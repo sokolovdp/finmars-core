@@ -6,7 +6,7 @@ from django.contrib.auth.admin import UserAdmin, GroupAdmin
 from django.contrib.auth.models import User, Group
 from reversion.admin import VersionAdmin
 
-from poms.users.models import PrivateGroup, MasterUser, Employee, GroupProfile, MasterUser2, Employee2, UserProfile
+from poms.users.models import PrivateGroup, MasterUser, Employee
 
 
 # class PrivateGroupInline(StackedInline):

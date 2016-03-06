@@ -57,61 +57,61 @@ class PrivateGroup(models.Model):
 
 # ----------------------------------------------------------------------------------------------------------------------
 
-
-@python_2_unicode_compatible
-class UserProfile(models.Model):
-    user = models.OneToOneField(settings.AUTH_USER_MODEL, related_name='profile', verbose_name=_('user'))
-    language = LanguageField(null=True, blank=True, verbose_name=_('language'))
-    timezone = TimezoneField(null=True, blank=True, verbose_name=_('timezone'))
-
-    class Meta:
-        verbose_name = _('user profile')
-        verbose_name_plural = _('user profile')
-
-    def __str__(self):
-        return '%s' % (self.user.username,)
-
-
-@python_2_unicode_compatible
-class MasterUser2(UserProfile):
-    currency = models.ForeignKey('currencies.Currency', null=True, blank=True)
-
-    class Meta:
-        verbose_name = _('master user2')
-        verbose_name_plural = _('master users2')
-
-    def __str__(self):
-        return '%s' % (self.user.username,)
-
-
-@python_2_unicode_compatible
-class Employee2(UserProfile):
-    master_user = models.ForeignKey(MasterUser2, verbose_name=_('master user'), related_name='employees')
-
-    class Meta:
-        verbose_name = _('employee2')
-        verbose_name_plural = _('employees2')
-
-    def __str__(self):
-        return '%s (%s)' % (self.user.username, self.master_user.user.username)
-
-
-@python_2_unicode_compatible
-class GroupProfile(models.Model):
-    group = models.OneToOneField('auth.Group', related_name='profile', verbose_name=_('group'))
-    master_user = models.ForeignKey(MasterUser2, verbose_name=_('master user'), related_name='groups')
-    user_name = models.CharField(max_length=80, blank=True, default='', verbose_name=_('private name'),
-                                 help_text=_('User specified name'))
-
-    class Meta:
-        verbose_name = _('group profile')
-        verbose_name_plural = _('group profiles')
-        unique_together = ['master_user', 'user_name']
-
-    def __str__(self):
-        return '%s (%s)' % (self.user_name, self.master_user.user.username)
-
-    def save(self, *args, **kwargs):
-        self.group.name = '%s (%s)' % (self.user_name, self.master_user.user.username)
-        self.group.save(update_fields=['name'])
-        super(GroupProfile).save(*args, **kwargs)
+#
+# @python_2_unicode_compatible
+# class UserProfile(models.Model):
+#     user = models.OneToOneField(settings.AUTH_USER_MODEL, related_name='profile', verbose_name=_('user'))
+#     language = LanguageField(null=True, blank=True, verbose_name=_('language'))
+#     timezone = TimezoneField(null=True, blank=True, verbose_name=_('timezone'))
+#
+#     class Meta:
+#         verbose_name = _('user profile')
+#         verbose_name_plural = _('user profile')
+#
+#     def __str__(self):
+#         return '%s' % (self.user.username,)
+#
+#
+# @python_2_unicode_compatible
+# class MasterUser2(UserProfile):
+#     currency = models.ForeignKey('currencies.Currency', null=True, blank=True)
+#
+#     class Meta:
+#         verbose_name = _('master user2')
+#         verbose_name_plural = _('master users2')
+#
+#     def __str__(self):
+#         return '%s' % (self.user.username,)
+#
+#
+# @python_2_unicode_compatible
+# class Employee2(UserProfile):
+#     master_user = models.ForeignKey(MasterUser2, verbose_name=_('master user'), related_name='employees')
+#
+#     class Meta:
+#         verbose_name = _('employee2')
+#         verbose_name_plural = _('employees2')
+#
+#     def __str__(self):
+#         return '%s (%s)' % (self.user.username, self.master_user.user.username)
+#
+#
+# @python_2_unicode_compatible
+# class GroupProfile(models.Model):
+#     group = models.OneToOneField('auth.Group', related_name='profile', verbose_name=_('group'))
+#     master_user = models.ForeignKey(MasterUser2, verbose_name=_('master user'), related_name='groups')
+#     user_name = models.CharField(max_length=80, blank=True, default='', verbose_name=_('private name'),
+#                                  help_text=_('User specified name'))
+#
+#     class Meta:
+#         verbose_name = _('group profile')
+#         verbose_name_plural = _('group profiles')
+#         unique_together = ['master_user', 'user_name']
+#
+#     def __str__(self):
+#         return '%s (%s)' % (self.user_name, self.master_user.user.username)
+#
+#     def save(self, *args, **kwargs):
+#         self.group.name = '%s (%s)' % (self.user_name, self.master_user.user.username)
+#         self.group.save(update_fields=['name'])
+#         super(GroupProfile).save(*args, **kwargs)
