@@ -1,6 +1,7 @@
 from __future__ import unicode_literals
 
 from rest_framework import viewsets, status
+from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
 from poms.reports.backends.balance import BalanceReportBuilder
@@ -8,6 +9,8 @@ from poms.reports.serializers import BalanceReportSerializer
 
 
 class BalanceReportViewSet(viewsets.ViewSet):
+    permission_classes = [IsAuthenticated]
+
     def get_serializer(self, *args, **kwargs):
         kwargs['context'] = self.get_serializer_context()
         return BalanceReportSerializer(*args, **kwargs)

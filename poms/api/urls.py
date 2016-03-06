@@ -11,6 +11,7 @@ import poms.currencies.views as currencies
 import poms.instruments.views as instruments
 import poms.users.views as users
 import poms.reports.views as reports
+import poms.api.views as views
 
 router = routers.DefaultRouter()
 router.register(r'users/login', users.LoginViewSet, 'LoginViewSet')
@@ -29,6 +30,9 @@ router.register(r'currencies/currency', currencies.CurrencyViewSet)
 router.register(r'currencies/currency-history', currencies.CurrencyHistoryViewSet)
 
 router.register(r'reports/balance', reports.BalanceReportViewSet, "balancereport")
+
+router.register(r'util/ping', views.PingViewSet, "ping")
+router.register(r'util/protected-ping', views.ProtectedPingViewSet, "protectedping")
 
 urlpatterns = router.urls
 
