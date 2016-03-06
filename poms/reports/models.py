@@ -1,6 +1,7 @@
 from __future__ import unicode_literals
 
 from django.contrib.contenttypes.models import ContentType
+from django.utils.encoding import python_2_unicode_compatible
 
 from poms.users.models import MasterUser
 
@@ -34,3 +35,38 @@ from poms.users.models import MasterUser
 #
 #     def __str__(self):
 #         return '%s #%s - %s' % (self.content_type, self.object_id, self.name)
+
+@python_2_unicode_compatible
+class BaseReportItem(object):
+    def __init__(self, pk=None):
+        self.pk = pk
+
+    def __str__(self):
+        return "%s #%s" % (self.__class__.__name__, self.pk,)
+
+
+@python_2_unicode_compatible
+class BaseReport(object):
+    def __init__(self, begin_date=None, end_date=None, items=None):
+        self.begin_date = begin_date
+        self.end_date = end_date
+        self.items = items
+
+    def __str__(self):
+        return "%s (%s, %s)" % (self.__class__.__name__, self.begin_date, self.end_date)
+
+
+# @python_2_unicode_compatible
+class BalanceReportItem(BaseReportItem):
+    def __init__(self, pk=None, instrument=None):
+        super(BalanceReportItem, self).__init__(pk)
+        self.instrument = instrument
+
+    def __str__(self):
+        return "%s" % (self.instrument,)
+
+
+# @python_2_unicode_compatible
+class BalanceReport(BaseReport):
+    def __init__(self, begin_date=None, end_date=None, items=None):
+        super(BalanceReport, self).__init__(begin_date, end_date, items)
