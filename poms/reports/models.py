@@ -47,19 +47,21 @@ class BaseReportItem(object):
 
 @python_2_unicode_compatible
 class BaseReport(object):
-    def __init__(self, begin_date=None, end_date=None, items=None):
+    def __init__(self, master_user=None, begin_date=None, end_date=None, instruments=None, items=None):
+        self.master_user = master_user
         self.begin_date = begin_date
         self.end_date = end_date
+        self.instruments = instruments
         self.items = items
 
     def __str__(self):
-        return "%s (%s, %s)" % (self.__class__.__name__, self.begin_date, self.end_date)
+        return "%s for %s (%s, %s)" % (self.__class__.__name__, self.master_user, self.begin_date, self.end_date)
 
 
 # @python_2_unicode_compatible
 class BalanceReportItem(BaseReportItem):
-    def __init__(self, pk=None, instrument=None):
-        super(BalanceReportItem, self).__init__(pk)
+    def __init__(self, instrument=None, *args, **kwargs):
+        super(BalanceReportItem, self).__init__(*args, **kwargs)
         self.instrument = instrument
 
     def __str__(self):
@@ -68,5 +70,5 @@ class BalanceReportItem(BaseReportItem):
 
 # @python_2_unicode_compatible
 class BalanceReport(BaseReport):
-    def __init__(self, begin_date=None, end_date=None, items=None):
-        super(BalanceReport, self).__init__(begin_date, end_date, items)
+    def __init__(self, *args, **kwargs):
+        super(BalanceReport, self).__init__(*args, **kwargs)

@@ -3,6 +3,8 @@ from __future__ import unicode_literals
 from django.utils.translation import ugettext_lazy as _
 from rest_framework import serializers
 
+from poms.api.fields import CurrentMasterUserDefault
+from poms.instruments.models import Instrument
 from poms.reports.models import BalanceReport, BalanceReportItem
 
 
@@ -11,8 +13,11 @@ class BaseReportItemSerializer(serializers.Serializer):
 
 
 class BaseReportSerializer(serializers.Serializer):
-    begin_date = serializers.DateField(allow_null=True, required=False, help_text=_('some help text'))
-    end_date = serializers.DateField(allow_null=True, required=False, help_text=_('some help text'))
+    master_user = serializers.HiddenField(default=CurrentMasterUserDefault())
+    begin_date = serializers.DateField(required=False, allow_null=True, help_text=_('some help text'))
+    end_date = serializers.DateField(required=False, allow_null=True, help_text=_('some help text'))
+    instruments = serializers.PrimaryKeyRelatedField(queryset=Instrument.objects.all(), required=False, many=True,
+                                                     allow_null=True)
 
 
 class BalanceReportItemSerializer(BaseReportItemSerializer):
