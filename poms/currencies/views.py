@@ -7,8 +7,8 @@ from rest_framework.viewsets import ModelViewSet
 
 from poms.api.filters import IsOwnerByMasterUserOrSystemFilter
 from poms.api.permissions import IsOwnerOrReadonly
-from poms.currencies.models import Currency
-from poms.currencies.serializers import CurrencySerializer
+from poms.currencies.models import Currency, CurrencyHistory
+from poms.currencies.serializers import CurrencySerializer, CurrencyHistorySerializer
 
 
 class CurrencyFilter(FilterSet):
@@ -29,10 +29,29 @@ class CurrencyFilter(FilterSet):
 class CurrencyViewSet(ModelViewSet):
     queryset = Currency.objects.all()
     serializer_class = CurrencySerializer
-    permission_classes = (IsAuthenticated, IsOwnerOrReadonly)
-    filter_backends = (IsOwnerByMasterUserOrSystemFilter, DjangoFilterBackend, OrderingFilter, SearchFilter,)
+    permission_classes = [IsAuthenticated, IsOwnerOrReadonly]
+    filter_backends = [IsOwnerByMasterUserOrSystemFilter, DjangoFilterBackend, OrderingFilter, SearchFilter, ]
     # permission_classes = (IsAuthenticated, DjangoObjectPermissions,)
     # filter_backends = (DjangoFilterBackend, OrderingFilter, DjangoObjectPermissionsFilter)
     filter_class = CurrencyFilter
     ordering_fields = ['name']
     search_fields = ['name']
+
+
+class CurrencyHistoryFilter(FilterSet):
+    currency = django_filters.Filter(name='currency')
+    min_date = django_filters.DateFilter(name='date', lookup_type='gte')
+    max_date = django_filters.DateFilter(name='date', lookup_type='lte')
+
+    class Meta:
+        model = CurrencyHistory
+        fields = ['currency', 'min_date', 'max_date']
+
+
+class CurrencyHistoryViewSet(ModelViewSet):
+    queryset = CurrencyHistory.objects.all()
+    serializer_class = CurrencyHistorySerializer
+    permission_classes = [IsAuthenticated]
+    filter_backends = [DjangoFilterBackend, OrderingFilter, ]
+    filter_class = CurrencyHistoryFilter
+    ordering_fields = ['-date']
