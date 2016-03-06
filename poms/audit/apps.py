@@ -1,0 +1,14 @@
+from __future__ import unicode_literals
+
+from django.apps import AppConfig
+from django.utils.translation import ugettext_lazy as _
+
+
+class AuditConfig(AppConfig):
+    name = 'poms.audit'
+    # label = 'poms_audit'
+    verbose_name = _('Audit')
+
+    def ready(self):
+        # noinspection PyUnresolvedReferences
+        import poms.audit.signals

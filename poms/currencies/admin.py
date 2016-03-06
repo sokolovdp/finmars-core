@@ -1,0 +1,51 @@
+from __future__ import unicode_literals
+
+from django.contrib import admin
+from django.utils.translation import ugettext_lazy as _
+from reversion.admin import VersionAdmin
+
+from poms.currencies.models import Currency, CurrencyHistory
+
+
+class SystemCurrencyFilter(admin.SimpleListFilter):
+    title = _('is global')
+    parameter_name = 'master_user'
+
+    def lookups(self, request, model_admin):
+        return (
+            ('1', _('Yes')),
+            ('0', _('No')),
+        )
+
+    def queryset(self, request, queryset):
+        if self.value() == '1':
+            return queryset.filter(master_user__isnull=True)
+        if self.value() == '0':
+            return queryset.filter(master_user__isnull=False)
+
+
+class CurrencyAdmin(VersionAdmin):
+    model = Currency
+    list_display = ['id', 'code', 'name', 'master_user', 'is_global']
+    ordering = ['code']
+    list_filter = [SystemCurrencyFilter]
+
+    def is_global(self, obj):
+        return obj.is_global
+
+    is_global.short_name = _('is global')
+    is_global.boolean = True
+    is_global.admin_order_field = 'master_user'
+
+
+admin.site.register(Currency, CurrencyAdmin)
+
+
+class CurrencyHistoryAdmin(VersionAdmin):
+    model = CurrencyHistory
+    list_display = ['id', 'currency', 'date', 'fx_rate']
+    list_filter = ['date']
+    date_hierarchy = 'date'
+
+
+admin.site.register(CurrencyHistory, CurrencyHistoryAdmin)
