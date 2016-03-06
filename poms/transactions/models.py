@@ -29,8 +29,6 @@ class TransactionClass(models.Model):
         return '%s' % (self.name,)
 
 
-# тип транзакции это псмотри на комплексные транзакции...
-
 @python_2_unicode_compatible
 class Transaction(models.Model):
     master_user = models.ForeignKey(MasterUser, related_name='transactions', verbose_name=_('master user'))
