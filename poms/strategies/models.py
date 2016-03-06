@@ -15,7 +15,7 @@ class Strategy(MPTTModel):
     parent = TreeForeignKey('self', null=True, blank=True, related_name='children', db_index=True)
     user_code = models.CharField(max_length=25, null=True, blank=True)
     name = models.CharField(max_length=255, verbose_name=_('name'))
-    short_name = models.CharField(max_length=50, verbose_name=_('short name'))
+    short_name = models.CharField(max_length=50, null=True, blank=True, verbose_name=_('short name'))
 
     class MPTTMeta:
         order_insertion_by = ['master_user', 'name']

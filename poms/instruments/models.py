@@ -33,7 +33,7 @@ class Instrument(models.Model):
     master_user = models.ForeignKey(MasterUser, related_name='instruments', verbose_name=_('master user'))
     user_code = models.CharField(max_length=25, null=True, blank=True)
     name = models.CharField(max_length=255, verbose_name=_('name'))
-    short_name = models.CharField(max_length=50, verbose_name=_('short name'))
+    short_name = models.CharField(max_length=50, null=True, blank=True, verbose_name=_('short name'))
     currency = models.ForeignKey(Currency, on_delete=models.PROTECT)
     is_active = models.BooleanField(default=True)
     classifiers = TreeManyToManyField(InstrumentClassifier, blank=True)
@@ -43,7 +43,7 @@ class Instrument(models.Model):
         verbose_name_plural = _('instruments')
 
     def __str__(self):
-        return self.name
+        return '%s (%s)' % (self.name, self.master_user.user.username)
 
 
 @python_2_unicode_compatible

@@ -33,7 +33,7 @@ class Counterparty(models.Model):
     master_user = models.ForeignKey(MasterUser, related_name='counterparties', verbose_name=_('master user'))
     user_code = models.CharField(max_length=25, null=True, blank=True)
     name = models.CharField(max_length=255, verbose_name=_('name'))
-    short_name = models.CharField(max_length=50, verbose_name=_('short name'))
+    short_name = models.CharField(max_length=50, null=True, blank=True, verbose_name=_('short name'))
     # portfolios = models.ManyToManyField(Portfolio, blank=True)
     # settlement_details = models.TextField(null=True, blank=True)
     classifiers = TreeManyToManyField(CounterpartyClassifier, blank=True)
@@ -51,7 +51,7 @@ class Responsible(models.Model):
     master_user = models.ForeignKey(MasterUser, related_name='responsibles', verbose_name=_('master user'))
     user_code = models.CharField(max_length=25, null=True, blank=True)
     name = models.CharField(max_length=255, verbose_name=_('name'))
-    short_name = models.CharField(max_length=50, verbose_name=_('short name'))
+    short_name = models.CharField(max_length=50, null=True, blank=True, verbose_name=_('short name'))
 
     class Meta:
         verbose_name = _('responsible')

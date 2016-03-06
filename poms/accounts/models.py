@@ -29,7 +29,7 @@ class AccountClassifier(MPTTModel):
     parent = TreeForeignKey('self', null=True, blank=True, related_name='children', db_index=True)
     user_code = models.CharField(max_length=25, null=True, blank=True)
     name = models.CharField(max_length=255, verbose_name=_('name'))
-    short_name = models.CharField(max_length=50, verbose_name=_('short name'))
+    short_name = models.CharField(max_length=50, null=True, blank=True, verbose_name=_('short name'))
 
     class MPTTMeta:
         order_insertion_by = ['master_user', 'name']
@@ -47,7 +47,7 @@ class Account(models.Model):
     master_user = models.ForeignKey(MasterUser, related_name='accounts', verbose_name=_('master user'))
     user_code = models.CharField(max_length=25, null=True, blank=True)
     name = models.CharField(max_length=255, verbose_name=_('name'))
-    short_name = models.CharField(max_length=50, verbose_name=_('short name'))
+    short_name = models.CharField(max_length=50, null=True, blank=True, verbose_name=_('short name'))
     type = models.ForeignKey(AccountType, null=True, blank=True)
     # is_active = models.BooleanField(default=True)
     # is_cash_or_custody = models.BooleanField(default=False, verbose_name=_('Is Cash/Custody Account'))  # rename or ?

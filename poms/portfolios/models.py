@@ -34,7 +34,7 @@ class Portfolio(models.Model):
     master_user = models.ForeignKey(MasterUser, related_name='portfolios', verbose_name=_('master user'))
     user_code = models.CharField(max_length=25, null=True, blank=True)
     name = models.CharField(max_length=255, verbose_name=_('name'))
-    short_name = models.CharField(max_length=50, verbose_name=_('short name'))
+    short_name = models.CharField(max_length=50, null=True, blank=True, verbose_name=_('short name'))
     classifiers = TreeManyToManyField(PortfolioClassifier, blank=True)
 
     # inception_date = models.DateField(null=True, blank=True)
