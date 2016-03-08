@@ -1,32 +1,39 @@
-from __future__ import unicode_literals, division
+# -*- coding: utf-8 -*-
+from __future__ import unicode_literals, division, print_function
 
-from collections import OrderedDict
+DEBUG = False
 
-DEBUG = True
+
+# @python_2_unicode_compatible
+class Transaction0(object):
+    def __init__(self, instrument="", position_size_with_sign=0., principal_with_sign=0.):
+        self.instrument = instrument
+        self.position_size_with_sign = float(position_size_with_sign)
+        self.principal_with_sign = float(principal_with_sign)
+        self.multiplier = 0.
+        self.rolling_position = 0.
+        self.not_closed = 0.
+        self.balance = 0.
+
+    def __str__(self):
+        return "instrument=%s, position_size_with_sign=%s, principal_with_sign=%s, multiplier=%s, rolling_position=%s, not_closed=%s, balance=%s" % (
+            self.instrument, self.position_size_with_sign, self.principal_with_sign, self.multiplier,
+            self.rolling_position, self.not_closed, self.balance)
 
 
 def get_data(cnt):
-    # # transactions = list(Transaction.objects.order_by('id').filter(is_canceled=False))
-    # transactions = list(Transaction.objects.order_by('id').all())
-    #
-    # data = []
-    # for t in transactions:
-    #     data.append([t.instrument.name, t.position_size_with_sign, t.principal_with_sign])
-    #     # data.append([t.id, t.position_size_with_sign, t.principal_with_sign])
-
-    index = ['instrument', 'position_size_with_sign', 'principal_with_sign']
-    data = [
-        # ['I_1', 50.0, -100.0],
-        # ['I_1', 25.0, -40.0],
-        # ['I_1', -50.0, 80.0],
-        ['I_1', 25.0, -70.0],
-        ['I_1', -25.0, 30.0],
-    ]
-    data = [
-        ['I_1', 10000.0, -70.0],
-        ['I_1', 10000.0, -70.0],
-        ['I_1', -1.0, 30.0],
-    ]
+    # data = [
+    #     # ['I_1', 50.0, -100.0],
+    #     # ['I_1', 25.0, -40.0],
+    #     # ['I_1', -50.0, 80.0],
+    #     ['I_1', 25.0, -70.0],
+    #     ['I_1', -25.0, 30.0],
+    # ]
+    # data = [
+    #     ['I_1', 10000.0, -70.0],
+    #     ['I_1', 10000.0, -70.0],
+    #     ['I_1', -1.0, 30.0],
+    # ]
     # data = [
     #     ['I_1', 50.0, -100.0],
     #     ['I_1', 50.0, -100.0],
@@ -57,9 +64,8 @@ def get_data(cnt):
     #         if position_size_with_sign != 0:
     #             break
     #     principal_with_sign = position_size_with_sign
-    #     data.append(['I_1', position_size_with_sign, -principal_with_sign * 10])
-    # if DEBUG:
-    #     print(data)
+    #     data.append(['I_1', float(position_size_with_sign), float(-principal_with_sign) * 10.])
+    # print(data)
 
     # data = [
     #     ['I_1', 10, -10],
@@ -77,40 +83,190 @@ def get_data(cnt):
     #     data *= 2
     # data = data[0:cnt]
 
-    # data = [['I_1', -8, 80], ['I_1', -6, 60], ['I_1', 3, -30], ['I_1', -2, 20], ['I_1', -9, 90], ['I_1', -2, 20],
-    #         ['I_1', 9, -90], ['I_1', 5, -50], ['I_1', 10, -100], ['I_1', 1, -10], ['I_1', 4, -40], ['I_1', -8, 80],
-    #         ['I_1', 1, -10], ['I_1', 6, -60], ['I_1', -1, 10], ['I_1', 8, -80], ['I_1', 8, -80], ['I_1', 10, -100],
-    #         ['I_1', -7, 70], ['I_1', -10, 100], ['I_1', 10, -100], ['I_1', 1, -10], ['I_1', -4, 40], ['I_1', 8, -80],
-    #         ['I_1', 7, -70], ['I_1', 8, -80], ['I_1', 3, -30], ['I_1', -6, 60], ['I_1', 2, -20], ['I_1', 4, -40],
-    #         ['I_1', 1, -10], ['I_1', -6, 60], ['I_1', -5, 50], ['I_1', -5, 50], ['I_1', 7, -70], ['I_1', -1, 10],
-    #         ['I_1', 3, -30], ['I_1', 4, -40], ['I_1', 5, -50], ['I_1', 1, -10], ['I_1', 6, -60], ['I_1', 6, -60],
-    #         ['I_1', 4, -40], ['I_1', 9, -90], ['I_1', -8, 80], ['I_1', -4, 40], ['I_1', 2, -20], ['I_1', 4, -40],
-    #         ['I_1', 2, -20], ['I_1', 8, -80], ['I_1', -10, 100], ['I_1', 7, -70], ['I_1', 6, -60], ['I_1', -10, 100],
-    #         ['I_1', 9, -90], ['I_1', -8, 80], ['I_1', 5, -50], ['I_1', -10, 100], ['I_1', 10, -100], ['I_1', 4, -40],
-    #         ['I_1', -9, 90], ['I_1', -8, 80], ['I_1', -4, 40], ['I_1', -9, 90], ['I_1', -10, 100], ['I_1', -7, 70],
-    #         ['I_1', -8, 80], ['I_1', 5, -50], ['I_1', -5, 50], ['I_1', -8, 80], ['I_1', -1, 10], ['I_1', 4, -40],
-    #         ['I_1', -2, 20], ['I_1', 3, -30], ['I_1', 1, -10], ['I_1', 9, -90], ['I_1', 1, -10], ['I_1', 7, -70],
-    #         ['I_1', -10, 100], ['I_1', 3, -30], ['I_1', 1, -10], ['I_1', -3, 30], ['I_1', 6, -60], ['I_1', 9, -90],
-    #         ['I_1', -6, 60], ['I_1', 6, -60], ['I_1', 1, -10], ['I_1', 7, -70], ['I_1', -7, 70], ['I_1', -6, 60],
-    #         ['I_1', -4, 40], ['I_1', 1, -10], ['I_1', 8, -80], ['I_1', -6, 60], ['I_1', -8, 80], ['I_1', -2, 20],
-    #         ['I_1', 7, -70], ['I_1', -10, 100], ['I_1', -2, 20], ['I_1', 1, -10]]
+    data = [['I_1', -6, 60], ['I_1', -1, 10], ['I_1', -6, 60], ['I_1', 3, -30], ['I_1', -8, 80], ['I_1', 10, -100],
+            ['I_1', 1, -10], ['I_1', -8, 80], ['I_1', 2, -20], ['I_1', 3, -30], ['I_1', 3, -30], ['I_1', 7, -70],
+            ['I_1', 5, -50], ['I_1', 1, -10], ['I_1', 2, -20], ['I_1', 3, -30], ['I_1', 10, -100], ['I_1', 6, -60],
+            ['I_1', 3, -30], ['I_1', 5, -50], ['I_1', -1, 10], ['I_1', 10, -100], ['I_1', -6, 60], ['I_1', 4, -40],
+            ['I_1', -6, 60], ['I_1', -4, 40], ['I_1', -10, 100], ['I_1', -3, 30], ['I_1', 2, -20], ['I_1', 6, -60],
+            ['I_1', -3, 30], ['I_1', -10, 100], ['I_1', 4, -40], ['I_1', -3, 30], ['I_1', 5, -50], ['I_1', 3, -30],
+            ['I_1', -6, 60], ['I_1', -5, 50], ['I_1', 2, -20], ['I_1', 4, -40], ['I_1', 4, -40], ['I_1', 1, -10],
+            ['I_1', 6, -60], ['I_1', -6, 60], ['I_1', 6, -60], ['I_1', -3, 30], ['I_1', -4, 40], ['I_1', 5, -50],
+            ['I_1', 8, -80], ['I_1', -5, 50], ['I_1', -5, 50], ['I_1', -4, 40], ['I_1', -7, 70], ['I_1', -7, 70],
+            ['I_1', -5, 50], ['I_1', 3, -30], ['I_1', -9, 90], ['I_1', 8, -80], ['I_1', 2, -20], ['I_1', -10, 100],
+            ['I_1', -1, 10], ['I_1', 6, -60], ['I_1', -5, 50], ['I_1', 5, -50], ['I_1', -4, 40], ['I_1', 7, -70],
+            ['I_1', 7, -70], ['I_1', 7, -70], ['I_1', -5, 50], ['I_1', -9, 90], ['I_1', 9, -90], ['I_1', -1, 10],
+            ['I_1', 6, -60], ['I_1', -9, 90], ['I_1', 5, -50], ['I_1', 9, -90], ['I_1', -3, 30], ['I_1', -4, 40],
+            ['I_1', -6, 60], ['I_1', -7, 70], ['I_1', 6, -60], ['I_1', -2, 20], ['I_1', -9, 90], ['I_1', -8, 80],
+            ['I_1', 5, -50], ['I_1', -5, 50], ['I_1', -10, 100], ['I_1', -3, 30], ['I_1', -4, 40], ['I_1', -4, 40],
+            ['I_1', 5, -50], ['I_1', -8, 80], ['I_1', 2, -20], ['I_1', 3, -30], ['I_1', -9, 90], ['I_1', -3, 30],
+            ['I_1', 7, -70], ['I_1', 6, -60], ['I_1', 10, -100], ['I_1', -10, 100], ['I_1', -10, 100], ['I_1', -9, 90],
+            ['I_1', 3, -30], ['I_1', -7, 70], ['I_1', -10, 100], ['I_1', 5, -50], ['I_1', -4, 40], ['I_1', -4, 40],
+            ['I_1', 8, -80], ['I_1', -1, 10], ['I_1', 2, -20], ['I_1', -1, 10], ['I_1', -3, 30], ['I_1', -9, 90],
+            ['I_1', -3, 30], ['I_1', -9, 90], ['I_1', -7, 70], ['I_1', 7, -70], ['I_1', 2, -20], ['I_1', 6, -60],
+            ['I_1', 7, -70], ['I_1', 2, -20], ['I_1', -10, 100], ['I_1', -4, 40], ['I_1', -8, 80], ['I_1', -6, 60],
+            ['I_1', -8, 80], ['I_1', 6, -60], ['I_1', -8, 80], ['I_1', -10, 100], ['I_1', 9, -90], ['I_1', 3, -30],
+            ['I_1', 1, -10], ['I_1', 2, -20], ['I_1', 3, -30], ['I_1', -8, 80], ['I_1', 9, -90], ['I_1', -1, 10],
+            ['I_1', 3, -30], ['I_1', -5, 50], ['I_1', 3, -30], ['I_1', -3, 30], ['I_1', -7, 70], ['I_1', -4, 40],
+            ['I_1', -8, 80], ['I_1', -4, 40], ['I_1', -4, 40], ['I_1', 8, -80], ['I_1', 5, -50], ['I_1', -9, 90],
+            ['I_1', -9, 90], ['I_1', -10, 100], ['I_1', 10, -100], ['I_1', -4, 40], ['I_1', 10, -100],
+            ['I_1', -10, 100], ['I_1', 8, -80], ['I_1', 9, -90], ['I_1', -8, 80], ['I_1', 5, -50], ['I_1', -1, 10],
+            ['I_1', 8, -80], ['I_1', -3, 30], ['I_1', 1, -10], ['I_1', -5, 50], ['I_1', 7, -70], ['I_1', -9, 90],
+            ['I_1', 8, -80], ['I_1', 2, -20], ['I_1', -3, 30], ['I_1', 5, -50], ['I_1', -3, 30], ['I_1', 10, -100],
+            ['I_1', 2, -20], ['I_1', -5, 50], ['I_1', -1, 10], ['I_1', 9, -90], ['I_1', 4, -40], ['I_1', 3, -30],
+            ['I_1', 2, -20], ['I_1', 1, -10], ['I_1', 5, -50], ['I_1', -10, 100], ['I_1', -5, 50], ['I_1', -10, 100],
+            ['I_1', -6, 60], ['I_1', -7, 70], ['I_1', -4, 40], ['I_1', 10, -100], ['I_1', 7, -70], ['I_1', 2, -20],
+            ['I_1', -10, 100], ['I_1', 4, -40], ['I_1', -4, 40], ['I_1', -7, 70], ['I_1', -7, 70], ['I_1', -6, 60],
+            ['I_1', -3, 30], ['I_1', -8, 80], ['I_1', 3, -30], ['I_1', -9, 90], ['I_1', -7, 70], ['I_1', 6, -60],
+            ['I_1', 8, -80], ['I_1', -5, 50], ['I_1', 8, -80], ['I_1', 4, -40], ['I_1', 8, -80], ['I_1', -2, 20],
+            ['I_1', -9, 90], ['I_1', 4, -40], ['I_1', 10, -100], ['I_1', 10, -100], ['I_1', -5, 50], ['I_1', -9, 90],
+            ['I_1', 4, -40], ['I_1', 1, -10], ['I_1', -10, 100], ['I_1', -2, 20], ['I_1', -2, 20], ['I_1', 9, -90],
+            ['I_1', 7, -70], ['I_1', 8, -80], ['I_1', -4, 40], ['I_1', -8, 80], ['I_1', 9, -90], ['I_1', 7, -70],
+            ['I_1', -9, 90], ['I_1', -6, 60], ['I_1', -8, 80], ['I_1', 9, -90], ['I_1', -7, 70], ['I_1', -7, 70],
+            ['I_1', -6, 60], ['I_1', 10, -100], ['I_1', 9, -90], ['I_1', -9, 90], ['I_1', -6, 60], ['I_1', 2, -20],
+            ['I_1', -6, 60], ['I_1', 10, -100], ['I_1', 5, -50], ['I_1', 5, -50], ['I_1', 1, -10], ['I_1', 9, -90],
+            ['I_1', 2, -20], ['I_1', 6, -60], ['I_1', 10, -100], ['I_1', -8, 80], ['I_1', -7, 70], ['I_1', -3, 30],
+            ['I_1', -3, 30], ['I_1', 3, -30], ['I_1', 6, -60], ['I_1', -8, 80], ['I_1', -6, 60], ['I_1', -7, 70],
+            ['I_1', 9, -90], ['I_1', -10, 100], ['I_1', -7, 70], ['I_1', -8, 80], ['I_1', -6, 60], ['I_1', -10, 100],
+            ['I_1', 8, -80], ['I_1', -3, 30], ['I_1', -7, 70], ['I_1', 2, -20], ['I_1', 7, -70], ['I_1', 6, -60],
+            ['I_1', -2, 20], ['I_1', 7, -70], ['I_1', -8, 80], ['I_1', 2, -20], ['I_1', 6, -60], ['I_1', 2, -20],
+            ['I_1', -10, 100], ['I_1', -9, 90], ['I_1', -5, 50], ['I_1', -6, 60], ['I_1', 7, -70], ['I_1', 7, -70],
+            ['I_1', 9, -90], ['I_1', 2, -20], ['I_1', 7, -70], ['I_1', -9, 90], ['I_1', 7, -70], ['I_1', -9, 90],
+            ['I_1', -2, 20], ['I_1', 3, -30], ['I_1', -8, 80], ['I_1', 6, -60], ['I_1', 10, -100], ['I_1', -3, 30],
+            ['I_1', 6, -60], ['I_1', -9, 90], ['I_1', -3, 30], ['I_1', -8, 80], ['I_1', 6, -60], ['I_1', 3, -30],
+            ['I_1', 8, -80], ['I_1', 7, -70], ['I_1', 4, -40], ['I_1', 6, -60], ['I_1', 1, -10], ['I_1', -8, 80],
+            ['I_1', -10, 100], ['I_1', -3, 30], ['I_1', 10, -100], ['I_1', 7, -70], ['I_1', -1, 10], ['I_1', 9, -90],
+            ['I_1', 8, -80], ['I_1', 9, -90], ['I_1', 3, -30], ['I_1', 6, -60], ['I_1', 5, -50], ['I_1', 1, -10],
+            ['I_1', -4, 40], ['I_1', 2, -20], ['I_1', 10, -100], ['I_1', 9, -90], ['I_1', 4, -40], ['I_1', -7, 70],
+            ['I_1', 2, -20], ['I_1', 4, -40], ['I_1', -3, 30], ['I_1', -1, 10], ['I_1', -3, 30], ['I_1', 3, -30],
+            ['I_1', -8, 80], ['I_1', -1, 10], ['I_1', 7, -70], ['I_1', -9, 90], ['I_1', 7, -70], ['I_1', -9, 90],
+            ['I_1', 7, -70], ['I_1', 8, -80], ['I_1', -9, 90], ['I_1', 4, -40], ['I_1', -7, 70], ['I_1', 4, -40],
+            ['I_1', 4, -40], ['I_1', -3, 30], ['I_1', 7, -70], ['I_1', -6, 60], ['I_1', -6, 60], ['I_1', -1, 10],
+            ['I_1', 5, -50], ['I_1', 4, -40], ['I_1', -7, 70], ['I_1', -5, 50], ['I_1', 10, -100], ['I_1', 3, -30],
+            ['I_1', 6, -60], ['I_1', -3, 30], ['I_1', -6, 60], ['I_1', -5, 50], ['I_1', 4, -40], ['I_1', 8, -80],
+            ['I_1', 1, -10], ['I_1', 7, -70], ['I_1', -2, 20], ['I_1', -10, 100], ['I_1', 9, -90], ['I_1', -6, 60],
+            ['I_1', -10, 100], ['I_1', 5, -50], ['I_1', 4, -40], ['I_1', 4, -40], ['I_1', -2, 20], ['I_1', 4, -40],
+            ['I_1', 5, -50], ['I_1', 6, -60], ['I_1', 10, -100], ['I_1', -4, 40], ['I_1', -6, 60], ['I_1', -9, 90],
+            ['I_1', 9, -90], ['I_1', 1, -10], ['I_1', -7, 70], ['I_1', -2, 20], ['I_1', -9, 90], ['I_1', -2, 20],
+            ['I_1', -9, 90], ['I_1', 8, -80], ['I_1', 7, -70], ['I_1', -8, 80], ['I_1', 8, -80], ['I_1', -5, 50],
+            ['I_1', 4, -40], ['I_1', -8, 80], ['I_1', -7, 70], ['I_1', 4, -40], ['I_1', -9, 90], ['I_1', 2, -20],
+            ['I_1', -1, 10], ['I_1', -3, 30], ['I_1', 8, -80], ['I_1', -8, 80], ['I_1', -6, 60], ['I_1', 9, -90],
+            ['I_1', 7, -70], ['I_1', 10, -100], ['I_1', -4, 40], ['I_1', -7, 70], ['I_1', 10, -100], ['I_1', -2, 20],
+            ['I_1', 10, -100], ['I_1', -8, 80], ['I_1', 8, -80], ['I_1', 5, -50], ['I_1', -7, 70], ['I_1', 1, -10],
+            ['I_1', 3, -30], ['I_1', -9, 90], ['I_1', -10, 100], ['I_1', 4, -40], ['I_1', -7, 70], ['I_1', -4, 40],
+            ['I_1', 2, -20], ['I_1', 3, -30], ['I_1', 3, -30], ['I_1', -4, 40], ['I_1', -5, 50], ['I_1', 3, -30],
+            ['I_1', 3, -30], ['I_1', 4, -40], ['I_1', -5, 50], ['I_1', -2, 20], ['I_1', -1, 10], ['I_1', -7, 70],
+            ['I_1', 1, -10], ['I_1', 5, -50], ['I_1', 5, -50], ['I_1', -6, 60], ['I_1', 9, -90], ['I_1', 7, -70],
+            ['I_1', -8, 80], ['I_1', 2, -20], ['I_1', 5, -50], ['I_1', 10, -100], ['I_1', -3, 30], ['I_1', 1, -10],
+            ['I_1', -4, 40], ['I_1', -8, 80], ['I_1', 6, -60], ['I_1', -1, 10], ['I_1', 2, -20], ['I_1', 5, -50],
+            ['I_1', -1, 10], ['I_1', 9, -90], ['I_1', -9, 90], ['I_1', 6, -60], ['I_1', 10, -100], ['I_1', -7, 70],
+            ['I_1', -7, 70], ['I_1', -1, 10], ['I_1', -8, 80], ['I_1', -7, 70], ['I_1', 4, -40], ['I_1', 5, -50],
+            ['I_1', -3, 30], ['I_1', 3, -30], ['I_1', 6, -60], ['I_1', -8, 80], ['I_1', -1, 10], ['I_1', 2, -20],
+            ['I_1', 8, -80], ['I_1', -3, 30], ['I_1', 9, -90], ['I_1', -5, 50], ['I_1', -7, 70], ['I_1', -1, 10],
+            ['I_1', -1, 10], ['I_1', 9, -90], ['I_1', -7, 70], ['I_1', 3, -30], ['I_1', -1, 10], ['I_1', -6, 60],
+            ['I_1', -5, 50], ['I_1', 5, -50], ['I_1', 10, -100], ['I_1', 6, -60], ['I_1', -6, 60], ['I_1', -6, 60],
+            ['I_1', 7, -70], ['I_1', -4, 40], ['I_1', 7, -70], ['I_1', 3, -30], ['I_1', -1, 10], ['I_1', -8, 80],
+            ['I_1', 3, -30], ['I_1', -4, 40], ['I_1', 10, -100], ['I_1', -10, 100], ['I_1', -9, 90], ['I_1', 7, -70],
+            ['I_1', 5, -50], ['I_1', -1, 10], ['I_1', 8, -80], ['I_1', 1, -10], ['I_1', 2, -20], ['I_1', -1, 10],
+            ['I_1', -8, 80], ['I_1', -9, 90], ['I_1', -9, 90], ['I_1', 9, -90], ['I_1', 4, -40], ['I_1', -7, 70],
+            ['I_1', -10, 100], ['I_1', -5, 50], ['I_1', -2, 20], ['I_1', -3, 30], ['I_1', 5, -50], ['I_1', -4, 40],
+            ['I_1', 7, -70], ['I_1', -8, 80], ['I_1', 3, -30], ['I_1', 5, -50], ['I_1', 9, -90], ['I_1', -4, 40],
+            ['I_1', -9, 90], ['I_1', -9, 90], ['I_1', -4, 40], ['I_1', 5, -50], ['I_1', -5, 50], ['I_1', -3, 30],
+            ['I_1', 10, -100], ['I_1', -1, 10], ['I_1', -5, 50], ['I_1', 5, -50], ['I_1', -10, 100], ['I_1', -3, 30],
+            ['I_1', 8, -80], ['I_1', -9, 90], ['I_1', 10, -100], ['I_1', -8, 80], ['I_1', -2, 20], ['I_1', 7, -70],
+            ['I_1', 2, -20], ['I_1', -5, 50], ['I_1', 5, -50], ['I_1', 7, -70], ['I_1', 9, -90], ['I_1', -8, 80],
+            ['I_1', -6, 60], ['I_1', -3, 30], ['I_1', 10, -100], ['I_1', 10, -100], ['I_1', 3, -30], ['I_1', -7, 70],
+            ['I_1', -4, 40], ['I_1', -5, 50], ['I_1', -2, 20], ['I_1', -2, 20], ['I_1', -3, 30], ['I_1', -10, 100],
+            ['I_1', 6, -60], ['I_1', 9, -90], ['I_1', 3, -30], ['I_1', 5, -50], ['I_1', -3, 30], ['I_1', -1, 10],
+            ['I_1', -10, 100], ['I_1', -5, 50], ['I_1', -6, 60], ['I_1', -8, 80], ['I_1', -2, 20], ['I_1', -1, 10],
+            ['I_1', 4, -40], ['I_1', -8, 80], ['I_1', 8, -80], ['I_1', -6, 60], ['I_1', -8, 80], ['I_1', 3, -30],
+            ['I_1', -6, 60], ['I_1', 3, -30], ['I_1', 3, -30], ['I_1', -2, 20], ['I_1', 1, -10], ['I_1', -5, 50],
+            ['I_1', -10, 100], ['I_1', -6, 60], ['I_1', 5, -50], ['I_1', 7, -70], ['I_1', 2, -20], ['I_1', 9, -90],
+            ['I_1', -7, 70], ['I_1', -5, 50], ['I_1', 4, -40], ['I_1', 10, -100], ['I_1', -10, 100], ['I_1', 7, -70],
+            ['I_1', -3, 30], ['I_1', 7, -70], ['I_1', -8, 80], ['I_1', -2, 20], ['I_1', 3, -30], ['I_1', 4, -40],
+            ['I_1', -10, 100], ['I_1', -9, 90], ['I_1', 10, -100], ['I_1', 4, -40], ['I_1', 9, -90], ['I_1', -8, 80],
+            ['I_1', 5, -50], ['I_1', -6, 60], ['I_1', -10, 100], ['I_1', -3, 30], ['I_1', -5, 50], ['I_1', -7, 70],
+            ['I_1', -1, 10], ['I_1', 4, -40], ['I_1', -6, 60], ['I_1', 2, -20], ['I_1', 9, -90], ['I_1', 3, -30],
+            ['I_1', 7, -70], ['I_1', -7, 70], ['I_1', 4, -40], ['I_1', 6, -60], ['I_1', 6, -60], ['I_1', 10, -100],
+            ['I_1', 1, -10], ['I_1', -4, 40], ['I_1', -6, 60], ['I_1', -8, 80], ['I_1', -5, 50], ['I_1', -7, 70],
+            ['I_1', -1, 10], ['I_1', 1, -10], ['I_1', -4, 40], ['I_1', -3, 30], ['I_1', 7, -70], ['I_1', -3, 30],
+            ['I_1', 7, -70], ['I_1', 3, -30], ['I_1', -3, 30], ['I_1', -5, 50], ['I_1', 8, -80], ['I_1', -4, 40],
+            ['I_1', -7, 70], ['I_1', -4, 40], ['I_1', 1, -10], ['I_1', -9, 90], ['I_1', 1, -10], ['I_1', 3, -30],
+            ['I_1', 1, -10], ['I_1', 7, -70], ['I_1', 10, -100], ['I_1', 5, -50], ['I_1', -6, 60], ['I_1', 10, -100],
+            ['I_1', 8, -80], ['I_1', 8, -80], ['I_1', -5, 50], ['I_1', 4, -40], ['I_1', -1, 10], ['I_1', 8, -80],
+            ['I_1', 6, -60], ['I_1', -5, 50], ['I_1', -6, 60], ['I_1', 3, -30], ['I_1', -9, 90], ['I_1', 10, -100],
+            ['I_1', -3, 30], ['I_1', 8, -80], ['I_1', 9, -90], ['I_1', 7, -70], ['I_1', -5, 50], ['I_1', -10, 100],
+            ['I_1', 10, -100], ['I_1', 1, -10], ['I_1', 8, -80], ['I_1', -3, 30], ['I_1', 2, -20], ['I_1', 5, -50],
+            ['I_1', -7, 70], ['I_1', -4, 40], ['I_1', -2, 20], ['I_1', 3, -30], ['I_1', -10, 100], ['I_1', -5, 50],
+            ['I_1', -9, 90], ['I_1', -3, 30], ['I_1', -3, 30], ['I_1', -7, 70], ['I_1', -3, 30], ['I_1', 9, -90],
+            ['I_1', 10, -100], ['I_1', -5, 50], ['I_1', -7, 70], ['I_1', 10, -100], ['I_1', 6, -60], ['I_1', -9, 90],
+            ['I_1', -2, 20], ['I_1', 2, -20], ['I_1', 1, -10], ['I_1', 6, -60], ['I_1', -9, 90], ['I_1', 6, -60],
+            ['I_1', 4, -40], ['I_1', 2, -20], ['I_1', -7, 70], ['I_1', -10, 100], ['I_1', -8, 80], ['I_1', 6, -60],
+            ['I_1', 8, -80], ['I_1', -4, 40], ['I_1', 10, -100], ['I_1', -10, 100], ['I_1', 2, -20], ['I_1', -3, 30],
+            ['I_1', -2, 20], ['I_1', 2, -20], ['I_1', 2, -20], ['I_1', -3, 30], ['I_1', 5, -50], ['I_1', 10, -100],
+            ['I_1', -8, 80], ['I_1', -5, 50], ['I_1', 9, -90], ['I_1', -1, 10], ['I_1', -9, 90], ['I_1', 3, -30],
+            ['I_1', -1, 10], ['I_1', 3, -30], ['I_1', 1, -10], ['I_1', -7, 70], ['I_1', -9, 90], ['I_1', -7, 70],
+            ['I_1', -4, 40], ['I_1', -8, 80], ['I_1', 10, -100], ['I_1', 4, -40], ['I_1', -4, 40], ['I_1', 9, -90],
+            ['I_1', 3, -30], ['I_1', -5, 50], ['I_1', -1, 10], ['I_1', -9, 90], ['I_1', -3, 30], ['I_1', 9, -90],
+            ['I_1', -8, 80], ['I_1', -6, 60], ['I_1', -10, 100], ['I_1', 4, -40], ['I_1', 8, -80], ['I_1', -1, 10],
+            ['I_1', -3, 30], ['I_1', 4, -40], ['I_1', -7, 70], ['I_1', -9, 90], ['I_1', -3, 30], ['I_1', 8, -80],
+            ['I_1', -10, 100], ['I_1', -4, 40], ['I_1', -5, 50], ['I_1', -3, 30], ['I_1', -3, 30], ['I_1', 5, -50],
+            ['I_1', -10, 100], ['I_1', -1, 10], ['I_1', 3, -30], ['I_1', -4, 40], ['I_1', -3, 30], ['I_1', 3, -30],
+            ['I_1', 8, -80], ['I_1', -3, 30], ['I_1', -5, 50], ['I_1', -6, 60], ['I_1', 3, -30], ['I_1', -4, 40],
+            ['I_1', -5, 50], ['I_1', 7, -70], ['I_1', 10, -100], ['I_1', 8, -80], ['I_1', -3, 30], ['I_1', -2, 20],
+            ['I_1', -5, 50], ['I_1', -8, 80], ['I_1', -2, 20], ['I_1', -6, 60], ['I_1', -4, 40], ['I_1', -8, 80],
+            ['I_1', -6, 60], ['I_1', 6, -60], ['I_1', 7, -70], ['I_1', 6, -60], ['I_1', 6, -60], ['I_1', -9, 90],
+            ['I_1', 4, -40], ['I_1', 8, -80], ['I_1', 2, -20], ['I_1', -7, 70], ['I_1', -1, 10], ['I_1', -4, 40],
+            ['I_1', 10, -100], ['I_1', 3, -30], ['I_1', 4, -40], ['I_1', 1, -10], ['I_1', -4, 40], ['I_1', 9, -90],
+            ['I_1', 9, -90], ['I_1', 4, -40], ['I_1', -6, 60], ['I_1', -6, 60], ['I_1', 6, -60], ['I_1', -10, 100],
+            ['I_1', -5, 50], ['I_1', 8, -80], ['I_1', -6, 60], ['I_1', 8, -80], ['I_1', -6, 60], ['I_1', 7, -70],
+            ['I_1', -3, 30], ['I_1', -4, 40], ['I_1', -10, 100], ['I_1', -3, 30], ['I_1', -4, 40], ['I_1', 2, -20],
+            ['I_1', 5, -50], ['I_1', 3, -30], ['I_1', 1, -10], ['I_1', -2, 20], ['I_1', 3, -30], ['I_1', 3, -30],
+            ['I_1', 3, -30], ['I_1', -2, 20], ['I_1', 5, -50], ['I_1', 8, -80], ['I_1', 5, -50], ['I_1', -2, 20],
+            ['I_1', -2, 20], ['I_1', -7, 70], ['I_1', 3, -30], ['I_1', 7, -70], ['I_1', 2, -20], ['I_1', 10, -100],
+            ['I_1', -3, 30], ['I_1', -1, 10], ['I_1', 8, -80], ['I_1', -2, 20], ['I_1', -2, 20], ['I_1', 1, -10],
+            ['I_1', -8, 80], ['I_1', 3, -30], ['I_1', 10, -100], ['I_1', 5, -50], ['I_1', -4, 40], ['I_1', -10, 100],
+            ['I_1', -1, 10], ['I_1', 1, -10], ['I_1', 9, -90], ['I_1', 4, -40], ['I_1', -9, 90], ['I_1', 5, -50],
+            ['I_1', -1, 10], ['I_1', -1, 10], ['I_1', -3, 30], ['I_1', 8, -80], ['I_1', 8, -80], ['I_1', -6, 60],
+            ['I_1', -7, 70], ['I_1', -2, 20], ['I_1', 5, -50], ['I_1', -9, 90], ['I_1', -9, 90], ['I_1', 5, -50],
+            ['I_1', -6, 60], ['I_1', 2, -20], ['I_1', -5, 50], ['I_1', -10, 100], ['I_1', 2, -20], ['I_1', 3, -30],
+            ['I_1', -7, 70], ['I_1', 10, -100], ['I_1', 10, -100], ['I_1', 4, -40], ['I_1', -1, 10], ['I_1', -8, 80],
+            ['I_1', -3, 30], ['I_1', -9, 90], ['I_1', 10, -100], ['I_1', -6, 60], ['I_1', -6, 60], ['I_1', -6, 60],
+            ['I_1', -1, 10], ['I_1', 5, -50], ['I_1', -1, 10], ['I_1', -10, 100], ['I_1', 1, -10], ['I_1', -2, 20],
+            ['I_1', -1, 10], ['I_1', 10, -100], ['I_1', 3, -30], ['I_1', 4, -40], ['I_1', 9, -90], ['I_1', 1, -10],
+            ['I_1', -10, 100], ['I_1', 8, -80], ['I_1', -5, 50], ['I_1', 9, -90], ['I_1', 7, -70], ['I_1', 4, -40],
+            ['I_1', 4, -40], ['I_1', -4, 40], ['I_1', -3, 30], ['I_1', -4, 40], ['I_1', -3, 30], ['I_1', 4, -40],
+            ['I_1', -7, 70], ['I_1', 6, -60], ['I_1', 6, -60], ['I_1', 8, -80], ['I_1', 4, -40], ['I_1', -6, 60],
+            ['I_1', 9, -90], ['I_1', -1, 10], ['I_1', 1, -10], ['I_1', -9, 90], ['I_1', 5, -50], ['I_1', -5, 50],
+            ['I_1', -6, 60], ['I_1', -4, 40], ['I_1', -4, 40], ['I_1', 5, -50], ['I_1', -8, 80], ['I_1', 6, -60],
+            ['I_1', -4, 40], ['I_1', -4, 40], ['I_1', -3, 30], ['I_1', 6, -60], ['I_1', -6, 60], ['I_1', 1, -10],
+            ['I_1', -4, 40], ['I_1', -8, 80], ['I_1', 6, -60], ['I_1', 4, -40], ['I_1', -2, 20], ['I_1', -1, 10],
+            ['I_1', -8, 80], ['I_1', 8, -80], ['I_1', -9, 90], ['I_1', 5, -50], ['I_1', 6, -60], ['I_1', -7, 70],
+            ['I_1', -6, 60], ['I_1', 5, -50], ['I_1', 5, -50], ['I_1', 1, -10], ['I_1', 6, -60], ['I_1', 10, -100],
+            ['I_1', 1, -10], ['I_1', -4, 40], ['I_1', -1, 10], ['I_1', -1, 10], ['I_1', -3, 30], ['I_1', 5, -50],
+            ['I_1', -10, 100], ['I_1', -7, 70], ['I_1', -3, 30], ['I_1', 1, -10], ['I_1', 10, -100], ['I_1', -7, 70],
+            ['I_1', 10, -100], ['I_1', -4, 40], ['I_1', 4, -40], ['I_1', 3, -30], ['I_1', 6, -60], ['I_1', -1, 10],
+            ['I_1', -2, 20], ['I_1', 5, -50], ['I_1', 8, -80], ['I_1', -5, 50], ['I_1', -5, 50], ['I_1', -10, 100],
+            ['I_1', -8, 80], ['I_1', -1, 10], ['I_1', 3, -30], ['I_1', 5, -50], ['I_1', 3, -30], ['I_1', -8, 80],
+            ['I_1', -6, 60], ['I_1', 1, -10], ['I_1', -10, 100], ['I_1', -9, 90], ['I_1', -10, 100], ['I_1', 1, -10],
+            ['I_1', -5, 50], ['I_1', -9, 90], ['I_1', -10, 100], ['I_1', -5, 50], ['I_1', -9, 90], ['I_1', -8, 80],
+            ['I_1', -4, 40], ['I_1', 4, -40], ['I_1', -9, 90], ['I_1', 6, -60], ['I_1', -4, 40]]
 
-    for r in data:
-        r[1] = float(r[1])
-        r[2] = float(r[2])
-
-    return data, index
+    return [Transaction0(instrument=a[0], position_size_with_sign=a[1], principal_with_sign=a[2]) for a in data]
 
 
-def get_data2(data):
-    make_record = lambda instrument, position_size_with_sign, principal_with_sign: OrderedDict((
-        ('instrument', instrument,),
-        ('position_size_with_sign', position_size_with_sign,),
-        # ('principal_with_sign', principal_with_sign,),
-        ('avco', 0.,),
-        ('rolling_position', 0.,)
-    ))
-    return [make_record(*a) for a in data]
+if DEBUG:
+    def show(m):
+        if isinstance(m, list):
+            print('-' * 79)
+            for t in m:
+                print(t)
+            pass
+        else:
+            print('-' * 79)
+            print(m)
+else:
+    def show(m):
+        pass
 
 
 def avco3(transactions):
@@ -118,56 +274,45 @@ def avco3(transactions):
     for_sale = {}
     rolling_position = 0.
 
-    def show(m):
-        if DEBUG:
-            if isinstance(m, list):
-                # print('-' * 79)
-                # for t in m:
-                #     print(t)
-                pass
-            else:
-                print('-' * 79)
-                print(m)
-
     show(transactions)
     for index, transaction in enumerate(transactions):
-        instrument = transaction['instrument']
-        position_size_with_sign = transaction['position_size_with_sign']
-        transaction['multiplier'] = 0.
+        instrument = transaction.instrument
+        position_size_with_sign = transaction.position_size_with_sign
+        transaction.multiplier = 0.
         if position_size_with_sign > 0.:  # покупка
             instrument_for_sale = for_sale.get(instrument, [])
             if instrument_for_sale:  # есть прошлые продажи, которые надо закрыть
                 if position_size_with_sign + rolling_position >= 0.:  # все есть
-                    transaction['multiplier'] = abs(rolling_position / position_size_with_sign)
+                    transaction.multiplier = abs(rolling_position / position_size_with_sign)
                     for t in instrument_for_sale:
-                        t['multiplier'] = 1.
+                        t.multiplier = 1.
                     in_stock[instrument] = in_stock.get(instrument, []) + [transaction]
                 else:  # только частично
-                    transaction['multiplier'] = 1.
+                    transaction.multiplier = 1.
                     for t in instrument_for_sale:
-                        t['multiplier'] += abs((1. - t['multiplier']) * position_size_with_sign / rolling_position)
-                for_sale[instrument] = [t for t in instrument_for_sale if t['multiplier'] < 1.]
+                        t.multiplier += abs((1. - t.multiplier) * position_size_with_sign / rolling_position)
+                for_sale[instrument] = [t for t in instrument_for_sale if t.multiplier < 1.]
             else:  # новая "чистая" покупка
-                transaction['multiplier'] = 0.
+                transaction.multiplier = 0.
                 in_stock[instrument] = in_stock.get(instrument, []) + [transaction]
         else:  # продажа
             instrument_in_stock = in_stock.get(instrument, [])
             if instrument_in_stock:  # есть что продавать
                 if position_size_with_sign + rolling_position >= 0.:  # все есть
-                    transaction['multiplier'] = 1.
+                    transaction.multiplier = 1.
                     for t in instrument_in_stock:
-                        t['multiplier'] += abs((1. - t['multiplier']) * position_size_with_sign / rolling_position)
+                        t.multiplier += abs((1. - t.multiplier) * position_size_with_sign / rolling_position)
                 else:  # только частично
-                    transaction['multiplier'] = abs(rolling_position / position_size_with_sign)
+                    transaction.multiplier = abs(rolling_position / position_size_with_sign)
                     for t in instrument_in_stock:
-                        t['multiplier'] = 1.
+                        t.multiplier = 1.
                     for_sale[instrument] = for_sale.get(instrument, []) + [transaction]
-                in_stock[instrument] = [t for t in instrument_in_stock if t['multiplier'] < 1.]
+                in_stock[instrument] = [t for t in instrument_in_stock if t.multiplier < 1.]
             else:  # нечего продавать
-                transaction['multiplier'] = 0.
+                transaction.multiplier = 0.
                 for_sale[instrument] = for_sale.get(instrument, []) + [transaction]
         rolling_position += position_size_with_sign
-        transaction['rolling_position'] = rolling_position
+        transaction.rolling_position = rolling_position
 
     show(transactions)
 
@@ -177,8 +322,8 @@ def avco3(transactions):
 
     v = 0.
     for t in transactions:
-        v += t['position_size_with_sign'] * (1 - t['multiplier'])
-    # if v != transactions[-1]['rolling_position']:
+        v += t.position_size_with_sign * (1 - t.multiplier)
+    # if v != transactions[-1].rolling_position:
     #     raise RuntimeError('avco error')
     show('rolling_position=%s, verify=%s' % (rolling_position, v))
 
@@ -188,85 +333,74 @@ def fifo2(transactions):
     for_sale = {}
     rolling_position = 0.
 
-    def show(m):
-        if DEBUG:
-            if isinstance(m, list):
-                # print('-' * 79)
-                # for t in m:
-                #     print(t)
-                pass
-            else:
-                print('-' * 79)
-                print(m)
-
     show(transactions)
     for index, transaction in enumerate(transactions):
-        instrument = transaction['instrument']
-        position_size_with_sign = transaction['position_size_with_sign']
-        transaction['multiplier'] = 0.
+        instrument = transaction.instrument
+        position_size_with_sign = transaction.position_size_with_sign
+        transaction.multiplier = 0.
         if position_size_with_sign > 0.:  # покупка
             instrument_for_sale = for_sale.get(instrument, [])
             balance = position_size_with_sign
             if instrument_for_sale:
                 for t in instrument_for_sale:
-                    sale = t['not_closed']
+                    sale = t.not_closed
                     if balance + sale > 0.:  # есть все
                         balance -= abs(sale)
-                        t['multiplier'] = 1.
-                        t['not_closed'] = t['not_closed'] - abs(t['position_size_with_sign'])
+                        t.multiplier = 1.
+                        t.not_closed = t.not_closed - abs(t.position_size_with_sign)
                     else:
-                        t['not_closed'] = t['not_closed'] + balance
-                        t['multiplier'] = 1. - abs(t['not_closed'] / t['position_size_with_sign'])
+                        t.not_closed = t.not_closed + balance
+                        t.multiplier = 1. - abs(t.not_closed / t.position_size_with_sign)
                         balance = 0.
-                    # sale = (1 - t['multiplier']) * t['position_size_with_sign']
+                    # sale = (1 - t.multiplier) * t.position_size_with_sign
                     # if balance + sale > 0.:  # есть все
                     #     balance -= abs(sale)
-                    #     t['multiplier'] = 1.
+                    #     t.multiplier = 1.
                     # else:
-                    #     t['multiplier'] = 1 - abs((abs(sale) - balance) / t['position_size_with_sign'])
+                    #     t.multiplier = 1 - abs((abs(sale) - balance) / t.position_size_with_sign)
                     #     balance = 0.
                     if balance <= 0.:
                         break
-                for_sale[instrument] = [t for t in instrument_for_sale if t['multiplier'] < 1.]
-            transaction['balance'] = balance
-            transaction['multiplier'] = abs((position_size_with_sign - balance) / position_size_with_sign)
-            if transaction['multiplier'] < 1.:
+                for_sale[instrument] = [t for t in instrument_for_sale if t.multiplier < 1.]
+            transaction.balance = balance
+            transaction.multiplier = abs((position_size_with_sign - balance) / position_size_with_sign)
+            if transaction.multiplier < 1.:
                 in_stock[instrument] = in_stock.get(instrument, []) + [transaction]
         else:  # продажа
             instrument_in_stock = in_stock.get(instrument, [])
             sale = position_size_with_sign
             if instrument_in_stock:
                 for t in instrument_in_stock:
-                    balance = t['balance']
+                    balance = t.balance
                     if sale + balance > 0.:  # есть все
-                        t['balance'] = balance - abs(sale)
-                        t['multiplier'] = abs(
-                            (t['position_size_with_sign'] - t['balance']) / t['position_size_with_sign'])
-                        # print(t['position_size_with_sign'])
-                        # print(t['balance'])
-                        # print(t['position_size_with_sign'] - t['balance'])
+                        t.balance = balance - abs(sale)
+                        t.multiplier = abs(
+                            (t.position_size_with_sign - t.balance) / t.position_size_with_sign)
+                        # print(t.position_size_with_sign)
+                        # print(t.balance)
+                        # print(t.position_size_with_sign - t.balance)
                         sale = 0.
                     else:
-                        t['balance'] = 0.
-                        t['multiplier'] = 1.
+                        t.balance = 0.
+                        t.multiplier = 1.
                         sale += abs(balance)
-                    # balance = (1 - t['multiplier']) * t['position_size_with_sign']
+                    # balance = (1 - t.multiplier) * t.position_size_with_sign
                     # if sale + balance > 0.:  # есть все
-                    #     t['multiplier'] = abs((balance - abs(sale)) / t['position_size_with_sign'])
+                    #     t.multiplier = abs((balance - abs(sale)) / t.position_size_with_sign)
                     #     sale = 0.
                     # else:
-                    #     t['multiplier'] = 1.
+                    #     t.multiplier = 1.
                     #     sale += abs(balance)
                     if sale >= 0.:
                         break
-                in_stock[instrument] = [t for t in instrument_in_stock if t['multiplier'] < 1.]
-            transaction['not_closed'] = sale
-            transaction['multiplier'] = abs((position_size_with_sign - sale) / position_size_with_sign)
-            if transaction['multiplier'] < 1.:
+                in_stock[instrument] = [t for t in instrument_in_stock if t.multiplier < 1.]
+            transaction.not_closed = sale
+            transaction.multiplier = abs((position_size_with_sign - sale) / position_size_with_sign)
+            if transaction.multiplier < 1.:
                 for_sale[instrument] = for_sale.get(instrument, []) + [transaction]
 
         rolling_position += position_size_with_sign
-        transaction['rolling_position'] = rolling_position
+        transaction.rolling_position = rolling_position
 
     show(transactions)
 
@@ -276,8 +410,8 @@ def fifo2(transactions):
 
     v = 0.
     for t in transactions:
-        v += t['position_size_with_sign'] * (1 - t['multiplier'])
-    # if v != transactions[-1]['rolling_position']:
+        v += t.position_size_with_sign * (1 - t.multiplier)
+    # if v != transactions[-1].rolling_position:
     #     raise RuntimeError('fifo error')
     show('rolling_position=%s, verify=%s' % (rolling_position, v))
 
@@ -291,16 +425,12 @@ def main():
     import sys
     print(sys.version)
 
-    data, index = get_data(10000)
-    data2 = get_data2(data)
-    number = 1
+    transactions = get_data(1000)
+    number = 100
     precision = 3
     if DEBUG:
-        # avco2(data, index)
-        avco3(data2)
-
-        # fifo(data, index)
-        fifo2(data2)
+        avco3(transactions)
+        fifo2(transactions)
     else:
         import timeit
 
@@ -311,15 +441,9 @@ def main():
             # if min(times) > 0.002:
             #     print(data)
 
-        print('loops=%s, data=%s, total_rows=%s' % (number, len(data), number * len(data)))
-        # test('avco2 pandas', lambda: avco2(data, index))
-        test('avco3 code  ', lambda: avco3(data2))
-        # test('fifo  pandas', lambda: fifo(data, index))
-        test('fifo2 code  ', lambda: fifo2(data2))
-        # print('avco2 code: loops=%s, times=%s' % (number, timeit.repeat(lambda: avco2(data, index), number=number)))
-        # print('avco3 code  :    -> %s -> %s' % (number, timeit.repeat(lambda: avco3(data2), number=number)))
-        # print('fifo  pandas -> %s -> %s' % (number, timeit.repeat(lambda: fifo(data, index), number=number)))
-        # print('fifo2 code   -> %s -> %s' % (number, timeit.repeat(lambda: fifo2(data2), number=number)))
+        print('loops=%s, data=%s, total_rows=%s' % (number, len(transactions), number * len(transactions)))
+        test('avco3 code  ', lambda: avco3(transactions))
+        test('fifo2 code  ', lambda: fifo2(transactions))
 
 
 if __name__ == "__main__":
