@@ -1,5 +1,4 @@
 from django.contrib import admin
-from reversion.admin import VersionAdmin
 
 # from poms.reports.models import Mapping, ReportType
 #

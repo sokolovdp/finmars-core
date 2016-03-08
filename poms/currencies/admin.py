@@ -2,7 +2,6 @@ from __future__ import unicode_literals
 
 from django.contrib import admin
 from django.utils.translation import ugettext_lazy as _
-from reversion.admin import VersionAdmin
 
 from poms.currencies.models import Currency, CurrencyHistory
 
@@ -24,7 +23,7 @@ class SystemCurrencyFilter(admin.SimpleListFilter):
             return queryset.filter(master_user__isnull=False)
 
 
-class CurrencyAdmin(VersionAdmin):
+class CurrencyAdmin(admin.ModelAdmin):
     model = Currency
     list_display = ['id', 'code', 'name', 'master_user', 'is_global']
     ordering = ['code']
@@ -41,7 +40,7 @@ class CurrencyAdmin(VersionAdmin):
 admin.site.register(Currency, CurrencyAdmin)
 
 
-class CurrencyHistoryAdmin(VersionAdmin):
+class CurrencyHistoryAdmin(admin.ModelAdmin):
     model = CurrencyHistory
     list_display = ['id', 'currency', 'date', 'fx_rate']
     list_filter = ['date']

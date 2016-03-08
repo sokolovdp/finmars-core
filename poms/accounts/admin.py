@@ -1,14 +1,12 @@
 from __future__ import unicode_literals
 
 from django.contrib import admin
-from guardian.admin import GuardedModelAdmin
 from mptt.admin import MPTTModelAdmin
-from reversion.admin import VersionAdmin
 
 from poms.accounts.models import Account, AccountType, AccountClassifier
 
 
-class AccountTypeAdmin(VersionAdmin):
+class AccountTypeAdmin(admin.ModelAdmin):
     model = AccountType
     list_display = ['code', 'name']
     ordering = ['code']
@@ -26,7 +24,7 @@ class AccountClassifierAdmin(MPTTModelAdmin):
 admin.site.register(AccountClassifier, AccountClassifierAdmin)
 
 
-class AccountAdmin(VersionAdmin, GuardedModelAdmin):
+class AccountAdmin(admin.ModelAdmin):
     model = Account
     list_display = ['name', 'master_user']
 

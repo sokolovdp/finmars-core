@@ -2,9 +2,6 @@ from __future__ import unicode_literals
 
 from django.contrib import admin
 from django.contrib.admin import StackedInline
-from django.contrib.auth.admin import UserAdmin, GroupAdmin
-from django.contrib.auth.models import User, Group
-from reversion.admin import VersionAdmin
 
 from poms.users.models import PrivateGroup, MasterUser, Employee
 
@@ -77,7 +74,7 @@ from poms.users.models import PrivateGroup, MasterUser, Employee
 
 
 
-class PrivateGroupAdmin(VersionAdmin):
+class PrivateGroupAdmin(admin.ModelAdmin):
     model = PrivateGroup
 
 
@@ -89,7 +86,7 @@ class EmployeeInline(StackedInline):
     extra = 0
 
 
-class MasterUserAdmin(VersionAdmin):
+class MasterUserAdmin(admin.ModelAdmin):
     model = MasterUser
     inlines = [EmployeeInline]
 
@@ -97,7 +94,7 @@ class MasterUserAdmin(VersionAdmin):
 admin.site.register(MasterUser, MasterUserAdmin)
 
 
-class EmployeeAdmin(VersionAdmin):
+class EmployeeAdmin(admin.ModelAdmin):
     model = Employee
 
 

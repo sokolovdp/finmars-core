@@ -1,15 +1,19 @@
 from __future__ import unicode_literals
 
 from django.contrib import admin
-from reversion.admin import VersionAdmin
 
 from poms.transactions.models import TransactionClass, Transaction
 
 
-class TransactionClassAdmin(VersionAdmin):
+class TransactionClassAdmin(admin.ModelAdmin):
     model = TransactionClass
     list_display = ['code', 'name']
     ordering = ['code']
+
+    def save_model(self, request, obj, form, change):
+        super(TransactionClassAdmin, self).save_model(request, obj, form, change)
+        print(list(TransactionClass.history.all()))
+        print(list(TransactionClass.history.filter(code__contains='1')))
 
 
 admin.site.register(TransactionClass, TransactionClassAdmin)
