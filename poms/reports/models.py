@@ -80,7 +80,7 @@ class BalanceReportItem(BaseReportItem):
 
 
 @python_2_unicode_compatible
-class BalanceReportTotal(object):
+class BalanceReportSummary(object):
     def __init__(self, invested_value=0., current_value=0., p_and_l=0.):
         self.invested_value = invested_value
         self.current_value = current_value
@@ -93,7 +93,7 @@ class BalanceReportTotal(object):
 
 # @python_2_unicode_compatible
 class BalanceReport(BaseReport):
-    def __init__(self, currency=None, total=None, *args, **kwargs):
+    def __init__(self, currency=None, summary=None, *args, **kwargs):
         super(BalanceReport, self).__init__(*args, **kwargs)
         self.currency = currency
-        self.total = total
+        self.summary = summary

@@ -3,7 +3,7 @@ from __future__ import unicode_literals
 import logging
 
 from poms.reports.backends.base import BaseReportBuilder
-from poms.reports.models import BalanceReportItem, BalanceReportTotal
+from poms.reports.models import BalanceReportItem, BalanceReportSummary
 from poms.transactions.models import TransactionClass
 
 _l = logging.getLogger('poms.reports')
@@ -51,14 +51,14 @@ class BalanceReportBuilder(BaseReportBuilder):
         self.instance.results = items
 
         if self.instance.currency:
-            total = BalanceReportTotal()
+            summary = BalanceReportSummary()
             ccy = self.instance.currency
             for t in self.transactions:
                 if t.transaction_class.code == TransactionClass.CASH_INFLOW:
                     value = self.currency_fx(t.transaction_currency,
                                              t.position_size_with_sign,
                                              ccy)
-                    total.invested_value += value
+                    summary.invested_value += value
             for i in items:
                 if i.instrument:
                     value = i.position_size_with_sign * self.instrument_price(i.instrument)
@@ -66,14 +66,14 @@ class BalanceReportBuilder(BaseReportBuilder):
                                              value,
                                              ccy)
                     print('%s -> %s' % (i.instrument, value))
-                    total.current_value += value
+                    summary.current_value += value
                 if i.currency:
                     value = self.currency_fx(i.currency,
                                              i.position_size_with_sign,
                                              ccy)
                     print('%s -> %s' % (i.currency, value))
-                    total.current_value += value
-            total.p_and_l = total.current_value - total.invested_value
-            self.instance.total = total
+                    summary.current_value += value
+            summary.p_and_l = summary.current_value - summary.invested_value
+            self.instance.summary = summary
 
         return self.instance
