@@ -260,11 +260,6 @@ if DEV:
                                                    'rest_framework.renderers.AdminRenderer',)
 
 CURRENCY_CODE = 'USD'
-CURRENCIES = (
-    ('RUB', 'RUB'),
-    ('USD', 'USD'),
-    ('EUR', 'EUR'),
-)
 
 AUTHENTICATION_BACKENDS = (
     'django.contrib.auth.backends.ModelBackend',
