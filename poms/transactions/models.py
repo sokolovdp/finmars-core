@@ -17,7 +17,17 @@ from poms.users.models import MasterUser
 
 @python_2_unicode_compatible
 class TransactionClass(models.Model):
-    code = models.CharField(max_length=50, unique=True, verbose_name=_('system code'))
+    BUY = "Buy"
+    SELL = "Sell"
+    FX_TRADE = "FX Trade"
+    INSTRUMENT_PL = "Instrument PL"
+    TRANSACTION_PL = "Transaction PL"
+    TRANSFER = "Transfer"
+    FX_TRANSFER = "FX Transfer"
+    CASH_INFLOW = "Cash-Inflow"
+    CASH_OUTFLOW = "Cash-Outflow"
+
+    code = models.CharField(max_length=50, unique=True, verbose_name=_('internal code'))
     name = models.CharField(max_length=255, verbose_name=_('name'))
     description = models.TextField(null=True, blank=True, default='', verbose_name=_('description'))
 
@@ -86,3 +96,7 @@ class Transaction(models.Model):
 
     def __str__(self):
         return '%s' % self.id
+
+    # @property
+    # def cash_flow(self):
+    #     return self.principal_with_sign + self.carry_with_sign + self.overheads_with_sign

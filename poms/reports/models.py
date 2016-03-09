@@ -1,5 +1,7 @@
 from __future__ import unicode_literals
 
+import uuid
+
 from django.contrib.contenttypes.models import ContentType
 from django.utils.encoding import python_2_unicode_compatible
 
@@ -39,7 +41,7 @@ from poms.users.models import MasterUser
 @python_2_unicode_compatible
 class BaseReportItem(object):
     def __init__(self, pk=None):
-        self.pk = pk
+        self.pk = pk or uuid.uuid4()
 
     def __str__(self):
         return "%s #%s" % (self.__class__.__name__, self.pk,)
@@ -47,25 +49,30 @@ class BaseReportItem(object):
 
 @python_2_unicode_compatible
 class BaseReport(object):
-    def __init__(self, master_user=None, begin_date=None, end_date=None, instruments=None, items=None):
+    def __init__(self, master_user=None, begin_date=None, end_date=None, instruments=None, results=None):
         self.master_user = master_user
         self.begin_date = begin_date
         self.end_date = end_date
         self.instruments = instruments
-        self.items = items
+        self.results = results
 
     def __str__(self):
         return "%s for %s (%s, %s)" % (self.__class__.__name__, self.master_user, self.begin_date, self.end_date)
 
 
-# @python_2_unicode_compatible
+@python_2_unicode_compatible
 class BalanceReportItem(BaseReportItem):
-    def __init__(self, instrument=None, *args, **kwargs):
+    def __init__(self, instrument=None, currency=None, position_size_with_sign=0., *args, **kwargs):
         super(BalanceReportItem, self).__init__(*args, **kwargs)
         self.instrument = instrument
+        self.currency = currency
+        self.position_size_with_sign = position_size_with_sign
 
     def __str__(self):
-        return "%s" % (self.instrument,)
+        if self.instrument:
+            return "%s - %s" % (self.instrument, self.position_size_with_sign)
+        else:
+            return "%s - %s" % (self.currency, self.position_size_with_sign)
 
 
 # @python_2_unicode_compatible

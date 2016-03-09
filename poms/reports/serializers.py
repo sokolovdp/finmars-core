@@ -9,7 +9,7 @@ from poms.reports.models import BalanceReport, BalanceReportItem
 
 
 class BaseReportItemSerializer(serializers.Serializer):
-    id = serializers.IntegerField(required=False, source='pk', help_text=_('report item id'))
+    id = serializers.UUIDField(read_only=True, source='pk', help_text=_('report item id'))
 
 
 class BaseReportSerializer(serializers.Serializer):
@@ -21,7 +21,14 @@ class BaseReportSerializer(serializers.Serializer):
 
 
 class BalanceReportItemSerializer(BaseReportItemSerializer):
-    instrument = serializers.IntegerField(required=False, help_text=_('Instrument'))
+    # instrument = serializers.IntegerField(required=False, help_text=_('Instrument'))
+    # currency = serializers.IntegerField(required=False, help_text=_('currency'))
+    instrument = serializers.PrimaryKeyRelatedField(read_only=True, help_text=_('Instrument'))
+    currency = serializers.PrimaryKeyRelatedField(read_only=True, help_text=_('currency'))
+    position_size_with_sign = serializers.FloatField(read_only=True, help_text=_('position size with sign'))
+
+    currency_name = serializers.SerializerMethodField()
+    instrument_name = serializers.SerializerMethodField()
 
     def create(self, validated_data):
         return BalanceReportItem(**validated_data)
@@ -29,9 +36,15 @@ class BalanceReportItemSerializer(BaseReportItemSerializer):
     def update(self, instance, validated_data):
         return instance
 
+    def get_currency_name(self, instance):
+        return instance.currency.name if instance.currency else None
+
+    def get_instrument_name(self, instance):
+        return instance.instrument.name if instance.instrument else None
+
 
 class BalanceReportSerializer(BaseReportSerializer):
-    items = BalanceReportItemSerializer(many=True, read_only=True, help_text=_('some help text'))
+    results = BalanceReportItemSerializer(many=True, read_only=True, help_text=_('some help text'))
 
     def create(self, validated_data):
         return BalanceReport(**validated_data)
