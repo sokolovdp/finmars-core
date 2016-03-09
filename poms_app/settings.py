@@ -25,7 +25,7 @@ SECRET_KEY = 'jrixf-%65l5&#@hbmq()sa-pzy@e)=zpdr6g0cg8a!i_&w-c!)'
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = str(os.environ.get('DJANGO_DEBUG', 'True')).lower() == 'true'
-DEV = str(os.environ.get('POMS_DEV', 'True')).lower() == 'true'
+DEV = DEBUG or str(os.environ.get('POMS_DEV', 'True')).lower() == 'true'
 
 ALLOWED_HOSTS = ['*']
 
@@ -110,21 +110,21 @@ DATABASES = {
 }
 
 if DEBUG:
-    # DATABASES['default'] = {
-    #     # 'ENGINE': 'django.contrib.gis.db.backends.postgis',
-    #     'ENGINE': 'django.db.backends.postgresql',
-    #     'NAME': 'poms_dev',
-    #     'USER': 'poms_dev',
-    #     'PASSWORD': 'sqlsql',
-    #     'HOST': '192.168.57.2',
-    #     'PORT': '',
-    # }
-    DATABASES = {
-        'default': {
-            'ENGINE': 'django.db.backends.sqlite3',
-            'NAME': os.path.join(BASE_DIR, 'db.sqlite3'),
-        }
+    DATABASES['default'] = {
+        # 'ENGINE': 'django.contrib.gis.db.backends.postgis',
+        'ENGINE': 'django.db.backends.postgresql',
+        'NAME': 'poms_dev',
+        'USER': 'poms_dev',
+        'PASSWORD': 'sqlsql',
+        'HOST': '192.168.57.2',
+        'PORT': '',
     }
+    # DATABASES = {
+    #     'default': {
+    #         'ENGINE': 'django.db.backends.sqlite3',
+    #         'NAME': os.path.join(BASE_DIR, 'db.sqlite3'),
+    #     }
+    # }
 
 # Password validation
 # https://docs.djangoproject.com/en/1.9/ref/settings/#auth-password-validators
@@ -255,7 +255,7 @@ REST_FRAMEWORK = {
     # },
 }
 
-if DEBUG or DEV:
+if DEV:
     REST_FRAMEWORK['DEFAULT_RENDERER_CLASSES'] += ('rest_framework.renderers.BrowsableAPIRenderer',
                                                    'rest_framework.renderers.AdminRenderer',)
 
