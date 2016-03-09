@@ -26,7 +26,7 @@ admin.site.register(TransactionClass, TransactionClassAdmin)
 class TransactionAdmin(admin.ModelAdmin):
     model = Transaction
     save_as = True
-    list_display = ['id', 'accounting_date', 'master_user', 'instrument', 'transaction_class',
+    list_display = ['id', 'accounting_date', 'master_user', 'instrument', 'transaction_currency', 'transaction_class',
                     'position_size_with_sign', 'principal_with_sign']
 
 

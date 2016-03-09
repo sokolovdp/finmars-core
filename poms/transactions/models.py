@@ -47,11 +47,12 @@ class Transaction(models.Model):
     # strategy = models.ManyToManyField(Strategy, blank=True)
 
     # Position related
-    instrument = models.ForeignKey(Instrument)
+    instrument = models.ForeignKey(Instrument, null=True, blank=True)
+    transaction_currency = models.ForeignKey(Currency, null=True, blank=True, related_name='transactions_as_instrument')
     position_size_with_sign = models.FloatField(null=True, blank=True)
 
     # Cash related
-    settlement_currency = models.ForeignKey(Currency)
+    settlement_currency = models.ForeignKey(Currency, related_name='transactions')
     cash_consideration = models.FloatField(null=True, blank=True)
 
     # P&L related
