@@ -32,6 +32,12 @@ class BaseReportBuilder(object):
     def build(self):
         raise NotImplementedError('subclasses of BaseReportBuilder must provide an build() method')
 
+    def get_currency_fx_rate(self, currency):
+        pass
+
+    def get_instrument_price(self, currency):
+        pass
+
     def annotate_avco_multiplier(self):
         in_stock = {}
         for_sale = {}
@@ -57,7 +63,8 @@ class BaseReportBuilder(object):
                     else:  # только частично
                         transaction.avco_multiplier = 1.
                         for t in instrument_for_sale:
-                            t.avco_multiplier += abs((1. - t.avco_multiplier) * position_size_with_sign / rolling_position)
+                            t.avco_multiplier += abs(
+                                (1. - t.avco_multiplier) * position_size_with_sign / rolling_position)
                     for_sale[instrument] = [t for t in instrument_for_sale if t.avco_multiplier < 1.]
                 else:  # новая "чистая" покупка
                     transaction.avco_multiplier = 0.
@@ -68,7 +75,8 @@ class BaseReportBuilder(object):
                     if position_size_with_sign + rolling_position >= 0.:  # все есть
                         transaction.avco_multiplier = 1.
                         for t in instrument_in_stock:
-                            t.avco_multiplier += abs((1. - t.avco_multiplier) * position_size_with_sign / rolling_position)
+                            t.avco_multiplier += abs(
+                                (1. - t.avco_multiplier) * position_size_with_sign / rolling_position)
                     else:  # только частично
                         transaction.avco_multiplier = abs(rolling_position / position_size_with_sign)
                         for t in instrument_in_stock:
@@ -109,13 +117,6 @@ class BaseReportBuilder(object):
                             t.not_closed = t.not_closed + balance
                             t.fifo_multiplier = 1. - abs(t.not_closed / t.position_size_with_sign)
                             balance = 0.
-                        # sale = (1 - t.fifo_multiplier) * t.position_size_with_sign
-                        # if balance + sale > 0.:  # есть все
-                        #     balance -= abs(sale)
-                        #     t.fifo_multiplier = 1.
-                        # else:
-                        #     t.fifo_multiplier = 1 - abs((abs(sale) - balance) / t.position_size_with_sign)
-                        #     balance = 0.
                         if balance <= 0.:
                             break
                     for_sale[instrument] = [t for t in instrument_for_sale if t.fifo_multiplier < 1.]
@@ -131,23 +132,12 @@ class BaseReportBuilder(object):
                         balance = t.balance
                         if sale + balance > 0.:  # есть все
                             t.balance = balance - abs(sale)
-                            t.fifo_multiplier = abs(
-                                (t.position_size_with_sign - t.balance) / t.position_size_with_sign)
-                            # print(t.position_size_with_sign)
-                            # print(t.balance)
-                            # print(t.position_size_with_sign - t.balance)
+                            t.fifo_multiplier = abs((t.position_size_with_sign - t.balance) / t.position_size_with_sign)
                             sale = 0.
                         else:
                             t.balance = 0.
                             t.fifo_multiplier = 1.
                             sale += abs(balance)
-                        # balance = (1 - t.fifo_multiplier) * t.position_size_with_sign
-                        # if sale + balance > 0.:  # есть все
-                        #     t.fifo_multiplier = abs((balance - abs(sale)) / t.position_size_with_sign)
-                        #     sale = 0.
-                        # else:
-                        #     t.fifo_multiplier = 1.
-                        #     sale += abs(balance)
                         if sale >= 0.:
                             break
                     in_stock[instrument] = [t for t in instrument_in_stock if t.fifo_multiplier < 1.]
