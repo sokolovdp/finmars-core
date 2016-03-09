@@ -25,12 +25,17 @@ from poms.users.models import MasterUser
 class Currency(models.Model):
     master_user = models.ForeignKey(MasterUser, null=True, blank=True, related_name='currencies',
                                     verbose_name=_('master user'))
-    code = models.CharField(max_length=3, verbose_name=_('ISO 4217 code'), help_text=_('Test help text'))
+    user_code = models.CharField(max_length=25, null=True, blank=True, help_text=_('Some code, for example ISO 4217'))
     name = models.CharField(max_length=255, verbose_name=_('name'))
+    short_name = models.CharField(max_length=50, null=True, blank=True, verbose_name=_('short name'))
+    notes = models.TextField(null=True, blank=True)
 
     class Meta:
         verbose_name = _('currency')
         verbose_name_plural = _('currencies')
+        unique_together = [
+            ['master_user', 'user_code']
+        ]
 
     def __str__(self):
         if self.is_global:

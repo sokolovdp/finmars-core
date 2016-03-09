@@ -34,6 +34,7 @@ class Counterparty(models.Model):
     user_code = models.CharField(max_length=25, null=True, blank=True)
     name = models.CharField(max_length=255, verbose_name=_('name'))
     short_name = models.CharField(max_length=50, null=True, blank=True, verbose_name=_('short name'))
+    notes = models.TextField(null=True, blank=True)
     # portfolios = models.ManyToManyField(Portfolio, blank=True)
     # settlement_details = models.TextField(null=True, blank=True)
     classifiers = TreeManyToManyField(CounterpartyClassifier, blank=True)
@@ -41,6 +42,9 @@ class Counterparty(models.Model):
     class Meta:
         verbose_name = _('counterparty')
         verbose_name_plural = _('counterparties')
+        unique_together = [
+            ['master_user', 'user_code']
+        ]
 
     def __str__(self):
         return '%s' % self.legal_name
@@ -52,10 +56,14 @@ class Responsible(models.Model):
     user_code = models.CharField(max_length=25, null=True, blank=True)
     name = models.CharField(max_length=255, verbose_name=_('name'))
     short_name = models.CharField(max_length=50, null=True, blank=True, verbose_name=_('short name'))
+    notes = models.TextField(null=True, blank=True)
 
     class Meta:
         verbose_name = _('responsible')
         verbose_name_plural = _('responsibles')
+        unique_together = [
+            ['master_user', 'user_code']
+        ]
 
     def __str__(self):
         return '%s' % self.name

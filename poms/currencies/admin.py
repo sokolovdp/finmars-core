@@ -25,8 +25,8 @@ class SystemCurrencyFilter(admin.SimpleListFilter):
 
 class CurrencyAdmin(admin.ModelAdmin):
     model = Currency
-    list_display = ['id', 'code', 'name', 'master_user', 'is_global']
-    ordering = ['code']
+    list_display = ['id', 'user_code', 'name', 'master_user', 'is_global']
+    ordering = ['user_code']
     list_filter = [SystemCurrencyFilter]
 
     def is_global(self, obj):

@@ -16,6 +16,7 @@ class Strategy(MPTTModel):
     user_code = models.CharField(max_length=25, null=True, blank=True)
     name = models.CharField(max_length=255, verbose_name=_('name'))
     short_name = models.CharField(max_length=50, null=True, blank=True, verbose_name=_('short name'))
+    notes = models.TextField(null=True, blank=True)
 
     class MPTTMeta:
         order_insertion_by = ['master_user', 'name']
@@ -23,6 +24,9 @@ class Strategy(MPTTModel):
     class Meta:
         verbose_name = _('strategy')
         verbose_name_plural = _('strategies')
+        unique_together = [
+            ['master_user', 'user_code']
+        ]
 
     def __str__(self):
         return '%s (%s)' % (self.name, self.master_user.user.username)

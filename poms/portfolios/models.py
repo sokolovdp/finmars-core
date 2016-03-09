@@ -16,7 +16,10 @@ from poms.users.models import MasterUser
 class PortfolioClassifier(MPTTModel):
     master_user = models.ForeignKey(MasterUser, related_name='portfolio_classifiers', verbose_name=_('master user'))
     parent = TreeForeignKey('self', null=True, blank=True, related_name='children', db_index=True)
-    name = models.CharField(max_length=255)
+    user_code = models.CharField(max_length=25, null=True, blank=True)
+    name = models.CharField(max_length=255, verbose_name=_('name'))
+    short_name = models.CharField(max_length=50, null=True, blank=True, verbose_name=_('short name'))
+    notes = models.TextField(null=True, blank=True)
 
     class MPTTMeta:
         order_insertion_by = ['master_user', 'name']
@@ -35,6 +38,7 @@ class Portfolio(models.Model):
     user_code = models.CharField(max_length=25, null=True, blank=True)
     name = models.CharField(max_length=255, verbose_name=_('name'))
     short_name = models.CharField(max_length=50, null=True, blank=True, verbose_name=_('short name'))
+    notes = models.TextField(null=True, blank=True)
     classifiers = TreeManyToManyField(PortfolioClassifier, blank=True)
 
     # inception_date = models.DateField(null=True, blank=True)
@@ -45,6 +49,9 @@ class Portfolio(models.Model):
     class Meta:
         verbose_name = _('portfolio')
         verbose_name_plural = _('portfolios')
+        unique_together = [
+            ['master_user', 'user_code']
+        ]
 
     def __str__(self):
         return self.name

@@ -15,7 +15,10 @@ from poms.users.models import MasterUser
 class InstrumentClassifier(MPTTModel):
     master_user = models.ForeignKey(MasterUser, related_name='instrument_classifiers', verbose_name=_('master user'))
     parent = TreeForeignKey('self', null=True, blank=True, related_name='children', db_index=True)
-    name = models.CharField(max_length=255)
+    user_code = models.CharField(max_length=25, null=True, blank=True)
+    name = models.CharField(max_length=255, verbose_name=_('name'))
+    short_name = models.CharField(max_length=50, null=True, blank=True, verbose_name=_('short name'))
+    notes = models.TextField(null=True, blank=True)
 
     class MPTTMeta:
         order_insertion_by = ['master_user', 'name']
@@ -23,6 +26,9 @@ class InstrumentClassifier(MPTTModel):
     class Meta:
         verbose_name = _('instrument classifier')
         verbose_name_plural = _('instrument classifiers')
+        unique_together = [
+            ['master_user', 'user_code']
+        ]
 
     def __str__(self):
         return '%s (%s)' % (self.name, self.master_user.user.username)
@@ -34,6 +40,7 @@ class Instrument(models.Model):
     user_code = models.CharField(max_length=25, null=True, blank=True)
     name = models.CharField(max_length=255, verbose_name=_('name'))
     short_name = models.CharField(max_length=50, null=True, blank=True, verbose_name=_('short name'))
+    notes = models.TextField(null=True, blank=True)
     currency = models.ForeignKey(Currency, on_delete=models.PROTECT)
     is_active = models.BooleanField(default=True)
     classifiers = TreeManyToManyField(InstrumentClassifier, blank=True)
@@ -41,6 +48,9 @@ class Instrument(models.Model):
     class Meta:
         verbose_name = _('instrument')
         verbose_name_plural = _('instruments')
+        unique_together = [
+            ['master_user', 'user_code']
+        ]
 
     def __str__(self):
         return '%s (%s)' % (self.name, self.master_user.user.username)
