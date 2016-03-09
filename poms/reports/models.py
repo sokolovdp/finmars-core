@@ -79,7 +79,21 @@ class BalanceReportItem(BaseReportItem):
             return "%s - %s" % (self.currency, self.position_size_with_sign)
 
 
+@python_2_unicode_compatible
+class BalanceReportTotal(object):
+    def __init__(self, invested_value=0., current_value=0., p_and_l=0.):
+        self.invested_value = invested_value
+        self.current_value = current_value
+        self.p_and_l = p_and_l
+
+    def __str__(self):
+        return "%s: invested=%s, current=%s, p_and_l=%s" % \
+               (self.currency, self.invested_value, self.current_value, self.p_and_l)
+
+
 # @python_2_unicode_compatible
 class BalanceReport(BaseReport):
-    def __init__(self, *args, **kwargs):
+    def __init__(self, currency=None, total=None, *args, **kwargs):
         super(BalanceReport, self).__init__(*args, **kwargs)
+        self.currency = currency
+        self.total = total

@@ -32,11 +32,36 @@ class BaseReportBuilder(object):
     def build(self):
         raise NotImplementedError('subclasses of BaseReportBuilder must provide an build() method')
 
-    def get_currency_fx_rate(self, currency):
-        pass
+    def currency_fx(self, src_ccy, value, dst_ccy, date=None):
+        if src_ccy is None:
+            if dst_ccy is None:
+                return value
+            else:
+                if dst_ccy.user_code == 'USD':
+                    return value
+                if dst_ccy.user_code == 'EUR':
+                    return value / 1.3
+        else:
+            if dst_ccy is None:
+                if src_ccy.user_code == 'USD':
+                    return value
+                if src_ccy.user_code == 'EUR':
+                    return value * 1.3
+            else:
+                value = self.currency_fx(src_ccy, value, None, date)
+                value = self.currency_fx(None, value, dst_ccy, date)
+                return value
+        raise RuntimeError('bad %s or %s' % (src_ccy, dst_ccy))
 
-    def get_instrument_price(self, currency):
-        pass
+    def instrument_price(self, instrument, date=None):
+        if instrument.user_code == 'I1':
+            return 0.98
+        if instrument.user_code == 'I2':
+            return 1.02
+        return 0.0
+        # if not date:
+        #     date = timezone.now().date()
+        # return PriceHistory.objects.filter(instrument=instrument_id, date__lt=date).order_by('date').last()
 
     def annotate_avco_multiplier(self):
         in_stock = {}

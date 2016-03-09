@@ -5,6 +5,7 @@ from django.utils.translation import ugettext_lazy as _
 from rest_framework import serializers
 
 from poms.api.fields import CurrentMasterUserDefault
+from poms.currencies.models import Currency
 from poms.instruments.models import Instrument
 from poms.reports.models import BalanceReport, BalanceReportItem
 
@@ -46,8 +47,18 @@ class BalanceReportItemSerializer(BaseReportItemSerializer):
         return instance.instrument.name if instance.instrument else None
 
 
+class BalanceReportToralSerializer(serializers.Serializer):
+    invested_value = serializers.FloatField(read_only=True, help_text=_('position size with sign'))
+    current_value = serializers.FloatField(read_only=True, help_text=_('position size with sign'))
+    p_and_l = serializers.FloatField(read_only=True, help_text=_('position size with sign'))
+
+
 class BalanceReportSerializer(BaseReportSerializer):
-    results = BalanceReportItemSerializer(many=True, read_only=True, help_text=_('some help text'))
+    currency = serializers.PrimaryKeyRelatedField(queryset=Currency.objects.all(), required=False, allow_null=True)
+    results = BalanceReportItemSerializer(many=True, read_only=True,
+                                          help_text=_('balance for currency and instruments'))
+    total = BalanceReportToralSerializer(read_only=True,
+                                         help_text=_('total in specified currency'))
 
     def create(self, validated_data):
         return BalanceReport(**validated_data)

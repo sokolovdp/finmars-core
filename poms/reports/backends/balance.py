@@ -3,7 +3,7 @@ from __future__ import unicode_literals
 import logging
 
 from poms.reports.backends.base import BaseReportBuilder
-from poms.reports.models import BalanceReportItem
+from poms.reports.models import BalanceReportItem, BalanceReportTotal
 from poms.transactions.models import TransactionClass
 
 _l = logging.getLogger('poms.reports')
@@ -47,5 +47,33 @@ class BalanceReportBuilder(BaseReportBuilder):
                 cash_item = self._get_currency_item(items_index, items, t.settlement_currency)
                 cash_item.position_size_with_sign += t.cash_consideration
 
-        self.instance.results = sorted(items, key=lambda x: x.key)
+        items = sorted(items, key=lambda x: x.key)
+        self.instance.results = items
+
+        if self.instance.currency:
+            total = BalanceReportTotal()
+            ccy = self.instance.currency
+            for t in self.transactions:
+                if t.transaction_class.code == TransactionClass.CASH_INFLOW:
+                    value = self.currency_fx(t.transaction_currency,
+                                             t.position_size_with_sign,
+                                             ccy)
+                    total.invested_value += value
+            for i in items:
+                if i.instrument:
+                    value = i.position_size_with_sign * self.instrument_price(i.instrument)
+                    value = self.currency_fx(i.instrument.currency,
+                                             value,
+                                             ccy)
+                    print('%s -> %s' % (i.instrument, value))
+                    total.current_value += value
+                if i.currency:
+                    value = self.currency_fx(i.currency,
+                                             i.position_size_with_sign,
+                                             ccy)
+                    print('%s -> %s' % (i.currency, value))
+                    total.current_value += value
+            total.p_and_l = total.current_value - total.invested_value
+            self.instance.total = total
+
         return self.instance
