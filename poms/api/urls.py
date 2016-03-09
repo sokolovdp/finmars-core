@@ -34,6 +34,7 @@ router.register(r'transactions/transaction-class', transactions.TransactionClass
 router.register(r'transactions/transaction', transactions.TransactionViewSet)
 
 router.register(r'reports/balance', reports.BalanceReportViewSet, "balancereport")
+router.register(r'reports/simple-multipliers', reports.SimpleMultipliersReportViewSet, "simplemultipliersreport")
 
 router.register(r'util/ping', views.PingViewSet, "ping")
 router.register(r'util/protected-ping', views.ProtectedPingViewSet, "protectedping")

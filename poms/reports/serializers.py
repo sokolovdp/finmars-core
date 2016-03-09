@@ -54,3 +54,33 @@ class BalanceReportSerializer(BaseReportSerializer):
 
     def update(self, instance, validated_data):
         return instance
+
+
+class SimpleMultipliersReportItemSerializer(BaseReportItemSerializer):
+    instrument = serializers.PrimaryKeyRelatedField(read_only=True, help_text=_('Instrument'))
+    position_size_with_sign = serializers.FloatField(read_only=True)
+    avco_multiplier = serializers.FloatField(read_only=True)
+    fifo_multiplier = serializers.FloatField(read_only=True)
+    rolling_position = serializers.FloatField(read_only=True)
+
+    def create(self, validated_data):
+        return None
+
+    def update(self, instance, validated_data):
+        return instance
+
+    def get_currency_name(self, instance):
+        return instance.currency.name if instance.currency else None
+
+    def get_instrument_name(self, instance):
+        return instance.instrument.name if instance.instrument else None
+
+
+class SimpleMultipliersReportSerializer(BaseReportSerializer):
+    results = SimpleMultipliersReportItemSerializer(many=True, read_only=True, help_text=_('some help text'))
+
+    def create(self, validated_data):
+        return BalanceReport(**validated_data)
+
+    def update(self, instance, validated_data):
+        return instance
