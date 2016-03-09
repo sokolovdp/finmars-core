@@ -47,7 +47,7 @@ class Counterparty(models.Model):
         ]
 
     def __str__(self):
-        return '%s' % self.legal_name
+        return '%s (%s)' % (self.name, self.master_user.user.username)
 
 
 @python_2_unicode_compatible
@@ -66,4 +66,4 @@ class Responsible(models.Model):
         ]
 
     def __str__(self):
-        return '%s' % self.name
+        return '%s (%s)' % (self.name, self.master_user.user.username)
