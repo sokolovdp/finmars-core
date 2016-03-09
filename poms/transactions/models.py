@@ -67,26 +67,40 @@ class Transaction(models.Model):
     account_position = models.ForeignKey(Account, null=True, blank=True, related_name='account_positions')
     account_interim = models.ForeignKey(Account, null=True, blank=True, related_name='account_interims')
 
-    reference_fx_rate = models.FloatField(null=True, blank=True, help_text=_(
-        "FX rate to convert from Settlement ccy to Instrument Ccy on Accounting Date (trade date)"))
+    reference_fx_rate = models.FloatField(null=True, blank=True,
+                                          help_text=_("FX rate to convert from Settlement ccy to Instrument "
+                                                      "Ccy on Accounting Date (trade date)"))
 
     # other
-    is_locked = models.BooleanField(default=False)
-    is_canceled = models.BooleanField(default=False)
-    factor = models.FloatField(null=True, blank=True)
-    trade_price = models.FloatField(null=True, blank=True)
-    principal_amount = models.FloatField(null=True, blank=True)
-    carry_amount = models.FloatField(null=True, blank=True)
-    overheads = models.FloatField(null=True, blank=True)
+    is_locked = models.BooleanField(default=False,
+                                    help_text=_('If checked – transaction cannot be changed '))
+    is_canceled = models.BooleanField(default=False,
+                                      help_text=_('If checked – transaction is cancelled'))
+    factor = models.FloatField(null=True, blank=True,
+                               help_text=_('Multiplier (for calculations on the form)'))
+    trade_price = models.FloatField(null=True, blank=True,
+                                    help_text=_('Price (for calculations on the form)'))
+    principal_amount = models.FloatField(null=True, blank=True,
+                                         help_text=_(
+                                             'Absolute value of Principal with Sign (for calculations on the form)'))
+    carry_amount = models.FloatField(null=True, blank=True,
+                                     help_text=_('Absolute value of Carry with Sign (for calculations on the form)'))
+    overheads = models.FloatField(null=True, blank=True,
+                                  help_text=_('Absolute value of Carry with Sign (for calculations on the form)'))
 
     # information
-    notes_front_office = models.TextField(null=True, blank=True)
-    notes_middle_office = models.TextField(null=True, blank=True)
-    responsible = models.ForeignKey(Responsible, null=True, blank=True, help_text=_("Trader or transaction executer"))
+    notes_front_office = models.TextField(null=True, blank=True,
+                                          help_text=_('text'))
+    notes_middle_office = models.TextField(null=True, blank=True,
+                                           help_text=_('text'))
+    responsible = models.ForeignKey(Responsible, null=True, blank=True,
+                                    help_text=_("Trader or transaction executer"))
     responsible_text = models.CharField(max_length=50, null=True, blank=True,
                                         help_text=_("Text for non-frequent responsible"))
-    counterparty = models.ForeignKey(Counterparty, null=True, blank=True)
-    counterparty_text = models.CharField(max_length=50, null=True, blank=True)
+    counterparty = models.ForeignKey(Counterparty, null=True, blank=True,
+                                     help_text=_('Transaction Counterparty'))
+    counterparty_text = models.CharField(max_length=50, null=True, blank=True,
+                                         help_text=_('Text for non-frequent Counterparty'))
 
     # classifiers = TreeManyToManyField(TransactionClassifier, blank=True)
 
@@ -97,6 +111,6 @@ class Transaction(models.Model):
     def __str__(self):
         return '%s' % self.id
 
-    # @property
-    # def cash_flow(self):
-    #     return self.principal_with_sign + self.carry_with_sign + self.overheads_with_sign
+        # @property
+        # def cash_flow(self):
+        #     return self.principal_with_sign + self.carry_with_sign + self.overheads_with_sign
