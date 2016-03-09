@@ -59,6 +59,10 @@ class BaseReport(object):
     def __str__(self):
         return "%s for %s (%s, %s)" % (self.__class__.__name__, self.master_user, self.begin_date, self.end_date)
 
+    @property
+    def count(self):
+        return len(self.results) if self.results else 0
+
 
 @python_2_unicode_compatible
 class BalanceReportItem(BaseReportItem):

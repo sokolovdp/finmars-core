@@ -19,6 +19,7 @@ class BaseReportSerializer(serializers.Serializer):
     end_date = serializers.DateField(required=False, allow_null=True, help_text=_('some help text'))
     instruments = serializers.PrimaryKeyRelatedField(queryset=Instrument.objects.all(), required=False, many=True,
                                                      allow_null=True)
+    count = serializers.IntegerField(read_only=True)
 
 
 class BalanceReportItemSerializer(BaseReportItemSerializer):
