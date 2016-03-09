@@ -41,7 +41,7 @@ from poms.users.models import MasterUser
 @python_2_unicode_compatible
 class BaseReportItem(object):
     def __init__(self, pk=None):
-        self.pk = pk or uuid.uuid4()
+        self.pk = pk or uuid.uuid1()
 
     def __str__(self):
         return "%s #%s" % (self.__class__.__name__, self.pk,)

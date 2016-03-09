@@ -26,7 +26,7 @@ class BalanceReportItemSerializer(BaseReportItemSerializer):
     # instrument = serializers.IntegerField(required=False, help_text=_('Instrument'))
     # currency = serializers.IntegerField(required=False, help_text=_('currency'))
     instrument = serializers.PrimaryKeyRelatedField(read_only=True, help_text=_('Instrument'))
-    currency = serializers.PrimaryKeyRelatedField(read_only=True, help_text=_('currency'))
+    currency = serializers.PrimaryKeyRelatedField(read_only=True, help_text=_('transaction currency'))
     position_size_with_sign = serializers.FloatField(read_only=True, help_text=_('position size with sign'))
 
     if settings.DEV:
