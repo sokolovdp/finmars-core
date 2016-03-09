@@ -1,7 +1,11 @@
 from __future__ import unicode_literals
 
+from django.conf import settings
+from django.utils import timezone
 from django.utils.functional import cached_property
 
+from poms.currencies.models import CurrencyHistory, Currency
+from poms.instruments.models import PriceHistory
 from poms.transactions.models import Transaction, TransactionClass
 
 
@@ -32,36 +36,32 @@ class BaseReportBuilder(object):
     def build(self):
         raise NotImplementedError('subclasses of BaseReportBuilder must provide an build() method')
 
+    @cached_property
+    def system_currency(self):
+        return Currency.objects.get(master_user__isnull=True, user_code=settings.CURRENCY_CODE)
+
     def currency_fx(self, src_ccy, value, dst_ccy, date=None):
-        if src_ccy is None:
-            if dst_ccy is None:
-                return value
-            else:
-                if dst_ccy.user_code == 'USD':
-                    return value
-                if dst_ccy.user_code == 'EUR':
-                    return value / 1.3
+        if src_ccy.is_system and dst_ccy.is_system:
+            return value
+        if not date:
+            date = timezone.now().date()
+        if src_ccy.is_system and not dst_ccy.is_system:
+            c = CurrencyHistory.objects.filter(currency=dst_ccy, date__lte=date).order_by('date').last()
+            return value / c.fx_rate
+        elif not src_ccy.is_system and dst_ccy.is_system:
+            c = CurrencyHistory.objects.filter(currency=src_ccy, date__lte=date).order_by('date').last()
+            return value * c.fx_rate
         else:
-            if dst_ccy is None:
-                if src_ccy.user_code == 'USD':
-                    return value
-                if src_ccy.user_code == 'EUR':
-                    return value * 1.3
-            else:
-                value = self.currency_fx(src_ccy, value, None, date)
-                value = self.currency_fx(None, value, dst_ccy, date)
-                return value
-        raise RuntimeError('bad %s or %s' % (src_ccy, dst_ccy))
+            value = self.currency_fx(src_ccy, value, self.system_currency, date)
+            value = self.currency_fx(self.system_currency, value, dst_ccy, date)
+            return value
 
     def instrument_price(self, instrument, date=None):
-        if instrument.user_code == 'I1':
-            return 0.98
-        if instrument.user_code == 'I2':
-            return 1.02
-        return 0.0
-        # if not date:
-        #     date = timezone.now().date()
-        # return PriceHistory.objects.filter(instrument=instrument_id, date__lt=date).order_by('date').last()
+        if not date:
+            date = timezone.now().date()
+        price = PriceHistory.objects.filter(instrument=instrument, date__lte=date).order_by('date').last()
+        print(price)
+        return price.price
 
     def annotate_avco_multiplier(self):
         in_stock = {}

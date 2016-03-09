@@ -6,7 +6,7 @@ from django.utils.translation import ugettext_lazy as _
 from poms.currencies.models import Currency, CurrencyHistory
 
 
-class SystemCurrencyFilter(admin.SimpleListFilter):
+class GlobalCurrencyFilter(admin.SimpleListFilter):
     title = _('is global')
     parameter_name = 'master_user'
 
@@ -25,9 +25,9 @@ class SystemCurrencyFilter(admin.SimpleListFilter):
 
 class CurrencyAdmin(admin.ModelAdmin):
     model = Currency
-    list_display = ['id', 'user_code', 'name', 'master_user', 'is_global']
+    list_display = ['id', 'user_code', 'name', 'master_user', 'is_global', 'is_system']
     ordering = ['user_code']
-    list_filter = [SystemCurrencyFilter]
+    list_filter = [GlobalCurrencyFilter]
 
     def is_global(self, obj):
         return obj.is_global
@@ -36,6 +36,11 @@ class CurrencyAdmin(admin.ModelAdmin):
     is_global.boolean = True
     is_global.admin_order_field = 'master_user'
 
+    def is_system(self, obj):
+        return obj.is_system
+
+    is_system.short_name = _('is system')
+    is_system.boolean = True
 
 admin.site.register(Currency, CurrencyAdmin)
 

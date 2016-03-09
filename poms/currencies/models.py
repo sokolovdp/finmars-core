@@ -1,5 +1,6 @@
 from __future__ import unicode_literals
 
+from django.conf import settings
 from django.db import models
 from django.utils import timezone
 from django.utils.encoding import python_2_unicode_compatible
@@ -46,6 +47,10 @@ class Currency(models.Model):
     @property
     def is_global(self):
         return self.master_user_id is None
+
+    @property
+    def is_system(self):
+        return self.is_global and self.user_code == settings.CURRENCY_CODE
 
 
 # EUR -> USD
