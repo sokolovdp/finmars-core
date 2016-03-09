@@ -10,6 +10,7 @@ import poms.accounts.views as accounts
 import poms.currencies.views as currencies
 import poms.instruments.views as instruments
 import poms.users.views as users
+import poms.transactions.views as transactions
 import poms.reports.views as reports
 import poms.api.views as views
 
@@ -28,6 +29,9 @@ router.register(r'instruments/instrument-classifier', instruments.InstrumentClas
 
 router.register(r'currencies/currency', currencies.CurrencyViewSet)
 router.register(r'currencies/currency-history', currencies.CurrencyHistoryViewSet)
+
+router.register(r'transactions/transaction-class', transactions.TransactionClassViewSet)
+router.register(r'transactions/transaction', transactions.TransactionViewSet)
 
 router.register(r'reports/balance', reports.BalanceReportViewSet, "balancereport")
 

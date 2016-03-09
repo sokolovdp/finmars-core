@@ -1,5 +1,6 @@
 from __future__ import unicode_literals
 
+from django.conf import settings
 from django.utils.translation import ugettext_lazy as _
 from rest_framework import serializers
 
@@ -27,8 +28,9 @@ class BalanceReportItemSerializer(BaseReportItemSerializer):
     currency = serializers.PrimaryKeyRelatedField(read_only=True, help_text=_('currency'))
     position_size_with_sign = serializers.FloatField(read_only=True, help_text=_('position size with sign'))
 
-    currency_name = serializers.SerializerMethodField()
-    instrument_name = serializers.SerializerMethodField()
+    if settings.DEV:
+        currency_name = serializers.SerializerMethodField()
+        instrument_name = serializers.SerializerMethodField()
 
     def create(self, validated_data):
         return BalanceReportItem(**validated_data)
