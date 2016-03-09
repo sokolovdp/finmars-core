@@ -60,7 +60,6 @@ class BaseReportBuilder(object):
         if not date:
             date = timezone.now().date()
         price = PriceHistory.objects.filter(instrument=instrument, date__lte=date).order_by('date').last()
-        print(price)
         return price.price
 
     def annotate_avco_multiplier(self):
