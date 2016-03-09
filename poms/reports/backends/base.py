@@ -47,9 +47,13 @@ class BaseReportBuilder(object):
             date = timezone.now().date()
         if src_ccy.is_system and not dst_ccy.is_system:
             c = CurrencyHistory.objects.filter(currency=dst_ccy, date__lte=date).order_by('date').last()
+            if c is None:
+                return 0.
             return value / c.fx_rate
         elif not src_ccy.is_system and dst_ccy.is_system:
             c = CurrencyHistory.objects.filter(currency=src_ccy, date__lte=date).order_by('date').last()
+            if c is None:
+                return 0.
             return value * c.fx_rate
         else:
             value = self.currency_fx(src_ccy, value, self.system_currency, date)
@@ -59,8 +63,10 @@ class BaseReportBuilder(object):
     def instrument_price(self, instrument, date=None):
         if not date:
             date = timezone.now().date()
-        price = PriceHistory.objects.filter(instrument=instrument, date__lte=date).order_by('date').last()
-        return price.price
+        p = PriceHistory.objects.filter(instrument=instrument, date__lte=date).order_by('date').last()
+        if p is None:
+            return 0.
+        return p.price
 
     def annotate_avco_multiplier(self):
         in_stock = {}
