@@ -10,11 +10,6 @@ class TransactionClassAdmin(admin.ModelAdmin):
     list_display = ['code', 'name']
     ordering = ['code']
 
-    def save_model(self, request, obj, form, change):
-        super(TransactionClassAdmin, self).save_model(request, obj, form, change)
-        print(list(TransactionClass.history.all()))
-        print(list(TransactionClass.history.filter(code__contains='1')))
-
 
 admin.site.register(TransactionClass, TransactionClassAdmin)
 
