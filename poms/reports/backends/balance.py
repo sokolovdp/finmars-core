@@ -69,32 +69,4 @@ class BalanceReportBuilder(BaseReportBuilder):
             if i.currency:
                 i.currency_history = self.find_currency_history(i.currency, self.instance.end_date)
 
-        # if self.instance.currency:
-        #     summary = BalanceReportSummary()
-        #     ccy = self.instance.currency
-        #
-        #     # for t in self.transactions:
-        #     #     if t.transaction_class.code == TransactionClass.CASH_INFLOW:
-        #     #         value = self.currency_fx(t.transaction_currency,
-        #     #                                  t.position_size_with_sign,
-        #     #                                  ccy)
-        #     #         summary.invested_value += value
-        #
-        #     for i in items:
-        #         if i.instrument:
-        #             value = i.position_size_with_sign * self.instrument_price(i.instrument)
-        #             value = self.currency_fx(i.instrument.currency,
-        #                                      value,
-        #                                      ccy)
-        #             # print('%s -> %s' % (i.instrument, value))
-        #             summary.current_value += value
-        #         if i.currency:
-        #             value = self.currency_fx(i.currency,
-        #                                      i.position_size_with_sign,
-        #                                      ccy)
-        #             # print('%s -> %s' % (i.currency, value))
-        #             summary.current_value += value
-        #     summary.p_and_l = summary.current_value - summary.invested_value
-        #     self.instance.summary = summary
-
         return self.instance

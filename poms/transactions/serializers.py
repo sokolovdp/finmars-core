@@ -18,7 +18,9 @@ class TransactionSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Transaction
-        fields = ['url', 'id', 'portfolio', 'transaction_class', 'instrument', 'position_size_with_sign',
+        fields = ['url', 'id', 'portfolio', 'transaction_class',
+                  'instrument', 'transaction_currency',
+                  'position_size_with_sign',
                   'settlement_currency','cash_consideration',
                   'principal_with_sign', 'carry_with_sign', 'overheads_with_sign',
                   'accounting_date', 'cash_date', 'transaction_date',

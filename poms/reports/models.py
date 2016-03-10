@@ -11,7 +11,7 @@ from poms.users.models import MasterUser
 
 @python_2_unicode_compatible
 class BaseReportItem(object):
-    def __init__(self, pk=None):
+    def __init__(self, pk=None, *args, **kwargs):
         self.pk = pk
 
     def __str__(self):
@@ -50,9 +50,9 @@ class BalanceReportItem(BaseReportItem):
 
     def __str__(self):
         if self.instrument:
-            return "%s - %s" % (self.instrument, self.position_size_with_sign)
+            return "%s - %s" % (self.instrument, self.balance_position)
         else:
-            return "%s - %s" % (self.currency, self.position_size_with_sign)
+            return "%s - %s" % (self.currency, self.balance_position)
 
     @property
     def currency_name(self):
@@ -117,13 +117,28 @@ class BalanceReportItem(BaseReportItem):
         return getattr(self.instrument_accrued_currency_history, 'fx_rate', 0.) or 0.
 
     @property
-    def market_value_system_ccy(self):
+    def principal_value_instrument_system_ccy(self):
         if self.instrument:
-            return self.principal_value_intrument_principal_ccy * self.instrument_principal_fx_rate + \
-                   self.accrued_value_intrument_principal_ccy * self.instrument_accrued_fx_rate
+            return self.principal_value_intrument_principal_ccy * self.instrument_principal_fx_rate
         if self.currency:
             return self.balance_position * self.currency_fx_rate
         return 0.
+
+    @property
+    def accrued_value_instrument_system_ccy(self):
+        if self.instrument:
+            return self.accrued_value_intrument_principal_ccy * self.instrument_accrued_fx_rate
+        return 0.
+
+    @property
+    def market_value_system_ccy(self):
+        # if self.instrument:
+        #     return self.principal_value_intrument_principal_ccy * self.instrument_principal_fx_rate + \
+        #            self.accrued_value_intrument_principal_ccy * self.instrument_accrued_fx_rate
+        # if self.currency:
+        #     return self.balance_position * self.currency_fx_rate
+        # return 0.
+        return self.principal_value_instrument_system_ccy + self.accrued_value_instrument_system_ccy
 
 
 @python_2_unicode_compatible
@@ -134,8 +149,8 @@ class BalanceReportSummary(object):
         # self.current_value_system_ccy = -1132
 
     def __str__(self):
-        return "%s: invested_value_system_ccy=%s, current_value_system_ccy=%s, p_l_system_ccy=%s" % \
-               (self.currency, self.invested_value_system_ccy, self.current_value_system_ccy, self.p_l_system_ccy)
+        return "invested_value_system_ccy=%s, current_value_system_ccy=%s, p_l_system_ccy=%s" % \
+               (self.invested_value_system_ccy, self.current_value_system_ccy, self.p_l_system_ccy)
 
     @property
     def invested_value_system_ccy(self):
@@ -164,22 +179,125 @@ class BalanceReport(BaseReport):
         super(BalanceReport, self).__init__(*args, **kwargs)
         self.summary = BalanceReportSummary(self)
         self.invested_items = None
-        self.currency = currency
 
 
 # ----------------------------------------------------------------------------------------------------------------------
 
 
 @python_2_unicode_compatible
-class PLReportItem(BaseReportItem):
-    def __init__(self, *args, **kwargs):
-        super(PLReportItem, self).__init__(*args, **kwargs)
+class PLReportTransaction(BaseReportItem):
+    def __init__(self, transaction, *args, **kwargs):
+        super(PLReportTransaction, self).__init__(*args, **kwargs)
+        self._transaction = transaction
+        self.pk = transaction.id
+        self.currency = None
+        self.currency_history = None
+
+    def __str__(self):
+        return 'transaction=%s' % self.transaction.id
+
+    @property
+    def transaction_class(self):
+        return getattr(self._transaction, 'transaction_class', None)
+
+    @property
+    def transaction_class_code(self):
+        return getattr(self.transaction_class, 'code', None)
+
+    @property
+    def instrument(self):
+        return getattr(self._transaction, 'instrument', None)
+
+    @property
+    def instrument_name(self):
+        return getattr(self.instrument, 'name', None)
+
+    @property
+    def transaction_currency(self):
+        return getattr(self._transaction, 'transaction_currency', None)
+
+    @property
+    def transaction_currency_name(self):
+        return getattr(self.transaction_currency, 'name', None)
+
+    @property
+    def position_size_with_sign(self):
+        return getattr(self._transaction, 'position_size_with_sign', 0.)
+
+    @property
+    def cash_consideration(self):
+        return getattr(self._transaction, 'cash_consideration', 0.)
+
+    @property
+    def principal_with_sign(self):
+        return getattr(self._transaction, 'principal_with_sign', 0.)
+
+    @property
+    def carry_with_sign(self):
+        return getattr(self._transaction, 'carry_with_sign', 0.)
+
+    @property
+    def overheads_with_sign(self):
+        return getattr(self._transaction, 'overheads_with_sign', 0.)
+
+    @property
+    def currency_name(self):
+        return getattr(self.currency, 'name', None)
+
+    @property
+    def currency_fx_rate(self):
+        if getattr(self.currency, 'is_system', False):
+            return 1.
+        return getattr(self.currency_history, 'fx_rate', 0.) or 0.
+
+    @property
+    def principal_with_sign_system_ccy(self):
+        return self.principal_with_sign * self.currency_fx_rate
+
+    @property
+    def carry_with_sign_system_ccy(self):
+        return self.carry_with_sign * self.currency_fx_rate
+
+    @property
+    def overheads_with_sign_system_ccy(self):
+        return self.overheads_with_sign * self.currency_fx_rate
+
+
+@python_2_unicode_compatible
+class PLReportInstrument(BaseReportItem):
+    def __init__(self, instrument=None, *args, **kwargs):
+        super(PLReportInstrument, self).__init__(pk=getattr(instrument, 'pk', None), *args, **kwargs)
+        self.instrument = instrument
+        self.principal_with_sign_system_ccy = 0.
+        self.carry_with_sign_system_ccy = 0.
+        self.overheads_with_sign_system_ccy = 0.
 
     def __str__(self):
         return 'PLReportItem'
+
+    @property
+    def instrument_name(self):
+        return getattr(self.instrument, 'name', None)
+
+    def total_system_ccy(self):
+        return self.principal_with_sign_system_ccy + self.carry_with_sign_system_ccy + self.overheads_with_sign_system_ccy
+
+
+class PLReportSummary(object):
+    def __init__(self, *args, **kwargs):
+        self.principal_with_sign_system_ccy = 0.
+        self.carry_with_sign_system_ccy = 0.
+        self.overheads_with_sign_system_ccy = 0.
+
+    @property
+    def total_system_ccy(self):
+        return self.principal_with_sign_system_ccy + self.carry_with_sign_system_ccy + self.overheads_with_sign_system_ccy
 
 
 # @python_2_unicode_compatible
 class PLReport(BaseReport):
     def __init__(self, *args, **kwargs):
         super(PLReport, self).__init__(*args, **kwargs)
+        self.transactions = []
+        self.items = []
+        self.summary = PLReportSummary()
