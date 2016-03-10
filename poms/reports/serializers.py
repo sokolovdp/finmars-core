@@ -7,7 +7,10 @@ from rest_framework import serializers
 from poms.api.fields import CurrentMasterUserDefault
 from poms.currencies.models import Currency
 from poms.instruments.models import Instrument
-from poms.reports.models import BalanceReport, BalanceReportItem, BalanceReportSummary
+from poms.reports.models import BalanceReport, BalanceReportItem, BalanceReportSummary, PLReportItem, PLReport
+
+
+# ----------------------------------------------------------------------------------------------------------------------
 
 
 class BaseReportItemSerializer(serializers.Serializer):
@@ -20,7 +23,9 @@ class BaseReportSerializer(serializers.Serializer):
     end_date = serializers.DateField(required=False, allow_null=True, help_text=_('some help text'))
     instruments = serializers.PrimaryKeyRelatedField(queryset=Instrument.objects.all(), required=False, many=True,
                                                      allow_null=True)
-    count = serializers.IntegerField(read_only=True)
+
+
+# ----------------------------------------------------------------------------------------------------------------------
 
 
 class BalanceReportItemSerializer(BaseReportItemSerializer):
@@ -71,6 +76,32 @@ class BalanceReportSerializer(BaseReportSerializer):
 
     def update(self, instance, validated_data):
         return instance
+
+
+# ----------------------------------------------------------------------------------------------------------------------
+
+
+
+class PLReportItemSerializer(BaseReportItemSerializer):
+    def create(self, validated_data):
+        return PLReportItem(**validated_data)
+
+    def update(self, instance, validated_data):
+        return instance
+
+
+class PLReportSerializer(BaseReportSerializer):
+    results = BalanceReportItemSerializer(many=True, read_only=True,
+                                          help_text=_('balance for currency and instruments'))
+
+    def create(self, validated_data):
+        return PLReport(**validated_data)
+
+    def update(self, instance, validated_data):
+        return instance
+
+
+# ----------------------------------------------------------------------------------------------------------------------
 
 
 class SimpleMultipliersReportItemSerializer(BaseReportItemSerializer):

@@ -15,7 +15,7 @@ class BalanceReportBuilder(BaseReportBuilder):
         i = items_index.get(key, None)
         if i is None:
             i = BalanceReportItem(currency=currency)
-            i.key = key
+            i.pk = key
             items_index[key] = i
             items.append(i)
         return i
@@ -25,7 +25,7 @@ class BalanceReportBuilder(BaseReportBuilder):
         i = items_index.get(key, None)
         if i is None:
             i = BalanceReportItem(instrument=instrument)
-            i.key = key
+            i.pk = key
             items_index[key] = i
             items.append(i)
         return i
@@ -47,7 +47,7 @@ class BalanceReportBuilder(BaseReportBuilder):
                 cash_item = self._get_currency_item(items_index, items, t.settlement_currency)
                 cash_item.position_size_with_sign += t.cash_consideration
 
-        items = sorted(items, key=lambda x: x.key)
+        items = sorted(items, key=lambda x: x.pk)
         self.instance.results = items
 
         if self.instance.currency:
@@ -65,13 +65,13 @@ class BalanceReportBuilder(BaseReportBuilder):
                     value = self.currency_fx(i.instrument.currency,
                                              value,
                                              ccy)
-                    print('%s -> %s' % (i.instrument, value))
+                    # print('%s -> %s' % (i.instrument, value))
                     summary.current_value += value
                 if i.currency:
                     value = self.currency_fx(i.currency,
                                              i.position_size_with_sign,
                                              ccy)
-                    print('%s -> %s' % (i.currency, value))
+                    # print('%s -> %s' % (i.currency, value))
                     summary.current_value += value
             summary.p_and_l = summary.current_value - summary.invested_value
             self.instance.summary = summary

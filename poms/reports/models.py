@@ -1,47 +1,18 @@
 from __future__ import unicode_literals
 
-import uuid
-
 from django.contrib.contenttypes.models import ContentType
 from django.utils.encoding import python_2_unicode_compatible
 
 from poms.users.models import MasterUser
 
 
-# @python_2_unicode_compatible
-# class ReportType(models.Model):
-#     code = models.CharField(max_length=50, verbose_name=_('code'))
-#     name = models.CharField(max_length=255, verbose_name=_('name'))
-#     description = models.TextField(null=True, blank=True, default='', verbose_name=_('description'))
-#
-#     class Meta:
-#         verbose_name = _('report type')
-#         verbose_name_plural = _('report types')
-#
-#     def __str__(self):
-#         return '%s' % (self.name,)
-#
-#
-# @python_2_unicode_compatible
-# class Mapping(models.Model):
-#     master_user = models.ForeignKey(MasterUser, related_name='report_mappings', verbose_name=_('master user'))
-#     content_type = models.ForeignKey(ContentType, on_delete=models.CASCADE)
-#     object_id = models.CharField(max_length=255)
-#     content_object = GenericForeignKey('content_type', 'object_id')
-#     name = models.CharField(max_length=255, verbose_name=_('object attribute'))
-#     expr = models.TextField(null=True, blank=True, verbose_name=_('expression'))
-#
-#     class Meta:
-#         verbose_name = _('mapping')
-#         verbose_name_plural = _('mappings')
-#
-#     def __str__(self):
-#         return '%s #%s - %s' % (self.content_type, self.object_id, self.name)
+# ----------------------------------------------------------------------------------------------------------------------
+
 
 @python_2_unicode_compatible
 class BaseReportItem(object):
     def __init__(self, pk=None):
-        self.pk = pk or uuid.uuid1()
+        self.pk = pk
 
     def __str__(self):
         return "%s #%s" % (self.__class__.__name__, self.pk,)
@@ -59,9 +30,8 @@ class BaseReport(object):
     def __str__(self):
         return "%s for %s (%s, %s)" % (self.__class__.__name__, self.master_user, self.begin_date, self.end_date)
 
-    @property
-    def count(self):
-        return len(self.results) if self.results else 0
+
+# ----------------------------------------------------------------------------------------------------------------------
 
 
 @python_2_unicode_compatible
@@ -70,7 +40,21 @@ class BalanceReportItem(BaseReportItem):
         super(BalanceReportItem, self).__init__(*args, **kwargs)
         self.instrument = instrument
         self.currency = currency
-        self.position_size_with_sign = position_size_with_sign
+        self.position_size_with_sign = position_size_with_sign  # -> position
+
+        # [09.03.16, 17:26:30] Instrument - name
+        # [09.03.16, 17:27:03] Position
+        # [09.03.16, 17:27:28] Inst Ccy - name
+        # [09.03.16, 17:27:40] Inst Price Multiplier
+        # [09.03.16, 17:29:19] Price (Price hist + date)
+        # [09.03.16, 17:29:36] Acctrued Multiplier (price hist + date)
+        # [09.03.16, 17:31:18] Principal, loc ccy
+        # [09.03.16, 17:32:06] Accrue, loc ccy
+        # [09.03.16, 17:32:51] FX rate (instrm ccy + fx hist + date)
+        # [09.03.16, 17:35:38] Principal, $
+        # [09.03.16, 17:35:49] Accrued, $
+        # [09.03.16, 17:36:15] Mkt Value, $ = Principla + Accrued
+        # [09.03.16, 17:36:27] SUM (Mkt Value, $)
 
     def __str__(self):
         if self.instrument:
@@ -97,3 +81,21 @@ class BalanceReport(BaseReport):
         super(BalanceReport, self).__init__(*args, **kwargs)
         self.currency = currency
         self.summary = summary
+
+
+# ----------------------------------------------------------------------------------------------------------------------
+
+
+@python_2_unicode_compatible
+class PLReportItem(BaseReportItem):
+    def __init__(self, *args, **kwargs):
+        super(PLReportItem, self).__init__(*args, **kwargs)
+
+    def __str__(self):
+        return 'PLReportItem'
+
+
+# @python_2_unicode_compatible
+class PLReport(BaseReport):
+    def __init__(self, *args, **kwargs):
+        super(PLReport, self).__init__(*args, **kwargs)

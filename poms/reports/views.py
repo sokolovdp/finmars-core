@@ -9,12 +9,15 @@ from poms.reports.backends.simple_multipliers import SimpleMultipliersReportBuil
 from poms.reports.serializers import BalanceReportSerializer, SimpleMultipliersReportSerializer
 
 
-class BalanceReportViewSet(viewsets.ViewSet):
+class BaseReportViewSet(viewsets.ViewSet):
     permission_classes = [IsAuthenticated]
+    serializer_class = None
+    report_builder_class = None
 
     def get_serializer(self, *args, **kwargs):
+        assert self.serializer_class is not None
         kwargs['context'] = self.get_serializer_context()
-        return BalanceReportSerializer(*args, **kwargs)
+        return self.serializer_class(*args, **kwargs)
 
     def get_serializer_context(self):
         return {
@@ -24,13 +27,24 @@ class BalanceReportViewSet(viewsets.ViewSet):
         }
 
     def create(self, request, *args, **kwargs):
+        assert self.report_builder_class is not None
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         instance = serializer.save()
-        builder = BalanceReportBuilder(instance=instance)
+        builder = self.report_builder_class(instance=instance)
         instance = builder.build()
         serializer = self.get_serializer(instance=instance, many=False)
         return Response(serializer.data, status=status.HTTP_201_CREATED)
+
+
+class BalanceReportViewSet(BaseReportViewSet):
+    serializer_class = BalanceReportSerializer
+    report_builder_class = BalanceReportBuilder
+
+
+class PLReportViewSet(BaseReportViewSet):
+    serializer_class = BalanceReportSerializer
+    report_builder_class = BalanceReportBuilder
 
 
 class SimpleMultipliersReportViewSet(viewsets.ViewSet):
@@ -55,4 +69,3 @@ class SimpleMultipliersReportViewSet(viewsets.ViewSet):
         instance = builder.build()
         serializer = self.get_serializer(instance=instance, many=False)
         return Response(serializer.data, status=status.HTTP_201_CREATED)
-
