@@ -19,13 +19,13 @@ admin.site.register(InstrumentClassifier, InstrumentClassifierAdmin)
 
 class InstrumentAdmin(admin.ModelAdmin):
     model = Instrument
-    list_display = ['name', 'currency', 'master_user', 'get_classifiers']
+    list_display = ['name', 'currency', 'accrued_currency', 'price_multiplier', 'master_user']
 
-    def get_classifiers(self, obj):
-        return ', '.join(p.name for p in obj.classifiers.all())
-
-    get_classifiers.short_name = _('classifiers')
-    get_classifiers.short_description = _('classifiers')
+    # def get_classifiers(self, obj):
+    #     return ', '.join(p.name for p in obj.classifiers.all())
+    #
+    # get_classifiers.short_name = _('classifiers')
+    # get_classifiers.short_description = _('classifiers')
 
 
 admin.site.register(Instrument, InstrumentAdmin)
@@ -33,7 +33,7 @@ admin.site.register(Instrument, InstrumentAdmin)
 
 class PriceHistoryAdmin(admin.ModelAdmin):
     model = PriceHistory
-    list_display = ['id', 'date', 'instrument', 'price']
+    list_display = ['id', 'date', 'instrument', 'principal_price', 'accrued_price', 'factor']
     date_hierarchy = 'date'
 
 

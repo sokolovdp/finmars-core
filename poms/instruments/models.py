@@ -42,7 +42,9 @@ class Instrument(models.Model):
     short_name = models.CharField(max_length=50, null=True, blank=True, verbose_name=_('short name'))
     notes = models.TextField(null=True, blank=True)
     currency = models.ForeignKey(Currency, on_delete=models.PROTECT)
+    accrued_currency = models.ForeignKey(Currency, null=True, blank=True, related_name='instruments_accrued', on_delete=models.PROTECT)
     is_active = models.BooleanField(default=True)
+    price_multiplier = models.FloatField(default=1.)
     classifiers = TreeManyToManyField(InstrumentClassifier, blank=True)
 
     class Meta:
@@ -60,8 +62,8 @@ class Instrument(models.Model):
 class PriceHistory(models.Model):
     instrument = models.ForeignKey(Instrument, related_name='prices')
     date = models.DateField(null=False, blank=False, db_index=True, default=timezone.now)
-    price = models.FloatField(default=0.0)
-    accrued_multiplier = models.FloatField(null=True, blank=True)
+    principal_price = models.FloatField(default=0.0)
+    accrued_price = models.FloatField(null=True, blank=True)
     factor = models.FloatField(null=True, blank=True)
 
     # coupon = models.FloatField(null=True, blank=True)
