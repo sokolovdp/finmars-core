@@ -1,6 +1,5 @@
 from __future__ import unicode_literals
 
-from django.conf import settings
 from django.utils.translation import ugettext_lazy as _
 from rest_framework import serializers
 
@@ -31,25 +30,71 @@ class BaseReportSerializer(serializers.Serializer):
 class BalanceReportItemSerializer(BaseReportItemSerializer):
     # instrument = serializers.IntegerField(required=False, help_text=_('Instrument'))
     # currency = serializers.IntegerField(required=False, help_text=_('currency'))
-    instrument = serializers.PrimaryKeyRelatedField(read_only=True, help_text=_('Instrument'))
-    currency = serializers.PrimaryKeyRelatedField(read_only=True, help_text=_('transaction currency'))
-    position_size_with_sign = serializers.FloatField(read_only=True, help_text=_('position size with sign'))
 
-    if settings.DEV:
-        currency_name = serializers.SerializerMethodField()
-        instrument_name = serializers.SerializerMethodField()
+    balance_position = serializers.FloatField(read_only=True, help_text=_('Position'))
+
+    currency = serializers.PrimaryKeyRelatedField(read_only=True, help_text=_('Currency'))
+    currency_name = serializers.CharField(read_only=True)
+    currency_history = serializers.PrimaryKeyRelatedField(read_only=True, help_text=_('Currency history'))
+    currency_fx_rate = serializers.FloatField(read_only=True)
+
+    instrument = serializers.PrimaryKeyRelatedField(read_only=True, help_text=_('Instrument'))
+    instrument_name = serializers.CharField(read_only=True)
+    instrument_principal_pricing_ccy = serializers.CharField(read_only=True)
+    instrument_price_multiplier = serializers.FloatField(read_only=True)
+    instrument_accrued_pricing_ccy = serializers.CharField(read_only=True)
+    instrument_accrued_multiplier = serializers.FloatField(read_only=True)
+
+    price_history = serializers.PrimaryKeyRelatedField(read_only=True, help_text=_('price history'))
+    instrument_principal_price = serializers.FloatField(read_only=True)
+    instrument_accrued_price = serializers.FloatField(read_only=True)
+
+    principal_value_intrument_principal_ccy = serializers.FloatField(read_only=True)
+    accrued_value_intrument_principal_ccy = serializers.FloatField(read_only=True)
+
+    instrument_principal_currency_history = serializers.PrimaryKeyRelatedField(read_only=True, help_text=_(''))
+    instrument_principal_fx_rate = serializers.FloatField(read_only=True, help_text=_(''))
+    instrument_accrued_currency_history = serializers.PrimaryKeyRelatedField(read_only=True, help_text=_(''))
+    instrument_accrued_fx_rate = serializers.FloatField(read_only=True, help_text=_(''))
+
+    market_value_system_ccy = serializers.FloatField(read_only=True)
 
     def create(self, validated_data):
         return BalanceReportItem(**validated_data)
 
     def update(self, instance, validated_data):
         return instance
-
-    def get_currency_name(self, instance):
-        return instance.currency.name if instance.currency else None
-
-    def get_instrument_name(self, instance):
-        return instance.instrument.name if instance.instrument else None
+    #
+    # def get_instrument_name(self, instance):
+    #     return getattr(instance.instrument, 'name', None)
+    #     # return instance.instrument.name if instance.instrument else None
+    #
+    # def get_instrument_principal_pricing_ccy(self, instance):
+    #     c = getattr(instance.instrument, 'pricing_currency', None)
+    #     return getattr(c, 'name', None)
+    #
+    # def get_instrument_price_multiplier(self, instance):
+    #     return getattr(instance.instrument, 'price_multiplier', None)
+    #
+    # def get_instrument_accrued_pricing_ccy(self, instance):
+    #     c = getattr(instance.instrument, 'accrued_currency', None)
+    #     return getattr(c, 'name', None)
+    #
+    # def get_instrument_accrued_multiplier(self, instance):
+    #     return getattr(instance.instrument, 'accrued_multiplier', None)
+    #
+    # def get_instrument_principal_price(self, instance):
+    #     return getattr(instance.price_history, 'principal_price', None)
+    #
+    # def get_instrument_accrued_price(self, instance):
+    #     return getattr(instance.price_history, 'accrued_price', None)
+    #
+    # def get_currency_name(self, instance):
+    #     return getattr(instance.currency, 'name', None)
+    #     # return instance.currency.name if instance.currency else None
+    #
+    # def get_currency_fx_rate(self, instance):
+    #     return getattr(instance.currency_history, 'fx_rate', None)
 
 
 class BalanceReportSummarySerializer(serializers.Serializer):

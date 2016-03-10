@@ -40,33 +40,39 @@ class BaseReportBuilder(object):
     def system_currency(self):
         return Currency.objects.get(master_user__isnull=True, user_code=settings.CURRENCY_CODE)
 
-    def currency_fx(self, src_ccy, value, dst_ccy, date=None):
-        if src_ccy.is_system and dst_ccy.is_system:
-            return value
+    # def currency_fx(self, src_ccy, value, dst_ccy, date=None):
+    #     if src_ccy.is_system and dst_ccy.is_system:
+    #         return value
+    #     if not date:
+    #         date = timezone.now().date()
+    #     if src_ccy.is_system and not dst_ccy.is_system:
+    #         c = CurrencyHistory.objects.filter(currency=dst_ccy, date__lte=date).order_by('date').last()
+    #         if c is None:
+    #             return 0.
+    #         return value / c.fx_rate
+    #     elif not src_ccy.is_system and dst_ccy.is_system:
+    #         c = CurrencyHistory.objects.filter(currency=src_ccy, date__lte=date).order_by('date').last()
+    #         if c is None:
+    #             return 0.
+    #         return value * c.fx_rate
+    #     else:
+    #         value = self.currency_fx(src_ccy, value, self.system_currency, date)
+    #         value = self.currency_fx(self.system_currency, value, dst_ccy, date)
+    #         return value
+
+    def find_currency_history(self, currency, date=None):
+        if currency is None or currency.is_system:
+            return None
         if not date:
             date = timezone.now().date()
-        if src_ccy.is_system and not dst_ccy.is_system:
-            c = CurrencyHistory.objects.filter(currency=dst_ccy, date__lte=date).order_by('date').last()
-            if c is None:
-                return 0.
-            return value / c.fx_rate
-        elif not src_ccy.is_system and dst_ccy.is_system:
-            c = CurrencyHistory.objects.filter(currency=src_ccy, date__lte=date).order_by('date').last()
-            if c is None:
-                return 0.
-            return value * c.fx_rate
-        else:
-            value = self.currency_fx(src_ccy, value, self.system_currency, date)
-            value = self.currency_fx(self.system_currency, value, dst_ccy, date)
-            return value
+        p = CurrencyHistory.objects.filter(currency=currency, date__lte=date).order_by('date').last()
+        return p
 
-    def instrument_price(self, instrument, date=None):
+    def find_price_history(self, instrument, date=None):
         if not date:
             date = timezone.now().date()
         p = PriceHistory.objects.filter(instrument=instrument, date__lte=date).order_by('date').last()
-        if p is None:
-            return 0.
-        return p.price
+        return p
 
     def annotate_avco_multiplier(self):
         in_stock = {}

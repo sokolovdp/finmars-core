@@ -36,44 +36,54 @@ class BalanceReportBuilder(BaseReportBuilder):
         for t in self.transactions:
             if t.transaction_class.code == TransactionClass.CASH_INFLOW:
                 cash_item = self._get_currency_item(items_index, items, t.transaction_currency)
-                cash_item.position_size_with_sign += t.position_size_with_sign
+                cash_item.balance_position += t.position_size_with_sign
             elif t.transaction_class.code in [TransactionClass.BUY, TransactionClass.SELL]:
                 instrument_item = self._get_instrument_item(items_index, items, t.instrument)
-                instrument_item.position_size_with_sign += t.position_size_with_sign
+                instrument_item.balance_position += t.position_size_with_sign
 
                 cash_item = self._get_currency_item(items_index, items, t.settlement_currency)
-                cash_item.position_size_with_sign += t.cash_consideration
+                cash_item.balance_position += t.cash_consideration
             elif t.transaction_class.code == TransactionClass.INSTRUMENT_PL:
                 cash_item = self._get_currency_item(items_index, items, t.settlement_currency)
-                cash_item.position_size_with_sign += t.cash_consideration
+                cash_item.balance_position += t.cash_consideration
 
         items = sorted(items, key=lambda x: x.pk)
         self.instance.results = items
 
-        if self.instance.currency:
-            summary = BalanceReportSummary()
-            ccy = self.instance.currency
-            for t in self.transactions:
-                if t.transaction_class.code == TransactionClass.CASH_INFLOW:
-                    value = self.currency_fx(t.transaction_currency,
-                                             t.position_size_with_sign,
-                                             ccy)
-                    summary.invested_value += value
-            for i in items:
-                if i.instrument:
-                    value = i.position_size_with_sign * self.instrument_price(i.instrument)
-                    value = self.currency_fx(i.instrument.currency,
-                                             value,
-                                             ccy)
-                    # print('%s -> %s' % (i.instrument, value))
-                    summary.current_value += value
-                if i.currency:
-                    value = self.currency_fx(i.currency,
-                                             i.position_size_with_sign,
-                                             ccy)
-                    # print('%s -> %s' % (i.currency, value))
-                    summary.current_value += value
-            summary.p_and_l = summary.current_value - summary.invested_value
-            self.instance.summary = summary
+        for i in items:
+            if i.instrument:
+                i.price_history = self.find_price_history(i.instrument, self.instance.end_date)
+                i.instrument_principal_currency_history = self.find_currency_history(i.instrument.pricing_currency, self.instance.end_date)
+                i.instrument_accrued_currency_history = self.find_currency_history(i.instrument.accrued_currency, self.instance.end_date)
+            if i.currency:
+                i.currency_history = self.find_currency_history(i.currency, self.instance.end_date)
+
+        # if self.instance.currency:
+        #     summary = BalanceReportSummary()
+        #     ccy = self.instance.currency
+        #
+        #     # for t in self.transactions:
+        #     #     if t.transaction_class.code == TransactionClass.CASH_INFLOW:
+        #     #         value = self.currency_fx(t.transaction_currency,
+        #     #                                  t.position_size_with_sign,
+        #     #                                  ccy)
+        #     #         summary.invested_value += value
+        #
+        #     for i in items:
+        #         if i.instrument:
+        #             value = i.position_size_with_sign * self.instrument_price(i.instrument)
+        #             value = self.currency_fx(i.instrument.currency,
+        #                                      value,
+        #                                      ccy)
+        #             # print('%s -> %s' % (i.instrument, value))
+        #             summary.current_value += value
+        #         if i.currency:
+        #             value = self.currency_fx(i.currency,
+        #                                      i.position_size_with_sign,
+        #                                      ccy)
+        #             # print('%s -> %s' % (i.currency, value))
+        #             summary.current_value += value
+        #     summary.p_and_l = summary.current_value - summary.invested_value
+        #     self.instance.summary = summary
 
         return self.instance

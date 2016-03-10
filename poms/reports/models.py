@@ -36,31 +36,94 @@ class BaseReport(object):
 
 @python_2_unicode_compatible
 class BalanceReportItem(BaseReportItem):
-    def __init__(self, instrument=None, currency=None, position_size_with_sign=0., *args, **kwargs):
+    def __init__(self, instrument=None, currency=None, balance_position=0., *args, **kwargs):
         super(BalanceReportItem, self).__init__(*args, **kwargs)
-        self.instrument = instrument
-        self.currency = currency
-        self.position_size_with_sign = position_size_with_sign  # -> position
+        self.balance_position = balance_position
 
-        # [09.03.16, 17:26:30] Instrument - name
-        # [09.03.16, 17:27:03] Position
-        # [09.03.16, 17:27:28] Inst Ccy - name
-        # [09.03.16, 17:27:40] Inst Price Multiplier
-        # [09.03.16, 17:29:19] Price (Price hist + date)
-        # [09.03.16, 17:29:36] Acctrued Multiplier (price hist + date)
-        # [09.03.16, 17:31:18] Principal, loc ccy
-        # [09.03.16, 17:32:06] Accrue, loc ccy
-        # [09.03.16, 17:32:51] FX rate (instrm ccy + fx hist + date)
-        # [09.03.16, 17:35:38] Principal, $
-        # [09.03.16, 17:35:49] Accrued, $
-        # [09.03.16, 17:36:15] Mkt Value, $ = Principla + Accrued
-        # [09.03.16, 17:36:27] SUM (Mkt Value, $)
+        self.currency = currency
+        self.currency_history = None  # -> CurrencyHistory
+
+        self.instrument = instrument
+        self.price_history = None  # -> PriceHistory
+        self.instrument_principal_currency_history = None  # -> CurrencyHistory
+        self.instrument_accrued_currency_history = None  # -> CurrencyHistory
 
     def __str__(self):
         if self.instrument:
             return "%s - %s" % (self.instrument, self.position_size_with_sign)
         else:
             return "%s - %s" % (self.currency, self.position_size_with_sign)
+
+    @property
+    def currency_name(self):
+        return getattr(self.currency, 'name', None)
+        # return instance.currency.name if instance.currency else None
+
+    @property
+    def currency_fx_rate(self):
+        if getattr(self.currency, 'is_system', False):
+            return 1.
+        return getattr(self.currency_history, 'fx_rate', 0.) or 0.
+
+    @property
+    def instrument_name(self):
+        return getattr(self.instrument, 'name', None)
+        # return instance.instrument.name if instance.instrument else None
+
+    @property
+    def instrument_principal_pricing_ccy(self):
+        c = getattr(self.instrument, 'pricing_currency', None)
+        return getattr(c, 'name', None)
+
+    @property
+    def instrument_price_multiplier(self):
+        return getattr(self.instrument, 'price_multiplier', 1.) or 1.
+
+    @property
+    def instrument_accrued_pricing_ccy(self):
+        c = getattr(self.instrument, 'accrued_currency', None)
+        return getattr(c, 'name', None)
+
+    @property
+    def instrument_accrued_multiplier(self):
+        return getattr(self.instrument, 'accrued_multiplier', 1.) or 1.
+
+    @property
+    def instrument_principal_price(self):
+        return getattr(self.price_history, 'principal_price', 0.) or 0.
+
+    @property
+    def instrument_accrued_price(self):
+        return getattr(self.price_history, 'accrued_price', 0.) or 0.
+
+    @property
+    def principal_value_intrument_principal_ccy(self):
+        return self.instrument_price_multiplier * self.balance_position * self.instrument_principal_price
+
+    @property
+    def accrued_value_intrument_principal_ccy(self):
+        return self.instrument_accrued_multiplier * self.balance_position * self.instrument_accrued_price
+
+    @property
+    def instrument_principal_fx_rate(self):
+        if getattr(self.instrument_principal_currency_history, 'is_system', False):
+            return 1.
+        return getattr(self.instrument_principal_currency_history, 'fx_rate', 0.) or 0.
+
+    @property
+    def instrument_accrued_fx_rate(self):
+        if getattr(self.instrument_accrued_currency_history, 'is_system', False):
+            return 1.
+        return getattr(self.instrument_accrued_currency_history, 'fx_rate', 0.) or 0.
+
+    @property
+    def market_value_system_ccy(self):
+        if self.instrument:
+            return self.principal_value_intrument_principal_ccy * self.instrument_principal_fx_rate + \
+                   self.accrued_value_intrument_principal_ccy * self.instrument_accrued_fx_rate
+        if self.currency:
+            return self.balance_position * self.currency_fx_rate
+        return 0.
 
 
 @python_2_unicode_compatible
