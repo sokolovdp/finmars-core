@@ -33,10 +33,15 @@ class BalanceReportBuilder(BaseReportBuilder):
     def build(self):
         items_index = {}
         items = []
+        invested_items_index = {}
+        invested_items = []
         for t in self.transactions:
             if t.transaction_class.code == TransactionClass.CASH_INFLOW:
                 cash_item = self._get_currency_item(items_index, items, t.transaction_currency)
                 cash_item.balance_position += t.position_size_with_sign
+
+                invested_item = self._get_currency_item(invested_items_index, invested_items, t.transaction_currency)
+                invested_item.balance_position += t.position_size_with_sign
             elif t.transaction_class.code in [TransactionClass.BUY, TransactionClass.SELL]:
                 instrument_item = self._get_instrument_item(items_index, items, t.instrument)
                 instrument_item.balance_position += t.position_size_with_sign
@@ -48,7 +53,13 @@ class BalanceReportBuilder(BaseReportBuilder):
                 cash_item.balance_position += t.cash_consideration
 
         items = sorted(items, key=lambda x: x.pk)
-        self.instance.results = items
+        self.instance.items = items
+
+        invested_items = sorted(invested_items, key=lambda x: x.pk)
+        self.instance.invested_items = invested_items
+
+        for i in invested_items:
+            i.currency_history = self.find_currency_history(i.currency, self.instance.end_date)
 
         for i in items:
             if i.instrument:

@@ -20,12 +20,12 @@ class BaseReportItem(object):
 
 @python_2_unicode_compatible
 class BaseReport(object):
-    def __init__(self, master_user=None, begin_date=None, end_date=None, instruments=None, results=None):
+    def __init__(self, master_user=None, begin_date=None, end_date=None, instruments=None, items=None):
         self.master_user = master_user
         self.begin_date = begin_date
         self.end_date = end_date
         self.instruments = instruments
-        self.results = results
+        self.items = items
 
     def __str__(self):
         return "%s for %s (%s, %s)" % (self.__class__.__name__, self.master_user, self.begin_date, self.end_date)
@@ -128,22 +128,43 @@ class BalanceReportItem(BaseReportItem):
 
 @python_2_unicode_compatible
 class BalanceReportSummary(object):
-    def __init__(self, invested_value=0., current_value=0., p_and_l=0.):
-        self.invested_value = invested_value
-        self.current_value = current_value
-        self.p_and_l = p_and_l
+    def __init__(self, report):
+        self.report = report
+        # self.invested_value_system_ccy = 0.
+        # self.current_value_system_ccy = -1132
 
     def __str__(self):
-        return "%s: invested=%s, current=%s, p_and_l=%s" % \
-               (self.currency, self.invested_value, self.current_value, self.p_and_l)
+        return "%s: invested_value_system_ccy=%s, current_value_system_ccy=%s, p_l_system_ccy=%s" % \
+               (self.currency, self.invested_value_system_ccy, self.current_value_system_ccy, self.p_l_system_ccy)
+
+    @property
+    def invested_value_system_ccy(self):
+        v = 0.
+        if self.report.invested_items:
+            for i in self.report.invested_items:
+                v += i.market_value_system_ccy
+        return v
+
+    @property
+    def current_value_system_ccy(self):
+        v = 0.
+        if self.report.items:
+            for i in self.report.items:
+                v += i.market_value_system_ccy
+        return v
+
+    @property
+    def p_l_system_ccy(self):
+        return self.current_value_system_ccy - self.invested_value_system_ccy
 
 
 # @python_2_unicode_compatible
 class BalanceReport(BaseReport):
     def __init__(self, currency=None, summary=None, *args, **kwargs):
         super(BalanceReport, self).__init__(*args, **kwargs)
+        self.summary = BalanceReportSummary(self)
+        self.invested_items = None
         self.currency = currency
-        self.summary = summary
 
 
 # ----------------------------------------------------------------------------------------------------------------------

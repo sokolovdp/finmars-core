@@ -64,43 +64,12 @@ class BalanceReportItemSerializer(BaseReportItemSerializer):
 
     def update(self, instance, validated_data):
         return instance
-    #
-    # def get_instrument_name(self, instance):
-    #     return getattr(instance.instrument, 'name', None)
-    #     # return instance.instrument.name if instance.instrument else None
-    #
-    # def get_instrument_principal_pricing_ccy(self, instance):
-    #     c = getattr(instance.instrument, 'pricing_currency', None)
-    #     return getattr(c, 'name', None)
-    #
-    # def get_instrument_price_multiplier(self, instance):
-    #     return getattr(instance.instrument, 'price_multiplier', None)
-    #
-    # def get_instrument_accrued_pricing_ccy(self, instance):
-    #     c = getattr(instance.instrument, 'accrued_currency', None)
-    #     return getattr(c, 'name', None)
-    #
-    # def get_instrument_accrued_multiplier(self, instance):
-    #     return getattr(instance.instrument, 'accrued_multiplier', None)
-    #
-    # def get_instrument_principal_price(self, instance):
-    #     return getattr(instance.price_history, 'principal_price', None)
-    #
-    # def get_instrument_accrued_price(self, instance):
-    #     return getattr(instance.price_history, 'accrued_price', None)
-    #
-    # def get_currency_name(self, instance):
-    #     return getattr(instance.currency, 'name', None)
-    #     # return instance.currency.name if instance.currency else None
-    #
-    # def get_currency_fx_rate(self, instance):
-    #     return getattr(instance.currency_history, 'fx_rate', None)
 
 
 class BalanceReportSummarySerializer(serializers.Serializer):
-    invested_value = serializers.FloatField(read_only=True, help_text=_('position size with sign'))
-    current_value = serializers.FloatField(read_only=True, help_text=_('position size with sign'))
-    p_and_l = serializers.FloatField(read_only=True, help_text=_('position size with sign'))
+    invested_value_system_ccy = serializers.FloatField(read_only=True, help_text=_('invested value in system currency'))
+    current_value_system_ccy = serializers.FloatField(read_only=True, help_text=_('current value in system currency'))
+    p_l_system_ccy = serializers.FloatField(read_only=True, help_text=_('position size with sign'))
 
     def create(self, validated_data):
         return BalanceReportSummary(**validated_data)
@@ -111,8 +80,10 @@ class BalanceReportSummarySerializer(serializers.Serializer):
 
 class BalanceReportSerializer(BaseReportSerializer):
     currency = serializers.PrimaryKeyRelatedField(queryset=Currency.objects.all(), required=False, allow_null=True)
-    results = BalanceReportItemSerializer(many=True, read_only=True,
-                                          help_text=_('balance for currency and instruments'))
+    invested_items = BalanceReportItemSerializer(many=True, read_only=True,
+                                                 help_text=_('invested'))
+    items = BalanceReportItemSerializer(many=True, read_only=True,
+                                        help_text=_('items'))
     summary = BalanceReportSummarySerializer(read_only=True,
                                              help_text=_('total in specified currency'))
 
@@ -124,7 +95,6 @@ class BalanceReportSerializer(BaseReportSerializer):
 
 
 # ----------------------------------------------------------------------------------------------------------------------
-
 
 
 class PLReportItemSerializer(BaseReportItemSerializer):
