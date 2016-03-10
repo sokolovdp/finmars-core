@@ -58,7 +58,7 @@ class BalanceReportItemSerializer(BaseReportItemSerializer):
     instrument_accrued_fx_rate = serializers.FloatField(read_only=True, help_text=_(''))
 
     principal_value_instrument_system_ccy = serializers.FloatField(read_only=True)
-    accrued_value_intsrument_system_ccy = serializers.FloatField(read_only=True)
+    accrued_value_instrument_system_ccy = serializers.FloatField(read_only=True)
 
     market_value_system_ccy = serializers.FloatField(read_only=True)
 
@@ -103,11 +103,15 @@ class PLReportTransactionSerializer(BaseReportItemSerializer):
     transaction_class = serializers.PrimaryKeyRelatedField(read_only=True)
     transaction_class_code = serializers.CharField(read_only=True)
 
-    instrument = serializers.PrimaryKeyRelatedField(read_only=True)
-    instrument_name = serializers.CharField(read_only=True)
-
     transaction_currency = serializers.PrimaryKeyRelatedField(read_only=True)
     transaction_currency_name = serializers.CharField(read_only=True)
+
+    instrument = serializers.PrimaryKeyRelatedField(read_only=True)
+    instrument_name = serializers.CharField(read_only=True)
+    instrument_pricing_currency = serializers.PrimaryKeyRelatedField(read_only=True)
+    instrument_pricing_currency_name = serializers.CharField(read_only=True)
+    instrument_accrued_currency = serializers.PrimaryKeyRelatedField(read_only=True)
+    instrument_accrued_currency_name = serializers.CharField(read_only=True)
 
     position_size_with_sign = serializers.FloatField(read_only=True)
     cash_consideration = serializers.FloatField(read_only=True)

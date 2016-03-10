@@ -106,13 +106,15 @@ class BalanceReportItem(BaseReportItem):
 
     @property
     def instrument_principal_fx_rate(self):
-        if getattr(self.instrument_principal_currency_history, 'is_system', False):
+        pricing_currency =  getattr(self.instrument, 'pricing_currency', None)
+        if getattr(pricing_currency, 'is_system', False):
             return 1.
         return getattr(self.instrument_principal_currency_history, 'fx_rate', 0.) or 0.
 
     @property
     def instrument_accrued_fx_rate(self):
-        if getattr(self.instrument_accrued_currency_history, 'is_system', False):
+        accrued_currency =  getattr(self.instrument, 'accrued_currency', None)
+        if getattr(accrued_currency, 'is_system', False):
             return 1.
         return getattr(self.instrument_accrued_currency_history, 'fx_rate', 0.) or 0.
 
@@ -204,6 +206,15 @@ class PLReportTransaction(BaseReportItem):
     def transaction_class_code(self):
         return getattr(self.transaction_class, 'code', None)
 
+
+    @property
+    def transaction_currency(self):
+        return getattr(self._transaction, 'transaction_currency', None)
+
+    @property
+    def transaction_currency_name(self):
+        return getattr(self.transaction_currency, 'name', None)
+
     @property
     def instrument(self):
         return getattr(self._transaction, 'instrument', None)
@@ -213,12 +224,20 @@ class PLReportTransaction(BaseReportItem):
         return getattr(self.instrument, 'name', None)
 
     @property
-    def transaction_currency(self):
-        return getattr(self._transaction, 'transaction_currency', None)
+    def instrument_pricing_currency(self):
+        return getattr(self.instrument, 'pricing_currency', None)
 
     @property
-    def transaction_currency_name(self):
-        return getattr(self.transaction_currency, 'name', None)
+    def instrument_pricing_currency_name(self):
+        return getattr(self.instrument_pricing_currency, 'name', None)
+
+    @property
+    def instrument_accrued_currency(self):
+        return getattr(self.instrument, 'accrued_currency', None)
+
+    @property
+    def instrument_accrued_currency_name(self):
+        return getattr(self.instrument_accrued_currency, 'name', None)
 
     @property
     def position_size_with_sign(self):

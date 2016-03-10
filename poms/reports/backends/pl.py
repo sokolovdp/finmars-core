@@ -21,6 +21,9 @@ class PLReportBuilder(BalanceReportBuilder):
 
                 summary.principal_with_sign_system_ccy += i.principal_value_instrument_system_ccy
                 summary.carry_with_sign_system_ccy += i.accrued_value_instrument_system_ccy
+
+                pli.principal_with_sign_system_ccy += i.principal_value_instrument_system_ccy
+                pli.carry_with_sign_system_ccy += i.accrued_value_instrument_system_ccy
         self.instance.items = items
 
         for t in self.transactions:
@@ -41,6 +44,11 @@ class PLReportBuilder(BalanceReportBuilder):
             elif t.transaction_class.code == TransactionClass.INSTRUMENT_PL:
                 plt.currency = t.settlement_currency
                 plt.currency_history = self.find_currency_history(t.settlement_currency, self.instance.end_date)
+
+                pli = items_index['%s' % t.instrument.id]
+                pli.principal_with_sign_system_ccy += plt.principal_with_sign_system_ccy
+                pli.carry_with_sign_system_ccy += plt.carry_with_sign_system_ccy
+                pli.overheads_with_sign_system_ccy += plt.overheads_with_sign_system_ccy
 
             summary.principal_with_sign_system_ccy += plt.principal_with_sign_system_ccy
             summary.carry_with_sign_system_ccy += plt.carry_with_sign_system_ccy

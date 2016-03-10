@@ -61,8 +61,10 @@ class BaseReportBuilder(object):
     #         return value
 
     def find_currency_history(self, currency, date=None):
-        if currency is None or currency.is_system:
+        if currency is None:
             return None
+        if currency.is_system:
+            return CurrencyHistory(currency=currency, date=date, fx_rate=1.)
         if not date:
             date = timezone.now().date()
         p = CurrencyHistory.objects.filter(currency=currency, date__lte=date).order_by('date').last()
