@@ -19,7 +19,7 @@ admin.site.register(InstrumentClassifier, InstrumentClassifierAdmin)
 
 class InstrumentAdmin(admin.ModelAdmin):
     model = Instrument
-    list_display = ['name', 'currency', 'accrued_currency', 'price_multiplier', 'master_user']
+    list_display = ['name', 'pricing_currency', 'accrued_currency', 'price_multiplier', 'master_user']
 
     # def get_classifiers(self, obj):
     #     return ', '.join(p.name for p in obj.classifiers.all())
