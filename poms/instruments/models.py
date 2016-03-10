@@ -41,10 +41,11 @@ class Instrument(models.Model):
     name = models.CharField(max_length=255, verbose_name=_('name'))
     short_name = models.CharField(max_length=50, null=True, blank=True, verbose_name=_('short name'))
     notes = models.TextField(null=True, blank=True)
-    pricing_currency = models.ForeignKey(Currency, on_delete=models.PROTECT)
-    accrued_currency = models.ForeignKey(Currency, null=True, blank=True, related_name='instruments_accrued', on_delete=models.PROTECT)
     is_active = models.BooleanField(default=True)
+    pricing_currency = models.ForeignKey(Currency, on_delete=models.PROTECT)
     price_multiplier = models.FloatField(default=1.)
+    accrued_currency = models.ForeignKey(Currency, null=True, blank=True, related_name='instruments_accrued', on_delete=models.PROTECT)
+    accrued_multiplier = models.FloatField(default=1.)
     classifiers = TreeManyToManyField(InstrumentClassifier, blank=True)
 
     class Meta:
