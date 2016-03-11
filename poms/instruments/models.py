@@ -77,4 +77,4 @@ class PriceHistory(models.Model):
         ]
 
     def __str__(self):
-        return '%s at %s - %s' % (self.instrument, self.date, self.price,)
+        return '%s at %s - %s' % (self.instrument, self.date, self.principal_price,)
