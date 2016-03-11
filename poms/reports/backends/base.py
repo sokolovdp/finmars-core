@@ -1,5 +1,7 @@
 from __future__ import unicode_literals
 
+from collections import Counter
+
 from django.conf import settings
 from django.utils import timezone
 from django.utils.functional import cached_property
@@ -83,7 +85,7 @@ class BaseReportBuilder(object):
     def annotate_avco_multiplier(self):
         in_stock = {}
         for_sale = {}
-        rolling_position = 0.
+        rolling_position_counter = Counter()
 
         for transaction in self.transactions:
             if transaction.transaction_class.code not in [TransactionClass.BUY, TransactionClass.SELL]:
@@ -94,6 +96,7 @@ class BaseReportBuilder(object):
             instrument = transaction.instrument
             position_size_with_sign = transaction.position_size_with_sign
             transaction.avco_multiplier = 0.
+            rolling_position = rolling_position_counter['%s' % instrument.pk]
             if position_size_with_sign > 0.:  # покупка
                 instrument_for_sale = for_sale.get(instrument, [])
                 if instrument_for_sale:  # есть прошлые продажи, которые надо закрыть
@@ -129,22 +132,24 @@ class BaseReportBuilder(object):
                     transaction.avco_multiplier = 0.
                     for_sale[instrument] = for_sale.get(instrument, []) + [transaction]
             rolling_position += position_size_with_sign
+            rolling_position_counter['%s' % instrument.pk] = rolling_position
             transaction.rolling_position = rolling_position
 
     def annotate_fifo_multiplier(self):
         in_stock = {}
         for_sale = {}
-        rolling_position = 0.
+        rolling_position_counter = Counter()
 
         for transaction in self.transactions:
             if transaction.transaction_class.code not in [TransactionClass.BUY, TransactionClass.SELL]:
-                transaction.avco_multiplier = None
-                transaction.fifo_multiplier = None
-                transaction.rolling_position = None
+                # transaction.avco_multiplier = None
+                # transaction.fifo_multiplier = None
+                # transaction.rolling_position = None
                 continue
             instrument = transaction.instrument
             position_size_with_sign = transaction.position_size_with_sign
             transaction.fifo_multiplier = 0.
+            rolling_position = rolling_position_counter['%s' % instrument.pk]
             if position_size_with_sign > 0.:  # покупка
                 instrument_for_sale = for_sale.get(instrument, [])
                 balance = position_size_with_sign
@@ -189,4 +194,5 @@ class BaseReportBuilder(object):
                     for_sale[instrument] = for_sale.get(instrument, []) + [transaction]
 
             rolling_position += position_size_with_sign
+            rolling_position_counter['%s' % instrument.pk] = rolling_position
             transaction.rolling_position = rolling_position
