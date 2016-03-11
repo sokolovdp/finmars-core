@@ -350,11 +350,6 @@ class YTMTransactionSerializer(serializers.ModelSerializer):
 
     position_size_with_sign = serializers.FloatField(read_only=True)
 
-    cash_consideration = serializers.FloatField(read_only=True)
-    principal_with_sign = serializers.FloatField(read_only=True)
-    carry_with_sign = serializers.FloatField(read_only=True)
-    overheads_with_sign = serializers.FloatField(read_only=True)
-
     avco_multiplier = serializers.FloatField(read_only=True)
     fifo_multiplier = serializers.FloatField(read_only=True)
     rolling_position = serializers.FloatField(read_only=True)
@@ -375,7 +370,6 @@ class YTMTransactionSerializer(serializers.ModelSerializer):
             'instrument', 'instrument_name',
             'settlement_currency', 'settlement_currency_name',
             'position_size_with_sign',
-            'cash_consideration', 'principal_with_sign', 'carry_with_sign', 'overheads_with_sign',
             'rolling_position',
             'avco_multiplier', 'fifo_multiplier',
             'ytm', 'time_invested',
