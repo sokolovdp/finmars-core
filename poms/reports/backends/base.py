@@ -40,41 +40,45 @@ class BaseReportBuilder(object):
     def system_currency(self):
         return Currency.objects.get(master_user__isnull=True, user_code=settings.CURRENCY_CODE)
 
-    # def currency_fx(self, src_ccy, value, dst_ccy, date=None):
-    #     if src_ccy.is_system and dst_ccy.is_system:
-    #         return value
-    #     if not date:
-    #         date = timezone.now().date()
-    #     if src_ccy.is_system and not dst_ccy.is_system:
-    #         c = CurrencyHistory.objects.filter(currency=dst_ccy, date__lte=date).order_by('date').last()
-    #         if c is None:
-    #             return 0.
-    #         return value / c.fx_rate
-    #     elif not src_ccy.is_system and dst_ccy.is_system:
-    #         c = CurrencyHistory.objects.filter(currency=src_ccy, date__lte=date).order_by('date').last()
-    #         if c is None:
-    #             return 0.
-    #         return value * c.fx_rate
-    #     else:
-    #         value = self.currency_fx(src_ccy, value, self.system_currency, date)
-    #         value = self.currency_fx(self.system_currency, value, dst_ccy, date)
-    #         return value
-
     def find_currency_history(self, currency, date=None):
         if currency is None:
             return None
         if currency.is_system:
             return CurrencyHistory(currency=currency, date=date, fx_rate=1.)
         if not date:
-            date = timezone.now().date()
+            date = self.instance.end_date or timezone.now().date()
         p = CurrencyHistory.objects.filter(currency=currency, date__lte=date).order_by('date').last()
+        if p is None:
+            return CurrencyHistory(currency=currency, date=date, fx_rate=0.)
         return p
 
     def find_price_history(self, instrument, date=None):
         if not date:
-            date = timezone.now().date()
+            date = self.instance.end_date or timezone.now().date()
         p = PriceHistory.objects.filter(instrument=instrument, date__lte=date).order_by('date').last()
+        if p is None:
+            return PriceHistory(instrument=instrument, date=date, principal_price=0., accrued_price=0., factor=0.)
         return p
+
+    def annotate_fx_rates_and_prices(self):
+        for t in self.transactions:
+            if t.transaction_currency:
+                t.transaction_currency_history = self.find_currency_history(t.transaction_currency)
+                t.transaction_currency_fx_rate = getattr(t.transaction_currency_history, 'fx_rate', 0.) or 0.
+
+            if t.settlement_currency:
+                t.settlement_currency_history = self.find_currency_history(t.settlement_currency)
+                t.settlement_currency_fx_rate = getattr(t.settlement_currency_history, 'fx_rate', 0.) or 0.
+
+            # if t.transaction_class.code == TransactionClass.CASH_INFLOW:
+            #     t.currency = t.transaction_currency
+            #     t.transaction_currency_fx_rate = self.find_currency_history(t.transaction_currency, self.instance.end_date)
+            # elif t.transaction_class.code in [TransactionClass.BUY, TransactionClass.SELL]:
+            #     t.currency = t.settlement_currency
+            #     t.currency_history = self.find_currency_history(t.settlement_currency, self.instance.end_date)
+            # elif t.transaction_class.code == TransactionClass.INSTRUMENT_PL:
+            #     t.currency = t.settlement_currency
+            #     t.currency_history = self.find_currency_history(t.settlement_currency, self.instance.end_date)
 
     def annotate_avco_multiplier(self):
         in_stock = {}

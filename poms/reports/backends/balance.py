@@ -1,9 +1,10 @@
 from __future__ import unicode_literals
 
 import logging
+from functools import reduce
 
 from poms.reports.backends.base import BaseReportBuilder
-from poms.reports.models import BalanceReportItem, BalanceReportSummary
+from poms.reports.models import BalanceReportItem
 from poms.transactions.models import TransactionClass
 
 _l = logging.getLogger('poms.reports')
@@ -59,14 +60,46 @@ class BalanceReportBuilder(BaseReportBuilder):
         self.instance.invested_items = invested_items
 
         for i in invested_items:
-            i.currency_history = self.find_currency_history(i.currency, self.instance.end_date)
+            i.currency_history = self.find_currency_history(i.currency)
+            i.currency_fx_rate = getattr(i.currency_history, 'fx_rate', 0.)
+            i.market_value_system_ccy = i.balance_position * i.currency_fx_rate
 
         for i in items:
             if i.instrument:
                 i.price_history = self.find_price_history(i.instrument, self.instance.end_date)
-                i.instrument_principal_currency_history = self.find_currency_history(i.instrument.pricing_currency, self.instance.end_date)
-                i.instrument_accrued_currency_history = self.find_currency_history(i.instrument.accrued_currency, self.instance.end_date)
-            if i.currency:
-                i.currency_history = self.find_currency_history(i.currency, self.instance.end_date)
+                i.instrument_principal_currency_history = self.find_currency_history(i.instrument.pricing_currency)
+                i.instrument_accrued_currency_history = self.find_currency_history(i.instrument.accrued_currency)
+
+                # i.instrument_name = i.instrument.name
+                # i.instrument_principal_pricing_ccy = getattr(i.instrument.pricing_currency, 'name', None)
+                i.instrument_price_multiplier = i.instrument.price_multiplier if i.instrument.price_multiplier is not None else 1.
+                # i.instrument_accrued_pricing_ccy = getattr(i.instrument.accrued_currency, 'name', None)
+                i.instrument_accrued_multiplier = i.instrument.accrued_multiplier if i.instrument.accrued_multiplier is not None else 1.
+
+                i.instrument_principal_price = getattr(i.price_history, 'principal_price', 0.) or 0.
+                i.instrument_accrued_price = getattr(i.price_history, 'accrued_price', 0.) or 0.
+
+                i.principal_value_instrument_principal_ccy = i.instrument_price_multiplier * i.balance_position * i.instrument_principal_price
+                i.accrued_value_instrument_principal_ccy = i.instrument_accrued_multiplier * i.balance_position * i.instrument_accrued_price
+
+                i.instrument_principal_fx_rate = getattr(i.instrument_principal_currency_history, 'fx_rate', 0.) or 0.
+                i.instrument_accrued_fx_rate = getattr(i.instrument_accrued_currency_history, 'fx_rate', 0.) or 0.
+
+                i.principal_value_instrument_system_ccy = i.principal_value_instrument_principal_ccy * i.instrument_principal_fx_rate
+                i.accrued_value_instrument_system_ccy = i.accrued_value_instrument_principal_ccy * i.instrument_accrued_fx_rate
+
+                i.market_value_system_ccy = i.principal_value_instrument_system_ccy + \
+                                            i.accrued_value_instrument_system_ccy
+            elif i.currency:
+                # i.currency_name = i.currency.name
+                i.currency_history = self.find_currency_history(i.currency)
+                i.currency_fx_rate = getattr(i.currency_history, 'fx_rate', 0.)
+                i.principal_value_instrument_system_ccy = i.balance_position * i.currency_fx_rate
+                i.market_value_system_ccy = i.principal_value_instrument_system_ccy
+
+        summary = self.instance.summary
+        summary.invested_value_system_ccy = reduce(lambda x, y: x + y.market_value_system_ccy, invested_items, 0.)
+        summary.current_value_system_ccy = reduce(lambda x, y: x + y.market_value_system_ccy, items, 0.)
+        summary.p_l_system_ccy = summary.current_value_system_ccy - summary.invested_value_system_ccy
 
         return self.instance

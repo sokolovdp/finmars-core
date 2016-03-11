@@ -60,8 +60,8 @@ class Currency(models.Model):
 class CurrencyHistory(models.Model):
     currency = models.ForeignKey(Currency, related_name='histories')
     # date = models.DateTimeField(db_index=True, default=timezone.now)
-    date = models.DateField(null=False, blank=False, db_index=True, default=timezone.now)
-    fx_rate = models.FloatField(verbose_name=_('fx rate'))
+    date = models.DateField(db_index=True, default=timezone.now)
+    fx_rate = models.FloatField(default=0., verbose_name=_('fx rate'))
 
     class Meta:
         verbose_name = _('currency')
