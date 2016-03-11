@@ -1,4 +1,5 @@
-from __future__ import unicode_literals
+# -*- coding: utf-8 -*-
+from __future__ import unicode_literals, division
 
 import logging
 from functools import reduce

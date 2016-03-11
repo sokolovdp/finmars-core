@@ -1,3 +1,5 @@
+# -*- coding: utf-8 -*-
+from __future__ import unicode_literals, division
 from django.utils import timezone
 
 from poms.reports.backends.base import BaseReportBuilder
@@ -7,7 +9,7 @@ from poms.transactions.models import TransactionClass
 
 class YTMReportBuilder(BaseReportBuilder):
     def _get_ytm_item(self, items, items_index, instrument):
-        key = 'instrument:%s' % instrument.id
+        key = '%s' % instrument.id
         i = items_index.get(key, None)
         if i is None:
             i = YTMReportInstrument(instrument=instrument)
@@ -30,6 +32,7 @@ class YTMReportBuilder(BaseReportBuilder):
 
         now = self.instance.end_date or timezone.now().date()
 
+        # calculate total position for instrument
         for t in self.transactions:
             if t.transaction_class.code in [TransactionClass.BUY, TransactionClass.SELL]:
                 item = self._get_ytm_item(items, items_index, t.instrument)

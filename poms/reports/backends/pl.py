@@ -1,3 +1,6 @@
+# -*- coding: utf-8 -*-
+from __future__ import unicode_literals, division
+
 from poms.reports.backends.balance import BalanceReportBuilder
 from poms.reports.models import PLReportInstrument
 from poms.transactions.models import TransactionClass

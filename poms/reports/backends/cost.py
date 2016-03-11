@@ -1,3 +1,5 @@
+# -*- coding: utf-8 -*-
+from __future__ import unicode_literals, division
 from poms.reports.backends.base import BaseReportBuilder
 from poms.reports.models import CostReportInstrument
 from poms.transactions.models import TransactionClass
