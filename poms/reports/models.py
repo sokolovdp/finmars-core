@@ -109,12 +109,12 @@ class PLReportInstrument(BaseReportItem):
     def __str__(self):
         return 'PLReportItem'
 
-    # @property
-    # def instrument_name(self):
-    #     return getattr(self.instrument, 'name', None)
+        # @property
+        # def instrument_name(self):
+        #     return getattr(self.instrument, 'name', None)
 
-    # def total_system_ccy(self):
-    #     return self.principal_with_sign_system_ccy + self.carry_with_sign_system_ccy + self.overheads_with_sign_system_ccy
+        # def total_system_ccy(self):
+        #     return self.principal_with_sign_system_ccy + self.carry_with_sign_system_ccy + self.overheads_with_sign_system_ccy
 
 
 class PLReportSummary(object):
@@ -124,9 +124,9 @@ class PLReportSummary(object):
         self.overheads_with_sign_system_ccy = 0.
         self.total_system_ccy = 0.
 
-    # @property
-    # def total_system_ccy(self):
-    #     return self.principal_with_sign_system_ccy + self.carry_with_sign_system_ccy + self.overheads_with_sign_system_ccy
+        # @property
+        # def total_system_ccy(self):
+        #     return self.principal_with_sign_system_ccy + self.carry_with_sign_system_ccy + self.overheads_with_sign_system_ccy
 
 
 # @python_2_unicode_compatible
@@ -158,3 +158,19 @@ class CostReport(BaseReport):
         self.multiplier_class = multiplier_class
         self.transactions = []
 
+
+# ----------------------------------------------------------------------------------------------------------------------
+
+
+class YTMReportInstrument(BaseReportItem):
+    def __init__(self, instrument=None, *args, **kwargs):
+        super(YTMReportInstrument, self).__init__(pk=getattr(instrument, 'pk', None), *args, **kwargs)
+        self.instrument = instrument
+
+
+# @python_2_unicode_compatible
+class YTMReport(BaseReport):
+    def __init__(self, multiplier_class=None, *args, **kwargs):
+        super(YTMReport, self).__init__(*args, **kwargs)
+        self.multiplier_class = multiplier_class
+        self.transactions = []

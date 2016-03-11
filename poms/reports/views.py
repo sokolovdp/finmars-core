@@ -8,8 +8,9 @@ from poms.reports.backends.balance import BalanceReportBuilder
 from poms.reports.backends.cost import CostReportBuilder
 from poms.reports.backends.pl import PLReportBuilder
 from poms.reports.backends.simple_multipliers import SimpleMultipliersReportBuilder
+from poms.reports.backends.ytm import YTMReportBuilder
 from poms.reports.serializers import BalanceReportSerializer, SimpleMultipliersReportSerializer, PLReportSerializer, \
-    CostReportSerializer
+    CostReportSerializer, YTMReportSerializer
 
 
 class BaseReportViewSet(viewsets.ViewSet):
@@ -53,6 +54,11 @@ class PLReportViewSet(BaseReportViewSet):
 class CostReportViewSet(BaseReportViewSet):
     serializer_class = CostReportSerializer
     report_builder_class = CostReportBuilder
+
+
+class YTMReportViewSet(BaseReportViewSet):
+    serializer_class = YTMReportSerializer
+    report_builder_class = YTMReportBuilder
 
 
 class SimpleMultipliersReportViewSet(viewsets.ViewSet):
