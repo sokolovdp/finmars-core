@@ -19,9 +19,7 @@ class BaseReportBuilder(object):
         self.currency_history_cache = {}
         self.price_history_cache = {}
 
-    @cached_property
-    def transactions(self):
-        # load transaction using user filter
+    def _get_transaction_qs(self):
         if self.queryset is None:
             queryset = Transaction.objects
         else:
@@ -41,8 +39,12 @@ class BaseReportBuilder(object):
             if self.instance.instruments:
                 queryset = queryset.filter(instrument__in=self.instance.instruments)
         queryset = queryset.order_by('transaction_date', 'id')
+        return queryset
+
+    @cached_property
+    def transactions(self):
+        queryset = self._get_transaction_qs()
         return list(queryset.all())
-        # return Transaction.objects.none()
 
     def build(self):
         raise NotImplementedError('subclasses of BaseReportBuilder must provide an build() method')
@@ -115,9 +117,6 @@ class BaseReportBuilder(object):
 
         for transaction in self.transactions:
             if transaction.transaction_class.code not in [TransactionClass.BUY, TransactionClass.SELL]:
-                # transaction.avco_multiplier = None
-                # transaction.fifo_multiplier = None
-                # transaction.rolling_position = None
                 continue
             instrument = transaction.instrument
             position_size_with_sign = transaction.position_size_with_sign
@@ -168,9 +167,6 @@ class BaseReportBuilder(object):
 
         for transaction in self.transactions:
             if transaction.transaction_class.code not in [TransactionClass.BUY, TransactionClass.SELL]:
-                # transaction.avco_multiplier = None
-                # transaction.fifo_multiplier = None
-                # transaction.rolling_position = None
                 continue
             instrument = transaction.instrument
             position_size_with_sign = transaction.position_size_with_sign

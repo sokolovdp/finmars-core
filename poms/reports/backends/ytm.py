@@ -1,5 +1,7 @@
 # -*- coding: utf-8 -*-
 from __future__ import unicode_literals, division
+
+import six
 from django.utils import timezone
 
 from poms.reports.backends.base import BaseReportBuilder
@@ -8,14 +10,18 @@ from poms.transactions.models import TransactionClass
 
 
 class YTMReportBuilder(BaseReportBuilder):
-    def _get_ytm_item(self, items, items_index, instrument):
+    def _get_transaction_qs(self):
+        queryset = super(YTMReportBuilder, self)._get_transaction_qs()
+        queryset = queryset.filter(transaction_class__code__in=[TransactionClass.BUY, TransactionClass.SELL])
+        return queryset
+
+    def _get_ytm_item(self, items, instrument):
         key = '%s' % instrument.id
-        i = items_index.get(key, None)
+        i = items.get(key, None)
         if i is None:
             i = YTMReportInstrument(instrument=instrument)
             i.pk = instrument.id
-            items_index[key] = i
-            items.append(i)
+            items[key] = i
         return i
 
     def build(self):
@@ -27,21 +33,20 @@ class YTMReportBuilder(BaseReportBuilder):
             self.annotate_fifo_multiplier()
             multiplier_attr = 'fifo_multiplier'
 
-        items = []
-        items_index = {}
+        items = {}
 
         now = self.instance.end_date or timezone.now().date()
 
         # calculate total position for instrument
         for t in self.transactions:
             if t.transaction_class.code in [TransactionClass.BUY, TransactionClass.SELL]:
-                item = self._get_ytm_item(items, items_index, t.instrument)
+                item = self._get_ytm_item(items, t.instrument)
                 item.position += t.position_size_with_sign
 
         for t in self.transactions:
             if t.transaction_class.code in [TransactionClass.BUY, TransactionClass.SELL]:
                 multiplier = getattr(t, multiplier_attr, 0.)
-                item = self._get_ytm_item(items, items_index, t.instrument)
+                item = self._get_ytm_item(items, t.instrument)
 
                 t.ytm = 0.
                 t.time_invested = (now - t.transaction_date).days
@@ -52,6 +57,9 @@ class YTMReportBuilder(BaseReportBuilder):
 
                 item.ytm += t.weighted_ytm
                 item.time_invested += t.weighted_time_invested
+
+        items = [i for i in six.itervalues(items)]
+        items = sorted(items, key=lambda x: x.pk)
 
         self.instance.transactions = self.transactions
         self.instance.items = items

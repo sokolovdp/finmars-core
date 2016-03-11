@@ -4,6 +4,8 @@ from __future__ import unicode_literals, division
 import logging
 from functools import reduce
 
+import six
+
 from poms.reports.backends.base import BaseReportBuilder
 from poms.reports.models import BalanceReportItem
 from poms.transactions.models import TransactionClass
@@ -12,51 +14,49 @@ _l = logging.getLogger('poms.reports')
 
 
 class BalanceReportBuilder(BaseReportBuilder):
-    def _get_currency_item(self, items_index, items, currency):
+    def _get_currency_item(self, items, currency):
         key = 'currency:%s' % currency.id
-        i = items_index.get(key, None)
+        i = items.get(key, None)
         if i is None:
             i = BalanceReportItem(currency=currency)
             i.pk = key
-            items_index[key] = i
-            items.append(i)
+            items[key] = i
         return i
 
-    def _get_instrument_item(self, items_index, items, instrument):
+    def _get_instrument_item(self, items, instrument):
         key = 'instrument:%s' % instrument.id
-        i = items_index.get(key, None)
+        i = items.get(key, None)
         if i is None:
             i = BalanceReportItem(instrument=instrument)
             i.pk = key
-            items_index[key] = i
-            items.append(i)
+            items[key] = i
         return i
 
     def build(self):
-        items_index = {}
-        items = []
-        invested_items_index = {}
-        invested_items = []
+        items = {}
+        invested_items = {}
         for t in self.transactions:
             if t.transaction_class.code == TransactionClass.CASH_INFLOW:
-                cash_item = self._get_currency_item(items_index, items, t.transaction_currency)
+                cash_item = self._get_currency_item(items, t.transaction_currency)
                 cash_item.balance_position += t.position_size_with_sign
 
-                invested_item = self._get_currency_item(invested_items_index, invested_items, t.transaction_currency)
+                invested_item = self._get_currency_item(invested_items, t.transaction_currency)
                 invested_item.balance_position += t.position_size_with_sign
             elif t.transaction_class.code in [TransactionClass.BUY, TransactionClass.SELL]:
-                instrument_item = self._get_instrument_item(items_index, items, t.instrument)
+                instrument_item = self._get_instrument_item(items, t.instrument)
                 instrument_item.balance_position += t.position_size_with_sign
 
-                cash_item = self._get_currency_item(items_index, items, t.settlement_currency)
+                cash_item = self._get_currency_item(items, t.settlement_currency)
                 cash_item.balance_position += t.cash_consideration
             elif t.transaction_class.code == TransactionClass.INSTRUMENT_PL:
-                cash_item = self._get_currency_item(items_index, items, t.settlement_currency)
+                cash_item = self._get_currency_item(items, t.settlement_currency)
                 cash_item.balance_position += t.cash_consideration
 
+        items = [i for i in six.itervalues(items)]
         items = sorted(items, key=lambda x: x.pk)
         self.instance.items = items
 
+        invested_items = [i for i in six.itervalues(invested_items)]
         invested_items = sorted(invested_items, key=lambda x: x.pk)
         self.instance.invested_items = invested_items
 

@@ -1,6 +1,8 @@
 # -*- coding: utf-8 -*-
 from __future__ import unicode_literals, division
 
+import six
+
 from poms.reports.backends.balance import BalanceReportBuilder
 from poms.reports.models import PLReportInstrument
 from poms.transactions.models import TransactionClass
@@ -9,22 +11,24 @@ from poms.transactions.models import TransactionClass
 class PLReportBuilder(BalanceReportBuilder):
     def build(self):
         super(PLReportBuilder, self).build()
+        balance_items = self.instance.items
 
         summary = self.instance.summary
-        items_index = {}
-        items = []
+        items = {}
 
-        for i in self.instance.items:
+        for i in balance_items:
             if i.instrument:
                 pli = PLReportInstrument(i.instrument)
-                items.append(pli)
-                items_index['%s' % pli.pk] = pli
+                items['%s' % pli.pk] = pli
 
                 summary.principal_with_sign_system_ccy += i.principal_value_instrument_system_ccy
                 summary.carry_with_sign_system_ccy += i.accrued_value_instrument_system_ccy
 
                 pli.principal_with_sign_system_ccy += i.principal_value_instrument_system_ccy
                 pli.carry_with_sign_system_ccy += i.accrued_value_instrument_system_ccy
+
+        items = [i for i in six.itervalues(items)]
+        items = sorted(items, key=lambda x: x.pk)
 
         for i in items:
             i.total_system_ccy = i.principal_with_sign_system_ccy + \
