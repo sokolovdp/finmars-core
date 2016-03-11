@@ -31,6 +31,8 @@ class BaseReportBuilder(object):
         return self.instance.end_date or self.now
 
     def _get_transaction_qs(self):
+        assert self.instance is not None, "instance is None!"
+        assert self.instance.master_user is not None, "master_user is None!"
         if self.queryset is None:
             queryset = Transaction.objects
         else:
@@ -41,15 +43,13 @@ class BaseReportBuilder(object):
                                              'instrument__pricing_currency',
                                              'instrument__accrued_currency',
                                              'settlement_currency')
-        if self.instance:
-            assert self.instance.master_user is not None, "master_user is None!"
-            queryset = queryset.filter(master_user=self.instance.master_user)
-            if self.instance.begin_date:
-                queryset = queryset.filter(transaction_date__gte=self.instance.begin_date)
-            if self.instance.end_date:
-                queryset = queryset.filter(transaction_date__lte=self.instance.end_date)
-            if self.instance.instruments:
-                queryset = queryset.filter(instrument__in=self.instance.instruments)
+        queryset = queryset.filter(master_user=self.instance.master_user)
+        if self.instance.begin_date:
+            queryset = queryset.filter(transaction_date__gte=self.begin_date)
+        # if self.instance.end_date:
+        queryset = queryset.filter(transaction_date__lte=self.end_date)
+        if self.instance.instruments:
+            queryset = queryset.filter(instrument__in=self.instance.instruments)
         queryset = queryset.order_by('transaction_date', 'id')
         return queryset
 
