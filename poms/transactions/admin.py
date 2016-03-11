@@ -1,6 +1,7 @@
 from __future__ import unicode_literals
 
 from django.contrib import admin
+from import_export.admin import ImportExportModelAdmin
 
 from poms.transactions.models import TransactionClass, Transaction
 
@@ -23,7 +24,7 @@ admin.site.register(TransactionClass, TransactionClassAdmin)
 # admin.site.register(TransactionClassifier, TransactionClassifierAdmin)
 
 
-class TransactionAdmin(admin.ModelAdmin):
+class TransactionAdmin(ImportExportModelAdmin, admin.ModelAdmin):
     model = Transaction
     save_as = True
     list_display = ['id', 'transaction_date', 'transaction_class', 'instrument', 'transaction_currency',

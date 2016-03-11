@@ -2,6 +2,7 @@ from __future__ import unicode_literals
 
 from django.contrib import admin
 from django.utils.translation import ugettext_lazy as _
+from import_export.admin import ImportExportModelAdmin
 from mptt.admin import MPTTModelAdmin
 
 from poms.instruments.models import Instrument, PriceHistory, InstrumentClassifier
@@ -31,7 +32,7 @@ class InstrumentAdmin(admin.ModelAdmin):
 admin.site.register(Instrument, InstrumentAdmin)
 
 
-class PriceHistoryAdmin(admin.ModelAdmin):
+class PriceHistoryAdmin(ImportExportModelAdmin, admin.ModelAdmin):
     model = PriceHistory
     list_display = ['id', 'date', 'instrument', 'principal_price', 'accrued_price', 'factor']
     date_hierarchy = 'date'

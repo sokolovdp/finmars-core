@@ -45,6 +45,8 @@ INSTALLED_APPS = [
     'guardian',
     'mptt',
 
+    'import_export',
+
     'poms.users',
     'poms.audit',
     'poms.http_sessions',

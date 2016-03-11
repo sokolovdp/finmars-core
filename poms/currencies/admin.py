@@ -2,6 +2,7 @@ from __future__ import unicode_literals
 
 from django.contrib import admin
 from django.utils.translation import ugettext_lazy as _
+from import_export.admin import ImportExportModelAdmin
 
 from poms.currencies.models import Currency, CurrencyHistory
 
@@ -45,7 +46,7 @@ class CurrencyAdmin(admin.ModelAdmin):
 admin.site.register(Currency, CurrencyAdmin)
 
 
-class CurrencyHistoryAdmin(admin.ModelAdmin):
+class CurrencyHistoryAdmin(ImportExportModelAdmin, admin.ModelAdmin):
     model = CurrencyHistory
     list_display = ['id', 'currency', 'date', 'fx_rate']
     list_filter = ['date']
