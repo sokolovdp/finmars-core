@@ -16,14 +16,22 @@ class BaseReportBuilder(object):
     def __init__(self, instance=None, queryset=None):
         self.instance = instance
         self.queryset = queryset
+        self.currency_history_cache = {}
+        self.price_history_cache = {}
 
     @cached_property
     def transactions(self):
+        # load transaction using user filter
         if self.queryset is None:
             queryset = Transaction.objects
         else:
             queryset = self.queryset
-        queryset = queryset.prefetch_related('transaction_class', 'instrument')
+        queryset = queryset.prefetch_related('transaction_class',
+                                             'transaction_currency',
+                                             'instrument',
+                                             'instrument__pricing_currency',
+                                             'instrument__accrued_currency',
+                                             'settlement_currency')
         if self.instance:
             queryset = queryset.filter(master_user=self.instance.master_user)
             if self.instance.begin_date:
@@ -50,18 +58,26 @@ class BaseReportBuilder(object):
             return CurrencyHistory(currency=currency, date=date, fx_rate=1.)
         if not date:
             date = self.instance.end_date or timezone.now().date()
-        p = CurrencyHistory.objects.filter(currency=currency, date__lte=date).order_by('date').last()
-        if p is None:
-            return CurrencyHistory(currency=currency, date=date, fx_rate=0.)
-        return p
+        key = '%s:%s' % (currency.id, date)
+        h = self.currency_history_cache.get(key, None)
+        if h is None:
+            h = CurrencyHistory.objects.filter(currency=currency, date__lte=date).order_by('date').last()
+            if h is None:
+                h = CurrencyHistory(currency=currency, date=date, fx_rate=0.)
+            self.currency_history_cache[key] = h
+        return h
 
     def find_price_history(self, instrument, date=None):
         if not date:
             date = self.instance.end_date or timezone.now().date()
-        p = PriceHistory.objects.filter(instrument=instrument, date__lte=date).order_by('date').last()
-        if p is None:
-            return PriceHistory(instrument=instrument, date=date, principal_price=0., accrued_price=0., factor=0.)
-        return p
+        key = '%s:%s' % (instrument.id, date)
+        h = self.price_history_cache.get(key, None)
+        if h is None:
+            h = PriceHistory.objects.filter(instrument=instrument, date__lte=date).order_by('date').last()
+            if h is None:
+                h = PriceHistory(instrument=instrument, date=date, principal_price=0., accrued_price=0., factor=0.)
+            self.price_history_cache[key] = h
+        return h
 
     def annotate_fx_rate(self, obj, currency_attr, date=None):
         currency = getattr(obj, currency_attr)
