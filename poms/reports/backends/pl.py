@@ -22,9 +22,13 @@ class PLReportBuilder(BalanceReportBuilder):
 
                 pli.principal_with_sign_system_ccy += i.principal_value_instrument_system_ccy
                 pli.carry_with_sign_system_ccy += i.accrued_value_instrument_system_ccy
-        self.instance.items = items
 
-        self.annotate_fx_rates_and_prices()
+        for i in items:
+            i.total_system_ccy = i.principal_with_sign_system_ccy + \
+                                 i.carry_with_sign_system_ccy + \
+                                 i.overheads_with_sign_system_ccy
+
+        self.annotate_fx_rates()
 
         for t in self.transactions:
             t.transaction_class_code = t.transaction_class.code
@@ -52,40 +56,11 @@ class PLReportBuilder(BalanceReportBuilder):
             summary.carry_with_sign_system_ccy += getattr(t, 'carry_with_sign_system_ccy', 0.)
             summary.overheads_with_sign_system_ccy += getattr(t, 'overheads_with_sign_system_ccy', 0.)
 
-        # for t in self.transactions:
-        #     plt = PLReportTransaction(t)
-        #     transactions.append(plt)
-        #
-        #     is_update_report_instrument = False
-        #     is_update_summary = False
-        #
-        #     if t.transaction_class.code == TransactionClass.CASH_INFLOW:
-        #         plt.currency = t.transaction_currency
-        #         plt.currency_history = self.find_currency_history(t.transaction_currency, self.instance.end_date)
-        #     elif t.transaction_class.code in [TransactionClass.BUY, TransactionClass.SELL]:
-        #         plt.currency = t.settlement_currency
-        #         plt.currency_history = self.find_currency_history(t.settlement_currency, self.instance.end_date)
-        #
-        #         is_update_report_instrument = True
-        #         is_update_summary = True
-        #     elif t.transaction_class.code == TransactionClass.INSTRUMENT_PL:
-        #         plt.currency = t.settlement_currency
-        #         plt.currency_history = self.find_currency_history(t.settlement_currency, self.instance.end_date)
-        #
-        #         is_update_report_instrument = True
-        #         is_update_summary = True
-        #
-        #     if is_update_report_instrument:
-        #         pli = items_index['%s' % t.instrument.id]
-        #         pli.principal_with_sign_system_ccy += plt.principal_with_sign_system_ccy
-        #         pli.carry_with_sign_system_ccy += plt.carry_with_sign_system_ccy
-        #         pli.overheads_with_sign_system_ccy += plt.overheads_with_sign_system_ccy
-        #
-        #     if is_update_summary:
-        #         summary.principal_with_sign_system_ccy += plt.principal_with_sign_system_ccy
-        #         summary.carry_with_sign_system_ccy += plt.carry_with_sign_system_ccy
-        #         summary.overheads_with_sign_system_ccy += plt.overheads_with_sign_system_ccy
+        summary.total_system_ccy = summary.principal_with_sign_system_ccy + \
+                                   summary.carry_with_sign_system_ccy + \
+                                   summary.overheads_with_sign_system_ccy
 
+        self.instance.items = items
         self.instance.transactions = self.transactions
 
         return self.instance

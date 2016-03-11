@@ -62,25 +62,34 @@ class BaseReportBuilder(object):
             return PriceHistory(instrument=instrument, date=date, principal_price=0., accrued_price=0., factor=0.)
         return p
 
-    def annotate_fx_rates_and_prices(self):
+    def annotate_fx_rate(self, obj, currency_attr, date=None):
+        currency = getattr(obj, currency_attr)
+        currency_history = self.find_currency_history(currency, date=date)
+        currency_fx_rate = getattr(currency_history, 'fx_rate', 0.) or 0.
+        setattr(obj, '%s_history' % currency_attr, currency_history)
+        setattr(obj, '%s_fx_rate' % currency_attr, currency_fx_rate)
+
+    def annotate_price(self, transaction, date=None):
+        instrument = transaction.instrument
+        price_history = self.find_price_history(instrument)
+        transaction.price_history = price_history
+
+    def annotate_fx_rates(self, date=None):
         for t in self.transactions:
             if t.transaction_currency:
-                t.transaction_currency_history = self.find_currency_history(t.transaction_currency)
-                t.transaction_currency_fx_rate = getattr(t.transaction_currency_history, 'fx_rate', 0.) or 0.
+                self.annotate_fx_rate(t, 'transaction_currency', date=date)
+                # t.transaction_currency_history = self.find_currency_history(t.transaction_currency)
+                # t.transaction_currency_fx_rate = getattr(t.transaction_currency_history, 'fx_rate', 0.) or 0.
 
             if t.settlement_currency:
-                t.settlement_currency_history = self.find_currency_history(t.settlement_currency)
-                t.settlement_currency_fx_rate = getattr(t.settlement_currency_history, 'fx_rate', 0.) or 0.
+                self.annotate_fx_rate(t, 'settlement_currency', date=date)
+                # t.settlement_currency_history = self.find_currency_history(t.settlement_currency)
+                # t.settlement_currency_fx_rate = getattr(t.settlement_currency_history, 'fx_rate', 0.) or 0.
 
-            # if t.transaction_class.code == TransactionClass.CASH_INFLOW:
-            #     t.currency = t.transaction_currency
-            #     t.transaction_currency_fx_rate = self.find_currency_history(t.transaction_currency, self.instance.end_date)
-            # elif t.transaction_class.code in [TransactionClass.BUY, TransactionClass.SELL]:
-            #     t.currency = t.settlement_currency
-            #     t.currency_history = self.find_currency_history(t.settlement_currency, self.instance.end_date)
-            # elif t.transaction_class.code == TransactionClass.INSTRUMENT_PL:
-            #     t.currency = t.settlement_currency
-            #     t.currency_history = self.find_currency_history(t.settlement_currency, self.instance.end_date)
+    def annotate_prices(self, date=None):
+        for t in self.transactions:
+            if t.instrument:
+                self.annotate_price(t, date=date)
 
     def annotate_avco_multiplier(self):
         in_stock = {}
@@ -89,9 +98,9 @@ class BaseReportBuilder(object):
 
         for transaction in self.transactions:
             if transaction.transaction_class.code not in [TransactionClass.BUY, TransactionClass.SELL]:
-                transaction.avco_multiplier = None
-                transaction.fifo_multiplier = None
-                transaction.rolling_position = None
+                # transaction.avco_multiplier = None
+                # transaction.fifo_multiplier = None
+                # transaction.rolling_position = None
                 continue
             instrument = transaction.instrument
             position_size_with_sign = transaction.position_size_with_sign

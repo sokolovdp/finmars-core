@@ -104,16 +104,17 @@ class PLReportInstrument(BaseReportItem):
         self.principal_with_sign_system_ccy = 0.
         self.carry_with_sign_system_ccy = 0.
         self.overheads_with_sign_system_ccy = 0.
+        self.total_system_ccy = 0.
 
     def __str__(self):
         return 'PLReportItem'
 
-    @property
-    def instrument_name(self):
-        return getattr(self.instrument, 'name', None)
+    # @property
+    # def instrument_name(self):
+    #     return getattr(self.instrument, 'name', None)
 
-    def total_system_ccy(self):
-        return self.principal_with_sign_system_ccy + self.carry_with_sign_system_ccy + self.overheads_with_sign_system_ccy
+    # def total_system_ccy(self):
+    #     return self.principal_with_sign_system_ccy + self.carry_with_sign_system_ccy + self.overheads_with_sign_system_ccy
 
 
 class PLReportSummary(object):
@@ -121,10 +122,11 @@ class PLReportSummary(object):
         self.principal_with_sign_system_ccy = 0.
         self.carry_with_sign_system_ccy = 0.
         self.overheads_with_sign_system_ccy = 0.
+        self.total_system_ccy = 0.
 
-    @property
-    def total_system_ccy(self):
-        return self.principal_with_sign_system_ccy + self.carry_with_sign_system_ccy + self.overheads_with_sign_system_ccy
+    # @property
+    # def total_system_ccy(self):
+    #     return self.principal_with_sign_system_ccy + self.carry_with_sign_system_ccy + self.overheads_with_sign_system_ccy
 
 
 # @python_2_unicode_compatible
@@ -137,6 +139,16 @@ class PLReport(BaseReport):
 
 
 # ----------------------------------------------------------------------------------------------------------------------
+
+
+class CostReportInstrument(BaseReportItem):
+    def __init__(self, instrument=None, *args, **kwargs):
+        super(CostReportInstrument, self).__init__(pk=getattr(instrument, 'pk', None), *args, **kwargs)
+        self.instrument = instrument
+        self.position = 0.
+        self.cost_system_ccy = 0.
+        self.cost_instrument_ccy = 0.
+        self.cost_price_adjusted = 0.
 
 
 # @python_2_unicode_compatible

@@ -181,7 +181,7 @@ class PLReportTransactionSerializer(serializers.ModelSerializer):
 
 class PLReportInstrumentSerializer(BaseReportItemSerializer):
     instrument = serializers.PrimaryKeyRelatedField(read_only=True)
-    instrument_name = serializers.CharField(read_only=True)
+    instrument_name = serializers.SerializerMethodField()
 
     principal_with_sign_system_ccy = serializers.FloatField(read_only=True)
     carry_with_sign_system_ccy = serializers.FloatField(read_only=True)
@@ -193,6 +193,9 @@ class PLReportInstrumentSerializer(BaseReportItemSerializer):
 
     def update(self, instance, validated_data):
         return instance
+
+    def get_instrument_name(self, instance):
+        return getattr(instance.instrument, 'name', None)
 
 
 class PLReportSummarySerializer(serializers.Serializer):
@@ -252,6 +255,10 @@ class CostTransactionSerializer(serializers.ModelSerializer):
     fifo_multiplier = serializers.FloatField(read_only=True)
     rolling_position = serializers.FloatField(read_only=True)
 
+    remaining = serializers.FloatField(read_only=True)
+    remaining_position_cost_settlement_ccy = serializers.FloatField(read_only=True)
+    remaining_position_cost_system_ccy = serializers.FloatField(read_only=True)
+
     class Meta:
         model = Transaction
         fields = [
@@ -264,6 +271,7 @@ class CostTransactionSerializer(serializers.ModelSerializer):
             'cash_consideration', 'principal_with_sign', 'carry_with_sign', 'overheads_with_sign',
             'rolling_position',
             'avco_multiplier', 'fifo_multiplier',
+            'remaining', 'remaining_position_cost_settlement_ccy', 'remaining_position_cost_system_ccy',
         ]
 
     def get_transaction_class_code(self, instance):
@@ -279,9 +287,43 @@ class CostTransactionSerializer(serializers.ModelSerializer):
         return getattr(instance.settlement_currency, 'name', None)
 
 
+class CostReportInstrumentSerializer(BaseReportItemSerializer):
+    instrument = serializers.PrimaryKeyRelatedField(read_only=True)
+    instrument_name = serializers.SerializerMethodField()
+
+    pricing_currency_name = serializers.SerializerMethodField(read_only=True)
+    pricing_currency_fx_rate = serializers.SerializerMethodField()
+    price_multiplier = serializers.SerializerMethodField()
+    position = serializers.FloatField(read_only=True)
+    cost_system_ccy = serializers.FloatField(read_only=True)
+    cost_instrument_ccy = serializers.FloatField(read_only=True)
+    cost_price = serializers.FloatField(read_only=True)
+    cost_price_adjusted = serializers.FloatField(read_only=True)
+
+    def create(self, validated_data):
+        return PLReportInstrument(**validated_data)
+
+    def update(self, instance, validated_data):
+        return instance
+
+    def get_instrument_name(self, instance):
+        return getattr(instance.instrument, 'name', None)
+
+    def get_pricing_currency_name(self, instance):
+        pricing_currency = getattr(instance.instrument, 'pricing_currency', None)
+        return getattr(pricing_currency, 'name', None)
+
+    def get_pricing_currency_fx_rate(self, instance):
+        pricing_currency_fx_rate = getattr(instance.instrument, 'pricing_currency_fx_rate', None)
+        return pricing_currency_fx_rate
+
+    def get_price_multiplier(self, instance):
+        return getattr(instance.instrument, 'price_multiplier', None)
+
 class CostReportSerializer(BaseReportSerializer):
     multiplier_class = serializers.ChoiceField(default='avco', choices=[['avco', _('avco')], ['fifo', _('fifo')]])
     transactions = CostTransactionSerializer(many=True, read_only=True, help_text=_('Transactions with miltipliers'))
+    items = CostReportInstrumentSerializer(many=True, read_only=True)
 
     def create(self, validated_data):
         return CostReport(**validated_data)
