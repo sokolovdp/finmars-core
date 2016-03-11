@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 from __future__ import unicode_literals, division
 
+import datetime
 from collections import Counter
 
 from django.conf import settings
@@ -19,6 +20,16 @@ class BaseReportBuilder(object):
         self.currency_history_cache = {}
         self.price_history_cache = {}
 
+        self.now = timezone.now().date()
+
+    @property
+    def begin_date(self):
+        return self.instance.begin_date or datetime.date.min
+
+    @property
+    def end_date(self):
+        return self.instance.end_date or self.now
+
     def _get_transaction_qs(self):
         if self.queryset is None:
             queryset = Transaction.objects
@@ -31,6 +42,7 @@ class BaseReportBuilder(object):
                                              'instrument__accrued_currency',
                                              'settlement_currency')
         if self.instance:
+            assert self.instance.master_user is not None, "master_user is None!"
             queryset = queryset.filter(master_user=self.instance.master_user)
             if self.instance.begin_date:
                 queryset = queryset.filter(transaction_date__gte=self.instance.begin_date)
@@ -56,10 +68,10 @@ class BaseReportBuilder(object):
     def find_currency_history(self, currency, date=None):
         if currency is None:
             return None
+        if not date:
+            date = self.end_date
         if currency.is_system:
             return CurrencyHistory(currency=currency, date=date, fx_rate=1.)
-        if not date:
-            date = self.instance.end_date or timezone.now().date()
         key = '%s:%s' % (currency.id, date)
         h = self.currency_history_cache.get(key, None)
         if h is None:
@@ -71,7 +83,7 @@ class BaseReportBuilder(object):
 
     def find_price_history(self, instrument, date=None):
         if not date:
-            date = self.instance.end_date or timezone.now().date()
+            date = self.end_date
         key = '%s:%s' % (instrument.id, date)
         h = self.price_history_cache.get(key, None)
         if h is None:

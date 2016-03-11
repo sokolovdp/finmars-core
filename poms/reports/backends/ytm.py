@@ -35,7 +35,7 @@ class YTMReportBuilder(BaseReportBuilder):
 
         items = {}
 
-        now = self.instance.end_date or timezone.now().date()
+        end_date = self.end_date
 
         # calculate total position for instrument
         for t in self.transactions:
@@ -49,7 +49,7 @@ class YTMReportBuilder(BaseReportBuilder):
                 item = self._get_ytm_item(items, t.instrument)
 
                 t.ytm = 0.
-                t.time_invested = (now - t.transaction_date).days
+                t.time_invested = (end_date - t.transaction_date).days
                 t.remaining_position = abs(t.position_size_with_sign * (1 - multiplier))
                 t.remaining_position_percent = t.remaining_position / item.position
                 t.weighted_ytm = t.ytm * t.remaining_position_percent
