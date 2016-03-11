@@ -74,9 +74,9 @@ class Transaction(models.Model):
 
     # other
     is_locked = models.BooleanField(default=False,
-                                    help_text=_('If checked – transaction cannot be changed '))
+                                    help_text=_('If checked - transaction cannot be changed'))
     is_canceled = models.BooleanField(default=False,
-                                      help_text=_('If checked – transaction is cancelled'))
+                                      help_text=_('If checked - transaction is cancelled'))
     factor = models.FloatField(null=True, blank=True,
                                help_text=_('Multiplier (for calculations on the form)'))
     trade_price = models.FloatField(null=True, blank=True,
