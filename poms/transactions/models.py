@@ -63,7 +63,9 @@ class Transaction(models.Model):
     # accounting dates
     accounting_date = models.DateField(default=timezone.now)
     cash_date = models.DateField(default=timezone.now)
-    transaction_date = models.DateField(default=timezone.now, help_text=_("Min of accounting_date and cash_date"))
+    transaction_date = models.DateField(editable=False, default=timezone.now,
+                                        help_text=_("Min of accounting_date and cash_date"))
+
     account_cash = models.ForeignKey(Account, null=True, blank=True, related_name='transaction_cashs')
     account_position = models.ForeignKey(Account, null=True, blank=True, related_name='account_positions')
     account_interim = models.ForeignKey(Account, null=True, blank=True, related_name='account_interims')
@@ -115,3 +117,13 @@ class Transaction(models.Model):
         # @property
         # def cash_flow(self):
         #     return self.principal_with_sign + self.carry_with_sign + self.overheads_with_sign
+
+    def save(self, force_insert=False, force_update=False, using=None, update_fields=None):
+        self.transaction_date = min(self.accounting_date, self.cash_date)
+        if update_fields is not None:
+            if isinstance(update_fields, tuple):
+                update_fields = update_fields + ('transaction_date',)
+            if isinstance(update_fields, list):
+                update_fields = update_fields + ['transaction_date', ]
+        super(Transaction, self).save(force_insert=force_insert, force_update=force_update, using=using,
+                                      update_fields=update_fields)
