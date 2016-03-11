@@ -255,7 +255,7 @@ class CostTransactionSerializer(serializers.ModelSerializer):
     fifo_multiplier = serializers.FloatField(read_only=True)
     rolling_position = serializers.FloatField(read_only=True)
 
-    remaining = serializers.FloatField(read_only=True)
+    remaining_position = serializers.FloatField(read_only=True)
     remaining_position_cost_settlement_ccy = serializers.FloatField(read_only=True)
     remaining_position_cost_system_ccy = serializers.FloatField(read_only=True)
 
@@ -271,7 +271,7 @@ class CostTransactionSerializer(serializers.ModelSerializer):
             'cash_consideration', 'principal_with_sign', 'carry_with_sign', 'overheads_with_sign',
             'rolling_position',
             'avco_multiplier', 'fifo_multiplier',
-            'remaining', 'remaining_position_cost_settlement_ccy', 'remaining_position_cost_system_ccy',
+            'remaining_position', 'remaining_position_cost_settlement_ccy', 'remaining_position_cost_system_ccy',
         ]
 
     def get_transaction_class_code(self, instance):
@@ -359,6 +359,13 @@ class YTMTransactionSerializer(serializers.ModelSerializer):
     fifo_multiplier = serializers.FloatField(read_only=True)
     rolling_position = serializers.FloatField(read_only=True)
 
+    ytm = serializers.FloatField(read_only=True)
+    time_invested = serializers.FloatField(read_only=True)
+    remaining_position = serializers.FloatField(read_only=True)
+    remaining_position_percent = serializers.FloatField(read_only=True)
+    weighted_ytm = serializers.FloatField(read_only=True)
+    weighted_time_invested = serializers.FloatField(read_only=True)
+
     class Meta:
         model = Transaction
         fields = [
@@ -371,6 +378,9 @@ class YTMTransactionSerializer(serializers.ModelSerializer):
             'cash_consideration', 'principal_with_sign', 'carry_with_sign', 'overheads_with_sign',
             'rolling_position',
             'avco_multiplier', 'fifo_multiplier',
+            'ytm', 'time_invested',
+            'remaining_position', 'remaining_position_percent',
+            'weighted_ytm', 'weighted_time_invested',
         ]
 
     def get_transaction_class_code(self, instance):
@@ -389,6 +399,10 @@ class YTMTransactionSerializer(serializers.ModelSerializer):
 class YTMReportInstrumentSerializer(BaseReportItemSerializer):
     instrument = serializers.PrimaryKeyRelatedField(read_only=True)
     instrument_name = serializers.SerializerMethodField()
+
+    position = serializers.FloatField(read_only=True)
+    ytm = serializers.FloatField(read_only=True)
+    time_invested = serializers.FloatField(read_only=True)
 
     def create(self, validated_data):
         return PLReportInstrument(**validated_data)

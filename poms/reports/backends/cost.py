@@ -15,13 +15,13 @@ class CostReportBuilder(BaseReportBuilder):
         return i
 
     def build(self):
-        multiplier = None
+        multiplier_attr = None
         if self.instance.multiplier_class == 'avco':
             self.annotate_avco_multiplier()
-            multiplier = 'avco_multiplier'
+            multiplier_attr = 'avco_multiplier'
         elif self.instance.multiplier_class == 'fifo':
             self.annotate_fifo_multiplier()
-            multiplier = 'fifo_multiplier'
+            multiplier_attr = 'fifo_multiplier'
 
         items = []
         items_index = {}
@@ -30,12 +30,13 @@ class CostReportBuilder(BaseReportBuilder):
 
         for t in self.transactions:
             if t.transaction_class.code in [TransactionClass.BUY, TransactionClass.SELL]:
-                t.remaining = abs(t.position_size_with_sign * (1 - getattr(t, multiplier, 0.)))
-                t.remaining_position_cost_settlement_ccy = t.principal_with_sign * (1 - getattr(t, multiplier, 0.))
+                multiplier = getattr(t, multiplier_attr, 0.)
+                t.remaining_position = abs(t.position_size_with_sign * (1 - multiplier))
+                t.remaining_position_cost_settlement_ccy = t.principal_with_sign * (1 - multiplier)
                 t.remaining_position_cost_system_ccy = t.remaining_position_cost_settlement_ccy * t.settlement_currency_fx_rate
 
                 item = self._get_cost_item(items, items_index, t.instrument)
-                item.position += t.remaining
+                item.position += t.remaining_position
                 item.cost_system_ccy += t.remaining_position_cost_system_ccy
 
         for item in items:

@@ -166,6 +166,9 @@ class YTMReportInstrument(BaseReportItem):
     def __init__(self, instrument=None, *args, **kwargs):
         super(YTMReportInstrument, self).__init__(pk=getattr(instrument, 'pk', None), *args, **kwargs)
         self.instrument = instrument
+        self.position = 0.
+        self.ytm = 0.
+        self.time_invested = 0.
 
 
 # @python_2_unicode_compatible
