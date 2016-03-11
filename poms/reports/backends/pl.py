@@ -30,6 +30,9 @@ class PLReportBuilder(BalanceReportBuilder):
             plt = PLReportTransaction(t)
             transactions.append(plt)
 
+            is_update_report_instrument = False
+            is_update_summary = False
+
             if t.transaction_class.code == TransactionClass.CASH_INFLOW:
                 plt.currency = t.transaction_currency
                 plt.currency_history = self.find_currency_history(t.transaction_currency, self.instance.end_date)
@@ -37,22 +40,25 @@ class PLReportBuilder(BalanceReportBuilder):
                 plt.currency = t.settlement_currency
                 plt.currency_history = self.find_currency_history(t.settlement_currency, self.instance.end_date)
 
-                pli = items_index['%s' % t.instrument.id]
-                pli.principal_with_sign_system_ccy += plt.principal_with_sign_system_ccy
-                pli.carry_with_sign_system_ccy += plt.carry_with_sign_system_ccy
-                pli.overheads_with_sign_system_ccy += plt.overheads_with_sign_system_ccy
+                is_update_report_instrument = True
+                is_update_summary = True
             elif t.transaction_class.code == TransactionClass.INSTRUMENT_PL:
                 plt.currency = t.settlement_currency
                 plt.currency_history = self.find_currency_history(t.settlement_currency, self.instance.end_date)
 
+                is_update_report_instrument = True
+                is_update_summary = True
+
+            if is_update_report_instrument:
                 pli = items_index['%s' % t.instrument.id]
                 pli.principal_with_sign_system_ccy += plt.principal_with_sign_system_ccy
                 pli.carry_with_sign_system_ccy += plt.carry_with_sign_system_ccy
                 pli.overheads_with_sign_system_ccy += plt.overheads_with_sign_system_ccy
 
-            summary.principal_with_sign_system_ccy += plt.principal_with_sign_system_ccy
-            summary.carry_with_sign_system_ccy += plt.carry_with_sign_system_ccy
-            summary.overheads_with_sign_system_ccy += plt.overheads_with_sign_system_ccy
+            if is_update_summary:
+                summary.principal_with_sign_system_ccy += plt.principal_with_sign_system_ccy
+                summary.carry_with_sign_system_ccy += plt.carry_with_sign_system_ccy
+                summary.overheads_with_sign_system_ccy += plt.overheads_with_sign_system_ccy
 
         self.instance.transactions = transactions
 
