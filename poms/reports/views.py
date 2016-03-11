@@ -5,9 +5,11 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
 from poms.reports.backends.balance import BalanceReportBuilder
+from poms.reports.backends.cost import CostReportBuilder
 from poms.reports.backends.pl import PLReportBuilder
 from poms.reports.backends.simple_multipliers import SimpleMultipliersReportBuilder
-from poms.reports.serializers import BalanceReportSerializer, SimpleMultipliersReportSerializer, PLReportSerializer
+from poms.reports.serializers import BalanceReportSerializer, SimpleMultipliersReportSerializer, PLReportSerializer, \
+    CostReportSerializer
 
 
 class BaseReportViewSet(viewsets.ViewSet):
@@ -46,6 +48,11 @@ class BalanceReportViewSet(BaseReportViewSet):
 class PLReportViewSet(BaseReportViewSet):
     serializer_class = PLReportSerializer
     report_builder_class = PLReportBuilder
+
+
+class CostReportViewSet(BaseReportViewSet):
+    serializer_class = CostReportSerializer
+    report_builder_class = CostReportBuilder
 
 
 class SimpleMultipliersReportViewSet(viewsets.ViewSet):

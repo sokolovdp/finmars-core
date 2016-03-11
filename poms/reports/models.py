@@ -96,7 +96,6 @@ class BalanceReport(BaseReport):
 # ----------------------------------------------------------------------------------------------------------------------
 
 
-
 @python_2_unicode_compatible
 class PLReportInstrument(BaseReportItem):
     def __init__(self, instrument=None, *args, **kwargs):
@@ -135,3 +134,15 @@ class PLReport(BaseReport):
         self.transactions = []
         self.items = []
         self.summary = PLReportSummary()
+
+
+# ----------------------------------------------------------------------------------------------------------------------
+
+
+# @python_2_unicode_compatible
+class CostReport(BaseReport):
+    def __init__(self, multiplier_class=None, *args, **kwargs):
+        super(CostReport, self).__init__(*args, **kwargs)
+        self.multiplier_class = multiplier_class
+        self.transactions = []
+

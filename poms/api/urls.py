@@ -35,6 +35,7 @@ router.register(r'transactions/transaction', transactions.TransactionViewSet)
 
 router.register(r'reports/balance', reports.BalanceReportViewSet, "balancereport")
 router.register(r'reports/p-and-l', reports.PLReportViewSet, "plreport")
+router.register(r'reports/cost', reports.CostReportViewSet, "costreport")
 router.register(r'reports/simple-multipliers', reports.SimpleMultipliersReportViewSet, "simplemultipliersreport")
 
 router.register(r'util/ping', views.PingViewSet, "ping")
