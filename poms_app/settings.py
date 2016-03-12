@@ -43,7 +43,7 @@ INSTALLED_APPS = [
     'mptt',
 
     'kombu.transport.django',
-    'djcelery',
+    # 'djcelery',
 
     'reversion',
     'guardian',
@@ -269,8 +269,11 @@ REST_FRAMEWORK = {
 }
 
 if DEV:
-    REST_FRAMEWORK['DEFAULT_RENDERER_CLASSES'] += ('rest_framework.renderers.BrowsableAPIRenderer',
-                                                   'rest_framework.renderers.AdminRenderer',)
+    REST_FRAMEWORK['DEFAULT_RENDERER_CLASSES'] += (
+        'rest_framework.renderers.BrowsableAPIRenderer',
+        'rest_framework.renderers.AdminRenderer',
+        'poms.api.renderers.PlainTextRenderer',
+    )
 
 CURRENCY_CODE = 'USD'
 
