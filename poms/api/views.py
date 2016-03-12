@@ -10,7 +10,7 @@ class PingViewSet(viewsets.ViewSet):
 
     def list(self, request, *args, **kwargs):
         return Response({
-            'messages': 'pong',
+            'message': 'pong',
             'version': request.version,
         })
 
@@ -20,6 +20,6 @@ class ProtectedPingViewSet(viewsets.ViewSet):
 
     def list(self, request, *args, **kwargs):
         return Response({
-            'messages': 'pong',
+            'message': 'pong',
             'version': request.version,
         })
