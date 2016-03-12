@@ -20,19 +20,20 @@ class CurrencySerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Currency
-        fields = ['url', 'id', 'master_user', 'code', 'name', 'is_global']
+        fields = ['url', 'id', 'master_user', 'user_code', 'name', 'short_name', 'is_global']
         readonly_fields = ['is_global']
 
 
 class CurrencyHistorySerializer(serializers.ModelSerializer):
     url = serializers.HyperlinkedIdentityField(view_name='currencyhistory-detail')
+    master_user = serializers.HiddenField(default=CurrentMasterUserDefault())
     currency = CurrencyField()
     fx_rate_expr = serializers.CharField(max_length=50, write_only=True, required=False, allow_null=True,
                                          help_text=_('Expression to calculate fx rate (for example 1/75)'))
 
     class Meta:
         model = CurrencyHistory
-        fields = ['url', 'id', 'currency', 'date', 'fx_rate', 'fx_rate_expr']
+        fields = ['url', 'id', 'master_user', 'currency', 'date', 'fx_rate', 'fx_rate_expr']
 
     def validate(self, data):
         fx_rate_expr = data.pop('fx_rate_expr', None)

@@ -43,12 +43,13 @@ class CurrencyAdmin(admin.ModelAdmin):
     is_system.short_name = _('is system')
     is_system.boolean = True
 
+
 admin.site.register(Currency, CurrencyAdmin)
 
 
 class CurrencyHistoryAdmin(ImportExportModelAdmin, admin.ModelAdmin):
     model = CurrencyHistory
-    list_display = ['id', 'currency', 'date', 'fx_rate']
+    list_display = ['id', 'currency', 'master_user', 'date', 'fx_rate']
     list_filter = ['date']
     date_hierarchy = 'date'
 

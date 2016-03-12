@@ -58,6 +58,8 @@ class Currency(models.Model):
 # ...
 @python_2_unicode_compatible
 class CurrencyHistory(models.Model):
+    master_user = models.ForeignKey(MasterUser, null=True, blank=True, related_name='fx_rates',
+                                    verbose_name=_('master user'))
     currency = models.ForeignKey(Currency, related_name='histories')
     # date = models.DateTimeField(db_index=True, default=timezone.now)
     date = models.DateField(db_index=True, default=timezone.now)
