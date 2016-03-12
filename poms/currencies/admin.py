@@ -49,9 +49,16 @@ admin.site.register(Currency, CurrencyAdmin)
 
 class CurrencyHistoryAdmin(ImportExportModelAdmin, admin.ModelAdmin):
     model = CurrencyHistory
-    list_display = ['id', 'currency', 'master_user', 'date', 'fx_rate']
+    list_display = ['id', 'currency', 'master_user', 'date', 'fx_rate', 'is_global']
     list_filter = ['date']
     date_hierarchy = 'date'
+
+    def is_global(self, obj):
+        return obj.is_global
+
+    is_global.short_name = _('is global')
+    is_global.boolean = True
+    is_global.admin_order_field = 'master_user'
 
 
 admin.site.register(CurrencyHistory, CurrencyHistoryAdmin)

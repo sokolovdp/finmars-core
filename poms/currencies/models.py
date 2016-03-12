@@ -75,3 +75,7 @@ class CurrencyHistory(models.Model):
 
     def __str__(self):
         return '%s @ %s - %s' % (self.currency, self.date, self.fx_rate,)
+
+    @property
+    def is_global(self):
+        return self.master_user_id is None

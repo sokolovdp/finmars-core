@@ -20,7 +20,7 @@ class CurrencySerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Currency
-        fields = ['url', 'id', 'master_user', 'user_code', 'name', 'short_name', 'is_global']
+        fields = ['url', 'id', 'master_user', 'user_code', 'name', 'short_name', 'is_global', 'is_system']
         readonly_fields = ['is_global']
 
 
@@ -33,7 +33,8 @@ class CurrencyHistorySerializer(serializers.ModelSerializer):
 
     class Meta:
         model = CurrencyHistory
-        fields = ['url', 'id', 'master_user', 'currency', 'date', 'fx_rate', 'fx_rate_expr']
+        fields = ['url', 'id', 'master_user', 'currency', 'date', 'fx_rate', 'fx_rate_expr', 'is_global']
+        readonly_fields = ['is_global']
 
     def validate(self, data):
         fx_rate_expr = data.pop('fx_rate_expr', None)
