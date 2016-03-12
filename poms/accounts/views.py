@@ -2,11 +2,30 @@ from __future__ import unicode_literals
 
 from rest_framework.filters import FilterSet, DjangoFilterBackend, OrderingFilter, SearchFilter
 from rest_framework.permissions import IsAuthenticated
-from rest_framework.viewsets import ModelViewSet
+from rest_framework.viewsets import ModelViewSet, ReadOnlyModelViewSet
 
-from poms.accounts.models import Account
-from poms.accounts.serializers import AccountSerializer
+from poms.accounts.models import Account, AccountType, AccountClassifier
+from poms.accounts.serializers import AccountSerializer, AccountTypeSerializer, AccountClassifierSerializer
 from poms.api.filters import IsOwnerByMasterUserFilter
+from poms.api.mixins import DbTransactionMixin
+
+
+class AccountTypeViewSet(DbTransactionMixin, ReadOnlyModelViewSet):
+    queryset = AccountType.objects.all()
+    serializer_class = AccountTypeSerializer
+    permission_classes = [IsAuthenticated, ]
+    filter_backends = [DjangoFilterBackend, OrderingFilter, SearchFilter]
+    ordering_fields = ['code', 'name']
+    search_fields = ['code', 'name']
+
+
+class AccountClassifierViewSet(DbTransactionMixin, ModelViewSet):
+    queryset = AccountClassifier.objects.all()
+    serializer_class = AccountClassifierSerializer
+    permission_classes = [IsAuthenticated, ]
+    filter_backends = [IsOwnerByMasterUserFilter, DjangoFilterBackend, OrderingFilter, SearchFilter, ]
+    ordering_fields = ['user_code', 'name', 'short_name']
+    search_fields = ['user_code', 'name', 'short_name']
 
 
 class AccountFilter(FilterSet):
@@ -15,7 +34,7 @@ class AccountFilter(FilterSet):
         fields = []
 
 
-class AccountViewSet(ModelViewSet):
+class AccountViewSet(DbTransactionMixin, ModelViewSet):
     queryset = Account.objects.all()
     serializer_class = AccountSerializer
     permission_classes = [IsAuthenticated, ]

@@ -4,15 +4,14 @@ from django.db import transaction
 from rest_framework import permissions
 
 
-class TransactionMixin(object):
+class DbTransactionMixin(object):
     def dispatch(self, request, *args, **kwargs):
         method = request.method.upper()
         if method in permissions.SAFE_METHODS:
-            return super(TransactionMixin, self).dispatch(request, *args, **kwargs)
+            return super(DbTransactionMixin, self).dispatch(request, *args, **kwargs)
         else:
             with transaction.atomic():
-                return super(TransactionMixin, self).dispatch(request, *args, **kwargs)
-
+                return super(DbTransactionMixin, self).dispatch(request, *args, **kwargs)
 
 # def initial(self, request, *args, **kwargs):
 #     super(LagoonMixin, self).initial(request, *args, **kwargs)

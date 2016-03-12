@@ -7,8 +7,10 @@ from rest_framework.parsers import JSONParser, MultiPartParser, FormParser
 from rest_framework.response import Response
 from rest_framework.viewsets import ViewSet
 
+from poms.api.mixins import DbTransactionMixin
 
-class ObtainAuthTokenViewSet(ViewSet):
+
+class ObtainAuthTokenViewSet(DbTransactionMixin, ViewSet):
     parser_classes = (FormParser, MultiPartParser, JSONParser,)
     serializer_class = AuthTokenSerializer
 
@@ -21,7 +23,7 @@ class ObtainAuthTokenViewSet(ViewSet):
         return Response({'token': token.key})
 
 
-class LoginViewSet(ViewSet):
+class LoginViewSet(DbTransactionMixin, ViewSet):
     permission_classes = ()
     parser_classes = (FormParser, MultiPartParser, JSONParser,)
     serializer_class = AuthTokenSerializer
@@ -34,7 +36,7 @@ class LoginViewSet(ViewSet):
         return Response({'success': True})
 
 
-class LogoutViewSet(ViewSet):
+class LogoutViewSet(DbTransactionMixin, ViewSet):
     def create(self, request, *args, **kwargs):
         logout(request)
         return Response({'success': True})

@@ -6,8 +6,9 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.viewsets import ModelViewSet
 
 from poms.api.filters import IsOwnerByMasterUserFilter
-from poms.instruments.models import InstrumentClassifier
-from poms.instruments.serializers import InstrumentClassifierSerializer
+from poms.api.mixins import DbTransactionMixin
+from poms.instruments.models import InstrumentClassifier, Instrument, PriceHistory
+from poms.instruments.serializers import InstrumentClassifierSerializer, InstrumentSerializer, PriceHistorySerializer
 
 
 class InstrumentClassifierFilter(FilterSet):
@@ -26,11 +27,39 @@ class InstrumentClassifierFilter(FilterSet):
         return qs
 
 
-class InstrumentClassifierViewSet(ModelViewSet):
+class InstrumentClassifierViewSet(DbTransactionMixin, ModelViewSet):
     queryset = InstrumentClassifier.objects.all()
     serializer_class = InstrumentClassifierSerializer
-    permission_classes = (IsAuthenticated,)
-    filter_backends = (IsOwnerByMasterUserFilter, DjangoFilterBackend, OrderingFilter, SearchFilter,)
+    permission_classes = [IsAuthenticated, ]
+    filter_backends = [IsOwnerByMasterUserFilter, DjangoFilterBackend, OrderingFilter, SearchFilter, ]
     filter_class = InstrumentClassifierFilter
-    ordering_fields = ['name']
-    search_fields = ['name']
+    ordering_fields = ['user_code', 'name', 'short_name']
+    search_fields = ['user_code', 'name', 'short_name']
+
+
+class InstrumentViewSet(DbTransactionMixin, ModelViewSet):
+    queryset = Instrument.objects.all()
+    serializer_class = InstrumentSerializer
+    permission_classes = [IsAuthenticated, ]
+    filter_backends = [IsOwnerByMasterUserFilter, DjangoFilterBackend, OrderingFilter, SearchFilter, ]
+    ordering_fields = ['user_code', 'name', 'short_name']
+    search_fields = ['user_code', 'name', 'short_name']
+
+
+class PriceHistoryFilter(FilterSet):
+    instrument = django_filters.Filter(name='instrument')
+    min_date = django_filters.DateFilter(name='date', lookup_type='gte')
+    max_date = django_filters.DateFilter(name='date', lookup_type='lte')
+
+    class Meta:
+        model = PriceHistory
+        fields = ['instrument', 'min_date', 'max_date']
+
+
+class PriceHistoryViewSet(DbTransactionMixin, ModelViewSet):
+    queryset = PriceHistory.objects.all()
+    serializer_class = PriceHistorySerializer
+    permission_classes = [IsAuthenticated, ]
+    filter_backends = [DjangoFilterBackend, OrderingFilter, ]
+    filter_class = PriceHistoryFilter
+    ordering_fields = ['-date']

@@ -7,12 +7,15 @@ from rest_framework import routers
 import poms.accounts.views as accounts
 import poms.api.views as views
 import poms.audit.views as audit
+import poms.counterparties.views as counterparties
 import poms.currencies.views as currencies
 import poms.http_sessions.views as sessions
 import poms.instruments.views as instruments
-import poms.reports.views as reports
+import poms.portfolios.views as portfolios
 import poms.transactions.views as transactions
+import poms.strategies.views as strategies
 import poms.users.views as users
+import poms.reports.views as reports
 
 router = routers.DefaultRouter()
 router.register(r'users/login', users.LoginViewSet, 'LoginViewSet')
@@ -23,15 +26,28 @@ router.register(r'security/http-session', sessions.SessionViewSet)
 
 router.register(r'audit/authlog', audit.AuthLogViewSet)
 
+router.register(r'accounts/account-type', accounts.AccountTypeViewSet)
+router.register(r'accounts/account-classifier', accounts.AccountClassifierViewSet)
 router.register(r'accounts/account', accounts.AccountViewSet)
 
-router.register(r'instruments/instrument-classifier', instruments.InstrumentClassifierViewSet)
+router.register(r'counterparties/counterparty-classifier', counterparties.CounterpartyClassifierViewSet)
+router.register(r'counterparties/counterparty', counterparties.CounterpartyViewSet)
+router.register(r'counterparties/responsible', counterparties.ResponsibleViewSet)
 
 router.register(r'currencies/currency', currencies.CurrencyViewSet)
 router.register(r'currencies/currency-history', currencies.CurrencyHistoryViewSet)
 
+router.register(r'instruments/instrument-classifier', instruments.InstrumentClassifierViewSet)
+router.register(r'instruments/instrument', instruments.InstrumentViewSet)
+router.register(r'instruments/price-history', instruments.PriceHistoryViewSet)
+
+router.register(r'portfolios/portfolio-classifier', portfolios.PortfolioClassifierViewSet)
+router.register(r'portfolios/portfolio', portfolios.PortfolioViewSet)
+
 router.register(r'transactions/transaction-class', transactions.TransactionClassViewSet)
 router.register(r'transactions/transaction', transactions.TransactionViewSet)
+
+router.register(r'strategies/strategy', strategies.StrategyViewSet)
 
 router.register(r'reports/balance', reports.BalanceReportViewSet, "balancereport")
 router.register(r'reports/pl', reports.PLReportViewSet, "plreport")

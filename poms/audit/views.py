@@ -6,6 +6,7 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.viewsets import ReadOnlyModelViewSet
 
 from poms.api.filters import IsOwnerFilter
+from poms.api.mixins import DbTransactionMixin
 from poms.audit.models import AuthLog
 from poms.audit.serializers import AuthLogSerializer
 
@@ -16,7 +17,7 @@ class AuthLogFilter(FilterSet):
         fields = ['user_ip', 'is_success']
 
 
-class AuthLogViewSet(ReadOnlyModelViewSet):
+class AuthLogViewSet(DbTransactionMixin, ReadOnlyModelViewSet):
     queryset = AuthLog.objects.all()
     serializer_class = AuthLogSerializer
     permission_classes = (IsAuthenticated,)
