@@ -87,7 +87,7 @@ class BalanceReportSummary(object):
 
 # @python_2_unicode_compatible
 class BalanceReport(BaseReport):
-    def __init__(self, currency=None, summary=None, *args, **kwargs):
+    def __init__(self, *args, **kwargs):
         super(BalanceReport, self).__init__(*args, **kwargs)
         self.summary = BalanceReportSummary(self)
         self.invested_items = None
@@ -109,24 +109,13 @@ class PLReportInstrument(BaseReportItem):
     def __str__(self):
         return 'PLReportItem'
 
-        # @property
-        # def instrument_name(self):
-        #     return getattr(self.instrument, 'name', None)
-
-        # def total_system_ccy(self):
-        #     return self.principal_with_sign_system_ccy + self.carry_with_sign_system_ccy + self.overheads_with_sign_system_ccy
-
 
 class PLReportSummary(object):
-    def __init__(self, *args, **kwargs):
+    def __init__(self):
         self.principal_with_sign_system_ccy = 0.
         self.carry_with_sign_system_ccy = 0.
         self.overheads_with_sign_system_ccy = 0.
         self.total_system_ccy = 0.
-
-        # @property
-        # def total_system_ccy(self):
-        #     return self.principal_with_sign_system_ccy + self.carry_with_sign_system_ccy + self.overheads_with_sign_system_ccy
 
 
 # @python_2_unicode_compatible
