@@ -9,11 +9,17 @@ class PingViewSet(viewsets.ViewSet):
     permission_classes = [AllowAny]
 
     def list(self, request, *args, **kwargs):
-        return Response("pong")
+        return Response({
+            'messages': 'pong',
+            'version': request.version,
+        })
 
 
 class ProtectedPingViewSet(viewsets.ViewSet):
     permission_classes = [IsAuthenticated]
 
     def list(self, request, *args, **kwargs):
-        return Response("pong")
+        return Response({
+            'messages': 'pong',
+            'version': request.version,
+        })

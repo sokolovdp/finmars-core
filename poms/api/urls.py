@@ -4,15 +4,15 @@ from django.conf import settings
 from django.conf.urls import patterns, url, include
 from rest_framework import routers
 
-import poms.audit.views as audit
-import poms.http_sessions.views as sessions
 import poms.accounts.views as accounts
-import poms.currencies.views as currencies
-import poms.instruments.views as instruments
-import poms.users.views as users
-import poms.transactions.views as transactions
-import poms.reports.views as reports
 import poms.api.views as views
+import poms.audit.views as audit
+import poms.currencies.views as currencies
+import poms.http_sessions.views as sessions
+import poms.instruments.views as instruments
+import poms.reports.views as reports
+import poms.transactions.views as transactions
+import poms.users.views as users
 
 router = routers.DefaultRouter()
 router.register(r'users/login', users.LoginViewSet, 'LoginViewSet')
@@ -42,7 +42,12 @@ router.register(r'reports/simple-multipliers', reports.SimpleMultipliersReportVi
 router.register(r'util/ping', views.PingViewSet, "ping")
 router.register(r'util/protected-ping', views.ProtectedPingViewSet, "protectedping")
 
-urlpatterns = router.urls
+# urlpatterns = router.urls
+
+urlpatterns = [
+    url(r'^v1/', include(router.urls, namespace='v1')),
+    # url(r'^v2/', include(router.urls, namespace='v2')),
+]
 
 if settings.DEV:
     urlpatterns += patterns('',
