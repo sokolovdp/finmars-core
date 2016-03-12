@@ -1,6 +1,7 @@
 from __future__ import unicode_literals
 
 from rest_framework.compat import unicode_to_repr
+from rest_framework.relations import PrimaryKeyRelatedField
 
 
 class CurrentMasterUserDefault(object):
@@ -18,3 +19,22 @@ class CurrentMasterUserDefault(object):
 
     def __repr__(self):
         return unicode_to_repr('%s()' % self.__class__.__name__)
+
+
+class FilteredPrimaryKeyRelatedField(PrimaryKeyRelatedField):
+    filter_backends = None
+
+    def __init__(self, **kwargs):
+        super(FilteredPrimaryKeyRelatedField, self).__init__(**kwargs)
+
+    def get_queryset(self):
+        queryset = super(FilteredPrimaryKeyRelatedField, self).get_queryset()
+        queryset = self.filter_queryset(queryset)
+        return queryset
+
+    def filter_queryset(self, queryset):
+        if self.filter_backends:
+            request = self.context['request']
+            for backend in list(self.filter_backends):
+                queryset = backend().filter_queryset(request, queryset, None)
+        return queryset

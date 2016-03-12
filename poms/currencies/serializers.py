@@ -4,8 +4,14 @@ from django.utils.encoding import force_text
 from django.utils.translation import ugettext_lazy as _
 from rest_framework import serializers
 
-from poms.api.fields import CurrentMasterUserDefault
+from poms.api.fields import CurrentMasterUserDefault, FilteredPrimaryKeyRelatedField
+from poms.api.filters import IsOwnerByMasterUserOrSystemFilter
 from poms.currencies.models import Currency, CurrencyHistory
+
+
+class CurrencyField(FilteredPrimaryKeyRelatedField):
+    queryset = Currency.objects
+    filter_backends = [IsOwnerByMasterUserOrSystemFilter]
 
 
 class CurrencySerializer(serializers.ModelSerializer):
@@ -20,6 +26,7 @@ class CurrencySerializer(serializers.ModelSerializer):
 
 class CurrencyHistorySerializer(serializers.ModelSerializer):
     url = serializers.HyperlinkedIdentityField(view_name='currencyhistory-detail')
+    currency = CurrencyField()
     fx_rate_expr = serializers.CharField(max_length=50, write_only=True, required=False, allow_null=True,
                                          help_text=_('Expression to calculate fx rate (for example 1/75)'))
 
@@ -34,5 +41,5 @@ class CurrencyHistorySerializer(serializers.ModelSerializer):
             try:
                 data['fx_rate'] = simpleeval.simple_eval(fx_rate_expr)
             except (simpleeval.InvalidExpression, ArithmeticError) as e:
-                raise serializers.ValidationError({'fx_rate_expr':force_text(e)})
+                raise serializers.ValidationError({'fx_rate_expr': force_text(e)})
         return data

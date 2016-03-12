@@ -39,12 +39,14 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'django.contrib.humanize',
-    'debug_toolbar',
     'rest_framework',
-    'reversion',
-    'guardian',
     'mptt',
 
+    'kombu.transport.django',
+    'djcelery',
+
+    'reversion',
+    'guardian',
     'import_export',
 
     'poms.users',
@@ -60,6 +62,9 @@ INSTALLED_APPS = [
     'poms.reports',
     'poms.api',
 ]
+
+if DEBUG:
+    INSTALLED_APPS += ['debug_toolbar', ]
 
 MIDDLEWARE_CLASSES = [
     'poms.middleware.CommonMiddleware',
@@ -165,10 +170,16 @@ USE_TZ = True
 
 USE_ETAGS = True
 
+SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+SECURE_SSL_REDIRECT = not DEBUG
+SESSION_COOKIE_SECURE = not DEBUG
+CSRF_COOKIE_SECURE = not DEBUG
+
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/1.9/howto/static-files/
 
 STATIC_URL = '/static/'
+STATIC_ROOT = os.path.join(BASE_DIR, "static")
 
 CACHES = {
     'default': {
@@ -222,11 +233,11 @@ LOGGING = {
 REST_FRAMEWORK = {
     # 'DEFAULT_PAGINATION_CLASS' : 'rest_framework.pagination.PageNumberPagination',
     'PAGE_SIZE': 20,
-    # 'DEFAULT_AUTHENTICATION_CLASSES': (
-    #     'rest_framework.authentication.SessionAuthentication',
-    #     'rest_framework.authentication.BasicAuthentication',
-    #     'rest_framework.authentication.TokenAuthentication',
-    # ),
+    'DEFAULT_AUTHENTICATION_CLASSES': (
+        'rest_framework.authentication.SessionAuthentication',
+        #     'rest_framework.authentication.BasicAuthentication',
+        #     'rest_framework.authentication.TokenAuthentication',
+    ),
     'DEFAULT_PERMISSION_CLASSES': (
         'rest_framework.permissions.IsAuthenticated',
     ),
@@ -272,3 +283,25 @@ ANONYMOUS_USER_ID = -1
 
 # POSTMAN_AUTO_MODERATE_AS = True
 # NOTIFICATIONS_SOFT_DELETE = True
+
+# email config
+
+DEFAULT_FROM_EMAIL = '"FinMars" <no-reply@finmars.com>'
+SERVER_EMAIL = '"ADMIN: FinMars" <no-reply@finmars.com>'
+EMAIL_HOST = os.environ.get('EMAIL_HOST', None)
+EMAIL_PORT = int(os.environ.get('EMAIL_HOST', "587"))
+EMAIL_HOST_USER = os.environ.get('EMAIL_HOST_USER', None)
+EMAIL_HOST_PASSWORD = os.environ.get('EMAIL_HOST_PASSWORD', None)
+EMAIL_USE_TLS = True
+EMAIL_TIMEOUT = 10
+
+if DEV:
+    ADMINS = MANAGERS = [
+        ['alyakhov', 'alyakhov@quadrogroup.ru'],
+        ['ailyukhin', 'ailyukhin@quadrogroup.ru'],
+    ]
+    EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
+else:
+    ADMINS = []
+    MANAGERS = []
+    EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
