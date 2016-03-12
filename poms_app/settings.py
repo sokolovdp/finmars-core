@@ -113,7 +113,6 @@ DATABASES = {
 
 if DEBUG:
     DATABASES['default'] = {
-        # 'ENGINE': 'django.contrib.gis.db.backends.postgis',
         'ENGINE': 'django.db.backends.postgresql',
         'NAME': 'poms_dev',
         'USER': 'poms_dev',

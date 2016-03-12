@@ -43,7 +43,7 @@ class BaseReportBuilder(object):
                                              'instrument__pricing_currency',
                                              'instrument__accrued_currency',
                                              'settlement_currency')
-        queryset = queryset.filter(master_user=self.instance.master_user)
+        queryset = queryset.filter(master_user=self.instance.master_user, is_canceled=False)
         if self.instance.begin_date:
             queryset = queryset.filter(transaction_date__gte=self.begin_date)
         # if self.instance.end_date:
@@ -122,111 +122,136 @@ class BaseReportBuilder(object):
             if t.instrument:
                 self.annotate_price(t, date=date)
 
+    def annotate_multiplier(self, multiplier_class):
+        multiplier_attr = None
+        if multiplier_class == 'avco':
+            multiplier_attr = 'avco_multiplier'
+            self.annotate_avco_multiplier()
+        elif multiplier_class == 'fifo':
+            multiplier_attr = 'fifo_multiplier'
+            self.annotate_fifo_multiplier()
+        return multiplier_attr
+
     def annotate_avco_multiplier(self):
         in_stock = {}
-        for_sale = {}
-        rolling_position_counter = Counter()
+        not_closed = {}
+        rolling_positions = Counter()
 
-        for transaction in self.transactions:
-            if transaction.transaction_class.code not in [TransactionClass.BUY, TransactionClass.SELL]:
+        for t in self.transactions:
+            t_class = t.transaction_class.code
+            if t_class not in [TransactionClass.BUY, TransactionClass.SELL]:
                 continue
-            instrument = transaction.instrument
-            position_size_with_sign = transaction.position_size_with_sign
-            transaction.avco_multiplier = 0.
-            rolling_position = rolling_position_counter['%s' % instrument.pk]
-            if position_size_with_sign > 0.:  # покупка
-                instrument_for_sale = for_sale.get(instrument, [])
-                if instrument_for_sale:  # есть прошлые продажи, которые надо закрыть
+
+            i = t.instrument
+            i_key = '%s' % i.pk
+
+            t.avco_multiplier = 0.
+            position_size_with_sign = t.position_size_with_sign
+            rolling_position = rolling_positions[i_key]
+
+            # if position_size_with_sign > 0.:  # покупка
+            if t_class == TransactionClass.BUY:
+                i_not_closed = not_closed.get(i_key, [])
+                if i_not_closed:  # есть прошлые продажи, которые надо закрыть
                     if position_size_with_sign + rolling_position >= 0.:  # все есть
-                        transaction.avco_multiplier = abs(rolling_position / position_size_with_sign)
-                        for t in instrument_for_sale:
-                            t.avco_multiplier = 1.
-                        in_stock[instrument] = in_stock.get(instrument, []) + [transaction]
+                        t.avco_multiplier = abs(rolling_position / position_size_with_sign)
+                        for t0 in i_not_closed:
+                            t0.avco_multiplier = 1.
+                        in_stock[i_key] = in_stock.get(i_key, []) + [t]
                     else:  # только частично
-                        transaction.avco_multiplier = 1.
-                        for t in instrument_for_sale:
-                            t.avco_multiplier += abs(
-                                (1. - t.avco_multiplier) * position_size_with_sign / rolling_position)
-                    for_sale[instrument] = [t for t in instrument_for_sale if t.avco_multiplier < 1.]
+                        t.avco_multiplier = 1.
+                        for t0 in i_not_closed:
+                            t0.avco_multiplier += abs(
+                                (1. - t0.avco_multiplier) * position_size_with_sign / rolling_position)
+                    not_closed[i_key] = [t for t in i_not_closed if t.avco_multiplier < 1.]
                 else:  # новая "чистая" покупка
-                    transaction.avco_multiplier = 0.
-                    in_stock[instrument] = in_stock.get(instrument, []) + [transaction]
-            else:  # продажа
-                instrument_in_stock = in_stock.get(instrument, [])
-                if instrument_in_stock:  # есть что продавать
+                    t.avco_multiplier = 0.
+                    in_stock[i_key] = in_stock.get(i_key, []) + [t]
+            # else:  # продажа
+            elif t_class == TransactionClass.SELL:
+                i_in_stock = in_stock.get(i_key, [])
+                if i_in_stock:  # есть что продавать
                     if position_size_with_sign + rolling_position >= 0.:  # все есть
-                        transaction.avco_multiplier = 1.
-                        for t in instrument_in_stock:
-                            t.avco_multiplier += abs(
-                                (1. - t.avco_multiplier) * position_size_with_sign / rolling_position)
+                        t.avco_multiplier = 1.
+                        for t0 in i_in_stock:
+                            t0.avco_multiplier += abs(
+                                (1. - t0.avco_multiplier) * position_size_with_sign / rolling_position)
                     else:  # только частично
-                        transaction.avco_multiplier = abs(rolling_position / position_size_with_sign)
-                        for t in instrument_in_stock:
-                            t.avco_multiplier = 1.
-                        for_sale[instrument] = for_sale.get(instrument, []) + [transaction]
-                    in_stock[instrument] = [t for t in instrument_in_stock if t.avco_multiplier < 1.]
+                        t.avco_multiplier = abs(rolling_position / position_size_with_sign)
+                        for t0 in i_in_stock:
+                            t0.avco_multiplier = 1.
+                        not_closed[i_key] = not_closed.get(i_key, []) + [t]
+                    in_stock[i_key] = [t for t in i_in_stock if t.avco_multiplier < 1.]
                 else:  # нечего продавать
-                    transaction.avco_multiplier = 0.
-                    for_sale[instrument] = for_sale.get(instrument, []) + [transaction]
+                    t.avco_multiplier = 0.
+                    not_closed[i_key] = not_closed.get(i_key, []) + [t]
             rolling_position += position_size_with_sign
-            rolling_position_counter['%s' % instrument.pk] = rolling_position
-            transaction.rolling_position = rolling_position
+            rolling_positions[i_key] = rolling_position
+            t.rolling_position = rolling_position
 
     def annotate_fifo_multiplier(self):
         in_stock = {}
-        for_sale = {}
-        rolling_position_counter = Counter()
+        not_closed = {}
+        rolling_positions = Counter()
 
-        for transaction in self.transactions:
-            if transaction.transaction_class.code not in [TransactionClass.BUY, TransactionClass.SELL]:
+        for t in self.transactions:
+            t_class = t.transaction_class.code
+            if t_class not in [TransactionClass.BUY, TransactionClass.SELL]:
                 continue
-            instrument = transaction.instrument
-            position_size_with_sign = transaction.position_size_with_sign
-            transaction.fifo_multiplier = 0.
-            rolling_position = rolling_position_counter['%s' % instrument.pk]
-            if position_size_with_sign > 0.:  # покупка
-                instrument_for_sale = for_sale.get(instrument, [])
+
+            i = t.instrument
+            i_key = '%s' % i.pk
+
+            t.fifo_multiplier = 0.
+            position_size_with_sign = t.position_size_with_sign
+            rolling_position = rolling_positions[i_key]
+
+            # if position_size_with_sign > 0.:  # покупка
+            if t_class == TransactionClass.BUY:
+                i_not_closed = not_closed.get(i_key, [])
                 balance = position_size_with_sign
-                if instrument_for_sale:
-                    for t in instrument_for_sale:
-                        sale = t.not_closed
+                if i_not_closed:
+                    for t0 in i_not_closed:
+                        sale = t0.not_closed
                         if balance + sale > 0.:  # есть все
                             balance -= abs(sale)
-                            t.fifo_multiplier = 1.
-                            t.not_closed = t.not_closed - abs(t.position_size_with_sign)
+                            t0.fifo_multiplier = 1.
+                            t0.not_closed = t0.not_closed - abs(t0.position_size_with_sign)
                         else:
-                            t.not_closed = t.not_closed + balance
-                            t.fifo_multiplier = 1. - abs(t.not_closed / t.position_size_with_sign)
+                            t0.not_closed = t0.not_closed + balance
+                            t0.fifo_multiplier = 1. - abs(t0.not_closed / t0.position_size_with_sign)
                             balance = 0.
                         if balance <= 0.:
                             break
-                    for_sale[instrument] = [t for t in instrument_for_sale if t.fifo_multiplier < 1.]
-                transaction.balance = balance
-                transaction.fifo_multiplier = abs((position_size_with_sign - balance) / position_size_with_sign)
-                if transaction.fifo_multiplier < 1.:
-                    in_stock[instrument] = in_stock.get(instrument, []) + [transaction]
-            else:  # продажа
-                instrument_in_stock = in_stock.get(instrument, [])
+                    not_closed[i_key] = [t for t in i_not_closed if t.fifo_multiplier < 1.]
+                t.balance = balance
+                t.fifo_multiplier = abs((position_size_with_sign - balance) / position_size_with_sign)
+                if t.fifo_multiplier < 1.:
+                    in_stock[i_key] = in_stock.get(i_key, []) + [t]
+            # else:  # продажа
+            elif t_class == TransactionClass.SELL:
+                i_in_stock = in_stock.get(i_key, [])
                 sale = position_size_with_sign
-                if instrument_in_stock:
-                    for t in instrument_in_stock:
-                        balance = t.balance
+                if i_in_stock:
+                    for t0 in i_in_stock:
+                        balance = t0.balance
                         if sale + balance > 0.:  # есть все
-                            t.balance = balance - abs(sale)
-                            t.fifo_multiplier = abs((t.position_size_with_sign - t.balance) / t.position_size_with_sign)
+                            t0.balance = balance - abs(sale)
+                            t0.fifo_multiplier = abs(
+                                (t0.position_size_with_sign - t0.balance) / t0.position_size_with_sign)
                             sale = 0.
                         else:
-                            t.balance = 0.
-                            t.fifo_multiplier = 1.
+                            t0.balance = 0.
+                            t0.fifo_multiplier = 1.
                             sale += abs(balance)
                         if sale >= 0.:
                             break
-                    in_stock[instrument] = [t for t in instrument_in_stock if t.fifo_multiplier < 1.]
-                transaction.not_closed = sale
-                transaction.fifo_multiplier = abs((position_size_with_sign - sale) / position_size_with_sign)
-                if transaction.fifo_multiplier < 1.:
-                    for_sale[instrument] = for_sale.get(instrument, []) + [transaction]
+                    in_stock[i_key] = [t for t in i_in_stock if t.fifo_multiplier < 1.]
+                t.not_closed = sale
+                t.fifo_multiplier = abs((position_size_with_sign - sale) / position_size_with_sign)
+                if t.fifo_multiplier < 1.:
+                    not_closed[i_key] = not_closed.get(i_key, []) + [t]
 
             rolling_position += position_size_with_sign
-            rolling_position_counter['%s' % instrument.pk] = rolling_position
-            transaction.rolling_position = rolling_position
+            rolling_positions[i_key] = rolling_position
+            t.rolling_position = rolling_position

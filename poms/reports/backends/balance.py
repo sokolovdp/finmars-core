@@ -35,6 +35,8 @@ class BalanceReportBuilder(BaseReportBuilder):
     def build(self):
         items = {}
         invested_items = {}
+
+        # create balance items
         for t in self.transactions:
             if t.transaction_class.code == TransactionClass.CASH_INFLOW:
                 cash_item = self._get_currency_item(items, t.transaction_currency)

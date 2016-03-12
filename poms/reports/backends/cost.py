@@ -25,21 +25,15 @@ class CostReportBuilder(BaseReportBuilder):
         return i
 
     def build(self):
-        multiplier_attr = None
-        if self.instance.multiplier_class == 'avco':
-            self.annotate_avco_multiplier()
-            multiplier_attr = 'avco_multiplier'
-        elif self.instance.multiplier_class == 'fifo':
-            self.annotate_fifo_multiplier()
-            multiplier_attr = 'fifo_multiplier'
-
-        items = {}
+        multiplier_attr = self.annotate_multiplier(self.instance.multiplier_class)
 
         self.annotate_fx_rates()
 
+        items = {}
         for t in self.transactions:
             if t.transaction_class.code in [TransactionClass.BUY, TransactionClass.SELL]:
                 multiplier = getattr(t, multiplier_attr, 0.)
+
                 t.remaining_position = abs(t.position_size_with_sign * (1 - multiplier))
                 t.remaining_position_cost_settlement_ccy = t.principal_with_sign * (1 - multiplier)
                 t.remaining_position_cost_system_ccy = t.remaining_position_cost_settlement_ccy * t.settlement_currency_fx_rate

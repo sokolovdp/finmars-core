@@ -25,16 +25,9 @@ class YTMReportBuilder(BaseReportBuilder):
         return i
 
     def build(self):
-        multiplier_attr = None
-        if self.instance.multiplier_class == 'avco':
-            self.annotate_avco_multiplier()
-            multiplier_attr = 'avco_multiplier'
-        elif self.instance.multiplier_class == 'fifo':
-            self.annotate_fifo_multiplier()
-            multiplier_attr = 'fifo_multiplier'
+        multiplier_attr = self.annotate_multiplier(self.instance.multiplier_class)
 
         items = {}
-
         end_date = self.end_date
 
         # calculate total position for instrument
