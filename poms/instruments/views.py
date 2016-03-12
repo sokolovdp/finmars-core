@@ -7,6 +7,7 @@ from rest_framework.viewsets import ModelViewSet
 
 from poms.api.filters import IsOwnerByMasterUserFilter
 from poms.api.mixins import DbTransactionMixin
+from poms.instruments.filters import IsOwnerViaInstrumentFilter
 from poms.instruments.models import InstrumentClassifier, Instrument, PriceHistory
 from poms.instruments.serializers import InstrumentClassifierSerializer, InstrumentSerializer, PriceHistorySerializer
 
@@ -60,6 +61,6 @@ class PriceHistoryViewSet(DbTransactionMixin, ModelViewSet):
     queryset = PriceHistory.objects.all()
     serializer_class = PriceHistorySerializer
     permission_classes = [IsAuthenticated, ]
-    filter_backends = [DjangoFilterBackend, OrderingFilter, ]
+    filter_backends = [IsOwnerViaInstrumentFilter, DjangoFilterBackend, OrderingFilter, ]
     filter_class = PriceHistoryFilter
     ordering_fields = ['-date']
