@@ -6,12 +6,7 @@ from django.db.models import CharField
 from django.utils.translation import ugettext_lazy as _
 
 LANGUAGE_MAX_LENGTH = 5
-CURRENCY_MAX_LENGTH = 3
-MONEY_MAX_DIGITS = 14
-MONEY_MAX_DECIMAL_PLACES = 4
-PHONENUMBER_MAX_LENGTH = 20
 TIMEZONE_MAX_LENGTH = 20
-
 
 TIMEZONE_CHOICES = sorted(list((k, k) for k in pytz.all_timezones))
 TIMEZONE_COMMON_CHOICES = sorted(list((k, k) for k in pytz.common_timezones))
