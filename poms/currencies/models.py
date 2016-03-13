@@ -66,7 +66,7 @@ class CurrencyHistory(models.Model):
     fx_rate = models.FloatField(default=0., verbose_name=_('fx rate'))
 
     class Meta:
-        verbose_name = _('currency')
+        verbose_name = _('currency history')
         verbose_name_plural = _('currency histories')
         index_together = [
             ['currency', 'date']
