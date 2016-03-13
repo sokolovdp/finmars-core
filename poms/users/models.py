@@ -13,8 +13,8 @@ from poms.fields import TimezoneField, LanguageField
 class MasterUser(models.Model):
     user = models.OneToOneField(settings.AUTH_USER_MODEL, related_name='master_user', verbose_name=_('user'))
     currency = models.ForeignKey('currencies.Currency', null=True, blank=True)
-    language = LanguageField(null=True, blank=True, verbose_name=_('language'))
-    timezone = TimezoneField(null=True, blank=True, verbose_name=_('timezone'))
+    # language = LanguageField(null=True, blank=True, verbose_name=_('language'))
+    # timezone = TimezoneField(null=True, blank=True, verbose_name=_('timezone'))
 
     class Meta:
         verbose_name = _('master user')
@@ -25,31 +25,35 @@ class MasterUser(models.Model):
 
 
 @python_2_unicode_compatible
-class Employee(models.Model):
-    user = models.OneToOneField(settings.AUTH_USER_MODEL, related_name='employee', verbose_name=_('user'))
+class UserProfile(models.Model):
+    user = models.OneToOneField(settings.AUTH_USER_MODEL, related_name='profile', verbose_name=_('user'))
     master_user = models.ForeignKey(MasterUser, verbose_name=_('master user'), related_name='employees')
     language = LanguageField(null=True, blank=True, verbose_name=_('language'))
     timezone = TimezoneField(null=True, blank=True, verbose_name=_('timezone'))
+    is_owner = models.BooleanField(default=False)
+    is_admin = models.BooleanField(default=False)
 
     class Meta:
-        verbose_name = _('employee')
-        verbose_name_plural = _('employees')
+        verbose_name = _('profile')
+        verbose_name_plural = _('profiles')
 
     def __str__(self):
         return '%s (%s)' % (self.user.username, self.master_user.user.username)
 
 
 @python_2_unicode_compatible
-class PrivateGroup(models.Model):
+class GroupProfile(models.Model):
     master_user = models.ForeignKey(MasterUser, verbose_name=_('master user'), related_name='groups')
-    group = models.OneToOneField('auth.Group', related_name='owner', verbose_name=_('group'), on_delete=models.PROTECT)
+    group = models.OneToOneField('auth.Group', related_name='profile', verbose_name=_('group'))
     name = models.CharField(max_length=80, blank=True, default='', verbose_name=_('private name'),
                             help_text=_('user group name'))
 
     class Meta:
-        verbose_name = _('private group')
-        verbose_name_plural = _('private groups')
-        unique_together = ['master_user', 'name']
+        verbose_name = _('group profile')
+        verbose_name_plural = _('group profiles')
+        unique_together = [
+            ['master_user', 'name']
+        ]
 
     def __str__(self):
         return '%s (%s)' % (self.name, self.master_user.user.username)

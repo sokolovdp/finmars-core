@@ -2,8 +2,10 @@ from __future__ import unicode_literals
 
 from django.contrib import admin
 from django.contrib.admin import StackedInline
+from django.contrib.auth.admin import GroupAdmin, UserAdmin
+from django.contrib.auth.models import Group, User
 
-from poms.users.models import PrivateGroup, MasterUser, Employee
+from poms.users.models import MasterUser, UserProfile, GroupProfile
 
 
 # class PrivateGroupInline(StackedInline):
@@ -74,31 +76,50 @@ from poms.users.models import PrivateGroup, MasterUser, Employee
 
 
 
-class PrivateGroupAdmin(admin.ModelAdmin):
-    model = PrivateGroup
 
-
-admin.site.register(PrivateGroup, PrivateGroupAdmin)
-
-
-class EmployeeInline(StackedInline):
-    model = Employee
-    extra = 0
+# class UserProfileInline(StackedInline):
+#     model = UserProfile
+#     extra = 0
 
 
 class MasterUserAdmin(admin.ModelAdmin):
     model = MasterUser
-    inlines = [EmployeeInline]
+    # inlines = [UserProfileInline]
 
 
 admin.site.register(MasterUser, MasterUserAdmin)
 
 
-class EmployeeAdmin(admin.ModelAdmin):
-    model = Employee
+class UserProfileInline(StackedInline):
+    model = UserProfile
+    can_delete = False
 
 
-admin.site.register(Employee, EmployeeAdmin)
+class UserWithProfileAdmin(UserAdmin):
+    inlines = [UserProfileInline]
+
+
+admin.site.unregister(User)
+admin.site.register(User, UserWithProfileAdmin)
+
+
+class GroupProfileInline(StackedInline):
+    model = GroupProfile
+    can_delete = False
+
+
+class GroupWithProfileAdmin(GroupAdmin):
+    inlines = [GroupProfileInline]
+
+    def save_model(self, request, obj, form, change):
+        profile = getattr(obj, 'profile', None)
+        if profile:
+            obj.name = '%s (%s)' % (profile.name, profile.master_user,)
+        super(GroupWithProfileAdmin, self).save_model(request, obj, form, change)
+
+
+admin.site.unregister(Group)
+admin.site.register(Group, GroupWithProfileAdmin)
 
 
 # class UserCreationForm1(UserCreationForm):

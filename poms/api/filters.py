@@ -11,9 +11,11 @@ class IsOwnerFilter(BaseFilterBackend):
 
 class IsOwnerByMasterUserFilter(BaseFilterBackend):
     def filter_queryset(self, request, queryset, view):
-        return queryset.filter(master_user__user=request.user)
+        # return queryset.filter(master_user__user=request.user)
+        return queryset.filter(master_user=request.user.profile.master_user)
 
 
 class IsOwnerByMasterUserOrSystemFilter(BaseFilterBackend):
     def filter_queryset(self, request, queryset, view):
-        return queryset.filter(Q(master_user__user=request.user) | Q(master_user__isnull=True))
+        return queryset.filter(Q(master_user=request.user.profile.master_user) | Q(master_user__isnull=True))
+        # return queryset.filter(Q(master_user__user=request.user) | Q(master_user__isnull=True))
