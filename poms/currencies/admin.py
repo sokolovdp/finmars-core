@@ -3,6 +3,7 @@ from __future__ import unicode_literals
 from django.contrib import admin
 from django.utils.translation import ugettext_lazy as _
 from import_export.admin import ImportExportModelAdmin
+from reversion_compare.admin import CompareVersionAdmin
 
 from poms.currencies.models import Currency, CurrencyHistory
 
@@ -24,7 +25,7 @@ class GlobalCurrencyFilter(admin.SimpleListFilter):
             return queryset.filter(master_user__isnull=False)
 
 
-class CurrencyAdmin(admin.ModelAdmin):
+class CurrencyAdmin(CompareVersionAdmin, admin.ModelAdmin):
     model = Currency
     list_display = ['id', 'user_code', 'name', 'master_user', 'is_global', 'is_system']
     ordering = ['user_code']

@@ -46,6 +46,7 @@ INSTALLED_APPS = [
     # 'djcelery',
 
     'reversion',
+    'reversion_compare',
     'guardian',
     'import_export',
 
@@ -117,20 +118,20 @@ DATABASES = {
 }
 
 if DEBUG:
-    DATABASES['default'] = {
-        'ENGINE': 'django.db.backends.postgresql',
-        'NAME': 'poms_dev',
-        'USER': 'poms_dev',
-        'PASSWORD': 'sqlsql',
-        'HOST': '192.168.57.2',
-        'PORT': '',
-    }
-    # DATABASES = {
-    #     'default': {
-    #         'ENGINE': 'django.db.backends.sqlite3',
-    #         'NAME': os.path.join(BASE_DIR, 'db.sqlite3'),
-    #     }
+    # DATABASES['default'] = {
+    #     'ENGINE': 'django.db.backends.postgresql',
+    #     'NAME': 'poms_dev',
+    #     'USER': 'poms_dev',
+    #     'PASSWORD': 'sqlsql',
+    #     'HOST': '192.168.57.2',
+    #     'PORT': '',
     # }
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.sqlite3',
+            'NAME': os.path.join(BASE_DIR, 'db.sqlite3'),
+        }
+    }
 
 # Password validation
 # https://docs.djangoproject.com/en/1.9/ref/settings/#auth-password-validators
