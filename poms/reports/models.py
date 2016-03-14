@@ -89,8 +89,9 @@ class BalanceReportSummary(object):
 
 # @python_2_unicode_compatible
 class BalanceReport(BaseReport):
-    def __init__(self, *args, **kwargs):
+    def __init__(self, show_transaction_details=True, *args, **kwargs):
         super(BalanceReport, self).__init__(*args, **kwargs)
+        self.show_transaction_details = show_transaction_details
         self.invested_items = []
         self.transactions = []
         self.summary = BalanceReportSummary(self)
