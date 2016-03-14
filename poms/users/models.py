@@ -27,7 +27,7 @@ class MasterUser(models.Model):
 @python_2_unicode_compatible
 class UserProfile(models.Model):
     user = models.OneToOneField(settings.AUTH_USER_MODEL, related_name='profile', verbose_name=_('user'))
-    master_user = models.ForeignKey(MasterUser, verbose_name=_('master user'), related_name='employees')
+    master_user = models.ForeignKey(MasterUser, verbose_name=_('master user'), related_name='users')
     language = LanguageField(null=True, blank=True, verbose_name=_('language'))
     timezone = TimezoneField(null=True, blank=True, verbose_name=_('timezone'))
     is_owner = models.BooleanField(default=False)
