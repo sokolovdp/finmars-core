@@ -11,6 +11,7 @@ from poms.transactions.models import TransactionClass
 class YTMReportBuilder(BaseReportBuilder):
     def __init__(self, *args, **kwargs):
         super(YTMReportBuilder, self).__init__(*args, **kwargs)
+        self._filter_date_attr = 'accounting_date'
 
     def _get_transaction_qs(self):
         queryset = super(YTMReportBuilder, self)._get_transaction_qs()

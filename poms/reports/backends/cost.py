@@ -11,6 +11,7 @@ from poms.transactions.models import TransactionClass
 class CostReportBuilder(BaseReportBuilder):
     def __init__(self, *args, **kwargs):
         super(CostReportBuilder, self).__init__(*args, **kwargs)
+        self._filter_date_attr = 'accounting_date'
 
     def _get_transaction_qs(self):
         queryset = super(CostReportBuilder, self)._get_transaction_qs()
