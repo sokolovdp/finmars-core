@@ -12,8 +12,11 @@ from poms.users.models import MasterUser
 
 @python_2_unicode_compatible
 class AccountType(models.Model):
+    master_user = models.ForeignKey(MasterUser, related_name='account_types', verbose_name=_('master user'))
     code = models.CharField(max_length=20, verbose_name=_('code'), help_text=_('system wide value'))
     name = models.CharField(max_length=255, verbose_name=_('name'))
+    show_transaction_details = models.BooleanField(default=False)
+    transaction_details_expr = models.CharField(max_length=255, null=True, blank=True)
 
     class Meta:
         verbose_name = _('account type')
