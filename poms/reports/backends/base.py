@@ -5,6 +5,7 @@ import datetime
 from collections import Counter
 
 from django.conf import settings
+from django.db.models import Q
 from django.utils import timezone
 from django.utils.functional import cached_property
 
@@ -52,11 +53,15 @@ class BaseReportBuilder(object):
                                              'instrument__accrued_currency',
                                              'settlement_currency')
         queryset = queryset.filter(master_user=self.instance.master_user, is_canceled=False)
+
         if self.instance.begin_date:
-            queryset = queryset.filter(transaction_date__gte=self.begin_date)
-        queryset = queryset.filter(transaction_date__lte=self.end_date)
+            # queryset = queryset.filter(transaction_date__gte=self.begin_date)
+            queryset = queryset.filter(**{'%s__gte' % self._filter_date_attr: self.begin_date})
+        # queryset = queryset.filter(transaction_date__lte=self.end_date)
+        queryset = queryset.filter(**{'%s__lte' % self._filter_date_attr: self.end_date})
         if self.instance.instruments:
-            queryset = queryset.filter(instrument__in=self.instance.instruments)
+            queryset = queryset.filter(
+                Q(instrument__in=self.instance.instruments) | Q(transaction_currency__isnull=False))
         queryset = queryset.order_by('transaction_date', 'id')
         return queryset
 
@@ -109,7 +114,7 @@ class BaseReportBuilder(object):
 
     def annotate_price(self, transaction, date=None):
         instrument = transaction.instrument
-        price_history = self.find_price_history(instrument)
+        price_history = self.find_price_history(instrument, date=date)
         transaction.price_history = price_history
 
     def annotate_fx_rates(self, date=None):
