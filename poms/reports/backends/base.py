@@ -24,11 +24,11 @@ def fgetattr(obj, attr, default=0.):
 class BaseReportBuilder(object):
     def __init__(self, instance=None, queryset=None):
         self.instance = instance
-        self.queryset = queryset
+        self._queryset = queryset
+        self._now = timezone.now().date()
         self._currency_history_cache = {}
         self._price_history_cache = {}
-
-        self.now = timezone.now().date()
+        self._filter_date_attr = 'transaction_date'
 
     @property
     def begin_date(self):
@@ -36,15 +36,15 @@ class BaseReportBuilder(object):
 
     @property
     def end_date(self):
-        return self.instance.end_date or self.now
+        return self.instance.end_date or self._now
 
     def _get_transaction_qs(self):
         assert self.instance is not None, "instance is None!"
         assert self.instance.master_user is not None, "master_user is None!"
-        if self.queryset is None:
+        if self._queryset is None:
             queryset = Transaction.objects
         else:
-            queryset = self.queryset
+            queryset = self._queryset
         queryset = queryset.prefetch_related('transaction_class',
                                              'transaction_currency',
                                              'instrument',
