@@ -92,7 +92,7 @@ class BalanceReportItemSerializer(BaseReportItemSerializer):
     instrument_principal_price = serializers.FloatField(read_only=True)
     instrument_accrued_price = serializers.FloatField(read_only=True)
     principal_value_instrument_principal_ccy = serializers.FloatField(read_only=True)
-    accrued_value_instrument_principal_ccy = serializers.FloatField(read_only=True)
+    accrued_value_instrument_accrued_ccy = serializers.FloatField(read_only=True)
     instrument_principal_currency_history = serializers.PrimaryKeyRelatedField(read_only=True, help_text=_(''))
     instrument_principal_fx_rate = serializers.FloatField(read_only=True, help_text=_(''))
     instrument_accrued_currency_history = serializers.PrimaryKeyRelatedField(read_only=True, help_text=_(''))

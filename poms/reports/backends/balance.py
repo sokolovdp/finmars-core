@@ -120,13 +120,13 @@ class BalanceReportBuilder(BaseReportBuilder):
                 i.instrument_accrued_price = getattr(i.price_history, 'accrued_price', 0.) or 0.
 
                 i.principal_value_instrument_principal_ccy = i.instrument_price_multiplier * i.balance_position * i.instrument_principal_price
-                i.accrued_value_instrument_principal_ccy = i.instrument_accrued_multiplier * i.balance_position * i.instrument_accrued_price
+                i.accrued_value_instrument_accrued_ccy = i.instrument_accrued_multiplier * i.balance_position * i.instrument_accrued_price
 
                 i.instrument_principal_fx_rate = getattr(i.instrument_principal_currency_history, 'fx_rate', 0.) or 0.
                 i.instrument_accrued_fx_rate = getattr(i.instrument_accrued_currency_history, 'fx_rate', 0.) or 0.
 
                 i.principal_value_system_ccy = i.principal_value_instrument_principal_ccy * i.instrument_principal_fx_rate
-                i.accrued_value_system_ccy = i.accrued_value_instrument_principal_ccy * i.instrument_accrued_fx_rate
+                i.accrued_value_system_ccy = i.accrued_value_instrument_accrued_ccy * i.instrument_accrued_fx_rate
 
                 i.market_value_system_ccy = i.principal_value_system_ccy + i.accrued_value_system_ccy
             elif i.currency:

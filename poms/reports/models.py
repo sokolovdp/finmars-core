@@ -57,7 +57,7 @@ class BalanceReportItem(BaseReportItem):
         self.instrument_principal_price = None
         self.instrument_accrued_price = None
         self.principal_value_instrument_principal_ccy = None
-        self.accrued_value_instrument_principal_ccy = None
+        self.accrued_value_instrument_accrued_ccy = None
         self.instrument_principal_fx_rate = None
         self.instrument_accrued_fx_rate = None
 
