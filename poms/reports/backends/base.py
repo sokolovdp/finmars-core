@@ -26,7 +26,7 @@ class BaseReportBuilder(object):
     def __init__(self, instance=None, queryset=None):
         self.instance = instance
         self._queryset = queryset
-        self._filter_date_attr = 'transaction_date'
+        self._filter_date_attr = None
         self._now = timezone.now().date()
         self._currency_history_cache = {}
         self._price_history_cache = {}
@@ -40,6 +40,7 @@ class BaseReportBuilder(object):
         return self.instance.end_date or self._now
 
     def _get_transaction_qs(self):
+        assert self._filter_date_attr is not None, "_filter_date_attr is None!"
         assert self.instance is not None, "instance is None!"
         assert self.instance.master_user is not None, "master_user is None!"
         if self._queryset is None:
@@ -62,7 +63,7 @@ class BaseReportBuilder(object):
         if self.instance.instruments:
             queryset = queryset.filter(
                 Q(instrument__in=self.instance.instruments) | Q(transaction_currency__isnull=False))
-        queryset = queryset.order_by('transaction_date', 'id')
+        queryset = queryset.order_by(self._filter_date_attr, 'id')
         return queryset
 
     @cached_property
