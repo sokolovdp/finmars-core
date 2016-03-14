@@ -28,7 +28,7 @@ class TransactionAdmin(ImportExportModelAdmin, admin.ModelAdmin):
     model = Transaction
     save_as = True
     list_display = ['id', 'transaction_date', 'transaction_class', 'instrument', 'transaction_currency',
-                    'position_size_with_sign', 'master_user']
+                    'position_size_with_sign', 'is_canceled', 'master_user']
     ordering = ['transaction_date', 'id']
     date_hierarchy = 'transaction_date'
 
