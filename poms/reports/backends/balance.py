@@ -32,18 +32,31 @@ class BalanceReportBuilder(BaseReportBuilder):
             items[key] = i
         return i
 
-    def build(self):
-        items = {}
+    def get_invested_items(self):
         invested_items = {}
 
-        # create balance items
+        for t in self.transactions:
+            if t.transaction_class.code == TransactionClass.CASH_INFLOW:
+                invested_item = self._get_currency_item(invested_items, t.transaction_currency)
+                invested_item.balance_position += t.position_size_with_sign
+
+        for i in six.itervalues(invested_items):
+            i.currency_history = self.find_currency_history(i.currency)
+            i.currency_fx_rate = getattr(i.currency_history, 'fx_rate', 0.)
+            i.market_value_system_ccy = i.balance_position * i.currency_fx_rate
+
+        invested_items = [i for i in six.itervalues(invested_items)]
+        invested_items = sorted(invested_items, key=lambda x: x.pk)
+
+        return invested_items
+
+    def get_items(self):
+        items = {}
+
         for t in self.transactions:
             if t.transaction_class.code == TransactionClass.CASH_INFLOW:
                 cash_item = self._get_currency_item(items, t.transaction_currency)
                 cash_item.balance_position += t.position_size_with_sign
-
-                invested_item = self._get_currency_item(invested_items, t.transaction_currency)
-                invested_item.balance_position += t.position_size_with_sign
             elif t.transaction_class.code in [TransactionClass.BUY, TransactionClass.SELL]:
                 instrument_item = self._get_instrument_item(items, t.instrument)
                 instrument_item.balance_position += t.position_size_with_sign
@@ -54,20 +67,7 @@ class BalanceReportBuilder(BaseReportBuilder):
                 cash_item = self._get_currency_item(items, t.settlement_currency)
                 cash_item.balance_position += t.cash_consideration
 
-        items = [i for i in six.itervalues(items)]
-        items = sorted(items, key=lambda x: x.pk)
-        self.instance.items = items
-
-        invested_items = [i for i in six.itervalues(invested_items)]
-        invested_items = sorted(invested_items, key=lambda x: x.pk)
-        self.instance.invested_items = invested_items
-
-        for i in invested_items:
-            i.currency_history = self.find_currency_history(i.currency)
-            i.currency_fx_rate = getattr(i.currency_history, 'fx_rate', 0.)
-            i.market_value_system_ccy = i.balance_position * i.currency_fx_rate
-
-        for i in items:
+        for i in six.itervalues(items):
             if i.instrument:
                 i.price_history = self.find_price_history(i.instrument, self.instance.end_date)
                 i.instrument_principal_currency_history = self.find_currency_history(i.instrument.pricing_currency)
@@ -88,17 +88,50 @@ class BalanceReportBuilder(BaseReportBuilder):
                 i.instrument_principal_fx_rate = getattr(i.instrument_principal_currency_history, 'fx_rate', 0.) or 0.
                 i.instrument_accrued_fx_rate = getattr(i.instrument_accrued_currency_history, 'fx_rate', 0.) or 0.
 
-                i.principal_value_instrument_system_ccy = i.principal_value_instrument_principal_ccy * i.instrument_principal_fx_rate
-                i.accrued_value_instrument_system_ccy = i.accrued_value_instrument_principal_ccy * i.instrument_accrued_fx_rate
+                i.principal_value_system_ccy = i.principal_value_instrument_principal_ccy * i.instrument_principal_fx_rate
+                i.accrued_value_system_ccy = i.accrued_value_instrument_principal_ccy * i.instrument_accrued_fx_rate
 
-                i.market_value_system_ccy = i.principal_value_instrument_system_ccy + \
-                                            i.accrued_value_instrument_system_ccy
+                i.market_value_system_ccy = i.principal_value_system_ccy + i.accrued_value_system_ccy
             elif i.currency:
                 # i.currency_name = i.currency.name
                 i.currency_history = self.find_currency_history(i.currency)
                 i.currency_fx_rate = getattr(i.currency_history, 'fx_rate', 0.)
-                i.principal_value_instrument_system_ccy = i.balance_position * i.currency_fx_rate
-                i.market_value_system_ccy = i.principal_value_instrument_system_ccy
+                i.principal_value_system_ccy = i.balance_position * i.currency_fx_rate
+                i.market_value_system_ccy = i.principal_value_system_ccy
+
+        items = [i for i in six.itervalues(items)]
+        items = sorted(items, key=lambda x: x.pk)
+
+        return items
+
+    def build(self):
+        # items = {}
+        # invested_items = {}
+
+        invested_items = self.get_invested_items()
+        items = self.get_items()
+
+        # # create balance items
+        # for t in self.transactions:
+        #     if t.transaction_class.code == TransactionClass.CASH_INFLOW:
+        #         cash_item = self._get_currency_item(items, t.transaction_currency)
+        #         cash_item.balance_position += t.position_size_with_sign
+        #
+        #         invested_item = self._get_currency_item(invested_items, t.transaction_currency)
+        #         invested_item.balance_position += t.position_size_with_sign
+        #     elif t.transaction_class.code in [TransactionClass.BUY, TransactionClass.SELL]:
+        #         instrument_item = self._get_instrument_item(items, t.instrument)
+        #         instrument_item.balance_position += t.position_size_with_sign
+        #
+        #         cash_item = self._get_currency_item(items, t.settlement_currency)
+        #         cash_item.balance_position += t.cash_consideration
+        #     elif t.transaction_class.code == TransactionClass.INSTRUMENT_PL:
+        #         cash_item = self._get_currency_item(items, t.settlement_currency)
+        #         cash_item.balance_position += t.cash_consideration
+
+        self.instance.items = items
+
+        self.instance.invested_items = invested_items
 
         summary = self.instance.summary
         summary.invested_value_system_ccy = reduce(lambda x, y: x + y.market_value_system_ccy, invested_items, 0.)

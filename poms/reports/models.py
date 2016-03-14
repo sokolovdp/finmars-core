@@ -61,8 +61,8 @@ class BalanceReportItem(BaseReportItem):
         self.instrument_principal_fx_rate = None
         self.instrument_accrued_fx_rate = None
 
-        self.principal_value_instrument_system_ccy = None
-        self.accrued_value_instrument_system_ccy = None
+        self.principal_value_system_ccy = None
+        self.accrued_value_system_ccy = None
         self.market_value_system_ccy = None
 
     def __str__(self):
