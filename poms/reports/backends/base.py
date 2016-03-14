@@ -26,10 +26,10 @@ class BaseReportBuilder(object):
     def __init__(self, instance=None, queryset=None):
         self.instance = instance
         self._queryset = queryset
+        self._filter_date_attr = 'transaction_date'
         self._now = timezone.now().date()
         self._currency_history_cache = {}
         self._price_history_cache = {}
-        self._filter_date_attr = 'transaction_date'
 
     @property
     def begin_date(self):
