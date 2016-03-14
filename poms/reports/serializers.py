@@ -5,6 +5,7 @@ from rest_framework import serializers
 
 from poms.api.fields import CurrentMasterUserDefault
 from poms.instruments.models import Instrument
+from poms.instruments.serializers import InstrumentField
 from poms.reports.models import BalanceReport, BalanceReportItem, BalanceReportSummary, PLReportInstrument, PLReport, \
     PLReportSummary, CostReport
 
@@ -20,8 +21,7 @@ class BaseReportSerializer(serializers.Serializer):
     master_user = serializers.HiddenField(default=CurrentMasterUserDefault())
     begin_date = serializers.DateField(required=False, allow_null=True, help_text=_('some help text'))
     end_date = serializers.DateField(required=False, allow_null=True, help_text=_('some help text'))
-    instruments = serializers.PrimaryKeyRelatedField(queryset=Instrument.objects.all(), required=False, many=True,
-                                                     allow_null=True)
+    instruments = InstrumentField(many=True, required=False, allow_null=True)
 
 
 # ----------------------------------------------------------------------------------------------------------------------
