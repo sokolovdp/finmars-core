@@ -11,6 +11,11 @@ from poms.transactions.models import TransactionClass
 
 
 class PLReportBuilder(BalanceReportBuilder):
+    def _get_transaction_qs(self):
+        # TODO: When building P&L report we use Accounting Date
+        queryset = super(BalanceReportBuilder, self)._get_transaction_qs()
+        return queryset
+
     def build(self):
         # super(PLReportBuilder, self).build()
         # balance_items = self.instance.items

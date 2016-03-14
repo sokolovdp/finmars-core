@@ -14,20 +14,25 @@ _l = logging.getLogger('poms.reports')
 
 
 class BalanceReportBuilder(BaseReportBuilder):
-    def _get_currency_item(self, items, currency):
-        key = 'currency:%s' % currency.id
+    def _get_transaction_qs(self):
+        # TODO: When building BALANCE report we use Transaction Date = min (Accounting Date, Cash Date)
+        queryset = super(BalanceReportBuilder, self)._get_transaction_qs()
+        return queryset
+
+    def _get_currency_item(self, items, currency, account):
+        key = 'c=%s;a=%s' % (currency.id, getattr(account, 'pk', None))
         i = items.get(key, None)
         if i is None:
-            i = BalanceReportItem(currency=currency)
+            i = BalanceReportItem(currency=currency, account=account)
             i.pk = key
             items[key] = i
         return i
 
-    def _get_instrument_item(self, items, instrument):
-        key = 'instrument:%s' % instrument.id
+    def _get_instrument_item(self, items, instrument, account):
+        key = 'i=%s;a=%s' % (instrument.id, getattr(account, 'pk', None))
         i = items.get(key, None)
         if i is None:
-            i = BalanceReportItem(instrument=instrument)
+            i = BalanceReportItem(instrument=instrument, account=account)
             i.pk = key
             items[key] = i
         return i
@@ -37,7 +42,8 @@ class BalanceReportBuilder(BaseReportBuilder):
 
         for t in self.transactions:
             if t.transaction_class.code == TransactionClass.CASH_INFLOW:
-                invested_item = self._get_currency_item(invested_items, t.transaction_currency)
+                account = self.get_account(t)
+                invested_item = self._get_currency_item(invested_items, t.transaction_currency, account)
                 invested_item.balance_position += t.position_size_with_sign
 
         for i in six.itervalues(invested_items):
@@ -50,21 +56,35 @@ class BalanceReportBuilder(BaseReportBuilder):
 
         return invested_items
 
+    def get_account(self, transaction, now=None):
+        # TODO: Cash Date may be NULL, then we treat it as the date in indefinite future
+        if now is None:
+            now = self.end_date
+        accounting_date = transaction.accounting_date
+        cash_date = transaction.cash_date
+        if accounting_date != cash_date and min(accounting_date, cash_date) < now < max(cash_date, accounting_date):
+            return transaction.account_interim
+        if transaction.transaction_class.code in [TransactionClass.CASH_INFLOW]:
+            return transaction.account_cash
+        else:
+            return transaction.account_position
+
     def get_items(self):
         items = {}
 
         for t in self.transactions:
+            account = self.get_account(t)
             if t.transaction_class.code == TransactionClass.CASH_INFLOW:
-                cash_item = self._get_currency_item(items, t.transaction_currency)
+                cash_item = self._get_currency_item(items, t.transaction_currency, account)
                 cash_item.balance_position += t.position_size_with_sign
             elif t.transaction_class.code in [TransactionClass.BUY, TransactionClass.SELL]:
-                instrument_item = self._get_instrument_item(items, t.instrument)
+                instrument_item = self._get_instrument_item(items, t.instrument, account)
                 instrument_item.balance_position += t.position_size_with_sign
 
-                cash_item = self._get_currency_item(items, t.settlement_currency)
+                cash_item = self._get_currency_item(items, t.settlement_currency, account)
                 cash_item.balance_position += t.cash_consideration
             elif t.transaction_class.code == TransactionClass.INSTRUMENT_PL:
-                cash_item = self._get_currency_item(items, t.settlement_currency)
+                cash_item = self._get_currency_item(items, t.settlement_currency, account)
                 cash_item.balance_position += t.cash_consideration
 
         for i in six.itervalues(items):
@@ -137,5 +157,7 @@ class BalanceReportBuilder(BaseReportBuilder):
         summary.invested_value_system_ccy = reduce(lambda x, y: x + y.market_value_system_ccy, invested_items, 0.)
         summary.current_value_system_ccy = reduce(lambda x, y: x + y.market_value_system_ccy, items, 0.)
         summary.p_l_system_ccy = summary.current_value_system_ccy - summary.invested_value_system_ccy
+
+        self.instance.transactions = self.transactions
 
         return self.instance

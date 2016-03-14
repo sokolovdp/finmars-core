@@ -36,7 +36,7 @@ class BaseReport(object):
 
 @python_2_unicode_compatible
 class BalanceReportItem(BaseReportItem):
-    def __init__(self, instrument=None, currency=None, balance_position=0., *args, **kwargs):
+    def __init__(self, instrument=None, currency=None, balance_position=0., account=None, *args, **kwargs):
         super(BalanceReportItem, self).__init__(*args, **kwargs)
         self.balance_position = balance_position
 
@@ -60,6 +60,8 @@ class BalanceReportItem(BaseReportItem):
         self.accrued_value_instrument_principal_ccy = None
         self.instrument_principal_fx_rate = None
         self.instrument_accrued_fx_rate = None
+
+        self.account = account  # -> Account
 
         self.principal_value_system_ccy = None
         self.accrued_value_system_ccy = None
@@ -89,8 +91,9 @@ class BalanceReportSummary(object):
 class BalanceReport(BaseReport):
     def __init__(self, *args, **kwargs):
         super(BalanceReport, self).__init__(*args, **kwargs)
+        self.invested_items = []
+        self.transactions = []
         self.summary = BalanceReportSummary(self)
-        self.invested_items = None
 
 
 # ----------------------------------------------------------------------------------------------------------------------
@@ -111,7 +114,7 @@ class PLReportInstrument(BaseReportItem):
 
 
 class PLReportSummary(object):
-    def __init__(self):
+    def __init__(self, **kwargs):
         self.principal_with_sign_system_ccy = 0.
         self.carry_with_sign_system_ccy = 0.
         self.overheads_with_sign_system_ccy = 0.

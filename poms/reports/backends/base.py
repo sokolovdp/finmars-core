@@ -54,7 +54,6 @@ class BaseReportBuilder(object):
         queryset = queryset.filter(master_user=self.instance.master_user, is_canceled=False)
         if self.instance.begin_date:
             queryset = queryset.filter(transaction_date__gte=self.begin_date)
-        # if self.instance.end_date:
         queryset = queryset.filter(transaction_date__lte=self.end_date)
         if self.instance.instruments:
             queryset = queryset.filter(instrument__in=self.instance.instruments)
