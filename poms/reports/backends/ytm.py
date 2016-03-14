@@ -18,12 +18,12 @@ class YTMReportBuilder(BaseReportBuilder):
         queryset = queryset.filter(transaction_class__code__in=[TransactionClass.BUY, TransactionClass.SELL])
         return queryset
 
-    def _get_ytm_item(self, items, instrument):
-        key = '%s' % instrument.id
+    def _get_ytm_item(self, items, transaction):
+        key = '%s' % transaction.instrument.id
         i = items.get(key, None)
         if i is None:
-            i = YTMReportInstrument(instrument=instrument)
-            i.pk = instrument.id
+            i = YTMReportInstrument(instrument=transaction.instrument)
+            # i.pk = transaction.instrument.id
             items[key] = i
         return i
 
@@ -36,13 +36,13 @@ class YTMReportBuilder(BaseReportBuilder):
         # calculate total position for instrument
         for t in self.transactions:
             if t.transaction_class.code in [TransactionClass.BUY, TransactionClass.SELL]:
-                item = self._get_ytm_item(items, t.instrument)
+                item = self._get_ytm_item(items, t)
                 item.position += t.position_size_with_sign
 
         for t in self.transactions:
             if t.transaction_class.code in [TransactionClass.BUY, TransactionClass.SELL]:
                 multiplier = getattr(t, multiplier_attr, 0.)
-                item = self._get_ytm_item(items, t.instrument)
+                item = self._get_ytm_item(items, t)
 
                 t.ytm = 0.
                 t.time_invested = (end_date - t.transaction_date).days

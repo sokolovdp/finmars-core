@@ -18,12 +18,12 @@ class CostReportBuilder(BaseReportBuilder):
         queryset = queryset.filter(transaction_class__code__in=[TransactionClass.BUY, TransactionClass.SELL])
         return queryset
 
-    def _get_cost_item(self, items, instrument):
-        key = 'instrument:%s' % instrument.id
+    def _get_cost_item(self, items, transaction):
+        key = '%s' % transaction.instrument.id
         i = items.get(key, None)
         if i is None:
-            i = CostReportInstrument(instrument=instrument)
-            i.pk = instrument.id
+            i = CostReportInstrument(instrument=transaction.instrument)
+            # i.pk = transaction.instrument.id
             items[key] = i
         return i
 
@@ -41,7 +41,7 @@ class CostReportBuilder(BaseReportBuilder):
                 t.remaining_position_cost_settlement_ccy = t.principal_with_sign * (1 - multiplier)
                 t.remaining_position_cost_system_ccy = t.remaining_position_cost_settlement_ccy * t.settlement_currency_fx_rate
 
-                item = self._get_cost_item(items, t.instrument)
+                item = self._get_cost_item(items, t)
                 item.position += t.remaining_position
                 item.cost_system_ccy += t.remaining_position_cost_system_ccy
 
