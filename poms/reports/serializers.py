@@ -68,7 +68,7 @@ class BaseReportSerializer(serializers.Serializer):
     master_user = serializers.HiddenField(default=CurrentMasterUserDefault())
     begin_date = serializers.DateField(required=False, allow_null=True, help_text=_('some help text'))
     end_date = serializers.DateField(required=False, allow_null=True, help_text=_('some help text'))
-    instruments = InstrumentField(many=True, required=False, allow_null=True)
+    # instruments = InstrumentField(many=True, required=False, allow_null=True)
 
 
 # ----------------------------------------------------------------------------------------------------------------------
@@ -144,6 +144,7 @@ class BalanceReportSummarySerializer(serializers.Serializer):
 
 
 class BalanceReportSerializer(BaseReportSerializer):
+    show_transaction_details = serializers.BooleanField(initial=True)
     transactions = BaseTransactionSerializer(many=True, read_only=True)
     invested_items = BalanceReportItemSerializer(many=True, read_only=True,
                                                  help_text=_('invested'))
