@@ -1,6 +1,8 @@
 # -*- coding: utf-8 -*-
 from __future__ import unicode_literals, division
 
+from functools import reduce
+
 import six
 
 from poms.reports.backends.balance import BalanceReportBuilder
@@ -10,10 +12,10 @@ from poms.transactions.models import TransactionClass
 
 class PLReportBuilder(BalanceReportBuilder):
     def build(self):
-        super(PLReportBuilder, self).build()
-        balance_items = self.instance.items
+        # super(PLReportBuilder, self).build()
+        # balance_items = self.instance.items
+        balance_items = super(PLReportBuilder, self).get_items()
 
-        summary = self.instance.summary
         items = {}
 
         for bi in balance_items:
@@ -21,11 +23,11 @@ class PLReportBuilder(BalanceReportBuilder):
                 pli = PLReportInstrument(bi.instrument)
                 items['%s' % pli.pk] = pli
 
-                summary.principal_with_sign_system_ccy += bi.principal_value_instrument_system_ccy
-                summary.carry_with_sign_system_ccy += bi.accrued_value_instrument_system_ccy
+                # summary.principal_with_sign_system_ccy += bi.principal_value_system_ccy
+                # summary.carry_with_sign_system_ccy += bi.accrued_value_system_ccy
 
-                pli.principal_with_sign_system_ccy += bi.principal_value_instrument_system_ccy
-                pli.carry_with_sign_system_ccy += bi.accrued_value_instrument_system_ccy
+                pli.principal_with_sign_system_ccy += bi.principal_value_system_ccy
+                pli.carry_with_sign_system_ccy += bi.accrued_value_system_ccy
 
         items = [i for i in six.itervalues(items)]
         items = sorted(items, key=lambda x: x.pk)
@@ -52,9 +54,22 @@ class PLReportBuilder(BalanceReportBuilder):
                 t.carry_with_sign_system_ccy = t.carry_with_sign * t.settlement_currency_fx_rate
                 t.overheads_with_sign_system_ccy = t.overheads_with_sign * t.settlement_currency_fx_rate
 
-            summary.principal_with_sign_system_ccy += getattr(t, 'principal_with_sign_system_ccy', 0.)
-            summary.carry_with_sign_system_ccy += getattr(t, 'carry_with_sign_system_ccy', 0.)
-            summary.overheads_with_sign_system_ccy += getattr(t, 'overheads_with_sign_system_ccy', 0.)
+                # summary.principal_with_sign_system_ccy += getattr(t, 'principal_with_sign_system_ccy', 0.)
+                # summary.carry_with_sign_system_ccy += getattr(t, 'carry_with_sign_system_ccy', 0.)
+                # summary.overheads_with_sign_system_ccy += getattr(t, 'overheads_with_sign_system_ccy', 0.)
+
+        summary = self.instance.summary
+
+        summary.principal_with_sign_system_ccy = \
+            reduce(lambda x, y: x + y.principal_with_sign_system_ccy, items, 0.) + \
+            reduce(lambda x, y: x + getattr(y, 'principal_with_sign_system_ccy', 0.), self.transactions, 0.)
+
+        summary.carry_with_sign_system_ccy = \
+            reduce(lambda x, y: x + y.carry_with_sign_system_ccy, items, 0.) + \
+            reduce(lambda x, y: x + getattr(y, 'carry_with_sign_system_ccy', 0.), self.transactions, 0.)
+
+        summary.overheads_with_sign_system_ccy = \
+            reduce(lambda x, y: x + getattr(y, 'overheads_with_sign_system_ccy', 0.), self.transactions, 0.)
 
         summary.total_system_ccy = summary.principal_with_sign_system_ccy + \
                                    summary.carry_with_sign_system_ccy + \
