@@ -8,8 +8,7 @@ from poms.accounts.models import Account, AccountType, AccountClassifier
 
 class AccountTypeAdmin(admin.ModelAdmin):
     model = AccountType
-    list_display = ['code', 'name']
-    ordering = ['code']
+    list_display = ['name', 'master_user']
 
 
 admin.site.register(AccountType, AccountTypeAdmin)

@@ -13,17 +13,22 @@ from poms.users.models import MasterUser
 @python_2_unicode_compatible
 class AccountType(models.Model):
     master_user = models.ForeignKey(MasterUser, related_name='account_types', verbose_name=_('master user'))
-    code = models.CharField(max_length=20, verbose_name=_('code'), help_text=_('system wide value'))
+    user_code = models.CharField(max_length=25, null=True, blank=True)
     name = models.CharField(max_length=255, verbose_name=_('name'))
+    short_name = models.CharField(max_length=50, null=True, blank=True, verbose_name=_('short name'))
+    notes = models.TextField(null=True, blank=True)
     show_transaction_details = models.BooleanField(default=False)
     transaction_details_expr = models.CharField(max_length=255, null=True, blank=True)
 
     class Meta:
         verbose_name = _('account type')
         verbose_name_plural = _('account types')
+        unique_together = [
+            ['master_user', 'user_code']
+        ]
 
     def __str__(self):
-        return '%s' % (self.name,)
+        return '%s (%s)' % (self.name, self.master_user.user.username)
 
 
 @python_2_unicode_compatible
