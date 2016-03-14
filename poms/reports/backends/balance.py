@@ -20,7 +20,7 @@ class BalanceReportBuilder(BaseReportBuilder):
         return queryset
 
     def _get_currency_item(self, items, currency, account):
-        key = 'c=%s;a=%s' % (currency.id, getattr(account, 'pk', None))
+        key = 'currency:%s;account:%s' % (currency.id, getattr(account, 'pk', None))
         i = items.get(key, None)
         if i is None:
             i = BalanceReportItem(currency=currency, account=account)
@@ -29,7 +29,7 @@ class BalanceReportBuilder(BaseReportBuilder):
         return i
 
     def _get_instrument_item(self, items, instrument, account):
-        key = 'i=%s;a=%s' % (instrument.id, getattr(account, 'pk', None))
+        key = 'instrument:%s;account:%s' % (instrument.id, getattr(account, 'pk', None))
         i = items.get(key, None)
         if i is None:
             i = BalanceReportItem(instrument=instrument, account=account)
@@ -37,12 +37,36 @@ class BalanceReportBuilder(BaseReportBuilder):
             items[key] = i
         return i
 
+    def is_special_case(self, transaction, now=None):
+        # TODO: Cash Date may be NULL, then we treat it as the date in indefinite future
+        if now is None:
+            now = self.end_date
+        accounting_date = transaction.accounting_date
+        cash_date = transaction.cash_date
+        if accounting_date == cash_date:
+            return False
+        min_date = min(accounting_date, cash_date)
+        max_date = max(accounting_date, cash_date)
+        if min_date <= now <= max_date:
+            return True
+        return False
+
+    def get_cash_account(self, transaction, now=None):
+        if self.is_special_case(transaction, now):
+            return transaction.account_interim
+        return transaction.account_cash
+
+    def get_instrument_account(self, transaction, now=None):
+        if self.is_special_case(transaction, now):
+            return transaction.account_interim
+        return transaction.account_position
+
     def get_invested_items(self):
         invested_items = {}
 
         for t in self.transactions:
             if t.transaction_class.code == TransactionClass.CASH_INFLOW:
-                account = self.get_account(t)
+                account = self.get_cash_account(t)
                 invested_item = self._get_currency_item(invested_items, t.transaction_currency, account)
                 invested_item.balance_position += t.position_size_with_sign
 
@@ -56,34 +80,24 @@ class BalanceReportBuilder(BaseReportBuilder):
 
         return invested_items
 
-    def get_account(self, transaction, now=None):
-        # TODO: Cash Date may be NULL, then we treat it as the date in indefinite future
-        if now is None:
-            now = self.end_date
-        accounting_date = transaction.accounting_date
-        cash_date = transaction.cash_date
-        if accounting_date != cash_date and min(accounting_date, cash_date) < now < max(cash_date, accounting_date):
-            return transaction.account_interim
-        if transaction.transaction_class.code in [TransactionClass.CASH_INFLOW]:
-            return transaction.account_cash
-        else:
-            return transaction.account_position
-
     def get_items(self):
         items = {}
 
         for t in self.transactions:
-            account = self.get_account(t)
             if t.transaction_class.code == TransactionClass.CASH_INFLOW:
+                account = self.get_cash_account(t)
                 cash_item = self._get_currency_item(items, t.transaction_currency, account)
                 cash_item.balance_position += t.position_size_with_sign
             elif t.transaction_class.code in [TransactionClass.BUY, TransactionClass.SELL]:
+                account = self.get_instrument_account(t)
                 instrument_item = self._get_instrument_item(items, t.instrument, account)
                 instrument_item.balance_position += t.position_size_with_sign
 
+                account = self.get_cash_account(t)
                 cash_item = self._get_currency_item(items, t.settlement_currency, account)
                 cash_item.balance_position += t.cash_consideration
             elif t.transaction_class.code == TransactionClass.INSTRUMENT_PL:
+                account = self.get_cash_account(t)
                 cash_item = self._get_currency_item(items, t.settlement_currency, account)
                 cash_item.balance_position += t.cash_consideration
 
