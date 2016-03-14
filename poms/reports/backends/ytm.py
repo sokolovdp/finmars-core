@@ -2,7 +2,6 @@
 from __future__ import unicode_literals, division
 
 import six
-from django.utils import timezone
 
 from poms.reports.backends.base import BaseReportBuilder
 from poms.reports.models import YTMReportInstrument
@@ -10,6 +9,9 @@ from poms.transactions.models import TransactionClass
 
 
 class YTMReportBuilder(BaseReportBuilder):
+    def __init__(self, *args, **kwargs):
+        super(YTMReportBuilder, self).__init__(*args, **kwargs)
+
     def _get_transaction_qs(self):
         queryset = super(YTMReportBuilder, self)._get_transaction_qs()
         queryset = queryset.filter(transaction_class__code__in=[TransactionClass.BUY, TransactionClass.SELL])

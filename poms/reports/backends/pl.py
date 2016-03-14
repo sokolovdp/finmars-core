@@ -11,6 +11,10 @@ from poms.transactions.models import TransactionClass
 
 
 class PLReportBuilder(BalanceReportBuilder):
+    def __init__(self, *args, **kwargs):
+        super(PLReportBuilder, self).__init__(*args, **kwargs)
+        self._filter_date_attr = 'accounting_date'
+
     def _get_transaction_qs(self):
         # TODO: When building P&L report we use Accounting Date
         queryset = super(BalanceReportBuilder, self)._get_transaction_qs()

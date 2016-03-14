@@ -14,6 +14,9 @@ _l = logging.getLogger('poms.reports')
 
 
 class BalanceReportBuilder(BaseReportBuilder):
+    def __init__(self, *args, **kwargs):
+        super(BalanceReportBuilder, self).__init__(*args, **kwargs)
+
     def _get_transaction_qs(self):
         # TODO: When building BALANCE report we use Transaction Date = min (Accounting Date, Cash Date)
         queryset = super(BalanceReportBuilder, self)._get_transaction_qs()
