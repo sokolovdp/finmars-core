@@ -54,9 +54,9 @@ class PLReportBuilder(BalanceReportBuilder):
                 t.carry_with_sign_system_ccy = t.carry_with_sign * t.settlement_currency_fx_rate
                 t.overheads_with_sign_system_ccy = t.overheads_with_sign * t.settlement_currency_fx_rate
 
-                # summary.principal_with_sign_system_ccy += getattr(t, 'principal_with_sign_system_ccy', 0.)
-                # summary.carry_with_sign_system_ccy += getattr(t, 'carry_with_sign_system_ccy', 0.)
-                # summary.overheads_with_sign_system_ccy += getattr(t, 'overheads_with_sign_system_ccy', 0.)
+            # summary.principal_with_sign_system_ccy += getattr(t, 'principal_with_sign_system_ccy', 0.)
+            # summary.carry_with_sign_system_ccy += getattr(t, 'carry_with_sign_system_ccy', 0.)
+            # summary.overheads_with_sign_system_ccy += getattr(t, 'overheads_with_sign_system_ccy', 0.)
 
         summary = self.instance.summary
 
