@@ -13,12 +13,20 @@ from poms.instruments.models import PriceHistory
 from poms.transactions.models import Transaction, TransactionClass
 
 
+def fval(value, default=0.):
+    return value if value is not None else default
+
+
+def fgetattr(obj, attr, default=0.):
+    return fval(getattr(obj, attr, default), default)
+
+
 class BaseReportBuilder(object):
     def __init__(self, instance=None, queryset=None):
         self.instance = instance
         self.queryset = queryset
-        self.currency_history_cache = {}
-        self.price_history_cache = {}
+        self._currency_history_cache = {}
+        self._price_history_cache = {}
 
         self.now = timezone.now().date()
 
@@ -73,24 +81,24 @@ class BaseReportBuilder(object):
         if currency.is_system:
             return CurrencyHistory(currency=currency, date=date, fx_rate=1.)
         key = '%s:%s' % (currency.id, date)
-        h = self.currency_history_cache.get(key, None)
+        h = self._currency_history_cache.get(key, None)
         if h is None:
             h = CurrencyHistory.objects.filter(currency=currency, date__lte=date).order_by('date').last()
             if h is None:
                 h = CurrencyHistory(currency=currency, date=date, fx_rate=0.)
-            self.currency_history_cache[key] = h
+            self._currency_history_cache[key] = h
         return h
 
     def find_price_history(self, instrument, date=None):
         if not date:
             date = self.end_date
         key = '%s:%s' % (instrument.id, date)
-        h = self.price_history_cache.get(key, None)
+        h = self._price_history_cache.get(key, None)
         if h is None:
             h = PriceHistory.objects.filter(instrument=instrument, date__lte=date).order_by('date').last()
             if h is None:
                 h = PriceHistory(instrument=instrument, date=date, principal_price=0., accrued_price=0., factor=0.)
-            self.price_history_cache[key] = h
+            self._price_history_cache[key] = h
         return h
 
     def annotate_fx_rate(self, obj, currency_attr, date=None):
