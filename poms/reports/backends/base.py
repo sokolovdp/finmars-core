@@ -139,10 +139,12 @@ class BaseReportBuilder(object):
         if multiplier_class == 'avco':
             multiplier_attr = 'avco_multiplier'
             self.annotate_avco_multiplier()
+            return multiplier_attr
         elif multiplier_class == 'fifo':
             multiplier_attr = 'fifo_multiplier'
             self.annotate_fifo_multiplier()
-        return multiplier_attr
+            return multiplier_attr
+        raise ValueError('Bad multiplier class - %s' % multiplier_class)
 
     def annotate_avco_multiplier(self):
         in_stock = {}
