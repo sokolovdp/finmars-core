@@ -43,12 +43,13 @@ class PLReportBuilder(BalanceReportBuilder):
 
         summary = self.instance.summary
         for t in self.transactions:
-            t.transaction_class_code = t_class = t.transaction_class.code
-            if t_class == TransactionClass.CASH_INFLOW:
+            t_class = t.transaction_class.code
+            if t_class in [TransactionClass.CASH_INFLOW, TransactionClass.CASH_OUTFLOW]:
                 t.principal_with_sign_system_ccy = t.principal_with_sign * t.transaction_currency_fx_rate
                 t.carry_with_sign_system_ccy = t.carry_with_sign * t.transaction_currency_fx_rate
                 t.overheads_with_sign_system_ccy = t.overheads_with_sign * t.transaction_currency_fx_rate
-            elif t_class in [TransactionClass.BUY, TransactionClass.SELL]:
+
+            elif t_class in [TransactionClass.BUY, TransactionClass.SELL, TransactionClass.FX_TRADE]:
                 t.principal_with_sign_system_ccy = t.principal_with_sign * t.settlement_currency_fx_rate
                 t.carry_with_sign_system_ccy = t.carry_with_sign * t.settlement_currency_fx_rate
                 t.overheads_with_sign_system_ccy = t.overheads_with_sign * t.settlement_currency_fx_rate
@@ -57,7 +58,8 @@ class PLReportBuilder(BalanceReportBuilder):
                 pli.principal_with_sign_system_ccy += t.principal_with_sign_system_ccy
                 pli.carry_with_sign_system_ccy += t.carry_with_sign_system_ccy
                 pli.overheads_with_sign_system_ccy += t.overheads_with_sign_system_ccy
-            elif t_class == TransactionClass.INSTRUMENT_PL:
+
+            elif t_class in [TransactionClass.INSTRUMENT_PL, TransactionClass.TRANSACTION_PL]:
                 t.principal_with_sign_system_ccy = t.principal_with_sign * t.settlement_currency_fx_rate
                 t.carry_with_sign_system_ccy = t.carry_with_sign * t.settlement_currency_fx_rate
                 t.overheads_with_sign_system_ccy = t.overheads_with_sign * t.settlement_currency_fx_rate

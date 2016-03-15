@@ -15,7 +15,7 @@ class YTMReportBuilder(BaseReportBuilder):
 
     def _get_transaction_qs(self):
         queryset = super(YTMReportBuilder, self)._get_transaction_qs()
-        queryset = queryset.filter(transaction_class__code__in=[TransactionClass.BUY, TransactionClass.SELL])
+        # queryset = queryset.filter(transaction_class__code__in=[TransactionClass.BUY, TransactionClass.SELL])
         return queryset
 
     def _get_ytm_item(self, items, transaction):
@@ -35,12 +35,14 @@ class YTMReportBuilder(BaseReportBuilder):
 
         # calculate total position for instrument
         for t in self.transactions:
-            if t.transaction_class.code in [TransactionClass.BUY, TransactionClass.SELL]:
+            t_class = t.transaction_class.code
+            if t_class in [TransactionClass.BUY, TransactionClass.SELL, TransactionClass.FX_TRADE]:
                 item = self._get_ytm_item(items, t)
                 item.position += t.position_size_with_sign
 
         for t in self.transactions:
-            if t.transaction_class.code in [TransactionClass.BUY, TransactionClass.SELL]:
+            t_class = t.transaction_class.code
+            if t_class in [TransactionClass.BUY, TransactionClass.SELL, TransactionClass.FX_TRADE]:
                 multiplier = getattr(t, multiplier_attr, 0.)
                 item = self._get_ytm_item(items, t)
 

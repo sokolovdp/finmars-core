@@ -76,15 +76,17 @@ class BalanceReportBuilder(BaseReportBuilder):
         items = {}
 
         for t in self.transactions:
+            t_class = t.transaction_class.code
             case, account_position, account_cash = self.get_accounts(t)
 
-            if t.transaction_class.code == TransactionClass.CASH_INFLOW:
+            if t_class in [TransactionClass.CASH_INFLOW, TransactionClass.CASH_OUTFLOW]:
                 cash_item = self._get_currency_item(items, t.transaction_currency, account_position)
                 cash_item.balance_position += t.position_size_with_sign
 
                 invested_item = self._get_currency_item(invested_items, t.transaction_currency, account_position)
                 invested_item.balance_position += t.position_size_with_sign
-            elif t.transaction_class.code in [TransactionClass.BUY, TransactionClass.SELL]:
+
+            elif t_class in [TransactionClass.BUY, TransactionClass.SELL, TransactionClass.FX_TRADE]:
                 if case == 0 or case == 1:
                     if account_position:
                         instrument_item = self._get_instrument_item(items, t.instrument, account_position)
@@ -96,7 +98,8 @@ class BalanceReportBuilder(BaseReportBuilder):
                     cash_item = self._get_currency_item(items, t.settlement_currency, account_cash,
                                                         self.get_transaction_details(case, account_cash, t))
                     cash_item.balance_position += -t.cash_consideration
-            elif t.transaction_class.code == TransactionClass.INSTRUMENT_PL:
+
+            elif t_class in [TransactionClass.INSTRUMENT_PL, TransactionClass.TRANSACTION_PL]:
                 if case == 0 or case == 1:
                     cash_item = self._get_currency_item(items, t.settlement_currency, account_cash,
                                                         self.get_transaction_details(case, account_cash, t))
@@ -117,10 +120,7 @@ class BalanceReportBuilder(BaseReportBuilder):
                 i.instrument_principal_currency_history = self.find_currency_history(i.instrument.pricing_currency)
                 i.instrument_accrued_currency_history = self.find_currency_history(i.instrument.accrued_currency)
 
-                # i.instrument_name = i.instrument.name
-                # i.instrument_principal_pricing_ccy = getattr(i.instrument.pricing_currency, 'name', None)
                 i.instrument_price_multiplier = i.instrument.price_multiplier if i.instrument.price_multiplier is not None else 1.
-                # i.instrument_accrued_pricing_ccy = getattr(i.instrument.accrued_currency, 'name', None)
                 i.instrument_accrued_multiplier = i.instrument.accrued_multiplier if i.instrument.accrued_multiplier is not None else 1.
 
                 i.instrument_principal_price = getattr(i.price_history, 'principal_price', 0.) or 0.
@@ -154,27 +154,9 @@ class BalanceReportBuilder(BaseReportBuilder):
     def build(self):
         items, invested_items = self.get_items()
 
-        # # create balance items
-        # for t in self.transactions:
-        #     if t.transaction_class.code == TransactionClass.CASH_INFLOW:
-        #         cash_item = self._get_currency_item(items, t.transaction_currency)
-        #         cash_item.balance_position += t.position_size_with_sign
-        #
-        #         invested_item = self._get_currency_item(invested_items, t.transaction_currency)
-        #         invested_item.balance_position += t.position_size_with_sign
-        #     elif t.transaction_class.code in [TransactionClass.BUY, TransactionClass.SELL]:
-        #         instrument_item = self._get_instrument_item(items, t.instrument)
-        #         instrument_item.balance_position += t.position_size_with_sign
-        #
-        #         cash_item = self._get_currency_item(items, t.settlement_currency)
-        #         cash_item.balance_position += t.cash_consideration
-        #     elif t.transaction_class.code == TransactionClass.INSTRUMENT_PL:
-        #         cash_item = self._get_currency_item(items, t.settlement_currency)
-        #         cash_item.balance_position += t.cash_consideration
-
-        self.instance.items = items
 
         self.instance.invested_items = invested_items
+        self.instance.items = items
 
         summary = self.instance.summary
         summary.invested_value_system_ccy = reduce(lambda x, y: x + y.market_value_system_ccy, invested_items, 0.)

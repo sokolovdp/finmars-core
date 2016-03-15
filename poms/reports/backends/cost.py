@@ -15,7 +15,7 @@ class CostReportBuilder(BaseReportBuilder):
 
     def _get_transaction_qs(self):
         queryset = super(CostReportBuilder, self)._get_transaction_qs()
-        queryset = queryset.filter(transaction_class__code__in=[TransactionClass.BUY, TransactionClass.SELL])
+        # queryset = queryset.filter(transaction_class__code__in=[TransactionClass.BUY, TransactionClass.SELL])
         return queryset
 
     def _get_cost_item(self, items, transaction):
@@ -34,7 +34,8 @@ class CostReportBuilder(BaseReportBuilder):
 
         items = {}
         for t in self.transactions:
-            if t.transaction_class.code in [TransactionClass.BUY, TransactionClass.SELL]:
+            t_class = t.transaction_class.code
+            if t_class in [TransactionClass.BUY, TransactionClass.SELL, TransactionClass.FX_TRADE]:
                 multiplier = getattr(t, multiplier_attr, 0.)
 
                 t.remaining_position = abs(t.position_size_with_sign * (1 - multiplier))
