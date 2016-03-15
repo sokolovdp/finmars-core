@@ -105,6 +105,8 @@ class BalanceReportItemSerializer(BaseReportItemSerializer):
     accrued_value_system_ccy = serializers.FloatField(read_only=True)
     market_value_system_ccy = serializers.FloatField(read_only=True)
 
+    transaction = serializers.PrimaryKeyRelatedField(read_only=True, help_text=_('Transaction for case 1&2'))
+
     def create(self, validated_data):
         return BalanceReportItem(**validated_data)
 
