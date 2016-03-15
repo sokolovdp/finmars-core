@@ -67,6 +67,8 @@ class BalanceReportItem(BaseReportItem):
         self.accrued_value_system_ccy = None
         self.market_value_system_ccy = None
 
+        self.transaction = None # -> Transaction for case 1 and case 2
+
     def __str__(self):
         if self.instrument:
             return "%s - %s" % (self.instrument, self.balance_position)

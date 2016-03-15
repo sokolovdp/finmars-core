@@ -24,7 +24,7 @@ class PLReportBuilder(BalanceReportBuilder):
     def build(self):
         # super(PLReportBuilder, self).build()
         # balance_items = self.instance.items
-        balance_items = super(PLReportBuilder, self).get_items()
+        balance_items, balance_invested_items = super(PLReportBuilder, self).get_items()
 
         items = {}
 

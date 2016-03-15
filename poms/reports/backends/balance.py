@@ -2,6 +2,7 @@
 from __future__ import unicode_literals, division
 
 import logging
+from datetime import date
 from functools import reduce
 
 import six
@@ -16,15 +17,16 @@ _l = logging.getLogger('poms.reports')
 class BalanceReportBuilder(BaseReportBuilder):
     def __init__(self, *args, **kwargs):
         super(BalanceReportBuilder, self).__init__(*args, **kwargs)
-        self._filter_date_attr = 'transaction_date'
+        self._filter_date_attr = 'accounting_date'
 
     def _get_transaction_qs(self):
         # TODO: When building BALANCE report we use Transaction Date = min (Accounting Date, Cash Date)
         queryset = super(BalanceReportBuilder, self)._get_transaction_qs()
         return queryset
 
-    def _get_currency_item(self, items, currency, account):
-        key = 'currency:%s;account:%s' % (currency.id, getattr(account, 'pk', None))
+    def _get_currency_item(self, items, currency, account, transaction=None):
+        key = 'currency:%s;account:%s;transaction:%s' % \
+              (currency.id, getattr(account, 'pk', None), getattr(transaction, 'pk', None))
         i = items.get(key, None)
         if i is None:
             i = BalanceReportItem(currency=currency, account=account)
@@ -41,69 +43,104 @@ class BalanceReportBuilder(BaseReportBuilder):
             items[key] = i
         return i
 
-    def is_special_case(self, transaction, now=None):
-        # TODO: Cash Date may be NULL, then we treat it as the date in indefinite future
-        if now is None:
-            now = self.end_date
+    def get_accounts(self, transaction):
+        now = self.end_date
         accounting_date = transaction.accounting_date
         cash_date = transaction.cash_date
-        if accounting_date == cash_date:
+        if cash_date is None:
+            cash_date = date.max
+
+        if accounting_date == cash_date or (accounting_date < now and cash_date < now):  # default
+            # account_position = transaction.account_position
+            # account_cash = transaction.account_cash
+            return 0, transaction.account_position, transaction.account_cash
+        else:
+            if cash_date > accounting_date:  # case 1
+                # account_position = transaction.account_position
+                # account_cash = transaction.account_interim
+                return 1, transaction.account_position, transaction.account_interim
+            else:  # case 2
+                # account_position = None
+                # account_cash = transaction.account_interim
+                return 2, None, transaction.account_interim
+
+    # def get_invested_items(self):
+    #     invested_items = {}
+    #
+    #     for t in self.transactions:
+    #         if t.transaction_class.code == TransactionClass.CASH_INFLOW:
+    #             case, account_position, account_cash = self.get_accounts(t)
+    #             if case == 0:
+    #                 invested_item = self._get_currency_item(invested_items, t.transaction_currency, account_position)
+    #                 invested_item.balance_position += t.position_size_with_sign
+    #             elif case == 1:
+    #                 invested_item = self._get_currency_item(invested_items, t.transaction_currency, account_cash)
+    #                 invested_item.balance_position += t.position_size_with_sign
+    #             elif case == 2:
+    #                 invested_item = self._get_currency_item(invested_items, t.transaction_currency, account_cash)
+    #                 invested_item.balance_position += -t.position_size_with_sign
+    #
+    #     for i in six.itervalues(invested_items):
+    #         i.currency_history = self.find_currency_history(i.currency)
+    #         i.currency_fx_rate = getattr(i.currency_history, 'fx_rate', 0.)
+    #         i.market_value_system_ccy = i.balance_position * i.currency_fx_rate
+    #
+    #     invested_items = [i for i in six.itervalues(invested_items)]
+    #     invested_items = sorted(invested_items, key=lambda x: x.pk)
+    #
+    #     return invested_items
+
+    def is_show_details(self, case, account):
+        if case == 0 or not self.instance.show_transaction_details:
             return False
-        min_date = min(accounting_date, cash_date)
-        max_date = max(accounting_date, cash_date)
-        if min_date <= now <= max_date:
-            return True
-        return False
+        acc_type = getattr(account, 'type', None)
+        return getattr(acc_type, 'show_transaction_details', False)
 
-    def get_cash_account(self, transaction, now=None):
-        if self.is_special_case(transaction, now):
-            return transaction.account_interim
-        return transaction.account_cash
-
-    def get_instrument_account(self, transaction, now=None):
-        if self.is_special_case(transaction, now):
-            return transaction.account_interim
-        return transaction.account_position
-
-    def get_invested_items(self):
+    def get_items(self):
         invested_items = {}
+        items = {}
 
         for t in self.transactions:
+            case, account_position, account_cash = self.get_accounts(t)
+
+            # if t.transaction_class.code in [TransactionClass.CASH_INFLOW, TransactionClass.BUY, TransactionClass.SELL,
+            #                                 TransactionClass.INSTRUMENT_PL]:
             if t.transaction_class.code == TransactionClass.CASH_INFLOW:
-                account = self.get_cash_account(t)
-                invested_item = self._get_currency_item(invested_items, t.transaction_currency, account)
-                invested_item.balance_position += t.position_size_with_sign
+                if case == 0 or case == 1:
+                    cash_item = self._get_currency_item(items, t.transaction_currency, account_position)
+                    cash_item.balance_position += t.position_size_with_sign
+
+                    invested_item = self._get_currency_item(invested_items, t.transaction_currency, account_position)
+                    invested_item.balance_position += t.position_size_with_sign
+                else:
+                    cash_item = self._get_currency_item(items, t.transaction_currency, account_cash)
+                    cash_item.balance_position += -t.position_size_with_sign
+
+                    invested_item = self._get_currency_item(invested_items, t.transaction_currency, account_position)
+                    invested_item.balance_position += t.position_size_with_sign
+
+            elif t.transaction_class.code in [TransactionClass.BUY, TransactionClass.SELL]:
+                if case == 0 or case == 1:
+                    if account_position:
+                        instrument_item = self._get_instrument_item(items, t.instrument, account_position)
+                        instrument_item.balance_position += t.position_size_with_sign
+                    cash_item = self._get_currency_item(items, t.settlement_currency, account_cash)
+                    cash_item.balance_position += t.cash_consideration
+                elif case == 2:
+                    cash_item = self._get_currency_item(items, t.settlement_currency, account_cash)
+                    cash_item.balance_position += -t.cash_consideration
+            elif t.transaction_class.code == TransactionClass.INSTRUMENT_PL:
+                if case == 0 or case == 1:
+                    cash_item = self._get_currency_item(items, t.settlement_currency, account_cash)
+                    cash_item.balance_position += t.cash_consideration
+                elif case == 2:
+                    cash_item = self._get_currency_item(items, t.settlement_currency, account_cash)
+                    cash_item.balance_position += -t.cash_consideration
 
         for i in six.itervalues(invested_items):
             i.currency_history = self.find_currency_history(i.currency)
             i.currency_fx_rate = getattr(i.currency_history, 'fx_rate', 0.)
             i.market_value_system_ccy = i.balance_position * i.currency_fx_rate
-
-        invested_items = [i for i in six.itervalues(invested_items)]
-        invested_items = sorted(invested_items, key=lambda x: x.pk)
-
-        return invested_items
-
-    def get_items(self):
-        items = {}
-
-        for t in self.transactions:
-            if t.transaction_class.code == TransactionClass.CASH_INFLOW:
-                account = self.get_cash_account(t)
-                cash_item = self._get_currency_item(items, t.transaction_currency, account)
-                cash_item.balance_position += t.position_size_with_sign
-            elif t.transaction_class.code in [TransactionClass.BUY, TransactionClass.SELL]:
-                account = self.get_instrument_account(t)
-                instrument_item = self._get_instrument_item(items, t.instrument, account)
-                instrument_item.balance_position += t.position_size_with_sign
-
-                account = self.get_cash_account(t)
-                cash_item = self._get_currency_item(items, t.settlement_currency, account)
-                cash_item.balance_position += t.cash_consideration
-            elif t.transaction_class.code == TransactionClass.INSTRUMENT_PL:
-                account = self.get_cash_account(t)
-                cash_item = self._get_currency_item(items, t.settlement_currency, account)
-                cash_item.balance_position += t.cash_consideration
 
         for i in six.itervalues(items):
             if i.instrument:
@@ -137,17 +174,16 @@ class BalanceReportBuilder(BaseReportBuilder):
                 i.principal_value_system_ccy = i.balance_position * i.currency_fx_rate
                 i.market_value_system_ccy = i.principal_value_system_ccy
 
+        invested_items = [i for i in six.itervalues(invested_items)]
+        invested_items = sorted(invested_items, key=lambda x: x.pk)
+
         items = [i for i in six.itervalues(items)]
         items = sorted(items, key=lambda x: x.pk)
 
-        return items
+        return items, invested_items
 
     def build(self):
-        # items = {}
-        # invested_items = {}
-
-        invested_items = self.get_invested_items()
-        items = self.get_items()
+        items, invested_items = self.get_items()
 
         # # create balance items
         # for t in self.transactions:
