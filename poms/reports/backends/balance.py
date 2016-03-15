@@ -14,6 +14,9 @@ from poms.transactions.models import TransactionClass
 _l = logging.getLogger('poms.reports')
 
 
+# случаи 1 и 2 возможны для всех транзакций кроме Cash-Inflow/Outflow
+# в т.ч. для Трансфер (чуть позже я поясню, что на самом деле Transfer = Sell + Buy)
+
 class BalanceReportBuilder(BaseReportBuilder):
     def __init__(self, *args, **kwargs):
         super(BalanceReportBuilder, self).__init__(*args, **kwargs)
@@ -76,19 +79,11 @@ class BalanceReportBuilder(BaseReportBuilder):
             case, account_position, account_cash = self.get_accounts(t)
 
             if t.transaction_class.code == TransactionClass.CASH_INFLOW:
-                if case == 0 or case == 1:
-                    cash_item = self._get_currency_item(items, t.transaction_currency, account_position)
-                    cash_item.balance_position += t.position_size_with_sign
+                cash_item = self._get_currency_item(items, t.transaction_currency, account_position)
+                cash_item.balance_position += t.position_size_with_sign
 
-                    invested_item = self._get_currency_item(invested_items, t.transaction_currency, account_position)
-                    invested_item.balance_position += t.position_size_with_sign
-                else:
-                    cash_item = self._get_currency_item(items, t.transaction_currency, account_cash)
-                    cash_item.balance_position += -t.position_size_with_sign
-
-                    invested_item = self._get_currency_item(invested_items, t.transaction_currency, account_position)
-                    invested_item.balance_position += t.position_size_with_sign
-
+                invested_item = self._get_currency_item(invested_items, t.transaction_currency, account_position)
+                invested_item.balance_position += t.position_size_with_sign
             elif t.transaction_class.code in [TransactionClass.BUY, TransactionClass.SELL]:
                 if case == 0 or case == 1:
                     if account_position:
