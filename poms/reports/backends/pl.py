@@ -31,6 +31,7 @@ class PLReportBuilder(BalanceReportBuilder):
         for bi in balance_items:
             if bi.instrument:
                 pli = PLReportInstrument(bi.instrument)
+                pli.pk = '%s' % bi.instrument.id
                 items['%s' % bi.instrument.id] = pli
 
                 # summary.principal_with_sign_system_ccy += bi.principal_value_system_ccy
@@ -54,17 +55,30 @@ class PLReportBuilder(BalanceReportBuilder):
                 t.carry_with_sign_system_ccy = t.carry_with_sign * t.settlement_currency_fx_rate
                 t.overheads_with_sign_system_ccy = t.overheads_with_sign * t.settlement_currency_fx_rate
 
-                pli = items['%s' % t.instrument.id]
                 pli.principal_with_sign_system_ccy += t.principal_with_sign_system_ccy
                 pli.carry_with_sign_system_ccy += t.carry_with_sign_system_ccy
                 pli.overheads_with_sign_system_ccy += t.overheads_with_sign_system_ccy
 
-            elif t_class in [TransactionClass.INSTRUMENT_PL, TransactionClass.TRANSACTION_PL]:
+            elif t_class in [TransactionClass.INSTRUMENT_PL]:
                 t.principal_with_sign_system_ccy = t.principal_with_sign * t.settlement_currency_fx_rate
                 t.carry_with_sign_system_ccy = t.carry_with_sign * t.settlement_currency_fx_rate
                 t.overheads_with_sign_system_ccy = t.overheads_with_sign * t.settlement_currency_fx_rate
 
                 pli = items['%s' % t.instrument.id]
+                pli.principal_with_sign_system_ccy += t.principal_with_sign_system_ccy
+                pli.carry_with_sign_system_ccy += t.carry_with_sign_system_ccy
+                pli.overheads_with_sign_system_ccy += t.overheads_with_sign_system_ccy
+
+            elif t_class in [TransactionClass.TRANSACTION_PL]:
+                t.principal_with_sign_system_ccy = t.principal_with_sign * t.settlement_currency_fx_rate
+                t.carry_with_sign_system_ccy = t.carry_with_sign * t.settlement_currency_fx_rate
+                t.overheads_with_sign_system_ccy = t.overheads_with_sign * t.settlement_currency_fx_rate
+
+                try:
+                    pli = items[t_class]
+                except KeyError:
+                    pli = items[t_class] = PLReportInstrument()
+                    pli.pk = t_class
                 pli.principal_with_sign_system_ccy += t.principal_with_sign_system_ccy
                 pli.carry_with_sign_system_ccy += t.carry_with_sign_system_ccy
                 pli.overheads_with_sign_system_ccy += t.overheads_with_sign_system_ccy
