@@ -35,7 +35,7 @@ class CostReportBuilder(BaseReportBuilder):
         items = {}
         for t in self.transactions:
             t_class = t.transaction_class.code
-            if t_class in [TransactionClass.BUY, TransactionClass.SELL, TransactionClass.FX_TRADE]:
+            if t_class in [TransactionClass.BUY, TransactionClass.SELL]:
                 multiplier = getattr(t, multiplier_attr, 0.)
 
                 t.remaining_position = abs(t.position_size_with_sign * (1 - multiplier))
