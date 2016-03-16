@@ -15,19 +15,10 @@ class PLReportBuilder(BalanceReportBuilder):
         super(PLReportBuilder, self).__init__(*args, **kwargs)
         self._filter_date_attr = 'accounting_date'
 
-    def get_cash_account(self, transaction, now=None):
-        return None
-
-    def get_instrument_account(self, transaction, now=None):
-        return None
-
     def build(self):
-        # super(PLReportBuilder, self).build()
-        # balance_items = self.instance.items
         balance_items, balance_invested_items = super(PLReportBuilder, self).get_items()
 
         items = {}
-
         for bi in balance_items:
             if bi.instrument:
                 pli = PLReportInstrument(bi.instrument)
@@ -55,6 +46,7 @@ class PLReportBuilder(BalanceReportBuilder):
                 t.carry_with_sign_system_ccy = t.carry_with_sign * t.settlement_currency_fx_rate
                 t.overheads_with_sign_system_ccy = t.overheads_with_sign * t.settlement_currency_fx_rate
 
+                pli = items['%s' % t.instrument.id]
                 pli.principal_with_sign_system_ccy += t.principal_with_sign_system_ccy
                 pli.carry_with_sign_system_ccy += t.carry_with_sign_system_ccy
                 pli.overheads_with_sign_system_ccy += t.overheads_with_sign_system_ccy
