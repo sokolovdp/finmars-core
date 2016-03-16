@@ -135,7 +135,6 @@ class BaseReportBuilder(object):
                 self.annotate_price(t, date=date)
 
     def annotate_multiplier(self, multiplier_class):
-        multiplier_attr = None
         if multiplier_class == 'avco':
             multiplier_attr = 'avco_multiplier'
             self.annotate_avco_multiplier()
