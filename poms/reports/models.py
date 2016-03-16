@@ -20,10 +20,12 @@ class BaseReportItem(object):
 
 @python_2_unicode_compatible
 class BaseReport(object):
-    def __init__(self, master_user=None, begin_date=None, end_date=None, instruments=None, items=None):
+    def __init__(self, master_user=None, begin_date=None, end_date=None, instruments=None, transaction_currencies=None,
+                 items=None):
         self.master_user = master_user
         self.begin_date = begin_date
         self.end_date = end_date
+        self.transaction_currencies = transaction_currencies
         self.instruments = instruments
         self.items = items
 
@@ -67,7 +69,7 @@ class BalanceReportItem(BaseReportItem):
         self.accrued_value_system_ccy = None
         self.market_value_system_ccy = None
 
-        self.transaction = None # -> Transaction for case 1 and case 2
+        self.transaction = None  # -> Transaction for case 1 and case 2
 
     def __str__(self):
         if self.instrument:

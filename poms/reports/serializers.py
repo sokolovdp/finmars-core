@@ -4,6 +4,7 @@ from django.utils.translation import ugettext_lazy as _
 from rest_framework import serializers
 
 from poms.api.fields import CurrentMasterUserDefault
+from poms.currencies.serializers import CurrencyField
 from poms.instruments.serializers import InstrumentField
 from poms.reports.models import BalanceReport, BalanceReportItem, BalanceReportSummary, PLReportInstrument, PLReport, \
     PLReportSummary, CostReport
@@ -68,7 +69,9 @@ class BaseReportSerializer(serializers.Serializer):
     master_user = serializers.HiddenField(default=CurrentMasterUserDefault())
     begin_date = serializers.DateField(required=False, allow_null=True, help_text=_('some help text'))
     end_date = serializers.DateField(required=False, allow_null=True, help_text=_('some help text'))
-    # instruments = InstrumentField(many=True, required=False, allow_null=True)
+    
+    transaction_currencies = CurrencyField(many=True, required=False, allow_null=True)
+    instruments = InstrumentField(many=True, required=False, allow_null=True)
 
 
 # ----------------------------------------------------------------------------------------------------------------------
