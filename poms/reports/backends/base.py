@@ -43,25 +43,29 @@ class BaseReportBuilder(object):
         assert self._filter_date_attr is not None, "_filter_date_attr is None!"
         assert self.instance is not None, "instance is None!"
         assert self.instance.master_user is not None, "master_user is None!"
+
         if self._queryset is None:
             queryset = Transaction.objects
         else:
             queryset = self._queryset
+
         queryset = queryset.prefetch_related(
-            'transaction_class', 'transaction_currency',
+            'transaction_class',
+            'transaction_currency',
             'instrument', 'instrument__pricing_currency', 'instrument__accrued_currency',
             'settlement_currency',
             'account_position', 'account_cash', 'account_interim', )
         queryset = queryset.filter(master_user=self.instance.master_user, is_canceled=False)
 
         if self.instance.begin_date:
-            # queryset = queryset.filter(transaction_date__gte=self.begin_date)
             queryset = queryset.filter(**{'%s__gte' % self._filter_date_attr: self.begin_date})
-        # queryset = queryset.filter(transaction_date__lte=self.end_date)
         queryset = queryset.filter(**{'%s__lte' % self._filter_date_attr: self.end_date})
+
+        if self.instance.transaction_currencies:
+            queryset = queryset.filter(Q(transaction_currency__in=self.instance.transaction_currencies))
         if self.instance.instruments:
-            queryset = queryset.filter(
-                Q(instrument__in=self.instance.instruments) | Q(transaction_currency__isnull=False))
+            queryset = queryset.filter(Q(instrument__in=self.instance.instruments))
+
         queryset = queryset.order_by(self._filter_date_attr, 'id')
         return queryset
 
@@ -78,8 +82,9 @@ class BaseReportBuilder(object):
         return Currency.objects.get(master_user__isnull=True, user_code=settings.CURRENCY_CODE)
 
     def find_currency_history(self, currency, date=None):
-        if currency is None:
-            return None
+        assert currency is not None, 'currency is None!'
+        # if currency is None:
+        #     return None
         if not date:
             date = self.end_date
         if currency.is_system:
@@ -94,6 +99,7 @@ class BaseReportBuilder(object):
         return h
 
     def find_price_history(self, instrument, date=None):
+        assert instrument is not None, 'instrument is None!'
         if not date:
             date = self.end_date
         key = '%s:%s' % (instrument.id, date)
@@ -121,13 +127,8 @@ class BaseReportBuilder(object):
         for t in self.transactions:
             if t.transaction_currency:
                 self.annotate_fx_rate(t, 'transaction_currency', date=date)
-                # t.transaction_currency_history = self.find_currency_history(t.transaction_currency)
-                # t.transaction_currency_fx_rate = getattr(t.transaction_currency_history, 'fx_rate', 0.) or 0.
-
             if t.settlement_currency:
                 self.annotate_fx_rate(t, 'settlement_currency', date=date)
-                # t.settlement_currency_history = self.find_currency_history(t.settlement_currency)
-                # t.settlement_currency_fx_rate = getattr(t.settlement_currency_history, 'fx_rate', 0.) or 0.
 
     def annotate_prices(self, date=None):
         for t in self.transactions:
