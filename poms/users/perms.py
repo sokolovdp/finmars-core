@@ -88,27 +88,19 @@ def e1_accounts():
     with transaction.atomic():
         owner1, _ = User.objects.get_or_create(username="e1:owner1")
         owner2, _ = User.objects.get_or_create(username="e1:owner2")
-        # print(owner1)
-        # print(owner2)
 
         mu1, _ = MasterUser.objects.get_or_create(user=owner1)
         mu2, _ = MasterUser.objects.get_or_create(user=owner2)
-        # print(mu1)
-        # print(mu2)
 
         mu_grp1, _ = Group.objects.get_or_create(name='e1:MasterUsers:%s' % mu1.pk)
         mu_grp2, _ = Group.objects.get_or_create(name='e1:MasterUsers:%s' % mu2.pk)
         acc_grp1, _ = Group.objects.get_or_create(name='e1:Accounts:%s' % mu1.pk)
         acc_grp2, _ = Group.objects.get_or_create(name='e1:Accounts:%s' % mu2.pk)
-        # print(acc_grp1)
-        # print(acc_grp2)
 
         agent1, _ = User.objects.get_or_create(username="e1:agent1")
         agent2, _ = User.objects.get_or_create(username="e1:agent2")
         agent3, _ = User.objects.get_or_create(username="e1:agent3")
         agent4, _ = User.objects.get_or_create(username="e1:agent4")
-        # print(agent1)
-        # print(agent2)
 
         owner1.groups = [mu_grp1]
         owner2.groups = [mu_grp2]
@@ -120,7 +112,7 @@ def e1_accounts():
         acc1, _ = Account.objects.get_or_create(master_user=mu1, name='e1:acc1')
         acc2, _ = Account.objects.get_or_create(master_user=mu2, name='e1:acc2')
 
-        assign_perm('accounts.change_account', mu_grp1)
+        # assign_perm('accounts.change_account', mu_grp1)
         # assign_perm('accounts.change_account', mu_grp2)
         assign_perm('change_account', mu_grp1, acc1)
         assign_perm('change_account', mu_grp2, acc2)
@@ -151,7 +143,6 @@ def e1_accounts():
         print(7, agent4.has_perm('change_account', acc1))
         print(8, agent4.has_perm('change_account', acc2))
 
-
         print('-' * 79)
         accept_global_perms = False
         # print(1, get_objects_for_user(owner1, 'accounts.change_account', accept_global_perms=accept_global_perms))
@@ -164,6 +155,10 @@ def e1_accounts():
         print(2, get_objects_for_user(agent2, 'change_account', klass=Account, accept_global_perms=accept_global_perms))
         print(3, get_objects_for_user(agent3, 'change_account', klass=Account, accept_global_perms=accept_global_perms))
         print(4, get_objects_for_user(agent4, 'change_account', klass=Account, accept_global_perms=accept_global_perms))
+
+        # how add perms to add account for mu and agent1?
+        assign_perm('add_account', mu_grp1, mu1)
+        # assign_perm('add_account', mu_grp1, agent1)
 
         print('-' * 79)
         time.sleep(1)
