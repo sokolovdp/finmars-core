@@ -31,7 +31,7 @@ class InstrumentClassifier(MPTTModel):
         ]
 
     def __str__(self):
-        return '%s (%s)' % (self.name, self.master_user.user.username)
+        return self.name
 
 
 @python_2_unicode_compatible
@@ -56,7 +56,7 @@ class Instrument(models.Model):
         ]
 
     def __str__(self):
-        return '%s (%s)' % (self.name, self.master_user.user.username)
+        return self.name
 
 
 @python_2_unicode_compatible
