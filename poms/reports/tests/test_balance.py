@@ -37,7 +37,7 @@ class BalanceTestCase(BaseReportTestCase):
                 i.balance_position,
                 i.market_value_system_ccy,
             ])
-        print('-' * 79)
+        print('*' * 79)
         print('Positions')
         print(pd.DataFrame(data=data, columns=columns))
 
@@ -73,7 +73,7 @@ class BalanceTestCase(BaseReportTestCase):
         self.assertEqual(n(result.summary.p_l_system_ccy), n(expected.summary.p_l_system_ccy),
                          'p_l_system_ccy')
 
-    def test_balance1(self):
+    def test_simple(self):
         queryset = Transaction.objects.filter(pk__in=self.simple)
 
         instance = BalanceReport(master_user=self.m,
@@ -83,7 +83,6 @@ class BalanceTestCase(BaseReportTestCase):
         b = BalanceReport2Builder(instance=instance, queryset=queryset)
         b.build()
         self._print_balance(instance)
-
         self._assertEqualBalance(instance, BalanceReport(
             items=[
                 BalanceReportItem(pk=b.make_key(None, None, self.instr1_bond_chf, None),
@@ -170,7 +169,7 @@ class BalanceTestCase(BaseReportTestCase):
                                          p_l_system_ccy=-653.550000)
         ))
 
-    def test_balance2(self):
+    def test_simple_w_trnpl(self):
         queryset = Transaction.objects.filter(pk__in=self.simple_w_trnpl)
 
         instance = BalanceReport(master_user=self.m,
@@ -275,7 +274,7 @@ class BalanceTestCase(BaseReportTestCase):
                                          p_l_system_ccy=-639.883333)
         ))
 
-    def test_balance3(self):
+    def test_simple_w_fxtrade(self):
         queryset = Transaction.objects.filter(pk__in=self.simple_w_fxtrade)
 
         instance = BalanceReport(master_user=self.m,
@@ -398,7 +397,7 @@ class BalanceTestCase(BaseReportTestCase):
                                          p_l_system_ccy=-566.383333)
         ))
 
-    def test_balance1_w_dates(self):
+    def test_simple_w_dates(self):
         queryset = Transaction.objects.filter(pk__in=self.simple)
         instance = BalanceReport(master_user=self.m,
                                  begin_date=None, end_date=date(2016, 3, 5),
@@ -460,4 +459,170 @@ class BalanceTestCase(BaseReportTestCase):
             summary=BalanceReportSummary(invested_value_system_ccy=1300.000000,
                                          current_value_system_ccy=646.450000,
                                          p_l_system_ccy=-653.550000)
+        ))
+
+    def test_multiple_acc_p(self):
+        queryset = Transaction.objects.filter(pk__in=[
+            self.t_in.pk, self.t_buy_bond.pk, self.t_buy_bond_acc2.pk, self.t_buy_bond_p2.pk
+        ])
+        instance = BalanceReport(master_user=self.m,
+                                 begin_date=None, end_date=None,
+                                 use_portfolio=False, use_account=False,
+                                 show_transaction_details=False)
+        b = BalanceReport2Builder(instance=instance, queryset=queryset)
+        b.build()
+        self._print_balance_transactions(instance.transactions)
+        self._print_balance(instance)
+        self._assertEqualBalance(instance, BalanceReport(
+            items=[
+                BalanceReportItem(pk=b.make_key(None, None, self.instr1_bond_chf, None),
+                                  portfolio=None, account=None, instrument=self.instr1_bond_chf, currency=None,
+                                  balance_position=300.000000, market_value_system_ccy=55.350000),
+
+                BalanceReportItem(pk=b.make_key(None, None, None, self.eur),
+                                  portfolio=None, account=None, instrument=None, currency=self.eur,
+                                  balance_position=1000.000000, market_value_system_ccy=1300.000000),
+                BalanceReportItem(pk=b.make_key(None, None, None, self.usd),
+                                  portfolio=None, account=None, instrument=None, currency=self.usd,
+                                  balance_position=-600.000000, market_value_system_ccy=-600.000000),
+            ],
+            summary=BalanceReportSummary(invested_value_system_ccy=1300.,
+                                         current_value_system_ccy=755.350000,
+                                         p_l_system_ccy=-544.650000)
+        ))
+
+        instance = BalanceReport(master_user=self.m,
+                                 begin_date=None, end_date=None,
+                                 use_portfolio=False, use_account=True,
+                                 show_transaction_details=False)
+        b = BalanceReport2Builder(instance=instance, queryset=queryset)
+        b.build()
+        self._print_balance(instance)
+        self._assertEqualBalance(instance, BalanceReport(
+            items=[
+                BalanceReportItem(pk=b.make_key(None, self.acc1, self.instr1_bond_chf, None),
+                                  portfolio=None, account=self.acc1, instrument=self.instr1_bond_chf, currency=None,
+                                  balance_position=200.000000, market_value_system_ccy=36.900000),
+                BalanceReportItem(pk=b.make_key(None, self.acc2, self.instr1_bond_chf, None),
+                                  portfolio=None, account=self.acc2, instrument=self.instr1_bond_chf, currency=None,
+                                  balance_position=100.000000, market_value_system_ccy=18.450000),
+
+                BalanceReportItem(pk=b.make_key(None, self.acc1, None, self.eur),
+                                  portfolio=None, account=self.acc1, instrument=None, currency=self.eur,
+                                  balance_position=1000.000000, market_value_system_ccy=1300.000000),
+                BalanceReportItem(pk=b.make_key(None, self.acc1, None, self.usd),
+                                  portfolio=None, account=self.acc1, instrument=None, currency=self.usd,
+                                  balance_position=-400.000000, market_value_system_ccy=-400.000000),
+                BalanceReportItem(pk=b.make_key(None, self.acc2, None, self.usd),
+                                  portfolio=None, account=self.acc2, instrument=None, currency=self.usd,
+                                  balance_position=-200.000000, market_value_system_ccy=-200.000000),
+            ],
+            summary=BalanceReportSummary(invested_value_system_ccy=1300.,
+                                         current_value_system_ccy=755.350000,
+                                         p_l_system_ccy=-544.650000)
+        ))
+
+        instance = BalanceReport(master_user=self.m,
+                                 begin_date=None, end_date=None,
+                                 use_portfolio=True, use_account=True,
+                                 show_transaction_details=False)
+        b = BalanceReport2Builder(instance=instance, queryset=queryset)
+        b.build()
+        self._print_balance(instance)
+        self._assertEqualBalance(instance, BalanceReport(
+            items=[
+                BalanceReportItem(pk=b.make_key(self.p1, self.acc1, self.instr1_bond_chf, None),
+                                  portfolio=self.p1, account=self.acc1, instrument=self.instr1_bond_chf, currency=None,
+                                  balance_position=100.000000, market_value_system_ccy=18.450000),
+                BalanceReportItem(pk=b.make_key(self.p1, self.acc2, self.instr1_bond_chf, None),
+                                  portfolio=self.p1, account=self.acc2, instrument=self.instr1_bond_chf, currency=None,
+                                  balance_position=100.000000, market_value_system_ccy=18.450000),
+                BalanceReportItem(pk=b.make_key(self.p2, self.acc1, self.instr1_bond_chf, None),
+                                  portfolio=self.p2, account=self.acc1, instrument=self.instr1_bond_chf, currency=None,
+                                  balance_position=100.000000, market_value_system_ccy=18.450000),
+
+                BalanceReportItem(pk=b.make_key(self.p1, self.acc1, None, self.eur),
+                                  portfolio=self.p1, account=self.acc1, instrument=None, currency=self.eur,
+                                  balance_position=1000.000000, market_value_system_ccy=1300.000000),
+                BalanceReportItem(pk=b.make_key(self.p1, self.acc1, None, self.usd),
+                                  portfolio=self.p1, account=self.acc1, instrument=None, currency=self.usd,
+                                  balance_position=-200.000000, market_value_system_ccy=-200.000000),
+                BalanceReportItem(pk=b.make_key(self.p1, self.acc2, None, self.usd),
+                                  portfolio=self.p1, account=self.acc2, instrument=None, currency=self.usd,
+                                  balance_position=-200.000000, market_value_system_ccy=-200.000000),
+                BalanceReportItem(pk=b.make_key(self.p2, self.acc1, None, self.usd),
+                                  portfolio=self.p2, account=self.acc1, instrument=None, currency=self.usd,
+                                  balance_position=-200.000000, market_value_system_ccy=-200.000000),
+            ],
+            summary=BalanceReportSummary(invested_value_system_ccy=1300.,
+                                         current_value_system_ccy=755.350000,
+                                         p_l_system_ccy=-544.650000)
+        ))
+
+        instance = BalanceReport(master_user=self.m,
+                                 begin_date=None, end_date=date(2016, 3, 5),
+                                 use_portfolio=True, use_account=True,
+                                 show_transaction_details=False)
+        b = BalanceReport2Builder(instance=instance, queryset=queryset)
+        b.build()
+        self._print_balance(instance)
+        self._assertEqualBalance(instance, BalanceReport(
+            items=[
+                BalanceReportItem(pk=b.make_key(self.p1, self.acc1, self.instr1_bond_chf, None),
+                                  portfolio=self.p1, account=self.acc1, instrument=self.instr1_bond_chf, currency=None,
+                                  balance_position=100.000000, market_value_system_ccy=18.450000),
+                BalanceReportItem(pk=b.make_key(self.p1, self.acc2, self.instr1_bond_chf, None),
+                                  portfolio=self.p1, account=self.acc2, instrument=self.instr1_bond_chf, currency=None,
+                                  balance_position=100.000000, market_value_system_ccy=18.450000),
+                BalanceReportItem(pk=b.make_key(self.p2, self.acc1, self.instr1_bond_chf, None),
+                                  portfolio=self.p2, account=self.acc1, instrument=self.instr1_bond_chf, currency=None,
+                                  balance_position=100.000000, market_value_system_ccy=18.450000),
+
+                BalanceReportItem(pk=b.make_key(self.p1, self.acc1, None, self.eur),
+                                  portfolio=self.p1, account=self.acc1, instrument=None, currency=self.eur,
+                                  balance_position=1000.000000, market_value_system_ccy=1300.000000),
+                BalanceReportItem(pk=b.make_key(self.p1, self.prov_acc1, None, self.usd),
+                                  portfolio=self.p1, account=self.prov_acc1, instrument=None, currency=self.usd,
+                                  balance_position=-200.000000, market_value_system_ccy=-200.000000),
+                BalanceReportItem(pk=b.make_key(self.p1, self.prov_acc2, None, self.usd),
+                                  portfolio=self.p1, account=self.prov_acc2, instrument=None, currency=self.usd,
+                                  balance_position=-200.000000, market_value_system_ccy=-200.000000),
+                BalanceReportItem(pk=b.make_key(self.p2, self.prov_acc1, None, self.usd),
+                                  portfolio=self.p2, account=self.prov_acc1, instrument=None, currency=self.usd,
+                                  balance_position=-200.000000, market_value_system_ccy=-200.000000),
+            ],
+            summary=BalanceReportSummary(invested_value_system_ccy=1300.,
+                                         current_value_system_ccy=755.350000,
+                                         p_l_system_ccy=-544.650000)
+        ))
+
+        queryset = Transaction.objects.filter(pk__in=[
+            self.t_in.pk, self.t_sell_stock.pk, self.t_sell_stock_acc2.pk, self.t_sell_stock_p2.pk
+        ])
+        instance = BalanceReport(master_user=self.m,
+                                 begin_date=None, end_date=date(2016, 3, 5),
+                                 use_portfolio=True, use_account=True,
+                                 show_transaction_details=False)
+        b = BalanceReport2Builder(instance=instance, queryset=queryset)
+        b.build()
+        self._print_balance_transactions(instance.transactions)
+        self._print_balance(instance)
+        self._assertEqualBalance(instance, BalanceReport(
+            items=[
+                BalanceReportItem(pk=b.make_key(self.p1, self.acc1, None, self.eur),
+                                  portfolio=self.p1, account=self.acc1, instrument=None, currency=self.eur,
+                                  balance_position=1000.000000, market_value_system_ccy=1300.000000),
+                BalanceReportItem(pk=b.make_key(self.p1, self.prov_acc1, None, self.rub),
+                                  portfolio=self.p1, account=self.prov_acc1, instrument=None, currency=self.rub,
+                                  balance_position=-1000.000000, market_value_system_ccy=-13.333333),
+                BalanceReportItem(pk=b.make_key(self.p1, self.prov_acc2, None, self.rub),
+                                  portfolio=self.p1, account=self.prov_acc2, instrument=None, currency=self.rub,
+                                  balance_position=-1000.000000, market_value_system_ccy=-13.333333),
+                BalanceReportItem(pk=b.make_key(self.p2, self.prov_acc1, None, self.rub),
+                                  portfolio=self.p2, account=self.prov_acc1, instrument=None, currency=self.rub,
+                                  balance_position=-1000.000000, market_value_system_ccy=-13.333333),
+            ],
+            summary=BalanceReportSummary(invested_value_system_ccy=1300.000000,
+                                         current_value_system_ccy=1260.000000,
+                                         p_l_system_ccy=-40.000000)
         ))

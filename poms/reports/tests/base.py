@@ -78,7 +78,7 @@ class BaseReportTestCase(TestCase):
         self.p1 = Portfolio.objects.create(master_user=m, name='p1')
         self.p2 = Portfolio.objects.create(master_user=m, name='p2')
 
-        t_in = Transaction.objects.create(
+        self.t_in = Transaction.objects.create(
             master_user=m,
             transaction_class=cash_inflow,
             portfolio=self.p1,
@@ -99,7 +99,7 @@ class BaseReportTestCase(TestCase):
             reference_fx_rate=1.3
         )
 
-        t_buy_bond = Transaction.objects.create(
+        self.t_buy_bond = Transaction.objects.create(
             master_user=m,
             transaction_class=buy,
             portfolio=self.p1,
@@ -119,8 +119,48 @@ class BaseReportTestCase(TestCase):
             account_interim=self.prov_acc1,
             reference_fx_rate=None
         )
+        self.t_buy_bond_acc2 = Transaction.objects.create(
+            master_user=m,
+            transaction_class=buy,
+            portfolio=self.p1,
+            instrument=self.instr1_bond_chf,
+            transaction_currency=None,
+            position_size_with_sign=100,
+            settlement_currency=self.usd,
+            cash_consideration=-200.,
+            principal_with_sign=-180.,
+            carry_with_sign=-5.,
+            overheads_with_sign=-15.,
+            transaction_date=date(2016, 3, 4),
+            accounting_date=date(2016, 3, 4),
+            cash_date=date(2016, 3, 6),
+            account_position=self.acc2,
+            account_cash=self.acc2,
+            account_interim=self.prov_acc2,
+            reference_fx_rate=None
+        )
+        self.t_buy_bond_p2 = Transaction.objects.create(
+            master_user=m,
+            transaction_class=buy,
+            portfolio=self.p2,
+            instrument=self.instr1_bond_chf,
+            transaction_currency=None,
+            position_size_with_sign=100,
+            settlement_currency=self.usd,
+            cash_consideration=-200.,
+            principal_with_sign=-180.,
+            carry_with_sign=-5.,
+            overheads_with_sign=-15.,
+            transaction_date=date(2016, 3, 4),
+            accounting_date=date(2016, 3, 4),
+            cash_date=date(2016, 3, 6),
+            account_position=self.acc1,
+            account_cash=self.acc1,
+            account_interim=self.prov_acc1,
+            reference_fx_rate=None
+        )
 
-        t_buy_stock = Transaction.objects.create(
+        self.t_sell_stock = Transaction.objects.create(
             master_user=m,
             transaction_class=sell,
             portfolio=self.p1,
@@ -140,8 +180,48 @@ class BaseReportTestCase(TestCase):
             account_interim=self.prov_acc1,
             reference_fx_rate=None
         )
+        self.t_sell_stock_acc2 = Transaction.objects.create(
+            master_user=m,
+            transaction_class=sell,
+            portfolio=self.p1,
+            instrument=self.instr2_stock,
+            transaction_currency=None,
+            position_size_with_sign=-200,
+            settlement_currency=self.rub,
+            cash_consideration=1000.,
+            principal_with_sign=1100.,
+            carry_with_sign=0.,
+            overheads_with_sign=-100.,
+            transaction_date=date(2016, 3, 4),
+            accounting_date=date(2016, 3, 6),
+            cash_date=date(2016, 3, 4),
+            account_position=self.acc2,
+            account_cash=self.acc2,
+            account_interim=self.prov_acc2,
+            reference_fx_rate=None
+        )
+        self.t_sell_stock_p2 = Transaction.objects.create(
+            master_user=m,
+            transaction_class=sell,
+            portfolio=self.p2,
+            instrument=self.instr2_stock,
+            transaction_currency=None,
+            position_size_with_sign=-200,
+            settlement_currency=self.rub,
+            cash_consideration=1000.,
+            principal_with_sign=1100.,
+            carry_with_sign=0.,
+            overheads_with_sign=-100.,
+            transaction_date=date(2016, 3, 4),
+            accounting_date=date(2016, 3, 6),
+            cash_date=date(2016, 3, 4),
+            account_position=self.acc1,
+            account_cash=self.acc1,
+            account_interim=self.prov_acc1,
+            reference_fx_rate=None
+        )
 
-        t_out = Transaction.objects.create(
+        self.t_out = Transaction.objects.create(
             master_user=m,
             transaction_class=cash_outflow,
             portfolio=self.p1,
@@ -162,7 +242,7 @@ class BaseReportTestCase(TestCase):
             reference_fx_rate=1 / 75.
         )
 
-        t_instrpl_stock = Transaction.objects.create(
+        self.t_instrpl_stock = Transaction.objects.create(
             master_user=m,
             transaction_class=instrument_pl,
             portfolio=self.p1,
@@ -183,7 +263,7 @@ class BaseReportTestCase(TestCase):
             reference_fx_rate=None
         )
 
-        t_instrpl_bond = Transaction.objects.create(
+        self.t_instrpl_bond = Transaction.objects.create(
             master_user=m,
             transaction_class=instrument_pl,
             portfolio=self.p1,
@@ -203,8 +283,48 @@ class BaseReportTestCase(TestCase):
             account_interim=self.prov_acc1,
             reference_fx_rate=None
         )
+        self.t_instrpl_bond_acc2 = Transaction.objects.create(
+            master_user=m,
+            transaction_class=instrument_pl,
+            portfolio=self.p1,
+            instrument=self.instr1_bond_chf,
+            transaction_currency=None,
+            position_size_with_sign=0.,
+            settlement_currency=self.chf,
+            cash_consideration=20.,
+            principal_with_sign=0,
+            carry_with_sign=20.,
+            overheads_with_sign=0.,
+            transaction_date=date(2016, 3, 9),
+            accounting_date=date(2016, 3, 9),
+            cash_date=date(2016, 3, 9),
+            account_position=self.acc2,
+            account_cash=self.acc2,
+            account_interim=self.prov_acc2,
+            reference_fx_rate=None
+        )
+        self.t_instrpl_bond_p2 = Transaction.objects.create(
+            master_user=m,
+            transaction_class=instrument_pl,
+            portfolio=self.p2,
+            instrument=self.instr1_bond_chf,
+            transaction_currency=None,
+            position_size_with_sign=0.,
+            settlement_currency=self.chf,
+            cash_consideration=20.,
+            principal_with_sign=0,
+            carry_with_sign=20.,
+            overheads_with_sign=0.,
+            transaction_date=date(2016, 3, 9),
+            accounting_date=date(2016, 3, 9),
+            cash_date=date(2016, 3, 9),
+            account_position=self.acc1,
+            account_cash=self.acc1,
+            account_interim=self.prov_acc1,
+            reference_fx_rate=None
+        )
 
-        t_trnpl = Transaction.objects.create(
+        self.t_trnpl = Transaction.objects.create(
             master_user=m,
             transaction_class=transaction_pl,
             portfolio=self.p1,
@@ -225,7 +345,7 @@ class BaseReportTestCase(TestCase):
             reference_fx_rate=None
         )
 
-        t_fxtrade = Transaction.objects.create(
+        self.t_fxtrade = Transaction.objects.create(
             master_user=m,
             transaction_class=fx_tade,
             portfolio=self.p1,
@@ -247,19 +367,19 @@ class BaseReportTestCase(TestCase):
         )
 
         self.simple = [
-            t_in.pk, t_buy_bond.pk, t_buy_stock.pk, t_out.pk
+            self.t_in.pk, self.t_buy_bond.pk, self.t_sell_stock.pk, self.t_out.pk
         ]
         self.simple_w_trnpl = [
-            t_in.pk, t_buy_bond.pk, t_buy_stock.pk, t_out.pk, t_instrpl_stock.pk, t_instrpl_bond.pk,
-            t_trnpl.pk
+            self.t_in.pk, self.t_buy_bond.pk, self.t_sell_stock.pk, self.t_out.pk, self.t_instrpl_stock.pk,
+            self.t_instrpl_bond.pk, self.t_trnpl.pk
         ]
         self.simple_w_fxtrade = [
-            t_in.pk, t_buy_bond.pk, t_buy_stock.pk, t_out.pk, t_instrpl_stock.pk, t_instrpl_bond.pk, t_trnpl.pk,
-            t_fxtrade.pk
+            self.t_in.pk, self.t_buy_bond.pk, self.t_sell_stock.pk, self.t_out.pk, self.t_instrpl_stock.pk,
+            self.t_instrpl_bond.pk, self.t_trnpl.pk, self.t_fxtrade.pk
         ]
 
     def _print_transactions(self, transactions, *columns):
-        print('-' * 79)
+        print('=' * 79)
         print('Transactions')
         data = []
         for t in transactions:
