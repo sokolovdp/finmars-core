@@ -160,7 +160,7 @@ class PLReport2Builder(BaseReport2Builder):
 
             elif t_class in [TransactionClass.TRANSACTION_PL]:
                 item = self._get_item(t, ext=TransactionClass.TRANSACTION_PL)
-                item.name = TransactionClass.FX_TRADE
+                item.name = TransactionClass.TRANSACTION_PL
 
             elif t_class in [TransactionClass.FX_TRADE]:
                 spec = self._get_item(t, ext=TransactionClass.FX_TRADE)

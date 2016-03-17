@@ -72,6 +72,7 @@ class PLTestCase(BaseReportTestCase):
             self.assertEqual(ri.portfolio, ei.portfolio, '%s - portfolio' % ri.pk)
             self.assertEqual(ri.account, ei.account, '%s - account' % ri.pk)
             self.assertEqual(ri.instrument, ei.instrument, '%s - instrument' % ri.pk)
+            self.assertEqual(ri.name, ei.name, '%s - name' % ri.pk)
 
             self.assertEqual(n(ri.principal_with_sign_system_ccy), n(ei.principal_with_sign_system_ccy),
                              '%s - principal_with_sign_system_ccy' % ri.pk)
@@ -115,7 +116,7 @@ class PLTestCase(BaseReportTestCase):
                              principal_with_sign_system_ccy=-465.333333, carry_with_sign_system_ccy=4.566667,
                              overheads_with_sign_system_ccy=-2.233333, total_system_ccy=-463.000000),
                 PLReportItem(pk=b.make_key(None, None, None, None, TransactionClass.TRANSACTION_PL),
-                             portfolio=None, account=None, instrument=None,
+                             portfolio=None, account=None, instrument=None, name=TransactionClass.TRANSACTION_PL,
                              principal_with_sign_system_ccy=0.000000, carry_with_sign_system_ccy=-12.000000,
                              overheads_with_sign_system_ccy=-1.333333, total_system_ccy=-13.333333),
             ],
@@ -145,7 +146,7 @@ class PLTestCase(BaseReportTestCase):
                              principal_with_sign_system_ccy=-465.333333, carry_with_sign_system_ccy=4.566667,
                              overheads_with_sign_system_ccy=-2.233333, total_system_ccy=-463.000000),
                 PLReportItem(pk=b.make_key(None, self.acc1, None, None, TransactionClass.TRANSACTION_PL),
-                             portfolio=None, account=self.acc1, instrument=None,
+                             portfolio=None, account=self.acc1, instrument=None, name=TransactionClass.TRANSACTION_PL,
                              principal_with_sign_system_ccy=0.000000, carry_with_sign_system_ccy=-12.000000,
                              overheads_with_sign_system_ccy=-1.333333, total_system_ccy=-13.333333),
             ],
@@ -175,7 +176,7 @@ class PLTestCase(BaseReportTestCase):
                              principal_with_sign_system_ccy=-465.333333, carry_with_sign_system_ccy=4.566667,
                              overheads_with_sign_system_ccy=-2.233333, total_system_ccy=-463.000000),
                 PLReportItem(pk=b.make_key(self.p1, self.acc1, None, None, TransactionClass.TRANSACTION_PL),
-                             portfolio=self.p1, account=self.acc1, instrument=None,
+                             portfolio=self.p1, account=self.acc1, instrument=None, name=TransactionClass.TRANSACTION_PL,
                              principal_with_sign_system_ccy=0.000000, carry_with_sign_system_ccy=-12.000000,
                              overheads_with_sign_system_ccy=-1.333333, total_system_ccy=-13.333333),
             ],
@@ -205,11 +206,11 @@ class PLTestCase(BaseReportTestCase):
                              principal_with_sign_system_ccy=-465.333333, carry_with_sign_system_ccy=4.566667,
                              overheads_with_sign_system_ccy=-2.233333, total_system_ccy=-463.000000),
                 PLReportItem(pk=b.make_key(None, None, None, None, TransactionClass.TRANSACTION_PL),
-                             portfolio=None, account=None, instrument=None,
+                             portfolio=None, account=None, instrument=None,name=TransactionClass.TRANSACTION_PL,
                              principal_with_sign_system_ccy=0.000000, carry_with_sign_system_ccy=-12.000000,
                              overheads_with_sign_system_ccy=-1.333333, total_system_ccy=-13.333333),
                 PLReportItem(pk=b.make_key(None, None, None, None, TransactionClass.FX_TRADE),
-                             portfolio=None, account=None, instrument=None,
+                             portfolio=None, account=None, instrument=None,name=TransactionClass.FX_TRADE,
                              principal_with_sign_system_ccy=75.000000, carry_with_sign_system_ccy=0.000000,
                              overheads_with_sign_system_ccy=-1.500000, total_system_ccy=73.500000),
             ],
