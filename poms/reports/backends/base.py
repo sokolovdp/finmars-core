@@ -389,7 +389,7 @@ class BaseReport2Builder(object):
         for t in self.transactions:
             self.set_price(t)
 
-    def make_key(self, portfolio, account, instrument, currency):
+    def make_key(self, portfolio, account, instrument, currency, ext=None):
         if self._use_portfolio:
             portfolio = getattr(portfolio, 'pk', None)
         else:
@@ -409,9 +409,9 @@ class BaseReport2Builder(object):
             currency = getattr(currency, 'pk', None)
         else:
             currency = None
-        return '%s,%s,%s,%s' % (portfolio, account, instrument, currency,)
+        return '%s,%s,%s,%s,%s' % (portfolio, account, instrument, currency, ext)
 
-    def _get_transaction_key(self, trn, instr_attr, ccy_attr, acc_attr):
+    def _get_transaction_key(self, trn, instr_attr, ccy_attr, acc_attr, ext=None):
         if self._use_portfolio:
             portfolio = trn.portfolio
             # portfolio = getattr(portfolio, 'pk', None)
@@ -436,7 +436,7 @@ class BaseReport2Builder(object):
         else:
             currency = None
 
-        return self.make_key(portfolio, account, instrument, currency)
+        return self.make_key(portfolio, account, instrument, currency, ext=ext)
 
     def set_multipliers(self, multiplier_class):
         if multiplier_class == 'avco':

@@ -119,8 +119,8 @@ class PLReport2Builder(BaseReport2Builder):
         self._items = {}
         self._balance_items = {}
 
-    def _get_item(self, trn, trn_key=None):
-        t_key = trn_key or self._get_transaction_key(trn, 'instrument', None, 'account_position')
+    def _get_item(self, trn, ext=None):
+        t_key = self._get_transaction_key(trn, 'instrument', None, 'account_position', ext)
         try:
             return self._items[t_key]
         except KeyError:
@@ -184,10 +184,10 @@ class PLReport2Builder(BaseReport2Builder):
                 # t.carry_with_sign_system_ccy = t.carry_with_sign * t.settlement_currency_fx_rate
                 # t.overheads_with_sign_system_ccy = t.overheads_with_sign * t.settlement_currency_fx_rate
 
-                item = self._get_item(t, trn_key=TransactionClass.TRANSACTION_PL)
+                item = self._get_item(t, ext=TransactionClass.TRANSACTION_PL)
 
             elif t_class in [TransactionClass.FX_TRADE]:
-                spec = self._get_item(t, trn_key=TransactionClass.FX_TRADE)
+                spec = self._get_item(t, ext=TransactionClass.FX_TRADE)
 
                 self.set_currency_fx_rate(t, 'transaction_currency', date=t.accounting_date)
                 self.set_currency_fx_rate(t, 'settlement_currency')

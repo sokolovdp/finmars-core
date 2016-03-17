@@ -108,30 +108,32 @@ class BalanceReport(BaseReport):
 
 @python_2_unicode_compatible
 class PLReportInstrument(BaseReportItem):
-    def __init__(self, *args, **kwargs):
+    def __init__(self, principal_with_sign_system_ccy=0, carry_with_sign_system_ccy=0.,
+                 overheads_with_sign_system_ccy=0., total_system_ccy=0., *args, **kwargs):
         super(PLReportInstrument, self).__init__(*args, **kwargs)
-        self.principal_with_sign_system_ccy = 0.
-        self.carry_with_sign_system_ccy = 0.
-        self.overheads_with_sign_system_ccy = 0.
-        self.total_system_ccy = 0.
+        self.principal_with_sign_system_ccy = principal_with_sign_system_ccy
+        self.carry_with_sign_system_ccy = carry_with_sign_system_ccy
+        self.overheads_with_sign_system_ccy = overheads_with_sign_system_ccy
+        self.total_system_ccy = total_system_ccy
 
     def __str__(self):
         return 'PLReportItem'
 
 
 class PLReportSummary(object):
-    def __init__(self, **kwargs):
-        self.principal_with_sign_system_ccy = 0.
-        self.carry_with_sign_system_ccy = 0.
-        self.overheads_with_sign_system_ccy = 0.
-        self.total_system_ccy = 0.
+    def __init__(self, principal_with_sign_system_ccy=0., carry_with_sign_system_ccy=0.,
+                 overheads_with_sign_system_ccy=0., total_system_ccy=0.):
+        self.principal_with_sign_system_ccy = principal_with_sign_system_ccy
+        self.carry_with_sign_system_ccy = carry_with_sign_system_ccy
+        self.overheads_with_sign_system_ccy = overheads_with_sign_system_ccy
+        self.total_system_ccy = total_system_ccy
 
 
 # @python_2_unicode_compatible
 class PLReport(BaseReport):
-    def __init__(self, *args, **kwargs):
+    def __init__(self, summary=None, *args, **kwargs):
         super(PLReport, self).__init__(*args, **kwargs)
-        self.summary = PLReportSummary()
+        self.summary = summary or PLReportSummary()
 
 
 # ----------------------------------------------------------------------------------------------------------------------
