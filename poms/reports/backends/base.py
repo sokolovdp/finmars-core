@@ -336,10 +336,9 @@ class BaseReport2Builder(object):
     def system_currency(self):
         return Currency.objects.get(master_user__isnull=True, user_code=settings.CURRENCY_CODE)
 
-    def find_currency_history(self, ccy):
+    def find_currency_history(self, ccy, date=None):
         assert ccy is not None, 'ccy is None!'
-        # TODO: In prod use always current day!
-        d = self._end_date
+        d = date or self._end_date
         if ccy.is_system:
             return CurrencyHistory(currency=ccy, date=d, fx_rate=1.)
         key = '%s:%s' % (ccy.id, d)
@@ -351,10 +350,9 @@ class BaseReport2Builder(object):
             self._currency_history_cache[key] = h
         return h
 
-    def find_price_history(self, instr):
+    def find_price_history(self, instr, date=None):
         assert instr is not None, 'instrument is None!'
-        # TODO: In prod use always current day!
-        d = self._end_date
+        d = date or self._end_date
         key = '%s:%s' % (instr.id, d)
         h = self._price_history_cache.get(key, None)
         if h is None:
@@ -364,13 +362,15 @@ class BaseReport2Builder(object):
             self._price_history_cache[key] = h
         return h
 
-    def set_currency_fx_rate(self, obj, currency_attr):
+    def set_currency_fx_rate(self, obj, currency_attr, date=None):
         currency = getattr(obj, currency_attr)
         if currency:
-            currency_history = self.find_currency_history(currency)
+            currency_history = self.find_currency_history(currency, date=date)
             currency_fx_rate = getattr(currency_history, 'fx_rate', 0.) or 0.
             setattr(obj, '%s_history' % currency_attr, currency_history)
             setattr(obj, '%s_fx_rate' % currency_attr, currency_fx_rate)
+            return currency_fx_rate
+        return None
 
     def set_fx_rate(self, transaction):
         self.set_currency_fx_rate(transaction, 'transaction_currency')

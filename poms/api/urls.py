@@ -56,6 +56,7 @@ router.register(r'reports/ytm', reports.YTMReportViewSet, "ytmreport")
 router.register(r'reports/simple-multipliers', reports.SimpleMultipliersReportViewSet, "simplemultipliersreport")
 
 router.register(r'reports/v2/balance', reports.BalanceReport2ViewSet, "balancereport2")
+router.register(r'reports/v2/pl', reports.PLReport2ViewSet, "plreport2")
 router.register(r'reports/v2/simple-multipliers', reports.SimpleMultipliersReport2ViewSet, "simplemultipliersreport2")
 
 router.register(r'util/ping', views.PingViewSet, "ping")

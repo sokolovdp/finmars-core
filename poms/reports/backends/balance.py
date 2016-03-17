@@ -177,8 +177,8 @@ class BalanceReport2Builder(BaseReport2Builder):
         self._invested_items = {}
         self._items = {}
 
-    def _get_item0(self, items, trn, trn_key=None, instr_attr=None, ccy_attr=None, acc_attr=None):
-        t_key = trn_key or self._get_transaction_key(trn, instr_attr, ccy_attr, acc_attr)
+    def _get_item0(self, items, trn, instr_attr=None, ccy_attr=None, acc_attr=None):
+        t_key = self._get_transaction_key(trn, instr_attr, ccy_attr, acc_attr)
         try:
             return items[t_key]
         except KeyError:
@@ -191,13 +191,11 @@ class BalanceReport2Builder(BaseReport2Builder):
             items[t_key] = item
             return item
 
-    def _get_item(self, trn, trn_key=None, instr_attr=None, ccy_attr=None, acc_attr=None):
-        return self._get_item0(self._items, trn, trn_key=trn_key,
-                               instr_attr=instr_attr, ccy_attr=ccy_attr, acc_attr=acc_attr)
+    def _get_item(self, trn, instr_attr=None, ccy_attr=None, acc_attr=None):
+        return self._get_item0(self._items, trn, instr_attr=instr_attr, ccy_attr=ccy_attr, acc_attr=acc_attr)
 
     def _get_invested_items(self, trn, instr_attr=None, ccy_attr=None, acc_attr=None):
-        return self._get_item0(self._invested_items, trn,
-                               instr_attr=instr_attr, ccy_attr=ccy_attr, acc_attr=acc_attr)
+        return self._get_item0(self._invested_items, trn, instr_attr=instr_attr, ccy_attr=ccy_attr, acc_attr=acc_attr)
 
     def get_accounts(self, trn):
         accounting_date, cash_date = trn.accounting_date, trn.cash_date
@@ -212,6 +210,8 @@ class BalanceReport2Builder(BaseReport2Builder):
             return 0, 'account_position', 'account_cash'
 
     def get_items(self):
+        # TODO: use show_transaction_details
+        # TODO: use transaction.currency_fx_rate
         for t in self.transactions:
             t_class = t.transaction_class.code
             case, acc_pos_attr, acc_cash_attr = self.get_accounts(t)
@@ -222,7 +222,6 @@ class BalanceReport2Builder(BaseReport2Builder):
 
                 invested_item = self._get_invested_items(t, ccy_attr='transaction_currency', acc_attr=acc_pos_attr)
                 invested_item.balance_position += t.position_size_with_sign
-
             elif t_class in [TransactionClass.BUY, TransactionClass.SELL]:
                 if case == 0 or case == 1:
                     instrument_item = self._get_item(t, instr_attr='instrument', acc_attr=acc_pos_attr)
@@ -287,7 +286,6 @@ class BalanceReport2Builder(BaseReport2Builder):
 
                 i.market_value_system_ccy = i.principal_value_system_ccy + i.accrued_value_system_ccy
             elif i.currency:
-                # i.currency_name = i.currency.name
                 i.currency_history = self.find_currency_history(i.currency)
                 i.currency_fx_rate = getattr(i.currency_history, 'fx_rate', 0.)
                 i.principal_value_system_ccy = i.balance_position * i.currency_fx_rate

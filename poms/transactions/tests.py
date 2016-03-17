@@ -2,16 +2,17 @@ from __future__ import unicode_literals, division
 
 from datetime import date
 
+import pandas as pd
 from django.contrib.auth.models import User
 from django.test import TestCase
-import pandas as pd
 
 from poms.accounts.models import Account
 from poms.currencies.models import Currency, CurrencyHistory
 from poms.instruments.models import Instrument, PriceHistory
 from poms.portfolios.models import Portfolio
 from poms.reports.backends.balance import BalanceReport2Builder
-from poms.reports.models import BalanceReport
+from poms.reports.backends.pl import PLReport2Builder
+from poms.reports.models import BalanceReport, PLReport
 from poms.transactions.models import Transaction, TransactionClass
 from poms.users.models import MasterUser
 
@@ -127,7 +128,7 @@ class BalanceTestCase(TestCase):
             position_size_with_sign=-200,
             settlement_currency=rub,
             cash_consideration=1000.,
-            principal_with_sign=-1100.,
+            principal_with_sign=1100.,
             carry_with_sign=0.,
             overheads_with_sign=-100.,
             transaction_date=date(2016, 3, 4),
@@ -147,7 +148,7 @@ class BalanceTestCase(TestCase):
             transaction_currency=rub,
             position_size_with_sign=-1000,
             settlement_currency=rub,  # TODO: must be None
-            cash_consideration=1000.,
+            cash_consideration=0.,
             principal_with_sign=0,
             carry_with_sign=0.,
             overheads_with_sign=0.,
@@ -271,6 +272,30 @@ class BalanceTestCase(TestCase):
             'p_l_system_ccy': "%.6f" % instance.summary.p_l_system_ccy,
         }, total_res, 'Summary failed')
 
+    def _validate_pl(self, instance, instr_res, ext_res, total_res):
+        instr = {}
+        ext = {}
+        for i in instance.items:
+            portfolio = getattr(i.portfolio, 'name', None)
+            account = getattr(i.account, 'name', None)
+            v = "%.6f" % i.principal_with_sign_system_ccy, "%.6f" % i.carry_with_sign_system_ccy, \
+                "%.6f" % i.overheads_with_sign_system_ccy, "%.6f" % i.total_system_ccy,
+            if i.instrument:
+                instr[portfolio, account, i.instrument.name] = v
+            else:
+                ext[portfolio, account, i.pk] = v
+
+        self.assertDictEqual(instr, instr_res, 'Instruments failed')
+
+        self.assertDictEqual(ext, ext_res, 'Ext rows failed')
+
+        self.assertDictEqual({
+            'principal_with_sign_system_ccy': "%.6f" % instance.summary.principal_with_sign_system_ccy,
+            'carry_with_sign_system_ccy': "%.6f" % instance.summary.carry_with_sign_system_ccy,
+            'overheads_with_sign_system_ccy': "%.6f" % instance.summary.overheads_with_sign_system_ccy,
+            'total_system_ccy': "%.6f" % instance.summary.total_system_ccy,
+        }, total_res, 'Summary failed')
+
     def _print_transactions(self, transactions, *columns):
         print('-' * 79)
         print('Transactions')
@@ -301,11 +326,48 @@ class BalanceTestCase(TestCase):
 
         print('-' * 79)
         print('Summary')
-        print(pd.DataFrame(data=[
-            ['invested_value_system_ccy', instance.summary.invested_value_system_ccy],
-            ['current_value_system_ccy', instance.summary.current_value_system_ccy],
-            ['p_l_system_ccy', instance.summary.p_l_system_ccy],
-        ], columns=['name', 'value']))
+        print(pd.DataFrame(
+            data=[[instance.summary.invested_value_system_ccy, instance.summary.current_value_system_ccy,
+                   instance.summary.p_l_system_ccy], ],
+            columns=['invested_value_system_ccy', 'current_value_system_ccy', 'p_l_system_ccy']))
+
+    def _print_pl(self, instance):
+        columns = ['pk',
+                   'portfolio', 'account', 'instrument',
+                   'principal_with_sign_system_ccy', 'carry_with_sign_system_ccy', 'overheads_with_sign_system_ccy',
+                   'total_system_ccy']
+        data = []
+
+        self.principal_with_sign_system_ccy = 0.
+        self.carry_with_sign_system_ccy = 0.
+        self.overheads_with_sign_system_ccy = 0.
+        self.total_system_ccy = 0.
+
+        for i in instance.items:
+            portfolio = i.portfolio
+            acc = i.account
+            instr = i.instrument
+            data.append([
+                i.pk,
+                getattr(portfolio, 'name', None),
+                getattr(acc, 'name', None),
+                getattr(instr, 'name', None),
+                i.principal_with_sign_system_ccy,
+                i.carry_with_sign_system_ccy,
+                i.overheads_with_sign_system_ccy,
+                i.total_system_ccy,
+            ])
+        print('-' * 79)
+        print('Positions')
+        print(pd.DataFrame(data=data, columns=columns))
+
+        print('-' * 79)
+        print('Summary')
+        print(pd.DataFrame(
+            data=[[instance.summary.principal_with_sign_system_ccy, instance.summary.carry_with_sign_system_ccy,
+                   instance.summary.overheads_with_sign_system_ccy, instance.summary.total_system_ccy]],
+            columns=['principal_with_sign_system_ccy', 'carry_with_sign_system_ccy', 'overheads_with_sign_system_ccy',
+                     'total_system_ccy']))
 
     def test_balance1(self):
         queryset = Transaction.objects.filter(pk__in=self.trn_1)
@@ -381,7 +443,6 @@ class BalanceTestCase(TestCase):
                                    'current_value_system_ccy': "633.116667",
                                    'p_l_system_ccy': "-653.550000",
                                })
-
 
     def test_balance2(self):
         queryset = Transaction.objects.filter(pk__in=self.trn_2)
@@ -554,9 +615,15 @@ class BalanceTestCase(TestCase):
         b = BalanceReport2Builder(instance=instance, queryset=queryset)
         b.build()
 
-        self._print_transactions(b.transactions, 'transaction_class', 'portfolio', 'instrument', 'transaction_currency',
-                                 'settlement_currency', 'cash_consideration',
+        self._print_transactions(b.transactions,
+                                 'transaction_class',
+                                 'portfolio',
+                                 'instrument', 'transaction_currency',
+                                 'position_size_with_sign',
+                                 'settlement_currency',
+                                 'cash_consideration',
                                  'accounting_date', 'cash_date')
+        print('*' * 79)
         self._print_balance(instance)
         self._validate_balance(instance,
                                instr_res={
@@ -583,14 +650,6 @@ class BalanceTestCase(TestCase):
         b = BalanceReport2Builder(instance=instance, queryset=queryset)
         b.build()
 
-        self._print_transactions(b.transactions,
-                                 'transaction_class',
-                                 'portfolio',
-                                 'instrument', 'transaction_currency',
-                                 'position_size_with_sign',
-                                 'settlement_currency',
-                                 'cash_consideration',
-                                 'accounting_date', 'cash_date')
         self._print_balance(instance)
         self._validate_balance(instance,
                                instr_res={
@@ -608,3 +667,121 @@ class BalanceTestCase(TestCase):
                                    'current_value_system_ccy': "646.450000",
                                    'p_l_system_ccy': "-653.550000",
                                })
+
+    def test_pl1(self):
+        queryset = Transaction.objects.filter(pk__in=self.trn_2)
+
+        instance = PLReport(master_user=self.m,
+                            begin_date=None, end_date=None,
+                            use_portfolio=False, use_account=False)
+        b = PLReport2Builder(instance=instance, queryset=queryset)
+        b.build()
+        self._print_transactions(instance.transactions,
+                                 'transaction_class',
+                                 'portfolio',
+                                 'instrument', 'transaction_currency',
+                                 'position_size_with_sign',
+                                 'settlement_currency',
+                                 'cash_consideration',
+                                 'principal_with_sign', 'carry_with_sign', 'overheads_with_sign',
+                                 'principal_with_sign_system_ccy', 'carry_with_sign_system_ccy',
+                                 'overheads_with_sign_system_ccy'
+                                 )
+        self._print_pl(instance)
+        self._validate_pl(instance,
+                          instr_res={
+                              (None, None, 'instr1-bond, CHF'): (
+                                  "-162.000000", "13.450000", '-15.000000', '-163.550000'),
+                              (None, None, 'instr2-stock'): ("-465.333333", "4.566667", '-2.233333', '-463.000000'),
+                          },
+                          ext_res={
+                              (None, None, 'Transaction PL'): ("0.000000", "-12.000000", '-1.333333', '-13.333333'),
+                          },
+                          total_res={
+                              'principal_with_sign_system_ccy': "-627.333333",
+                              'carry_with_sign_system_ccy': "6.016667",
+                              'overheads_with_sign_system_ccy': "-18.566667",
+                              'total_system_ccy': "-639.883333",
+                          })
+
+
+        instance = PLReport(master_user=self.m,
+                            begin_date=None, end_date=None,
+                            use_portfolio=False, use_account=True)
+        b = PLReport2Builder(instance=instance, queryset=queryset)
+        b.build()
+        self._print_pl(instance)
+        self._validate_pl(instance,
+                          instr_res={
+                              (None, 'Acc1', 'instr1-bond, CHF'): (
+                                  "-162.000000", "13.450000", '-15.000000', '-163.550000'),
+                              (None, 'Acc1', 'instr2-stock'): ("-465.333333", "4.566667", '-2.233333', '-463.000000'),
+                          },
+                          ext_res={
+                              (None, 'Acc1', 'Transaction PL'): ("0.000000", "-12.000000", '-1.333333', '-13.333333'),
+                          },
+                          total_res={
+                              'principal_with_sign_system_ccy': "-627.333333",
+                              'carry_with_sign_system_ccy': "6.016667",
+                              'overheads_with_sign_system_ccy': "-18.566667",
+                              'total_system_ccy': "-639.883333",
+                          })
+
+        instance = PLReport(master_user=self.m,
+                            begin_date=None, end_date=None,
+                            use_portfolio=True, use_account=True)
+        b = PLReport2Builder(instance=instance, queryset=queryset)
+        b.build()
+        self._print_pl(instance)
+        self._validate_pl(instance,
+                          instr_res={
+                              ('p1', 'Acc1', 'instr1-bond, CHF'): (
+                                  "-162.000000", "13.450000", '-15.000000', '-163.550000'),
+                              ('p1', 'Acc1', 'instr2-stock'): ("-465.333333", "4.566667", '-2.233333', '-463.000000'),
+                          },
+                          ext_res={
+                              ('p1', 'Acc1', 'Transaction PL'): ("0.000000", "-12.000000", '-1.333333', '-13.333333'),
+                          },
+                          total_res={
+                              'principal_with_sign_system_ccy': "-627.333333",
+                              'carry_with_sign_system_ccy': "6.016667",
+                              'overheads_with_sign_system_ccy': "-18.566667",
+                              'total_system_ccy': "-639.883333",
+                          })
+
+    def test_pl2(self):
+        queryset = Transaction.objects.filter(pk__in=self.trn_3)
+
+        instance = PLReport(master_user=self.m,
+                            begin_date=None, end_date=None,
+                            use_portfolio=False, use_account=False)
+        b = PLReport2Builder(instance=instance, queryset=queryset)
+        b.build()
+        self._print_transactions(instance.transactions,
+                                 'transaction_class',
+                                 'portfolio',
+                                 'instrument', 'transaction_currency',
+                                 'position_size_with_sign',
+                                 'settlement_currency',
+                                 'cash_consideration',
+                                 'principal_with_sign', 'carry_with_sign', 'overheads_with_sign',
+                                 'principal_with_sign_system_ccy', 'carry_with_sign_system_ccy',
+                                 'overheads_with_sign_system_ccy'
+                                 )
+        self._print_pl(instance)
+        self._validate_pl(instance,
+                          instr_res={
+                              (None, None, 'instr1-bond, CHF'): (
+                                  "-162.000000", "13.450000", '-15.000000', '-163.550000'),
+                              (None, None, 'instr2-stock'): ("-465.333333", "4.566667", '-2.233333', '-463.000000'),
+                          },
+                          ext_res={
+                              (None, None, 'FX Trade'): ("75.000000", "0.000000", '-1.500000', '73.500000'),
+                              (None, None, 'Transaction PL'): ("0.000000", "-12.000000", '-1.333333', '-13.333333'),
+                          },
+                          total_res={
+                              'principal_with_sign_system_ccy': "-552.333333",
+                              'carry_with_sign_system_ccy': "6.016667",
+                              'overheads_with_sign_system_ccy': "-20.066667",
+                              'total_system_ccy': "-566.383333",
+                          })
