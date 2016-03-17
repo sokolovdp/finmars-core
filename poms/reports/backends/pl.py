@@ -5,7 +5,7 @@ import six
 
 from poms.reports.backends.balance import BalanceReportBuilder
 from poms.reports.backends.base import BaseReport2Builder
-from poms.reports.models import PLReportInstrument, BalanceReportItem
+from poms.reports.models import PLReportItem, BalanceReportItem
 from poms.transactions.models import TransactionClass
 
 
@@ -20,7 +20,7 @@ class PLReportBuilder(BalanceReportBuilder):
         items = {}
         for bi in balance_items:
             if bi.instrument:
-                pli = PLReportInstrument(bi.instrument)
+                pli = PLReportItem(bi.instrument)
                 pli.pk = '%s' % bi.instrument.id
                 items['%s' % bi.instrument.id] = pli
 
@@ -68,7 +68,7 @@ class PLReportBuilder(BalanceReportBuilder):
                 try:
                     pli = items[t_class]
                 except KeyError:
-                    pli = items[t_class] = PLReportInstrument()
+                    pli = items[t_class] = PLReportItem()
                     pli.pk = t_class
                 pli.principal_with_sign_system_ccy += t.principal_with_sign_system_ccy
                 pli.carry_with_sign_system_ccy += t.carry_with_sign_system_ccy
@@ -127,7 +127,7 @@ class PLReport2Builder(BaseReport2Builder):
             portfolio = trn.portfolio if self._use_portfolio else None
             account = trn.account_position if self._use_account else None
             instrument = trn.instrument
-            item = PLReportInstrument(pk=t_key, portfolio=portfolio, account=account, instrument=instrument)
+            item = PLReportItem(pk=t_key, portfolio=portfolio, account=account, instrument=instrument)
             self._items[t_key] = item
             return item
 

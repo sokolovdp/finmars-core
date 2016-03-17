@@ -107,10 +107,10 @@ class BalanceReport(BaseReport):
 
 
 @python_2_unicode_compatible
-class PLReportInstrument(BaseReportItem):
+class PLReportItem(BaseReportItem):
     def __init__(self, principal_with_sign_system_ccy=0, carry_with_sign_system_ccy=0.,
                  overheads_with_sign_system_ccy=0., total_system_ccy=0., *args, **kwargs):
-        super(PLReportInstrument, self).__init__(*args, **kwargs)
+        super(PLReportItem, self).__init__(*args, **kwargs)
         self.principal_with_sign_system_ccy = principal_with_sign_system_ccy
         self.carry_with_sign_system_ccy = carry_with_sign_system_ccy
         self.overheads_with_sign_system_ccy = overheads_with_sign_system_ccy

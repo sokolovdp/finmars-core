@@ -6,7 +6,7 @@ from rest_framework import serializers
 from poms.api.fields import CurrentMasterUserDefault
 from poms.currencies.serializers import CurrencyField
 from poms.instruments.serializers import InstrumentField
-from poms.reports.models import BalanceReport, BalanceReportItem, BalanceReportSummary, PLReportInstrument, PLReport, \
+from poms.reports.models import BalanceReport, BalanceReportItem, BalanceReportSummary, PLReportItem, PLReport, \
     PLReportSummary, CostReport, BaseReport
 from poms.transactions.models import Transaction
 
@@ -194,14 +194,14 @@ class PLReportTransactionSerializer(BaseTransactionSerializer):
         ]
 
 
-class PLReportInstrumentSerializer(BaseReportItemSerializer):
+class PLReportItemSerializer(BaseReportItemSerializer):
     principal_with_sign_system_ccy = serializers.FloatField(read_only=True)
     carry_with_sign_system_ccy = serializers.FloatField(read_only=True)
     overheads_with_sign_system_ccy = serializers.FloatField(read_only=True)
     total_system_ccy = serializers.FloatField(read_only=True)
 
     def create(self, validated_data):
-        return PLReportInstrument(**validated_data)
+        return PLReportItem(**validated_data)
 
     def update(self, instance, validated_data):
         return instance
@@ -226,8 +226,8 @@ class PLReportSummarySerializer(serializers.Serializer):
 
 class PLReportSerializer(BaseReportSerializer):
     transactions = PLReportTransactionSerializer(many=True, read_only=True)
-    items = PLReportInstrumentSerializer(many=True, read_only=True,
-                                         help_text=_('items'))
+    items = PLReportItemSerializer(many=True, read_only=True,
+                                   help_text=_('items'))
     summary = PLReportSummarySerializer(read_only=True,
                                         help_text=_('total in specified currency'))
 
@@ -282,7 +282,7 @@ class CostReportInstrumentSerializer(BaseReportItemSerializer):
     cost_price_adjusted = serializers.FloatField(read_only=True)
 
     def create(self, validated_data):
-        return PLReportInstrument(**validated_data)
+        return PLReportItem(**validated_data)
 
     def update(self, instance, validated_data):
         return instance
@@ -355,7 +355,7 @@ class YTMReportInstrumentSerializer(BaseReportItemSerializer):
     time_invested = serializers.FloatField(read_only=True)
 
     def create(self, validated_data):
-        return PLReportInstrument(**validated_data)
+        return PLReportItem(**validated_data)
 
     def update(self, instance, validated_data):
         return instance
