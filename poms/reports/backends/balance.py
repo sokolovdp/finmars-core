@@ -86,7 +86,10 @@ class BalanceReportBuilder(BaseReportBuilder):
                 invested_item = self._get_currency_item(invested_items, t.transaction_currency, account_position)
                 invested_item.balance_position += t.position_size_with_sign
 
-            elif t_class in [TransactionClass.BUY, TransactionClass.SELL, TransactionClass.FX_TRADE]:
+            elif t_class in [TransactionClass.FX_TRADE]:
+                # TODO: use transaction_currency
+                pass
+            elif t_class in [TransactionClass.BUY, TransactionClass.SELL]:
                 if case == 0 or case == 1:
                     if account_position:
                         instrument_item = self._get_instrument_item(items, t.instrument, account_position)

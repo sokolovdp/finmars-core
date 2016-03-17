@@ -83,6 +83,7 @@ class BaseReportBuilder(object):
 
     def find_currency_history(self, currency, date=None):
         assert currency is not None, 'currency is None!'
+        # TODO: In prod use always current day!
         # if currency is None:
         #     return None
         if not date:
@@ -100,6 +101,7 @@ class BaseReportBuilder(object):
 
     def find_price_history(self, instrument, date=None):
         assert instrument is not None, 'instrument is None!'
+        # TODO: In prod use always current day!
         if not date:
             date = self.end_date
         key = '%s:%s' % (instrument.id, date)
