@@ -45,7 +45,7 @@ class BaseReport(object):
 
 @python_2_unicode_compatible
 class BalanceReportItem(BaseReportItem):
-    def __init__(self, currency=None, balance_position=0., *args, **kwargs):
+    def __init__(self, currency=None, balance_position=0., market_value_system_ccy=None, *args, **kwargs):
         super(BalanceReportItem, self).__init__(*args, **kwargs)
         self.balance_position = balance_position
 
@@ -71,7 +71,7 @@ class BalanceReportItem(BaseReportItem):
 
         self.principal_value_system_ccy = None
         self.accrued_value_system_ccy = None
-        self.market_value_system_ccy = None
+        self.market_value_system_ccy = market_value_system_ccy
 
         self.transaction = None  # -> Transaction for case 1 and case 2
 
@@ -84,11 +84,10 @@ class BalanceReportItem(BaseReportItem):
 
 @python_2_unicode_compatible
 class BalanceReportSummary(object):
-    def __init__(self, report):
-        self.report = report
-        self.invested_value_system_ccy = 0.
-        self.current_value_system_ccy = 0.
-        self.p_l_system_ccy = 0.
+    def __init__(self, invested_value_system_ccy=0., current_value_system_ccy=0., p_l_system_ccy=0.):
+        self.invested_value_system_ccy = invested_value_system_ccy
+        self.current_value_system_ccy = current_value_system_ccy
+        self.p_l_system_ccy = p_l_system_ccy
 
     def __str__(self):
         return "invested_value_system_ccy=%s, current_value_system_ccy=%s, p_l_system_ccy=%s" % \
@@ -97,11 +96,11 @@ class BalanceReportSummary(object):
 
 # @python_2_unicode_compatible
 class BalanceReport(BaseReport):
-    def __init__(self, show_transaction_details=True, *args, **kwargs):
-        super(BalanceReport, self).__init__(*args, **kwargs)
+    def __init__(self, show_transaction_details=True, items=None, summary=None, *args, **kwargs):
+        super(BalanceReport, self).__init__(items=items, *args, **kwargs)
         self.show_transaction_details = show_transaction_details
         self.invested_items = []
-        self.summary = BalanceReportSummary(self)
+        self.summary = summary or BalanceReportSummary()
 
 
 # ----------------------------------------------------------------------------------------------------------------------

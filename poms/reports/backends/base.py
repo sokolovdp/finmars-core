@@ -389,32 +389,54 @@ class BaseReport2Builder(object):
         for t in self.transactions:
             self.set_price(t)
 
-    def _get_transaction_key(self, trn, instr_attr, ccy_attr, acc_attr):
+    def make_key(self, portfolio, account, instrument, currency):
         if self._use_portfolio:
-            portfolio = trn.portfolio
             portfolio = getattr(portfolio, 'pk', None)
         else:
             portfolio = None
 
         if self._use_account:
-            account = getattr(trn, acc_attr, None)
             account = getattr(account, 'pk', None)
+        else:
+            account = None
+
+        if instrument:
+            instrument = getattr(instrument, 'pk', None)
+        else:
+            instrument = None
+
+        if currency:
+            currency = getattr(currency, 'pk', None)
+        else:
+            currency = None
+        return '%s,%s,%s,%s' % (portfolio, account, instrument, currency,)
+
+    def _get_transaction_key(self, trn, instr_attr, ccy_attr, acc_attr):
+        if self._use_portfolio:
+            portfolio = trn.portfolio
+            # portfolio = getattr(portfolio, 'pk', None)
+        else:
+            portfolio = None
+
+        if self._use_account:
+            account = getattr(trn, acc_attr, None)
+            # account = getattr(account, 'pk', None)
         else:
             account = None
 
         if instr_attr:
             instrument = getattr(trn, instr_attr, None)
-            instrument = getattr(instrument, 'pk', None)
+            # instrument = getattr(instrument, 'pk', None)
         else:
             instrument = None
 
         if ccy_attr:
             currency = getattr(trn, ccy_attr, None)
-            currency = getattr(currency, 'pk', None)
+            # currency = getattr(currency, 'pk', None)
         else:
             currency = None
 
-        return 'p=%s, a=%s, i=%s, c=%s' % (portfolio, account, instrument, currency,)
+        return self.make_key(portfolio, account, instrument, currency)
 
     def set_multipliers(self, multiplier_class):
         if multiplier_class == 'avco':
