@@ -78,7 +78,7 @@ class BaseReportTestCase(TestCase):
         self.p1 = Portfolio.objects.create(master_user=m, name='p1')
         self.p2 = Portfolio.objects.create(master_user=m, name='p2')
 
-        t1 = Transaction.objects.create(
+        t_in = Transaction.objects.create(
             master_user=m,
             transaction_class=cash_inflow,
             portfolio=self.p1,
@@ -99,7 +99,7 @@ class BaseReportTestCase(TestCase):
             reference_fx_rate=1.3
         )
 
-        t2 = Transaction.objects.create(
+        t_buy_bond = Transaction.objects.create(
             master_user=m,
             transaction_class=buy,
             portfolio=self.p1,
@@ -120,7 +120,7 @@ class BaseReportTestCase(TestCase):
             reference_fx_rate=None
         )
 
-        t3 = Transaction.objects.create(
+        t_buy_stock = Transaction.objects.create(
             master_user=m,
             transaction_class=sell,
             portfolio=self.p1,
@@ -141,7 +141,7 @@ class BaseReportTestCase(TestCase):
             reference_fx_rate=None
         )
 
-        t4 = Transaction.objects.create(
+        t_out = Transaction.objects.create(
             master_user=m,
             transaction_class=cash_outflow,
             portfolio=self.p1,
@@ -162,7 +162,7 @@ class BaseReportTestCase(TestCase):
             reference_fx_rate=1 / 75.
         )
 
-        t5 = Transaction.objects.create(
+        t_instrpl_stock = Transaction.objects.create(
             master_user=m,
             transaction_class=instrument_pl,
             portfolio=self.p1,
@@ -183,7 +183,7 @@ class BaseReportTestCase(TestCase):
             reference_fx_rate=None
         )
 
-        t6 = Transaction.objects.create(
+        t_instrpl_bond = Transaction.objects.create(
             master_user=m,
             transaction_class=instrument_pl,
             portfolio=self.p1,
@@ -204,7 +204,7 @@ class BaseReportTestCase(TestCase):
             reference_fx_rate=None
         )
 
-        t7 = Transaction.objects.create(
+        t_trnpl = Transaction.objects.create(
             master_user=m,
             transaction_class=transaction_pl,
             portfolio=self.p1,
@@ -225,7 +225,7 @@ class BaseReportTestCase(TestCase):
             reference_fx_rate=None
         )
 
-        t8 = Transaction.objects.create(
+        t_fxtrade = Transaction.objects.create(
             master_user=m,
             transaction_class=fx_tade,
             portfolio=self.p1,
@@ -246,9 +246,17 @@ class BaseReportTestCase(TestCase):
             reference_fx_rate=None
         )
 
-        self.trn_1 = [t1.pk, t2.pk, t3.pk, t4.pk]  # [inflow, buy, sell, outflow]
-        self.trn_2 = [t1.pk, t2.pk, t3.pk, t4.pk, t5.pk, t6.pk, t7.pk]  # + [instr_pl, instr_pl, trn_pk]
-        self.trn_3 = [t1.pk, t2.pk, t3.pk, t4.pk, t5.pk, t6.pk, t7.pk, t8.pk]  # + [fx trade]
+        self.simple = [
+            t_in.pk, t_buy_bond.pk, t_buy_stock.pk, t_out.pk
+        ]
+        self.simple_w_trnpl = [
+            t_in.pk, t_buy_bond.pk, t_buy_stock.pk, t_out.pk, t_instrpl_stock.pk, t_instrpl_bond.pk,
+            t_trnpl.pk
+        ]
+        self.simple_w_fxtrade = [
+            t_in.pk, t_buy_bond.pk, t_buy_stock.pk, t_out.pk, t_instrpl_stock.pk, t_instrpl_bond.pk, t_trnpl.pk,
+            t_fxtrade.pk
+        ]
 
     def _print_transactions(self, transactions, *columns):
         print('-' * 79)

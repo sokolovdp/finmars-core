@@ -74,7 +74,7 @@ class BalanceTestCase(BaseReportTestCase):
                          'p_l_system_ccy')
 
     def test_balance1(self):
-        queryset = Transaction.objects.filter(pk__in=self.trn_1)
+        queryset = Transaction.objects.filter(pk__in=self.simple)
 
         instance = BalanceReport(master_user=self.m,
                                  begin_date=None, end_date=None,
@@ -171,7 +171,7 @@ class BalanceTestCase(BaseReportTestCase):
         ))
 
     def test_balance2(self):
-        queryset = Transaction.objects.filter(pk__in=self.trn_2)
+        queryset = Transaction.objects.filter(pk__in=self.simple_w_trnpl)
 
         instance = BalanceReport(master_user=self.m,
                                  begin_date=None, end_date=date(2016, 3, 15),
@@ -276,7 +276,7 @@ class BalanceTestCase(BaseReportTestCase):
         ))
 
     def test_balance3(self):
-        queryset = Transaction.objects.filter(pk__in=self.trn_3)
+        queryset = Transaction.objects.filter(pk__in=self.simple_w_fxtrade)
 
         instance = BalanceReport(master_user=self.m,
                                  begin_date=None, end_date=date(2016, 3, 15),
@@ -399,7 +399,7 @@ class BalanceTestCase(BaseReportTestCase):
         ))
 
     def test_balance1_w_dates(self):
-        queryset = Transaction.objects.filter(pk__in=self.trn_1)
+        queryset = Transaction.objects.filter(pk__in=self.simple)
         instance = BalanceReport(master_user=self.m,
                                  begin_date=None, end_date=date(2016, 3, 5),
                                  use_portfolio=False, use_account=True,
@@ -429,7 +429,7 @@ class BalanceTestCase(BaseReportTestCase):
                                          p_l_system_ccy=-194.883333)
         ))
 
-        queryset = Transaction.objects.filter(pk__in=self.trn_1)
+        queryset = Transaction.objects.filter(pk__in=self.simple)
         instance = BalanceReport(master_user=self.m,
                                  begin_date=None, end_date=date(2016, 3, 6),
                                  use_portfolio=False, use_account=True,

@@ -95,7 +95,7 @@ class BalanceTestCase(BaseReportTestCase):
                          'total_system_ccy')
 
     def test_pl1(self):
-        queryset = Transaction.objects.filter(pk__in=self.trn_2)
+        queryset = Transaction.objects.filter(pk__in=self.simple_w_trnpl)
 
         instance = PLReport(master_user=self.m,
                             begin_date=None, end_date=None,
@@ -180,7 +180,7 @@ class BalanceTestCase(BaseReportTestCase):
         ))
 
     def test_pl2(self):
-        queryset = Transaction.objects.filter(pk__in=self.trn_3)
+        queryset = Transaction.objects.filter(pk__in=self.simple_w_fxtrade)
 
         instance = PLReport(master_user=self.m,
                             begin_date=None, end_date=None,
