@@ -7,13 +7,14 @@ from poms.api.fields import CurrentMasterUserDefault
 from poms.currencies.serializers import CurrencyField
 from poms.instruments.serializers import InstrumentField
 from poms.reports.models import BalanceReport, BalanceReportItem, BalanceReportSummary, PLReportInstrument, PLReport, \
-    PLReportSummary, CostReport
+    PLReportSummary, CostReport, BaseReport
 from poms.transactions.models import Transaction
 
 
 class BaseTransactionSerializer(serializers.ModelSerializer):
     transaction_class_code = serializers.SerializerMethodField()
     transaction_currency_name = serializers.SerializerMethodField()
+    portfolio_name = serializers.SerializerMethodField()
     instrument_name = serializers.SerializerMethodField()
     settlement_currency_name = serializers.SerializerMethodField()
 
@@ -24,8 +25,9 @@ class BaseTransactionSerializer(serializers.ModelSerializer):
     class Meta:
         model = Transaction
         fields = [
-            'id', 'portfolio',
+            'id',
             'transaction_class', 'transaction_class_code',
+            'portfolio', 'portfolio_name',
             'transaction_currency', 'transaction_currency_name',
             'instrument', 'instrument_name',
             'position_size_with_sign',
@@ -35,12 +37,15 @@ class BaseTransactionSerializer(serializers.ModelSerializer):
             'transaction_date', 'accounting_date', 'cash_date',
             'account_cash', 'account_cash_name',
             'account_position', 'account_position_name',
-            'account_interim','account_interim_name',
+            'account_interim', 'account_interim_name',
             'reference_fx_rate',
         ]
 
     def get_transaction_class_code(self, instance):
         return getattr(instance.transaction_class, 'code', None)
+
+    def get_portfolio_name(self, instance):
+        return getattr(instance.portfolio, 'name', None)
 
     def get_transaction_currency_name(self, instance):
         return getattr(instance.transaction_currency, 'name', None)
@@ -64,12 +69,32 @@ class BaseTransactionSerializer(serializers.ModelSerializer):
 class BaseReportItemSerializer(serializers.Serializer):
     id = serializers.UUIDField(read_only=True, source='pk', help_text=_('report item id'))
 
+    portfolio = serializers.PrimaryKeyRelatedField(read_only=True, help_text=_('Portfolio'))
+    portfolio_name = serializers.SerializerMethodField()
+
+    account = serializers.PrimaryKeyRelatedField(read_only=True, help_text=_('Account'))
+    account_name = serializers.SerializerMethodField()
+
+    instrument = serializers.PrimaryKeyRelatedField(read_only=True, help_text=_('Instrument'))
+    instrument_name = serializers.SerializerMethodField()
+
+    def get_portfolio_name(self, instance):
+        return getattr(instance.portfolio, 'name', None)
+
+    def get_account_name(self, instance):
+        return getattr(instance.account, 'name', None)
+
+    def get_instrument_name(self, instance):
+        return getattr(instance.instrument, 'name', None)
+
 
 class BaseReportSerializer(serializers.Serializer):
     master_user = serializers.HiddenField(default=CurrentMasterUserDefault())
     begin_date = serializers.DateField(required=False, allow_null=True, help_text=_('some help text'))
     end_date = serializers.DateField(required=False, allow_null=True, help_text=_('some help text'))
-    
+    use_portfolio = serializers.BooleanField(initial=False, help_text=_('Include detalization by portfolio'))
+    use_account = serializers.BooleanField(initial=False, help_text=_('Include detalization by account'))
+
     transaction_currencies = CurrencyField(many=True, required=False, allow_null=True)
     instruments = InstrumentField(many=True, required=False, allow_null=True)
 
@@ -85,8 +110,6 @@ class BalanceReportItemSerializer(BaseReportItemSerializer):
     currency_history = serializers.PrimaryKeyRelatedField(read_only=True, help_text=_('Currency history'))
     currency_fx_rate = serializers.FloatField(read_only=True)
 
-    instrument = serializers.PrimaryKeyRelatedField(read_only=True, help_text=_('Instrument'))
-    instrument_name = serializers.SerializerMethodField()
     instrument_principal_pricing_ccy = serializers.SerializerMethodField()
     instrument_price_multiplier = serializers.FloatField(read_only=True)
     instrument_accrued_pricing_ccy = serializers.SerializerMethodField()
@@ -100,9 +123,6 @@ class BalanceReportItemSerializer(BaseReportItemSerializer):
     instrument_principal_fx_rate = serializers.FloatField(read_only=True, help_text=_(''))
     instrument_accrued_currency_history = serializers.PrimaryKeyRelatedField(read_only=True, help_text=_(''))
     instrument_accrued_fx_rate = serializers.FloatField(read_only=True, help_text=_(''))
-
-    account = serializers.PrimaryKeyRelatedField(read_only=True, help_text=_('Account'))
-    account_name = serializers.SerializerMethodField()
 
     principal_value_system_ccy = serializers.FloatField(read_only=True)
     accrued_value_system_ccy = serializers.FloatField(read_only=True)
@@ -119,9 +139,6 @@ class BalanceReportItemSerializer(BaseReportItemSerializer):
     def get_currency_name(self, instance):
         return getattr(instance.currency, 'name', None)
 
-    def get_instrument_name(self, instance):
-        return getattr(instance.instrument, 'name', None)
-
     def get_instrument_principal_pricing_ccy(self, instance):
         instrument = getattr(instance, 'instrument', None)
         pricing_currency = getattr(instrument, 'pricing_currency', None)
@@ -131,9 +148,6 @@ class BalanceReportItemSerializer(BaseReportItemSerializer):
         instrument = getattr(instance, 'instrument', None)
         accrued_currency = getattr(instrument, 'accrued_currency', None)
         return getattr(accrued_currency, 'name', None)
-
-    def get_account_name(self, instance):
-        return getattr(instance.account, 'name', None)
 
 
 class BalanceReportSummarySerializer(serializers.Serializer):
@@ -181,9 +195,6 @@ class PLReportTransactionSerializer(BaseTransactionSerializer):
 
 
 class PLReportInstrumentSerializer(BaseReportItemSerializer):
-    instrument = serializers.PrimaryKeyRelatedField(read_only=True)
-    instrument_name = serializers.SerializerMethodField()
-
     principal_with_sign_system_ccy = serializers.FloatField(read_only=True)
     carry_with_sign_system_ccy = serializers.FloatField(read_only=True)
     overheads_with_sign_system_ccy = serializers.FloatField(read_only=True)
@@ -194,9 +205,6 @@ class PLReportInstrumentSerializer(BaseReportItemSerializer):
 
     def update(self, instance, validated_data):
         return instance
-
-    def get_instrument_name(self, instance):
-        return getattr(instance.instrument, 'name', None)
 
 
 class PLReportSummarySerializer(serializers.Serializer):
@@ -264,9 +272,6 @@ class CostTransactionSerializer(BaseTransactionSerializer):
 
 
 class CostReportInstrumentSerializer(BaseReportItemSerializer):
-    instrument = serializers.PrimaryKeyRelatedField(read_only=True)
-    instrument_name = serializers.SerializerMethodField()
-
     pricing_currency_name = serializers.SerializerMethodField(read_only=True)
     pricing_currency_fx_rate = serializers.SerializerMethodField()
     price_multiplier = serializers.SerializerMethodField()
@@ -281,9 +286,6 @@ class CostReportInstrumentSerializer(BaseReportItemSerializer):
 
     def update(self, instance, validated_data):
         return instance
-
-    def get_instrument_name(self, instance):
-        return getattr(instance.instrument, 'name', None)
 
     def get_pricing_currency_name(self, instance):
         pricing_currency = getattr(instance.instrument, 'pricing_currency', None)
@@ -348,9 +350,6 @@ class YTMTransactionSerializer(BaseTransactionSerializer):
 
 
 class YTMReportInstrumentSerializer(BaseReportItemSerializer):
-    instrument = serializers.PrimaryKeyRelatedField(read_only=True)
-    instrument_name = serializers.SerializerMethodField()
-
     position = serializers.FloatField(read_only=True)
     ytm = serializers.FloatField(read_only=True)
     time_invested = serializers.FloatField(read_only=True)
@@ -360,9 +359,6 @@ class YTMReportInstrumentSerializer(BaseReportItemSerializer):
 
     def update(self, instance, validated_data):
         return instance
-
-    def get_instrument_name(self, instance):
-        return getattr(instance.instrument, 'name', None)
 
 
 class YTMReportSerializer(BaseReportSerializer):
@@ -405,6 +401,29 @@ class SimpleMultipliersReportSerializer(BaseReportSerializer):
 
     def create(self, validated_data):
         return BalanceReport(**validated_data)
+
+    def update(self, instance, validated_data):
+        return instance
+
+
+class SimpleMultipliersReport2TransactionSerializer(BaseTransactionSerializer):
+    rolling_position = serializers.FloatField(read_only=True)
+    avco_multiplier = serializers.FloatField(read_only=True)
+    fifo_multiplier = serializers.FloatField(read_only=True)
+
+    class Meta:
+        model = Transaction
+        fields = BaseTransactionSerializer.Meta.fields + [
+            'rolling_position',
+            'avco_multiplier', 'fifo_multiplier',
+        ]
+
+
+class SimpleMultipliersReport2Serializer(BaseReportSerializer):
+    transactions = SimpleMultipliersReport2TransactionSerializer(many=True, read_only=True)
+
+    def create(self, validated_data):
+        return BaseReport(**validated_data)
 
     def update(self, instance, validated_data):
         return instance

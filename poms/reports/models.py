@@ -11,8 +11,11 @@ from poms.users.models import MasterUser
 
 @python_2_unicode_compatible
 class BaseReportItem(object):
-    def __init__(self, pk=None, *args, **kwargs):
+    def __init__(self, pk=None, portfolio=None, account=None, instrument=None, *args, **kwargs):
         self.pk = pk
+        self.portfolio = portfolio  # -> Portfolio
+        self.account = account  # -> Account
+        self.instrument = instrument  # -> Instrument
 
     def __str__(self):
         return "%s #%s" % (self.__class__.__name__, self.pk,)
@@ -20,13 +23,17 @@ class BaseReportItem(object):
 
 @python_2_unicode_compatible
 class BaseReport(object):
-    def __init__(self, master_user=None, begin_date=None, end_date=None, instruments=None, transaction_currencies=None,
+    def __init__(self, master_user=None, begin_date=None, end_date=None, use_portfolio=None, use_account=None,
+                 instruments=None, transaction_currencies=None,
                  items=None):
         self.master_user = master_user
         self.begin_date = begin_date
         self.end_date = end_date
+        self.use_portfolio = use_portfolio
+        self.use_account = use_account
         self.transaction_currencies = transaction_currencies
         self.instruments = instruments
+        self.transactions = []
         self.items = items
 
     def __str__(self):
@@ -38,7 +45,7 @@ class BaseReport(object):
 
 @python_2_unicode_compatible
 class BalanceReportItem(BaseReportItem):
-    def __init__(self, instrument=None, currency=None, balance_position=0., account=None, *args, **kwargs):
+    def __init__(self, currency=None, balance_position=0., *args, **kwargs):
         super(BalanceReportItem, self).__init__(*args, **kwargs)
         self.balance_position = balance_position
 
@@ -47,11 +54,10 @@ class BalanceReportItem(BaseReportItem):
         self.currency_name = None
         self.currency_fx_rate = 0.
 
-        self.instrument = instrument
         self.price_history = None  # -> PriceHistory
         self.instrument_principal_currency_history = None  # -> CurrencyHistory
         self.instrument_accrued_currency_history = None  # -> CurrencyHistory
-        self.instrument_name = None
+        # self.instrument_name = None
         self.instrument_principal_pricing_ccy = None
         self.instrument_price_multiplier = None
         self.instrument_accrued_pricing_ccy = None
@@ -62,8 +68,6 @@ class BalanceReportItem(BaseReportItem):
         self.accrued_value_instrument_accrued_ccy = None
         self.instrument_principal_fx_rate = None
         self.instrument_accrued_fx_rate = None
-
-        self.account = account  # -> Account
 
         self.principal_value_system_ccy = None
         self.accrued_value_system_ccy = None
@@ -97,7 +101,6 @@ class BalanceReport(BaseReport):
         super(BalanceReport, self).__init__(*args, **kwargs)
         self.show_transaction_details = show_transaction_details
         self.invested_items = []
-        self.transactions = []
         self.summary = BalanceReportSummary(self)
 
 
@@ -106,9 +109,8 @@ class BalanceReport(BaseReport):
 
 @python_2_unicode_compatible
 class PLReportInstrument(BaseReportItem):
-    def __init__(self, instrument=None, *args, **kwargs):
-        super(PLReportInstrument, self).__init__(pk=getattr(instrument, 'pk', None), *args, **kwargs)
-        self.instrument = instrument
+    def __init__(self, *args, **kwargs):
+        super(PLReportInstrument, self).__init__(*args, **kwargs)
         self.principal_with_sign_system_ccy = 0.
         self.carry_with_sign_system_ccy = 0.
         self.overheads_with_sign_system_ccy = 0.
@@ -130,8 +132,6 @@ class PLReportSummary(object):
 class PLReport(BaseReport):
     def __init__(self, *args, **kwargs):
         super(PLReport, self).__init__(*args, **kwargs)
-        self.transactions = []
-        self.items = []
         self.summary = PLReportSummary()
 
 
@@ -139,9 +139,8 @@ class PLReport(BaseReport):
 
 
 class CostReportInstrument(BaseReportItem):
-    def __init__(self, instrument=None, *args, **kwargs):
-        super(CostReportInstrument, self).__init__(pk=getattr(instrument, 'pk', None), *args, **kwargs)
-        self.instrument = instrument
+    def __init__(self, *args, **kwargs):
+        super(CostReportInstrument, self).__init__(*args, **kwargs)
         self.position = 0.
         self.cost_system_ccy = 0.
         self.cost_instrument_ccy = 0.
@@ -153,16 +152,14 @@ class CostReport(BaseReport):
     def __init__(self, multiplier_class=None, *args, **kwargs):
         super(CostReport, self).__init__(*args, **kwargs)
         self.multiplier_class = multiplier_class
-        self.transactions = []
 
 
 # ----------------------------------------------------------------------------------------------------------------------
 
 
 class YTMReportInstrument(BaseReportItem):
-    def __init__(self, instrument=None, *args, **kwargs):
-        super(YTMReportInstrument, self).__init__(pk=getattr(instrument, 'pk', None), *args, **kwargs)
-        self.instrument = instrument
+    def __init__(self, *args, **kwargs):
+        super(YTMReportInstrument, self).__init__(*args, **kwargs)
         self.position = 0.
         self.ytm = 0.
         self.time_invested = 0.
@@ -173,4 +170,3 @@ class YTMReport(BaseReport):
     def __init__(self, multiplier_class=None, *args, **kwargs):
         super(YTMReport, self).__init__(*args, **kwargs)
         self.multiplier_class = multiplier_class
-        self.transactions = []
