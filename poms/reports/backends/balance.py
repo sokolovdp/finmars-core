@@ -204,30 +204,12 @@ class BalanceReport2Builder(BaseReport2Builder):
         if cash_date is None:
             cash_date = date.max
 
-        # if accounting_date == cash_date or (accounting_date < self._end_date and cash_date < self._end_date):  # default
-        #     return 0, 'account_position', 'account_cash'
-        # else:
-        #     if accounting_date < cash_date:  # case 1
-        #         return 1, 'account_position', 'account_interim'
-        #     else:  # case 2
-        #         return 2, None, 'account_interim'
         if accounting_date <= self._end_date < cash_date:  # default
             return 1, 'account_position', 'account_interim'
         elif cash_date <= self._end_date < accounting_date:
             return 2, None, 'account_interim'
         else:
             return 0, 'account_position', 'account_cash'
-
-    # def is_show_details(self, case, account):
-    #     if case == 0 or not getattr(self.instance, 'show_transaction_details', False):
-    #         return False
-    #     acc_type = getattr(account, 'type', None)
-    #     return getattr(acc_type, 'show_transaction_details', False)
-    #
-    # def get_transaction_details(self, case, account, transaction):
-    #     if self.is_show_details(case, account):
-    #         return transaction
-    #     return None
 
     def get_items(self):
         for t in self.transactions:

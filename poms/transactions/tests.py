@@ -4,7 +4,7 @@ from datetime import date
 
 from django.contrib.auth.models import User
 from django.test import TestCase
-from pandas import DataFrame
+import pandas as pd
 
 from poms.accounts.models import Account
 from poms.currencies.models import Currency, CurrencyHistory
@@ -18,6 +18,8 @@ from poms.users.models import MasterUser
 
 class BalanceTestCase(TestCase):
     def setUp(self):
+        pd.set_option('display.width', 1000)
+
         u = User.objects.create_user('a')
         self.m = m = MasterUser.objects.create(user=u)
 
@@ -107,9 +109,9 @@ class BalanceTestCase(TestCase):
             principal_with_sign=-180.,
             carry_with_sign=-5.,
             overheads_with_sign=-15.,
-            transaction_date=date(2016, 3, 1),
-            accounting_date=date(2016, 3, 1),
-            cash_date=date(2016, 3, 1),
+            transaction_date=date(2016, 3, 4),
+            accounting_date=date(2016, 3, 4),
+            cash_date=date(2016, 3, 6),
             account_position=acc1,
             account_cash=acc1,
             account_interim=prov_acc1,
@@ -128,9 +130,9 @@ class BalanceTestCase(TestCase):
             principal_with_sign=-1100.,
             carry_with_sign=0.,
             overheads_with_sign=-100.,
-            transaction_date=date(2016, 3, 1),
-            accounting_date=date(2016, 3, 1),
-            cash_date=date(2016, 3, 1),
+            transaction_date=date(2016, 3, 4),
+            accounting_date=date(2016, 3, 6),
+            cash_date=date(2016, 3, 4),
             account_position=acc1,
             account_cash=acc1,
             account_interim=prov_acc1,
@@ -149,9 +151,9 @@ class BalanceTestCase(TestCase):
             principal_with_sign=0,
             carry_with_sign=0.,
             overheads_with_sign=0.,
-            transaction_date=date(2016, 3, 1),
-            accounting_date=date(2016, 3, 1),
-            cash_date=date(2016, 3, 1),
+            transaction_date=date(2016, 3, 7),
+            accounting_date=date(2016, 3, 7),
+            cash_date=date(2016, 3, 7),
             account_position=acc1,
             account_cash=acc1,
             account_interim=prov_acc1,
@@ -170,9 +172,9 @@ class BalanceTestCase(TestCase):
             principal_with_sign=0,
             carry_with_sign=11.,
             overheads_with_sign=-1.,
-            transaction_date=date(2016, 3, 1),
-            accounting_date=date(2016, 3, 1),
-            cash_date=date(2016, 3, 1),
+            transaction_date=date(2016, 3, 8),
+            accounting_date=date(2016, 3, 8),
+            cash_date=date(2016, 3, 8),
             account_position=acc1,
             account_cash=acc1,
             account_interim=prov_acc1,
@@ -191,9 +193,9 @@ class BalanceTestCase(TestCase):
             principal_with_sign=0,
             carry_with_sign=20.,
             overheads_with_sign=0.,
-            transaction_date=date(2016, 3, 1),
-            accounting_date=date(2016, 3, 1),
-            cash_date=date(2016, 3, 1),
+            transaction_date=date(2016, 3, 9),
+            accounting_date=date(2016, 3, 9),
+            cash_date=date(2016, 3, 9),
             account_position=acc1,
             account_cash=acc1,
             account_interim=prov_acc1,
@@ -212,9 +214,9 @@ class BalanceTestCase(TestCase):
             principal_with_sign=0,
             carry_with_sign=-900.,
             overheads_with_sign=-100.,
-            transaction_date=date(2016, 3, 1),
-            accounting_date=date(2016, 3, 1),
-            cash_date=date(2016, 3, 1),
+            transaction_date=date(2016, 3, 9),
+            accounting_date=date(2016, 3, 9),
+            cash_date=date(2016, 3, 9),
             account_position=acc1,
             account_cash=acc1,
             account_interim=prov_acc1,
@@ -233,9 +235,9 @@ class BalanceTestCase(TestCase):
             principal_with_sign=-140,
             carry_with_sign=0.,
             overheads_with_sign=-10.,
-            transaction_date=date(2016, 3, 1),
-            accounting_date=date(2016, 3, 1),
-            cash_date=date(2016, 3, 1),
+            transaction_date=date(2016, 3, 9),
+            accounting_date=date(2016, 3, 9),
+            cash_date=date(2016, 3, 9),
             account_position=acc1,
             account_cash=acc1,
             account_interim=prov_acc1,
@@ -269,6 +271,14 @@ class BalanceTestCase(TestCase):
             'p_l_system_ccy': "%.6f" % instance.summary.p_l_system_ccy,
         }, total_res, 'Summary failed')
 
+    def _print_transactions(self, transactions, *columns):
+        print('-' * 79)
+        print('Transactions')
+        data = []
+        for t in transactions:
+            data.append([getattr(t, c, None) for c in columns])
+        print(pd.DataFrame(data=data, columns=columns))
+
     def _print_balance(self, instance):
         columns = ['portfolio', 'account', 'instrument', 'currency', 'position', 'market_value']
         data = []
@@ -285,11 +295,13 @@ class BalanceTestCase(TestCase):
                 i.balance_position,
                 i.market_value_system_ccy,
             ])
+        print('-' * 79)
         print('Positions')
-        print(DataFrame(data=data, columns=columns))
+        print(pd.DataFrame(data=data, columns=columns))
 
+        print('-' * 79)
         print('Summary')
-        print(DataFrame(data=[
+        print(pd.DataFrame(data=[
             ['invested_value_system_ccy', instance.summary.invested_value_system_ccy],
             ['current_value_system_ccy', instance.summary.current_value_system_ccy],
             ['p_l_system_ccy', instance.summary.p_l_system_ccy],
@@ -531,4 +543,68 @@ class BalanceTestCase(TestCase):
                                    'invested_value_system_ccy': "1286.666667",
                                    'current_value_system_ccy': "720.283333",
                                    'p_l_system_ccy': "-566.383333",
+                               })
+
+    def test_balance1_w_dates(self):
+        queryset = Transaction.objects.filter(pk__in=self.trn_1)
+        instance = BalanceReport(master_user=self.m,
+                                 begin_date=None, end_date=date(2016, 3, 5),
+                                 use_portfolio=False, use_account=True,
+                                 show_transaction_details=False)
+        b = BalanceReport2Builder(instance=instance, queryset=queryset)
+        b.build()
+
+        self._print_transactions(b.transactions, 'transaction_class', 'portfolio', 'instrument', 'transaction_currency',
+                                 'settlement_currency', 'cash_consideration',
+                                 'accounting_date', 'cash_date')
+        self._print_balance(instance)
+        self._validate_balance(instance,
+                               instr_res={
+                                   # name: position, market value
+                                   (None, 'Acc1', 'instr1-bond, CHF'): ("100.000000", "18.450000"),
+                                   # (None, 'Acc1', 'instr2-stock'): ("-200.000000", "-485.333333"),
+                               },
+                               ccy_res={
+                                   (None, 'Acc1', 'EUR'): ("1000.000000", "1300.000000"),
+                                   (None, 'Prov Acc1', 'USD'): ("-200.000000", "-200.000000"),
+                                   (None, 'Prov Acc1', 'RUB'): ("-1000.000000", "-13.333333"),
+                               },
+                               total_res={
+                                   'invested_value_system_ccy': "1300.000000",
+                                   'current_value_system_ccy': "1105.116667",
+                                   'p_l_system_ccy': "-194.883333",
+                               })
+
+        queryset = Transaction.objects.filter(pk__in=self.trn_1)
+        instance = BalanceReport(master_user=self.m,
+                                 begin_date=None, end_date=date(2016, 3, 6),
+                                 use_portfolio=False, use_account=True,
+                                 show_transaction_details=False)
+        b = BalanceReport2Builder(instance=instance, queryset=queryset)
+        b.build()
+
+        self._print_transactions(b.transactions,
+                                 'transaction_class',
+                                 'portfolio',
+                                 'instrument', 'transaction_currency',
+                                 'position_size_with_sign',
+                                 'settlement_currency',
+                                 'cash_consideration',
+                                 'accounting_date', 'cash_date')
+        self._print_balance(instance)
+        self._validate_balance(instance,
+                               instr_res={
+                                   # name: position, market value
+                                   (None, 'Acc1', 'instr1-bond, CHF'): ("100.000000", "18.450000"),
+                                   (None, 'Acc1', 'instr2-stock'): ("-200.000000", "-485.333333"),
+                               },
+                               ccy_res={
+                                   (None, 'Acc1', 'EUR'): ("1000.000000", "1300.000000"),
+                                   (None, 'Acc1', 'USD'): ("-200.000000", "-200.000000"),
+                                   (None, 'Acc1', 'RUB'): ("1000.000000", "13.333333"),
+                               },
+                               total_res={
+                                   'invested_value_system_ccy': "1300.000000",
+                                   'current_value_system_ccy': "646.450000",
+                                   'p_l_system_ccy': "-653.550000",
                                })
