@@ -271,3 +271,280 @@ class BaseReportBuilder(object):
             rolling_position += position_size_with_sign
             rolling_positions[i_key] = rolling_position
             t.rolling_position = rolling_position
+
+
+class BaseReport2Builder(object):
+    def __init__(self, instance=None, queryset=None, transactions=None):
+        self.instance = instance
+        self._queryset = queryset
+        self._filter_date_attr = None
+        self._currency_history_cache = {}
+        self._price_history_cache = {}
+
+        self._transactions = transactions
+
+        self._now = timezone.now().date()
+        self._begin_date = self.instance.begin_date
+        self._end_date = self.instance.end_date or self._now
+
+        self._use_portfolio = self.instance.use_portfolio
+        self._use_account = self.instance.use_account
+
+    def _get_transaction_qs(self):
+        assert self._filter_date_attr is not None, "_filter_date_attr is None!"
+        assert self.instance is not None, "instance is None!"
+        assert self.instance.master_user is not None, "master_user is None!"
+
+        if self._queryset is None:
+            queryset = Transaction.objects
+        else:
+            queryset = self._queryset
+
+        queryset = queryset.prefetch_related(
+            'transaction_class',
+            'transaction_currency',
+            'instrument', 'instrument__pricing_currency', 'instrument__accrued_currency',
+            'settlement_currency',
+            'account_position', 'account_cash', 'account_interim', )
+        queryset = queryset.filter(master_user=self.instance.master_user, is_canceled=False)
+
+        if self._begin_date:
+            queryset = queryset.filter(**{'%s__gte' % self._filter_date_attr: self._begin_date})
+        if self._end_date:
+            queryset = queryset.filter(**{'%s__lte' % self._filter_date_attr: self._end_date})
+
+        if self.instance.transaction_currencies:
+            queryset = queryset.filter(Q(transaction_currency__in=self.instance.transaction_currencies))
+
+        if self.instance.instruments:
+            queryset = queryset.filter(Q(instrument__in=self.instance.instruments))
+
+        queryset = queryset.order_by(self._filter_date_attr, 'id')
+        return queryset
+
+    @cached_property
+    def transactions(self):
+        if self._transactions:
+            return self._transactions
+        queryset = self._get_transaction_qs()
+        return list(queryset.all())
+
+    def build(self):
+        raise NotImplementedError('subclasses of BaseReportBuilder must provide an build() method')
+
+    @cached_property
+    def system_currency(self):
+        return Currency.objects.get(master_user__isnull=True, user_code=settings.CURRENCY_CODE)
+
+    def find_currency_history(self, ccy):
+        assert ccy is not None, 'ccy is None!'
+        # TODO: In prod use always current day!
+        d = self._end_date
+        if ccy.is_system:
+            return CurrencyHistory(currency=ccy, date=d, fx_rate=1.)
+        key = '%s:%s' % (ccy.id, d)
+        h = self._currency_history_cache.get(key, None)
+        if h is None:
+            h = CurrencyHistory.objects.filter(currency=ccy, date__lte=d).order_by('date').last()
+            if h is None:
+                h = CurrencyHistory(currency=ccy, date=d, fx_rate=0.)
+            self._currency_history_cache[key] = h
+        return h
+
+    def find_price_history(self, instr):
+        assert instr is not None, 'instrument is None!'
+        # TODO: In prod use always current day!
+        d = self._end_date
+        key = '%s:%s' % (instr.id, d)
+        h = self._price_history_cache.get(key, None)
+        if h is None:
+            h = PriceHistory.objects.filter(instrument=instr, date__lte=d).order_by('date').last()
+            if h is None:
+                h = PriceHistory(instrument=instr, date=d, principal_price=0., accrued_price=0., factor=0.)
+            self._price_history_cache[key] = h
+        return h
+
+    def set_currency_fx_rate(self, obj, currency_attr):
+        currency = getattr(obj, currency_attr)
+        if currency:
+            currency_history = self.find_currency_history(currency)
+            currency_fx_rate = getattr(currency_history, 'fx_rate', 0.) or 0.
+            setattr(obj, '%s_history' % currency_attr, currency_history)
+            setattr(obj, '%s_fx_rate' % currency_attr, currency_fx_rate)
+
+    def set_fx_rate(self, transaction):
+        self.set_currency_fx_rate(transaction, 'transaction_currency')
+        self.set_currency_fx_rate(transaction, 'settlement_currency')
+
+    def set_price(self, transaction):
+        if transaction.instrument:
+            price_history = self.find_price_history(transaction.instrument)
+            transaction.price_history = price_history
+
+    def annotate_fx_rates(self):
+        for t in self.transactions:
+            self.set_fx_rate(t)
+
+    def annotate_prices(self, date=None):
+        for t in self.transactions:
+            self.set_price(t)
+
+    def _get_transaction_key(self, trn, instr_attr, ccy_attr, acc_attr):
+        if self._use_portfolio:
+            portfolio = trn.portfolio
+            portfolio = getattr(portfolio, 'pk', None)
+        else:
+            portfolio = None
+
+        if self._use_account:
+            account = getattr(trn, acc_attr, None)
+            account = getattr(account, 'pk', None)
+        else:
+            account = None
+
+        if instr_attr:
+            instrument = getattr(trn, instr_attr, None)
+            instrument = getattr(instrument, 'pk', None)
+        else:
+            instrument = None
+
+        if ccy_attr:
+            currency = getattr(trn, ccy_attr, None)
+            currency = getattr(currency, 'pk', None)
+        else:
+            currency = None
+
+        return 'p=%s, a=%s, i=%s, c=%s' % (portfolio, account, instrument, currency,)
+
+    def set_multipliers(self, multiplier_class):
+        if multiplier_class == 'avco':
+            multiplier_attr = 'avco_multiplier'
+            self.set_avco_multiplier()
+            return multiplier_attr
+        elif multiplier_class == 'fifo':
+            multiplier_attr = 'fifo_multiplier'
+            self.set_fifo_multiplier()
+            return multiplier_attr
+        raise ValueError('Bad multiplier class - %s' % multiplier_class)
+
+    def set_avco_multiplier(self):
+        in_stock = {}
+        not_closed = {}
+        rolling_positions = Counter()
+
+        for t in self.transactions:
+            t_class = t.transaction_class.code
+            if t_class not in [TransactionClass.BUY, TransactionClass.SELL]:
+                continue
+
+            t_key = self._get_transaction_key(t, 'instrument', 'account_position', None)
+
+            t.avco_multiplier = 0.
+            position_size_with_sign = t.position_size_with_sign
+            rolling_position = rolling_positions[t_key]
+
+            # if position_size_with_sign > 0.:  # покупка
+            if t_class == TransactionClass.BUY:
+                i_not_closed = not_closed.get(t_key, [])
+                if i_not_closed:  # есть прошлые продажи, которые надо закрыть
+                    if position_size_with_sign + rolling_position >= 0.:  # все есть
+                        t.avco_multiplier = abs(rolling_position / position_size_with_sign)
+                        for t0 in i_not_closed:
+                            t0.avco_multiplier = 1.
+                        in_stock[t_key] = in_stock.get(t_key, []) + [t]
+                    else:  # только частично
+                        t.avco_multiplier = 1.
+                        for t0 in i_not_closed:
+                            t0.avco_multiplier += abs(
+                                (1. - t0.avco_multiplier) * position_size_with_sign / rolling_position)
+                    not_closed[t_key] = [t for t in i_not_closed if t.avco_multiplier < 1.]
+                else:  # новая "чистая" покупка
+                    t.avco_multiplier = 0.
+                    in_stock[t_key] = in_stock.get(t_key, []) + [t]
+            # else:  # продажа
+            elif t_class == TransactionClass.SELL:
+                i_in_stock = in_stock.get(t_key, [])
+                if i_in_stock:  # есть что продавать
+                    if position_size_with_sign + rolling_position >= 0.:  # все есть
+                        t.avco_multiplier = 1.
+                        for t0 in i_in_stock:
+                            t0.avco_multiplier += abs(
+                                (1. - t0.avco_multiplier) * position_size_with_sign / rolling_position)
+                    else:  # только частично
+                        t.avco_multiplier = abs(rolling_position / position_size_with_sign)
+                        for t0 in i_in_stock:
+                            t0.avco_multiplier = 1.
+                        not_closed[t_key] = not_closed.get(t_key, []) + [t]
+                    in_stock[t_key] = [t for t in i_in_stock if t.avco_multiplier < 1.]
+                else:  # нечего продавать
+                    t.avco_multiplier = 0.
+                    not_closed[t_key] = not_closed.get(t_key, []) + [t]
+            rolling_position += position_size_with_sign
+            rolling_positions[t_key] = rolling_position
+            t.rolling_position = rolling_position
+
+    def set_fifo_multiplier(self):
+        in_stock = {}
+        not_closed = {}
+        rolling_positions = Counter()
+
+        for t in self.transactions:
+            t_class = t.transaction_class.code
+            if t_class not in [TransactionClass.BUY, TransactionClass.SELL]:
+                continue
+
+            t_key = self._get_transaction_key(t, 'instrument', 'account_position', None)
+
+            t.fifo_multiplier = 0.
+            position_size_with_sign = t.position_size_with_sign
+            rolling_position = rolling_positions[t_key]
+
+            # if position_size_with_sign > 0.:  # покупка
+            if t_class == TransactionClass.BUY:
+                i_not_closed = not_closed.get(t_key, [])
+                balance = position_size_with_sign
+                if i_not_closed:
+                    for t0 in i_not_closed:
+                        sale = t0.not_closed
+                        if balance + sale > 0.:  # есть все
+                            balance -= abs(sale)
+                            t0.fifo_multiplier = 1.
+                            t0.not_closed = t0.not_closed - abs(t0.position_size_with_sign)
+                        else:
+                            t0.not_closed = t0.not_closed + balance
+                            t0.fifo_multiplier = 1. - abs(t0.not_closed / t0.position_size_with_sign)
+                            balance = 0.
+                        if balance <= 0.:
+                            break
+                    not_closed[t_key] = [t for t in i_not_closed if t.fifo_multiplier < 1.]
+                t.balance = balance
+                t.fifo_multiplier = abs((position_size_with_sign - balance) / position_size_with_sign)
+                if t.fifo_multiplier < 1.:
+                    in_stock[t_key] = in_stock.get(t_key, []) + [t]
+            # else:  # продажа
+            elif t_class == TransactionClass.SELL:
+                i_in_stock = in_stock.get(t_key, [])
+                sale = position_size_with_sign
+                if i_in_stock:
+                    for t0 in i_in_stock:
+                        balance = t0.balance
+                        if sale + balance > 0.:  # есть все
+                            t0.balance = balance - abs(sale)
+                            t0.fifo_multiplier = abs(
+                                (t0.position_size_with_sign - t0.balance) / t0.position_size_with_sign)
+                            sale = 0.
+                        else:
+                            t0.balance = 0.
+                            t0.fifo_multiplier = 1.
+                            sale += abs(balance)
+                        if sale >= 0.:
+                            break
+                    in_stock[t_key] = [t for t in i_in_stock if t.fifo_multiplier < 1.]
+                t.not_closed = sale
+                t.fifo_multiplier = abs((position_size_with_sign - sale) / position_size_with_sign)
+                if t.fifo_multiplier < 1.:
+                    not_closed[t_key] = not_closed.get(t_key, []) + [t]
+
+            rolling_position += position_size_with_sign
+            rolling_positions[t_key] = rolling_position
+            t.rolling_position = rolling_position

@@ -5,13 +5,13 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
 from poms.api.mixins import DbTransactionMixin
-from poms.reports.backends.balance import BalanceReportBuilder
+from poms.reports.backends.balance import BalanceReportBuilder, BalanceReport2Builder
 from poms.reports.backends.cost import CostReportBuilder
 from poms.reports.backends.pl import PLReportBuilder
-from poms.reports.backends.simple_multipliers import SimpleMultipliersReportBuilder
+from poms.reports.backends.simple_multipliers import SimpleMultipliersReportBuilder, SimpleMultipliersReport2Builder
 from poms.reports.backends.ytm import YTMReportBuilder
 from poms.reports.serializers import BalanceReportSerializer, SimpleMultipliersReportSerializer, PLReportSerializer, \
-    CostReportSerializer, YTMReportSerializer
+    CostReportSerializer, YTMReportSerializer, SimpleMultipliersReport2Serializer
 
 
 class BaseReportViewSet(DbTransactionMixin, viewsets.ViewSet):
@@ -45,6 +45,11 @@ class BaseReportViewSet(DbTransactionMixin, viewsets.ViewSet):
 class BalanceReportViewSet(BaseReportViewSet):
     serializer_class = BalanceReportSerializer
     report_builder_class = BalanceReportBuilder
+
+
+class BalanceReport2ViewSet(BaseReportViewSet):
+    serializer_class = BalanceReportSerializer
+    report_builder_class = BalanceReport2Builder
 
 
 class PLReportViewSet(BaseReportViewSet):
@@ -84,3 +89,8 @@ class SimpleMultipliersReportViewSet(viewsets.ViewSet):
         instance = builder.build()
         serializer = self.get_serializer(instance=instance, many=False)
         return Response(serializer.data, status=status.HTTP_201_CREATED)
+
+
+class SimpleMultipliersReport2ViewSet(BaseReportViewSet):
+    serializer_class = SimpleMultipliersReport2Serializer
+    report_builder_class = SimpleMultipliersReport2Builder
