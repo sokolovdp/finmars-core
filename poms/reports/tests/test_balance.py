@@ -75,13 +75,13 @@ class BalanceTestCase(BaseReportTestCase):
 
     def test_simple(self):
         queryset = Transaction.objects.filter(pk__in=self.simple)
-
         instance = BalanceReport(master_user=self.m,
                                  begin_date=None, end_date=None,
                                  use_portfolio=False, use_account=False,
                                  show_transaction_details=False)
         b = BalanceReport2Builder(instance=instance, queryset=queryset)
         b.build()
+        self._print_transactions(instance.transactions)
         self._print_balance(instance)
         self._assertEqualBalance(instance, BalanceReport(
             items=[
@@ -107,12 +107,15 @@ class BalanceTestCase(BaseReportTestCase):
                                          p_l_system_ccy=-653.550000)
         ))
 
+    def test_simple_accs(self):
+        queryset = Transaction.objects.filter(pk__in=self.simple)
         instance = BalanceReport(master_user=self.m,
                                  begin_date=None, end_date=date(2016, 3, 15),
                                  use_portfolio=False, use_account=True,
                                  show_transaction_details=False)
         b = BalanceReport2Builder(instance=instance, queryset=queryset)
         b.build()
+        self._print_transactions(instance.transactions)
         self._print_balance(instance)
         self._assertEqualBalance(instance, BalanceReport(
             items=[
@@ -138,12 +141,15 @@ class BalanceTestCase(BaseReportTestCase):
                                          p_l_system_ccy=-653.550000)
         ))
 
+    def test_simple_portf_accs(self):
+        queryset = Transaction.objects.filter(pk__in=self.simple)
         instance = BalanceReport(master_user=self.m,
                                  begin_date=None, end_date=date(2016, 3, 15),
                                  use_portfolio=True, use_account=True,
                                  show_transaction_details=False)
         b = BalanceReport2Builder(instance=instance, queryset=queryset)
         b.build()
+        self._print_transactions(instance.transactions)
         self._print_balance(instance)
         self._assertEqualBalance(instance, BalanceReport(
             items=[
@@ -169,15 +175,15 @@ class BalanceTestCase(BaseReportTestCase):
                                          p_l_system_ccy=-653.550000)
         ))
 
-    def test_simple_w_trnpl(self):
+    def test_trnpl(self):
         queryset = Transaction.objects.filter(pk__in=self.simple_w_trnpl)
-
         instance = BalanceReport(master_user=self.m,
                                  begin_date=None, end_date=date(2016, 3, 15),
                                  use_portfolio=False, use_account=False,
                                  show_transaction_details=False)
         b = BalanceReport2Builder(instance=instance, queryset=queryset)
         b.build()
+        self._print_transactions(instance.transactions)
         self._print_balance(instance)
         self._assertEqualBalance(instance, BalanceReport(
             items=[
@@ -206,12 +212,15 @@ class BalanceTestCase(BaseReportTestCase):
                                          p_l_system_ccy=-639.883333)
         ))
 
+    def test_trnpl_acc(self):
+        queryset = Transaction.objects.filter(pk__in=self.simple_w_trnpl)
         instance = BalanceReport(master_user=self.m,
                                  begin_date=None, end_date=date(2016, 3, 15),
                                  use_portfolio=False, use_account=True,
                                  show_transaction_details=False)
         b = BalanceReport2Builder(instance=instance, queryset=queryset)
         b.build()
+        self._print_transactions(instance.transactions)
         self._print_balance(instance)
         self._assertEqualBalance(instance, BalanceReport(
             items=[
@@ -240,12 +249,15 @@ class BalanceTestCase(BaseReportTestCase):
                                          p_l_system_ccy=-639.883333)
         ))
 
+    def test_trnpl_portf_acc(self):
+        queryset = Transaction.objects.filter(pk__in=self.simple_w_trnpl)
         instance = BalanceReport(master_user=self.m,
                                  begin_date=None, end_date=date(2016, 3, 15),
                                  use_portfolio=True, use_account=True,
                                  show_transaction_details=False)
         b = BalanceReport2Builder(instance=instance, queryset=queryset)
         b.build()
+        self._print_transactions(instance.transactions)
         self._print_balance(instance)
         self._assertEqualBalance(instance, BalanceReport(
             items=[
@@ -274,15 +286,15 @@ class BalanceTestCase(BaseReportTestCase):
                                          p_l_system_ccy=-639.883333)
         ))
 
-    def test_simple_w_fxtrade(self):
+    def test_fxtrade(self):
         queryset = Transaction.objects.filter(pk__in=self.simple_w_fxtrade)
-
         instance = BalanceReport(master_user=self.m,
                                  begin_date=None, end_date=date(2016, 3, 15),
                                  use_portfolio=False, use_account=False,
                                  show_transaction_details=False)
         b = BalanceReport2Builder(instance=instance, queryset=queryset)
         b.build()
+        self._print_transactions(instance.transactions)
         self._print_balance(instance)
         self._assertEqualBalance(instance, BalanceReport(
             items=[
@@ -317,12 +329,15 @@ class BalanceTestCase(BaseReportTestCase):
                                          p_l_system_ccy=-566.383333)
         ))
 
+    def test_fxtrade_acc(self):
+        queryset = Transaction.objects.filter(pk__in=self.simple_w_fxtrade)
         instance = BalanceReport(master_user=self.m,
                                  begin_date=None, end_date=date(2016, 3, 15),
                                  use_portfolio=False, use_account=True,
                                  show_transaction_details=False)
         b = BalanceReport2Builder(instance=instance, queryset=queryset)
         b.build()
+        self._print_transactions(instance.transactions)
         self._print_balance(instance)
         self._assertEqualBalance(instance, BalanceReport(
             items=[
@@ -357,12 +372,15 @@ class BalanceTestCase(BaseReportTestCase):
                                          p_l_system_ccy=-566.383333)
         ))
 
+    def test_fxtrade_portf_acc(self):
+        queryset = Transaction.objects.filter(pk__in=self.simple_w_fxtrade)
         instance = BalanceReport(master_user=self.m,
                                  begin_date=None, end_date=date(2016, 3, 15),
                                  use_portfolio=True, use_account=True,
                                  show_transaction_details=False)
         b = BalanceReport2Builder(instance=instance, queryset=queryset)
         b.build()
+        self._print_transactions(instance.transactions)
         self._print_balance(instance)
         self._assertEqualBalance(instance, BalanceReport(
             items=[
@@ -397,7 +415,7 @@ class BalanceTestCase(BaseReportTestCase):
                                          p_l_system_ccy=-566.383333)
         ))
 
-    def test_simple_w_dates(self):
+    def test_dates_case_1_2(self):
         queryset = Transaction.objects.filter(pk__in=self.simple)
         instance = BalanceReport(master_user=self.m,
                                  begin_date=None, end_date=date(2016, 3, 5),
@@ -428,6 +446,7 @@ class BalanceTestCase(BaseReportTestCase):
                                          p_l_system_ccy=-194.883333)
         ))
 
+    def test_dates_case_1_2_over(self):
         queryset = Transaction.objects.filter(pk__in=self.simple)
         instance = BalanceReport(master_user=self.m,
                                  begin_date=None, end_date=date(2016, 3, 6),
@@ -435,7 +454,7 @@ class BalanceTestCase(BaseReportTestCase):
                                  show_transaction_details=False)
         b = BalanceReport2Builder(instance=instance, queryset=queryset)
         b.build()
-
+        self._print_transactions(instance.transactions)
         self._print_balance(instance)
         self._assertEqualBalance(instance, BalanceReport(
             items=[
@@ -461,7 +480,7 @@ class BalanceTestCase(BaseReportTestCase):
                                          p_l_system_ccy=-653.550000)
         ))
 
-    def test_multiple_acc_p(self):
+    def test_multiple(self):
         queryset = Transaction.objects.filter(pk__in=[
             self.t_in.pk, self.t_buy_bond.pk, self.t_buy_bond_acc2.pk, self.t_buy_bond_p2.pk
         ])
@@ -491,12 +510,17 @@ class BalanceTestCase(BaseReportTestCase):
                                          p_l_system_ccy=-544.650000)
         ))
 
+    def test_multiple_acc(self):
+        queryset = Transaction.objects.filter(pk__in=[
+            self.t_in.pk, self.t_buy_bond.pk, self.t_buy_bond_acc2.pk, self.t_buy_bond_p2.pk
+        ])
         instance = BalanceReport(master_user=self.m,
                                  begin_date=None, end_date=None,
                                  use_portfolio=False, use_account=True,
                                  show_transaction_details=False)
         b = BalanceReport2Builder(instance=instance, queryset=queryset)
         b.build()
+        self._print_transactions(instance.transactions)
         self._print_balance(instance)
         self._assertEqualBalance(instance, BalanceReport(
             items=[
@@ -522,12 +546,17 @@ class BalanceTestCase(BaseReportTestCase):
                                          p_l_system_ccy=-544.650000)
         ))
 
+    def test_multiple_portf_acc(self):
+        queryset = Transaction.objects.filter(pk__in=[
+            self.t_in.pk, self.t_buy_bond.pk, self.t_buy_bond_acc2.pk, self.t_buy_bond_p2.pk
+        ])
         instance = BalanceReport(master_user=self.m,
                                  begin_date=None, end_date=None,
                                  use_portfolio=True, use_account=True,
                                  show_transaction_details=False)
         b = BalanceReport2Builder(instance=instance, queryset=queryset)
         b.build()
+        self._print_transactions(instance.transactions)
         self._print_balance(instance)
         self._assertEqualBalance(instance, BalanceReport(
             items=[
@@ -559,12 +588,17 @@ class BalanceTestCase(BaseReportTestCase):
                                          p_l_system_ccy=-544.650000)
         ))
 
+    def test_multiple_portf_acc_case1(self):
+        queryset = Transaction.objects.filter(pk__in=[
+            self.t_in.pk, self.t_buy_bond.pk, self.t_buy_bond_acc2.pk, self.t_buy_bond_p2.pk
+        ])
         instance = BalanceReport(master_user=self.m,
                                  begin_date=None, end_date=date(2016, 3, 5),
                                  use_portfolio=True, use_account=True,
                                  show_transaction_details=False)
         b = BalanceReport2Builder(instance=instance, queryset=queryset)
         b.build()
+        self._print_transactions(instance.transactions)
         self._print_balance(instance)
         self._assertEqualBalance(instance, BalanceReport(
             items=[
@@ -596,6 +630,7 @@ class BalanceTestCase(BaseReportTestCase):
                                          p_l_system_ccy=-544.650000)
         ))
 
+    def test_multiple_portf_acc_case2(self):
         queryset = Transaction.objects.filter(pk__in=[
             self.t_in.pk, self.t_sell_stock.pk, self.t_sell_stock_acc2.pk, self.t_sell_stock_p2.pk
         ])

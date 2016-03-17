@@ -8,7 +8,7 @@ from poms.reports.tests.base import BaseReportTestCase, n
 from poms.transactions.models import Transaction, TransactionClass
 
 
-class BalanceTestCase(BaseReportTestCase):
+class PLTestCase(BaseReportTestCase):
     def _print_pl_transactions(self, transactions):
         self._print_transactions(
             transactions,
@@ -94,9 +94,8 @@ class BalanceTestCase(BaseReportTestCase):
                          n(expected.summary.total_system_ccy),
                          'total_system_ccy')
 
-    def test_simple_w_trnpl(self):
+    def test_simple(self):
         queryset = Transaction.objects.filter(pk__in=self.simple_w_trnpl)
-
         instance = PLReport(master_user=self.m,
                             begin_date=None, end_date=None,
                             use_portfolio=False, use_account=False)
@@ -125,11 +124,14 @@ class BalanceTestCase(BaseReportTestCase):
                                     total_system_ccy=-639.883333)
         ))
 
+    def test_with_accs(self):
+        queryset = Transaction.objects.filter(pk__in=self.simple_w_trnpl)
         instance = PLReport(master_user=self.m,
                             begin_date=None, end_date=None,
                             use_portfolio=False, use_account=True)
         b = PLReport2Builder(instance=instance, queryset=queryset)
         b.build()
+        self._print_pl_transactions(instance.transactions)
         self._print_pl(instance)
         self._assertEqualPL(instance, PLReport(
             items=[
@@ -152,11 +154,14 @@ class BalanceTestCase(BaseReportTestCase):
                                     total_system_ccy=-639.883333)
         ))
 
+    def test_with_portf_accs(self):
+        queryset = Transaction.objects.filter(pk__in=self.simple_w_trnpl)
         instance = PLReport(master_user=self.m,
                             begin_date=None, end_date=None,
                             use_portfolio=True, use_account=True)
         b = PLReport2Builder(instance=instance, queryset=queryset)
         b.build()
+        self._print_pl_transactions(instance.transactions)
         self._print_pl(instance)
         self._assertEqualPL(instance, PLReport(
             items=[
@@ -179,9 +184,8 @@ class BalanceTestCase(BaseReportTestCase):
                                     total_system_ccy=-639.883333)
         ))
 
-    def test_simple_w_fxtrade(self):
+    def test_fxtrade(self):
         queryset = Transaction.objects.filter(pk__in=self.simple_w_fxtrade)
-
         instance = PLReport(master_user=self.m,
                             begin_date=None, end_date=None,
                             use_portfolio=False, use_account=False)
