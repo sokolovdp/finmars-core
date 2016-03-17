@@ -24,7 +24,7 @@ class PLTestCase(BaseReportTestCase):
 
     def _print_pl(self, instance):
         columns = ['pk',
-                   'portfolio', 'account', 'instrument',
+                   'portfolio', 'account', 'instrument', 'name',
                    'principal_with_sign_system_ccy', 'carry_with_sign_system_ccy', 'overheads_with_sign_system_ccy',
                    'total_system_ccy']
         data = []
@@ -43,6 +43,7 @@ class PLTestCase(BaseReportTestCase):
                 getattr(portfolio, 'name', None),
                 getattr(acc, 'name', None),
                 getattr(instr, 'name', None),
+                i.name,
                 i.principal_with_sign_system_ccy,
                 i.carry_with_sign_system_ccy,
                 i.overheads_with_sign_system_ccy,

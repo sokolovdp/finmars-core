@@ -11,11 +11,12 @@ from poms.users.models import MasterUser
 
 @python_2_unicode_compatible
 class BaseReportItem(object):
-    def __init__(self, pk=None, portfolio=None, account=None, instrument=None, *args, **kwargs):
+    def __init__(self, pk=None, portfolio=None, account=None, instrument=None, name=None, *args, **kwargs):
         self.pk = pk
         self.portfolio = portfolio  # -> Portfolio
         self.account = account  # -> Account
         self.instrument = instrument  # -> Instrument
+        self.name = name
 
     def __str__(self):
         return "%s #%s" % (self.__class__.__name__, self.pk,)

@@ -78,6 +78,8 @@ class BaseReportItemSerializer(serializers.Serializer):
     instrument = serializers.PrimaryKeyRelatedField(read_only=True, help_text=_('Instrument'))
     instrument_name = serializers.SerializerMethodField()
 
+    name = serializers.CharField(read_only=True)
+
     def get_portfolio_name(self, instance):
         return getattr(instance.portfolio, 'name', None)
 
