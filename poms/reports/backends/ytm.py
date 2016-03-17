@@ -22,8 +22,7 @@ class YTMReportBuilder(BaseReportBuilder):
         key = '%s' % transaction.instrument.id
         i = items.get(key, None)
         if i is None:
-            i = YTMReportInstrument(instrument=transaction.instrument)
-            # i.pk = transaction.instrument.id
+            i = YTMReportInstrument(pk='%s' % transaction.instrument.id, instrument=transaction.instrument)
             items[key] = i
         return i
 

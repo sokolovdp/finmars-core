@@ -22,8 +22,7 @@ class CostReportBuilder(BaseReportBuilder):
         key = '%s' % transaction.instrument.id
         i = items.get(key, None)
         if i is None:
-            i = CostReportInstrument(instrument=transaction.instrument)
-            # i.pk = transaction.instrument.id
+            i = CostReportInstrument(pk='%s' % transaction.instrument.id, instrument=transaction.instrument)
             items[key] = i
         return i
 
