@@ -22,7 +22,7 @@ class BalanceTestCase(BaseReportTestCase):
             'accounting_date', 'cash_date')
 
     def _print_balance(self, instance):
-        columns = ['portfolio', 'account', 'instrument', 'currency', 'position', 'market_value']
+        columns = ['pk', 'portfolio', 'account', 'instrument', 'currency', 'position', 'market_value', 'transaction']
         data = []
         for i in instance.items:
             portfolio = i.portfolio
@@ -30,12 +30,14 @@ class BalanceTestCase(BaseReportTestCase):
             instr = i.instrument
             ccy = i.currency
             data.append([
+                i.pk,
                 getattr(portfolio, 'name', None),
                 getattr(acc, 'name', None),
                 getattr(instr, 'name', None),
                 getattr(ccy, 'name', None),
                 i.balance_position,
                 i.market_value_system_ccy,
+                i.transaction,
             ])
         print('*' * 79)
         print('Positions')
@@ -454,6 +456,41 @@ class BalanceTestCase(BaseReportTestCase):
             summary=BalanceReportSummary(invested_value_system_ccy=1300.000000,
                                          current_value_system_ccy=1105.116667,
                                          p_l_system_ccy=-194.883333)
+        ))
+
+    def test_dates_case_1_2_show_transaction_details(self):
+        queryset = Transaction.objects.filter(pk__in=[
+            self.t_buy_bond.pk,
+            self.t_buy_bond_acc2.pk
+        ])
+        instance = BalanceReport(master_user=self.m,
+                                 begin_date=None, end_date=date(2016, 3, 5),
+                                 use_portfolio=False, use_account=True,
+                                 show_transaction_details=True)
+        b = BalanceReport2Builder(instance=instance, queryset=queryset)
+        b.build()
+        self._print_test_name()
+        self._print_balance_transactions(instance.transactions)
+        self._print_balance(instance)
+        self._assertEqualBalance(instance, BalanceReport(
+            items=[
+                BalanceReportItem(pk=b.make_key(None, self.acc1, self.instr1_bond_chf, None),
+                                  portfolio=None, account=self.acc1, instrument=self.instr1_bond_chf, currency=None,
+                                  balance_position=100.000000, market_value_system_ccy=18.450000),
+                BalanceReportItem(pk=b.make_key(None, self.acc2, self.instr1_bond_chf, None),
+                                  portfolio=None, account=self.acc2, instrument=self.instr1_bond_chf, currency=None,
+                                  balance_position=100.000000, market_value_system_ccy=18.450000),
+
+                BalanceReportItem(pk=b.make_key(None, self.prov_acc1, None, self.usd),
+                                  portfolio=None, account=self.prov_acc1, instrument=None, currency=self.usd,
+                                  balance_position=-200.000000, market_value_system_ccy=-200.000000),
+                BalanceReportItem(pk=b.make_key(None, self.prov_acc2, None, self.usd, ext=self.t_buy_bond_acc2.pk),
+                                  portfolio=None, account=self.prov_acc2, instrument=None, currency=self.usd,
+                                  balance_position=-200.000000, market_value_system_ccy=-200.000000),
+            ],
+            summary=BalanceReportSummary(invested_value_system_ccy=0,
+                                         current_value_system_ccy=-363.1,
+                                         p_l_system_ccy=-363.1)
         ))
 
     def test_dates_case_1_2_over(self):

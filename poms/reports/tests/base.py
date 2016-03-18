@@ -7,7 +7,7 @@ import pandas as pd
 from django.contrib.auth.models import User
 from django.test import TestCase
 
-from poms.accounts.models import Account
+from poms.accounts.models import Account, AccountType
 from poms.currencies.models import Currency, CurrencyHistory
 from poms.instruments.models import Instrument, PriceHistory
 from poms.portfolios.models import Portfolio
@@ -71,10 +71,13 @@ class BaseReportTestCase(TestCase):
         PriceHistory.objects.create(instrument=self.instr2_stock, date=d,
                                     principal_price=1.5, accrued_price=2)
 
-        self.acc1 = Account.objects.create(master_user=m, name='Acc1')
-        self.acc2 = Account.objects.create(master_user=m, name='Acc2')
-        self.prov_acc1 = Account.objects.create(master_user=m, name='Prov Acc1')
-        self.prov_acc2 = Account.objects.create(master_user=m, name='Prov Acc2')
+        self.acc_t = AccountType.objects.create(master_user=m, name='Def', show_transaction_details=False)
+        self.prov_acc_t = AccountType.objects.create(master_user=m, name='Prov', show_transaction_details=False)
+        self.prov_acc_t2 = AccountType.objects.create(master_user=m, name='Prov2', show_transaction_details=True)
+        self.acc1 = Account.objects.create(master_user=m, name='Acc1', type=self.acc_t)
+        self.acc2 = Account.objects.create(master_user=m, name='Acc2', type=self.acc_t)
+        self.prov_acc1 = Account.objects.create(master_user=m, name='Prov Acc1', type=self.prov_acc_t)
+        self.prov_acc2 = Account.objects.create(master_user=m, name='Prov Acc2', type=self.prov_acc_t2)
 
         self.p1 = Portfolio.objects.create(master_user=m, name='p1')
         self.p2 = Portfolio.objects.create(master_user=m, name='p2')

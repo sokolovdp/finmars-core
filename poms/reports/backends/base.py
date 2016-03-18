@@ -393,23 +393,27 @@ class BaseReport2Builder(object):
         if self._use_portfolio:
             portfolio = getattr(portfolio, 'pk', None)
         else:
-            portfolio = None
+            portfolio = ''
 
         if self._use_account:
             account = getattr(account, 'pk', None)
         else:
-            account = None
+            account = ''
 
         if instrument:
             instrument = getattr(instrument, 'pk', None)
         else:
-            instrument = None
+            instrument = ''
 
         if currency:
             currency = getattr(currency, 'pk', None)
         else:
-            currency = None
-        return '%s,%s,%s,%s,%s' % (portfolio, account, instrument, currency, ext)
+            currency = ''
+
+        if ext is None:
+            ext = ''
+
+        return 'p%s,a%s,i%s,c%s,e%s' % (portfolio, account, instrument, currency, ext)
 
     def _get_transaction_key(self, trn, instr_attr, ccy_attr, acc_attr, ext=None):
         if self._use_portfolio:
@@ -437,6 +441,34 @@ class BaseReport2Builder(object):
             currency = None
 
         return self.make_key(portfolio, account, instrument, currency, ext=ext)
+
+    def calc_balance_item(self, i):
+        if i.instrument:
+            i.price_history = self.find_price_history(i.instrument)
+            i.instrument_principal_currency_history = self.find_currency_history(i.instrument.pricing_currency)
+            i.instrument_accrued_currency_history = self.find_currency_history(i.instrument.accrued_currency)
+
+            i.instrument_price_multiplier = i.instrument.price_multiplier if i.instrument.price_multiplier is not None else 1.
+            i.instrument_accrued_multiplier = i.instrument.accrued_multiplier if i.instrument.accrued_multiplier is not None else 1.
+
+            i.instrument_principal_price = getattr(i.price_history, 'principal_price', 0.) or 0.
+            i.instrument_accrued_price = getattr(i.price_history, 'accrued_price', 0.) or 0.
+
+            i.principal_value_instrument_principal_ccy = i.instrument_price_multiplier * i.balance_position * i.instrument_principal_price
+            i.accrued_value_instrument_accrued_ccy = i.instrument_accrued_multiplier * i.balance_position * i.instrument_accrued_price
+
+            i.instrument_principal_fx_rate = getattr(i.instrument_principal_currency_history, 'fx_rate', 0.) or 0.
+            i.instrument_accrued_fx_rate = getattr(i.instrument_accrued_currency_history, 'fx_rate', 0.) or 0.
+
+            i.principal_value_system_ccy = i.principal_value_instrument_principal_ccy * i.instrument_principal_fx_rate
+            i.accrued_value_system_ccy = i.accrued_value_instrument_accrued_ccy * i.instrument_accrued_fx_rate
+
+            i.market_value_system_ccy = i.principal_value_system_ccy + i.accrued_value_system_ccy
+        elif i.currency:
+            i.currency_history = self.find_currency_history(i.currency)
+            i.currency_fx_rate = getattr(i.currency_history, 'fx_rate', 0.)
+            i.principal_value_system_ccy = i.balance_position * i.currency_fx_rate
+            i.market_value_system_ccy = i.principal_value_system_ccy
 
     def set_multipliers(self, multiplier_class):
         if multiplier_class == 'avco':

@@ -177,8 +177,8 @@ class BalanceReport2Builder(BaseReport2Builder):
         self._invested_items = {}
         self._items = {}
 
-    def _get_item0(self, items, trn, instr_attr=None, ccy_attr=None, acc_attr=None):
-        t_key = self._get_transaction_key(trn, instr_attr, ccy_attr, acc_attr)
+    def _get_item0(self, items, trn, instr_attr=None, ccy_attr=None, acc_attr=None, ext=None):
+        t_key = self._get_transaction_key(trn, instr_attr, ccy_attr, acc_attr, ext=ext)
         try:
             return items[t_key]
         except KeyError:
@@ -191,8 +191,8 @@ class BalanceReport2Builder(BaseReport2Builder):
             items[t_key] = item
             return item
 
-    def _get_item(self, trn, instr_attr=None, ccy_attr=None, acc_attr=None):
-        return self._get_item0(self._items, trn, instr_attr=instr_attr, ccy_attr=ccy_attr, acc_attr=acc_attr)
+    def _get_item(self, trn, instr_attr=None, ccy_attr=None, acc_attr=None, ext=None):
+        return self._get_item0(self._items, trn, instr_attr=instr_attr, ccy_attr=ccy_attr, acc_attr=acc_attr, ext=ext)
 
     def _get_invested_items(self, trn, instr_attr=None, ccy_attr=None, acc_attr=None):
         return self._get_item0(self._invested_items, trn, instr_attr=instr_attr, ccy_attr=ccy_attr, acc_attr=acc_attr)
@@ -208,6 +208,12 @@ class BalanceReport2Builder(BaseReport2Builder):
             return 2, None, 'account_interim'
         else:
             return 0, 'account_position', 'account_cash'
+
+    def is_show_details(self, trn, acc_atr):
+        if self.instance.show_transaction_details:
+            acc = getattr(trn, acc_atr, None)
+            return acc and acc.type and acc.type.show_transaction_details
+        return False
 
     def get_items(self):
         # TODO: use show_transaction_details
@@ -227,69 +233,91 @@ class BalanceReport2Builder(BaseReport2Builder):
                     instrument_item = self._get_item(t, instr_attr='instrument', acc_attr=acc_pos_attr)
                     instrument_item.balance_position += t.position_size_with_sign
 
-                cash_item = self._get_item(t, ccy_attr='settlement_currency', acc_attr=acc_cash_attr)
-                if case == 0 or case == 1:
-                    cash_item.balance_position += t.cash_consideration
-                elif case == 2:
-                    cash_item.balance_position += -t.cash_consideration
-
-            elif t_class in [TransactionClass.FX_TRADE]:
-                if case == 0 or case == 1:
-                    instrument_item = self._get_item(t, ccy_attr='transaction_currency', acc_attr=acc_pos_attr)
-                    instrument_item.balance_position += t.position_size_with_sign
-
-                cash_item = self._get_item(t, ccy_attr='settlement_currency', acc_attr=acc_cash_attr)
+                # cash_item = self._get_item(t, ccy_attr='settlement_currency', acc_attr=acc_cash_attr)
+                if case in [1,2] and self.is_show_details(t, acc_cash_attr):
+                    cash_item = self._get_item(t, ccy_attr='settlement_currency', acc_attr=acc_cash_attr, ext=t.id)
+                    cash_item.transaction = t
+                else:
+                    cash_item = self._get_item(t, ccy_attr='settlement_currency', acc_attr=acc_cash_attr)
                 if case == 0 or case == 1:
                     cash_item.balance_position += t.cash_consideration
                 elif case == 2:
                     cash_item.balance_position += -t.cash_consideration
 
             elif t_class in [TransactionClass.INSTRUMENT_PL]:
-                cash_item = self._get_item(t, ccy_attr='settlement_currency', acc_attr=acc_cash_attr)
+                # cash_item = self._get_item(t, ccy_attr='settlement_currency', acc_attr=acc_cash_attr)
+                if case in [1,2] and self.is_show_details(t, acc_cash_attr):
+                    cash_item = self._get_item(t, ccy_attr='settlement_currency', acc_attr=acc_cash_attr, ext=t.id)
+                    cash_item.transaction = t
+                else:
+                    cash_item = self._get_item(t, ccy_attr='settlement_currency', acc_attr=acc_cash_attr)
                 if case == 0 or case == 1:
                     cash_item.balance_position += t.cash_consideration
                 elif case == 2:
                     cash_item.balance_position += -t.cash_consideration
 
             elif t_class in [TransactionClass.TRANSACTION_PL]:
-                cash_item = self._get_item(t, ccy_attr='settlement_currency', acc_attr=acc_cash_attr)
+                # cash_item = self._get_item(t, ccy_attr='settlement_currency', acc_attr=acc_cash_attr)
+                if case in [1,2] and self.is_show_details(t, acc_cash_attr):
+                    cash_item = self._get_item(t, ccy_attr='settlement_currency', acc_attr=acc_cash_attr, ext=t.id)
+                    cash_item.transaction = t
+                else:
+                    cash_item = self._get_item(t, ccy_attr='settlement_currency', acc_attr=acc_cash_attr)
                 if case == 0 or case == 1:
                     cash_item.balance_position += t.cash_consideration
                 elif case == 2:
                     cash_item.balance_position += -t.cash_consideration
 
+            elif t_class in [TransactionClass.FX_TRADE]:
+                instrument_item = self._get_item(t, ccy_attr='transaction_currency', acc_attr=acc_pos_attr)
+                instrument_item.balance_position += t.position_size_with_sign
+
+                cash_item = self._get_item(t, ccy_attr='settlement_currency', acc_attr=acc_cash_attr)
+                cash_item.balance_position += t.cash_consideration
+
+                # if case == 0 or case == 1:
+                #     instrument_item = self._get_item(t, ccy_attr='transaction_currency', acc_attr=acc_pos_attr)
+                #     instrument_item.balance_position += t.position_size_with_sign
+                # if case == 0 or case == 1:
+                #     cash_item.balance_position += t.cash_consideration
+                # elif case == 2:
+                #     cash_item.balance_position += -t.cash_consideration
+
         for i in six.itervalues(self._invested_items):
-            i.currency_history = self.find_currency_history(i.currency)
-            i.currency_fx_rate = getattr(i.currency_history, 'fx_rate', 0.)
-            i.market_value_system_ccy = i.balance_position * i.currency_fx_rate
+            # i.currency_history = self.find_currency_history(i.currency)
+            # i.currency_fx_rate = getattr(i.currency_history, 'fx_rate', 0.)
+            # i.principal_value_system_ccy = i.balance_position * i.currency_fx_rate
+            # i.market_value_system_ccy = i.principal_value_system_ccy
+            self.calc_balance_item(i)
 
         for i in six.itervalues(self._items):
-            if i.instrument:
-                i.price_history = self.find_price_history(i.instrument)
-                i.instrument_principal_currency_history = self.find_currency_history(i.instrument.pricing_currency)
-                i.instrument_accrued_currency_history = self.find_currency_history(i.instrument.accrued_currency)
-
-                i.instrument_price_multiplier = i.instrument.price_multiplier if i.instrument.price_multiplier is not None else 1.
-                i.instrument_accrued_multiplier = i.instrument.accrued_multiplier if i.instrument.accrued_multiplier is not None else 1.
-
-                i.instrument_principal_price = getattr(i.price_history, 'principal_price', 0.) or 0.
-                i.instrument_accrued_price = getattr(i.price_history, 'accrued_price', 0.) or 0.
-
-                i.principal_value_instrument_principal_ccy = i.instrument_price_multiplier * i.balance_position * i.instrument_principal_price
-                i.accrued_value_instrument_accrued_ccy = i.instrument_accrued_multiplier * i.balance_position * i.instrument_accrued_price
-
-                i.instrument_principal_fx_rate = getattr(i.instrument_principal_currency_history, 'fx_rate', 0.) or 0.
-                i.instrument_accrued_fx_rate = getattr(i.instrument_accrued_currency_history, 'fx_rate', 0.) or 0.
-
-                i.principal_value_system_ccy = i.principal_value_instrument_principal_ccy * i.instrument_principal_fx_rate
-                i.accrued_value_system_ccy = i.accrued_value_instrument_accrued_ccy * i.instrument_accrued_fx_rate
-
-                i.market_value_system_ccy = i.principal_value_system_ccy + i.accrued_value_system_ccy
-            elif i.currency:
-                i.currency_history = self.find_currency_history(i.currency)
-                i.currency_fx_rate = getattr(i.currency_history, 'fx_rate', 0.)
-                i.principal_value_system_ccy = i.balance_position * i.currency_fx_rate
-                i.market_value_system_ccy = i.principal_value_system_ccy
+            # if i.instrument:
+            #     i.price_history = self.find_price_history(i.instrument)
+            #     i.instrument_principal_currency_history = self.find_currency_history(i.instrument.pricing_currency)
+            #     i.instrument_accrued_currency_history = self.find_currency_history(i.instrument.accrued_currency)
+            #
+            #     i.instrument_price_multiplier = i.instrument.price_multiplier if i.instrument.price_multiplier is not None else 1.
+            #     i.instrument_accrued_multiplier = i.instrument.accrued_multiplier if i.instrument.accrued_multiplier is not None else 1.
+            #
+            #     i.instrument_principal_price = getattr(i.price_history, 'principal_price', 0.) or 0.
+            #     i.instrument_accrued_price = getattr(i.price_history, 'accrued_price', 0.) or 0.
+            #
+            #     i.principal_value_instrument_principal_ccy = i.instrument_price_multiplier * i.balance_position * i.instrument_principal_price
+            #     i.accrued_value_instrument_accrued_ccy = i.instrument_accrued_multiplier * i.balance_position * i.instrument_accrued_price
+            #
+            #     i.instrument_principal_fx_rate = getattr(i.instrument_principal_currency_history, 'fx_rate', 0.) or 0.
+            #     i.instrument_accrued_fx_rate = getattr(i.instrument_accrued_currency_history, 'fx_rate', 0.) or 0.
+            #
+            #     i.principal_value_system_ccy = i.principal_value_instrument_principal_ccy * i.instrument_principal_fx_rate
+            #     i.accrued_value_system_ccy = i.accrued_value_instrument_accrued_ccy * i.instrument_accrued_fx_rate
+            #
+            #     i.market_value_system_ccy = i.principal_value_system_ccy + i.accrued_value_system_ccy
+            # elif i.currency:
+            #     i.currency_history = self.find_currency_history(i.currency)
+            #     i.currency_fx_rate = getattr(i.currency_history, 'fx_rate', 0.)
+            #     i.principal_value_system_ccy = i.balance_position * i.currency_fx_rate
+            #     i.market_value_system_ccy = i.principal_value_system_ccy
+            self.calc_balance_item(i)
 
         invested_items = [i for i in six.itervalues(self._invested_items)]
         invested_items = sorted(invested_items, key=lambda x: x.pk)
