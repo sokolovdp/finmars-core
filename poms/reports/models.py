@@ -45,7 +45,8 @@ class BaseReport(object):
 
 @python_2_unicode_compatible
 class BalanceReportItem(BaseReportItem):
-    def __init__(self, currency=None, balance_position=0., market_value_system_ccy=0., *args, **kwargs):
+    def __init__(self, currency=None, balance_position=0., market_value_system_ccy=0., transaction=None, *args,
+                 **kwargs):
         super(BalanceReportItem, self).__init__(*args, **kwargs)
         self.balance_position = balance_position
 
@@ -73,7 +74,7 @@ class BalanceReportItem(BaseReportItem):
         self.accrued_value_system_ccy = 0.
         self.market_value_system_ccy = market_value_system_ccy
 
-        self.transaction = None  # -> Transaction for case 1 and case 2
+        self.transaction = transaction  # -> Transaction for case 1 and case 2
 
     def __str__(self):
         if self.instrument:
