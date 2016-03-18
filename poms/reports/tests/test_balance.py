@@ -78,7 +78,7 @@ class BalanceTestCase(BaseReportTestCase):
     def test_simple(self):
         queryset = Transaction.objects.filter(pk__in=self.simple)
         instance = BalanceReport(master_user=self.m,
-                                 begin_date=None, end_date=None,
+                                 begin_date=None, end_date=date(2016,3,10),
                                  use_portfolio=False, use_account=False,
                                  show_transaction_details=False)
         b = BalanceReport2Builder(instance=instance, queryset=queryset)
@@ -533,7 +533,7 @@ class BalanceTestCase(BaseReportTestCase):
             self.t_in.pk, self.t_buy_bond.pk, self.t_buy_bond_acc2.pk, self.t_buy_bond_p2.pk
         ])
         instance = BalanceReport(master_user=self.m,
-                                 begin_date=None, end_date=None,
+                                 begin_date=None, end_date=date(2016,3,10),
                                  use_portfolio=False, use_account=False,
                                  show_transaction_details=False)
         b = BalanceReport2Builder(instance=instance, queryset=queryset)
@@ -564,7 +564,7 @@ class BalanceTestCase(BaseReportTestCase):
             self.t_in.pk, self.t_buy_bond.pk, self.t_buy_bond_acc2.pk, self.t_buy_bond_p2.pk
         ])
         instance = BalanceReport(master_user=self.m,
-                                 begin_date=None, end_date=None,
+                                 begin_date=None, end_date=date(2016,3,10),
                                  use_portfolio=False, use_account=True,
                                  show_transaction_details=False)
         b = BalanceReport2Builder(instance=instance, queryset=queryset)
@@ -601,7 +601,7 @@ class BalanceTestCase(BaseReportTestCase):
             self.t_in.pk, self.t_buy_bond.pk, self.t_buy_bond_acc2.pk, self.t_buy_bond_p2.pk
         ])
         instance = BalanceReport(master_user=self.m,
-                                 begin_date=None, end_date=None,
+                                 begin_date=None, end_date=date(2016,3,10),
                                  use_portfolio=True, use_account=True,
                                  show_transaction_details=False)
         b = BalanceReport2Builder(instance=instance, queryset=queryset)
