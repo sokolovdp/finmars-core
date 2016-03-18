@@ -144,6 +144,8 @@ class PLReport2Builder(BaseReport2Builder):
             return item
 
     def build(self):
+        # TODO: Fx-Trade use fx-rate on transaction date
+
         for t in self.transactions:
             t_class = t.transaction_class.code
             item = None
@@ -189,32 +191,11 @@ class PLReport2Builder(BaseReport2Builder):
                 item.overheads_with_sign_system_ccy += t.overheads_with_sign_system_ccy
 
         for i in six.itervalues(self._balance_items):
-            # # TODO: copy-pasted from balance :(
-            # i.price_history = self.find_price_history(i.instrument)
-            # i.instrument_principal_currency_history = self.find_currency_history(i.instrument.pricing_currency)
-            # i.instrument_accrued_currency_history = self.find_currency_history(i.instrument.accrued_currency)
-            #
-            # i.instrument_price_multiplier = i.instrument.price_multiplier if i.instrument.price_multiplier is not None else 1.
-            # i.instrument_accrued_multiplier = i.instrument.accrued_multiplier if i.instrument.accrued_multiplier is not None else 1.
-            #
-            # i.instrument_principal_price = getattr(i.price_history, 'principal_price', 0.) or 0.
-            # i.instrument_accrued_price = getattr(i.price_history, 'accrued_price', 0.) or 0.
-            #
-            # i.principal_value_instrument_principal_ccy = i.instrument_price_multiplier * i.balance_position * i.instrument_principal_price
-            # i.accrued_value_instrument_accrued_ccy = i.instrument_accrued_multiplier * i.balance_position * i.instrument_accrued_price
-            #
-            # i.instrument_principal_fx_rate = getattr(i.instrument_principal_currency_history, 'fx_rate', 0.) or 0.
-            # i.instrument_accrued_fx_rate = getattr(i.instrument_accrued_currency_history, 'fx_rate', 0.) or 0.
-            #
-            # i.principal_value_system_ccy = i.principal_value_instrument_principal_ccy * i.instrument_principal_fx_rate
-            # i.accrued_value_system_ccy = i.accrued_value_instrument_accrued_ccy * i.instrument_accrued_fx_rate
-            #
-            # i.market_value_system_ccy = i.principal_value_system_ccy + i.accrued_value_system_ccy
-            #
-            # pli = self._items[i.pk]
-            # pli.principal_with_sign_system_ccy += i.principal_value_system_ccy
-            # pli.carry_with_sign_system_ccy += i.accrued_value_system_ccy
             self.calc_balance_item(i)
+
+            pli = self._items[i.pk]
+            pli.principal_with_sign_system_ccy += i.principal_value_system_ccy
+            pli.carry_with_sign_system_ccy += i.accrued_value_system_ccy
 
         summary = self.instance.summary
         for i in six.itervalues(self._items):
