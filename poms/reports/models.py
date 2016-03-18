@@ -46,7 +46,7 @@ class BaseReport(object):
 
 @python_2_unicode_compatible
 class BalanceReportItem(BaseReportItem):
-    def __init__(self, currency=None, balance_position=0., market_value_system_ccy=None, *args, **kwargs):
+    def __init__(self, currency=None, balance_position=0., market_value_system_ccy=0., *args, **kwargs):
         super(BalanceReportItem, self).__init__(*args, **kwargs)
         self.balance_position = balance_position
 
@@ -59,19 +59,19 @@ class BalanceReportItem(BaseReportItem):
         self.instrument_principal_currency_history = None  # -> CurrencyHistory
         self.instrument_accrued_currency_history = None  # -> CurrencyHistory
         # self.instrument_name = None
-        self.instrument_principal_pricing_ccy = None
-        self.instrument_price_multiplier = None
-        self.instrument_accrued_pricing_ccy = None
-        self.instrument_accrued_multiplier = None
-        self.instrument_principal_price = None
-        self.instrument_accrued_price = None
+        self.instrument_principal_pricing_ccy = 0.
+        self.instrument_price_multiplier = 0.
+        self.instrument_accrued_pricing_ccy = 0.
+        self.instrument_accrued_multiplier = 0.
+        self.instrument_principal_price = 0.
+        self.instrument_accrued_price = 0.
         self.principal_value_instrument_principal_ccy = None
         self.accrued_value_instrument_accrued_ccy = None
-        self.instrument_principal_fx_rate = None
-        self.instrument_accrued_fx_rate = None
+        self.instrument_principal_fx_rate = 0.
+        self.instrument_accrued_fx_rate = 0.
 
-        self.principal_value_system_ccy = None
-        self.accrued_value_system_ccy = None
+        self.principal_value_system_ccy = 0.
+        self.accrued_value_system_ccy = 0.
         self.market_value_system_ccy = market_value_system_ccy
 
         self.transaction = None  # -> Transaction for case 1 and case 2
