@@ -25,8 +25,7 @@ class BaseReportItem(object):
 @python_2_unicode_compatible
 class BaseReport(object):
     def __init__(self, master_user=None, begin_date=None, end_date=None, use_portfolio=None, use_account=None,
-                 instruments=None, transaction_currencies=None,
-                 items=None):
+                 instruments=None, transaction_currencies=None, items=None):
         self.master_user = master_user
         self.begin_date = begin_date
         self.end_date = end_date
@@ -161,11 +160,11 @@ class CostReport(BaseReport):
 
 
 class YTMReportItem(BaseReportItem):
-    def __init__(self, *args, **kwargs):
+    def __init__(self, position=0., ytm=0., time_invested=0., *args, **kwargs):
         super(YTMReportItem, self).__init__(*args, **kwargs)
-        self.position = 0.
-        self.ytm = 0.
-        self.time_invested = 0.
+        self.position = position
+        self.ytm = ytm
+        self.time_invested = time_invested
 
 
 # @python_2_unicode_compatible
