@@ -4,7 +4,7 @@ from __future__ import unicode_literals, division
 import six
 
 from poms.reports.backends.base import BaseReportBuilder, BaseReport2Builder
-from poms.reports.models import CostReportInstrument
+from poms.reports.models import CostReportItem
 from poms.transactions.models import TransactionClass
 
 
@@ -22,7 +22,7 @@ class CostReportBuilder(BaseReportBuilder):
         key = '%s' % transaction.instrument.id
         i = items.get(key, None)
         if i is None:
-            i = CostReportInstrument(pk='%s' % transaction.instrument.id, instrument=transaction.instrument)
+            i = CostReportItem(pk='%s' % transaction.instrument.id, instrument=transaction.instrument)
             items[key] = i
         return i
 
@@ -73,7 +73,7 @@ class CostReport2Builder(BaseReport2Builder):
             portfolio = trn.portfolio if self._use_portfolio else None
             account = trn.account_position if self._use_account else None
             instrument = trn.instrument
-            item = CostReportInstrument(pk=t_key, portfolio=portfolio, account=account, instrument=instrument)
+            item = CostReportItem(pk=t_key, portfolio=portfolio, account=account, instrument=instrument)
             self._items[t_key] = item
             return item
 

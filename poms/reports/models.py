@@ -140,10 +140,10 @@ class PLReport(BaseReport):
 # ----------------------------------------------------------------------------------------------------------------------
 
 
-class CostReportInstrument(BaseReportItem):
+class CostReportItem(BaseReportItem):
     def __init__(self, position=0., cost_system_ccy=0., cost_instrument_ccy=0., cost_price_adjusted=0., *args,
                  **kwargs):
-        super(CostReportInstrument, self).__init__(*args, **kwargs)
+        super(CostReportItem, self).__init__(*args, **kwargs)
         self.position = position
         self.cost_system_ccy = cost_system_ccy
         self.cost_instrument_ccy = cost_instrument_ccy
@@ -160,9 +160,9 @@ class CostReport(BaseReport):
 # ----------------------------------------------------------------------------------------------------------------------
 
 
-class YTMReportInstrument(BaseReportItem):
+class YTMReportItem(BaseReportItem):
     def __init__(self, *args, **kwargs):
-        super(YTMReportInstrument, self).__init__(*args, **kwargs)
+        super(YTMReportItem, self).__init__(*args, **kwargs)
         self.position = 0.
         self.ytm = 0.
         self.time_invested = 0.
