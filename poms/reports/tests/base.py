@@ -23,22 +23,22 @@ class BaseReportTestCase(TestCase):
     def setUp(self):
         pd.set_option('display.width', 1000)
 
-        u = User.objects.create_user('a')
+        u = User.objects.create_user('a1')
         self.m = m = MasterUser.objects.create(user=u)
 
-        cash_inflow = TransactionClass.objects.create(code=TransactionClass.CASH_INFLOW,
+        self.cash_inflow = TransactionClass.objects.create(code=TransactionClass.CASH_INFLOW,
                                                       name=TransactionClass.CASH_INFLOW)
-        cash_outflow = TransactionClass.objects.create(code=TransactionClass.CASH_OUTFLOW,
+        self.cash_outflow = TransactionClass.objects.create(code=TransactionClass.CASH_OUTFLOW,
                                                        name=TransactionClass.CASH_OUTFLOW)
-        buy = TransactionClass.objects.create(code=TransactionClass.BUY,
+        self.buy = TransactionClass.objects.create(code=TransactionClass.BUY,
                                               name=TransactionClass.BUY)
-        sell = TransactionClass.objects.create(code=TransactionClass.SELL,
+        self.sell = TransactionClass.objects.create(code=TransactionClass.SELL,
                                                name=TransactionClass.SELL)
-        instrument_pl = TransactionClass.objects.create(code=TransactionClass.INSTRUMENT_PL,
+        self.instrument_pl = TransactionClass.objects.create(code=TransactionClass.INSTRUMENT_PL,
                                                         name=TransactionClass.INSTRUMENT_PL)
-        transaction_pl = TransactionClass.objects.create(code=TransactionClass.TRANSACTION_PL,
+        self.transaction_pl = TransactionClass.objects.create(code=TransactionClass.TRANSACTION_PL,
                                                          name=TransactionClass.TRANSACTION_PL)
-        fx_tade = TransactionClass.objects.create(code=TransactionClass.FX_TRADE,
+        self.fx_tade = TransactionClass.objects.create(code=TransactionClass.FX_TRADE,
                                                   name=TransactionClass.FX_TRADE)
 
         ccy_ = Currency.objects.create(user_code='-', master_user=None)
@@ -90,7 +90,7 @@ class BaseReportTestCase(TestCase):
 
         self.t_in = Transaction.objects.create(
             master_user=m,
-            transaction_class=cash_inflow,
+            transaction_class=self.cash_inflow,
             portfolio=self.p1,
             instrument=None,
             transaction_currency=self.eur,
@@ -110,7 +110,7 @@ class BaseReportTestCase(TestCase):
         )
         self.t_in2 = Transaction.objects.create(
             master_user=m,
-            transaction_class=cash_inflow,
+            transaction_class=self.cash_inflow,
             portfolio=self.p1,
             instrument=None,
             transaction_currency=self.eur,
@@ -131,7 +131,7 @@ class BaseReportTestCase(TestCase):
 
         self.t_buy_bond = Transaction.objects.create(
             master_user=m,
-            transaction_class=buy,
+            transaction_class=self.buy,
             portfolio=self.p1,
             instrument=self.instr1_bond_chf,
             transaction_currency=None,
@@ -151,7 +151,7 @@ class BaseReportTestCase(TestCase):
         )
         self.t_buy_bond_acc2 = Transaction.objects.create(
             master_user=m,
-            transaction_class=buy,
+            transaction_class=self.buy,
             portfolio=self.p1,
             instrument=self.instr1_bond_chf,
             transaction_currency=None,
@@ -171,7 +171,7 @@ class BaseReportTestCase(TestCase):
         )
         self.t_buy_bond_p2 = Transaction.objects.create(
             master_user=m,
-            transaction_class=buy,
+            transaction_class=self.buy,
             portfolio=self.p2,
             instrument=self.instr1_bond_chf,
             transaction_currency=None,
@@ -192,7 +192,7 @@ class BaseReportTestCase(TestCase):
 
         self.t_sell_stock = Transaction.objects.create(
             master_user=m,
-            transaction_class=sell,
+            transaction_class=self.sell,
             portfolio=self.p1,
             instrument=self.instr2_stock,
             transaction_currency=None,
@@ -212,7 +212,7 @@ class BaseReportTestCase(TestCase):
         )
         self.t_sell_stock_acc2 = Transaction.objects.create(
             master_user=m,
-            transaction_class=sell,
+            transaction_class=self.sell,
             portfolio=self.p1,
             instrument=self.instr2_stock,
             transaction_currency=None,
@@ -232,7 +232,7 @@ class BaseReportTestCase(TestCase):
         )
         self.t_sell_stock_p2 = Transaction.objects.create(
             master_user=m,
-            transaction_class=sell,
+            transaction_class=self.sell,
             portfolio=self.p2,
             instrument=self.instr2_stock,
             transaction_currency=None,
@@ -253,7 +253,7 @@ class BaseReportTestCase(TestCase):
 
         self.t_out = Transaction.objects.create(
             master_user=m,
-            transaction_class=cash_outflow,
+            transaction_class=self.cash_outflow,
             portfolio=self.p1,
             instrument=None,
             transaction_currency=self.rub,
@@ -274,7 +274,7 @@ class BaseReportTestCase(TestCase):
 
         self.t_instrpl_stock = Transaction.objects.create(
             master_user=m,
-            transaction_class=instrument_pl,
+            transaction_class=self.instrument_pl,
             portfolio=self.p1,
             instrument=self.instr2_stock,
             transaction_currency=None,
@@ -295,7 +295,7 @@ class BaseReportTestCase(TestCase):
 
         self.t_instrpl_bond = Transaction.objects.create(
             master_user=m,
-            transaction_class=instrument_pl,
+            transaction_class=self.instrument_pl,
             portfolio=self.p1,
             instrument=self.instr1_bond_chf,
             transaction_currency=None,
@@ -315,7 +315,7 @@ class BaseReportTestCase(TestCase):
         )
         self.t_instrpl_bond_acc2 = Transaction.objects.create(
             master_user=m,
-            transaction_class=instrument_pl,
+            transaction_class=self.instrument_pl,
             portfolio=self.p1,
             instrument=self.instr1_bond_chf,
             transaction_currency=None,
@@ -335,7 +335,7 @@ class BaseReportTestCase(TestCase):
         )
         self.t_instrpl_bond_p2 = Transaction.objects.create(
             master_user=m,
-            transaction_class=instrument_pl,
+            transaction_class=self.instrument_pl,
             portfolio=self.p2,
             instrument=self.instr1_bond_chf,
             transaction_currency=None,
@@ -356,7 +356,7 @@ class BaseReportTestCase(TestCase):
 
         self.t_trnpl = Transaction.objects.create(
             master_user=m,
-            transaction_class=transaction_pl,
+            transaction_class=self.transaction_pl,
             portfolio=self.p1,
             instrument=None,
             transaction_currency=None,
@@ -377,7 +377,7 @@ class BaseReportTestCase(TestCase):
 
         self.t_fxtrade = Transaction.objects.create(
             master_user=m,
-            transaction_class=fx_tade,
+            transaction_class=self.fx_tade,
             portfolio=self.p1,
             instrument=None,
             transaction_currency=self.cad,
@@ -397,7 +397,7 @@ class BaseReportTestCase(TestCase):
         )
         self.t_fxtrade2 = Transaction.objects.create(
             master_user=m,
-            transaction_class=fx_tade,
+            transaction_class=self.fx_tade,
             portfolio=self.p1,
             instrument=None,
             transaction_currency=self.cad,

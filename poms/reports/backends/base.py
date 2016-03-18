@@ -495,7 +495,7 @@ class BaseReport2Builder(object):
             if t_class not in [TransactionClass.BUY, TransactionClass.SELL]:
                 continue
 
-            t_key = self._get_transaction_key(t, 'instrument', 'account_position', None)
+            t_key = self._get_transaction_key(t, 'instrument', None, 'account_position')
 
             t.avco_multiplier = 0.
             position_size_with_sign = t.position_size_with_sign
@@ -551,7 +551,7 @@ class BaseReport2Builder(object):
             if t_class not in [TransactionClass.BUY, TransactionClass.SELL]:
                 continue
 
-            t_key = self._get_transaction_key(t, 'instrument', 'account_position', None)
+            t_key = self._get_transaction_key(t, 'instrument', None, 'account_position')
 
             t.fifo_multiplier = 0.
             position_size_with_sign = t.position_size_with_sign
