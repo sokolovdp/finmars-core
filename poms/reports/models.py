@@ -140,13 +140,14 @@ class PLReport(BaseReport):
 
 
 class CostReportItem(BaseReportItem):
-    def __init__(self, position=0., cost_system_ccy=0., cost_instrument_ccy=0., cost_price_adjusted=0., *args,
-                 **kwargs):
+    def __init__(self, position=0., cost_price=0., cost_price_adjusted=0., cost_system_ccy=0., cost_instrument_ccy=0.,
+                 *args, **kwargs):
         super(CostReportItem, self).__init__(*args, **kwargs)
         self.position = position
-        self.cost_system_ccy = cost_system_ccy
-        self.cost_instrument_ccy = cost_instrument_ccy
+        self.cost_price = cost_price,
         self.cost_price_adjusted = cost_price_adjusted
+        self.cost_instrument_ccy = cost_instrument_ccy
+        self.cost_system_ccy = cost_system_ccy
 
 
 # @python_2_unicode_compatible
