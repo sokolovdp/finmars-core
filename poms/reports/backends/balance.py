@@ -216,7 +216,6 @@ class BalanceReport2Builder(BaseReport2Builder):
         return False
 
     def get_items(self):
-        # TODO: use show_transaction_details
         # TODO: use transaction.currency_fx_rate
         for t in self.transactions:
             t_class = t.transaction_class.code
