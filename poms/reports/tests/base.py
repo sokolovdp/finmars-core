@@ -108,6 +108,26 @@ class BaseReportTestCase(TestCase):
             account_interim=self.prov_acc1,
             reference_fx_rate=1.3
         )
+        self.t_in2 = Transaction.objects.create(
+            master_user=m,
+            transaction_class=cash_inflow,
+            portfolio=self.p1,
+            instrument=None,
+            transaction_currency=self.eur,
+            position_size_with_sign=1000,
+            settlement_currency=self.eur,  # TODO: must be None
+            cash_consideration=0.,
+            principal_with_sign=0.,
+            carry_with_sign=0.,
+            overheads_with_sign=0.,
+            transaction_date=date(2016, 3, 10),
+            accounting_date=date(2016, 3, 10),
+            cash_date=date(2016, 3, 1),
+            account_position=self.acc1,
+            account_cash=self.acc1,
+            account_interim=self.prov_acc1,
+            reference_fx_rate=1.4
+        )
 
         self.t_buy_bond = Transaction.objects.create(
             master_user=m,
@@ -373,6 +393,26 @@ class BaseReportTestCase(TestCase):
             account_position=self.acc1,
             account_cash=self.acc1,
             account_interim=self.prov_acc1,
+            reference_fx_rate=None
+        )
+        self.t_fxtrade2 = Transaction.objects.create(
+            master_user=m,
+            transaction_class=fx_tade,
+            portfolio=self.p1,
+            instrument=None,
+            transaction_currency=self.cad,
+            position_size_with_sign=80.,
+            settlement_currency=self.mex,
+            cash_consideration=-150.,
+            principal_with_sign=-140,
+            carry_with_sign=0.,
+            overheads_with_sign=-10.,
+            transaction_date=date(2016, 4, 9),
+            accounting_date=date(2016, 4, 9),
+            cash_date=date(2016, 4, 9),
+            account_position=self.acc2,
+            account_cash=self.acc2,
+            account_interim=self.prov_acc2,
             reference_fx_rate=None
         )
 
