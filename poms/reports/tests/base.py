@@ -50,13 +50,21 @@ class BaseReportTestCase(TestCase):
         self.rub = Currency.objects.create(user_code='RUB', name='RUB', master_user=None)
         self.gbp = Currency.objects.create(user_code='GBP', name='GBP', master_user=None)
 
-        d = date(2016, 3, 1)
-        CurrencyHistory.objects.create(currency=self.eur, date=d, fx_rate=1.3)
-        CurrencyHistory.objects.create(currency=self.chf, date=d, fx_rate=0.9)
-        CurrencyHistory.objects.create(currency=self.cad, date=d, fx_rate=1.2)
-        CurrencyHistory.objects.create(currency=self.mex, date=d, fx_rate=0.15)
-        CurrencyHistory.objects.create(currency=self.rub, date=d, fx_rate=1. / 75.)
-        CurrencyHistory.objects.create(currency=self.gbp, date=d, fx_rate=1.6)
+        cd1 = date(2016, 3, 1)
+        CurrencyHistory.objects.create(currency=self.eur, date=cd1, fx_rate=1.3)
+        CurrencyHistory.objects.create(currency=self.chf, date=cd1, fx_rate=0.9)
+        CurrencyHistory.objects.create(currency=self.cad, date=cd1, fx_rate=1.2)
+        CurrencyHistory.objects.create(currency=self.mex, date=cd1, fx_rate=0.15)
+        CurrencyHistory.objects.create(currency=self.rub, date=cd1, fx_rate=1. / 75.)
+        CurrencyHistory.objects.create(currency=self.gbp, date=cd1, fx_rate=1.6)
+
+        cd2 = date(2016, 4, 1)
+        CurrencyHistory.objects.create(currency=self.eur, date=cd2, fx_rate=1.2)
+        CurrencyHistory.objects.create(currency=self.chf, date=cd2, fx_rate=0.8)
+        CurrencyHistory.objects.create(currency=self.cad, date=cd2, fx_rate=1.1)
+        CurrencyHistory.objects.create(currency=self.mex, date=cd2, fx_rate=0.1)
+        CurrencyHistory.objects.create(currency=self.rub, date=cd2, fx_rate=1. / 100.)
+        CurrencyHistory.objects.create(currency=self.gbp, date=cd2, fx_rate=1.5)
 
         self.instr1_bond_chf = Instrument.objects.create(master_user=m, name="instr1-bond, CHF",
                                                          pricing_currency=self.chf, price_multiplier=0.01,
@@ -65,11 +73,9 @@ class BaseReportTestCase(TestCase):
                                                       pricing_currency=self.gbp, price_multiplier=1.,
                                                       accrued_currency=self.rub, accrued_multiplier=1.)
 
-        PriceHistory.objects.create(instrument=self.instr1_bond_chf, date=d,
-                                    principal_price=20., accrued_price=0.5)
-
-        PriceHistory.objects.create(instrument=self.instr2_stock, date=d,
-                                    principal_price=1.5, accrued_price=2)
+        phd1 = date(2016, 3, 1)
+        PriceHistory.objects.create(instrument=self.instr1_bond_chf, date=phd1, principal_price=20., accrued_price=0.5)
+        PriceHistory.objects.create(instrument=self.instr2_stock, date=phd1, principal_price=1.5, accrued_price=2)
 
         self.acc_t = AccountType.objects.create(master_user=m, name='Def', show_transaction_details=False)
         self.prov_acc_t = AccountType.objects.create(master_user=m, name='Prov', show_transaction_details=False)
