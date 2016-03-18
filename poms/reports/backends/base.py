@@ -302,10 +302,11 @@ class BaseReport2Builder(object):
         else:
             queryset = self._queryset
 
-        queryset = queryset.prefetch_related(
+        queryset = queryset.select_related(
             'transaction_class',
-            'transaction_currency',
+            'portfolio',
             'instrument', 'instrument__pricing_currency', 'instrument__accrued_currency',
+            'transaction_currency',
             'settlement_currency',
             'account_position', 'account_cash', 'account_interim', )
         queryset = queryset.filter(master_user=self.instance.master_user, is_canceled=False)
