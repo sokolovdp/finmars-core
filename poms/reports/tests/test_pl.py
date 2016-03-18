@@ -14,7 +14,7 @@ class PLTestCase(BaseReportTestCase):
     def _print_pl_transactions(self, transactions):
         self._print_transactions(
             transactions,
-            'accounting_date', 
+            'accounting_date',
             'transaction_class',
             'portfolio',
             'instrument', 'transaction_currency',
