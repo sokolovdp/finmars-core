@@ -1,5 +1,6 @@
 from __future__ import unicode_literals, division
 
+import inspect
 from datetime import date
 
 import pandas as pd
@@ -379,9 +380,15 @@ class BaseReportTestCase(TestCase):
         ]
 
     def _print_transactions(self, transactions, *columns):
-        print('=' * 79)
+        # print('=' * 79)
         print('Transactions')
         data = []
         for t in transactions:
             data.append([getattr(t, c, None) for c in columns])
         print(pd.DataFrame(data=data, columns=columns))
+
+    def _print_test_name(self):
+        print('=' * 79)
+        curframe = inspect.currentframe()
+        calframe = inspect.getouterframes(curframe, 2)
+        print(calframe[1][3])

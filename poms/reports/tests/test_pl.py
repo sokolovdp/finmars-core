@@ -103,6 +103,7 @@ class PLTestCase(BaseReportTestCase):
                             use_portfolio=False, use_account=False)
         b = PLReport2Builder(instance=instance, queryset=queryset)
         b.build()
+        self._print_test_name()
         self._print_pl_transactions(instance.transactions)
         self._print_pl(instance)
         self._assertEqualPL(instance, PLReport(
@@ -126,13 +127,14 @@ class PLTestCase(BaseReportTestCase):
                                     total_system_ccy=-639.883333)
         ))
 
-    def test_with_accs(self):
+    def test_accs(self):
         queryset = Transaction.objects.filter(pk__in=self.simple_w_trnpl)
         instance = PLReport(master_user=self.m,
                             begin_date=None, end_date=None,
                             use_portfolio=False, use_account=True)
         b = PLReport2Builder(instance=instance, queryset=queryset)
         b.build()
+        self._print_test_name()
         self._print_pl_transactions(instance.transactions)
         self._print_pl(instance)
         self._assertEqualPL(instance, PLReport(
@@ -156,13 +158,14 @@ class PLTestCase(BaseReportTestCase):
                                     total_system_ccy=-639.883333)
         ))
 
-    def test_with_portf_accs(self):
+    def test_portf_accs(self):
         queryset = Transaction.objects.filter(pk__in=self.simple_w_trnpl)
         instance = PLReport(master_user=self.m,
                             begin_date=None, end_date=None,
                             use_portfolio=True, use_account=True)
         b = PLReport2Builder(instance=instance, queryset=queryset)
         b.build()
+        self._print_test_name()
         self._print_pl_transactions(instance.transactions)
         self._print_pl(instance)
         self._assertEqualPL(instance, PLReport(
@@ -176,7 +179,8 @@ class PLTestCase(BaseReportTestCase):
                              principal_with_sign_system_ccy=-465.333333, carry_with_sign_system_ccy=4.566667,
                              overheads_with_sign_system_ccy=-2.233333, total_system_ccy=-463.000000),
                 PLReportItem(pk=b.make_key(self.p1, self.acc1, None, None, TransactionClass.TRANSACTION_PL),
-                             portfolio=self.p1, account=self.acc1, instrument=None, name=TransactionClass.TRANSACTION_PL,
+                             portfolio=self.p1, account=self.acc1, instrument=None,
+                             name=TransactionClass.TRANSACTION_PL,
                              principal_with_sign_system_ccy=0.000000, carry_with_sign_system_ccy=-12.000000,
                              overheads_with_sign_system_ccy=-1.333333, total_system_ccy=-13.333333),
             ],
@@ -193,6 +197,7 @@ class PLTestCase(BaseReportTestCase):
                             use_portfolio=False, use_account=False)
         b = PLReport2Builder(instance=instance, queryset=queryset)
         b.build()
+        self._print_test_name()
         self._print_pl_transactions(instance.transactions)
         self._print_pl(instance)
         self._assertEqualPL(instance, PLReport(
@@ -206,11 +211,11 @@ class PLTestCase(BaseReportTestCase):
                              principal_with_sign_system_ccy=-465.333333, carry_with_sign_system_ccy=4.566667,
                              overheads_with_sign_system_ccy=-2.233333, total_system_ccy=-463.000000),
                 PLReportItem(pk=b.make_key(None, None, None, None, TransactionClass.TRANSACTION_PL),
-                             portfolio=None, account=None, instrument=None,name=TransactionClass.TRANSACTION_PL,
+                             portfolio=None, account=None, instrument=None, name=TransactionClass.TRANSACTION_PL,
                              principal_with_sign_system_ccy=0.000000, carry_with_sign_system_ccy=-12.000000,
                              overheads_with_sign_system_ccy=-1.333333, total_system_ccy=-13.333333),
                 PLReportItem(pk=b.make_key(None, None, None, None, TransactionClass.FX_TRADE),
-                             portfolio=None, account=None, instrument=None,name=TransactionClass.FX_TRADE,
+                             portfolio=None, account=None, instrument=None, name=TransactionClass.FX_TRADE,
                              principal_with_sign_system_ccy=75.000000, carry_with_sign_system_ccy=0.000000,
                              overheads_with_sign_system_ccy=-1.500000, total_system_ccy=73.500000),
             ],
@@ -218,4 +223,91 @@ class PLTestCase(BaseReportTestCase):
                                     carry_with_sign_system_ccy=6.016667,
                                     overheads_with_sign_system_ccy=-20.066667,
                                     total_system_ccy=-566.383333)
+        ))
+
+    def test_multiple(self):
+        queryset = Transaction.objects.filter(pk__in=[
+            self.t_in.pk, self.t_buy_bond.pk, self.t_buy_bond_acc2.pk, self.t_buy_bond_p2.pk
+        ])
+        instance = PLReport(master_user=self.m,
+                            begin_date=None, end_date=None,
+                            use_portfolio=False, use_account=False)
+        b = PLReport2Builder(instance=instance, queryset=queryset)
+        b.build()
+        self._print_test_name()
+        self._print_pl_transactions(instance.transactions)
+        self._print_pl(instance)
+        self._assertEqualPL(instance, PLReport(
+            items=[
+                PLReportItem(pk=b.make_key(None, None, self.instr1_bond_chf, None),
+                             portfolio=None, account=None, instrument=self.instr1_bond_chf,
+                             principal_with_sign_system_ccy=-486.000000, carry_with_sign_system_ccy=-13.65,
+                             overheads_with_sign_system_ccy=-45, total_system_ccy=-544.65),
+            ],
+            summary=PLReportSummary(principal_with_sign_system_ccy=-486.000000,
+                                    carry_with_sign_system_ccy=-13.65,
+                                    overheads_with_sign_system_ccy=-45,
+                                    total_system_ccy=-544.65)
+        ))
+
+    def test_multiple_acc(self):
+        queryset = Transaction.objects.filter(pk__in=[
+            self.t_in.pk, self.t_buy_bond.pk, self.t_buy_bond_acc2.pk, self.t_buy_bond_p2.pk
+        ])
+        instance = PLReport(master_user=self.m,
+                            begin_date=None, end_date=None,
+                            use_portfolio=False, use_account=True)
+        b = PLReport2Builder(instance=instance, queryset=queryset)
+        b.build()
+        self._print_test_name()
+        self._print_pl_transactions(instance.transactions)
+        self._print_pl(instance)
+        self._assertEqualPL(instance, PLReport(
+            items=[
+                PLReportItem(pk=b.make_key(None, self.acc1, self.instr1_bond_chf, None),
+                             portfolio=None, account=self.acc1, instrument=self.instr1_bond_chf,
+                             principal_with_sign_system_ccy=-324.000000, carry_with_sign_system_ccy=-9.1,
+                             overheads_with_sign_system_ccy=-30, total_system_ccy=-363.1),
+                PLReportItem(pk=b.make_key(None, self.acc2, self.instr1_bond_chf, None),
+                             portfolio=None, account=self.acc2, instrument=self.instr1_bond_chf,
+                             principal_with_sign_system_ccy=-162, carry_with_sign_system_ccy=-4.55,
+                             overheads_with_sign_system_ccy=-15, total_system_ccy=-181.55),
+            ],
+            summary=PLReportSummary(principal_with_sign_system_ccy=-486.000000,
+                                    carry_with_sign_system_ccy=-13.65,
+                                    overheads_with_sign_system_ccy=-45,
+                                    total_system_ccy=-544.65)
+        ))
+
+    def test_multiple_portf_acc(self):
+        queryset = Transaction.objects.filter(pk__in=[
+            self.t_in.pk, self.t_buy_bond.pk, self.t_buy_bond_acc2.pk, self.t_buy_bond_p2.pk
+        ])
+        instance = PLReport(master_user=self.m,
+                            begin_date=None, end_date=None,
+                            use_portfolio=True, use_account=True)
+        b = PLReport2Builder(instance=instance, queryset=queryset)
+        b.build()
+        self._print_test_name()
+        self._print_pl_transactions(instance.transactions)
+        self._print_pl(instance)
+        self._assertEqualPL(instance, PLReport(
+            items=[
+                PLReportItem(pk=b.make_key(self.p1, self.acc1, self.instr1_bond_chf, None),
+                             portfolio=self.p1, account=self.acc1, instrument=self.instr1_bond_chf,
+                             principal_with_sign_system_ccy=-162, carry_with_sign_system_ccy=-4.55,
+                             overheads_with_sign_system_ccy=-15, total_system_ccy=-181.55),
+                PLReportItem(pk=b.make_key(self.p1, self.acc2, self.instr1_bond_chf, None),
+                             portfolio=self.p1, account=self.acc2, instrument=self.instr1_bond_chf,
+                             principal_with_sign_system_ccy=-162, carry_with_sign_system_ccy=-4.55,
+                             overheads_with_sign_system_ccy=-15, total_system_ccy=-181.55),
+                PLReportItem(pk=b.make_key(self.p2, self.acc1, self.instr1_bond_chf, None),
+                             portfolio=self.p2, account=self.acc1, instrument=self.instr1_bond_chf,
+                             principal_with_sign_system_ccy=-162, carry_with_sign_system_ccy=-4.55,
+                             overheads_with_sign_system_ccy=-15, total_system_ccy=-181.55),
+            ],
+            summary=PLReportSummary(principal_with_sign_system_ccy=-486.000000,
+                                    carry_with_sign_system_ccy=-13.65,
+                                    overheads_with_sign_system_ccy=-45,
+                                    total_system_ccy=-544.65)
         ))

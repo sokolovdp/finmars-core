@@ -81,6 +81,7 @@ class BalanceTestCase(BaseReportTestCase):
                                  show_transaction_details=False)
         b = BalanceReport2Builder(instance=instance, queryset=queryset)
         b.build()
+        self._print_test_name()
         self._print_transactions(instance.transactions)
         self._print_balance(instance)
         self._assertEqualBalance(instance, BalanceReport(
@@ -115,6 +116,7 @@ class BalanceTestCase(BaseReportTestCase):
                                  show_transaction_details=False)
         b = BalanceReport2Builder(instance=instance, queryset=queryset)
         b.build()
+        self._print_test_name()
         self._print_transactions(instance.transactions)
         self._print_balance(instance)
         self._assertEqualBalance(instance, BalanceReport(
@@ -149,6 +151,7 @@ class BalanceTestCase(BaseReportTestCase):
                                  show_transaction_details=False)
         b = BalanceReport2Builder(instance=instance, queryset=queryset)
         b.build()
+        self._print_test_name()
         self._print_transactions(instance.transactions)
         self._print_balance(instance)
         self._assertEqualBalance(instance, BalanceReport(
@@ -183,6 +186,7 @@ class BalanceTestCase(BaseReportTestCase):
                                  show_transaction_details=False)
         b = BalanceReport2Builder(instance=instance, queryset=queryset)
         b.build()
+        self._print_test_name()
         self._print_transactions(instance.transactions)
         self._print_balance(instance)
         self._assertEqualBalance(instance, BalanceReport(
@@ -220,6 +224,7 @@ class BalanceTestCase(BaseReportTestCase):
                                  show_transaction_details=False)
         b = BalanceReport2Builder(instance=instance, queryset=queryset)
         b.build()
+        self._print_test_name()
         self._print_transactions(instance.transactions)
         self._print_balance(instance)
         self._assertEqualBalance(instance, BalanceReport(
@@ -257,6 +262,7 @@ class BalanceTestCase(BaseReportTestCase):
                                  show_transaction_details=False)
         b = BalanceReport2Builder(instance=instance, queryset=queryset)
         b.build()
+        self._print_test_name()
         self._print_transactions(instance.transactions)
         self._print_balance(instance)
         self._assertEqualBalance(instance, BalanceReport(
@@ -294,6 +300,7 @@ class BalanceTestCase(BaseReportTestCase):
                                  show_transaction_details=False)
         b = BalanceReport2Builder(instance=instance, queryset=queryset)
         b.build()
+        self._print_test_name()
         self._print_transactions(instance.transactions)
         self._print_balance(instance)
         self._assertEqualBalance(instance, BalanceReport(
@@ -337,6 +344,7 @@ class BalanceTestCase(BaseReportTestCase):
                                  show_transaction_details=False)
         b = BalanceReport2Builder(instance=instance, queryset=queryset)
         b.build()
+        self._print_test_name()
         self._print_transactions(instance.transactions)
         self._print_balance(instance)
         self._assertEqualBalance(instance, BalanceReport(
@@ -380,6 +388,7 @@ class BalanceTestCase(BaseReportTestCase):
                                  show_transaction_details=False)
         b = BalanceReport2Builder(instance=instance, queryset=queryset)
         b.build()
+        self._print_test_name()
         self._print_transactions(instance.transactions)
         self._print_balance(instance)
         self._assertEqualBalance(instance, BalanceReport(
@@ -423,6 +432,7 @@ class BalanceTestCase(BaseReportTestCase):
                                  show_transaction_details=False)
         b = BalanceReport2Builder(instance=instance, queryset=queryset)
         b.build()
+        self._print_test_name()
         self._print_balance_transactions(instance.transactions)
         self._print_balance(instance)
         self._assertEqualBalance(instance, BalanceReport(
@@ -454,6 +464,7 @@ class BalanceTestCase(BaseReportTestCase):
                                  show_transaction_details=False)
         b = BalanceReport2Builder(instance=instance, queryset=queryset)
         b.build()
+        self._print_test_name()
         self._print_transactions(instance.transactions)
         self._print_balance(instance)
         self._assertEqualBalance(instance, BalanceReport(
@@ -490,6 +501,7 @@ class BalanceTestCase(BaseReportTestCase):
                                  show_transaction_details=False)
         b = BalanceReport2Builder(instance=instance, queryset=queryset)
         b.build()
+        self._print_test_name()
         self._print_balance_transactions(instance.transactions)
         self._print_balance(instance)
         self._assertEqualBalance(instance, BalanceReport(
@@ -520,6 +532,7 @@ class BalanceTestCase(BaseReportTestCase):
                                  show_transaction_details=False)
         b = BalanceReport2Builder(instance=instance, queryset=queryset)
         b.build()
+        self._print_test_name()
         self._print_transactions(instance.transactions)
         self._print_balance(instance)
         self._assertEqualBalance(instance, BalanceReport(
@@ -556,6 +569,7 @@ class BalanceTestCase(BaseReportTestCase):
                                  show_transaction_details=False)
         b = BalanceReport2Builder(instance=instance, queryset=queryset)
         b.build()
+        self._print_test_name()
         self._print_transactions(instance.transactions)
         self._print_balance(instance)
         self._assertEqualBalance(instance, BalanceReport(
@@ -598,6 +612,7 @@ class BalanceTestCase(BaseReportTestCase):
                                  show_transaction_details=False)
         b = BalanceReport2Builder(instance=instance, queryset=queryset)
         b.build()
+        self._print_test_name()
         self._print_transactions(instance.transactions)
         self._print_balance(instance)
         self._assertEqualBalance(instance, BalanceReport(
@@ -640,6 +655,7 @@ class BalanceTestCase(BaseReportTestCase):
                                  show_transaction_details=False)
         b = BalanceReport2Builder(instance=instance, queryset=queryset)
         b.build()
+        self._print_test_name()
         self._print_balance_transactions(instance.transactions)
         self._print_balance(instance)
         self._assertEqualBalance(instance, BalanceReport(
