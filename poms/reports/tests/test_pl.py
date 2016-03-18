@@ -1,7 +1,8 @@
 from __future__ import unicode_literals, division
 
-import pandas as pd
 from datetime import date
+
+import pandas as pd
 
 from poms.reports.backends.pl import PLReport2Builder
 from poms.reports.models import PLReport, PLReportSummary, PLReportItem
@@ -100,7 +101,7 @@ class PLTestCase(BaseReportTestCase):
     def test_simple(self):
         queryset = Transaction.objects.filter(pk__in=self.simple_w_trnpl)
         instance = PLReport(master_user=self.m,
-                            begin_date=None, end_date=date(2016,3,10),
+                            begin_date=None, end_date=date(2016, 3, 10),
                             use_portfolio=False, use_account=False)
         b = PLReport2Builder(instance=instance, queryset=queryset)
         b.build()
@@ -131,7 +132,7 @@ class PLTestCase(BaseReportTestCase):
     def test_accs(self):
         queryset = Transaction.objects.filter(pk__in=self.simple_w_trnpl)
         instance = PLReport(master_user=self.m,
-                            begin_date=None, end_date=date(2016,3,10),
+                            begin_date=None, end_date=date(2016, 3, 10),
                             use_portfolio=False, use_account=True)
         b = PLReport2Builder(instance=instance, queryset=queryset)
         b.build()
@@ -162,7 +163,7 @@ class PLTestCase(BaseReportTestCase):
     def test_portf_accs(self):
         queryset = Transaction.objects.filter(pk__in=self.simple_w_trnpl)
         instance = PLReport(master_user=self.m,
-                            begin_date=None, end_date=date(2016,3,10),
+                            begin_date=None, end_date=date(2016, 3, 10),
                             use_portfolio=True, use_account=True)
         b = PLReport2Builder(instance=instance, queryset=queryset)
         b.build()
@@ -194,7 +195,7 @@ class PLTestCase(BaseReportTestCase):
     def test_fxtrade(self):
         queryset = Transaction.objects.filter(pk__in=self.simple_w_fxtrade)
         instance = PLReport(master_user=self.m,
-                            begin_date=None, end_date=date(2016,3,10),
+                            begin_date=None, end_date=date(2016, 3, 10),
                             use_portfolio=False, use_account=False)
         b = PLReport2Builder(instance=instance, queryset=queryset)
         b.build()
@@ -231,7 +232,7 @@ class PLTestCase(BaseReportTestCase):
             self.t_in.pk, self.t_buy_bond.pk, self.t_buy_bond_acc2.pk, self.t_buy_bond_p2.pk
         ])
         instance = PLReport(master_user=self.m,
-                            begin_date=None, end_date=date(2016,3,10),
+                            begin_date=None, end_date=date(2016, 3, 10),
                             use_portfolio=False, use_account=False)
         b = PLReport2Builder(instance=instance, queryset=queryset)
         b.build()
@@ -256,7 +257,7 @@ class PLTestCase(BaseReportTestCase):
             self.t_in.pk, self.t_buy_bond.pk, self.t_buy_bond_acc2.pk, self.t_buy_bond_p2.pk
         ])
         instance = PLReport(master_user=self.m,
-                            begin_date=None, end_date=date(2016,3,10),
+                            begin_date=None, end_date=date(2016, 3, 10),
                             use_portfolio=False, use_account=True)
         b = PLReport2Builder(instance=instance, queryset=queryset)
         b.build()
@@ -285,7 +286,7 @@ class PLTestCase(BaseReportTestCase):
             self.t_in.pk, self.t_buy_bond.pk, self.t_buy_bond_acc2.pk, self.t_buy_bond_p2.pk
         ])
         instance = PLReport(master_user=self.m,
-                            begin_date=None, end_date=date(2016,3,10),
+                            begin_date=None, end_date=date(2016, 3, 10),
                             use_portfolio=True, use_account=True)
         b = PLReport2Builder(instance=instance, queryset=queryset)
         b.build()
