@@ -1,5 +1,6 @@
 from __future__ import unicode_literals
 
+from django.conf import settings
 from django.utils.translation import ugettext_lazy as _
 from rest_framework import serializers
 
@@ -92,10 +93,12 @@ class BaseReportItemSerializer(serializers.Serializer):
 
 class BaseReportSerializer(serializers.Serializer):
     master_user = serializers.HiddenField(default=CurrentMasterUserDefault())
-    begin_date = serializers.DateField(required=False, allow_null=True, help_text=_('some help text'))
-    end_date = serializers.DateField(required=False, allow_null=True, help_text=_('some help text'))
-    use_portfolio = serializers.BooleanField(initial=False, help_text=_('Include detalization by portfolio'))
-    use_account = serializers.BooleanField(initial=False, help_text=_('Include detalization by account'))
+
+    begin_date = serializers.DateField(required=False, allow_null=True, help_text=_('Begin report date'))
+    end_date = serializers.DateField(required=False, allow_null=True, help_text=_('End report date'))
+
+    use_portfolio = serializers.BooleanField(initial=False, help_text=_('Aggregate by portfolio'))
+    use_account = serializers.BooleanField(initial=False, help_text=_('Aggregate by account'))
 
     transaction_currencies = CurrencyField(many=True, required=False, allow_null=True)
     instruments = InstrumentField(many=True, required=False, allow_null=True)
@@ -166,13 +169,16 @@ class BalanceReportSummarySerializer(serializers.Serializer):
 
 class BalanceReportSerializer(BaseReportSerializer):
     show_transaction_details = serializers.BooleanField(initial=True)
-    transactions = BaseTransactionSerializer(many=True, read_only=True)
-    invested_items = BalanceReportItemSerializer(many=True, read_only=True,
-                                                 help_text=_('invested'))
+
     items = BalanceReportItemSerializer(many=True, read_only=True,
                                         help_text=_('items'))
-    summary = BalanceReportSummarySerializer(read_only=True,
-                                             help_text=_('total in specified currency'))
+
+    if settings.DEV:
+        summary = BalanceReportSummarySerializer(read_only=True,
+                                                 help_text=_('Balance summary'))
+        invested_items = BalanceReportItemSerializer(many=True, read_only=True,
+                                                     help_text=_('Invested'))
+        transactions = BaseTransactionSerializer(many=True, read_only=True)
 
     def create(self, validated_data):
         return BalanceReport(**validated_data)
@@ -227,11 +233,13 @@ class PLReportSummarySerializer(serializers.Serializer):
 
 
 class PLReportSerializer(BaseReportSerializer):
-    transactions = PLReportTransactionSerializer(many=True, read_only=True)
     items = PLReportItemSerializer(many=True, read_only=True,
                                    help_text=_('items'))
-    summary = PLReportSummarySerializer(read_only=True,
-                                        help_text=_('total in specified currency'))
+
+    if settings.DEV:
+        summary = PLReportSummarySerializer(read_only=True,
+                                            help_text=_('total in specified currency'))
+        transactions = PLReportTransactionSerializer(many=True, read_only=True)
 
     def create(self, validated_data):
         return PLReport(**validated_data)
@@ -303,8 +311,11 @@ class CostReportInstrumentSerializer(BaseReportItemSerializer):
 
 class CostReportSerializer(BaseReportSerializer):
     multiplier_class = serializers.ChoiceField(default='avco', choices=[['avco', _('avco')], ['fifo', _('fifo')]])
-    transactions = CostTransactionSerializer(many=True, read_only=True, help_text=_('Transactions with miltipliers'))
     items = CostReportInstrumentSerializer(many=True, read_only=True)
+
+    if settings.DEV:
+        transactions = CostTransactionSerializer(many=True, read_only=True,
+                                                 help_text=_('Transactions with miltipliers'))
 
     def create(self, validated_data):
         return CostReport(**validated_data)
@@ -365,8 +376,10 @@ class YTMReportInstrumentSerializer(BaseReportItemSerializer):
 
 class YTMReportSerializer(BaseReportSerializer):
     multiplier_class = serializers.ChoiceField(default='avco', choices=[['avco', _('avco')], ['fifo', _('fifo')]])
-    transactions = YTMTransactionSerializer(many=True, read_only=True, help_text=_('Transactions with miltipliers'))
     items = YTMReportInstrumentSerializer(many=True, read_only=True)
+
+    if settings.DEV:
+        transactions = YTMTransactionSerializer(many=True, read_only=True, help_text=_('Transactions'))
 
     def create(self, validated_data):
         return CostReport(**validated_data)
