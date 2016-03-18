@@ -19,7 +19,8 @@ class BalanceTestCase(BaseReportTestCase):
             'instrument', 'transaction_currency',
             'position_size_with_sign',
             'settlement_currency', 'cash_consideration',
-            'accounting_date', 'cash_date')
+            'accounting_date', 'cash_date',
+            'reference_fx_rate')
 
     def _print_balance(self, instance):
         columns = ['pk', 'portfolio', 'account', 'instrument', 'currency', 'position', 'market_value', 'transaction']
@@ -713,4 +714,55 @@ class BalanceTestCase(BaseReportTestCase):
             summary=BalanceReportSummary(invested_value_system_ccy=1300.000000,
                                          current_value_system_ccy=1260.000000,
                                          p_l_system_ccy=-40.000000)
+        ))
+
+    def test_reference_fx_rate(self):
+        queryset = Transaction.objects.filter(pk__in=[
+            self.t_in.pk, self.t_in2.pk
+        ])
+        instance = BalanceReport(master_user=self.m,
+                                 begin_date=None, end_date=date(2016, 4, 1),
+                                 use_portfolio=False, use_account=False,
+                                 show_transaction_details=False)
+        b = BalanceReport2Builder(instance=instance, queryset=queryset)
+        b.build()
+        self._print_test_name()
+        self._print_balance_transactions(instance.transactions)
+        self._print_balance(instance)
+        self._assertEqualBalance(instance, BalanceReport(
+            items=[
+                BalanceReportItem(pk=b.make_key(None, None, None, self.eur),
+                                  portfolio=None, account=None, instrument=None, currency=self.eur,
+                                  balance_position=2000.000000, market_value_system_ccy=2700.000000),
+            ],
+            summary=BalanceReportSummary(invested_value_system_ccy=2700.,
+                                         current_value_system_ccy=2700.,
+                                         p_l_system_ccy=0.)
+        ))
+
+    def test_fx_trade_fx_rate_on_date(self):
+        queryset = Transaction.objects.filter(pk__in=[
+            self.t_fxtrade.pk, self.t_fxtrade2.pk
+        ])
+        instance = BalanceReport(master_user=self.m,
+                                 begin_date=None, end_date=date(2016, 5, 1),
+                                 use_portfolio=False, use_account=False,
+                                 show_transaction_details=False)
+        b = BalanceReport2Builder(instance=instance, queryset=queryset)
+        b.build()
+        self._print_test_name()
+        self._print_balance_transactions(instance.transactions)
+        self._print_balance(instance)
+        self._assertEqualBalance(instance, BalanceReport(
+            items=[
+                BalanceReportItem(pk=b.make_key(None, None, None, self.cad),
+                                  portfolio=None, account=None, instrument=None, currency=self.cad,
+                                  balance_position=160., market_value_system_ccy=184.),
+                BalanceReportItem(pk=b.make_key(None, None, None, self.mex),
+                                  portfolio=None, account=None, instrument=None, currency=self.mex,
+                                  balance_position=-300, market_value_system_ccy=-37.5),
+            ],
+            summary=BalanceReportSummary(invested_value_system_ccy=0,
+                                         current_value_system_ccy=146.5,
+                                         p_l_system_ccy=146.5)
         ))

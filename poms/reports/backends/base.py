@@ -372,22 +372,23 @@ class BaseReport2Builder(object):
             return currency_fx_rate
         return None
 
-    def set_fx_rate(self, transaction):
-        self.set_currency_fx_rate(transaction, 'transaction_currency')
-        self.set_currency_fx_rate(transaction, 'settlement_currency')
+    # def set_fx_rate(self, transaction):
+    #     self.set_currency_fx_rate(transaction, 'transaction_currency')
+    #     self.set_currency_fx_rate(transaction, 'settlement_currency')
 
-    def set_price(self, transaction):
-        if transaction.instrument:
-            price_history = self.find_price_history(transaction.instrument)
-            transaction.price_history = price_history
+    def set_price(self, obj, instr_attr):
+        instrument = getattr(obj, instr_attr)
+        if instrument:
+            price_history = self.find_price_history(instrument)
+            obj.price_history = price_history
 
-    def annotate_fx_rates(self):
-        for t in self.transactions:
-            self.set_fx_rate(t)
+    # def annotate_fx_rates(self):
+    #     for t in self.transactions:
+    #         self.set_fx_rate(t)
 
-    def annotate_prices(self, date=None):
-        for t in self.transactions:
-            self.set_price(t)
+    # def annotate_prices(self, date=None):
+    #     for t in self.transactions:
+    #         self.set_price(t)
 
     def make_key(self, portfolio, account, instrument, currency, ext=None):
         if self._use_portfolio:
@@ -442,33 +443,36 @@ class BaseReport2Builder(object):
 
         return self.make_key(portfolio, account, instrument, currency, ext=ext)
 
-    def calc_balance_item(self, i):
-        if i.instrument:
-            i.price_history = self.find_price_history(i.instrument)
-            i.instrument_principal_currency_history = self.find_currency_history(i.instrument.pricing_currency)
-            i.instrument_accrued_currency_history = self.find_currency_history(i.instrument.accrued_currency)
+    def calc_balance_instrument(self, i):
+        # i.price_history = self.find_price_history(i.instrument)
+        self.set_price(i,  'instrument')
 
-            i.instrument_price_multiplier = i.instrument.price_multiplier if i.instrument.price_multiplier is not None else 1.
-            i.instrument_accrued_multiplier = i.instrument.accrued_multiplier if i.instrument.accrued_multiplier is not None else 1.
+        i.instrument_principal_currency_history = self.find_currency_history(i.instrument.pricing_currency)
+        i.instrument_accrued_currency_history = self.find_currency_history(i.instrument.accrued_currency)
 
-            i.instrument_principal_price = getattr(i.price_history, 'principal_price', 0.) or 0.
-            i.instrument_accrued_price = getattr(i.price_history, 'accrued_price', 0.) or 0.
+        i.instrument_price_multiplier = i.instrument.price_multiplier if i.instrument.price_multiplier is not None else 1.
+        i.instrument_accrued_multiplier = i.instrument.accrued_multiplier if i.instrument.accrued_multiplier is not None else 1.
 
-            i.principal_value_instrument_principal_ccy = i.instrument_price_multiplier * i.balance_position * i.instrument_principal_price
-            i.accrued_value_instrument_accrued_ccy = i.instrument_accrued_multiplier * i.balance_position * i.instrument_accrued_price
+        i.instrument_principal_price = getattr(i.price_history, 'principal_price', 0.) or 0.
+        i.instrument_accrued_price = getattr(i.price_history, 'accrued_price', 0.) or 0.
 
-            i.instrument_principal_fx_rate = getattr(i.instrument_principal_currency_history, 'fx_rate', 0.) or 0.
-            i.instrument_accrued_fx_rate = getattr(i.instrument_accrued_currency_history, 'fx_rate', 0.) or 0.
+        i.principal_value_instrument_principal_ccy = i.instrument_price_multiplier * i.balance_position * i.instrument_principal_price
+        i.accrued_value_instrument_accrued_ccy = i.instrument_accrued_multiplier * i.balance_position * i.instrument_accrued_price
 
-            i.principal_value_system_ccy = i.principal_value_instrument_principal_ccy * i.instrument_principal_fx_rate
-            i.accrued_value_system_ccy = i.accrued_value_instrument_accrued_ccy * i.instrument_accrued_fx_rate
+        i.instrument_principal_fx_rate = getattr(i.instrument_principal_currency_history, 'fx_rate', 0.) or 0.
+        i.instrument_accrued_fx_rate = getattr(i.instrument_accrued_currency_history, 'fx_rate', 0.) or 0.
 
-            i.market_value_system_ccy = i.principal_value_system_ccy + i.accrued_value_system_ccy
-        elif i.currency:
-            i.currency_history = self.find_currency_history(i.currency)
-            i.currency_fx_rate = getattr(i.currency_history, 'fx_rate', 0.)
-            i.principal_value_system_ccy = i.balance_position * i.currency_fx_rate
-            i.market_value_system_ccy = i.principal_value_system_ccy
+        i.principal_value_system_ccy = i.principal_value_instrument_principal_ccy * i.instrument_principal_fx_rate
+        i.accrued_value_system_ccy = i.accrued_value_instrument_accrued_ccy * i.instrument_accrued_fx_rate
+
+        i.market_value_system_ccy = i.principal_value_system_ccy + i.accrued_value_system_ccy
+
+    # def calc_balance_ccy(self, i):
+    #     # i.currency_history = self.find_currency_history(i.currency)
+    #     self.set_currency_fx_rate(i, 'currency')
+    #     i.currency_fx_rate = getattr(i.currency_history, 'fx_rate', 0.)
+    #     i.principal_value_system_ccy = i.balance_position * i.currency_fx_rate
+    #     i.market_value_system_ccy = i.principal_value_system_ccy
 
     def set_multipliers(self, multiplier_class):
         if multiplier_class == 'avco':
