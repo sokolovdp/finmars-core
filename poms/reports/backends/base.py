@@ -61,10 +61,12 @@ class BaseReportBuilder(object):
             queryset = queryset.filter(**{'%s__gte' % self._filter_date_attr: self.begin_date})
         queryset = queryset.filter(**{'%s__lte' % self._filter_date_attr: self.end_date})
 
+        f = Q()
         if self.instance.transaction_currencies:
-            queryset = queryset.filter(Q(transaction_currency__in=self.instance.transaction_currencies))
+            f = f | Q(transaction_currency__in=self.instance.transaction_currencies)
         if self.instance.instruments:
-            queryset = queryset.filter(Q(instrument__in=self.instance.instruments))
+            f = f | Q(instrument__in=self.instance.instruments)
+        queryset = queryset.filter(f)
 
         queryset = queryset.order_by(self._filter_date_attr, 'id')
         return queryset
@@ -313,11 +315,12 @@ class BaseReport2Builder(object):
         if self._end_date:
             queryset = queryset.filter(**{'%s__lte' % self._filter_date_attr: self._end_date})
 
+        f = Q()
         if self.instance.transaction_currencies:
-            queryset = queryset.filter(Q(transaction_currency__in=self.instance.transaction_currencies))
-
+            f = f | Q(transaction_currency__in=self.instance.transaction_currencies)
         if self.instance.instruments:
-            queryset = queryset.filter(Q(instrument__in=self.instance.instruments))
+            f = f | Q(instrument__in=self.instance.instruments)
+        queryset = queryset.filter(f)
 
         queryset = queryset.order_by(self._filter_date_attr, 'id')
         return queryset
