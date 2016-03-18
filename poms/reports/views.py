@@ -6,10 +6,10 @@ from rest_framework.response import Response
 
 from poms.api.mixins import DbTransactionMixin
 from poms.reports.backends.balance import BalanceReportBuilder, BalanceReport2Builder
-from poms.reports.backends.cost import CostReportBuilder
+from poms.reports.backends.cost import CostReportBuilder, CostReport2Builder
 from poms.reports.backends.pl import PLReportBuilder, PLReport2Builder
 from poms.reports.backends.simple_multipliers import SimpleMultipliersReportBuilder, SimpleMultipliersReport2Builder
-from poms.reports.backends.ytm import YTMReportBuilder
+from poms.reports.backends.ytm import YTMReportBuilder, YTMReport2Builder
 from poms.reports.serializers import BalanceReportSerializer, SimpleMultipliersReportSerializer, PLReportSerializer, \
     CostReportSerializer, YTMReportSerializer, SimpleMultipliersReport2Serializer
 
@@ -67,9 +67,19 @@ class CostReportViewSet(BaseReportViewSet):
     report_builder_class = CostReportBuilder
 
 
+class CostReport2ViewSet(BaseReportViewSet):
+    serializer_class = CostReportSerializer
+    report_builder_class = CostReport2Builder
+
+
 class YTMReportViewSet(BaseReportViewSet):
     serializer_class = YTMReportSerializer
     report_builder_class = YTMReportBuilder
+
+
+class YTMReport2ViewSet(BaseReportViewSet):
+    serializer_class = YTMReportSerializer
+    report_builder_class = YTMReport2Builder
 
 
 class SimpleMultipliersReportViewSet(viewsets.ViewSet):
