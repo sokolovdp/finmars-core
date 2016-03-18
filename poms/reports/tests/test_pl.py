@@ -14,6 +14,7 @@ class PLTestCase(BaseReportTestCase):
     def _print_pl_transactions(self, transactions):
         self._print_transactions(
             transactions,
+            'accounting_date', 
             'transaction_class',
             'portfolio',
             'instrument', 'transaction_currency',
@@ -225,6 +226,36 @@ class PLTestCase(BaseReportTestCase):
                                     carry_with_sign_system_ccy=6.016667,
                                     overheads_with_sign_system_ccy=-20.066667,
                                     total_system_ccy=-566.383333)
+        ))
+
+    def test_fx_trade_fx_rate_on_date(self):
+        queryset = Transaction.objects.filter(pk__in=[
+            self.t_fxtrade.pk, self.t_fxtrade2.pk
+        ])
+        instance = PLReport(master_user=self.m,
+                            begin_date=None, end_date=date(2016, 5, 1),
+                            use_portfolio=False, use_account=True)
+        b = PLReport2Builder(instance=instance, queryset=queryset)
+        b.build()
+        self._print_test_name()
+        self._print_pl_transactions(instance.transactions)
+        self._print_pl(instance)
+        self._assertEqualPL(instance, PLReport(
+            items=[
+                PLReportItem(pk=b.make_key(None, self.acc1, None, None, TransactionClass.FX_TRADE),
+                             portfolio=None, account=self.acc1, instrument=None, name=TransactionClass.FX_TRADE,
+                             principal_with_sign_system_ccy=75., carry_with_sign_system_ccy=0.,
+                             overheads_with_sign_system_ccy=-1.5, total_system_ccy=73.5),
+
+                PLReportItem(pk=b.make_key(None, self.acc2, None, None, TransactionClass.FX_TRADE),
+                             portfolio=None, account=self.acc2, instrument=None, name=TransactionClass.FX_TRADE,
+                             principal_with_sign_system_ccy=74., carry_with_sign_system_ccy=0.,
+                             overheads_with_sign_system_ccy=-1., total_system_ccy=73.),
+            ],
+            summary=PLReportSummary(principal_with_sign_system_ccy=149,
+                                    carry_with_sign_system_ccy=0.,
+                                    overheads_with_sign_system_ccy=-2.5,
+                                    total_system_ccy=146.5)
         ))
 
     def test_multiple(self):

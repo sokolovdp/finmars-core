@@ -144,8 +144,6 @@ class PLReport2Builder(BaseReport2Builder):
             return item
 
     def build(self):
-        # TODO: Fx-Trade use fx-rate on transaction date
-
         for t in self.transactions:
             t_class = t.transaction_class.code
             item = None
@@ -165,11 +163,12 @@ class PLReport2Builder(BaseReport2Builder):
                 item.name = TransactionClass.TRANSACTION_PL
 
             elif t_class in [TransactionClass.FX_TRADE]:
+                # special case -> Fx-Trade use fx-rate on transaction date
                 spec = self._get_item(t, ext=TransactionClass.FX_TRADE)
                 spec.name = TransactionClass.FX_TRADE
 
                 self.set_currency_fx_rate(t, 'transaction_currency', date=t.accounting_date)
-                self.set_currency_fx_rate(t, 'settlement_currency')
+                self.set_currency_fx_rate(t, 'settlement_currency', date=t.accounting_date)
 
                 t.principal_with_sign_system_ccy = t.principal_with_sign * t.settlement_currency_fx_rate + \
                                                    t.position_size_with_sign * t.transaction_currency_fx_rate
@@ -181,7 +180,10 @@ class PLReport2Builder(BaseReport2Builder):
                 spec.overheads_with_sign_system_ccy += t.overheads_with_sign_system_ccy
 
             if item:
-                self.set_fx_rate(t)
+                # default case
+                # self.set_currency_fx_rate(t, 'transaction_currency')
+                self.set_currency_fx_rate(t, 'settlement_currency')
+
                 t.principal_with_sign_system_ccy = t.principal_with_sign * t.settlement_currency_fx_rate
                 t.carry_with_sign_system_ccy = t.carry_with_sign * t.settlement_currency_fx_rate
                 t.overheads_with_sign_system_ccy = t.overheads_with_sign * t.settlement_currency_fx_rate
@@ -191,7 +193,7 @@ class PLReport2Builder(BaseReport2Builder):
                 item.overheads_with_sign_system_ccy += t.overheads_with_sign_system_ccy
 
         for i in six.itervalues(self._balance_items):
-            self.calc_balance_item(i)
+            self.calc_balance_instrument(i)
 
             pli = self._items[i.pk]
             pli.principal_with_sign_system_ccy += i.principal_value_system_ccy
