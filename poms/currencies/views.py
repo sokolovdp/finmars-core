@@ -1,8 +1,9 @@
 from __future__ import unicode_literals
 
 import django_filters
-from rest_framework.filters import DjangoFilterBackend, OrderingFilter, SearchFilter, FilterSet
-from rest_framework.permissions import IsAuthenticated
+from rest_framework.filters import DjangoFilterBackend, OrderingFilter, SearchFilter, FilterSet, \
+    DjangoObjectPermissionsFilter
+from rest_framework.permissions import IsAuthenticated, DjangoObjectPermissions
 from rest_framework.viewsets import ModelViewSet
 
 from poms.api.filters import IsOwnerByMasterUserOrSystemFilter
@@ -27,11 +28,46 @@ class CurrencyFilter(FilterSet):
         return qs
 
 
+class DjangoObjectPermissions2(DjangoObjectPermissions):
+    perms_map = {
+        'GET': ['%(app_label)s.view_%(model_name)s'],
+        'OPTIONS': ['%(app_label)s.view_%(model_name)s'],
+        'HEAD': ['%(app_label)s.view_%(model_name)s'],
+        'POST': ['%(app_label)s.add_%(model_name)s'],
+        'PUT': ['%(app_label)s.change_%(model_name)s'],
+        'PATCH': ['%(app_label)s.change_%(model_name)s'],
+        'DELETE': ['%(app_label)s.delete_%(model_name)s'],
+    }
+
+
+class DjangoObjectPermissionsFilter2(DjangoObjectPermissionsFilter):
+    perms_map = {
+        'GET': ['%(app_label)s.view_%(model_name)s'],
+        'OPTIONS': ['%(app_label)s.view_%(model_name)s'],
+        'HEAD': ['%(app_label)s.view_%(model_name)s'],
+        'POST': ['%(app_label)s.add_%(model_name)s'],
+        'PUT': ['%(app_label)s.change_%(model_name)s'],
+        'PATCH': ['%(app_label)s.change_%(model_name)s'],
+        'DELETE': ['%(app_label)s.delete_%(model_name)s'],
+    }
+
+    def filter_queryset(self, request, queryset, view):
+        from guardian.shortcuts import get_objects_for_user
+        user = request.user
+        model_cls = queryset.model
+        kwargs = {
+            'app_label': model_cls._meta.app_label,
+            'model_name': model_cls._meta.model_name
+        }
+        permission = self.perm_format % kwargs
+        return get_objects_for_user(user, permission, queryset, with_superuser=False, accept_global_perms=False)
+
+
 class CurrencyViewSet(DbTransactionMixin, ModelViewSet):
     queryset = Currency.objects.all()
     serializer_class = CurrencySerializer
-    permission_classes = [IsAuthenticated, IsOwnerOrReadonly]
-    filter_backends = [IsOwnerByMasterUserOrSystemFilter, DjangoFilterBackend, OrderingFilter, SearchFilter, ]
+    permission_classes = [IsAuthenticated, DjangoObjectPermissions2]
+    filter_backends = [DjangoObjectPermissionsFilter2, DjangoFilterBackend, OrderingFilter, SearchFilter, ]
     filter_class = CurrencyFilter
     ordering_fields = ['user_code', 'name', 'short_name']
     search_fields = ['user_code', 'name', 'short_name']
