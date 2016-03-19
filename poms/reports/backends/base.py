@@ -519,7 +519,7 @@ class BaseReport2Builder(object):
                         for t0 in i_not_closed:
                             t0.avco_multiplier += abs(
                                 (1. - t0.avco_multiplier) * position_size_with_sign / rolling_position)
-                    not_closed[t_key] = [t for t in i_not_closed if t.avco_multiplier < 1.]
+                    not_closed[t_key] = [t0 for t0 in i_not_closed if t0.avco_multiplier < 1.]
                 else:  # новая "чистая" покупка
                     t.avco_multiplier = 0.
                     in_stock[t_key] = in_stock.get(t_key, []) + [t]
@@ -537,7 +537,7 @@ class BaseReport2Builder(object):
                         for t0 in i_in_stock:
                             t0.avco_multiplier = 1.
                         not_closed[t_key] = not_closed.get(t_key, []) + [t]
-                    in_stock[t_key] = [t for t in i_in_stock if t.avco_multiplier < 1.]
+                    in_stock[t_key] = [t0 for t0 in i_in_stock if t0.avco_multiplier < 1.]
                 else:  # нечего продавать
                     t.avco_multiplier = 0.
                     not_closed[t_key] = not_closed.get(t_key, []) + [t]
@@ -578,7 +578,7 @@ class BaseReport2Builder(object):
                             balance = 0.
                         if balance <= 0.:
                             break
-                    not_closed[t_key] = [t for t in i_not_closed if t.fifo_multiplier < 1.]
+                    not_closed[t_key] = [t0 for t0 in i_not_closed if t0.fifo_multiplier < 1.]
                 t.balance = balance
                 t.fifo_multiplier = abs((position_size_with_sign - balance) / position_size_with_sign)
                 if t.fifo_multiplier < 1.:
@@ -601,7 +601,7 @@ class BaseReport2Builder(object):
                             sale += abs(balance)
                         if sale >= 0.:
                             break
-                    in_stock[t_key] = [t for t in i_in_stock if t.fifo_multiplier < 1.]
+                    in_stock[t_key] = [t0 for t0 in i_in_stock if t0.fifo_multiplier < 1.]
                 t.not_closed = sale
                 t.fifo_multiplier = abs((position_size_with_sign - sale) / position_size_with_sign)
                 if t.fifo_multiplier < 1.:
