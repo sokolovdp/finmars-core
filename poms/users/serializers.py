@@ -1,14 +1,15 @@
 from __future__ import unicode_literals
 
 from django.contrib.auth import get_user_model, authenticate
-from django.contrib.auth.models import User
+from django.contrib.auth.models import User, Group, Permission
+from django.contrib.contenttypes.models import ContentType
 from django.utils import translation
 from django.utils.translation import ugettext_lazy as _
 from rest_framework import serializers
 from rest_framework.authtoken.serializers import AuthTokenSerializer
 
 from poms.api.fields import CurrentMasterUserDefault
-from poms.users.models import MasterUser
+from poms.users.models import MasterUser, UserProfile, GroupProfile
 
 
 class MasterUserField(serializers.HiddenField):
@@ -54,55 +55,50 @@ class PasswordChangeSerializer(serializers.Serializer):
         return validated_data
 
 
+class ContentTypeSerializer(serializers.ModelSerializer):
+    url = serializers.HyperlinkedIdentityField(view_name='contenttype-detail')
+
+    class Meta:
+        model = ContentType
+        fields = ['url', 'id', 'app_label', 'model']
+
+
+class PermissionSerializer(serializers.ModelSerializer):
+    url = serializers.HyperlinkedIdentityField(view_name='permission-detail')
+    content_type = serializers.PrimaryKeyRelatedField(queryset=ContentType.objects.all())
+
+    class Meta:
+        model = Permission
+        fields = ['url', 'id', 'content_type', 'codename']
+
+
+class GroupProfileSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = GroupProfile
+        fields = ['name']
+
+
+class GroupSerializer(serializers.ModelSerializer):
+    url = serializers.HyperlinkedIdentityField(view_name='group-detail')
+    permissions = serializers.PrimaryKeyRelatedField(queryset=Permission.objects.all(), many=True)
+    profile = GroupProfileSerializer()
+
+    class Meta:
+        model = Group
+        fields = ['url', 'id', 'name', 'permissions', 'profile']
+
+
+class UserProfileSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = UserProfile
+        fields = ['language', 'timezone', 'is_owner', 'is_admin']
+
+
 class UserSerializer(serializers.ModelSerializer):
+    url = serializers.HyperlinkedIdentityField(view_name='user-detail')
+    groups = serializers.PrimaryKeyRelatedField(queryset=Group.objects.all(), many=True)
+    profile = UserProfileSerializer()
+
     class Meta:
         model = User
-        fields = ['first_name', 'last_name', 'is_active']
-
-    def create(self, validated_data):
-        return super(UserSerializer, self).create(validated_data)
-
-# class MasterUserSerializer(serializers.ModelSerializer):
-#     first_name = serializers.CharField(max_length=30, allow_null=False, allow_blank=True)
-#     last_name = serializers.CharField(max_length=30, allow_null=False, allow_blank=True)
-#
-#     class Meta:
-#         model = MasterUser
-#         fields = ['first_name', 'last_name', 'currency', 'language', 'timezone']
-#
-#     def update(self, instance, validated_data):
-#         if 'first_name' in validated_data or 'last_name' in validated_data:
-#             first_name = validated_data.pop('first_name', None)
-#             last_name = validated_data.pop('last_name', None)
-#         else:
-#             first_name = None
-#             last_name = None
-#         instance = super(MasterUserSerializer, self).update(instance, validated_data)
-#         if first_name is not None or last_name is not None:
-#             if first_name:
-#                 instance.user.first_name = first_name
-#             if last_name:
-#                 instance.user.last_name = last_name
-#             instance.user.save(update_fields=['first_name', 'last_name'])
-#         return instance
-
-#
-# class EmployeeSerializer(serializers.ModelSerializer):
-#     first_name = serializers.CharField(max_length=30, allow_null=False, allow_blank=True)
-#     last_name = serializers.CharField(max_length=30, allow_null=False, allow_blank=True)
-#
-#     class Meta:
-#         model = Employee
-#         fields = ['first_name', 'last_name', 'language', 'timezone']
-#
-#     def create(self, validated_data):
-#         return super(EmployeeSerializer, self).create(validated_data)
-#
-#
-# class PrivateGroupSerializer(serializers.ModelSerializer):
-#     class Meta:
-#         model = PrivateGroup
-#         fields = ['name']
-#
-#     def create(self, validated_data):
-#         return super(PrivateGroupSerializer, self).create(validated_data)
+        fields = ['url', 'id', 'username', 'first_name', 'last_name', 'is_active', 'groups', 'profile']

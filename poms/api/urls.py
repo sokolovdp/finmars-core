@@ -22,6 +22,11 @@ router.register(r'users/login', users.LoginViewSet, 'LoginViewSet')
 router.register(r'users/logout', users.LogoutViewSet, 'LogoutViewSet')
 # router.register(r'auth/obtain-token', auth.ObtainAuthTokenViewSet, 'ObtainAuthTokenViewSet')
 
+router.register(r'users/permissions', users.PermissionViewSet)
+router.register(r'users/content-type', users.ContentTypeViewSet)
+router.register(r'users/group', users.GroupViewSet)
+router.register(r'users/user', users.UserViewSet)
+
 router.register(r'security/http-session', sessions.SessionViewSet)
 
 router.register(r'audit/authlog', audit.AuthLogViewSet)

@@ -52,14 +52,3 @@ class CurrencyHistorySerializer(serializers.ModelSerializer):
             except (simpleeval.InvalidExpression, ArithmeticError) as e:
                 raise serializers.ValidationError({'fx_rate_expr': force_text(e)})
         return data
-
-
-class PermissionSerializer(serializers.Serializer):
-    group = FilteredPrimaryKeyRelatedField(queryset=Group.objects.all())
-    permissions = FilteredPrimaryKeyRelatedField(queryset=Permission.objects.all())
-
-    def create(self, validated_data):
-        pass
-
-    def update(self, instance, validated_data):
-        pass
