@@ -102,3 +102,16 @@ class UserSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
         fields = ['url', 'id', 'username', 'first_name', 'last_name', 'is_active', 'groups', 'profile']
+
+
+class ObjectPermissionSerializer(serializers.Serializer):
+    content_type = serializers.PrimaryKeyRelatedField(queryset=ContentType.objects.all())
+    object_id = serializers.IntegerField()
+    group = serializers.PrimaryKeyRelatedField(queryset=Group.objects.all())
+    permissions = serializers.PrimaryKeyRelatedField(queryset=Permission.objects.all(), many=True)
+
+    def create(self, validated_data):
+        return None
+
+    def update(self, instance, validated_data):
+        return None

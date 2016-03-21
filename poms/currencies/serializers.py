@@ -3,6 +3,7 @@ from __future__ import unicode_literals
 from django.contrib.auth.models import Group, Permission
 from django.utils.encoding import force_text
 from django.utils.translation import ugettext_lazy as _
+from guardian.shortcuts import get_perms_for_model, get_perms
 from rest_framework import serializers
 
 from poms.api.fields import CurrentMasterUserDefault, FilteredPrimaryKeyRelatedField
@@ -26,7 +27,6 @@ class CurrencySerializer(serializers.ModelSerializer):
         readonly_fields = ['is_global']
 
     def get_permissions(self, instance):
-        from guardian.shortcuts import get_perms
         request = self.context['request']
         return get_perms(request.user, instance)
 

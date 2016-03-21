@@ -1,7 +1,11 @@
-from __future__ import unicode_literals
+from __future__ import unicode_literals, print_function
 
 import django_filters
 import six
+from django.contrib.auth.models import Group
+from django.contrib.contenttypes.models import ContentType
+from guardian.shortcuts import get_groups_with_perms, get_perms_for_model, remove_perm, assign_perm, get_group_perms
+from rest_framework import serializers
 from rest_framework.decorators import detail_route, list_route
 from rest_framework.filters import DjangoFilterBackend, OrderingFilter, SearchFilter, FilterSet, \
     DjangoObjectPermissionsFilter
@@ -66,7 +70,138 @@ class DjangoObjectPermissionsFilter2(DjangoObjectPermissionsFilter):
         return get_objects_for_user(user, permission, queryset, with_superuser=False, accept_global_perms=False)
 
 
-class CurrencyViewSet(DbTransactionMixin, ModelViewSet):
+class ObjectPermission(object):
+    def __init__(self, group=None, permissions=None):
+        self.group = group
+        self.permissions = permissions
+
+
+class ObjectPermissionSerializer(serializers.Serializer):
+    group = serializers.PrimaryKeyRelatedField(queryset=Group.objects.all())
+    permissions = serializers.ListField(child=serializers.CharField())
+
+    def create(self, validated_data):
+        return ObjectPermission(**validated_data)
+
+    def update(self, instance, validated_data):
+        return None
+
+
+class ModelPermissionMixin(object):
+    def _perms(self, request, pk=None):
+        model = self.get_queryset().model
+        ctype = ContentType.objects.get_for_model(model)
+
+        if request.method == 'GET':
+            data = []
+
+            for group in Group.objects.filter(permissions__content_type=ctype).distinct():
+                perms = [p.codename for p in group.permissions.filter(content_type=ctype)]
+                data.append(ObjectPermission(
+                    group=group,
+                    permissions=perms
+                    # permissions=Permission.objects.filter(content_type=ctype, codename__in=perms)
+                ))
+
+            serializer = ObjectPermissionSerializer(data, many=True)
+            return Response(serializer.data)
+
+        elif request.method in ['POST', 'PUT']:
+            serializer = ObjectPermissionSerializer(data=request.data, context={'request': request})
+            serializer.is_valid(raise_exception=True)
+            op = serializer.save()
+
+            all_perms = {p.codename for p in get_perms_for_model(model)}
+            new_perms = {p for p in op.permissions if p in all_perms}  # filter
+
+            old_perms = {p.codename for p in op.group.permissions.filter(content_type=ctype)}
+            for p in set(new_perms) - set(old_perms):
+                assign_perm('%s.%s' % (ctype.app_label, p), op.group)
+            for p in set(old_perms) - set(new_perms):
+                remove_perm('%s.%s' % (ctype.app_label, p), op.group)
+
+            op.permissions = [p.codename for p in op.group.permissions.filter(content_type=ctype)]
+
+            serializer = ObjectPermissionSerializer(instance=op, context={'request': request})
+            return Response(serializer.data)
+
+        return Response([])
+
+    @list_route(methods=['get', 'post'], url_path='permissions', permission_classes=[IsAuthenticated])
+    def list_perms(self, request, pk=None):
+        return self._perms(request, pk)
+
+
+class ObjectPermissionMixin(object):
+    def _perms(self, request, pk=None):
+        model = self.get_queryset().model
+        ctype = ContentType.objects.get_for_model(model)
+        instance = self.get_object() if pk else None
+
+        if request.method == 'GET':
+            data = []
+
+            if instance:
+                perms = get_groups_with_perms(instance, True)
+                for group, perms in six.iteritems(perms):
+                    data.append(ObjectPermission(
+                        group=group,
+                        permissions=perms
+                        # permissions=Permission.objects.filter(content_type=ctype, codename__in=perms)
+                    ))
+            else:
+                for group in Group.objects.filter(permissions__content_type=ctype).distinct():
+                    perms = [p.codename for p in group.permissions.filter(content_type=ctype)]
+                    data.append(ObjectPermission(
+                        group=group,
+                        permissions=perms
+                        # permissions=Permission.objects.filter(content_type=ctype, codename__in=perms)
+                    ))
+
+            serializer = ObjectPermissionSerializer(data, many=True)
+            return Response(serializer.data)
+
+        elif request.method in ['POST', 'PUT']:
+            serializer = ObjectPermissionSerializer(data=request.data, context={'request': request})
+            serializer.is_valid(raise_exception=True)
+            op = serializer.save()
+
+            all_perms = {p.codename for p in get_perms_for_model(model)}
+            new_perms = {p for p in op.permissions if p in all_perms}  # filter
+
+            if instance:
+                old_perms = get_group_perms(request.user, instance)
+                # old_perms = {p.codename for p in op.group.permissions.filter(content_type=ctype)}
+                for p in set(new_perms) - set(old_perms):
+                    assign_perm(p, op.group, instance)
+                for p in set(old_perms) - set(new_perms):
+                    remove_perm(p, op.group, instance)
+
+                op.permissions = get_group_perms(op.group, instance)
+            else:
+                old_perms = {p.codename for p in op.group.permissions.filter(content_type=ctype)}
+                for p in set(new_perms) - set(old_perms):
+                    assign_perm('%s.%s' % (ctype.app_label, p), op.group)
+                for p in set(old_perms) - set(new_perms):
+                    remove_perm('%s.%s' % (ctype.app_label, p), op.group)
+
+                op.permissions = [p.codename for p in op.group.permissions.filter(content_type=ctype)]
+
+            serializer = ObjectPermissionSerializer(instance=op, context={'request': request})
+            return Response(serializer.data)
+
+        return Response([])
+
+    @list_route(methods=['get', 'post'], url_path='permissions', permission_classes=[IsAuthenticated])
+    def list_perms(self, request, pk=None):
+        return self._perms(request, pk)
+
+    @detail_route(methods=['get', 'post'], url_path='permissions', permission_classes=[IsAuthenticated])
+    def object_perms(self, request, pk=None):
+        return self._perms(request, pk)
+
+
+class CurrencyViewSet(DbTransactionMixin, ObjectPermissionMixin, ModelViewSet):
     queryset = Currency.objects.all()
     serializer_class = CurrencySerializer
     permission_classes = [IsAuthenticated, DjangoObjectPermissions2]
@@ -75,50 +210,77 @@ class CurrencyViewSet(DbTransactionMixin, ModelViewSet):
     ordering_fields = ['user_code', 'name', 'short_name']
     search_fields = ['user_code', 'name', 'short_name']
 
-    @list_route(methods=['get'], url_path='permissions')
-    def get_list_permissions(self, request, pk=None):
-        perms = request.user.get_all_permissions()
-        return Response(perms)
+    def get_serializer_class(self):
+        if self.request.path.endswith('permissions/'):
+            return ObjectPermissionSerializer
+        return super(CurrencyViewSet, self).get_serializer_class()
 
-    @list_route(methods=['get'], url_path='groups-with-permissions')
-    def list_groups_with_perms(self, request, pk=None):
-        from guardian.shortcuts import get_perms_for_model
-        from django.contrib.auth.models import Group
-        from django.contrib.contenttypes.models import ContentType
-        ctype = ContentType.objects.get_for_model(Currency)
-        res = []
-        res.append(
-            {
-                'group': None,
-                'permissions': [p.codename for p in get_perms_for_model(Currency)]
-            }
-        )
-        for g in Group.objects.filter(permissions__content_type=ctype).distinct():
-            res.append({
-                'group': g.pk,
-                'permissions': [p.codename for p in g.permissions.filter(content_type=ctype)]
-            })
-        return Response(res)
-
-    @detail_route(methods=['get'], url_path='permissions')
-    def get_perms(self, request, pk=None):
-        from guardian.shortcuts import get_perms
-        instance = self.get_object()
-        perms = get_perms(request.user, instance)
-        return Response(perms)
-
-    @detail_route(methods=['get'], url_path='groups-with-permissions')
-    def get_groups_with_perms(self, request, pk=None):
-        from guardian.shortcuts import get_groups_with_perms
-        instance = self.get_object()
-        perms = get_groups_with_perms(instance, True)
-        res = []
-        for g, permissions in six.iteritems(perms):
-            res.append({
-                'group': g.pk,
-                'permissions': permissions,
-            })
-        return Response(res)
+        # def _perms(self, request, pk=None):
+        #     model = self.get_queryset().model
+        #     ctype = ContentType.objects.get_for_model(model)
+        #     instance = self.get_object() if pk else None
+        #
+        #     if request.method == 'GET':
+        #         data = []
+        #
+        #         if instance:
+        #             perms = get_groups_with_perms(instance, True)
+        #             for group, perms in six.iteritems(perms):
+        #                 data.append(ObjectPermission(
+        #                     group=group,
+        #                     permissions=perms
+        #                     # permissions=Permission.objects.filter(content_type=ctype, codename__in=perms)
+        #                 ))
+        #         else:
+        #             for group in Group.objects.filter(permissions__content_type=ctype).distinct():
+        #                 perms = [p.codename for p in group.permissions.filter(content_type=ctype)]
+        #                 data.append(ObjectPermission(
+        #                     group=group,
+        #                     permissions=perms
+        #                     # permissions=Permission.objects.filter(content_type=ctype, codename__in=perms)
+        #                 ))
+        #
+        #         serializer = ObjectPermissionSerializer(data, many=True)
+        #         return Response(serializer.data)
+        #
+        #     elif request.method in ['POST', 'PUT']:
+        #         serializer = ObjectPermissionSerializer(data=request.data, context={'request': request})
+        #         serializer.is_valid(raise_exception=True)
+        #         op = serializer.save()
+        #
+        #         all_perms = {p.codename for p in get_perms_for_model(model)}
+        #         new_perms = {p for p in op.permissions if p in all_perms}  # filter
+        #
+        #         if instance:
+        #             old_perms = get_group_perms(request.user, instance)
+        #             # old_perms = {p.codename for p in op.group.permissions.filter(content_type=ctype)}
+        #             for p in set(new_perms) - set(old_perms):
+        #                 assign_perm(p, op.group, instance)
+        #             for p in set(old_perms) - set(new_perms):
+        #                 remove_perm(p, op.group, instance)
+        #
+        #             op.permissions = get_group_perms(op.group, instance)
+        #         else:
+        #             old_perms = {p.codename for p in op.group.permissions.filter(content_type=ctype)}
+        #             for p in set(new_perms) - set(old_perms):
+        #                 assign_perm('%s.%s' % (ctype.app_label, p), op.group)
+        #             for p in set(old_perms) - set(new_perms):
+        #                 remove_perm('%s.%s' % (ctype.app_label, p), op.group)
+        #
+        #             op.permissions = [p.codename for p in op.group.permissions.filter(content_type=ctype)]
+        #
+        #         serializer = ObjectPermissionSerializer(instance=op, context={'request': request})
+        #         return Response(serializer.data)
+        #
+        #     return Response([])
+        #
+        # @list_route(methods=['get', 'post'], url_path='permissions', permission_classes=[IsAuthenticated])
+        # def list_perms(self, request, pk=None):
+        #     return self._perms(request, pk)
+        #
+        # @detail_route(methods=['get', 'post'], url_path='permissions', permission_classes=[IsAuthenticated])
+        # def object_perms(self, request, pk=None):
+        #     return self._perms(request, pk)
 
 
 class CurrencyHistoryFilter(FilterSet):

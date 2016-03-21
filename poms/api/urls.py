@@ -26,6 +26,7 @@ router.register(r'users/permissions', users.PermissionViewSet)
 router.register(r'users/content-type', users.ContentTypeViewSet)
 router.register(r'users/group', users.GroupViewSet)
 router.register(r'users/user', users.UserViewSet)
+router.register(r'users/object-permission', users.ObjectPermissionViewSet, 'objectpermission')
 
 router.register(r'security/http-session', sessions.SessionViewSet)
 
