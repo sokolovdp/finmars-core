@@ -82,10 +82,17 @@ class CurrencyViewSet(DbTransactionMixin, ModelViewSet):
 
     @list_route(methods=['get'], url_path='groups-with-permissions')
     def list_groups_with_perms(self, request, pk=None):
+        from guardian.shortcuts import get_perms_for_model
         from django.contrib.auth.models import Group
         from django.contrib.contenttypes.models import ContentType
         ctype = ContentType.objects.get_for_model(Currency)
         res = []
+        res.append(
+            {
+                'group': None,
+                'permissions': [p.codename for p in get_perms_for_model(Currency)]
+            }
+        )
         for g in Group.objects.filter(permissions__content_type=ctype).distinct():
             res.append({
                 'group': g.pk,
