@@ -1,9 +1,11 @@
 from __future__ import unicode_literals
 
 import django_filters
+from rest_framework.decorators import detail_route, list_route
 from rest_framework.filters import DjangoFilterBackend, OrderingFilter, SearchFilter, FilterSet, \
     DjangoObjectPermissionsFilter
 from rest_framework.permissions import IsAuthenticated, DjangoObjectPermissions
+from rest_framework.response import Response
 from rest_framework.viewsets import ModelViewSet
 
 from poms.api.filters import IsOwnerByMasterUserOrSystemFilter
@@ -71,6 +73,32 @@ class CurrencyViewSet(DbTransactionMixin, ModelViewSet):
     filter_class = CurrencyFilter
     ordering_fields = ['user_code', 'name', 'short_name']
     search_fields = ['user_code', 'name', 'short_name']
+
+    def get_object(self):
+        obj = super(CurrencyViewSet, self).get_object()
+        return obj
+
+    def list(self, request, *args, **kwargs):
+        response = super(CurrencyViewSet, self).list(request, *args, **kwargs)
+        # self.headers['Allow'] = 'GET, HEAD, OPTIONS'
+        return response
+
+    def retrieve(self, request, *args, **kwargs):
+        response = super(CurrencyViewSet, self).retrieve(request, *args, **kwargs)
+        # self.headers['Allow'] = 'GET, PUT, PATCH, DELETE, HEAD, OPTIONS'
+        return response
+
+    @list_route(methods=['get'], url_path='permissions')
+    def permissions(self, request, pk=None):
+        perms = request.user.get_all_permissions()
+        return Response(perms)
+
+    @detail_route(methods=['get'], url_path='permissions')
+    def object_permissions(self, request, pk=None):
+        from guardian.shortcuts import get_perms
+        instance = self.get_object()
+        perms = get_perms(request.user, instance)
+        return Response(perms)
 
 
 class CurrencyHistoryFilter(FilterSet):

@@ -17,11 +17,17 @@ class CurrencyField(FilteredPrimaryKeyRelatedField):
 class CurrencySerializer(serializers.ModelSerializer):
     url = serializers.HyperlinkedIdentityField(view_name='currency-detail')
     master_user = serializers.HiddenField(default=CurrentMasterUserDefault())
+    permissions = serializers.SerializerMethodField()
 
     class Meta:
         model = Currency
-        fields = ['url', 'id', 'master_user', 'user_code', 'name', 'short_name', 'is_global', 'is_system']
+        fields = ['url', 'id', 'master_user', 'user_code', 'name', 'short_name', 'is_global', 'is_system', 'permissions']
         readonly_fields = ['is_global']
+
+    def get_permissions(self, instance):
+        from guardian.shortcuts import get_perms
+        request = self.context['request']
+        return get_perms(request.user, instance)
 
 
 class CurrencyHistorySerializer(serializers.ModelSerializer):
