@@ -1,6 +1,7 @@
 from __future__ import unicode_literals
 
 import django_filters
+import six
 from rest_framework.decorators import detail_route, list_route
 from rest_framework.filters import DjangoFilterBackend, OrderingFilter, SearchFilter, FilterSet, \
     DjangoObjectPermissionsFilter
@@ -74,31 +75,43 @@ class CurrencyViewSet(DbTransactionMixin, ModelViewSet):
     ordering_fields = ['user_code', 'name', 'short_name']
     search_fields = ['user_code', 'name', 'short_name']
 
-    def get_object(self):
-        obj = super(CurrencyViewSet, self).get_object()
-        return obj
-
-    def list(self, request, *args, **kwargs):
-        response = super(CurrencyViewSet, self).list(request, *args, **kwargs)
-        # self.headers['Allow'] = 'GET, HEAD, OPTIONS'
-        return response
-
-    def retrieve(self, request, *args, **kwargs):
-        response = super(CurrencyViewSet, self).retrieve(request, *args, **kwargs)
-        # self.headers['Allow'] = 'GET, PUT, PATCH, DELETE, HEAD, OPTIONS'
-        return response
-
     @list_route(methods=['get'], url_path='permissions')
-    def permissions(self, request, pk=None):
+    def get_list_permissions(self, request, pk=None):
         perms = request.user.get_all_permissions()
         return Response(perms)
 
+    @list_route(methods=['get'], url_path='groups-with-permissions')
+    def list_groups_with_perms(self, request, pk=None):
+        from django.contrib.auth.models import Group
+        from django.contrib.contenttypes.models import ContentType
+        ctype = ContentType.objects.get_for_model(Currency)
+        res = []
+        for g in Group.objects.filter(permissions__content_type=ctype).distinct():
+            res.append({
+                'group': g.pk,
+                'permissions': [p.codename for p in g.permissions.filter(content_type=ctype)]
+            })
+        return Response(res)
+
     @detail_route(methods=['get'], url_path='permissions')
-    def object_permissions(self, request, pk=None):
+    def get_perms(self, request, pk=None):
         from guardian.shortcuts import get_perms
         instance = self.get_object()
         perms = get_perms(request.user, instance)
         return Response(perms)
+
+    @detail_route(methods=['get'], url_path='groups-with-permissions')
+    def get_groups_with_perms(self, request, pk=None):
+        from guardian.shortcuts import get_groups_with_perms
+        instance = self.get_object()
+        perms = get_groups_with_perms(instance, True)
+        res = []
+        for g, permissions in six.iteritems(perms):
+            res.append({
+                'group': g.pk,
+                'permissions': permissions,
+            })
+        return Response(res)
 
 
 class CurrencyHistoryFilter(FilterSet):
