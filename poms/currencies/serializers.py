@@ -1,9 +1,9 @@
 from __future__ import unicode_literals
 
-from django.contrib.auth.models import Group, Permission
+from django.contrib.contenttypes.models import ContentType
 from django.utils.encoding import force_text
 from django.utils.translation import ugettext_lazy as _
-from guardian.shortcuts import get_perms_for_model, get_perms
+from guardian.shortcuts import get_perms
 from rest_framework import serializers
 
 from poms.api.fields import CurrentMasterUserDefault, FilteredPrimaryKeyRelatedField
@@ -16,14 +16,32 @@ class CurrencyField(FilteredPrimaryKeyRelatedField):
     filter_backends = [IsOwnerByMasterUserOrSystemFilter]
 
 
+class PermissionField(serializers.Field):
+    def __init__(self, **kwargs):
+        kwargs['source'] = '*'
+        kwargs['read_only'] = True
+        super(PermissionField, self).__init__(**kwargs)
+
+    def bind(self, field_name, parent):
+        super(PermissionField, self).bind(field_name, parent)
+
+    def to_representation(self, value):
+        request = self.context['request']
+        ctype = ContentType.objects.get_for_model(value)
+        return {'%s.%s' % (ctype.app_label, p) for p in get_perms(request.user, value)}
+        # return get_perms(request.user, value)
+
+
 class CurrencySerializer(serializers.ModelSerializer):
     url = serializers.HyperlinkedIdentityField(view_name='currency-detail')
     master_user = serializers.HiddenField(default=CurrentMasterUserDefault())
-    permissions = serializers.SerializerMethodField()
+    # permissions = serializers.SerializerMethodField()
+    permissions = PermissionField()
 
     class Meta:
         model = Currency
-        fields = ['url', 'id', 'master_user', 'user_code', 'name', 'short_name', 'is_global', 'is_system', 'permissions']
+        fields = ['url', 'id', 'master_user', 'user_code', 'name', 'short_name', 'is_global', 'is_system',
+                  'permissions']
         readonly_fields = ['is_global']
 
     def get_permissions(self, instance):

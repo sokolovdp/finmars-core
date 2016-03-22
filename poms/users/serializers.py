@@ -94,7 +94,7 @@ class PermissionField(serializers.RelatedField):
 
 class GroupSerializer(serializers.ModelSerializer):
     url = serializers.HyperlinkedIdentityField(view_name='group-detail')
-    permissions = serializers.PrimaryKeyRelatedField(queryset=Permission.objects.all(), many=True)
+    # permissions = serializers.PrimaryKeyRelatedField(queryset=Permission.objects.all(), many=True)
     # permissions = PermissionField(queryset=Permission.objects.all(), many=True)
     profile = GroupProfileSerializer()
 
@@ -104,7 +104,7 @@ class GroupSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Group
-        fields = ['url', 'id', 'name', 'permissions', 'profile']
+        fields = ['url', 'id', 'name', 'profile']
 
 
 class UserProfileSerializer(serializers.ModelSerializer):

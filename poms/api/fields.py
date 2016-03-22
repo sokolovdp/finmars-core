@@ -25,7 +25,9 @@ class CurrentMasterUserDefault(object):
 class FilteredPrimaryKeyRelatedField(PrimaryKeyRelatedField):
     filter_backends = None
 
-    def __init__(self, **kwargs):
+    def __init__(self, filter_backends=None, **kwargs):
+        if filter_backends:
+            self.filter_backends = filter_backends
         super(FilteredPrimaryKeyRelatedField, self).__init__(**kwargs)
 
     def get_queryset(self):

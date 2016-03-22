@@ -219,9 +219,9 @@ LOGGING = {
             'level': 'INFO',
             'handlers': ['console'],
         },
-        'django.db': {
-            'level': 'DEBUG',
-        },
+        # 'django.db': {
+        #     'level': 'DEBUG',
+        # },
         'poms': {
             'level': 'DEBUG',
             'handlers': ['console'],
