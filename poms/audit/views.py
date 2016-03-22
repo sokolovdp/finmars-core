@@ -39,7 +39,6 @@ class MyNotificationFilter(BaseFilterBackend):
         # user_model = get_user_model()
         # ct = ContentType.objects.get_for_model(user_model)
         queryset = queryset.filter(recipient=request.user)
-        print("request.GET.get('all')",request.GET.get('all'))
         if request.GET.get('all') in ['1', 'true']:
             return queryset
         else:
