@@ -1,8 +1,4 @@
-from __future__ import unicode_literals, division
-
-from datetime import date
-
-import pandas as pd
+from __future__ import unicode_literals, division, print_function
 
 from poms.reports.backends.pl import PLReport2Builder
 from poms.reports.models import PLReport, PLReportSummary, PLReportItem
@@ -54,15 +50,21 @@ class PLTestCase(BaseReportTestCase):
             ])
         print('-' * 79)
         print('Positions')
-        print(pd.DataFrame(data=data, columns=columns))
+        # print(pd.DataFrame(data=data, columns=columns))
+        self._print_table(data=data, columns=columns)
 
         print('-' * 79)
         print('Summary')
-        print(pd.DataFrame(
+        # print(pd.DataFrame(
+        #     data=[[instance.summary.principal_with_sign_system_ccy, instance.summary.carry_with_sign_system_ccy,
+        #            instance.summary.overheads_with_sign_system_ccy, instance.summary.total_system_ccy]],
+        #     columns=['principal_with_sign_system_ccy', 'carry_with_sign_system_ccy', 'overheads_with_sign_system_ccy',
+        #              'total_system_ccy']))
+        self._print_table(
             data=[[instance.summary.principal_with_sign_system_ccy, instance.summary.carry_with_sign_system_ccy,
                    instance.summary.overheads_with_sign_system_ccy, instance.summary.total_system_ccy]],
             columns=['principal_with_sign_system_ccy', 'carry_with_sign_system_ccy', 'overheads_with_sign_system_ccy',
-                     'total_system_ccy']))
+                     'total_system_ccy'])
 
     def _assertEqualPL(self, result, expected):
         self.assertEqual(len(result.items), len(expected.items), 'len items')

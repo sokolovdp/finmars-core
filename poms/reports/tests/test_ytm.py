@@ -1,8 +1,4 @@
-from __future__ import unicode_literals, division
-
-from datetime import date
-
-import pandas as pd
+from __future__ import unicode_literals, division, print_function
 
 from poms.reports.backends.ytm import YTMReport2Builder
 from poms.reports.models import YTMReport, YTMReportItem
@@ -44,7 +40,8 @@ class YTMTestCase(BaseReportTestCase):
             ])
         print('*' * 79)
         print('Positions')
-        print(pd.DataFrame(data=data, columns=columns))
+        # print(pd.DataFrame(data=data, columns=columns))
+        self._print_table(data=data, columns=columns)
 
     def _assertEqualYTM(self, result, expected):
         self.assertEqual(len(result.items), len(expected.items), 'len items')

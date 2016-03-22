@@ -1,4 +1,4 @@
-from __future__ import unicode_literals, division
+from __future__ import unicode_literals, division, print_function
 
 import inspect
 from datetime import date, timedelta
@@ -522,13 +522,17 @@ class BaseReportTestCase(TestCase):
             account_position=acc_pos, account_cash=acc_cash, account_interim=acc_interim,
             reference_fx_rate=fx_rate)
 
+    def _print_table(self, data, columns):
+        print(pd.DataFrame(data=data, columns=columns))
+
     def _print_transactions(self, transactions, *columns):
         # print('=' * 79)
         print('Transactions')
         data = []
         for t in transactions:
             data.append([getattr(t, c, None) for c in columns])
-        print(pd.DataFrame(data=data, columns=columns))
+        self._print_table(data, columns)
+        # print(pd.DataFrame(data=data, columns=columns))
 
     def _print_test_name(self):
         print('=' * 79)

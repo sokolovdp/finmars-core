@@ -1,8 +1,4 @@
-from __future__ import unicode_literals, division
-
-from datetime import date
-
-import pandas as pd
+from __future__ import unicode_literals, division, print_function
 
 from poms.reports.backends.balance import BalanceReport2Builder
 from poms.reports.models import BalanceReport, BalanceReportItem, BalanceReportSummary
@@ -42,14 +38,19 @@ class BalanceTestCase(BaseReportTestCase):
             ])
         print('*' * 79)
         print('Positions')
-        print(pd.DataFrame(data=data, columns=columns))
+        # print(pd.DataFrame(data=data, columns=columns))
+        self._print_table(data=data, columns=columns)
 
         print('-' * 79)
         print('Summary')
-        print(pd.DataFrame(
+        # print(pd.DataFrame(
+        #     data=[[instance.summary.invested_value_system_ccy, instance.summary.current_value_system_ccy,
+        #            instance.summary.p_l_system_ccy], ],
+        #     columns=['invested_value_system_ccy', 'current_value_system_ccy', 'p_l_system_ccy']))
+        self._print_table(
             data=[[instance.summary.invested_value_system_ccy, instance.summary.current_value_system_ccy,
-                   instance.summary.p_l_system_ccy], ],
-            columns=['invested_value_system_ccy', 'current_value_system_ccy', 'p_l_system_ccy']))
+                   instance.summary.p_l_system_ccy]],
+            columns=['invested_value_system_ccy', 'current_value_system_ccy', 'p_l_system_ccy'])
 
     def _assertEqualBalance(self, result, expected):
         self.assertEqual(len(result.items), len(expected.items), 'len items')

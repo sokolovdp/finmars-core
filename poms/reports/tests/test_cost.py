@@ -1,8 +1,4 @@
-from __future__ import unicode_literals, division
-
-from datetime import date
-
-import pandas as pd
+from __future__ import unicode_literals, division, print_function
 
 from poms.reports.backends.cost import CostReport2Builder
 from poms.reports.models import CostReport, CostReportItem
@@ -48,7 +44,8 @@ class CostTestCase(BaseReportTestCase):
             ])
         print('*' * 79)
         print('Positions')
-        print(pd.DataFrame(data=data, columns=columns))
+        # print(pd.DataFrame(data=data, columns=columns))
+        self._print_table(data=data, columns=columns)
 
     def _assertEqualCost(self, result, expected):
         self.assertEqual(len(result.items), len(expected.items), 'len items')
