@@ -27,6 +27,7 @@ class BaseReportTestCase(TestCase):
     def setUp(self):
         if pd:
             pd.set_option('display.width', 1000)
+            pd.set_option('display.max_rows', 1000)
 
         u = User.objects.create_user('a1')
         self.m = m = MasterUser.objects.create(user=u)
