@@ -3,7 +3,6 @@ from __future__ import unicode_literals, division, print_function
 import inspect
 from datetime import date, timedelta
 
-import pandas as pd
 from django.contrib.auth.models import User
 from django.test import TestCase
 
@@ -14,6 +13,11 @@ from poms.portfolios.models import Portfolio
 from poms.transactions.models import Transaction, TransactionClass
 from poms.users.models import MasterUser
 
+try:
+    import pandas as pd
+except ImportError:
+    pd = None
+
 
 def n(v):
     return "%.6f" % v
@@ -21,7 +25,8 @@ def n(v):
 
 class BaseReportTestCase(TestCase):
     def setUp(self):
-        pd.set_option('display.width', 1000)
+        if pd:
+            pd.set_option('display.width', 1000)
 
         u = User.objects.create_user('a1')
         self.m = m = MasterUser.objects.create(user=u)
@@ -523,7 +528,12 @@ class BaseReportTestCase(TestCase):
             reference_fx_rate=fx_rate)
 
     def _print_table(self, data, columns):
-        print(pd.DataFrame(data=data, columns=columns))
+        if pd:
+            print(pd.DataFrame(data=data, columns=columns))
+        else:
+            print(columns)
+            for r in data:
+                print(r)
 
     def _print_transactions(self, transactions, *columns):
         # print('=' * 79)
