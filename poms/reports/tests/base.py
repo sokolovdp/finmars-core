@@ -56,7 +56,8 @@ class BaseReportTestCase(TestCase):
         self.gbp = Currency.objects.create(user_code='GBP', name='GBP', master_user=None)
 
         self.base_date = date(2016, 3, 1)
-        cd1 = self.base_date
+
+        cd1 = self.d()
         CurrencyHistory.objects.create(currency=self.eur, date=cd1, fx_rate=1.3)
         CurrencyHistory.objects.create(currency=self.chf, date=cd1, fx_rate=0.9)
         CurrencyHistory.objects.create(currency=self.cad, date=cd1, fx_rate=1.2)
@@ -72,14 +73,14 @@ class BaseReportTestCase(TestCase):
         CurrencyHistory.objects.create(currency=self.rub, date=cd2, fx_rate=1. / 100.)
         CurrencyHistory.objects.create(currency=self.gbp, date=cd2, fx_rate=1.5)
 
-        self.instr1_bond_chf = Instrument.objects.create(master_user=m, name="instr1-bond, CHF",
-                                                         pricing_currency=self.chf, price_multiplier=0.01,
-                                                         accrued_currency=self.chf, accrued_multiplier=0.01)
-        self.instr2_stock = Instrument.objects.create(master_user=m, name="instr2-stock",
-                                                      pricing_currency=self.gbp, price_multiplier=1.,
-                                                      accrued_currency=self.rub, accrued_multiplier=1.)
+        self.instr1_bond_chf = Instrument.objects.create(
+            master_user=m, name="instr1-bond, CHF",
+            pricing_currency=self.chf, price_multiplier=0.01, accrued_currency=self.chf, accrued_multiplier=0.01)
+        self.instr2_stock = Instrument.objects.create(
+            master_user=m, name="instr2-stock",
+            pricing_currency=self.gbp, price_multiplier=1., accrued_currency=self.rub, accrued_multiplier=1.)
 
-        phd1 = self.base_date
+        phd1 = self.d()
         PriceHistory.objects.create(instrument=self.instr1_bond_chf, date=phd1, principal_price=20., accrued_price=0.5)
         PriceHistory.objects.create(instrument=self.instr2_stock, date=phd1, principal_price=1.5, accrued_price=2)
 
@@ -487,7 +488,7 @@ class BaseReportTestCase(TestCase):
             self.t_instrpl_bond.pk, self.t_trnpl.pk, self.t_fxtrade.pk
         ]
 
-    def d(self, days):
+    def d(self, days=None):
         if days is None:
             return self.base_date
         else:
