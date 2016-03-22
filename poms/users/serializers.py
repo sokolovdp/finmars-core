@@ -9,7 +9,7 @@ from rest_framework import serializers
 from rest_framework.authtoken.serializers import AuthTokenSerializer
 
 from poms.api.fields import CurrentMasterUserDefault
-from poms.users.models import MasterUser, UserProfile, GroupProfile
+from poms.users.models import MasterUser, UserProfile, GroupProfile, Member
 
 
 class MasterUserField(serializers.HiddenField):
@@ -75,13 +75,32 @@ class PermissionSerializer(serializers.ModelSerializer):
 class GroupProfileSerializer(serializers.ModelSerializer):
     class Meta:
         model = GroupProfile
-        fields = ['name']
+        fields = ['master_user', 'name']
+
+
+class PermissionField(serializers.RelatedField):
+    def to_internal_value(self, data):
+        try:
+            app_label, codename = data.split('.')
+            return self.get_queryset().get(content_type__app_label=app_label, codename=codename)
+        # except ObjectDoesNotExist:
+        #     self.fail('does_not_exist', slug_name=self.slug_field, value=smart_text(data))
+        except (TypeError, ValueError):
+            self.fail('invalid')
+
+    def to_representation(self, obj):
+        return '%s.%s' % (obj.content_type.app_label, obj.codename)
 
 
 class GroupSerializer(serializers.ModelSerializer):
     url = serializers.HyperlinkedIdentityField(view_name='group-detail')
     permissions = serializers.PrimaryKeyRelatedField(queryset=Permission.objects.all(), many=True)
+    # permissions = PermissionField(queryset=Permission.objects.all(), many=True)
     profile = GroupProfileSerializer()
+
+    # real_name = serializers.CharField()
+    # master_user = serializers.PrimaryKeyRelatedField(queryset=MasterUser.objects.all())
+    # master_user = serializers.CharField()
 
     class Meta:
         model = Group
@@ -91,7 +110,7 @@ class GroupSerializer(serializers.ModelSerializer):
 class UserProfileSerializer(serializers.ModelSerializer):
     class Meta:
         model = UserProfile
-        fields = ['language', 'timezone', 'is_owner', 'is_admin']
+        fields = ['language', 'timezone']
 
 
 class UserSerializer(serializers.ModelSerializer):
@@ -101,17 +120,24 @@ class UserSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = User
-        fields = ['url', 'id', 'username', 'first_name', 'last_name', 'is_active', 'groups', 'profile']
+        fields = ['url', 'id', 'username', 'first_name', 'last_name', 'groups', 'profile', ]
+        read_only_fields = ['username', ]
 
 
-class ObjectPermissionSerializer(serializers.Serializer):
-    content_type = serializers.PrimaryKeyRelatedField(queryset=ContentType.objects.all())
-    object_id = serializers.IntegerField()
-    group = serializers.PrimaryKeyRelatedField(queryset=Group.objects.all())
-    permissions = serializers.PrimaryKeyRelatedField(queryset=Permission.objects.all(), many=True)
+class MasterUserSerializer(serializers.ModelSerializer):
+    url = serializers.HyperlinkedIdentityField(view_name='masteruser-detail')
+    # members = serializers.PrimaryKeyRelatedField(queryset=User.objects.all())
 
-    def create(self, validated_data):
-        return None
+    class Meta:
+        model = MasterUser
+        fields = ['url', 'id', 'currency', 'members']
 
-    def update(self, instance, validated_data):
-        return None
+
+class MemberSerializer(serializers.ModelSerializer):
+    url = serializers.HyperlinkedIdentityField(view_name='member-detail')
+    # members = serializers.PrimaryKeyRelatedField(queryset=User.objects.all())
+    user = serializers.PrimaryKeyRelatedField(queryset=User.objects.filter(pk__gt=0))
+
+    class Meta:
+        model = Member
+        fields = ['url', 'id', 'master_user', 'user', 'is_owner', 'is_admin', 'join_date']
