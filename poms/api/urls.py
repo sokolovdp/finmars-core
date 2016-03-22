@@ -25,6 +25,7 @@ router.register(r'users/logout', users.LogoutViewSet, 'LogoutViewSet')
 router.register(r'security/http-session', sessions.SessionViewSet)
 
 router.register(r'audit/authlog', audit.AuthLogViewSet)
+router.register(r'audit/notification', audit.NotificationViewSet)
 
 router.register(r'accounts/account-type', accounts.AccountTypeViewSet)
 router.register(r'accounts/account-classifier', accounts.AccountClassifierViewSet)

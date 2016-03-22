@@ -75,7 +75,7 @@ def deactivate():
 
 def get_request():
     request = getattr(_active, "request", None)
-    assert request is not None, "CommonMiddleware is not installed"
+    # assert request is not None, "CommonMiddleware is not installed"
     return request
     # if hasattr(_active, "request"):
     #     return _active.request
