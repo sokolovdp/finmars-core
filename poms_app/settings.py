@@ -284,9 +284,6 @@ AUTHENTICATION_BACKENDS = (
 
 ANONYMOUS_USER_ID = -1
 
-# POSTMAN_AUTO_MODERATE_AS = True
-# NOTIFICATIONS_SOFT_DELETE = True
-
 # email config
 
 DEFAULT_FROM_EMAIL = '"FinMars" <no-reply@finmars.com>'
@@ -308,3 +305,8 @@ else:
     ADMINS = []
     MANAGERS = []
     EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
+
+
+# POSTMAN_AUTO_MODERATE_AS = True
+NOTIFY_USE_JSONFIELD = True
+NOTIFICATIONS_SOFT_DELETE = True

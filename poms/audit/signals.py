@@ -3,10 +3,10 @@ from __future__ import unicode_literals
 from django.contrib.auth import user_logged_in, user_login_failed, get_user_model
 from django.db.models.signals import post_save, post_delete
 from django.dispatch import receiver
+from notifications.signals import notify
 
 from poms.audit.models import AuthLog
 from poms.middleware import get_request
-from notifications.signals import notify
 
 
 @receiver(user_logged_in, dispatch_uid='audit_user_logged_in')
@@ -15,11 +15,9 @@ def audit_user_logged_in(request=None, user=None, **kwargs):
                            user_agent=getattr(request, 'user_agent', None),
                            user_ip=getattr(request, 'user_ip', None))
 
-    notify.send(user, verb='logged in', recipient=user, public=False)
-    # notify.send(user, verb='logged in', recipient=user, public=False, data={
-    #     'user_agent': getattr(request, 'user_agent', None),
-    #     'user_ip': getattr(request, 'user_ip', None),
-    # })
+    notify.send(user, verb='logged in', recipient=user, public=False,
+                user_agent=getattr(request, 'user_agent', None),
+                user_ip=getattr(request, 'user_ip', None))
 
 
 @receiver(user_login_failed, dispatch_uid='audit_user_login_failed')
@@ -39,7 +37,9 @@ def audit_user_login_failed(credentials=None, **kwargs):
                            user_agent=getattr(request, 'user_agent', None),
                            user_ip=getattr(request, 'user_ip', None))
 
-    notify.send(user, verb='login failed', level='warning', recipient=user, public=False)
+    notify.send(user, verb='login failed', level='warning', recipient=user, public=False,
+                user_agent=getattr(request, 'user_agent', None),
+                user_ip=getattr(request, 'user_ip', None))
 
 
 def _get_actor():
