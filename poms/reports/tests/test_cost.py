@@ -74,7 +74,7 @@ class CostTestCase(BaseReportTestCase):
             self.t_sell_stock.pk
         ])
         instance = CostReport(master_user=self.m, multiplier_class='avco',
-                              begin_date=None, end_date=date(2016, 3, 10),
+                              begin_date=None, end_date=self.d(9),
                               use_portfolio=False, use_account=False)
         b = CostReport2Builder(instance=instance, queryset=queryset)
         b.build()
@@ -101,7 +101,7 @@ class CostTestCase(BaseReportTestCase):
             self.t_buy_bond.pk, self.t_sell_stock.pk
         ])
         instance = CostReport(master_user=self.m, multiplier_class='fifo',
-                              begin_date=None, end_date=date(2016, 3, 10),
+                              begin_date=None, end_date=self.d(9),
                               use_portfolio=False, use_account=False)
         b = CostReport2Builder(instance=instance, queryset=queryset)
         b.build()

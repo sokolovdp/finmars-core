@@ -79,7 +79,7 @@ class BalanceTestCase(BaseReportTestCase):
     def test_simple(self):
         queryset = Transaction.objects.filter(pk__in=self.simple)
         instance = BalanceReport(master_user=self.m,
-                                 begin_date=None, end_date=date(2016, 3, 10),
+                                 begin_date=None, end_date=self.d(9),
                                  use_portfolio=False, use_account=False,
                                  show_transaction_details=False)
         b = BalanceReport2Builder(instance=instance, queryset=queryset)
@@ -114,7 +114,7 @@ class BalanceTestCase(BaseReportTestCase):
     def test_simple_accs(self):
         queryset = Transaction.objects.filter(pk__in=self.simple)
         instance = BalanceReport(master_user=self.m,
-                                 begin_date=None, end_date=date(2016, 3, 15),
+                                 begin_date=None, end_date=self.d(14),
                                  use_portfolio=False, use_account=True,
                                  show_transaction_details=False)
         b = BalanceReport2Builder(instance=instance, queryset=queryset)
@@ -149,7 +149,7 @@ class BalanceTestCase(BaseReportTestCase):
     def test_simple_portf_accs(self):
         queryset = Transaction.objects.filter(pk__in=self.simple)
         instance = BalanceReport(master_user=self.m,
-                                 begin_date=None, end_date=date(2016, 3, 15),
+                                 begin_date=None, end_date=self.d(14),
                                  use_portfolio=True, use_account=True,
                                  show_transaction_details=False)
         b = BalanceReport2Builder(instance=instance, queryset=queryset)
@@ -184,7 +184,7 @@ class BalanceTestCase(BaseReportTestCase):
     def test_trnpl(self):
         queryset = Transaction.objects.filter(pk__in=self.simple_w_trnpl)
         instance = BalanceReport(master_user=self.m,
-                                 begin_date=None, end_date=date(2016, 3, 15),
+                                 begin_date=None, end_date=self.d(14),
                                  use_portfolio=False, use_account=False,
                                  show_transaction_details=False)
         b = BalanceReport2Builder(instance=instance, queryset=queryset)
@@ -222,7 +222,7 @@ class BalanceTestCase(BaseReportTestCase):
     def test_trnpl_acc(self):
         queryset = Transaction.objects.filter(pk__in=self.simple_w_trnpl)
         instance = BalanceReport(master_user=self.m,
-                                 begin_date=None, end_date=date(2016, 3, 15),
+                                 begin_date=None, end_date=self.d(14),
                                  use_portfolio=False, use_account=True,
                                  show_transaction_details=False)
         b = BalanceReport2Builder(instance=instance, queryset=queryset)
@@ -260,7 +260,7 @@ class BalanceTestCase(BaseReportTestCase):
     def test_trnpl_portf_acc(self):
         queryset = Transaction.objects.filter(pk__in=self.simple_w_trnpl)
         instance = BalanceReport(master_user=self.m,
-                                 begin_date=None, end_date=date(2016, 3, 15),
+                                 begin_date=None, end_date=self.d(14),
                                  use_portfolio=True, use_account=True,
                                  show_transaction_details=False)
         b = BalanceReport2Builder(instance=instance, queryset=queryset)
@@ -298,7 +298,7 @@ class BalanceTestCase(BaseReportTestCase):
     def test_fxtrade(self):
         queryset = Transaction.objects.filter(pk__in=self.simple_w_fxtrade)
         instance = BalanceReport(master_user=self.m,
-                                 begin_date=None, end_date=date(2016, 3, 15),
+                                 begin_date=None, end_date=self.d(14),
                                  use_portfolio=False, use_account=False,
                                  show_transaction_details=False)
         b = BalanceReport2Builder(instance=instance, queryset=queryset)
@@ -342,7 +342,7 @@ class BalanceTestCase(BaseReportTestCase):
     def test_fxtrade_acc(self):
         queryset = Transaction.objects.filter(pk__in=self.simple_w_fxtrade)
         instance = BalanceReport(master_user=self.m,
-                                 begin_date=None, end_date=date(2016, 3, 15),
+                                 begin_date=None, end_date=self.d(14),
                                  use_portfolio=False, use_account=True,
                                  show_transaction_details=False)
         b = BalanceReport2Builder(instance=instance, queryset=queryset)
@@ -386,7 +386,7 @@ class BalanceTestCase(BaseReportTestCase):
     def test_fxtrade_portf_acc(self):
         queryset = Transaction.objects.filter(pk__in=self.simple_w_fxtrade)
         instance = BalanceReport(master_user=self.m,
-                                 begin_date=None, end_date=date(2016, 3, 15),
+                                 begin_date=None, end_date=self.d(14),
                                  use_portfolio=True, use_account=True,
                                  show_transaction_details=False)
         b = BalanceReport2Builder(instance=instance, queryset=queryset)
@@ -430,7 +430,7 @@ class BalanceTestCase(BaseReportTestCase):
     def test_dates_case_1_2(self):
         queryset = Transaction.objects.filter(pk__in=self.simple)
         instance = BalanceReport(master_user=self.m,
-                                 begin_date=None, end_date=date(2016, 3, 5),
+                                 begin_date=None, end_date=self.d(4),
                                  use_portfolio=False, use_account=True,
                                  show_transaction_details=False)
         b = BalanceReport2Builder(instance=instance, queryset=queryset)
@@ -465,7 +465,7 @@ class BalanceTestCase(BaseReportTestCase):
             self.t_buy_bond_acc2.pk
         ])
         instance = BalanceReport(master_user=self.m,
-                                 begin_date=None, end_date=date(2016, 3, 5),
+                                 begin_date=None, end_date=self.d(4),
                                  use_portfolio=False, use_account=True,
                                  show_transaction_details=True)
         b = BalanceReport2Builder(instance=instance, queryset=queryset)
@@ -497,7 +497,7 @@ class BalanceTestCase(BaseReportTestCase):
     def test_dates_case_1_2_over(self):
         queryset = Transaction.objects.filter(pk__in=self.simple)
         instance = BalanceReport(master_user=self.m,
-                                 begin_date=None, end_date=date(2016, 3, 6),
+                                 begin_date=None, end_date=self.d(5),
                                  use_portfolio=False, use_account=True,
                                  show_transaction_details=False)
         b = BalanceReport2Builder(instance=instance, queryset=queryset)
@@ -534,7 +534,7 @@ class BalanceTestCase(BaseReportTestCase):
             self.t_in.pk, self.t_buy_bond.pk, self.t_buy_bond_acc2.pk, self.t_buy_bond_p2.pk
         ])
         instance = BalanceReport(master_user=self.m,
-                                 begin_date=None, end_date=date(2016, 3, 10),
+                                 begin_date=None, end_date=self.d(9),
                                  use_portfolio=False, use_account=False,
                                  show_transaction_details=False)
         b = BalanceReport2Builder(instance=instance, queryset=queryset)
@@ -565,7 +565,7 @@ class BalanceTestCase(BaseReportTestCase):
             self.t_in.pk, self.t_buy_bond.pk, self.t_buy_bond_acc2.pk, self.t_buy_bond_p2.pk
         ])
         instance = BalanceReport(master_user=self.m,
-                                 begin_date=None, end_date=date(2016, 3, 10),
+                                 begin_date=None, end_date=self.d(9),
                                  use_portfolio=False, use_account=True,
                                  show_transaction_details=False)
         b = BalanceReport2Builder(instance=instance, queryset=queryset)
@@ -602,7 +602,7 @@ class BalanceTestCase(BaseReportTestCase):
             self.t_in.pk, self.t_buy_bond.pk, self.t_buy_bond_acc2.pk, self.t_buy_bond_p2.pk
         ])
         instance = BalanceReport(master_user=self.m,
-                                 begin_date=None, end_date=date(2016, 3, 10),
+                                 begin_date=None, end_date=self.d(9),
                                  use_portfolio=True, use_account=True,
                                  show_transaction_details=False)
         b = BalanceReport2Builder(instance=instance, queryset=queryset)
@@ -645,7 +645,7 @@ class BalanceTestCase(BaseReportTestCase):
             self.t_in.pk, self.t_buy_bond.pk, self.t_buy_bond_acc2.pk, self.t_buy_bond_p2.pk
         ])
         instance = BalanceReport(master_user=self.m,
-                                 begin_date=None, end_date=date(2016, 3, 5),
+                                 begin_date=None, end_date=self.d(4),
                                  use_portfolio=True, use_account=True,
                                  show_transaction_details=False)
         b = BalanceReport2Builder(instance=instance, queryset=queryset)
@@ -688,7 +688,7 @@ class BalanceTestCase(BaseReportTestCase):
             self.t_in.pk, self.t_sell_stock.pk, self.t_sell_stock_acc2.pk, self.t_sell_stock_p2.pk
         ])
         instance = BalanceReport(master_user=self.m,
-                                 begin_date=None, end_date=date(2016, 3, 5),
+                                 begin_date=None, end_date=self.d(4),
                                  use_portfolio=True, use_account=True,
                                  show_transaction_details=False)
         b = BalanceReport2Builder(instance=instance, queryset=queryset)
@@ -721,7 +721,7 @@ class BalanceTestCase(BaseReportTestCase):
             self.t_in.pk, self.t_in2.pk
         ])
         instance = BalanceReport(master_user=self.m,
-                                 begin_date=None, end_date=date(2016, 4, 1),
+                                 begin_date=None, end_date=self.d(30),
                                  use_portfolio=False, use_account=False,
                                  show_transaction_details=False)
         b = BalanceReport2Builder(instance=instance, queryset=queryset)
@@ -745,7 +745,7 @@ class BalanceTestCase(BaseReportTestCase):
             self.t_fxtrade.pk, self.t_fxtrade2.pk
         ])
         instance = BalanceReport(master_user=self.m,
-                                 begin_date=None, end_date=date(2016, 5, 1),
+                                 begin_date=None, end_date=self.d(60),
                                  use_portfolio=False, use_account=False,
                                  show_transaction_details=False)
         b = BalanceReport2Builder(instance=instance, queryset=queryset)

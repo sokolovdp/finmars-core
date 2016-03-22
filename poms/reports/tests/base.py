@@ -59,7 +59,7 @@ class BaseReportTestCase(TestCase):
         CurrencyHistory.objects.create(currency=self.rub, date=cd1, fx_rate=1. / 75.)
         CurrencyHistory.objects.create(currency=self.gbp, date=cd1, fx_rate=1.6)
 
-        cd2 = date(2016, 4, 1)
+        cd2 = self.d(30)
         CurrencyHistory.objects.create(currency=self.eur, date=cd2, fx_rate=1.2)
         CurrencyHistory.objects.create(currency=self.chf, date=cd2, fx_rate=0.8)
         CurrencyHistory.objects.create(currency=self.cad, date=cd2, fx_rate=1.1)
@@ -482,6 +482,12 @@ class BaseReportTestCase(TestCase):
             self.t_instrpl_bond.pk, self.t_trnpl.pk, self.t_fxtrade.pk
         ]
 
+    def d(self, days):
+        if days is None:
+            return self.base_date
+        else:
+            return self.base_date + timedelta(days=days)
+
     def t(self, master=None, t_class=None, p=None, instr=None, transaction_ccy=None,
           position=None, settlement_ccy=None, cash_consideration=None, principal=0., carry=0., overheads=0.,
           acc_date=None, acc_date_delta=None, cash_date=None, cash_date_delta=None,
@@ -493,13 +499,9 @@ class BaseReportTestCase(TestCase):
         if cash_consideration is None:
             cash_consideration = principal + carry + overheads
         if acc_date is None:
-            acc_date = self.base_date
-            if acc_date_delta:
-                acc_date += timedelta(days=acc_date_delta)
+            acc_date = self.d(acc_date_delta)
         if cash_date is None:
-            cash_date = self.base_date
-            if cash_date_delta:
-                cash_date += timedelta(days=cash_date_delta)
+            cash_date = self.d(cash_date_delta)
         if acc_pos is None:
             acc_pos = self.acc1
         if acc_cash is None:
