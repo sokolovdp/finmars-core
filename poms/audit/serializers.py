@@ -21,12 +21,14 @@ class NotificationSerializer(serializers.ModelSerializer):
     actor_name = serializers.SerializerMethodField()
     target = serializers.SerializerMethodField()
     target_content_type = serializers.SerializerMethodField()
-    data = serializers.JSONField()
+    data = serializers.JSONField(read_only=True)
 
     class Meta:
         model = Notification
-        fields = ['url', 'id', 'actor', 'actor_name', 'verb', 'description', 'target', 'target_content_type', 'target_object_id',
+        fields = ['url', 'id', 'actor', 'actor_name', 'verb', 'description', 'target', 'target_content_type',
+                  'target_object_id',
                   'level', 'timestamp', 'unread', 'data']
+        read_only_fields = set(fields) - {'unread'}
 
     def get_actor(self, value):
         return int(value.actor_object_id)
