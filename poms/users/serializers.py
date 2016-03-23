@@ -72,7 +72,7 @@ class PermissionField(serializers.SlugRelatedField):
 
     def get_queryset(self):
         queryset = super(PermissionField, self).get_queryset()
-        queryset = queryset.filter(content_type__app_label__in=AVAILABLE_APPS)
+        queryset = queryset.select_related('content_type').filter(content_type__app_label__in=AVAILABLE_APPS)
         return queryset
 
     def to_internal_value(self, data):
