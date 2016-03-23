@@ -2,10 +2,12 @@ from __future__ import unicode_literals
 
 from django.contrib.auth import login, logout
 from django.contrib.auth.models import User
+from django.db.models import Q
 from rest_framework.authtoken.models import Token
 from rest_framework.authtoken.serializers import AuthTokenSerializer
+from rest_framework.filters import BaseFilterBackend
 from rest_framework.parsers import JSONParser, MultiPartParser, FormParser
-from rest_framework.permissions import IsAuthenticated
+from rest_framework.permissions import IsAuthenticated, BasePermission, SAFE_METHODS
 from rest_framework.response import Response
 from rest_framework.viewsets import ViewSet, ModelViewSet
 
@@ -51,17 +53,37 @@ class LogoutViewSet(DbTransactionMixin, ViewSet):
 #         return request.user and hasattr(request.user, 'profile') and request.user.profile.is_admin
 
 
-class GroupViewSet(DbTransactionMixin, ModelViewSet):
-    queryset = GroupProfile.objects. \
-        prefetch_related('group__permissions', 'group__permissions__content_type').select_related('group')
-    serializer_class = GroupSerializer
-    permission_classes = [IsAuthenticated]
+class GuardByUserFilter(BaseFilterBackend):
+    def filter_queryset(self, request, queryset, view):
+        user = request.user
+        return queryset.filter(user)
+
+
+class GuardByMasterUserFilter(BaseFilterBackend):
+    def filter_queryset(self, request, queryset, view):
+        user = request.user
+        return queryset.filter(master_user__in=user.member_of.all())
+
+
+class UserFilter(BaseFilterBackend):
+    def filter_queryset(self, request, queryset, view):
+        user = request.user
+        return queryset.filter(Q(id=user.id) | Q(member_of__in=user.member_of.all()))
+
+
+class UserPermission(BasePermission):
+    def has_object_permission(self, request, view, obj):
+        if request.method.upper() in SAFE_METHODS:
+            return True
+        user = request.user
+        return user.id == obj.id
 
 
 class UserViewSet(DbTransactionMixin, ModelViewSet):
     queryset = User.objects.filter(id__gt=0)
     serializer_class = UserSerializer
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated, UserPermission]
+    filter_backends = [UserFilter]
 
     def retrieve(self, request, *args, **kwargs):
         # super(UserViewSet, self).retrieve(request, *args, **kwargs)
@@ -74,13 +96,29 @@ class UserViewSet(DbTransactionMixin, ModelViewSet):
         return Response(serializer.data)
 
 
+class MasterUserFilter(BaseFilterBackend):
+    def filter_queryset(self, request, queryset, view):
+        user = request.user
+        return queryset.filter(members=user)
+
+
 class MasterUserViewSet(DbTransactionMixin, ModelViewSet):
     queryset = MasterUser.objects.filter()
     serializer_class = MasterUserSerializer
     permission_classes = [IsAuthenticated]
+    filter_backends = [MasterUserFilter]
 
 
 class MemberViewSet(DbTransactionMixin, ModelViewSet):
     queryset = Member.objects.filter()
     serializer_class = MemberSerializer
     permission_classes = [IsAuthenticated]
+    filter_backends = [GuardByMasterUserFilter]
+
+
+class GroupViewSet(DbTransactionMixin, ModelViewSet):
+    queryset = GroupProfile.objects. \
+        prefetch_related('group__permissions', 'group__permissions__content_type').select_related('group')
+    serializer_class = GroupSerializer
+    permission_classes = [IsAuthenticated]
+    filter_backends = [GuardByMasterUserFilter]

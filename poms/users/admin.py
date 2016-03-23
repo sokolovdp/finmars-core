@@ -45,7 +45,7 @@ class GroupWithProfileAdmin(GroupAdmin):
     def save_model(self, request, obj, form, change):
         profile = getattr(obj, 'profile', None)
         if profile:
-            obj.name = '%s (%s)' % (profile.name, profile.master_user,)
+            obj.name = profile.group_name
         super(GroupWithProfileAdmin, self).save_model(request, obj, form, change)
 
 

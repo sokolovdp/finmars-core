@@ -11,7 +11,7 @@ from guardian.shortcuts import get_perms
 from rest_framework import serializers
 from rest_framework.authtoken.serializers import AuthTokenSerializer
 
-from poms.api.fields import CurrentMasterUserDefault
+from poms.api.fields import CurrentMasterUserDefault, FilteredPrimaryKeyRelatedField
 from poms.users.models import MasterUser, UserProfile, GroupProfile, Member, AVAILABLE_APPS
 
 
@@ -110,7 +110,7 @@ class GroupSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = GroupProfile
-        fields = ['url', 'id', 'name', 'permissions']
+        fields = ['url', 'id', 'master_user', 'name', 'permissions']
 
 
 class UserProfileSerializer(serializers.ModelSerializer):
@@ -126,9 +126,12 @@ class UserSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = User
-        fields = ['url', 'id', 'username', 'first_name', 'last_name', 'groups', 'profile', ]
+        fields = ['url', 'id', 'username', 'first_name', 'last_name', 'groups', 'profile']
         read_only_fields = ['username', ]
 
+
+class MasterUserField(FilteredPrimaryKeyRelatedField):
+    filter_backends = []
 
 class MasterUserSerializer(serializers.ModelSerializer):
     url = serializers.HyperlinkedIdentityField(view_name='masteruser-detail')
@@ -148,3 +151,4 @@ class MemberSerializer(serializers.ModelSerializer):
     class Meta:
         model = Member
         fields = ['url', 'id', 'master_user', 'user', 'is_owner', 'is_admin', 'join_date']
+        read_only_fields = ['is_owner']

@@ -52,11 +52,8 @@ class Member(models.Model):
 @python_2_unicode_compatible
 class UserProfile(models.Model):
     user = models.OneToOneField(settings.AUTH_USER_MODEL, related_name='profile', verbose_name=_('user'))
-    master_user = models.ForeignKey(MasterUser, verbose_name=_('master user'), related_name='users')
     language = LanguageField(null=True, blank=True, verbose_name=_('language'))
     timezone = TimezoneField(null=True, blank=True, verbose_name=_('timezone'))
-    is_owner = models.BooleanField(default=False, verbose_name=_('is owner (deprecated)'))
-    is_admin = models.BooleanField(default=False, verbose_name=_('is admin (deprecated)'))
 
     class Meta:
         verbose_name = _('profile')
@@ -68,8 +65,8 @@ class UserProfile(models.Model):
 
 @python_2_unicode_compatible
 class GroupProfile(models.Model):
-    master_user = models.ForeignKey(MasterUser, verbose_name=_('master user'), related_name='groups')
     group = models.OneToOneField('auth.Group', related_name='profile', verbose_name=_('group'))
+    master_user = models.ForeignKey(MasterUser, verbose_name=_('master user'), related_name='groups')
     name = models.CharField(max_length=80, blank=True, default='', verbose_name=_('real name'),
                             help_text=_('user group name'))
 
@@ -83,11 +80,15 @@ class GroupProfile(models.Model):
     def __str__(self):
         return self.name
 
+    @property
+    def group_name(self):
+        return '!:%s:%s' % (self.master_user_id, self.name)
+
     def save(self, force_insert=False, force_update=False, using=None, update_fields=None):
         super(GroupProfile, self).save(force_insert=force_insert, force_update=force_update, using=using,
                                        update_fields=update_fields)
 
-        self.group.name = '!:%s:%s' % (self.master_user_id, self.name)
+        self.group.name = self.group_name
         self.group.save(using=using)
 
     def get_permissions(self):
