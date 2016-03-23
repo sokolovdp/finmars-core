@@ -1,9 +1,9 @@
 from __future__ import unicode_literals
 
 import django_filters
-from rest_framework.decorators import list_route
+from django.utils import timezone
+from rest_framework.decorators import list_route, detail_route
 from rest_framework.filters import DjangoFilterBackend, OrderingFilter, SearchFilter, BaseFilterBackend, FilterSet
-from rest_framework.mixins import UpdateModelMixin
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.viewsets import ReadOnlyModelViewSet
@@ -15,13 +15,11 @@ from poms.notifications.serializers import NotificationSerializer
 
 class MyNotificationFilter(BaseFilterBackend):
     def filter_queryset(self, request, queryset, view):
-        # user_model = get_user_model()
-        # ct = ContentType.objects.get_for_model(user_model)
         queryset = queryset.filter(recipient=request.user)
         if request.GET.get('all') in ['1', 'true']:
             return queryset
         else:
-            return queryset.filter(unread=True)
+            return queryset.filter(read_date__isnull=True)
 
 
 class NotificationFilter(FilterSet):
@@ -36,7 +34,7 @@ class NotificationFilter(FilterSet):
         return qs
 
 
-class NotificationViewSet(DbTransactionMixin, UpdateModelMixin, ReadOnlyModelViewSet):
+class NotificationViewSet(DbTransactionMixin, ReadOnlyModelViewSet):
     queryset = Notification.objects.filter(deleted=False)
     serializer_class = NotificationSerializer
     permission_classes = (IsAuthenticated,)
@@ -47,6 +45,13 @@ class NotificationViewSet(DbTransactionMixin, UpdateModelMixin, ReadOnlyModelVie
     # search_fields = ['verb']
 
     @list_route(methods=['post'], url_path='mark-all-as-read')
-    def mark_all_as_read(self, request):
-        request.user.notifications.mark_all_as_read()
-        return Response({})
+    def mark_all_as_read(self, request, pk=None):
+        request.user.notifications.filter(read_date__isnull=True).update(read_date=timezone.now())
+        return Response([])
+
+    @detail_route(methods=['post'], url_path='mark-as-read')
+    def mark_as_read(self, request, pk=None):
+        instance = self.get_object()
+        instance.mark_as_read()
+        serializer = self.get_serializer(instance=instance)
+        return Response(serializer.data)

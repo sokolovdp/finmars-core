@@ -2,6 +2,8 @@ from __future__ import unicode_literals
 
 import json
 
+from babel import Locale
+from babel.dates import format_timedelta
 from django.conf import settings
 from django.contrib.auth.models import Group
 from django.contrib.contenttypes.fields import GenericForeignKey
@@ -9,7 +11,7 @@ from django.contrib.contenttypes.models import ContentType
 from django.db import models
 from django.utils import timezone
 from django.utils.encoding import python_2_unicode_compatible, force_text
-from django.utils.translation import ugettext_lazy as _
+from django.utils.translation import ugettext_lazy as _, get_language
 
 
 # Create your models here.
@@ -30,8 +32,8 @@ class Notification(models.Model):
     level = models.PositiveSmallIntegerField(choices=LEVELS, default=INFO)
 
     recipient = models.ForeignKey(settings.AUTH_USER_MODEL, blank=False, related_name='notifications')
-    unread = models.BooleanField(default=True, blank=False, db_index=True)
-    timestamp = models.DateTimeField(default=timezone.now, db_index=True)
+    create_date = models.DateTimeField(default=timezone.now, db_index=True)
+    read_date = models.DateTimeField(null=True, blank=True, db_index=True)
 
     actor_content_type = models.ForeignKey(ContentType, related_name='notify_actor')
     actor_object_id = models.CharField(max_length=255)
@@ -58,7 +60,7 @@ class Notification(models.Model):
     # objects = NotificationQuerySet.as_manager()
 
     class Meta:
-        ordering = ['-timestamp']
+        ordering = ['-create_date']
 
     def __str__(self):  # Adds support for Python 3
         ctx = {
@@ -77,18 +79,20 @@ class Notification(models.Model):
         return '%(actor)s %(verb)s %(timesince)s ago' % ctx
 
     def timesince(self, now=None):
-        from django.utils.timesince import timesince as timesince_
-        return timesince_(self.timestamp, now)
+        # from django.utils.timesince import timesince as timesince_
+        # return timesince_(self.create_date, now)
+        locale = Locale.parse(get_language(), sep='-')
+        return format_timedelta(self.create_date - timezone.now(), add_direction=True, locale=locale)
 
     def mark_as_read(self):
-        if self.unread:
-            self.unread = False
-            self.save(update_fields=['unread'])
+        if self.read_date is None:
+            self.read_date = timezone.now()
+            self.save(update_fields=['read_date'])
 
     def mark_as_unread(self):
-        if not self.unread:
-            self.unread = True
-            self.save(update_fields=['unread'])
+        if self.read_date is not None:
+            self.read_date = None
+            self.save(update_fields=['read_date'])
 
 
 def notify_handler(verb, **kwargs):
@@ -98,7 +102,7 @@ def notify_handler(verb, **kwargs):
     optional_objs = [(kwargs.pop(opt, None), opt) for opt in ('target', 'action_object')]
     public = bool(kwargs.pop('public', True))
     description = kwargs.pop('description', None)
-    timestamp = kwargs.pop('timestamp', timezone.now())
+    create_date = kwargs.pop('create_date', timezone.now())
     level = kwargs.pop('level', Notification.INFO)
 
     # Check if User or Group
@@ -115,7 +119,7 @@ def notify_handler(verb, **kwargs):
             verb=force_text(verb),
             public=public,
             description=description,
-            timestamp=timestamp,
+            create_date=create_date,
             level=level,
         )
 

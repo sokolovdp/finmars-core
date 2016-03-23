@@ -19,12 +19,12 @@ class NotificationSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Notification
-        fields = ['url', 'id', 'level', 'timestamp', 'unread',
+        fields = ['url', 'id', 'level', 'create_date', 'read_date', 'timesince',
                   'actor', 'actor_type', 'actor_name',
                   'verb',
                   'target', 'target_type', 'target_name',
                   'description', 'data']
-        read_only_fields = set(fields) - {'unread'}
+        # read_only_fields = set(fields) - {'read_date'}
 
     def get_actor(self, value):
         if value.actor_object_id:
