@@ -26,9 +26,21 @@ admin.site.register(TransactionClass, TransactionClassAdmin)
 
 class TransactionAdmin(ImportExportModelAdmin, admin.ModelAdmin):
     model = Transaction
+    list_select_related = ['transaction_class', 'instrument', 'transaction_currency', 'settlement_currency',
+                           'account_cash', 'account_position', 'account_interim',
+                           'master_user', 'master_user__user']
+
     save_as = True
-    list_display = ['id', 'transaction_date', 'transaction_class', 'instrument', 'transaction_currency',
-                    'position_size_with_sign', 'master_user']
+    list_display = ['id', 'master_user', 'is_canceled', 'transaction_class', 'portfolio',
+                    'instrument', 'transaction_currency',
+                    'position_size_with_sign',
+                    'settlement_currency', 'cash_consideration',
+                    'principal_with_sign', 'carry_with_sign', 'overheads_with_sign',
+                    'account_cash', 'account_position', 'account_interim',
+                    'transaction_date', 'accounting_date', 'cash_date']
+
+    list_filter = ['is_canceled']
+
     ordering = ['transaction_date', 'id']
     date_hierarchy = 'transaction_date'
 

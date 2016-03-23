@@ -7,21 +7,21 @@ from rest_framework.viewsets import ReadOnlyModelViewSet
 
 from poms.api.filters import IsOwnerFilter
 from poms.api.mixins import DbTransactionMixin
-from poms.audit.models import AuthLog
-from poms.audit.serializers import AuthLogSerializer
+from poms.audit.models import AuthLogEntry
+from poms.audit.serializers import AuthLogEntrySerializer
 
 
-class AuthLogFilter(FilterSet):
+class AuthLogEntryFilter(FilterSet):
     class Meta:
-        model = AuthLog
+        model = AuthLogEntry
         fields = ['user_ip', 'is_success']
 
 
-class AuthLogViewSet(DbTransactionMixin, ReadOnlyModelViewSet):
-    queryset = AuthLog.objects.all()
-    serializer_class = AuthLogSerializer
+class AuthLogEntryViewSet(DbTransactionMixin, ReadOnlyModelViewSet):
+    queryset = AuthLogEntry.objects.all()
+    serializer_class = AuthLogEntrySerializer
     permission_classes = (IsAuthenticated,)
     filter_backends = (IsOwnerFilter, DjangoFilterBackend, OrderingFilter, SearchFilter,)
-    filter_class = AuthLogFilter
+    filter_class = AuthLogEntryFilter
     ordering_fields = ['user_ip']
     search_fields = ['user_ip', 'user_agent']

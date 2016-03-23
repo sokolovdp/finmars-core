@@ -2,11 +2,11 @@ from __future__ import unicode_literals
 
 from django.contrib import admin
 
-from poms.audit.models import AuthLog
+from poms.audit.models import AuthLogEntry
 
 
-class AuthLogAdmin(admin.ModelAdmin):
-    model = AuthLog
+class AuthLogEntryAdmin(admin.ModelAdmin):
+    model = AuthLogEntry
     list_display = ['id', 'date', 'user', 'is_success', 'user_ip', 'user_agent']
     list_select_related = ['user']
     date_hierarchy = 'date'
@@ -18,4 +18,4 @@ class AuthLogAdmin(admin.ModelAdmin):
         return False
 
 
-admin.site.register(AuthLog, AuthLogAdmin)
+admin.site.register(AuthLogEntry, AuthLogEntryAdmin)

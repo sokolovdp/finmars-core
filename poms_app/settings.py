@@ -62,6 +62,7 @@ INSTALLED_APPS = [
     'poms.transactions',
     'poms.reports',
     'poms.api',
+    'poms.notifications',
 ]
 
 if DEBUG:
@@ -118,20 +119,19 @@ DATABASES = {
 }
 
 if DEBUG:
-    # DATABASES['default'] = {
-    #     'ENGINE': 'django.db.backends.postgresql',
-    #     'NAME': 'poms_dev',
-    #     'USER': 'poms_dev',
-    #     'PASSWORD': 'sqlsql',
-    #     'HOST': '192.168.57.2',
-    #     'PORT': '',
-    # }
-    DATABASES = {
-        'default': {
-            'ENGINE': 'django.db.backends.sqlite3',
-            'NAME': os.path.join(BASE_DIR, 'db.sqlite3'),
-        }
+    DATABASES['default'] = {
+        'ENGINE': 'django.db.backends.postgresql',
+        'NAME': 'poms_dev',
+        'USER': 'poms_dev',
+        'PASSWORD': 'sqlsql',
+        'HOST': '192.168.57.2',
+        'PORT': '',
     }
+    # DATABASES['default'] = {
+    #     'ENGINE': 'django.db.backends.sqlite3',
+    #     # 'NAME': os.path.join(BASE_DIR, 'db.sqlite3'),
+    #     'NAME': ':memory:'
+    # }
 
 # Password validation
 # https://docs.djangoproject.com/en/1.9/ref/settings/#auth-password-validators
@@ -285,9 +285,6 @@ AUTHENTICATION_BACKENDS = (
 
 ANONYMOUS_USER_ID = -1
 
-# POSTMAN_AUTO_MODERATE_AS = True
-# NOTIFICATIONS_SOFT_DELETE = True
-
 # email config
 
 DEFAULT_FROM_EMAIL = '"FinMars" <no-reply@finmars.com>'
@@ -309,3 +306,8 @@ else:
     ADMINS = []
     MANAGERS = []
     EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
+
+
+# POSTMAN_AUTO_MODERATE_AS = True
+NOTIFY_USE_JSONFIELD = True
+NOTIFICATIONS_SOFT_DELETE = True

@@ -19,10 +19,12 @@ class AccountField(FilteredPrimaryKeyRelatedField):
 
 class AccountTypeSerializer(serializers.ModelSerializer):
     url = serializers.HyperlinkedIdentityField(view_name='accounttype-detail')
+    master_user = serializers.HiddenField(default=CurrentMasterUserDefault())
 
     class Meta:
         model = AccountType
-        fields = ['url', 'id', 'code', 'name']
+        fields = ['url', 'id', 'master_user', 'user_code', 'name', 'short_name', 'notes',
+                  'show_transaction_details', 'transaction_details_expr']
 
 
 class AccountClassifierSerializer(serializers.ModelSerializer):

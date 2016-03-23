@@ -16,15 +16,18 @@ import poms.transactions.views as transactions
 import poms.strategies.views as strategies
 import poms.users.views as users
 import poms.reports.views as reports
+import poms.notifications.views as notifications
 
 router = routers.DefaultRouter()
 router.register(r'users/login', users.LoginViewSet, 'LoginViewSet')
 router.register(r'users/logout', users.LogoutViewSet, 'LogoutViewSet')
 # router.register(r'auth/obtain-token', auth.ObtainAuthTokenViewSet, 'ObtainAuthTokenViewSet')
 
+router.register(r'notifications/notification', notifications.NotificationViewSet)
+
 router.register(r'security/http-session', sessions.SessionViewSet)
 
-router.register(r'audit/authlog', audit.AuthLogViewSet)
+router.register(r'audit/auth-log', audit.AuthLogEntryViewSet)
 
 router.register(r'accounts/account-type', accounts.AccountTypeViewSet)
 router.register(r'accounts/account-classifier', accounts.AccountClassifierViewSet)
@@ -54,6 +57,12 @@ router.register(r'reports/pl', reports.PLReportViewSet, "plreport")
 router.register(r'reports/cost', reports.CostReportViewSet, "costreport")
 router.register(r'reports/ytm', reports.YTMReportViewSet, "ytmreport")
 router.register(r'reports/simple-multipliers', reports.SimpleMultipliersReportViewSet, "simplemultipliersreport")
+
+router.register(r'reports/v2/balance', reports.BalanceReport2ViewSet, "balancereport2")
+router.register(r'reports/v2/pl', reports.PLReport2ViewSet, "plreport2")
+router.register(r'reports/v2/cost', reports.CostReport2ViewSet, "costreport2")
+router.register(r'reports/v2/ytm', reports.YTMReport2ViewSet, "ytmreport2")
+router.register(r'reports/v2/simple-multipliers', reports.SimpleMultipliersReport2ViewSet, "simplemultipliersreport2")
 
 router.register(r'util/ping', views.PingViewSet, "ping")
 router.register(r'util/protected-ping', views.ProtectedPingViewSet, "protectedping")

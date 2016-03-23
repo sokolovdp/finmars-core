@@ -61,13 +61,13 @@ class Transaction(models.Model):
     overheads_with_sign = models.FloatField(null=True, blank=True)
 
     # accounting dates
-    accounting_date = models.DateField(default=timezone.now)
-    cash_date = models.DateField(default=timezone.now)
     transaction_date = models.DateField(editable=False, default=timezone.now,
                                         help_text=_("Min of accounting_date and cash_date"))
+    accounting_date = models.DateField(default=timezone.now)
+    cash_date = models.DateField(default=timezone.now)
 
-    account_cash = models.ForeignKey(Account, null=True, blank=True, related_name='transaction_cashs')
     account_position = models.ForeignKey(Account, null=True, blank=True, related_name='account_positions')
+    account_cash = models.ForeignKey(Account, null=True, blank=True, related_name='transaction_cashs')
     account_interim = models.ForeignKey(Account, null=True, blank=True, related_name='account_interims')
 
     reference_fx_rate = models.FloatField(null=True, blank=True,

@@ -7,7 +7,14 @@ from django.utils.translation import ugettext_lazy as _
 from rest_framework import serializers
 from rest_framework.authtoken.serializers import AuthTokenSerializer
 
-from poms.users.models import MasterUser, Employee, PrivateGroup
+from poms.api.fields import CurrentMasterUserDefault
+from poms.users.models import MasterUser
+
+
+class MasterUserField(serializers.HiddenField):
+    def __init__(self, **kwargs):
+        kwargs['default'] = CurrentMasterUserDefault()
+        super(MasterUserField, self).__init__(**kwargs)
 
 
 class LoginSerializer(AuthTokenSerializer):
@@ -55,48 +62,47 @@ class UserSerializer(serializers.ModelSerializer):
     def create(self, validated_data):
         return super(UserSerializer, self).create(validated_data)
 
+# class MasterUserSerializer(serializers.ModelSerializer):
+#     first_name = serializers.CharField(max_length=30, allow_null=False, allow_blank=True)
+#     last_name = serializers.CharField(max_length=30, allow_null=False, allow_blank=True)
+#
+#     class Meta:
+#         model = MasterUser
+#         fields = ['first_name', 'last_name', 'currency', 'language', 'timezone']
+#
+#     def update(self, instance, validated_data):
+#         if 'first_name' in validated_data or 'last_name' in validated_data:
+#             first_name = validated_data.pop('first_name', None)
+#             last_name = validated_data.pop('last_name', None)
+#         else:
+#             first_name = None
+#             last_name = None
+#         instance = super(MasterUserSerializer, self).update(instance, validated_data)
+#         if first_name is not None or last_name is not None:
+#             if first_name:
+#                 instance.user.first_name = first_name
+#             if last_name:
+#                 instance.user.last_name = last_name
+#             instance.user.save(update_fields=['first_name', 'last_name'])
+#         return instance
 
-class MasterUserSerializer(serializers.ModelSerializer):
-    first_name = serializers.CharField(max_length=30, allow_null=False, allow_blank=True)
-    last_name = serializers.CharField(max_length=30, allow_null=False, allow_blank=True)
-
-    class Meta:
-        model = MasterUser
-        fields = ['first_name', 'last_name', 'currency', 'language', 'timezone']
-
-    def update(self, instance, validated_data):
-        if 'first_name' in validated_data or 'last_name' in validated_data:
-            first_name = validated_data.pop('first_name', None)
-            last_name = validated_data.pop('last_name', None)
-        else:
-            first_name = None
-            last_name = None
-        instance = super(MasterUserSerializer, self).update(instance, validated_data)
-        if first_name is not None or last_name is not None:
-            if first_name:
-                instance.user.first_name = first_name
-            if last_name:
-                instance.user.last_name = last_name
-            instance.user.save(update_fields=['first_name', 'last_name'])
-        return instance
-
-
-class EmployeeSerializer(serializers.ModelSerializer):
-    first_name = serializers.CharField(max_length=30, allow_null=False, allow_blank=True)
-    last_name = serializers.CharField(max_length=30, allow_null=False, allow_blank=True)
-
-    class Meta:
-        model = Employee
-        fields = ['first_name', 'last_name', 'language', 'timezone']
-
-    def create(self, validated_data):
-        return super(EmployeeSerializer, self).create(validated_data)
-
-
-class PrivateGroupSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = PrivateGroup
-        fields = ['name']
-
-    def create(self, validated_data):
-        return super(PrivateGroupSerializer, self).create(validated_data)
+#
+# class EmployeeSerializer(serializers.ModelSerializer):
+#     first_name = serializers.CharField(max_length=30, allow_null=False, allow_blank=True)
+#     last_name = serializers.CharField(max_length=30, allow_null=False, allow_blank=True)
+#
+#     class Meta:
+#         model = Employee
+#         fields = ['first_name', 'last_name', 'language', 'timezone']
+#
+#     def create(self, validated_data):
+#         return super(EmployeeSerializer, self).create(validated_data)
+#
+#
+# class PrivateGroupSerializer(serializers.ModelSerializer):
+#     class Meta:
+#         model = PrivateGroup
+#         fields = ['name']
+#
+#     def create(self, validated_data):
+#         return super(PrivateGroupSerializer, self).create(validated_data)
