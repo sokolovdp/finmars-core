@@ -2,6 +2,7 @@ from __future__ import unicode_literals
 
 import json
 
+from django.utils.encoding import force_text
 from rest_framework import serializers
 
 from poms.notifications.models import Notification
@@ -9,6 +10,7 @@ from poms.notifications.models import Notification
 
 class NotificationSerializer(serializers.ModelSerializer):
     url = serializers.HyperlinkedIdentityField(view_name='notification-detail')
+    message = serializers.SerializerMethodField()
     actor = serializers.SerializerMethodField()
     actor_type = serializers.SerializerMethodField()
     actor_name = serializers.SerializerMethodField()
@@ -19,12 +21,15 @@ class NotificationSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Notification
-        fields = ['url', 'id', 'level', 'create_date', 'read_date', 'timesince',
+        fields = ['url', 'id', 'level', 'create_date', 'read_date', 'message', 'timesince',
                   'actor', 'actor_type', 'actor_name',
                   'verb',
                   'target', 'target_type', 'target_name',
                   'description', 'data']
         # read_only_fields = set(fields) - {'read_date'}
+
+    def get_message(self, value):
+        return force_text(value)
 
     def get_actor(self, value):
         if value.actor_object_id:
