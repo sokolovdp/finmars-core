@@ -13,6 +13,10 @@ def audit_user_logged_in(request=None, user=None, **kwargs):
                            user_agent=getattr(request, 'user_agent', None),
                            user_ip=getattr(request, 'user_ip', None))
 
+    # notify.send(user, verb='logged in', recipient=user, public=False,
+    #             user_agent=getattr(request, 'user_agent', None),
+    #             user_ip=getattr(request, 'user_ip', None))
+
 
 @receiver(user_login_failed, dispatch_uid='audit_user_login_failed')
 def audit_user_login_failed(credentials=None, **kwargs):
@@ -30,3 +34,46 @@ def audit_user_login_failed(credentials=None, **kwargs):
     AuthLog.objects.create(user=user, is_success=False,
                            user_agent=getattr(request, 'user_agent', None),
                            user_ip=getattr(request, 'user_ip', None))
+
+    # notify.send(user, verb='login failed', level='warning', recipient=user, public=False,
+    #             user_agent=getattr(request, 'user_agent', None),
+    #             user_ip=getattr(request, 'user_ip', None))
+
+# def _get_actor():
+#     request = get_request()
+#     if request:
+#         user = request.user
+#         return user
+#     return None
+#
+#
+# def _get_recipients():
+#     # request = get_request()
+#     # if request:
+#     #     user = request.user
+#     #     # profile = getattr(user, 'profile', None)
+#     #     # master_user = getattr(profile, 'master_user', None)
+#     #     return [user]
+#     # return []
+#     from django.contrib.auth.models import User
+#     return User.objects.filter(id__gt=0)
+#
+#
+# @receiver(post_save, dispatch_uid='audit_post_save')
+# def audit_post_save(sender=None, instance=None, created=False, **kwargs):
+#     if instance._meta.app_label in ['currencies']:
+#         user = _get_actor()
+#         if user:
+#             verb = 'created' if created else 'updated'
+#             for recipient in _get_recipients():
+#                 notify.send(user, verb=verb, target=instance, recipient=recipient, public=False)
+#
+#
+# @receiver(post_delete, dispatch_uid='audit_post_delete')
+# def audit_post_delete(sender=None, instance=None, created=False, **kwargs):
+#     if instance._meta.app_label in ['currencies']:
+#         user = _get_actor()
+#         if user:
+#             verb = 'deleted'
+#             for recipient in _get_recipients():
+#                 notify.send(user, verb=verb, target=instance, recipient=recipient, public=False)

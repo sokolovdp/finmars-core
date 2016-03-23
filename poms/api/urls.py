@@ -16,11 +16,14 @@ import poms.transactions.views as transactions
 import poms.strategies.views as strategies
 import poms.users.views as users
 import poms.reports.views as reports
+import poms.notifications.views as notifications
 
 router = routers.DefaultRouter()
 router.register(r'users/login', users.LoginViewSet, 'LoginViewSet')
 router.register(r'users/logout', users.LogoutViewSet, 'LogoutViewSet')
 # router.register(r'auth/obtain-token', auth.ObtainAuthTokenViewSet, 'ObtainAuthTokenViewSet')
+
+router.register(r'notifications/notification', notifications.NotificationViewSet)
 
 router.register(r'security/http-session', sessions.SessionViewSet)
 
