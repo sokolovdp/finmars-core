@@ -40,19 +40,19 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'django.contrib.humanize',
     'rest_framework',
-    'mptt',
 
     'kombu.transport.django',
     # 'djcelery',
 
+    'mptt',
     'reversion',
-    'reversion_compare',
     'guardian',
     'import_export',
 
+    'poms.http_sessions',
     'poms.users',
     'poms.audit',
-    'poms.http_sessions',
+    'poms.notifications',
     'poms.accounts',
     'poms.counterparties',
     'poms.currencies',
@@ -62,7 +62,6 @@ INSTALLED_APPS = [
     'poms.transactions',
     'poms.reports',
     'poms.api',
-    'poms.notifications',
 ]
 
 if DEBUG:
