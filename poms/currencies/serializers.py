@@ -2,7 +2,6 @@ from __future__ import unicode_literals
 
 from django.utils.encoding import force_text
 from django.utils.translation import ugettext_lazy as _
-from guardian.shortcuts import get_perms
 from rest_framework import serializers
 
 from poms.api.fields import CurrentMasterUserDefault, FilteredPrimaryKeyRelatedField
@@ -19,17 +18,17 @@ class CurrencyField(FilteredPrimaryKeyRelatedField):
 class CurrencySerializer(serializers.ModelSerializer):
     url = serializers.HyperlinkedIdentityField(view_name='currency-detail')
     master_user = serializers.HiddenField(default=CurrentMasterUserDefault())
-    permissions = ObjectPermissionField()
+    granted_permission = ObjectPermissionField()
 
     class Meta:
         model = Currency
         fields = ['url', 'id', 'master_user', 'user_code', 'name', 'short_name', 'is_global', 'is_system',
-                  'permissions']
-        readonly_fields = ['is_global']
+                  'granted_permission']
+        readonly_fields = ['is_system', 'is_global']
 
-    def get_permissions(self, instance):
-        request = self.context['request']
-        return get_perms(request.user, instance)
+        # def get_granted_permission(self, instance):
+        #     request = self.context['request']
+        #     return get_perms(request.user, instance)
 
 
 class CurrencyHistorySerializer(serializers.ModelSerializer):
@@ -38,7 +37,6 @@ class CurrencyHistorySerializer(serializers.ModelSerializer):
     currency = CurrencyField()
     fx_rate_expr = serializers.CharField(max_length=50, write_only=True, required=False, allow_null=True,
                                          help_text=_('Expression to calculate fx rate (for example 1/75)'))
-    permissions = ObjectPermissionField()
 
     class Meta:
         model = CurrencyHistory
