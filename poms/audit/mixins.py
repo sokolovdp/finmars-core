@@ -41,7 +41,7 @@ class HistoricalMixin(object):
 
         model = self.get_queryset().model
         deleted_list = reversion.get_deleted(model).filter(revision__info__master_user=master_user)
-        return self.make_historical_reponse(deleted_list)
+        return self._make_historical_reponse(deleted_list)
 
     @detail_route()
     def history(self, request, pk=None):
@@ -52,15 +52,18 @@ class HistoricalMixin(object):
 
         instance = self.get_object()
         version_list = reversion.get_for_object(instance)
-        return self.make_historical_reponse(version_list)
+        return self._make_historical_reponse(version_list)
 
     def _history_annotate_object(self, versions):
         for v in versions:
             instance = v.object_version.object
             serializer = self.get_serializer(instance=instance)
-            v.object_json = serializer.data
+            try:
+                v.object_json = serializer.data
+            except (KeyError, AttributeError):
+                v.object_json = None
 
-    def make_historical_reponse(self, versions):
+    def _make_historical_reponse(self, versions):
         queryset = versions.select_related('content_type', 'revision__user').prefetch_related('revision__info')
 
         page = self.paginate_queryset(queryset)
