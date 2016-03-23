@@ -6,6 +6,8 @@ from rest_framework.filters import DjangoFilterBackend, OrderingFilter, SearchFi
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.viewsets import ModelViewSet
+from reversion import revisions as reversion
+from reversion.models import Version
 
 from poms.api.filters import IsOwnerByMasterUserOrSystemFilter
 from poms.api.mixins import DbTransactionMixin
@@ -41,20 +43,22 @@ class CurrencyViewSet(DbTransactionMixin, ModelViewSet):
 
     @list_route()
     def deleted(self, request, pk=None):
-        from reversion import revisions as reversion
-
         profile = getattr(request.user, 'profile', None)
         master_user = getattr(profile, 'master_user', None)
 
         deleted_list = reversion.get_deleted(Currency).filter(revision__info__master_user=master_user)
+        deleted_list = self.get_history_queryset(deleted_list)
         return self.make_historical_reponse(deleted_list)
 
     @detail_route()
     def history(self, request, pk=None):
-        from reversion import revisions as reversion
         instance = self.get_object()
-        version_list = list(reversion.get_for_object(instance))
+        version_list = reversion.get_for_object(instance)
+        version_list = self.get_history_queryset(version_list)
         return self.make_historical_reponse(version_list)
+
+    def get_history_queryset(self, queryset):
+        return queryset.select_related('content_type', 'revision__user').prefetch_related('revision__info')
 
     def make_historical_reponse(self, versions):
         versions = list(versions)
