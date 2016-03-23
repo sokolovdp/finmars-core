@@ -1,8 +1,7 @@
 from __future__ import unicode_literals, print_function
 
-import six
 from django.contrib.contenttypes.models import ContentType
-from guardian.shortcuts import get_groups_with_perms, get_perms_for_model, remove_perm, assign_perm, get_group_perms, \
+from guardian.shortcuts import get_perms_for_model, remove_perm, assign_perm, get_group_perms, \
     get_objects_for_user
 from rest_framework import serializers
 from rest_framework.decorators import detail_route, list_route
@@ -100,11 +99,10 @@ class PomsModelPermissionMixin(object):
         #     raise PermissionDenied()
         pass
 
-    def _globalize_perms(self, ctype, perms, is_model=False):
-        if is_model:
-            return {'%s.%s' % (ctype.app_label, p.codename) for p in perms}
-        else:
-            return {'%s.%s' % (ctype.app_label, p) for p in perms}
+    def _get_groups(self, ctype):
+        return GroupProfile.objects. \
+            prefetch_related('group', 'group__permissions', 'group__permissions__content_type'). \
+            filter(group__permissions__content_type=ctype).distinct()
 
     def _perms(self, request, pk=None):
         model = self.get_queryset().model
@@ -113,13 +111,14 @@ class PomsModelPermissionMixin(object):
         if request.method == 'GET':
             data = []
 
-            for profile in GroupProfile.objects.filter(group__permissions__content_type=ctype).distinct():
+            for profile in self._get_groups(ctype):
                 group = profile.group
                 data.append(ObjectPermission(
                     group=profile,
                     # permissions=self._globalize_perms(ctype, group.permissions.filter(content_type=ctype),
                     #                                   is_model=True)
-                    permissions=group.permissions.filter(content_type=ctype)
+                    # permissions=group.permissions.filter(content_type=ctype)
+                    permissions=[p for p in group.permissions.all() if p.content_type_id == ctype.id]
                 ))
 
             serializer = ObjectPermissionSerializer(data, many=True)
@@ -176,7 +175,7 @@ class PomsObjectPermissionMixin(PomsModelPermissionMixin):
 
                 pm = {p.codename: p for p in get_perms_for_model(model)}
 
-                for profile in GroupProfile.objects.filter(group__permissions__content_type=ctype).distinct():
+                for profile in self._get_groups(ctype):
                     group = profile.group
                     perms = get_group_perms(group, instance)
                     data.append(ObjectPermission(
