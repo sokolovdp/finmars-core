@@ -1,9 +1,9 @@
 from __future__ import unicode_literals, print_function
 
 import six
-from django.contrib.auth.models import Group
 from django.contrib.contenttypes.models import ContentType
-from guardian.shortcuts import get_groups_with_perms, get_perms_for_model, remove_perm, assign_perm, get_group_perms
+from guardian.shortcuts import get_groups_with_perms, get_perms_for_model, remove_perm, assign_perm, get_group_perms, \
+    get_objects_for_user
 from rest_framework import serializers
 from rest_framework.decorators import detail_route, list_route
 from rest_framework.filters import DjangoObjectPermissionsFilter, BaseFilterBackend
@@ -11,6 +11,7 @@ from rest_framework.permissions import IsAuthenticated, DjangoObjectPermissions,
 from rest_framework.response import Response
 
 from poms.api.fields import FilteredPrimaryKeyRelatedField
+from poms.users.models import GroupProfile
 from poms.users.serializers import PermissionField
 
 
@@ -38,26 +39,25 @@ class PomsObjectPermissionsFilter(DjangoObjectPermissionsFilter):
     }
 
     def filter_queryset(self, request, queryset, view):
-        from guardian.shortcuts import get_objects_for_user
         user = request.user
-        model_cls = queryset.model
+        model = queryset.model
         kwargs = {
-            'app_label': model_cls._meta.app_label,
-            'model_name': model_cls._meta.model_name
+            'app_label': model._meta.app_label,
+            'model_name': model._meta.model_name
         }
         permission = self.perm_format % kwargs
         return get_objects_for_user(user, permission, queryset, with_superuser=False, accept_global_perms=False)
 
 
 class ObjectPermission(object):
-    def __init__(self, group=None, permissions=None):
+    def __init__(self, user=None, group=None, permissions=None):
+        self.user = user
         self.group = group
         self.permissions = permissions
 
 
 class ObjectPermissionSerializer(serializers.Serializer):
-    group = FilteredPrimaryKeyRelatedField(queryset=Group.objects.all(), filter_backends=[])
-    # permissions = serializers.ListField(child=serializers.CharField())
+    group = FilteredPrimaryKeyRelatedField(queryset=GroupProfile.objects.all(), filter_backends=[])
     permissions = PermissionField(many=True)
 
     def create(self, validated_data):
@@ -92,7 +92,7 @@ class PomsModelPermissionMixin(object):
             return ObjectPermissionSerializer
         return super(PomsModelPermissionMixin, self).get_serializer_class()
 
-    def check_manage_permission(self, request, group):
+    def check_manage_permission(self, request, op):
         # group_profile = getattr(group, 'profile', None)
         # if group_profile is None:
         #     raise PermissionDenied()
@@ -113,9 +113,10 @@ class PomsModelPermissionMixin(object):
         if request.method == 'GET':
             data = []
 
-            for group in Group.objects.filter(permissions__content_type=ctype).distinct():
+            for profile in GroupProfile.objects.filter(group__permissions__content_type=ctype).distinct():
+                group = profile.group
                 data.append(ObjectPermission(
-                    group=group,
+                    group=profile,
                     # permissions=self._globalize_perms(ctype, group.permissions.filter(content_type=ctype),
                     #                                   is_model=True)
                     permissions=group.permissions.filter(content_type=ctype)
@@ -129,13 +130,16 @@ class PomsModelPermissionMixin(object):
             serializer.is_valid(raise_exception=True)
             op = serializer.save()
 
-            self.check_manage_permission(request, op.group)
+            profile = op.group
+            group = profile.group
+
+            self.check_manage_permission(request, op)
 
             # all_perms = {'%s.%s' % (ctype.app_label, p.codename) for p in get_perms_for_model(model)}
             new_perms = {'%s.%s' % (ctype.app_label, p.codename) for p in op.permissions if
                          p.content_type_id == ctype.pk}
             old_perms = {'%s.%s' % (ctype.app_label, p.codename) for p in
-                         op.group.permissions.filter(content_type=ctype)}
+                         group.permissions.filter(content_type=ctype)}
 
             # all_perms = self._globalize_perms(ctype, get_perms_for_model(model), is_model=True)
             # new_perms = self._globalize_perms(ctype, op.permissions)
@@ -143,9 +147,9 @@ class PomsModelPermissionMixin(object):
             # old_perms = self._globalize_perms(ctype, op.group.permissions.filter(content_type=ctype), is_model=True)
 
             for p in new_perms - old_perms:
-                assign_perm(p, op.group)
+                assign_perm(p, group)
             for p in old_perms - new_perms:
-                remove_perm(p, op.group)
+                remove_perm(p, group)
 
             # op.permissions = new_perms
 
@@ -172,10 +176,11 @@ class PomsObjectPermissionMixin(PomsModelPermissionMixin):
 
                 pm = {p.codename: p for p in get_perms_for_model(model)}
 
-                perms = get_groups_with_perms(instance, True)
-                for group, perms in six.iteritems(perms):
+                for profile in GroupProfile.objects.filter(group__permissions__content_type=ctype).distinct():
+                    group = profile.group
+                    perms = get_group_perms(group, instance)
                     data.append(ObjectPermission(
-                        group=group,
+                        group=profile,
                         # permissions=self._globalize_perms(ctype, perms)
                         permissions=[pm[codename] for codename in perms if codename in pm]
                     ))
@@ -188,11 +193,14 @@ class PomsObjectPermissionMixin(PomsModelPermissionMixin):
                 serializer.is_valid(raise_exception=True)
                 op = serializer.save()
 
-                self.check_manage_permission(request, op.group)
+                self.check_manage_permission(request, op)
+
+                profile = op.group
+                group = profile.group
 
                 new_perms = {'%s.%s' % (ctype.app_label, p.codename) for p in op.permissions
                              if p.content_type_id == ctype.pk}
-                old_perms = {'%s.%s' % (ctype.app_label, codename) for codename in get_group_perms(op.group, instance)}
+                old_perms = {'%s.%s' % (ctype.app_label, codename) for codename in get_group_perms(group, instance)}
                 print(new_perms)
                 print(old_perms)
 
@@ -202,9 +210,9 @@ class PomsObjectPermissionMixin(PomsModelPermissionMixin):
                 # old_perms = self._globalize_perms(ctype, get_group_perms(op.group, instance))
 
                 for p in set(new_perms) - set(old_perms):
-                    assign_perm(p, op.group, instance)
+                    assign_perm(p, group, instance)
                 for p in set(old_perms) - set(new_perms):
-                    remove_perm(p, op.group, instance)
+                    remove_perm(p, group, instance)
 
                 # op.permissions = new_perms
 
