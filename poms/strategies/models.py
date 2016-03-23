@@ -5,6 +5,7 @@ from django.utils.encoding import python_2_unicode_compatible
 from django.utils.translation import ugettext_lazy as _
 from mptt.fields import TreeForeignKey
 from mptt.models import MPTTModel
+from reversion import revisions as reversion
 
 from poms.users.models import MasterUser
 
@@ -29,4 +30,7 @@ class Strategy(MPTTModel):
         ]
 
     def __str__(self):
-        return '%s (%s)' % (self.name, self.master_user.user.username)
+        return self.name
+
+
+reversion.register(Strategy)

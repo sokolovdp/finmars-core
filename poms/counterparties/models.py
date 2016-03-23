@@ -5,6 +5,7 @@ from django.utils.encoding import python_2_unicode_compatible
 from django.utils.translation import ugettext_lazy as _
 from mptt.fields import TreeForeignKey, TreeManyToManyField
 from mptt.models import MPTTModel
+from reversion import revisions as reversion
 
 from poms.currencies.models import Currency
 from poms.portfolios.models import Portfolio
@@ -28,7 +29,7 @@ class CounterpartyClassifier(MPTTModel):
         verbose_name_plural = _('counterparty classifiers')
 
     def __str__(self):
-        return '%s (%s)' % (self.name, self.master_user.user.username)
+        return self.name
 
 
 @python_2_unicode_compatible
@@ -50,7 +51,7 @@ class Counterparty(models.Model):
         ]
 
     def __str__(self):
-        return '%s (%s)' % (self.name, self.master_user.user.username)
+        return self.name
 
 
 @python_2_unicode_compatible
@@ -69,4 +70,9 @@ class Responsible(models.Model):
         ]
 
     def __str__(self):
-        return '%s (%s)' % (self.name, self.master_user.user.username)
+        return self.name
+
+
+reversion.register(CounterpartyClassifier)
+reversion.register(Counterparty)
+reversion.register(Responsible)

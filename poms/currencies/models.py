@@ -5,6 +5,7 @@ from django.db import models
 from django.utils import timezone
 from django.utils.encoding import python_2_unicode_compatible
 from django.utils.translation import ugettext_lazy as _
+from reversion import revisions as reversion
 
 from poms.users.models import MasterUser
 
@@ -39,10 +40,7 @@ class Currency(models.Model):
         ]
 
     def __str__(self):
-        if self.is_global:
-            return '%s' % (self.user_code,)
-        else:
-            return '%s (%s)' % (self.user_code, self.master_user.user.username)
+        return self.name
 
     @property
     def is_global(self):
@@ -79,3 +77,7 @@ class CurrencyHistory(models.Model):
     @property
     def is_global(self):
         return self.master_user_id is None
+
+
+reversion.register(Currency)
+reversion.register(CurrencyHistory)

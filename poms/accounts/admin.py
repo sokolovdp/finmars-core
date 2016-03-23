@@ -2,11 +2,12 @@ from __future__ import unicode_literals
 
 from django.contrib import admin
 from mptt.admin import MPTTModelAdmin
+from reversion.admin import VersionAdmin
 
 from poms.accounts.models import Account, AccountType, AccountClassifier
 
 
-class AccountTypeAdmin(admin.ModelAdmin):
+class AccountTypeAdmin(VersionAdmin):
     model = AccountType
     list_display = ['name', 'master_user']
 
@@ -14,16 +15,16 @@ class AccountTypeAdmin(admin.ModelAdmin):
 admin.site.register(AccountType, AccountTypeAdmin)
 
 
-class AccountClassifierAdmin(MPTTModelAdmin):
+class AccountClassifierAdmin(VersionAdmin, MPTTModelAdmin):
     model = AccountClassifier
-    list_display = ['name', 'master_user']
+    list_display = ['name', 'parent', 'master_user']
     mptt_level_indent = 20
 
 
 admin.site.register(AccountClassifier, AccountClassifierAdmin)
 
 
-class AccountAdmin(admin.ModelAdmin):
+class AccountAdmin(VersionAdmin):
     model = Account
     list_display = ['name', 'master_user']
 

@@ -2,11 +2,12 @@ from __future__ import unicode_literals
 
 from django.contrib import admin
 from import_export.admin import ImportExportModelAdmin
+from reversion.admin import VersionAdmin
 
 from poms.transactions.models import TransactionClass, Transaction
 
 
-class TransactionClassAdmin(admin.ModelAdmin):
+class TransactionClassAdmin(VersionAdmin):
     model = TransactionClass
     list_display = ['code', 'name']
     ordering = ['code']
@@ -24,7 +25,7 @@ admin.site.register(TransactionClass, TransactionClassAdmin)
 # admin.site.register(TransactionClassifier, TransactionClassifierAdmin)
 
 
-class TransactionAdmin(ImportExportModelAdmin, admin.ModelAdmin):
+class TransactionAdmin(VersionAdmin, ImportExportModelAdmin):
     model = Transaction
     list_select_related = ['transaction_class', 'instrument', 'transaction_currency', 'settlement_currency',
                            'account_cash', 'account_position', 'account_interim',

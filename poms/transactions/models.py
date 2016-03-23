@@ -5,6 +5,7 @@ from django.utils import timezone
 from django.utils.encoding import python_2_unicode_compatible
 from django.utils.translation import ugettext_lazy as _
 from mptt.models import MPTTModel
+from reversion import revisions as reversion
 
 from poms.accounts.models import Account
 from poms.counterparties.models import Responsible, Counterparty
@@ -112,7 +113,7 @@ class Transaction(models.Model):
         verbose_name_plural = _('transactions')
 
     def __str__(self):
-        return '%s' % self.id
+        return '%s #%s' % (self.master_user, self.id)
 
         # @property
         # def cash_flow(self):
@@ -127,3 +128,7 @@ class Transaction(models.Model):
                 update_fields = update_fields + ['transaction_date', ]
         super(Transaction, self).save(force_insert=force_insert, force_update=force_update, using=using,
                                       update_fields=update_fields)
+
+
+reversion.register(TransactionClass)
+reversion.register(Transaction)
