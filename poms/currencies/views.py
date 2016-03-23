@@ -1,17 +1,14 @@
 from __future__ import unicode_literals
 
 import django_filters
-from rest_framework.decorators import detail_route, list_route
 from rest_framework.filters import DjangoFilterBackend, OrderingFilter, SearchFilter, FilterSet
 from rest_framework.permissions import IsAuthenticated
-from rest_framework.response import Response
 from rest_framework.viewsets import ModelViewSet
-from reversion import revisions as reversion
 
 from poms.api.filters import IsOwnerByMasterUserOrSystemFilter
 from poms.api.mixins import DbTransactionMixin
 from poms.api.permissions import IsOwnerOrReadonly
-from poms.audit.serializers import VersionSerializer
+from poms.audit.mixins import HistoricalMixin
 from poms.currencies.models import Currency, CurrencyHistory
 from poms.currencies.serializers import CurrencySerializer, CurrencyHistorySerializer
 
@@ -31,7 +28,7 @@ class CurrencyFilter(FilterSet):
         return qs
 
 
-class CurrencyViewSet(DbTransactionMixin, ModelViewSet):
+class CurrencyViewSet(DbTransactionMixin, HistoricalMixin, ModelViewSet):
     queryset = Currency.objects.all()
     serializer_class = CurrencySerializer
     permission_classes = [IsAuthenticated, IsOwnerOrReadonly]
@@ -39,35 +36,6 @@ class CurrencyViewSet(DbTransactionMixin, ModelViewSet):
     filter_class = CurrencyFilter
     ordering_fields = ['user_code', 'name', 'short_name']
     search_fields = ['user_code', 'name', 'short_name']
-
-    @list_route()
-    def deleted(self, request, pk=None):
-        profile = getattr(request.user, 'profile', None)
-        master_user = getattr(profile, 'master_user', None)
-
-        deleted_list = reversion.get_deleted(Currency).filter(revision__info__master_user=master_user)
-        deleted_list = self.get_history_queryset(deleted_list)
-        return self.make_historical_reponse(deleted_list)
-
-    @detail_route()
-    def history(self, request, pk=None):
-        instance = self.get_object()
-        version_list = reversion.get_for_object(instance)
-        version_list = self.get_history_queryset(version_list)
-        return self.make_historical_reponse(version_list)
-
-    def get_history_queryset(self, queryset):
-        return queryset.select_related('content_type', 'revision__user').prefetch_related('revision__info')
-
-    def make_historical_reponse(self, versions):
-        versions = list(versions)
-        for v in versions:
-            instance = v.object_version.object
-            serializer = self.get_serializer(instance=instance)
-            v.object_json = serializer.data
-        serializer = VersionSerializer(data=versions, many=True)
-        serializer.is_valid()
-        return Response(serializer.data)
 
 
 class CurrencyHistoryFilter(FilterSet):
@@ -80,7 +48,7 @@ class CurrencyHistoryFilter(FilterSet):
         fields = ['currency', 'min_date', 'max_date']
 
 
-class CurrencyHistoryViewSet(DbTransactionMixin, ModelViewSet):
+class CurrencyHistoryViewSet(DbTransactionMixin, HistoricalMixin, ModelViewSet):
     queryset = CurrencyHistory.objects.all()
     serializer_class = CurrencyHistorySerializer
     permission_classes = [IsAuthenticated, IsOwnerOrReadonly]
