@@ -1,6 +1,5 @@
 from __future__ import unicode_literals
 
-from django.contrib.contenttypes.models import ContentType
 from django.utils.encoding import force_text
 from django.utils.translation import ugettext_lazy as _
 from guardian.shortcuts import get_perms
@@ -9,7 +8,7 @@ from rest_framework import serializers
 from poms.api.fields import CurrentMasterUserDefault, FilteredPrimaryKeyRelatedField
 from poms.api.filters import IsOwnerByMasterUserOrSystemFilter
 from poms.currencies.models import Currency, CurrencyHistory
-from poms.users.serializers import PermissionField
+from poms.users.serializers import ObjectPermissionField
 
 
 class CurrencyField(FilteredPrimaryKeyRelatedField):
@@ -17,27 +16,10 @@ class CurrencyField(FilteredPrimaryKeyRelatedField):
     filter_backends = [IsOwnerByMasterUserOrSystemFilter]
 
 
-# class PermissionField(serializers.Field):
-#     def __init__(self, **kwargs):
-#         kwargs['source'] = '*'
-#         kwargs['read_only'] = True
-#         super(PermissionField, self).__init__(**kwargs)
-#
-#     def bind(self, field_name, parent):
-#         super(PermissionField, self).bind(field_name, parent)
-#
-#     def to_representation(self, value):
-#         request = self.context['request']
-#         ctype = ContentType.objects.get_for_model(value)
-#         return {'%s.%s' % (ctype.app_label, p) for p in get_perms(request.user, value)}
-#         # return get_perms(request.user, value)
-
-
 class CurrencySerializer(serializers.ModelSerializer):
     url = serializers.HyperlinkedIdentityField(view_name='currency-detail')
     master_user = serializers.HiddenField(default=CurrentMasterUserDefault())
-    # permissions = serializers.SerializerMethodField()
-    permissions = PermissionField()
+    permissions = ObjectPermissionField()
 
     class Meta:
         model = Currency
@@ -56,10 +38,11 @@ class CurrencyHistorySerializer(serializers.ModelSerializer):
     currency = CurrencyField()
     fx_rate_expr = serializers.CharField(max_length=50, write_only=True, required=False, allow_null=True,
                                          help_text=_('Expression to calculate fx rate (for example 1/75)'))
+    permissions = ObjectPermissionField()
 
     class Meta:
         model = CurrencyHistory
-        fields = ['url', 'id', 'master_user', 'currency', 'date', 'fx_rate', 'fx_rate_expr', 'is_global']
+        fields = ['url', 'id', 'master_user', 'currency', 'date', 'fx_rate', 'fx_rate_expr', 'is_global', 'permissions']
         readonly_fields = ['is_global']
 
     def validate(self, data):

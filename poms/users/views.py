@@ -1,7 +1,7 @@
 from __future__ import unicode_literals
 
 from django.contrib.auth import login, logout
-from django.contrib.auth.models import Group, User
+from django.contrib.auth.models import User
 from rest_framework.authtoken.models import Token
 from rest_framework.authtoken.serializers import AuthTokenSerializer
 from rest_framework.parsers import JSONParser, MultiPartParser, FormParser
@@ -10,7 +10,7 @@ from rest_framework.response import Response
 from rest_framework.viewsets import ViewSet, ModelViewSet
 
 from poms.api.mixins import DbTransactionMixin
-from poms.users.models import MasterUser, Member
+from poms.users.models import MasterUser, Member, GroupProfile
 from poms.users.serializers import GroupSerializer, UserSerializer, MasterUserSerializer, MemberSerializer
 
 
@@ -51,21 +51,9 @@ class LogoutViewSet(DbTransactionMixin, ViewSet):
 #         return request.user and hasattr(request.user, 'profile') and request.user.profile.is_admin
 
 
-# class ContentTypeViewSet(DbTransactionMixin, ReadOnlyModelViewSet):
-#     queryset = ContentType.objects.filter(app_label__in=AVAILABLE_APPS)
-#     serializer_class = ContentTypeSerializer
-#     permission_classes = [IsAuthenticated]
-#
-#
-# class PermissionViewSet(DbTransactionMixin, ReadOnlyModelViewSet):
-#     queryset = Permission.objects.filter(content_type__app_label__in=AVAILABLE_APPS)
-#     serializer_class = PermissionSerializer
-#     permission_classes = [IsAuthenticated]
-#     pagination_class = None
-
-
 class GroupViewSet(DbTransactionMixin, ModelViewSet):
-    queryset = Group.objects.prefetch_related('permissions', 'permissions__content_type').select_related('profile')
+    queryset = GroupProfile.objects. \
+        prefetch_related('group__permissions', 'group__permissions__content_type').select_related('group')
     serializer_class = GroupSerializer
     permission_classes = [IsAuthenticated]
 

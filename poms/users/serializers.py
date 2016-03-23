@@ -2,10 +2,12 @@ from __future__ import unicode_literals
 
 from django.contrib.auth import get_user_model, authenticate
 from django.contrib.auth.models import User, Group, Permission
-from django.core.exceptions import ObjectDoesNotExist
+from django.contrib.contenttypes.models import ContentType
+from django.core.exceptions import ObjectDoesNotExist, PermissionDenied
 from django.utils import translation
 from django.utils.encoding import smart_text
 from django.utils.translation import ugettext_lazy as _
+from guardian.shortcuts import get_perms
 from rest_framework import serializers
 from rest_framework.authtoken.serializers import AuthTokenSerializer
 
@@ -51,31 +53,21 @@ class PasswordChangeSerializer(serializers.Serializer):
     new_password = serializers.CharField(required=True, max_length=128, style={'input_type': 'password'})
 
     def create(self, validated_data):
-        # password = validated_data.get('password')
-        # user.set_password()
-        return validated_data
-
-
-# class ContentTypeSerializer(serializers.ModelSerializer):
-#     url = serializers.HyperlinkedIdentityField(view_name='contenttype-detail')
-#
-#     class Meta:
-#         model = ContentType
-#         fields = ['url', 'id', 'app_label', 'model']
-
-
-# class PermissionSerializer(serializers.ModelSerializer):
-#     url = serializers.HyperlinkedIdentityField(view_name='permission-detail')
-#     content_type = serializers.PrimaryKeyRelatedField(queryset=ContentType.objects.all())
-#
-#     class Meta:
-#         model = Permission
-#         fields = ['url', 'id', 'content_type', 'codename']
+        request = self.context['request']
+        user = request.user
+        password = validated_data['password']
+        if user.check_password(password):
+            new_password = validated_data['new_password']
+            user.set_password(new_password)
+            return validated_data
+        raise PermissionDenied(_('Invalid password'))
 
 
 class PermissionField(serializers.SlugRelatedField):
     def __init__(self, **kwargs):
         kwargs.setdefault('slug_field', 'codename')
+        if 'queryset' not in kwargs:
+            kwargs['queryset'] = Permission.objects.all()
         super(PermissionField, self).__init__(**kwargs)
 
     def get_queryset(self):
@@ -96,25 +88,29 @@ class PermissionField(serializers.SlugRelatedField):
         return '%s.%s' % (obj.content_type.app_label, obj.codename)
 
 
-class GroupProfileSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = GroupProfile
-        fields = ['master_user', 'name']
+class ObjectPermissionField(serializers.Field):
+    def __init__(self, **kwargs):
+        kwargs['source'] = '*'
+        kwargs['read_only'] = True
+        super(ObjectPermissionField, self).__init__(**kwargs)
+
+    def bind(self, field_name, parent):
+        super(ObjectPermissionField, self).bind(field_name, parent)
+
+    def to_representation(self, value):
+        request = self.context['request']
+        ctype = ContentType.objects.get_for_model(value)
+        return {'%s.%s' % (ctype.app_label, p) for p in get_perms(request.user, value)}
+        # return get_perms(request.user, value)
 
 
 class GroupSerializer(serializers.ModelSerializer):
-    url = serializers.HyperlinkedIdentityField(view_name='group-detail')
-    # permissions = serializers.PrimaryKeyRelatedField(queryset=Permission.objects.all(), many=True)
-    permissions = PermissionField(queryset=Permission.objects.all(), many=True)
-    profile = GroupProfileSerializer()
-
-    # real_name = serializers.CharField()
-    # master_user = serializers.PrimaryKeyRelatedField(queryset=MasterUser.objects.all())
-    # master_user = serializers.CharField()
+    url = serializers.HyperlinkedIdentityField(view_name='groupprofile-detail')
+    permissions = PermissionField(many=True)
 
     class Meta:
-        model = Group
-        fields = ['url', 'id', 'name', 'profile', 'permissions']
+        model = GroupProfile
+        fields = ['url', 'id', 'name', 'permissions']
 
 
 class UserProfileSerializer(serializers.ModelSerializer):
