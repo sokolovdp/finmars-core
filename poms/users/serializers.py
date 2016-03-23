@@ -2,14 +2,15 @@ from __future__ import unicode_literals
 
 from django.contrib.auth import get_user_model, authenticate
 from django.contrib.auth.models import User, Group, Permission
-from django.contrib.contenttypes.models import ContentType
+from django.core.exceptions import ObjectDoesNotExist
 from django.utils import translation
+from django.utils.encoding import smart_text
 from django.utils.translation import ugettext_lazy as _
 from rest_framework import serializers
 from rest_framework.authtoken.serializers import AuthTokenSerializer
 
 from poms.api.fields import CurrentMasterUserDefault
-from poms.users.models import MasterUser, UserProfile, GroupProfile, Member
+from poms.users.models import MasterUser, UserProfile, GroupProfile, Member, AVAILABLE_APPS
 
 
 class MasterUserField(serializers.HiddenField):
@@ -46,7 +47,7 @@ class RegisterSerializer(AuthTokenSerializer):
 
 
 class PasswordChangeSerializer(serializers.Serializer):
-    original_password = serializers.CharField(required=True, max_length=128, style={'input_type': 'password'})
+    password = serializers.CharField(required=True, max_length=128, style={'input_type': 'password'})
     new_password = serializers.CharField(required=True, max_length=128, style={'input_type': 'password'})
 
     def create(self, validated_data):
@@ -55,21 +56,44 @@ class PasswordChangeSerializer(serializers.Serializer):
         return validated_data
 
 
-class ContentTypeSerializer(serializers.ModelSerializer):
-    url = serializers.HyperlinkedIdentityField(view_name='contenttype-detail')
+# class ContentTypeSerializer(serializers.ModelSerializer):
+#     url = serializers.HyperlinkedIdentityField(view_name='contenttype-detail')
+#
+#     class Meta:
+#         model = ContentType
+#         fields = ['url', 'id', 'app_label', 'model']
 
-    class Meta:
-        model = ContentType
-        fields = ['url', 'id', 'app_label', 'model']
+
+# class PermissionSerializer(serializers.ModelSerializer):
+#     url = serializers.HyperlinkedIdentityField(view_name='permission-detail')
+#     content_type = serializers.PrimaryKeyRelatedField(queryset=ContentType.objects.all())
+#
+#     class Meta:
+#         model = Permission
+#         fields = ['url', 'id', 'content_type', 'codename']
 
 
-class PermissionSerializer(serializers.ModelSerializer):
-    url = serializers.HyperlinkedIdentityField(view_name='permission-detail')
-    content_type = serializers.PrimaryKeyRelatedField(queryset=ContentType.objects.all())
+class PermissionField(serializers.SlugRelatedField):
+    def __init__(self, **kwargs):
+        kwargs.setdefault('slug_field', 'codename')
+        super(PermissionField, self).__init__(**kwargs)
 
-    class Meta:
-        model = Permission
-        fields = ['url', 'id', 'content_type', 'codename']
+    def get_queryset(self):
+        queryset = super(PermissionField, self).get_queryset()
+        queryset = queryset.filter(content_type__app_label__in=AVAILABLE_APPS)
+        return queryset
+
+    def to_internal_value(self, data):
+        try:
+            app_label, codename = data.split('.')
+            return self.get_queryset().get(content_type__app_label=app_label, codename=codename)
+        except ObjectDoesNotExist:
+            self.fail('does_not_exist', slug_name=self.slug_field, value=smart_text(data))
+        except (TypeError, ValueError):
+            self.fail('invalid')
+
+    def to_representation(self, obj):
+        return '%s.%s' % (obj.content_type.app_label, obj.codename)
 
 
 class GroupProfileSerializer(serializers.ModelSerializer):
@@ -78,24 +102,10 @@ class GroupProfileSerializer(serializers.ModelSerializer):
         fields = ['master_user', 'name']
 
 
-class PermissionField(serializers.RelatedField):
-    def to_internal_value(self, data):
-        try:
-            app_label, codename = data.split('.')
-            return self.get_queryset().get(content_type__app_label=app_label, codename=codename)
-        # except ObjectDoesNotExist:
-        #     self.fail('does_not_exist', slug_name=self.slug_field, value=smart_text(data))
-        except (TypeError, ValueError):
-            self.fail('invalid')
-
-    def to_representation(self, obj):
-        return '%s.%s' % (obj.content_type.app_label, obj.codename)
-
-
 class GroupSerializer(serializers.ModelSerializer):
     url = serializers.HyperlinkedIdentityField(view_name='group-detail')
     # permissions = serializers.PrimaryKeyRelatedField(queryset=Permission.objects.all(), many=True)
-    # permissions = PermissionField(queryset=Permission.objects.all(), many=True)
+    permissions = PermissionField(queryset=Permission.objects.all(), many=True)
     profile = GroupProfileSerializer()
 
     # real_name = serializers.CharField()
@@ -104,7 +114,7 @@ class GroupSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Group
-        fields = ['url', 'id', 'name', 'profile']
+        fields = ['url', 'id', 'name', 'profile', 'permissions']
 
 
 class UserProfileSerializer(serializers.ModelSerializer):
@@ -126,6 +136,7 @@ class UserSerializer(serializers.ModelSerializer):
 
 class MasterUserSerializer(serializers.ModelSerializer):
     url = serializers.HyperlinkedIdentityField(view_name='masteruser-detail')
+
     # members = serializers.PrimaryKeyRelatedField(queryset=User.objects.all())
 
     class Meta:

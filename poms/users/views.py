@@ -1,19 +1,17 @@
 from __future__ import unicode_literals
 
 from django.contrib.auth import login, logout
-from django.contrib.auth.models import Permission, Group, User
-from django.contrib.contenttypes.models import ContentType
+from django.contrib.auth.models import Group, User
 from rest_framework.authtoken.models import Token
 from rest_framework.authtoken.serializers import AuthTokenSerializer
 from rest_framework.parsers import JSONParser, MultiPartParser, FormParser
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
-from rest_framework.viewsets import ViewSet, ReadOnlyModelViewSet, ModelViewSet
+from rest_framework.viewsets import ViewSet, ModelViewSet
 
 from poms.api.mixins import DbTransactionMixin
 from poms.users.models import MasterUser, Member
-from poms.users.serializers import PermissionSerializer, ContentTypeSerializer, GroupSerializer, UserSerializer, \
-    MasterUserSerializer, MemberSerializer
+from poms.users.serializers import GroupSerializer, UserSerializer, MasterUserSerializer, MemberSerializer
 
 
 class ObtainAuthTokenViewSet(DbTransactionMixin, ViewSet):
@@ -48,26 +46,22 @@ class LogoutViewSet(DbTransactionMixin, ViewSet):
         return Response({'success': True})
 
 
-AVAILABLE_APPS = ['accounts', 'counterparties', 'currencies', 'instruments', 'portfolios', 'strategies', 'transactions',
-                  'reports', 'users']
-
-
 # class IsAdminUser(BasePermission):
 #     def has_object_permission(self, request, view, obj):
 #         return request.user and hasattr(request.user, 'profile') and request.user.profile.is_admin
 
 
-class ContentTypeViewSet(DbTransactionMixin, ReadOnlyModelViewSet):
-    queryset = ContentType.objects.filter(app_label__in=AVAILABLE_APPS)
-    serializer_class = ContentTypeSerializer
-    permission_classes = [IsAuthenticated]
-
-
-class PermissionViewSet(DbTransactionMixin, ReadOnlyModelViewSet):
-    queryset = Permission.objects.filter(content_type__app_label__in=AVAILABLE_APPS)
-    serializer_class = PermissionSerializer
-    permission_classes = [IsAuthenticated]
-    pagination_class = None
+# class ContentTypeViewSet(DbTransactionMixin, ReadOnlyModelViewSet):
+#     queryset = ContentType.objects.filter(app_label__in=AVAILABLE_APPS)
+#     serializer_class = ContentTypeSerializer
+#     permission_classes = [IsAuthenticated]
+#
+#
+# class PermissionViewSet(DbTransactionMixin, ReadOnlyModelViewSet):
+#     queryset = Permission.objects.filter(content_type__app_label__in=AVAILABLE_APPS)
+#     serializer_class = PermissionSerializer
+#     permission_classes = [IsAuthenticated]
+#     pagination_class = None
 
 
 class GroupViewSet(DbTransactionMixin, ModelViewSet):

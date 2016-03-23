@@ -9,6 +9,7 @@ from rest_framework import serializers
 from poms.api.fields import CurrentMasterUserDefault, FilteredPrimaryKeyRelatedField
 from poms.api.filters import IsOwnerByMasterUserOrSystemFilter
 from poms.currencies.models import Currency, CurrencyHistory
+from poms.users.serializers import PermissionField
 
 
 class CurrencyField(FilteredPrimaryKeyRelatedField):
@@ -16,20 +17,20 @@ class CurrencyField(FilteredPrimaryKeyRelatedField):
     filter_backends = [IsOwnerByMasterUserOrSystemFilter]
 
 
-class PermissionField(serializers.Field):
-    def __init__(self, **kwargs):
-        kwargs['source'] = '*'
-        kwargs['read_only'] = True
-        super(PermissionField, self).__init__(**kwargs)
-
-    def bind(self, field_name, parent):
-        super(PermissionField, self).bind(field_name, parent)
-
-    def to_representation(self, value):
-        request = self.context['request']
-        ctype = ContentType.objects.get_for_model(value)
-        return {'%s.%s' % (ctype.app_label, p) for p in get_perms(request.user, value)}
-        # return get_perms(request.user, value)
+# class PermissionField(serializers.Field):
+#     def __init__(self, **kwargs):
+#         kwargs['source'] = '*'
+#         kwargs['read_only'] = True
+#         super(PermissionField, self).__init__(**kwargs)
+#
+#     def bind(self, field_name, parent):
+#         super(PermissionField, self).bind(field_name, parent)
+#
+#     def to_representation(self, value):
+#         request = self.context['request']
+#         ctype = ContentType.objects.get_for_model(value)
+#         return {'%s.%s' % (ctype.app_label, p) for p in get_perms(request.user, value)}
+#         # return get_perms(request.user, value)
 
 
 class CurrencySerializer(serializers.ModelSerializer):

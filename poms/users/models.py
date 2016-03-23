@@ -8,12 +8,16 @@ from django.utils.translation import ugettext_lazy as _
 
 from poms.fields import TimezoneField, LanguageField
 
+AVAILABLE_APPS = ['accounts', 'counterparties', 'currencies', 'instruments', 'portfolios', 'strategies', 'transactions',
+                  'reports', 'users']
+
 
 @python_2_unicode_compatible
 class MasterUser(models.Model):
     name = models.CharField(max_length=255, null=True, blank=True)
     currency = models.ForeignKey('currencies.Currency', null=True, blank=True)
-    user = models.OneToOneField(settings.AUTH_USER_MODEL, related_name='master_user', verbose_name=_('user (deprecated)'))
+    user = models.OneToOneField(settings.AUTH_USER_MODEL, related_name='master_user',
+                                verbose_name=_('user (deprecated)'))
     members = models.ManyToManyField(settings.AUTH_USER_MODEL, blank=True, through='Member', related_name='member_of')
 
     class Meta:
