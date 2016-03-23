@@ -59,16 +59,15 @@ def _get_recipients():
     #     return [user]
     # return []
     from django.contrib.auth.models import User
-    return User.objects.all()
+    return User.objects.filter(id__gt=0)
 
 
 @receiver(post_save, dispatch_uid='audit_post_save')
 def audit_post_save(sender=None, instance=None, created=False, **kwargs):
     if instance._meta.app_label in ['currencies']:
-        from notifications.signals import notify
         user = _get_actor()
         if user:
-            verb = 'create' if created else 'update'
+            verb = 'created' if created else 'updated'
             for recipient in _get_recipients():
                 notify.send(user, verb=verb, target=instance, recipient=recipient, public=False)
 
@@ -78,6 +77,6 @@ def audit_post_delete(sender=None, instance=None, created=False, **kwargs):
     if instance._meta.app_label in ['currencies']:
         user = _get_actor()
         if user:
-            verb = 'delete'
+            verb = 'deleted'
             for recipient in _get_recipients():
                 notify.send(user, verb=verb, target=instance, recipient=recipient, public=False)
