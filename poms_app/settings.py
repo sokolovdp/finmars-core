@@ -48,7 +48,6 @@ INSTALLED_APPS = [
     'reversion',
     'guardian',
     'import_export',
-    # 'notifications',
 
     'poms.users',
     'poms.audit',
