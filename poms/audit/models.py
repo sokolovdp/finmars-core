@@ -7,7 +7,7 @@ from django.utils.translation import ugettext_lazy as _
 
 
 @python_2_unicode_compatible
-class AuthLog(models.Model):
+class AuthLogEntry(models.Model):
     date = models.DateTimeField(auto_now_add=True, db_index=True, verbose_name=_('create date'))
     user = models.ForeignKey(settings.AUTH_USER_MODEL, verbose_name=_('user'))
     user_ip = models.GenericIPAddressField(null=True, blank=True, verbose_name=_('user ip'))
