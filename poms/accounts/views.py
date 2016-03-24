@@ -7,10 +7,11 @@ from rest_framework.viewsets import ModelViewSet, ReadOnlyModelViewSet
 from poms.accounts.models import Account, AccountType, AccountClassifier
 from poms.accounts.serializers import AccountSerializer, AccountTypeSerializer, AccountClassifierSerializer
 from poms.api.mixins import DbTransactionMixin
+from poms.audit.mixins import HistoricalMixin
 from poms.users.filters import OwnerByMasterUserFilter
 
 
-class AccountTypeViewSet(DbTransactionMixin, ReadOnlyModelViewSet):
+class AccountTypeViewSet(DbTransactionMixin, HistoricalMixin, ModelViewSet):
     queryset = AccountType.objects.all()
     serializer_class = AccountTypeSerializer
     permission_classes = [IsAuthenticated, ]
@@ -19,7 +20,7 @@ class AccountTypeViewSet(DbTransactionMixin, ReadOnlyModelViewSet):
     search_fields = ['code', 'name']
 
 
-class AccountClassifierViewSet(DbTransactionMixin, ModelViewSet):
+class AccountClassifierViewSet(DbTransactionMixin, HistoricalMixin, ModelViewSet):
     queryset = AccountClassifier.objects.all()
     serializer_class = AccountClassifierSerializer
     permission_classes = [IsAuthenticated, ]
@@ -34,7 +35,7 @@ class AccountFilter(FilterSet):
         fields = []
 
 
-class AccountViewSet(DbTransactionMixin, ModelViewSet):
+class AccountViewSet(DbTransactionMixin, HistoricalMixin, ModelViewSet):
     queryset = Account.objects.all()
     serializer_class = AccountSerializer
     permission_classes = [IsAuthenticated, ]

@@ -1,7 +1,7 @@
 from __future__ import unicode_literals
 
 from django.conf import settings
-from django.contrib.auth.models import Group, User
+from django.contrib.auth.models import Group, User, Permission
 from django.db import models
 from django.utils.encoding import python_2_unicode_compatible
 from django.utils.translation import ugettext_lazy as _
@@ -104,8 +104,9 @@ class GroupProfile(models.Model):
 
 reversion.register(MasterUser)
 reversion.register(Member)
+reversion.register(Permission)
 reversion.register(User, follow=['profile'], exclude=['password'])
 reversion.register(UserProfile)
-reversion.register(Group, follow=['profile'])
+reversion.register(Group, follow=['profile', 'permissions'])
 reversion.register(GroupProfile, follow=['group'])
 

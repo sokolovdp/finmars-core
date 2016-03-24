@@ -6,6 +6,7 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.viewsets import ModelViewSet
 
 from poms.api.mixins import DbTransactionMixin
+from poms.audit.mixins import HistoricalMixin
 from poms.instruments.filters import OwnerByInstrumentFilter
 from poms.instruments.models import InstrumentClassifier, Instrument, PriceHistory
 from poms.instruments.serializers import InstrumentClassifierSerializer, InstrumentSerializer, PriceHistorySerializer
@@ -28,7 +29,7 @@ class InstrumentClassifierFilter(FilterSet):
         return qs
 
 
-class InstrumentClassifierViewSet(DbTransactionMixin, ModelViewSet):
+class InstrumentClassifierViewSet(DbTransactionMixin, HistoricalMixin, ModelViewSet):
     queryset = InstrumentClassifier.objects.all()
     serializer_class = InstrumentClassifierSerializer
     permission_classes = [IsAuthenticated, ]
@@ -38,7 +39,7 @@ class InstrumentClassifierViewSet(DbTransactionMixin, ModelViewSet):
     search_fields = ['user_code', 'name', 'short_name']
 
 
-class InstrumentViewSet(DbTransactionMixin, ModelViewSet):
+class InstrumentViewSet(DbTransactionMixin, HistoricalMixin, ModelViewSet):
     queryset = Instrument.objects.all()
     serializer_class = InstrumentSerializer
     permission_classes = [IsAuthenticated, ]
@@ -57,7 +58,7 @@ class PriceHistoryFilter(FilterSet):
         fields = ['instrument', 'min_date', 'max_date']
 
 
-class PriceHistoryViewSet(DbTransactionMixin, ModelViewSet):
+class PriceHistoryViewSet(DbTransactionMixin, HistoricalMixin, ModelViewSet):
     queryset = PriceHistory.objects.all()
     serializer_class = PriceHistorySerializer
     permission_classes = [IsAuthenticated, ]

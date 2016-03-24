@@ -12,6 +12,7 @@ from rest_framework.response import Response
 from rest_framework.viewsets import ViewSet, ModelViewSet
 
 from poms.api.mixins import DbTransactionMixin
+from poms.audit.mixins import HistoricalMixin
 from poms.users.fields import get_master_user
 from poms.users.filters import OwnerByMasterUserFilter
 from poms.users.models import MasterUser, Member, GroupProfile
@@ -83,7 +84,7 @@ class UserFilter(BaseFilterBackend):
         return queryset.filter(member_of=master_user)
 
 
-class UserViewSet(DbTransactionMixin, ModelViewSet):
+class UserViewSet(DbTransactionMixin, HistoricalMixin, ModelViewSet):
     queryset = User.objects
     serializer_class = UserSerializer
     permission_classes = [IsAuthenticated, UserPermission]
@@ -106,21 +107,21 @@ class MasterUserFilter(BaseFilterBackend):
         return queryset.filter(members=user)
 
 
-class MasterUserViewSet(DbTransactionMixin, ModelViewSet):
+class MasterUserViewSet(DbTransactionMixin, HistoricalMixin, ModelViewSet):
     queryset = MasterUser.objects.filter()
     serializer_class = MasterUserSerializer
     permission_classes = [IsAuthenticated]
     filter_backends = [MasterUserFilter]
 
 
-class MemberViewSet(DbTransactionMixin, ModelViewSet):
+class MemberViewSet(DbTransactionMixin, HistoricalMixin, ModelViewSet):
     queryset = Member.objects.filter()
     serializer_class = MemberSerializer
     permission_classes = [IsAuthenticated]
     filter_backends = [OwnerByMasterUserFilter]
 
 
-class GroupViewSet(DbTransactionMixin, ModelViewSet):
+class GroupViewSet(DbTransactionMixin, HistoricalMixin, ModelViewSet):
     queryset = GroupProfile.objects.prefetch_related('group__permissions', 'group__permissions__content_type'). \
         select_related('group')
     serializer_class = GroupSerializer

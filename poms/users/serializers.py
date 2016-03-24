@@ -107,12 +107,33 @@ class UserProfileSerializer(serializers.ModelSerializer):
 class UserSerializer(serializers.ModelSerializer):
     url = serializers.HyperlinkedIdentityField(view_name='user-detail')
     groups = serializers.PrimaryKeyRelatedField(queryset=Group.objects.all(), many=True)
-    profile = UserProfileSerializer()
+    profile = UserProfileSerializer(read_only=False)
 
     class Meta:
         model = User
         fields = ['url', 'id', 'username', 'first_name', 'last_name', 'groups', 'profile']
         read_only_fields = ['username', ]
+
+    def create(self, validated_data):
+        profile_data = validated_data.pop('profile')
+        user = User.objects.create(**validated_data)
+        UserProfile.objects.create(user=user, **profile_data)
+        return user
+
+    def update(self, instance, validated_data):
+        profile_data = validated_data.pop('profile')
+        profile = instance.profile
+
+        instance.first_name = validated_data.get('first_name', instance.first_name)
+        instance.last_name = validated_data.get('last_name', instance.last_name)
+        instance.groups = validated_data.get('groups', instance.groups)
+        instance.save()
+
+        profile.language = profile_data.get('language', profile.language)
+        profile.timezone = profile_data.get('timezone', profile.timezone)
+        profile.save()
+
+        return instance
 
 
 class MasterUserSerializer(serializers.ModelSerializer):

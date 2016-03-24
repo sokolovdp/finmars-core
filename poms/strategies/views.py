@@ -5,12 +5,13 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.viewsets import ModelViewSet
 
 from poms.api.mixins import DbTransactionMixin
+from poms.audit.mixins import HistoricalMixin
 from poms.strategies.models import Strategy
 from poms.strategies.serializers import StrategySerializer
 from poms.users.filters import OwnerByMasterUserFilter
 
 
-class StrategyViewSet(DbTransactionMixin, ModelViewSet):
+class StrategyViewSet(DbTransactionMixin, HistoricalMixin, ModelViewSet):
     queryset = Strategy.objects.all()
     serializer_class = StrategySerializer
     permission_classes = [IsAuthenticated, ]
