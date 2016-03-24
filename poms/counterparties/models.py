@@ -28,7 +28,7 @@ class CounterpartyClassifier(MPTTModel):
         verbose_name_plural = _('counterparty classifiers')
 
     def __str__(self):
-        return '%s (%s)' % (self.name, self.master_user.user.username)
+        return self.name
 
 
 @python_2_unicode_compatible
@@ -50,7 +50,7 @@ class Counterparty(models.Model):
         ]
 
     def __str__(self):
-        return '%s (%s)' % (self.name, self.master_user.user.username)
+        return self.name
 
 
 @python_2_unicode_compatible
@@ -69,4 +69,4 @@ class Responsible(models.Model):
         ]
 
     def __str__(self):
-        return '%s (%s)' % (self.name, self.master_user.user.username)
+        return self.name

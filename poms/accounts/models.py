@@ -28,7 +28,7 @@ class AccountType(models.Model):
         ]
 
     def __str__(self):
-        return '%s (%s)' % (self.name, self.master_user.user.username)
+        return self.name
 
 
 @python_2_unicode_compatible
@@ -51,7 +51,7 @@ class AccountClassifier(MPTTModel):
         ]
 
     def __str__(self):
-        return '%s (%s)' % (self.name, self.master_user.user.username)
+        return self.name
 
 
 @python_2_unicode_compatible
@@ -74,4 +74,4 @@ class Account(models.Model):
         ]
 
     def __str__(self):
-        return '%s' % self.name
+        return self.name
