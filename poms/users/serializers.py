@@ -11,7 +11,7 @@ from guardian.shortcuts import get_perms
 from rest_framework import serializers
 from rest_framework.authtoken.serializers import AuthTokenSerializer
 
-from poms.users.fields import MasterUserField
+from poms.users.fields import MasterUserField, get_master_user, get_member
 from poms.users.models import MasterUser, UserProfile, GroupProfile, Member, AVAILABLE_APPS
 
 
@@ -117,21 +117,32 @@ class UserSerializer(serializers.ModelSerializer):
 
 class MasterUserSerializer(serializers.ModelSerializer):
     url = serializers.HyperlinkedIdentityField(view_name='masteruser-detail')
+    is_current = serializers.SerializerMethodField()
 
     class Meta:
         model = MasterUser
-        fields = ['url', 'id', 'name', 'currency', 'members']
+        fields = ['url', 'id', 'name', 'currency', 'is_current', 'members']
+
+    def get_is_current(self, obj):
+        request = self.context['request']
+        return obj.id == get_master_user(request).id
 
 
 class MemberSerializer(serializers.ModelSerializer):
     url = serializers.HyperlinkedIdentityField(view_name='member-detail')
     master_user = MasterUserField()
     user = serializers.PrimaryKeyRelatedField(queryset=User.objects.filter(pk__gt=0))
+    is_current = serializers.SerializerMethodField()
 
     class Meta:
         model = Member
-        fields = ['url', 'id', 'master_user', 'user', 'is_owner', 'is_admin', 'join_date']
+        fields = ['url', 'id', 'master_user', 'user', 'is_owner', 'is_admin', 'join_date', 'is_current']
         read_only_fields = ['user', 'is_owner']
+
+    def get_is_current(self, obj):
+        request = self.context['request']
+        member = get_member(request)
+        return obj.id == member.id
 
 
 class GroupSerializer(serializers.ModelSerializer):

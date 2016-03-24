@@ -16,8 +16,6 @@ AVAILABLE_APPS = ['accounts', 'counterparties', 'currencies', 'instruments', 'po
 class MasterUser(models.Model):
     name = models.CharField(max_length=255, null=True, blank=True)
     currency = models.ForeignKey('currencies.Currency', null=True, blank=True)
-    user = models.OneToOneField(settings.AUTH_USER_MODEL, related_name='master_user',
-                                verbose_name=_('user (deprecated)'))
     members = models.ManyToManyField(settings.AUTH_USER_MODEL, blank=True, through='Member', related_name='member_of')
 
     class Meta:

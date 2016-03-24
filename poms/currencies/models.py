@@ -42,10 +42,7 @@ class Currency(models.Model):
         ]
 
     def __str__(self):
-        if self.is_global:
-            return '%s' % (self.user_code,)
-        else:
-            return '%s (%s)' % (self.user_code, self.master_user.user.username)
+        return '%s' % self.user_code
 
     @property
     def is_global(self):
