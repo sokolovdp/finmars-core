@@ -1,20 +1,20 @@
 from __future__ import unicode_literals
 
 from django.contrib.auth import login, logout
-from django.contrib.auth.models import User
-from django.db.models import Q
+from django.contrib.auth.models import User, Group
 from rest_framework.authtoken.models import Token
 from rest_framework.authtoken.serializers import AuthTokenSerializer
 from rest_framework.filters import BaseFilterBackend
+from rest_framework.mixins import UpdateModelMixin, DestroyModelMixin
 from rest_framework.parsers import JSONParser, MultiPartParser, FormParser
 from rest_framework.permissions import IsAuthenticated, BasePermission, SAFE_METHODS
 from rest_framework.response import Response
-from rest_framework.viewsets import ViewSet, ModelViewSet
+from rest_framework.viewsets import ViewSet, ModelViewSet, ReadOnlyModelViewSet
 
 from poms.api.mixins import DbTransactionMixin
-from poms.users.fields import get_master_user
+from poms.users.fields import get_master_user, GroupOwnerByMasterUserFilter
 from poms.users.filters import OwnerByMasterUserFilter
-from poms.users.models import MasterUser, Member, GroupProfile
+from poms.users.models import MasterUser, Member
 from poms.users.serializers import GroupSerializer, UserSerializer, MasterUserSerializer, MemberSerializer
 
 
@@ -83,7 +83,7 @@ class UserFilter(BaseFilterBackend):
         return queryset.filter(member_of=master_user)
 
 
-class UserViewSet(DbTransactionMixin, ModelViewSet):
+class UserViewSet(DbTransactionMixin, UpdateModelMixin, DestroyModelMixin, ReadOnlyModelViewSet):
     queryset = User.objects
     serializer_class = UserSerializer
     permission_classes = [IsAuthenticated, UserPermission]
@@ -120,9 +120,16 @@ class MemberViewSet(DbTransactionMixin, ModelViewSet):
     filter_backends = [OwnerByMasterUserFilter]
 
 
+# class GroupViewSet(DbTransactionMixin, ModelViewSet):
+#     queryset = GroupProfile.objects.prefetch_related('group__permissions', 'group__permissions__content_type'). \
+#         select_related('group')
+#     serializer_class = GroupSerializer
+#     permission_classes = [IsAuthenticated]
+#     filter_backends = [OwnerByMasterUserFilter]
+
 class GroupViewSet(DbTransactionMixin, ModelViewSet):
-    queryset = GroupProfile.objects.prefetch_related('group__permissions', 'group__permissions__content_type'). \
-        select_related('group')
+    queryset = Group.objects.prefetch_related('profile', 'profile__master_user', 'permissions',
+                                              'permissions__content_type')
     serializer_class = GroupSerializer
     permission_classes = [IsAuthenticated]
-    filter_backends = [OwnerByMasterUserFilter]
+    filter_backends = [GroupOwnerByMasterUserFilter]

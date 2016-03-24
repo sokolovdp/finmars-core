@@ -1,8 +1,11 @@
 from django.conf import settings
+from django.contrib.auth.models import Group
 from django.core.exceptions import ObjectDoesNotExist
 from rest_framework import serializers
 from rest_framework.exceptions import NotFound
 
+from poms.api.fields import FilteredPrimaryKeyRelatedField
+from poms.users.filters import OwnerByMasterUserFilter
 from poms.users.models import Member
 
 
@@ -64,6 +67,18 @@ class MasterUserField(serializers.HiddenField):
     def __init__(self, **kwargs):
         kwargs['default'] = CurrentMasterUserDefault()
         super(MasterUserField, self).__init__(**kwargs)
+
+
+class GroupOwnerByMasterUserFilter(OwnerByMasterUserFilter):
+    def filter_queryset(self, request, queryset, view):
+        # print(get_master_user(request))
+        return queryset.filter(profile__master_user=get_master_user(request))
+
+
+class GroupField(FilteredPrimaryKeyRelatedField):
+    # queryset = Group.objects.filter(id__lt= 10)
+    queryset = Group.objects.all()
+    filter_backends = [GroupOwnerByMasterUserFilter]
 
 # class UserField(FilteredPrimaryKeyRelatedField):
 #     queryset = User.objects.all()
