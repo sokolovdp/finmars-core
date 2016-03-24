@@ -136,14 +136,8 @@ class UserSerializer(serializers.ModelSerializer):
             cur_groups = set(instance.groups.filter(profile__master_user=master_user))
             new_groups = set(validated_data['groups'])
 
-            print('cur_groups', cur_groups)
-            print('new_groups', new_groups)
-
             add_groups = new_groups - cur_groups
             del_groups = cur_groups - new_groups
-
-            print('add_groups', add_groups)
-            print('del_groups', del_groups)
 
             if add_groups:
                 instance.groups.add(*add_groups)
