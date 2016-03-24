@@ -76,7 +76,6 @@ class GroupOwnerByMasterUserFilter(OwnerByMasterUserFilter):
 
 
 class GroupField(FilteredPrimaryKeyRelatedField):
-    # queryset = Group.objects.filter(id__lt= 10)
     queryset = Group.objects.all()
     filter_backends = [GroupOwnerByMasterUserFilter]
 
