@@ -34,7 +34,7 @@ class PLReportBuilder(BalanceReportBuilder):
 
         summary = self.instance.summary
         for t in self.transactions:
-            t_class = t.transaction_class.code
+            t_class = t.transaction_class_id
             if t_class in [TransactionClass.CASH_INFLOW, TransactionClass.CASH_OUTFLOW]:
                 t.principal_with_sign_system_ccy = t.principal_with_sign * t.transaction_currency_fx_rate
                 t.carry_with_sign_system_ccy = t.carry_with_sign * t.transaction_currency_fx_rate
@@ -145,7 +145,7 @@ class PLReport2Builder(BaseReport2Builder):
 
     def build(self):
         for t in self.transactions:
-            t_class = t.transaction_class.code
+            t_class = t.transaction_class_id
             item = None
             if t_class in [TransactionClass.CASH_INFLOW, TransactionClass.CASH_OUTFLOW]:
                 pass

@@ -30,22 +30,29 @@ class BaseReportTestCase(TestCase):
             pd.set_option('display.max_rows', 1000)
 
         u = User.objects.create_user('a1')
-        self.m = m = MasterUser.objects.create(user=u)
+        self.m = m = MasterUser.objects.create()
 
-        self.cash_inflow = TransactionClass.objects.create(code=TransactionClass.CASH_INFLOW,
-                                                           name=TransactionClass.CASH_INFLOW)
-        self.cash_outflow = TransactionClass.objects.create(code=TransactionClass.CASH_OUTFLOW,
-                                                            name=TransactionClass.CASH_OUTFLOW)
-        self.buy = TransactionClass.objects.create(code=TransactionClass.BUY,
-                                                   name=TransactionClass.BUY)
-        self.sell = TransactionClass.objects.create(code=TransactionClass.SELL,
-                                                    name=TransactionClass.SELL)
-        self.instrument_pl = TransactionClass.objects.create(code=TransactionClass.INSTRUMENT_PL,
-                                                             name=TransactionClass.INSTRUMENT_PL)
-        self.transaction_pl = TransactionClass.objects.create(code=TransactionClass.TRANSACTION_PL,
-                                                              name=TransactionClass.TRANSACTION_PL)
-        self.fx_tade = TransactionClass.objects.create(code=TransactionClass.FX_TRADE,
-                                                       name=TransactionClass.FX_TRADE)
+        # self.cash_inflow = TransactionClass.objects.create(code=TransactionClass.CASH_INFLOW,
+        #                                                    name=TransactionClass.CASH_INFLOW)
+        # self.cash_outflow = TransactionClass.objects.create(code=TransactionClass.CASH_OUTFLOW,
+        #                                                     name=TransactionClass.CASH_OUTFLOW)
+        # self.buy = TransactionClass.objects.create(code=TransactionClass.BUY,
+        #                                            name=TransactionClass.BUY)
+        # self.sell = TransactionClass.objects.create(code=TransactionClass.SELL,
+        #                                             name=TransactionClass.SELL)
+        # self.instrument_pl = TransactionClass.objects.create(code=TransactionClass.INSTRUMENT_PL,
+        #                                                      name=TransactionClass.INSTRUMENT_PL)
+        # self.transaction_pl = TransactionClass.objects.create(code=TransactionClass.TRANSACTION_PL,
+        #                                                       name=TransactionClass.TRANSACTION_PL)
+        # self.fx_tade = TransactionClass.objects.create(code=TransactionClass.FX_TRADE,
+        #                                                name=TransactionClass.FX_TRADE)
+        self.cash_inflow = TransactionClass.objects.get(id=TransactionClass.CASH_INFLOW)
+        self.cash_outflow = TransactionClass.objects.get(id=TransactionClass.CASH_OUTFLOW)
+        self.buy = TransactionClass.objects.get(id=TransactionClass.BUY)
+        self.sell = TransactionClass.objects.get(id=TransactionClass.SELL)
+        self.instrument_pl = TransactionClass.objects.get(id=TransactionClass.INSTRUMENT_PL)
+        self.transaction_pl = TransactionClass.objects.get(id=TransactionClass.TRANSACTION_PL)
+        self.fx_tade = TransactionClass.objects.get(id=TransactionClass.FX_TRADE)
 
         self.ccy_ = Currency.objects.create(user_code='-', master_user=None)
         self.usd = Currency.objects.create(user_code='USD', name='USD', master_user=None)

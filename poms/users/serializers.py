@@ -11,7 +11,7 @@ from guardian.shortcuts import get_perms
 from rest_framework import serializers
 from rest_framework.authtoken.serializers import AuthTokenSerializer
 
-from poms.users.fields import MasterUserField, get_master_user, get_member
+from poms.users.fields import MasterUserField, get_master_user, get_member, GroupField
 from poms.users.models import MasterUser, UserProfile, GroupProfile, Member, AVAILABLE_APPS
 
 
@@ -106,17 +106,19 @@ class UserProfileSerializer(serializers.ModelSerializer):
 
 class UserSerializer(serializers.ModelSerializer):
     url = serializers.HyperlinkedIdentityField(view_name='user-detail')
-    groups = serializers.PrimaryKeyRelatedField(queryset=Group.objects.all(), many=True)
-    profile = UserProfileSerializer(read_only=False)
+    groups = GroupField(many=True)  # TODO: filter groups in response JSON
+    profile = UserProfileSerializer()
 
     class Meta:
         model = User
-        fields = ['url', 'id', 'username', 'first_name', 'last_name', 'groups', 'profile']
-        read_only_fields = ['username', ]
+        fields = ['url', 'id', 'first_name', 'last_name', 'groups', 'profile']
+        # read_only_fields = ['username', ]
 
     def create(self, validated_data):
         profile_data = validated_data.pop('profile')
+        groups = validated_data.pop('groups')
         user = User.objects.create(**validated_data)
+        user.groups = groups
         UserProfile.objects.create(user=user, **profile_data)
         return user
 
@@ -126,8 +128,23 @@ class UserSerializer(serializers.ModelSerializer):
 
         instance.first_name = validated_data.get('first_name', instance.first_name)
         instance.last_name = validated_data.get('last_name', instance.last_name)
-        instance.groups = validated_data.get('groups', instance.groups)
         instance.save()
+
+        if 'groups' in validated_data:
+            request = self.context['request']
+            master_user = get_master_user(request)
+            cur_groups = set(instance.groups.filter(profile__master_user=master_user))
+            new_groups = set(validated_data['groups'])
+
+            add_groups = new_groups - cur_groups
+            del_groups = cur_groups - new_groups
+
+            if add_groups:
+                instance.groups.add(*add_groups)
+            if del_groups:
+                instance.groups.remove(*del_groups)
+
+                # instance.groups = validated_data.get('groups', instance.groups)
 
         profile.language = profile_data.get('language', profile.language)
         profile.timezone = profile_data.get('timezone', profile.timezone)
@@ -166,17 +183,70 @@ class MemberSerializer(serializers.ModelSerializer):
         return obj.id == member.id
 
 
-class GroupSerializer(serializers.ModelSerializer):
-    url = serializers.HyperlinkedIdentityField(view_name='groupprofile-detail')
+# class GroupSerializer(serializers.ModelSerializer):
+#     url = serializers.HyperlinkedIdentityField(view_name='groupprofile-detail')
+#     master_user = MasterUserField()
+#     permissions = PermissionField(many=True)
+#
+#     class Meta:
+#         model = GroupProfile
+#         fields = ['url', 'id', 'master_user', 'name', 'permissions']
+#
+#     def create(self, validated_data):
+#         master_user = validated_data['master_user']
+#         name = validated_data['name']
+#         validated_data['group'] = Group.objects.create(name=GroupProfile.make_group_name(master_user.id, name))
+#         return super(GroupSerializer, self).create(validated_data)
+
+
+class GroupProfileSerializer(serializers.ModelSerializer):
     master_user = MasterUserField()
-    permissions = PermissionField(many=True)
 
     class Meta:
         model = GroupProfile
-        fields = ['url', 'id', 'master_user', 'name', 'permissions']
+        fields = ['master_user', 'name']
+        validators = []  # TODO: nested serializer on update raise unique exception...
+
+
+class GroupNameField(serializers.CharField):
+    def get_attribute(self, instance):
+        profile = getattr(instance, 'profile', None)
+        return getattr(profile, 'name', None)
+
+
+class GroupSerializer(serializers.ModelSerializer):
+    url = serializers.HyperlinkedIdentityField(view_name='group-detail')
+    master_user = MasterUserField()
+    group_name = GroupNameField()
+    permissions = PermissionField(many=True)
+
+    # profile = GroupProfileSerializer(read_only=False)
+
+    class Meta:
+        model = Group
+        fields = ['url', 'id', 'master_user', 'group_name', 'permissions']
 
     def create(self, validated_data):
+        master_user = validated_data.pop('master_user')
+        group_name = validated_data.pop('group_name')
+
+        validated_data['name'] = GroupProfile.make_group_name(master_user.id, group_name)
+        permissions = validated_data.pop('permissions')
+        group = Group.objects.create(**validated_data)
+        group.permissions = permissions
+        GroupProfile.objects.create(group=group, master_user=master_user, name=group_name)
+        return group
+
+    def update(self, instance, validated_data):
         master_user = validated_data['master_user']
-        name = validated_data['name']
-        validated_data['group'] = Group.objects.create(name=GroupProfile.make_group_name(master_user.id, name))
-        return super(GroupSerializer, self).create(validated_data)
+
+        profile = instance.profile
+        profile.name = validated_data.get('group_name', profile.name)
+
+        instance.name = GroupProfile.make_group_name(master_user.id, profile.name)
+        instance.permissions = validated_data.get('permissions', instance.permissions)
+        instance.save()
+
+        profile.save()
+
+        return instance

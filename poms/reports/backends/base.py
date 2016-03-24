@@ -156,7 +156,7 @@ class BaseReportBuilder(object):
         rolling_positions = Counter()
 
         for t in self.transactions:
-            t_class = t.transaction_class.code
+            t_class = t.transaction_class_id
             if t_class not in [TransactionClass.BUY, TransactionClass.SELL]:
                 continue
 
@@ -213,7 +213,7 @@ class BaseReportBuilder(object):
         rolling_positions = Counter()
 
         for t in self.transactions:
-            t_class = t.transaction_class.code
+            t_class = t.transaction_class_id
             if t_class not in [TransactionClass.BUY, TransactionClass.SELL]:
                 continue
 
@@ -495,7 +495,7 @@ class BaseReport2Builder(object):
         rolling_positions = Counter()
 
         for t in self.transactions:
-            t_class = t.transaction_class.code
+            t_class = t.transaction_class_id
             if t_class not in [TransactionClass.BUY, TransactionClass.SELL]:
                 continue
 
@@ -551,7 +551,7 @@ class BaseReport2Builder(object):
         rolling_positions = Counter()
 
         for t in self.transactions:
-            t_class = t.transaction_class.code
+            t_class = t.transaction_class_id
             if t_class not in [TransactionClass.BUY, TransactionClass.SELL]:
                 continue
 

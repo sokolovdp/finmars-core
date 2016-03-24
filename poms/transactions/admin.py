@@ -9,8 +9,8 @@ from poms.transactions.models import TransactionClass, Transaction
 
 class TransactionClassAdmin(VersionAdmin):
     model = TransactionClass
-    list_display = ['id', 'code', 'name']
-    ordering = ['code']
+    list_display = ['id', 'system_code', 'name']
+    ordering = ['id']
 
 
 admin.site.register(TransactionClass, TransactionClassAdmin)
