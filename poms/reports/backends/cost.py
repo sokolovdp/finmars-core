@@ -33,7 +33,7 @@ class CostReportBuilder(BaseReportBuilder):
 
         items = {}
         for t in self.transactions:
-            t_class = t.transaction_class.code
+            t_class = t.transaction_class_id
             if t_class in [TransactionClass.BUY, TransactionClass.SELL]:
                 multiplier = getattr(t, multiplier_attr, 0.)
 
@@ -83,7 +83,7 @@ class CostReport2Builder(BaseReport2Builder):
         for t in self.transactions:
             self.set_currency_fx_rate(t, 'settlement_currency')
 
-            t_class = t.transaction_class.code
+            t_class = t.transaction_class_id
             if t_class in [TransactionClass.BUY, TransactionClass.SELL]:
                 multiplier = getattr(t, multiplier_attr, 0.)
 

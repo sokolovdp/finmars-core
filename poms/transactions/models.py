@@ -17,17 +17,40 @@ from poms.users.models import MasterUser
 
 @python_2_unicode_compatible
 class TransactionClass(models.Model):
-    BUY = "Buy"
-    SELL = "Sell"
-    FX_TRADE = "FX Trade"
-    INSTRUMENT_PL = "Instrument PL"
-    TRANSACTION_PL = "Transaction PL"
-    TRANSFER = "Transfer"
-    FX_TRANSFER = "FX Transfer"
-    CASH_INFLOW = "Cash-Inflow"
-    CASH_OUTFLOW = "Cash-Outflow"
+    # BUY = "Buy"  # 1
+    # CASH_INFLOW = "Cash-Inflow"  # 8
+    # CASH_OUTFLOW = "Cash-Outflow"  # 9
+    # FX_TRADE = "FX Trade"  # 3
+    # FX_TRANSFER = "FX Transfer"  # 7
+    # INSTRUMENT_PL = "Instrument PL"  # 4
+    # SELL = "Sell"  # 2
+    # TRANSACTION_PL = "Transaction PL"  # 5
+    # TRANSFER = "Transfer"  # 6
 
-    code = models.CharField(max_length=50, unique=True, verbose_name=_('internal code'))
+    BUY = 1
+    SELL = 2
+    FX_TRADE = 3
+    INSTRUMENT_PL = 4
+    TRANSACTION_PL = 5
+    TRANSFER = 6
+    FX_TRANSFER = 7
+    CASH_INFLOW = 8
+    CASH_OUTFLOW = 9
+
+    CLASSES = (
+        (BUY, "Buy"),
+        (SELL, "Sell"),
+        (FX_TRADE, "FX Trade"),
+        (INSTRUMENT_PL, "Instrument PL"),
+        (TRANSACTION_PL, "Transaction PL"),
+        (TRANSFER, "Transfer"),
+        (FX_TRANSFER, "FX Transfer"),
+        (CASH_INFLOW, "Cash-Inflow"),
+        (CASH_OUTFLOW, "Cash-Outflow"),
+    )
+
+    id = models.PositiveSmallIntegerField(primary_key=1)
+    system_code = models.CharField(max_length=50, null=True, blank=True, verbose_name=_('system code'))
     name = models.CharField(max_length=255, verbose_name=_('name'))
     description = models.TextField(null=True, blank=True, default='', verbose_name=_('description'))
 

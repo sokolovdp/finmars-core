@@ -76,7 +76,7 @@ class BalanceReportBuilder(BaseReportBuilder):
         items = {}
 
         for t in self.transactions:
-            t_class = t.transaction_class.code
+            t_class = t.transaction_class_id
             case, account_position, account_cash = self.get_accounts(t)
 
             if t_class in [TransactionClass.CASH_INFLOW, TransactionClass.CASH_OUTFLOW]:
@@ -226,7 +226,7 @@ class BalanceReport2Builder(BaseReport2Builder):
 
     def get_items(self):
         for t in self.transactions:
-            t_class = t.transaction_class.code
+            t_class = t.transaction_class_id
             case, acc_pos_attr, acc_cash_attr = self.get_accounts(t)
 
             if t_class in [TransactionClass.CASH_INFLOW, TransactionClass.CASH_OUTFLOW]:

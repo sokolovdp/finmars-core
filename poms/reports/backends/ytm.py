@@ -34,13 +34,13 @@ class YTMReportBuilder(BaseReportBuilder):
 
         # calculate total position for instrument
         for t in self.transactions:
-            t_class = t.transaction_class.code
+            t_class = t.transaction_class_id
             if t_class in [TransactionClass.BUY, TransactionClass.SELL]:
                 item = self._get_ytm_item(items, t)
                 item.position += t.position_size_with_sign
 
         for t in self.transactions:
-            t_class = t.transaction_class.code
+            t_class = t.transaction_class_id
             if t_class in [TransactionClass.BUY, TransactionClass.SELL]:
                 multiplier = getattr(t, multiplier_attr, 0.)
                 item = self._get_ytm_item(items, t)
@@ -86,13 +86,13 @@ class YTMReport2Builder(BaseReport2Builder):
 
         # calculate total position for instrument
         for t in self.transactions:
-            t_class = t.transaction_class.code
+            t_class = t.transaction_class_id
             if t_class in [TransactionClass.BUY, TransactionClass.SELL]:
                 item = self._get_item(t)
                 item.position += t.position_size_with_sign
 
         for t in self.transactions:
-            t_class = t.transaction_class.code
+            t_class = t.transaction_class_id
             if t_class in [TransactionClass.BUY, TransactionClass.SELL]:
                 item = self._get_item(t)
 
