@@ -12,8 +12,8 @@ from rest_framework.response import Response
 from rest_framework.viewsets import ViewSet, ModelViewSet, ReadOnlyModelViewSet
 
 from poms.api.mixins import DbTransactionMixin
-from poms.users.fields import get_master_user, GroupOwnerByMasterUserFilter
 from poms.audit.mixins import HistoricalMixin
+from poms.users.fields import GroupOwnerByMasterUserFilter
 from poms.users.fields import get_master_user
 from poms.users.filters import OwnerByMasterUserFilter
 from poms.users.models import MasterUser, Member

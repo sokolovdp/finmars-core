@@ -1,6 +1,5 @@
 from __future__ import unicode_literals
 
-from django.contrib.auth.models import User
 from rest_framework import permissions
 from rest_framework.decorators import detail_route, list_route
 from rest_framework.exceptions import PermissionDenied
@@ -61,14 +60,15 @@ class HistoricalMixin(object):
 
     def _history_annotate_object(self, model, fields, versions):
         for v in versions:
-            print(v.serialized_data)
-            print(v.field_dict)
+            print('-'*79)
+            # print(v.serialized_data)
+            # print(v.field_dict)
 
             # obj = v.object_version.object # deserialize m2m as current value :(
 
             obj = model()
             for field in fields:
-                # print(repr(field))
+                print(repr(field))
                 setattr(obj, field.name, v.field_dict.get(field.name, None))
 
             serializer = self.get_serializer(instance=obj)
