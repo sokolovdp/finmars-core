@@ -28,7 +28,7 @@ class TransactionAdmin(ImportExportModelAdmin, admin.ModelAdmin):
     model = Transaction
     list_select_related = ['transaction_class', 'instrument', 'transaction_currency', 'settlement_currency',
                            'account_cash', 'account_position', 'account_interim',
-                           'master_user', 'master_user__user']
+                           'master_user']
 
     save_as = True
     list_display = ['id', 'master_user', 'is_canceled', 'transaction_class', 'portfolio',
