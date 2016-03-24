@@ -9,10 +9,11 @@ from poms.instruments.models import Instrument, PriceHistory, InstrumentClassifi
 
 
 class InstrumentClassifierAdmin(MPTTModelAdmin):
-    # change_list_template = 'admin/mptt_change_list.html'
     model = InstrumentClassifier
-    list_display = ['name', 'master_user']
+    list_display = ['id', 'name', 'parent', 'master_user']
+    list_select_related = ['master_user', 'parent']
     mptt_level_indent = 20
+    mptt_indent_field = "name"
 
 
 admin.site.register(InstrumentClassifier, InstrumentClassifierAdmin)
@@ -20,7 +21,8 @@ admin.site.register(InstrumentClassifier, InstrumentClassifierAdmin)
 
 class InstrumentAdmin(admin.ModelAdmin):
     model = Instrument
-    list_display = ['name', 'pricing_currency', 'accrued_currency', 'price_multiplier', 'master_user']
+    list_display = ['id', 'name', 'master_user', 'pricing_currency', 'accrued_currency']
+    list_select_related = ['master_user', 'pricing_currency', 'accrued_currency']
 
     # def get_classifiers(self, obj):
     #     return ', '.join(p.name for p in obj.classifiers.all())
@@ -35,6 +37,7 @@ admin.site.register(Instrument, InstrumentAdmin)
 class PriceHistoryAdmin(ImportExportModelAdmin, admin.ModelAdmin):
     model = PriceHistory
     list_display = ['id', 'date', 'instrument', 'principal_price', 'accrued_price', 'factor']
+    list_select_related = ['instrument']
     date_hierarchy = 'date'
 
 

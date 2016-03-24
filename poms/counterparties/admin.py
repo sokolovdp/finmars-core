@@ -6,25 +6,30 @@ from mptt.admin import MPTTModelAdmin
 from poms.counterparties.models import Counterparty, Responsible, CounterpartyClassifier
 
 
-class ResponsibleAdmin(admin.ModelAdmin):
-    model = Responsible
-
-
-admin.site.register(Responsible, ResponsibleAdmin)
-
-
 class CounterpartyClassifierAdmin(MPTTModelAdmin):
     model = CounterpartyClassifier
-    list_display = ['name', 'master_user']
+    list_display = ['id', 'name', 'parent', 'master_user']
+    list_select_related = ['master_user', 'parent']
     mptt_level_indent = 20
+    mptt_indent_field = "name"
 
 
 admin.site.register(CounterpartyClassifier, CounterpartyClassifierAdmin)
 
 
 class CounterpartyAdmin(admin.ModelAdmin):
-    list_display = ['name', 'master_user']
+    list_display = ['id', 'name', 'master_user']
+    list_select_related = ['master_user']
     model = Counterparty
 
 
 admin.site.register(Counterparty, CounterpartyAdmin)
+
+
+class ResponsibleAdmin(admin.ModelAdmin):
+    model = Responsible
+    list_display = ['id', 'name', 'master_user']
+    list_select_related = ['master_user']
+
+
+admin.site.register(Responsible, ResponsibleAdmin)

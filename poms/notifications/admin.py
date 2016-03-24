@@ -6,6 +6,7 @@ from poms.notifications.models import Notification
 class NotificationAdmin(admin.ModelAdmin):
     model = Notification
     list_display = ['id', 'recipient', 'create_date', 'read_date', 'actor', 'verb', 'target', 'action_object', 'public']
+    list_select_related = ['recipient']
     date_hierarchy = 'create_date'
 
 

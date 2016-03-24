@@ -27,7 +27,8 @@ class GlobalCurrencyFilter(admin.SimpleListFilter):
 
 class CurrencyAdmin(GuardedModelAdminMixin, admin.ModelAdmin):
     model = Currency
-    list_display = ['id', 'user_code', 'name', 'master_user', 'is_global', 'is_system']
+    list_display = ['id', 'name', 'master_user', 'is_global', 'is_system']
+    list_select_related = ['master_user']
     ordering = ['user_code']
     list_filter = [GlobalCurrencyFilter]
 
@@ -51,6 +52,7 @@ admin.site.register(Currency, CurrencyAdmin)
 class CurrencyHistoryAdmin(ImportExportModelAdmin, admin.ModelAdmin):
     model = CurrencyHistory
     list_display = ['id', 'currency', 'master_user', 'date', 'fx_rate', 'is_global']
+    list_select_related = ['currency', 'master_user']
     list_filter = ['date']
     date_hierarchy = 'date'
 
