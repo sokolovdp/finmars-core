@@ -1,20 +1,18 @@
 from __future__ import unicode_literals
 
 from django.contrib.auth import get_user_model, authenticate
-from django.contrib.auth.models import User
+from django.contrib.auth.models import User, Group, Permission
+from django.contrib.contenttypes.models import ContentType
+from django.core.exceptions import ObjectDoesNotExist, PermissionDenied
 from django.utils import translation
+from django.utils.encoding import smart_text
 from django.utils.translation import ugettext_lazy as _
+from guardian.shortcuts import get_perms
 from rest_framework import serializers
 from rest_framework.authtoken.serializers import AuthTokenSerializer
 
-from poms.api.fields import CurrentMasterUserDefault
-from poms.users.models import MasterUser
-
-
-class MasterUserField(serializers.HiddenField):
-    def __init__(self, **kwargs):
-        kwargs['default'] = CurrentMasterUserDefault()
-        super(MasterUserField, self).__init__(**kwargs)
+from poms.users.fields import MasterUserField, get_master_user, get_member
+from poms.users.models import MasterUser, UserProfile, GroupProfile, Member, AVAILABLE_APPS
 
 
 class LoginSerializer(AuthTokenSerializer):
@@ -45,64 +43,119 @@ class RegisterSerializer(AuthTokenSerializer):
 
 
 class PasswordChangeSerializer(serializers.Serializer):
-    original_password = serializers.CharField(required=True, max_length=128, style={'input_type': 'password'})
+    password = serializers.CharField(required=True, max_length=128, style={'input_type': 'password'})
     new_password = serializers.CharField(required=True, max_length=128, style={'input_type': 'password'})
 
     def create(self, validated_data):
-        # password = validated_data.get('password')
-        # user.set_password()
-        return validated_data
+        request = self.context['request']
+        user = request.user
+        password = validated_data['password']
+        if user.check_password(password):
+            new_password = validated_data['new_password']
+            user.set_password(new_password)
+            return validated_data
+        raise PermissionDenied(_('Invalid password'))
+
+
+class PermissionField(serializers.SlugRelatedField):
+    def __init__(self, **kwargs):
+        kwargs.setdefault('slug_field', 'codename')
+        if 'queryset' not in kwargs:
+            kwargs['queryset'] = Permission.objects.all()
+        super(PermissionField, self).__init__(**kwargs)
+
+    def get_queryset(self):
+        queryset = super(PermissionField, self).get_queryset()
+        queryset = queryset.select_related('content_type').filter(content_type__app_label__in=AVAILABLE_APPS)
+        return queryset
+
+    def to_internal_value(self, data):
+        try:
+            app_label, codename = data.split('.')
+            return self.get_queryset().get(content_type__app_label=app_label, codename=codename)
+        except ObjectDoesNotExist:
+            self.fail('does_not_exist', slug_name=self.slug_field, value=smart_text(data))
+        except (TypeError, ValueError):
+            self.fail('invalid')
+
+    def to_representation(self, obj):
+        return '%s.%s' % (obj.content_type.app_label, obj.codename)
+
+
+class GrantedPermissionField(serializers.Field):
+    def __init__(self, **kwargs):
+        kwargs['source'] = '*'
+        kwargs['read_only'] = True
+        super(GrantedPermissionField, self).__init__(**kwargs)
+
+    def bind(self, field_name, parent):
+        super(GrantedPermissionField, self).bind(field_name, parent)
+
+    def to_representation(self, value):
+        request = self.context['request']
+        ctype = ContentType.objects.get_for_model(value)
+        return {'%s.%s' % (ctype.app_label, p) for p in get_perms(request.user, value)}
+        # return get_perms(request.user, value)
+
+
+class UserProfileSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = UserProfile
+        fields = ['language', 'timezone']
 
 
 class UserSerializer(serializers.ModelSerializer):
+    url = serializers.HyperlinkedIdentityField(view_name='user-detail')
+    groups = serializers.PrimaryKeyRelatedField(queryset=Group.objects.all(), many=True)
+    profile = UserProfileSerializer()
+
     class Meta:
         model = User
-        fields = ['first_name', 'last_name', 'is_active']
+        fields = ['url', 'id', 'username', 'first_name', 'last_name', 'groups', 'profile']
+        read_only_fields = ['username', ]
+
+
+class MasterUserSerializer(serializers.ModelSerializer):
+    url = serializers.HyperlinkedIdentityField(view_name='masteruser-detail')
+    is_current = serializers.SerializerMethodField()
+
+    class Meta:
+        model = MasterUser
+        fields = ['url', 'id', 'name', 'currency', 'is_current', 'members']
+
+    def get_is_current(self, obj):
+        request = self.context['request']
+        return obj.id == get_master_user(request).id
+
+
+class MemberSerializer(serializers.ModelSerializer):
+    url = serializers.HyperlinkedIdentityField(view_name='member-detail')
+    master_user = MasterUserField()
+    user = serializers.PrimaryKeyRelatedField(queryset=User.objects.filter(pk__gt=0))
+    is_current = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Member
+        fields = ['url', 'id', 'master_user', 'user', 'is_owner', 'is_admin', 'join_date', 'is_current']
+        read_only_fields = ['user', 'is_owner']
+
+    def get_is_current(self, obj):
+        request = self.context['request']
+        member = get_member(request)
+        return obj.id == member.id
+
+
+class GroupSerializer(serializers.ModelSerializer):
+    url = serializers.HyperlinkedIdentityField(view_name='groupprofile-detail')
+    master_user = MasterUserField()
+    permissions = PermissionField(many=True)
+
+    class Meta:
+        model = GroupProfile
+        fields = ['url', 'id', 'master_user', 'name', 'permissions']
 
     def create(self, validated_data):
-        return super(UserSerializer, self).create(validated_data)
-
-# class MasterUserSerializer(serializers.ModelSerializer):
-#     first_name = serializers.CharField(max_length=30, allow_null=False, allow_blank=True)
-#     last_name = serializers.CharField(max_length=30, allow_null=False, allow_blank=True)
-#
-#     class Meta:
-#         model = MasterUser
-#         fields = ['first_name', 'last_name', 'currency', 'language', 'timezone']
-#
-#     def update(self, instance, validated_data):
-#         if 'first_name' in validated_data or 'last_name' in validated_data:
-#             first_name = validated_data.pop('first_name', None)
-#             last_name = validated_data.pop('last_name', None)
-#         else:
-#             first_name = None
-#             last_name = None
-#         instance = super(MasterUserSerializer, self).update(instance, validated_data)
-#         if first_name is not None or last_name is not None:
-#             if first_name:
-#                 instance.user.first_name = first_name
-#             if last_name:
-#                 instance.user.last_name = last_name
-#             instance.user.save(update_fields=['first_name', 'last_name'])
-#         return instance
-
-#
-# class EmployeeSerializer(serializers.ModelSerializer):
-#     first_name = serializers.CharField(max_length=30, allow_null=False, allow_blank=True)
-#     last_name = serializers.CharField(max_length=30, allow_null=False, allow_blank=True)
-#
-#     class Meta:
-#         model = Employee
-#         fields = ['first_name', 'last_name', 'language', 'timezone']
-#
-#     def create(self, validated_data):
-#         return super(EmployeeSerializer, self).create(validated_data)
-#
-#
-# class PrivateGroupSerializer(serializers.ModelSerializer):
-#     class Meta:
-#         model = PrivateGroup
-#         fields = ['name']
-#
-#     def create(self, validated_data):
-#         return super(PrivateGroupSerializer, self).create(validated_data)
+        master_user = validated_data['master_user']
+        name = validated_data['name']
+        validated_data['group'] = Group.objects.create(name=GroupProfile.make_group_name(master_user.id, name))
+        return super(GroupSerializer, self).create(validated_data)

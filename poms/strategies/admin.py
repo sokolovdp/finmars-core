@@ -7,7 +7,7 @@ from poms.strategies.models import Strategy
 
 class StrategyAdmin(admin.ModelAdmin):
     model = Strategy
-    list_display = ['name', 'master_user']
+    list_display = ['name', 'parent', 'master_user']
 
 
 admin.site.register(Strategy, StrategyAdmin)

@@ -1,15 +1,15 @@
-from __future__ import unicode_literals
+from __future__ import unicode_literals, print_function
 
 import django_filters
 from rest_framework.filters import DjangoFilterBackend, OrderingFilter, SearchFilter, FilterSet
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.viewsets import ModelViewSet
 
-from poms.api.filters import IsOwnerByMasterUserOrSystemFilter
 from poms.api.mixins import DbTransactionMixin
 from poms.api.permissions import IsOwnerOrReadonly
 from poms.currencies.models import Currency, CurrencyHistory
 from poms.currencies.serializers import CurrencySerializer, CurrencyHistorySerializer
+from poms.users.permissions import PomsObjectPermissionMixin, PomsObjectPermissionsFilter, PomsObjectPermission
 
 
 class CurrencyFilter(FilterSet):
@@ -27,11 +27,11 @@ class CurrencyFilter(FilterSet):
         return qs
 
 
-class CurrencyViewSet(DbTransactionMixin, ModelViewSet):
+class CurrencyViewSet(DbTransactionMixin, PomsObjectPermissionMixin, ModelViewSet):
     queryset = Currency.objects.all()
     serializer_class = CurrencySerializer
-    permission_classes = [IsAuthenticated, IsOwnerOrReadonly]
-    filter_backends = [IsOwnerByMasterUserOrSystemFilter, DjangoFilterBackend, OrderingFilter, SearchFilter, ]
+    permission_classes = [IsAuthenticated, PomsObjectPermission]
+    filter_backends = [PomsObjectPermissionsFilter, DjangoFilterBackend, OrderingFilter, SearchFilter, ]
     filter_class = CurrencyFilter
     ordering_fields = ['user_code', 'name', 'short_name']
     search_fields = ['user_code', 'name', 'short_name']
@@ -51,6 +51,6 @@ class CurrencyHistoryViewSet(DbTransactionMixin, ModelViewSet):
     queryset = CurrencyHistory.objects.all()
     serializer_class = CurrencyHistorySerializer
     permission_classes = [IsAuthenticated, IsOwnerOrReadonly]
-    filter_backends = [IsOwnerByMasterUserOrSystemFilter, DjangoFilterBackend, OrderingFilter, ]
+    filter_backends = [DjangoFilterBackend, OrderingFilter, ]
     filter_class = CurrencyHistoryFilter
     ordering_fields = ['-date']

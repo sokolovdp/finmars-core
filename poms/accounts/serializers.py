@@ -2,24 +2,14 @@ from __future__ import unicode_literals
 
 from rest_framework import serializers
 
+from poms.accounts.fields import AccountClassifierField
 from poms.accounts.models import Account, AccountType, AccountClassifier
-from poms.api.fields import CurrentMasterUserDefault, FilteredPrimaryKeyRelatedField
-from poms.api.filters import IsOwnerByMasterUserFilter
-
-
-class AccountClassifierField(FilteredPrimaryKeyRelatedField):
-    queryset = AccountClassifier.objects
-    filter_backends = [IsOwnerByMasterUserFilter]
-
-
-class AccountField(FilteredPrimaryKeyRelatedField):
-    queryset = Account.objects
-    filter_backends = [IsOwnerByMasterUserFilter]
+from poms.users.fields import MasterUserField
 
 
 class AccountTypeSerializer(serializers.ModelSerializer):
     url = serializers.HyperlinkedIdentityField(view_name='accounttype-detail')
-    master_user = serializers.HiddenField(default=CurrentMasterUserDefault())
+    master_user = MasterUserField()
 
     class Meta:
         model = AccountType
@@ -29,7 +19,7 @@ class AccountTypeSerializer(serializers.ModelSerializer):
 
 class AccountClassifierSerializer(serializers.ModelSerializer):
     url = serializers.HyperlinkedIdentityField(view_name='accountclassifier-detail')
-    master_user = serializers.HiddenField(default=CurrentMasterUserDefault())
+    master_user = MasterUserField()
     parent = AccountClassifierField(required=False, allow_null=True)
     children = AccountClassifierField(many=True, required=False, read_only=False)
 
@@ -41,7 +31,7 @@ class AccountClassifierSerializer(serializers.ModelSerializer):
 
 class AccountSerializer(serializers.ModelSerializer):
     url = serializers.HyperlinkedIdentityField(view_name='account-detail')
-    master_user = serializers.HiddenField(default=CurrentMasterUserDefault())
+    master_user = MasterUserField()
     classifiers = AccountClassifierField(many=True, read_only=False)
 
     class Meta:

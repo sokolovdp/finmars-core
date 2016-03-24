@@ -305,8 +305,3 @@ else:
     ADMINS = []
     MANAGERS = []
     EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
-
-
-# POSTMAN_AUTO_MODERATE_AS = True
-NOTIFY_USE_JSONFIELD = True
-NOTIFICATIONS_SOFT_DELETE = True

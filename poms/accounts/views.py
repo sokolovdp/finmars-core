@@ -6,8 +6,8 @@ from rest_framework.viewsets import ModelViewSet, ReadOnlyModelViewSet
 
 from poms.accounts.models import Account, AccountType, AccountClassifier
 from poms.accounts.serializers import AccountSerializer, AccountTypeSerializer, AccountClassifierSerializer
-from poms.api.filters import IsOwnerByMasterUserFilter
 from poms.api.mixins import DbTransactionMixin
+from poms.users.filters import OwnerByMasterUserFilter
 
 
 class AccountTypeViewSet(DbTransactionMixin, ReadOnlyModelViewSet):
@@ -23,7 +23,7 @@ class AccountClassifierViewSet(DbTransactionMixin, ModelViewSet):
     queryset = AccountClassifier.objects.all()
     serializer_class = AccountClassifierSerializer
     permission_classes = [IsAuthenticated, ]
-    filter_backends = [IsOwnerByMasterUserFilter, DjangoFilterBackend, OrderingFilter, SearchFilter, ]
+    filter_backends = [OwnerByMasterUserFilter, DjangoFilterBackend, OrderingFilter, SearchFilter, ]
     ordering_fields = ['user_code', 'name', 'short_name']
     search_fields = ['user_code', 'name', 'short_name']
 
@@ -38,7 +38,7 @@ class AccountViewSet(DbTransactionMixin, ModelViewSet):
     queryset = Account.objects.all()
     serializer_class = AccountSerializer
     permission_classes = [IsAuthenticated, ]
-    filter_backends = [IsOwnerByMasterUserFilter, DjangoFilterBackend, OrderingFilter, SearchFilter, ]
+    filter_backends = [OwnerByMasterUserFilter, DjangoFilterBackend, OrderingFilter, SearchFilter, ]
     filter_class = AccountFilter
     ordering_fields = ['user_code', 'name', 'short_name']
     search_fields = ['user_code', 'name', 'short_name']

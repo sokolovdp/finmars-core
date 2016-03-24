@@ -2,25 +2,15 @@ from __future__ import unicode_literals
 
 from rest_framework import serializers
 
-from poms.api.fields import CurrentMasterUserDefault, FilteredPrimaryKeyRelatedField
-from poms.api.filters import IsOwnerByMasterUserFilter
 from poms.currencies.serializers import CurrencyField
+from poms.instruments.fields import InstrumentClassifierField, InstrumentField
 from poms.instruments.models import InstrumentClassifier, Instrument, PriceHistory
-
-
-class InstrumentClassifierField(FilteredPrimaryKeyRelatedField):
-    queryset = InstrumentClassifier.objects
-    filter_backends = [IsOwnerByMasterUserFilter]
-
-
-class InstrumentField(FilteredPrimaryKeyRelatedField):
-    queryset = Instrument.objects
-    filter_backends = [IsOwnerByMasterUserFilter]
+from poms.users.fields import CurrentMasterUserDefault, MasterUserField
 
 
 class InstrumentClassifierSerializer(serializers.ModelSerializer):
     url = serializers.HyperlinkedIdentityField(view_name='instrumentclassifier-detail')
-    master_user = serializers.HiddenField(default=CurrentMasterUserDefault())
+    master_user = MasterUserField()
     parent = InstrumentClassifierField(required=False, allow_null=True)
     children = InstrumentClassifierField(many=True, required=False, read_only=False)
 
@@ -32,7 +22,7 @@ class InstrumentClassifierSerializer(serializers.ModelSerializer):
 
 class InstrumentSerializer(serializers.ModelSerializer):
     url = serializers.HyperlinkedIdentityField(view_name='instrument-detail')
-    master_user = serializers.HiddenField(default=CurrentMasterUserDefault())
+    master_user = MasterUserField()
     pricing_currency = CurrencyField(read_only=False)
     accrued_currency = CurrencyField(read_only=False)
     classifiers = InstrumentClassifierField(many=True, read_only=False)
