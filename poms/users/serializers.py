@@ -192,33 +192,44 @@ class GroupProfileSerializer(serializers.ModelSerializer):
         validators = []  # TODO: nested serializer on update raise unique exception...
 
 
+class GroupNameField(serializers.CharField):
+    def get_attribute(self, instance):
+        profile = getattr(instance, 'profile', None)
+        return getattr(profile, 'name', None)
+
+
 class GroupSerializer(serializers.ModelSerializer):
     url = serializers.HyperlinkedIdentityField(view_name='group-detail')
+    master_user = MasterUserField()
+    group_name = GroupNameField()
     permissions = PermissionField(many=True)
-    profile = GroupProfileSerializer(read_only=False)
+    # profile = GroupProfileSerializer(read_only=False)
 
     class Meta:
         model = Group
-        fields = ['url', 'id', 'profile', 'permissions']
+        fields = ['url', 'id', 'master_user', 'group_name', 'permissions']
 
     def create(self, validated_data):
-        profile_data = validated_data.pop('profile')
-        validated_data['name'] = GroupProfile.make_group_name(profile_data['master_user'].id, profile_data['name'])
+        master_user = validated_data.pop('master_user')
+        group_name = validated_data.pop('group_name')
+
+        validated_data['name'] = GroupProfile.make_group_name(master_user.id, group_name)
         permissions = validated_data.pop('permissions')
         group = Group.objects.create(**validated_data)
         group.permissions = permissions
-        GroupProfile.objects.create(group=group, **profile_data)
+        GroupProfile.objects.create(group=group, master_user=master_user, name=group_name)
         return group
 
     def update(self, instance, validated_data):
-        profile_data = validated_data.pop('profile')
-        profile = instance.profile
+        master_user = validated_data['master_user']
 
-        instance.name = GroupProfile.make_group_name(profile_data['master_user'].id, profile_data['name'])
+        profile = instance.profile
+        profile.name = validated_data.get('group_name', profile.name)
+
+        instance.name = GroupProfile.make_group_name(master_user.id, profile.name)
         instance.permissions = validated_data.get('permissions', instance.permissions)
         instance.save()
 
-        profile.name = profile_data.get('name', profile.name)
         profile.save()
 
         return instance
