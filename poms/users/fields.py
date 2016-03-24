@@ -1,6 +1,7 @@
 from django.conf import settings
-from django.core.exceptions import ObjectDoesNotExist, PermissionDenied
+from django.core.exceptions import ObjectDoesNotExist
 from rest_framework import serializers
+from rest_framework.exceptions import NotFound
 
 from poms.users.models import Member
 
@@ -18,13 +19,13 @@ def get_master_user(request, master_user_id=None):
             if settings.DEV:
                 master_user = user.member_of.first()
             else:
-                raise PermissionDenied()
+                raise NotFound()
         else:
             master_user = user.member_of.get(pk=master_user_id)
         user._cached_master_user = master_user
         return master_user
     except ObjectDoesNotExist:
-        raise PermissionDenied()
+        raise NotFound()
 
 
 def set_master_user(request, master_user_id):
@@ -47,7 +48,7 @@ def get_member(request, master_user_id=None):
         user._cached_member = member
         return member
     except ObjectDoesNotExist:
-        raise PermissionDenied()
+        raise NotFound()
 
 
 class CurrentMasterUserDefault(object):
