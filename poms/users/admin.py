@@ -16,6 +16,7 @@ class MemberInline(admin.TabularInline):
 class MasterUserAdmin(admin.ModelAdmin):
     model = MasterUser
     inlines = [MemberInline]
+    list_display = ['id', '__str__']
 
 
 admin.site.register(MasterUser, MasterUserAdmin)

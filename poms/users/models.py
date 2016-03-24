@@ -23,9 +23,8 @@ class MasterUser(models.Model):
         verbose_name_plural = _('master users')
 
     def __str__(self):
-        # return '%s' % (self.user.username,)
         if self.name:
-            return '%s' % (self.name,)
+            return self.name
         else:
             try:
                 return self._cached_str
