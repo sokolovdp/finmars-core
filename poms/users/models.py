@@ -7,6 +7,7 @@ from django.utils.encoding import python_2_unicode_compatible
 from django.utils.translation import ugettext_lazy as _
 
 from poms.fields import TimezoneField, LanguageField
+from reversion import revisions as reversion
 
 AVAILABLE_APPS = ['accounts', 'counterparties', 'currencies', 'instruments', 'portfolios', 'strategies', 'transactions',
                   'reports', 'users']
@@ -99,4 +100,12 @@ class GroupProfile(models.Model):
         self.group.permissions = value
 
     permissions = property(get_permissions, set_permissions)
+
+
+reversion.register(MasterUser)
+reversion.register(Member)
+reversion.register(User, follow=['profile'], exclude=['password'])
+reversion.register(UserProfile)
+reversion.register(Group, follow=['profile'])
+reversion.register(GroupProfile, follow=['group'])
 
