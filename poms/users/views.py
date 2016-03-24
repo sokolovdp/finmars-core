@@ -12,6 +12,7 @@ from rest_framework.response import Response
 from rest_framework.viewsets import ViewSet, ModelViewSet
 
 from poms.api.mixins import DbTransactionMixin
+from poms.users.fields import get_master_user
 from poms.users.filters import OwnerByMasterUserFilter
 from poms.users.models import MasterUser, Member, GroupProfile
 from poms.users.serializers import GroupSerializer, UserSerializer, MasterUserSerializer, MemberSerializer
@@ -78,12 +79,12 @@ class UserPermission(BasePermission):
 
 class UserFilter(BaseFilterBackend):
     def filter_queryset(self, request, queryset, view):
-        user = request.user
-        return queryset.filter(Q(id=user.id) | Q(member_of__in=user.member_of.all()))
+        master_user = get_master_user(request)
+        return queryset.filter(member_of=master_user)
 
 
 class UserViewSet(DbTransactionMixin, ModelViewSet):
-    queryset = User.objects.filter(id__gt=0)
+    queryset = User.objects
     serializer_class = UserSerializer
     permission_classes = [IsAuthenticated, UserPermission]
     filter_backends = [UserFilter]
