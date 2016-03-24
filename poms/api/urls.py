@@ -23,10 +23,10 @@ router.register(r'users/logout', users.LogoutViewSet, 'LogoutViewSet')
 router.register(r'users/ping', views.PingViewSet, "ping")
 router.register(r'users/protected-ping', views.ProtectedPingViewSet, "protectedping")
 
-router.register(r'users/group', users.GroupViewSet)
 router.register(r'users/user', users.UserViewSet)
 router.register(r'users/master-user', users.MasterUserViewSet)
 router.register(r'users/member', users.MemberViewSet)
+router.register(r'users/group', users.GroupViewSet)
 
 router.register(r'security/http-session', sessions.SessionViewSet)
 

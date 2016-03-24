@@ -2,12 +2,13 @@ from __future__ import unicode_literals
 
 from rest_framework import serializers
 
-from poms.accounts.serializers import AccountField
-from poms.counterparties.serializers import CounterpartyField, ResponsibleField
-from poms.currencies.serializers import CurrencyField
-from poms.instruments.serializers import InstrumentField
-from poms.portfolios.serializers import PortfolioField
+from poms.accounts.fields import AccountField
+from poms.counterparties.fields import ResponsibleField, CounterpartyField
+from poms.currencies.fields import CurrencyField
+from poms.instruments.fields import InstrumentField
+from poms.portfolios.fields import PortfolioField
 from poms.transactions.models import TransactionClass, Transaction
+from poms.users.fields import MasterUserField
 
 
 class TransactionClassSerializer(serializers.ModelSerializer):
@@ -20,6 +21,7 @@ class TransactionClassSerializer(serializers.ModelSerializer):
 
 class TransactionSerializer(serializers.ModelSerializer):
     url = serializers.HyperlinkedIdentityField(view_name='transaction-detail')
+    master_user = MasterUserField()
     portfolio = PortfolioField(required=False, allow_null=True)
     transaction_currency = CurrencyField(required=False, allow_null=True)
     instrument = InstrumentField(required=False, allow_null=True)
@@ -32,7 +34,8 @@ class TransactionSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Transaction
-        fields = ['url', 'id', 'portfolio', 'transaction_class',
+        fields = ['url', 'id', 'master_user',
+                  'portfolio', 'transaction_class',
                   'transaction_currency', 'instrument',
                   'position_size_with_sign',
                   'settlement_currency', 'cash_consideration',

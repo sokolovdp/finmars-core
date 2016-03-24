@@ -4,12 +4,12 @@ from django.conf import settings
 from django.utils.translation import ugettext_lazy as _
 from rest_framework import serializers
 
-from poms.api.fields import CurrentMasterUserDefault
 from poms.currencies.serializers import CurrencyField
 from poms.instruments.serializers import InstrumentField
 from poms.reports.models import BalanceReport, BalanceReportItem, BalanceReportSummary, PLReportItem, PLReport, \
     PLReportSummary, CostReport, BaseReport
 from poms.transactions.models import Transaction
+from poms.users.fields import CurrentMasterUserDefault
 
 
 class BaseTransactionSerializer(serializers.ModelSerializer):

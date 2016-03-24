@@ -5,11 +5,11 @@ from rest_framework.filters import DjangoFilterBackend, OrderingFilter, SearchFi
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.viewsets import ModelViewSet
 
-from poms.api.filters import IsOwnerByMasterUserFilter
 from poms.api.mixins import DbTransactionMixin
-from poms.instruments.filters import IsOwnerViaInstrumentFilter
+from poms.instruments.filters import OwnerByInstrumentFilter
 from poms.instruments.models import InstrumentClassifier, Instrument, PriceHistory
 from poms.instruments.serializers import InstrumentClassifierSerializer, InstrumentSerializer, PriceHistorySerializer
+from poms.users.filters import OwnerByMasterUserFilter
 
 
 class InstrumentClassifierFilter(FilterSet):
@@ -32,7 +32,7 @@ class InstrumentClassifierViewSet(DbTransactionMixin, ModelViewSet):
     queryset = InstrumentClassifier.objects.all()
     serializer_class = InstrumentClassifierSerializer
     permission_classes = [IsAuthenticated, ]
-    filter_backends = [IsOwnerByMasterUserFilter, DjangoFilterBackend, OrderingFilter, SearchFilter, ]
+    filter_backends = [OwnerByMasterUserFilter, DjangoFilterBackend, OrderingFilter, SearchFilter, ]
     filter_class = InstrumentClassifierFilter
     ordering_fields = ['user_code', 'name', 'short_name']
     search_fields = ['user_code', 'name', 'short_name']
@@ -42,7 +42,7 @@ class InstrumentViewSet(DbTransactionMixin, ModelViewSet):
     queryset = Instrument.objects.all()
     serializer_class = InstrumentSerializer
     permission_classes = [IsAuthenticated, ]
-    filter_backends = [IsOwnerByMasterUserFilter, DjangoFilterBackend, OrderingFilter, SearchFilter, ]
+    filter_backends = [OwnerByMasterUserFilter, DjangoFilterBackend, OrderingFilter, SearchFilter, ]
     ordering_fields = ['user_code', 'name', 'short_name']
     search_fields = ['user_code', 'name', 'short_name']
 
@@ -61,6 +61,6 @@ class PriceHistoryViewSet(DbTransactionMixin, ModelViewSet):
     queryset = PriceHistory.objects.all()
     serializer_class = PriceHistorySerializer
     permission_classes = [IsAuthenticated, ]
-    filter_backends = [IsOwnerViaInstrumentFilter, DjangoFilterBackend, OrderingFilter, ]
+    filter_backends = [OwnerByInstrumentFilter, DjangoFilterBackend, OrderingFilter, ]
     filter_class = PriceHistoryFilter
     ordering_fields = ['-date']

@@ -4,21 +4,16 @@ from django.utils.encoding import force_text
 from django.utils.translation import ugettext_lazy as _
 from rest_framework import serializers
 
-from poms.api.fields import CurrentMasterUserDefault, FilteredPrimaryKeyRelatedField
-from poms.api.filters import IsOwnerByMasterUserOrSystemFilter
+from poms.currencies.fields import CurrencyField
 from poms.currencies.models import Currency, CurrencyHistory
-from poms.users.serializers import ObjectPermissionField
-
-
-class CurrencyField(FilteredPrimaryKeyRelatedField):
-    queryset = Currency.objects
-    filter_backends = [IsOwnerByMasterUserOrSystemFilter]
+from poms.users.fields import MasterUserField
+from poms.users.serializers import GrantedPermissionField
 
 
 class CurrencySerializer(serializers.ModelSerializer):
     url = serializers.HyperlinkedIdentityField(view_name='currency-detail')
-    master_user = serializers.HiddenField(default=CurrentMasterUserDefault())
-    granted_permission = ObjectPermissionField()
+    master_user = MasterUserField()
+    granted_permission = GrantedPermissionField()
 
     class Meta:
         model = Currency
@@ -26,21 +21,19 @@ class CurrencySerializer(serializers.ModelSerializer):
                   'granted_permission']
         readonly_fields = ['is_system', 'is_global']
 
-        # def get_granted_permission(self, instance):
-        #     request = self.context['request']
-        #     return get_perms(request.user, instance)
-
 
 class CurrencyHistorySerializer(serializers.ModelSerializer):
     url = serializers.HyperlinkedIdentityField(view_name='currencyhistory-detail')
-    master_user = serializers.HiddenField(default=CurrentMasterUserDefault())
+    master_user = MasterUserField()
     currency = CurrencyField()
     fx_rate_expr = serializers.CharField(max_length=50, write_only=True, required=False, allow_null=True,
                                          help_text=_('Expression to calculate fx rate (for example 1/75)'))
+    granted_permission = GrantedPermissionField()
 
     class Meta:
         model = CurrencyHistory
-        fields = ['url', 'id', 'master_user', 'currency', 'date', 'fx_rate', 'fx_rate_expr', 'is_global', 'permissions']
+        fields = ['url', 'id', 'master_user', 'currency', 'date', 'fx_rate', 'fx_rate_expr', 'is_global',
+                  'granted_permission']
         readonly_fields = ['is_global']
 
     def validate(self, data):

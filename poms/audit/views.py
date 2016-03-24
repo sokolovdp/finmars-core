@@ -5,10 +5,10 @@ from rest_framework.filters import DjangoFilterBackend, OrderingFilter, SearchFi
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.viewsets import ReadOnlyModelViewSet
 
-from poms.api.filters import IsOwnerFilter
 from poms.api.mixins import DbTransactionMixin
 from poms.audit.models import AuthLog
 from poms.audit.serializers import AuthLogSerializer
+from poms.users.filters import OwnerByUserFilter
 
 
 class AuthLogFilter(FilterSet):
@@ -21,7 +21,7 @@ class AuthLogViewSet(DbTransactionMixin, ReadOnlyModelViewSet):
     queryset = AuthLog.objects.all()
     serializer_class = AuthLogSerializer
     permission_classes = (IsAuthenticated,)
-    filter_backends = (IsOwnerFilter, DjangoFilterBackend, OrderingFilter, SearchFilter,)
+    filter_backends = (OwnerByUserFilter, DjangoFilterBackend, OrderingFilter, SearchFilter,)
     filter_class = AuthLogFilter
     ordering_fields = ['user_ip']
     search_fields = ['user_ip', 'user_agent']

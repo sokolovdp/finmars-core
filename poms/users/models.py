@@ -80,9 +80,13 @@ class GroupProfile(models.Model):
     def __str__(self):
         return self.name
 
+    @staticmethod
+    def make_group_name(master_user_id, name):
+        return '!:%s:%s' % (master_user_id, name)
+
     @property
     def group_name(self):
-        return '!:%s:%s' % (self.master_user_id, self.name)
+        return self.make_group_name(self.master_user_id, self.name)
 
     def save(self, force_insert=False, force_update=False, using=None, update_fields=None):
         super(GroupProfile, self).save(force_insert=force_insert, force_update=force_update, using=using,

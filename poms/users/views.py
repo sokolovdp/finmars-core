@@ -12,6 +12,7 @@ from rest_framework.response import Response
 from rest_framework.viewsets import ViewSet, ModelViewSet
 
 from poms.api.mixins import DbTransactionMixin
+from poms.users.filters import OwnerByMasterUserFilter
 from poms.users.models import MasterUser, Member, GroupProfile
 from poms.users.serializers import GroupSerializer, UserSerializer, MasterUserSerializer, MemberSerializer
 
@@ -53,22 +54,18 @@ class LogoutViewSet(DbTransactionMixin, ViewSet):
 #         return request.user and hasattr(request.user, 'profile') and request.user.profile.is_admin
 
 
-class GuardByUserFilter(BaseFilterBackend):
-    def filter_queryset(self, request, queryset, view):
-        user = request.user
-        return queryset.filter(user)
-
-
-class GuardByMasterUserFilter(BaseFilterBackend):
-    def filter_queryset(self, request, queryset, view):
-        user = request.user
-        return queryset.filter(master_user__in=user.member_of.all())
-
-
-class UserFilter(BaseFilterBackend):
-    def filter_queryset(self, request, queryset, view):
-        user = request.user
-        return queryset.filter(Q(id=user.id) | Q(member_of__in=user.member_of.all()))
+# class GuardByUserFilter(BaseFilterBackend):
+#     def filter_queryset(self, request, queryset, view):
+#         user = request.user
+#         return queryset.filter(user)
+#
+#
+# class GuardByMasterUserFilter(BaseFilterBackend):
+#     def filter_queryset(self, request, queryset, view):
+#         user = request.user
+#         return queryset.filter(master_user__in=user.member_of.all())
+#
+#
 
 
 class UserPermission(BasePermission):
@@ -77,6 +74,12 @@ class UserPermission(BasePermission):
             return True
         user = request.user
         return user.id == obj.id
+
+
+class UserFilter(BaseFilterBackend):
+    def filter_queryset(self, request, queryset, view):
+        user = request.user
+        return queryset.filter(Q(id=user.id) | Q(member_of__in=user.member_of.all()))
 
 
 class UserViewSet(DbTransactionMixin, ModelViewSet):
@@ -113,12 +116,12 @@ class MemberViewSet(DbTransactionMixin, ModelViewSet):
     queryset = Member.objects.filter()
     serializer_class = MemberSerializer
     permission_classes = [IsAuthenticated]
-    filter_backends = [GuardByMasterUserFilter]
+    filter_backends = [OwnerByMasterUserFilter]
 
 
 class GroupViewSet(DbTransactionMixin, ModelViewSet):
-    queryset = GroupProfile.objects. \
-        prefetch_related('group__permissions', 'group__permissions__content_type').select_related('group')
+    queryset = GroupProfile.objects.prefetch_related('group__permissions', 'group__permissions__content_type'). \
+        select_related('group')
     serializer_class = GroupSerializer
     permission_classes = [IsAuthenticated]
-    filter_backends = [GuardByMasterUserFilter]
+    filter_backends = [OwnerByMasterUserFilter]

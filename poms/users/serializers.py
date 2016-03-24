@@ -11,14 +11,8 @@ from guardian.shortcuts import get_perms
 from rest_framework import serializers
 from rest_framework.authtoken.serializers import AuthTokenSerializer
 
-from poms.api.fields import CurrentMasterUserDefault, FilteredPrimaryKeyRelatedField
+from poms.users.fields import MasterUserField
 from poms.users.models import MasterUser, UserProfile, GroupProfile, Member, AVAILABLE_APPS
-
-
-class MasterUserField(serializers.HiddenField):
-    def __init__(self, **kwargs):
-        kwargs['default'] = CurrentMasterUserDefault()
-        super(MasterUserField, self).__init__(**kwargs)
 
 
 class LoginSerializer(AuthTokenSerializer):
@@ -88,29 +82,20 @@ class PermissionField(serializers.SlugRelatedField):
         return '%s.%s' % (obj.content_type.app_label, obj.codename)
 
 
-class ObjectPermissionField(serializers.Field):
+class GrantedPermissionField(serializers.Field):
     def __init__(self, **kwargs):
         kwargs['source'] = '*'
         kwargs['read_only'] = True
-        super(ObjectPermissionField, self).__init__(**kwargs)
+        super(GrantedPermissionField, self).__init__(**kwargs)
 
     def bind(self, field_name, parent):
-        super(ObjectPermissionField, self).bind(field_name, parent)
+        super(GrantedPermissionField, self).bind(field_name, parent)
 
     def to_representation(self, value):
         request = self.context['request']
         ctype = ContentType.objects.get_for_model(value)
         return {'%s.%s' % (ctype.app_label, p) for p in get_perms(request.user, value)}
         # return get_perms(request.user, value)
-
-
-class GroupSerializer(serializers.ModelSerializer):
-    url = serializers.HyperlinkedIdentityField(view_name='groupprofile-detail')
-    permissions = PermissionField(many=True)
-
-    class Meta:
-        model = GroupProfile
-        fields = ['url', 'id', 'master_user', 'name', 'permissions']
 
 
 class UserProfileSerializer(serializers.ModelSerializer):
@@ -130,25 +115,36 @@ class UserSerializer(serializers.ModelSerializer):
         read_only_fields = ['username', ]
 
 
-class MasterUserField(FilteredPrimaryKeyRelatedField):
-    filter_backends = []
-
 class MasterUserSerializer(serializers.ModelSerializer):
     url = serializers.HyperlinkedIdentityField(view_name='masteruser-detail')
 
-    # members = serializers.PrimaryKeyRelatedField(queryset=User.objects.all())
-
     class Meta:
         model = MasterUser
-        fields = ['url', 'id', 'currency', 'members']
+        fields = ['url', 'id', 'name', 'currency', 'members']
 
 
 class MemberSerializer(serializers.ModelSerializer):
     url = serializers.HyperlinkedIdentityField(view_name='member-detail')
-    # members = serializers.PrimaryKeyRelatedField(queryset=User.objects.all())
+    master_user = MasterUserField()
     user = serializers.PrimaryKeyRelatedField(queryset=User.objects.filter(pk__gt=0))
 
     class Meta:
         model = Member
         fields = ['url', 'id', 'master_user', 'user', 'is_owner', 'is_admin', 'join_date']
-        read_only_fields = ['is_owner']
+        read_only_fields = ['user', 'is_owner']
+
+
+class GroupSerializer(serializers.ModelSerializer):
+    url = serializers.HyperlinkedIdentityField(view_name='groupprofile-detail')
+    master_user = MasterUserField()
+    permissions = PermissionField(many=True)
+
+    class Meta:
+        model = GroupProfile
+        fields = ['url', 'id', 'master_user', 'name', 'permissions']
+
+    def create(self, validated_data):
+        master_user = validated_data['master_user']
+        name = validated_data['name']
+        validated_data['group'] = Group.objects.create(name=GroupProfile.make_group_name(master_user.id, name))
+        return super(GroupSerializer, self).create(validated_data)
