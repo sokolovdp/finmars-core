@@ -2,29 +2,14 @@ from __future__ import unicode_literals
 
 from rest_framework import serializers
 
-from poms.api.fields import CurrentMasterUserDefault, FilteredPrimaryKeyRelatedField
-from poms.api.filters import IsOwnerByMasterUserFilter
+from poms.counterparties.fields import CounterpartyClassifierField
 from poms.counterparties.models import CounterpartyClassifier, Counterparty, Responsible
-
-
-class CounterpartyClassifierField(FilteredPrimaryKeyRelatedField):
-    queryset = CounterpartyClassifier.objects
-    filter_backends = [IsOwnerByMasterUserFilter]
-
-
-class CounterpartyField(FilteredPrimaryKeyRelatedField):
-    queryset = Counterparty.objects
-    filter_backends = [IsOwnerByMasterUserFilter]
-
-
-class ResponsibleField(FilteredPrimaryKeyRelatedField):
-    queryset = Responsible.objects
-    filter_backends = [IsOwnerByMasterUserFilter]
+from poms.users.fields import MasterUserField
 
 
 class CounterpartyClassifierSerializer(serializers.ModelSerializer):
     url = serializers.HyperlinkedIdentityField(view_name='counterpartyclassifier-detail')
-    master_user = serializers.HiddenField(default=CurrentMasterUserDefault())
+    master_user = MasterUserField()
     parent = CounterpartyClassifierField(required=False, allow_null=True)
     children = CounterpartyClassifierField(many=True, required=False, read_only=False)
 
@@ -36,7 +21,7 @@ class CounterpartyClassifierSerializer(serializers.ModelSerializer):
 
 class CounterpartySerializer(serializers.ModelSerializer):
     url = serializers.HyperlinkedIdentityField(view_name='counterparty-detail')
-    master_user = serializers.HiddenField(default=CurrentMasterUserDefault())
+    master_user = MasterUserField()
     classifiers = CounterpartyClassifierField(many=True, read_only=False)
 
     class Meta:
@@ -46,7 +31,7 @@ class CounterpartySerializer(serializers.ModelSerializer):
 
 class ResponsibleSerializer(serializers.ModelSerializer):
     url = serializers.HyperlinkedIdentityField(view_name='responsible-detail')
-    master_user = serializers.HiddenField(default=CurrentMasterUserDefault())
+    master_user = MasterUserField()
 
     class Meta:
         model = Responsible

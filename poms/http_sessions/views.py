@@ -5,10 +5,10 @@ from rest_framework.mixins import DestroyModelMixin
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.viewsets import ReadOnlyModelViewSet
 
-from poms.api.filters import IsOwnerFilter
 from poms.api.mixins import DbTransactionMixin
 from poms.http_sessions.models import Session
 from poms.http_sessions.serializers import SessionSerializer
+from poms.users.filters import OwnerByUserFilter
 
 
 class SessionFilter(FilterSet):
@@ -22,7 +22,7 @@ class SessionViewSet(DbTransactionMixin, DestroyModelMixin, ReadOnlyModelViewSet
     lookup_field = 'id'
     serializer_class = SessionSerializer
     permission_classes = (IsAuthenticated,)
-    filter_backends = (IsOwnerFilter, DjangoFilterBackend, OrderingFilter, SearchFilter,)
+    filter_backends = (OwnerByUserFilter, DjangoFilterBackend, OrderingFilter, SearchFilter,)
     filter_class = SessionFilter
     ordering_fields = ['user_ip']
     search_fields = ['user_ip', 'user_agent']

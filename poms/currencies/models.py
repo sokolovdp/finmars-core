@@ -38,6 +38,9 @@ class Currency(models.Model):
         unique_together = [
             ['master_user', 'user_code']
         ]
+        permissions = [
+            ('view_currency', 'Can view currency')
+        ]
 
     def __str__(self):
         return self.name

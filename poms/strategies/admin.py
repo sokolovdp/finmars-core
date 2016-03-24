@@ -9,8 +9,10 @@ from poms.strategies.models import Strategy
 
 class StrategyAdmin(VersionAdmin, MPTTModelAdmin):
     model = Strategy
-    list_display = ['name', 'parent', 'master_user']
+    list_display = ['id', 'name', 'parent', 'master_user']
+    list_select_related = ['master_user']
     mptt_level_indent = 20
+    mptt_indent_field = "name"
 
 
 admin.site.register(Strategy, StrategyAdmin)

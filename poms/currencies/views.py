@@ -5,12 +5,12 @@ from rest_framework.filters import DjangoFilterBackend, OrderingFilter, SearchFi
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.viewsets import ModelViewSet
 
-from poms.api.filters import IsOwnerByMasterUserOrSystemFilter
 from poms.api.mixins import DbTransactionMixin
 from poms.api.permissions import IsOwnerOrReadonly
 from poms.audit.mixins import HistoricalMixin
 from poms.currencies.models import Currency, CurrencyHistory
 from poms.currencies.serializers import CurrencySerializer, CurrencyHistorySerializer
+from poms.users.permissions import PomsObjectPermissionMixin, PomsObjectPermissionsFilter, PomsObjectPermission
 
 
 class CurrencyFilter(FilterSet):
@@ -28,11 +28,11 @@ class CurrencyFilter(FilterSet):
         return qs
 
 
-class CurrencyViewSet(DbTransactionMixin, HistoricalMixin, ModelViewSet):
+class CurrencyViewSet(DbTransactionMixin, HistoricalMixin, PomsObjectPermissionMixin, ModelViewSet):
     queryset = Currency.objects.all()
     serializer_class = CurrencySerializer
-    permission_classes = [IsAuthenticated, IsOwnerOrReadonly]
-    filter_backends = [IsOwnerByMasterUserOrSystemFilter, DjangoFilterBackend, OrderingFilter, SearchFilter, ]
+    permission_classes = [IsAuthenticated, PomsObjectPermission]
+    filter_backends = [PomsObjectPermissionsFilter, DjangoFilterBackend, OrderingFilter, SearchFilter, ]
     filter_class = CurrencyFilter
     ordering_fields = ['user_code', 'name', 'short_name']
     search_fields = ['user_code', 'name', 'short_name']
@@ -52,6 +52,6 @@ class CurrencyHistoryViewSet(DbTransactionMixin, HistoricalMixin, ModelViewSet):
     queryset = CurrencyHistory.objects.all()
     serializer_class = CurrencyHistorySerializer
     permission_classes = [IsAuthenticated, IsOwnerOrReadonly]
-    filter_backends = [IsOwnerByMasterUserOrSystemFilter, DjangoFilterBackend, OrderingFilter, ]
+    filter_backends = [DjangoFilterBackend, OrderingFilter, ]
     filter_class = CurrencyHistoryFilter
     ordering_fields = ['-date']
