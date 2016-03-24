@@ -116,7 +116,9 @@ class UserSerializer(serializers.ModelSerializer):
 
     def create(self, validated_data):
         profile_data = validated_data.pop('profile')
+        groups = validated_data.pop('groups')
         user = User.objects.create(**validated_data)
+        user.groups = groups
         UserProfile.objects.create(user=user, **profile_data)
         return user
 
@@ -127,8 +129,29 @@ class UserSerializer(serializers.ModelSerializer):
         instance.first_name = validated_data.get('first_name', instance.first_name)
         instance.last_name = validated_data.get('last_name', instance.last_name)
         # TODO: filter groups
-        instance.groups = validated_data.get('groups', instance.groups)
         instance.save()
+
+        if 'groups' in validated_data:
+            request = self.context['request']
+            master_user = get_master_user(request)
+            cur_groups = set(instance.groups.filter(profile__master_user=master_user))
+            new_groups = set(validated_data['groups'])
+
+            print('cur_groups', cur_groups)
+            print('new_groups', new_groups)
+
+            add_groups = new_groups - cur_groups
+            del_groups = cur_groups - new_groups
+
+            print('add_groups', add_groups)
+            print('del_groups', del_groups)
+
+            if add_groups:
+                instance.groups.add(*add_groups)
+            if del_groups:
+                instance.groups.remove(*del_groups)
+
+            # instance.groups = validated_data.get('groups', instance.groups)
 
         profile.language = profile_data.get('language', profile.language)
         profile.timezone = profile_data.get('timezone', profile.timezone)
