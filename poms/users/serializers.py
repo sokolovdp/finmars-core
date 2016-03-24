@@ -106,7 +106,7 @@ class UserProfileSerializer(serializers.ModelSerializer):
 
 class UserSerializer(serializers.ModelSerializer):
     url = serializers.HyperlinkedIdentityField(view_name='user-detail')
-    groups = GroupField(many=True)
+    groups = GroupField(many=True)  # TODO: filter groups in response JSON
     profile = UserProfileSerializer()
 
     class Meta:
@@ -128,7 +128,6 @@ class UserSerializer(serializers.ModelSerializer):
 
         instance.first_name = validated_data.get('first_name', instance.first_name)
         instance.last_name = validated_data.get('last_name', instance.last_name)
-        # TODO: filter groups
         instance.save()
 
         if 'groups' in validated_data:
@@ -151,7 +150,7 @@ class UserSerializer(serializers.ModelSerializer):
             if del_groups:
                 instance.groups.remove(*del_groups)
 
-            # instance.groups = validated_data.get('groups', instance.groups)
+                # instance.groups = validated_data.get('groups', instance.groups)
 
         profile.language = profile_data.get('language', profile.language)
         profile.timezone = profile_data.get('timezone', profile.timezone)
@@ -226,6 +225,7 @@ class GroupSerializer(serializers.ModelSerializer):
     master_user = MasterUserField()
     group_name = GroupNameField()
     permissions = PermissionField(many=True)
+
     # profile = GroupProfileSerializer(read_only=False)
 
     class Meta:
