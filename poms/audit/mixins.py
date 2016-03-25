@@ -71,30 +71,30 @@ class HistoricalMixin(object):
 
         return self._make_historical_reponse(version_list)
 
-    def _get_fields(self, model):
-        fields = [field for field in model._meta.fields]
-        concrete_model = model._meta.concrete_model
-        fields += concrete_model._meta.many_to_many
-        return fields
+    # def _get_fields(self, model):
+    #     fields = [field for field in model._meta.fields]
+    #     concrete_model = model._meta.concrete_model
+    #     fields += concrete_model._meta.many_to_many
+    #     return fields
 
-    def _historical_annotate_object(self, version):
+    def _history_load_object(self, version):
         # TODO: load one-to-one from history, currently loaded from db
         # TODO: show many-to-many from history, currently loaded from db
         if version and self._version_id:
             serializer = self.get_serializer(instance=history.ModelProxy(version))
             version.object_json = serializer.data
 
-    def _historical_annotate_objects(self, versions):
+    def _history_load_objects(self, versions):
         if self._version_id:
             for v in versions:
-                self._historical_annotate_object(v)
+                self._history_load_object(v)
 
     def _make_historical_reponse(self, versions):
         queryset = versions.select_related('content_type', 'revision__user').prefetch_related('revision__info')
 
         if self._version_id:
             version = queryset.first()
-            self._historical_annotate_object(version)
+            self._history_load_object(version)
             serializer = VersionSerializer(version)
             return Response(serializer.data)
 
@@ -105,11 +105,11 @@ class HistoricalMixin(object):
 
         page = self.paginate_queryset(queryset)
         if page is not None:
-            self._historical_annotate_objects(page)
+            self._history_load_objects(page)
             serializer = VersionSerializer(page, many=True)
             return self.get_paginated_response(serializer.data)
 
-        self._historical_annotate_objects(queryset)
+        self._history_load_objects(queryset)
         serializer = VersionSerializer(queryset, many=True)
         return Response(serializer.data)
 

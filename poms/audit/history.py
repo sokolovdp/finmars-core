@@ -11,7 +11,6 @@ from django.utils.translation import ugettext as _
 from reversion import revisions as reversion
 from reversion.errors import RevisionManagementError
 
-from poms.audit.models import ModelProxy
 
 _active = local()
 
