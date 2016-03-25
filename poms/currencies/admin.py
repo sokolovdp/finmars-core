@@ -4,7 +4,7 @@ from django.contrib import admin
 from django.utils.translation import ugettext_lazy as _
 from guardian.admin import GuardedModelAdminMixin
 
-from poms.audit.history import HistoricalAdmin
+from poms.audit.mixins import HistoricalAdmin
 from poms.currencies.models import Currency, CurrencyHistory
 
 

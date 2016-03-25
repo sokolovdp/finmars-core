@@ -3,7 +3,7 @@ from __future__ import unicode_literals
 from django.contrib import admin
 from import_export.admin import ImportExportModelAdmin
 
-from poms.audit.history import HistoricalAdmin
+from poms.audit.mixins import HistoricalAdmin
 from poms.transactions.models import TransactionClass, Transaction
 
 

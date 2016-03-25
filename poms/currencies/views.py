@@ -7,7 +7,7 @@ from rest_framework.viewsets import ModelViewSet
 
 from poms.api.mixins import DbTransactionMixin
 from poms.api.permissions import IsOwnerOrReadonly
-from poms.audit.history import HistoricalMixin
+from poms.audit.mixins import HistoricalMixin
 from poms.currencies.models import Currency, CurrencyHistory
 from poms.currencies.serializers import CurrencySerializer, CurrencyHistorySerializer
 from poms.users.permissions import PomsObjectPermissionMixin, PomsObjectPermissionsFilter, PomsObjectPermission
