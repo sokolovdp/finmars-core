@@ -6,11 +6,14 @@ from django.core import serializers as django_serializers
 from django.core.exceptions import FieldDoesNotExist
 from django.db.models.signals import post_init, post_save, post_delete
 from django.utils.encoding import force_text
+from django.utils.text import get_text_list
+from django.utils.translation import ugettext as _
 from rest_framework import permissions
 from rest_framework.decorators import detail_route, list_route
 from rest_framework.exceptions import PermissionDenied
 from rest_framework.response import Response
 from reversion import revisions as reversion
+from reversion.errors import RevisionManagementError
 
 from poms.audit.models import VersionInfo
 from poms.audit.serializers import VersionSerializer
@@ -20,6 +23,9 @@ from poms.users.fields import get_master_user
 # TODO: request is to hard for DB, can't prefetch or any optimization
 
 class HistoricalMixin(object):
+    ignore_duplicate_revisions = False
+    history_latest_first = False
+
     def dispatch(self, request, *args, **kwargs):
         self._reversion_is_active = False
         if request.method.upper() in permissions.SAFE_METHODS:
@@ -27,14 +33,17 @@ class HistoricalMixin(object):
         else:
             self._reversion_is_active = True
             with reversion.create_revision():
-                return super(HistoricalMixin, self).dispatch(request, *args, **kwargs)
+                response = super(HistoricalMixin, self).dispatch(request, *args, **kwargs)
+                if not reversion.get_comment():
+                    reversion.set_comment(_('No fields changed.'))
+                return response
 
     def initial(self, request, *args, **kwargs):
         super(HistoricalMixin, self).initial(request, *args, **kwargs)
 
         if self._reversion_is_active:
             reversion.set_user(request.user)
-            reversion.set_ignore_duplicates(True)
+            # reversion.set_ignore_duplicates(True)
 
             master_user = get_master_user(request)
             reversion.add_meta(VersionInfo, master_user=master_user, username=request.user.username)
@@ -104,6 +113,11 @@ class HistoricalMixin(object):
         fields = self._get_fields(model)
         queryset = versions.select_related('content_type', 'revision__user').prefetch_related('revision__info')
 
+        if self.history_latest_first:
+            queryset = queryset.order_by("-pk")
+        else:
+            queryset = queryset.order_by("pk")
+
         page = self.paginate_queryset(queryset)
         if page is not None:
             self._history_annotate_object(model, fields, page)
@@ -167,13 +181,10 @@ class ModelProxy(object):
 
 def is_track(obj):
     # return obj._meta.label_lower in APP_LABELS
-    from reversion import revisions as reversion
     return reversion.is_registered(obj)
 
 
 def safe_update_comment(message):
-    from reversion import revisions as reversion
-    from reversion.errors import RevisionManagementError
     try:
         comment = reversion.get_comment() or ''
         reversion.set_comment(comment + message)
@@ -194,18 +205,24 @@ def _to_set(fields):
 def tracker_init(sender, instance=None, **kwargs):
     if not is_track(instance):
         return
-    instance._tracker_init_data = django_serializers.serialize('python', [instance])[0]
-    # print(instance._tracker_init_data)
+    if instance.pk:
+        instance._tracker_init_data = django_serializers.serialize('python', [instance])[0]
+    else:
+        instance._tracker_init_data = {'pk': None, 'fields': {}}
 
 
 def tracker_save(sender, instance=None, created=None, **kwargs):
     if not is_track(instance):
         return
 
-    print('tracker_save: instance=%s, created=%s' % (repr(instance), created))
+    # print('tracker_save: %s' % repr(instance))
 
     if created:
-        message = 'Added %(name)s "%(object)s". ' % {
+        # message = 'Added %(name)s "%(object)s". ' % {
+        #     'name': force_text(instance._meta.verbose_name),
+        #     'object': force_text(instance)
+        # }
+        message = _('Added %(name)s "%(object)s".') % {
             'name': force_text(instance._meta.verbose_name),
             'object': force_text(instance)
         }
@@ -224,8 +241,13 @@ def tracker_save(sender, instance=None, created=None, **kwargs):
                     f = instance._meta.get_field(attr)
                     attr_names.append(force_text(f.verbose_name))
 
-                message = 'Changed %(list)s for %(name)s "%(object)s". ' % {
-                    'list': ', '.join(attr_names),
+                # message = 'Changed %(list)s for %(name)s "%(object)s". ' % {
+                #     'list': ', '.join(attr_names),
+                #     'name': force_text(instance._meta.verbose_name),
+                #     'object': force_text(instance)
+                # }
+                message = _('Changed %(list)s for %(name)s "%(object)s".') % {
+                    'list': get_text_list(attr_names, _('and')),
                     'name': force_text(instance._meta.verbose_name),
                     'object': force_text(instance)
                 }
@@ -236,9 +258,11 @@ def tracker_delete(sender, instance=None, **kwargs):
     if not is_track(instance):
         return
 
-    print('tracker_delete: instance=%s' % repr(instance))
-
-    message = 'Deleted %(name)s "%(object)s". ' % {
+    # message = 'Deleted %(name)s "%(object)s". ' % {
+    #     'name': force_text(instance._meta.verbose_name),
+    #     'object': force_text(instance)
+    # }
+    message = _('Deleted %(name)s "%(object)s".') % {
         'name': force_text(instance._meta.verbose_name),
         'object': force_text(instance)
     }
