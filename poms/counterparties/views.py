@@ -6,7 +6,7 @@ from rest_framework.viewsets import ModelViewSet
 
 from poms.accounts.serializers import AccountClassifierSerializer
 from poms.api.mixins import DbTransactionMixin
-from poms.audit.mixins import HistoricalMixin
+from poms.audit.history import HistoricalMixin
 from poms.counterparties.models import CounterpartyClassifier, Counterparty, Responsible
 from poms.counterparties.serializers import CounterpartySerializer, ResponsibleSerializer
 from poms.users.filters import OwnerByMasterUserFilter

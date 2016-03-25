@@ -6,7 +6,7 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.viewsets import ReadOnlyModelViewSet, ModelViewSet
 
 from poms.api.mixins import DbTransactionMixin
-from poms.audit.mixins import HistoricalMixin
+from poms.audit.history import HistoricalMixin
 from poms.transactions.models import TransactionClass, Transaction
 from poms.transactions.serializers import TransactionClassSerializer, TransactionSerializer
 from poms.users.filters import OwnerByMasterUserFilter

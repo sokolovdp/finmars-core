@@ -92,7 +92,7 @@ class GrantedPermissionField(serializers.Field):
         super(GrantedPermissionField, self).bind(field_name, parent)
 
     def to_representation(self, value):
-        from poms.audit.mixins import ModelProxy
+        from poms.audit.history import ModelProxy
         if isinstance(value, ModelProxy):
             return []
         request = self.context['request']

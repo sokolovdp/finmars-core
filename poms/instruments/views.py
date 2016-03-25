@@ -6,7 +6,7 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.viewsets import ModelViewSet
 
 from poms.api.mixins import DbTransactionMixin
-from poms.audit.mixins import HistoricalMixin
+from poms.audit.history import HistoricalMixin
 from poms.instruments.filters import OwnerByInstrumentFilter
 from poms.instruments.models import InstrumentClassifier, Instrument, PriceHistory
 from poms.instruments.serializers import InstrumentClassifierSerializer, InstrumentSerializer, PriceHistorySerializer

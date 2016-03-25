@@ -7,7 +7,7 @@ from rest_framework.viewsets import ModelViewSet, ReadOnlyModelViewSet
 from poms.accounts.models import Account, AccountType, AccountClassifier
 from poms.accounts.serializers import AccountSerializer, AccountTypeSerializer, AccountClassifierSerializer
 from poms.api.mixins import DbTransactionMixin
-from poms.audit.mixins import HistoricalMixin
+from poms.audit.history import HistoricalMixin
 from poms.users.filters import OwnerByMasterUserFilter
 
 
