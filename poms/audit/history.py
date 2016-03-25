@@ -1,36 +1,21 @@
 from __future__ import unicode_literals
 
-import six
-from django.contrib.contenttypes.models import ContentType
-from django.core import serializers as django_serializers
-from django.core.exceptions import FieldDoesNotExist
-from django.db.models.signals import post_init, post_save, post_delete
-from django.utils.encoding import force_text
 from django.utils.functional import cached_property
-from django.utils.text import get_text_list
 from django.utils.translation import ugettext as _
 from rest_framework import permissions
 from rest_framework.decorators import detail_route, list_route
 from rest_framework.exceptions import PermissionDenied
-from rest_framework.pagination import PageNumberPagination
 from rest_framework.response import Response
 from reversion import revisions as reversion
-from reversion.errors import RevisionManagementError
+from reversion.admin import VersionAdmin
 
-from poms.audit.models import VersionInfo
+from poms.audit.models import VersionInfo, ModelProxy
+from poms.audit.pagination import HistoricalPageNumberPagination
 from poms.audit.serializers import VersionSerializer
 from poms.users.fields import get_master_user
 
 
 # TODO: request is to hard for DB, can't prefetch or any optimization
-
-
-class HistoricalPageNumberPagination(PageNumberPagination):
-    page_size_query_param = 'size'
-    page_size = 5
-    max_page_size = 10
-
-
 class HistoricalMixin(object):
     ignore_duplicate_revisions = False
     history_latest_first = True
@@ -157,145 +142,5 @@ class HistoricalMixin(object):
         return self._historical_paginator.get_paginated_response(data)
 
 
-class ModelProxy(object):
-    def __init__(self, version):
-        self._version = version
-        self._object = version.object_version.object
-        self._m2m_data = version.object_version.m2m_data
-        self._cache = {}
-
-    def __getattr__(self, item):
-        obj = self._object
-        try:
-            f = obj._meta.get_field(item)
-        except FieldDoesNotExist:
-            f = None
-        # print('-' * 10)
-        # print(item, ':', f)
-        if f:
-            # print('one_to_one: ', f.one_to_one)
-            # print('many_to_many: ', f.many_to_many)
-            # print('related_model: ', f.related_model)
-
-            if item in self._cache:
-                return self._cache[item]
-            if f.one_to_one:
-                ct = ContentType.objects.get_for_model(f.related_model)
-                related_obj = self._version.revision.version_set.filter(content_type=ct).first()
-                if related_obj:
-                    val = related_obj.object_version.object
-                    self._cache[item] = val
-                    return val
-                self._cache[item] = None
-                return None
-            elif f.many_to_many:
-                m2m_d = self._m2m_data
-                if m2m_d and item in m2m_d:
-                    val = list(f.related_model.objects.filter(id__in=m2m_d[item]))
-                    self._cache[item] = val
-                    return val
-                self._cache[item] = None
-                return None
-        val = getattr(obj, item)
-        return val
-
-    def save(self, *args, **kwargs):
-        raise NotImplementedError()
-
-    def delete(self, *args, **kwargs):
-        raise NotImplementedError()
-
-
-def _is_track(obj):
-    # return obj._meta.label_lower in APP_LABELS
-    return reversion.is_registered(obj)
-
-
-def _safe_update_comment(message):
-    try:
-        comment = reversion.get_comment() or ''
-        reversion.set_comment(comment + message)
-    except RevisionManagementError:
-        pass
-
-
-def _to_set(fields):
-    ret = set()
-    for k, v in six.iteritems(fields):
-        if isinstance(v, list):
-            ret.add((k, tuple(v)))
-        else:
-            ret.add((k, v))
-    return ret
-
-
-def _tracker_init(sender, instance=None, **kwargs):
-    if not _is_track(instance):
-        return
-    if instance.pk:
-        instance._tracker_init_data = django_serializers.serialize('python', [instance])[0]
-    else:
-        instance._tracker_init_data = {'pk': None, 'fields': {}}
-
-
-def _tracker_save(sender, instance=None, created=None, **kwargs):
-    if not _is_track(instance):
-        return
-
-    # print('tracker_save: %s' % repr(instance))
-
-    if created:
-        # message = 'Added %(name)s "%(object)s". ' % {
-        #     'name': force_text(instance._meta.verbose_name),
-        #     'object': force_text(instance)
-        # }
-        message = _('Added %(name)s "%(object)s".') % {
-            'name': force_text(instance._meta.verbose_name),
-            'object': force_text(instance)
-        }
-        _safe_update_comment(message)
-    else:
-        c = django_serializers.serialize('python', [instance])[0]
-        i = instance._tracker_init_data
-
-        if c['pk'] == i['pk']:
-            cfields = _to_set(c['fields'])
-            ifileds = _to_set(i['fields'])
-            changed = ifileds - cfields
-            if changed:
-                attr_names = []
-                for attr, v in changed:
-                    f = instance._meta.get_field(attr)
-                    attr_names.append(force_text(f.verbose_name))
-
-                # message = 'Changed %(list)s for %(name)s "%(object)s". ' % {
-                #     'list': ', '.join(attr_names),
-                #     'name': force_text(instance._meta.verbose_name),
-                #     'object': force_text(instance)
-                # }
-                message = _('Changed %(list)s for %(name)s "%(object)s".') % {
-                    'list': get_text_list(attr_names, _('and')),
-                    'name': force_text(instance._meta.verbose_name),
-                    'object': force_text(instance)
-                }
-                _safe_update_comment(message)
-
-
-def _tracker_delete(sender, instance=None, **kwargs):
-    if not _is_track(instance):
-        return
-
-    # message = 'Deleted %(name)s "%(object)s". ' % {
-    #     'name': force_text(instance._meta.verbose_name),
-    #     'object': force_text(instance)
-    # }
-    message = _('Deleted %(name)s "%(object)s".') % {
-        'name': force_text(instance._meta.verbose_name),
-        'object': force_text(instance)
-    }
-    _safe_update_comment(message)
-
-
-post_init.connect(_tracker_init, dispatch_uid='tracker_init')
-post_save.connect(_tracker_save, dispatch_uid='tracker_save')
-post_delete.connect(_tracker_delete, dispatch_uid='tracker_delete')
+class HistoricalAdmin(VersionAdmin):
+    pass

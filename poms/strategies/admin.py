@@ -2,12 +2,12 @@ from __future__ import unicode_literals
 
 from django.contrib import admin
 from mptt.admin import MPTTModelAdmin
-from reversion.admin import VersionAdmin
 
+from poms.audit.history import HistoricalAdmin
 from poms.strategies.models import Strategy
 
 
-class StrategyAdmin(VersionAdmin, MPTTModelAdmin):
+class StrategyAdmin(HistoricalAdmin, MPTTModelAdmin):
     model = Strategy
     list_display = ['id', 'name', 'parent', 'master_user']
     list_select_related = ['master_user']

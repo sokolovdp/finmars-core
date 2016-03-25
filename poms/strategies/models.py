@@ -5,7 +5,7 @@ from django.utils.encoding import python_2_unicode_compatible
 from django.utils.translation import ugettext_lazy as _
 from mptt.fields import TreeForeignKey
 from mptt.models import MPTTModel
-from reversion import revisions as reversion
+from poms.audit import utils as history
 
 from poms.users.models import MasterUser
 
@@ -33,4 +33,4 @@ class Strategy(MPTTModel):
         return self.name
 
 
-reversion.register(Strategy)
+history.register(Strategy)

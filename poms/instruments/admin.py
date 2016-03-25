@@ -1,14 +1,13 @@
 from __future__ import unicode_literals
 
 from django.contrib import admin
-from django.utils.translation import ugettext_lazy as _
 from mptt.admin import MPTTModelAdmin
-from reversion.admin import VersionAdmin
 
+from poms.audit.history import HistoricalAdmin
 from poms.instruments.models import Instrument, PriceHistory, InstrumentClassifier
 
 
-class InstrumentClassifierAdmin(VersionAdmin, MPTTModelAdmin):
+class InstrumentClassifierAdmin(HistoricalAdmin, MPTTModelAdmin):
     # change_list_template = 'admin/mptt_change_list.html'
     model = InstrumentClassifier
     list_display = ['id', 'name', 'parent', 'master_user']
@@ -20,7 +19,7 @@ class InstrumentClassifierAdmin(VersionAdmin, MPTTModelAdmin):
 admin.site.register(InstrumentClassifier, InstrumentClassifierAdmin)
 
 
-class InstrumentAdmin(VersionAdmin):
+class InstrumentAdmin(HistoricalAdmin):
     model = Instrument
     list_display = ['id', 'name', 'master_user', 'pricing_currency', 'accrued_currency']
     list_select_related = ['master_user', 'pricing_currency', 'accrued_currency']
@@ -35,7 +34,7 @@ class InstrumentAdmin(VersionAdmin):
 admin.site.register(Instrument, InstrumentAdmin)
 
 
-class PriceHistoryAdmin(VersionAdmin):
+class PriceHistoryAdmin(HistoricalAdmin):
     model = PriceHistory
     list_display = ['id', 'date', 'instrument', 'principal_price', 'accrued_price', 'factor']
     list_select_related = ['instrument']

@@ -4,8 +4,8 @@ from django.contrib import admin
 from django.contrib.admin import StackedInline
 from django.contrib.auth.admin import GroupAdmin, UserAdmin
 from django.contrib.auth.models import Group, User, Permission
-from reversion.admin import VersionAdmin
 
+from poms.audit.history import HistoricalAdmin
 from poms.users.models import MasterUser, UserProfile, GroupProfile, Member
 
 
@@ -14,7 +14,7 @@ class MemberInline(admin.TabularInline):
     extra = 0
 
 
-class MasterUserAdmin(VersionAdmin):
+class MasterUserAdmin(HistoricalAdmin):
     model = MasterUser
     inlines = [MemberInline]
     list_display = ['id', '__str__']
@@ -28,7 +28,7 @@ class UserProfileInline(StackedInline):
     can_delete = False
 
 
-class UserWithProfileAdmin(VersionAdmin, UserAdmin):
+class UserWithProfileAdmin(HistoricalAdmin, UserAdmin):
     inlines = [UserProfileInline]
 
 
@@ -41,7 +41,7 @@ class GroupProfileInline(StackedInline):
     can_delete = False
 
 
-class GroupWithProfileAdmin(VersionAdmin, GroupAdmin):
+class GroupWithProfileAdmin(HistoricalAdmin, GroupAdmin):
     inlines = [GroupProfileInline]
 
     def save_model(self, request, obj, form, change):

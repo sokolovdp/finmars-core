@@ -2,12 +2,12 @@ from __future__ import unicode_literals
 
 from django.contrib import admin
 from mptt.admin import MPTTModelAdmin
-from reversion.admin import VersionAdmin
 
 from poms.accounts.models import Account, AccountType, AccountClassifier
+from poms.audit.history import HistoricalAdmin
 
 
-class AccountTypeAdmin(VersionAdmin):
+class AccountTypeAdmin(HistoricalAdmin):
     model = AccountType
     list_display = ['id', 'name', 'master_user']
     list_select_related = ['master_user']
@@ -16,7 +16,7 @@ class AccountTypeAdmin(VersionAdmin):
 admin.site.register(AccountType, AccountTypeAdmin)
 
 
-class AccountClassifierAdmin(VersionAdmin, MPTTModelAdmin):
+class AccountClassifierAdmin(HistoricalAdmin, MPTTModelAdmin):
     model = AccountClassifier
     list_display = ['id', 'name', 'parent', 'master_user']
     list_select_related = ['master_user']
@@ -27,7 +27,7 @@ class AccountClassifierAdmin(VersionAdmin, MPTTModelAdmin):
 admin.site.register(AccountClassifier, AccountClassifierAdmin)
 
 
-class AccountAdmin(VersionAdmin):
+class AccountAdmin(HistoricalAdmin):
     model = Account
     list_display = ['id', 'name', 'master_user']
     list_select_related = ['master_user']

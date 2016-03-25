@@ -5,7 +5,7 @@ from django.utils.encoding import python_2_unicode_compatible
 from django.utils.translation import ugettext_lazy as _
 from mptt.fields import TreeForeignKey, TreeManyToManyField
 from mptt.models import MPTTModel
-from reversion import revisions as reversion
+from poms.audit import utils as history
 
 from poms.currencies.models import Currency
 from poms.users.models import MasterUser
@@ -78,6 +78,6 @@ class Account(models.Model):
         return self.name
 
 
-reversion.register(AccountClassifier)
-reversion.register(AccountType)
-reversion.register(Account)
+history.register(AccountClassifier)
+history.register(AccountType)
+history.register(Account)
