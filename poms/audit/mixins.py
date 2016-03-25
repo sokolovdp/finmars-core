@@ -1,7 +1,11 @@
 from __future__ import unicode_literals
 
+import six
 from django.contrib.contenttypes.models import ContentType
+from django.core import serializers as django_serializers
 from django.core.exceptions import FieldDoesNotExist
+from django.db.models.signals import post_init, post_save, post_delete
+from django.utils.encoding import force_text
 from rest_framework import permissions
 from rest_framework.decorators import detail_route, list_route
 from rest_framework.exceptions import PermissionDenied
@@ -159,3 +163,88 @@ class ModelProxy(object):
 
     def delete(self, *args, **kwargs):
         raise NotImplementedError()
+
+
+def is_track(obj):
+    # return obj._meta.label_lower in APP_LABELS
+    from reversion import revisions as reversion
+    return reversion.is_registered(obj)
+
+
+def safe_update_comment(message):
+    from reversion import revisions as reversion
+    from reversion.errors import RevisionManagementError
+    try:
+        comment = reversion.get_comment() or ''
+        reversion.set_comment(comment + message)
+    except RevisionManagementError:
+        pass
+
+
+def _to_set(fields):
+    ret = set()
+    for k, v in six.iteritems(fields):
+        if isinstance(v, list):
+            ret.add((k, tuple(v)))
+        else:
+            ret.add((k, v))
+    return ret
+
+
+def tracker_init(sender, instance=None, **kwargs):
+    if not is_track(instance):
+        return
+    instance._tracker_init_data = django_serializers.serialize('python', [instance])[0]
+    # print(instance._tracker_init_data)
+
+
+def tracker_save(sender, instance=None, created=None, **kwargs):
+    if not is_track(instance):
+        return
+
+    print('tracker_save: instance=%s, created=%s' % (repr(instance), created))
+
+    if created:
+        message = 'Added %(name)s "%(object)s". ' % {
+            'name': force_text(instance._meta.verbose_name),
+            'object': force_text(instance)
+        }
+        safe_update_comment(message)
+    else:
+        c = django_serializers.serialize('python', [instance])[0]
+        i = instance._tracker_init_data
+
+        if c['pk'] == i['pk']:
+            cfields = _to_set(c['fields'])
+            ifileds = _to_set(i['fields'])
+            changed = ifileds - cfields
+            if changed:
+                attr_names = []
+                for attr, v in changed:
+                    f = instance._meta.get_field(attr)
+                    attr_names.append(force_text(f.verbose_name))
+
+                message = 'Changed %(list)s for %(name)s "%(object)s". ' % {
+                    'list': ', '.join(attr_names),
+                    'name': force_text(instance._meta.verbose_name),
+                    'object': force_text(instance)
+                }
+                safe_update_comment(message)
+
+
+def tracker_delete(sender, instance=None, **kwargs):
+    if not is_track(instance):
+        return
+
+    print('tracker_delete: instance=%s' % repr(instance))
+
+    message = 'Deleted %(name)s "%(object)s". ' % {
+        'name': force_text(instance._meta.verbose_name),
+        'object': force_text(instance)
+    }
+    safe_update_comment(message)
+
+
+post_init.connect(tracker_init, dispatch_uid='tracker_init')
+post_save.connect(tracker_save, dispatch_uid='tracker_save')
+post_delete.connect(tracker_delete, dispatch_uid='tracker_delete')
