@@ -17,7 +17,7 @@ class CurrencySerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Currency
-        fields = ['url', 'id', 'master_user', 'user_code', 'name', 'short_name', 'is_global', 'is_system',
+        fields = ['url', 'id', 'master_user', 'user_code', 'name', 'short_name', 'notes', 'is_global', 'is_system',
                   'granted_permission']
         readonly_fields = ['is_system', 'is_global']
 
