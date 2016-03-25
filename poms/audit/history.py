@@ -2,6 +2,8 @@ from __future__ import unicode_literals
 
 from threading import local
 
+from django.contrib.contenttypes.models import ContentType
+from django.core.exceptions import FieldDoesNotExist
 from django.utils.decorators import ContextDecorator
 from django.utils.encoding import force_text
 from django.utils.text import get_text_list
@@ -10,7 +12,6 @@ from reversion import revisions as reversion
 from reversion.errors import RevisionManagementError
 
 from poms.audit.models import ModelProxy
-
 
 _active = local()
 
@@ -78,3 +79,52 @@ def object_deleted(obj):
             'object': force_text(obj)
         }
         add_comment(message)
+
+
+class ModelProxy(object):
+    def __init__(self, version):
+        self._version = version
+        self._object = version.object_version.object
+        self._m2m_data = version.object_version.m2m_data
+        self._cache = {}
+
+    def __getattr__(self, item):
+        obj = self._object
+        try:
+            f = obj._meta.get_field(item)
+        except FieldDoesNotExist:
+            f = None
+        # print('-' * 10)
+        # print(item, ':', f)
+        if f:
+            # print('one_to_one: ', f.one_to_one)
+            # print('many_to_many: ', f.many_to_many)
+            # print('related_model: ', f.related_model)
+
+            if item in self._cache:
+                return self._cache[item]
+            if f.one_to_one:
+                ct = ContentType.objects.get_for_model(f.related_model)
+                related_obj = self._version.revision.version_set.filter(content_type=ct).first()
+                if related_obj:
+                    val = related_obj.object_version.object
+                    self._cache[item] = val
+                    return val
+                self._cache[item] = None
+                return None
+            elif f.many_to_many:
+                m2m_d = self._m2m_data
+                if m2m_d and item in m2m_d:
+                    val = list(f.related_model.objects.filter(id__in=m2m_d[item]))
+                    self._cache[item] = val
+                    return val
+                self._cache[item] = None
+                return None
+        val = getattr(obj, item)
+        return val
+
+    def save(self, *args, **kwargs):
+        raise NotImplementedError()
+
+    def delete(self, *args, **kwargs):
+        raise NotImplementedError()

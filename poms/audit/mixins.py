@@ -7,7 +7,7 @@ from rest_framework.response import Response
 from reversion import revisions as reversion
 
 from poms.audit import history
-from poms.audit.models import VersionInfo, ModelProxy
+from poms.audit.models import VersionInfo
 from poms.audit.serializers import VersionSerializer
 from poms.users.fields import get_master_user
 
@@ -81,7 +81,7 @@ class HistoricalMixin(object):
         # TODO: load one-to-one from history, currently loaded from db
         # TODO: show many-to-many from history, currently loaded from db
         if version and self._version_id:
-            serializer = self.get_serializer(instance=ModelProxy(version))
+            serializer = self.get_serializer(instance=history.ModelProxy(version))
             version.object_json = serializer.data
 
     def _historical_annotate_objects(self, versions):
