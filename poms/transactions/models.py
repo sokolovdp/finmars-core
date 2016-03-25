@@ -5,8 +5,8 @@ from django.utils import timezone
 from django.utils.encoding import python_2_unicode_compatible
 from django.utils.translation import ugettext_lazy as _
 from mptt.models import MPTTModel
-from poms.audit import utils as history
 
+from poms import audit
 from poms.accounts.models import Account
 from poms.counterparties.models import Responsible, Counterparty
 from poms.currencies.models import Currency
@@ -153,5 +153,5 @@ class Transaction(models.Model):
                                       update_fields=update_fields)
 
 
-history.register(TransactionClass)
-history.register(Transaction)
+audit.register(TransactionClass)
+audit.register(Transaction)

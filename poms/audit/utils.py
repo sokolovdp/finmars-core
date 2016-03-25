@@ -14,8 +14,8 @@ def set_comment_safe(message):
         pass
 
 
-def register(model, **kwargs):
-    reversion.register(model, **kwargs)
+# def register(model, **kwargs):
+#     reversion.register(model, **kwargs)
 
 
 def is_historical_proxy(obj):

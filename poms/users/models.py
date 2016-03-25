@@ -6,8 +6,8 @@ from django.db import models
 from django.utils.encoding import python_2_unicode_compatible
 from django.utils.translation import ugettext_lazy as _
 
+from poms import audit
 from poms.fields import TimezoneField, LanguageField
-from poms.audit import utils as history
 
 AVAILABLE_APPS = ['accounts', 'counterparties', 'currencies', 'instruments', 'portfolios', 'strategies', 'transactions',
                   'reports', 'users']
@@ -102,11 +102,10 @@ class GroupProfile(models.Model):
     permissions = property(get_permissions, set_permissions)
 
 
-history.register(MasterUser)
-history.register(Member)
-history.register(Permission)
-history.register(User, follow=['profile'], exclude=['password'])
-history.register(UserProfile)
-history.register(Group, follow=['profile', 'permissions'])
-history.register(GroupProfile, follow=['group'])
-
+audit.register(MasterUser)
+audit.register(Member)
+audit.register(Permission)
+audit.register(User, follow=['profile'], exclude=['password'])
+audit.register(UserProfile)
+audit.register(Group, follow=['profile', 'permissions'])
+audit.register(GroupProfile, follow=['group'])

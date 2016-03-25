@@ -5,8 +5,8 @@ from django.utils.encoding import python_2_unicode_compatible
 from django.utils.translation import ugettext_lazy as _
 from mptt.fields import TreeForeignKey, TreeManyToManyField
 from mptt.models import MPTTModel
-from poms.audit import utils as history
 
+from poms import audit
 from poms.accounts.models import Account
 from poms.currencies.models import Currency
 from poms.strategies.models import Strategy
@@ -58,5 +58,5 @@ class Portfolio(models.Model):
         return self.name
 
 
-history.register(PortfolioClassifier)
-history.register(Portfolio)
+audit.register(PortfolioClassifier)
+audit.register(Portfolio)
