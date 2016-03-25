@@ -13,6 +13,8 @@ from poms.audit.serializers import VersionSerializer
 from poms.users.fields import get_master_user
 
 
+# TODO: request is to hard for DB, can't prefetch or any optimization
+
 class HistoricalMixin(object):
     def dispatch(self, request, *args, **kwargs):
         self._reversion_is_active = False
@@ -93,9 +95,6 @@ class HistoricalMixin(object):
             # serializer = self.get_serializer(instance=obj)
             serializer = self.get_serializer(instance=ModelProxy(v))
             v.object_json = serializer.data
-            # # TODO: modify
-            # if 'granted_permission' in v.object_json:
-            #     del v.object_json['granted_permission']
 
     def _make_historical_reponse(self, model, versions):
         fields = self._get_fields(model)
@@ -118,6 +117,7 @@ class ModelProxy(object):
         self._version = version
         self._object = version.object_version.object
         self._m2m_data = version.object_version.m2m_data
+        self._cache = {}
 
     def __getattr__(self, item):
         obj = self._object
@@ -131,16 +131,26 @@ class ModelProxy(object):
             # print('one_to_one: ', f.one_to_one)
             # print('many_to_many: ', f.many_to_many)
             # print('related_model: ', f.related_model)
+
+            if item in self._cache:
+                return self._cache[item]
             if f.one_to_one:
                 ct = ContentType.objects.get_for_model(f.related_model)
                 related_obj = self._version.revision.version_set.filter(content_type=ct).first()
                 if related_obj:
-                    return related_obj.object_version.object
+                    val = related_obj.object_version.object
+                    self._cache[item] = val
+                    return val
+                self._cache[item] = None
                 return None
             elif f.many_to_many:
                 m2m_d = self._m2m_data
                 if m2m_d and item in m2m_d:
-                    return f.related_model.objects.filter(id__in=m2m_d[item])
+                    val = list(f.related_model.objects.filter(id__in=m2m_d[item]))
+                    self._cache[item] = val
+                    return val
+                self._cache[item] = None
+                return None
         val = getattr(obj, item)
         return val
 
