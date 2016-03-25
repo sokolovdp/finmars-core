@@ -3,7 +3,7 @@ from __future__ import unicode_literals
 from django.contrib import admin
 from mptt.admin import MPTTModelAdmin
 
-from poms.audit.mixins import HistoricalAdmin
+from poms.audit.admin import HistoricalAdmin
 from poms.strategies.models import Strategy
 
 

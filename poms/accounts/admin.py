@@ -4,7 +4,7 @@ from django.contrib import admin
 from mptt.admin import MPTTModelAdmin
 
 from poms.accounts.models import Account, AccountType, AccountClassifier
-from poms.audit.mixins import HistoricalAdmin
+from poms.audit.admin import HistoricalAdmin
 
 
 class AccountTypeAdmin(HistoricalAdmin):

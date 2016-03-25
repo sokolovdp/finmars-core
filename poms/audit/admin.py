@@ -1,6 +1,7 @@
 from __future__ import unicode_literals
 
 from django.contrib import admin
+from reversion.admin import VersionAdmin
 
 from poms.audit.models import AuthLogEntry
 
@@ -19,3 +20,7 @@ class AuthLogEntryAdmin(admin.ModelAdmin):
 
 
 admin.site.register(AuthLogEntry, AuthLogEntryAdmin)
+
+
+class HistoricalAdmin(VersionAdmin):
+    pass

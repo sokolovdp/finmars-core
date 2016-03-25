@@ -5,7 +5,7 @@ from django.contrib.admin import StackedInline
 from django.contrib.auth.admin import GroupAdmin, UserAdmin
 from django.contrib.auth.models import Group, User, Permission
 
-from poms.audit.mixins import HistoricalAdmin
+from poms.audit.admin import HistoricalAdmin
 from poms.users.models import MasterUser, UserProfile, GroupProfile, Member
 
 

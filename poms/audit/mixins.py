@@ -7,7 +7,6 @@ from rest_framework.decorators import detail_route, list_route
 from rest_framework.exceptions import PermissionDenied
 from rest_framework.response import Response
 from reversion import revisions as reversion
-from reversion.admin import VersionAdmin
 
 from poms.audit.models import VersionInfo, ModelProxy
 from poms.audit.pagination import HistoricalPageNumberPagination
@@ -140,7 +139,3 @@ class HistoricalMixin(object):
     def _historical_get_paginated_response(self, data):
         assert self._historical_paginator is not None
         return self._historical_paginator.get_paginated_response(data)
-
-
-class HistoricalAdmin(VersionAdmin):
-    pass
