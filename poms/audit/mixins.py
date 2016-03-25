@@ -6,11 +6,13 @@ from django.core import serializers as django_serializers
 from django.core.exceptions import FieldDoesNotExist
 from django.db.models.signals import post_init, post_save, post_delete
 from django.utils.encoding import force_text
+from django.utils.functional import cached_property
 from django.utils.text import get_text_list
 from django.utils.translation import ugettext as _
 from rest_framework import permissions
 from rest_framework.decorators import detail_route, list_route
 from rest_framework.exceptions import PermissionDenied
+from rest_framework.pagination import PageNumberPagination
 from rest_framework.response import Response
 from reversion import revisions as reversion
 from reversion.errors import RevisionManagementError
@@ -22,9 +24,16 @@ from poms.users.fields import get_master_user
 
 # TODO: request is to hard for DB, can't prefetch or any optimization
 
+
+class HistoricalPageNumberPagination(PageNumberPagination):
+    page_size = 5
+    max_page_size = 10
+
+
 class HistoricalMixin(object):
     ignore_duplicate_revisions = False
-    history_latest_first = False
+    history_latest_first = True
+    history_pagination_class = HistoricalPageNumberPagination
 
     def dispatch(self, request, *args, **kwargs):
         self._reversion_is_active = False
@@ -75,7 +84,7 @@ class HistoricalMixin(object):
         fields += concrete_model._meta.many_to_many
         return fields
 
-    def _history_annotate_object(self, model, fields, versions):
+    def _historical_annotate_object(self, model, fields, versions):
         for v in versions:
             # print('-'*79)
             # print(v.serialized_data)
@@ -118,16 +127,33 @@ class HistoricalMixin(object):
         else:
             queryset = queryset.order_by("pk")
 
-        page = self.paginate_queryset(queryset)
+        page = self._historical_paginate_queryset(queryset)
         if page is not None:
-            self._history_annotate_object(model, fields, page)
+            self._historical_annotate_object(model, fields, page)
 
             serializer = VersionSerializer(page, many=True)
-            return self.get_paginated_response(serializer.data)
+            return self._historical_get_paginated_response(serializer.data)
 
-        self._history_annotate_object(model, fields, queryset)
+        self._historical_annotate_object(model, fields, queryset)
         serializer = VersionSerializer(queryset, many=True)
         return Response(serializer.data)
+
+    @cached_property
+    def _historical_paginator(self):
+        if self.history_pagination_class:
+            return self.history_pagination_class()
+        return self.pagination_class()
+
+    def _historical_paginate_queryset(self, queryset):
+        if self._historical_paginator is None:
+            return None
+        return self._historical_paginator.paginate_queryset(queryset, self.request, view=self)
+
+        # return self.paginate_queryset(queryset)
+
+    def _historical_get_paginated_response(self, data):
+        assert self._historical_paginator is not None
+        return self._historical_paginator.get_paginated_response(data)
 
 
 class ModelProxy(object):
@@ -179,12 +205,12 @@ class ModelProxy(object):
         raise NotImplementedError()
 
 
-def is_track(obj):
+def _is_track(obj):
     # return obj._meta.label_lower in APP_LABELS
     return reversion.is_registered(obj)
 
 
-def safe_update_comment(message):
+def _safe_update_comment(message):
     try:
         comment = reversion.get_comment() or ''
         reversion.set_comment(comment + message)
@@ -202,8 +228,8 @@ def _to_set(fields):
     return ret
 
 
-def tracker_init(sender, instance=None, **kwargs):
-    if not is_track(instance):
+def _tracker_init(sender, instance=None, **kwargs):
+    if not _is_track(instance):
         return
     if instance.pk:
         instance._tracker_init_data = django_serializers.serialize('python', [instance])[0]
@@ -211,8 +237,8 @@ def tracker_init(sender, instance=None, **kwargs):
         instance._tracker_init_data = {'pk': None, 'fields': {}}
 
 
-def tracker_save(sender, instance=None, created=None, **kwargs):
-    if not is_track(instance):
+def _tracker_save(sender, instance=None, created=None, **kwargs):
+    if not _is_track(instance):
         return
 
     # print('tracker_save: %s' % repr(instance))
@@ -226,7 +252,7 @@ def tracker_save(sender, instance=None, created=None, **kwargs):
             'name': force_text(instance._meta.verbose_name),
             'object': force_text(instance)
         }
-        safe_update_comment(message)
+        _safe_update_comment(message)
     else:
         c = django_serializers.serialize('python', [instance])[0]
         i = instance._tracker_init_data
@@ -251,11 +277,11 @@ def tracker_save(sender, instance=None, created=None, **kwargs):
                     'name': force_text(instance._meta.verbose_name),
                     'object': force_text(instance)
                 }
-                safe_update_comment(message)
+                _safe_update_comment(message)
 
 
-def tracker_delete(sender, instance=None, **kwargs):
-    if not is_track(instance):
+def _tracker_delete(sender, instance=None, **kwargs):
+    if not _is_track(instance):
         return
 
     # message = 'Deleted %(name)s "%(object)s". ' % {
@@ -266,9 +292,9 @@ def tracker_delete(sender, instance=None, **kwargs):
         'name': force_text(instance._meta.verbose_name),
         'object': force_text(instance)
     }
-    safe_update_comment(message)
+    _safe_update_comment(message)
 
 
-post_init.connect(tracker_init, dispatch_uid='tracker_init')
-post_save.connect(tracker_save, dispatch_uid='tracker_save')
-post_delete.connect(tracker_delete, dispatch_uid='tracker_delete')
+post_init.connect(_tracker_init, dispatch_uid='tracker_init')
+post_save.connect(_tracker_save, dispatch_uid='tracker_save')
+post_delete.connect(_tracker_delete, dispatch_uid='tracker_delete')
