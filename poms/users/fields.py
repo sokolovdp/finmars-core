@@ -54,6 +54,30 @@ def get_member(request, master_user_id=None):
         raise NotFound()
 
 
+def is_admin(request, master_user_id=None):
+    try:
+        member = get_member(request, master_user_id)
+        return member.is_admin
+    except NotFound:
+        return False
+
+
+def is_owner(request, master_user_id=None):
+    try:
+        member = get_member(request, master_user_id)
+        return member.is_admin
+    except NotFound:
+        return False
+
+
+def is_admin_role(request, master_user_id=None):
+    try:
+        member = get_member(request, master_user_id)
+        return member.is_admin or member.is_owner
+    except NotFound:
+        return False
+
+
 class CurrentMasterUserDefault(object):
     def set_context(self, serializer_field):
         request = serializer_field.context['request']
