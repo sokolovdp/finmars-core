@@ -1,5 +1,7 @@
 from __future__ import unicode_literals
 
+from django.contrib.contenttypes.models import ContentType
+from django.core.exceptions import FieldDoesNotExist
 from rest_framework import permissions
 from rest_framework.decorators import detail_route, list_route
 from rest_framework.exceptions import PermissionDenied
@@ -60,22 +62,40 @@ class HistoricalMixin(object):
 
     def _history_annotate_object(self, model, fields, versions):
         for v in versions:
-            print('-'*79)
+            # print('-'*79)
             # print(v.serialized_data)
             # print(v.field_dict)
 
+            # TODO: load one-to-one from history, currently loaded from db
+            # TODO: show many-to-many from history, currently loaded from db
+
+            # deser_obj = v.object_version
+            # obj = deser_obj.object
+
+            # if deser_obj.m2m_data:
+            #     for accessor_name, object_list in deser_obj.m2m_data.items():
+            #         setattr(self.object, accessor_name, object_list)
             # obj = v.object_version.object # deserialize m2m as current value :(
 
-            obj = model()
-            for field in fields:
-                print(repr(field))
-                setattr(obj, field.name, v.field_dict.get(field.name, None))
+            # obj = model()
+            # for field in fields:
+            #     # print(repr(field))
+            #     setattr(obj, field.name, v.field_dict.get(field.name, None))
 
-            serializer = self.get_serializer(instance=obj)
-            try:
-                v.object_json = serializer.data
-            except (KeyError, AttributeError):
-                v.object_json = None
+            # profile = UserProfile.objects.get(user=obj.pk)
+            # try:
+            #     profile = reversion.get_for_date(profile, v.revision.date_created)
+            #     profile = profile.object_version.object
+            #     obj.profile = profile
+            # except ObjectDoesNotExist:
+            #     obj.profile = UserProfile()
+
+            # serializer = self.get_serializer(instance=obj)
+            serializer = self.get_serializer(instance=ModelProxy(v))
+            v.object_json = serializer.data
+            # # TODO: modify
+            # if 'granted_permission' in v.object_json:
+            #     del v.object_json['granted_permission']
 
     def _make_historical_reponse(self, model, versions):
         fields = self._get_fields(model)
@@ -91,3 +111,41 @@ class HistoricalMixin(object):
         self._history_annotate_object(model, fields, queryset)
         serializer = VersionSerializer(queryset, many=True)
         return Response(serializer.data)
+
+
+class ModelProxy(object):
+    def __init__(self, version):
+        self._version = version
+        self._object = version.object_version.object
+        self._m2m_data = version.object_version.m2m_data
+
+    def __getattr__(self, item):
+        obj = self._object
+        try:
+            f = obj._meta.get_field(item)
+        except FieldDoesNotExist:
+            f = None
+        # print('-' * 10)
+        # print(item, ':', f)
+        if f:
+            # print('one_to_one: ', f.one_to_one)
+            # print('many_to_many: ', f.many_to_many)
+            # print('related_model: ', f.related_model)
+            if f.one_to_one:
+                ct = ContentType.objects.get_for_model(f.related_model)
+                related_obj = self._version.revision.version_set.filter(content_type=ct).first()
+                if related_obj:
+                    return related_obj.object_version.object
+                return None
+            elif f.many_to_many:
+                m2m_d = self._m2m_data
+                if m2m_d and item in m2m_d:
+                    return f.related_model.objects.filter(id__in=m2m_d[item])
+        val = getattr(obj, item)
+        return val
+
+    def save(self, *args, **kwargs):
+        raise NotImplementedError()
+
+    def delete(self, *args, **kwargs):
+        raise NotImplementedError()

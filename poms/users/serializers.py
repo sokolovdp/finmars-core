@@ -92,6 +92,9 @@ class GrantedPermissionField(serializers.Field):
         super(GrantedPermissionField, self).bind(field_name, parent)
 
     def to_representation(self, value):
+        from poms.audit.mixins import ModelProxy
+        if isinstance(value, ModelProxy):
+            return ['unsupported']
         request = self.context['request']
         ctype = ContentType.objects.get_for_model(value)
         return {'%s.%s' % (ctype.app_label, p) for p in get_perms(request.user, value)}
