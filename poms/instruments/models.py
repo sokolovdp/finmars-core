@@ -7,7 +7,7 @@ from django.utils.translation import ugettext_lazy as _
 from mptt.fields import TreeForeignKey, TreeManyToManyField
 from mptt.models import MPTTModel
 
-from poms import audit
+from poms.audit import history
 from poms.currencies.models import Currency
 from poms.users.models import MasterUser
 
@@ -82,6 +82,6 @@ class PriceHistory(models.Model):
         return '%s at %s - %s' % (self.instrument, self.date, self.principal_price,)
 
 
-audit.register(InstrumentClassifier)
-audit.register(Instrument)
-audit.register(PriceHistory)
+history.register(InstrumentClassifier)
+history.register(Instrument)
+history.register(PriceHistory)

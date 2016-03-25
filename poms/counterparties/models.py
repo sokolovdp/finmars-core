@@ -5,8 +5,8 @@ from django.utils.encoding import python_2_unicode_compatible
 from django.utils.translation import ugettext_lazy as _
 from mptt.fields import TreeForeignKey, TreeManyToManyField
 from mptt.models import MPTTModel
-from poms import audit
 
+from poms.audit import history
 from poms.currencies.models import Currency
 from poms.portfolios.models import Portfolio
 from poms.users.models import MasterUser
@@ -73,6 +73,6 @@ class Responsible(models.Model):
         return self.name
 
 
-audit.register(CounterpartyClassifier)
-audit.register(Counterparty)
-audit.register(Responsible)
+history.register(CounterpartyClassifier)
+history.register(Counterparty)
+history.register(Responsible)

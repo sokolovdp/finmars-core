@@ -5,8 +5,8 @@ from django.db import models
 from django.utils import timezone
 from django.utils.encoding import python_2_unicode_compatible
 from django.utils.translation import ugettext_lazy as _
-from poms import audit
 
+from poms.audit import history
 from poms.users.models import MasterUser
 
 
@@ -82,5 +82,5 @@ class CurrencyHistory(models.Model):
         return self.master_user_id is None
 
 
-audit.register(Currency)
-audit.register(CurrencyHistory)
+history.register(Currency)
+history.register(CurrencyHistory)

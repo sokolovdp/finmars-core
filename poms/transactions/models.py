@@ -6,8 +6,8 @@ from django.utils.encoding import python_2_unicode_compatible
 from django.utils.translation import ugettext_lazy as _
 from mptt.models import MPTTModel
 
-from poms import audit
 from poms.accounts.models import Account
+from poms.audit import history
 from poms.counterparties.models import Responsible, Counterparty
 from poms.currencies.models import Currency
 from poms.instruments.models import Instrument
@@ -153,5 +153,5 @@ class Transaction(models.Model):
                                       update_fields=update_fields)
 
 
-audit.register(TransactionClass)
-audit.register(Transaction)
+history.register(TransactionClass)
+history.register(Transaction)

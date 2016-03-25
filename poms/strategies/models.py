@@ -6,7 +6,7 @@ from django.utils.translation import ugettext_lazy as _
 from mptt.fields import TreeForeignKey
 from mptt.models import MPTTModel
 
-from poms import audit
+from poms.audit import history
 from poms.users.models import MasterUser
 
 
@@ -33,4 +33,4 @@ class Strategy(MPTTModel):
         return self.name
 
 
-audit.register(Strategy)
+history.register(Strategy)

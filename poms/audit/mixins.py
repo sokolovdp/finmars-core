@@ -8,6 +8,7 @@ from rest_framework.exceptions import PermissionDenied
 from rest_framework.response import Response
 from reversion import revisions as reversion
 
+from poms.audit import history
 from poms.audit.models import VersionInfo, ModelProxy
 from poms.audit.pagination import HistoricalPageNumberPagination
 from poms.audit.serializers import VersionSerializer
@@ -26,7 +27,7 @@ class HistoricalMixin(object):
             return super(HistoricalMixin, self).dispatch(request, *args, **kwargs)
         else:
             self._reversion_is_active = True
-            with reversion.create_revision():
+            with reversion.create_revision(), history.enable():
                 response = super(HistoricalMixin, self).dispatch(request, *args, **kwargs)
                 if not reversion.get_comment():
                     reversion.set_comment(_('No fields changed.'))
