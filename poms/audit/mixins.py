@@ -26,6 +26,7 @@ from poms.users.fields import get_master_user
 
 
 class HistoricalPageNumberPagination(PageNumberPagination):
+    page_size_query_param = 'size'
     page_size = 5
     max_page_size = 10
 
