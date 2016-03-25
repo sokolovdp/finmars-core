@@ -79,11 +79,11 @@ def _tracker_save(sender, instance=None, created=None, **kwargs):
             ifileds = _to_set(i['fields'])
             changed = ifileds - cfields
             if changed:
-                attr_names = []
+                fields = []
                 for attr, v in changed:
                     f = instance._meta.get_field(attr)
-                    attr_names.append(force_text(f.verbose_name))
-                history.object_changed(instance, attr_names)
+                    fields.append(force_text(f.verbose_name))
+                history.object_changed(instance, fields)
 
 
 def _tracker_delete(sender, instance=None, **kwargs):
