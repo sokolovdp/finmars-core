@@ -23,4 +23,5 @@ admin.site.register(AuthLogEntry, AuthLogEntryAdmin)
 
 
 class HistoricalAdmin(VersionAdmin):
-    pass
+    history_latest_first = True
+    ignore_duplicate_revisions = True
