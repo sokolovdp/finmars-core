@@ -3,6 +3,8 @@ from __future__ import unicode_literals
 from reversion import revisions as reversion
 from reversion.errors import RevisionManagementError
 
+from poms.audit.models import ModelProxy
+
 
 def set_comment_safe(message):
     try:
@@ -14,3 +16,7 @@ def set_comment_safe(message):
 
 def register(model=None):
     reversion.register(model)
+
+
+def is_historical_proxy(obj):
+    return isinstance(obj, ModelProxy)
