@@ -50,7 +50,6 @@ class HistoricalMixin(object):
     @list_route()
     def deleted(self, request, pk=None):
         master_user = get_master_user(request)
-
         model = self.get_queryset().model
         deleted_list = reversion.get_deleted(model).filter(revision__info__master_user=master_user)
 
@@ -62,8 +61,12 @@ class HistoricalMixin(object):
 
     @detail_route()
     def history(self, request, pk=None):
-        instance = self.get_object()
-        version_list = reversion.get_for_object(instance)
+        # instance = self.get_object()
+        # version_list = reversion.get_for_object(instance)
+
+        master_user = get_master_user(request)
+        model = self.get_queryset().model
+        version_list = reversion.get_for_object_reference(model, pk).filter(revision__info__master_user=master_user)
 
         self._version_id = request.query_params.get('version_id')
         if self._version_id:
