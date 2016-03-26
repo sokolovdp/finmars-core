@@ -26,7 +26,7 @@ class CounterpartySerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Counterparty
-        fields = ['url', 'id', 'master_user', 'user_code', 'name', 'short_name', 'classifiers']
+        fields = ['url', 'id', 'master_user', 'user_code', 'name', 'short_name', 'classifiers', 'notes']
 
 
 class ResponsibleSerializer(serializers.ModelSerializer):
