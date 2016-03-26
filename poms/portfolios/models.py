@@ -7,6 +7,7 @@ from mptt.fields import TreeForeignKey, TreeManyToManyField
 from mptt.models import MPTTModel
 
 from poms.accounts.models import Account
+from poms.audit import history
 from poms.currencies.models import Currency
 from poms.strategies.models import Strategy
 from poms.users.models import MasterUser
@@ -55,3 +56,7 @@ class Portfolio(models.Model):
 
     def __str__(self):
         return self.name
+
+
+history.register(PortfolioClassifier)
+history.register(Portfolio)

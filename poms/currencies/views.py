@@ -1,4 +1,4 @@
-from __future__ import unicode_literals, print_function
+from __future__ import unicode_literals
 
 import django_filters
 from rest_framework.filters import DjangoFilterBackend, OrderingFilter, SearchFilter, FilterSet
@@ -7,6 +7,7 @@ from rest_framework.viewsets import ModelViewSet
 
 from poms.api.mixins import DbTransactionMixin
 from poms.api.permissions import IsOwnerOrReadonly
+from poms.audit.mixins import HistoricalMixin
 from poms.currencies.models import Currency, CurrencyHistory
 from poms.currencies.serializers import CurrencySerializer, CurrencyHistorySerializer
 from poms.users.permissions import PomsObjectPermissionMixin, PomsObjectPermissionsFilter, PomsObjectPermission
@@ -27,7 +28,7 @@ class CurrencyFilter(FilterSet):
         return qs
 
 
-class CurrencyViewSet(DbTransactionMixin, PomsObjectPermissionMixin, ModelViewSet):
+class CurrencyViewSet(DbTransactionMixin, HistoricalMixin, PomsObjectPermissionMixin, ModelViewSet):
     queryset = Currency.objects.all()
     serializer_class = CurrencySerializer
     permission_classes = [IsAuthenticated, PomsObjectPermission]
@@ -47,7 +48,7 @@ class CurrencyHistoryFilter(FilterSet):
         fields = ['currency', 'min_date', 'max_date']
 
 
-class CurrencyHistoryViewSet(DbTransactionMixin, ModelViewSet):
+class CurrencyHistoryViewSet(DbTransactionMixin, HistoricalMixin, ModelViewSet):
     queryset = CurrencyHistory.objects.all()
     serializer_class = CurrencyHistorySerializer
     permission_classes = [IsAuthenticated, IsOwnerOrReadonly]

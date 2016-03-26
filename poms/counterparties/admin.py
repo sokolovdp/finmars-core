@@ -3,10 +3,11 @@ from __future__ import unicode_literals
 from django.contrib import admin
 from mptt.admin import MPTTModelAdmin
 
+from poms.audit.admin import HistoricalAdmin
 from poms.counterparties.models import Counterparty, Responsible, CounterpartyClassifier
 
 
-class CounterpartyClassifierAdmin(MPTTModelAdmin):
+class CounterpartyClassifierAdmin(HistoricalAdmin, MPTTModelAdmin):
     model = CounterpartyClassifier
     list_display = ['id', 'name', 'parent', 'master_user']
     list_select_related = ['master_user', 'parent']
@@ -17,7 +18,7 @@ class CounterpartyClassifierAdmin(MPTTModelAdmin):
 admin.site.register(CounterpartyClassifier, CounterpartyClassifierAdmin)
 
 
-class CounterpartyAdmin(admin.ModelAdmin):
+class CounterpartyAdmin(HistoricalAdmin):
     list_display = ['id', 'name', 'master_user']
     list_select_related = ['master_user']
     model = Counterparty
@@ -26,7 +27,7 @@ class CounterpartyAdmin(admin.ModelAdmin):
 admin.site.register(Counterparty, CounterpartyAdmin)
 
 
-class ResponsibleAdmin(admin.ModelAdmin):
+class ResponsibleAdmin(HistoricalAdmin):
     model = Responsible
     list_display = ['id', 'name', 'master_user']
     list_select_related = ['master_user']

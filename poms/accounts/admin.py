@@ -4,9 +4,10 @@ from django.contrib import admin
 from mptt.admin import MPTTModelAdmin
 
 from poms.accounts.models import Account, AccountType, AccountClassifier
+from poms.audit.admin import HistoricalAdmin
 
 
-class AccountTypeAdmin(admin.ModelAdmin):
+class AccountTypeAdmin(HistoricalAdmin):
     model = AccountType
     list_display = ['id', 'name', 'master_user']
     list_select_related = ['master_user']
@@ -15,7 +16,7 @@ class AccountTypeAdmin(admin.ModelAdmin):
 admin.site.register(AccountType, AccountTypeAdmin)
 
 
-class AccountClassifierAdmin(MPTTModelAdmin):
+class AccountClassifierAdmin(HistoricalAdmin, MPTTModelAdmin):
     model = AccountClassifier
     list_display = ['id', 'name', 'parent', 'master_user']
     list_select_related = ['master_user']
@@ -26,7 +27,7 @@ class AccountClassifierAdmin(MPTTModelAdmin):
 admin.site.register(AccountClassifier, AccountClassifierAdmin)
 
 
-class AccountAdmin(admin.ModelAdmin):
+class AccountAdmin(HistoricalAdmin):
     model = Account
     list_display = ['id', 'name', 'master_user']
     list_select_related = ['master_user']

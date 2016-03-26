@@ -6,6 +6,7 @@ from django.utils.translation import ugettext_lazy as _
 from mptt.fields import TreeForeignKey, TreeManyToManyField
 from mptt.models import MPTTModel
 
+from poms.audit import history
 from poms.currencies.models import Currency
 from poms.users.models import MasterUser
 
@@ -75,3 +76,8 @@ class Account(models.Model):
 
     def __str__(self):
         return self.name
+
+
+history.register(AccountClassifier)
+history.register(AccountType)
+history.register(Account)

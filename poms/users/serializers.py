@@ -11,6 +11,7 @@ from guardian.shortcuts import get_perms
 from rest_framework import serializers
 from rest_framework.authtoken.serializers import AuthTokenSerializer
 
+from poms.audit import history
 from poms.users.fields import MasterUserField, get_master_user, get_member, GroupField
 from poms.users.models import MasterUser, UserProfile, GroupProfile, Member, AVAILABLE_APPS
 
@@ -92,6 +93,8 @@ class GrantedPermissionField(serializers.Field):
         super(GrantedPermissionField, self).bind(field_name, parent)
 
     def to_representation(self, value):
+        if history.is_historical_proxy(value):
+            return []
         request = self.context['request']
         ctype = ContentType.objects.get_for_model(value)
         return {'%s.%s' % (ctype.app_label, p) for p in get_perms(request.user, value)}

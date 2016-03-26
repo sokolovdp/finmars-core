@@ -6,12 +6,13 @@ from rest_framework.viewsets import ModelViewSet
 
 from poms.accounts.serializers import AccountClassifierSerializer
 from poms.api.mixins import DbTransactionMixin
+from poms.audit.mixins import HistoricalMixin
 from poms.counterparties.models import CounterpartyClassifier, Counterparty, Responsible
 from poms.counterparties.serializers import CounterpartySerializer, ResponsibleSerializer
 from poms.users.filters import OwnerByMasterUserFilter
 
 
-class CounterpartyClassifierViewSet(DbTransactionMixin, ModelViewSet):
+class CounterpartyClassifierViewSet(DbTransactionMixin, HistoricalMixin, ModelViewSet):
     queryset = CounterpartyClassifier.objects.all()
     serializer_class = AccountClassifierSerializer
     permission_classes = [IsAuthenticated, ]
@@ -20,7 +21,7 @@ class CounterpartyClassifierViewSet(DbTransactionMixin, ModelViewSet):
     search_fields = ['user_code', 'name', 'short_name']
 
 
-class CounterpartyViewSet(DbTransactionMixin, ModelViewSet):
+class CounterpartyViewSet(DbTransactionMixin, HistoricalMixin, ModelViewSet):
     queryset = Counterparty.objects.all()
     serializer_class = CounterpartySerializer
     permission_classes = [IsAuthenticated, ]
@@ -29,7 +30,7 @@ class CounterpartyViewSet(DbTransactionMixin, ModelViewSet):
     search_fields = ['user_code', 'name', 'short_name']
 
 
-class ResponsibleViewSet(DbTransactionMixin, ModelViewSet):
+class ResponsibleViewSet(DbTransactionMixin, HistoricalMixin, ModelViewSet):
     queryset = Responsible.objects.all()
     serializer_class = ResponsibleSerializer
     permission_classes = [IsAuthenticated, ]

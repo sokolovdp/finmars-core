@@ -7,6 +7,7 @@ from django.utils.translation import ugettext_lazy as _
 from mptt.models import MPTTModel
 
 from poms.accounts.models import Account
+from poms.audit import history
 from poms.counterparties.models import Responsible, Counterparty
 from poms.currencies.models import Currency
 from poms.instruments.models import Instrument
@@ -135,7 +136,7 @@ class Transaction(models.Model):
         verbose_name_plural = _('transactions')
 
     def __str__(self):
-        return '%s' % self.id
+        return '%s #%s' % (self.master_user, self.id)
 
         # @property
         # def cash_flow(self):
@@ -150,3 +151,7 @@ class Transaction(models.Model):
                 update_fields = update_fields + ['transaction_date', ]
         super(Transaction, self).save(force_insert=force_insert, force_update=force_update, using=using,
                                       update_fields=update_fields)
+
+
+history.register(TransactionClass)
+history.register(Transaction)

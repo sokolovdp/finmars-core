@@ -3,10 +3,11 @@ from __future__ import unicode_literals
 from django.contrib import admin
 from import_export.admin import ImportExportModelAdmin
 
+from poms.audit.admin import HistoricalAdmin
 from poms.transactions.models import TransactionClass, Transaction
 
 
-class TransactionClassAdmin(admin.ModelAdmin):
+class TransactionClassAdmin(HistoricalAdmin):
     model = TransactionClass
     list_display = ['id', 'system_code', 'name']
     ordering = ['id']
@@ -24,7 +25,7 @@ admin.site.register(TransactionClass, TransactionClassAdmin)
 # admin.site.register(TransactionClassifier, TransactionClassifierAdmin)
 
 
-class TransactionAdmin(ImportExportModelAdmin, admin.ModelAdmin):
+class TransactionAdmin(HistoricalAdmin, ImportExportModelAdmin):
     model = Transaction
     list_select_related = ['master_user', 'transaction_class', 'instrument', 'transaction_currency',
                            'settlement_currency', 'account_cash', 'account_position', 'account_interim', ]

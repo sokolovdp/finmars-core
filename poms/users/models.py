@@ -1,11 +1,12 @@
 from __future__ import unicode_literals
 
 from django.conf import settings
-from django.contrib.auth.models import Group, User
+from django.contrib.auth.models import Group, User, Permission
 from django.db import models
 from django.utils.encoding import python_2_unicode_compatible
 from django.utils.translation import ugettext_lazy as _
 
+from poms.audit import history
 from poms.fields import TimezoneField, LanguageField
 
 AVAILABLE_APPS = ['accounts', 'counterparties', 'currencies', 'instruments', 'portfolios', 'strategies', 'transactions',
@@ -100,3 +101,11 @@ class GroupProfile(models.Model):
 
     permissions = property(get_permissions, set_permissions)
 
+
+history.register(MasterUser)
+history.register(Member)
+history.register(Permission)
+history.register(User, follow=['profile'], exclude=['password'])
+history.register(UserProfile)
+history.register(Group, follow=['profile', 'permissions'])
+history.register(GroupProfile, follow=['group'])

@@ -6,6 +6,7 @@ from django.utils import timezone
 from django.utils.encoding import python_2_unicode_compatible
 from django.utils.translation import ugettext_lazy as _
 
+from poms.audit import history
 from poms.users.models import MasterUser
 
 
@@ -42,7 +43,7 @@ class Currency(models.Model):
         ]
 
     def __str__(self):
-        return '%s' % self.user_code
+        return self.name
 
     @property
     def is_global(self):
@@ -79,3 +80,7 @@ class CurrencyHistory(models.Model):
     @property
     def is_global(self):
         return self.master_user_id is None
+
+
+history.register(Currency)
+history.register(CurrencyHistory)

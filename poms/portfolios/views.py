@@ -5,12 +5,13 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.viewsets import ModelViewSet
 
 from poms.api.mixins import DbTransactionMixin
+from poms.audit.mixins import HistoricalMixin
 from poms.portfolios.models import PortfolioClassifier, Portfolio
 from poms.portfolios.serializers import PortfolioClassifierSerializer, PortfolioSerializer
 from poms.users.filters import OwnerByMasterUserFilter
 
 
-class PortfolioClassifierViewSet(DbTransactionMixin, ModelViewSet):
+class PortfolioClassifierViewSet(DbTransactionMixin, HistoricalMixin, ModelViewSet):
     queryset = PortfolioClassifier.objects.all()
     serializer_class = PortfolioClassifierSerializer
     permission_classes = [IsAuthenticated, ]
@@ -19,7 +20,7 @@ class PortfolioClassifierViewSet(DbTransactionMixin, ModelViewSet):
     search_fields = ['user_code', 'name', 'short_name']
 
 
-class PortfolioViewSet(DbTransactionMixin, ModelViewSet):
+class PortfolioViewSet(DbTransactionMixin, HistoricalMixin, ModelViewSet):
     queryset = Portfolio.objects.all()
     serializer_class = PortfolioSerializer
     permission_classes = [IsAuthenticated, ]

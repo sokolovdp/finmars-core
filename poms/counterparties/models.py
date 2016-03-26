@@ -6,6 +6,7 @@ from django.utils.translation import ugettext_lazy as _
 from mptt.fields import TreeForeignKey, TreeManyToManyField
 from mptt.models import MPTTModel
 
+from poms.audit import history
 from poms.currencies.models import Currency
 from poms.portfolios.models import Portfolio
 from poms.users.models import MasterUser
@@ -70,3 +71,8 @@ class Responsible(models.Model):
 
     def __str__(self):
         return self.name
+
+
+history.register(CounterpartyClassifier)
+history.register(Counterparty)
+history.register(Responsible)

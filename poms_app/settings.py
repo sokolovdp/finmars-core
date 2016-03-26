@@ -40,18 +40,19 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'django.contrib.humanize',
     'rest_framework',
-    'mptt',
 
     'kombu.transport.django',
     # 'djcelery',
 
+    'mptt',
     'reversion',
     'guardian',
     'import_export',
 
+    'poms.http_sessions',
     'poms.users',
     'poms.audit',
-    'poms.http_sessions',
+    'poms.notifications',
     'poms.accounts',
     'poms.counterparties',
     'poms.currencies',
@@ -61,7 +62,6 @@ INSTALLED_APPS = [
     'poms.transactions',
     'poms.reports',
     'poms.api',
-    'poms.notifications',
 ]
 
 if DEBUG:
@@ -118,19 +118,19 @@ DATABASES = {
 }
 
 if DEBUG:
-    DATABASES['default'] = {
-        'ENGINE': 'django.db.backends.postgresql',
-        'NAME': 'poms_dev',
-        'USER': 'poms_dev',
-        'PASSWORD': 'sqlsql',
-        'HOST': '192.168.57.2',
-        'PORT': '',
-    }
     # DATABASES['default'] = {
-    #     'ENGINE': 'django.db.backends.sqlite3',
-    #     # 'NAME': os.path.join(BASE_DIR, 'db.sqlite3'),
-    #     'NAME': ':memory:'
+    #     'ENGINE': 'django.db.backends.postgresql',
+    #     'NAME': 'poms_dev',
+    #     'USER': 'poms_dev',
+    #     'PASSWORD': 'sqlsql',
+    #     'HOST': '192.168.57.2',
+    #     'PORT': '',
     # }
+    DATABASES['default'] = {
+        'ENGINE': 'django.db.backends.sqlite3',
+        'NAME': os.path.join(BASE_DIR, 'db.sqlite3'),
+        # 'NAME': ':memory:'
+    }
 
 # Password validation
 # https://docs.djangoproject.com/en/1.9/ref/settings/#auth-password-validators
@@ -232,7 +232,7 @@ LOGGING = {
 
 REST_FRAMEWORK = {
     # 'DEFAULT_PAGINATION_CLASS' : 'rest_framework.pagination.PageNumberPagination',
-    'PAGE_SIZE': 20,
+    'PAGE_SIZE': 200,
     'DEFAULT_AUTHENTICATION_CLASSES': (
         'rest_framework.authentication.SessionAuthentication',
         #     'rest_framework.authentication.BasicAuthentication',
