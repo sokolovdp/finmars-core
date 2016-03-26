@@ -1,5 +1,4 @@
 from __future__ import unicode_literals
-from __future__ import unicode_literals
 
 import six
 from django.contrib.auth import user_logged_in, user_login_failed, get_user_model
@@ -7,8 +6,6 @@ from django.core import serializers as django_serializers
 from django.db.models.signals import post_init, post_save, post_delete
 from django.dispatch import receiver
 from django.utils.encoding import force_text
-from django.utils.text import get_text_list
-from django.utils.translation import ugettext as _
 from reversion import revisions as reversion
 
 from poms.audit import history
