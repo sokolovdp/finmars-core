@@ -29,7 +29,7 @@ class NotificationFilter(FilterSet):
 
 
 class NotificationViewSet(DbTransactionMixin, ReadOnlyModelViewSet):
-    queryset = Notification.objects.filter(deleted=False)
+    queryset = Notification.objects
     serializer_class = NotificationSerializer
     permission_classes = (IsAuthenticated,)
     filter_backends = (OwnerByRecipientFilter, DjangoFilterBackend, OrderingFilter, SearchFilter,)

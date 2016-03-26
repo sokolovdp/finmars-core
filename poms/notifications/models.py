@@ -38,6 +38,7 @@ class Notification(models.Model):
     actor_content_type = models.ForeignKey(ContentType, related_name='notify_actor')
     actor_object_id = models.CharField(max_length=255)
     actor = GenericForeignKey('actor_content_type', 'actor_object_id')
+    actor_repr = models.TextField(null=True, blank=True)
 
     verb = models.CharField(max_length=255)
     description = models.TextField(blank=True, null=True)
@@ -45,14 +46,14 @@ class Notification(models.Model):
     target_content_type = models.ForeignKey(ContentType, related_name='notify_target', blank=True, null=True)
     target_object_id = models.CharField(max_length=255, blank=True, null=True)
     target = GenericForeignKey('target_content_type', 'target_object_id')
+    target_repr = models.TextField(null=True, blank=True)
 
     action_object_content_type = models.ForeignKey(ContentType, blank=True, null=True,
                                                    related_name='notify_action_object')
     action_object_object_id = models.CharField(max_length=255, blank=True, null=True)
     action_object = GenericForeignKey('action_object_content_type', 'action_object_object_id')
+    action_object_repr = models.TextField(null=True, blank=True)
 
-    public = models.BooleanField(default=True)
-    deleted = models.BooleanField(default=False)
     emailed = models.BooleanField(default=False)
 
     data = models.TextField(blank=True, null=True)
@@ -95,16 +96,8 @@ class Notification(models.Model):
             self.save(update_fields=['read_date'])
 
 
-def notify_handler(verb, **kwargs):
-    kwargs.pop('signal', None)
-    recipient = kwargs.pop('recipient')
-    actor = kwargs.pop('sender')
-    optional_objs = [(kwargs.pop(opt, None), opt) for opt in ('target', 'action_object')]
-    public = bool(kwargs.pop('public', True))
-    description = kwargs.pop('description', None)
-    create_date = kwargs.pop('create_date', timezone.now())
-    level = kwargs.pop('level', Notification.INFO)
-
+def notify_handler(recipient=None, actor=None, verb=None, action_object=None, target=None, description=None,
+                   create_date=None, level=None, data=None, **kwargs):
     # Check if User or Group
     if isinstance(recipient, Group):
         recipients = recipient.user_set.all()
@@ -114,23 +107,24 @@ def notify_handler(verb, **kwargs):
     for recipient in recipients:
         n = Notification(
             recipient=recipient,
-            actor_content_type=ContentType.objects.get_for_model(actor),
-            actor_object_id=actor.pk,
+            actor=actor,
+            actor_repr=force_text(actor),
             verb=force_text(verb),
-            public=public,
             description=description,
             create_date=create_date,
             level=level,
         )
 
-        # Set optional objects
-        for obj, opt in optional_objs:
-            if obj is not None:
-                setattr(n, '%s_object_id' % opt, obj.pk)
-                setattr(n, '%s_content_type' % opt,
-                        ContentType.objects.get_for_model(obj))
+        if target:
+            n.target = target
+            n.target_repr = force_text(target)
 
-        n.data = json.dumps(kwargs, sort_keys=True, indent=2)
+        if action_object:
+            n.action_object = action_object
+            n.action_object_repr = force_text(action_object)
+
+        if data:
+            n.data = json.dumps(data, sort_keys=True)
 
         n.save()
 
