@@ -18,14 +18,14 @@ from poms.notifications.serializers import NotificationSerializer
 class NotificationFilter(FilterSet):
     all = django_filters.MethodFilter(action='show_all', widget=BooleanWidget())
     level = django_filters.MultipleChoiceFilter(choices=Notification.LEVELS)
-    type = django_filters.ChoiceFilter()
+    type = django_filters.CharFilter(lookup_expr='startswith')
 
     class Meta:
         model = Notification
         fields = ['all', 'level']
 
     def show_all(self, qs, value):
-        # see OwnerByRecipientFilter
+        # used only for show attr in filter, see OwnerByRecipientFilter
         return qs
 
 

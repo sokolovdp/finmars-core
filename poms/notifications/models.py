@@ -150,8 +150,8 @@ def info(*args, **kwargs):
     send(*args, **kwargs)
 
 
-def warn(self, *args, **kwargs):
-    kwargs['level'] = Notification.WARNING
+def warn(*args, **kwargs):
+    kwargs['level'] = Notification.WARN
     send(*args, **kwargs)
 
 # connect the signal
