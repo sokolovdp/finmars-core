@@ -11,7 +11,7 @@ from reversion import revisions as reversion
 from poms.audit import history
 from poms.audit.models import AuthLogEntry
 from poms.middleware import get_request
-from poms.notifications.models import warn
+from poms import notifications
 
 
 @receiver(user_logged_in, dispatch_uid='audit_user_logged_in')
@@ -38,7 +38,7 @@ def audit_user_login_failed(credentials=None, **kwargs):
                                 user_agent=getattr(request, 'user_agent', None),
                                 user_ip=getattr(request, 'user_ip', None))
 
-    warn([user], actor=user, verb='login failed')
+    notifications.warning([user], actor=user, verb='login failed')
 
 
 def _is_track(obj):

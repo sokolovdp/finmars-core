@@ -1,32 +1,25 @@
 from __future__ import unicode_literals
 
-import json
-
 from babel import Locale
 from babel.dates import format_timedelta
 from django.conf import settings
+from django.contrib import messages
 from django.contrib.auth.models import Group
 from django.contrib.contenttypes.fields import GenericForeignKey
 from django.contrib.contenttypes.models import ContentType
 from django.db import models
 from django.utils import timezone
-from django.utils.encoding import python_2_unicode_compatible, force_text
+from django.utils.encoding import python_2_unicode_compatible
 from django.utils.translation import ugettext_lazy as _, get_language
+
+from poms.notifications import LEVELS
 
 
 @python_2_unicode_compatible
 class Notification(models.Model):
-    DISABLE = 0
-    INFO = 1
-    WARN = 2
-    LEVELS = (
-        (INFO, _('info')),
-        (WARN, _('warning')),
-    )
-
     recipient = models.ForeignKey(settings.AUTH_USER_MODEL, blank=False, related_name='notifications')
 
-    level = models.PositiveSmallIntegerField(choices=LEVELS, default=INFO)
+    level = models.PositiveSmallIntegerField(choices=LEVELS, default=messages.INFO)
     type = models.CharField(max_length=30, null=True, blank=True)
     message = models.TextField(blank=True, null=True)
 
@@ -89,7 +82,6 @@ class Notification(models.Model):
             self.read_date = None
             self.save(update_fields=['read_date'])
 
-
 #
 # def notify_handler(sender=None, recipient=None, nf_type=None, message=None, verb=None, action_object=None, target=None,
 #                    create_date=None, level=None, data=None, **kwargs):
@@ -121,37 +113,5 @@ class Notification(models.Model):
 #         ret.append(n)
 #     return ret
 
-
-def send(recipients, level=Notification.INFO, type=None, message=None,
-         actor=None, verb=None, target=None, action_object=None, data=None):
-    ret = []
-    for recipient in recipients:
-        # profile = getattr(recipient, 'profile', None)
-        # language = getattr(profile, 'language', settings.LANGUAGE_CODE)
-        # with override(language):
-        n = Notification.objects.create(
-            recipient=recipient,
-            level=level,
-            type=type,
-            message=message,
-            actor=actor,
-            verb=force_text(verb),
-            target=target,
-            action_object=action_object,
-            data=json.dumps(data, sort_keys=True) if data else None,
-            create_date=timezone.now()
-        )
-        ret.append(n)
-    return ret
-
-
-def info(*args, **kwargs):
-    kwargs['level'] = Notification.INFO
-    send(*args, **kwargs)
-
-
-def warn(*args, **kwargs):
-    kwargs['level'] = Notification.WARN
-    send(*args, **kwargs)
 
 # connect the signal
