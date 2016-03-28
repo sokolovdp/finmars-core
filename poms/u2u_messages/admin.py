@@ -27,7 +27,7 @@ class StatusInline(admin.TabularInline):
 
 class MessageAdmin(HistoricalAdmin):
     model = Message
-    list_display = ['id', 'channel', 'sender', 'text']
+    list_display = ['id', 'channel', 'sender', 'short_text']
     inlines = [StatusInline]
 
 

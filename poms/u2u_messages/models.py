@@ -3,6 +3,7 @@ from __future__ import unicode_literals
 from django.conf import settings
 from django.db import models
 from django.utils.encoding import python_2_unicode_compatible
+from django.utils.text import Truncator
 from django.utils.translation import ugettext_lazy as _
 
 from poms.users.models import MasterUser
@@ -46,8 +47,9 @@ class Message(models.Model):
         return self.mini_text
 
     @property
-    def mini_text(self):
-        return self.text[:50] if self.text else None
+    def short_text(self):
+        return Truncator(self.text).chars(50)
+        # return self.text[:50] if self.text else None
 
 
 @python_2_unicode_compatible
