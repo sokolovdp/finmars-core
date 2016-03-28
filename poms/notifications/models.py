@@ -2,8 +2,6 @@ from __future__ import unicode_literals
 
 import json
 
-from babel import Locale
-from babel.dates import format_timedelta
 from django.conf import settings
 from django.contrib.auth.models import Group
 from django.contrib.contenttypes.fields import GenericForeignKey
@@ -11,7 +9,8 @@ from django.contrib.contenttypes.models import ContentType
 from django.db import models
 from django.utils import timezone
 from django.utils.encoding import python_2_unicode_compatible, force_text
-from django.utils.translation import ugettext_lazy as _, get_language
+from django.utils.timesince import timesince as timesince_
+from django.utils.translation import ugettext_lazy as _
 
 
 # Create your models here.
@@ -29,32 +28,31 @@ class Notification(models.Model):
         (WARNING, _('warning')),
         (ERROR, _('error'))
     )
-    level = models.PositiveSmallIntegerField(choices=LEVELS, default=INFO)
 
     recipient = models.ForeignKey(settings.AUTH_USER_MODEL, blank=False, related_name='notifications')
-    create_date = models.DateTimeField(default=timezone.now, db_index=True)
-    read_date = models.DateTimeField(null=True, blank=True, db_index=True)
 
-    actor_content_type = models.ForeignKey(ContentType, related_name='notify_actor')
-    actor_object_id = models.CharField(max_length=255)
+    level = models.PositiveSmallIntegerField(choices=LEVELS, default=INFO)
+    type = models.CharField(max_length=30, null=True, blank=True)
+    message = models.TextField(blank=True, null=True)
+
+    actor_content_type = models.ForeignKey(ContentType, related_name='notify_actor', null=True, blank=True)
+    actor_object_id = models.CharField(max_length=255, null=True, blank=True)
     actor = GenericForeignKey('actor_content_type', 'actor_object_id')
-    actor_repr = models.TextField(null=True, blank=True)
 
-    verb = models.CharField(max_length=255)
-    description = models.TextField(blank=True, null=True)
+    verb = models.CharField(max_length=255, null=True, blank=True)
 
     target_content_type = models.ForeignKey(ContentType, related_name='notify_target', blank=True, null=True)
     target_object_id = models.CharField(max_length=255, blank=True, null=True)
     target = GenericForeignKey('target_content_type', 'target_object_id')
-    target_repr = models.TextField(null=True, blank=True)
 
     action_object_content_type = models.ForeignKey(ContentType, blank=True, null=True,
                                                    related_name='notify_action_object')
     action_object_object_id = models.CharField(max_length=255, blank=True, null=True)
     action_object = GenericForeignKey('action_object_content_type', 'action_object_object_id')
-    action_object_repr = models.TextField(null=True, blank=True)
 
-    emailed = models.BooleanField(default=False)
+    create_date = models.DateTimeField(default=timezone.now, db_index=True)
+    read_date = models.DateTimeField(null=True, blank=True, db_index=True)
+    email_sent_date = models.DateTimeField(null=True, blank=True)
 
     data = models.TextField(blank=True, null=True)
 
@@ -63,27 +61,29 @@ class Notification(models.Model):
     class Meta:
         ordering = ['-create_date']
 
-    def __str__(self):  # Adds support for Python 3
-        ctx = {
-            'actor': self.actor,
-            'verb': self.verb,
-            'action_object': self.action_object,
-            'target': self.target,
-            'timesince': self.timesince()
-        }
-        if self.target:
+    def __str__(self):
+        if self.verb and self.actor_object_id:
+            ctx = {
+                'actor': self.actor,
+                'verb': self.verb,
+                'action_object': self.action_object,
+                'target': self.target,
+                'timesince': self.timesince()
+            }
+            if self.target:
+                if self.action_object:
+                    return _('%(actor)s %(verb)s %(action_object)s on %(target)s %(timesince)s') % ctx
+                return _('%(actor)s %(verb)s %(target)s %(timesince)s') % ctx
             if self.action_object:
-                return '%(actor)s %(verb)s %(action_object)s on %(target)s %(timesince)s' % ctx
-            return '%(actor)s %(verb)s %(target)s %(timesince)s' % ctx
-        if self.action_object:
-            return '%(actor)s %(verb)s %(action_object)s %(timesince)s' % ctx
-        return '%(actor)s %(verb)s %(timesince)s' % ctx
+                return _('%(actor)s %(verb)s %(action_object)s %(timesince)s') % ctx
+            return _('%(actor)s %(verb)s %(timesince)s') % ctx
+        else:
+            return self.message
 
     def timesince(self, now=None):
-        # from django.utils.timesince import timesince as timesince_
-        # return timesince_(self.create_date, now)
-        locale = Locale.parse(get_language(), sep='-')
-        return format_timedelta(self.create_date - timezone.now(), add_direction=True, locale=locale)
+        # locale = Locale.parse(get_language(), sep='-')
+        # return format_timedelta(self.create_date - timezone.now(), add_direction=True, locale=locale)
+        return timesince_(self.create_date, now)
 
     def mark_as_read(self):
         if self.read_date is None:
@@ -95,37 +95,37 @@ class Notification(models.Model):
             self.read_date = None
             self.save(update_fields=['read_date'])
 
+    def mark_as_emailed(self):
+        if self.email_sent_date is None:
+            self.email_sent_date = timezone.now()
+            self.save(update_fields=['email_sent_date'])
 
-def notify_handler(recipient=None, actor=None, verb=None, action_object=None, target=None, description=None,
+
+def notify_handler(recipient=None, nf_type=None, message=None, actor=None, verb=None, action_object=None, target=None,
                    create_date=None, level=None, data=None, **kwargs):
     # Check if User or Group
     if isinstance(recipient, Group):
         recipients = recipient.user_set.all()
+    elif isinstance(recipient, (list, tuple, models.QuerySet, models.Manager)):
+        recipients = recipient
     else:
         recipients = [recipient]
 
+    ret = []
     for recipient in recipients:
-        n = Notification(
+        n = Notification.objects.create(
             recipient=recipient,
-            actor=actor,
-            actor_repr=force_text(actor),
-            verb=force_text(verb),
-            description=description,
-            create_date=create_date,
             level=level,
+            type=nf_type,
+            message=message,
+            actor=actor,
+            verb=force_text(verb),
+            target=target,
+            action_object=action_object,
+            data=json.dumps(data, sort_keys=True) if data else None,
+            create_date=create_date
         )
-
-        if target:
-            n.target = target
-            n.target_repr = force_text(target)
-
-        if action_object:
-            n.action_object = action_object
-            n.action_object_repr = force_text(action_object)
-
-        if data:
-            n.data = json.dumps(data, sort_keys=True)
-
-        n.save()
+        ret.append(n)
+    return ret
 
 # connect the signal
