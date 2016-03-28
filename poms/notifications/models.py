@@ -2,6 +2,8 @@ from __future__ import unicode_literals
 
 import json
 
+from babel import Locale
+from babel.dates import format_timedelta
 from django.conf import settings
 from django.contrib.auth.models import Group
 from django.contrib.contenttypes.fields import GenericForeignKey
@@ -9,24 +11,17 @@ from django.contrib.contenttypes.models import ContentType
 from django.db import models
 from django.utils import timezone
 from django.utils.encoding import python_2_unicode_compatible, force_text
-from django.utils.timesince import timesince as timesince_
-from django.utils.translation import ugettext_lazy as _
-
-
-# Create your models here.
+from django.utils.translation import ugettext_lazy as _, get_language
 
 
 @python_2_unicode_compatible
 class Notification(models.Model):
-    SUCCESS = 1
-    INFO = 2
-    WARNING = 3
-    ERROR = 4
+    DISABLE = 0
+    INFO = 1
+    WARN = 2
     LEVELS = (
-        (SUCCESS, _('success')),
         (INFO, _('info')),
-        (WARNING, _('warning')),
-        (ERROR, _('error'))
+        (WARN, _('warning')),
     )
 
     recipient = models.ForeignKey(settings.AUTH_USER_MODEL, blank=False, related_name='notifications')
@@ -52,7 +47,6 @@ class Notification(models.Model):
 
     create_date = models.DateTimeField(default=timezone.now, db_index=True)
     read_date = models.DateTimeField(null=True, blank=True, db_index=True)
-    email_sent_date = models.DateTimeField(null=True, blank=True)
 
     data = models.TextField(blank=True, null=True)
 
@@ -81,9 +75,9 @@ class Notification(models.Model):
             return self.message
 
     def timesince(self, now=None):
-        # locale = Locale.parse(get_language(), sep='-')
-        # return format_timedelta(self.create_date - timezone.now(), add_direction=True, locale=locale)
-        return timesince_(self.create_date, now)
+        locale = Locale.parse(get_language(), sep='-')
+        return format_timedelta(self.create_date - timezone.now(), add_direction=True, locale=locale)
+        # return timesince(self.create_date, now)
 
     def mark_as_read(self):
         if self.read_date is None:
@@ -95,37 +89,69 @@ class Notification(models.Model):
             self.read_date = None
             self.save(update_fields=['read_date'])
 
-    def mark_as_emailed(self):
-        if self.email_sent_date is None:
-            self.email_sent_date = timezone.now()
-            self.save(update_fields=['email_sent_date'])
+
+#
+# def notify_handler(sender=None, recipient=None, nf_type=None, message=None, verb=None, action_object=None, target=None,
+#                    create_date=None, level=None, data=None, **kwargs):
+#     # Check if User or Group
+#     if isinstance(recipient, Group):
+#         recipients = recipient.user_set.all()
+#     elif isinstance(recipient, (list, tuple, models.QuerySet, models.Manager)):
+#         recipients = recipient
+#     else:
+#         recipients = [recipient]
+#
+#     ret = []
+#     for recipient in recipients:
+#         # profile = getattr(recipient, 'profile', None)
+#         # language = getattr(profile, 'language', settings.LANGUAGE_CODE)
+#         # with override(language):
+#         n = Notification.objects.create(
+#             recipient=recipient,
+#             level=level or LEVEL_INFO,
+#             type=nf_type,
+#             message=message,
+#             actor=sender,
+#             verb=force_text(verb),
+#             target=target,
+#             action_object=action_object,
+#             data=json.dumps(data, sort_keys=True) if data else None,
+#             create_date=create_date or timezone.now()
+#         )
+#         ret.append(n)
+#     return ret
 
 
-def notify_handler(recipient=None, nf_type=None, message=None, actor=None, verb=None, action_object=None, target=None,
-                   create_date=None, level=None, data=None, **kwargs):
-    # Check if User or Group
-    if isinstance(recipient, Group):
-        recipients = recipient.user_set.all()
-    elif isinstance(recipient, (list, tuple, models.QuerySet, models.Manager)):
-        recipients = recipient
-    else:
-        recipients = [recipient]
-
+def send(recipients, level=Notification.INFO, type=None, message=None,
+         actor=None, verb=None, target=None, action_object=None, data=None):
     ret = []
     for recipient in recipients:
+        # profile = getattr(recipient, 'profile', None)
+        # language = getattr(profile, 'language', settings.LANGUAGE_CODE)
+        # with override(language):
         n = Notification.objects.create(
             recipient=recipient,
             level=level,
-            type=nf_type,
+            type=type,
             message=message,
             actor=actor,
             verb=force_text(verb),
             target=target,
             action_object=action_object,
             data=json.dumps(data, sort_keys=True) if data else None,
-            create_date=create_date
+            create_date=timezone.now()
         )
         ret.append(n)
     return ret
+
+
+def info(*args, **kwargs):
+    kwargs['level'] = Notification.INFO
+    send(*args, **kwargs)
+
+
+def warn(self, *args, **kwargs):
+    kwargs['level'] = Notification.WARNING
+    send(*args, **kwargs)
 
 # connect the signal

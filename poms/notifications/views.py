@@ -18,6 +18,7 @@ from poms.notifications.serializers import NotificationSerializer
 class NotificationFilter(FilterSet):
     all = django_filters.MethodFilter(action='show_all', widget=BooleanWidget())
     level = django_filters.MultipleChoiceFilter(choices=Notification.LEVELS)
+    type = django_filters.ChoiceFilter()
 
     class Meta:
         model = Notification
@@ -29,7 +30,9 @@ class NotificationFilter(FilterSet):
 
 
 class NotificationViewSet(DbTransactionMixin, ReadOnlyModelViewSet):
-    queryset = Notification.objects
+    queryset = Notification.objects.prefetch_related('actor_content_type', 'actor',
+                                                     'target_content_type', 'target',
+                                                     'action_object_content_type', 'action_object')
     serializer_class = NotificationSerializer
     permission_classes = (IsAuthenticated,)
     filter_backends = (OwnerByRecipientFilter, DjangoFilterBackend, OrderingFilter, SearchFilter,)

@@ -24,12 +24,14 @@ class NotificationSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Notification
-        fields = ['url', 'id', 'level', 'create_date', 'read_date', 'message', 'timesince',
+        fields = ['url', 'id', 'level', 'create_date', 'read_date',
+                  'type',
+                  'message', 'timesince',
                   'actor', 'actor_type', 'actor_repr',
                   'verb',
                   'target', 'target_type', 'target_repr',
                   'action_object', 'action_object_type', 'action_object_repr',
-                  'description', 'data']
+                  'data']
 
     def get_message(self, value):
         return force_text(value)
@@ -45,7 +47,7 @@ class NotificationSerializer(serializers.ModelSerializer):
         return None
 
     def get_actor_repr(self, value):
-        if value.actor:
+        if value.actor_object_id:
             return '%s' % value.actor
         return None
 
@@ -55,12 +57,12 @@ class NotificationSerializer(serializers.ModelSerializer):
         return None
 
     def get_target_type(self, value):
-        if value.target_content_type:
+        if value.target_content_type_id:
             return '%s' % value.target_content_type.model
         return None
 
     def get_target_repr(self, value):
-        if value.target:
+        if value.target_object_id:
             return '%s' % value.target
         return None
 
@@ -70,12 +72,12 @@ class NotificationSerializer(serializers.ModelSerializer):
         return None
 
     def get_action_object_type(self, value):
-        if value.action_object_content_type:
+        if value.action_object_content_type_id:
             return '%s' % value.action_object_content_type.model
         return None
 
     def get_action_object_repr(self, value):
-        if value.action_object:
+        if value.action_object_object_id:
             return '%s' % value.action_object
         return None
 
