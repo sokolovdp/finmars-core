@@ -17,10 +17,11 @@ import poms.strategies.views as strategies
 import poms.users.views as users
 import poms.reports.views as reports
 import poms.notifications.views as notifications
+import poms.u2u_messages.views as u2um
 
 router = routers.DefaultRouter()
-router.register(r'users/login', users.LoginViewSet, 'LoginViewSet')
-router.register(r'users/logout', users.LogoutViewSet, 'LogoutViewSet')
+router.register(r'users/login', users.LoginViewSet, 'login')
+router.register(r'users/logout', users.LogoutViewSet, 'logout')
 router.register(r'users/ping', views.PingViewSet, "ping")
 router.register(r'users/protected-ping', views.ProtectedPingViewSet, "protectedping")
 
@@ -30,6 +31,9 @@ router.register(r'users/member', users.MemberViewSet)
 router.register(r'users/group', users.GroupViewSet)
 
 router.register(r'notifications/notification', notifications.NotificationViewSet)
+router.register(r'u2um/channel', u2um.ChannelViewSet, 'u2uchannel')
+router.register(r'u2um/member', u2um.MemberViewSet, 'u2umember')
+router.register(r'u2um/message', u2um.MessageViewSet, 'u2umessage')
 
 router.register(r'security/http-session', sessions.SessionViewSet)
 

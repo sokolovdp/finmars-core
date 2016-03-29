@@ -14,8 +14,14 @@ class Channel(models.Model):
     master_user = models.ForeignKey(MasterUser, related_name='channels', verbose_name=_('master user'))
     users = models.ManyToManyField(settings.AUTH_USER_MODEL, related_name='channels', through='Member')
     name = models.CharField(max_length=255)
-    create_date = models.DateTimeField(auto_now_add=True)
+    create_date = models.DateTimeField(auto_now_add=True, db_index=True)
     is_direct = models.BooleanField(default=False)
+
+    class Meta:
+        unique_together = [
+            ['master_user', 'name', 'is_direct']
+        ]
+        ordering = ['name']
 
     def __str__(self):
         return self.name
@@ -23,7 +29,7 @@ class Channel(models.Model):
 
 @python_2_unicode_compatible
 class Member(models.Model):
-    channel = models.ForeignKey(Channel, on_delete=models.PROTECT)
+    channel = models.ForeignKey(Channel, on_delete=models.PROTECT, related_name='members')
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.PROTECT, related_name='channel_members')
     join_date = models.DateTimeField(auto_now_add=True)
 
@@ -38,13 +44,19 @@ class Member(models.Model):
 
 @python_2_unicode_compatible
 class Message(models.Model):
-    sender = models.ForeignKey(settings.AUTH_USER_MODEL, related_name='out_messages')
-    recipient = models.ForeignKey(settings.AUTH_USER_MODEL, null=True, blank=True)
     channel = models.ForeignKey(Channel)
+    sender = models.ForeignKey(settings.AUTH_USER_MODEL, related_name='out_messages')
     text = models.TextField()
+    create_date = models.DateTimeField(auto_now_add=True, db_index=True)
+
+    class Meta:
+        unique_together = [
+            ['channel', 'create_date']
+        ]
+        ordering = ['-create_date']
 
     def __str__(self):
-        return self.mini_text
+        return self.short_text
 
     @property
     def short_text(self):
