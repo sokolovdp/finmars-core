@@ -81,9 +81,17 @@ class Account(models.Model):
 class AccountUserObjectPermission(UserObjectPermissionBase):
     content_object = models.ForeignKey(Account)
 
+    class Meta:
+        verbose_name = _('Accounts - user permission')
+        verbose_name_plural = _('Accounts - user permissions')
+
 
 class AccountGroupObjectPermission(GroupObjectPermissionBase):
     content_object = models.ForeignKey(Account)
+
+    class Meta:
+        verbose_name = _('Accounts - group permission')
+        verbose_name_plural = _('Accounts - group permissions')
 
 
 history.register(AccountClassifier)

@@ -109,6 +109,7 @@ class UserObjectPermissionAdminBase(admin.TabularInline):
 
 class UserObjectPermissionAdmin(admin.ModelAdmin):
     raw_id_fields = ['member', 'content_object']
+    list_display = ['id', 'member', 'permission', 'content_object']
 
     def formfield_for_foreignkey(self, db_field, request=None, **kwargs):
         if db_field.name == 'permission':
@@ -121,6 +122,7 @@ class UserObjectPermissionAdmin(admin.ModelAdmin):
 
 class GroupObjectPermissionAdmin(admin.ModelAdmin):
     raw_id_fields = ['group', 'content_object']
+    list_display = ['id', 'group', 'permission', 'content_object']
 
     def formfield_for_foreignkey(self, db_field, request=None, **kwargs):
         if db_field.name == 'permission':

@@ -47,7 +47,7 @@ class Member(models.Model):
     permissions = models.ManyToManyField(Permission, blank=True)
 
     def __str__(self):
-        return '%s@%s' % (self.user.username,self.master_user)
+        return '%s@%s' % (self.user.username, self.master_user)
 
 
 @python_2_unicode_compatible
@@ -129,18 +129,26 @@ class ObjectPermissionBase(models.Model):
         abstract = True
 
 
+@python_2_unicode_compatible
 class UserObjectPermissionBase(ObjectPermissionBase):
     member = models.ForeignKey(Member)
 
     class Meta:
         abstract = True
 
+    def __str__(self):
+        return '%s - %s - %s' % (self.content_object, self.member, self.permission)
 
+
+@python_2_unicode_compatible
 class GroupObjectPermissionBase(ObjectPermissionBase):
     group = models.ForeignKey(Group2)
 
     class Meta:
         abstract = True
+
+    def __str__(self):
+        return '%s - %s - %s' % (self.content_object, self.group, self.permission)
 
 
 history.register(MasterUser)
