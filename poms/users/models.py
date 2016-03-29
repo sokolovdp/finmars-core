@@ -122,21 +122,21 @@ class Group2(models.Model):
         return '%s@%s' % (self.name, self.master_user)
 
 
-class BaseObjectPermission(models.Model):
+class ObjectPermissionBase(models.Model):
     permission = models.ForeignKey(Permission)
 
     class Meta:
         abstract = True
 
 
-class BaseUserObjectPermission(BaseObjectPermission):
+class UserObjectPermissionBase(ObjectPermissionBase):
     member = models.ForeignKey(Member)
 
     class Meta:
         abstract = True
 
 
-class BaseGroupObjectPermission(BaseObjectPermission):
+class GroupObjectPermissionBase(ObjectPermissionBase):
     group = models.ForeignKey(Group2)
 
     class Meta:

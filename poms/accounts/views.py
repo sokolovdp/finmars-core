@@ -1,16 +1,16 @@
 from __future__ import unicode_literals
 
 from rest_framework.filters import FilterSet, DjangoFilterBackend, OrderingFilter, SearchFilter
-from rest_framework.permissions import IsAuthenticated, DjangoObjectPermissions
+from rest_framework.permissions import IsAuthenticated
 from rest_framework.viewsets import ModelViewSet
 
 from poms.accounts.models import Account, AccountType, AccountClassifier
 from poms.accounts.serializers import AccountSerializer, AccountTypeSerializer, AccountClassifierSerializer
 from poms.api.mixins import DbTransactionMixin
 from poms.audit.mixins import HistoricalMixin
-from poms.users.backends import PomsObjectPermissionsFilter
-from poms.users.filters import OwnerByMasterUserFilter
-from poms.users.permissions import PomsObjectPermissionMixin
+from poms.users.filters import OwnerByMasterUserFilter, PomsObjectPermissionsFilter
+from poms.users.mixins import PomsObjectPermissionMixin
+from poms.users.permissions import PomsObjectPermissions
 
 
 class AccountTypeViewSet(DbTransactionMixin, HistoricalMixin, ModelViewSet):
@@ -40,7 +40,7 @@ class AccountFilter(FilterSet):
 class AccountViewSet(DbTransactionMixin, PomsObjectPermissionMixin, HistoricalMixin, ModelViewSet):
     queryset = Account.objects.all()
     serializer_class = AccountSerializer
-    permission_classes = [IsAuthenticated, DjangoObjectPermissions]
+    permission_classes = [IsAuthenticated, PomsObjectPermissions]
     filter_backends = [OwnerByMasterUserFilter, PomsObjectPermissionsFilter, DjangoFilterBackend, OrderingFilter,
                        SearchFilter, ]
     filter_class = AccountFilter

@@ -1,9 +1,8 @@
 from django.contrib.auth.models import Permission
 from django.contrib.contenttypes.models import ContentType
 from django.db.models import Model, Q
-from rest_framework.filters import BaseFilterBackend
 
-from poms.users.models import BaseGroupObjectPermission, BaseUserObjectPermission
+from poms.users.models import GroupObjectPermissionBase, UserObjectPermissionBase
 
 _obj_perms_model_cache = {}
 
@@ -34,11 +33,11 @@ def get_obj_perms_model(obj, base_cls):
 
 
 def get_user_obj_perms_model(obj):
-    return get_obj_perms_model(obj, BaseUserObjectPermission)
+    return get_obj_perms_model(obj, UserObjectPermissionBase)
 
 
 def get_group_obj_perms_model(obj):
-    return get_obj_perms_model(obj, BaseGroupObjectPermission)
+    return get_obj_perms_model(obj, GroupObjectPermissionBase)
 
 
 def filter_objects_for_user(user_obj, perms, queryset):
@@ -80,21 +79,6 @@ def filter_objects_for_user(user_obj, perms, queryset):
         return queryset.filter(f)
     else:
         return queryset.none()
-
-
-class PomsObjectPermissionsFilter(BaseFilterBackend):
-    # perm_format = '%(app_label)s.view_%(model_name)s'
-    perm_format = '%(app_label)s.change_%(model_name)s'
-
-    def filter_queryset(self, request, queryset, view):
-        user = request.user
-        model_cls = queryset.model
-        kwargs = {
-            'app_label': model_cls._meta.app_label,
-            'model_name': model_cls._meta.model_name
-        }
-        perm = self.perm_format % kwargs
-        return filter_objects_for_user(user, [perm], queryset)
 
 
 class PomsPermissionBackend(object):

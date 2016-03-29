@@ -4,6 +4,7 @@ from django.contrib import admin
 from django.contrib.admin import StackedInline
 from django.contrib.auth.admin import GroupAdmin, UserAdmin
 from django.contrib.auth.models import Group, User, Permission
+from django.contrib.contenttypes.models import ContentType
 
 from poms.audit.admin import HistoricalAdmin
 from poms.users.models import MasterUser, UserProfile, GroupProfile, Member, Group2
@@ -82,7 +83,8 @@ admin.site.register(Permission)
 
 class Group2Admin(HistoricalAdmin, admin.ModelAdmin):
     model = Group2
-    filter_horizontal = ('permissions',)
+    list_display = ['id', 'name', 'master_user']
+    filter_horizontal = ['permissions', ]
 
     def formfield_for_manytomany(self, db_field, request=None, **kwargs):
         if db_field.name == 'permissions':
@@ -92,3 +94,38 @@ class Group2Admin(HistoricalAdmin, admin.ModelAdmin):
 
 
 admin.site.register(Group2, Group2Admin)
+
+
+class UserObjectPermissionAdminBase(admin.TabularInline):
+    raw_id_fields = ['group', 'content_object']
+
+    def formfield_for_foreignkey(self, db_field, request=None, **kwargs):
+        if db_field.name == 'permission':
+            qs = kwargs.get('queryset', db_field.remote_field.model.objects)
+            ctype = ContentType.objects.get_for_model(self.parent_model)
+            kwargs['queryset'] = qs.select_related('content_type').filter(content_type=ctype)
+        return super(UserObjectPermissionAdminBase, self).formfield_for_foreignkey(db_field, request=request, **kwargs)
+
+
+class UserObjectPermissionAdmin(admin.ModelAdmin):
+    raw_id_fields = ['member', 'content_object']
+
+    def formfield_for_foreignkey(self, db_field, request=None, **kwargs):
+        if db_field.name == 'permission':
+            qs = kwargs.get('queryset', db_field.remote_field.model.objects)
+            # ctype = ContentType.objects.get_for_model(self.model)
+            # kwargs['queryset'] = qs.select_related('content_type').filter(content_type=ctype)
+            kwargs['queryset'] = qs.select_related('content_type')
+        return super(UserObjectPermissionAdmin, self).formfield_for_foreignkey(db_field, request=request, **kwargs)
+
+
+class GroupObjectPermissionAdmin(admin.ModelAdmin):
+    raw_id_fields = ['group', 'content_object']
+
+    def formfield_for_foreignkey(self, db_field, request=None, **kwargs):
+        if db_field.name == 'permission':
+            qs = kwargs.get('queryset', db_field.remote_field.model.objects)
+            # ctype = ContentType.objects.get_for_model(self.model)
+            # kwargs['queryset'] = qs.select_related('content_type').filter(content_type=ctype)
+            kwargs['queryset'] = qs.select_related('content_type')
+        return super(GroupObjectPermissionAdmin, self).formfield_for_foreignkey(db_field, request=request, **kwargs)

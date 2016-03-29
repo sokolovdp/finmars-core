@@ -1,15 +1,16 @@
 from __future__ import unicode_literals
 
 from django.contrib import admin
-from guardian.admin import GuardedModelAdminMixin
+from django.contrib.contenttypes.models import ContentType
 from mptt.admin import MPTTModelAdmin
 
 from poms.accounts.models import Account, AccountType, AccountClassifier, AccountUserObjectPermission, \
     AccountGroupObjectPermission
 from poms.audit.admin import HistoricalAdmin
+from poms.users.admin import UserObjectPermissionAdmin, GroupObjectPermissionAdmin
 
 
-class AccountTypeAdmin(GuardedModelAdminMixin, HistoricalAdmin):
+class AccountTypeAdmin(HistoricalAdmin):
     model = AccountType
     list_display = ['id', 'name', 'master_user']
     list_select_related = ['master_user']
@@ -18,7 +19,7 @@ class AccountTypeAdmin(GuardedModelAdminMixin, HistoricalAdmin):
 admin.site.register(AccountType, AccountTypeAdmin)
 
 
-class AccountClassifierAdmin(GuardedModelAdminMixin, HistoricalAdmin, MPTTModelAdmin):
+class AccountClassifierAdmin(HistoricalAdmin, MPTTModelAdmin):
     model = AccountClassifier
     list_display = ['id', 'name', 'parent', 'master_user']
     list_select_related = ['master_user']
@@ -29,35 +30,35 @@ class AccountClassifierAdmin(GuardedModelAdminMixin, HistoricalAdmin, MPTTModelA
 admin.site.register(AccountClassifier, AccountClassifierAdmin)
 
 
-class AccountUserObjectPermissionInline(admin.TabularInline):
-    model = AccountUserObjectPermission
+class UserObjectPermissionInlineBase(admin.TabularInline):
     extra = 0
 
     def formfield_for_foreignkey(self, db_field, request=None, **kwargs):
         if db_field.name == 'permission':
             qs = kwargs.get('queryset', db_field.remote_field.model.objects)
-            kwargs['queryset'] = qs.select_related('content_type')
-        return super(AccountUserObjectPermissionInline, self).formfield_for_foreignkey(db_field, request=request,
-                                                                                       **kwargs)
+            ctype = ContentType.objects.get_for_model(self.parent_model)
+            kwargs['queryset'] = qs.select_related('content_type').filter(content_type=ctype)
+        return super(UserObjectPermissionInlineBase, self).formfield_for_foreignkey(db_field, request=request,
+                                                                                    **kwargs)
 
 
-class AccountGroupObjectPermissionInline(admin.TabularInline):
-    model = AccountGroupObjectPermission
-    extra = 0
-
-    def formfield_for_foreignkey(self, db_field, request=None, **kwargs):
-        if db_field.name == 'permission':
-            qs = kwargs.get('queryset', db_field.remote_field.model.objects)
-            kwargs['queryset'] = qs.select_related('content_type')
-        return super(AccountGroupObjectPermissionInline, self).formfield_for_foreignkey(db_field, request=request,
-                                                                                        **kwargs)
+# class AccountUserObjectPermissionInline(UserObjectPermissionInlineBase):
+#     model = AccountUserObjectPermission
+#
+#
+# class AccountGroupObjectPermissionInline(UserObjectPermissionInlineBase):
+#     model = AccountGroupObjectPermission
 
 
-class AccountAdmin(GuardedModelAdminMixin, HistoricalAdmin):
+class AccountAdmin(HistoricalAdmin):
     model = Account
     list_display = ['id', 'name', 'master_user']
     list_select_related = ['master_user']
-    inlines = [AccountUserObjectPermissionInline, AccountGroupObjectPermissionInline]
+    # inlines = [AccountUserObjectPermissionInline, AccountGroupObjectPermissionInline]
 
 
 admin.site.register(Account, AccountAdmin)
+
+
+admin.site.register(AccountUserObjectPermission, UserObjectPermissionAdmin)
+admin.site.register(AccountGroupObjectPermission, GroupObjectPermissionAdmin)

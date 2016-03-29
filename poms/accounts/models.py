@@ -8,7 +8,7 @@ from mptt.models import MPTTModel
 
 from poms.audit import history
 from poms.currencies.models import Currency
-from poms.users.models import MasterUser, BaseUserObjectPermission, BaseGroupObjectPermission
+from poms.users.models import MasterUser, UserObjectPermissionBase, GroupObjectPermissionBase
 
 
 @python_2_unicode_compatible
@@ -78,11 +78,11 @@ class Account(models.Model):
         return self.name
 
 
-class AccountUserObjectPermission(BaseUserObjectPermission):
+class AccountUserObjectPermission(UserObjectPermissionBase):
     content_object = models.ForeignKey(Account)
 
 
-class AccountGroupObjectPermission(BaseGroupObjectPermission):
+class AccountGroupObjectPermission(GroupObjectPermissionBase):
     content_object = models.ForeignKey(Account)
 
 
