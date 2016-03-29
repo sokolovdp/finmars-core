@@ -78,6 +78,14 @@ class Account(models.Model):
         return self.name
 
 
+# class AccountUserObjectPermission(BaseUserObjectPermission):
+#     content_object = models.ForeignKey(Account)
+#
+#
+# class AccountGroupObjectPermission(BaseGroupObjectPermission):
+#     content_object = models.ForeignKey(Account)
+
+
 history.register(AccountClassifier)
 history.register(AccountType)
 history.register(Account)

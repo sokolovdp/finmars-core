@@ -43,6 +43,9 @@ class Member(models.Model):
     is_owner = models.BooleanField(default=False, verbose_name=_('is owner'))
     is_admin = models.BooleanField(default=False, verbose_name=_('is admin'))
 
+    groups = models.ManyToManyField('Group2', blank=True)
+    permissions = models.ManyToManyField(Permission, blank=True)
+
     def __str__(self):
         return '%s' % (self.user.username,)
 
@@ -100,6 +103,44 @@ class GroupProfile(models.Model):
         self.group.permissions = value
 
     permissions = property(get_permissions, set_permissions)
+
+
+@python_2_unicode_compatible
+class Group2(models.Model):
+    master_user = models.ForeignKey(MasterUser, verbose_name=_('master user'), related_name='groups2')
+    name = models.CharField(_('name'), max_length=80, unique=True)
+    permissions = models.ManyToManyField(Permission, verbose_name=_('permissions'), blank=True)
+
+    class Meta:
+        verbose_name = _('group2')
+        verbose_name_plural = _('group2')
+        unique_together = [
+            ['master_user', 'name']
+        ]
+
+    def __str__(self):
+        return self.name
+
+
+class BaseObjectPermission(models.Model):
+    permission = models.ForeignKey(Permission)
+
+    class Meta:
+        abstract = True
+
+
+class BaseUserObjectPermission(BaseObjectPermission):
+    member = models.ForeignKey(Member)
+
+    class Meta:
+        abstract = True
+
+
+class BaseGroupObjectPermission(BaseObjectPermission):
+    group = models.ForeignKey(Group2)
+
+    class Meta:
+        abstract = True
 
 
 history.register(MasterUser)

@@ -5,9 +5,10 @@ from mptt.admin import MPTTModelAdmin
 
 from poms.accounts.models import Account, AccountType, AccountClassifier
 from poms.audit.admin import HistoricalAdmin
+from guardian.admin import GuardedModelAdminMixin
 
 
-class AccountTypeAdmin(HistoricalAdmin):
+class AccountTypeAdmin(GuardedModelAdminMixin, HistoricalAdmin):
     model = AccountType
     list_display = ['id', 'name', 'master_user']
     list_select_related = ['master_user']
@@ -16,7 +17,7 @@ class AccountTypeAdmin(HistoricalAdmin):
 admin.site.register(AccountType, AccountTypeAdmin)
 
 
-class AccountClassifierAdmin(HistoricalAdmin, MPTTModelAdmin):
+class AccountClassifierAdmin(GuardedModelAdminMixin, HistoricalAdmin, MPTTModelAdmin):
     model = AccountClassifier
     list_display = ['id', 'name', 'parent', 'master_user']
     list_select_related = ['master_user']
@@ -27,7 +28,7 @@ class AccountClassifierAdmin(HistoricalAdmin, MPTTModelAdmin):
 admin.site.register(AccountClassifier, AccountClassifierAdmin)
 
 
-class AccountAdmin(HistoricalAdmin):
+class AccountAdmin(GuardedModelAdminMixin, HistoricalAdmin):
     model = Account
     list_display = ['id', 'name', 'master_user']
     list_select_related = ['master_user']

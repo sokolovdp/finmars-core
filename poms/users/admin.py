@@ -6,12 +6,13 @@ from django.contrib.auth.admin import GroupAdmin, UserAdmin
 from django.contrib.auth.models import Group, User, Permission
 
 from poms.audit.admin import HistoricalAdmin
-from poms.users.models import MasterUser, UserProfile, GroupProfile, Member
+from poms.users.models import MasterUser, UserProfile, GroupProfile, Member, Group2
 
 
-class MemberInline(admin.TabularInline):
+class MemberInline(admin.StackedInline):
     model = Member
     extra = 0
+    filter_horizontal = ('groups', 'permissions',)
 
 
 class MasterUserAdmin(HistoricalAdmin):
@@ -55,3 +56,11 @@ admin.site.unregister(Group)
 admin.site.register(Group, GroupWithProfileAdmin)
 
 admin.site.register(Permission)
+
+
+class Group2Admin(HistoricalAdmin, admin.ModelAdmin):
+    model = Group2
+    filter_horizontal = ('permissions',)
+
+
+admin.site.register(Group2, Group2Admin)
