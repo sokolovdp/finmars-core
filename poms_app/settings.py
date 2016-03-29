@@ -220,9 +220,9 @@ LOGGING = {
             'level': 'INFO',
             'handlers': ['console'],
         },
-        # 'django.db': {
-        #     'level': 'DEBUG',
-        # },
+        'django.db': {
+            'level': 'DEBUG',
+        },
         'poms': {
             'level': 'DEBUG',
             'handlers': ['console'],
@@ -279,7 +279,8 @@ CURRENCY_CODE = 'USD'
 
 AUTHENTICATION_BACKENDS = (
     'django.contrib.auth.backends.ModelBackend',
-    'guardian.backends.ObjectPermissionBackend',
+    # 'guardian.backends.ObjectPermissionBackend',
+    'poms.users.backends.PomsPermissionBackend',
 )
 
 ANONYMOUS_USER_ID = -1

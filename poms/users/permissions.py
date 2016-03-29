@@ -10,6 +10,7 @@ from rest_framework.permissions import IsAuthenticated, DjangoObjectPermissions,
 from rest_framework.response import Response
 
 from poms.api.fields import FilteredPrimaryKeyRelatedField
+from poms.users.fields import get_master_user, get_member
 from poms.users.models import GroupProfile
 from poms.users.serializers import PermissionField
 
@@ -86,6 +87,13 @@ class ObjectPermissionGuard(BasePermission):
 
 
 class PomsModelPermissionMixin(object):
+
+    def initial(self, request, *args, **kwargs):
+        super(PomsModelPermissionMixin, self).initial(request, *args, **kwargs)
+        if request.user.is_authenticated():
+            request.user.current_master_user = get_master_user(request)
+            request.user.current_member = get_member(request)
+
     def get_serializer_class(self):
         if self.request.path.endswith('permissions/'):
             return ObjectPermissionSerializer

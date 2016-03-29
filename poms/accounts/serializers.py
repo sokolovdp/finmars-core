@@ -33,7 +33,13 @@ class AccountSerializer(serializers.ModelSerializer):
     url = serializers.HyperlinkedIdentityField(view_name='account-detail')
     master_user = MasterUserField()
     classifiers = AccountClassifierField(many=True, read_only=False)
+    granted_permissions = serializers.SerializerMethodField()
 
     class Meta:
         model = Account
-        fields = ['url', 'id', 'master_user', 'user_code', 'name', 'short_name', 'type', 'classifiers', 'notes']
+        fields = ['url', 'id', 'master_user', 'user_code', 'name', 'short_name', 'type', 'classifiers', 'notes',
+                  'granted_permissions']
+
+    def get_granted_permissions(self, obj):
+        user = self.context['request'].user
+        return user.get_all_permissions(obj)

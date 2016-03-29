@@ -47,7 +47,7 @@ class Member(models.Model):
     permissions = models.ManyToManyField(Permission, blank=True)
 
     def __str__(self):
-        return '%s' % (self.user.username,)
+        return '%s@%s' % (self.user.username,self.master_user)
 
 
 @python_2_unicode_compatible
@@ -119,7 +119,7 @@ class Group2(models.Model):
         ]
 
     def __str__(self):
-        return self.name
+        return '%s@%s' % (self.name, self.master_user)
 
 
 class BaseObjectPermission(models.Model):
