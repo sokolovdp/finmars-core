@@ -63,17 +63,17 @@ class Message(models.Model):
         return Truncator(self.text).chars(50)
         # return self.text[:50] if self.text else None
 
-
-@python_2_unicode_compatible
-class Status(models.Model):
-    message = models.ForeignKey(Message, related_name='statuses')
-    user = models.ForeignKey(settings.AUTH_USER_MODEL, null=True, blank=True, related_name='message_statuses')
-    read_date = models.DateTimeField(auto_now_add=True)
-
-    class Meta:
-        unique_together = [
-            ['message', 'user']
-        ]
-
-    def __str__(self):
-        return '%s read %s at %s' % (self.user, self.message, self.read_date)
+#
+# @python_2_unicode_compatible
+# class Status(models.Model):
+#     message = models.ForeignKey(Message, related_name='statuses')
+#     user = models.ForeignKey(settings.AUTH_USER_MODEL, null=True, blank=True, related_name='message_statuses')
+#     read_date = models.DateTimeField(auto_now_add=True)
+#
+#     class Meta:
+#         unique_together = [
+#             ['message', 'user']
+#         ]
+#
+#     def __str__(self):
+#         return '%s read %s at %s' % (self.user, self.message, self.read_date)

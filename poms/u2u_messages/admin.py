@@ -3,7 +3,7 @@ from __future__ import unicode_literals
 from django.contrib import admin
 
 from poms.audit.admin import HistoricalAdmin
-from poms.u2u_messages.models import Channel, Member, Message, Status
+from poms.u2u_messages.models import Channel, Member, Message
 
 
 class MemberInline(admin.TabularInline):
@@ -20,15 +20,15 @@ class ChannelAdmin(HistoricalAdmin):
 admin.site.register(Channel, ChannelAdmin)
 
 
-class StatusInline(admin.TabularInline):
-    model = Status
-    extra = 0
+# class StatusInline(admin.TabularInline):
+#     model = Status
+#     extra = 0
 
 
 class MessageAdmin(HistoricalAdmin):
     model = Message
     list_display = ['id', 'channel', 'sender', 'short_text']
-    inlines = [StatusInline]
+    # inlines = [StatusInline]
 
 
 admin.site.register(Message, MessageAdmin)
