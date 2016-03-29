@@ -46,7 +46,7 @@ INSTALLED_APPS = [
 
     'mptt',
     'reversion',
-    'guardian',
+    # 'guardian',
     'import_export',
 
     'poms.http_sessions',
