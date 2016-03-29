@@ -30,6 +30,9 @@ class InstrumentClassifier(MPTTModel):
         unique_together = [
             ['master_user', 'user_code']
         ]
+        permissions = [
+            ('view_instrumentclassifier', 'Can view instrument classifier')
+        ]
 
     def __str__(self):
         return self.name
@@ -56,6 +59,9 @@ class Instrument(models.Model):
         unique_together = [
             ['master_user', 'user_code']
         ]
+        permissions = [
+            ('view_instrument', 'Can view instrument')
+        ]
 
     def __str__(self):
         return self.name
@@ -76,6 +82,9 @@ class PriceHistory(models.Model):
         verbose_name_plural = _('price histories')
         index_together = [
             ['instrument', 'date']
+        ]
+        permissions = [
+            ('view_pricehistory', 'Can view price history')
         ]
 
     def __str__(self):

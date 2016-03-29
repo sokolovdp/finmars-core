@@ -134,6 +134,9 @@ class Transaction(models.Model):
     class Meta:
         verbose_name = _('transaction')
         verbose_name_plural = _('transactions')
+        permissions = [
+            ('view_transaction', 'Can view transaction')
+        ]
 
     def __str__(self):
         return '%s #%s' % (self.master_user, self.id)

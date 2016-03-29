@@ -27,6 +27,9 @@ class CounterpartyClassifier(MPTTModel):
     class Meta:
         verbose_name = _('counterparty classifier')
         verbose_name_plural = _('counterparty classifiers')
+        permissions = [
+            ('view_counterpartyclassifier', 'Can view counterparty classifier')
+        ]
 
     def __str__(self):
         return self.name
@@ -49,6 +52,9 @@ class Counterparty(models.Model):
         unique_together = [
             ['master_user', 'user_code']
         ]
+        permissions = [
+            ('view_counterparty', 'Can view counterparty')
+        ]
 
     def __str__(self):
         return self.name
@@ -67,6 +73,9 @@ class Responsible(models.Model):
         verbose_name_plural = _('responsibles')
         unique_together = [
             ['master_user', 'user_code']
+        ]
+        permissions = [
+            ('view_responsible', 'Can view responsible')
         ]
 
     def __str__(self):

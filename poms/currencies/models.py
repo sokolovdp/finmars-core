@@ -73,6 +73,9 @@ class CurrencyHistory(models.Model):
             ['currency', 'date']
         ]
         ordering = ['-date']
+        permissions = [
+            ('view_currencyhistory', 'Can view currency history')
+        ]
 
     def __str__(self):
         return '%s @ %s - %s' % (self.currency, self.date, self.fx_rate,)
