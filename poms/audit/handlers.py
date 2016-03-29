@@ -41,11 +41,11 @@ def audit_user_login_failed(credentials=None, **kwargs):
     notifications.warning([user], actor=user, verb='login failed')
 
 
-def _is_track(obj):
+def is_track_enabled(obj):
     return history.is_active() and reversion.is_registered(obj)
 
 
-def _to_set(fields):
+def fields_to_set(fields):
     ret = set()
     for k, v in six.iteritems(fields):
         if isinstance(v, list):
@@ -55,8 +55,9 @@ def _to_set(fields):
     return ret
 
 
-def _tracker_init(sender, instance=None, **kwargs):
-    if not _is_track(instance):
+@receiver(post_init, dispatch_uid='tracker_on_init')
+def tracker_on_init(sender, instance=None, **kwargs):
+    if not is_track_enabled(instance):
         return
     if instance.pk:
         instance._tracker_data = django_serializers.serialize('python', [instance])[0]
@@ -64,8 +65,9 @@ def _tracker_init(sender, instance=None, **kwargs):
         instance._tracker_data = {'pk': None, 'fields': {}}
 
 
-def _tracker_save(sender, instance=None, created=None, **kwargs):
-    if not _is_track(instance):
+@receiver(post_save, dispatch_uid='tracker_on_save')
+def tracker_on_save(sender, instance=None, created=None, **kwargs):
+    if not is_track_enabled(instance):
         return
 
     if created:
@@ -75,23 +77,25 @@ def _tracker_save(sender, instance=None, created=None, **kwargs):
         i = instance._tracker_data
 
         if c['pk'] == i['pk']:
-            cfields = _to_set(c['fields'])
-            ifileds = _to_set(i['fields'])
+            cfields = fields_to_set(c['fields'])
+            ifileds = fields_to_set(i['fields'])
             changed = ifileds - cfields
             if changed:
                 fields = []
                 for attr, v in changed:
                     f = instance._meta.get_field(attr)
                     fields.append(force_text(f.verbose_name))
+                fields.sort()
                 history.object_changed(instance, fields)
 
 
-def _tracker_delete(sender, instance=None, **kwargs):
-    if not _is_track(instance):
+@receiver(post_delete, dispatch_uid='tracker_on_delete')
+def tracker_on_delete(sender, instance=None, **kwargs):
+    if not is_track_enabled(instance):
         return
     history.object_deleted(instance)
 
 
-post_init.connect(_tracker_init, dispatch_uid='tracker_init')
-post_save.connect(_tracker_save, dispatch_uid='tracker_save')
-post_delete.connect(_tracker_delete, dispatch_uid='tracker_delete')
+# post_init.connect(_tracker_init, dispatch_uid='tracker_init')
+# post_save.connect(_tracker_save, dispatch_uid='tracker_save')
+# post_delete.connect(_tracker_delete, dispatch_uid='tracker_delete')
