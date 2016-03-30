@@ -9,23 +9,35 @@ from django.utils.translation import ugettext_lazy as _
 from poms.users.models import MasterUser
 
 
+class ThreadStatus(models.Model):
+    master_user = models.ForeignKey(MasterUser, related_name='chat_thread_statuses', verbose_name=_('master user'))
+    # users = models.ManyToManyField(settings.AUTH_USER_MODEL, related_name='channels')
+    name = models.CharField(max_length=255)
+    is_closed = models.BooleanField(default=False)
+
+    class Meta:
+        verbose_name = _('thread status')
+        verbose_name_plural = _('thread statuses')
+        unique_together = [
+            ['master_user', 'name']
+        ]
+
+    def __str__(self):
+        return self.name
+
+
 @python_2_unicode_compatible
 class Thread(models.Model):
-    OPENED = 1
-    CLOSED = 2
-    STATUSES = [
-        (OPENED, 'Opened'),
-        (CLOSED, 'Closed'),
-    ]
-
     master_user = models.ForeignKey(MasterUser, related_name='chat_threads', verbose_name=_('master user'))
     # users = models.ManyToManyField(settings.AUTH_USER_MODEL, related_name='channels')
     create_date = models.DateTimeField(auto_now_add=True, db_index=True)
     subject = models.CharField(max_length=255)
-    status = models.PositiveSmallIntegerField(choices=STATUSES, default=OPENED)
+    status = models.ForeignKey(ThreadStatus)
     status_date = models.DateTimeField()
 
     class Meta:
+        verbose_name = _('thread')
+        verbose_name_plural = _('threads')
         ordering = ['-create_date']
 
     def __str__(self):
@@ -40,6 +52,8 @@ class Message(models.Model):
     create_date = models.DateTimeField(auto_now_add=True, db_index=True)
 
     class Meta:
+        verbose_name = _('message')
+        verbose_name_plural = _('messages')
         ordering = ['-create_date']
 
     def __str__(self):
@@ -59,6 +73,8 @@ class DirectMessage(models.Model):
     create_date = models.DateTimeField(auto_now_add=True, db_index=True)
 
     class Meta:
+        verbose_name = _('direct message')
+        verbose_name_plural = _('direct messages')
         ordering = ['-create_date']
 
     def __str__(self):

@@ -3,8 +3,17 @@ from __future__ import unicode_literals
 from rest_framework import serializers
 
 from poms.chats.fields import ThreadField
-from poms.chats.models import Thread, Message, DirectMessage
+from poms.chats.models import Thread, Message, DirectMessage, ThreadStatus
 from poms.users.fields import MasterUserField
+
+
+class ThreadStatusSerializer(serializers.ModelSerializer):
+    url = serializers.HyperlinkedIdentityField(view_name='chatthreadstatus-detail')
+    master_user = MasterUserField()
+
+    class Meta:
+        model = ThreadStatus
+        fields = ['url', 'id', 'master_user', 'name', 'is_closed']
 
 
 class ThreadSerializer(serializers.ModelSerializer):

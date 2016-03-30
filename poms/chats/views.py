@@ -7,9 +7,18 @@ from rest_framework.viewsets import ModelViewSet
 
 from poms.api.mixins import DbTransactionMixin
 from poms.chats.filters import ThreadOwnerByMasterUserFilter, DirectMessageOwnerByMasterUserFilter
-from poms.chats.models import Thread, Message, DirectMessage
-from poms.chats.serializers import ThreadSerializer, MessageSerializer, DirectMessageSerializer
+from poms.chats.models import Thread, Message, DirectMessage, ThreadStatus
+from poms.chats.serializers import ThreadSerializer, MessageSerializer, DirectMessageSerializer, ThreadStatusSerializer
 from poms.users.filters import OwnerByMasterUserFilter
+
+
+class ThreadStatusViewSet(DbTransactionMixin, ModelViewSet):
+    queryset = ThreadStatus.objects.all()
+    serializer_class = ThreadStatusSerializer
+    permission_classes = [IsAuthenticated]
+    filter_backends = [OwnerByMasterUserFilter, OrderingFilter, SearchFilter, ]
+    ordering_fields = ['id', 'name']
+    search_fields = ['name']
 
 
 class ThreadViewSet(DbTransactionMixin, ModelViewSet):
