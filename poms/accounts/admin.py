@@ -32,49 +32,19 @@ class AccountClassifierAdmin(HistoricalAdmin, MPTTModelAdmin):
 admin.site.register(AccountClassifier, AccountClassifierAdmin)
 
 
-class UserObjectPermissionInlineBase(admin.TabularInline):
-    extra = 0
-
-    def formfield_for_foreignkey(self, db_field, request=None, **kwargs):
-        if db_field.name == 'permission':
-            qs = kwargs.get('queryset', db_field.remote_field.model.objects)
-            ctype = ContentType.objects.get_for_model(self.parent_model)
-            kwargs['queryset'] = qs.select_related('content_type').filter(content_type=ctype)
-        return super(UserObjectPermissionInlineBase, self).formfield_for_foreignkey(db_field, request=request,
-                                                                                    **kwargs)
-
-
-# class AccountUserObjectPermissionInline(UserObjectPermissionInlineBase):
-#     model = AccountUserObjectPermission
-#
-#
-# class AccountGroupObjectPermissionInline(UserObjectPermissionInlineBase):
-#     model = AccountGroupObjectPermission
-
-
 class AccountAdmin(HistoricalAdmin):
     model = Account
     list_display = ['id', 'name', 'master_user']
     list_select_related = ['master_user']
-    # inlines = [AccountUserObjectPermissionInline, AccountGroupObjectPermissionInline]
 
 
 admin.site.register(Account, AccountAdmin)
 
 
-def register_object_perms_admin(*args):
-    for model in args:
-        if issubclass(model, UserObjectPermissionBase):
-            admin.site.register(model, UserObjectPermissionAdmin)
-        elif issubclass(model, GroupObjectPermissionBase):
-            admin.site.register(model, GroupObjectPermissionAdmin)
+admin.site.register(AccountTypeUserObjectPermission, UserObjectPermissionAdmin)
+admin.site.register(AccountTypeGroupObjectPermission, GroupObjectPermissionAdmin)
+admin.site.register(AccountClassifierUserObjectPermission, UserObjectPermissionAdmin)
+admin.site.register(AccountClassifierGroupObjectPermission, GroupObjectPermissionAdmin)
+admin.site.register(AccountUserObjectPermission, UserObjectPermissionAdmin)
+admin.site.register(AccountGroupObjectPermission, GroupObjectPermissionAdmin)
 
-
-register_object_perms_admin(AccountTypeUserObjectPermission, AccountTypeGroupObjectPermission,
-                            AccountClassifierUserObjectPermission, AccountClassifierGroupObjectPermission,
-                            AccountUserObjectPermission, AccountGroupObjectPermission)
-
-# admin.site.register(AccountTypeUserObjectPermission, UserObjectPermissionAdmin)
-# admin.site.register(AccountTypeGroupObjectPermission, GroupObjectPermissionAdmin)
-# admin.site.register(AccountUserObjectPermission, UserObjectPermissionAdmin)
-# admin.site.register(AccountGroupObjectPermission, GroupObjectPermissionAdmin)

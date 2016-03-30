@@ -78,78 +78,53 @@ class Account(models.Model):
         return self.name
 
 
-# class AccountTypeUserObjectPermission(UserObjectPermissionBase):
-#     content_object = models.ForeignKey(Account)
-#
-#     class Meta:
-#         verbose_name = _('account types - user permission')
-#         verbose_name_plural = _('account types - user permissions')
-#
-#
-# class AccountTypeGroupObjectPermission(GroupObjectPermissionBase):
-#     content_object = models.ForeignKey(Account)
-#
-#     class Meta:
-#         verbose_name = _('account types - group permission')
-#         verbose_name_plural = _('account types - group permissions')
-#
-#
-# class AccountUserObjectPermission(UserObjectPermissionBase):
-#     content_object = models.ForeignKey(Account)
-#
-#     class Meta:
-#         verbose_name = _('accounts - user permission')
-#         verbose_name_plural = _('Accounts - user permissions')
-#
-#
-# class AccountGroupObjectPermission(GroupObjectPermissionBase):
-#     content_object = models.ForeignKey(Account)
-#
-#     class Meta:
-#         verbose_name = _('accounts - group permission')
-#         verbose_name_plural = _('accounts - group permissions')
+class AccountTypeUserObjectPermission(UserObjectPermissionBase):
+    content_object = models.ForeignKey(Account)
+
+    class Meta:
+        verbose_name = _('account types - user permission')
+        verbose_name_plural = _('account types - user permissions')
 
 
-def register(model):
-    app_module = '%s.models' % model._meta.app_label
+class AccountTypeGroupObjectPermission(GroupObjectPermissionBase):
+    content_object = models.ForeignKey(Account)
 
-    u_name = '%sUserObjectPermission' % model._meta.object_name
-    u_attrs = {
-        '__module__': app_module,
-        'content_object': models.ForeignKey(model),
-        'Meta': type(str('Meta'), (), {
-            'app_label': model._meta.app_label,
-            'verbose_name': _('%(name)s - user permission') % {
-                'name': model._meta.verbose_name_plural
-            },
-            'verbose_name_plural': _('%(name)s - user permissions')% {
-                'name': model._meta.verbose_name_plural
-            },
-        })
-    }
-    u_perms = type(str(u_name), (UserObjectPermissionBase,), u_attrs)
-
-    g_name = '%sGroupObjectPermission' % model._meta.object_name
-    g_attrs = {
-        '__module__': app_module,
-        'content_object': models.ForeignKey(model),
-        'Meta': type(str('Meta'), (), {
-            'app_label': model._meta.app_label,
-            'verbose_name': _('%(name)s - group permission') % {
-                'name': model._meta.verbose_name_plural
-            },
-            'verbose_name_plural': _('%(name)s - group permissions')% {
-                'name': model._meta.verbose_name_plural
-            },
-        })
-    }
-    g_perms = type(str(g_name), (GroupObjectPermissionBase,), g_attrs)
-    return u_perms, g_perms
+    class Meta:
+        verbose_name = _('account types - group permission')
+        verbose_name_plural = _('account types - group permissions')
 
 
-AccountTypeUserObjectPermission, AccountTypeGroupObjectPermission = register(AccountType)
-AccountClassifierUserObjectPermission, AccountClassifierGroupObjectPermission = register(AccountClassifier)
-AccountUserObjectPermission, AccountGroupObjectPermission = register(Account)
+class AccountClassifierUserObjectPermission(UserObjectPermissionBase):
+    content_object = models.ForeignKey(AccountClassifier)
+
+    class Meta:
+        verbose_name = _('account classifiers - user permission')
+        verbose_name_plural = _('account classifiers - user permissions')
+
+
+class AccountClassifierGroupObjectPermission(GroupObjectPermissionBase):
+    content_object = models.ForeignKey(AccountClassifier)
+
+    class Meta:
+        verbose_name = _('account classifiers - group permission')
+        verbose_name_plural = _('account classifiers - group permissions')
+
+
+class AccountUserObjectPermission(UserObjectPermissionBase):
+    content_object = models.ForeignKey(Account)
+
+    class Meta:
+        verbose_name = _('accounts - user permission')
+        verbose_name_plural = _('accounts - user permissions')
+
+
+class AccountGroupObjectPermission(GroupObjectPermissionBase):
+    content_object = models.ForeignKey(Account)
+
+    class Meta:
+        verbose_name = _('accounts - group permission')
+        verbose_name_plural = _('accounts - group permissions')
+
 
 history.register(AccountClassifier)
 history.register(AccountType)
