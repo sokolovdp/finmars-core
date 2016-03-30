@@ -3,32 +3,28 @@ from __future__ import unicode_literals
 from django.contrib import admin
 
 from poms.audit.admin import HistoricalAdmin
-from poms.u2u_messages.models import Channel, Member, Message
+from poms.u2u_messages.models import Thread, Message, DirectMessage
 
 
-class MemberInline(admin.TabularInline):
-    model = Member
-    extra = 0
+class ThreadAdmin(HistoricalAdmin):
+    model = Thread
+    list_display = ['id', 'subject', 'master_user']
 
 
-class ChannelAdmin(HistoricalAdmin):
-    model = Channel
-    list_display = ['id', 'name', 'master_user']
-    inlines = [MemberInline]
-
-
-admin.site.register(Channel, ChannelAdmin)
-
-
-# class StatusInline(admin.TabularInline):
-#     model = Status
-#     extra = 0
+admin.site.register(Thread, ThreadAdmin)
 
 
 class MessageAdmin(HistoricalAdmin):
     model = Message
-    list_display = ['id', 'channel', 'sender', 'short_text']
-    # inlines = [StatusInline]
+    list_display = ['id', 'thread', 'create_date', 'sender', 'short_text']
 
 
 admin.site.register(Message, MessageAdmin)
+
+
+class DirectMessageAdmin(HistoricalAdmin):
+    model = DirectMessage
+    list_display = ['id', 'create_date', 'recipient', 'sender', 'short_text']
+
+
+admin.site.register(DirectMessage, DirectMessageAdmin)

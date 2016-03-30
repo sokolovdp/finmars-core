@@ -6,15 +6,15 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.viewsets import ModelViewSet
 
 from poms.api.mixins import DbTransactionMixin
-from poms.u2u_messages.filters import ChannelOwnerByMasterUserFilter
-from poms.u2u_messages.models import Channel, Message, Member
-from poms.u2u_messages.serializers import ChannelSerializer, MessageSerializer, MemberSerializer
+from poms.u2u_messages.filters import ThreadOwnerByMasterUserFilter, DirectMessageOwnerByMasterUserFilter
+from poms.u2u_messages.models import Thread, Message, DirectMessage
+from poms.u2u_messages.serializers import ThreadSerializer, MessageSerializer, DirectMessageSerializer
 from poms.users.filters import OwnerByMasterUserFilter
 
 
-class ChannelViewSet(DbTransactionMixin, ModelViewSet):
-    queryset = Channel.objects.all()
-    serializer_class = ChannelSerializer
+class ThreadViewSet(DbTransactionMixin, ModelViewSet):
+    queryset = Thread.objects.all()
+    serializer_class = ThreadSerializer
     permission_classes = [IsAuthenticated]
     filter_backends = [OwnerByMasterUserFilter, OrderingFilter, SearchFilter, ]
     ordering_fields = ['id', 'name']
@@ -29,14 +29,6 @@ class MemberFilter(FilterSet):
         fields = ['channel']
 
 
-class MemberViewSet(DbTransactionMixin, ModelViewSet):
-    queryset = Member.objects.all()
-    serializer_class = MemberSerializer
-    permission_classes = [IsAuthenticated]
-    filter_backends = [ChannelOwnerByMasterUserFilter, DjangoFilterBackend, ]
-    filter_class = MemberFilter
-
-
 class MessageFilter(FilterSet):
     channel = django_filters.NumberFilter()
 
@@ -49,6 +41,14 @@ class MessageViewSet(DbTransactionMixin, ModelViewSet):
     queryset = Message.objects.all()
     serializer_class = MessageSerializer
     permission_classes = [IsAuthenticated]
-    filter_backends = [ChannelOwnerByMasterUserFilter, DjangoFilterBackend, OrderingFilter, SearchFilter, ]
+    filter_backends = [ThreadOwnerByMasterUserFilter, DjangoFilterBackend, OrderingFilter, SearchFilter, ]
     filter_class = MessageFilter
+    ordering_fields = ['id', 'create_date']
+
+
+class DirectMessageViewSet(DbTransactionMixin, ModelViewSet):
+    queryset = DirectMessage.objects.all()
+    serializer_class = DirectMessageSerializer
+    permission_classes = [IsAuthenticated]
+    filter_backends = [DirectMessageOwnerByMasterUserFilter, DjangoFilterBackend, OrderingFilter, SearchFilter, ]
     ordering_fields = ['id', 'create_date']
