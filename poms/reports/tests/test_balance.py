@@ -451,13 +451,18 @@ class BalanceTestCase(BaseReportTestCase):
                 BalanceReportItem(pk=b.make_key(None, self.prov_acc1, None, self.usd),
                                   portfolio=None, account=self.prov_acc1, instrument=None, currency=self.usd,
                                   balance_position=-200.000000, market_value_system_ccy=-200.000000),
+
+
+                BalanceReportItem(pk=b.make_key(None, self.acc1, None, self.rub),
+                                  portfolio=None, account=self.acc1, instrument=None, currency=self.rub,
+                                  balance_position=1000.000000, market_value_system_ccy=13.333333),
                 BalanceReportItem(pk=b.make_key(None, self.prov_acc1, None, self.rub),
                                   portfolio=None, account=self.prov_acc1, instrument=None, currency=self.rub,
                                   balance_position=-1000.000000, market_value_system_ccy=-13.333333),
             ],
             summary=BalanceReportSummary(invested_value_system_ccy=1300.000000,
-                                         current_value_system_ccy=1105.116667,
-                                         p_l_system_ccy=-194.883333)
+                                         current_value_system_ccy=1118.450000,
+                                         p_l_system_ccy=-181.55)
         ))
 
     def test_dates_case_1_2_show_transaction_details(self):
@@ -702,19 +707,31 @@ class BalanceTestCase(BaseReportTestCase):
                 BalanceReportItem(pk=b.make_key(self.p1, self.acc1, None, self.eur),
                                   portfolio=self.p1, account=self.acc1, instrument=None, currency=self.eur,
                                   balance_position=1000.000000, market_value_system_ccy=1300.000000),
+
+                BalanceReportItem(pk=b.make_key(self.p1, self.acc1, None, self.rub),
+                                  portfolio=self.p1, account=self.acc1, instrument=None, currency=self.rub,
+                                  balance_position=1000.000000, market_value_system_ccy=13.333333),
                 BalanceReportItem(pk=b.make_key(self.p1, self.prov_acc1, None, self.rub),
                                   portfolio=self.p1, account=self.prov_acc1, instrument=None, currency=self.rub,
                                   balance_position=-1000.000000, market_value_system_ccy=-13.333333),
+
+                BalanceReportItem(pk=b.make_key(self.p1, self.acc2, None, self.rub),
+                                  portfolio=self.p1, account=self.acc2, instrument=None, currency=self.rub,
+                                  balance_position=1000.000000, market_value_system_ccy=13.333333),
                 BalanceReportItem(pk=b.make_key(self.p1, self.prov_acc2, None, self.rub),
                                   portfolio=self.p1, account=self.prov_acc2, instrument=None, currency=self.rub,
                                   balance_position=-1000.000000, market_value_system_ccy=-13.333333),
+
+                BalanceReportItem(pk=b.make_key(self.p2, self.acc1, None, self.rub),
+                                  portfolio=self.p2, account=self.acc1, instrument=None, currency=self.rub,
+                                  balance_position=1000.000000, market_value_system_ccy=13.333333),
                 BalanceReportItem(pk=b.make_key(self.p2, self.prov_acc1, None, self.rub),
                                   portfolio=self.p2, account=self.prov_acc1, instrument=None, currency=self.rub,
                                   balance_position=-1000.000000, market_value_system_ccy=-13.333333),
             ],
             summary=BalanceReportSummary(invested_value_system_ccy=1300.000000,
-                                         current_value_system_ccy=1260.000000,
-                                         p_l_system_ccy=-40.000000)
+                                         current_value_system_ccy=1300.000000,
+                                         p_l_system_ccy=0.000000)
         ))
 
     def test_reference_fx_rate(self):
