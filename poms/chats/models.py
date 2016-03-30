@@ -2,16 +2,17 @@ from __future__ import unicode_literals
 
 from django.conf import settings
 from django.db import models
+from django.utils import timezone
 from django.utils.encoding import python_2_unicode_compatible
 from django.utils.text import Truncator
 from django.utils.translation import ugettext_lazy as _
 
+from poms.audit import history
 from poms.users.models import MasterUser
 
 
 class ThreadStatus(models.Model):
     master_user = models.ForeignKey(MasterUser, related_name='chat_thread_statuses', verbose_name=_('master user'))
-    # users = models.ManyToManyField(settings.AUTH_USER_MODEL, related_name='channels')
     name = models.CharField(max_length=255)
     is_closed = models.BooleanField(default=False)
 
@@ -29,11 +30,10 @@ class ThreadStatus(models.Model):
 @python_2_unicode_compatible
 class Thread(models.Model):
     master_user = models.ForeignKey(MasterUser, related_name='chat_threads', verbose_name=_('master user'))
-    # users = models.ManyToManyField(settings.AUTH_USER_MODEL, related_name='channels')
     create_date = models.DateTimeField(auto_now_add=True, db_index=True)
     subject = models.CharField(max_length=255)
     status = models.ForeignKey(ThreadStatus)
-    status_date = models.DateTimeField()
+    status_date = models.DateTimeField(default=timezone.now)
 
     class Meta:
         verbose_name = _('thread')
@@ -43,11 +43,15 @@ class Thread(models.Model):
     def __str__(self):
         return self.subject
 
+    def save(self, force_insert=False, force_update=False, using=None, update_fields=None):
+        super(Thread, self).save(force_insert=force_insert, force_update=force_update, using=using,
+                                 update_fields=update_fields)
+
 
 @python_2_unicode_compatible
 class Message(models.Model):
     thread = models.ForeignKey(Thread)
-    sender = models.ForeignKey(settings.AUTH_USER_MODEL, related_name='chat_send_messages')
+    sender = models.ForeignKey(settings.AUTH_USER_MODEL, related_name='chat_sent_messages')
     text = models.TextField()
     create_date = models.DateTimeField(auto_now_add=True, db_index=True)
 
@@ -67,8 +71,8 @@ class Message(models.Model):
 
 @python_2_unicode_compatible
 class DirectMessage(models.Model):
-    recipient = models.ForeignKey(settings.AUTH_USER_MODEL, related_name='chat_incoming_direct_messages')
-    sender = models.ForeignKey(settings.AUTH_USER_MODEL, related_name='chat_outgoing_direct_messages')
+    recipient = models.ForeignKey(settings.AUTH_USER_MODEL, related_name='chat_received_direct_messages')
+    sender = models.ForeignKey(settings.AUTH_USER_MODEL, related_name='chat_sent_direct_messages')
     text = models.TextField()
     create_date = models.DateTimeField(auto_now_add=True, db_index=True)
 
@@ -83,3 +87,9 @@ class DirectMessage(models.Model):
     @property
     def short_text(self):
         return Truncator(self.text).chars(50)
+
+
+history.register(ThreadStatus)
+history.register(Thread)
+history.register(Message)
+history.register(DirectMessage)
