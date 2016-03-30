@@ -19,7 +19,7 @@ class Storage(BaseStorage):
                 message = Message(n.level, force_text(n), None)
                 message.id = n.pk
                 ret.append(message)
-                print(0, getattr(message, 'id', None), message)
+                # print(0, getattr(message, 'id', None), message)
             return ret, True
         else:
             return [], False
@@ -29,13 +29,9 @@ class Storage(BaseStorage):
             user = self.request.user
             if user.is_authenticated():
                 for message in messages:
-                    print(1, getattr(message, 'id', None), message)
+                    # print(1, getattr(message, 'id', None), message)
                     if not hasattr(message, 'id'):
-                        Notification.objects.create(
-                            recipient=user,
-                            level=message.level,
-                            message=message
-                        )
+                        Notification.objects.create(recipient=user, level=message.level, message=message)
         else:
             Notification.objects.filter(read_date__isnull=True).update(read_date=timezone.now())
         return []
