@@ -4,10 +4,12 @@ from django.contrib import admin
 from django.contrib.contenttypes.models import ContentType
 from mptt.admin import MPTTModelAdmin
 
-from poms.accounts.models import Account, AccountType, AccountClassifier, AccountUserObjectPermission, \
-    AccountGroupObjectPermission
+from poms.accounts.models import Account, AccountType, AccountClassifier, AccountTypeUserObjectPermission, \
+    AccountTypeGroupObjectPermission, AccountUserObjectPermission, AccountGroupObjectPermission, \
+    AccountClassifierUserObjectPermission, AccountClassifierGroupObjectPermission
 from poms.audit.admin import HistoricalAdmin
 from poms.users.admin import UserObjectPermissionAdmin, GroupObjectPermissionAdmin
+from poms.users.models import UserObjectPermissionBase, GroupObjectPermissionBase
 
 
 class AccountTypeAdmin(HistoricalAdmin):
@@ -60,5 +62,19 @@ class AccountAdmin(HistoricalAdmin):
 admin.site.register(Account, AccountAdmin)
 
 
-admin.site.register(AccountUserObjectPermission, UserObjectPermissionAdmin)
-admin.site.register(AccountGroupObjectPermission, GroupObjectPermissionAdmin)
+def register_object_perms_admin(*args):
+    for model in args:
+        if issubclass(model, UserObjectPermissionBase):
+            admin.site.register(model, UserObjectPermissionAdmin)
+        elif issubclass(model, GroupObjectPermissionBase):
+            admin.site.register(model, GroupObjectPermissionAdmin)
+
+
+register_object_perms_admin(AccountTypeUserObjectPermission, AccountTypeGroupObjectPermission,
+                            AccountClassifierUserObjectPermission, AccountClassifierGroupObjectPermission,
+                            AccountUserObjectPermission, AccountGroupObjectPermission)
+
+# admin.site.register(AccountTypeUserObjectPermission, UserObjectPermissionAdmin)
+# admin.site.register(AccountTypeGroupObjectPermission, GroupObjectPermissionAdmin)
+# admin.site.register(AccountUserObjectPermission, UserObjectPermissionAdmin)
+# admin.site.register(AccountGroupObjectPermission, GroupObjectPermissionAdmin)
