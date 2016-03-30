@@ -29,7 +29,7 @@ class Thread(models.Model):
         ordering = ['-create_date']
 
     def __str__(self):
-        return self.name
+        return self.subject
 
 
 @python_2_unicode_compatible

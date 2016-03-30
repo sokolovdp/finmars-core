@@ -6,9 +6,9 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.viewsets import ModelViewSet
 
 from poms.api.mixins import DbTransactionMixin
-from poms.u2u_messages.filters import ThreadOwnerByMasterUserFilter, DirectMessageOwnerByMasterUserFilter
-from poms.u2u_messages.models import Thread, Message, DirectMessage
-from poms.u2u_messages.serializers import ThreadSerializer, MessageSerializer, DirectMessageSerializer
+from poms.chats.filters import ThreadOwnerByMasterUserFilter, DirectMessageOwnerByMasterUserFilter
+from poms.chats.models import Thread, Message, DirectMessage
+from poms.chats.serializers import ThreadSerializer, MessageSerializer, DirectMessageSerializer
 from poms.users.filters import OwnerByMasterUserFilter
 
 
@@ -30,11 +30,11 @@ class MemberFilter(FilterSet):
 
 
 class MessageFilter(FilterSet):
-    channel = django_filters.NumberFilter()
+    thread = django_filters.NumberFilter()
 
     class Meta:
         model = Message
-        fields = ['channel']
+        fields = ['thread']
 
 
 class MessageViewSet(DbTransactionMixin, ModelViewSet):

@@ -62,7 +62,7 @@ INSTALLED_APPS = [
     'poms.transactions',
     'poms.reports',
     'poms.api',
-    'poms.u2u_messages',
+    'poms.chats',
 ]
 
 if DEBUG:

@@ -2,8 +2,8 @@ from __future__ import unicode_literals
 
 from rest_framework import serializers
 
-from poms.u2u_messages.fields import ThreadField
-from poms.u2u_messages.models import Thread, Message, DirectMessage
+from poms.chats.fields import ThreadField
+from poms.chats.models import Thread, Message, DirectMessage
 from poms.users.fields import MasterUserField
 
 

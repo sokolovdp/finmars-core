@@ -17,7 +17,7 @@ import poms.strategies.views as strategies
 import poms.users.views as users
 import poms.reports.views as reports
 import poms.notifications.views as notifications
-import poms.u2u_messages.views as chats
+import poms.chats.views as chats
 
 router = routers.DefaultRouter()
 router.register(r'users/login', users.LoginViewSet, 'login')
