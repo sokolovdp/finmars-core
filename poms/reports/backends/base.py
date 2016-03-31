@@ -376,80 +376,23 @@ class BaseReport2Builder(object):
             return currency_fx_rate
         return None
 
-    # def set_fx_rate(self, transaction):
-    #     self.set_currency_fx_rate(transaction, 'transaction_currency')
-    #     self.set_currency_fx_rate(transaction, 'settlement_currency')
-
     def set_price(self, obj, instr_attr):
         instrument = getattr(obj, instr_attr)
         if instrument:
             price_history = self.find_price_history(instrument)
             obj.price_history = price_history
 
-    # def annotate_fx_rates(self):
-    #     for t in self.transactions:
-    #         self.set_fx_rate(t)
-
-    # def annotate_prices(self, date=None):
-    #     for t in self.transactions:
-    #         self.set_price(t)
-
-    def make_key(self, portfolio, account, instrument, currency, ext=None):
-        if self._use_portfolio:
-            portfolio = getattr(portfolio, 'pk', None)
-        else:
-            portfolio = ''
-
-        if self._use_account:
-            account = getattr(account, 'pk', None)
-        else:
-            account = ''
-
-        if instrument:
-            instrument = getattr(instrument, 'pk', None)
-        else:
-            instrument = ''
-
-        if currency:
-            currency = getattr(currency, 'pk', None)
-        else:
-            currency = ''
-
-        if ext is None:
-            ext = ''
-
+    def make_key(self, portfolio=None, account=None, instrument=None, currency=None, ext=None):
+        portfolio = getattr(portfolio, 'pk', None) if self._use_portfolio else ''
+        account = getattr(account, 'pk', None) if self._use_account else ''
+        instrument = getattr(instrument, 'pk', None) if instrument else None
+        currency = getattr(currency, 'pk', None) if currency else None
+        ext = ext if ext else ''
         return 'p%s,a%s,i%s,c%s,e%s' % (portfolio, account, instrument, currency, ext)
-
-    def _get_transaction_key(self, trn, instr_attr, ccy_attr, acc_attr, ext=None):
-        if self._use_portfolio:
-            portfolio = trn.portfolio
-            # portfolio = getattr(portfolio, 'pk', None)
-        else:
-            portfolio = None
-
-        if self._use_account:
-            account = getattr(trn, acc_attr, None)
-            # account = getattr(account, 'pk', None)
-        else:
-            account = None
-
-        if instr_attr:
-            instrument = getattr(trn, instr_attr, None)
-            # instrument = getattr(instrument, 'pk', None)
-        else:
-            instrument = None
-
-        if ccy_attr:
-            currency = getattr(trn, ccy_attr, None)
-            # currency = getattr(currency, 'pk', None)
-        else:
-            currency = None
-
-        return self.make_key(portfolio, account, instrument, currency, ext=ext)
 
     def calc_balance_instrument(self, i):
         # i.price_history = self.find_price_history(i.instrument)
-        self.set_price(i,  'instrument')
+        self.set_price(i, 'instrument')
 
         i.instrument_principal_currency_history = self.find_currency_history(i.instrument.pricing_currency)
         i.instrument_accrued_currency_history = self.find_currency_history(i.instrument.accrued_currency)
@@ -470,13 +413,6 @@ class BaseReport2Builder(object):
         i.accrued_value_system_ccy = i.accrued_value_instrument_accrued_ccy * i.instrument_accrued_fx_rate
 
         i.market_value_system_ccy = i.principal_value_system_ccy + i.accrued_value_system_ccy
-
-    # def calc_balance_ccy(self, i):
-    #     # i.currency_history = self.find_currency_history(i.currency)
-    #     self.set_currency_fx_rate(i, 'currency')
-    #     i.currency_fx_rate = getattr(i.currency_history, 'fx_rate', 0.)
-    #     i.principal_value_system_ccy = i.balance_position * i.currency_fx_rate
-    #     i.market_value_system_ccy = i.principal_value_system_ccy
 
     def set_multipliers(self, multiplier_class):
         if multiplier_class == 'avco':
@@ -499,7 +435,7 @@ class BaseReport2Builder(object):
             if t_class not in [TransactionClass.BUY, TransactionClass.SELL]:
                 continue
 
-            t_key = self._get_transaction_key(t, 'instrument', None, 'account_position')
+            t_key = self.make_key(portfolio=t.portfolio, instrument=t.instrument, account=t.account_position)
 
             t.avco_multiplier = 0.
             position_size_with_sign = t.position_size_with_sign
@@ -555,7 +491,7 @@ class BaseReport2Builder(object):
             if t_class not in [TransactionClass.BUY, TransactionClass.SELL]:
                 continue
 
-            t_key = self._get_transaction_key(t, 'instrument', None, 'account_position')
+            t_key = self.make_key(portfolio=t.portfolio, instrument=t.instrument, account=t.account_position)
 
             t.fifo_multiplier = 0.
             position_size_with_sign = t.position_size_with_sign

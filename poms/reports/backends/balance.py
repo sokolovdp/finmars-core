@@ -177,38 +177,37 @@ class BalanceReport2Builder(BaseReport2Builder):
         self._invested_items = {}
         self._items = {}
 
-    def _get_item0(self, items, trn, instr_attr=None, ccy_attr=None, acc_attr=None, ext=None):
-        t_key = self._get_transaction_key(trn, instr_attr, ccy_attr, acc_attr, ext=ext)
+    def _get_item0(self, items, trn, instr=None, ccy=None, acc=None, ext=None):
+        t_key = self.make_key(portfolio=trn.portfolio, instrument=instr, currency=ccy, account=acc, ext=ext)
         try:
             return items[t_key]
         except KeyError:
             portfolio = trn.portfolio if self._use_portfolio else None
-            account = getattr(trn, acc_attr, None) if acc_attr and self._use_account else None
-            instrument = getattr(trn, instr_attr, None) if instr_attr else None
-            currency = getattr(trn, ccy_attr, None) if ccy_attr else None
+            account = acc if self._use_account else None
+            instrument = instr
+            currency = ccy
             item = BalanceReportItem(pk=t_key, portfolio=portfolio, account=account, instrument=instrument,
                                      currency=currency)
             items[t_key] = item
             return item
 
-    def _get_item(self, trn, instr_attr=None, ccy_attr=None, acc_attr=None, case=None):
-        if self._is_show_details(trn, case, acc_attr):
+    def _get_item(self, trn, instr=None, ccy=None, acc=None, case=None):
+        if self._is_show_details(trn, case, acc):
             ext = trn.id
         else:
             ext = None
-        item = self._get_item0(self._items, trn, instr_attr=instr_attr, ccy_attr=ccy_attr, acc_attr=acc_attr, ext=ext)
+        item = self._get_item0(self._items, trn, instr=instr, ccy=ccy, acc=acc, ext=ext)
         if ext:
             item.transaction = trn
         return item
 
-    def _is_show_details(self, trn, case, acc_atr):
+    def _is_show_details(self, trn, case, acc):
         if (case == 1 or case == 2) and self.instance.show_transaction_details:
-            acc = getattr(trn, acc_atr, None)
             return acc and acc.type and acc.type.show_transaction_details
         return False
 
-    def _get_invested_items(self, trn, instr_attr=None, ccy_attr=None, acc_attr=None):
-        return self._get_item0(self._invested_items, trn, instr_attr=instr_attr, ccy_attr=ccy_attr, acc_attr=acc_attr)
+    def _get_invested_items(self, trn, instr=None, ccy=None, acc=None):
+        return self._get_item0(self._invested_items, trn, instr=instr, ccy=ccy, acc=acc)
 
     def _get_trn_case(self, trn):
         accounting_date, cash_date = trn.accounting_date, trn.cash_date
@@ -233,32 +232,32 @@ class BalanceReport2Builder(BaseReport2Builder):
 
     def _process_instrument(self, t, case):
         if case == 0:
-            instrument_item = self._get_item(t, instr_attr='instrument', acc_attr='account_position')
+            instrument_item = self._get_item(t, instr=t.instrument, acc=t.account_position)
             instrument_item.balance_position += t.position_size_with_sign
 
         elif case == 1:
-            instrument_item = self._get_item(t, instr_attr='instrument', acc_attr='account_position')
+            instrument_item = self._get_item(t, instr=t.instrument, acc=t.account_position)
             instrument_item.balance_position += t.position_size_with_sign
 
         elif case == 2:
             pass
 
-    def _process_cash(self, t, ccy_attr, ccy_val_attr, acc_attr, acc_interim_attr, case):
-        ccy_val = getattr(t, ccy_val_attr)
+    def _process_cash(self, t, ccy, ccy_val, acc, acc_interim=None, case=None, fx_rate=None,
+                      fx_rate_date=None):
         if case == 0:
-            cash_item = self._get_item(t, ccy_attr=ccy_attr, acc_attr=acc_attr)
-            self._add_cash(cash_item, ccy_val)
+            cash_item = self._get_item(t, ccy=ccy, acc=acc)
+            self._add_cash(cash_item, ccy_val, fx_rate=fx_rate, fx_rate_date=fx_rate_date)
 
         elif case == 1:
-            cash_item = self._get_item(t, ccy_attr=ccy_attr, acc_attr=acc_interim_attr, case=case)
-            self._add_cash(cash_item, ccy_val)
+            cash_item = self._get_item(t, ccy=ccy, acc=acc_interim, case=case)
+            self._add_cash(cash_item, ccy_val, fx_rate=fx_rate, fx_rate_date=fx_rate_date)
 
         elif case == 2:
-            cash_item = self._get_item(t, ccy_attr=ccy_attr, acc_attr=acc_attr)
-            self._add_cash(cash_item, ccy_val)
+            cash_item = self._get_item(t, ccy=ccy, acc=acc)
+            self._add_cash(cash_item, ccy_val, fx_rate=fx_rate, fx_rate_date=fx_rate_date)
 
-            cash_item = self._get_item(t, ccy_attr=ccy_attr, acc_attr=acc_interim_attr, case=case)
-            self._add_cash(cash_item, -ccy_val)
+            cash_item = self._get_item(t, ccy=ccy, acc=acc_interim, case=case)
+            self._add_cash(cash_item, -ccy_val, fx_rate=fx_rate, fx_rate_date=fx_rate_date)
 
     def get_items(self):
         for t in self.transactions:
@@ -268,70 +267,70 @@ class BalanceReport2Builder(BaseReport2Builder):
             if t_class == TransactionClass.CASH_INFLOW or t_class == TransactionClass.CASH_OUTFLOW:
                 # Cash-Inflow/Cash-Outflow use transaction.reference_fx_rate
 
-                cash_item = self._get_item(t, ccy_attr='transaction_currency', acc_attr='account_position')
+                cash_item = self._get_item(t, ccy=t.transaction_currency, acc=t.account_position)
                 self._add_cash(cash_item, t.position_size_with_sign, fx_rate=t.reference_fx_rate)
 
-                invested_item = self._get_invested_items(t, ccy_attr='transaction_currency', acc_attr='account_cash')
+                invested_item = self._get_invested_items(t, ccy=t.transaction_currency, acc=t.account_cash)
                 self._add_cash(invested_item, t.position_size_with_sign, fx_rate=t.reference_fx_rate)
 
             elif t_class == TransactionClass.BUY or t_class == TransactionClass.SELL:
                 if case == 0:
-                    instrument_item = self._get_item(t, instr_attr='instrument', acc_attr='account_position')
+                    instrument_item = self._get_item(t, instr=t.instrument, acc=t.account_position)
                     instrument_item.balance_position += t.position_size_with_sign
 
-                    cash_item = self._get_item(t, ccy_attr='settlement_currency', acc_attr='account_cash')
+                    cash_item = self._get_item(t, ccy=t.settlement_currency, acc=t.account_cash)
                     self._add_cash(cash_item, t.cash_consideration)
 
                 elif case == 1:
-                    instrument_item = self._get_item(t, instr_attr='instrument', acc_attr='account_position')
+                    instrument_item = self._get_item(t, instr=t.instrument, acc=t.account_position)
                     instrument_item.balance_position += t.position_size_with_sign
 
-                    cash_item = self._get_item(t, ccy_attr='settlement_currency', acc_attr='account_interim', case=case)
+                    cash_item = self._get_item(t, ccy=t.settlement_currency, acc=t.account_interim, case=case)
                     self._add_cash(cash_item, t.cash_consideration)
 
                 elif case == 2:
-                    cash_item = self._get_item(t, ccy_attr='settlement_currency', acc_attr='account_cash')
+                    cash_item = self._get_item(t, ccy=t.settlement_currency, acc=t.account_cash)
                     self._add_cash(cash_item, t.cash_consideration)
 
-                    cash_item = self._get_item(t, ccy_attr='settlement_currency', acc_attr='account_interim', case=case)
+                    cash_item = self._get_item(t, ccy=t.settlement_currency, acc=t.account_interim, case=case)
                     self._add_cash(cash_item, -t.cash_consideration)
 
             elif t_class == TransactionClass.INSTRUMENT_PL:
-                # cash_item = self._get_item(t, ccy_attr='settlement_currency', acc_attr='account_cash')
+                # cash_item = self._get_item(t, ccy=t.settlement_currency, acc=t.account_cash)
                 # self.add_cash(cash_item, t.cash_consideration)
 
                 if case == 0:
-                    cash_item = self._get_item(t, ccy_attr='settlement_currency', acc_attr='account_cash')
+                    cash_item = self._get_item(t, ccy=t.settlement_currency, acc=t.account_cash)
                     self._add_cash(cash_item, t.cash_consideration)
 
                 elif case == 1:
-                    cash_item = self._get_item(t, ccy_attr='settlement_currency', acc_attr='account_interim', case=case)
+                    cash_item = self._get_item(t, ccy=t.settlement_currency, acc=t.account_interim, case=case)
                     self._add_cash(cash_item, t.cash_consideration)
 
                 elif case == 2:
-                    cash_item = self._get_item(t, ccy_attr='settlement_currency', acc_attr='account_cash')
+                    cash_item = self._get_item(t, ccy=t.settlement_currency, acc=t.account_cash)
                     self._add_cash(cash_item, t.cash_consideration)
 
-                    cash_item = self._get_item(t, ccy_attr='settlement_currency', acc_attr='account_interim', case=case)
+                    cash_item = self._get_item(t, ccy=t.settlement_currency, acc=t.account_interim, case=case)
                     self._add_cash(cash_item, -t.cash_consideration)
 
             elif t_class == TransactionClass.TRANSACTION_PL:
-                # cash_item = self._get_item(t, ccy_attr='settlement_currency', acc_attr='account_cash', add_details=True)
+                # cash_item = self._get_item(t, ccy=t.settlement_currency, acc=t.account_cash, add_details=True)
                 # self.add_cash(cash_item, t.cash_consideration)
 
                 if case == 0:
-                    cash_item = self._get_item(t, ccy_attr='settlement_currency', acc_attr='account_cash')
+                    cash_item = self._get_item(t, ccy=t.settlement_currency, acc=t.account_cash)
                     self._add_cash(cash_item, t.cash_consideration)
 
                 elif case == 1:
-                    cash_item = self._get_item(t, ccy_attr='settlement_currency', acc_attr='account_interim', case=case)
+                    cash_item = self._get_item(t, ccy=t.settlement_currency, acc=t.account_interim, case=case)
                     self._add_cash(cash_item, t.cash_consideration)
 
                 elif case == 2:
-                    cash_item = self._get_item(t, ccy_attr='settlement_currency', acc_attr='account_cash')
+                    cash_item = self._get_item(t, ccy=t.settlement_currency, acc=t.account_cash)
                     self._add_cash(cash_item, t.cash_consideration)
 
-                    cash_item = self._get_item(t, ccy_attr='settlement_currency', acc_attr='account_interim', case=case)
+                    cash_item = self._get_item(t, ccy=t.settlement_currency, acc=t.account_interim, case=case)
                     self._add_cash(cash_item, -t.cash_consideration)
 
             elif t_class == TransactionClass.FX_TRADE:
@@ -339,31 +338,31 @@ class BalanceReport2Builder(BaseReport2Builder):
                 # продублировать логику работу как с кэшь частью BUY/SELL, а не то как делали
 
                 if case == 0:
-                    cash_item = self._get_item(t, ccy_attr='transaction_currency', acc_attr='account_position')
-                    self._add_cash(cash_item, t.position_size_with_sign, fx_rate_date=t.cash_date)
+                    cash_item = self._get_item(t, ccy=t.transaction_currency, acc=t.account_position)
+                    self._add_cash(cash_item, t.position_size_with_sign, fx_rate_date=t.accounting_date)
 
-                    cash_item = self._get_item(t, ccy_attr='settlement_currency', acc_attr='account_cash')
-                    self._add_cash(cash_item, t.cash_consideration, fx_rate_date=t.cash_date)
+                    cash_item = self._get_item(t, ccy=t.settlement_currency, acc=t.account_cash)
+                    self._add_cash(cash_item, t.cash_consideration, fx_rate_date=t.accounting_date)
 
                 elif case == 1:
-                    cash_item = self._get_item(t, ccy_attr='transaction_currency', acc_attr='account_interim', case=case)
-                    self._add_cash(cash_item, t.position_size_with_sign, fx_rate_date=t.cash_date)
+                    cash_item = self._get_item(t, ccy=t.transaction_currency, acc=t.account_interim, case=case)
+                    self._add_cash(cash_item, t.position_size_with_sign, fx_rate_date=t.accounting_date)
 
-                    cash_item = self._get_item(t, ccy_attr='settlement_currency', acc_attr='account_interim', case=case)
-                    self._add_cash(cash_item, t.cash_consideration, fx_rate_date=t.cash_date)
+                    cash_item = self._get_item(t, ccy=t.settlement_currency, acc=t.account_interim, case=case)
+                    self._add_cash(cash_item, t.cash_consideration, fx_rate_date=t.accounting_date)
 
                 elif case == 2:
-                    cash_item = self._get_item(t, ccy_attr='transaction_currency', acc_attr='account_position')
-                    self._add_cash(cash_item, t.position_size_with_sign, fx_rate_date=t.cash_date)
+                    cash_item = self._get_item(t, ccy=t.transaction_currency, acc=t.account_position)
+                    self._add_cash(cash_item, t.position_size_with_sign, fx_rate_date=t.accounting_date)
 
-                    cash_item = self._get_item(t, ccy_attr='transaction_currency', acc_attr='account_interim', case=case)
-                    self._add_cash(cash_item, -t.position_size_with_sign, fx_rate_date=t.cash_date)
+                    cash_item = self._get_item(t, ccy=t.transaction_currency, acc=t.account_interim, case=case)
+                    self._add_cash(cash_item, -t.position_size_with_sign, fx_rate_date=t.accounting_date)
 
-                    cash_item = self._get_item(t, ccy_attr='settlement_currency', acc_attr='account_cash')
-                    self._add_cash(cash_item, t.cash_consideration, fx_rate_date=t.cash_date)
+                    cash_item = self._get_item(t, ccy=t.settlement_currency, acc=t.account_cash)
+                    self._add_cash(cash_item, t.cash_consideration, fx_rate_date=t.accounting_date)
 
-                    cash_item = self._get_item(t, ccy_attr='settlement_currency', acc_attr='account_interim', case=case)
-                    self._add_cash(cash_item, -t.cash_consideration, fx_rate_date=t.cash_date)
+                    cash_item = self._get_item(t, ccy=t.settlement_currency, acc=t.account_interim, case=case)
+                    self._add_cash(cash_item, -t.cash_consideration, fx_rate_date=t.accounting_date)
 
         for i in six.itervalues(self._invested_items):
             if i.instrument:
