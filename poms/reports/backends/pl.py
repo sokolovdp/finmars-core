@@ -125,7 +125,7 @@ class PLReport2Builder(BaseReport2Builder):
             return self._items[t_key]
         except KeyError:
             portfolio = trn.portfolio if self._use_portfolio else None
-            account = trn.account_position if self._use_account else None
+            account = acc if self._use_account else None
             instrument = trn.instrument
             item = PLReportItem(pk=t_key, portfolio=portfolio, account=account, instrument=instrument)
             self._items[t_key] = item
@@ -137,7 +137,7 @@ class PLReport2Builder(BaseReport2Builder):
             return self._balance_items[t_key]
         except KeyError:
             portfolio = trn.portfolio if self._use_portfolio else None
-            account = trn.account_position if self._use_account else None
+            account = acc if self._use_account else None
             instrument = trn.instrument
             item = BalanceReportItem(pk=t_key, portfolio=portfolio, account=account, instrument=instrument)
             self._balance_items[t_key] = item
@@ -210,7 +210,7 @@ class PLReport2Builder(BaseReport2Builder):
 
             elif t_class == TransactionClass.TRANSFER:
                 item = self._get_item(t, acc=t.account_cash)
-                self._process_instrument(t, item, sign=1.)
+                self._process_instrument(t, item)
                 bitem = self._get_balance_items(t, acc=t.account_cash)
                 bitem.balance_position += t.position_size_with_sign
 
@@ -226,7 +226,7 @@ class PLReport2Builder(BaseReport2Builder):
 
                 spec = self._get_item(t, acc=t.account_position, ext=TransactionClass.FX_TRADE)
                 spec.name = TransactionClass.FX_TRADE
-                self._process_fx_trade(t, spec)
+                self._process_fx_trade(t, spec, sign=-1.)
 
                 # if item:
                 #     # default case

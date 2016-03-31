@@ -368,6 +368,23 @@ class PLTestCase(BaseReportTestCase):
         self._print_test_name()
         self._print_pl_transactions(instance.transactions)
         self._print_pl(instance)
+        self._assertEqualPL(instance, PLReport(
+            items=[
+                PLReportItem(pk=b.make_key(None, self.acc2, self.instr1_bond_chf, None),
+                             portfolio=None, account=self.acc2, instrument=self.instr1_bond_chf,
+                             principal_with_sign_system_ccy=47.000000, carry_with_sign_system_ccy=4.75,
+                             overheads_with_sign_system_ccy=0.000000, total_system_ccy=51.75),
+
+                PLReportItem(pk=b.make_key(None, self.acc1, self.instr1_bond_chf, None),
+                             portfolio=None, account=self.acc1, instrument=self.instr1_bond_chf,
+                             principal_with_sign_system_ccy=-47.000000, carry_with_sign_system_ccy=-4.75,
+                             overheads_with_sign_system_ccy=0.000000, total_system_ccy=-51.75),
+            ],
+            summary=PLReportSummary(principal_with_sign_system_ccy=0.,
+                                    carry_with_sign_system_ccy=0.,
+                                    overheads_with_sign_system_ccy=0.,
+                                    total_system_ccy=0.)
+        ))
 
     def test_fx_transfer_case0(self):
         trn = self.t(
@@ -387,3 +404,20 @@ class PLTestCase(BaseReportTestCase):
         self._print_test_name()
         self._print_pl_transactions(instance.transactions)
         self._print_pl(instance)
+        self._assertEqualPL(instance, PLReport(
+            items=[
+                PLReportItem(pk=b.make_key(None, self.acc1, None, None, TransactionClass.FX_TRADE),
+                             portfolio=None, account=self.acc1, instrument=None, name=TransactionClass.FX_TRADE,
+                             principal_with_sign_system_ccy=-25.666667, carry_with_sign_system_ccy=0.,
+                             overheads_with_sign_system_ccy=0., total_system_ccy=-25.666667),
+
+                PLReportItem(pk=b.make_key(None, self.acc2, None, None, TransactionClass.FX_TRADE),
+                             portfolio=None, account=self.acc2, instrument=None, name=TransactionClass.FX_TRADE,
+                             principal_with_sign_system_ccy=25.666667, carry_with_sign_system_ccy=0.,
+                             overheads_with_sign_system_ccy=0., total_system_ccy=25.666667),
+            ],
+            summary=PLReportSummary(principal_with_sign_system_ccy=0.,
+                                    carry_with_sign_system_ccy=0.,
+                                    overheads_with_sign_system_ccy=0.,
+                                    total_system_ccy=0.)
+        ))
