@@ -234,7 +234,6 @@ class PLReport2Builder(BaseReport2Builder):
                 # make 2 transactions for buy/sell
                 pass
 
-
         for i in six.itervalues(self._balance_items):
             self.calc_balance_instrument(i)
 
