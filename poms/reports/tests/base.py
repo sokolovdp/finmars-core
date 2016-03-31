@@ -53,6 +53,8 @@ class BaseReportTestCase(TestCase):
         self.instrument_pl = TransactionClass.objects.get(id=TransactionClass.INSTRUMENT_PL)
         self.transaction_pl = TransactionClass.objects.get(id=TransactionClass.TRANSACTION_PL)
         self.fx_tade = TransactionClass.objects.get(id=TransactionClass.FX_TRADE)
+        self.transfer = TransactionClass.objects.get(id=TransactionClass.TRANSFER)
+        self.fx_transfer = TransactionClass.objects.get(id=TransactionClass.FX_TRANSFER)
 
         self.ccy_ = Currency.objects.create(user_code='-', master_user=None)
         self.usd = Currency.objects.create(user_code='USD', name='USD', master_user=None)

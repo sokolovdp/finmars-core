@@ -17,8 +17,11 @@ class PLTestCase(BaseReportTestCase):
             'position_size_with_sign',
             'settlement_currency', 'cash_consideration',
             'principal_with_sign', 'carry_with_sign', 'overheads_with_sign',
-            'principal_with_sign_system_ccy', 'carry_with_sign_system_ccy',
-            'overheads_with_sign_system_ccy'
+
+            'accounting_date', 'cash_date',
+
+            # 'principal_with_sign_system_ccy', 'carry_with_sign_system_ccy',
+            # 'overheads_with_sign_system_ccy'
         )
 
     def _print_pl(self, instance):
@@ -346,3 +349,41 @@ class PLTestCase(BaseReportTestCase):
                                     overheads_with_sign_system_ccy=-45,
                                     total_system_ccy=-544.65)
         ))
+
+    def test_transfer_case0(self):
+        trn = self.t(
+            t_class=self.transfer, instr=self.instr1_bond_chf, position=-100., settlement_ccy=self.eur,
+            principal=50., carry=4., overheads=0., acc_date_delta=3., cash_date_delta=3.,
+            acc_cash=self.acc2, acc_pos=self.acc1,  # acc2 -> acc1
+            acc_interim=self.prov_acc1)
+
+        queryset = Transaction.objects.filter(pk__in=[
+            trn.pk
+        ])
+        instance = PLReport(master_user=self.m,
+                            begin_date=None, end_date=self.d(4),
+                            use_portfolio=False, use_account=True)
+        b = PLReport2Builder(instance=instance, queryset=queryset)
+        b.build()
+        self._print_test_name()
+        self._print_pl_transactions(instance.transactions)
+        self._print_pl(instance)
+
+    def test_fx_transfer_case0(self):
+        trn = self.t(
+            t_class=self.fx_transfer, transaction_ccy=self.rub, position=-1000., settlement_ccy=self.eur,
+            principal=30., carry=0., overheads=0., acc_date_delta=3., cash_date_delta=3.,
+            acc_cash=self.acc2, acc_pos=self.acc1,  # acc2 -> acc1
+            acc_interim=self.prov_acc1)
+
+        queryset = Transaction.objects.filter(pk__in=[
+            trn.pk
+        ])
+        instance = PLReport(master_user=self.m,
+                            begin_date=None, end_date=self.d(4),
+                            use_portfolio=False, use_account=True)
+        b = PLReport2Builder(instance=instance, queryset=queryset)
+        b.build()
+        self._print_test_name()
+        self._print_pl_transactions(instance.transactions)
+        self._print_pl(instance)

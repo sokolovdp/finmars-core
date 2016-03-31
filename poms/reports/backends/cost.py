@@ -84,7 +84,7 @@ class CostReport2Builder(BaseReport2Builder):
             self.set_currency_fx_rate(t, 'settlement_currency')
 
             t_class = t.transaction_class_id
-            if t_class in [TransactionClass.BUY, TransactionClass.SELL]:
+            if t_class == TransactionClass.BUY or t_class == TransactionClass.SELL:
                 multiplier = getattr(t, multiplier_attr, 0.)
 
                 t.remaining_position = abs(t.position_size_with_sign * (1 - multiplier))

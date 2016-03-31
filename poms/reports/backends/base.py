@@ -367,12 +367,16 @@ class BaseReport2Builder(object):
         return h
 
     def set_currency_fx_rate(self, obj, currency_attr, date=None):
+        fx_rate_attr = '%s_fx_rate' % currency_attr
+        if hasattr(obj, fx_rate_attr):
+            return getattr(obj, fx_rate_attr)
         currency = getattr(obj, currency_attr)
         if currency:
+            hist_attr = '%s_history' % currency_attr
             currency_history = self.find_currency_history(currency, date=date)
             currency_fx_rate = getattr(currency_history, 'fx_rate', 0.) or 0.
-            setattr(obj, '%s_history' % currency_attr, currency_history)
-            setattr(obj, '%s_fx_rate' % currency_attr, currency_fx_rate)
+            setattr(obj, hist_attr, currency_history)
+            setattr(obj, fx_rate_attr, currency_fx_rate)
             return currency_fx_rate
         return None
 
