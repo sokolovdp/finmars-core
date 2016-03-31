@@ -152,6 +152,12 @@ class BalanceReportBuilder(BaseReportBuilder):
         items = [i for i in six.itervalues(items)]
         items = sorted(items, key=lambda x: x.pk)
 
+        # TODO:
+        # [14:51] Alexander Ilyukhin: про 0 говорили и там что то было в документе, просто они нулевые но появились (edited)
+        # [14:51]      akalenichenko: нулевые строчки просто не отражаем
+        # [14:52] Alexander Ilyukhin: во всех случаях, т.е. если я сделаю CASH_INFLOW + CASH_OUTFLOW в размере 100 рублей то и в этом случае тоже не отображаем?
+        # [14:54]      akalenichenko: да, в отчете Balance, если Position = 0 , то не отражаем
+
         return items, invested_items
 
     def build(self):
@@ -378,30 +384,36 @@ class BalanceReport2Builder(BaseReport2Builder):
                 #     self._add_cash(cash_item, -t.cash_consideration)
 
             elif t_class == TransactionClass.TRANSFER:
-                # account_cash     -> from
-                # account_position -> to
-                # as sell
-                self._process_instrument(t, val=t.position_size_with_sign, acc=t.account_cash, case=case)
-                # self._process_cash(t, ccy=t.settlement_currency, ccy_val=t.cash_consideration,
-                #                    acc=t.account_cash, acc_interim=t.account_interim, case=case)
+                # # account_cash     -> from
+                # # account_position -> to
+                # # as sell
+                # self._process_instrument(t, val=t.position_size_with_sign, acc=t.account_cash, case=case)
+                # # self._process_cash(t, ccy=t.settlement_currency, ccy_val=t.cash_consideration,
+                # #                    acc=t.account_cash, acc_interim=t.account_interim, case=case)
+                #
+                # # as buy
+                # self._process_instrument(t, val=-t.position_size_with_sign, acc=t.account_position, case=case)
+                # # self._process_cash(t, ccy=t.settlement_currency, ccy_val=-t.cash_consideration,
+                # #                    acc=t.account_cash, acc_interim=t.account_interim, case=case)
 
-                # as buy
-                self._process_instrument(t, val=-t.position_size_with_sign, acc=t.account_position, case=case)
-                # self._process_cash(t, ccy=t.settlement_currency, ccy_val=-t.cash_consideration,
-                #                    acc=t.account_cash, acc_interim=t.account_interim, case=case)
+                # make 2 transactions for buy/sell
+                pass
 
             elif t_class == TransactionClass.FX_TRANSFER:
-                # as sell
-                self._process_cash(t, ccy=t.transaction_currency, ccy_val=t.position_size_with_sign,
-                                   acc=t.account_cash, acc_interim=t.account_interim, case=case)
-                # self._process_cash(t, ccy=t.settlement_currency, ccy_val=t.cash_consideration,
+                # # as sell
+                # self._process_cash(t, ccy=t.transaction_currency, ccy_val=t.position_size_with_sign,
                 #                    acc=t.account_cash, acc_interim=t.account_interim, case=case)
-
-                # as buy
-                self._process_cash(t, ccy=t.transaction_currency, ccy_val=-t.position_size_with_sign,
-                                   acc=t.account_position, acc_interim=t.account_interim, case=case)
-                # self._process_cash(t, ccy=t.settlement_currency, ccy_val=t.cash_consideration,
+                # # self._process_cash(t, ccy=t.settlement_currency, ccy_val=t.cash_consideration,
+                # #                    acc=t.account_cash, acc_interim=t.account_interim, case=case)
+                #
+                # # as buy
+                # self._process_cash(t, ccy=t.transaction_currency, ccy_val=-t.position_size_with_sign,
                 #                    acc=t.account_position, acc_interim=t.account_interim, case=case)
+                # # self._process_cash(t, ccy=t.settlement_currency, ccy_val=t.cash_consideration,
+                # #                    acc=t.account_position, acc_interim=t.account_interim, case=case)
+
+                # make 2 transactions for buy/sell
+                pass
 
         for i in six.itervalues(self._invested_items):
             if i.instrument:

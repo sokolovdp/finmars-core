@@ -22,6 +22,31 @@ def fgetattr(obj, attr, default=0.):
     return fval(getattr(obj, attr, default), default)
 
 
+class TransactionProxy(object):
+    def __init__(self, trn, pk, override_values, override_signs=False):
+        self.trn = trn
+        self.pk = pk
+        self.override_values = override_values or {}
+        self.override_signs = override_signs
+
+    def __getattr__(self, item):
+        if item == 'pk' or item == 'id':
+            return self.pk
+
+        if item in self.override_values:
+            return self.override_values[item]
+
+        val = getattr(self.trn, item)
+        if item == 'pk' or item == 'id':
+            return 'proxy_%s' % val
+
+        if self.override_signs and item in {'position_size_with_sign', 'cash_consideration', 'principal_with_sign',
+                                            'carry_with_sign', 'overheads_with_sign'}:
+            return -val
+
+        return val
+
+
 class BaseReportBuilder(object):
     def __init__(self, instance=None, queryset=None):
         self.instance = instance
@@ -330,8 +355,56 @@ class BaseReport2Builder(object):
     def transactions(self):
         if self._transactions:
             return self._transactions
-        queryset = self._get_transaction_qs()
-        return list(queryset.all())
+
+        # queryset = self._get_transaction_qs()
+        # return list(queryset.all())
+
+        sell = TransactionClass.objects.get(pk=TransactionClass.SELL)
+        buy = TransactionClass.objects.get(pk=TransactionClass.BUY)
+        fx_trade = TransactionClass.objects.get(pk=TransactionClass.FX_TRADE)
+
+        ret = []
+        for t in self._get_transaction_qs().all():
+            t_class = t.transaction_class_id
+            if t_class == TransactionClass.TRANSFER:
+                ret.append(
+                    TransactionProxy(t, '%s:sell' % t.pk,
+                                     override_values={
+                                         'transaction_class_id': sell.id,
+                                         'transaction_class': sell,
+                                         'account_position': t.account_cash,
+                                         'account_cash': t.account_cash,
+                                     }))
+                ret.append(
+                    TransactionProxy(t, '%s:buy' % t.pk,
+                                     override_values={
+                                         'transaction_class_id': buy.id,
+                                         'transaction_class': buy,
+                                         'account_position': t.account_position,
+                                         'account_cash': t.account_position,
+                                     },
+                                     override_signs=True))
+            elif t_class == TransactionClass.FX_TRANSFER:
+                ret.append(
+                    TransactionProxy(t, '%s:sell' % t.pk,
+                                     override_values={
+                                         'transaction_class_id': fx_trade.id,
+                                         'transaction_class': fx_trade,
+                                         'account_position': t.account_cash,
+                                         'account_cash': t.account_cash,
+                                     }))
+                ret.append(
+                    TransactionProxy(t, '%s:buy' % t.pk,
+                                     override_values={
+                                         'transaction_class_id': fx_trade.id,
+                                         'transaction_class': fx_trade,
+                                         'account_position': t.account_position,
+                                         'account_cash': t.account_position,
+                                     },
+                                     override_signs=True))
+            else:
+                ret.append(t)
+        return ret
 
     def build(self):
         raise NotImplementedError('subclasses of BaseReportBuilder must provide an build() method')

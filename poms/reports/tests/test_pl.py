@@ -10,18 +10,14 @@ class PLTestCase(BaseReportTestCase):
     def _print_pl_transactions(self, transactions):
         self._print_transactions(
             transactions,
-            'accounting_date',
+            'pk',
             'transaction_class',
             'portfolio',
-            'instrument', 'transaction_currency',
-            'position_size_with_sign',
-            'settlement_currency', 'cash_consideration',
-            'principal_with_sign', 'carry_with_sign', 'overheads_with_sign',
-
+            'instrument', 'transaction_currency', 'position_size_with_sign',
+            'settlement_currency',
+            'cash_consideration', 'principal_with_sign', 'carry_with_sign', 'overheads_with_sign',
+            'account_position', 'account_cash', 'account_interim',
             'accounting_date', 'cash_date',
-
-            # 'principal_with_sign_system_ccy', 'carry_with_sign_system_ccy',
-            # 'overheads_with_sign_system_ccy'
         )
 
     def _print_pl(self, instance):
@@ -353,7 +349,8 @@ class PLTestCase(BaseReportTestCase):
     def test_transfer_case0(self):
         trn = self.t(
             t_class=self.transfer, instr=self.instr1_bond_chf, position=-100., settlement_ccy=self.eur,
-            principal=50., carry=4., overheads=0., acc_date_delta=3., cash_date_delta=3.,
+            cash_consideration=0., principal=50., carry=4., overheads=0.,
+            acc_date_delta=3., cash_date_delta=3.,
             acc_cash=self.acc2, acc_pos=self.acc1,  # acc2 -> acc1
             acc_interim=self.prov_acc1)
 
@@ -389,7 +386,8 @@ class PLTestCase(BaseReportTestCase):
     def test_fx_transfer_case0(self):
         trn = self.t(
             t_class=self.fx_transfer, transaction_ccy=self.rub, position=-1000., settlement_ccy=self.eur,
-            principal=30., carry=0., overheads=0., acc_date_delta=3., cash_date_delta=3.,
+            cash_consideration=0., principal=30., carry=0., overheads=0.,
+            acc_date_delta=3., cash_date_delta=3.,
             acc_cash=self.acc2, acc_pos=self.acc1,  # acc2 -> acc1
             acc_interim=self.prov_acc1)
 

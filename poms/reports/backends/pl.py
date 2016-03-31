@@ -209,37 +209,31 @@ class PLReport2Builder(BaseReport2Builder):
                 # spec.overheads_with_sign_system_ccy += t.overheads_with_sign_system_ccy
 
             elif t_class == TransactionClass.TRANSFER:
-                item = self._get_item(t, acc=t.account_cash)
-                self._process_instrument(t, item)
-                bitem = self._get_balance_items(t, acc=t.account_cash)
-                bitem.balance_position += t.position_size_with_sign
+                # item = self._get_item(t, acc=t.account_cash)
+                # self._process_instrument(t, item)
+                # bitem = self._get_balance_items(t, acc=t.account_cash)
+                # bitem.balance_position += t.position_size_with_sign
+                #
+                # item = self._get_item(t, acc=t.account_position)
+                # self._process_instrument(t, item, sign=-1.)
+                # bitem = self._get_balance_items(t, acc=t.account_position)
+                # bitem.balance_position += -t.position_size_with_sign
 
-                item = self._get_item(t, acc=t.account_position)
-                self._process_instrument(t, item, sign=-1.)
-                bitem = self._get_balance_items(t, acc=t.account_position)
-                bitem.balance_position += -t.position_size_with_sign
+                # make 2 transactions for buy/sell
+                pass
 
             elif t_class == TransactionClass.FX_TRANSFER:
-                spec = self._get_item(t, acc=t.account_cash, ext=TransactionClass.FX_TRADE)
-                spec.name = TransactionClass.FX_TRADE
-                self._process_fx_trade(t, spec)
-
-                spec = self._get_item(t, acc=t.account_position, ext=TransactionClass.FX_TRADE)
-                spec.name = TransactionClass.FX_TRADE
-                self._process_fx_trade(t, spec, sign=-1.)
-
-                # if item:
-                #     # default case
-                #     # self.set_currency_fx_rate(t, 'transaction_currency')
-                #     self.set_currency_fx_rate(t, 'settlement_currency')
+                # spec = self._get_item(t, acc=t.account_cash, ext=TransactionClass.FX_TRADE)
+                # spec.name = TransactionClass.FX_TRADE
+                # self._process_fx_trade(t, spec)
                 #
-                #     t.principal_with_sign_system_ccy = t.principal_with_sign * t.settlement_currency_fx_rate
-                #     t.carry_with_sign_system_ccy = t.carry_with_sign * t.settlement_currency_fx_rate
-                #     t.overheads_with_sign_system_ccy = t.overheads_with_sign * t.settlement_currency_fx_rate
-                #
-                #     item.principal_with_sign_system_ccy += t.principal_with_sign_system_ccy
-                #     item.carry_with_sign_system_ccy += t.carry_with_sign_system_ccy
-                #     item.overheads_with_sign_system_ccy += t.overheads_with_sign_system_ccy
+                # spec = self._get_item(t, acc=t.account_position, ext=TransactionClass.FX_TRADE)
+                # spec.name = TransactionClass.FX_TRADE
+                # self._process_fx_trade(t, spec, sign=-1.)
+
+                # make 2 transactions for buy/sell
+                pass
+
 
         for i in six.itervalues(self._balance_items):
             self.calc_balance_instrument(i)

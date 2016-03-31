@@ -10,10 +10,10 @@ class BalanceTestCase(BaseReportTestCase):
     def _print_balance_transactions(self, transactions):
         self._print_transactions(
             transactions,
+            'pk',
             'transaction_class',
             'portfolio',
-            'instrument', 'transaction_currency',
-            'position_size_with_sign',
+            'instrument', 'transaction_currency', 'position_size_with_sign',
             'settlement_currency', 'cash_consideration',
             'account_position', 'account_cash', 'account_interim',
             'accounting_date', 'cash_date',
@@ -788,7 +788,8 @@ class BalanceTestCase(BaseReportTestCase):
     def test_transfer_case0(self):
         trn = self.t(
             t_class=self.transfer, instr=self.instr1_bond_chf, position=-100., settlement_ccy=self.eur,
-            principal=50., carry=4., overheads=0., acc_date_delta=3., cash_date_delta=3.,
+            cash_consideration=0., principal=50., carry=4., overheads=0.,
+            acc_date_delta=3., cash_date_delta=3.,
             acc_cash=self.acc2, acc_pos=self.acc1,  # acc2 -> acc1
             acc_interim=self.prov_acc1)
 
@@ -809,10 +810,16 @@ class BalanceTestCase(BaseReportTestCase):
                 BalanceReportItem(pk=b.make_key(None, self.acc2, self.instr1_bond_chf, None),
                                   portfolio=None, account=self.acc2, instrument=self.instr1_bond_chf, currency=None,
                                   balance_position=-100.000000, market_value_system_ccy=-18.450000),
+                BalanceReportItem(pk=b.make_key(None, self.acc2, None, self.eur),
+                                  portfolio=None, account=self.acc2, instrument=None, currency=self.eur,
+                                  balance_position=0.000000, market_value_system_ccy=0.00000),
 
                 BalanceReportItem(pk=b.make_key(None, self.acc1, self.instr1_bond_chf, None),
                                   portfolio=None, account=self.acc1, instrument=self.instr1_bond_chf, currency=None,
                                   balance_position=100.000000, market_value_system_ccy=18.450000),
+                BalanceReportItem(pk=b.make_key(None, self.acc1, None, self.eur),
+                                  portfolio=None, account=self.acc1, instrument=None, currency=self.eur,
+                                  balance_position=0.000000, market_value_system_ccy=0.00000),
 
             ],
             summary=BalanceReportSummary(invested_value_system_ccy=0,
@@ -823,7 +830,8 @@ class BalanceTestCase(BaseReportTestCase):
     def test_fx_transfer_case0(self):
         trn = self.t(
             t_class=self.fx_transfer, transaction_ccy=self.rub, position=-1000., settlement_ccy=self.eur,
-            principal=30., carry=0., overheads=0., acc_date_delta=3., cash_date_delta=3.,
+            cash_consideration=0., principal=30., carry=0., overheads=0.,
+            acc_date_delta=3., cash_date_delta=3.,
             acc_cash=self.acc2, acc_pos=self.acc1,  # acc2 -> acc1
             acc_interim=self.prov_acc1)
 
@@ -844,10 +852,16 @@ class BalanceTestCase(BaseReportTestCase):
                 BalanceReportItem(pk=b.make_key(None, self.acc1, None, self.rub),
                                   portfolio=None, account=self.acc1, instrument=None, currency=self.rub,
                                   balance_position=1000., market_value_system_ccy=13.333333),
+                BalanceReportItem(pk=b.make_key(None, self.acc1, None, self.eur),
+                                  portfolio=None, account=self.acc1, instrument=None, currency=self.eur,
+                                  balance_position=0.000000, market_value_system_ccy=0.00000),
 
                 BalanceReportItem(pk=b.make_key(None, self.acc2, None, self.rub),
                                   portfolio=None, account=self.acc2, instrument=None, currency=self.rub,
                                   balance_position=-1000., market_value_system_ccy=-13.333333),
+                BalanceReportItem(pk=b.make_key(None, self.acc2, None, self.eur),
+                                  portfolio=None, account=self.acc2, instrument=None, currency=self.eur,
+                                  balance_position=0.000000, market_value_system_ccy=0.00000),
             ],
             summary=BalanceReportSummary(invested_value_system_ccy=0,
                                          current_value_system_ccy=0.,
