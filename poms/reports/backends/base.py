@@ -426,11 +426,11 @@ class BaseReport2Builder(object):
                                           'account_position': t.account_cash,
                                           'account_cash': t.account_cash,
 
-                                          'position_size_with_sign': abs(t.position_size_with_sign),
-                                          'cash_consideration': -abs(t.cash_consideration),
-                                          'principal_with_sign': -abs(t.principal_with_sign),
-                                          'carry_with_sign': -abs(t.carry_with_sign),
-                                          'overheads_with_sign': -abs(t.overheads_with_sign),
+                                          'position_size_with_sign': -abs(t.position_size_with_sign),
+                                          'cash_consideration': abs(t.cash_consideration),
+                                          'principal_with_sign': abs(t.principal_with_sign),
+                                          'carry_with_sign': abs(t.carry_with_sign),
+                                          'overheads_with_sign': abs(t.overheads_with_sign),
                                       })
 
                 t2 = TransactionProxy(t, '%s:buy' % t.pk,
