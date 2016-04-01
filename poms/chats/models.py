@@ -52,6 +52,8 @@ class Thread(models.Model):
 class Message(models.Model):
     thread = models.ForeignKey(Thread)
     sender = models.ForeignKey(settings.AUTH_USER_MODEL, related_name='chat_sent_messages')
+    # sender_username = models.CharField(max_length=100, null=True, blank=True)
+    # sender_email = models.EmailField(null=True, blank=True)
     text = models.TextField()
     create_date = models.DateTimeField(auto_now_add=True, db_index=True)
 

@@ -53,6 +53,7 @@ INSTALLED_APPS = [
     'poms.users',
     'poms.audit',
     'poms.notifications',
+    'poms.chats',
     'poms.accounts',
     'poms.counterparties',
     'poms.currencies',
@@ -62,7 +63,6 @@ INSTALLED_APPS = [
     'poms.transactions',
     'poms.reports',
     'poms.api',
-    'poms.chats',
 ]
 
 if DEBUG:
