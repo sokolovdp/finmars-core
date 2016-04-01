@@ -27,6 +27,9 @@ class AccountType(models.Model):
         unique_together = [
             ['master_user', 'user_code']
         ]
+        permissions = [
+            ('view_accounttype', 'Can view account type')
+        ]
 
     def __str__(self):
         return self.name
@@ -50,6 +53,9 @@ class AccountClassifier(MPTTModel):
         unique_together = [
             ['master_user', 'user_code']
         ]
+        permissions = [
+            ('view_accountclassifier', 'Can view account classifier')
+        ]
 
     def __str__(self):
         return self.name
@@ -72,6 +78,9 @@ class Account(models.Model):
         verbose_name_plural = _('accounts')
         unique_together = [
             ['master_user', 'user_code']
+        ]
+        permissions = [
+            ('view_account', 'Can view account')
         ]
 
     def __str__(self):

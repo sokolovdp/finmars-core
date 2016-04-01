@@ -28,6 +28,9 @@ class PortfolioClassifier(MPTTModel):
     class Meta:
         verbose_name = _('portfolio classifier')
         verbose_name_plural = _('portfolio classifiers')
+        permissions = [
+            ('view_portfolioclassifier', 'Can view portfolio classifier')
+        ]
 
     def __str__(self):
         return self.name
@@ -52,6 +55,9 @@ class Portfolio(models.Model):
         verbose_name_plural = _('portfolios')
         unique_together = [
             ['master_user', 'user_code']
+        ]
+        permissions = [
+            ('view_portfolio', 'Can view portfolio')
         ]
 
     def __str__(self):

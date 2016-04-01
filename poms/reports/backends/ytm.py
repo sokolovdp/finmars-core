@@ -70,7 +70,7 @@ class YTMReport2Builder(BaseReport2Builder):
         self._items = {}
 
     def _get_item(self, trn, ext=None):
-        t_key = self._get_transaction_key(trn, 'instrument', None, 'account_position', ext)
+        t_key = self.make_key(portfolio=trn.portfolio, instrument=trn.instrument, account=trn.account_position, ext=ext)
         try:
             return self._items[t_key]
         except KeyError:
@@ -87,13 +87,13 @@ class YTMReport2Builder(BaseReport2Builder):
         # calculate total position for instrument
         for t in self.transactions:
             t_class = t.transaction_class_id
-            if t_class in [TransactionClass.BUY, TransactionClass.SELL]:
+            if t_class == TransactionClass.BUY or t_class == TransactionClass.SELL:
                 item = self._get_item(t)
                 item.position += t.position_size_with_sign
 
         for t in self.transactions:
             t_class = t.transaction_class_id
-            if t_class in [TransactionClass.BUY, TransactionClass.SELL]:
+            if t_class == TransactionClass.BUY or t_class == TransactionClass.SELL:
                 item = self._get_item(t)
 
                 multiplier = getattr(t, multiplier_attr, 0.)

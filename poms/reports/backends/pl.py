@@ -119,78 +119,120 @@ class PLReport2Builder(BaseReport2Builder):
         self._items = {}
         self._balance_items = {}
 
-    def _get_item(self, trn, ext=None):
-        t_key = self._get_transaction_key(trn, 'instrument', None, 'account_position', ext)
+    def _get_item(self, trn, acc, ext=None):
+        t_key = self.make_key(portfolio=trn.portfolio, instrument=trn.instrument, account=acc, ext=ext)
         try:
             return self._items[t_key]
         except KeyError:
             portfolio = trn.portfolio if self._use_portfolio else None
-            account = trn.account_position if self._use_account else None
+            account = acc if self._use_account else None
             instrument = trn.instrument
             item = PLReportItem(pk=t_key, portfolio=portfolio, account=account, instrument=instrument)
             self._items[t_key] = item
             return item
 
-    def _get_balance_items(self, trn):
-        t_key = self._get_transaction_key(trn, 'instrument', None, 'account_position')
+    def _get_balance_items(self, trn, acc, ext=None):
+        t_key = self.make_key(portfolio=trn.portfolio, instrument=trn.instrument, account=acc, ext=ext)
         try:
             return self._balance_items[t_key]
         except KeyError:
             portfolio = trn.portfolio if self._use_portfolio else None
-            account = trn.account_position if self._use_account else None
+            account = acc if self._use_account else None
             instrument = trn.instrument
             item = BalanceReportItem(pk=t_key, portfolio=portfolio, account=account, instrument=instrument)
             self._balance_items[t_key] = item
             return item
 
+    def _process_instrument(self, t, item, sign=1.):
+        # default case
+        # self.set_currency_fx_rate(t, 'transaction_currency')
+        self.set_currency_fx_rate(t, 'settlement_currency')
+
+        t.principal_with_sign_system_ccy = t.principal_with_sign * t.settlement_currency_fx_rate
+        t.carry_with_sign_system_ccy = t.carry_with_sign * t.settlement_currency_fx_rate
+        t.overheads_with_sign_system_ccy = t.overheads_with_sign * t.settlement_currency_fx_rate
+
+        item.principal_with_sign_system_ccy += sign * t.principal_with_sign_system_ccy
+        item.carry_with_sign_system_ccy += sign * t.carry_with_sign_system_ccy
+        item.overheads_with_sign_system_ccy += sign * t.overheads_with_sign_system_ccy
+
+    def _process_fx_trade(self, t, item, sign=1.):
+        self.set_currency_fx_rate(t, 'transaction_currency')
+        self.set_currency_fx_rate(t, 'settlement_currency')
+
+        t.principal_with_sign_system_ccy = t.principal_with_sign * t.settlement_currency_fx_rate + \
+                                           t.position_size_with_sign * t.transaction_currency_fx_rate
+        t.carry_with_sign_system_ccy = t.carry_with_sign * t.settlement_currency_fx_rate
+        t.overheads_with_sign_system_ccy = t.overheads_with_sign * t.settlement_currency_fx_rate
+
+        item.principal_with_sign_system_ccy += sign * t.principal_with_sign_system_ccy
+        item.carry_with_sign_system_ccy += sign * t.carry_with_sign_system_ccy
+        item.overheads_with_sign_system_ccy += sign * t.overheads_with_sign_system_ccy
+
     def build(self):
         for t in self.transactions:
             t_class = t.transaction_class_id
-            item = None
-            if t_class in [TransactionClass.CASH_INFLOW, TransactionClass.CASH_OUTFLOW]:
+            # item = None
+            if t_class == TransactionClass.CASH_INFLOW or t_class == TransactionClass.CASH_OUTFLOW:
                 pass
-            elif t_class in [TransactionClass.BUY, TransactionClass.SELL]:
-                item = self._get_item(t)
+            elif t_class == TransactionClass.BUY or t_class == TransactionClass.SELL:
+                item = self._get_item(t, acc=t.account_position)
+                self._process_instrument(t, item)
 
-                bitem = self._get_balance_items(t)
+                bitem = self._get_balance_items(t, acc=t.account_position)
                 bitem.balance_position += t.position_size_with_sign
 
-            elif t_class in [TransactionClass.INSTRUMENT_PL]:
-                item = self._get_item(t)
+            elif t_class == TransactionClass.INSTRUMENT_PL:
+                item = self._get_item(t, acc=t.account_position)
+                self._process_instrument(t, item)
 
-            elif t_class in [TransactionClass.TRANSACTION_PL]:
-                item = self._get_item(t, ext=TransactionClass.TRANSACTION_PL)
+            elif t_class == TransactionClass.TRANSACTION_PL:
+                item = self._get_item(t, acc=t.account_position, ext=TransactionClass.TRANSACTION_PL)
                 item.name = TransactionClass.TRANSACTION_PL
+                self._process_instrument(t, item)
 
-            elif t_class in [TransactionClass.FX_TRADE]:
-                # special case -> Fx-Trade use fx-rate on transaction date
-                spec = self._get_item(t, ext=TransactionClass.FX_TRADE)
+            elif t_class == TransactionClass.FX_TRADE:
+                spec = self._get_item(t, acc=t.account_position, ext=TransactionClass.FX_TRADE)
                 spec.name = TransactionClass.FX_TRADE
+                self._process_fx_trade(t, spec)
 
-                self.set_currency_fx_rate(t, 'transaction_currency', date=t.accounting_date)
-                self.set_currency_fx_rate(t, 'settlement_currency', date=t.accounting_date)
-
-                t.principal_with_sign_system_ccy = t.principal_with_sign * t.settlement_currency_fx_rate + \
-                                                   t.position_size_with_sign * t.transaction_currency_fx_rate
-                t.carry_with_sign_system_ccy = t.carry_with_sign * t.settlement_currency_fx_rate
-                t.overheads_with_sign_system_ccy = t.overheads_with_sign * t.settlement_currency_fx_rate
-
-                spec.principal_with_sign_system_ccy += t.principal_with_sign_system_ccy
-                spec.carry_with_sign_system_ccy += t.carry_with_sign_system_ccy
-                spec.overheads_with_sign_system_ccy += t.overheads_with_sign_system_ccy
-
-            if item:
-                # default case
                 # self.set_currency_fx_rate(t, 'transaction_currency')
-                self.set_currency_fx_rate(t, 'settlement_currency')
+                # self.set_currency_fx_rate(t, 'settlement_currency')
+                #
+                # t.principal_with_sign_system_ccy = t.principal_with_sign * t.settlement_currency_fx_rate + \
+                #                                    t.position_size_with_sign * t.transaction_currency_fx_rate
+                # t.carry_with_sign_system_ccy = t.carry_with_sign * t.settlement_currency_fx_rate
+                # t.overheads_with_sign_system_ccy = t.overheads_with_sign * t.settlement_currency_fx_rate
+                #
+                # spec.principal_with_sign_system_ccy += t.principal_with_sign_system_ccy
+                # spec.carry_with_sign_system_ccy += t.carry_with_sign_system_ccy
+                # spec.overheads_with_sign_system_ccy += t.overheads_with_sign_system_ccy
 
-                t.principal_with_sign_system_ccy = t.principal_with_sign * t.settlement_currency_fx_rate
-                t.carry_with_sign_system_ccy = t.carry_with_sign * t.settlement_currency_fx_rate
-                t.overheads_with_sign_system_ccy = t.overheads_with_sign * t.settlement_currency_fx_rate
+            elif t_class == TransactionClass.TRANSFER:
+                # item = self._get_item(t, acc=t.account_cash)
+                # self._process_instrument(t, item)
+                # bitem = self._get_balance_items(t, acc=t.account_cash)
+                # bitem.balance_position += t.position_size_with_sign
+                #
+                # item = self._get_item(t, acc=t.account_position)
+                # self._process_instrument(t, item, sign=-1.)
+                # bitem = self._get_balance_items(t, acc=t.account_position)
+                # bitem.balance_position += -t.position_size_with_sign
 
-                item.principal_with_sign_system_ccy += t.principal_with_sign_system_ccy
-                item.carry_with_sign_system_ccy += t.carry_with_sign_system_ccy
-                item.overheads_with_sign_system_ccy += t.overheads_with_sign_system_ccy
+                # make 2 transactions for buy/sell
+                pass
+
+            elif t_class == TransactionClass.FX_TRANSFER:
+                # spec = self._get_item(t, acc=t.account_cash, ext=TransactionClass.FX_TRADE)
+                # spec.name = TransactionClass.FX_TRADE
+                # self._process_fx_trade(t, spec)
+                #
+                # spec = self._get_item(t, acc=t.account_position, ext=TransactionClass.FX_TRADE)
+                # spec.name = TransactionClass.FX_TRADE
+                # self._process_fx_trade(t, spec, sign=-1.)
+
+                # make 2 transactions for buy/sell
+                pass
 
         for i in six.itervalues(self._balance_items):
             self.calc_balance_instrument(i)

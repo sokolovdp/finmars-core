@@ -28,6 +28,9 @@ class Strategy(MPTTModel):
         unique_together = [
             ['master_user', 'user_code']
         ]
+        permissions = [
+            ('view_strategy', 'Can view strategy')
+        ]
 
     def __str__(self):
         return self.name
