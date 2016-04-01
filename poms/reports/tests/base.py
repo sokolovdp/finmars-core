@@ -535,24 +535,43 @@ class BaseReportTestCase(TestCase):
         # if settlement_ccy is None:
         #     settlement_ccy = self.ccy_
 
-        t = Transaction(
-            master_user=master if master else self.m,
-            transaction_class=t_class,
-            portfolio=p if p else self.p1,
-            instrument=instr,
-            transaction_currency=transaction_ccy,
-            position_size_with_sign=position,
-            settlement_currency=settlement_ccy if settlement_ccy else self.ccy_,
-            cash_consideration=cash_consideration if cash_consideration is not None else (principal + carry + overheads),
-            principal_with_sign=principal,
-            carry_with_sign=carry,
-            overheads_with_sign=overheads,
-            accounting_date=acc_date if acc_date else self.d(acc_date_delta),
-            cash_date=cash_date if cash_date else self.d(cash_date_delta),
-            account_position=acc_pos if acc_pos else self.acc1,
-            account_cash=acc_cash if acc_cash else self.acc1,
-            account_interim=acc_interim if acc_interim else self.prov_acc1,
-            reference_fx_rate=fx_rate)
+        # t = Transaction(
+        #     master_user=master if master else self.m,
+        #     transaction_class=t_class,
+        #     portfolio=p if p else self.p1,
+        #     instrument=instr,
+        #     transaction_currency=transaction_ccy,
+        #     position_size_with_sign=position,
+        #     settlement_currency=settlement_ccy if settlement_ccy else self.ccy_,
+        #     cash_consideration=cash_consideration if cash_consideration is not None else (principal + carry + overheads),
+        #     principal_with_sign=principal,
+        #     carry_with_sign=carry,
+        #     overheads_with_sign=overheads,
+        #     accounting_date=acc_date if acc_date else self.d(acc_date_delta),
+        #     cash_date=cash_date if cash_date else self.d(cash_date_delta),
+        #     account_position=acc_pos if acc_pos else self.acc1,
+        #     account_cash=acc_cash if acc_cash else self.acc1,
+        #     account_interim=acc_interim if acc_interim else self.prov_acc1,
+        #     reference_fx_rate=fx_rate)
+
+        t = Transaction()
+        t.master_user = master if master else self.m
+        t.transaction_class = t_class
+        t.portfolio = p if p else self.p1
+        t.instrument = instr
+        t.transaction_currency = transaction_ccy
+        t.position_size_with_sign = position
+        t.settlement_currency = settlement_ccy if settlement_ccy else self.ccy_
+        t.cash_consideration = cash_consideration if cash_consideration is not None else (principal + carry + overheads)
+        t.principal_with_sign = principal
+        t.carry_with_sign = carry
+        t.overheads_with_sign = overheads
+        t.accounting_date = acc_date if acc_date else self.d(acc_date_delta)
+        t.cash_date = cash_date if cash_date else self.d(cash_date_delta)
+        t.account_position = acc_pos if acc_pos else self.acc1
+        t.account_cash = acc_cash if acc_cash else self.acc1
+        t.account_interim = acc_interim if acc_interim else self.prov_acc1
+        t.reference_fx_rate = fx_rate
 
         if strategies:
             for strategy in strategies:
@@ -561,7 +580,6 @@ class BaseReportTestCase(TestCase):
 
         t.save()
         return t
-
 
     def _print_table(self, data, columns):
         if pd:
