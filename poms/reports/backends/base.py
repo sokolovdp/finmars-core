@@ -513,12 +513,11 @@ class BaseReport2Builder(object):
         ext = ext if ext is not None else ''
         return 'p%s,a%s,i%s,c%s,e%s' % (portfolio, account, instrument, currency, ext)
 
-    def make_item(self, item_cls, key, portfolio=None, account=None, instrument=None, currency=None):
+    def make_item(self, item_cls, key, portfolio=None, account=None, **kwargs):
         item = item_cls(pk=key,
                         portfolio=portfolio if self._use_portfolio else None,
                         account=account if self._use_account else None,
-                        instrument=instrument,
-                        currency=currency)
+                        **kwargs)
         return item
 
     def calc_balance_instrument(self, i):
