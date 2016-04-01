@@ -99,6 +99,7 @@ class BaseReportSerializer(serializers.Serializer):
 
     use_portfolio = serializers.BooleanField(initial=False, help_text=_('Detalization by portfolio'))
     use_account = serializers.BooleanField(initial=False, help_text=_('Detalization by account'))
+    use_strategy = serializers.BooleanField(initial=False, help_text=_('Detalization by strategy'))
 
     transaction_currencies = CurrencyField(many=True, required=False, allow_null=True)
     instruments = InstrumentField(many=True, required=False, allow_null=True)
@@ -168,7 +169,6 @@ class BalanceReportSummarySerializer(serializers.Serializer):
 
 
 class BalanceReportSerializer(BaseReportSerializer):
-    use_strategy = serializers.BooleanField(initial=False, help_text=_('Detalization by strategy'))
     show_transaction_details = serializers.BooleanField(initial=True)
     items = BalanceReportItemSerializer(many=True, read_only=True, help_text=_('items'))
 
@@ -230,7 +230,6 @@ class PLReportSummarySerializer(serializers.Serializer):
 
 
 class PLReportSerializer(BaseReportSerializer):
-    use_strategy = serializers.BooleanField(initial=False, help_text=_('Detalization by strategy'))
     items = PLReportItemSerializer(many=True, read_only=True, help_text=_('items'))
 
     if settings.DEV:

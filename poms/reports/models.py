@@ -25,12 +25,13 @@ class BaseReportItem(object):
 @python_2_unicode_compatible
 class BaseReport(object):
     def __init__(self, master_user=None, begin_date=None, end_date=None, use_portfolio=None, use_account=None,
-                 instruments=None, transaction_currencies=None, items=None):
+                 use_strategy=False, instruments=None, transaction_currencies=None, items=None):
         self.master_user = master_user
         self.begin_date = begin_date
         self.end_date = end_date
         self.use_portfolio = use_portfolio
         self.use_account = use_account
+        self.use_strategy = use_strategy
         self.transaction_currencies = transaction_currencies
         self.instruments = instruments
         self.transactions = []
@@ -97,10 +98,9 @@ class BalanceReportSummary(object):
 
 # @python_2_unicode_compatible
 class BalanceReport(BaseReport):
-    def __init__(self, show_transaction_details=True, use_strategy=False, items=None, summary=None, *args, **kwargs):
+    def __init__(self, show_transaction_details=True, items=None, summary=None, *args, **kwargs):
         super(BalanceReport, self).__init__(items=items, *args, **kwargs)
         self.show_transaction_details = show_transaction_details
-        self.use_strategy = use_strategy
         self.invested_items = []
         self.summary = summary or BalanceReportSummary()
 
@@ -133,9 +133,8 @@ class PLReportSummary(object):
 
 # @python_2_unicode_compatible
 class PLReport(BaseReport):
-    def __init__(self, use_strategy=False, summary=None, *args, **kwargs):
+    def __init__(self, summary=None, *args, **kwargs):
         super(PLReport, self).__init__(*args, **kwargs)
-        self.use_strategy = use_strategy
         self.summary = summary or PLReportSummary()
 
 
