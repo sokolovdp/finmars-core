@@ -73,7 +73,8 @@ class YTMTestCase(BaseReportTestCase):
         self._print_ytm(instance)
         self._assertEqualYTM(instance, YTMReport(
             items=[
-                YTMReportItem(pk=b.make_key(portfolio=None, account=None, instrument=self.instr1_bond_chf, currency=None),
+                YTMReportItem(pk=b.make_key(portfolio=None, account=None, instrument=self.instr1_bond_chf,
+                                            currency=None),
                               portfolio=None, account=None, instrument=self.instr1_bond_chf,
                               position=100., ytm=0., time_invested=6),
                 YTMReportItem(pk=b.make_key(portfolio=None, account=None, instrument=self.instr2_stock, currency=None),
@@ -96,7 +97,8 @@ class YTMTestCase(BaseReportTestCase):
         self._print_ytm(instance)
         self._assertEqualYTM(instance, YTMReport(
             items=[
-                YTMReportItem(pk=b.make_key(portfolio=None, account=None, instrument=self.instr1_bond_chf, currency=None),
+                YTMReportItem(pk=b.make_key(portfolio=None, account=None, instrument=self.instr1_bond_chf,
+                                            currency=None),
                               portfolio=None, account=None, instrument=self.instr1_bond_chf,
                               position=100., ytm=0., time_invested=6),
                 YTMReportItem(pk=b.make_key(portfolio=None, account=None, instrument=self.instr2_stock, currency=None),

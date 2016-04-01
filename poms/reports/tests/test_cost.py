@@ -80,7 +80,8 @@ class CostTestCase(BaseReportTestCase):
         self._print_cost(instance)
         self._assertEqualCost(instance, CostReport(
             items=[
-                CostReportItem(pk=b.make_key(portfolio=None, account=None, instrument=self.instr1_bond_chf, currency=None),
+                CostReportItem(pk=b.make_key(portfolio=None, account=None, instrument=self.instr1_bond_chf,
+                                             currency=None),
                                portfolio=None, account=None, instrument=self.instr1_bond_chf,
                                position=100.,
                                cost_instrument_ccy=-200., cost_system_ccy=-180.,

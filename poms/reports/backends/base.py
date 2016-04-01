@@ -508,10 +508,14 @@ class BaseReport2Builder(object):
     def make_key(self, portfolio=None, account=None, instrument=None, currency=None, ext=None):
         portfolio = getattr(portfolio, 'pk', None) if self._use_portfolio else ''
         account = getattr(account, 'pk', None) if self._use_account else ''
+        # strategies = 's(%s)' % (','.join(s.pk for s in strategies)) if strategies else ''
+
         instrument = getattr(instrument, 'pk', None) if instrument else ''
         currency = getattr(currency, 'pk', None) if currency else ''
+
         ext = ext if ext is not None else ''
-        return 'p%s,a%s,i%s,c%s,e%s' % (portfolio, account, instrument, currency, ext)
+
+        return 'p(%s),a(%s),i(%s),c(%s),e(%s)' % (portfolio, account, instrument, currency, ext)
 
     def make_item(self, item_cls, key, portfolio=None, account=None, **kwargs):
         item = item_cls(pk=key,
@@ -565,7 +569,7 @@ class BaseReport2Builder(object):
             if t_class not in [TransactionClass.BUY, TransactionClass.SELL]:
                 continue
 
-            t_key = self.make_key(portfolio=t.portfolio, instrument=t.instrument, account=t.account_position)
+            t_key = self.make_key(portfolio=t.portfolio, account=t.account_position, instrument=t.instrument)
 
             t.avco_multiplier = 0.
             position_size_with_sign = t.position_size_with_sign
@@ -621,7 +625,7 @@ class BaseReport2Builder(object):
             if t_class not in [TransactionClass.BUY, TransactionClass.SELL]:
                 continue
 
-            t_key = self.make_key(portfolio=t.portfolio, instrument=t.instrument, account=t.account_position)
+            t_key = self.make_key(portfolio=t.portfolio, account=t.account_position, instrument=t.instrument)
 
             t.fifo_multiplier = 0.
             position_size_with_sign = t.position_size_with_sign

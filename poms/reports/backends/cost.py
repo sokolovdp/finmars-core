@@ -66,7 +66,7 @@ class CostReport2Builder(BaseReport2Builder):
         self._items = {}
 
     def _get_item(self, trn, ext=None):
-        t_key = self.make_key(portfolio=trn.portfolio, instrument=trn.instrument, account=trn.account_position, ext=ext)
+        t_key = self.make_key(portfolio=trn.portfolio, account=trn.account_position, instrument=trn.instrument, ext=ext)
         try:
             return self._items[t_key]
         except KeyError:

@@ -120,7 +120,7 @@ class PLReport2Builder(BaseReport2Builder):
         self._balance_items = {}
 
     def _get_item(self, trn, acc, ext=None):
-        t_key = self.make_key(portfolio=trn.portfolio, instrument=trn.instrument, account=acc, ext=ext)
+        t_key = self.make_key(portfolio=trn.portfolio, account=acc, instrument=trn.instrument, ext=ext)
         try:
             return self._items[t_key]
         except KeyError:
@@ -134,7 +134,7 @@ class PLReport2Builder(BaseReport2Builder):
             return item
 
     def _get_balance_items(self, trn, acc, ext=None):
-        t_key = self.make_key(portfolio=trn.portfolio, instrument=trn.instrument, account=acc, ext=ext)
+        t_key = self.make_key(portfolio=trn.portfolio, account=acc, instrument=trn.instrument, ext=ext)
         try:
             return self._balance_items[t_key]
         except KeyError:

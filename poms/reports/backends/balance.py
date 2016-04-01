@@ -184,7 +184,7 @@ class BalanceReport2Builder(BaseReport2Builder):
         self._items = {}
 
     def _get_item0(self, items, trn, instr=None, ccy=None, acc=None, ext=None):
-        t_key = self.make_key(portfolio=trn.portfolio, instrument=instr, currency=ccy, account=acc, ext=ext)
+        t_key = self.make_key(portfolio=trn.portfolio, account=acc, instrument=instr, currency=ccy, ext=ext)
         try:
             return items[t_key]
         except KeyError:

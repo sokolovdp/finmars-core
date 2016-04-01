@@ -112,7 +112,8 @@ class PLTestCase(BaseReportTestCase):
         self._print_pl(instance)
         self._assertEqualPL(instance, PLReport(
             items=[
-                PLReportItem(pk=b.make_key(portfolio=None, account=None, instrument=self.instr1_bond_chf, currency=None),
+                PLReportItem(pk=b.make_key(portfolio=None, account=None, instrument=self.instr1_bond_chf,
+                                           currency=None),
                              portfolio=None, account=None, instrument=self.instr1_bond_chf,
                              principal_with_sign_system_ccy=-162.000000, carry_with_sign_system_ccy=13.450000,
                              overheads_with_sign_system_ccy=-15.000000, total_system_ccy=-163.550000),
@@ -120,7 +121,8 @@ class PLTestCase(BaseReportTestCase):
                              portfolio=None, account=None, instrument=self.instr2_stock,
                              principal_with_sign_system_ccy=-465.333333, carry_with_sign_system_ccy=4.566667,
                              overheads_with_sign_system_ccy=-2.233333, total_system_ccy=-463.000000),
-                PLReportItem(pk=b.make_key(portfolio=None, account=None, instrument=None, currency=None, ext=TransactionClass.TRANSACTION_PL),
+                PLReportItem(pk=b.make_key(portfolio=None, account=None, instrument=None, currency=None,
+                                           ext=TransactionClass.TRANSACTION_PL),
                              portfolio=None, account=None, instrument=None, name=TransactionClass.TRANSACTION_PL,
                              principal_with_sign_system_ccy=0.000000, carry_with_sign_system_ccy=-12.000000,
                              overheads_with_sign_system_ccy=-1.333333, total_system_ccy=-13.333333),
@@ -143,15 +145,18 @@ class PLTestCase(BaseReportTestCase):
         self._print_pl(instance)
         self._assertEqualPL(instance, PLReport(
             items=[
-                PLReportItem(pk=b.make_key(portfolio=None, account=self.acc1, instrument=self.instr1_bond_chf, currency=None),
+                PLReportItem(pk=b.make_key(portfolio=None, account=self.acc1, instrument=self.instr1_bond_chf,
+                                           currency=None),
                              portfolio=None, account=self.acc1, instrument=self.instr1_bond_chf,
                              principal_with_sign_system_ccy=-162.000000, carry_with_sign_system_ccy=13.450000,
                              overheads_with_sign_system_ccy=-15.000000, total_system_ccy=-163.550000),
-                PLReportItem(pk=b.make_key(portfolio=None, account=self.acc1, instrument=self.instr2_stock, currency=None),
+                PLReportItem(pk=b.make_key(portfolio=None, account=self.acc1, instrument=self.instr2_stock,
+                                           currency=None),
                              portfolio=None, account=self.acc1, instrument=self.instr2_stock,
                              principal_with_sign_system_ccy=-465.333333, carry_with_sign_system_ccy=4.566667,
                              overheads_with_sign_system_ccy=-2.233333, total_system_ccy=-463.000000),
-                PLReportItem(pk=b.make_key(portfolio=None, account=self.acc1, instrument=None, currency=None, ext=TransactionClass.TRANSACTION_PL),
+                PLReportItem(pk=b.make_key(portfolio=None, account=self.acc1, instrument=None, currency=None,
+                                           ext=TransactionClass.TRANSACTION_PL),
                              portfolio=None, account=self.acc1, instrument=None, name=TransactionClass.TRANSACTION_PL,
                              principal_with_sign_system_ccy=0.000000, carry_with_sign_system_ccy=-12.000000,
                              overheads_with_sign_system_ccy=-1.333333, total_system_ccy=-13.333333),
@@ -174,15 +179,18 @@ class PLTestCase(BaseReportTestCase):
         self._print_pl(instance)
         self._assertEqualPL(instance, PLReport(
             items=[
-                PLReportItem(pk=b.make_key(portfolio=self.p1, account=self.acc1, instrument=self.instr1_bond_chf, currency=None),
+                PLReportItem(pk=b.make_key(portfolio=self.p1, account=self.acc1, instrument=self.instr1_bond_chf,
+                                           currency=None),
                              portfolio=self.p1, account=self.acc1, instrument=self.instr1_bond_chf,
                              principal_with_sign_system_ccy=-162.000000, carry_with_sign_system_ccy=13.450000,
                              overheads_with_sign_system_ccy=-15.000000, total_system_ccy=-163.550000),
-                PLReportItem(pk=b.make_key(portfolio=self.p1, account=self.acc1, instrument=self.instr2_stock, currency=None),
+                PLReportItem(pk=b.make_key(portfolio=self.p1, account=self.acc1, instrument=self.instr2_stock,
+                                           currency=None),
                              portfolio=self.p1, account=self.acc1, instrument=self.instr2_stock,
                              principal_with_sign_system_ccy=-465.333333, carry_with_sign_system_ccy=4.566667,
                              overheads_with_sign_system_ccy=-2.233333, total_system_ccy=-463.000000),
-                PLReportItem(pk=b.make_key(portfolio=self.p1, account=self.acc1, instrument=None, currency=None, ext=TransactionClass.TRANSACTION_PL),
+                PLReportItem(pk=b.make_key(portfolio=self.p1, account=self.acc1, instrument=None, currency=None,
+                                           ext=TransactionClass.TRANSACTION_PL),
                              portfolio=self.p1, account=self.acc1, instrument=None,
                              name=TransactionClass.TRANSACTION_PL,
                              principal_with_sign_system_ccy=0.000000, carry_with_sign_system_ccy=-12.000000,
@@ -206,7 +214,8 @@ class PLTestCase(BaseReportTestCase):
         self._print_pl(instance)
         self._assertEqualPL(instance, PLReport(
             items=[
-                PLReportItem(pk=b.make_key(portfolio=None, account=None, instrument=self.instr1_bond_chf, currency=None),
+                PLReportItem(pk=b.make_key(portfolio=None, account=None, instrument=self.instr1_bond_chf,
+                                           currency=None),
                              portfolio=None, account=None, instrument=self.instr1_bond_chf,
                              principal_with_sign_system_ccy=-162.000000, carry_with_sign_system_ccy=13.450000,
                              overheads_with_sign_system_ccy=-15.000000, total_system_ccy=-163.550000),
@@ -214,11 +223,13 @@ class PLTestCase(BaseReportTestCase):
                              portfolio=None, account=None, instrument=self.instr2_stock,
                              principal_with_sign_system_ccy=-465.333333, carry_with_sign_system_ccy=4.566667,
                              overheads_with_sign_system_ccy=-2.233333, total_system_ccy=-463.000000),
-                PLReportItem(pk=b.make_key(portfolio=None, account=None, instrument=None, currency=None, ext=TransactionClass.TRANSACTION_PL),
+                PLReportItem(pk=b.make_key(portfolio=None, account=None, instrument=None, currency=None,
+                                           ext=TransactionClass.TRANSACTION_PL),
                              portfolio=None, account=None, instrument=None, name=TransactionClass.TRANSACTION_PL,
                              principal_with_sign_system_ccy=0.000000, carry_with_sign_system_ccy=-12.000000,
                              overheads_with_sign_system_ccy=-1.333333, total_system_ccy=-13.333333),
-                PLReportItem(pk=b.make_key(portfolio=None, account=None, instrument=None, currency=None, ext=TransactionClass.FX_TRADE),
+                PLReportItem(pk=b.make_key(portfolio=None, account=None, instrument=None, currency=None,
+                                           ext=TransactionClass.FX_TRADE),
                              portfolio=None, account=None, instrument=None, name=TransactionClass.FX_TRADE,
                              principal_with_sign_system_ccy=75.000000, carry_with_sign_system_ccy=0.000000,
                              overheads_with_sign_system_ccy=-1.500000, total_system_ccy=73.500000),
@@ -273,7 +284,8 @@ class PLTestCase(BaseReportTestCase):
         self._print_pl(instance)
         self._assertEqualPL(instance, PLReport(
             items=[
-                PLReportItem(pk=b.make_key(portfolio=None, account=None, instrument=self.instr1_bond_chf, currency=None),
+                PLReportItem(pk=b.make_key(portfolio=None, account=None, instrument=self.instr1_bond_chf,
+                                           currency=None),
                              portfolio=None, account=None, instrument=self.instr1_bond_chf,
                              principal_with_sign_system_ccy=-486.000000, carry_with_sign_system_ccy=-13.65,
                              overheads_with_sign_system_ccy=-45, total_system_ccy=-544.65),
@@ -298,11 +310,13 @@ class PLTestCase(BaseReportTestCase):
         self._print_pl(instance)
         self._assertEqualPL(instance, PLReport(
             items=[
-                PLReportItem(pk=b.make_key(portfolio=None, account=self.acc1, instrument=self.instr1_bond_chf, currency=None),
+                PLReportItem(pk=b.make_key(portfolio=None, account=self.acc1, instrument=self.instr1_bond_chf,
+                                           currency=None),
                              portfolio=None, account=self.acc1, instrument=self.instr1_bond_chf,
                              principal_with_sign_system_ccy=-324.000000, carry_with_sign_system_ccy=-9.1,
                              overheads_with_sign_system_ccy=-30, total_system_ccy=-363.1),
-                PLReportItem(pk=b.make_key(portfolio=None, account=self.acc2, instrument=self.instr1_bond_chf, currency=None),
+                PLReportItem(pk=b.make_key(portfolio=None, account=self.acc2, instrument=self.instr1_bond_chf,
+                                           currency=None),
                              portfolio=None, account=self.acc2, instrument=self.instr1_bond_chf,
                              principal_with_sign_system_ccy=-162, carry_with_sign_system_ccy=-4.55,
                              overheads_with_sign_system_ccy=-15, total_system_ccy=-181.55),
@@ -327,15 +341,18 @@ class PLTestCase(BaseReportTestCase):
         self._print_pl(instance)
         self._assertEqualPL(instance, PLReport(
             items=[
-                PLReportItem(pk=b.make_key(portfolio=self.p1, account=self.acc1, instrument=self.instr1_bond_chf, currency=None),
+                PLReportItem(pk=b.make_key(portfolio=self.p1, account=self.acc1, instrument=self.instr1_bond_chf,
+                                           currency=None),
                              portfolio=self.p1, account=self.acc1, instrument=self.instr1_bond_chf,
                              principal_with_sign_system_ccy=-162, carry_with_sign_system_ccy=-4.55,
                              overheads_with_sign_system_ccy=-15, total_system_ccy=-181.55),
-                PLReportItem(pk=b.make_key(portfolio=self.p1, account=self.acc2, instrument=self.instr1_bond_chf, currency=None),
+                PLReportItem(pk=b.make_key(portfolio=self.p1, account=self.acc2, instrument=self.instr1_bond_chf,
+                                           currency=None),
                              portfolio=self.p1, account=self.acc2, instrument=self.instr1_bond_chf,
                              principal_with_sign_system_ccy=-162, carry_with_sign_system_ccy=-4.55,
                              overheads_with_sign_system_ccy=-15, total_system_ccy=-181.55),
-                PLReportItem(pk=b.make_key(portfolio=self.p2, account=self.acc1, instrument=self.instr1_bond_chf, currency=None),
+                PLReportItem(pk=b.make_key(portfolio=self.p2, account=self.acc1, instrument=self.instr1_bond_chf,
+                                           currency=None),
                              portfolio=self.p2, account=self.acc1, instrument=self.instr1_bond_chf,
                              principal_with_sign_system_ccy=-162, carry_with_sign_system_ccy=-4.55,
                              overheads_with_sign_system_ccy=-15, total_system_ccy=-181.55),
@@ -367,12 +384,14 @@ class PLTestCase(BaseReportTestCase):
         self._print_pl(instance)
         self._assertEqualPL(instance, PLReport(
             items=[
-                PLReportItem(pk=b.make_key(portfolio=None, account=self.acc2, instrument=self.instr1_bond_chf, currency=None),
+                PLReportItem(pk=b.make_key(portfolio=None, account=self.acc2, instrument=self.instr1_bond_chf,
+                                           currency=None),
                              portfolio=None, account=self.acc2, instrument=self.instr1_bond_chf,
                              principal_with_sign_system_ccy=47.000000, carry_with_sign_system_ccy=4.75,
                              overheads_with_sign_system_ccy=0.000000, total_system_ccy=51.75),
 
-                PLReportItem(pk=b.make_key(portfolio=None, account=self.acc1, instrument=self.instr1_bond_chf, currency=None),
+                PLReportItem(pk=b.make_key(portfolio=None, account=self.acc1, instrument=self.instr1_bond_chf,
+                                           currency=None),
                              portfolio=None, account=self.acc1, instrument=self.instr1_bond_chf,
                              principal_with_sign_system_ccy=-47.000000, carry_with_sign_system_ccy=-4.75,
                              overheads_with_sign_system_ccy=0.000000, total_system_ccy=-51.75),
@@ -404,12 +423,14 @@ class PLTestCase(BaseReportTestCase):
         self._print_pl(instance)
         self._assertEqualPL(instance, PLReport(
             items=[
-                PLReportItem(pk=b.make_key(portfolio=None, account=self.acc1, instrument=None, currency=None, ext=TransactionClass.FX_TRADE),
+                PLReportItem(pk=b.make_key(portfolio=None, account=self.acc1, instrument=None, currency=None,
+                                           ext=TransactionClass.FX_TRADE),
                              portfolio=None, account=self.acc1, instrument=None, name=TransactionClass.FX_TRADE,
                              principal_with_sign_system_ccy=-25.666667, carry_with_sign_system_ccy=0.,
                              overheads_with_sign_system_ccy=0., total_system_ccy=-25.666667),
 
-                PLReportItem(pk=b.make_key(portfolio=None, account=self.acc2, instrument=None, currency=None, ext=TransactionClass.FX_TRADE),
+                PLReportItem(pk=b.make_key(portfolio=None, account=self.acc2, instrument=None, currency=None,
+                                           ext=TransactionClass.FX_TRADE),
                              portfolio=None, account=self.acc2, instrument=None, name=TransactionClass.FX_TRADE,
                              principal_with_sign_system_ccy=25.666667, carry_with_sign_system_ccy=0.,
                              overheads_with_sign_system_ccy=0., total_system_ccy=25.666667),
