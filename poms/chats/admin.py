@@ -18,6 +18,8 @@ admin.site.register(ThreadStatus, ThreadStatusAdmin)
 class MessageInline(admin.StackedInline):
     raw_id_fields = ['sender']
     model = Message
+    extra = 1
+    ordering = ['create_date']
 
 
 class ThreadAdmin(HistoricalAdmin):

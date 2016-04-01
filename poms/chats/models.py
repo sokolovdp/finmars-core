@@ -63,7 +63,7 @@ class Message(models.Model):
         ordering = ['-create_date']
 
     def __str__(self):
-        return self.short_text
+        return '%s @ %s - %s' % (self.sender, self.create_date, self.short_text)
 
     @property
     def short_text(self):
