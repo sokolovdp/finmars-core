@@ -10,6 +10,7 @@ from poms.accounts.models import Account, AccountType
 from poms.currencies.models import Currency, CurrencyHistory
 from poms.instruments.models import Instrument, PriceHistory
 from poms.portfolios.models import Portfolio
+from poms.strategies.models import Strategy
 from poms.transactions.models import Transaction, TransactionClass
 from poms.users.models import MasterUser
 
@@ -104,6 +105,13 @@ class BaseReportTestCase(TestCase):
 
         self.p1 = Portfolio.objects.create(master_user=m, name='p1')
         self.p2 = Portfolio.objects.create(master_user=m, name='p2')
+
+        self.s1 = Strategy.objects.create(master_user=m, name='s1')
+        self.s11 = Strategy.objects.create(master_user=m, name='s11', parent=self.s1)
+        self.s12 = Strategy.objects.create(master_user=m, name='s12', parent=self.s1)
+        self.s2 = Strategy.objects.create(master_user=m, name='s2')
+        self.s21 = Strategy.objects.create(master_user=m, name='s21', parent=self.s2)
+        self.s22 = Strategy.objects.create(master_user=m, name='s22', parent=self.s2)
 
         # self.t_in = Transaction.objects.create(
         #     master_user=m,
@@ -507,36 +515,53 @@ class BaseReportTestCase(TestCase):
     def t(self, master=None, t_class=None, p=None, instr=None, transaction_ccy=None,
           position=None, settlement_ccy=None, cash_consideration=None, principal=0., carry=0., overheads=0.,
           acc_date=None, acc_date_delta=None, cash_date=None, cash_date_delta=None,
-          acc_pos=None, acc_cash=None, acc_interim=None, fx_rate=None):
-        if master is None:
-            master = self.m
-        if p is None:
-            p = self.p1
-        if cash_consideration is None:
-            cash_consideration = principal + carry + overheads
-        if acc_date is None:
-            acc_date = self.d(acc_date_delta)
-        if cash_date is None:
-            cash_date = self.d(cash_date_delta)
-        if acc_pos is None:
-            acc_pos = self.acc1
-        if acc_cash is None:
-            acc_cash = self.acc1
-        if acc_interim is None:
-            acc_interim = self.prov_acc1
+          acc_pos=None, acc_cash=None, acc_interim=None, fx_rate=None,
+          strategies=None):
 
-        if settlement_ccy is None:
-            settlement_ccy = self.ccy_
+        # if p is None:
+        #     p = self.p1
+        # if cash_consideration is None:
+        #     cash_consideration = principal + carry + overheads
+        # if acc_date is None:
+        #     acc_date = self.d(acc_date_delta)
+        # if cash_date is None:
+        #     cash_date = self.d(cash_date_delta)
+        # if acc_pos is None:
+        #     acc_pos = self.acc1
+        # if acc_cash is None:
+        #     acc_cash = self.acc1
+        # if acc_interim is None:
+        #     acc_interim = self.prov_acc1
+        # if settlement_ccy is None:
+        #     settlement_ccy = self.ccy_
 
-        transaction_date = min(acc_date, cash_date)
-        return Transaction.objects.create(
-            master_user=master, transaction_class=t_class, portfolio=p, instrument=instr,
+        t = Transaction(
+            master_user=master if master else self.m,
+            transaction_class=t_class,
+            portfolio=p if p else self.p1,
+            instrument=instr,
             transaction_currency=transaction_ccy,
-            position_size_with_sign=position, settlement_currency=settlement_ccy, cash_consideration=cash_consideration,
-            principal_with_sign=principal, carry_with_sign=carry, overheads_with_sign=overheads,
-            transaction_date=transaction_date, accounting_date=acc_date, cash_date=cash_date,
-            account_position=acc_pos, account_cash=acc_cash, account_interim=acc_interim,
+            position_size_with_sign=position,
+            settlement_currency=settlement_ccy if settlement_ccy else self.ccy_,
+            cash_consideration=cash_consideration if cash_consideration is not None else (principal + carry + overheads),
+            principal_with_sign=principal,
+            carry_with_sign=carry,
+            overheads_with_sign=overheads,
+            accounting_date=acc_date if acc_date else self.d(acc_date_delta),
+            cash_date=cash_date if cash_date else self.d(cash_date_delta),
+            account_position=acc_pos if acc_pos else self.acc1,
+            account_cash=acc_cash if acc_cash else self.acc1,
+            account_interim=acc_interim if acc_interim else self.prov_acc1,
             reference_fx_rate=fx_rate)
+
+        if strategies:
+            for strategy in strategies:
+                t.strategy_position = strategy.get('position', None)
+                t.strategy_cash = strategy.get('cash', None)
+
+        t.save()
+        return t
+
 
     def _print_table(self, data, columns):
         if pd:
