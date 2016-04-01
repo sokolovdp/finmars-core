@@ -53,6 +53,7 @@ INSTALLED_APPS = [
     'poms.users',
     'poms.audit',
     'poms.notifications',
+    'poms.chats',
     'poms.accounts',
     'poms.counterparties',
     'poms.currencies',
