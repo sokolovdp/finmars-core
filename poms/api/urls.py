@@ -17,10 +17,11 @@ import poms.strategies.views as strategies
 import poms.users.views as users
 import poms.reports.views as reports
 import poms.notifications.views as notifications
+import poms.chats.views as chats
 
 router = routers.DefaultRouter()
-router.register(r'users/login', users.LoginViewSet, 'LoginViewSet')
-router.register(r'users/logout', users.LogoutViewSet, 'LogoutViewSet')
+router.register(r'users/login', users.LoginViewSet, 'login')
+router.register(r'users/logout', users.LogoutViewSet, 'logout')
 router.register(r'users/ping', views.PingViewSet, "ping")
 router.register(r'users/protected-ping', views.ProtectedPingViewSet, "protectedping")
 
@@ -30,6 +31,10 @@ router.register(r'users/member', users.MemberViewSet)
 router.register(r'users/group', users.GroupViewSet)
 
 router.register(r'notifications/notification', notifications.NotificationViewSet)
+router.register(r'chats/thread-status', chats.ThreadStatusViewSet, 'chatthreadstatus')
+router.register(r'chats/thread', chats.ThreadViewSet, 'chatthread')
+router.register(r'chats/message', chats.MessageViewSet, 'chatmessage')
+router.register(r'chats/direct-message', chats.DirectMessageViewSet, 'chatdirectmessage')
 
 router.register(r'security/http-session', sessions.SessionViewSet)
 

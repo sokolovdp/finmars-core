@@ -62,6 +62,7 @@ INSTALLED_APPS = [
     'poms.transactions',
     'poms.reports',
     'poms.api',
+    'poms.chats',
 ]
 
 if DEBUG:
