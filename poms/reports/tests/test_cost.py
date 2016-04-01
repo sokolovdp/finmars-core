@@ -1,7 +1,7 @@
 from __future__ import unicode_literals, division, print_function
 
 from poms.reports.backends.cost import CostReport2Builder
-from poms.reports.models import CostReport, CostReportItem
+from poms.reports.models import CostReport, CostReportItem, MULTIPLIER_FIFO, MULTIPLIER_AVCO
 from poms.reports.tests.base import BaseReportTestCase, n
 from poms.transactions.models import Transaction
 
@@ -70,7 +70,7 @@ class CostTestCase(BaseReportTestCase):
             self.t_buy_bond.pk,
             self.t_sell_stock.pk
         ])
-        instance = CostReport(master_user=self.m, multiplier_class='avco',
+        instance = CostReport(master_user=self.m, multiplier_class=MULTIPLIER_AVCO,
                               begin_date=None, end_date=self.d(9),
                               use_portfolio=False, use_account=False)
         b = CostReport2Builder(instance=instance, queryset=queryset)
@@ -98,7 +98,7 @@ class CostTestCase(BaseReportTestCase):
         queryset = Transaction.objects.filter(pk__in=[
             self.t_buy_bond.pk, self.t_sell_stock.pk
         ])
-        instance = CostReport(master_user=self.m, multiplier_class='fifo',
+        instance = CostReport(master_user=self.m, multiplier_class=MULTIPLIER_FIFO,
                               begin_date=None, end_date=self.d(9),
                               use_portfolio=False, use_account=False)
         b = CostReport2Builder(instance=instance, queryset=queryset)

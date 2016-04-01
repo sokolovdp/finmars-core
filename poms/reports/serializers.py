@@ -7,7 +7,7 @@ from rest_framework import serializers
 from poms.currencies.serializers import CurrencyField
 from poms.instruments.serializers import InstrumentField
 from poms.reports.models import BalanceReport, BalanceReportItem, BalanceReportSummary, PLReportItem, PLReport, \
-    PLReportSummary, CostReport, BaseReport
+    PLReportSummary, CostReport, BaseReport, MULTIPLIERS, MULTIPLIER_AVCO
 from poms.transactions.models import Transaction
 from poms.users.fields import CurrentMasterUserDefault
 
@@ -100,6 +100,8 @@ class BaseReportSerializer(serializers.Serializer):
     use_portfolio = serializers.BooleanField(initial=False, help_text=_('Detalization by portfolio'))
     use_account = serializers.BooleanField(initial=False, help_text=_('Detalization by account'))
     use_strategy = serializers.BooleanField(initial=False, help_text=_('Detalization by strategy'))
+
+    multiplier_class = serializers.ChoiceField(default=MULTIPLIER_AVCO, choices=MULTIPLIERS)
 
     transaction_currencies = CurrencyField(many=True, required=False, allow_null=True)
     instruments = InstrumentField(many=True, required=False, allow_null=True)
@@ -305,7 +307,6 @@ class CostReportInstrumentSerializer(BaseReportItemSerializer):
 
 
 class CostReportSerializer(BaseReportSerializer):
-    multiplier_class = serializers.ChoiceField(default='avco', choices=[['avco', _('avco')], ['fifo', _('fifo')]])
     items = CostReportInstrumentSerializer(many=True, read_only=True)
 
     if settings.DEV:
@@ -369,7 +370,6 @@ class YTMReportInstrumentSerializer(BaseReportItemSerializer):
 
 
 class YTMReportSerializer(BaseReportSerializer):
-    multiplier_class = serializers.ChoiceField(default='avco', choices=[['avco', _('avco')], ['fifo', _('fifo')]])
     items = YTMReportInstrumentSerializer(many=True, read_only=True)
 
     if settings.DEV:

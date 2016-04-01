@@ -1,7 +1,7 @@
 from __future__ import unicode_literals, division, print_function
 
 from poms.reports.backends.ytm import YTMReport2Builder
-from poms.reports.models import YTMReport, YTMReportItem
+from poms.reports.models import YTMReport, YTMReportItem, MULTIPLIER_AVCO, MULTIPLIER_FIFO
 from poms.reports.tests.base import BaseReportTestCase, n
 from poms.transactions.models import Transaction
 
@@ -63,7 +63,7 @@ class YTMTestCase(BaseReportTestCase):
         queryset = Transaction.objects.filter(pk__in=[
             self.t_buy_bond.pk, self.t_sell_stock.pk
         ])
-        instance = YTMReport(master_user=self.m, multiplier_class='avco',
+        instance = YTMReport(master_user=self.m, multiplier_class=MULTIPLIER_AVCO,
                              begin_date=None, end_date=self.d(9),
                              use_portfolio=False, use_account=False)
         b = YTMReport2Builder(instance=instance, queryset=queryset)
@@ -87,7 +87,7 @@ class YTMTestCase(BaseReportTestCase):
         queryset = Transaction.objects.filter(pk__in=[
             self.t_buy_bond.pk, self.t_sell_stock.pk
         ])
-        instance = YTMReport(master_user=self.m, multiplier_class='fifo',
+        instance = YTMReport(master_user=self.m, multiplier_class=MULTIPLIER_FIFO,
                              begin_date=None, end_date=self.d(9),
                              use_portfolio=False, use_account=False)
         b = YTMReport2Builder(instance=instance, queryset=queryset)

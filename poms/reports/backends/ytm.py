@@ -84,7 +84,8 @@ class YTMReport2Builder(BaseReport2Builder):
             return item
 
     def build(self):
-        multiplier_attr = self.set_multipliers(self.instance.multiplier_class)
+        self.set_multiplier()
+        multiplier_attr = self.multiplier_attr
 
         # calculate total position for instrument
         for t in self.transactions:

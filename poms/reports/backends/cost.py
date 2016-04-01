@@ -80,7 +80,8 @@ class CostReport2Builder(BaseReport2Builder):
             return item
 
     def build(self):
-        multiplier_attr = self.set_multipliers(self.instance.multiplier_class)
+        self.set_multiplier()
+        multiplier_attr = self.multiplier_attr
 
         for t in self.transactions:
             self.set_currency_fx_rate(t, 'settlement_currency')

@@ -11,6 +11,7 @@ from django.utils.functional import cached_property
 
 from poms.currencies.models import CurrencyHistory, Currency
 from poms.instruments.models import PriceHistory
+from poms.reports.models import MULTIPLIER_AVCO, MULTIPLIER_FIFO
 from poms.transactions.models import Transaction, TransactionClass
 
 
@@ -548,16 +549,21 @@ class BaseReport2Builder(object):
 
         i.market_value_system_ccy = i.principal_value_system_ccy + i.accrued_value_system_ccy
 
-    def set_multipliers(self, multiplier_class):
-        if multiplier_class == 'avco':
-            multiplier_attr = 'avco_multiplier'
+    def set_multiplier(self):
+        if self.instance.multiplier_class == MULTIPLIER_AVCO:
             self.set_avco_multiplier()
-            return multiplier_attr
-        elif multiplier_class == 'fifo':
-            multiplier_attr = 'fifo_multiplier'
+        elif self.instance.multiplier_class == MULTIPLIER_FIFO:
             self.set_fifo_multiplier()
-            return multiplier_attr
-        raise ValueError('Bad multiplier class - %s' % multiplier_class)
+        else:
+            raise ValueError('Bad multiplier class - %s' % self.instance.multiplier_class)
+
+    @property
+    def multiplier_attr(self):
+        if self.instance.multiplier_class == MULTIPLIER_AVCO:
+            return 'avco_multiplier'
+        elif self.instance.multiplier_class == MULTIPLIER_FIFO:
+            return 'fifo_multiplier'
+        raise ValueError('Bad multiplier class - %s' % self.instance.multiplier_class)
 
     def set_avco_multiplier(self):
         in_stock = {}
