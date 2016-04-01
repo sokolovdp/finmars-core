@@ -17,7 +17,9 @@ class BalanceTestCase(BaseReportTestCase):
             'settlement_currency', 'cash_consideration',
             'account_position', 'account_cash', 'account_interim',
             'accounting_date', 'cash_date',
-            'reference_fx_rate')
+            'reference_fx_rate',
+            'strategy_position', 'strategy_cash'
+        )
 
     def _print_balance(self, instance):
         columns = ['pk', 'portfolio', 'account', 'instrument', 'currency', 'position', 'market_value', 'transaction']
@@ -913,18 +915,20 @@ class BalanceTestCase(BaseReportTestCase):
     def test_strategies_1(self):
         t1 = self.t(
             t_class=self.buy, instr=self.instr1_bond_chf, position=20., settlement_ccy=self.usd,
-            principal=-100., carry=0., overheads=0., acc_date_delta=3, cash_date_delta=3)
+            principal=-100., carry=0., overheads=0., acc_date_delta=3, cash_date_delta=3,
+            strategies=[{'position': self.s11, 'cash': self.s21}])
 
         t2 = self.t(
             t_class=self.sell, instr=self.instr1_bond_chf, position=10., settlement_ccy=self.usd,
-            principal=70., carry=0., overheads=0., acc_date_delta=4, cash_date_delta=4)
+            principal=70., carry=0., overheads=0., acc_date_delta=4, cash_date_delta=4,
+            strategies=[{'position': self.s11, 'cash': self.s21}])
 
         queryset = Transaction.objects.filter(pk__in=[
             t1.pk, t2.pk
         ])
         instance = BalanceReport(master_user=self.m,
                                  begin_date=None, end_date=self.d(5),
-                                 use_strategy=True, use_portfolio=False, use_account=True,
+                                 use_portfolio=False, use_account=True, use_strategy=True,
                                  show_transaction_details=False)
         b = BalanceReport2Builder(instance=instance, queryset=queryset)
         b.build()
