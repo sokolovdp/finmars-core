@@ -909,3 +909,25 @@ class BalanceTestCase(BaseReportTestCase):
                                          current_value_system_ccy=0.,
                                          p_l_system_ccy=0.)
         ))
+
+    def test_strategies_1(self):
+        t1 = self.t(
+            t_class=self.buy, instr=self.instr1_bond_chf, position=20., settlement_ccy=self.usd,
+            principal=-100., carry=0., overheads=0., acc_date_delta=3, cash_date_delta=3)
+
+        t2 = self.t(
+            t_class=self.sell, instr=self.instr1_bond_chf, position=10., settlement_ccy=self.usd,
+            principal=70., carry=0., overheads=0., acc_date_delta=4, cash_date_delta=4)
+
+        queryset = Transaction.objects.filter(pk__in=[
+            t1.pk, t2.pk
+        ])
+        instance = BalanceReport(master_user=self.m,
+                                 begin_date=None, end_date=self.d(5),
+                                 use_strategy=True, use_portfolio=False, use_account=True,
+                                 show_transaction_details=False)
+        b = BalanceReport2Builder(instance=instance, queryset=queryset)
+        b.build()
+        self._print_test_name()
+        self._print_balance_transactions(instance.transactions)
+        self._print_balance(instance)
