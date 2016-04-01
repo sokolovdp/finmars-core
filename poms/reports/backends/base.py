@@ -275,6 +275,26 @@ class BaseReportBuilder(object):
             t.rolling_position = rolling_position
 
 
+class TransactionProxy(object):
+    def __init__(self, trn, pk, override_values):
+        self.trn = trn
+        self.pk = pk
+        self.override_values = override_values or {}
+
+    def __getattr__(self, item):
+        if item == 'pk' or item == 'id':
+            return self.pk
+
+        if item in self.override_values:
+            return self.override_values[item]
+
+        val = getattr(self.trn, item)
+        if item == 'pk' or item == 'id':
+            return 'proxy_%s' % val
+
+        return val
+
+
 class BaseReport2Builder(object):
     def __init__(self, instance=None, queryset=None, transactions=None):
         self.instance = instance
@@ -330,8 +350,107 @@ class BaseReport2Builder(object):
     def transactions(self):
         if self._transactions:
             return self._transactions
-        queryset = self._get_transaction_qs()
-        return list(queryset.all())
+
+        # queryset = self._get_transaction_qs()
+        # return list(queryset.all())
+
+        sell = TransactionClass.objects.get(pk=TransactionClass.SELL)
+        buy = TransactionClass.objects.get(pk=TransactionClass.BUY)
+        fx_trade = TransactionClass.objects.get(pk=TransactionClass.FX_TRADE)
+
+        ret = []
+        for t in self._get_transaction_qs().all():
+            t_class = t.transaction_class_id
+            if t_class == TransactionClass.TRANSFER:
+                if t.position_size_with_sign >= 0:
+                    t1 = TransactionProxy(t, '%s:sell' % t.pk,
+                                          override_values={
+                                              'transaction_class_id': sell.id,
+                                              'transaction_class': sell,
+                                              'account_position': t.account_cash,
+                                              'account_cash': t.account_cash,
+
+                                              'position_size_with_sign': -t.position_size_with_sign,
+                                              'cash_consideration': t.cash_consideration,
+                                              'principal_with_sign': t.principal_with_sign,
+                                              'carry_with_sign': t.carry_with_sign,
+                                              'overheads_with_sign': t.overheads_with_sign,
+                                          })
+                    t2 = TransactionProxy(t, '%s:buy' % t.pk,
+                                          override_values={
+                                              'transaction_class_id': buy.id,
+                                              'transaction_class': buy,
+                                              'account_position': t.account_position,
+                                              'account_cash': t.account_position,
+
+                                              'position_size_with_sign': t.position_size_with_sign,
+                                              'cash_consideration': -t.cash_consideration,
+                                              'principal_with_sign': -t.principal_with_sign,
+                                              'carry_with_sign': -t.carry_with_sign,
+                                              'overheads_with_sign': -t.overheads_with_sign,
+                                          })
+                else:
+                    t1 = TransactionProxy(t, '%s:buy' % t.pk,
+                                          override_values={
+                                              'transaction_class_id': buy.id,
+                                              'transaction_class': buy,
+                                              'account_position': t.account_cash,
+                                              'account_cash': t.account_cash,
+
+                                              'position_size_with_sign': -t.position_size_with_sign,
+                                              'cash_consideration': t.cash_consideration,
+                                              'principal_with_sign': t.principal_with_sign,
+                                              'carry_with_sign': t.carry_with_sign,
+                                              'overheads_with_sign': t.overheads_with_sign,
+                                          })
+                    t2 = TransactionProxy(t, '%s:sell' % t.pk,
+                                          override_values={
+                                              'transaction_class_id': sell.id,
+                                              'transaction_class': sell,
+                                              'account_position': t.account_position,
+                                              'account_cash': t.account_position,
+
+                                              'position_size_with_sign': t.position_size_with_sign,
+                                              'cash_consideration': -t.cash_consideration,
+                                              'principal_with_sign': -t.principal_with_sign,
+                                              'carry_with_sign': -t.carry_with_sign,
+                                              'overheads_with_sign': -t.overheads_with_sign,
+                                          })
+                ret.append(t1)
+                ret.append(t2)
+            elif t_class == TransactionClass.FX_TRANSFER:
+                t1 = TransactionProxy(t, '%s:sell' % t.pk,
+                                      override_values={
+                                          'transaction_class_id': fx_trade.id,
+                                          'transaction_class': fx_trade,
+                                          'account_position': t.account_cash,
+                                          'account_cash': t.account_cash,
+
+                                          'position_size_with_sign': -t.position_size_with_sign,
+                                          'cash_consideration': t.cash_consideration,
+                                          'principal_with_sign': t.principal_with_sign,
+                                          'carry_with_sign': t.carry_with_sign,
+                                          'overheads_with_sign': t.overheads_with_sign,
+                                      })
+
+                t2 = TransactionProxy(t, '%s:buy' % t.pk,
+                                      override_values={
+                                          'transaction_class_id': fx_trade.id,
+                                          'transaction_class': fx_trade,
+                                          'account_position': t.account_position,
+                                          'account_cash': t.account_position,
+
+                                          'position_size_with_sign': t.position_size_with_sign,
+                                          'cash_consideration': -t.cash_consideration,
+                                          'principal_with_sign': -t.principal_with_sign,
+                                          'carry_with_sign': -t.carry_with_sign,
+                                          'overheads_with_sign': -t.overheads_with_sign,
+                                      })
+                ret.append(t1)
+                ret.append(t2)
+            else:
+                ret.append(t)
+        return ret
 
     def build(self):
         raise NotImplementedError('subclasses of BaseReportBuilder must provide an build() method')
@@ -367,18 +486,18 @@ class BaseReport2Builder(object):
         return h
 
     def set_currency_fx_rate(self, obj, currency_attr, date=None):
+        fx_rate_attr = '%s_fx_rate' % currency_attr
+        if hasattr(obj, fx_rate_attr):
+            return getattr(obj, fx_rate_attr)
         currency = getattr(obj, currency_attr)
         if currency:
+            hist_attr = '%s_history' % currency_attr
             currency_history = self.find_currency_history(currency, date=date)
             currency_fx_rate = getattr(currency_history, 'fx_rate', 0.) or 0.
-            setattr(obj, '%s_history' % currency_attr, currency_history)
-            setattr(obj, '%s_fx_rate' % currency_attr, currency_fx_rate)
+            setattr(obj, hist_attr, currency_history)
+            setattr(obj, fx_rate_attr, currency_fx_rate)
             return currency_fx_rate
         return None
-
-    # def set_fx_rate(self, transaction):
-    #     self.set_currency_fx_rate(transaction, 'transaction_currency')
-    #     self.set_currency_fx_rate(transaction, 'settlement_currency')
 
     def set_price(self, obj, instr_attr):
         instrument = getattr(obj, instr_attr)
@@ -386,70 +505,17 @@ class BaseReport2Builder(object):
             price_history = self.find_price_history(instrument)
             obj.price_history = price_history
 
-    # def annotate_fx_rates(self):
-    #     for t in self.transactions:
-    #         self.set_fx_rate(t)
-
-    # def annotate_prices(self, date=None):
-    #     for t in self.transactions:
-    #         self.set_price(t)
-
-    def make_key(self, portfolio, account, instrument, currency, ext=None):
-        if self._use_portfolio:
-            portfolio = getattr(portfolio, 'pk', None)
-        else:
-            portfolio = ''
-
-        if self._use_account:
-            account = getattr(account, 'pk', None)
-        else:
-            account = ''
-
-        if instrument:
-            instrument = getattr(instrument, 'pk', None)
-        else:
-            instrument = ''
-
-        if currency:
-            currency = getattr(currency, 'pk', None)
-        else:
-            currency = ''
-
-        if ext is None:
-            ext = ''
-
+    def make_key(self, portfolio=None, account=None, instrument=None, currency=None, ext=None):
+        portfolio = getattr(portfolio, 'pk', None) if self._use_portfolio else ''
+        account = getattr(account, 'pk', None) if self._use_account else ''
+        instrument = getattr(instrument, 'pk', None) if instrument else None
+        currency = getattr(currency, 'pk', None) if currency else None
+        ext = ext if ext else ''
         return 'p%s,a%s,i%s,c%s,e%s' % (portfolio, account, instrument, currency, ext)
-
-    def _get_transaction_key(self, trn, instr_attr, ccy_attr, acc_attr, ext=None):
-        if self._use_portfolio:
-            portfolio = trn.portfolio
-            # portfolio = getattr(portfolio, 'pk', None)
-        else:
-            portfolio = None
-
-        if self._use_account:
-            account = getattr(trn, acc_attr, None)
-            # account = getattr(account, 'pk', None)
-        else:
-            account = None
-
-        if instr_attr:
-            instrument = getattr(trn, instr_attr, None)
-            # instrument = getattr(instrument, 'pk', None)
-        else:
-            instrument = None
-
-        if ccy_attr:
-            currency = getattr(trn, ccy_attr, None)
-            # currency = getattr(currency, 'pk', None)
-        else:
-            currency = None
-
-        return self.make_key(portfolio, account, instrument, currency, ext=ext)
 
     def calc_balance_instrument(self, i):
         # i.price_history = self.find_price_history(i.instrument)
-        self.set_price(i,  'instrument')
+        self.set_price(i, 'instrument')
 
         i.instrument_principal_currency_history = self.find_currency_history(i.instrument.pricing_currency)
         i.instrument_accrued_currency_history = self.find_currency_history(i.instrument.accrued_currency)
@@ -470,13 +536,6 @@ class BaseReport2Builder(object):
         i.accrued_value_system_ccy = i.accrued_value_instrument_accrued_ccy * i.instrument_accrued_fx_rate
 
         i.market_value_system_ccy = i.principal_value_system_ccy + i.accrued_value_system_ccy
-
-    # def calc_balance_ccy(self, i):
-    #     # i.currency_history = self.find_currency_history(i.currency)
-    #     self.set_currency_fx_rate(i, 'currency')
-    #     i.currency_fx_rate = getattr(i.currency_history, 'fx_rate', 0.)
-    #     i.principal_value_system_ccy = i.balance_position * i.currency_fx_rate
-    #     i.market_value_system_ccy = i.principal_value_system_ccy
 
     def set_multipliers(self, multiplier_class):
         if multiplier_class == 'avco':
@@ -499,7 +558,7 @@ class BaseReport2Builder(object):
             if t_class not in [TransactionClass.BUY, TransactionClass.SELL]:
                 continue
 
-            t_key = self._get_transaction_key(t, 'instrument', None, 'account_position')
+            t_key = self.make_key(portfolio=t.portfolio, instrument=t.instrument, account=t.account_position)
 
             t.avco_multiplier = 0.
             position_size_with_sign = t.position_size_with_sign
@@ -555,7 +614,7 @@ class BaseReport2Builder(object):
             if t_class not in [TransactionClass.BUY, TransactionClass.SELL]:
                 continue
 
-            t_key = self._get_transaction_key(t, 'instrument', None, 'account_position')
+            t_key = self.make_key(portfolio=t.portfolio, instrument=t.instrument, account=t.account_position)
 
             t.fifo_multiplier = 0.
             position_size_with_sign = t.position_size_with_sign

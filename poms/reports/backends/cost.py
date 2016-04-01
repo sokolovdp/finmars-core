@@ -66,7 +66,7 @@ class CostReport2Builder(BaseReport2Builder):
         self._items = {}
 
     def _get_item(self, trn, ext=None):
-        t_key = self._get_transaction_key(trn, 'instrument', None, 'account_position', ext)
+        t_key = self.make_key(portfolio=trn.portfolio, instrument=trn.instrument, account=trn.account_position, ext=ext)
         try:
             return self._items[t_key]
         except KeyError:
@@ -84,7 +84,7 @@ class CostReport2Builder(BaseReport2Builder):
             self.set_currency_fx_rate(t, 'settlement_currency')
 
             t_class = t.transaction_class_id
-            if t_class in [TransactionClass.BUY, TransactionClass.SELL]:
+            if t_class == TransactionClass.BUY or t_class == TransactionClass.SELL:
                 multiplier = getattr(t, multiplier_attr, 0.)
 
                 t.remaining_position = abs(t.position_size_with_sign * (1 - multiplier))

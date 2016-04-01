@@ -9,6 +9,7 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.viewsets import ReadOnlyModelViewSet
 
+from poms import notifications
 from poms.api.mixins import DbTransactionMixin
 from poms.notifications.filters import OwnerByRecipientFilter
 from poms.notifications.models import Notification
@@ -17,7 +18,7 @@ from poms.notifications.serializers import NotificationSerializer
 
 class NotificationFilter(FilterSet):
     all = django_filters.MethodFilter(action='show_all', widget=BooleanWidget())
-    level = django_filters.MultipleChoiceFilter(choices=Notification.LEVELS)
+    level = django_filters.MultipleChoiceFilter(choices=notifications.LEVELS)
     type = django_filters.CharFilter(lookup_expr='startswith')
 
     class Meta:
