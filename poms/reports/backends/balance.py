@@ -184,26 +184,29 @@ class BalanceReport2Builder(BaseReport2Builder):
         self._items = {}
 
     def _get_item0(self, items, trn, instr=None, ccy=None, acc=None, ext=None):
-        t_key = self.make_key(portfolio=trn.portfolio, account=acc, instrument=instr, currency=ccy, ext=ext)
+        if self._use_strategy:
+            if instr:
+                strategies = trn.strategies_position
+                # strategies = None
+            elif ccy:
+                strategies = trn.strategies_cash
+            else:
+                strategies = None
+        else:
+            strategies = None
+        # strategies = []
+        t_key = self.make_key(portfolio=trn.portfolio, account=acc, instrument=instr, currency=ccy, ext=ext,
+                              strategies=strategies)
         try:
             return items[t_key]
         except KeyError:
-            # portfolio = trn.portfolio if self._use_portfolio else None
-            # account = acc if self._use_account else None
-            # instrument = instr
-            # currency = ccy
-            # item = BalanceReportItem(pk=t_key, portfolio=portfolio, account=account, instrument=instrument,
-            #                          currency=currency)
             item = self.make_item(BalanceReportItem, key=t_key, portfolio=trn.portfolio, account=acc, instrument=instr,
-                                  currency=ccy)
+                                  currency=ccy,strategies=strategies)
             items[t_key] = item
             return item
 
     def _get_item(self, trn, instr=None, ccy=None, acc=None, case=None):
-        if self._is_show_details(trn, case, acc):
-            ext = trn.id
-        else:
-            ext = None
+        ext = trn.id if self._is_show_details(trn, case, acc) else None
         item = self._get_item0(self._items, trn, instr=instr, ccy=ccy, acc=acc, ext=ext)
         if ext:
             item.transaction = trn
@@ -267,6 +270,9 @@ class BalanceReport2Builder(BaseReport2Builder):
             self._add_cash(cash_item, -ccy_val, fx_rate=fx_rate, fx_rate_date=fx_rate_date)
 
     def get_items(self):
+        if self._use_strategy:
+            self.set_multiplier()
+
         for t in self.transactions:
             t_class = t.transaction_class_id
             case = self._get_trn_case(t)
@@ -281,7 +287,13 @@ class BalanceReport2Builder(BaseReport2Builder):
                 self._add_cash(invested_item, t.position_size_with_sign, fx_rate=t.reference_fx_rate)
 
             elif t_class == TransactionClass.BUY or t_class == TransactionClass.SELL:
-                self._process_instrument(t, val=t.position_size_with_sign, acc=t.account_position, case=case)
+                if self._use_strategy:
+                    multiplier_attr = self.multiplier_attr
+                    multiplier = getattr(t, multiplier_attr)
+                    self._process_instrument(t, val=t.position_size_with_sign*(1.-multiplier), acc=t.account_position, case=case)
+                else:
+                    self._process_instrument(t, val=t.position_size_with_sign, acc=t.account_position, case=case)
+                # self._process_instrument(t, val=t.position_size_with_sign, acc=t.account_position, case=case)
                 self._process_cash(t, ccy=t.settlement_currency, ccy_val=t.cash_consideration,
                                    acc=t.account_cash, acc_interim=t.account_interim, case=case)
 

@@ -158,6 +158,14 @@ class Transaction(models.Model):
         super(Transaction, self).save(force_insert=force_insert, force_update=force_update, using=using,
                                       update_fields=update_fields)
 
+    @property
+    def strategies_position(self):
+        return [self.strategy_position] if self.strategy_position_id else []
+
+    @property
+    def strategies_cash(self):
+        return [self.strategy_cash] if self.strategy_cash_id else []
+
 
 history.register(TransactionClass)
 history.register(Transaction)

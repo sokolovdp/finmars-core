@@ -4,6 +4,7 @@ from __future__ import unicode_literals, division
 import datetime
 from collections import Counter
 
+import six
 from django.conf import settings
 from django.db.models import Q
 from django.utils import timezone
@@ -312,6 +313,7 @@ class BaseReport2Builder(object):
 
         self._use_portfolio = self.instance.use_portfolio
         self._use_account = self.instance.use_account
+        self._use_strategy = self.instance.use_strategy
 
     def _get_transaction_qs(self):
         assert self._filter_date_attr is not None, "_filter_date_attr is None!"
@@ -506,17 +508,17 @@ class BaseReport2Builder(object):
             price_history = self.find_price_history(instrument)
             obj.price_history = price_history
 
-    def make_key(self, portfolio=None, account=None, instrument=None, currency=None, ext=None):
+    def make_key(self, portfolio=None, account=None, instrument=None, currency=None, ext=None, strategies=None):
         portfolio = getattr(portfolio, 'pk', None) if self._use_portfolio else ''
         account = getattr(account, 'pk', None) if self._use_account else ''
-        # strategies = 's(%s)' % (','.join(s.pk for s in strategies)) if strategies else ''
+        strategies = ','.join(six.text_type(s.pk) for s in strategies) if self._use_strategy and strategies else ''
 
         instrument = getattr(instrument, 'pk', None) if instrument else ''
         currency = getattr(currency, 'pk', None) if currency else ''
 
         ext = ext if ext is not None else ''
 
-        return 'p(%s),a(%s),i(%s),c(%s),e(%s)' % (portfolio, account, instrument, currency, ext)
+        return 'p(%s),a(%s),i(%s),c(%s),e(%s),s(%s)' % (portfolio, account, instrument, currency, ext, strategies)
 
     def make_item(self, item_cls, key, portfolio=None, account=None, **kwargs):
         item = item_cls(pk=key,
@@ -572,9 +574,13 @@ class BaseReport2Builder(object):
 
         for t in self.transactions:
             t_class = t.transaction_class_id
-            if t_class not in [TransactionClass.BUY, TransactionClass.SELL]:
+
+            # if t_class not in [TransactionClass.BUY, TransactionClass.SELL]:
+            #     continue
+            if t_class != TransactionClass.BUY and t_class != TransactionClass.SELL:
                 continue
 
+            # do not use strategy!!!
             t_key = self.make_key(portfolio=t.portfolio, account=t.account_position, instrument=t.instrument)
 
             t.avco_multiplier = 0.
@@ -631,6 +637,7 @@ class BaseReport2Builder(object):
             if t_class not in [TransactionClass.BUY, TransactionClass.SELL]:
                 continue
 
+            # do not use strategy!!!
             t_key = self.make_key(portfolio=t.portfolio, account=t.account_position, instrument=t.instrument)
 
             t.fifo_multiplier = 0.

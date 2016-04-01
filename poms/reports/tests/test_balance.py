@@ -1,38 +1,41 @@
 from __future__ import unicode_literals, division, print_function
 
 from poms.reports.backends.balance import BalanceReport2Builder
-from poms.reports.models import BalanceReport, BalanceReportItem, BalanceReportSummary
+from poms.reports.models import BalanceReport, BalanceReportItem, BalanceReportSummary, MULTIPLIER_AVCO
 from poms.reports.tests.base import BaseReportTestCase, n
 from poms.transactions.models import Transaction
 
 
 class BalanceTestCase(BaseReportTestCase):
-    def _print_balance_transactions(self, transactions):
-        self._print_transactions(
-            transactions,
-            'pk',
-            'transaction_class',
-            'portfolio',
-            'instrument', 'transaction_currency', 'position_size_with_sign',
-            'settlement_currency', 'cash_consideration',
-            'account_position', 'account_cash', 'account_interim',
-            'accounting_date', 'cash_date',
-            'reference_fx_rate',
-            'strategy_position', 'strategy_cash'
-        )
+    def _print_balance_transactions(self, transactions, *columns):
+        self._print_transactions(transactions,
+                                 'pk',
+                                 'transaction_class',
+                                 'portfolio',
+                                 'instrument', 'transaction_currency', 'position_size_with_sign',
+                                 'settlement_currency', 'cash_consideration',
+                                 'account_position', 'account_cash', 'account_interim',
+                                 'accounting_date', 'cash_date',
+                                 'reference_fx_rate',
+                                 'strategies_position', 'strategies_cash',
+                                 'avco_multiplier',
+                                 'fifo_multiplier')
 
     def _print_balance(self, instance):
-        columns = ['pk', 'portfolio', 'account', 'instrument', 'currency', 'position', 'market_value', 'transaction']
+        columns = ['pk', 'portfolio', 'account', 'strategies', 'instrument', 'currency', 'position', 'market_value',
+                   'transaction']
         data = []
         for i in instance.items:
             portfolio = i.portfolio
             acc = i.account
+            strategies = i.strategies
             instr = i.instrument
             ccy = i.currency
             data.append([
                 i.pk,
                 getattr(portfolio, 'name', None),
                 getattr(acc, 'name', None),
+                [s.name for s in strategies] if strategies else [],
                 getattr(instr, 'name', None),
                 getattr(ccy, 'name', None),
                 i.balance_position,
@@ -67,6 +70,7 @@ class BalanceTestCase(BaseReportTestCase):
             self.assertEqual(ri.account, ei.account, '%s - account' % ri.pk)
             self.assertEqual(ri.instrument, ei.instrument, '%s - instrument' % ri.pk)
             self.assertEqual(ri.currency, ei.currency, '%s - currency' % ri.pk)
+            self.assertEqual(ri.strategies, ei.strategies, '%s - strategies' % ri.pk)
 
             self.assertEqual(n(ri.balance_position), n(ei.balance_position),
                              '%s - balance_position' % ri.pk)
@@ -987,19 +991,40 @@ class BalanceTestCase(BaseReportTestCase):
             strategies=[{'position': self.s11, 'cash': self.s21}])
 
         t2 = self.t(
-            t_class=self.sell, instr=self.instr1_bond_chf, position=10., settlement_ccy=self.usd,
+            t_class=self.sell, instr=self.instr1_bond_chf, position=-10., settlement_ccy=self.usd,
             principal=70., carry=0., overheads=0., acc_date_delta=4, cash_date_delta=4,
-            strategies=[{'position': self.s11, 'cash': self.s21}])
+            strategies=[{'position': self.s12, 'cash': self.s22}])
 
         queryset = Transaction.objects.filter(pk__in=[
             t1.pk, t2.pk
         ])
         instance = BalanceReport(master_user=self.m,
                                  begin_date=None, end_date=self.d(5),
-                                 use_portfolio=False, use_account=True, use_strategy=True,
+                                 use_portfolio=False, use_account=True,
+                                 use_strategy=True, multiplier_class=MULTIPLIER_AVCO,
                                  show_transaction_details=False)
         b = BalanceReport2Builder(instance=instance, queryset=queryset)
         b.build()
         self._print_test_name()
         self._print_balance_transactions(instance.transactions)
         self._print_balance(instance)
+        self._assertEqualBalance(instance, BalanceReport(
+            items=[
+                BalanceReportItem(pk=b.make_key(portfolio=None, account=self.acc1, instrument=self.instr1_bond_chf, currency=None, strategies=[self.s11]),
+                                  portfolio=None, account=self.acc1, instrument=self.instr1_bond_chf, currency=None, strategies=[self.s11],
+                                  balance_position=10., market_value_system_ccy=1.845),
+                BalanceReportItem(pk=b.make_key(portfolio=None, account=self.acc1, instrument=self.instr1_bond_chf, currency=None, strategies=[self.s12]),
+                                  portfolio=None, account=self.acc1, instrument=self.instr1_bond_chf, currency=None, strategies=[self.s12],
+                                  balance_position=0., market_value_system_ccy=0.),
+
+                BalanceReportItem(pk=b.make_key(portfolio=None, account=self.acc1, instrument=None, currency=self.usd, strategies=[self.s21]),
+                                  portfolio=None, account=self.acc1, instrument=None, currency=self.usd, strategies=[self.s21],
+                                  balance_position=-100., market_value_system_ccy=-100.),
+                BalanceReportItem(pk=b.make_key(portfolio=None, account=self.acc1, instrument=None, currency=self.usd, strategies=[self.s22]),
+                                  portfolio=None, account=self.acc1, instrument=None, currency=self.usd, strategies=[self.s22],
+                                  balance_position=70., market_value_system_ccy=70.),
+            ],
+            summary=BalanceReportSummary(invested_value_system_ccy=0,
+                                         current_value_system_ccy=-28.155,
+                                         p_l_system_ccy=-28.155)
+        ))
