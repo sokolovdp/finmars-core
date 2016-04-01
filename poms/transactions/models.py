@@ -66,9 +66,8 @@ class TransactionClass(models.Model):
 @python_2_unicode_compatible
 class Transaction(models.Model):
     master_user = models.ForeignKey(MasterUser, related_name='transactions', verbose_name=_('master user'))
-    portfolio = models.ForeignKey(Portfolio)
-    transaction_class = models.ForeignKey(TransactionClass)
-    # strategy = models.ManyToManyField(Strategy, blank=True)
+    portfolio = models.ForeignKey(Portfolio, verbose_name="portfolio")
+    transaction_class = models.ForeignKey(TransactionClass, verbose_name="class")
 
     # Position related
     instrument = models.ForeignKey(Instrument, null=True, blank=True)
@@ -117,19 +116,22 @@ class Transaction(models.Model):
 
     # information
     notes_front_office = models.TextField(null=True, blank=True,
-                                          help_text=_('text'))
+                                          help_text=_('Notes front office'))
     notes_middle_office = models.TextField(null=True, blank=True,
-                                           help_text=_('text'))
+                                           help_text=_('Notes middle office'))
     responsible = models.ForeignKey(Responsible, null=True, blank=True,
                                     help_text=_("Trader or transaction executer"))
     responsible_text = models.CharField(max_length=50, null=True, blank=True,
                                         help_text=_("Text for non-frequent responsible"))
     counterparty = models.ForeignKey(Counterparty, null=True, blank=True,
-                                     help_text=_('Transaction Counterparty'))
+                                     help_text=_('Transaction counterparty'))
     counterparty_text = models.CharField(max_length=50, null=True, blank=True,
-                                         help_text=_('Text for non-frequent Counterparty'))
+                                         help_text=_('Text for non-frequent counterparty'))
 
-    # classifiers = TreeManyToManyField(TransactionClassifier, blank=True)
+    strategy_position = models.ForeignKey(Strategy, null=True, blank=True, related_name='+',
+                                          verbose_name='temporary strategy position')
+    strategy_cash = models.ForeignKey(Strategy, null=True, blank=True, related_name='+',
+                                      verbose_name='temporary strategy cash')
 
     class Meta:
         verbose_name = _('transaction')

@@ -97,9 +97,10 @@ class BalanceReportSummary(object):
 
 # @python_2_unicode_compatible
 class BalanceReport(BaseReport):
-    def __init__(self, show_transaction_details=True, items=None, summary=None, *args, **kwargs):
+    def __init__(self, show_transaction_details=True, use_strategy=False, items=None, summary=None, *args, **kwargs):
         super(BalanceReport, self).__init__(items=items, *args, **kwargs)
         self.show_transaction_details = show_transaction_details
+        self.use_strategy = use_strategy
         self.invested_items = []
         self.summary = summary or BalanceReportSummary()
 
@@ -132,8 +133,9 @@ class PLReportSummary(object):
 
 # @python_2_unicode_compatible
 class PLReport(BaseReport):
-    def __init__(self, summary=None, *args, **kwargs):
+    def __init__(self, use_strategy=False, summary=None, *args, **kwargs):
         super(PLReport, self).__init__(*args, **kwargs)
+        self.use_strategy = use_strategy
         self.summary = summary or PLReportSummary()
 
 

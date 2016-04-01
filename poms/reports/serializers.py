@@ -97,8 +97,8 @@ class BaseReportSerializer(serializers.Serializer):
     begin_date = serializers.DateField(required=False, allow_null=True, help_text=_('Begin report date'))
     end_date = serializers.DateField(required=False, allow_null=True, help_text=_('End report date'))
 
-    use_portfolio = serializers.BooleanField(initial=False, help_text=_('Aggregate by portfolio'))
-    use_account = serializers.BooleanField(initial=False, help_text=_('Aggregate by account'))
+    use_portfolio = serializers.BooleanField(initial=False, help_text=_('Detalization by portfolio'))
+    use_account = serializers.BooleanField(initial=False, help_text=_('Detalization by account'))
 
     transaction_currencies = CurrencyField(many=True, required=False, allow_null=True)
     instruments = InstrumentField(many=True, required=False, allow_null=True)
@@ -168,16 +168,13 @@ class BalanceReportSummarySerializer(serializers.Serializer):
 
 
 class BalanceReportSerializer(BaseReportSerializer):
+    use_strategy = serializers.BooleanField(initial=False, help_text=_('Detalization by strategy'))
     show_transaction_details = serializers.BooleanField(initial=True)
-
-    items = BalanceReportItemSerializer(many=True, read_only=True,
-                                        help_text=_('items'))
+    items = BalanceReportItemSerializer(many=True, read_only=True, help_text=_('items'))
 
     if settings.DEV:
-        summary = BalanceReportSummarySerializer(read_only=True,
-                                                 help_text=_('Balance summary'))
-        invested_items = BalanceReportItemSerializer(many=True, read_only=True,
-                                                     help_text=_('Invested'))
+        summary = BalanceReportSummarySerializer(read_only=True)
+        invested_items = BalanceReportItemSerializer(many=True, read_only=True)
         transactions = BaseTransactionSerializer(many=True, read_only=True)
 
     def create(self, validated_data):
@@ -233,12 +230,11 @@ class PLReportSummarySerializer(serializers.Serializer):
 
 
 class PLReportSerializer(BaseReportSerializer):
-    items = PLReportItemSerializer(many=True, read_only=True,
-                                   help_text=_('items'))
+    use_strategy = serializers.BooleanField(initial=False, help_text=_('Detalization by strategy'))
+    items = PLReportItemSerializer(many=True, read_only=True, help_text=_('items'))
 
     if settings.DEV:
-        summary = PLReportSummarySerializer(read_only=True,
-                                            help_text=_('total in specified currency'))
+        summary = PLReportSummarySerializer(read_only=True)
         transactions = PLReportTransactionSerializer(many=True, read_only=True)
 
     def create(self, validated_data):
@@ -314,8 +310,7 @@ class CostReportSerializer(BaseReportSerializer):
     items = CostReportInstrumentSerializer(many=True, read_only=True)
 
     if settings.DEV:
-        transactions = CostTransactionSerializer(many=True, read_only=True,
-                                                 help_text=_('Transactions with miltipliers'))
+        transactions = CostTransactionSerializer(many=True, read_only=True)
 
     def create(self, validated_data):
         return CostReport(**validated_data)
@@ -379,7 +374,7 @@ class YTMReportSerializer(BaseReportSerializer):
     items = YTMReportInstrumentSerializer(many=True, read_only=True)
 
     if settings.DEV:
-        transactions = YTMTransactionSerializer(many=True, read_only=True, help_text=_('Transactions'))
+        transactions = YTMTransactionSerializer(many=True, read_only=True)
 
     def create(self, validated_data):
         return CostReport(**validated_data)
@@ -392,7 +387,7 @@ class YTMReportSerializer(BaseReportSerializer):
 
 
 class SimpleMultipliersReportItemSerializer(BaseReportItemSerializer):
-    instrument = serializers.PrimaryKeyRelatedField(read_only=True, help_text=_('Instrument'))
+    instrument = serializers.PrimaryKeyRelatedField(read_only=True)
     position_size_with_sign = serializers.FloatField(read_only=True)
     avco_multiplier = serializers.FloatField(read_only=True)
     fifo_multiplier = serializers.FloatField(read_only=True)
@@ -429,8 +424,7 @@ class SimpleMultipliersReport2TransactionSerializer(BaseTransactionSerializer):
     class Meta:
         model = Transaction
         fields = BaseTransactionSerializer.Meta.fields + [
-            'rolling_position',
-            'avco_multiplier', 'fifo_multiplier',
+            'rolling_position', 'avco_multiplier', 'fifo_multiplier',
         ]
 
 
