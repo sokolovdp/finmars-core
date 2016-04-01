@@ -74,10 +74,12 @@ class YTMReport2Builder(BaseReport2Builder):
         try:
             return self._items[t_key]
         except KeyError:
-            portfolio = trn.portfolio if self._use_portfolio else None
-            account = trn.account_position if self._use_account else None
-            instrument = trn.instrument
-            item = YTMReportItem(pk=t_key, portfolio=portfolio, account=account, instrument=instrument)
+            # portfolio = trn.portfolio if self._use_portfolio else None
+            # account = trn.account_position if self._use_account else None
+            # instrument = trn.instrument
+            # item = YTMReportItem(pk=t_key, portfolio=portfolio, account=account, instrument=instrument)
+            item = self.make_item(YTMReportItem, key=t_key, portfolio=trn.portfolio, account=trn.account_position,
+                                  instrument=trn.instrument)
             self._items[t_key] = item
             return item
 

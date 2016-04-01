@@ -188,12 +188,14 @@ class BalanceReport2Builder(BaseReport2Builder):
         try:
             return items[t_key]
         except KeyError:
-            portfolio = trn.portfolio if self._use_portfolio else None
-            account = acc if self._use_account else None
-            instrument = instr
-            currency = ccy
-            item = BalanceReportItem(pk=t_key, portfolio=portfolio, account=account, instrument=instrument,
-                                     currency=currency)
+            # portfolio = trn.portfolio if self._use_portfolio else None
+            # account = acc if self._use_account else None
+            # instrument = instr
+            # currency = ccy
+            # item = BalanceReportItem(pk=t_key, portfolio=portfolio, account=account, instrument=instrument,
+            #                          currency=currency)
+            item = self.make_item(BalanceReportItem, key=t_key, portfolio=trn.portfolio, account=acc, instrument=instr,
+                                  currency=ccy)
             items[t_key] = item
             return item
 

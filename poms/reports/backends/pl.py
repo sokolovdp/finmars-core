@@ -124,10 +124,12 @@ class PLReport2Builder(BaseReport2Builder):
         try:
             return self._items[t_key]
         except KeyError:
-            portfolio = trn.portfolio if self._use_portfolio else None
-            account = acc if self._use_account else None
-            instrument = trn.instrument
-            item = PLReportItem(pk=t_key, portfolio=portfolio, account=account, instrument=instrument)
+            # portfolio = trn.portfolio if self._use_portfolio else None
+            # account = acc if self._use_account else None
+            # instrument = trn.instrument
+            # item = PLReportItem(pk=t_key, portfolio=portfolio, account=account, instrument=instrument)
+            item = self.make_item(PLReportItem, key=t_key, portfolio=trn.portfolio, account=acc,
+                                  instrument=trn.instrument)
             self._items[t_key] = item
             return item
 
@@ -136,10 +138,12 @@ class PLReport2Builder(BaseReport2Builder):
         try:
             return self._balance_items[t_key]
         except KeyError:
-            portfolio = trn.portfolio if self._use_portfolio else None
-            account = acc if self._use_account else None
-            instrument = trn.instrument
-            item = BalanceReportItem(pk=t_key, portfolio=portfolio, account=account, instrument=instrument)
+            # portfolio = trn.portfolio if self._use_portfolio else None
+            # account = acc if self._use_account else None
+            # instrument = trn.instrument
+            # item = BalanceReportItem(pk=t_key, portfolio=portfolio, account=account, instrument=instrument)
+            item = self.make_item(BalanceReportItem, key=t_key, portfolio=trn.portfolio, account=acc,
+                                  instrument=trn.instrument)
             self._balance_items[t_key] = item
             return item
 

@@ -508,10 +508,18 @@ class BaseReport2Builder(object):
     def make_key(self, portfolio=None, account=None, instrument=None, currency=None, ext=None):
         portfolio = getattr(portfolio, 'pk', None) if self._use_portfolio else ''
         account = getattr(account, 'pk', None) if self._use_account else ''
-        instrument = getattr(instrument, 'pk', None) if instrument else None
-        currency = getattr(currency, 'pk', None) if currency else None
-        ext = ext if ext else ''
+        instrument = getattr(instrument, 'pk', None) if instrument else ''
+        currency = getattr(currency, 'pk', None) if currency else ''
+        ext = ext if ext is not None else ''
         return 'p%s,a%s,i%s,c%s,e%s' % (portfolio, account, instrument, currency, ext)
+
+    def make_item(self, item_cls, key, portfolio=None, account=None, instrument=None, currency=None):
+        item = item_cls(pk=key,
+                        portfolio=portfolio if self._use_portfolio else None,
+                        account=account if self._use_account else None,
+                        instrument=instrument,
+                        currency=currency)
+        return item
 
     def calc_balance_instrument(self, i):
         # i.price_history = self.find_price_history(i.instrument)
