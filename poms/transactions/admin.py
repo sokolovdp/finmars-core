@@ -29,7 +29,8 @@ class TransactionAdmin(HistoricalAdmin, ImportExportModelAdmin):
     model = Transaction
     list_select_related = ['master_user', 'transaction_class', 'instrument', 'transaction_currency',
                            'settlement_currency', 'account_cash', 'account_position', 'account_interim', ]
-    list_display = ['id', 'master_user', 'is_canceled', 'transaction_class', 'portfolio',
+    list_display = ['id', 'master_user',
+                    'is_canceled', 'transaction_class', 'portfolio',
                     'instrument', 'transaction_currency',
                     'position_size_with_sign',
                     'settlement_currency', 'cash_consideration',
@@ -39,6 +40,14 @@ class TransactionAdmin(HistoricalAdmin, ImportExportModelAdmin):
     list_filter = ['is_canceled']
     ordering = ['transaction_date', 'id']
     date_hierarchy = 'transaction_date'
+    actions = ['make_canceled', 'make_active']
 
+    def make_canceled(self, request, queryset):
+        queryset.update(is_canceled=True)
+    make_canceled.short_description = "Mark selected transaction as canceled"
+
+    def make_active(self, request, queryset):
+        queryset.update(is_canceled=False)
+    make_active.short_description = "Mark selected transaction as active"
 
 admin.site.register(Transaction, TransactionAdmin)

@@ -4,6 +4,7 @@ from django.db import models
 from django.utils import timezone
 from django.utils.encoding import python_2_unicode_compatible
 from django.utils.translation import ugettext_lazy as _
+from mptt.fields import TreeForeignKey
 from mptt.models import MPTTModel
 
 from poms.accounts.models import Account
@@ -128,10 +129,10 @@ class Transaction(models.Model):
     counterparty_text = models.CharField(max_length=50, null=True, blank=True,
                                          help_text=_('Text for non-frequent counterparty'))
 
-    strategy_position = models.ForeignKey(Strategy, null=True, blank=True, related_name='+',
-                                          verbose_name='temporary strategy position')
-    strategy_cash = models.ForeignKey(Strategy, null=True, blank=True, related_name='+',
-                                      verbose_name='temporary strategy cash')
+    strategy_position = TreeForeignKey(Strategy, null=True, blank=True, related_name='+',
+                                       verbose_name='temporary strategy position')
+    strategy_cash = TreeForeignKey(Strategy, null=True, blank=True, related_name='+',
+                                   verbose_name='temporary strategy cash')
 
     class Meta:
         verbose_name = _('transaction')
