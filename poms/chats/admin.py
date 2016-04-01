@@ -15,12 +15,18 @@ class ThreadStatusAdmin(HistoricalAdmin):
 admin.site.register(ThreadStatus, ThreadStatusAdmin)
 
 
+class MessageInline(admin.StackedInline):
+    raw_id_fields = ['sender']
+    model = Message
+
+
 class ThreadAdmin(HistoricalAdmin):
     model = Thread
     list_display = ['id', 'master_user', 'create_date', 'subject', 'status', 'status_date']
     date_hierarchy = 'create_date'
     list_select_related = ['status', 'master_user']
     raw_id_fields = ['master_user']
+    inlines = [MessageInline]
 
 
 admin.site.register(Thread, ThreadAdmin)
