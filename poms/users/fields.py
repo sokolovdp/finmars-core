@@ -1,14 +1,15 @@
 from __future__ import unicode_literals
 
 from django.conf import settings
-from django.contrib.auth.models import Group
+from django.contrib.auth.models import Group, Permission, User
 from django.core.exceptions import ObjectDoesNotExist
+from django.utils.encoding import smart_text
 from rest_framework import serializers
 from rest_framework.exceptions import NotFound
 
 from poms.api.fields import FilteredPrimaryKeyRelatedField
 from poms.users.filters import OwnerByMasterUserFilter
-from poms.users.models import Member
+from poms.users.models import Member, AVAILABLE_APPS
 
 
 def get_master_user(request, master_user_id=None):
@@ -101,9 +102,57 @@ class GroupOwnerByMasterUserFilter(OwnerByMasterUserFilter):
         return queryset.filter(profile__master_user=get_master_user(request))
 
 
+class UserField(FilteredPrimaryKeyRelatedField):
+    queryset = User.objects.all()
+
+
 class GroupField(FilteredPrimaryKeyRelatedField):
     queryset = Group.objects.all()
     filter_backends = [GroupOwnerByMasterUserFilter]
+
+
+class PermissionField(serializers.SlugRelatedField):
+    def __init__(self, **kwargs):
+        kwargs.setdefault('slug_field', 'codename')
+        if 'queryset' not in kwargs:
+            kwargs['queryset'] = Permission.objects.all()
+        super(PermissionField, self).__init__(**kwargs)
+
+    def get_queryset(self):
+        queryset = super(PermissionField, self).get_queryset()
+        queryset = queryset.select_related('content_type').filter(content_type__app_label__in=AVAILABLE_APPS)
+        return queryset
+
+    def to_internal_value(self, data):
+        try:
+            app_label, codename = data.split('.')
+            return self.get_queryset().get(content_type__app_label=app_label, codename=codename)
+        except ObjectDoesNotExist:
+            self.fail('does_not_exist', slug_name=self.slug_field, value=smart_text(data))
+        except (TypeError, ValueError):
+            self.fail('invalid')
+
+    def to_representation(self, obj):
+        return '%s.%s' % (obj.content_type.app_label, obj.codename)
+
+
+class GrantedPermissionField(serializers.Field):
+    def __init__(self, **kwargs):
+        kwargs['source'] = '*'
+        kwargs['read_only'] = True
+        super(GrantedPermissionField, self).__init__(**kwargs)
+
+    def bind(self, field_name, parent):
+        super(GrantedPermissionField, self).bind(field_name, parent)
+
+    def to_representation(self, value):
+        if history.is_historical_proxy(value):
+            return []
+        request = self.context['request']
+        ctype = ContentType.objects.get_for_model(value)
+        # return {'%s.%s' % (ctype.app_label, p) for p in get_perms(request.user, value)}
+        return []
+        # return get_perms(request.user, value)
 
 # class UserField(FilteredPrimaryKeyRelatedField):
 #     queryset = User.objects.all()

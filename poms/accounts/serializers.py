@@ -29,6 +29,7 @@ class AccountClassifierSerializer(serializers.ModelSerializer):
                   'parent', 'children', 'tree_id', 'level']
 
 
+# granted_permission = GrantedPermissionField()
 class AccountSerializer(serializers.ModelSerializer):
     url = serializers.HyperlinkedIdentityField(view_name='account-detail')
     master_user = MasterUserField()

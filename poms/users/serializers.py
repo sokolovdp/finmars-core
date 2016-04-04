@@ -1,18 +1,15 @@
 from __future__ import unicode_literals
 
 from django.contrib.auth import get_user_model, authenticate
-from django.contrib.auth.models import User, Permission
-from django.contrib.contenttypes.models import ContentType
-from django.core.exceptions import ObjectDoesNotExist, PermissionDenied
+from django.contrib.auth.models import User
+from django.core.exceptions import PermissionDenied
 from django.utils import translation
-from django.utils.encoding import smart_text
 from django.utils.translation import ugettext_lazy as _
 from rest_framework import serializers
 from rest_framework.authtoken.serializers import AuthTokenSerializer
 
-from poms.audit import history
-from poms.users.fields import MasterUserField, get_master_user, get_member, GroupField
-from poms.users.models import MasterUser, UserProfile, Group, Member, AVAILABLE_APPS
+from poms.users.fields import MasterUserField, get_master_user, get_member, GroupField, PermissionField, UserField
+from poms.users.models import MasterUser, UserProfile, Group, Member
 
 
 class LoginSerializer(AuthTokenSerializer):
@@ -55,50 +52,6 @@ class PasswordChangeSerializer(serializers.Serializer):
             user.set_password(new_password)
             return validated_data
         raise PermissionDenied(_('Invalid password'))
-
-
-class PermissionField(serializers.SlugRelatedField):
-    def __init__(self, **kwargs):
-        kwargs.setdefault('slug_field', 'codename')
-        if 'queryset' not in kwargs:
-            kwargs['queryset'] = Permission.objects.all()
-        super(PermissionField, self).__init__(**kwargs)
-
-    def get_queryset(self):
-        queryset = super(PermissionField, self).get_queryset()
-        queryset = queryset.select_related('content_type').filter(content_type__app_label__in=AVAILABLE_APPS)
-        return queryset
-
-    def to_internal_value(self, data):
-        try:
-            app_label, codename = data.split('.')
-            return self.get_queryset().get(content_type__app_label=app_label, codename=codename)
-        except ObjectDoesNotExist:
-            self.fail('does_not_exist', slug_name=self.slug_field, value=smart_text(data))
-        except (TypeError, ValueError):
-            self.fail('invalid')
-
-    def to_representation(self, obj):
-        return '%s.%s' % (obj.content_type.app_label, obj.codename)
-
-
-class GrantedPermissionField(serializers.Field):
-    def __init__(self, **kwargs):
-        kwargs['source'] = '*'
-        kwargs['read_only'] = True
-        super(GrantedPermissionField, self).__init__(**kwargs)
-
-    def bind(self, field_name, parent):
-        super(GrantedPermissionField, self).bind(field_name, parent)
-
-    def to_representation(self, value):
-        if history.is_historical_proxy(value):
-            return []
-        request = self.context['request']
-        ctype = ContentType.objects.get_for_model(value)
-        # return {'%s.%s' % (ctype.app_label, p) for p in get_perms(request.user, value)}
-        return []
-        # return get_perms(request.user, value)
 
 
 class UserProfileSerializer(serializers.ModelSerializer):
@@ -172,7 +125,7 @@ class MasterUserSerializer(serializers.ModelSerializer):
 class MemberSerializer(serializers.ModelSerializer):
     url = serializers.HyperlinkedIdentityField(view_name='member-detail')
     master_user = MasterUserField()
-    user = serializers.PrimaryKeyRelatedField(queryset=User.objects.filter(pk__gt=0))
+    user = UserField()
     is_current = serializers.SerializerMethodField()
 
     class Meta:
