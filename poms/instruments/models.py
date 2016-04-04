@@ -139,6 +139,25 @@ class InstrumentTag(TagModelBase):
 
 
 @python_2_unicode_compatible
+class ManualPricingFormula(NamedModel):
+    master_user = models.ForeignKey(MasterUser, related_name='manual_pricing_formulas', verbose_name=_('master user'))
+
+    class Meta:
+        verbose_name = _('manual pricing formula')
+        verbose_name_plural = _('manual pricing formulas')
+        unique_together = [
+            ['master_user', 'user_code']
+        ]
+        permissions = [
+            ('view_manualpricingformula', 'Can view manual pricing formula')
+        ]
+
+    def __str__(self):
+        return self.name
+
+
+
+@python_2_unicode_compatible
 class Instrument(NamedModel):
     master_user = models.ForeignKey(MasterUser, related_name='instruments', verbose_name=_('master user'))
     type = models.ForeignKey(InstrumentType, verbose_name=_('type'))
@@ -154,6 +173,7 @@ class Instrument(NamedModel):
     daily_pricing_model = models.ForeignKey(DailyPricingModel, null=True, blank=True)
     accrual_calculation_model = models.ForeignKey(AccrualCalculationModel, null=True, blank=True)
     payment_frequency = models.ForeignKey(PaymentFrequency, null=True, blank=True)
+    manual_pricing_formula = models.ForeignKey(ManualPricingFormula, null=True, blank=True)
 
     class Meta:
         verbose_name = _('instrument')
