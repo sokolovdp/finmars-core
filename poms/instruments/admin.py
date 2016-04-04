@@ -5,7 +5,7 @@ from mptt.admin import MPTTModelAdmin
 
 from poms.audit.admin import HistoricalAdmin
 from poms.instruments.models import Instrument, PriceHistory, InstrumentClassifier, InstrumentClass, InstrumentType, \
-    InstrumentTypeTag, InstrumentTag
+    InstrumentTypeTag, InstrumentTag, DailyPricingModel, AccrualCalculationModel, PaymentFrequency, CostMethod
 
 
 class InstrumentClassAdmin(HistoricalAdmin):
@@ -15,6 +15,42 @@ class InstrumentClassAdmin(HistoricalAdmin):
 
 
 admin.site.register(InstrumentClass, InstrumentClassAdmin)
+
+
+class DailyPricingModelAdmin(HistoricalAdmin):
+    model = DailyPricingModel
+    list_display = ['id', 'system_code', 'name']
+    ordering = ['id']
+
+
+admin.site.register(DailyPricingModel, DailyPricingModelAdmin)
+
+
+class AccrualCalculationModelAdmin(HistoricalAdmin):
+    model = AccrualCalculationModel
+    list_display = ['id', 'system_code', 'name']
+    ordering = ['id']
+
+
+admin.site.register(AccrualCalculationModel, AccrualCalculationModelAdmin)
+
+
+class PaymentFrequencyAdmin(HistoricalAdmin):
+    model = PaymentFrequency
+    list_display = ['id', 'system_code', 'name']
+    ordering = ['id']
+
+
+admin.site.register(PaymentFrequency, PaymentFrequencyAdmin)
+
+
+class CostMethodAdmin(HistoricalAdmin):
+    model = InstrumentClass
+    list_display = ['id', 'system_code', 'name']
+    ordering = ['id']
+
+
+admin.site.register(CostMethod, InstrumentClassAdmin)
 
 
 class InstrumentTypeTagAdmin(HistoricalAdmin):

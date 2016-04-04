@@ -8,13 +8,12 @@ from mptt.fields import TreeForeignKey, TreeManyToManyField
 from mptt.models import MPTTModel
 
 from poms.audit import history
-from poms.common.models import NamedModel, TagModelBase
+from poms.common.models import NamedModel, TagModelBase, ClassModelBase
 from poms.currencies.models import Currency
 from poms.users.models import MasterUser
 
 
-@python_2_unicode_compatible
-class InstrumentClass(models.Model):
+class InstrumentClass(ClassModelBase):
     GENERAL = 1
     EVENT_AT_MATURITY = 2
     REGULAR_EVENT_AT_MATURITY = 3
@@ -29,19 +28,41 @@ class InstrumentClass(models.Model):
         (CONTRACT_FOR_DIFFERENCE, "Contract for Difference"),
     )
 
-    id = models.PositiveSmallIntegerField(primary_key=True)
-    system_code = models.CharField(max_length=50, null=True, blank=True, verbose_name=_('system code'))
-    name = models.CharField(max_length=255, verbose_name=_('name'))
-    description = models.TextField(null=True, blank=True, default='', verbose_name=_('description'))
-
     class Meta:
         verbose_name = _('instrument class')
         verbose_name_plural = _('instrument classes')
 
-    def __str__(self):
-        return '%s' % (self.name,)
+
+class DailyPricingModel(ClassModelBase):
+    # TODO: add "values"
+
+    class Meta:
+        verbose_name = _('daily pricing model')
+        verbose_name_plural = _('daily pricing models')
 
 
+class AccrualCalculationModel(ClassModelBase):
+    # TODO: add "values"
+
+    class Meta:
+        verbose_name = _('accrual calculation model')
+        verbose_name_plural = _('accrual calculation models')
+
+
+class PaymentFrequency(ClassModelBase):
+    # TODO: add "values"
+
+    class Meta:
+        verbose_name = _('payment frequency')
+        verbose_name_plural = _('payment frequencies')
+
+
+class CostMethod(ClassModelBase):
+    # TODO: add "values"
+
+    class Meta:
+        verbose_name = _('cost method')
+        verbose_name_plural = _('cost methods')
 
 
 class InstrumentTypeTag(TagModelBase):
@@ -62,7 +83,8 @@ class InstrumentTypeTag(TagModelBase):
 @python_2_unicode_compatible
 class InstrumentType(NamedModel):
     master_user = models.ForeignKey(MasterUser, related_name='instrument_types', verbose_name=_('master user'))
-    instrument_class = models.ForeignKey(InstrumentClass, related_name='instrument_types', verbose_name=_('instrument class'))
+    instrument_class = models.ForeignKey(InstrumentClass, related_name='instrument_types',
+                                         verbose_name=_('instrument class'))
     tags = models.ManyToManyField(InstrumentTypeTag, blank=True)
 
     class Meta:

@@ -9,7 +9,7 @@ from mptt.models import MPTTModel
 
 from poms.accounts.models import Account
 from poms.audit import history
-from poms.common.models import NamedModel, TagModelBase
+from poms.common.models import NamedModel, TagModelBase, ClassModelBase
 from poms.counterparties.models import Responsible, Counterparty
 from poms.currencies.models import Currency
 from poms.instruments.models import Instrument
@@ -18,8 +18,7 @@ from poms.strategies.models import Strategy
 from poms.users.models import MasterUser
 
 
-@python_2_unicode_compatible
-class TransactionClass(models.Model):
+class TransactionClass(ClassModelBase):
     # BUY = "Buy"  # 1
     # CASH_INFLOW = "Cash-Inflow"  # 8
     # CASH_OUTFLOW = "Cash-Outflow"  # 9
@@ -52,17 +51,9 @@ class TransactionClass(models.Model):
         (CASH_OUTFLOW, "Cash-Outflow"),
     )
 
-    id = models.PositiveSmallIntegerField(primary_key=True)
-    system_code = models.CharField(max_length=50, null=True, blank=True, verbose_name=_('system code'))
-    name = models.CharField(max_length=255, verbose_name=_('name'))
-    description = models.TextField(null=True, blank=True, default='', verbose_name=_('description'))
-
     class Meta:
         verbose_name = _('transaction class')
         verbose_name_plural = _('transaction classes')
-
-    def __str__(self):
-        return '%s' % (self.name,)
 
 
 class TransactionTypeTag(TagModelBase):

@@ -43,6 +43,19 @@ class TagModelBase(NamedModel):
         abstract = True
 
 
+@python_2_unicode_compatible
+class ClassModelBase(models.Model):
+    id = models.PositiveSmallIntegerField(primary_key=True)
+    system_code = models.CharField(max_length=50, null=True, blank=True, verbose_name=_('system code'))
+    name = models.CharField(max_length=255, verbose_name=_('name'))
+    description = models.TextField(null=True, blank=True, default='', verbose_name=_('description'))
+
+    class Meta:
+        abstract = True
+
+    def __str__(self):
+        return self.name
+
 # class UserTimeStampedModel(TimeStampedModel):
 #     created_by = models.ForeignKey(settings.AUTH_USER_MODEL, null=True, blank=True, verbose_name=_('created by'))
 #     modified_by = models.DateTimeField(settings.AUTH_USER_MODEL, null=True, blank=True, verbose_name=_('modified by'))
