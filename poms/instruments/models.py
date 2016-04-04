@@ -151,6 +151,10 @@ class Instrument(NamedModel):
     classifiers = TreeManyToManyField(InstrumentClassifier, blank=True)
     tags = models.ManyToManyField(InstrumentTag, blank=True)
 
+    daily_pricing_model = models.ForeignKey(DailyPricingModel, null=True, blank=True)
+    accrual_calculation_model = models.ForeignKey(AccrualCalculationModel, null=True, blank=True)
+    payment_frequency = models.ForeignKey(PaymentFrequency, null=True, blank=True)
+
     class Meta:
         verbose_name = _('instrument')
         verbose_name_plural = _('instruments')
