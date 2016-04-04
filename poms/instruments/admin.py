@@ -4,7 +4,8 @@ from django.contrib import admin
 from mptt.admin import MPTTModelAdmin
 
 from poms.audit.admin import HistoricalAdmin
-from poms.instruments.models import Instrument, PriceHistory, InstrumentClassifier, InstrumentClass, InstrumentType
+from poms.instruments.models import Instrument, PriceHistory, InstrumentClassifier, InstrumentClass, InstrumentType, \
+    InstrumentTypeTag, InstrumentTag
 
 
 class InstrumentClassAdmin(HistoricalAdmin):
@@ -16,11 +17,21 @@ class InstrumentClassAdmin(HistoricalAdmin):
 admin.site.register(InstrumentClass, InstrumentClassAdmin)
 
 
+class InstrumentTypeTagAdmin(HistoricalAdmin):
+    model = InstrumentTypeTag
+    list_display = ['id', 'name', 'master_user']
+    list_select_related = ['master_user']
+
+
+admin.site.register(InstrumentTypeTag, InstrumentTypeTagAdmin)
+
+
 class InstrumentTypeAdmin(HistoricalAdmin):
     model = InstrumentType
     list_display = ['id', 'instrument_class', 'name', 'master_user']
     list_select_related = ['master_user']
     list_filter = ['instrument_class']
+    filter_horizontal = ['tags', ]
 
 
 admin.site.register(InstrumentType, InstrumentTypeAdmin)
@@ -38,10 +49,20 @@ class InstrumentClassifierAdmin(HistoricalAdmin, MPTTModelAdmin):
 admin.site.register(InstrumentClassifier, InstrumentClassifierAdmin)
 
 
+class InstrumentTagAdmin(HistoricalAdmin):
+    model = InstrumentTag
+    list_display = ['id', 'name', 'master_user']
+    list_select_related = ['master_user']
+
+
+admin.site.register(InstrumentTag, InstrumentTagAdmin)
+
+
 class InstrumentAdmin(HistoricalAdmin):
     model = Instrument
     list_display = ['id', 'name', 'type', 'master_user', 'pricing_currency', 'accrued_currency']
     list_select_related = ['master_user', 'pricing_currency', 'accrued_currency']
+    filter_horizontal = ['tags', ]
 
     # def get_classifiers(self, obj):
     #     return ', '.join(p.name for p in obj.classifiers.all())

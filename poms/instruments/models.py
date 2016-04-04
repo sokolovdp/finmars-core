@@ -8,7 +8,7 @@ from mptt.fields import TreeForeignKey, TreeManyToManyField
 from mptt.models import MPTTModel
 
 from poms.audit import history
-from poms.common.models import NamedModel
+from poms.common.models import NamedModel, TagModelBase
 from poms.currencies.models import Currency
 from poms.users.models import MasterUser
 
@@ -42,10 +42,26 @@ class InstrumentClass(models.Model):
         return '%s' % (self.name,)
 
 
+class InstrumentTypeTag(TagModelBase):
+    master_user = models.ForeignKey(MasterUser, related_name='instrumenttype_tags', verbose_name=_('master user'))
+
+    class Meta:
+        verbose_name = _('instrument type tag')
+        verbose_name_plural = _('instrument type tags')
+        unique_together = [
+            ['master_user', 'user_code'],
+            ['master_user', 'name'],
+        ]
+        permissions = [
+            ('view_instrumenttypetag', 'Can view instrument type tag')
+        ]
+
+
 @python_2_unicode_compatible
 class InstrumentType(NamedModel):
     master_user = models.ForeignKey(MasterUser, related_name='instrument_types', verbose_name=_('master user'))
     instrument_class = models.ForeignKey(InstrumentClass, related_name='instrument_types', verbose_name=_('instrument class'))
+    tags = models.ManyToManyField(InstrumentTypeTag, blank=True)
 
     class Meta:
         verbose_name = _('instrument type')
@@ -83,6 +99,21 @@ class InstrumentClassifier(NamedModel, MPTTModel):
         return self.name
 
 
+class InstrumentTag(TagModelBase):
+    master_user = models.ForeignKey(MasterUser, related_name='instrument_tags', verbose_name=_('master user'))
+
+    class Meta:
+        verbose_name = _('instrument tag')
+        verbose_name_plural = _('instrument tags')
+        unique_together = [
+            ['master_user', 'user_code'],
+            ['master_user', 'name'],
+        ]
+        permissions = [
+            ('view_instrumenttag', 'Can view instrument tag')
+        ]
+
+
 @python_2_unicode_compatible
 class Instrument(NamedModel):
     master_user = models.ForeignKey(MasterUser, related_name='instruments', verbose_name=_('master user'))
@@ -94,6 +125,7 @@ class Instrument(NamedModel):
                                          on_delete=models.PROTECT)
     accrued_multiplier = models.FloatField(default=1.)
     classifiers = TreeManyToManyField(InstrumentClassifier, blank=True)
+    tags = models.ManyToManyField(InstrumentTag, blank=True)
 
     class Meta:
         verbose_name = _('instrument')
