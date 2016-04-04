@@ -8,10 +8,10 @@ from django.dispatch import receiver
 from django.utils.encoding import force_text
 from reversion import revisions as reversion
 
+from poms import notifications
 from poms.audit import history
 from poms.audit.models import AuthLogEntry
-from poms.middleware import get_request
-from poms import notifications
+from poms.common.middleware import get_request
 
 
 @receiver(user_logged_in, dispatch_uid='audit_user_logged_in')

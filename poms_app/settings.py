@@ -69,7 +69,7 @@ if DEBUG:
     INSTALLED_APPS += ['debug_toolbar', ]
 
 MIDDLEWARE_CLASSES = [
-    'poms.middleware.CommonMiddleware',
+    'poms.common.middleware.CommonMiddleware',
     'django.middleware.security.SecurityMiddleware',
     'django.middleware.http.ConditionalGetMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
@@ -129,7 +129,7 @@ if DEBUG:
     # }
     DATABASES['default'] = {
         'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': os.path.join(BASE_DIR, 'db_perms2.sqlite3'),
+        'NAME': os.path.join(BASE_DIR, 'db.sqlite3'),
         # 'NAME': ':memory:'
     }
 
