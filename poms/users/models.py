@@ -1,7 +1,7 @@
 from __future__ import unicode_literals
 
 from django.conf import settings
-from django.contrib.auth.models import Group, User, Permission
+from django.contrib.auth.models import User, Permission
 from django.db import models
 from django.utils.encoding import python_2_unicode_compatible
 from django.utils.translation import ugettext_lazy as _
@@ -43,7 +43,7 @@ class Member(models.Model):
     is_owner = models.BooleanField(default=False, verbose_name=_('is owner'))
     is_admin = models.BooleanField(default=False, verbose_name=_('is admin'))
 
-    groups = models.ManyToManyField('Group2', blank=True)
+    groups = models.ManyToManyField('Group', blank=True)
     permissions = models.ManyToManyField(Permission, blank=True)
 
     def __str__(self):
@@ -65,61 +65,20 @@ class UserProfile(models.Model):
 
 
 @python_2_unicode_compatible
-class GroupProfile(models.Model):
-    group = models.OneToOneField('auth.Group', related_name='profile', verbose_name=_('group'))
+class Group(models.Model):
     master_user = models.ForeignKey(MasterUser, verbose_name=_('master user'), related_name='groups')
-    name = models.CharField(max_length=80, blank=True, default='', verbose_name=_('real name'),
-                            help_text=_('user group name'))
+    name = models.CharField(_('name'), max_length=80, unique=True)
+    permissions = models.ManyToManyField(Permission, verbose_name=_('permissions'), blank=True, related_name='poms_groups')
 
     class Meta:
-        verbose_name = _('group profile')
-        verbose_name_plural = _('group profiles')
+        verbose_name = _('group')
+        verbose_name_plural = _('group')
         unique_together = [
             ['master_user', 'name']
         ]
 
     def __str__(self):
         return self.name
-
-    @staticmethod
-    def make_group_name(master_user_id, name):
-        return '!:%s:%s' % (master_user_id, name)
-
-    @property
-    def group_name(self):
-        return self.make_group_name(self.master_user_id, self.name)
-
-    def save(self, force_insert=False, force_update=False, using=None, update_fields=None):
-        super(GroupProfile, self).save(force_insert=force_insert, force_update=force_update, using=using,
-                                       update_fields=update_fields)
-
-        self.group.name = self.group_name
-        self.group.save(using=using)
-
-    def get_permissions(self):
-        return self.group.permissions
-
-    def set_permissions(self, value):
-        self.group.permissions = value
-
-    permissions = property(get_permissions, set_permissions)
-
-
-@python_2_unicode_compatible
-class Group2(models.Model):
-    master_user = models.ForeignKey(MasterUser, verbose_name=_('master user'), related_name='groups2')
-    name = models.CharField(_('name'), max_length=80, unique=True)
-    permissions = models.ManyToManyField(Permission, verbose_name=_('permissions'), blank=True)
-
-    class Meta:
-        verbose_name = _('group2')
-        verbose_name_plural = _('group2')
-        unique_together = [
-            ['master_user', 'name']
-        ]
-
-    def __str__(self):
-        return '%s@%s' % (self.name, self.master_user)
 
 
 class ObjectPermissionBase(models.Model):
@@ -142,7 +101,7 @@ class UserObjectPermissionBase(ObjectPermissionBase):
 
 @python_2_unicode_compatible
 class GroupObjectPermissionBase(ObjectPermissionBase):
-    group = models.ForeignKey(Group2)
+    group = models.ForeignKey(Group)
 
     class Meta:
         abstract = True
@@ -153,8 +112,8 @@ class GroupObjectPermissionBase(ObjectPermissionBase):
 
 history.register(MasterUser)
 history.register(Member)
-history.register(Permission)
 history.register(User, follow=['profile'], exclude=['password'])
-history.register(UserProfile)
-history.register(Group, follow=['profile', 'permissions'])
-history.register(GroupProfile, follow=['group'])
+history.register(UserProfile, follow=['user'])
+history.register(Group, follow=['permissions'])
+# history.register(GroupProfile, follow=['group'])
+history.register(Permission)

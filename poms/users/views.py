@@ -1,7 +1,7 @@
 from __future__ import unicode_literals
 
 from django.contrib.auth import login, logout
-from django.contrib.auth.models import User, Group
+from django.contrib.auth.models import User
 from rest_framework.authtoken.models import Token
 from rest_framework.authtoken.serializers import AuthTokenSerializer
 from rest_framework.filters import BaseFilterBackend
@@ -16,7 +16,7 @@ from poms.audit.mixins import HistoricalMixin
 from poms.users.fields import GroupOwnerByMasterUserFilter
 from poms.users.fields import get_master_user
 from poms.users.filters import OwnerByMasterUserFilter
-from poms.users.models import MasterUser, Member
+from poms.users.models import MasterUser, Member, Group
 from poms.users.serializers import GroupSerializer, UserSerializer, MasterUserSerializer, MemberSerializer
 
 
@@ -122,16 +122,8 @@ class MemberViewSet(DbTransactionMixin, HistoricalMixin, ModelViewSet):
     filter_backends = [OwnerByMasterUserFilter]
 
 
-# class GroupViewSet(DbTransactionMixin, ModelViewSet):
-#     queryset = GroupProfile.objects.prefetch_related('group__permissions', 'group__permissions__content_type'). \
-#         select_related('group')
-#     serializer_class = GroupSerializer
-#     permission_classes = [IsAuthenticated]
-#     filter_backends = [OwnerByMasterUserFilter]
-
 class GroupViewSet(DbTransactionMixin, HistoricalMixin, ModelViewSet):
-    queryset = Group.objects.prefetch_related('profile', 'profile__master_user', 'permissions',
-                                              'permissions__content_type')
+    queryset = Group.objects.prefetch_related('master_user', 'permissions', 'permissions__content_type')
     serializer_class = GroupSerializer
     permission_classes = [IsAuthenticated]
     filter_backends = [GroupOwnerByMasterUserFilter]

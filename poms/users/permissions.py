@@ -1,7 +1,6 @@
 from __future__ import unicode_literals, print_function
 
 from django.contrib.contenttypes.models import ContentType
-from guardian.shortcuts import get_perms_for_model, remove_perm, assign_perm, get_group_perms
 from rest_framework import serializers
 from rest_framework.decorators import detail_route, list_route
 from rest_framework.filters import BaseFilterBackend
@@ -10,7 +9,7 @@ from rest_framework.response import Response
 
 from poms.api.fields import FilteredPrimaryKeyRelatedField
 from poms.users.fields import get_master_user, get_member
-from poms.users.models import GroupProfile
+from poms.users.models import Group
 from poms.users.serializers import PermissionField
 
 
@@ -60,7 +59,7 @@ class ObjectPermission(object):
 
 
 class ObjectPermissionSerializer(serializers.Serializer):
-    group = FilteredPrimaryKeyRelatedField(queryset=GroupProfile.objects.all(), filter_backends=[])
+    group = FilteredPrimaryKeyRelatedField(queryset=Group.objects.all(), filter_backends=[])
     permissions = PermissionField(many=True)
 
     def create(self, validated_data):
