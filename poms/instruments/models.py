@@ -43,6 +43,25 @@ class InstrumentClass(models.Model):
 
 
 @python_2_unicode_compatible
+class InstrumentType(NamedModel):
+    master_user = models.ForeignKey(MasterUser, related_name='instrument_types', verbose_name=_('master user'))
+    instrument_class = models.ForeignKey(InstrumentClass, related_name='instrument_types', verbose_name=_('instrument class'))
+
+    class Meta:
+        verbose_name = _('instrument type')
+        verbose_name_plural = _('instrument types')
+        unique_together = [
+            ['master_user', 'user_code']
+        ]
+        permissions = [
+            ('view_instrumenttype', 'Can view instrument type')
+        ]
+
+    def __str__(self):
+        return self.name
+
+
+@python_2_unicode_compatible
 class InstrumentClassifier(NamedModel, MPTTModel):
     master_user = models.ForeignKey(MasterUser, related_name='instrument_classifiers', verbose_name=_('master user'))
     parent = TreeForeignKey('self', null=True, blank=True, related_name='children', db_index=True)
@@ -67,6 +86,7 @@ class InstrumentClassifier(NamedModel, MPTTModel):
 @python_2_unicode_compatible
 class Instrument(NamedModel):
     master_user = models.ForeignKey(MasterUser, related_name='instruments', verbose_name=_('master user'))
+    type = models.ForeignKey(InstrumentType, verbose_name=_('type'))
     is_active = models.BooleanField(default=True)
     pricing_currency = models.ForeignKey(Currency, on_delete=models.PROTECT)
     price_multiplier = models.FloatField(default=1.)
