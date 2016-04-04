@@ -1,36 +1,41 @@
 from __future__ import unicode_literals, division, print_function
 
 from poms.reports.backends.balance import BalanceReport2Builder
-from poms.reports.models import BalanceReport, BalanceReportItem, BalanceReportSummary
+from poms.reports.models import BalanceReport, BalanceReportItem, BalanceReportSummary, MULTIPLIER_AVCO
 from poms.reports.tests.base import BaseReportTestCase, n
 from poms.transactions.models import Transaction
 
 
 class BalanceTestCase(BaseReportTestCase):
-    def _print_balance_transactions(self, transactions):
-        self._print_transactions(
-            transactions,
-            'pk',
-            'transaction_class',
-            'portfolio',
-            'instrument', 'transaction_currency', 'position_size_with_sign',
-            'settlement_currency', 'cash_consideration',
-            'account_position', 'account_cash', 'account_interim',
-            'accounting_date', 'cash_date',
-            'reference_fx_rate')
+    def _print_balance_transactions(self, transactions, *columns):
+        self._print_transactions(transactions,
+                                 'pk',
+                                 'transaction_class',
+                                 'portfolio',
+                                 'instrument', 'transaction_currency', 'position_size_with_sign',
+                                 'settlement_currency', 'cash_consideration',
+                                 'account_position', 'account_cash', 'account_interim',
+                                 'accounting_date', 'cash_date',
+                                 'reference_fx_rate',
+                                 'strategies_position', 'strategies_cash',
+                                 'avco_multiplier',
+                                 'fifo_multiplier')
 
     def _print_balance(self, instance):
-        columns = ['pk', 'portfolio', 'account', 'instrument', 'currency', 'position', 'market_value', 'transaction']
+        columns = ['pk', 'portfolio', 'account', 'strategies', 'instrument', 'currency', 'position', 'market_value',
+                   'transaction']
         data = []
         for i in instance.items:
             portfolio = i.portfolio
             acc = i.account
+            strategies = i.strategies
             instr = i.instrument
             ccy = i.currency
             data.append([
                 i.pk,
                 getattr(portfolio, 'name', None),
                 getattr(acc, 'name', None),
+                [s.name for s in strategies] if strategies else [],
                 getattr(instr, 'name', None),
                 getattr(ccy, 'name', None),
                 i.balance_position,
@@ -65,6 +70,7 @@ class BalanceTestCase(BaseReportTestCase):
             self.assertEqual(ri.account, ei.account, '%s - account' % ri.pk)
             self.assertEqual(ri.instrument, ei.instrument, '%s - instrument' % ri.pk)
             self.assertEqual(ri.currency, ei.currency, '%s - currency' % ri.pk)
+            self.assertEqual(ri.strategies, ei.strategies, '%s - strategies' % ri.pk)
 
             self.assertEqual(n(ri.balance_position), n(ei.balance_position),
                              '%s - balance_position' % ri.pk)
@@ -91,20 +97,22 @@ class BalanceTestCase(BaseReportTestCase):
         self._print_balance(instance)
         self._assertEqualBalance(instance, BalanceReport(
             items=[
-                BalanceReportItem(pk=b.make_key(None, None, self.instr1_bond_chf, None),
+                BalanceReportItem(pk=b.make_key(portfolio=None, account=self.acc1, instrument=self.instr1_bond_chf,
+                                                currency=None),
                                   portfolio=None, account=None, instrument=self.instr1_bond_chf, currency=None,
                                   balance_position=100.000000, market_value_system_ccy=18.450000),
-                BalanceReportItem(pk=b.make_key(None, None, self.instr2_stock, None),
+                BalanceReportItem(pk=b.make_key(portfolio=None, account=None, instrument=self.instr2_stock,
+                                                currency=None),
                                   portfolio=None, account=None, instrument=self.instr2_stock, currency=None,
                                   balance_position=-200.000000, market_value_system_ccy=-485.333333),
 
-                BalanceReportItem(pk=b.make_key(None, None, None, self.usd),
+                BalanceReportItem(pk=b.make_key(portfolio=None, account=None, instrument=None, currency=self.usd),
                                   portfolio=None, account=None, instrument=None, currency=self.usd,
                                   balance_position=-200.000000, market_value_system_ccy=-200.000000),
-                BalanceReportItem(pk=b.make_key(None, None, None, self.rub),
+                BalanceReportItem(pk=b.make_key(portfolio=None, account=None, instrument=None, currency=self.rub),
                                   portfolio=None, account=None, instrument=None, currency=self.rub,
                                   balance_position=0.000000, market_value_system_ccy=0.000000),
-                BalanceReportItem(pk=b.make_key(None, None, None, self.eur),
+                BalanceReportItem(pk=b.make_key(portfolio=None, account=None, instrument=None, currency=self.eur),
                                   portfolio=None, account=None, instrument=None, currency=self.eur,
                                   balance_position=1000.000000, market_value_system_ccy=1300.000000),
             ],
@@ -126,20 +134,22 @@ class BalanceTestCase(BaseReportTestCase):
         self._print_balance(instance)
         self._assertEqualBalance(instance, BalanceReport(
             items=[
-                BalanceReportItem(pk=b.make_key(None, self.acc1, self.instr1_bond_chf, None),
+                BalanceReportItem(pk=b.make_key(portfolio=None, account=self.acc1, instrument=self.instr1_bond_chf,
+                                                currency=None),
                                   portfolio=None, account=self.acc1, instrument=self.instr1_bond_chf, currency=None,
                                   balance_position=100.000000, market_value_system_ccy=18.450000),
-                BalanceReportItem(pk=b.make_key(None, self.acc1, self.instr2_stock, None),
+                BalanceReportItem(pk=b.make_key(portfolio=None, account=self.acc1, instrument=self.instr2_stock,
+                                                currency=None),
                                   portfolio=None, account=self.acc1, instrument=self.instr2_stock, currency=None,
                                   balance_position=-200.000000, market_value_system_ccy=-485.333333),
 
-                BalanceReportItem(pk=b.make_key(None, self.acc1, None, self.usd),
+                BalanceReportItem(pk=b.make_key(portfolio=None, account=self.acc1, instrument=None, currency=self.usd),
                                   portfolio=None, account=self.acc1, instrument=None, currency=self.usd,
                                   balance_position=-200.000000, market_value_system_ccy=-200.000000),
-                BalanceReportItem(pk=b.make_key(None, self.acc1, None, self.rub),
+                BalanceReportItem(pk=b.make_key(portfolio=None, account=self.acc1, instrument=None, currency=self.rub),
                                   portfolio=None, account=self.acc1, instrument=None, currency=self.rub,
                                   balance_position=0.000000, market_value_system_ccy=0.000000),
-                BalanceReportItem(pk=b.make_key(None, self.acc1, None, self.eur),
+                BalanceReportItem(pk=b.make_key(portfolio=None, account=self.acc1, instrument=None, currency=self.eur),
                                   portfolio=None, account=self.acc1, instrument=None, currency=self.eur,
                                   balance_position=1000.000000, market_value_system_ccy=1300.000000),
             ],
@@ -161,20 +171,25 @@ class BalanceTestCase(BaseReportTestCase):
         self._print_balance(instance)
         self._assertEqualBalance(instance, BalanceReport(
             items=[
-                BalanceReportItem(pk=b.make_key(self.p1, self.acc1, self.instr1_bond_chf, None),
+                BalanceReportItem(pk=b.make_key(portfolio=self.p1, account=self.acc1, instrument=self.instr1_bond_chf,
+                                                currency=None),
                                   portfolio=self.p1, account=self.acc1, instrument=self.instr1_bond_chf, currency=None,
                                   balance_position=100.000000, market_value_system_ccy=18.450000),
-                BalanceReportItem(pk=b.make_key(self.p1, self.acc1, self.instr2_stock, None),
+                BalanceReportItem(pk=b.make_key(portfolio=self.p1, account=self.acc1, instrument=self.instr2_stock,
+                                                currency=None),
                                   portfolio=self.p1, account=self.acc1, instrument=self.instr2_stock, currency=None,
                                   balance_position=-200.000000, market_value_system_ccy=-485.333333),
 
-                BalanceReportItem(pk=b.make_key(self.p1, self.acc1, None, self.usd),
+                BalanceReportItem(pk=b.make_key(portfolio=self.p1, account=self.acc1, instrument=None,
+                                                currency=self.usd),
                                   portfolio=self.p1, account=self.acc1, instrument=None, currency=self.usd,
                                   balance_position=-200.000000, market_value_system_ccy=-200.000000),
-                BalanceReportItem(pk=b.make_key(self.p1, self.acc1, None, self.rub),
+                BalanceReportItem(pk=b.make_key(portfolio=self.p1, account=self.acc1, instrument=None,
+                                                currency=self.rub),
                                   portfolio=self.p1, account=self.acc1, instrument=None, currency=self.rub,
                                   balance_position=0.000000, market_value_system_ccy=0.000000),
-                BalanceReportItem(pk=b.make_key(self.p1, self.acc1, None, self.eur),
+                BalanceReportItem(pk=b.make_key(portfolio=self.p1, account=self.acc1, instrument=None,
+                                                currency=self.eur),
                                   portfolio=self.p1, account=self.acc1, instrument=None, currency=self.eur,
                                   balance_position=1000.000000, market_value_system_ccy=1300.000000),
             ],
@@ -196,23 +211,25 @@ class BalanceTestCase(BaseReportTestCase):
         self._print_balance(instance)
         self._assertEqualBalance(instance, BalanceReport(
             items=[
-                BalanceReportItem(pk=b.make_key(None, None, self.instr1_bond_chf, None),
+                BalanceReportItem(pk=b.make_key(portfolio=None, account=self.acc1, instrument=self.instr1_bond_chf,
+                                                currency=None),
                                   portfolio=None, account=None, instrument=self.instr1_bond_chf, currency=None,
                                   balance_position=100.000000, market_value_system_ccy=18.450000),
-                BalanceReportItem(pk=b.make_key(None, None, self.instr2_stock, None),
+                BalanceReportItem(pk=b.make_key(portfolio=None, account=None, instrument=self.instr2_stock,
+                                                currency=None),
                                   portfolio=None, account=None, instrument=self.instr2_stock, currency=None,
                                   balance_position=-200.000000, market_value_system_ccy=-485.333333),
 
-                BalanceReportItem(pk=b.make_key(None, None, None, self.usd),
+                BalanceReportItem(pk=b.make_key(portfolio=None, account=None, instrument=None, currency=self.usd),
                                   portfolio=None, account=None, instrument=None, currency=self.usd,
                                   balance_position=-200.000000, market_value_system_ccy=-200.000000),
-                BalanceReportItem(pk=b.make_key(None, None, None, self.eur),
+                BalanceReportItem(pk=b.make_key(portfolio=None, account=None, instrument=None, currency=self.eur),
                                   portfolio=None, account=None, instrument=None, currency=self.eur,
                                   balance_position=1000.000000, market_value_system_ccy=1300.000000),
-                BalanceReportItem(pk=b.make_key(None, None, None, self.chf),
+                BalanceReportItem(pk=b.make_key(portfolio=None, account=None, instrument=None, currency=self.chf),
                                   portfolio=None, account=None, instrument=None, currency=self.chf,
                                   balance_position=30.000000, market_value_system_ccy=27.000000),
-                BalanceReportItem(pk=b.make_key(None, None, None, self.rub),
+                BalanceReportItem(pk=b.make_key(portfolio=None, account=None, instrument=None, currency=self.rub),
                                   portfolio=None, account=None, instrument=None, currency=self.rub,
                                   balance_position=-1000.000000, market_value_system_ccy=-13.333333),
             ],
@@ -234,23 +251,25 @@ class BalanceTestCase(BaseReportTestCase):
         self._print_balance(instance)
         self._assertEqualBalance(instance, BalanceReport(
             items=[
-                BalanceReportItem(pk=b.make_key(None, self.acc1, self.instr1_bond_chf, None),
+                BalanceReportItem(pk=b.make_key(portfolio=None, account=self.acc1, instrument=self.instr1_bond_chf,
+                                                currency=None),
                                   portfolio=None, account=self.acc1, instrument=self.instr1_bond_chf, currency=None,
                                   balance_position=100.000000, market_value_system_ccy=18.450000),
-                BalanceReportItem(pk=b.make_key(None, self.acc1, self.instr2_stock, None),
+                BalanceReportItem(pk=b.make_key(portfolio=None, account=self.acc1, instrument=self.instr2_stock,
+                                                currency=None),
                                   portfolio=None, account=self.acc1, instrument=self.instr2_stock, currency=None,
                                   balance_position=-200.000000, market_value_system_ccy=-485.333333),
 
-                BalanceReportItem(pk=b.make_key(None, self.acc1, None, self.usd),
+                BalanceReportItem(pk=b.make_key(portfolio=None, account=self.acc1, instrument=None, currency=self.usd),
                                   portfolio=None, account=self.acc1, instrument=None, currency=self.usd,
                                   balance_position=-200.000000, market_value_system_ccy=-200.000000),
-                BalanceReportItem(pk=b.make_key(None, self.acc1, None, self.eur),
+                BalanceReportItem(pk=b.make_key(portfolio=None, account=self.acc1, instrument=None, currency=self.eur),
                                   portfolio=None, account=self.acc1, instrument=None, currency=self.eur,
                                   balance_position=1000.000000, market_value_system_ccy=1300.000000),
-                BalanceReportItem(pk=b.make_key(None, self.acc1, None, self.chf),
+                BalanceReportItem(pk=b.make_key(portfolio=None, account=self.acc1, instrument=None, currency=self.chf),
                                   portfolio=None, account=self.acc1, instrument=None, currency=self.chf,
                                   balance_position=30.000000, market_value_system_ccy=27.000000),
-                BalanceReportItem(pk=b.make_key(None, self.acc1, None, self.rub),
+                BalanceReportItem(pk=b.make_key(portfolio=None, account=self.acc1, instrument=None, currency=self.rub),
                                   portfolio=None, account=self.acc1, instrument=None, currency=self.rub,
                                   balance_position=-1000.000000, market_value_system_ccy=-13.333333),
             ],
@@ -272,23 +291,29 @@ class BalanceTestCase(BaseReportTestCase):
         self._print_balance(instance)
         self._assertEqualBalance(instance, BalanceReport(
             items=[
-                BalanceReportItem(pk=b.make_key(self.p1, self.acc1, self.instr1_bond_chf, None),
+                BalanceReportItem(pk=b.make_key(portfolio=self.p1, account=self.acc1, instrument=self.instr1_bond_chf,
+                                                currency=None),
                                   portfolio=self.p1, account=self.acc1, instrument=self.instr1_bond_chf, currency=None,
                                   balance_position=100.000000, market_value_system_ccy=18.450000),
-                BalanceReportItem(pk=b.make_key(self.p1, self.acc1, self.instr2_stock, None),
+                BalanceReportItem(pk=b.make_key(portfolio=self.p1, account=self.acc1, instrument=self.instr2_stock,
+                                                currency=None),
                                   portfolio=self.p1, account=self.acc1, instrument=self.instr2_stock, currency=None,
                                   balance_position=-200.000000, market_value_system_ccy=-485.333333),
 
-                BalanceReportItem(pk=b.make_key(self.p1, self.acc1, None, self.usd),
+                BalanceReportItem(pk=b.make_key(portfolio=self.p1, account=self.acc1, instrument=None,
+                                                currency=self.usd),
                                   portfolio=self.p1, account=self.acc1, instrument=None, currency=self.usd,
                                   balance_position=-200.000000, market_value_system_ccy=-200.000000),
-                BalanceReportItem(pk=b.make_key(self.p1, self.acc1, None, self.eur),
+                BalanceReportItem(pk=b.make_key(portfolio=self.p1, account=self.acc1, instrument=None,
+                                                currency=self.eur),
                                   portfolio=self.p1, account=self.acc1, instrument=None, currency=self.eur,
                                   balance_position=1000.000000, market_value_system_ccy=1300.000000),
-                BalanceReportItem(pk=b.make_key(self.p1, self.acc1, None, self.chf),
+                BalanceReportItem(pk=b.make_key(portfolio=self.p1, account=self.acc1, instrument=None,
+                                                currency=self.chf),
                                   portfolio=self.p1, account=self.acc1, instrument=None, currency=self.chf,
                                   balance_position=30.000000, market_value_system_ccy=27.000000),
-                BalanceReportItem(pk=b.make_key(self.p1, self.acc1, None, self.rub),
+                BalanceReportItem(pk=b.make_key(portfolio=self.p1, account=self.acc1, instrument=None,
+                                                currency=self.rub),
                                   portfolio=self.p1, account=self.acc1, instrument=None, currency=self.rub,
                                   balance_position=-1000.000000, market_value_system_ccy=-13.333333),
             ],
@@ -310,29 +335,31 @@ class BalanceTestCase(BaseReportTestCase):
         self._print_balance(instance)
         self._assertEqualBalance(instance, BalanceReport(
             items=[
-                BalanceReportItem(pk=b.make_key(None, None, self.instr1_bond_chf, None),
+                BalanceReportItem(pk=b.make_key(portfolio=None, account=self.acc1, instrument=self.instr1_bond_chf,
+                                                currency=None),
                                   portfolio=None, account=None, instrument=self.instr1_bond_chf, currency=None,
                                   balance_position=100.000000, market_value_system_ccy=18.450000),
-                BalanceReportItem(pk=b.make_key(None, None, self.instr2_stock, None),
+                BalanceReportItem(pk=b.make_key(portfolio=None, account=None, instrument=self.instr2_stock,
+                                                currency=None),
                                   portfolio=None, account=None, instrument=self.instr2_stock, currency=None,
                                   balance_position=-200.000000, market_value_system_ccy=-485.333333),
 
-                BalanceReportItem(pk=b.make_key(None, None, None, self.usd),
+                BalanceReportItem(pk=b.make_key(portfolio=None, account=None, instrument=None, currency=self.usd),
                                   portfolio=None, account=None, instrument=None, currency=self.usd,
                                   balance_position=-200.000000, market_value_system_ccy=-200.000000),
-                BalanceReportItem(pk=b.make_key(None, None, None, self.eur),
+                BalanceReportItem(pk=b.make_key(portfolio=None, account=None, instrument=None, currency=self.eur),
                                   portfolio=None, account=None, instrument=None, currency=self.eur,
                                   balance_position=1000.000000, market_value_system_ccy=1300.000000),
-                BalanceReportItem(pk=b.make_key(None, None, None, self.chf),
+                BalanceReportItem(pk=b.make_key(portfolio=None, account=None, instrument=None, currency=self.chf),
                                   portfolio=None, account=None, instrument=None, currency=self.chf,
                                   balance_position=30.000000, market_value_system_ccy=27.000000),
-                BalanceReportItem(pk=b.make_key(None, None, None, self.rub),
+                BalanceReportItem(pk=b.make_key(portfolio=None, account=None, instrument=None, currency=self.rub),
                                   portfolio=None, account=None, instrument=None, currency=self.rub,
                                   balance_position=-1000.000000, market_value_system_ccy=-13.333333),
-                BalanceReportItem(pk=b.make_key(None, None, None, self.cad),
+                BalanceReportItem(pk=b.make_key(portfolio=None, account=None, instrument=None, currency=self.cad),
                                   portfolio=None, account=None, instrument=None, currency=self.cad,
                                   balance_position=80.000000, market_value_system_ccy=96.000000),
-                BalanceReportItem(pk=b.make_key(None, None, None, self.mex),
+                BalanceReportItem(pk=b.make_key(portfolio=None, account=None, instrument=None, currency=self.mex),
                                   portfolio=None, account=None, instrument=None, currency=self.mex,
                                   balance_position=-150.000000, market_value_system_ccy=-22.500000),
             ],
@@ -354,29 +381,31 @@ class BalanceTestCase(BaseReportTestCase):
         self._print_balance(instance)
         self._assertEqualBalance(instance, BalanceReport(
             items=[
-                BalanceReportItem(pk=b.make_key(None, self.acc1, self.instr1_bond_chf, None),
+                BalanceReportItem(pk=b.make_key(portfolio=None, account=self.acc1, instrument=self.instr1_bond_chf,
+                                                currency=None),
                                   portfolio=None, account=self.acc1, instrument=self.instr1_bond_chf, currency=None,
                                   balance_position=100.000000, market_value_system_ccy=18.450000),
-                BalanceReportItem(pk=b.make_key(None, self.acc1, self.instr2_stock, None),
+                BalanceReportItem(pk=b.make_key(portfolio=None, account=self.acc1, instrument=self.instr2_stock,
+                                                currency=None),
                                   portfolio=None, account=self.acc1, instrument=self.instr2_stock, currency=None,
                                   balance_position=-200.000000, market_value_system_ccy=-485.333333),
 
-                BalanceReportItem(pk=b.make_key(None, self.acc1, None, self.usd),
+                BalanceReportItem(pk=b.make_key(portfolio=None, account=self.acc1, instrument=None, currency=self.usd),
                                   portfolio=None, account=self.acc1, instrument=None, currency=self.usd,
                                   balance_position=-200.000000, market_value_system_ccy=-200.000000),
-                BalanceReportItem(pk=b.make_key(None, self.acc1, None, self.eur),
+                BalanceReportItem(pk=b.make_key(portfolio=None, account=self.acc1, instrument=None, currency=self.eur),
                                   portfolio=None, account=self.acc1, instrument=None, currency=self.eur,
                                   balance_position=1000.000000, market_value_system_ccy=1300.000000),
-                BalanceReportItem(pk=b.make_key(None, self.acc1, None, self.chf),
+                BalanceReportItem(pk=b.make_key(portfolio=None, account=self.acc1, instrument=None, currency=self.chf),
                                   portfolio=None, account=self.acc1, instrument=None, currency=self.chf,
                                   balance_position=30.000000, market_value_system_ccy=27.000000),
-                BalanceReportItem(pk=b.make_key(None, self.acc1, None, self.rub),
+                BalanceReportItem(pk=b.make_key(portfolio=None, account=self.acc1, instrument=None, currency=self.rub),
                                   portfolio=None, account=self.acc1, instrument=None, currency=self.rub,
                                   balance_position=-1000.000000, market_value_system_ccy=-13.333333),
-                BalanceReportItem(pk=b.make_key(None, self.acc1, None, self.cad),
+                BalanceReportItem(pk=b.make_key(portfolio=None, account=self.acc1, instrument=None, currency=self.cad),
                                   portfolio=None, account=self.acc1, instrument=None, currency=self.cad,
                                   balance_position=80.000000, market_value_system_ccy=96.000000),
-                BalanceReportItem(pk=b.make_key(None, self.acc1, None, self.mex),
+                BalanceReportItem(pk=b.make_key(portfolio=None, account=self.acc1, instrument=None, currency=self.mex),
                                   portfolio=None, account=self.acc1, instrument=None, currency=self.mex,
                                   balance_position=-150.000000, market_value_system_ccy=-22.500000),
             ],
@@ -398,29 +427,37 @@ class BalanceTestCase(BaseReportTestCase):
         self._print_balance(instance)
         self._assertEqualBalance(instance, BalanceReport(
             items=[
-                BalanceReportItem(pk=b.make_key(self.p1, self.acc1, self.instr1_bond_chf, None),
+                BalanceReportItem(pk=b.make_key(portfolio=self.p1, account=self.acc1, instrument=self.instr1_bond_chf,
+                                                currency=None),
                                   portfolio=self.p1, account=self.acc1, instrument=self.instr1_bond_chf, currency=None,
                                   balance_position=100.000000, market_value_system_ccy=18.450000),
-                BalanceReportItem(pk=b.make_key(self.p1, self.acc1, self.instr2_stock, None),
+                BalanceReportItem(pk=b.make_key(portfolio=self.p1, account=self.acc1, instrument=self.instr2_stock,
+                                                currency=None),
                                   portfolio=self.p1, account=self.acc1, instrument=self.instr2_stock, currency=None,
                                   balance_position=-200.000000, market_value_system_ccy=-485.333333),
 
-                BalanceReportItem(pk=b.make_key(self.p1, self.acc1, None, self.usd),
+                BalanceReportItem(pk=b.make_key(portfolio=self.p1, account=self.acc1, instrument=None,
+                                                currency=self.usd),
                                   portfolio=self.p1, account=self.acc1, instrument=None, currency=self.usd,
                                   balance_position=-200.000000, market_value_system_ccy=-200.000000),
-                BalanceReportItem(pk=b.make_key(self.p1, self.acc1, None, self.eur),
+                BalanceReportItem(pk=b.make_key(portfolio=self.p1, account=self.acc1, instrument=None,
+                                                currency=self.eur),
                                   portfolio=self.p1, account=self.acc1, instrument=None, currency=self.eur,
                                   balance_position=1000.000000, market_value_system_ccy=1300.000000),
-                BalanceReportItem(pk=b.make_key(self.p1, self.acc1, None, self.chf),
+                BalanceReportItem(pk=b.make_key(portfolio=self.p1, account=self.acc1, instrument=None,
+                                                currency=self.chf),
                                   portfolio=self.p1, account=self.acc1, instrument=None, currency=self.chf,
                                   balance_position=30.000000, market_value_system_ccy=27.000000),
-                BalanceReportItem(pk=b.make_key(self.p1, self.acc1, None, self.rub),
+                BalanceReportItem(pk=b.make_key(portfolio=self.p1, account=self.acc1, instrument=None,
+                                                currency=self.rub),
                                   portfolio=self.p1, account=self.acc1, instrument=None, currency=self.rub,
                                   balance_position=-1000.000000, market_value_system_ccy=-13.333333),
-                BalanceReportItem(pk=b.make_key(self.p1, self.acc1, None, self.cad),
+                BalanceReportItem(pk=b.make_key(portfolio=self.p1, account=self.acc1, instrument=None,
+                                                currency=self.cad),
                                   portfolio=self.p1, account=self.acc1, instrument=None, currency=self.cad,
                                   balance_position=80.000000, market_value_system_ccy=96.000000),
-                BalanceReportItem(pk=b.make_key(self.p1, self.acc1, None, self.mex),
+                BalanceReportItem(pk=b.make_key(portfolio=self.p1, account=self.acc1, instrument=None,
+                                                currency=self.mex),
                                   portfolio=self.p1, account=self.acc1, instrument=None, currency=self.mex,
                                   balance_position=-150.000000, market_value_system_ccy=-22.500000),
             ],
@@ -442,21 +479,24 @@ class BalanceTestCase(BaseReportTestCase):
         self._print_balance(instance)
         self._assertEqualBalance(instance, BalanceReport(
             items=[
-                BalanceReportItem(pk=b.make_key(None, self.acc1, self.instr1_bond_chf, None),
+                BalanceReportItem(pk=b.make_key(portfolio=None, account=self.acc1, instrument=self.instr1_bond_chf,
+                                                currency=None),
                                   portfolio=None, account=self.acc1, instrument=self.instr1_bond_chf, currency=None,
                                   balance_position=100.000000, market_value_system_ccy=18.450000),
 
-                BalanceReportItem(pk=b.make_key(None, self.acc1, None, self.eur),
+                BalanceReportItem(pk=b.make_key(portfolio=None, account=self.acc1, instrument=None, currency=self.eur),
                                   portfolio=None, account=self.acc1, instrument=None, currency=self.eur,
                                   balance_position=1000.000000, market_value_system_ccy=1300.000000),
-                BalanceReportItem(pk=b.make_key(None, self.prov_acc1, None, self.usd),
+                BalanceReportItem(pk=b.make_key(portfolio=None, account=self.prov_acc1, instrument=None,
+                                                currency=self.usd),
                                   portfolio=None, account=self.prov_acc1, instrument=None, currency=self.usd,
                                   balance_position=-200.000000, market_value_system_ccy=-200.000000),
 
-                BalanceReportItem(pk=b.make_key(None, self.acc1, None, self.rub),
+                BalanceReportItem(pk=b.make_key(portfolio=None, account=self.acc1, instrument=None, currency=self.rub),
                                   portfolio=None, account=self.acc1, instrument=None, currency=self.rub,
                                   balance_position=1000.000000, market_value_system_ccy=13.333333),
-                BalanceReportItem(pk=b.make_key(None, self.prov_acc1, None, self.rub),
+                BalanceReportItem(pk=b.make_key(portfolio=None, account=self.prov_acc1, instrument=None,
+                                                currency=self.rub),
                                   portfolio=None, account=self.prov_acc1, instrument=None, currency=self.rub,
                                   balance_position=-1000.000000, market_value_system_ccy=-13.333333),
             ],
@@ -481,17 +521,21 @@ class BalanceTestCase(BaseReportTestCase):
         self._print_balance(instance)
         self._assertEqualBalance(instance, BalanceReport(
             items=[
-                BalanceReportItem(pk=b.make_key(None, self.acc1, self.instr1_bond_chf, None),
+                BalanceReportItem(pk=b.make_key(portfolio=None, account=self.acc1, instrument=self.instr1_bond_chf,
+                                                currency=None),
                                   portfolio=None, account=self.acc1, instrument=self.instr1_bond_chf, currency=None,
                                   balance_position=100.000000, market_value_system_ccy=18.450000),
-                BalanceReportItem(pk=b.make_key(None, self.acc2, self.instr1_bond_chf, None),
+                BalanceReportItem(pk=b.make_key(portfolio=None, account=self.acc2, instrument=self.instr1_bond_chf,
+                                                currency=None),
                                   portfolio=None, account=self.acc2, instrument=self.instr1_bond_chf, currency=None,
                                   balance_position=100.000000, market_value_system_ccy=18.450000),
 
-                BalanceReportItem(pk=b.make_key(None, self.prov_acc1, None, self.usd),
+                BalanceReportItem(pk=b.make_key(portfolio=None, account=self.prov_acc1, instrument=None,
+                                                currency=self.usd),
                                   portfolio=None, account=self.prov_acc1, instrument=None, currency=self.usd,
                                   balance_position=-200.000000, market_value_system_ccy=-200.000000),
-                BalanceReportItem(pk=b.make_key(None, self.prov_acc2, None, self.usd, ext=self.t_buy_bond_acc2.pk),
+                BalanceReportItem(pk=b.make_key(portfolio=None, account=self.prov_acc2, instrument=None,
+                                                currency=self.usd, ext=self.t_buy_bond_acc2.pk),
                                   portfolio=None, account=self.prov_acc2, instrument=None, currency=self.usd,
                                   balance_position=-200.000000, market_value_system_ccy=-200.000000),
             ],
@@ -513,20 +557,22 @@ class BalanceTestCase(BaseReportTestCase):
         self._print_balance(instance)
         self._assertEqualBalance(instance, BalanceReport(
             items=[
-                BalanceReportItem(pk=b.make_key(None, self.acc1, self.instr1_bond_chf, None),
+                BalanceReportItem(pk=b.make_key(portfolio=None, account=self.acc1, instrument=self.instr1_bond_chf,
+                                                currency=None),
                                   portfolio=None, account=self.acc1, instrument=self.instr1_bond_chf, currency=None,
                                   balance_position=100.000000, market_value_system_ccy=18.450000),
-                BalanceReportItem(pk=b.make_key(None, self.acc1, self.instr2_stock, None),
+                BalanceReportItem(pk=b.make_key(portfolio=None, account=self.acc1, instrument=self.instr2_stock,
+                                                currency=None),
                                   portfolio=None, account=self.acc1, instrument=self.instr2_stock, currency=None,
                                   balance_position=-200.000000, market_value_system_ccy=-485.333333),
 
-                BalanceReportItem(pk=b.make_key(None, self.acc1, None, self.eur),
+                BalanceReportItem(pk=b.make_key(portfolio=None, account=self.acc1, instrument=None, currency=self.eur),
                                   portfolio=None, account=self.acc1, instrument=None, currency=self.eur,
                                   balance_position=1000.000000, market_value_system_ccy=1300.000000),
-                BalanceReportItem(pk=b.make_key(None, self.acc1, None, self.usd),
+                BalanceReportItem(pk=b.make_key(portfolio=None, account=self.acc1, instrument=None, currency=self.usd),
                                   portfolio=None, account=self.acc1, instrument=None, currency=self.usd,
                                   balance_position=-200.000000, market_value_system_ccy=-200.000000),
-                BalanceReportItem(pk=b.make_key(None, self.acc1, None, self.rub),
+                BalanceReportItem(pk=b.make_key(portfolio=None, account=self.acc1, instrument=None, currency=self.rub),
                                   portfolio=None, account=self.acc1, instrument=None, currency=self.rub,
                                   balance_position=1000.000000, market_value_system_ccy=13.333333),
             ],
@@ -550,14 +596,15 @@ class BalanceTestCase(BaseReportTestCase):
         self._print_balance(instance)
         self._assertEqualBalance(instance, BalanceReport(
             items=[
-                BalanceReportItem(pk=b.make_key(None, None, self.instr1_bond_chf, None),
+                BalanceReportItem(pk=b.make_key(portfolio=None, account=self.acc1, instrument=self.instr1_bond_chf,
+                                                currency=None),
                                   portfolio=None, account=None, instrument=self.instr1_bond_chf, currency=None,
                                   balance_position=300.000000, market_value_system_ccy=55.350000),
 
-                BalanceReportItem(pk=b.make_key(None, None, None, self.eur),
+                BalanceReportItem(pk=b.make_key(portfolio=None, account=None, instrument=None, currency=self.eur),
                                   portfolio=None, account=None, instrument=None, currency=self.eur,
                                   balance_position=1000.000000, market_value_system_ccy=1300.000000),
-                BalanceReportItem(pk=b.make_key(None, None, None, self.usd),
+                BalanceReportItem(pk=b.make_key(portfolio=None, account=None, instrument=None, currency=self.usd),
                                   portfolio=None, account=None, instrument=None, currency=self.usd,
                                   balance_position=-600.000000, market_value_system_ccy=-600.000000),
             ],
@@ -581,20 +628,22 @@ class BalanceTestCase(BaseReportTestCase):
         self._print_balance(instance)
         self._assertEqualBalance(instance, BalanceReport(
             items=[
-                BalanceReportItem(pk=b.make_key(None, self.acc1, self.instr1_bond_chf, None),
+                BalanceReportItem(pk=b.make_key(portfolio=None, account=self.acc1, instrument=self.instr1_bond_chf,
+                                                currency=None),
                                   portfolio=None, account=self.acc1, instrument=self.instr1_bond_chf, currency=None,
                                   balance_position=200.000000, market_value_system_ccy=36.900000),
-                BalanceReportItem(pk=b.make_key(None, self.acc2, self.instr1_bond_chf, None),
+                BalanceReportItem(pk=b.make_key(portfolio=None, account=self.acc2, instrument=self.instr1_bond_chf,
+                                                currency=None),
                                   portfolio=None, account=self.acc2, instrument=self.instr1_bond_chf, currency=None,
                                   balance_position=100.000000, market_value_system_ccy=18.450000),
 
-                BalanceReportItem(pk=b.make_key(None, self.acc1, None, self.eur),
+                BalanceReportItem(pk=b.make_key(portfolio=None, account=self.acc1, instrument=None, currency=self.eur),
                                   portfolio=None, account=self.acc1, instrument=None, currency=self.eur,
                                   balance_position=1000.000000, market_value_system_ccy=1300.000000),
-                BalanceReportItem(pk=b.make_key(None, self.acc1, None, self.usd),
+                BalanceReportItem(pk=b.make_key(portfolio=None, account=self.acc1, instrument=None, currency=self.usd),
                                   portfolio=None, account=self.acc1, instrument=None, currency=self.usd,
                                   balance_position=-400.000000, market_value_system_ccy=-400.000000),
-                BalanceReportItem(pk=b.make_key(None, self.acc2, None, self.usd),
+                BalanceReportItem(pk=b.make_key(portfolio=None, account=self.acc2, instrument=None, currency=self.usd),
                                   portfolio=None, account=self.acc2, instrument=None, currency=self.usd,
                                   balance_position=-200.000000, market_value_system_ccy=-200.000000),
             ],
@@ -618,26 +667,33 @@ class BalanceTestCase(BaseReportTestCase):
         self._print_balance(instance)
         self._assertEqualBalance(instance, BalanceReport(
             items=[
-                BalanceReportItem(pk=b.make_key(self.p1, self.acc1, self.instr1_bond_chf, None),
+                BalanceReportItem(pk=b.make_key(portfolio=self.p1, account=self.acc1, instrument=self.instr1_bond_chf,
+                                                currency=None),
                                   portfolio=self.p1, account=self.acc1, instrument=self.instr1_bond_chf, currency=None,
                                   balance_position=100.000000, market_value_system_ccy=18.450000),
-                BalanceReportItem(pk=b.make_key(self.p1, self.acc2, self.instr1_bond_chf, None),
+                BalanceReportItem(pk=b.make_key(portfolio=self.p1, account=self.acc2, instrument=self.instr1_bond_chf,
+                                                currency=None),
                                   portfolio=self.p1, account=self.acc2, instrument=self.instr1_bond_chf, currency=None,
                                   balance_position=100.000000, market_value_system_ccy=18.450000),
-                BalanceReportItem(pk=b.make_key(self.p2, self.acc1, self.instr1_bond_chf, None),
+                BalanceReportItem(pk=b.make_key(portfolio=self.p2, account=self.acc1, instrument=self.instr1_bond_chf,
+                                                currency=None),
                                   portfolio=self.p2, account=self.acc1, instrument=self.instr1_bond_chf, currency=None,
                                   balance_position=100.000000, market_value_system_ccy=18.450000),
 
-                BalanceReportItem(pk=b.make_key(self.p1, self.acc1, None, self.eur),
+                BalanceReportItem(pk=b.make_key(portfolio=self.p1, account=self.acc1, instrument=None,
+                                                currency=self.eur),
                                   portfolio=self.p1, account=self.acc1, instrument=None, currency=self.eur,
                                   balance_position=1000.000000, market_value_system_ccy=1300.000000),
-                BalanceReportItem(pk=b.make_key(self.p1, self.acc1, None, self.usd),
+                BalanceReportItem(pk=b.make_key(portfolio=self.p1, account=self.acc1, instrument=None,
+                                                currency=self.usd),
                                   portfolio=self.p1, account=self.acc1, instrument=None, currency=self.usd,
                                   balance_position=-200.000000, market_value_system_ccy=-200.000000),
-                BalanceReportItem(pk=b.make_key(self.p1, self.acc2, None, self.usd),
+                BalanceReportItem(pk=b.make_key(portfolio=self.p1, account=self.acc2, instrument=None,
+                                                currency=self.usd),
                                   portfolio=self.p1, account=self.acc2, instrument=None, currency=self.usd,
                                   balance_position=-200.000000, market_value_system_ccy=-200.000000),
-                BalanceReportItem(pk=b.make_key(self.p2, self.acc1, None, self.usd),
+                BalanceReportItem(pk=b.make_key(portfolio=self.p2, account=self.acc1, instrument=None,
+                                                currency=self.usd),
                                   portfolio=self.p2, account=self.acc1, instrument=None, currency=self.usd,
                                   balance_position=-200.000000, market_value_system_ccy=-200.000000),
             ],
@@ -661,26 +717,33 @@ class BalanceTestCase(BaseReportTestCase):
         self._print_balance(instance)
         self._assertEqualBalance(instance, BalanceReport(
             items=[
-                BalanceReportItem(pk=b.make_key(self.p1, self.acc1, self.instr1_bond_chf, None),
+                BalanceReportItem(pk=b.make_key(portfolio=self.p1, account=self.acc1, instrument=self.instr1_bond_chf,
+                                                currency=None),
                                   portfolio=self.p1, account=self.acc1, instrument=self.instr1_bond_chf, currency=None,
                                   balance_position=100.000000, market_value_system_ccy=18.450000),
-                BalanceReportItem(pk=b.make_key(self.p1, self.acc2, self.instr1_bond_chf, None),
+                BalanceReportItem(pk=b.make_key(portfolio=self.p1, account=self.acc2, instrument=self.instr1_bond_chf,
+                                                currency=None),
                                   portfolio=self.p1, account=self.acc2, instrument=self.instr1_bond_chf, currency=None,
                                   balance_position=100.000000, market_value_system_ccy=18.450000),
-                BalanceReportItem(pk=b.make_key(self.p2, self.acc1, self.instr1_bond_chf, None),
+                BalanceReportItem(pk=b.make_key(portfolio=self.p2, account=self.acc1, instrument=self.instr1_bond_chf,
+                                                currency=None),
                                   portfolio=self.p2, account=self.acc1, instrument=self.instr1_bond_chf, currency=None,
                                   balance_position=100.000000, market_value_system_ccy=18.450000),
 
-                BalanceReportItem(pk=b.make_key(self.p1, self.acc1, None, self.eur),
+                BalanceReportItem(pk=b.make_key(portfolio=self.p1, account=self.acc1, instrument=None,
+                                                currency=self.eur),
                                   portfolio=self.p1, account=self.acc1, instrument=None, currency=self.eur,
                                   balance_position=1000.000000, market_value_system_ccy=1300.000000),
-                BalanceReportItem(pk=b.make_key(self.p1, self.prov_acc1, None, self.usd),
+                BalanceReportItem(pk=b.make_key(portfolio=self.p1, account=self.prov_acc1, instrument=None,
+                                                currency=self.usd),
                                   portfolio=self.p1, account=self.prov_acc1, instrument=None, currency=self.usd,
                                   balance_position=-200.000000, market_value_system_ccy=-200.000000),
-                BalanceReportItem(pk=b.make_key(self.p1, self.prov_acc2, None, self.usd),
+                BalanceReportItem(pk=b.make_key(portfolio=self.p1, account=self.prov_acc2, instrument=None,
+                                                currency=self.usd),
                                   portfolio=self.p1, account=self.prov_acc2, instrument=None, currency=self.usd,
                                   balance_position=-200.000000, market_value_system_ccy=-200.000000),
-                BalanceReportItem(pk=b.make_key(self.p2, self.prov_acc1, None, self.usd),
+                BalanceReportItem(pk=b.make_key(portfolio=self.p2, account=self.prov_acc1, instrument=None,
+                                                currency=self.usd),
                                   portfolio=self.p2, account=self.prov_acc1, instrument=None, currency=self.usd,
                                   balance_position=-200.000000, market_value_system_ccy=-200.000000),
             ],
@@ -704,28 +767,35 @@ class BalanceTestCase(BaseReportTestCase):
         self._print_balance(instance)
         self._assertEqualBalance(instance, BalanceReport(
             items=[
-                BalanceReportItem(pk=b.make_key(self.p1, self.acc1, None, self.eur),
+                BalanceReportItem(pk=b.make_key(portfolio=self.p1, account=self.acc1, instrument=None,
+                                                currency=self.eur),
                                   portfolio=self.p1, account=self.acc1, instrument=None, currency=self.eur,
                                   balance_position=1000.000000, market_value_system_ccy=1300.000000),
 
-                BalanceReportItem(pk=b.make_key(self.p1, self.acc1, None, self.rub),
+                BalanceReportItem(pk=b.make_key(portfolio=self.p1, account=self.acc1, instrument=None,
+                                                currency=self.rub),
                                   portfolio=self.p1, account=self.acc1, instrument=None, currency=self.rub,
                                   balance_position=1000.000000, market_value_system_ccy=13.333333),
-                BalanceReportItem(pk=b.make_key(self.p1, self.prov_acc1, None, self.rub),
+                BalanceReportItem(pk=b.make_key(portfolio=self.p1, account=self.prov_acc1, instrument=None,
+                                                currency=self.rub),
                                   portfolio=self.p1, account=self.prov_acc1, instrument=None, currency=self.rub,
                                   balance_position=-1000.000000, market_value_system_ccy=-13.333333),
 
-                BalanceReportItem(pk=b.make_key(self.p1, self.acc2, None, self.rub),
+                BalanceReportItem(pk=b.make_key(portfolio=self.p1, account=self.acc2, instrument=None,
+                                                currency=self.rub),
                                   portfolio=self.p1, account=self.acc2, instrument=None, currency=self.rub,
                                   balance_position=1000.000000, market_value_system_ccy=13.333333),
-                BalanceReportItem(pk=b.make_key(self.p1, self.prov_acc2, None, self.rub),
+                BalanceReportItem(pk=b.make_key(portfolio=self.p1, account=self.prov_acc2, instrument=None,
+                                                currency=self.rub),
                                   portfolio=self.p1, account=self.prov_acc2, instrument=None, currency=self.rub,
                                   balance_position=-1000.000000, market_value_system_ccy=-13.333333),
 
-                BalanceReportItem(pk=b.make_key(self.p2, self.acc1, None, self.rub),
+                BalanceReportItem(pk=b.make_key(portfolio=self.p2, account=self.acc1, instrument=None,
+                                                currency=self.rub),
                                   portfolio=self.p2, account=self.acc1, instrument=None, currency=self.rub,
                                   balance_position=1000.000000, market_value_system_ccy=13.333333),
-                BalanceReportItem(pk=b.make_key(self.p2, self.prov_acc1, None, self.rub),
+                BalanceReportItem(pk=b.make_key(portfolio=self.p2, account=self.prov_acc1, instrument=None,
+                                                currency=self.rub),
                                   portfolio=self.p2, account=self.prov_acc1, instrument=None, currency=self.rub,
                                   balance_position=-1000.000000, market_value_system_ccy=-13.333333),
             ],
@@ -749,7 +819,7 @@ class BalanceTestCase(BaseReportTestCase):
         self._print_balance(instance)
         self._assertEqualBalance(instance, BalanceReport(
             items=[
-                BalanceReportItem(pk=b.make_key(None, None, None, self.eur),
+                BalanceReportItem(pk=b.make_key(portfolio=None, account=None, instrument=None, currency=self.eur),
                                   portfolio=None, account=None, instrument=None, currency=self.eur,
                                   balance_position=2000.000000, market_value_system_ccy=2700.000000),
             ],
@@ -773,10 +843,10 @@ class BalanceTestCase(BaseReportTestCase):
         self._print_balance(instance)
         self._assertEqualBalance(instance, BalanceReport(
             items=[
-                BalanceReportItem(pk=b.make_key(None, None, None, self.cad),
+                BalanceReportItem(pk=b.make_key(portfolio=None, account=None, instrument=None, currency=self.cad),
                                   portfolio=None, account=None, instrument=None, currency=self.cad,
                                   balance_position=160., market_value_system_ccy=176.),
-                BalanceReportItem(pk=b.make_key(None, None, None, self.mex),
+                BalanceReportItem(pk=b.make_key(portfolio=None, account=None, instrument=None, currency=self.mex),
                                   portfolio=None, account=None, instrument=None, currency=self.mex,
                                   balance_position=-300, market_value_system_ccy=-30.),
             ],
@@ -807,17 +877,19 @@ class BalanceTestCase(BaseReportTestCase):
         self._print_balance(instance)
         self._assertEqualBalance(instance, BalanceReport(
             items=[
-                BalanceReportItem(pk=b.make_key(None, self.acc2, self.instr1_bond_chf, None),
+                BalanceReportItem(pk=b.make_key(portfolio=None, account=self.acc2, instrument=self.instr1_bond_chf,
+                                                currency=None),
                                   portfolio=None, account=self.acc2, instrument=self.instr1_bond_chf, currency=None,
                                   balance_position=-100.000000, market_value_system_ccy=-18.450000),
-                BalanceReportItem(pk=b.make_key(None, self.acc2, None, self.eur),
+                BalanceReportItem(pk=b.make_key(portfolio=None, account=self.acc2, instrument=None, currency=self.eur),
                                   portfolio=None, account=self.acc2, instrument=None, currency=self.eur,
                                   balance_position=0.000000, market_value_system_ccy=0.00000),
 
-                BalanceReportItem(pk=b.make_key(None, self.acc1, self.instr1_bond_chf, None),
+                BalanceReportItem(pk=b.make_key(portfolio=None, account=self.acc1, instrument=self.instr1_bond_chf,
+                                                currency=None),
                                   portfolio=None, account=self.acc1, instrument=self.instr1_bond_chf, currency=None,
                                   balance_position=100.000000, market_value_system_ccy=18.450000),
-                BalanceReportItem(pk=b.make_key(None, self.acc1, None, self.eur),
+                BalanceReportItem(pk=b.make_key(portfolio=None, account=self.acc1, instrument=None, currency=self.eur),
                                   portfolio=None, account=self.acc1, instrument=None, currency=self.eur,
                                   balance_position=0.000000, market_value_system_ccy=0.00000),
 
@@ -849,17 +921,19 @@ class BalanceTestCase(BaseReportTestCase):
         self._print_balance(instance)
         self._assertEqualBalance(instance, BalanceReport(
             items=[
-                BalanceReportItem(pk=b.make_key(None, self.acc1, self.instr1_bond_chf, None),
+                BalanceReportItem(pk=b.make_key(portfolio=None, account=self.acc1, instrument=self.instr1_bond_chf,
+                                                currency=None),
                                   portfolio=None, account=self.acc1, instrument=self.instr1_bond_chf, currency=None,
                                   balance_position=-100.000000, market_value_system_ccy=-18.450000),
-                BalanceReportItem(pk=b.make_key(None, self.acc1, None, self.eur),
+                BalanceReportItem(pk=b.make_key(portfolio=None, account=self.acc1, instrument=None, currency=self.eur),
                                   portfolio=None, account=self.acc1, instrument=None, currency=self.eur,
                                   balance_position=0.000000, market_value_system_ccy=0.00000),
 
-                BalanceReportItem(pk=b.make_key(None, self.acc2, self.instr1_bond_chf, None),
+                BalanceReportItem(pk=b.make_key(portfolio=None, account=self.acc2, instrument=self.instr1_bond_chf,
+                                                currency=None),
                                   portfolio=None, account=self.acc2, instrument=self.instr1_bond_chf, currency=None,
                                   balance_position=100.000000, market_value_system_ccy=18.450000),
-                BalanceReportItem(pk=b.make_key(None, self.acc2, None, self.eur),
+                BalanceReportItem(pk=b.make_key(portfolio=None, account=self.acc2, instrument=None, currency=self.eur),
                                   portfolio=None, account=self.acc2, instrument=None, currency=self.eur,
                                   balance_position=0.000000, market_value_system_ccy=0.00000),
 
@@ -891,21 +965,66 @@ class BalanceTestCase(BaseReportTestCase):
         self._print_balance(instance)
         self._assertEqualBalance(instance, BalanceReport(
             items=[
-                BalanceReportItem(pk=b.make_key(None, self.acc1, None, self.rub),
+                BalanceReportItem(pk=b.make_key(portfolio=None, account=self.acc1, instrument=None, currency=self.rub),
                                   portfolio=None, account=self.acc1, instrument=None, currency=self.rub,
                                   balance_position=1000., market_value_system_ccy=13.333333),
-                BalanceReportItem(pk=b.make_key(None, self.acc1, None, self.eur),
+                BalanceReportItem(pk=b.make_key(portfolio=None, account=self.acc1, instrument=None, currency=self.eur),
                                   portfolio=None, account=self.acc1, instrument=None, currency=self.eur,
                                   balance_position=0.000000, market_value_system_ccy=0.00000),
 
-                BalanceReportItem(pk=b.make_key(None, self.acc2, None, self.rub),
+                BalanceReportItem(pk=b.make_key(portfolio=None, account=self.acc2, instrument=None, currency=self.rub),
                                   portfolio=None, account=self.acc2, instrument=None, currency=self.rub,
                                   balance_position=-1000., market_value_system_ccy=-13.333333),
-                BalanceReportItem(pk=b.make_key(None, self.acc2, None, self.eur),
+                BalanceReportItem(pk=b.make_key(portfolio=None, account=self.acc2, instrument=None, currency=self.eur),
                                   portfolio=None, account=self.acc2, instrument=None, currency=self.eur,
                                   balance_position=0.000000, market_value_system_ccy=0.00000),
             ],
             summary=BalanceReportSummary(invested_value_system_ccy=0,
                                          current_value_system_ccy=0.,
                                          p_l_system_ccy=0.)
+        ))
+
+    def test_strategies_1(self):
+        t1 = self.t(
+            t_class=self.buy, instr=self.instr1_bond_chf, position=20., settlement_ccy=self.usd,
+            principal=-100., carry=0., overheads=0., acc_date_delta=3, cash_date_delta=3,
+            strategies=[{'position': self.s11, 'cash': self.s21}])
+
+        t2 = self.t(
+            t_class=self.sell, instr=self.instr1_bond_chf, position=-10., settlement_ccy=self.usd,
+            principal=70., carry=0., overheads=0., acc_date_delta=4, cash_date_delta=4,
+            strategies=[{'position': self.s12, 'cash': self.s22}])
+
+        queryset = Transaction.objects.filter(pk__in=[
+            t1.pk, t2.pk
+        ])
+        instance = BalanceReport(master_user=self.m,
+                                 begin_date=None, end_date=self.d(5),
+                                 use_portfolio=False, use_account=True,
+                                 use_strategy=True, multiplier_class=MULTIPLIER_AVCO,
+                                 show_transaction_details=False)
+        b = BalanceReport2Builder(instance=instance, queryset=queryset)
+        b.build()
+        self._print_test_name()
+        self._print_balance_transactions(instance.transactions)
+        self._print_balance(instance)
+        self._assertEqualBalance(instance, BalanceReport(
+            items=[
+                BalanceReportItem(pk=b.make_key(portfolio=None, account=self.acc1, instrument=self.instr1_bond_chf, currency=None, strategies=[self.s11]),
+                                  portfolio=None, account=self.acc1, instrument=self.instr1_bond_chf, currency=None, strategies=[self.s11],
+                                  balance_position=10., market_value_system_ccy=1.845),
+                BalanceReportItem(pk=b.make_key(portfolio=None, account=self.acc1, instrument=self.instr1_bond_chf, currency=None, strategies=[self.s12]),
+                                  portfolio=None, account=self.acc1, instrument=self.instr1_bond_chf, currency=None, strategies=[self.s12],
+                                  balance_position=0., market_value_system_ccy=0.),
+
+                BalanceReportItem(pk=b.make_key(portfolio=None, account=self.acc1, instrument=None, currency=self.usd, strategies=[self.s21]),
+                                  portfolio=None, account=self.acc1, instrument=None, currency=self.usd, strategies=[self.s21],
+                                  balance_position=-100., market_value_system_ccy=-100.),
+                BalanceReportItem(pk=b.make_key(portfolio=None, account=self.acc1, instrument=None, currency=self.usd, strategies=[self.s22]),
+                                  portfolio=None, account=self.acc1, instrument=None, currency=self.usd, strategies=[self.s22],
+                                  balance_position=70., market_value_system_ccy=70.),
+            ],
+            summary=BalanceReportSummary(invested_value_system_ccy=0,
+                                         current_value_system_ccy=-28.155,
+                                         p_l_system_ccy=-28.155)
         ))

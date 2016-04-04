@@ -1,7 +1,7 @@
 from __future__ import unicode_literals, division, print_function
 
 from poms.reports.backends.ytm import YTMReport2Builder
-from poms.reports.models import YTMReport, YTMReportItem
+from poms.reports.models import YTMReport, YTMReportItem, MULTIPLIER_AVCO, MULTIPLIER_FIFO
 from poms.reports.tests.base import BaseReportTestCase, n
 from poms.transactions.models import Transaction
 
@@ -63,7 +63,7 @@ class YTMTestCase(BaseReportTestCase):
         queryset = Transaction.objects.filter(pk__in=[
             self.t_buy_bond.pk, self.t_sell_stock.pk
         ])
-        instance = YTMReport(master_user=self.m, multiplier_class='avco',
+        instance = YTMReport(master_user=self.m, multiplier_class=MULTIPLIER_AVCO,
                              begin_date=None, end_date=self.d(9),
                              use_portfolio=False, use_account=False)
         b = YTMReport2Builder(instance=instance, queryset=queryset)
@@ -73,10 +73,11 @@ class YTMTestCase(BaseReportTestCase):
         self._print_ytm(instance)
         self._assertEqualYTM(instance, YTMReport(
             items=[
-                YTMReportItem(pk=b.make_key(None, None, self.instr1_bond_chf, None),
+                YTMReportItem(pk=b.make_key(portfolio=None, account=None, instrument=self.instr1_bond_chf,
+                                            currency=None),
                               portfolio=None, account=None, instrument=self.instr1_bond_chf,
                               position=100., ytm=0., time_invested=6),
-                YTMReportItem(pk=b.make_key(None, None, self.instr2_stock, None),
+                YTMReportItem(pk=b.make_key(portfolio=None, account=None, instrument=self.instr2_stock, currency=None),
                               portfolio=None, account=None, instrument=self.instr2_stock,
                               position=-200., ytm=0., time_invested=-6)
             ]
@@ -86,7 +87,7 @@ class YTMTestCase(BaseReportTestCase):
         queryset = Transaction.objects.filter(pk__in=[
             self.t_buy_bond.pk, self.t_sell_stock.pk
         ])
-        instance = YTMReport(master_user=self.m, multiplier_class='fifo',
+        instance = YTMReport(master_user=self.m, multiplier_class=MULTIPLIER_FIFO,
                              begin_date=None, end_date=self.d(9),
                              use_portfolio=False, use_account=False)
         b = YTMReport2Builder(instance=instance, queryset=queryset)
@@ -96,10 +97,11 @@ class YTMTestCase(BaseReportTestCase):
         self._print_ytm(instance)
         self._assertEqualYTM(instance, YTMReport(
             items=[
-                YTMReportItem(pk=b.make_key(None, None, self.instr1_bond_chf, None),
+                YTMReportItem(pk=b.make_key(portfolio=None, account=None, instrument=self.instr1_bond_chf,
+                                            currency=None),
                               portfolio=None, account=None, instrument=self.instr1_bond_chf,
                               position=100., ytm=0., time_invested=6),
-                YTMReportItem(pk=b.make_key(None, None, self.instr2_stock, None),
+                YTMReportItem(pk=b.make_key(portfolio=None, account=None, instrument=self.instr2_stock, currency=None),
                               portfolio=None, account=None, instrument=self.instr2_stock,
                               position=-200., ytm=0., time_invested=-6)
             ]

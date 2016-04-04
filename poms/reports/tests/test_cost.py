@@ -1,7 +1,7 @@
 from __future__ import unicode_literals, division, print_function
 
 from poms.reports.backends.cost import CostReport2Builder
-from poms.reports.models import CostReport, CostReportItem
+from poms.reports.models import CostReport, CostReportItem, MULTIPLIER_FIFO, MULTIPLIER_AVCO
 from poms.reports.tests.base import BaseReportTestCase, n
 from poms.transactions.models import Transaction
 
@@ -70,7 +70,7 @@ class CostTestCase(BaseReportTestCase):
             self.t_buy_bond.pk,
             self.t_sell_stock.pk
         ])
-        instance = CostReport(master_user=self.m, multiplier_class='avco',
+        instance = CostReport(master_user=self.m, multiplier_class=MULTIPLIER_AVCO,
                               begin_date=None, end_date=self.d(9),
                               use_portfolio=False, use_account=False)
         b = CostReport2Builder(instance=instance, queryset=queryset)
@@ -80,12 +80,13 @@ class CostTestCase(BaseReportTestCase):
         self._print_cost(instance)
         self._assertEqualCost(instance, CostReport(
             items=[
-                CostReportItem(pk=b.make_key(None, None, self.instr1_bond_chf, None),
+                CostReportItem(pk=b.make_key(portfolio=None, account=None, instrument=self.instr1_bond_chf,
+                                             currency=None),
                                portfolio=None, account=None, instrument=self.instr1_bond_chf,
                                position=100.,
                                cost_instrument_ccy=-200., cost_system_ccy=-180.,
                                cost_price=2., cost_price_adjusted=200.),
-                CostReportItem(pk=b.make_key(None, None, self.instr2_stock, None),
+                CostReportItem(pk=b.make_key(portfolio=None, account=None, instrument=self.instr2_stock, currency=None),
                                portfolio=None, account=None, instrument=self.instr2_stock,
                                position=200.,
                                cost_instrument_ccy=9.166667, cost_system_ccy=14.666667,
@@ -97,7 +98,7 @@ class CostTestCase(BaseReportTestCase):
         queryset = Transaction.objects.filter(pk__in=[
             self.t_buy_bond.pk, self.t_sell_stock.pk
         ])
-        instance = CostReport(master_user=self.m, multiplier_class='fifo',
+        instance = CostReport(master_user=self.m, multiplier_class=MULTIPLIER_FIFO,
                               begin_date=None, end_date=self.d(9),
                               use_portfolio=False, use_account=False)
         b = CostReport2Builder(instance=instance, queryset=queryset)

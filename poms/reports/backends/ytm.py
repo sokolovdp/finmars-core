@@ -70,19 +70,22 @@ class YTMReport2Builder(BaseReport2Builder):
         self._items = {}
 
     def _get_item(self, trn, ext=None):
-        t_key = self.make_key(portfolio=trn.portfolio, instrument=trn.instrument, account=trn.account_position, ext=ext)
+        t_key = self.make_key(portfolio=trn.portfolio, account=trn.account_position, instrument=trn.instrument, ext=ext)
         try:
             return self._items[t_key]
         except KeyError:
-            portfolio = trn.portfolio if self._use_portfolio else None
-            account = trn.account_position if self._use_account else None
-            instrument = trn.instrument
-            item = YTMReportItem(pk=t_key, portfolio=portfolio, account=account, instrument=instrument)
+            # portfolio = trn.portfolio if self._use_portfolio else None
+            # account = trn.account_position if self._use_account else None
+            # instrument = trn.instrument
+            # item = YTMReportItem(pk=t_key, portfolio=portfolio, account=account, instrument=instrument)
+            item = self.make_item(YTMReportItem, key=t_key, portfolio=trn.portfolio, account=trn.account_position,
+                                  instrument=trn.instrument)
             self._items[t_key] = item
             return item
 
     def build(self):
-        multiplier_attr = self.set_multipliers(self.instance.multiplier_class)
+        self.set_multiplier()
+        multiplier_attr = self.multiplier_attr
 
         # calculate total position for instrument
         for t in self.transactions:

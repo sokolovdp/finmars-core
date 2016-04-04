@@ -5,16 +5,26 @@ from django.utils.encoding import python_2_unicode_compatible
 
 from poms.users.models import MasterUser
 
+MULTIPLIER_AVCO = 1
+MULTIPLIER_FIFO = 2
+# MULTIPLIER_LIFO = 3
+MULTIPLIERS = (
+    (MULTIPLIER_AVCO, 'avco'),
+    (MULTIPLIER_FIFO, 'fifo'),
+    # (LIFO, 'lifo'),
+)
+
 
 # ----------------------------------------------------------------------------------------------------------------------
 
 
 @python_2_unicode_compatible
 class BaseReportItem(object):
-    def __init__(self, pk=None, portfolio=None, account=None, instrument=None, name=None, *args, **kwargs):
+    def __init__(self, pk=None, portfolio=None, account=None, strategies=None, instrument=None, name=None):
         self.pk = pk
         self.portfolio = portfolio  # -> Portfolio
         self.account = account  # -> Account
+        self.strategies = strategies  # -> sorted strategy list
         self.instrument = instrument  # -> Instrument
         self.name = name
 
@@ -25,16 +35,18 @@ class BaseReportItem(object):
 @python_2_unicode_compatible
 class BaseReport(object):
     def __init__(self, master_user=None, begin_date=None, end_date=None, use_portfolio=None, use_account=None,
-                 instruments=None, transaction_currencies=None, items=None):
+                 use_strategy=False, multiplier_class=None, items=None, instruments=None, transaction_currencies=None):
         self.master_user = master_user
         self.begin_date = begin_date
         self.end_date = end_date
         self.use_portfolio = use_portfolio
         self.use_account = use_account
+        self.use_strategy = use_strategy
+        self.multiplier_class = multiplier_class
+        self.items = items
         self.transaction_currencies = transaction_currencies
         self.instruments = instruments
         self.transactions = []
-        self.items = items
 
     def __str__(self):
         return "%s for %s (%s, %s)" % (self.__class__.__name__, self.master_user, self.begin_date, self.end_date)
@@ -153,9 +165,8 @@ class CostReportItem(BaseReportItem):
 
 # @python_2_unicode_compatible
 class CostReport(BaseReport):
-    def __init__(self, multiplier_class=None, *args, **kwargs):
+    def __init__(self, *args, **kwargs):
         super(CostReport, self).__init__(*args, **kwargs)
-        self.multiplier_class = multiplier_class
 
 
 # ----------------------------------------------------------------------------------------------------------------------
@@ -171,6 +182,5 @@ class YTMReportItem(BaseReportItem):
 
 # @python_2_unicode_compatible
 class YTMReport(BaseReport):
-    def __init__(self, multiplier_class=None, *args, **kwargs):
+    def __init__(self, *args, **kwargs):
         super(YTMReport, self).__init__(*args, **kwargs)
-        self.multiplier_class = multiplier_class
