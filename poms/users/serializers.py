@@ -186,29 +186,10 @@ class MemberSerializer(serializers.ModelSerializer):
         return obj.id == member.id
 
 
-# class GroupSerializer(serializers.ModelSerializer):
-#     url = serializers.HyperlinkedIdentityField(view_name='groupprofile-detail')
-#     master_user = MasterUserField()
-#     permissions = PermissionField(many=True)
-#
-#     class Meta:
-#         model = GroupProfile
-#         fields = ['url', 'id', 'master_user', 'name', 'permissions']
-#
-#     def create(self, validated_data):
-#         master_user = validated_data['master_user']
-#         name = validated_data['name']
-#         validated_data['group'] = Group.objects.create(name=GroupProfile.make_group_name(master_user.id, name))
-#         return super(GroupSerializer, self).create(validated_data)
-
-
-
 class GroupSerializer(serializers.ModelSerializer):
     url = serializers.HyperlinkedIdentityField(view_name='group-detail')
     master_user = MasterUserField()
     permissions = PermissionField(many=True)
-
-    # profile = GroupProfileSerializer(read_only=False)
 
     class Meta:
         model = Group

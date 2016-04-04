@@ -51,39 +51,38 @@ class PomsObjectPermissions(DjangoObjectPermissions):
 #         return get_objects_for_user(user, permission, queryset, with_superuser=False, accept_global_perms=False)
 
 
-class ObjectPermission(object):
-    def __init__(self, user=None, group=None, permissions=None):
-        self.user = user
-        self.group = group
-        self.permissions = permissions
+# class ObjectPermission(object):
+#     def __init__(self, user=None, group=None, permissions=None):
+#         self.user = user
+#         self.group = group
+#         self.permissions = permissions
+#
+#
+# class ObjectPermissionSerializer(serializers.Serializer):
+#     group = FilteredPrimaryKeyRelatedField(queryset=Group.objects.all(), filter_backends=[])
+#     permissions = PermissionField(many=True)
+#
+#     def create(self, validated_data):
+#         return ObjectPermission(**validated_data)
+#
+#     def update(self, instance, validated_data):
+#         return None
 
 
-class ObjectPermissionSerializer(serializers.Serializer):
-    group = FilteredPrimaryKeyRelatedField(queryset=Group.objects.all(), filter_backends=[])
-    permissions = PermissionField(many=True)
-
-    def create(self, validated_data):
-        return ObjectPermission(**validated_data)
-
-    def update(self, instance, validated_data):
-        return None
+# class ObjectPermissionGroupFilter(BaseFilterBackend):
+#     def filter_queryset(self, request, queryset, view):
+#         return queryset.filter(profile__isnull=False)
 
 
-class ObjectPermissionGroupFilter(BaseFilterBackend):
-    def filter_queryset(self, request, queryset, view):
-        return queryset.filter(profile__isnull=False)
-
-
-class ObjectPermissionGuard(BasePermission):
-    # def has_permission(self, request, view):
-    #     profile = getattr(request.user, 'profile', None)
-    #     return getattr(profile, 'is_admin', False)
-
-    # def has_object_permission(self, request, view, obj):
-    #     # <Currency: USD>
-    #     # print(repr(obj))
-    #     if request.method in SAFE_METHODS:
-    #         return True
-    #     return False
-    pass
-
+# class ObjectPermissionGuard(BasePermission):
+#     # def has_permission(self, request, view):
+#     #     profile = getattr(request.user, 'profile', None)
+#     #     return getattr(profile, 'is_admin', False)
+#
+#     # def has_object_permission(self, request, view, obj):
+#     #     # <Currency: USD>
+#     #     # print(repr(obj))
+#     #     if request.method in SAFE_METHODS:
+#     #         return True
+#     #     return False
+#     pass

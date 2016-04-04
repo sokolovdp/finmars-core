@@ -59,24 +59,6 @@ class UserWithProfileAdmin(HistoricalAdmin, UserAdmin):
 admin.site.unregister(User)
 admin.site.register(User, UserWithProfileAdmin)
 
-# class GroupProfileInline(StackedInline):
-#     model = GroupProfile
-#     can_delete = False
-
-
-# class GroupWithProfileAdmin(HistoricalAdmin, GroupAdmin):
-#     inlines = [GroupProfileInline]
-#
-#     def save_model(self, request, obj, form, change):
-#         profile = getattr(obj, 'profile', None)
-#         if profile:
-#             obj.name = profile.group_name
-#         super(GroupWithProfileAdmin, self).save_model(request, obj, form, change)
-#
-#
-# admin.site.unregister(Group)
-# admin.site.register(Group, GroupWithProfileAdmin)
-
 admin.site.register(Permission)
 
 

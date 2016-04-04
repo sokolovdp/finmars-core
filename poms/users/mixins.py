@@ -6,14 +6,7 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
 from poms.users.fields import get_master_user, get_member
-from poms.users.permissions import ObjectPermissionSerializer, ObjectPermission, ObjectPermissionGuard
-
-class PomsModelPermissionMixin(object):
-    pass
-
-
-class PomsObjectPermissionMixin(PomsModelPermissionMixin):
-    pass
+# from poms.users.permissions import ObjectPermissionSerializer, ObjectPermission, ObjectPermissionGuard
 
 # class PomsModelPermissionMixin(object):
 #     def initial(self, request, *args, **kwargs):

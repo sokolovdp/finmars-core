@@ -8,9 +8,7 @@ from poms.accounts.models import Account, AccountType, AccountClassifier
 from poms.accounts.serializers import AccountSerializer, AccountTypeSerializer, AccountClassifierSerializer
 from poms.api.mixins import DbTransactionMixin
 from poms.audit.mixins import HistoricalMixin
-from poms.users.filters import OwnerByMasterUserFilter, PomsObjectPermissionsFilter
-from poms.users.mixins import PomsObjectPermissionMixin
-from poms.users.permissions import PomsObjectPermissions
+from poms.users.filters import OwnerByMasterUserFilter
 
 
 class AccountTypeViewSet(DbTransactionMixin, HistoricalMixin, ModelViewSet):
@@ -37,12 +35,14 @@ class AccountFilter(FilterSet):
         fields = []
 
 
-class AccountViewSet(DbTransactionMixin, PomsObjectPermissionMixin, HistoricalMixin, ModelViewSet):
+# PomsObjectPermissionMixin,
+# PomsObjectPermissions
+# PomsObjectPermissionsFilter
+class AccountViewSet(DbTransactionMixin, HistoricalMixin, ModelViewSet):
     queryset = Account.objects.all()
     serializer_class = AccountSerializer
-    permission_classes = [IsAuthenticated, PomsObjectPermissions]
-    filter_backends = [OwnerByMasterUserFilter, PomsObjectPermissionsFilter, DjangoFilterBackend, OrderingFilter,
-                       SearchFilter, ]
+    permission_classes = [IsAuthenticated]
+    filter_backends = [OwnerByMasterUserFilter, DjangoFilterBackend, OrderingFilter, SearchFilter, ]
     filter_class = AccountFilter
     ordering_fields = ['user_code', 'name', 'short_name']
     search_fields = ['user_code', 'name', 'short_name']
