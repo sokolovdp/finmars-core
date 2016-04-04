@@ -8,8 +8,6 @@ from mptt.models import MPTTModel
 
 from poms.audit import history
 from poms.common.models import NamedModel
-from poms.currencies.models import Currency
-from poms.portfolios.models import Portfolio
 from poms.users.models import MasterUser
 
 
