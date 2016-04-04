@@ -4,7 +4,7 @@ from django.contrib import admin
 from import_export.admin import ImportExportModelAdmin
 
 from poms.audit.admin import HistoricalAdmin
-from poms.transactions.models import TransactionClass, Transaction
+from poms.transactions.models import TransactionClass, Transaction, TransactionTypeTag, TransactionType
 
 
 class TransactionClassAdmin(HistoricalAdmin):
@@ -16,13 +16,23 @@ class TransactionClassAdmin(HistoricalAdmin):
 admin.site.register(TransactionClass, TransactionClassAdmin)
 
 
-# class TransactionClassifierAdmin(MPTTModelAdmin):
-#     model = TransactionClassifier
-#     list_display = ['name', 'master_user']
-#     mptt_level_indent = 20
-#
-#
-# admin.site.register(TransactionClassifier, TransactionClassifierAdmin)
+class TransactionTypeTagAdmin(HistoricalAdmin):
+    model = TransactionTypeTag
+    list_display = ['id', 'name', 'master_user']
+    list_select_related = ['master_user']
+
+
+admin.site.register(TransactionTypeTag, TransactionTypeTagAdmin)
+
+
+class TransactionTypeAdmin(HistoricalAdmin):
+    model = TransactionType
+    list_display = ['id', 'name', 'master_user']
+    list_select_related = ['master_user']
+    filter_horizontal = ['tags', ]
+
+
+admin.site.register(TransactionType, TransactionTypeAdmin)
 
 
 class TransactionAdmin(HistoricalAdmin, ImportExportModelAdmin):
@@ -44,10 +54,13 @@ class TransactionAdmin(HistoricalAdmin, ImportExportModelAdmin):
 
     def make_canceled(self, request, queryset):
         queryset.update(is_canceled=True)
+
     make_canceled.short_description = "Mark selected transaction as canceled"
 
     def make_active(self, request, queryset):
         queryset.update(is_canceled=False)
+
     make_active.short_description = "Mark selected transaction as active"
+
 
 admin.site.register(Transaction, TransactionAdmin)

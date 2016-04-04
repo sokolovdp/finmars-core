@@ -9,6 +9,7 @@ from mptt.models import MPTTModel
 
 from poms.accounts.models import Account
 from poms.audit import history
+from poms.common.models import NamedModel, TagModelBase
 from poms.counterparties.models import Responsible, Counterparty
 from poms.currencies.models import Currency
 from poms.instruments.models import Instrument
@@ -62,6 +63,39 @@ class TransactionClass(models.Model):
 
     def __str__(self):
         return '%s' % (self.name,)
+
+
+class TransactionTypeTag(TagModelBase):
+    master_user = models.ForeignKey(MasterUser, related_name='transactiontype_tags', verbose_name=_('master user'))
+
+    class Meta:
+        verbose_name = _('transaction type tag')
+        verbose_name_plural = _('transaction type tags')
+        unique_together = [
+            ['master_user', 'user_code'],
+            ['master_user', 'name'],
+        ]
+        permissions = [
+            ('view_transactiontypetag', 'Can view instrument type tag')
+        ]
+
+
+class TransactionType(NamedModel):
+    master_user = models.ForeignKey(MasterUser, related_name='transaction_types', verbose_name=_('master user'))
+    tags = models.ManyToManyField(TransactionTypeTag, blank=True)
+
+    class Meta:
+        verbose_name = _('transaction type')
+        verbose_name_plural = _('transaction types')
+        unique_together = [
+            ['master_user', 'user_code']
+        ]
+        permissions = [
+            ('view_transactiontype', 'Can view instrument type')
+        ]
+
+    def __str__(self):
+        return self.name
 
 
 @python_2_unicode_compatible
