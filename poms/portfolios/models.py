@@ -8,7 +8,7 @@ from mptt.models import MPTTModel
 
 from poms.accounts.models import Account
 from poms.audit import history
-from poms.common.models import NamedModel
+from poms.common.models import NamedModel, TagModelBase
 from poms.currencies.models import Currency
 from poms.strategies.models import Strategy
 from poms.users.models import MasterUser
@@ -33,10 +33,26 @@ class PortfolioClassifier(NamedModel, MPTTModel):
         return self.name
 
 
+class PortfolioTag(TagModelBase):
+    master_user = models.ForeignKey(MasterUser, related_name='portfolio_tags', verbose_name=_('master user'))
+
+    class Meta:
+        verbose_name = _('portfolio tag')
+        verbose_name_plural = _('portfolio tags')
+        unique_together = [
+            ['master_user', 'user_code'],
+            ['master_user', 'name'],
+        ]
+        permissions = [
+            ('view_portfoliotag', 'Can view portfolio tag')
+        ]
+
+
 @python_2_unicode_compatible
 class Portfolio(NamedModel):
     master_user = models.ForeignKey(MasterUser, related_name='portfolios', verbose_name=_('master user'))
     classifiers = TreeManyToManyField(PortfolioClassifier, blank=True)
+    tags = models.ManyToManyField(PortfolioTag, blank=True)
 
     # inception_date = models.DateField(null=True, blank=True)
     # accounts = models.ManyToManyField(Account, blank=True, verbose_name=_('accounts'))
