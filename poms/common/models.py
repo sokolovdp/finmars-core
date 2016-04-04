@@ -38,20 +38,13 @@ class TimeStampedModel(models.Model):
         ordering = ('-modified', '-created',)
 
 
-@python_2_unicode_compatible
-class TagModelBase(models.Model):
-    user_code = models.CharField(max_length=25, null=True, blank=True, verbose_name=_('user code'))
-    name = models.CharField(max_length=255, verbose_name=_('name'))
-
+class TagModelBase(NamedModel):
     class Meta:
         abstract = True
 
-    def __str__(self):
-        return self.name
 
-    # class UserTimeStampedModel(TimeStampedModel):
-
-# created_by = models.ForeignKey(settings.AUTH_USER_MODEL, null=True, blank=True, verbose_name=_('created by'))
+# class UserTimeStampedModel(TimeStampedModel):
+#     created_by = models.ForeignKey(settings.AUTH_USER_MODEL, null=True, blank=True, verbose_name=_('created by'))
 #     modified_by = models.DateTimeField(settings.AUTH_USER_MODEL, null=True, blank=True, verbose_name=_('modified by'))
 #
 #     class Meta:
