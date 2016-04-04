@@ -46,7 +46,7 @@ class TagModelBase(NamedModel):
 @python_2_unicode_compatible
 class ClassModelBase(models.Model):
     id = models.PositiveSmallIntegerField(primary_key=True)
-    system_code = models.CharField(max_length=50, null=True, blank=True, verbose_name=_('system code'))
+    system_code = models.CharField(max_length=50, null=True, blank=True, unique=True, verbose_name=_('system code'))
     name = models.CharField(max_length=255, verbose_name=_('name'))
     description = models.TextField(null=True, blank=True, default='', verbose_name=_('description'))
 
