@@ -9,6 +9,7 @@ from mptt.models import MPTTModel
 from poms.accounts.models import Account
 from poms.audit import history
 from poms.common.models import NamedModel, TagModelBase
+from poms.counterparties.models import Counterparty, Responsible
 from poms.currencies.models import Currency
 from poms.strategies.models import Strategy
 from poms.users.models import MasterUser
@@ -54,10 +55,9 @@ class Portfolio(NamedModel):
     classifiers = TreeManyToManyField(PortfolioClassifier, blank=True)
     tags = models.ManyToManyField(PortfolioTag, blank=True)
 
-    # inception_date = models.DateField(null=True, blank=True)
-    # accounts = models.ManyToManyField(Account, blank=True, verbose_name=_('accounts'))
-    # strategies = models.ManyToManyField(Strategy, blank=True, verbose_name=_('strategies'))
-    # notes = models.TextField(null=True, blank=True, default='', verbose_name=_('description'))
+    accounts = models.ManyToManyField(Account, blank=True, related_name='portfolios', verbose_name=_('accounts'))
+    counterparties = models.ManyToManyField(Counterparty, blank=True, related_name='portfolios', verbose_name=_('counterparties'))
+    responsibles = models.ManyToManyField(Responsible, blank=True, related_name='portfolios', verbose_name=_('responsibles'))
 
     class Meta:
         verbose_name = _('portfolio')
