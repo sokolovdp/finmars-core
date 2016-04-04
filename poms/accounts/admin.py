@@ -3,7 +3,7 @@ from __future__ import unicode_literals
 from django.contrib import admin
 from mptt.admin import MPTTModelAdmin
 
-from poms.accounts.models import Account, AccountType, AccountClassifier
+from poms.accounts.models import Account, AccountType, AccountClassifier, AccountTag
 from poms.audit.admin import HistoricalAdmin
 
 
@@ -27,10 +27,20 @@ class AccountClassifierAdmin(HistoricalAdmin, MPTTModelAdmin):
 admin.site.register(AccountClassifier, AccountClassifierAdmin)
 
 
+class AccountTagAdmin(HistoricalAdmin):
+    model = AccountTag
+    list_display = ['id', 'name', 'master_user']
+    list_select_related = ['master_user']
+
+
+admin.site.register(AccountTag, AccountTagAdmin)
+
+
 class AccountAdmin(HistoricalAdmin):
     model = Account
     list_display = ['id', 'name', 'master_user']
     list_select_related = ['master_user']
+    filter_horizontal = ['tags', ]
 
 
 admin.site.register(Account, AccountAdmin)
