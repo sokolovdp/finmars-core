@@ -280,7 +280,6 @@ CURRENCY_CODE = 'USD'
 
 AUTHENTICATION_BACKENDS = (
     'django.contrib.auth.backends.ModelBackend',
-    # 'guardian.backends.ObjectPermissionBackend',
     'poms.users.backends.PomsPermissionBackend',
 )
 

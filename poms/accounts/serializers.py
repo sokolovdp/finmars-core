@@ -4,7 +4,7 @@ from rest_framework import serializers
 
 from poms.accounts.fields import AccountClassifierField
 from poms.accounts.models import Account, AccountType, AccountClassifier
-from poms.users.fields import MasterUserField
+from poms.users.fields import MasterUserField, GrantedPermissionField
 
 
 class AccountTypeSerializer(serializers.ModelSerializer):
@@ -34,13 +34,9 @@ class AccountSerializer(serializers.ModelSerializer):
     url = serializers.HyperlinkedIdentityField(view_name='account-detail')
     master_user = MasterUserField()
     classifiers = AccountClassifierField(many=True, read_only=False)
-    granted_permissions = serializers.SerializerMethodField()
+    granted_permissions = GrantedPermissionField()
 
     class Meta:
         model = Account
         fields = ['url', 'id', 'master_user', 'user_code', 'name', 'short_name', 'type', 'classifiers', 'notes',
                   'granted_permissions']
-
-    def get_granted_permissions(self, obj):
-        user = self.context['request'].user
-        return user.get_all_permissions(obj)

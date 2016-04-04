@@ -8,6 +8,7 @@ from rest_framework import serializers
 from rest_framework.exceptions import NotFound
 
 from poms.api.fields import FilteredPrimaryKeyRelatedField
+from poms.audit import history
 from poms.users.filters import OwnerByMasterUserFilter
 from poms.users.models import Member, AVAILABLE_APPS
 
@@ -148,12 +149,6 @@ class GrantedPermissionField(serializers.Field):
     def to_representation(self, value):
         if history.is_historical_proxy(value):
             return []
-        request = self.context['request']
-        ctype = ContentType.objects.get_for_model(value)
-        # return {'%s.%s' % (ctype.app_label, p) for p in get_perms(request.user, value)}
-        return []
-        # return get_perms(request.user, value)
+        user = self.context['request'].user
+        return user.get_all_permissions(value)
 
-# class UserField(FilteredPrimaryKeyRelatedField):
-#     queryset = User.objects.all()
-#     filter_backends = [UserFilter]
