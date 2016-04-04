@@ -190,5 +190,8 @@ class PriceHistory(models.Model):
 
 
 history.register(InstrumentClassifier)
+history.register(InstrumentType)
+history.register(InstrumentTypeTag)
+history.register(InstrumentTag)
 history.register(Instrument)
 history.register(PriceHistory)

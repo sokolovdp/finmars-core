@@ -74,4 +74,5 @@ class Portfolio(NamedModel):
 
 
 history.register(PortfolioClassifier)
+history.register(PortfolioTag)
 history.register(Portfolio)

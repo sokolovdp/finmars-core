@@ -193,4 +193,6 @@ class Transaction(models.Model):
 
 
 history.register(TransactionClass)
+history.register(TransactionType)
+history.register(TransactionTypeTag)
 history.register(Transaction)

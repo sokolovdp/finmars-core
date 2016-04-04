@@ -142,4 +142,5 @@ class Account(NamedModel):
 
 history.register(AccountClassifier)
 history.register(AccountType)
+history.register(AccountTag)
 history.register(Account)
