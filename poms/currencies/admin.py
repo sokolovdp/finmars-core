@@ -2,7 +2,6 @@ from __future__ import unicode_literals
 
 from django.contrib import admin
 from django.utils.translation import ugettext_lazy as _
-from guardian.admin import GuardedModelAdminMixin
 
 from poms.audit.admin import HistoricalAdmin
 from poms.currencies.models import Currency, CurrencyHistory
@@ -25,7 +24,7 @@ class GlobalCurrencyFilter(admin.SimpleListFilter):
             return queryset.filter(master_user__isnull=False)
 
 
-class CurrencyAdmin(GuardedModelAdminMixin, HistoricalAdmin):
+class CurrencyAdmin(HistoricalAdmin):
     model = Currency
     list_display = ['id', 'name', 'master_user', 'is_global', 'is_system']
     list_select_related = ['master_user']

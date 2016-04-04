@@ -46,7 +46,7 @@ INSTALLED_APPS = [
 
     'mptt',
     'reversion',
-    'guardian',
+    # 'guardian',
     'import_export',
 
     'poms.http_sessions',
@@ -129,7 +129,7 @@ if DEBUG:
     # }
     DATABASES['default'] = {
         'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': os.path.join(BASE_DIR, 'db.sqlite3'),
+        'NAME': os.path.join(BASE_DIR, 'db_perms2.sqlite3'),
         # 'NAME': ':memory:'
     }
 
@@ -280,7 +280,7 @@ CURRENCY_CODE = 'USD'
 
 AUTHENTICATION_BACKENDS = (
     'django.contrib.auth.backends.ModelBackend',
-    'guardian.backends.ObjectPermissionBackend',
+    'poms.users.backends.PomsPermissionBackend',
 )
 
 ANONYMOUS_USER_ID = -1

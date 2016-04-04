@@ -10,7 +10,6 @@ from poms.api.permissions import IsOwnerOrReadonly
 from poms.audit.mixins import HistoricalMixin
 from poms.currencies.models import Currency, CurrencyHistory
 from poms.currencies.serializers import CurrencySerializer, CurrencyHistorySerializer
-from poms.users.permissions import PomsObjectPermissionMixin, PomsObjectPermissionsFilter, PomsObjectPermission
 
 
 class CurrencyFilter(FilterSet):
@@ -28,11 +27,11 @@ class CurrencyFilter(FilterSet):
         return qs
 
 
-class CurrencyViewSet(DbTransactionMixin, HistoricalMixin, PomsObjectPermissionMixin, ModelViewSet):
+class CurrencyViewSet(DbTransactionMixin, HistoricalMixin, ModelViewSet):
     queryset = Currency.objects.all()
     serializer_class = CurrencySerializer
-    permission_classes = [IsAuthenticated, PomsObjectPermission]
-    filter_backends = [PomsObjectPermissionsFilter, DjangoFilterBackend, OrderingFilter, SearchFilter, ]
+    permission_classes = [IsAuthenticated]
+    filter_backends = [DjangoFilterBackend, OrderingFilter, SearchFilter, ]
     filter_class = CurrencyFilter
     ordering_fields = ['user_code', 'name', 'short_name']
     search_fields = ['user_code', 'name', 'short_name']

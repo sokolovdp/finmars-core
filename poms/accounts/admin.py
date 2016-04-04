@@ -34,3 +34,11 @@ class AccountAdmin(HistoricalAdmin):
 
 
 admin.site.register(Account, AccountAdmin)
+
+
+# admin.site.register(AccountTypeUserObjectPermission, UserObjectPermissionAdmin)
+# admin.site.register(AccountTypeGroupObjectPermission, GroupObjectPermissionAdmin)
+# admin.site.register(AccountClassifierUserObjectPermission, UserObjectPermissionAdmin)
+# admin.site.register(AccountClassifierGroupObjectPermission, GroupObjectPermissionAdmin)
+# admin.site.register(AccountUserObjectPermission, UserObjectPermissionAdmin)
+# admin.site.register(AccountGroupObjectPermission, GroupObjectPermissionAdmin)
