@@ -35,6 +35,7 @@ class InstrumentClass(ClassModelBase):
 
 class DailyPricingModel(ClassModelBase):
     # TODO: add "values"
+    CLASSES = tuple()
 
     class Meta:
         verbose_name = _('daily pricing model')
@@ -43,6 +44,7 @@ class DailyPricingModel(ClassModelBase):
 
 class AccrualCalculationModel(ClassModelBase):
     # TODO: add "values"
+    CLASSES = tuple()
 
     class Meta:
         verbose_name = _('accrual calculation model')
@@ -51,6 +53,7 @@ class AccrualCalculationModel(ClassModelBase):
 
 class PaymentFrequency(ClassModelBase):
     # TODO: add "values"
+    CLASSES = tuple()
 
     class Meta:
         verbose_name = _('payment frequency')
@@ -59,6 +62,7 @@ class PaymentFrequency(ClassModelBase):
 
 class CostMethod(ClassModelBase):
     # TODO: add "values"
+    CLASSES = tuple()
 
     class Meta:
         verbose_name = _('cost method')
@@ -154,7 +158,6 @@ class ManualPricingFormula(NamedModel):
 
     def __str__(self):
         return self.name
-
 
 
 @python_2_unicode_compatible
