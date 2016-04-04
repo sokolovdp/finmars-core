@@ -4,7 +4,16 @@ from django.contrib import admin
 from mptt.admin import MPTTModelAdmin
 
 from poms.audit.admin import HistoricalAdmin
-from poms.instruments.models import Instrument, PriceHistory, InstrumentClassifier
+from poms.instruments.models import Instrument, PriceHistory, InstrumentClassifier, InstrumentClass
+
+
+class InstrumentClassAdmin(HistoricalAdmin):
+    model = InstrumentClass
+    list_display = ['id', 'system_code', 'name']
+    ordering = ['id']
+
+
+admin.site.register(InstrumentClass, InstrumentClassAdmin)
 
 
 class InstrumentClassifierAdmin(HistoricalAdmin, MPTTModelAdmin):

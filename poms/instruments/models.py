@@ -14,6 +14,35 @@ from poms.users.models import MasterUser
 
 
 @python_2_unicode_compatible
+class InstrumentClass(models.Model):
+    GENERAL = 1
+    EVENT_AT_MATURITY = 2
+    REGULAR_EVENT_AT_MATURITY = 3
+    PERPETUAL_REGULAR_EVENT = 4
+    CONTRACT_FOR_DIFFERENCE = 5
+
+    CLASSES = (
+        (GENERAL, "General Class"),
+        (EVENT_AT_MATURITY, "Event at Maturity"),
+        (REGULAR_EVENT_AT_MATURITY, "Regular Event with Maturity"),
+        (PERPETUAL_REGULAR_EVENT, "Perpetual Regular Event"),
+        (CONTRACT_FOR_DIFFERENCE, "Contract for Difference"),
+    )
+
+    id = models.PositiveSmallIntegerField(primary_key=1)
+    system_code = models.CharField(max_length=50, null=True, blank=True, verbose_name=_('system code'))
+    name = models.CharField(max_length=255, verbose_name=_('name'))
+    description = models.TextField(null=True, blank=True, default='', verbose_name=_('description'))
+
+    class Meta:
+        verbose_name = _('instrument class')
+        verbose_name_plural = _('instrument classes')
+
+    def __str__(self):
+        return '%s' % (self.name,)
+
+
+@python_2_unicode_compatible
 class InstrumentClassifier(NamedModel, MPTTModel):
     master_user = models.ForeignKey(MasterUser, related_name='instrument_classifiers', verbose_name=_('master user'))
     parent = TreeForeignKey('self', null=True, blank=True, related_name='children', db_index=True)
