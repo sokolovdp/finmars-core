@@ -29,7 +29,7 @@ class InstrumentClass(models.Model):
         (CONTRACT_FOR_DIFFERENCE, "Contract for Difference"),
     )
 
-    id = models.PositiveSmallIntegerField(primary_key=1)
+    id = models.PositiveSmallIntegerField(primary_key=True)
     system_code = models.CharField(max_length=50, null=True, blank=True, verbose_name=_('system code'))
     name = models.CharField(max_length=255, verbose_name=_('name'))
     description = models.TextField(null=True, blank=True, default='', verbose_name=_('description'))
@@ -40,6 +40,8 @@ class InstrumentClass(models.Model):
 
     def __str__(self):
         return '%s' % (self.name,)
+
+
 
 
 class InstrumentTypeTag(TagModelBase):
