@@ -1,6 +1,5 @@
 from __future__ import unicode_literals
 
-from django.conf import settings
 from django.db import models
 from django.utils.encoding import python_2_unicode_compatible
 from django.utils.text import Truncator
@@ -16,9 +15,6 @@ class NamedModel(models.Model):
 
     class Meta:
         abstract = True
-        unique_together = [
-            ['master_user', 'user_code']
-        ]
 
     def __str__(self):
         return self.name
@@ -41,10 +37,10 @@ class TimeStampedModel(models.Model):
         get_latest_by = 'modified'
         ordering = ('-modified', '-created',)
 
-
-class UserTimeStampedModel(TimeStampedModel):
-    created_by = models.ForeignKey(settings.AUTH_USER_MODEL, null=True, blank=True, verbose_name=_('created by'))
-    modified_by = models.DateTimeField(settings.AUTH_USER_MODEL, null=True, blank=True, verbose_name=_('modified by'))
-
-    class Meta:
-        abstract = True
+#
+# class UserTimeStampedModel(TimeStampedModel):
+#     created_by = models.ForeignKey(settings.AUTH_USER_MODEL, null=True, blank=True, verbose_name=_('created by'))
+#     modified_by = models.DateTimeField(settings.AUTH_USER_MODEL, null=True, blank=True, verbose_name=_('modified by'))
+#
+#     class Meta:
+#         abstract = True

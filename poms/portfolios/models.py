@@ -8,19 +8,16 @@ from mptt.models import MPTTModel
 
 from poms.accounts.models import Account
 from poms.audit import history
+from poms.common.models import NamedModel
 from poms.currencies.models import Currency
 from poms.strategies.models import Strategy
 from poms.users.models import MasterUser
 
 
 @python_2_unicode_compatible
-class PortfolioClassifier(MPTTModel):
+class PortfolioClassifier(NamedModel, MPTTModel):
     master_user = models.ForeignKey(MasterUser, related_name='portfolio_classifiers', verbose_name=_('master user'))
     parent = TreeForeignKey('self', null=True, blank=True, related_name='children', db_index=True)
-    user_code = models.CharField(max_length=25, null=True, blank=True)
-    name = models.CharField(max_length=255, verbose_name=_('name'))
-    short_name = models.CharField(max_length=50, null=True, blank=True, verbose_name=_('short name'))
-    notes = models.TextField(null=True, blank=True)
 
     class MPTTMeta:
         order_insertion_by = ['master_user', 'name']
@@ -37,12 +34,8 @@ class PortfolioClassifier(MPTTModel):
 
 
 @python_2_unicode_compatible
-class Portfolio(models.Model):
+class Portfolio(NamedModel):
     master_user = models.ForeignKey(MasterUser, related_name='portfolios', verbose_name=_('master user'))
-    user_code = models.CharField(max_length=25, null=True, blank=True)
-    name = models.CharField(max_length=255, verbose_name=_('name'))
-    short_name = models.CharField(max_length=50, null=True, blank=True, verbose_name=_('short name'))
-    notes = models.TextField(null=True, blank=True)
     classifiers = TreeManyToManyField(PortfolioClassifier, blank=True)
 
     # inception_date = models.DateField(null=True, blank=True)

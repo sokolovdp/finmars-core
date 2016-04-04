@@ -7,6 +7,7 @@ from django.utils.encoding import python_2_unicode_compatible
 from django.utils.translation import ugettext_lazy as _
 
 from poms.audit import history
+from poms.common.models import NamedModel
 from poms.users.models import MasterUser
 
 
@@ -24,13 +25,9 @@ from poms.users.models import MasterUser
 
 
 @python_2_unicode_compatible
-class Currency(models.Model):
+class Currency(NamedModel):
     master_user = models.ForeignKey(MasterUser, null=True, blank=True, related_name='currencies',
                                     verbose_name=_('master user'))
-    user_code = models.CharField(max_length=25, null=True, blank=True, help_text=_('Some code, for example ISO 4217'))
-    name = models.CharField(max_length=255, verbose_name=_('name'))
-    short_name = models.CharField(max_length=50, null=True, blank=True, verbose_name=_('short name'))
-    notes = models.TextField(null=True, blank=True)
 
     class Meta:
         verbose_name = _('currency')

@@ -7,17 +7,14 @@ from mptt.fields import TreeForeignKey, TreeManyToManyField
 from mptt.models import MPTTModel
 
 from poms.audit import history
+from poms.common.models import NamedModel
 from poms.currencies.models import Currency
 from poms.users.models import MasterUser, UserObjectPermissionBase, GroupObjectPermissionBase
 
 
 @python_2_unicode_compatible
-class AccountType(models.Model):
+class AccountType(NamedModel):
     master_user = models.ForeignKey(MasterUser, related_name='account_types', verbose_name=_('master user'))
-    user_code = models.CharField(max_length=25, null=True, blank=True)
-    name = models.CharField(max_length=255, verbose_name=_('name'))
-    short_name = models.CharField(max_length=50, null=True, blank=True, verbose_name=_('short name'))
-    notes = models.TextField(null=True, blank=True)
     show_transaction_details = models.BooleanField(default=False)
     transaction_details_expr = models.CharField(max_length=255, null=True, blank=True)
 
@@ -36,13 +33,9 @@ class AccountType(models.Model):
 
 
 @python_2_unicode_compatible
-class AccountClassifier(MPTTModel):
+class AccountClassifier(NamedModel, MPTTModel):
     master_user = models.ForeignKey(MasterUser, related_name='account_classifiers', verbose_name=_('master user'))
     parent = TreeForeignKey('self', null=True, blank=True, related_name='children', db_index=True)
-    user_code = models.CharField(max_length=25, null=True, blank=True)
-    name = models.CharField(max_length=255, verbose_name=_('name'))
-    short_name = models.CharField(max_length=50, null=True, blank=True, verbose_name=_('short name'))
-    notes = models.TextField(null=True, blank=True)
 
     class MPTTMeta:
         order_insertion_by = ['master_user', 'name']
@@ -62,12 +55,8 @@ class AccountClassifier(MPTTModel):
 
 
 @python_2_unicode_compatible
-class Account(models.Model):
+class Account(NamedModel):
     master_user = models.ForeignKey(MasterUser, related_name='accounts', verbose_name=_('master user'))
-    user_code = models.CharField(max_length=25, null=True, blank=True)
-    name = models.CharField(max_length=255, verbose_name=_('name'))
-    short_name = models.CharField(max_length=50, null=True, blank=True, verbose_name=_('short name'))
-    notes = models.TextField(null=True, blank=True)
     type = models.ForeignKey(AccountType, null=True, blank=True)
     classifiers = TreeManyToManyField(AccountClassifier, blank=True)
 

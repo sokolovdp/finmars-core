@@ -7,17 +7,14 @@ from mptt.fields import TreeForeignKey
 from mptt.models import MPTTModel
 
 from poms.audit import history
+from poms.common.models import NamedModel
 from poms.users.models import MasterUser
 
 
 @python_2_unicode_compatible
-class Strategy(MPTTModel):
+class Strategy(NamedModel, MPTTModel):
     master_user = models.ForeignKey(MasterUser, related_name='strategy_classifiers', verbose_name=_('master user'))
     parent = TreeForeignKey('self', null=True, blank=True, related_name='children', db_index=True)
-    user_code = models.CharField(max_length=25, null=True, blank=True)
-    name = models.CharField(max_length=255, verbose_name=_('name'))
-    short_name = models.CharField(max_length=50, null=True, blank=True, verbose_name=_('short name'))
-    notes = models.TextField(null=True, blank=True)
 
     class MPTTMeta:
         order_insertion_by = ['master_user', 'name']

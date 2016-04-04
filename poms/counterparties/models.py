@@ -7,19 +7,16 @@ from mptt.fields import TreeForeignKey, TreeManyToManyField
 from mptt.models import MPTTModel
 
 from poms.audit import history
+from poms.common.models import NamedModel
 from poms.currencies.models import Currency
 from poms.portfolios.models import Portfolio
 from poms.users.models import MasterUser
 
 
 @python_2_unicode_compatible
-class CounterpartyClassifier(MPTTModel):
+class CounterpartyClassifier(NamedModel, MPTTModel):
     master_user = models.ForeignKey(MasterUser, related_name='counterparty_classifiers', verbose_name=_('master user'))
     parent = TreeForeignKey('self', null=True, blank=True, related_name='children', db_index=True)
-    user_code = models.CharField(max_length=25, null=True, blank=True)
-    name = models.CharField(max_length=255, verbose_name=_('name'))
-    short_name = models.CharField(max_length=50, null=True, blank=True, verbose_name=_('short name'))
-    notes = models.TextField(null=True, blank=True)
 
     class MPTTMeta:
         order_insertion_by = ['master_user', 'name']
@@ -36,12 +33,8 @@ class CounterpartyClassifier(MPTTModel):
 
 
 @python_2_unicode_compatible
-class Counterparty(models.Model):
+class Counterparty(NamedModel):
     master_user = models.ForeignKey(MasterUser, related_name='counterparties', verbose_name=_('master user'))
-    user_code = models.CharField(max_length=25, null=True, blank=True)
-    name = models.CharField(max_length=255, verbose_name=_('name'))
-    short_name = models.CharField(max_length=50, null=True, blank=True, verbose_name=_('short name'))
-    notes = models.TextField(null=True, blank=True)
     # portfolios = models.ManyToManyField(Portfolio, blank=True)
     # settlement_details = models.TextField(null=True, blank=True)
     classifiers = TreeManyToManyField(CounterpartyClassifier, blank=True)
@@ -61,12 +54,8 @@ class Counterparty(models.Model):
 
 
 @python_2_unicode_compatible
-class Responsible(models.Model):
+class Responsible(NamedModel):
     master_user = models.ForeignKey(MasterUser, related_name='responsibles', verbose_name=_('master user'))
-    user_code = models.CharField(max_length=25, null=True, blank=True)
-    name = models.CharField(max_length=255, verbose_name=_('name'))
-    short_name = models.CharField(max_length=50, null=True, blank=True, verbose_name=_('short name'))
-    notes = models.TextField(null=True, blank=True)
 
     class Meta:
         verbose_name = _('responsible')
