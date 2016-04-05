@@ -4,7 +4,8 @@ from django.contrib import admin
 from import_export.admin import ImportExportModelAdmin
 
 from poms.audit.admin import HistoricalAdmin
-from poms.transactions.models import TransactionClass, Transaction, TransactionTypeTag, TransactionType
+from poms.transactions.models import TransactionClass, Transaction, TransactionTypeTag, TransactionType, \
+    TransactionAttrValue, ComplexTransaction, ComplexTransactionItem
 
 
 class TransactionClassAdmin(HistoricalAdmin):
@@ -35,6 +36,26 @@ class TransactionTypeAdmin(HistoricalAdmin):
 admin.site.register(TransactionType, TransactionTypeAdmin)
 
 
+class ComplexTransactionItemInline(admin.StackedInline):
+    model = ComplexTransactionItem
+    extra = 0
+
+
+class ComplexTransactionAdmin(HistoricalAdmin):
+    model = ComplexTransaction
+    list_display = ['id', 'name', 'master_user']
+    list_select_related = ['master_user']
+    inlines = [ComplexTransactionItemInline]
+
+
+admin.site.register(ComplexTransaction, ComplexTransactionAdmin)
+
+
+class TransactionAttrValueInline(admin.StackedInline):
+    model = TransactionAttrValue
+    extra = 0
+
+
 class TransactionAdmin(HistoricalAdmin, ImportExportModelAdmin):
     model = Transaction
     list_select_related = ['master_user', 'transaction_class', 'instrument', 'transaction_currency',
@@ -51,6 +72,7 @@ class TransactionAdmin(HistoricalAdmin, ImportExportModelAdmin):
     ordering = ['transaction_date', 'id']
     date_hierarchy = 'transaction_date'
     actions = ['make_canceled', 'make_active']
+    inlines = [TransactionAttrValueInline]
 
     def make_canceled(self, request, queryset):
         queryset.update(is_canceled=True)

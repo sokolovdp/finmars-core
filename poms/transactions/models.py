@@ -9,7 +9,7 @@ from mptt.models import MPTTModel
 
 from poms.accounts.models import Account
 from poms.audit import history
-from poms.common.models import NamedModel, TagModelBase, ClassModelBase
+from poms.common.models import NamedModel, TagModelBase, ClassModelBase, AttrBase, AttrValueBase
 from poms.counterparties.models import Responsible, Counterparty
 from poms.currencies.models import Currency
 from poms.instruments.models import Instrument
@@ -85,8 +85,31 @@ class TransactionType(NamedModel):
             ('view_transactiontype', 'Can view instrument type')
         ]
 
+@python_2_unicode_compatible
+class ComplexTransaction(NamedModel):
+    master_user = models.ForeignKey(MasterUser, related_name='complex_transactions', verbose_name=_('master user'))
+    type = models.ForeignKey(TransactionType)
+
+    class Meta:
+        verbose_name = _('complex transaction')
+        verbose_name_plural = _('complex transactions')
+        unique_together = [
+            ['master_user', 'user_code']
+        ]
+
+
+@python_2_unicode_compatible
+class ComplexTransactionItem(models.Model):
+    complex_transaction = models.ForeignKey(ComplexTransaction)
+    order = models.PositiveIntegerField(default=0)
+
+    transaction = models.OneToOneField('Transaction', null=True, blank=True)
+
+    next_trigger_date = models.DateTimeField(default=timezone.now)
+    trigger_count = models.PositiveIntegerField(default=0)
+
     def __str__(self):
-        return self.name
+        return 'Item %s#%s' % (self.complex_transaction, self.pk)
 
 
 @python_2_unicode_compatible
@@ -190,6 +213,31 @@ class Transaction(models.Model):
     @property
     def strategies_cash(self):
         return [self.strategy_cash] if self.strategy_cash_id else []
+
+
+class TransactionAttr(AttrBase):
+    strategy_position_root = TreeForeignKey('strategies.Strategy', null=True, blank=True, related_name='+')
+    strategy_cash_root = TreeForeignKey('strategies.Strategy', null=True, blank=True, related_name='+')
+
+    class Meta:
+        pass
+
+
+class TransactionAttrValue(AttrValueBase):
+    transaction = models.ForeignKey('transactions.Transaction')
+    attr = models.ForeignKey(TransactionAttr)
+    strategy_position = TreeForeignKey('strategies.Strategy', null=True, blank=True, related_name='+')
+    strategy_cash = TreeForeignKey('strategies.Strategy', null=True, blank=True, related_name='+')
+
+    class Meta:
+        unique_together = [
+            ['transaction', 'attr']
+        ]
+
+    def get_value(self):
+        if self.attr.value_type == AttrBase.CLASSIFIER:
+            return '(%s, %s)' % (self.strategy_position, self.strategy_cash)
+        return super(TransactionAttrValue, self).get_value()
 
 
 history.register(TransactionClass)

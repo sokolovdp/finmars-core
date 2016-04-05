@@ -8,7 +8,7 @@ from mptt.fields import TreeForeignKey, TreeManyToManyField
 from mptt.models import MPTTModel
 
 from poms.audit import history
-from poms.common.models import NamedModel, TagModelBase, ClassModelBase
+from poms.common.models import NamedModel, TagModelBase, ClassModelBase, AttrBase, AttrValueBase
 from poms.currencies.models import Currency
 from poms.users.models import MasterUser
 
@@ -145,6 +145,7 @@ class InstrumentTag(TagModelBase):
 @python_2_unicode_compatible
 class ManualPricingFormula(NamedModel):
     master_user = models.ForeignKey(MasterUser, related_name='manual_pricing_formulas', verbose_name=_('master user'))
+    expr = models.TextField(default='0.')
 
     class Meta:
         verbose_name = _('manual pricing formula')
@@ -195,6 +196,7 @@ class Instrument(NamedModel):
 @python_2_unicode_compatible
 class PriceHistory(models.Model):
     instrument = models.ForeignKey(Instrument, related_name='prices')
+    pricing_policy = models.ForeignKey('integrations.PricingPolicy', null=True, blank=True)
     date = models.DateField(null=False, blank=False, db_index=True, default=timezone.now)
     principal_price = models.FloatField(default=0.0)
     accrued_price = models.FloatField(null=True, blank=True)
@@ -214,6 +216,26 @@ class PriceHistory(models.Model):
 
     def __str__(self):
         return '%s at %s - %s' % (self.instrument, self.date, self.principal_price,)
+
+
+class InstrumentAttr(AttrBase):
+    # scheme = models.ForeignKey(AttrScheme, verbose_name=_('attribute scheme'))
+    classifier = TreeForeignKey('instruments.InstrumentClassifier', null=True, blank=True)
+
+    class Meta:
+        pass
+
+
+class InstrumentAttrValue(AttrValueBase):
+    instrument = models.ForeignKey('instruments.Instrument')
+    attr = models.ForeignKey(InstrumentAttr)
+    classifier = TreeForeignKey('instruments.InstrumentClassifier', null=True, blank=True)
+
+    class Meta:
+        unique_together = [
+            ['instrument', 'attr']
+        ]
+
 
 
 history.register(InstrumentClassifier)

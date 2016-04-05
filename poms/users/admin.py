@@ -7,7 +7,10 @@ from django.contrib.auth.models import User, Permission
 from django.contrib.contenttypes.models import ContentType
 
 from poms.audit.admin import HistoricalAdmin
-from poms.users.models import MasterUser, UserProfile, Member, Group
+from poms.instruments.models import InstrumentAttr
+from poms.portfolios.models import PortfolioAttr
+from poms.transactions.models import TransactionAttr
+from poms.users.models import MasterUser, UserProfile, Member, Group, AttrScheme
 
 
 class MemberInline(admin.StackedInline):
@@ -75,6 +78,33 @@ class GroupAdmin(HistoricalAdmin, admin.ModelAdmin):
 
 
 admin.site.register(Group, GroupAdmin)
+
+
+class PortfolioAttrInline(admin.StackedInline):
+    model = PortfolioAttr
+    ordering = ['order', 'name']
+    extra = 0
+
+
+class InstrumentAttrInline(admin.StackedInline):
+    model = InstrumentAttr
+    ordering = ['order', 'name']
+    extra = 0
+
+
+class TransactionAttrInline(admin.StackedInline):
+    model = TransactionAttr
+    ordering = ['order', 'name']
+    extra = 0
+
+
+class AttrSchemeAdmin(HistoricalAdmin, admin.ModelAdmin):
+    model = AttrScheme
+    list_display = ['id', 'name', 'master_user']
+    inlines = [PortfolioAttrInline, InstrumentAttrInline, TransactionAttrInline]
+
+
+admin.site.register(AttrScheme, AttrSchemeAdmin)
 
 
 class UserObjectPermissionAdminBase(admin.ModelAdmin):

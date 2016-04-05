@@ -8,6 +8,7 @@ from django.utils.translation import ugettext_lazy as _
 
 from poms.audit import history
 from poms.common.fields import TimezoneField, LanguageField
+from poms.common.models import NamedModel
 
 AVAILABLE_APPS = ['accounts', 'counterparties', 'currencies', 'instruments', 'portfolios', 'strategies', 'transactions',
                   'reports', 'users']
@@ -79,6 +80,19 @@ class Group(models.Model):
 
     def __str__(self):
         return self.name
+
+
+class AttrScheme(NamedModel):
+    master_user = models.ForeignKey(MasterUser, verbose_name=_('master user'))
+    member = models.ForeignKey(Member, null=True, blank=True)
+
+    class Meta:
+        verbose_name = _('attribute scheme')
+        verbose_name_plural = _('attribute schemes')
+        unique_together = [
+            ['master_user', 'user_code']
+        ]
+
 
 
 class ObjectPermissionBase(models.Model):
