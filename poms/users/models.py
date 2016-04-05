@@ -84,7 +84,6 @@ class Group(models.Model):
 
 class AttrScheme(NamedModel):
     master_user = models.ForeignKey(MasterUser, verbose_name=_('master user'))
-    member = models.ForeignKey(Member, null=True, blank=True)
 
     class Meta:
         verbose_name = _('attribute scheme')
