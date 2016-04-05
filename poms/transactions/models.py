@@ -85,6 +85,19 @@ class TransactionType(NamedModel):
             ('view_transactiontype', 'Can view instrument type')
         ]
 
+
+class EventType(NamedModel):
+    SECONDS = 1
+    DAYS = 2
+    INTERVALS = (
+        (SECONDS, 'Seconds'),
+        (DAYS, 'Days'),
+    )
+    transaction_type = models.ForeignKey(TransactionType)
+    interval = models.PositiveIntegerField(default=DAYS, choices=INTERVALS)
+    duration = models.PositiveIntegerField(default=1)
+
+
 @python_2_unicode_compatible
 class ComplexTransaction(NamedModel):
     master_user = models.ForeignKey(MasterUser, related_name='complex_transactions', verbose_name=_('master user'))
@@ -104,9 +117,14 @@ class ComplexTransactionItem(models.Model):
     order = models.PositiveIntegerField(default=0)
 
     transaction = models.OneToOneField('Transaction', null=True, blank=True)
+    event_type = models.ForeignKey(EventType, null=True, blank=True)
 
-    next_trigger_date = models.DateTimeField(default=timezone.now)
+    trigger_date = models.DateTimeField(default=timezone.now)
     trigger_count = models.PositiveIntegerField(default=0)
+
+    class Meta:
+        verbose_name = _('item')
+        verbose_name_plural = _('items')
 
     def __str__(self):
         return 'Item %s#%s' % (self.complex_transaction, self.pk)

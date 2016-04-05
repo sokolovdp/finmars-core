@@ -237,6 +237,15 @@ class InstrumentAttrValue(AttrValueBase):
         ]
 
 
+class AccrualCalculationSchedule(NamedModel):
+    instrument = models.ForeignKey(Instrument, related_name='accrual_calculation_schedule')
+    new_accrual_start_date = models.DateField(default=timezone.now)
+    new_first_payment_date = models.DateField(default=timezone.now)
+    new_accrual_size = models.FloatField(default=0.)
+    payment_frequency = models.ForeignKey(PaymentFrequency)
+    accrual_calculation_model = models.ForeignKey(AccrualCalculationModel)
+
+
 
 history.register(InstrumentClassifier)
 history.register(InstrumentType)

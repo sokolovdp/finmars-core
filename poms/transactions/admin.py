@@ -5,7 +5,7 @@ from import_export.admin import ImportExportModelAdmin
 
 from poms.audit.admin import HistoricalAdmin
 from poms.transactions.models import TransactionClass, Transaction, TransactionTypeTag, TransactionType, \
-    TransactionAttrValue, ComplexTransaction, ComplexTransactionItem
+    TransactionAttrValue, ComplexTransaction, ComplexTransactionItem, EventType
 
 
 class TransactionClassAdmin(HistoricalAdmin):
@@ -26,11 +26,17 @@ class TransactionTypeTagAdmin(HistoricalAdmin):
 admin.site.register(TransactionTypeTag, TransactionTypeTagAdmin)
 
 
+class EventTypeAdmin(admin.StackedInline):
+    model = EventType
+    extra = 0
+
+
 class TransactionTypeAdmin(HistoricalAdmin):
     model = TransactionType
     list_display = ['id', 'name', 'master_user']
     list_select_related = ['master_user']
     filter_horizontal = ['tags', ]
+    inlines = [EventTypeAdmin]
 
 
 admin.site.register(TransactionType, TransactionTypeAdmin)

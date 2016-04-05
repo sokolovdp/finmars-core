@@ -6,7 +6,7 @@ from mptt.admin import MPTTModelAdmin
 from poms.audit.admin import HistoricalAdmin
 from poms.instruments.models import Instrument, PriceHistory, InstrumentClassifier, InstrumentClass, InstrumentType, \
     InstrumentTypeTag, InstrumentTag, DailyPricingModel, AccrualCalculationModel, PaymentFrequency, CostMethod, \
-    ManualPricingFormula, InstrumentAttrValue
+    ManualPricingFormula, InstrumentAttrValue, AccrualCalculationSchedule
 
 
 class InstrumentClassAdmin(HistoricalAdmin):
@@ -109,12 +109,17 @@ class InstrumentAttrValueInline(admin.StackedInline):
     extra = 0
 
 
+class AccrualCalculationScheduleInline(admin.StackedInline):
+    model = AccrualCalculationSchedule
+    extra = 0
+
+
 class InstrumentAdmin(HistoricalAdmin):
     model = Instrument
     list_display = ['id', 'name', 'type', 'master_user', 'pricing_currency', 'accrued_currency']
     list_select_related = ['master_user', 'pricing_currency', 'accrued_currency']
     filter_horizontal = ['tags', ]
-    inlines = [InstrumentAttrValueInline]
+    inlines = [InstrumentAttrValueInline, AccrualCalculationScheduleInline]
 
     # def get_classifiers(self, obj):
     #     return ', '.join(p.name for p in obj.classifiers.all())
