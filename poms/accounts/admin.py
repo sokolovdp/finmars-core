@@ -47,8 +47,8 @@ class AccountAdmin(HistoricalAdmin):
     model = Account
     list_display = ['id', 'name', 'master_user']
     list_select_related = ['master_user']
-    # filter_horizontal = ['tags']
-    raw_id_fields = ['master_user', 'type', 'tags']
+    filter_horizontal = ['tags']
+    raw_id_fields = ['master_user', 'type']
     inlines = [AccountAttrValueInline]
 
     # related_lookup_fields = {
