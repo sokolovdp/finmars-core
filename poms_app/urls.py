@@ -10,6 +10,10 @@ urlpatterns = [
 ]
 
 if settings.ADMIN:
+    if 'grappelli' in settings.INSTALLED_APPS:
+        urlpatterns += [
+            url(r'^grappelli/', include('grappelli.urls')),
+        ]
     urlpatterns += [
         url(r'^admin/doc/', include('django.contrib.admindocs.urls')),
         url(r'^admin/', admin.site.urls),

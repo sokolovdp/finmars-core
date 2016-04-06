@@ -51,10 +51,14 @@ class AccountAdmin(HistoricalAdmin):
     raw_id_fields = ['master_user', 'type', 'tags']
     inlines = [AccountAttrValueInline]
 
-    related_lookup_fields = {
-        'fk': ['master_user', 'type'],
-        'm2m': ['tags'],
-    }
+    # related_lookup_fields = {
+    #     'fk': ['master_user', 'type'],
+    #     'm2m': ['tags'],
+    # }
+    # autocomplete_lookup_fields = {
+    #     'fk': ['master_user', 'type'],
+    #     'm2m': ['tags'],
+    # }
 
 admin.site.register(Account, AccountAdmin)
 
