@@ -4,16 +4,15 @@ from django.contrib import admin
 from mptt.admin import MPTTModelAdmin
 
 from poms.audit.admin import HistoricalAdmin
+from poms.common.admin import TreeModelAdmin
 from poms.portfolios.models import Portfolio, PortfolioClassifier, PortfolioTag, PortfolioAttrValue
 from poms.users.admin import AttrValueAdminBase
 
 
-class PortfolioClassifierAdmin(HistoricalAdmin, MPTTModelAdmin):
+class PortfolioClassifierAdmin(HistoricalAdmin, TreeModelAdmin):
     model = PortfolioClassifier
     list_display = ['id', 'name', 'parent', 'master_user']
     list_select_related = ['master_user', 'parent']
-    mptt_level_indent = 20
-    mptt_indent_field = "name"
     raw_id_fields = ['master_user', 'parent']
 
 

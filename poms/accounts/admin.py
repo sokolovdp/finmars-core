@@ -5,6 +5,7 @@ from mptt.admin import MPTTModelAdmin
 
 from poms.accounts.models import Account, AccountType, AccountClassifier, AccountTag, AccountAttrValue
 from poms.audit.admin import HistoricalAdmin
+from poms.common.admin import TreeModelAdmin
 from poms.users.admin import AttrValueAdminBase
 
 
@@ -18,12 +19,10 @@ class AccountTypeAdmin(HistoricalAdmin):
 admin.site.register(AccountType, AccountTypeAdmin)
 
 
-class AccountClassifierAdmin(HistoricalAdmin, MPTTModelAdmin):
+class AccountClassifierAdmin(HistoricalAdmin, TreeModelAdmin):
     model = AccountClassifier
     list_display = ['id', 'name', 'parent', 'master_user']
     list_select_related = ['master_user']
-    mptt_level_indent = 20
-    mptt_indent_field = "name"
     raw_id_fields = ['master_user', 'parent']
 
 

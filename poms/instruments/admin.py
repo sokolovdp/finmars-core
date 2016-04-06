@@ -1,9 +1,9 @@
 from __future__ import unicode_literals
 
 from django.contrib import admin
-from mptt.admin import MPTTModelAdmin
 
 from poms.audit.admin import HistoricalAdmin
+from poms.common.admin import TreeModelAdmin
 from poms.instruments.models import Instrument, PriceHistory, InstrumentClassifier, InstrumentClass, InstrumentType, \
     InstrumentTypeTag, InstrumentTag, DailyPricingModel, AccrualCalculationModel, PaymentFrequency, CostMethod, \
     ManualPricingFormula, InstrumentAttrValue, AccrualCalculationSchedule
@@ -77,13 +77,10 @@ class InstrumentTypeAdmin(HistoricalAdmin):
 admin.site.register(InstrumentType, InstrumentTypeAdmin)
 
 
-class InstrumentClassifierAdmin(HistoricalAdmin, MPTTModelAdmin):
-    # change_list_template = 'admin/mptt_change_list.html'
+class InstrumentClassifierAdmin(HistoricalAdmin, TreeModelAdmin):
     model = InstrumentClassifier
     list_display = ['id', 'name', 'parent', 'master_user']
     list_select_related = ['master_user', 'parent']
-    mptt_level_indent = 20
-    mptt_indent_field = "name"
     raw_id_fields = ['master_user', 'parent']
 
 
