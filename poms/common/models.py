@@ -29,8 +29,8 @@ class NamedModel(models.Model):
 
 
 class TimeStampedModel(models.Model):
-    created = models.DateTimeField(auto_now_add=True, editable=False, verbose_name=_('created'))
-    modified = models.DateTimeField(auto_now=True, editable=False, verbose_name=_('modified'))
+    created = models.DateTimeField(auto_now_add=True, editable=False, verbose_name=_('created'), db_index=True)
+    modified = models.DateTimeField(auto_now=True, editable=False, verbose_name=_('modified'), db_index=True)
 
     class Meta:
         abstract = True

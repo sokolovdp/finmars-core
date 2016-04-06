@@ -1,14 +1,18 @@
 from __future__ import unicode_literals
 
+from babel import Locale
+from babel.dates import format_timedelta
 from django.conf import settings
 from django.db import models
 from django.utils import timezone
 from django.utils.encoding import python_2_unicode_compatible
 from django.utils.text import Truncator
-from django.utils.translation import ugettext_lazy as _
+from django.utils.translation import ugettext_lazy as _, get_language
 
 from poms.audit import history
-from poms.users.models import MasterUser
+from poms.common.models import TimeStampedModel
+from poms.users.models import MasterUser, Member
+from poms.users.obj_perms.api import register_model
 
 
 class ThreadStatus(models.Model):
@@ -28,17 +32,18 @@ class ThreadStatus(models.Model):
 
 
 @python_2_unicode_compatible
-class Thread(models.Model):
+class Thread(TimeStampedModel):
     master_user = models.ForeignKey(MasterUser, related_name='chat_threads', verbose_name=_('master user'))
-    create_date = models.DateTimeField(auto_now_add=True, db_index=True)
     subject = models.CharField(max_length=255)
     status = models.ForeignKey(ThreadStatus)
-    status_date = models.DateTimeField(default=timezone.now)
 
-    class Meta:
+    class Meta(TimeStampedModel.Meta):
         verbose_name = _('thread')
         verbose_name_plural = _('threads')
-        ordering = ['-create_date']
+        permissions = [
+            ('view_thread', 'Can view thread'),
+            ('manage_thread', 'Can manage thread'),
+        ]
 
     def __str__(self):
         return self.subject
@@ -49,47 +54,53 @@ class Thread(models.Model):
 
 
 @python_2_unicode_compatible
-class Message(models.Model):
+class Message(TimeStampedModel):
     thread = models.ForeignKey(Thread)
-    sender = models.ForeignKey(settings.AUTH_USER_MODEL, related_name='chat_sent_messages')
-    # sender_username = models.CharField(max_length=100, null=True, blank=True)
-    # sender_email = models.EmailField(null=True, blank=True)
+    sender = models.ForeignKey(Member, related_name='chat_sent_messages')
     text = models.TextField()
-    create_date = models.DateTimeField(auto_now_add=True, db_index=True)
 
-    class Meta:
+    class Meta(TimeStampedModel.Meta):
         verbose_name = _('message')
         verbose_name_plural = _('messages')
-        ordering = ['-create_date']
 
     def __str__(self):
-        return '%s @ %s - %s' % (self.sender, self.create_date, self.short_text)
+        return '%s sent %s - %s' % (self.sender, self.timesince, self.short_text)
 
     @property
     def short_text(self):
         return Truncator(self.text).chars(50)
         # return self.text[:50] if self.text else None
 
+    @property
+    def timesince(self):
+        locale = Locale.parse(get_language(), sep='-')
+        return format_timedelta(self.created - timezone.now(), add_direction=True, locale=locale)
+
 
 @python_2_unicode_compatible
-class DirectMessage(models.Model):
+class DirectMessage(TimeStampedModel):
     recipient = models.ForeignKey(settings.AUTH_USER_MODEL, related_name='chat_received_direct_messages')
     sender = models.ForeignKey(settings.AUTH_USER_MODEL, related_name='chat_sent_direct_messages')
     text = models.TextField()
-    create_date = models.DateTimeField(auto_now_add=True, db_index=True)
 
-    class Meta:
+    class Meta(TimeStampedModel.Meta):
         verbose_name = _('direct message')
         verbose_name_plural = _('direct messages')
-        ordering = ['-create_date']
 
     def __str__(self):
-        return self.short_text
+        return '%s sent to %s %s - %s' % (self.sender, self.recipient, self.timesince, self.short_text)
 
     @property
     def short_text(self):
         return Truncator(self.text).chars(50)
 
+    @property
+    def timesince(self):
+        locale = Locale.parse(get_language(), sep='-')
+        return format_timedelta(self.created - timezone.now(), add_direction=True, locale=locale)
+
+
+register_model(Thread)
 
 history.register(ThreadStatus)
 history.register(Thread)
