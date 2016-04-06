@@ -21,7 +21,7 @@ admin.site.register(AccountType, AccountTypeAdmin)
 
 class AccountClassifierAdmin(HistoricalAdmin, TreeModelAdmin):
     model = AccountClassifier
-    list_display = ['id', 'name', 'parent', 'master_user']
+    list_display = ['id', 'formatted_name', 'parent', 'master_user']
     list_select_related = ['master_user']
     raw_id_fields = ['master_user', 'parent']
 
@@ -47,10 +47,14 @@ class AccountAdmin(HistoricalAdmin):
     model = Account
     list_display = ['id', 'name', 'master_user']
     list_select_related = ['master_user']
-    filter_horizontal = ['tags', ]
+    # filter_horizontal = ['tags']
+    raw_id_fields = ['master_user', 'type', 'tags']
     inlines = [AccountAttrValueInline]
-    raw_id_fields = ['master_user', 'type']
 
+    related_lookup_fields = {
+        'fk': ['master_user', 'type'],
+        'm2m': ['tags'],
+    }
 
 admin.site.register(Account, AccountAdmin)
 

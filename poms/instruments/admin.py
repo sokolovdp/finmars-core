@@ -79,7 +79,7 @@ admin.site.register(InstrumentType, InstrumentTypeAdmin)
 
 class InstrumentClassifierAdmin(HistoricalAdmin, TreeModelAdmin):
     model = InstrumentClassifier
-    list_display = ['id', 'name', 'parent', 'master_user']
+    list_display = ['id', 'formatted_name', 'parent', 'master_user']
     list_select_related = ['master_user', 'parent']
     raw_id_fields = ['master_user', 'parent']
 

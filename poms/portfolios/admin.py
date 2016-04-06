@@ -11,7 +11,7 @@ from poms.users.admin import AttrValueAdminBase
 
 class PortfolioClassifierAdmin(HistoricalAdmin, TreeModelAdmin):
     model = PortfolioClassifier
-    list_display = ['id', 'name', 'parent', 'master_user']
+    list_display = ['id', 'formatted_name', 'parent', 'master_user']
     list_select_related = ['master_user', 'parent']
     raw_id_fields = ['master_user', 'parent']
 
