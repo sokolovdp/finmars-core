@@ -26,7 +26,7 @@ from poms.users.models import MasterUser
 
 @python_2_unicode_compatible
 class Currency(NamedModel):
-    master_user = models.ForeignKey(MasterUser, null=True, blank=True, related_name='currencies',
+    master_user = models.ForeignKey(MasterUser, related_name='currencies',
                                     verbose_name=_('master user'))
 
     class Meta:
@@ -56,8 +56,6 @@ class Currency(NamedModel):
 # ...
 @python_2_unicode_compatible
 class CurrencyHistory(models.Model):
-    master_user = models.ForeignKey(MasterUser, null=True, blank=True, related_name='fx_rates',
-                                    verbose_name=_('master user'))
     currency = models.ForeignKey(Currency, related_name='histories')
     pricing_policy = models.ForeignKey('integrations.PricingPolicy', null=True, blank=True)
     # date = models.DateTimeField(db_index=True, default=timezone.now)
@@ -77,10 +75,6 @@ class CurrencyHistory(models.Model):
 
     def __str__(self):
         return '%s @ %s - %s' % (self.currency, self.date, self.fx_rate,)
-
-    @property
-    def is_global(self):
-        return self.master_user_id is None
 
 
 history.register(Currency)
