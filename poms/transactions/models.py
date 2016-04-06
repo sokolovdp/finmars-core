@@ -234,8 +234,8 @@ class Transaction(models.Model):
 
 
 class TransactionAttr(AttrBase):
-    strategy_position_root = TreeForeignKey('strategies.Strategy', null=True, blank=True, related_name='+')
-    strategy_cash_root = TreeForeignKey('strategies.Strategy', null=True, blank=True, related_name='+')
+    strategy_position = TreeForeignKey('strategies.Strategy', null=True, blank=True, related_name='+')
+    strategy_cash = TreeForeignKey('strategies.Strategy', null=True, blank=True, related_name='+')
 
     class Meta:
         pass

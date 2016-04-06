@@ -30,6 +30,7 @@ class CurrencyAdmin(HistoricalAdmin):
     list_select_related = ['master_user']
     ordering = ['user_code']
     list_filter = [GlobalCurrencyFilter]
+    raw_id_fields = ['master_user']
 
     def is_global(self, obj):
         return obj.is_global
@@ -50,10 +51,14 @@ admin.site.register(Currency, CurrencyAdmin)
 
 class CurrencyHistoryAdmin(HistoricalAdmin):
     model = CurrencyHistory
-    list_display = ['id', 'currency', 'date', 'fx_rate']
-    list_select_related = ['currency', 'master_user']
+    list_display = ['id', 'currency', 'master_user', 'date', 'fx_rate']
+    list_select_related = ['currency', 'currency__master_user']
     list_filter = ['date']
     date_hierarchy = 'date'
+    raw_id_fields = ['currency', 'pricing_policy']
+
+    def master_user(self, obj):
+        return obj.currency.master_user
 
 
 admin.site.register(CurrencyHistory, CurrencyHistoryAdmin)

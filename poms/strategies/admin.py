@@ -15,6 +15,7 @@ class StrategyAdmin(HistoricalAdmin, MPTTModelAdmin):
     list_select_related = ['master_user']
     mptt_level_indent = 20
     mptt_indent_field = "name"
+    raw_id_fields = ['master_user', 'parent']
 
     def formatted_name(self, obj):
         return format_html('<div style="padding-left: {}px">{}</div>', self.mptt_level_indent*obj.level, obj.name)

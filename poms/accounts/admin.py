@@ -12,6 +12,7 @@ class AccountTypeAdmin(HistoricalAdmin):
     model = AccountType
     list_display = ['id', 'name', 'master_user']
     list_select_related = ['master_user']
+    raw_id_fields = ['master_user']
 
 
 admin.site.register(AccountType, AccountTypeAdmin)
@@ -23,6 +24,7 @@ class AccountClassifierAdmin(HistoricalAdmin, MPTTModelAdmin):
     list_select_related = ['master_user']
     mptt_level_indent = 20
     mptt_indent_field = "name"
+    raw_id_fields = ['master_user', 'parent']
 
 
 admin.site.register(AccountClassifier, AccountClassifierAdmin)
@@ -32,6 +34,7 @@ class AccountTagAdmin(HistoricalAdmin):
     model = AccountTag
     list_display = ['id', 'name', 'master_user']
     list_select_related = ['master_user']
+    raw_id_fields = ['master_user']
 
 
 admin.site.register(AccountTag, AccountTagAdmin)
@@ -47,6 +50,7 @@ class AccountAdmin(HistoricalAdmin):
     list_select_related = ['master_user']
     filter_horizontal = ['tags', ]
     inlines = [AccountAttrValueInline]
+    raw_id_fields = ['master_user', 'type']
 
 
 admin.site.register(Account, AccountAdmin)

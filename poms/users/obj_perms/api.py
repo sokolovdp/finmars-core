@@ -45,10 +45,13 @@ def register_admin(*args):
     from poms.users.admin import UserObjectPermissionAdmin, GroupObjectPermissionAdmin
 
     for model in args:
-        if issubclass(model, UserObjectPermissionBase):
-            admin.site.register(model, UserObjectPermissionAdmin)
-        elif issubclass(model, GroupObjectPermissionBase):
-            admin.site.register(model, GroupObjectPermissionAdmin)
+        fields = (f for f in model._meta.get_fields() if (f.one_to_many or f.one_to_one) and f.auto_created)
+        for attr in fields:
+            model = getattr(attr, 'related_model', None)
+            if model and issubclass(model, UserObjectPermissionBase):
+                admin.site.register(model, UserObjectPermissionAdmin)
+            elif model and issubclass(model, GroupObjectPermissionBase):
+                admin.site.register(model, GroupObjectPermissionAdmin)
 
 
 def get_obj_perms_model(obj, base_cls):

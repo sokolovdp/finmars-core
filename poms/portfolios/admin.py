@@ -14,6 +14,7 @@ class PortfolioClassifierAdmin(HistoricalAdmin, MPTTModelAdmin):
     list_select_related = ['master_user', 'parent']
     mptt_level_indent = 20
     mptt_indent_field = "name"
+    raw_id_fields = ['master_user', 'parent']
 
 
 admin.site.register(PortfolioClassifier, PortfolioClassifierAdmin)
@@ -38,6 +39,7 @@ class PortfolioAdmin(HistoricalAdmin):
     list_select_related = ['master_user']
     filter_horizontal = ['tags', ]
     inlines = [PortfolioAttrValueInline]
+    raw_id_fields = ['master_user']
 
 
 admin.site.register(Portfolio, PortfolioAdmin)

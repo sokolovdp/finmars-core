@@ -38,9 +38,11 @@ admin.site.register(MasterUser, MasterUserAdmin)
 
 class MemberAdmin(admin.ModelAdmin):
     model = Member
-    list_display = ['id', 'user', 'master_user', 'is_owner', 'is_admin']
+    list_display = ['id', 'master_user', 'user', 'is_owner', 'is_admin']
+    list_select_related = ['master_user', 'user']
     filter_horizontal = ('groups', 'permissions',)
     ordering = ['user', 'master_user']
+    raw_id_fields = ['master_user', 'user']
 
     def formfield_for_manytomany(self, db_field, request=None, **kwargs):
         if db_field.name == 'permissions':
@@ -70,7 +72,9 @@ admin.site.register(Permission)
 class GroupAdmin(HistoricalAdmin, admin.ModelAdmin):
     model = Group
     list_display = ['id', 'name', 'master_user']
-    filter_horizontal = ['permissions', ]
+    list_select_related = ['master_user']
+    filter_horizontal = ['permissions']
+    raw_id_fields = ['master_user']
 
     def formfield_for_manytomany(self, db_field, request=None, **kwargs):
         if db_field.name == 'permissions':
@@ -84,11 +88,13 @@ admin.site.register(Group, GroupAdmin)
 
 class AttrAdminBase(admin.StackedInline):
     ordering = ['order', 'name']
+    raw_id_fields = ['classifier']
     extra = 0
 
 
 class AttrValueAdminBase(admin.StackedInline):
     extra = 0
+    raw_id_fields = ['classifier']
 
 
 class AccountAttrInline(AttrAdminBase):
@@ -113,6 +119,7 @@ class InstrumentAttrInline(AttrAdminBase):
 
 class TransactionAttrInline(AttrAdminBase):
     model = TransactionAttr
+    raw_id_fields = ['strategy_position', 'strategy_cash']
     ordering = ['order', 'name']
     extra = 0
 
@@ -120,6 +127,8 @@ class TransactionAttrInline(AttrAdminBase):
 class AttrSchemeAdmin(HistoricalAdmin, admin.ModelAdmin):
     model = AttrScheme
     list_display = ['id', 'name', 'master_user']
+    list_select_related = ['master_user']
+    raw_id_fields = ['master_user']
     inlines = [
         AccountAttrInline,
         CounterpartyAttrInline,

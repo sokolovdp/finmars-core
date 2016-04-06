@@ -21,6 +21,7 @@ class TransactionTypeTagAdmin(HistoricalAdmin):
     model = TransactionTypeTag
     list_display = ['id', 'name', 'master_user']
     list_select_related = ['master_user']
+    raw_id_fields = ['master_user']
 
 
 admin.site.register(TransactionTypeTag, TransactionTypeTagAdmin)
@@ -36,6 +37,7 @@ class TransactionTypeAdmin(HistoricalAdmin):
     list_display = ['id', 'name', 'master_user']
     list_select_related = ['master_user']
     filter_horizontal = ['tags', ]
+    raw_id_fields = ['master_user']
     inlines = [EventTypeAdmin]
 
 
@@ -59,6 +61,7 @@ admin.site.register(ComplexTransaction, ComplexTransactionAdmin)
 
 class TransactionAttrValueInline(AttrValueAdminBase):
     model = TransactionAttrValue
+    raw_id_fields = ['strategy_position', 'strategy_cash']
 
 
 class TransactionAdmin(HistoricalAdmin):
@@ -76,7 +79,11 @@ class TransactionAdmin(HistoricalAdmin):
     list_filter = ['is_canceled']
     ordering = ['transaction_date', 'id']
     date_hierarchy = 'transaction_date'
-    actions = ['make_canceled', 'make_active']
+    # actions = ['make_canceled', 'make_active']
+
+    raw_id_fields = ['master_user', 'portfolio', 'instrument', 'transaction_currency', 'settlement_currency',
+                     'account_position', 'account_cash', 'account_interim', 'responsible', 'counterparty']
+
     inlines = [TransactionAttrValueInline]
 
     def make_canceled(self, request, queryset):

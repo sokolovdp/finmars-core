@@ -76,7 +76,7 @@ class Portfolio(NamedModel):
 
 
 class PortfolioAttr(AttrBase):
-    classifier_root = TreeForeignKey(PortfolioClassifier, null=True, blank=True)
+    classifier = TreeForeignKey(PortfolioClassifier, null=True, blank=True)
 
     class Meta:
         pass

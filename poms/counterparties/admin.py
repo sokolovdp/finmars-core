@@ -15,6 +15,7 @@ class CounterpartyClassifierAdmin(HistoricalAdmin, MPTTModelAdmin):
     list_select_related = ['master_user', 'parent']
     mptt_level_indent = 20
     mptt_indent_field = "name"
+    raw_id_fields = ['master_user', 'parent']
 
 
 admin.site.register(CounterpartyClassifier, CounterpartyClassifierAdmin)
@@ -29,6 +30,7 @@ class CounterpartyAdmin(HistoricalAdmin):
     list_display = ['id', 'name', 'master_user']
     list_select_related = ['master_user']
     inlines = [CounterpartyAttrValueInline]
+    raw_id_fields = ['master_user']
 
 
 admin.site.register(Counterparty, CounterpartyAdmin)
@@ -40,6 +42,8 @@ class ResponsibleClassifierAdmin(HistoricalAdmin, MPTTModelAdmin):
     list_select_related = ['master_user', 'parent']
     mptt_level_indent = 20
     mptt_indent_field = "name"
+    raw_id_fields = ['master_user', 'parent']
+
 
 admin.site.register(ResponsibleClassifier, ResponsibleClassifierAdmin)
 
@@ -53,6 +57,7 @@ class ResponsibleAdmin(HistoricalAdmin):
     list_display = ['id', 'name', 'master_user']
     list_select_related = ['master_user']
     inlines = [ResponsibleAttrValueInline]
+    raw_id_fields = ['master_user']
 
 
 admin.site.register(Responsible, ResponsibleAdmin)
