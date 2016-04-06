@@ -5,7 +5,7 @@ from mptt.admin import MPTTModelAdmin
 
 from poms.audit.admin import HistoricalAdmin
 from poms.counterparties.models import Counterparty, Responsible, CounterpartyClassifier, CounterpartyAttrValue, \
-    ResponsibleAttrValue
+    ResponsibleAttrValue, ResponsibleClassifier
 from poms.users.admin import AttrValueAdminBase
 
 
@@ -32,6 +32,16 @@ class CounterpartyAdmin(HistoricalAdmin):
 
 
 admin.site.register(Counterparty, CounterpartyAdmin)
+
+
+class ResponsibleClassifierAdmin(HistoricalAdmin, MPTTModelAdmin):
+    model = ResponsibleClassifier
+    list_display = ['id', 'name', 'parent', 'master_user']
+    list_select_related = ['master_user', 'parent']
+    mptt_level_indent = 20
+    mptt_indent_field = "name"
+
+admin.site.register(ResponsibleClassifier, ResponsibleClassifierAdmin)
 
 
 class ResponsibleAttrValueInline(AttrValueAdminBase):
