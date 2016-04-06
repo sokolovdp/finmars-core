@@ -8,11 +8,11 @@ from mptt.models import MPTTModel
 
 from poms.accounts.models import Account
 from poms.audit import history
-from poms.common.models import NamedModel, TagModelBase, AttrBase, AttrValueBase
+from poms.common.models import NamedModel, TagModelBase
 from poms.counterparties.models import Counterparty, Responsible
 from poms.currencies.models import Currency
 from poms.strategies.models import Strategy
-from poms.users.models import MasterUser
+from poms.users.models import MasterUser, AttrBase, AttrValueBase
 
 
 @python_2_unicode_compatible
@@ -52,7 +52,7 @@ class PortfolioTag(TagModelBase):
 @python_2_unicode_compatible
 class Portfolio(NamedModel):
     master_user = models.ForeignKey(MasterUser, related_name='portfolios', verbose_name=_('master user'))
-    classifiers = TreeManyToManyField(PortfolioClassifier, blank=True)
+    # classifiers = TreeManyToManyField(PortfolioClassifier, blank=True)
     tags = models.ManyToManyField(PortfolioTag, blank=True)
 
     accounts = models.ManyToManyField(Account, blank=True, related_name='portfolios', verbose_name=_('accounts'))
@@ -76,17 +76,16 @@ class Portfolio(NamedModel):
 
 
 class PortfolioAttr(AttrBase):
-    # scheme = models.ForeignKey(AttrScheme, verbose_name=_('attribute scheme'))
-    classifier_root = TreeForeignKey('portfolios.PortfolioClassifier', null=True, blank=True)
+    classifier_root = TreeForeignKey(PortfolioClassifier, null=True, blank=True)
 
     class Meta:
         pass
 
 
 class PortfolioAttrValue(AttrValueBase):
-    portfolio = models.ForeignKey('portfolios.Portfolio')
+    portfolio = models.ForeignKey(Portfolio)
     attr = models.ForeignKey(PortfolioAttr)
-    classifier = TreeForeignKey('portfolios.PortfolioClassifier', null=True, blank=True)
+    classifier = TreeForeignKey(PortfolioClassifier, null=True, blank=True)
 
     class Meta:
         unique_together = [

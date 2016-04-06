@@ -7,6 +7,7 @@ from poms.audit.admin import HistoricalAdmin
 from poms.instruments.models import Instrument, PriceHistory, InstrumentClassifier, InstrumentClass, InstrumentType, \
     InstrumentTypeTag, InstrumentTag, DailyPricingModel, AccrualCalculationModel, PaymentFrequency, CostMethod, \
     ManualPricingFormula, InstrumentAttrValue, AccrualCalculationSchedule
+from poms.users.admin import AttrValueAdminBase
 
 
 class InstrumentClassAdmin(HistoricalAdmin):
@@ -104,9 +105,8 @@ class ManualPricingFormulaAdmin(HistoricalAdmin):
 admin.site.register(ManualPricingFormula, ManualPricingFormulaAdmin)
 
 
-class InstrumentAttrValueInline(admin.StackedInline):
+class InstrumentAttrValueInline(AttrValueAdminBase):
     model = InstrumentAttrValue
-    extra = 0
 
 
 class AccrualCalculationScheduleInline(admin.StackedInline):
@@ -120,12 +120,6 @@ class InstrumentAdmin(HistoricalAdmin):
     list_select_related = ['master_user', 'pricing_currency', 'accrued_currency']
     filter_horizontal = ['tags', ]
     inlines = [InstrumentAttrValueInline, AccrualCalculationScheduleInline]
-
-    # def get_classifiers(self, obj):
-    #     return ', '.join(p.name for p in obj.classifiers.all())
-    #
-    # get_classifiers.short_name = _('classifiers')
-    # get_classifiers.short_description = _('classifiers')
 
 
 admin.site.register(Instrument, InstrumentAdmin)

@@ -4,7 +4,9 @@ from django.contrib import admin
 from mptt.admin import MPTTModelAdmin
 
 from poms.audit.admin import HistoricalAdmin
-from poms.counterparties.models import Counterparty, Responsible, CounterpartyClassifier
+from poms.counterparties.models import Counterparty, Responsible, CounterpartyClassifier, CounterpartyAttrValue, \
+    ResponsibleAttrValue
+from poms.users.admin import AttrValueAdminBase
 
 
 class CounterpartyClassifierAdmin(HistoricalAdmin, MPTTModelAdmin):
@@ -18,19 +20,29 @@ class CounterpartyClassifierAdmin(HistoricalAdmin, MPTTModelAdmin):
 admin.site.register(CounterpartyClassifier, CounterpartyClassifierAdmin)
 
 
+class CounterpartyAttrValueInline(AttrValueAdminBase):
+    model = CounterpartyAttrValue
+
+
 class CounterpartyAdmin(HistoricalAdmin):
+    model = Counterparty
     list_display = ['id', 'name', 'master_user']
     list_select_related = ['master_user']
-    model = Counterparty
+    inlines = [CounterpartyAttrValueInline]
 
 
 admin.site.register(Counterparty, CounterpartyAdmin)
+
+
+class ResponsibleAttrValueInline(AttrValueAdminBase):
+    model = ResponsibleAttrValue
 
 
 class ResponsibleAdmin(HistoricalAdmin):
     model = Responsible
     list_display = ['id', 'name', 'master_user']
     list_select_related = ['master_user']
+    inlines = [ResponsibleAttrValueInline]
 
 
 admin.site.register(Responsible, ResponsibleAdmin)

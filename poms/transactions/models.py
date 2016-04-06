@@ -9,13 +9,13 @@ from mptt.models import MPTTModel
 
 from poms.accounts.models import Account
 from poms.audit import history
-from poms.common.models import NamedModel, TagModelBase, ClassModelBase, AttrBase, AttrValueBase
+from poms.common.models import NamedModel, TagModelBase, ClassModelBase
 from poms.counterparties.models import Responsible, Counterparty
 from poms.currencies.models import Currency
 from poms.instruments.models import Instrument
 from poms.portfolios.models import Portfolio
 from poms.strategies.models import Strategy
-from poms.users.models import MasterUser
+from poms.users.models import MasterUser, AttrBase, AttrValueBase
 
 
 class TransactionClass(ClassModelBase):
@@ -242,7 +242,7 @@ class TransactionAttr(AttrBase):
 
 
 class TransactionAttrValue(AttrValueBase):
-    transaction = models.ForeignKey('transactions.Transaction')
+    transaction = models.ForeignKey(Transaction)
     attr = models.ForeignKey(TransactionAttr)
     strategy_position = TreeForeignKey('strategies.Strategy', null=True, blank=True, related_name='+')
     strategy_cash = TreeForeignKey('strategies.Strategy', null=True, blank=True, related_name='+')

@@ -5,6 +5,7 @@ from mptt.admin import MPTTModelAdmin
 
 from poms.audit.admin import HistoricalAdmin
 from poms.portfolios.models import Portfolio, PortfolioClassifier, PortfolioTag, PortfolioAttrValue
+from poms.users.admin import AttrValueAdminBase
 
 
 class PortfolioClassifierAdmin(HistoricalAdmin, MPTTModelAdmin):
@@ -27,10 +28,8 @@ class PortfolioTagAdmin(HistoricalAdmin):
 admin.site.register(PortfolioTag, PortfolioTagAdmin)
 
 
-class PortfolioAttrValueInline(admin.StackedInline):
+class PortfolioAttrValueInline(AttrValueAdminBase):
     model = PortfolioAttrValue
-    ordering = ['portfolio', 'attr__order']
-    extra = 0
 
 
 class PortfolioAdmin(HistoricalAdmin):

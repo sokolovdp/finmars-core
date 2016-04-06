@@ -69,7 +69,8 @@ class UserProfile(models.Model):
 class Group(models.Model):
     master_user = models.ForeignKey(MasterUser, verbose_name=_('master user'), related_name='groups')
     name = models.CharField(_('name'), max_length=80, unique=True)
-    permissions = models.ManyToManyField(Permission, verbose_name=_('permissions'), blank=True, related_name='poms_groups')
+    permissions = models.ManyToManyField(Permission, verbose_name=_('permissions'), blank=True,
+                                         related_name='poms_groups')
 
     class Meta:
         verbose_name = _('group')
@@ -84,7 +85,6 @@ class Group(models.Model):
 
 class AttrScheme(NamedModel):
     master_user = models.ForeignKey(MasterUser, verbose_name=_('master user'))
-    member = models.ForeignKey(Member, null=True, blank=True)
 
     class Meta:
         verbose_name = _('attribute scheme')
@@ -93,6 +93,52 @@ class AttrScheme(NamedModel):
             ['master_user', 'user_code']
         ]
 
+
+class AttrBase(NamedModel):
+    STR = 10
+    NUM = 20
+    CLASSIFIER = 30
+
+    VALUE_TYPES = (
+        (NUM, _('Number')),
+        (STR, _('String')),
+        (CLASSIFIER, _('Classifier')),
+    )
+
+    scheme = models.ForeignKey(AttrScheme, verbose_name=_('attribute scheme'))
+    order = models.IntegerField(default=0)
+    value_type = models.PositiveSmallIntegerField(default=STR, choices=VALUE_TYPES)
+
+    class Meta:
+        abstract = True
+        verbose_name = _('attribute')
+        verbose_name_plural = _('attributes')
+        unique_together = [
+            ['scheme', 'user_code']
+        ]
+
+
+@python_2_unicode_compatible
+class AttrValueBase(models.Model):
+    value_str = models.CharField(max_length=255, null=True, blank=True)
+    value_num = models.FloatField(null=True, blank=True)
+
+    class Meta:
+        abstract = True
+
+    def __str__(self):
+        return '%s' % self.get_value()
+
+    def get_value(self):
+        if self.attr.value_type == AttrBase.NUM:
+            return self.value_num
+        elif self.attr.value_type == AttrBase.STR:
+            return self.value_str
+        elif self.attr.value_type == AttrBase.CLASSIFIER:
+            return self.classifier
+        return None
+
+        # value = property(get_value)
 
 
 class ObjectPermissionBase(models.Model):

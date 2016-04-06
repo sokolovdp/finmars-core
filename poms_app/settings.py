@@ -26,13 +26,13 @@ SECRET_KEY = 'jrixf-%65l5&#@hbmq()sa-pzy@e)=zpdr6g0cg8a!i_&w-c!)'
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = str(os.environ.get('DJANGO_DEBUG', 'True')).lower() == 'true'
 DEV = DEBUG or str(os.environ.get('POMS_DEV', 'True')).lower() == 'true'
+ADMIN = True
 
 ALLOWED_HOSTS = ['*']
 
 # Application definition
 
 INSTALLED_APPS = [
-    'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
     'django.contrib.sessions',
@@ -46,8 +46,6 @@ INSTALLED_APPS = [
 
     'mptt',
     'reversion',
-    # 'guardian',
-    'import_export',
 
     'poms.http_sessions',
     'poms.users',
@@ -64,7 +62,15 @@ INSTALLED_APPS = [
     'poms.integrations',
     'poms.reports',
     'poms.api',
+
+    'django_extensions',
 ]
+
+if ADMIN:
+    INSTALLED_APPS += [
+        'django.contrib.admin',
+        'django.contrib.admindocs',
+    ]
 
 if DEBUG:
     INSTALLED_APPS += ['debug_toolbar', ]
@@ -159,17 +165,16 @@ if not DEBUG:
 LANGUAGE_CODE = 'en'
 LANGUAGES = [
     ('en', 'English'),
+    ('es', 'Español'),
+    ('de', 'Deutsch'),
     ('ru', 'Russian'),
 ]
 
 TIME_ZONE = 'UTC'
 
 USE_I18N = True
-
 USE_L10N = True
-
 USE_TZ = True
-
 USE_ETAGS = True
 
 SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')

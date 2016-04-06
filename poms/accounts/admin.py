@@ -3,8 +3,9 @@ from __future__ import unicode_literals
 from django.contrib import admin
 from mptt.admin import MPTTModelAdmin
 
-from poms.accounts.models import Account, AccountType, AccountClassifier, AccountTag
+from poms.accounts.models import Account, AccountType, AccountClassifier, AccountTag, AccountAttrValue
 from poms.audit.admin import HistoricalAdmin
+from poms.users.admin import AttrValueAdminBase
 
 
 class AccountTypeAdmin(HistoricalAdmin):
@@ -36,11 +37,16 @@ class AccountTagAdmin(HistoricalAdmin):
 admin.site.register(AccountTag, AccountTagAdmin)
 
 
+class AccountAttrValueInline(AttrValueAdminBase):
+    model = AccountAttrValue
+
+
 class AccountAdmin(HistoricalAdmin):
     model = Account
     list_display = ['id', 'name', 'master_user']
     list_select_related = ['master_user']
     filter_horizontal = ['tags', ]
+    inlines = [AccountAttrValueInline]
 
 
 admin.site.register(Account, AccountAdmin)
