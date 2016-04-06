@@ -3,6 +3,8 @@ from __future__ import unicode_literals
 from django.conf import settings
 from django.contrib.auth.models import User, Permission
 from django.db import models
+from django.db.models.signals import post_save
+from django.dispatch import receiver
 from django.utils.encoding import python_2_unicode_compatible
 from django.utils.translation import ugettext_lazy as _
 
@@ -18,7 +20,7 @@ AVAILABLE_APPS = ['accounts', 'counterparties', 'currencies', 'instruments', 'po
 class MasterUser(models.Model):
     name = models.CharField(max_length=255, null=True, blank=True)
     currency = models.ForeignKey('currencies.Currency', null=True, blank=True)
-    members = models.ManyToManyField(settings.AUTH_USER_MODEL, blank=True, through='Member', related_name='member_of')
+    # members = models.ManyToManyField(settings.AUTH_USER_MODEL, blank=True, through='Member', related_name='member_of')
 
     class Meta:
         verbose_name = _('master user')
@@ -38,8 +40,13 @@ class MasterUser(models.Model):
 
 @python_2_unicode_compatible
 class Member(models.Model):
-    master_user = models.ForeignKey(MasterUser)
-    user = models.ForeignKey(settings.AUTH_USER_MODEL)
+    master_user = models.ForeignKey(MasterUser, related_name='member_set')
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, related_name='member_set')
+
+    first_name = models.CharField(max_length=30, blank=True, default='', editable=False)
+    last_name = models.CharField(max_length=30, blank=True, default='', editable=False)
+    email = models.EmailField(blank=True, default='', editable=False)
+
     join_date = models.DateTimeField(auto_now_add=True)
     is_owner = models.BooleanField(default=False, verbose_name=_('is owner'))
     is_admin = models.BooleanField(default=False, verbose_name=_('is admin'))
@@ -168,6 +175,30 @@ class GroupObjectPermissionBase(ObjectPermissionBase):
 
     def __str__(self):
         return '%s - %s - %s' % (self.content_object, self.group, self.permission)
+
+
+@receiver(post_save, dispatch_uid='members_fill_from_user', sender=settings.AUTH_USER_MODEL)
+def members_fill_from_user(sender, instance=None, created=None, **kwargs):
+    if not created:
+        instance.member_set.all().update(
+            first_name = instance.first_name,
+            last_name = instance.last_name,
+            email = instance.email
+        )
+        # for member in instance.member_set.all():
+        #     member.first_name = instance.user.first_name
+        #     member.last_name = instance.user.last_name
+        #     member.email = instance.user.email
+        #     member.save(update_fields=['first_name', 'last_name', 'email'])
+
+
+@receiver(post_save, dispatch_uid='members_fill_from_user', sender=Member)
+def member_fill_from_user(sender, instance=None, created=None, **kwargs):
+    if created:
+        instance.first_name = instance.user.first_name
+        instance.last_name = instance.user.last_name
+        instance.email = instance.user.email
+        instance.save(update_fields=['first_name', 'last_name', 'email'])
 
 
 history.register(MasterUser)

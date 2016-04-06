@@ -29,7 +29,7 @@ class MemberInline(admin.StackedInline):
 
 class MasterUserAdmin(HistoricalAdmin):
     model = MasterUser
-    # inlines = [MemberInline]
+    inlines = [MemberInline]
     list_display = ['id', '__str__']
 
 
