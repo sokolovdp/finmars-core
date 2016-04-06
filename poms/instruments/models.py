@@ -171,7 +171,7 @@ class Instrument(NamedModel):
     accrued_currency = models.ForeignKey(Currency, null=True, blank=True, related_name='instruments_accrued',
                                          on_delete=models.PROTECT)
     accrued_multiplier = models.FloatField(default=1.)
-    classifiers = TreeManyToManyField(InstrumentClassifier, blank=True)
+    # classifiers = TreeManyToManyField(InstrumentClassifier, blank=True)
     tags = models.ManyToManyField(InstrumentTag, blank=True)
 
     daily_pricing_model = models.ForeignKey(DailyPricingModel, null=True, blank=True)
@@ -218,25 +218,6 @@ class PriceHistory(models.Model):
         return '%s at %s - %s' % (self.instrument, self.date, self.principal_price,)
 
 
-class InstrumentAttr(AttrBase):
-    # scheme = models.ForeignKey(AttrScheme, verbose_name=_('attribute scheme'))
-    classifier = TreeForeignKey('instruments.InstrumentClassifier', null=True, blank=True)
-
-    class Meta:
-        pass
-
-
-class InstrumentAttrValue(AttrValueBase):
-    instrument = models.ForeignKey('instruments.Instrument')
-    attr = models.ForeignKey(InstrumentAttr)
-    classifier = TreeForeignKey('instruments.InstrumentClassifier', null=True, blank=True)
-
-    class Meta:
-        unique_together = [
-            ['instrument', 'attr']
-        ]
-
-
 class AccrualCalculationSchedule(NamedModel):
     instrument = models.ForeignKey(Instrument, related_name='accrual_calculation_schedule')
     new_accrual_start_date = models.DateField(default=timezone.now)
@@ -245,6 +226,24 @@ class AccrualCalculationSchedule(NamedModel):
     payment_frequency = models.ForeignKey(PaymentFrequency)
     accrual_calculation_model = models.ForeignKey(AccrualCalculationModel)
 
+
+class InstrumentAttr(AttrBase):
+    # scheme = models.ForeignKey(AttrScheme, verbose_name=_('attribute scheme'))
+    classifier = TreeForeignKey(InstrumentClassifier, null=True, blank=True)
+
+    class Meta:
+        pass
+
+
+class InstrumentAttrValue(AttrValueBase):
+    instrument = models.ForeignKey(Instrument)
+    attr = models.ForeignKey(InstrumentAttr)
+    classifier = TreeForeignKey(InstrumentClassifier, null=True, blank=True)
+
+    class Meta:
+        unique_together = [
+            ['instrument', 'attr']
+        ]
 
 
 history.register(InstrumentClassifier)

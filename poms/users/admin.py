@@ -6,7 +6,9 @@ from django.contrib.auth.admin import UserAdmin
 from django.contrib.auth.models import User, Permission
 from django.contrib.contenttypes.models import ContentType
 
+from poms.accounts.models import AccountAttr
 from poms.audit.admin import HistoricalAdmin
+from poms.counterparties.models import CounterpartyAttr, ResponsibleAttr
 from poms.instruments.models import InstrumentAttr
 from poms.portfolios.models import PortfolioAttr
 from poms.transactions.models import TransactionAttr
@@ -80,19 +82,36 @@ class GroupAdmin(HistoricalAdmin, admin.ModelAdmin):
 admin.site.register(Group, GroupAdmin)
 
 
-class PortfolioAttrInline(admin.StackedInline):
+class AttrAdminBase(admin.StackedInline):
+    ordering = ['order', 'name']
+    extra = 0
+
+
+class AttrValueAdminBase(admin.StackedInline):
+    extra = 0
+
+
+class AccountAttrInline(AttrAdminBase):
+    model = AccountAttr
+
+
+class CounterpartyAttrInline(AttrAdminBase):
+    model = CounterpartyAttr
+
+
+class ResponsibleAttrInline(AttrAdminBase):
+    model = ResponsibleAttr
+
+
+class PortfolioAttrInline(AttrAdminBase):
     model = PortfolioAttr
-    ordering = ['order', 'name']
-    extra = 0
 
 
-class InstrumentAttrInline(admin.StackedInline):
+class InstrumentAttrInline(AttrAdminBase):
     model = InstrumentAttr
-    ordering = ['order', 'name']
-    extra = 0
 
 
-class TransactionAttrInline(admin.StackedInline):
+class TransactionAttrInline(AttrAdminBase):
     model = TransactionAttr
     ordering = ['order', 'name']
     extra = 0
@@ -101,7 +120,14 @@ class TransactionAttrInline(admin.StackedInline):
 class AttrSchemeAdmin(HistoricalAdmin, admin.ModelAdmin):
     model = AttrScheme
     list_display = ['id', 'name', 'master_user']
-    inlines = [PortfolioAttrInline, InstrumentAttrInline, TransactionAttrInline]
+    inlines = [
+        AccountAttrInline,
+        CounterpartyAttrInline,
+        ResponsibleAttrInline,
+        PortfolioAttrInline,
+        InstrumentAttrInline,
+        TransactionAttrInline
+    ]
 
 
 admin.site.register(AttrScheme, AttrSchemeAdmin)

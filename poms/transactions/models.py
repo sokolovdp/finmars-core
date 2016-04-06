@@ -242,7 +242,7 @@ class TransactionAttr(AttrBase):
 
 
 class TransactionAttrValue(AttrValueBase):
-    transaction = models.ForeignKey('transactions.Transaction')
+    transaction = models.ForeignKey(Transaction)
     attr = models.ForeignKey(TransactionAttr)
     strategy_position = TreeForeignKey('strategies.Strategy', null=True, blank=True, related_name='+')
     strategy_cash = TreeForeignKey('strategies.Strategy', null=True, blank=True, related_name='+')

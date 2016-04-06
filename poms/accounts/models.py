@@ -9,7 +9,7 @@ from mptt.models import MPTTModel
 from poms.audit import history
 from poms.common.models import NamedModel, TagModelBase
 from poms.currencies.models import Currency
-from poms.users.models import MasterUser, UserObjectPermissionBase, GroupObjectPermissionBase
+from poms.users.models import MasterUser, UserObjectPermissionBase, GroupObjectPermissionBase, AttrBase, AttrValueBase
 
 
 @python_2_unicode_compatible
@@ -73,7 +73,7 @@ class AccountTag(TagModelBase):
 class Account(NamedModel):
     master_user = models.ForeignKey(MasterUser, related_name='accounts', verbose_name=_('master user'))
     type = models.ForeignKey(AccountType, null=True, blank=True)
-    classifiers = TreeManyToManyField(AccountClassifier, blank=True)
+    # classifiers = TreeManyToManyField(AccountClassifier, blank=True)
     tags = models.ManyToManyField(AccountTag, blank=True)
 
     class Meta:
@@ -88,6 +88,24 @@ class Account(NamedModel):
 
     def __str__(self):
         return self.name
+
+
+class AccountAttr(AttrBase):
+    classifier = TreeForeignKey(AccountClassifier, null=True, blank=True)
+
+    class Meta:
+        pass
+
+
+class AccountAttrValue(AttrValueBase):
+    account = models.ForeignKey(Account)
+    attr = models.ForeignKey(AccountAttr)
+    classifier = TreeForeignKey(AccountClassifier, null=True, blank=True)
+
+    class Meta:
+        unique_together = [
+            ['account', 'attr']
+        ]
 
 
 # class AccountTypeUserObjectPermission(UserObjectPermissionBase):

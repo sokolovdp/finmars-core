@@ -1,7 +1,6 @@
 from __future__ import unicode_literals
 
 from django.db import models
-from django.utils.encoding import python_2_unicode_compatible
 from django.utils.translation import ugettext_lazy as _
 from mptt.fields import TreeForeignKey
 from mptt.models import MPTTModel
@@ -11,7 +10,6 @@ from poms.common.models import NamedModel
 from poms.users.models import MasterUser
 
 
-@python_2_unicode_compatible
 class Strategy(NamedModel, MPTTModel):
     master_user = models.ForeignKey(MasterUser, related_name='strategy_classifiers', verbose_name=_('master user'))
     parent = TreeForeignKey('self', null=True, blank=True, related_name='children', db_index=True)
@@ -28,9 +26,6 @@ class Strategy(NamedModel, MPTTModel):
         permissions = [
             ('view_strategy', 'Can view strategy')
         ]
-
-    def __str__(self):
-        return self.name
 
 
 history.register(Strategy)

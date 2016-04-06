@@ -8,10 +8,9 @@ from mptt.models import MPTTModel
 
 from poms.audit import history
 from poms.common.models import NamedModel
-from poms.users.models import MasterUser
+from poms.users.models import MasterUser, AttrBase, AttrValueBase
 
 
-@python_2_unicode_compatible
 class CounterpartyClassifier(NamedModel, MPTTModel):
     master_user = models.ForeignKey(MasterUser, related_name='counterparty_classifiers', verbose_name=_('master user'))
     parent = TreeForeignKey('self', null=True, blank=True, related_name='children', db_index=True)
@@ -26,16 +25,13 @@ class CounterpartyClassifier(NamedModel, MPTTModel):
             ('view_counterpartyclassifier', 'Can view counterparty classifier')
         ]
 
-    def __str__(self):
-        return self.name
-
 
 @python_2_unicode_compatible
 class Counterparty(NamedModel):
     master_user = models.ForeignKey(MasterUser, related_name='counterparties', verbose_name=_('master user'))
     # portfolios = models.ManyToManyField(Portfolio, blank=True)
     # settlement_details = models.TextField(null=True, blank=True)
-    classifiers = TreeManyToManyField(CounterpartyClassifier, blank=True)
+    # classifiers = TreeManyToManyField(CounterpartyClassifier, blank=True)
 
     class Meta:
         verbose_name = _('counterparty')
@@ -49,6 +45,21 @@ class Counterparty(NamedModel):
 
     def __str__(self):
         return self.name
+
+
+class ResponsibleClassifier(NamedModel, MPTTModel):
+    master_user = models.ForeignKey(MasterUser, related_name='responsible_classifiers', verbose_name=_('master user'))
+    parent = TreeForeignKey('self', null=True, blank=True, related_name='children', db_index=True)
+
+    class MPTTMeta:
+        order_insertion_by = ['master_user', 'name']
+
+    class Meta:
+        verbose_name = _('responsible classifier')
+        verbose_name_plural = _('responsible classifiers')
+        permissions = [
+            ('view_responsibleclassifier', 'Can view responsible classifier')
+        ]
 
 
 @python_2_unicode_compatible
@@ -69,6 +80,45 @@ class Responsible(NamedModel):
         return self.name
 
 
+class CounterpartyAttr(AttrBase):
+    # scheme = models.ForeignKey(AttrScheme, verbose_name=_('attribute scheme'))
+    classifier = TreeForeignKey(CounterpartyClassifier, null=True, blank=True)
+
+    class Meta:
+        pass
+
+
+class CounterpartyAttrValue(AttrValueBase):
+    counterparty = models.ForeignKey(Counterparty)
+    attr = models.ForeignKey(CounterpartyAttr)
+    classifier = TreeForeignKey(CounterpartyClassifier, null=True, blank=True)
+
+    class Meta:
+        unique_together = [
+            ['counterparty', 'attr']
+        ]
+
+
+class ResponsibleAttr(AttrBase):
+    # scheme = models.ForeignKey(AttrScheme, verbose_name=_('attribute scheme'))
+    classifier = TreeForeignKey(ResponsibleClassifier, null=True, blank=True)
+
+    class Meta:
+        pass
+
+
+class ResponsibleAttrValue(AttrValueBase):
+    responsible = models.ForeignKey(Responsible)
+    attr = models.ForeignKey(ResponsibleAttr)
+    classifier = TreeForeignKey(ResponsibleClassifier, null=True, blank=True)
+
+    class Meta:
+        unique_together = [
+            ['responsible', 'attr']
+        ]
+
+
 history.register(CounterpartyClassifier)
 history.register(Counterparty)
+history.register(ResponsibleClassifier)
 history.register(Responsible)

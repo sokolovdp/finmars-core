@@ -5,6 +5,7 @@ from django.contrib import admin
 from poms.audit.admin import HistoricalAdmin
 from poms.transactions.models import TransactionClass, Transaction, TransactionTypeTag, TransactionType, \
     TransactionAttrValue, ComplexTransaction, ComplexTransactionItem, EventType
+from poms.users.admin import AttrValueAdminBase
 
 
 class TransactionClassAdmin(HistoricalAdmin):
@@ -56,9 +57,8 @@ class ComplexTransactionAdmin(HistoricalAdmin):
 admin.site.register(ComplexTransaction, ComplexTransactionAdmin)
 
 
-class TransactionAttrValueInline(admin.StackedInline):
+class TransactionAttrValueInline(AttrValueAdminBase):
     model = TransactionAttrValue
-    extra = 0
 
 
 class TransactionAdmin(HistoricalAdmin):
