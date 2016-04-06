@@ -1,7 +1,6 @@
 from __future__ import unicode_literals
 
 from django.contrib import admin
-from import_export.admin import ImportExportModelAdmin
 
 from poms.audit.admin import HistoricalAdmin
 from poms.transactions.models import TransactionClass, Transaction, TransactionTypeTag, TransactionType, \
@@ -62,7 +61,7 @@ class TransactionAttrValueInline(admin.StackedInline):
     extra = 0
 
 
-class TransactionAdmin(HistoricalAdmin, ImportExportModelAdmin):
+class TransactionAdmin(HistoricalAdmin):
     model = Transaction
     list_select_related = ['master_user', 'transaction_class', 'instrument', 'transaction_currency',
                            'settlement_currency', 'account_cash', 'account_position', 'account_interim', ]
