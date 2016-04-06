@@ -8,11 +8,11 @@ from mptt.models import MPTTModel
 
 from poms.accounts.models import Account
 from poms.audit import history
-from poms.common.models import NamedModel, TagModelBase, AttrBase, AttrValueBase
+from poms.common.models import NamedModel, TagModelBase
 from poms.counterparties.models import Counterparty, Responsible
 from poms.currencies.models import Currency
 from poms.strategies.models import Strategy
-from poms.users.models import MasterUser
+from poms.users.models import MasterUser, AttrBase, AttrValueBase
 
 
 @python_2_unicode_compatible

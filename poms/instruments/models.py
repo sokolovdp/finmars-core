@@ -8,9 +8,9 @@ from mptt.fields import TreeForeignKey, TreeManyToManyField
 from mptt.models import MPTTModel
 
 from poms.audit import history
-from poms.common.models import NamedModel, TagModelBase, ClassModelBase, AttrBase, AttrValueBase
+from poms.common.models import NamedModel, TagModelBase, ClassModelBase
 from poms.currencies.models import Currency
-from poms.users.models import MasterUser
+from poms.users.models import MasterUser, AttrBase, AttrValueBase
 
 
 class InstrumentClass(ClassModelBase):
