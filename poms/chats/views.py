@@ -7,8 +7,10 @@ from rest_framework.viewsets import ModelViewSet
 
 from poms.api.mixins import DbTransactionMixin
 from poms.audit.mixins import HistoricalMixin
-from poms.chats.filters import ThreadOwnerByMasterUserFilter, DirectMessageOwnerByMasterUserFilter
+from poms.chats.filters import ThreadOwnerByMasterUserFilter, DirectMessageOwnerByMasterUserFilter, \
+    ThreadObjectPermissionFilter, MessageObjectPermissionFilter
 from poms.chats.models import Thread, Message, DirectMessage, ThreadStatus
+from poms.chats.permissions import ThreadObjectPermission
 from poms.chats.serializers import ThreadSerializer, MessageSerializer, DirectMessageSerializer, ThreadStatusSerializer
 from poms.users.filters import OwnerByMasterUserFilter
 
@@ -25,8 +27,8 @@ class ThreadStatusViewSet(DbTransactionMixin, HistoricalMixin, ModelViewSet):
 class ThreadViewSet(DbTransactionMixin, HistoricalMixin, ModelViewSet):
     queryset = Thread.objects.all()
     serializer_class = ThreadSerializer
-    permission_classes = [IsAuthenticated]
-    filter_backends = [OwnerByMasterUserFilter, OrderingFilter, SearchFilter, ]
+    permission_classes = [IsAuthenticated, ThreadObjectPermission]
+    filter_backends = [OwnerByMasterUserFilter, ThreadObjectPermissionFilter, OrderingFilter, SearchFilter, ]
     ordering_fields = ['id', 'subject']
     search_fields = ['subject']
 
@@ -43,7 +45,8 @@ class MessageViewSet(DbTransactionMixin, HistoricalMixin, ModelViewSet):
     queryset = Message.objects.all()
     serializer_class = MessageSerializer
     permission_classes = [IsAuthenticated]
-    filter_backends = [ThreadOwnerByMasterUserFilter, DjangoFilterBackend, OrderingFilter, SearchFilter, ]
+    filter_backends = [ThreadOwnerByMasterUserFilter, MessageObjectPermissionFilter, DjangoFilterBackend,
+                       OrderingFilter, SearchFilter, ]
     filter_class = MessageFilter
     ordering_fields = ['id', 'create_date']
 

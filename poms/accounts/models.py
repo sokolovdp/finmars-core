@@ -9,7 +9,7 @@ from mptt.models import MPTTModel
 from poms.audit import history
 from poms.common.models import NamedModel, TagModelBase
 from poms.currencies.models import Currency
-from poms.users.models import MasterUser, UserObjectPermissionBase, GroupObjectPermissionBase
+from poms.users.models import MasterUser
 
 
 @python_2_unicode_compatible

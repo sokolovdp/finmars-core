@@ -1,21 +1,10 @@
 from __future__ import unicode_literals, print_function
 
-from django.contrib.contenttypes.models import ContentType
-from rest_framework import serializers
-from rest_framework.decorators import detail_route, list_route
-from rest_framework.filters import BaseFilterBackend
-from rest_framework.permissions import IsAuthenticated, DjangoObjectPermissions, BasePermission
-from rest_framework.response import Response
-
-from poms.api.fields import FilteredPrimaryKeyRelatedField
-from poms.users.fields import get_master_user, get_member
-from poms.users.models import Group
-from poms.users.serializers import PermissionField
+from rest_framework.permissions import DjangoObjectPermissions
 
 
 class PomsObjectPermissions(DjangoObjectPermissions):
     pass
-
 
 # class PomsObjectPermission(DjangoObjectPermissions):
 #     perms_map = {

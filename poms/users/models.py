@@ -53,7 +53,8 @@ class Member(models.Model):
     is_admin = models.BooleanField(default=False, verbose_name=_('is admin'))
 
     groups = models.ManyToManyField('Group', blank=True)
-    permissions = models.ManyToManyField(Permission, blank=True)
+
+    # permissions = models.ManyToManyField(Permission, blank=True)
 
     def __str__(self):
         return '%s@%s' % (self.user.username, self.master_user)
@@ -77,8 +78,9 @@ class UserProfile(models.Model):
 class Group(models.Model):
     master_user = models.ForeignKey(MasterUser, verbose_name=_('master user'), related_name='groups')
     name = models.CharField(_('name'), max_length=80, unique=True)
-    permissions = models.ManyToManyField(Permission, verbose_name=_('permissions'), blank=True,
-                                         related_name='poms_groups')
+
+    # permissions = models.ManyToManyField(Permission, verbose_name=_('permissions'), blank=True,
+    #                                      related_name='poms_groups')
 
     class Meta:
         verbose_name = _('group')
@@ -91,35 +93,6 @@ class Group(models.Model):
         return self.name
 
 
-class ObjectPermissionBase(models.Model):
-    permission = models.ForeignKey(Permission)
-
-    class Meta:
-        abstract = True
-
-
-@python_2_unicode_compatible
-class UserObjectPermissionBase(ObjectPermissionBase):
-    member = models.ForeignKey(Member)
-
-    class Meta:
-        abstract = True
-
-    def __str__(self):
-        return '%s - %s - %s' % (self.content_object, self.member, self.permission)
-
-
-@python_2_unicode_compatible
-class GroupObjectPermissionBase(ObjectPermissionBase):
-    group = models.ForeignKey(Group)
-
-    class Meta:
-        abstract = True
-
-    def __str__(self):
-        return '%s - %s - %s' % (self.content_object, self.group, self.permission)
-
-
 @receiver(post_save, dispatch_uid='members_fill_from_user', sender=settings.AUTH_USER_MODEL)
 def members_fill_from_user(sender, instance=None, created=None, **kwargs):
     if not created:
@@ -128,11 +101,6 @@ def members_fill_from_user(sender, instance=None, created=None, **kwargs):
             last_name=instance.last_name,
             email=instance.email
         )
-        # for member in instance.member_set.all():
-        #     member.first_name = instance.user.first_name
-        #     member.last_name = instance.user.last_name
-        #     member.email = instance.user.email
-        #     member.save(update_fields=['first_name', 'last_name', 'email'])
 
 
 @receiver(post_save, dispatch_uid='members_fill_from_user', sender=Member)

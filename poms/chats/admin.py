@@ -4,7 +4,6 @@ from django.contrib import admin
 
 from poms.audit.admin import HistoricalAdmin
 from poms.chats.models import Thread, Message, DirectMessage, ThreadStatus
-from poms.users.obj_perms.api import register_admin
 
 
 class ThreadStatusAdmin(HistoricalAdmin):
@@ -57,7 +56,3 @@ class DirectMessageAdmin(HistoricalAdmin):
 
 
 admin.site.register(DirectMessage, DirectMessageAdmin)
-
-
-register_admin(Thread)
-

@@ -24,11 +24,12 @@ def get_master_user(request, master_user_id=None):
     try:
         if master_user_id is None:
             if settings.DEV:
-                master_user = user.member_of.first()
+                member = user.member_set.first()
+                master_user = member.master_user
             else:
                 raise NotFound()
         else:
-            master_user = user.member_of.get(pk=master_user_id)
+            master_user = user.member_set.get(pk=master_user_id)
         user._cached_master_user = master_user
         return master_user
     except ObjectDoesNotExist:
@@ -97,6 +98,27 @@ class MasterUserField(serializers.HiddenField):
         super(MasterUserField, self).__init__(**kwargs)
 
 
+class CurrentMemberDefault(object):
+    def set_context(self, serializer_field):
+        request = serializer_field.context['request']
+        self._member = get_member(request)
+
+    def __call__(self):
+        return self._member
+
+
+class HiddenMemberField(serializers.PrimaryKeyRelatedField):
+    def __init__(self, **kwargs):
+        kwargs['default'] = CurrentMemberDefault()
+        kwargs['read_only'] = True
+        super(HiddenMemberField, self).__init__(**kwargs)
+
+
+class MemberField(FilteredPrimaryKeyRelatedField):
+    queryset = Member.objects
+    filter_backends = [OwnerByMasterUserFilter]
+
+
 class GroupOwnerByMasterUserFilter(OwnerByMasterUserFilter):
     def filter_queryset(self, request, queryset, view):
         # print(get_master_user(request))
@@ -151,4 +173,3 @@ class GrantedPermissionField(serializers.Field):
             return []
         user = self.context['request'].user
         return user.get_all_permissions(value)
-

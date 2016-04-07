@@ -62,6 +62,7 @@ INSTALLED_APPS = [
     'poms.integrations',
     'poms.tags',
     'poms.obj_attrs',
+    'poms.obj_perms',
     'poms.reports',
     'poms.api',
 
@@ -230,9 +231,9 @@ LOGGING = {
             'level': 'INFO',
             'handlers': ['console'],
         },
-        # 'django.db': {
-        #     'level': 'DEBUG',
-        # },
+        'django.db': {
+            'level': 'DEBUG',
+        },
         'poms': {
             'level': 'DEBUG',
             'handlers': ['console'],
@@ -289,7 +290,7 @@ CURRENCY_CODE = 'USD'
 
 AUTHENTICATION_BACKENDS = (
     'django.contrib.auth.backends.ModelBackend',
-    'poms.users.backends.PomsPermissionBackend',
+    # 'poms.obj_perms.backends.PomsPermissionBackend',
 )
 
 ANONYMOUS_USER_ID = -1
