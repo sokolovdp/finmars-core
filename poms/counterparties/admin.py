@@ -4,9 +4,9 @@ from django.contrib import admin
 
 from poms.audit.admin import HistoricalAdmin
 from poms.common.admin import TreeModelAdmin
-from poms.counterparties.models import Counterparty, Responsible, CounterpartyClassifier, CounterpartyAttrValue, \
-    ResponsibleAttrValue, ResponsibleClassifier
-from poms.users.admin import AttrValueAdminBase
+from poms.counterparties.models import Counterparty, Responsible, CounterpartyClassifier, ResponsibleClassifier
+from poms.obj_attrs.admin import AttrValueInlineBase
+from poms.obj_attrs.models import CounterpartyAttrValue, ResponsibleAttrValue
 
 
 class CounterpartyClassifierAdmin(HistoricalAdmin, TreeModelAdmin):
@@ -19,7 +19,7 @@ class CounterpartyClassifierAdmin(HistoricalAdmin, TreeModelAdmin):
 admin.site.register(CounterpartyClassifier, CounterpartyClassifierAdmin)
 
 
-class CounterpartyAttrValueInline(AttrValueAdminBase):
+class CounterpartyAttrValueInline(AttrValueInlineBase):
     model = CounterpartyAttrValue
 
 
@@ -44,7 +44,7 @@ class ResponsibleClassifierAdmin(HistoricalAdmin, TreeModelAdmin):
 admin.site.register(ResponsibleClassifier, ResponsibleClassifierAdmin)
 
 
-class ResponsibleAttrValueInline(AttrValueAdminBase):
+class ResponsibleAttrValueInline(AttrValueInlineBase):
     model = ResponsibleAttrValue
 
 

@@ -15,7 +15,7 @@ from poms.currencies.models import Currency
 from poms.instruments.models import Instrument
 from poms.portfolios.models import Portfolio
 from poms.strategies.models import Strategy
-from poms.users.models import MasterUser, AttrBase, AttrValueBase
+from poms.users.models import MasterUser
 
 
 class TransactionClass(ClassModelBase):
@@ -215,31 +215,6 @@ class Transaction(models.Model):
     @property
     def strategies_cash(self):
         return [self.strategy_cash] if self.strategy_cash_id else []
-
-
-class TransactionAttr(AttrBase):
-    strategy_position = TreeForeignKey('strategies.Strategy', null=True, blank=True, related_name='+')
-    strategy_cash = TreeForeignKey('strategies.Strategy', null=True, blank=True, related_name='+')
-
-    class Meta:
-        pass
-
-
-class TransactionAttrValue(AttrValueBase):
-    transaction = models.ForeignKey(Transaction)
-    attr = models.ForeignKey(TransactionAttr)
-    strategy_position = TreeForeignKey('strategies.Strategy', null=True, blank=True, related_name='+')
-    strategy_cash = TreeForeignKey('strategies.Strategy', null=True, blank=True, related_name='+')
-
-    class Meta:
-        unique_together = [
-            ['transaction', 'attr']
-        ]
-
-    def get_value(self):
-        if self.attr.value_type == AttrBase.CLASSIFIER:
-            return '(%s, %s)' % (self.strategy_position, self.strategy_cash)
-        return super(TransactionAttrValue, self).get_value()
 
 
 history.register(TransactionClass)

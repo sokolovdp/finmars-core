@@ -61,6 +61,7 @@ INSTALLED_APPS = [
     'poms.transactions',
     'poms.integrations',
     'poms.tags',
+    'poms.obj_attrs',
     'poms.reports',
     'poms.api',
 

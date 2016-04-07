@@ -3,12 +3,12 @@ from __future__ import unicode_literals
 from django.db import models
 from django.utils.encoding import python_2_unicode_compatible
 from django.utils.translation import ugettext_lazy as _
-from mptt.fields import TreeForeignKey, TreeManyToManyField
+from mptt.fields import TreeForeignKey
 from mptt.models import MPTTModel
 
 from poms.audit import history
 from poms.common.models import NamedModel
-from poms.users.models import MasterUser, AttrBase, AttrValueBase
+from poms.users.models import MasterUser
 
 
 class CounterpartyClassifier(NamedModel, MPTTModel):
@@ -29,9 +29,6 @@ class CounterpartyClassifier(NamedModel, MPTTModel):
 @python_2_unicode_compatible
 class Counterparty(NamedModel):
     master_user = models.ForeignKey(MasterUser, related_name='counterparties', verbose_name=_('master user'))
-    # portfolios = models.ManyToManyField(Portfolio, blank=True)
-    # settlement_details = models.TextField(null=True, blank=True)
-    # classifiers = TreeManyToManyField(CounterpartyClassifier, blank=True)
 
     class Meta:
         verbose_name = _('counterparty')
@@ -78,44 +75,6 @@ class Responsible(NamedModel):
 
     def __str__(self):
         return self.name
-
-
-class CounterpartyAttr(AttrBase):
-    # scheme = models.ForeignKey(AttrScheme, verbose_name=_('attribute scheme'))
-    classifier = TreeForeignKey(CounterpartyClassifier, null=True, blank=True)
-
-    class Meta:
-        pass
-
-
-class CounterpartyAttrValue(AttrValueBase):
-    counterparty = models.ForeignKey(Counterparty)
-    attr = models.ForeignKey(CounterpartyAttr)
-    classifier = TreeForeignKey(CounterpartyClassifier, null=True, blank=True)
-
-    class Meta:
-        unique_together = [
-            ['counterparty', 'attr']
-        ]
-
-
-class ResponsibleAttr(AttrBase):
-    # scheme = models.ForeignKey(AttrScheme, verbose_name=_('attribute scheme'))
-    classifier = TreeForeignKey(ResponsibleClassifier, null=True, blank=True)
-
-    class Meta:
-        pass
-
-
-class ResponsibleAttrValue(AttrValueBase):
-    responsible = models.ForeignKey(Responsible)
-    attr = models.ForeignKey(ResponsibleAttr)
-    classifier = TreeForeignKey(ResponsibleClassifier, null=True, blank=True)
-
-    class Meta:
-        unique_together = [
-            ['responsible', 'attr']
-        ]
 
 
 history.register(CounterpartyClassifier)

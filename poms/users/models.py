@@ -20,6 +20,7 @@ AVAILABLE_APPS = ['accounts', 'counterparties', 'currencies', 'instruments', 'po
 class MasterUser(models.Model):
     name = models.CharField(max_length=255, null=True, blank=True)
     currency = models.ForeignKey('currencies.Currency', null=True, blank=True)
+
     # members = models.ManyToManyField(settings.AUTH_USER_MODEL, blank=True, through='Member', related_name='member_of')
 
     class Meta:
@@ -90,64 +91,6 @@ class Group(models.Model):
         return self.name
 
 
-class AttrScheme(NamedModel):
-    master_user = models.ForeignKey(MasterUser, verbose_name=_('master user'))
-
-    class Meta:
-        verbose_name = _('attribute scheme')
-        verbose_name_plural = _('attribute schemes')
-        unique_together = [
-            ['master_user', 'user_code']
-        ]
-
-
-class AttrBase(NamedModel):
-    STR = 10
-    NUM = 20
-    CLASSIFIER = 30
-
-    VALUE_TYPES = (
-        (NUM, _('Number')),
-        (STR, _('String')),
-        (CLASSIFIER, _('Classifier')),
-    )
-
-    scheme = models.ForeignKey(AttrScheme, verbose_name=_('attribute scheme'))
-    order = models.IntegerField(default=0)
-    value_type = models.PositiveSmallIntegerField(default=STR, choices=VALUE_TYPES)
-
-    class Meta:
-        abstract = True
-        verbose_name = _('attribute')
-        verbose_name_plural = _('attributes')
-        unique_together = [
-            ['scheme', 'user_code']
-        ]
-
-
-@python_2_unicode_compatible
-class AttrValueBase(models.Model):
-    value_str = models.CharField(max_length=255, null=True, blank=True)
-    value_num = models.FloatField(null=True, blank=True)
-
-    class Meta:
-        abstract = True
-
-    def __str__(self):
-        return '%s' % self.get_value()
-
-    def get_value(self):
-        if self.attr.value_type == AttrBase.NUM:
-            return self.value_num
-        elif self.attr.value_type == AttrBase.STR:
-            return self.value_str
-        elif self.attr.value_type == AttrBase.CLASSIFIER:
-            return self.classifier
-        return None
-
-        # value = property(get_value)
-
-
 class ObjectPermissionBase(models.Model):
     permission = models.ForeignKey(Permission)
 
@@ -181,9 +124,9 @@ class GroupObjectPermissionBase(ObjectPermissionBase):
 def members_fill_from_user(sender, instance=None, created=None, **kwargs):
     if not created:
         instance.member_set.all().update(
-            first_name = instance.first_name,
-            last_name = instance.last_name,
-            email = instance.email
+            first_name=instance.first_name,
+            last_name=instance.last_name,
+            email=instance.email
         )
         # for member in instance.member_set.all():
         #     member.first_name = instance.user.first_name

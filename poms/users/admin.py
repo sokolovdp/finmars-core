@@ -6,13 +6,8 @@ from django.contrib.auth.admin import UserAdmin
 from django.contrib.auth.models import User, Permission
 from django.contrib.contenttypes.models import ContentType
 
-from poms.accounts.models import AccountAttr
 from poms.audit.admin import HistoricalAdmin
-from poms.counterparties.models import CounterpartyAttr, ResponsibleAttr
-from poms.instruments.models import InstrumentAttr
-from poms.portfolios.models import PortfolioAttr
-from poms.transactions.models import TransactionAttr
-from poms.users.models import MasterUser, UserProfile, Member, Group, AttrScheme
+from poms.users.models import MasterUser, UserProfile, Member, Group
 
 
 class MemberInline(admin.StackedInline):
@@ -84,62 +79,6 @@ class GroupAdmin(HistoricalAdmin, admin.ModelAdmin):
 
 
 admin.site.register(Group, GroupAdmin)
-
-
-class AttrAdminBase(admin.StackedInline):
-    ordering = ['order', 'name']
-    raw_id_fields = ['classifier']
-    extra = 0
-
-
-class AttrValueAdminBase(admin.StackedInline):
-    extra = 0
-    raw_id_fields = ['classifier']
-
-
-class AccountAttrInline(AttrAdminBase):
-    model = AccountAttr
-
-
-class CounterpartyAttrInline(AttrAdminBase):
-    model = CounterpartyAttr
-
-
-class ResponsibleAttrInline(AttrAdminBase):
-    model = ResponsibleAttr
-
-
-class PortfolioAttrInline(AttrAdminBase):
-    model = PortfolioAttr
-
-
-class InstrumentAttrInline(AttrAdminBase):
-    model = InstrumentAttr
-
-
-class TransactionAttrInline(AttrAdminBase):
-    model = TransactionAttr
-    raw_id_fields = ['strategy_position', 'strategy_cash']
-    ordering = ['order', 'name']
-    extra = 0
-
-
-class AttrSchemeAdmin(HistoricalAdmin, admin.ModelAdmin):
-    model = AttrScheme
-    list_display = ['id', 'name', 'master_user']
-    list_select_related = ['master_user']
-    raw_id_fields = ['master_user']
-    inlines = [
-        AccountAttrInline,
-        CounterpartyAttrInline,
-        ResponsibleAttrInline,
-        PortfolioAttrInline,
-        InstrumentAttrInline,
-        TransactionAttrInline
-    ]
-
-
-admin.site.register(AttrScheme, AttrSchemeAdmin)
 
 
 class UserObjectPermissionAdminBase(admin.ModelAdmin):

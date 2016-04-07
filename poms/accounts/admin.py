@@ -2,10 +2,11 @@ from __future__ import unicode_literals
 
 from django.contrib import admin
 
-from poms.accounts.models import Account, AccountType, AccountClassifier, AccountAttrValue
+from poms.accounts.models import Account, AccountType, AccountClassifier
 from poms.audit.admin import HistoricalAdmin
 from poms.common.admin import TreeModelAdmin
-from poms.users.admin import AttrValueAdminBase
+from poms.obj_attrs.admin import AttrValueInlineBase
+from poms.obj_attrs.models import AccountAttrValue
 
 
 class AccountTypeAdmin(HistoricalAdmin):
@@ -28,7 +29,7 @@ class AccountClassifierAdmin(HistoricalAdmin, TreeModelAdmin):
 admin.site.register(AccountClassifier, AccountClassifierAdmin)
 
 
-class AccountAttrValueInline(AttrValueAdminBase):
+class AccountAttrValueInline(AttrValueInlineBase):
     model = AccountAttrValue
 
 
@@ -39,22 +40,5 @@ class AccountAdmin(HistoricalAdmin):
     raw_id_fields = ['master_user', 'type']
     inlines = [AccountAttrValueInline]
 
-    # related_lookup_fields = {
-    #     'fk': ['master_user', 'type'],
-    #     'm2m': ['tags'],
-    # }
-    # autocomplete_lookup_fields = {
-    #     'fk': ['master_user', 'type'],
-    #     'm2m': ['tags'],
-    # }
-
 
 admin.site.register(Account, AccountAdmin)
-
-
-# admin.site.register(AccountTypeUserObjectPermission, UserObjectPermissionAdmin)
-# admin.site.register(AccountTypeGroupObjectPermission, GroupObjectPermissionAdmin)
-# admin.site.register(AccountClassifierUserObjectPermission, UserObjectPermissionAdmin)
-# admin.site.register(AccountClassifierGroupObjectPermission, GroupObjectPermissionAdmin)
-# admin.site.register(AccountUserObjectPermission, UserObjectPermissionAdmin)
-# admin.site.register(AccountGroupObjectPermission, GroupObjectPermissionAdmin)

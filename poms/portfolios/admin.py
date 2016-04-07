@@ -4,8 +4,9 @@ from django.contrib import admin
 
 from poms.audit.admin import HistoricalAdmin
 from poms.common.admin import TreeModelAdmin
-from poms.portfolios.models import Portfolio, PortfolioClassifier, PortfolioAttrValue
-from poms.users.admin import AttrValueAdminBase
+from poms.obj_attrs.admin import AttrValueInlineBase
+from poms.obj_attrs.models import PortfolioAttrValue
+from poms.portfolios.models import Portfolio, PortfolioClassifier
 
 
 class PortfolioClassifierAdmin(HistoricalAdmin, TreeModelAdmin):
@@ -18,7 +19,7 @@ class PortfolioClassifierAdmin(HistoricalAdmin, TreeModelAdmin):
 admin.site.register(PortfolioClassifier, PortfolioClassifierAdmin)
 
 
-class PortfolioAttrValueInline(AttrValueAdminBase):
+class PortfolioAttrValueInline(AttrValueInlineBase):
     model = PortfolioAttrValue
 
 

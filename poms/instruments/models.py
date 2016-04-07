@@ -10,7 +10,7 @@ from mptt.models import MPTTModel
 from poms.audit import history
 from poms.common.models import NamedModel, ClassModelBase
 from poms.currencies.models import Currency
-from poms.users.models import MasterUser, AttrBase, AttrValueBase
+from poms.users.models import MasterUser
 
 
 class InstrumentClass(ClassModelBase):
@@ -195,25 +195,6 @@ class AccrualCalculationSchedule(models.Model):
     payment_frequency = models.ForeignKey(PaymentFrequency)
     accrual_calculation_model = models.ForeignKey(AccrualCalculationModel)
     notes = models.TextField(null=True, blank=True, verbose_name=_('notes'))
-
-
-class InstrumentAttr(AttrBase):
-    # scheme = models.ForeignKey(AttrScheme, verbose_name=_('attribute scheme'))
-    classifier = TreeForeignKey(InstrumentClassifier, null=True, blank=True)
-
-    class Meta:
-        pass
-
-
-class InstrumentAttrValue(AttrValueBase):
-    instrument = models.ForeignKey(Instrument)
-    attr = models.ForeignKey(InstrumentAttr)
-    classifier = TreeForeignKey(InstrumentClassifier, null=True, blank=True)
-
-    class Meta:
-        unique_together = [
-            ['instrument', 'attr']
-        ]
 
 
 history.register(InstrumentClassifier)

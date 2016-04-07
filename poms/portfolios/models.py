@@ -12,7 +12,7 @@ from poms.common.models import NamedModel
 from poms.counterparties.models import Counterparty, Responsible
 from poms.currencies.models import Currency
 from poms.strategies.models import Strategy
-from poms.users.models import MasterUser, AttrBase, AttrValueBase
+from poms.users.models import MasterUser
 
 
 @python_2_unicode_compatible
@@ -50,24 +50,6 @@ class Portfolio(NamedModel):
 
     def __str__(self):
         return self.name
-
-
-class PortfolioAttr(AttrBase):
-    classifier = TreeForeignKey(PortfolioClassifier, null=True, blank=True)
-
-    class Meta:
-        pass
-
-
-class PortfolioAttrValue(AttrValueBase):
-    portfolio = models.ForeignKey(Portfolio)
-    attr = models.ForeignKey(PortfolioAttr)
-    classifier = TreeForeignKey(PortfolioClassifier, null=True, blank=True)
-
-    class Meta:
-        unique_together = [
-            ['portfolio', 'attr']
-        ]
 
 
 history.register(PortfolioClassifier)

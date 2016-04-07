@@ -3,9 +3,10 @@ from __future__ import unicode_literals
 from django.contrib import admin
 
 from poms.audit.admin import HistoricalAdmin
+from poms.obj_attrs.admin import AttrValueInlineBase
+from poms.obj_attrs.models import TransactionAttrValue
 from poms.transactions.models import TransactionClass, Transaction, TransactionType, \
-    TransactionAttrValue, ComplexTransaction, ComplexTransactionItem, EventType
-from poms.users.admin import AttrValueAdminBase
+    ComplexTransaction, ComplexTransactionItem, EventType
 
 
 class TransactionClassAdmin(HistoricalAdmin):
@@ -48,9 +49,9 @@ class ComplexTransactionAdmin(HistoricalAdmin):
 admin.site.register(ComplexTransaction, ComplexTransactionAdmin)
 
 
-class TransactionAttrValueInline(AttrValueAdminBase):
+class TransactionAttrValueInline(AttrValueInlineBase):
     model = TransactionAttrValue
-    raw_id_fields = ['strategy_position', 'strategy_cash']
+    raw_id_fields = ['attr', 'strategy_position', 'strategy_cash']
 
 
 class TransactionAdmin(HistoricalAdmin):
