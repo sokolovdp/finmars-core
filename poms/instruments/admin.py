@@ -97,15 +97,9 @@ class InstrumentTagAdmin(HistoricalAdmin):
 admin.site.register(InstrumentTag, InstrumentTagAdmin)
 
 
-class ManualPricingFormulaAdmin(HistoricalAdmin):
+class ManualPricingFormulaInline(admin.StackedInline):
     model = ManualPricingFormula
-    list_display = ['id', 'name', 'master_user']
-    list_select_related = ['master_user']
-    raw_id_fields = ['master_user']
-
-
-admin.site.register(ManualPricingFormula, ManualPricingFormulaAdmin)
-
+    extra = 0
 
 class InstrumentAttrValueInline(AttrValueAdminBase):
     model = InstrumentAttrValue
@@ -121,10 +115,9 @@ class InstrumentAdmin(HistoricalAdmin):
     list_display = ['id', 'name', 'master_user', 'type', 'pricing_currency', 'accrued_currency']
     list_select_related = ['master_user', 'type', 'pricing_currency', 'accrued_currency']
     filter_horizontal = ['tags']
-    inlines = [InstrumentAttrValueInline, AccrualCalculationScheduleInline]
+    inlines = [ManualPricingFormulaInline, InstrumentAttrValueInline, AccrualCalculationScheduleInline]
     raw_id_fields = ['master_user', 'type', 'pricing_currency', 'accrued_currency',
-                     'daily_pricing_model', 'accrual_calculation_model', 'payment_frequency',
-                     'manual_pricing_formula']
+                     'daily_pricing_model']
 
 
 admin.site.register(Instrument, InstrumentAdmin)

@@ -35,6 +35,9 @@ class InstrumentClass(ClassModelBase):
 
 class DailyPricingModel(ClassModelBase):
     # TODO: add "values"
+    SKIP = 1
+    MANUAL = 2
+    BLOOMBERG = 3
     CLASSES = tuple()
 
     class Meta:
@@ -143,25 +146,6 @@ class InstrumentTag(TagModelBase):
 
 
 @python_2_unicode_compatible
-class ManualPricingFormula(NamedModel):
-    master_user = models.ForeignKey(MasterUser, related_name='manual_pricing_formulas', verbose_name=_('master user'))
-    expr = models.TextField(default='0.')
-
-    class Meta:
-        verbose_name = _('manual pricing formula')
-        verbose_name_plural = _('manual pricing formulas')
-        unique_together = [
-            ['master_user', 'user_code']
-        ]
-        permissions = [
-            ('view_manualpricingformula', 'Can view manual pricing formula')
-        ]
-
-    def __str__(self):
-        return self.name
-
-
-@python_2_unicode_compatible
 class Instrument(NamedModel):
     master_user = models.ForeignKey(MasterUser, related_name='instruments', verbose_name=_('master user'))
     type = models.ForeignKey(InstrumentType, verbose_name=_('type'))
@@ -171,13 +155,11 @@ class Instrument(NamedModel):
     accrued_currency = models.ForeignKey(Currency, null=True, blank=True, related_name='instruments_accrued',
                                          on_delete=models.PROTECT)
     accrued_multiplier = models.FloatField(default=1.)
-    # classifiers = TreeManyToManyField(InstrumentClassifier, blank=True)
     tags = models.ManyToManyField(InstrumentTag, blank=True)
 
     daily_pricing_model = models.ForeignKey(DailyPricingModel, null=True, blank=True)
-    accrual_calculation_model = models.ForeignKey(AccrualCalculationModel, null=True, blank=True)
-    payment_frequency = models.ForeignKey(PaymentFrequency, null=True, blank=True)
-    manual_pricing_formula = models.ForeignKey(ManualPricingFormula, null=True, blank=True)
+    # accrual_calculation_model = models.ForeignKey(AccrualCalculationModel, null=True, blank=True)
+    # payment_frequency = models.ForeignKey(PaymentFrequency, null=True, blank=True)
 
     class Meta:
         verbose_name = _('instrument')
@@ -191,6 +173,27 @@ class Instrument(NamedModel):
 
     def __str__(self):
         return self.name
+
+
+# @python_2_unicode_compatible
+class ManualPricingFormula(models.Model):
+    instrument = models.ForeignKey(Instrument)
+    pricing_policy = models.ForeignKey('integrations.PricingPolicy')
+    expr = models.TextField(default='')
+    notes = models.TextField(blank=True, default='', verbose_name=_('notes'))
+
+    class Meta:
+        verbose_name = _('manual pricing formula')
+        verbose_name_plural = _('manual pricing formulas')
+        unique_together = [
+            ['instrument', 'pricing_policy']
+        ]
+        permissions = [
+            ('view_manualpricingformula', 'Can view manual pricing formula')
+        ]
+
+    def __str__(self):
+        return '%s - %s' % (self.instrument, self.pricing_policy)
 
 
 @python_2_unicode_compatible
@@ -218,13 +221,14 @@ class PriceHistory(models.Model):
         return '%s at %s - %s' % (self.instrument, self.date, self.principal_price,)
 
 
-class AccrualCalculationSchedule(NamedModel):
-    instrument = models.ForeignKey(Instrument, related_name='accrual_calculation_schedule')
+class AccrualCalculationSchedule(models.Model):
+    instrument = models.ForeignKey(Instrument, related_name='accrual_calculation_schedules')
     new_accrual_start_date = models.DateField(default=timezone.now)
     new_first_payment_date = models.DateField(default=timezone.now)
     new_accrual_size = models.FloatField(default=0.)
     payment_frequency = models.ForeignKey(PaymentFrequency)
     accrual_calculation_model = models.ForeignKey(AccrualCalculationModel)
+    notes = models.TextField(null=True, blank=True, verbose_name=_('notes'))
 
 
 class InstrumentAttr(AttrBase):

@@ -15,6 +15,7 @@ class PricingPolicy(NamedModel):
 
     master_user = models.ForeignKey(MasterUser, related_name='pricing_policies', verbose_name=_('master user'))
     type = models.PositiveIntegerField(default=DISABLED, choices=TYPES)
+    expr = models.TextField(default='')
 
     class Meta:
         verbose_name = _('pricing policy')
@@ -24,12 +25,26 @@ class PricingPolicy(NamedModel):
         ]
 
 
-class PricingPolicyAttr(models.Model):
-    pricing_policy = models.ForeignKey(PricingPolicy)
-    name = models.CharField(max_length=255)
-    value = models.CharField(max_length=255, blank=True)
+class AccessData(models.Model):
+    master_user = models.ForeignKey(MasterUser, related_name='access_datas', verbose_name=_('master user'))
+    daily_pricing_model = models.ForeignKey('instruments.DailyPricingModel')
+    username = models.CharField(max_length=255, blank=True)
+    password = models.CharField(max_length=255, blank=True)
+    api_token = models.CharField(max_length=255, blank=True)
 
-    class Meta:
-        unique_together = [
-            ['pricing_policy', 'name']
-        ]
+    # pricing_policy = models.ForeignKey(PricingPolicy)
+    # class Meta:
+    #     unique_together = [
+    #         ['pricing_policy', 'name']
+    #     ]
+
+# class AccessDataAttr(models.Model):
+#     # pricing_policy = models.ForeignKey(PricingPolicy)
+#     access_data = models.ForeignKey(AccessData)
+#     name = models.CharField(max_length=255)
+#     value = models.CharField(max_length=255, blank=True)
+#
+#     class Meta:
+#         unique_together = [
+#             ['pricing_policy', 'name']
+#         ]

@@ -1,13 +1,13 @@
 from django.contrib import admin
 
 from poms.audit.admin import HistoricalAdmin
-from poms.integrations.models import PricingPolicy, PricingPolicyAttr
+from poms.integrations.models import PricingPolicy
 
 
-class PricingPolicyAttrInline(admin.TabularInline):
-    model = PricingPolicyAttr
-    ordering = ['name']
-    extra = 0
+# class PricingPolicyAttrInline(admin.TabularInline):
+#     model = PricingPolicyAttr
+#     ordering = ['name']
+#     extra = 0
 
 
 class PricingPolicyAdmin(HistoricalAdmin):
@@ -15,7 +15,7 @@ class PricingPolicyAdmin(HistoricalAdmin):
     list_display = ['id', 'name', 'master_user']
     list_select_related = ['master_user']
     ordering = ['user_code']
-    inlines = [PricingPolicyAttrInline]
+    # inlines = [PricingPolicyAttrInline]
 
 
 admin.site.register(PricingPolicy, PricingPolicyAdmin)

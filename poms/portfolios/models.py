@@ -60,6 +60,8 @@ class Portfolio(NamedModel):
                                             verbose_name=_('counterparties'))
     responsibles = models.ManyToManyField(Responsible, blank=True, related_name='portfolios',
                                           verbose_name=_('responsibles'))
+    strategies = TreeManyToManyField(Strategy, blank=True, related_name='portfolios',
+                                     verbose_name=_('strategies'))
 
     class Meta:
         verbose_name = _('portfolio')
