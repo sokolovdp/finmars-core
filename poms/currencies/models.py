@@ -11,19 +11,6 @@ from poms.common.models import NamedModel
 from poms.users.models import MasterUser
 
 
-# @python_2_unicode_compatible
-# class CurrencySource(models.Model):
-#     code = models.CharField(max_length=50, verbose_name=_('internal code'), unique=True)
-#     name = models.CharField(max_length=255, verbose_name=_('name'))
-#
-#     class Meta:
-#         verbose_name = _('currency source')
-#         verbose_name_plural = _('currency sources')
-#
-#     def __str__(self):
-#         return '%s' % (self.name,)
-
-
 @python_2_unicode_compatible
 class Currency(NamedModel):
     master_user = models.ForeignKey(MasterUser, related_name='currencies',
