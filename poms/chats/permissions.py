@@ -1,7 +1,5 @@
-from django.contrib.contenttypes.models import ContentType
-from rest_framework.permissions import BasePermission, DjangoObjectPermissions
+from rest_framework.permissions import BasePermission
 
-from poms.chats.models import Thread
 from poms.users.utils import get_member
 
 
@@ -42,10 +40,12 @@ class ThreadObjectPermission(BasePermission):
             return True
 
         member = get_member(request)
-        user_permissions = thread.user_object_permissions.select_related('permission', 'permission__content_type').filter(
+        user_permissions = thread.user_object_permissions.select_related('permission',
+                                                                         'permission__content_type').filter(
             member=member
         )
-        group_permissions = thread.group_object_permissions.select_related('permission', 'permission__content_type').filter(
+        group_permissions = thread.group_object_permissions.select_related('permission',
+                                                                           'permission__content_type').filter(
             group__in=member.groups.all()
         )
         permissions = {p.permission.codename for p in user_permissions}

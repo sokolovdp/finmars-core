@@ -1,9 +1,12 @@
 from __future__ import unicode_literals
 
 import six
+from django.contrib.auth.models import Permission
+from django.contrib.contenttypes.models import ContentType
 from rest_framework import serializers
 
 from poms.audit import history
+from poms.obj_perms.utils import get_granted_permissions
 from poms.users.utils import get_member
 
 
@@ -21,16 +24,17 @@ class GrantedPermissionField(serializers.Field):
             return []
 
         member = get_member(self.context['request'])
+        return get_granted_permissions(member, value)
 
-        perms = set()
-        for uop in value.user_object_permissions.all():
-            if uop.member_id == member.id:
-                perms.add(uop.permission.codename)
-        for gop in value.group_object_permissions.all():
-            if gop.group in member.groups.all():
-                perms.add(gop.permission.codename)
-
-        return perms
+        # perms = set()
+        # for uop in value.user_object_permissions.all():
+        #     if uop.member_id == member.id:
+        #         perms.add(uop.permission.codename)
+        # for gop in value.group_object_permissions.all():
+        #     if gop.group in member.groups.all():
+        #         perms.add(gop.permission.codename)
+        #
+        # return perms
 
 
 class ObjectPermissionField(serializers.Field):
@@ -71,3 +75,16 @@ class ObjectPermissionField(serializers.Field):
             'users': [v for v in six.itervalues(users)],
             'groups': [v for v in six.itervalues(groups)],
         }
+
+
+class PermissionField(serializers.SlugRelatedField):
+    queryset = Permission.objects
+
+    def __init__(self, **kwargs):
+        kwargs['slug_field'] = 'codename'
+        super(PermissionField, self).__init__(**kwargs)
+
+    def get_queryset(self):
+        content_type = ContentType.objects.get_for_model(self.root.Meta.model)
+        qs = super(PermissionField, self).get_queryset()
+        return qs.select_related('content_type').filter(content_type=content_type)

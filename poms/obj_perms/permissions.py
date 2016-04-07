@@ -1,77 +1,51 @@
-from __future__ import unicode_literals, print_function
+from rest_framework.permissions import BasePermission
 
-from rest_framework.permissions import DjangoObjectPermissions
-
-
-class PomsObjectPermissions(DjangoObjectPermissions):
-    pass
-
-# class PomsObjectPermission(DjangoObjectPermissions):
-#     perms_map = {
-#         'GET': ['%(app_label)s.view_%(model_name)s'],
-#         'OPTIONS': ['%(app_label)s.view_%(model_name)s'],
-#         'HEAD': ['%(app_label)s.view_%(model_name)s'],
-#         'POST': ['%(app_label)s.add_%(model_name)s'],
-#         'PUT': ['%(app_label)s.change_%(model_name)s'],
-#         'PATCH': ['%(app_label)s.change_%(model_name)s'],
-#         'DELETE': ['%(app_label)s.delete_%(model_name)s'],
-#     }
-#
-#
-# class PomsObjectPermissionsFilter(DjangoObjectPermissionsFilter):
-#     perms_map = {
-#         'GET': ['%(app_label)s.view_%(model_name)s'],
-#         'OPTIONS': ['%(app_label)s.view_%(model_name)s'],
-#         'HEAD': ['%(app_label)s.view_%(model_name)s'],
-#         'POST': ['%(app_label)s.add_%(model_name)s'],
-#         'PUT': ['%(app_label)s.change_%(model_name)s'],
-#         'PATCH': ['%(app_label)s.change_%(model_name)s'],
-#         'DELETE': ['%(app_label)s.delete_%(model_name)s'],
-#     }
-#
-#     def filter_queryset(self, request, queryset, view):
-#         user = request.user
-#         model = queryset.model
-#         kwargs = {
-#             'app_label': model._meta.app_label,
-#             'model_name': model._meta.model_name
-#         }
-#         permission = self.perm_format % kwargs
-#         return get_objects_for_user(user, permission, queryset, with_superuser=False, accept_global_perms=False)
+from poms.users.utils import get_member
 
 
-# class ObjectPermission(object):
-#     def __init__(self, user=None, group=None, permissions=None):
-#         self.user = user
-#         self.group = group
-#         self.permissions = permissions
-#
-#
-# class ObjectPermissionSerializer(serializers.Serializer):
-#     group = FilteredPrimaryKeyRelatedField(queryset=Group.objects.all(), filter_backends=[])
-#     permissions = PermissionField(many=True)
-#
-#     def create(self, validated_data):
-#         return ObjectPermission(**validated_data)
-#
-#     def update(self, instance, validated_data):
-#         return None
+class ThreadObjectPermission(BasePermission):
+    # perms_map = {
+    #     'GET': [],
+    #     'OPTIONS': [],
+    #     'HEAD': [],
+    #     'POST': ['%(app_label)s.add_%(model_name)s'],
+    #     'PUT': ['%(app_label)s.change_%(model_name)s'],
+    #     'PATCH': ['%(app_label)s.change_%(model_name)s'],
+    #     'DELETE': ['%(app_label)s.delete_%(model_name)s'],
+    # }
+    perms_map = {
+        'GET': [],
+        'OPTIONS': [],
+        'HEAD': [],
+        'POST': ['add_%(model_name)s'],
+        'PUT': ['change_%(model_name)s'],
+        'PATCH': ['change_%(model_name)s'],
+        'DELETE': ['delete_%(model_name)s'],
+    }
 
+    def get_required_object_permissions(self, method, model_cls):
+        kwargs = {
+            'app_label': model_cls._meta.app_label,
+            'model_name': model_cls._meta.model_name
+        }
+        return {perm % kwargs for perm in self.perms_map[method]}
 
-# class ObjectPermissionGroupFilter(BaseFilterBackend):
-#     def filter_queryset(self, request, queryset, view):
-#         return queryset.filter(profile__isnull=False)
+    def has_object_permission(self, request, view, obj):
+        thread = obj
+        req_perms = self.get_required_object_permissions(request.method, thread)
+        if not req_perms:
+            return True
 
+        member = get_member(request)
+        user_perms = thread.user_object_permissions.select_related('permission',
+                                                                   'permission__content_type').filter(
+            member=member
+        )
+        group_perms = thread.group_object_permissions.select_related('permission',
+                                                                     'permission__content_type').filter(
+            group__in=member.groups.all()
+        )
+        permissions = {p.permission.codename for p in user_perms}
+        permissions.update(p.permission.codename for p in group_perms)
 
-# class ObjectPermissionGuard(BasePermission):
-#     # def has_permission(self, request, view):
-#     #     profile = getattr(request.user, 'profile', None)
-#     #     return getattr(profile, 'is_admin', False)
-#
-#     # def has_object_permission(self, request, view, obj):
-#     #     # <Currency: USD>
-#     #     # print(repr(obj))
-#     #     if request.method in SAFE_METHODS:
-#     #         return True
-#     #     return False
-#     pass
+        return req_perms.issubset(permissions)

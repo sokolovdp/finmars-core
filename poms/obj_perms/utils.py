@@ -1,7 +1,14 @@
+from django.contrib.auth.models import Permission
+from django.contrib.contenttypes.models import ContentType
+from django.db.models import Q
+
+from poms.obj_perms.models import GroupObjectPermissionBase, UserObjectPermissionBase
+
+
 def register_model(model):
     from django.db import models
     from django.utils.translation import ugettext_lazy as _
-    from poms.users.models import UserObjectPermissionBase, GroupObjectPermissionBase
+    from poms.obj_perms.models import UserObjectPermissionBase, GroupObjectPermissionBase
 
     app_module = '%s.models' % model._meta.app_label
 
@@ -41,8 +48,8 @@ def register_model(model):
 
 def register_admin(*args):
     from django.contrib import admin
-    from poms.users.models import UserObjectPermissionBase, GroupObjectPermissionBase
-    from poms.users.admin import UserObjectPermissionAdmin, GroupObjectPermissionAdmin
+    from poms.obj_perms.models import UserObjectPermissionBase, GroupObjectPermissionBase
+    from poms.obj_perms.admin import UserObjectPermissionAdmin, GroupObjectPermissionAdmin
 
     for model in args:
         fields = (f for f in model._meta.get_fields() if (f.one_to_many or f.one_to_one) and f.auto_created)
@@ -73,27 +80,18 @@ def get_obj_perms_model(obj, base_cls):
 
 
 def get_user_obj_perms_model(obj):
-    from poms.users.obj_perms.models import UserObjectPermissionBase
     return get_obj_perms_model(obj, UserObjectPermissionBase)
 
 
 def get_group_obj_perms_model(obj):
-    from poms.users.obj_perms.models import GroupObjectPermissionBase
     return get_obj_perms_model(obj, GroupObjectPermissionBase)
 
 
-def filter_objects_for_user(user_obj, perms, queryset):
-    from django.contrib.contenttypes.models import ContentType
-    from django.db.models import Q
-
-    if not hasattr(user_obj, 'current_member'):
-        return queryset.none()
-    member = user_obj.current_member
-
-    model = queryset.model
-    ctype = ContentType.objects.get_for_model(model)
+def obj_perms_filter_objects(member, perms, queryset, model_cls=None):
+    model = model_cls or queryset.model
     user_lookup_name, user_obj_perms_model = get_user_obj_perms_model(model)
     group_lookup_name, group_obj_perms_model = get_group_obj_perms_model(model)
+    ctype = ContentType.objects.get_for_model(model)
 
     codenames = set()
     for perm in perms:
@@ -127,10 +125,12 @@ def filter_objects_for_user(user_obj, perms, queryset):
         lookups = []
         if user_lookup_name:
             lookups.append(user_lookup_name)
-            lookups.append('%s__content_type' % user_lookup_name)
+            lookups.append('%s__permission' % user_lookup_name)
+            lookups.append('%s__permission__content_type' % user_lookup_name)
         if group_lookup_name:
             lookups.append(group_lookup_name)
-            lookups.append('%s__content_type' % group_lookup_name)
+            lookups.append('%s__permission' % group_lookup_name)
+            lookups.append('%s__permission__content_type' % group_lookup_name)
         if lookups:
             queryset = queryset.prefetch_related(*lookups)
 
@@ -139,18 +139,107 @@ def filter_objects_for_user(user_obj, perms, queryset):
         return queryset.none()
 
 
-def get_granted_permissions(user_obj, obj):
+def get_granted_permissions(member, obj):
+    model = obj
+    user_lookup_name, user_obj_perms_model = get_user_obj_perms_model(model)
+    group_lookup_name, group_obj_perms_model = get_group_obj_perms_model(model)
+
+    obj_perms = set()
+    if user_lookup_name:
+        user_obj_perms = getattr(obj, user_lookup_name)
+        for po in user_obj_perms.all():
+            if po.member_id == member.id:
+                obj_perms.add(po.permission.codename)
+
+    if group_lookup_name:
+        group_obj_perms = getattr(obj, group_lookup_name)
+        for po in group_obj_perms.all():
+            if po.group in member.groups.all():
+                obj_perms.add(po.permission.codename)
+
+    return obj_perms
+
+
+def assign_perms_to_new_obj(obj, owner, owner_perms, members, groups, perms):
+    ctype = ContentType.objects.get_for_model(obj)
+    permissions = list(Permission.objects.filter(content_type=ctype))
+
     user_lookup_name, user_obj_perms_model = get_user_obj_perms_model(obj)
     group_lookup_name, group_obj_perms_model = get_group_obj_perms_model(obj)
 
-    user_perms = getattr(obj, user_lookup_name, []) if user_lookup_name else []
-    group_perms = getattr(obj, group_lookup_name, []) if group_lookup_name else []
+    user_perms = []
+    group_perms = []
 
-    if not hasattr(user_obj, 'current_member'):
-        return []
-    member = user_obj.current_member
-    groups = {g.id for g in member.groups.all()}
+    for p in permissions:
+        if owner_perms:
+            if p.codename in owner_perms:
+                user_perms.append(
+                    user_obj_perms_model(content_object=obj, member=owner, permission=p)
+                )
+        else:
+            user_perms.append(
+                user_obj_perms_model(content_object=obj, member=owner, permission=p)
+            )
 
-    perms = {'%s.%s' % (p.content_type.app_label, p.code) for p in user_perms if p.member_id == member.id}
-    perms.update('%s.%s' % (p.content_type.app_label, p.code) for p in group_perms if p.group_id == groups)
-    return perms
+    if members:
+        for m in members:
+            if m.id == owner.id:
+                continue
+            for p in permissions:
+                if p.codename in perms:
+                    user_perms.append(
+                        user_obj_perms_model(content_object=obj, member=m, permission=p)
+                    )
+
+    if groups:
+        for g in groups:
+            for p in permissions:
+                if p.codename in perms:
+                    group_perms.append(
+                        group_obj_perms_model(content_object=obj, group=g, permission=p)
+                    )
+
+    if user_perms:
+        user_obj_perms_model.objects.bulk_create(user_perms)
+    if group_perms:
+        group_obj_perms_model.objects.bulk_create(group_perms)
+
+
+def get_perms(ctype, perms):
+    if perms:
+        if isinstance(perms[0], Permission):
+            return perms
+        return list(Permission.objects.filter(content_type=ctype, codename__in=perms))
+    return None
+
+
+def assign_member_perm(obj, members, perms):
+    ctype = ContentType.objects.get_for_model(obj)
+    user_lookup_name, user_obj_perms_model = get_user_obj_perms_model(obj)
+
+    user_obj_perms_model.objects.filter(member__in=members).delete()
+    if perms:
+        perms = get_perms(ctype, perms)
+        user_perms = []
+        for m in members:
+            for p in perms:
+                user_perms.append(
+                    user_obj_perms_model(content_object=obj, member=m, permission=p)
+                )
+        user_obj_perms_model.objects.bulk_create(user_perms)
+
+
+def assign_group_perm(obj, groups, perms):
+    ctype = ContentType.objects.get_for_model(obj)
+    group_lookup_name, group_obj_perms_model = get_group_obj_perms_model(obj)
+
+    group_obj_perms_model.objects.filter(group__in=groups).delete()
+    if perms:
+        perms = get_perms(ctype, perms)
+        group_perms = []
+        for g in groups:
+            for p in perms:
+                group_perms.append(
+                    group_obj_perms_model(content_object=obj, group=g, permission=p)
+                )
+        group_obj_perms_model.objects.bulk_create(group_perms)

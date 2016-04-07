@@ -1,13 +1,12 @@
 from __future__ import unicode_literals
 
-from django.contrib.auth.models import Permission
-from django.contrib.contenttypes.models import ContentType
 from rest_framework import serializers
 
 from poms.chats.fields import ThreadField, ThreadStatusField
 from poms.chats.models import Thread, Message, DirectMessage, ThreadStatus
-from poms.obj_perms.fields import GrantedPermissionField, ObjectPermissionField
-from poms.obj_perms.models import ThreadUserObjectPermission, ThreadGroupObjectPermission
+from poms.obj_perms.fields import GrantedPermissionField
+from poms.obj_perms.serializers import UserObjectPermissionSerializer, GroupObjectPermissionSerializer
+from poms.obj_perms.utils import assign_perms_to_new_obj
 from poms.users.fields import MasterUserField, MemberField, HiddenMemberField, GroupField
 from poms.users.utils import get_member
 
@@ -25,63 +24,38 @@ class ThreadSerializer(serializers.ModelSerializer):
     url = serializers.HyperlinkedIdentityField(view_name='chatthread-detail')
     master_user = MasterUserField()
     status = ThreadStatusField()
+    granted_permissions = GrantedPermissionField()
+
+    # user_object_permissions = UserObjectPermissionSerializer(many=True, read_only=True)
+    # group_object_permissions = GroupObjectPermissionSerializer(many=True, read_only=True)
+
     members = MemberField(many=True, write_only=True)
     groups = GroupField(many=True, write_only=True)
-    granted_permissions = GrantedPermissionField()
-    object_permissions = ObjectPermissionField()
+
+    # permissions = PermissionField(many=True, write_only=True)
 
     class Meta:
         model = Thread
         fields = ['url', 'id', 'master_user', 'created', 'modified', 'subject', 'status',
-                  'members', 'groups',
-                  'granted_permissions', 'object_permissions']
+                  'granted_permissions',
+                  # 'user_object_permissions', 'group_object_permissions',
+                  'members', 'groups']
         read_only_fields = ['created', 'modified']
 
     def create(self, validated_data):
         members = validated_data.pop('members', None)
         groups = validated_data.pop('groups', None)
+        permissions = validated_data.pop('permissions', None)
+
         instance = super(ThreadSerializer, self).create(validated_data)
 
+        member = get_member(self.context['request'])
         owner_permission_set = ['view_thread', 'change_thread', 'manage_thread', 'delete_thread']
         member_permission_set = ['view_thread']
-
-        request = self.context['request']
-        member = get_member(request)
-        ctype = ContentType.objects.get_for_model(Thread)
-        permissions = list(Permission.objects.filter(content_type=ctype))
-
-        user_permissions = []
-        group_permissions = []
-
-        for p in permissions:
-            if p.codename in owner_permission_set:
-                user_permissions.append(
-                    ThreadUserObjectPermission(content_object=instance, member=member, permission=p)
-                )
-
-        if members:
-            for m in members:
-                if m.id == member.id:
-                    continue
-                for p in permissions:
-                    if p.codename in member_permission_set:
-                        user_permissions.append(
-                            ThreadUserObjectPermission(content_object=instance, member=m, permission=p)
-                        )
-
-        if groups:
-            for g in groups:
-                for p in permissions:
-                    if p.codename in member_permission_set:
-                        group_permissions.append(
-                            ThreadGroupObjectPermission(content_object=instance, group=g, permission=p)
-                        )
-
-        if user_permissions:
-            ThreadUserObjectPermission.objects.bulk_create(user_permissions)
-
-        if group_permissions:
-            ThreadGroupObjectPermission.objects.bulk_create(group_permissions)
+        assign_perms_to_new_obj(obj=instance,
+                                owner=member, owner_perms=owner_permission_set,
+                                members=members, groups=groups,
+                                perms=member_permission_set)
 
         return instance
 
