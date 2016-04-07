@@ -5,7 +5,7 @@ from django.contrib import admin
 from poms.audit.admin import HistoricalAdmin
 from poms.common.admin import TreeModelAdmin
 from poms.instruments.models import Instrument, PriceHistory, InstrumentClassifier, InstrumentClass, InstrumentType, \
-    InstrumentTypeTag, InstrumentTag, DailyPricingModel, AccrualCalculationModel, PaymentFrequency, CostMethod, \
+    DailyPricingModel, AccrualCalculationModel, PaymentFrequency, CostMethod, \
     ManualPricingFormula, InstrumentAttrValue, AccrualCalculationSchedule
 from poms.users.admin import AttrValueAdminBase
 
@@ -55,22 +55,11 @@ class CostMethodAdmin(HistoricalAdmin):
 admin.site.register(CostMethod, InstrumentClassAdmin)
 
 
-class InstrumentTypeTagAdmin(HistoricalAdmin):
-    model = InstrumentTypeTag
-    list_display = ['id', 'name', 'master_user']
-    list_select_related = ['master_user']
-    raw_id_fields = ['master_user']
-
-
-admin.site.register(InstrumentTypeTag, InstrumentTypeTagAdmin)
-
-
 class InstrumentTypeAdmin(HistoricalAdmin):
     model = InstrumentType
     list_display = ['id', 'name', 'master_user', 'instrument_class']
     list_select_related = ['master_user', 'instrument_class']
     list_filter = ['instrument_class']
-    filter_horizontal = ['tags', ]
     raw_id_fields = ['master_user']
 
 
@@ -87,19 +76,10 @@ class InstrumentClassifierAdmin(HistoricalAdmin, TreeModelAdmin):
 admin.site.register(InstrumentClassifier, InstrumentClassifierAdmin)
 
 
-class InstrumentTagAdmin(HistoricalAdmin):
-    model = InstrumentTag
-    list_display = ['id', 'name', 'master_user']
-    list_select_related = ['master_user']
-    raw_id_fields = ['master_user']
-
-
-admin.site.register(InstrumentTag, InstrumentTagAdmin)
-
-
 class ManualPricingFormulaInline(admin.StackedInline):
     model = ManualPricingFormula
     extra = 0
+
 
 class InstrumentAttrValueInline(AttrValueAdminBase):
     model = InstrumentAttrValue
@@ -114,7 +94,6 @@ class InstrumentAdmin(HistoricalAdmin):
     model = Instrument
     list_display = ['id', 'name', 'master_user', 'type', 'pricing_currency', 'accrued_currency']
     list_select_related = ['master_user', 'type', 'pricing_currency', 'accrued_currency']
-    filter_horizontal = ['tags']
     inlines = [ManualPricingFormulaInline, InstrumentAttrValueInline, AccrualCalculationScheduleInline]
     raw_id_fields = ['master_user', 'type', 'pricing_currency', 'accrued_currency',
                      'daily_pricing_model']

@@ -27,10 +27,10 @@ class PricingPolicy(NamedModel):
 
 class AccessData(models.Model):
     master_user = models.ForeignKey(MasterUser, related_name='access_datas', verbose_name=_('master user'))
-    daily_pricing_model = models.ForeignKey('instruments.DailyPricingModel')
+    pricing_policy = models.ManyToManyField(PricingPolicy)
     username = models.CharField(max_length=255, blank=True)
     password = models.CharField(max_length=255, blank=True)
-    api_token = models.CharField(max_length=255, blank=True)
+    data = models.TextField(blank=True)
 
     # pricing_policy = models.ForeignKey(PricingPolicy)
     # class Meta:

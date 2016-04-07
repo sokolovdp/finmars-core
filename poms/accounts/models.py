@@ -3,7 +3,7 @@ from __future__ import unicode_literals
 from django.db import models
 from django.utils.encoding import python_2_unicode_compatible
 from django.utils.translation import ugettext_lazy as _
-from mptt.fields import TreeForeignKey, TreeManyToManyField
+from mptt.fields import TreeForeignKey
 from mptt.models import MPTTModel
 
 from poms.audit import history
@@ -54,27 +54,10 @@ class AccountClassifier(NamedModel, MPTTModel):
         return self.name
 
 
-class AccountTag(TagModelBase):
-    master_user = models.ForeignKey(MasterUser, related_name='account_tags', verbose_name=_('master user'))
-
-    class Meta:
-        verbose_name = _('account tag')
-        verbose_name_plural = _('account tags')
-        unique_together = [
-            ['master_user', 'user_code'],
-            ['master_user', 'name'],
-        ]
-        permissions = [
-            ('view_accounttag', 'Can view account tag')
-        ]
-
-
 @python_2_unicode_compatible
 class Account(NamedModel):
     master_user = models.ForeignKey(MasterUser, related_name='accounts', verbose_name=_('master user'))
     type = models.ForeignKey(AccountType, null=True, blank=True)
-    # classifiers = TreeManyToManyField(AccountClassifier, blank=True)
-    tags = models.ManyToManyField(AccountTag, blank=True)
 
     class Meta:
         verbose_name = _('account')
@@ -160,5 +143,4 @@ class AccountAttrValue(AttrValueBase):
 
 history.register(AccountClassifier)
 history.register(AccountType)
-history.register(AccountTag)
 history.register(Account)

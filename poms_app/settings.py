@@ -60,6 +60,7 @@ INSTALLED_APPS = [
     'poms.strategies',
     'poms.transactions',
     'poms.integrations',
+    'poms.tags',
     'poms.reports',
     'poms.api',
 

@@ -3,12 +3,12 @@ from __future__ import unicode_literals
 from django.db import models
 from django.utils.encoding import python_2_unicode_compatible
 from django.utils.translation import ugettext_lazy as _
-from mptt.fields import TreeForeignKey, TreeManyToManyField
+from mptt.fields import TreeForeignKey
 from mptt.models import MPTTModel
 
 from poms.accounts.models import Account
 from poms.audit import history
-from poms.common.models import NamedModel, TagModelBase
+from poms.common.models import NamedModel
 from poms.counterparties.models import Counterparty, Responsible
 from poms.currencies.models import Currency
 from poms.strategies.models import Strategy
@@ -34,34 +34,9 @@ class PortfolioClassifier(NamedModel, MPTTModel):
         return self.name
 
 
-class PortfolioTag(TagModelBase):
-    master_user = models.ForeignKey(MasterUser, related_name='portfolio_tags', verbose_name=_('master user'))
-
-    class Meta:
-        verbose_name = _('portfolio tag')
-        verbose_name_plural = _('portfolio tags')
-        unique_together = [
-            ['master_user', 'user_code'],
-            ['master_user', 'name'],
-        ]
-        permissions = [
-            ('view_portfoliotag', 'Can view portfolio tag')
-        ]
-
-
 @python_2_unicode_compatible
 class Portfolio(NamedModel):
     master_user = models.ForeignKey(MasterUser, related_name='portfolios', verbose_name=_('master user'))
-    # classifiers = TreeManyToManyField(PortfolioClassifier, blank=True)
-    tags = models.ManyToManyField(PortfolioTag, blank=True)
-
-    accounts = models.ManyToManyField(Account, blank=True, related_name='portfolios', verbose_name=_('accounts'))
-    counterparties = models.ManyToManyField(Counterparty, blank=True, related_name='portfolios',
-                                            verbose_name=_('counterparties'))
-    responsibles = models.ManyToManyField(Responsible, blank=True, related_name='portfolios',
-                                          verbose_name=_('responsibles'))
-    strategies = TreeManyToManyField(Strategy, blank=True, related_name='portfolios',
-                                     verbose_name=_('strategies'))
 
     class Meta:
         verbose_name = _('portfolio')
@@ -96,5 +71,4 @@ class PortfolioAttrValue(AttrValueBase):
 
 
 history.register(PortfolioClassifier)
-history.register(PortfolioTag)
 history.register(Portfolio)

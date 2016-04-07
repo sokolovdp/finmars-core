@@ -4,11 +4,11 @@ from django.db import models
 from django.utils import timezone
 from django.utils.encoding import python_2_unicode_compatible
 from django.utils.translation import ugettext_lazy as _
-from mptt.fields import TreeForeignKey, TreeManyToManyField
+from mptt.fields import TreeForeignKey
 from mptt.models import MPTTModel
 
 from poms.audit import history
-from poms.common.models import NamedModel, TagModelBase, ClassModelBase
+from poms.common.models import NamedModel, ClassModelBase
 from poms.currencies.models import Currency
 from poms.users.models import MasterUser, AttrBase, AttrValueBase
 
@@ -72,27 +72,11 @@ class CostMethod(ClassModelBase):
         verbose_name_plural = _('cost methods')
 
 
-class InstrumentTypeTag(TagModelBase):
-    master_user = models.ForeignKey(MasterUser, related_name='instrumenttype_tags', verbose_name=_('master user'))
-
-    class Meta:
-        verbose_name = _('instrument type tag')
-        verbose_name_plural = _('instrument type tags')
-        unique_together = [
-            ['master_user', 'user_code'],
-            ['master_user', 'name'],
-        ]
-        permissions = [
-            ('view_instrumenttypetag', 'Can view instrument type tag')
-        ]
-
-
 @python_2_unicode_compatible
 class InstrumentType(NamedModel):
     master_user = models.ForeignKey(MasterUser, related_name='instrument_types', verbose_name=_('master user'))
     instrument_class = models.ForeignKey(InstrumentClass, related_name='instrument_types',
                                          verbose_name=_('instrument class'))
-    tags = models.ManyToManyField(InstrumentTypeTag, blank=True)
 
     class Meta:
         verbose_name = _('instrument type')
@@ -130,21 +114,6 @@ class InstrumentClassifier(NamedModel, MPTTModel):
         return self.name
 
 
-class InstrumentTag(TagModelBase):
-    master_user = models.ForeignKey(MasterUser, related_name='instrument_tags', verbose_name=_('master user'))
-
-    class Meta:
-        verbose_name = _('instrument tag')
-        verbose_name_plural = _('instrument tags')
-        unique_together = [
-            ['master_user', 'user_code'],
-            ['master_user', 'name'],
-        ]
-        permissions = [
-            ('view_instrumenttag', 'Can view instrument tag')
-        ]
-
-
 @python_2_unicode_compatible
 class Instrument(NamedModel):
     master_user = models.ForeignKey(MasterUser, related_name='instruments', verbose_name=_('master user'))
@@ -155,11 +124,8 @@ class Instrument(NamedModel):
     accrued_currency = models.ForeignKey(Currency, null=True, blank=True, related_name='instruments_accrued',
                                          on_delete=models.PROTECT)
     accrued_multiplier = models.FloatField(default=1.)
-    tags = models.ManyToManyField(InstrumentTag, blank=True)
 
     daily_pricing_model = models.ForeignKey(DailyPricingModel, null=True, blank=True)
-    # accrual_calculation_model = models.ForeignKey(AccrualCalculationModel, null=True, blank=True)
-    # payment_frequency = models.ForeignKey(PaymentFrequency, null=True, blank=True)
 
     class Meta:
         verbose_name = _('instrument')
@@ -252,7 +218,5 @@ class InstrumentAttrValue(AttrValueBase):
 
 history.register(InstrumentClassifier)
 history.register(InstrumentType)
-history.register(InstrumentTypeTag)
-history.register(InstrumentTag)
 history.register(Instrument)
 history.register(PriceHistory)

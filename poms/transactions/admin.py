@@ -3,7 +3,7 @@ from __future__ import unicode_literals
 from django.contrib import admin
 
 from poms.audit.admin import HistoricalAdmin
-from poms.transactions.models import TransactionClass, Transaction, TransactionTypeTag, TransactionType, \
+from poms.transactions.models import TransactionClass, Transaction, TransactionType, \
     TransactionAttrValue, ComplexTransaction, ComplexTransactionItem, EventType
 from poms.users.admin import AttrValueAdminBase
 
@@ -17,16 +17,6 @@ class TransactionClassAdmin(HistoricalAdmin):
 admin.site.register(TransactionClass, TransactionClassAdmin)
 
 
-class TransactionTypeTagAdmin(HistoricalAdmin):
-    model = TransactionTypeTag
-    list_display = ['id', 'name', 'master_user']
-    list_select_related = ['master_user']
-    raw_id_fields = ['master_user']
-
-
-admin.site.register(TransactionTypeTag, TransactionTypeTagAdmin)
-
-
 class EventTypeAdmin(admin.StackedInline):
     model = EventType
     extra = 0
@@ -36,7 +26,6 @@ class TransactionTypeAdmin(HistoricalAdmin):
     model = TransactionType
     list_display = ['id', 'name', 'master_user']
     list_select_related = ['master_user']
-    filter_horizontal = ['tags', ]
     raw_id_fields = ['master_user']
     inlines = [EventTypeAdmin]
 

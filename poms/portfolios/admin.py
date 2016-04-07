@@ -1,11 +1,10 @@
 from __future__ import unicode_literals
 
 from django.contrib import admin
-from mptt.admin import MPTTModelAdmin
 
 from poms.audit.admin import HistoricalAdmin
 from poms.common.admin import TreeModelAdmin
-from poms.portfolios.models import Portfolio, PortfolioClassifier, PortfolioTag, PortfolioAttrValue
+from poms.portfolios.models import Portfolio, PortfolioClassifier, PortfolioAttrValue
 from poms.users.admin import AttrValueAdminBase
 
 
@@ -19,15 +18,6 @@ class PortfolioClassifierAdmin(HistoricalAdmin, TreeModelAdmin):
 admin.site.register(PortfolioClassifier, PortfolioClassifierAdmin)
 
 
-class PortfolioTagAdmin(HistoricalAdmin):
-    model = PortfolioTag
-    list_display = ['id', 'name', 'master_user']
-    list_select_related = ['master_user']
-
-
-admin.site.register(PortfolioTag, PortfolioTagAdmin)
-
-
 class PortfolioAttrValueInline(AttrValueAdminBase):
     model = PortfolioAttrValue
 
@@ -36,7 +26,6 @@ class PortfolioAdmin(HistoricalAdmin):
     model = Portfolio
     list_display = ['id', 'name', 'master_user']
     list_select_related = ['master_user']
-    filter_horizontal = ['tags', 'accounts', 'counterparties', 'responsibles']
     inlines = [PortfolioAttrValueInline]
     raw_id_fields = ['master_user']
 

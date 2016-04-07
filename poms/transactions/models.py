@@ -56,24 +56,8 @@ class TransactionClass(ClassModelBase):
         verbose_name_plural = _('transaction classes')
 
 
-class TransactionTypeTag(TagModelBase):
-    master_user = models.ForeignKey(MasterUser, related_name='transactiontype_tags', verbose_name=_('master user'))
-
-    class Meta:
-        verbose_name = _('transaction type tag')
-        verbose_name_plural = _('transaction type tags')
-        unique_together = [
-            ['master_user', 'user_code'],
-            ['master_user', 'name'],
-        ]
-        permissions = [
-            ('view_transactiontypetag', 'Can view instrument type tag')
-        ]
-
-
 class TransactionType(NamedModel):
     master_user = models.ForeignKey(MasterUser, related_name='transaction_types', verbose_name=_('master user'))
-    tags = models.ManyToManyField(TransactionTypeTag, blank=True)
 
     class Meta:
         verbose_name = _('transaction type')
@@ -260,5 +244,4 @@ class TransactionAttrValue(AttrValueBase):
 
 history.register(TransactionClass)
 history.register(TransactionType)
-history.register(TransactionTypeTag)
 history.register(Transaction)
