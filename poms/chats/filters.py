@@ -2,17 +2,15 @@ from django.contrib.contenttypes.models import ContentType
 from django.db.models import Q
 from rest_framework.filters import BaseFilterBackend
 
-from poms.obj_perms.models import ThreadGroupObjectPermission
+from poms.chats.models import Thread
+from poms.obj_perms.models import ThreadGroupObjectPermission, ThreadUserObjectPermission
+from poms.users.utils import get_member
 
 
 class ThreadObjectPermissionFilter(BaseFilterBackend):
     codename_set = ['view_thread', 'change_thread', 'manage_thread']
 
     def filter_queryset(self, request, queryset, view):
-        from poms.users.fields import get_member
-        from poms.obj_perms.models import ThreadUserObjectPermission
-        from poms.chats.models import Thread
-
         member = get_member(request)
         ctype = ContentType.objects.get_for_model(Thread)
 
@@ -27,17 +25,16 @@ class ThreadObjectPermissionFilter(BaseFilterBackend):
                       permission__codename__in=self.codename_set).
                values_list('content_object__id', flat=True))
 
-        return queryset.filter(f)
+        return queryset.prefetch_related(
+            'user_object_permissions', 'user_object_permissions__permission',
+            'group_object_permissions', 'group_object_permissions__permission',
+        ).filter(f)
 
 
 class MessageObjectPermissionFilter(BaseFilterBackend):
     codename_set = ['view_thread', 'change_thread', 'manage_thread']
 
     def filter_queryset(self, request, queryset, view):
-        from poms.users.fields import get_member
-        from poms.obj_perms.models import ThreadUserObjectPermission
-        from poms.chats.models import Thread
-
         member = get_member(request)
         ctype = ContentType.objects.get_for_model(Thread)
 
@@ -57,7 +54,7 @@ class MessageObjectPermissionFilter(BaseFilterBackend):
 
 class ThreadOwnerByMasterUserFilter(BaseFilterBackend):
     def filter_queryset(self, request, queryset, view):
-        from poms.users.fields import get_master_user
+        from poms.users.utils import get_master_user
         return queryset.filter(thread__master_user=get_master_user(request))
 
 

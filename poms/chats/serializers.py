@@ -6,8 +6,10 @@ from rest_framework import serializers
 
 from poms.chats.fields import ThreadField, ThreadStatusField
 from poms.chats.models import Thread, Message, DirectMessage, ThreadStatus
-from poms.obj_perms.models import ThreadUserObjectPermission
-from poms.users.fields import MasterUserField, MemberField, get_member, HiddenMemberField
+from poms.obj_perms.fields import GrantedPermissionField, ObjectPermissionField
+from poms.obj_perms.models import ThreadUserObjectPermission, ThreadGroupObjectPermission
+from poms.users.fields import MasterUserField, MemberField, HiddenMemberField, GroupField
+from poms.users.utils import get_member
 
 
 class ThreadStatusSerializer(serializers.ModelSerializer):
@@ -24,14 +26,20 @@ class ThreadSerializer(serializers.ModelSerializer):
     master_user = MasterUserField()
     status = ThreadStatusField()
     members = MemberField(many=True, write_only=True)
+    groups = GroupField(many=True, write_only=True)
+    granted_permissions = GrantedPermissionField()
+    object_permissions = ObjectPermissionField()
 
     class Meta:
         model = Thread
-        fields = ['url', 'id', 'master_user', 'created', 'modified', 'subject', 'status', 'members']
+        fields = ['url', 'id', 'master_user', 'created', 'modified', 'subject', 'status',
+                  'members', 'groups',
+                  'granted_permissions', 'object_permissions']
         read_only_fields = ['created', 'modified']
 
     def create(self, validated_data):
         members = validated_data.pop('members', None)
+        groups = validated_data.pop('groups', None)
         instance = super(ThreadSerializer, self).create(validated_data)
 
         owner_permission_set = ['view_thread', 'change_thread', 'manage_thread', 'delete_thread']
@@ -42,26 +50,38 @@ class ThreadSerializer(serializers.ModelSerializer):
         ctype = ContentType.objects.get_for_model(Thread)
         permissions = list(Permission.objects.filter(content_type=ctype))
 
-        object_permissions = []
+        user_permissions = []
+        group_permissions = []
 
         for p in permissions:
             if p.codename in owner_permission_set:
-                object_permissions.append(
+                user_permissions.append(
                     ThreadUserObjectPermission(content_object=instance, member=member, permission=p)
                 )
 
-        print('members: ', members)
         if members:
             for m in members:
                 if m.id == member.id:
                     continue
                 for p in permissions:
                     if p.codename in member_permission_set:
-                        object_permissions.append(
+                        user_permissions.append(
                             ThreadUserObjectPermission(content_object=instance, member=m, permission=p)
                         )
 
-        ThreadUserObjectPermission.objects.bulk_create(object_permissions)
+        if groups:
+            for g in groups:
+                for p in permissions:
+                    if p.codename in member_permission_set:
+                        group_permissions.append(
+                            ThreadGroupObjectPermission(content_object=instance, group=g, permission=p)
+                        )
+
+        if user_permissions:
+            ThreadUserObjectPermission.objects.bulk_create(user_permissions)
+
+        if group_permissions:
+            ThreadGroupObjectPermission.objects.bulk_create(group_permissions)
 
         return instance
 

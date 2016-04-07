@@ -8,7 +8,8 @@ from django.utils.translation import ugettext_lazy as _
 from rest_framework import serializers
 from rest_framework.authtoken.serializers import AuthTokenSerializer
 
-from poms.users.fields import MasterUserField, get_master_user, get_member, GroupField, PermissionField, UserField
+from poms.users.fields import MasterUserField, get_member, GroupField, UserField
+from poms.users.utils import get_master_user, get_member
 from poms.users.models import MasterUser, UserProfile, Group, Member
 
 
@@ -142,8 +143,7 @@ class MemberSerializer(serializers.ModelSerializer):
 class GroupSerializer(serializers.ModelSerializer):
     url = serializers.HyperlinkedIdentityField(view_name='group-detail')
     master_user = MasterUserField()
-    permissions = PermissionField(many=True)
 
     class Meta:
         model = Group
-        fields = ['url', 'id', 'master_user', 'name', 'permissions']
+        fields = ['url', 'id', 'master_user', 'name']

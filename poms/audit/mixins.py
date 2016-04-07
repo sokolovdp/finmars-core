@@ -9,7 +9,7 @@ from reversion import revisions as reversion
 from poms.audit import history
 from poms.audit.models import VersionInfo
 from poms.audit.serializers import VersionSerializer
-from poms.users.fields import get_master_user
+from poms.users.utils import get_master_user
 
 
 # class HistoricalPageNumberPagination(PageNumberPagination):

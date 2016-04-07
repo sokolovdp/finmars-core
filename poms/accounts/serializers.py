@@ -4,7 +4,7 @@ from rest_framework import serializers
 
 from poms.accounts.fields import AccountClassifierField
 from poms.accounts.models import Account, AccountType, AccountClassifier
-from poms.users.fields import MasterUserField, GrantedPermissionField
+from poms.users.fields import MasterUserField
 
 
 class AccountTypeSerializer(serializers.ModelSerializer):
@@ -29,12 +29,10 @@ class AccountClassifierSerializer(serializers.ModelSerializer):
                   'parent', 'children', 'tree_id', 'level']
 
 
-# granted_permission = GrantedPermissionField()
 class AccountSerializer(serializers.ModelSerializer):
     url = serializers.HyperlinkedIdentityField(view_name='account-detail')
     master_user = MasterUserField()
     classifiers = AccountClassifierField(many=True, read_only=False)
-    granted_permissions = GrantedPermissionField()
 
     class Meta:
         model = Account
