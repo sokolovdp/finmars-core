@@ -70,11 +70,6 @@ class MessageSerializer(serializers.ModelSerializer):
         fields = ['url', 'id', 'thread', 'sender', 'created', 'modified', 'text']
         read_only_fields = ['created', 'modified']
 
-        # def validate(self, attrs):
-        #     request = self.context['request']
-        #     attrs['sender'] = get_member(request)
-        #     return attrs
-
 
 class DirectMessageSerializer(serializers.ModelSerializer):
     url = serializers.HyperlinkedIdentityField(view_name='chatdirectmessage-detail')
