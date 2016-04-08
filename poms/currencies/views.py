@@ -50,7 +50,7 @@ class CurrencyHistoryFilter(FilterSet):
 class CurrencyHistoryViewSet(DbTransactionMixin, HistoricalMixin, ModelViewSet):
     queryset = CurrencyHistory.objects.all()
     serializer_class = CurrencyHistorySerializer
-    permission_classes = [IsAuthenticated, IsOwnerOrReadonly]
+    permission_classes = [IsAuthenticated,]
     filter_backends = [DjangoFilterBackend, OrderingFilter, ]
     filter_class = CurrencyHistoryFilter
     ordering_fields = ['-date']
