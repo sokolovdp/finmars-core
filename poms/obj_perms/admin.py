@@ -35,19 +35,32 @@ class GroupObjectPermissionAdmin(UserObjectPermissionAdminBase):
 # admin.site.register(ThreadGroupObjectPermission, GroupObjectPermissionAdmin)
 
 
-class GenericUserObjectPermissionAdmin(UserObjectPermissionAdminBase):
-    raw_id_fields = ['member', 'content_type']
-    list_display = ['id', 'member', 'permission', 'content_object']
+class GenericObjectPermissionAdmin(admin.ModelAdmin):
     list_filter = ['content_type']
     save_as = True
-    # list_filter = ['permission']
+    readonly_fields = ('content_object',)
+
+    def get_queryset(self, request):
+        qs = super(GenericObjectPermissionAdmin, self).get_queryset(request)
+        return qs.prefetch_related('content_object')
+
+    def formfield_for_foreignkey(self, db_field, request=None, **kwargs):
+        if db_field.name == 'permission':
+            qs = kwargs.get('queryset', db_field.remote_field.model.objects)
+            kwargs['queryset'] = qs.select_related('content_type')
+        return super(GenericObjectPermissionAdmin, self).formfield_for_foreignkey(db_field, request=request, **kwargs)
 
 
-class GenericGroupObjectPermissionAdmin(UserObjectPermissionAdminBase):
-    raw_id_fields = ['group', 'content_type']
+class GenericUserObjectPermissionAdmin(GenericObjectPermissionAdmin):
+    raw_id_fields = ['member']
+    list_display = ['id', 'member', 'permission', 'content_object']
+    fields = ('member', ('content_type', 'object_id'), 'content_object', 'permission')
+
+
+class GenericGroupObjectPermissionAdmin(GenericObjectPermissionAdmin):
+    raw_id_fields = ['group']
     list_display = ['id', 'group', 'permission', 'content_object']
-    save_as = True
-    # list_filter = ['permission']
+    fields = ('group', ('content_type', 'object_id'), 'content_object', 'permission')
 
 
 admin.site.register(UserObjectPermission, GenericUserObjectPermissionAdmin)

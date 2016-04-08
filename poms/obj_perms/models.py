@@ -4,7 +4,7 @@ from django.contrib.contenttypes.fields import GenericForeignKey
 from django.contrib.contenttypes.models import ContentType
 from django.db import models
 from django.utils.encoding import python_2_unicode_compatible
-# from django.utils.translation import ugettext_lazy as _
+from django.utils.translation import ugettext_lazy as _
 
 from poms.chats.models import Thread
 
@@ -27,7 +27,7 @@ class UserObjectPermissionBase(ObjectPermissionBase):
         ]
 
     def __str__(self):
-        return '%s - %s - %s' % (self.member, self.content_object, self.permission)
+        return '%s %s %s' % (self.member, self.permission.name, self.content_object)
 
 
 @python_2_unicode_compatible
@@ -41,7 +41,7 @@ class GroupObjectPermissionBase(ObjectPermissionBase):
         ]
 
     def __str__(self):
-        return '%s - %s - %s' % (self.group, self.content_object, self.permission)
+        return '%s %s %s' % (self.group, self.permission.name, self.content_object)
 
 
 class UserObjectPermission(UserObjectPermissionBase):
@@ -50,6 +50,8 @@ class UserObjectPermission(UserObjectPermissionBase):
     content_object = GenericForeignKey()
 
     class Meta:
+        verbose_name = _('generic user object permission')
+        verbose_name_plural = _('generic user object permissions')
         unique_together = [
             ['member', 'content_type', 'object_id', 'permission']
         ]
@@ -61,6 +63,8 @@ class GroupObjectPermission(GroupObjectPermissionBase):
     content_object = GenericForeignKey()
 
     class Meta:
+        verbose_name = _('generic group object permission')
+        verbose_name_plural = _('generic group object permissions')
         unique_together = [
             ['group', 'content_type', 'object_id', 'permission']
         ]
