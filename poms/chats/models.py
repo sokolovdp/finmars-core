@@ -11,6 +11,7 @@ from django.utils.translation import ugettext_lazy as _, get_language
 
 from poms.audit import history
 from poms.common.models import TimeStampedModel
+from poms.obj_perms.utils import register_model
 from poms.users.models import MasterUser, Member
 
 
@@ -98,6 +99,8 @@ class DirectMessage(TimeStampedModel):
         locale = Locale.parse(get_language(), sep='-')
         return format_timedelta(self.created - timezone.now(), add_direction=True, locale=locale)
 
+
+register_model(Thread)
 
 history.register(ThreadStatus)
 history.register(Thread)
