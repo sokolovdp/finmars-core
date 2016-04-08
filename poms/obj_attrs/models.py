@@ -1,3 +1,5 @@
+from django.contrib.contenttypes.fields import GenericForeignKey
+from django.contrib.contenttypes.models import ContentType
 from django.db import models
 from django.utils.encoding import python_2_unicode_compatible
 from django.utils.translation import ugettext_lazy as _
@@ -7,6 +9,7 @@ from poms.accounts.models import AccountClassifier, Account
 from poms.common.models import NamedModel
 from poms.counterparties.models import CounterpartyClassifier, Counterparty, ResponsibleClassifier, Responsible
 from poms.instruments.models import InstrumentClassifier, Instrument
+from poms.obj_perms.utils import register_model
 from poms.portfolios.models import PortfolioClassifier, Portfolio
 from poms.strategies.models import Strategy
 from poms.transactions.models import Transaction
@@ -14,28 +17,29 @@ from poms.users.models import MasterUser
 
 
 class AttrBase(NamedModel):
-    STR = 10
-    NUM = 20
+    STRING = 10
+    NUMBER = 20
     CLASSIFIER = 30
 
     VALUE_TYPES = (
-        (NUM, _('Number')),
-        (STR, _('String')),
+        (NUMBER, _('Number')),
+        (STRING, _('String')),
         (CLASSIFIER, _('Classifier')),
     )
 
-    scheme = models.ForeignKey('Scheme', verbose_name=_('attribute scheme'))
+    master_user = models.ForeignKey(MasterUser, verbose_name=_('master user'),
+                                    related_name="%(app_label)s_%(class)s_attrs")
     order = models.IntegerField(default=0)
-    value_type = models.PositiveSmallIntegerField(default=STR, choices=VALUE_TYPES)
+    value_type = models.PositiveSmallIntegerField(default=STRING, choices=VALUE_TYPES)
 
     class Meta:
         abstract = True
         unique_together = [
-            ['scheme', 'user_code']
+            ['master_user', 'user_code']
         ]
 
     def __str__(self):
-        return '%s[%s:%s]' % (self.scheme, self.short_name, self.get_value_type_display())
+        return '%s:%s' % (self.short_name, self.get_value_type_display())
 
 
 @python_2_unicode_compatible
@@ -57,17 +61,6 @@ class AttrValueBase(models.Model):
         elif self.attr.value_type in [AttrBase.CLASSIFIER]:
             return self.classifier
         return None
-
-
-class Scheme(NamedModel):
-    master_user = models.ForeignKey(MasterUser, verbose_name=_('master user'), related_name='schemes')
-
-    class Meta:
-        verbose_name = _('attribute scheme')
-        verbose_name_plural = _('attribute schemes')
-        unique_together = [
-            ['master_user', 'user_code']
-        ]
 
 
 class AccountAttr(AttrBase):
@@ -172,4 +165,111 @@ class TransactionAttrValue(AttrValueBase):
             return self.value
         elif self.attr.value_type in [AttrBase.CLASSIFIER]:
             return self.strategy_position, self.strategy_cash
+        return None
+
+
+@python_2_unicode_compatible
+class Attribute(models.Model):
+    STRING = 10
+    NUMBER = 20
+    CLASSIFIER = 30
+    CHOICE = 40
+    CHOICES = 50
+
+    VALUE_TYPES = (
+        (NUMBER, _('Number')),
+        (STRING, _('String')),
+        (CLASSIFIER, _('Classifier')),
+        (CHOICE, _('Choice')),
+        (CHOICES, _('Choices')),
+    )
+
+    master_user = models.ForeignKey(MasterUser, related_name='attributes')
+    content_type = models.ForeignKey(ContentType, related_name='dynamic_attributes')
+    name = models.CharField(max_length=255)
+    type = models.PositiveSmallIntegerField(choices=VALUE_TYPES, default=STRING)
+    order = models.IntegerField(default=0)
+
+    classifier_content_type = models.ForeignKey(ContentType, null=True, blank=True,
+                                                related_name='dynamic_attribute_classifiers')
+    classifier_object_id = models.BigIntegerField(null=True, blank=True)
+    classifier = GenericForeignKey(ct_field='classifier_content_type', fk_field='classifier_object_id')
+
+    class Meta:
+        unique_together = [
+            ['master_user', 'content_type', 'name']
+        ]
+        permissions = [
+            ('view_attribute', 'Can view attribute'),
+            ('share_attribute', 'Can share attribute'),
+            ('manage_attribute', 'Can manage attribute'),
+        ]
+
+    def __str__(self):
+        return self.name
+
+
+register_model(Attribute)
+
+
+@python_2_unicode_compatible
+class AttributeChoice(models.Model):
+    attribute = models.ForeignKey(Attribute, related_name='choices')
+    order = models.IntegerField(default=0)
+    name = models.CharField(max_length=255)
+    value = models.CharField(max_length=255)
+
+    class Meta:
+        unique_together = [
+            ['attribute', 'value'],
+            ['attribute', 'name'],
+        ]
+        ordering = ['order', 'name']
+
+    def __str__(self):
+        return self.name
+
+
+@python_2_unicode_compatible
+class AttributeOrder(models.Model):
+    member = models.ForeignKey('users.Member', related_name='attribute_orders')
+    attribute = models.ForeignKey(Attribute, related_name='orders')
+    order = models.IntegerField(default=0)
+    is_hidden = models.BooleanField(default=False)
+
+    class Meta:
+        unique_together = [
+            ['member', 'attribute']
+        ]
+
+
+@python_2_unicode_compatible
+class AttributeValue(models.Model):
+    attribute = models.ForeignKey(Attribute, related_name='values')
+
+    content_type = models.ForeignKey(ContentType, related_name='dynamic_attribute_value_targets')
+    object_id = models.BigIntegerField()
+    content_object = GenericForeignKey()
+
+    value = models.CharField(max_length=255, blank=True, default='')
+    choices = models.ManyToManyField(AttributeChoice, blank=True)
+
+    classifier_content_type = models.ForeignKey(ContentType, null=True, blank=True,
+                                                related_name='dynamic_attribute_value_classifiers')
+    classifier_object_id = models.BigIntegerField(null=True, blank=True)
+    classifier = GenericForeignKey(ct_field='classifier_content_type', fk_field='classifier_object_id')
+
+    def __str__(self):
+        # return '%s[%s] = %s' % (self.content_object, self.attribute, self._get_value())
+        return '%s' % self.get_display_value()
+
+    def get_display_value(self):
+        t = self.attribute.type
+        if t == Attribute.NUMBER or t == Attribute.STRING:
+            return self.value
+        elif t == Attribute.CLASSIFIER:
+            return self.classifier
+        elif t == Attribute.CHOICE or t == Attribute.CHOICES:
+            choices = [c.name for c in self.choices.all()]
+            return ', '.join(choices)
         return None

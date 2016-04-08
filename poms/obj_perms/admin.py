@@ -1,7 +1,7 @@
 from django.contrib import admin
 from django.contrib.contenttypes.models import ContentType
 
-from poms.obj_perms.models import ThreadUserObjectPermission, ThreadGroupObjectPermission
+from poms.obj_perms.models import UserObjectPermission, GroupObjectPermission
 
 
 class UserObjectPermissionAdminBase(admin.ModelAdmin):
@@ -19,6 +19,7 @@ class UserObjectPermissionAdmin(UserObjectPermissionAdminBase):
     raw_id_fields = ['member', 'content_object']
     list_display = ['id', 'member', 'permission', 'content_object']
     search_fields = ['content_object__id', 'member__id', 'member__user__username']
+    save_as = True
     # list_filter = ['permission']
 
 
@@ -26,9 +27,28 @@ class GroupObjectPermissionAdmin(UserObjectPermissionAdminBase):
     raw_id_fields = ['group', 'content_object']
     list_display = ['id', 'group', 'permission', 'content_object']
     search_fields = ['content_object__id', 'group__id', 'group__name']
+    save_as = True
     # list_filter = ['permission']
 
 
-admin.site.register(ThreadUserObjectPermission, UserObjectPermissionAdmin)
-admin.site.register(ThreadGroupObjectPermission, GroupObjectPermissionAdmin)
+# admin.site.register(ThreadUserObjectPermission, UserObjectPermissionAdmin)
+# admin.site.register(ThreadGroupObjectPermission, GroupObjectPermissionAdmin)
 
+
+class GenericUserObjectPermissionAdmin(UserObjectPermissionAdminBase):
+    raw_id_fields = ['member', 'content_type']
+    list_display = ['id', 'member', 'permission', 'content_object']
+    list_filter = ['content_type']
+    save_as = True
+    # list_filter = ['permission']
+
+
+class GenericGroupObjectPermissionAdmin(UserObjectPermissionAdminBase):
+    raw_id_fields = ['group', 'content_type']
+    list_display = ['id', 'group', 'permission', 'content_object']
+    save_as = True
+    # list_filter = ['permission']
+
+
+admin.site.register(UserObjectPermission, GenericUserObjectPermissionAdmin)
+admin.site.register(GroupObjectPermission, GenericGroupObjectPermissionAdmin)

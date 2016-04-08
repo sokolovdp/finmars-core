@@ -2,8 +2,6 @@ from django.contrib.auth.models import Permission
 from django.contrib.contenttypes.models import ContentType
 from django.db.models import Q
 
-from poms.obj_perms.models import GroupObjectPermissionBase, UserObjectPermissionBase
-
 
 def register_model(model):
     from django.db import models
@@ -80,10 +78,12 @@ def get_obj_perms_model(obj, base_cls):
 
 
 def get_user_obj_perms_model(obj):
+    from poms.obj_perms.models import UserObjectPermissionBase
     return get_obj_perms_model(obj, UserObjectPermissionBase)
 
 
 def get_group_obj_perms_model(obj):
+    from poms.obj_perms.models import GroupObjectPermissionBase
     return get_obj_perms_model(obj, GroupObjectPermissionBase)
 
 
