@@ -8,9 +8,9 @@ from mptt.models import MPTTModel
 
 from poms.audit import history
 from poms.common.models import NamedModel
-from poms.obj_attrs.models import AttributeTypeBase, AttributeBase
+from poms.obj_attrs.models import AttributeTypeBase, AttributeBase, AttributeTypeOptionBase
 from poms.obj_perms.models import UserObjectPermissionBase, GroupObjectPermissionBase
-from poms.users.models import MasterUser
+from poms.users.models import MasterUser, Member
 
 
 @python_2_unicode_compatible
@@ -68,6 +68,11 @@ class PortfolioGroupObjectPermission(GroupObjectPermissionBase):
 
 class PortfolioAttributeType(AttributeTypeBase):
     classifier_root = models.ForeignKey(PortfolioClassifier, null=True, blank=True)
+
+
+class PortfolioAccountAttributeTypeOption(AttributeTypeOptionBase):
+    member = models.ForeignKey(Member, related_name='portfolio_attribute_type_options')
+    attribute_type = models.ForeignKey(PortfolioAttributeType, related_name='attribute_type_options')
 
 
 class PortfolioAttributeTypeUserObjectPermission(UserObjectPermissionBase):

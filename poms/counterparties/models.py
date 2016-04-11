@@ -8,8 +8,8 @@ from mptt.models import MPTTModel
 
 from poms.audit import history
 from poms.common.models import NamedModel
-from poms.obj_attrs.models import AttributeTypeBase, AttributeBase
-from poms.users.models import MasterUser
+from poms.obj_attrs.models import AttributeTypeBase, AttributeBase, AttributeTypeOptionBase
+from poms.users.models import MasterUser, Member
 
 
 class CounterpartyClassifier(NamedModel, MPTTModel):
@@ -47,6 +47,11 @@ class Counterparty(NamedModel):
 
 class CounterpartyAttributeType(AttributeTypeBase):
     classifier_root = models.ForeignKey('counterparties.CounterpartyClassifier', null=True, blank=True)
+
+
+class CounterpartyAccountAttributeTypeOption(AttributeTypeOptionBase):
+    member = models.ForeignKey(Member, related_name='counterparty_attribute_type_options')
+    attribute_type = models.ForeignKey(CounterpartyAttributeType, related_name='attribute_type_options')
 
 
 class CounterpartyAttribute(AttributeBase):
@@ -89,13 +94,18 @@ class Responsible(NamedModel):
 
 
 class ResponsibleAttributeType(AttributeTypeBase):
-    classifier_root = models.ForeignKey('counterparties.ResponsibleClassifier', null=True, blank=True)
+    classifier_root = models.ForeignKey(ResponsibleClassifier, null=True, blank=True)
+
+
+class ResponsibleAccountAttributeTypeOption(AttributeTypeOptionBase):
+    member = models.ForeignKey(Member, related_name='responsible_attribute_type_options')
+    attribute_type = models.ForeignKey(ResponsibleAttributeType, related_name='attribute_type_options')
 
 
 class ResponsibleAttribute(AttributeBase):
     attribute_type = models.ForeignKey(ResponsibleAttributeType, related_name='attributes')
-    content_object = models.ForeignKey('counterparties.Responsible')
-    classifier = models.ForeignKey('counterparties.ResponsibleClassifier', null=True, blank=True)
+    content_object = models.ForeignKey(Responsible)
+    classifier = models.ForeignKey(ResponsibleClassifier, null=True, blank=True)
 
 
 history.register(CounterpartyClassifier)

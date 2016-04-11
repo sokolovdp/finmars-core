@@ -9,9 +9,9 @@ from mptt.models import MPTTModel
 from poms.audit import history
 from poms.common.models import NamedModel, TagModelBase
 from poms.currencies.models import Currency
-from poms.obj_attrs.models import AttributeTypeBase, AttributeBase
+from poms.obj_attrs.models import AttributeTypeBase, AttributeBase, AttributeTypeOptionBase
 from poms.obj_perms.models import UserObjectPermissionBase, GroupObjectPermissionBase
-from poms.users.models import MasterUser
+from poms.users.models import MasterUser, Member
 
 
 @python_2_unicode_compatible
@@ -129,6 +129,18 @@ class AccountAttributeType(AttributeTypeBase):
     class Meta:
         verbose_name = _('account attribute type')
         verbose_name_plural = _('account attribute types')
+
+
+class AccountAttributeTypeOption(AttributeTypeOptionBase):
+    member = models.ForeignKey(Member, related_name='account_attribute_type_options')
+    attribute_type = models.ForeignKey(AccountAttributeType, related_name='attribute_type_options')
+
+    class Meta:
+        verbose_name = _('account attribute types - option')
+        verbose_name_plural = _('account attribute types - options')
+        unique_together = [
+            ['member', 'attribute_type']
+        ]
 
 
 class AccountAttributeTypeUserObjectPermission(UserObjectPermissionBase):

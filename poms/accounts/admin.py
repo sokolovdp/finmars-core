@@ -5,10 +5,12 @@ from django.contrib import admin
 from poms.accounts.models import Account, AccountType, AccountClassifier, AccountTypeUserObjectPermission, \
     AccountTypeGroupObjectPermission, AccountClassifierUserObjectPermission, AccountClassifierGroupObjectPermission, \
     AccountUserObjectPermission, AccountGroupObjectPermission, AccountAttributeType, \
-    AccountAttributeTypeUserObjectPermission, AccountAttributeTypeGroupObjectPermission, AccountAttribute
+    AccountAttributeTypeUserObjectPermission, AccountAttributeTypeGroupObjectPermission, AccountAttribute, \
+    AccountAttributeTypeOption
 from poms.audit.admin import HistoricalAdmin
 from poms.common.admin import TreeModelAdmin
-from poms.obj_attrs.admin import AttributeTypeAdminBase, AttributeBase
+from poms.obj_attrs.admin import AttributeTypeAdminBase, AttributeInlineBase, AttributeTypeOptionInlineBase
+from poms.obj_attrs.models import AttributeTypeOptionBase
 from poms.obj_perms.admin import UserObjectPermissionAdmin, GroupObjectPermissionAdmin
 
 
@@ -36,7 +38,7 @@ admin.site.register(AccountClassifierUserObjectPermission, UserObjectPermissionA
 admin.site.register(AccountClassifierGroupObjectPermission, GroupObjectPermissionAdmin)
 
 
-class AttributeInline(AttributeBase):
+class AttributeInline(AttributeInlineBase):
     model = AccountAttribute
 
 
@@ -52,6 +54,8 @@ admin.site.register(Account, AccountAdmin)
 admin.site.register(AccountUserObjectPermission, UserObjectPermissionAdmin)
 admin.site.register(AccountGroupObjectPermission, GroupObjectPermissionAdmin)
 
+
 admin.site.register(AccountAttributeType, AttributeTypeAdminBase)
+admin.site.register(AccountAttributeTypeOption, AttributeTypeOptionInlineBase)
 admin.site.register(AccountAttributeTypeUserObjectPermission, UserObjectPermissionAdmin)
 admin.site.register(AccountAttributeTypeGroupObjectPermission, GroupObjectPermissionAdmin)

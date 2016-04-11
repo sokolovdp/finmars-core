@@ -14,11 +14,11 @@ from poms.common.models import NamedModel, TagModelBase, ClassModelBase
 from poms.counterparties.models import Responsible, Counterparty
 from poms.currencies.models import Currency
 from poms.instruments.models import Instrument
-from poms.obj_attrs.models import AttributeTypeBase, AttributeBase
+from poms.obj_attrs.models import AttributeTypeBase, AttributeBase, AttributeTypeOptionBase
 from poms.obj_perms.models import UserObjectPermissionBase, GroupObjectPermissionBase
 from poms.portfolios.models import Portfolio
 from poms.strategies.models import Strategy
-from poms.users.models import MasterUser
+from poms.users.models import MasterUser, Member
 
 
 class TransactionClass(ClassModelBase):
@@ -62,7 +62,8 @@ class TransactionClass(ClassModelBase):
 class TransactionType(NamedModel):
     master_user = models.ForeignKey(MasterUser, related_name='transaction_types', verbose_name=_('master user'))
 
-    instrument_types = models.ManyToManyField('instruments.InstrumentType', blank=True, related_name='transaction_types')
+    instrument_types = models.ManyToManyField('instruments.InstrumentType', blank=True,
+                                              related_name='transaction_types')
 
     class Meta:
         verbose_name = _('transaction type')
@@ -298,6 +299,11 @@ class Transaction(models.Model):
 class TransactionAttributeType(AttributeTypeBase):
     strategy_position_root = models.ForeignKey(Strategy, null=True, blank=True, related_name='+')
     strategy_cash_root = models.ForeignKey(Strategy, null=True, blank=True, related_name='+')
+
+
+class PortfolioAccountAttributeTypeOption(AttributeTypeOptionBase):
+    member = models.ForeignKey(Member, related_name='transaction_attribute_type_options')
+    attribute_type = models.ForeignKey(TransactionAttributeType, related_name='attribute_type_options')
 
 
 class TransactionAttributeTypeUserObjectPermission(UserObjectPermissionBase):

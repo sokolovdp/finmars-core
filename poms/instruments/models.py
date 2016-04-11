@@ -10,9 +10,9 @@ from mptt.models import MPTTModel
 from poms.audit import history
 from poms.common.models import NamedModel, ClassModelBase
 from poms.currencies.models import Currency
-from poms.obj_attrs.models import AttributeTypeBase, AttributeBase
+from poms.obj_attrs.models import AttributeTypeBase, AttributeBase, AttributeTypeOptionBase
 from poms.obj_perms.models import UserObjectPermissionBase, GroupObjectPermissionBase
-from poms.users.models import MasterUser
+from poms.users.models import MasterUser, Member
 
 
 class InstrumentClass(ClassModelBase):
@@ -169,6 +169,11 @@ class InstrumentGroupObjectPermission(GroupObjectPermissionBase):
 
 class InstrumentAttributeType(AttributeTypeBase):
     classifier_root = models.ForeignKey(InstrumentClassifier, null=True, blank=True)
+
+
+class InstrumentAccountAttributeTypeOption(AttributeTypeOptionBase):
+    member = models.ForeignKey(Member, related_name='instrument_attribute_type_options')
+    attribute_type = models.ForeignKey(InstrumentAttributeType, related_name='attribute_type_options')
 
 
 class InstrumentAttributeTypeUserObjectPermission(UserObjectPermissionBase):
