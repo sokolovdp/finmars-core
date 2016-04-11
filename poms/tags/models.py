@@ -49,13 +49,4 @@ class TagGroupObjectPermission(GroupObjectPermissionBase):
         verbose_name_plural = _('tags - group permissions')
 
 
-# history.register(AccountTag)
-# history.register(CurrencyTag)
-# history.register(InstrumentTypeTag)
-# history.register(InstrumentTag)
-# history.register(CounterpartyTag)
-# history.register(ResponsibleTag)
-# history.register(StrategyTag)
-# history.register(PortfolioTag)
-# history.register(TransactionTypeTag)
 history.register(Tag)
