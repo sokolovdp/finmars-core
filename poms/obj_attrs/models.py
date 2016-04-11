@@ -272,17 +272,105 @@ class AttributeValue(models.Model):
             return ', '.join(choices)
         return None
 
+
 # @python_2_unicode_compatible
-# class TransactionAttribute(Attribute):
-#     classifier2_content_type = models.ForeignKey(ContentType, null=True, blank=True,
-#                                                 related_name='dynamic_attribute_classifiers2')
-#     classifier2_object_id = models.BigIntegerField(null=True, blank=True)
-#     classifier2 = GenericForeignKey(ct_field='classifier2_content_type', fk_field='classifier2_object_id')
+# class Attribute2(models.Model):
+#     STRING = 10
+#     NUMBER = 20
+#     CLASSIFIER = 30
+#     CHOICE = 40
+#     CHOICES = 50
+#
+#     VALUE_TYPES = (
+#         (NUMBER, _('Number')),
+#         (STRING, _('String')),
+#         (CLASSIFIER, _('Classifier')),
+#         (CHOICE, _('Choice')),
+#         (CHOICES, _('Choices')),
+#     )
+#
+#     master_user = models.ForeignKey(MasterUser, related_name='attributes2')
+#     content_type = models.ForeignKey(ContentType)
+#     name = models.CharField(max_length=255)
+#     type = models.PositiveSmallIntegerField(choices=VALUE_TYPES, default=STRING)
+#     order = models.IntegerField(default=0)
+#
+#     class Meta:
+#         unique_together = [
+#             ['master_user', 'content_type', 'name']
+#         ]
+#         pass
+#
+#     def __str__(self):
+#         return self.name
 #
 #
-# @python_2_unicode_compatible
-# class TransactionAttributeValue(AttributeValue):
-#     classifier2_content_type = models.ForeignKey(ContentType, null=True, blank=True,
-#                                                 related_name='dynamic_attribute_value_classifiers2')
-#     classifier2_object_id = models.BigIntegerField(null=True, blank=True)
-#     classifier2 = GenericForeignKey(ct_field='classifier2_content_type', fk_field='classifier2_object_id')
+# register_model(Attribute2)
+#
+#
+# class Attribute2Choice(models.Model):
+#     attribute = models.ForeignKey(Attribute2, related_name='choices')
+#     order = models.IntegerField(default=0)
+#     name = models.CharField(max_length=255)
+#
+#     def __str__(self):
+#         return self.name
+#
+#
+# class Attribute2Value(models.Model):
+#     attribute = models.ForeignKey(Attribute2, related_name='values')
+#
+#     value = models.CharField(max_length=255, blank=True, default='')
+#     choices = models.ManyToManyField(Attribute2Choice, blank=True)
+#
+#     class Meta:
+#         pass
+#
+#     def __str__(self):
+#         return '%s' % self.get_display_value()
+#
+#     def get_display_value(self):
+#         t = self.attribute.type
+#         if t == Attribute.NUMBER or t == Attribute.STRING:
+#             return self.value
+#         elif t == Attribute.CLASSIFIER:
+#             return self.classifier
+#         elif t == Attribute.CHOICE or t == Attribute.CHOICES:
+#             choices = [c.name for c in self.choices.all()]
+#             return ', '.join(choices)
+#         return None
+#
+#
+# class AccountAttribute(Attribute2):
+#     classifier = TreeForeignKey(AccountClassifier, null=True, blank=True, related_name='attrs2')
+#
+#     # class Meta:
+#     #     unique_together = [
+#     #         ['master_user', 'name']
+#     #     ]
+#
+#
+# class AccountAttributeValue(Attribute2Value):
+#     content_object = models.ForeignKey(Account, related_name='attr_values2')
+#     classifier = TreeForeignKey(AccountClassifier, null=True, blank=True, related_name='attr_values2')
+#
+#     # class Meta(Attribute2Value.Meta):
+#     #     pass
+#
+#
+# class InstrumentAttribute(Attribute2):
+#     classifier = TreeForeignKey(InstrumentClassifier, null=True, blank=True, related_name='attrs2')
+#
+#     # class Meta(Attribute2.Meta):
+#     #     # unique_together = [
+#     #     #     ['master_user', 'name']
+#     #     # ]
+#     #     pass
+#
+#
+# class InstrumentAttributeValue(Attribute2Value):
+#     content_object = models.ForeignKey(Instrument, related_name='attr_values2')
+#     classifier = TreeForeignKey(InstrumentClassifier, null=True, blank=True, related_name='attr_values2')
+#
+#     # class Meta(Attribute2Value.Meta):
+#     #     pass
