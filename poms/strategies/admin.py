@@ -4,7 +4,8 @@ from django.contrib import admin
 
 from poms.audit.admin import HistoricalAdmin
 from poms.common.admin import TreeModelAdmin
-from poms.strategies.models import Strategy
+from poms.obj_perms.admin import UserObjectPermissionAdmin, GroupObjectPermissionAdmin
+from poms.strategies.models import Strategy, StrategyUserObjectPermission, StrategyGroupObjectPermission
 
 
 class StrategyAdmin(HistoricalAdmin, TreeModelAdmin):
@@ -15,3 +16,5 @@ class StrategyAdmin(HistoricalAdmin, TreeModelAdmin):
 
 
 admin.site.register(Strategy, StrategyAdmin)
+admin.site.register(StrategyUserObjectPermission, UserObjectPermissionAdmin)
+admin.site.register(StrategyGroupObjectPermission, GroupObjectPermissionAdmin)
