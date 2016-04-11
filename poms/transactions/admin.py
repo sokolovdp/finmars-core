@@ -17,14 +17,36 @@ class TransactionClassAdmin(HistoricalAdmin):
 admin.site.register(TransactionClass, TransactionClassAdmin)
 
 
+# class TransactionTypeVarInline(admin.StackedInline):
+#     model = TransactionTypeVar
+#     extra = 0
+
+
 class TransactionTypeAdmin(HistoricalAdmin):
     model = TransactionType
     list_display = ['id', 'name', 'master_user']
     list_select_related = ['master_user']
     raw_id_fields = ['master_user']
+    # inlines = [TransactionTypeVarInline]
 
 
 admin.site.register(TransactionType, TransactionTypeAdmin)
+
+
+# class TransactionTypeItemValueInline(admin.StackedInline):
+#     model = TransactionTypeItemValue
+#     extra = 0
+
+
+# class TransactionTypeItemAdmin(HistoricalAdmin):
+#     model = TransactionTypeItem
+#     list_display = ['id', 'transaction_type']
+#     # list_select_related = ['master_user']
+#     # raw_id_fields = ['master_user']
+#     inlines = [TransactionTypeItemValueInline]
+#
+#
+# admin.site.register(TransactionTypeItem, TransactionTypeItemAdmin)
 
 
 class TransactionAttrValueInline(AttrValueInlineBase):

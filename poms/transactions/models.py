@@ -104,10 +104,18 @@ class TransactionType(NamedModel):
 #     position_size_with_sign = models.FloatField(null=True, blank=True)
 #     settlement_currency = models.ForeignKey(Currency, null=True, blank=True, related_name='+')
 #     cash_consideration = models.FloatField(null=True, blank=True)
-#
 #     account_position = models.ForeignKey(Account, null=True, blank=True, related_name='+')
 #     account_cash = models.ForeignKey(Account, null=True, blank=True, related_name='+')
 #     account_interim = models.ForeignKey(Account, null=True, blank=True, related_name='+')
+#
+#     instrument_expr = models.CharField(max_length=255, blank=True)
+#     transaction_currency_expr = models.CharField(max_length=255, blank=True)
+#     position_size_with_sign_expr = models.CharField(max_length=255, blank=True)
+#     settlement_currency_expr = models.CharField(max_length=255, blank=True)
+#     cash_consideration_expr = models.CharField(max_length=255, blank=True)
+#     account_position_expr = models.CharField(max_length=255, blank=True)
+#     account_cash_expr = models.CharField(max_length=255, blank=True)
+#     account_interim_expr = models.CharField(max_length=255, blank=True)
 #
 #
 # # instrument = instr
