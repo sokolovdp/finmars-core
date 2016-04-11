@@ -12,7 +12,16 @@ from poms.obj_perms.models import UserObjectPermissionBase, GroupObjectPermissio
 
 class Tag(TagModelBase):
     master_user = models.ForeignKey('users.MasterUser', related_name='tags', verbose_name=_('master user'))
-    content_type = models.ForeignKey(ContentType, null=True, blank=True, related_name='+')
+    content_type = models.ManyToManyField(ContentType, blank=True, related_name='+')
+
+    # available_for_account = models.BooleanField(default=True)
+    # available_for_currency = models.BooleanField(default=True)
+    # available_for_instrument_type = models.BooleanField(default=True)
+    # available_for_instrument = models.BooleanField(default=True)
+    # available_for_counterparty = models.BooleanField(default=True)
+    # available_for_responsible = models.BooleanField(default=True)
+    # available_for_portfolio = models.BooleanField(default=True)
+    # available_for_transaction_type = models.BooleanField(default=True)
 
     accounts = models.ManyToManyField('accounts.Account', blank=True, related_name='tags')
     currencies = models.ManyToManyField('currencies.Currency', blank=True, related_name='tags')
