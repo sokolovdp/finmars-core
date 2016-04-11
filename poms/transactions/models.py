@@ -76,6 +76,22 @@ class TransactionType(NamedModel):
         ]
 
 
+class TransactionTypeUserObjectPermission(UserObjectPermissionBase):
+    content_object = models.ForeignKey(TransactionType, related_name='user_object_permissions')
+
+    class Meta:
+        verbose_name = _('transaction types - user permission')
+        verbose_name_plural = _('transaction types - user permissions')
+
+
+class TransactionTypeGroupObjectPermission(GroupObjectPermissionBase):
+    content_object = models.ForeignKey(TransactionType, related_name='group_object_permissions')
+
+    class Meta:
+        verbose_name = _('transaction types - group permission')
+        verbose_name_plural = _('transaction types - group permissions')
+
+
 # name - expr
 # instr - content_type:instrument
 # sccy - content_type:currency
@@ -300,18 +316,34 @@ class TransactionAttributeType(AttributeTypeBase):
     strategy_position_root = models.ForeignKey(Strategy, null=True, blank=True, related_name='+')
     strategy_cash_root = models.ForeignKey(Strategy, null=True, blank=True, related_name='+')
 
+    class Meta:
+        verbose_name = _('transaction attribute type')
+        verbose_name_plural = _('transaction attribute types')
 
-class PortfolioAccountAttributeTypeOption(AttributeTypeOptionBase):
+
+class TransactionAttributeTypeOption(AttributeTypeOptionBase):
     member = models.ForeignKey(Member, related_name='transaction_attribute_type_options')
     attribute_type = models.ForeignKey(TransactionAttributeType, related_name='attribute_type_options')
+
+    class Meta:
+        verbose_name = _('transaction attribute types - option')
+        verbose_name_plural = _('transaction attribute types - options')
 
 
 class TransactionAttributeTypeUserObjectPermission(UserObjectPermissionBase):
     content_object = models.ForeignKey(TransactionAttributeType, related_name='user_object_permissions')
 
+    class Meta:
+        verbose_name = _('transaction attribute types - user permission')
+        verbose_name_plural = _('transaction attribute types - user permissions')
+
 
 class TransactionAttributeTypeGroupObjectPermission(GroupObjectPermissionBase):
     content_object = models.ForeignKey(TransactionAttributeType, related_name='group_object_permissions')
+
+    class Meta:
+        verbose_name = _('transaction attribute types - group permission')
+        verbose_name_plural = _('transaction attribute types - group permissions')
 
 
 class TransactionAttribute(AttributeBase):
@@ -319,6 +351,10 @@ class TransactionAttribute(AttributeBase):
     content_object = models.ForeignKey(Transaction)
     strategy_position = models.ForeignKey(Strategy, null=True, blank=True, related_name='+')
     strategy_cash = models.ForeignKey(Strategy, null=True, blank=True, related_name='+')
+
+    class Meta:
+        verbose_name = _('transaction attribute')
+        verbose_name_plural = _('transaction attributes')
 
 
 history.register(TransactionClass)

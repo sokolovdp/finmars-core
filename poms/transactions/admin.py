@@ -3,8 +3,12 @@ from __future__ import unicode_literals
 from django.contrib import admin
 
 from poms.audit.admin import HistoricalAdmin
+from poms.obj_attrs.admin import AttributeTypeAdminBase, AttributeTypeOptionInlineBase
+from poms.obj_perms.admin import UserObjectPermissionAdmin, GroupObjectPermissionAdmin
 from poms.transactions.models import TransactionClass, Transaction, TransactionType, TransactionTypeInput, \
-    TransactionTypeItem
+    TransactionTypeItem, TransactionTypeUserObjectPermission, TransactionTypeGroupObjectPermission, \
+    TransactionAttributeType, TransactionAttributeTypeOption, TransactionAttributeTypeUserObjectPermission, \
+    TransactionAttributeTypeGroupObjectPermission
 
 
 class TransactionClassAdmin(HistoricalAdmin):
@@ -36,27 +40,8 @@ class TransactionTypeAdmin(HistoricalAdmin):
 
 
 admin.site.register(TransactionType, TransactionTypeAdmin)
-
-
-# class TransactionTypeItemValueInline(admin.StackedInline):
-#     model = TransactionTypeItemValue
-#     extra = 0
-
-
-# class TransactionTypeItemAdmin(HistoricalAdmin):
-#     model = TransactionTypeItem
-#     list_display = ['id', 'transaction_type']
-#     # list_select_related = ['master_user']
-#     # raw_id_fields = ['master_user']
-#     inlines = [TransactionTypeItemValueInline]
-#
-#
-# admin.site.register(TransactionTypeItem, TransactionTypeItemAdmin)
-
-
-# class TransactionAttrValueInline(AttrValueInlineBase):
-#     model = TransactionAttrValue
-#     raw_id_fields = ['attr', 'strategy_position', 'strategy_cash']
+admin.site.register(TransactionTypeUserObjectPermission, UserObjectPermissionAdmin)
+admin.site.register(TransactionTypeGroupObjectPermission, GroupObjectPermissionAdmin)
 
 
 class TransactionAdmin(HistoricalAdmin):
@@ -93,3 +78,15 @@ class TransactionAdmin(HistoricalAdmin):
 
 
 admin.site.register(Transaction, TransactionAdmin)
+
+
+class TransactionAttributeTypeAdmin(AttributeTypeAdminBase):
+    list_display = ['id', 'master_user', 'name', 'value_type', 'strategy_position_root', 'strategy_cash_root']
+    list_select_related = ['master_user', 'strategy_position_root', 'strategy_cash_root']
+    raw_id_fields = ['master_user', 'strategy_position_root', 'strategy_cash_root']
+
+
+admin.site.register(TransactionAttributeType, TransactionAttributeTypeAdmin)
+admin.site.register(TransactionAttributeTypeOption, AttributeTypeOptionInlineBase)
+admin.site.register(TransactionAttributeTypeUserObjectPermission, UserObjectPermissionAdmin)
+admin.site.register(TransactionAttributeTypeGroupObjectPermission, GroupObjectPermissionAdmin)
