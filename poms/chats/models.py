@@ -56,9 +56,17 @@ class Thread(TimeStampedModel):
 class ThreadUserObjectPermission(UserObjectPermissionBase):
     content_object = models.ForeignKey(Thread, related_name='user_object_permissions')
 
+    class Meta:
+        verbose_name = _('threads - user permission')
+        verbose_name_plural = _('threads - user permissions')
+
 
 class ThreadGroupObjectPermission(GroupObjectPermissionBase):
     content_object = models.ForeignKey(Thread, related_name='group_object_permissions')
+
+    class Meta:
+        verbose_name = _('threads - group permission')
+        verbose_name_plural = _('threads - group permissions')
 
 
 @python_2_unicode_compatible

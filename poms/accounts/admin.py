@@ -2,9 +2,14 @@ from __future__ import unicode_literals
 
 from django.contrib import admin
 
-from poms.accounts.models import Account, AccountType, AccountClassifier
+from poms.accounts.models import Account, AccountType, AccountClassifier, AccountTypeUserObjectPermission, \
+    AccountTypeGroupObjectPermission, AccountClassifierUserObjectPermission, AccountClassifierGroupObjectPermission, \
+    AccountUserObjectPermission, AccountGroupObjectPermission, AccountAttributeType, \
+    AccountAttributeTypeUserObjectPermission, AccountAttributeTypeGroupObjectPermission, AccountAttribute
 from poms.audit.admin import HistoricalAdmin
 from poms.common.admin import TreeModelAdmin
+from poms.obj_attrs.admin import AttributeTypeAdminBase, AttributeBase
+from poms.obj_perms.admin import UserObjectPermissionAdmin, GroupObjectPermissionAdmin
 
 
 class AccountTypeAdmin(HistoricalAdmin):
@@ -15,6 +20,8 @@ class AccountTypeAdmin(HistoricalAdmin):
 
 
 admin.site.register(AccountType, AccountTypeAdmin)
+admin.site.register(AccountTypeUserObjectPermission, UserObjectPermissionAdmin)
+admin.site.register(AccountTypeGroupObjectPermission, GroupObjectPermissionAdmin)
 
 
 class AccountClassifierAdmin(HistoricalAdmin, TreeModelAdmin):
@@ -25,10 +32,12 @@ class AccountClassifierAdmin(HistoricalAdmin, TreeModelAdmin):
 
 
 admin.site.register(AccountClassifier, AccountClassifierAdmin)
+admin.site.register(AccountClassifierUserObjectPermission, UserObjectPermissionAdmin)
+admin.site.register(AccountClassifierGroupObjectPermission, GroupObjectPermissionAdmin)
 
 
-# class AccountAttrValueInline(AttrValueInlineBase):
-#     model = AccountAttrValue
+class AttributeInline(AttributeBase):
+    model = AccountAttribute
 
 
 class AccountAdmin(HistoricalAdmin):
@@ -36,7 +45,13 @@ class AccountAdmin(HistoricalAdmin):
     list_display = ['id', 'name', 'master_user']
     list_select_related = ['master_user']
     raw_id_fields = ['master_user', 'type']
-    # inlines = [AccountAttrValueInline]
+    inlines = [AttributeInline]
 
 
 admin.site.register(Account, AccountAdmin)
+admin.site.register(AccountUserObjectPermission, UserObjectPermissionAdmin)
+admin.site.register(AccountGroupObjectPermission, GroupObjectPermissionAdmin)
+
+admin.site.register(AccountAttributeType, AttributeTypeAdminBase)
+admin.site.register(AccountAttributeTypeUserObjectPermission, UserObjectPermissionAdmin)
+admin.site.register(AccountAttributeTypeGroupObjectPermission, GroupObjectPermissionAdmin)

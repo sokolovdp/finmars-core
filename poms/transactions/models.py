@@ -62,6 +62,8 @@ class TransactionClass(ClassModelBase):
 class TransactionType(NamedModel):
     master_user = models.ForeignKey(MasterUser, related_name='transaction_types', verbose_name=_('master user'))
 
+    instrument_types = models.ManyToManyField('instruments.InstrumentType', blank=True, related_name='transaction_types')
+
     class Meta:
         verbose_name = _('transaction type')
         verbose_name_plural = _('transaction types')
@@ -69,7 +71,7 @@ class TransactionType(NamedModel):
             ['master_user', 'user_code']
         ]
         permissions = [
-            ('view_transactiontype', 'Can view instrument type')
+            ('view_transactiontype', 'Can view transaction type')
         ]
 
 
@@ -93,7 +95,7 @@ class TransactionTypeInput(models.Model):
     )
 
     transaction_type = models.ForeignKey(TransactionType)
-    value_type = models.PositiveSmallIntegerField(default=NUMBER,choices=TYPES)
+    value_type = models.PositiveSmallIntegerField(default=NUMBER, choices=TYPES)
     name = models.CharField(max_length=255, null=True, blank=True)
     content_type = models.ForeignKey(ContentType, null=True, blank=True)
     order = models.IntegerField(default=0)

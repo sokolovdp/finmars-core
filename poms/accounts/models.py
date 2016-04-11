@@ -37,9 +37,17 @@ class AccountType(NamedModel):
 class AccountTypeUserObjectPermission(UserObjectPermissionBase):
     content_object = models.ForeignKey(AccountType, related_name='user_object_permissions')
 
+    class Meta:
+        verbose_name = _('account types - user permission')
+        verbose_name_plural = _('account types - user permissions')
+
 
 class AccountTypeGroupObjectPermission(GroupObjectPermissionBase):
     content_object = models.ForeignKey(AccountType, related_name='group_object_permissions')
+
+    class Meta:
+        verbose_name = _('account types - group permission')
+        verbose_name_plural = _('account types - group permissions')
 
 
 @python_2_unicode_compatible
@@ -67,9 +75,17 @@ class AccountClassifier(NamedModel, MPTTModel):
 class AccountClassifierUserObjectPermission(UserObjectPermissionBase):
     content_object = models.ForeignKey(AccountClassifier, related_name='user_object_permissions')
 
+    class Meta:
+        verbose_name = _('account classifiers - user permission')
+        verbose_name_plural = _('account classifiers - user permissions')
+
 
 class AccountClassifierGroupObjectPermission(GroupObjectPermissionBase):
     content_object = models.ForeignKey(AccountClassifier, related_name='group_object_permissions')
+
+    class Meta:
+        verbose_name = _('account classifiers - group permission')
+        verbose_name_plural = _('account classifiers - group permissions')
 
 
 @python_2_unicode_compatible
@@ -94,27 +110,51 @@ class Account(NamedModel):
 class AccountUserObjectPermission(UserObjectPermissionBase):
     content_object = models.ForeignKey(Account, related_name='user_object_permissions')
 
+    class Meta:
+        verbose_name = _('accounts - user permission')
+        verbose_name_plural = _('accounts - user permissions')
+
 
 class AccountGroupObjectPermission(GroupObjectPermissionBase):
     content_object = models.ForeignKey(Account, related_name='group_object_permissions')
+
+    class Meta:
+        verbose_name = _('accounts - group permission')
+        verbose_name_plural = _('accounts - group permissions')
 
 
 class AccountAttributeType(AttributeTypeBase):
     classifier_root = models.ForeignKey(AccountClassifier, null=True, blank=True)
 
+    class Meta:
+        verbose_name = _('account attribute type')
+        verbose_name_plural = _('account attribute types')
+
 
 class AccountAttributeTypeUserObjectPermission(UserObjectPermissionBase):
     content_object = models.ForeignKey(AccountAttributeType, related_name='user_object_permissions')
 
+    class Meta:
+        verbose_name = _('account attribute types - user permission')
+        verbose_name_plural = _('account attribute types - user permissions')
+
 
 class AccountAttributeTypeGroupObjectPermission(GroupObjectPermissionBase):
     content_object = models.ForeignKey(AccountAttributeType, related_name='group_object_permissions')
+
+    class Meta:
+        verbose_name = _('account attribute types - group permission')
+        verbose_name_plural = _('account attribute types - group permissions')
 
 
 class AccountAttribute(AttributeBase):
     attribute_type = models.ForeignKey(AccountAttributeType, related_name='attributes')
     content_object = models.ForeignKey(Account)
     classifier = models.ForeignKey(AccountClassifier, null=True, blank=True)
+
+    class Meta:
+        verbose_name = _('account attribute')
+        verbose_name_plural = _('account attributes')
 
 
 history.register(AccountType)

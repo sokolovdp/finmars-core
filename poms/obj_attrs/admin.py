@@ -170,5 +170,19 @@ class AttributeTypeOrderAdmin(HistoricalAdmin):
 admin.site.register(AttributeType, AttributeTypeAdmin)
 admin.site.register(AttributeTypeOrder, AttributeTypeOrderAdmin)
 admin.site.register(Attribute, AttributeAdmin)
+
+
 # admin.site.register(Classifier, TreeModelAdmin)
 # register_admin(Attribute)
+
+class AttributeTypeAdminBase(HistoricalAdmin):
+    list_display = ['id', 'master_user', 'name', 'value_type', 'classifier_root', ]
+    list_select_related = ['master_user', 'classifier_root', ]
+    raw_id_fields = ['master_user', 'classifier_root']
+    save_as = True
+
+
+class AttributeBase(admin.TabularInline):
+    extra = 0
+    fields = ['attribute_type', 'value', 'classifier']
+    raw_id_fields = ['attribute_type', 'classifier']
