@@ -9,6 +9,8 @@ from mptt.models import MPTTModel
 from poms.audit import history
 from poms.common.models import NamedModel, TagModelBase
 from poms.currencies.models import Currency
+from poms.obj_attrs.models import AttributeTypeBase, AttributeBase
+from poms.obj_perms.models import UserObjectPermissionBase, GroupObjectPermissionBase
 from poms.users.models import MasterUser
 
 
@@ -30,6 +32,14 @@ class AccountType(NamedModel):
 
     def __str__(self):
         return self.name
+
+
+class AccountTypeUserObjectPermission(UserObjectPermissionBase):
+    content_object = models.ForeignKey(AccountType, related_name='user_object_permissions')
+
+
+class AccountTypeGroupObjectPermission(GroupObjectPermissionBase):
+    content_object = models.ForeignKey(AccountType, related_name='group_object_permissions')
 
 
 @python_2_unicode_compatible
@@ -54,6 +64,14 @@ class AccountClassifier(NamedModel, MPTTModel):
         return self.name
 
 
+class AccountClassifierUserObjectPermission(UserObjectPermissionBase):
+    content_object = models.ForeignKey(AccountClassifier, related_name='user_object_permissions')
+
+
+class AccountClassifierGroupObjectPermission(GroupObjectPermissionBase):
+    content_object = models.ForeignKey(AccountClassifier, related_name='group_object_permissions')
+
+
 @python_2_unicode_compatible
 class Account(NamedModel):
     master_user = models.ForeignKey(MasterUser, related_name='accounts', verbose_name=_('master user'))
@@ -73,6 +91,34 @@ class Account(NamedModel):
         return self.name
 
 
-history.register(AccountClassifier)
+class AccountUserObjectPermission(UserObjectPermissionBase):
+    content_object = models.ForeignKey(Account, related_name='user_object_permissions')
+
+
+class AccountGroupObjectPermission(GroupObjectPermissionBase):
+    content_object = models.ForeignKey(Account, related_name='group_object_permissions')
+
+
+class AccountAttributeType(AttributeTypeBase):
+    classifier_root = models.ForeignKey(AccountClassifier, null=True, blank=True)
+
+
+class AccountAttributeTypeUserObjectPermission(UserObjectPermissionBase):
+    content_object = models.ForeignKey(AccountAttributeType, related_name='user_object_permissions')
+
+
+class AccountAttributeTypeGroupObjectPermission(GroupObjectPermissionBase):
+    content_object = models.ForeignKey(AccountAttributeType, related_name='group_object_permissions')
+
+
+class AccountAttribute(AttributeBase):
+    attribute_type = models.ForeignKey(AccountAttributeType, related_name='attributes')
+    content_object = models.ForeignKey(Account)
+    classifier = models.ForeignKey(AccountClassifier, null=True, blank=True)
+
+
 history.register(AccountType)
+history.register(AccountClassifier)
 history.register(Account)
+history.register(AccountAttributeType)
+history.register(AccountAttribute)

@@ -14,6 +14,8 @@ from poms.common.models import NamedModel, TagModelBase, ClassModelBase
 from poms.counterparties.models import Responsible, Counterparty
 from poms.currencies.models import Currency
 from poms.instruments.models import Instrument
+from poms.obj_attrs.models import AttributeTypeBase, AttributeBase
+from poms.obj_perms.models import UserObjectPermissionBase, GroupObjectPermissionBase
 from poms.portfolios.models import Portfolio
 from poms.strategies.models import Strategy
 from poms.users.models import MasterUser
@@ -71,53 +73,56 @@ class TransactionType(NamedModel):
         ]
 
 
-# # name - expr
-# # instr - content_type:instrument
-# # sccy - content_type:currency
-# # pos - number
-# # price - number
-# # acc - content_type:account
-# class TransactionTypeVar(models.Model):
-#     STRING = 10
-#     NUMBER = 20
-#     RELATION = 30
-#
-#     TYPES = (
-#         (NUMBER, _('Number')),
-#         (STRING, _('String')),
-#         (RELATION, _('Relation')),
-#     )
-#
-#     transaction_type = models.ForeignKey(TransactionType)
-#     type = models.PositiveSmallIntegerField(default=NUMBER,choices=TYPES)
-#     name = models.CharField(max_length=255, null=True, blank=True)
-#     content_type = models.ForeignKey(ContentType, null=True, blank=True)
-#
-#
-# class TransactionTypeItem(models.Model):
-#     transaction_type = models.ForeignKey(TransactionType)
-#     order = models.IntegerField(default=0)
-#
-#     transaction_class = models.ForeignKey(TransactionClass, related_name='+')
-#     instrument = models.ForeignKey(Instrument, null=True, blank=True, related_name='+')
-#     transaction_currency = models.ForeignKey(Currency, null=True, blank=True, related_name='+')
-#     position_size_with_sign = models.FloatField(null=True, blank=True)
-#     settlement_currency = models.ForeignKey(Currency, null=True, blank=True, related_name='+')
-#     cash_consideration = models.FloatField(null=True, blank=True)
-#     account_position = models.ForeignKey(Account, null=True, blank=True, related_name='+')
-#     account_cash = models.ForeignKey(Account, null=True, blank=True, related_name='+')
-#     account_interim = models.ForeignKey(Account, null=True, blank=True, related_name='+')
-#
-#     instrument_expr = models.CharField(max_length=255, blank=True)
-#     transaction_currency_expr = models.CharField(max_length=255, blank=True)
-#     position_size_with_sign_expr = models.CharField(max_length=255, blank=True)
-#     settlement_currency_expr = models.CharField(max_length=255, blank=True)
-#     cash_consideration_expr = models.CharField(max_length=255, blank=True)
-#     account_position_expr = models.CharField(max_length=255, blank=True)
-#     account_cash_expr = models.CharField(max_length=255, blank=True)
-#     account_interim_expr = models.CharField(max_length=255, blank=True)
-#
-#
+# name - expr
+# instr - content_type:instrument
+# sccy - content_type:currency
+# pos - number
+# price - number
+# acc - content_type:account
+class TransactionTypeInput(models.Model):
+    STRING = 10
+    NUMBER = 20
+    RELATION = 30
+    EXPRESSION = 40
+
+    TYPES = (
+        (NUMBER, _('Number')),
+        (STRING, _('String')),
+        (RELATION, _('Relation')),
+        (EXPRESSION, _('Expression')),
+    )
+
+    transaction_type = models.ForeignKey(TransactionType)
+    value_type = models.PositiveSmallIntegerField(default=NUMBER,choices=TYPES)
+    name = models.CharField(max_length=255, null=True, blank=True)
+    content_type = models.ForeignKey(ContentType, null=True, blank=True)
+    order = models.IntegerField(default=0)
+
+
+class TransactionTypeItem(models.Model):
+    transaction_type = models.ForeignKey(TransactionType)
+    order = models.IntegerField(default=0)
+
+    transaction_class = models.ForeignKey(TransactionClass, related_name='+')
+    instrument = models.ForeignKey(Instrument, null=True, blank=True, related_name='+')
+    transaction_currency = models.ForeignKey(Currency, null=True, blank=True, related_name='+')
+    position_size_with_sign = models.FloatField(null=True, blank=True)
+    settlement_currency = models.ForeignKey(Currency, null=True, blank=True, related_name='+')
+    cash_consideration = models.FloatField(null=True, blank=True)
+    account_position = models.ForeignKey(Account, null=True, blank=True, related_name='+')
+    account_cash = models.ForeignKey(Account, null=True, blank=True, related_name='+')
+    account_interim = models.ForeignKey(Account, null=True, blank=True, related_name='+')
+
+    instrument_expr = models.CharField(max_length=255, blank=True)
+    transaction_currency_expr = models.CharField(max_length=255, blank=True)
+    position_size_with_sign_expr = models.CharField(max_length=255, blank=True)
+    settlement_currency_expr = models.CharField(max_length=255, blank=True)
+    cash_consideration_expr = models.CharField(max_length=255, blank=True)
+    account_position_expr = models.CharField(max_length=255, blank=True)
+    account_cash_expr = models.CharField(max_length=255, blank=True)
+    account_interim_expr = models.CharField(max_length=255, blank=True)
+
+
 # # instrument = instr
 # # position_size_with_sign = pos
 # # settlement_currency = sccy
@@ -137,7 +142,7 @@ class TransactionType(NamedModel):
 #     #     ('account_interim', 'account_interim'),
 #     # )
 #     item = models.ForeignKey(TransactionTypeItem)
-#     name = models.CharField(max_length=255, help_text="transaction basic attribue name or any dynamic attribute")
+#     name = models.CharField(max_length=255, help_text="transaction basic attribute name or any dynamic attribute")
 #     expr = models.CharField(max_length=255, null=True, blank=True)
 
 
@@ -286,6 +291,26 @@ class Transaction(models.Model):
     @property
     def strategies_cash(self):
         return [self.strategy_cash] if self.strategy_cash_id else []
+
+
+class TransactionAttributeType(AttributeTypeBase):
+    strategy_position_root = models.ForeignKey(Strategy, null=True, blank=True, related_name='+')
+    strategy_cash_root = models.ForeignKey(Strategy, null=True, blank=True, related_name='+')
+
+
+class TransactionAttributeTypeUserObjectPermission(UserObjectPermissionBase):
+    content_object = models.ForeignKey(TransactionAttributeType, related_name='user_object_permissions')
+
+
+class TransactionAttributeTypeGroupObjectPermission(GroupObjectPermissionBase):
+    content_object = models.ForeignKey(TransactionAttributeType, related_name='group_object_permissions')
+
+
+class TransactionAttribute(AttributeBase):
+    attribute_type = models.ForeignKey(TransactionAttributeType, related_name='attributes')
+    content_object = models.ForeignKey(Transaction)
+    strategy_position = models.ForeignKey(Strategy, null=True, blank=True, related_name='+')
+    strategy_cash = models.ForeignKey(Strategy, null=True, blank=True, related_name='+')
 
 
 history.register(TransactionClass)

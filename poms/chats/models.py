@@ -11,7 +11,7 @@ from django.utils.translation import ugettext_lazy as _, get_language
 
 from poms.audit import history
 from poms.common.models import TimeStampedModel
-from poms.obj_perms.utils import register_model
+from poms.obj_perms.models import UserObjectPermissionBase, GroupObjectPermissionBase
 from poms.users.models import MasterUser, Member
 
 
@@ -51,6 +51,14 @@ class Thread(TimeStampedModel):
     def save(self, force_insert=False, force_update=False, using=None, update_fields=None):
         super(Thread, self).save(force_insert=force_insert, force_update=force_update, using=using,
                                  update_fields=update_fields)
+
+
+class ThreadUserObjectPermission(UserObjectPermissionBase):
+    content_object = models.ForeignKey(Thread, related_name='user_object_permissions')
+
+
+class ThreadGroupObjectPermission(GroupObjectPermissionBase):
+    content_object = models.ForeignKey(Thread, related_name='group_object_permissions')
 
 
 @python_2_unicode_compatible
@@ -100,7 +108,7 @@ class DirectMessage(TimeStampedModel):
         return format_timedelta(self.created - timezone.now(), add_direction=True, locale=locale)
 
 
-register_model(Thread)
+# register_model(Thread)
 
 history.register(ThreadStatus)
 history.register(Thread)

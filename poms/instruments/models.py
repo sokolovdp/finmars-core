@@ -10,6 +10,8 @@ from mptt.models import MPTTModel
 from poms.audit import history
 from poms.common.models import NamedModel, ClassModelBase
 from poms.currencies.models import Currency
+from poms.obj_attrs.models import AttributeTypeBase, AttributeBase
+from poms.obj_perms.models import UserObjectPermissionBase, GroupObjectPermissionBase
 from poms.users.models import MasterUser
 
 
@@ -92,6 +94,14 @@ class InstrumentType(NamedModel):
         return self.name
 
 
+class InstrumentTypeUserObjectPermission(UserObjectPermissionBase):
+    content_object = models.ForeignKey(InstrumentType, related_name='user_object_permissions')
+
+
+class InstrumentTypeGroupObjectPermission(GroupObjectPermissionBase):
+    content_object = models.ForeignKey(InstrumentType, related_name='group_object_permissions')
+
+
 @python_2_unicode_compatible
 class InstrumentClassifier(NamedModel, MPTTModel):
     master_user = models.ForeignKey(MasterUser, related_name='instrument_classifiers', verbose_name=_('master user'))
@@ -112,6 +122,14 @@ class InstrumentClassifier(NamedModel, MPTTModel):
 
     def __str__(self):
         return self.name
+
+
+class InstrumentClassifierUserObjectPermission(UserObjectPermissionBase):
+    content_object = models.ForeignKey(InstrumentClassifier, related_name='user_object_permissions')
+
+
+class InstrumentClassifierGroupObjectPermission(GroupObjectPermissionBase):
+    content_object = models.ForeignKey(InstrumentClassifier, related_name='group_object_permissions')
 
 
 @python_2_unicode_compatible
@@ -139,6 +157,32 @@ class Instrument(NamedModel):
 
     def __str__(self):
         return self.name
+
+
+class InstrumentUserObjectPermission(UserObjectPermissionBase):
+    content_object = models.ForeignKey(Instrument, related_name='user_object_permissions')
+
+
+class InstrumentGroupObjectPermission(GroupObjectPermissionBase):
+    content_object = models.ForeignKey(Instrument, related_name='group_object_permissions')
+
+
+class InstrumentAttributeType(AttributeTypeBase):
+    classifier_root = models.ForeignKey(InstrumentClassifier, null=True, blank=True)
+
+
+class InstrumentAttributeTypeUserObjectPermission(UserObjectPermissionBase):
+    content_object = models.ForeignKey(InstrumentAttributeType, related_name='user_object_permissions')
+
+
+class InstrumentAttributeTypeGroupObjectPermission(GroupObjectPermissionBase):
+    content_object = models.ForeignKey(InstrumentAttributeType, related_name='group_object_permissions')
+
+
+class InstrumentAttribute(AttributeBase):
+    attribute_type = models.ForeignKey(InstrumentAttributeType, related_name='attributes')
+    content_object = models.ForeignKey(Instrument)
+    classifier = models.ForeignKey(InstrumentClassifier, null=True, blank=True)
 
 
 # @python_2_unicode_compatible

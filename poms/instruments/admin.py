@@ -7,8 +7,6 @@ from poms.common.admin import TreeModelAdmin
 from poms.instruments.models import Instrument, PriceHistory, InstrumentClassifier, InstrumentClass, InstrumentType, \
     DailyPricingModel, AccrualCalculationModel, PaymentFrequency, CostMethod, \
     ManualPricingFormula, AccrualCalculationSchedule
-from poms.obj_attrs.admin import AttrValueInlineBase
-from poms.obj_attrs.models import InstrumentAttrValue
 
 
 class InstrumentClassAdmin(HistoricalAdmin):
@@ -87,15 +85,11 @@ class AccrualCalculationScheduleInline(admin.StackedInline):
     extra = 0
 
 
-class InstrumentAttrValueInline(AttrValueInlineBase):
-    model = InstrumentAttrValue
-
-
 class InstrumentAdmin(HistoricalAdmin):
     model = Instrument
     list_display = ['id', 'name', 'master_user', 'type', 'pricing_currency', 'accrued_currency']
     list_select_related = ['master_user', 'type', 'pricing_currency', 'accrued_currency']
-    inlines = [ManualPricingFormulaInline, AccrualCalculationScheduleInline, InstrumentAttrValueInline, ]
+    inlines = [ManualPricingFormulaInline, AccrualCalculationScheduleInline, ]
     raw_id_fields = ['master_user', 'type', 'pricing_currency', 'accrued_currency',
                      'daily_pricing_model']
 

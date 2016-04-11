@@ -8,6 +8,7 @@ from mptt.models import MPTTModel
 
 from poms.audit import history
 from poms.common.models import NamedModel
+from poms.obj_attrs.models import AttributeTypeBase, AttributeBase
 from poms.users.models import MasterUser
 
 
@@ -44,6 +45,16 @@ class Counterparty(NamedModel):
         return self.name
 
 
+class CounterpartyAttributeType(AttributeTypeBase):
+    classifier_root = models.ForeignKey('counterparties.CounterpartyClassifier', null=True, blank=True)
+
+
+class CounterpartyAttribute(AttributeBase):
+    attribute_type = models.ForeignKey(CounterpartyAttributeType, related_name='attributes')
+    content_object = models.ForeignKey('counterparties.Counterparty')
+    classifier = models.ForeignKey('counterparties.CounterpartyClassifier', null=True, blank=True)
+
+
 class ResponsibleClassifier(NamedModel, MPTTModel):
     master_user = models.ForeignKey(MasterUser, related_name='responsible_classifiers', verbose_name=_('master user'))
     parent = TreeForeignKey('self', null=True, blank=True, related_name='children', db_index=True)
@@ -75,6 +86,16 @@ class Responsible(NamedModel):
 
     def __str__(self):
         return self.name
+
+
+class ResponsibleAttributeType(AttributeTypeBase):
+    classifier_root = models.ForeignKey('counterparties.ResponsibleClassifier', null=True, blank=True)
+
+
+class ResponsibleAttribute(AttributeBase):
+    attribute_type = models.ForeignKey(ResponsibleAttributeType, related_name='attributes')
+    content_object = models.ForeignKey('counterparties.Responsible')
+    classifier = models.ForeignKey('counterparties.ResponsibleClassifier', null=True, blank=True)
 
 
 history.register(CounterpartyClassifier)

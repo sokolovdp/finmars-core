@@ -3,9 +3,8 @@ from __future__ import unicode_literals
 from django.contrib import admin
 
 from poms.audit.admin import HistoricalAdmin
-from poms.obj_attrs.admin import AttrValueInlineBase
-from poms.obj_attrs.models import TransactionAttrValue
-from poms.transactions.models import TransactionClass, Transaction, TransactionType
+from poms.transactions.models import TransactionClass, Transaction, TransactionType, TransactionTypeInput, \
+    TransactionTypeItem
 
 
 class TransactionClassAdmin(HistoricalAdmin):
@@ -17,9 +16,14 @@ class TransactionClassAdmin(HistoricalAdmin):
 admin.site.register(TransactionClass, TransactionClassAdmin)
 
 
-# class TransactionTypeVarInline(admin.StackedInline):
-#     model = TransactionTypeVar
-#     extra = 0
+class TransactionTypeInputInline(admin.StackedInline):
+    model = TransactionTypeInput
+    extra = 0
+
+
+class TransactionTypeItemInline(admin.StackedInline):
+    model = TransactionTypeItem
+    extra = 0
 
 
 class TransactionTypeAdmin(HistoricalAdmin):
@@ -27,7 +31,7 @@ class TransactionTypeAdmin(HistoricalAdmin):
     list_display = ['id', 'name', 'master_user']
     list_select_related = ['master_user']
     raw_id_fields = ['master_user']
-    # inlines = [TransactionTypeVarInline]
+    inlines = [TransactionTypeInputInline, TransactionTypeItemInline]
 
 
 admin.site.register(TransactionType, TransactionTypeAdmin)
@@ -49,9 +53,9 @@ admin.site.register(TransactionType, TransactionTypeAdmin)
 # admin.site.register(TransactionTypeItem, TransactionTypeItemAdmin)
 
 
-class TransactionAttrValueInline(AttrValueInlineBase):
-    model = TransactionAttrValue
-    raw_id_fields = ['attr', 'strategy_position', 'strategy_cash']
+# class TransactionAttrValueInline(AttrValueInlineBase):
+#     model = TransactionAttrValue
+#     raw_id_fields = ['attr', 'strategy_position', 'strategy_cash']
 
 
 class TransactionAdmin(HistoricalAdmin):
@@ -74,7 +78,7 @@ class TransactionAdmin(HistoricalAdmin):
     raw_id_fields = ['master_user', 'portfolio', 'instrument', 'transaction_currency', 'settlement_currency',
                      'account_position', 'account_cash', 'account_interim', 'responsible', 'counterparty']
 
-    inlines = [TransactionAttrValueInline]
+    # inlines = [TransactionAttrValueInline]
 
     def make_canceled(self, request, queryset):
         queryset.update(is_canceled=True)

@@ -5,8 +5,6 @@ from django.contrib import admin
 from poms.accounts.models import Account, AccountType, AccountClassifier
 from poms.audit.admin import HistoricalAdmin
 from poms.common.admin import TreeModelAdmin
-from poms.obj_attrs.admin import AttrValueInlineBase
-from poms.obj_attrs.models import AccountAttrValue
 
 
 class AccountTypeAdmin(HistoricalAdmin):
@@ -29,8 +27,8 @@ class AccountClassifierAdmin(HistoricalAdmin, TreeModelAdmin):
 admin.site.register(AccountClassifier, AccountClassifierAdmin)
 
 
-class AccountAttrValueInline(AttrValueInlineBase):
-    model = AccountAttrValue
+# class AccountAttrValueInline(AttrValueInlineBase):
+#     model = AccountAttrValue
 
 
 class AccountAdmin(HistoricalAdmin):
@@ -38,7 +36,7 @@ class AccountAdmin(HistoricalAdmin):
     list_display = ['id', 'name', 'master_user']
     list_select_related = ['master_user']
     raw_id_fields = ['master_user', 'type']
-    inlines = [AccountAttrValueInline]
+    # inlines = [AccountAttrValueInline]
 
 
 admin.site.register(Account, AccountAdmin)

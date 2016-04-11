@@ -1,6 +1,5 @@
 from __future__ import unicode_literals
 
-from django.contrib.contenttypes.fields import GenericForeignKey
 from django.contrib.contenttypes.models import ContentType
 from django.db import models
 from django.utils.translation import ugettext_lazy as _
@@ -12,25 +11,26 @@ from poms.common.models import TagModelBase
 from poms.counterparties.models import Responsible, Counterparty
 from poms.currencies.models import Currency
 from poms.instruments.models import Instrument, InstrumentType
+from poms.obj_perms.models import UserObjectPermissionBase, GroupObjectPermissionBase
 from poms.portfolios.models import Portfolio
 from poms.strategies.models import Strategy
 from poms.transactions.models import TransactionType
 from poms.users.models import MasterUser
 
 
-class Tag(TagModelBase):
-    master_user = models.ForeignKey(MasterUser, related_name='tags', verbose_name=_('master user'))
-    content_type = models.ForeignKey(ContentType, null=True, blank=True, related_name='+')
-
-
-class TaggedObject(models.Model):
-    tag = models.ForeignKey(Tag)
-    content_type = models.ForeignKey(ContentType, related_name='+')
-    object_id = models.BigIntegerField()
-    content_object = GenericForeignKey()
-
-    def __str__(self):
-        return '%s' % self.content_object
+# class Tag(TagModelBase):
+#     master_user = models.ForeignKey(MasterUser, related_name='tags', verbose_name=_('master user'))
+#     content_type = models.ForeignKey(ContentType, null=True, blank=True, related_name='+')
+#
+#
+# class TaggedObject(models.Model):
+#     tag = models.ForeignKey(Tag)
+#     content_type = models.ForeignKey(ContentType, related_name='+')
+#     object_id = models.BigIntegerField()
+#     content_object = GenericForeignKey()
+#
+#     def __str__(self):
+#         return '%s' % self.content_object
 
 
 # class AccountTag(TagModelBase):
@@ -177,19 +177,39 @@ class TaggedObject(models.Model):
 #         ]
 
 
-class Tag2(TagModelBase):
-    master_user = models.ForeignKey(MasterUser, related_name='common_tags', verbose_name=_('master user'))
+class Tag(TagModelBase):
+    master_user = models.ForeignKey(MasterUser, related_name='tags', verbose_name=_('master user'))
     content_type = models.ForeignKey(ContentType, null=True, blank=True, related_name='+')
 
-    accounts = models.ManyToManyField('accounts.Account', blank=True, related_name='tags2')
-    currencies = models.ManyToManyField('currencies.Currency', blank=True, related_name='tags2')
-    instrument_types = models.ManyToManyField('instruments.InstrumentType', blank=True, related_name='tags2')
-    instruments = models.ManyToManyField('instruments.Instrument', blank=True, related_name='tags2')
-    counterparties = models.ManyToManyField('counterparties.Counterparty', blank=True, related_name='tags2')
-    responsibles = models.ManyToManyField('counterparties.Responsible', blank=True, related_name='tags2')
-    strategies = TreeManyToManyField('strategies.Strategy', blank=True, related_name='tags2')
-    portfolios = models.ManyToManyField('portfolios.Portfolio', blank=True, related_name='tags2')
-    transaction_types = models.ManyToManyField('transactions.TransactionType', blank=True, related_name='tags2')
+    accounts = models.ManyToManyField('accounts.Account', blank=True, related_name='tags')
+    currencies = models.ManyToManyField('currencies.Currency', blank=True, related_name='tags')
+    instrument_types = models.ManyToManyField('instruments.InstrumentType', blank=True, related_name='tags')
+    instruments = models.ManyToManyField('instruments.Instrument', blank=True, related_name='tags')
+    counterparties = models.ManyToManyField('counterparties.Counterparty', blank=True, related_name='tags')
+    responsibles = models.ManyToManyField('counterparties.Responsible', blank=True, related_name='tags')
+    strategies = TreeManyToManyField('strategies.Strategy', blank=True, related_name='tags')
+    portfolios = models.ManyToManyField('portfolios.Portfolio', blank=True, related_name='tags')
+    transaction_types = models.ManyToManyField('transactions.TransactionType', blank=True, related_name='tags')
+
+    class Meta:
+        verbose_name = _('tag')
+        verbose_name_plural = _('tags')
+
+
+class TagUserObjectPermission(UserObjectPermissionBase):
+    content_object = models.ForeignKey(Tag, related_name='user_object_permissions')
+
+    class Meta:
+        verbose_name = _('tags - user permission')
+        verbose_name_plural = _('tags - user permissions')
+
+
+class TagGroupObjectPermission(GroupObjectPermissionBase):
+    content_object = models.ForeignKey(Tag, related_name='group_object_permissions')
+
+    class Meta:
+        verbose_name = _('tags - group permission')
+        verbose_name_plural = _('tags - group permissions')
 
 
 # history.register(AccountTag)
@@ -201,4 +221,4 @@ class Tag2(TagModelBase):
 # history.register(StrategyTag)
 # history.register(PortfolioTag)
 # history.register(TransactionTypeTag)
-history.register(Tag2)
+history.register(Tag)

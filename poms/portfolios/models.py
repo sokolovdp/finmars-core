@@ -6,12 +6,10 @@ from django.utils.translation import ugettext_lazy as _
 from mptt.fields import TreeForeignKey
 from mptt.models import MPTTModel
 
-from poms.accounts.models import Account
 from poms.audit import history
 from poms.common.models import NamedModel
-from poms.counterparties.models import Counterparty, Responsible
-from poms.currencies.models import Currency
-from poms.strategies.models import Strategy
+from poms.obj_attrs.models import AttributeTypeBase, AttributeBase
+from poms.obj_perms.models import UserObjectPermissionBase, GroupObjectPermissionBase
 from poms.users.models import MasterUser
 
 
@@ -34,6 +32,14 @@ class PortfolioClassifier(NamedModel, MPTTModel):
         return self.name
 
 
+class PortfolioClassifierUserObjectPermission(UserObjectPermissionBase):
+    content_object = models.ForeignKey(PortfolioClassifier, related_name='user_object_permissions')
+
+
+class PortfolioClassifierGroupObjectPermission(GroupObjectPermissionBase):
+    content_object = models.ForeignKey(PortfolioClassifier, related_name='group_object_permissions')
+
+
 @python_2_unicode_compatible
 class Portfolio(NamedModel):
     master_user = models.ForeignKey(MasterUser, related_name='portfolios', verbose_name=_('master user'))
@@ -50,6 +56,32 @@ class Portfolio(NamedModel):
 
     def __str__(self):
         return self.name
+
+
+class PortfolioUserObjectPermission(UserObjectPermissionBase):
+    content_object = models.ForeignKey(Portfolio, related_name='user_object_permissions')
+
+
+class PortfolioGroupObjectPermission(GroupObjectPermissionBase):
+    content_object = models.ForeignKey(Portfolio, related_name='group_object_permissions')
+
+
+class PortfolioAttributeType(AttributeTypeBase):
+    classifier_root = models.ForeignKey(PortfolioClassifier, null=True, blank=True)
+
+
+class PortfolioAttributeTypeUserObjectPermission(UserObjectPermissionBase):
+    content_object = models.ForeignKey(PortfolioAttributeType, related_name='user_object_permissions')
+
+
+class PortfolioAttributeTypeGroupObjectPermission(GroupObjectPermissionBase):
+    content_object = models.ForeignKey(PortfolioAttributeType, related_name='group_object_permissions')
+
+
+class PortfolioAttribute(AttributeBase):
+    attribute_type = models.ForeignKey(PortfolioAttributeType, related_name='attributes')
+    content_object = models.ForeignKey(Portfolio)
+    classifier = models.ForeignKey(PortfolioClassifier, null=True, blank=True)
 
 
 history.register(PortfolioClassifier)
