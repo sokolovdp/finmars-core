@@ -58,4 +58,4 @@ class DirectMessageAdmin(HistoricalAdmin):
 
 admin.site.register(DirectMessage, DirectMessageAdmin)
 
-register_admin(Thread)
+# register_admin(Thread)
