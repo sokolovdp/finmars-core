@@ -5,8 +5,7 @@ from django.contrib import admin
 from poms.audit.admin import HistoricalAdmin
 from poms.obj_attrs.admin import AttrValueInlineBase
 from poms.obj_attrs.models import TransactionAttrValue
-from poms.transactions.models import TransactionClass, Transaction, TransactionType, \
-    ComplexTransaction, ComplexTransactionItem, EventType
+from poms.transactions.models import TransactionClass, Transaction, TransactionType
 
 
 class TransactionClassAdmin(HistoricalAdmin):
@@ -18,35 +17,14 @@ class TransactionClassAdmin(HistoricalAdmin):
 admin.site.register(TransactionClass, TransactionClassAdmin)
 
 
-class EventTypeAdmin(admin.StackedInline):
-    model = EventType
-    extra = 0
-
-
 class TransactionTypeAdmin(HistoricalAdmin):
     model = TransactionType
     list_display = ['id', 'name', 'master_user']
     list_select_related = ['master_user']
     raw_id_fields = ['master_user']
-    inlines = [EventTypeAdmin]
 
 
 admin.site.register(TransactionType, TransactionTypeAdmin)
-
-
-class ComplexTransactionItemInline(admin.StackedInline):
-    model = ComplexTransactionItem
-    extra = 0
-
-
-class ComplexTransactionAdmin(HistoricalAdmin):
-    model = ComplexTransaction
-    list_display = ['id', 'name', 'master_user']
-    list_select_related = ['master_user']
-    inlines = [ComplexTransactionItemInline]
-
-
-admin.site.register(ComplexTransaction, ComplexTransactionAdmin)
 
 
 class TransactionAttrValueInline(AttrValueInlineBase):

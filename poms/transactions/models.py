@@ -1,5 +1,6 @@
 from __future__ import unicode_literals
 
+from django.contrib.contenttypes.models import ContentType
 from django.db import models
 from django.utils import timezone
 from django.utils.encoding import python_2_unicode_compatible
@@ -70,48 +71,110 @@ class TransactionType(NamedModel):
         ]
 
 
-class EventType(NamedModel):
-    SECONDS = 1
-    DAYS = 2
-    INTERVALS = (
-        (SECONDS, 'Seconds'),
-        (DAYS, 'Days'),
-    )
-    transaction_type = models.ForeignKey(TransactionType)
-    interval = models.PositiveIntegerField(default=DAYS, choices=INTERVALS)
-    duration = models.PositiveIntegerField(default=1)
+# # name - expr
+# # instr - content_type:instrument
+# # sccy - content_type:currency
+# # pos - number
+# # price - number
+# # acc - content_type:account
+# class TransactionTypeVar(models.Model):
+#     STRING = 10
+#     NUMBER = 20
+#     RELATION = 30
+#
+#     TYPES = (
+#         (NUMBER, _('Number')),
+#         (STRING, _('String')),
+#         (RELATION, _('Relation')),
+#     )
+#
+#     transaction_type = models.ForeignKey(TransactionType)
+#     type = models.PositiveSmallIntegerField(default=NUMBER,choices=TYPES)
+#     name = models.CharField(max_length=255, null=True, blank=True)
+#     content_type = models.ForeignKey(ContentType, null=True, blank=True)
+#
+#
+# class TransactionTypeItem(models.Model):
+#     transaction_type = models.ForeignKey(TransactionType)
+#     order = models.IntegerField(default=0)
+#
+#     transaction_class = models.ForeignKey(TransactionClass, related_name='+')
+#     instrument = models.ForeignKey(Instrument, null=True, blank=True, related_name='+')
+#     transaction_currency = models.ForeignKey(Currency, null=True, blank=True, related_name='+')
+#     position_size_with_sign = models.FloatField(null=True, blank=True)
+#     settlement_currency = models.ForeignKey(Currency, null=True, blank=True, related_name='+')
+#     cash_consideration = models.FloatField(null=True, blank=True)
+#
+#     account_position = models.ForeignKey(Account, null=True, blank=True, related_name='+')
+#     account_cash = models.ForeignKey(Account, null=True, blank=True, related_name='+')
+#     account_interim = models.ForeignKey(Account, null=True, blank=True, related_name='+')
+#
+#
+# # instrument = instr
+# # position_size_with_sign = pos
+# # settlement_currency = sccy
+# # cash_consideration = pos * price
+# # account_position = acc
+# # account_cash = acc
+# # account_interim = acc
+# class TransactionTypeItemValue(models.Model):
+#     # NAMES = (
+#     #     ('instrument', 'instrument'),
+#     #     ('transaction_currency', 'transaction_currency'),
+#     #     ('position_size_with_sign', 'position_size_with_sign'),
+#     #     ('settlement_currency', 'settlement_currency'),
+#     #     ('cash_consideration', 'cash_consideration'),
+#     #     ('account_position', 'account_position'),
+#     #     ('account_cash', 'account_cash'),
+#     #     ('account_interim', 'account_interim'),
+#     # )
+#     item = models.ForeignKey(TransactionTypeItem)
+#     name = models.CharField(max_length=255, help_text="transaction basic attribue name or any dynamic attribute")
+#     expr = models.CharField(max_length=255, null=True, blank=True)
 
 
-@python_2_unicode_compatible
-class ComplexTransaction(NamedModel):
-    master_user = models.ForeignKey(MasterUser, related_name='complex_transactions', verbose_name=_('master user'))
-    type = models.ForeignKey(TransactionType)
-
-    class Meta:
-        verbose_name = _('complex transaction')
-        verbose_name_plural = _('complex transactions')
-        unique_together = [
-            ['master_user', 'user_code']
-        ]
-
-
-@python_2_unicode_compatible
-class ComplexTransactionItem(models.Model):
-    complex_transaction = models.ForeignKey(ComplexTransaction)
-    order = models.PositiveIntegerField(default=0)
-
-    transaction = models.OneToOneField('Transaction', null=True, blank=True)
-    event_type = models.ForeignKey(EventType, null=True, blank=True)
-
-    trigger_date = models.DateTimeField(default=timezone.now)
-    trigger_count = models.PositiveIntegerField(default=0)
-
-    class Meta:
-        verbose_name = _('item')
-        verbose_name_plural = _('items')
-
-    def __str__(self):
-        return 'Item %s#%s' % (self.complex_transaction, self.pk)
+# class EventType(NamedModel):
+#     SECONDS = 1
+#     DAYS = 2
+#     INTERVALS = (
+#         (SECONDS, 'Seconds'),
+#         (DAYS, 'Days'),
+#     )
+#     transaction_type = models.ForeignKey(TransactionType)
+#     interval = models.PositiveIntegerField(default=DAYS, choices=INTERVALS)
+#     duration = models.PositiveIntegerField(default=1)
+#
+#
+# @python_2_unicode_compatible
+# class ComplexTransaction(NamedModel):
+#     master_user = models.ForeignKey(MasterUser, related_name='complex_transactions', verbose_name=_('master user'))
+#     type = models.ForeignKey(TransactionType)
+#
+#     class Meta:
+#         verbose_name = _('complex transaction')
+#         verbose_name_plural = _('complex transactions')
+#         unique_together = [
+#             ['master_user', 'user_code']
+#         ]
+#
+#
+# @python_2_unicode_compatible
+# class ComplexTransactionItem(models.Model):
+#     complex_transaction = models.ForeignKey(ComplexTransaction)
+#     order = models.PositiveIntegerField(default=0)
+#
+#     transaction = models.OneToOneField('Transaction', null=True, blank=True)
+#     event_type = models.ForeignKey(EventType, null=True, blank=True)
+#
+#     trigger_date = models.DateTimeField(default=timezone.now)
+#     trigger_count = models.PositiveIntegerField(default=0)
+#
+#     class Meta:
+#         verbose_name = _('item')
+#         verbose_name_plural = _('items')
+#
+#     def __str__(self):
+#         return 'Item %s#%s' % (self.complex_transaction, self.pk)
 
 
 @python_2_unicode_compatible
