@@ -3,7 +3,8 @@ from django.contrib.contenttypes.models import ContentType
 from django.db import models
 from django.utils.encoding import python_2_unicode_compatible
 from django.utils.translation import ugettext_lazy as _
-from mptt.fields import TreeForeignKey
+from mptt.fields import TreeForeignKey, TreeManyToManyField
+from mptt.models import MPTTModel
 
 from poms.accounts.models import AccountClassifier, Account
 from poms.common.models import NamedModel
@@ -173,15 +174,15 @@ class Attribute(models.Model):
     STRING = 10
     NUMBER = 20
     CLASSIFIER = 30
-    CHOICE = 40
-    CHOICES = 50
+    # CHOICE = 40
+    # CHOICES = 50
 
     VALUE_TYPES = (
         (NUMBER, _('Number')),
         (STRING, _('String')),
         (CLASSIFIER, _('Classifier')),
-        (CHOICE, _('Choice')),
-        (CHOICES, _('Choices')),
+        # (CHOICE, _('Choice')),
+        # (CHOICES, _('Choices')),
     )
 
     master_user = models.ForeignKey(MasterUser, related_name='attributes')
@@ -225,20 +226,38 @@ class AttributeOrder(models.Model):
         ]
 
 
-@python_2_unicode_compatible
-class AttributeChoice(models.Model):
-    attribute = models.ForeignKey(Attribute, related_name='choices')
-    order = models.IntegerField(default=0)
-    name = models.CharField(max_length=255)
+# @python_2_unicode_compatible
+# class AttributeChoice(models.Model):
+#     attribute = models.ForeignKey(Attribute, related_name='choices')
+#     order = models.IntegerField(default=0)
+#     name = models.CharField(max_length=255)
+#
+#     class Meta:
+#         unique_together = [
+#             ['attribute', 'name'],
+#         ]
+#         ordering = ['attribute', 'order', 'name']
+#
+#     def __str__(self):
+#         return self.name
 
-    class Meta:
-        unique_together = [
-            ['attribute', 'name'],
-        ]
-        ordering = ['attribute', 'order', 'name']
 
-    def __str__(self):
-        return self.name
+# @python_2_unicode_compatible
+# class Classifier(NamedModel, MPTTModel):
+#     attribute = models.ForeignKey(Attribute, related_name='+')
+#     # content_type = models.ForeignKey(ContentType, related_name='+')
+#     parent = TreeForeignKey('self', null=True, blank=True, related_name='children', db_index=True)
+#     # order = models.IntegerField(default=0)
+#
+#     class MPTTMeta:
+#         order_insertion_by = ['attribute', 'name']
+#
+#     class Meta:
+#         verbose_name = _('classifier')
+#         verbose_name_plural = _('classifiers')
+#
+#     def __str__(self):
+#         return self.name
 
 
 @python_2_unicode_compatible
@@ -250,7 +269,8 @@ class AttributeValue(models.Model):
     content_object = GenericForeignKey()
 
     value = models.CharField(max_length=255, blank=True, default='')
-    choices = models.ManyToManyField(AttributeChoice, blank=True)
+    # choices = models.ManyToManyField(AttributeChoice, blank=True)
+    # classifiers = TreeManyToManyField(Classifier, blank=True)
 
     classifier_content_type = models.ForeignKey(ContentType, null=True, blank=True,
                                                 related_name='dynamic_attribute_value_classifiers')
@@ -267,9 +287,9 @@ class AttributeValue(models.Model):
             return self.value
         elif t == Attribute.CLASSIFIER:
             return self.classifier
-        elif t == Attribute.CHOICE or t == Attribute.CHOICES:
-            choices = [c.name for c in self.choices.all()]
-            return ', '.join(choices)
+        # elif t == Attribute.CHOICE or t == Attribute.CHOICES:
+        #     choices = [c.name for c in self.choices.all()]
+        #     return ', '.join(choices)
         return None
 
 

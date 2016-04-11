@@ -1,10 +1,9 @@
 from django.contrib import admin
 
 from poms.audit.admin import HistoricalAdmin
+from poms.common.admin import TreeModelAdmin
 from poms.obj_attrs.models import AccountAttr, CounterpartyAttr, ResponsibleAttr, PortfolioAttr, InstrumentAttr, \
-    TransactionAttr, Attribute, AttributeValue, AttributeChoice, AttributeOrder, AccountAttrValue, CounterpartyAttrValue, \
-    ResponsibleAttrValue, InstrumentAttrValue, PortfolioAttrValue, TransactionAttrValue
-from poms.obj_perms.utils import register_admin
+    TransactionAttr, Attribute, AttributeValue, AttributeOrder
 
 
 class AttrInlineBase(admin.StackedInline):
@@ -69,23 +68,23 @@ class TransactionAttrValueAdmin(AttrValueAdmin):
     raw_id_fields = ['attr', 'content_object', 'strategy_position', 'strategy_cash']
 
 
-admin.site.register(AccountAttr, AttrAdmin)
-admin.site.register(AccountAttrValue, AttrValueAdmin)
-admin.site.register(CounterpartyAttr, AttrAdmin)
-admin.site.register(CounterpartyAttrValue, AttrValueAdmin)
-admin.site.register(ResponsibleAttr, AttrAdmin)
-admin.site.register(ResponsibleAttrValue, AttrValueAdmin)
-admin.site.register(InstrumentAttr, AttrAdmin)
-admin.site.register(InstrumentAttrValue, AttrValueAdmin)
-admin.site.register(PortfolioAttr, AttrAdmin)
-admin.site.register(PortfolioAttrValue, AttrValueAdmin)
-admin.site.register(TransactionAttr, TransactionAttrAdmin)
-admin.site.register(TransactionAttrValue, TransactionAttrValueAdmin)
+# admin.site.register(AccountAttr, AttrAdmin)
+# admin.site.register(AccountAttrValue, AttrValueAdmin)
+# admin.site.register(CounterpartyAttr, AttrAdmin)
+# admin.site.register(CounterpartyAttrValue, AttrValueAdmin)
+# admin.site.register(ResponsibleAttr, AttrAdmin)
+# admin.site.register(ResponsibleAttrValue, AttrValueAdmin)
+# admin.site.register(InstrumentAttr, AttrAdmin)
+# admin.site.register(InstrumentAttrValue, AttrValueAdmin)
+# admin.site.register(PortfolioAttr, AttrAdmin)
+# admin.site.register(PortfolioAttrValue, AttrValueAdmin)
+# admin.site.register(TransactionAttr, TransactionAttrAdmin)
+# admin.site.register(TransactionAttrValue, TransactionAttrValueAdmin)
 
 
-class AttributeChoiceInline(admin.TabularInline):
-    model = AttributeChoice
-    extra = 0
+# class AttributeChoiceInline(admin.TabularInline):
+#     model = AttributeChoice
+#     extra = 0
 
 
 class AttributeAdmin(HistoricalAdmin):
@@ -94,8 +93,9 @@ class AttributeAdmin(HistoricalAdmin):
     fields = ('master_user', 'content_type', 'name', 'type', 'order',
               ('classifier_content_type', 'classifier_object_id',), 'classifier')
     readonly_fields = ('classifier',)
-    inlines = [AttributeChoiceInline]
     raw_id_fields = ['master_user']
+
+    # inlines = [AttributeChoiceInline]
 
     def get_readonly_fields(self, request, obj=None):
         ro = super(AttributeAdmin, self).get_readonly_fields(request, obj=obj)
@@ -106,26 +106,28 @@ class AttributeAdmin(HistoricalAdmin):
                 ro += ('classifier_object_id',)
             elif t == Attribute.CLASSIFIER:
                 pass
-            elif t == Attribute.CHOICE or t == Attribute.CHOICES:
-                ro += ('classifier_object_id',)
+                # elif t == Attribute.CHOICE or t == Attribute.CHOICES:
+                #     ro += ('classifier_object_id',)
         return ro
 
     def get_inline_instances(self, request, obj=None):
-        if obj and (obj.type == Attribute.CHOICE or obj.type == Attribute.CHOICES):
-            return super(AttributeAdmin, self).get_inline_instances(request, obj)
+        # if obj and (obj.type == Attribute.CHOICE or obj.type == Attribute.CHOICES):
+        #     return super(AttributeAdmin, self).get_inline_instances(request, obj)
         return []
 
 
 class AttributeValueAdmin(HistoricalAdmin):
     model = AttributeValue
-    filter_horizontal = ['choices']
+    # filter_horizontal = ['choices']
     list_display = ['id', 'master_user', 'attribute', 'content_object', '__str__']
-    fields = ('attribute', ('content_type', 'object_id',), 'value', 'choices',
+    # 'choices',
+    fields = ('attribute', ('content_type', 'object_id',), 'value',
               ('classifier_content_type', 'classifier_object_id',), 'classifier')
     readonly_fields = ('classifier',)
 
     def master_user(self, obj):
         return obj.attribute.master_user
+
     master_user.admin_order_field = 'attribute__master_user'
 
     def get_readonly_fields(self, request, obj=None):
@@ -137,8 +139,8 @@ class AttributeValueAdmin(HistoricalAdmin):
                 ro += ('choices', 'classifier_content_type', 'classifier_object_id')
             elif t == Attribute.CLASSIFIER:
                 ro += ('value', 'choices', 'classifier_content_type')
-            elif t == Attribute.CHOICE or t == Attribute.CHOICES:
-                ro += ('value', 'classifier_content_type', 'classifier_object_id')
+            # elif t == Attribute.CHOICE or t == Attribute.CHOICES:
+            #     ro += ('value', 'classifier_content_type', 'classifier_object_id')
             return ro
         else:
             return ro + ('choices',)
@@ -169,5 +171,5 @@ class AttributeOrderAdmin(HistoricalAdmin):
 admin.site.register(Attribute, AttributeAdmin)
 admin.site.register(AttributeOrder, AttributeOrderAdmin)
 admin.site.register(AttributeValue, AttributeValueAdmin)
-
-register_admin(Attribute)
+# admin.site.register(Classifier, TreeModelAdmin)
+# register_admin(Attribute)
