@@ -83,7 +83,7 @@ class TransactionAttrValueAdmin(AttrValueAdmin):
 # admin.site.register(TransactionAttrValue, TransactionAttrValueAdmin)
 
 
-class AttributeCoiceInline(admin.TabularInline):
+class AttributeChoiceInline(admin.TabularInline):
     model = AttributeChoice
     extra = 0
 
@@ -93,7 +93,7 @@ class AttributeAdmin(HistoricalAdmin):
     list_display = ['id', 'master_user', 'content_type', 'name', 'type']
     fields = ('master_user', 'content_type', 'name', 'type', 'order',
               ('classifier_content_type', 'classifier_object_id',))
-    inlines = [AttributeCoiceInline]
+    inlines = [AttributeChoiceInline]
     raw_id_fields = ['master_user']
 
     def get_readonly_fields(self, request, obj=None):

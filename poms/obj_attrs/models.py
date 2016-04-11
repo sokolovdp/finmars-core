@@ -213,24 +213,6 @@ register_model(Attribute)
 
 
 @python_2_unicode_compatible
-class AttributeChoice(models.Model):
-    attribute = models.ForeignKey(Attribute, related_name='choices')
-    order = models.IntegerField(default=0)
-    name = models.CharField(max_length=255)
-    value = models.CharField(max_length=255)
-
-    class Meta:
-        unique_together = [
-            ['attribute', 'value'],
-            ['attribute', 'name'],
-        ]
-        ordering = ['order', 'name']
-
-    def __str__(self):
-        return self.name
-
-
-@python_2_unicode_compatible
 class AttributeOrder(models.Model):
     member = models.ForeignKey('users.Member', related_name='attribute_orders')
     attribute = models.ForeignKey(Attribute, related_name='orders')
@@ -241,6 +223,22 @@ class AttributeOrder(models.Model):
         unique_together = [
             ['member', 'attribute']
         ]
+
+
+@python_2_unicode_compatible
+class AttributeChoice(models.Model):
+    attribute = models.ForeignKey(Attribute, related_name='choices')
+    order = models.IntegerField(default=0)
+    name = models.CharField(max_length=255)
+
+    class Meta:
+        unique_together = [
+            ['attribute', 'name'],
+        ]
+        ordering = ['attribute', 'order', 'name']
+
+    def __str__(self):
+        return self.name
 
 
 @python_2_unicode_compatible
@@ -273,3 +271,18 @@ class AttributeValue(models.Model):
             choices = [c.name for c in self.choices.all()]
             return ', '.join(choices)
         return None
+
+# @python_2_unicode_compatible
+# class TransactionAttribute(Attribute):
+#     classifier2_content_type = models.ForeignKey(ContentType, null=True, blank=True,
+#                                                 related_name='dynamic_attribute_classifiers2')
+#     classifier2_object_id = models.BigIntegerField(null=True, blank=True)
+#     classifier2 = GenericForeignKey(ct_field='classifier2_content_type', fk_field='classifier2_object_id')
+#
+#
+# @python_2_unicode_compatible
+# class TransactionAttributeValue(AttributeValue):
+#     classifier2_content_type = models.ForeignKey(ContentType, null=True, blank=True,
+#                                                 related_name='dynamic_attribute_value_classifiers2')
+#     classifier2_object_id = models.BigIntegerField(null=True, blank=True)
+#     classifier2 = GenericForeignKey(ct_field='classifier2_content_type', fk_field='classifier2_object_id')
