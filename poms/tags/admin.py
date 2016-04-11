@@ -10,8 +10,8 @@ from poms.tags.models import Tag, TagUserObjectPermission, TagGroupObjectPermiss
 class TagAdmin(HistoricalAdmin):
     model = Tag
     list_display = ['id', 'master_user', 'name']
-    filter_horizontal = ['accounts', 'currencies', 'instrument_types', 'instruments', 'counterparties', 'responsibles',
-                         'portfolios', 'transaction_types']
+    filter_horizontal = ['account_types', 'accounts', 'currencies', 'instrument_types', 'instruments', 'counterparties',
+                         'responsibles', 'portfolios', 'transaction_types']
 
 
 admin.site.register(Tag, TagAdmin)
