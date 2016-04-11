@@ -10,7 +10,6 @@ from poms.accounts.models import Account, AccountType, AccountClassifier, Accoun
 from poms.audit.admin import HistoricalAdmin
 from poms.common.admin import TreeModelAdmin
 from poms.obj_attrs.admin import AttributeTypeAdminBase, AttributeInlineBase, AttributeTypeOptionInlineBase
-from poms.obj_attrs.models import AttributeTypeOptionBase
 from poms.obj_perms.admin import UserObjectPermissionAdmin, GroupObjectPermissionAdmin
 
 
@@ -53,7 +52,6 @@ class AccountAdmin(HistoricalAdmin):
 admin.site.register(Account, AccountAdmin)
 admin.site.register(AccountUserObjectPermission, UserObjectPermissionAdmin)
 admin.site.register(AccountGroupObjectPermission, GroupObjectPermissionAdmin)
-
 
 admin.site.register(AccountAttributeType, AttributeTypeAdminBase)
 admin.site.register(AccountAttributeTypeOption, AttributeTypeOptionInlineBase)

@@ -138,9 +138,6 @@ class AccountAttributeTypeOption(AttributeTypeOptionBase):
     class Meta:
         verbose_name = _('account attribute types - option')
         verbose_name_plural = _('account attribute types - options')
-        unique_together = [
-            ['member', 'attribute_type']
-        ]
 
 
 class AccountAttributeTypeUserObjectPermission(UserObjectPermissionBase):

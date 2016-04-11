@@ -6,7 +6,13 @@ from poms.audit.admin import HistoricalAdmin
 from poms.common.admin import TreeModelAdmin
 from poms.instruments.models import Instrument, PriceHistory, InstrumentClassifier, InstrumentClass, InstrumentType, \
     DailyPricingModel, AccrualCalculationModel, PaymentFrequency, CostMethod, \
-    ManualPricingFormula, AccrualCalculationSchedule
+    ManualPricingFormula, AccrualCalculationSchedule, InstrumentTypeUserObjectPermission, \
+    InstrumentTypeGroupObjectPermission, InstrumentClassifierUserObjectPermission, \
+    InstrumentClassifierGroupObjectPermission, InstrumentUserObjectPermission, InstrumentGroupObjectPermission, \
+    InstrumentAttributeType, InstrumentAttributeTypeOption, InstrumentAttributeTypeUserObjectPermission, \
+    InstrumentAttributeTypeGroupObjectPermission
+from poms.obj_attrs.admin import AttributeTypeAdminBase, AttributeTypeOptionInlineBase
+from poms.obj_perms.admin import UserObjectPermissionAdmin, GroupObjectPermissionAdmin
 
 
 class InstrumentClassAdmin(HistoricalAdmin):
@@ -63,6 +69,8 @@ class InstrumentTypeAdmin(HistoricalAdmin):
 
 
 admin.site.register(InstrumentType, InstrumentTypeAdmin)
+admin.site.register(InstrumentTypeUserObjectPermission, UserObjectPermissionAdmin)
+admin.site.register(InstrumentTypeGroupObjectPermission, GroupObjectPermissionAdmin)
 
 
 class InstrumentClassifierAdmin(HistoricalAdmin, TreeModelAdmin):
@@ -73,6 +81,8 @@ class InstrumentClassifierAdmin(HistoricalAdmin, TreeModelAdmin):
 
 
 admin.site.register(InstrumentClassifier, InstrumentClassifierAdmin)
+admin.site.register(InstrumentClassifierUserObjectPermission, UserObjectPermissionAdmin)
+admin.site.register(InstrumentClassifierGroupObjectPermission, GroupObjectPermissionAdmin)
 
 
 class ManualPricingFormulaInline(admin.StackedInline):
@@ -95,6 +105,8 @@ class InstrumentAdmin(HistoricalAdmin):
 
 
 admin.site.register(Instrument, InstrumentAdmin)
+admin.site.register(InstrumentUserObjectPermission, UserObjectPermissionAdmin)
+admin.site.register(InstrumentGroupObjectPermission, GroupObjectPermissionAdmin)
 
 
 class PriceHistoryAdmin(HistoricalAdmin):
@@ -106,3 +118,8 @@ class PriceHistoryAdmin(HistoricalAdmin):
 
 
 admin.site.register(PriceHistory, PriceHistoryAdmin)
+
+admin.site.register(InstrumentAttributeType, AttributeTypeAdminBase)
+admin.site.register(InstrumentAttributeTypeOption, AttributeTypeOptionInlineBase)
+admin.site.register(InstrumentAttributeTypeUserObjectPermission, UserObjectPermissionAdmin)
+admin.site.register(InstrumentAttributeTypeGroupObjectPermission, GroupObjectPermissionAdmin)

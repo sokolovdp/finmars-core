@@ -4,7 +4,15 @@ from django.contrib import admin
 
 from poms.audit.admin import HistoricalAdmin
 from poms.common.admin import TreeModelAdmin
-from poms.counterparties.models import Counterparty, Responsible, CounterpartyClassifier, ResponsibleClassifier
+from poms.counterparties.models import Counterparty, Responsible, CounterpartyClassifier, ResponsibleClassifier, \
+    CounterpartyClassifierUserObjectPermission, CounterpartyClassifierGroupObjectPermission, \
+    CounterpartyUserObjectPermission, CounterpartyGroupObjectPermission, ResponsibleClassifierUserObjectPermission, \
+    ResponsibleClassifierGroupObjectPermission, ResponsibleUserObjectPermission, ResponsibleGroupObjectPermission, \
+    CounterpartyAttributeType, CounterpartyAttributeTypeOption, CounterpartyAttributeTypeUserObjectPermission, \
+    CounterpartyAttributeTypeGroupObjectPermission, ResponsibleAttributeType, ResponsibleAttributeTypeOption, \
+    ResponsibleAttributeTypeUserObjectPermission, ResponsibleAttributeTypeGroupObjectPermission
+from poms.obj_attrs.admin import AttributeTypeAdminBase, AttributeTypeOptionInlineBase
+from poms.obj_perms.admin import UserObjectPermissionAdmin, GroupObjectPermissionAdmin
 
 
 class CounterpartyClassifierAdmin(HistoricalAdmin, TreeModelAdmin):
@@ -15,6 +23,8 @@ class CounterpartyClassifierAdmin(HistoricalAdmin, TreeModelAdmin):
 
 
 admin.site.register(CounterpartyClassifier, CounterpartyClassifierAdmin)
+admin.site.register(CounterpartyClassifierUserObjectPermission, UserObjectPermissionAdmin)
+admin.site.register(CounterpartyClassifierGroupObjectPermission, GroupObjectPermissionAdmin)
 
 
 class CounterpartyAdmin(HistoricalAdmin):
@@ -25,6 +35,8 @@ class CounterpartyAdmin(HistoricalAdmin):
 
 
 admin.site.register(Counterparty, CounterpartyAdmin)
+admin.site.register(CounterpartyUserObjectPermission, UserObjectPermissionAdmin)
+admin.site.register(CounterpartyGroupObjectPermission, GroupObjectPermissionAdmin)
 
 
 class ResponsibleClassifierAdmin(HistoricalAdmin, TreeModelAdmin):
@@ -35,6 +47,8 @@ class ResponsibleClassifierAdmin(HistoricalAdmin, TreeModelAdmin):
 
 
 admin.site.register(ResponsibleClassifier, ResponsibleClassifierAdmin)
+admin.site.register(ResponsibleClassifierUserObjectPermission, UserObjectPermissionAdmin)
+admin.site.register(ResponsibleClassifierGroupObjectPermission, GroupObjectPermissionAdmin)
 
 
 class ResponsibleAdmin(HistoricalAdmin):
@@ -45,3 +59,15 @@ class ResponsibleAdmin(HistoricalAdmin):
 
 
 admin.site.register(Responsible, ResponsibleAdmin)
+admin.site.register(ResponsibleUserObjectPermission, UserObjectPermissionAdmin)
+admin.site.register(ResponsibleGroupObjectPermission, GroupObjectPermissionAdmin)
+
+admin.site.register(CounterpartyAttributeType, AttributeTypeAdminBase)
+admin.site.register(CounterpartyAttributeTypeOption, AttributeTypeOptionInlineBase)
+admin.site.register(CounterpartyAttributeTypeUserObjectPermission, UserObjectPermissionAdmin)
+admin.site.register(CounterpartyAttributeTypeGroupObjectPermission, GroupObjectPermissionAdmin)
+
+admin.site.register(ResponsibleAttributeType, AttributeTypeAdminBase)
+admin.site.register(ResponsibleAttributeTypeOption, AttributeTypeOptionInlineBase)
+admin.site.register(ResponsibleAttributeTypeUserObjectPermission, UserObjectPermissionAdmin)
+admin.site.register(ResponsibleAttributeTypeGroupObjectPermission, GroupObjectPermissionAdmin)

@@ -97,9 +97,17 @@ class InstrumentType(NamedModel):
 class InstrumentTypeUserObjectPermission(UserObjectPermissionBase):
     content_object = models.ForeignKey(InstrumentType, related_name='user_object_permissions')
 
+    class Meta:
+        verbose_name = _('instrument types - user permission')
+        verbose_name_plural = _('instrument types - user permissions')
+
 
 class InstrumentTypeGroupObjectPermission(GroupObjectPermissionBase):
     content_object = models.ForeignKey(InstrumentType, related_name='group_object_permissions')
+
+    class Meta:
+        verbose_name = _('instrument types - group permission')
+        verbose_name_plural = _('instrument types - group permissions')
 
 
 @python_2_unicode_compatible
@@ -127,9 +135,17 @@ class InstrumentClassifier(NamedModel, MPTTModel):
 class InstrumentClassifierUserObjectPermission(UserObjectPermissionBase):
     content_object = models.ForeignKey(InstrumentClassifier, related_name='user_object_permissions')
 
+    class Meta:
+        verbose_name = _('instrument classifiers - user permission')
+        verbose_name_plural = _('instrument classifiers - user permissions')
+
 
 class InstrumentClassifierGroupObjectPermission(GroupObjectPermissionBase):
     content_object = models.ForeignKey(InstrumentClassifier, related_name='group_object_permissions')
+
+    class Meta:
+        verbose_name = _('instrument classifiers - group permission')
+        verbose_name_plural = _('instrument classifiers - group permissions')
 
 
 @python_2_unicode_compatible
@@ -162,32 +178,60 @@ class Instrument(NamedModel):
 class InstrumentUserObjectPermission(UserObjectPermissionBase):
     content_object = models.ForeignKey(Instrument, related_name='user_object_permissions')
 
+    class Meta:
+        verbose_name = _('instruments - user permission')
+        verbose_name_plural = _('instruments - user permissions')
+
 
 class InstrumentGroupObjectPermission(GroupObjectPermissionBase):
     content_object = models.ForeignKey(Instrument, related_name='group_object_permissions')
+
+    class Meta:
+        verbose_name = _('instruments - group permission')
+        verbose_name_plural = _('instruments - group permissions')
 
 
 class InstrumentAttributeType(AttributeTypeBase):
     classifier_root = models.ForeignKey(InstrumentClassifier, null=True, blank=True)
 
+    class Meta:
+        verbose_name = _('instrument attribute type')
+        verbose_name_plural = _('instrument attribute types')
 
-class InstrumentAccountAttributeTypeOption(AttributeTypeOptionBase):
+
+class InstrumentAttributeTypeOption(AttributeTypeOptionBase):
     member = models.ForeignKey(Member, related_name='instrument_attribute_type_options')
     attribute_type = models.ForeignKey(InstrumentAttributeType, related_name='attribute_type_options')
+
+    class Meta:
+        verbose_name = _('instrument attribute types - option')
+        verbose_name_plural = _('instrument attribute types - options')
 
 
 class InstrumentAttributeTypeUserObjectPermission(UserObjectPermissionBase):
     content_object = models.ForeignKey(InstrumentAttributeType, related_name='user_object_permissions')
 
+    class Meta:
+        verbose_name = _('instrument attribute types - user permission')
+        verbose_name_plural = _('instrument attribute types - user permissions')
+
 
 class InstrumentAttributeTypeGroupObjectPermission(GroupObjectPermissionBase):
     content_object = models.ForeignKey(InstrumentAttributeType, related_name='group_object_permissions')
+
+    class Meta:
+        verbose_name = _('instrument attribute types - group permission')
+        verbose_name_plural = _('instrument attribute types - group permissions')
 
 
 class InstrumentAttribute(AttributeBase):
     attribute_type = models.ForeignKey(InstrumentAttributeType, related_name='attributes')
     content_object = models.ForeignKey(Instrument)
     classifier = models.ForeignKey(InstrumentClassifier, null=True, blank=True)
+
+    class Meta:
+        verbose_name = _('instrument attribute')
+        verbose_name_plural = _('instrument attributes')
 
 
 # @python_2_unicode_compatible
