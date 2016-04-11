@@ -23,6 +23,7 @@ class Tag(TagModelBase):
     # available_for_portfolio = models.BooleanField(default=True)
     # available_for_transaction_type = models.BooleanField(default=True)
 
+    account_types = models.ManyToManyField('accounts.AccountType', blank=True, related_name='tags')
     accounts = models.ManyToManyField('accounts.Account', blank=True, related_name='tags')
     currencies = models.ManyToManyField('currencies.Currency', blank=True, related_name='tags')
     instrument_types = models.ManyToManyField('instruments.InstrumentType', blank=True, related_name='tags')
