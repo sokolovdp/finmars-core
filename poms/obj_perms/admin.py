@@ -53,13 +53,13 @@ class GenericObjectPermissionAdmin(admin.ModelAdmin):
 
 class GenericUserObjectPermissionAdmin(GenericObjectPermissionAdmin):
     raw_id_fields = ['member']
-    list_display = ['id', 'member', 'permission', 'content_object']
+    list_display = ['id', 'member', 'permission', 'content_type', 'object_id', 'content_object']
     fields = ('member', ('content_type', 'object_id'), 'content_object', 'permission')
 
 
 class GenericGroupObjectPermissionAdmin(GenericObjectPermissionAdmin):
     raw_id_fields = ['group']
-    list_display = ['id', 'group', 'permission', 'content_object']
+    list_display = ['id', 'group', 'permission', 'content_type', 'object_id', 'content_object']
     fields = ('group', ('content_type', 'object_id'), 'content_object', 'permission')
 
 
