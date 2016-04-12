@@ -122,6 +122,7 @@ class TransactionTypeInput(models.Model):
     STRING = 10
     NUMBER = 20
     EXPRESSION = 30
+    DATE = 40
     RELATION = 100
     # ACCOUNT = 110
     # INSTRUMENT = 120
@@ -133,6 +134,7 @@ class TransactionTypeInput(models.Model):
     TYPES = (
         (NUMBER, _('Number')),
         (STRING, _('String')),
+        (DATE, _('Date')),
         (EXPRESSION, _('Expression')),
         (RELATION, _('Relation')),
         # (ACCOUNT, _('Account')),
@@ -168,15 +170,19 @@ class TransactionTypeItem(models.Model):
     account_position = models.ForeignKey(Account, null=True, blank=True, related_name='+')
     account_cash = models.ForeignKey(Account, null=True, blank=True, related_name='+')
     account_interim = models.ForeignKey(Account, null=True, blank=True, related_name='+')
+    accounting_date = models.DateField(null=True, blank=True)
+    cash_date = models.DateField(null=True, blank=True)
 
     instrument_input = models.ForeignKey(TransactionTypeInput, null=True, blank=True, related_name='+')
     transaction_currency_input = models.ForeignKey(TransactionTypeInput, null=True, blank=True, related_name='+')
-    position_size_with_sign_expr = models.CharField(max_length=255, blank=True)
+    position_size_with_sign_expr = models.CharField(max_length=255, blank=True, default='')
     settlement_currency_input = models.ForeignKey(TransactionTypeInput, null=True, blank=True, related_name='+')
-    cash_consideration_expr = models.CharField(max_length=255, blank=True)
+    cash_consideration_expr = models.CharField(max_length=255, blank=True, default='')
     account_position_input = models.ForeignKey(TransactionTypeInput, null=True, blank=True, related_name='+')
     account_cash_input = models.ForeignKey(TransactionTypeInput, null=True, blank=True, related_name='+')
     account_interim_input = models.ForeignKey(TransactionTypeInput, null=True, blank=True, related_name='+')
+    accounting_date_expr = models.CharField(max_length=255, blank=True, default='')
+    cash_date_expr = models.CharField(max_length=255, blank=True, default='')
 
     # instrument_expr = models.CharField(max_length=255, blank=True)
     # transaction_currency_expr = models.CharField(max_length=255, blank=True)
@@ -196,15 +202,15 @@ class EventSchedule(NamedModel):
     event_class = models.ForeignKey(EventClass)
 
     notification_class = models.ForeignKey(NotificationClass)
-    notification_date = models.DateField(default=timezone.now)
+    notification_date = models.DateField(null=True, blank=True)
 
-    effective_date = models.DateField(default=timezone.now)
+    effective_date = models.DateField(null=True, blank=True)
 
 
 class EventToHandle(NamedModel):
     transaction_type = models.ForeignKey(TransactionType)
-    notification_date = models.DateField(default=timezone.now)
-    effective_date = models.DateField(default=timezone.now)
+    notification_date = models.DateField(null=True, blank=True)
+    effective_date = models.DateField(null=True, blank=True)
 
 
 @python_2_unicode_compatible

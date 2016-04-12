@@ -35,6 +35,8 @@ class TransactionTypeItemInline(admin.StackedInline):
         ('account_position', 'account_position_input'),
         ('account_cash', 'account_cash_input'),
         ('account_interim', 'account_interim_input'),
+        # ('accounting_date', 'accounting_date_expr'),
+        # ('cash_date', 'cash_date_expr'),
     )
 
 
