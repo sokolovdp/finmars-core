@@ -231,9 +231,9 @@ LOGGING = {
             'level': 'INFO',
             'handlers': ['console'],
         },
-        # 'django.db': {
-        #     'level': 'DEBUG',
-        # },
+        'django.db': {
+            'level': 'DEBUG',
+        },
         'poms': {
             'level': 'DEBUG',
             'handlers': ['console'],
@@ -283,7 +283,6 @@ if DEV:
     REST_FRAMEWORK['DEFAULT_RENDERER_CLASSES'] += (
         'rest_framework.renderers.BrowsableAPIRenderer',
         'rest_framework.renderers.AdminRenderer',
-        'poms.api.renderers.PlainTextRenderer',
     )
 
 CURRENCY_CODE = 'USD'
@@ -292,8 +291,6 @@ AUTHENTICATION_BACKENDS = (
     'django.contrib.auth.backends.ModelBackend',
     # 'poms.obj_perms.backends.PomsPermissionBackend',
 )
-
-ANONYMOUS_USER_ID = -1
 
 # email config
 
