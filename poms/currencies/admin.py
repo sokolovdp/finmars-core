@@ -4,7 +4,9 @@ from django.contrib import admin
 from django.utils.translation import ugettext_lazy as _
 
 from poms.audit.admin import HistoricalAdmin
-from poms.currencies.models import Currency, CurrencyHistory
+from poms.currencies.models import Currency, CurrencyHistory, CurrencyUserObjectPermission, \
+    CurrencyGroupObjectPermission
+from poms.obj_perms.admin import UserObjectPermissionAdmin, GroupObjectPermissionAdmin
 
 
 class GlobalCurrencyFilter(admin.SimpleListFilter):
@@ -47,6 +49,8 @@ class CurrencyAdmin(HistoricalAdmin):
 
 
 admin.site.register(Currency, CurrencyAdmin)
+admin.site.register(CurrencyUserObjectPermission, UserObjectPermissionAdmin)
+admin.site.register(CurrencyGroupObjectPermission, GroupObjectPermissionAdmin)
 
 
 class CurrencyHistoryAdmin(HistoricalAdmin):
