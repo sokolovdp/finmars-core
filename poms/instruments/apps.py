@@ -16,7 +16,7 @@ class InstrumentsConfig(AppConfig):
         pass
 
     def update_transaction_classes(self, app_config, verbosity=2, using=DEFAULT_DB_ALIAS, **kwargs):
-        from .models import InstrumentClass, DailyPricingModel, AccrualCalculationModel, PaymentFrequency, CostMethod
+        from .models import InstrumentClass, DailyPricingModel, AccrualCalculationModel, PaymentPeriod, CostMethod
 
         if not isinstance(app_config, InstrumentsConfig):
             return
@@ -24,7 +24,7 @@ class InstrumentsConfig(AppConfig):
         self.create_data(InstrumentClass, verbosity, using)
         self.create_data(DailyPricingModel, verbosity, using)
         self.create_data(AccrualCalculationModel, verbosity, using)
-        self.create_data(PaymentFrequency, verbosity, using)
+        self.create_data(PaymentPeriod, verbosity, using)
         self.create_data(CostMethod, verbosity, using)
 
         # exists = set(InstrumentClass.objects.using(using).values_list('pk', flat=True))

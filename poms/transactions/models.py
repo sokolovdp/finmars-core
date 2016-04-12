@@ -5,7 +5,6 @@ from django.db import models
 from django.utils import timezone
 from django.utils.encoding import python_2_unicode_compatible
 from django.utils.translation import ugettext_lazy as _
-from mptt.fields import TreeForeignKey
 from mptt.models import MPTTModel
 
 from poms.accounts.models import Account
@@ -22,16 +21,6 @@ from poms.users.models import MasterUser, Member
 
 
 class TransactionClass(ClassModelBase):
-    # BUY = "Buy"  # 1
-    # CASH_INFLOW = "Cash-Inflow"  # 8
-    # CASH_OUTFLOW = "Cash-Outflow"  # 9
-    # FX_TRADE = "FX Trade"  # 3
-    # FX_TRANSFER = "FX Transfer"  # 7
-    # INSTRUMENT_PL = "Instrument PL"  # 4
-    # SELL = "Sell"  # 2
-    # TRANSACTION_PL = "Transaction PL"  # 5
-    # TRANSFER = "Transfer"  # 6
-
     BUY = 1
     SELL = 2
     FX_TRADE = 3
@@ -52,6 +41,20 @@ class TransactionClass(ClassModelBase):
         (FX_TRANSFER, "FX Transfer"),
         (CASH_INFLOW, "Cash-Inflow"),
         (CASH_OUTFLOW, "Cash-Outflow"),
+    )
+
+    class Meta:
+        verbose_name = _('transaction class')
+        verbose_name_plural = _('transaction classes')
+
+
+class ActionClass(ClassModelBase):
+    CREATE_INSTRUMENT = 1
+    CREATE_INSTRUMENT_PARAMETER = 2
+
+    CLASSES = (
+        (CREATE_INSTRUMENT, "Create instrument"),
+        (CREATE_INSTRUMENT_PARAMETER, "Create instrument parameter"),
     )
 
     class Meta:
@@ -334,13 +337,13 @@ class Transaction(models.Model):
         super(Transaction, self).save(force_insert=force_insert, force_update=force_update, using=using,
                                       update_fields=update_fields)
 
-    # @property
-    # def strategies_position(self):
-    #     return [self.strategy_position] if self.strategy_position_id else []
+        # @property
+        # def strategies_position(self):
+        #     return [self.strategy_position] if self.strategy_position_id else []
 
-    # @property
-    # def strategies_cash(self):
-    #     return [self.strategy_cash] if self.strategy_cash_id else []
+        # @property
+        # def strategies_cash(self):
+        #     return [self.strategy_cash] if self.strategy_cash_id else []
 
 
 class TransactionAttributeType(AttributeTypeBase):

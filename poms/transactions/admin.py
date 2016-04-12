@@ -3,6 +3,7 @@ from __future__ import unicode_literals
 from django.contrib import admin
 
 from poms.audit.admin import HistoricalAdmin
+from poms.common.admin import ClassModelAdmin
 from poms.obj_attrs.admin import AttributeTypeAdminBase, AttributeTypeOptionInlineBase, AttributeInlineBase
 from poms.obj_perms.admin import UserObjectPermissionAdmin, GroupObjectPermissionAdmin
 from poms.transactions.models import TransactionClass, Transaction, TransactionType, TransactionTypeInput, \
@@ -10,14 +11,7 @@ from poms.transactions.models import TransactionClass, Transaction, TransactionT
     TransactionAttributeType, TransactionAttributeTypeOption, TransactionAttributeTypeUserObjectPermission, \
     TransactionAttributeTypeGroupObjectPermission, TransactionAttribute
 
-
-class TransactionClassAdmin(HistoricalAdmin):
-    model = TransactionClass
-    list_display = ['id', 'system_code', 'name']
-    ordering = ['id']
-
-
-admin.site.register(TransactionClass, TransactionClassAdmin)
+admin.site.register(TransactionClass, ClassModelAdmin)
 
 
 class TransactionTypeInputInline(admin.StackedInline):

@@ -40,7 +40,11 @@ class DailyPricingModel(ClassModelBase):
     SKIP = 1
     MANUAL = 2
     BLOOMBERG = 3
-    CLASSES = tuple()
+    CLASSES = (
+        (SKIP, _("Skip")),
+        (MANUAL, _("Manual")),
+        (BLOOMBERG, _("Bloomberg")),
+    )
 
     class Meta:
         verbose_name = _('daily pricing model')
@@ -48,26 +52,121 @@ class DailyPricingModel(ClassModelBase):
 
 
 class AccrualCalculationModel(ClassModelBase):
-    # TODO: add "values"
-    CLASSES = tuple()
+    NONE = 1
+    ACT_ACT = 2
+    ACT_ACT_ISDA = 3
+    ACT_360 = 4
+    ACT_365 = 5
+    ACT_365_25 = 6
+    ACT_365_366 = 7
+    ACT_1_365 = 8
+    ACT_1_360 = 9
+    C_30_ACT = 10
+    C_30_360 = 11
+    C_30_360_NO_EOM = 12
+    C_30E_P_360_ITL = 13
+    NL_365 = 14
+    NL_365_NO_EOM = 15
+    ISMA_30_365 = 16
+    ISMA_30_365_NO_EOM = 17
+    US_MINI_30_360_EOM = 18
+    US_MINI_30_360_NO_EOM = 19
+    BUS_DAYS_252 = 20
+    GERMAN_30_360_EOM = 21
+    GERMAN_30_360_NO_EOM = 22
+    REVERSED_ACT_365 = 23
+
+    CLASSES = (
+        (NONE, _("none")),
+        (ACT_ACT, _("ACT/ACT")),
+        (ACT_ACT_ISDA, _("ACT/ACT - ISDA")),
+        (ACT_360, _("ACT/360")),
+        (ACT_365, _("ACT/365")),
+        (ACT_365_25, _("Act/365.25")),
+        (ACT_365_366, _("Act/365(366)")),
+        (ACT_1_365, _("Act+1/365")),
+        (ACT_1_360, _("Act+1/360")),
+        (C_30_ACT, _("30/ACT")),
+        (C_30_360, _("30/360")),
+        (C_30_360_NO_EOM, _("30/360 (NO EOM)")),
+        (C_30E_P_360_ITL, _("30E+/360.ITL")),
+        (NL_365, _("NL/365")),
+        (NL_365_NO_EOM, _("NL/365 (NO-EOM)")),
+        (ISMA_30_365, _("ISMA-30/360")),
+        (ISMA_30_365_NO_EOM, _("ISMA-30/360 (NO EOM)")),
+        (US_MINI_30_360_EOM, _("US MUNI-30/360 (EOM)")),
+        (US_MINI_30_360_NO_EOM, _("US MUNI-30/360 (NO EOM)")),
+        (BUS_DAYS_252, _("BUS DAYS/252")),
+        (GERMAN_30_360_EOM, _("GERMAN-30/360 (EOM)")),
+        (GERMAN_30_360_NO_EOM, _("GERMAN-30/360 (NO EOM)")),
+        (NONE, _("Reversed ACT/365")),
+    )
 
     class Meta:
         verbose_name = _('accrual calculation model')
         verbose_name_plural = _('accrual calculation models')
 
 
-class PaymentFrequency(ClassModelBase):
-    # TODO: add "values"
-    CLASSES = tuple()
+# class PaymentFrequency(ClassModelBase):
+#     # TODO: add "values"
+#     CLASSES = tuple()
+#
+#     class Meta:
+#         verbose_name = _('payment frequency')
+#         verbose_name_plural = _('payment frequencies')
+
+class PaymentSizeDetail(ClassModelBase):
+    PERCENT = 1
+    PER_ANNUM = 2
+    PER_QUARTER = 3
+    PER_MONTH = 4
+    PER_WEEK = 5
+    PER_DAY = 6
+    CLASSES = (
+        (PERCENT, _("% per annum")),
+        (PER_ANNUM, _("per annum")),
+        (PER_QUARTER, _("per quarter")),
+        (PER_MONTH, _("per month")),
+        (PER_WEEK, _("per week")),
+        (PER_DAY, _("per day")),
+    )
 
     class Meta:
-        verbose_name = _('payment frequency')
-        verbose_name_plural = _('payment frequencies')
+        verbose_name = _('payment size detail')
+        verbose_name_plural = _('payment size details')
+
+
+class PaymentPeriod(ClassModelBase):
+    DAY = 1
+    WEEK = 2
+    MONTH = 3
+    MONTH_DAY = 4
+    YEAR = 5
+    YEAR_DAY = 6
+    CLASSES = (
+        (DAY, _("Days")),
+        (WEEK, _("Weeks (eobw)")),
+        (MONTH, _("Months (eom)")),
+        (MONTH_DAY, _("Months (same date)")),
+        (YEAR, _("Years (eoy)")),
+        (YEAR_DAY, _("Years (same date)")),
+    )
+
+    class Meta:
+        verbose_name = _('payment size detail')
+        verbose_name_plural = _('payment size details')
 
 
 class CostMethod(ClassModelBase):
     # TODO: add "values"
-    CLASSES = tuple()
+    AVCO = 1
+    FIFO = 2
+    LIFO = 3
+    CLASSES = (
+        (AVCO, _('AVCO')),
+        (FIFO, _('FIFO')),
+        # (LIFO, _('LIFO')),
+    )
 
     class Meta:
         verbose_name = _('cost method')
@@ -160,6 +259,7 @@ class Instrument(NamedModel):
     accrued_multiplier = models.FloatField(default=1.)
 
     daily_pricing_model = models.ForeignKey(DailyPricingModel, null=True, blank=True)
+    payment_size_detail = models.ForeignKey(PaymentSizeDetail, null=True, blank=True)
 
     class Meta:
         verbose_name = _('instrument')
@@ -238,7 +338,7 @@ class InstrumentAttribute(AttributeBase):
 class ManualPricingFormula(models.Model):
     instrument = models.ForeignKey(Instrument)
     pricing_policy = models.ForeignKey('integrations.PricingPolicy')
-    expr = models.TextField(default='')
+    expr = models.CharField(max_length=255, blank=True, default='')
     notes = models.TextField(blank=True, default='', verbose_name=_('notes'))
 
     class Meta:
@@ -285,9 +385,15 @@ class AccrualCalculationSchedule(models.Model):
     new_accrual_start_date = models.DateField(default=timezone.now)
     new_first_payment_date = models.DateField(default=timezone.now)
     new_accrual_size = models.FloatField(default=0.)
-    payment_frequency = models.ForeignKey(PaymentFrequency)
     accrual_calculation_model = models.ForeignKey(AccrualCalculationModel)
+    payment_period = models.ForeignKey(PaymentPeriod, null=True, blank=True)
     notes = models.TextField(null=True, blank=True, verbose_name=_('notes'))
+
+
+class InstrumentFactorSchedule(models.Model):
+    instrument = models.ForeignKey(Instrument, related_name='factor_schedules')
+    effective_date = models.DateField(default=timezone.now)
+    factor_value = models.FloatField(default=0.)
 
 
 history.register(InstrumentClassifier)

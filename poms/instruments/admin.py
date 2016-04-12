@@ -3,61 +3,22 @@ from __future__ import unicode_literals
 from django.contrib import admin
 
 from poms.audit.admin import HistoricalAdmin
-from poms.common.admin import TreeModelAdmin
+from poms.common.admin import TreeModelAdmin, ClassModelAdmin
 from poms.instruments.models import Instrument, PriceHistory, InstrumentClassifier, InstrumentClass, InstrumentType, \
-    DailyPricingModel, AccrualCalculationModel, PaymentFrequency, CostMethod, \
+    DailyPricingModel, AccrualCalculationModel, PaymentPeriod, CostMethod, \
     ManualPricingFormula, AccrualCalculationSchedule, InstrumentTypeUserObjectPermission, \
     InstrumentTypeGroupObjectPermission, InstrumentClassifierUserObjectPermission, \
     InstrumentClassifierGroupObjectPermission, InstrumentUserObjectPermission, InstrumentGroupObjectPermission, \
     InstrumentAttributeType, InstrumentAttributeTypeOption, InstrumentAttributeTypeUserObjectPermission, \
-    InstrumentAttributeTypeGroupObjectPermission, InstrumentAttribute
+    InstrumentAttributeTypeGroupObjectPermission, InstrumentAttribute, InstrumentFactorSchedule
 from poms.obj_attrs.admin import AttributeTypeAdminBase, AttributeTypeOptionInlineBase, AttributeInlineBase
 from poms.obj_perms.admin import UserObjectPermissionAdmin, GroupObjectPermissionAdmin
 
-
-class InstrumentClassAdmin(HistoricalAdmin):
-    model = InstrumentClass
-    list_display = ['id', 'system_code', 'name']
-    ordering = ['id']
-
-
-admin.site.register(InstrumentClass, InstrumentClassAdmin)
-
-
-class DailyPricingModelAdmin(HistoricalAdmin):
-    model = DailyPricingModel
-    list_display = ['id', 'system_code', 'name']
-    ordering = ['id']
-
-
-admin.site.register(DailyPricingModel, DailyPricingModelAdmin)
-
-
-class AccrualCalculationModelAdmin(HistoricalAdmin):
-    model = AccrualCalculationModel
-    list_display = ['id', 'system_code', 'name']
-    ordering = ['id']
-
-
-admin.site.register(AccrualCalculationModel, AccrualCalculationModelAdmin)
-
-
-class PaymentFrequencyAdmin(HistoricalAdmin):
-    model = PaymentFrequency
-    list_display = ['id', 'system_code', 'name']
-    ordering = ['id']
-
-
-admin.site.register(PaymentFrequency, PaymentFrequencyAdmin)
-
-
-class CostMethodAdmin(HistoricalAdmin):
-    model = InstrumentClass
-    list_display = ['id', 'system_code', 'name']
-    ordering = ['id']
-
-
-admin.site.register(CostMethod, InstrumentClassAdmin)
+admin.site.register(InstrumentClass, ClassModelAdmin)
+admin.site.register(DailyPricingModel, ClassModelAdmin)
+admin.site.register(AccrualCalculationModel, ClassModelAdmin)
+admin.site.register(PaymentPeriod, ClassModelAdmin)
+admin.site.register(CostMethod, ClassModelAdmin)
 
 
 class InstrumentTypeAdmin(HistoricalAdmin):
@@ -99,13 +60,19 @@ class AccrualCalculationScheduleInline(admin.StackedInline):
     extra = 0
 
 
+class InstrumentFactorScheduleInline(admin.StackedInline):
+    model = InstrumentFactorSchedule
+    extra = 0
+
+
 class InstrumentAdmin(HistoricalAdmin):
     model = Instrument
     list_display = ['id', 'name', 'master_user', 'type', 'pricing_currency', 'accrued_currency']
     list_select_related = ['master_user', 'type', 'pricing_currency', 'accrued_currency']
     raw_id_fields = ['master_user', 'type', 'pricing_currency', 'accrued_currency',
                      'daily_pricing_model']
-    inlines = [InstrumentAttributeInline, ManualPricingFormulaInline, AccrualCalculationScheduleInline, ]
+    inlines = [InstrumentAttributeInline, ManualPricingFormulaInline, AccrualCalculationScheduleInline,
+               InstrumentFactorScheduleInline]
 
 
 admin.site.register(Instrument, InstrumentAdmin)
