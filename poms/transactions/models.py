@@ -62,6 +62,22 @@ class ActionClass(ClassModelBase):
         verbose_name_plural = _('action classes')
 
 
+class EventClass(ClassModelBase):
+    CLASSES = tuple()
+
+    class Meta:
+        verbose_name = _('event class')
+        verbose_name_plural = _('event classes')
+
+
+class NotificationClass(ClassModelBase):
+    CLASSES = tuple()
+
+    class Meta:
+        verbose_name = _('notification class')
+        verbose_name_plural = _('notification classes')
+
+
 class TransactionType(NamedModel):
     master_user = models.ForeignKey(MasterUser, related_name='transaction_types', verbose_name=_('master user'))
 
@@ -175,71 +191,20 @@ class TransactionTypeItem(models.Model):
         return 'item #%s' % self.id
 
 
-# # instrument = instr
-# # position_size_with_sign = pos
-# # settlement_currency = sccy
-# # cash_consideration = pos * price
-# # account_position = acc
-# # account_cash = acc
-# # account_interim = acc
-# class TransactionTypeItemValue(models.Model):
-#     # NAMES = (
-#     #     ('instrument', 'instrument'),
-#     #     ('transaction_currency', 'transaction_currency'),
-#     #     ('position_size_with_sign', 'position_size_with_sign'),
-#     #     ('settlement_currency', 'settlement_currency'),
-#     #     ('cash_consideration', 'cash_consideration'),
-#     #     ('account_position', 'account_position'),
-#     #     ('account_cash', 'account_cash'),
-#     #     ('account_interim', 'account_interim'),
-#     # )
-#     item = models.ForeignKey(TransactionTypeItem)
-#     name = models.CharField(max_length=255, help_text="transaction basic attribute name or any dynamic attribute")
-#     expr = models.CharField(max_length=255, null=True, blank=True)
+class EventSchedule(NamedModel):
+    transaction_type = models.ForeignKey(TransactionType)
+    event_class = models.ForeignKey(EventClass)
+
+    notification_class = models.ForeignKey(NotificationClass)
+    notification_date = models.DateField(default=timezone.now)
+
+    effective_date = models.DateField(default=timezone.now)
 
 
-# class EventType(NamedModel):
-#     SECONDS = 1
-#     DAYS = 2
-#     INTERVALS = (
-#         (SECONDS, 'Seconds'),
-#         (DAYS, 'Days'),
-#     )
-#     transaction_type = models.ForeignKey(TransactionType)
-#     interval = models.PositiveIntegerField(default=DAYS, choices=INTERVALS)
-#     duration = models.PositiveIntegerField(default=1)
-#
-#
-# @python_2_unicode_compatible
-# class ComplexTransaction(NamedModel):
-#     master_user = models.ForeignKey(MasterUser, related_name='complex_transactions', verbose_name=_('master user'))
-#     type = models.ForeignKey(TransactionType)
-#
-#     class Meta:
-#         verbose_name = _('complex transaction')
-#         verbose_name_plural = _('complex transactions')
-#         unique_together = [
-#             ['master_user', 'user_code']
-#         ]
-#
-#
-# @python_2_unicode_compatible
-# class ComplexTransactionItem(models.Model):
-#     complex_transaction = models.ForeignKey(ComplexTransaction)
-#     order = models.PositiveIntegerField(default=0)
-#
-#     transaction = models.OneToOneField('Transaction', null=True, blank=True)
-#     event_type = models.ForeignKey(EventType, null=True, blank=True)
-#
-#     trigger_date = models.DateTimeField(default=timezone.now)
-#     trigger_count = models.PositiveIntegerField(default=0)
-#
-#     class Meta:
-#         verbose_name = _('item')
-#         verbose_name_plural = _('items')
-#
-#     def __str__(self):
-#         return 'Item %s#%s' % (self.complex_transaction, self.pk)
+class EventToHandle(NamedModel):
+    transaction_type = models.ForeignKey(TransactionType)
+    notification_date = models.DateField(default=timezone.now)
+    effective_date = models.DateField(default=timezone.now)
 
 
 @python_2_unicode_compatible

@@ -9,7 +9,7 @@ from poms.obj_perms.admin import UserObjectPermissionAdmin, GroupObjectPermissio
 from poms.transactions.models import TransactionClass, Transaction, TransactionType, TransactionTypeInput, \
     TransactionTypeItem, TransactionTypeUserObjectPermission, TransactionTypeGroupObjectPermission, \
     TransactionAttributeType, TransactionAttributeTypeOption, TransactionAttributeTypeUserObjectPermission, \
-    TransactionAttributeTypeGroupObjectPermission, TransactionAttribute, ActionClass
+    TransactionAttributeTypeGroupObjectPermission, TransactionAttribute, ActionClass, EventToHandle, EventSchedule
 
 admin.site.register(TransactionClass, ClassModelAdmin)
 admin.site.register(ActionClass, ClassModelAdmin)
@@ -37,13 +37,24 @@ class TransactionTypeItemInline(admin.StackedInline):
     )
 
 
+class EventScheduleInline(admin.StackedInline):
+    model = EventSchedule
+    extra = 0
+
+
+class EventToHandleInline(admin.StackedInline):
+    model = EventToHandle
+    extra = 0
+
+
 class TransactionTypeAdmin(HistoricalAdmin):
     model = TransactionType
     list_display = ['id', 'name', 'master_user']
     list_select_related = ['master_user']
     raw_id_fields = ['master_user']
     filter_horizontal = ['instrument_types']
-    inlines = [TransactionTypeInputInline, TransactionTypeItemInline]
+    inlines = [TransactionTypeInputInline, TransactionTypeItemInline,
+               EventScheduleInline, EventToHandleInline]
 
     def get_inline_instances(self, request, obj=None):
         if obj:

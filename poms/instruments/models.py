@@ -260,6 +260,8 @@ class Instrument(NamedModel):
 
     daily_pricing_model = models.ForeignKey(DailyPricingModel, null=True, blank=True)
     payment_size_detail = models.ForeignKey(PaymentSizeDetail, null=True, blank=True)
+    default_price = models.FloatField(default=0.)
+    default_accrued = models.FloatField(default=0.)
 
     class Meta:
         verbose_name = _('instrument')
