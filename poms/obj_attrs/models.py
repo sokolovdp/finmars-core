@@ -102,15 +102,13 @@ class AttributeTypeBase(NamedModel):
     STRING = 10
     NUMBER = 20
     CLASSIFIER = 30
-    # CHOICE = 40
-    # CHOICES = 50
+    DATE = 40
 
     VALUE_TYPES = (
         (NUMBER, _('Number')),
         (STRING, _('String')),
+        (DATE, _('Date')),
         (CLASSIFIER, _('Classifier')),
-        # (CHOICE, _('Choice')),
-        # (CHOICES, _('Choices')),
     )
 
     master_user = models.ForeignKey(MasterUser)

@@ -58,8 +58,8 @@ class ActionClass(ClassModelBase):
     )
 
     class Meta:
-        verbose_name = _('transaction class')
-        verbose_name_plural = _('transaction classes')
+        verbose_name = _('action class')
+        verbose_name_plural = _('action classes')
 
 
 class TransactionType(NamedModel):

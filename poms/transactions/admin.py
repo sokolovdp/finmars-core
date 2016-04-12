@@ -9,9 +9,10 @@ from poms.obj_perms.admin import UserObjectPermissionAdmin, GroupObjectPermissio
 from poms.transactions.models import TransactionClass, Transaction, TransactionType, TransactionTypeInput, \
     TransactionTypeItem, TransactionTypeUserObjectPermission, TransactionTypeGroupObjectPermission, \
     TransactionAttributeType, TransactionAttributeTypeOption, TransactionAttributeTypeUserObjectPermission, \
-    TransactionAttributeTypeGroupObjectPermission, TransactionAttribute
+    TransactionAttributeTypeGroupObjectPermission, TransactionAttribute, ActionClass
 
 admin.site.register(TransactionClass, ClassModelAdmin)
+admin.site.register(ActionClass, ClassModelAdmin)
 
 
 class TransactionTypeInputInline(admin.StackedInline):
