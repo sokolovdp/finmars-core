@@ -29,6 +29,18 @@ class TransactionTypeItemInline(admin.StackedInline):
     model = TransactionTypeItem
     extra = 0
 
+    fields = (
+        'order', 'transaction_class',
+        ('instrument', 'instrument_input'),
+        ('transaction_currency', 'transaction_currency_input'),
+        ('position_size_with_sign', 'position_size_with_sign_expr'),
+        ('settlement_currency', 'settlement_currency_input'),
+        ('cash_consideration', 'cash_consideration_expr'),
+        ('account_position', 'account_position_input'),
+        ('account_cash', 'account_cash_input'),
+        ('account_interim', 'account_interim_input'),
+    )
+
 
 class TransactionTypeAdmin(HistoricalAdmin):
     model = TransactionType
@@ -69,17 +81,22 @@ class TransactionAdmin(HistoricalAdmin):
     raw_id_fields = ['master_user', 'portfolio', 'instrument', 'transaction_currency', 'settlement_currency',
                      'account_position', 'account_cash', 'account_interim', 'responsible', 'counterparty']
 
-    # inlines = [TransactionAttrValueInline]
-
-    def make_canceled(self, request, queryset):
-        queryset.update(is_canceled=True)
-
-    make_canceled.short_description = "Mark selected transaction as canceled"
-
-    def make_active(self, request, queryset):
-        queryset.update(is_canceled=False)
-
-    make_active.short_description = "Mark selected transaction as active"
+    # fields = (
+    #     'portfolio',
+    #     ('instrument', 'transaction_currency', 'position_size_with_sign',),
+    #     ('settlement_currency', 'cash_consideration'),
+    #     ('principal_with_sign', 'carry_with_sign', 'overheads_with_sign',),
+    #     ('accounting_date', 'cash_date',),
+    #     ('account_position', 'account_cash', 'account_interim',),
+    #     'reference_fx_rate',
+    #     ('is_locked', 'is_canceled',),
+    #     'factor',
+    #     'trade_price',
+    #     ('principal_amount', 'carry_amount', 'overheads',),
+    #     ('notes_front_office', 'notes_middle_office',),
+    #     ('responsible', 'responsible_text',),
+    #     ('counterparty', 'counterparty_text',),
+    # )
 
 
 admin.site.register(Transaction, TransactionAdmin)

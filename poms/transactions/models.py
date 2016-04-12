@@ -238,8 +238,9 @@ class TransactionTypeItem(models.Model):
 @python_2_unicode_compatible
 class Transaction(models.Model):
     master_user = models.ForeignKey(MasterUser, related_name='transactions', verbose_name=_('master user'))
-    portfolio = models.ForeignKey(Portfolio, verbose_name="portfolio")
     transaction_class = models.ForeignKey(TransactionClass, verbose_name="class")
+
+    portfolio = models.ForeignKey(Portfolio, verbose_name="portfolio")
 
     # Position related
     instrument = models.ForeignKey(Instrument, null=True, blank=True)
