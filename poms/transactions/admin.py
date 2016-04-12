@@ -70,6 +70,7 @@ admin.site.register(TransactionTypeGroupObjectPermission, GroupObjectPermissionA
 
 class TransactionAttributeInline(AttributeInlineBase):
     model = TransactionAttribute
+    fields = ['attribute_type', 'value', 'strategy_position', 'strategy_cash']
     raw_id_fields = ['attribute_type', 'strategy_position', 'strategy_cash']
 
 
