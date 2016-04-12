@@ -37,7 +37,7 @@ admin.site.register(AccountClassifierUserObjectPermission, UserObjectPermissionA
 admin.site.register(AccountClassifierGroupObjectPermission, GroupObjectPermissionAdmin)
 
 
-class AttributeInline(AttributeInlineBase):
+class AccountAttributeInline(AttributeInlineBase):
     model = AccountAttribute
 
 
@@ -46,7 +46,7 @@ class AccountAdmin(HistoricalAdmin):
     list_display = ['id', 'name', 'master_user']
     list_select_related = ['master_user']
     raw_id_fields = ['master_user', 'type']
-    inlines = [AttributeInline]
+    inlines = [AccountAttributeInline]
 
 
 admin.site.register(Account, AccountAdmin)

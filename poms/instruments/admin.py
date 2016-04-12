@@ -10,8 +10,8 @@ from poms.instruments.models import Instrument, PriceHistory, InstrumentClassifi
     InstrumentTypeGroupObjectPermission, InstrumentClassifierUserObjectPermission, \
     InstrumentClassifierGroupObjectPermission, InstrumentUserObjectPermission, InstrumentGroupObjectPermission, \
     InstrumentAttributeType, InstrumentAttributeTypeOption, InstrumentAttributeTypeUserObjectPermission, \
-    InstrumentAttributeTypeGroupObjectPermission
-from poms.obj_attrs.admin import AttributeTypeAdminBase, AttributeTypeOptionInlineBase
+    InstrumentAttributeTypeGroupObjectPermission, InstrumentAttribute
+from poms.obj_attrs.admin import AttributeTypeAdminBase, AttributeTypeOptionInlineBase, AttributeInlineBase
 from poms.obj_perms.admin import UserObjectPermissionAdmin, GroupObjectPermissionAdmin
 
 
@@ -85,6 +85,10 @@ admin.site.register(InstrumentClassifierUserObjectPermission, UserObjectPermissi
 admin.site.register(InstrumentClassifierGroupObjectPermission, GroupObjectPermissionAdmin)
 
 
+class InstrumentAttributeInline(AttributeInlineBase):
+    model = InstrumentAttribute
+
+
 class ManualPricingFormulaInline(admin.StackedInline):
     model = ManualPricingFormula
     extra = 0
@@ -99,9 +103,9 @@ class InstrumentAdmin(HistoricalAdmin):
     model = Instrument
     list_display = ['id', 'name', 'master_user', 'type', 'pricing_currency', 'accrued_currency']
     list_select_related = ['master_user', 'type', 'pricing_currency', 'accrued_currency']
-    inlines = [ManualPricingFormulaInline, AccrualCalculationScheduleInline, ]
     raw_id_fields = ['master_user', 'type', 'pricing_currency', 'accrued_currency',
                      'daily_pricing_model']
+    inlines = [InstrumentAttributeInline, ManualPricingFormulaInline, AccrualCalculationScheduleInline, ]
 
 
 admin.site.register(Instrument, InstrumentAdmin)

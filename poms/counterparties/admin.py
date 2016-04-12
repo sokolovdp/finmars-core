@@ -10,8 +10,9 @@ from poms.counterparties.models import Counterparty, Responsible, CounterpartyCl
     ResponsibleClassifierGroupObjectPermission, ResponsibleUserObjectPermission, ResponsibleGroupObjectPermission, \
     CounterpartyAttributeType, CounterpartyAttributeTypeOption, CounterpartyAttributeTypeUserObjectPermission, \
     CounterpartyAttributeTypeGroupObjectPermission, ResponsibleAttributeType, ResponsibleAttributeTypeOption, \
-    ResponsibleAttributeTypeUserObjectPermission, ResponsibleAttributeTypeGroupObjectPermission
-from poms.obj_attrs.admin import AttributeTypeAdminBase, AttributeTypeOptionInlineBase
+    ResponsibleAttributeTypeUserObjectPermission, ResponsibleAttributeTypeGroupObjectPermission, CounterpartyAttribute, \
+    ResponsibleAttribute
+from poms.obj_attrs.admin import AttributeTypeAdminBase, AttributeTypeOptionInlineBase, AttributeInlineBase
 from poms.obj_perms.admin import UserObjectPermissionAdmin, GroupObjectPermissionAdmin
 
 
@@ -27,11 +28,16 @@ admin.site.register(CounterpartyClassifierUserObjectPermission, UserObjectPermis
 admin.site.register(CounterpartyClassifierGroupObjectPermission, GroupObjectPermissionAdmin)
 
 
+class CounterpartyAttributeInline(AttributeInlineBase):
+    model = CounterpartyAttribute
+
+
 class CounterpartyAdmin(HistoricalAdmin):
     model = Counterparty
     list_display = ['id', 'name', 'master_user']
     list_select_related = ['master_user']
     raw_id_fields = ['master_user']
+    inlines = [CounterpartyAttributeInline]
 
 
 admin.site.register(Counterparty, CounterpartyAdmin)
@@ -51,11 +57,16 @@ admin.site.register(ResponsibleClassifierUserObjectPermission, UserObjectPermiss
 admin.site.register(ResponsibleClassifierGroupObjectPermission, GroupObjectPermissionAdmin)
 
 
+class ResponsibleAttributeInline(AttributeInlineBase):
+    model = ResponsibleAttribute
+
+
 class ResponsibleAdmin(HistoricalAdmin):
     model = Responsible
     list_display = ['id', 'name', 'master_user']
     list_select_related = ['master_user']
     raw_id_fields = ['master_user']
+    inlines = [ResponsibleAttributeInline]
 
 
 admin.site.register(Responsible, ResponsibleAdmin)

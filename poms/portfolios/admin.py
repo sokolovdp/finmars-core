@@ -4,12 +4,12 @@ from django.contrib import admin
 
 from poms.audit.admin import HistoricalAdmin
 from poms.common.admin import TreeModelAdmin
-from poms.obj_attrs.admin import AttributeTypeAdminBase, AttributeTypeOptionInlineBase
+from poms.obj_attrs.admin import AttributeTypeAdminBase, AttributeTypeOptionInlineBase, AttributeInlineBase
 from poms.obj_perms.admin import UserObjectPermissionAdmin, GroupObjectPermissionAdmin
 from poms.portfolios.models import Portfolio, PortfolioClassifier, PortfolioClassifierUserObjectPermission, \
     PortfolioClassifierGroupObjectPermission, PortfolioGroupObjectPermission, PortfolioUserObjectPermission, \
     PortfolioAttributeType, PortfolioAttributeTypeOption, PortfolioAttributeTypeUserObjectPermission, \
-    PortfolioAttributeTypeGroupObjectPermission
+    PortfolioAttributeTypeGroupObjectPermission, PortfolioAttribute
 
 
 class PortfolioClassifierAdmin(HistoricalAdmin, TreeModelAdmin):
@@ -24,11 +24,16 @@ admin.site.register(PortfolioClassifierUserObjectPermission, UserObjectPermissio
 admin.site.register(PortfolioClassifierGroupObjectPermission, GroupObjectPermissionAdmin)
 
 
+class PortfolioAttributeInline(AttributeInlineBase):
+    model = PortfolioAttribute
+
+
 class PortfolioAdmin(HistoricalAdmin):
     model = Portfolio
     list_display = ['id', 'name', 'master_user']
     list_select_related = ['master_user']
     raw_id_fields = ['master_user']
+    inlines = [PortfolioAttributeInline]
 
 
 admin.site.register(Portfolio, PortfolioAdmin)

@@ -3,12 +3,12 @@ from __future__ import unicode_literals
 from django.contrib import admin
 
 from poms.audit.admin import HistoricalAdmin
-from poms.obj_attrs.admin import AttributeTypeAdminBase, AttributeTypeOptionInlineBase
+from poms.obj_attrs.admin import AttributeTypeAdminBase, AttributeTypeOptionInlineBase, AttributeInlineBase
 from poms.obj_perms.admin import UserObjectPermissionAdmin, GroupObjectPermissionAdmin
 from poms.transactions.models import TransactionClass, Transaction, TransactionType, TransactionTypeInput, \
     TransactionTypeItem, TransactionTypeUserObjectPermission, TransactionTypeGroupObjectPermission, \
     TransactionAttributeType, TransactionAttributeTypeOption, TransactionAttributeTypeUserObjectPermission, \
-    TransactionAttributeTypeGroupObjectPermission
+    TransactionAttributeTypeGroupObjectPermission, TransactionAttribute
 
 
 class TransactionClassAdmin(HistoricalAdmin):
@@ -61,6 +61,11 @@ admin.site.register(TransactionTypeUserObjectPermission, UserObjectPermissionAdm
 admin.site.register(TransactionTypeGroupObjectPermission, GroupObjectPermissionAdmin)
 
 
+class TransactionAttributeInline(AttributeInlineBase):
+    model = TransactionAttribute
+    raw_id_fields = ['attribute_type', 'strategy_position', 'strategy_cash']
+
+
 class TransactionAdmin(HistoricalAdmin):
     model = Transaction
     list_select_related = ['master_user', 'transaction_class', 'instrument', 'transaction_currency',
@@ -76,27 +81,9 @@ class TransactionAdmin(HistoricalAdmin):
     list_filter = ['is_canceled']
     ordering = ['transaction_date', 'id']
     date_hierarchy = 'transaction_date'
-    # actions = ['make_canceled', 'make_active']
-
     raw_id_fields = ['master_user', 'portfolio', 'instrument', 'transaction_currency', 'settlement_currency',
                      'account_position', 'account_cash', 'account_interim', 'responsible', 'counterparty']
-
-    # fields = (
-    #     'portfolio',
-    #     ('instrument', 'transaction_currency', 'position_size_with_sign',),
-    #     ('settlement_currency', 'cash_consideration'),
-    #     ('principal_with_sign', 'carry_with_sign', 'overheads_with_sign',),
-    #     ('accounting_date', 'cash_date',),
-    #     ('account_position', 'account_cash', 'account_interim',),
-    #     'reference_fx_rate',
-    #     ('is_locked', 'is_canceled',),
-    #     'factor',
-    #     'trade_price',
-    #     ('principal_amount', 'carry_amount', 'overheads',),
-    #     ('notes_front_office', 'notes_middle_office',),
-    #     ('responsible', 'responsible_text',),
-    #     ('counterparty', 'counterparty_text',),
-    # )
+    inlines = [TransactionAttributeInline]
 
 
 admin.site.register(Transaction, TransactionAdmin)
