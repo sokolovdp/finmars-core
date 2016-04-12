@@ -38,6 +38,11 @@ class TransactionTypeAdmin(HistoricalAdmin):
     filter_horizontal = ['instrument_types']
     inlines = [TransactionTypeInputInline, TransactionTypeItemInline]
 
+    def get_inline_instances(self, request, obj=None):
+        if obj:
+            return super(TransactionTypeAdmin, self).get_inline_instances(request, obj)
+        return []
+
 
 admin.site.register(TransactionType, TransactionTypeAdmin)
 admin.site.register(TransactionTypeUserObjectPermission, UserObjectPermissionAdmin)

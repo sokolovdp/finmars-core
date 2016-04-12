@@ -59,6 +59,7 @@ class TransactionClass(ClassModelBase):
         verbose_name_plural = _('transaction classes')
 
 
+@python_2_unicode_compatible
 class TransactionType(NamedModel):
     master_user = models.ForeignKey(MasterUser, related_name='transaction_types', verbose_name=_('master user'))
 
@@ -123,18 +124,22 @@ class TransactionTypeInput(models.Model):
         # (STRATEGY, _('Strategy')),
     )
 
-    transaction_type = models.ForeignKey(TransactionType)
+    transaction_type = models.ForeignKey(TransactionType, related_name='inputs')
     value_type = models.PositiveSmallIntegerField(default=NUMBER, choices=TYPES)
     name = models.CharField(max_length=255, null=True, blank=True)
     content_type = models.ForeignKey(ContentType, null=True, blank=True)
     order = models.IntegerField(default=0)
 
+    def __str__(self):
+        return self.name
+
 
 class TransactionTypeItem(models.Model):
-    transaction_type = models.ForeignKey(TransactionType)
+    transaction_type = models.ForeignKey(TransactionType, related_name='items')
     order = models.IntegerField(default=0)
 
     transaction_class = models.ForeignKey(TransactionClass, related_name='+')
+
     instrument = models.ForeignKey(Instrument, null=True, blank=True, related_name='+')
     transaction_currency = models.ForeignKey(Currency, null=True, blank=True, related_name='+')
     position_size_with_sign = models.FloatField(null=True, blank=True)
@@ -144,14 +149,23 @@ class TransactionTypeItem(models.Model):
     account_cash = models.ForeignKey(Account, null=True, blank=True, related_name='+')
     account_interim = models.ForeignKey(Account, null=True, blank=True, related_name='+')
 
-    instrument_expr = models.CharField(max_length=255, blank=True)
-    transaction_currency_expr = models.CharField(max_length=255, blank=True)
+    instrument_input = models.ForeignKey(TransactionTypeInput, null=True, blank=True, related_name='+')
+    transaction_currency_input = models.ForeignKey(TransactionTypeInput, null=True, blank=True, related_name='+')
     position_size_with_sign_expr = models.CharField(max_length=255, blank=True)
-    settlement_currency_expr = models.CharField(max_length=255, blank=True)
+    settlement_currency_input = models.ForeignKey(TransactionTypeInput, null=True, blank=True, related_name='+')
     cash_consideration_expr = models.CharField(max_length=255, blank=True)
-    account_position_expr = models.CharField(max_length=255, blank=True)
-    account_cash_expr = models.CharField(max_length=255, blank=True)
-    account_interim_expr = models.CharField(max_length=255, blank=True)
+    account_position_input = models.ForeignKey(TransactionTypeInput, null=True, blank=True, related_name='+')
+    account_cash_input = models.ForeignKey(TransactionTypeInput, null=True, blank=True, related_name='+')
+    account_interim_input = models.ForeignKey(TransactionTypeInput, null=True, blank=True, related_name='+')
+
+    # instrument_expr = models.CharField(max_length=255, blank=True)
+    # transaction_currency_expr = models.CharField(max_length=255, blank=True)
+    # position_size_with_sign_expr = models.CharField(max_length=255, blank=True)
+    # settlement_currency_expr = models.CharField(max_length=255, blank=True)
+    # cash_consideration_expr = models.CharField(max_length=255, blank=True)
+    # account_position_expr = models.CharField(max_length=255, blank=True)
+    # account_cash_expr = models.CharField(max_length=255, blank=True)
+    # account_interim_expr = models.CharField(max_length=255, blank=True)
 
 
 # # instrument = instr
@@ -286,10 +300,10 @@ class Transaction(models.Model):
     counterparty_text = models.CharField(max_length=50, null=True, blank=True,
                                          help_text=_('Text for non-frequent counterparty'))
 
-    strategy_position = TreeForeignKey(Strategy, null=True, blank=True, related_name='+',
-                                       verbose_name='temporary strategy position')
-    strategy_cash = TreeForeignKey(Strategy, null=True, blank=True, related_name='+',
-                                   verbose_name='temporary strategy cash')
+    # strategy_position = TreeForeignKey(Strategy, null=True, blank=True, related_name='+',
+    #                                    verbose_name='temporary strategy position')
+    # strategy_cash = TreeForeignKey(Strategy, null=True, blank=True, related_name='+',
+    #                                verbose_name='temporary strategy cash')
 
     class Meta:
         verbose_name = _('transaction')
@@ -315,13 +329,13 @@ class Transaction(models.Model):
         super(Transaction, self).save(force_insert=force_insert, force_update=force_update, using=using,
                                       update_fields=update_fields)
 
-    @property
-    def strategies_position(self):
-        return [self.strategy_position] if self.strategy_position_id else []
+    # @property
+    # def strategies_position(self):
+    #     return [self.strategy_position] if self.strategy_position_id else []
 
-    @property
-    def strategies_cash(self):
-        return [self.strategy_cash] if self.strategy_cash_id else []
+    # @property
+    # def strategies_cash(self):
+    #     return [self.strategy_cash] if self.strategy_cash_id else []
 
 
 class TransactionAttributeType(AttributeTypeBase):
