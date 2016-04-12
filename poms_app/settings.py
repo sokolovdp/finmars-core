@@ -169,7 +169,7 @@ if not DEBUG:
 LANGUAGE_CODE = 'en'
 LANGUAGES = [
     ('en', 'English'),
-    ('es', 'Español'),
+    ('es', 'Spanish'),
     ('de', 'Deutsch'),
     ('ru', 'Russian'),
 ]
@@ -231,9 +231,9 @@ LOGGING = {
             'level': 'INFO',
             'handlers': ['console'],
         },
-        'django.db': {
-            'level': 'DEBUG',
-        },
+        # 'django.db': {
+        #     'level': 'DEBUG',
+        # },
         'poms': {
             'level': 'DEBUG',
             'handlers': ['console'],

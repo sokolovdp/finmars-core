@@ -14,7 +14,7 @@ from poms.users.models import MasterUser, Member
 
 
 @python_2_unicode_compatible
-class PortfolioClassifier(NamedModel, MPTTModel):
+class PortfolioClassifier(MPTTModel, NamedModel):
     master_user = models.ForeignKey(MasterUser, related_name='portfolio_classifiers', verbose_name=_('master user'))
     parent = TreeForeignKey('self', null=True, blank=True, related_name='children', db_index=True)
 

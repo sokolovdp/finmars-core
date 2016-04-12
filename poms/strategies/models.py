@@ -11,7 +11,7 @@ from poms.obj_perms.models import UserObjectPermissionBase, GroupObjectPermissio
 from poms.users.models import MasterUser
 
 
-class Strategy(NamedModel, MPTTModel):
+class Strategy(MPTTModel, NamedModel):
     master_user = models.ForeignKey(MasterUser, related_name='strategy_classifiers', verbose_name=_('master user'))
     parent = TreeForeignKey('self', null=True, blank=True, related_name='children', db_index=True)
 

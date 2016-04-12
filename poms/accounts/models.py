@@ -51,7 +51,7 @@ class AccountTypeGroupObjectPermission(GroupObjectPermissionBase):
 
 
 @python_2_unicode_compatible
-class AccountClassifier(NamedModel, MPTTModel):
+class AccountClassifier(MPTTModel, NamedModel):
     master_user = models.ForeignKey(MasterUser, related_name='account_classifiers', verbose_name=_('master user'))
     parent = TreeForeignKey('self', null=True, blank=True, related_name='children', db_index=True)
 

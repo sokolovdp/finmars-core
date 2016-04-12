@@ -210,7 +210,7 @@ class InstrumentTypeGroupObjectPermission(GroupObjectPermissionBase):
 
 
 @python_2_unicode_compatible
-class InstrumentClassifier(NamedModel, MPTTModel):
+class InstrumentClassifier(MPTTModel, NamedModel):
     master_user = models.ForeignKey(MasterUser, related_name='instrument_classifiers', verbose_name=_('master user'))
     parent = TreeForeignKey('self', null=True, blank=True, related_name='children', db_index=True)
 

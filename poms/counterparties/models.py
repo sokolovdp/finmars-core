@@ -13,7 +13,7 @@ from poms.obj_perms.models import UserObjectPermissionBase, GroupObjectPermissio
 from poms.users.models import MasterUser, Member
 
 
-class CounterpartyClassifier(NamedModel, MPTTModel):
+class CounterpartyClassifier(MPTTModel, NamedModel):
     master_user = models.ForeignKey(MasterUser, related_name='counterparty_classifiers', verbose_name=_('master user'))
     parent = TreeForeignKey('self', null=True, blank=True, related_name='children', db_index=True)
 
@@ -124,7 +124,7 @@ class CounterpartyAttribute(AttributeBase):
         verbose_name_plural = _('counterparty attributes')
 
 
-class ResponsibleClassifier(NamedModel, MPTTModel):
+class ResponsibleClassifier(MPTTModel, NamedModel):
     master_user = models.ForeignKey(MasterUser, related_name='responsible_classifiers', verbose_name=_('master user'))
     parent = TreeForeignKey('self', null=True, blank=True, related_name='children', db_index=True)
 
