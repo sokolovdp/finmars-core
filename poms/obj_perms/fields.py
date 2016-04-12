@@ -51,22 +51,23 @@ class ObjectPermissionField(serializers.Field):
             return []
 
         users = {}
-        groups = {}
         for uop in value.user_object_permissions.all():
             try:
                 user_perms = users[uop.member_id]
             except KeyError:
                 users[uop.member_id] = user_perms = {
-                    'id': uop.member_id,
+                    'member_id': uop.member_id,
                     'permissions': set(),
                 }
             user_perms['permissions'].add(uop.permission.codename)
+
+        groups = {}
         for gop in value.group_object_permissions.all():
             try:
                 group_perms = groups[gop.group_id]
             except KeyError:
                 groups[gop.group_id] = group_perms = {
-                    'id': gop.group_id,
+                    'group_id': gop.group_id,
                     'permissions': set(),
                 }
             group_perms['permissions'].add(gop.permission.codename)
