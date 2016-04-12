@@ -101,14 +101,26 @@ class TransactionTypeGroupObjectPermission(GroupObjectPermissionBase):
 class TransactionTypeInput(models.Model):
     STRING = 10
     NUMBER = 20
-    RELATION = 30
-    EXPRESSION = 40
+    EXPRESSION = 30
+    RELATION = 100
+    # ACCOUNT = 110
+    # INSTRUMENT = 120
+    # CURRENCY = 130
+    # COUNTERPARTY = 140
+    # RESPONSIBLE = 150
+    # STRATEGY = 150
 
     TYPES = (
         (NUMBER, _('Number')),
         (STRING, _('String')),
-        (RELATION, _('Relation')),
         (EXPRESSION, _('Expression')),
+        (RELATION, _('Relation')),
+        # (ACCOUNT, _('Account')),
+        # (INSTRUMENT, _('Instrument')),
+        # (CURRENCY, _('Currency')),
+        # (COUNTERPARTY, _('Counterparty')),
+        # (RESPONSIBLE, _('Responsible')),
+        # (STRATEGY, _('Strategy')),
     )
 
     transaction_type = models.ForeignKey(TransactionType)
