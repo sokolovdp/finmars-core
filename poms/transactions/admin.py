@@ -9,7 +9,8 @@ from poms.obj_perms.admin import UserObjectPermissionAdmin, GroupObjectPermissio
 from poms.transactions.models import TransactionClass, Transaction, TransactionType, TransactionTypeInput, \
     TransactionTypeItem, TransactionTypeUserObjectPermission, TransactionTypeGroupObjectPermission, \
     TransactionAttributeType, TransactionAttributeTypeOption, TransactionAttributeTypeUserObjectPermission, \
-    TransactionAttributeTypeGroupObjectPermission, TransactionAttribute, ActionClass, EventToHandle, EventSchedule
+    TransactionAttributeTypeGroupObjectPermission, TransactionAttribute, ActionClass, EventToHandle, EventSchedule, \
+    CashFlow, CashFlowStrategy
 
 admin.site.register(TransactionClass, ClassModelAdmin)
 admin.site.register(ActionClass, ClassModelAdmin)
@@ -105,3 +106,18 @@ admin.site.register(TransactionAttributeType, TransactionAttributeTypeAdmin)
 admin.site.register(TransactionAttributeTypeOption, AttributeTypeOptionInlineBase)
 admin.site.register(TransactionAttributeTypeUserObjectPermission, UserObjectPermissionAdmin)
 admin.site.register(TransactionAttributeTypeGroupObjectPermission, GroupObjectPermissionAdmin)
+
+
+class CashFlowStrategyInline(admin.TabularInline):
+    model = CashFlowStrategy
+    raw_id_fields = ['strategy']
+    extra = 0
+
+
+class CashFlowAdmin(admin.ModelAdmin):
+    model = CashFlow
+    inlines = [CashFlowStrategyInline]
+    raw_id_fields = ['portfolio', 'account', 'currency']
+
+
+admin.site.register(CashFlow, CashFlowAdmin)

@@ -356,6 +356,32 @@ class TransactionAttribute(AttributeBase):
         verbose_name_plural = _('transaction attributes')
 
 
+@python_2_unicode_compatible
+class CashFlow(models.Model):
+    date = models.DateField(default=timezone.now)
+    portfolio = models.ForeignKey(Portfolio)
+    account = models.ForeignKey(Account)
+    currency = models.ForeignKey(Currency)
+    amount = models.FloatField(default=0.)
+
+    def __str__(self):
+        return '%s: %s - %s - %s - %s = %s' % (self.date, self.portfolio, self.account, list(self.strategies.all()),
+                                               self.currency, self.amount)
+
+
+@python_2_unicode_compatible
+class CashFlowStrategy(models.Model):
+    cash_flow = models.ForeignKey(CashFlow, related_name='strategies')
+    order = models.IntegerField(default=0.)
+    strategy = models.ForeignKey(Strategy)
+
+    class Meta:
+        ordering = ['cash_flow', 'order']
+
+    def __str__(self):
+        return '%s' % self.strategy
+
+
 history.register(TransactionClass)
 history.register(TransactionType)
 history.register(Transaction)
