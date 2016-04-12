@@ -59,7 +59,6 @@ class TransactionClass(ClassModelBase):
         verbose_name_plural = _('transaction classes')
 
 
-@python_2_unicode_compatible
 class TransactionType(NamedModel):
     master_user = models.ForeignKey(MasterUser, related_name='transaction_types', verbose_name=_('master user'))
 
@@ -99,6 +98,7 @@ class TransactionTypeGroupObjectPermission(GroupObjectPermissionBase):
 # pos - number
 # price - number
 # acc - content_type:account
+@python_2_unicode_compatible
 class TransactionTypeInput(models.Model):
     STRING = 10
     NUMBER = 20
@@ -134,6 +134,7 @@ class TransactionTypeInput(models.Model):
         return self.name
 
 
+@python_2_unicode_compatible
 class TransactionTypeItem(models.Model):
     transaction_type = models.ForeignKey(TransactionType, related_name='items')
     order = models.IntegerField(default=0)
@@ -166,6 +167,9 @@ class TransactionTypeItem(models.Model):
     # account_position_expr = models.CharField(max_length=255, blank=True)
     # account_cash_expr = models.CharField(max_length=255, blank=True)
     # account_interim_expr = models.CharField(max_length=255, blank=True)
+
+    def __str__(self):
+        return 'item #%s' % self.id
 
 
 # # instrument = instr
