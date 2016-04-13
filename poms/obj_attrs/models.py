@@ -146,7 +146,7 @@ class AttributeBase(models.Model):
         abstract = True
 
     def __str__(self):
-        return '%s' % self.get_display_value()
+        return '%s' % self.get_value()
 
     def get_value(self):
         t = self.attribute_type.value_type

@@ -106,5 +106,5 @@ class AttributeTypeOptionInlineBase(HistoricalAdmin):
 
 class AttributeInlineBase(admin.TabularInline):
     extra = 0
-    fields = ['attribute_type', 'value', 'classifier']
+    fields = ['attribute_type', 'value_string', 'value_float', 'value_date', 'classifier']
     raw_id_fields = ['attribute_type', 'classifier']
