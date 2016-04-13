@@ -1,4 +1,3 @@
-from django.contrib.contenttypes.fields import GenericForeignKey
 from django.contrib.contenttypes.models import ContentType
 from django.db import models
 from django.utils.encoding import python_2_unicode_compatible
@@ -139,15 +138,35 @@ class AttributeTypeOptionBase(models.Model):
 
 @python_2_unicode_compatible
 class AttributeBase(models.Model):
-    value = models.CharField(max_length=255, blank=True, default='')
+    value_string = models.CharField(max_length=255, null=True, blank=True)
+    value_float = models.FloatField(null=True, blank=True)
+    value_date = models.DateField(null=True, blank=True)
+
+    class Meta:
+        abstract = True
 
     def __str__(self):
         return '%s' % self.get_display_value()
 
-    def get_display_value(self):
+    def get_value(self):
         t = self.attribute_type.value_type
-        if t == AttributeTypeBase.NUMBER or t == AttributeTypeBase.STRING:
-            return self.value
+        if t == AttributeTypeBase.STRING:
+            return self.value_string
+        elif t == AttributeTypeBase.NUMBER:
+            return self.value_float
+        elif t == AttributeTypeBase.DATE:
+            return self.value_date
         elif t == AttributeTypeBase.CLASSIFIER:
             return self.classifier
         return None
+
+    def set_value(self, value):
+        t = self.attribute_type.value_type
+        if t == AttributeTypeBase.STRING:
+            self.value_string = value
+        elif t == AttributeTypeBase.NUMBER:
+            self.value_float = value
+        elif t == AttributeTypeBase.DATE:
+            self.value_date = value
+        elif t == AttributeTypeBase.CLASSIFIER:
+            self.classifier = value

@@ -361,6 +361,20 @@ class TransactionAttribute(AttributeBase):
         verbose_name = _('transaction attribute')
         verbose_name_plural = _('transaction attributes')
 
+    def get_value(self):
+        t = self.attribute_type.value_type
+        if t == AttributeTypeBase.CLASSIFIER:
+            return self.strategy_position, self.strategy_position
+        else:
+            return super(TransactionAttribute, self).get_value()
+
+    def set_value(self, value):
+        t = self.attribute_type.value_type
+        if t == AttributeTypeBase.CLASSIFIER:
+            self.strategy_position, self.strategy_position = value
+        else:
+            super(TransactionAttribute, self).set_value(value)
+
 
 @python_2_unicode_compatible
 class CashFlow(models.Model):
