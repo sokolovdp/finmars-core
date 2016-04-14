@@ -2,6 +2,7 @@ from __future__ import unicode_literals
 
 from django.contrib.auth.models import User
 from rest_framework import serializers
+from rest_framework.fields import CurrentUserDefault
 
 from poms.api.fields import FilteredPrimaryKeyRelatedField
 from poms.users.filters import OwnerByMasterUserFilter, GroupOwnerByMasterUserFilter
@@ -38,6 +39,13 @@ class HiddenMemberField(serializers.PrimaryKeyRelatedField):
         kwargs['default'] = CurrentMemberDefault()
         kwargs['read_only'] = True
         super(HiddenMemberField, self).__init__(**kwargs)
+
+
+class HiddenUserField(serializers.PrimaryKeyRelatedField):
+    def __init__(self, **kwargs):
+        kwargs['default'] = CurrentUserDefault()
+        kwargs['read_only'] = True
+        super(HiddenUserField, self).__init__(**kwargs)
 
 
 class MemberField(FilteredPrimaryKeyRelatedField):
