@@ -14,6 +14,12 @@ class ThreadObjectPermissionFilter(BaseFilterBackend):
         return obj_perms_filter_objects(member, self.codename_set, queryset)
 
 
+class MessageThreadOwnerByMasterUserFilter(BaseFilterBackend):
+    def filter_queryset(self, request, queryset, view):
+        from poms.users.utils import get_master_user
+        return queryset.filter(thread__master_user=get_master_user(request))
+
+
 class MessageObjectPermissionFilter(BaseFilterBackend):
     codename_set = ['view_thread', 'change_thread', 'manage_thread']
 
@@ -23,13 +29,7 @@ class MessageObjectPermissionFilter(BaseFilterBackend):
         return queryset.filter(thread_id__in=threads)
 
 
-class ThreadOwnerByMasterUserFilter(BaseFilterBackend):
-    def filter_queryset(self, request, queryset, view):
-        from poms.users.utils import get_master_user
-        return queryset.filter(thread__master_user=get_master_user(request))
-
-
-class DirectMessageOwnerByMasterUserFilter(BaseFilterBackend):
+class DirectMessageFilter(BaseFilterBackend):
     def filter_queryset(self, request, queryset, view):
         user = request.user
         return queryset.filter(Q(recipient=user) | Q(sender=user))
