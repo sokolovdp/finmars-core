@@ -10,12 +10,13 @@ from poms.transactions.models import TransactionClass, Transaction, TransactionT
     TransactionTypeItem, TransactionTypeUserObjectPermission, TransactionTypeGroupObjectPermission, \
     TransactionAttributeType, TransactionAttributeTypeOption, TransactionAttributeTypeUserObjectPermission, \
     TransactionAttributeTypeGroupObjectPermission, TransactionAttribute, ActionClass, EventToHandle, \
-    ExternalCashFlow, ExternalCashFlowStrategy, NotificationClass, EventClass
+    ExternalCashFlow, ExternalCashFlowStrategy, NotificationClass, EventClass, PeriodicityGroup
 
 admin.site.register(TransactionClass, ClassModelAdmin)
 admin.site.register(ActionClass, ClassModelAdmin)
 admin.site.register(EventClass, ClassModelAdmin)
 admin.site.register(NotificationClass, ClassModelAdmin)
+admin.site.register(PeriodicityGroup, ClassModelAdmin)
 
 
 class TransactionTypeInputInline(admin.StackedInline):
