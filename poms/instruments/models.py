@@ -153,8 +153,8 @@ class PeriodicityPeriod(ClassModelBase):
     )
 
     class Meta:
-        verbose_name = _('payment size detail')
-        verbose_name_plural = _('payment size details')
+        verbose_name = _('periodicity period')
+        verbose_name_plural = _('periodicity periods')
 
 
 class CostMethod(ClassModelBase):
