@@ -136,7 +136,7 @@ class PaymentSizeDetail(ClassModelBase):
         verbose_name_plural = _('payment size details')
 
 
-class PaymentPeriod(ClassModelBase):
+class PeriodicityPeriod(ClassModelBase):
     DAY = 1
     WEEK = 2
     MONTH = 3
@@ -388,7 +388,7 @@ class AccrualCalculationSchedule(models.Model):
     first_payment_date = models.DateField(default=timezone.now)
     accrual_size = models.FloatField(default=0.)
     accrual_calculation_model = models.ForeignKey(AccrualCalculationModel)
-    payment_period = models.ForeignKey(PaymentPeriod, null=True, blank=True)
+    periodicity_period = models.ForeignKey(PeriodicityPeriod, null=True, blank=True)
     notes = models.TextField(null=True, blank=True, verbose_name=_('notes'))
 
 

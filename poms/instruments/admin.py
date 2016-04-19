@@ -5,7 +5,7 @@ from django.contrib import admin
 from poms.audit.admin import HistoricalAdmin
 from poms.common.admin import TreeModelAdmin, ClassModelAdmin
 from poms.instruments.models import Instrument, PriceHistory, InstrumentClassifier, InstrumentClass, InstrumentType, \
-    DailyPricingModel, AccrualCalculationModel, PaymentPeriod, CostMethod, \
+    DailyPricingModel, AccrualCalculationModel, PeriodicityPeriod, CostMethod, \
     ManualPricingFormula, AccrualCalculationSchedule, InstrumentTypeUserObjectPermission, \
     InstrumentTypeGroupObjectPermission, InstrumentClassifierUserObjectPermission, \
     InstrumentClassifierGroupObjectPermission, InstrumentUserObjectPermission, InstrumentGroupObjectPermission, \
@@ -17,7 +17,7 @@ from poms.obj_perms.admin import UserObjectPermissionAdmin, GroupObjectPermissio
 admin.site.register(InstrumentClass, ClassModelAdmin)
 admin.site.register(DailyPricingModel, ClassModelAdmin)
 admin.site.register(AccrualCalculationModel, ClassModelAdmin)
-admin.site.register(PaymentPeriod, ClassModelAdmin)
+admin.site.register(PeriodicityPeriod, ClassModelAdmin)
 admin.site.register(CostMethod, ClassModelAdmin)
 
 
