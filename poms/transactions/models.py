@@ -78,6 +78,41 @@ class NotificationClass(ClassModelBase):
         verbose_name_plural = _('notification classes')
 
 
+class PeriodicityGroup(ClassModelBase):
+    DAILY = 1
+    WEEKLY = 2
+    WEEKLY_EOW = 3
+    BE_WEEKLY = 4
+    BE_WEEKLY_EOW = 5
+    MONTHLY = 6
+    MONTHLY_EOM = 7
+    QUARTERLY = 8
+    QUARTERLY_CALENDAR = 9
+    SEMI_ANUALLY = 10
+    SEMI_ANUALLY_CALENDAR = 11
+    ANUALLY = 12
+    ANUALLY_CALENDAR = 13
+    CLASSES = (
+        (DAILY, "daily"),
+        (WEEKLY, "weekly (+7d)"),
+        (WEEKLY_EOW, "weekly (eow)"),
+        (BE_WEEKLY, "bi-weekly (+14d)"),
+        (BE_WEEKLY_EOW, "bi-weekly (eow)"),
+        (MONTHLY, "monthly (+1m)"),
+        (MONTHLY_EOM, "monthly (eom)"),
+        (QUARTERLY, "quarterly (+3m)"),
+        (QUARTERLY_CALENDAR, "quarterly (calendar)"),
+        (SEMI_ANUALLY, "semi-anually (+6m)"),
+        (SEMI_ANUALLY_CALENDAR, "semi-anually (calendar)"),
+        (ANUALLY, "anually (+12m)"),
+        (ANUALLY_CALENDAR, "anually (eoy)"),
+    )
+
+    class Meta:
+        verbose_name = _('periodicity group')
+        verbose_name_plural = _('periodicity group')
+
+
 class TransactionType(NamedModel):
     master_user = models.ForeignKey(MasterUser, related_name='transaction_types', verbose_name=_('master user'))
 
