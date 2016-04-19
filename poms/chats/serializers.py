@@ -5,7 +5,6 @@ from rest_framework import serializers
 from poms.chats.fields import ThreadField, ThreadStatusField
 from poms.chats.models import Thread, Message, DirectMessage, ThreadStatus
 from poms.obj_perms.fields import GrantedPermissionField
-from poms.obj_perms.serializers import UserObjectPermissionSerializer, GroupObjectPermissionSerializer
 from poms.obj_perms.utils import assign_perms_to_new_obj
 from poms.users.fields import MasterUserField, MemberField, HiddenMemberField, GroupField, UserField, HiddenUserField
 from poms.users.utils import get_member

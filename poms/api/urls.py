@@ -43,6 +43,7 @@ router.register(r'audit/auth-log', audit.AuthLogEntryViewSet)
 router.register(r'accounts/account-type', accounts.AccountTypeViewSet)
 router.register(r'accounts/account-classifier', accounts.AccountClassifierViewSet)
 router.register(r'accounts/account', accounts.AccountViewSet)
+router.register(r'accounts/account-attribute-type', accounts.AccountAttributeTypeViewSet)
 
 router.register(r'counterparties/counterparty-classifier', counterparties.CounterpartyClassifierViewSet)
 router.register(r'counterparties/counterparty', counterparties.CounterpartyViewSet)

@@ -6,15 +6,15 @@ from poms.users.models import MasterUser
 
 
 class PricingPolicy(NamedModel):
-    DISABLED = 0
-    BLOOMBERG = 1
-    TYPES = (
-        (DISABLED, _('Disabled')),
-        (BLOOMBERG, _('Bloomberg')),
-    )
+    # DISABLED = 0
+    # BLOOMBERG = 1
+    # TYPES = (
+    #     (DISABLED, _('Disabled')),
+    #     (BLOOMBERG, _('Bloomberg')),
+    # )
 
     master_user = models.ForeignKey(MasterUser, related_name='pricing_policies', verbose_name=_('master user'))
-    type = models.PositiveIntegerField(default=DISABLED, choices=TYPES)
+    # type = models.PositiveIntegerField(default=DISABLED, choices=TYPES)
     expr = models.TextField(default='')
 
     class Meta:

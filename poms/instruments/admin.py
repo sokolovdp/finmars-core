@@ -10,7 +10,7 @@ from poms.instruments.models import Instrument, PriceHistory, InstrumentClassifi
     InstrumentTypeGroupObjectPermission, InstrumentClassifierUserObjectPermission, \
     InstrumentClassifierGroupObjectPermission, InstrumentUserObjectPermission, InstrumentGroupObjectPermission, \
     InstrumentAttributeType, InstrumentAttributeTypeOption, InstrumentAttributeTypeUserObjectPermission, \
-    InstrumentAttributeTypeGroupObjectPermission, InstrumentAttribute, InstrumentFactorSchedule
+    InstrumentAttributeTypeGroupObjectPermission, InstrumentAttribute, InstrumentFactorSchedule, EventSchedule
 from poms.obj_attrs.admin import AttributeTypeAdminBase, AttributeTypeOptionInlineBase, AttributeInlineBase
 from poms.obj_perms.admin import UserObjectPermissionAdmin, GroupObjectPermissionAdmin
 
@@ -65,6 +65,11 @@ class InstrumentFactorScheduleInline(admin.StackedInline):
     extra = 0
 
 
+class EventScheduleInline(admin.StackedInline):
+    model = EventSchedule
+    extra = 0
+
+
 class InstrumentAdmin(HistoricalAdmin):
     model = Instrument
     list_display = ['id', 'name', 'master_user', 'type', 'pricing_currency', 'accrued_currency']
@@ -72,7 +77,7 @@ class InstrumentAdmin(HistoricalAdmin):
     raw_id_fields = ['master_user', 'type', 'pricing_currency', 'accrued_currency',
                      'daily_pricing_model']
     inlines = [InstrumentAttributeInline, ManualPricingFormulaInline, AccrualCalculationScheduleInline,
-               InstrumentFactorScheduleInline]
+               InstrumentFactorScheduleInline, EventScheduleInline]
 
 
 admin.site.register(Instrument, InstrumentAdmin)

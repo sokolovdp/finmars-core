@@ -123,7 +123,6 @@ class AttributeTypeBase(NamedModel):
 
 @python_2_unicode_compatible
 class AttributeTypeOptionBase(models.Model):
-    order = models.IntegerField(default=0)
     is_hidden = models.BooleanField(default=False)
 
     class Meta:
@@ -144,6 +143,9 @@ class AttributeBase(models.Model):
 
     class Meta:
         abstract = True
+        unique_together = [
+            ['content_object', 'attribute_type']
+        ]
 
     def __str__(self):
         return '%s' % self.get_value()
@@ -170,3 +172,5 @@ class AttributeBase(models.Model):
             self.value_date = value
         elif t == AttributeTypeBase.CLASSIFIER:
             self.classifier = value
+
+    value = property(get_value, set_value)

@@ -120,7 +120,7 @@ class PortfolioAttribute(AttributeBase):
     content_object = models.ForeignKey(Portfolio)
     classifier = models.ForeignKey(PortfolioClassifier, null=True, blank=True)
 
-    class Meta:
+    class Meta(AttributeBase.Meta):
         verbose_name = _('portfolio attribute')
         verbose_name_plural = _('portfolio attributes')
 

@@ -158,10 +158,10 @@ class AccountAttributeTypeGroupObjectPermission(GroupObjectPermissionBase):
 
 class AccountAttribute(AttributeBase):
     attribute_type = models.ForeignKey(AccountAttributeType, related_name='attributes')
-    content_object = models.ForeignKey(Account)
+    content_object = models.ForeignKey(Account, related_name='attributes')
     classifier = models.ForeignKey(AccountClassifier, null=True, blank=True)
 
-    class Meta:
+    class Meta(AttributeBase.Meta):
         verbose_name = _('account attribute')
         verbose_name_plural = _('account attributes')
 

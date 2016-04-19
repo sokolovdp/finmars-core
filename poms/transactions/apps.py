@@ -14,22 +14,13 @@ class TransactionsConfig(AppConfig):
         post_migrate.connect(self.update_transaction_classes)
 
     def update_transaction_classes(self, app_config, verbosity=2, using=DEFAULT_DB_ALIAS, **kwargs):
-        from .models import TransactionClass, ActionClass
+        from poms.common.utils import db_class_check_data
+        from .models import TransactionClass, ActionClass, NotificationClass, EventClass
 
         if not isinstance(app_config, TransactionsConfig):
             return
 
-        self.create_data(TransactionClass, verbosity, using)
-        self.create_data(ActionClass, verbosity, using)
-
-    def create_data(self, model, verbosity, using):
-        exists = set(model.objects.using(using).values_list('pk', flat=True))
-
-        if verbosity >= 2:
-            print('existed transaction classes -> %s' % exists)
-
-        for id, name in model.CLASSES:
-            if id not in exists:
-                if verbosity >= 2:
-                    print('create %s class -> %s:%s' % (model._meta.verbose_name, id, name))
-                model.objects.using(using).create(pk=id, system_code=name, name=name, description=name)
+        db_class_check_data(TransactionClass, verbosity, using)
+        db_class_check_data(ActionClass, verbosity, using)
+        db_class_check_data(NotificationClass, verbosity, using)
+        db_class_check_data(EventClass, verbosity, using)

@@ -16,36 +16,14 @@ class InstrumentsConfig(AppConfig):
         pass
 
     def update_transaction_classes(self, app_config, verbosity=2, using=DEFAULT_DB_ALIAS, **kwargs):
+        from poms.common.utils import db_class_check_data
         from .models import InstrumentClass, DailyPricingModel, AccrualCalculationModel, PaymentPeriod, CostMethod
 
         if not isinstance(app_config, InstrumentsConfig):
             return
 
-        self.create_data(InstrumentClass, verbosity, using)
-        self.create_data(DailyPricingModel, verbosity, using)
-        self.create_data(AccrualCalculationModel, verbosity, using)
-        self.create_data(PaymentPeriod, verbosity, using)
-        self.create_data(CostMethod, verbosity, using)
-
-        # exists = set(InstrumentClass.objects.using(using).values_list('pk', flat=True))
-        #
-        # if verbosity >= 2:
-        #     print('existed transaction classes -> %s' % exists)
-        #
-        # for id, name in InstrumentClass.CLASSES:
-        #     if id not in exists:
-        #         if verbosity >= 2:
-        #             print('create instrument class -> %s:%s' % (id, name))
-        #         InstrumentClass.objects.using(using).create(pk=id, system_code=name, name=name, description=name)
-
-    def create_data(self, model, verbosity, using):
-        exists = set(model.objects.using(using).values_list('pk', flat=True))
-
-        if verbosity >= 2:
-            print('existed transaction classes -> %s' % exists)
-
-        for id, name in model.CLASSES:
-            if id not in exists:
-                if verbosity >= 2:
-                    print('create %s class -> %s:%s' % (model._meta.verbose_name, id, name))
-                model.objects.using(using).create(pk=id, system_code=name, name=name, description=name)
+        db_class_check_data(InstrumentClass, verbosity, using)
+        db_class_check_data(DailyPricingModel, verbosity, using)
+        db_class_check_data(AccrualCalculationModel, verbosity, using)
+        db_class_check_data(PaymentPeriod, verbosity, using)
+        db_class_check_data(CostMethod, verbosity, using)

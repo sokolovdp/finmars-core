@@ -2,8 +2,11 @@ from __future__ import unicode_literals
 
 from rest_framework import serializers
 
-from poms.accounts.fields import AccountClassifierField
-from poms.accounts.models import Account, AccountType, AccountClassifier
+from poms.accounts.fields import AccountClassifierField, AccountClassifierRootField, AttributeTypeField
+from poms.accounts.models import Account, AccountType, AccountClassifier, AccountAttributeType, AccountAttribute
+from poms.obj_attrs.serializers import AttributeTypeSerializerBase, AttributeSerializerBase, \
+    ModelWithAttributesSerializer
+from poms.obj_perms.fields import GrantedPermissionField
 from poms.users.fields import MasterUserField
 
 
@@ -29,12 +32,31 @@ class AccountClassifierSerializer(serializers.ModelSerializer):
                   'parent', 'children', 'tree_id', 'level']
 
 
-class AccountSerializer(serializers.ModelSerializer):
+class AccountAttributeTypeSerializer(AttributeTypeSerializerBase):
+    url = serializers.HyperlinkedIdentityField(view_name='accountattributetype-detail')
+    classifier_root = AccountClassifierRootField()
+
+    class Meta(AttributeTypeSerializerBase.Meta):
+        model = AccountAttributeType
+        fields = AttributeTypeSerializerBase.Meta.fields + ['classifier_root']
+
+
+class AccountAttributeSerializer(AttributeSerializerBase):
+    attribute_type = AttributeTypeField()
+    classifier = AccountClassifierField(required=False, allow_null=True)
+
+    class Meta(AttributeSerializerBase.Meta):
+        model = AccountAttribute
+        fields = AttributeSerializerBase.Meta.fields + ['attribute_type', 'classifier']
+
+
+class AccountSerializer(ModelWithAttributesSerializer):
     url = serializers.HyperlinkedIdentityField(view_name='account-detail')
     master_user = MasterUserField()
-    classifiers = AccountClassifierField(many=True, read_only=False)
+    attributes = AccountAttributeSerializer(many=True)
+    granted_permissions = GrantedPermissionField()
 
     class Meta:
         model = Account
-        fields = ['url', 'id', 'master_user', 'user_code', 'name', 'short_name', 'type', 'classifiers', 'notes',
-                  'granted_permissions']
+        fields = ['url', 'id', 'master_user', 'user_code', 'name', 'short_name', 'type', 'notes',
+                  'attributes', 'granted_permissions']

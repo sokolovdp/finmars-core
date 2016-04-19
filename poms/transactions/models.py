@@ -197,17 +197,8 @@ class TransactionTypeItem(models.Model):
         return 'item #%s' % self.id
 
 
-class EventSchedule(NamedModel):
-    transaction_type = models.ForeignKey(TransactionType)
-    event_class = models.ForeignKey(EventClass)
-
-    notification_class = models.ForeignKey(NotificationClass)
-    notification_date = models.DateField(null=True, blank=True)
-
-    effective_date = models.DateField(null=True, blank=True)
-
-
 class EventToHandle(NamedModel):
+    master_user = models.ForeignKey(MasterUser, related_name='events_to_handle')
     transaction_type = models.ForeignKey(TransactionType)
     notification_date = models.DateField(null=True, blank=True)
     effective_date = models.DateField(null=True, blank=True)
@@ -216,6 +207,7 @@ class EventToHandle(NamedModel):
 @python_2_unicode_compatible
 class Transaction(models.Model):
     master_user = models.ForeignKey(MasterUser, related_name='transactions', verbose_name=_('master user'))
+    transaction_code = models.IntegerField(default=0)
     transaction_class = models.ForeignKey(TransactionClass, verbose_name="class")
 
     portfolio = models.ForeignKey(Portfolio, verbose_name="portfolio")
@@ -266,18 +258,18 @@ class Transaction(models.Model):
                                   help_text=_('Absolute value of Carry with Sign (for calculations on the form)'))
 
     # information
-    notes_front_office = models.TextField(null=True, blank=True,
-                                          help_text=_('Notes front office'))
-    notes_middle_office = models.TextField(null=True, blank=True,
-                                           help_text=_('Notes middle office'))
+    # notes_front_office = models.TextField(null=True, blank=True,
+    #                                       help_text=_('Notes front office'))
+    # notes_middle_office = models.TextField(null=True, blank=True,
+    #                                        help_text=_('Notes middle office'))
     responsible = models.ForeignKey(Responsible, null=True, blank=True,
                                     help_text=_("Trader or transaction executer"))
-    responsible_text = models.CharField(max_length=50, null=True, blank=True,
-                                        help_text=_("Text for non-frequent responsible"))
+    # responsible_text = models.CharField(max_length=50, null=True, blank=True,
+    #                                     help_text=_("Text for non-frequent responsible"))
     counterparty = models.ForeignKey(Counterparty, null=True, blank=True,
                                      help_text=_('Transaction counterparty'))
-    counterparty_text = models.CharField(max_length=50, null=True, blank=True,
-                                         help_text=_('Text for non-frequent counterparty'))
+    # counterparty_text = models.CharField(max_length=50, null=True, blank=True,
+    #                                      help_text=_('Text for non-frequent counterparty'))
 
     # strategy_position = TreeForeignKey(Strategy, null=True, blank=True, related_name='+',
     #                                    verbose_name='temporary strategy position')
@@ -357,7 +349,7 @@ class TransactionAttribute(AttributeBase):
     strategy_position = models.ForeignKey(Strategy, null=True, blank=True, related_name='+')
     strategy_cash = models.ForeignKey(Strategy, null=True, blank=True, related_name='+')
 
-    class Meta:
+    class Meta(AttributeBase.Meta):
         verbose_name = _('transaction attribute')
         verbose_name_plural = _('transaction attributes')
 
@@ -377,7 +369,7 @@ class TransactionAttribute(AttributeBase):
 
 
 @python_2_unicode_compatible
-class CashFlow(models.Model):
+class ExternalCashFlow(models.Model):
     date = models.DateField(default=timezone.now)
     portfolio = models.ForeignKey(Portfolio)
     account = models.ForeignKey(Account)
@@ -390,13 +382,13 @@ class CashFlow(models.Model):
 
 
 @python_2_unicode_compatible
-class CashFlowStrategy(models.Model):
-    cash_flow = models.ForeignKey(CashFlow, related_name='strategies')
-    order = models.IntegerField(default=0.)
+class ExternalCashFlowStrategy(models.Model):
+    external_cash_flow = models.ForeignKey(ExternalCashFlow, related_name='strategies')
+    order = models.IntegerField(default=0)
     strategy = models.ForeignKey(Strategy)
 
     class Meta:
-        ordering = ['cash_flow', 'order']
+        ordering = ['external_cash_flow', 'order']
 
     def __str__(self):
         return '%s' % self.strategy

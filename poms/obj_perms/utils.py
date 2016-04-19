@@ -1,7 +1,6 @@
 from django.contrib.auth.models import Permission
-from django.contrib.contenttypes.fields import GenericRelation
 from django.contrib.contenttypes.models import ContentType
-from django.db.models import Q, Prefetch
+from django.db.models import Q
 
 
 # def register_model(model):
@@ -168,7 +167,7 @@ def get_granted_permissions(member, obj):
     return obj_perms
 
 
-def assign_perms_to_new_obj(obj, owner, owner_perms, members, groups, perms):
+def assign_perms_to_new_obj(obj, owner, owner_perms, members=None, groups=None, perms=None):
     ctype = ContentType.objects.get_for_model(obj)
     permissions = list(Permission.objects.filter(content_type=ctype))
 
@@ -212,6 +211,37 @@ def assign_perms_to_new_obj(obj, owner, owner_perms, members, groups, perms):
     if group_perms:
         group_obj_perms_model.objects.bulk_create(group_perms)
 
+
+def assign_perms(obj, members=None, groups=None, perms=None):
+    ctype = ContentType.objects.get_for_model(obj)
+    permissions = list(Permission.objects.filter(content_type=ctype))
+
+    user_lookup_name, user_obj_perms_model = get_user_obj_perms_model(obj)
+    group_lookup_name, group_obj_perms_model = get_group_obj_perms_model(obj)
+
+    if members:
+        user_perms = []
+        user_obj_perms_model.objects.filter(content_object=obj, member__in=members).delete()
+        for m in members:
+            for p in permissions:
+                if p.codename in perms:
+                    user_perms.append(
+                        user_obj_perms_model(content_object=obj, member=m, permission=p)
+                    )
+        if user_perms:
+            user_obj_perms_model.objects.bulk_create(user_perms)
+
+    if groups:
+        group_perms = []
+        group_obj_perms_model.objects.filter(content_object=obj, group__in=groups).delete()
+        for g in groups:
+            for p in permissions:
+                if p.codename in perms:
+                    group_perms.append(
+                        group_obj_perms_model(content_object=obj, group=g, permission=p)
+                    )
+        if group_perms:
+            group_obj_perms_model.objects.bulk_create(group_perms)
 
 # def obj_perms_filter_objects(member, perms, queryset, model_cls=None):
 #     from poms.obj_perms.models import UserObjectPermission, GroupObjectPermission

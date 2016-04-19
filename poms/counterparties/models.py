@@ -119,7 +119,7 @@ class CounterpartyAttribute(AttributeBase):
     content_object = models.ForeignKey(Counterparty)
     classifier = models.ForeignKey(CounterpartyClassifier, null=True, blank=True)
 
-    class Meta:
+    class Meta(AttributeBase.Meta):
         verbose_name = _('counterparty attribute')
         verbose_name_plural = _('counterparty attributes')
 
@@ -230,7 +230,7 @@ class ResponsibleAttribute(AttributeBase):
     content_object = models.ForeignKey(Responsible)
     classifier = models.ForeignKey(ResponsibleClassifier, null=True, blank=True)
 
-    class Meta:
+    class Meta(AttributeBase.Meta):
         verbose_name = _('responsible attribute')
         verbose_name_plural = _('responsible attributes')
 

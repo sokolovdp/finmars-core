@@ -9,11 +9,13 @@ from poms.obj_perms.admin import UserObjectPermissionAdmin, GroupObjectPermissio
 from poms.transactions.models import TransactionClass, Transaction, TransactionType, TransactionTypeInput, \
     TransactionTypeItem, TransactionTypeUserObjectPermission, TransactionTypeGroupObjectPermission, \
     TransactionAttributeType, TransactionAttributeTypeOption, TransactionAttributeTypeUserObjectPermission, \
-    TransactionAttributeTypeGroupObjectPermission, TransactionAttribute, ActionClass, EventToHandle, EventSchedule, \
-    CashFlow, CashFlowStrategy
+    TransactionAttributeTypeGroupObjectPermission, TransactionAttribute, ActionClass, EventToHandle, \
+    ExternalCashFlow, ExternalCashFlowStrategy, NotificationClass, EventClass
 
 admin.site.register(TransactionClass, ClassModelAdmin)
 admin.site.register(ActionClass, ClassModelAdmin)
+admin.site.register(EventClass, ClassModelAdmin)
+admin.site.register(NotificationClass, ClassModelAdmin)
 
 
 class TransactionTypeInputInline(admin.StackedInline):
@@ -40,24 +42,13 @@ class TransactionTypeItemInline(admin.StackedInline):
     )
 
 
-class EventScheduleInline(admin.StackedInline):
-    model = EventSchedule
-    extra = 0
-
-
-class EventToHandleInline(admin.StackedInline):
-    model = EventToHandle
-    extra = 0
-
-
 class TransactionTypeAdmin(HistoricalAdmin):
     model = TransactionType
     list_display = ['id', 'name', 'master_user']
     list_select_related = ['master_user']
     raw_id_fields = ['master_user']
     filter_horizontal = ['instrument_types']
-    inlines = [TransactionTypeInputInline, TransactionTypeItemInline,
-               EventScheduleInline, EventToHandleInline]
+    inlines = [TransactionTypeInputInline, TransactionTypeItemInline]
 
     def get_inline_instances(self, request, obj=None):
         if obj:
@@ -111,16 +102,25 @@ admin.site.register(TransactionAttributeTypeUserObjectPermission, UserObjectPerm
 admin.site.register(TransactionAttributeTypeGroupObjectPermission, GroupObjectPermissionAdmin)
 
 
-class CashFlowStrategyInline(admin.TabularInline):
-    model = CashFlowStrategy
+class ExternalCashFlowStrategyInline(admin.TabularInline):
+    model = ExternalCashFlowStrategy
     raw_id_fields = ['strategy']
     extra = 0
 
 
-class CashFlowAdmin(admin.ModelAdmin):
-    model = CashFlow
-    inlines = [CashFlowStrategyInline]
+class ExternalCashFlowAdmin(admin.ModelAdmin):
+    model = ExternalCashFlow
+    inlines = [ExternalCashFlowStrategyInline]
     raw_id_fields = ['portfolio', 'account', 'currency']
 
 
-admin.site.register(CashFlow, CashFlowAdmin)
+admin.site.register(ExternalCashFlow, ExternalCashFlowAdmin)
+
+
+class EventToHandleAdmin(HistoricalAdmin):
+    model = EventToHandle
+    list_display = ['id', 'master_user', 'name', 'transaction_type']
+    raw_id_fields = ['master_user', 'transaction_type']
+
+
+admin.site.register(EventToHandle, HistoricalAdmin)

@@ -43,8 +43,7 @@ class TransactionSerializer(serializers.ModelSerializer):
                   'accounting_date', 'cash_date', 'transaction_date',
                   'account_cash', 'account_position', 'account_interim',
                   'reference_fx_rate',
-                  'is_locked', 'is_canceled', 'factor', 'trade_price',
+                  'is_locked', 'is_canceled',
+                  'factor', 'trade_price',
                   'principal_amount', 'carry_amount', 'overheads',
-                  'notes_front_office', 'notes_middle_office',
-                  'responsible', 'responsible_text',
-                  'counterparty', 'counterparty_text']
+                  'responsible', 'counterparty']

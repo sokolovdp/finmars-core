@@ -331,7 +331,7 @@ class InstrumentAttribute(AttributeBase):
     content_object = models.ForeignKey(Instrument)
     classifier = models.ForeignKey(InstrumentClassifier, null=True, blank=True)
 
-    class Meta:
+    class Meta(AttributeBase.Meta):
         verbose_name = _('instrument attribute')
         verbose_name_plural = _('instrument attributes')
 
@@ -384,9 +384,9 @@ class PriceHistory(models.Model):
 
 class AccrualCalculationSchedule(models.Model):
     instrument = models.ForeignKey(Instrument, related_name='accrual_calculation_schedules')
-    new_accrual_start_date = models.DateField(default=timezone.now)
-    new_first_payment_date = models.DateField(default=timezone.now)
-    new_accrual_size = models.FloatField(default=0.)
+    accrual_start_date = models.DateField(default=timezone.now)
+    first_payment_date = models.DateField(default=timezone.now)
+    accrual_size = models.FloatField(default=0.)
     accrual_calculation_model = models.ForeignKey(AccrualCalculationModel)
     payment_period = models.ForeignKey(PaymentPeriod, null=True, blank=True)
     notes = models.TextField(null=True, blank=True, verbose_name=_('notes'))
@@ -396,6 +396,17 @@ class InstrumentFactorSchedule(models.Model):
     instrument = models.ForeignKey(Instrument, related_name='factor_schedules')
     effective_date = models.DateField(default=timezone.now)
     factor_value = models.FloatField(default=0.)
+
+
+class EventSchedule(NamedModel):
+    instrument = models.ForeignKey(Instrument)
+    transaction_types = models.ManyToManyField('transactions.TransactionType', blank=True)
+    event_class = models.ForeignKey('transactions.EventClass')
+
+    notification_class = models.ForeignKey('transactions.NotificationClass')
+    notification_date = models.DateField(null=True, blank=True)
+
+    effective_date = models.DateField(null=True, blank=True)
 
 
 history.register(InstrumentClassifier)

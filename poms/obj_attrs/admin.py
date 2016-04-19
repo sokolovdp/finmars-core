@@ -99,8 +99,8 @@ class AttributeTypeAdminBase(HistoricalAdmin):
 
 class AttributeTypeOptionInlineBase(HistoricalAdmin):
     extra = 0
-    list_display = ['id', 'member', 'attribute_type', 'order', 'is_hidden']
-    fields = ['member', 'order', 'is_hidden']
+    list_display = ['id', 'member', 'attribute_type', 'is_hidden']
+    fields = ['member', 'attribute_type', 'is_hidden']
     raw_id_fields = ['member']
 
 
