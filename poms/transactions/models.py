@@ -116,8 +116,8 @@ class PeriodicityGroup(ClassModelBase):
 class TransactionType(NamedModel):
     master_user = models.ForeignKey(MasterUser, related_name='transaction_types', verbose_name=_('master user'))
 
-    instrument_types = models.ManyToManyField('instruments.InstrumentType', blank=True,
-                                              related_name='transaction_types')
+    instrument_types = models.ManyToManyField('instruments.InstrumentType', related_name='transaction_types',
+                                              blank=True)
 
     class Meta:
         verbose_name = _('transaction type')
@@ -192,30 +192,30 @@ class TransactionTypeInput(models.Model):
 
 @python_2_unicode_compatible
 class TransactionTypeItem(models.Model):
-    transaction_type = models.ForeignKey(TransactionType, related_name='items')
+    transaction_type = models.ForeignKey(TransactionType, related_name='items', on_delete=models.PROTECT)
     order = models.IntegerField(default=0)
 
-    transaction_class = models.ForeignKey(TransactionClass, related_name='+')
+    transaction_class = models.ForeignKey(TransactionClass, related_name='+', on_delete=models.PROTECT)
 
-    instrument = models.ForeignKey(Instrument, null=True, blank=True, related_name='+')
-    transaction_currency = models.ForeignKey(Currency, null=True, blank=True, related_name='+')
+    instrument = models.ForeignKey(Instrument, related_name='+', on_delete=models.PROTECT, null=True, blank=True)
+    transaction_currency = models.ForeignKey(Currency, related_name='+', on_delete=models.PROTECT, null=True, blank=True)
     position_size_with_sign = models.FloatField(null=True, blank=True)
-    settlement_currency = models.ForeignKey(Currency, null=True, blank=True, related_name='+')
+    settlement_currency = models.ForeignKey(Currency, related_name='+', on_delete=models.PROTECT, null=True, blank=True)
     cash_consideration = models.FloatField(null=True, blank=True)
-    account_position = models.ForeignKey(Account, null=True, blank=True, related_name='+')
-    account_cash = models.ForeignKey(Account, null=True, blank=True, related_name='+')
-    account_interim = models.ForeignKey(Account, null=True, blank=True, related_name='+')
+    account_position = models.ForeignKey(Account, related_name='+', on_delete=models.PROTECT, null=True, blank=True)
+    account_cash = models.ForeignKey(Account, related_name='+', on_delete=models.PROTECT, null=True, blank=True)
+    account_interim = models.ForeignKey(Account, related_name='+', on_delete=models.PROTECT, blank=True, null=True)
     accounting_date = models.DateField(null=True, blank=True)
     cash_date = models.DateField(null=True, blank=True)
 
-    instrument_input = models.ForeignKey(TransactionTypeInput, null=True, blank=True, related_name='+')
-    transaction_currency_input = models.ForeignKey(TransactionTypeInput, null=True, blank=True, related_name='+')
+    instrument_input = models.ForeignKey(TransactionTypeInput, related_name='+', on_delete=models.PROTECT, null=True, blank=True)
+    transaction_currency_input = models.ForeignKey(TransactionTypeInput, related_name='+', on_delete=models.PROTECT, null=True, blank=True)
     position_size_with_sign_expr = models.CharField(max_length=255, blank=True, default='')
-    settlement_currency_input = models.ForeignKey(TransactionTypeInput, null=True, blank=True, related_name='+')
+    settlement_currency_input = models.ForeignKey(TransactionTypeInput, related_name='+', on_delete=models.PROTECT, null=True, blank=True)
     cash_consideration_expr = models.CharField(max_length=255, blank=True, default='')
-    account_position_input = models.ForeignKey(TransactionTypeInput, null=True, blank=True, related_name='+')
-    account_cash_input = models.ForeignKey(TransactionTypeInput, null=True, blank=True, related_name='+')
-    account_interim_input = models.ForeignKey(TransactionTypeInput, null=True, blank=True, related_name='+')
+    account_position_input = models.ForeignKey(TransactionTypeInput, related_name='+', on_delete=models.PROTECT, null=True, blank=True)
+    account_cash_input = models.ForeignKey(TransactionTypeInput, related_name='+', on_delete=models.PROTECT, null=True, blank=True)
+    account_interim_input = models.ForeignKey(TransactionTypeInput, related_name='+', on_delete=models.PROTECT, null=True, blank=True)
     accounting_date_expr = models.CharField(max_length=255, blank=True, default='')
     cash_date_expr = models.CharField(max_length=255, blank=True, default='')
 
@@ -234,7 +234,7 @@ class TransactionTypeItem(models.Model):
 
 class EventToHandle(NamedModel):
     master_user = models.ForeignKey(MasterUser, related_name='events_to_handle')
-    transaction_type = models.ForeignKey(TransactionType)
+    transaction_type = models.ForeignKey(TransactionType, on_delete=models.PROTECT)
     notification_date = models.DateField(null=True, blank=True)
     effective_date = models.DateField(null=True, blank=True)
 
@@ -243,17 +243,17 @@ class EventToHandle(NamedModel):
 class Transaction(models.Model):
     master_user = models.ForeignKey(MasterUser, related_name='transactions', verbose_name=_('master user'))
     transaction_code = models.IntegerField(default=0)
-    transaction_class = models.ForeignKey(TransactionClass, verbose_name="class")
+    transaction_class = models.ForeignKey(TransactionClass, on_delete=models.PROTECT, verbose_name=_("transaction class"))
 
-    portfolio = models.ForeignKey(Portfolio, verbose_name="portfolio")
+    portfolio = models.ForeignKey(Portfolio, on_delete=models.PROTECT, verbose_name=_("portfolio"))
 
     # Position related
-    instrument = models.ForeignKey(Instrument, null=True, blank=True)
-    transaction_currency = models.ForeignKey(Currency, null=True, blank=True, related_name='transactions_as_instrument')
+    instrument = models.ForeignKey(Instrument, on_delete=models.PROTECT, null=True, blank=True)
+    transaction_currency = models.ForeignKey(Currency, related_name='transactions_as_instrument', on_delete=models.PROTECT, null=True, blank=True)
     position_size_with_sign = models.FloatField(null=True, blank=True)
 
     # Cash related
-    settlement_currency = models.ForeignKey(Currency, related_name='transactions')
+    settlement_currency = models.ForeignKey(Currency, related_name='transactions', on_delete=models.PROTECT)
     cash_consideration = models.FloatField(null=True, blank=True)
 
     # P&L related
@@ -267,9 +267,9 @@ class Transaction(models.Model):
     accounting_date = models.DateField(default=timezone.now)
     cash_date = models.DateField(default=timezone.now)
 
-    account_position = models.ForeignKey(Account, null=True, blank=True, related_name='account_positions')
-    account_cash = models.ForeignKey(Account, null=True, blank=True, related_name='transaction_cashs')
-    account_interim = models.ForeignKey(Account, null=True, blank=True, related_name='account_interims')
+    account_position = models.ForeignKey(Account, related_name='account_positions', on_delete=models.PROTECT, null=True, blank=True)
+    account_cash = models.ForeignKey(Account, related_name='transaction_cashs', on_delete=models.PROTECT, null=True, blank=True)
+    account_interim = models.ForeignKey(Account, related_name='account_interims', on_delete=models.PROTECT, null=True, blank=True)
 
     reference_fx_rate = models.FloatField(null=True, blank=True,
                                           help_text=_("FX rate to convert from Settlement ccy to Instrument "
@@ -297,12 +297,13 @@ class Transaction(models.Model):
     #                                       help_text=_('Notes front office'))
     # notes_middle_office = models.TextField(null=True, blank=True,
     #                                        help_text=_('Notes middle office'))
-    responsible = models.ForeignKey(Responsible, null=True, blank=True,
+    responsible = models.ForeignKey(Responsible, on_delete=models.PROTECT, null=True, blank=True,
                                     help_text=_("Trader or transaction executer"))
     # responsible_text = models.CharField(max_length=50, null=True, blank=True,
     #                                     help_text=_("Text for non-frequent responsible"))
-    counterparty = models.ForeignKey(Counterparty, null=True, blank=True,
+    counterparty = models.ForeignKey(Counterparty, on_delete=models.PROTECT, null=True, blank=True,
                                      help_text=_('Transaction counterparty'))
+
     # counterparty_text = models.CharField(max_length=50, null=True, blank=True,
     #                                      help_text=_('Text for non-frequent counterparty'))
 
@@ -345,8 +346,8 @@ class Transaction(models.Model):
 
 
 class TransactionAttributeType(AttributeTypeBase):
-    strategy_position_root = models.ForeignKey(Strategy, null=True, blank=True, related_name='+')
-    strategy_cash_root = models.ForeignKey(Strategy, null=True, blank=True, related_name='+')
+    strategy_position_root = models.ForeignKey(Strategy, related_name='+', on_delete=models.PROTECT, null=True, blank=True)
+    strategy_cash_root = models.ForeignKey(Strategy, related_name='+', on_delete=models.PROTECT, null=True, blank=True)
 
     class Meta:
         verbose_name = _('transaction attribute type')
@@ -379,10 +380,10 @@ class TransactionAttributeTypeGroupObjectPermission(GroupObjectPermissionBase):
 
 
 class TransactionAttribute(AttributeBase):
-    attribute_type = models.ForeignKey(TransactionAttributeType, related_name='attributes')
+    attribute_type = models.ForeignKey(TransactionAttributeType, related_name='attributes', on_delete=models.PROTECT)
     content_object = models.ForeignKey(Transaction)
-    strategy_position = models.ForeignKey(Strategy, null=True, blank=True, related_name='+')
-    strategy_cash = models.ForeignKey(Strategy, null=True, blank=True, related_name='+')
+    strategy_position = models.ForeignKey(Strategy, related_name='+', on_delete=models.PROTECT, null=True, blank=True)
+    strategy_cash = models.ForeignKey(Strategy, related_name='+', on_delete=models.PROTECT, null=True, blank=True)
 
     class Meta(AttributeBase.Meta):
         verbose_name = _('transaction attribute')
@@ -406,9 +407,9 @@ class TransactionAttribute(AttributeBase):
 @python_2_unicode_compatible
 class ExternalCashFlow(models.Model):
     date = models.DateField(default=timezone.now)
-    portfolio = models.ForeignKey(Portfolio)
-    account = models.ForeignKey(Account)
-    currency = models.ForeignKey(Currency)
+    portfolio = models.ForeignKey(Portfolio, on_delete=models.PROTECT)
+    account = models.ForeignKey(Account, on_delete=models.PROTECT)
+    currency = models.ForeignKey(Currency, on_delete=models.PROTECT)
     amount = models.FloatField(default=0.)
 
     def __str__(self):
@@ -420,7 +421,7 @@ class ExternalCashFlow(models.Model):
 class ExternalCashFlowStrategy(models.Model):
     external_cash_flow = models.ForeignKey(ExternalCashFlow, related_name='strategies')
     order = models.IntegerField(default=0)
-    strategy = models.ForeignKey(Strategy)
+    strategy = models.ForeignKey(Strategy, on_delete=models.PROTECT)
 
     class Meta:
         ordering = ['external_cash_flow', 'order']

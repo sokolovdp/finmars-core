@@ -83,7 +83,7 @@ class PortfolioGroupObjectPermission(GroupObjectPermissionBase):
 
 
 class PortfolioAttributeType(AttributeTypeBase):
-    classifier_root = models.ForeignKey(PortfolioClassifier, null=True, blank=True)
+    classifier_root = models.ForeignKey(PortfolioClassifier, on_delete=models.PROTECT, null=True, blank=True)
 
     class Meta:
         verbose_name = _('portfolio attribute type')
@@ -116,9 +116,9 @@ class PortfolioAttributeTypeGroupObjectPermission(GroupObjectPermissionBase):
 
 
 class PortfolioAttribute(AttributeBase):
-    attribute_type = models.ForeignKey(PortfolioAttributeType, related_name='attributes')
+    attribute_type = models.ForeignKey(PortfolioAttributeType, related_name='attributes', on_delete=models.PROTECT)
     content_object = models.ForeignKey(Portfolio)
-    classifier = models.ForeignKey(PortfolioClassifier, null=True, blank=True)
+    classifier = models.ForeignKey(PortfolioClassifier, on_delete=models.PROTECT, null=True, blank=True)
 
     class Meta(AttributeBase.Meta):
         verbose_name = _('portfolio attribute')

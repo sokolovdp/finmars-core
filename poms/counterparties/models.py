@@ -79,7 +79,7 @@ class CounterpartyGroupObjectPermission(GroupObjectPermissionBase):
 
 
 class CounterpartyAttributeType(AttributeTypeBase):
-    classifier_root = models.ForeignKey(CounterpartyClassifier, null=True, blank=True)
+    classifier_root = models.ForeignKey(CounterpartyClassifier, on_delete=models.PROTECT, null=True, blank=True)
 
     class Meta:
         verbose_name = _('counterparty attribute type')
@@ -115,9 +115,9 @@ class CounterpartyAttributeTypeOption(AttributeTypeOptionBase):
 
 
 class CounterpartyAttribute(AttributeBase):
-    attribute_type = models.ForeignKey(CounterpartyAttributeType, related_name='attributes')
+    attribute_type = models.ForeignKey(CounterpartyAttributeType, related_name='attributes', on_delete=models.PROTECT)
     content_object = models.ForeignKey(Counterparty)
-    classifier = models.ForeignKey(CounterpartyClassifier, null=True, blank=True)
+    classifier = models.ForeignKey(CounterpartyClassifier, on_delete=models.PROTECT, null=True, blank=True)
 
     class Meta(AttributeBase.Meta):
         verbose_name = _('counterparty attribute')
@@ -190,7 +190,7 @@ class ResponsibleGroupObjectPermission(GroupObjectPermissionBase):
 
 
 class ResponsibleAttributeType(AttributeTypeBase):
-    classifier_root = models.ForeignKey(ResponsibleClassifier, null=True, blank=True)
+    classifier_root = models.ForeignKey(ResponsibleClassifier, on_delete=models.PROTECT, null=True, blank=True)
 
     class Meta:
         verbose_name = _('responsible attribute type')
@@ -226,9 +226,9 @@ class ResponsibleAttributeTypeOption(AttributeTypeOptionBase):
 
 
 class ResponsibleAttribute(AttributeBase):
-    attribute_type = models.ForeignKey(ResponsibleAttributeType, related_name='attributes')
+    attribute_type = models.ForeignKey(ResponsibleAttributeType, related_name='attributes', on_delete=models.PROTECT)
     content_object = models.ForeignKey(Responsible)
-    classifier = models.ForeignKey(ResponsibleClassifier, null=True, blank=True)
+    classifier = models.ForeignKey(ResponsibleClassifier, on_delete=models.PROTECT, null=True, blank=True)
 
     class Meta(AttributeBase.Meta):
         verbose_name = _('responsible attribute')

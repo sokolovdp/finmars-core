@@ -91,7 +91,7 @@ class AccountClassifierGroupObjectPermission(GroupObjectPermissionBase):
 @python_2_unicode_compatible
 class Account(NamedModel):
     master_user = models.ForeignKey(MasterUser, related_name='accounts', verbose_name=_('master user'))
-    type = models.ForeignKey(AccountType, null=True, blank=True)
+    type = models.ForeignKey(AccountType, on_delete=models.PROTECT, null=True, blank=True)
 
     class Meta:
         verbose_name = _('account')
@@ -124,7 +124,7 @@ class AccountGroupObjectPermission(GroupObjectPermissionBase):
 
 
 class AccountAttributeType(AttributeTypeBase):
-    classifier_root = models.ForeignKey(AccountClassifier, null=True, blank=True)
+    classifier_root = models.ForeignKey(AccountClassifier, on_delete=models.PROTECT, null=True, blank=True)
 
     class Meta:
         verbose_name = _('account attribute type')
@@ -157,9 +157,9 @@ class AccountAttributeTypeGroupObjectPermission(GroupObjectPermissionBase):
 
 
 class AccountAttribute(AttributeBase):
-    attribute_type = models.ForeignKey(AccountAttributeType, related_name='attributes')
+    attribute_type = models.ForeignKey(AccountAttributeType, on_delete=models.PROTECT, related_name='attributes')
     content_object = models.ForeignKey(Account, related_name='attributes')
-    classifier = models.ForeignKey(AccountClassifier, null=True, blank=True)
+    classifier = models.ForeignKey(AccountClassifier, on_delete=models.PROTECT, null=True, blank=True)
 
     class Meta(AttributeBase.Meta):
         verbose_name = _('account attribute')

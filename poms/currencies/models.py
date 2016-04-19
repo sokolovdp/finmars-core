@@ -61,7 +61,7 @@ class CurrencyGroupObjectPermission(GroupObjectPermissionBase):
 @python_2_unicode_compatible
 class CurrencyHistory(models.Model):
     currency = models.ForeignKey(Currency, related_name='histories')
-    pricing_policy = models.ForeignKey('integrations.PricingPolicy', null=True, blank=True)
+    pricing_policy = models.ForeignKey('integrations.PricingPolicy', null=True, blank=True, on_delete=models.PROTECT)
     # date = models.DateTimeField(db_index=True, default=timezone.now)
     date = models.DateField(db_index=True, default=timezone.now)
     fx_rate = models.FloatField(default=0., verbose_name=_('fx rate'))
