@@ -144,12 +144,12 @@ class PeriodicityPeriod(ClassModelBase):
     YEAR = 5
     YEAR_DAY = 6
     CLASSES = (
-        (DAY, _("Days")),
-        (WEEK, _("Weeks (eobw)")),
-        (MONTH, _("Months (eom)")),
-        (MONTH_DAY, _("Months (same date)")),
-        (YEAR, _("Years (eoy)")),
-        (YEAR_DAY, _("Years (same date)")),
+        (DAY, _("N Days")),
+        (WEEK, _("N Weeks (eobw)")),
+        (MONTH, _("N Months (eom)")),
+        (MONTH_DAY, _("N Months (same date)")),
+        (YEAR, _("N Years (eoy)")),
+        (YEAR_DAY, _("N Years (same date)")),
     )
 
     class Meta:
