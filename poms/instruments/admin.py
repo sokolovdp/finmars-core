@@ -74,8 +74,7 @@ class InstrumentAdmin(HistoricalAdmin):
     model = Instrument
     list_display = ['id', 'name', 'master_user', 'type', 'pricing_currency', 'accrued_currency']
     list_select_related = ['master_user', 'type', 'pricing_currency', 'accrued_currency']
-    raw_id_fields = ['master_user', 'type', 'pricing_currency', 'accrued_currency',
-                     'daily_pricing_model']
+    raw_id_fields = ['master_user', 'type', 'pricing_currency', 'accrued_currency']
     inlines = [InstrumentAttributeInline, ManualPricingFormulaInline, AccrualCalculationScheduleInline,
                InstrumentFactorScheduleInline, EventScheduleInline]
 

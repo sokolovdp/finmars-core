@@ -14,7 +14,7 @@ from poms.portfolios.models import Portfolio, PortfolioClassifier, PortfolioClas
 
 class PortfolioClassifierAdmin(HistoricalAdmin, TreeModelAdmin):
     model = PortfolioClassifier
-    list_display = ['id', 'formatted_name', 'parent', 'master_user']
+    list_display = ['id', 'master_user', 'formatted_name', 'parent']
     list_select_related = ['master_user', 'parent']
     raw_id_fields = ['master_user', 'parent']
 
@@ -30,7 +30,7 @@ class PortfolioAttributeInline(AttributeInlineBase):
 
 class PortfolioAdmin(HistoricalAdmin):
     model = Portfolio
-    list_display = ['id', 'name', 'master_user']
+    list_display = ['id', 'master_user', 'name']
     list_select_related = ['master_user']
     raw_id_fields = ['master_user']
     inlines = [PortfolioAttributeInline]
