@@ -175,7 +175,8 @@ class CostMethod(ClassModelBase):
 
 @python_2_unicode_compatible
 class InstrumentType(NamedModel):
-    master_user = models.ForeignKey(MasterUser, related_name='instrument_types', verbose_name=_('master user'))
+    master_user = models.ForeignKey(MasterUser, related_name='instrument_types',
+                                    verbose_name=_('master user'))
     instrument_class = models.ForeignKey(InstrumentClass, related_name='instrument_types', on_delete=models.PROTECT,
                                          verbose_name=_('instrument class'))
 
@@ -194,7 +195,8 @@ class InstrumentType(NamedModel):
 
 
 class InstrumentTypeUserObjectPermission(UserObjectPermissionBase):
-    content_object = models.ForeignKey(InstrumentType, related_name='user_object_permissions')
+    content_object = models.ForeignKey(InstrumentType, related_name='user_object_permissions',
+                                       verbose_name=_('content object'))
 
     class Meta:
         verbose_name = _('instrument types - user permission')
@@ -202,7 +204,8 @@ class InstrumentTypeUserObjectPermission(UserObjectPermissionBase):
 
 
 class InstrumentTypeGroupObjectPermission(GroupObjectPermissionBase):
-    content_object = models.ForeignKey(InstrumentType, related_name='group_object_permissions')
+    content_object = models.ForeignKey(InstrumentType, related_name='group_object_permissions',
+                                       verbose_name=_('content object'))
 
     class Meta:
         verbose_name = _('instrument types - group permission')
@@ -211,8 +214,10 @@ class InstrumentTypeGroupObjectPermission(GroupObjectPermissionBase):
 
 @python_2_unicode_compatible
 class InstrumentClassifier(MPTTModel, NamedModel):
-    master_user = models.ForeignKey(MasterUser, related_name='instrument_classifiers', verbose_name=_('master user'))
-    parent = TreeForeignKey('self', null=True, blank=True, related_name='children', db_index=True)
+    master_user = models.ForeignKey(MasterUser, related_name='instrument_classifiers',
+                                    verbose_name=_('master user'))
+    parent = TreeForeignKey('self', related_name='children', null=True, blank=True, db_index=True,
+                            verbose_name=_('parent'))
 
     class MPTTMeta:
         order_insertion_by = ['master_user', 'name']
@@ -232,7 +237,8 @@ class InstrumentClassifier(MPTTModel, NamedModel):
 
 
 class InstrumentClassifierUserObjectPermission(UserObjectPermissionBase):
-    content_object = models.ForeignKey(InstrumentClassifier, related_name='user_object_permissions')
+    content_object = models.ForeignKey(InstrumentClassifier, related_name='user_object_permissions',
+                                       verbose_name=_('content object'))
 
     class Meta:
         verbose_name = _('instrument classifiers - user permission')
@@ -240,7 +246,8 @@ class InstrumentClassifierUserObjectPermission(UserObjectPermissionBase):
 
 
 class InstrumentClassifierGroupObjectPermission(GroupObjectPermissionBase):
-    content_object = models.ForeignKey(InstrumentClassifier, related_name='group_object_permissions')
+    content_object = models.ForeignKey(InstrumentClassifier, related_name='group_object_permissions',
+                                       verbose_name=_('content object'))
 
     class Meta:
         verbose_name = _('instrument classifiers - group permission')
@@ -249,18 +256,29 @@ class InstrumentClassifierGroupObjectPermission(GroupObjectPermissionBase):
 
 @python_2_unicode_compatible
 class Instrument(NamedModel):
-    master_user = models.ForeignKey(MasterUser, related_name='instruments', verbose_name=_('master user'))
-    type = models.ForeignKey(InstrumentType, on_delete=models.PROTECT, verbose_name=_('type'))
-    is_active = models.BooleanField(default=True)
-    pricing_currency = models.ForeignKey(Currency, on_delete=models.PROTECT)
-    price_multiplier = models.FloatField(default=1.)
-    accrued_currency = models.ForeignKey(Currency, related_name='instruments_accrued', on_delete=models.PROTECT)
-    accrued_multiplier = models.FloatField(default=1.)
+    master_user = models.ForeignKey(MasterUser, related_name='instruments',
+                                    verbose_name=_('master user'))
+    type = models.ForeignKey(InstrumentType, on_delete=models.PROTECT,
+                             verbose_name=_('type'))
+    is_active = models.BooleanField(default=True,
+                                    verbose_name=_('is active'))
+    pricing_currency = models.ForeignKey(Currency, on_delete=models.PROTECT,
+                                         verbose_name=_('pricing currency'))
+    price_multiplier = models.FloatField(default=1.,
+                                         verbose_name=_('price multiplier'))
+    accrued_currency = models.ForeignKey(Currency, related_name='instruments_accrued', on_delete=models.PROTECT,
+                                         verbose_name=_('accrued currency'))
+    accrued_multiplier = models.FloatField(default=1.,
+                                           verbose_name=_('accrued multiplier'))
 
-    daily_pricing_model = models.ForeignKey(DailyPricingModel, on_delete=models.PROTECT, null=True, blank=True)
-    payment_size_detail = models.ForeignKey(PaymentSizeDetail, on_delete=models.PROTECT, null=True, blank=True)
-    default_price = models.FloatField(default=0.)
-    default_accrued = models.FloatField(default=0.)
+    daily_pricing_model = models.ForeignKey(DailyPricingModel, on_delete=models.PROTECT, null=True, blank=True,
+                                            verbose_name=_('daily pricing model'))
+    payment_size_detail = models.ForeignKey(PaymentSizeDetail, on_delete=models.PROTECT, null=True, blank=True,
+                                            verbose_name=_('payment size detail'))
+    default_price = models.FloatField(default=0.,
+                                      verbose_name=_('default price'))
+    default_accrued = models.FloatField(default=0.,
+                                        verbose_name=_('default accrued'))
 
     class Meta:
         verbose_name = _('instrument')
@@ -277,7 +295,8 @@ class Instrument(NamedModel):
 
 
 class InstrumentUserObjectPermission(UserObjectPermissionBase):
-    content_object = models.ForeignKey(Instrument, related_name='user_object_permissions')
+    content_object = models.ForeignKey(Instrument, related_name='user_object_permissions',
+                                       verbose_name=_('content object'))
 
     class Meta:
         verbose_name = _('instruments - user permission')
@@ -285,7 +304,8 @@ class InstrumentUserObjectPermission(UserObjectPermissionBase):
 
 
 class InstrumentGroupObjectPermission(GroupObjectPermissionBase):
-    content_object = models.ForeignKey(Instrument, related_name='group_object_permissions')
+    content_object = models.ForeignKey(Instrument, related_name='group_object_permissions',
+                                       verbose_name=_('content object'))
 
     class Meta:
         verbose_name = _('instruments - group permission')
@@ -293,7 +313,8 @@ class InstrumentGroupObjectPermission(GroupObjectPermissionBase):
 
 
 class InstrumentAttributeType(AttributeTypeBase):
-    classifier_root = models.ForeignKey(InstrumentClassifier, on_delete=models.PROTECT, null=True, blank=True)
+    classifier_root = models.ForeignKey(InstrumentClassifier, on_delete=models.PROTECT, null=True, blank=True,
+                                        verbose_name=_('classifier (root)'))
 
     class Meta:
         verbose_name = _('instrument attribute type')
@@ -301,8 +322,10 @@ class InstrumentAttributeType(AttributeTypeBase):
 
 
 class InstrumentAttributeTypeOption(AttributeTypeOptionBase):
-    member = models.ForeignKey(Member, related_name='instrument_attribute_type_options')
-    attribute_type = models.ForeignKey(InstrumentAttributeType, related_name='attribute_type_options')
+    member = models.ForeignKey(Member, related_name='instrument_attribute_type_options',
+                               verbose_name=_('member'))
+    attribute_type = models.ForeignKey(InstrumentAttributeType, related_name='attribute_type_options',
+                                       verbose_name=_('attribute type'))
 
     class Meta:
         verbose_name = _('instrument attribute types - option')
@@ -310,7 +333,8 @@ class InstrumentAttributeTypeOption(AttributeTypeOptionBase):
 
 
 class InstrumentAttributeTypeUserObjectPermission(UserObjectPermissionBase):
-    content_object = models.ForeignKey(InstrumentAttributeType, related_name='user_object_permissions')
+    content_object = models.ForeignKey(InstrumentAttributeType, related_name='user_object_permissions',
+                                       verbose_name=_('content object'))
 
     class Meta:
         verbose_name = _('instrument attribute types - user permission')
@@ -318,7 +342,8 @@ class InstrumentAttributeTypeUserObjectPermission(UserObjectPermissionBase):
 
 
 class InstrumentAttributeTypeGroupObjectPermission(GroupObjectPermissionBase):
-    content_object = models.ForeignKey(InstrumentAttributeType, related_name='group_object_permissions')
+    content_object = models.ForeignKey(InstrumentAttributeType, related_name='group_object_permissions',
+                                       verbose_name=_('content object'))
 
     class Meta:
         verbose_name = _('instrument attribute types - group permission')
@@ -326,9 +351,12 @@ class InstrumentAttributeTypeGroupObjectPermission(GroupObjectPermissionBase):
 
 
 class InstrumentAttribute(AttributeBase):
-    attribute_type = models.ForeignKey(InstrumentAttributeType, related_name='attributes', on_delete=models.PROTECT)
-    content_object = models.ForeignKey(Instrument)
-    classifier = models.ForeignKey(InstrumentClassifier, on_delete=models.PROTECT, null=True, blank=True)
+    attribute_type = models.ForeignKey(InstrumentAttributeType, related_name='attributes', on_delete=models.PROTECT,
+                                       verbose_name=_('attribute type'))
+    content_object = models.ForeignKey(Instrument,
+                                       verbose_name=_('content object'))
+    classifier = models.ForeignKey(InstrumentClassifier, on_delete=models.PROTECT, null=True, blank=True,
+                                   verbose_name=_('classifier'))
 
     class Meta(AttributeBase.Meta):
         verbose_name = _('instrument attribute')
@@ -337,10 +365,15 @@ class InstrumentAttribute(AttributeBase):
 
 # @python_2_unicode_compatible
 class ManualPricingFormula(models.Model):
-    instrument = models.ForeignKey(Instrument)
-    pricing_policy = models.ForeignKey('integrations.PricingPolicy', on_delete=models.PROTECT)
-    expr = models.CharField(max_length=255, blank=True, default='')
-    notes = models.TextField(blank=True, default='', verbose_name=_('notes'))
+    instrument = models.ForeignKey(Instrument, related_name='manual_pricing_formulas',
+                                   verbose_name=_('instrument'))
+    pricing_policy = models.ForeignKey('integrations.PricingPolicy', on_delete=models.PROTECT,
+                                       related_name='manual_pricing_formulas',
+                                       verbose_name=_('pricing policy'))
+    expr = models.CharField(max_length=255, blank=True, default='',
+                            verbose_name=_('expression'))
+    notes = models.TextField(blank=True, default='',
+                             verbose_name=_('notes'))
 
     class Meta:
         verbose_name = _('manual pricing formula')
@@ -358,12 +391,18 @@ class ManualPricingFormula(models.Model):
 
 @python_2_unicode_compatible
 class PriceHistory(models.Model):
-    instrument = models.ForeignKey(Instrument, related_name='prices')
-    pricing_policy = models.ForeignKey('integrations.PricingPolicy', on_delete=models.PROTECT, null=True, blank=True)
-    date = models.DateField(null=False, blank=False, db_index=True, default=timezone.now)
-    principal_price = models.FloatField(default=0.0)
-    accrued_price = models.FloatField(null=True, blank=True)
-    factor = models.FloatField(null=True, blank=True)
+    instrument = models.ForeignKey(Instrument, related_name='prices',
+                                   verbose_name=_('instrument'))
+    pricing_policy = models.ForeignKey('integrations.PricingPolicy', on_delete=models.PROTECT, null=True, blank=True,
+                                       verbose_name=_('pricing policy'))
+    date = models.DateField(null=False, blank=False, db_index=True, default=timezone.now,
+                            verbose_name=_('pricing policy'))
+    principal_price = models.FloatField(default=0.0,
+                                        verbose_name=_('principal price'))
+    accrued_price = models.FloatField(null=True, blank=True,
+                                      verbose_name=_('accrued price'))
+    factor = models.FloatField(null=True, blank=True,
+                               verbose_name=_('factor'))
 
     # coupon = models.FloatField(null=True, blank=True)
     # delta = models.FloatField(null=True, blank=True)
@@ -382,33 +421,72 @@ class PriceHistory(models.Model):
 
 
 class AccrualCalculationSchedule(models.Model):
-    instrument = models.ForeignKey(Instrument, related_name='accrual_calculation_schedules')
-    accrual_start_date = models.DateField(default=timezone.now)
-    first_payment_date = models.DateField(default=timezone.now)
-    accrual_size = models.FloatField(default=0.)
-    accrual_calculation_model = models.ForeignKey(AccrualCalculationModel, on_delete=models.PROTECT)
-    periodicity_period = models.ForeignKey(PeriodicityPeriod, on_delete=models.PROTECT, null=True, blank=True)
-    notes = models.TextField(null=True, blank=True, verbose_name=_('notes'))
+    instrument = models.ForeignKey(Instrument, related_name='accrual_calculation_schedules',
+                                   verbose_name=_('instrument'))
+    accrual_start_date = models.DateField(default=timezone.now,
+                                          verbose_name=_('accrual start date'))
+    first_payment_date = models.DateField(default=timezone.now,
+                                          verbose_name=_('first payment date'))
+    accrual_size = models.FloatField(default=0.,
+                                     verbose_name=_('accrual size'))
+    accrual_calculation_model = models.ForeignKey(AccrualCalculationModel, on_delete=models.PROTECT,
+                                                  verbose_name=_('accrual calculation model'))
+    periodicity_period = models.ForeignKey(PeriodicityPeriod, on_delete=models.PROTECT, null=True, blank=True,
+                                           verbose_name=_('periodicity period'))
+    notes = models.TextField(null=True, blank=True,
+                             verbose_name=_('notes'))
+
+    class Meta:
+        verbose_name = _('accrual calculation schedule')
+        verbose_name_plural = _('accrual calculation schedules')
 
 
 class InstrumentFactorSchedule(models.Model):
-    instrument = models.ForeignKey(Instrument, related_name='factor_schedules')
-    effective_date = models.DateField(default=timezone.now)
-    factor_value = models.FloatField(default=0.)
+    instrument = models.ForeignKey(Instrument, related_name='factor_schedules',
+                                   verbose_name=_('instrument'))
+    effective_date = models.DateField(default=timezone.now,
+                                      verbose_name=_('effective date'))
+    factor_value = models.FloatField(default=0.,
+                                     verbose_name=_('factor value'))
+
+    class Meta:
+        verbose_name = _('instrument factor schedule')
+        verbose_name_plural = _('instrument factor schedules')
 
 
 class EventSchedule(NamedModel):
-    instrument = models.ForeignKey(Instrument)
-    transaction_types = models.ManyToManyField('transactions.TransactionType', blank=True)
-    event_class = models.ForeignKey('transactions.EventClass', on_delete=models.PROTECT)
+    instrument = models.ForeignKey(Instrument,
+                                   verbose_name=_('instrument'))
+    transaction_types = models.ManyToManyField('transactions.TransactionType', blank=True,
+                                               verbose_name=_('transaction types'))
+    event_class = models.ForeignKey('transactions.EventClass', on_delete=models.PROTECT,
+                                    verbose_name=_('event class'))
+    notification_class = models.ForeignKey('transactions.NotificationClass', on_delete=models.PROTECT,
+                                           verbose_name=_('notification class'))
+    notification_date = models.DateField(null=True, blank=True,
+                                         verbose_name=_('notification date'))
+    effective_date = models.DateField(null=True, blank=True,
+                                      verbose_name=_('effective date'))
 
-    notification_class = models.ForeignKey('transactions.NotificationClass', on_delete=models.PROTECT)
-    notification_date = models.DateField(null=True, blank=True)
+    class Meta:
+        verbose_name = _('event schedule')
+        verbose_name_plural = _('event schedules')
 
-    effective_date = models.DateField(null=True, blank=True)
 
-
-history.register(InstrumentClassifier)
+history.register(InstrumentClass)
+history.register(DailyPricingModel)
+history.register(AccrualCalculationModel)
+history.register(PaymentSizeDetail)
+history.register(PeriodicityPeriod)
+history.register(CostMethod)
 history.register(InstrumentType)
+history.register(InstrumentClassifier)
 history.register(Instrument)
+history.register(InstrumentAttributeType)
+history.register(InstrumentAttributeTypeOption)
+history.register(InstrumentAttribute)
+history.register(ManualPricingFormula)
 history.register(PriceHistory)
+history.register(AccrualCalculationSchedule)
+history.register(InstrumentFactorSchedule)
+history.register(EventSchedule)

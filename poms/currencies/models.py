@@ -40,7 +40,8 @@ class Currency(NamedModel):
 
 
 class CurrencyUserObjectPermission(UserObjectPermissionBase):
-    content_object = models.ForeignKey(Currency, related_name='user_object_permissions')
+    content_object = models.ForeignKey(Currency, related_name='user_object_permissions',
+                                       verbose_name=_('content object'))
 
     class Meta:
         verbose_name = _('counterparties - user permission')
@@ -48,7 +49,8 @@ class CurrencyUserObjectPermission(UserObjectPermissionBase):
 
 
 class CurrencyGroupObjectPermission(GroupObjectPermissionBase):
-    content_object = models.ForeignKey(Currency, related_name='group_object_permissions')
+    content_object = models.ForeignKey(Currency, related_name='group_object_permissions',
+                                       verbose_name=_('content object'))
 
     class Meta:
         verbose_name = _('counterparties - group permission')
@@ -60,11 +62,14 @@ class CurrencyGroupObjectPermission(GroupObjectPermissionBase):
 # ...
 @python_2_unicode_compatible
 class CurrencyHistory(models.Model):
-    currency = models.ForeignKey(Currency, related_name='histories')
-    pricing_policy = models.ForeignKey('integrations.PricingPolicy', null=True, blank=True, on_delete=models.PROTECT)
-    # date = models.DateTimeField(db_index=True, default=timezone.now)
-    date = models.DateField(db_index=True, default=timezone.now)
-    fx_rate = models.FloatField(default=0., verbose_name=_('fx rate'))
+    currency = models.ForeignKey(Currency, related_name='histories',
+                                 verbose_name=_('currency'))
+    pricing_policy = models.ForeignKey('integrations.PricingPolicy', on_delete=models.PROTECT, null=True, blank=True,
+                                       verbose_name=_('pricing policy'))
+    date = models.DateField(db_index=True, default=timezone.now,
+                            verbose_name=_('date'))
+    fx_rate = models.FloatField(default=0.,
+                                verbose_name=_('fx rate'))
 
     class Meta:
         verbose_name = _('currency history')

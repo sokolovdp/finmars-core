@@ -12,8 +12,10 @@ from poms.users.models import MasterUser
 
 
 class Strategy(MPTTModel, NamedModel):
-    master_user = models.ForeignKey(MasterUser, related_name='strategy_classifiers', verbose_name=_('master user'))
-    parent = TreeForeignKey('self', null=True, blank=True, related_name='children', db_index=True)
+    master_user = models.ForeignKey(MasterUser, related_name='strategy_classifiers',
+                                    verbose_name=_('master user'))
+    parent = TreeForeignKey('self', related_name='children', null=True, blank=True, db_index=True,
+                            verbose_name=_('parent'))
 
     class MPTTMeta:
         order_insertion_by = ['master_user', 'name']
@@ -30,7 +32,8 @@ class Strategy(MPTTModel, NamedModel):
 
 
 class StrategyUserObjectPermission(UserObjectPermissionBase):
-    content_object = models.ForeignKey(Strategy, related_name='user_object_permissions')
+    content_object = models.ForeignKey(Strategy, related_name='user_object_permissions',
+                                       verbose_name=_('content object'))
 
     class Meta:
         verbose_name = _('strategies - user permission')
@@ -38,7 +41,8 @@ class StrategyUserObjectPermission(UserObjectPermissionBase):
 
 
 class StrategyGroupObjectPermission(GroupObjectPermissionBase):
-    content_object = models.ForeignKey(Strategy, related_name='group_object_permissions')
+    content_object = models.ForeignKey(Strategy, related_name='group_object_permissions',
+                                       verbose_name=_('content object'))
 
     class Meta:
         verbose_name = _('strategies - group permission')

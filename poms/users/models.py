@@ -18,8 +18,10 @@ AVAILABLE_APPS = ['accounts', 'counterparties', 'currencies', 'instruments', 'po
 
 @python_2_unicode_compatible
 class MasterUser(models.Model):
-    name = models.CharField(max_length=255, null=True, blank=True)
-    currency = models.ForeignKey('currencies.Currency', null=True, blank=True)
+    name = models.CharField(max_length=255, null=True, blank=True,
+                            verbose_name=_('name'))
+    currency = models.ForeignKey('currencies.Currency', null=True, blank=True, on_delete=models.PROTECT,
+                                 verbose_name=_('currency'))
 
     # members = models.ManyToManyField(settings.AUTH_USER_MODEL, blank=True, through='Member', related_name='member_of')
 
@@ -41,18 +43,27 @@ class MasterUser(models.Model):
 
 @python_2_unicode_compatible
 class Member(models.Model):
-    master_user = models.ForeignKey(MasterUser, related_name='member_set')
-    user = models.ForeignKey(settings.AUTH_USER_MODEL, related_name='member_set')
+    master_user = models.ForeignKey(MasterUser, related_name='members',
+                                    verbose_name=_('master user'))
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, related_name='members',
+                             verbose_name=_('user'))
 
-    first_name = models.CharField(max_length=30, blank=True, default='', editable=False)
-    last_name = models.CharField(max_length=30, blank=True, default='', editable=False)
-    email = models.EmailField(blank=True, default='', editable=False)
+    first_name = models.CharField(max_length=30, blank=True, default='', editable=False,
+                                  verbose_name=_('first name'))
+    last_name = models.CharField(max_length=30, blank=True, default='', editable=False,
+                                 verbose_name=_('last name'))
+    email = models.EmailField(blank=True, default='', editable=False,
+                              verbose_name=_('email'))
 
-    join_date = models.DateTimeField(auto_now_add=True)
-    is_owner = models.BooleanField(default=False, verbose_name=_('is owner'))
-    is_admin = models.BooleanField(default=False, verbose_name=_('is admin'))
+    join_date = models.DateTimeField(auto_now_add=True,
+                                     verbose_name=_('join date'))
+    is_owner = models.BooleanField(default=False,
+                                   verbose_name=_('is owner'))
+    is_admin = models.BooleanField(default=False,
+                                   verbose_name=_('is admin'))
 
-    groups = models.ManyToManyField('Group', blank=True)
+    groups = models.ManyToManyField('Group', blank=True,
+                                    verbose_name=_('groups'))
 
     # permissions = models.ManyToManyField(Permission, blank=True)
 
@@ -62,9 +73,12 @@ class Member(models.Model):
 
 @python_2_unicode_compatible
 class UserProfile(models.Model):
-    user = models.OneToOneField(settings.AUTH_USER_MODEL, related_name='profile', verbose_name=_('user'))
-    language = LanguageField(null=True, blank=True, verbose_name=_('language'))
-    timezone = TimezoneField(null=True, blank=True, verbose_name=_('timezone'))
+    user = models.OneToOneField(settings.AUTH_USER_MODEL, related_name='profile',
+                                verbose_name=_('user'))
+    language = LanguageField(null=True, blank=True,
+                             verbose_name=_('language'))
+    timezone = TimezoneField(null=True, blank=True,
+                             verbose_name=_('timezone'))
 
     class Meta:
         verbose_name = _('profile')
@@ -76,8 +90,10 @@ class UserProfile(models.Model):
 
 @python_2_unicode_compatible
 class Group(models.Model):
-    master_user = models.ForeignKey(MasterUser, verbose_name=_('master user'), related_name='groups')
-    name = models.CharField(_('name'), max_length=80, unique=True)
+    master_user = models.ForeignKey(MasterUser, related_name='groups',
+                                    verbose_name=_('master user'), )
+    name = models.CharField(max_length=80, unique=True,
+                            verbose_name=_('name'))
 
     # permissions = models.ManyToManyField(Permission, verbose_name=_('permissions'), blank=True,
     #                                      related_name='poms_groups')
@@ -116,6 +132,5 @@ history.register(MasterUser)
 history.register(Member)
 history.register(User, follow=['profile'], exclude=['password'])
 history.register(UserProfile, follow=['user'])
-history.register(Group, follow=['permissions'])
-# history.register(GroupProfile, follow=['group'])
-history.register(Permission)
+history.register(Group)
+# history.register(Permission)

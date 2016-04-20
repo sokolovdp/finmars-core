@@ -4,12 +4,14 @@ from django.contrib.auth.models import Permission
 from django.contrib.contenttypes.models import ContentType
 from django.db import models
 from django.utils.encoding import python_2_unicode_compatible
+from django.utils.translation import ugettext_lazy as _
 
 from poms.users.models import Member, Group
 
 
 class ObjectPermissionBase(models.Model):
-    permission = models.ForeignKey(Permission)
+    permission = models.ForeignKey(Permission,
+                                   verbose_name=_('permission'))
 
     class Meta:
         abstract = True
@@ -17,7 +19,8 @@ class ObjectPermissionBase(models.Model):
 
 @python_2_unicode_compatible
 class UserObjectPermissionBase(ObjectPermissionBase):
-    member = models.ForeignKey(Member)
+    member = models.ForeignKey(Member,
+                               verbose_name=_('member'))
 
     class Meta:
         abstract = True
@@ -31,7 +34,8 @@ class UserObjectPermissionBase(ObjectPermissionBase):
 
 @python_2_unicode_compatible
 class GroupObjectPermissionBase(ObjectPermissionBase):
-    group = models.ForeignKey(Group)
+    group = models.ForeignKey(Group,
+                              verbose_name=_('group'))
 
     class Meta:
         abstract = True
@@ -41,6 +45,7 @@ class GroupObjectPermissionBase(ObjectPermissionBase):
 
     def __str__(self):
         return '%s %s %s' % (self.group, self.permission.name, self.content_object)
+
 
 # class UserObjectPermission(UserObjectPermissionBase):
 #     content_type = models.ForeignKey(ContentType, related_name='user_object_permissions')

@@ -109,7 +109,7 @@ class ExternalCashFlowStrategyInline(admin.TabularInline):
     extra = 0
 
 
-class ExternalCashFlowAdmin(admin.ModelAdmin):
+class ExternalCashFlowAdmin(HistoricalAdmin):
     model = ExternalCashFlow
     inlines = [ExternalCashFlowStrategyInline]
     raw_id_fields = ['portfolio', 'account', 'currency']

@@ -110,9 +110,12 @@ class AttributeTypeBase(NamedModel):
         (CLASSIFIER, _('Classifier')),
     )
 
-    master_user = models.ForeignKey(MasterUser)
-    value_type = models.PositiveSmallIntegerField(choices=VALUE_TYPES, default=STRING)
-    order = models.IntegerField(default=0)
+    master_user = models.ForeignKey(MasterUser,
+                                    verbose_name=_('master user'))
+    value_type = models.PositiveSmallIntegerField(choices=VALUE_TYPES, default=STRING,
+                                                  verbose_name=_('value type'))
+    order = models.IntegerField(default=0,
+                                verbose_name=_('order'))
 
     class Meta:
         abstract = True
@@ -123,7 +126,8 @@ class AttributeTypeBase(NamedModel):
 
 @python_2_unicode_compatible
 class AttributeTypeOptionBase(models.Model):
-    is_hidden = models.BooleanField(default=False)
+    is_hidden = models.BooleanField(default=False,
+                                    verbose_name=_('is hidden'))
 
     class Meta:
         abstract = True
@@ -137,9 +141,12 @@ class AttributeTypeOptionBase(models.Model):
 
 @python_2_unicode_compatible
 class AttributeBase(models.Model):
-    value_string = models.CharField(max_length=255, null=True, blank=True)
-    value_float = models.FloatField(null=True, blank=True)
-    value_date = models.DateField(null=True, blank=True)
+    value_string = models.CharField(max_length=255, null=True, blank=True,
+                                    verbose_name=_('value (String)'))
+    value_float = models.FloatField(null=True, blank=True,
+                                    verbose_name=_('value (Float)'))
+    value_date = models.DateField(null=True, blank=True,
+                                  verbose_name=_('value (Date)'))
 
     class Meta:
         abstract = True

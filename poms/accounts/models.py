@@ -16,9 +16,12 @@ from poms.users.models import MasterUser, Member
 
 @python_2_unicode_compatible
 class AccountType(NamedModel):
-    master_user = models.ForeignKey(MasterUser, related_name='account_types', verbose_name=_('master user'))
-    show_transaction_details = models.BooleanField(default=False)
-    transaction_details_expr = models.CharField(max_length=255, null=True, blank=True)
+    master_user = models.ForeignKey(MasterUser, related_name='account_types',
+                                    verbose_name=_('master user'))
+    show_transaction_details = models.BooleanField(default=False,
+                                                   verbose_name=_('show transaction details'))
+    transaction_details_expr = models.CharField(max_length=255, null=True, blank=True,
+                                                verbose_name=_('transaction details expr'))
 
     class Meta:
         verbose_name = _('account type')
@@ -35,7 +38,8 @@ class AccountType(NamedModel):
 
 
 class AccountTypeUserObjectPermission(UserObjectPermissionBase):
-    content_object = models.ForeignKey(AccountType, related_name='user_object_permissions')
+    content_object = models.ForeignKey(AccountType, related_name='user_object_permissions',
+                                       verbose_name=_('content object'))
 
     class Meta:
         verbose_name = _('account types - user permission')
@@ -43,7 +47,8 @@ class AccountTypeUserObjectPermission(UserObjectPermissionBase):
 
 
 class AccountTypeGroupObjectPermission(GroupObjectPermissionBase):
-    content_object = models.ForeignKey(AccountType, related_name='group_object_permissions')
+    content_object = models.ForeignKey(AccountType, related_name='group_object_permissions',
+                                       verbose_name=_('content object'))
 
     class Meta:
         verbose_name = _('account types - group permission')
@@ -52,8 +57,10 @@ class AccountTypeGroupObjectPermission(GroupObjectPermissionBase):
 
 @python_2_unicode_compatible
 class AccountClassifier(MPTTModel, NamedModel):
-    master_user = models.ForeignKey(MasterUser, related_name='account_classifiers', verbose_name=_('master user'))
-    parent = TreeForeignKey('self', null=True, blank=True, related_name='children', db_index=True)
+    master_user = models.ForeignKey(MasterUser, related_name='account_classifiers',
+                                    verbose_name=_('master user'))
+    parent = TreeForeignKey('self', null=True, blank=True, related_name='children', db_index=True,
+                            verbose_name=_('parent'))
 
     class MPTTMeta:
         order_insertion_by = ['master_user', 'name']
@@ -73,7 +80,8 @@ class AccountClassifier(MPTTModel, NamedModel):
 
 
 class AccountClassifierUserObjectPermission(UserObjectPermissionBase):
-    content_object = models.ForeignKey(AccountClassifier, related_name='user_object_permissions')
+    content_object = models.ForeignKey(AccountClassifier, related_name='user_object_permissions',
+                                       verbose_name=_('content object'))
 
     class Meta:
         verbose_name = _('account classifiers - user permission')
@@ -81,7 +89,8 @@ class AccountClassifierUserObjectPermission(UserObjectPermissionBase):
 
 
 class AccountClassifierGroupObjectPermission(GroupObjectPermissionBase):
-    content_object = models.ForeignKey(AccountClassifier, related_name='group_object_permissions')
+    content_object = models.ForeignKey(AccountClassifier, related_name='group_object_permissions',
+                                       verbose_name=_('content object'))
 
     class Meta:
         verbose_name = _('account classifiers - group permission')
@@ -90,8 +99,10 @@ class AccountClassifierGroupObjectPermission(GroupObjectPermissionBase):
 
 @python_2_unicode_compatible
 class Account(NamedModel):
-    master_user = models.ForeignKey(MasterUser, related_name='accounts', verbose_name=_('master user'))
-    type = models.ForeignKey(AccountType, on_delete=models.PROTECT, null=True, blank=True)
+    master_user = models.ForeignKey(MasterUser, related_name='accounts',
+                                    verbose_name=_('master user'))
+    type = models.ForeignKey(AccountType, on_delete=models.PROTECT, null=True, blank=True,
+                             verbose_name=_('account type'))
 
     class Meta:
         verbose_name = _('account')
@@ -108,7 +119,8 @@ class Account(NamedModel):
 
 
 class AccountUserObjectPermission(UserObjectPermissionBase):
-    content_object = models.ForeignKey(Account, related_name='user_object_permissions')
+    content_object = models.ForeignKey(Account, related_name='user_object_permissions',
+                                       verbose_name=_('content object'))
 
     class Meta:
         verbose_name = _('accounts - user permission')
@@ -116,7 +128,8 @@ class AccountUserObjectPermission(UserObjectPermissionBase):
 
 
 class AccountGroupObjectPermission(GroupObjectPermissionBase):
-    content_object = models.ForeignKey(Account, related_name='group_object_permissions')
+    content_object = models.ForeignKey(Account, related_name='group_object_permissions',
+                                       verbose_name=_('content object'))
 
     class Meta:
         verbose_name = _('accounts - group permission')
@@ -124,7 +137,8 @@ class AccountGroupObjectPermission(GroupObjectPermissionBase):
 
 
 class AccountAttributeType(AttributeTypeBase):
-    classifier_root = models.ForeignKey(AccountClassifier, on_delete=models.PROTECT, null=True, blank=True)
+    classifier_root = models.ForeignKey(AccountClassifier, on_delete=models.PROTECT, null=True, blank=True,
+                                        verbose_name=_('classifier (root)'))
 
     class Meta:
         verbose_name = _('account attribute type')
@@ -132,8 +146,10 @@ class AccountAttributeType(AttributeTypeBase):
 
 
 class AccountAttributeTypeOption(AttributeTypeOptionBase):
-    member = models.ForeignKey(Member, related_name='account_attribute_type_options')
-    attribute_type = models.ForeignKey(AccountAttributeType, related_name='attribute_type_options')
+    member = models.ForeignKey(Member, related_name='account_attribute_type_options',
+                               verbose_name=_('member'))
+    attribute_type = models.ForeignKey(AccountAttributeType, related_name='attribute_type_options',
+                                       verbose_name=_('attribute type'))
 
     class Meta:
         verbose_name = _('account attribute types - option')
@@ -141,7 +157,8 @@ class AccountAttributeTypeOption(AttributeTypeOptionBase):
 
 
 class AccountAttributeTypeUserObjectPermission(UserObjectPermissionBase):
-    content_object = models.ForeignKey(AccountAttributeType, related_name='user_object_permissions')
+    content_object = models.ForeignKey(AccountAttributeType, related_name='user_object_permissions',
+                                       verbose_name=_('content object'))
 
     class Meta:
         verbose_name = _('account attribute types - user permission')
@@ -149,7 +166,8 @@ class AccountAttributeTypeUserObjectPermission(UserObjectPermissionBase):
 
 
 class AccountAttributeTypeGroupObjectPermission(GroupObjectPermissionBase):
-    content_object = models.ForeignKey(AccountAttributeType, related_name='group_object_permissions')
+    content_object = models.ForeignKey(AccountAttributeType, related_name='group_object_permissions',
+                                       verbose_name=_('content object'))
 
     class Meta:
         verbose_name = _('account attribute types - group permission')
@@ -157,9 +175,12 @@ class AccountAttributeTypeGroupObjectPermission(GroupObjectPermissionBase):
 
 
 class AccountAttribute(AttributeBase):
-    attribute_type = models.ForeignKey(AccountAttributeType, on_delete=models.PROTECT, related_name='attributes')
-    content_object = models.ForeignKey(Account, related_name='attributes')
-    classifier = models.ForeignKey(AccountClassifier, on_delete=models.PROTECT, null=True, blank=True)
+    attribute_type = models.ForeignKey(AccountAttributeType, on_delete=models.PROTECT, related_name='attributes',
+                                       verbose_name=_('attribute type'))
+    content_object = models.ForeignKey(Account, related_name='attributes',
+                                       verbose_name=_('content object'))
+    classifier = models.ForeignKey(AccountClassifier, on_delete=models.PROTECT, null=True, blank=True,
+                                   verbose_name=_('classifier'))
 
     class Meta(AttributeBase.Meta):
         verbose_name = _('account attribute')
@@ -170,4 +191,5 @@ history.register(AccountType)
 history.register(AccountClassifier)
 history.register(Account)
 history.register(AccountAttributeType)
+history.register(AccountAttributeTypeOption)
 history.register(AccountAttribute)

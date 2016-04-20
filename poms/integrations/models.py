@@ -13,9 +13,11 @@ class PricingPolicy(NamedModel):
     #     (BLOOMBERG, _('Bloomberg')),
     # )
 
-    master_user = models.ForeignKey(MasterUser, related_name='pricing_policies', verbose_name=_('master user'))
+    master_user = models.ForeignKey(MasterUser, related_name='pricing_policies',
+                                    verbose_name=_('master user'))
     # type = models.PositiveIntegerField(default=DISABLED, choices=TYPES)
-    expr = models.TextField(default='')
+    expr = models.TextField(default='',
+                            verbose_name=_('expression'))
 
     class Meta:
         verbose_name = _('pricing policy')

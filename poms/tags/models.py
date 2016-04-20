@@ -11,19 +11,31 @@ from poms.obj_perms.models import UserObjectPermissionBase, GroupObjectPermissio
 
 
 class Tag(TagModelBase):
-    master_user = models.ForeignKey('users.MasterUser', related_name='tags', verbose_name=_('master user'))
-    content_types = models.ManyToManyField(ContentType, blank=True, related_name='+')
+    master_user = models.ForeignKey('users.MasterUser', related_name='tags',
+                                    verbose_name=_('master user'))
+    content_types = models.ManyToManyField(ContentType, related_name='tags', blank=True,
+                                           verbose_name=_('content types'))
 
-    account_types = models.ManyToManyField('accounts.AccountType', blank=True, related_name='tags')
-    accounts = models.ManyToManyField('accounts.Account', blank=True, related_name='tags')
-    currencies = models.ManyToManyField('currencies.Currency', blank=True, related_name='tags')
-    instrument_types = models.ManyToManyField('instruments.InstrumentType', blank=True, related_name='tags')
-    instruments = models.ManyToManyField('instruments.Instrument', blank=True, related_name='tags')
-    counterparties = models.ManyToManyField('counterparties.Counterparty', blank=True, related_name='tags')
-    responsibles = models.ManyToManyField('counterparties.Responsible', blank=True, related_name='tags')
-    strategies = TreeManyToManyField('strategies.Strategy', blank=True, related_name='tags')
-    portfolios = models.ManyToManyField('portfolios.Portfolio', blank=True, related_name='tags')
-    transaction_types = models.ManyToManyField('transactions.TransactionType', blank=True, related_name='tags')
+    account_types = models.ManyToManyField('accounts.AccountType', related_name='tags', blank=True,
+                                           verbose_name=_('account types'))
+    accounts = models.ManyToManyField('accounts.Account', related_name='tags', blank=True,
+                                      verbose_name=_('accounts'))
+    currencies = models.ManyToManyField('currencies.Currency', related_name='tags', blank=True,
+                                        verbose_name=_('currencies'))
+    instrument_types = models.ManyToManyField('instruments.InstrumentType', related_name='tags', blank=True,
+                                              verbose_name=_('instrument types'))
+    instruments = models.ManyToManyField('instruments.Instrument', related_name='tags', blank=True,
+                                         verbose_name=_('instruments'))
+    counterparties = models.ManyToManyField('counterparties.Counterparty', related_name='tags', blank=True,
+                                            verbose_name=_('counterparties'))
+    responsibles = models.ManyToManyField('counterparties.Responsible', related_name='tags', blank=True,
+                                          verbose_name=_('responsibles'))
+    strategies = TreeManyToManyField('strategies.Strategy', related_name='tags', blank=True,
+                                     verbose_name=_('strategies'))
+    portfolios = models.ManyToManyField('portfolios.Portfolio', related_name='tags', blank=True,
+                                        verbose_name=_('portfolios'))
+    transaction_types = models.ManyToManyField('transactions.TransactionType', related_name='tags', blank=True,
+                                               verbose_name=_('transaction types'))
 
     class Meta:
         verbose_name = _('tag')
@@ -35,7 +47,8 @@ class Tag(TagModelBase):
 
 
 class TagUserObjectPermission(UserObjectPermissionBase):
-    content_object = models.ForeignKey(Tag, related_name='user_object_permissions')
+    content_object = models.ForeignKey(Tag, related_name='user_object_permissions',
+                                       verbose_name=_('content object'))
 
     class Meta:
         verbose_name = _('tags - user permission')
@@ -43,7 +56,8 @@ class TagUserObjectPermission(UserObjectPermissionBase):
 
 
 class TagGroupObjectPermission(GroupObjectPermissionBase):
-    content_object = models.ForeignKey(Tag, related_name='group_object_permissions')
+    content_object = models.ForeignKey(Tag, related_name='group_object_permissions',
+                                       verbose_name=_('content object'))
 
     class Meta:
         verbose_name = _('tags - group permission')

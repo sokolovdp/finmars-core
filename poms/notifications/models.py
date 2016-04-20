@@ -17,7 +17,7 @@ from poms.notifications import LEVELS
 
 @python_2_unicode_compatible
 class Notification(models.Model):
-    recipient = models.ForeignKey(settings.AUTH_USER_MODEL, blank=False, related_name='notifications')
+    recipient = models.ForeignKey(settings.AUTH_USER_MODEL, related_name='notifications', blank=False)
 
     level = models.PositiveSmallIntegerField(choices=LEVELS, default=messages.INFO)
     type = models.CharField(max_length=30, null=True, blank=True)

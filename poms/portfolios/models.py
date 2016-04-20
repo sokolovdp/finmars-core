@@ -15,8 +15,10 @@ from poms.users.models import MasterUser, Member
 
 @python_2_unicode_compatible
 class PortfolioClassifier(MPTTModel, NamedModel):
-    master_user = models.ForeignKey(MasterUser, related_name='portfolio_classifiers', verbose_name=_('master user'))
-    parent = TreeForeignKey('self', null=True, blank=True, related_name='children', db_index=True)
+    master_user = models.ForeignKey(MasterUser, related_name='portfolio_classifiers',
+                                    verbose_name=_('master user'))
+    parent = TreeForeignKey('self', related_name='children', null=True, blank=True, db_index=True,
+                            verbose_name=_('parent'))
 
     class MPTTMeta:
         order_insertion_by = ['master_user', 'name']
@@ -33,7 +35,8 @@ class PortfolioClassifier(MPTTModel, NamedModel):
 
 
 class PortfolioClassifierUserObjectPermission(UserObjectPermissionBase):
-    content_object = models.ForeignKey(PortfolioClassifier, related_name='user_object_permissions')
+    content_object = models.ForeignKey(PortfolioClassifier, related_name='user_object_permissions',
+                                       verbose_name=_('content object'))
 
     class Meta:
         verbose_name = _('portfolio classifiers - user permission')
@@ -41,7 +44,8 @@ class PortfolioClassifierUserObjectPermission(UserObjectPermissionBase):
 
 
 class PortfolioClassifierGroupObjectPermission(GroupObjectPermissionBase):
-    content_object = models.ForeignKey(PortfolioClassifier, related_name='group_object_permissions')
+    content_object = models.ForeignKey(PortfolioClassifier, related_name='group_object_permissions',
+                                       verbose_name=_('content object'))
 
     class Meta:
         verbose_name = _('portfolio classifiers - group permission')
@@ -50,7 +54,8 @@ class PortfolioClassifierGroupObjectPermission(GroupObjectPermissionBase):
 
 @python_2_unicode_compatible
 class Portfolio(NamedModel):
-    master_user = models.ForeignKey(MasterUser, related_name='portfolios', verbose_name=_('master user'))
+    master_user = models.ForeignKey(MasterUser, related_name='portfolios',
+                                    verbose_name=_('master user'))
 
     class Meta:
         verbose_name = _('portfolio')
@@ -67,7 +72,8 @@ class Portfolio(NamedModel):
 
 
 class PortfolioUserObjectPermission(UserObjectPermissionBase):
-    content_object = models.ForeignKey(Portfolio, related_name='user_object_permissions')
+    content_object = models.ForeignKey(Portfolio, related_name='user_object_permissions',
+                                       verbose_name=_('content object'))
 
     class Meta:
         verbose_name = _('portfolios - user permission')
@@ -75,7 +81,8 @@ class PortfolioUserObjectPermission(UserObjectPermissionBase):
 
 
 class PortfolioGroupObjectPermission(GroupObjectPermissionBase):
-    content_object = models.ForeignKey(Portfolio, related_name='group_object_permissions')
+    content_object = models.ForeignKey(Portfolio, related_name='group_object_permissions',
+                                       verbose_name=_('content object'))
 
     class Meta:
         verbose_name = _('portfolios - group permission')
@@ -83,7 +90,8 @@ class PortfolioGroupObjectPermission(GroupObjectPermissionBase):
 
 
 class PortfolioAttributeType(AttributeTypeBase):
-    classifier_root = models.ForeignKey(PortfolioClassifier, on_delete=models.PROTECT, null=True, blank=True)
+    classifier_root = models.ForeignKey(PortfolioClassifier, on_delete=models.PROTECT, null=True, blank=True,
+                                        verbose_name=_('classifier (root)'))
 
     class Meta:
         verbose_name = _('portfolio attribute type')
@@ -91,8 +99,10 @@ class PortfolioAttributeType(AttributeTypeBase):
 
 
 class PortfolioAttributeTypeOption(AttributeTypeOptionBase):
-    member = models.ForeignKey(Member, related_name='portfolio_attribute_type_options')
-    attribute_type = models.ForeignKey(PortfolioAttributeType, related_name='attribute_type_options')
+    member = models.ForeignKey(Member, related_name='portfolio_attribute_type_options',
+                               verbose_name=_('member'))
+    attribute_type = models.ForeignKey(PortfolioAttributeType, related_name='attribute_type_options',
+                                       verbose_name=_('attribute type'))
 
     class Meta:
         verbose_name = _('portfolio attribute types - option')
@@ -100,7 +110,8 @@ class PortfolioAttributeTypeOption(AttributeTypeOptionBase):
 
 
 class PortfolioAttributeTypeUserObjectPermission(UserObjectPermissionBase):
-    content_object = models.ForeignKey(PortfolioAttributeType, related_name='user_object_permissions')
+    content_object = models.ForeignKey(PortfolioAttributeType, related_name='user_object_permissions',
+                                       verbose_name=_('content object'))
 
     class Meta:
         verbose_name = _('portfolio attribute types - user permission')
@@ -108,7 +119,8 @@ class PortfolioAttributeTypeUserObjectPermission(UserObjectPermissionBase):
 
 
 class PortfolioAttributeTypeGroupObjectPermission(GroupObjectPermissionBase):
-    content_object = models.ForeignKey(PortfolioAttributeType, related_name='group_object_permissions')
+    content_object = models.ForeignKey(PortfolioAttributeType, related_name='group_object_permissions',
+                                       verbose_name=_('content object'))
 
     class Meta:
         verbose_name = _('portfolio attribute types - group permission')
@@ -116,9 +128,12 @@ class PortfolioAttributeTypeGroupObjectPermission(GroupObjectPermissionBase):
 
 
 class PortfolioAttribute(AttributeBase):
-    attribute_type = models.ForeignKey(PortfolioAttributeType, related_name='attributes', on_delete=models.PROTECT)
-    content_object = models.ForeignKey(Portfolio)
-    classifier = models.ForeignKey(PortfolioClassifier, on_delete=models.PROTECT, null=True, blank=True)
+    attribute_type = models.ForeignKey(PortfolioAttributeType, related_name='attributes', on_delete=models.PROTECT,
+                                       verbose_name=_('attribute type'))
+    content_object = models.ForeignKey(Portfolio,
+                                       verbose_name=_('content object'))
+    classifier = models.ForeignKey(PortfolioClassifier, on_delete=models.PROTECT, null=True, blank=True,
+                                   verbose_name=_('classifier'))
 
     class Meta(AttributeBase.Meta):
         verbose_name = _('portfolio attribute')
@@ -127,3 +142,6 @@ class PortfolioAttribute(AttributeBase):
 
 history.register(PortfolioClassifier)
 history.register(Portfolio)
+history.register(PortfolioAttributeType)
+history.register(PortfolioAttributeTypeOption)
+history.register(PortfolioAttribute)
