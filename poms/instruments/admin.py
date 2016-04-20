@@ -3,7 +3,7 @@ from __future__ import unicode_literals
 from django.contrib import admin
 
 from poms.audit.admin import HistoricalAdmin
-from poms.common.admin import TreeModelAdmin, ClassModelAdmin
+from poms.common.admin import TreeModelAdmin, ClassModelAdmin, ClassifierAdmin
 from poms.instruments.models import Instrument, PriceHistory, InstrumentClassifier, InstrumentClass, InstrumentType, \
     DailyPricingModel, AccrualCalculationModel, PeriodicityPeriod, CostMethod, \
     ManualPricingFormula, AccrualCalculationSchedule, InstrumentTypeUserObjectPermission, \
@@ -34,14 +34,7 @@ admin.site.register(InstrumentTypeUserObjectPermission, UserObjectPermissionAdmi
 admin.site.register(InstrumentTypeGroupObjectPermission, GroupObjectPermissionAdmin)
 
 
-class InstrumentClassifierAdmin(HistoricalAdmin, TreeModelAdmin):
-    model = InstrumentClassifier
-    list_display = ['id', 'formatted_name', 'parent', 'master_user']
-    list_select_related = ['master_user', 'parent']
-    raw_id_fields = ['master_user', 'parent']
-
-
-admin.site.register(InstrumentClassifier, InstrumentClassifierAdmin)
+admin.site.register(InstrumentClassifier, ClassifierAdmin)
 admin.site.register(InstrumentClassifierUserObjectPermission, UserObjectPermissionAdmin)
 admin.site.register(InstrumentClassifierGroupObjectPermission, GroupObjectPermissionAdmin)
 

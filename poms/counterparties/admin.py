@@ -3,7 +3,7 @@ from __future__ import unicode_literals
 from django.contrib import admin
 
 from poms.audit.admin import HistoricalAdmin
-from poms.common.admin import TreeModelAdmin
+from poms.common.admin import ClassifierAdmin
 from poms.counterparties.models import Counterparty, Responsible, CounterpartyClassifier, ResponsibleClassifier, \
     CounterpartyClassifierUserObjectPermission, CounterpartyClassifierGroupObjectPermission, \
     CounterpartyUserObjectPermission, CounterpartyGroupObjectPermission, ResponsibleClassifierUserObjectPermission, \
@@ -15,15 +15,7 @@ from poms.counterparties.models import Counterparty, Responsible, CounterpartyCl
 from poms.obj_attrs.admin import AttributeTypeAdminBase, AttributeTypeOptionInlineBase, AttributeInlineBase
 from poms.obj_perms.admin import UserObjectPermissionAdmin, GroupObjectPermissionAdmin
 
-
-class CounterpartyClassifierAdmin(HistoricalAdmin, TreeModelAdmin):
-    model = CounterpartyClassifier
-    list_display = ['id', 'formatted_name', 'parent', 'master_user']
-    list_select_related = ['master_user', 'parent']
-    raw_id_fields = ['master_user', 'parent']
-
-
-admin.site.register(CounterpartyClassifier, CounterpartyClassifierAdmin)
+admin.site.register(CounterpartyClassifier, ClassifierAdmin)
 admin.site.register(CounterpartyClassifierUserObjectPermission, UserObjectPermissionAdmin)
 admin.site.register(CounterpartyClassifierGroupObjectPermission, GroupObjectPermissionAdmin)
 
@@ -44,15 +36,7 @@ admin.site.register(Counterparty, CounterpartyAdmin)
 admin.site.register(CounterpartyUserObjectPermission, UserObjectPermissionAdmin)
 admin.site.register(CounterpartyGroupObjectPermission, GroupObjectPermissionAdmin)
 
-
-class ResponsibleClassifierAdmin(HistoricalAdmin, TreeModelAdmin):
-    model = ResponsibleClassifier
-    list_display = ['id', 'formatted_name', 'parent', 'master_user']
-    list_select_related = ['master_user', 'parent']
-    raw_id_fields = ['master_user', 'parent']
-
-
-admin.site.register(ResponsibleClassifier, ResponsibleClassifierAdmin)
+admin.site.register(ResponsibleClassifier, ClassifierAdmin)
 admin.site.register(ResponsibleClassifierUserObjectPermission, UserObjectPermissionAdmin)
 admin.site.register(ResponsibleClassifierGroupObjectPermission, GroupObjectPermissionAdmin)
 

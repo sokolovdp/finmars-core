@@ -8,7 +8,7 @@ from poms.accounts.models import Account, AccountType, AccountClassifier, Accoun
     AccountAttributeTypeUserObjectPermission, AccountAttributeTypeGroupObjectPermission, AccountAttribute, \
     AccountAttributeTypeOption
 from poms.audit.admin import HistoricalAdmin
-from poms.common.admin import TreeModelAdmin
+from poms.common.admin import ClassifierAdmin
 from poms.obj_attrs.admin import AttributeTypeAdminBase, AttributeInlineBase, AttributeTypeOptionInlineBase
 from poms.obj_perms.admin import UserObjectPermissionAdmin, GroupObjectPermissionAdmin
 
@@ -24,15 +24,7 @@ admin.site.register(AccountType, AccountTypeAdmin)
 admin.site.register(AccountTypeUserObjectPermission, UserObjectPermissionAdmin)
 admin.site.register(AccountTypeGroupObjectPermission, GroupObjectPermissionAdmin)
 
-
-class AccountClassifierAdmin(HistoricalAdmin, TreeModelAdmin):
-    model = AccountClassifier
-    list_display = ['id', 'master_user', 'formatted_name', 'parent', ]
-    list_select_related = ['master_user', 'parent']
-    raw_id_fields = ['master_user', 'parent']
-
-
-admin.site.register(AccountClassifier, AccountClassifierAdmin)
+admin.site.register(AccountClassifier, ClassifierAdmin)
 admin.site.register(AccountClassifierUserObjectPermission, UserObjectPermissionAdmin)
 admin.site.register(AccountClassifierGroupObjectPermission, GroupObjectPermissionAdmin)
 
