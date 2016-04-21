@@ -24,18 +24,9 @@ class TagAdmin(HistoricalAdmin):
     def formfield_for_manytomany(self, db_field, request=None, **kwargs):
         if db_field.name == 'content_types':
             qs = kwargs.get('queryset', db_field.remote_field.model.objects)
-            ctypes = [
-                ContentType.objects.get_for_model(AccountType).pk,
-                ContentType.objects.get_for_model(Account).pk,
-                ContentType.objects.get_for_model(Currency).pk,
-                ContentType.objects.get_for_model(InstrumentType).pk,
-                ContentType.objects.get_for_model(Instrument).pk,
-                ContentType.objects.get_for_model(Counterparty).pk,
-                ContentType.objects.get_for_model(Responsible).pk,
-                ContentType.objects.get_for_model(Strategy).pk,
-                ContentType.objects.get_for_model(Portfolio).pk,
-                ContentType.objects.get_for_model(TransactionType).pk,
-            ]
+            models = [AccountType, Account, Currency, InstrumentType, Instrument, Counterparty, Responsible, Strategy,
+                      Portfolio, TransactionType]
+            ctypes = [ContentType.objects.get_for_model(model).pk for model in models]
             kwargs['queryset'] = qs.filter(pk__in=ctypes)
             # kwargs['queryset'] = qs.annotate(c=Concat('app_label', Value('.'), 'model')). \
             #     filter(c__in=[])

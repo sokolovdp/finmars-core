@@ -8,7 +8,7 @@ from poms.counterparties.fields import ResponsibleField, CounterpartyField
 from poms.currencies.fields import CurrencyField
 from poms.instruments.fields import InstrumentField
 from poms.portfolios.fields import PortfolioField
-from poms.transactions.models import TransactionClass, Transaction
+from poms.transactions.models import TransactionClass, Transaction, TransactionType
 from poms.users.fields import MasterUserField
 
 
@@ -17,8 +17,15 @@ class TransactionClassSerializer(PomsClassSerializer):
         model = TransactionClass
 
 
+class TransactionTypeSerializer(serializers.ModelSerializer):
+    master_user = MasterUserField()
+
+    class Meta:
+        model = TransactionType
+        fields = ['url', 'id', 'master_user', 'user_code', 'name', 'short_name', 'notes']
+
+
 class TransactionSerializer(serializers.ModelSerializer):
-    url = serializers.HyperlinkedIdentityField(view_name='transaction-detail')
     master_user = MasterUserField()
     portfolio = PortfolioField(required=False, allow_null=True)
     transaction_currency = CurrencyField(required=False, allow_null=True)

@@ -5,25 +5,35 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.viewsets import ModelViewSet
 
 from poms.audit.mixins import HistoricalMixin
+from poms.common.filters import ClassifierFilterSetBase
 from poms.common.mixins import DbTransactionMixin
-from poms.portfolios.models import PortfolioClassifier, Portfolio
-from poms.portfolios.serializers import PortfolioClassifierSerializer, PortfolioSerializer
+from poms.common.views import ClassifierViewSetBase, PomsViewSetBase
+from poms.obj_attrs.views import AttributeTypeViewSetBase
+from poms.portfolios.models import PortfolioClassifier, Portfolio, PortfolioAttributeType
+from poms.portfolios.serializers import PortfolioClassifierSerializer, PortfolioSerializer, \
+    PortfolioAttributeTypeSerializer
 from poms.users.filters import OwnerByMasterUserFilter
 
 
-class PortfolioClassifierViewSet(DbTransactionMixin, HistoricalMixin, ModelViewSet):
+class PortfolioClassifierFilterSet(ClassifierFilterSetBase):
+    class Meta(ClassifierFilterSetBase.Meta):
+        model = PortfolioClassifier
+
+
+class PortfolioClassifierViewSet(ClassifierViewSetBase):
     queryset = PortfolioClassifier.objects.all()
     serializer_class = PortfolioClassifierSerializer
-    permission_classes = [IsAuthenticated, ]
-    filter_backends = [OwnerByMasterUserFilter, DjangoFilterBackend, OrderingFilter, SearchFilter, ]
-    ordering_fields = ['user_code', 'name', 'short_name']
-    search_fields = ['user_code', 'name', 'short_name']
+    filter_class = PortfolioClassifierFilterSet
 
 
-class PortfolioViewSet(DbTransactionMixin, HistoricalMixin, ModelViewSet):
+class PortfolioAttributeTypeViewSet(AttributeTypeViewSetBase):
+    queryset = PortfolioAttributeType.objects.all()
+    serializer_class = PortfolioAttributeTypeSerializer
+
+
+class PortfolioViewSet(PomsViewSetBase):
     queryset = Portfolio.objects.all()
     serializer_class = PortfolioSerializer
-    permission_classes = [IsAuthenticated, ]
     filter_backends = [OwnerByMasterUserFilter, DjangoFilterBackend, OrderingFilter, SearchFilter, ]
     ordering_fields = ['user_code', 'name', 'short_name']
     search_fields = ['user_code', 'name', 'short_name']

@@ -18,6 +18,7 @@ import poms.users.views as users
 import poms.reports.views as reports
 import poms.notifications.views as notifications
 import poms.chats.views as chats
+import poms.tags.views as tags
 
 router = routers.DefaultRouter()
 router.register(r'users/login', users.LoginViewSet, 'login')
@@ -73,12 +74,16 @@ router.register(r'instruments/instrument-factor-schedule', instruments.Instrumen
 router.register(r'instruments/event-schedule', instruments.EventScheduleViewSet)
 
 router.register(r'portfolios/portfolio-classifier', portfolios.PortfolioClassifierViewSet)
+router.register(r'portfolios/portfolio-attribute-type', portfolios.PortfolioAttributeTypeViewSet)
 router.register(r'portfolios/portfolio', portfolios.PortfolioViewSet)
 
 router.register(r'transactions/transaction-class', transactions.TransactionClassViewSet)
+router.register(r'transactions/transaction-type', transactions.TransactionTypeViewSet)
 router.register(r'transactions/transaction', transactions.TransactionViewSet)
 
 router.register(r'strategies/strategy', strategies.StrategyViewSet)
+
+router.register(r'tags/tag', tags.TagViewSet)
 
 router.register(r'reports/balance', reports.BalanceReport2ViewSet, "balancereport2")
 router.register(r'reports/pl', reports.PLReport2ViewSet, "plreport2")

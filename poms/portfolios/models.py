@@ -130,7 +130,7 @@ class PortfolioAttributeTypeGroupObjectPermission(GroupObjectPermissionBase):
 class PortfolioAttribute(AttributeBase):
     attribute_type = models.ForeignKey(PortfolioAttributeType, related_name='attributes', on_delete=models.PROTECT,
                                        verbose_name=_('attribute type'))
-    content_object = models.ForeignKey(Portfolio,
+    content_object = models.ForeignKey(Portfolio, related_name='attributes',
                                        verbose_name=_('content object'))
     classifier = models.ForeignKey(PortfolioClassifier, on_delete=models.PROTECT, null=True, blank=True,
                                    verbose_name=_('classifier'))
