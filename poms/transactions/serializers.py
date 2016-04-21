@@ -3,6 +3,7 @@ from __future__ import unicode_literals
 from rest_framework import serializers
 
 from poms.accounts.fields import AccountField
+from poms.common.serializers import PomsClassSerializer
 from poms.counterparties.fields import ResponsibleField, CounterpartyField
 from poms.currencies.fields import CurrencyField
 from poms.instruments.fields import InstrumentField
@@ -11,12 +12,9 @@ from poms.transactions.models import TransactionClass, Transaction
 from poms.users.fields import MasterUserField
 
 
-class TransactionClassSerializer(serializers.ModelSerializer):
-    url = serializers.HyperlinkedIdentityField(view_name='transactionclass-detail')
-
+class TransactionClassSerializer(PomsClassSerializer):
     class Meta:
         model = TransactionClass
-        fields = ['url', 'id', 'system_code', 'name', 'description']
 
 
 class TransactionSerializer(serializers.ModelSerializer):

@@ -112,7 +112,7 @@ class Group(models.Model):
 @receiver(post_save, dispatch_uid='members_fill_from_user', sender=settings.AUTH_USER_MODEL)
 def members_fill_from_user(sender, instance=None, created=None, **kwargs):
     if not created:
-        instance.member_set.all().update(
+        instance.members.all().update(
             first_name=instance.first_name,
             last_name=instance.last_name,
             email=instance.email

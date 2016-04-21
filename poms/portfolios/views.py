@@ -4,8 +4,8 @@ from rest_framework.filters import DjangoFilterBackend, OrderingFilter, SearchFi
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.viewsets import ModelViewSet
 
-from poms.api.mixins import DbTransactionMixin
 from poms.audit.mixins import HistoricalMixin
+from poms.common.mixins import DbTransactionMixin
 from poms.portfolios.models import PortfolioClassifier, Portfolio
 from poms.portfolios.serializers import PortfolioClassifierSerializer, PortfolioSerializer
 from poms.users.filters import OwnerByMasterUserFilter

@@ -1,3 +1,10 @@
-from django.shortcuts import render
+from rest_framework.filters import DjangoFilterBackend, OrderingFilter, SearchFilter
 
-# Create your views here.
+from poms.common.views import PomsViewSetBase
+from poms.users.filters import OwnerByMasterUserFilter
+
+
+class AttributeTypeViewSetBase(PomsViewSetBase):
+    filter_backends = [OwnerByMasterUserFilter, DjangoFilterBackend, OrderingFilter, SearchFilter]
+    ordering_fields = ['user_code', 'name', 'short_name', 'order', ]
+    search_fields = ['user_code', 'name', 'short_name']

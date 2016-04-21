@@ -1,25 +1,21 @@
 from __future__ import unicode_literals
 
 import django_filters
-from rest_framework.filters import FilterSet, DjangoFilterBackend, OrderingFilter, SearchFilter
+from rest_framework.filters import FilterSet, DjangoFilterBackend, OrderingFilter
 from rest_framework.permissions import IsAuthenticated
-from rest_framework.viewsets import ReadOnlyModelViewSet, ModelViewSet
+from rest_framework.viewsets import ModelViewSet
 
-from poms.api.mixins import DbTransactionMixin
 from poms.audit.mixins import HistoricalMixin
+from poms.common.mixins import DbTransactionMixin
+from poms.common.views import PomsClassBase
 from poms.transactions.models import TransactionClass, Transaction
 from poms.transactions.serializers import TransactionClassSerializer, TransactionSerializer
 from poms.users.filters import OwnerByMasterUserFilter
 
 
-class TransactionClassViewSet(DbTransactionMixin, ReadOnlyModelViewSet):
+class TransactionClassViewSet(PomsClassBase):
     queryset = TransactionClass.objects.all()
     serializer_class = TransactionClassSerializer
-    permission_classes = [IsAuthenticated]
-    filter_backends = [OrderingFilter, SearchFilter, ]
-    ordering_fields = ['id', 'code', 'name']
-    search_fields = ['code', 'name']
-    pagination_class = None
 
 
 class TransactionFilter(FilterSet):

@@ -10,7 +10,7 @@ from rest_framework.response import Response
 from rest_framework.viewsets import ReadOnlyModelViewSet
 
 from poms import notifications
-from poms.api.mixins import DbTransactionMixin
+from poms.common.mixins import DbTransactionMixin
 from poms.notifications.filters import OwnerByRecipientFilter
 from poms.notifications.models import Notification
 from poms.notifications.serializers import NotificationSerializer

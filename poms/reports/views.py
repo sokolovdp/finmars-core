@@ -4,7 +4,7 @@ from rest_framework import viewsets, status
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
-from poms.api.mixins import DbTransactionMixin
+from poms.common.mixins import DbTransactionMixin
 from poms.reports.backends.balance import BalanceReportBuilder, BalanceReport2Builder
 from poms.reports.backends.cost import CostReportBuilder, CostReport2Builder
 from poms.reports.backends.pl import PLReportBuilder, PLReport2Builder

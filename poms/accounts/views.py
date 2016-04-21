@@ -1,58 +1,50 @@
 from __future__ import unicode_literals
 
 from rest_framework.filters import FilterSet, DjangoFilterBackend, OrderingFilter, SearchFilter
-from rest_framework.permissions import IsAuthenticated
-from rest_framework.viewsets import ModelViewSet
 
 from poms.accounts.models import Account, AccountType, AccountClassifier, AccountAttributeType
 from poms.accounts.serializers import AccountSerializer, AccountTypeSerializer, AccountClassifierSerializer, \
     AccountAttributeTypeSerializer
-from poms.api.mixins import DbTransactionMixin
-from poms.audit.mixins import HistoricalMixin
+from poms.common.filters import ClassifierFilterSetBase
+from poms.common.views import ClassifierViewSetBase, PomsViewSetBase
+from poms.obj_attrs.views import AttributeTypeViewSetBase
 from poms.users.filters import OwnerByMasterUserFilter
 
 
-class AccountTypeViewSet(DbTransactionMixin, HistoricalMixin, ModelViewSet):
+class AccountTypeViewSet(PomsViewSetBase):
     queryset = AccountType.objects.all()
     serializer_class = AccountTypeSerializer
-    permission_classes = [IsAuthenticated, ]
     filter_backends = [DjangoFilterBackend, OrderingFilter, SearchFilter]
     ordering_fields = ['code', 'name']
     search_fields = ['code', 'name']
 
 
-class AccountClassifierViewSet(DbTransactionMixin, HistoricalMixin, ModelViewSet):
+class AccountClassifierFilterSet(ClassifierFilterSetBase):
+    class Meta(ClassifierFilterSetBase.Meta):
+        model = AccountClassifier
+
+
+class AccountClassifierViewSet(ClassifierViewSetBase):
     queryset = AccountClassifier.objects.all()
     serializer_class = AccountClassifierSerializer
-    permission_classes = [IsAuthenticated]
-    filter_backends = [OwnerByMasterUserFilter, DjangoFilterBackend, OrderingFilter, SearchFilter, ]
-    ordering_fields = ['user_code', 'name', 'short_name']
-    search_fields = ['user_code', 'name', 'short_name']
+    filter_class = AccountClassifierFilterSet
 
 
-class AccountFilter(FilterSet):
+class AccountFilterSet(FilterSet):
     class Meta:
         model = Account
         fields = []
 
 
-# PomsObjectPermissionMixin,
-# PomsObjectPermissions
-# PomsObjectPermissionsFilter
-class AccountViewSet(DbTransactionMixin, HistoricalMixin, ModelViewSet):
+class AccountViewSet(PomsViewSetBase):
     queryset = Account.objects.prefetch_related('attributes', 'attributes__attribute_type').all()
     serializer_class = AccountSerializer
-    permission_classes = [IsAuthenticated]
     filter_backends = [OwnerByMasterUserFilter, DjangoFilterBackend, OrderingFilter, SearchFilter, ]
-    filter_class = AccountFilter
+    filter_class = AccountFilterSet
     ordering_fields = ['user_code', 'name', 'short_name']
     search_fields = ['user_code', 'name', 'short_name']
 
 
-class AccountAttributeTypeViewSet(DbTransactionMixin, HistoricalMixin, ModelViewSet):
+class AccountAttributeTypeViewSet(AttributeTypeViewSetBase):
     queryset = AccountAttributeType.objects.all()
     serializer_class = AccountAttributeTypeSerializer
-    permission_classes = [IsAuthenticated]
-    filter_backends = [OwnerByMasterUserFilter, DjangoFilterBackend, OrderingFilter, SearchFilter, ]
-    ordering_fields = ['order', 'name']
-    search_fields = ['user_code', 'name', 'short_name']

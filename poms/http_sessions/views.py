@@ -5,7 +5,7 @@ from rest_framework.mixins import DestroyModelMixin
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.viewsets import ReadOnlyModelViewSet
 
-from poms.api.mixins import DbTransactionMixin
+from poms.common.mixins import DbTransactionMixin
 from poms.http_sessions.models import Session
 from poms.http_sessions.serializers import SessionSerializer
 from poms.users.filters import OwnerByUserFilter

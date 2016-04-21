@@ -67,6 +67,7 @@ INSTALLED_APPS = [
     'poms.api',
 
     'django_extensions',
+    'rest_framework_swagger',
 ]
 
 if ADMIN:

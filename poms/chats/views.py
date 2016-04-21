@@ -5,13 +5,13 @@ from rest_framework.filters import OrderingFilter, SearchFilter, DjangoFilterBac
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.viewsets import ModelViewSet
 
-from poms.api.mixins import DbTransactionMixin
 from poms.audit.mixins import HistoricalMixin
 from poms.chats.filters import MessageThreadOwnerByMasterUserFilter, DirectMessageFilter, \
     ThreadObjectPermissionFilter, MessageObjectPermissionFilter
 from poms.chats.models import Thread, Message, DirectMessage, ThreadStatus
 from poms.chats.permissions import ThreadObjectPermission, MessagePermission, DirectMessagePermission
 from poms.chats.serializers import ThreadSerializer, MessageSerializer, DirectMessageSerializer, ThreadStatusSerializer
+from poms.common.mixins import DbTransactionMixin
 from poms.users.filters import OwnerByMasterUserFilter
 
 

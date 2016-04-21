@@ -16,12 +16,12 @@ def get_master_user(request, master_user_id=None):
     try:
         if master_user_id is None:
             if settings.DEV:
-                member = user.member_set.first()
+                member = user.members.first()
                 master_user = member.master_user
             else:
                 raise NotFound()
         else:
-            master_user = user.member_set.get(pk=master_user_id)
+            master_user = user.members.get(pk=master_user_id)
         user._cached_master_user = master_user
         return master_user
     except ObjectDoesNotExist:

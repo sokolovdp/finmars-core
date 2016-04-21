@@ -31,7 +31,8 @@ class CurrentMemberDefault(object):
         self._member = get_member(request)
 
     def __call__(self):
-        return self._member
+        # return self._member
+        return getattr(self, '_member', None)
 
 
 class HiddenMemberField(serializers.PrimaryKeyRelatedField):

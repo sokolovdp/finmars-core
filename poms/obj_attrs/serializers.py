@@ -11,6 +11,40 @@ class AttributeTypeSerializerBase(serializers.ModelSerializer):
 
     class Meta:
         fields = ['url', 'id', 'master_user', 'user_code', 'name', 'short_name', 'notes', 'value_type', 'order']
+        update_read_only_fields = ['value_type']
+
+    # def get_extra_kwargs(self):
+    #     extra_kwargs = super(AttributeTypeSerializerBase, self).get_extra_kwargs()
+    #
+    #     request = self.context.get('request', None)
+    #     if request and request.method in ['PUT', 'PATCH']:
+    #         update_read_only_fields = getattr(self.Meta, 'update_read_only_fields', None)
+    #         print(update_read_only_fields)
+    #         if update_read_only_fields is not None:
+    #             for field_name in update_read_only_fields:
+    #                 kwargs = extra_kwargs.get(field_name, {})
+    #                 kwargs['read_only'] = True
+    #                 extra_kwargs[field_name] = kwargs
+    #
+    #         for name, field in six.iteritems(self._fields):
+    #             print(name)
+    #             if name in update_read_only_fields:
+    #                 field.read_only = True
+    #
+    #     return extra_kwargs
+
+    def get_fields(self):
+        fields = super(AttributeTypeSerializerBase, self).get_fields()
+
+        request = self.context.get('request', None)
+        if request and request.method in ['PUT', 'PATCH']:
+            update_read_only_fields = getattr(self.Meta, 'update_read_only_fields', None)
+            for name, field in six.iteritems(fields):
+                print(name)
+                if name in update_read_only_fields:
+                    field.read_only = True
+
+        return fields
 
 
 class AttributeSerializerBase(serializers.ModelSerializer):

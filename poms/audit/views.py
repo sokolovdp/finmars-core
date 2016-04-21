@@ -5,9 +5,9 @@ from rest_framework.filters import DjangoFilterBackend, OrderingFilter, SearchFi
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.viewsets import ReadOnlyModelViewSet
 
-from poms.api.mixins import DbTransactionMixin
 from poms.audit.models import AuthLogEntry
 from poms.audit.serializers import AuthLogEntrySerializer
+from poms.common.mixins import DbTransactionMixin
 from poms.users.filters import OwnerByUserFilter
 
 

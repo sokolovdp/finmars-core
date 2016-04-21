@@ -5,8 +5,8 @@ from rest_framework.filters import DjangoFilterBackend, OrderingFilter, SearchFi
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.viewsets import ModelViewSet
 
-from poms.api.mixins import DbTransactionMixin
 from poms.audit.mixins import HistoricalMixin
+from poms.common.mixins import DbTransactionMixin
 from poms.instruments.filters import OwnerByInstrumentFilter
 from poms.instruments.models import InstrumentClassifier, Instrument, PriceHistory
 from poms.instruments.serializers import InstrumentClassifierSerializer, InstrumentSerializer, PriceHistorySerializer

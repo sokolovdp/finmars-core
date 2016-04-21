@@ -5,9 +5,8 @@ from rest_framework.filters import DjangoFilterBackend, OrderingFilter, SearchFi
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.viewsets import ModelViewSet
 
-from poms.api.mixins import DbTransactionMixin
-from poms.api.permissions import IsOwnerOrReadonly
 from poms.audit.mixins import HistoricalMixin
+from poms.common.mixins import DbTransactionMixin
 from poms.currencies.models import Currency, CurrencyHistory
 from poms.currencies.serializers import CurrencySerializer, CurrencyHistorySerializer
 
