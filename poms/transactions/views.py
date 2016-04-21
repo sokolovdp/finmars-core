@@ -2,14 +2,12 @@ from __future__ import unicode_literals
 
 import django_filters
 from rest_framework.filters import FilterSet, DjangoFilterBackend, OrderingFilter, SearchFilter
-from rest_framework.permissions import IsAuthenticated
-from rest_framework.viewsets import ModelViewSet
 
-from poms.audit.mixins import HistoricalMixin
-from poms.common.mixins import DbTransactionMixin
 from poms.common.views import PomsClassViewSetBase, PomsViewSetBase
-from poms.transactions.models import TransactionClass, Transaction, TransactionType
-from poms.transactions.serializers import TransactionClassSerializer, TransactionSerializer, TransactionTypeSerializer
+from poms.obj_attrs.views import AttributeTypeViewSetBase
+from poms.transactions.models import TransactionClass, Transaction, TransactionType, TransactionAttributeType
+from poms.transactions.serializers import TransactionClassSerializer, TransactionSerializer, TransactionTypeSerializer, \
+    TransactionAttributeTypeSerializer
 from poms.users.filters import OwnerByMasterUserFilter
 
 
@@ -26,6 +24,11 @@ class TransactionTypeViewSet(PomsViewSetBase):
     search_fields = ['user_code', 'name', 'short_name']
 
 
+class TransactionAttributeTypeViewSet(AttributeTypeViewSetBase):
+    queryset = TransactionAttributeType.objects.all()
+    serializer_class = TransactionAttributeTypeSerializer
+
+
 class TransactionFilter(FilterSet):
     transaction_date = django_filters.DateFilter()
 
@@ -34,10 +37,9 @@ class TransactionFilter(FilterSet):
         fields = ['transaction_date']
 
 
-class TransactionViewSet(DbTransactionMixin, HistoricalMixin, ModelViewSet):
-    queryset = Transaction.objects.all()
+class TransactionViewSet(PomsViewSetBase):
+    queryset = Transaction.objects.prefetch_related('attributes', 'attributes__attribute_type').all()
     serializer_class = TransactionSerializer
-    permission_classes = [IsAuthenticated]
-    filter_backends = [OwnerByMasterUserFilter, DjangoFilterBackend, OrderingFilter, ]
+    filter_backends = [OwnerByMasterUserFilter, DjangoFilterBackend, OrderingFilter]
     filter_class = TransactionFilter
     ordering_fields = ['transaction_date']

@@ -7,8 +7,13 @@ from poms.common.serializers import PomsClassSerializer
 from poms.counterparties.fields import ResponsibleField, CounterpartyField
 from poms.currencies.fields import CurrencyField
 from poms.instruments.fields import InstrumentField
+from poms.obj_attrs.serializers import AttributeTypeSerializerBase, AttributeSerializerBase, \
+    ModelWithAttributesSerializer
 from poms.portfolios.fields import PortfolioField
-from poms.transactions.models import TransactionClass, Transaction, TransactionType
+from poms.strategies.fields import StrategyRootField
+from poms.transactions.fields import TransactionAttributeTypeField
+from poms.transactions.models import TransactionClass, Transaction, TransactionType, TransactionAttributeType, \
+    TransactionAttribute
 from poms.users.fields import MasterUserField
 
 
@@ -25,7 +30,28 @@ class TransactionTypeSerializer(serializers.ModelSerializer):
         fields = ['url', 'id', 'master_user', 'user_code', 'name', 'short_name', 'notes']
 
 
-class TransactionSerializer(serializers.ModelSerializer):
+class TransactionAttributeTypeSerializer(AttributeTypeSerializerBase):
+    strategy_position_root = StrategyRootField(required=False, allow_null=True)
+    strategy_cash_root = StrategyRootField(required=False, allow_null=True)
+
+    class Meta(AttributeTypeSerializerBase.Meta):
+        model = TransactionAttributeType
+        fields = AttributeTypeSerializerBase.Meta.fields + ['strategy_position_root', 'strategy_cash_root']
+        update_read_only_fields = AttributeTypeSerializerBase.Meta.update_read_only_fields + \
+                                  ['strategy_position_root', 'strategy_cash_root']
+
+
+class TransactionAttributeSerializer(AttributeSerializerBase):
+    attribute_type = TransactionAttributeTypeField()
+    strategy_position = StrategyRootField(required=False, allow_null=True)
+    strategy_cash = StrategyRootField(required=False, allow_null=True)
+
+    class Meta(AttributeSerializerBase.Meta):
+        model = TransactionAttribute
+        fields = AttributeSerializerBase.Meta.fields + ['attribute_type', 'strategy_position', 'strategy_cash']
+
+
+class TransactionSerializer(ModelWithAttributesSerializer):
     master_user = MasterUserField()
     portfolio = PortfolioField(required=False, allow_null=True)
     transaction_currency = CurrencyField(required=False, allow_null=True)
@@ -36,6 +62,7 @@ class TransactionSerializer(serializers.ModelSerializer):
     account_interim = AccountField(required=False, allow_null=True)
     responsible = ResponsibleField(required=False, allow_null=True)
     counterparty = CounterpartyField(required=False, allow_null=True)
+    attributes = TransactionAttributeSerializer(many=True)
 
     class Meta:
         model = Transaction
@@ -51,4 +78,5 @@ class TransactionSerializer(serializers.ModelSerializer):
                   'is_locked', 'is_canceled',
                   'factor', 'trade_price',
                   'principal_amount', 'carry_amount', 'overheads',
-                  'responsible', 'counterparty']
+                  'responsible', 'counterparty',
+                  'attributes']

@@ -8,3 +8,8 @@ from poms.users.filters import OwnerByMasterUserFilter
 class StrategyField(FilteredPrimaryKeyRelatedField):
     queryset = Strategy.objects
     filter_backends = [OwnerByMasterUserFilter]
+
+
+class StrategyRootField(FilteredPrimaryKeyRelatedField):
+    queryset = Strategy.objects.filter(parent__isnull=True)
+    filter_backends = [OwnerByMasterUserFilter]
