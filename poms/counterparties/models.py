@@ -129,7 +129,7 @@ class CounterpartyAttributeTypeOption(AttributeTypeOptionBase):
 class CounterpartyAttribute(AttributeBase):
     attribute_type = models.ForeignKey(CounterpartyAttributeType, related_name='attributes', on_delete=models.PROTECT,
                                        verbose_name=_('attribute type'))
-    content_object = models.ForeignKey(Counterparty,
+    content_object = models.ForeignKey(Counterparty, related_name='attributes',
                                        verbose_name=_('content object'))
     classifier = models.ForeignKey(CounterpartyClassifier, on_delete=models.PROTECT, null=True, blank=True,
                                    verbose_name=_('classifier'))
@@ -255,7 +255,7 @@ class ResponsibleAttributeTypeOption(AttributeTypeOptionBase):
 class ResponsibleAttribute(AttributeBase):
     attribute_type = models.ForeignKey(ResponsibleAttributeType, related_name='attributes', on_delete=models.PROTECT,
                                        verbose_name=_('attribute type'))
-    content_object = models.ForeignKey(Responsible,
+    content_object = models.ForeignKey(Responsible, related_name='attributes',
                                        verbose_name=_('content object'))
     classifier = models.ForeignKey(ResponsibleClassifier, on_delete=models.PROTECT, null=True, blank=True,
                                    verbose_name=_('classifier'))

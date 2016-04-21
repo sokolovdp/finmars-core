@@ -3,14 +3,15 @@ from __future__ import unicode_literals
 from django.contrib import admin
 
 from poms.audit.admin import HistoricalAdmin
-from poms.common.admin import TreeModelAdmin, ClassModelAdmin, ClassifierAdmin
+from poms.common.admin import ClassModelAdmin, ClassifierAdmin
 from poms.instruments.models import Instrument, PriceHistory, InstrumentClassifier, InstrumentClass, InstrumentType, \
     DailyPricingModel, AccrualCalculationModel, PeriodicityPeriod, CostMethod, \
     ManualPricingFormula, AccrualCalculationSchedule, InstrumentTypeUserObjectPermission, \
     InstrumentTypeGroupObjectPermission, InstrumentClassifierUserObjectPermission, \
     InstrumentClassifierGroupObjectPermission, InstrumentUserObjectPermission, InstrumentGroupObjectPermission, \
     InstrumentAttributeType, InstrumentAttributeTypeOption, InstrumentAttributeTypeUserObjectPermission, \
-    InstrumentAttributeTypeGroupObjectPermission, InstrumentAttribute, InstrumentFactorSchedule, EventSchedule
+    InstrumentAttributeTypeGroupObjectPermission, InstrumentAttribute, InstrumentFactorSchedule, EventSchedule, \
+    PricingPolicy
 from poms.obj_attrs.admin import AttributeTypeAdminBase, AttributeTypeOptionInlineBase, AttributeInlineBase
 from poms.obj_perms.admin import UserObjectPermissionAdmin, GroupObjectPermissionAdmin
 
@@ -19,6 +20,16 @@ admin.site.register(DailyPricingModel, ClassModelAdmin)
 admin.site.register(AccrualCalculationModel, ClassModelAdmin)
 admin.site.register(PeriodicityPeriod, ClassModelAdmin)
 admin.site.register(CostMethod, ClassModelAdmin)
+
+
+class PricingPolicyAdmin(HistoricalAdmin):
+    model = PricingPolicy
+    list_display = ['id', 'name', 'master_user']
+    list_select_related = ['master_user']
+    ordering = ['user_code']
+
+
+admin.site.register(PricingPolicy, PricingPolicyAdmin)
 
 
 class InstrumentTypeAdmin(HistoricalAdmin):
@@ -32,7 +43,6 @@ class InstrumentTypeAdmin(HistoricalAdmin):
 admin.site.register(InstrumentType, InstrumentTypeAdmin)
 admin.site.register(InstrumentTypeUserObjectPermission, UserObjectPermissionAdmin)
 admin.site.register(InstrumentTypeGroupObjectPermission, GroupObjectPermissionAdmin)
-
 
 admin.site.register(InstrumentClassifier, ClassifierAdmin)
 admin.site.register(InstrumentClassifierUserObjectPermission, UserObjectPermissionAdmin)

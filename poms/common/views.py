@@ -15,16 +15,16 @@ class PomsViewSetBase(DbTransactionMixin, HistoricalMixin, ModelViewSet):
     pass
 
 
-class PomsClassBase(DbTransactionMixin, ReadOnlyModelViewSet):
+class PomsClassViewSetBase(DbTransactionMixin, ReadOnlyModelViewSet):
     permission_classes = [IsAuthenticated]
-    filter_backends = [OrderingFilter, SearchFilter, ]
+    filter_backends = [DjangoFilterBackend, OrderingFilter, SearchFilter]
     ordering_fields = ['id', 'system_code', 'name']
     search_fields = ['system_code', 'name']
     pagination_class = None
 
 
 class ClassifierViewSetBase(PomsViewSetBase):
-    filter_backends = [OwnerByMasterUserFilter, ClassifierFilter, DjangoFilterBackend, OrderingFilter, SearchFilter, ]
+    filter_backends = [OwnerByMasterUserFilter, ClassifierFilter, DjangoFilterBackend, OrderingFilter, SearchFilter]
     ordering_fields = ['user_code', 'name', 'short_name']
     search_fields = ['user_code', 'name', 'short_name']
     pagination_class = None

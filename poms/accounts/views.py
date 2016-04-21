@@ -11,14 +11,6 @@ from poms.obj_attrs.views import AttributeTypeViewSetBase
 from poms.users.filters import OwnerByMasterUserFilter
 
 
-class AccountTypeViewSet(PomsViewSetBase):
-    queryset = AccountType.objects.all()
-    serializer_class = AccountTypeSerializer
-    filter_backends = [DjangoFilterBackend, OrderingFilter, SearchFilter]
-    ordering_fields = ['code', 'name']
-    search_fields = ['code', 'name']
-
-
 class AccountClassifierFilterSet(ClassifierFilterSetBase):
     class Meta(ClassifierFilterSetBase.Meta):
         model = AccountClassifier
@@ -28,6 +20,19 @@ class AccountClassifierViewSet(ClassifierViewSetBase):
     queryset = AccountClassifier.objects.all()
     serializer_class = AccountClassifierSerializer
     filter_class = AccountClassifierFilterSet
+
+
+class AccountTypeViewSet(PomsViewSetBase):
+    queryset = AccountType.objects.all()
+    serializer_class = AccountTypeSerializer
+    filter_backends = [OwnerByMasterUserFilter, DjangoFilterBackend, OrderingFilter, SearchFilter]
+    ordering_fields = ['user_code', 'name', 'short_name']
+    search_fields = ['user_code', 'name', 'short_name']
+
+
+class AccountAttributeTypeViewSet(AttributeTypeViewSetBase):
+    queryset = AccountAttributeType.objects.all()
+    serializer_class = AccountAttributeTypeSerializer
 
 
 class AccountFilterSet(FilterSet):
@@ -43,8 +48,3 @@ class AccountViewSet(PomsViewSetBase):
     filter_class = AccountFilterSet
     ordering_fields = ['user_code', 'name', 'short_name']
     search_fields = ['user_code', 'name', 'short_name']
-
-
-class AccountAttributeTypeViewSet(AttributeTypeViewSetBase):
-    queryset = AccountAttributeType.objects.all()
-    serializer_class = AccountAttributeTypeSerializer

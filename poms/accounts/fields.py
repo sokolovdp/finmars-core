@@ -13,7 +13,7 @@ class AccountClassifierRootField(FilteredPrimaryKeyRelatedField):
     filter_backends = [OwnerByMasterUserFilter]
 
 
-class AttributeTypeField(FilteredPrimaryKeyRelatedField):
+class AccountAttributeTypeField(FilteredPrimaryKeyRelatedField):
     queryset = AccountAttributeType.objects
     filter_backends = [OwnerByMasterUserFilter]
 

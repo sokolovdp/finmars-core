@@ -1,39 +1,61 @@
 from __future__ import unicode_literals
 
 from rest_framework.filters import DjangoFilterBackend, OrderingFilter, SearchFilter
-from rest_framework.permissions import IsAuthenticated
-from rest_framework.viewsets import ModelViewSet
 
-from poms.accounts.serializers import AccountClassifierSerializer
-from poms.audit.mixins import HistoricalMixin
-from poms.common.mixins import DbTransactionMixin
-from poms.counterparties.models import CounterpartyClassifier, Counterparty, Responsible
-from poms.counterparties.serializers import CounterpartySerializer, ResponsibleSerializer
+from poms.common.filters import ClassifierFilterSetBase
+from poms.common.views import ClassifierViewSetBase, PomsViewSetBase
+from poms.counterparties.models import CounterpartyClassifier, Counterparty, Responsible, ResponsibleClassifier, \
+    CounterpartyAttributeType, ResponsibleAttributeType
+from poms.counterparties.serializers import CounterpartySerializer, ResponsibleSerializer, \
+    CounterpartyClassifierSerializer, ResponsibleClassifierSerializer, CounterpartyAttributeTypeSerializer, \
+    ResponsibleAttributeTypeSerializer
+from poms.obj_attrs.views import AttributeTypeViewSetBase
 from poms.users.filters import OwnerByMasterUserFilter
 
 
-class CounterpartyClassifierViewSet(DbTransactionMixin, HistoricalMixin, ModelViewSet):
+class CounterpartyClassifierFilterSet(ClassifierFilterSetBase):
+    class Meta(ClassifierFilterSetBase.Meta):
+        model = CounterpartyClassifier
+
+
+class CounterpartyClassifierViewSet(ClassifierViewSetBase):
     queryset = CounterpartyClassifier.objects.all()
-    serializer_class = AccountClassifierSerializer
-    permission_classes = [IsAuthenticated, ]
-    filter_backends = [OwnerByMasterUserFilter, DjangoFilterBackend, OrderingFilter, SearchFilter, ]
-    ordering_fields = ['user_code', 'name', 'short_name']
-    search_fields = ['user_code', 'name', 'short_name']
+    serializer_class = CounterpartyClassifierSerializer
+    filter_class = CounterpartyClassifierFilterSet
 
 
-class CounterpartyViewSet(DbTransactionMixin, HistoricalMixin, ModelViewSet):
-    queryset = Counterparty.objects.all()
+class CounterpartyAttributeTypeViewSet(AttributeTypeViewSetBase):
+    queryset = CounterpartyAttributeType.objects.all()
+    serializer_class = CounterpartyAttributeTypeSerializer
+
+
+class CounterpartyViewSet(PomsViewSetBase):
+    queryset = Counterparty.objects.prefetch_related('attributes', 'attributes__attribute_type').all()
     serializer_class = CounterpartySerializer
-    permission_classes = [IsAuthenticated, ]
-    filter_backends = [OwnerByMasterUserFilter, DjangoFilterBackend, OrderingFilter, SearchFilter, ]
+    filter_backends = [OwnerByMasterUserFilter, DjangoFilterBackend, OrderingFilter, SearchFilter]
     ordering_fields = ['user_code', 'name', 'short_name']
     search_fields = ['user_code', 'name', 'short_name']
 
 
-class ResponsibleViewSet(DbTransactionMixin, HistoricalMixin, ModelViewSet):
-    queryset = Responsible.objects.all()
+class ResponsibleClassifierFilterSet(ClassifierFilterSetBase):
+    class Meta(ClassifierFilterSetBase.Meta):
+        model = ResponsibleClassifier
+
+
+class ResponsibleClassifierViewSet(ClassifierViewSetBase):
+    queryset = ResponsibleClassifier.objects.all()
+    serializer_class = ResponsibleClassifierSerializer
+    filter_class = ResponsibleClassifierFilterSet
+
+
+class ResponsibleAttributeTypeViewSet(AttributeTypeViewSetBase):
+    queryset = ResponsibleAttributeType.objects.all()
+    serializer_class = ResponsibleAttributeTypeSerializer
+
+
+class ResponsibleViewSet(PomsViewSetBase):
+    queryset = Responsible.objects.prefetch_related('attributes', 'attributes__attribute_type').all()
     serializer_class = ResponsibleSerializer
-    permission_classes = [IsAuthenticated, ]
-    filter_backends = [OwnerByMasterUserFilter, DjangoFilterBackend, OrderingFilter, SearchFilter, ]
+    filter_backends = [OwnerByMasterUserFilter, DjangoFilterBackend, OrderingFilter, SearchFilter]
     ordering_fields = ['user_code', 'name', 'short_name']
     search_fields = ['user_code', 'name', 'short_name']

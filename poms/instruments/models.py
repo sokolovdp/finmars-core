@@ -173,43 +173,26 @@ class CostMethod(ClassModelBase):
         verbose_name_plural = _('cost methods')
 
 
-@python_2_unicode_compatible
-class InstrumentType(NamedModel):
-    master_user = models.ForeignKey(MasterUser, related_name='instrument_types',
+class PricingPolicy(NamedModel):
+    # DISABLED = 0
+    # BLOOMBERG = 1
+    # TYPES = (
+    #     (DISABLED, _('Disabled')),
+    #     (BLOOMBERG, _('Bloomberg')),
+    # )
+
+    master_user = models.ForeignKey(MasterUser, related_name='pricing_policies',
                                     verbose_name=_('master user'))
-    instrument_class = models.ForeignKey(InstrumentClass, related_name='instrument_types', on_delete=models.PROTECT,
-                                         verbose_name=_('instrument class'))
+    # type = models.PositiveIntegerField(default=DISABLED, choices=TYPES)
+    expr = models.TextField(default='',
+                            verbose_name=_('expression'))
 
     class Meta:
-        verbose_name = _('instrument type')
-        verbose_name_plural = _('instrument types')
+        verbose_name = _('pricing policy')
+        verbose_name_plural = _('pricing policies')
         unique_together = [
             ['master_user', 'user_code']
         ]
-        permissions = [
-            ('view_instrumenttype', 'Can view instrument type')
-        ]
-
-    def __str__(self):
-        return self.name
-
-
-class InstrumentTypeUserObjectPermission(UserObjectPermissionBase):
-    content_object = models.ForeignKey(InstrumentType, related_name='user_object_permissions',
-                                       verbose_name=_('content object'))
-
-    class Meta:
-        verbose_name = _('instrument types - user permission')
-        verbose_name_plural = _('instrument types - user permissions')
-
-
-class InstrumentTypeGroupObjectPermission(GroupObjectPermissionBase):
-    content_object = models.ForeignKey(InstrumentType, related_name='group_object_permissions',
-                                       verbose_name=_('content object'))
-
-    class Meta:
-        verbose_name = _('instrument types - group permission')
-        verbose_name_plural = _('instrument types - group permissions')
 
 
 @python_2_unicode_compatible
@@ -252,6 +235,45 @@ class InstrumentClassifierGroupObjectPermission(GroupObjectPermissionBase):
     class Meta:
         verbose_name = _('instrument classifiers - group permission')
         verbose_name_plural = _('instrument classifiers - group permissions')
+
+
+@python_2_unicode_compatible
+class InstrumentType(NamedModel):
+    master_user = models.ForeignKey(MasterUser, related_name='instrument_types',
+                                    verbose_name=_('master user'))
+    instrument_class = models.ForeignKey(InstrumentClass, related_name='instrument_types', on_delete=models.PROTECT,
+                                         verbose_name=_('instrument class'))
+
+    class Meta:
+        verbose_name = _('instrument type')
+        verbose_name_plural = _('instrument types')
+        unique_together = [
+            ['master_user', 'user_code']
+        ]
+        permissions = [
+            ('view_instrumenttype', 'Can view instrument type')
+        ]
+
+    def __str__(self):
+        return self.name
+
+
+class InstrumentTypeUserObjectPermission(UserObjectPermissionBase):
+    content_object = models.ForeignKey(InstrumentType, related_name='user_object_permissions',
+                                       verbose_name=_('content object'))
+
+    class Meta:
+        verbose_name = _('instrument types - user permission')
+        verbose_name_plural = _('instrument types - user permissions')
+
+
+class InstrumentTypeGroupObjectPermission(GroupObjectPermissionBase):
+    content_object = models.ForeignKey(InstrumentType, related_name='group_object_permissions',
+                                       verbose_name=_('content object'))
+
+    class Meta:
+        verbose_name = _('instrument types - group permission')
+        verbose_name_plural = _('instrument types - group permissions')
 
 
 @python_2_unicode_compatible
@@ -353,7 +375,7 @@ class InstrumentAttributeTypeGroupObjectPermission(GroupObjectPermissionBase):
 class InstrumentAttribute(AttributeBase):
     attribute_type = models.ForeignKey(InstrumentAttributeType, related_name='attributes', on_delete=models.PROTECT,
                                        verbose_name=_('attribute type'))
-    content_object = models.ForeignKey(Instrument,
+    content_object = models.ForeignKey(Instrument, related_name='attributes',
                                        verbose_name=_('content object'))
     classifier = models.ForeignKey(InstrumentClassifier, on_delete=models.PROTECT, null=True, blank=True,
                                    verbose_name=_('classifier'))
@@ -367,7 +389,7 @@ class InstrumentAttribute(AttributeBase):
 class ManualPricingFormula(models.Model):
     instrument = models.ForeignKey(Instrument, related_name='manual_pricing_formulas',
                                    verbose_name=_('instrument'))
-    pricing_policy = models.ForeignKey('integrations.PricingPolicy', on_delete=models.PROTECT,
+    pricing_policy = models.ForeignKey(PricingPolicy, on_delete=models.PROTECT,
                                        related_name='manual_pricing_formulas',
                                        verbose_name=_('pricing policy'))
     expr = models.CharField(max_length=255, blank=True, default='',
@@ -393,7 +415,7 @@ class ManualPricingFormula(models.Model):
 class PriceHistory(models.Model):
     instrument = models.ForeignKey(Instrument, related_name='prices',
                                    verbose_name=_('instrument'))
-    pricing_policy = models.ForeignKey('integrations.PricingPolicy', on_delete=models.PROTECT, null=True, blank=True,
+    pricing_policy = models.ForeignKey(PricingPolicy, on_delete=models.PROTECT, null=True, blank=True,
                                        verbose_name=_('pricing policy'))
     date = models.DateField(null=False, blank=False, db_index=True, default=timezone.now,
                             verbose_name=_('pricing policy'))

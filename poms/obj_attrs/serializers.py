@@ -40,7 +40,6 @@ class AttributeTypeSerializerBase(serializers.ModelSerializer):
         if request and request.method in ['PUT', 'PATCH']:
             update_read_only_fields = getattr(self.Meta, 'update_read_only_fields', None)
             for name, field in six.iteritems(fields):
-                print(name)
                 if name in update_read_only_fields:
                     field.read_only = True
 

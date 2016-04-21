@@ -13,7 +13,7 @@ from poms.users.fields import MasterUserField
 
 
 class TransactionClassSerializer(PomsClassSerializer):
-    class Meta:
+    class Meta(PomsClassSerializer.Meta):
         model = TransactionClass
 
 

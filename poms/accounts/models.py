@@ -15,47 +15,6 @@ from poms.users.models import MasterUser, Member
 
 
 @python_2_unicode_compatible
-class AccountType(NamedModel):
-    master_user = models.ForeignKey(MasterUser, related_name='account_types',
-                                    verbose_name=_('master user'))
-    show_transaction_details = models.BooleanField(default=False,
-                                                   verbose_name=_('show transaction details'))
-    transaction_details_expr = models.CharField(max_length=255, null=True, blank=True,
-                                                verbose_name=_('transaction details expr'))
-
-    class Meta:
-        verbose_name = _('account type')
-        verbose_name_plural = _('account types')
-        unique_together = [
-            ['master_user', 'user_code']
-        ]
-        permissions = [
-            ('view_accounttype', 'Can view account type')
-        ]
-
-    def __str__(self):
-        return self.name
-
-
-class AccountTypeUserObjectPermission(UserObjectPermissionBase):
-    content_object = models.ForeignKey(AccountType, related_name='user_object_permissions',
-                                       verbose_name=_('content object'))
-
-    class Meta:
-        verbose_name = _('account types - user permission')
-        verbose_name_plural = _('account types - user permissions')
-
-
-class AccountTypeGroupObjectPermission(GroupObjectPermissionBase):
-    content_object = models.ForeignKey(AccountType, related_name='group_object_permissions',
-                                       verbose_name=_('content object'))
-
-    class Meta:
-        verbose_name = _('account types - group permission')
-        verbose_name_plural = _('account types - group permissions')
-
-
-@python_2_unicode_compatible
 class AccountClassifier(MPTTModel, NamedModel):
     master_user = models.ForeignKey(MasterUser, related_name='account_classifiers',
                                     verbose_name=_('master user'))
@@ -95,6 +54,47 @@ class AccountClassifierGroupObjectPermission(GroupObjectPermissionBase):
     class Meta:
         verbose_name = _('account classifiers - group permission')
         verbose_name_plural = _('account classifiers - group permissions')
+
+
+@python_2_unicode_compatible
+class AccountType(NamedModel):
+    master_user = models.ForeignKey(MasterUser, related_name='account_types',
+                                    verbose_name=_('master user'))
+    show_transaction_details = models.BooleanField(default=False,
+                                                   verbose_name=_('show transaction details'))
+    transaction_details_expr = models.CharField(max_length=255, null=True, blank=True,
+                                                verbose_name=_('transaction details expr'))
+
+    class Meta:
+        verbose_name = _('account type')
+        verbose_name_plural = _('account types')
+        unique_together = [
+            ['master_user', 'user_code']
+        ]
+        permissions = [
+            ('view_accounttype', 'Can view account type')
+        ]
+
+    def __str__(self):
+        return self.name
+
+
+class AccountTypeUserObjectPermission(UserObjectPermissionBase):
+    content_object = models.ForeignKey(AccountType, related_name='user_object_permissions',
+                                       verbose_name=_('content object'))
+
+    class Meta:
+        verbose_name = _('account types - user permission')
+        verbose_name_plural = _('account types - user permissions')
+
+
+class AccountTypeGroupObjectPermission(GroupObjectPermissionBase):
+    content_object = models.ForeignKey(AccountType, related_name='group_object_permissions',
+                                       verbose_name=_('content object'))
+
+    class Meta:
+        verbose_name = _('account types - group permission')
+        verbose_name_plural = _('account types - group permissions')
 
 
 @python_2_unicode_compatible

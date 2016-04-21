@@ -64,7 +64,7 @@ class CurrencyGroupObjectPermission(GroupObjectPermissionBase):
 class CurrencyHistory(models.Model):
     currency = models.ForeignKey(Currency, related_name='histories',
                                  verbose_name=_('currency'))
-    pricing_policy = models.ForeignKey('integrations.PricingPolicy', on_delete=models.PROTECT, null=True, blank=True,
+    pricing_policy = models.ForeignKey('instruments.PricingPolicy', on_delete=models.PROTECT, null=True, blank=True,
                                        verbose_name=_('pricing policy'))
     date = models.DateField(db_index=True, default=timezone.now,
                             verbose_name=_('date'))

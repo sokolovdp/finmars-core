@@ -7,13 +7,13 @@ from rest_framework.viewsets import ModelViewSet
 
 from poms.audit.mixins import HistoricalMixin
 from poms.common.mixins import DbTransactionMixin
-from poms.common.views import PomsClassBase
+from poms.common.views import PomsClassViewSetBase
 from poms.transactions.models import TransactionClass, Transaction
 from poms.transactions.serializers import TransactionClassSerializer, TransactionSerializer
 from poms.users.filters import OwnerByMasterUserFilter
 
 
-class TransactionClassViewSet(PomsClassBase):
+class TransactionClassViewSet(PomsClassViewSetBase):
     queryset = TransactionClass.objects.all()
     serializer_class = TransactionClassSerializer
 
