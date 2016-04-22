@@ -7,7 +7,6 @@ from poms.chats.models import Thread, Message, DirectMessage, ThreadStatus
 from poms.obj_perms.fields import GrantedPermissionField
 from poms.obj_perms.utils import assign_perms_to_new_obj
 from poms.users.fields import MasterUserField, MemberField, HiddenMemberField, GroupField, UserField, HiddenUserField
-from poms.users.utils import get_member
 
 
 class ThreadStatusSerializer(serializers.ModelSerializer):
@@ -48,7 +47,10 @@ class ThreadSerializer(serializers.ModelSerializer):
 
         instance = super(ThreadSerializer, self).create(validated_data)
 
-        member = get_member(self.context['request'])
+        request = self.context['request']
+        # member = get_member(request)
+        member = request.user.member
+
         owner_permission_set = ['view_thread', 'change_thread', 'manage_thread', 'delete_thread']
         member_permission_set = ['view_thread']
         assign_perms_to_new_obj(obj=instance,

@@ -1,7 +1,5 @@
 from rest_framework.filters import BaseFilterBackend
 
-from poms.users.utils import get_master_user
-
 
 class OwnerByUserFilter(BaseFilterBackend):
     def filter_queryset(self, request, queryset, view):
@@ -10,9 +8,13 @@ class OwnerByUserFilter(BaseFilterBackend):
 
 class OwnerByMasterUserFilter(BaseFilterBackend):
     def filter_queryset(self, request, queryset, view):
-        return queryset.filter(master_user=get_master_user(request))
+        # master_user = get_master_user(request)
+        master_user = request.user.master_user
+        return queryset.filter(master_user=master_user)
 
 
 class GroupOwnerByMasterUserFilter(OwnerByMasterUserFilter):
     def filter_queryset(self, request, queryset, view):
-        return queryset.filter(master_user=get_master_user(request))
+        # master_user = get_master_user(request)
+        master_user = request.user.master_user
+        return queryset.filter(master_user=master_user)

@@ -7,7 +7,6 @@ from rest_framework import serializers
 
 from poms.audit import history
 from poms.obj_perms.utils import get_granted_permissions
-from poms.users.utils import get_member
 
 
 class GrantedPermissionField(serializers.Field):
@@ -23,7 +22,9 @@ class GrantedPermissionField(serializers.Field):
         if history.is_historical_proxy(value):
             return []
 
-        member = get_member(self.context['request'])
+        request = self.context['request']
+        # member = get_member(request)
+        member = request.user.member
         return get_granted_permissions(member, value)
 
         # perms = set()

@@ -17,7 +17,6 @@ from poms.users.fields import GroupOwnerByMasterUserFilter
 from poms.users.filters import OwnerByMasterUserFilter
 from poms.users.models import MasterUser, Member, Group
 from poms.users.serializers import GroupSerializer, UserSerializer, MasterUserSerializer, MemberSerializer
-from poms.users.utils import get_master_user
 
 
 class ObtainAuthTokenViewSet(DbTransactionMixin, ViewSet):
@@ -81,7 +80,8 @@ class UserPermission(BasePermission):
 
 class UserFilter(BaseFilterBackend):
     def filter_queryset(self, request, queryset, view):
-        master_user = get_master_user(request)
+        # master_user = get_master_user(request)
+        master_user = request.user.master_user
         return queryset.filter(member_of=master_user)
 
 
@@ -104,8 +104,8 @@ class UserViewSet(DbTransactionMixin, HistoricalMixin, UpdateModelMixin, Destroy
 
 class MasterUserFilter(BaseFilterBackend):
     def filter_queryset(self, request, queryset, view):
-        user = request.user
-        return queryset.filter(members=user)
+        member = request.user.member
+        return queryset.filter(members=member)
 
 
 class MasterUserViewSet(DbTransactionMixin, HistoricalMixin, ModelViewSet):

@@ -39,7 +39,10 @@ class ModelWithPermissionSerializer(serializers.ModelSerializer):
     def create(self, validated_data):
         instance = super(ModelWithPermissionSerializer, self).create(validated_data)
 
-        member = get_member(self.context['request'])
+        request = self.context['request']
+        # member = get_member(request)
+        member = request.user.member
+
         perms = self.get_owner_permissions(instance)
         assign_perms_to_new_obj(obj=instance, owner=member, owner_perms=perms)
 

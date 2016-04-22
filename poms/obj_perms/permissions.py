@@ -27,7 +27,8 @@ class ObjectPermissionBase(BasePermission):
         if not req_perms:
             return True
 
-        member = get_member(request)
+        # member = get_member(request)
+        member = request.user.member
         perms = get_granted_permissions(member, obj)
         # user_perms = obj.user_object_permissions.select_related('permission',
         #                                                         'permission__content_type').filter(

@@ -2,33 +2,30 @@ from django.conf import settings
 from django.core.exceptions import ObjectDoesNotExist
 from rest_framework.exceptions import NotFound
 
-from poms.users.models import Member
+from poms.users.models import Member, MasterUser
 
 
-def get_master_user(request, master_user_id=None):
+def get_master_user(request):
     user = request.user
-    if hasattr(user, '_cached_master_user'):
-        return user._cached_master_user
-    if master_user_id is None:
-        master_user_id = request.GET.get('master_user_id', None)
+
+    master_user_id = request.GET.get('master_user_id', None)
     if master_user_id is None:
         master_user_id = request.session.get('master_user_id', None)
+
     try:
         if master_user_id is None:
             if settings.DEV:
                 member = user.members.first()
-                master_user = member.master_user
-            else:
-                raise NotFound()
-        else:
-            master_user = user.members.get(pk=master_user_id)
-        user._cached_master_user = master_user
-        return master_user
+                return member.master_user
+        if master_user_id:
+            return MasterUser.objects.get(id=master_user_id, members__user=user)
+        raise NotFound()
     except ObjectDoesNotExist:
         raise NotFound()
 
 
-def set_master_user(request, master_user_id):
+def set_master_user(request, master_user):
+    master_user_id = master_user.id
     old_master_user_id = request.session.get('master_user_id', None)
     if old_master_user_id != master_user_id:
         if master_user_id is None:
@@ -37,39 +34,35 @@ def set_master_user(request, master_user_id):
             request.session['master_user_id'] = master_user_id
 
 
-def get_member(request, master_user_id=None):
+def get_member(request):
     user = request.user
-    if hasattr(user, '_cached_member'):
-        return user._cached_member
     try:
-        master_user = get_master_user(request, master_user_id)
-        master_user_id = master_user.id
-        member = Member.objects.get(user=request.user, master_user=master_user_id)
-        user._cached_member = member
+        master_user = user.master_user
+        member = Member.objects.get(user=request.user, master_user=master_user)
         return member
     except ObjectDoesNotExist:
         raise NotFound()
 
 
-def is_admin(request, master_user_id=None):
-    try:
-        member = get_member(request, master_user_id)
-        return member.is_admin
-    except NotFound:
-        return False
-
-
-def is_owner(request, master_user_id=None):
-    try:
-        member = get_member(request, master_user_id)
-        return member.is_admin
-    except NotFound:
-        return False
-
-
-def is_admin_role(request, master_user_id=None):
-    try:
-        member = get_member(request, master_user_id)
-        return member.is_admin or member.is_owner
-    except NotFound:
-        return False
+# def is_admin(request, master_user_id=None):
+#     try:
+#         member = get_member(request)
+#         return member.is_admin
+#     except NotFound:
+#         return False
+#
+#
+# def is_owner(request, master_user_id=None):
+#     try:
+#         member = get_member(request, master_user_id)
+#         return member.is_admin
+#     except NotFound:
+#         return False
+#
+#
+# def is_admin_role(request, master_user_id=None):
+#     try:
+#         member = get_member(request, master_user_id)
+#         return member.is_admin or member.is_owner
+#     except NotFound:
+#         return False

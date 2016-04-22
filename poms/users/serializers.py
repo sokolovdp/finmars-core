@@ -8,9 +8,9 @@ from django.utils.translation import ugettext_lazy as _
 from rest_framework import serializers
 from rest_framework.authtoken.serializers import AuthTokenSerializer
 
-from poms.users.fields import MasterUserField, get_member, GroupField, UserField
-from poms.users.utils import get_master_user, get_member
+from poms.users.fields import MasterUserField, GroupField, UserField
 from poms.users.models import MasterUser, UserProfile, Group, Member
+from poms.users.utils import get_member
 
 
 class LoginSerializer(AuthTokenSerializer):
@@ -89,7 +89,9 @@ class UserSerializer(serializers.ModelSerializer):
 
         if 'groups' in validated_data:
             request = self.context['request']
-            master_user = get_master_user(request)
+            # master_user = get_master_user(request)
+            master_user = request.user.master_user
+
             cur_groups = set(instance.groups.filter(profile__master_user=master_user))
             new_groups = set(validated_data['groups'])
 
@@ -116,11 +118,13 @@ class MasterUserSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = MasterUser
-        fields = ['url', 'id', 'name', 'currency', 'is_current', 'members']
+        fields = ['url', 'id', 'name', 'currency', 'is_current']
 
     def get_is_current(self, obj):
         request = self.context['request']
-        return obj.id == get_master_user(request).id
+        # master_user = get_master_user(request)
+        master_user = request.user.master_user
+        return obj.id == master_user.id
 
 
 class MemberSerializer(serializers.ModelSerializer):
@@ -136,7 +140,8 @@ class MemberSerializer(serializers.ModelSerializer):
 
     def get_is_current(self, obj):
         request = self.context['request']
-        member = get_member(request)
+        # member = get_member(request)
+        member = request.user.member
         return obj.id == member.id
 
 

@@ -1,7 +1,6 @@
 from rest_framework.permissions import BasePermission, SAFE_METHODS
 
 from poms.obj_perms.permissions import ObjectPermissionBase
-from poms.users.utils import get_member
 
 
 class ThreadObjectPermission(ObjectPermissionBase):
@@ -55,7 +54,8 @@ class MessagePermission(BasePermission):
     def has_object_permission(self, request, view, obj):
         if request.method in SAFE_METHODS:
             return True
-        member = get_member(request)
+        # member = get_member(request)
+        member = request.user.member
         return obj.sender_id == member.id
 
 

@@ -9,7 +9,6 @@ from reversion import revisions as reversion
 from poms.audit import history
 from poms.audit.models import VersionInfo
 from poms.audit.serializers import VersionSerializer
-from poms.users.utils import get_master_user
 
 
 # class HistoricalPageNumberPagination(PageNumberPagination):
@@ -44,12 +43,14 @@ class HistoricalMixin(object):
             reversion.set_user(request.user)
             # reversion.set_ignore_duplicates(True)
 
-            master_user = get_master_user(request)
+            # master_user = get_master_user(request)
+            master_user = request.user.master_user
             reversion.add_meta(VersionInfo, master_user=master_user, username=request.user.username)
 
     @list_route()
     def deleted(self, request, pk=None):
-        master_user = get_master_user(request)
+        # master_user = get_master_user(request)
+        master_user = request.user.master_user
         model = self.get_queryset().model
         deleted_list = reversion.get_deleted(model).filter(revision__info__master_user=master_user)
 
@@ -64,7 +65,8 @@ class HistoricalMixin(object):
         # instance = self.get_object()
         # version_list = reversion.get_for_object(instance)
 
-        master_user = get_master_user(request)
+        # master_user = get_master_user(request)
+        master_user = request.user.master_user
         model = self.get_queryset().model
         version_list = reversion.get_for_object_reference(model, pk).filter(revision__info__master_user=master_user)
 

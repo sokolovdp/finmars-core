@@ -7,13 +7,14 @@ from rest_framework.fields import CurrentUserDefault
 from poms.api.fields import FilteredPrimaryKeyRelatedField
 from poms.users.filters import OwnerByMasterUserFilter, GroupOwnerByMasterUserFilter
 from poms.users.models import Member, Group
-from poms.users.utils import get_master_user, get_member
 
 
 class CurrentMasterUserDefault(object):
     def set_context(self, serializer_field):
         request = serializer_field.context['request']
-        self._master_user = get_master_user(request)
+        # master_user = get_master_user(request)
+        master_user = request.user.master_user
+        self._master_user = master_user
 
     def __call__(self):
         return self._master_user
@@ -28,7 +29,9 @@ class MasterUserField(serializers.HiddenField):
 class CurrentMemberDefault(object):
     def set_context(self, serializer_field):
         request = serializer_field.context['request']
-        self._member = get_member(request)
+        # member = get_member(request)
+        member = request.user.member
+        self._member = member
 
     def __call__(self):
         # return self._member

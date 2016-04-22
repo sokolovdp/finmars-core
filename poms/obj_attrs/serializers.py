@@ -6,8 +6,27 @@ from rest_framework import serializers
 from poms.users.fields import MasterUserField
 
 
+class AttributeTypeIsHiddenField(serializers.BooleanField):
+    def __init__(self, method_name=None, **kwargs):
+        kwargs['source'] = '*'
+        super(AttributeTypeIsHiddenField, self).__init__(**kwargs)
+
+    def to_representation(self, obj):
+        # print(repr(obj))
+        # member = get_member(self.parent.context['request'])
+        # option = obj.options.filter(member=member, attribute_type=obj).first()
+        # # print('AttributeTypeIsHiddenField.to_representation: %s - %s' %(obj, repr(obj)))
+        # return getattr(option, 'is_hidden', False)
+        return True
+
+    def to_internal_value(self, data):
+        print('AttributeTypeIsHiddenField.to_internal_value: %s - %s' %(data, repr(data)))
+        return True
+
+
 class AttributeTypeSerializerBase(serializers.ModelSerializer):
     master_user = MasterUserField()
+    # is_hidden = AttributeTypeIsHiddenField()
 
     class Meta:
         fields = ['url', 'id', 'master_user', 'user_code', 'name', 'short_name', 'notes', 'value_type', 'order']

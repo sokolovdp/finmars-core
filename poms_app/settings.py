@@ -67,7 +67,7 @@ INSTALLED_APPS = [
     'poms.api',
 
     'django_extensions',
-    'rest_framework_swagger',
+    # 'rest_framework_swagger',
 ]
 
 if ADMIN:
@@ -90,6 +90,7 @@ MIDDLEWARE_CLASSES = [
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
+    'poms.users.middleware.AuthenticationMiddleware',
     'django.contrib.auth.middleware.SessionAuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
@@ -232,9 +233,9 @@ LOGGING = {
             'level': 'INFO',
             'handlers': ['console'],
         },
-        # 'django.db': {
-        #     'level': 'DEBUG',
-        # },
+        'django.db': {
+            'level': 'DEBUG',
+        },
         'poms': {
             'level': 'DEBUG',
             'handlers': ['console'],
