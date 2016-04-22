@@ -248,8 +248,8 @@ REST_FRAMEWORK = {
     'PAGE_SIZE': 200,
     'DEFAULT_AUTHENTICATION_CLASSES': (
         'rest_framework.authentication.SessionAuthentication',
-        #     'rest_framework.authentication.BasicAuthentication',
-        #     'rest_framework.authentication.TokenAuthentication',
+        # 'rest_framework.authentication.BasicAuthentication',
+        # 'rest_framework.authentication.TokenAuthentication',
     ),
     'DEFAULT_PERMISSION_CLASSES': (
         'rest_framework.permissions.IsAuthenticated',
@@ -315,6 +315,5 @@ else:
     ADMINS = []
     MANAGERS = []
     EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
-
 
 MESSAGE_STORAGE = 'poms.notifications.message_storage.Storage'
