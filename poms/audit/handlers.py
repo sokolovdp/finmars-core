@@ -42,7 +42,6 @@ def audit_user_login_failed(credentials=None, **kwargs):
 
 
 def is_track_enabled(obj):
-    return False
     return history.is_active() and reversion.is_registered(obj)
 
 

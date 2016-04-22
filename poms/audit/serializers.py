@@ -31,8 +31,12 @@ class VersionSerializer(serializers.ModelSerializer):
 
     def get_username(self, value):
         info = getattr(value.revision, 'info', None)
-        info = info.first()
-        return getattr(info, 'username', None)
+        if info is None:
+            info = list(info.all())
+            if len(info) > 0:
+                info = info[0]
+                return getattr(info, 'username', None)
+        return None
 
     def get_comment(self, value):
         return value.revision.comment
