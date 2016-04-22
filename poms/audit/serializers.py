@@ -7,11 +7,9 @@ from poms.audit.models import AuthLogEntry
 
 
 class AuthLogEntrySerializer(serializers.ModelSerializer):
-    url = serializers.HyperlinkedIdentityField(view_name='authlog-detail')
-
     class Meta:
         model = AuthLogEntry
-        fields = ['url', 'date', 'user_ip', 'user_agent', 'is_success']
+        fields = ['url', 'id', 'date', 'user_ip', 'user_agent', 'is_success']
 
 
 class VersionSerializer(serializers.ModelSerializer):

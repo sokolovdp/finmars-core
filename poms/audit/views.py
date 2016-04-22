@@ -17,8 +17,8 @@ class AuthLogEntryFilter(FilterSet):
         fields = ['user_ip', 'is_success']
 
 
-class AuthLogEntryViewSet(DbTransactionMixin, ReadOnlyModelViewSet):
-    queryset = AuthLogEntry.objects.all()
+class AuthLogEntryViewSet(ReadOnlyModelViewSet):
+    queryset = AuthLogEntry.objects.select_related('user').all()
     serializer_class = AuthLogEntrySerializer
     permission_classes = (IsAuthenticated,)
     filter_backends = (OwnerByUserFilter, DjangoFilterBackend, OrderingFilter, SearchFilter,)
