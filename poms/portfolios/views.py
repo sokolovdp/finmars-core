@@ -1,12 +1,8 @@
 from __future__ import unicode_literals
 
 from rest_framework.filters import DjangoFilterBackend, OrderingFilter, SearchFilter
-from rest_framework.permissions import IsAuthenticated
-from rest_framework.viewsets import ModelViewSet
 
-from poms.audit.mixins import HistoricalMixin
 from poms.common.filters import ClassifierFilterSetBase
-from poms.common.mixins import DbTransactionMixin
 from poms.common.views import ClassifierViewSetBase, PomsViewSetBase
 from poms.obj_attrs.views import AttributeTypeViewSetBase
 from poms.portfolios.models import PortfolioClassifier, Portfolio, PortfolioAttributeType

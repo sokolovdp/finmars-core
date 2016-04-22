@@ -10,7 +10,6 @@ from rest_framework.response import Response
 from rest_framework.viewsets import ReadOnlyModelViewSet
 
 from poms import notifications
-from poms.common.mixins import DbTransactionMixin
 from poms.notifications.filters import OwnerByRecipientFilter
 from poms.notifications.models import Notification
 from poms.notifications.serializers import NotificationSerializer
@@ -30,7 +29,7 @@ class NotificationFilter(FilterSet):
         return qs
 
 
-class NotificationViewSet(DbTransactionMixin, ReadOnlyModelViewSet):
+class NotificationViewSet(ReadOnlyModelViewSet):
     queryset = Notification.objects.prefetch_related('actor_content_type', 'actor',
                                                      'target_content_type', 'target',
                                                      'action_object_content_type', 'action_object')

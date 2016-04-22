@@ -6,16 +6,15 @@ from rest_framework.viewsets import ModelViewSet, ReadOnlyModelViewSet
 
 from poms.audit.mixins import HistoricalMixin
 from poms.common.filters import ClassifierFilter
-from poms.common.mixins import DbTransactionMixin
 from poms.users.filters import OwnerByMasterUserFilter
 
 
-class PomsViewSetBase(DbTransactionMixin, HistoricalMixin, ModelViewSet):
+class PomsViewSetBase(HistoricalMixin, ModelViewSet):
     permission_classes = [IsAuthenticated]
     pass
 
 
-class PomsClassViewSetBase(DbTransactionMixin, ReadOnlyModelViewSet):
+class PomsClassViewSetBase(ReadOnlyModelViewSet):
     permission_classes = [IsAuthenticated]
     filter_backends = [DjangoFilterBackend, OrderingFilter, SearchFilter]
     ordering_fields = ['id', 'system_code', 'name']

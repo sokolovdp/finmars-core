@@ -5,7 +5,6 @@ from rest_framework.mixins import DestroyModelMixin
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.viewsets import ReadOnlyModelViewSet
 
-from poms.common.mixins import DbTransactionMixin
 from poms.http_sessions.models import Session
 from poms.http_sessions.serializers import SessionSerializer
 from poms.users.filters import OwnerByUserFilter
@@ -17,7 +16,7 @@ class SessionFilter(FilterSet):
         fields = ['user_ip']
 
 
-class SessionViewSet(DbTransactionMixin, DestroyModelMixin, ReadOnlyModelViewSet):
+class SessionViewSet(DestroyModelMixin, ReadOnlyModelViewSet):
     queryset = Session.objects.all()
     lookup_field = 'id'
     serializer_class = SessionSerializer

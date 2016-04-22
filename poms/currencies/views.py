@@ -6,7 +6,6 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.viewsets import ModelViewSet
 
 from poms.audit.mixins import HistoricalMixin
-from poms.common.mixins import DbTransactionMixin
 from poms.currencies.models import Currency, CurrencyHistory
 from poms.currencies.serializers import CurrencySerializer, CurrencyHistorySerializer
 
@@ -26,7 +25,7 @@ class CurrencyFilter(FilterSet):
         return qs
 
 
-class CurrencyViewSet(DbTransactionMixin, HistoricalMixin, ModelViewSet):
+class CurrencyViewSet(HistoricalMixin, ModelViewSet):
     queryset = Currency.objects.all()
     serializer_class = CurrencySerializer
     permission_classes = [IsAuthenticated]
@@ -46,7 +45,7 @@ class CurrencyHistoryFilter(FilterSet):
         fields = ['currency', 'min_date', 'max_date']
 
 
-class CurrencyHistoryViewSet(DbTransactionMixin, HistoricalMixin, ModelViewSet):
+class CurrencyHistoryViewSet(HistoricalMixin, ModelViewSet):
     queryset = CurrencyHistory.objects.all()
     serializer_class = CurrencyHistorySerializer
     permission_classes = [IsAuthenticated,]

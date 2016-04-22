@@ -4,7 +4,6 @@ from rest_framework import viewsets, status
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
-from poms.common.mixins import DbTransactionMixin
 from poms.reports.backends.balance import BalanceReportBuilder, BalanceReport2Builder
 from poms.reports.backends.cost import CostReportBuilder, CostReport2Builder
 from poms.reports.backends.pl import PLReportBuilder, PLReport2Builder
@@ -14,7 +13,7 @@ from poms.reports.serializers import BalanceReportSerializer, SimpleMultipliersR
     CostReportSerializer, YTMReportSerializer, SimpleMultipliersReport2Serializer
 
 
-class BaseReportViewSet(DbTransactionMixin, viewsets.ViewSet):
+class BaseReportViewSet(viewsets.ViewSet):
     permission_classes = [IsAuthenticated]
     serializer_class = None
     report_builder_class = None

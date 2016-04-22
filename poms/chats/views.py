@@ -11,11 +11,10 @@ from poms.chats.filters import MessageThreadOwnerByMasterUserFilter, DirectMessa
 from poms.chats.models import Thread, Message, DirectMessage, ThreadStatus
 from poms.chats.permissions import ThreadObjectPermission, MessagePermission, DirectMessagePermission
 from poms.chats.serializers import ThreadSerializer, MessageSerializer, DirectMessageSerializer, ThreadStatusSerializer
-from poms.common.mixins import DbTransactionMixin
 from poms.users.filters import OwnerByMasterUserFilter
 
 
-class ThreadStatusViewSet(DbTransactionMixin, HistoricalMixin, ModelViewSet):
+class ThreadStatusViewSet(HistoricalMixin, ModelViewSet):
     queryset = ThreadStatus.objects.all()
     serializer_class = ThreadStatusSerializer
     permission_classes = [IsAuthenticated]
@@ -32,7 +31,7 @@ class ThreadFilter(FilterSet):
         fields = ['subject', 'created', 'modified']
 
 
-class ThreadViewSet(DbTransactionMixin, HistoricalMixin, ModelViewSet):
+class ThreadViewSet(HistoricalMixin, ModelViewSet):
     queryset = Thread.objects.all()
     serializer_class = ThreadSerializer
     permission_classes = [IsAuthenticated, ThreadObjectPermission]
@@ -52,7 +51,7 @@ class MessageFilter(FilterSet):
         fields = ['thread', 'created']
 
 
-class MessageViewSet(DbTransactionMixin, HistoricalMixin, ModelViewSet):
+class MessageViewSet(HistoricalMixin, ModelViewSet):
     queryset = Message.objects.all()
     serializer_class = MessageSerializer
     permission_classes = [IsAuthenticated, MessagePermission]
@@ -62,7 +61,7 @@ class MessageViewSet(DbTransactionMixin, HistoricalMixin, ModelViewSet):
     ordering_fields = ['id', 'created']
 
 
-class DirectMessageViewSet(DbTransactionMixin, HistoricalMixin, ModelViewSet):
+class DirectMessageViewSet(HistoricalMixin, ModelViewSet):
     queryset = DirectMessage.objects.all()
     serializer_class = DirectMessageSerializer
     permission_classes = [IsAuthenticated, DirectMessagePermission]

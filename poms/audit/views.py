@@ -7,7 +7,6 @@ from rest_framework.viewsets import ReadOnlyModelViewSet
 
 from poms.audit.models import AuthLogEntry
 from poms.audit.serializers import AuthLogEntrySerializer
-from poms.common.mixins import DbTransactionMixin
 from poms.users.filters import OwnerByUserFilter
 
 

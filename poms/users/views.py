@@ -12,14 +12,13 @@ from rest_framework.response import Response
 from rest_framework.viewsets import ViewSet, ModelViewSet, ReadOnlyModelViewSet
 
 from poms.audit.mixins import HistoricalMixin
-from poms.common.mixins import DbTransactionMixin
 from poms.users.fields import GroupOwnerByMasterUserFilter
 from poms.users.filters import OwnerByMasterUserFilter
 from poms.users.models import MasterUser, Member, Group
 from poms.users.serializers import GroupSerializer, UserSerializer, MasterUserSerializer, MemberSerializer
 
 
-class ObtainAuthTokenViewSet(DbTransactionMixin, ViewSet):
+class ObtainAuthTokenViewSet(ViewSet):
     parser_classes = (FormParser, MultiPartParser, JSONParser,)
     serializer_class = AuthTokenSerializer
 
@@ -32,7 +31,7 @@ class ObtainAuthTokenViewSet(DbTransactionMixin, ViewSet):
         return Response({'token': token.key})
 
 
-class LoginViewSet(DbTransactionMixin, ViewSet):
+class LoginViewSet(ViewSet):
     permission_classes = ()
     parser_classes = (FormParser, MultiPartParser, JSONParser,)
     serializer_class = AuthTokenSerializer
@@ -45,7 +44,7 @@ class LoginViewSet(DbTransactionMixin, ViewSet):
         return Response({'success': True})
 
 
-class LogoutViewSet(DbTransactionMixin, ViewSet):
+class LogoutViewSet(ViewSet):
     def create(self, request, *args, **kwargs):
         logout(request)
         return Response({'success': True})
@@ -85,7 +84,7 @@ class UserFilter(BaseFilterBackend):
         return queryset.filter(members__master_user=master_user)
 
 
-class UserViewSet(DbTransactionMixin, HistoricalMixin, UpdateModelMixin, DestroyModelMixin, ReadOnlyModelViewSet):
+class UserViewSet(HistoricalMixin, UpdateModelMixin, DestroyModelMixin, ReadOnlyModelViewSet):
     queryset = User.objects
     serializer_class = UserSerializer
     permission_classes = [IsAuthenticated, UserPermission]
@@ -108,22 +107,22 @@ class MasterUserFilter(BaseFilterBackend):
         return queryset.filter(members=member)
 
 
-class MasterUserViewSet(DbTransactionMixin, HistoricalMixin, ModelViewSet):
+class MasterUserViewSet(HistoricalMixin, ModelViewSet):
     queryset = MasterUser.objects.filter()
     serializer_class = MasterUserSerializer
     permission_classes = [IsAuthenticated]
     filter_backends = [MasterUserFilter]
 
 
-class MemberViewSet(DbTransactionMixin, HistoricalMixin, ModelViewSet):
+class MemberViewSet(HistoricalMixin, ModelViewSet):
     queryset = Member.objects.filter()
     serializer_class = MemberSerializer
     permission_classes = [IsAuthenticated]
     filter_backends = [OwnerByMasterUserFilter]
 
 
-class GroupViewSet(DbTransactionMixin, HistoricalMixin, ModelViewSet):
-    queryset = Group.objects.prefetch_related('master_user', 'permissions', 'permissions__content_type')
+class GroupViewSet(HistoricalMixin, ModelViewSet):
+    queryset = Group.objects.prefetch_related('master_user')
     serializer_class = GroupSerializer
     permission_classes = [IsAuthenticated]
     filter_backends = [GroupOwnerByMasterUserFilter]

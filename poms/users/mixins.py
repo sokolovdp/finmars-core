@@ -5,8 +5,6 @@ from rest_framework.decorators import detail_route, list_route
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
-from poms.users.fields import get_member
-from poms.users.utils import get_master_user, get_member
 # from poms.users.permissions import ObjectPermissionSerializer, ObjectPermission, ObjectPermissionGuard
 
 # class PomsModelPermissionMixin(object):
