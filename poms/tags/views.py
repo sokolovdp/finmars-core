@@ -9,7 +9,9 @@ from poms.users.filters import OwnerByMasterUserFilter
 
 
 class TagViewSet(PomsViewSetBase):
-    queryset = Tag.objects.all()
+    queryset = Tag.objects.prefetch_related('content_types', 'account_types', 'accounts', 'currencies',
+                                            'instrument_types', 'instruments', 'counterparties', 'responsibles',
+                                            'strategies', 'portfolios', 'transaction_types').all()
     serializer_class = TagSerializer
     filter_backends = [OwnerByMasterUserFilter, DjangoFilterBackend, OrderingFilter, SearchFilter]
     ordering_fields = ['user_code', 'name', 'short_name']
