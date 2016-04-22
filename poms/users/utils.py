@@ -1,12 +1,14 @@
 from django.conf import settings
 from django.core.exceptions import ObjectDoesNotExist
-from rest_framework.exceptions import NotFound
+from rest_framework.exceptions import NotFound, PermissionDenied
 
 from poms.users.models import Member, MasterUser
 
 
 def get_master_user(request):
     user = request.user
+    if not user.is_authenticated:
+        raise PermissionDenied()
 
     master_user_id = request.GET.get('master_user_id', None)
     if master_user_id is None:
@@ -36,9 +38,12 @@ def set_master_user(request, master_user):
 
 def get_member(request):
     user = request.user
+    if not user.is_authenticated:
+        raise PermissionDenied()
     try:
         master_user = user.master_user
-        member = Member.objects.get(user=request.user, master_user=master_user)
+        # member = Member.objects.get(user=user, master_user=master_user)
+        member = user.members.get(master_user=master_user)
         return member
     except ObjectDoesNotExist:
         raise NotFound()
