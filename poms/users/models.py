@@ -1,5 +1,6 @@
 from __future__ import unicode_literals
 
+import pytz
 from django.conf import settings
 from django.contrib.auth.models import User, Permission
 from django.db import models
@@ -9,11 +10,38 @@ from django.utils.encoding import python_2_unicode_compatible
 from django.utils.translation import ugettext_lazy as _
 
 from poms.audit import history
-from poms.common.fields import TimezoneField, LanguageField
 from poms.common.models import NamedModel
 
 AVAILABLE_APPS = ['accounts', 'counterparties', 'currencies', 'instruments', 'portfolios', 'strategies', 'transactions',
                   'reports', 'users']
+
+LANGUAGE_MAX_LENGTH = 5
+TIMEZONE_MAX_LENGTH = 20
+TIMEZONE_CHOICES = sorted(list((k, k) for k in pytz.all_timezones))
+TIMEZONE_COMMON_CHOICES = sorted(list((k, k) for k in pytz.common_timezones))
+
+
+# class LanguageField(CharField):
+#     description = _("Language")
+#
+#     def __init__(self, *args, **kwargs):
+#         kwargs['max_length'] = kwargs.get('max_length', LANGUAGE_MAX_LENGTH)
+#         kwargs['choices'] = kwargs.get('choices', settings.LANGUAGES)
+#         kwargs['default'] = kwargs.get('default', settings.LANGUAGE_CODE)
+#         super(LanguageField, self).__init__(*args, **kwargs)
+#
+#     def deconstruct(self):
+#         name, path, args, kwargs = super(LanguageField, self).deconstruct()
+#         return name, path, args, kwargs
+#
+#
+# class TimezoneField(CharField):
+#     description = _("Timezone")
+#
+#     def __init__(self, *args, **kwargs):
+#         kwargs['max_length'] = kwargs.get('max_length', TIMEZONE_MAX_LENGTH)
+#         kwargs['choices'] = kwargs.get('choices', TIMEZONE_CHOICES)
+#         super(TimezoneField, self).__init__(*args, **kwargs)
 
 
 @python_2_unicode_compatible
@@ -75,10 +103,10 @@ class Member(models.Model):
 class UserProfile(models.Model):
     user = models.OneToOneField(settings.AUTH_USER_MODEL, related_name='profile',
                                 verbose_name=_('user'))
-    language = LanguageField(null=True, blank=True,
-                             verbose_name=_('language'))
-    timezone = TimezoneField(null=True, blank=True,
-                             verbose_name=_('timezone'))
+    language = models.CharField(max_length=LANGUAGE_MAX_LENGTH, null=True, blank=True,
+                                verbose_name=_('language'))
+    timezone = models.CharField(max_length=TIMEZONE_MAX_LENGTH, null=True, blank=True,
+                                verbose_name=_('timezone'))
 
     class Meta:
         verbose_name = _('profile')
@@ -133,4 +161,3 @@ history.register(Member)
 history.register(User, follow=['profile'], exclude=['password'])
 history.register(UserProfile, follow=['user'])
 history.register(Group)
-# history.register(Permission)

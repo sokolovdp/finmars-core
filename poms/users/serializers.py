@@ -1,5 +1,6 @@
 from __future__ import unicode_literals
 
+from django.conf import settings
 from django.contrib.auth import get_user_model, authenticate
 from django.contrib.auth.models import User
 from django.core.exceptions import PermissionDenied
@@ -9,8 +10,7 @@ from rest_framework import serializers
 from rest_framework.authtoken.serializers import AuthTokenSerializer
 
 from poms.users.fields import MasterUserField, GroupField, UserField
-from poms.users.models import MasterUser, UserProfile, Group, Member
-from poms.users.utils import get_member
+from poms.users.models import MasterUser, UserProfile, Group, Member, TIMEZONE_CHOICES
 
 
 class LoginSerializer(AuthTokenSerializer):
@@ -56,6 +56,9 @@ class PasswordChangeSerializer(serializers.Serializer):
 
 
 class UserProfileSerializer(serializers.ModelSerializer):
+    language = serializers.ChoiceField(choices=settings.LANGUAGES, default=settings.LANGUAGE_CODE)
+    timezone = serializers.ChoiceField(choices=TIMEZONE_CHOICES)
+
     class Meta:
         model = UserProfile
         fields = ['language', 'timezone']

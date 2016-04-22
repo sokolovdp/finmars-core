@@ -82,7 +82,7 @@ class UserFilter(BaseFilterBackend):
     def filter_queryset(self, request, queryset, view):
         # master_user = get_master_user(request)
         master_user = request.user.master_user
-        return queryset.filter(member_of=master_user)
+        return queryset.filter(members__master_user=master_user)
 
 
 class UserViewSet(DbTransactionMixin, HistoricalMixin, UpdateModelMixin, DestroyModelMixin, ReadOnlyModelViewSet):

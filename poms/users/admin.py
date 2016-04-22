@@ -1,12 +1,13 @@
 from __future__ import unicode_literals
 
+from django import forms
+from django.conf import settings
 from django.contrib import admin
-from django.contrib.admin import StackedInline
 from django.contrib.auth.admin import UserAdmin
 from django.contrib.auth.models import User, Permission
 
 from poms.audit.admin import HistoricalAdmin
-from poms.users.models import MasterUser, UserProfile, Member, Group
+from poms.users.models import MasterUser, UserProfile, Member, Group, TIMEZONE_CHOICES
 
 
 class MemberInline(admin.StackedInline):
@@ -48,8 +49,18 @@ class MemberAdmin(admin.ModelAdmin):
 admin.site.register(Member, MemberAdmin)
 
 
-class UserProfileInline(StackedInline):
+class UserProfileForm(forms.ModelForm):
+    language = forms.ChoiceField(choices=settings.LANGUAGES, initial=settings.LANGUAGE_CODE)
+    timezone = forms.ChoiceField(choices=TIMEZONE_CHOICES)
+
+    class Meta:
+        model = UserProfile
+        fields = ['language', 'timezone']
+
+
+class UserProfileInline(admin.StackedInline):
     model = UserProfile
+    form = UserProfileForm
     can_delete = False
 
 
