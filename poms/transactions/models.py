@@ -422,7 +422,7 @@ class TransactionAttributeType(AttributeTypeBase):
 class TransactionAttributeTypeOption(AttributeTypeOptionBase):
     member = models.ForeignKey(Member, related_name='transaction_attribute_type_options',
                                verbose_name=_("member"))
-    attribute_type = models.ForeignKey(TransactionAttributeType, related_name='attribute_type_options',
+    attribute_type = models.ForeignKey(TransactionAttributeType, related_name='options',
                                        verbose_name=_("attribute type"))
 
     class Meta:

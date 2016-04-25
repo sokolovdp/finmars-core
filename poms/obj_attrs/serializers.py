@@ -6,30 +6,29 @@ from rest_framework import serializers
 from poms.users.fields import MasterUserField
 
 
-class AttributeTypeIsHiddenField(serializers.BooleanField):
-    def __init__(self, method_name=None, **kwargs):
-        kwargs['source'] = '*'
-        super(AttributeTypeIsHiddenField, self).__init__(**kwargs)
+class AttributeTypeOptionIsHiddenField(serializers.BooleanField):
+    def __init__(self, **kwargs):
+        super(AttributeTypeOptionIsHiddenField, self).__init__(**kwargs)
 
-    def to_representation(self, obj):
-        # print(repr(obj))
-        # member = get_member(self.parent.context['request'])
-        # option = obj.options.filter(member=member, attribute_type=obj).first()
-        # # print('AttributeTypeIsHiddenField.to_representation: %s - %s' %(obj, repr(obj)))
-        # return getattr(option, 'is_hidden', False)
-        return True
+    def get_attribute(self, obj):
+        return obj
 
-    def to_internal_value(self, data):
-        print('AttributeTypeIsHiddenField.to_internal_value: %s - %s' %(data, repr(data)))
-        return True
+    def to_representation(self, value):
+        # some "optimization" to use preloaded data through prefetch_related
+        member = self.context['request'].user.member
+        for o in value.options.all():
+            if o.member_id == member.id:
+                return o.is_hidden
+        return False
 
 
 class AttributeTypeSerializerBase(serializers.ModelSerializer):
     master_user = MasterUserField()
-    # is_hidden = AttributeTypeIsHiddenField()
+    is_hidden = AttributeTypeOptionIsHiddenField()
 
     class Meta:
-        fields = ['url', 'id', 'master_user', 'user_code', 'name', 'short_name', 'notes', 'value_type', 'order']
+        fields = ['url', 'id', 'master_user', 'user_code', 'name', 'short_name', 'notes', 'value_type', 'order',
+                  'is_hidden']
         update_read_only_fields = ['value_type']
 
     # def get_extra_kwargs(self):
@@ -63,6 +62,30 @@ class AttributeTypeSerializerBase(serializers.ModelSerializer):
                     field.read_only = True
 
         return fields
+
+    def create(self, validated_data):
+        is_hidden = validated_data.pop('is_hidden', False)
+
+        instance = super(AttributeTypeSerializerBase, self).create(validated_data)
+
+        member = self.context['request'].user.member
+        instance.options.create(member=member, is_hidden=is_hidden)
+        return instance
+
+    def update(self, instance, validated_data):
+        is_hidden = validated_data.pop('is_hidden', False)
+
+        instance = super(AttributeTypeSerializerBase, self).update(instance, validated_data)
+
+        member = self.context['request'].user.member
+        instance.options.update_or_create(member=member, defaults={'is_hidden': is_hidden})
+        # try:
+        #     option = instance.options.get(member=member)
+        #     option.is_hidden = is_hidden
+        #     option.save()
+        # except ObjectDoesNotExist:
+        #     instance.options.create(member=member, is_hidden=is_hidden)
+        return instance
 
 
 class AttributeSerializerBase(serializers.ModelSerializer):

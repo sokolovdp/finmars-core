@@ -128,6 +128,7 @@ DATABASES = {
         'PASSWORD': os.environ.get('RDS_PASSWORD', None),
         'HOST': os.environ.get('RDS_HOSTNAME', None),
         'PORT': os.environ.get('RDS_PORT', None),
+        'ATOMIC_REQUESTS': True,
     }
 }
 
@@ -234,9 +235,9 @@ LOGGING = {
             'level': 'INFO',
             'handlers': ['console'],
         },
-        'django.db': {
-            'level': 'DEBUG',
-        },
+        # 'django.db': {
+        #     'level': 'DEBUG',
+        # },
         'poms': {
             'level': 'DEBUG',
             'handlers': ['console'],

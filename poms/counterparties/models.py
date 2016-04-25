@@ -115,7 +115,7 @@ class CounterpartyAttributeTypeGroupObjectPermission(GroupObjectPermissionBase):
 class CounterpartyAttributeTypeOption(AttributeTypeOptionBase):
     member = models.ForeignKey(Member, related_name='counterparty_attribute_type_options',
                                        verbose_name=_('member'))
-    attribute_type = models.ForeignKey(CounterpartyAttributeType, related_name='attribute_type_options',
+    attribute_type = models.ForeignKey(CounterpartyAttributeType, related_name='options',
                                        verbose_name=_('attribute type'))
 
     class Meta:
@@ -241,7 +241,7 @@ class ResponsibleAttributeTypeGroupObjectPermission(GroupObjectPermissionBase):
 class ResponsibleAttributeTypeOption(AttributeTypeOptionBase):
     member = models.ForeignKey(Member, related_name='responsible_attribute_type_options',
                                verbose_name=_('meber'))
-    attribute_type = models.ForeignKey(ResponsibleAttributeType, related_name='attribute_type_options',
+    attribute_type = models.ForeignKey(ResponsibleAttributeType, related_name='options',
                                        verbose_name=_('attribute type'))
 
     class Meta:

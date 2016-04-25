@@ -101,7 +101,7 @@ class PortfolioAttributeType(AttributeTypeBase):
 class PortfolioAttributeTypeOption(AttributeTypeOptionBase):
     member = models.ForeignKey(Member, related_name='portfolio_attribute_type_options',
                                verbose_name=_('member'))
-    attribute_type = models.ForeignKey(PortfolioAttributeType, related_name='attribute_type_options',
+    attribute_type = models.ForeignKey(PortfolioAttributeType, related_name='options',
                                        verbose_name=_('attribute type'))
 
     class Meta:

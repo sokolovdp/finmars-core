@@ -346,7 +346,7 @@ class InstrumentAttributeType(AttributeTypeBase):
 class InstrumentAttributeTypeOption(AttributeTypeOptionBase):
     member = models.ForeignKey(Member, related_name='instrument_attribute_type_options',
                                verbose_name=_('member'))
-    attribute_type = models.ForeignKey(InstrumentAttributeType, related_name='attribute_type_options',
+    attribute_type = models.ForeignKey(InstrumentAttributeType, related_name='options',
                                        verbose_name=_('attribute type'))
 
     class Meta:
