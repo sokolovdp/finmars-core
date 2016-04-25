@@ -22,10 +22,10 @@ class UserObjectPermissionBase(ObjectPermissionBase):
     member = models.ForeignKey(Member,
                                verbose_name=_('member'))
 
-    class Meta:
+    class Meta(ObjectPermissionBase.Meta):
         abstract = True
         unique_together = [
-            ['member', 'content_object', 'permission']
+            ['content_object', 'member', 'permission']
         ]
 
     def __str__(self):
@@ -37,15 +37,14 @@ class GroupObjectPermissionBase(ObjectPermissionBase):
     group = models.ForeignKey(Group,
                               verbose_name=_('group'))
 
-    class Meta:
+    class Meta(ObjectPermissionBase.Meta):
         abstract = True
         unique_together = [
-            ['group', 'content_object', 'permission']
+            ['content_object', 'group', 'permission']
         ]
 
     def __str__(self):
         return '%s %s %s' % (self.group, self.permission.name, self.content_object)
-
 
 # class UserObjectPermission(UserObjectPermissionBase):
 #     content_type = models.ForeignKey(ContentType, related_name='user_object_permissions')

@@ -20,12 +20,9 @@ class Strategy(MPTTModel, NamedModel):
     class MPTTMeta:
         order_insertion_by = ['master_user', 'name']
 
-    class Meta:
+    class Meta(NamedModel.Meta):
         verbose_name = _('strategy')
         verbose_name_plural = _('strategies')
-        unique_together = [
-            ['master_user', 'user_code']
-        ]
         permissions = [
             ('view_strategy', 'Can view strategy')
         ]
@@ -35,7 +32,7 @@ class StrategyUserObjectPermission(UserObjectPermissionBase):
     content_object = models.ForeignKey(Strategy, related_name='user_object_permissions',
                                        verbose_name=_('content object'))
 
-    class Meta:
+    class Meta(UserObjectPermissionBase.Meta):
         verbose_name = _('strategies - user permission')
         verbose_name_plural = _('strategies - user permissions')
 
@@ -44,7 +41,7 @@ class StrategyGroupObjectPermission(GroupObjectPermissionBase):
     content_object = models.ForeignKey(Strategy, related_name='group_object_permissions',
                                        verbose_name=_('content object'))
 
-    class Meta:
+    class Meta(GroupObjectPermissionBase.Meta):
         verbose_name = _('strategies - group permission')
         verbose_name_plural = _('strategies - group permissions')
 

@@ -43,7 +43,7 @@ class TransactionClass(ClassModelBase):
         (CASH_OUTFLOW, "Cash-Outflow"),
     )
 
-    class Meta:
+    class Meta(ClassModelBase.Meta):
         verbose_name = _('transaction class')
         verbose_name_plural = _('transaction classes')
 
@@ -57,7 +57,7 @@ class ActionClass(ClassModelBase):
         (CREATE_INSTRUMENT_PARAMETER, "Create instrument parameter"),
     )
 
-    class Meta:
+    class Meta(ClassModelBase.Meta):
         verbose_name = _('action class')
         verbose_name_plural = _('action classes')
 
@@ -65,7 +65,7 @@ class ActionClass(ClassModelBase):
 class EventClass(ClassModelBase):
     CLASSES = tuple()
 
-    class Meta:
+    class Meta(ClassModelBase.Meta):
         verbose_name = _('event class')
         verbose_name_plural = _('event classes')
 
@@ -73,7 +73,7 @@ class EventClass(ClassModelBase):
 class NotificationClass(ClassModelBase):
     CLASSES = tuple()
 
-    class Meta:
+    class Meta(ClassModelBase.Meta):
         verbose_name = _('notification class')
         verbose_name_plural = _('notification classes')
 
@@ -108,7 +108,7 @@ class PeriodicityGroup(ClassModelBase):
         (ANUALLY_CALENDAR, "anually (eoy)"),
     )
 
-    class Meta:
+    class Meta(ClassModelBase.Meta):
         verbose_name = _('periodicity group')
         verbose_name_plural = _('periodicity group')
 
@@ -120,7 +120,7 @@ class TransactionType(NamedModel):
                                               blank=True,
                                               verbose_name=_('instrument types'))
 
-    class Meta:
+    class Meta(NamedModel.Meta):
         verbose_name = _('transaction type')
         verbose_name_plural = _('transaction types')
         unique_together = [
@@ -135,7 +135,7 @@ class TransactionTypeUserObjectPermission(UserObjectPermissionBase):
     content_object = models.ForeignKey(TransactionType, related_name='user_object_permissions',
                                        verbose_name=_('content object'))
 
-    class Meta:
+    class Meta(UserObjectPermissionBase.Meta):
         verbose_name = _('transaction types - user permission')
         verbose_name_plural = _('transaction types - user permissions')
 
@@ -144,7 +144,7 @@ class TransactionTypeGroupObjectPermission(GroupObjectPermissionBase):
     content_object = models.ForeignKey(TransactionType, related_name='group_object_permissions',
                                        verbose_name=_('content object'))
 
-    class Meta:
+    class Meta(GroupObjectPermissionBase.Meta):
         verbose_name = _('transaction types - group permission')
         verbose_name_plural = _('transaction types - group permissions')
 
@@ -265,7 +265,7 @@ class EventToHandle(NamedModel):
     effective_date = models.DateField(null=True, blank=True,
                                       verbose_name=_('effective date'))
 
-    class Meta:
+    class Meta(NamedModel.Meta):
         verbose_name = _('transaction type item')
         verbose_name_plural = _('transaction type tems')
 
@@ -414,7 +414,7 @@ class TransactionAttributeType(AttributeTypeBase):
                                            on_delete=models.PROTECT, null=True, blank=True,
                                            verbose_name=_("strategy cash (root)"))
 
-    class Meta:
+    class Meta(AttributeTypeBase.Meta):
         verbose_name = _('transaction attribute type')
         verbose_name_plural = _('transaction attribute types')
 
@@ -425,7 +425,7 @@ class TransactionAttributeTypeOption(AttributeTypeOptionBase):
     attribute_type = models.ForeignKey(TransactionAttributeType, related_name='options',
                                        verbose_name=_("attribute type"))
 
-    class Meta:
+    class Meta(AttributeTypeOptionBase.Meta):
         verbose_name = _('transaction attribute types - option')
         verbose_name_plural = _('transaction attribute types - options')
 
@@ -434,7 +434,7 @@ class TransactionAttributeTypeUserObjectPermission(UserObjectPermissionBase):
     content_object = models.ForeignKey(TransactionAttributeType, related_name='user_object_permissions',
                                        verbose_name=_("content object"))
 
-    class Meta:
+    class Meta(UserObjectPermissionBase.Meta):
         verbose_name = _('transaction attribute types - user permission')
         verbose_name_plural = _('transaction attribute types - user permissions')
 
@@ -443,7 +443,7 @@ class TransactionAttributeTypeGroupObjectPermission(GroupObjectPermissionBase):
     content_object = models.ForeignKey(TransactionAttributeType, related_name='group_object_permissions',
                                        verbose_name=_("content object"))
 
-    class Meta:
+    class Meta(GroupObjectPermissionBase.Meta):
         verbose_name = _('transaction attribute types - group permission')
         verbose_name_plural = _('transaction attribute types - group permissions')
 

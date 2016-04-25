@@ -19,6 +19,9 @@ class NamedModel(models.Model):
 
     class Meta:
         abstract = True
+        unique_together = [
+            ['master_user', 'user_code']
+        ]
 
     def __str__(self):
         return self.name
@@ -45,7 +48,7 @@ class TimeStampedModel(models.Model):
 
 
 class TagModelBase(NamedModel):
-    class Meta:
+    class Meta(NamedModel.Meta):
         abstract = True
 
 

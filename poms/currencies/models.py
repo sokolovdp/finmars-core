@@ -17,12 +17,9 @@ class Currency(NamedModel):
     master_user = models.ForeignKey(MasterUser, related_name='currencies',
                                     verbose_name=_('master user'))
 
-    class Meta:
+    class Meta(NamedModel.Meta):
         verbose_name = _('currency')
         verbose_name_plural = _('currencies')
-        unique_together = [
-            ['master_user', 'user_code']
-        ]
         permissions = [
             ('view_currency', 'Can view currency')
         ]
@@ -43,7 +40,7 @@ class CurrencyUserObjectPermission(UserObjectPermissionBase):
     content_object = models.ForeignKey(Currency, related_name='user_object_permissions',
                                        verbose_name=_('content object'))
 
-    class Meta:
+    class Meta(UserObjectPermissionBase.Meta):
         verbose_name = _('counterparties - user permission')
         verbose_name_plural = _('counterparties - user permissions')
 
@@ -52,7 +49,7 @@ class CurrencyGroupObjectPermission(GroupObjectPermissionBase):
     content_object = models.ForeignKey(Currency, related_name='group_object_permissions',
                                        verbose_name=_('content object'))
 
-    class Meta:
+    class Meta(GroupObjectPermissionBase.Meta):
         verbose_name = _('counterparties - group permission')
         verbose_name_plural = _('counterparties - group permissions')
 

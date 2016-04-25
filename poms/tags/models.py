@@ -37,7 +37,7 @@ class Tag(TagModelBase):
     transaction_types = models.ManyToManyField('transactions.TransactionType', related_name='tags', blank=True,
                                                verbose_name=_('transaction types'))
 
-    class Meta:
+    class Meta(TagModelBase.Meta):
         verbose_name = _('tag')
         verbose_name_plural = _('tags')
         permissions = [
@@ -50,7 +50,7 @@ class TagUserObjectPermission(UserObjectPermissionBase):
     content_object = models.ForeignKey(Tag, related_name='user_object_permissions',
                                        verbose_name=_('content object'))
 
-    class Meta:
+    class Meta(UserObjectPermissionBase.Meta):
         verbose_name = _('tags - user permission')
         verbose_name_plural = _('tags - user permissions')
 
@@ -59,7 +59,7 @@ class TagGroupObjectPermission(GroupObjectPermissionBase):
     content_object = models.ForeignKey(Tag, related_name='group_object_permissions',
                                        verbose_name=_('content object'))
 
-    class Meta:
+    class Meta(GroupObjectPermissionBase.Meta):
         verbose_name = _('tags - group permission')
         verbose_name_plural = _('tags - group permissions')
 
