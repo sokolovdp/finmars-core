@@ -243,6 +243,25 @@ def assign_perms(obj, members=None, groups=None, perms=None):
         if group_perms:
             group_obj_perms_model.objects.bulk_create(group_perms)
 
+
+def assign_perms_from_list(obj, user_object_permissions=None, group_object_permissions=None):
+    user_lookup_name, user_obj_perms_model = get_user_obj_perms_model(obj)
+    group_lookup_name, group_obj_perms_model = get_group_obj_perms_model(obj)
+
+    if user_object_permissions is not None:
+        user_obj_perms_model.objects.filter(content_object=obj).delete()
+        user_obj_perms_model.objects.bulk_create(
+            user_obj_perms_model(content_object=obj, member=p['member'], permission=p['permission'])
+            for p in user_object_permissions
+        )
+
+    if group_object_permissions is not None:
+        group_obj_perms_model.objects.filter(content_object=obj).delete()
+        group_obj_perms_model.objects.bulk_create(
+            group_obj_perms_model(content_object=obj, group=p['group'], permission=p['permission'])
+            for p in group_object_permissions
+        )
+
 # def obj_perms_filter_objects(member, perms, queryset, model_cls=None):
 #     from poms.obj_perms.models import UserObjectPermission, GroupObjectPermission
 #     model = model_cls or queryset.model

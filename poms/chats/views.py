@@ -11,6 +11,7 @@ from poms.chats.filters import MessageThreadOwnerByMasterUserFilter, DirectMessa
 from poms.chats.models import Thread, Message, DirectMessage, ThreadStatus
 from poms.chats.permissions import ThreadObjectPermission, MessagePermission, DirectMessagePermission
 from poms.chats.serializers import ThreadSerializer, MessageSerializer, DirectMessageSerializer, ThreadStatusSerializer
+from poms.obj_perms.filters import ObjectPermissionPrefetchFilter
 from poms.users.filters import OwnerByMasterUserFilter
 
 
@@ -35,8 +36,9 @@ class ThreadViewSet(HistoricalMixin, ModelViewSet):
     queryset = Thread.objects.all()
     serializer_class = ThreadSerializer
     permission_classes = [IsAuthenticated, ThreadObjectPermission]
-    filter_backends = [OwnerByMasterUserFilter, ThreadObjectPermissionFilter, DjangoFilterBackend, OrderingFilter,
-                       SearchFilter, ]
+    filter_backends = [OwnerByMasterUserFilter, ObjectPermissionPrefetchFilter,
+                       ThreadObjectPermissionFilter,
+                       DjangoFilterBackend, OrderingFilter, SearchFilter, ]
     filter_class = ThreadFilter
     ordering_fields = ['id', 'created', 'subject']
     search_fields = ['subject']

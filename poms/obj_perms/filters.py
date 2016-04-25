@@ -18,3 +18,17 @@ class ObjectPermissionFilter(BaseFilterBackend):
         member = request.user.member
         model_cls = queryset.model
         return obj_perms_filter_objects(member, self.get_codename_set(model_cls), queryset)
+
+
+class ObjectPermissionPrefetchFilter(BaseFilterBackend):
+    def filter_queryset(self, request, queryset, view):
+        return queryset.prefetch_related(
+            'user_object_permissions',
+            'user_object_permissions__member',
+            'user_object_permissions__permission',
+            'user_object_permissions__permission__content_type',
+            'group_object_permissions',
+            'group_object_permissions__group',
+            'group_object_permissions__permission',
+            'group_object_permissions__permission__content_type',
+        )

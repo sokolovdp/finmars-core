@@ -1,82 +1,78 @@
 from __future__ import unicode_literals
 
-import six
 from django.contrib.auth.models import Permission
 from django.contrib.contenttypes.models import ContentType
 from rest_framework import serializers
 
-from poms.audit import history
-from poms.obj_perms.utils import get_granted_permissions
 
-
-class GrantedPermissionField(serializers.Field):
-    def __init__(self, **kwargs):
-        kwargs['source'] = '*'
-        kwargs['read_only'] = True
-        super(GrantedPermissionField, self).__init__(**kwargs)
-
-    def bind(self, field_name, parent):
-        super(GrantedPermissionField, self).bind(field_name, parent)
-
-    def to_representation(self, value):
-        if history.is_historical_proxy(value):
-            return []
-
-        request = self.context['request']
-        # member = get_member(request)
-        member = request.user.member
-        return get_granted_permissions(member, value)
-
-        # perms = set()
-        # for uop in value.user_object_permissions.all():
-        #     if uop.member_id == member.id:
-        #         perms.add(uop.permission.codename)
-        # for gop in value.group_object_permissions.all():
-        #     if gop.group in member.groups.all():
-        #         perms.add(gop.permission.codename)
-        #
-        # return perms
-
-
-class ObjectPermissionField(serializers.Field):
-    def __init__(self, **kwargs):
-        kwargs['source'] = '*'
-        kwargs['read_only'] = True
-        super(ObjectPermissionField, self).__init__(**kwargs)
-
-    def bind(self, field_name, parent):
-        super(ObjectPermissionField, self).bind(field_name, parent)
-
-    def to_representation(self, value):
-        if history.is_historical_proxy(value):
-            return []
-
-        users = {}
-        for uop in value.user_object_permissions.all():
-            try:
-                user_perms = users[uop.member_id]
-            except KeyError:
-                users[uop.member_id] = user_perms = {
-                    'member_id': uop.member_id,
-                    'permissions': set(),
-                }
-            user_perms['permissions'].add(uop.permission.codename)
-
-        groups = {}
-        for gop in value.group_object_permissions.all():
-            try:
-                group_perms = groups[gop.group_id]
-            except KeyError:
-                groups[gop.group_id] = group_perms = {
-                    'group_id': gop.group_id,
-                    'permissions': set(),
-                }
-            group_perms['permissions'].add(gop.permission.codename)
-
-        return {
-            'users': [v for v in six.itervalues(users)],
-            'groups': [v for v in six.itervalues(groups)],
-        }
+# class GrantedPermissionField(serializers.Field):
+#     def __init__(self, **kwargs):
+#         kwargs['source'] = '*'
+#         kwargs['read_only'] = True
+#         super(GrantedPermissionField, self).__init__(**kwargs)
+#
+#     def bind(self, field_name, parent):
+#         super(GrantedPermissionField, self).bind(field_name, parent)
+#
+#     def to_representation(self, value):
+#         if history.is_historical_proxy(value):
+#             return []
+#
+#         request = self.context['request']
+#         # member = get_member(request)
+#         member = request.user.member
+#         return get_granted_permissions(member, value)
+#
+#         # perms = set()
+#         # for uop in value.user_object_permissions.all():
+#         #     if uop.member_id == member.id:
+#         #         perms.add(uop.permission.codename)
+#         # for gop in value.group_object_permissions.all():
+#         #     if gop.group in member.groups.all():
+#         #         perms.add(gop.permission.codename)
+#         #
+#         # return perms
+#
+#
+# class ObjectPermissionField(serializers.Field):
+#     def __init__(self, **kwargs):
+#         kwargs['source'] = '*'
+#         kwargs['read_only'] = True
+#         super(ObjectPermissionField, self).__init__(**kwargs)
+#
+#     def bind(self, field_name, parent):
+#         super(ObjectPermissionField, self).bind(field_name, parent)
+#
+#     def to_representation(self, value):
+#         if history.is_historical_proxy(value):
+#             return []
+#
+#         users = {}
+#         for uop in value.user_object_permissions.all():
+#             try:
+#                 user_perms = users[uop.member_id]
+#             except KeyError:
+#                 users[uop.member_id] = user_perms = {
+#                     'member_id': uop.member_id,
+#                     'permissions': set(),
+#                 }
+#             user_perms['permissions'].add(uop.permission.codename)
+#
+#         groups = {}
+#         for gop in value.group_object_permissions.all():
+#             try:
+#                 group_perms = groups[gop.group_id]
+#             except KeyError:
+#                 groups[gop.group_id] = group_perms = {
+#                     'group_id': gop.group_id,
+#                     'permissions': set(),
+#                 }
+#             group_perms['permissions'].add(gop.permission.codename)
+#
+#         return {
+#             'users': [v for v in six.itervalues(users)],
+#             'groups': [v for v in six.itervalues(groups)],
+#         }
 
 
 class PermissionField(serializers.SlugRelatedField):

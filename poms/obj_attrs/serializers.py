@@ -95,15 +95,17 @@ class AttributeSerializerBase(serializers.ModelSerializer):
 
 class ModelWithAttributesSerializer(serializers.ModelSerializer):
     def create(self, validated_data):
-        attributes = validated_data.pop('attributes')
+        attributes = validated_data.pop('attributes', None)
         instance = super(ModelWithAttributesSerializer, self).create(validated_data)
-        self.save_attributes(instance, attributes, True)
+        if attributes:
+            self.save_attributes(instance, attributes, True)
         return instance
 
     def update(self, instance, validated_data):
-        attributes = validated_data.pop('attributes')
+        attributes = validated_data.pop('attributes', None)
         instance = super(ModelWithAttributesSerializer, self).update(instance, validated_data)
-        self.save_attributes(instance, attributes, False)
+        if attributes:
+            self.save_attributes(instance, attributes, False)
         return instance
 
     def save_attributes(self, instance, attributes, created):
