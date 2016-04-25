@@ -1,3 +1,4 @@
+import six
 from django.contrib.auth.models import Permission
 from django.contrib.contenttypes.models import ContentType
 from django.db.models import Q
@@ -167,49 +168,67 @@ def get_granted_permissions(member, obj):
     return obj_perms
 
 
-def assign_perms_to_new_obj(obj, owner, owner_perms, members=None, groups=None, perms=None):
+# def assign_perms_to_new_obj(obj, owner, owner_perms, members=None, groups=None, perms=None):
+#     ctype = ContentType.objects.get_for_model(obj)
+#     permissions = list(Permission.objects.filter(content_type=ctype))
+#
+#     user_lookup_name, user_obj_perms_model = get_user_obj_perms_model(obj)
+#     group_lookup_name, group_obj_perms_model = get_group_obj_perms_model(obj)
+#
+#     user_perms = []
+#     group_perms = []
+#
+#     for p in permissions:
+#         if owner_perms:
+#             if p.codename in owner_perms:
+#                 user_perms.append(
+#                     user_obj_perms_model(content_object=obj, member=owner, permission=p)
+#                 )
+#         else:
+#             user_perms.append(
+#                 user_obj_perms_model(content_object=obj, member=owner, permission=p)
+#             )
+#
+#     if members:
+#         for m in members:
+#             if m.id == owner.id:
+#                 continue
+#             for p in permissions:
+#                 if p.codename in perms:
+#                     user_perms.append(
+#                         user_obj_perms_model(content_object=obj, member=m, permission=p)
+#                     )
+#
+#     if groups:
+#         for g in groups:
+#             for p in permissions:
+#                 if p.codename in perms:
+#                     group_perms.append(
+#                         group_obj_perms_model(content_object=obj, group=g, permission=p)
+#                     )
+#
+#     if user_perms:
+#         user_obj_perms_model.objects.bulk_create(user_perms)
+#     if group_perms:
+#         group_obj_perms_model.objects.bulk_create(group_perms)
+
+
+def assign_owner_permissions(obj, member, perms=None):
     ctype = ContentType.objects.get_for_model(obj)
-    permissions = list(Permission.objects.filter(content_type=ctype))
-
+    perms = list(Permission.objects.filter(content_type=ctype)) if perms is None else perms
     user_lookup_name, user_obj_perms_model = get_user_obj_perms_model(obj)
-    group_lookup_name, group_obj_perms_model = get_group_obj_perms_model(obj)
 
-    user_perms = []
-    group_perms = []
+    user_obj_perms_model.objects.filter(content_object=obj, member=member).delete()
+    if perms:
+        user_obj_perms_model.objects.bulk_create(
+            user_obj_perms_model(content_object=obj, member=member, permission=p)
+            for p in perms if not p.codename.startswith('add_')
+        )
 
-    for p in permissions:
-        if owner_perms:
-            if p.codename in owner_perms:
-                user_perms.append(
-                    user_obj_perms_model(content_object=obj, member=owner, permission=p)
-                )
-        else:
-            user_perms.append(
-                user_obj_perms_model(content_object=obj, member=owner, permission=p)
-            )
 
-    if members:
-        for m in members:
-            if m.id == owner.id:
-                continue
-            for p in permissions:
-                if p.codename in perms:
-                    user_perms.append(
-                        user_obj_perms_model(content_object=obj, member=m, permission=p)
-                    )
-
-    if groups:
-        for g in groups:
-            for p in permissions:
-                if p.codename in perms:
-                    group_perms.append(
-                        group_obj_perms_model(content_object=obj, group=g, permission=p)
-                    )
-
-    if user_perms:
-        user_obj_perms_model.objects.bulk_create(user_perms)
-    if group_perms:
-        group_obj_perms_model.objects.bulk_create(group_perms)
+def get_owner_default_permissions(instance):
+    ctype = ContentType.objects.get_for_model(instance)
+    return [p for p in Permission.objects.filter(content_type=ctype) if not p.codename.startswith('add_')]
 
 
 def assign_perms(obj, members=None, groups=None, perms=None):
@@ -250,6 +269,11 @@ def assign_perms_from_list(obj, user_object_permissions=None, group_object_permi
 
     if user_object_permissions is not None:
         user_obj_perms_model.objects.filter(content_object=obj).delete()
+
+        # filter duplicate
+        user_object_permissions = six.itervalues({'%s.%s' % (p['member'].id, p['permission'].codename): p
+                                                  for p in user_object_permissions})
+
         user_obj_perms_model.objects.bulk_create(
             user_obj_perms_model(content_object=obj, member=p['member'], permission=p['permission'])
             for p in user_object_permissions
@@ -257,6 +281,11 @@ def assign_perms_from_list(obj, user_object_permissions=None, group_object_permi
 
     if group_object_permissions is not None:
         group_obj_perms_model.objects.filter(content_object=obj).delete()
+
+        # filter duplicate
+        group_object_permissions = six.itervalues({'%s.%s' % (p['group'].id, p['permission'].codename): p
+                                                   for p in group_object_permissions})
+
         group_obj_perms_model.objects.bulk_create(
             group_obj_perms_model(content_object=obj, group=p['group'], permission=p['permission'])
             for p in group_object_permissions
