@@ -9,6 +9,7 @@ from poms.counterparties.models import CounterpartyClassifier, Counterparty, Res
 from poms.counterparties.serializers import CounterpartySerializer, ResponsibleSerializer, \
     CounterpartyClassifierSerializer, ResponsibleClassifierSerializer, CounterpartyAttributeTypeSerializer, \
     ResponsibleAttributeTypeSerializer
+from poms.obj_attrs.filters import AttributePrefetchFilter
 from poms.obj_attrs.views import AttributeTypeViewSetBase
 from poms.users.filters import OwnerByMasterUserFilter
 
@@ -30,9 +31,10 @@ class CounterpartyAttributeTypeViewSet(AttributeTypeViewSetBase):
 
 
 class CounterpartyViewSet(PomsViewSetBase):
-    queryset = Counterparty.objects.prefetch_related('attributes', 'attributes__attribute_type').all()
+    queryset = Counterparty.objects.all()
     serializer_class = CounterpartySerializer
-    filter_backends = [OwnerByMasterUserFilter, DjangoFilterBackend, OrderingFilter, SearchFilter]
+    filter_backends = [OwnerByMasterUserFilter, AttributePrefetchFilter,
+                       DjangoFilterBackend, OrderingFilter, SearchFilter]
     ordering_fields = ['user_code', 'name', 'short_name']
     search_fields = ['user_code', 'name', 'short_name']
 
@@ -54,8 +56,9 @@ class ResponsibleAttributeTypeViewSet(AttributeTypeViewSetBase):
 
 
 class ResponsibleViewSet(PomsViewSetBase):
-    queryset = Responsible.objects.prefetch_related('attributes', 'attributes__attribute_type').all()
+    queryset = Responsible.objects.all()
     serializer_class = ResponsibleSerializer
-    filter_backends = [OwnerByMasterUserFilter, DjangoFilterBackend, OrderingFilter, SearchFilter]
+    filter_backends = [OwnerByMasterUserFilter, AttributePrefetchFilter,
+                       DjangoFilterBackend, OrderingFilter, SearchFilter]
     ordering_fields = ['user_code', 'name', 'short_name']
     search_fields = ['user_code', 'name', 'short_name']

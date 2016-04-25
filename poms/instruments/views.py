@@ -15,6 +15,7 @@ from poms.instruments.serializers import InstrumentClassifierSerializer, Instrum
     PaymentSizeDetailSerializer, PeriodicityPeriodSerializer, CostMethodSerializer, InstrumentTypeSerializer, \
     InstrumentAttributeTypeSerializer, ManualPricingFormulaSerializer, AccrualCalculationScheduleSerializer, \
     InstrumentFactorScheduleSerializer, EventScheduleSerializer, PricingPolicySerializer
+from poms.obj_attrs.filters import AttributePrefetchFilter
 from poms.obj_attrs.views import AttributeTypeViewSetBase
 from poms.users.filters import OwnerByMasterUserFilter
 
@@ -82,10 +83,11 @@ class InstrumentAttributeTypeViewSet(AttributeTypeViewSetBase):
 
 
 class InstrumentViewSet(PomsViewSetBase):
-    queryset = Instrument.objects.prefetch_related('attributes', 'attributes__attribute_type').all()
+    queryset = Instrument.objects.all()
     serializer_class = InstrumentSerializer
     permission_classes = [IsAuthenticated]
-    filter_backends = [OwnerByMasterUserFilter, DjangoFilterBackend, OrderingFilter, SearchFilter]
+    filter_backends = [OwnerByMasterUserFilter, AttributePrefetchFilter,
+                       DjangoFilterBackend, OrderingFilter, SearchFilter]
     ordering_fields = ['user_code', 'name', 'short_name']
     search_fields = ['user_code', 'name', 'short_name']
 

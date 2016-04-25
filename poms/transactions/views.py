@@ -4,6 +4,7 @@ import django_filters
 from rest_framework.filters import FilterSet, DjangoFilterBackend, OrderingFilter, SearchFilter
 
 from poms.common.views import PomsClassViewSetBase, PomsViewSetBase
+from poms.obj_attrs.filters import AttributePrefetchFilter
 from poms.obj_attrs.views import AttributeTypeViewSetBase
 from poms.transactions.models import TransactionClass, Transaction, TransactionType, TransactionAttributeType
 from poms.transactions.serializers import TransactionClassSerializer, TransactionSerializer, TransactionTypeSerializer, \
@@ -38,8 +39,9 @@ class TransactionFilter(FilterSet):
 
 
 class TransactionViewSet(PomsViewSetBase):
-    queryset = Transaction.objects.prefetch_related('attributes', 'attributes__attribute_type').all()
+    queryset = Transaction.objects.all()
     serializer_class = TransactionSerializer
-    filter_backends = [OwnerByMasterUserFilter, DjangoFilterBackend, OrderingFilter]
+    filter_backends = [OwnerByMasterUserFilter, AttributePrefetchFilter,
+                       DjangoFilterBackend, OrderingFilter]
     filter_class = TransactionFilter
     ordering_fields = ['transaction_date']
