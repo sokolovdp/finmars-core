@@ -3,19 +3,18 @@ from __future__ import unicode_literals
 import django_filters
 from rest_framework.filters import OrderingFilter, SearchFilter, DjangoFilterBackend, FilterSet
 from rest_framework.permissions import IsAuthenticated
-from rest_framework.viewsets import ModelViewSet
 
-from poms.audit.mixins import HistoricalMixin
 from poms.chats.filters import MessageThreadOwnerByMasterUserFilter, DirectMessageFilter, \
     ThreadObjectPermissionFilter, MessageObjectPermissionFilter
 from poms.chats.models import Thread, Message, DirectMessage, ThreadStatus
 from poms.chats.permissions import ThreadObjectPermission, MessagePermission, DirectMessagePermission
 from poms.chats.serializers import ThreadSerializer, MessageSerializer, DirectMessageSerializer, ThreadStatusSerializer
+from poms.common.views import PomsViewSetBase
 from poms.obj_perms.filters import ObjectPermissionPrefetchFilter
 from poms.users.filters import OwnerByMasterUserFilter
 
 
-class ThreadStatusViewSet(HistoricalMixin, ModelViewSet):
+class ThreadStatusViewSet(PomsViewSetBase):
     queryset = ThreadStatus.objects.all()
     serializer_class = ThreadStatusSerializer
     permission_classes = [IsAuthenticated]
@@ -32,7 +31,7 @@ class ThreadFilter(FilterSet):
         fields = ['subject', 'created', 'modified']
 
 
-class ThreadViewSet(HistoricalMixin, ModelViewSet):
+class ThreadViewSet(PomsViewSetBase):
     queryset = Thread.objects.all()
     serializer_class = ThreadSerializer
     permission_classes = [IsAuthenticated, ThreadObjectPermission]
@@ -53,7 +52,7 @@ class MessageFilter(FilterSet):
         fields = ['thread', 'created']
 
 
-class MessageViewSet(HistoricalMixin, ModelViewSet):
+class MessageViewSet(PomsViewSetBase):
     queryset = Message.objects.all()
     serializer_class = MessageSerializer
     permission_classes = [IsAuthenticated, MessagePermission]
@@ -63,7 +62,7 @@ class MessageViewSet(HistoricalMixin, ModelViewSet):
     ordering_fields = ['id', 'created']
 
 
-class DirectMessageViewSet(HistoricalMixin, ModelViewSet):
+class DirectMessageViewSet(PomsViewSetBase):
     queryset = DirectMessage.objects.all()
     serializer_class = DirectMessageSerializer
     permission_classes = [IsAuthenticated, DirectMessagePermission]

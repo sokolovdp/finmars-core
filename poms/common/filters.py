@@ -19,10 +19,11 @@ class ClassifierRootFilter(BaseFilterBackend):
 
 
 class ClassifierFilterSetBase(FilterSet):
-    parent = django_filters.MethodFilter(name='parent', label=_('Parent'))
+    # parent = django_filters.MethodFilter(name='parent', label=_('Parent'))
 
     class Meta:
-        fields = ['parent', 'user_code', 'name', 'short_name']
+        # fields = ['parent', 'user_code', 'name', 'short_name']
+        fields = ['user_code', 'name', 'short_name']
 
     def parent_filter(self, qs, value):
         return qs

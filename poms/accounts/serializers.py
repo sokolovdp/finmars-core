@@ -4,7 +4,7 @@ from rest_framework import serializers
 
 from poms.accounts.fields import AccountClassifierField, AccountClassifierRootField, AccountAttributeTypeField
 from poms.accounts.models import Account, AccountType, AccountClassifier, AccountAttributeType, AccountAttribute
-from poms.common.serializers import ClassifierSerializerBase
+from poms.common.serializers import ClassifierSerializerBase, ClassifierRecursiveField
 from poms.obj_attrs.serializers import AttributeTypeSerializerBase, AttributeSerializerBase, \
     ModelWithAttributesSerializer
 from poms.obj_perms.serializers import ObjectPermissionSerializer, ModelWithObjectPermissionSerializer
@@ -12,8 +12,9 @@ from poms.users.fields import MasterUserField
 
 
 class AccountClassifierSerializer(ClassifierSerializerBase):
-    parent = AccountClassifierField(required=False, allow_null=True)
-    children = AccountClassifierField(many=True, required=False, read_only=False)
+    # parent = AccountClassifierField(required=False, allow_null=True)
+    # children = AccountClassifierField(many=True, required=False, read_only=False)
+    # children = ClassifierRecursiveField(many=True)
 
     class Meta(ClassifierSerializerBase.Meta):
         model = AccountClassifier

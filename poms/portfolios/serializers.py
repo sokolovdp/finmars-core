@@ -10,8 +10,8 @@ from poms.users.fields import MasterUserField
 
 
 class PortfolioClassifierSerializer(ClassifierSerializerBase):
-    parent = PortfolioClassifierField(required=False, allow_null=True)
-    children = PortfolioClassifierField(many=True, required=False, read_only=False)
+    # parent = PortfolioClassifierField(required=False, allow_null=True)
+    # children = PortfolioClassifierField(many=True, required=False, read_only=False)
 
     class Meta(ClassifierSerializerBase.Meta):
         model = PortfolioClassifier

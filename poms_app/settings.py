@@ -128,7 +128,7 @@ DATABASES = {
         'PASSWORD': os.environ.get('RDS_PASSWORD', None),
         'HOST': os.environ.get('RDS_HOSTNAME', None),
         'PORT': os.environ.get('RDS_PORT', None),
-        'ATOMIC_REQUESTS': True,
+        # 'ATOMIC_REQUESTS': True,
     }
 }
 
@@ -145,7 +145,7 @@ if DEBUG:
         'ENGINE': 'django.db.backends.sqlite3',
         'NAME': os.path.join(BASE_DIR, 'db.sqlite3'),
         # 'NAME': ':memory:'
-        'ATOMIC_REQUESTS': True,
+        # 'ATOMIC_REQUESTS': True,
     }
 
 # Password validation

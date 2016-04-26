@@ -12,8 +12,8 @@ from poms.users.fields import MasterUserField
 
 
 class CounterpartyClassifierSerializer(ClassifierSerializerBase):
-    parent = CounterpartyClassifierField(required=False, allow_null=True)
-    children = CounterpartyClassifierField(many=True, required=False, read_only=False)
+    # parent = CounterpartyClassifierField(required=False, allow_null=True)
+    # children = CounterpartyClassifierField(many=True, required=False, read_only=False)
 
     class Meta(ClassifierSerializerBase.Meta):
         model = CounterpartyClassifier
@@ -47,8 +47,8 @@ class CounterpartySerializer(ModelWithAttributesSerializer):
 
 
 class ResponsibleClassifierSerializer(ClassifierSerializerBase):
-    parent = ResponsibleClassifierField(required=False, allow_null=True)
-    children = ResponsibleClassifierField(many=True, required=False, read_only=False)
+    # parent = ResponsibleClassifierField(required=False, allow_null=True)
+    # children = ResponsibleClassifierField(many=True, required=False, read_only=False)
 
     class Meta(ClassifierSerializerBase.Meta):
         model = ResponsibleClassifier

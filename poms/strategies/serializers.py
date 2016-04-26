@@ -6,8 +6,8 @@ from poms.strategies.models import Strategy
 
 
 class StrategySerializer(ClassifierSerializerBase):
-    parent = StrategyField(required=False, allow_null=True)
-    children = StrategyField(many=True, required=False, read_only=False)
+    # parent = StrategyField(required=False, allow_null=True)
+    # children = StrategyField(many=True, required=False, read_only=False)
 
     class Meta(ClassifierSerializerBase.Meta):
         model = Strategy

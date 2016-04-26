@@ -5,11 +5,12 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.viewsets import ModelViewSet, ReadOnlyModelViewSet
 
 from poms.audit.mixins import HistoricalMixin
-from poms.common.filters import ClassifierFilter
+from poms.common.filters import ClassifierRootFilter
+from poms.common.mixins import DbTransactionMixin
 from poms.users.filters import OwnerByMasterUserFilter
 
 
-class PomsViewSetBase(HistoricalMixin, ModelViewSet):
+class PomsViewSetBase(DbTransactionMixin, HistoricalMixin, ModelViewSet):
     permission_classes = [IsAuthenticated]
     pass
 
@@ -23,7 +24,8 @@ class PomsClassViewSetBase(ReadOnlyModelViewSet):
 
 
 class ClassifierViewSetBase(PomsViewSetBase):
-    filter_backends = [OwnerByMasterUserFilter, ClassifierFilter, DjangoFilterBackend, OrderingFilter, SearchFilter]
+    # ClassifierFilter
+    filter_backends = [OwnerByMasterUserFilter, ClassifierRootFilter, DjangoFilterBackend, OrderingFilter, SearchFilter]
     ordering_fields = ['user_code', 'name', 'short_name']
     search_fields = ['user_code', 'name', 'short_name']
     pagination_class = None

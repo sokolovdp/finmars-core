@@ -56,8 +56,8 @@ class PricingPolicySerializer(serializers.ModelSerializer):
 
 
 class InstrumentClassifierSerializer(ClassifierSerializerBase):
-    parent = InstrumentClassifierField(required=False, allow_null=True)
-    children = InstrumentClassifierField(many=True, required=False, read_only=False)
+    # parent = InstrumentClassifierField(required=False, allow_null=True)
+    # children = InstrumentClassifierField(many=True, required=False, read_only=False)
 
     class Meta(ClassifierSerializerBase.Meta):
         model = InstrumentClassifier
