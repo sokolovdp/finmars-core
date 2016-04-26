@@ -10,6 +10,7 @@ class NotificationAdmin(admin.ModelAdmin):
     list_display = ['id', 'recipient', 'create_date', 'type', 'message',
                     'actor', 'verb', 'target', 'action_object']
     list_select_related = ['recipient']
+    raw_id_fields = ['recipient']
     date_hierarchy = 'create_date'
 
     def get_queryset(self, request):

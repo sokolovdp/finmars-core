@@ -318,4 +318,4 @@ else:
     MANAGERS = []
     EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
 
-MESSAGE_STORAGE = 'poms.notifications.message_storage.Storage'
+MESSAGE_STORAGE = 'poms.notifications.message_storage.FallbackStorage'

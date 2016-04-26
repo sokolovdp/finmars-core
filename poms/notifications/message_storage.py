@@ -1,6 +1,6 @@
 from django.contrib.messages.storage.base import BaseStorage, Message
-from django.contrib.messages.storage.cookie import CookieStorage
-from django.contrib.messages.storage.fallback import FallbackStorage
+from django.contrib.messages.storage.cookie import CookieStorage as DjangoCookieStorage
+from django.contrib.messages.storage.fallback import FallbackStorage as DjangoFallbackStorage
 from django.utils import timezone
 from django.utils.encoding import force_text
 
@@ -9,7 +9,7 @@ from poms.notifications.models import Notification
 
 # Can user is null  middleware process_response if used in Rest Framework authtoken?
 
-class Storage(BaseStorage):
+class DbStorage(BaseStorage):
     def _get(self, *args, **kwargs):
         user = self.request.user
         if user.is_authenticated():
@@ -29,7 +29,6 @@ class Storage(BaseStorage):
             user = self.request.user
             if user.is_authenticated():
                 for message in messages:
-                    # print(1, getattr(message, 'id', None), message)
                     if not hasattr(message, 'id'):
                         Notification.objects.create(recipient=user, level=message.level, message=message)
         else:
@@ -37,5 +36,11 @@ class Storage(BaseStorage):
         return []
 
 
-class NFallbackStorage(FallbackStorage):
-    storage_classes = (Storage, CookieStorage)
+class CookieStorage(DjangoCookieStorage):
+    def _get(self, *args, **kwargs):
+        messages, all_retrieved = super(CookieStorage, self)._get(*args, **kwargs)
+        return messages, False
+
+
+class FallbackStorage(DjangoFallbackStorage):
+    storage_classes = (CookieStorage, DbStorage)
