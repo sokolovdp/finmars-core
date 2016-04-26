@@ -8,6 +8,7 @@ from poms.common.serializers import ClassifierSerializerBase, ClassifierRecursiv
 from poms.obj_attrs.serializers import AttributeTypeSerializerBase, AttributeSerializerBase, \
     ModelWithAttributesSerializer
 from poms.obj_perms.serializers import ObjectPermissionSerializer, ModelWithObjectPermissionSerializer
+from poms.tags.fields import TagField
 from poms.users.fields import MasterUserField
 
 
@@ -22,11 +23,12 @@ class AccountClassifierSerializer(ClassifierSerializerBase):
 
 class AccountTypeSerializer(serializers.ModelSerializer):
     master_user = MasterUserField()
+    tags = TagField(many=True)
 
     class Meta:
         model = AccountType
         fields = ['url', 'id', 'master_user', 'user_code', 'name', 'short_name', 'notes',
-                  'show_transaction_details', 'transaction_details_expr']
+                  'show_transaction_details', 'transaction_details_expr', 'tags']
 
 
 class AccountAttributeTypeSerializer(AttributeTypeSerializerBase):
@@ -51,8 +53,9 @@ class AccountSerializer(ModelWithAttributesSerializer, ModelWithObjectPermission
     master_user = MasterUserField()
     attributes = AccountAttributeSerializer(many=True)
     object_permission = ObjectPermissionSerializer()
+    tags = TagField(many=True)
 
     class Meta:
         model = Account
         fields = ['url', 'id', 'master_user', 'user_code', 'name', 'short_name', 'type', 'notes',
-                  'attributes', 'object_permission']
+                  'attributes', 'tags', 'object_permission']

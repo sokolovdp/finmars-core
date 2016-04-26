@@ -10,6 +10,7 @@ from poms.common.views import ClassifierViewSetBase, PomsViewSetBase
 from poms.obj_attrs.filters import AttributePrefetchFilter
 from poms.obj_attrs.views import AttributeTypeViewSetBase
 from poms.obj_perms.filters import ObjectPermissionPrefetchFilter
+from poms.tags.filters import TagPrefetchFilter
 from poms.users.filters import OwnerByMasterUserFilter
 
 
@@ -25,9 +26,10 @@ class AccountClassifierViewSet(ClassifierViewSetBase):
 
 
 class AccountTypeViewSet(PomsViewSetBase):
-    queryset = AccountType.objects.all()
+    queryset = AccountType.objects
     serializer_class = AccountTypeSerializer
-    filter_backends = [OwnerByMasterUserFilter, DjangoFilterBackend, OrderingFilter, SearchFilter]
+    filter_backends = [OwnerByMasterUserFilter, TagPrefetchFilter,
+                       DjangoFilterBackend, OrderingFilter, SearchFilter]
     ordering_fields = ['user_code', 'name', 'short_name']
     search_fields = ['user_code', 'name', 'short_name']
 
@@ -46,7 +48,8 @@ class AccountFilterSet(FilterSet):
 class AccountViewSet(PomsViewSetBase):
     queryset = Account.objects.all()
     serializer_class = AccountSerializer
-    filter_backends = [OwnerByMasterUserFilter, AttributePrefetchFilter, ObjectPermissionPrefetchFilter,
+    filter_backends = [OwnerByMasterUserFilter, AttributePrefetchFilter, TagPrefetchFilter,
+                       ObjectPermissionPrefetchFilter,
                        DjangoFilterBackend, OrderingFilter, SearchFilter, ]
     filter_class = AccountFilterSet
     ordering_fields = ['user_code', 'name', 'short_name']

@@ -8,6 +8,7 @@ from poms.counterparties.models import CounterpartyClassifier, Counterparty, Res
     CounterpartyAttributeType, CounterpartyAttribute, ResponsibleAttributeType
 from poms.obj_attrs.serializers import AttributeTypeSerializerBase, AttributeSerializerBase, \
     ModelWithAttributesSerializer
+from poms.tags.fields import TagField
 from poms.users.fields import MasterUserField
 
 
@@ -40,10 +41,11 @@ class CounterpartyAttributeSerializer(AttributeSerializerBase):
 class CounterpartySerializer(ModelWithAttributesSerializer):
     master_user = MasterUserField()
     attributes = CounterpartyAttributeSerializer(many=True)
+    tags = TagField(many=True)
 
     class Meta:
         model = Counterparty
-        fields = ['url', 'id', 'master_user', 'user_code', 'name', 'short_name', 'notes', 'attributes']
+        fields = ['url', 'id', 'master_user', 'user_code', 'name', 'short_name', 'notes', 'attributes', 'tags']
 
 
 class ResponsibleClassifierSerializer(ClassifierSerializerBase):
@@ -75,7 +77,8 @@ class ResponsibleAttributeSerializer(AttributeSerializerBase):
 class ResponsibleSerializer(ModelWithAttributesSerializer):
     master_user = MasterUserField()
     attributes = ResponsibleAttributeSerializer(many=True)
+    tags = TagField(many=True)
 
     class Meta:
         model = Responsible
-        fields = ['url', 'id', 'master_user', 'user_code', 'name', 'short_name', 'notes', 'attributes']
+        fields = ['url', 'id', 'master_user', 'user_code', 'name', 'short_name', 'notes', 'attributes', 'tags']

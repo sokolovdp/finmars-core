@@ -17,6 +17,7 @@ from poms.instruments.serializers import InstrumentClassifierSerializer, Instrum
     InstrumentFactorScheduleSerializer, EventScheduleSerializer, PricingPolicySerializer
 from poms.obj_attrs.filters import AttributePrefetchFilter
 from poms.obj_attrs.views import AttributeTypeViewSetBase
+from poms.tags.filters import TagPrefetchFilter
 from poms.users.filters import OwnerByMasterUserFilter
 
 
@@ -53,7 +54,8 @@ class CostMethodViewSet(PomsClassViewSetBase):
 class InstrumentTypeViewSet(PomsViewSetBase):
     queryset = InstrumentType.objects.all()
     serializer_class = InstrumentTypeSerializer
-    filter_backends = [OwnerByMasterUserFilter, DjangoFilterBackend, OrderingFilter, SearchFilter]
+    filter_backends = [OwnerByMasterUserFilter, TagPrefetchFilter,
+                       DjangoFilterBackend, OrderingFilter, SearchFilter]
     ordering_fields = ['user_code', 'name', 'short_name']
     search_fields = ['user_code', 'name', 'short_name']
 
@@ -86,7 +88,7 @@ class InstrumentViewSet(PomsViewSetBase):
     queryset = Instrument.objects.all()
     serializer_class = InstrumentSerializer
     permission_classes = [IsAuthenticated]
-    filter_backends = [OwnerByMasterUserFilter, AttributePrefetchFilter,
+    filter_backends = [OwnerByMasterUserFilter, AttributePrefetchFilter, TagPrefetchFilter,
                        DjangoFilterBackend, OrderingFilter, SearchFilter]
     ordering_fields = ['user_code', 'name', 'short_name']
     search_fields = ['user_code', 'name', 'short_name']

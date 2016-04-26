@@ -12,6 +12,7 @@ from poms.instruments.models import InstrumentClassifier, Instrument, PriceHisto
     PricingPolicy
 from poms.obj_attrs.serializers import AttributeSerializerBase, AttributeTypeSerializerBase, \
     ModelWithAttributesSerializer
+from poms.tags.fields import TagField
 from poms.transactions.fields import TransactionTypeField
 from poms.users.fields import MasterUserField
 
@@ -65,11 +66,12 @@ class InstrumentClassifierSerializer(ClassifierSerializerBase):
 
 class InstrumentTypeSerializer(serializers.ModelSerializer):
     master_user = MasterUserField()
+    tags = TagField(many=True)
 
     class Meta:
         model = InstrumentType
         fields = ['url', 'id', 'master_user', 'user_code', 'name', 'short_name', 'notes',
-                  'instrument_class']
+                  'instrument_class', 'tags']
 
 
 class InstrumentAttributeTypeSerializer(AttributeTypeSerializerBase):
@@ -95,13 +97,14 @@ class InstrumentSerializer(ModelWithAttributesSerializer):
     pricing_currency = CurrencyField(read_only=False)
     accrued_currency = CurrencyField(read_only=False)
     attributes = InstrumentAttributeSerializer(many=True)
+    tags = TagField(many=True)
 
     class Meta:
         model = Instrument
         fields = ['url', 'id', 'master_user', 'user_code', 'name', 'short_name', 'notes', 'is_active',
                   'pricing_currency', 'price_multiplier', 'accrued_currency', 'accrued_multiplier',
                   'daily_pricing_model', 'payment_size_detail', 'default_price', 'default_accrued',
-                  'attributes']
+                  'attributes', 'tags']
 
 
 class PriceHistorySerializer(serializers.ModelSerializer):

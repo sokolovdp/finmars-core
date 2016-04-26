@@ -11,6 +11,7 @@ from poms.obj_attrs.serializers import AttributeTypeSerializerBase, AttributeSer
     ModelWithAttributesSerializer
 from poms.portfolios.fields import PortfolioField
 from poms.strategies.fields import StrategyRootField
+from poms.tags.fields import TagField
 from poms.transactions.fields import TransactionAttributeTypeField
 from poms.transactions.models import TransactionClass, Transaction, TransactionType, TransactionAttributeType, \
     TransactionAttribute
@@ -24,10 +25,11 @@ class TransactionClassSerializer(PomsClassSerializer):
 
 class TransactionTypeSerializer(serializers.ModelSerializer):
     master_user = MasterUserField()
+    tags = TagField(many=True)
 
     class Meta:
         model = TransactionType
-        fields = ['url', 'id', 'master_user', 'user_code', 'name', 'short_name', 'notes']
+        fields = ['url', 'id', 'master_user', 'user_code', 'name', 'short_name', 'notes', 'tags']
 
 
 class TransactionAttributeTypeSerializer(AttributeTypeSerializerBase):

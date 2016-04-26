@@ -19,3 +19,9 @@ class TagContentTypeFilter(BaseFilterBackend):
                   Portfolio, TransactionType]
         ctypes = [ContentType.objects.get_for_model(model).pk for model in models]
         return queryset.filter(pk__in=ctypes)
+
+
+class TagPrefetchFilter(BaseFilterBackend):
+    def filter_queryset(self, request, queryset, view):
+        return queryset.prefetch_related('tags')
+

@@ -6,6 +6,7 @@ from poms.common.serializers import ClassifierSerializerBase
 from poms.obj_attrs.serializers import AttributeTypeSerializerBase, AttributeSerializerBase
 from poms.portfolios.fields import PortfolioClassifierField, PortfolioClassifierRootField, PortfolioAttributeTypeField
 from poms.portfolios.models import PortfolioClassifier, Portfolio, PortfolioAttributeType, PortfolioAttribute
+from poms.tags.fields import TagField
 from poms.users.fields import MasterUserField
 
 
@@ -38,8 +39,8 @@ class PortfolioAttributeSerializer(AttributeSerializerBase):
 class PortfolioSerializer(serializers.ModelSerializer):
     master_user = MasterUserField()
     attributes = PortfolioAttributeSerializer(many=True)
+    tags = TagField(many=True)
 
     class Meta:
         model = Portfolio
-        fields = ['url', 'id', 'master_user', 'user_code', 'name', 'short_name', 'notes',
-                  'attributes']
+        fields = ['url', 'id', 'master_user', 'user_code', 'name', 'short_name', 'notes', 'attributes', 'tags']

@@ -4,9 +4,10 @@ from poms.common.filters import ClassifierFilterSetBase
 from poms.common.views import ClassifierViewSetBase
 from poms.strategies.models import Strategy
 from poms.strategies.serializers import StrategySerializer
+from poms.tags.filters import TagPrefetchFilter
 
 
-class AccountClassifierFilterSet(ClassifierFilterSetBase):
+class StrategyClassifierFilterSet(ClassifierFilterSetBase):
     class Meta(ClassifierFilterSetBase.Meta):
         model = Strategy
 
@@ -14,4 +15,5 @@ class AccountClassifierFilterSet(ClassifierFilterSetBase):
 class StrategyViewSet(ClassifierViewSetBase):
     queryset = Strategy.objects.all()
     serializer_class = StrategySerializer
-    filter_class = AccountClassifierFilterSet
+    filter_backends = [TagPrefetchFilter] + ClassifierViewSetBase.filter_backends
+    filter_class = StrategyClassifierFilterSet

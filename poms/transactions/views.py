@@ -6,6 +6,7 @@ from rest_framework.filters import FilterSet, DjangoFilterBackend, OrderingFilte
 from poms.common.views import PomsClassViewSetBase, PomsViewSetBase
 from poms.obj_attrs.filters import AttributePrefetchFilter
 from poms.obj_attrs.views import AttributeTypeViewSetBase
+from poms.tags.filters import TagPrefetchFilter
 from poms.transactions.models import TransactionClass, Transaction, TransactionType, TransactionAttributeType
 from poms.transactions.serializers import TransactionClassSerializer, TransactionSerializer, TransactionTypeSerializer, \
     TransactionAttributeTypeSerializer
@@ -20,7 +21,8 @@ class TransactionClassViewSet(PomsClassViewSetBase):
 class TransactionTypeViewSet(PomsViewSetBase):
     queryset = TransactionType.objects.all()
     serializer_class = TransactionTypeSerializer
-    filter_backends = [OwnerByMasterUserFilter, DjangoFilterBackend, OrderingFilter, SearchFilter]
+    filter_backends = [OwnerByMasterUserFilter, TagPrefetchFilter,
+                       DjangoFilterBackend, OrderingFilter, SearchFilter]
     ordering_fields = ['user_code', 'name', 'short_name']
     search_fields = ['user_code', 'name', 'short_name']
 

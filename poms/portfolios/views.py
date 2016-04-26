@@ -4,10 +4,12 @@ from rest_framework.filters import DjangoFilterBackend, OrderingFilter, SearchFi
 
 from poms.common.filters import ClassifierFilterSetBase
 from poms.common.views import ClassifierViewSetBase, PomsViewSetBase
+from poms.obj_attrs.filters import AttributePrefetchFilter
 from poms.obj_attrs.views import AttributeTypeViewSetBase
 from poms.portfolios.models import PortfolioClassifier, Portfolio, PortfolioAttributeType
 from poms.portfolios.serializers import PortfolioClassifierSerializer, PortfolioSerializer, \
     PortfolioAttributeTypeSerializer
+from poms.tags.filters import TagPrefetchFilter
 from poms.users.filters import OwnerByMasterUserFilter
 
 
@@ -30,6 +32,7 @@ class PortfolioAttributeTypeViewSet(AttributeTypeViewSetBase):
 class PortfolioViewSet(PomsViewSetBase):
     queryset = Portfolio.objects.all()
     serializer_class = PortfolioSerializer
-    filter_backends = [OwnerByMasterUserFilter, DjangoFilterBackend, OrderingFilter, SearchFilter, ]
+    filter_backends = [OwnerByMasterUserFilter, AttributePrefetchFilter, TagPrefetchFilter,
+                       DjangoFilterBackend, OrderingFilter, SearchFilter, ]
     ordering_fields = ['user_code', 'name', 'short_name']
     search_fields = ['user_code', 'name', 'short_name']
