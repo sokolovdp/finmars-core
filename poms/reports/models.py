@@ -60,7 +60,7 @@ class ReportType(NamedModel):
         ]
 
 
-class TransactionTypeUserObjectPermission(UserObjectPermissionBase):
+class ReportTypeUserObjectPermission(UserObjectPermissionBase):
     content_object = models.ForeignKey(ReportType, related_name='user_object_permissions',
                                        verbose_name=_('content object'))
 
@@ -70,7 +70,7 @@ class TransactionTypeUserObjectPermission(UserObjectPermissionBase):
         verbose_name_plural = _('report types - user permissions')
 
 
-class TransactionTypeGroupObjectPermission(GroupObjectPermissionBase):
+class ReportTypeGroupObjectPermission(GroupObjectPermissionBase):
     content_object = models.ForeignKey(ReportType, related_name='group_object_permissions',
                                        verbose_name=_('content object'))
 
