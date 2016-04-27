@@ -1,9 +1,123 @@
 from __future__ import unicode_literals
 
-from django.contrib.contenttypes.models import ContentType
-from django.utils.encoding import python_2_unicode_compatible
+from datetime import date
 
+from django.contrib.contenttypes.models import ContentType
+from django.db import models
+from django.utils import timezone
+from django.utils.encoding import python_2_unicode_compatible
+from django.utils.translation import ugettext_lazy as _
+
+from poms.common.models import NamedModel, ClassModelBase
+from poms.obj_perms.models import UserObjectPermissionBase, GroupObjectPermissionBase
 from poms.users.models import MasterUser
+
+
+class ReportClass(ClassModelBase):
+    # TODO: add "values"
+    BALANCE = 1
+    P_L = 2
+    COST = 3
+    YTM = 3
+    CLASSES = (
+        (BALANCE, _('BALANCE')),
+        (P_L, _('P&L')),
+        (COST, _('COST')),
+        (YTM, _('YTM')),
+    )
+
+    class Meta(ClassModelBase.Meta):
+        abstract = True
+        verbose_name = _('report class')
+        verbose_name_plural = _('report classes')
+
+
+class ReportType(NamedModel):
+    master_user = models.ForeignKey(MasterUser, related_name='report_types',
+                                    verbose_name=_('master user'))
+
+    report_class = models.ForeignKey(ReportClass)
+    begin_date = models.DateField(default=date.min)
+    end_date = models.DateField(default=timezone.now)
+
+    show_transaction_details = models.BooleanField(default=False)
+    group_by_portfolio = models.BooleanField(default=False)
+    group_by_account = models.BooleanField(default=False)
+    group_by_strategy = models.BooleanField(default=False)
+
+    cost_method = models.ForeignKey('instruments.CostMethod')
+    portfolios = models.ManyToManyField('portfolios.Portfolio')
+    accounts = models.ManyToManyField('accounts.Account')
+    instruments = models.ManyToManyField('instruments.Instrument')
+    currencies = models.ManyToManyField('currencies.Currency')
+
+    class Meta(NamedModel.Meta):
+        abstract = True
+        verbose_name = _('report type')
+        verbose_name_plural = _('report types')
+        permissions = [
+            ('view_reporttype', 'Can view report type')
+        ]
+
+
+class TransactionTypeUserObjectPermission(UserObjectPermissionBase):
+    content_object = models.ForeignKey(ReportType, related_name='user_object_permissions',
+                                       verbose_name=_('content object'))
+
+    class Meta(UserObjectPermissionBase.Meta):
+        abstract = True
+        verbose_name = _('report types - user permission')
+        verbose_name_plural = _('report types - user permissions')
+
+
+class TransactionTypeGroupObjectPermission(GroupObjectPermissionBase):
+    content_object = models.ForeignKey(ReportType, related_name='group_object_permissions',
+                                       verbose_name=_('content object'))
+
+    class Meta(GroupObjectPermissionBase.Meta):
+        abstract = True
+        verbose_name = _('report types - group permission')
+        verbose_name_plural = _('report types - group permissions')
+
+
+@python_2_unicode_compatible
+class ReportTypeInput(models.Model):
+    STRING = 10
+    NUMBER = 20
+    EXPRESSION = 30
+    DATE = 40
+    RELATION = 100
+
+    TYPES = (
+        (NUMBER, _('Number')),
+        (STRING, _('String')),
+        (DATE, _('Date')),
+        (EXPRESSION, _('Expression')),
+        (RELATION, _('Relation')),
+    )
+
+    report_type = models.ForeignKey(ReportType, related_name='inputs',
+                                    verbose_name=_('transaction type'))
+    value_type = models.PositiveSmallIntegerField(default=NUMBER, choices=TYPES,
+                                                  verbose_name=_('value type'))
+    name = models.CharField(max_length=255, null=True, blank=True,
+                            verbose_name=_('name'))
+    content_type = models.ForeignKey(ContentType, null=True, blank=True,
+                                     verbose_name=_('content type'))
+    order = models.IntegerField(default=0,
+                                verbose_name=_('order'))
+
+    class Meta:
+        abstract = True
+        verbose_name = _('report type input')
+        verbose_name_plural = _('report type inputs')
+
+    def __str__(self):
+        return self.name
+
+
+# ----------------------------------------------------------------------------------------------------------------------
+
 
 MULTIPLIER_AVCO = 1
 MULTIPLIER_FIFO = 2
