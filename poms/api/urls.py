@@ -5,7 +5,6 @@ from django.conf.urls import patterns, url, include
 from rest_framework import routers
 
 import poms.accounts.views as accounts
-import poms.api.views as views
 import poms.audit.views as audit
 import poms.counterparties.views as counterparties
 import poms.currencies.views as currencies
@@ -23,8 +22,8 @@ import poms.tags.views as tags
 router = routers.DefaultRouter()
 router.register(r'users/login', users.LoginViewSet, 'login')
 router.register(r'users/logout', users.LogoutViewSet, 'logout')
-router.register(r'users/ping', views.PingViewSet, "ping")
-router.register(r'users/protected-ping', views.ProtectedPingViewSet, "protectedping")
+router.register(r'users/ping', users.PingViewSet, "ping")
+router.register(r'users/protected-ping', users.ProtectedPingViewSet, "protectedping")
 
 router.register(r'users/user', users.UserViewSet)
 router.register(r'users/master-user', users.MasterUserViewSet)

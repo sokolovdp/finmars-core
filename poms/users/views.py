@@ -7,7 +7,7 @@ from rest_framework.authtoken.serializers import AuthTokenSerializer
 from rest_framework.filters import BaseFilterBackend
 from rest_framework.mixins import UpdateModelMixin, DestroyModelMixin
 from rest_framework.parsers import JSONParser, MultiPartParser, FormParser
-from rest_framework.permissions import IsAuthenticated, BasePermission, SAFE_METHODS
+from rest_framework.permissions import IsAuthenticated, BasePermission, SAFE_METHODS, AllowAny
 from rest_framework.response import Response
 from rest_framework.viewsets import ViewSet, ModelViewSet, ReadOnlyModelViewSet
 
@@ -29,6 +29,26 @@ class ObtainAuthTokenViewSet(ViewSet):
         Token.objects.filter(user=user).delete()
         token, created = Token.objects.get_or_create(user=user)
         return Response({'token': token.key})
+
+
+class PingViewSet(ViewSet):
+    permission_classes = [AllowAny]
+
+    def list(self, request, *args, **kwargs):
+        return Response({
+            'message': 'pong',
+            'version': request.version,
+        })
+
+
+class ProtectedPingViewSet(ViewSet):
+    permission_classes = [IsAuthenticated]
+
+    def list(self, request, *args, **kwargs):
+        return Response({
+            'message': 'pong',
+            'version': request.version,
+        })
 
 
 class LoginViewSet(ViewSet):
