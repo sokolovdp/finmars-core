@@ -7,7 +7,7 @@ from poms.accounts.models import Account, AccountType, AccountClassifier, Accoun
 from poms.common.serializers import ClassifierSerializerBase, ClassifierNodeSerializerBase
 from poms.obj_attrs.serializers import AttributeTypeSerializerBase, AttributeSerializerBase, \
     ModelWithAttributesSerializer
-from poms.obj_perms.serializers import ObjectPermissionSerializer, ModelWithObjectPermissionSerializer
+from poms.obj_perms.serializers import ModelWithObjectPermissionSerializer
 from poms.tags.fields import TagField
 from poms.users.fields import MasterUserField
 
@@ -55,10 +55,9 @@ class AccountAttributeSerializer(AttributeSerializerBase):
 class AccountSerializer(ModelWithAttributesSerializer, ModelWithObjectPermissionSerializer):
     master_user = MasterUserField()
     attributes = AccountAttributeSerializer(many=True)
-    object_permission = ObjectPermissionSerializer()
     tags = TagField(many=True)
 
     class Meta:
         model = Account
         fields = ['url', 'id', 'master_user', 'user_code', 'name', 'short_name', 'type', 'notes',
-                  'attributes', 'tags', 'object_permission']
+                  'attributes', 'tags']

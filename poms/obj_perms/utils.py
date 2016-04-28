@@ -213,17 +213,17 @@ def get_granted_permissions(member, obj):
 #         group_obj_perms_model.objects.bulk_create(group_perms)
 
 
-def assign_owner_permissions(obj, member, perms=None):
-    ctype = ContentType.objects.get_for_model(obj)
-    perms = list(Permission.objects.filter(content_type=ctype)) if perms is None else perms
-    user_lookup_name, user_obj_perms_model = get_user_obj_perms_model(obj)
-
-    user_obj_perms_model.objects.filter(content_object=obj, member=member).delete()
-    if perms:
-        user_obj_perms_model.objects.bulk_create(
-            user_obj_perms_model(content_object=obj, member=member, permission=p)
-            for p in perms if not p.codename.startswith('add_')
-        )
+# def assign_owner_permissions(obj, member, perms=None):
+#     ctype = ContentType.objects.get_for_model(obj)
+#     perms = list(Permission.objects.filter(content_type=ctype)) if perms is None else perms
+#     user_lookup_name, user_obj_perms_model = get_user_obj_perms_model(obj)
+#
+#     user_obj_perms_model.objects.filter(content_object=obj, member=member).delete()
+#     if perms:
+#         user_obj_perms_model.objects.bulk_create(
+#             user_obj_perms_model(content_object=obj, member=member, permission=p)
+#             for p in perms if not p.codename.startswith('add_')
+#         )
 
 
 def get_owner_default_permissions(instance):
@@ -235,12 +235,12 @@ def assign_perms(obj, members=None, groups=None, perms=None):
     ctype = ContentType.objects.get_for_model(obj)
     permissions = list(Permission.objects.filter(content_type=ctype))
 
-    user_lookup_name, user_obj_perms_model = get_user_obj_perms_model(obj)
-    group_lookup_name, group_obj_perms_model = get_group_obj_perms_model(obj)
-
     if members:
+        user_lookup_name, user_obj_perms_model = get_user_obj_perms_model(obj)
+        # user_obj_perms_model.objects.filter(content_object=obj, member__in=members).delete()
+        user_obj_perms_qs = getattr(obj, user_lookup_name)
+        user_obj_perms_qs.all().delete()
         user_perms = []
-        user_obj_perms_model.objects.filter(content_object=obj, member__in=members).delete()
         for m in members:
             for p in permissions:
                 if p.codename in perms:
@@ -251,8 +251,11 @@ def assign_perms(obj, members=None, groups=None, perms=None):
             user_obj_perms_model.objects.bulk_create(user_perms)
 
     if groups:
+        group_lookup_name, group_obj_perms_model = get_group_obj_perms_model(obj)
+        # group_obj_perms_model.objects.filter(content_object=obj, group__in=groups).delete()
+        group_obj_perms_qs = getattr(obj, group_lookup_name)
+        group_obj_perms_qs.all().delete()
         group_perms = []
-        group_obj_perms_model.objects.filter(content_object=obj, group__in=groups).delete()
         for g in groups:
             for p in permissions:
                 if p.codename in perms:
@@ -264,32 +267,47 @@ def assign_perms(obj, members=None, groups=None, perms=None):
 
 
 def assign_perms_from_list(obj, user_object_permissions=None, group_object_permissions=None):
-    user_lookup_name, user_obj_perms_model = get_user_obj_perms_model(obj)
-    group_lookup_name, group_obj_perms_model = get_group_obj_perms_model(obj)
-
     if user_object_permissions is not None:
-        user_obj_perms_model.objects.filter(content_object=obj).delete()
+        # make dict for duplicate filtering
+        user_object_permissions = {'%s.%s' % (p['member'].id, p['permission'].codename): p
+                                   for p in user_object_permissions}
 
-        # filter duplicate
-        user_object_permissions = six.itervalues({'%s.%s' % (p['member'].id, p['permission'].codename): p
-                                                  for p in user_object_permissions})
+        user_lookup_name, user_obj_perms_model = get_user_obj_perms_model(obj)
 
-        user_obj_perms_model.objects.bulk_create(
-            user_obj_perms_model(content_object=obj, member=p['member'], permission=p['permission'])
-            for p in user_object_permissions
-        )
+        # user_obj_perms_model.objects.filter(content_object=obj).delete()
+        # if user_object_permissions:
+        #     user_obj_perms_model.objects.bulk_create(
+        #         user_obj_perms_model(content_object=obj, member=p['member'], permission=p['permission'])
+        #         for p in six.itervalues(user_object_permissions)
+        #     )
+        user_obj_perms_qs = getattr(obj, user_lookup_name)
+        user_obj_perms_qs.all().delete()
+        if user_object_permissions:
+            user_obj_perms_model.objects.bulk_create(
+                user_obj_perms_model(content_object=obj, member=p['member'], permission=p['permission'])
+                for p in six.itervalues(user_object_permissions)
+            )
 
     if group_object_permissions is not None:
-        group_obj_perms_model.objects.filter(content_object=obj).delete()
+        # make dict for duplicate filtering
+        group_object_permissions = {'%s.%s' % (p['group'].id, p['permission'].codename): p
+                                    for p in group_object_permissions}
 
-        # filter duplicate
-        group_object_permissions = six.itervalues({'%s.%s' % (p['group'].id, p['permission'].codename): p
-                                                   for p in group_object_permissions})
+        group_lookup_name, group_obj_perms_model = get_group_obj_perms_model(obj)
 
-        group_obj_perms_model.objects.bulk_create(
-            group_obj_perms_model(content_object=obj, group=p['group'], permission=p['permission'])
-            for p in group_object_permissions
-        )
+        # group_obj_perms_model.objects.filter(content_object=obj).delete()
+        # if group_object_permissions:
+        #     group_obj_perms_model.objects.bulk_create(
+        #         group_obj_perms_model(content_object=obj, group=p['group'], permission=p['permission'])
+        #         for p in six.itervalues(group_object_permissions)
+        #     )
+        group_obj_perms_qs = getattr(obj, group_lookup_name)
+        group_obj_perms_qs.all().delete()
+        if group_object_permissions:
+            group_obj_perms_model.objects.bulk_create(
+                group_obj_perms_model(content_object=obj, group=p['group'], permission=p['permission'])
+                for p in six.itervalues(group_object_permissions)
+            )
 
 # def obj_perms_filter_objects(member, perms, queryset, model_cls=None):
 #     from poms.obj_perms.models import UserObjectPermission, GroupObjectPermission

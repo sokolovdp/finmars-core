@@ -25,6 +25,7 @@ class ObjectPermissionPrefetchFilter(BaseFilterBackend):
         return queryset.prefetch_related(
             'user_object_permissions',
             'user_object_permissions__member',
+            'user_object_permissions__member__groups',
             'user_object_permissions__permission',
             'user_object_permissions__permission__content_type',
             'group_object_permissions',
