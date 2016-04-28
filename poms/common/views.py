@@ -3,11 +3,13 @@ from __future__ import unicode_literals
 from django.http import Http404
 from mptt.utils import get_cached_trees
 from rest_framework.filters import DjangoFilterBackend, OrderingFilter, SearchFilter
+from rest_framework.mixins import UpdateModelMixin
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.viewsets import ModelViewSet, ReadOnlyModelViewSet
 
 from poms.audit.mixins import HistoricalMixin
+from poms.common.filters import ClassifierPrefetchFilter
 from poms.common.mixins import DbTransactionMixin
 from poms.users.filters import OwnerByMasterUserFilter
 
@@ -58,3 +60,10 @@ class ClassifierViewSetBase(PomsViewSetBase):
         instance = self.get_object()
         serializer = self.get_serializer(instance)
         return Response(serializer.data)
+
+
+class ClassifierNodeViewSetBase(DbTransactionMixin, HistoricalMixin, UpdateModelMixin, ReadOnlyModelViewSet):
+    filter_backends = [OwnerByMasterUserFilter, ClassifierPrefetchFilter,
+                       DjangoFilterBackend, OrderingFilter, SearchFilter]
+    ordering_fields = ['user_code', 'name', 'short_name']
+    search_fields = ['user_code', 'name', 'short_name']

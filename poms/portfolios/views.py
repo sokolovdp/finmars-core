@@ -3,12 +3,12 @@ from __future__ import unicode_literals
 from rest_framework.filters import DjangoFilterBackend, OrderingFilter, SearchFilter
 
 from poms.common.filters import ClassifierFilterSetBase
-from poms.common.views import ClassifierViewSetBase, PomsViewSetBase
+from poms.common.views import ClassifierViewSetBase, PomsViewSetBase, ClassifierNodeViewSetBase
 from poms.obj_attrs.filters import AttributePrefetchFilter
 from poms.obj_attrs.views import AttributeTypeViewSetBase
 from poms.portfolios.models import PortfolioClassifier, Portfolio, PortfolioAttributeType
 from poms.portfolios.serializers import PortfolioClassifierSerializer, PortfolioSerializer, \
-    PortfolioAttributeTypeSerializer
+    PortfolioAttributeTypeSerializer, PortfolioClassifierNodeSerializer
 from poms.tags.filters import TagPrefetchFilter
 from poms.users.filters import OwnerByMasterUserFilter
 
@@ -21,6 +21,12 @@ class PortfolioClassifierFilterSet(ClassifierFilterSetBase):
 class PortfolioClassifierViewSet(ClassifierViewSetBase):
     queryset = PortfolioClassifier.objects.all()
     serializer_class = PortfolioClassifierSerializer
+    filter_class = PortfolioClassifierFilterSet
+
+
+class PortfolioClassifierNodeViewSet(ClassifierNodeViewSetBase):
+    queryset = PortfolioClassifier.objects.all()
+    serializer_class = PortfolioClassifierNodeSerializer
     filter_class = PortfolioClassifierFilterSet
 
 

@@ -2,7 +2,7 @@ from __future__ import unicode_literals
 
 from rest_framework import serializers
 
-from poms.common.serializers import ClassifierSerializerBase
+from poms.common.serializers import ClassifierSerializerBase, ClassifierNodeSerializerBase
 from poms.obj_attrs.serializers import AttributeTypeSerializerBase, AttributeSerializerBase
 from poms.portfolios.fields import PortfolioClassifierField, PortfolioClassifierRootField, PortfolioAttributeTypeField
 from poms.portfolios.models import PortfolioClassifier, Portfolio, PortfolioAttributeType, PortfolioAttribute
@@ -11,10 +11,14 @@ from poms.users.fields import MasterUserField
 
 
 class PortfolioClassifierSerializer(ClassifierSerializerBase):
-    # parent = PortfolioClassifierField(required=False, allow_null=True)
-    # children = PortfolioClassifierField(many=True, required=False, read_only=False)
-
     class Meta(ClassifierSerializerBase.Meta):
+        model = PortfolioClassifier
+
+
+class PortfolioClassifierNodeSerializer(ClassifierNodeSerializerBase):
+    url = serializers.HyperlinkedIdentityField(view_name='portfolioclassifiernode-detail')
+
+    class Meta(ClassifierNodeSerializerBase.Meta):
         model = PortfolioClassifier
 
 

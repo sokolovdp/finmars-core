@@ -1,5 +1,3 @@
-import django_filters
-from django.utils.translation import ugettext_lazy as _
 from rest_framework.filters import BaseFilterBackend, FilterSet
 
 
@@ -16,6 +14,11 @@ class ClassifierFilter(BaseFilterBackend):
 class ClassifierRootFilter(BaseFilterBackend):
     def filter_queryset(self, request, queryset, view):
         return queryset.filter(parent__isnull=True)
+
+
+class ClassifierPrefetchFilter(BaseFilterBackend):
+    def filter_queryset(self, request, queryset, view):
+        return queryset.prefetch_related('parent', 'children')
 
 
 class ClassifierFilterSetBase(FilterSet):

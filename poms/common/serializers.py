@@ -125,3 +125,12 @@ class ClassifierSerializerBase(PomsSerializerBase):
         if node.is_root_node():
             # print('processed', processed)
             node.get_family().exclude(pk__in=processed).delete()
+
+
+class ClassifierNodeSerializerBase(PomsSerializerBase):
+    parent = serializers.PrimaryKeyRelatedField(read_only=True)
+    children = serializers.PrimaryKeyRelatedField(many=True, read_only=True)
+
+    class Meta(PomsSerializerBase.Meta):
+        fields = PomsSerializerBase.Meta.fields + ['user_code', 'name', 'short_name', 'notes', 'level',
+                                                   'parent', 'children']

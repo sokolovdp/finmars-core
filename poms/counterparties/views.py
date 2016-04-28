@@ -3,12 +3,12 @@ from __future__ import unicode_literals
 from rest_framework.filters import DjangoFilterBackend, OrderingFilter, SearchFilter
 
 from poms.common.filters import ClassifierFilterSetBase
-from poms.common.views import ClassifierViewSetBase, PomsViewSetBase
+from poms.common.views import ClassifierViewSetBase, PomsViewSetBase, ClassifierNodeViewSetBase
 from poms.counterparties.models import CounterpartyClassifier, Counterparty, Responsible, ResponsibleClassifier, \
     CounterpartyAttributeType, ResponsibleAttributeType
 from poms.counterparties.serializers import CounterpartySerializer, ResponsibleSerializer, \
     CounterpartyClassifierSerializer, ResponsibleClassifierSerializer, CounterpartyAttributeTypeSerializer, \
-    ResponsibleAttributeTypeSerializer
+    ResponsibleAttributeTypeSerializer, CounterpartyClassifierNodeSerializer, ResponsibleClassifierNodeSerializer
 from poms.obj_attrs.filters import AttributePrefetchFilter
 from poms.obj_attrs.views import AttributeTypeViewSetBase
 from poms.tags.filters import TagPrefetchFilter
@@ -23,6 +23,12 @@ class CounterpartyClassifierFilterSet(ClassifierFilterSetBase):
 class CounterpartyClassifierViewSet(ClassifierViewSetBase):
     queryset = CounterpartyClassifier.objects.all()
     serializer_class = CounterpartyClassifierSerializer
+    filter_class = CounterpartyClassifierFilterSet
+
+
+class CounterpartyClassifierNodeViewSet(ClassifierNodeViewSetBase):
+    queryset = CounterpartyClassifier.objects.all()
+    serializer_class = CounterpartyClassifierNodeSerializer
     filter_class = CounterpartyClassifierFilterSet
 
 
@@ -48,6 +54,12 @@ class ResponsibleClassifierFilterSet(ClassifierFilterSetBase):
 class ResponsibleClassifierViewSet(ClassifierViewSetBase):
     queryset = ResponsibleClassifier.objects.all()
     serializer_class = ResponsibleClassifierSerializer
+    filter_class = ResponsibleClassifierFilterSet
+
+
+class ResponsibleClassifierNodeViewSet(ClassifierNodeViewSetBase):
+    queryset = ResponsibleClassifier.objects.all()
+    serializer_class = ResponsibleClassifierNodeSerializer
     filter_class = ResponsibleClassifierFilterSet
 
 

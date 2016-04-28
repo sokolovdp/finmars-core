@@ -1,7 +1,9 @@
 from __future__ import unicode_literals
 
-from poms.common.serializers import ClassifierSerializerBase
-from poms.counterparties.fields import CounterpartyClassifierField, ResponsibleClassifierField, \
+from rest_framework import serializers
+
+from poms.common.serializers import ClassifierSerializerBase, ClassifierNodeSerializerBase
+from poms.counterparties.fields import ResponsibleClassifierField, \
     CounterpartyClassifierRootField, CounterpartyAttributeTypeField, ResponsibleClassifierRootField, \
     ResponsibleAttributeTypeField
 from poms.counterparties.models import CounterpartyClassifier, Counterparty, Responsible, ResponsibleClassifier, \
@@ -13,10 +15,14 @@ from poms.users.fields import MasterUserField
 
 
 class CounterpartyClassifierSerializer(ClassifierSerializerBase):
-    # parent = CounterpartyClassifierField(required=False, allow_null=True)
-    # children = CounterpartyClassifierField(many=True, required=False, read_only=False)
-
     class Meta(ClassifierSerializerBase.Meta):
+        model = CounterpartyClassifier
+
+
+class CounterpartyClassifierNodeSerializer(ClassifierNodeSerializerBase):
+    url = serializers.HyperlinkedIdentityField(view_name='counterpartyclassifiernode-detail')
+
+    class Meta(ClassifierNodeSerializerBase.Meta):
         model = CounterpartyClassifier
 
 
@@ -49,10 +55,14 @@ class CounterpartySerializer(ModelWithAttributesSerializer):
 
 
 class ResponsibleClassifierSerializer(ClassifierSerializerBase):
-    # parent = ResponsibleClassifierField(required=False, allow_null=True)
-    # children = ResponsibleClassifierField(many=True, required=False, read_only=False)
-
     class Meta(ClassifierSerializerBase.Meta):
+        model = ResponsibleClassifier
+
+
+class ResponsibleClassifierNodeSerializer(ClassifierNodeSerializerBase):
+    url = serializers.HyperlinkedIdentityField(view_name='responsibleclassifiernode-detail')
+
+    class Meta(ClassifierNodeSerializerBase.Meta):
         model = ResponsibleClassifier
 
 

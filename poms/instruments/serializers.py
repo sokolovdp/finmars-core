@@ -2,7 +2,7 @@ from __future__ import unicode_literals
 
 from rest_framework import serializers
 
-from poms.common.serializers import PomsClassSerializer, ClassifierSerializerBase
+from poms.common.serializers import PomsClassSerializer, ClassifierSerializerBase, ClassifierNodeSerializerBase
 from poms.currencies.serializers import CurrencyField
 from poms.instruments.fields import InstrumentClassifierField, InstrumentField, InstrumentClassifierRootField, \
     InstrumentAttributeTypeField
@@ -57,10 +57,14 @@ class PricingPolicySerializer(serializers.ModelSerializer):
 
 
 class InstrumentClassifierSerializer(ClassifierSerializerBase):
-    # parent = InstrumentClassifierField(required=False, allow_null=True)
-    # children = InstrumentClassifierField(many=True, required=False, read_only=False)
-
     class Meta(ClassifierSerializerBase.Meta):
+        model = InstrumentClassifier
+
+
+class InstrumentClassifierNodeSerializer(ClassifierNodeSerializerBase):
+    url = serializers.HyperlinkedIdentityField(view_name='instrumentclassifiernode-detail')
+
+    class Meta(ClassifierNodeSerializerBase.Meta):
         model = InstrumentClassifier
 
 

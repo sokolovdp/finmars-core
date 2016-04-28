@@ -40,14 +40,18 @@ router.register(r'security/http-session', sessions.SessionViewSet)
 
 router.register(r'audit/auth-log', audit.AuthLogEntryViewSet)
 
+router.register(r'accounts/account-classifier/node', accounts.AccountClassifierNodeViewSet, 'accountclassifiernode')
 router.register(r'accounts/account-classifier', accounts.AccountClassifierViewSet)
 router.register(r'accounts/account-type', accounts.AccountTypeViewSet)
 router.register(r'accounts/account-attribute-type', accounts.AccountAttributeTypeViewSet)
 router.register(r'accounts/account', accounts.AccountViewSet)
 
+router.register(r'counterparties/counterparty-classifier/node', counterparties.CounterpartyClassifierNodeViewSet, 'counterpartyclassifiernode')
 router.register(r'counterparties/counterparty-classifier', counterparties.CounterpartyClassifierViewSet)
 router.register(r'counterparties/counterparty-attribute-type', counterparties.CounterpartyAttributeTypeViewSet)
 router.register(r'counterparties/counterparty', counterparties.CounterpartyViewSet)
+
+router.register(r'counterparties/responsible-classifier/node', counterparties.ResponsibleClassifierNodeViewSet, 'responsibleclassifiernode')
 router.register(r'counterparties/responsible-classifier', counterparties.ResponsibleClassifierViewSet)
 router.register(r'counterparties/responsible-attribute-type', counterparties.ResponsibleAttributeTypeViewSet)
 router.register(r'counterparties/responsible', counterparties.ResponsibleViewSet)
@@ -62,6 +66,7 @@ router.register(r'instruments/payment-size-detail', instruments.PaymentSizeDetai
 router.register(r'instruments/periodicity-period', instruments.PeriodicityPeriodViewSet)
 router.register(r'instruments/cost-method', instruments.CostMethodViewSet)
 router.register(r'instruments/pricing-policy', instruments.PricingPolicyViewSet)
+router.register(r'instruments/instrument-classifier/node', instruments.InstrumentClassifierNodeViewSet, 'instrumentclassifiernode')
 router.register(r'instruments/instrument-classifier', instruments.InstrumentClassifierViewSet)
 router.register(r'instruments/instrument-type', instruments.InstrumentTypeViewSet)
 router.register(r'instruments/instrument-attribute-type', instruments.InstrumentAttributeTypeViewSet)
@@ -72,18 +77,20 @@ router.register(r'instruments/accrual-calculation-schedule', instruments.Accrual
 router.register(r'instruments/instrument-factor-schedule', instruments.InstrumentFactorScheduleViewSet)
 router.register(r'instruments/event-schedule', instruments.EventScheduleViewSet)
 
+router.register(r'portfolios/portfolio-classifier/node', portfolios.PortfolioClassifierNodeViewSet, 'portfolioclassifiernode')
 router.register(r'portfolios/portfolio-classifier', portfolios.PortfolioClassifierViewSet)
 router.register(r'portfolios/portfolio-attribute-type', portfolios.PortfolioAttributeTypeViewSet)
 router.register(r'portfolios/portfolio', portfolios.PortfolioViewSet)
+
+router.register(r'strategies/strategy/node', strategies.StrategyNodeViewSet, 'strategynode')
+router.register(r'strategies/strategy', strategies.StrategyViewSet)
+
+router.register(r'tags/tag', tags.TagViewSet)
 
 router.register(r'transactions/transaction-class', transactions.TransactionClassViewSet)
 router.register(r'transactions/transaction-type', transactions.TransactionTypeViewSet)
 router.register(r'transactions/transaction-attribute-type', transactions.TransactionAttributeTypeViewSet)
 router.register(r'transactions/transaction', transactions.TransactionViewSet)
-
-router.register(r'strategies/strategy', strategies.StrategyViewSet)
-
-router.register(r'tags/tag', tags.TagViewSet)
 
 router.register(r'reports/balance', reports.BalanceReport2ViewSet, "balancereport2")
 router.register(r'reports/pl', reports.PLReport2ViewSet, "plreport2")

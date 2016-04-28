@@ -4,9 +4,9 @@ from rest_framework.filters import FilterSet, DjangoFilterBackend, OrderingFilte
 
 from poms.accounts.models import Account, AccountType, AccountClassifier, AccountAttributeType
 from poms.accounts.serializers import AccountSerializer, AccountTypeSerializer, AccountClassifierSerializer, \
-    AccountAttributeTypeSerializer
+    AccountAttributeTypeSerializer, AccountClassifierNodeSerializer
 from poms.common.filters import ClassifierFilterSetBase
-from poms.common.views import ClassifierViewSetBase, PomsViewSetBase
+from poms.common.views import ClassifierViewSetBase, PomsViewSetBase, ClassifierNodeViewSetBase
 from poms.obj_attrs.filters import AttributePrefetchFilter
 from poms.obj_attrs.views import AttributeTypeViewSetBase
 from poms.obj_perms.filters import ObjectPermissionPrefetchFilter
@@ -22,6 +22,12 @@ class AccountClassifierFilterSet(ClassifierFilterSetBase):
 class AccountClassifierViewSet(ClassifierViewSetBase):
     queryset = AccountClassifier.objects.all()
     serializer_class = AccountClassifierSerializer
+    filter_class = AccountClassifierFilterSet
+
+
+class AccountClassifierNodeViewSet(ClassifierNodeViewSetBase):
+    queryset = AccountClassifier.objects.all()
+    serializer_class = AccountClassifierNodeSerializer
     filter_class = AccountClassifierFilterSet
 
 

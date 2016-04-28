@@ -5,7 +5,7 @@ from rest_framework.filters import DjangoFilterBackend, OrderingFilter, SearchFi
 from rest_framework.permissions import IsAuthenticated
 
 from poms.common.filters import ClassifierFilterSetBase
-from poms.common.views import PomsClassViewSetBase, ClassifierViewSetBase, PomsViewSetBase
+from poms.common.views import PomsClassViewSetBase, ClassifierViewSetBase, PomsViewSetBase, ClassifierNodeViewSetBase
 from poms.instruments.filters import OwnerByInstrumentFilter
 from poms.instruments.models import InstrumentClassifier, Instrument, PriceHistory, InstrumentClass, DailyPricingModel, \
     AccrualCalculationModel, PaymentSizeDetail, PeriodicityPeriod, CostMethod, InstrumentType, InstrumentAttributeType, \
@@ -14,7 +14,8 @@ from poms.instruments.serializers import InstrumentClassifierSerializer, Instrum
     InstrumentClassSerializer, DailyPricingModelSerializer, AccrualCalculationModelSerializer, \
     PaymentSizeDetailSerializer, PeriodicityPeriodSerializer, CostMethodSerializer, InstrumentTypeSerializer, \
     InstrumentAttributeTypeSerializer, ManualPricingFormulaSerializer, AccrualCalculationScheduleSerializer, \
-    InstrumentFactorScheduleSerializer, EventScheduleSerializer, PricingPolicySerializer
+    InstrumentFactorScheduleSerializer, EventScheduleSerializer, PricingPolicySerializer, \
+    InstrumentClassifierNodeSerializer
 from poms.obj_attrs.filters import AttributePrefetchFilter
 from poms.obj_attrs.views import AttributeTypeViewSetBase
 from poms.tags.filters import TagPrefetchFilter
@@ -68,6 +69,12 @@ class InstrumentClassifierFilterSet(ClassifierFilterSetBase):
 class InstrumentClassifierViewSet(ClassifierViewSetBase):
     queryset = InstrumentClassifier.objects.all()
     serializer_class = InstrumentClassifierSerializer
+    filter_class = InstrumentClassifierFilterSet
+
+
+class InstrumentClassifierNodeViewSet(ClassifierNodeViewSetBase):
+    queryset = InstrumentClassifier.objects.all()
+    serializer_class = InstrumentClassifierNodeSerializer
     filter_class = InstrumentClassifierFilterSet
 
 
