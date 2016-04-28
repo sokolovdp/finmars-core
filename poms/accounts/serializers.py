@@ -24,7 +24,7 @@ class AccountClassifierNodeSerializer(ClassifierNodeSerializerBase):
         model = AccountClassifier
 
 
-class AccountTypeSerializer(serializers.ModelSerializer):
+class AccountTypeSerializer(ModelWithObjectPermissionSerializer):
     master_user = MasterUserField()
     tags = TagField(many=True)
 
@@ -34,7 +34,7 @@ class AccountTypeSerializer(serializers.ModelSerializer):
                   'show_transaction_details', 'transaction_details_expr', 'tags']
 
 
-class AccountAttributeTypeSerializer(AttributeTypeSerializerBase):
+class AccountAttributeTypeSerializer(AttributeTypeSerializerBase, ModelWithObjectPermissionSerializer):
     classifier_root = AccountClassifierRootField(required=False, allow_null=True)
 
     class Meta(AttributeTypeSerializerBase.Meta):

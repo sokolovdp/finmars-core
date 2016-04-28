@@ -1,5 +1,7 @@
 from __future__ import unicode_literals
 
+from collections import OrderedDict
+
 from rest_framework import serializers
 
 from poms.obj_perms.fields import PermissionField
@@ -40,6 +42,11 @@ class ModelWithObjectPermissionSerializer(serializers.ModelSerializer):
 
     def get_fields(self):
         fields = super(ModelWithObjectPermissionSerializer, self).get_fields()
+        fields.update(self.get_permissions_fields() or {})
+        return fields
+
+    def get_permissions_fields(self):
+        fields = OrderedDict()
         fields['granted_permissions'] = GrantedPermissionField()
         fields['user_object_permissions'] = UserObjectPermissionSerializer(many=True, required=False, allow_null=True)
         fields['group_object_permissions'] = GroupObjectPermissionSerializer(many=True, required=False, allow_null=True)

@@ -31,26 +31,6 @@ class AttributeTypeSerializerBase(serializers.ModelSerializer):
                   'is_hidden']
         update_read_only_fields = ['value_type']
 
-    # def get_extra_kwargs(self):
-    #     extra_kwargs = super(AttributeTypeSerializerBase, self).get_extra_kwargs()
-    #
-    #     request = self.context.get('request', None)
-    #     if request and request.method in ['PUT', 'PATCH']:
-    #         update_read_only_fields = getattr(self.Meta, 'update_read_only_fields', None)
-    #         print(update_read_only_fields)
-    #         if update_read_only_fields is not None:
-    #             for field_name in update_read_only_fields:
-    #                 kwargs = extra_kwargs.get(field_name, {})
-    #                 kwargs['read_only'] = True
-    #                 extra_kwargs[field_name] = kwargs
-    #
-    #         for name, field in six.iteritems(self._fields):
-    #             print(name)
-    #             if name in update_read_only_fields:
-    #                 field.read_only = True
-    #
-    #     return extra_kwargs
-
     def get_fields(self):
         fields = super(AttributeTypeSerializerBase, self).get_fields()
 
@@ -65,32 +45,35 @@ class AttributeTypeSerializerBase(serializers.ModelSerializer):
 
     def create(self, validated_data):
         is_hidden = validated_data.pop('is_hidden', False)
-
         instance = super(AttributeTypeSerializerBase, self).create(validated_data)
-
         member = self.context['request'].user.member
         instance.options.create(member=member, is_hidden=is_hidden)
         return instance
 
     def update(self, instance, validated_data):
         is_hidden = validated_data.pop('is_hidden', False)
-
         instance = super(AttributeTypeSerializerBase, self).update(instance, validated_data)
-
         member = self.context['request'].user.member
         instance.options.update_or_create(member=member, defaults={'is_hidden': is_hidden})
-        # try:
-        #     option = instance.options.get(member=member)
-        #     option.is_hidden = is_hidden
-        #     option.save()
-        # except ObjectDoesNotExist:
-        #     instance.options.create(member=member, is_hidden=is_hidden)
         return instance
 
 
 class AttributeSerializerBase(serializers.ModelSerializer):
     class Meta:
         fields = ['id', 'value_string', 'value_float', 'value_date']
+        update_read_only_fields = ['attribute_type']
+
+    def get_fields(self):
+        fields = super(AttributeSerializerBase, self).get_fields()
+
+        request = self.context.get('request', None)
+        if request and request.method in ['PUT', 'PATCH']:
+            update_read_only_fields = getattr(self.Meta, 'update_read_only_fields', None)
+            for name, field in six.iteritems(fields):
+                if name in update_read_only_fields:
+                    field.read_only = True
+
+        return fields
 
 
 class ModelWithAttributesSerializer(serializers.ModelSerializer):

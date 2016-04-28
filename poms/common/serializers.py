@@ -1,11 +1,10 @@
-import pprint
-
 from rest_framework import serializers
 from rest_framework.exceptions import APIException
 from rest_framework.serializers import ListSerializer
 
 from poms.api.fields import FilteredPrimaryKeyRelatedField
 from poms.common.filters import ClassifierRootFilter
+from poms.obj_perms.serializers import ModelWithObjectPermissionSerializer
 from poms.users.fields import MasterUserField
 from poms.users.filters import OwnerByMasterUserFilter
 
@@ -51,17 +50,22 @@ class ClassifierRecursiveField(serializers.Serializer):
         return data
 
 
-class ClassifierSerializerBase(PomsSerializerBase):
+class ClassifierSerializerBase(PomsSerializerBase, ModelWithObjectPermissionSerializer):
     id = serializers.IntegerField(read_only=False, required=False, allow_null=True)
     master_user = MasterUserField()
     children = ClassifierRecursiveField(source='get_children', many=True, required=False, allow_null=True)
 
-    # children = ClassifierRecursiveField(many=True, required=False, allow_null=True)
-
     class Meta(PomsSerializerBase.Meta):
-        # fields = PomsSerializerBase.Meta.fields + ['master_user', 'user_code', 'name', 'short_name', 'notes', 'parent', 'children', 'level']
         fields = PomsSerializerBase.Meta.fields + ['master_user', 'user_code', 'name', 'short_name', 'notes',
                                                    'level', 'children']
+
+    def to_representation(self, instance):
+        ret = super(ClassifierSerializerBase, self).to_representation(instance)
+        if not instance.is_root_node():
+            ret.pop("granted_permissions", None)
+            ret.pop("user_object_permissions", None)
+            ret.pop("group_object_permissions", None)
+        return ret
 
     def create(self, validated_data):
         validated_data.pop('id', None)
@@ -72,9 +76,8 @@ class ClassifierSerializerBase(PomsSerializerBase):
         return instance
 
     def update(self, instance, validated_data):
-        pprint.pprint(validated_data)
-
         validated_data.pop('id', None)
+
         # children = validated_data.pop('children', None)
         children = validated_data.pop('get_children', [])
 
@@ -126,11 +129,29 @@ class ClassifierSerializerBase(PomsSerializerBase):
             # print('processed', processed)
             node.get_family().exclude(pk__in=processed).delete()
 
+    def save_object_permission(self, instance, user_object_permissions, group_object_permissions, created):
+        if instance.is_root_node():
+            super(ClassifierSerializerBase, self).save_object_permission(instance, user_object_permissions,
+                                                                         group_object_permissions, created)
 
-class ClassifierNodeSerializerBase(PomsSerializerBase):
+
+class ClassifierNodeSerializerBase(PomsSerializerBase, ModelWithObjectPermissionSerializer):
     parent = serializers.PrimaryKeyRelatedField(read_only=True)
     children = serializers.PrimaryKeyRelatedField(many=True, read_only=True)
 
     class Meta(PomsSerializerBase.Meta):
         fields = PomsSerializerBase.Meta.fields + ['user_code', 'name', 'short_name', 'notes', 'level',
                                                    'parent', 'children']
+
+    def to_representation(self, instance):
+        ret = super(ClassifierNodeSerializerBase, self).to_representation(instance)
+        if not instance.is_root_node():
+            ret.pop("granted_permissions", None)
+            ret.pop("user_object_permissions", None)
+            ret.pop("group_object_permissions", None)
+        return ret
+
+    def save_object_permission(self, instance, user_object_permissions, group_object_permissions, created):
+        if instance.is_root_node():
+            super(ClassifierNodeSerializerBase, self).save_object_permission(instance, user_object_permissions,
+                                                                             group_object_permissions, created)

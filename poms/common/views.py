@@ -45,7 +45,7 @@ class ClassifierViewSetBase(PomsViewSetBase):
         obj = super(ClassifierViewSetBase, self).get_object()
         if not obj.is_root_node():
             raise Http404
-        trees = get_cached_trees(obj.get_family())
+        trees = get_cached_trees(self.filter_queryset(obj.get_family()))
         obj = trees[0]
         return obj
 

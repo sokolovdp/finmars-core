@@ -21,12 +21,14 @@ class AccountClassifierFilterSet(ClassifierFilterSetBase):
 
 class AccountClassifierViewSet(ClassifierViewSetBase):
     queryset = AccountClassifier.objects.all()
+    filter_backends = [ObjectPermissionPrefetchFilter] + ClassifierViewSetBase.filter_backends
     serializer_class = AccountClassifierSerializer
     filter_class = AccountClassifierFilterSet
 
 
 class AccountClassifierNodeViewSet(ClassifierNodeViewSetBase):
     queryset = AccountClassifier.objects.all()
+    filter_backends = [ObjectPermissionPrefetchFilter] + ClassifierNodeViewSetBase.filter_backends
     serializer_class = AccountClassifierNodeSerializer
     filter_class = AccountClassifierFilterSet
 
@@ -35,6 +37,7 @@ class AccountTypeViewSet(PomsViewSetBase):
     queryset = AccountType.objects
     serializer_class = AccountTypeSerializer
     filter_backends = [OwnerByMasterUserFilter, TagPrefetchFilter,
+                       ObjectPermissionPrefetchFilter,
                        DjangoFilterBackend, OrderingFilter, SearchFilter]
     ordering_fields = ['user_code', 'name', 'short_name']
     search_fields = ['user_code', 'name', 'short_name']
