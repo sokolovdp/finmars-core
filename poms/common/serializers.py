@@ -1,4 +1,7 @@
+import pprint
+
 from rest_framework import serializers
+from rest_framework.exceptions import APIException
 from rest_framework.serializers import ListSerializer
 
 from poms.api.fields import FilteredPrimaryKeyRelatedField
@@ -30,26 +33,30 @@ class ClassifierRecursiveField(serializers.Serializer):
         # context = {"parent": self.parent.object, "parent_serializer": self.parent}
         # cls = self.parent.__class__
         # return cls(instance=instance.children.all(), many=True).data
-
         if isinstance(self.parent, ListSerializer):
             cls = self.parent.parent.__class__
         else:
             cls = self.parent.__class__
+        # print('%s -> %s' % (instance.pk, getattr(instance, '_cached_children', 'LOL')))
         return cls(instance=instance, context=self.context).data
 
     def to_internal_value(self, data):
-        if isinstance(self.parent, ListSerializer):
-            cls = self.parent.parent.__class__
-        else:
-            cls = self.parent.__class__
-        return cls(context=self.context).to_internal_value(data)
-        # return super(RecursiveField, self).to_internal_value(data)
+        # if isinstance(self.parent, ListSerializer):
+        #     cls = self.parent.parent.__class__
+        # else:
+        #     cls = self.parent.__class__
+        # s = cls(context=self.context, data=data)
+        # s.is_valid(raise_exception=True)
+        # return s.validated_data
+        return data
 
 
 class ClassifierSerializerBase(PomsSerializerBase):
     id = serializers.IntegerField(read_only=False, required=False, allow_null=True)
     master_user = MasterUserField()
-    children = ClassifierRecursiveField(many=True, required=False, allow_null=True)
+    children = ClassifierRecursiveField(source='get_children', many=True, required=False, allow_null=True)
+
+    # children = ClassifierRecursiveField(many=True, required=False, allow_null=True)
 
     class Meta(PomsSerializerBase.Meta):
         # fields = PomsSerializerBase.Meta.fields + ['master_user', 'user_code', 'name', 'short_name', 'notes', 'parent', 'children', 'level']
@@ -58,30 +65,63 @@ class ClassifierSerializerBase(PomsSerializerBase):
 
     def create(self, validated_data):
         validated_data.pop('id', None)
-        children = validated_data.pop('children', None)
-        # master_user = self.context['request'].user.master_user
-        # validated_data['master_user'] = master_user
+        # children = validated_data.pop('children', None)
+        children = validated_data.pop('get_children', None)
         instance = super(ClassifierSerializerBase, self).create(validated_data)
         self.save_tree(instance, children)
         return instance
 
     def update(self, instance, validated_data):
+        pprint.pprint(validated_data)
+
         validated_data.pop('id', None)
-        children = validated_data.pop('children', None)
+        # children = validated_data.pop('children', None)
+        children = validated_data.pop('get_children', [])
+
+        if instance.is_leaf_node() and children:
+            raise APIException("Can't add children to leaf node")
+
         instance = super(ClassifierSerializerBase, self).update(instance, validated_data)
         self.save_tree(instance, children)
         return instance
 
     def save_tree(self, node, children):
-        if children is not None:
-            cls = self.__class__
-            processed = set()
-            for child in children:
-                # print(child)
-                pk = child.pop('id', None)
-                child_obj = node.children.get(pk=pk) if pk else None
-                node_s = cls(instance=child_obj, data=child, context=self.context)
-                node_s.is_valid(raise_exception=True)
-                child_obj = node_s.save(parent=node)
-                processed.add(child_obj.pk)
-            node.children.exclude(pk__in=processed).delete()
+        cls = self.__class__
+        # processed = set()
+
+        # root = SimpleLazyObject(lambda: node.get_root())
+        # print('root: ', root)
+
+        context = {}
+        context.update(self.context)
+        if node.is_root_node():
+            processed = context['processed'] = set()
+            processed.add(node.pk)
+            root = context['root_node'] = node
+            # family_cache = context['family_cache'] = {n.pk: n for n in node.get_family()}
+        else:
+            processed = self.context['processed']
+            root = self.context['root_node']
+            # family_cache = context['family_cache']
+
+        for child_data in children:
+            child_pk = child_data.pop('id', None)
+
+            if child_pk in processed:
+                raise APIException('Tree node  with id %s already processed' % child_pk)
+
+            if child_pk:
+                child_obj = root.get_family().get(pk=child_pk)
+                if child_obj.parent_id != node.id:
+                    child_obj.parent = node
+            else:
+                child_obj = None
+
+            node_s = cls(instance=child_obj, data=child_data, context=context)
+            node_s.is_valid(raise_exception=True)
+            child_obj = node_s.save(parent=node)
+            processed.add(child_obj.pk)
+
+        if node.is_root_node():
+            # print('processed', processed)
+            node.get_family().exclude(pk__in=processed).delete()
