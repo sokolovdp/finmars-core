@@ -126,6 +126,8 @@ class AttributeTypeBase(NamedModel):
 
 @python_2_unicode_compatible
 class AttributeTypeOptionBase(models.Model):
+    # attribute_type -> actual attribute model
+
     is_hidden = models.BooleanField(default=False,
                                     verbose_name=_('is hidden'))
 
@@ -141,6 +143,9 @@ class AttributeTypeOptionBase(models.Model):
 
 @python_2_unicode_compatible
 class AttributeBase(models.Model):
+    # attribute_type -> actual attribute model
+    # content_object -> actual object
+
     value_string = models.CharField(max_length=255, null=True, blank=True,
                                     verbose_name=_('value (String)'))
     value_float = models.FloatField(null=True, blank=True,

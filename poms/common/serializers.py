@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from rest_framework.exceptions import APIException
+from rest_framework.exceptions import ValidationError
 from rest_framework.serializers import ListSerializer
 
 from poms.api.fields import FilteredPrimaryKeyRelatedField
@@ -82,7 +82,7 @@ class ClassifierSerializerBase(PomsSerializerBase, ModelWithObjectPermissionSeri
         children = validated_data.pop('get_children', [])
 
         if instance.is_leaf_node() and children:
-            raise APIException("Can't add children to leaf node")
+            raise ValidationError("Can't add children to leaf node")
 
         instance = super(ClassifierSerializerBase, self).update(instance, validated_data)
         self.save_tree(instance, children)
@@ -111,7 +111,7 @@ class ClassifierSerializerBase(PomsSerializerBase, ModelWithObjectPermissionSeri
             child_pk = child_data.pop('id', None)
 
             if child_pk in processed:
-                raise APIException('Tree node  with id %s already processed' % child_pk)
+                raise ValidationError('Tree node  with id %s already processed' % child_pk)
 
             if child_pk:
                 child_obj = root.get_family().get(pk=child_pk)

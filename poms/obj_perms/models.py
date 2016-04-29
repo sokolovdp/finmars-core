@@ -10,6 +10,8 @@ from poms.users.models import Member, Group
 
 
 class ObjectPermissionBase(models.Model):
+    # content_object -> actual object
+
     permission = models.ForeignKey(Permission,
                                    verbose_name=_('permission'))
 
@@ -19,6 +21,8 @@ class ObjectPermissionBase(models.Model):
 
 @python_2_unicode_compatible
 class UserObjectPermissionBase(ObjectPermissionBase):
+    # content_object -> actual object
+
     member = models.ForeignKey(Member,
                                verbose_name=_('member'))
 
@@ -34,6 +38,8 @@ class UserObjectPermissionBase(ObjectPermissionBase):
 
 @python_2_unicode_compatible
 class GroupObjectPermissionBase(ObjectPermissionBase):
+    # content_object -> actual object
+
     group = models.ForeignKey(Group,
                               verbose_name=_('group'))
 
