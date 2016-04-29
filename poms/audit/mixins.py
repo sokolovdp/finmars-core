@@ -1,5 +1,8 @@
 from __future__ import unicode_literals
 
+import pprint
+
+from django.core.exceptions import ObjectDoesNotExist
 from django.utils.translation import ugettext as _
 from rest_framework import permissions
 from rest_framework.decorators import detail_route, list_route
@@ -36,6 +39,7 @@ class HistoricalMixin(object):
                     reversion.set_comment(_('No fields changed.'))
                 return response
 
+
     def initial(self, request, *args, **kwargs):
         super(HistoricalMixin, self).initial(request, *args, **kwargs)
 
@@ -43,9 +47,26 @@ class HistoricalMixin(object):
             reversion.set_user(request.user)
             # reversion.set_ignore_duplicates(True)
 
-            # master_user = get_master_user(request)
+            # instance = self.get_object()
+            # serializer = self.get_serializer(instance)
+            # self._o1 = serializer.data
+            #
             master_user = request.user.master_user
             reversion.add_meta(VersionInfo, master_user=master_user, username=request.user.username)
+
+
+    def finalize_response(self, request, response, *args, **kwargs):
+        # if self._reversion_is_active:
+        #     try:
+        #         instance = self.get_object()
+        #         serializer = self.get_serializer(instance)
+        #         self._o2 = serializer.data
+        #     except ObjectDoesNotExist:
+        #         self._o2 = None
+        #     pprint.pprint(self._o1)
+        #     pprint.pprint(self._o2)
+        return super(HistoricalMixin, self).finalize_response(request, response, *args, **kwargs)
+
 
     @list_route()
     def deleted(self, request, pk=None):
