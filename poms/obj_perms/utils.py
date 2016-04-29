@@ -267,48 +267,44 @@ def assign_perms(obj, members=None, groups=None, perms=None):
             group_obj_perms_model.objects.bulk_create(group_perms)
 
 
+def _assign_perms(obj, perms_lookup_name, perms_model, member_or_group_lookup_name, perm_list):
+    obj_perms_qs = getattr(obj, perms_lookup_name)
+
+    cur_perms = {(getattr(p, member_or_group_lookup_name), getattr(p, 'permission')): p for p in obj_perms_qs.all()}
+    new_perms = {(p[member_or_group_lookup_name], p['permission']): p for p in perm_list}
+
+    for k, v in six.iteritems(new_perms):
+        if k not in cur_perms:
+            # obj_perms_qs.add(perms_model(**{
+            #     member_or_group_lookup_name: k[0],
+            #     'permission': k[1]
+            # }))
+            obj_perms_qs.create(**{
+                member_or_group_lookup_name: k[0],
+                'permission': k[1]
+            })
+
+    for k, v in six.iteritems(cur_perms):
+        if k not in new_perms:
+            # obj_perms_qs.remove(v)
+            obj_perms_qs.filter(**{
+                member_or_group_lookup_name: k[0],
+                'permission': k[1]
+            }).delete()
+
+    # TODO: invalidate cache for *_object_permission, how prefetch related?
+    obj_perms_qs.update()
+    # setattr(obj, perms_lookup_name, obj_perms_qs.select_related('permission').all()) # called update :(
+
+
 def assign_perms_from_list(obj, user_object_permissions=None, group_object_permissions=None):
     if user_object_permissions is not None:
-        # make dict for duplicate filtering
-        user_object_permissions = {'%s.%s' % (p['member'].id, p['permission'].codename): p
-                                   for p in user_object_permissions}
-
-        user_lookup_name, user_obj_perms_model = get_user_obj_perms_model(obj)
-
-        # user_obj_perms_model.objects.filter(content_object=obj).delete()
-        # if user_object_permissions:
-        #     user_obj_perms_model.objects.bulk_create(
-        #         user_obj_perms_model(content_object=obj, member=p['member'], permission=p['permission'])
-        #         for p in six.itervalues(user_object_permissions)
-        #     )
-        user_obj_perms_qs = getattr(obj, user_lookup_name)
-        user_obj_perms_qs.all().delete()
-        if user_object_permissions:
-            user_obj_perms_model.objects.bulk_create(
-                user_obj_perms_model(content_object=obj, member=p['member'], permission=p['permission'])
-                for p in six.itervalues(user_object_permissions)
-            )
+        lookup_name, perms_model = get_user_obj_perms_model(obj)
+        _assign_perms(obj, lookup_name, perms_model, 'member', user_object_permissions)
 
     if group_object_permissions is not None:
-        # make dict for duplicate filtering
-        group_object_permissions = {'%s.%s' % (p['group'].id, p['permission'].codename): p
-                                    for p in group_object_permissions}
-
-        group_lookup_name, group_obj_perms_model = get_group_obj_perms_model(obj)
-
-        # group_obj_perms_model.objects.filter(content_object=obj).delete()
-        # if group_object_permissions:
-        #     group_obj_perms_model.objects.bulk_create(
-        #         group_obj_perms_model(content_object=obj, group=p['group'], permission=p['permission'])
-        #         for p in six.itervalues(group_object_permissions)
-        #     )
-        group_obj_perms_qs = getattr(obj, group_lookup_name)
-        group_obj_perms_qs.all().delete()
-        if group_object_permissions:
-            group_obj_perms_model.objects.bulk_create(
-                group_obj_perms_model(content_object=obj, group=p['group'], permission=p['permission'])
-                for p in six.itervalues(group_object_permissions)
-            )
+        lookup_name, perms_model = get_group_obj_perms_model(obj)
+        _assign_perms(obj, lookup_name, perms_model, 'group', group_object_permissions)
 
 # def obj_perms_filter_objects(member, perms, queryset, model_cls=None):
 #     from poms.obj_perms.models import UserObjectPermission, GroupObjectPermission

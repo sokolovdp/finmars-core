@@ -109,3 +109,7 @@ class ModelWithAttributesSerializer(serializers.ModelSerializer):
             else:
                 instance.attributes.create(**new_attr)
         instance.attributes.exclude(attribute_type_id__in=processed).delete()
+
+        # TODO: invalidate cache for instance.attributes, how prefetch related?
+        instance.attributes.update()
+        # instance.attributes.select_related('attribute_type').all()
