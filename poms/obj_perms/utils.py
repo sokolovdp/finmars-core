@@ -160,9 +160,10 @@ def get_granted_permissions(member, obj):
                 obj_perms.add(po.permission.codename)
 
     if group_lookup_name:
+        groups_id = [g.id for g in member.groups.all()]
         group_obj_perms = getattr(obj, group_lookup_name)
         for po in group_obj_perms.all():
-            if po.group in member.groups.all():
+            if po.group_id in groups_id:
                 obj_perms.add(po.permission.codename)
 
     return obj_perms

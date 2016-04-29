@@ -3,6 +3,8 @@ from __future__ import unicode_literals
 import six
 from rest_framework import serializers
 
+from poms.obj_attrs.utils import get_attr_type_model, get_attr_type_view_perms
+from poms.obj_perms.utils import obj_perms_filter_objects
 from poms.users.fields import MasterUserField
 
 
@@ -58,8 +60,19 @@ class AttributeTypeSerializerBase(serializers.ModelSerializer):
         return instance
 
 
+# class AttributeListSerializer(serializers.ListSerializer):
+#     def get_attribute(self, instance):
+#         member = self.context['request'].user.member
+#         master_user = self.context['request'].user.master_user
+#         attr_type_model = get_attr_type_model(instance)
+#         attr_types = attr_type_model.objects.filter(master_user=master_user)
+#         attr_types = obj_perms_filter_objects(member, get_attr_type_view_perms(attr_type_model), attr_types)
+#         return instance.attributes.filter(attribute_type__in=attr_types)
+
+
 class AttributeSerializerBase(serializers.ModelSerializer):
     class Meta:
+        # list_serializer_class = AttributeListSerializer
         fields = ['id', 'value_string', 'value_float', 'value_date']
         update_read_only_fields = ['attribute_type']
 

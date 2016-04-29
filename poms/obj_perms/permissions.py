@@ -1,7 +1,6 @@
 from rest_framework.permissions import BasePermission
 
 from poms.obj_perms.utils import get_granted_permissions
-from poms.users.utils import get_member
 
 
 class ObjectPermissionBase(BasePermission):
@@ -26,19 +25,6 @@ class ObjectPermissionBase(BasePermission):
         req_perms = self.get_required_object_permissions(request.method, obj)
         if not req_perms:
             return True
-
-        # member = get_member(request)
         member = request.user.member
         perms = get_granted_permissions(member, obj)
-        # user_perms = obj.user_object_permissions.select_related('permission',
-        #                                                         'permission__content_type').filter(
-        #     member=member
-        # )
-        # group_perms = obj.group_object_permissions.select_related('permission',
-        #                                                           'permission__content_type').filter(
-        #     group__in=member.groups.all()
-        # )
-        # permissions = {p.permission.codename for p in user_perms}
-        # permissions.update(p.permission.codename for p in group_perms)
-
         return req_perms.issubset(perms)
