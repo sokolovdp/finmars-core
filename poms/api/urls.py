@@ -30,16 +30,6 @@ router.register(r'users/master-user', users.MasterUserViewSet)
 router.register(r'users/member', users.MemberViewSet)
 router.register(r'users/group', users.GroupViewSet)
 
-router.register(r'notifications/notification', notifications.NotificationViewSet)
-router.register(r'chats/thread-status', chats.ThreadStatusViewSet, 'chatthreadstatus')
-router.register(r'chats/thread', chats.ThreadViewSet, 'chatthread')
-router.register(r'chats/message', chats.MessageViewSet, 'chatmessage')
-router.register(r'chats/direct-message', chats.DirectMessageViewSet, 'chatdirectmessage')
-
-router.register(r'security/http-session', sessions.SessionViewSet)
-
-router.register(r'audit/auth-log', audit.AuthLogEntryViewSet)
-
 router.register(r'accounts/account-classifier/node', accounts.AccountClassifierNodeViewSet, 'accountclassifiernode')
 router.register(r'accounts/account-classifier', accounts.AccountClassifierViewSet)
 router.register(r'accounts/account-type', accounts.AccountTypeViewSet)
@@ -97,6 +87,15 @@ router.register(r'reports/pl', reports.PLReport2ViewSet, "plreport2")
 router.register(r'reports/cost', reports.CostReport2ViewSet, "costreport2")
 router.register(r'reports/ytm', reports.YTMReport2ViewSet, "ytmreport2")
 router.register(r'reports/simple-multipliers', reports.SimpleMultipliersReport2ViewSet, "simplemultipliersreport2")
+
+router.register(r'notifications/notification', notifications.NotificationViewSet)
+router.register(r'chats/thread-status', chats.ThreadStatusViewSet, 'chatthreadstatus')
+router.register(r'chats/thread', chats.ThreadViewSet, 'chatthread')
+router.register(r'chats/message', chats.MessageViewSet, 'chatmessage')
+router.register(r'chats/direct-message', chats.DirectMessageViewSet, 'chatdirectmessage')
+
+router.register(r'security/http-session', sessions.SessionViewSet)
+router.register(r'audit/auth-log', audit.AuthLogEntryViewSet)
 
 
 urlpatterns = [
