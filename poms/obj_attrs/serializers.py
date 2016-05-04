@@ -92,6 +92,9 @@ class ModelWithAttributesSerializer(serializers.ModelSerializer):
 
     def save_attributes(self, instance, attributes, created):
         cur_attrs = {a.attribute_type_id: a for a in instance.attributes.all()}
+        new_attrs = {a['attribute_type'].id: a for a in attributes}
+
+        has_changes = False
 
         processed = set()
         for new_attr in attributes:
@@ -107,9 +110,15 @@ class ModelWithAttributesSerializer(serializers.ModelSerializer):
                         setattr(cur_attr, k, v)
                 cur_attr.save()
             else:
+                has_changes = True
                 instance.attributes.create(**new_attr)
-        instance.attributes.exclude(attribute_type_id__in=processed).delete()
+
+        for k, v in six.iteritems(cur_attrs):
+            if k not in new_attrs:
+                has_changes = True
+                instance.attributes.exclude(attribute_type_id__in=processed).delete()
 
         # TODO: invalidate cache for instance.attributes, how prefetch related?
-        instance.attributes.update()
-        # instance.attributes.select_related('attribute_type').all()
+        if has_changes:
+            # need only on add and delete operation
+            instance.attributes.update()

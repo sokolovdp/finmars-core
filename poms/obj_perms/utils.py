@@ -273,8 +273,11 @@ def _assign_perms(obj, perms_lookup_name, perms_model, member_or_group_lookup_na
     cur_perms = {(getattr(p, member_or_group_lookup_name), getattr(p, 'permission')): p for p in obj_perms_qs.all()}
     new_perms = {(p[member_or_group_lookup_name], p['permission']): p for p in perm_list}
 
+    has_changes = False
+
     for k, v in six.iteritems(new_perms):
         if k not in cur_perms:
+            has_changes = True
             # obj_perms_qs.add(perms_model(**{
             #     member_or_group_lookup_name: k[0],
             #     'permission': k[1]
@@ -286,6 +289,7 @@ def _assign_perms(obj, perms_lookup_name, perms_model, member_or_group_lookup_na
 
     for k, v in six.iteritems(cur_perms):
         if k not in new_perms:
+            has_changes = True
             # obj_perms_qs.remove(v)
             obj_perms_qs.filter(**{
                 member_or_group_lookup_name: k[0],
@@ -293,8 +297,10 @@ def _assign_perms(obj, perms_lookup_name, perms_model, member_or_group_lookup_na
             }).delete()
 
     # TODO: invalidate cache for *_object_permission, how prefetch related?
-    obj_perms_qs.update()
-    # setattr(obj, perms_lookup_name, obj_perms_qs.select_related('permission').all()) # called update :(
+    if has_changes:
+        # need only on add and delete operation
+        obj_perms_qs.update()
+        # setattr(obj, perms_lookup_name, obj_perms_qs.select_related('permission').all()) # called update :(
 
 
 def assign_perms_from_list(obj, user_object_permissions=None, group_object_permissions=None):
