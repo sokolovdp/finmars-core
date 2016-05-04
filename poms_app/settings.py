@@ -135,7 +135,7 @@ DATABASES = {
 if DEBUG:
     # DATABASES['default'] = {
     #     'ENGINE': 'django.db.backends.postgresql',
-    #     'NAME': 'poms_dev',
+    #     'NAME': 'poms_dev2',
     #     'USER': 'poms_dev',
     #     'PASSWORD': 'sqlsql',
     #     'HOST': '192.168.57.2',
@@ -235,9 +235,9 @@ LOGGING = {
             'level': 'INFO',
             'handlers': ['console'],
         },
-        'django.db': {
-            'level': 'DEBUG',
-        },
+        # 'django.db': {
+        #     'level': 'DEBUG',
+        # },
         'poms': {
             'level': 'DEBUG',
             'handlers': ['console'],
