@@ -13,6 +13,7 @@ from poms.users.models import MasterUser, UserProfile, Member, Group, TIMEZONE_C
 class MemberInline(admin.StackedInline):
     model = Member
     extra = 0
+    raw_id_fields = ['master_user', 'user']
     filter_horizontal = ('groups',)
 
     # def formfield_for_manytomany(self, db_field, request=None, **kwargs):

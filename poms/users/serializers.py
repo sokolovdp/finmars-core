@@ -133,7 +133,7 @@ class MasterUserSerializer(serializers.ModelSerializer):
 class MemberSerializer(serializers.ModelSerializer):
     url = serializers.HyperlinkedIdentityField(view_name='member-detail')
     master_user = MasterUserField()
-    user = UserField()
+    # user = UserField(read_only=True)
     is_current = serializers.SerializerMethodField()
 
     class Meta:

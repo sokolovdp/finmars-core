@@ -4,6 +4,7 @@ from django.contrib.auth import login, logout
 from django.contrib.auth.models import User
 from rest_framework.authtoken.models import Token
 from rest_framework.authtoken.serializers import AuthTokenSerializer
+from rest_framework.decorators import detail_route
 from rest_framework.filters import BaseFilterBackend
 from rest_framework.mixins import UpdateModelMixin, DestroyModelMixin
 from rest_framework.parsers import JSONParser, MultiPartParser, FormParser
@@ -16,6 +17,7 @@ from poms.users.fields import GroupOwnerByMasterUserFilter
 from poms.users.filters import OwnerByMasterUserFilter
 from poms.users.models import MasterUser, Member, Group
 from poms.users.serializers import GroupSerializer, UserSerializer, MasterUserSerializer, MemberSerializer
+from poms.users.utils import set_master_user
 
 
 class ObtainAuthTokenViewSet(ViewSet):
@@ -123,26 +125,42 @@ class UserViewSet(HistoricalMixin, UpdateModelMixin, DestroyModelMixin, ReadOnly
 
 class MasterUserFilter(BaseFilterBackend):
     def filter_queryset(self, request, queryset, view):
-        member = request.user.member
-        return queryset.filter(members=member)
+        user = request.user
+        return queryset.filter(members__user=user)
+
+
+class MasterUserNonCurrentReadonly(BasePermission):
+    def has_object_permission(self, request, view, obj):
+        if request.method in SAFE_METHODS:
+            return True
+        return request.user.master_user.id == obj.id
 
 
 class MasterUserViewSet(HistoricalMixin, ModelViewSet):
-    queryset = MasterUser.objects.filter()
+    queryset = MasterUser.objects
     serializer_class = MasterUserSerializer
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated, MasterUserNonCurrentReadonly]
     filter_backends = [MasterUserFilter]
 
+    @detail_route()
+    def set_current(self, request, pk=None):
+        instance = self.get_object()
+        set_master_user(request, instance)
+        return Response({
+            'status': 'OK',
+            'master_user': instance.pk,
+        })
 
-class MemberViewSet(HistoricalMixin, ModelViewSet):
-    queryset = Member.objects.filter()
+
+class MemberViewSet(HistoricalMixin, UpdateModelMixin, DestroyModelMixin, ReadOnlyModelViewSet):
+    queryset = Member.objects.select_related('user')
     serializer_class = MemberSerializer
     permission_classes = [IsAuthenticated]
     filter_backends = [OwnerByMasterUserFilter]
 
 
 class GroupViewSet(HistoricalMixin, ModelViewSet):
-    queryset = Group.objects.prefetch_related('master_user')
+    queryset = Group.objects.select_related('master_user')
     serializer_class = GroupSerializer
     permission_classes = [IsAuthenticated]
     filter_backends = [GroupOwnerByMasterUserFilter]
