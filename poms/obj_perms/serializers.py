@@ -4,19 +4,9 @@ from collections import OrderedDict
 
 from rest_framework import serializers
 
-from poms.obj_perms.fields import PermissionField
-from poms.obj_perms.utils import get_granted_permissions, assign_perms_from_list, get_owner_default_permissions
+from poms.obj_perms.fields import PermissionField, GrantedPermissionField
+from poms.obj_perms.utils import assign_perms_from_list, get_owner_default_permissions
 from poms.users.fields import MemberField, GroupField
-
-
-class GrantedPermissionField(serializers.ReadOnlyField):
-    def get_attribute(self, instance):
-        return instance
-
-    def to_representation(self, value):
-        request = self.context['request']
-        member = request.user.member
-        return get_granted_permissions(member, value)
 
 
 class UserObjectPermissionSerializer(serializers.Serializer):
@@ -36,10 +26,6 @@ class GroupObjectPermissionSerializer(serializers.Serializer):
 
 
 class ModelWithObjectPermissionSerializer(serializers.ModelSerializer):
-    granted_permissions = GrantedPermissionField()
-    user_object_permissions = UserObjectPermissionSerializer(many=True, required=False, allow_null=True)
-    group_object_permissions = GroupObjectPermissionSerializer(many=True, required=False, allow_null=True)
-
     def get_fields(self):
         fields = super(ModelWithObjectPermissionSerializer, self).get_fields()
         fields.update(self.get_permissions_fields() or {})
@@ -48,6 +34,7 @@ class ModelWithObjectPermissionSerializer(serializers.ModelSerializer):
     def get_permissions_fields(self):
         fields = OrderedDict()
         fields['granted_permissions'] = GrantedPermissionField()
+        # self.context['request'].user
         fields['user_object_permissions'] = UserObjectPermissionSerializer(many=True, required=False, allow_null=True)
         fields['group_object_permissions'] = GroupObjectPermissionSerializer(many=True, required=False, allow_null=True)
         return fields

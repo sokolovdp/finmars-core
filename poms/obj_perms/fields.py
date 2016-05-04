@@ -4,6 +4,8 @@ from django.contrib.auth.models import Permission
 from django.contrib.contenttypes.models import ContentType
 from rest_framework import serializers
 
+from poms.obj_perms.utils import get_granted_permissions
+
 
 # class GrantedPermissionField(serializers.Field):
 #     def __init__(self, **kwargs):
@@ -86,3 +88,14 @@ class PermissionField(serializers.SlugRelatedField):
         content_type = ContentType.objects.get_for_model(self.root.Meta.model)
         qs = super(PermissionField, self).get_queryset()
         return qs.select_related('content_type').filter(content_type=content_type)
+
+
+class GrantedPermissionField(serializers.ReadOnlyField):
+    def get_attribute(self, instance):
+        return instance
+
+    def to_representation(self, value):
+        request = self.context['request']
+        member = request.user.member
+        perms = get_granted_permissions(member, value)
+        return perms
