@@ -98,6 +98,10 @@ class Member(models.Model):
     def __str__(self):
         return '%s@%s' % (self.user.username, self.master_user)
 
+    @property
+    def is_superuser(self):
+        return self.is_owner or self.is_admin
+
 
 @python_2_unicode_compatible
 class UserProfile(models.Model):
@@ -135,6 +139,16 @@ class Group(models.Model):
 
     def __str__(self):
         return self.name
+
+
+@receiver(post_save, dispatch_uid='create_profile', sender=settings.AUTH_USER_MODEL)
+def create_profile(sender, instance=None, created=None, **kwargs):
+    if created:
+        UserProfile.objects.create(
+            user=instance,
+            language=settings.LANGUAGE_CODE,
+            timezone=settings.TIME_ZONE,
+        )
 
 
 @receiver(post_save, dispatch_uid='members_fill_from_user', sender=settings.AUTH_USER_MODEL)

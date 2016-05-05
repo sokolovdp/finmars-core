@@ -15,7 +15,7 @@ class ObjectPermissionFilter(BaseFilterBackend):
 
     def filter_queryset(self, request, queryset, view):
         member = request.user.member
-        if member.is_owner or member.is_admin:
+        if member.is_superuser:
             return queryset
         model_cls = queryset.model
         return obj_perms_filter_objects(member, self.get_codename_set(model_cls), queryset)

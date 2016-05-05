@@ -11,20 +11,32 @@ from poms.users.filters import OwnerByMasterUserFilter
 
 class PomsSerializerBase(serializers.ModelSerializer):
     class Meta:
-        fields = ['url', 'id']
+        fields = [
+            'url',
+            'id'
+        ]
 
 
 class PomsClassSerializer(PomsSerializerBase):
     class Meta(PomsSerializerBase.Meta):
-        fields = PomsSerializerBase.Meta.fields + ['system_code', 'name', 'description']
+        fields = PomsSerializerBase.Meta.fields + [
+            'system_code',
+            'name',
+            'description'
+        ]
 
 
 class ClassifierFieldBase(FilteredPrimaryKeyRelatedField):
-    filter_backends = [OwnerByMasterUserFilter]
+    filter_backends = [
+        OwnerByMasterUserFilter
+    ]
 
 
 class ClassifierRootFieldBase(FilteredPrimaryKeyRelatedField):
-    filter_backends = [OwnerByMasterUserFilter, ClassifierRootFilter]
+    filter_backends = [
+        OwnerByMasterUserFilter,
+        ClassifierRootFilter
+    ]
 
 
 class ClassifierRecursiveField(serializers.Serializer):
@@ -56,8 +68,15 @@ class ClassifierSerializerBase(PomsSerializerBase, ModelWithObjectPermissionSeri
     children = ClassifierRecursiveField(source='get_children', many=True, required=False, allow_null=True)
 
     class Meta(PomsSerializerBase.Meta):
-        fields = PomsSerializerBase.Meta.fields + ['master_user', 'user_code', 'name', 'short_name', 'notes',
-                                                   'level', 'children']
+        fields = PomsSerializerBase.Meta.fields + [
+            'master_user',
+            'user_code',
+            'name',
+            'short_name',
+            'notes',
+            'level',
+            'children'
+        ]
 
     def to_representation(self, instance):
         ret = super(ClassifierSerializerBase, self).to_representation(instance)
@@ -140,8 +159,15 @@ class ClassifierNodeSerializerBase(PomsSerializerBase, ModelWithObjectPermission
     children = serializers.PrimaryKeyRelatedField(many=True, read_only=True)
 
     class Meta(PomsSerializerBase.Meta):
-        fields = PomsSerializerBase.Meta.fields + ['user_code', 'name', 'short_name', 'notes', 'level',
-                                                   'parent', 'children']
+        fields = PomsSerializerBase.Meta.fields + [
+            'user_code',
+            'name',
+            'short_name',
+            'notes',
+            'level',
+            'parent',
+            'children'
+        ]
 
     def to_representation(self, instance):
         ret = super(ClassifierNodeSerializerBase, self).to_representation(instance)

@@ -227,7 +227,7 @@ def get_granted_permissions(member, obj):
 #         )
 
 
-def get_owner_default_permissions(instance):
+def get_default_owner_permissions(instance):
     ctype = ContentType.objects.get_for_model(instance)
     return [p for p in Permission.objects.filter(content_type=ctype) if not p.codename.startswith('add_')]
 

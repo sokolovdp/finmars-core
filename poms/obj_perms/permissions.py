@@ -23,7 +23,7 @@ class ObjectPermissionBase(BasePermission):
 
     def has_object_permission(self, request, view, obj):
         member = request.user.member
-        if member.is_owner or member.is_admin:
+        if member.is_superuser:
             return True
         req_perms = self.get_required_object_permissions(request.method, obj)
         if not req_perms:
