@@ -123,6 +123,17 @@ class AttributeTypeBase(NamedModel):
             ['master_user', 'name']
         ]
 
+    def get_value_atr(self):
+        if self.value_type == self.STRING:
+            return 'value_string'
+        elif self.value_type == self.NUMBER:
+            return 'value_float'
+        elif self.value_type == self.DATE:
+            return 'value_date'
+        elif self.value_type == self.CLASSIFIER:
+            return 'classifier'
+        raise ValueError('Unknown value_type: %s' % self.value_type)
+
 
 @python_2_unicode_compatible
 class AttributeTypeOptionBase(models.Model):
