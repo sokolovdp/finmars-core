@@ -50,8 +50,10 @@ class MasterUser(models.Model):
                             verbose_name=_('name'))
     currency = models.ForeignKey('currencies.Currency', null=True, blank=True, on_delete=models.PROTECT,
                                  verbose_name=_('currency'))
-
-    # members = models.ManyToManyField(settings.AUTH_USER_MODEL, blank=True, through='Member', related_name='member_of')
+    language = models.CharField(max_length=LANGUAGE_MAX_LENGTH, default=settings.LANGUAGE_CODE,
+                                verbose_name=_('language'))
+    timezone = models.CharField(max_length=TIMEZONE_MAX_LENGTH, default=settings.TIME_ZONE,
+                                verbose_name=_('timezone'))
 
     class Meta:
         verbose_name = _('master user')
@@ -95,6 +97,13 @@ class Member(models.Model):
 
     # permissions = models.ManyToManyField(Permission, blank=True)
 
+    class Meta:
+        verbose_name = _('member')
+        verbose_name_plural = _('member')
+        unique_together = [
+            ['master_user', 'user']
+        ]
+
     def __str__(self):
         return '%s@%s' % (self.user.username, self.master_user)
 
@@ -107,9 +116,9 @@ class Member(models.Model):
 class UserProfile(models.Model):
     user = models.OneToOneField(settings.AUTH_USER_MODEL, related_name='profile',
                                 verbose_name=_('user'))
-    language = models.CharField(max_length=LANGUAGE_MAX_LENGTH, null=True, blank=True,
+    language = models.CharField(max_length=LANGUAGE_MAX_LENGTH, default=settings.LANGUAGE_CODE,
                                 verbose_name=_('language'))
-    timezone = models.CharField(max_length=TIMEZONE_MAX_LENGTH, null=True, blank=True,
+    timezone = models.CharField(max_length=TIMEZONE_MAX_LENGTH, default=settings.TIME_ZONE,
                                 verbose_name=_('timezone'))
 
     class Meta:
@@ -135,6 +144,9 @@ class Group(models.Model):
         verbose_name_plural = _('group')
         unique_together = [
             ['master_user', 'name']
+        ]
+        permissions = [
+            ('view_group', 'Can view group')
         ]
 
     def __str__(self):

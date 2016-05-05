@@ -93,6 +93,9 @@ class PortfolioAttributeType(AttributeTypeBase):
     class Meta(AttributeTypeBase.Meta):
         verbose_name = _('portfolio attribute type')
         verbose_name_plural = _('portfolio attribute types')
+        permissions = [
+            ('view_portfolioattributetype', 'Can view portfolio attribute type')
+        ]
 
 
 class PortfolioAttributeTypeOption(AttributeTypeOptionBase):

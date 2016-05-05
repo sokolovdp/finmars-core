@@ -134,6 +134,9 @@ class AccountAttributeType(AttributeTypeBase):
     class Meta(AttributeTypeBase.Meta):
         verbose_name = _('account attribute type')
         verbose_name_plural = _('account attribute types')
+        permissions = [
+            ('view_accountattributetype', 'Can view account attribute type')
+        ]
 
 
 class AccountAttributeTypeOption(AttributeTypeOptionBase):

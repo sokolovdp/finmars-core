@@ -332,6 +332,9 @@ class InstrumentAttributeType(AttributeTypeBase):
     class Meta(AttributeTypeBase.Meta):
         verbose_name = _('instrument attribute type')
         verbose_name_plural = _('instrument attribute types')
+        permissions = [
+            ('view_instrumentattributetype', 'Can view instrument attribute type')
+        ]
 
 
 class InstrumentAttributeTypeOption(AttributeTypeOptionBase):

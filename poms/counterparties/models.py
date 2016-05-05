@@ -89,6 +89,9 @@ class CounterpartyAttributeType(AttributeTypeBase):
     class Meta(AttributeTypeBase.Meta):
         verbose_name = _('counterparty attribute type')
         verbose_name_plural = _('counterparty attribute types')
+        permissions = [
+            ('view_counterpartyattributetype', 'Can view counterparty attribute type')
+        ]
 
 
 class CounterpartyAttributeTypeUserObjectPermission(UserObjectPermissionBase):
@@ -212,6 +215,9 @@ class ResponsibleAttributeType(AttributeTypeBase):
     class Meta(AttributeTypeBase.Meta):
         verbose_name = _('responsible attribute type')
         verbose_name_plural = _('responsible attribute types')
+        permissions = [
+            ('view_responsibleattributetype', 'Can view responsible attribute type')
+        ]
 
 
 class ResponsibleAttributeTypeUserObjectPermission(UserObjectPermissionBase):
