@@ -22,9 +22,11 @@ class ObjectPermissionBase(BasePermission):
         return {perm % kwargs for perm in self.perms_map[method]}
 
     def has_object_permission(self, request, view, obj):
+        member = request.user.member
+        if member.is_owner or member.is_admin:
+            return True
         req_perms = self.get_required_object_permissions(request.method, obj)
         if not req_perms:
             return True
-        member = request.user.member
         perms = get_granted_permissions(member, obj)
         return req_perms.issubset(perms)
