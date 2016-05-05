@@ -12,7 +12,9 @@ from poms.users.filters import OwnerByMasterUserFilter
 
 class TagContentTypeField(FilteredSlugRelatedField):
     queryset = ContentType.objects
-    filter_backends = [TagContentTypeFilter]
+    filter_backends = [
+        TagContentTypeFilter
+    ]
 
     def __init__(self, **kwargs):
         kwargs['slug_field'] = 'model'
@@ -38,7 +40,6 @@ class TagField(FilteredPrimaryKeyRelatedField):
     ]
 
     def get_queryset(self):
-        # ctype = ContentType.objects.get_for_model(self.parent.parent.Meta.model)
         ctype = ContentType.objects.get_for_model(self.root.Meta.model)
         queryset = super(TagField, self).get_queryset()
         return queryset.filter(content_types__in=[ctype.pk])
