@@ -1,23 +1,23 @@
 from __future__ import unicode_literals
 
 from django.conf import settings
-from django.conf.urls import patterns, url, include
+from django.conf.urls import url, include
 from rest_framework import routers
 
 import poms.accounts.views as accounts
 import poms.audit.views as audit
+import poms.chats.views as chats
 import poms.counterparties.views as counterparties
 import poms.currencies.views as currencies
 import poms.http_sessions.views as sessions
 import poms.instruments.views as instruments
-import poms.portfolios.views as portfolios
-import poms.transactions.views as transactions
-import poms.strategies.views as strategies
-import poms.users.views as users
-import poms.reports.views as reports
 import poms.notifications.views as notifications
-import poms.chats.views as chats
+import poms.portfolios.views as portfolios
+import poms.reports.views as reports
+import poms.strategies.views as strategies
 import poms.tags.views as tags
+import poms.transactions.views as transactions
+import poms.users.views as users
 
 router = routers.DefaultRouter()
 router.register(r'users/login', users.LoginViewSet, 'login')
@@ -36,12 +36,14 @@ router.register(r'accounts/account-type', accounts.AccountTypeViewSet)
 router.register(r'accounts/account-attribute-type', accounts.AccountAttributeTypeViewSet)
 router.register(r'accounts/account', accounts.AccountViewSet)
 
-router.register(r'counterparties/counterparty-classifier/node', counterparties.CounterpartyClassifierNodeViewSet, 'counterpartyclassifiernode')
+router.register(r'counterparties/counterparty-classifier/node', counterparties.CounterpartyClassifierNodeViewSet,
+                'counterpartyclassifiernode')
 router.register(r'counterparties/counterparty-classifier', counterparties.CounterpartyClassifierViewSet)
 router.register(r'counterparties/counterparty-attribute-type', counterparties.CounterpartyAttributeTypeViewSet)
 router.register(r'counterparties/counterparty', counterparties.CounterpartyViewSet)
 
-router.register(r'counterparties/responsible-classifier/node', counterparties.ResponsibleClassifierNodeViewSet, 'responsibleclassifiernode')
+router.register(r'counterparties/responsible-classifier/node', counterparties.ResponsibleClassifierNodeViewSet,
+                'responsibleclassifiernode')
 router.register(r'counterparties/responsible-classifier', counterparties.ResponsibleClassifierViewSet)
 router.register(r'counterparties/responsible-attribute-type', counterparties.ResponsibleAttributeTypeViewSet)
 router.register(r'counterparties/responsible', counterparties.ResponsibleViewSet)
@@ -56,7 +58,8 @@ router.register(r'instruments/payment-size-detail', instruments.PaymentSizeDetai
 router.register(r'instruments/periodicity-period', instruments.PeriodicityPeriodViewSet)
 router.register(r'instruments/cost-method', instruments.CostMethodViewSet)
 router.register(r'instruments/pricing-policy', instruments.PricingPolicyViewSet)
-router.register(r'instruments/instrument-classifier/node', instruments.InstrumentClassifierNodeViewSet, 'instrumentclassifiernode')
+router.register(r'instruments/instrument-classifier/node', instruments.InstrumentClassifierNodeViewSet,
+                'instrumentclassifiernode')
 router.register(r'instruments/instrument-classifier', instruments.InstrumentClassifierViewSet)
 router.register(r'instruments/instrument-type', instruments.InstrumentTypeViewSet)
 router.register(r'instruments/instrument-attribute-type', instruments.InstrumentAttributeTypeViewSet)
@@ -67,7 +70,8 @@ router.register(r'instruments/accrual-calculation-schedule', instruments.Accrual
 router.register(r'instruments/instrument-factor-schedule', instruments.InstrumentFactorScheduleViewSet)
 router.register(r'instruments/event-schedule', instruments.EventScheduleViewSet)
 
-router.register(r'portfolios/portfolio-classifier/node', portfolios.PortfolioClassifierNodeViewSet, 'portfolioclassifiernode')
+router.register(r'portfolios/portfolio-classifier/node', portfolios.PortfolioClassifierNodeViewSet,
+                'portfolioclassifiernode')
 router.register(r'portfolios/portfolio-classifier', portfolios.PortfolioClassifierViewSet)
 router.register(r'portfolios/portfolio-attribute-type', portfolios.PortfolioAttributeTypeViewSet)
 router.register(r'portfolios/portfolio', portfolios.PortfolioViewSet)
@@ -97,12 +101,11 @@ router.register(r'chats/direct-message', chats.DirectMessageViewSet, 'chatdirect
 router.register(r'security/http-session', sessions.SessionViewSet)
 router.register(r'audit/auth-log', audit.AuthLogEntryViewSet)
 
-
 urlpatterns = [
     url(r'^v1/', include(router.urls, namespace='v1')),
 ]
 
 if settings.DEV:
-    urlpatterns += patterns('',
-                            url(r'^dev/auth/', include('rest_framework.urls', namespace='rest_framework')),
-                            )
+    urlpatterns += [
+        url(r'^dev/auth/', include('rest_framework.urls', namespace='rest_framework')),
+    ]
