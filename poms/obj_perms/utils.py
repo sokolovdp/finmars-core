@@ -94,6 +94,9 @@ def get_group_obj_perms_model(obj):
 
 
 def obj_perms_filter_objects(member, perms, queryset, model_cls=None):
+    if member.is_superuser:
+        return queryset
+
     model = model_cls or queryset.model
     user_lookup_name, user_obj_perms_model = get_user_obj_perms_model(model)
     group_lookup_name, group_obj_perms_model = get_group_obj_perms_model(model)
