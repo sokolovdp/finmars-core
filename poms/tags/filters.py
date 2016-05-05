@@ -1,5 +1,10 @@
 from django.contrib.contenttypes.models import ContentType
+from django.db.models import Q
+from django.utils.encoding import force_text
 from rest_framework.filters import BaseFilterBackend
+
+from poms.obj_perms.utils import obj_perms_filter_objects
+from poms.tags.models import Tag
 
 
 class TagContentTypeFilter(BaseFilterBackend):
@@ -31,3 +36,21 @@ class TagPrefetchFilter(BaseFilterBackend):
             'tags__group_object_permissions__permission',
         )
 
+
+class ByTagNameFilter(BaseFilterBackend):
+    def filter_queryset(self, request, queryset, view):
+        tags = request.query_params.get('tags', None)
+        if not tags:
+            return queryset
+
+        tags = force_text(tags).split(',')
+        f = Q()
+        for t in tags:
+            f |= Q(name__istartswith=t)
+        tag_queryset = Tag.objects.filter(f)
+
+        member = request.user.member
+        if not member.is_superuser:
+            tag_queryset = obj_perms_filter_objects(member, ['view_tag'], tag_queryset, prefetch=False)
+
+        return queryset.filter(tags__id__in=tag_queryset)

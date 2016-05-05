@@ -93,7 +93,7 @@ def get_group_obj_perms_model(obj):
     return get_obj_perms_model(obj, GroupObjectPermissionBase)
 
 
-def obj_perms_filter_objects(member, perms, queryset, model_cls=None):
+def obj_perms_filter_objects(member, perms, queryset, model_cls=None, prefetch=True):
     if member.is_superuser:
         return queryset
 
@@ -131,19 +131,20 @@ def obj_perms_filter_objects(member, perms, queryset, model_cls=None):
         if f:
             queryset = queryset.filter(f)
 
-        lookups = []
-        if user_lookup_name:
-            lookups.append(user_lookup_name)
-            lookups.append('%s__member' % user_lookup_name)
-            lookups.append('%s__permission' % user_lookup_name)
-            lookups.append('%s__permission__content_type' % user_lookup_name)
-        if group_lookup_name:
-            lookups.append(group_lookup_name)
-            lookups.append('%s__group' % group_lookup_name)
-            lookups.append('%s__permission' % group_lookup_name)
-            lookups.append('%s__permission__content_type' % group_lookup_name)
-        if lookups:
-            queryset = queryset.prefetch_related(*lookups)
+        if prefetch:
+            lookups = []
+            if user_lookup_name:
+                lookups.append(user_lookup_name)
+                lookups.append('%s__member' % user_lookup_name)
+                lookups.append('%s__permission' % user_lookup_name)
+                lookups.append('%s__permission__content_type' % user_lookup_name)
+            if group_lookup_name:
+                lookups.append(group_lookup_name)
+                lookups.append('%s__group' % group_lookup_name)
+                lookups.append('%s__permission' % group_lookup_name)
+                lookups.append('%s__permission__content_type' % group_lookup_name)
+            if lookups:
+                queryset = queryset.prefetch_related(*lookups)
 
         return queryset
     else:

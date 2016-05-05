@@ -1,5 +1,6 @@
 from __future__ import unicode_literals
 
+import django_filters
 from rest_framework.filters import FilterSet, DjangoFilterBackend, OrderingFilter, SearchFilter
 
 from poms.accounts.models import Account, AccountType, AccountClassifier, AccountAttributeType
@@ -11,7 +12,7 @@ from poms.obj_attrs.filters import AttributePrefetchFilter
 from poms.obj_attrs.views import AttributeTypeViewSetBase
 from poms.obj_perms.filters import ObjectPermissionPrefetchFilter, ObjectPermissionFilter
 from poms.obj_perms.permissions import ObjectPermissionBase
-from poms.tags.filters import TagPrefetchFilter
+from poms.tags.filters import TagPrefetchFilter, ByTagNameFilter
 from poms.users.filters import OwnerByMasterUserFilter
 
 
@@ -38,31 +39,37 @@ class AccountClassifierNodeViewSet(ClassifierNodeViewSetBase):
     filter_class = AccountClassifierFilterSet
 
 
+class AccountTypeFilterSet(FilterSet):
+    tags = django_filters.MethodFilter(action='tags_filter')
+
+    class Meta:
+        model = AccountType
+        fields = ['tags']
+
+    @staticmethod
+    def tags_filter(queryset, value):
+        return queryset
+
+
 class AccountTypeViewSet(PomsViewSetBase):
     queryset = AccountType.objects
     serializer_class = AccountTypeSerializer
     filter_backends = [
         OwnerByMasterUserFilter,
         TagPrefetchFilter,
+        ByTagNameFilter,
         ObjectPermissionPrefetchFilter,
         ObjectPermissionFilter,
         DjangoFilterBackend,
         OrderingFilter,
         SearchFilter,
     ]
+    filter_class = AccountTypeFilterSet
     permission_classes = PomsViewSetBase.permission_classes + [
         ObjectPermissionBase,
     ]
-    ordering_fields = [
-        'user_code',
-        'name',
-        'short_name',
-    ]
-    search_fields = [
-        'user_code',
-        'name',
-        'short_name',
-    ]
+    ordering_fields = ['user_code', 'name', 'short_name', ]
+    search_fields = ['user_code', 'name', 'short_name', ]
 
 
 class AccountAttributeTypeViewSet(AttributeTypeViewSetBase):
@@ -71,9 +78,15 @@ class AccountAttributeTypeViewSet(AttributeTypeViewSetBase):
 
 
 class AccountFilterSet(FilterSet):
+    tags = django_filters.MethodFilter(action='tags_filter')
+
     class Meta:
         model = Account
-        fields = []
+        fields = ['tags']
+
+    @staticmethod
+    def tags_filter(queryset, value):
+        return queryset
 
 
 class AccountViewSet(PomsViewSetBase):
@@ -83,6 +96,7 @@ class AccountViewSet(PomsViewSetBase):
         OwnerByMasterUserFilter,
         AttributePrefetchFilter,
         TagPrefetchFilter,
+        ByTagNameFilter,
         ObjectPermissionPrefetchFilter,
         ObjectPermissionFilter,
         DjangoFilterBackend,
@@ -90,17 +104,9 @@ class AccountViewSet(PomsViewSetBase):
         OrderingWithAttributesFilter,
         SearchFilter,
     ]
+    filter_class = AccountFilterSet
     permission_classes = PomsViewSetBase.permission_classes + [
         ObjectPermissionBase
     ]
-    filter_class = AccountFilterSet
-    ordering_fields = [
-        'user_code',
-        'name',
-        'short_name',
-    ]
-    search_fields = [
-        'user_code',
-        'name',
-        'short_name',
-    ]
+    ordering_fields = ['user_code', 'name', 'short_name', ]
+    search_fields = ['user_code', 'name', 'short_name', ]

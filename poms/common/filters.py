@@ -42,7 +42,7 @@ class OrderingWithAttributesFilter(OrderingFilter):
                 value_attr = attr_type.get_value_atr()
                 d[key] = \
                     'select __attr.%(attr_value)s ' \
-                    'from %(attr_tbl)s as __attr ' \
+                    'from %(attr_tbl)s __attr ' \
                     'where __attr.content_object_id=%(obj_tbl)s.id and __attr.attribute_type_id=%(attr_type_id)s' % {
                         'obj_tbl': queryset.model._meta.db_table,
                         'attr_tbl': attr_model._meta.db_table,
