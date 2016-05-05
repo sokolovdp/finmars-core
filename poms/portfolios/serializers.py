@@ -3,7 +3,8 @@ from __future__ import unicode_literals
 from rest_framework import serializers
 
 from poms.common.serializers import ClassifierSerializerBase, ClassifierNodeSerializerBase
-from poms.obj_attrs.serializers import AttributeTypeSerializerBase, AttributeSerializerBase
+from poms.obj_attrs.serializers import AttributeTypeSerializerBase, AttributeSerializerBase, \
+    ModelWithAttributesSerializer
 from poms.portfolios.fields import PortfolioClassifierField, PortfolioClassifierRootField, PortfolioAttributeTypeField
 from poms.portfolios.models import PortfolioClassifier, Portfolio, PortfolioAttributeType, PortfolioAttribute
 from poms.tags.fields import TagField
@@ -40,7 +41,7 @@ class PortfolioAttributeSerializer(AttributeSerializerBase):
         fields = AttributeSerializerBase.Meta.fields + ['attribute_type', 'classifier']
 
 
-class PortfolioSerializer(serializers.ModelSerializer):
+class PortfolioSerializer(ModelWithAttributesSerializer):
     master_user = MasterUserField()
     attributes = PortfolioAttributeSerializer(many=True)
     tags = TagField(many=True)
