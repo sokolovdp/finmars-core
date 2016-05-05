@@ -5,7 +5,7 @@ from rest_framework.filters import FilterSet, DjangoFilterBackend, OrderingFilte
 from poms.accounts.models import Account, AccountType, AccountClassifier, AccountAttributeType
 from poms.accounts.serializers import AccountSerializer, AccountTypeSerializer, AccountClassifierSerializer, \
     AccountAttributeTypeSerializer, AccountClassifierNodeSerializer
-from poms.common.filters import ClassifierFilterSetBase
+from poms.common.filters import ClassifierFilterSetBase, OrderingWithAttributesFilter
 from poms.common.views import ClassifierViewSetBase, PomsViewSetBase, ClassifierNodeViewSetBase
 from poms.obj_attrs.filters import AttributePrefetchFilter
 from poms.obj_attrs.views import AttributeTypeViewSetBase
@@ -22,14 +22,18 @@ class AccountClassifierFilterSet(ClassifierFilterSetBase):
 
 class AccountClassifierViewSet(ClassifierViewSetBase):
     queryset = AccountClassifier.objects.all()
-    filter_backends = [ObjectPermissionPrefetchFilter] + ClassifierViewSetBase.filter_backends
+    filter_backends = ClassifierViewSetBase.filter_backends + [
+        ObjectPermissionPrefetchFilter,
+    ]
     serializer_class = AccountClassifierSerializer
     filter_class = AccountClassifierFilterSet
 
 
 class AccountClassifierNodeViewSet(ClassifierNodeViewSetBase):
     queryset = AccountClassifier.objects.all()
-    filter_backends = [ObjectPermissionPrefetchFilter] + ClassifierNodeViewSetBase.filter_backends
+    filter_backends = ClassifierNodeViewSetBase.filter_backends + [
+        ObjectPermissionPrefetchFilter,
+    ]
     serializer_class = AccountClassifierNodeSerializer
     filter_class = AccountClassifierFilterSet
 
@@ -37,21 +41,33 @@ class AccountClassifierNodeViewSet(ClassifierNodeViewSetBase):
 class AccountTypeViewSet(PomsViewSetBase):
     queryset = AccountType.objects
     serializer_class = AccountTypeSerializer
-    filter_backends = [OwnerByMasterUserFilter, TagPrefetchFilter,
-                       ObjectPermissionPrefetchFilter,
-                       ObjectPermissionFilter,
-                       DjangoFilterBackend, OrderingFilter, SearchFilter]
-    permission_classes = PomsViewSetBase.permission_classes + \
-                         [ObjectPermissionBase]
-    ordering_fields = ['user_code', 'name', 'short_name']
-    search_fields = ['user_code', 'name', 'short_name']
+    filter_backends = [
+        OwnerByMasterUserFilter,
+        TagPrefetchFilter,
+        ObjectPermissionPrefetchFilter,
+        ObjectPermissionFilter,
+        DjangoFilterBackend,
+        OrderingFilter,
+        SearchFilter,
+    ]
+    permission_classes = PomsViewSetBase.permission_classes + [
+        ObjectPermissionBase,
+    ]
+    ordering_fields = [
+        'user_code',
+        'name',
+        'short_name',
+    ]
+    search_fields = [
+        'user_code',
+        'name',
+        'short_name',
+    ]
 
 
 class AccountAttributeTypeViewSet(AttributeTypeViewSetBase):
     queryset = AccountAttributeType.objects.all()
     serializer_class = AccountAttributeTypeSerializer
-    # permission_classes = PomsViewSetBase.permission_classes + \
-    #                      [ObjectPermissionBase]
 
 
 class AccountFilterSet(FilterSet):
@@ -63,12 +79,28 @@ class AccountFilterSet(FilterSet):
 class AccountViewSet(PomsViewSetBase):
     queryset = Account.objects.all()
     serializer_class = AccountSerializer
-    filter_backends = [OwnerByMasterUserFilter, AttributePrefetchFilter, TagPrefetchFilter,
-                       ObjectPermissionPrefetchFilter,
-                       ObjectPermissionFilter,
-                       DjangoFilterBackend, OrderingFilter, SearchFilter, ]
-    permission_classes = PomsViewSetBase.permission_classes + \
-                         [ObjectPermissionBase]
+    filter_backends = [
+        OwnerByMasterUserFilter,
+        AttributePrefetchFilter,
+        TagPrefetchFilter,
+        ObjectPermissionPrefetchFilter,
+        ObjectPermissionFilter,
+        DjangoFilterBackend,
+        # OrderingFilter,
+        OrderingWithAttributesFilter,
+        SearchFilter,
+    ]
+    permission_classes = PomsViewSetBase.permission_classes + [
+        ObjectPermissionBase
+    ]
     filter_class = AccountFilterSet
-    ordering_fields = ['user_code', 'name', 'short_name']
-    search_fields = ['user_code', 'name', 'short_name']
+    ordering_fields = [
+        'user_code',
+        'name',
+        'short_name',
+    ]
+    search_fields = [
+        'user_code',
+        'name',
+        'short_name',
+    ]
