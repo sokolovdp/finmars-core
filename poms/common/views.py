@@ -15,15 +15,29 @@ from poms.users.filters import OwnerByMasterUserFilter
 
 
 class PomsViewSetBase(DbTransactionMixin, HistoricalMixin, ModelViewSet):
-    permission_classes = [IsAuthenticated]
-    pass
+    permission_classes = [
+        IsAuthenticated
+    ]
 
 
 class PomsClassViewSetBase(ReadOnlyModelViewSet):
-    permission_classes = [IsAuthenticated]
-    filter_backends = [DjangoFilterBackend, OrderingFilter, SearchFilter]
-    ordering_fields = ['id', 'system_code', 'name']
-    search_fields = ['system_code', 'name']
+    permission_classes = [
+        IsAuthenticated
+    ]
+    filter_backends = [
+        DjangoFilterBackend,
+        OrderingFilter,
+        SearchFilter
+    ]
+    ordering_fields = [
+        'id',
+        'system_code',
+        'name'
+    ]
+    search_fields = [
+        'system_code',
+        'name'
+    ]
     pagination_class = None
 
 
@@ -63,7 +77,20 @@ class ClassifierViewSetBase(PomsViewSetBase):
 
 
 class ClassifierNodeViewSetBase(DbTransactionMixin, HistoricalMixin, UpdateModelMixin, ReadOnlyModelViewSet):
-    filter_backends = [OwnerByMasterUserFilter, ClassifierPrefetchFilter,
-                       DjangoFilterBackend, OrderingFilter, SearchFilter]
-    ordering_fields = ['user_code', 'name', 'short_name']
-    search_fields = ['user_code', 'name', 'short_name']
+    filter_backends = [
+        OwnerByMasterUserFilter,
+        ClassifierPrefetchFilter,
+        DjangoFilterBackend,
+        OrderingFilter,
+        SearchFilter
+    ]
+    ordering_fields = [
+        'user_code',
+        'name',
+        'short_name'
+    ]
+    search_fields = [
+        'user_code',
+        'name',
+        'short_name'
+    ]

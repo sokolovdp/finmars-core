@@ -8,14 +8,27 @@ from django.utils.translation import ugettext_lazy as _
 
 @python_2_unicode_compatible
 class NamedModel(models.Model):
-    user_code = models.CharField(max_length=25, null=True, blank=True,
-                                 verbose_name=_('user code'))
-    name = models.CharField(max_length=255,
-                            verbose_name=_('name'))
-    short_name = models.CharField(max_length=50, null=True, blank=True,
-                                  verbose_name=_('short name'))
-    notes = models.TextField(null=True, blank=True,
-                             verbose_name=_('notes'))
+    user_code = models.CharField(
+        max_length=25,
+        null=True,
+        blank=True,
+        verbose_name=_('user code')
+    )
+    name = models.CharField(
+        max_length=255,
+        verbose_name=_('name')
+    )
+    short_name = models.CharField(
+        max_length=50,
+        null=True,
+        blank=True,
+        verbose_name=_('short name')
+    )
+    notes = models.TextField(
+        null=True,
+        blank=True,
+        verbose_name=_('notes')
+    )
 
     class Meta:
         abstract = True
@@ -36,10 +49,18 @@ class NamedModel(models.Model):
 
 
 class TimeStampedModel(models.Model):
-    created = models.DateTimeField(auto_now_add=True, editable=False, db_index=True,
-                                   verbose_name=_('created'))
-    modified = models.DateTimeField(auto_now=True, editable=False, db_index=True,
-                                    verbose_name=_('modified'))
+    created = models.DateTimeField(
+        auto_now_add=True,
+        editable=False,
+        db_index=True,
+        verbose_name=_('created')
+    )
+    modified = models.DateTimeField(
+        auto_now=True,
+        editable=False,
+        db_index=True,
+        verbose_name=_('modified')
+    )
 
     class Meta:
         abstract = True
@@ -54,14 +75,26 @@ class TagModelBase(NamedModel):
 
 @python_2_unicode_compatible
 class ClassModelBase(models.Model):
-    id = models.PositiveSmallIntegerField(primary_key=True,
-                                          verbose_name=_('ID'))
-    system_code = models.CharField(max_length=50, null=True, blank=True, unique=True,
-                                   verbose_name=_('system code'))
-    name = models.CharField(max_length=255,
-                            verbose_name=_('name'))
-    description = models.TextField(null=True, blank=True,
-                                   verbose_name=_('description'))
+    id = models.PositiveSmallIntegerField(
+        primary_key=True,
+        verbose_name=_('ID')
+    )
+    system_code = models.CharField(
+        max_length=50,
+        null=True,
+        blank=True,
+        unique=True,
+        verbose_name=_('system code')
+    )
+    name = models.CharField(
+        max_length=255,
+        verbose_name=_('name')
+    )
+    description = models.TextField(
+        null=True,
+        blank=True,
+        verbose_name=_('description')
+    )
 
     class Meta:
         abstract = True
