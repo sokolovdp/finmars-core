@@ -1,4 +1,4 @@
-from poms.api.fields import FilteredPrimaryKeyRelatedField
+from poms.common.fields import FilteredPrimaryKeyRelatedField
 from poms.chats.filters import ThreadObjectPermissionFilter
 from poms.chats.models import Thread, ThreadStatus
 from poms.users.filters import OwnerByMasterUserFilter

@@ -1,6 +1,6 @@
 from __future__ import unicode_literals
 
-from poms.api.fields import FilteredPrimaryKeyRelatedField
+from poms.common.fields import FilteredPrimaryKeyRelatedField
 from poms.transactions.models import TransactionType, TransactionAttributeType
 from poms.users.filters import OwnerByMasterUserFilter
 

@@ -2,7 +2,7 @@ from rest_framework import serializers
 from rest_framework.exceptions import ValidationError
 from rest_framework.serializers import ListSerializer
 
-from poms.api.fields import FilteredPrimaryKeyRelatedField
+from poms.common.fields import FilteredPrimaryKeyRelatedField
 from poms.common.filters import ClassifierRootFilter
 from poms.obj_perms.serializers import ModelWithObjectPermissionSerializer
 from poms.users.fields import MasterUserField

@@ -1,6 +1,6 @@
 from __future__ import unicode_literals
 
-from poms.api.fields import FilteredPrimaryKeyRelatedField
+from poms.common.fields import FilteredPrimaryKeyRelatedField
 from poms.common.filters import ClassifierRootFilter
 from poms.counterparties.models import CounterpartyClassifier, Counterparty, Responsible, ResponsibleClassifier, \
     CounterpartyAttributeType

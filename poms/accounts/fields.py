@@ -1,5 +1,5 @@
 from poms.accounts.models import AccountClassifier, Account, AccountAttributeType, AccountType
-from poms.api.fields import FilteredPrimaryKeyRelatedField
+from poms.common.fields import FilteredPrimaryKeyRelatedField
 from poms.users.filters import OwnerByMasterUserFilter
 
 

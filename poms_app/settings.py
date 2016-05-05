@@ -201,6 +201,11 @@ CACHES = {
         'BACKEND': 'django.core.cache.backends.db.DatabaseCache',
         'LOCATION': 'cache_default',
         'KEY_PREFIX': 'default',
+        'VERSION': 1,
+        'TIMEOUT': 300,
+        'OPTIONS': {
+            'MAX_ENTRIES': 1000000,
+        }
     },
     # 'http_cache': {
     #     'BACKEND': 'django.core.cache.backends.locmem.LocMemCache',
@@ -233,6 +238,9 @@ LOGGING = {
     'loggers': {
         'django': {
             'level': 'INFO',
+            'handlers': ['console'],
+        },
+        'py.warnings': {
             'handlers': ['console'],
         },
         # 'django.db': {
