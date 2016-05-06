@@ -171,7 +171,7 @@ class AttributeBase(models.Model):
         ]
 
     def __str__(self):
-        return '%s' % self.get_value()
+        return '%s' % (self.get_value(), )
 
     def get_value(self):
         t = self.attribute_type.value_type
