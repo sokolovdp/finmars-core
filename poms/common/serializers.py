@@ -1,3 +1,4 @@
+from django.conf import settings
 from rest_framework import serializers
 from rest_framework.exceptions import ValidationError
 from rest_framework.serializers import ListSerializer
@@ -96,23 +97,22 @@ class ClassifierSerializerBase(PomsSerializerBase, ModelWithObjectPermissionSeri
 
     def update(self, instance, validated_data):
         validated_data.pop('id', None)
-
-        # children = validated_data.pop('children', None)
         children = validated_data.pop('get_children', [])
-
-        if instance.is_leaf_node() and children:
-            raise ValidationError("Can't add children to leaf node")
-
         instance = super(ClassifierSerializerBase, self).update(instance, validated_data)
-        self.save_tree(instance, children)
+        if instance.is_root_node() or not instance.is_leaf_node() or settings.CLASSIFIER_RELAX_UPDATE_MODE:
+            self.save_tree(instance, children)
+        else:
+            if children:
+                raise ValidationError("Can't add children to leaf node")
         return instance
 
     def save_tree(self, node, children):
-        cls = self.__class__
         # processed = set()
-
         # root = SimpleLazyObject(lambda: node.get_root())
         # print('root: ', root)
+
+        if not children:
+            return
 
         context = {}
         context.update(self.context)
@@ -130,7 +130,7 @@ class ClassifierSerializerBase(PomsSerializerBase, ModelWithObjectPermissionSeri
             child_pk = child_data.pop('id', None)
 
             if child_pk in processed:
-                raise ValidationError('Tree node  with id %s already processed' % child_pk)
+                raise ValidationError('Tree node with id %s already processed' % child_pk)
 
             if child_pk:
                 child_obj = root.get_family().get(pk=child_pk)
@@ -139,7 +139,7 @@ class ClassifierSerializerBase(PomsSerializerBase, ModelWithObjectPermissionSeri
             else:
                 child_obj = None
 
-            node_s = cls(instance=child_obj, data=child_data, context=context)
+            node_s = self.__class__(instance=child_obj, data=child_data, context=context)
             node_s.is_valid(raise_exception=True)
             child_obj = node_s.save(parent=node)
             processed.add(child_obj.pk)

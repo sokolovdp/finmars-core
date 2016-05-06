@@ -317,8 +317,8 @@ EMAIL_TIMEOUT = 10
 
 if DEV:
     ADMINS = MANAGERS = [
-        ['alyakhov', 'alyakhov@quadrogroup.ru'],
         ['ailyukhin', 'ailyukhin@quadrogroup.ru'],
+        ['alyakhov', 'alyakhov@quadrogroup.ru'],
     ]
     EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
 else:
@@ -327,3 +327,6 @@ else:
     EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
 
 MESSAGE_STORAGE = 'poms.notifications.message_storage.FallbackStorage'
+
+
+CLASSIFIER_RELAX_UPDATE_MODE = True
