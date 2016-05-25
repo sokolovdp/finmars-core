@@ -21,6 +21,8 @@ class NamedModel(models.Model):
     public_name = models.CharField(
         max_length=255,
         verbose_name=_('public name'),
+        null=True,
+        blank=True,
         help_text=_('used if user does not have permissions to view object')
     )
     short_name = models.CharField(
