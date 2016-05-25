@@ -8,7 +8,6 @@ from django.utils.translation import ugettext_lazy as _
 
 from poms.audit import history
 from poms.common.models import NamedModel
-from poms.obj_perms.models import UserObjectPermissionBase, GroupObjectPermissionBase
 from poms.users.models import MasterUser
 
 
@@ -36,22 +35,22 @@ class Currency(NamedModel):
         return self.is_global and self.user_code == settings.CURRENCY_CODE
 
 
-class CurrencyUserObjectPermission(UserObjectPermissionBase):
-    content_object = models.ForeignKey(Currency, related_name='user_object_permissions',
-                                       verbose_name=_('content object'))
-
-    class Meta(UserObjectPermissionBase.Meta):
-        verbose_name = _('counterparties - user permission')
-        verbose_name_plural = _('counterparties - user permissions')
-
-
-class CurrencyGroupObjectPermission(GroupObjectPermissionBase):
-    content_object = models.ForeignKey(Currency, related_name='group_object_permissions',
-                                       verbose_name=_('content object'))
-
-    class Meta(GroupObjectPermissionBase.Meta):
-        verbose_name = _('counterparties - group permission')
-        verbose_name_plural = _('counterparties - group permissions')
+# class CurrencyUserObjectPermission(UserObjectPermissionBase):
+#     content_object = models.ForeignKey(Currency, related_name='user_object_permissions',
+#                                        verbose_name=_('content object'))
+#
+#     class Meta(UserObjectPermissionBase.Meta):
+#         verbose_name = _('currencies - user permission')
+#         verbose_name_plural = _('currencies - user permissions')
+#
+#
+# class CurrencyGroupObjectPermission(GroupObjectPermissionBase):
+#     content_object = models.ForeignKey(Currency, related_name='group_object_permissions',
+#                                        verbose_name=_('content object'))
+#
+#     class Meta(GroupObjectPermissionBase.Meta):
+#         verbose_name = _('currencies - group permission')
+#         verbose_name_plural = _('currencies - group permissions')
 
 
 # EUR -> USD

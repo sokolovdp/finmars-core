@@ -16,8 +16,30 @@ from poms.notifications import LEVELS
 
 
 @python_2_unicode_compatible
+class NotificationConfig(models.Model):
+    user = models.ForeignKey(settings.AUTH_USER_MODEL)
+
+    # TODO: !!!
+    content_type = models.ForeignKey(ContentType, related_name='notificatins_config', null=True, blank=True)
+    type = models.CharField(max_length=30, null=True, blank=True)
+
+    level = models.PositiveSmallIntegerField(choices=LEVELS, default=messages.INFO)
+    is_enabled = models.BooleanField(default=True)
+    is_email_enabled = models.BooleanField(default=True)
+    is_web_enabled = models.BooleanField(default=True)
+
+    class Meta:
+        abstract = True
+
+    def __str__(self):
+        return '%s - %s: %s' % (self.user, self.level, self.is_send_email)
+
+
+@python_2_unicode_compatible
 class Notification(models.Model):
     recipient = models.ForeignKey(settings.AUTH_USER_MODEL, related_name='notifications', blank=False)
+
+    # TODO: !!!
 
     level = models.PositiveSmallIntegerField(choices=LEVELS, default=messages.INFO)
     type = models.CharField(max_length=30, null=True, blank=True)

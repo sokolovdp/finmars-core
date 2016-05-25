@@ -6,20 +6,20 @@ from poms.audit.admin import HistoricalAdmin
 from poms.common.admin import ClassModelAdmin, ClassifierAdmin
 from poms.instruments.models import Instrument, PriceHistory, InstrumentClassifier, InstrumentClass, InstrumentType, \
     DailyPricingModel, AccrualCalculationModel, PeriodicityPeriod, CostMethod, \
-    ManualPricingFormula, AccrualCalculationSchedule, InstrumentTypeUserObjectPermission, \
-    InstrumentTypeGroupObjectPermission, InstrumentClassifierUserObjectPermission, \
-    InstrumentClassifierGroupObjectPermission, InstrumentUserObjectPermission, InstrumentGroupObjectPermission, \
-    InstrumentAttributeType, InstrumentAttributeTypeOption, InstrumentAttributeTypeUserObjectPermission, \
-    InstrumentAttributeTypeGroupObjectPermission, InstrumentAttribute, InstrumentFactorSchedule, EventSchedule, \
-    PricingPolicy
+    ManualPricingFormula, AccrualCalculationSchedule, InstrumentTypeGroupObjectPermission, \
+    InstrumentGroupObjectPermission, \
+    InstrumentAttributeType, InstrumentAttributeTypeOption, InstrumentAttributeTypeGroupObjectPermission, \
+    InstrumentAttribute, InstrumentFactorSchedule, EventSchedule, \
+    PricingPolicy, PaymentSizeDetail
 from poms.obj_attrs.admin import AttributeTypeAdminBase, AttributeTypeOptionInlineBase, AttributeInlineBase
-from poms.obj_perms.admin import UserObjectPermissionAdmin, GroupObjectPermissionAdmin
+from poms.obj_perms.admin import GroupObjectPermissionAdmin
 
 admin.site.register(InstrumentClass, ClassModelAdmin)
 admin.site.register(DailyPricingModel, ClassModelAdmin)
 admin.site.register(AccrualCalculationModel, ClassModelAdmin)
 admin.site.register(PeriodicityPeriod, ClassModelAdmin)
 admin.site.register(CostMethod, ClassModelAdmin)
+admin.site.register(PaymentSizeDetail, ClassModelAdmin)
 
 
 class PricingPolicyAdmin(HistoricalAdmin):
@@ -41,12 +41,12 @@ class InstrumentTypeAdmin(HistoricalAdmin):
 
 
 admin.site.register(InstrumentType, InstrumentTypeAdmin)
-admin.site.register(InstrumentTypeUserObjectPermission, UserObjectPermissionAdmin)
+# admin.site.register(InstrumentTypeUserObjectPermission, UserObjectPermissionAdmin)
 admin.site.register(InstrumentTypeGroupObjectPermission, GroupObjectPermissionAdmin)
 
 admin.site.register(InstrumentClassifier, ClassifierAdmin)
-admin.site.register(InstrumentClassifierUserObjectPermission, UserObjectPermissionAdmin)
-admin.site.register(InstrumentClassifierGroupObjectPermission, GroupObjectPermissionAdmin)
+# admin.site.register(InstrumentClassifierUserObjectPermission, UserObjectPermissionAdmin)
+# admin.site.register(InstrumentClassifierGroupObjectPermission, GroupObjectPermissionAdmin)
 
 
 class InstrumentAttributeInline(AttributeInlineBase):
@@ -83,7 +83,7 @@ class InstrumentAdmin(HistoricalAdmin):
 
 
 admin.site.register(Instrument, InstrumentAdmin)
-admin.site.register(InstrumentUserObjectPermission, UserObjectPermissionAdmin)
+# admin.site.register(InstrumentUserObjectPermission, UserObjectPermissionAdmin)
 admin.site.register(InstrumentGroupObjectPermission, GroupObjectPermissionAdmin)
 
 
@@ -99,5 +99,5 @@ admin.site.register(PriceHistory, PriceHistoryAdmin)
 
 admin.site.register(InstrumentAttributeType, AttributeTypeAdminBase)
 admin.site.register(InstrumentAttributeTypeOption, AttributeTypeOptionInlineBase)
-admin.site.register(InstrumentAttributeTypeUserObjectPermission, UserObjectPermissionAdmin)
+# admin.site.register(InstrumentAttributeTypeUserObjectPermission, UserObjectPermissionAdmin)
 admin.site.register(InstrumentAttributeTypeGroupObjectPermission, GroupObjectPermissionAdmin)

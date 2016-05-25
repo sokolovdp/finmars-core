@@ -5,11 +5,11 @@ from django.contrib import admin
 from poms.audit.admin import HistoricalAdmin
 from poms.common.admin import ClassModelAdmin
 from poms.obj_attrs.admin import AttributeTypeAdminBase, AttributeTypeOptionInlineBase, AttributeInlineBase
-from poms.obj_perms.admin import UserObjectPermissionAdmin, GroupObjectPermissionAdmin
+from poms.obj_perms.admin import GroupObjectPermissionAdmin
 from poms.transactions.models import TransactionClass, Transaction, TransactionType, TransactionTypeInput, \
-    TransactionTypeItem, TransactionTypeUserObjectPermission, TransactionTypeGroupObjectPermission, \
-    TransactionAttributeType, TransactionAttributeTypeOption, TransactionAttributeTypeUserObjectPermission, \
-    TransactionAttributeTypeGroupObjectPermission, TransactionAttribute, ActionClass, EventToHandle, \
+    TransactionTypeItem, TransactionTypeGroupObjectPermission, \
+    TransactionAttributeType, TransactionAttributeTypeOption, TransactionAttributeTypeGroupObjectPermission, \
+    TransactionAttribute, ActionClass, EventToHandle, \
     ExternalCashFlow, ExternalCashFlowStrategy, NotificationClass, EventClass, PeriodicityGroup
 
 admin.site.register(TransactionClass, ClassModelAdmin)
@@ -58,7 +58,7 @@ class TransactionTypeAdmin(HistoricalAdmin):
 
 
 admin.site.register(TransactionType, TransactionTypeAdmin)
-admin.site.register(TransactionTypeUserObjectPermission, UserObjectPermissionAdmin)
+# admin.site.register(TransactionTypeUserObjectPermission, UserObjectPermissionAdmin)
 admin.site.register(TransactionTypeGroupObjectPermission, GroupObjectPermissionAdmin)
 
 
@@ -99,7 +99,7 @@ class TransactionAttributeTypeAdmin(AttributeTypeAdminBase):
 
 admin.site.register(TransactionAttributeType, TransactionAttributeTypeAdmin)
 admin.site.register(TransactionAttributeTypeOption, AttributeTypeOptionInlineBase)
-admin.site.register(TransactionAttributeTypeUserObjectPermission, UserObjectPermissionAdmin)
+# admin.site.register(TransactionAttributeTypeUserObjectPermission, UserObjectPermissionAdmin)
 admin.site.register(TransactionAttributeTypeGroupObjectPermission, GroupObjectPermissionAdmin)
 
 

@@ -8,10 +8,10 @@ from poms.audit.admin import HistoricalAdmin
 from poms.counterparties.models import Counterparty, Responsible
 from poms.currencies.models import Currency
 from poms.instruments.models import InstrumentType, Instrument
-from poms.obj_perms.admin import UserObjectPermissionAdmin, GroupObjectPermissionAdmin
+from poms.obj_perms.admin import GroupObjectPermissionAdmin
 from poms.portfolios.models import Portfolio
 from poms.strategies.models import Strategy
-from poms.tags.models import Tag, TagUserObjectPermission, TagGroupObjectPermission
+from poms.tags.models import Tag, TagGroupObjectPermission
 from poms.transactions.models import TransactionType
 
 
@@ -34,6 +34,5 @@ class TagAdmin(HistoricalAdmin):
 
 
 admin.site.register(Tag, TagAdmin)
-
-admin.site.register(TagUserObjectPermission, UserObjectPermissionAdmin)
+# admin.site.register(TagUserObjectPermission, UserObjectPermissionAdmin)
 admin.site.register(TagGroupObjectPermission, GroupObjectPermissionAdmin)

@@ -5,7 +5,6 @@ from django.db import models
 from django.utils import timezone
 from django.utils.encoding import python_2_unicode_compatible
 from django.utils.translation import ugettext_lazy as _
-from mptt.models import MPTTModel
 
 from poms.accounts.models import Account
 from poms.audit import history
@@ -14,9 +13,9 @@ from poms.counterparties.models import Responsible, Counterparty
 from poms.currencies.models import Currency
 from poms.instruments.models import Instrument
 from poms.obj_attrs.models import AttributeTypeBase, AttributeBase, AttributeTypeOptionBase
-from poms.obj_perms.models import UserObjectPermissionBase, GroupObjectPermissionBase
+from poms.obj_perms.models import GroupObjectPermissionBase
 from poms.portfolios.models import Portfolio
-from poms.strategies.models import Strategy
+from poms.strategies.models import Strategy, Strategy1, Strategy2, Strategy3
 from poms.users.models import MasterUser, Member
 
 
@@ -131,13 +130,13 @@ class TransactionType(NamedModel):
         ]
 
 
-class TransactionTypeUserObjectPermission(UserObjectPermissionBase):
-    content_object = models.ForeignKey(TransactionType, related_name='user_object_permissions',
-                                       verbose_name=_('content object'))
-
-    class Meta(UserObjectPermissionBase.Meta):
-        verbose_name = _('transaction types - user permission')
-        verbose_name_plural = _('transaction types - user permissions')
+# class TransactionTypeUserObjectPermission(UserObjectPermissionBase):
+#     content_object = models.ForeignKey(TransactionType, related_name='user_object_permissions',
+#                                        verbose_name=_('content object'))
+#
+#     class Meta(UserObjectPermissionBase.Meta):
+#         verbose_name = _('transaction types - user permission')
+#         verbose_name_plural = _('transaction types - user permissions')
 
 
 class TransactionTypeGroupObjectPermission(GroupObjectPermissionBase):
@@ -323,6 +322,55 @@ class Transaction(models.Model):
                                         blank=True,
                                         verbose_name=_("account interim"))
 
+    strategy1_position = models.ForeignKey(
+        Strategy1,
+        null=True,
+        blank=True,
+        related_name='transaction_as_position',
+        on_delete=models.PROTECT,
+        verbose_name=_("strategy - 1 - cash")
+    )
+    strategy1_cash = models.ForeignKey(
+        Strategy1,
+        null=True,
+        blank=True,
+        related_name='transaction_as_cash',
+        on_delete=models.PROTECT,
+        verbose_name=_("strategy - 1 - position")
+    )
+    strategy2_position = models.ForeignKey(
+        Strategy2,
+        null=True,
+        blank=True,
+        related_name='transaction_as_position',
+        on_delete=models.PROTECT,
+        verbose_name=_("strategy - 2 - cash"),
+    )
+    strategy2_cash = models.ForeignKey(
+        Strategy2,
+        null=True,
+        blank=True,
+        related_name='transaction_as_cash',
+        on_delete=models.PROTECT,
+        verbose_name=_("strategy - 2 - position")
+    )
+    strategy3_position = models.ForeignKey(
+        Strategy3,
+        null=True,
+        blank=True,
+        related_name='transaction_as_position',
+        on_delete=models.PROTECT,
+        verbose_name=_("strategy - 3 - cash")
+    )
+    strategy3_cash = models.ForeignKey(
+        Strategy3,
+        null=True,
+        blank=True,
+        on_delete=models.PROTECT,
+        related_name='transaction_as_cash',
+        verbose_name=_("strategy - 3 - position")
+    )
+
     reference_fx_rate = models.FloatField(null=True, blank=True,
                                           verbose_name=_("reference fx-rate"),
                                           help_text=_("FX rate to convert from Settlement ccy to Instrument "
@@ -430,13 +478,13 @@ class TransactionAttributeTypeOption(AttributeTypeOptionBase):
         verbose_name_plural = _('transaction attribute types - options')
 
 
-class TransactionAttributeTypeUserObjectPermission(UserObjectPermissionBase):
-    content_object = models.ForeignKey(TransactionAttributeType, related_name='user_object_permissions',
-                                       verbose_name=_("content object"))
-
-    class Meta(UserObjectPermissionBase.Meta):
-        verbose_name = _('transaction attribute types - user permission')
-        verbose_name_plural = _('transaction attribute types - user permissions')
+# class TransactionAttributeTypeUserObjectPermission(UserObjectPermissionBase):
+#     content_object = models.ForeignKey(TransactionAttributeType, related_name='user_object_permissions',
+#                                        verbose_name=_("content object"))
+#
+#     class Meta(UserObjectPermissionBase.Meta):
+#         verbose_name = _('transaction attribute types - user permission')
+#         verbose_name_plural = _('transaction attribute types - user permissions')
 
 
 class TransactionAttributeTypeGroupObjectPermission(GroupObjectPermissionBase):

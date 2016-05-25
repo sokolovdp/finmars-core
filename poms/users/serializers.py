@@ -9,6 +9,7 @@ from django.utils.translation import ugettext_lazy as _
 from rest_framework import serializers
 from rest_framework.authtoken.serializers import AuthTokenSerializer
 
+from poms.currencies.fields import CurrencyField
 from poms.users.fields import MasterUserField, GroupField, UserField
 from poms.users.models import MasterUser, UserProfile, Group, Member, TIMEZONE_CHOICES
 
@@ -117,11 +118,14 @@ class UserSerializer(serializers.ModelSerializer):
 
 class MasterUserSerializer(serializers.ModelSerializer):
     url = serializers.HyperlinkedIdentityField(view_name='masteruser-detail')
+    currency = CurrencyField()
+    language = serializers.ChoiceField(choices=settings.LANGUAGES, default=settings.LANGUAGE_CODE)
+    timezone = serializers.ChoiceField(choices=TIMEZONE_CHOICES)
     is_current = serializers.SerializerMethodField()
 
     class Meta:
         model = MasterUser
-        fields = ['url', 'id', 'name', 'currency', 'is_current']
+        fields = ['url', 'id', 'name', 'currency', 'language', 'timezone', 'is_current']
 
     def get_is_current(self, obj):
         request = self.context['request']
@@ -139,7 +143,7 @@ class MemberSerializer(serializers.ModelSerializer):
     class Meta:
         model = Member
         fields = ['url', 'id', 'master_user', 'user', 'is_owner', 'is_admin', 'join_date', 'is_current']
-        read_only_fields = ['user', 'is_owner']
+        read_only_fields = ['user', 'is_owner', 'join_date']
 
     def get_is_current(self, obj):
         request = self.context['request']

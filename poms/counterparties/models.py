@@ -9,7 +9,7 @@ from mptt.models import MPTTModel
 from poms.audit import history
 from poms.common.models import NamedModel
 from poms.obj_attrs.models import AttributeTypeBase, AttributeBase, AttributeTypeOptionBase
-from poms.obj_perms.models import UserObjectPermissionBase, GroupObjectPermissionBase
+from poms.obj_perms.models import GroupObjectPermissionBase
 from poms.users.models import MasterUser, Member
 
 
@@ -30,22 +30,22 @@ class CounterpartyClassifier(MPTTModel, NamedModel):
         ]
 
 
-class CounterpartyClassifierUserObjectPermission(UserObjectPermissionBase):
-    content_object = models.ForeignKey(CounterpartyClassifier, related_name='user_object_permissions',
-                                       verbose_name=_('content object'))
+# class CounterpartyClassifierUserObjectPermission(UserObjectPermissionBase):
+#     content_object = models.ForeignKey(CounterpartyClassifier, related_name='user_object_permissions',
+#                                        verbose_name=_('content object'))
+#
+#     class Meta(UserObjectPermissionBase.Meta):
+#         verbose_name = _('counterparty classifiers - user permission')
+#         verbose_name_plural = _('counterparty classifiers - user permissions')
 
-    class Meta(UserObjectPermissionBase.Meta):
-        verbose_name = _('counterparty classifiers - user permission')
-        verbose_name_plural = _('counterparty classifiers - user permissions')
 
-
-class CounterpartyClassifierGroupObjectPermission(GroupObjectPermissionBase):
-    content_object = models.ForeignKey(CounterpartyClassifier, related_name='group_object_permissions',
-                                       verbose_name=_('content object'))
-
-    class Meta(GroupObjectPermissionBase.Meta):
-        verbose_name = _('counterparty classifiers - group permission')
-        verbose_name_plural = _('counterparty classifiers - group permissions')
+# class CounterpartyClassifierGroupObjectPermission(GroupObjectPermissionBase):
+#     content_object = models.ForeignKey(CounterpartyClassifier, related_name='group_object_permissions',
+#                                        verbose_name=_('content object'))
+#
+#     class Meta(GroupObjectPermissionBase.Meta):
+#         verbose_name = _('counterparty classifiers - group permission')
+#         verbose_name_plural = _('counterparty classifiers - group permissions')
 
 
 @python_2_unicode_compatible
@@ -64,13 +64,13 @@ class Counterparty(NamedModel):
         return self.name
 
 
-class CounterpartyUserObjectPermission(UserObjectPermissionBase):
-    content_object = models.ForeignKey(Counterparty, related_name='user_object_permissions',
-                                       verbose_name=_('content object'))
-
-    class Meta(UserObjectPermissionBase.Meta):
-        verbose_name = _('counterparties - user permission')
-        verbose_name_plural = _('counterparties - user permissions')
+# class CounterpartyUserObjectPermission(UserObjectPermissionBase):
+#     content_object = models.ForeignKey(Counterparty, related_name='user_object_permissions',
+#                                        verbose_name=_('content object'))
+#
+#     class Meta(UserObjectPermissionBase.Meta):
+#         verbose_name = _('counterparties - user permission')
+#         verbose_name_plural = _('counterparties - user permissions')
 
 
 class CounterpartyGroupObjectPermission(GroupObjectPermissionBase):
@@ -83,8 +83,13 @@ class CounterpartyGroupObjectPermission(GroupObjectPermissionBase):
 
 
 class CounterpartyAttributeType(AttributeTypeBase):
-    classifier_root = models.ForeignKey(CounterpartyClassifier, on_delete=models.PROTECT, null=True, blank=True,
-                                        verbose_name=_('classifier (root)'))
+    classifier_root = models.OneToOneField(
+        CounterpartyClassifier,
+        on_delete=models.PROTECT,
+        null=True,
+        blank=True,
+        verbose_name=_('classifier)')
+    )
 
     class Meta(AttributeTypeBase.Meta):
         verbose_name = _('counterparty attribute type')
@@ -94,13 +99,13 @@ class CounterpartyAttributeType(AttributeTypeBase):
         ]
 
 
-class CounterpartyAttributeTypeUserObjectPermission(UserObjectPermissionBase):
-    content_object = models.ForeignKey(CounterpartyAttributeType, related_name='user_object_permissions',
-                                       verbose_name=_('content object'))
-
-    class Meta(UserObjectPermissionBase.Meta):
-        verbose_name = _('counterparty attribute types - user permission')
-        verbose_name_plural = _('counterparty attribute types - user permissions')
+# class CounterpartyAttributeTypeUserObjectPermission(UserObjectPermissionBase):
+#     content_object = models.ForeignKey(CounterpartyAttributeType, related_name='user_object_permissions',
+#                                        verbose_name=_('content object'))
+#
+#     class Meta(UserObjectPermissionBase.Meta):
+#         verbose_name = _('counterparty attribute types - user permission')
+#         verbose_name_plural = _('counterparty attribute types - user permissions')
 
 
 class CounterpartyAttributeTypeGroupObjectPermission(GroupObjectPermissionBase):
@@ -114,7 +119,7 @@ class CounterpartyAttributeTypeGroupObjectPermission(GroupObjectPermissionBase):
 
 class CounterpartyAttributeTypeOption(AttributeTypeOptionBase):
     member = models.ForeignKey(Member, related_name='counterparty_attribute_type_options',
-                                       verbose_name=_('member'))
+                               verbose_name=_('member'))
     attribute_type = models.ForeignKey(CounterpartyAttributeType, related_name='options',
                                        verbose_name=_('attribute type'))
 
@@ -156,22 +161,22 @@ class ResponsibleClassifier(MPTTModel, NamedModel):
         ]
 
 
-class ResponsibleClassifierUserObjectPermission(UserObjectPermissionBase):
-    content_object = models.ForeignKey(ResponsibleClassifier, related_name='user_object_permissions',
-                                       verbose_name=_('content object'))
+# class ResponsibleClassifierUserObjectPermission(UserObjectPermissionBase):
+#     content_object = models.ForeignKey(ResponsibleClassifier, related_name='user_object_permissions',
+#                                        verbose_name=_('content object'))
+#
+#     class Meta(UserObjectPermissionBase.Meta):
+#         verbose_name = _('responsible classifiers - user permission')
+#         verbose_name_plural = _('responsible classifiers - user permissions')
 
-    class Meta(UserObjectPermissionBase.Meta):
-        verbose_name = _('responsible classifiers - user permission')
-        verbose_name_plural = _('responsible classifiers - user permissions')
 
-
-class ResponsibleClassifierGroupObjectPermission(GroupObjectPermissionBase):
-    content_object = models.ForeignKey(ResponsibleClassifier, related_name='group_object_permissions',
-                                       verbose_name=_('content object'))
-
-    class Meta(GroupObjectPermissionBase.Meta):
-        verbose_name = _('responsible classifiers - group permission')
-        verbose_name_plural = _('responsible classifiers - group permissions')
+# class ResponsibleClassifierGroupObjectPermission(GroupObjectPermissionBase):
+#     content_object = models.ForeignKey(ResponsibleClassifier, related_name='group_object_permissions',
+#                                        verbose_name=_('content object'))
+#
+#     class Meta(GroupObjectPermissionBase.Meta):
+#         verbose_name = _('responsible classifiers - group permission')
+#         verbose_name_plural = _('responsible classifiers - group permissions')
 
 
 @python_2_unicode_compatible
@@ -190,13 +195,13 @@ class Responsible(NamedModel):
         return self.name
 
 
-class ResponsibleUserObjectPermission(UserObjectPermissionBase):
-    content_object = models.ForeignKey(Responsible, related_name='user_object_permissions',
-                                       verbose_name=_('content object'))
-
-    class Meta(UserObjectPermissionBase.Meta):
-        verbose_name = _('responsibles - user permission')
-        verbose_name_plural = _('responsibles - user permissions')
+# class ResponsibleUserObjectPermission(UserObjectPermissionBase):
+#     content_object = models.ForeignKey(Responsible, related_name='user_object_permissions',
+#                                        verbose_name=_('content object'))
+#
+#     class Meta(UserObjectPermissionBase.Meta):
+#         verbose_name = _('responsibles - user permission')
+#         verbose_name_plural = _('responsibles - user permissions')
 
 
 class ResponsibleGroupObjectPermission(GroupObjectPermissionBase):
@@ -209,8 +214,13 @@ class ResponsibleGroupObjectPermission(GroupObjectPermissionBase):
 
 
 class ResponsibleAttributeType(AttributeTypeBase):
-    classifier_root = models.ForeignKey(ResponsibleClassifier, on_delete=models.PROTECT, null=True, blank=True,
-                                        verbose_name=_('classifier (root)'))
+    classifier_root = models.OneToOneField(
+        ResponsibleClassifier,
+        on_delete=models.PROTECT,
+        null=True,
+        blank=True,
+        verbose_name=_('classifier (root)')
+    )
 
     class Meta(AttributeTypeBase.Meta):
         verbose_name = _('responsible attribute type')
@@ -220,13 +230,13 @@ class ResponsibleAttributeType(AttributeTypeBase):
         ]
 
 
-class ResponsibleAttributeTypeUserObjectPermission(UserObjectPermissionBase):
-    content_object = models.ForeignKey(ResponsibleAttributeType, related_name='user_object_permissions',
-                                       verbose_name=_('content object'))
-
-    class Meta(UserObjectPermissionBase.Meta):
-        verbose_name = _('responsible attribute types - user permission')
-        verbose_name_plural = _('responsible attribute types - user permissions')
+# class ResponsibleAttributeTypeUserObjectPermission(UserObjectPermissionBase):
+#     content_object = models.ForeignKey(ResponsibleAttributeType, related_name='user_object_permissions',
+#                                        verbose_name=_('content object'))
+#
+#     class Meta(UserObjectPermissionBase.Meta):
+#         verbose_name = _('responsible attribute types - user permission')
+#         verbose_name_plural = _('responsible attribute types - user permissions')
 
 
 class ResponsibleAttributeTypeGroupObjectPermission(GroupObjectPermissionBase):

@@ -5,16 +5,16 @@ from django.contrib import admin
 from poms.audit.admin import HistoricalAdmin
 from poms.common.admin import ClassifierAdmin
 from poms.obj_attrs.admin import AttributeTypeAdminBase, AttributeTypeOptionInlineBase, AttributeInlineBase
-from poms.obj_perms.admin import UserObjectPermissionAdmin, GroupObjectPermissionAdmin
-from poms.portfolios.models import Portfolio, PortfolioClassifier, PortfolioClassifierUserObjectPermission, \
-    PortfolioClassifierGroupObjectPermission, PortfolioGroupObjectPermission, PortfolioUserObjectPermission, \
-    PortfolioAttributeType, PortfolioAttributeTypeOption, PortfolioAttributeTypeUserObjectPermission, \
-    PortfolioAttributeTypeGroupObjectPermission, PortfolioAttribute
-
+from poms.obj_perms.admin import GroupObjectPermissionAdmin
+from poms.portfolios.models import Portfolio, PortfolioClassifier, PortfolioGroupObjectPermission, \
+    PortfolioAttributeType, PortfolioAttributeTypeOption, PortfolioAttributeTypeGroupObjectPermission, \
+    PortfolioAttribute
 
 admin.site.register(PortfolioClassifier, ClassifierAdmin)
-admin.site.register(PortfolioClassifierUserObjectPermission, UserObjectPermissionAdmin)
-admin.site.register(PortfolioClassifierGroupObjectPermission, GroupObjectPermissionAdmin)
+
+
+# admin.site.register(PortfolioClassifierUserObjectPermission, UserObjectPermissionAdmin)
+# admin.site.register(PortfolioClassifierGroupObjectPermission, GroupObjectPermissionAdmin)
 
 
 class PortfolioAttributeInline(AttributeInlineBase):
@@ -30,10 +30,10 @@ class PortfolioAdmin(HistoricalAdmin):
 
 
 admin.site.register(Portfolio, PortfolioAdmin)
-admin.site.register(PortfolioUserObjectPermission, UserObjectPermissionAdmin)
+# admin.site.register(PortfolioUserObjectPermission, UserObjectPermissionAdmin)
 admin.site.register(PortfolioGroupObjectPermission, GroupObjectPermissionAdmin)
 
 admin.site.register(PortfolioAttributeType, AttributeTypeAdminBase)
 admin.site.register(PortfolioAttributeTypeOption, AttributeTypeOptionInlineBase)
-admin.site.register(PortfolioAttributeTypeUserObjectPermission, UserObjectPermissionAdmin)
+# admin.site.register(PortfolioAttributeTypeUserObjectPermission, UserObjectPermissionAdmin)
 admin.site.register(PortfolioAttributeTypeGroupObjectPermission, GroupObjectPermissionAdmin)

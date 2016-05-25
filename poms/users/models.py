@@ -21,27 +21,35 @@ TIMEZONE_CHOICES = sorted(list((k, k) for k in pytz.all_timezones))
 TIMEZONE_COMMON_CHOICES = sorted(list((k, k) for k in pytz.common_timezones))
 
 
-# class LanguageField(CharField):
-#     description = _("Language")
-#
-#     def __init__(self, *args, **kwargs):
-#         kwargs['max_length'] = kwargs.get('max_length', LANGUAGE_MAX_LENGTH)
-#         kwargs['choices'] = kwargs.get('choices', settings.LANGUAGES)
-#         kwargs['default'] = kwargs.get('default', settings.LANGUAGE_CODE)
-#         super(LanguageField, self).__init__(*args, **kwargs)
-#
-#     def deconstruct(self):
-#         name, path, args, kwargs = super(LanguageField, self).deconstruct()
-#         return name, path, args, kwargs
-#
-#
-# class TimezoneField(CharField):
-#     description = _("Timezone")
-#
-#     def __init__(self, *args, **kwargs):
-#         kwargs['max_length'] = kwargs.get('max_length', TIMEZONE_MAX_LENGTH)
-#         kwargs['choices'] = kwargs.get('choices', TIMEZONE_CHOICES)
-#         super(TimezoneField, self).__init__(*args, **kwargs)
+class MasterUserManager(models.Manager):
+    def create(self, **kwargs):
+        from poms.currencies.models import Currency
+        from poms.accounts.models import AccountType, Account
+        from poms.counterparties.models import Counterparty, Responsible
+        from poms.portfolios.models import Portfolio
+        from poms.instruments.models import InstrumentClass, InstrumentType, Instrument
+
+        obj = super(MasterUserManager, self).create(kwargs)
+
+        ccy = Currency.objects.create(master_user=obj, name='-')
+        Currency.objects.create(master_user=obj, name=settings.CURRENCY_CODE)
+        obj.currency = ccy
+        obj.save(update_fields=['currency'])
+
+        acc_t = AccountType.objects.create(master_user=obj, name='-')
+        acc = Account.objects.create(master_user=obj, type=acc_t, name='-')
+
+        Counterparty.objects.create(master_user=obj, name='-')
+        Responsible.objects.create(master_user=obj, name='-')
+
+        Portfolio.objects.create(master_user=obj, name='-')
+
+        instr_cls = InstrumentClass.objects.get(pk=InstrumentClass.GENERAL)
+        instr_t = InstrumentType.objects.create(master_user=obj, instrument_class=instr_cls, name='-')
+        instr = Instrument.objects.create(master_user=obj, type=instr_t, pricing_currency=acc, accrued_currency=acc,
+                                          name='-')
+
+        return obj
 
 
 @python_2_unicode_compatible

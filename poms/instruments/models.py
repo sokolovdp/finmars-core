@@ -11,7 +11,7 @@ from poms.audit import history
 from poms.common.models import NamedModel, ClassModelBase
 from poms.currencies.models import Currency
 from poms.obj_attrs.models import AttributeTypeBase, AttributeBase, AttributeTypeOptionBase
-from poms.obj_perms.models import UserObjectPermissionBase, GroupObjectPermissionBase
+from poms.obj_perms.models import GroupObjectPermissionBase
 from poms.users.models import MasterUser, Member
 
 
@@ -216,22 +216,22 @@ class InstrumentClassifier(MPTTModel, NamedModel):
         return self.name
 
 
-class InstrumentClassifierUserObjectPermission(UserObjectPermissionBase):
-    content_object = models.ForeignKey(InstrumentClassifier, related_name='user_object_permissions',
-                                       verbose_name=_('content object'))
+# class InstrumentClassifierUserObjectPermission(UserObjectPermissionBase):
+#     content_object = models.ForeignKey(InstrumentClassifier, related_name='user_object_permissions',
+#                                        verbose_name=_('content object'))
+#
+#     class Meta(UserObjectPermissionBase.Meta):
+#         verbose_name = _('instrument classifiers - user permission')
+#         verbose_name_plural = _('instrument classifiers - user permissions')
 
-    class Meta(UserObjectPermissionBase.Meta):
-        verbose_name = _('instrument classifiers - user permission')
-        verbose_name_plural = _('instrument classifiers - user permissions')
 
-
-class InstrumentClassifierGroupObjectPermission(GroupObjectPermissionBase):
-    content_object = models.ForeignKey(InstrumentClassifier, related_name='group_object_permissions',
-                                       verbose_name=_('content object'))
-
-    class Meta(GroupObjectPermissionBase.Meta):
-        verbose_name = _('instrument classifiers - group permission')
-        verbose_name_plural = _('instrument classifiers - group permissions')
+# class InstrumentClassifierGroupObjectPermission(GroupObjectPermissionBase):
+#     content_object = models.ForeignKey(InstrumentClassifier, related_name='group_object_permissions',
+#                                        verbose_name=_('content object'))
+#
+#     class Meta(GroupObjectPermissionBase.Meta):
+#         verbose_name = _('instrument classifiers - group permission')
+#         verbose_name_plural = _('instrument classifiers - group permissions')
 
 
 @python_2_unicode_compatible
@@ -252,13 +252,13 @@ class InstrumentType(NamedModel):
         return self.name
 
 
-class InstrumentTypeUserObjectPermission(UserObjectPermissionBase):
-    content_object = models.ForeignKey(InstrumentType, related_name='user_object_permissions',
-                                       verbose_name=_('content object'))
-
-    class Meta(UserObjectPermissionBase.Meta):
-        verbose_name = _('instrument types - user permission')
-        verbose_name_plural = _('instrument types - user permissions')
+# class InstrumentTypeUserObjectPermission(UserObjectPermissionBase):
+#     content_object = models.ForeignKey(InstrumentType, related_name='user_object_permissions',
+#                                        verbose_name=_('content object'))
+#
+#     class Meta(UserObjectPermissionBase.Meta):
+#         verbose_name = _('instrument types - user permission')
+#         verbose_name_plural = _('instrument types - user permissions')
 
 
 class InstrumentTypeGroupObjectPermission(GroupObjectPermissionBase):
@@ -307,13 +307,13 @@ class Instrument(NamedModel):
         return self.name
 
 
-class InstrumentUserObjectPermission(UserObjectPermissionBase):
-    content_object = models.ForeignKey(Instrument, related_name='user_object_permissions',
-                                       verbose_name=_('content object'))
-
-    class Meta(UserObjectPermissionBase.Meta):
-        verbose_name = _('instruments - user permission')
-        verbose_name_plural = _('instruments - user permissions')
+# class InstrumentUserObjectPermission(UserObjectPermissionBase):
+#     content_object = models.ForeignKey(Instrument, related_name='user_object_permissions',
+#                                        verbose_name=_('content object'))
+#
+#     class Meta(UserObjectPermissionBase.Meta):
+#         verbose_name = _('instruments - user permission')
+#         verbose_name_plural = _('instruments - user permissions')
 
 
 class InstrumentGroupObjectPermission(GroupObjectPermissionBase):
@@ -326,8 +326,13 @@ class InstrumentGroupObjectPermission(GroupObjectPermissionBase):
 
 
 class InstrumentAttributeType(AttributeTypeBase):
-    classifier_root = models.ForeignKey(InstrumentClassifier, on_delete=models.PROTECT, null=True, blank=True,
-                                        verbose_name=_('classifier (root)'))
+    classifier_root = models.OneToOneField(
+        InstrumentClassifier,
+        on_delete=models.PROTECT,
+        null=True,
+        blank=True,
+        verbose_name=_('classifier')
+    )
 
     class Meta(AttributeTypeBase.Meta):
         verbose_name = _('instrument attribute type')
@@ -348,13 +353,13 @@ class InstrumentAttributeTypeOption(AttributeTypeOptionBase):
         verbose_name_plural = _('instrument attribute types - options')
 
 
-class InstrumentAttributeTypeUserObjectPermission(UserObjectPermissionBase):
-    content_object = models.ForeignKey(InstrumentAttributeType, related_name='user_object_permissions',
-                                       verbose_name=_('content object'))
-
-    class Meta(UserObjectPermissionBase.Meta):
-        verbose_name = _('instrument attribute types - user permission')
-        verbose_name_plural = _('instrument attribute types - user permissions')
+# class InstrumentAttributeTypeUserObjectPermission(UserObjectPermissionBase):
+#     content_object = models.ForeignKey(InstrumentAttributeType, related_name='user_object_permissions',
+#                                        verbose_name=_('content object'))
+#
+#     class Meta(UserObjectPermissionBase.Meta):
+#         verbose_name = _('instrument attribute types - user permission')
+#         verbose_name_plural = _('instrument attribute types - user permissions')
 
 
 class InstrumentAttributeTypeGroupObjectPermission(GroupObjectPermissionBase):
@@ -476,7 +481,7 @@ class EventSchedule(models.Model):
     name = models.CharField(max_length=255,
                             verbose_name=_('name'))
     description = models.TextField(null=True, blank=True,
-                             verbose_name=_('description'))
+                                   verbose_name=_('description'))
     transaction_types = models.ManyToManyField('transactions.TransactionType', blank=True,
                                                verbose_name=_('transaction types'))
     event_class = models.ForeignKey('transactions.EventClass', on_delete=models.PROTECT,

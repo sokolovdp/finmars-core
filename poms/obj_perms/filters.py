@@ -24,10 +24,10 @@ class ObjectPermissionFilter(BaseFilterBackend):
 class ObjectPermissionPrefetchFilter(BaseFilterBackend):
     def filter_queryset(self, request, queryset, view):
         return queryset.prefetch_related(
-            'user_object_permissions',
+            # 'user_object_permissions',
             # 'user_object_permissions__member',
             # 'user_object_permissions__member__groups',
-            'user_object_permissions__permission',
+            # 'user_object_permissions__permission',
             # 'user_object_permissions__permission__content_type',
             'group_object_permissions',
             # 'group_object_permissions__group',

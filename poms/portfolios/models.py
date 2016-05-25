@@ -9,7 +9,7 @@ from mptt.models import MPTTModel
 from poms.audit import history
 from poms.common.models import NamedModel
 from poms.obj_attrs.models import AttributeTypeBase, AttributeBase, AttributeTypeOptionBase
-from poms.obj_perms.models import UserObjectPermissionBase, GroupObjectPermissionBase
+from poms.obj_perms.models import GroupObjectPermissionBase
 from poms.users.models import MasterUser, Member
 
 
@@ -34,22 +34,22 @@ class PortfolioClassifier(MPTTModel, NamedModel):
         return self.name
 
 
-class PortfolioClassifierUserObjectPermission(UserObjectPermissionBase):
-    content_object = models.ForeignKey(PortfolioClassifier, related_name='user_object_permissions',
-                                       verbose_name=_('content object'))
+# class PortfolioClassifierUserObjectPermission(UserObjectPermissionBase):
+#     content_object = models.ForeignKey(PortfolioClassifier, related_name='user_object_permissions',
+#                                        verbose_name=_('content object'))
+#
+#     class Meta(UserObjectPermissionBase.Meta):
+#         verbose_name = _('portfolio classifiers - user permission')
+#         verbose_name_plural = _('portfolio classifiers - user permissions')
 
-    class Meta(UserObjectPermissionBase.Meta):
-        verbose_name = _('portfolio classifiers - user permission')
-        verbose_name_plural = _('portfolio classifiers - user permissions')
 
-
-class PortfolioClassifierGroupObjectPermission(GroupObjectPermissionBase):
-    content_object = models.ForeignKey(PortfolioClassifier, related_name='group_object_permissions',
-                                       verbose_name=_('content object'))
-
-    class Meta(GroupObjectPermissionBase.Meta):
-        verbose_name = _('portfolio classifiers - group permission')
-        verbose_name_plural = _('portfolio classifiers - group permissions')
+# class PortfolioClassifierGroupObjectPermission(GroupObjectPermissionBase):
+#     content_object = models.ForeignKey(PortfolioClassifier, related_name='group_object_permissions',
+#                                        verbose_name=_('content object'))
+#
+#     class Meta(GroupObjectPermissionBase.Meta):
+#         verbose_name = _('portfolio classifiers - group permission')
+#         verbose_name_plural = _('portfolio classifiers - group permissions')
 
 
 @python_2_unicode_compatible
@@ -68,13 +68,13 @@ class Portfolio(NamedModel):
         return self.name
 
 
-class PortfolioUserObjectPermission(UserObjectPermissionBase):
-    content_object = models.ForeignKey(Portfolio, related_name='user_object_permissions',
-                                       verbose_name=_('content object'))
-
-    class Meta(UserObjectPermissionBase.Meta):
-        verbose_name = _('portfolios - user permission')
-        verbose_name_plural = _('portfolios - user permissions')
+# class PortfolioUserObjectPermission(UserObjectPermissionBase):
+#     content_object = models.ForeignKey(Portfolio, related_name='user_object_permissions',
+#                                        verbose_name=_('content object'))
+#
+#     class Meta(UserObjectPermissionBase.Meta):
+#         verbose_name = _('portfolios - user permission')
+#         verbose_name_plural = _('portfolios - user permissions')
 
 
 class PortfolioGroupObjectPermission(GroupObjectPermissionBase):
@@ -87,8 +87,13 @@ class PortfolioGroupObjectPermission(GroupObjectPermissionBase):
 
 
 class PortfolioAttributeType(AttributeTypeBase):
-    classifier_root = models.ForeignKey(PortfolioClassifier, on_delete=models.PROTECT, null=True, blank=True,
-                                        verbose_name=_('classifier (root)'))
+    classifier_root = models.OneToOneField(
+        PortfolioClassifier,
+        on_delete=models.PROTECT,
+        null=True,
+        blank=True,
+        verbose_name=_('classifier')
+    )
 
     class Meta(AttributeTypeBase.Meta):
         verbose_name = _('portfolio attribute type')
@@ -109,13 +114,13 @@ class PortfolioAttributeTypeOption(AttributeTypeOptionBase):
         verbose_name_plural = _('portfolio attribute types - options')
 
 
-class PortfolioAttributeTypeUserObjectPermission(UserObjectPermissionBase):
-    content_object = models.ForeignKey(PortfolioAttributeType, related_name='user_object_permissions',
-                                       verbose_name=_('content object'))
-
-    class Meta(UserObjectPermissionBase.Meta):
-        verbose_name = _('portfolio attribute types - user permission')
-        verbose_name_plural = _('portfolio attribute types - user permissions')
+# class PortfolioAttributeTypeUserObjectPermission(UserObjectPermissionBase):
+#     content_object = models.ForeignKey(PortfolioAttributeType, related_name='user_object_permissions',
+#                                        verbose_name=_('content object'))
+#
+#     class Meta(UserObjectPermissionBase.Meta):
+#         verbose_name = _('portfolio attribute types - user permission')
+#         verbose_name_plural = _('portfolio attribute types - user permissions')
 
 
 class PortfolioAttributeTypeGroupObjectPermission(GroupObjectPermissionBase):

@@ -51,28 +51,3 @@ class GroupObjectPermissionBase(ObjectPermissionBase):
 
     def __str__(self):
         return '%s %s %s' % (self.group, self.permission.name, self.content_object)
-
-# class UserObjectPermission(UserObjectPermissionBase):
-#     content_type = models.ForeignKey(ContentType, related_name='user_object_permissions')
-#     object_id = models.BigIntegerField()
-#     content_object = GenericForeignKey()
-#
-#     class Meta:
-#         verbose_name = _('generic user object permission')
-#         verbose_name_plural = _('generic user object permissions')
-#         unique_together = [
-#             ['member', 'content_type', 'object_id', 'permission']
-#         ]
-#
-#
-# class GroupObjectPermission(GroupObjectPermissionBase):
-#     content_type = models.ForeignKey(ContentType, related_name='group_object_permissions')
-#     object_id = models.BigIntegerField()
-#     content_object = GenericForeignKey()
-#
-#     class Meta:
-#         verbose_name = _('generic group object permission')
-#         verbose_name_plural = _('generic group object permissions')
-#         unique_together = [
-#             ['group', 'content_type', 'object_id', 'permission']
-#         ]

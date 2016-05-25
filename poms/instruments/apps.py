@@ -17,7 +17,8 @@ class InstrumentsConfig(AppConfig):
 
     def update_transaction_classes(self, app_config, verbosity=2, using=DEFAULT_DB_ALIAS, **kwargs):
         from poms.common.utils import db_class_check_data
-        from .models import InstrumentClass, DailyPricingModel, AccrualCalculationModel, PeriodicityPeriod, CostMethod
+        from .models import InstrumentClass, DailyPricingModel, AccrualCalculationModel, PeriodicityPeriod, CostMethod, \
+            PaymentSizeDetail
 
         if not isinstance(app_config, InstrumentsConfig):
             return
@@ -27,3 +28,4 @@ class InstrumentsConfig(AppConfig):
         db_class_check_data(AccrualCalculationModel, verbosity, using)
         db_class_check_data(PeriodicityPeriod, verbosity, using)
         db_class_check_data(CostMethod, verbosity, using)
+        db_class_check_data(PaymentSizeDetail, verbosity, using)
