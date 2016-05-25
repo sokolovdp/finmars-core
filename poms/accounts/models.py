@@ -15,45 +15,6 @@ from poms.users.models import MasterUser, Member
 
 
 @python_2_unicode_compatible
-class AccountClassifier(MPTTModel, NamedModel):
-    master_user = models.ForeignKey(MasterUser, related_name='account_classifiers',
-                                    verbose_name=_('master user'))
-    parent = TreeForeignKey('self', null=True, blank=True, related_name='children', db_index=True,
-                            verbose_name=_('parent'))
-
-    class MPTTMeta:
-        order_insertion_by = ['master_user', 'name']
-
-    class Meta(NamedModel.Meta):
-        verbose_name = _('account classifier')
-        verbose_name_plural = _('account classifiers')
-        permissions = [
-            ('view_accountclassifier', 'Can view account classifier')
-        ]
-
-    def __str__(self):
-        return self.name
-
-
-# class AccountClassifierUserObjectPermission(UserObjectPermissionBase):
-#     content_object = models.ForeignKey(AccountClassifier, related_name='user_object_permissions',
-#                                        verbose_name=_('content object'))
-#
-#     class Meta(UserObjectPermissionBase.Meta):
-#         verbose_name = _('account classifiers - user permission')
-#         verbose_name_plural = _('account classifiers - user permissions')
-
-
-# class AccountClassifierGroupObjectPermission(GroupObjectPermissionBase):
-#     content_object = models.ForeignKey(AccountClassifier, related_name='group_object_permissions',
-#                                        verbose_name=_('content object'))
-#
-#     class Meta(GroupObjectPermissionBase.Meta):
-#         verbose_name = _('account classifiers - group permission')
-#         verbose_name_plural = _('account classifiers - group permissions')
-
-
-@python_2_unicode_compatible
 class AccountType(NamedModel):
     master_user = models.ForeignKey(MasterUser, related_name='account_types',
                                     verbose_name=_('master user'))
@@ -128,19 +89,63 @@ class AccountGroupObjectPermission(GroupObjectPermissionBase):
 
 
 class AccountAttributeType(AttributeTypeBase):
-    classifier_root = models.OneToOneField(
-        AccountClassifier,
-        null=True,
-        blank=True,
-        on_delete=models.PROTECT,
-        verbose_name=_('classifier')
-    )
+    # classifier_root = models.OneToOneField(
+    #     AccountClassifier,
+    #     null=True,
+    #     blank=True,
+    #     on_delete=models.PROTECT,
+    #     verbose_name=_('classifier')
+    # )
 
     class Meta(AttributeTypeBase.Meta):
         verbose_name = _('account attribute type')
         verbose_name_plural = _('account attribute types')
         permissions = [
             ('view_accountattributetype', 'Can view account attribute type')
+        ]
+
+
+class AccountAttributeTypeGroupObjectPermission(GroupObjectPermissionBase):
+    content_object = models.ForeignKey(AccountAttributeType, related_name='group_object_permissions',
+                                       verbose_name=_('content object'))
+
+    class Meta(GroupObjectPermissionBase.Meta):
+        verbose_name = _('account attribute types - group permission')
+        verbose_name_plural = _('account attribute types - group permissions')
+
+
+class AccountClassifier(MPTTModel, NamedModel):
+    # master_user = models.ForeignKey(
+    #     MasterUser,
+    #     null=True,
+    #     blank=True,
+    #     related_name='account_classifiers',
+    #     verbose_name=_('master user')
+    # )
+    attribute_type = models.ForeignKey(
+        AccountAttributeType,
+        null=True,
+        blank=True,
+        related_name='classifiers',
+        verbose_name=_('attribute type')
+    )
+    parent = TreeForeignKey(
+        'self',
+        null=True,
+        blank=True,
+        related_name='children',
+        db_index=True,
+        verbose_name=_('parent')
+    )
+
+    class MPTTMeta:
+        order_insertion_by = ['attribute_type', 'name']
+
+    class Meta(NamedModel.Meta):
+        verbose_name = _('account classifier')
+        verbose_name_plural = _('account classifiers')
+        unique_together = [
+            ['attribute_type', 'user_code']
         ]
 
 
@@ -162,16 +167,6 @@ class AccountAttributeTypeOption(AttributeTypeOptionBase):
 #     class Meta(UserObjectPermissionBase.Meta):
 #         verbose_name = _('account attribute types - user permission')
 #         verbose_name_plural = _('account attribute types - user permissions')
-
-
-class AccountAttributeTypeGroupObjectPermission(GroupObjectPermissionBase):
-    content_object = models.ForeignKey(AccountAttributeType, related_name='group_object_permissions',
-                                       verbose_name=_('content object'))
-
-    class Meta(GroupObjectPermissionBase.Meta):
-        verbose_name = _('account attribute types - group permission')
-        verbose_name_plural = _('account attribute types - group permissions')
-
 
 class AccountAttribute(AttributeBase):
     attribute_type = models.ForeignKey(AccountAttributeType, on_delete=models.PROTECT, related_name='attributes',

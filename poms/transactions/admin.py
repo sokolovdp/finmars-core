@@ -4,7 +4,7 @@ from django.contrib import admin
 
 from poms.audit.admin import HistoricalAdmin
 from poms.common.admin import ClassModelAdmin
-from poms.obj_attrs.admin import AttributeTypeAdminBase, AttributeTypeOptionInlineBase, AttributeInlineBase
+from poms.obj_attrs.admin import AttributeTypeAdminBase, AttributeTypeOptionAdminBase, AttributeInlineBase
 from poms.obj_perms.admin import GroupObjectPermissionAdmin
 from poms.transactions.models import TransactionClass, Transaction, TransactionType, TransactionTypeInput, \
     TransactionTypeItem, TransactionTypeGroupObjectPermission, \
@@ -38,9 +38,24 @@ class TransactionTypeItemInline(admin.StackedInline):
         ('account_position', 'account_position_input'),
         ('account_cash', 'account_cash_input'),
         ('account_interim', 'account_interim_input'),
+
+        ('strategy1_position', 'strategy1_position_input'),
+        ('strategy1_cash', 'strategy1_cash_input'),
+        ('strategy2_position', 'strategy2_position_input'),
+        ('strategy2_cash', 'strategy2_cash_input'),
+        ('strategy3_position', 'strategy3_position_input'),
+        ('strategy3_cash', 'strategy3_cash_input'),
+
         # ('accounting_date', 'accounting_date_expr'),
         # ('cash_date', 'cash_date_expr'),
     )
+
+
+class EventToHandleInline(admin.StackedInline):
+    model = EventToHandle
+    list_display = ['id', 'master_user', 'name']
+    raw_id_fields = ['master_user']
+    extra = 0
 
 
 class TransactionTypeAdmin(HistoricalAdmin):
@@ -49,7 +64,7 @@ class TransactionTypeAdmin(HistoricalAdmin):
     list_select_related = ['master_user']
     raw_id_fields = ['master_user']
     filter_horizontal = ['instrument_types']
-    inlines = [TransactionTypeInputInline, TransactionTypeItemInline]
+    inlines = [TransactionTypeInputInline, TransactionTypeItemInline, EventToHandleInline]
 
     def get_inline_instances(self, request, obj=None):
         if obj:
@@ -62,10 +77,19 @@ admin.site.register(TransactionType, TransactionTypeAdmin)
 admin.site.register(TransactionTypeGroupObjectPermission, GroupObjectPermissionAdmin)
 
 
+# class EventToHandleAdmin(HistoricalAdmin):
+#     model = EventToHandle
+#     list_display = ['id', 'master_user', 'name', 'transaction_type']
+#     raw_id_fields = ['master_user', 'transaction_type']
+#
+#
+# admin.site.register(EventToHandle, HistoricalAdmin)
+
+
 class TransactionAttributeInline(AttributeInlineBase):
     model = TransactionAttribute
-    fields = ['attribute_type', 'value_string', 'value_float', 'value_date', 'strategy_position', 'strategy_cash']
-    raw_id_fields = ['attribute_type', 'strategy_position', 'strategy_cash']
+    fields = ['attribute_type', 'value_string', 'value_float', 'value_date']
+    raw_id_fields = ['attribute_type']
 
 
 class TransactionAdmin(HistoricalAdmin):
@@ -84,7 +108,11 @@ class TransactionAdmin(HistoricalAdmin):
     ordering = ['transaction_date', 'id']
     date_hierarchy = 'transaction_date'
     raw_id_fields = ['master_user', 'portfolio', 'instrument', 'transaction_currency', 'settlement_currency',
-                     'account_position', 'account_cash', 'account_interim', 'responsible', 'counterparty']
+                     'account_position', 'account_cash', 'account_interim', 'responsible', 'counterparty',
+                     'strategy1_position', 'strategy1_cash',
+                     'strategy2_position', 'strategy2_cash',
+                     'strategy3_position', 'strategy3_cash'
+                     ]
     inlines = [TransactionAttributeInline]
 
 
@@ -92,13 +120,13 @@ admin.site.register(Transaction, TransactionAdmin)
 
 
 class TransactionAttributeTypeAdmin(AttributeTypeAdminBase):
-    list_display = ['id', 'master_user', 'name', 'value_type', 'strategy_position_root', 'strategy_cash_root']
-    list_select_related = ['master_user', 'strategy_position_root', 'strategy_cash_root']
-    raw_id_fields = ['master_user', 'strategy_position_root', 'strategy_cash_root']
+    list_display = ['id', 'master_user', 'name', 'value_type']
+    list_select_related = ['master_user']
+    raw_id_fields = ['master_user']
 
 
 admin.site.register(TransactionAttributeType, TransactionAttributeTypeAdmin)
-admin.site.register(TransactionAttributeTypeOption, AttributeTypeOptionInlineBase)
+admin.site.register(TransactionAttributeTypeOption, AttributeTypeOptionAdminBase)
 # admin.site.register(TransactionAttributeTypeUserObjectPermission, UserObjectPermissionAdmin)
 admin.site.register(TransactionAttributeTypeGroupObjectPermission, GroupObjectPermissionAdmin)
 
@@ -116,12 +144,3 @@ class ExternalCashFlowAdmin(HistoricalAdmin):
 
 
 admin.site.register(ExternalCashFlow, ExternalCashFlowAdmin)
-
-
-class EventToHandleAdmin(HistoricalAdmin):
-    model = EventToHandle
-    list_display = ['id', 'master_user', 'name', 'transaction_type']
-    raw_id_fields = ['master_user', 'transaction_type']
-
-
-admin.site.register(EventToHandle, HistoricalAdmin)

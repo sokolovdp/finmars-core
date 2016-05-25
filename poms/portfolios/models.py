@@ -14,45 +14,6 @@ from poms.users.models import MasterUser, Member
 
 
 @python_2_unicode_compatible
-class PortfolioClassifier(MPTTModel, NamedModel):
-    master_user = models.ForeignKey(MasterUser, related_name='portfolio_classifiers',
-                                    verbose_name=_('master user'))
-    parent = TreeForeignKey('self', related_name='children', null=True, blank=True, db_index=True,
-                            verbose_name=_('parent'))
-
-    class MPTTMeta:
-        order_insertion_by = ['master_user', 'name']
-
-    class Meta(NamedModel.Meta):
-        verbose_name = _('portfolio classifier')
-        verbose_name_plural = _('portfolio classifiers')
-        permissions = [
-            ('view_portfolioclassifier', 'Can view portfolio classifier')
-        ]
-
-    def __str__(self):
-        return self.name
-
-
-# class PortfolioClassifierUserObjectPermission(UserObjectPermissionBase):
-#     content_object = models.ForeignKey(PortfolioClassifier, related_name='user_object_permissions',
-#                                        verbose_name=_('content object'))
-#
-#     class Meta(UserObjectPermissionBase.Meta):
-#         verbose_name = _('portfolio classifiers - user permission')
-#         verbose_name_plural = _('portfolio classifiers - user permissions')
-
-
-# class PortfolioClassifierGroupObjectPermission(GroupObjectPermissionBase):
-#     content_object = models.ForeignKey(PortfolioClassifier, related_name='group_object_permissions',
-#                                        verbose_name=_('content object'))
-#
-#     class Meta(GroupObjectPermissionBase.Meta):
-#         verbose_name = _('portfolio classifiers - group permission')
-#         verbose_name_plural = _('portfolio classifiers - group permissions')
-
-
-@python_2_unicode_compatible
 class Portfolio(NamedModel):
     master_user = models.ForeignKey(MasterUser, related_name='portfolios',
                                     verbose_name=_('master user'))
@@ -87,13 +48,13 @@ class PortfolioGroupObjectPermission(GroupObjectPermissionBase):
 
 
 class PortfolioAttributeType(AttributeTypeBase):
-    classifier_root = models.OneToOneField(
-        PortfolioClassifier,
-        on_delete=models.PROTECT,
-        null=True,
-        blank=True,
-        verbose_name=_('classifier')
-    )
+    # classifier_root = models.OneToOneField(
+    #     PortfolioClassifier,
+    #     on_delete=models.PROTECT,
+    #     null=True,
+    #     blank=True,
+    #     verbose_name=_('classifier')
+    # )
 
     class Meta(AttributeTypeBase.Meta):
         verbose_name = _('portfolio attribute type')
@@ -101,17 +62,6 @@ class PortfolioAttributeType(AttributeTypeBase):
         permissions = [
             ('view_portfolioattributetype', 'Can view portfolio attribute type')
         ]
-
-
-class PortfolioAttributeTypeOption(AttributeTypeOptionBase):
-    member = models.ForeignKey(Member, related_name='portfolio_attribute_type_options',
-                               verbose_name=_('member'))
-    attribute_type = models.ForeignKey(PortfolioAttributeType, related_name='options',
-                                       verbose_name=_('attribute type'))
-
-    class Meta(AttributeTypeOptionBase.Meta):
-        verbose_name = _('portfolio attribute types - option')
-        verbose_name_plural = _('portfolio attribute types - options')
 
 
 # class PortfolioAttributeTypeUserObjectPermission(UserObjectPermissionBase):
@@ -130,6 +80,47 @@ class PortfolioAttributeTypeGroupObjectPermission(GroupObjectPermissionBase):
     class Meta(GroupObjectPermissionBase.Meta):
         verbose_name = _('portfolio attribute types - group permission')
         verbose_name_plural = _('portfolio attribute types - group permissions')
+
+
+class PortfolioClassifier(MPTTModel, NamedModel):
+    # master_user = models.ForeignKey(MasterUser, related_name='portfolio_classifiers',
+    #                                 verbose_name=_('master user'))
+    attribute_type = models.ForeignKey(
+        PortfolioAttributeType,
+        null=True,
+        blank=True,
+        related_name='classifiers',
+        verbose_name=_('attribute type')
+    )
+    parent = TreeForeignKey(
+        'self',
+        null=True,
+        blank=True,
+        related_name='children',
+        db_index=True,
+        verbose_name=_('parent')
+    )
+
+    class MPTTMeta:
+        order_insertion_by = ['attribute_type', 'name']
+
+    class Meta(NamedModel.Meta):
+        verbose_name = _('portfolio classifier')
+        verbose_name_plural = _('portfolio classifiers')
+        unique_together = [
+            ['attribute_type', 'user_code']
+        ]
+
+
+class PortfolioAttributeTypeOption(AttributeTypeOptionBase):
+    member = models.ForeignKey(Member, related_name='portfolio_attribute_type_options',
+                               verbose_name=_('member'))
+    attribute_type = models.ForeignKey(PortfolioAttributeType, related_name='options',
+                                       verbose_name=_('attribute type'))
+
+    class Meta(AttributeTypeOptionBase.Meta):
+        verbose_name = _('portfolio attribute types - option')
+        verbose_name_plural = _('portfolio attribute types - options')
 
 
 class PortfolioAttribute(AttributeBase):

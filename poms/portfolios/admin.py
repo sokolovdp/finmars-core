@@ -4,7 +4,8 @@ from django.contrib import admin
 
 from poms.audit.admin import HistoricalAdmin
 from poms.common.admin import ClassifierAdmin
-from poms.obj_attrs.admin import AttributeTypeAdminBase, AttributeTypeOptionInlineBase, AttributeInlineBase
+from poms.obj_attrs.admin import AttributeTypeAdminBase, AttributeTypeOptionAdminBase, AttributeInlineBase, \
+    AttributeTypeClassifierInlineBase
 from poms.obj_perms.admin import GroupObjectPermissionAdmin
 from poms.portfolios.models import Portfolio, PortfolioClassifier, PortfolioGroupObjectPermission, \
     PortfolioAttributeType, PortfolioAttributeTypeOption, PortfolioAttributeTypeGroupObjectPermission, \
@@ -33,7 +34,16 @@ admin.site.register(Portfolio, PortfolioAdmin)
 # admin.site.register(PortfolioUserObjectPermission, UserObjectPermissionAdmin)
 admin.site.register(PortfolioGroupObjectPermission, GroupObjectPermissionAdmin)
 
-admin.site.register(PortfolioAttributeType, AttributeTypeAdminBase)
-admin.site.register(PortfolioAttributeTypeOption, AttributeTypeOptionInlineBase)
+
+class PortfolioAttributeTypeClassifierInline(AttributeTypeClassifierInlineBase):
+    model = PortfolioClassifier
+
+
+class AccountAttributeTypeAdmin(AttributeTypeAdminBase):
+    inlines = [PortfolioAttributeTypeClassifierInline]
+
+
+admin.site.register(PortfolioAttributeType, AccountAttributeTypeAdmin)
+admin.site.register(PortfolioAttributeTypeOption, AttributeTypeOptionAdminBase)
 # admin.site.register(PortfolioAttributeTypeUserObjectPermission, UserObjectPermissionAdmin)
 admin.site.register(PortfolioAttributeTypeGroupObjectPermission, GroupObjectPermissionAdmin)

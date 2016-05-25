@@ -13,41 +13,6 @@ from poms.obj_perms.models import GroupObjectPermissionBase
 from poms.users.models import MasterUser, Member
 
 
-class CounterpartyClassifier(MPTTModel, NamedModel):
-    master_user = models.ForeignKey(MasterUser, related_name='counterparty_classifiers',
-                                    verbose_name=_('master user'))
-    parent = TreeForeignKey('self', related_name='children', null=True, blank=True, db_index=True,
-                            verbose_name=_('parent'))
-
-    class MPTTMeta:
-        order_insertion_by = ['master_user', 'name']
-
-    class Meta(NamedModel.Meta):
-        verbose_name = _('counterparty classifier')
-        verbose_name_plural = _('counterparty classifiers')
-        permissions = [
-            ('view_counterpartyclassifier', 'Can view counterparty classifier')
-        ]
-
-
-# class CounterpartyClassifierUserObjectPermission(UserObjectPermissionBase):
-#     content_object = models.ForeignKey(CounterpartyClassifier, related_name='user_object_permissions',
-#                                        verbose_name=_('content object'))
-#
-#     class Meta(UserObjectPermissionBase.Meta):
-#         verbose_name = _('counterparty classifiers - user permission')
-#         verbose_name_plural = _('counterparty classifiers - user permissions')
-
-
-# class CounterpartyClassifierGroupObjectPermission(GroupObjectPermissionBase):
-#     content_object = models.ForeignKey(CounterpartyClassifier, related_name='group_object_permissions',
-#                                        verbose_name=_('content object'))
-#
-#     class Meta(GroupObjectPermissionBase.Meta):
-#         verbose_name = _('counterparty classifiers - group permission')
-#         verbose_name_plural = _('counterparty classifiers - group permissions')
-
-
 @python_2_unicode_compatible
 class Counterparty(NamedModel):
     master_user = models.ForeignKey(MasterUser, related_name='counterparties',
@@ -83,13 +48,13 @@ class CounterpartyGroupObjectPermission(GroupObjectPermissionBase):
 
 
 class CounterpartyAttributeType(AttributeTypeBase):
-    classifier_root = models.OneToOneField(
-        CounterpartyClassifier,
-        on_delete=models.PROTECT,
-        null=True,
-        blank=True,
-        verbose_name=_('classifier)')
-    )
+    # classifier_root = models.OneToOneField(
+    #     CounterpartyClassifier,
+    #     on_delete=models.PROTECT,
+    #     null=True,
+    #     blank=True,
+    #     verbose_name=_('classifier)')
+    # )
 
     class Meta(AttributeTypeBase.Meta):
         verbose_name = _('counterparty attribute type')
@@ -117,6 +82,36 @@ class CounterpartyAttributeTypeGroupObjectPermission(GroupObjectPermissionBase):
         verbose_name_plural = _('counterparty attribute types - group permissions')
 
 
+class CounterpartyClassifier(MPTTModel, NamedModel):
+    # master_user = models.ForeignKey(MasterUser, related_name='counterparty_classifiers',
+    #                                 verbose_name=_('master user'))
+    attribute_type = models.ForeignKey(
+        CounterpartyAttributeType,
+        null=True,
+        blank=True,
+        related_name='classifiers',
+        verbose_name=_('attribute type')
+    )
+    parent = TreeForeignKey(
+        'self',
+        related_name='children',
+        null=True,
+        blank=True,
+        db_index=True,
+        verbose_name=_('parent')
+    )
+
+    class MPTTMeta:
+        order_insertion_by = ['attribute_type', 'name']
+
+    class Meta(NamedModel.Meta):
+        verbose_name = _('counterparty classifier')
+        verbose_name_plural = _('counterparty classifiers')
+        unique_together = [
+            ['attribute_type', 'user_code']
+        ]
+
+
 class CounterpartyAttributeTypeOption(AttributeTypeOptionBase):
     member = models.ForeignKey(Member, related_name='counterparty_attribute_type_options',
                                verbose_name=_('member'))
@@ -142,41 +137,6 @@ class CounterpartyAttribute(AttributeBase):
     class Meta(AttributeBase.Meta):
         verbose_name = _('counterparty attribute')
         verbose_name_plural = _('counterparty attributes')
-
-
-class ResponsibleClassifier(MPTTModel, NamedModel):
-    master_user = models.ForeignKey(MasterUser, related_name='responsible_classifiers',
-                                    verbose_name=_('master user'))
-    parent = TreeForeignKey('self', related_name='children', null=True, blank=True, db_index=True,
-                            verbose_name=_('parent'))
-
-    class MPTTMeta:
-        order_insertion_by = ['master_user', 'name']
-
-    class Meta(NamedModel.Meta):
-        verbose_name = _('responsible classifier')
-        verbose_name_plural = _('responsible classifiers')
-        permissions = [
-            ('view_responsibleclassifier', 'Can view responsible classifier')
-        ]
-
-
-# class ResponsibleClassifierUserObjectPermission(UserObjectPermissionBase):
-#     content_object = models.ForeignKey(ResponsibleClassifier, related_name='user_object_permissions',
-#                                        verbose_name=_('content object'))
-#
-#     class Meta(UserObjectPermissionBase.Meta):
-#         verbose_name = _('responsible classifiers - user permission')
-#         verbose_name_plural = _('responsible classifiers - user permissions')
-
-
-# class ResponsibleClassifierGroupObjectPermission(GroupObjectPermissionBase):
-#     content_object = models.ForeignKey(ResponsibleClassifier, related_name='group_object_permissions',
-#                                        verbose_name=_('content object'))
-#
-#     class Meta(GroupObjectPermissionBase.Meta):
-#         verbose_name = _('responsible classifiers - group permission')
-#         verbose_name_plural = _('responsible classifiers - group permissions')
 
 
 @python_2_unicode_compatible
@@ -214,13 +174,13 @@ class ResponsibleGroupObjectPermission(GroupObjectPermissionBase):
 
 
 class ResponsibleAttributeType(AttributeTypeBase):
-    classifier_root = models.OneToOneField(
-        ResponsibleClassifier,
-        on_delete=models.PROTECT,
-        null=True,
-        blank=True,
-        verbose_name=_('classifier (root)')
-    )
+    # classifier_root = models.OneToOneField(
+    #     ResponsibleClassifier,
+    #     on_delete=models.PROTECT,
+    #     null=True,
+    #     blank=True,
+    #     verbose_name=_('classifier (root)')
+    # )
 
     class Meta(AttributeTypeBase.Meta):
         verbose_name = _('responsible attribute type')
@@ -246,6 +206,36 @@ class ResponsibleAttributeTypeGroupObjectPermission(GroupObjectPermissionBase):
     class Meta(GroupObjectPermissionBase.Meta):
         verbose_name = _('responsible attribute types - group permission')
         verbose_name_plural = _('responsible attribute types - group permissions')
+
+
+class ResponsibleClassifier(MPTTModel, NamedModel):
+    # master_user = models.ForeignKey(MasterUser, related_name='responsible_classifiers',
+    #                                 verbose_name=_('master user'))
+    attribute_type = models.ForeignKey(
+        ResponsibleAttributeType,
+        null=True,
+        blank=True,
+        related_name='classifiers',
+        verbose_name=_('attribute type')
+    )
+    parent = TreeForeignKey(
+        'self',
+        related_name='children',
+        null=True,
+        blank=True,
+        db_index=True,
+        verbose_name=_('parent')
+    )
+
+    class MPTTMeta:
+        order_insertion_by = ['attribute_type', 'name']
+
+    class Meta(NamedModel.Meta):
+        verbose_name = _('responsible classifier')
+        verbose_name_plural = _('responsible classifiers')
+        unique_together = [
+            ['attribute_type', 'user_code']
+        ]
 
 
 class ResponsibleAttributeTypeOption(AttributeTypeOptionBase):

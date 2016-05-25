@@ -160,26 +160,31 @@ class TransactionTypeInput(models.Model):
     NUMBER = 20
     EXPRESSION = 30
     DATE = 40
-    RELATION = 100
-    # ACCOUNT = 110
-    # INSTRUMENT = 120
-    # CURRENCY = 130
-    # COUNTERPARTY = 140
-    # RESPONSIBLE = 150
-    # STRATEGY = 150
+    # RELATION = 100
+
+    ACCOUNT = 110
+    INSTRUMENT = 120
+    CURRENCY = 130
+    COUNTERPARTY = 140
+    RESPONSIBLE = 150
+    STRATEGY1 = 161
+    STRATEGY2 = 162
+    STRATEGY3 = 163
 
     TYPES = (
         (NUMBER, _('Number')),
         (STRING, _('String')),
         (DATE, _('Date')),
         (EXPRESSION, _('Expression')),
-        (RELATION, _('Relation')),
-        # (ACCOUNT, _('Account')),
-        # (INSTRUMENT, _('Instrument')),
-        # (CURRENCY, _('Currency')),
-        # (COUNTERPARTY, _('Counterparty')),
-        # (RESPONSIBLE, _('Responsible')),
-        # (STRATEGY, _('Strategy')),
+        # (RELATION, _('Relation')),
+        (ACCOUNT, _('Account')),
+        (INSTRUMENT, _('Instrument')),
+        (CURRENCY, _('Currency')),
+        (COUNTERPARTY, _('Counterparty')),
+        (RESPONSIBLE, _('Responsible')),
+        (STRATEGY1, _('Strategy 1')),
+        (STRATEGY2, _('Strategy 2')),
+        (STRATEGY3, _('Strategy 3')),
     )
 
     transaction_type = models.ForeignKey(TransactionType, related_name='inputs',
@@ -188,8 +193,8 @@ class TransactionTypeInput(models.Model):
                                                   verbose_name=_('value type'))
     name = models.CharField(max_length=255, null=True, blank=True,
                             verbose_name=_('name'))
-    content_type = models.ForeignKey(ContentType, null=True, blank=True,
-                                     verbose_name=_('content type'))
+    # content_type = models.ForeignKey(ContentType, null=True, blank=True,
+    #                                  verbose_name=_('content type'))
     order = models.IntegerField(default=0,
                                 verbose_name=_('order'))
 
@@ -220,20 +225,78 @@ class TransactionTypeItem(models.Model):
     accounting_date = models.DateField(null=True, blank=True)
     cash_date = models.DateField(null=True, blank=True)
 
+    strategy1_position = models.ForeignKey(
+        Strategy1,
+        null=True,
+        blank=True,
+        related_name='+',
+        on_delete=models.PROTECT
+    )
+    strategy1_cash = models.ForeignKey(
+        Strategy1,
+        null=True,
+        blank=True,
+        related_name='+',
+        on_delete=models.PROTECT
+    )
+    strategy2_position = models.ForeignKey(
+        Strategy2,
+        null=True,
+        blank=True,
+        related_name='+',
+        on_delete=models.PROTECT
+    )
+    strategy2_cash = models.ForeignKey(
+        Strategy2,
+        null=True,
+        blank=True,
+        related_name='+',
+        on_delete=models.PROTECT
+    )
+    strategy3_position = models.ForeignKey(
+        Strategy3,
+        null=True,
+        blank=True,
+        related_name='+',
+        on_delete=models.PROTECT
+    )
+    strategy3_cash = models.ForeignKey(
+        Strategy3,
+        null=True,
+        blank=True,
+        on_delete=models.PROTECT,
+        related_name='+'
+    )
+
     instrument_input = models.ForeignKey(TransactionTypeInput, related_name='+', on_delete=models.PROTECT, null=True,
                                          blank=True)
     transaction_currency_input = models.ForeignKey(TransactionTypeInput, related_name='+', on_delete=models.PROTECT,
                                                    null=True, blank=True)
+
     position_size_with_sign_expr = models.CharField(max_length=255, blank=True, default='')
     settlement_currency_input = models.ForeignKey(TransactionTypeInput, related_name='+', on_delete=models.PROTECT,
                                                   null=True, blank=True)
     cash_consideration_expr = models.CharField(max_length=255, blank=True, default='')
+
     account_position_input = models.ForeignKey(TransactionTypeInput, related_name='+', on_delete=models.PROTECT,
                                                null=True, blank=True)
     account_cash_input = models.ForeignKey(TransactionTypeInput, related_name='+', on_delete=models.PROTECT, null=True,
                                            blank=True)
     account_interim_input = models.ForeignKey(TransactionTypeInput, related_name='+', on_delete=models.PROTECT,
                                               null=True, blank=True)
+    strategy1_position_input = models.ForeignKey(TransactionTypeInput, related_name='+', on_delete=models.PROTECT,
+                                                 null=True, blank=True)
+    strategy1_cash_input = models.ForeignKey(TransactionTypeInput, related_name='+', on_delete=models.PROTECT,
+                                             null=True, blank=True)
+    strategy2_position_input = models.ForeignKey(TransactionTypeInput, related_name='+', on_delete=models.PROTECT,
+                                                 null=True, blank=True)
+    strategy2_cash_input = models.ForeignKey(TransactionTypeInput, related_name='+', on_delete=models.PROTECT,
+                                             null=True, blank=True)
+    strategy3_position_input = models.ForeignKey(TransactionTypeInput, related_name='+', on_delete=models.PROTECT,
+                                                 null=True, blank=True)
+    strategy3_cash_input = models.ForeignKey(TransactionTypeInput, related_name='+', on_delete=models.PROTECT,
+                                             null=True, blank=True)
+
     accounting_date_expr = models.CharField(max_length=255, blank=True, default='')
     cash_date_expr = models.CharField(max_length=255, blank=True, default='')
 
@@ -265,8 +328,8 @@ class EventToHandle(NamedModel):
                                       verbose_name=_('effective date'))
 
     class Meta(NamedModel.Meta):
-        verbose_name = _('transaction type item')
-        verbose_name_plural = _('transaction type tems')
+        verbose_name = _('event to handle')
+        verbose_name_plural = _('events to handle')
 
 
 @python_2_unicode_compatible
@@ -455,12 +518,12 @@ class Transaction(models.Model):
 
 
 class TransactionAttributeType(AttributeTypeBase):
-    strategy_position_root = models.ForeignKey(Strategy, related_name='strategy_transaction_attribute_types',
-                                               on_delete=models.PROTECT, null=True, blank=True,
-                                               verbose_name=_("strategy position (root)"))
-    strategy_cash_root = models.ForeignKey(Strategy, related_name='cash_transaction_attribute_types',
-                                           on_delete=models.PROTECT, null=True, blank=True,
-                                           verbose_name=_("strategy cash (root)"))
+    # strategy_position_root = models.ForeignKey(Strategy, related_name='strategy_transaction_attribute_types',
+    #                                            on_delete=models.PROTECT, null=True, blank=True,
+    #                                            verbose_name=_("strategy position (root)"))
+    # strategy_cash_root = models.ForeignKey(Strategy, related_name='cash_transaction_attribute_types',
+    #                                        on_delete=models.PROTECT, null=True, blank=True,
+    #                                        verbose_name=_("strategy cash (root)"))
 
     class Meta(AttributeTypeBase.Meta):
         verbose_name = _('transaction attribute type')
@@ -501,30 +564,31 @@ class TransactionAttribute(AttributeBase):
                                        verbose_name=_("attribute type"))
     content_object = models.ForeignKey(Transaction, related_name='attributes',
                                        verbose_name=_("content object"))
-    strategy_position = models.ForeignKey(Strategy, related_name='strategy_transaction_attributes',
-                                          on_delete=models.PROTECT, null=True, blank=True,
-                                          verbose_name=_("strategy position"))
-    strategy_cash = models.ForeignKey(Strategy, related_name='cash_transaction_attributes', on_delete=models.PROTECT,
-                                      null=True, blank=True,
-                                      verbose_name=_("strategy cash"))
+    # strategy_position = models.ForeignKey(Strategy, related_name='strategy_transaction_attributes',
+    #                                       on_delete=models.PROTECT, null=True, blank=True,
+    #                                       verbose_name=_("strategy position"))
+    # strategy_cash = models.ForeignKey(Strategy, related_name='cash_transaction_attributes', on_delete=models.PROTECT,
+    #                                   null=True, blank=True,
+    #                                   verbose_name=_("strategy cash"))
+    classifier = None
 
     class Meta(AttributeBase.Meta):
         verbose_name = _('transaction attribute')
         verbose_name_plural = _('transaction attributes')
 
-    def get_value(self):
-        t = self.attribute_type.value_type
-        if t == AttributeTypeBase.CLASSIFIER:
-            return self.strategy_position, self.strategy_position
-        else:
-            return super(TransactionAttribute, self).get_value()
-
-    def set_value(self, value):
-        t = self.attribute_type.value_type
-        if t == AttributeTypeBase.CLASSIFIER:
-            self.strategy_position, self.strategy_position = value
-        else:
-            super(TransactionAttribute, self).set_value(value)
+        # def get_value(self):
+        #     t = self.attribute_type.value_type
+        #     if t == AttributeTypeBase.CLASSIFIER:
+        #         return self.strategy_position, self.strategy_position
+        #     else:
+        #         return super(TransactionAttribute, self).get_value()
+        #
+        # def set_value(self, value):
+        #     t = self.attribute_type.value_type
+        #     if t == AttributeTypeBase.CLASSIFIER:
+        #         self.strategy_position, self.strategy_position = value
+        #     else:
+        #         super(TransactionAttribute, self).set_value(value)
 
 
 @python_2_unicode_compatible

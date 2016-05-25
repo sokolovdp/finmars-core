@@ -18,6 +18,11 @@ class NamedModel(models.Model):
         max_length=255,
         verbose_name=_('name')
     )
+    public_name = models.CharField(
+        max_length=255,
+        verbose_name=_('public name'),
+        help_text=_('used if user does not have permissions to view object')
+    )
     short_name = models.CharField(
         max_length=50,
         null=True,

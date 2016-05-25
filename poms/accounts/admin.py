@@ -7,7 +7,8 @@ from poms.accounts.models import Account, AccountType, AccountClassifier, Accoun
     AccountAttributeTypeOption
 from poms.audit.admin import HistoricalAdmin
 from poms.common.admin import ClassifierAdmin
-from poms.obj_attrs.admin import AttributeTypeAdminBase, AttributeInlineBase, AttributeTypeOptionInlineBase
+from poms.obj_attrs.admin import AttributeTypeAdminBase, AttributeInlineBase, AttributeTypeOptionAdminBase, \
+    AttributeTypeClassifierInlineBase
 from poms.obj_perms.admin import GroupObjectPermissionAdmin
 
 
@@ -21,10 +22,6 @@ class AccountTypeAdmin(HistoricalAdmin):
 admin.site.register(AccountType, AccountTypeAdmin)
 # admin.site.register(AccountTypeUserObjectPermission, UserObjectPermissionAdmin)
 admin.site.register(AccountTypeGroupObjectPermission, GroupObjectPermissionAdmin)
-
-admin.site.register(AccountClassifier, ClassifierAdmin)
-# admin.site.register(AccountClassifierUserObjectPermission, UserObjectPermissionAdmin)
-# admin.site.register(AccountClassifierGroupObjectPermission, GroupObjectPermissionAdmin)
 
 
 class AccountAttributeInline(AttributeInlineBase):
@@ -43,7 +40,20 @@ admin.site.register(Account, AccountAdmin)
 # admin.site.register(AccountUserObjectPermission, UserObjectPermissionAdmin)
 admin.site.register(AccountGroupObjectPermission, GroupObjectPermissionAdmin)
 
-admin.site.register(AccountAttributeType, AttributeTypeAdminBase)
-admin.site.register(AccountAttributeTypeOption, AttributeTypeOptionInlineBase)
+
+class AccountAttributeTypeClassifierInline(AttributeTypeClassifierInlineBase):
+    model = AccountClassifier
+
+
+class AccountAttributeTypeAdmin(AttributeTypeAdminBase):
+    inlines = [AccountAttributeTypeClassifierInline]
+
+
+admin.site.register(AccountAttributeType, AccountAttributeTypeAdmin)
+admin.site.register(AccountAttributeTypeOption, AttributeTypeOptionAdminBase)
 # admin.site.register(AccountAttributeTypeUserObjectPermission, UserObjectPermissionAdmin)
 admin.site.register(AccountAttributeTypeGroupObjectPermission, GroupObjectPermissionAdmin)
+
+admin.site.register(AccountClassifier, ClassifierAdmin)
+# admin.site.register(AccountClassifierUserObjectPermission, UserObjectPermissionAdmin)
+# admin.site.register(AccountClassifierGroupObjectPermission, GroupObjectPermissionAdmin)

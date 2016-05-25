@@ -196,45 +196,6 @@ class PricingPolicy(NamedModel):
 
 
 @python_2_unicode_compatible
-class InstrumentClassifier(MPTTModel, NamedModel):
-    master_user = models.ForeignKey(MasterUser, related_name='instrument_classifiers',
-                                    verbose_name=_('master user'))
-    parent = TreeForeignKey('self', related_name='children', null=True, blank=True, db_index=True,
-                            verbose_name=_('parent'))
-
-    class MPTTMeta:
-        order_insertion_by = ['master_user', 'name']
-
-    class Meta(NamedModel.Meta):
-        verbose_name = _('instrument classifier')
-        verbose_name_plural = _('instrument classifiers')
-        permissions = [
-            ('view_instrumentclassifier', 'Can view instrument classifier')
-        ]
-
-    def __str__(self):
-        return self.name
-
-
-# class InstrumentClassifierUserObjectPermission(UserObjectPermissionBase):
-#     content_object = models.ForeignKey(InstrumentClassifier, related_name='user_object_permissions',
-#                                        verbose_name=_('content object'))
-#
-#     class Meta(UserObjectPermissionBase.Meta):
-#         verbose_name = _('instrument classifiers - user permission')
-#         verbose_name_plural = _('instrument classifiers - user permissions')
-
-
-# class InstrumentClassifierGroupObjectPermission(GroupObjectPermissionBase):
-#     content_object = models.ForeignKey(InstrumentClassifier, related_name='group_object_permissions',
-#                                        verbose_name=_('content object'))
-#
-#     class Meta(GroupObjectPermissionBase.Meta):
-#         verbose_name = _('instrument classifiers - group permission')
-#         verbose_name_plural = _('instrument classifiers - group permissions')
-
-
-@python_2_unicode_compatible
 class InstrumentType(NamedModel):
     master_user = models.ForeignKey(MasterUser, related_name='instrument_types',
                                     verbose_name=_('master user'))
@@ -326,13 +287,13 @@ class InstrumentGroupObjectPermission(GroupObjectPermissionBase):
 
 
 class InstrumentAttributeType(AttributeTypeBase):
-    classifier_root = models.OneToOneField(
-        InstrumentClassifier,
-        on_delete=models.PROTECT,
-        null=True,
-        blank=True,
-        verbose_name=_('classifier')
-    )
+    # classifier_root = models.OneToOneField(
+    #     InstrumentClassifier,
+    #     on_delete=models.PROTECT,
+    #     null=True,
+    #     blank=True,
+    #     verbose_name=_('classifier')
+    # )
 
     class Meta(AttributeTypeBase.Meta):
         verbose_name = _('instrument attribute type')
@@ -340,17 +301,6 @@ class InstrumentAttributeType(AttributeTypeBase):
         permissions = [
             ('view_instrumentattributetype', 'Can view instrument attribute type')
         ]
-
-
-class InstrumentAttributeTypeOption(AttributeTypeOptionBase):
-    member = models.ForeignKey(Member, related_name='instrument_attribute_type_options',
-                               verbose_name=_('member'))
-    attribute_type = models.ForeignKey(InstrumentAttributeType, related_name='options',
-                                       verbose_name=_('attribute type'))
-
-    class Meta(AttributeTypeOptionBase.Meta):
-        verbose_name = _('instrument attribute types - option')
-        verbose_name_plural = _('instrument attribute types - options')
 
 
 # class InstrumentAttributeTypeUserObjectPermission(UserObjectPermissionBase):
@@ -369,6 +319,51 @@ class InstrumentAttributeTypeGroupObjectPermission(GroupObjectPermissionBase):
     class Meta(GroupObjectPermissionBase.Meta):
         verbose_name = _('instrument attribute types - group permission')
         verbose_name_plural = _('instrument attribute types - group permissions')
+
+
+@python_2_unicode_compatible
+class InstrumentClassifier(MPTTModel, NamedModel):
+    # master_user = models.ForeignKey(MasterUser, related_name='instrument_classifiers',
+    #                                 verbose_name=_('master user'))
+    attribute_type = models.ForeignKey(
+        InstrumentAttributeType,
+        null=True,
+        blank=True,
+        related_name='classifiers',
+        verbose_name=_('attribute type')
+    )
+    parent = TreeForeignKey(
+        'self',
+        null=True,
+        blank=True,
+        related_name='children',
+        db_index=True,
+        verbose_name=_('parent')
+    )
+
+    class MPTTMeta:
+        order_insertion_by = ['attribute_type', 'name']
+
+    class Meta(NamedModel.Meta):
+        verbose_name = _('instrument classifier')
+        verbose_name_plural = _('instrument classifiers')
+        unique_together = [
+            ['attribute_type', 'user_code']
+        ]
+
+    def __str__(self):
+        return self.name
+
+
+class InstrumentAttributeTypeOption(AttributeTypeOptionBase):
+    member = models.ForeignKey(Member, related_name='instrument_attribute_type_options',
+                               verbose_name=_('member'))
+    attribute_type = models.ForeignKey(InstrumentAttributeType, related_name='options',
+                                       verbose_name=_('attribute type'))
+
+    class Meta(AttributeTypeOptionBase.Meta):
+        verbose_name = _('instrument attribute types - option')
+        verbose_name_plural = _('instrument attribute types - options')
 
 
 class InstrumentAttribute(AttributeBase):

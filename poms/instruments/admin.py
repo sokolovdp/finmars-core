@@ -11,7 +11,8 @@ from poms.instruments.models import Instrument, PriceHistory, InstrumentClassifi
     InstrumentAttributeType, InstrumentAttributeTypeOption, InstrumentAttributeTypeGroupObjectPermission, \
     InstrumentAttribute, InstrumentFactorSchedule, EventSchedule, \
     PricingPolicy, PaymentSizeDetail
-from poms.obj_attrs.admin import AttributeTypeAdminBase, AttributeTypeOptionInlineBase, AttributeInlineBase
+from poms.obj_attrs.admin import AttributeTypeAdminBase, AttributeTypeOptionAdminBase, AttributeInlineBase, \
+    AttributeTypeClassifierInlineBase
 from poms.obj_perms.admin import GroupObjectPermissionAdmin
 
 admin.site.register(InstrumentClass, ClassModelAdmin)
@@ -45,6 +46,8 @@ admin.site.register(InstrumentType, InstrumentTypeAdmin)
 admin.site.register(InstrumentTypeGroupObjectPermission, GroupObjectPermissionAdmin)
 
 admin.site.register(InstrumentClassifier, ClassifierAdmin)
+
+
 # admin.site.register(InstrumentClassifierUserObjectPermission, UserObjectPermissionAdmin)
 # admin.site.register(InstrumentClassifierGroupObjectPermission, GroupObjectPermissionAdmin)
 
@@ -97,7 +100,16 @@ class PriceHistoryAdmin(HistoricalAdmin):
 
 admin.site.register(PriceHistory, PriceHistoryAdmin)
 
-admin.site.register(InstrumentAttributeType, AttributeTypeAdminBase)
-admin.site.register(InstrumentAttributeTypeOption, AttributeTypeOptionInlineBase)
+
+class InstrumentAttributeTypeClassifierInline(AttributeTypeClassifierInlineBase):
+    model = InstrumentClassifier
+
+
+class InstrumentAttributeTypeAdmin(AttributeTypeAdminBase):
+    inlines = [InstrumentAttributeTypeClassifierInline]
+
+
+admin.site.register(InstrumentAttributeType, InstrumentAttributeTypeAdmin)
+admin.site.register(InstrumentAttributeTypeOption, AttributeTypeOptionAdminBase)
 # admin.site.register(InstrumentAttributeTypeUserObjectPermission, UserObjectPermissionAdmin)
 admin.site.register(InstrumentAttributeTypeGroupObjectPermission, GroupObjectPermissionAdmin)

@@ -16,10 +16,15 @@ class TreeModelAdmin(MPTTModelAdmin):
 
 
 class ClassifierAdmin(HistoricalAdmin, TreeModelAdmin):
-    list_display = ['id', 'master_user', 'formatted_name', 'parent', ]
-    list_select_related = ['master_user', 'parent']
-    raw_id_fields = ['master_user', 'parent']
-    fields = ['master_user', 'parent', 'user_code', 'name', 'short_name', 'notes']
+    # list_display = ['id', 'master_user', 'formatted_name', 'parent', ]
+    # list_select_related = ['master_user', 'parent']
+    # raw_id_fields = ['master_user', 'parent']
+    # fields = ['master_user', 'parent', 'user_code', 'name', 'short_name', 'notes']
+
+    list_display = ['id', 'formatted_name', 'parent']
+    list_select_related = ['parent']
+    raw_id_fields = ['parent']
+    fields = ['parent', 'user_code', 'name', 'short_name', 'notes']
 
 
 class ClassModelAdmin(HistoricalAdmin):
