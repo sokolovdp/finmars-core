@@ -166,6 +166,7 @@ class ClassifierSerializerBase(serializers.ModelSerializer):
     class Meta(PomsSerializerBase.Meta):
         list_serializer_class = ClassifierListSerializer
         fields = [
+            'url',
             'id',
             'user_code',
             'name',

@@ -37,6 +37,7 @@ class StrategyBaseSerializer(ClassifierSerializerBase, ModelWithObjectPermission
     def to_representation(self, instance):
         ret = super(StrategyBaseSerializer, self).to_representation(instance)
         if not instance.is_root_node():
+            ret.pop("url", None)
             ret.pop("granted_permissions", None)
             # ret.pop("user_object_permissions", None)
             ret.pop("group_object_permissions", None)
@@ -67,6 +68,7 @@ class StrategyBaseNodeSerializer(ClassifierNodeSerializerBase, ModelWithObjectPe
 
 
 class Strategy1Serializer(StrategyBaseSerializer):
+    # url = serializers.HyperlinkedIdentityField(view_name='strategy1-detail')
     class Meta(StrategyBaseSerializer.Meta):
         model = Strategy1
 
