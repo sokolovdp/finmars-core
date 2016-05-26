@@ -94,16 +94,22 @@ class TransactionAttributeInline(AttributeInlineBase):
 
 class TransactionAdmin(HistoricalAdmin):
     model = Transaction
-    list_select_related = ['master_user', 'transaction_class', 'instrument', 'transaction_currency',
-                           'settlement_currency', 'account_cash', 'account_position', 'account_interim', ]
+    list_select_related = ['master_user', 'transaction_class',
+                           'instrument', 'transaction_currency', 'settlement_currency',
+                           'portfolio', 'account_cash', 'account_position', 'account_interim',
+                           'strategy1_position', 'strategy1_cash', 'strategy2_position', 'strategy2_cash',
+                           'strategy3_position', 'strategy3_cash']
     list_display = ['id', 'master_user',
-                    'is_canceled', 'transaction_class', 'portfolio',
+                    'is_canceled', 'transaction_class',
+                    'transaction_date', 'accounting_date', 'cash_date',
                     'instrument', 'transaction_currency',
                     'position_size_with_sign',
                     'settlement_currency', 'cash_consideration',
                     'principal_with_sign', 'carry_with_sign', 'overheads_with_sign',
                     'account_cash', 'account_position', 'account_interim',
-                    'transaction_date', 'accounting_date', 'cash_date']
+                    'strategy1_position', 'strategy1_cash', 'strategy2_position', 'strategy2_cash',
+                    'strategy3_position', 'strategy3_cash',
+                    ]
     list_filter = ['is_canceled']
     ordering = ['transaction_date', 'id']
     date_hierarchy = 'transaction_date'
@@ -114,6 +120,27 @@ class TransactionAdmin(HistoricalAdmin):
                      'strategy3_position', 'strategy3_cash'
                      ]
     inlines = [TransactionAttributeInline]
+    fields = (
+        'master_user',
+        'transaction_code',
+        'transaction_class',
+        ('instrument', 'transaction_currency', 'position_size_with_sign'),
+        ('settlement_currency', 'cash_consideration'),
+        ('principal_with_sign', 'carry_with_sign', 'overheads_with_sign'),
+        ('accounting_date', 'cash_date'),
+        'portfolio',
+        ('account_position', 'account_cash', 'account_interim'),
+        ('strategy1_position', 'strategy1_cash'),
+        ('strategy2_position', 'strategy2_cash'),
+        ('strategy3_position', 'strategy3_cash'),
+        ('responsible', 'counterparty'),
+        'reference_fx_rate',
+        'is_locked',
+        'is_canceled',
+        'factor',
+        'trade_price',
+        'principal_amount', 'carry_amount', 'overheads',
+    )
 
 
 admin.site.register(Transaction, TransactionAdmin)

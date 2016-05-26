@@ -7,7 +7,7 @@ from poms.counterparties.fields import CounterpartyField, ResponsibleField
 from poms.currencies.fields import CurrencyField
 from poms.instruments.fields import InstrumentTypeField, InstrumentField
 from poms.portfolios.fields import PortfolioField
-from poms.strategies.fields import StrategyField
+from poms.strategies.fields import Strategy1Field, Strategy2Field, Strategy3Field
 from poms.tags.fields import TagContentTypeField
 from poms.tags.models import Tag
 from poms.transactions.fields import TransactionTypeField
@@ -17,19 +17,24 @@ from poms.users.fields import MasterUserField
 class TagSerializer(serializers.ModelSerializer):
     master_user = MasterUserField()
     content_types = TagContentTypeField(many=True)
-    account_types = AccountTypeField(many=True)
-    accounts = AccountField(many=True)
-    currencies = CurrencyField(many=True)
-    instrument_types = InstrumentTypeField(many=True)
-    instruments = InstrumentField(many=True)
-    counterparties = CounterpartyField(many=True)
-    responsibles = ResponsibleField(many=True)
-    strategies = StrategyField(many=True)
-    portfolios = PortfolioField(many=True)
-    transaction_types = TransactionTypeField(many=True)
+    # account_types = AccountTypeField(many=True)
+    # accounts = AccountField(many=True)
+    # currencies = CurrencyField(many=True)
+    # instrument_types = InstrumentTypeField(many=True)
+    # instruments = InstrumentField(many=True)
+    # counterparties = CounterpartyField(many=True)
+    # responsibles = ResponsibleField(many=True)
+    # strategies1 = Strategy1Field(many=True)
+    # strategies2 = Strategy2Field(many=True)
+    # strategies3 = Strategy3Field(many=True)
+    # portfolios = PortfolioField(many=True)
+    # transaction_types = TransactionTypeField(many=True)
 
     class Meta:
         model = Tag
-        fields = ['url', 'id', 'master_user', 'user_code', 'name', 'short_name', 'notes',
-                  'content_types', 'account_types', 'accounts', 'currencies', 'instrument_types', 'instruments',
-                  'counterparties', 'responsibles', 'strategies', 'portfolios', 'transaction_types']
+        fields = [
+            'url', 'id', 'master_user', 'user_code', 'name', 'short_name', 'notes', 'content_types',
+            # 'account_types', 'accounts', 'currencies', 'instrument_types', 'instruments',
+            # 'counterparties', 'responsibles', 'strategies1', 'strategies2', 'strategies3',
+            # 'portfolios', 'transaction_types'
+        ]

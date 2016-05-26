@@ -1,15 +1,18 @@
 from __future__ import unicode_literals
 
-from rest_framework.filters import DjangoFilterBackend, OrderingFilter, SearchFilter
+import django_filters
+from rest_framework.filters import DjangoFilterBackend, OrderingFilter, SearchFilter, FilterSet
 
-from poms.common.filters import ClassifierFilterSetBase
-from poms.common.views import ClassifierViewSetBase, PomsViewSetBase, ClassifierNodeViewSetBase
+from poms.common.filters import OrderingWithAttributesFilter
+from poms.common.views import PomsViewSetBase
 from poms.obj_attrs.filters import AttributePrefetchFilter
 from poms.obj_attrs.views import AttributeTypeViewSetBase
-from poms.portfolios.models import PortfolioClassifier, Portfolio, PortfolioAttributeType
-from poms.portfolios.serializers import PortfolioClassifierSerializer, PortfolioSerializer, \
-    PortfolioAttributeTypeSerializer, PortfolioClassifierNodeSerializer
-from poms.tags.filters import TagPrefetchFilter
+from poms.obj_perms.filters import ObjectPermissionPrefetchFilter, ObjectPermissionFilter
+from poms.obj_perms.permissions import ObjectPermissionBase
+from poms.portfolios.models import Portfolio, PortfolioAttributeType
+from poms.portfolios.serializers import PortfolioSerializer, \
+    PortfolioAttributeTypeSerializer
+from poms.tags.filters import TagPrefetchFilter, ByTagNameFilter
 from poms.users.filters import OwnerByMasterUserFilter
 
 
@@ -30,15 +33,62 @@ from poms.users.filters import OwnerByMasterUserFilter
 #     filter_class = PortfolioClassifierFilterSet
 
 
+class PortfolioAttributeTypeFilterSet(FilterSet):
+    class Meta:
+        model = PortfolioAttributeType
+        fields = ['user_code', 'name', 'short_name']
+
+
 class PortfolioAttributeTypeViewSet(AttributeTypeViewSetBase):
-    queryset = PortfolioAttributeType.objects.all()
+    queryset = PortfolioAttributeType.objects.prefetch_related('classifiers')
     serializer_class = PortfolioAttributeTypeSerializer
+    filter_backends = [
+        OwnerByMasterUserFilter,
+        ObjectPermissionPrefetchFilter,
+        ObjectPermissionFilter,
+        DjangoFilterBackend,
+        OrderingFilter,
+        SearchFilter,
+    ]
+    filter_class = PortfolioAttributeTypeFilterSet
+    permission_classes = PomsViewSetBase.permission_classes + [
+        ObjectPermissionBase,
+    ]
+    ordering_fields = ['user_code', 'name', 'short_name', ]
+    search_fields = ['user_code', 'name', 'short_name', ]
+
+
+class PortfolioFilterSet(FilterSet):
+    tags = django_filters.MethodFilter(action='tags_filter')
+
+    class Meta:
+        model = Portfolio
+        fields = ['user_code', 'name', 'short_name', 'tags']
+
+    @staticmethod
+    def tags_filter(queryset, value):
+        return queryset
 
 
 class PortfolioViewSet(PomsViewSetBase):
-    queryset = Portfolio.objects.all()
+    queryset = Portfolio.objects
     serializer_class = PortfolioSerializer
-    filter_backends = [OwnerByMasterUserFilter, AttributePrefetchFilter, TagPrefetchFilter,
-                       DjangoFilterBackend, OrderingFilter, SearchFilter, ]
+    filter_backends = [
+        OwnerByMasterUserFilter,
+        TagPrefetchFilter,
+        ByTagNameFilter,
+        ObjectPermissionPrefetchFilter,
+        ObjectPermissionFilter,
+        AttributePrefetchFilter,
+        TagPrefetchFilter,
+        DjangoFilterBackend,
+        # OrderingFilter,
+        OrderingWithAttributesFilter,
+        SearchFilter,
+    ]
+    filter_class = PortfolioFilterSet
+    permission_classes = PomsViewSetBase.permission_classes + [
+        ObjectPermissionBase
+    ]
     ordering_fields = ['user_code', 'name', 'short_name']
     search_fields = ['user_code', 'name', 'short_name']

@@ -16,12 +16,12 @@ class TagContentTypeFilter(BaseFilterBackend):
         from poms.instruments.models import Instrument
         from poms.counterparties.models import Counterparty
         from poms.counterparties.models import Responsible
-        from poms.strategies.models import Strategy
+        from poms.strategies.models import Strategy1, Strategy2, Strategy3
         from poms.portfolios.models import Portfolio
         from poms.transactions.models import TransactionType
 
-        models = [AccountType, Account, Currency, InstrumentType, Instrument, Counterparty, Responsible, Strategy,
-                  Portfolio, TransactionType]
+        models = [AccountType, Account, Currency, InstrumentType, Instrument, Counterparty, Responsible,
+                  Strategy1, Strategy2, Strategy3, Portfolio, TransactionType]
         ctypes = [ContentType.objects.get_for_model(model).pk for model in models]
         return queryset.filter(pk__in=ctypes)
 

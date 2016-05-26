@@ -1,17 +1,19 @@
 from __future__ import unicode_literals
 
-from rest_framework.filters import DjangoFilterBackend, OrderingFilter, SearchFilter
+import django_filters
+from rest_framework.filters import DjangoFilterBackend, SearchFilter, FilterSet, OrderingFilter
 
-from poms.common.filters import ClassifierFilterSetBase
-from poms.common.views import ClassifierViewSetBase, PomsViewSetBase, ClassifierNodeViewSetBase
-from poms.counterparties.models import CounterpartyClassifier, Counterparty, Responsible, ResponsibleClassifier, \
-    CounterpartyAttributeType, ResponsibleAttributeType
+from poms.common.filters import OrderingWithAttributesFilter
+from poms.common.views import PomsViewSetBase
+from poms.counterparties.models import Counterparty, Responsible, CounterpartyAttributeType, ResponsibleAttributeType
 from poms.counterparties.serializers import CounterpartySerializer, ResponsibleSerializer, \
-    CounterpartyClassifierSerializer, ResponsibleClassifierSerializer, CounterpartyAttributeTypeSerializer, \
-    ResponsibleAttributeTypeSerializer, CounterpartyClassifierNodeSerializer, ResponsibleClassifierNodeSerializer
+    CounterpartyAttributeTypeSerializer, \
+    ResponsibleAttributeTypeSerializer
 from poms.obj_attrs.filters import AttributePrefetchFilter
 from poms.obj_attrs.views import AttributeTypeViewSetBase
-from poms.tags.filters import TagPrefetchFilter
+from poms.obj_perms.filters import ObjectPermissionPrefetchFilter, ObjectPermissionFilter
+from poms.obj_perms.permissions import ObjectPermissionBase
+from poms.tags.filters import TagPrefetchFilter, ByTagNameFilter
 from poms.users.filters import OwnerByMasterUserFilter
 
 
@@ -21,27 +23,73 @@ from poms.users.filters import OwnerByMasterUserFilter
 #
 #
 # class CounterpartyClassifierViewSet(ClassifierViewSetBase):
-#     queryset = CounterpartyClassifier.objects.all()
+#     queryset = CounterpartyClassifier.objects
 #     serializer_class = CounterpartyClassifierSerializer
 #     filter_class = CounterpartyClassifierFilterSet
 #
 #
 # class CounterpartyClassifierNodeViewSet(ClassifierNodeViewSetBase):
-#     queryset = CounterpartyClassifier.objects.all()
+#     queryset = CounterpartyClassifier.objects
 #     serializer_class = CounterpartyClassifierNodeSerializer
 #     filter_class = CounterpartyClassifierFilterSet
 
+class CounterpartyAttributeTypeFilterSet(FilterSet):
+    class Meta:
+        model = CounterpartyAttributeType
+        fields = ['user_code', 'name', 'short_name']
+
 
 class CounterpartyAttributeTypeViewSet(AttributeTypeViewSetBase):
-    queryset = CounterpartyAttributeType.objects.all()
+    queryset = CounterpartyAttributeType.objects.prefetch_related('classifiers')
     serializer_class = CounterpartyAttributeTypeSerializer
+    filter_backends = [
+        OwnerByMasterUserFilter,
+        ObjectPermissionPrefetchFilter,
+        ObjectPermissionFilter,
+        DjangoFilterBackend,
+        OrderingFilter,
+        SearchFilter,
+    ]
+    filter_class = CounterpartyAttributeTypeFilterSet
+    permission_classes = PomsViewSetBase.permission_classes + [
+        ObjectPermissionBase,
+    ]
+    ordering_fields = ['user_code', 'name', 'short_name', ]
+    search_fields = ['user_code', 'name', 'short_name', ]
+
+
+class CounterpartyFilterSet(FilterSet):
+    tags = django_filters.MethodFilter(action='tags_filter')
+
+    class Meta:
+        model = Counterparty
+        fields = ['user_code', 'name', 'short_name', 'tags']
+
+    @staticmethod
+    def tags_filter(queryset, value):
+        return queryset
 
 
 class CounterpartyViewSet(PomsViewSetBase):
-    queryset = Counterparty.objects.all()
+    queryset = Counterparty.objects
     serializer_class = CounterpartySerializer
-    filter_backends = [OwnerByMasterUserFilter, AttributePrefetchFilter, TagPrefetchFilter,
-                       DjangoFilterBackend, OrderingFilter, SearchFilter]
+    filter_backends = [
+        OwnerByMasterUserFilter,
+        TagPrefetchFilter,
+        ByTagNameFilter,
+        ObjectPermissionPrefetchFilter,
+        ObjectPermissionFilter,
+        AttributePrefetchFilter,
+        TagPrefetchFilter,
+        DjangoFilterBackend,
+        # OrderingFilter,
+        OrderingWithAttributesFilter,
+        SearchFilter,
+    ]
+    filter_class = CounterpartyFilterSet
+    permission_classes = PomsViewSetBase.permission_classes + [
+        ObjectPermissionBase
+    ]
     ordering_fields = ['user_code', 'name', 'short_name']
     search_fields = ['user_code', 'name', 'short_name']
 
@@ -52,26 +100,72 @@ class CounterpartyViewSet(PomsViewSetBase):
 #
 #
 # class ResponsibleClassifierViewSet(ClassifierViewSetBase):
-#     queryset = ResponsibleClassifier.objects.all()
+#     queryset = ResponsibleClassifier.objects
 #     serializer_class = ResponsibleClassifierSerializer
 #     filter_class = ResponsibleClassifierFilterSet
 #
 #
 # class ResponsibleClassifierNodeViewSet(ClassifierNodeViewSetBase):
-#     queryset = ResponsibleClassifier.objects.all()
+#     queryset = ResponsibleClassifier.objects
 #     serializer_class = ResponsibleClassifierNodeSerializer
 #     filter_class = ResponsibleClassifierFilterSet
 
+class ResponsibleAttributeTypeFilterSet(FilterSet):
+    class Meta:
+        model = ResponsibleAttributeType
+        fields = ['user_code', 'name', 'short_name']
+
 
 class ResponsibleAttributeTypeViewSet(AttributeTypeViewSetBase):
-    queryset = ResponsibleAttributeType.objects.all()
+    queryset = ResponsibleAttributeType.objects.prefetch_related('classifiers')
     serializer_class = ResponsibleAttributeTypeSerializer
+    filter_backends = [
+        OwnerByMasterUserFilter,
+        ObjectPermissionPrefetchFilter,
+        ObjectPermissionFilter,
+        DjangoFilterBackend,
+        OrderingFilter,
+        SearchFilter,
+    ]
+    filter_class = ResponsibleAttributeTypeFilterSet
+    permission_classes = PomsViewSetBase.permission_classes + [
+        ObjectPermissionBase,
+    ]
+    ordering_fields = ['user_code', 'name', 'short_name', ]
+    search_fields = ['user_code', 'name', 'short_name', ]
+
+
+class ResponsibleFilterSet(FilterSet):
+    tags = django_filters.MethodFilter(action='tags_filter')
+
+    class Meta:
+        model = Responsible
+        fields = ['user_code', 'name', 'short_name', 'tags']
+
+    @staticmethod
+    def tags_filter(queryset, value):
+        return queryset
 
 
 class ResponsibleViewSet(PomsViewSetBase):
-    queryset = Responsible.objects.all()
+    queryset = Responsible.objects
     serializer_class = ResponsibleSerializer
-    filter_backends = [OwnerByMasterUserFilter, AttributePrefetchFilter, TagPrefetchFilter,
-                       DjangoFilterBackend, OrderingFilter, SearchFilter]
+    filter_backends = [
+        OwnerByMasterUserFilter,
+        TagPrefetchFilter,
+        ByTagNameFilter,
+        ObjectPermissionPrefetchFilter,
+        ObjectPermissionFilter,
+        AttributePrefetchFilter,
+        TagPrefetchFilter,
+        DjangoFilterBackend,
+        # OrderingFilter,
+        OrderingWithAttributesFilter,
+        SearchFilter,
+    ]
+    filter_class = ResponsibleFilterSet
+    permission_classes = PomsViewSetBase.permission_classes + [
+        ObjectPermissionBase
+    ]
     ordering_fields = ['user_code', 'name', 'short_name']
     search_fields = ['user_code', 'name', 'short_name']

@@ -3,73 +3,100 @@ from __future__ import unicode_literals
 from rest_framework import serializers
 
 from poms.common.serializers import ClassifierSerializerBase, ClassifierNodeSerializerBase
-from poms.strategies.models import Strategy, Strategy1, Strategy2, Strategy3
+from poms.obj_perms.serializers import ModelWithObjectPermissionSerializer
+from poms.strategies.models import Strategy1, Strategy2, Strategy3
 from poms.tags.fields import TagField
 
 
-class StrategySerializer(ClassifierSerializerBase):
+# class StrategySerializer(ClassifierSerializerBase):
+#     tags = TagField(many=True)
+#
+#     class Meta(ClassifierSerializerBase.Meta):
+#         model = Strategy
+#         fields = ClassifierSerializerBase.Meta.fields + ['tags']
+#
+#
+# class StrategyNodeSerializer(ClassifierNodeSerializerBase):
+#     url = serializers.HyperlinkedIdentityField(view_name='strategynode-detail')
+#     tags = TagField(many=True)
+#
+#     class Meta(ClassifierNodeSerializerBase.Meta):
+#         model = Strategy
+#         fields = ClassifierNodeSerializerBase.Meta.fields + ['tags']
+#
+#
+# -------------
+
+
+class StrategyBaseSerializer(ClassifierSerializerBase, ModelWithObjectPermissionSerializer):
     tags = TagField(many=True)
 
     class Meta(ClassifierSerializerBase.Meta):
-        model = Strategy
         fields = ClassifierSerializerBase.Meta.fields + ['tags']
 
+    def to_representation(self, instance):
+        ret = super(StrategyBaseSerializer, self).to_representation(instance)
+        if not instance.is_root_node():
+            ret.pop("granted_permissions", None)
+            # ret.pop("user_object_permissions", None)
+            ret.pop("group_object_permissions", None)
+        return ret
 
-class StrategyNodeSerializer(ClassifierNodeSerializerBase):
-    url = serializers.HyperlinkedIdentityField(view_name='strategynode-detail')
+    def save_object_permission(self, instance, group_object_permissions=None, created=False):
+        if instance.is_root_node():
+            super(StrategyBaseSerializer, self).save_object_permission(instance, group_object_permissions, created)
+
+
+class StrategyBaseNodeSerializer(ClassifierNodeSerializerBase, ModelWithObjectPermissionSerializer):
     tags = TagField(many=True)
 
     class Meta(ClassifierNodeSerializerBase.Meta):
-        model = Strategy
         fields = ClassifierNodeSerializerBase.Meta.fields + ['tags']
 
+    def to_representation(self, instance):
+        ret = super(StrategyBaseNodeSerializer, self).to_representation(instance)
+        if not instance.is_root_node():
+            ret.pop("granted_permissions", None)
+            # ret.pop("user_object_permissions", None)
+            ret.pop("group_object_permissions", None)
+        return ret
 
-class Strategy1Serializer(ClassifierSerializerBase):
-    tags = TagField(many=True)
+    def save_object_permission(self, instance, group_object_permissions=None, created=False):
+        if instance.is_root_node():
+            super(StrategyBaseNodeSerializer, self).save_object_permission(instance, group_object_permissions, created)
 
-    class Meta(ClassifierSerializerBase.Meta):
+
+class Strategy1Serializer(StrategyBaseSerializer):
+    class Meta(StrategyBaseSerializer.Meta):
         model = Strategy1
-        fields = ClassifierSerializerBase.Meta.fields + ['tags']
 
 
-class Strategy1NodeSerializer(ClassifierNodeSerializerBase):
+class Strategy1NodeSerializer(StrategyBaseNodeSerializer):
     url = serializers.HyperlinkedIdentityField(view_name='strategy1node-detail')
-    tags = TagField(many=True)
 
-    class Meta(ClassifierNodeSerializerBase.Meta):
+    class Meta(StrategyBaseNodeSerializer.Meta):
         model = Strategy1
-        fields = ClassifierNodeSerializerBase.Meta.fields + ['tags']
 
 
-class Strategy2Serializer(ClassifierSerializerBase):
-    tags = TagField(many=True)
-
-    class Meta(ClassifierSerializerBase.Meta):
+class Strategy2Serializer(StrategyBaseSerializer):
+    class Meta(StrategyBaseSerializer.Meta):
         model = Strategy2
-        fields = ClassifierSerializerBase.Meta.fields + ['tags']
 
 
-class Strategy2NodeSerializer(ClassifierNodeSerializerBase):
-    url = serializers.HyperlinkedIdentityField(view_name='strategynode-detail')
-    tags = TagField(many=True)
+class Strategy2NodeSerializer(StrategyBaseNodeSerializer):
+    url = serializers.HyperlinkedIdentityField(view_name='strategy2node-detail')
 
-    class Meta(ClassifierNodeSerializerBase.Meta):
+    class Meta(StrategyBaseNodeSerializer.Meta):
         model = Strategy2
-        fields = ClassifierNodeSerializerBase.Meta.fields + ['tags']
 
 
-class Strategy3Serializer(ClassifierSerializerBase):
-    tags = TagField(many=True)
-
-    class Meta(ClassifierSerializerBase.Meta):
+class Strategy3Serializer(StrategyBaseSerializer):
+    class Meta(StrategyBaseSerializer.Meta):
         model = Strategy3
-        fields = ClassifierSerializerBase.Meta.fields + ['tags']
 
 
-class Strategy3NodeSerializer(ClassifierNodeSerializerBase):
-    url = serializers.HyperlinkedIdentityField(view_name='strategynode-detail')
-    tags = TagField(many=True)
+class Strategy3NodeSerializer(StrategyBaseNodeSerializer):
+    url = serializers.HyperlinkedIdentityField(view_name='strategy3node-detail')
 
-    class Meta(ClassifierNodeSerializerBase.Meta):
+    class Meta(StrategyBaseNodeSerializer.Meta):
         model = Strategy3
-        fields = ClassifierNodeSerializerBase.Meta.fields + ['tags']

@@ -1,6 +1,8 @@
 from __future__ import unicode_literals
 
 from django.db import models
+from django.db.models.signals import post_save, post_delete
+from django.dispatch import receiver
 from django.utils.translation import ugettext_lazy as _
 from mptt.fields import TreeForeignKey
 from mptt.models import MPTTModel
@@ -187,7 +189,94 @@ class Strategy3GroupObjectPermission(GroupObjectPermissionBase):
         verbose_name_plural = _('strategies - 3 - group permissions')
 
 
-history.register(Strategy)
+def _strategy_post_save(instance, created, group_object_permission_model):
+    if created and not instance.is_root_node():
+        root = instance.get_root()
+        perms = []
+        for gop in root.group_object_permissions.all():
+            perms.append(group_object_permission_model(content_object=instance,
+                                                       group=gop.group,
+                                                       permission=gop.permission))
+        # group_object_permission_model.objects.filter(content_object=instance).delete()
+        group_object_permission_model.objects.bulk_create(perms)
+
+
+def _strategy_group_object_permission_post_save(instance, created, group_object_permission_model):
+    if instance.content_object.is_root_node():
+        if created:
+            perms = []
+            for o in instance.content_object.get_family():
+                if o.is_root_node():
+                    continue
+                perms.append(group_object_permission_model(content_object=o,
+                                                           group=instance.group,
+                                                           permission=instance.permission))
+            group_object_permission_model.objects.bulk_create(perms)
+        else:
+            group_object_permission_model.objects.filter(
+                id__in=instance.content_object.get_family().exclude(id=instance.content_object_id)).update(
+                group=instance.group,
+                permission=instance.permission
+            )
+
+
+def _strategy_group_object_permission_post_delete(instance, group_object_permission_model):
+    if instance.content_object.is_root_node():
+        group_object_permission_model.objects.filter(content_object__in=instance.content_object.get_family()).delete()
+
+
+@receiver(post_save, sender=Strategy1, dispatch_uid='strategy1_post_save')
+def strategy1_post_save(sender, instance=None, created=None, **kwargs):
+    _strategy_post_save(instance, created, Strategy1GroupObjectPermission)
+
+
+@receiver(post_save, sender=Strategy1GroupObjectPermission,
+          dispatch_uid='strategy1_group_object_permission_post_save')
+def strategy1_group_object_permission_post_save(sender, instance=None, created=None, **kwargs):
+    _strategy_group_object_permission_post_save(instance, created, Strategy1GroupObjectPermission)
+
+
+@receiver(post_delete, sender=Strategy1GroupObjectPermission,
+          dispatch_uid='strategy1_group_object_permission_post_delete')
+def strategy1_group_object_permission_post_delete(sender, instance=None, **kwargs):
+    _strategy_group_object_permission_post_delete(instance, Strategy1GroupObjectPermission)
+
+
+@receiver(post_save, sender=Strategy2, dispatch_uid='strategy2_post_save')
+def strategy2_post_save(sender, instance=None, created=None, **kwargs):
+    _strategy_post_save(instance, created, Strategy2GroupObjectPermission)
+
+
+@receiver(post_save, sender=Strategy2GroupObjectPermission,
+          dispatch_uid='strategy2_group_object_permission_post_save')
+def strategy2_group_object_permission_post_save(sender, instance=None, created=None, **kwargs):
+    _strategy_group_object_permission_post_save(instance, created, Strategy2GroupObjectPermission)
+
+
+@receiver(post_delete, sender=Strategy2GroupObjectPermission,
+          dispatch_uid='strategy2_group_object_permission_post_delete')
+def strategy2_group_object_permission_post_delete(sender, instance=None, **kwargs):
+    _strategy_group_object_permission_post_delete(instance, Strategy2GroupObjectPermission)
+
+
+@receiver(post_save, sender=Strategy3, dispatch_uid='strategy3_post_save')
+def strategy3_post_save(sender, instance=None, created=None, **kwargs):
+    _strategy_post_save(instance, created, Strategy3GroupObjectPermission)
+
+
+@receiver(post_save, sender=Strategy3GroupObjectPermission,
+          dispatch_uid='strategy3_group_object_permission_post_save')
+def strategy3_group_object_permission_post_save(sender, instance=None, created=None, **kwargs):
+    _strategy_group_object_permission_post_save(instance, created, Strategy3GroupObjectPermission)
+
+
+@receiver(post_delete, sender=Strategy3GroupObjectPermission,
+          dispatch_uid='strategy3_group_object_permission_post_delete')
+def strategy3_group_object_permission_post_delete(sender, instance=None, **kwargs):
+    _strategy_group_object_permission_post_delete(instance, Strategy3GroupObjectPermission)
+
+
+# history.register(Strategy)
 history.register(Strategy1)
 history.register(Strategy2)
 history.register(Strategy3)

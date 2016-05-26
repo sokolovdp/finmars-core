@@ -8,31 +8,34 @@ from poms.common.views import PomsViewSetBase
 from poms.currencies.filters import OwnerByCurrencyFilter
 from poms.currencies.models import Currency, CurrencyHistory
 from poms.currencies.serializers import CurrencySerializer, CurrencyHistorySerializer
-from poms.tags.filters import TagPrefetchFilter
+from poms.tags.filters import TagPrefetchFilter, ByTagNameFilter
 from poms.users.filters import OwnerByMasterUserFilter
 
 
 class CurrencyFilter(FilterSet):
-    is_global = django_filters.MethodFilter(action='is_global_filter')
+    tags = django_filters.MethodFilter(action='tags_filter')
 
     class Meta:
         model = Currency
-        fields = ['is_global']
+        fields = ['user_code', 'name', 'short_name', 'tags']
 
-    def is_global_filter(self, qs, value):
-        if value is not None and (value.lower() in ['1', 'true']):
-            return qs.filter(master_user__isnull=True)
-        elif value is not None and (value.lower() in ['0', 'false']):
-            return qs.filter(master_user__isnull=False)
-        return qs
+    @staticmethod
+    def tags_filter(queryset, value):
+        return queryset
 
 
 class CurrencyViewSet(PomsViewSetBase):
-    queryset = Currency.objects.all()
+    queryset = Currency.objects
     serializer_class = CurrencySerializer
     permission_classes = [IsAuthenticated]
-    filter_backends = [OwnerByMasterUserFilter, TagPrefetchFilter,
-                       DjangoFilterBackend, OrderingFilter, SearchFilter, ]
+    filter_backends = [
+        OwnerByMasterUserFilter,
+        TagPrefetchFilter,
+        ByTagNameFilter,
+        DjangoFilterBackend,
+        OrderingFilter,
+        SearchFilter,
+    ]
     filter_class = CurrencyFilter
     ordering_fields = ['user_code', 'name', 'short_name']
     search_fields = ['user_code', 'name', 'short_name']
@@ -49,9 +52,13 @@ class CurrencyHistoryFilter(FilterSet):
 
 
 class CurrencyHistoryViewSet(PomsViewSetBase):
-    queryset = CurrencyHistory.objects.all()
+    queryset = CurrencyHistory.objects
     serializer_class = CurrencyHistorySerializer
     permission_classes = [IsAuthenticated, ]
-    filter_backends = [OwnerByCurrencyFilter, DjangoFilterBackend, OrderingFilter, ]
+    filter_backends = [
+        OwnerByCurrencyFilter,
+        DjangoFilterBackend,
+        OrderingFilter,
+    ]
     filter_class = CurrencyHistoryFilter
-    ordering_fields = ['-date']
+    ordering_fields = ['date',]

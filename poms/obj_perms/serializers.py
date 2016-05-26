@@ -5,7 +5,7 @@ from collections import OrderedDict
 from rest_framework import serializers
 
 from poms.obj_perms.fields import PermissionField, GrantedPermissionField
-from poms.obj_perms.utils import assign_perms_from_list, get_default_owner_permissions
+from poms.obj_perms.utils import assign_perms_from_list
 from poms.users.fields import MemberField, GroupField
 
 
