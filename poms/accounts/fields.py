@@ -10,7 +10,7 @@ class AccountClassifierField(FilteredPrimaryKeyRelatedField):
 
 class AccountClassifierRootField(FilteredPrimaryKeyRelatedField):
     queryset = AccountClassifier.objects.filter(parent__isnull=True)
-    filter_backends = [OwnerByMasterUserFilter]
+    # filter_backends = [OwnerByMasterUserFilter]
 
 
 class AccountAttributeTypeField(FilteredPrimaryKeyRelatedField):

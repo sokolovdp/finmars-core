@@ -1,9 +1,11 @@
 from __future__ import unicode_literals
 
 import six
+from django.core.exceptions import ObjectDoesNotExist
 from rest_framework import serializers
 from rest_framework.exceptions import ValidationError
 
+from poms.obj_attrs.models import AttributeTypeBase
 from poms.users.fields import MasterUserField
 
 
@@ -44,19 +46,81 @@ class AttributeTypeSerializerBase(serializers.ModelSerializer):
 
         return fields
 
+    def validate(self, attrs):
+        attrs = super(AttributeTypeSerializerBase, self).validate(attrs)
+        classifiers = attrs.get('classifiers', None)
+        if classifiers:
+            self._validate_classifiers(classifiers, id_set=set(), user_code_set=set())
+        return attrs
+
+    def _validate_classifiers(self, classifiers, id_set, user_code_set):
+        for c in classifiers:
+            c_id = c.get('id', None)
+            c_user_code = c.get('user_code', None)
+            if c_id and c_id in id_set:
+                raise ValidationError("non unique id")
+            if c_user_code and c_user_code in user_code_set:
+                raise ValidationError("non unique user_code")
+            if c_id:
+                id_set.add(c_id)
+            if c_user_code:
+                user_code_set.add(c_user_code)
+            children = c.get('get_children', c.pop('children', []))
+            self._validate_classifiers(children, id_set, user_code_set)
+
     def create(self, validated_data):
-        is_hidden = validated_data.pop('is_hidden', False)
-        instance = super(AttributeTypeSerializerBase, self).create(validated_data)
         member = self.context['request'].user.member
+        is_hidden = validated_data.pop('is_hidden', False)
+        classifiers = validated_data.pop('classifiers', None)
+        instance = super(AttributeTypeSerializerBase, self).create(validated_data)
         instance.options.create(member=member, is_hidden=is_hidden)
+        self.save_classifiers(instance, classifiers)
         return instance
 
     def update(self, instance, validated_data):
-        is_hidden = validated_data.pop('is_hidden', False)
-        instance = super(AttributeTypeSerializerBase, self).update(instance, validated_data)
         member = self.context['request'].user.member
+        is_hidden = validated_data.pop('is_hidden', False)
+        classifiers = validated_data.pop('classifiers', None)
+        instance = super(AttributeTypeSerializerBase, self).update(instance, validated_data)
         instance.options.update_or_create(member=member, defaults={'is_hidden': is_hidden})
+        self.save_classifiers(instance, classifiers)
         return instance
+
+    def save_classifiers(self, instance, classifier_tree):
+        if instance.value_type != AttributeTypeBase.CLASSIFIER:
+            return
+        if classifier_tree is None:
+            return
+        if len(classifier_tree) == 0:
+            instance.classifiers.all().delete()
+            return
+
+        classifier_model = instance._meta.get_field('classifiers').related_model
+
+        processed = set()
+        for node in classifier_tree:
+            self.save_classifier(instance, node, None, processed, classifier_model)
+
+        instance.classifiers.exclude(pk__in=processed).delete()
+
+    def save_classifier(self, instance, node, parent, processed, classifier_model):
+        if 'id' in node:
+            try:
+                o = instance.classifiers.get(pk=node.pop('id'))
+            except ObjectDoesNotExist:
+                o = classifier_model()
+        else:
+            o = classifier_model()
+        o.parent = parent
+        o.attribute_type = instance
+        children = node.pop('get_children', node.pop('children', []))
+        for k, v in six.iteritems(node):
+            setattr(o, k, v)
+        o.save()
+        processed.add(o.id)
+
+        for c in children:
+            self.save_classifier(instance, c, o, processed, classifier_model)
 
 
 # class AttributeListSerializer(serializers.ListSerializer):

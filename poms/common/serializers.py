@@ -1,4 +1,4 @@
-from django.conf import settings
+from mptt.utils import get_cached_trees
 from rest_framework import serializers
 from rest_framework.exceptions import ValidationError
 from rest_framework.serializers import ListSerializer
@@ -6,7 +6,6 @@ from rest_framework.serializers import ListSerializer
 from poms.common.fields import FilteredPrimaryKeyRelatedField
 from poms.common.filters import ClassifierRootFilter
 from poms.obj_perms.serializers import ModelWithObjectPermissionSerializer
-from poms.users.fields import MasterUserField
 from poms.users.filters import OwnerByMasterUserFilter
 
 
@@ -63,14 +62,111 @@ class ClassifierRecursiveField(serializers.Serializer):
         return data
 
 
-class ClassifierSerializerBase(PomsSerializerBase, ModelWithObjectPermissionSerializer):
+# class ClassifierSerializerBase(PomsSerializerBase, ModelWithObjectPermissionSerializer):
+#     id = serializers.IntegerField(read_only=False, required=False, allow_null=True)
+#     master_user = MasterUserField()
+#     children = ClassifierRecursiveField(source='get_children', many=True, required=False, allow_null=True)
+#
+#     class Meta(PomsSerializerBase.Meta):
+#         fields = PomsSerializerBase.Meta.fields + [
+#             'master_user',
+#             'user_code',
+#             'name',
+#             'short_name',
+#             'notes',
+#             'level',
+#             'children'
+#         ]
+#
+#     def to_representation(self, instance):
+#         ret = super(ClassifierSerializerBase, self).to_representation(instance)
+#         if not instance.is_root_node():
+#             ret.pop("granted_permissions", None)
+#             ret.pop("user_object_permissions", None)
+#             ret.pop("group_object_permissions", None)
+#         return ret
+#
+#     def create(self, validated_data):
+#         validated_data.pop('id', None)
+#         # children = validated_data.pop('children', None)
+#         children = validated_data.pop('get_children', None)
+#         instance = super(ClassifierSerializerBase, self).create(validated_data)
+#         self.save_tree(instance, children)
+#         return instance
+#
+#     def update(self, instance, validated_data):
+#         validated_data.pop('id', None)
+#         children = validated_data.pop('get_children', [])
+#         instance = super(ClassifierSerializerBase, self).update(instance, validated_data)
+#         if instance.is_root_node() or not instance.is_leaf_node() or settings.CLASSIFIER_RELAX_UPDATE_MODE:
+#             self.save_tree(instance, children)
+#         else:
+#             if children:
+#                 raise ValidationError("Can't add children to leaf node")
+#         return instance
+#
+#     def save_tree(self, node, children):
+#         # processed = set()
+#         # root = SimpleLazyObject(lambda: node.get_root())
+#         # print('root: ', root)
+#
+#         if not children:
+#             return
+#
+#         context = {}
+#         context.update(self.context)
+#         if node.is_root_node():
+#             processed = context['processed'] = set()
+#             processed.add(node.pk)
+#             root = context['root_node'] = node
+#             # family_cache = context['family_cache'] = {n.pk: n for n in node.get_family()}
+#         else:
+#             processed = self.context['processed']
+#             root = self.context['root_node']
+#             # family_cache = context['family_cache']
+#
+#         for child_data in children:
+#             child_pk = child_data.pop('id', None)
+#
+#             if child_pk in processed:
+#                 raise ValidationError('Tree node with id %s already processed' % child_pk)
+#
+#             if child_pk:
+#                 child_obj = root.get_family().get(pk=child_pk)
+#                 if child_obj.parent_id != node.id:
+#                     child_obj.parent = node
+#             else:
+#                 child_obj = None
+#
+#             node_s = self.__class__(instance=child_obj, data=child_data, context=context)
+#             node_s.is_valid(raise_exception=True)
+#             child_obj = node_s.save(parent=node)
+#             processed.add(child_obj.pk)
+#
+#         if node.is_root_node():
+#             # print('processed', processed)
+#             node.get_family().exclude(pk__in=processed).delete()
+#
+#     def save_object_permission(self, instance, user_object_permissions, group_object_permissions, created):
+#         if instance.is_root_node():
+#             super(ClassifierSerializerBase, self).save_object_permission(instance, user_object_permissions,
+#                                                                          group_object_permissions, created)
+
+
+class ClassifierListSerializer(serializers.ListSerializer):
+    def get_attribute(self, instance):
+        tree = get_cached_trees(instance.classifiers.all())
+        return tree
+
+
+class ClassifierSerializerBase(serializers.ModelSerializer):
     id = serializers.IntegerField(read_only=False, required=False, allow_null=True)
-    master_user = MasterUserField()
     children = ClassifierRecursiveField(source='get_children', many=True, required=False, allow_null=True)
 
     class Meta(PomsSerializerBase.Meta):
-        fields = PomsSerializerBase.Meta.fields + [
-            'master_user',
+        list_serializer_class = ClassifierListSerializer
+        fields = [
+            'id',
             'user_code',
             'name',
             'short_name',
@@ -79,17 +175,8 @@ class ClassifierSerializerBase(PomsSerializerBase, ModelWithObjectPermissionSeri
             'children'
         ]
 
-    def to_representation(self, instance):
-        ret = super(ClassifierSerializerBase, self).to_representation(instance)
-        if not instance.is_root_node():
-            ret.pop("granted_permissions", None)
-            ret.pop("user_object_permissions", None)
-            ret.pop("group_object_permissions", None)
-        return ret
-
     def create(self, validated_data):
         validated_data.pop('id', None)
-        # children = validated_data.pop('children', None)
         children = validated_data.pop('get_children', None)
         instance = super(ClassifierSerializerBase, self).create(validated_data)
         self.save_tree(instance, children)
@@ -99,11 +186,11 @@ class ClassifierSerializerBase(PomsSerializerBase, ModelWithObjectPermissionSeri
         validated_data.pop('id', None)
         children = validated_data.pop('get_children', [])
         instance = super(ClassifierSerializerBase, self).update(instance, validated_data)
-        if instance.is_root_node() or not instance.is_leaf_node() or settings.CLASSIFIER_RELAX_UPDATE_MODE:
-            self.save_tree(instance, children)
-        else:
-            if children:
-                raise ValidationError("Can't add children to leaf node")
+        # if instance.is_root_node() or not instance.is_leaf_node() or settings.CLASSIFIER_RELAX_UPDATE_MODE:
+        self.save_tree(instance, children)
+        # else:
+        #     if children:
+        #         raise ValidationError("Can't add children to leaf node")
         return instance
 
     def save_tree(self, node, children):
@@ -148,10 +235,10 @@ class ClassifierSerializerBase(PomsSerializerBase, ModelWithObjectPermissionSeri
             # print('processed', processed)
             node.get_family().exclude(pk__in=processed).delete()
 
-    def save_object_permission(self, instance, user_object_permissions, group_object_permissions, created):
-        if instance.is_root_node():
-            super(ClassifierSerializerBase, self).save_object_permission(instance, user_object_permissions,
-                                                                         group_object_permissions, created)
+            # def save_object_permission(self, instance, user_object_permissions, group_object_permissions, created):
+            #     if instance.is_root_node():
+            #         super(ClassifierSerializerBase, self).save_object_permission(instance, user_object_permissions,
+            #                                                                      group_object_permissions, created)
 
 
 class ClassifierNodeSerializerBase(PomsSerializerBase, ModelWithObjectPermissionSerializer):

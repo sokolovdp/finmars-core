@@ -10,7 +10,7 @@ from poms.currencies.models import Currency
 from poms.instruments.models import InstrumentType, Instrument
 from poms.obj_perms.admin import GroupObjectPermissionAdmin
 from poms.portfolios.models import Portfolio
-from poms.strategies.models import Strategy
+from poms.strategies.models import Strategy1, Strategy2, Strategy3
 from poms.tags.models import Tag, TagGroupObjectPermission
 from poms.transactions.models import TransactionType
 
@@ -19,13 +19,14 @@ class TagAdmin(HistoricalAdmin):
     model = Tag
     list_display = ['id', 'master_user', 'name']
     filter_horizontal = ['content_types', 'account_types', 'accounts', 'currencies', 'instrument_types', 'instruments',
-                         'counterparties', 'responsibles', 'portfolios', 'transaction_types']
+                         'counterparties', 'responsibles', 'portfolios', 'transaction_types',
+                         'strategies1', 'strategies2', 'strategies3', ]
 
     def formfield_for_manytomany(self, db_field, request=None, **kwargs):
         if db_field.name == 'content_types':
             qs = kwargs.get('queryset', db_field.remote_field.model.objects)
-            models = [AccountType, Account, Currency, InstrumentType, Instrument, Counterparty, Responsible, Strategy,
-                      Portfolio, TransactionType]
+            models = [AccountType, Account, Currency, InstrumentType, Instrument, Counterparty, Responsible,
+                      Portfolio, TransactionType, Strategy1, Strategy2, Strategy3, ]
             ctypes = [ContentType.objects.get_for_model(model).pk for model in models]
             kwargs['queryset'] = qs.filter(pk__in=ctypes)
             # kwargs['queryset'] = qs.annotate(c=Concat('app_label', Value('.'), 'model')). \

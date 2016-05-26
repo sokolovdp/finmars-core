@@ -35,6 +35,7 @@ def get_attr_model(obj):
             return model
     return None
 
+
 def get_attr_type_view_perms(model_cls):
     codename_set = ['view_%(model_name)s', 'change_%(model_name)s', 'manage_%(model_name)s']
     kwargs = {

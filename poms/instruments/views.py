@@ -61,21 +61,21 @@ class InstrumentTypeViewSet(PomsViewSetBase):
     search_fields = ['user_code', 'name', 'short_name']
 
 
-class InstrumentClassifierFilterSet(ClassifierFilterSetBase):
-    class Meta(ClassifierFilterSetBase.Meta):
-        model = InstrumentClassifier
-
-
-class InstrumentClassifierViewSet(ClassifierViewSetBase):
-    queryset = InstrumentClassifier.objects.all()
-    serializer_class = InstrumentClassifierSerializer
-    filter_class = InstrumentClassifierFilterSet
-
-
-class InstrumentClassifierNodeViewSet(ClassifierNodeViewSetBase):
-    queryset = InstrumentClassifier.objects.all()
-    serializer_class = InstrumentClassifierNodeSerializer
-    filter_class = InstrumentClassifierFilterSet
+# class InstrumentClassifierFilterSet(ClassifierFilterSetBase):
+#     class Meta(ClassifierFilterSetBase.Meta):
+#         model = InstrumentClassifier
+#
+#
+# class InstrumentClassifierViewSet(ClassifierViewSetBase):
+#     queryset = InstrumentClassifier.objects.all()
+#     serializer_class = InstrumentClassifierSerializer
+#     filter_class = InstrumentClassifierFilterSet
+#
+#
+# class InstrumentClassifierNodeViewSet(ClassifierNodeViewSetBase):
+#     queryset = InstrumentClassifier.objects.all()
+#     serializer_class = InstrumentClassifierNodeSerializer
+#     filter_class = InstrumentClassifierFilterSet
 
 
 class PricingPolicyViewSet(PomsViewSetBase):

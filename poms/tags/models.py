@@ -65,12 +65,6 @@ class Tag(TagModelBase):
         blank=True,
         verbose_name=_('responsibles')
     )
-    strategies = TreeManyToManyField(
-        'strategies.Strategy',
-        related_name='tags',
-        blank=True,
-        verbose_name=_('strategies')
-    )
     portfolios = models.ManyToManyField(
         'portfolios.Portfolio',
         related_name='tags',
@@ -82,6 +76,30 @@ class Tag(TagModelBase):
         related_name='tags',
         blank=True,
         verbose_name=_('transaction types')
+    )
+    # strategies = TreeManyToManyField(
+    #     'strategies.Strategy',
+    #     related_name='tags',
+    #     blank=True,
+    #     verbose_name=_('strategies')
+    # )
+    strategies1 = TreeManyToManyField(
+        'strategies.Strategy1',
+        related_name='tags',
+        blank=True,
+        verbose_name=_('strategies 1')
+    )
+    strategies2 = TreeManyToManyField(
+        'strategies.Strategy2',
+        related_name='tags',
+        blank=True,
+        verbose_name=_('strategies 2')
+    )
+    strategies3 = TreeManyToManyField(
+        'strategies.Strategy3',
+        related_name='tags',
+        blank=True,
+        verbose_name=_('strategies 3')
     )
 
     class Meta(TagModelBase.Meta):

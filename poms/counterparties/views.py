@@ -15,21 +15,21 @@ from poms.tags.filters import TagPrefetchFilter
 from poms.users.filters import OwnerByMasterUserFilter
 
 
-class CounterpartyClassifierFilterSet(ClassifierFilterSetBase):
-    class Meta(ClassifierFilterSetBase.Meta):
-        model = CounterpartyClassifier
-
-
-class CounterpartyClassifierViewSet(ClassifierViewSetBase):
-    queryset = CounterpartyClassifier.objects.all()
-    serializer_class = CounterpartyClassifierSerializer
-    filter_class = CounterpartyClassifierFilterSet
-
-
-class CounterpartyClassifierNodeViewSet(ClassifierNodeViewSetBase):
-    queryset = CounterpartyClassifier.objects.all()
-    serializer_class = CounterpartyClassifierNodeSerializer
-    filter_class = CounterpartyClassifierFilterSet
+# class CounterpartyClassifierFilterSet(ClassifierFilterSetBase):
+#     class Meta(ClassifierFilterSetBase.Meta):
+#         model = CounterpartyClassifier
+#
+#
+# class CounterpartyClassifierViewSet(ClassifierViewSetBase):
+#     queryset = CounterpartyClassifier.objects.all()
+#     serializer_class = CounterpartyClassifierSerializer
+#     filter_class = CounterpartyClassifierFilterSet
+#
+#
+# class CounterpartyClassifierNodeViewSet(ClassifierNodeViewSetBase):
+#     queryset = CounterpartyClassifier.objects.all()
+#     serializer_class = CounterpartyClassifierNodeSerializer
+#     filter_class = CounterpartyClassifierFilterSet
 
 
 class CounterpartyAttributeTypeViewSet(AttributeTypeViewSetBase):
@@ -46,21 +46,21 @@ class CounterpartyViewSet(PomsViewSetBase):
     search_fields = ['user_code', 'name', 'short_name']
 
 
-class ResponsibleClassifierFilterSet(ClassifierFilterSetBase):
-    class Meta(ClassifierFilterSetBase.Meta):
-        model = ResponsibleClassifier
-
-
-class ResponsibleClassifierViewSet(ClassifierViewSetBase):
-    queryset = ResponsibleClassifier.objects.all()
-    serializer_class = ResponsibleClassifierSerializer
-    filter_class = ResponsibleClassifierFilterSet
-
-
-class ResponsibleClassifierNodeViewSet(ClassifierNodeViewSetBase):
-    queryset = ResponsibleClassifier.objects.all()
-    serializer_class = ResponsibleClassifierNodeSerializer
-    filter_class = ResponsibleClassifierFilterSet
+# class ResponsibleClassifierFilterSet(ClassifierFilterSetBase):
+#     class Meta(ClassifierFilterSetBase.Meta):
+#         model = ResponsibleClassifier
+#
+#
+# class ResponsibleClassifierViewSet(ClassifierViewSetBase):
+#     queryset = ResponsibleClassifier.objects.all()
+#     serializer_class = ResponsibleClassifierSerializer
+#     filter_class = ResponsibleClassifierFilterSet
+#
+#
+# class ResponsibleClassifierNodeViewSet(ClassifierNodeViewSetBase):
+#     queryset = ResponsibleClassifier.objects.all()
+#     serializer_class = ResponsibleClassifierNodeSerializer
+#     filter_class = ResponsibleClassifierFilterSet
 
 
 class ResponsibleAttributeTypeViewSet(AttributeTypeViewSetBase):

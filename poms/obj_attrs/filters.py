@@ -8,8 +8,8 @@ class AttributePrefetchFilter(BaseFilterBackend):
         return queryset.prefetch_related(
             'attributes',
             'attributes__attribute_type',
-            'attributes__attribute_type__user_object_permissions',
-            'attributes__attribute_type__user_object_permissions__permission',
+            # 'attributes__attribute_type__user_object_permissions',
+            # 'attributes__attribute_type__user_object_permissions__permission',
             'attributes__attribute_type__group_object_permissions',
             'attributes__attribute_type__group_object_permissions__permission',
         )

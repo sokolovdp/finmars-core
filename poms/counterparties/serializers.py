@@ -27,12 +27,13 @@ class CounterpartyClassifierNodeSerializer(ClassifierNodeSerializerBase):
 
 
 class CounterpartyAttributeTypeSerializer(AttributeTypeSerializerBase):
-    classifier_root = CounterpartyClassifierRootField(required=False, allow_null=True)
+    # classifier_root = CounterpartyClassifierRootField(required=False, allow_null=True)
+    classifiers = CounterpartyClassifierSerializer(required=False, allow_null=True, many=True)
 
     class Meta(AttributeTypeSerializerBase.Meta):
         model = CounterpartyAttributeType
-        fields = AttributeTypeSerializerBase.Meta.fields + ['classifier_root']
-        update_read_only_fields = AttributeTypeSerializerBase.Meta.update_read_only_fields + ['classifier_root']
+        fields = AttributeTypeSerializerBase.Meta.fields + ['classifiers']
+        # update_read_only_fields = AttributeTypeSerializerBase.Meta.update_read_only_fields + ['classifier_root']
 
 
 class CounterpartyAttributeSerializer(AttributeSerializerBase):
@@ -67,12 +68,13 @@ class ResponsibleClassifierNodeSerializer(ClassifierNodeSerializerBase):
 
 
 class ResponsibleAttributeTypeSerializer(AttributeTypeSerializerBase):
-    classifier_root = ResponsibleClassifierRootField(required=False, allow_null=True)
+    # classifier_root = ResponsibleClassifierRootField(required=False, allow_null=True)
+    classifiers = ResponsibleClassifierSerializer(required=False, allow_null=True, many=True)
 
     class Meta(AttributeTypeSerializerBase.Meta):
         model = ResponsibleAttributeType
-        fields = AttributeTypeSerializerBase.Meta.fields + ['classifier_root']
-        update_read_only_fields = AttributeTypeSerializerBase.Meta.update_read_only_fields + ['classifier_root']
+        fields = AttributeTypeSerializerBase.Meta.fields + ['classifiers']
+        # update_read_only_fields = AttributeTypeSerializerBase.Meta.update_read_only_fields + ['classifier_root']
 
 
 class ResponsibleAttributeSerializer(AttributeSerializerBase):

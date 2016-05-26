@@ -79,12 +79,13 @@ class InstrumentTypeSerializer(serializers.ModelSerializer):
 
 
 class InstrumentAttributeTypeSerializer(AttributeTypeSerializerBase):
-    classifier_root = InstrumentClassifierRootField(required=False, allow_null=True)
+    # classifier_root = InstrumentClassifierRootField(required=False, allow_null=True)
+    classifiers = InstrumentClassifierSerializer(required=False, allow_null=True, many=True)
 
     class Meta(AttributeTypeSerializerBase.Meta):
         model = InstrumentAttributeType
-        fields = AttributeTypeSerializerBase.Meta.fields + ['classifier_root']
-        update_read_only_fields = AttributeTypeSerializerBase.Meta.update_read_only_fields + ['classifier_root']
+        fields = AttributeTypeSerializerBase.Meta.fields + ['classifiers']
+        # update_read_only_fields = AttributeTypeSerializerBase.Meta.update_read_only_fields + ['classifier_root']
 
 
 class InstrumentAttributeSerializer(AttributeSerializerBase):

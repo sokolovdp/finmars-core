@@ -16,27 +16,27 @@ from poms.tags.filters import TagPrefetchFilter, ByTagNameFilter
 from poms.users.filters import OwnerByMasterUserFilter
 
 
-class AccountClassifierFilterSet(ClassifierFilterSetBase):
-    class Meta(ClassifierFilterSetBase.Meta):
-        model = AccountClassifier
-
-
-class AccountClassifierViewSet(ClassifierViewSetBase):
-    queryset = AccountClassifier.objects.all()
-    filter_backends = ClassifierViewSetBase.filter_backends + [
-        ObjectPermissionPrefetchFilter,
-    ]
-    serializer_class = AccountClassifierSerializer
-    filter_class = AccountClassifierFilterSet
-
-
-class AccountClassifierNodeViewSet(ClassifierNodeViewSetBase):
-    queryset = AccountClassifier.objects.all()
-    filter_backends = ClassifierNodeViewSetBase.filter_backends + [
-        ObjectPermissionPrefetchFilter,
-    ]
-    serializer_class = AccountClassifierNodeSerializer
-    filter_class = AccountClassifierFilterSet
+# class AccountClassifierFilterSet(ClassifierFilterSetBase):
+#     class Meta(ClassifierFilterSetBase.Meta):
+#         model = AccountClassifier
+#
+#
+# class AccountClassifierViewSet(ClassifierViewSetBase):
+#     queryset = AccountClassifier.objects.all()
+#     filter_backends = ClassifierViewSetBase.filter_backends + [
+#         ObjectPermissionPrefetchFilter,
+#     ]
+#     serializer_class = AccountClassifierSerializer
+#     filter_class = AccountClassifierFilterSet
+#
+#
+# class AccountClassifierNodeViewSet(ClassifierNodeViewSetBase):
+#     queryset = AccountClassifier.objects.all()
+#     filter_backends = ClassifierNodeViewSetBase.filter_backends + [
+#         ObjectPermissionPrefetchFilter,
+#     ]
+#     serializer_class = AccountClassifierNodeSerializer
+#     filter_class = AccountClassifierFilterSet
 
 
 class AccountTypeFilterSet(FilterSet):

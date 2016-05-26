@@ -24,12 +24,13 @@ class PortfolioClassifierNodeSerializer(ClassifierNodeSerializerBase):
 
 
 class PortfolioAttributeTypeSerializer(AttributeTypeSerializerBase):
-    classifier_root = PortfolioClassifierRootField(required=False, allow_null=True)
+    # classifier_root = PortfolioClassifierRootField(required=False, allow_null=True)
+    classifiers = PortfolioClassifierSerializer(required=False, allow_null=True, many=True)
 
     class Meta(AttributeTypeSerializerBase.Meta):
         model = PortfolioAttributeType
-        fields = AttributeTypeSerializerBase.Meta.fields + ['classifier_root']
-        update_read_only_fields = AttributeTypeSerializerBase.Meta.update_read_only_fields + ['classifier_root']
+        fields = AttributeTypeSerializerBase.Meta.fields + ['classifiers']
+        # update_read_only_fields = AttributeTypeSerializerBase.Meta.update_read_only_fields + ['classifier_root']
 
 
 class PortfolioAttributeSerializer(AttributeSerializerBase):

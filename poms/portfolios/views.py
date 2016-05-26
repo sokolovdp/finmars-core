@@ -13,21 +13,21 @@ from poms.tags.filters import TagPrefetchFilter
 from poms.users.filters import OwnerByMasterUserFilter
 
 
-class PortfolioClassifierFilterSet(ClassifierFilterSetBase):
-    class Meta(ClassifierFilterSetBase.Meta):
-        model = PortfolioClassifier
-
-
-class PortfolioClassifierViewSet(ClassifierViewSetBase):
-    queryset = PortfolioClassifier.objects.all()
-    serializer_class = PortfolioClassifierSerializer
-    filter_class = PortfolioClassifierFilterSet
-
-
-class PortfolioClassifierNodeViewSet(ClassifierNodeViewSetBase):
-    queryset = PortfolioClassifier.objects.all()
-    serializer_class = PortfolioClassifierNodeSerializer
-    filter_class = PortfolioClassifierFilterSet
+# class PortfolioClassifierFilterSet(ClassifierFilterSetBase):
+#     class Meta(ClassifierFilterSetBase.Meta):
+#         model = PortfolioClassifier
+#
+#
+# class PortfolioClassifierViewSet(ClassifierViewSetBase):
+#     queryset = PortfolioClassifier.objects.all()
+#     serializer_class = PortfolioClassifierSerializer
+#     filter_class = PortfolioClassifierFilterSet
+#
+#
+# class PortfolioClassifierNodeViewSet(ClassifierNodeViewSetBase):
+#     queryset = PortfolioClassifier.objects.all()
+#     serializer_class = PortfolioClassifierNodeSerializer
+#     filter_class = PortfolioClassifierFilterSet
 
 
 class PortfolioAttributeTypeViewSet(AttributeTypeViewSetBase):
