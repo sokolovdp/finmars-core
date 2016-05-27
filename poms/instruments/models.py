@@ -471,7 +471,7 @@ class InstrumentFactorSchedule(models.Model):
 
 
 class EventSchedule(models.Model):
-    instrument = models.ForeignKey(Instrument,
+    instrument = models.ForeignKey(Instrument, related_name='event_schedules',
                                    verbose_name=_('instrument'))
     name = models.CharField(max_length=255,
                             verbose_name=_('name'))

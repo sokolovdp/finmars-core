@@ -32,7 +32,7 @@ class StrategyBaseSerializer(ClassifierSerializerBase, ModelWithObjectPermission
     tags = TagField(many=True)
 
     class Meta(ClassifierSerializerBase.Meta):
-        fields = ClassifierSerializerBase.Meta.fields + ['tags']
+        fields = ['url', ] + ClassifierSerializerBase.Meta.fields + ['tags', ]
 
     def to_representation(self, instance):
         ret = super(StrategyBaseSerializer, self).to_representation(instance)

@@ -12,6 +12,7 @@ from poms.instruments.fields import InstrumentField
 from poms.obj_attrs.models import AttributeTypeBase
 from poms.obj_attrs.serializers import AttributeTypeSerializerBase, AttributeSerializerBase, \
     ModelWithAttributesSerializer
+from poms.obj_perms.serializers import ModelWithObjectPermissionSerializer
 from poms.portfolios.fields import PortfolioField
 from poms.strategies.fields import Strategy1Field, Strategy2Field, Strategy3Field
 from poms.tags.fields import TagField
@@ -35,7 +36,7 @@ class TransactionTypeSerializer(serializers.ModelSerializer):
         fields = ['url', 'id', 'master_user', 'user_code', 'name', 'short_name', 'notes', 'tags']
 
 
-class TransactionAttributeTypeSerializer(AttributeTypeSerializerBase):
+class TransactionAttributeTypeSerializer(AttributeTypeSerializerBase, ModelWithObjectPermissionSerializer):
     # strategy_position_root = StrategyRootField(required=False, allow_null=True)
     # strategy_cash_root = StrategyRootField(required=False, allow_null=True)
 

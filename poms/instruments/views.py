@@ -2,61 +2,93 @@ from __future__ import unicode_literals
 
 import django_filters
 from rest_framework.filters import DjangoFilterBackend, OrderingFilter, SearchFilter, FilterSet
-from rest_framework.permissions import IsAuthenticated
 
-from poms.common.filters import ClassifierFilterSetBase
-from poms.common.views import PomsClassViewSetBase, ClassifierViewSetBase, PomsViewSetBase, ClassifierNodeViewSetBase
+from poms.common.filters import OrderingWithAttributesFilter
+from poms.common.views import PomsClassViewSetBase, PomsViewSetBase
 from poms.instruments.filters import OwnerByInstrumentFilter
-from poms.instruments.models import InstrumentClassifier, Instrument, PriceHistory, InstrumentClass, DailyPricingModel, \
+from poms.instruments.models import Instrument, PriceHistory, InstrumentClass, DailyPricingModel, \
     AccrualCalculationModel, PaymentSizeDetail, PeriodicityPeriod, CostMethod, InstrumentType, InstrumentAttributeType, \
-    ManualPricingFormula, AccrualCalculationSchedule, InstrumentFactorSchedule, EventSchedule, PricingPolicy
-from poms.instruments.serializers import InstrumentClassifierSerializer, InstrumentSerializer, PriceHistorySerializer, \
+    PricingPolicy
+from poms.instruments.serializers import InstrumentSerializer, PriceHistorySerializer, \
     InstrumentClassSerializer, DailyPricingModelSerializer, AccrualCalculationModelSerializer, \
     PaymentSizeDetailSerializer, PeriodicityPeriodSerializer, CostMethodSerializer, InstrumentTypeSerializer, \
-    InstrumentAttributeTypeSerializer, ManualPricingFormulaSerializer, AccrualCalculationScheduleSerializer, \
-    InstrumentFactorScheduleSerializer, EventScheduleSerializer, PricingPolicySerializer, \
-    InstrumentClassifierNodeSerializer
+    InstrumentAttributeTypeSerializer, PricingPolicySerializer
 from poms.obj_attrs.filters import AttributePrefetchFilter
 from poms.obj_attrs.views import AttributeTypeViewSetBase
-from poms.tags.filters import TagPrefetchFilter
+from poms.obj_perms.filters import ObjectPermissionFilter
+from poms.obj_perms.filters import ObjectPermissionPrefetchFilter
+from poms.obj_perms.permissions import ObjectPermissionBase
+from poms.tags.filters import TagPrefetchFilter, ByTagNameFilter
 from poms.users.filters import OwnerByMasterUserFilter
 
 
 class InstrumentClassViewSet(PomsClassViewSetBase):
-    queryset = InstrumentClass.objects.all()
+    queryset = InstrumentClass.objects
     serializer_class = InstrumentClassSerializer
 
 
 class DailyPricingModelViewSet(PomsClassViewSetBase):
-    queryset = DailyPricingModel.objects.all()
+    queryset = DailyPricingModel.objects
     serializer_class = DailyPricingModelSerializer
 
 
 class AccrualCalculationModelClassViewSet(PomsClassViewSetBase):
-    queryset = AccrualCalculationModel.objects.all()
+    queryset = AccrualCalculationModel.objects
     serializer_class = AccrualCalculationModelSerializer
 
 
 class PaymentSizeDetailViewSet(PomsClassViewSetBase):
-    queryset = PaymentSizeDetail.objects.all()
+    queryset = PaymentSizeDetail.objects
     serializer_class = PaymentSizeDetailSerializer
 
 
 class PeriodicityPeriodViewSet(PomsClassViewSetBase):
-    queryset = PeriodicityPeriod.objects.all()
+    queryset = PeriodicityPeriod.objects
     serializer_class = PeriodicityPeriodSerializer
 
 
 class CostMethodViewSet(PomsClassViewSetBase):
-    queryset = CostMethod.objects.all()
+    queryset = CostMethod.objects
     serializer_class = CostMethodSerializer
 
 
+class PricingPolicyViewSet(PomsViewSetBase):
+    queryset = PricingPolicy.objects
+    serializer_class = PricingPolicySerializer
+    filter_backends = [OwnerByMasterUserFilter, DjangoFilterBackend, OrderingFilter, SearchFilter]
+    ordering_fields = ['user_code', 'name', 'short_name']
+    search_fields = ['user_code', 'name', 'short_name']
+
+
+class InstrumentTypeFilterSet(FilterSet):
+    tags = django_filters.MethodFilter(action='tags_filter')
+
+    class Meta:
+        model = InstrumentType
+        fields = ['user_code', 'name', 'short_name', 'tags']
+
+    @staticmethod
+    def tags_filter(queryset, value):
+        return queryset
+
+
 class InstrumentTypeViewSet(PomsViewSetBase):
-    queryset = InstrumentType.objects.all()
+    queryset = InstrumentType.objects
     serializer_class = InstrumentTypeSerializer
-    filter_backends = [OwnerByMasterUserFilter, TagPrefetchFilter,
-                       DjangoFilterBackend, OrderingFilter, SearchFilter]
+    filter_backends = [
+        OwnerByMasterUserFilter,
+        TagPrefetchFilter,
+        ByTagNameFilter,
+        ObjectPermissionPrefetchFilter,
+        ObjectPermissionFilter,
+        DjangoFilterBackend,
+        OrderingFilter,
+        SearchFilter,
+    ]
+    filter_class = InstrumentTypeFilterSet
+    permission_classes = PomsViewSetBase.permission_classes + [
+        ObjectPermissionBase,
+    ]
     ordering_fields = ['user_code', 'name', 'short_name']
     search_fields = ['user_code', 'name', 'short_name']
 
@@ -67,38 +99,76 @@ class InstrumentTypeViewSet(PomsViewSetBase):
 #
 #
 # class InstrumentClassifierViewSet(ClassifierViewSetBase):
-#     queryset = InstrumentClassifier.objects.all()
+#     queryset = InstrumentClassifier.objects
 #     serializer_class = InstrumentClassifierSerializer
 #     filter_class = InstrumentClassifierFilterSet
 #
 #
 # class InstrumentClassifierNodeViewSet(ClassifierNodeViewSetBase):
-#     queryset = InstrumentClassifier.objects.all()
+#     queryset = InstrumentClassifier.objects
 #     serializer_class = InstrumentClassifierNodeSerializer
 #     filter_class = InstrumentClassifierFilterSet
 
 
-class PricingPolicyViewSet(PomsViewSetBase):
-    queryset = PricingPolicy.objects.all()
-    serializer_class = PricingPolicySerializer
-    filter_backends = [OwnerByMasterUserFilter, DjangoFilterBackend, OrderingFilter, SearchFilter]
-    ordering_fields = ['user_code', 'name', 'short_name']
-    search_fields = ['user_code', 'name', 'short_name']
+class InstrumentAttributeTypeFilterSet(FilterSet):
+    class Meta:
+        model = InstrumentAttributeType
+        fields = ['user_code', 'name', 'short_name']
 
 
 class InstrumentAttributeTypeViewSet(AttributeTypeViewSetBase):
-    queryset = InstrumentAttributeType.objects.all()
+    queryset = InstrumentAttributeType.objects.prefetch_related('classifiers')
     serializer_class = InstrumentAttributeTypeSerializer
+    filter_backends = [
+        OwnerByMasterUserFilter,
+        ObjectPermissionPrefetchFilter,
+        ObjectPermissionFilter,
+        DjangoFilterBackend,
+        OrderingFilter,
+        SearchFilter,
+    ]
+    filter_class = InstrumentAttributeTypeFilterSet
+    permission_classes = PomsViewSetBase.permission_classes + [
+        ObjectPermissionBase,
+    ]
+    ordering_fields = ['user_code', 'name', 'short_name', ]
+    search_fields = ['user_code', 'name', 'short_name', ]
+
+
+class InstrumentFilterSet(FilterSet):
+    tags = django_filters.MethodFilter(action='tags_filter')
+
+    class Meta:
+        model = Instrument
+        fields = ['user_code', 'name', 'short_name', 'tags']
+
+    @staticmethod
+    def tags_filter(queryset, value):
+        return queryset
 
 
 class InstrumentViewSet(PomsViewSetBase):
-    queryset = Instrument.objects.all()
+    queryset = Instrument.objects.prefetch_related('manual_pricing_formulas', 'accrual_calculation_schedules',
+                                                   'factor_schedules', 'event_schedules')
     serializer_class = InstrumentSerializer
-    permission_classes = [IsAuthenticated]
-    filter_backends = [OwnerByMasterUserFilter, AttributePrefetchFilter, TagPrefetchFilter,
-                       DjangoFilterBackend, OrderingFilter, SearchFilter]
-    ordering_fields = ['user_code', 'name', 'short_name']
-    search_fields = ['user_code', 'name', 'short_name']
+    filter_backends = [
+        OwnerByMasterUserFilter,
+        AttributePrefetchFilter,
+        TagPrefetchFilter,
+        ByTagNameFilter,
+        ObjectPermissionPrefetchFilter,
+        ObjectPermissionFilter,
+        DjangoFilterBackend,
+        # OrderingFilter,
+        OrderingWithAttributesFilter,
+        SearchFilter,
+    ]
+    filter_class = InstrumentFilterSet
+    permission_classes = PomsViewSetBase.permission_classes + [
+        ObjectPermissionBase
+    ]
+    ordering_fields = ['user_code', 'name', 'short_name', ]
+    search_fields = ['user_code', 'name', 'short_name', ]
 
 
 class PriceHistoryFilterSet(FilterSet):
@@ -112,32 +182,31 @@ class PriceHistoryFilterSet(FilterSet):
 
 
 class PriceHistoryViewSet(PomsViewSetBase):
-    queryset = PriceHistory.objects.all()
+    queryset = PriceHistory.objects
     serializer_class = PriceHistorySerializer
     filter_backends = [OwnerByInstrumentFilter, DjangoFilterBackend, OrderingFilter]
     filter_class = PriceHistoryFilterSet
     ordering_fields = ['-date']
 
-
-class ManualPricingFormulaViewSet(PomsViewSetBase):
-    queryset = ManualPricingFormula.objects.all()
-    serializer_class = ManualPricingFormulaSerializer
-    filter_backends = [OwnerByInstrumentFilter, DjangoFilterBackend, OrderingFilter]
-
-
-class AccrualCalculationScheduleViewSet(PomsViewSetBase):
-    queryset = AccrualCalculationSchedule.objects.all()
-    serializer_class = AccrualCalculationScheduleSerializer
-    filter_backends = [OwnerByInstrumentFilter, DjangoFilterBackend, OrderingFilter]
+# class ManualPricingFormulaViewSet(PomsViewSetBase):
+#     queryset = ManualPricingFormula.objects
+#     serializer_class = ManualPricingFormulaSerializer
+#     filter_backends = [OwnerByInstrumentFilter, DjangoFilterBackend, OrderingFilter]
 
 
-class InstrumentFactorScheduleViewSet(PomsViewSetBase):
-    queryset = InstrumentFactorSchedule.objects.all()
-    serializer_class = InstrumentFactorScheduleSerializer
-    filter_backends = [OwnerByInstrumentFilter, DjangoFilterBackend, OrderingFilter]
+# class AccrualCalculationScheduleViewSet(PomsViewSetBase):
+#     queryset = AccrualCalculationSchedule.objects
+#     serializer_class = AccrualCalculationScheduleSerializer
+#     filter_backends = [OwnerByInstrumentFilter, DjangoFilterBackend, OrderingFilter]
 
 
-class EventScheduleViewSet(PomsViewSetBase):
-    queryset = EventSchedule.objects.all()
-    serializer_class = EventScheduleSerializer
-    filter_backends = [OwnerByInstrumentFilter, DjangoFilterBackend, OrderingFilter]
+# class InstrumentFactorScheduleViewSet(PomsViewSetBase):
+#     queryset = InstrumentFactorSchedule.objects
+#     serializer_class = InstrumentFactorScheduleSerializer
+#     filter_backends = [OwnerByInstrumentFilter, DjangoFilterBackend, OrderingFilter]
+
+
+# class EventScheduleViewSet(PomsViewSetBase):
+#     queryset = EventSchedule.objects
+#     serializer_class = EventScheduleSerializer
+#     filter_backends = [OwnerByInstrumentFilter, DjangoFilterBackend, OrderingFilter]

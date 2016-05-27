@@ -4,14 +4,14 @@ from rest_framework import serializers
 
 from poms.common.serializers import PomsClassSerializer, ClassifierSerializerBase, ClassifierNodeSerializerBase
 from poms.currencies.serializers import CurrencyField
-from poms.instruments.fields import InstrumentClassifierField, InstrumentField, InstrumentClassifierRootField, \
-    InstrumentAttributeTypeField
+from poms.instruments.fields import InstrumentClassifierField, InstrumentField, InstrumentAttributeTypeField
 from poms.instruments.models import InstrumentClassifier, Instrument, PriceHistory, InstrumentClass, DailyPricingModel, \
     AccrualCalculationModel, PaymentSizeDetail, PeriodicityPeriod, CostMethod, InstrumentType, InstrumentAttributeType, \
     InstrumentAttribute, ManualPricingFormula, AccrualCalculationSchedule, InstrumentFactorSchedule, EventSchedule, \
     PricingPolicy
 from poms.obj_attrs.serializers import AttributeSerializerBase, AttributeTypeSerializerBase, \
     ModelWithAttributesSerializer
+from poms.obj_perms.serializers import ModelWithObjectPermissionSerializer
 from poms.tags.fields import TagField
 from poms.transactions.fields import TransactionTypeField
 from poms.users.fields import MasterUserField
@@ -68,7 +68,7 @@ class InstrumentClassifierNodeSerializer(ClassifierNodeSerializerBase):
         model = InstrumentClassifier
 
 
-class InstrumentTypeSerializer(serializers.ModelSerializer):
+class InstrumentTypeSerializer(ModelWithObjectPermissionSerializer):
     master_user = MasterUserField()
     tags = TagField(many=True)
 
@@ -78,7 +78,7 @@ class InstrumentTypeSerializer(serializers.ModelSerializer):
                   'instrument_class', 'tags']
 
 
-class InstrumentAttributeTypeSerializer(AttributeTypeSerializerBase):
+class InstrumentAttributeTypeSerializer(AttributeTypeSerializerBase, ModelWithObjectPermissionSerializer):
     # classifier_root = InstrumentClassifierRootField(required=False, allow_null=True)
     classifiers = InstrumentClassifierSerializer(required=False, allow_null=True, many=True)
 
@@ -86,6 +86,41 @@ class InstrumentAttributeTypeSerializer(AttributeTypeSerializerBase):
         model = InstrumentAttributeType
         fields = AttributeTypeSerializerBase.Meta.fields + ['classifiers']
         # update_read_only_fields = AttributeTypeSerializerBase.Meta.update_read_only_fields + ['classifier_root']
+
+
+class ManualPricingFormulaSerializer(serializers.ModelSerializer):
+    # instrument = InstrumentField()
+
+    class Meta:
+        model = ManualPricingFormula
+        fields = ['id', 'instrument', 'pricing_policy', 'expr', 'notes']
+
+
+class AccrualCalculationScheduleSerializer(serializers.ModelSerializer):
+    # instrument = InstrumentField()
+
+    class Meta:
+        model = AccrualCalculationSchedule
+        fields = ['id', 'instrument', 'accrual_start_date', 'first_payment_date', 'accrual_size',
+                  'accrual_calculation_model', 'periodicity_period', 'notes']
+
+
+class InstrumentFactorScheduleSerializer(serializers.ModelSerializer):
+    # instrument = InstrumentField()
+
+    class Meta:
+        model = InstrumentFactorSchedule
+        fields = ['id', 'instrument', 'effective_date', 'factor_value']
+
+
+class EventScheduleSerializer(serializers.ModelSerializer):
+    # instrument = InstrumentField()
+    transaction_types = TransactionTypeField(many=True)
+
+    class Meta:
+        model = EventSchedule
+        fields = ['id', 'instrument', 'transaction_types', 'event_class', 'notification_class',
+                  'notification_date', 'effective_date']
 
 
 class InstrumentAttributeSerializer(AttributeSerializerBase):
@@ -97,10 +132,16 @@ class InstrumentAttributeSerializer(AttributeSerializerBase):
         fields = AttributeSerializerBase.Meta.fields + ['attribute_type', 'classifier']
 
 
-class InstrumentSerializer(ModelWithAttributesSerializer):
+class InstrumentSerializer(ModelWithAttributesSerializer, ModelWithObjectPermissionSerializer):
     master_user = MasterUserField()
     pricing_currency = CurrencyField(read_only=False)
     accrued_currency = CurrencyField(read_only=False)
+
+    manual_pricing_formulas = ManualPricingFormulaSerializer(many=True, required=False, allow_null=True)
+    accrual_calculation_schedules = AccrualCalculationScheduleSerializer(many=True, required=False, allow_null=True)
+    factor_schedules = InstrumentFactorScheduleSerializer(many=True, required=False, allow_null=True)
+    event_schedules = EventScheduleSerializer(many=True, required=False, allow_null=True)
+
     attributes = InstrumentAttributeSerializer(many=True)
     tags = TagField(many=True)
 
@@ -109,6 +150,7 @@ class InstrumentSerializer(ModelWithAttributesSerializer):
         fields = ['url', 'id', 'master_user', 'user_code', 'name', 'short_name', 'notes', 'is_active',
                   'pricing_currency', 'price_multiplier', 'accrued_currency', 'accrued_multiplier',
                   'daily_pricing_model', 'payment_size_detail', 'default_price', 'default_accrued',
+                  'manual_pricing_formulas', 'accrual_calculation_schedules', 'factor_schedules', 'event_schedules',
                   'attributes', 'tags']
 
 
@@ -118,38 +160,3 @@ class PriceHistorySerializer(serializers.ModelSerializer):
     class Meta:
         model = PriceHistory
         fields = ['url', 'id', 'instrument', 'date', 'principal_price', 'accrued_price', 'factor']
-
-
-class ManualPricingFormulaSerializer(serializers.ModelSerializer):
-    instrument = InstrumentField()
-
-    class Meta:
-        model = ManualPricingFormula
-        fields = ['url', 'id', 'instrument', 'pricing_policy', 'expr', 'notes']
-
-
-class AccrualCalculationScheduleSerializer(serializers.ModelSerializer):
-    instrument = InstrumentField()
-
-    class Meta:
-        model = AccrualCalculationSchedule
-        fields = ['url', 'id', 'instrument', 'accrual_start_date', 'first_payment_date', 'accrual_size',
-                  'accrual_calculation_model', 'periodicity_period', 'notes']
-
-
-class InstrumentFactorScheduleSerializer(serializers.ModelSerializer):
-    instrument = InstrumentField()
-
-    class Meta:
-        model = InstrumentFactorSchedule
-        fields = ['url', 'id', 'instrument', 'effective_date', 'factor_value']
-
-
-class EventScheduleSerializer(serializers.ModelSerializer):
-    instrument = InstrumentField()
-    transaction_types = TransactionTypeField(many=True)
-
-    class Meta:
-        model = EventSchedule
-        fields = ['url', 'id', 'instrument', 'transaction_types', 'event_class', 'notification_class',
-                  'notification_date', 'effective_date']

@@ -65,10 +65,10 @@ router.register(r'instruments/instrument-type', instruments.InstrumentTypeViewSe
 router.register(r'instruments/instrument-attribute-type', instruments.InstrumentAttributeTypeViewSet)
 router.register(r'instruments/instrument', instruments.InstrumentViewSet)
 router.register(r'instruments/price-history', instruments.PriceHistoryViewSet)
-router.register(r'instruments/manual-pricing-formula', instruments.ManualPricingFormulaViewSet)
-router.register(r'instruments/accrual-calculation-schedule', instruments.AccrualCalculationScheduleViewSet)
-router.register(r'instruments/instrument-factor-schedule', instruments.InstrumentFactorScheduleViewSet)
-router.register(r'instruments/event-schedule', instruments.EventScheduleViewSet)
+# router.register(r'instruments/manual-pricing-formula', instruments.ManualPricingFormulaViewSet)
+# router.register(r'instruments/accrual-calculation-schedule', instruments.AccrualCalculationScheduleViewSet)
+# router.register(r'instruments/instrument-factor-schedule', instruments.InstrumentFactorScheduleViewSet)
+# router.register(r'instruments/event-schedule', instruments.EventScheduleViewSet)
 
 # router.register(r'portfolios/portfolio-classifier/node', portfolios.PortfolioClassifierNodeViewSet,
 #                 'portfolioclassifiernode')
