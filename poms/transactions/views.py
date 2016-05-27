@@ -3,13 +3,16 @@ from __future__ import unicode_literals
 import django_filters
 from rest_framework.filters import FilterSet, DjangoFilterBackend, OrderingFilter, SearchFilter
 
+from poms.common.filters import OrderingWithAttributesFilter
 from poms.common.views import PomsClassViewSetBase, PomsViewSetBase
 from poms.obj_attrs.filters import AttributePrefetchFilter
 from poms.obj_attrs.views import AttributeTypeViewSetBase
 from poms.obj_perms.filters import ObjectPermissionPrefetchFilter, ObjectPermissionFilter
 from poms.obj_perms.permissions import ObjectPermissionBase
 from poms.tags.filters import TagPrefetchFilter
+from poms.transactions.filters import TransactionObjectPermissionFilter
 from poms.transactions.models import TransactionClass, Transaction, TransactionType, TransactionAttributeType
+from poms.transactions.permissions import TransactionObjectPermission
 from poms.transactions.serializers import TransactionClassSerializer, TransactionSerializer, TransactionTypeSerializer, \
     TransactionAttributeTypeSerializer
 from poms.users.filters import OwnerByMasterUserFilter
@@ -63,37 +66,35 @@ class TransactionFilterSet(FilterSet):
 
 
 class TransactionViewSet(PomsViewSetBase):
-    # queryset = Transaction.objects.prefetch_related(
-    #     'transaction_class',
-    #     'instrument', 'transaction_currency', 'settlement_currency',
-    #     'portfolio', 'account_cash', 'account_position', 'account_interim',
-    #     'strategy1_position', 'strategy1_cash', 'strategy2_position', 'strategy2_cash',
-    #     'strategy3_position', 'strategy3_cash'
-    # )
-
-    queryset = Transaction.objects
-    # queryset = Transaction.objects.select_related(
-    #     'master_user',
-    #     'transaction_class',
-    #     'instrument', 'transaction_currency', 'settlement_currency',
-    #     'portfolio', 'account_cash', 'account_position', 'account_interim',
-    #     'strategy1_position', 'strategy1_cash', 'strategy2_position', 'strategy2_cash',
-    #     'strategy3_position', 'strategy3_cash'
-    # ).prefetch_related(
-    #     'instrument__group_object_permissions', 'instrument__group_object_permissions__permission',
-    #     'portfolio__group_object_permissions', 'portfolio__group_object_permissions__permission',
-    #     'account_cash__group_object_permissions', 'account_cash__group_object_permissions__permission',
-    #     'account_position__group_object_permissions', 'account_position__group_object_permissions__permission',
-    #     'account_interim__group_object_permissions', 'account_interim__group_object_permissions__permission',
-    #     # 'strategy1_position__group_object_permissions', 'strategy1_position__group_object_permissions__permission',
-    #     # 'strategy1_cash__group_object_permissions', 'strategy1_cash__group_object_permissions__permission',
-    #     # 'strategy2_position__group_object_permissions', 'strategy2_position__group_object_permissions__permission',
-    #     # 'strategy2_cash__group_object_permissions', 'strategy2_cash__group_object_permissions__permission',
-    #     # 'strategy3_position__group_object_permissions', 'strategy3_position__group_object_permissions__permission',
-    #     # 'strategy3_cash__group_object_permissions', 'strategy3_cash__group_object_permissions__permission',
-    # )
+    # queryset = Transaction.objects
+    queryset = Transaction.objects.select_related(
+        'master_user',
+        'transaction_class',
+        'instrument', 'transaction_currency', 'settlement_currency',
+        'portfolio', 'account_cash', 'account_position', 'account_interim',
+        'strategy1_position', 'strategy1_cash',
+        'strategy2_position', 'strategy2_cash',
+        'strategy3_position', 'strategy3_cash'
+    ).prefetch_related(
+        'portfolio__group_object_permissions', 'portfolio__group_object_permissions__permission',
+        'account_cash__group_object_permissions', 'account_cash__group_object_permissions__permission',
+        'account_position__group_object_permissions', 'account_position__group_object_permissions__permission',
+        'account_interim__group_object_permissions', 'account_interim__group_object_permissions__permission',
+        'instrument__group_object_permissions', 'instrument__group_object_permissions__permission',
+    )
     serializer_class = TransactionSerializer
-    filter_backends = [OwnerByMasterUserFilter, AttributePrefetchFilter,
-                       DjangoFilterBackend, OrderingFilter]
+    filter_backends = [
+        OwnerByMasterUserFilter,
+        TransactionObjectPermissionFilter,
+        AttributePrefetchFilter,
+        DjangoFilterBackend,
+        OrderingWithAttributesFilter,
+        # OrderingFilter
+        SearchFilter,
+    ]
+    permission_classes = PomsViewSetBase.permission_classes + [
+        TransactionObjectPermission,
+    ]
     filter_class = TransactionFilterSet
     ordering_fields = ['transaction_date']
+    # search_fields = ['user_code', 'name', 'short_name', ]

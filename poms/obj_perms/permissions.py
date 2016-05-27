@@ -22,10 +22,20 @@ class ObjectPermissionBase(BasePermission):
         return {perm % kwargs for perm in self.perms_map[method]}
 
     def has_object_permission(self, request, view, obj):
-        member = request.user.member
+        # member = request.user.member
+        # if member.is_superuser:
+        #     return True
+        # req_perms = self.get_required_object_permissions(request.method, obj)
+        # if not req_perms:
+        #     return True
+        # perms = get_granted_permissions(member, obj)
+        # return req_perms.issubset(perms)
+        return self.simple_has_object_permission(request.user.member, request.method, obj)
+
+    def simple_has_object_permission(self, member, http_method, obj):
         if member.is_superuser:
             return True
-        req_perms = self.get_required_object_permissions(request.method, obj)
+        req_perms = self.get_required_object_permissions(http_method, obj)
         if not req_perms:
             return True
         perms = get_granted_permissions(member, obj)
