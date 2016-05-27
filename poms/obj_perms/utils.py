@@ -90,6 +90,20 @@ def obj_perms_filter_objects(member, perms, queryset, model_cls=None, prefetch=T
         return queryset.none()
 
 
+def obj_perms_filter_object_list(member, perms, objs):
+    if member.is_superuser:
+        return objs
+
+    if not isinstance(perms, set):
+        perms = set(perms)
+
+    def _has_perm(obj):
+        obj_perms = get_granted_permissions(member, obj)
+        return perms.issubset(obj_perms)
+
+    return [obj for obj in objs if _has_perm(obj)]
+
+
 def get_granted_permissions(member, obj):
     model = obj
     user_lookup_name, user_obj_perms_model = get_user_obj_perms_model(model)

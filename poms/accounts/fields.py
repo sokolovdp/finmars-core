@@ -1,11 +1,12 @@
 from poms.accounts.models import AccountClassifier, Account, AccountAttributeType, AccountType
 from poms.common.fields import FilteredPrimaryKeyRelatedField
+from poms.obj_attrs.filters import AttributeClassifierBaseField
 from poms.users.filters import OwnerByMasterUserFilter
 
 
-class AccountClassifierField(FilteredPrimaryKeyRelatedField):
+class AccountClassifierField(AttributeClassifierBaseField):
     queryset = AccountClassifier.objects
-    filter_backends = [OwnerByMasterUserFilter]
+    # filter_backends = [OwnerByMasterUserFilter]
 
 
 class AccountClassifierRootField(FilteredPrimaryKeyRelatedField):

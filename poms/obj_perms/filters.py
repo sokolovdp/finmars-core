@@ -14,7 +14,14 @@ class ObjectPermissionFilter(BaseFilterBackend):
         return {perm % kwargs for perm in self.codename_set}
 
     def filter_queryset(self, request, queryset, view):
-        member = request.user.member
+        # member = request.user.member
+        # if member.is_superuser:
+        #     return queryset
+        # model_cls = queryset.model
+        # return obj_perms_filter_objects(member, self.get_codename_set(model_cls), queryset)
+        return self.simple_filter_queryset(request.user.member, queryset)
+
+    def simple_filter_queryset(self, member, queryset):
         if member.is_superuser:
             return queryset
         model_cls = queryset.model

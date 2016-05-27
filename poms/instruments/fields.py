@@ -2,12 +2,13 @@ from __future__ import unicode_literals
 
 from poms.common.fields import FilteredPrimaryKeyRelatedField
 from poms.instruments.models import InstrumentClassifier, Instrument, InstrumentAttributeType, InstrumentType
+from poms.obj_attrs.filters import AttributeClassifierBaseField
 from poms.users.filters import OwnerByMasterUserFilter
 
 
-class InstrumentClassifierField(FilteredPrimaryKeyRelatedField):
+class InstrumentClassifierField(AttributeClassifierBaseField):
     queryset = InstrumentClassifier.objects
-    filter_backends = [OwnerByMasterUserFilter]
+    # filter_backends = [OwnerByMasterUserFilter]
 
 
 class InstrumentClassifierRootField(FilteredPrimaryKeyRelatedField):

@@ -4,6 +4,7 @@ from poms.common.fields import FilteredPrimaryKeyRelatedField
 from poms.common.filters import ClassifierRootFilter
 from poms.counterparties.models import CounterpartyClassifier, Counterparty, Responsible, ResponsibleClassifier, \
     CounterpartyAttributeType
+from poms.obj_attrs.filters import AttributeClassifierBaseField
 from poms.users.filters import OwnerByMasterUserFilter
 
 
@@ -12,9 +13,9 @@ class CounterpartyAttributeTypeField(FilteredPrimaryKeyRelatedField):
     filter_backends = [OwnerByMasterUserFilter]
 
 
-class CounterpartyClassifierField(FilteredPrimaryKeyRelatedField):
+class CounterpartyClassifierField(AttributeClassifierBaseField):
     queryset = CounterpartyClassifier.objects
-    filter_backends = [OwnerByMasterUserFilter]
+    # filter_backends = [OwnerByMasterUserFilter]
 
 
 class CounterpartyClassifierRootField(FilteredPrimaryKeyRelatedField):
@@ -32,9 +33,9 @@ class ResponsibleAttributeTypeField(FilteredPrimaryKeyRelatedField):
     filter_backends = [OwnerByMasterUserFilter]
 
 
-class ResponsibleClassifierField(FilteredPrimaryKeyRelatedField):
+class ResponsibleClassifierField(AttributeClassifierBaseField):
     queryset = ResponsibleClassifier.objects
-    filter_backends = [OwnerByMasterUserFilter]
+    # filter_backends = [OwnerByMasterUserFilter]
 
 
 class ResponsibleClassifierRootField(FilteredPrimaryKeyRelatedField):

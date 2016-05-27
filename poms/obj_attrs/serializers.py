@@ -143,18 +143,23 @@ class ModelWithAttributesSerializer(serializers.ModelSerializer):
     def create(self, validated_data):
         attributes = validated_data.pop('attributes', None)
         instance = super(ModelWithAttributesSerializer, self).create(validated_data)
-        if attributes:
-            self.save_attributes(instance, attributes, True)
+        self.save_attributes(instance, attributes, True)
         return instance
 
     def update(self, instance, validated_data):
         attributes = validated_data.pop('attributes', None)
         instance = super(ModelWithAttributesSerializer, self).update(instance, validated_data)
-        if attributes is not None:
-            self.save_attributes(instance, attributes, False)
+        self.save_attributes(instance, attributes, False)
         return instance
 
     def save_attributes(self, instance, attributes, created):
+        if attributes is None:
+            return
+        if created:
+            if not attributes:
+                return
+        else:
+            pass
         cur_attrs = {a.attribute_type_id: a for a in instance.attributes.all()}
         new_attrs = {a['attribute_type'].id: a for a in attributes}
 
