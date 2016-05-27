@@ -12,7 +12,7 @@ from poms.tags.filters import TagPrefetchFilter, ByTagNameFilter
 from poms.users.filters import OwnerByMasterUserFilter
 
 
-class CurrencyFilter(FilterSet):
+class CurrencyFilterSet(FilterSet):
     tags = django_filters.MethodFilter(action='tags_filter')
 
     class Meta:
@@ -36,12 +36,12 @@ class CurrencyViewSet(PomsViewSetBase):
         OrderingFilter,
         SearchFilter,
     ]
-    filter_class = CurrencyFilter
+    filter_class = CurrencyFilterSet
     ordering_fields = ['user_code', 'name', 'short_name']
     search_fields = ['user_code', 'name', 'short_name']
 
 
-class CurrencyHistoryFilter(FilterSet):
+class CurrencyHistoryFilterSet(FilterSet):
     currency = django_filters.Filter(name='currency')
     min_date = django_filters.DateFilter(name='date', lookup_type='gte')
     max_date = django_filters.DateFilter(name='date', lookup_type='lte')
@@ -60,5 +60,5 @@ class CurrencyHistoryViewSet(PomsViewSetBase):
         DjangoFilterBackend,
         OrderingFilter,
     ]
-    filter_class = CurrencyHistoryFilter
+    filter_class = CurrencyHistoryFilterSet
     ordering_fields = ['date',]

@@ -16,7 +16,7 @@ from poms.notifications.models import Notification
 from poms.notifications.serializers import NotificationSerializer
 
 
-class NotificationFilter(FilterSet):
+class NotificationFilterSet(FilterSet):
     all = django_filters.MethodFilter(action='show_all', widget=BooleanWidget())
     level = django_filters.MultipleChoiceFilter(choices=notifications.LEVELS)
     type = django_filters.CharFilter(lookup_expr='startswith')
@@ -37,7 +37,7 @@ class NotificationViewSet(DbTransactionMixin, ReadOnlyModelViewSet):
     serializer_class = NotificationSerializer
     permission_classes = (IsAuthenticated,)
     filter_backends = (OwnerByRecipientFilter, DjangoFilterBackend, OrderingFilter, SearchFilter,)
-    filter_class = NotificationFilter
+    filter_class = NotificationFilterSet
     ordering_fields = ['level', 'create_date']
 
     # search_fields = ['verb']

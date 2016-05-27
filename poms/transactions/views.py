@@ -54,7 +54,7 @@ class TransactionAttributeTypeViewSet(AttributeTypeViewSetBase):
     search_fields = ['user_code', 'name', 'short_name', ]
 
 
-class TransactionFilter(FilterSet):
+class TransactionFilterSet(FilterSet):
     transaction_date = django_filters.DateFilter()
 
     class Meta:
@@ -95,5 +95,5 @@ class TransactionViewSet(PomsViewSetBase):
     serializer_class = TransactionSerializer
     filter_backends = [OwnerByMasterUserFilter, AttributePrefetchFilter,
                        DjangoFilterBackend, OrderingFilter]
-    filter_class = TransactionFilter
+    filter_class = TransactionFilterSet
     ordering_fields = ['transaction_date']

@@ -10,7 +10,7 @@ from poms.audit.serializers import AuthLogEntrySerializer
 from poms.users.filters import OwnerByUserFilter
 
 
-class AuthLogEntryFilter(FilterSet):
+class AuthLogEntryFilterSet(FilterSet):
     class Meta:
         model = AuthLogEntry
         fields = ['user_ip', 'is_success']
@@ -21,6 +21,6 @@ class AuthLogEntryViewSet(ReadOnlyModelViewSet):
     serializer_class = AuthLogEntrySerializer
     permission_classes = (IsAuthenticated,)
     filter_backends = (OwnerByUserFilter, DjangoFilterBackend, OrderingFilter, SearchFilter,)
-    filter_class = AuthLogEntryFilter
+    filter_class = AuthLogEntryFilterSet
     ordering_fields = ['user_ip']
     search_fields = ['user_ip', 'user_agent']

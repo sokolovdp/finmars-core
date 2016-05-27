@@ -23,7 +23,7 @@ class ThreadStatusViewSet(PomsViewSetBase):
     search_fields = ['name']
 
 
-class ThreadFilter(FilterSet):
+class ThreadFilterSet(FilterSet):
     created = django_filters.DateFilter()
 
     class Meta:
@@ -38,12 +38,12 @@ class ThreadViewSet(PomsViewSetBase):
     filter_backends = [OwnerByMasterUserFilter, ObjectPermissionPrefetchFilter,
                        ThreadObjectPermissionFilter,
                        DjangoFilterBackend, OrderingFilter, SearchFilter, ]
-    filter_class = ThreadFilter
+    filter_class = ThreadFilterSet
     ordering_fields = ['id', 'created', 'subject']
     search_fields = ['subject']
 
 
-class MessageFilter(FilterSet):
+class MessageFilterSet(FilterSet):
     thread = django_filters.NumberFilter()
     created = django_filters.DateFilter()
 
@@ -58,7 +58,7 @@ class MessageViewSet(PomsViewSetBase):
     permission_classes = [IsAuthenticated, MessagePermission]
     filter_backends = [MessageThreadOwnerByMasterUserFilter, MessageObjectPermissionFilter, DjangoFilterBackend,
                        OrderingFilter, SearchFilter, ]
-    filter_class = MessageFilter
+    filter_class = MessageFilterSet
     ordering_fields = ['id', 'created']
 
 

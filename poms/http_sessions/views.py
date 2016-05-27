@@ -11,7 +11,7 @@ from poms.http_sessions.serializers import SessionSerializer
 from poms.users.filters import OwnerByUserFilter
 
 
-class SessionFilter(FilterSet):
+class SessionFilterSet(FilterSet):
     class Meta:
         model = Session
         fields = ['user_ip']
@@ -23,6 +23,6 @@ class SessionViewSet(DbTransactionMixin, DestroyModelMixin, ReadOnlyModelViewSet
     serializer_class = SessionSerializer
     permission_classes = (IsAuthenticated,)
     filter_backends = (OwnerByUserFilter, DjangoFilterBackend, OrderingFilter, SearchFilter,)
-    filter_class = SessionFilter
+    filter_class = SessionFilterSet
     ordering_fields = ['user_ip']
     search_fields = ['user_ip', 'user_agent']
