@@ -9,8 +9,8 @@ class TransactionObjectPermission(BasePermission):
         if member.is_superuser:
             return True
         p = lambda obj1: ObjectPermissionBase().simple_has_object_permission(member, 'GET', obj1)
-        print('p(obj.portfolio) -> %s' % p(obj.portfolio))
-        print('p(obj.account_position) -> %s' % p(obj.account_position))
-        print('p(obj.account_cash) -> %s' % p(obj.account_cash))
-        print('p(obj.account_interim) -> %s' % p(obj.account_interim))
+        # print('p(obj.portfolio) -> %s' % p(obj.portfolio))
+        # print('p(obj.account_position) -> %s' % p(obj.account_position))
+        # print('p(obj.account_cash) -> %s' % p(obj.account_cash))
+        # print('p(obj.account_interim) -> %s' % p(obj.account_interim))
         return p(obj.portfolio) and (p(obj.account_position) | p (obj.account_cash) | p(obj.account_interim))
