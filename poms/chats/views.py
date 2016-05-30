@@ -4,8 +4,7 @@ import django_filters
 from rest_framework.filters import OrderingFilter, SearchFilter, DjangoFilterBackend, FilterSet
 from rest_framework.permissions import IsAuthenticated
 
-from poms.chats.filters import MessageThreadOwnerByMasterUserFilter, DirectMessageFilter, \
-    MessageObjectPermissionFilter
+from poms.chats.filters import DirectMessageFilter, MessagePermissionFilter
 from poms.chats.models import Thread, Message, DirectMessage, ThreadStatus
 from poms.chats.permissions import ThreadObjectPermission, MessagePermission, DirectMessagePermission
 from poms.chats.serializers import ThreadSerializer, MessageSerializer, DirectMessageSerializer, ThreadStatusSerializer
@@ -66,8 +65,8 @@ class MessageViewSet(PomsViewSetBase):
     serializer_class = MessageSerializer
     permission_classes = [IsAuthenticated, MessagePermission]
     filter_backends = [
-        MessageThreadOwnerByMasterUserFilter,
-        MessageObjectPermissionFilter,
+        # MessageThreadOwnerByMasterUserFilter,
+        MessagePermissionFilter,
         DjangoFilterBackend,
         OrderingFilter,
         SearchFilter,

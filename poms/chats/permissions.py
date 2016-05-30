@@ -54,7 +54,7 @@ class MessagePermission(BasePermission):
     def has_object_permission(self, request, view, obj):
         if request.method in SAFE_METHODS:
             return True
-        # member = get_member(request)
+        # allow change message
         member = request.user.member
         return obj.sender_id == member.id
 
