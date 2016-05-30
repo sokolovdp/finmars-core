@@ -4,6 +4,7 @@ from rest_framework import serializers
 
 from poms.chats.fields import ThreadField, ThreadStatusField
 from poms.chats.models import Thread, Message, DirectMessage, ThreadStatus
+from poms.obj_perms.serializers import ModelWithObjectPermissionSerializer
 from poms.users.fields import MasterUserField, HiddenMemberField, UserField, HiddenUserField
 
 
@@ -16,15 +17,14 @@ class ThreadStatusSerializer(serializers.ModelSerializer):
         fields = ['url', 'id', 'master_user', 'name', 'is_closed']
 
 
-class ThreadSerializer(serializers.ModelSerializer):
+class ThreadSerializer(ModelWithObjectPermissionSerializer):
     url = serializers.HyperlinkedIdentityField(view_name='chatthread-detail')
     master_user = MasterUserField()
     status = ThreadStatusField()
 
     class Meta:
         model = Thread
-        fields = ['url', 'id', 'master_user', 'created', 'modified', 'subject', 'status',
-                  'object_permission']
+        fields = ['url', 'id', 'master_user', 'created', 'modified', 'subject', 'status']
         read_only_fields = ['created', 'modified']
 
 

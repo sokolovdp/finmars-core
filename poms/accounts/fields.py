@@ -5,6 +5,7 @@ from poms.obj_perms.filters import ObjectPermissionPrefetchFilter, ObjectPermiss
 from poms.users.filters import OwnerByMasterUserFilter
 
 
+# TODO: add perms
 class AccountClassifierField(AttributeClassifierBaseField):
     queryset = AccountClassifier.objects
     # filter_backends = [OwnerByMasterUserFilter]

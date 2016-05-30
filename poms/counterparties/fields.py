@@ -5,12 +5,17 @@ from poms.common.filters import ClassifierRootFilter
 from poms.counterparties.models import CounterpartyClassifier, Counterparty, Responsible, ResponsibleClassifier, \
     CounterpartyAttributeType
 from poms.obj_attrs.filters import AttributeClassifierBaseField
+from poms.obj_perms.filters import ObjectPermissionPrefetchFilter, ObjectPermissionFilter
 from poms.users.filters import OwnerByMasterUserFilter
 
 
 class CounterpartyAttributeTypeField(FilteredPrimaryKeyRelatedField):
     queryset = CounterpartyAttributeType.objects
-    filter_backends = [OwnerByMasterUserFilter]
+    filter_backends = [
+        OwnerByMasterUserFilter,
+        ObjectPermissionPrefetchFilter,
+        ObjectPermissionFilter,
+    ]
 
 
 class CounterpartyClassifierField(AttributeClassifierBaseField):
@@ -25,12 +30,20 @@ class CounterpartyClassifierRootField(FilteredPrimaryKeyRelatedField):
 
 class CounterpartyField(FilteredPrimaryKeyRelatedField):
     queryset = Counterparty.objects
-    filter_backends = [OwnerByMasterUserFilter]
+    filter_backends = [
+        OwnerByMasterUserFilter,
+        ObjectPermissionPrefetchFilter,
+        ObjectPermissionFilter,
+    ]
 
 
 class ResponsibleAttributeTypeField(FilteredPrimaryKeyRelatedField):
     queryset = CounterpartyAttributeType.objects
-    filter_backends = [OwnerByMasterUserFilter]
+    filter_backends = [
+        OwnerByMasterUserFilter,
+        ObjectPermissionPrefetchFilter,
+        ObjectPermissionFilter,
+    ]
 
 
 class ResponsibleClassifierField(AttributeClassifierBaseField):
@@ -45,4 +58,8 @@ class ResponsibleClassifierRootField(FilteredPrimaryKeyRelatedField):
 
 class ResponsibleField(FilteredPrimaryKeyRelatedField):
     queryset = Responsible.objects
-    filter_backends = [OwnerByMasterUserFilter]
+    filter_backends = [
+        OwnerByMasterUserFilter,
+        ObjectPermissionPrefetchFilter,
+        ObjectPermissionFilter,
+    ]
