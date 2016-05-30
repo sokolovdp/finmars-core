@@ -64,6 +64,7 @@ INSTALLED_APPS = [
     'poms.obj_attrs',
     'poms.obj_perms',
     'poms.reports',
+    'poms.ui',
     'poms.api',
 
     'django_extensions',
@@ -243,9 +244,9 @@ LOGGING = {
         'py.warnings': {
             'handlers': ['console'],
         },
-        'django.db': {
-            'level': 'DEBUG',
-        },
+        # 'django.db': {
+        #     'level': 'DEBUG',
+        # },
         'poms': {
             'level': 'DEBUG',
             'handlers': ['console'],

@@ -18,6 +18,7 @@ import poms.strategies.views as strategies
 import poms.tags.views as tags
 import poms.transactions.views as transactions
 import poms.users.views as users
+import poms.ui.views as ui
 
 router = routers.DefaultRouter()
 router.register(r'users/login', users.LoginViewSet, 'login')
@@ -91,6 +92,11 @@ router.register(r'transactions/transaction-class', transactions.TransactionClass
 router.register(r'transactions/transaction-type', transactions.TransactionTypeViewSet)
 router.register(r'transactions/transaction-attribute-type', transactions.TransactionAttributeTypeViewSet)
 router.register(r'transactions/transaction', transactions.TransactionViewSet)
+
+router.register(r'ui/list-layout', ui.ListLayoutViewSet)
+router.register(r'ui/edit-layout', ui.EditLayoutViewSet)
+router.register(r'ui/template-list-layout', ui.TemplateListLayoutViewSet)
+router.register(r'ui/template-edit-layout', ui.TemplateEditLayoutViewSet)
 
 router.register(r'reports/balance', reports.BalanceReport2ViewSet, "balancereport2")
 router.register(r'reports/pl', reports.PLReport2ViewSet, "plreport2")
