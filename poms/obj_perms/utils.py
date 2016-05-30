@@ -90,18 +90,26 @@ def obj_perms_filter_objects(member, perms, queryset, model_cls=None, prefetch=T
         return queryset.none()
 
 
-def obj_perms_filter_object_list(member, perms, objs):
-    if member.is_superuser:
-        return objs
+def obj_perms_filter_objects_for_view(member, queryset, model=None):
+    model = model or queryset.model
+    perms = get_view_perms(model)
+    return obj_perms_filter_objects(member, perms, queryset)
 
+
+def obj_perms_filter_object_list(member, perms, objs):
+    if member.is_superuser or not objs:
+        return objs
     if not isinstance(perms, set):
         perms = set(perms)
+    return [obj for obj in objs if has_perms(member, obj, perms)]
 
-    def _has_perm(obj):
-        obj_perms = get_granted_permissions(member, obj)
-        return perms.issubset(obj_perms)
 
-    return [obj for obj in objs if _has_perm(obj)]
+def obj_perms_filter_object_list_for_view(member, objs, model=None):
+    if not objs:
+        return objs
+    model = model or objs[0]
+    perms = get_view_perms(model)
+    return obj_perms_filter_object_list(member, perms, objs)
 
 
 def get_granted_permissions(member, obj):
@@ -212,3 +220,34 @@ def assign_perms_from_list(obj, user_object_permissions=None, group_object_permi
 
     if group_object_permissions is not None:
         _assign_perms(obj, group_lookup_name, group_obj_perms_model, 'group', group_object_permissions)
+
+
+def get_view_perms(model):
+    # codename_set = ['view_%(model_name)s', 'change_%(model_name)s', 'manage_%(model_name)s']
+    codename_set = ['change_%(model_name)s', ]
+    kwargs = {
+        'app_label': model._meta.app_label,
+        'model_name': model._meta.model_name
+    }
+    return {perm % kwargs for perm in codename_set}
+
+
+def has_perms(member, obj, perms):
+    if member.is_superuser:
+        return True
+    obj_perms = get_granted_permissions(member, obj)
+    return perms.issubset(obj_perms)
+
+
+def has_view_perms(member, obj):
+    if member.is_superuser:
+        return True
+    perms = get_view_perms(obj)
+    return has_perms(member, obj, perms)
+
+
+def perms_prefetch(queryset):
+    return queryset.prefetch_related(
+        'group_object_permissions',
+        'group_object_permissions__permission',
+    )

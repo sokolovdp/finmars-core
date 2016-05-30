@@ -10,3 +10,13 @@ def filter_by_tag_name(queryset, value):
             f |= Q(tags__name__istartswith=t)
         return queryset.filter(f)
     return queryset
+
+
+def tags_prefetch(queryset):
+    return queryset.prefetch_related(
+        'tags',
+        # 'tags__user_object_permissions',
+        # 'tags__user_object_permissions__permission',
+        'tags__group_object_permissions',
+        'tags__group_object_permissions__permission',
+    )

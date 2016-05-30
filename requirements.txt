@@ -14,3 +14,4 @@ maxminddb==1.2.0
 pycountry==1.20
 django-reversion==1.10.2
 six==1.10.0
+django_extensions==1.6.7

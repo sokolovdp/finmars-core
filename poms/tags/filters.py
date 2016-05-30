@@ -5,6 +5,7 @@ from rest_framework.filters import BaseFilterBackend
 
 from poms.obj_perms.utils import obj_perms_filter_objects
 from poms.tags.models import Tag
+from poms.tags.utils import tags_prefetch
 
 
 class TagContentTypeFilter(BaseFilterBackend):
@@ -28,13 +29,14 @@ class TagContentTypeFilter(BaseFilterBackend):
 
 class TagPrefetchFilter(BaseFilterBackend):
     def filter_queryset(self, request, queryset, view):
-        return queryset.prefetch_related(
-            'tags',
-            # 'tags__user_object_permissions',
-            # 'tags__user_object_permissions__permission',
-            'tags__group_object_permissions',
-            'tags__group_object_permissions__permission',
-        )
+        # return queryset.prefetch_related(
+        #     'tags',
+        #     # 'tags__user_object_permissions',
+        #     # 'tags__user_object_permissions__permission',
+        #     'tags__group_object_permissions',
+        #     'tags__group_object_permissions__permission',
+        # )
+        return tags_prefetch(queryset)
 
 
 class ByTagNameFilter(BaseFilterBackend):
