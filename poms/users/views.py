@@ -5,7 +5,6 @@ from django.contrib.auth.models import User
 from rest_framework.authtoken.models import Token
 from rest_framework.authtoken.serializers import AuthTokenSerializer
 from rest_framework.decorators import detail_route
-from rest_framework.filters import BaseFilterBackend
 from rest_framework.mixins import UpdateModelMixin, DestroyModelMixin
 from rest_framework.parsers import JSONParser, MultiPartParser, FormParser
 from rest_framework.permissions import IsAuthenticated, BasePermission, SAFE_METHODS, AllowAny
@@ -14,8 +13,9 @@ from rest_framework.viewsets import ViewSet, ModelViewSet, ReadOnlyModelViewSet
 
 from poms.audit.mixins import HistoricalMixin
 from poms.users.fields import GroupOwnerByMasterUserFilter
-from poms.users.filters import OwnerByMasterUserFilter
+from poms.users.filters import OwnerByMasterUserFilter, MasterUserFilter, UserFilter
 from poms.users.models import MasterUser, Member, Group
+from poms.users.permissions import SuperUserOrReadOnly
 from poms.users.serializers import GroupSerializer, UserSerializer, MasterUserSerializer, MemberSerializer
 from poms.users.utils import set_master_user
 
@@ -72,38 +72,12 @@ class LogoutViewSet(ViewSet):
         return Response({'success': True})
 
 
-# class IsAdminUser(BasePermission):
-#     def has_object_permission(self, request, view, obj):
-#         return request.user and hasattr(request.user, 'profile') and request.user.profile.is_admin
-
-
-# class GuardByUserFilter(BaseFilterBackend):
-#     def filter_queryset(self, request, queryset, view):
-#         user = request.user
-#         return queryset.filter(user)
-#
-#
-# class GuardByMasterUserFilter(BaseFilterBackend):
-#     def filter_queryset(self, request, queryset, view):
-#         user = request.user
-#         return queryset.filter(master_user__in=user.member_of.all())
-#
-#
-
-
 class UserPermission(BasePermission):
     def has_object_permission(self, request, view, obj):
         if request.method.upper() in SAFE_METHODS:
             return True
         user = request.user
         return user.id == obj.id
-
-
-class UserFilter(BaseFilterBackend):
-    def filter_queryset(self, request, queryset, view):
-        # master_user = get_master_user(request)
-        master_user = request.user.master_user
-        return queryset.filter(members__master_user=master_user)
 
 
 class UserViewSet(HistoricalMixin, UpdateModelMixin, DestroyModelMixin, ReadOnlyModelViewSet):
@@ -123,13 +97,12 @@ class UserViewSet(HistoricalMixin, UpdateModelMixin, DestroyModelMixin, ReadOnly
         return Response(serializer.data)
 
 
-class MasterUserFilter(BaseFilterBackend):
-    def filter_queryset(self, request, queryset, view):
-        user = request.user
-        return queryset.filter(members__user=user)
+class MasterUserPermission(BasePermission):
+    def has_permission(self, request, view):
+        if request.method in SAFE_METHODS:
+            return True
+        return False
 
-
-class MasterUserNonCurrentReadonly(BasePermission):
     def has_object_permission(self, request, view, obj):
         if request.method in SAFE_METHODS:
             return True
@@ -139,7 +112,7 @@ class MasterUserNonCurrentReadonly(BasePermission):
 class MasterUserViewSet(HistoricalMixin, ModelViewSet):
     queryset = MasterUser.objects
     serializer_class = MasterUserSerializer
-    permission_classes = [IsAuthenticated, MasterUserNonCurrentReadonly]
+    permission_classes = [IsAuthenticated, SuperUserOrReadOnly, MasterUserPermission]
     filter_backends = [MasterUserFilter]
 
     @detail_route()
@@ -155,12 +128,12 @@ class MasterUserViewSet(HistoricalMixin, ModelViewSet):
 class MemberViewSet(HistoricalMixin, UpdateModelMixin, DestroyModelMixin, ReadOnlyModelViewSet):
     queryset = Member.objects.select_related('user')
     serializer_class = MemberSerializer
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated, SuperUserOrReadOnly]
     filter_backends = [OwnerByMasterUserFilter]
 
 
 class GroupViewSet(HistoricalMixin, ModelViewSet):
     queryset = Group.objects.select_related('master_user')
     serializer_class = GroupSerializer
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated, SuperUserOrReadOnly]
     filter_backends = [GroupOwnerByMasterUserFilter]

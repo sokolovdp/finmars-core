@@ -67,13 +67,20 @@ class UserProfileSerializer(serializers.ModelSerializer):
 
 class UserSerializer(serializers.ModelSerializer):
     url = serializers.HyperlinkedIdentityField(view_name='user-detail')
-    groups = GroupField(many=True)  # TODO: filter groups in response JSON
+    groups = GroupField(many=True)
     profile = UserProfileSerializer()
 
     class Meta:
         model = User
         fields = ['url', 'id', 'first_name', 'last_name', 'groups', 'profile']
         # read_only_fields = ['username', ]
+
+    def __init__(self, *args, **kwargs):
+        super(UserSerializer, self).__init__(*args, **kwargs)
+
+        member = self.context['request'].user.member
+        if not member.is_superuser:
+            self.fields.pop('groups')
 
     def create(self, validated_data):
         profile_data = validated_data.pop('profile')
