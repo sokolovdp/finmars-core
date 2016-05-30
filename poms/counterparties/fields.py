@@ -23,9 +23,9 @@ class CounterpartyClassifierField(AttributeClassifierBaseField):
     # filter_backends = [OwnerByMasterUserFilter]
 
 
-class CounterpartyClassifierRootField(FilteredPrimaryKeyRelatedField):
-    queryset = CounterpartyClassifier.objects
-    filter_backends = [OwnerByMasterUserFilter, ClassifierRootFilter]
+# class CounterpartyClassifierRootField(FilteredPrimaryKeyRelatedField):
+#     queryset = CounterpartyClassifier.objects
+#     filter_backends = [OwnerByMasterUserFilter, ClassifierRootFilter]
 
 
 class CounterpartyField(FilteredPrimaryKeyRelatedField):
@@ -51,9 +51,9 @@ class ResponsibleClassifierField(AttributeClassifierBaseField):
     # filter_backends = [OwnerByMasterUserFilter]
 
 
-class ResponsibleClassifierRootField(FilteredPrimaryKeyRelatedField):
-    queryset = ResponsibleClassifier.objects
-    filter_backends = [OwnerByMasterUserFilter, ClassifierRootFilter]
+# class ResponsibleClassifierRootField(FilteredPrimaryKeyRelatedField):
+#     queryset = ResponsibleClassifier.objects
+#     filter_backends = [OwnerByMasterUserFilter, ClassifierRootFilter]
 
 
 class ResponsibleField(FilteredPrimaryKeyRelatedField):

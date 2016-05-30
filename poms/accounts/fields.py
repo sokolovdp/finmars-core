@@ -11,9 +11,9 @@ class AccountClassifierField(AttributeClassifierBaseField):
     # filter_backends = [OwnerByMasterUserFilter]
 
 
-class AccountClassifierRootField(FilteredPrimaryKeyRelatedField):
-    queryset = AccountClassifier.objects.filter(parent__isnull=True)
-    # filter_backends = [OwnerByMasterUserFilter]
+# class AccountClassifierRootField(FilteredPrimaryKeyRelatedField):
+#     queryset = AccountClassifier.objects.filter(parent__isnull=True)
+#     # filter_backends = [OwnerByMasterUserFilter]
 
 
 class AccountAttributeTypeField(FilteredPrimaryKeyRelatedField):

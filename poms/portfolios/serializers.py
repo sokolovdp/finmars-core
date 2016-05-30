@@ -5,7 +5,7 @@ from rest_framework import serializers
 from poms.common.serializers import ClassifierSerializerBase, ClassifierNodeSerializerBase
 from poms.obj_attrs.serializers import AttributeTypeSerializerBase, AttributeSerializerBase, \
     ModelWithAttributesSerializer
-from poms.portfolios.fields import PortfolioClassifierField, PortfolioClassifierRootField, PortfolioAttributeTypeField
+from poms.portfolios.fields import PortfolioClassifierField, PortfolioAttributeTypeField
 from poms.portfolios.models import PortfolioClassifier, Portfolio, PortfolioAttributeType, PortfolioAttribute
 from poms.tags.fields import TagField
 from poms.users.fields import MasterUserField

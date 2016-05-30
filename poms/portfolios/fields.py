@@ -11,9 +11,9 @@ class PortfolioClassifierField(FilteredPrimaryKeyRelatedField):
     filter_backends = [OwnerByMasterUserFilter]
 
 
-class PortfolioClassifierRootField(FilteredPrimaryKeyRelatedField):
-    queryset = PortfolioClassifier.objects.filter(parent__isnull=True)
-    filter_backends = [OwnerByMasterUserFilter]
+# class PortfolioClassifierRootField(FilteredPrimaryKeyRelatedField):
+#     queryset = PortfolioClassifier.objects.filter(parent__isnull=True)
+#     filter_backends = [OwnerByMasterUserFilter]
 
 
 class PortfolioAttributeTypeField(FilteredPrimaryKeyRelatedField):

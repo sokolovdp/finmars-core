@@ -4,8 +4,7 @@ from rest_framework import serializers
 
 from poms.common.serializers import ClassifierSerializerBase, ClassifierNodeSerializerBase
 from poms.counterparties.fields import ResponsibleClassifierField, \
-    CounterpartyClassifierRootField, CounterpartyAttributeTypeField, ResponsibleClassifierRootField, \
-    ResponsibleAttributeTypeField
+    CounterpartyAttributeTypeField, ResponsibleAttributeTypeField
 from poms.counterparties.models import CounterpartyClassifier, Counterparty, Responsible, ResponsibleClassifier, \
     CounterpartyAttributeType, CounterpartyAttribute, ResponsibleAttributeType
 from poms.obj_attrs.serializers import AttributeTypeSerializerBase, AttributeSerializerBase, \

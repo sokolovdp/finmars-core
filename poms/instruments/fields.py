@@ -12,9 +12,9 @@ class InstrumentClassifierField(AttributeClassifierBaseField):
     # filter_backends = [OwnerByMasterUserFilter]
 
 
-class InstrumentClassifierRootField(FilteredPrimaryKeyRelatedField):
-    queryset = InstrumentClassifier.objects.filter(parent__isnull=True)
-    filter_backends = [OwnerByMasterUserFilter]
+# class InstrumentClassifierRootField(FilteredPrimaryKeyRelatedField):
+#     queryset = InstrumentClassifier.objects.filter(parent__isnull=True)
+#     filter_backends = [OwnerByMasterUserFilter]
 
 
 class InstrumentAttributeTypeField(FilteredPrimaryKeyRelatedField):
