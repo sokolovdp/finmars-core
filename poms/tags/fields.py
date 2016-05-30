@@ -54,17 +54,17 @@ class TagManyRelatedField(ManyRelatedField):
             return res
 
         data = set(data)
-        print('1: ', data, res)
+        # print('1: ', data, res)
         instance = self.root.instance
         member = self.context['request'].user.member
         if not member.is_superuser and instance:
             # add not visible for current member tag to list...
-            hidden_tags = []
+            # hidden_tags = []
             for t in perms_prefetch(instance.tags).all():
                 if not has_view_perms(member, t) and t.id not in data:
                     data.add(t.id)
                     res.append(t)
-        print('2: ', data, res)
+        # print('2: ', data, res)
         return res
 
 
