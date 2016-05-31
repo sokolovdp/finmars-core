@@ -51,7 +51,11 @@ INSTALLED_APPS = [
     'poms.users',
     'poms.audit',
     'poms.notifications',
+    'poms.obj_attrs',
+    'poms.obj_perms',
     'poms.chats',
+    'poms.ui',
+    'poms.tags',
     'poms.accounts',
     'poms.counterparties',
     'poms.currencies',
@@ -60,11 +64,7 @@ INSTALLED_APPS = [
     'poms.strategies',
     'poms.transactions',
     'poms.integrations',
-    'poms.tags',
-    'poms.obj_attrs',
-    'poms.obj_perms',
     'poms.reports',
-    'poms.ui',
     'poms.api',
 
     'django_extensions',
@@ -145,8 +145,7 @@ if DEBUG:
     DATABASES['default'] = {
         'ENGINE': 'django.db.backends.sqlite3',
         'NAME': os.path.join(BASE_DIR, 'db.sqlite3'),
-        # 'NAME': ':memory:'
-        # 'ATOMIC_REQUESTS': True,
+        # 'NAME': ':memory:',
     }
 
 # Password validation
