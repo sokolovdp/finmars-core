@@ -10,10 +10,11 @@ from poms.instruments.models import Instrument, PriceHistory, InstrumentClassifi
     InstrumentGroupObjectPermission, \
     InstrumentAttributeType, InstrumentAttributeTypeOption, InstrumentAttributeTypeGroupObjectPermission, \
     InstrumentAttribute, InstrumentFactorSchedule, EventSchedule, \
-    PricingPolicy, PaymentSizeDetail
+    PricingPolicy, PaymentSizeDetail, InstrumentTypeUserObjectPermission, InstrumentUserObjectPermission, \
+    InstrumentAttributeTypeUserObjectPermission
 from poms.obj_attrs.admin import AttributeTypeAdminBase, AttributeTypeOptionAdminBase, AttributeInlineBase, \
     AttributeTypeClassifierInlineBase
-from poms.obj_perms.admin import GroupObjectPermissionAdmin
+from poms.obj_perms.admin import GroupObjectPermissionAdmin, UserObjectPermissionAdmin
 
 admin.site.register(InstrumentClass, ClassModelAdmin)
 admin.site.register(DailyPricingModel, ClassModelAdmin)
@@ -42,7 +43,7 @@ class InstrumentTypeAdmin(HistoricalAdmin):
 
 
 admin.site.register(InstrumentType, InstrumentTypeAdmin)
-# admin.site.register(InstrumentTypeUserObjectPermission, UserObjectPermissionAdmin)
+admin.site.register(InstrumentTypeUserObjectPermission, UserObjectPermissionAdmin)
 admin.site.register(InstrumentTypeGroupObjectPermission, GroupObjectPermissionAdmin)
 
 admin.site.register(InstrumentClassifier, ClassifierAdmin)
@@ -86,7 +87,7 @@ class InstrumentAdmin(HistoricalAdmin):
 
 
 admin.site.register(Instrument, InstrumentAdmin)
-# admin.site.register(InstrumentUserObjectPermission, UserObjectPermissionAdmin)
+admin.site.register(InstrumentUserObjectPermission, UserObjectPermissionAdmin)
 admin.site.register(InstrumentGroupObjectPermission, GroupObjectPermissionAdmin)
 
 
@@ -111,5 +112,5 @@ class InstrumentAttributeTypeAdmin(AttributeTypeAdminBase):
 
 admin.site.register(InstrumentAttributeType, InstrumentAttributeTypeAdmin)
 admin.site.register(InstrumentAttributeTypeOption, AttributeTypeOptionAdminBase)
-# admin.site.register(InstrumentAttributeTypeUserObjectPermission, UserObjectPermissionAdmin)
+admin.site.register(InstrumentAttributeTypeUserObjectPermission, UserObjectPermissionAdmin)
 admin.site.register(InstrumentAttributeTypeGroupObjectPermission, GroupObjectPermissionAdmin)

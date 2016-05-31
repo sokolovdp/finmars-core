@@ -2,17 +2,17 @@ from __future__ import unicode_literals
 
 from poms.common.fields import FilteredPrimaryKeyRelatedField
 from poms.obj_perms.filters import ObjectPermissionPrefetchFilter, ObjectPermissionFilter
-from poms.strategies.models import Strategy, Strategy1, Strategy2, Strategy3
+from poms.strategies.models import Strategy1, Strategy2, Strategy3
 from poms.users.filters import OwnerByMasterUserFilter
 
 
-class StrategyField(FilteredPrimaryKeyRelatedField):
-    queryset = Strategy.objects
-    filter_backends = [
-        OwnerByMasterUserFilter,
-        ObjectPermissionPrefetchFilter,
-        ObjectPermissionFilter,
-    ]
+# class StrategyField(FilteredPrimaryKeyRelatedField):
+#     queryset = Strategy.objects
+#     filter_backends = [
+#         OwnerByMasterUserFilter,
+#         ObjectPermissionPrefetchFilter,
+#         ObjectPermissionFilter,
+#     ]
 
 
 # class StrategyRootField(FilteredPrimaryKeyRelatedField):

@@ -39,13 +39,18 @@ class StrategyBaseSerializer(ClassifierSerializerBase, ModelWithObjectPermission
         if not instance.is_root_node():
             ret.pop("url", None)
             ret.pop("granted_permissions", None)
-            # ret.pop("user_object_permissions", None)
+            ret.pop("user_object_permissions", None)
             ret.pop("group_object_permissions", None)
         return ret
 
-    def save_object_permission(self, instance, group_object_permissions=None, created=False):
+    def save_object_permission(self, instance, user_object_permissions=None, group_object_permissions=None,
+                               created=False):
         if instance.is_root_node():
-            super(StrategyBaseSerializer, self).save_object_permission(instance, group_object_permissions, created)
+            super(StrategyBaseSerializer, self).save_object_permission(
+                instance=instance,
+                user_object_permissions=user_object_permissions,
+                group_object_permissions=group_object_permissions,
+                created=created)
 
 
 class StrategyBaseNodeSerializer(ClassifierNodeSerializerBase, ModelWithObjectPermissionSerializer):
@@ -58,13 +63,18 @@ class StrategyBaseNodeSerializer(ClassifierNodeSerializerBase, ModelWithObjectPe
         ret = super(StrategyBaseNodeSerializer, self).to_representation(instance)
         if not instance.is_root_node():
             ret.pop("granted_permissions", None)
-            # ret.pop("user_object_permissions", None)
+            ret.pop("user_object_permissions", None)
             ret.pop("group_object_permissions", None)
         return ret
 
-    def save_object_permission(self, instance, group_object_permissions=None, created=False):
+    def save_object_permission(self, instance, user_object_permissions=None, group_object_permissions=None,
+                               created=False):
         if instance.is_root_node():
-            super(StrategyBaseNodeSerializer, self).save_object_permission(instance, group_object_permissions, created)
+            super(StrategyBaseNodeSerializer, self).save_object_permission(
+                instance=instance,
+                user_object_permissions=user_object_permissions,
+                group_object_permissions=group_object_permissions,
+                created=created)
 
 
 class Strategy1Serializer(StrategyBaseSerializer):

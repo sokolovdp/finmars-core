@@ -11,7 +11,7 @@ from poms.audit import history
 from poms.common.models import NamedModel, ClassModelBase
 from poms.currencies.models import Currency
 from poms.obj_attrs.models import AttributeTypeBase, AttributeBase, AttributeTypeOptionBase
-from poms.obj_perms.models import GroupObjectPermissionBase
+from poms.obj_perms.models import GroupObjectPermissionBase, UserObjectPermissionBase
 from poms.users.models import MasterUser, Member
 
 
@@ -213,13 +213,13 @@ class InstrumentType(NamedModel):
         return self.name
 
 
-# class InstrumentTypeUserObjectPermission(UserObjectPermissionBase):
-#     content_object = models.ForeignKey(InstrumentType, related_name='user_object_permissions',
-#                                        verbose_name=_('content object'))
-#
-#     class Meta(UserObjectPermissionBase.Meta):
-#         verbose_name = _('instrument types - user permission')
-#         verbose_name_plural = _('instrument types - user permissions')
+class InstrumentTypeUserObjectPermission(UserObjectPermissionBase):
+    content_object = models.ForeignKey(InstrumentType, related_name='user_object_permissions',
+                                       verbose_name=_('content object'))
+
+    class Meta(UserObjectPermissionBase.Meta):
+        verbose_name = _('instrument types - user permission')
+        verbose_name_plural = _('instrument types - user permissions')
 
 
 class InstrumentTypeGroupObjectPermission(GroupObjectPermissionBase):
@@ -268,13 +268,13 @@ class Instrument(NamedModel):
         return self.name
 
 
-# class InstrumentUserObjectPermission(UserObjectPermissionBase):
-#     content_object = models.ForeignKey(Instrument, related_name='user_object_permissions',
-#                                        verbose_name=_('content object'))
-#
-#     class Meta(UserObjectPermissionBase.Meta):
-#         verbose_name = _('instruments - user permission')
-#         verbose_name_plural = _('instruments - user permissions')
+class InstrumentUserObjectPermission(UserObjectPermissionBase):
+    content_object = models.ForeignKey(Instrument, related_name='user_object_permissions',
+                                       verbose_name=_('content object'))
+
+    class Meta(UserObjectPermissionBase.Meta):
+        verbose_name = _('instruments - user permission')
+        verbose_name_plural = _('instruments - user permissions')
 
 
 class InstrumentGroupObjectPermission(GroupObjectPermissionBase):
@@ -303,13 +303,13 @@ class InstrumentAttributeType(AttributeTypeBase):
         ]
 
 
-# class InstrumentAttributeTypeUserObjectPermission(UserObjectPermissionBase):
-#     content_object = models.ForeignKey(InstrumentAttributeType, related_name='user_object_permissions',
-#                                        verbose_name=_('content object'))
-#
-#     class Meta(UserObjectPermissionBase.Meta):
-#         verbose_name = _('instrument attribute types - user permission')
-#         verbose_name_plural = _('instrument attribute types - user permissions')
+class InstrumentAttributeTypeUserObjectPermission(UserObjectPermissionBase):
+    content_object = models.ForeignKey(InstrumentAttributeType, related_name='user_object_permissions',
+                                       verbose_name=_('content object'))
+
+    class Meta(UserObjectPermissionBase.Meta):
+        verbose_name = _('instrument attribute types - user permission')
+        verbose_name_plural = _('instrument attribute types - user permissions')
 
 
 class InstrumentAttributeTypeGroupObjectPermission(GroupObjectPermissionBase):

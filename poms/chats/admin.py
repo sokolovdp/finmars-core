@@ -3,8 +3,9 @@ from __future__ import unicode_literals
 from django.contrib import admin
 
 from poms.audit.admin import HistoricalAdmin
-from poms.chats.models import Thread, Message, DirectMessage, ThreadStatus, ThreadGroupObjectPermission
-from poms.obj_perms.admin import GroupObjectPermissionAdmin
+from poms.chats.models import Thread, Message, DirectMessage, ThreadStatus, ThreadGroupObjectPermission, \
+    ThreadUserObjectPermission
+from poms.obj_perms.admin import GroupObjectPermissionAdmin, UserObjectPermissionAdmin
 
 
 class ThreadStatusAdmin(HistoricalAdmin):
@@ -36,7 +37,7 @@ class ThreadAdmin(HistoricalAdmin):
 
 
 admin.site.register(Thread, ThreadAdmin)
-# admin.site.register(ThreadUserObjectPermission, UserObjectPermissionAdmin)
+admin.site.register(ThreadUserObjectPermission, UserObjectPermissionAdmin)
 admin.site.register(ThreadGroupObjectPermission, GroupObjectPermissionAdmin)
 
 

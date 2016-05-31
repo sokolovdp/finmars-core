@@ -9,10 +9,11 @@ from poms.counterparties.models import Counterparty, Responsible, CounterpartyCl
     CounterpartyAttributeType, CounterpartyAttributeTypeOption, CounterpartyAttributeTypeGroupObjectPermission, \
     ResponsibleAttributeType, ResponsibleAttributeTypeOption, \
     ResponsibleAttributeTypeGroupObjectPermission, CounterpartyAttribute, \
-    ResponsibleAttribute
+    ResponsibleAttribute, CounterpartyUserObjectPermission, CounterpartyAttributeTypeUserObjectPermission, \
+    ResponsibleUserObjectPermission, ResponsibleAttributeTypeUserObjectPermission
 from poms.obj_attrs.admin import AttributeTypeAdminBase, AttributeTypeOptionAdminBase, AttributeInlineBase, \
     AttributeTypeClassifierInlineBase
-from poms.obj_perms.admin import GroupObjectPermissionAdmin
+from poms.obj_perms.admin import GroupObjectPermissionAdmin, UserObjectPermissionAdmin
 
 
 class CounterpartyAttributeInline(AttributeInlineBase):
@@ -28,7 +29,7 @@ class CounterpartyAdmin(HistoricalAdmin):
 
 
 admin.site.register(Counterparty, CounterpartyAdmin)
-# admin.site.register(CounterpartyUserObjectPermission, UserObjectPermissionAdmin)
+admin.site.register(CounterpartyUserObjectPermission, UserObjectPermissionAdmin)
 admin.site.register(CounterpartyGroupObjectPermission, GroupObjectPermissionAdmin)
 
 
@@ -42,10 +43,12 @@ class CounterpartyAttributeTypeAdmin(AttributeTypeAdminBase):
 
 admin.site.register(CounterpartyAttributeType, CounterpartyAttributeTypeAdmin)
 admin.site.register(CounterpartyAttributeTypeOption, AttributeTypeOptionAdminBase)
-# admin.site.register(CounterpartyAttributeTypeUserObjectPermission, UserObjectPermissionAdmin)
+admin.site.register(CounterpartyAttributeTypeUserObjectPermission, UserObjectPermissionAdmin)
 admin.site.register(CounterpartyAttributeTypeGroupObjectPermission, GroupObjectPermissionAdmin)
 
 admin.site.register(CounterpartyClassifier, ClassifierAdmin)
+
+
 # admin.site.register(CounterpartyClassifierUserObjectPermission, UserObjectPermissionAdmin)
 # admin.site.register(CounterpartyClassifierGroupObjectPermission, GroupObjectPermissionAdmin)
 
@@ -63,7 +66,7 @@ class ResponsibleAdmin(HistoricalAdmin):
 
 
 admin.site.register(Responsible, ResponsibleAdmin)
-# admin.site.register(ResponsibleUserObjectPermission, UserObjectPermissionAdmin)
+admin.site.register(ResponsibleUserObjectPermission, UserObjectPermissionAdmin)
 admin.site.register(ResponsibleGroupObjectPermission, GroupObjectPermissionAdmin)
 
 
@@ -77,7 +80,7 @@ class ResponsibleAttributeTypeAdmin(AttributeTypeAdminBase):
 
 admin.site.register(ResponsibleAttributeType, ResponsibleAttributeTypeAdmin)
 admin.site.register(ResponsibleAttributeTypeOption, AttributeTypeOptionAdminBase)
-# admin.site.register(ResponsibleAttributeTypeUserObjectPermission, UserObjectPermissionAdmin)
+admin.site.register(ResponsibleAttributeTypeUserObjectPermission, UserObjectPermissionAdmin)
 admin.site.register(ResponsibleAttributeTypeGroupObjectPermission, GroupObjectPermissionAdmin)
 
 admin.site.register(ResponsibleClassifier, ClassifierAdmin)

@@ -9,7 +9,7 @@ from django.utils.encoding import python_2_unicode_compatible
 from django.utils.translation import ugettext_lazy as _
 
 from poms.common.models import NamedModel, ClassModelBase
-from poms.obj_perms.models import GroupObjectPermissionBase
+from poms.obj_perms.models import GroupObjectPermissionBase, UserObjectPermissionBase
 from poms.users.models import MasterUser
 
 
@@ -60,14 +60,14 @@ class ReportType(NamedModel):
         ]
 
 
-# class ReportTypeUserObjectPermission(UserObjectPermissionBase):
-#     content_object = models.ForeignKey(ReportType, related_name='user_object_permissions',
-#                                        verbose_name=_('content object'))
-#
-#     class Meta(UserObjectPermissionBase.Meta):
-#         abstract = True
-#         verbose_name = _('report types - user permission')
-#         verbose_name_plural = _('report types - user permissions')
+class ReportTypeUserObjectPermission(UserObjectPermissionBase):
+    content_object = models.ForeignKey(ReportType, related_name='user_object_permissions',
+                                       verbose_name=_('content object'))
+
+    class Meta(UserObjectPermissionBase.Meta):
+        abstract = True
+        verbose_name = _('report types - user permission')
+        verbose_name_plural = _('report types - user permissions')
 
 
 class ReportTypeGroupObjectPermission(GroupObjectPermissionBase):

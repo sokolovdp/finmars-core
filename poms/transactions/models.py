@@ -13,9 +13,9 @@ from poms.counterparties.models import Responsible, Counterparty
 from poms.currencies.models import Currency
 from poms.instruments.models import Instrument
 from poms.obj_attrs.models import AttributeTypeBase, AttributeBase, AttributeTypeOptionBase
-from poms.obj_perms.models import GroupObjectPermissionBase
+from poms.obj_perms.models import GroupObjectPermissionBase, UserObjectPermissionBase
 from poms.portfolios.models import Portfolio
-from poms.strategies.models import Strategy, Strategy1, Strategy2, Strategy3
+from poms.strategies.models import Strategy1, Strategy2, Strategy3
 from poms.users.models import MasterUser, Member
 
 
@@ -130,13 +130,13 @@ class TransactionType(NamedModel):
         ]
 
 
-# class TransactionTypeUserObjectPermission(UserObjectPermissionBase):
-#     content_object = models.ForeignKey(TransactionType, related_name='user_object_permissions',
-#                                        verbose_name=_('content object'))
-#
-#     class Meta(UserObjectPermissionBase.Meta):
-#         verbose_name = _('transaction types - user permission')
-#         verbose_name_plural = _('transaction types - user permissions')
+class TransactionTypeUserObjectPermission(UserObjectPermissionBase):
+    content_object = models.ForeignKey(TransactionType, related_name='user_object_permissions',
+                                       verbose_name=_('content object'))
+
+    class Meta(UserObjectPermissionBase.Meta):
+        verbose_name = _('transaction types - user permission')
+        verbose_name_plural = _('transaction types - user permissions')
 
 
 class TransactionTypeGroupObjectPermission(GroupObjectPermissionBase):
@@ -487,9 +487,9 @@ class Transaction(models.Model):
     class Meta:
         verbose_name = _('transaction')
         verbose_name_plural = _('transactions')
-        permissions = [
-            ('view_transaction', 'Can view transaction')
-        ]
+        # permissions = [
+        #     ('view_transaction', 'Can view transaction')
+        # ]
 
     def __str__(self):
         return '%s #%s' % (self.master_user, self.id)
@@ -541,13 +541,13 @@ class TransactionAttributeTypeOption(AttributeTypeOptionBase):
         verbose_name_plural = _('transaction attribute types - options')
 
 
-# class TransactionAttributeTypeUserObjectPermission(UserObjectPermissionBase):
-#     content_object = models.ForeignKey(TransactionAttributeType, related_name='user_object_permissions',
-#                                        verbose_name=_("content object"))
-#
-#     class Meta(UserObjectPermissionBase.Meta):
-#         verbose_name = _('transaction attribute types - user permission')
-#         verbose_name_plural = _('transaction attribute types - user permissions')
+class TransactionAttributeTypeUserObjectPermission(UserObjectPermissionBase):
+    content_object = models.ForeignKey(TransactionAttributeType, related_name='user_object_permissions',
+                                       verbose_name=_("content object"))
+
+    class Meta(UserObjectPermissionBase.Meta):
+        verbose_name = _('transaction attribute types - user permission')
+        verbose_name_plural = _('transaction attribute types - user permissions')
 
 
 class TransactionAttributeTypeGroupObjectPermission(GroupObjectPermissionBase):
@@ -617,12 +617,39 @@ class ExternalCashFlow(models.Model):
 
 @python_2_unicode_compatible
 class ExternalCashFlowStrategy(models.Model):
-    external_cash_flow = models.ForeignKey(ExternalCashFlow, related_name='strategies',
-                                           verbose_name=_("external cash flow"))
-    order = models.IntegerField(default=0,
-                                verbose_name=_("order"))
-    strategy = models.ForeignKey(Strategy, related_name="external_cash_flow_strategies", on_delete=models.PROTECT,
-                                 verbose_name=_("strategy"))
+    external_cash_flow = models.ForeignKey(
+        ExternalCashFlow,
+        related_name='strategies',
+        verbose_name=_("external cash flow")
+    )
+    order = models.IntegerField(
+        default=0,
+        verbose_name=_("order")
+    )
+    strategy1 = models.ForeignKey(
+        Strategy1,
+        on_delete=models.PROTECT,
+        null=True,
+        blank=True,
+        related_name="external_cash_flow_strategies",
+        verbose_name=_("strategy1")
+    )
+    strategy2 = models.ForeignKey(
+        Strategy2,
+        on_delete=models.PROTECT,
+        null=True,
+        blank=True,
+        related_name="external_cash_flow_strategies",
+        verbose_name=_("strategy2")
+    )
+    strategy3 = models.ForeignKey(
+        Strategy3,
+        on_delete=models.PROTECT,
+        null=True,
+        blank=True,
+        related_name="external_cash_flow_strategies",
+        verbose_name=_("strategy3")
+    )
 
     class Meta:
         verbose_name = _('external cash flow strategy')

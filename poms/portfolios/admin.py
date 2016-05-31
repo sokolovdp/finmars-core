@@ -6,10 +6,10 @@ from poms.audit.admin import HistoricalAdmin
 from poms.common.admin import ClassifierAdmin
 from poms.obj_attrs.admin import AttributeTypeAdminBase, AttributeTypeOptionAdminBase, AttributeInlineBase, \
     AttributeTypeClassifierInlineBase
-from poms.obj_perms.admin import GroupObjectPermissionAdmin
+from poms.obj_perms.admin import GroupObjectPermissionAdmin, UserObjectPermissionAdmin
 from poms.portfolios.models import Portfolio, PortfolioClassifier, PortfolioGroupObjectPermission, \
     PortfolioAttributeType, PortfolioAttributeTypeOption, PortfolioAttributeTypeGroupObjectPermission, \
-    PortfolioAttribute
+    PortfolioAttribute, PortfolioUserObjectPermission, PortfolioAttributeTypeUserObjectPermission
 
 admin.site.register(PortfolioClassifier, ClassifierAdmin)
 
@@ -31,7 +31,7 @@ class PortfolioAdmin(HistoricalAdmin):
 
 
 admin.site.register(Portfolio, PortfolioAdmin)
-# admin.site.register(PortfolioUserObjectPermission, UserObjectPermissionAdmin)
+admin.site.register(PortfolioUserObjectPermission, UserObjectPermissionAdmin)
 admin.site.register(PortfolioGroupObjectPermission, GroupObjectPermissionAdmin)
 
 
@@ -45,5 +45,5 @@ class AccountAttributeTypeAdmin(AttributeTypeAdminBase):
 
 admin.site.register(PortfolioAttributeType, AccountAttributeTypeAdmin)
 admin.site.register(PortfolioAttributeTypeOption, AttributeTypeOptionAdminBase)
-# admin.site.register(PortfolioAttributeTypeUserObjectPermission, UserObjectPermissionAdmin)
+admin.site.register(PortfolioAttributeTypeUserObjectPermission, UserObjectPermissionAdmin)
 admin.site.register(PortfolioAttributeTypeGroupObjectPermission, GroupObjectPermissionAdmin)

@@ -153,9 +153,9 @@ class Group(models.Model):
         unique_together = [
             ['master_user', 'name']
         ]
-        permissions = [
-            ('view_group', 'Can view group')
-        ]
+        # permissions = [
+        #     ('view_group', 'Can view group')
+        # ]
 
     def __str__(self):
         return self.name

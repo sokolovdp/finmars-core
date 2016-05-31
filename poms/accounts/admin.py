@@ -4,12 +4,13 @@ from django.contrib import admin
 
 from poms.accounts.models import Account, AccountType, AccountClassifier, AccountTypeGroupObjectPermission, \
     AccountGroupObjectPermission, AccountAttributeType, AccountAttributeTypeGroupObjectPermission, AccountAttribute, \
-    AccountAttributeTypeOption
+    AccountAttributeTypeOption, AccountTypeUserObjectPermission, AccountUserObjectPermission, \
+    AccountAttributeTypeUserObjectPermission
 from poms.audit.admin import HistoricalAdmin
 from poms.common.admin import ClassifierAdmin
 from poms.obj_attrs.admin import AttributeTypeAdminBase, AttributeInlineBase, AttributeTypeOptionAdminBase, \
     AttributeTypeClassifierInlineBase
-from poms.obj_perms.admin import GroupObjectPermissionAdmin
+from poms.obj_perms.admin import GroupObjectPermissionAdmin, UserObjectPermissionAdmin
 
 
 class AccountTypeAdmin(HistoricalAdmin):
@@ -20,7 +21,7 @@ class AccountTypeAdmin(HistoricalAdmin):
 
 
 admin.site.register(AccountType, AccountTypeAdmin)
-# admin.site.register(AccountTypeUserObjectPermission, UserObjectPermissionAdmin)
+admin.site.register(AccountTypeUserObjectPermission, UserObjectPermissionAdmin)
 admin.site.register(AccountTypeGroupObjectPermission, GroupObjectPermissionAdmin)
 
 
@@ -37,7 +38,7 @@ class AccountAdmin(HistoricalAdmin):
 
 
 admin.site.register(Account, AccountAdmin)
-# admin.site.register(AccountUserObjectPermission, UserObjectPermissionAdmin)
+admin.site.register(AccountUserObjectPermission, UserObjectPermissionAdmin)
 admin.site.register(AccountGroupObjectPermission, GroupObjectPermissionAdmin)
 
 
@@ -51,7 +52,7 @@ class AccountAttributeTypeAdmin(AttributeTypeAdminBase):
 
 admin.site.register(AccountAttributeType, AccountAttributeTypeAdmin)
 admin.site.register(AccountAttributeTypeOption, AttributeTypeOptionAdminBase)
-# admin.site.register(AccountAttributeTypeUserObjectPermission, UserObjectPermissionAdmin)
+admin.site.register(AccountAttributeTypeUserObjectPermission, UserObjectPermissionAdmin)
 admin.site.register(AccountAttributeTypeGroupObjectPermission, GroupObjectPermissionAdmin)
 
 admin.site.register(AccountClassifier, ClassifierAdmin)

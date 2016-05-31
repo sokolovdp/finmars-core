@@ -5,12 +5,13 @@ from django.contrib import admin
 from poms.audit.admin import HistoricalAdmin
 from poms.common.admin import ClassModelAdmin
 from poms.obj_attrs.admin import AttributeTypeAdminBase, AttributeTypeOptionAdminBase, AttributeInlineBase
-from poms.obj_perms.admin import GroupObjectPermissionAdmin
+from poms.obj_perms.admin import GroupObjectPermissionAdmin, UserObjectPermissionAdmin
 from poms.transactions.models import TransactionClass, Transaction, TransactionType, TransactionTypeInput, \
     TransactionTypeItem, TransactionTypeGroupObjectPermission, \
     TransactionAttributeType, TransactionAttributeTypeOption, TransactionAttributeTypeGroupObjectPermission, \
     TransactionAttribute, ActionClass, EventToHandle, \
-    ExternalCashFlow, ExternalCashFlowStrategy, NotificationClass, EventClass, PeriodicityGroup
+    ExternalCashFlow, ExternalCashFlowStrategy, NotificationClass, EventClass, PeriodicityGroup, \
+    TransactionTypeUserObjectPermission, TransactionAttributeTypeUserObjectPermission
 
 admin.site.register(TransactionClass, ClassModelAdmin)
 admin.site.register(ActionClass, ClassModelAdmin)
@@ -73,7 +74,7 @@ class TransactionTypeAdmin(HistoricalAdmin):
 
 
 admin.site.register(TransactionType, TransactionTypeAdmin)
-# admin.site.register(TransactionTypeUserObjectPermission, UserObjectPermissionAdmin)
+admin.site.register(TransactionTypeUserObjectPermission, UserObjectPermissionAdmin)
 admin.site.register(TransactionTypeGroupObjectPermission, GroupObjectPermissionAdmin)
 
 
@@ -154,13 +155,13 @@ class TransactionAttributeTypeAdmin(AttributeTypeAdminBase):
 
 admin.site.register(TransactionAttributeType, TransactionAttributeTypeAdmin)
 admin.site.register(TransactionAttributeTypeOption, AttributeTypeOptionAdminBase)
-# admin.site.register(TransactionAttributeTypeUserObjectPermission, UserObjectPermissionAdmin)
+admin.site.register(TransactionAttributeTypeUserObjectPermission, UserObjectPermissionAdmin)
 admin.site.register(TransactionAttributeTypeGroupObjectPermission, GroupObjectPermissionAdmin)
 
 
 class ExternalCashFlowStrategyInline(admin.TabularInline):
     model = ExternalCashFlowStrategy
-    raw_id_fields = ['strategy']
+    raw_id_fields = ['strategy1', 'strategy2', 'strategy3']
     extra = 0
 
 

@@ -72,7 +72,18 @@ class UserWithProfileAdmin(HistoricalAdmin, UserAdmin):
 admin.site.unregister(User)
 admin.site.register(User, UserWithProfileAdmin)
 
-admin.site.register(Permission)
+
+class PermissionAdmin(admin.ModelAdmin):
+    model = Permission
+    list_select_related = ['content_type']
+    list_display = ['id', 'content_type', 'codename']
+    search_fields = ['codename', 'content_type__app_label', 'content_type__model']
+
+    def has_add_permission(self, request):
+        return False
+
+
+admin.site.register(Permission, PermissionAdmin)
 
 
 class GroupAdmin(HistoricalAdmin, admin.ModelAdmin):

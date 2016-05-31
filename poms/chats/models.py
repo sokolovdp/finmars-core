@@ -11,7 +11,7 @@ from django.utils.translation import ugettext_lazy as _, get_language
 
 from poms.audit import history
 from poms.common.models import TimeStampedModel
-from poms.obj_perms.models import GroupObjectPermissionBase
+from poms.obj_perms.models import GroupObjectPermissionBase, UserObjectPermissionBase
 from poms.users.models import MasterUser, Member
 
 
@@ -48,7 +48,7 @@ class Thread(TimeStampedModel):
         verbose_name_plural = _('threads')
         permissions = [
             ('view_thread', 'Can view thread'),
-            ('manage_thread', 'Can manage thread'),
+            # ('manage_thread', 'Can manage thread'),
         ]
 
     def __str__(self):
@@ -59,13 +59,13 @@ class Thread(TimeStampedModel):
                                  update_fields=update_fields)
 
 
-# class ThreadUserObjectPermission(UserObjectPermissionBase):
-#     content_object = models.ForeignKey(Thread, related_name='user_object_permissions',
-#                                        verbose_name=_('content object'))
-#
-#     class Meta(UserObjectPermissionBase.Meta):
-#         verbose_name = _('threads - user permission')
-#         verbose_name_plural = _('threads - user permissions')
+class ThreadUserObjectPermission(UserObjectPermissionBase):
+    content_object = models.ForeignKey(Thread, related_name='user_object_permissions',
+                                       verbose_name=_('content object'))
+
+    class Meta(UserObjectPermissionBase.Meta):
+        verbose_name = _('threads - user permission')
+        verbose_name_plural = _('threads - user permissions')
 
 
 class ThreadGroupObjectPermission(GroupObjectPermissionBase):
