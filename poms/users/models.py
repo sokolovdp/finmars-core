@@ -141,7 +141,7 @@ class UserProfile(models.Model):
 class Group(models.Model):
     master_user = models.ForeignKey(MasterUser, related_name='groups',
                                     verbose_name=_('master user'), )
-    name = models.CharField(max_length=80, unique=True,
+    name = models.CharField(max_length=80,
                             verbose_name=_('name'))
 
     # permissions = models.ManyToManyField(Permission, verbose_name=_('permissions'), blank=True,
