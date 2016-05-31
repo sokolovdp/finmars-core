@@ -97,4 +97,3 @@ class TransactionViewSet(PomsViewSetBase):
     ]
     filter_class = TransactionFilterSet
     ordering_fields = ['transaction_date']
-    # search_fields = ['user_code', 'name', 'short_name', ]
