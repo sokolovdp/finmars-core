@@ -28,4 +28,7 @@ echo "transactions"
 echo "tags"
 ./manage.py graph_models -X NamedModel,TimeStampedModel,TagModelBase,ClassModelBase,ObjectPermissionBase,AttributeTypeOptionBase,AttributeBase,AttributeTypeOptionBase tags  -o ~/tmp/tags.png
 
+echo "ui"
+./manage.py graph_models -X NamedModel,TimeStampedModel,TagModelBase,ClassModelBase,ObjectPermissionBase,AttributeTypeOptionBase,AttributeBase,AttributeTypeOptionBase ui  -o ~/tmp/ui.png
+
 echo "done"
