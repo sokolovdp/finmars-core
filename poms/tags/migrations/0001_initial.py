@@ -23,6 +23,10 @@ class Migration(migrations.Migration):
         ('counterparties', '0002_auto_20160425_0912'),
     ]
 
+    run_before = [
+        ('strategies', '0002_auto_20160425_1436'),
+    ]
+
     operations = [
         migrations.CreateModel(
             name='Tag',
