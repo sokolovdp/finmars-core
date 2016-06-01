@@ -19,13 +19,15 @@ from poms.tags.models import Tag
 from poms.users.models import MasterUser, Member, Group
 
 
-class BaseTestCase(APITestCase):
+class BaseApiTestCase(APITestCase):
     def setUp(self):
-        super(BaseTestCase, self).setUp()
+        super(BaseApiTestCase, self).setUp()
 
         self.add_master_user_complex('a', groups=['g1', 'g2'])
         self.add_master_user_complex('b', groups=['g1', 'g2'])
 
+        self.add_user('a0')
+        self.add_member(user='a0', master_user='a', is_admin=True)
         self.add_user('a1')
         self.add_member(user='a1', master_user='a', groups=['g1'])
         self.add_user('a2')
@@ -84,9 +86,15 @@ class BaseTestCase(APITestCase):
             member.groups = Group.objects.filter(master_user=master_user, name__in=groups)
         return member
 
+    def get_member(self, user, master_user):
+        return Member.objects.get(user__username=user, master_user__name=master_user)
+
     def add_group(self, name, master_user):
         master_user = self.get_master_user(master_user)
         return Group.objects.create(master_user=master_user, name=name)
+
+    def get_group(self, name, master_user):
+        return Group.objects.get(name=name, master_user__name=master_user)
 
     def add_account_type(self, name, master_user):
         master_user = self.get_master_user(master_user)
@@ -206,7 +214,7 @@ class BaseTestCase(APITestCase):
             perms = {perm % kwargs for perm in codename_set}
         assign_perms(obj, members=members, groups=groups, perms=perms)
 
-    def test_play1(self):
+    def _test_play1(self):
         master_user = self.get_master_user('a')
 
         client = self.client
@@ -269,7 +277,7 @@ class BaseTestCase(APITestCase):
 
         response = client.post('/api/v1/accounts/account/', data={
             'name': 'acc3',
-            'user_code':'acc3',
+            # 'user_code':'acc3',
             'tags': [tag1.id, tag2.id]
         }, format='json')
         print('22 response', response)
