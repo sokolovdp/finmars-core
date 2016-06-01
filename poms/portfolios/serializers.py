@@ -44,8 +44,8 @@ class PortfolioAttributeSerializer(AttributeSerializerBase):
 
 class PortfolioSerializer(ModelWithAttributesSerializer):
     master_user = MasterUserField()
-    attributes = PortfolioAttributeSerializer(many=True)
-    tags = TagField(many=True)
+    attributes = PortfolioAttributeSerializer(many=True, required=False, allow_null=True)
+    tags = TagField(many=True, required=False, allow_null=True)
 
     class Meta:
         model = Portfolio

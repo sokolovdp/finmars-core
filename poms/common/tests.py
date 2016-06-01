@@ -254,4 +254,8 @@ class BaseTestCase(APITestCase):
         response = client.get('/api/v1/accounts/account/%s/' % account.id, format='json')
         print('21 response', response)
         self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+
+        response = client.post('/api/v1/accounts/account/', data={'name': 'acc3', 'user_code':'acc3'}, format='json')
+        print('22 response', response)
+        print('22 response.json', json.dumps(response.data, indent=2))
         client.logout()

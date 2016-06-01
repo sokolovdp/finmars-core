@@ -13,7 +13,7 @@ from poms.users.fields import MasterUserField
 class CurrencySerializer(serializers.ModelSerializer):
     url = serializers.HyperlinkedIdentityField(view_name='currency-detail')
     master_user = MasterUserField()
-    tags = TagField(many=True)
+    tags = TagField(many=True, required=False, allow_null=True)
 
     class Meta:
         model = Currency

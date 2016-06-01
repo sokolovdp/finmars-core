@@ -29,7 +29,7 @@ from poms.tags.fields import TagField
 
 
 class StrategyBaseSerializer(ClassifierSerializerBase, ModelWithObjectPermissionSerializer):
-    tags = TagField(many=True)
+    tags = TagField(many=True, required=False, allow_null=True)
 
     class Meta(ClassifierSerializerBase.Meta):
         fields = ['url', ] + ClassifierSerializerBase.Meta.fields + ['tags', ]
@@ -54,7 +54,7 @@ class StrategyBaseSerializer(ClassifierSerializerBase, ModelWithObjectPermission
 
 
 class StrategyBaseNodeSerializer(ClassifierNodeSerializerBase, ModelWithObjectPermissionSerializer):
-    tags = TagField(many=True)
+    tags = TagField(many=True, required=False, allow_null=True)
 
     class Meta(ClassifierNodeSerializerBase.Meta):
         fields = ClassifierNodeSerializerBase.Meta.fields + ['tags']

@@ -29,7 +29,7 @@ class TransactionClassSerializer(PomsClassSerializer):
 
 class TransactionTypeSerializer(serializers.ModelSerializer):
     master_user = MasterUserField()
-    tags = TagField(many=True)
+    tags = TagField(many=True, required=False, allow_null=True)
 
     class Meta:
         model = TransactionType
@@ -81,7 +81,7 @@ class TransactionSerializer(ModelWithAttributesSerializer):
 
     responsible = ResponsibleField(required=False, allow_null=True)
     counterparty = CounterpartyField(required=False, allow_null=True)
-    attributes = TransactionAttributeSerializer(many=True)
+    attributes = TransactionAttributeSerializer(many=True, required=False, allow_null=True)
 
     class Meta:
         model = Transaction

@@ -1,4 +1,7 @@
 from __future__ import unicode_literals
+import os
+
+os.environ['DJANGO_DEBUG'] = 'True'
 
 from .settings import *
 
@@ -7,4 +10,4 @@ DATABASES['default'] = {
     'NAME': ':memory:',
 }
 
-# LOGGING['loggers']['django.db'] = {'level': 'DEBUG',}
+LOGGING['loggers']['django.db'] = {'level': 'DEBUG',}

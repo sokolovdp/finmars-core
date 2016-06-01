@@ -46,8 +46,8 @@ class CounterpartyAttributeSerializer(AttributeSerializerBase):
 
 class CounterpartySerializer(ModelWithAttributesSerializer):
     master_user = MasterUserField()
-    attributes = CounterpartyAttributeSerializer(many=True)
-    tags = TagField(many=True)
+    attributes = CounterpartyAttributeSerializer(many=True, required=False, allow_null=True)
+    tags = TagField(many=True, required=False, allow_null=True)
 
     class Meta:
         model = Counterparty
@@ -87,8 +87,8 @@ class ResponsibleAttributeSerializer(AttributeSerializerBase):
 
 class ResponsibleSerializer(ModelWithAttributesSerializer):
     master_user = MasterUserField()
-    attributes = ResponsibleAttributeSerializer(many=True)
-    tags = TagField(many=True)
+    attributes = ResponsibleAttributeSerializer(many=True, required=False, allow_null=True)
+    tags = TagField(many=True, required=False, allow_null=True)
 
     class Meta:
         model = Responsible

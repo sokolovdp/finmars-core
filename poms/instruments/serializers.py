@@ -72,7 +72,7 @@ class InstrumentClassifierNodeSerializer(ClassifierNodeSerializerBase):
 
 class InstrumentTypeSerializer(ModelWithObjectPermissionSerializer):
     master_user = MasterUserField()
-    tags = TagField(many=True)
+    tags = TagField(many=True, required=False, allow_null=True)
 
     class Meta:
         model = InstrumentType
@@ -151,8 +151,8 @@ class InstrumentSerializer(ModelWithAttributesSerializer, ModelWithObjectPermiss
     factor_schedules = InstrumentFactorScheduleSerializer(many=True, required=False, allow_null=True)
     event_schedules = EventScheduleSerializer(many=True, required=False, allow_null=True)
 
-    attributes = InstrumentAttributeSerializer(many=True)
-    tags = TagField(many=True)
+    attributes = InstrumentAttributeSerializer(many=True, required=False, allow_null=True)
+    tags = TagField(many=True, required=False, allow_null=True)
 
     class Meta:
         model = Instrument
