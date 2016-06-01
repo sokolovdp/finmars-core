@@ -28,4 +28,4 @@ class GrantedPermissionField(serializers.ReadOnlyField):
         request = self.context['request']
         member = request.user.member
         perms = get_granted_permissions(member, value)
-        return perms
+        return list(perms) if perms else []
