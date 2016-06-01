@@ -397,9 +397,6 @@ class ManualPricingFormula(models.Model):
         unique_together = [
             ['instrument', 'pricing_policy']
         ]
-        permissions = [
-            ('view_manualpricingformula', 'Can view manual pricing formula')
-        ]
 
     def __str__(self):
         return '%s - %s' % (self.instrument, self.pricing_policy)
@@ -427,9 +424,6 @@ class PriceHistory(models.Model):
         verbose_name_plural = _('price histories')
         index_together = [
             ['instrument', 'date']
-        ]
-        permissions = [
-            ('view_pricehistory', 'Can view price history')
         ]
 
     def __str__(self):
