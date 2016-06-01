@@ -10,4 +10,4 @@ DATABASES['default'] = {
     'NAME': ':memory:',
 }
 
-LOGGING['loggers']['django.db'] = {'level': 'DEBUG',}
+# LOGGING['loggers']['django.db'] = {'level': 'DEBUG',}

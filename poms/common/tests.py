@@ -4,6 +4,7 @@ import json
 
 from django.conf import settings
 from django.contrib.auth.models import User
+from django.contrib.contenttypes.models import ContentType
 from rest_framework import status
 from rest_framework.test import APITestCase
 
@@ -14,6 +15,7 @@ from poms.instruments.models import InstrumentClass, InstrumentType, Instrument
 from poms.obj_perms.utils import assign_perms
 from poms.portfolios.models import Portfolio
 from poms.strategies.models import Strategy1, Strategy2, Strategy3
+from poms.tags.models import Tag
 from poms.users.models import MasterUser, Member, Group
 
 
@@ -176,6 +178,16 @@ class BaseTestCase(APITestCase):
     def get_strategy3(self, name, master_user):
         return Strategy3.objects.get(name=name, master_user__name=master_user)
 
+    def add_tag(self, name, master_user, content_types=None):
+        master_user = self.get_master_user(master_user)
+        tag = Tag.objects.create(master_user=master_user, name=name)
+        if content_types:
+            tag.content_types = [ContentType.objects.get_for_model(model) for model in content_types]
+        return tag
+
+    def get_tag(self, name, master_user):
+        return Tag.objects.get(name=name, master_user__name=master_user)
+
     def assign_perms(self, obj, master_user, users=None, groups=None, perms=None):
         if users:
             members = Member.objects.filter(user__username__in=users, master_user__name=master_user)
@@ -193,10 +205,6 @@ class BaseTestCase(APITestCase):
             }
             perms = {perm % kwargs for perm in codename_set}
         assign_perms(obj, members=members, groups=groups, perms=perms)
-
-    def account_perms(self, name, master_user, users=None, groups=None, perms=None):
-        account = self.get_account(name, master_user)
-        self.assign_perms(account, master_user, users=users, groups=groups, perms=perms)
 
     def test_play1(self):
         master_user = self.get_master_user('a')
@@ -222,9 +230,8 @@ class BaseTestCase(APITestCase):
 
         client.logout()
 
-        self.add_account('acc2', 'a')
-        account = self.get_account('acc2', 'a')
-        self.account_perms('acc2', 'a', groups=['g1'])
+        account = self.add_account('acc2', 'a')
+        self.assign_perms(account, 'a', groups=['g1'])
 
         client.login(username='a', password='a')
         response = client.get('/api/v1/accounts/account/', format='json')
@@ -255,7 +262,16 @@ class BaseTestCase(APITestCase):
         print('21 response', response)
         self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
 
-        response = client.post('/api/v1/accounts/account/', data={'name': 'acc3', 'user_code':'acc3'}, format='json')
+        tag1 = self.add_tag('tag1', 'a', [Account])
+        self.assign_perms(tag1, 'a', groups=['g2'])
+        tag2 = self.add_tag('tag2', 'a', [Account, AccountType])
+        self.assign_perms(tag2, 'a', groups=['g2'])
+
+        response = client.post('/api/v1/accounts/account/', data={
+            'name': 'acc3',
+            'user_code':'acc3',
+            'tags': [tag1.id, tag2.id]
+        }, format='json')
         print('22 response', response)
         print('22 response.json', json.dumps(response.data, indent=2))
         client.logout()
