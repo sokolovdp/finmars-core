@@ -25,9 +25,12 @@ class BaseTestCase(APITestCase):
         self.add_master_user_complex('b', groups=['g1', 'g2'])
 
         self.add_user('a1')
-        self.add_member(master_user='a', user='a1', groups=['g1'])
+        self.add_member(user='a1', master_user='a', groups=['g1'])
         self.add_user('a2')
-        self.add_member(master_user='a', user='a2', groups=['g2'])
+        self.add_member(user='a2', master_user='a', groups=['g2'])
+
+        self.add_user('b1')
+        self.add_member(user='b1', master_user='b', groups=['g2'])
 
     def add_master_user_complex(self, name, groups):
         master_user = name
@@ -71,7 +74,7 @@ class BaseTestCase(APITestCase):
     def get_user(self, name):
         return User.objects.get(username=name)
 
-    def add_member(self, master_user, user, is_owner=False, is_admin=False, groups=None):
+    def add_member(self, user, master_user, is_owner=False, is_admin=False, groups=None):
         master_user = self.get_master_user(master_user)
         user = self.get_user(user)
         member = Member.objects.create(master_user=master_user, user=user, is_owner=is_owner, is_admin=is_admin)
@@ -220,22 +223,35 @@ class BaseTestCase(APITestCase):
         client.logout()
 
         self.add_account('acc2', 'a')
+        account = self.get_account('acc2', 'a')
         self.account_perms('acc2', 'a', groups=['g1'])
 
         client.login(username='a', password='a')
         response = client.get('/api/v1/accounts/account/', format='json')
-        print('- response', response)
-        print('- response.json', json.dumps(response.data, indent=2))
+        print('-  response', response)
+        print('-  response.json', json.dumps(response.data, indent=2))
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data['count'], 2)
         client.logout()
 
         client.login(username='a1', password='a1')
         response = client.get('/api/v1/accounts/account/', format='json')
-        print('1 response', response)
-        print('1 response.json', json.dumps(response.data, indent=2))
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data['count'], 1)
+        print('1  response', response)
+        print('1  response.json', json.dumps(response.data, indent=2))
+        response = client.get('/api/v1/accounts/account/%s/' % account.id, format='json')
+        print('11 response', response)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
         client.logout()
 
         client.login(username='a2', password='a2')
         response = client.get('/api/v1/accounts/account/', format='json')
-        print('2 response', response)
-        print('2 response.json', json.dumps(response.data, indent=2))
+        print('2  response', response)
+        print('2  response.json', json.dumps(response.data, indent=2))
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data['count'], 0)
+        response = client.get('/api/v1/accounts/account/%s/' % account.id, format='json')
+        print('21 response', response)
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
         client.logout()
