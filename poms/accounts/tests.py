@@ -17,15 +17,6 @@ class AccountApiTestCase(BaseApiTestCase):
         self._url_object = '/api/v1/accounts/account/%s/'
         self._change_permission = 'change_account'
 
-        # account = self.add_account('acc1', 'a')
-        # self.assign_perms(account, 'a', groups=['g1'])
-
-        self._obj1 = self.add_account('acc1', 'a')
-        self.assign_perms(self._obj1, 'a', groups=['g1'])
-
-    # def _obj1(self):
-    #     return self.get_account('acc1', 'a')
-
     def _check_granted_permissions(self, obj, expected=None):
         self.assertTrue('granted_permissions' in obj)
         if expected is not None:
@@ -150,13 +141,15 @@ class AccountApiTestCase(BaseApiTestCase):
         acc = self.add_account('acc_with_group', 'a')
         self.assign_perms(acc, 'a', groups=['g1'])
 
+    def _create_obj(self, name='acc'):
+        return self.add_account(name, 'a')
+
     def test_list_by_owner(self):
         self._create_list_data()
         response = self._list('a')
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(response.data['count'], 3)
         for obj in response.data['results']:
-            # self.assertTrue('granted_permissions' in obj)
             self._check_granted_permissions(obj, expected=[])
             self.assertTrue('user_object_permissions' in obj)
             self.assertTrue('group_object_permissions' in obj)
@@ -167,7 +160,6 @@ class AccountApiTestCase(BaseApiTestCase):
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(response.data['count'], 3)
         for obj in response.data['results']:
-            # self.assertTrue('granted_permissions' in obj)
             self._check_granted_permissions(obj, expected=[])
             self.assertTrue('user_object_permissions' in obj)
             self.assertTrue('group_object_permissions' in obj)
@@ -178,7 +170,6 @@ class AccountApiTestCase(BaseApiTestCase):
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(response.data['count'], 2)
         for obj in response.data['results']:
-            # self.assertTrue('granted_permissions' in obj)
             self._check_granted_permissions(obj, expected=[self._change_permission])
             self.assertFalse('user_object_permissions' in obj)
             self.assertFalse('group_object_permissions' in obj)
@@ -190,51 +181,46 @@ class AccountApiTestCase(BaseApiTestCase):
         self.assertEqual(response.data['count'], 1)
 
     def test_get_by_owner(self):
-        acc = self.add_account('acc', 'a')
+        acc = self._create_obj()
         response = self._get('a', acc.id)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         obj = response.data
-        # self.assertTrue('granted_permissions' in obj)
         self._check_granted_permissions(obj, expected=[])
         self.assertTrue('user_object_permissions' in obj)
         self.assertTrue('group_object_permissions' in obj)
 
     def test_get_by_admin(self):
-        acc = self.add_account('acc', 'a')
+        acc = self._create_obj()
         response = self._get('a', acc.id)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         obj = response.data
-        # self.assertTrue('granted_permissions' in obj)
         self._check_granted_permissions(obj, expected=[])
         self.assertTrue('user_object_permissions' in obj)
         self.assertTrue('group_object_permissions' in obj)
 
     def test_get_by_user(self):
-        acc = self.add_account('acc_with_user', 'a')
+        acc = self._create_obj()
         self.assign_perms(acc, 'a', users=['a1'])
         response = self._get('a1', acc.id)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         obj = response.data
-        # self.assertTrue('granted_permissions' in obj)
         self._check_granted_permissions(obj, expected=[self._change_permission])
         self.assertFalse('user_object_permissions' in obj)
         self.assertFalse('group_object_permissions' in obj)
 
     def test_get_by_group(self):
-        acc = self.add_account('acc_with_user', 'a')
+        acc = self._create_obj()
         self.assign_perms(acc, 'a', groups=['g1'])
         response = self._get('a1', acc.id)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         obj = response.data
-        # self.assertTrue('granted_permissions' in obj)
         self._check_granted_permissions(obj, expected=[self._change_permission])
         self.assertFalse('user_object_permissions' in obj)
         self.assertFalse('group_object_permissions' in obj)
 
     def test_get_without_permission(self):
-        acc = self.add_account('acc_with_user', 'a')
+        acc = self._create_obj()
         self.assign_perms(acc, 'a', groups=['g1'])
-
         response = self._get('a2', acc.id)
         self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
 
@@ -385,33 +371,33 @@ class AccountApiTestCase(BaseApiTestCase):
         self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
 
     def test_delete_by_owner(self):
-        acc = self.add_account('acc', 'a')
+        acc = self._create_obj()
         response = self._delete('a', acc.id)
         self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
 
     def test_delete_by_admin(self):
-        acc = self.add_account('acc', 'a')
+        acc = self._create_obj()
         response = self._delete('a0', acc.id)
         self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
 
     def test_delete_by_user(self):
-        acc = self.add_account('acc', 'a')
+        acc = self._create_obj()
         response = self._delete('a1', acc.id)
         self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
 
     def test_delete_not_found_by_user(self):
-        acc = self.add_account('acc', 'a')
+        acc = self._create_obj()
         response = self._delete('a1', acc.id)
         self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
 
     def test_delete_without_delete_permission_by_user(self):
-        acc = self.add_account('acc', 'a')
+        acc = self._create_obj()
         self.assign_perms(acc, 'a', users=['a1'])
         response = self._delete('a1', acc.id)
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
 
     def test_delete_without_delete_permission_by_group(self):
-        acc = self.add_account('acc', 'a')
+        acc = self._create_obj()
         self.assign_perms(acc, 'a', groups=['g1'])
         response = self._delete('a1', acc.id)
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
