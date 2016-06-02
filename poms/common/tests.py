@@ -8,7 +8,7 @@ from django.contrib.contenttypes.models import ContentType
 from rest_framework import status
 from rest_framework.test import APITestCase
 
-from poms.accounts.models import AccountType, Account
+from poms.accounts.models import AccountType, Account, AccountAttributeType
 from poms.counterparties.models import Counterparty, Responsible
 from poms.currencies.models import Currency
 from poms.instruments.models import InstrumentClass, InstrumentType, Instrument
@@ -102,6 +102,13 @@ class BaseApiTestCase(APITestCase):
 
     def get_account_type(self, name, master_user):
         return AccountType.objects.get(name=name, master_user__name=master_user)
+
+    def add_account_attribute_type(self, name, master_user, value_type=AccountAttributeType.STRING):
+        master_user = self.get_master_user(master_user)
+        return AccountAttributeType.objects.create(master_user=master_user, name=name, value_type=value_type)
+
+    def get_account_attribute_type(self, name, master_user):
+        return AccountAttributeType.objects.get(name=name, master_user__name=master_user)
 
     def add_account(self, name, master_user, account_type='-'):
         account_type = self.get_account_type(account_type, master_user)
