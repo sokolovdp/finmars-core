@@ -1,12 +1,11 @@
 from __future__ import unicode_literals
 
-import json
 import uuid
 
-import six
 from django.utils.text import Truncator
 from rest_framework import status
 
+from poms.accounts.models import Account
 from poms.common.tests import BaseApiTestCase
 
 
@@ -85,13 +84,12 @@ class AccountApiTestCase(BaseApiTestCase):
     def _list(self, user):
         self.client.login(username=user, password=user)
         response = self.client.get(self._url_list, format='json')
-        # print(json.dumps(response.data, indent=2))
         self.client.logout()
         return response
 
-    def _get(self, user):
+    def _get(self, user, id):
         self.client.login(username=user, password=user)
-        response = self.client.get(self._url_object % self._obj1.id, format='json')
+        response = self.client.get(self._url_object % id, format='json')
         self.client.logout()
         return response
 
@@ -144,152 +142,19 @@ class AccountApiTestCase(BaseApiTestCase):
         self._add_permissions(data, user_object_permissions, group_object_permissions)
         return data
 
-    # def _make_patch_data(self):
-    #     data = {
-    #         'name': uuid.uuid4().hex,
-    #     }
-    #     return data
-    #
-    # def _make_update_data(self, user):
-    #     response = self._get(user)
-    #     self.assertEqual(response.status_code, status.HTTP_200_OK)
-    #     data = response.data.copy()
-    #     data['name'] = uuid.uuid4().hex
-    #     return data
-    #
-    # def _test_add(self, user):
-    #     self.client.login(username=user, password=user)
-    #
-    #     data = {
-    #         'name': uuid.uuid4().hex,
-    #         'user_code': Truncator(uuid.uuid4().hex).chars(25, truncate=''),
-    #         'short_name': uuid.uuid4().hex,
-    #         'public_name': uuid.uuid4().hex,
-    #     }
-    #
-    #     response = self.client.post(self._url_list, data=data, format='json')
-    #     print(json.dumps(response.data, indent=2))
-    #     response_data = response.data
-    #
-    #     self.assertEqual(response.status_code, status.HTTP_201_CREATED)
-    #
-    #     granted_permissions = response_data['granted_permissions']
-    #     self.assertEqual(set(granted_permissions), {self._change_permission, })
-    #
-    #     self.client.logout()
-    #     return response
-    #
-    # def _test_add_perms(self, user):
-    #     self.client.login(username=user, password=user)
-    #
-    #     users = ['a2']
-    #     groups = ['g1']
-    #     perms = [self._change_permission]
-    #
-    #     name = '%s' % uuid.uuid4().hex
-    #     data = {
-    #         'name': name,
-    #         'user_code': Truncator(name).chars(25),
-    #         'short_name': name,
-    #         'public_name': name,
-    #     }
-    #
-    #     user_object_permissions = []
-    #     group_object_permissions = []
-    #     # if perms is None:
-    #     #     perms = [self._change_permission]
-    #     for perm in perms:
-    #         for user in users:
-    #             member = self.get_member(user, 'a')
-    #             user_object_permissions.append({"member": member.id, "permission": perm})
-    #         for group in groups:
-    #             group = self.get_group(group, 'a')
-    #             group_object_permissions.append({"group": group.id, "permission": perm})
-    #     data['user_object_permissions'] = user_object_permissions
-    #     data['group_object_permissions'] = group_object_permissions
-    #
-    #     response = self.client.post(self._url_list, data=data, format='json')
-    #     # print(json.dumps(response.data, indent=2))
-    #     response_data = response.data
-    #
-    #     self.assertEqual(response.status_code, status.HTTP_201_CREATED)
-    #     granted_permissions = response_data['granted_permissions']
-    #     self.assertEqual(set(granted_permissions), {self._change_permission, })
-    #
-    #     member_a = self.get_member('a', 'a')
-    #     member_a2 = self.get_member('a2', 'a')
-    #     group_g1 = self.get_group('g1', 'a')
-    #     expected_user_object_permissions = [
-    #         {"member": member_a2.id, "permission": self._change_permission},
-    #         {"member": member_a.id, "permission": self._change_permission},
-    #     ]
-    #     expected_group_object_permissions = [
-    #         {"group": group_g1.id, "permission": self._change_permission},
-    #     ]
-    #
-    #     six.assertCountEqual(self, response_data['user_object_permissions'], expected_user_object_permissions)
-    #     six.assertCountEqual(self, response_data['group_object_permissions'], expected_group_object_permissions)
-    #
-    #     acc = self.get_account(data['name'], 'a')
-    #     user_object_permissions = [{"member": o.member_id, "permission": o.permission.codename}
-    #                                for o in acc.user_object_permissions.all()]
-    #     six.assertCountEqual(self, user_object_permissions, expected_user_object_permissions)
-    #
-    #     group_object_permissions = [{"group": o.group_id, "permission": o.permission.codename}
-    #                                 for o in acc.group_object_permissions.all()]
-    #     six.assertCountEqual(self, group_object_permissions, expected_group_object_permissions)
-    #
-    #     self.client.logout()
-    #     return response.data
-    #
-    # def _test_put(self, user, status_code=status.HTTP_200_OK):
-    #     self.client.login(username=user, password=user)
-    #
-    #     response = self.client.get(self._url_object % self._obj1.id, format='json')
-    #     self.assertEqual(response.status_code, status.HTTP_200_OK)
-    #     data = response.data
-    #     # print(json.dumps(data, indent=2))
-    #
-    #     data['name'] = '%s' % uuid.uuid4()
-    #     response = self.client.put(self._url_object % self._obj1.id, data=data, format='json')
-    #     # print(json.dumps(response.data, indent=2))
-    #
-    #     self.assertEqual(response.status_code, status.HTTP_200_OK)
-    #     self.assertEqual(response.data['name'], data['name'])
-    #
-    #     self.client.logout()
-    #     return response.data
-    #
-    # def _test_patch(self, user, status_code=status.HTTP_200_OK):
-    #     self.client.login(username=user, password=user)
-    #
-    #     data = {
-    #         'name': '%s' % uuid.uuid4(),
-    #     }
-    #     response = self.client.patch(self._url_object % self._obj1.id, data=data, format='json')
-    #     # print(json.dumps(response.data, indent=2))
-    #
-    #     self.assertEqual(response.status_code, status_code)
-    #     if status_code == status.HTTP_200_OK:
-    #         self.assertEqual(response.data['name'], data['name'])
-    #
-    #     self.client.logout()
-    #     return response.data
-    #
-    # def _test_delete(self, user, status_code=status.HTTP_204_NO_CONTENT):
-    #     self.client.login(username=user, password=user)
-    #
-    #     response = self.client.delete(self._url_object % self._obj1.id)
-    #     # print(response.status_code)
-    #
-    #     self.assertEqual(response.status_code, status_code)
-    #
-    #     self.client.logout()
+    def _create_list_data(self):
+        Account.objects.all().delete()
+        self.add_account('acc', 'a')
+        acc = self.add_account('acc_with_user', 'a')
+        self.assign_perms(acc, 'a', users=['a1', 'a2'])
+        acc = self.add_account('acc_with_group', 'a')
+        self.assign_perms(acc, 'a', groups=['g1'])
 
     def test_list_by_owner(self):
+        self._create_list_data()
         response = self._list('a')
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(response.data['count'], 2)
+        self.assertEqual(response.data['count'], 3)
         for obj in response.data['results']:
             # self.assertTrue('granted_permissions' in obj)
             self._check_granted_permissions(obj, expected=[])
@@ -297,9 +162,10 @@ class AccountApiTestCase(BaseApiTestCase):
             self.assertTrue('group_object_permissions' in obj)
 
     def test_list_by_admin(self):
+        self._create_list_data()
         response = self._list('a0')
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(response.data['count'], 2)
+        self.assertEqual(response.data['count'], 3)
         for obj in response.data['results']:
             # self.assertTrue('granted_permissions' in obj)
             self._check_granted_permissions(obj, expected=[])
@@ -307,9 +173,10 @@ class AccountApiTestCase(BaseApiTestCase):
             self.assertTrue('group_object_permissions' in obj)
 
     def test_list_by_a1(self):
+        self._create_list_data()
         response = self._list('a1')
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(response.data['count'], 1)
+        self.assertEqual(response.data['count'], 2)
         for obj in response.data['results']:
             # self.assertTrue('granted_permissions' in obj)
             self._check_granted_permissions(obj, expected=[self._change_permission])
@@ -317,12 +184,14 @@ class AccountApiTestCase(BaseApiTestCase):
             self.assertFalse('group_object_permissions' in obj)
 
     def test_list_by_a2(self):
+        self._create_list_data()
         response = self._list('a2')
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(response.data['count'], 0)
+        self.assertEqual(response.data['count'], 1)
 
     def test_get_by_owner(self):
-        response = self._get('a')
+        acc = self.add_account('acc', 'a')
+        response = self._get('a', acc.id)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         obj = response.data
         # self.assertTrue('granted_permissions' in obj)
@@ -331,7 +200,8 @@ class AccountApiTestCase(BaseApiTestCase):
         self.assertTrue('group_object_permissions' in obj)
 
     def test_get_by_admin(self):
-        response = self._get('a0')
+        acc = self.add_account('acc', 'a')
+        response = self._get('a', acc.id)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         obj = response.data
         # self.assertTrue('granted_permissions' in obj)
@@ -339,8 +209,10 @@ class AccountApiTestCase(BaseApiTestCase):
         self.assertTrue('user_object_permissions' in obj)
         self.assertTrue('group_object_permissions' in obj)
 
-    def test_get_by_a1(self):
-        response = self._get('a1')
+    def test_get_by_user(self):
+        acc = self.add_account('acc_with_user', 'a')
+        self.assign_perms(acc, 'a', users=['a1'])
+        response = self._get('a1', acc.id)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         obj = response.data
         # self.assertTrue('granted_permissions' in obj)
@@ -348,8 +220,22 @@ class AccountApiTestCase(BaseApiTestCase):
         self.assertFalse('user_object_permissions' in obj)
         self.assertFalse('group_object_permissions' in obj)
 
-    def test_get_by_a2(self):
-        response = self._get('a2')
+    def test_get_by_group(self):
+        acc = self.add_account('acc_with_user', 'a')
+        self.assign_perms(acc, 'a', groups=['g1'])
+        response = self._get('a1', acc.id)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        obj = response.data
+        # self.assertTrue('granted_permissions' in obj)
+        self._check_granted_permissions(obj, expected=[self._change_permission])
+        self.assertFalse('user_object_permissions' in obj)
+        self.assertFalse('group_object_permissions' in obj)
+
+    def test_get_without_permission(self):
+        acc = self.add_account('acc_with_user', 'a')
+        self.assign_perms(acc, 'a', groups=['g1'])
+
+        response = self._get('a2', acc.id)
         self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
 
     def test_add_by_owner(self):
@@ -488,7 +374,7 @@ class AccountApiTestCase(BaseApiTestCase):
         self._db_check_user_object_permissions(obj, [{'user': 'a1', 'permission': self._change_permission}])
         self._db_check_group_object_permissions(obj, [])
 
-    def test_update_without_permissions(self):
+    def test_update_without_permission(self):
         data = self._make_new_data()
         response = self._add('a', data)
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
@@ -498,27 +384,34 @@ class AccountApiTestCase(BaseApiTestCase):
         response = self._update('a1', data['id'], data)
         self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
 
-    def test_delete(self):
-        data = self._make_new_data()
-        response = self._add('a', data)
-        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
-
-        response = self._delete('a', response.data['id'])
+    def test_delete_by_owner(self):
+        acc = self.add_account('acc', 'a')
+        response = self._delete('a', acc.id)
         self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
 
-    def test_delete_without_permissions(self):
-        data = self._make_new_data()
-        response = self._add('a', data)
-        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+    def test_delete_by_admin(self):
+        acc = self.add_account('acc', 'a')
+        response = self._delete('a0', acc.id)
+        self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
 
-        response = self._delete('a1', response.data['id'])
+    def test_delete_by_user(self):
+        acc = self.add_account('acc', 'a')
+        response = self._delete('a1', acc.id)
         self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
 
+    def test_delete_not_found_by_user(self):
+        acc = self.add_account('acc', 'a')
+        response = self._delete('a1', acc.id)
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
 
-    def test_delete_without_delete_permissions(self):
-        data = self._make_new_data()
-        response = self._add('a1', data)
-        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+    def test_delete_without_delete_permission_by_user(self):
+        acc = self.add_account('acc', 'a')
+        self.assign_perms(acc, 'a', users=['a1'])
+        response = self._delete('a1', acc.id)
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
 
-        response = self._delete('a1', response.data['id'])
+    def test_delete_without_delete_permission_by_group(self):
+        acc = self.add_account('acc', 'a')
+        self.assign_perms(acc, 'a', groups=['g1'])
+        response = self._delete('a1', acc.id)
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
