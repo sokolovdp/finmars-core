@@ -26,6 +26,9 @@ class AccountApiTestCase(BaseApiTestCase):
 
         self._obj2_name = 'acc2'
 
+    # def _obj1(self):
+    #     return self.get_account('acc1', 'a')
+
     def _test_list(self, user, count):
         self.client.login(username=user, password=user)
 
@@ -40,16 +43,15 @@ class AccountApiTestCase(BaseApiTestCase):
     def _test_add(self, user):
         self.client.login(username=user, password=user)
 
-        name = '%s' % uuid.uuid4().hex
         data = {
-            'name': name,
-            'user_code': Truncator(name).chars(25),
-            'short_name': name,
-            'public_name': name,
+            'name': uuid.uuid4().hex,
+            'user_code': Truncator(uuid.uuid4().hex).chars(25, truncate=''),
+            'short_name': uuid.uuid4().hex,
+            'public_name': uuid.uuid4().hex,
         }
 
         response = self.client.post(self._url_list, data=data, format='json')
-        # print(json.dumps(response.data, indent=2))
+        print(json.dumps(response.data, indent=2))
         response_data = response.data
 
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
@@ -90,7 +92,7 @@ class AccountApiTestCase(BaseApiTestCase):
         data['group_object_permissions'] = group_object_permissions
 
         response = self.client.post(self._url_list, data=data, format='json')
-        print(json.dumps(response.data, indent=2))
+        # print(json.dumps(response.data, indent=2))
         response_data = response.data
 
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
@@ -99,18 +101,26 @@ class AccountApiTestCase(BaseApiTestCase):
 
         member_a = self.get_member('a', 'a')
         member_a2 = self.get_member('a2', 'a')
-
-        user_object_permissions = response_data['user_object_permissions']
-        six.assertCountEqual(self, user_object_permissions, [
+        group_g1 = self.get_group('g1', 'a')
+        expected_user_object_permissions = [
             {"member": member_a2.id, "permission": self._change_permission},
             {"member": member_a.id, "permission": self._change_permission},
-        ])
-
-        group_object_permissions = response_data['group_object_permissions']
-        group_g1 = self.get_group('g1', 'a')
-        six.assertCountEqual(self, group_object_permissions, [
+        ]
+        expected_group_object_permissions = [
             {"group": group_g1.id, "permission": self._change_permission},
-        ])
+        ]
+
+        six.assertCountEqual(self, response_data['user_object_permissions'], expected_user_object_permissions)
+        six.assertCountEqual(self, response_data['group_object_permissions'], expected_group_object_permissions)
+
+        acc = self.get_account(data['name'], 'a')
+        user_object_permissions = [{"member": o.member_id, "permission": o.permission.codename}
+                                   for o in acc.user_object_permissions.all()]
+        six.assertCountEqual(self, user_object_permissions, expected_user_object_permissions)
+
+        group_object_permissions = [{"group": o.group_id, "permission": o.permission.codename}
+                                    for o in acc.group_object_permissions.all()]
+        six.assertCountEqual(self, group_object_permissions, expected_group_object_permissions)
 
         self.client.logout()
         return response.data
@@ -188,8 +198,8 @@ class AccountApiTestCase(BaseApiTestCase):
     def test_owner_add_with_perms(self):
         self._test_add_perms('a')
 
-    # def test_a1_add_perms(self):
-    #     self._test_add_perms('a1')
+    def test_a1_add_perms(self):
+        self._test_add_perms('a1')
 
     def test_owner_get(self):
         self._test_get('a')
