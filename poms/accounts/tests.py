@@ -3,7 +3,7 @@ from __future__ import unicode_literals
 from rest_framework import status
 from rest_framework.test import APITestCase
 
-from poms.accounts.models import AccountAttributeType
+from poms.accounts.models import AccountAttributeType, AccountClassifier, Account
 from poms.common.tests import BaseApiWithPermissionTestCase
 
 
@@ -148,6 +148,28 @@ class AccountApiTestCase(BaseApiWithPermissionTestCase, APITestCase):
         self._change_permission = 'change_account'
 
         self.add_account_type('-', 'a')
+
+        at_simple = self.add_account_attribute_type('simple', 'a', value_type=AccountAttributeType.STRING)
+        self.assign_perms(at_simple, 'a', groups=['g1'])
+
+        at_classifier = self.add_account_attribute_type('classifier', 'a', value_type=AccountAttributeType.CLASSIFIER)
+        self.assign_perms(at_classifier, 'a', groups=['g1'])
+        n1 = AccountClassifier.objects.create(attribute_type=at_classifier, name='n1')
+        n11 = AccountClassifier.objects.create(attribute_type=at_classifier, name='n11', parent=n1)
+        n12 = AccountClassifier.objects.create(attribute_type=at_classifier, name='n12', parent=n1)
+        n2 = AccountClassifier.objects.create(attribute_type=at_classifier, name='n2')
+        n21 = AccountClassifier.objects.create(attribute_type=at_classifier, name='n21', parent=n2)
+        n22 = AccountClassifier.objects.create(attribute_type=at_classifier, name='n22', parent=n2)
+
+        at_classifier2 = self.add_account_attribute_type('classifier2', 'a', value_type=AccountAttributeType.CLASSIFIER)
+        self.assign_perms(at_classifier, 'a', groups=['g1'])
+        n1 = AccountClassifier.objects.create(attribute_type=at_classifier2, name='n1')
+        n11 = AccountClassifier.objects.create(attribute_type=at_classifier2, name='n11', parent=n1)
+        n12 = AccountClassifier.objects.create(attribute_type=at_classifier2, name='n12', parent=n1)
+
+        t1 = self.add_tag('t1', 'a', content_types=[Account])
+        t2 = self.add_tag('t2', 'a', content_types=[Account])
+        self.assign_perms(t2, 'a', groups=['g1'])
 
     def _create_obj(self, name='acc'):
         return self.add_account(name, 'a')
