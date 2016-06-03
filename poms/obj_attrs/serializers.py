@@ -13,6 +13,9 @@ from poms.users.fields import MasterUserField
 
 class AttributeTypeOptionIsHiddenField(serializers.BooleanField):
     def __init__(self, **kwargs):
+        kwargs['required'] = False
+        kwargs['default'] = False
+        # kwargs['allow_null'] = True
         super(AttributeTypeOptionIsHiddenField, self).__init__(**kwargs)
 
     def get_attribute(self, obj):
