@@ -548,8 +548,6 @@ class BaseApiWithPermissionTestCase(BaseApiTestCase):
     def test_add_by_a1(self):
         data = self._make_new_data()
         response = self._add('a1', data)
-        if response.status_code != status.HTTP_201_CREATED:
-            print(response.data)
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
         obj = response.data
         self._check_granted_permissions(obj, expected=[self._change_permission])
