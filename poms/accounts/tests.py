@@ -84,8 +84,6 @@ class AccountAttributeTypeApiTestCase(BaseApiWithPermissionTestCase, APITestCase
                                         user_object_permissions=None, group_object_permissions=None):
         data = self._make_new_data(value_type=value_type, user_object_permissions=user_object_permissions,
                                    group_object_permissions=group_object_permissions)
-        n = self._make_name()
-        uc = self._make_user_code(n)
         data['classifiers'] = self._make_classifiers()
         return data
 
@@ -118,7 +116,6 @@ class AccountAttributeTypeApiTestCase(BaseApiWithPermissionTestCase, APITestCase
         data = response.data.copy()
         data['classifiers'] = self._make_classifiers()
         response = self._update('a', data['id'], data)
-        self._dump(response.data)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(response.data['classifiers'], [])
 
