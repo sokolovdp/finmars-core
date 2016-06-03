@@ -8,7 +8,6 @@ from django.contrib.auth.models import User
 from django.contrib.contenttypes.models import ContentType
 from django.utils.text import Truncator
 from rest_framework import status
-from rest_framework.test import APITestCase
 
 from poms.accounts.models import AccountType, Account, AccountAttributeType
 from poms.counterparties.models import Counterparty, Responsible
@@ -229,6 +228,9 @@ class BaseApiTestCase(object):
             perms = {perm % kwargs for perm in codename_set}
         assign_perms(obj, members=members, groups=groups, perms=perms)
 
+    def _dump(self, data):
+        print(json.dumps(data, indent=2))
+
     def _test_play1(self):
         master_user = self.get_master_user('a')
 
@@ -329,12 +331,20 @@ class BaseApiWithPermissionTestCase(BaseApiTestCase):
         obj = self._create_obj('obj_with_group')
         self.assign_perms(obj, 'a', groups=['g1'])
 
+    def _make_name(self):
+        return uuid.uuid4().hex
+
+    def _make_user_code(self, name=None):
+        if not name:
+            name = uuid.uuid4().hex
+        return Truncator(name).chars(20, truncate='')
+
     def _make_new_data(self, user_object_permissions=None, group_object_permissions=None):
+        n = self._make_name()
+        uc = self._make_user_code(n)
         data = {
-            'name': uuid.uuid4().hex,
-            'user_code': Truncator(uuid.uuid4().hex).chars(25, truncate=''),
-            'short_name': uuid.uuid4().hex,
-            'public_name': uuid.uuid4().hex,
+            'name': n,
+            'user_code': uc,
         }
         self._add_permissions(data, user_object_permissions, group_object_permissions)
         return data
