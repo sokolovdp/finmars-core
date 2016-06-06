@@ -57,6 +57,16 @@ class TransactionTypeInputInline(admin.TabularInline):
 #     )
 
 
+def input_filter_by_master_user(form, field_name, master_user):
+    f = form.base_fields[field_name]
+    f.queryset = f.queryset.filter(master_user=master_user)
+
+
+def input_filter_owner(form, field_name, transaction_type):
+    f = form.base_fields[field_name]
+    f.queryset = f.queryset.filter(transaction_type=transaction_type)
+
+
 class TransactionTypeActionInstrumentInline(admin.StackedInline):
     model = TransactionTypeActionInstrument
     extra = 0
@@ -77,13 +87,24 @@ class TransactionTypeActionInstrumentInline(admin.StackedInline):
         'default_price',
         'default_accrued',
     )
-    raw_id_fields = (
-        'instrument_type', 'instrument_type_input',
-        'pricing_currency', 'pricing_currency_input',
-        'accrued_currency', 'accrued_currency_input',
-        'daily_pricing_model_input',
-        'payment_size_detail_input',
-    )
+
+    # raw_id_fields = (
+    #     # 'instrument_type', 'instrument_type_input',
+    #     # 'pricing_currency', 'pricing_currency_input',
+    #     # 'accrued_currency', 'accrued_currency_input',
+    #     # 'daily_pricing_model_input',
+    #     # 'payment_size_detail_input',
+    # )
+
+    def get_formset(self, request, obj=None, **kwargs):
+        f = super(TransactionTypeActionInstrumentInline, self).get_formset(request, obj=obj, **kwargs)
+        input_filter_by_master_user(f.form, 'instrument_type', obj.master_user)
+        input_filter_owner(f.form, 'instrument_type_input', obj)
+        input_filter_by_master_user(f.form, 'pricing_currency', obj.master_user)
+        input_filter_owner(f.form, 'pricing_currency_input', obj)
+        input_filter_by_master_user(f.form, 'accrued_currency', obj.master_user)
+        input_filter_owner(f.form, 'accrued_currency_input', obj)
+        return f
 
 
 class TransactionTypeActionTransactionInline(admin.StackedInline):
@@ -112,20 +133,42 @@ class TransactionTypeActionTransactionInline(admin.StackedInline):
         ('strategy3_position', 'strategy3_position_input'),
         ('strategy3_cash', 'strategy3_cash_input'),
     )
-    raw_id_fields = (
-        'instrument', 'instrument_input',
-        'transaction_currency', 'transaction_currency_input',
-        'settlement_currency', 'settlement_currency_input',
-        'account_position', 'account_position_input',
-        'account_cash', 'account_cash_input',
-        'account_interim', 'account_interim_input',
-        'strategy1_position', 'strategy1_position_input',
-        'strategy1_cash', 'strategy1_cash_input',
-        'strategy2_position', 'strategy2_position_input',
-        'strategy2_cash', 'strategy2_cash_input',
-        'strategy3_position', 'strategy3_position_input',
-        'strategy3_cash', 'strategy3_cash_input',
-    )
+
+    # raw_id_fields = (
+    #     'instrument', 'instrument_input',
+    #     'transaction_currency', 'transaction_currency_input',
+    #     'settlement_currency', 'settlement_currency_input',
+    #     'account_position', 'account_position_input',
+    #     'account_cash', 'account_cash_input',
+    #     'account_interim', 'account_interim_input',
+    #     'strategy1_position', 'strategy1_position_input',
+    #     'strategy1_cash', 'strategy1_cash_input',
+    #     'strategy2_position', 'strategy2_position_input',
+    #     'strategy2_cash', 'strategy2_cash_input',
+    #     'strategy3_position', 'strategy3_position_input',
+    #     'strategy3_cash', 'strategy3_cash_input',
+    # )
+    def get_formset(self, request, obj=None, **kwargs):
+        f = super(TransactionTypeActionTransactionInline, self).get_formset(request, obj=obj, **kwargs)
+        input_filter_by_master_user(f.form, 'instrument', obj.master_user)
+        input_filter_owner(f.form, 'instrument_input', obj)
+        input_filter_by_master_user(f.form, 'transaction_currency', obj.master_user)
+        input_filter_owner(f.form, 'transaction_currency_input', obj)
+        input_filter_by_master_user(f.form, 'settlement_currency', obj.master_user)
+        input_filter_owner(f.form, 'settlement_currency_input', obj)
+        input_filter_by_master_user(f.form, 'account_position', obj.master_user)
+        input_filter_owner(f.form, 'account_position_input', obj)
+        input_filter_by_master_user(f.form, 'account_cash', obj.master_user)
+        input_filter_owner(f.form, 'account_cash_input', obj)
+        input_filter_by_master_user(f.form, 'account_interim', obj.master_user)
+        input_filter_owner(f.form, 'account_interim_input', obj)
+        input_filter_by_master_user(f.form, 'strategy1_position', obj.master_user)
+        input_filter_owner(f.form, 'strategy1_position_input', obj)
+        input_filter_by_master_user(f.form, 'strategy2_position', obj.master_user)
+        input_filter_owner(f.form, 'strategy2_position_input', obj)
+        input_filter_by_master_user(f.form, 'strategy3_position', obj.master_user)
+        input_filter_owner(f.form, 'strategy3_position_input', obj)
+        return f
 
 
 class EventToHandleInline(admin.StackedInline):
@@ -152,6 +195,19 @@ class TransactionTypeAdmin(HistoricalAdmin):
         if obj:
             return super(TransactionTypeAdmin, self).get_inline_instances(request, obj)
         return []
+
+    def get_readonly_fields(self, request, obj=None):
+        fields = super(TransactionTypeAdmin, self).get_readonly_fields(request, obj)
+        if obj:
+            fields += ('master_user',)
+        else:
+            fields += ('instrument_types',)
+        return fields
+
+    def get_formset(self, request, obj=None, **kwargs):
+        f = super(TransactionTypeAdmin, self).get_formset(request, obj=obj, **kwargs)
+        input_filter_by_master_user(f.form, 'instrument_types', obj.master_user)
+        return f
 
 
 admin.site.register(TransactionType, TransactionTypeAdmin)
