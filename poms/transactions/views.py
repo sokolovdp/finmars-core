@@ -82,6 +82,9 @@ class TransactionTypeViewSet(PomsViewSetBase):
         OrderingFilter,
         SearchFilter
     ]
+    permission_classes = PomsViewSetBase.permission_classes + [
+        ObjectPermissionBase,
+    ]
     filter_class = TransactionTypeFilterSet
     ordering_fields = ['user_code', 'name', 'short_name']
     search_fields = ['user_code', 'name', 'short_name']
