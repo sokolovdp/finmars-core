@@ -208,7 +208,8 @@ class TransactionTypeInput(models.Model):
         verbose_name = _('transaction type input')
         verbose_name_plural = _('transaction type inputs')
         unique_together = [
-            ['transaction_type', 'name']
+            ['transaction_type', 'name'],
+            ['transaction_type', 'order'],
         ]
 
     def __str__(self):
@@ -331,6 +332,108 @@ class TransactionTypeAction(models.Model):
         ]
         verbose_name = _('action')
         verbose_name_plural = _('actions')
+
+
+class TransactionTypeActionInstrument(TransactionTypeAction):
+    instrument_type = models.ForeignKey(
+        'instruments.InstrumentType',
+        null=True,
+        blank=True,
+        on_delete=models.PROTECT,
+        related_name='+',
+    )
+    instrument_type_input = models.ForeignKey(
+        TransactionTypeInput,
+        null=True,
+        blank=True,
+        on_delete=models.PROTECT,
+        related_name='+'
+    )
+
+    pricing_currency = models.ForeignKey(
+        'currencies.Currency',
+        null=True,
+        blank=True,
+        on_delete=models.PROTECT,
+        related_name='+',
+    )
+    pricing_currency_input = models.ForeignKey(
+        TransactionTypeInput,
+        null=True,
+        blank=True,
+        on_delete=models.PROTECT,
+        related_name='+',
+    )
+
+    price_multiplier = models.CharField(
+        max_length=255,
+        blank=True,
+        default='0.'
+    )
+
+    accrued_currency = models.ForeignKey(
+        'currencies.Currency',
+        null=True,
+        blank=True,
+        on_delete=models.PROTECT,
+        related_name='+',
+    )
+    accrued_currency_input = models.ForeignKey(
+        TransactionTypeInput,
+        null=True,
+        blank=True,
+        on_delete=models.PROTECT,
+        related_name='+',
+    )
+
+    accrued_multiplier = models.CharField(
+        max_length=255,
+        default='0.'
+    )
+
+    daily_pricing_model = models.ForeignKey(
+        'instruments.DailyPricingModel',
+        null=True,
+        blank=True,
+        on_delete=models.PROTECT,
+        related_name='+',
+    )
+    daily_pricing_model_input = models.ForeignKey(
+        TransactionTypeInput,
+        null=True,
+        blank=True,
+        on_delete=models.PROTECT,
+        related_name='+',
+    )
+
+    payment_size_detail = models.ForeignKey(
+        'instruments.PaymentSizeDetail',
+        null=True,
+        blank=True,
+        on_delete=models.PROTECT,
+        related_name='+',
+    )
+    payment_size_detail_input = models.ForeignKey(
+        TransactionTypeInput,
+        null=True,
+        blank=True,
+        on_delete=models.PROTECT,
+        related_name='+',
+    )
+
+    default_price = models.CharField(
+        max_length=255,
+        default='0.'
+    )
+
+    default_accrued = models.CharField(
+        max_length=255,
+        default='0.'
+    )
+
+    class Meta:
+        verbose_name = _('action instrument')
+        verbose_name_plural = _('action instruments')
 
 
 class TransactionTypeActionTransaction(TransactionTypeAction):
@@ -555,108 +658,6 @@ class TransactionTypeActionTransaction(TransactionTypeAction):
     class Meta:
         verbose_name = _('action transaction')
         verbose_name_plural = _('action transactions')
-
-
-class TransactionTypeActionInstrument(TransactionTypeAction):
-    instrument_type = models.ForeignKey(
-        'instruments.InstrumentType',
-        null=True,
-        blank=True,
-        on_delete=models.PROTECT,
-        related_name='+',
-    )
-    instrument_type_input = models.ForeignKey(
-        TransactionTypeInput,
-        null=True,
-        blank=True,
-        on_delete=models.PROTECT,
-        related_name='+'
-    )
-
-    pricing_currency = models.ForeignKey(
-        'currencies.Currency',
-        null=True,
-        blank=True,
-        on_delete=models.PROTECT,
-        related_name='+',
-    )
-    pricing_currency_input = models.ForeignKey(
-        TransactionTypeInput,
-        null=True,
-        blank=True,
-        on_delete=models.PROTECT,
-        related_name='+',
-    )
-
-    price_multiplier = models.CharField(
-        max_length=255,
-        blank=True,
-        default='0.'
-    )
-
-    accrued_currency = models.ForeignKey(
-        'currencies.Currency',
-        null=True,
-        blank=True,
-        on_delete=models.PROTECT,
-        related_name='+',
-    )
-    accrued_currency_input = models.ForeignKey(
-        TransactionTypeInput,
-        null=True,
-        blank=True,
-        on_delete=models.PROTECT,
-        related_name='+',
-    )
-
-    accrued_multiplier = models.CharField(
-        max_length=255,
-        default='0.'
-    )
-
-    daily_pricing_model = models.ForeignKey(
-        'instruments.DailyPricingModel',
-        null=True,
-        blank=True,
-        on_delete=models.PROTECT,
-        related_name='+',
-    )
-    daily_pricing_model_input = models.ForeignKey(
-        TransactionTypeInput,
-        null=True,
-        blank=True,
-        on_delete=models.PROTECT,
-        related_name='+',
-    )
-
-    payment_size_detail = models.ForeignKey(
-        'instruments.PaymentSizeDetail',
-        null=True,
-        blank=True,
-        on_delete=models.PROTECT,
-        related_name='+',
-    )
-    payment_size_detail_input = models.ForeignKey(
-        TransactionTypeInput,
-        null=True,
-        blank=True,
-        on_delete=models.PROTECT,
-        related_name='+',
-    )
-
-    default_price = models.CharField(
-        max_length=255,
-        default='0.'
-    )
-
-    default_accrued = models.CharField(
-        max_length=255,
-        default='0.'
-    )
-
-    class Meta:
-        verbose_name = _('action instrument')
-        verbose_name_plural = _('action instruments')
 
 
 class EventToHandle(NamedModel):

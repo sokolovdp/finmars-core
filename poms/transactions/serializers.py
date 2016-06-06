@@ -2,6 +2,8 @@ from __future__ import unicode_literals
 
 import pprint
 
+import six
+from django.core.exceptions import ObjectDoesNotExist
 from django.utils.translation import ugettext_lazy as _
 from rest_framework import serializers
 from rest_framework.exceptions import ValidationError
@@ -36,25 +38,34 @@ class TransactionTypeInputSerializer(serializers.ModelSerializer):
         fields = ['id', 'value_type', 'name', 'order']
 
 
-class TransactionTypeActionTransactionSerializer(serializers.ModelSerializer):
-    instrument = InstrumentField()
-    transaction_currency = CurrencyField()
-    # transaction_currency_input = ?
-    settlement_currency = CurrencyField()
-    # settlement_currency_input = ?
-    account_position = AccountField()
-    # account_position_input = ?
-    account_cash = AccountField()
-    # account_cash_input = ?
-    account_interim = AccountField()
-    # aaccount_interim_input = ?
-    strategy1_position = Strategy1Field()
-    # strategy1_position_input = ?
-    strategy2_position = Strategy1Field()
-    # strategy2_position_input = ?
-    strategy3_position = Strategy1Field()
+class TransactionInputField(serializers.CharField):
+    def __init__(self, **kwargs):
+        super(TransactionInputField, self).__init__(**kwargs)
 
-    # strategy3_position_input = ?
+    def to_representation(self, value):
+        return value.name if value else None
+
+
+class TransactionTypeActionTransactionSerializer(serializers.ModelSerializer):
+    instrument = InstrumentField(allow_null=True)
+    instrument_input = TransactionInputField(allow_null=True)
+    transaction_currency = CurrencyField(allow_null=True)
+    transaction_currency_input = TransactionInputField(allow_null=True)
+    settlement_currency = CurrencyField(allow_null=True)
+    settlement_currency_input = TransactionInputField(allow_null=True)
+    account_position = AccountField(allow_null=True)
+    account_position_input = TransactionInputField(allow_null=True)
+    account_cash = AccountField(allow_null=True)
+    account_cash_input = TransactionInputField(allow_null=True)
+    account_interim = AccountField(allow_null=True)
+    account_interim_input = TransactionInputField(allow_null=True)
+    strategy1_position = Strategy1Field(allow_null=True)
+    strategy1_position_input = TransactionInputField(allow_null=True)
+    strategy2_position = Strategy1Field(allow_null=True)
+    strategy2_position_input = TransactionInputField(allow_null=True)
+    strategy3_position = Strategy1Field(allow_null=True)
+    strategy3_position_input = TransactionInputField(allow_null=True)
+
     class Meta:
         model = TransactionTypeActionTransaction
         fields = [
@@ -82,15 +93,15 @@ class TransactionTypeActionTransactionSerializer(serializers.ModelSerializer):
 
 
 class TransactionTypeActionInstrumentSerializer(serializers.ModelSerializer):
-    instrument_type = InstrumentTypeField()
-    # instrument_type_input = ?
-    pricing_currency = CurrencyField()
-    # pricing_currency_input = ?
-    accrued_currency = CurrencyField()
+    instrument_type = InstrumentTypeField(allow_null=True)
+    instrument_type_input = TransactionInputField(allow_null=True)
+    pricing_currency = CurrencyField(allow_null=True)
+    pricing_currency_input = TransactionInputField(allow_null=True)
+    accrued_currency = CurrencyField(allow_null=True)
+    accrued_currency_input = TransactionInputField(allow_null=True)
+    daily_pricing_model_input = TransactionInputField(allow_null=True)
+    payment_size_detail_input = TransactionInputField(allow_null=True)
 
-    # accrued_currency_input = ?
-    # daily_pricing_model_input = ?
-    # payment_size_detail_input = ?
     class Meta:
         model = TransactionTypeActionInstrument
         fields = [
@@ -107,50 +118,12 @@ class TransactionTypeActionInstrumentSerializer(serializers.ModelSerializer):
 
 
 class TransactionTypeActionSerializer(serializers.ModelSerializer):
-    transaction = TransactionTypeActionTransactionSerializer(source='transactiontypeactiontransaction')
-    instrument = TransactionTypeActionInstrumentSerializer(source='transactiontypeactioninstrument')
+    transaction = TransactionTypeActionTransactionSerializer(source='transactiontypeactiontransaction', allow_null=True)
+    instrument = TransactionTypeActionInstrumentSerializer(source='transactiontypeactioninstrument', allow_null=True)
 
     class Meta:
         model = TransactionTypeAction
         fields = ['id', 'order', 'transaction', 'instrument']
-
-        # def to_representation(self, obj):
-        #     # print('----')
-        #     # print(obj.id, obj.order)
-        #     try:
-        #         # print(obj.transactiontypeactiontransaction, obj.transactiontypeactiontransaction.order)
-        #         ret = TransactionTypeActionTransactionSerializer(instance=obj.transactiontypeactiontransaction,
-        #                                                          context=self.context).to_representation(
-        #             obj.transactiontypeactiontransaction)
-        #         ret['action_type'] = 'transaction'
-        #         return ret
-        #     except ObjectDoesNotExist:
-        #         pass
-        #     try:
-        #         # print(obj.transactiontypeactioninstrument, obj.transactiontypeactioninstrument.order)
-        #         ret = TransactionTypeActionInstrumentSerializer(instance=obj.transactiontypeactioninstrument,
-        #                                                         context=self.context).to_representation(
-        #             obj.transactiontypeactioninstrument)
-        #         ret['action_type'] = 'instrument'
-        #         return ret
-        #     except ObjectDoesNotExist:
-        #         pass
-        #         # TransactionTypeActionTransactionSerializer(obj.transactiontypeactiontransaction, context=self.context).to_representation(obj)
-        #         # TransactionTypeActionInstrumentSerializer(obj.transactiontypeactioninstrument, context=self.context).to_representation(obj)
-        #         # if hasattr(obj, 'transactiontypeactiontransaction'):
-        #         #     return TransactionTypeActionTransactionSerializer(obj.transactiontypeactiontransaction, context=self.context).to_representation(obj)
-        #         # elif hasattr(obj, 'transactiontypeactioninstrument'):
-        #         #     return TransactionTypeActionInstrumentSerializer(obj.transactiontypeactioninstrument, context=self.context).to_representation(obj)
-        #     return super(TransactionTypeActionSerializer, self).to_representation(obj)
-        #
-        # def to_internal_value(self, data):
-        #     # print(data)
-        #     action_type = data['action_type']
-        #     if action_type == 'transaction':
-        #         return TransactionTypeActionTransactionSerializer(context=self.context).to_internal_value(data)
-        #     elif action_type == 'instrument':
-        #         return TransactionTypeActionInstrumentSerializer(context=self.context).to_internal_value(data)
-        #     return super(TransactionTypeActionSerializer, self).to_internal_value(data)
 
 
 class TransactionTypeSerializer(ModelWithObjectPermissionSerializer):
@@ -165,9 +138,84 @@ class TransactionTypeSerializer(ModelWithObjectPermissionSerializer):
         fields = ['url', 'id', 'master_user', 'user_code', 'name', 'short_name', 'notes', 'tags',
                   'instrument_types', 'inputs', 'actions']
 
+    def create(self, validated_data):
+        pprint.pprint(validated_data)
+        inputs = validated_data.pop('inputs', None)
+        actions = validated_data.pop('actions', None)
+        instance = super(TransactionTypeSerializer, self).create(validated_data)
+        self.save_inputs(instance, inputs, True)
+        self.save_actions(instance, actions, True)
+        return instance
+
     def update(self, instance, validated_data):
         pprint.pprint(validated_data)
+        inputs = validated_data.pop('inputs', None)
+        actions = validated_data.pop('actions', None)
+        instance = super(TransactionTypeSerializer, self).update(instance, validated_data)
+        inputs = self.save_inputs(instance, inputs, False)
+        self.save_actions(instance, actions, False)
+        if inputs:
+            instance.inputs.eclude(id__in=[i.id for i in six.itervalues(inputs)]).delete()
         return instance
+
+    def save_inputs(self, instance, inputs, created):
+        cur_inputs = {i.name: i for i in instance.inputs.all()}
+        new_inputs = {i['name']: i for i in inputs}
+        for name, input_data in six.iteritems(new_inputs):
+            input = cur_inputs.pop(name, None)
+            if input is None:
+                input = TransactionTypeInput(transaction_type=instance)
+            for attr, value in six.iteritems(input_data):
+                setattr(input, attr, value)
+            input.save()
+            new_inputs[input.name] = input
+        return new_inputs
+
+    def save_actions(self, instance, actions, created):
+        inputs = {i.name: i for i in instance.inputs.all()}
+        cur_actions = {i.order: i for i in instance.actions.select_related('transactiontypeactioninstrument',
+                                                                           'transactiontypeactiontransaction').all()}
+        for action_data in actions:
+            instrument_data = action_data.get('instrument', action_data.get('transactiontypeactioninstrument'))
+            transaction_data = action_data.get('transaction', action_data.get('transactiontypeactiontransaction'))
+            data = instrument_data or transaction_data
+
+            # replace input name to input object
+            for name, value in six.iteritems(data):
+                if name.endswith('_input') and value:
+                    # print('name=%s, value=%s' % (name, value,))
+                    data[name] = inputs[value]
+
+            action = cur_actions.pop(action_data['order'], None)
+            if created:
+                if instrument_data:
+                    action = TransactionTypeActionInstrument(transaction_type=instance)
+                elif transaction_data:
+                    action = TransactionTypeActionTransaction(transaction_type=instance)
+                else:
+                    raise RuntimeError('unknown action')
+                action.order = action_data['order']
+                for attr, value in instrument_data.items():
+                    setattr(action, attr, value)
+                action.save()
+            else:
+                try:
+                    instrument = action.transactiontypeactioninstrument
+                except ObjectDoesNotExist:
+                    instrument = None
+                try:
+                    transaction = action.transactiontypeactiontransaction
+                except ObjectDoesNotExist:
+                    transaction = None
+                if instrument_data and instrument:
+                    action = instrument
+                elif transaction_data and transaction:
+                    action = instrument
+                else:
+                    raise RuntimeError('unknown action')
+                for attr, value in data.items():
+                    setattr(action, attr, value)
+                action.save()
 
 
 class TransactionAttributeTypeSerializer(AttributeTypeSerializerBase, ModelWithObjectPermissionSerializer):
