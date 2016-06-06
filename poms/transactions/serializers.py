@@ -1,7 +1,5 @@
 from __future__ import unicode_literals
 
-import pprint
-
 import six
 from django.core.exceptions import ObjectDoesNotExist
 from django.utils.translation import ugettext_lazy as _
@@ -46,19 +44,72 @@ class TransactionInputField(serializers.CharField):
         return value.name if value else None
 
 
+class ExpressionField(serializers.CharField):
+    def __init__(self, **kwargs):
+        kwargs['allow_null'] = kwargs.get('allow_null', False)
+        kwargs['allow_blank'] = kwargs.get('allow_blank', False)
+        super(ExpressionField, self).__init__(**kwargs)
+
+
+class TransactionTypeActionInstrumentSerializer(serializers.ModelSerializer):
+    user_code = ExpressionField(default="''")
+    name = ExpressionField(default="''")
+    public_name = ExpressionField(default="''")
+    short_name = ExpressionField(default="''")
+    notes = ExpressionField(default="''")
+    instrument_type = InstrumentTypeField(allow_null=True)
+    instrument_type_input = TransactionInputField(allow_null=True)
+    pricing_currency = CurrencyField(allow_null=True)
+    pricing_currency_input = TransactionInputField(allow_null=True)
+    price_multiplier = ExpressionField()
+    accrued_currency = CurrencyField(allow_null=True)
+    accrued_currency_input = TransactionInputField(allow_null=True)
+    accrued_multiplier = ExpressionField()
+    daily_pricing_model_input = TransactionInputField(allow_null=True)
+    payment_size_detail_input = TransactionInputField(allow_null=True)
+    default_price = ExpressionField()
+    default_accrued = ExpressionField()
+
+    class Meta:
+        model = TransactionTypeActionInstrument
+        fields = [
+            'user_code',
+            'name',
+            'public_name',
+            'short_name',
+            'notes',
+            'instrument_type', 'instrument_type_input',
+            'pricing_currency', 'pricing_currency_input',
+            'price_multiplier',
+            'accrued_currency', 'accrued_currency_input',
+            'accrued_multiplier',
+            'daily_pricing_model', 'daily_pricing_model_input',
+            'payment_size_detail', 'payment_size_detail_input',
+            'default_price',
+            'default_accrued',
+        ]
+
+
 class TransactionTypeActionTransactionSerializer(serializers.ModelSerializer):
     instrument = InstrumentField(allow_null=True)
     instrument_input = TransactionInputField(allow_null=True)
     transaction_currency = CurrencyField(allow_null=True)
     transaction_currency_input = TransactionInputField(allow_null=True)
+    position_size_with_sign = ExpressionField()
     settlement_currency = CurrencyField(allow_null=True)
     settlement_currency_input = TransactionInputField(allow_null=True)
+    cash_consideration = ExpressionField()
+    principal_with_sign = ExpressionField()
+    carry_with_sign = ExpressionField()
+    overheads_with_sign = ExpressionField()
     account_position = AccountField(allow_null=True)
     account_position_input = TransactionInputField(allow_null=True)
     account_cash = AccountField(allow_null=True)
     account_cash_input = TransactionInputField(allow_null=True)
     account_interim = AccountField(allow_null=True)
     account_interim_input = TransactionInputField(allow_null=True)
+    accounting_date = ExpressionField()
+    cash_date = ExpressionField()
     strategy1_position = Strategy1Field(allow_null=True)
     strategy1_position_input = TransactionInputField(allow_null=True)
     strategy2_position = Strategy1Field(allow_null=True)
@@ -89,31 +140,6 @@ class TransactionTypeActionTransactionSerializer(serializers.ModelSerializer):
             'strategy2_cash', 'strategy2_cash_input',
             'strategy3_position', 'strategy3_position_input',
             'strategy3_cash', 'strategy3_cash_input',
-        ]
-
-
-class TransactionTypeActionInstrumentSerializer(serializers.ModelSerializer):
-    instrument_type = InstrumentTypeField(allow_null=True)
-    instrument_type_input = TransactionInputField(allow_null=True)
-    pricing_currency = CurrencyField(allow_null=True)
-    pricing_currency_input = TransactionInputField(allow_null=True)
-    accrued_currency = CurrencyField(allow_null=True)
-    accrued_currency_input = TransactionInputField(allow_null=True)
-    daily_pricing_model_input = TransactionInputField(allow_null=True)
-    payment_size_detail_input = TransactionInputField(allow_null=True)
-
-    class Meta:
-        model = TransactionTypeActionInstrument
-        fields = [
-            'instrument_type', 'instrument_type_input',
-            'pricing_currency', 'pricing_currency_input',
-            'price_multiplier',
-            'accrued_currency', 'accrued_currency_input',
-            'accrued_multiplier',
-            'daily_pricing_model', 'daily_pricing_model_input',
-            'payment_size_detail', 'payment_size_detail_input',
-            'default_price',
-            'default_accrued',
         ]
 
 

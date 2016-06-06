@@ -21,9 +21,13 @@ admin.site.register(NotificationClass, ClassModelAdmin)
 admin.site.register(PeriodicityGroup, ClassModelAdmin)
 
 
-class TransactionTypeInputInline(admin.StackedInline):
+class TransactionTypeInputInline(admin.TabularInline):
     model = TransactionTypeInput
     extra = 0
+    fields = (
+        'id', 'name', 'value_type', 'order',
+    )
+    readonly_fields = ('id',)
 
 
 # class TransactionTypeItemInline(admin.StackedInline):
@@ -53,10 +57,38 @@ class TransactionTypeInputInline(admin.StackedInline):
 #     )
 
 
+class TransactionTypeActionInstrumentInline(admin.StackedInline):
+    model = TransactionTypeActionInstrument
+    extra = 0
+    fields = (
+        'order',
+        'user_code',
+        'name',
+        'public_name',
+        'short_name',
+        'notes',
+        ('instrument_type', 'instrument_type_input'),
+        ('pricing_currency', 'pricing_currency_input'),
+        'price_multiplier',
+        ('accrued_currency', 'accrued_currency_input'),
+        'accrued_multiplier',
+        ('daily_pricing_model', 'daily_pricing_model_input'),
+        ('payment_size_detail', 'payment_size_detail_input'),
+        'default_price',
+        'default_accrued',
+    )
+    raw_id_fields = (
+        'instrument_type', 'instrument_type_input',
+        'pricing_currency', 'pricing_currency_input',
+        'accrued_currency', 'accrued_currency_input',
+        'daily_pricing_model_input',
+        'payment_size_detail_input',
+    )
+
+
 class TransactionTypeActionTransactionInline(admin.StackedInline):
     model = TransactionTypeActionTransaction
     extra = 0
-
     fields = (
         'order',
         'transaction_class',
@@ -80,23 +112,19 @@ class TransactionTypeActionTransactionInline(admin.StackedInline):
         ('strategy3_position', 'strategy3_position_input'),
         ('strategy3_cash', 'strategy3_cash_input'),
     )
-
-
-class TransactionTypeActionInstrumentInline(admin.StackedInline):
-    model = TransactionTypeActionInstrument
-    extra = 0
-
-    fields = (
-        'order',
-        ('instrument_type', 'instrument_type_input'),
-        ('pricing_currency', 'pricing_currency_input'),
-        'price_multiplier',
-        ('accrued_currency', 'accrued_currency_input'),
-        'accrued_multiplier',
-        ('daily_pricing_model', 'daily_pricing_model_input'),
-        ('payment_size_detail', 'payment_size_detail_input'),
-        'default_price',
-        'default_accrued',
+    raw_id_fields = (
+        'instrument', 'instrument_input',
+        'transaction_currency', 'transaction_currency_input',
+        'settlement_currency', 'settlement_currency_input',
+        'account_position', 'account_position_input',
+        'account_cash', 'account_cash_input',
+        'account_interim', 'account_interim_input',
+        'strategy1_position', 'strategy1_position_input',
+        'strategy1_cash', 'strategy1_cash_input',
+        'strategy2_position', 'strategy2_position_input',
+        'strategy2_cash', 'strategy2_cash_input',
+        'strategy3_position', 'strategy3_position_input',
+        'strategy3_cash', 'strategy3_cash_input',
     )
 
 
@@ -115,8 +143,8 @@ class TransactionTypeAdmin(HistoricalAdmin):
     filter_horizontal = ['instrument_types']
     inlines = [
         TransactionTypeInputInline,
-        TransactionTypeActionTransactionInline,
         TransactionTypeActionInstrumentInline,
+        TransactionTypeActionTransactionInline,
         EventToHandleInline,
     ]
 

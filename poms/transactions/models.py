@@ -158,7 +158,7 @@ class TransactionTypeGroupObjectPermission(GroupObjectPermissionBase):
 class TransactionTypeInput(models.Model):
     STRING = 10
     NUMBER = 20
-    EXPRESSION = 30
+    # EXPRESSION = 30
     DATE = 40
     # RELATION = 100
 
@@ -178,7 +178,7 @@ class TransactionTypeInput(models.Model):
         (NUMBER, _('Number')),
         (STRING, _('String')),
         (DATE, _('Date')),
-        (EXPRESSION, _('Expression')),
+        # (EXPRESSION, _('Expression')),
         # (RELATION, _('Relation')),
         (ACCOUNT, _('Account')),
         (INSTRUMENT, _('Instrument')),
@@ -211,6 +211,7 @@ class TransactionTypeInput(models.Model):
             ['transaction_type', 'name'],
             ['transaction_type', 'order'],
         ]
+        ordering = ['transaction_type', 'order']
 
     def __str__(self):
         return self.name
@@ -317,7 +318,7 @@ class TransactionTypeInput(models.Model):
 #     def __str__(self):
 #         return 'item #%s' % self.id
 
-
+@python_2_unicode_compatible
 class TransactionTypeAction(models.Model):
     transaction_type = models.ForeignKey(
         TransactionType,
@@ -327,14 +328,44 @@ class TransactionTypeAction(models.Model):
     order = models.IntegerField(default=0)
 
     class Meta:
+        verbose_name = _('action')
+        verbose_name_plural = _('actions')
         unique_together = [
             ['transaction_type', 'order']
         ]
-        verbose_name = _('action')
-        verbose_name_plural = _('actions')
+        ordering = ['transaction_type', 'order']
+
+    def __str__(self):
+        return 'Action #%s' % self.order
 
 
 class TransactionTypeActionInstrument(TransactionTypeAction):
+    user_code = models.CharField(
+        max_length=25,
+        null=True,
+        blank=True,
+    )
+    name = models.CharField(
+        max_length=255,
+        blank=True,
+        default='',
+    )
+    public_name = models.CharField(
+        max_length=255,
+        blank=True,
+        default='',
+    )
+    short_name = models.CharField(
+        max_length=50,
+        blank=True,
+        default='',
+    )
+    notes = models.CharField(
+        max_length=255,
+        blank=True,
+        default='',
+    )
+
     instrument_type = models.ForeignKey(
         'instruments.InstrumentType',
         null=True,
