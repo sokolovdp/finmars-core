@@ -139,7 +139,6 @@ class TransactionTypeSerializer(ModelWithObjectPermissionSerializer):
                   'instrument_types', 'inputs', 'actions']
 
     def create(self, validated_data):
-        pprint.pprint(validated_data)
         inputs = validated_data.pop('inputs', None)
         actions = validated_data.pop('actions', None)
         instance = super(TransactionTypeSerializer, self).create(validated_data)
@@ -148,14 +147,13 @@ class TransactionTypeSerializer(ModelWithObjectPermissionSerializer):
         return instance
 
     def update(self, instance, validated_data):
-        pprint.pprint(validated_data)
         inputs = validated_data.pop('inputs', None)
         actions = validated_data.pop('actions', None)
         instance = super(TransactionTypeSerializer, self).update(instance, validated_data)
         inputs = self.save_inputs(instance, inputs, False)
         self.save_actions(instance, actions, False)
         if inputs:
-            instance.inputs.eclude(id__in=[i.id for i in six.itervalues(inputs)]).delete()
+            instance.inputs.exclude(id__in=[i.id for i in six.itervalues(inputs)]).delete()
         return instance
 
     def save_inputs(self, instance, inputs, created):
@@ -195,7 +193,7 @@ class TransactionTypeSerializer(ModelWithObjectPermissionSerializer):
                 else:
                     raise RuntimeError('unknown action')
                 action.order = action_data['order']
-                for attr, value in instrument_data.items():
+                for attr, value in six.iteritems(instrument_data):
                     setattr(action, attr, value)
                 action.save()
             else:
@@ -207,13 +205,10 @@ class TransactionTypeSerializer(ModelWithObjectPermissionSerializer):
                     transaction = action.transactiontypeactiontransaction
                 except ObjectDoesNotExist:
                     transaction = None
-                if instrument_data and instrument:
-                    action = instrument
-                elif transaction_data and transaction:
-                    action = instrument
-                else:
+                action = instrument or transaction
+                if action is None:
                     raise RuntimeError('unknown action')
-                for attr, value in data.items():
+                for attr, value in six.iteritems(data):
                     setattr(action, attr, value)
                 action.save()
 
