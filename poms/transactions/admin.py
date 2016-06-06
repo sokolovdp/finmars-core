@@ -7,11 +7,12 @@ from poms.common.admin import ClassModelAdmin
 from poms.obj_attrs.admin import AttributeTypeAdminBase, AttributeTypeOptionAdminBase, AttributeInlineBase
 from poms.obj_perms.admin import GroupObjectPermissionAdmin, UserObjectPermissionAdmin
 from poms.transactions.models import TransactionClass, Transaction, TransactionType, TransactionTypeInput, \
-    TransactionTypeItem, TransactionTypeGroupObjectPermission, \
+    TransactionTypeGroupObjectPermission, \
     TransactionAttributeType, TransactionAttributeTypeOption, TransactionAttributeTypeGroupObjectPermission, \
     TransactionAttribute, ActionClass, EventToHandle, \
     ExternalCashFlow, ExternalCashFlowStrategy, NotificationClass, EventClass, PeriodicityGroup, \
-    TransactionTypeUserObjectPermission, TransactionAttributeTypeUserObjectPermission
+    TransactionTypeUserObjectPermission, TransactionAttributeTypeUserObjectPermission, TransactionTypeActionInstrument, \
+    TransactionTypeActionTransaction
 
 admin.site.register(TransactionClass, ClassModelAdmin)
 admin.site.register(ActionClass, ClassModelAdmin)
@@ -25,30 +26,77 @@ class TransactionTypeInputInline(admin.StackedInline):
     extra = 0
 
 
-class TransactionTypeItemInline(admin.StackedInline):
-    model = TransactionTypeItem
+# class TransactionTypeItemInline(admin.StackedInline):
+#     model = TransactionTypeItem
+#     extra = 0
+#
+#     fields = (
+#         'order', 'transaction_class',
+#         ('instrument', 'instrument_input'),
+#         ('transaction_currency', 'transaction_currency_input'),
+#         ('position_size_with_sign', 'position_size_with_sign_expr'),
+#         ('settlement_currency', 'settlement_currency_input'),
+#         ('cash_consideration', 'cash_consideration_expr'),
+#         ('account_position', 'account_position_input'),
+#         ('account_cash', 'account_cash_input'),
+#         ('account_interim', 'account_interim_input'),
+#
+#         ('strategy1_position', 'strategy1_position_input'),
+#         ('strategy1_cash', 'strategy1_cash_input'),
+#         ('strategy2_position', 'strategy2_position_input'),
+#         ('strategy2_cash', 'strategy2_cash_input'),
+#         ('strategy3_position', 'strategy3_position_input'),
+#         ('strategy3_cash', 'strategy3_cash_input'),
+#
+#         ('accounting_date', 'accounting_date_expr'),
+#         ('cash_date', 'cash_date_expr'),
+#     )
+
+
+class TransactionTypeActionTransactionInline(admin.StackedInline):
+    model = TransactionTypeActionTransaction
     extra = 0
 
     fields = (
-        'order', 'transaction_class',
+        'order',
+        'transaction_class',
         ('instrument', 'instrument_input'),
         ('transaction_currency', 'transaction_currency_input'),
-        ('position_size_with_sign', 'position_size_with_sign_expr'),
+        'position_size_with_sign',
         ('settlement_currency', 'settlement_currency_input'),
-        ('cash_consideration', 'cash_consideration_expr'),
+        'cash_consideration',
+        'principal_with_sign',
+        'carry_with_sign',
+        'overheads_with_sign',
         ('account_position', 'account_position_input'),
         ('account_cash', 'account_cash_input'),
         ('account_interim', 'account_interim_input'),
-
+        'accounting_date',
+        'cash_date',
         ('strategy1_position', 'strategy1_position_input'),
         ('strategy1_cash', 'strategy1_cash_input'),
         ('strategy2_position', 'strategy2_position_input'),
         ('strategy2_cash', 'strategy2_cash_input'),
         ('strategy3_position', 'strategy3_position_input'),
         ('strategy3_cash', 'strategy3_cash_input'),
+    )
 
-        # ('accounting_date', 'accounting_date_expr'),
-        # ('cash_date', 'cash_date_expr'),
+
+class TransactionTypeActionInstrumentInline(admin.StackedInline):
+    model = TransactionTypeActionInstrument
+    extra = 0
+
+    fields = (
+        'order',
+        ('instrument_type', 'instrument_type_input'),
+        ('pricing_currency', 'pricing_currency_input'),
+        'price_multiplier',
+        ('accrued_currency', 'accrued_currency_input'),
+        'accrued_multiplier',
+        ('daily_pricing_model', 'daily_pricing_model_input'),
+        ('payment_size_detail', 'payment_size_detail_input'),
+        'default_price',
+        'default_accrued',
     )
 
 
@@ -65,7 +113,12 @@ class TransactionTypeAdmin(HistoricalAdmin):
     list_select_related = ['master_user']
     raw_id_fields = ['master_user']
     filter_horizontal = ['instrument_types']
-    inlines = [TransactionTypeInputInline, TransactionTypeItemInline, EventToHandleInline]
+    inlines = [
+        TransactionTypeInputInline,
+        TransactionTypeActionTransactionInline,
+        TransactionTypeActionInstrumentInline,
+        EventToHandleInline,
+    ]
 
     def get_inline_instances(self, request, obj=None):
         if obj:
