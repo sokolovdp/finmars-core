@@ -341,9 +341,9 @@ class TransactionTypeAction(models.Model):
 
 class TransactionTypeActionInstrument(TransactionTypeAction):
     user_code = models.CharField(
-        max_length=25,
-        null=True,
+        max_length=255,
         blank=True,
+        default='',
     )
     name = models.CharField(
         max_length=255,
@@ -356,7 +356,7 @@ class TransactionTypeActionInstrument(TransactionTypeAction):
         default='',
     )
     short_name = models.CharField(
-        max_length=50,
+        max_length=255,
         blank=True,
         default='',
     )
@@ -398,7 +398,6 @@ class TransactionTypeActionInstrument(TransactionTypeAction):
 
     price_multiplier = models.CharField(
         max_length=255,
-        blank=True,
         default='0.'
     )
 
