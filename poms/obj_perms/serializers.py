@@ -26,6 +26,10 @@ class GroupObjectPermissionSerializer(serializers.Serializer):
 
 
 class ModelWithObjectPermissionSerializer(serializers.ModelSerializer):
+    # granted_permissions = GrantedPermissionField()
+    # user_object_permissions = UserObjectPermissionSerializer(many=True, required=False, allow_null=True)
+    # group_object_permissions = GroupObjectPermissionSerializer(many=True, required=False, allow_null=True)
+
     def get_fields(self):
         fields = super(ModelWithObjectPermissionSerializer, self).get_fields()
         fields.update(self.get_permissions_fields() or {})

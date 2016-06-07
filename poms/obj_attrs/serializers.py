@@ -40,17 +40,15 @@ class AttributeTypeSerializerBase(serializers.ModelSerializer):
                   'is_hidden']
         update_read_only_fields = ['value_type']
 
-    def get_fields(self):
-        fields = super(AttributeTypeSerializerBase, self).get_fields()
+    def __init__(self, *args, **kwargs):
+        super(AttributeTypeSerializerBase, self).__init__(*args, **kwargs)
 
         request = self.context.get('request', None)
         if request and request.method in ['PUT', 'PATCH']:
             update_read_only_fields = getattr(self.Meta, 'update_read_only_fields', None)
-            for name, field in six.iteritems(fields):
+            for name, field in six.iteritems(self.fields):
                 if name in update_read_only_fields:
                     field.read_only = True
-
-        return fields
 
     def validate(self, attrs):
         attrs = super(AttributeTypeSerializerBase, self).validate(attrs)
@@ -188,13 +186,13 @@ class ModelWithAttributesSerializer(serializers.ModelSerializer):
 
                 if attr_type.id in cur_attrs:
                     cur_attr = cur_attrs[attr_type.id]
-                    # TODO: verify value_ and classifier
+                    # verify value_ and classifier -> DONE in AttributeSerializerBase
                     for k, v in six.iteritems(attr):
                         if k not in ['id', 'attribute_type']:
                             setattr(cur_attr, k, v)
                     cur_attr.save()
                 else:
-                    # TODO: verify value_ and classifier
+                    # verify value_ and classifier -> DONE in AttributeSerializerBase
                     instance.attributes.create(**attr)
             else:
                 # perms error...
