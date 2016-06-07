@@ -155,6 +155,7 @@ class TransactionTypeActionSerializer(serializers.ModelSerializer):
 
 class TransactionTypeSerializer(ModelWithObjectPermissionSerializer):
     master_user = MasterUserField()
+    display_expr = ExpressionField(allow_blank=False, allow_null=False)
     tags = TagField(many=True, required=False, allow_null=True)
     instrument_types = InstrumentTypeField(many=True)
     inputs = TransactionTypeInputSerializer(many=True)
@@ -162,8 +163,8 @@ class TransactionTypeSerializer(ModelWithObjectPermissionSerializer):
 
     class Meta:
         model = TransactionType
-        fields = ['url', 'id', 'master_user', 'user_code', 'name', 'short_name', 'notes', 'tags',
-                  'instrument_types', 'inputs', 'actions']
+        fields = ['url', 'id', 'master_user', 'user_code', 'name', 'short_name', 'notes', 'display_expr',
+                  'tags',                  'instrument_types', 'inputs', 'actions']
 
     def create(self, validated_data):
         inputs = validated_data.pop('inputs', None)
