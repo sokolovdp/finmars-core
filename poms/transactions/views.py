@@ -1,7 +1,11 @@
 from __future__ import unicode_literals
 
+from collections import OrderedDict
+
 import django_filters
+from rest_framework.decorators import detail_route
 from rest_framework.filters import FilterSet, DjangoFilterBackend, OrderingFilter, SearchFilter
+from rest_framework.response import Response
 
 from poms.common.filters import OrderingWithAttributesFilter
 from poms.common.views import PomsClassViewSetBase, PomsViewSetBase
@@ -88,6 +92,18 @@ class TransactionTypeViewSet(PomsViewSetBase):
     filter_class = TransactionTypeFilterSet
     ordering_fields = ['user_code', 'name', 'short_name']
     search_fields = ['user_code', 'name', 'short_name']
+
+    @detail_route(methods=['get', 'post'], url_path='process')
+    def process(self, request, pk=None):
+        instance = self.get_object()
+        inputs = {}
+        instruments, transactions = instance.process(inputs)
+        data = OrderedDict((
+            ('status', 'processed'),
+            ('instruments', instruments),
+            ('transactions', transactions)
+        ))
+        return Response(data)
 
 
 class TransactionAttributeTypeFilterSet(FilterSet):

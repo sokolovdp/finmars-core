@@ -140,6 +140,46 @@ class TransactionType(NamedModel):
             ('view_transactiontype', 'Can view transaction type')
         ]
 
+    def process(self, inputs):
+        instruments = []
+        transactions = []
+        for action in self.actions.order_by('order').select_related(
+                'transactiontypeactiontransaction', 'transactiontypeactioninstrument').prefetch_related(
+            # 'transactiontypeactiontransaction',
+            'transactiontypeactiontransaction__instrument',
+            'transactiontypeactiontransaction__instrument_input',
+            'transactiontypeactiontransaction__transaction_currency',
+            'transactiontypeactiontransaction__transaction_currency_input',
+            'transactiontypeactiontransaction__settlement_currency',
+            'transactiontypeactiontransaction__settlement_currency_input',
+            'transactiontypeactiontransaction__account_position',
+            'transactiontypeactiontransaction__account_position_input',
+            'transactiontypeactiontransaction__account_cash',
+            'transactiontypeactiontransaction__account_cash_input',
+            'transactiontypeactiontransaction__account_interim',
+            'transactiontypeactiontransaction__account_interim_input',
+            'transactiontypeactiontransaction__strategy1_position',
+            'transactiontypeactiontransaction__strategy1_position_input',
+            'transactiontypeactiontransaction__strategy2_position',
+            'transactiontypeactiontransaction__strategy2_position_input',
+            'transactiontypeactiontransaction__strategy3_position',
+            'transactiontypeactiontransaction__strategy3_position_input',
+
+            # 'transactiontypeactioninstrument',
+            'transactiontypeactioninstrument__instrument_type',
+            'transactiontypeactioninstrument__instrument_type_input',
+            'transactiontypeactioninstrument__pricing_currency',
+            'transactiontypeactioninstrument__pricing_currency_input',
+            'transactiontypeactioninstrument__accrued_currency',
+            'transactiontypeactioninstrument__accrued_currency_input',
+            'transactiontypeactioninstrument__daily_pricing_model',
+            'transactiontypeactioninstrument__daily_pricing_model_input',
+            'transactiontypeactioninstrument__payment_size_detail',
+            'transactiontypeactioninstrument__payment_size_detail_input',
+        ):
+            pass
+        return instruments, transactions
+
 
 class TransactionTypeUserObjectPermission(UserObjectPermissionBase):
     content_object = models.ForeignKey(TransactionType, related_name='user_object_permissions',
@@ -250,7 +290,7 @@ class TransactionTypeInput(models.Model):
         if not self.verbose_name:
             self.verbose_name = self.name
         super(TransactionTypeInput, self).save(force_insert=force_insert, force_update=force_update, using=using,
-                                         update_fields=update_fields)
+                                               update_fields=update_fields)
 
 
 # @python_2_unicode_compatible
