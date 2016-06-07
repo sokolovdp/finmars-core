@@ -1,6 +1,7 @@
 from __future__ import unicode_literals
 
 from django.contrib.contenttypes.models import ContentType
+from django.core.exceptions import ObjectDoesNotExist
 from django.db import models
 from django.utils import timezone
 from django.utils.encoding import python_2_unicode_compatible
@@ -8,6 +9,7 @@ from django.utils.translation import ugettext_lazy as _
 
 from poms.accounts.models import Account
 from poms.audit import history
+from poms.common import formula
 from poms.common.models import NamedModel, TagModelBase, ClassModelBase
 from poms.counterparties.models import Responsible, Counterparty
 from poms.currencies.models import Currency
@@ -140,7 +142,21 @@ class TransactionType(NamedModel):
             ('view_transactiontype', 'Can view transaction type')
         ]
 
-    def process(self, inputs):
+    def _set_simple(self, obj, name, tobj, tname, input_values):
+        value = formula.safe_eval(getattr(tobj, tname), names=input_values)
+        setattr(obj, name, value)
+
+    def _set_relation(self, obj, name, tobj, tname, input_values):
+        value = getattr(tobj, tname, None)
+        if value is None:
+            inp = getattr(tobj, '%s_input' % tname)
+            if inp:
+                value = input_values[inp.name]
+        setattr(obj, name, value)
+
+    def process(self, input_values, save=False):
+        import pprint
+        pprint.pprint(input_values)
         instruments = []
         transactions = []
         for action in self.actions.order_by('order').select_related(
@@ -175,9 +191,67 @@ class TransactionType(NamedModel):
             'transactiontypeactioninstrument__daily_pricing_model',
             'transactiontypeactioninstrument__daily_pricing_model_input',
             'transactiontypeactioninstrument__payment_size_detail',
-            'transactiontypeactioninstrument__payment_size_detail_input',
-        ):
+            'transactiontypeactioninstrument__payment_size_detail_input'):
             pass
+
+            try:
+                ainstr = action.transactiontypeactioninstrument
+            except ObjectDoesNotExist:
+                ainstr = None
+            try:
+                atrn = action.transactiontypeactiontransaction
+            except ObjectDoesNotExist:
+                atrn = None
+            if ainstr:
+                user_code = formula.safe_eval(ainstr.user_code, names=input_values)
+                if user_code:
+                    try:
+                        Instrument.objects.get(master_user=self.master_user, user_code=user_code)
+                        continue
+                    except ObjectDoesNotExist:
+                        pass
+
+                instr = Instrument(master_user=self.master_user)
+                instr.user_code = user_code
+                self._set_simple(instr, 'name', ainstr, 'name', input_values)
+                self._set_simple(instr, 'public_name', ainstr, 'public_name', input_values)
+                self._set_simple(instr, 'short_name', ainstr, 'short_name', input_values)
+                self._set_simple(instr, 'notes', ainstr, 'notes', input_values)
+                self._set_relation(instr, 'instrument_type', ainstr, 'instrument_type', input_values)
+                self._set_relation(instr, 'pricing_currency', ainstr, 'pricing_currency', input_values)
+                self._set_simple(instr, 'price_multiplier', ainstr, 'price_multiplier', input_values)
+                self._set_relation(instr, 'accrued_currency', ainstr, 'accrued_currency', input_values)
+                self._set_simple(instr, 'accrued_multiplier', ainstr, 'accrued_multiplier', input_values)
+                self._set_relation(instr, 'daily_pricing_model', ainstr, 'daily_pricing_model', input_values)
+                self._set_relation(instr, 'payment_size_detail', ainstr, 'payment_size_detail', input_values)
+                self._set_simple(instr, 'default_price', ainstr, 'default_price', input_values)
+                self._set_simple(instr, 'default_accrued', ainstr, 'default_accrued', input_values)
+                if save:
+                    instr.save()
+            elif atrn:
+                trn = Transaction(master_user=self.master_user)
+                trn.transaction_class = atrn.transaction_class
+                self._set_relation(trn, 'instrument', atrn, 'instrument', input_values)
+                self._set_relation(trn, 'transaction_currency', atrn, 'transaction_currency', input_values)
+                self._set_simple(trn, 'position_size_with_sign', atrn, 'position_size_with_sign', input_values)
+                self._set_relation(trn, 'settlement_currency', atrn, 'settlement_currency', input_values)
+                self._set_simple(trn, 'cash_consideration', atrn, 'cash_consideration', input_values)
+                self._set_simple(trn, 'principal_with_sign', atrn, 'principal_with_sign', input_values)
+                self._set_simple(trn, 'carry_with_sign', atrn, 'carry_with_sign', input_values)
+                self._set_simple(trn, 'overheads_with_sign', atrn, 'overheads_with_sign', input_values)
+                self._set_relation(trn, 'account_position', atrn, 'account_position', input_values)
+                self._set_relation(trn, 'account_cash', atrn, 'account_cash', input_values)
+                self._set_relation(trn, 'account_interim', atrn, 'account_interim', input_values)
+                self._set_simple(trn, 'accounting_date', atrn, 'accounting_date', input_values)
+                self._set_simple(trn, 'cash_date', atrn, 'cash_date', input_values)
+                self._set_relation(trn, 'strategy1_position', atrn, 'strategy1_position', input_values)
+                self._set_relation(trn, 'strategy1_cash', atrn, 'strategy1_cash', input_values)
+                self._set_relation(trn, 'strategy2_position', atrn, 'strategy2_position', input_values)
+                self._set_relation(trn, 'strategy2_cash', atrn, 'strategy2_cash', input_values)
+                self._set_relation(trn, 'strategy3_position', atrn, 'strategy3_position', input_values)
+                self._set_relation(trn, 'strategy3_cash', atrn, 'strategy3_cash', input_values)
+                if save:
+                    trn.save()
         return instruments, transactions
 
 

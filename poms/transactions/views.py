@@ -1,7 +1,5 @@
 from __future__ import unicode_literals
 
-from collections import OrderedDict
-
 import django_filters
 from rest_framework.decorators import detail_route
 from rest_framework.filters import FilterSet, DjangoFilterBackend, OrderingFilter, SearchFilter
@@ -18,7 +16,7 @@ from poms.transactions.filters import TransactionObjectPermissionFilter
 from poms.transactions.models import TransactionClass, Transaction, TransactionType, TransactionAttributeType
 from poms.transactions.permissions import TransactionObjectPermission
 from poms.transactions.serializers import TransactionClassSerializer, TransactionSerializer, TransactionTypeSerializer, \
-    TransactionAttributeTypeSerializer
+    TransactionAttributeTypeSerializer, TransactionTypeProcessSerializer
 from poms.users.filters import OwnerByMasterUserFilter
 
 
@@ -93,17 +91,34 @@ class TransactionTypeViewSet(PomsViewSetBase):
     ordering_fields = ['user_code', 'name', 'short_name']
     search_fields = ['user_code', 'name', 'short_name']
 
+    def get_serializer(self, *args, **kwargs):
+        if self.request.path.endswith('/process/'):
+            kwargs['context'] = self.get_serializer_context()
+            return TransactionTypeProcessSerializer(transaction_type=self._instance, **kwargs)
+        else:
+            return super(TransactionTypeViewSet, self).get_serializer(*args, **kwargs)
+
     @detail_route(methods=['get', 'post'], url_path='process')
     def process(self, request, pk=None):
-        instance = self.get_object()
-        inputs = {}
-        instruments, transactions = instance.process(inputs)
-        data = OrderedDict((
-            ('status', 'processed'),
-            ('instruments', instruments),
-            ('transactions', transactions)
-        ))
-        return Response(data)
+        self._instance = self.get_object()
+        # inputs = {}
+        # instruments, transactions = instance.process(inputs)
+        # data = OrderedDict((
+        #     ('status', 'processed'),
+        #     ('instruments', instruments),
+        #     ('transactions', transactions)
+        # ))
+        if request.method == 'GET':
+            serializer = TransactionTypeProcessSerializer(transaction_type=self._instance,
+                                                          context=self.get_serializer_context())
+            return Response(serializer.data)
+        else:
+            serializer = TransactionTypeProcessSerializer(transaction_type=self._instance,
+                                                          data=request.data,
+                                                          context=self.get_serializer_context())
+            serializer.is_valid(raise_exception=True)
+            self._instance.process(serializer.validated_data)
+            return Response(serializer.data)
 
 
 class TransactionAttributeTypeFilterSet(FilterSet):

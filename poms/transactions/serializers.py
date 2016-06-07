@@ -7,16 +7,21 @@ from rest_framework import serializers
 from rest_framework.exceptions import ValidationError
 
 from poms.accounts.fields import AccountField
+from poms.accounts.models import Account
 from poms.common.serializers import PomsClassSerializer
 from poms.counterparties.fields import ResponsibleField, CounterpartyField
+from poms.counterparties.models import Counterparty, Responsible
 from poms.currencies.fields import CurrencyField
+from poms.currencies.models import Currency
 from poms.instruments.fields import InstrumentField, InstrumentTypeField
+from poms.instruments.models import Instrument, InstrumentType, DailyPricingModel, PaymentSizeDetail
 from poms.obj_attrs.models import AttributeTypeBase
 from poms.obj_attrs.serializers import AttributeTypeSerializerBase, AttributeSerializerBase, \
     ModelWithAttributesSerializer
 from poms.obj_perms.serializers import ModelWithObjectPermissionSerializer
 from poms.portfolios.fields import PortfolioField
 from poms.strategies.fields import Strategy1Field, Strategy2Field, Strategy3Field
+from poms.strategies.models import Strategy1, Strategy2, Strategy3
 from poms.tags.fields import TagField
 from poms.transactions.fields import TransactionAttributeTypeField, TransactionTypeInputContentTypeField, \
     ExpressionField, TransactionInputField
@@ -164,7 +169,7 @@ class TransactionTypeSerializer(ModelWithObjectPermissionSerializer):
     class Meta:
         model = TransactionType
         fields = ['url', 'id', 'master_user', 'user_code', 'name', 'short_name', 'notes', 'display_expr',
-                  'tags',                  'instrument_types', 'inputs', 'actions']
+                  'tags', 'instrument_types', 'inputs', 'actions']
 
     def create(self, validated_data):
         inputs = validated_data.pop('inputs', None)
@@ -239,6 +244,54 @@ class TransactionTypeSerializer(ModelWithObjectPermissionSerializer):
                 for attr, value in six.iteritems(data):
                     setattr(action, attr, value)
                 action.save()
+
+
+class TransactionTypeProcessSerializer(serializers.Serializer):
+    def __init__(self, transaction_type=None, **kwargs):
+        self.transaction_type = transaction_type
+        super(TransactionTypeProcessSerializer, self).__init__(**kwargs)
+
+        if self.transaction_type:
+            for i in self.transaction_type.inputs.order_by('name').all():
+                name = '%s' % i.name
+                field = None
+                if i.value_type == TransactionTypeInput.STRING:
+                    field = serializers.CharField(required=True, label=i.name, help_text=i.verbose_name)
+                elif i.value_type == TransactionTypeInput.NUMBER:
+                    field = serializers.FloatField(required=True, label=i.name, help_text=i.verbose_name)
+                elif i.value_type == TransactionTypeInput.DATE:
+                    field = serializers.DateField(required=True, label=i.name, help_text=i.verbose_name)
+                elif i.value_type == TransactionTypeInput.RELATION:
+                    content_type = i.content_type
+                    model_class = content_type.model_class()
+                    if issubclass(model_class, Account):
+                        field = AccountField(required=True, label=i.name, help_text=i.verbose_name)
+                    elif issubclass(model_class, Currency):
+                        field = CurrencyField(required=True, label=i.name, help_text=i.verbose_name)
+                    elif issubclass(model_class, Instrument):
+                        field = InstrumentField(required=True, label=i.name, help_text=i.verbose_name)
+                    elif issubclass(model_class, InstrumentType):
+                        field = InstrumentTypeField(required=True, label=i.name, help_text=i.verbose_name)
+                    elif issubclass(model_class, Counterparty):
+                        field = CounterpartyField(required=True, label=i.name, help_text=i.verbose_name)
+                    elif issubclass(model_class, Responsible):
+                        field = ResponsibleField(required=True, label=i.name, help_text=i.verbose_name)
+                    elif issubclass(model_class, Strategy1):
+                        field = Strategy1Field(required=True, label=i.name, help_text=i.verbose_name)
+                    elif issubclass(model_class, Strategy2):
+                        field = Strategy2Field(required=True, label=i.name, help_text=i.verbose_name)
+                    elif issubclass(model_class, Strategy3):
+                        field = Strategy3Field(required=True, label=i.name, help_text=i.verbose_name)
+                    elif issubclass(model_class, DailyPricingModel):
+                        field = serializers.PrimaryKeyRelatedField(queryset=DailyPricingModel.objects, required=True,
+                                                                   label=i.name, help_text=i.verbose_name)
+                    elif issubclass(model_class, PaymentSizeDetail):
+                        field = serializers.PrimaryKeyRelatedField(queryset=PaymentSizeDetail.objects, required=True,
+                                                                   label=i.name, help_text=i.verbose_name)
+                if field:
+                    self.fields[name] = field
+                else:
+                    raise RuntimeError('Unknown value type %s' % i.value_type)
 
 
 class TransactionAttributeTypeSerializer(AttributeTypeSerializerBase, ModelWithObjectPermissionSerializer):
