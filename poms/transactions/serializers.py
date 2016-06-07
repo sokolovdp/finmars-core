@@ -20,7 +20,7 @@ from poms.obj_perms.serializers import ModelWithObjectPermissionSerializer
 from poms.portfolios.fields import PortfolioField
 from poms.strategies.fields import Strategy1Field, Strategy2Field, Strategy3Field
 from poms.tags.fields import TagField
-from poms.transactions.fields import TransactionAttributeTypeField
+from poms.transactions.fields import TransactionAttributeTypeField, TransactionTypeInputContentTypeField
 from poms.transactions.models import TransactionClass, Transaction, TransactionType, TransactionAttributeType, \
     TransactionAttribute, TransactionTypeAction, TransactionTypeActionTransaction, TransactionTypeActionInstrument, \
     TransactionTypeInput
@@ -33,9 +33,11 @@ class TransactionClassSerializer(PomsClassSerializer):
 
 
 class TransactionTypeInputSerializer(serializers.ModelSerializer):
+    content_type = TransactionTypeInputContentTypeField(allow_null=True, allow_empty=True)
+
     class Meta:
         model = TransactionTypeInput
-        fields = ['id', 'value_type', 'name', 'order']
+        fields = ['id', 'name', 'verbose_name', 'value_type', 'content_type', 'order']
 
 
 class TransactionInputField(serializers.CharField):

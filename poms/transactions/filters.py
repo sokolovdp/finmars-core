@@ -1,3 +1,4 @@
+from django.contrib.contenttypes.models import ContentType
 from django.db.models import Q
 from rest_framework.filters import BaseFilterBackend
 
@@ -14,7 +15,7 @@ class TransactionObjectPermissionFilter(BaseFilterBackend):
             return queryset
         # portfolio_qs = obj_perms_filter_objects_for_view(member, Portfolio.objects.filter(master_user=master_user))
         # account_qs = obj_perms_filter_objects_for_view(member, Account.objects.filter(master_user=master_user))
-        #minimize inlined SQL
+        # minimize inlined SQL
         portfolio_qs = list(
             obj_perms_filter_objects_for_view(member, Portfolio.objects.filter(master_user=master_user)).values_list(
                 'id', flat=True))
@@ -30,3 +31,18 @@ class TransactionObjectPermissionFilter(BaseFilterBackend):
         )
 
         return queryset
+
+
+class TransactionTypeInputContentTypeFilter(BaseFilterBackend):
+    def filter_queryset(self, request, queryset, view):
+        from poms.accounts.models import Account
+        from poms.currencies.models import Currency
+        from poms.instruments.models import InstrumentType, Instrument, DailyPricingModel, PaymentSizeDetail
+        from poms.counterparties.models import Counterparty
+        from poms.counterparties.models import Responsible
+        from poms.strategies.models import Strategy1, Strategy2, Strategy3
+
+        models = [Account, Instrument, InstrumentType, Currency, Counterparty, Responsible,
+                  Strategy1, Strategy2, Strategy3, DailyPricingModel, PaymentSizeDetail]
+        ctypes = [ContentType.objects.get_for_model(model).pk for model in models]
+        return queryset.filter(pk__in=ctypes)

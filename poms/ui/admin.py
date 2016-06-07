@@ -16,21 +16,8 @@ class BaseLayoutAdmin(HistoricalAdmin):
     def formfield_for_foreignkey(self, db_field, request=None, **kwargs):
         if db_field.name == 'content_type':
             qs = kwargs.get('queryset', db_field.remote_field.model.objects)
-            models = [
-                AccountType,
-                Account,
-                Currency,
-                InstrumentType,
-                Instrument,
-                Counterparty,
-                Responsible,
-                Portfolio,
-                TransactionType,
-                Transaction,
-                Strategy1,
-                Strategy2,
-                Strategy3,
-            ]
+            models = [AccountType, Account, Currency, InstrumentType, Instrument, Counterparty, Responsible, Portfolio,
+                      TransactionType, Transaction, Strategy1, Strategy2, Strategy3, ]
             ctypes = [ContentType.objects.get_for_model(model).pk for model in models]
             kwargs['queryset'] = qs.filter(pk__in=ctypes)
         return super(BaseLayoutAdmin, self).formfield_for_foreignkey(db_field, request=request, **kwargs)

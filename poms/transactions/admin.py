@@ -1,11 +1,17 @@
 from __future__ import unicode_literals
 
 from django.contrib import admin
+from django.contrib.contenttypes.models import ContentType
 
+from poms.accounts.models import Account
 from poms.audit.admin import HistoricalAdmin
 from poms.common.admin import ClassModelAdmin
+from poms.counterparties.models import Counterparty, Responsible
+from poms.currencies.models import Currency
+from poms.instruments.models import Instrument, InstrumentType, DailyPricingModel, PaymentSizeDetail
 from poms.obj_attrs.admin import AttributeTypeAdminBase, AttributeTypeOptionAdminBase, AttributeInlineBase
 from poms.obj_perms.admin import GroupObjectPermissionAdmin, UserObjectPermissionAdmin
+from poms.strategies.models import Strategy1, Strategy2, Strategy3
 from poms.transactions.models import TransactionClass, Transaction, TransactionType, TransactionTypeInput, \
     TransactionTypeGroupObjectPermission, \
     TransactionAttributeType, TransactionAttributeTypeOption, TransactionAttributeTypeGroupObjectPermission, \
@@ -25,9 +31,18 @@ class TransactionTypeInputInline(admin.TabularInline):
     model = TransactionTypeInput
     extra = 0
     fields = (
-        'id', 'name', 'value_type', 'order',
+        'id', 'name', 'value_type', 'content_type', 'verbose_name', 'order',
     )
     readonly_fields = ('id',)
+
+    def formfield_for_foreignkey(self, db_field, request=None, **kwargs):
+        if db_field.name == 'content_type':
+            qs = kwargs.get('queryset', db_field.remote_field.model.objects)
+            models = [Account, Instrument, InstrumentType, Currency, Counterparty, Responsible,
+                      Strategy1, Strategy2, Strategy3, DailyPricingModel, PaymentSizeDetail]
+            ctypes = [ContentType.objects.get_for_model(model).pk for model in models]
+            kwargs['queryset'] = qs.filter(pk__in=ctypes)
+        return super(TransactionTypeInputInline, self).formfield_for_foreignkey(db_field, request=request, **kwargs)
 
 
 # class TransactionTypeItemInline(admin.StackedInline):

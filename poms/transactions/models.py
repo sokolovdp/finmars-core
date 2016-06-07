@@ -113,11 +113,22 @@ class PeriodicityGroup(ClassModelBase):
 
 
 class TransactionType(NamedModel):
-    master_user = models.ForeignKey(MasterUser, related_name='transaction_types',
-                                    verbose_name=_('master user'))
-    instrument_types = models.ManyToManyField('instruments.InstrumentType', related_name='transaction_types',
-                                              blank=True,
-                                              verbose_name=_('instrument types'))
+    master_user = models.ForeignKey(
+        MasterUser,
+        related_name='transaction_types',
+        verbose_name=_('master user')
+    )
+    display_expr = models.CharField(
+        max_length=255,
+        blank=True,
+        default='',
+    )
+    instrument_types = models.ManyToManyField(
+        'instruments.InstrumentType',
+        related_name='transaction_types',
+        blank=True,
+        verbose_name=_('instrument types')
+    )
 
     class Meta(NamedModel.Meta):
         verbose_name = _('transaction type')
@@ -160,49 +171,68 @@ class TransactionTypeInput(models.Model):
     NUMBER = 20
     # EXPRESSION = 30
     DATE = 40
-    # RELATION = 100
+    RELATION = 100
 
-    ACCOUNT = 110
-    INSTRUMENT = 120
-    CURRENCY = 130
-    COUNTERPARTY = 140
-    RESPONSIBLE = 150
-    STRATEGY1 = 161
-    STRATEGY2 = 162
-    STRATEGY3 = 163
-    DAILY_PRICING_MODEL = 170
-    PAYMENT_SIZE_DETAIL = 180
-    INSTRUMENT_TYPE = 190
+    # ACCOUNT = 110
+    # INSTRUMENT = 120
+    # CURRENCY = 130
+    # COUNTERPARTY = 140
+    # RESPONSIBLE = 150
+    # STRATEGY1 = 161
+    # STRATEGY2 = 162
+    # STRATEGY3 = 163
+    # DAILY_PRICING_MODEL = 170
+    # PAYMENT_SIZE_DETAIL = 180
+    # INSTRUMENT_TYPE = 190
 
     TYPES = (
         (NUMBER, _('Number')),
         (STRING, _('String')),
         (DATE, _('Date')),
         # (EXPRESSION, _('Expression')),
-        # (RELATION, _('Relation')),
-        (ACCOUNT, _('Account')),
-        (INSTRUMENT, _('Instrument')),
-        (CURRENCY, _('Currency')),
-        (COUNTERPARTY, _('Counterparty')),
-        (RESPONSIBLE, _('Responsible')),
-        (STRATEGY1, _('Strategy 1')),
-        (STRATEGY2, _('Strategy 2')),
-        (STRATEGY3, _('Strategy 3')),
-        (DAILY_PRICING_MODEL, _('Daily pricing model')),
-        (PAYMENT_SIZE_DETAIL, _('Payment size detail')),
-        (INSTRUMENT_TYPE, _('Instrument type'))
+        (RELATION, _('Relation')),
+        # (ACCOUNT, _('Account')),
+        # (INSTRUMENT, _('Instrument')),
+        # (CURRENCY, _('Currency')),
+        # (COUNTERPARTY, _('Counterparty')),
+        # (RESPONSIBLE, _('Responsible')),
+        # (STRATEGY1, _('Strategy 1')),
+        # (STRATEGY2, _('Strategy 2')),
+        # (STRATEGY3, _('Strategy 3')),
+        # (DAILY_PRICING_MODEL, _('Daily pricing model')),
+        # (PAYMENT_SIZE_DETAIL, _('Payment size detail')),
+        # (INSTRUMENT_TYPE, _('Instrument type'))
     )
 
-    transaction_type = models.ForeignKey(TransactionType, related_name='inputs',
-                                         verbose_name=_('transaction type'))
-    value_type = models.PositiveSmallIntegerField(default=NUMBER, choices=TYPES,
-                                                  verbose_name=_('value type'))
-    name = models.CharField(max_length=255, null=True, blank=True,
-                            verbose_name=_('name'))
-    # content_type = models.ForeignKey(ContentType, null=True, blank=True,
-    #                                  verbose_name=_('content type'))
-    order = models.IntegerField(default=0,
-                                verbose_name=_('order'))
+    transaction_type = models.ForeignKey(
+        TransactionType,
+        related_name='inputs'
+    )
+    name = models.CharField(
+        max_length=255,
+        null=True,
+        blank=True,
+    )
+    verbose_name = models.CharField(
+        max_length=255,
+        null=True,
+        blank=True
+    )
+    value_type = models.PositiveSmallIntegerField(
+        default=NUMBER,
+        choices=TYPES,
+        verbose_name=_('value type')
+    )
+    content_type = models.ForeignKey(
+        ContentType,
+        null=True,
+        blank=True,
+        verbose_name=_('content type')
+    )
+    order = models.IntegerField(
+        default=0,
+        verbose_name=_('order')
+    )
 
     class Meta:
         verbose_name = _('transaction type input')
@@ -214,7 +244,13 @@ class TransactionTypeInput(models.Model):
         ordering = ['transaction_type', 'order']
 
     def __str__(self):
-        return self.name
+        return '%s: %s' % (self.name, self.get_value_type_display())
+
+    def save(self, force_insert=False, force_update=False, using=None, update_fields=None):
+        if not self.verbose_name:
+            self.verbose_name = self.name
+        super(TransactionTypeInput, self).save(force_insert=force_insert, force_update=force_update, using=using,
+                                         update_fields=update_fields)
 
 
 # @python_2_unicode_compatible
