@@ -2,6 +2,7 @@ from __future__ import unicode_literals
 
 import six
 from django.core.exceptions import ObjectDoesNotExist
+from django.utils.translation import ugettext_lazy as _
 from rest_framework import serializers
 from rest_framework.exceptions import ValidationError
 
@@ -143,6 +144,18 @@ class AttributeSerializerBase(serializers.ModelSerializer):
         list_serializer_class = AttributeListSerializer
         fields = ['value_string', 'value_float', 'value_date']
 
+    def validate(self, attrs):
+        attribute_type = attrs['attribute_type']
+        print(self.fields)
+        if attribute_type.value_type == AttributeTypeBase.CLASSIFIER:
+            classifier = attrs.get('classifier', None)
+            if classifier is None:
+                raise ValidationError({'classifier': _('This field may not be null.')})
+            if classifier.attribute_type_id != attribute_type.id:
+                raise ValidationError(
+                    {'classifier': _('Invalid pk "%(pk)s" - object does not exist.') % {'pk': classifier.id}})
+        return attrs
+
 
 class ModelWithAttributesSerializer(serializers.ModelSerializer):
     def create(self, validated_data):
@@ -194,7 +207,6 @@ class ModelWithAttributesSerializer(serializers.ModelSerializer):
                 processed.add(attr_type.id)
 
         instance.attributes.exclude(attribute_type_id__in=processed).delete()
-
 
         # cur_attrs = {a.attribute_type_id: a for a in instance.attributes.all()}
         # new_attrs = {a['attribute_type'].id: a for a in attributes}
