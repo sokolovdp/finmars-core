@@ -5,10 +5,8 @@ from django.core.exceptions import ObjectDoesNotExist
 from django.utils.translation import ugettext_lazy as _
 from rest_framework import serializers
 from rest_framework.exceptions import ValidationError
-from rest_framework.fields import empty
 
 from poms.accounts.fields import AccountField
-from poms.common import formula
 from poms.common.serializers import PomsClassSerializer
 from poms.counterparties.fields import ResponsibleField, CounterpartyField
 from poms.currencies.fields import CurrencyField
@@ -20,7 +18,8 @@ from poms.obj_perms.serializers import ModelWithObjectPermissionSerializer
 from poms.portfolios.fields import PortfolioField
 from poms.strategies.fields import Strategy1Field, Strategy2Field, Strategy3Field
 from poms.tags.fields import TagField
-from poms.transactions.fields import TransactionAttributeTypeField, TransactionTypeInputContentTypeField
+from poms.transactions.fields import TransactionAttributeTypeField, TransactionTypeInputContentTypeField, \
+    ExpressionField, TransactionInputField
 from poms.transactions.models import TransactionClass, Transaction, TransactionType, TransactionAttributeType, \
     TransactionAttribute, TransactionTypeAction, TransactionTypeActionTransaction, TransactionTypeActionInstrument, \
     TransactionTypeInput
@@ -33,34 +32,24 @@ class TransactionClassSerializer(PomsClassSerializer):
 
 
 class TransactionTypeInputSerializer(serializers.ModelSerializer):
+    name = serializers.CharField(max_length=255, allow_null=False, allow_blank=False,
+                                 validators=[
+                                     # serializers.RegexValidator(regex='[a-zA-Z0-9_]+'),
+                                     serializers.RegexValidator(regex='[a-zA-Z_][a-zA-Z0-9_]*'),
+                                 ])
     content_type = TransactionTypeInputContentTypeField(allow_null=True, allow_empty=True)
 
     class Meta:
         model = TransactionTypeInput
         fields = ['id', 'name', 'verbose_name', 'value_type', 'content_type', 'order']
 
-
-class TransactionInputField(serializers.CharField):
-    def __init__(self, **kwargs):
-        super(TransactionInputField, self).__init__(**kwargs)
-
-    def to_representation(self, value):
-        return value.name if value else None
-
-
-class ExpressionField(serializers.CharField):
-    def __init__(self, **kwargs):
-        kwargs['allow_null'] = kwargs.get('allow_null', False)
-        kwargs['allow_blank'] = kwargs.get('allow_blank', False)
-        super(ExpressionField, self).__init__(**kwargs)
-
-    def run_validation(self, data=empty):
-        value = super(ExpressionField, self).run_validation(data)
-        if data:
-            _, err = formula.parse(data)
-            if err:
-                raise ValidationError('Invalid expression: %s' % err)
-        return value
+    def validate(self, data):
+        value_type = data['value_type']
+        if value_type == TransactionTypeInput.RELATION:
+            content_type = data.get('content_type', None)
+            if content_type is None:
+                self.content_type.fail('required')
+        return data
 
 
 class TransactionTypeActionInstrumentSerializer(serializers.ModelSerializer):

@@ -1,8 +1,9 @@
 from __future__ import unicode_literals
 
 from django.contrib.contenttypes.models import ContentType
-from django.core.exceptions import ObjectDoesNotExist
+from django.core.exceptions import ObjectDoesNotExist, ValidationError
 from django.utils.encoding import smart_text
+from rest_framework.fields import CharField, empty
 
 from poms.common.fields import FilteredPrimaryKeyRelatedField, FilteredSlugRelatedField
 from poms.obj_perms.filters import ObjectPermissionPrefetchFilter, ObjectPermissionFilter
@@ -50,3 +51,27 @@ class TransactionTypeInputContentTypeField(FilteredSlugRelatedField):
 
     def to_representation(self, obj):
         return '%s.%s' % (obj.app_label, obj.model)
+
+
+class TransactionInputField(CharField):
+    def __init__(self, **kwargs):
+        super(TransactionInputField, self).__init__(**kwargs)
+
+    def to_representation(self, value):
+        return value.name if value else None
+
+
+class ExpressionField(CharField):
+    def __init__(self, **kwargs):
+        kwargs['allow_null'] = kwargs.get('allow_null', False)
+        kwargs['allow_blank'] = kwargs.get('allow_blank', False)
+        super(ExpressionField, self).__init__(**kwargs)
+
+    def run_validation(self, data=empty):
+        value = super(ExpressionField, self).run_validation(data)
+        if data:
+            from poms.common import formula
+            _, err = formula.parse(data)
+            if err:
+                raise ValidationError('Invalid expression: %s' % err)
+        return value
