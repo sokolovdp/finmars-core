@@ -51,7 +51,8 @@ def safe_eval(expr, functions=DEFAULT_FUNCTIONS, names=None):
     return v
 
 
-# safe_eval('now()')
-safe_eval('"a".__class__.__class__()')
-# safe_eval('"-" * 2 ** 2 ** 2 ** 2 ** 2')
-# safe_eval('2 >> 2')
+if __name__ == "__main__":
+    # safe_eval('now()')
+    safe_eval('"a".__class__.__class__()')
+    safe_eval('"-" * 2 ** 2 ** 2 ** 2 ** 2')
+    # safe_eval('2 >> 2')
