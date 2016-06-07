@@ -5,8 +5,10 @@ from django.core.exceptions import ObjectDoesNotExist
 from django.utils.translation import ugettext_lazy as _
 from rest_framework import serializers
 from rest_framework.exceptions import ValidationError
+from rest_framework.fields import empty
 
 from poms.accounts.fields import AccountField
+from poms.common import formula
 from poms.common.serializers import PomsClassSerializer
 from poms.counterparties.fields import ResponsibleField, CounterpartyField
 from poms.currencies.fields import CurrencyField
@@ -50,25 +52,33 @@ class ExpressionField(serializers.CharField):
         kwargs['allow_blank'] = kwargs.get('allow_blank', False)
         super(ExpressionField, self).__init__(**kwargs)
 
+    def run_validation(self, data=empty):
+        value = super(ExpressionField, self).run_validation(data)
+        if data:
+            _, err = formula.parse(data)
+            if err:
+                raise ValidationError('Invalid expression: %s' % err)
+        return value
+
 
 class TransactionTypeActionInstrumentSerializer(serializers.ModelSerializer):
-    user_code = ExpressionField(default="''")
-    name = ExpressionField(default="''")
-    public_name = ExpressionField(default="''")
-    short_name = ExpressionField(default="''")
-    notes = ExpressionField(default="''")
+    user_code = ExpressionField(allow_blank=True)
+    name = ExpressionField(allow_blank=False)
+    public_name = ExpressionField(allow_blank=True)
+    short_name = ExpressionField(allow_blank=True)
+    notes = ExpressionField(allow_blank=True)
     instrument_type = InstrumentTypeField(allow_null=True)
     instrument_type_input = TransactionInputField(allow_null=True)
     pricing_currency = CurrencyField(allow_null=True)
     pricing_currency_input = TransactionInputField(allow_null=True)
-    price_multiplier = ExpressionField()
+    price_multiplier = ExpressionField(default="1.0")
     accrued_currency = CurrencyField(allow_null=True)
     accrued_currency_input = TransactionInputField(allow_null=True)
-    accrued_multiplier = ExpressionField()
+    accrued_multiplier = ExpressionField(default="1.0")
     daily_pricing_model_input = TransactionInputField(allow_null=True)
     payment_size_detail_input = TransactionInputField(allow_null=True)
-    default_price = ExpressionField()
-    default_accrued = ExpressionField()
+    default_price = ExpressionField(default="0.0")
+    default_accrued = ExpressionField(default="0.0")
 
     class Meta:
         model = TransactionTypeActionInstrument
@@ -95,21 +105,21 @@ class TransactionTypeActionTransactionSerializer(serializers.ModelSerializer):
     instrument_input = TransactionInputField(allow_null=True)
     transaction_currency = CurrencyField(allow_null=True)
     transaction_currency_input = TransactionInputField(allow_null=True)
-    position_size_with_sign = ExpressionField()
+    position_size_with_sign = ExpressionField(default="0.0")
     settlement_currency = CurrencyField(allow_null=True)
     settlement_currency_input = TransactionInputField(allow_null=True)
-    cash_consideration = ExpressionField()
-    principal_with_sign = ExpressionField()
-    carry_with_sign = ExpressionField()
-    overheads_with_sign = ExpressionField()
+    cash_consideration = ExpressionField(default="0.0")
+    principal_with_sign = ExpressionField(default="0.0")
+    carry_with_sign = ExpressionField(default="0.0")
+    overheads_with_sign = ExpressionField(default="0.0")
     account_position = AccountField(allow_null=True)
     account_position_input = TransactionInputField(allow_null=True)
     account_cash = AccountField(allow_null=True)
     account_cash_input = TransactionInputField(allow_null=True)
     account_interim = AccountField(allow_null=True)
     account_interim_input = TransactionInputField(allow_null=True)
-    accounting_date = ExpressionField()
-    cash_date = ExpressionField()
+    accounting_date = ExpressionField(default="now()")
+    cash_date = ExpressionField(default="now()")
     strategy1_position = Strategy1Field(allow_null=True)
     strategy1_position_input = TransactionInputField(allow_null=True)
     strategy2_position = Strategy1Field(allow_null=True)

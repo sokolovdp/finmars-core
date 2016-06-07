@@ -4,6 +4,7 @@ from django.utils.encoding import force_text
 from django.utils.translation import ugettext_lazy as _
 from rest_framework import serializers
 
+from poms.common import formula
 from poms.currencies.fields import CurrencyField
 from poms.currencies.models import Currency, CurrencyHistory
 from poms.tags.fields import TagField
@@ -36,9 +37,8 @@ class CurrencyHistorySerializer(serializers.ModelSerializer):
     def validate(self, data):
         fx_rate_expr = data.pop('fx_rate_expr', None)
         if fx_rate_expr:
-            import simpleeval
             try:
-                data['fx_rate'] = simpleeval.simple_eval(fx_rate_expr)
-            except (simpleeval.InvalidExpression, ArithmeticError) as e:
+                data['fx_rate'] = formula.safe_eval(fx_rate_expr)
+            except (formula.InvalidExpression, ArithmeticError) as e:
                 raise serializers.ValidationError({'fx_rate_expr': force_text(e)})
         return data

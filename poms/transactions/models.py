@@ -587,12 +587,14 @@ class TransactionTypeActionTransaction(TransactionTypeAction):
 
     accounting_date = models.CharField(
         max_length=255,
-        default='now()'
+        blank=True,
+        default=''
     )
 
     cash_date = models.CharField(
         max_length=255,
-        default='now()'
+        blank=True,
+        default=''
     )
 
     strategy1_position = models.ForeignKey(
