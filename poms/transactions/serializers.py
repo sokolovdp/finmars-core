@@ -299,7 +299,7 @@ class TransactionTypeSerializer(ModelWithObjectPermissionSerializer):
 
 class TransactionTypeProcessSerializer(serializers.Serializer):
     def __init__(self, transaction_type=None, **kwargs):
-        context = kwargs.get('context', None)
+        context = kwargs.get('context', None) or {}
         self.transaction_type = transaction_type or context.get('transaction_type', None)
 
         super(TransactionTypeProcessSerializer, self).__init__(**kwargs)
