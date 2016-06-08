@@ -159,6 +159,13 @@ class TransactionTypeActionTransactionInline(admin.StackedInline):
         ('strategy2_cash', 'strategy2_cash_input'),
         ('strategy3_position', 'strategy3_position_input'),
         ('strategy3_cash', 'strategy3_cash_input'),
+        'factor',
+        'trade_price',
+        'principal_amount',
+        'carry_amount',
+        'overheads',
+        ('responsible', 'responsible_input'),
+        ('counterparty', 'counterparty_input'),
     )
 
     def get_formset(self, request, obj=None, **kwargs):
@@ -184,6 +191,10 @@ class TransactionTypeActionTransactionInline(admin.StackedInline):
         input_filter_owner(f.form, 'strategy2_position_input', obj)
         input_filter_by_master_user(f.form, 'strategy3_position', obj.master_user)
         input_filter_owner(f.form, 'strategy3_position_input', obj)
+        input_filter_by_master_user(f.form, 'responsible', obj.master_user)
+        input_filter_owner(f.form, 'responsible_input', obj)
+        input_filter_by_master_user(f.form, 'counterparty', obj.master_user)
+        input_filter_owner(f.form, 'counterparty_input', obj)
         return f
 
     def formfield_for_foreignkey(self, db_field, request=None, **kwargs):

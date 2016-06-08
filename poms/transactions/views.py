@@ -1,8 +1,5 @@
 from __future__ import unicode_literals
 
-import json
-import pprint
-
 import django_filters
 from rest_framework.decorators import detail_route
 from rest_framework.filters import FilterSet, DjangoFilterBackend, OrderingFilter, SearchFilter
@@ -81,6 +78,12 @@ class TransactionTypeViewSet(PomsViewSetBase):
         'actions__transactiontypeactiontransaction__strategy2_position_input',
         'actions__transactiontypeactiontransaction__strategy3_position',
         'actions__transactiontypeactiontransaction__strategy3_position_input',
+        'actions__transactiontypeactiontransaction__strategy3_position',
+        'actions__transactiontypeactiontransaction__strategy3_position_input',
+        'actions__transactiontypeactiontransaction__responsible',
+        'actions__transactiontypeactiontransaction__responsible_input',
+        'actions__transactiontypeactiontransaction__counterparty',
+        'actions__transactiontypeactiontransaction__counterparty_input',
     )
     serializer_class = TransactionTypeSerializer
     filter_backends = [
@@ -103,55 +106,44 @@ class TransactionTypeViewSet(PomsViewSetBase):
     def get_serializer(self, *args, **kwargs):
         if self.request.path.endswith('/process/') or self.request.path.endswith('/check/'):
             kwargs['context'] = self.get_serializer_context()
-            return TransactionTypeProcessSerializer(transaction_type=self._instance, **kwargs)
+            return TransactionTypeProcessSerializer(transaction_type=self._detail_instance, **kwargs)
         else:
             return super(TransactionTypeViewSet, self).get_serializer(*args, **kwargs)
 
     @detail_route(methods=['get', 'post'], url_path='process')
     def process(self, request, pk=None):
-        self._instance = self.get_object()
-        # inputs = {}
-        # instruments, transactions = instance.process(inputs)
-        # data = OrderedDict((
-        #     ('status', 'processed'),
-        #     ('instruments', instruments),
-        #     ('transactions', transactions)
-        # ))
-        if request.method == 'GET':
-            serializer = TransactionTypeProcessSerializer(transaction_type=self._instance,
-                                                          context=self.get_serializer_context())
-            return Response(serializer.data)
-        else:
-            serializer = TransactionTypeProcessSerializer(transaction_type=self._instance,
-                                                          data=request.data,
-                                                          context=self.get_serializer_context())
-            serializer.is_valid(raise_exception=True)
-            instruments, transactions = self._instance.process(serializer.validated_data)
-            return Response(serializer.data)
+        return self.process_or_check(request, True)
 
     @detail_route(methods=['get', 'post'], url_path='check')
-    def process_virtual(self, request, pk=None):
-        self._instance = self.get_object()
+    def check(self, request, pk=None):
+        return self.process_or_check(request, False)
+
+    def process_or_check(self, request, save=False):
+        self._detail_instance = self.get_object()
         if request.method == 'GET':
-            serializer = TransactionTypeProcessSerializer(transaction_type=self._instance,
+            serializer = TransactionTypeProcessSerializer(transaction_type=self._detail_instance,
                                                           context=self.get_serializer_context())
             return Response(serializer.data)
         else:
-            serializer = TransactionTypeProcessSerializer(transaction_type=self._instance,
+            from poms.instruments.serializers import InstrumentSerializer
+
+            serializer = TransactionTypeProcessSerializer(transaction_type=self._detail_instance,
                                                           data=request.data,
                                                           context=self.get_serializer_context())
             serializer.is_valid(raise_exception=True)
-            instruments, transactions = self._instance.process(serializer.validated_data, save=False)
-            print('-' * 79)
+            instruments, transactions = self._detail_instance.process(serializer.validated_data, save=save)
+            instruments_s = []
+            transactions_s = []
             for i in instruments:
-                from poms.instruments.serializers import InstrumentSerializer
                 s = InstrumentSerializer(instance=i, context=self.get_serializer_context())
-                print(json.dumps(s.data, indent=2))
-            print('-' * 79)
+                instruments_s.append(s.data)
             for t in transactions:
                 s = TransactionSerializer(instance=t, context=self.get_serializer_context())
-                print(json.dumps(s.data, indent=2))
-            return Response(serializer.data)
+                transactions_s.append(s.data)
+            d = serializer.data.copy()
+            d['instruments'] = instruments_s
+            d['transactions'] = transactions_s
+            return Response(d)
 
 
 class TransactionAttributeTypeFilterSet(FilterSet):

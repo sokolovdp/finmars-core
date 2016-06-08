@@ -159,7 +159,10 @@ class TransactionType(NamedModel):
     def process(self, input_values, save=False):
         instruments = []
         transactions = []
-        ctrn = ComplexTransaction.objects.create(transaction_type=self)
+        if save:
+            ctrn = ComplexTransaction.objects.create(transaction_type=self)
+        else:
+            ctrn = ComplexTransaction(id=-1, transaction_type=self)
         ctrn_order = 0
         for action in self.actions.order_by('order').select_related(
                 'transactiontypeactiontransaction', 'transactiontypeactioninstrument').prefetch_related(
@@ -194,7 +197,6 @@ class TransactionType(NamedModel):
             'transactiontypeactioninstrument__daily_pricing_model_input',
             'transactiontypeactioninstrument__payment_size_detail',
             'transactiontypeactioninstrument__payment_size_detail_input'):
-            pass
 
             try:
                 ainstr = action.transactiontypeactioninstrument
@@ -220,7 +222,7 @@ class TransactionType(NamedModel):
                 self._set_simple(instr, 'public_name', ainstr, 'public_name', input_values)
                 self._set_simple(instr, 'short_name', ainstr, 'short_name', input_values)
                 self._set_simple(instr, 'notes', ainstr, 'notes', input_values)
-                self._set_relation(instr, 'instrument_type', ainstr, 'instrument_type', input_values)
+                self._set_relation(instr, 'type', ainstr, 'instrument_type', input_values)
                 self._set_relation(instr, 'pricing_currency', ainstr, 'pricing_currency', input_values)
                 self._set_simple(instr, 'price_multiplier', ainstr, 'price_multiplier', input_values)
                 self._set_relation(instr, 'accrued_currency', ainstr, 'accrued_currency', input_values)
@@ -231,6 +233,8 @@ class TransactionType(NamedModel):
                 self._set_simple(instr, 'default_accrued', ainstr, 'default_accrued', input_values)
                 if save:
                     instr.save()
+                else:
+                    instr.id = -ainstr.order - 1
             elif atrn:
                 trn = Transaction(master_user=self.master_user)
                 transactions.append(trn)
@@ -261,8 +265,16 @@ class TransactionType(NamedModel):
                 self._set_relation(trn, 'strategy2_cash', atrn, 'strategy2_cash', input_values)
                 self._set_relation(trn, 'strategy3_position', atrn, 'strategy3_position', input_values)
                 self._set_relation(trn, 'strategy3_cash', atrn, 'strategy3_cash', input_values)
+                self._set_simple(trn, 'factor', atrn, 'factor', input_values)
+                self._set_simple(trn, 'trade_price', atrn, 'trade_price', input_values)
+                self._set_simple(trn, 'principal_amount', atrn, 'principal_amount', input_values)
+                self._set_simple(trn, 'carry_amount', atrn, 'carry_amount', input_values)
+                self._set_simple(trn, 'responsible', atrn, 'responsible', input_values)
+                self._set_relation(trn, 'counterparty', atrn, 'counterparty', input_values)
                 if save:
                     trn.save()
+                else:
+                    trn.id = -atrn.order - 1
         return instruments, transactions
 
 
@@ -770,6 +782,62 @@ class TransactionTypeActionTransaction(TransactionTypeAction):
         related_name='+',
     )
     strategy3_cash_input = models.ForeignKey(
+        TransactionTypeInput,
+        null=True,
+        blank=True,
+        on_delete=models.PROTECT,
+        related_name='+',
+    )
+
+    reference_fx_rate = models.CharField(
+        max_length=255,
+        default='0.'
+    )
+
+    factor = models.CharField(
+        max_length=255,
+        default='0.'
+    )
+    trade_price = models.CharField(
+        max_length=255,
+        default='0.'
+    )
+    principal_amount = models.CharField(
+        max_length=255,
+        default='0.'
+    )
+    carry_amount = models.CharField(
+        max_length=255,
+        default='0.'
+    )
+    overheads = models.CharField(
+        max_length=255,
+        default='0.'
+    )
+
+    responsible = models.ForeignKey(
+        Responsible,
+        null=True,
+        blank=True,
+        on_delete=models.PROTECT,
+        related_name='+',
+    )
+    responsible_input = models.ForeignKey(
+        TransactionTypeInput,
+        null=True,
+        blank=True,
+        on_delete=models.PROTECT,
+        related_name='+',
+    )
+
+    counterparty = models.ForeignKey(
+        Counterparty,
+        null=True,
+        blank=True,
+        on_delete=models.PROTECT,
+        related_name='+',
+    )
+    counterparty_input = models.ForeignKey(
         TransactionTypeInput,
         null=True,
         blank=True,

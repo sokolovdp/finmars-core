@@ -146,6 +146,15 @@ class TransactionTypeActionTransactionSerializer(serializers.ModelSerializer):
     strategy3_position_input = TransactionInputField(allow_null=True)
     strategy3_cash = Strategy1Field(allow_null=True)
     strategy3_cash_input = TransactionInputField(allow_null=True)
+    responsible = ResponsibleField(allow_null=True)
+    responsible_input = TransactionInputField(allow_null=True)
+    factor = ExpressionField(default="0.0")
+    trade_price = ExpressionField(default="0.0")
+    principal_amount = ExpressionField(default="0.0")
+    carry_amount = ExpressionField(default="0.0")
+    overheads = ExpressionField(default="0.0")
+    counterparty = CounterpartyField(allow_null=True)
+    counterparty_input = TransactionInputField(allow_null=True)
 
     class Meta:
         model = TransactionTypeActionTransaction
@@ -171,6 +180,13 @@ class TransactionTypeActionTransactionSerializer(serializers.ModelSerializer):
             'strategy2_cash', 'strategy2_cash_input',
             'strategy3_position', 'strategy3_position_input',
             'strategy3_cash', 'strategy3_cash_input',
+            'factor',
+            'trade_price',
+            'principal_amount',
+            'carry_amount',
+            'overheads',
+            'responsible', 'responsible_input',
+            'counterparty', 'counterparty_input',
         ]
 
 
@@ -285,6 +301,10 @@ class TransactionTypeProcessSerializer(serializers.Serializer):
     def __init__(self, transaction_type=None, **kwargs):
         self.transaction_type = transaction_type
         super(TransactionTypeProcessSerializer, self).__init__(**kwargs)
+
+        from poms.instruments.serializers import InstrumentSerializer
+        self.fields['instruments'] = InstrumentSerializer(many=True, read_only=True)
+        self.fields['transactions'] = TransactionSerializer(many=True, read_only=True)
 
         if self.transaction_type:
             for i in self.transaction_type.inputs.order_by('name').all():
