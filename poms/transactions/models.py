@@ -164,40 +164,7 @@ class TransactionType(NamedModel):
         else:
             ctrn = ComplexTransaction(id=-1, transaction_type=self)
         ctrn_order = 0
-        for action in self.actions.order_by('order').select_related(
-                'transactiontypeactiontransaction', 'transactiontypeactioninstrument').prefetch_related(
-            # 'transactiontypeactiontransaction',
-            'transactiontypeactiontransaction__instrument',
-            'transactiontypeactiontransaction__instrument_input',
-            'transactiontypeactiontransaction__transaction_currency',
-            'transactiontypeactiontransaction__transaction_currency_input',
-            'transactiontypeactiontransaction__settlement_currency',
-            'transactiontypeactiontransaction__settlement_currency_input',
-            'transactiontypeactiontransaction__account_position',
-            'transactiontypeactiontransaction__account_position_input',
-            'transactiontypeactiontransaction__account_cash',
-            'transactiontypeactiontransaction__account_cash_input',
-            'transactiontypeactiontransaction__account_interim',
-            'transactiontypeactiontransaction__account_interim_input',
-            'transactiontypeactiontransaction__strategy1_position',
-            'transactiontypeactiontransaction__strategy1_position_input',
-            'transactiontypeactiontransaction__strategy2_position',
-            'transactiontypeactiontransaction__strategy2_position_input',
-            'transactiontypeactiontransaction__strategy3_position',
-            'transactiontypeactiontransaction__strategy3_position_input',
-
-            # 'transactiontypeactioninstrument',
-            'transactiontypeactioninstrument__instrument_type',
-            'transactiontypeactioninstrument__instrument_type_input',
-            'transactiontypeactioninstrument__pricing_currency',
-            'transactiontypeactioninstrument__pricing_currency_input',
-            'transactiontypeactioninstrument__accrued_currency',
-            'transactiontypeactioninstrument__accrued_currency_input',
-            'transactiontypeactioninstrument__daily_pricing_model',
-            'transactiontypeactioninstrument__daily_pricing_model_input',
-            'transactiontypeactioninstrument__payment_size_detail',
-            'transactiontypeactioninstrument__payment_size_detail_input'):
-
+        for order, action in enumerate(self.actions.order_by('order').all(), start=1):
             try:
                 ainstr = action.transactiontypeactioninstrument
             except ObjectDoesNotExist:
@@ -234,13 +201,13 @@ class TransactionType(NamedModel):
                 if save:
                     instr.save()
                 else:
-                    instr.id = -ainstr.order - 1
+                    instr.id = -order
             elif atrn:
+                ctrn_order += 1
                 trn = Transaction(master_user=self.master_user)
                 transactions.append(trn)
                 trn.complex_transaction = ctrn
                 trn.complex_transaction_order = ctrn_order
-                ctrn_order += 1
                 trn.transaction_class = atrn.transaction_class
                 self._set_relation(trn, 'portfolio', atrn, 'portfolio', input_values)
                 self._set_relation(trn, 'instrument', atrn, 'instrument', input_values)
@@ -274,7 +241,7 @@ class TransactionType(NamedModel):
                 if save:
                     trn.save()
                 else:
-                    trn.id = -atrn.order - 1
+                    trn.id = -order
         return instruments, transactions
 
 
