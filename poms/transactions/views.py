@@ -103,18 +103,23 @@ class TransactionTypeViewSet(PomsViewSetBase):
     ordering_fields = ['user_code', 'name', 'short_name']
     search_fields = ['user_code', 'name', 'short_name']
 
-    def get_serializer(self, *args, **kwargs):
-        if self.request.path.endswith('/process/') or self.request.path.endswith('/check/'):
-            kwargs['context'] = self.get_serializer_context()
-            return TransactionTypeProcessSerializer(transaction_type=self._detail_instance, **kwargs)
-        else:
-            return super(TransactionTypeViewSet, self).get_serializer(*args, **kwargs)
+    # def get_serializer(self, *args, **kwargs):
+    #     if self.request.path.endswith('/process/') or self.request.path.endswith('/check/'):
+    #         kwargs['context'] = self.get_serializer_context()
+    #         return TransactionTypeProcessSerializer(transaction_type=self._detail_instance, **kwargs)
+    #     else:
+    #         return super(TransactionTypeViewSet, self).get_serializer(*args, **kwargs)
 
-    @detail_route(methods=['get', 'post'], url_path='process')
+    def get_serializer_context(self):
+        context = super(TransactionTypeViewSet, self).get_serializer_context()
+        context['transaction_type'] = getattr(self, '_detail_instance', None)
+        return context
+
+    @detail_route(methods=['get', 'post'], url_path='process', serializer_class=TransactionTypeProcessSerializer)
     def process(self, request, pk=None):
         return self.process_or_check(request, True)
 
-    @detail_route(methods=['get', 'post'], url_path='check')
+    @detail_route(methods=['get', 'post'], url_path='check', serializer_class=TransactionTypeProcessSerializer)
     def check(self, request, pk=None):
         return self.process_or_check(request, False)
 

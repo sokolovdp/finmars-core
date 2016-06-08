@@ -299,7 +299,9 @@ class TransactionTypeSerializer(ModelWithObjectPermissionSerializer):
 
 class TransactionTypeProcessSerializer(serializers.Serializer):
     def __init__(self, transaction_type=None, **kwargs):
-        self.transaction_type = transaction_type
+        context = kwargs.get('context', None)
+        self.transaction_type = transaction_type or context.get('transaction_type', None)
+
         super(TransactionTypeProcessSerializer, self).__init__(**kwargs)
 
         from poms.instruments.serializers import InstrumentSerializer
