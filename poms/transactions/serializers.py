@@ -61,6 +61,7 @@ class TransactionTypeInputSerializer(serializers.ModelSerializer):
     class Meta:
         model = TransactionTypeInput
         fields = ['id', 'name', 'verbose_name', 'value_type', 'content_type', 'order']
+        read_only_fields = ['order']
 
     def validate(self, data):
         value_type = data['value_type']
@@ -135,10 +136,16 @@ class TransactionTypeActionTransactionSerializer(serializers.ModelSerializer):
     cash_date = ExpressionField(default="now()")
     strategy1_position = Strategy1Field(allow_null=True)
     strategy1_position_input = TransactionInputField(allow_null=True)
+    strategy1_cash = Strategy1Field(allow_null=True)
+    strategy1_cash_input = TransactionInputField(allow_null=True)
     strategy2_position = Strategy1Field(allow_null=True)
     strategy2_position_input = TransactionInputField(allow_null=True)
+    strategy2_cash = Strategy1Field(allow_null=True)
+    strategy2_cash_input = TransactionInputField(allow_null=True)
     strategy3_position = Strategy1Field(allow_null=True)
     strategy3_position_input = TransactionInputField(allow_null=True)
+    strategy3_cash = Strategy1Field(allow_null=True)
+    strategy3_cash_input = TransactionInputField(allow_null=True)
 
     class Meta:
         model = TransactionTypeActionTransaction
@@ -174,6 +181,7 @@ class TransactionTypeActionSerializer(serializers.ModelSerializer):
     class Meta:
         model = TransactionTypeAction
         fields = ['id', 'order', 'transaction', 'instrument']
+        read_only_fields = ['order']
 
     def validate(self, attrs):
         # TODO: transaction or instrument prsent
@@ -215,61 +223,62 @@ class TransactionTypeSerializer(ModelWithObjectPermissionSerializer):
             instance.inputs.exclude(id__in=[i.id for i in six.itervalues(inputs)]).delete()
         return instance
 
-    def save_inputs(self, instance, inputs, created):
+    def save_inputs(self, instance, inputs_data, created):
         cur_inputs = {i.name: i for i in instance.inputs.all()}
-        new_inputs = {i['name']: i for i in inputs}
-        for name, input_data in six.iteritems(new_inputs):
+        new_inputs = {}
+        for order, input_data in enumerate(inputs_data):
+            name = input_data['name']
             input = cur_inputs.pop(name, None)
             if input is None:
                 input = TransactionTypeInput(transaction_type=instance)
+            input.order = order
             for attr, value in six.iteritems(input_data):
                 setattr(input, attr, value)
             input.save()
             new_inputs[input.name] = input
         return new_inputs
 
-    def save_actions(self, instance, actions, created):
+    def save_actions(self, instance, actions_data, created):
         inputs = {i.name: i for i in instance.inputs.all()}
         cur_actions = {i.order: i for i in instance.actions.select_related('transactiontypeactioninstrument',
                                                                            'transactiontypeactiontransaction').all()}
-        for action_data in actions:
+        actions = []
+        for order, action_data in enumerate(actions_data):
             instrument_data = action_data.get('instrument', action_data.get('transactiontypeactioninstrument'))
             transaction_data = action_data.get('transaction', action_data.get('transactiontypeactiontransaction'))
             data = instrument_data or transaction_data
 
             # replace input name to input object
-            for name, value in six.iteritems(data):
-                if name.endswith('_input') and value:
+            for attr, value in six.iteritems(data):
+                if attr.endswith('_input') and value:
                     # print('name=%s, value=%s' % (name, value,))
-                    data[name] = inputs[value]
+                    data[attr] = inputs[value]
+                if transaction_data and attr == 'instrument_phantom' and value is not None:
+                    data[attr] = actions[value]
 
-            action = cur_actions.pop(action_data['order'], None)
+            action = cur_actions.pop(order, None)
             if created:
                 if instrument_data:
                     action = TransactionTypeActionInstrument(transaction_type=instance)
                 elif transaction_data:
                     action = TransactionTypeActionTransaction(transaction_type=instance)
                 else:
-                    raise RuntimeError('unknown action')
-                action.order = action_data['order']
-                for attr, value in six.iteritems(instrument_data):
-                    setattr(action, attr, value)
-                action.save()
+                    raise RuntimeError('some unknown error')
             else:
                 try:
-                    instrument = action.transactiontypeactioninstrument
+                    action = action.transactiontypeactioninstrument
                 except ObjectDoesNotExist:
-                    instrument = None
-                try:
-                    transaction = action.transactiontypeactiontransaction
-                except ObjectDoesNotExist:
-                    transaction = None
-                action = instrument or transaction
+                    try:
+                        action = action.transactiontypeactiontransaction
+                    except ObjectDoesNotExist:
+                        pass
                 if action is None:
                     raise RuntimeError('unknown action')
-                for attr, value in six.iteritems(data):
-                    setattr(action, attr, value)
-                action.save()
+            action.order = order
+            for attr, value in six.iteritems(data):
+                setattr(action, attr, value)
+            action.save()
+            actions.append(action)
 
 
 class TransactionTypeProcessSerializer(serializers.Serializer):
@@ -352,7 +361,7 @@ class TransactionAttributeSerializer(AttributeSerializerBase):
 class TransactionSerializer(ModelWithAttributesSerializer):
     master_user = MasterUserField()
     complex_transaction = serializers.PrimaryKeyRelatedField(read_only=True)
-    complex_transaction_order = serializers.PrimaryKeyRelatedField(read_only=True)
+    complex_transaction_order = serializers.IntegerField(read_only=True)
     portfolio = PortfolioField(required=False, allow_null=True)
     transaction_currency = CurrencyField(required=False, allow_null=True)
     instrument = InstrumentField(required=False, allow_null=True)

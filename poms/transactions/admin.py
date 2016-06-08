@@ -31,9 +31,7 @@ admin.site.register(PeriodicityGroup, ClassModelAdmin)
 class TransactionTypeInputInline(admin.TabularInline):
     model = TransactionTypeInput
     extra = 0
-    fields = (
-        'id', 'name', 'value_type', 'content_type', 'verbose_name', 'order',
-    )
+    fields = ('id', 'name', 'value_type', 'content_type', 'verbose_name', 'order',)
     readonly_fields = ('id',)
 
     def formfield_for_foreignkey(self, db_field, request=None, **kwargs):
@@ -44,6 +42,11 @@ class TransactionTypeInputInline(admin.TabularInline):
             ctypes = [ContentType.objects.get_for_model(model).pk for model in models]
             kwargs['queryset'] = qs.filter(pk__in=ctypes)
         return super(TransactionTypeInputInline, self).formfield_for_foreignkey(db_field, request=request, **kwargs)
+
+        # if db_field.name == 'permissions':
+        #     qs = kwargs.get('queryset', db_field.remote_field.model.objects)
+        #     kwargs['queryset'] = qs.select_related('content_type')
+        # return super(GroupAdmin, self).formfield_for_manytomany(db_field, request=request, **kwargs)
 
 
 # class TransactionTypeItemInline(admin.StackedInline):
@@ -122,6 +125,13 @@ class TransactionTypeActionInstrumentInline(admin.StackedInline):
         input_filter_owner(f.form, 'accrued_currency_input', obj)
         return f
 
+    def formfield_for_foreignkey(self, db_field, request=None, **kwargs):
+        if db_field.name.endswith('_input'):
+            qs = kwargs.get('queryset', db_field.remote_field.model.objects)
+            kwargs['queryset'] = qs.select_related('content_type')
+        return super(TransactionTypeActionInstrumentInline, self).formfield_for_foreignkey(db_field, request=request,
+                                                                                           **kwargs)
+
 
 class TransactionTypeActionTransactionInline(admin.StackedInline):
     model = TransactionTypeActionTransaction
@@ -175,6 +185,13 @@ class TransactionTypeActionTransactionInline(admin.StackedInline):
         input_filter_by_master_user(f.form, 'strategy3_position', obj.master_user)
         input_filter_owner(f.form, 'strategy3_position_input', obj)
         return f
+
+    def formfield_for_foreignkey(self, db_field, request=None, **kwargs):
+        if db_field.name.endswith('_input'):
+            qs = kwargs.get('queryset', db_field.remote_field.model.objects)
+            kwargs['queryset'] = qs.select_related('content_type')
+        return super(TransactionTypeActionTransactionInline, self).formfield_for_foreignkey(db_field, request=request,
+                                                                                            **kwargs)
 
 
 class EventToHandleInline(admin.StackedInline):

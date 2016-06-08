@@ -364,6 +364,8 @@ class TransactionTypeInput(models.Model):
         verbose_name_plural = _('transaction type inputs')
         unique_together = [
             ['transaction_type', 'name'],
+        ]
+        index_together = [
             ['transaction_type', 'order'],
         ]
         ordering = ['transaction_type', 'order']
@@ -393,8 +395,11 @@ class TransactionTypeAction(models.Model):
     class Meta:
         verbose_name = _('action')
         verbose_name_plural = _('actions')
-        unique_together = [
-            ['transaction_type', 'order']
+        # unique_together = [
+        #     ['transaction_type', 'order']
+        # ]
+        index_together = [
+            ['transaction_type', 'order'],
         ]
         ordering = ['transaction_type', 'order']
 
