@@ -3,8 +3,13 @@ from django.db.models import Q
 from rest_framework.filters import BaseFilterBackend
 
 from poms.accounts.models import Account
+from poms.counterparties.models import Counterparty
+from poms.counterparties.models import Responsible
+from poms.currencies.models import Currency
+from poms.instruments.models import InstrumentType, Instrument, DailyPricingModel, PaymentSizeDetail
 from poms.obj_perms.utils import obj_perms_filter_objects_for_view
 from poms.portfolios.models import Portfolio
+from poms.strategies.models import Strategy1, Strategy2, Strategy3
 
 
 class TransactionObjectPermissionFilter(BaseFilterBackend):
@@ -35,14 +40,7 @@ class TransactionObjectPermissionFilter(BaseFilterBackend):
 
 class TransactionTypeInputContentTypeFilter(BaseFilterBackend):
     def filter_queryset(self, request, queryset, view):
-        from poms.accounts.models import Account
-        from poms.currencies.models import Currency
-        from poms.instruments.models import InstrumentType, Instrument, DailyPricingModel, PaymentSizeDetail
-        from poms.counterparties.models import Counterparty
-        from poms.counterparties.models import Responsible
-        from poms.strategies.models import Strategy1, Strategy2, Strategy3
-
         models = [Account, Instrument, InstrumentType, Currency, Counterparty, Responsible,
-                  Strategy1, Strategy2, Strategy3, DailyPricingModel, PaymentSizeDetail]
+                  Strategy1, Strategy2, Strategy3, DailyPricingModel, PaymentSizeDetail, Portfolio]
         ctypes = [ContentType.objects.get_for_model(model).pk for model in models]
         return queryset.filter(pk__in=ctypes)

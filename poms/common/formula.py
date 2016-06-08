@@ -3,6 +3,8 @@ from __future__ import unicode_literals, print_function
 import datetime
 import pprint
 
+from django.utils import timezone
+
 
 class InvalidExpression(Exception):
     pass
@@ -26,8 +28,9 @@ def parse(expr):
 
 
 DEFAULT_FUNCTIONS = {
+    'now': lambda: timezone.now().date()
     # 'now': lambda: timezone.now()
-    'now': lambda: datetime.datetime.utcnow(),
+    # 'now': lambda: datetime.datetime.utcnow().date(),
     # 'now2': lambda: '%s' % datetime.datetime.utcnow(),
 }
 
@@ -47,12 +50,11 @@ def safe_eval(expr, functions=DEFAULT_FUNCTIONS, names=None):
         # v = simpleeval.simple_eval(expr,names=names)
     except (simpleeval.InvalidExpression, KeyError, AttributeError) as e:
         raise InvalidExpression(e)
-    pprint.pprint(v)
     return v
 
 
 if __name__ == "__main__":
-    # safe_eval('now()')
-    safe_eval('"a".__class__.__class__()')
-    safe_eval('"-" * 2 ** 2 ** 2 ** 2 ** 2')
+    print(repr(safe_eval('now()')))
+    # safe_eval('"a".__class__.__class__()')
+    # safe_eval('"-" * 2 ** 2 ** 2 ** 2 ** 2')
     # safe_eval('2 >> 2')

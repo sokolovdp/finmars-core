@@ -53,14 +53,6 @@ class TransactionTypeInputContentTypeField(FilteredSlugRelatedField):
         return '%s.%s' % (obj.app_label, obj.model)
 
 
-class TransactionInputField(CharField):
-    def __init__(self, **kwargs):
-        super(TransactionInputField, self).__init__(**kwargs)
-
-    def to_representation(self, value):
-        return value.name if value else None
-
-
 class ExpressionField(CharField):
     def __init__(self, **kwargs):
         kwargs['allow_null'] = kwargs.get('allow_null', False)

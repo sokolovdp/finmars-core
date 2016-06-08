@@ -1,5 +1,8 @@
 from __future__ import unicode_literals
 
+import json
+import pprint
+
 import django_filters
 from rest_framework.decorators import detail_route
 from rest_framework.filters import FilterSet, DjangoFilterBackend, OrderingFilter, SearchFilter
@@ -92,7 +95,7 @@ class TransactionTypeViewSet(PomsViewSetBase):
     search_fields = ['user_code', 'name', 'short_name']
 
     def get_serializer(self, *args, **kwargs):
-        if self.request.path.endswith('/process/'):
+        if self.request.path.endswith('/process/') or self.request.path.endswith('/check/'):
             kwargs['context'] = self.get_serializer_context()
             return TransactionTypeProcessSerializer(transaction_type=self._instance, **kwargs)
         else:
@@ -117,7 +120,31 @@ class TransactionTypeViewSet(PomsViewSetBase):
                                                           data=request.data,
                                                           context=self.get_serializer_context())
             serializer.is_valid(raise_exception=True)
-            self._instance.process(serializer.validated_data)
+            instruments, transactions = self._instance.process(serializer.validated_data)
+            return Response(serializer.data)
+
+    @detail_route(methods=['get', 'post'], url_path='check')
+    def process_virtual(self, request, pk=None):
+        self._instance = self.get_object()
+        if request.method == 'GET':
+            serializer = TransactionTypeProcessSerializer(transaction_type=self._instance,
+                                                          context=self.get_serializer_context())
+            return Response(serializer.data)
+        else:
+            serializer = TransactionTypeProcessSerializer(transaction_type=self._instance,
+                                                          data=request.data,
+                                                          context=self.get_serializer_context())
+            serializer.is_valid(raise_exception=True)
+            instruments, transactions = self._instance.process(serializer.validated_data, save=False)
+            print('-' * 79)
+            for i in instruments:
+                from poms.instruments.serializers import InstrumentSerializer
+                s = InstrumentSerializer(instance=i, context=self.get_serializer_context())
+                print(json.dumps(s.data, indent=2))
+            print('-' * 79)
+            for t in transactions:
+                s = TransactionSerializer(instance=t, context=self.get_serializer_context())
+                print(json.dumps(s.data, indent=2))
             return Response(serializer.data)
 
 

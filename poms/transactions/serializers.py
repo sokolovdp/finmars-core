@@ -20,11 +20,12 @@ from poms.obj_attrs.serializers import AttributeTypeSerializerBase, AttributeSer
     ModelWithAttributesSerializer
 from poms.obj_perms.serializers import ModelWithObjectPermissionSerializer
 from poms.portfolios.fields import PortfolioField
+from poms.portfolios.models import Portfolio
 from poms.strategies.fields import Strategy1Field, Strategy2Field, Strategy3Field
 from poms.strategies.models import Strategy1, Strategy2, Strategy3
 from poms.tags.fields import TagField
 from poms.transactions.fields import TransactionAttributeTypeField, TransactionTypeInputContentTypeField, \
-    ExpressionField, TransactionInputField
+    ExpressionField
 from poms.transactions.models import TransactionClass, Transaction, TransactionType, TransactionAttributeType, \
     TransactionAttribute, TransactionTypeAction, TransactionTypeActionTransaction, TransactionTypeActionInstrument, \
     TransactionTypeInput
@@ -34,6 +35,19 @@ from poms.users.fields import MasterUserField
 class TransactionClassSerializer(PomsClassSerializer):
     class Meta(PomsClassSerializer.Meta):
         model = TransactionClass
+
+
+class TransactionInputField(serializers.CharField):
+    def __init__(self, **kwargs):
+        super(TransactionInputField, self).__init__(**kwargs)
+
+    def to_representation(self, value):
+        return value.name if value else None
+
+
+class TransactionTypeActionInstrumentPhantomField(serializers.IntegerField):
+    def to_representation(self, value):
+        return value.order if value else None
 
 
 class TransactionTypeInputSerializer(serializers.ModelSerializer):
@@ -97,8 +111,11 @@ class TransactionTypeActionInstrumentSerializer(serializers.ModelSerializer):
 
 
 class TransactionTypeActionTransactionSerializer(serializers.ModelSerializer):
+    portfolio = PortfolioField(allow_null=True)
+    portfolio_input = TransactionInputField(allow_null=True)
     instrument = InstrumentField(allow_null=True)
     instrument_input = TransactionInputField(allow_null=True)
+    instrument_phantom = TransactionTypeActionInstrumentPhantomField(allow_null=True)
     transaction_currency = CurrencyField(allow_null=True)
     transaction_currency_input = TransactionInputField(allow_null=True)
     position_size_with_sign = ExpressionField(default="0.0")
@@ -127,7 +144,8 @@ class TransactionTypeActionTransactionSerializer(serializers.ModelSerializer):
         model = TransactionTypeActionTransaction
         fields = [
             'transaction_class',
-            'instrument', 'instrument_input',
+            'portfolio', 'portfolio_input',
+            'instrument', 'instrument_input', 'instrument_phantom',
             'transaction_currency', 'transaction_currency_input',
             'position_size_with_sign',
             'settlement_currency', 'settlement_currency_input',
@@ -157,6 +175,10 @@ class TransactionTypeActionSerializer(serializers.ModelSerializer):
         model = TransactionTypeAction
         fields = ['id', 'order', 'transaction', 'instrument']
 
+    def validate(self, attrs):
+        # TODO: transaction or instrument prsent
+        return attrs
+
 
 class TransactionTypeSerializer(ModelWithObjectPermissionSerializer):
     master_user = MasterUserField()
@@ -170,6 +192,10 @@ class TransactionTypeSerializer(ModelWithObjectPermissionSerializer):
         model = TransactionType
         fields = ['url', 'id', 'master_user', 'user_code', 'name', 'short_name', 'notes', 'display_expr',
                   'tags', 'instrument_types', 'inputs', 'actions']
+
+    def validate(self, attrs):
+        # TODO: validate *_input...
+        return attrs
 
     def create(self, validated_data):
         inputs = validated_data.pop('inputs', None)
@@ -288,6 +314,8 @@ class TransactionTypeProcessSerializer(serializers.Serializer):
                     elif issubclass(model_class, PaymentSizeDetail):
                         field = serializers.PrimaryKeyRelatedField(queryset=PaymentSizeDetail.objects, required=True,
                                                                    label=i.name, help_text=i.verbose_name)
+                    elif issubclass(model_class, Portfolio):
+                        field = PortfolioField(required=True, label=i.name, help_text=i.verbose_name)
                 if field:
                     self.fields[name] = field
                 else:
@@ -323,6 +351,8 @@ class TransactionAttributeSerializer(AttributeSerializerBase):
 
 class TransactionSerializer(ModelWithAttributesSerializer):
     master_user = MasterUserField()
+    complex_transaction = serializers.PrimaryKeyRelatedField(read_only=True)
+    complex_transaction_order = serializers.PrimaryKeyRelatedField(read_only=True)
     portfolio = PortfolioField(required=False, allow_null=True)
     transaction_currency = CurrencyField(required=False, allow_null=True)
     instrument = InstrumentField(required=False, allow_null=True)
@@ -344,7 +374,9 @@ class TransactionSerializer(ModelWithAttributesSerializer):
     class Meta:
         model = Transaction
         fields = ['url', 'id', 'master_user',
-                  'portfolio', 'transaction_class',
+                  'complex_transaction', 'complex_transaction_order',
+                  'transaction_class',
+                  'portfolio',
                   'transaction_currency', 'instrument',
                   'position_size_with_sign',
                   'settlement_currency', 'cash_consideration',

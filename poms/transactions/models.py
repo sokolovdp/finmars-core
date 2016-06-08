@@ -143,8 +143,10 @@ class TransactionType(NamedModel):
         ]
 
     def _set_simple(self, obj, name, tobj, tname, input_values):
-        value = formula.safe_eval(getattr(tobj, tname), names=input_values)
-        setattr(obj, name, value)
+        value = getattr(tobj, tname)
+        if value:
+            value = formula.safe_eval(value, names=input_values)
+            setattr(obj, name, value)
 
     def _set_relation(self, obj, name, tobj, tname, input_values):
         value = getattr(tobj, tname, None)
@@ -155,10 +157,10 @@ class TransactionType(NamedModel):
         setattr(obj, name, value)
 
     def process(self, input_values, save=False):
-        import pprint
-        pprint.pprint(input_values)
         instruments = []
         transactions = []
+        ctrn = ComplexTransaction.objects.create(transaction_type=self)
+        ctrn_order = 0
         for action in self.actions.order_by('order').select_related(
                 'transactiontypeactiontransaction', 'transactiontypeactioninstrument').prefetch_related(
             # 'transactiontypeactiontransaction',
@@ -212,6 +214,7 @@ class TransactionType(NamedModel):
                         pass
 
                 instr = Instrument(master_user=self.master_user)
+                instruments.append(instr)
                 instr.user_code = user_code
                 self._set_simple(instr, 'name', ainstr, 'name', input_values)
                 self._set_simple(instr, 'public_name', ainstr, 'public_name', input_values)
@@ -230,8 +233,15 @@ class TransactionType(NamedModel):
                     instr.save()
             elif atrn:
                 trn = Transaction(master_user=self.master_user)
+                transactions.append(trn)
+                trn.complex_transaction = ctrn
+                trn.complex_transaction_order = ctrn_order
+                ctrn_order += 1
                 trn.transaction_class = atrn.transaction_class
+                self._set_relation(trn, 'portfolio', atrn, 'portfolio', input_values)
                 self._set_relation(trn, 'instrument', atrn, 'instrument', input_values)
+                if trn.instrument is None and atrn.instrument_phantom is not None:
+                    trn.instrument = instruments[atrn.instrument_phantom]
                 self._set_relation(trn, 'transaction_currency', atrn, 'transaction_currency', input_values)
                 self._set_simple(trn, 'position_size_with_sign', atrn, 'position_size_with_sign', input_values)
                 self._set_relation(trn, 'settlement_currency', atrn, 'settlement_currency', input_values)
@@ -244,6 +254,7 @@ class TransactionType(NamedModel):
                 self._set_relation(trn, 'account_interim', atrn, 'account_interim', input_values)
                 self._set_simple(trn, 'accounting_date', atrn, 'accounting_date', input_values)
                 self._set_simple(trn, 'cash_date', atrn, 'cash_date', input_values)
+                trn.transaction_date = min(trn.accounting_date, trn.cash_date)
                 self._set_relation(trn, 'strategy1_position', atrn, 'strategy1_position', input_values)
                 self._set_relation(trn, 'strategy1_cash', atrn, 'strategy1_cash', input_values)
                 self._set_relation(trn, 'strategy2_position', atrn, 'strategy2_position', input_values)
@@ -358,7 +369,10 @@ class TransactionTypeInput(models.Model):
         ordering = ['transaction_type', 'order']
 
     def __str__(self):
-        return '%s: %s' % (self.name, self.get_value_type_display())
+        if self.value_type == self.RELATION:
+            return '%s: %s' % (self.name, self.content_type)
+        else:
+            return '%s: %s' % (self.name, self.get_value_type_display())
 
     def save(self, force_insert=False, force_update=False, using=None, update_fields=None):
         if not self.verbose_name:
@@ -366,107 +380,6 @@ class TransactionTypeInput(models.Model):
         super(TransactionTypeInput, self).save(force_insert=force_insert, force_update=force_update, using=using,
                                                update_fields=update_fields)
 
-
-# @python_2_unicode_compatible
-# class TransactionTypeItem(models.Model):
-#     transaction_type = models.ForeignKey(TransactionType, related_name='items', on_delete=models.PROTECT)
-#     order = models.IntegerField(default=0)
-#
-#     transaction_class = models.ForeignKey(TransactionClass, related_name='+', on_delete=models.PROTECT)
-#
-#     instrument = models.ForeignKey(Instrument, related_name='+', on_delete=models.PROTECT, null=True, blank=True)
-#     transaction_currency = models.ForeignKey(Currency, related_name='+', on_delete=models.PROTECT, null=True,
-#                                              blank=True)
-#     position_size_with_sign = models.FloatField(null=True, blank=True)
-#     settlement_currency = models.ForeignKey(Currency, related_name='+', on_delete=models.PROTECT, null=True, blank=True)
-#     cash_consideration = models.FloatField(null=True, blank=True)
-#     account_position = models.ForeignKey(Account, related_name='+', on_delete=models.PROTECT, null=True, blank=True)
-#     account_cash = models.ForeignKey(Account, related_name='+', on_delete=models.PROTECT, null=True, blank=True)
-#     account_interim = models.ForeignKey(Account, related_name='+', on_delete=models.PROTECT, blank=True, null=True)
-#     accounting_date = models.DateField(null=True, blank=True)
-#     cash_date = models.DateField(null=True, blank=True)
-#
-#     strategy1_position = models.ForeignKey(
-#         Strategy1,
-#         null=True,
-#         blank=True,
-#         related_name='+',
-#         on_delete=models.PROTECT
-#     )
-#     strategy1_cash = models.ForeignKey(
-#         Strategy1,
-#         null=True,
-#         blank=True,
-#         related_name='+',
-#         on_delete=models.PROTECT
-#     )
-#     strategy2_position = models.ForeignKey(
-#         Strategy2,
-#         null=True,
-#         blank=True,
-#         related_name='+',
-#         on_delete=models.PROTECT
-#     )
-#     strategy2_cash = models.ForeignKey(
-#         Strategy2,
-#         null=True,
-#         blank=True,
-#         related_name='+',
-#         on_delete=models.PROTECT
-#     )
-#     strategy3_position = models.ForeignKey(
-#         Strategy3,
-#         null=True,
-#         blank=True,
-#         related_name='+',
-#         on_delete=models.PROTECT
-#     )
-#     strategy3_cash = models.ForeignKey(
-#         Strategy3,
-#         null=True,
-#         blank=True,
-#         on_delete=models.PROTECT,
-#         related_name='+'
-#     )
-#
-#     instrument_input = models.ForeignKey(TransactionTypeInput, related_name='+', on_delete=models.PROTECT, null=True,
-#                                          blank=True)
-#     transaction_currency_input = models.ForeignKey(TransactionTypeInput, related_name='+', on_delete=models.PROTECT,
-#                                                    null=True, blank=True)
-#
-#     position_size_with_sign_expr = models.CharField(max_length=255, blank=True, default='')
-#     settlement_currency_input = models.ForeignKey(TransactionTypeInput, related_name='+', on_delete=models.PROTECT,
-#                                                   null=True, blank=True)
-#     cash_consideration_expr = models.CharField(max_length=255, blank=True, default='')
-#
-#     account_position_input = models.ForeignKey(TransactionTypeInput, related_name='+', on_delete=models.PROTECT,
-#                                                null=True, blank=True)
-#     account_cash_input = models.ForeignKey(TransactionTypeInput, related_name='+', on_delete=models.PROTECT, null=True,
-#                                            blank=True)
-#     account_interim_input = models.ForeignKey(TransactionTypeInput, related_name='+', on_delete=models.PROTECT,
-#                                               null=True, blank=True)
-#     strategy1_position_input = models.ForeignKey(TransactionTypeInput, related_name='+', on_delete=models.PROTECT,
-#                                                  null=True, blank=True)
-#     strategy1_cash_input = models.ForeignKey(TransactionTypeInput, related_name='+', on_delete=models.PROTECT,
-#                                              null=True, blank=True)
-#     strategy2_position_input = models.ForeignKey(TransactionTypeInput, related_name='+', on_delete=models.PROTECT,
-#                                                  null=True, blank=True)
-#     strategy2_cash_input = models.ForeignKey(TransactionTypeInput, related_name='+', on_delete=models.PROTECT,
-#                                              null=True, blank=True)
-#     strategy3_position_input = models.ForeignKey(TransactionTypeInput, related_name='+', on_delete=models.PROTECT,
-#                                                  null=True, blank=True)
-#     strategy3_cash_input = models.ForeignKey(TransactionTypeInput, related_name='+', on_delete=models.PROTECT,
-#                                              null=True, blank=True)
-#
-#     accounting_date_expr = models.CharField(max_length=255, blank=True, default='')
-#     cash_date_expr = models.CharField(max_length=255, blank=True, default='')
-#
-#     class Meta:
-#         verbose_name = _('transaction type item')
-#         verbose_name_plural = _('transaction type tems')
-#
-#     def __str__(self):
-#         return 'item #%s' % self.id
 
 @python_2_unicode_compatible
 class TransactionTypeAction(models.Model):
@@ -623,6 +536,21 @@ class TransactionTypeActionTransaction(TransactionTypeAction):
         related_name='+',
     )
 
+    portfolio = models.ForeignKey(
+        Portfolio,
+        null=True,
+        blank=True,
+        on_delete=models.PROTECT,
+        related_name='+',
+    )
+    portfolio_input = models.ForeignKey(
+        TransactionTypeInput,
+        null=True,
+        blank=True,
+        on_delete=models.PROTECT,
+        related_name='+',
+    )
+
     instrument = models.ForeignKey(
         Instrument,
         null=True,
@@ -636,6 +564,13 @@ class TransactionTypeActionTransaction(TransactionTypeAction):
         blank=True,
         on_delete=models.PROTECT,
         related_name='+',
+    )
+    instrument_phantom = models.ForeignKey(
+        TransactionTypeActionInstrument,
+        null=True,
+        blank=True,
+        on_delete=models.PROTECT,
+        related_name='+'
     )
 
     transaction_currency = models.ForeignKey(
@@ -858,9 +793,19 @@ class EventToHandle(NamedModel):
 
 
 @python_2_unicode_compatible
+class ComplexTransaction(models.Model):
+    transaction_type = models.ForeignKey(TransactionType, on_delete=models.PROTECT)
+
+    def __str__(self):
+        return "ComplexTransaction #%s" % self.id
+
+
+@python_2_unicode_compatible
 class Transaction(models.Model):
     master_user = models.ForeignKey(MasterUser, related_name='transactions',
                                     verbose_name=_('master user'))
+    complex_transaction = models.ForeignKey(ComplexTransaction, null=True, blank=True, on_delete=models.PROTECT)
+    complex_transaction_order = models.PositiveSmallIntegerField(default=0.)
     transaction_code = models.IntegerField(default=0,
                                            verbose_name=_('transaction code'))
     transaction_class = models.ForeignKey(TransactionClass, on_delete=models.PROTECT,

@@ -11,6 +11,7 @@ from poms.currencies.models import Currency
 from poms.instruments.models import Instrument, InstrumentType, DailyPricingModel, PaymentSizeDetail
 from poms.obj_attrs.admin import AttributeTypeAdminBase, AttributeTypeOptionAdminBase, AttributeInlineBase
 from poms.obj_perms.admin import GroupObjectPermissionAdmin, UserObjectPermissionAdmin
+from poms.portfolios.models import Portfolio
 from poms.strategies.models import Strategy1, Strategy2, Strategy3
 from poms.transactions.models import TransactionClass, Transaction, TransactionType, TransactionTypeInput, \
     TransactionTypeGroupObjectPermission, \
@@ -18,7 +19,7 @@ from poms.transactions.models import TransactionClass, Transaction, TransactionT
     TransactionAttribute, ActionClass, EventToHandle, \
     ExternalCashFlow, ExternalCashFlowStrategy, NotificationClass, EventClass, PeriodicityGroup, \
     TransactionTypeUserObjectPermission, TransactionAttributeTypeUserObjectPermission, TransactionTypeActionInstrument, \
-    TransactionTypeActionTransaction
+    TransactionTypeActionTransaction, ComplexTransaction
 
 admin.site.register(TransactionClass, ClassModelAdmin)
 admin.site.register(ActionClass, ClassModelAdmin)
@@ -39,7 +40,7 @@ class TransactionTypeInputInline(admin.TabularInline):
         if db_field.name == 'content_type':
             qs = kwargs.get('queryset', db_field.remote_field.model.objects)
             models = [Account, Instrument, InstrumentType, Currency, Counterparty, Responsible,
-                      Strategy1, Strategy2, Strategy3, DailyPricingModel, PaymentSizeDetail]
+                      Strategy1, Strategy2, Strategy3, DailyPricingModel, PaymentSizeDetail, Portfolio]
             ctypes = [ContentType.objects.get_for_model(model).pk for model in models]
             kwargs['queryset'] = qs.filter(pk__in=ctypes)
         return super(TransactionTypeInputInline, self).formfield_for_foreignkey(db_field, request=request, **kwargs)
@@ -128,7 +129,8 @@ class TransactionTypeActionTransactionInline(admin.StackedInline):
     fields = (
         'order',
         'transaction_class',
-        ('instrument', 'instrument_input'),
+        ('portfolio', 'portfolio_input'),
+        ('instrument', 'instrument_input', 'instrument_phantom'),
         ('transaction_currency', 'transaction_currency_input'),
         'position_size_with_sign',
         ('settlement_currency', 'settlement_currency_input'),
@@ -149,24 +151,13 @@ class TransactionTypeActionTransactionInline(admin.StackedInline):
         ('strategy3_cash', 'strategy3_cash_input'),
     )
 
-    # raw_id_fields = (
-    #     'instrument', 'instrument_input',
-    #     'transaction_currency', 'transaction_currency_input',
-    #     'settlement_currency', 'settlement_currency_input',
-    #     'account_position', 'account_position_input',
-    #     'account_cash', 'account_cash_input',
-    #     'account_interim', 'account_interim_input',
-    #     'strategy1_position', 'strategy1_position_input',
-    #     'strategy1_cash', 'strategy1_cash_input',
-    #     'strategy2_position', 'strategy2_position_input',
-    #     'strategy2_cash', 'strategy2_cash_input',
-    #     'strategy3_position', 'strategy3_position_input',
-    #     'strategy3_cash', 'strategy3_cash_input',
-    # )
     def get_formset(self, request, obj=None, **kwargs):
         f = super(TransactionTypeActionTransactionInline, self).get_formset(request, obj=obj, **kwargs)
+        input_filter_by_master_user(f.form, 'portfolio', obj.master_user)
+        input_filter_owner(f.form, 'portfolio_input', obj)
         input_filter_by_master_user(f.form, 'instrument', obj.master_user)
         input_filter_owner(f.form, 'instrument_input', obj)
+        input_filter_owner(f.form, 'instrument_phantom', obj)
         input_filter_by_master_user(f.form, 'transaction_currency', obj.master_user)
         input_filter_owner(f.form, 'transaction_currency_input', obj)
         input_filter_by_master_user(f.form, 'settlement_currency', obj.master_user)
@@ -230,6 +221,15 @@ admin.site.register(TransactionTypeUserObjectPermission, UserObjectPermissionAdm
 admin.site.register(TransactionTypeGroupObjectPermission, GroupObjectPermissionAdmin)
 
 
+class ComplexTransactionAdmin(HistoricalAdmin):
+    model = ComplexTransaction
+    list_select_related = ['transaction_type', 'transaction_type__master_user']
+    list_display = ['id', 'transaction_type']
+
+
+admin.site.register(ComplexTransaction, ComplexTransactionAdmin)
+
+
 # class EventToHandleAdmin(HistoricalAdmin):
 #     model = EventToHandle
 #     list_display = ['id', 'master_user', 'name', 'transaction_type']
@@ -247,13 +247,14 @@ class TransactionAttributeInline(AttributeInlineBase):
 
 class TransactionAdmin(HistoricalAdmin):
     model = Transaction
-    list_select_related = ['master_user', 'transaction_class',
+    list_select_related = ['master_user', 'complex_transaction', 'transaction_class',
                            'instrument', 'transaction_currency', 'settlement_currency',
                            'portfolio', 'account_cash', 'account_position', 'account_interim',
                            'strategy1_position', 'strategy1_cash', 'strategy2_position', 'strategy2_cash',
                            'strategy3_position', 'strategy3_cash']
-    list_display = ['id', 'master_user',
-                    'is_canceled', 'transaction_class',
+    list_display = ['id', 'master_user', 'is_canceled',
+                    'complex_transaction', 'complex_transaction_order',
+                    'transaction_class',
                     'transaction_date', 'accounting_date', 'cash_date',
                     'instrument', 'transaction_currency',
                     'position_size_with_sign',
@@ -276,6 +277,7 @@ class TransactionAdmin(HistoricalAdmin):
     fields = (
         'master_user',
         'transaction_code',
+        ('complex_transaction', 'complex_transaction_order'),
         'transaction_class',
         ('instrument', 'transaction_currency', 'position_size_with_sign'),
         ('settlement_currency', 'cash_consideration'),
