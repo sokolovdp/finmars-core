@@ -115,11 +115,11 @@ class TransactionTypeViewSet(PomsViewSetBase):
         context['transaction_type'] = getattr(self, '_detail_instance', None)
         return context
 
-    @detail_route(methods=['get', 'post'], url_path='process', serializer_class=TransactionTypeProcessSerializer)
+    @detail_route(methods=['get', 'put'], url_path='process', serializer_class=TransactionTypeProcessSerializer)
     def process(self, request, pk=None):
         return self.process_or_check(request, True)
 
-    @detail_route(methods=['get', 'post'], url_path='check', serializer_class=TransactionTypeProcessSerializer)
+    @detail_route(methods=['get', 'put'], url_path='check', serializer_class=TransactionTypeProcessSerializer)
     def check(self, request, pk=None):
         return self.process_or_check(request, False)
 
