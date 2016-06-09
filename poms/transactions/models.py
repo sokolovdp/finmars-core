@@ -160,6 +160,7 @@ class TransactionType(NamedModel):
     def process(self, input_values, save=False):
         instruments = []
         transactions = []
+        results = {}
         if save:
             ctrn = ComplexTransaction.objects.create(transaction_type=self)
         else:
@@ -185,6 +186,7 @@ class TransactionType(NamedModel):
 
                 instr = Instrument(master_user=self.master_user)
                 instruments.append(instr)
+                results[order] = instr
                 instr.user_code = user_code
                 self._set_simple(instr, 'name', ainstr, 'name', input_values)
                 self._set_simple(instr, 'public_name', ainstr, 'public_name', input_values)
@@ -221,13 +223,14 @@ class TransactionType(NamedModel):
                 ctrn_order += 1
                 trn = Transaction(master_user=self.master_user)
                 transactions.append(trn)
+                results[order] = trn
                 trn.complex_transaction = ctrn
                 trn.complex_transaction_order = ctrn_order
                 trn.transaction_class = atrn.transaction_class
                 self._set_relation(trn, 'portfolio', atrn, 'portfolio', input_values)
                 self._set_relation(trn, 'instrument', atrn, 'instrument', input_values)
                 if trn.instrument is None and atrn.instrument_phantom is not None:
-                    trn.instrument = instruments[atrn.instrument_phantom]
+                    trn.instrument = results[atrn.instrument_phantom.order]
                 self._set_relation(trn, 'transaction_currency', atrn, 'transaction_currency', input_values)
                 self._set_simple(trn, 'position_size_with_sign', atrn, 'position_size_with_sign', input_values)
                 self._set_relation(trn, 'settlement_currency', atrn, 'settlement_currency', input_values)

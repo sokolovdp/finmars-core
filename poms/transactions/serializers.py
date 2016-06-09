@@ -309,7 +309,7 @@ class TransactionTypeProcessSerializer(serializers.Serializer):
         self.fields['transactions'] = TransactionSerializer(many=True, read_only=True)
 
         if self.transaction_type:
-            for i in self.transaction_type.inputs.order_by('name').all():
+            for i in self.transaction_type.inputs.order_by('value_type', 'name').all():
                 name = '%s' % i.name
                 field = None
                 if i.value_type == TransactionTypeInput.STRING:
