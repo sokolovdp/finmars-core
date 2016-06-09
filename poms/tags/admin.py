@@ -21,6 +21,7 @@ class TagAdmin(HistoricalAdmin):
     filter_horizontal = ['content_types', 'account_types', 'accounts', 'currencies', 'instrument_types', 'instruments',
                          'counterparties', 'responsibles', 'portfolios', 'transaction_types',
                          'strategies1', 'strategies2', 'strategies3', ]
+    raw_id_fields = ['master_user', ]
 
     def formfield_for_manytomany(self, db_field, request=None, **kwargs):
         if db_field.name == 'content_types':
