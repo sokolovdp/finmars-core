@@ -186,7 +186,7 @@ class TransactionType(NamedModel):
 
                 instr = Instrument(master_user=self.master_user)
                 instruments.append(instr)
-                results[order] = instr
+                results[ainstr.order] = instr
                 instr.user_code = user_code
                 self._set_simple(instr, 'name', ainstr, 'name', input_values)
                 self._set_simple(instr, 'public_name', ainstr, 'public_name', input_values)
