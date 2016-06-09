@@ -16,6 +16,7 @@ from poms.currencies.models import Currency
 from poms.instruments.models import Instrument
 from poms.obj_attrs.models import AttributeTypeBase, AttributeBase, AttributeTypeOptionBase
 from poms.obj_perms.models import GroupObjectPermissionBase, UserObjectPermissionBase
+from poms.obj_perms.utils import assign_perms
 from poms.portfolios.models import Portfolio
 from poms.strategies.models import Strategy1, Strategy2, Strategy3
 from poms.users.models import MasterUser, Member
@@ -200,6 +201,20 @@ class TransactionType(NamedModel):
                 self._set_simple(instr, 'default_accrued', ainstr, 'default_accrued', input_values)
                 if save:
                     instr.save()
+                    perms_map = {
+                        'add_transactiontype': 'add_instrument',
+                        'view_transactiontype': 'view_instrument',
+                        'change_transactiontype': 'change_instrument',
+                        'delete_transactiontype': 'delete_instrument',
+                    }
+                    for uop in self.user_object_permissions.select_related('permission').all():
+                        if uop.permission.codename in perms_map:
+                            perms = [perms_map[uop.permission.codename], ]
+                            assign_perms(instr, members=[uop.member], groups=None, perms=perms)
+                    for gop in self.group_object_permissions.select_related('permission').all():
+                        if gop.permission.codename in perms_map:
+                            perms = [perms_map[gop.permission.codename], ]
+                            assign_perms(instr, members=None, groups=[gop.group], perms=perms)
                 else:
                     instr.id = -order
             elif atrn:
