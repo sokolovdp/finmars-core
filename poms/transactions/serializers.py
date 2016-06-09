@@ -305,8 +305,8 @@ class TransactionTypeProcessSerializer(serializers.Serializer):
         super(TransactionTypeProcessSerializer, self).__init__(**kwargs)
 
         from poms.instruments.serializers import InstrumentSerializer
-        self.fields['instruments'] = InstrumentSerializer(many=True, read_only=True)
-        self.fields['transactions'] = TransactionSerializer(many=True, read_only=True)
+        self.fields['instruments'] = InstrumentSerializer(many=True, read_only=True, context=context)
+        self.fields['transactions'] = TransactionSerializer(many=True, read_only=True, context=context)
 
         if self.transaction_type:
             for i in self.transaction_type.inputs.order_by('value_type', 'name').all():
