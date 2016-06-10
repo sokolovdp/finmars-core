@@ -83,6 +83,7 @@ if DEBUG:
 
 MIDDLEWARE_CLASSES = [
     'poms.common.middleware.CommonMiddleware',
+    # 'django.middleware.cache.UpdateCacheMiddleware',
     'django.middleware.security.SecurityMiddleware',
     'django.middleware.http.ConditionalGetMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
@@ -92,9 +93,12 @@ MIDDLEWARE_CLASSES = [
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'poms.users.middleware.AuthenticationMiddleware',
+    'poms.users.middleware.TimezoneMiddleware',
+    # 'poms.users.middleware.LocaleMiddleware',
     'django.contrib.auth.middleware.SessionAuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    # 'django.middleware.cache.FetchFromCacheMiddleware',
 ]
 
 ROOT_URLCONF = 'poms_app.urls'
@@ -243,9 +247,9 @@ LOGGING = {
         'py.warnings': {
             'handlers': ['console'],
         },
-        # 'django.db': {
-        #     'level': 'DEBUG',
-        # },
+        'django.db': {
+            'level': 'DEBUG',
+        },
         'poms': {
             'level': 'DEBUG',
             'handlers': ['console'],
@@ -327,6 +331,3 @@ else:
     EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
 
 MESSAGE_STORAGE = 'poms.notifications.message_storage.FallbackStorage'
-
-
-CLASSIFIER_RELAX_UPDATE_MODE = True
