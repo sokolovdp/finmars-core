@@ -13,7 +13,7 @@ class AuthenticationMiddleware(object):
 
 class LocaleMiddleware(object):
     def process_request(self, request):
-        if request.user.is_authenticated:
+        if request.user.is_authenticated():
             if request.user.profile.language:
                 translation.activate(request.user.profile.language)
                 request.LANGUAGE_CODE = translation.get_language()
@@ -21,7 +21,7 @@ class LocaleMiddleware(object):
 
 class TimezoneMiddleware(object):
     def process_request(self, request):
-        if request.user.is_authenticated:
+        if request.user.is_authenticated():
             master_user = request.user.master_user
             if master_user.timezone:
                 timezone.activate(master_user.timezone)
