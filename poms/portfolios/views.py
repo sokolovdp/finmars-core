@@ -1,6 +1,5 @@
 from __future__ import unicode_literals
 
-import django_filters
 from rest_framework.filters import DjangoFilterBackend, OrderingFilter, SearchFilter, FilterSet
 
 from poms.common.filters import OrderingWithAttributesFilter
@@ -12,7 +11,7 @@ from poms.obj_perms.permissions import ObjectPermissionBase
 from poms.portfolios.models import Portfolio, PortfolioAttributeType
 from poms.portfolios.serializers import PortfolioSerializer, \
     PortfolioAttributeTypeSerializer
-from poms.tags.filters import TagPrefetchFilter, ByTagNameFilter, TagFakeFilter
+from poms.tags.filters import TagFakeFilter, TagFilterBackend
 from poms.users.filters import OwnerByMasterUserFilter
 
 
@@ -78,10 +77,8 @@ class PortfolioViewSet(PomsViewSetBase):
         OwnerByMasterUserFilter,
         ObjectPermissionPrefetchFilter,
         ObjectPermissionFilter,
-        TagPrefetchFilter,
-        ByTagNameFilter,
+        TagFilterBackend,
         AttributePrefetchFilter,
-        TagPrefetchFilter,
         DjangoFilterBackend,
         # OrderingFilter,
         OrderingWithAttributesFilter,

@@ -9,7 +9,7 @@ from poms.currencies.filters import OwnerByCurrencyFilter
 from poms.currencies.models import Currency, CurrencyHistory
 from poms.currencies.serializers import CurrencySerializer, CurrencyHistorySerializer
 from poms.obj_perms.filters import AllFakeFilter
-from poms.tags.filters import TagPrefetchFilter, ByTagNameFilter, TagFakeFilter
+from poms.tags.filters import TagFakeFilter, TagFilterBackend
 from poms.users.filters import OwnerByMasterUserFilter
 
 
@@ -28,8 +28,7 @@ class CurrencyViewSet(PomsViewSetBase):
     permission_classes = [IsAuthenticated]
     filter_backends = [
         OwnerByMasterUserFilter,
-        TagPrefetchFilter,
-        ByTagNameFilter,
+        TagFilterBackend,
         DjangoFilterBackend,
         OrderingFilter,
         SearchFilter,

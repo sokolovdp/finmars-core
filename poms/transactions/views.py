@@ -11,7 +11,7 @@ from poms.obj_attrs.filters import AttributePrefetchFilter
 from poms.obj_attrs.views import AttributeTypeViewSetBase
 from poms.obj_perms.filters import ObjectPermissionPrefetchFilter, ObjectPermissionFilter, AllFakeFilter
 from poms.obj_perms.permissions import ObjectPermissionBase
-from poms.tags.filters import TagPrefetchFilter, ByTagNameFilter, TagFakeFilter
+from poms.tags.filters import TagFakeFilter, TagFilterBackend
 from poms.transactions.filters import TransactionObjectPermissionFilter
 from poms.transactions.models import TransactionClass, Transaction, TransactionType, TransactionAttributeType
 from poms.transactions.permissions import TransactionObjectPermission
@@ -91,8 +91,7 @@ class TransactionTypeViewSet(PomsViewSetBase):
         OwnerByMasterUserFilter,
         ObjectPermissionPrefetchFilter,
         ObjectPermissionFilter,
-        TagPrefetchFilter,
-        ByTagNameFilter,
+        TagFilterBackend,
         DjangoFilterBackend,
         OrderingFilter,
         SearchFilter

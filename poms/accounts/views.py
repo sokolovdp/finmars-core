@@ -10,7 +10,7 @@ from poms.obj_attrs.filters import AttributePrefetchFilter
 from poms.obj_attrs.views import AttributeTypeViewSetBase
 from poms.obj_perms.filters import ObjectPermissionPrefetchFilter, ObjectPermissionFilter, AllFakeFilter
 from poms.obj_perms.permissions import ObjectPermissionBase
-from poms.tags.filters import TagPrefetchFilter, ByTagNameFilter, TagFakeFilter
+from poms.tags.filters import TagFakeFilter, TagFilterBackend
 from poms.users.filters import OwnerByMasterUserFilter
 
 
@@ -57,8 +57,7 @@ class AccountTypeViewSet(PomsViewSetBase):
         OwnerByMasterUserFilter,
         ObjectPermissionPrefetchFilter,
         ObjectPermissionFilter,
-        TagPrefetchFilter,
-        ByTagNameFilter,
+        TagFilterBackend,
         DjangoFilterBackend,
         OrderingFilter,
         SearchFilter,
@@ -113,8 +112,7 @@ class AccountViewSet(PomsViewSetBase):
         AttributePrefetchFilter,
         ObjectPermissionPrefetchFilter,
         ObjectPermissionFilter,
-        TagPrefetchFilter,
-        ByTagNameFilter,
+        TagFilterBackend,
         DjangoFilterBackend,
         # OrderingFilter,
         OrderingWithAttributesFilter,

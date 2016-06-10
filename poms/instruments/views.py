@@ -18,7 +18,7 @@ from poms.obj_attrs.views import AttributeTypeViewSetBase
 from poms.obj_perms.filters import ObjectPermissionFilter, AllFakeFilter
 from poms.obj_perms.filters import ObjectPermissionPrefetchFilter
 from poms.obj_perms.permissions import ObjectPermissionBase
-from poms.tags.filters import TagPrefetchFilter, ByTagNameFilter, TagFakeFilter
+from poms.tags.filters import TagFakeFilter, TagFilterBackend
 from poms.users.filters import OwnerByMasterUserFilter
 
 
@@ -76,8 +76,7 @@ class InstrumentTypeViewSet(PomsViewSetBase):
         OwnerByMasterUserFilter,
         ObjectPermissionPrefetchFilter,
         ObjectPermissionFilter,
-        TagPrefetchFilter,
-        ByTagNameFilter,
+        TagFilterBackend,
         DjangoFilterBackend,
         OrderingFilter,
         SearchFilter,
@@ -150,8 +149,7 @@ class InstrumentViewSet(PomsViewSetBase):
         AttributePrefetchFilter,
         ObjectPermissionPrefetchFilter,
         ObjectPermissionFilter,
-        TagPrefetchFilter,
-        ByTagNameFilter,
+        TagFilterBackend,
         DjangoFilterBackend,
         # OrderingFilter,
         OrderingWithAttributesFilter,
