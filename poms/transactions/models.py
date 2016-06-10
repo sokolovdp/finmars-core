@@ -132,6 +132,12 @@ class TransactionType(NamedModel):
         blank=True,
         verbose_name=_('instrument types')
     )
+    portfolios = models.ManyToManyField(
+        'portfolios.Portfolio',
+        related_name='transaction_types',
+        blank=True,
+        verbose_name=_('instrument types')
+    )
 
     class Meta(NamedModel.Meta):
         verbose_name = _('transaction type')
@@ -180,6 +186,8 @@ class TransactionType(NamedModel):
                 if user_code:
                     try:
                         Instrument.objects.get(master_user=self.master_user, user_code=user_code)
+                        instruments.append(instr)
+                        results[ainstr.order] = instr
                         continue
                     except ObjectDoesNotExist:
                         pass

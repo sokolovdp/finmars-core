@@ -217,7 +217,7 @@ class TransactionTypeAdmin(HistoricalAdmin):
     list_display = ['id', 'name', 'master_user']
     list_select_related = ['master_user']
     raw_id_fields = ['master_user']
-    filter_horizontal = ['instrument_types']
+    filter_horizontal = ['instrument_types', 'portfolios']
     inlines = [
         TransactionTypeInputInline,
         TransactionTypeActionInstrumentInline,
@@ -241,6 +241,7 @@ class TransactionTypeAdmin(HistoricalAdmin):
     def get_formset(self, request, obj=None, **kwargs):
         f = super(TransactionTypeAdmin, self).get_formset(request, obj=obj, **kwargs)
         input_filter_by_master_user(f.form, 'instrument_types', obj.master_user)
+        input_filter_by_master_user(f.form, 'portfolios', obj.master_user)
         return f
 
 
