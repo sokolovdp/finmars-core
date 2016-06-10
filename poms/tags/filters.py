@@ -53,6 +53,6 @@ class ByTagNameFilter(BaseFilterBackend):
 
         member = request.user.member
         if not member.is_superuser:
-            tag_queryset = obj_perms_filter_objects(member, ['view_tag'], tag_queryset, prefetch=False)
+            tag_queryset = obj_perms_filter_objects(member, ['view_tag', 'change_tag'], tag_queryset, prefetch=False)
 
         return queryset.filter(tags__id__in=tag_queryset)
