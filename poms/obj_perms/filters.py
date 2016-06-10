@@ -1,6 +1,22 @@
+import django_filters
+from django import forms
 from rest_framework.filters import BaseFilterBackend
 
 from poms.obj_perms.utils import obj_perms_filter_objects
+
+
+class AllFakeFilter(django_filters.Filter):
+    field_class = forms.ChoiceField
+
+    def __init__(self, *args, **kwargs):
+        kwargs['choices'] = (
+            (0, '0: Granted only'),
+            (1, '1: Show all'),
+        )
+        super(AllFakeFilter, self).__init__(*args, **kwargs)
+
+    def filter(self, qs, value):
+        return qs
 
 
 class ObjectPermissionFilter(BaseFilterBackend):
@@ -19,6 +35,9 @@ class ObjectPermissionFilter(BaseFilterBackend):
         #     return queryset
         # model_cls = queryset.model
         # return obj_perms_filter_objects(member, self.get_codename_set(model_cls), queryset)
+        # return self.simple_filter_queryset(request.user.member, queryset)
+        if request.query_params.get('all', '') in ['1', 'yes', 'true']:
+            return queryset
         return self.simple_filter_queryset(request.user.member, queryset)
 
     def simple_filter_queryset(self, member, queryset):

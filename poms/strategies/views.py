@@ -1,46 +1,22 @@
 from __future__ import unicode_literals
 
-import django_filters
-
 from poms.common.filters import ClassifierFilterSetBase
 from poms.common.views import ClassifierViewSetBase, ClassifierNodeViewSetBase
-from poms.obj_perms.filters import ObjectPermissionFilter, ObjectPermissionPrefetchFilter
+from poms.obj_perms.filters import ObjectPermissionFilter, ObjectPermissionPrefetchFilter, AllFakeFilter
 from poms.obj_perms.permissions import ObjectPermissionBase
 from poms.strategies.models import Strategy1, Strategy2, Strategy3
 from poms.strategies.serializers import Strategy1Serializer, \
     Strategy1NodeSerializer, Strategy2Serializer, Strategy2NodeSerializer, Strategy3Serializer, Strategy3NodeSerializer
-from poms.tags.filters import TagPrefetchFilter, ByTagNameFilter
-
-
-# class StrategyClassifierFilterSet(ClassifierFilterSetBase):
-#     class Meta(ClassifierFilterSetBase.Meta):
-#         model = Strategy
-#
-#
-# class StrategyViewSet(ClassifierViewSetBase):
-#     queryset = Strategy.objects
-#     serializer_class = StrategySerializer
-#     filter_backends = [TagPrefetchFilter] + StrategyViewSet.filter_backends
-#     filter_class = StrategyClassifierFilterSet
-#
-#
-# class StrategyNodeViewSet(StrategyBaseNodeViewSet):
-#     queryset = Strategy.objects
-#     serializer_class = StrategyNodeSerializer
-#     filter_backends = [TagPrefetchFilter] + StrategyBaseNodeViewSet.filter_backends
-#     filter_class = StrategyClassifierFilterSet
+from poms.tags.filters import TagPrefetchFilter, ByTagNameFilter, TagFakeFilter
 
 
 class StrategyClassifierBaseFilterSet(ClassifierFilterSetBase):
-    tags = django_filters.MethodFilter(action='tags_filter')
+    all = AllFakeFilter()
+    tags = TagFakeFilter()
 
     class Meta(ClassifierFilterSetBase.Meta):
         model = Strategy1
-        fields = ClassifierFilterSetBase.Meta.fields + ['tags', ]
-
-    @staticmethod
-    def tags_filter(queryset, value):
-        return queryset
+        fields = ClassifierFilterSetBase.Meta.fields + ['all', 'tags', ]
 
 
 class StrategyBaseViewSet(ClassifierViewSetBase):
@@ -53,6 +29,7 @@ class StrategyBaseViewSet(ClassifierViewSetBase):
     permission_classes = ClassifierNodeViewSetBase.permission_classes + [
         ObjectPermissionBase
     ]
+
 
 class StrategyBaseNodeViewSet(ClassifierNodeViewSetBase):
     filter_backends = ClassifierNodeViewSetBase.filter_backends + [

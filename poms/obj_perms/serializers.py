@@ -1,11 +1,10 @@
 from __future__ import unicode_literals
 
-from collections import OrderedDict
-
+import six
 from rest_framework import serializers
 
 from poms.obj_perms.fields import PermissionField, GrantedPermissionField
-from poms.obj_perms.utils import assign_perms_from_list, get_default_owner_permissions
+from poms.obj_perms.utils import assign_perms_from_list, get_default_owner_permissions, has_view_perms
 from poms.users.fields import MemberField, GroupField
 
 
@@ -26,28 +25,44 @@ class GroupObjectPermissionSerializer(serializers.Serializer):
 
 
 class ModelWithObjectPermissionSerializer(serializers.ModelSerializer):
-    # granted_permissions = GrantedPermissionField()
-    # user_object_permissions = UserObjectPermissionSerializer(many=True, required=False, allow_null=True)
-    # group_object_permissions = GroupObjectPermissionSerializer(many=True, required=False, allow_null=True)
+    def __init__(self, *args, **kwargs):
+        super(ModelWithObjectPermissionSerializer, self).__init__(*args, **kwargs)
 
-    def get_fields(self):
-        fields = super(ModelWithObjectPermissionSerializer, self).get_fields()
-        fields.update(self.get_permissions_fields() or {})
-        return fields
-
-    def get_permissions_fields(self):
-        fields = OrderedDict()
-        fields['granted_permissions'] = GrantedPermissionField()
+        self.fields['granted_permissions'] = GrantedPermissionField()
 
         member = self.context['request'].user.member
         if member.is_superuser:
-            # additional permission fields "check" is not required
-            fields['user_object_permissions'] = UserObjectPermissionSerializer(
+            self.fields['user_object_permissions'] = UserObjectPermissionSerializer(
                 many=True, required=False, allow_null=True)
-            fields['group_object_permissions'] = GroupObjectPermissionSerializer(
+            self.fields['group_object_permissions'] = GroupObjectPermissionSerializer(
                 many=True, required=False, allow_null=True)
 
-        return fields
+    # def to_representation(self, instance):
+    #     member = self.context['request'].user.member
+    #     if not has_view_perms(member, instance):
+    #         ret = OrderedDict()
+    #         fields = self._readable_fields
+    #         for field in fields:
+    #             if field.field_name not in ['url', 'id', 'public_name', 'granted_permissions']:
+    #                 continue
+    #             try:
+    #                 attribute = field.get_attribute(instance)
+    #             except SkipField:
+    #                 continue
+    #             if attribute is None:
+    #                 ret[field.field_name] = None
+    #             else:
+    #                 ret[field.field_name] = field.to_representation(attribute)
+    #         return ret
+    #     return super(ModelWithObjectPermissionSerializer, self).to_representation(instance)
+    def to_representation(self, instance):
+        ret = super(ModelWithObjectPermissionSerializer, self).to_representation(instance)
+        member = self.context['request'].user.member
+        if not has_view_perms(member, instance):
+            for k in list(six.iterkeys(ret)):
+                if k not in ['url', 'id', 'public_name', 'granted_permissions']:
+                    ret.pop(k)
+        return ret
 
     def create(self, validated_data):
         user_object_permissions = validated_data.pop('user_object_permissions', None)

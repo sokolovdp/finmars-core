@@ -15,10 +15,10 @@ from poms.instruments.serializers import InstrumentSerializer, PriceHistorySeria
     InstrumentAttributeTypeSerializer, PricingPolicySerializer
 from poms.obj_attrs.filters import AttributePrefetchFilter
 from poms.obj_attrs.views import AttributeTypeViewSetBase
-from poms.obj_perms.filters import ObjectPermissionFilter
+from poms.obj_perms.filters import ObjectPermissionFilter, AllFakeFilter
 from poms.obj_perms.filters import ObjectPermissionPrefetchFilter
 from poms.obj_perms.permissions import ObjectPermissionBase
-from poms.tags.filters import TagPrefetchFilter, ByTagNameFilter
+from poms.tags.filters import TagPrefetchFilter, ByTagNameFilter, TagFakeFilter
 from poms.users.filters import OwnerByMasterUserFilter
 
 
@@ -61,15 +61,12 @@ class PricingPolicyViewSet(PomsViewSetBase):
 
 
 class InstrumentTypeFilterSet(FilterSet):
-    tags = django_filters.MethodFilter(action='tags_filter')
+    all = AllFakeFilter()
+    tags = TagFakeFilter()
 
     class Meta:
         model = InstrumentType
-        fields = ['user_code', 'name', 'short_name', 'tags']
-
-    @staticmethod
-    def tags_filter(queryset, value):
-        return queryset
+        fields = ['user_code', 'name', 'short_name', 'all', 'tags']
 
 
 class InstrumentTypeViewSet(PomsViewSetBase):
@@ -77,10 +74,10 @@ class InstrumentTypeViewSet(PomsViewSetBase):
     serializer_class = InstrumentTypeSerializer
     filter_backends = [
         OwnerByMasterUserFilter,
-        TagPrefetchFilter,
-        ByTagNameFilter,
         ObjectPermissionPrefetchFilter,
         ObjectPermissionFilter,
+        TagPrefetchFilter,
+        ByTagNameFilter,
         DjangoFilterBackend,
         OrderingFilter,
         SearchFilter,
@@ -136,15 +133,12 @@ class InstrumentAttributeTypeViewSet(AttributeTypeViewSetBase):
 
 
 class InstrumentFilterSet(FilterSet):
-    tags = django_filters.MethodFilter(action='tags_filter')
+    all = AllFakeFilter()
+    tags = TagFakeFilter()
 
     class Meta:
         model = Instrument
-        fields = ['user_code', 'name', 'short_name', 'tags']
-
-    @staticmethod
-    def tags_filter(queryset, value):
-        return queryset
+        fields = ['user_code', 'name', 'short_name', 'all', 'tags']
 
 
 class InstrumentViewSet(PomsViewSetBase):
@@ -154,10 +148,10 @@ class InstrumentViewSet(PomsViewSetBase):
     filter_backends = [
         OwnerByMasterUserFilter,
         AttributePrefetchFilter,
-        TagPrefetchFilter,
-        ByTagNameFilter,
         ObjectPermissionPrefetchFilter,
         ObjectPermissionFilter,
+        TagPrefetchFilter,
+        ByTagNameFilter,
         DjangoFilterBackend,
         # OrderingFilter,
         OrderingWithAttributesFilter,

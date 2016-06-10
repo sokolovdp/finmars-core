@@ -8,20 +8,18 @@ from poms.common.views import PomsViewSetBase
 from poms.currencies.filters import OwnerByCurrencyFilter
 from poms.currencies.models import Currency, CurrencyHistory
 from poms.currencies.serializers import CurrencySerializer, CurrencyHistorySerializer
-from poms.tags.filters import TagPrefetchFilter, ByTagNameFilter
+from poms.obj_perms.filters import AllFakeFilter
+from poms.tags.filters import TagPrefetchFilter, ByTagNameFilter, TagFakeFilter
 from poms.users.filters import OwnerByMasterUserFilter
 
 
 class CurrencyFilterSet(FilterSet):
-    tags = django_filters.MethodFilter(action='tags_filter')
+    all = AllFakeFilter()
+    tags = TagFakeFilter()
 
     class Meta:
         model = Currency
-        fields = ['user_code', 'name', 'short_name', 'tags']
-
-    @staticmethod
-    def tags_filter(queryset, value):
-        return queryset
+        fields = ['user_code', 'name', 'short_name', 'all', 'tags']
 
 
 class CurrencyViewSet(PomsViewSetBase):
@@ -61,4 +59,4 @@ class CurrencyHistoryViewSet(PomsViewSetBase):
         OrderingFilter,
     ]
     filter_class = CurrencyHistoryFilterSet
-    ordering_fields = ['date',]
+    ordering_fields = ['date', ]

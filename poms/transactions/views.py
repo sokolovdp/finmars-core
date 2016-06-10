@@ -9,9 +9,9 @@ from poms.common.filters import OrderingWithAttributesFilter
 from poms.common.views import PomsClassViewSetBase, PomsViewSetBase
 from poms.obj_attrs.filters import AttributePrefetchFilter
 from poms.obj_attrs.views import AttributeTypeViewSetBase
-from poms.obj_perms.filters import ObjectPermissionPrefetchFilter, ObjectPermissionFilter
+from poms.obj_perms.filters import ObjectPermissionPrefetchFilter, ObjectPermissionFilter, AllFakeFilter
 from poms.obj_perms.permissions import ObjectPermissionBase
-from poms.tags.filters import TagPrefetchFilter, ByTagNameFilter
+from poms.tags.filters import TagPrefetchFilter, ByTagNameFilter, TagFakeFilter
 from poms.transactions.filters import TransactionObjectPermissionFilter
 from poms.transactions.models import TransactionClass, Transaction, TransactionType, TransactionAttributeType
 from poms.transactions.permissions import TransactionObjectPermission
@@ -26,11 +26,12 @@ class TransactionClassViewSet(PomsClassViewSetBase):
 
 
 class TransactionTypeFilterSet(FilterSet):
-    tags = django_filters.MethodFilter(action='tags_filter')
+    all = AllFakeFilter()
+    tags = TagFakeFilter()
 
     class Meta:
         model = TransactionType
-        fields = ['user_code', 'name', 'short_name', 'tags']
+        fields = ['user_code', 'name', 'short_name', 'all', 'tags']
 
     @staticmethod
     def tags_filter(queryset, value):

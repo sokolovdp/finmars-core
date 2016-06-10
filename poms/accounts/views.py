@@ -1,6 +1,5 @@
 from __future__ import unicode_literals
 
-import django_filters
 from rest_framework.filters import FilterSet, DjangoFilterBackend, OrderingFilter, SearchFilter
 
 from poms.accounts.models import Account, AccountType, AccountAttributeType
@@ -9,9 +8,9 @@ from poms.common.filters import OrderingWithAttributesFilter
 from poms.common.views import PomsViewSetBase
 from poms.obj_attrs.filters import AttributePrefetchFilter
 from poms.obj_attrs.views import AttributeTypeViewSetBase
-from poms.obj_perms.filters import ObjectPermissionPrefetchFilter, ObjectPermissionFilter
+from poms.obj_perms.filters import ObjectPermissionPrefetchFilter, ObjectPermissionFilter, AllFakeFilter
 from poms.obj_perms.permissions import ObjectPermissionBase
-from poms.tags.filters import TagPrefetchFilter, ByTagNameFilter
+from poms.tags.filters import TagPrefetchFilter, ByTagNameFilter, TagFakeFilter
 from poms.users.filters import OwnerByMasterUserFilter
 
 
@@ -39,11 +38,12 @@ from poms.users.filters import OwnerByMasterUserFilter
 
 
 class AccountTypeFilterSet(FilterSet):
-    tags = django_filters.MethodFilter(action='tags_filter')
+    all = AllFakeFilter()
+    tags = TagFakeFilter()
 
     class Meta:
         model = AccountType
-        fields = ['user_code', 'name', 'short_name', 'tags']
+        fields = ['user_code', 'name', 'short_name', 'all', 'tags']
 
     @staticmethod
     def tags_filter(queryset, value):
@@ -55,10 +55,10 @@ class AccountTypeViewSet(PomsViewSetBase):
     serializer_class = AccountTypeSerializer
     filter_backends = [
         OwnerByMasterUserFilter,
-        TagPrefetchFilter,
-        ByTagNameFilter,
         ObjectPermissionPrefetchFilter,
         ObjectPermissionFilter,
+        TagPrefetchFilter,
+        ByTagNameFilter,
         DjangoFilterBackend,
         OrderingFilter,
         SearchFilter,
@@ -97,15 +97,12 @@ class AccountAttributeTypeViewSet(AttributeTypeViewSetBase):
 
 
 class AccountFilterSet(FilterSet):
-    tags = django_filters.MethodFilter(action='tags_filter')
+    all = AllFakeFilter()
+    tags = TagFakeFilter()
 
     class Meta:
         model = Account
-        fields = ['user_code', 'name', 'short_name', 'tags']
-
-    @staticmethod
-    def tags_filter(queryset, value):
-        return queryset
+        fields = ['user_code', 'name', 'short_name', 'all', 'tags']
 
 
 class AccountViewSet(PomsViewSetBase):
@@ -114,10 +111,10 @@ class AccountViewSet(PomsViewSetBase):
     filter_backends = [
         OwnerByMasterUserFilter,
         AttributePrefetchFilter,
-        TagPrefetchFilter,
-        ByTagNameFilter,
         ObjectPermissionPrefetchFilter,
         ObjectPermissionFilter,
+        TagPrefetchFilter,
+        ByTagNameFilter,
         DjangoFilterBackend,
         # OrderingFilter,
         OrderingWithAttributesFilter,

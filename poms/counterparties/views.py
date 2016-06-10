@@ -1,6 +1,5 @@
 from __future__ import unicode_literals
 
-import django_filters
 from rest_framework.filters import DjangoFilterBackend, SearchFilter, FilterSet, OrderingFilter
 
 from poms.common.filters import OrderingWithAttributesFilter
@@ -11,27 +10,11 @@ from poms.counterparties.serializers import CounterpartySerializer, ResponsibleS
     ResponsibleAttributeTypeSerializer
 from poms.obj_attrs.filters import AttributePrefetchFilter
 from poms.obj_attrs.views import AttributeTypeViewSetBase
-from poms.obj_perms.filters import ObjectPermissionPrefetchFilter, ObjectPermissionFilter
+from poms.obj_perms.filters import ObjectPermissionPrefetchFilter, ObjectPermissionFilter, AllFakeFilter
 from poms.obj_perms.permissions import ObjectPermissionBase
-from poms.tags.filters import TagPrefetchFilter, ByTagNameFilter
+from poms.tags.filters import TagPrefetchFilter, ByTagNameFilter, TagFakeFilter
 from poms.users.filters import OwnerByMasterUserFilter
 
-
-# class CounterpartyClassifierFilterSet(ClassifierFilterSetBase):
-#     class Meta(ClassifierFilterSetBase.Meta):
-#         model = CounterpartyClassifier
-#
-#
-# class CounterpartyClassifierViewSet(ClassifierViewSetBase):
-#     queryset = CounterpartyClassifier.objects
-#     serializer_class = CounterpartyClassifierSerializer
-#     filter_class = CounterpartyClassifierFilterSet
-#
-#
-# class CounterpartyClassifierNodeViewSet(ClassifierNodeViewSetBase):
-#     queryset = CounterpartyClassifier.objects
-#     serializer_class = CounterpartyClassifierNodeSerializer
-#     filter_class = CounterpartyClassifierFilterSet
 
 class CounterpartyAttributeTypeFilterSet(FilterSet):
     class Meta:
@@ -59,15 +42,12 @@ class CounterpartyAttributeTypeViewSet(AttributeTypeViewSetBase):
 
 
 class CounterpartyFilterSet(FilterSet):
-    tags = django_filters.MethodFilter(action='tags_filter')
+    all = AllFakeFilter()
+    tags = TagFakeFilter()
 
     class Meta:
         model = Counterparty
-        fields = ['user_code', 'name', 'short_name', 'tags']
-
-    @staticmethod
-    def tags_filter(queryset, value):
-        return queryset
+        fields = ['user_code', 'name', 'short_name', 'all', 'tags']
 
 
 class CounterpartyViewSet(PomsViewSetBase):
@@ -75,10 +55,10 @@ class CounterpartyViewSet(PomsViewSetBase):
     serializer_class = CounterpartySerializer
     filter_backends = [
         OwnerByMasterUserFilter,
-        TagPrefetchFilter,
-        ByTagNameFilter,
         ObjectPermissionPrefetchFilter,
         ObjectPermissionFilter,
+        TagPrefetchFilter,
+        ByTagNameFilter,
         AttributePrefetchFilter,
         TagPrefetchFilter,
         DjangoFilterBackend,
@@ -93,22 +73,6 @@ class CounterpartyViewSet(PomsViewSetBase):
     ordering_fields = ['user_code', 'name', 'short_name']
     search_fields = ['user_code', 'name', 'short_name']
 
-
-# class ResponsibleClassifierFilterSet(ClassifierFilterSetBase):
-#     class Meta(ClassifierFilterSetBase.Meta):
-#         model = ResponsibleClassifier
-#
-#
-# class ResponsibleClassifierViewSet(ClassifierViewSetBase):
-#     queryset = ResponsibleClassifier.objects
-#     serializer_class = ResponsibleClassifierSerializer
-#     filter_class = ResponsibleClassifierFilterSet
-#
-#
-# class ResponsibleClassifierNodeViewSet(ClassifierNodeViewSetBase):
-#     queryset = ResponsibleClassifier.objects
-#     serializer_class = ResponsibleClassifierNodeSerializer
-#     filter_class = ResponsibleClassifierFilterSet
 
 class ResponsibleAttributeTypeFilterSet(FilterSet):
     class Meta:
@@ -136,15 +100,12 @@ class ResponsibleAttributeTypeViewSet(AttributeTypeViewSetBase):
 
 
 class ResponsibleFilterSet(FilterSet):
-    tags = django_filters.MethodFilter(action='tags_filter')
+    all = AllFakeFilter()
+    tags = TagFakeFilter()
 
     class Meta:
         model = Responsible
-        fields = ['user_code', 'name', 'short_name', 'tags']
-
-    @staticmethod
-    def tags_filter(queryset, value):
-        return queryset
+        fields = ['user_code', 'name', 'short_name', 'all', 'tags']
 
 
 class ResponsibleViewSet(PomsViewSetBase):
@@ -152,12 +113,11 @@ class ResponsibleViewSet(PomsViewSetBase):
     serializer_class = ResponsibleSerializer
     filter_backends = [
         OwnerByMasterUserFilter,
-        TagPrefetchFilter,
-        ByTagNameFilter,
         ObjectPermissionPrefetchFilter,
         ObjectPermissionFilter,
-        AttributePrefetchFilter,
         TagPrefetchFilter,
+        ByTagNameFilter,
+        AttributePrefetchFilter,
         DjangoFilterBackend,
         # OrderingFilter,
         OrderingWithAttributesFilter,

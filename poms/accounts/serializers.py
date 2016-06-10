@@ -2,7 +2,7 @@ from __future__ import unicode_literals
 
 from rest_framework import serializers
 
-from poms.accounts.fields import AccountClassifierField, AccountAttributeTypeField
+from poms.accounts.fields import AccountClassifierField, AccountAttributeTypeField, AccountTypeField
 from poms.accounts.models import Account, AccountType, AccountClassifier, AccountAttributeType, AccountAttribute
 from poms.common.serializers import ClassifierSerializerBase, ClassifierNodeSerializerBase
 from poms.obj_attrs.serializers import AttributeTypeSerializerBase, AttributeSerializerBase, \
@@ -56,18 +56,17 @@ class AccountAttributeSerializer(AttributeSerializerBase):
 
 class AccountSerializer(ModelWithAttributesSerializer, ModelWithObjectPermissionSerializer):
     master_user = MasterUserField()
+    type = AccountTypeField()
     attributes = AccountAttributeSerializer(many=True, required=False, allow_null=True)
     tags = TagField(many=True, required=False, allow_null=True)
-    # type_public_name = serializers.SlugRelatedField(slug_field='public_name', read_only=True)
-    type__public_name = serializers.SerializerMethodField()
 
     class Meta:
         model = Account
-        fields = ['url', 'id', 'master_user', 'user_code', 'name', 'public_name', 'short_name', 'notes',
-                  'type', 'type__public_name', 'tags', 'attributes', ]
+        fields = ['url', 'id', 'master_user', 'type', 'user_code', 'name', 'public_name', 'short_name', 'notes',
+                  'tags', 'attributes', ]
 
-    def get_type__public_name(self, obj):
-        return obj.type.public_name if obj.type is not None else None
+        # def get_type__public_name(self, obj):
+        #     return obj.type.public_name if obj.type is not None else None
 
         # def validate_tags(self, tags):
         #     return tags

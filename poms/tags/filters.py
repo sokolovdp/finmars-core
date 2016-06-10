@@ -1,3 +1,4 @@
+import django_filters
 from django.contrib.contenttypes.models import ContentType
 from django.db.models import Q
 from django.utils.encoding import force_text
@@ -6,6 +7,14 @@ from rest_framework.filters import BaseFilterBackend
 from poms.obj_perms.utils import obj_perms_filter_objects
 from poms.tags.models import Tag
 from poms.tags.utils import tags_prefetch
+
+
+class TagFakeFilter(django_filters.Filter):
+    def __init__(self, *args, **kwargs):
+        super(TagFakeFilter, self).__init__(*args, **kwargs)
+
+    def filter(self, qs, value):
+        return qs
 
 
 class TagContentTypeFilter(BaseFilterBackend):
