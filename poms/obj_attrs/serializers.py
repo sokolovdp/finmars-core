@@ -144,7 +144,6 @@ class AttributeSerializerBase(serializers.ModelSerializer):
 
     def validate(self, attrs):
         attribute_type = attrs['attribute_type']
-        print(self.fields)
         if attribute_type.value_type == AttributeTypeBase.CLASSIFIER:
             classifier = attrs.get('classifier', None)
             if classifier is None:

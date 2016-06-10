@@ -1,6 +1,7 @@
 from rest_framework.filters import BaseFilterBackend
 
 from poms.common.fields import FilteredPrimaryKeyRelatedField
+from poms.obj_perms.filters import FieldObjectPermissionBackend
 
 
 class AttributePrefetchFilter(BaseFilterBackend):
@@ -18,17 +19,21 @@ class AttributePrefetchFilter(BaseFilterBackend):
 class OwnerByAttributeTypeFilter(BaseFilterBackend):
     def filter_queryset(self, request, queryset, view):
         master_user = request.user.master_user
-        return queryset.filter(attribute_type__master_user=master_user)
+        queryset = queryset.filter(attribute_type__master_user=master_user)
+        return queryset
 
 
-# class ClassifierPermissionBackend(BaseObjectPermissionBackend):
-#     def filter_queryset(self, request, queryset, view):
-#         # attr_type_qs = AttributeType.objects.filter()
-#         return obj_perms_filter_objects(request.user.member, self.get_codename_set(queryset.model), queryset)
+class ClassifierPermissionBackend(BaseFilterBackend):
+    def filter_queryset(self, request, queryset, view):
+        attribute_type_model = queryset.model._meta.get_field('attribute_type').related_model
+        attribute_type_qs = attribute_type_model.objects.all()
+        attribute_type_qs = FieldObjectPermissionBackend().filter_queryset(request, attribute_type_qs, view)
+        queryset = queryset.filter(attribute_type__in=attribute_type_qs)
+        return queryset
 
 
 class AttributeClassifierBaseField(FilteredPrimaryKeyRelatedField):
     filter_backends = [
         OwnerByAttributeTypeFilter,
-        # FieldObjectPermissionBackend,
+        ClassifierPermissionBackend,
     ]
