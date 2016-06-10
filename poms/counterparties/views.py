@@ -10,7 +10,8 @@ from poms.counterparties.serializers import CounterpartySerializer, ResponsibleS
     ResponsibleAttributeTypeSerializer
 from poms.obj_attrs.filters import AttributePrefetchFilter
 from poms.obj_attrs.views import AttributeTypeViewSetBase
-from poms.obj_perms.filters import ObjectPermissionPrefetchFilter, ObjectPermissionFilter, AllFakeFilter
+from poms.obj_perms.filters import AllFakeFilter, \
+    ObjectPermissionBackend
 from poms.obj_perms.permissions import ObjectPermissionBase
 from poms.tags.filters import TagFakeFilter, TagFilterBackend
 from poms.users.filters import OwnerByMasterUserFilter
@@ -27,8 +28,7 @@ class CounterpartyAttributeTypeViewSet(AttributeTypeViewSetBase):
     serializer_class = CounterpartyAttributeTypeSerializer
     filter_backends = [
         OwnerByMasterUserFilter,
-        ObjectPermissionPrefetchFilter,
-        ObjectPermissionFilter,
+        ObjectPermissionBackend,
         DjangoFilterBackend,
         OrderingFilter,
         SearchFilter,
@@ -55,8 +55,7 @@ class CounterpartyViewSet(PomsViewSetBase):
     serializer_class = CounterpartySerializer
     filter_backends = [
         OwnerByMasterUserFilter,
-        ObjectPermissionPrefetchFilter,
-        ObjectPermissionFilter,
+        ObjectPermissionBackend,
         TagFilterBackend,
         AttributePrefetchFilter,
         DjangoFilterBackend,
@@ -83,8 +82,7 @@ class ResponsibleAttributeTypeViewSet(AttributeTypeViewSetBase):
     serializer_class = ResponsibleAttributeTypeSerializer
     filter_backends = [
         OwnerByMasterUserFilter,
-        ObjectPermissionPrefetchFilter,
-        ObjectPermissionFilter,
+        ObjectPermissionBackend,
         DjangoFilterBackend,
         OrderingFilter,
         SearchFilter,
@@ -111,8 +109,7 @@ class ResponsibleViewSet(PomsViewSetBase):
     serializer_class = ResponsibleSerializer
     filter_backends = [
         OwnerByMasterUserFilter,
-        ObjectPermissionPrefetchFilter,
-        ObjectPermissionFilter,
+        ObjectPermissionBackend,
         TagFilterBackend,
         AttributePrefetchFilter,
         DjangoFilterBackend,

@@ -15,8 +15,7 @@ from poms.instruments.serializers import InstrumentSerializer, PriceHistorySeria
     InstrumentAttributeTypeSerializer, PricingPolicySerializer
 from poms.obj_attrs.filters import AttributePrefetchFilter
 from poms.obj_attrs.views import AttributeTypeViewSetBase
-from poms.obj_perms.filters import ObjectPermissionFilter, AllFakeFilter
-from poms.obj_perms.filters import ObjectPermissionPrefetchFilter
+from poms.obj_perms.filters import AllFakeFilter, ObjectPermissionBackend
 from poms.obj_perms.permissions import ObjectPermissionBase
 from poms.tags.filters import TagFakeFilter, TagFilterBackend
 from poms.users.filters import OwnerByMasterUserFilter
@@ -74,8 +73,7 @@ class InstrumentTypeViewSet(PomsViewSetBase):
     serializer_class = InstrumentTypeSerializer
     filter_backends = [
         OwnerByMasterUserFilter,
-        ObjectPermissionPrefetchFilter,
-        ObjectPermissionFilter,
+        ObjectPermissionBackend,
         TagFilterBackend,
         DjangoFilterBackend,
         OrderingFilter,
@@ -117,8 +115,7 @@ class InstrumentAttributeTypeViewSet(AttributeTypeViewSetBase):
     serializer_class = InstrumentAttributeTypeSerializer
     filter_backends = [
         OwnerByMasterUserFilter,
-        ObjectPermissionPrefetchFilter,
-        ObjectPermissionFilter,
+        ObjectPermissionBackend,
         DjangoFilterBackend,
         OrderingFilter,
         SearchFilter,
@@ -146,9 +143,8 @@ class InstrumentViewSet(PomsViewSetBase):
     serializer_class = InstrumentSerializer
     filter_backends = [
         OwnerByMasterUserFilter,
+        ObjectPermissionBackend,
         AttributePrefetchFilter,
-        ObjectPermissionPrefetchFilter,
-        ObjectPermissionFilter,
         TagFilterBackend,
         DjangoFilterBackend,
         # OrderingFilter,

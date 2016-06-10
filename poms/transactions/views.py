@@ -9,7 +9,7 @@ from poms.common.filters import OrderingWithAttributesFilter
 from poms.common.views import PomsClassViewSetBase, PomsViewSetBase
 from poms.obj_attrs.filters import AttributePrefetchFilter
 from poms.obj_attrs.views import AttributeTypeViewSetBase
-from poms.obj_perms.filters import ObjectPermissionPrefetchFilter, ObjectPermissionFilter, AllFakeFilter
+from poms.obj_perms.filters import AllFakeFilter, ObjectPermissionBackend
 from poms.obj_perms.permissions import ObjectPermissionBase
 from poms.tags.filters import TagFakeFilter, TagFilterBackend
 from poms.transactions.filters import TransactionObjectPermissionFilter
@@ -89,8 +89,7 @@ class TransactionTypeViewSet(PomsViewSetBase):
     serializer_class = TransactionTypeSerializer
     filter_backends = [
         OwnerByMasterUserFilter,
-        ObjectPermissionPrefetchFilter,
-        ObjectPermissionFilter,
+        ObjectPermissionBackend,
         TagFilterBackend,
         DjangoFilterBackend,
         OrderingFilter,
@@ -162,8 +161,7 @@ class TransactionAttributeTypeViewSet(AttributeTypeViewSetBase):
     serializer_class = TransactionAttributeTypeSerializer
     filter_backends = [
         OwnerByMasterUserFilter,
-        ObjectPermissionPrefetchFilter,
-        ObjectPermissionFilter,
+        ObjectPermissionBackend,
         DjangoFilterBackend,
         OrderingFilter,
         SearchFilter,

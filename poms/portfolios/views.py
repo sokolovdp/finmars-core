@@ -6,11 +6,10 @@ from poms.common.filters import OrderingWithAttributesFilter
 from poms.common.views import PomsViewSetBase
 from poms.obj_attrs.filters import AttributePrefetchFilter
 from poms.obj_attrs.views import AttributeTypeViewSetBase
-from poms.obj_perms.filters import ObjectPermissionPrefetchFilter, ObjectPermissionFilter, AllFakeFilter
+from poms.obj_perms.filters import AllFakeFilter, ObjectPermissionBackend
 from poms.obj_perms.permissions import ObjectPermissionBase
 from poms.portfolios.models import Portfolio, PortfolioAttributeType
-from poms.portfolios.serializers import PortfolioSerializer, \
-    PortfolioAttributeTypeSerializer
+from poms.portfolios.serializers import PortfolioSerializer, PortfolioAttributeTypeSerializer
 from poms.tags.filters import TagFakeFilter, TagFilterBackend
 from poms.users.filters import OwnerByMasterUserFilter
 
@@ -43,8 +42,7 @@ class PortfolioAttributeTypeViewSet(AttributeTypeViewSetBase):
     serializer_class = PortfolioAttributeTypeSerializer
     filter_backends = [
         OwnerByMasterUserFilter,
-        ObjectPermissionPrefetchFilter,
-        ObjectPermissionFilter,
+        ObjectPermissionBackend,
         DjangoFilterBackend,
         OrderingFilter,
         SearchFilter,
@@ -75,8 +73,7 @@ class PortfolioViewSet(PomsViewSetBase):
     serializer_class = PortfolioSerializer
     filter_backends = [
         OwnerByMasterUserFilter,
-        ObjectPermissionPrefetchFilter,
-        ObjectPermissionFilter,
+        ObjectPermissionBackend,
         TagFilterBackend,
         AttributePrefetchFilter,
         DjangoFilterBackend,

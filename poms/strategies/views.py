@@ -2,11 +2,11 @@ from __future__ import unicode_literals
 
 from poms.common.filters import ClassifierFilterSetBase
 from poms.common.views import ClassifierViewSetBase, ClassifierNodeViewSetBase
-from poms.obj_perms.filters import ObjectPermissionFilter, ObjectPermissionPrefetchFilter, AllFakeFilter
+from poms.obj_perms.filters import AllFakeFilter, ObjectPermissionBackend
 from poms.obj_perms.permissions import ObjectPermissionBase
 from poms.strategies.models import Strategy1, Strategy2, Strategy3
-from poms.strategies.serializers import Strategy1Serializer, \
-    Strategy1NodeSerializer, Strategy2Serializer, Strategy2NodeSerializer, Strategy3Serializer, Strategy3NodeSerializer
+from poms.strategies.serializers import Strategy1Serializer, Strategy1NodeSerializer, Strategy2Serializer, \
+    Strategy2NodeSerializer, Strategy3Serializer, Strategy3NodeSerializer
 from poms.tags.filters import TagFakeFilter, TagFilterBackend
 
 
@@ -22,8 +22,7 @@ class StrategyClassifierBaseFilterSet(ClassifierFilterSetBase):
 class StrategyBaseViewSet(ClassifierViewSetBase):
     filter_backends = ClassifierViewSetBase.filter_backends + [
         TagFilterBackend,
-        ObjectPermissionPrefetchFilter,
-        ObjectPermissionFilter,
+        ObjectPermissionBackend,
     ]
     permission_classes = ClassifierNodeViewSetBase.permission_classes + [
         ObjectPermissionBase
@@ -33,8 +32,7 @@ class StrategyBaseViewSet(ClassifierViewSetBase):
 class StrategyBaseNodeViewSet(ClassifierNodeViewSetBase):
     filter_backends = ClassifierNodeViewSetBase.filter_backends + [
         TagFilterBackend,
-        ObjectPermissionPrefetchFilter,
-        ObjectPermissionFilter,
+        ObjectPermissionBackend,
     ]
     permission_classes = ClassifierNodeViewSetBase.permission_classes + [
         ObjectPermissionBase
