@@ -61,7 +61,9 @@ class ExpressionField(CharField):
         value = super(ExpressionField, self).run_validation(data)
         if data:
             from poms.common import formula
-            _, err = formula.parse(data)
-            if err:
-                raise ValidationError('Invalid expression: %s' % err)
+            formula.validate(data)
+            # try:
+            #     formula.try_parse(data)
+            # except formula.InvalidExpression as e:
+            #     raise ValidationError('Invalid expression: %s' % e)
         return value

@@ -1,60 +1,250 @@
 from __future__ import unicode_literals, print_function
 
+import ast
+import collections
 import datetime
-import pprint
+import math
 
-from django.utils import timezone
+import simpleeval
+from rest_framework.exceptions import ValidationError
 
 
 class InvalidExpression(Exception):
     pass
 
 
-def is_valid(expr):
-    import ast
-    try:
-        ast.parse(expr)
-    except (SyntaxError, ValueError):
-        return False
-    return True
-
-
-def parse(expr):
-    import ast
-    try:
-        return ast.parse(expr), None
-    except (SyntaxError, ValueError) as e:
-        return None, e
-
-
 DEFAULT_FUNCTIONS = {
-    'now': lambda: timezone.now().date()
-    # 'now': lambda: timezone.now()
-    # 'now': lambda: datetime.datetime.utcnow().date(),
-    # 'now2': lambda: '%s' % datetime.datetime.utcnow(),
+    "len": lambda x: len(x),
+    "str": lambda x: force_text(x),
+    "int": lambda x: int(x),
+    "float": lambda x: float(x),
+    "round": lambda x: round(x),
+    "trunc": lambda x: math.trunc(x),
+    "iff": lambda x, v1, v2: v1 if x else v2,
+    "now": lambda: timezone.now().date(),
+    "days": lambda x: datetime.timedelta(days=x),
+    "add_days": lambda d, x: d + datetime.timedelta(days=x),
+    "strftime": lambda x, fmt=None: x.strftime(fmt) if fmt else force_text(x),
 }
 
 
-def funcs(f, with_default=True):
-    if with_default:
-        res = f.copy()
-        res.update(DEFAULT_FUNCTIONS)
-        return res
-    return f
+class SimpleEval2(object):  # pylint: disable=too-few-public-methods
+    expr = ""
+
+    def __init__(self, operators=None, functions=None, names=None):
+        '''
+            Create the evaluator instance.  Set up valid operators (+,-, etc)
+            functions (add, random, get_val, whatever) and names. '''
+
+        if not operators:
+            operators = simpleeval.DEFAULT_OPERATORS
+        if not functions:
+            functions = DEFAULT_FUNCTIONS
+        if not names:
+            names = simpleeval.DEFAULT_NAMES
+
+        self.operators = operators
+        self.functions = functions
+        self.names = names
+
+    @staticmethod
+    def is_valid(expr):
+        try:
+            ast.parse(expr)
+        except (SyntaxError, ValueError):
+            return False
+        return True
+
+    @staticmethod
+    def try_parse(expr):
+        try:
+            ast.parse(expr)
+        except (SyntaxError, ValueError) as e:
+            raise InvalidExpression(e)
+
+    def eval(self, expr):
+        ''' evaluate an expresssion, using the operators, functions and
+            names previously set up. '''
+
+        # set a copy of the expression aside, so we can give nice errors...
+
+        self.expr = expr
+
+        # and evaluate:
+        return self._eval(ast.parse(expr).body[0].value)
+
+    def _eval(self, node):
+        ''' The internal eval function used on each node in the parsed tree. '''
+
+        # literals:
+
+        if isinstance(node, ast.Num):  # <number>
+            return node.n
+
+        elif isinstance(node, ast.Str):  # <string>
+            if len(node.s) > simpleeval.MAX_STRING_LENGTH:
+                raise simpleeval.StringTooLong("String Literal in statement is too long! ({0}, when {1} is max)".format(
+                    len(node.s), simpleeval.MAX_STRING_LENGTH))
+            return node.s
+
+        # python 3 compatibility:
+        elif hasattr(ast, 'NameConstant') and isinstance(node, ast.NameConstant):  # <bool>
+            return node.value
+
+        # operators, functions, etc:
+
+        elif isinstance(node, ast.UnaryOp):  # - and + etc.
+            return self.operators[type(node.op)](self._eval(node.operand))
+
+        elif isinstance(node, ast.BinOp):  # <left> <operator> <right>
+            # return self.operators[type(node.op)](self._eval(node.left), self._eval(node.right))
+            l = self._eval(node.left)
+            r = self._eval(node.right)
+            if isinstance(node.op, ast.Mult) and isinstance(l, str):
+                raise simpleeval.InvalidExpression("Can't multiply string")
+            return self.operators[type(node.op)](l, r)
+
+        elif isinstance(node, ast.BoolOp):  # and & or...
+            if isinstance(node.op, ast.And):
+                return all((self._eval(v) for v in node.values))
+            elif isinstance(node.op, ast.Or):
+                return any((self._eval(v) for v in node.values))
+
+        elif isinstance(node, ast.Compare):  # 1 < 2, a == b...
+            return self.operators[type(node.ops[0])](self._eval(node.left), self._eval(node.comparators[0]))
+
+        elif isinstance(node, ast.IfExp):  # x if y else z
+            return self._eval(node.body) if self._eval(node.test) else self._eval(node.orelse)
+
+        elif isinstance(node, ast.Call):  # function...
+            try:
+                return self.functions[node.func.id](*(self._eval(a) for a in node.args))
+            except KeyError:
+                #     raise FunctionNotDefined(node.func.id, self.expr)
+                raise
+
+        # variables/names:
+        elif isinstance(node, ast.Name):  # a, b, c...
+            try:
+                # This happens at least for slicing
+                # This is a safe thing to do because it is impossible
+                # that there is a true exression assigning to none
+                # (the compiler rejects it, so you can't even pass that to ast.parse)
+                if node.id == "None":
+                    return None
+                elif isinstance(self.names, dict):
+                    return self.names[node.id]
+                elif isinstance(self.names, collections.Callable):
+                    return self.names(node)
+                else:
+                    raise InvalidExpression('Trying to use name (variable) "{0}"'
+                                            ' when no "names" defined for'
+                                            ' evaluator'.format(node.id))
+
+            except KeyError:
+                raise simpleeval.NameNotDefined(node.id, self.expr)
+
+        elif isinstance(node, ast.Subscript):  # b[1]
+            return self._eval(node.value)[self._eval(node.slice)]
+
+        elif isinstance(node, ast.Attribute):  # a.b.c
+            try:
+                return self._eval(node.value)[node.attr]
+            except (KeyError, TypeError):
+                pass
+
+            # # Maybe the base object is an actual object, not just a dict
+            # try:
+            #     return getattr(self._eval(node.value), node.attr)
+            # except (AttributeError, TypeError):
+            #     pass
+
+            # If it is neither, raise an exception
+            raise simpleeval.AttributeDoesNotExist(node.attr, self.expr)
+        elif isinstance(node, ast.Index):
+            return self._eval(node.value)
+
+        elif isinstance(node, ast.Slice):
+            lower = upper = step = None
+            if node.lower is not None:
+                lower = self._eval(node.lower)
+            if node.upper is not None:
+                upper = self._eval(node.upper)
+            if node.step is not None:
+                step = self._eval(node.step)
+            return slice(lower, upper, step)
+
+        else:
+            raise simpleeval.FeatureNotAvailable("Sorry, {0} is not available in this "
+                                                 "evaluator".format(type(node).__name__))
 
 
-def safe_eval(expr, functions=DEFAULT_FUNCTIONS, names=None):
-    import simpleeval
+def is_valid(expr):
+    return SimpleEval2.is_valid(expr)
+
+
+def try_parse(expr):
+    return SimpleEval2.try_parse(expr)
+
+
+def validate(expr):
     try:
-        v = simpleeval.simple_eval(expr, functions=functions, names=names)
-        # v = simpleeval.simple_eval(expr,names=names)
+        try_parse(expr)
+    except InvalidExpression as e:
+        raise ValidationError('Invalid expression: %s' % e)
+
+
+def safe_eval(s, names=None, functions=None):
+    try:
+        return SimpleEval2(names=names, functions=functions).eval(s)
     except (simpleeval.InvalidExpression, KeyError, AttributeError) as e:
         raise InvalidExpression(e)
-    return v
 
 
 if __name__ == "__main__":
-    print(repr(safe_eval('now()')))
-    # safe_eval('"a".__class__.__class__()')
-    # safe_eval('"-" * 2 ** 2 ** 2 ** 2 ** 2')
-    # safe_eval('2 >> 2')
+    import os
+    import django
+    from django.utils import timezone
+    from django.utils.encoding import force_text
+
+    os.environ.setdefault("DJANGO_SETTINGS_MODULE", "poms_app.settings")
+    django.setup()
+
+    from poms.instruments.models import Instrument
+
+    names = {
+        "o1": Instrument.objects.first(),
+        "o2": {
+            "id": -1,
+            "o21": {
+                'id': -11
+            }
+        },
+        "o3": [
+            {
+                "id": -2,
+            },
+            {
+                "id": -3,
+            },
+        ],
+    }
+    functions = {
+        "len": lambda x: len(x),
+        "str": lambda x: force_text(x),
+        "int": lambda x: int(x),
+        "float": lambda x: float(x),
+        "round": lambda x: round(x),
+        "trunc": lambda x: math.trunc(x),
+        "iff": lambda x, v1, v2: v1 if x else v2,
+        "now": lambda: timezone.now().date(),
+        "days": lambda x: datetime.timedelta(days=x),
+        "add_days": lambda d, x: d + datetime.timedelta(days=x),
+        "strftime": lambda x, fmt=None: x.strftime(fmt) if fmt else force_text(x),
+    }
+    # print(safe_eval('(1).__class__.__bases__', names=names))
+    # print(safe_eval2('(1).__class__.__bases__', names=names))
+    # print(safe_eval3('(1).__class__.__bases__[0].__subclasses__()', names=names))
+    # r = safe_eval3('"%r" % now()', names=names, functions=functions)
+    r = safe_eval('-3', names=names, functions=functions)
+    print(repr(r))
