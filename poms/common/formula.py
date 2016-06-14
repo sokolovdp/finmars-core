@@ -3,28 +3,38 @@ from __future__ import unicode_literals, print_function
 import ast
 import collections
 import datetime
-import math
 
 import simpleeval
-from rest_framework.exceptions import ValidationError
 
 
 class InvalidExpression(Exception):
     pass
 
 
+def add_workdays(d, x, only_workdays=True):
+    weeks = int(x / 5)
+    days_remainder = x % 5
+    d = d + datetime.timedelta(weeks=weeks, days=days_remainder)
+    if only_workdays:
+        if d.weekday() == 5:
+            return d + datetime.timedelta(days=2)
+        if d.weekday() == 6:
+            return d + datetime.timedelta(days=1)
+    return d
+
+
 DEFAULT_FUNCTIONS = {
-    "len": lambda x: len(x),
     "str": lambda x: force_text(x),
     "int": lambda x: int(x),
     "float": lambda x: float(x),
     "round": lambda x: round(x),
-    "trunc": lambda x: math.trunc(x),
+    "trunc": lambda x: int(x),
     "iff": lambda x, v1, v2: v1 if x else v2,
     "now": lambda: timezone.now().date(),
     "days": lambda x: datetime.timedelta(days=x),
     "add_days": lambda d, x: d + datetime.timedelta(days=x),
-    "strftime": lambda x, fmt=None: x.strftime(fmt) if fmt else force_text(x),
+    "add_workdays": add_workdays,
+    "format_date": lambda x, fmt=None: x.strftime(fmt) if fmt else force_text(x),
 }
 
 
@@ -188,6 +198,7 @@ def try_parse(expr):
 
 
 def validate(expr):
+    from rest_framework.exceptions import ValidationError
     try:
         try_parse(expr)
     except InvalidExpression as e:
@@ -203,48 +214,39 @@ def safe_eval(s, names=None, functions=None):
 
 if __name__ == "__main__":
     import os
+
+    os.environ.setdefault("DJANGO_SETTINGS_MODULE", "poms_app.settings")
     import django
+
+    django.setup()
+
     from django.utils import timezone
     from django.utils.encoding import force_text
 
-    os.environ.setdefault("DJANGO_SETTINGS_MODULE", "poms_app.settings")
-    django.setup()
-
-    from poms.instruments.models import Instrument
-
-    names = {
-        "o1": Instrument.objects.first(),
-        "o2": {
-            "id": -1,
-            "o21": {
-                'id': -11
-            }
-        },
-        "o3": [
-            {
-                "id": -2,
-            },
-            {
-                "id": -3,
-            },
-        ],
-    }
-    functions = {
-        "len": lambda x: len(x),
-        "str": lambda x: force_text(x),
-        "int": lambda x: int(x),
-        "float": lambda x: float(x),
-        "round": lambda x: round(x),
-        "trunc": lambda x: math.trunc(x),
-        "iff": lambda x, v1, v2: v1 if x else v2,
-        "now": lambda: timezone.now().date(),
-        "days": lambda x: datetime.timedelta(days=x),
-        "add_days": lambda d, x: d + datetime.timedelta(days=x),
-        "strftime": lambda x, fmt=None: x.strftime(fmt) if fmt else force_text(x),
-    }
+    # names = {
+    #     "o1": Instrument.objects.first(),
+    #     "o2": {
+    #         "id": -1,
+    #         "o21": {
+    #             'id': -11
+    #         }
+    #     },
+    #     "o3": [
+    #         {
+    #             "id": -2,
+    #         },
+    #         {
+    #             "id": -3,
+    #         },
+    #     ],
+    # }
     # print(safe_eval('(1).__class__.__bases__', names=names))
     # print(safe_eval2('(1).__class__.__bases__', names=names))
     # print(safe_eval3('(1).__class__.__bases__[0].__subclasses__()', names=names))
     # r = safe_eval3('"%r" % now()', names=names, functions=functions)
-    r = safe_eval('-3', names=names, functions=functions)
-    print(repr(r))
+    # r = safe_eval('-3', names=names)
+    # print(repr(r))
+    print(add_workdays(datetime.date(2016, 6, 15), 3, only_workdays=False))
+    print(add_workdays(datetime.date(2016, 6, 15), 4, only_workdays=False))
+    print(add_workdays(datetime.date(2016, 6, 15), 3))
+    print(add_workdays(datetime.date(2016, 6, 15), 4))
