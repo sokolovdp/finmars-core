@@ -144,13 +144,13 @@ class MasterUserSerializer(serializers.ModelSerializer):
 class MemberSerializer(serializers.ModelSerializer):
     url = serializers.HyperlinkedIdentityField(view_name='member-detail')
     master_user = MasterUserField()
-    # user = UserField(read_only=True)
     is_current = serializers.SerializerMethodField()
 
     class Meta:
         model = Member
-        fields = ['url', 'id', 'master_user', 'user', 'is_owner', 'is_admin', 'join_date', 'is_current']
-        read_only_fields = ['user', 'is_owner', 'join_date']
+        fields = ['url', 'id', 'master_user', 'is_owner', 'is_admin', 'join_date', 'is_current',
+                  'first_name', 'last_name', 'email']
+        read_only_fields = ['is_owner', 'join_date', 'first_name', 'last_name', 'email']
 
     def get_is_current(self, obj):
         request = self.context['request']

@@ -80,11 +80,16 @@ class UserPermission(BasePermission):
         return user.id == obj.id
 
 
-class UserViewSet(HistoricalMixin, UpdateModelMixin, DestroyModelMixin, ReadOnlyModelViewSet):
+class UserViewSet(HistoricalMixin, UpdateModelMixin, ReadOnlyModelViewSet):
     queryset = User.objects
     serializer_class = UserSerializer
     permission_classes = [IsAuthenticated, UserPermission]
     filter_backends = [UserFilter]
+
+    def get_queryset(self):
+        qs = super(UserViewSet, self).get_queryset()
+        qs = qs.filter(id=self.request.user.id)
+        return qs
 
     def retrieve(self, request, *args, **kwargs):
         # super(UserViewSet, self).retrieve(request, *args, **kwargs)
