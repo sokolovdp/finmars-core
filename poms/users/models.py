@@ -223,8 +223,8 @@ def update_member_when_member_created(sender, instance=None, created=None, **kwa
         instance.save(update_fields=['username', 'first_name', 'last_name', 'email'])
 
 
-@receiver(post_save, dispatch_uid='update_member_when_user_update', sender=settings.AUTH_USER_MODEL)
-def update_member_when_user_update(sender, instance=None, created=None, **kwargs):
+@receiver(post_save, dispatch_uid='update_member_when_user_updated', sender=settings.AUTH_USER_MODEL)
+def update_member_when_user_updated(sender, instance=None, created=None, **kwargs):
     if not created:
         instance.members.all().update(
             username=instance.username,
