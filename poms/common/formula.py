@@ -117,7 +117,13 @@ class SimpleEval2(object):  # pylint: disable=too-few-public-methods
         self.expr = expr
 
         # and evaluate:
-        return self._eval(ast.parse(expr).body[0].value)
+        try:
+            return self._eval(ast.parse(expr).body[0].value)
+        except Exception as e:
+            if isinstance(e, InvalidExpression):
+                raise e
+            else:
+                raise InvalidExpression(e)
 
     def _eval(self, node):
         ''' The internal eval function used on each node in the parsed tree. '''
@@ -281,8 +287,8 @@ if __name__ == "__main__":
     # print(safe_eval3('(1).__class__.__bases__[0].__subclasses__()', names=names))
     print(safe_eval('format_date(now(), "G, EEEE, QQQQ, MMMM, d, Y", "en")'))
     print(safe_eval('format_decimal(1234.234, "#,##0.##;-#", "en")'))
-    print(safe_eval('format_currency(1234.234, "USD", "en")'))
-    print(safe_eval('format_currency(1234.234, "RUB", "en")'))
+    print(safe_eval('format_currency(1234.234, "USD", "ru_US")'))
+    print(safe_eval('format_currency(1234.234, "RUB", "ru_US")'))
 
     # r = safe_eval3('"%r" % now()', names=names, functions=functions)
     # r = safe_eval('format_date(now(), "EEE, MMM d, yy")')
