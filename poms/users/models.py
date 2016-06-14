@@ -83,8 +83,14 @@ class MasterUser(models.Model):
 class Member(models.Model):
     master_user = models.ForeignKey(MasterUser, related_name='members',
                                     verbose_name=_('master user'))
-    user = models.ForeignKey(settings.AUTH_USER_MODEL, related_name='members',
-                             verbose_name=_('user'))
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='members',
+        verbose_name=_('user'),
+    )
 
     first_name = models.CharField(max_length=30, blank=True, default='', editable=False,
                                   verbose_name=_('first name'))
@@ -107,7 +113,7 @@ class Member(models.Model):
 
     class Meta:
         verbose_name = _('member')
-        verbose_name_plural = _('member')
+        verbose_name_plural = _('members')
         unique_together = [
             ['master_user', 'user']
         ]
@@ -149,7 +155,7 @@ class Group(models.Model):
 
     class Meta:
         verbose_name = _('group')
-        verbose_name_plural = _('group')
+        verbose_name_plural = _('groups')
         unique_together = [
             ['master_user', 'name']
         ]
@@ -170,7 +176,7 @@ class FakeSequence(models.Model):
 
     class Meta:
         verbose_name = _('fake sequence')
-        verbose_name_plural = _('fake sequence')
+        verbose_name_plural = _('fake sequences')
         unique_together = [
             ['master_user', 'name']
         ]
@@ -195,7 +201,7 @@ class FakeSequence(models.Model):
     def next_value(cls, master_user, name, count=0):
         # seq = SimpleSequence.objects.select_for_update().get_or_create(master_user=master_user, name=name)
         # seq = SimpleSequence.objects.select_for_update().get(master_user=master_user, name=name)
-        seq = cls.objects.get_or_create(master_user=master_user, name=name)
+        seq, _ = cls.objects.get_or_create(master_user=master_user, name=name)
         newval = seq.value + 1
         seq.value = newval + count
         seq.save(update_fields=['value'])

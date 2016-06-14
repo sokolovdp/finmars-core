@@ -19,7 +19,7 @@ from poms.obj_perms.models import GroupObjectPermissionBase, UserObjectPermissio
 from poms.obj_perms.utils import assign_perms
 from poms.portfolios.models import Portfolio
 from poms.strategies.models import Strategy1, Strategy2, Strategy3
-from poms.users.models import MasterUser, Member
+from poms.users.models import MasterUser, Member, FakeSequence
 
 
 class TransactionClass(ClassModelBase):
@@ -864,12 +864,19 @@ class ComplexTransaction(models.Model):
     code = models.IntegerField(default=0)
 
     class Meta:
+        verbose_name = _('complex transaction')
+        verbose_name_plural = _('complex transactions')
         index_together = [
             ['transaction_type', 'code']
         ]
 
     def __str__(self):
         return "ComplexTransaction #%s" % self.id
+
+    def save(self, *args, **kwargs):
+        if self.code is None or self.code == 0:
+            self.code = FakeSequence.next_value(self.transaction_type.master_user, 'complex_transaction')
+        super(ComplexTransaction, self).save(*args, **kwargs)
 
 
 @python_2_unicode_compatible
@@ -1036,15 +1043,11 @@ class Transaction(models.Model):
     def __str__(self):
         return '%s #%s' % (self.master_user, self.id)
 
-    def save(self, force_insert=False, force_update=False, using=None, update_fields=None):
+    def save(self, *args, **kwargs):
         self.transaction_date = min(self.accounting_date, self.cash_date)
-        if update_fields is not None:
-            if isinstance(update_fields, tuple):
-                update_fields = update_fields + ('transaction_date',)
-            if isinstance(update_fields, list):
-                update_fields = update_fields + ['transaction_date', ]
-        super(Transaction, self).save(force_insert=force_insert, force_update=force_update, using=using,
-                                      update_fields=update_fields)
+        if self.transaction_code is None or self.transaction_code == 0:
+            self.transaction_code = FakeSequence.next_value(self.transaction_type.master_user, 'transaction')
+        super(Transaction, self).save(*args, **kwargs)
 
 
 class TransactionAttributeType(AttributeTypeBase):

@@ -7,7 +7,7 @@ from django.contrib.auth.admin import UserAdmin
 from django.contrib.auth.models import User, Permission
 
 from poms.audit.admin import HistoricalAdmin
-from poms.users.models import MasterUser, UserProfile, Member, Group, TIMEZONE_CHOICES
+from poms.users.models import MasterUser, UserProfile, Member, Group, TIMEZONE_CHOICES, FakeSequence
 
 
 class MemberInline(admin.StackedInline):
@@ -101,3 +101,20 @@ class GroupAdmin(HistoricalAdmin, admin.ModelAdmin):
 
 
 admin.site.register(Group, GroupAdmin)
+
+
+class FakeSequenceAdmin(admin.ModelAdmin):
+    model = Group
+    list_display = ['id', 'master_user', 'name', 'value']
+    list_select_related = ['master_user']
+    raw_id_fields = ['master_user']
+    readonly_fields = ['master_user', 'name', 'value']
+
+    def has_add_permission(self, request):
+        return False
+
+    def has_delete_permission(self, request, obj=None):
+        return False
+
+
+admin.site.register(FakeSequence, FakeSequenceAdmin)

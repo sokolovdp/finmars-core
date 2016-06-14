@@ -253,7 +253,7 @@ admin.site.register(TransactionTypeGroupObjectPermission, GroupObjectPermissionA
 class ComplexTransactionAdmin(HistoricalAdmin):
     model = ComplexTransaction
     list_select_related = ['transaction_type', 'transaction_type__master_user']
-    list_display = ['id', 'transaction_type', 'master_user']
+    list_display = ['id', 'transaction_type', 'master_user', 'code']
     raw_id_fields = ['transaction_type']
 
     def master_user(self, obj):
