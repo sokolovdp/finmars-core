@@ -92,22 +92,16 @@ class Member(models.Model):
         verbose_name=_('user'),
     )
 
-    first_name = models.CharField(max_length=30, blank=True, default='', editable=False,
-                                  verbose_name=_('first name'))
-    last_name = models.CharField(max_length=30, blank=True, default='', editable=False,
-                                 verbose_name=_('last name'))
-    email = models.EmailField(blank=True, default='', editable=False,
-                              verbose_name=_('email'))
+    username = models.CharField(max_length=255, blank=True, default='', editable=False, verbose_name=_('first name'))
+    first_name = models.CharField(max_length=30, blank=True, default='', editable=False, verbose_name=_('first name'))
+    last_name = models.CharField(max_length=30, blank=True, default='', editable=False, verbose_name=_('last name'))
+    email = models.EmailField(blank=True, default='', editable=False, verbose_name=_('email'))
 
-    join_date = models.DateTimeField(auto_now_add=True,
-                                     verbose_name=_('join date'))
-    is_owner = models.BooleanField(default=False,
-                                   verbose_name=_('is owner'))
-    is_admin = models.BooleanField(default=False,
-                                   verbose_name=_('is admin'))
+    join_date = models.DateTimeField(auto_now_add=True, verbose_name=_('join date'))
+    is_owner = models.BooleanField(default=False, verbose_name=_('is owner'))
+    is_admin = models.BooleanField(default=False, verbose_name=_('is admin'))
 
-    groups = models.ManyToManyField('Group', blank=True,
-                                    verbose_name=_('groups'))
+    groups = models.ManyToManyField('Group', blank=True, verbose_name=_('groups'))
 
     # permissions = models.ManyToManyField(Permission, blank=True)
 
@@ -119,6 +113,7 @@ class Member(models.Model):
         ]
 
     def __str__(self):
+        # return '%s@%s' % (self.user.username, self.master_user)
         return '%s@%s' % (self.user.username, self.master_user)
 
     @property
@@ -218,23 +213,25 @@ def create_profile(sender, instance=None, created=None, **kwargs):
         )
 
 
-@receiver(post_save, dispatch_uid='members_fill_from_user', sender=settings.AUTH_USER_MODEL)
-def members_fill_from_user(sender, instance=None, created=None, **kwargs):
+@receiver(post_save, dispatch_uid='update_member_when_member_created', sender=Member)
+def update_member_when_member_created(sender, instance=None, created=None, **kwargs):
+    if created:
+        instance.username = instance.user.username
+        instance.first_name = instance.user.first_name
+        instance.last_name = instance.user.last_name
+        instance.email = instance.user.email
+        instance.save(update_fields=['username', 'first_name', 'last_name', 'email'])
+
+
+@receiver(post_save, dispatch_uid='update_member_when_user_update', sender=settings.AUTH_USER_MODEL)
+def update_member_when_user_update(sender, instance=None, created=None, **kwargs):
     if not created:
         instance.members.all().update(
+            username=instance.username,
             first_name=instance.first_name,
             last_name=instance.last_name,
             email=instance.email
         )
-
-
-@receiver(post_save, dispatch_uid='members_fill_from_user', sender=Member)
-def member_fill_from_user(sender, instance=None, created=None, **kwargs):
-    if created:
-        instance.first_name = instance.user.first_name
-        instance.last_name = instance.user.last_name
-        instance.email = instance.user.email
-        instance.save(update_fields=['first_name', 'last_name', 'email'])
 
 
 history.register(MasterUser)
