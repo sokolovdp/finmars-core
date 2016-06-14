@@ -34,7 +34,8 @@ class MessagePermissionFilter(BaseFilterBackend):
         return queryset.filter(thread_id__in=thread_qs)
 
 
-class DirectMessageFilter(BaseFilterBackend):
+class DirectMessagePermissionFilter(BaseFilterBackend):
     def filter_queryset(self, request, queryset, view):
-        user = request.user
-        return queryset.filter(Q(recipient=user) | Q(sender=user))
+        # user = request.user
+        member = request.user.member
+        return queryset.filter(Q(recipient=member) | Q(sender=member))

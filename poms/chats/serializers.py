@@ -5,7 +5,7 @@ from rest_framework import serializers
 from poms.chats.fields import ThreadField, ThreadStatusField
 from poms.chats.models import Thread, Message, DirectMessage, ThreadStatus
 from poms.obj_perms.serializers import ModelWithObjectPermissionSerializer
-from poms.users.fields import MasterUserField, HiddenMemberField, UserField, HiddenUserField
+from poms.users.fields import MasterUserField, HiddenMemberField, MemberField
 
 
 class ThreadStatusSerializer(serializers.ModelSerializer):
@@ -41,10 +41,12 @@ class MessageSerializer(serializers.ModelSerializer):
 
 class DirectMessageSerializer(serializers.ModelSerializer):
     url = serializers.HyperlinkedIdentityField(view_name='chatdirectmessage-detail')
-    recipient = UserField()
-    sender = HiddenUserField()
+    # sender = HiddenUserField()
+    # recipient = UserField()
+    sender = HiddenMemberField()
+    recipient = MemberField()
 
     class Meta:
         model = DirectMessage
-        fields = ['url', 'id', 'recipient', 'sender', 'created', 'modified', 'text']
+        fields = ['url', 'id', 'sender', 'recipient', 'created', 'modified', 'text']
         read_only_fields = ['created', 'modified']

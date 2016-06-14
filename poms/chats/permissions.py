@@ -63,5 +63,7 @@ class DirectMessagePermission(BasePermission):
     def has_object_permission(self, request, view, obj):
         if request.method in SAFE_METHODS:
             return True
-        user = request.user
-        return obj.sender_id == user.id
+        # user = request.user
+        # return obj.sender_id == user.id
+        member = request.user.member
+        return obj.sender_id == member.id
