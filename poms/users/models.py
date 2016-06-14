@@ -161,6 +161,47 @@ class Group(models.Model):
         return self.name
 
 
+@python_2_unicode_compatible
+class FakeSequence(models.Model):
+    master_user = models.ForeignKey(MasterUser, related_name='fake_sequences',
+                                    verbose_name=_('master user'), )
+    name = models.CharField(max_length=80)
+    value = models.PositiveIntegerField(default=0)
+
+    class Meta:
+        verbose_name = _('fake sequence')
+        verbose_name_plural = _('fake sequence')
+        unique_together = [
+            ['master_user', 'name']
+        ]
+        # permissions = [
+        #     ('view_group', 'Can view group')
+        # ]
+
+    def __str__(self):
+        return "%s: %s" % (self.name, self.value)
+
+    # @staticmethod
+    # def inc1(master_user, name):
+    #     for i in range(20):
+    #         seq = SimpleSequence.objects.get_or_create(master_user=master_user, name=name)
+    #         newval = seq.value + 1
+    #         updated = SimpleSequence.objects.filter(id=seq.id, value=seq.value).update(value=newval)
+    #         if updated == 1:
+    #             return newval
+    #     return RuntimeError('simple sequence optimistic lock error')
+
+    @classmethod
+    def next_value(cls, master_user, name, count=0):
+        # seq = SimpleSequence.objects.select_for_update().get_or_create(master_user=master_user, name=name)
+        # seq = SimpleSequence.objects.select_for_update().get(master_user=master_user, name=name)
+        seq = cls.objects.get_or_create(master_user=master_user, name=name)
+        newval = seq.value + 1
+        seq.value = newval + count
+        seq.save(update_fields=['value'])
+        return newval
+
+
 @receiver(post_save, dispatch_uid='create_profile', sender=settings.AUTH_USER_MODEL)
 def create_profile(sender, instance=None, created=None, **kwargs):
     if created:

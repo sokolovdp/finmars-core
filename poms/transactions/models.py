@@ -861,6 +861,12 @@ class EventToHandle(NamedModel):
 @python_2_unicode_compatible
 class ComplexTransaction(models.Model):
     transaction_type = models.ForeignKey(TransactionType, on_delete=models.PROTECT)
+    code = models.IntegerField(default=0)
+
+    class Meta:
+        index_together = [
+            ['transaction_type', 'code']
+        ]
 
     def __str__(self):
         return "ComplexTransaction #%s" % self.id
@@ -1023,16 +1029,12 @@ class Transaction(models.Model):
     class Meta:
         verbose_name = _('transaction')
         verbose_name_plural = _('transactions')
-        # permissions = [
-        #     ('view_transaction', 'Can view transaction')
-        # ]
+        index_together = [
+            ['master_user', 'transaction_code']
+        ]
 
     def __str__(self):
         return '%s #%s' % (self.master_user, self.id)
-
-        # @property
-        # def cash_flow(self):
-        #     return self.principal_with_sign + self.carry_with_sign + self.overheads_with_sign
 
     def save(self, force_insert=False, force_update=False, using=None, update_fields=None):
         self.transaction_date = min(self.accounting_date, self.cash_date)
@@ -1043,14 +1045,6 @@ class Transaction(models.Model):
                 update_fields = update_fields + ['transaction_date', ]
         super(Transaction, self).save(force_insert=force_insert, force_update=force_update, using=using,
                                       update_fields=update_fields)
-
-        # @property
-        # def strategies_position(self):
-        #     return [self.strategy_position] if self.strategy_position_id else []
-
-        # @property
-        # def strategies_cash(self):
-        #     return [self.strategy_cash] if self.strategy_cash_id else []
 
 
 class TransactionAttributeType(AttributeTypeBase):
