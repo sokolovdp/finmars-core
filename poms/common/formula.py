@@ -5,10 +5,16 @@ import collections
 import datetime
 
 import simpleeval
+from babel import dates, numbers
 
 
 class InvalidExpression(Exception):
     pass
+
+
+def now():
+    from django.utils import timezone
+    return timezone.now().date()
 
 
 def add_workdays(d, x, only_workdays=True):
@@ -23,6 +29,33 @@ def add_workdays(d, x, only_workdays=True):
     return d
 
 
+def format_date(x, fmt=None, locale=None):
+    if fmt:
+        from django.utils import translation
+        if locale is None:
+            locale = translation.get_language()
+        return dates.format_date(x, fmt, locale=locale)
+    else:
+        force_text(x)
+
+
+def format_decimal(x, fmt=None, locale=None):
+    if fmt:
+        from django.utils import translation
+        if locale is None:
+            locale = translation.get_language()
+        return numbers.format_decimal(x, fmt, locale=locale)
+    else:
+        return force_text(x)
+
+
+def format_currency(x, ccy, locale=None):
+    from django.utils import translation
+    if locale is None:
+        locale = translation.get_language()
+    return numbers.format_currency(x, ccy, locale=locale)
+
+
 DEFAULT_FUNCTIONS = {
     "str": lambda x: force_text(x),
     "int": lambda x: int(x),
@@ -30,11 +63,14 @@ DEFAULT_FUNCTIONS = {
     "round": lambda x: round(x),
     "trunc": lambda x: int(x),
     "iff": lambda x, v1, v2: v1 if x else v2,
-    "now": lambda: timezone.now().date(),
+    "now": now,
     "days": lambda x: datetime.timedelta(days=x),
     "add_days": lambda d, x: d + datetime.timedelta(days=x),
+    "add_weeks": lambda d, x: d + datetime.timedelta(weeks=x),
     "add_workdays": add_workdays,
-    "format_date": lambda x, fmt=None: x.strftime(fmt) if fmt else force_text(x),
+    "format_date": format_date,
+    "format_decimal": format_decimal,
+    "format_currency": format_currency,
 }
 
 
@@ -243,10 +279,15 @@ if __name__ == "__main__":
     # print(safe_eval('(1).__class__.__bases__', names=names))
     # print(safe_eval2('(1).__class__.__bases__', names=names))
     # print(safe_eval3('(1).__class__.__bases__[0].__subclasses__()', names=names))
+    print(safe_eval('format_date(now(), "G, EEEE, QQQQ, MMMM, d, Y", "en")'))
+    print(safe_eval('format_decimal(1234.234, "#,##0.##;-#", "en")'))
+    print(safe_eval('format_currency(1234.234, "USD", "en")'))
+    print(safe_eval('format_currency(1234.234, "RUB", "en")'))
+
     # r = safe_eval3('"%r" % now()', names=names, functions=functions)
-    # r = safe_eval('-3', names=names)
+    # r = safe_eval('format_date(now(), "EEE, MMM d, yy")')
     # print(repr(r))
-    print(add_workdays(datetime.date(2016, 6, 15), 3, only_workdays=False))
-    print(add_workdays(datetime.date(2016, 6, 15), 4, only_workdays=False))
-    print(add_workdays(datetime.date(2016, 6, 15), 3))
-    print(add_workdays(datetime.date(2016, 6, 15), 4))
+    # print(add_workdays(datetime.date(2016, 6, 15), 3, only_workdays=False))
+    # print(add_workdays(datetime.date(2016, 6, 15), 4, only_workdays=False))
+    # print(add_workdays(datetime.date(2016, 6, 15), 3))
+    # print(add_workdays(datetime.date(2016, 6, 15), 4))
