@@ -1,11 +1,11 @@
 from __future__ import unicode_literals
 
-import pprint
+from collections import OrderedDict
 
-from django.core.exceptions import ObjectDoesNotExist
 from django.utils.translation import ugettext as _
 from rest_framework import permissions
 from rest_framework.decorators import detail_route, list_route
+from rest_framework.generics import GenericAPIView
 from rest_framework.response import Response
 from reversion import revisions as reversion
 
@@ -18,6 +18,7 @@ from poms.audit.serializers import VersionSerializer
 #     page_size_query_param = 'size'
 #     page_size = 5
 #     max_page_size = 10
+
 
 
 # TODO: request is to hard for DB, can't prefetch or any optimization
@@ -39,7 +40,6 @@ class HistoricalMixin(object):
                     reversion.set_comment(_('No fields changed.'))
                 return response
 
-
     def initial(self, request, *args, **kwargs):
         super(HistoricalMixin, self).initial(request, *args, **kwargs)
 
@@ -54,7 +54,6 @@ class HistoricalMixin(object):
             master_user = request.user.master_user
             reversion.add_meta(VersionInfo, master_user=master_user, username=request.user.username)
 
-
     def finalize_response(self, request, response, *args, **kwargs):
         # if self._reversion_is_active:
         #     try:
@@ -66,7 +65,6 @@ class HistoricalMixin(object):
         #     pprint.pprint(self._o1)
         #     pprint.pprint(self._o2)
         return super(HistoricalMixin, self).finalize_response(request, response, *args, **kwargs)
-
 
     @list_route()
     def deleted(self, request, pk=None):
@@ -155,3 +153,41 @@ class HistoricalMixin(object):
         # def _historical_get_paginated_response(self, data):
         #     assert self._historical_paginator is not None
         #     return self._historical_paginator.get_paginated_response(data)
+
+
+class HistoricalMixin2(GenericAPIView):
+    def dispatch(self, request, *args, **kwargs):
+        self._history_is_active = False
+        if request.method.upper() in permissions.SAFE_METHODS:
+            return super(HistoricalMixin2, self).dispatch(request, *args, **kwargs)
+        else:
+            self._history_is_active = True
+            response = super(HistoricalMixin2, self).dispatch(request, *args, **kwargs)
+            return response
+
+    def initial(self, request, *args, **kwargs):
+        super(HistoricalMixin2, self).initial(request, *args, **kwargs)
+
+        if self._history_is_active:
+            instance = self.get_object()
+            serializer = self.get_serializer(instance)
+            before_change = serializer.data
+
+            import pprint
+            print('----')
+            pprint.pprint(OrderedDict(before_change))
+
+    def finalize_response(self, request, response, *args, **kwargs):
+        if self._history_is_active:
+            instance = self.get_object()
+            serializer = self.get_serializer(instance)
+            after_change = serializer.data
+
+            import pprint
+            print('----')
+            pprint.pprint(OrderedDict(after_change))
+
+        return super(HistoricalMixin2, self).finalize_response(request, response, *args, **kwargs)
+
+
+HistoricalMixin = HistoricalMixin2

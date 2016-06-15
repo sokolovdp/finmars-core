@@ -65,7 +65,7 @@ class HistoryEntry(models.Model):
     DELETION = 3
     FLAG_CHOICES = (
         (ADDITION, 'Added'),
-        (CHANGE, 'Chaned'),
+        (CHANGE, 'Changed'),
         (DELETION, 'Deleted'),
     )
 
