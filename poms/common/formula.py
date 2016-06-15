@@ -274,7 +274,7 @@ if __name__ == "__main__":
     from django.utils.encoding import force_text
 
 
-    # names = OrderedDict({
+    # names = {
     #     "v0": 1.00001,
     #     "v1": "str",
     #     "v2": {
@@ -292,7 +292,7 @@ if __name__ == "__main__":
     #             "name": "V32"
     #         },
     #     ],
-    # })
+    # }
 
     # print(safe_eval('(1).__class__.__bases__', names=names))
     # print(safe_eval2('(1).__class__.__bases__', names=names))
