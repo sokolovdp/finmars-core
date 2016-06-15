@@ -262,7 +262,7 @@ class TransactionType(NamedModel):
                 self._set_simple(trn, 'trade_price', atrn, 'trade_price', input_values)
                 self._set_simple(trn, 'principal_amount', atrn, 'principal_amount', input_values)
                 self._set_simple(trn, 'carry_amount', atrn, 'carry_amount', input_values)
-                self._set_simple(trn, 'responsible', atrn, 'responsible', input_values)
+                self._set_relation(trn, 'responsible', atrn, 'responsible', input_values)
                 self._set_relation(trn, 'counterparty', atrn, 'counterparty', input_values)
                 if save:
                     trn.save()
