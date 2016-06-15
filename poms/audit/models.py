@@ -74,12 +74,6 @@ class HistoryEntry(models.Model):
     )
     member = models.ForeignKey(
         'users.Member',
-        on_delete=models.SET_NULL,
-        null=True,
-        blank=True,
-    )
-    member_name = models.CharField(
-        verbose_name=_('member name (if member deleted)')
     )
     created = models.DateTimeField(
         auto_now_add=True
@@ -92,7 +86,8 @@ class HistoryEntry(models.Model):
     object_id = models.BigIntegerField(verbose_name=_('object id'))
     content_object = GenericForeignKey()
     action_flag = models.PositiveSmallIntegerField(
-        verbose_name=_('action flag')
+        verbose_name=_('action flag'),
+        choices=FLAG_CHOICES
     )
     message = models.TextField(
         null=True,
@@ -104,9 +99,12 @@ class HistoryEntry(models.Model):
     )
 
     class Meta:
-        abstract = True
+        # abstract = True
         verbose_name = _('history')
         verbose_name_plural = _('histories')
+        index_together = (
+            ('master_user', 'created')
+        )
         ordering = [
             '-created'
         ]
