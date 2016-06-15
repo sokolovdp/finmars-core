@@ -235,8 +235,8 @@ class InstrumentTypeGroupObjectPermission(GroupObjectPermissionBase):
 class Instrument(NamedModel):
     master_user = models.ForeignKey(MasterUser, related_name='instruments',
                                     verbose_name=_('master user'))
-    type = models.ForeignKey(InstrumentType, on_delete=models.PROTECT,
-                             verbose_name=_('type'))
+    instrument_type = models.ForeignKey(InstrumentType, on_delete=models.PROTECT,
+                             verbose_name=_('instrument type'))
     is_active = models.BooleanField(default=True,
                                     verbose_name=_('is active'))
     pricing_currency = models.ForeignKey(Currency, on_delete=models.PROTECT,

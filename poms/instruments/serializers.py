@@ -6,7 +6,8 @@ from rest_framework import serializers
 
 from poms.common.serializers import PomsClassSerializer, ClassifierSerializerBase, ClassifierNodeSerializerBase
 from poms.currencies.serializers import CurrencyField
-from poms.instruments.fields import InstrumentClassifierField, InstrumentField, InstrumentAttributeTypeField
+from poms.instruments.fields import InstrumentClassifierField, InstrumentField, InstrumentAttributeTypeField, \
+    InstrumentTypeField
 from poms.instruments.models import InstrumentClassifier, Instrument, PriceHistory, InstrumentClass, DailyPricingModel, \
     AccrualCalculationModel, PaymentSizeDetail, PeriodicityPeriod, CostMethod, InstrumentType, InstrumentAttributeType, \
     InstrumentAttribute, ManualPricingFormula, AccrualCalculationSchedule, InstrumentFactorSchedule, EventSchedule, \
@@ -143,6 +144,7 @@ class InstrumentAttributeSerializer(AttributeSerializerBase):
 
 class InstrumentSerializer(ModelWithAttributesSerializer, ModelWithObjectPermissionSerializer):
     master_user = MasterUserField()
+    instrument_type = InstrumentTypeField()
     pricing_currency = CurrencyField(read_only=False)
     accrued_currency = CurrencyField(read_only=False)
 
@@ -156,7 +158,7 @@ class InstrumentSerializer(ModelWithAttributesSerializer, ModelWithObjectPermiss
 
     class Meta:
         model = Instrument
-        fields = ['url', 'id', 'master_user', 'user_code', 'name', 'short_name', 'notes', 'is_active',
+        fields = ['url', 'id', 'master_user', 'instrument_type', 'user_code', 'name', 'short_name', 'notes', 'is_active',
                   'pricing_currency', 'price_multiplier', 'accrued_currency', 'accrued_multiplier',
                   'daily_pricing_model', 'payment_size_detail', 'default_price', 'default_accrued',
                   'manual_pricing_formulas', 'accrual_calculation_schedules', 'factor_schedules', 'event_schedules',
