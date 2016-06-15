@@ -25,14 +25,14 @@ class DbStorage(BaseStorage):
             return [], False
 
     def _store(self, messages, response, *args, **kwargs):
+        user = self.request.user
         if messages:
-            user = self.request.user
             if user.is_authenticated():
                 for message in messages:
                     if not hasattr(message, 'id'):
                         Notification.objects.create(recipient=user, level=message.level, message=message)
         else:
-            Notification.objects.filter(read_date__isnull=True).update(read_date=timezone.now())
+            Notification.objects.filter(recipient=user, read_date__isnull=True).update(read_date=timezone.now())
         return []
 
 
