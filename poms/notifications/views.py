@@ -42,6 +42,13 @@ class NotificationViewSet(DbTransactionMixin, ReadOnlyModelViewSet):
 
     # search_fields = ['verb']
 
+    @list_route(methods=['get'], url_path='status')
+    def get_status(self, request, pk=None):
+        unread_count = request.user.notifications.filter(read_date__isnull=True).count()
+        return Response({
+            "unread_count": unread_count
+        })
+
     @list_route(methods=['post'], url_path='mark-all-as-read')
     def mark_all_as_read(self, request, pk=None):
         request.user.notifications.filter(read_date__isnull=True).update(read_date=timezone.now())
