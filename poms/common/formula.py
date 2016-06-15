@@ -156,8 +156,12 @@ class SimpleEval2(object):  # pylint: disable=too-few-public-methods
             # return self.operators[type(node.op)](self._eval(node.left), self._eval(node.right))
             l = self._eval(node.left)
             r = self._eval(node.right)
-            if isinstance(node.op, ast.Mult) and isinstance(l, str):
-                raise simpleeval.InvalidExpression("Can't multiply string")
+            # if isinstance(node.op, ast.Mult) and isinstance(l, str):
+            #     raise simpleeval.InvalidExpression("Invalid first argument")
+            # if isinstance(node.op, ast.Mod) and isinstance(l, str):
+            #     raise simpleeval.InvalidExpression("Invalid first argument")
+            if isinstance(node.op, (ast.Mult, ast.Mod,)) and isinstance(l, (six.text_type, six.binary_type)):
+                raise simpleeval.InvalidExpression("Binary operation does't support string")
             return self.operators[type(node.op)](l, r)
 
         elif isinstance(node, ast.BoolOp):  # and & or...
@@ -269,6 +273,7 @@ if __name__ == "__main__":
     from django.utils import timezone, translation
     from django.utils.encoding import force_text
 
+
     # names = OrderedDict({
     #     "v0": 1.00001,
     #     "v1": "str",
@@ -292,6 +297,7 @@ if __name__ == "__main__":
     # print(safe_eval('(1).__class__.__bases__', names=names))
     # print(safe_eval2('(1).__class__.__bases__', names=names))
     # print(safe_eval3('(1).__class__.__bases__[0].__subclasses__()', names=names))
+    # print(safe_eval('5 % 2'))
 
     def demo():
         def play(expr, names=None):
@@ -318,6 +324,8 @@ if __name__ == "__main__":
         play('2 * 2 + 2', names)
         play('2 * (2 + 2)', names)
         play('16 ** 16', names)
+        play('5 / 2', names)
+        play('5 % 2', names)
 
         print()
         print('with variables:')
