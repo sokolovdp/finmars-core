@@ -1,15 +1,19 @@
-from __future__ import unicode_literals, print_function
+from __future__ import unicode_literals, print_function, division
 
 import ast
-import collections
 import datetime
+import json
+from collections import Callable
 
 import simpleeval
+import six
 from babel import dates, numbers
 
 
 class InvalidExpression(Exception):
-    pass
+    def __init__(self, e):
+        super(InvalidExpression, self).__init__(e)
+        self.message = getattr(e, "message", str(e))
 
 
 def now():
@@ -186,7 +190,7 @@ class SimpleEval2(object):  # pylint: disable=too-few-public-methods
                     return None
                 elif isinstance(self.names, dict):
                     return self.names[node.id]
-                elif isinstance(self.names, collections.Callable):
+                elif isinstance(self.names, Callable):
                     return self.names(node)
                 else:
                     raise InvalidExpression('Trying to use name (variable) "{0}"'
@@ -216,15 +220,15 @@ class SimpleEval2(object):  # pylint: disable=too-few-public-methods
         elif isinstance(node, ast.Index):
             return self._eval(node.value)
 
-        elif isinstance(node, ast.Slice):
-            lower = upper = step = None
-            if node.lower is not None:
-                lower = self._eval(node.lower)
-            if node.upper is not None:
-                upper = self._eval(node.upper)
-            if node.step is not None:
-                step = self._eval(node.step)
-            return slice(lower, upper, step)
+        # elif isinstance(node, ast.Slice):
+        #     lower = upper = step = None
+        #     if node.lower is not None:
+        #         lower = self._eval(node.lower)
+        #     if node.upper is not None:
+        #         upper = self._eval(node.upper)
+        #     if node.step is not None:
+        #         step = self._eval(node.step)
+        #     return slice(lower, upper, step)
 
         else:
             raise simpleeval.FeatureNotAvailable("Sorry, {0} is not available in this "
@@ -262,38 +266,97 @@ if __name__ == "__main__":
 
     django.setup()
 
-    from django.utils import timezone
+    from django.utils import timezone, translation
     from django.utils.encoding import force_text
 
-    # names = {
-    #     "o1": Instrument.objects.first(),
-    #     "o2": {
-    #         "id": -1,
-    #         "o21": {
-    #             'id': -11
-    #         }
+    # names = OrderedDict({
+    #     "v0": 1.00001,
+    #     "v1": "str",
+    #     "v2": {
+    #         "id": 1,
+    #         "name": "V2",
+    #         "code": 12354
     #     },
-    #     "o3": [
+    #     "v3": [
     #         {
-    #             "id": -2,
+    #             "id": 2,
+    #             "name": "V31"
     #         },
     #         {
-    #             "id": -3,
+    #             "id": 3,
+    #             "name": "V32"
     #         },
     #     ],
-    # }
+    # })
+
     # print(safe_eval('(1).__class__.__bases__', names=names))
     # print(safe_eval2('(1).__class__.__bases__', names=names))
     # print(safe_eval3('(1).__class__.__bases__[0].__subclasses__()', names=names))
-    print(safe_eval('format_date(now(), "G, EEEE, QQQQ, MMMM, d, Y", "en")'))
-    print(safe_eval('format_decimal(1234.234, "#,##0.##;-#", "en")'))
-    print(safe_eval('format_currency(1234.234, "USD", "ru_US")'))
-    print(safe_eval('format_currency(1234.234, "RUB", "ru_US")'))
 
-    # r = safe_eval3('"%r" % now()', names=names, functions=functions)
-    # r = safe_eval('format_date(now(), "EEE, MMM d, yy")')
-    # print(repr(r))
-    # print(add_workdays(datetime.date(2016, 6, 15), 3, only_workdays=False))
-    # print(add_workdays(datetime.date(2016, 6, 15), 4, only_workdays=False))
-    # print(add_workdays(datetime.date(2016, 6, 15), 3))
-    # print(add_workdays(datetime.date(2016, 6, 15), 4))
+    def demo():
+        def play(expr, names=None):
+            try:
+                res = safe_eval(expr, names=names)
+            except InvalidExpression as e:
+                res = "<ERROR1: %s>" % e.message
+            except Exception as e:
+                res = "<ERROR2: %s>" % e
+            print('\t%-60s -> %s' % (expr, res))
+
+        names = {
+            "v0": 1.00001,
+            "v1": "str",
+            "v2": {"id": 1, "name": "V2", "trn_code": 12354, "num": 1.234},
+            "v3": [{"id": 2, "name": "V31"}, {"id": 3, "name": "V32"}, ],
+        }
+        print('test variables:')
+        for n in sorted(six.iterkeys(names)):
+            print('\t%s -> %s' % (n, json.dumps(names[n], sort_keys=True)))
+
+        print()
+        print('simple:')
+        play('2 * 2 + 2', names)
+        play('2 * (2 + 2)', names)
+        play('16 ** 16', names)
+
+        print()
+        print('with variables:')
+        play('v0 + 1', names)
+        play('v1 + " & " + str(v0)', names)
+        play('v2.name', names)
+        play('v2.num * 3', names)
+        play('v3[1].name', names)
+
+        print()
+        print('functions: ')
+        play('round(1.5)', names)
+        play('trunc(1.5)', names)
+        play('int(1.5)', names)
+        play('now()', names)
+        play('add_days(now(), 10)', names)
+        play('add_workdays(now(), 10)', names)
+        play('iff(1.001 > 1.002, "really?", "ok")', names)
+        play('"really?" if 1.001 > 1.002 else "ok"', names)
+        play('"N" + format_date(now(), "YMMdd") + "/" + str(v2.trn_code)', names)
+
+        for lang in ['ru', 'en', 'de', 'fr']:
+            print()
+            print('localized (from master user settings): language=%s' % lang)
+            translation.activate(lang)
+            play('format_date(now(), "full")', names)
+            play('format_date(now(), "long")', names)
+            play('format_date(now(), "short")', names)
+            play('format_decimal(1234.234, "#,##0.##;-#")', names)
+            play('format_currency(1234.234, "USD")', names)
+            play('format_currency(1234.234, "RUB")', names)
+
+            # r = safe_eval3('"%r" % now()', names=names, functions=functions)
+            # r = safe_eval('format_date(now(), "EEE, MMM d, yy")')
+            # print(repr(r))
+            # print(add_workdays(datetime.date(2016, 6, 15), 3, only_workdays=False))
+            # print(add_workdays(datetime.date(2016, 6, 15), 4, only_workdays=False))
+            # print(add_workdays(datetime.date(2016, 6, 15), 3))
+            # print(add_workdays(datetime.date(2016, 6, 15), 4))
+
+
+    demo()
