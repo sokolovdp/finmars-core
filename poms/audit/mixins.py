@@ -258,4 +258,4 @@ class HistoricalMixin2(GenericAPIView):
         return super(HistoricalMixin2, self).finalize_response(request, response, *args, **kwargs)
 
 
-HistoricalMixin = HistoricalMixin2
+# HistoricalMixin = HistoricalMixin2

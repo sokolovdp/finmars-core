@@ -111,6 +111,14 @@ class ModelProxy(object):
                     return val
                 self._cache[item] = None
                 return None
+            elif f.one_to_many:
+                ct = ContentType.objects.get_for_model(f.related_model)
+                res = []
+                for related_obj in self._version.revision.version_set.filter(content_type=ct):
+                    val = related_obj.object_version.object
+                    res.append(val)
+                self._cache[item] = res
+                return res if res else None
             elif f.many_to_many:
                 m2m_d = self._m2m_data
                 if m2m_d and item in m2m_d:
