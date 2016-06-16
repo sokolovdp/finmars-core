@@ -4,9 +4,8 @@ from rest_framework.filters import FilterSet, DjangoFilterBackend, OrderingFilte
 
 from poms.accounts.models import Account, AccountType, AccountAttributeType
 from poms.accounts.serializers import AccountSerializer, AccountTypeSerializer, AccountAttributeTypeSerializer
-from poms.common.filters import OrderingWithAttributesFilter
 from poms.common.views import PomsViewSetBase
-from poms.obj_attrs.filters import AttributePrefetchFilter
+from poms.obj_attrs.filters import AttributePrefetchFilter, OrderingWithAttributesFilter
 from poms.obj_attrs.views import AttributeTypeViewSetBase
 from poms.obj_perms.filters import AllFakeFilter, ObjectPermissionBackend
 from poms.obj_perms.permissions import ObjectPermissionBase
