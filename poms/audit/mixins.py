@@ -6,6 +6,7 @@ from django.utils.translation import ugettext as _
 from rest_framework import permissions
 from rest_framework.decorators import detail_route, list_route
 from rest_framework.generics import GenericAPIView
+from rest_framework.mixins import DestroyModelMixin, UpdateModelMixin, CreateModelMixin
 from rest_framework.response import Response
 from reversion import revisions as reversion
 
@@ -155,38 +156,105 @@ class HistoricalMixin(object):
         #     return self._historical_paginator.get_paginated_response(data)
 
 
+class BaseAuditModelMixin(object):
+    def get_object_data(self):
+        instance = self.get_object()
+        serializer = self.get_serializer(instance)
+        return serializer.data
+
+    def audit(self, data, changed=None):
+        pass
+
+
+class AuditCreateModelMixin(BaseAuditModelMixin, CreateModelMixin):
+    def create(self, request, *args, **kwargs):
+        response = super(AuditCreateModelMixin, self).create(request, *args, **kwargs)
+        self.audit(response.data)
+        return response
+
+
+class AuditUpdateModelMixin(BaseAuditModelMixin, UpdateModelMixin):
+    def __init__(self, **kwargs):
+        super(AuditUpdateModelMixin, self).__init__(**kwargs)
+        self._audit_object = False
+
+    def get_object(self):
+        if self._audit_object is None:
+            self._audit_object = super(AuditUpdateModelMixin, self).get_object()
+        return self._audit_object
+
+    def update(self, request, *args, **kwargs):
+        instance = self.get_object()
+        serializer = self.get_serializer(instance)
+        readed_data = serializer.data
+
+        response = super(AuditUpdateModelMixin, self).update(request, *args, **kwargs)
+
+        self._audit_object = None
+        instance = self.get_object()
+        serializer = self.get_serializer(instance)
+        updated_data = serializer.data
+
+        response.data = updated_data
+
+        changed = self.audit_diff(readed_data, updated_data)
+        self.audit(response.data, changed=changed)
+        return response
+
+    def audit_diff(self, readed_data, updated_data):
+        return []
+
+
+class AuditDestroyModelMixin(BaseAuditModelMixin, DestroyModelMixin):
+    def destroy(self, request, *args, **kwargs):
+        response = super(AuditDestroyModelMixin, self).destroy(request, *args, **kwargs)
+        self.audit(None)
+        return response
+
+
+class AuditModelMixin(AuditCreateModelMixin, AuditUpdateModelMixin, AuditDestroyModelMixin):
+    pass
+
+
 class HistoricalMixin2(GenericAPIView):
-    def dispatch(self, request, *args, **kwargs):
+    def __init__(self, **kwargs):
+        super(HistoricalMixin2, self).__init__(**kwargs)
         self._history_is_active = False
-        if request.method.upper() in permissions.SAFE_METHODS:
-            return super(HistoricalMixin2, self).dispatch(request, *args, **kwargs)
-        else:
-            self._history_is_active = True
-            response = super(HistoricalMixin2, self).dispatch(request, *args, **kwargs)
-            return response
+        self._history_cached_object = None
+        self._history_original_data = None
+        self._history_changed_data = None
+
+    def get_object(self):
+        if self._history_cached_object is None:
+            self._history_cached_object = super(HistoricalMixin2, self).get_object()
+        return self._history_cached_object
+
+    def reset_cache(self):
+        self._history_cached_object = None
+
+    def _get_data(self):
+        instance = self.get_object()
+        serializer = self.get_serializer(instance)
+        data = OrderedDict(serializer.data)
+
+        import pprint
+        print('----')
+        pprint.pprint(OrderedDict(data))
+
+        return data
 
     def initial(self, request, *args, **kwargs):
         super(HistoricalMixin2, self).initial(request, *args, **kwargs)
-
+        self._history_is_active = request.method.upper() not in permissions.SAFE_METHODS
         if self._history_is_active:
-            instance = self.get_object()
-            serializer = self.get_serializer(instance)
-            before_change = serializer.data
-
-            import pprint
-            print('----')
-            pprint.pprint(OrderedDict(before_change))
+            self._history_original_data = self._get_data()
 
     def finalize_response(self, request, response, *args, **kwargs):
         if self._history_is_active:
-            instance = self.get_object()
-            serializer = self.get_serializer(instance)
-            after_change = serializer.data
-
-            import pprint
-            print('----')
-            pprint.pprint(OrderedDict(after_change))
-
+            if request.method.upper() != 'DELETE':
+                self.reset_cache()
+                self._history_changed_data = self._get_data()
+                response.data = self._history_changed_data
         return super(HistoricalMixin2, self).finalize_response(request, response, *args, **kwargs)
 
 
