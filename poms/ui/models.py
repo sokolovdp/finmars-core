@@ -16,11 +16,13 @@ class BaseLayout(models.Model):
         abstract = True
 
     def get_data(self):
-        return json.loads(self.json_data) if self.json_data else None
+        try:
+            return json.loads(self.json_data) if self.json_data else None
+        except (ValueError, TypeError):
+            return None
 
     def set_data(self, data):
         self.json_data = json.dumps(data, cls=DjangoJSONEncoder, sort_keys=True) if data else None
-        # self.json_data = json.dumps(data) if data else None
 
     data = property(get_data, set_data)
 
