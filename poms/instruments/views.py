@@ -19,6 +19,7 @@ from poms.obj_perms.filters import AllFakeFilter, ObjectPermissionBackend
 from poms.obj_perms.permissions import ObjectPermissionBase
 from poms.tags.filters import TagFakeFilter, TagFilterBackend
 from poms.users.filters import OwnerByMasterUserFilter
+from poms.users.permissions import SuperUserOrReadOnly
 
 
 class InstrumentClassViewSet(PomsClassViewSetBase):
@@ -54,7 +55,15 @@ class CostMethodViewSet(PomsClassViewSetBase):
 class PricingPolicyViewSet(PomsViewSetBase):
     queryset = PricingPolicy.objects
     serializer_class = PricingPolicySerializer
-    filter_backends = [OwnerByMasterUserFilter, DjangoFilterBackend, OrderingFilter, SearchFilter]
+    filter_backends = [
+        OwnerByMasterUserFilter,
+        DjangoFilterBackend,
+        OrderingFilter,
+        SearchFilter
+    ]
+    permission_classes = PomsViewSetBase.permission_classes + [
+        SuperUserOrReadOnly,
+    ]
     ordering_fields = ['user_code', 'name', 'short_name']
     search_fields = ['user_code', 'name', 'short_name']
 

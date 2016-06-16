@@ -28,6 +28,7 @@ class ModelWithObjectPermissionSerializer(serializers.ModelSerializer):
     def __init__(self, *args, **kwargs):
         super(ModelWithObjectPermissionSerializer, self).__init__(*args, **kwargs)
 
+        self.fields['display_name'] = serializers.SerializerMethodField()
         self.fields['granted_permissions'] = GrantedPermissionField()
 
         member = self.context['request'].user.member
@@ -36,6 +37,13 @@ class ModelWithObjectPermissionSerializer(serializers.ModelSerializer):
                 many=True, required=False, allow_null=True)
             self.fields['group_object_permissions'] = GroupObjectPermissionSerializer(
                 many=True, required=False, allow_null=True)
+
+    def get_display_name(self, instance):
+        member = self.context['request'].user.member
+        if has_view_perms(member, instance):
+            return getattr(instance, 'name', None)
+        else:
+            return getattr(instance, 'public_name', None)
 
     # def to_representation(self, instance):
     #     member = self.context['request'].user.member
@@ -60,7 +68,7 @@ class ModelWithObjectPermissionSerializer(serializers.ModelSerializer):
         member = self.context['request'].user.member
         if not has_view_perms(member, instance):
             for k in list(six.iterkeys(ret)):
-                if k not in ['url', 'id', 'public_name', 'granted_permissions']:
+                if k not in ['url', 'id', 'public_name', 'display_name', 'granted_permissions']:
                     ret.pop(k)
         return ret
 

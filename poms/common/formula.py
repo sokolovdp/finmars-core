@@ -5,6 +5,7 @@ import datetime
 import json
 from collections import Callable
 
+import collections
 import simpleeval
 import six
 from babel import dates, numbers
@@ -300,6 +301,11 @@ if __name__ == "__main__":
     # print(safe_eval('5 % 2'))
 
     def demo():
+        import pprint
+        from poms.instruments.models import Instrument
+        from poms.transactions.models import Transaction
+        from poms.common.formula_serializers import EvalInstrumentSerializer, EvalTransactionSerializer
+
         def play(expr, names=None):
             try:
                 res = safe_eval(expr, names=names)
@@ -314,10 +320,15 @@ if __name__ == "__main__":
             "v1": "str",
             "v2": {"id": 1, "name": "V2", "trn_code": 12354, "num": 1.234},
             "v3": [{"id": 2, "name": "V31"}, {"id": 3, "name": "V32"}, ],
+            "instr": collections.OrderedDict(EvalInstrumentSerializer(instance=Instrument.objects.first()).data),
+            "trns": [collections.OrderedDict(EvalTransactionSerializer(instance=t).data)
+                     for t in Transaction.objects.all()[:2]],
         }
         print('test variables:')
         for n in sorted(six.iterkeys(names)):
-            print('\t%s -> %s' % (n, json.dumps(names[n], sort_keys=True)))
+            print(n, '\n')
+            pprint.pprint(names[n])
+            # print('\t%s -> %s' % (n, json.dumps(names[n], sort_keys=True, indent=2)))
 
         print()
         print('simple:')
@@ -334,6 +345,10 @@ if __name__ == "__main__":
         play('v2.name', names)
         play('v2.num * 3', names)
         play('v3[1].name', names)
+        play('v3[1].name', names)
+        play('instr.name', names)
+        play('instr.instrument_type.id', names)
+        play('instr.instrument_type.user_code', names)
 
         print()
         print('functions: ')

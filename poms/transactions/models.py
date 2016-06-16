@@ -200,7 +200,7 @@ class TransactionType(NamedModel):
                 self._set_simple(instr, 'public_name', ainstr, 'public_name', input_values)
                 self._set_simple(instr, 'short_name', ainstr, 'short_name', input_values)
                 self._set_simple(instr, 'notes', ainstr, 'notes', input_values)
-                self._set_relation(instr, 'type', ainstr, 'instrument_type', input_values)
+                self._set_relation(instr, 'instrument_type', ainstr, 'instrument_type', input_values)
                 self._set_relation(instr, 'pricing_currency', ainstr, 'pricing_currency', input_values)
                 self._set_simple(instr, 'price_multiplier', ainstr, 'price_multiplier', input_values)
                 self._set_relation(instr, 'accrued_currency', ainstr, 'accrued_currency', input_values)

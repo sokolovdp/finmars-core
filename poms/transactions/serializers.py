@@ -406,6 +406,7 @@ class TransactionSerializer(ModelWithAttributesSerializer):
     class Meta:
         model = Transaction
         fields = ['url', 'id', 'master_user',
+                  'transaction_code',
                   'complex_transaction', 'complex_transaction_order',
                   'transaction_class',
                   'portfolio',
