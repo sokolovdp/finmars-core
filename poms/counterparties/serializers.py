@@ -52,6 +52,7 @@ class CounterpartySerializer(ModelWithAttributesSerializer):
     class Meta:
         model = Counterparty
         fields = ['url', 'id', 'master_user', 'user_code', 'name', 'short_name', 'notes', 'attributes', 'tags']
+        extra_kwargs = {'user_code': {'required': False}}
 
 
 class ResponsibleClassifierSerializer(ClassifierSerializerBase):
@@ -93,3 +94,4 @@ class ResponsibleSerializer(ModelWithAttributesSerializer):
     class Meta:
         model = Responsible
         fields = ['url', 'id', 'master_user', 'user_code', 'name', 'short_name', 'notes', 'attributes', 'tags']
+        extra_kwargs = {'user_code': {'required': False}}

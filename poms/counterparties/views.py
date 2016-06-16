@@ -2,13 +2,12 @@ from __future__ import unicode_literals
 
 from rest_framework.filters import DjangoFilterBackend, SearchFilter, FilterSet, OrderingFilter
 
-from poms.common.filters import OrderingWithAttributesFilter
 from poms.common.views import PomsViewSetBase
 from poms.counterparties.models import Counterparty, Responsible, CounterpartyAttributeType, ResponsibleAttributeType
 from poms.counterparties.serializers import CounterpartySerializer, ResponsibleSerializer, \
     CounterpartyAttributeTypeSerializer, \
     ResponsibleAttributeTypeSerializer
-from poms.obj_attrs.filters import AttributePrefetchFilter
+from poms.obj_attrs.filters import AttributePrefetchFilter, OrderingWithAttributesFilter
 from poms.obj_attrs.views import AttributeTypeViewSetBase
 from poms.obj_perms.filters import AllFakeFilter, \
     ObjectPermissionBackend

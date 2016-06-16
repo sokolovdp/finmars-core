@@ -33,3 +33,4 @@ class TagSerializer(ModelWithObjectPermissionSerializer):
             'counterparties', 'responsibles', 'strategies1', 'strategies2', 'strategies3',
             'portfolios', 'transaction_types'
         ]
+        extra_kwargs = {'user_code': {'required': False}}

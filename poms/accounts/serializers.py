@@ -32,6 +32,7 @@ class AccountTypeSerializer(ModelWithObjectPermissionSerializer):
         model = AccountType
         fields = ['url', 'id', 'master_user', 'user_code', 'name', 'public_name', 'short_name', 'notes',
                   'show_transaction_details', 'transaction_details_expr', 'tags']
+        extra_kwargs = {'user_code': {'required': False}}
 
 
 class AccountAttributeTypeSerializer(AttributeTypeSerializerBase, ModelWithObjectPermissionSerializer):
@@ -64,6 +65,7 @@ class AccountSerializer(ModelWithAttributesSerializer, ModelWithObjectPermission
         model = Account
         fields = ['url', 'id', 'master_user', 'type', 'user_code', 'name', 'public_name', 'short_name', 'notes',
                   'tags', 'attributes', ]
+        extra_kwargs = {'user_code': {'required': False}}
 
         # def get_type__public_name(self, obj):
         #     return obj.type.public_name if obj.type is not None else None

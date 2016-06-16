@@ -3,7 +3,6 @@ from __future__ import unicode_literals
 import django_filters
 from rest_framework.filters import DjangoFilterBackend, OrderingFilter, SearchFilter, FilterSet
 
-from poms.common.filters import OrderingWithAttributesFilter
 from poms.common.views import PomsClassViewSetBase, PomsViewSetBase
 from poms.instruments.filters import OwnerByInstrumentFilter
 from poms.instruments.models import Instrument, PriceHistory, InstrumentClass, DailyPricingModel, \
@@ -13,7 +12,7 @@ from poms.instruments.serializers import InstrumentSerializer, PriceHistorySeria
     InstrumentClassSerializer, DailyPricingModelSerializer, AccrualCalculationModelSerializer, \
     PaymentSizeDetailSerializer, PeriodicityPeriodSerializer, CostMethodSerializer, InstrumentTypeSerializer, \
     InstrumentAttributeTypeSerializer, PricingPolicySerializer
-from poms.obj_attrs.filters import AttributePrefetchFilter
+from poms.obj_attrs.filters import AttributePrefetchFilter, OrderingWithAttributesFilter
 from poms.obj_attrs.views import AttributeTypeViewSetBase
 from poms.obj_perms.filters import AllFakeFilter, ObjectPermissionBackend
 from poms.obj_perms.permissions import ObjectPermissionBase
