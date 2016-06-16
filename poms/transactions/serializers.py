@@ -217,6 +217,7 @@ class TransactionTypeSerializer(ModelWithObjectPermissionSerializer):
         model = TransactionType
         fields = ['url', 'id', 'master_user', 'user_code', 'name', 'short_name', 'notes', 'display_expr',
                   'instrument_types', 'portfolios', 'tags', 'inputs', 'actions']
+        extra_kwargs = {'user_code': {'required': False}}
 
     def validate(self, attrs):
         # TODO: validate *_input...

@@ -38,6 +38,7 @@ class AttributeTypeSerializerBase(serializers.ModelSerializer):
     class Meta:
         fields = ['url', 'id', 'master_user', 'user_code', 'name', 'short_name', 'notes', 'value_type', 'order',
                   'is_hidden']
+        extra_kwargs = {'user_code': {'required': False}}
         update_read_only_fields = ['value_type']
 
     def __init__(self, *args, **kwargs):

@@ -19,6 +19,7 @@ class CurrencySerializer(serializers.ModelSerializer):
     class Meta:
         model = Currency
         fields = ['url', 'id', 'master_user', 'user_code', 'name', 'short_name', 'notes', 'tags']
+        extra_kwargs = {'user_code': {'required': False}}
         readonly_fields = ['is_system', 'is_global']
 
 

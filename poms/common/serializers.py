@@ -175,6 +175,7 @@ class ClassifierSerializerBase(serializers.ModelSerializer):
             'level',
             'children'
         ]
+        extra_kwargs = {'user_code': {'required': False}}
 
     def create(self, validated_data):
         validated_data.pop('id', None)
@@ -251,6 +252,7 @@ class ClassifierNodeSerializerBase(PomsSerializerBase, ModelWithObjectPermission
             'parent',
             'children'
         ]
+        extra_kwargs = {'user_code': {'required': False}}
 
     # def to_representation(self, instance):
     #     ret = super(ClassifierNodeSerializerBase, self).to_representation(instance)

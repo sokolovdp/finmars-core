@@ -55,8 +55,8 @@ class PricingPolicySerializer(serializers.ModelSerializer):
 
     class Meta:
         model = PricingPolicy
-        fields = ['url', 'id', 'master_user', 'user_code', 'name', 'short_name', 'notes',
-                  'expr']
+        fields = ['url', 'id', 'master_user', 'user_code', 'name', 'short_name', 'notes', 'expr']
+        extra_kwargs = {'user_code': {'required': False}}
 
 
 class InstrumentClassifierSerializer(ClassifierSerializerBase):
@@ -77,8 +77,8 @@ class InstrumentTypeSerializer(ModelWithObjectPermissionSerializer):
 
     class Meta:
         model = InstrumentType
-        fields = ['url', 'id', 'master_user', 'user_code', 'name', 'short_name', 'notes',
-                  'instrument_class', 'tags']
+        fields = ['url', 'id', 'master_user', 'user_code', 'name', 'short_name', 'notes', 'instrument_class', 'tags']
+        extra_kwargs = {'user_code': {'required': False}}
 
 
 class InstrumentAttributeTypeSerializer(AttributeTypeSerializerBase, ModelWithObjectPermissionSerializer):
@@ -158,11 +158,13 @@ class InstrumentSerializer(ModelWithAttributesSerializer, ModelWithObjectPermiss
 
     class Meta:
         model = Instrument
-        fields = ['url', 'id', 'master_user', 'instrument_type', 'user_code', 'name', 'short_name', 'notes', 'is_active',
+        fields = ['url', 'id', 'master_user', 'instrument_type', 'user_code', 'name', 'short_name', 'notes',
+                  'is_active',
                   'pricing_currency', 'price_multiplier', 'accrued_currency', 'accrued_multiplier',
                   'daily_pricing_model', 'payment_size_detail', 'default_price', 'default_accrued',
                   'manual_pricing_formulas', 'accrual_calculation_schedules', 'factor_schedules', 'event_schedules',
                   'attributes', 'tags']
+        extra_kwargs = {'user_code': {'required': False}}
 
     def create(self, validated_data):
         manual_pricing_formulas = validated_data.pop('manual_pricing_formulas', None)

@@ -50,3 +50,4 @@ class PortfolioSerializer(ModelWithAttributesSerializer):
     class Meta:
         model = Portfolio
         fields = ['url', 'id', 'master_user', 'user_code', 'name', 'short_name', 'notes', 'attributes', 'tags']
+        extra_kwargs = {'user_code': {'required': False}}
