@@ -76,23 +76,23 @@ class HistoryEntry(models.Model):
         'users.Member',
     )
     created = models.DateTimeField(
-        auto_now_add=True
+        auto_now_add=True,
+        db_index=True
     )
     content_type = models.ForeignKey(
         ContentType,
         related_name='histories',
-        verbose_name=_('content type')
     )
-    object_id = models.BigIntegerField(verbose_name=_('object id'))
+    object_id = models.BigIntegerField()
     content_object = GenericForeignKey()
     action_flag = models.PositiveSmallIntegerField(
-        verbose_name=_('action flag'),
         choices=FLAG_CHOICES
     )
     message = models.TextField(
         null=True,
         blank=True
     )
+    json_version = models.IntegerField(default=0)
     json = models.TextField(
         null=True,
         blank=True
