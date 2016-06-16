@@ -1,9 +1,10 @@
+from django.utils.text import Truncator
 from mptt.utils import get_cached_trees
 from rest_framework import serializers
 from rest_framework.exceptions import ValidationError
 from rest_framework.serializers import ListSerializer
 
-from poms.common.fields import FilteredPrimaryKeyRelatedField
+from poms.common.fields import FilteredPrimaryKeyRelatedField, UserCodeField
 from poms.common.filters import ClassifierRootFilter
 from poms.obj_perms.serializers import ModelWithObjectPermissionSerializer
 from poms.users.filters import OwnerByMasterUserFilter
@@ -24,6 +25,23 @@ class PomsClassSerializer(PomsSerializerBase):
             'name',
             'description'
         ]
+
+
+class ModelWithUserCodeSerializer(serializers.ModelSerializer):
+    def __init__(self, *args, **kwargs):
+        super(ModelWithUserCodeSerializer, self).__init__(*args, **kwargs)
+
+        self.fields['user_code'] = UserCodeField()
+
+    def to_internal_value(self, data):
+        ret = super(ModelWithUserCodeSerializer, self).to_internal_value(data)
+
+        user_code = ret.get('user_code', None)
+        if not user_code:
+            name = ret.get('name', '')
+            user_code = Truncator(name).chars(25)
+            ret['user_code'] = user_code
+        return ret
 
 
 class ClassifierFieldBase(FilteredPrimaryKeyRelatedField):
@@ -254,15 +272,15 @@ class ClassifierNodeSerializerBase(PomsSerializerBase, ModelWithObjectPermission
         ]
         extra_kwargs = {'user_code': {'required': False}}
 
-    # def to_representation(self, instance):
-    #     ret = super(ClassifierNodeSerializerBase, self).to_representation(instance)
-    #     if not instance.is_root_node():
-    #         ret.pop("granted_permissions", None)
-    #         ret.pop("user_object_permissions", None)
-    #         ret.pop("group_object_permissions", None)
-    #     return ret
+        # def to_representation(self, instance):
+        #     ret = super(ClassifierNodeSerializerBase, self).to_representation(instance)
+        #     if not instance.is_root_node():
+        #         ret.pop("granted_permissions", None)
+        #         ret.pop("user_object_permissions", None)
+        #         ret.pop("group_object_permissions", None)
+        #     return ret
 
-    # def save_object_permission(self, instance, user_object_permissions, group_object_permissions, created):
-    #     if instance.is_root_node():
-    #         super(ClassifierNodeSerializerBase, self).save_object_permission(instance, user_object_permissions,
-    #                                                                          group_object_permissions, created)
+        # def save_object_permission(self, instance, user_object_permissions, group_object_permissions, created):
+        #     if instance.is_root_node():
+        #         super(ClassifierNodeSerializerBase, self).save_object_permission(instance, user_object_permissions,
+        #                                                                          group_object_permissions, created)

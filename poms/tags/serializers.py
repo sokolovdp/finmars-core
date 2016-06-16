@@ -2,13 +2,14 @@ from __future__ import unicode_literals
 
 from rest_framework import serializers
 
+from poms.common.serializers import ModelWithUserCodeSerializer
 from poms.obj_perms.serializers import ModelWithObjectPermissionSerializer
 from poms.tags.fields import TagContentTypeField
 from poms.tags.models import Tag
 from poms.users.fields import MasterUserField
 
 
-class TagSerializer(ModelWithObjectPermissionSerializer):
+class TagSerializer(ModelWithObjectPermissionSerializer, ModelWithUserCodeSerializer):
     master_user = MasterUserField()
     content_types = TagContentTypeField(many=True)
 
@@ -33,4 +34,3 @@ class TagSerializer(ModelWithObjectPermissionSerializer):
             'counterparties', 'responsibles', 'strategies1', 'strategies2', 'strategies3',
             'portfolios', 'transaction_types'
         ]
-        extra_kwargs = {'user_code': {'required': False}}

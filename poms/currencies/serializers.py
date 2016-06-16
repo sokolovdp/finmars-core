@@ -5,13 +5,14 @@ from django.utils.translation import ugettext_lazy as _
 from rest_framework import serializers
 
 from poms.common import formula
+from poms.common.serializers import ModelWithUserCodeSerializer
 from poms.currencies.fields import CurrencyField
 from poms.currencies.models import Currency, CurrencyHistory
 from poms.tags.fields import TagField
 from poms.users.fields import MasterUserField
 
 
-class CurrencySerializer(serializers.ModelSerializer):
+class CurrencySerializer(ModelWithUserCodeSerializer):
     url = serializers.HyperlinkedIdentityField(view_name='currency-detail')
     master_user = MasterUserField()
     tags = TagField(many=True, required=False, allow_null=True)
@@ -19,7 +20,6 @@ class CurrencySerializer(serializers.ModelSerializer):
     class Meta:
         model = Currency
         fields = ['url', 'id', 'master_user', 'user_code', 'name', 'short_name', 'notes', 'tags']
-        extra_kwargs = {'user_code': {'required': False}}
         readonly_fields = ['is_system', 'is_global']
 
 

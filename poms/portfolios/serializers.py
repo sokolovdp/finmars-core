@@ -2,9 +2,10 @@ from __future__ import unicode_literals
 
 from rest_framework import serializers
 
-from poms.common.serializers import ClassifierSerializerBase, ClassifierNodeSerializerBase
+from poms.common.serializers import ClassifierSerializerBase, ClassifierNodeSerializerBase, ModelWithUserCodeSerializer
 from poms.obj_attrs.serializers import AttributeTypeSerializerBase, AttributeSerializerBase, \
     ModelWithAttributesSerializer
+from poms.obj_perms.serializers import ModelWithObjectPermissionSerializer
 from poms.portfolios.fields import PortfolioClassifierField, PortfolioAttributeTypeField
 from poms.portfolios.models import PortfolioClassifier, Portfolio, PortfolioAttributeType, PortfolioAttribute
 from poms.tags.fields import TagField
@@ -42,7 +43,8 @@ class PortfolioAttributeSerializer(AttributeSerializerBase):
         fields = AttributeSerializerBase.Meta.fields + ['attribute_type', 'classifier']
 
 
-class PortfolioSerializer(ModelWithAttributesSerializer):
+class PortfolioSerializer(ModelWithObjectPermissionSerializer, ModelWithAttributesSerializer,
+                          ModelWithUserCodeSerializer):
     master_user = MasterUserField()
     attributes = PortfolioAttributeSerializer(many=True, required=False, allow_null=True)
     tags = TagField(many=True, required=False, allow_null=True)
@@ -50,4 +52,3 @@ class PortfolioSerializer(ModelWithAttributesSerializer):
     class Meta:
         model = Portfolio
         fields = ['url', 'id', 'master_user', 'user_code', 'name', 'short_name', 'notes', 'attributes', 'tags']
-        extra_kwargs = {'user_code': {'required': False}}

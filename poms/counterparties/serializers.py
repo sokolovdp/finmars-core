@@ -2,7 +2,7 @@ from __future__ import unicode_literals
 
 from rest_framework import serializers
 
-from poms.common.serializers import ClassifierSerializerBase, ClassifierNodeSerializerBase
+from poms.common.serializers import ClassifierSerializerBase, ClassifierNodeSerializerBase, ModelWithUserCodeSerializer
 from poms.counterparties.fields import ResponsibleClassifierField, \
     CounterpartyAttributeTypeField, ResponsibleAttributeTypeField
 from poms.counterparties.models import CounterpartyClassifier, Counterparty, Responsible, ResponsibleClassifier, \
@@ -44,7 +44,7 @@ class CounterpartyAttributeSerializer(AttributeSerializerBase):
         fields = AttributeSerializerBase.Meta.fields + ['attribute_type', 'classifier']
 
 
-class CounterpartySerializer(ModelWithAttributesSerializer):
+class CounterpartySerializer(ModelWithAttributesSerializer, ModelWithUserCodeSerializer):
     master_user = MasterUserField()
     attributes = CounterpartyAttributeSerializer(many=True, required=False, allow_null=True)
     tags = TagField(many=True, required=False, allow_null=True)
@@ -52,7 +52,6 @@ class CounterpartySerializer(ModelWithAttributesSerializer):
     class Meta:
         model = Counterparty
         fields = ['url', 'id', 'master_user', 'user_code', 'name', 'short_name', 'notes', 'attributes', 'tags']
-        extra_kwargs = {'user_code': {'required': False}}
 
 
 class ResponsibleClassifierSerializer(ClassifierSerializerBase):
@@ -86,7 +85,7 @@ class ResponsibleAttributeSerializer(AttributeSerializerBase):
         fields = AttributeSerializerBase.Meta.fields + ['attribute_type', 'classifier']
 
 
-class ResponsibleSerializer(ModelWithAttributesSerializer):
+class ResponsibleSerializer(ModelWithAttributesSerializer, ModelWithUserCodeSerializer):
     master_user = MasterUserField()
     attributes = ResponsibleAttributeSerializer(many=True, required=False, allow_null=True)
     tags = TagField(many=True, required=False, allow_null=True)
@@ -94,4 +93,3 @@ class ResponsibleSerializer(ModelWithAttributesSerializer):
     class Meta:
         model = Responsible
         fields = ['url', 'id', 'master_user', 'user_code', 'name', 'short_name', 'notes', 'attributes', 'tags']
-        extra_kwargs = {'user_code': {'required': False}}
