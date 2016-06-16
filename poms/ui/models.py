@@ -1,15 +1,33 @@
+import json
+
 from django.contrib.contenttypes.models import ContentType
+from django.core.serializers.json import DjangoJSONEncoder
 from django.db import models
 
 from poms.audit import history
 from poms.users.models import MasterUser, Member
 
 
-class TemplateListLayout(models.Model):
-    master_user = models.ForeignKey(MasterUser)
+class BaseLayout(models.Model):
     content_type = models.ForeignKey(ContentType)
+    json_data = models.TextField(null=True, blank=True)
+
+    class Meta:
+        abstract = True
+
+    def get_data(self):
+        return json.loads(self.json_data) if self.json_data else None
+
+    def set_data(self, data):
+        self.json_data = json.dumps(data, cls=DjangoJSONEncoder, sort_keys=True) if data else None
+        # self.json_data = json.dumps(data) if data else None
+
+    data = property(get_data, set_data)
+
+
+class TemplateListLayout(BaseLayout):
+    master_user = models.ForeignKey(MasterUser)
     name = models.CharField(max_length=255, blank=True, default="", db_index=True)
-    json_data = models.TextField(null=False, blank=True, default="")
 
     class Meta:
         unique_together = [
@@ -17,10 +35,8 @@ class TemplateListLayout(models.Model):
         ]
 
 
-class TemplateEditLayout(models.Model):
+class TemplateEditLayout(BaseLayout):
     master_user = models.ForeignKey(MasterUser)
-    content_type = models.ForeignKey(ContentType)
-    json_data = models.TextField(null=False, blank=True, default="")
 
     class Meta:
         unique_together = [
@@ -28,11 +44,9 @@ class TemplateEditLayout(models.Model):
         ]
 
 
-class ListLayout(models.Model):
+class ListLayout(BaseLayout):
     member = models.ForeignKey(Member)
-    content_type = models.ForeignKey(ContentType)
     name = models.CharField(max_length=255, blank=True, default="", db_index=True)
-    json_data = models.TextField(null=False, blank=True, default="")
 
     class Meta:
         unique_together = [
@@ -40,10 +54,8 @@ class ListLayout(models.Model):
         ]
 
 
-class EditLayout(models.Model):
+class EditLayout(BaseLayout):
     member = models.ForeignKey(Member)
-    content_type = models.ForeignKey(ContentType)
-    json_data = models.TextField(null=False, blank=True, default="")
 
     class Meta:
         unique_together = [
