@@ -16,6 +16,9 @@ class StrategyAdmin(HistoricalAdmin, TreeModelAdmin):
     raw_id_fields = ['master_user', 'parent']
     fields = ['master_user', 'parent', 'user_code', 'name', 'short_name', 'notes']
 
+    def rebuild_permissions(self):
+        pass
+
 
 # admin.site.register(Strategy, StrategyAdmin)
 # # admin.site.register(StrategyUserObjectPermission, UserObjectPermissionAdmin)

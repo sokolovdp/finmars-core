@@ -155,8 +155,8 @@ class InstrumentViewSet(PomsViewSetBase):
         AttributePrefetchFilter,
         TagFilterBackend,
         DjangoFilterBackend,
-        # OrderingFilter,
-        OrderingWithAttributesFilter,
+        OrderingFilter,
+        # OrderingWithAttributesFilter,
         SearchFilter,
     ]
     filter_class = InstrumentFilterSet

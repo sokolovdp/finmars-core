@@ -6,7 +6,7 @@ from rest_framework.filters import FilterSet, DjangoFilterBackend, OrderingFilte
 from rest_framework.response import Response
 
 from poms.common.views import PomsClassViewSetBase, PomsViewSetBase
-from poms.obj_attrs.filters import AttributePrefetchFilter, OrderingWithAttributesFilter
+from poms.obj_attrs.filters import AttributePrefetchFilter
 from poms.obj_attrs.views import AttributeTypeViewSetBase
 from poms.obj_perms.filters import AllFakeFilter, ObjectPermissionBackend
 from poms.obj_perms.permissions import ObjectPermissionBase
@@ -175,10 +175,12 @@ class TransactionAttributeTypeViewSet(AttributeTypeViewSetBase):
 
 class TransactionFilterSet(FilterSet):
     transaction_date = django_filters.DateFilter()
+    accounting_date = django_filters.DateFilter()
+    cash_date = django_filters.DateFilter()
 
     class Meta:
         model = Transaction
-        fields = ['transaction_date']
+        fields = ['transaction_date', 'accounting_date', 'cash_date']
 
 
 class TransactionViewSet(PomsViewSetBase):
@@ -192,11 +194,28 @@ class TransactionViewSet(PomsViewSetBase):
         'strategy2_position', 'strategy2_cash',
         'strategy3_position', 'strategy3_cash'
     ).prefetch_related(
+        'portfolio__user_object_permissions', 'portfolio__user_object_permissions__permission',
         'portfolio__group_object_permissions', 'portfolio__group_object_permissions__permission',
-        'account_cash__group_object_permissions', 'account_cash__group_object_permissions__permission',
-        'account_position__group_object_permissions', 'account_position__group_object_permissions__permission',
-        'account_interim__group_object_permissions', 'account_interim__group_object_permissions__permission',
+        'instrument__user_object_permissions', 'instrument__user_object_permissions__permission',
         'instrument__group_object_permissions', 'instrument__group_object_permissions__permission',
+        'account_cash__user_object_permissions', 'account_cash__user_object_permissions__permission',
+        'account_cash__group_object_permissions', 'account_cash__group_object_permissions__permission',
+        'account_position__user_object_permissions', 'account_position__user_object_permissions__permission',
+        'account_position__group_object_permissions', 'account_position__group_object_permissions__permission',
+        'account_interim__user_object_permissions', 'account_interim__user_object_permissions__permission',
+        'account_interim__group_object_permissions', 'account_interim__group_object_permissions__permission',
+        'strategy1_position__user_object_permissions', 'strategy1_position__user_object_permissions__permission',
+        'strategy1_position__group_object_permissions', 'strategy1_position__group_object_permissions__permission',
+        'strategy1_cash__user_object_permissions', 'strategy1_cash__user_object_permissions__permission',
+        'strategy1_cash__group_object_permissions', 'strategy1_cash__group_object_permissions__permission',
+        'strategy2_position__user_object_permissions', 'strategy2_position__user_object_permissions__permission',
+        'strategy2_position__group_object_permissions', 'strategy2_position__group_object_permissions__permission',
+        'strategy2_cash__user_object_permissions', 'strategy2_cash__user_object_permissions__permission',
+        'strategy2_cash__group_object_permissions', 'strategy2_cash__group_object_permissions__permission',
+        'strategy3_position__user_object_permissions', 'strategy3_position__user_object_permissions__permission',
+        'strategy3_position__group_object_permissions', 'strategy3_position__group_object_permissions__permission',
+        'strategy3_cash__user_object_permissions', 'strategy3_cash__user_object_permissions__permission',
+        'strategy3_cash__group_object_permissions', 'strategy3_cash__group_object_permissions__permission',
     )
     serializer_class = TransactionSerializer
     filter_backends = [
@@ -204,12 +223,13 @@ class TransactionViewSet(PomsViewSetBase):
         TransactionObjectPermissionFilter,
         AttributePrefetchFilter,
         DjangoFilterBackend,
-        OrderingWithAttributesFilter,
-        # OrderingFilter
+        # OrderingWithAttributesFilter,
+        OrderingFilter,
         SearchFilter,
     ]
     permission_classes = PomsViewSetBase.permission_classes + [
         TransactionObjectPermission,
     ]
     filter_class = TransactionFilterSet
-    ordering_fields = ['transaction_date']
+    ordering_fields = ['transaction_code', 'transaction_date', 'accounting_date', 'cash_date']
+    search_fields = ['transaction_code']
