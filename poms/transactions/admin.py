@@ -92,19 +92,17 @@ class TransactionTypeActionInstrumentInline(admin.StackedInline):
     fields = (
         'order',
         'user_code',
-        'name',
-        'public_name',
-        'short_name',
+        ('name', 'short_name', 'public_name',),
         'notes',
-        ('instrument_type', 'instrument_type_input'),
-        ('pricing_currency', 'pricing_currency_input'),
+        ('instrument_type', 'instrument_type_input',),
+        ('pricing_currency', 'pricing_currency_input',),
         'price_multiplier',
-        ('accrued_currency', 'accrued_currency_input'),
+        ('accrued_currency', 'accrued_currency_input',),
         'accrued_multiplier',
-        ('daily_pricing_model', 'daily_pricing_model_input'),
-        ('payment_size_detail', 'payment_size_detail_input'),
-        'default_price',
-        'default_accrued',
+        ('daily_pricing_model', 'daily_pricing_model_input',),
+        ('payment_size_detail', 'payment_size_detail_input',),
+        ('default_price', 'default_accrued',),
+        ('user_text_1', 'user_text_2', 'user_text_3',),
     )
 
     # raw_id_fields = (

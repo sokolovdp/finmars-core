@@ -90,6 +90,9 @@ class TransactionTypeActionInstrumentSerializer(serializers.ModelSerializer):
     payment_size_detail_input = TransactionInputField(allow_null=True)
     default_price = ExpressionField(default="0.0")
     default_accrued = ExpressionField(default="0.0")
+    user_text_1 = ExpressionField(allow_blank=True)
+    user_text_2 = ExpressionField(allow_blank=True)
+    user_text_3 = ExpressionField(allow_blank=True)
 
     class Meta:
         model = TransactionTypeActionInstrument
@@ -106,8 +109,8 @@ class TransactionTypeActionInstrumentSerializer(serializers.ModelSerializer):
             'accrued_multiplier',
             'daily_pricing_model', 'daily_pricing_model_input',
             'payment_size_detail', 'payment_size_detail_input',
-            'default_price',
-            'default_accrued',
+            'default_price', 'default_accrued',
+            'user_text_1', 'user_text_2', 'user_text_3',
         ]
 
 

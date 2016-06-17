@@ -209,6 +209,9 @@ class TransactionType(NamedModel):
                 self._set_relation(instr, 'payment_size_detail', ainstr, 'payment_size_detail', input_values)
                 self._set_simple(instr, 'default_price', ainstr, 'default_price', input_values)
                 self._set_simple(instr, 'default_accrued', ainstr, 'default_accrued', input_values)
+                self._set_simple(instr, 'user_text_1', ainstr, 'user_text_1', input_values)
+                self._set_simple(instr, 'user_text_2', ainstr, 'user_text_2', input_values)
+                self._set_simple(instr, 'user_text_3', ainstr, 'user_text_3', input_values)
                 if save:
                     instr.save()
                     perms_map = {
@@ -532,6 +535,24 @@ class TransactionTypeActionInstrument(TransactionTypeAction):
     default_accrued = models.CharField(
         max_length=255,
         default='0.'
+    )
+
+    user_text_1 = models.CharField(
+        max_length=255,
+        blank=True,
+        default='',
+    )
+
+    user_text_2 = models.CharField(
+        max_length=255,
+        blank=True,
+        default='',
+    )
+
+    user_text_3 = models.CharField(
+        max_length=255,
+        blank=True,
+        default='',
     )
 
     class Meta:

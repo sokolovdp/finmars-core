@@ -137,17 +137,25 @@ class InstrumentAttributeTypeViewSet(AttributeTypeViewSetBase):
 
 
 class InstrumentFilterSet(FilterSet):
+    user_code = django_filters.CharFilter(lookup_expr='icontains')
+    name = django_filters.CharFilter(lookup_expr='icontains')
+    short_name = django_filters.CharFilter(lookup_expr='icontains')
+    user_text_1 = django_filters.CharFilter(lookup_expr='icontains')
+    user_text_2 = django_filters.CharFilter(lookup_expr='icontains')
+    user_text_3 = django_filters.CharFilter(lookup_expr='icontains')
     all = AllFakeFilter()
     tags = TagFakeFilter()
 
     class Meta:
         model = Instrument
-        fields = ['user_code', 'name', 'short_name', 'all', 'tags']
+        fields = ['user_code', 'name', 'short_name', 'user_text_1', 'user_text_2', 'user_text_3',
+                  'all', 'tags']
 
 
 class InstrumentViewSet(PomsViewSetBase):
-    queryset = Instrument.objects.prefetch_related('manual_pricing_formulas', 'accrual_calculation_schedules',
-                                                   'factor_schedules', 'event_schedules')
+    queryset = Instrument.objects.prefetch_related(
+        # 'pricing_currency', 'accrued_currency',
+        'manual_pricing_formulas', 'accrual_calculation_schedules', 'factor_schedules', 'event_schedules')
     serializer_class = InstrumentSerializer
     filter_backends = [
         OwnerByMasterUserFilter,

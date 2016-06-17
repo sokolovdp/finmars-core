@@ -162,6 +162,7 @@ class InstrumentSerializer(ModelWithAttributesSerializer, ModelWithObjectPermiss
                   'is_active',
                   'pricing_currency', 'price_multiplier', 'accrued_currency', 'accrued_multiplier',
                   'daily_pricing_model', 'payment_size_detail', 'default_price', 'default_accrued',
+                  'user_text_1', 'user_text_2', 'user_text_3',
                   'manual_pricing_formulas', 'accrual_calculation_schedules', 'factor_schedules', 'event_schedules',
                   'attributes', 'tags']
 
