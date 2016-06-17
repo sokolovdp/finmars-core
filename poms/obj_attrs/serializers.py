@@ -132,6 +132,8 @@ class AttributeTypeSerializerBase(ModelWithObjectPermissionSerializer, ModelWith
 class AttributeListSerializer(serializers.ListSerializer):
     def get_attribute(self, instance):
         member = self.context['request'].user.member
+        if member.is_superuser:
+            return instance.attributes
         master_user = self.context['request'].user.master_user
         attr_type_model = get_attr_type_model(instance)
         attr_types = attr_type_model.objects.filter(master_user=master_user)
