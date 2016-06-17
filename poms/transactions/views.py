@@ -14,6 +14,7 @@ from poms.tags.filters import TagFakeFilter, TagFilterBackend
 from poms.transactions.filters import TransactionObjectPermissionFilter
 from poms.transactions.models import TransactionClass, Transaction, TransactionType, TransactionAttributeType
 from poms.transactions.permissions import TransactionObjectPermission
+from poms.transactions.processor import TransactionTypeProcessor
 from poms.transactions.serializers import TransactionClassSerializer, TransactionSerializer, TransactionTypeSerializer, \
     TransactionAttributeTypeSerializer, TransactionTypeProcessSerializer
 from poms.users.filters import OwnerByMasterUserFilter
@@ -115,13 +116,13 @@ class TransactionTypeViewSet(PomsViewSetBase):
 
     @detail_route(methods=['get', 'put'], url_path='process', serializer_class=TransactionTypeProcessSerializer)
     def process(self, request, pk=None):
-        return self.process_or_check(request, True)
+        return self.process_or_check(request, False)
 
     @detail_route(methods=['get', 'put'], url_path='check', serializer_class=TransactionTypeProcessSerializer)
     def check(self, request, pk=None):
-        return self.process_or_check(request, False)
+        return self.process_or_check(request, True)
 
-    def process_or_check(self, request, save=False):
+    def process_or_check(self, request, check_mode=True):
         self._detail_instance = self.get_object()
         if request.method == 'GET':
             serializer = TransactionTypeProcessSerializer(transaction_type=self._detail_instance,
@@ -134,7 +135,8 @@ class TransactionTypeViewSet(PomsViewSetBase):
                                                           data=request.data,
                                                           context=self.get_serializer_context())
             serializer.is_valid(raise_exception=True)
-            instruments, transactions = self._detail_instance.process(serializer.validated_data, save=save)
+            processor = TransactionTypeProcessor(self._detail_instance, serializer.validated_data)
+            instruments, transactions = processor.run(check_mode)
             instruments_s = []
             transactions_s = []
             for i in instruments:
