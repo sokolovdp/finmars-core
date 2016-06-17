@@ -135,4 +135,4 @@ class TagGroupObjectPermission(GroupObjectPermissionBase):
         verbose_name_plural = _('tags - group permissions')
 
 
-history.register(Tag)
+history.register(Tag, follow=['user_object_permissions', 'group_object_permissions'])

@@ -265,13 +265,15 @@ class ResponsibleAttribute(AttributeBase):
         verbose_name_plural = _('responsible attributes')
 
 
+history.register(Counterparty, follow=['attributes', 'tags', 'user_object_permissions', 'group_object_permissions'])
+history.register(CounterpartyAttributeType,
+                 follow=['classifiers', 'options', 'user_object_permissions', 'group_object_permissions'])
 history.register(CounterpartyClassifier)
-history.register(Counterparty)
-history.register(CounterpartyAttributeType)
 history.register(CounterpartyAttributeTypeOption)
 history.register(CounterpartyAttribute)
+history.register(Responsible, follow=['attributes', 'tags', 'user_object_permissions', 'group_object_permissions'])
+history.register(ResponsibleAttributeType,
+                 follow=['classifiers', 'options', 'user_object_permissions', 'group_object_permissions'])
 history.register(ResponsibleClassifier)
-history.register(Responsible)
-history.register(ResponsibleAttributeType)
 history.register(ResponsibleAttributeTypeOption)
 history.register(ResponsibleAttribute)

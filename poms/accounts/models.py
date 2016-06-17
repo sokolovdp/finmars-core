@@ -182,9 +182,10 @@ class AccountAttribute(AttributeBase):
         verbose_name_plural = _('account attributes')
 
 
-history.register(AccountType)
+history.register(AccountType, follow=['tags', 'user_object_permissions', 'group_object_permissions'])
+history.register(Account, follow=['attributes', 'tags', 'user_object_permissions', 'group_object_permissions'])
+history.register(AccountAttributeType,
+                 follow=['classifiers', 'options', 'user_object_permissions', 'group_object_permissions'])
 history.register(AccountClassifier)
-history.register(Account)
-history.register(AccountAttributeType)
 history.register(AccountAttributeTypeOption)
 history.register(AccountAttribute)
