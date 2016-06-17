@@ -85,7 +85,7 @@ class BaseObjectPermissionBackend(BaseFilterBackend):
             'group_object_permissions__permission',
             # 'group_object_permissions__permission__content_type',
         )
-        if view.action == 'retrieve':
+        if view and view.action == 'retrieve':
             return queryset
         # if self.can_view_all:
         #     if request.query_params.get('all', '') in ['1', 'yes', 'true']:
