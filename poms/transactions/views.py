@@ -174,13 +174,14 @@ class TransactionAttributeTypeViewSet(AttributeTypeViewSetBase):
 
 
 class TransactionFilterSet(FilterSet):
-    transaction_date = django_filters.DateFilter()
-    accounting_date = django_filters.DateFilter()
-    cash_date = django_filters.DateFilter()
+    transaction_code = django_filters.NumericRangeFilter()
+    transaction_date = django_filters.DateFromToRangeFilter()
+    accounting_date = django_filters.DateFromToRangeFilter()
+    cash_date = django_filters.DateFromToRangeFilter()
 
     class Meta:
         model = Transaction
-        fields = ['transaction_date', 'accounting_date', 'cash_date']
+        fields = ['transaction_code', 'transaction_date', 'accounting_date', 'cash_date']
 
 
 class TransactionViewSet(PomsViewSetBase):

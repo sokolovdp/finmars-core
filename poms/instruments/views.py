@@ -4,7 +4,7 @@ import django_filters
 from rest_framework.filters import DjangoFilterBackend, OrderingFilter, SearchFilter, FilterSet
 
 from poms.common.views import PomsClassViewSetBase, PomsViewSetBase
-from poms.instruments.filters import OwnerByInstrumentFilter
+from poms.instruments.filters import OwnerByInstrumentFilter, PriceHistoryObjectPermissionFilter
 from poms.instruments.models import Instrument, PriceHistory, InstrumentClass, DailyPricingModel, \
     AccrualCalculationModel, PaymentSizeDetail, PeriodicityPeriod, CostMethod, InstrumentType, InstrumentAttributeType, \
     PricingPolicy
@@ -12,7 +12,7 @@ from poms.instruments.serializers import InstrumentSerializer, PriceHistorySeria
     InstrumentClassSerializer, DailyPricingModelSerializer, AccrualCalculationModelSerializer, \
     PaymentSizeDetailSerializer, PeriodicityPeriodSerializer, CostMethodSerializer, InstrumentTypeSerializer, \
     InstrumentAttributeTypeSerializer, PricingPolicySerializer
-from poms.obj_attrs.filters import AttributePrefetchFilter, OrderingWithAttributesFilter
+from poms.obj_attrs.filters import AttributePrefetchFilter
 from poms.obj_attrs.views import AttributeTypeViewSetBase
 from poms.obj_perms.filters import AllFakeFilter, ObjectPermissionBackend
 from poms.obj_perms.permissions import ObjectPermissionBase
@@ -169,20 +169,30 @@ class InstrumentViewSet(PomsViewSetBase):
 
 class PriceHistoryFilterSet(FilterSet):
     instrument = django_filters.Filter(name='instrument')
-    min_date = django_filters.DateFilter(name='date', lookup_type='gte')
-    max_date = django_filters.DateFilter(name='date', lookup_type='lte')
+    date = django_filters.DateFromToRangeFilter()
 
     class Meta:
         model = PriceHistory
-        fields = ['instrument', 'min_date', 'max_date']
+        fields = ['instrument', 'date', ]
 
 
 class PriceHistoryViewSet(PomsViewSetBase):
-    queryset = PriceHistory.objects
+    queryset = PriceHistory.objects.prefetch_related(
+        'instrument',
+        'instrument__user_object_permissions', 'instrument__user_object_permissions__permission',
+        'instrument__group_object_permissions', 'instrument__group_object_permissions__permission',
+    )
     serializer_class = PriceHistorySerializer
-    filter_backends = [OwnerByInstrumentFilter, DjangoFilterBackend, OrderingFilter]
+    filter_backends = [
+        OwnerByInstrumentFilter,
+        PriceHistoryObjectPermissionFilter,
+        DjangoFilterBackend,
+        OrderingFilter,
+        SearchFilter,
+    ]
     filter_class = PriceHistoryFilterSet
     ordering_fields = ['-date']
+    search_fields = ['instrument__user_code', 'instrument__name', 'instrument__short_name', ]
 
 # class ManualPricingFormulaViewSet(PomsViewSetBase):
 #     queryset = ManualPricingFormula.objects
