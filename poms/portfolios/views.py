@@ -76,8 +76,8 @@ class PortfolioViewSet(PomsViewSetBase):
         TagFilterBackend,
         AttributePrefetchFilter,
         DjangoFilterBackend,
-        # OrderingFilter,
-        OrderingWithAttributesFilter,
+        OrderingFilter,
+        # OrderingWithAttributesFilter,
         SearchFilter,
     ]
     filter_class = PortfolioFilterSet

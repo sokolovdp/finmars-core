@@ -236,7 +236,7 @@ class Instrument(NamedModel):
     master_user = models.ForeignKey(MasterUser, related_name='instruments',
                                     verbose_name=_('master user'))
     instrument_type = models.ForeignKey(InstrumentType, on_delete=models.PROTECT,
-                             verbose_name=_('instrument type'))
+                                        verbose_name=_('instrument type'))
     is_active = models.BooleanField(default=True,
                                     verbose_name=_('is active'))
     pricing_currency = models.ForeignKey(Currency, on_delete=models.PROTECT,
@@ -256,6 +256,12 @@ class Instrument(NamedModel):
                                       verbose_name=_('default price'))
     default_accrued = models.FloatField(default=0.,
                                         verbose_name=_('default accrued'))
+    user_text_1 = models.CharField(max_length=255, null=True, blank=True,
+                                   help_text=_('User specified field'))
+    user_text_2 = models.CharField(max_length=255, null=True, blank=True,
+                                   help_text=_('User specified field'))
+    user_text_3 = models.CharField(max_length=255, null=True, blank=True,
+                                   help_text=_('User specified field'))
 
     class Meta(NamedModel.Meta):
         verbose_name = _('instrument')

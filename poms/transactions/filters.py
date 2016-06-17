@@ -18,15 +18,11 @@ class TransactionObjectPermissionFilter(BaseFilterBackend):
         master_user = request.user.master_user
         if member.is_superuser:
             return queryset
-        # portfolio_qs = obj_perms_filter_objects_for_view(member, Portfolio.objects.filter(master_user=master_user))
-        # account_qs = obj_perms_filter_objects_for_view(member, Account.objects.filter(master_user=master_user))
+        portfolio_qs = obj_perms_filter_objects_for_view(member, Portfolio.objects.filter(master_user=master_user))
+        account_qs = obj_perms_filter_objects_for_view(member, Account.objects.filter(master_user=master_user))
         # minimize inlined SQL
-        portfolio_qs = list(
-            obj_perms_filter_objects_for_view(member, Portfolio.objects.filter(master_user=master_user)).values_list(
-                'id', flat=True))
-        account_qs = list(
-            obj_perms_filter_objects_for_view(member, Account.objects.filter(master_user=master_user)).values_list('id',
-                                                                                                                   flat=True))
+        portfolio_qs = list(portfolio_qs.values_list('id', flat=True))
+        account_qs = list(account_qs.values_list('id', flat=True))
         queryset = queryset.filter(
             Q(portfolio__in=portfolio_qs) & (
                 Q(account_position__in=account_qs) |
@@ -34,7 +30,6 @@ class TransactionObjectPermissionFilter(BaseFilterBackend):
                 Q(account_interim__in=account_qs)
             )
         )
-
         return queryset
 
 

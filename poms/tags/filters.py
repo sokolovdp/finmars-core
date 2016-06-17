@@ -4,9 +4,8 @@ from django.db.models import Q
 from django.utils.encoding import force_text
 from rest_framework.filters import BaseFilterBackend
 
-from poms.obj_perms.utils import obj_perms_filter_objects
+from poms.obj_perms.utils import obj_perms_filter_objects_for_view
 from poms.tags.models import Tag
-from poms.tags.utils import tags_prefetch
 
 
 class TagFakeFilter(django_filters.Filter):
@@ -35,7 +34,7 @@ class TagContentTypeFilter(BaseFilterBackend):
         ctypes = [ContentType.objects.get_for_model(model).pk for model in models]
         return queryset.filter(pk__in=ctypes)
 
-#
+
 # class TagPrefetchFilter(BaseFilterBackend):
 #     def filter_queryset(self, request, queryset, view):
 #         # return queryset.prefetch_related(
@@ -84,7 +83,9 @@ class TagFilterBackend(BaseFilterBackend):
         f = Q()
         for t in tags:
             if t:
-                f |= Q(name__istartswith=t)
-        tag_queryset = obj_perms_filter_objects(request.user.member, perms=['view_tag', 'change_tag'],
-                                                queryset=Tag.objects.filter(f), prefetch=False)
-        return queryset.filter(tags__id__in=tag_queryset)
+                f |= Q(name__icontains=t)
+        tag_qs = obj_perms_filter_objects_for_view(
+            request.user.member,
+            queryset=Tag.objects.filter(f, master_user=request.user.master_user),
+            prefetch=False)
+        return queryset.filter(tags__id__in=tag_qs)

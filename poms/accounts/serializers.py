@@ -4,7 +4,7 @@ from rest_framework import serializers
 
 from poms.accounts.fields import AccountClassifierField, AccountAttributeTypeField, AccountTypeField
 from poms.accounts.models import Account, AccountType, AccountClassifier, AccountAttributeType, AccountAttribute
-from poms.common.serializers import ClassifierSerializerBase, ClassifierNodeSerializerBase
+from poms.common.serializers import ClassifierSerializerBase, ClassifierNodeSerializerBase, ModelWithUserCodeSerializer
 from poms.obj_attrs.serializers import AttributeTypeSerializerBase, AttributeSerializerBase, \
     ModelWithAttributesSerializer
 from poms.obj_perms.serializers import ModelWithObjectPermissionSerializer
@@ -24,7 +24,7 @@ class AccountClassifierNodeSerializer(ClassifierNodeSerializerBase):
         model = AccountClassifier
 
 
-class AccountTypeSerializer(ModelWithObjectPermissionSerializer):
+class AccountTypeSerializer(ModelWithObjectPermissionSerializer, ModelWithUserCodeSerializer):
     master_user = MasterUserField()
     tags = TagField(many=True, required=False, allow_null=True)
 
@@ -32,10 +32,9 @@ class AccountTypeSerializer(ModelWithObjectPermissionSerializer):
         model = AccountType
         fields = ['url', 'id', 'master_user', 'user_code', 'name', 'public_name', 'short_name', 'notes',
                   'show_transaction_details', 'transaction_details_expr', 'tags']
-        extra_kwargs = {'user_code': {'required': False}}
 
 
-class AccountAttributeTypeSerializer(AttributeTypeSerializerBase, ModelWithObjectPermissionSerializer):
+class AccountAttributeTypeSerializer(AttributeTypeSerializerBase):
     # classifier_root = AccountClassifierRootField(required=False, allow_null=True)
     # classifiers = AccountClassifierSerializer2(required=False, allow_null=True, many=True)
     classifiers = AccountClassifierSerializer(required=False, allow_null=True, many=True)
@@ -55,7 +54,7 @@ class AccountAttributeSerializer(AttributeSerializerBase):
         fields = AttributeSerializerBase.Meta.fields + ['attribute_type', 'classifier']
 
 
-class AccountSerializer(ModelWithAttributesSerializer, ModelWithObjectPermissionSerializer):
+class AccountSerializer(ModelWithObjectPermissionSerializer, ModelWithAttributesSerializer, ModelWithUserCodeSerializer):
     master_user = MasterUserField()
     type = AccountTypeField()
     attributes = AccountAttributeSerializer(many=True, required=False, allow_null=True)
@@ -65,7 +64,6 @@ class AccountSerializer(ModelWithAttributesSerializer, ModelWithObjectPermission
         model = Account
         fields = ['url', 'id', 'master_user', 'type', 'user_code', 'name', 'public_name', 'short_name', 'notes',
                   'tags', 'attributes', ]
-        extra_kwargs = {'user_code': {'required': False}}
 
         # def get_type__public_name(self, obj):
         #     return obj.type.public_name if obj.type is not None else None

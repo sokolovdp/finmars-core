@@ -2,7 +2,6 @@ from __future__ import unicode_literals
 
 from rest_framework.fields import CharField
 from rest_framework.relations import PrimaryKeyRelatedField, SlugRelatedField
-from rest_framework.validators import UniqueTogetherValidator
 
 
 class FilteredPrimaryKeyRelatedField(PrimaryKeyRelatedField):
@@ -50,8 +49,7 @@ class FilteredSlugRelatedField(SlugRelatedField):
 class UserCodeField(CharField):
     def __init__(self, *args, **kwargs):
         kwargs['max_length'] = 25
+        kwargs['required'] = False
+        kwargs['allow_null'] = True
         kwargs['allow_blank'] = True
-        kwargs['validators'] = [
-            UniqueTogetherValidator()
-        ]
         super(UserCodeField, self).__init__(**kwargs)

@@ -6,7 +6,7 @@ from rest_framework.filters import FilterSet, DjangoFilterBackend, OrderingFilte
 from rest_framework.response import Response
 
 from poms.common.views import PomsClassViewSetBase, PomsViewSetBase
-from poms.obj_attrs.filters import AttributePrefetchFilter, OrderingWithAttributesFilter
+from poms.obj_attrs.filters import AttributePrefetchFilter
 from poms.obj_attrs.views import AttributeTypeViewSetBase
 from poms.obj_perms.filters import AllFakeFilter, ObjectPermissionBackend
 from poms.obj_perms.permissions import ObjectPermissionBase
@@ -14,6 +14,7 @@ from poms.tags.filters import TagFakeFilter, TagFilterBackend
 from poms.transactions.filters import TransactionObjectPermissionFilter
 from poms.transactions.models import TransactionClass, Transaction, TransactionType, TransactionAttributeType
 from poms.transactions.permissions import TransactionObjectPermission
+from poms.transactions.processor import TransactionTypeProcessor
 from poms.transactions.serializers import TransactionClassSerializer, TransactionSerializer, TransactionTypeSerializer, \
     TransactionAttributeTypeSerializer, TransactionTypeProcessSerializer
 from poms.users.filters import OwnerByMasterUserFilter
@@ -115,13 +116,13 @@ class TransactionTypeViewSet(PomsViewSetBase):
 
     @detail_route(methods=['get', 'put'], url_path='process', serializer_class=TransactionTypeProcessSerializer)
     def process(self, request, pk=None):
-        return self.process_or_check(request, True)
+        return self.process_or_check(request, False)
 
     @detail_route(methods=['get', 'put'], url_path='check', serializer_class=TransactionTypeProcessSerializer)
     def check(self, request, pk=None):
-        return self.process_or_check(request, False)
+        return self.process_or_check(request, True)
 
-    def process_or_check(self, request, save=False):
+    def process_or_check(self, request, check_mode=True):
         self._detail_instance = self.get_object()
         if request.method == 'GET':
             serializer = TransactionTypeProcessSerializer(transaction_type=self._detail_instance,
@@ -134,7 +135,8 @@ class TransactionTypeViewSet(PomsViewSetBase):
                                                           data=request.data,
                                                           context=self.get_serializer_context())
             serializer.is_valid(raise_exception=True)
-            instruments, transactions = self._detail_instance.process(serializer.validated_data, save=save)
+            processor = TransactionTypeProcessor(self._detail_instance, serializer.validated_data)
+            instruments, transactions = processor.run(check_mode)
             instruments_s = []
             transactions_s = []
             for i in instruments:
@@ -174,11 +176,14 @@ class TransactionAttributeTypeViewSet(AttributeTypeViewSetBase):
 
 
 class TransactionFilterSet(FilterSet):
-    transaction_date = django_filters.DateFilter()
+    transaction_code = django_filters.NumericRangeFilter()
+    transaction_date = django_filters.DateFromToRangeFilter()
+    accounting_date = django_filters.DateFromToRangeFilter()
+    cash_date = django_filters.DateFromToRangeFilter()
 
     class Meta:
         model = Transaction
-        fields = ['transaction_date']
+        fields = ['transaction_code', 'transaction_date', 'accounting_date', 'cash_date']
 
 
 class TransactionViewSet(PomsViewSetBase):
@@ -192,11 +197,28 @@ class TransactionViewSet(PomsViewSetBase):
         'strategy2_position', 'strategy2_cash',
         'strategy3_position', 'strategy3_cash'
     ).prefetch_related(
+        'portfolio__user_object_permissions', 'portfolio__user_object_permissions__permission',
         'portfolio__group_object_permissions', 'portfolio__group_object_permissions__permission',
-        'account_cash__group_object_permissions', 'account_cash__group_object_permissions__permission',
-        'account_position__group_object_permissions', 'account_position__group_object_permissions__permission',
-        'account_interim__group_object_permissions', 'account_interim__group_object_permissions__permission',
+        'instrument__user_object_permissions', 'instrument__user_object_permissions__permission',
         'instrument__group_object_permissions', 'instrument__group_object_permissions__permission',
+        'account_cash__user_object_permissions', 'account_cash__user_object_permissions__permission',
+        'account_cash__group_object_permissions', 'account_cash__group_object_permissions__permission',
+        'account_position__user_object_permissions', 'account_position__user_object_permissions__permission',
+        'account_position__group_object_permissions', 'account_position__group_object_permissions__permission',
+        'account_interim__user_object_permissions', 'account_interim__user_object_permissions__permission',
+        'account_interim__group_object_permissions', 'account_interim__group_object_permissions__permission',
+        'strategy1_position__user_object_permissions', 'strategy1_position__user_object_permissions__permission',
+        'strategy1_position__group_object_permissions', 'strategy1_position__group_object_permissions__permission',
+        'strategy1_cash__user_object_permissions', 'strategy1_cash__user_object_permissions__permission',
+        'strategy1_cash__group_object_permissions', 'strategy1_cash__group_object_permissions__permission',
+        'strategy2_position__user_object_permissions', 'strategy2_position__user_object_permissions__permission',
+        'strategy2_position__group_object_permissions', 'strategy2_position__group_object_permissions__permission',
+        'strategy2_cash__user_object_permissions', 'strategy2_cash__user_object_permissions__permission',
+        'strategy2_cash__group_object_permissions', 'strategy2_cash__group_object_permissions__permission',
+        'strategy3_position__user_object_permissions', 'strategy3_position__user_object_permissions__permission',
+        'strategy3_position__group_object_permissions', 'strategy3_position__group_object_permissions__permission',
+        'strategy3_cash__user_object_permissions', 'strategy3_cash__user_object_permissions__permission',
+        'strategy3_cash__group_object_permissions', 'strategy3_cash__group_object_permissions__permission',
     )
     serializer_class = TransactionSerializer
     filter_backends = [
@@ -204,12 +226,13 @@ class TransactionViewSet(PomsViewSetBase):
         TransactionObjectPermissionFilter,
         AttributePrefetchFilter,
         DjangoFilterBackend,
-        OrderingWithAttributesFilter,
-        # OrderingFilter
+        # OrderingWithAttributesFilter,
+        OrderingFilter,
         SearchFilter,
     ]
     permission_classes = PomsViewSetBase.permission_classes + [
         TransactionObjectPermission,
     ]
     filter_class = TransactionFilterSet
-    ordering_fields = ['transaction_date']
+    ordering_fields = ['transaction_code', 'transaction_date', 'accounting_date', 'cash_date']
+    search_fields = ['transaction_code']

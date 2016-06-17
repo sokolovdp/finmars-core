@@ -6,8 +6,10 @@ from django.utils.translation import ugettext_lazy as _
 from rest_framework import serializers
 from rest_framework.exceptions import ValidationError
 
+from poms.common.serializers import ModelWithUserCodeSerializer
 from poms.obj_attrs.models import AttributeTypeBase
 from poms.obj_attrs.utils import get_attr_type_model, get_attr_type_view_perms
+from poms.obj_perms.serializers import ModelWithObjectPermissionSerializer
 from poms.obj_perms.utils import obj_perms_filter_objects, has_view_perms
 from poms.users.fields import MasterUserField
 
@@ -31,14 +33,13 @@ class AttributeTypeOptionIsHiddenField(serializers.BooleanField):
         return False
 
 
-class AttributeTypeSerializerBase(serializers.ModelSerializer):
+class AttributeTypeSerializerBase(ModelWithObjectPermissionSerializer, ModelWithUserCodeSerializer):
     master_user = MasterUserField()
     is_hidden = AttributeTypeOptionIsHiddenField()
 
     class Meta:
         fields = ['url', 'id', 'master_user', 'user_code', 'name', 'short_name', 'notes', 'value_type', 'order',
                   'is_hidden']
-        extra_kwargs = {'user_code': {'required': False}}
         update_read_only_fields = ['value_type']
 
     def __init__(self, *args, **kwargs):

@@ -40,22 +40,23 @@ class CurrencyViewSet(PomsViewSetBase):
 
 class CurrencyHistoryFilterSet(FilterSet):
     currency = django_filters.Filter(name='currency')
-    min_date = django_filters.DateFilter(name='date', lookup_type='gte')
-    max_date = django_filters.DateFilter(name='date', lookup_type='lte')
+    date = django_filters.DateFromToRangeFilter()
 
     class Meta:
         model = CurrencyHistory
-        fields = ['currency', 'min_date', 'max_date']
+        fields = ['currency', 'date']
 
 
 class CurrencyHistoryViewSet(PomsViewSetBase):
-    queryset = CurrencyHistory.objects
+    queryset = CurrencyHistory.objects.prefetch_related('currency')
     serializer_class = CurrencyHistorySerializer
     permission_classes = [IsAuthenticated, ]
     filter_backends = [
         OwnerByCurrencyFilter,
         DjangoFilterBackend,
         OrderingFilter,
+        SearchFilter,
     ]
     filter_class = CurrencyHistoryFilterSet
     ordering_fields = ['date', ]
+    search_fields = ['currency__user_code', 'currency__name', 'currency__short_name']

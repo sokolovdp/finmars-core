@@ -58,8 +58,8 @@ class CounterpartyViewSet(PomsViewSetBase):
         TagFilterBackend,
         AttributePrefetchFilter,
         DjangoFilterBackend,
-        # OrderingFilter,
-        OrderingWithAttributesFilter,
+        OrderingFilter,
+        # OrderingWithAttributesFilter,
         SearchFilter,
     ]
     filter_class = CounterpartyFilterSet
@@ -112,8 +112,8 @@ class ResponsibleViewSet(PomsViewSetBase):
         TagFilterBackend,
         AttributePrefetchFilter,
         DjangoFilterBackend,
-        # OrderingFilter,
-        OrderingWithAttributesFilter,
+        OrderingFilter,
+        # OrderingWithAttributesFilter,
         SearchFilter,
     ]
     filter_class = ResponsibleFilterSet

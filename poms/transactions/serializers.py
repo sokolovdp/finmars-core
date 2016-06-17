@@ -8,7 +8,7 @@ from rest_framework.exceptions import ValidationError
 
 from poms.accounts.fields import AccountField
 from poms.accounts.models import Account
-from poms.common.serializers import PomsClassSerializer
+from poms.common.serializers import PomsClassSerializer, ModelWithUserCodeSerializer
 from poms.counterparties.fields import ResponsibleField, CounterpartyField
 from poms.counterparties.models import Counterparty, Responsible
 from poms.currencies.fields import CurrencyField
@@ -90,6 +90,9 @@ class TransactionTypeActionInstrumentSerializer(serializers.ModelSerializer):
     payment_size_detail_input = TransactionInputField(allow_null=True)
     default_price = ExpressionField(default="0.0")
     default_accrued = ExpressionField(default="0.0")
+    user_text_1 = ExpressionField(allow_blank=True)
+    user_text_2 = ExpressionField(allow_blank=True)
+    user_text_3 = ExpressionField(allow_blank=True)
 
     class Meta:
         model = TransactionTypeActionInstrument
@@ -106,8 +109,8 @@ class TransactionTypeActionInstrumentSerializer(serializers.ModelSerializer):
             'accrued_multiplier',
             'daily_pricing_model', 'daily_pricing_model_input',
             'payment_size_detail', 'payment_size_detail_input',
-            'default_price',
-            'default_accrued',
+            'default_price', 'default_accrued',
+            'user_text_1', 'user_text_2', 'user_text_3',
         ]
 
 
@@ -204,7 +207,7 @@ class TransactionTypeActionSerializer(serializers.ModelSerializer):
         return attrs
 
 
-class TransactionTypeSerializer(ModelWithObjectPermissionSerializer):
+class TransactionTypeSerializer(ModelWithObjectPermissionSerializer, ModelWithUserCodeSerializer):
     master_user = MasterUserField()
     display_expr = ExpressionField(allow_blank=False, allow_null=False)
     instrument_types = InstrumentTypeField(many=True)
@@ -217,7 +220,6 @@ class TransactionTypeSerializer(ModelWithObjectPermissionSerializer):
         model = TransactionType
         fields = ['url', 'id', 'master_user', 'user_code', 'name', 'short_name', 'notes', 'display_expr',
                   'instrument_types', 'portfolios', 'tags', 'inputs', 'actions']
-        extra_kwargs = {'user_code': {'required': False}}
 
     def validate(self, attrs):
         # TODO: validate *_input...
@@ -355,7 +357,7 @@ class TransactionTypeProcessSerializer(serializers.Serializer):
                     raise RuntimeError('Unknown value type %s' % i.value_type)
 
 
-class TransactionAttributeTypeSerializer(AttributeTypeSerializerBase, ModelWithObjectPermissionSerializer):
+class TransactionAttributeTypeSerializer(AttributeTypeSerializerBase):
     # strategy_position_root = StrategyRootField(required=False, allow_null=True)
     # strategy_cash_root = StrategyRootField(required=False, allow_null=True)
 
