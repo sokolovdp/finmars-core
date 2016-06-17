@@ -7,13 +7,13 @@ from rest_framework import permissions
 from rest_framework.decorators import detail_route, list_route
 from rest_framework.generics import GenericAPIView
 from rest_framework.mixins import DestroyModelMixin, UpdateModelMixin, CreateModelMixin
+from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from reversion import revisions as reversion
 
 from poms.audit import history
 from poms.audit.models import VersionInfo
 from poms.audit.serializers import VersionSerializer
-
 
 # class HistoricalPageNumberPagination(PageNumberPagination):
 #     page_size_query_param = 'size'
@@ -23,6 +23,9 @@ from poms.audit.serializers import VersionSerializer
 
 
 # TODO: request is to hard for DB, can't prefetch or any optimization
+from poms.users.permissions import SuperUserOnly
+
+
 class HistoricalMixin(object):
     ignore_duplicate_revisions = False
     history_latest_first = True
@@ -67,7 +70,7 @@ class HistoricalMixin(object):
         #     pprint.pprint(self._o2)
         return super(HistoricalMixin, self).finalize_response(request, response, *args, **kwargs)
 
-    @list_route()
+    @list_route(permission_classes=(IsAuthenticated, SuperUserOnly,))
     def deleted(self, request, pk=None):
         # master_user = get_master_user(request)
         master_user = request.user.master_user
@@ -80,7 +83,7 @@ class HistoricalMixin(object):
 
         return self._make_historical_reponse(deleted_list)
 
-    @detail_route()
+    @detail_route(permission_classes=(IsAuthenticated, SuperUserOnly,))
     def history(self, request, pk=None):
         # instance = self.get_object()
         # version_list = reversion.get_for_object(instance)
@@ -256,6 +259,5 @@ class HistoricalMixin2(GenericAPIView):
                 self._history_changed_data = self._get_data()
                 response.data = self._history_changed_data
         return super(HistoricalMixin2, self).finalize_response(request, response, *args, **kwargs)
-
 
 # HistoricalMixin = HistoricalMixin2
