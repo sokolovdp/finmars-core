@@ -30,7 +30,7 @@ admin.site.register(NotificationClass, ClassModelAdmin)
 admin.site.register(PeriodicityGroup, ClassModelAdmin)
 
 
-class TransactionTypeGroupAdmin(admin.ModelAdmin):
+class TransactionTypeGroupAdmin(HistoricalAdmin):
     model = TransactionTypeGroup
     list_display = ['id', 'name', 'master_user']
     raw_id_fields = ['master_user']
