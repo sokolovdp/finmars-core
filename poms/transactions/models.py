@@ -9,6 +9,7 @@ from django.utils.translation import ugettext_lazy as _
 from poms.accounts.models import Account
 from poms.audit import history
 from poms.common.models import NamedModel, TagModelBase, ClassModelBase
+from poms.common.utils import date_now
 from poms.counterparties.models import Responsible, Counterparty
 from poms.currencies.models import Currency
 from poms.instruments.models import Instrument
@@ -112,11 +113,53 @@ class PeriodicityGroup(ClassModelBase):
         verbose_name_plural = _('periodicity group')
 
 
+class TransactionTypeGroup(NamedModel):
+    master_user = models.ForeignKey(
+        MasterUser,
+        related_name='transaction_type_groups',
+        verbose_name=_('master user')
+    )
+
+    class Meta(NamedModel.Meta):
+        verbose_name = _('transaction type group')
+        verbose_name_plural = _('transaction type groups')
+        unique_together = [
+            ['master_user', 'user_code']
+        ]
+        permissions = [
+            ('view_transactiontypegroup', 'Can view transaction type group')
+        ]
+
+
+class TransactionTypeGroupUserObjectPermission(UserObjectPermissionBase):
+    content_object = models.ForeignKey(TransactionTypeGroup, related_name='user_object_permissions',
+                                       verbose_name=_('content object'))
+
+    class Meta(UserObjectPermissionBase.Meta):
+        verbose_name = _('transaction type groups - user permission')
+        verbose_name_plural = _('transaction type groups - user permissions')
+
+
+class TransactionTypeGroupGroupObjectPermission(GroupObjectPermissionBase):
+    content_object = models.ForeignKey(TransactionTypeGroup, related_name='group_object_permissions',
+                                       verbose_name=_('content object'))
+
+    class Meta(GroupObjectPermissionBase.Meta):
+        verbose_name = _('transaction type groups - group permission')
+        verbose_name_plural = _('transaction type groups - group permissions')
+
+
 class TransactionType(NamedModel):
     master_user = models.ForeignKey(
         MasterUser,
         related_name='transaction_types',
         verbose_name=_('master user')
+    )
+    group = models.ForeignKey(
+        TransactionTypeGroup,
+        null=True,
+        blank=True,
+        on_delete=models.PROTECT
     )
     display_expr = models.CharField(
         max_length=255,
@@ -811,11 +854,11 @@ class Transaction(models.Model):
                                             verbose_name=_("overheads with sign"))
 
     # accounting dates
-    transaction_date = models.DateField(editable=False, default=timezone.now,
+    transaction_date = models.DateField(editable=False, default=date_now,
                                         verbose_name=_("transaction date"))
-    accounting_date = models.DateField(default=timezone.now,
+    accounting_date = models.DateField(default=date_now,
                                        verbose_name=_("accounting date"))
-    cash_date = models.DateField(default=timezone.now,
+    cash_date = models.DateField(default=date_now,
                                  verbose_name=_("cash date"))
 
     account_position = models.ForeignKey(Account, related_name='account_positions', on_delete=models.PROTECT, null=True,
@@ -1022,7 +1065,7 @@ class TransactionAttribute(AttributeBase):
 class ExternalCashFlow(models.Model):
     master_user = models.ForeignKey(MasterUser, related_name='external_cash_flows',
                                     verbose_name=_('master user'))
-    date = models.DateField(default=timezone.now, db_index=True,
+    date = models.DateField(default=date_now, db_index=True,
                             verbose_name=_("date"))
     portfolio = models.ForeignKey(Portfolio, related_name='external_cash_flows', on_delete=models.PROTECT,
                                   verbose_name=_("portfolio"))

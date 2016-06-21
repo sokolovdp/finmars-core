@@ -2,12 +2,12 @@ from __future__ import unicode_literals
 
 from django.conf import settings
 from django.db import models
-from django.utils import timezone
 from django.utils.encoding import python_2_unicode_compatible
 from django.utils.translation import ugettext_lazy as _
 
 from poms.audit import history
 from poms.common.models import NamedModel
+from poms.common.utils import date_now
 from poms.obj_perms.models import UserObjectPermissionBase, GroupObjectPermissionBase
 from poms.users.models import MasterUser
 
@@ -63,7 +63,7 @@ class CurrencyHistory(models.Model):
                                  verbose_name=_('currency'))
     pricing_policy = models.ForeignKey('instruments.PricingPolicy', on_delete=models.PROTECT, null=True, blank=True,
                                        verbose_name=_('pricing policy'))
-    date = models.DateField(db_index=True, default=timezone.now,
+    date = models.DateField(db_index=True, default=date_now,
                             verbose_name=_('date'))
     fx_rate = models.FloatField(default=0.,
                                 verbose_name=_('fx rate'))

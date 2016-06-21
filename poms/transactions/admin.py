@@ -19,13 +19,26 @@ from poms.transactions.models import TransactionClass, Transaction, TransactionT
     TransactionAttribute, ActionClass, EventToHandle, \
     ExternalCashFlow, ExternalCashFlowStrategy, NotificationClass, EventClass, PeriodicityGroup, \
     TransactionTypeUserObjectPermission, TransactionAttributeTypeUserObjectPermission, TransactionTypeActionInstrument, \
-    TransactionTypeActionTransaction, ComplexTransaction
+    TransactionTypeActionTransaction, ComplexTransaction, TransactionTypeGroup, \
+    TransactionTypeGroupUserObjectPermission, \
+    TransactionTypeGroupGroupObjectPermission
 
 admin.site.register(TransactionClass, ClassModelAdmin)
 admin.site.register(ActionClass, ClassModelAdmin)
 admin.site.register(EventClass, ClassModelAdmin)
 admin.site.register(NotificationClass, ClassModelAdmin)
 admin.site.register(PeriodicityGroup, ClassModelAdmin)
+
+
+class TransactionTypeGroupAdmin(admin.ModelAdmin):
+    model = TransactionTypeGroup
+    list_display = ['id', 'name', 'master_user']
+    raw_id_fields = ['master_user']
+
+
+admin.site.register(TransactionTypeGroup, TransactionTypeGroupAdmin)
+admin.site.register(TransactionTypeGroupUserObjectPermission, UserObjectPermissionAdmin)
+admin.site.register(TransactionTypeGroupGroupObjectPermission, GroupObjectPermissionAdmin)
 
 
 class TransactionTypeInputInline(admin.TabularInline):
@@ -214,7 +227,7 @@ class TransactionTypeAdmin(HistoricalAdmin):
     model = TransactionType
     list_display = ['id', 'name', 'master_user']
     list_select_related = ['master_user']
-    raw_id_fields = ['master_user']
+    raw_id_fields = ['master_user', 'group']
     filter_horizontal = ['instrument_types', 'portfolios']
     inlines = [
         TransactionTypeInputInline,
