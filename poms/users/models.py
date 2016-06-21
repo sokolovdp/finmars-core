@@ -92,10 +92,10 @@ class Member(models.Model):
         verbose_name=_('user'),
     )
 
-    username = models.CharField(max_length=255, blank=True, default='', editable=False, verbose_name=_('first name'))
-    first_name = models.CharField(max_length=30, blank=True, default='', editable=False, verbose_name=_('first name'))
-    last_name = models.CharField(max_length=30, blank=True, default='', editable=False, verbose_name=_('last name'))
-    email = models.EmailField(blank=True, default='', editable=False, verbose_name=_('email'))
+    username = models.CharField(max_length=255, blank=True, default='', editable=False)
+    first_name = models.CharField(max_length=30, blank=True, default='', editable=False)
+    last_name = models.CharField(max_length=30, blank=True, default='', editable=False)
+    email = models.EmailField(blank=True, default='', editable=False)
 
     join_date = models.DateTimeField(auto_now_add=True, verbose_name=_('join date'))
     is_owner = models.BooleanField(default=False, verbose_name=_('is owner'))
