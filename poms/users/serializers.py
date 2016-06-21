@@ -67,58 +67,30 @@ class UserProfileSerializer(serializers.ModelSerializer):
 
 class UserSerializer(serializers.ModelSerializer):
     url = serializers.HyperlinkedIdentityField(view_name='user-detail')
-    groups = GroupField(many=True)
     profile = UserProfileSerializer()
 
     class Meta:
         model = User
-        fields = ['url', 'id', 'first_name', 'last_name', 'groups', 'profile']
-        # read_only_fields = ['username', ]
-
-    def __init__(self, *args, **kwargs):
-        super(UserSerializer, self).__init__(*args, **kwargs)
-
-        member = self.context['request'].user.member
-        if not member.is_superuser:
-            self.fields.pop('groups')
+        fields = ['url', 'id', 'username', 'first_name', 'last_name', 'profile']
 
     def create(self, validated_data):
-        profile_data = validated_data.pop('profile')
-        groups = validated_data.pop('groups')
+        profile_data = validated_data.pop('profile', {})
         user = User.objects.create(**validated_data)
-        user.groups = groups
         UserProfile.objects.create(user=user, **profile_data)
         return user
 
     def update(self, instance, validated_data):
-        profile_data = validated_data.pop('profile')
-        profile = instance.profile
+        profile_data = validated_data.pop('profile', None)
 
         instance.first_name = validated_data.get('first_name', instance.first_name)
         instance.last_name = validated_data.get('last_name', instance.last_name)
         instance.save()
 
-        if 'groups' in validated_data:
-            request = self.context['request']
-            # master_user = get_master_user(request)
-            master_user = request.user.master_user
-
-            cur_groups = set(instance.groups.filter(profile__master_user=master_user))
-            new_groups = set(validated_data['groups'])
-
-            add_groups = new_groups - cur_groups
-            del_groups = cur_groups - new_groups
-
-            if add_groups:
-                instance.groups.add(*add_groups)
-            if del_groups:
-                instance.groups.remove(*del_groups)
-
-                # instance.groups = validated_data.get('groups', instance.groups)
-
-        profile.language = profile_data.get('language', profile.language)
-        profile.timezone = profile_data.get('timezone', profile.timezone)
-        profile.save()
+        if profile_data:
+            profile = instance.profile
+            profile.language = profile_data.get('language', profile.language)
+            profile.timezone = profile_data.get('timezone', profile.timezone)
+            profile.save()
 
         return instance
 

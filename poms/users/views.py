@@ -2,6 +2,7 @@ from __future__ import unicode_literals
 
 from django.contrib.auth import login, logout
 from django.contrib.auth.models import User
+from django.middleware.csrf import rotate_token
 from rest_framework.authtoken.models import Token
 from rest_framework.authtoken.serializers import AuthTokenSerializer
 from rest_framework.decorators import detail_route
@@ -37,6 +38,7 @@ class PingViewSet(ViewSet):
     permission_classes = [AllowAny]
 
     def list(self, request, *args, **kwargs):
+        rotate_token(request)
         return Response({
             'message': 'pong',
             'version': request.version,
@@ -47,6 +49,7 @@ class ProtectedPingViewSet(ViewSet):
     permission_classes = [IsAuthenticated]
 
     def list(self, request, *args, **kwargs):
+        rotate_token(request)
         return Response({
             'message': 'pong',
             'version': request.version,
@@ -90,16 +93,6 @@ class UserViewSet(HistoricalMixin, UpdateModelMixin, ReadOnlyModelViewSet):
         qs = super(UserViewSet, self).get_queryset()
         qs = qs.filter(id=self.request.user.id)
         return qs
-
-    def retrieve(self, request, *args, **kwargs):
-        # super(UserViewSet, self).retrieve(request, *args, **kwargs)
-        lookup_url_kwarg = self.lookup_url_kwarg or self.lookup_field
-        if self.kwargs[lookup_url_kwarg] == 'me':
-            instance = request.user
-        else:
-            instance = self.get_object()
-        serializer = self.get_serializer(instance)
-        return Response(serializer.data)
 
 
 class MasterUserPermission(BasePermission):
