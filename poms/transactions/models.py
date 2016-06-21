@@ -1065,7 +1065,7 @@ class TransactionAttribute(AttributeBase):
 class ExternalCashFlow(models.Model):
     master_user = models.ForeignKey(MasterUser, related_name='external_cash_flows',
                                     verbose_name=_('master user'))
-    date = models.DateField(default=timezone.now, db_index=True,
+    date = models.DateField(default=date_now, db_index=True,
                             verbose_name=_("date"))
     portfolio = models.ForeignKey(Portfolio, related_name='external_cash_flows', on_delete=models.PROTECT,
                                   verbose_name=_("portfolio"))
