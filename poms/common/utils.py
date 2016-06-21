@@ -12,3 +12,8 @@ def db_class_check_data(model, verbosity, using):
                 model.objects.using(using).create(pk=id, system_code=name, name=name, description=name)
             except IntegrityError:
                 pass
+
+
+def date_now():
+    from django.utils import timezone
+    return timezone.now().date()

@@ -1,7 +1,6 @@
 from __future__ import unicode_literals
 
 from django.db import models
-from django.utils import timezone
 from django.utils.encoding import python_2_unicode_compatible
 from django.utils.translation import ugettext_lazy as _
 from mptt.fields import TreeForeignKey
@@ -9,6 +8,7 @@ from mptt.models import MPTTModel
 
 from poms.audit import history
 from poms.common.models import NamedModel, ClassModelBase
+from poms.common.utils import date_now
 from poms.currencies.models import Currency
 from poms.obj_attrs.models import AttributeTypeBase, AttributeBase, AttributeTypeOptionBase
 from poms.obj_perms.models import GroupObjectPermissionBase, UserObjectPermissionBase
@@ -414,7 +414,7 @@ class PriceHistory(models.Model):
                                    verbose_name=_('instrument'))
     pricing_policy = models.ForeignKey(PricingPolicy, on_delete=models.PROTECT, null=True, blank=True,
                                        verbose_name=_('pricing policy'))
-    date = models.DateField(null=False, blank=False, db_index=True, default=timezone.now,
+    date = models.DateField(db_index=True, default=date_now,
                             verbose_name=_('date'))
     principal_price = models.FloatField(default=0.0,
                                         verbose_name=_('principal price'))
@@ -439,9 +439,9 @@ class PriceHistory(models.Model):
 class AccrualCalculationSchedule(models.Model):
     instrument = models.ForeignKey(Instrument, related_name='accrual_calculation_schedules',
                                    verbose_name=_('instrument'))
-    accrual_start_date = models.DateField(default=timezone.now,
+    accrual_start_date = models.DateField(default=date_now,
                                           verbose_name=_('accrual start date'))
-    first_payment_date = models.DateField(default=timezone.now,
+    first_payment_date = models.DateField(default=date_now,
                                           verbose_name=_('first payment date'))
     accrual_size = models.FloatField(default=0.,
                                      verbose_name=_('accrual size'))
@@ -460,7 +460,7 @@ class AccrualCalculationSchedule(models.Model):
 class InstrumentFactorSchedule(models.Model):
     instrument = models.ForeignKey(Instrument, related_name='factor_schedules',
                                    verbose_name=_('instrument'))
-    effective_date = models.DateField(default=timezone.now,
+    effective_date = models.DateField(default=date_now,
                                       verbose_name=_('effective date'))
     factor_value = models.FloatField(default=0.,
                                      verbose_name=_('factor value'))

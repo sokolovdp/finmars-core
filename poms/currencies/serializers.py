@@ -27,7 +27,7 @@ class CurrencySerializer(ModelWithUserCodeSerializer):
 class CurrencyHistorySerializer(serializers.ModelSerializer):
     url = serializers.HyperlinkedIdentityField(view_name='currencyhistory-detail')
     currency = CurrencyField()
-    pricing_policy = PricingPolicyField()
+    pricing_policy = PricingPolicyField(allow_null=False)
     # fx_rate_expr = serializers.CharField(max_length=50, write_only=True, required=False, allow_null=True,
     #                                      help_text=_('Expression to calculate fx rate (for example 1/75)'))
 

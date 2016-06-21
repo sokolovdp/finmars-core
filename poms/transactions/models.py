@@ -9,6 +9,7 @@ from django.utils.translation import ugettext_lazy as _
 from poms.accounts.models import Account
 from poms.audit import history
 from poms.common.models import NamedModel, TagModelBase, ClassModelBase
+from poms.common.utils import date_now
 from poms.counterparties.models import Responsible, Counterparty
 from poms.currencies.models import Currency
 from poms.instruments.models import Instrument
@@ -853,11 +854,11 @@ class Transaction(models.Model):
                                             verbose_name=_("overheads with sign"))
 
     # accounting dates
-    transaction_date = models.DateField(editable=False, default=timezone.now,
+    transaction_date = models.DateField(editable=False, default=date_now,
                                         verbose_name=_("transaction date"))
-    accounting_date = models.DateField(default=timezone.now,
+    accounting_date = models.DateField(default=date_now,
                                        verbose_name=_("accounting date"))
-    cash_date = models.DateField(default=timezone.now,
+    cash_date = models.DateField(default=date_now,
                                  verbose_name=_("cash date"))
 
     account_position = models.ForeignKey(Account, related_name='account_positions', on_delete=models.PROTECT, null=True,

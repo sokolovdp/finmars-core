@@ -9,6 +9,7 @@ from django.utils.encoding import python_2_unicode_compatible
 from django.utils.translation import ugettext_lazy as _
 
 from poms.common.models import NamedModel, ClassModelBase
+from poms.common.utils import date_now
 from poms.obj_perms.models import GroupObjectPermissionBase, UserObjectPermissionBase
 from poms.users.models import MasterUser
 
@@ -38,7 +39,7 @@ class ReportType(NamedModel):
 
     report_class = models.ForeignKey(ReportClass)
     begin_date = models.DateField(default=date.min)
-    end_date = models.DateField(default=timezone.now)
+    end_date = models.DateField(default=date_now)
 
     show_transaction_details = models.BooleanField(default=False)
     group_by_portfolio = models.BooleanField(default=False)

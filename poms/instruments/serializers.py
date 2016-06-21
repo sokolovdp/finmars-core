@@ -92,6 +92,7 @@ class InstrumentAttributeTypeSerializer(AttributeTypeSerializerBase):
 
 class ManualPricingFormulaSerializer(serializers.ModelSerializer):
     id = serializers.IntegerField(read_only=False, required=False, allow_null=True)
+    pricing_policy = PricingPolicyField(allow_null=False)
 
     # instrument = InstrumentField()
 
@@ -282,7 +283,7 @@ class InstrumentSerializer(ModelWithAttributesSerializer, ModelWithObjectPermiss
 
 class PriceHistorySerializer(serializers.ModelSerializer):
     instrument = InstrumentField()
-    pricing_policy = PricingPolicyField()
+    pricing_policy = PricingPolicyField(allow_null=False)
 
     class Meta:
         model = PriceHistory
