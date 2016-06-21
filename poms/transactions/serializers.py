@@ -25,16 +25,24 @@ from poms.strategies.fields import Strategy1Field, Strategy2Field, Strategy3Fiel
 from poms.strategies.models import Strategy1, Strategy2, Strategy3
 from poms.tags.fields import TagField
 from poms.transactions.fields import TransactionAttributeTypeField, TransactionTypeInputContentTypeField, \
-    ExpressionField
+    ExpressionField, TransactionTypeGroupField
 from poms.transactions.models import TransactionClass, Transaction, TransactionType, TransactionAttributeType, \
     TransactionAttribute, TransactionTypeAction, TransactionTypeActionTransaction, TransactionTypeActionInstrument, \
-    TransactionTypeInput
+    TransactionTypeInput, TransactionTypeGroup
 from poms.users.fields import MasterUserField
 
 
 class TransactionClassSerializer(PomsClassSerializer):
     class Meta(PomsClassSerializer.Meta):
         model = TransactionClass
+
+
+class TransactionTypeGroupSerializer(ModelWithObjectPermissionSerializer, ModelWithUserCodeSerializer):
+    master_user = MasterUserField()
+
+    class Meta:
+        model = TransactionTypeGroup
+        fields = ['url', 'id', 'master_user', 'user_code', 'name', 'short_name', 'notes']
 
 
 class TransactionInputField(serializers.CharField):
@@ -209,6 +217,7 @@ class TransactionTypeActionSerializer(serializers.ModelSerializer):
 
 class TransactionTypeSerializer(ModelWithObjectPermissionSerializer, ModelWithUserCodeSerializer):
     master_user = MasterUserField()
+    group = TransactionTypeGroupField(allow_null=False)
     display_expr = ExpressionField(allow_blank=False, allow_null=False)
     instrument_types = InstrumentTypeField(many=True)
     portfolios = PortfolioField(many=True)
@@ -218,7 +227,7 @@ class TransactionTypeSerializer(ModelWithObjectPermissionSerializer, ModelWithUs
 
     class Meta:
         model = TransactionType
-        fields = ['url', 'id', 'master_user', 'user_code', 'name', 'short_name', 'notes', 'display_expr',
+        fields = ['url', 'id', 'master_user', 'group', 'user_code', 'name', 'short_name', 'notes', 'display_expr',
                   'instrument_types', 'portfolios', 'tags', 'inputs', 'actions']
 
     def validate(self, attrs):

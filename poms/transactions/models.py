@@ -112,11 +112,53 @@ class PeriodicityGroup(ClassModelBase):
         verbose_name_plural = _('periodicity group')
 
 
+class TransactionTypeGroup(NamedModel):
+    master_user = models.ForeignKey(
+        MasterUser,
+        related_name='transaction_type_groups',
+        verbose_name=_('master user')
+    )
+
+    class Meta(NamedModel.Meta):
+        verbose_name = _('transaction type group')
+        verbose_name_plural = _('transaction type groups')
+        unique_together = [
+            ['master_user', 'user_code']
+        ]
+        permissions = [
+            ('view_transactiontypegroup', 'Can view transaction type group')
+        ]
+
+
+class TransactionTypeGroupUserObjectPermission(UserObjectPermissionBase):
+    content_object = models.ForeignKey(TransactionTypeGroup, related_name='user_object_permissions',
+                                       verbose_name=_('content object'))
+
+    class Meta(UserObjectPermissionBase.Meta):
+        verbose_name = _('transaction type groups - user permission')
+        verbose_name_plural = _('transaction type groups - user permissions')
+
+
+class TransactionTypeGroupGroupObjectPermission(GroupObjectPermissionBase):
+    content_object = models.ForeignKey(TransactionTypeGroup, related_name='group_object_permissions',
+                                       verbose_name=_('content object'))
+
+    class Meta(GroupObjectPermissionBase.Meta):
+        verbose_name = _('transaction type groups - group permission')
+        verbose_name_plural = _('transaction type groups - group permissions')
+
+
 class TransactionType(NamedModel):
     master_user = models.ForeignKey(
         MasterUser,
         related_name='transaction_types',
         verbose_name=_('master user')
+    )
+    group = models.ForeignKey(
+        TransactionTypeGroup,
+        null=True,
+        blank=True,
+        on_delete=models.PROTECT
     )
     display_expr = models.CharField(
         max_length=255,
@@ -1093,6 +1135,7 @@ history.register(EventClass)
 history.register(NotificationClass)
 history.register(PeriodicityGroup)
 
+history.register(TransactionTypeGroup)
 history.register(TransactionType)
 history.register(TransactionAttributeType)
 history.register(TransactionAttributeTypeOption)

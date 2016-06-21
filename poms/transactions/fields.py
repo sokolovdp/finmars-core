@@ -1,15 +1,23 @@
 from __future__ import unicode_literals
 
 from django.contrib.contenttypes.models import ContentType
-from django.core.exceptions import ObjectDoesNotExist, ValidationError
+from django.core.exceptions import ObjectDoesNotExist
 from django.utils.encoding import smart_text
 from rest_framework.fields import CharField, empty
 
 from poms.common.fields import FilteredPrimaryKeyRelatedField, FilteredSlugRelatedField
 from poms.obj_perms.filters import FieldObjectPermissionBackend
 from poms.transactions.filters import TransactionTypeInputContentTypeFilter
-from poms.transactions.models import TransactionType, TransactionAttributeType
+from poms.transactions.models import TransactionType, TransactionAttributeType, TransactionTypeGroup
 from poms.users.filters import OwnerByMasterUserFilter
+
+
+class TransactionTypeGroupField(FilteredPrimaryKeyRelatedField):
+    queryset = TransactionTypeGroup.objects
+    filter_backends = [
+        OwnerByMasterUserFilter,
+        FieldObjectPermissionBackend,
+    ]
 
 
 class TransactionTypeField(FilteredPrimaryKeyRelatedField):

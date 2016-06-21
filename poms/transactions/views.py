@@ -12,17 +12,42 @@ from poms.obj_perms.filters import AllFakeFilter, ObjectPermissionBackend
 from poms.obj_perms.permissions import ObjectPermissionBase
 from poms.tags.filters import TagFakeFilter, TagFilterBackend
 from poms.transactions.filters import TransactionObjectPermissionFilter
-from poms.transactions.models import TransactionClass, Transaction, TransactionType, TransactionAttributeType
+from poms.transactions.models import TransactionClass, Transaction, TransactionType, TransactionAttributeType, \
+    TransactionTypeGroup
 from poms.transactions.permissions import TransactionObjectPermission
 from poms.transactions.processor import TransactionTypeProcessor
 from poms.transactions.serializers import TransactionClassSerializer, TransactionSerializer, TransactionTypeSerializer, \
-    TransactionAttributeTypeSerializer, TransactionTypeProcessSerializer
+    TransactionAttributeTypeSerializer, TransactionTypeProcessSerializer, TransactionTypeGroupSerializer
 from poms.users.filters import OwnerByMasterUserFilter
 
 
 class TransactionClassViewSet(PomsClassViewSetBase):
     queryset = TransactionClass.objects
     serializer_class = TransactionClassSerializer
+
+
+class TransactionTypeGroupFilterSet(FilterSet):
+    class Meta:
+        model = TransactionTypeGroup
+        fields = ['user_code', 'name', 'short_name']
+
+
+class TransactionTypeGroupViewSet(PomsViewSetBase):
+    queryset = TransactionTypeGroup.objects
+    serializer_class = TransactionTypeGroupSerializer
+    filter_backends = [
+        OwnerByMasterUserFilter,
+        ObjectPermissionBackend,
+        DjangoFilterBackend,
+        OrderingFilter,
+        SearchFilter,
+    ]
+    filter_class = TransactionTypeGroupFilterSet
+    permission_classes = PomsViewSetBase.permission_classes + [
+        ObjectPermissionBase,
+    ]
+    ordering_fields = ['user_code', 'name', 'short_name']
+    search_fields = ['user_code', 'name', 'short_name']
 
 
 class TransactionTypeFilterSet(FilterSet):
