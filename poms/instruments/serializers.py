@@ -8,7 +8,7 @@ from poms.common.serializers import PomsClassSerializer, ClassifierSerializerBas
     ModelWithUserCodeSerializer
 from poms.currencies.serializers import CurrencyField
 from poms.instruments.fields import InstrumentClassifierField, InstrumentField, InstrumentAttributeTypeField, \
-    InstrumentTypeField
+    InstrumentTypeField, PricingPolicyField
 from poms.instruments.models import InstrumentClassifier, Instrument, PriceHistory, InstrumentClass, DailyPricingModel, \
     AccrualCalculationModel, PaymentSizeDetail, PeriodicityPeriod, CostMethod, InstrumentType, InstrumentAttributeType, \
     InstrumentAttribute, ManualPricingFormula, AccrualCalculationSchedule, InstrumentFactorSchedule, EventSchedule, \
@@ -282,7 +282,8 @@ class InstrumentSerializer(ModelWithAttributesSerializer, ModelWithObjectPermiss
 
 class PriceHistorySerializer(serializers.ModelSerializer):
     instrument = InstrumentField()
+    pricing_policy = PricingPolicyField()
 
     class Meta:
         model = PriceHistory
-        fields = ['url', 'id', 'instrument', 'date', 'principal_price', 'accrued_price', 'factor']
+        fields = ['url', 'id', 'instrument', 'pricing_policy', 'date', 'principal_price', 'accrued_price', 'factor']

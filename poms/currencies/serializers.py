@@ -8,6 +8,7 @@ from poms.common import formula
 from poms.common.serializers import ModelWithUserCodeSerializer
 from poms.currencies.fields import CurrencyField
 from poms.currencies.models import Currency, CurrencyHistory
+from poms.instruments.fields import PricingPolicyField
 from poms.tags.fields import TagField
 from poms.users.fields import MasterUserField
 
@@ -27,12 +28,13 @@ class CurrencyHistorySerializer(serializers.ModelSerializer):
     url = serializers.HyperlinkedIdentityField(view_name='currencyhistory-detail')
     master_user = MasterUserField()
     currency = CurrencyField()
+    pricing_policy = PricingPolicyField()
     fx_rate_expr = serializers.CharField(max_length=50, write_only=True, required=False, allow_null=True,
                                          help_text=_('Expression to calculate fx rate (for example 1/75)'))
 
     class Meta:
         model = CurrencyHistory
-        fields = ['url', 'id', 'master_user', 'currency', 'date', 'fx_rate', 'fx_rate_expr']
+        fields = ['url', 'id', 'master_user', 'currency', 'pricing_policy', 'date', 'fx_rate', 'fx_rate_expr']
         readonly_fields = ['is_global']
 
     def validate(self, data):

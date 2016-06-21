@@ -415,7 +415,7 @@ class PriceHistory(models.Model):
     pricing_policy = models.ForeignKey(PricingPolicy, on_delete=models.PROTECT, null=True, blank=True,
                                        verbose_name=_('pricing policy'))
     date = models.DateField(null=False, blank=False, db_index=True, default=timezone.now,
-                            verbose_name=_('pricing policy'))
+                            verbose_name=_('date'))
     principal_price = models.FloatField(default=0.0,
                                         verbose_name=_('principal price'))
     accrued_price = models.FloatField(null=True, blank=True,
