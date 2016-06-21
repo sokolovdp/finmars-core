@@ -2,7 +2,6 @@ from __future__ import unicode_literals
 
 from django.contrib.contenttypes.models import ContentType
 from django.db import models
-from django.utils import timezone
 from django.utils.encoding import python_2_unicode_compatible
 from django.utils.translation import ugettext_lazy as _
 
@@ -1136,10 +1135,15 @@ history.register(EventClass)
 history.register(NotificationClass)
 history.register(PeriodicityGroup)
 
-history.register(TransactionTypeGroup)
-history.register(TransactionType)
-history.register(TransactionAttributeType)
+history.register(TransactionTypeGroup, follow=['user_object_permissions', 'group_object_permissions'])
+history.register(TransactionType, follow=['inputs', 'actions', 'user_object_permissions', 'group_object_permissions'])
+history.register(TransactionTypeInput)
+history.register(TransactionTypeActionInstrument)
+history.register(TransactionTypeActionTransaction)
+history.register(TransactionAttributeType,
+                 follow=['classifiers', 'options', 'user_object_permissions', 'group_object_permissions'])
 history.register(TransactionAttributeTypeOption)
 history.register(TransactionAttribute)
+history.register(Transaction, follow=['attributes'])
 history.register(ExternalCashFlow, follow=['strategies'])
 history.register(ExternalCashFlowStrategy, follow=['external_cash_flow'])

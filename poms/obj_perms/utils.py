@@ -113,6 +113,8 @@ def obj_perms_filter_object_list_for_view(member, objs, model=None):
 
 
 def get_granted_permissions(member, obj):
+    if member.is_superuser:
+        return get_all_perms(obj)
     model = obj
     user_lookup_name, user_obj_perms_model = get_user_obj_perms_model(model)
     group_lookup_name, group_obj_perms_model = get_group_obj_perms_model(model)
@@ -231,6 +233,19 @@ def get_view_perms(model):
         'model_name': model._meta.model_name
     }
     return {perm % kwargs for perm in codename_set}
+
+
+_perms_cache = {}
+
+
+def get_all_perms(model):
+    # return [p.codename for p in Permission.objects.filter(content_type=ctype)]
+    ctype = ContentType.objects.get_for_model(model)
+    if ctype in _perms_cache:
+        return _perms_cache[ctype]
+    ret = [p.codename for p in Permission.objects.filter(content_type=ctype)]
+    _perms_cache[ctype] = ret
+    return ret
 
 
 def has_perms(member, obj, perms):

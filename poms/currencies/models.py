@@ -83,5 +83,5 @@ class CurrencyHistory(models.Model):
         return '%s @ %s - %s' % (self.currency, self.date, self.fx_rate,)
 
 
-history.register(Currency)
+history.register(Currency, follow=['user_object_permissions', 'group_object_permissions'])
 history.register(CurrencyHistory)

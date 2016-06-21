@@ -136,8 +136,9 @@ class PortfolioAttribute(AttributeBase):
         verbose_name_plural = _('portfolio attributes')
 
 
+history.register(Portfolio, follow=['attributes', 'tags', 'user_object_permissions', 'group_object_permissions'])
+history.register(PortfolioAttributeType,
+                 follow=['classifiers', 'options', 'user_object_permissions', 'group_object_permissions'])
 history.register(PortfolioClassifier)
-history.register(Portfolio)
-history.register(PortfolioAttributeType)
 history.register(PortfolioAttributeTypeOption)
 history.register(PortfolioAttribute)

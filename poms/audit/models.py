@@ -65,7 +65,7 @@ class HistoryEntry(models.Model):
     DELETION = 3
     FLAG_CHOICES = (
         (ADDITION, 'Added'),
-        (CHANGE, 'Chaned'),
+        (CHANGE, 'Changed'),
         (DELETION, 'Deleted'),
     )
 
@@ -74,39 +74,37 @@ class HistoryEntry(models.Model):
     )
     member = models.ForeignKey(
         'users.Member',
-        on_delete=models.SET_NULL,
-        null=True,
-        blank=True,
-    )
-    member_name = models.CharField(
-        verbose_name=_('member name (if member deleted)')
     )
     created = models.DateTimeField(
-        auto_now_add=True
+        auto_now_add=True,
+        db_index=True
     )
     content_type = models.ForeignKey(
         ContentType,
         related_name='histories',
-        verbose_name=_('content type')
     )
-    object_id = models.BigIntegerField(verbose_name=_('object id'))
+    object_id = models.BigIntegerField()
     content_object = GenericForeignKey()
     action_flag = models.PositiveSmallIntegerField(
-        verbose_name=_('action flag')
+        choices=FLAG_CHOICES
     )
     message = models.TextField(
         null=True,
         blank=True
     )
+    json_version = models.IntegerField(default=0)
     json = models.TextField(
         null=True,
         blank=True
     )
 
     class Meta:
-        abstract = True
+        # abstract = True
         verbose_name = _('history')
         verbose_name_plural = _('histories')
+        index_together = (
+            ('master_user', 'created')
+        )
         ordering = [
             '-created'
         ]
