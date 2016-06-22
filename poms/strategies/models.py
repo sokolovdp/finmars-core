@@ -278,5 +278,11 @@ def strategy3_group_object_permission_post_delete(sender, instance=None, **kwarg
 
 # history.register(Strategy)
 history.register(Strategy1, follow=['tags', 'user_object_permissions', 'group_object_permissions'])
+history.register(Strategy1UserObjectPermission)
+history.register(Strategy1GroupObjectPermission)
 history.register(Strategy2, follow=['tags', 'user_object_permissions', 'group_object_permissions'])
+history.register(Strategy2UserObjectPermission)
+history.register(Strategy2GroupObjectPermission)
 history.register(Strategy3, follow=['tags', 'user_object_permissions', 'group_object_permissions'])
+history.register(Strategy3UserObjectPermission)
+history.register(Strategy3GroupObjectPermission)

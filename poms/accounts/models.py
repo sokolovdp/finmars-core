@@ -183,9 +183,15 @@ class AccountAttribute(AttributeBase):
 
 
 history.register(AccountType, follow=['tags', 'user_object_permissions', 'group_object_permissions'])
+history.register(AccountTypeUserObjectPermission)
+history.register(AccountTypeGroupObjectPermission)
 history.register(Account, follow=['attributes', 'tags', 'user_object_permissions', 'group_object_permissions'])
+history.register(AccountUserObjectPermission)
+history.register(AccountGroupObjectPermission)
 history.register(AccountAttributeType,
                  follow=['classifiers', 'options', 'user_object_permissions', 'group_object_permissions'])
+history.register(AccountAttributeTypeUserObjectPermission)
+history.register(AccountAttributeTypeGroupObjectPermission)
 history.register(AccountClassifier)
 history.register(AccountAttributeTypeOption)
 history.register(AccountAttribute)

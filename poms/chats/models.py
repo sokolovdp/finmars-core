@@ -182,5 +182,7 @@ class DirectMessage(TimeStampedModel):
 
 history.register(ThreadStatus)
 history.register(Thread)
+history.register(ThreadUserObjectPermission)
+history.register(ThreadGroupObjectPermission)
 history.register(Message)
 history.register(DirectMessage)

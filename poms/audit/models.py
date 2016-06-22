@@ -99,7 +99,7 @@ class HistoryEntry(models.Model):
     )
 
     class Meta:
-        # abstract = True
+        abstract = True
         verbose_name = _('history')
         verbose_name_plural = _('histories')
         index_together = (

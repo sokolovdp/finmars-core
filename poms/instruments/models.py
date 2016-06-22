@@ -500,11 +500,17 @@ history.register(PaymentSizeDetail)
 history.register(PeriodicityPeriod)
 history.register(CostMethod)
 history.register(InstrumentType, follow=['tags', 'user_object_permissions', 'group_object_permissions'])
+history.register(InstrumentTypeUserObjectPermission)
+history.register(InstrumentTypeGroupObjectPermission)
 history.register(Instrument, follow=['manual_pricing_formulas', 'accrual_calculation_schedules', 'factor_schedules',
                                      'event_schedules', 'attributes', 'tags', 'user_object_permissions',
                                      'group_object_permissions'])
+history.register(InstrumentUserObjectPermission)
+history.register(InstrumentGroupObjectPermission)
 history.register(InstrumentAttributeType,
                  follow=['classifiers', 'options', 'user_object_permissions', 'group_object_permissions'])
+history.register(InstrumentAttributeTypeUserObjectPermission)
+history.register(InstrumentAttributeTypeGroupObjectPermission)
 history.register(InstrumentClassifier)
 history.register(InstrumentAttributeTypeOption)
 history.register(InstrumentAttribute)

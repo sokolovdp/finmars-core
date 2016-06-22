@@ -136,3 +136,5 @@ class TagGroupObjectPermission(GroupObjectPermissionBase):
 
 
 history.register(Tag, follow=['user_object_permissions', 'group_object_permissions'])
+history.register(TagUserObjectPermission)
+history.register(TagGroupObjectPermission)

@@ -266,14 +266,22 @@ class ResponsibleAttribute(AttributeBase):
 
 
 history.register(Counterparty, follow=['attributes', 'tags', 'user_object_permissions', 'group_object_permissions'])
+history.register(CounterpartyUserObjectPermission)
+history.register(CounterpartyGroupObjectPermission)
 history.register(CounterpartyAttributeType,
                  follow=['classifiers', 'options', 'user_object_permissions', 'group_object_permissions'])
+history.register(CounterpartyAttributeTypeUserObjectPermission)
+history.register(CounterpartyAttributeTypeGroupObjectPermission)
 history.register(CounterpartyClassifier)
 history.register(CounterpartyAttributeTypeOption)
 history.register(CounterpartyAttribute)
 history.register(Responsible, follow=['attributes', 'tags', 'user_object_permissions', 'group_object_permissions'])
+history.register(ResponsibleUserObjectPermission)
+history.register(ResponsibleGroupObjectPermission)
 history.register(ResponsibleAttributeType,
                  follow=['classifiers', 'options', 'user_object_permissions', 'group_object_permissions'])
+history.register(ResponsibleAttributeTypeUserObjectPermission)
+history.register(ResponsibleAttributeTypeGroupObjectPermission)
 history.register(ResponsibleClassifier)
 history.register(ResponsibleAttributeTypeOption)
 history.register(ResponsibleAttribute)

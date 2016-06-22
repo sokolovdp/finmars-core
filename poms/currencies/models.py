@@ -84,4 +84,6 @@ class CurrencyHistory(models.Model):
 
 
 history.register(Currency, follow=['user_object_permissions', 'group_object_permissions'])
+history.register(CurrencyUserObjectPermission)
+history.register(CurrencyGroupObjectPermission)
 history.register(CurrencyHistory)

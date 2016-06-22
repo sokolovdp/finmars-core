@@ -137,8 +137,12 @@ class PortfolioAttribute(AttributeBase):
 
 
 history.register(Portfolio, follow=['attributes', 'tags', 'user_object_permissions', 'group_object_permissions'])
+history.register(PortfolioUserObjectPermission)
+history.register(PortfolioGroupObjectPermission)
 history.register(PortfolioAttributeType,
                  follow=['classifiers', 'options', 'user_object_permissions', 'group_object_permissions'])
+history.register(PortfolioAttributeTypeUserObjectPermission)
+history.register(PortfolioAttributeTypeGroupObjectPermission)
 history.register(PortfolioClassifier)
 history.register(PortfolioAttributeTypeOption)
 history.register(PortfolioAttribute)
