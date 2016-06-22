@@ -17,7 +17,7 @@ class AccountTypeApiTestCase(BaseApiWithPermissionTestCase, APITestCase):
         self._change_permission = 'change_accounttype'
 
     def _create_obj(self, name='acc'):
-        return self.add_account_type(name, 'a')
+        return self.create_account_type(name, 'a')
 
     def _get_obj(self, name='acc'):
         return self.get_account_type(name, 'a')
@@ -34,7 +34,7 @@ class AccountAttributeTypeApiTestCase(BaseAttributeTypeApiTestCase):
         self._change_permission = 'change_accountattributetype'
 
     def _create_obj(self, name='acc'):
-        return self.add_account_attribute_type(name, 'a')
+        return self.create_account_attribute_type(name, 'a')
 
     def _get_obj(self, name='acc'):
         return self.get_account_attribute_type(name, 'a')
@@ -50,13 +50,13 @@ class AccountApiTestCase(BaseApiWithPermissionTestCase, BaseApiWithAttributesTes
         self._url_object = '/api/v1/accounts/account/%s/'
         self._change_permission = 'change_account'
 
-        account_type_dummy = self.add_account_type('-', 'a')
+        account_type_dummy = self.create_account_type('-', 'a')
         self.assign_perms(account_type_dummy, 'a', users=['a0', 'a1', 'a2'])
 
-        at_simple = self.add_account_attribute_type('simple', 'a', value_type=AccountAttributeType.STRING)
+        at_simple = self.create_account_attribute_type('simple', 'a', value_type=AccountAttributeType.STRING)
         self.assign_perms(at_simple, 'a', groups=['g1'])
 
-        at_classifier = self.add_account_attribute_type('classifier', 'a', value_type=AccountAttributeType.CLASSIFIER)
+        at_classifier = self.create_account_attribute_type('classifier', 'a', value_type=AccountAttributeType.CLASSIFIER)
         self.assign_perms(at_classifier, 'a', groups=['g1'])
         n1 = AccountClassifier.objects.create(attribute_type=at_classifier, name='n1')
         n11 = AccountClassifier.objects.create(attribute_type=at_classifier, name='n11', parent=n1)
@@ -65,18 +65,18 @@ class AccountApiTestCase(BaseApiWithPermissionTestCase, BaseApiWithAttributesTes
         n21 = AccountClassifier.objects.create(attribute_type=at_classifier, name='n21', parent=n2)
         n22 = AccountClassifier.objects.create(attribute_type=at_classifier, name='n22', parent=n2)
 
-        at_classifier2 = self.add_account_attribute_type('classifier2', 'a', value_type=AccountAttributeType.CLASSIFIER)
+        at_classifier2 = self.create_account_attribute_type('classifier2', 'a', value_type=AccountAttributeType.CLASSIFIER)
         self.assign_perms(at_classifier, 'a', groups=['g1'])
         n1 = AccountClassifier.objects.create(attribute_type=at_classifier2, name='n1')
         n11 = AccountClassifier.objects.create(attribute_type=at_classifier2, name='n11', parent=n1)
         n12 = AccountClassifier.objects.create(attribute_type=at_classifier2, name='n12', parent=n1)
 
-        t1 = self.add_tag('t1', 'a', content_types=[Account])
-        t2 = self.add_tag('t2', 'a', content_types=[Account])
+        t1 = self.create_tag('t1', 'a', content_types=[Account])
+        t2 = self.create_tag('t2', 'a', content_types=[Account])
         self.assign_perms(t2, 'a', groups=['g1'])
 
     def _create_obj(self, name='acc'):
-        return self.add_account(name, 'a')
+        return self.create_account(name, 'a')
 
     def _get_obj(self, name='acc'):
         return self.get_account(name, 'a')

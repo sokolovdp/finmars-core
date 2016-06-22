@@ -14,12 +14,12 @@ from rest_framework import status
 from rest_framework.test import APITestCase
 
 from poms.accounts.models import AccountType, Account, AccountAttributeType
-from poms.counterparties.models import Counterparty, Responsible
+from poms.counterparties.models import Counterparty, Responsible, CounterpartyAttributeType, ResponsibleAttributeType
 from poms.currencies.models import Currency
-from poms.instruments.models import InstrumentClass, InstrumentType, Instrument
+from poms.instruments.models import InstrumentClass, InstrumentType, Instrument, InstrumentAttributeType
 from poms.obj_attrs.models import AttributeTypeBase
 from poms.obj_perms.utils import assign_perms, get_all_perms
-from poms.portfolios.models import Portfolio
+from poms.portfolios.models import Portfolio, PortfolioAttributeType
 from poms.strategies.models import Strategy1, Strategy2, Strategy3
 from poms.tags.models import Tag
 from poms.users.models import MasterUser, Member, Group
@@ -54,49 +54,49 @@ class BaseApiTestCase(APITestCase):
 
         self.all_permissions = list(get_all_perms(self.model))
 
-        # self.add_master_user_complex('a', groups=['g1', 'g2'])
-        # self.add_master_user_complex('b', groups=['g1', 'g2'])
+        # self.create_master_user_complex('a', groups=['g1', 'g2'])
+        # self.create_master_user_complex('b', groups=['g1', 'g2'])
 
-        self.add_master_user('a')
-        self.add_group('g1', 'a')
-        self.add_group('g2', 'a')
-        self.add_user('a')
-        self.add_member(user='a', master_user='a', is_owner=True, is_admin=True)
-        self.add_user('a0')
-        self.add_member(user='a0', master_user='a', is_owner=False, is_admin=True)
-        self.add_user('a1')
-        self.add_member(user='a1', master_user='a', groups=['g1'])
-        self.add_user('a2')
-        self.add_member(user='a2', master_user='a', groups=['g2'])
+        self.create_master_user('a')
+        self.create_group('g1', 'a')
+        self.create_group('g2', 'a')
+        self.create_user('a')
+        self.create_member(user='a', master_user='a', is_owner=True, is_admin=True)
+        self.create_user('a0')
+        self.create_member(user='a0', master_user='a', is_owner=False, is_admin=True)
+        self.create_user('a1')
+        self.create_member(user='a1', master_user='a', groups=['g1'])
+        self.create_user('a2')
+        self.create_member(user='a2', master_user='a', groups=['g2'])
 
-        self.add_master_user('b')
-        self.add_group('g1', 'b')
-        self.add_group('g2', 'b')
-        self.add_user('b')
-        self.add_member(user='b', master_user='b', is_owner=True, is_admin=True)
+        self.create_master_user('b')
+        self.create_group('g1', 'b')
+        self.create_group('g2', 'b')
+        self.create_user('b')
+        self.create_member(user='b', master_user='b', is_owner=True, is_admin=True)
 
-    # def add_master_user_complex(self, name, groups):
+    # def create_master_user_complex(self, name, groups):
     #     master_user = name
-    #     self.add_master_user(master_user)
+    #     self.create_master_user(master_user)
     #
-    #     # self.add_group('-', master_user)
+    #     # self.create_group('-', master_user)
     #     if groups:
     #         for group in groups:
-    #             self.add_group(group, master_user)
+    #             self.create_group(group, master_user)
     #
     #     user = name
     #
-    #     self.add_account_type('-', master_user)
-    #     self.add_account('-', master_user, '-')
-    #     self.add_counterparty('-', master_user)
-    #     self.add_responsible('-', master_user)
-    #     self.add_portfolio('-', master_user)
-    #     self.add_instrument_type('-', master_user)
-    #     self.add_instrument('-', master_user, instrument_type='-')
+    #     self.create_account_type('-', master_user)
+    #     self.create_account('-', master_user, '-')
+    #     self.create_counterparty('-', master_user)
+    #     self.create_responsible('-', master_user)
+    #     self.create_portfolio('-', master_user)
+    #     self.create_instrument_type('-', master_user)
+    #     self.create_instrument('-', master_user, instrument_type='-')
     #
-    #     self.add_strategy1('-', master_user)
-    #     self.add_strategy2('-', master_user)
-    #     self.add_strategy3('-', master_user)
+    #     self.create_strategy1('-', master_user)
+    #     self.create_strategy2('-', master_user)
+    #     self.create_strategy3('-', master_user)
     #
     #     return master_user
 
@@ -108,7 +108,7 @@ class BaseApiTestCase(APITestCase):
             name = uuid.uuid4().hex
         return Truncator(name).chars(20, truncate='')
 
-    def add_master_user(self, name):
+    def create_master_user(self, name):
         master_user = MasterUser.objects.create(name=name)
         master_user.currency = Currency.objects.create(master_user=master_user, name=settings.CURRENCY_CODE)
         master_user.save()
@@ -119,13 +119,13 @@ class BaseApiTestCase(APITestCase):
     def get_master_user(self, name):
         return MasterUser.objects.get(name=name)
 
-    def add_user(self, name):
+    def create_user(self, name):
         return User.objects.create_user(name, password=name)
 
     def get_user(self, name):
         return User.objects.get(username=name)
 
-    def add_member(self, user, master_user, is_owner=False, is_admin=False, groups=None):
+    def create_member(self, user, master_user, is_owner=False, is_admin=False, groups=None):
         master_user = self.get_master_user(master_user)
         user = self.get_user(user)
         member = Member.objects.create(master_user=master_user, user=user, is_owner=is_owner, is_admin=is_admin)
@@ -138,7 +138,7 @@ class BaseApiTestCase(APITestCase):
     def get_member(self, user, master_user):
         return Member.objects.get(user__username=user, master_user__name=master_user)
 
-    def add_group(self, name, master_user):
+    def create_group(self, name, master_user):
         master_user = self.get_master_user(master_user)
         group = Group.objects.create(master_user=master_user, name=name)
         print('create group: id=%s, name=%s, master_user=%s' %
@@ -148,53 +148,18 @@ class BaseApiTestCase(APITestCase):
     def get_group(self, name, master_user):
         return Group.objects.get(name=name, master_user__name=master_user)
 
-    def add_account_type(self, name, master_user):
+    def create_attribute_type(self, model, name, master_user, value_type=AccountAttributeType.STRING):
         master_user = self.get_master_user(master_user)
-        account_type = AccountType.objects.create(master_user=master_user, name=name)
-        return account_type
+        attribute_type = model.objects.create(master_user=master_user, name=name, value_type=value_type)
+        return attribute_type
 
-    def get_account_type(self, name, master_user):
-        return AccountType.objects.get(name=name, master_user__name=master_user)
+    def get_attribute_type(self, model, name, master_user):
+        return model.objects.get(name=name, master_user__name=master_user)
 
-    def add_account_attribute_type(self, name, master_user, value_type=AccountAttributeType.STRING):
+    def create_currency(self, name, master_user):
         master_user = self.get_master_user(master_user)
-        return AccountAttributeType.objects.create(master_user=master_user, name=name, value_type=value_type)
-
-    def get_account_attribute_type(self, name, master_user):
-        return AccountAttributeType.objects.get(name=name, master_user__name=master_user)
-
-    def add_account(self, name, master_user, account_type='-'):
-        account_type = self.get_account_type(account_type, master_user)
-        master_user = self.get_master_user(master_user)
-        return Account.objects.create(master_user=master_user, type=account_type, name=name)
-
-    def get_account(self, name, master_user):
-        return Account.objects.get(name=name, master_user__name=master_user)
-
-    def add_counterparty(self, name, master_user):
-        master_user = self.get_master_user(master_user)
-        return Counterparty.objects.create(master_user=master_user, name=name)
-
-    def get_counterparty(self, name, master_user):
-        return Counterparty.objects.get(name=name, master_user__name=master_user)
-
-    def add_responsible(self, name, master_user):
-        master_user = self.get_master_user(master_user)
-        return Responsible.objects.create(master_user=master_user, name=name)
-
-    def get_responsible(self, name, master_user):
-        return Responsible.objects.get(name=name, master_user__name=master_user)
-
-    def add_portfolio(self, name, master_user):
-        master_user = self.get_master_user(master_user)
-        return Portfolio.objects.create(master_user=master_user, name=name)
-
-    def get_portfolio(self, name, master_user):
-        return Portfolio.objects.get(name=name, master_user__name=master_user)
-
-    def add_currency(self, name, master_user):
-        master_user = self.get_master_user(master_user)
-        return Currency.objects.create(master_user=master_user, name=name)
+        currency = Currency.objects.create(master_user=master_user, name=name)
+        return currency
 
     def get_currency(self, name, master_user):
         if name:
@@ -203,50 +168,127 @@ class BaseApiTestCase(APITestCase):
             master_user = self.get_master_user(master_user)
             return master_user.currency
 
-    def add_instrument_type(self, name, master_user, instrument_class=None):
+    def create_account_type(self, name, master_user):
+        master_user = self.get_master_user(master_user)
+        account_type = AccountType.objects.create(master_user=master_user, name=name)
+        return account_type
+
+    def get_account_type(self, name, master_user):
+        return AccountType.objects.get(name=name, master_user__name=master_user)
+
+    def create_account_attribute_type(self, name, master_user, value_type=AccountAttributeType.STRING):
+        return self.create_attribute_type(AccountAttributeType, name, master_user, value_type=value_type)
+
+    def get_account_attribute_type(self, name, master_user):
+        return self.get_attribute_type(AccountAttributeType, name, master_user)
+
+    def create_account(self, name, master_user, account_type='-'):
+        account_type = self.get_account_type(account_type, master_user)
+        master_user = self.get_master_user(master_user)
+        account = Account.objects.create(master_user=master_user, type=account_type, name=name)
+        return account
+
+    def get_account(self, name, master_user):
+        return Account.objects.get(name=name, master_user__name=master_user)
+
+    def create_counterparty(self, name, master_user):
+        master_user = self.get_master_user(master_user)
+        counterparty = Counterparty.objects.create(master_user=master_user, name=name)
+        return counterparty
+
+    def get_counterparty(self, name, master_user):
+        return Counterparty.objects.get(name=name, master_user__name=master_user)
+
+    def create_counterparty_attribute_type(self, name, master_user, value_type=AccountAttributeType.STRING):
+        return self.create_attribute_type(CounterpartyAttributeType, name, master_user, value_type=value_type)
+
+    def get_counterparty_attribute_type(self, name, master_user):
+        return self.get_attribute_type(CounterpartyAttributeType, name, master_user)
+
+    def create_responsible(self, name, master_user):
+        master_user = self.get_master_user(master_user)
+        responsible = Responsible.objects.create(master_user=master_user, name=name)
+        return responsible
+
+    def get_responsible(self, name, master_user):
+        return Responsible.objects.get(name=name, master_user__name=master_user)
+
+    def create_responsible_attribute_type(self, name, master_user, value_type=AccountAttributeType.STRING):
+        return self.create_attribute_type(ResponsibleAttributeType, name, master_user, value_type=value_type)
+
+    def get_responsible_attribute_type(self, name, master_user):
+        return self.get_attribute_type(ResponsibleAttributeType, name, master_user)
+
+    def create_portfolio(self, name, master_user):
+        master_user = self.get_master_user(master_user)
+        portfolio = Portfolio.objects.create(master_user=master_user, name=name)
+        return portfolio
+
+    def get_portfolio(self, name, master_user):
+        return Portfolio.objects.get(name=name, master_user__name=master_user)
+
+    def create_portfolio_attribute_type(self, name, master_user, value_type=AccountAttributeType.STRING):
+        return self.create_attribute_type(PortfolioAttributeType, name, master_user, value_type=value_type)
+
+    def get_portfolio_attribute_type(self, name, master_user):
+        return self.get_attribute_type(PortfolioAttributeType, name, master_user)
+
+    def create_instrument_type(self, name, master_user, instrument_class=None):
         master_user = self.get_master_user(master_user)
         instrument_class = instrument_class or InstrumentClass.objects.get(pk=InstrumentClass.GENERAL)
-        return InstrumentType.objects.create(master_user=master_user, instrument_class=instrument_class, name=name)
+        instrument_type = InstrumentType.objects.create(master_user=master_user, instrument_class=instrument_class,
+                                                        name=name)
+        return instrument_type
 
     def get_instrument_type(self, name, master_user):
         return InstrumentType.objects.get(name=name, master_user__name=master_user)
 
-    def add_instrument(self, name, master_user, instrument_type=None, pricing_currency=None, accrued_currency=None):
+    def create_instrument(self, name, master_user, instrument_type=None, pricing_currency=None, accrued_currency=None):
         instrument_type = self.get_instrument_type(name, master_user)
         pricing_currency = self.get_currency(pricing_currency, master_user)
         accrued_currency = self.get_currency(accrued_currency, master_user)
         master_user = self.get_master_user(master_user)
-        return Instrument.objects.create(master_user=master_user, type=instrument_type, name=name,
-                                         pricing_currency=pricing_currency, accrued_currency=accrued_currency)
+        instrument = Instrument.objects.create(master_user=master_user, type=instrument_type, name=name,
+                                               pricing_currency=pricing_currency, accrued_currency=accrued_currency)
+        return instrument
 
     def get_instrument(self, name, master_user):
         return Instrument.objects.get(name=name, master_user__name=master_user)
 
-    def add_strategy1(self, name, master_user, parent=None):
-        parent = self.get_strategy1(parent, master_user) if parent else None
+    def create_instrument_attribute_type(self, name, master_user, value_type=AccountAttributeType.STRING):
+        return self.create_attribute_type(InstrumentAttributeType, name, master_user, value_type=value_type)
+
+    def get_instrument_attribute_type(self, name, master_user):
+        return self.get_attribute_type(InstrumentAttributeType, name, master_user)
+
+    def create_strategy(self, model, name, master_user, parent=None):
+        parent = self.get_strategy(model, parent, master_user) if parent else None
         master_user = self.get_master_user(master_user)
-        return Strategy1.objects.create(master_user=master_user, name=name, parent=parent)
+        strategy = model.objects.create(master_user=master_user, name=name, parent=parent)
+        return strategy
+
+    def get_strategy(self, model, name, master_user):
+        return model.objects.get(name=name, master_user__name=master_user)
+
+    def create_strategy1(self, name, master_user, parent=None):
+        return self.create_strategy(Strategy1, name, master_user, parent=parent)
 
     def get_strategy1(self, name, master_user):
-        return Strategy1.objects.get(name=name, master_user__name=master_user)
+        return self.get_strategy(Strategy1, name, master_user)
 
-    def add_strategy2(self, name, master_user, parent=None):
-        parent = self.get_strategy2(parent, master_user) if parent else None
-        master_user = self.get_master_user(master_user)
-        return Strategy2.objects.create(master_user=master_user, name=name, parent=parent)
+    def create_strategy2(self, name, master_user, parent=None):
+        return self.create_strategy(Strategy2, name, master_user, parent=parent)
 
     def get_strategy2(self, name, master_user):
-        return Strategy2.objects.get(name=name, master_user__name=master_user)
+        return self.get_strategy(Strategy2, name, master_user)
 
-    def add_strategy3(self, name, master_user, parent=None):
-        parent = self.get_strategy3(parent, master_user) if parent else None
-        master_user = self.get_master_user(master_user)
-        return Strategy3.objects.create(master_user=master_user, name=name, parent=parent)
+    def create_strategy3(self, name, master_user, parent=None):
+        return self.create_strategy(Strategy3, name, master_user, parent=parent)
 
     def get_strategy3(self, name, master_user):
-        return Strategy3.objects.get(name=name, master_user__name=master_user)
+        return self.get_strategy(Strategy3, name, master_user)
 
-    def add_tag(self, name, master_user, content_types=None):
+    def create_tag(self, name, master_user, content_types=None):
         master_user = self.get_master_user(master_user)
         tag = Tag.objects.create(master_user=master_user, name=name)
         if content_types:
@@ -301,7 +343,7 @@ class BaseApiTestCase(APITestCase):
 
         client.logout()
 
-        account = self.add_account('acc2', 'a')
+        account = self.create_account('acc2', 'a')
         self.assign_perms(account, 'a', groups=['g1'])
 
         client.login(username='a', password='a')
@@ -333,9 +375,9 @@ class BaseApiTestCase(APITestCase):
         print('21 response', response)
         self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
 
-        tag1 = self.add_tag('tag1', 'a', [Account])
+        tag1 = self.create_tag('tag1', 'a', [Account])
         self.assign_perms(tag1, 'a', groups=['g2'])
-        tag2 = self.add_tag('tag2', 'a', [Account, AccountType])
+        tag2 = self.create_tag('tag2', 'a', [Account, AccountType])
         self.assign_perms(tag2, 'a', groups=['g2'])
 
         response = client.post('/api/v1/accounts/account/', data={
@@ -360,11 +402,11 @@ class BaseApiWithPermissionTestCase(BaseApiTestCase):
         self._url_object = None
         self._change_permission = None
 
-        # self.add_account_type('-', 'a')
+        # self.create_account_type('-', 'a')
 
     def _create_obj(self, name='acc'):
         raise NotImplementedError()
-        # return self.add_account(name, 'a')
+        # return self.create_account(name, 'a')
 
     def _get_obj(self, name='acc'):
         raise NotImplementedError()
@@ -383,6 +425,21 @@ class BaseApiWithPermissionTestCase(BaseApiTestCase):
             'name': n,
         }
         self._add_permissions(data, user_object_permissions, group_object_permissions)
+        return data
+
+    def _add_permissions(self, data, user_object_permissions, group_object_permissions):
+        if user_object_permissions:
+            data['user_object_permissions'] = [{
+                                                   'member': self.get_member(e['user'], 'a').id,
+                                                   'permission': e['permission']
+                                               }
+                                               for e in user_object_permissions]
+        if group_object_permissions:
+            data['group_object_permissions'] = [{
+                                                    'group': self.get_group(e['group'], 'a').id,
+                                                    'permission': e['permission']
+                                                }
+                                                for e in group_object_permissions]
         return data
 
     def _check_granted_permissions(self, obj, expected=None):
@@ -477,21 +534,6 @@ class BaseApiWithPermissionTestCase(BaseApiTestCase):
         self.client.logout()
         self._log_response(response)
         return response
-
-    def _add_permissions(self, data, user_object_permissions, group_object_permissions):
-        if user_object_permissions:
-            data['user_object_permissions'] = [{
-                                                   'member': self.get_member(e['user'], 'a').id,
-                                                   'permission': e['permission']
-                                               }
-                                               for e in user_object_permissions]
-        if group_object_permissions:
-            data['group_object_permissions'] = [{
-                                                    'group': self.get_group(e['group'], 'a').id,
-                                                    'permission': e['permission']
-                                                }
-                                                for e in group_object_permissions]
-        return data
 
     def test_list_by_owner(self):
         self._create_list_data()
@@ -814,6 +856,15 @@ class BaseAttributeTypeApiTestCase(BaseApiWithPermissionTestCase):
                                    group_object_permissions=group_object_permissions)
         data['classifiers'] = self._make_classifiers()
         return data
+
+    def test_get_without_permission(self):
+        obj = self._create_obj()
+        self.assign_perms(obj, 'a', groups=['g1'])
+        response = self._get('a2', obj.id)
+        obj = response.data
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self._check_granted_permissions(obj, expected=[])
+        self.assertEqual(set(six.iterkeys(obj)), {'url', 'id', 'display_name', 'granted_permissions'})
 
     def test_add_classifier(self):
         data = self._make_new_data_with_classifiers()
