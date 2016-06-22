@@ -10,8 +10,16 @@ from rest_framework import serializers
 from rest_framework.authtoken.serializers import AuthTokenSerializer
 
 from poms.currencies.fields import CurrencyField
-from poms.users.fields import MasterUserField, GroupField, UserField
+from poms.users.fields import MasterUserField
 from poms.users.models import MasterUser, UserProfile, Group, Member, TIMEZONE_CHOICES
+
+
+class PingSerializer(serializers.Serializer):
+    message = serializers.CharField(read_only=True)
+    version = serializers.CharField(read_only=True)
+    is_authenticated = serializers.BooleanField(read_only=True)
+    is_anonymous = serializers.BooleanField(read_only=True)
+    now = serializers.DateTimeField(read_only=True)
 
 
 class LoginSerializer(AuthTokenSerializer):

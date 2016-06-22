@@ -5,7 +5,7 @@ from rest_framework import serializers
 from rest_framework.fields import CurrentUserDefault
 
 from poms.common.fields import FilteredPrimaryKeyRelatedField
-from poms.users.filters import OwnerByMasterUserFilter, GroupOwnerByMasterUserFilter
+from poms.users.filters import OwnerByMasterUserFilter
 from poms.users.models import Member, Group
 
 
@@ -63,4 +63,4 @@ class UserField(FilteredPrimaryKeyRelatedField):
 
 class GroupField(FilteredPrimaryKeyRelatedField):
     queryset = Group.objects.all()
-    filter_backends = [GroupOwnerByMasterUserFilter]
+    filter_backends = [OwnerByMasterUserFilter]

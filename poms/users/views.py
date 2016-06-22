@@ -2,6 +2,7 @@ from __future__ import unicode_literals
 
 from django.contrib.auth import login, logout
 from django.contrib.auth.models import User
+from django.utils import timezone
 from django.utils.decorators import method_decorator
 from django.views.decorators.csrf import ensure_csrf_cookie
 from rest_framework.authtoken.models import Token
@@ -14,11 +15,11 @@ from rest_framework.response import Response
 from rest_framework.viewsets import ViewSet, ModelViewSet, ReadOnlyModelViewSet
 
 from poms.audit.mixins import HistoricalMixin
-from poms.users.fields import GroupOwnerByMasterUserFilter
 from poms.users.filters import OwnerByMasterUserFilter, MasterUserFilter, UserFilter
 from poms.users.models import MasterUser, Member, Group
-from poms.users.permissions import SuperUserOrReadOnly
-from poms.users.serializers import GroupSerializer, UserSerializer, MasterUserSerializer, MemberSerializer
+from poms.users.permissions import SuperUserOrReadOnly, IsCurrentMasterUser
+from poms.users.serializers import GroupSerializer, UserSerializer, MasterUserSerializer, MemberSerializer, \
+    PingSerializer
 from poms.users.utils import set_master_user
 
 
@@ -40,12 +41,14 @@ class PingViewSet(ViewSet):
 
     @method_decorator(ensure_csrf_cookie)
     def list(self, request, *args, **kwargs):
-        return Response({
+        serializer = PingSerializer(instance={
             'message': 'pong',
             'version': request.version,
             'is_authenticated': request.user.is_authenticated(),
             'is_anonymous': request.user.is_anonymous(),
+            'now': timezone.template_localtime(timezone.now()),
         })
+        return Response(serializer.data)
 
 
 class ProtectedPingViewSet(PingViewSet):
@@ -91,22 +94,14 @@ class UserViewSet(HistoricalMixin, UpdateModelMixin, ReadOnlyModelViewSet):
         return qs
 
 
-class MasterUserPermission(BasePermission):
-    def has_permission(self, request, view):
-        if request.method in SAFE_METHODS:
-            return True
-        return False
-
-    def has_object_permission(self, request, view, obj):
-        if request.method in SAFE_METHODS:
-            return True
-        return request.user.master_user.id == obj.id
-
-
 class MasterUserViewSet(HistoricalMixin, ModelViewSet):
     queryset = MasterUser.objects
     serializer_class = MasterUserSerializer
-    permission_classes = [IsAuthenticated, SuperUserOrReadOnly, MasterUserPermission]
+    permission_classes = [
+        IsAuthenticated,
+        IsCurrentMasterUser,
+        SuperUserOrReadOnly,
+    ]
     filter_backends = [MasterUserFilter]
 
     @detail_route()
@@ -122,12 +117,18 @@ class MasterUserViewSet(HistoricalMixin, ModelViewSet):
 class MemberViewSet(HistoricalMixin, UpdateModelMixin, DestroyModelMixin, ReadOnlyModelViewSet):
     queryset = Member.objects.select_related('user')
     serializer_class = MemberSerializer
-    permission_classes = [IsAuthenticated, SuperUserOrReadOnly]
+    permission_classes = [
+        IsAuthenticated,
+        SuperUserOrReadOnly
+    ]
     filter_backends = [OwnerByMasterUserFilter]
 
 
 class GroupViewSet(HistoricalMixin, ModelViewSet):
     queryset = Group.objects.select_related('master_user')
     serializer_class = GroupSerializer
-    permission_classes = [IsAuthenticated, SuperUserOrReadOnly]
-    filter_backends = [GroupOwnerByMasterUserFilter]
+    permission_classes = [
+        IsAuthenticated,
+        SuperUserOrReadOnly
+    ]
+    filter_backends = [OwnerByMasterUserFilter]

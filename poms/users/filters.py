@@ -20,11 +20,11 @@ class OwnerByMemberFilter(BaseFilterBackend):
         return queryset.filter(member=member)
 
 
-class GroupOwnerByMasterUserFilter(OwnerByMasterUserFilter):
-    def filter_queryset(self, request, queryset, view):
-        # master_user = get_master_user(request)
-        master_user = request.user.master_user
-        return queryset.filter(master_user=master_user)
+# class GroupOwnerByMasterUserFilter(OwnerByMasterUserFilter):
+#     def filter_queryset(self, request, queryset, view):
+#         # master_user = get_master_user(request)
+#         master_user = request.user.master_user
+#         return queryset.filter(master_user=master_user)
 
 
 class UserFilter(BaseFilterBackend):
