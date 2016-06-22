@@ -5,7 +5,7 @@ import uuid
 
 import six
 from django.conf import settings
-from django.contrib.auth import user_logged_in
+from django.contrib.auth import user_logged_in, user_logged_out
 from django.contrib.auth.models import User
 from django.contrib.contenttypes.models import ContentType
 from django.dispatch import receiver
@@ -13,13 +13,15 @@ from django.utils.text import Truncator
 from rest_framework import status
 from rest_framework.test import APITestCase
 
-from poms.accounts.models import AccountType, Account, AccountAttributeType
-from poms.counterparties.models import Counterparty, Responsible, CounterpartyAttributeType, ResponsibleAttributeType
+from poms.accounts.models import AccountType, Account, AccountAttributeType, AccountClassifier
+from poms.counterparties.models import Counterparty, Responsible, CounterpartyAttributeType, ResponsibleAttributeType, \
+    ResponsibleClassifier, CounterpartyClassifier
 from poms.currencies.models import Currency
-from poms.instruments.models import InstrumentClass, InstrumentType, Instrument, InstrumentAttributeType
+from poms.instruments.models import InstrumentClass, InstrumentType, Instrument, InstrumentAttributeType, \
+    InstrumentClassifier
 from poms.obj_attrs.models import AttributeTypeBase
 from poms.obj_perms.utils import assign_perms, get_all_perms
-from poms.portfolios.models import Portfolio, PortfolioAttributeType
+from poms.portfolios.models import Portfolio, PortfolioAttributeType, PortfolioClassifier
 from poms.strategies.models import Strategy1, Strategy2, Strategy3
 from poms.tags.models import Tag
 from poms.users.models import MasterUser, Member, Group
@@ -39,8 +41,15 @@ def load_tests(loader, standard_tests, pattern):
 
 
 @receiver(user_logged_in, dispatch_uid='tests_user_logged_in')
-def tests_user_logged_in(request=None, user=None, **kwargs):
-    print('user_logged_in: user=%s' % user)
+def tests_user_logged_in(user=None, **kwargs):
+    # print('user_logged_in: user=%s' % user)
+    pass
+
+
+@receiver(user_logged_out, dispatch_uid='tests_user_logged_out')
+def tests_user_logged_out(user=None, **kwargs):
+    # print('user_logged_out: user=%s' % user)
+    pass
 
 
 class BaseApiTestCase(APITestCase):
@@ -53,9 +62,6 @@ class BaseApiTestCase(APITestCase):
         super(BaseApiTestCase, self).setUp()
 
         self.all_permissions = list(get_all_perms(self.model))
-
-        # self.create_master_user_complex('a', groups=['g1', 'g2'])
-        # self.create_master_user_complex('b', groups=['g1', 'g2'])
 
         self.create_master_user('a')
         self.create_group('g1', 'a')
@@ -75,31 +81,6 @@ class BaseApiTestCase(APITestCase):
         self.create_user('b')
         self.create_member(user='b', master_user='b', is_owner=True, is_admin=True)
 
-    # def create_master_user_complex(self, name, groups):
-    #     master_user = name
-    #     self.create_master_user(master_user)
-    #
-    #     # self.create_group('-', master_user)
-    #     if groups:
-    #         for group in groups:
-    #             self.create_group(group, master_user)
-    #
-    #     user = name
-    #
-    #     self.create_account_type('-', master_user)
-    #     self.create_account('-', master_user, '-')
-    #     self.create_counterparty('-', master_user)
-    #     self.create_responsible('-', master_user)
-    #     self.create_portfolio('-', master_user)
-    #     self.create_instrument_type('-', master_user)
-    #     self.create_instrument('-', master_user, instrument_type='-')
-    #
-    #     self.create_strategy1('-', master_user)
-    #     self.create_strategy2('-', master_user)
-    #     self.create_strategy3('-', master_user)
-    #
-    #     return master_user
-
     def create_name(self):
         return uuid.uuid4().hex
 
@@ -112,8 +93,8 @@ class BaseApiTestCase(APITestCase):
         master_user = MasterUser.objects.create(name=name)
         master_user.currency = Currency.objects.create(master_user=master_user, name=settings.CURRENCY_CODE)
         master_user.save()
-        print('create master user: id=%s, name=%s' %
-              (master_user.id, name))
+        # print('create master user: id=%s, name=%s' %
+        #       (master_user.id, name))
         return master_user
 
     def get_master_user(self, name):
@@ -131,8 +112,8 @@ class BaseApiTestCase(APITestCase):
         member = Member.objects.create(master_user=master_user, user=user, is_owner=is_owner, is_admin=is_admin)
         if groups:
             member.groups = Group.objects.filter(master_user=master_user, name__in=groups)
-        print('create member: id=%s, name=%s, master_user=%s, is_owner=%s, is_admin=%s, groups=%s' %
-              (member.id, user, master_user, is_owner, is_admin, groups))
+        # print('create member: id=%s, name=%s, master_user=%s, is_owner=%s, is_admin=%s, groups=%s' %
+        #       (member.id, user, master_user, is_owner, is_admin, groups))
         return member
 
     def get_member(self, user, master_user):
@@ -141,17 +122,29 @@ class BaseApiTestCase(APITestCase):
     def create_group(self, name, master_user):
         master_user = self.get_master_user(master_user)
         group = Group.objects.create(master_user=master_user, name=name)
-        print('create group: id=%s, name=%s, master_user=%s' %
-              (group.id, name, master_user))
+        # print('create group: id=%s, name=%s, master_user=%s' %
+        #       (group.id, name, master_user))
         return group
 
     def get_group(self, name, master_user):
         return Group.objects.get(name=name, master_user__name=master_user)
 
-    def create_attribute_type(self, model, name, master_user, value_type=AccountAttributeType.STRING):
+    def create_attribute_type(self, model, name, master_user, value_type=AccountAttributeType.STRING,
+                              classifier_model=None, classifier_tree=None):
         master_user = self.get_master_user(master_user)
         attribute_type = model.objects.create(master_user=master_user, name=name, value_type=value_type)
+        if classifier_model and classifier_tree:
+            for root in classifier_tree:
+                self.create_classifier(attribute_type, classifier_model, root, None)
         return attribute_type
+
+    def create_classifier(self, attribute_type, model, node, parent):
+        name = node['name']
+        children = node.get('children', [])
+        classifier = model.objects.create(attribute_type=attribute_type, name=name)
+        for child in children:
+            self.create_classifier(attribute_type, model, child, classifier)
+        return classifier
 
     def get_attribute_type(self, model, name, master_user):
         return model.objects.get(name=name, master_user__name=master_user)
@@ -176,8 +169,10 @@ class BaseApiTestCase(APITestCase):
     def get_account_type(self, name, master_user):
         return AccountType.objects.get(name=name, master_user__name=master_user)
 
-    def create_account_attribute_type(self, name, master_user, value_type=AccountAttributeType.STRING):
-        return self.create_attribute_type(AccountAttributeType, name, master_user, value_type=value_type)
+    def create_account_attribute_type(self, name, master_user, value_type=AccountAttributeType.STRING,
+                                      classifiers=None):
+        return self.create_attribute_type(AccountAttributeType, name, master_user, value_type=value_type,
+                                          classifier_model=AccountClassifier, classifier_tree=classifiers)
 
     def get_account_attribute_type(self, name, master_user):
         return self.get_attribute_type(AccountAttributeType, name, master_user)
@@ -199,8 +194,10 @@ class BaseApiTestCase(APITestCase):
     def get_counterparty(self, name, master_user):
         return Counterparty.objects.get(name=name, master_user__name=master_user)
 
-    def create_counterparty_attribute_type(self, name, master_user, value_type=AccountAttributeType.STRING):
-        return self.create_attribute_type(CounterpartyAttributeType, name, master_user, value_type=value_type)
+    def create_counterparty_attribute_type(self, name, master_user, value_type=AccountAttributeType.STRING,
+                                           classifiers=None):
+        return self.create_attribute_type(CounterpartyAttributeType, name, master_user, value_type=value_type,
+                                          classifier_model=CounterpartyClassifier, classifier_tree=classifiers)
 
     def get_counterparty_attribute_type(self, name, master_user):
         return self.get_attribute_type(CounterpartyAttributeType, name, master_user)
@@ -213,8 +210,10 @@ class BaseApiTestCase(APITestCase):
     def get_responsible(self, name, master_user):
         return Responsible.objects.get(name=name, master_user__name=master_user)
 
-    def create_responsible_attribute_type(self, name, master_user, value_type=AccountAttributeType.STRING):
-        return self.create_attribute_type(ResponsibleAttributeType, name, master_user, value_type=value_type)
+    def create_responsible_attribute_type(self, name, master_user, value_type=AccountAttributeType.STRING,
+                                          classifiers=None):
+        return self.create_attribute_type(ResponsibleAttributeType, name, master_user, value_type=value_type,
+                                          classifier_model=ResponsibleClassifier, classifier_tree=classifiers)
 
     def get_responsible_attribute_type(self, name, master_user):
         return self.get_attribute_type(ResponsibleAttributeType, name, master_user)
@@ -227,8 +226,10 @@ class BaseApiTestCase(APITestCase):
     def get_portfolio(self, name, master_user):
         return Portfolio.objects.get(name=name, master_user__name=master_user)
 
-    def create_portfolio_attribute_type(self, name, master_user, value_type=AccountAttributeType.STRING):
-        return self.create_attribute_type(PortfolioAttributeType, name, master_user, value_type=value_type)
+    def create_portfolio_attribute_type(self, name, master_user, value_type=AccountAttributeType.STRING,
+                                        classifiers=None):
+        return self.create_attribute_type(PortfolioAttributeType, name, master_user, value_type=value_type,
+                                          classifier_model=PortfolioClassifier, classifier_tree=classifiers)
 
     def get_portfolio_attribute_type(self, name, master_user):
         return self.get_attribute_type(PortfolioAttributeType, name, master_user)
@@ -255,8 +256,10 @@ class BaseApiTestCase(APITestCase):
     def get_instrument(self, name, master_user):
         return Instrument.objects.get(name=name, master_user__name=master_user)
 
-    def create_instrument_attribute_type(self, name, master_user, value_type=AccountAttributeType.STRING):
-        return self.create_attribute_type(InstrumentAttributeType, name, master_user, value_type=value_type)
+    def create_instrument_attribute_type(self, name, master_user, value_type=AccountAttributeType.STRING,
+                                         classifiers=None):
+        return self.create_attribute_type(InstrumentAttributeType, name, master_user, value_type=value_type,
+                                          classifier_model=InstrumentClassifier, classifier_tree=classifiers)
 
     def get_instrument_attribute_type(self, name, master_user):
         return self.get_attribute_type(InstrumentAttributeType, name, master_user)
@@ -806,6 +809,8 @@ class BaseApiWithTagsTestCase(BaseApiTestCase):
 
 
 class BaseAttributeTypeApiTestCase(BaseApiWithPermissionTestCase):
+    classifier_model = None
+
     def _make_new_data(self, value_type=AttributeTypeBase.STRING, user_object_permissions=None,
                        group_object_permissions=None):
         data = super(BaseAttributeTypeApiTestCase, self)._make_new_data(user_object_permissions=user_object_permissions,
@@ -856,6 +861,14 @@ class BaseAttributeTypeApiTestCase(BaseApiWithPermissionTestCase):
                                    group_object_permissions=group_object_permissions)
         data['classifiers'] = self._make_classifiers()
         return data
+
+    def _create_obj(self, name='acc'):
+        return self.create_attribute_type(self.model, name, 'a',
+                                          classifier_model=self.classifier_model)
+
+    def _get_obj(self, name='acc'):
+        return self.get_attribute_type(self.model, name, 'a')
+
 
     def test_get_without_permission(self):
         obj = self._create_obj()
