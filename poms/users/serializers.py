@@ -103,6 +103,27 @@ class UserSerializer(serializers.ModelSerializer):
         return instance
 
 
+class UserSetPasswordSerializer(serializers.Serializer):
+    password = serializers.CharField(allow_null=False, allow_blank=False, required=True, write_only=True,
+                                     style={'input_type': 'password'})
+    new_password = serializers.CharField(allow_null=False, allow_blank=False, required=True, write_only=True,
+                                         style={'input_type': 'password'})
+
+    def validate(self, attrs):
+        user = self.context['request'].user
+        if not user.check_password(attrs['password']):
+            raise serializers.ValidationError({'password': 'bad password'})
+        return attrs
+
+    def create(self, validated_data):
+        user = self.context['request'].user
+        # user.set_password(validated_data['new_password'])
+        return validated_data
+
+    def update(self, instance, validated_data):
+        return self.create(validated_data)
+
+
 class MasterUserSerializer(serializers.ModelSerializer):
     url = serializers.HyperlinkedIdentityField(view_name='masteruser-detail')
     currency = CurrencyField()
@@ -119,6 +140,15 @@ class MasterUserSerializer(serializers.ModelSerializer):
         # master_user = get_master_user(request)
         master_user = request.user.master_user
         return obj.id == master_user.id
+
+
+class MasterUserSetCurrentSerializer(serializers.Serializer):
+
+    def create(self, validated_data):
+        return validated_data
+
+    def update(self, instance, validated_data):
+        return self.create(validated_data)
 
 
 class MemberSerializer(serializers.ModelSerializer):

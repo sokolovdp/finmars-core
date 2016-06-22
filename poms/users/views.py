@@ -10,16 +10,16 @@ from rest_framework.authtoken.serializers import AuthTokenSerializer
 from rest_framework.decorators import detail_route
 from rest_framework.mixins import UpdateModelMixin, DestroyModelMixin
 from rest_framework.parsers import JSONParser, MultiPartParser, FormParser
-from rest_framework.permissions import IsAuthenticated, BasePermission, SAFE_METHODS, AllowAny
+from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework.response import Response
 from rest_framework.viewsets import ViewSet, ModelViewSet, ReadOnlyModelViewSet
 
 from poms.audit.mixins import HistoricalMixin
 from poms.users.filters import OwnerByMasterUserFilter, MasterUserFilter, UserFilter
 from poms.users.models import MasterUser, Member, Group
-from poms.users.permissions import SuperUserOrReadOnly, IsCurrentMasterUser
+from poms.users.permissions import SuperUserOrReadOnly, IsCurrentMasterUser, IsCurrentUser
 from poms.users.serializers import GroupSerializer, UserSerializer, MasterUserSerializer, MemberSerializer, \
-    PingSerializer
+    PingSerializer, UserSetPasswordSerializer, MasterUserSetCurrentSerializer
 from poms.users.utils import set_master_user
 
 
@@ -74,24 +74,35 @@ class LogoutViewSet(ViewSet):
         return Response({'success': True})
 
 
-class UserPermission(BasePermission):
-    def has_object_permission(self, request, view, obj):
-        if request.method.upper() in SAFE_METHODS:
-            return True
-        user = request.user
-        return user.id == obj.id
-
-
 class UserViewSet(HistoricalMixin, UpdateModelMixin, ReadOnlyModelViewSet):
     queryset = User.objects
     serializer_class = UserSerializer
-    permission_classes = [IsAuthenticated, UserPermission]
+    permission_classes = [IsAuthenticated, IsCurrentUser]
     filter_backends = [UserFilter]
+
+    # def get_serializer_class(self):
+    #     # print(self.action)
+    #     # print(self.request.method)
+    #     if self.action == 'change_password':
+    #         return UserSetPasswordSerializer
+    #     return super(UserViewSet, self).get_serializer_class()
 
     def get_queryset(self):
         qs = super(UserViewSet, self).get_queryset()
         qs = qs.filter(id=self.request.user.id)
         return qs
+
+    def get_object(self):
+        return self.request.user
+
+    @detail_route(methods=('PUT', 'PATCH',), url_path='set-password', serializer_class=UserSetPasswordSerializer)
+    def set_password(self, request, pk=None):
+        # user = self.get_object()
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+        # return Response(serializer.data)
+        return Response()
 
 
 class MasterUserViewSet(HistoricalMixin, ModelViewSet):
@@ -104,14 +115,12 @@ class MasterUserViewSet(HistoricalMixin, ModelViewSet):
     ]
     filter_backends = [MasterUserFilter]
 
-    @detail_route()
+    @detail_route(methods=('PUT', 'PATCH',), url_path='set-current', permission_classes=[IsAuthenticated],
+                  serializer_class=MasterUserSetCurrentSerializer)
     def set_current(self, request, pk=None):
         instance = self.get_object()
         set_master_user(request, instance)
-        return Response({
-            'status': 'OK',
-            'master_user': instance.pk,
-        })
+        return Response({'success': True})
 
 
 class MemberViewSet(HistoricalMixin, UpdateModelMixin, DestroyModelMixin, ReadOnlyModelViewSet):
