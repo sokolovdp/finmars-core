@@ -17,6 +17,7 @@ from poms.accounts.models import AccountType, Account, AccountAttributeType
 from poms.counterparties.models import Counterparty, Responsible
 from poms.currencies.models import Currency
 from poms.instruments.models import InstrumentClass, InstrumentType, Instrument
+from poms.obj_attrs.models import AttributeTypeBase
 from poms.obj_perms.utils import assign_perms, get_all_perms
 from poms.portfolios.models import Portfolio
 from poms.strategies.models import Strategy1, Strategy2, Strategy3
@@ -26,8 +27,12 @@ from poms.users.models import MasterUser, Member, Group
 
 def load_tests(loader, standard_tests, pattern):
     result = []
+    abstract_tests = (BaseApiTestCase,
+                      BaseApiWithPermissionTestCase,
+                      BaseApiWithAttributesTestCase,
+                      BaseAttributeTypeApiTestCase)
     for test_case in standard_tests:
-        if type(test_case._tests[0]) in (BaseApiTestCase, BaseApiWithPermissionTestCase, BaseApiWithAttributesTestCase):
+        if type(test_case._tests[0]) in abstract_tests:
             continue
         result.append(test_case)
     return loader.suiteClass(result)
@@ -94,6 +99,14 @@ class BaseApiTestCase(APITestCase):
     #     self.add_strategy3('-', master_user)
     #
     #     return master_user
+
+    def create_name(self):
+        return uuid.uuid4().hex
+
+    def create_user_code(self, name=None):
+        if not name:
+            name = uuid.uuid4().hex
+        return Truncator(name).chars(20, truncate='')
 
     def add_master_user(self, name):
         master_user = MasterUser.objects.create(name=name)
@@ -364,16 +377,8 @@ class BaseApiWithPermissionTestCase(BaseApiTestCase):
         obj = self._create_obj('obj_with_group')
         self.assign_perms(obj, 'a', groups=['g1'])
 
-    def _make_name(self):
-        return uuid.uuid4().hex
-
-    def _make_user_code(self, name=None):
-        if not name:
-            name = uuid.uuid4().hex
-        return Truncator(name).chars(20, truncate='')
-
     def _make_new_data(self, user_object_permissions=None, group_object_permissions=None):
-        n = self._make_name()
+        n = self.create_name()
         data = {
             'name': n,
         }
@@ -756,3 +761,107 @@ class BaseApiWithAttributesTestCase(BaseApiTestCase):
 
 class BaseApiWithTagsTestCase(BaseApiTestCase):
     pass
+
+
+class BaseAttributeTypeApiTestCase(BaseApiWithPermissionTestCase):
+    def _make_new_data(self, value_type=AttributeTypeBase.STRING, user_object_permissions=None,
+                       group_object_permissions=None):
+        data = super(BaseAttributeTypeApiTestCase, self)._make_new_data(user_object_permissions=user_object_permissions,
+                                                                        group_object_permissions=group_object_permissions)
+        data['value_type'] = value_type
+        return data
+
+    def _make_classifiers(self):
+        n = self.create_name()
+        uc = self.create_user_code(n)
+        return [
+            {
+                "user_code": '1_%s' % uc,
+                "name": '1_%s' % n,
+                "children": [
+                    {
+                        "user_code": '11_%s' % uc,
+                        "name": '11_%s' % n,
+                        "children": [
+                            {
+                                "user_code": '111_%s' % uc,
+                                "name": '111_%s' % n,
+                            }
+                        ]
+                    },
+                    {
+                        "user_code": '12_%s' % uc,
+                        "name": '12_%s' % n,
+                    }
+                ]
+            },
+            {
+                "user_code": '2_%s' % uc,
+                "name": '2_%s' % n,
+                "children": [
+                    {
+                        "user_code": '22_%s' % uc,
+                        "name": '22_%s' % n,
+                        "children": []
+                    }
+                ]
+            }
+        ]
+
+    def _make_new_data_with_classifiers(self, value_type=AttributeTypeBase.CLASSIFIER,
+                                        user_object_permissions=None, group_object_permissions=None):
+        data = self._make_new_data(value_type=value_type, user_object_permissions=user_object_permissions,
+                                   group_object_permissions=group_object_permissions)
+        data['classifiers'] = self._make_classifiers()
+        return data
+
+    def test_add_classifier(self):
+        data = self._make_new_data_with_classifiers()
+        response = self._add('a', data)
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+
+    def test_add_string_with_classifiers(self):
+        data = self._make_new_data_with_classifiers(value_type=AttributeTypeBase.STRING)
+        response = self._add('a', data)
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        self.assertEqual(response.data['classifiers'], [])
+
+    def test_update_classifier(self):
+        data = self._make_new_data_with_classifiers()
+        response = self._add('a', data)
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+
+        data = response.data.copy()
+        data['classifiers'] = self._make_classifiers()
+        response = self._update('a', data['id'], data)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+    def test_update_as_string_with_classifiers(self):
+        data = self._make_new_data(value_type=AttributeTypeBase.STRING)
+        response = self._add('a', data)
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+
+        data = response.data.copy()
+        data['classifiers'] = self._make_classifiers()
+        response = self._update('a', data['id'], data)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data['classifiers'], [])
+
+    def test_list_classifier(self):
+        data = self._make_new_data_with_classifiers()
+        response = self._add('a', data)
+        data = response.data.copy()
+
+        response = self._list('a')
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data['count'], 1)
+        for obj in response.data['results']:
+            pass
+
+    def test_get_classifier(self):
+        data = self._make_new_data_with_classifiers()
+        response = self._add('a', data)
+        data = response.data.copy()
+
+        response = self._get('a', data['id'])
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
