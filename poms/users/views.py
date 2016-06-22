@@ -2,7 +2,8 @@ from __future__ import unicode_literals
 
 from django.contrib.auth import login, logout
 from django.contrib.auth.models import User
-from django.middleware.csrf import rotate_token
+from django.utils.decorators import method_decorator
+from django.views.decorators.csrf import ensure_csrf_cookie
 from rest_framework.authtoken.models import Token
 from rest_framework.authtoken.serializers import AuthTokenSerializer
 from rest_framework.decorators import detail_route
@@ -37,23 +38,18 @@ class ObtainAuthTokenViewSet(ViewSet):
 class PingViewSet(ViewSet):
     permission_classes = [AllowAny]
 
+    @method_decorator(ensure_csrf_cookie)
     def list(self, request, *args, **kwargs):
-        rotate_token(request)
         return Response({
             'message': 'pong',
             'version': request.version,
+            'is_authenticated': request.user.is_authenticated(),
+            'is_anonymous': request.user.is_anonymous(),
         })
 
 
-class ProtectedPingViewSet(ViewSet):
+class ProtectedPingViewSet(PingViewSet):
     permission_classes = [IsAuthenticated]
-
-    def list(self, request, *args, **kwargs):
-        rotate_token(request)
-        return Response({
-            'message': 'pong',
-            'version': request.version,
-        })
 
 
 class LoginViewSet(ViewSet):
