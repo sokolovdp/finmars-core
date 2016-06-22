@@ -3,26 +3,51 @@ from __future__ import unicode_literals, division, print_function
 import json
 import uuid
 
+import six
 from django.conf import settings
+from django.contrib.auth import user_logged_in
 from django.contrib.auth.models import User
 from django.contrib.contenttypes.models import ContentType
+from django.dispatch import receiver
 from django.utils.text import Truncator
 from rest_framework import status
+from rest_framework.test import APITestCase
 
 from poms.accounts.models import AccountType, Account, AccountAttributeType
 from poms.counterparties.models import Counterparty, Responsible
 from poms.currencies.models import Currency
 from poms.instruments.models import InstrumentClass, InstrumentType, Instrument
-from poms.obj_perms.utils import assign_perms
+from poms.obj_perms.utils import assign_perms, get_all_perms
 from poms.portfolios.models import Portfolio
 from poms.strategies.models import Strategy1, Strategy2, Strategy3
 from poms.tags.models import Tag
 from poms.users.models import MasterUser, Member, Group
 
 
-class BaseApiTestCase(object):
+def load_tests(loader, standard_tests, pattern):
+    result = []
+    for test_case in standard_tests:
+        if type(test_case._tests[0]) in (BaseApiTestCase, BaseApiWithPermissionTestCase, BaseApiWithAttributesTestCase):
+            continue
+        result.append(test_case)
+    return loader.suiteClass(result)
+
+
+@receiver(user_logged_in, dispatch_uid='tests_user_logged_in')
+def tests_user_logged_in(request=None, user=None, **kwargs):
+    print('user_logged_in: user=%s' % user)
+
+
+class BaseApiTestCase(APITestCase):
+    model = None
+
+    def __init__(self, *args, **kwargs):
+        super(BaseApiTestCase, self).__init__(*args, **kwargs)
+
     def setUp(self):
         super(BaseApiTestCase, self).setUp()
+
+        self.all_permissions = list(get_all_perms(self.model))
 
         # self.add_master_user_complex('a', groups=['g1', 'g2'])
         # self.add_master_user_complex('b', groups=['g1', 'g2'])
@@ -74,6 +99,8 @@ class BaseApiTestCase(object):
         master_user = MasterUser.objects.create(name=name)
         master_user.currency = Currency.objects.create(master_user=master_user, name=settings.CURRENCY_CODE)
         master_user.save()
+        print('create master user: id=%s, name=%s' %
+              (master_user.id, name))
         return master_user
 
     def get_master_user(self, name):
@@ -91,6 +118,8 @@ class BaseApiTestCase(object):
         member = Member.objects.create(master_user=master_user, user=user, is_owner=is_owner, is_admin=is_admin)
         if groups:
             member.groups = Group.objects.filter(master_user=master_user, name__in=groups)
+        print('create member: id=%s, name=%s, master_user=%s, is_owner=%s, is_admin=%s, groups=%s' %
+              (member.id, user, master_user, is_owner, is_admin, groups))
         return member
 
     def get_member(self, user, master_user):
@@ -98,14 +127,18 @@ class BaseApiTestCase(object):
 
     def add_group(self, name, master_user):
         master_user = self.get_master_user(master_user)
-        return Group.objects.create(master_user=master_user, name=name)
+        group = Group.objects.create(master_user=master_user, name=name)
+        print('create group: id=%s, name=%s, master_user=%s' %
+              (group.id, name, master_user))
+        return group
 
     def get_group(self, name, master_user):
         return Group.objects.get(name=name, master_user__name=master_user)
 
     def add_account_type(self, name, master_user):
         master_user = self.get_master_user(master_user)
-        return AccountType.objects.create(master_user=master_user, name=name)
+        account_type = AccountType.objects.create(master_user=master_user, name=name)
+        return account_type
 
     def get_account_type(self, name, master_user):
         return AccountType.objects.get(name=name, master_user__name=master_user)
@@ -306,9 +339,9 @@ class BaseApiWithPermissionTestCase(BaseApiTestCase):
     def setUp(self):
         super(BaseApiWithPermissionTestCase, self).setUp()
 
-        self._url_list = '/api/v1/accounts/account/'
-        self._url_object = '/api/v1/accounts/account/%s/'
-        self._change_permission = 'change_account'
+        # self._url_list = '/api/v1/accounts/account/'
+        # self._url_object = '/api/v1/accounts/account/%s/'
+        # self._change_permission = 'change_account'
 
         self._url_list = None
         self._url_object = None
@@ -341,10 +374,8 @@ class BaseApiWithPermissionTestCase(BaseApiTestCase):
 
     def _make_new_data(self, user_object_permissions=None, group_object_permissions=None):
         n = self._make_name()
-        uc = self._make_user_code(n)
         data = {
             'name': n,
-            'user_code': uc,
         }
         self._add_permissions(data, user_object_permissions, group_object_permissions)
         return data
@@ -357,10 +388,7 @@ class BaseApiWithPermissionTestCase(BaseApiTestCase):
     def _check_user_object_permissions(self, obj, expected=None):
         self.assertTrue('user_object_permissions' in obj)
         if expected is not None:
-            expected = [{
-                            'member': self.get_member(e['user'], 'a').id,
-                            'permission': e['permission']
-                        }
+            expected = [{'member': self.get_member(e['user'], 'a').id, 'permission': e['permission']}
                         for e in expected]
             actual = [dict(e) for e in obj['user_object_permissions']]
             self.assertEqual(expected, actual)
@@ -368,10 +396,7 @@ class BaseApiWithPermissionTestCase(BaseApiTestCase):
     def _check_group_object_permissions(self, obj, expected=None):
         self.assertTrue('group_object_permissions' in obj)
         if expected is not None:
-            expected = [{
-                            'group': self.get_group(e['group'], 'a').id,
-                            'permission': e['permission']
-                        }
+            expected = [{'group': self.get_group(e['group'], 'a').id, 'permission': e['permission']}
                         for e in expected]
             actual = [dict(e) for e in obj['group_object_permissions']]
             self.assertEqual(expected, actual)
@@ -416,28 +441,36 @@ class BaseApiWithPermissionTestCase(BaseApiTestCase):
         self.client.logout()
         return response
 
+    def _log_response(self, response):
+        if response.status_code in (status.HTTP_400_BAD_REQUEST,):
+            print('response: status_code=%s, data=%s' % (response.status_code, response.data))
+
     def _add(self, user, data):
         self.client.login(username=user, password=user)
         response = self.client.post(self._url_list, data=data, format='json')
         self.client.logout()
+        self._log_response(response)
         return response
 
     def _update(self, user, id, data):
         self.client.login(username=user, password=user)
         response = self.client.put(self._url_object % id, data=data, format='json')
         self.client.logout()
+        self._log_response(response)
         return response
 
     def _partial_update(self, user, id, data):
         self.client.login(username=user, password=user)
         response = self.client.patch(self._url_object % id, data=data, format='json')
         self.client.logout()
+        self._log_response(response)
         return response
 
     def _delete(self, user, id):
         self.client.login(username=user, password=user)
         response = self.client.delete(self._url_object % id)
         self.client.logout()
+        self._log_response(response)
         return response
 
     def _add_permissions(self, data, user_object_permissions, group_object_permissions):
@@ -461,7 +494,7 @@ class BaseApiWithPermissionTestCase(BaseApiTestCase):
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(response.data['count'], 3)
         for obj in response.data['results']:
-            self._check_granted_permissions(obj, expected=[])
+            self._check_granted_permissions(obj, expected=self.all_permissions)
             self.assertTrue('user_object_permissions' in obj)
             self.assertTrue('group_object_permissions' in obj)
 
@@ -471,7 +504,7 @@ class BaseApiWithPermissionTestCase(BaseApiTestCase):
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(response.data['count'], 3)
         for obj in response.data['results']:
-            self._check_granted_permissions(obj, expected=[])
+            self._check_granted_permissions(obj, expected=self.all_permissions)
             self.assertTrue('user_object_permissions' in obj)
             self.assertTrue('group_object_permissions' in obj)
 
@@ -496,7 +529,7 @@ class BaseApiWithPermissionTestCase(BaseApiTestCase):
         response = self._get('a', obj.id)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         obj = response.data
-        self._check_granted_permissions(obj, expected=[])
+        self._check_granted_permissions(obj, expected=self.all_permissions)
         self.assertTrue('user_object_permissions' in obj)
         self.assertTrue('group_object_permissions' in obj)
 
@@ -505,7 +538,7 @@ class BaseApiWithPermissionTestCase(BaseApiTestCase):
         response = self._get('a', obj.id)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         obj = response.data
-        self._check_granted_permissions(obj, expected=[])
+        self._check_granted_permissions(obj, self.all_permissions)
         self.assertTrue('user_object_permissions' in obj)
         self.assertTrue('group_object_permissions' in obj)
 
@@ -533,14 +566,17 @@ class BaseApiWithPermissionTestCase(BaseApiTestCase):
         obj = self._create_obj()
         self.assign_perms(obj, 'a', groups=['g1'])
         response = self._get('a2', obj.id)
-        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+        obj = response.data
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self._check_granted_permissions(obj, expected=[])
+        self.assertEqual(set(six.iterkeys(obj)), {'url', 'id', 'public_name', 'display_name', 'granted_permissions'})
 
     def test_add_by_owner(self):
         data = self._make_new_data()
         response = self._add('a', data)
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
         obj = response.data
-        self._check_granted_permissions(obj, expected=[self._change_permission])
+        self._check_granted_permissions(obj, expected=self.all_permissions)
         self._check_user_object_permissions(obj, [{'user': 'a', 'permission': self._change_permission}])
         self._db_check_user_object_permissions(obj, [{'user': 'a', 'permission': self._change_permission}])
         self._check_group_object_permissions(obj, [])
@@ -550,7 +586,7 @@ class BaseApiWithPermissionTestCase(BaseApiTestCase):
         response = self._add('a0', data)
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
         obj = response.data
-        self._check_granted_permissions(obj, expected=[self._change_permission])
+        self._check_granted_permissions(obj, expected=self.all_permissions)
         self._check_user_object_permissions(obj, [{'user': 'a0', 'permission': self._change_permission}])
         self._db_check_user_object_permissions(obj, [{'user': 'a0', 'permission': self._change_permission}])
         self._check_group_object_permissions(obj, [])
@@ -571,7 +607,7 @@ class BaseApiWithPermissionTestCase(BaseApiTestCase):
         response = self._add('a', data)
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
         obj = response.data
-        self._check_granted_permissions(obj, expected=[self._change_permission])
+        self._check_granted_permissions(obj, expected=self.all_permissions)
         self._check_user_object_permissions(obj, [{'user': 'a', 'permission': self._change_permission},
                                                   {'user': 'a2', 'permission': self._change_permission}])
         self._db_check_user_object_permissions(obj, [{'user': 'a', 'permission': self._change_permission},
@@ -585,7 +621,7 @@ class BaseApiWithPermissionTestCase(BaseApiTestCase):
         response = self._add('a0', data)
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
         obj = response.data
-        self._check_granted_permissions(obj, expected=[self._change_permission])
+        self._check_granted_permissions(obj, expected=self.all_permissions)
         self._check_user_object_permissions(obj, [{'user': 'a0', 'permission': self._change_permission},
                                                   {'user': 'a2', 'permission': self._change_permission}])
         self._db_check_user_object_permissions(obj, [{'user': 'a0', 'permission': self._change_permission},
@@ -613,7 +649,7 @@ class BaseApiWithPermissionTestCase(BaseApiTestCase):
         response = self._update('a', data['id'], data)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         obj = response.data
-        self._check_granted_permissions(obj, expected=[self._change_permission])
+        self._check_granted_permissions(obj, expected=self.all_permissions)
         self._check_user_object_permissions(obj, [{'user': 'a', 'permission': self._change_permission}])
         self._db_check_user_object_permissions(obj, [{'user': 'a', 'permission': self._change_permission}])
         self._check_group_object_permissions(obj, [])
@@ -712,3 +748,11 @@ class BaseApiWithPermissionTestCase(BaseApiTestCase):
         self.assign_perms(obj, 'a', groups=['g1'])
         response = self._delete('a1', obj.id)
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+
+
+class BaseApiWithAttributesTestCase(BaseApiTestCase):
+    pass
+
+
+class BaseApiWithTagsTestCase(BaseApiTestCase):
+    pass

@@ -4,7 +4,7 @@ from rest_framework import status
 from rest_framework.test import APITestCase
 
 from poms.accounts.models import AccountAttributeType, AccountClassifier, Account
-from poms.common.tests import BaseApiWithPermissionTestCase
+from poms.common.tests import BaseApiWithPermissionTestCase, BaseApiWithAttributesTestCase
 
 
 class AccountTypeApiTestCase(BaseApiWithPermissionTestCase, APITestCase):
@@ -139,7 +139,9 @@ class AccountAttributeTypeApiTestCase(BaseApiWithPermissionTestCase, APITestCase
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
 
-class AccountApiTestCase(BaseApiWithPermissionTestCase, APITestCase):
+class AccountApiTestCase(BaseApiWithPermissionTestCase, BaseApiWithAttributesTestCase, APITestCase):
+    model = Account
+
     def setUp(self):
         super(AccountApiTestCase, self).setUp()
 
@@ -147,7 +149,8 @@ class AccountApiTestCase(BaseApiWithPermissionTestCase, APITestCase):
         self._url_object = '/api/v1/accounts/account/%s/'
         self._change_permission = 'change_account'
 
-        self.add_account_type('-', 'a')
+        account_type_dummy = self.add_account_type('-', 'a')
+        self.assign_perms(account_type_dummy, 'a', users=['a0', 'a1', 'a2'])
 
         at_simple = self.add_account_attribute_type('simple', 'a', value_type=AccountAttributeType.STRING)
         self.assign_perms(at_simple, 'a', groups=['g1'])
@@ -176,3 +179,9 @@ class AccountApiTestCase(BaseApiWithPermissionTestCase, APITestCase):
 
     def _get_obj(self, name='acc'):
         return self.get_account(name, 'a')
+
+    def _make_new_data(self, user_object_permissions=None, group_object_permissions=None):
+        data = super(AccountApiTestCase, self)._make_new_data(user_object_permissions=user_object_permissions,
+                                                              group_object_permissions=group_object_permissions)
+        data['type'] = self.get_account_type('-', 'a').id
+        return data
