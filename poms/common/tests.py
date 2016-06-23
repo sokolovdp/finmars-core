@@ -570,7 +570,14 @@ class BaseApiWithPermissionTestCase(BaseApiTestCase):
         obj_g2 = self._create_obj('obj_g2')
         self.assign_perms(obj_g2, 'a', groups=['g2'], perms=self.default_owner_permissions)
 
+        # owner
         response = self._list('a')
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data['count'], 3)
+        self.check_obj_list_perm(response.data['results'], self.all_permissions, True)
+
+        # admin
+        response = self._list('a0')
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(response.data['count'], 3)
         self.check_obj_list_perm(response.data['results'], self.all_permissions, True)
@@ -590,15 +597,23 @@ class BaseApiWithPermissionTestCase(BaseApiTestCase):
         obj12 = self._create_obj('obj_a1')
         self.assign_perms(obj12, 'a', users=['a1'], groups=['g2'], perms=self.default_owner_permissions)
 
+        # owner
         response = self._get('a', obj.id)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.check_obj_perm(response.data, self.all_permissions, True)
 
+        # admin
+        response = self._get('a0', obj.id)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.check_obj_perm(response.data, self.all_permissions, True)
+
+        # restricted access
         response = self._get('a1', obj.id)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(set(six.iterkeys(response.data)),
                          {'url', 'id', 'public_name', 'display_name', 'granted_permissions'})
 
+        # restricted access
         response = self._get('a2', obj.id)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(set(six.iterkeys(response.data)),
@@ -627,12 +642,14 @@ class BaseApiWithPermissionTestCase(BaseApiTestCase):
         self.assertEqual(response.status_code, status.HTTP_201_CREATED, response.content)
         self.check_obj_perm(response.data, self.default_owner_permissions, False)
 
+        # add with perms
         data = self._make_new_data(user_object_permissions=[{'user': 'a1', 'permission': self._change_permission}],
                                    group_object_permissions=[{'group': 'g2', 'permission': self._change_permission}])
-        response_wperms = self._add('a', data)
+        response_wperms = self._add('a0', data)
         self.assertEqual(response_wperms.status_code, status.HTTP_201_CREATED)
         self.check_obj_perm(response_wperms.data, self.all_permissions, True)
 
+        # permitted
         response = self._get('a1', response_wperms.data['id'])
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         response = self._get('a2', response_wperms.data['id'])
@@ -643,28 +660,33 @@ class BaseApiWithPermissionTestCase(BaseApiTestCase):
         response = self._get('a', obj.id)
         udata = response.data.copy()
 
+        # create by owner
         udata['name'] = self.create_name()
         response = self._update('a', obj.id, udata)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.check_obj_perm(response.data, self.default_owner_permissions, True)
 
+        # no permissions
         response = self._update('a1', obj.id, udata)
         self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
 
+        # update permissions
         udata['name'] = self.create_name()
         perm = get_perms_codename(obj, ['change'])[0]
         self._add_permissions(udata,
                               user_object_permissions=[{'user': 'a1', 'permission': perm}],
                               group_object_permissions=[{'group': 'g2', 'permission': perm}])
         self._dump(udata)
-        response = self._update('a', obj.id, udata)
+        response = self._update('a0', obj.id, udata)
         self.assertEqual(response.status_code, status.HTTP_200_OK, response.data)
         self.check_obj_perm(response.data, self.default_owner_permissions, True)
 
+        # permitted
         udata['name'] = self.create_name()
         response = self._update('a1', obj.id, udata)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
+        # permitted
         udata['name'] = self.create_name()
         response = self._update('a2', obj.id, udata)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
@@ -684,21 +706,25 @@ class BaseApiWithPermissionTestCase(BaseApiTestCase):
         response = self._delete('a2', obj.id)
         self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
 
+        # delete by user
         obj = self._create_obj('obj_a1_1')
         self.assign_perms(obj, 'a', users=['a1'], groups=['g2'], perms=self.default_owner_permissions)
         response = self._delete('a1', obj.id)
         self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
 
+        # delete by group
         obj = self._create_obj('obj_a2_1')
         self.assign_perms(obj, 'a', users=['a1'], groups=['g2'], perms=self.default_owner_permissions)
         response = self._delete('a2', obj.id)
         self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
 
+        # no delete permission
         obj = self._create_obj('obj_a1_2')
         self.assign_perms(obj, 'a', users=['a1'], groups=['g2'], perms=only_change_perms)
         response = self._delete('a1', obj.id)
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
 
+        # no delete permission
         obj = self._create_obj('obj_a2_2')
         self.assign_perms(obj, 'a', users=['a1'], groups=['g2'], perms=only_change_perms)
         response = self._delete('a2', obj.id)
