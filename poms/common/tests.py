@@ -139,7 +139,7 @@ class BaseApiTestCase(APITestCase):
                               classifier_model=None, classifier_tree=None):
         master_user = self.get_master_user(master_user)
         attribute_type = model.objects.create(master_user=master_user, name=name, value_type=value_type)
-        if classifier_model and classifier_tree:
+        if classifier_model and classifier_tree and value_type == AttributeTypeBase.CLASSIFIER:
             for root in classifier_tree:
                 self.create_classifier(attribute_type, classifier_model, root, None)
         return attribute_type
@@ -147,7 +147,7 @@ class BaseApiTestCase(APITestCase):
     def create_classifier(self, attribute_type, model, node, parent):
         name = node['name']
         children = node.get('children', [])
-        classifier = model.objects.create(attribute_type=attribute_type, name=name)
+        classifier = model.objects.create(attribute_type=attribute_type, name=name, parent=parent)
         for child in children:
             self.create_classifier(attribute_type, model, child, classifier)
         return classifier
@@ -676,7 +676,6 @@ class BaseApiWithPermissionTestCase(BaseApiTestCase):
         self._add_permissions(udata,
                               user_object_permissions=[{'user': 'a1', 'permission': perm}],
                               group_object_permissions=[{'group': 'g2', 'permission': perm}])
-        self._dump(udata)
         response = self._update('a0', obj.id, udata)
         self.assertEqual(response.status_code, status.HTTP_200_OK, response.data)
         self.check_obj_perm(response.data, self.default_owner_permissions, True)
@@ -840,7 +839,47 @@ class BaseApiWithTagsTestCase(BaseApiTestCase):
 class BaseAttributeTypeApiTestCase(BaseApiWithPermissionTestCase):
     classifier_model = None
 
-    def _make_classifiers(self):
+    def create_default_attrs(self):
+        self.attr_str = self.create_attribute_type(self.model, 'str', 'a',
+                                                   value_type=AttributeTypeBase.STRING)
+        self.attr_num = self.create_attribute_type(self.model, 'num', 'a',
+                                                   value_type=AttributeTypeBase.NUMBER)
+        self.attr_date = self.create_attribute_type(self.model, 'date', 'a',
+                                                    value_type=AttributeTypeBase.DATE)
+        self.attr_clsfr1 = self.create_attribute_type(self.model, 'clsfr1', 'a',
+                                                      value_type=AttributeTypeBase.CLASSIFIER,
+                                                      classifier_model=self.classifier_model,
+                                                      classifier_tree=[{
+                                                          'name': 'clsfr1_n1',
+                                                          'children': [
+                                                              {'name': 'clsfr1_n11',},
+                                                              {'name': 'clsfr1_n12',},
+                                                          ]
+                                                      }, {
+                                                          'name': 'clsfr1_n2',
+                                                          'children': [
+                                                              {'name': 'clsfr1_n21',},
+                                                              {'name': 'clsfr1_n22',},
+                                                          ]
+                                                      }, ])
+        self.attr_clsfr2 = self.create_attribute_type(self.model, 'clsfr2', 'a',
+                                                      value_type=AttributeTypeBase.CLASSIFIER,
+                                                      classifier_model=self.classifier_model,
+                                                      classifier_tree=[{
+                                                          'name': 'clsfr2_n1',
+                                                          'children': [
+                                                              {'name': 'clsfr2_n11',},
+                                                              {'name': 'clsfr2_n12',},
+                                                          ]
+                                                      }, {
+                                                          'name': 'clsfr2_n2',
+                                                          'children': [
+                                                              {'name': 'clsfr2_n21',},
+                                                              {'name': 'clsfr2_n22',},
+                                                          ]
+                                                      }, ])
+
+    def _gen_classifiers(self):
         n = self.create_name()
         uc = self.create_user_code(n)
         return [
@@ -877,11 +916,9 @@ class BaseAttributeTypeApiTestCase(BaseApiWithPermissionTestCase):
             }
         ]
 
-    def _make_new_data_with_classifiers(self, value_type=AttributeTypeBase.CLASSIFIER,
-                                        user_object_permissions=None, group_object_permissions=None):
-        data = self._make_new_data(value_type=value_type, user_object_permissions=user_object_permissions,
-                                   group_object_permissions=group_object_permissions)
-        data['classifiers'] = self._make_classifiers()
+    def _make_new_data_with_classifiers(self, value_type=AttributeTypeBase.CLASSIFIER, **kwargs):
+        data = self._make_new_data(value_type=value_type, **kwargs)
+        data['classifiers'] = self._gen_classifiers()
         return data
 
     def _create_obj(self, name='acc'):
@@ -891,65 +928,46 @@ class BaseAttributeTypeApiTestCase(BaseApiWithPermissionTestCase):
     def _get_obj(self, name='acc'):
         return self.get_attribute_type(self.model, name, 'a')
 
-    def test_get_without_permission(self):
-        obj = self._create_obj()
-        self.assign_perms(obj, 'a', groups=['g1'])
-        response = self._get('a2', obj.id)
-        obj = response.data
+    def test_classifiers_get(self):
+        self.create_default_attrs()
+        response = self._get('a', self.attr_clsfr1.id)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self._check_granted_permissions(obj, expected=[])
-        self.assertEqual(set(six.iterkeys(obj)), {'url', 'id', 'display_name', 'granted_permissions'})
+        self.assertEqual(len(response.data['classifiers']), 2)
 
-    def test_add_classifier(self):
+    def test_classifiers_add(self):
         data = self._make_new_data_with_classifiers()
         response = self._add('a', data)
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        self.assertEqual(len(response.data['classifiers']), 2)
 
-    def test_add_string_with_classifiers(self):
+        # try create with classifier with other value type
         data = self._make_new_data_with_classifiers(value_type=AttributeTypeBase.STRING)
         response = self._add('a', data)
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
         self.assertEqual(response.data['classifiers'], [])
 
-    def test_update_classifier(self):
-        data = self._make_new_data_with_classifiers()
+    def test_classifiers_update(self):
+        data = self._make_new_data(value_type=AttributeTypeBase.CLASSIFIER)
         response = self._add('a', data)
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        self.assertEqual(len(response.data['classifiers']), 0)
 
         data = response.data.copy()
-        data['classifiers'] = self._make_classifiers()
+        data['classifiers'] = self._gen_classifiers()
         response = self._update('a', data['id'], data)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(len(response.data['classifiers']), 2)
 
-    def test_update_as_string_with_classifiers(self):
+        # try add classifier to other value type
         data = self._make_new_data(value_type=AttributeTypeBase.STRING)
         response = self._add('a', data)
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
 
         data = response.data.copy()
-        data['classifiers'] = self._make_classifiers()
+        data['classifiers'] = self._gen_classifiers()
         response = self._update('a', data['id'], data)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(response.data['classifiers'], [])
-
-    def test_list_classifier(self):
-        data = self._make_new_data_with_classifiers()
-        response = self._add('a', data)
-        data = response.data.copy()
-
-        response = self._list('a')
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(response.data['count'], 1)
-        for obj in response.data['results']:
-            pass
-
-    def test_get_classifier(self):
-        data = self._make_new_data_with_classifiers()
-        response = self._add('a', data)
-        data = response.data.copy()
-
-        response = self._get('a', data['id'])
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
 
 
 class BaseApiWithAttributesTestCase(BaseApiTestCase):

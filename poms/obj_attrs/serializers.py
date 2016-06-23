@@ -38,8 +38,8 @@ class AttributeTypeSerializerBase(ModelWithObjectPermissionSerializer, ModelWith
     is_hidden = AttributeTypeOptionIsHiddenField()
 
     class Meta:
-        fields = ['url', 'id', 'master_user', 'user_code', 'name', 'short_name', 'notes', 'value_type', 'order',
-                  'is_hidden']
+        fields = ['url', 'id', 'master_user', 'user_code', 'name', 'short_name', 'public_name', 'notes', 'value_type',
+                  'order', 'is_hidden']
         update_read_only_fields = ['value_type']
 
     def __init__(self, *args, **kwargs):
