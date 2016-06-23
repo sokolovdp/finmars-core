@@ -54,7 +54,8 @@ class AccountAttributeSerializer(AttributeSerializerBase):
         fields = AttributeSerializerBase.Meta.fields + ['attribute_type', 'classifier']
 
 
-class AccountSerializer(ModelWithObjectPermissionSerializer, ModelWithAttributesSerializer, ModelWithUserCodeSerializer):
+class AccountSerializer(ModelWithObjectPermissionSerializer, ModelWithAttributesSerializer,
+                        ModelWithUserCodeSerializer):
     master_user = MasterUserField()
     type = AccountTypeField()
     attributes = AccountAttributeSerializer(many=True, required=False, allow_null=True)
@@ -64,35 +65,3 @@ class AccountSerializer(ModelWithObjectPermissionSerializer, ModelWithAttributes
         model = Account
         fields = ['url', 'id', 'master_user', 'type', 'user_code', 'name', 'public_name', 'short_name', 'notes',
                   'tags', 'attributes', ]
-
-        # def get_type__public_name(self, obj):
-        #     return obj.type.public_name if obj.type is not None else None
-
-        # def validate_tags(self, tags):
-        #     return tags
-        #
-        # def update(self, instance, validated_data):
-        #     tags = validated_data.pop('tags', None)
-        #
-        #     instance = super(AccountSerializer, self).update(instance, validated_data)
-        #
-        #     if tags is not None:
-        #         tags_field = self.fields['tags']
-        #
-        #         ctype = ContentType.objects.get_for_model(instance)
-        #         tags_qs = Tag.objects.filter(master_user=instance.master_user, content_types__in=[ctype])
-        #
-        #         cur_tags = {t.id for t in instance.tags.all()}
-        #         # print('cur_tags ->', cur_tags)
-        #         cur_tags_with_perms = {t.id for t in tags_field.get_attribute(instance)}
-        #         # print('cur_tags_with_perms ->', cur_tags_with_perms)
-        #         hidden_tags = cur_tags - cur_tags_with_perms
-        #         # print('hidden_tags ->', hidden_tags)
-        #         new_tags = {t.id for t in tags}
-        #         # print('new_tags ->', new_tags)
-        #         tags = [t for t in tags_qs.all() if t.id in hidden_tags or t.id in new_tags]
-        #         # print(tags)
-        #
-        #         instance.tags = tags
-        #
-        #     return instance
