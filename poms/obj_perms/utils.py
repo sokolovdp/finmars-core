@@ -133,7 +133,7 @@ def get_granted_permissions(member, obj):
             if po.group_id in groups_id:
                 obj_perms.add(po.permission.codename)
 
-    return obj_perms
+    return list(obj_perms)
 
 
 def assign_perms(obj, members=None, groups=None, perms=None):
@@ -272,7 +272,8 @@ def has_perms(member, obj, perms):
     if member.is_superuser:
         return True
     obj_perms = get_granted_permissions(member, obj)
-    return set(perms).issubset(set(obj_perms))
+    # return set(perms).issubset(set(obj_perms))
+    return len(set(perms).intersection(set(obj_perms))) > 0
 
 
 def has_view_perms(member, obj):
