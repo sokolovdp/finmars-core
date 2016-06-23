@@ -6,6 +6,7 @@ from poms.accounts.models import AccountAttributeType, Account, AccountType, Acc
 from poms.common.tests import BaseApiWithPermissionTestCase, BaseApiWithAttributesTestCase, \
     BaseAttributeTypeApiTestCase, \
     BaseApiWithTagsTestCase
+from poms.obj_perms.utils import get_perms_codename
 
 
 class AccountTypeApiTestCase(BaseApiWithPermissionTestCase, BaseApiWithTagsTestCase):
@@ -49,8 +50,9 @@ class AccountApiTestCase(BaseApiWithPermissionTestCase, BaseApiWithTagsTestCase,
         self._url_object = '/api/v1/accounts/account/%s/'
         self._change_permission = 'change_account'
 
-        self.type_dummy = self.create_account_type('-', 'a')
-        self.assign_perms(self.type_dummy, 'a', users=['a0', 'a1', 'a2'], groups=['g1', 'g2'])
+        self.type_def = self.create_account_type('-', 'a')
+        self.assign_perms(self.type_def, 'a', users=['a0', 'a1', 'a2'], groups=['g1', 'g2'],
+                          perms=get_perms_codename(self.type_def, ['change', 'view']))
 
         self.type1 = self.create_account_type('type1', 'a')
         self.type2_a1 = self.create_account_type('type2_a1', 'a')

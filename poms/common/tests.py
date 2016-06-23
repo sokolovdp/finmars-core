@@ -20,7 +20,7 @@ from poms.currencies.models import Currency
 from poms.instruments.models import InstrumentClass, InstrumentType, Instrument, InstrumentAttributeType, \
     InstrumentClassifier
 from poms.obj_attrs.models import AttributeTypeBase
-from poms.obj_perms.utils import assign_perms, get_all_perms, get_default_owner_permissions
+from poms.obj_perms.utils import assign_perms, get_all_perms, get_default_owner_permissions, get_perms_codename
 from poms.portfolios.models import Portfolio, PortfolioAttributeType, PortfolioClassifier
 from poms.strategies.models import Strategy1, Strategy2, Strategy3
 from poms.tags.models import Tag
@@ -596,11 +596,13 @@ class BaseApiWithPermissionTestCase(BaseApiTestCase):
 
         response = self._get('a1', obj.id)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(set(six.iterkeys(response.data)), {'url', 'id', 'public_name', 'display_name', 'granted_permissions'})
+        self.assertEqual(set(six.iterkeys(response.data)),
+                         {'url', 'id', 'public_name', 'display_name', 'granted_permissions'})
 
         response = self._get('a2', obj.id)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(set(six.iterkeys(response.data)), {'url', 'id', 'public_name', 'display_name', 'granted_permissions'})
+        self.assertEqual(set(six.iterkeys(response.data)),
+                         {'url', 'id', 'public_name', 'display_name', 'granted_permissions'})
 
         response = self._get('a', obj12.id)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
@@ -614,182 +616,92 @@ class BaseApiWithPermissionTestCase(BaseApiTestCase):
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.check_obj_perm(response.data, self.default_owner_permissions, False)
 
-    def test_add_by_owner(self):
+    def test_add(self):
         data = self._make_new_data()
         response = self._add('a', data)
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
-        obj = response.data
-        self._check_granted_permissions(obj, expected=self.all_permissions)
-        self._check_user_object_permissions(obj, [{'user': 'a', 'permission': self._change_permission}])
-        self._db_check_user_object_permissions(obj, [{'user': 'a', 'permission': self._change_permission}])
-        self._check_group_object_permissions(obj, [])
+        self.check_obj_perm(response.data, self.all_permissions, True)
 
-    def test_add_by_admin(self):
-        data = self._make_new_data()
-        response = self._add('a0', data)
-        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
-        obj = response.data
-        self._check_granted_permissions(obj, expected=self.all_permissions)
-        self._check_user_object_permissions(obj, [{'user': 'a0', 'permission': self._change_permission}])
-        self._db_check_user_object_permissions(obj, [{'user': 'a0', 'permission': self._change_permission}])
-        self._check_group_object_permissions(obj, [])
-
-    def test_add_by_a1(self):
         data = self._make_new_data()
         response = self._add('a1', data)
-        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
-        obj = response.data
-        self._check_granted_permissions(obj, expected=[self._change_permission])
-        self.assertFalse('user_object_permissions' in obj)
-        self._db_check_user_object_permissions(obj, [{'user': 'a1', 'permission': self._change_permission}])
-        self.assertFalse('group_object_permissions' in obj)
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED, response.content)
+        self.check_obj_perm(response.data, self.default_owner_permissions, False)
 
-    def test_add_by_owner_with_additional_permissions(self):
-        data = self._make_new_data(user_object_permissions=[{'user': 'a2', 'permission': self._change_permission}],
-                                   group_object_permissions=[{'group': 'g1', 'permission': self._change_permission}])
-        response = self._add('a', data)
-        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
-        obj = response.data
-        self._check_granted_permissions(obj, expected=self.all_permissions)
-        self._check_user_object_permissions(obj, [{'user': 'a', 'permission': self._change_permission},
-                                                  {'user': 'a2', 'permission': self._change_permission}])
-        self._db_check_user_object_permissions(obj, [{'user': 'a', 'permission': self._change_permission},
-                                                     {'user': 'a2', 'permission': self._change_permission}])
-        self._check_group_object_permissions(obj, [{'group': 'g1', 'permission': self._change_permission}])
-        self._db_check_group_object_permissions(obj, [{'group': 'g1', 'permission': self._change_permission}])
+        data = self._make_new_data(user_object_permissions=[{'user': 'a1', 'permission': self._change_permission}],
+                                   group_object_permissions=[{'group': 'g2', 'permission': self._change_permission}])
+        response_wperms = self._add('a', data)
+        self.assertEqual(response_wperms.status_code, status.HTTP_201_CREATED)
+        self.check_obj_perm(response_wperms.data, self.all_permissions, True)
 
-    def test_add_by_admin_with_additional_permissions(self):
-        data = self._make_new_data(user_object_permissions=[{'user': 'a2', 'permission': self._change_permission}],
-                                   group_object_permissions=[{'group': 'g1', 'permission': self._change_permission}])
-        response = self._add('a0', data)
-        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
-        obj = response.data
-        self._check_granted_permissions(obj, expected=self.all_permissions)
-        self._check_user_object_permissions(obj, [{'user': 'a0', 'permission': self._change_permission},
-                                                  {'user': 'a2', 'permission': self._change_permission}])
-        self._db_check_user_object_permissions(obj, [{'user': 'a0', 'permission': self._change_permission},
-                                                     {'user': 'a2', 'permission': self._change_permission}])
-        self._check_group_object_permissions(obj, [{'group': 'g1', 'permission': self._change_permission}])
-        self._db_check_group_object_permissions(obj, [{'group': 'g1', 'permission': self._change_permission}])
-
-    def test_add_by_a1_with_additional_permissions(self):
-        data = self._make_new_data(user_object_permissions=[{'user': 'a2', 'permission': self._change_permission}],
-                                   group_object_permissions=[{'group': 'g1', 'permission': self._change_permission}])
-        response = self._add('a1', data)
-        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
-        obj = response.data
-        self._check_granted_permissions(obj, expected=[self._change_permission])
-        self._db_check_user_object_permissions(obj, [{'user': 'a1', 'permission': self._change_permission}])
-        self._db_check_group_object_permissions(obj, [])
-
-    def test_update_by_owner(self):
-        data = self._make_new_data()
-        response = self._add('a', data)
-        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
-        data = response.data.copy()
-
-        data['name'] = uuid.uuid4().hex
-        response = self._update('a', data['id'], data)
+        response = self._get('a1', response_wperms.data['id'])
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        obj = response.data
-        self._check_granted_permissions(obj, expected=self.all_permissions)
-        self._check_user_object_permissions(obj, [{'user': 'a', 'permission': self._change_permission}])
-        self._db_check_user_object_permissions(obj, [{'user': 'a', 'permission': self._change_permission}])
-        self._check_group_object_permissions(obj, [])
-
-    def test_update_by_a1(self):
-        data = self._make_new_data()
-        response = self._add('a1', data)
-        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
-        data = response.data.copy()
-
-        data['name'] = uuid.uuid4().hex
-        response = self._update('a1', data['id'], data)
+        response = self._get('a2', response_wperms.data['id'])
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
-        obj = response.data
-        self._check_granted_permissions(obj, expected=[self._change_permission])
-        self.assertFalse('user_object_permissions' in obj)
-        self._db_check_user_object_permissions(obj, [{'user': 'a1', 'permission': self._change_permission}])
-        self.assertFalse('group_object_permissions' in obj)
+    def test_update(self):
+        obj = self._create_obj(self.create_name())
+        response = self._get('a', obj.id)
+        udata = response.data.copy()
 
-    def test_update_permissions_by_owner(self):
-        data = self._make_new_data()
-        response = self._add('a', data)
-        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
-        data = response.data.copy()
-
-        data['name'] = uuid.uuid4().hex
-        self._add_permissions(data,
-                              user_object_permissions=[{'user': 'a', 'permission': self._change_permission},
-                                                       {'user': 'a2', 'permission': self._change_permission}],
-                              group_object_permissions=[{'group': 'g1', 'permission': self._change_permission}])
-        response = self._update('a', data['id'], data)
+        udata['name'] = self.create_name()
+        response = self._update('a', obj.id, udata)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        obj = response.data
-        self._check_user_object_permissions(obj, [{'user': 'a', 'permission': self._change_permission},
-                                                  {'user': 'a2', 'permission': self._change_permission}])
-        self._db_check_user_object_permissions(obj, [{'user': 'a', 'permission': self._change_permission},
-                                                     {'user': 'a2', 'permission': self._change_permission}])
-        self._check_group_object_permissions(obj, [{'group': 'g1', 'permission': self._change_permission}])
-        self._db_check_group_object_permissions(obj, [{'group': 'g1', 'permission': self._change_permission}])
+        self.check_obj_perm(response.data, self.default_owner_permissions, True)
 
-    def test_update_permissions_by_a1(self):
-        data = self._make_new_data()
-        response = self._add('a1', data)
-        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
-        data = response.data.copy()
-
-        data['name'] = uuid.uuid4().hex
-        self._add_permissions(data,
-                              user_object_permissions=[{'user': 'a2', 'permission': self._change_permission}],
-                              group_object_permissions=[{'group': 'g1', 'permission': self._change_permission}])
-        response = self._update('a1', data['id'], data)
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        obj = response.data
-        self._db_check_user_object_permissions(obj, [{'user': 'a1', 'permission': self._change_permission}])
-        self._db_check_group_object_permissions(obj, [])
-
-    def test_update_without_permission(self):
-        data = self._make_new_data()
-        response = self._add('a', data)
-        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
-        data = response.data.copy()
-
-        data['name'] = uuid.uuid4().hex
-        response = self._update('a1', data['id'], data)
+        response = self._update('a1', obj.id, udata)
         self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
 
-    def test_delete_by_owner(self):
-        obj = self._create_obj()
+        udata['name'] = self.create_name()
+        perm = get_perms_codename(obj, ['change'])[0]
+        self._add_permissions(udata,
+                              user_object_permissions=[{'user': 'a1', 'permission': perm}],
+                              group_object_permissions=[{'group': 'g2', 'permission': perm}])
+        self._dump(udata)
+        response = self._update('a', obj.id, udata)
+        self.assertEqual(response.status_code, status.HTTP_200_OK, response.data)
+        self.check_obj_perm(response.data, self.default_owner_permissions, True)
+
+        udata['name'] = self.create_name()
+        response = self._update('a1', obj.id, udata)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        udata['name'] = self.create_name()
+        response = self._update('a2', obj.id, udata)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+    def test_delete(self):
+        only_change_perms = get_perms_codename(self.model, ['change'])
+
+        obj = self._create_obj('obj_a')
         response = self._delete('a', obj.id)
         self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
 
-    def test_delete_by_admin(self):
-        obj = self._create_obj()
-        response = self._delete('a0', obj.id)
+        obj = self._create_obj('obj_a1')
+        response = self._delete('a1', obj.id)
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+
+        obj = self._create_obj('obj_a2')
+        response = self._delete('a2', obj.id)
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+
+        obj = self._create_obj('obj_a1_1')
+        self.assign_perms(obj, 'a', users=['a1'], groups=['g2'], perms=self.default_owner_permissions)
+        response = self._delete('a1', obj.id)
         self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
 
-    def test_delete_by_user(self):
-        obj = self._create_obj()
-        response = self._delete('a1', obj.id)
-        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+        obj = self._create_obj('obj_a2_1')
+        self.assign_perms(obj, 'a', users=['a1'], groups=['g2'], perms=self.default_owner_permissions)
+        response = self._delete('a2', obj.id)
+        self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
 
-    def test_delete_not_found_by_user(self):
-        obj = self._create_obj()
-        response = self._delete('a1', obj.id)
-        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
-
-    def test_delete_without_delete_permission_by_user(self):
-        obj = self._create_obj()
-        self.assign_perms(obj, 'a', users=['a1'])
+        obj = self._create_obj('obj_a1_2')
+        self.assign_perms(obj, 'a', users=['a1'], groups=['g2'], perms=only_change_perms)
         response = self._delete('a1', obj.id)
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
 
-    def test_delete_without_delete_permission_by_group(self):
-        obj = self._create_obj()
-        self.assign_perms(obj, 'a', groups=['g1'])
-        response = self._delete('a1', obj.id)
+        obj = self._create_obj('obj_a2_2')
+        self.assign_perms(obj, 'a', users=['a1'], groups=['g2'], perms=only_change_perms)
+        response = self._delete('a2', obj.id)
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
 
 
@@ -1093,13 +1005,6 @@ class BaseApiWithTagsTestCase(BaseApiTestCase):
 
 class BaseAttributeTypeApiTestCase(BaseApiWithPermissionTestCase):
     classifier_model = None
-
-    # def _make_new_data(self, value_type=AttributeTypeBase.STRING, user_object_permissions=None,
-    #                    group_object_permissions=None):
-    #     data = super(BaseAttributeTypeApiTestCase, self)._make_new_data(user_object_permissions=user_object_permissions,
-    #                                                                     group_object_permissions=group_object_permissions)
-    #     data['value_type'] = value_type
-    #     return data
 
     def _make_classifiers(self):
         n = self.create_name()

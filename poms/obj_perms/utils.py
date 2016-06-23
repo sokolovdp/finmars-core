@@ -136,13 +136,6 @@ def get_granted_permissions(member, obj):
     return obj_perms
 
 
-def get_default_owner_permissions(instance):
-    ctype = ContentType.objects.get_for_model(instance)
-    # return [p for p in Permission.objects.filter(content_type=ctype) if not p.codename.startswith('add_')]
-    return [p for p in Permission.objects.filter(content_type=ctype)
-            if p.codename.startswith('change_') or p.codename.startswith('delete_')]
-
-
 def assign_perms(obj, members=None, groups=None, perms=None):
     ctype = ContentType.objects.get_for_model(obj)
     permissions = list(Permission.objects.filter(content_type=ctype))
@@ -226,34 +219,60 @@ def assign_perms_from_list(obj, user_object_permissions=None, group_object_permi
         _assign_perms(obj, group_lookup_name, group_obj_perms_model, 'group', group_object_permissions)
 
 
-def get_view_perms(model):
-    # codename_set = ['view_%(model_name)s', 'change_%(model_name)s', 'manage_%(model_name)s']
-    codename_set = ['change_%(model_name)s', ]
-    kwargs = {
+def get_perms_codename(model, actions):
+    params = {
+        'action': None,
         'app_label': model._meta.app_label,
         'model_name': model._meta.model_name
     }
-    return {perm % kwargs for perm in codename_set}
+    ret = []
+    for action in actions:
+        params['action'] = action
+        ret.append('%(action)s_%(model_name)s' % params)
+    return ret
+
+
+def get_view_perms(model):
+    # # codename_set = ['view_%(model_name)s', 'change_%(model_name)s', 'manage_%(model_name)s']
+    # codename_set = ['change_%(model_name)s', ]
+    # kwargs = {
+    #     'app_label': model._meta.app_label,
+    #     'model_name': model._meta.model_name
+    # }
+    # return {perm % kwargs for perm in codename_set}
+    return get_perms_codename(model, ['change', 'view'])
 
 
 _perms_cache = {}
 
 
 def get_all_perms(model):
-    # return [p.codename for p in Permission.objects.filter(content_type=ctype)]
-    ctype = ContentType.objects.get_for_model(model)
-    if ctype in _perms_cache:
-        return _perms_cache[ctype]
-    ret = [p.codename for p in Permission.objects.filter(content_type=ctype)]
-    _perms_cache[ctype] = ret
-    return ret
+    # # return [p.codename for p in Permission.objects.filter(content_type=ctype)]
+    # ctype = ContentType.objects.get_for_model(model)
+    # if ctype in _perms_cache:
+    #     return _perms_cache[ctype]
+    # ret = [p.codename for p in Permission.objects.filter(content_type=ctype)]
+    # _perms_cache[ctype] = ret
+    # return ret
+    return get_perms_codename(model, ['change', 'delete', 'view'])
+
+
+def get_default_owner_permissions(instance):
+    # ctype = ContentType.objects.get_for_model(instance)
+    # # return [p for p in Permission.objects.filter(content_type=ctype) if not p.codename.startswith('add_')]
+    # return [p for p in Permission.objects.filter(content_type=ctype)
+    #         if p.codename.startswith('change_') or p.codename.startswith('delete_')]
+
+    view_perms = get_perms_codename(instance, ['change', 'view', 'delete'])
+    ctype = ContentType.objects.get_for_model(instance)
+    return [p for p in Permission.objects.filter(content_type=ctype) if p.codename in view_perms]
 
 
 def has_perms(member, obj, perms):
     if member.is_superuser:
         return True
     obj_perms = get_granted_permissions(member, obj)
-    return perms.issubset(obj_perms)
+    return set(perms).issubset(set(obj_perms))
 
 
 def has_view_perms(member, obj):
