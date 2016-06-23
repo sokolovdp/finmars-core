@@ -739,294 +739,102 @@ class BaseApiWithTagsTestCase(BaseApiTestCase):
             self.model2 = AccountType
         else:
             self.model2 = Account
-        self.tag1 = self.create_tag('tag1', 'a', [self.model])
-        self.tag2_a1 = self.create_tag('tag2', 'a', [self.model])
-        self.assign_perms(self.tag2_a1, 'a', users=['a1'])
-        self.tag3_g2 = self.create_tag('tag3', 'a', [self.model])
-        self.assign_perms(self.tag3_g2, 'a', groups=['g2'])
-        self.tag4_ctype2 = self.create_tag('tag5', 'a', [self.model2])
-        self.assign_perms(self.tag4_ctype2, 'a', users=['a1'], groups=['g2'])
 
-    def test_tags_list_by_owner(self):
+        self.tag1 = self.create_tag('tag1', 'a', [self.model])
+
+        self.tag2_a1 = self.create_tag('tag2', 'a', [self.model])
+        self.assign_perms(self.tag2_a1, 'a', users=['a1'], perms=get_all_perms(self.tag1))
+
+        self.tag3_g2 = self.create_tag('tag3', 'a', [self.model])
+        self.assign_perms(self.tag3_g2, 'a', groups=['g2'], perms=get_all_perms(self.tag1))
+
+        self.tag4_ctype2 = self.create_tag('tag5', 'a', [self.model2])
+        self.assign_perms(self.tag4_ctype2, 'a', users=['a1'], groups=['g2'], perms=get_all_perms(self.tag1))
+
+    def test_tags_list(self):
         obj = self._create_obj()
+        self.assign_perms(obj, 'a', users=['a1'], groups=['g2'])
         obj.tags = [self.tag1, self.tag2_a1, self.tag3_g2]
 
         response = self._list('a')
-
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(response.data['count'], 1)
-        tags = response.data['results'][0]['tags']
-        self.assertEqual(set(tags), {self.tag1.id, self.tag2_a1.id, self.tag3_g2.id, })
-
-    def test_tags_list_by_admin(self):
-        obj = self._create_obj()
-        obj.tags = [self.tag1, self.tag2_a1, self.tag3_g2]
+        self.assertEqual(set(response.data['results'][0]['tags']), {self.tag1.id, self.tag2_a1.id, self.tag3_g2.id, })
 
         response = self._list('a0')
-
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(response.data['count'], 1)
-        tags = response.data['results'][0]['tags']
-        self.assertEqual(set(tags), {self.tag1.id, self.tag2_a1.id, self.tag3_g2.id, })
-
-    def test_tags_list_by_user_perms(self):
-        obj = self._create_obj()
-        self.assign_perms(obj, 'a', users=['a1'])
-        obj.tags = [self.tag1, self.tag2_a1, self.tag3_g2]
+        self.assertEqual(set(response.data['results'][0]['tags']), {self.tag1.id, self.tag2_a1.id, self.tag3_g2.id, })
 
         response = self._list('a1')
-
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(response.data['count'], 1)
-        tags = response.data['results'][0]['tags']
-        self.assertEqual(set(tags), {self.tag2_a1.id})
-
-    def test_tags_list_by_group_perms(self):
-        obj = self._create_obj()
-        self.assign_perms(obj, 'a', users=['a2'])
-        obj.tags = [self.tag1, self.tag2_a1, self.tag3_g2]
+        self.assertEqual(set(response.data['results'][0]['tags']), {self.tag2_a1.id})
 
         response = self._list('a2')
-
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(response.data['count'], 1)
-        tags = response.data['results'][0]['tags']
-        self.assertEqual(set(tags), {self.tag3_g2.id, })
+        self.assertEqual(set(response.data['results'][0]['tags']), {self.tag3_g2.id, })
 
-    def test_tags_list_by_no_perms(self):
+    def test_tags_get(self):
         obj = self._create_obj()
-        self.assign_perms(obj, 'a', users=['a1'])
-        obj.tags = [self.tag1]
-
-        response = self._list('a1')
-
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(response.data['count'], 1)
-        tags = response.data['results'][0]['tags']
-        self.assertEqual(len(tags), 0)
-
-    def test_tags_get_by_owner(self):
-        obj = self._create_obj()
+        self.assign_perms(obj, 'a', users=['a1'], groups=['g2'])
         obj.tags = [self.tag1, self.tag2_a1, self.tag3_g2]
 
         response = self._get('a', obj.id)
-
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        tags = response.data['tags']
-        self.assertEqual(set(tags), {self.tag1.id, self.tag2_a1.id, self.tag3_g2.id, })
-
-    def test_tags_get_by_admin(self):
-        obj = self._create_obj()
-        obj.tags = [self.tag1, self.tag2_a1, self.tag3_g2]
+        self.assertEqual(set(response.data['tags']), {self.tag1.id, self.tag2_a1.id, self.tag3_g2.id, })
 
         response = self._get('a0', obj.id)
-
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        tags = response.data['tags']
-        self.assertEqual(set(tags), {self.tag1.id, self.tag2_a1.id, self.tag3_g2.id, })
-
-    def test_tags_get_by_user_perms(self):
-        obj = self._create_obj()
-        self.assign_perms(obj, 'a', users=['a1'])
-        obj.tags = [self.tag1, self.tag2_a1, self.tag3_g2]
+        self.assertEqual(set(response.data['tags']), {self.tag1.id, self.tag2_a1.id, self.tag3_g2.id, })
 
         response = self._get('a1', obj.id)
-
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        tags = response.data['tags']
-        self.assertEqual(set(tags), {self.tag2_a1.id})
-
-    def test_tags_get_by_group_perms(self):
-        obj = self._create_obj()
-        self.assign_perms(obj, 'a', users=['a2'])
-        obj.tags = [self.tag1, self.tag2_a1, self.tag3_g2]
+        self.assertEqual(set(response.data['tags']), {self.tag2_a1.id})
 
         response = self._get('a2', obj.id)
-
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        tags = response.data['tags']
-        self.assertEqual(set(tags), {self.tag3_g2.id, })
+        self.assertEqual(set(response.data['tags']), {self.tag3_g2.id, })
 
-    def test_tags_get_by_no_perms(self):
-        obj = self._create_obj()
-        self.assign_perms(obj, 'a', users=['a1'])
-        obj.tags = [self.tag1]
-
-        response = self._get('a1', obj.id)
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        tags = response.data['tags']
-        self.assertEqual(len(tags), 0)
-
-    def test_tags_add_by_owner(self):
-        data_tags = {self.tag1.id, self.tag2_a1.id, self.tag3_g2.id}
-        data = self._make_new_data(tags=data_tags)
+    def test_tags_update(self):
+        data = self._make_new_data(tags=[self.tag1.id])
         response = self._add('a', data)
+        data = response.data.copy()
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
-        tags = response.data['tags']
-        self.assertEqual(set(tags), data_tags)
+        self.assertEqual(set(response.data['tags']), {self.tag1.id})
 
-    def test_tags_add_by_admin(self):
-        data_tags = {self.tag1.id, self.tag2_a1.id, self.tag3_g2.id}
-        data = self._make_new_data(tags=data_tags)
-        response = self._add('a0', data)
-        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
-        tags = response.data['tags']
-        self.assertEqual(set(tags), data_tags)
+        udata = data.copy()
+        udata['tags'] = {self.tag1.id, self.tag2_a1.id, self.tag3_g2.id, }
+        response = self._update('a', data['id'], udata)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(set(response.data['tags']), {self.tag1.id, self.tag2_a1.id, self.tag3_g2.id, })
 
-    def test_tags_add_by_user_perms(self):
-        data_tags = {self.tag2_a1.id}
-        data = self._make_new_data(tags=data_tags)
-        response = self._add('a1', data)
+        self.assign_perms(self.model.objects.get(id=data['id']), 'a', users=['a1'], groups=['g2'],
+                          perms=self.all_permissions)
+        response = self._get('a1', data['id'])
+        udata = response.data.copy()
+        udata['tags'] = []
+        response = self._update('a1', data['id'], udata)
+        self.assertEqual(response.status_code, status.HTTP_200_OK, response.data)
+        self.assertEqual(len(response.data['tags']), 0)
 
-        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
-        tags = response.data['tags']
-        self.assertEqual(set(tags), {self.tag2_a1.id, })
+        response = self._get('a0', data['id'])
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(set(response.data['tags']), {self.tag1.id, self.tag3_g2.id, })
 
-    def test_tags_add_by_group_perms(self):
-        data_tags = {self.tag3_g2.id}
-        data = self._make_new_data(tags=data_tags)
-        response = self._add('a2', data)
-        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
-        tags = response.data['tags']
-        self.assertEqual(set(tags), {self.tag3_g2.id, })
-
-    def test_tags_add_no_user_perms(self):
-        data_tags = {self.tag1.id, self.tag2_a1.id, self.tag3_g2.id}
-        data = self._make_new_data(tags=data_tags)
-        response = self._add('a1', data)
-        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
-
-    def test_tags_add_no_group_perms(self):
-        data_tags = {self.tag1.id, self.tag2_a1.id, self.tag3_g2.id}
-        data = self._make_new_data(tags=data_tags)
-        response = self._add('a2', data)
-        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
-
-    def test_tags_add_by_owner_tag_without_coorect_ctype(self):
+    def test_tags_with_incorrect_ctype(self):
         data_tags = {self.tag4_ctype2.id}
         data = self._make_new_data(tags=data_tags)
         response = self._add('a', data)
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
 
-    def test_tags_update_by_owner(self):
-        data = self._make_new_data(tags={self.tag1.id, self.tag2_a1.id, self.tag3_g2.id})
-        response = self._add('a', data)
-        data = response.data.copy()
-
-        data['tags'] = {self.tag1.id, self.tag2_a1.id}
-        response = self._update('a', data['id'], data)
-
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        tags = response.data['tags']
-        self.assertEqual(set(tags), data['tags'])
-
-    def test_tags_update_by_admin(self):
-        data = self._make_new_data(tags={self.tag1.id, self.tag2_a1.id, self.tag3_g2.id})
-        response = self._add('a0', data)
-        data = response.data.copy()
-
-        data['tags'] = {self.tag1.id, self.tag2_a1.id}
-        response = self._update('a0', data['id'], data)
-
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        tags = response.data['tags']
-        self.assertEqual(set(tags), data['tags'])
-
-    def test_tags_update_by_user_perms(self):
-        data = self._make_new_data()
-        response = self._add('a1', data)
-        data = response.data.copy()
-
-        data['tags'] = {self.tag2_a1.id}
-        response = self._update('a1', data['id'], data)
-
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        tags = response.data['tags']
-        self.assertEqual(set(tags), data['tags'])
-
-    def test_tags_update_by_group_perms(self):
-        data = self._make_new_data()
-        response = self._add('a2', data)
-        data = response.data.copy()
-
-        data['tags'] = {self.tag3_g2.id}
-        response = self._update('a2', data['id'], data)
-
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        tags = response.data['tags']
-        self.assertEqual(set(tags), data['tags'])
-
-    def test_tags_update_by_owner_tag_with_invalid_ctype(self):
         data = self._make_new_data(tags={self.tag1.id})
         response = self._add('a', data)
         data = response.data.copy()
-
         data['tags'] = {self.tag4_ctype2.id}
         response = self._update('a', data['id'], data)
-
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
-
-    def test_tags_add_owner_update_by_users_perms(self):
-        obj = self._create_obj()
-        self.assign_perms(obj, 'a', users=['a1'])
-        obj.tags = [self.tag1]
-
-        # data = self._make_new_data(tags={self.tag1.id})
-        response = self._get('a', obj.id)
-        data = response.data.copy()
-
-        # add
-        data['tags'] = {self.tag2_a1.id}
-        response = self._update('a1', data['id'], data)
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        tags = response.data['tags']
-        self.assertEqual(set(tags), data['tags'])
-
-        response = self._get('a', data['id'])
-        tags = response.data['tags']
-        self.assertEqual(set(tags), {self.tag1.id, self.tag2_a1.id})
-
-        # del
-        data['tags'] = set()
-        response = self._update('a1', data['id'], data)
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        tags = response.data['tags']
-        self.assertEqual(set(tags), data['tags'])
-
-        response = self._get('a', data['id'])
-        tags = response.data['tags']
-        self.assertEqual(set(tags), {self.tag1.id, })
-
-    def test_tags_add_owner_update_by_group_perms(self):
-        obj = self._create_obj()
-        self.assign_perms(obj, 'a', groups=['g2'])
-        obj.tags = [self.tag1]
-
-        # data = self._make_new_data(tags={self.tag1.id})
-        response = self._get('a', obj.id)
-        data = response.data.copy()
-
-        # add
-        data['tags'] = {self.tag3_g2.id}
-        response = self._update('a2', data['id'], data)
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        tags = response.data['tags']
-        self.assertEqual(set(tags), data['tags'])
-
-        response = self._get('a', data['id'])
-        tags = response.data['tags']
-        self.assertEqual(set(tags), {self.tag1.id, self.tag3_g2.id})
-
-        # del
-        data['tags'] = set()
-        response = self._update('a2', data['id'], data)
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        tags = response.data['tags']
-        self.assertEqual(set(tags), data['tags'])
-
-        response = self._get('a', data['id'])
-        tags = response.data['tags']
-        self.assertEqual(set(tags), {self.tag1.id, })
 
 
 class BaseAttributeTypeApiTestCase(BaseApiWithPermissionTestCase):
