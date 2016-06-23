@@ -1,5 +1,7 @@
 from __future__ import unicode_literals
 
+from rest_framework import status
+
 from poms.accounts.models import AccountAttributeType, Account, AccountType, AccountClassifier
 from poms.common.tests import BaseApiWithPermissionTestCase, BaseApiWithAttributesTestCase, \
     BaseAttributeTypeApiTestCase, \
@@ -35,8 +37,10 @@ class AccountAttributeTypeApiTestCase(BaseAttributeTypeApiTestCase):
         self._change_permission = 'change_accountattributetype'
 
 
-class AccountApiTestCase(BaseApiWithPermissionTestCase, BaseApiWithAttributesTestCase, BaseApiWithTagsTestCase):
+class AccountApiTestCase(BaseApiWithPermissionTestCase, BaseApiWithTagsTestCase, BaseApiWithAttributesTestCase):
     model = Account
+    attribute_type_model = AccountAttributeType
+    classifier_model = AccountClassifier
 
     def setUp(self):
         super(AccountApiTestCase, self).setUp()
@@ -45,43 +49,14 @@ class AccountApiTestCase(BaseApiWithPermissionTestCase, BaseApiWithAttributesTes
         self._url_object = '/api/v1/accounts/account/%s/'
         self._change_permission = 'change_account'
 
-        account_type_dummy = self.create_account_type('-', 'a')
-        self.assign_perms(account_type_dummy, 'a', users=['a0', 'a1', 'a2'])
+        self.type_dummy = self.create_account_type('-', 'a')
+        self.assign_perms(self.type_dummy, 'a', users=['a0', 'a1', 'a2'], groups=['g1', 'g2'])
 
-        at_simple = self.create_account_attribute_type('simple', 'a', value_type=AccountAttributeType.STRING)
-        self.assign_perms(at_simple, 'a', groups=['g1'])
-
-        at_classifier = self.create_account_attribute_type('classifier', 'a',
-                                                           value_type=AccountAttributeType.CLASSIFIER,
-                                                           classifiers=[{
-                                                               'name': 'n1',
-                                                               'children': [
-                                                                   {'name': 'n11',},
-                                                                   {'name': 'n12',},
-                                                               ]
-                                                           }, {
-                                                               'name': 'n2',
-                                                               'children': [
-                                                                   {'name': 'n21',},
-                                                                   {'name': 'n22',},
-                                                               ]
-                                                           }, ])
-        self.assign_perms(at_classifier, 'a', groups=['g1'])
-
-        at_classifier2 = self.create_account_attribute_type('classifier2', 'a',
-                                                            value_type=AccountAttributeType.CLASSIFIER,
-                                                            classifiers=[{
-                                                                'name': 'n1',
-                                                                'children': [
-                                                                    {'name': 'n11',},
-                                                                    {'name': 'n12',},
-                                                                ]
-                                                            }, ])
-        self.assign_perms(at_classifier2, 'a', groups=['g1'])
-
-        t1 = self.create_tag('t1', 'a', content_types=[Account])
-        t2 = self.create_tag('t2', 'a', content_types=[Account])
-        self.assign_perms(t2, 'a', groups=['g1'])
+        self.type1 = self.create_account_type('type1', 'a')
+        self.type2_a1 = self.create_account_type('type2_a1', 'a')
+        self.assign_perms(self.type2_a1, 'a', users=['a1'], groups=[])
+        self.type3_g2 = self.create_account_type('type3_g2', 'a')
+        self.assign_perms(self.type3_g2, 'a', groups=['g2'])
 
     def _create_obj(self, name='acc'):
         return self.create_account(name, 'a')
@@ -90,7 +65,16 @@ class AccountApiTestCase(BaseApiWithPermissionTestCase, BaseApiWithAttributesTes
         return self.get_account(name, 'a')
 
     def _make_new_data(self, **kwargs):
-        acc_type = self.get_account_type('-', 'a')
-        data = super(AccountApiTestCase, self)._make_new_data(type=acc_type.id, **kwargs)
-        # data['type'] = self.get_account_type('-', 'a').id
+        account_type = self.get_account_type(kwargs.get('account_type', '-'), 'a')
+        data = super(AccountApiTestCase, self)._make_new_data(type=account_type.id, **kwargs)
         return data
+
+    def test_add_by_user_with_type_without_perms(self):
+        data = self._make_new_data(account_type='type1')
+        response = self._add('a1', data)
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+    def test_add_by_group_with_type_without_perms(self):
+        data = self._make_new_data(account_type='type1')
+        response = self._add('a2', data)
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
