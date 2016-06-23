@@ -1,12 +1,12 @@
 from __future__ import unicode_literals
 
-from rest_framework.test import APITestCase
-
 from poms.accounts.models import AccountAttributeType, Account, AccountType, AccountClassifier
-from poms.common.tests import BaseApiWithPermissionTestCase, BaseApiWithAttributesTestCase, BaseAttributeTypeApiTestCase
+from poms.common.tests import BaseApiWithPermissionTestCase, BaseApiWithAttributesTestCase, \
+    BaseAttributeTypeApiTestCase, \
+    BaseApiWithTagsTestCase
 
 
-class AccountTypeApiTestCase(BaseApiWithPermissionTestCase, APITestCase):
+class AccountTypeApiTestCase(BaseApiWithPermissionTestCase, BaseApiWithTagsTestCase):
     model = AccountType
 
     def setUp(self):
@@ -34,14 +34,8 @@ class AccountAttributeTypeApiTestCase(BaseAttributeTypeApiTestCase):
         self._url_object = '/api/v1/accounts/account-attribute-type/%s/'
         self._change_permission = 'change_accountattributetype'
 
-    # def _create_obj(self, name='acc'):
-    #     return self.create_account_attribute_type(name, 'a')
-    #
-    # def _get_obj(self, name='acc'):
-    #     return self.get_account_attribute_type(name, 'a')
 
-
-class AccountApiTestCase(BaseApiWithPermissionTestCase, BaseApiWithAttributesTestCase, APITestCase):
+class AccountApiTestCase(BaseApiWithPermissionTestCase, BaseApiWithAttributesTestCase, BaseApiWithTagsTestCase):
     model = Account
 
     def setUp(self):
@@ -95,8 +89,8 @@ class AccountApiTestCase(BaseApiWithPermissionTestCase, BaseApiWithAttributesTes
     def _get_obj(self, name='acc'):
         return self.get_account(name, 'a')
 
-    def _make_new_data(self, user_object_permissions=None, group_object_permissions=None):
-        data = super(AccountApiTestCase, self)._make_new_data(user_object_permissions=user_object_permissions,
-                                                              group_object_permissions=group_object_permissions)
-        data['type'] = self.get_account_type('-', 'a').id
+    def _make_new_data(self, **kwargs):
+        acc_type = self.get_account_type('-', 'a')
+        data = super(AccountApiTestCase, self)._make_new_data(type=acc_type.id, **kwargs)
+        # data['type'] = self.get_account_type('-', 'a').id
         return data

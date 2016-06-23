@@ -19,6 +19,13 @@ class PomsViewSetBase(DbTransactionMixin, HistoricalMixin, ModelViewSet):
         IsAuthenticated
     ]
 
+    def update(self, request, *args, **kwargs):
+        super(PomsViewSetBase, self).update(request, *args, **kwargs)
+        # total reload object, due many to many don't correctly returned
+        instance = self.get_object()
+        serializer = self.get_serializer(instance)
+        return Response(serializer.data)
+
 
 class PomsClassViewSetBase(ReadOnlyModelViewSet):
     permission_classes = [
