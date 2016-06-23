@@ -139,7 +139,8 @@ def get_granted_permissions(member, obj):
 def get_default_owner_permissions(instance):
     ctype = ContentType.objects.get_for_model(instance)
     # return [p for p in Permission.objects.filter(content_type=ctype) if not p.codename.startswith('add_')]
-    return [p for p in Permission.objects.filter(content_type=ctype) if p.codename.startswith('change_')]
+    return [p for p in Permission.objects.filter(content_type=ctype)
+            if p.codename.startswith('change_') or p.codename.startswith('delete_')]
 
 
 def assign_perms(obj, members=None, groups=None, perms=None):

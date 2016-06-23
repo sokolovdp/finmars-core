@@ -1,7 +1,6 @@
 from __future__ import unicode_literals, division, print_function
 
 import json
-import pprint
 import uuid
 
 import six
@@ -21,7 +20,7 @@ from poms.currencies.models import Currency
 from poms.instruments.models import InstrumentClass, InstrumentType, Instrument, InstrumentAttributeType, \
     InstrumentClassifier
 from poms.obj_attrs.models import AttributeTypeBase
-from poms.obj_perms.utils import assign_perms, get_all_perms
+from poms.obj_perms.utils import assign_perms, get_all_perms, get_default_owner_permissions
 from poms.portfolios.models import Portfolio, PortfolioAttributeType, PortfolioClassifier
 from poms.strategies.models import Strategy1, Strategy2, Strategy3
 from poms.tags.models import Tag
@@ -67,7 +66,8 @@ class BaseApiTestCase(APITestCase):
         self._url_object = None
         self._change_permission = None
 
-        self.all_permissions = list(get_all_perms(self.model))
+        self.all_permissions = set(get_all_perms(self.model))
+        self.default_owner_permissions = set([p.codename for p in get_default_owner_permissions(self.model)])
 
         self.create_master_user('a')
         self.create_group('g1', 'a')
@@ -321,17 +321,19 @@ class BaseApiTestCase(APITestCase):
             groups = Group.objects.filter(name__in=groups, master_user__name=master_user)
 
         if perms is None:
-            # codename_set = ['view_%(model_name)s', 'change_%(model_name)s', 'manage_%(model_name)s']
-            codename_set = ['change_%(model_name)s']
-            kwargs = {
-                'app_label': obj._meta.app_label,
-                'model_name': obj._meta.model_name
-            }
-            perms = {perm % kwargs for perm in codename_set}
+            # # codename_set = ['view_%(model_name)s', 'change_%(model_name)s', 'manage_%(model_name)s']
+            # codename_set = ['change_%(model_name)s']
+            # kwargs = {
+            #     'app_label': obj._meta.app_label,
+            #     'model_name': obj._meta.model_name
+            # }
+            # perms = {perm % kwargs for perm in codename_set}
+            perms = self.default_owner_permissions
         assign_perms(obj, members=members, groups=groups, perms=perms)
 
     def _dump(self, data):
-        pprint.pprint(data)
+        # pprint.pprint(data, width=40)
+        print(json.dumps(data, indent=2, sort_keys=True))
 
     def _create_obj(self, name='acc'):
         raise NotImplementedError()
@@ -548,88 +550,69 @@ class BaseApiWithPermissionTestCase(BaseApiTestCase):
                     for e in expected]
         self.assertEqual(expected, perms)
 
-    def test_list_by_owner(self):
-        self._create_list_data()
-        response = self._list('a')
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(response.data['count'], 3)
-        for obj in response.data['results']:
-            self._check_granted_permissions(obj, expected=self.all_permissions)
+    def check_obj_list_perm(self, obj_list, granted_permissions, object_permissions):
+        for obj in obj_list:
+            self.check_obj_perm(obj, granted_permissions, object_permissions)
+
+    def check_obj_perm(self, obj, granted_permissions, object_permissions):
+        self._check_granted_permissions(obj, expected=granted_permissions)
+        if object_permissions:
             self.assertTrue('user_object_permissions' in obj)
             self.assertTrue('group_object_permissions' in obj)
-
-    def test_list_by_admin(self):
-        self._create_list_data()
-        response = self._list('a0')
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(response.data['count'], 3)
-        for obj in response.data['results']:
-            self._check_granted_permissions(obj, expected=self.all_permissions)
-            self.assertTrue('user_object_permissions' in obj)
-            self.assertTrue('group_object_permissions' in obj)
-
-    def test_list_by_a1(self):
-        self._create_list_data()
-        response = self._list('a1')
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(response.data['count'], 2)
-        for obj in response.data['results']:
-            self._check_granted_permissions(obj, expected=[self._change_permission])
+        else:
             self.assertFalse('user_object_permissions' in obj)
             self.assertFalse('group_object_permissions' in obj)
 
-    def test_list_by_a2(self):
-        self._create_list_data()
+    def test_list(self):
+        obj = self._create_obj('obj')
+        obj_a1 = self._create_obj('obj_a1')
+        self.assign_perms(obj_a1, 'a', users=['a1'], perms=self.default_owner_permissions)
+        obj_g2 = self._create_obj('obj_g2')
+        self.assign_perms(obj_g2, 'a', groups=['g2'], perms=self.default_owner_permissions)
+
+        response = self._list('a')
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data['count'], 3)
+        self.check_obj_list_perm(response.data['results'], self.all_permissions, True)
+
+        response = self._list('a1')
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data['count'], 1)
+        self.check_obj_list_perm(response.data['results'], self.default_owner_permissions, False)
+
         response = self._list('a2')
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(response.data['count'], 1)
+        self.check_obj_list_perm(response.data['results'], self.default_owner_permissions, False)
 
-    def test_get_by_owner(self):
-        obj = self._create_obj()
+    def test_get(self):
+        obj = self._create_obj('obj')
+        obj12 = self._create_obj('obj_a1')
+        self.assign_perms(obj12, 'a', users=['a1'], groups=['g2'], perms=self.default_owner_permissions)
+
         response = self._get('a', obj.id)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        obj = response.data
-        self._check_granted_permissions(obj, expected=self.all_permissions)
-        self.assertTrue('user_object_permissions' in obj)
-        self.assertTrue('group_object_permissions' in obj)
+        self.check_obj_perm(response.data, self.all_permissions, True)
 
-    def test_get_by_admin(self):
-        obj = self._create_obj()
-        response = self._get('a', obj.id)
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        obj = response.data
-        self._check_granted_permissions(obj, self.all_permissions)
-        self.assertTrue('user_object_permissions' in obj)
-        self.assertTrue('group_object_permissions' in obj)
-
-    def test_get_by_user(self):
-        obj = self._create_obj()
-        self.assign_perms(obj, 'a', users=['a1'])
         response = self._get('a1', obj.id)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        obj = response.data
-        self._check_granted_permissions(obj, expected=[self._change_permission])
-        self.assertFalse('user_object_permissions' in obj)
-        self.assertFalse('group_object_permissions' in obj)
+        self.assertEqual(set(six.iterkeys(response.data)), {'url', 'id', 'public_name', 'display_name', 'granted_permissions'})
 
-    def test_get_by_group(self):
-        obj = self._create_obj()
-        self.assign_perms(obj, 'a', groups=['g1'])
-        response = self._get('a1', obj.id)
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        obj = response.data
-        self._check_granted_permissions(obj, expected=[self._change_permission])
-        self.assertFalse('user_object_permissions' in obj)
-        self.assertFalse('group_object_permissions' in obj)
-
-    def test_get_without_permission(self):
-        obj = self._create_obj()
-        self.assign_perms(obj, 'a', groups=['g1'])
         response = self._get('a2', obj.id)
-        obj = response.data
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self._check_granted_permissions(obj, expected=[])
-        self.assertEqual(set(six.iterkeys(obj)), {'url', 'id', 'public_name', 'display_name', 'granted_permissions'})
+        self.assertEqual(set(six.iterkeys(response.data)), {'url', 'id', 'public_name', 'display_name', 'granted_permissions'})
+
+        response = self._get('a', obj12.id)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.check_obj_perm(response.data, self.all_permissions, True)
+
+        response = self._get('a1', obj12.id)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.check_obj_perm(response.data, self.default_owner_permissions, False)
+
+        response = self._get('a2', obj12.id)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.check_obj_perm(response.data, self.default_owner_permissions, False)
 
     def test_add_by_owner(self):
         data = self._make_new_data()
