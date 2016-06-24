@@ -237,15 +237,15 @@ class TransactionFilterSet(FilterSet):
 class TransactionViewSet(PomsViewSetBase):
     # queryset = Transaction.objects
     queryset = Transaction.objects.select_related(
-        'master_user',
         'complex_transaction', 'complex_transaction__transaction_type',
-        'transaction_class',
         'instrument', 'transaction_currency', 'settlement_currency',
         'portfolio', 'account_cash', 'account_position', 'account_interim',
         'strategy1_position', 'strategy1_cash',
         'strategy2_position', 'strategy2_cash',
         'strategy3_position', 'strategy3_cash'
     ).prefetch_related(
+        'master_user',
+        'transaction_class',
         'portfolio__user_object_permissions', 'portfolio__user_object_permissions__permission',
         'portfolio__group_object_permissions', 'portfolio__group_object_permissions__permission',
         'instrument__user_object_permissions', 'instrument__user_object_permissions__permission',
@@ -283,20 +283,21 @@ class TransactionViewSet(PomsViewSetBase):
         TransactionObjectPermission,
     ]
     filter_class = TransactionFilterSet
-    ordering_fields = ['transaction_code', 'transaction_date', 'accounting_date', 'cash_date',
-                       'complex_transaction__code', 'complex_transaction_order'
-                                                    'portfolio__user_code', 'portfolio__name', 'portfolio__short_name',
-                       # 'instrument__user_code', 'instrument__name', 'instrument__short_name',
-                       # 'transaction_currency__user_code', 'transaction_currency__name', 'transaction_currency__short_name',
-                       # 'settlement_currency__user_code', 'settlement_currency__name', 'settlement_currency__short_name',
-                       # 'account_cash__user_code', 'account_cash__name', 'account_cash__short_name',
-                       # 'account_position__user_code', 'account_position__name', 'account_position__short_name',
-                       # 'account_interim__user_code', 'account_interim__name', 'account_interim__short_name',
-                       # 'strategy1_position__user_code', 'strategy1_position__name', 'strategy1_position__short_name',
-                       # 'strategy1_cash__user_code', 'strategy1_cash__name', 'strategy1_cash__short_name',
-                       # 'strategy2_position__user_code', 'strategy2_position__name', 'strategy2_position__short_name',
-                       # 'strategy2_cash__user_code', 'strategy2_cash__name', 'strategy2_cash__short_name',
-                       # 'strategy3_position__user_code', 'strategy3_position__name', 'strategy3_position__short_name',
-                       # 'strategy3_cash__user_code', '__name', 'strategy3_cash__short_name',
-                       ]
+    ordering_fields = [
+        'transaction_code', 'transaction_date', 'accounting_date', 'cash_date',
+        'complex_transaction__code', 'complex_transaction_order',
+        'portfolio__user_code', 'portfolio__name', 'portfolio__short_name',
+        'instrument__user_code', 'instrument__name', 'instrument__short_name',
+        'transaction_currency__user_code', 'transaction_currency__name', 'transaction_currency__short_name',
+        'settlement_currency__user_code', 'settlement_currency__name', 'settlement_currency__short_name',
+        'account_cash__user_code', 'account_cash__name', 'account_cash__short_name',
+        'account_position__user_code', 'account_position__name', 'account_position__short_name',
+        'account_interim__user_code', 'account_interim__name', 'account_interim__short_name',
+        'strategy1_position__user_code', 'strategy1_position__name', 'strategy1_position__short_name',
+        'strategy1_cash__user_code', 'strategy1_cash__name', 'strategy1_cash__short_name',
+        'strategy2_position__user_code', 'strategy2_position__name', 'strategy2_position__short_name',
+        'strategy2_cash__user_code', 'strategy2_cash__name', 'strategy2_cash__short_name',
+        'strategy3_position__user_code', 'strategy3_position__name', 'strategy3_position__short_name',
+        'strategy3_cash__user_code', '__name', 'strategy3_cash__short_name',
+    ]
     search_fields = ['transaction_code', 'complex_transaction__code', 'complex_transaction_order']
