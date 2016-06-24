@@ -219,6 +219,13 @@ class TransactionFilterSet(FilterSet):
     complex_transaction = django_filters.Filter(name='complex_transaction')
     complex_transaction__code = django_filters.RangeFilter()
     complex_transaction__transaction_type = django_filters.Filter(name='complex_transaction__transaction_type')
+    portfolio = django_filters.Filter(name='portfolio')
+    instrument = django_filters.Filter(name='instrument')
+    transaction_currency = django_filters.Filter(name='transaction_currency')
+    settlement_currency = django_filters.Filter(name='settlement_currency')
+    account_cash = django_filters.Filter(name='account_cash')
+    account_position = django_filters.Filter(name='account_position')
+    account_interim = django_filters.Filter(name='account_interim')
 
     class Meta:
         model = Transaction
@@ -277,6 +284,19 @@ class TransactionViewSet(PomsViewSetBase):
     ]
     filter_class = TransactionFilterSet
     ordering_fields = ['transaction_code', 'transaction_date', 'accounting_date', 'cash_date',
-                       'complex_transaction__code', 'complex_transaction_order']
-    search_fields = ['transaction_code',
-                     'complex_transaction__code', 'complex_transaction_order']
+                       'complex_transaction__code', 'complex_transaction_order'
+                                                    'portfolio__user_code', 'portfolio__name', 'portfolio__short_name',
+                       # 'instrument__user_code', 'instrument__name', 'instrument__short_name',
+                       # 'transaction_currency__user_code', 'transaction_currency__name', 'transaction_currency__short_name',
+                       # 'settlement_currency__user_code', 'settlement_currency__name', 'settlement_currency__short_name',
+                       # 'account_cash__user_code', 'account_cash__name', 'account_cash__short_name',
+                       # 'account_position__user_code', 'account_position__name', 'account_position__short_name',
+                       # 'account_interim__user_code', 'account_interim__name', 'account_interim__short_name',
+                       # 'strategy1_position__user_code', 'strategy1_position__name', 'strategy1_position__short_name',
+                       # 'strategy1_cash__user_code', 'strategy1_cash__name', 'strategy1_cash__short_name',
+                       # 'strategy2_position__user_code', 'strategy2_position__name', 'strategy2_position__short_name',
+                       # 'strategy2_cash__user_code', 'strategy2_cash__name', 'strategy2_cash__short_name',
+                       # 'strategy3_position__user_code', 'strategy3_position__name', 'strategy3_position__short_name',
+                       # 'strategy3_cash__user_code', '__name', 'strategy3_cash__short_name',
+                       ]
+    search_fields = ['transaction_code', 'complex_transaction__code', 'complex_transaction_order']

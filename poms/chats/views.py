@@ -43,7 +43,10 @@ class ThreadFilterSet(FilterSet):
 class ThreadViewSet(PomsViewSetBase):
     queryset = Thread.objects.all()
     serializer_class = ThreadSerializer
-    permission_classes = [IsAuthenticated, ObjectPermissionBase]
+    permission_classes = [
+        IsAuthenticated,
+        ObjectPermissionBase
+    ]
     filter_backends = [
         OwnerByMasterUserFilter,
         FieldObjectPermissionBackend,
