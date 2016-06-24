@@ -982,7 +982,7 @@ class Transaction(models.Model):
     def save(self, *args, **kwargs):
         self.transaction_date = min(self.accounting_date, self.cash_date)
         if self.transaction_code is None or self.transaction_code == 0:
-            self.transaction_code = FakeSequence.next_value(self.transaction_type.master_user, 'transaction')
+            self.transaction_code = FakeSequence.next_value(self.master_user, 'transaction')
         super(Transaction, self).save(*args, **kwargs)
 
 

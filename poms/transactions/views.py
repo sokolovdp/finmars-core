@@ -212,15 +212,19 @@ class TransactionAttributeTypeViewSet(AttributeTypeViewSetBase):
 
 
 class TransactionFilterSet(FilterSet):
-    transaction_code = django_filters.NumericRangeFilter()
+    transaction_code = django_filters.RangeFilter()
     transaction_date = django_filters.DateFromToRangeFilter()
     accounting_date = django_filters.DateFromToRangeFilter()
     cash_date = django_filters.DateFromToRangeFilter()
     complex_transaction = django_filters.Filter(name='complex_transaction')
+    complex_transaction__code = django_filters.RangeFilter()
+    complex_transaction__transaction_type = django_filters.Filter(name='complex_transaction__transaction_type')
 
     class Meta:
         model = Transaction
-        fields = ['transaction_code', 'transaction_date', 'accounting_date', 'cash_date']
+        fields = ['transaction_code', 'transaction_date', 'accounting_date', 'cash_date',
+                  'complex_transaction', 'complex_transaction__code',
+                  'complex_transaction__transaction_type']
 
 
 class TransactionViewSet(PomsViewSetBase):
@@ -272,8 +276,7 @@ class TransactionViewSet(PomsViewSetBase):
         TransactionObjectPermission,
     ]
     filter_class = TransactionFilterSet
-    ordering_fields = ['transaction_code', 'transaction_date', 'accounting_date', 'cash_date']
-    search_fields = ['transaction_code']
-
-    ordering_fields = ['user_code', 'name', 'short_name', 'group__user_code', 'group__name', 'group__short_name']
-    search_fields = ['user_code', 'name', 'short_name', 'group__user_code', 'group__name', 'group__short_name']
+    ordering_fields = ['transaction_code', 'transaction_date', 'accounting_date', 'cash_date',
+                       'complex_transaction__code', 'complex_transaction_order']
+    search_fields = ['transaction_code',
+                     'complex_transaction__code', 'complex_transaction_order']

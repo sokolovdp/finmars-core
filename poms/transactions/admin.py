@@ -313,12 +313,10 @@ class TransactionAdmin(HistoricalAdmin):
     list_filter = ['is_canceled']
     ordering = ['transaction_date', 'id']
     date_hierarchy = 'transaction_date'
-    raw_id_fields = ['master_user', 'portfolio', 'instrument', 'transaction_currency', 'settlement_currency',
+    raw_id_fields = ['master_user', 'complex_transaction', 'portfolio', 'instrument', 'transaction_currency', 'settlement_currency',
                      'account_position', 'account_cash', 'account_interim', 'responsible', 'counterparty',
-                     'strategy1_position', 'strategy1_cash',
-                     'strategy2_position', 'strategy2_cash',
-                     'strategy3_position', 'strategy3_cash'
-                     ]
+                     'strategy1_position', 'strategy1_cash', 'strategy2_position', 'strategy2_cash',
+                     'strategy3_position', 'strategy3_cash', ]
     inlines = [TransactionAttributeInline]
     fields = (
         'master_user',
