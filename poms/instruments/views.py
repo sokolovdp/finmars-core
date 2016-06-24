@@ -97,23 +97,6 @@ class InstrumentTypeViewSet(PomsViewSetBase):
     search_fields = ['user_code', 'name', 'short_name']
 
 
-# class InstrumentClassifierFilterSet(ClassifierFilterSetBase):
-#     class Meta(ClassifierFilterSetBase.Meta):
-#         model = InstrumentClassifier
-#
-#
-# class InstrumentClassifierViewSet(ClassifierViewSetBase):
-#     queryset = InstrumentClassifier.objects
-#     serializer_class = InstrumentClassifierSerializer
-#     filter_class = InstrumentClassifierFilterSet
-#
-#
-# class InstrumentClassifierNodeViewSet(ClassifierNodeViewSetBase):
-#     queryset = InstrumentClassifier.objects
-#     serializer_class = InstrumentClassifierNodeSerializer
-#     filter_class = InstrumentClassifierFilterSet
-
-
 class InstrumentAttributeTypeFilterSet(FilterSet):
     user_code = django_filters.CharFilter(lookup_expr='icontains')
     name = django_filters.CharFilter(lookup_expr='icontains')
