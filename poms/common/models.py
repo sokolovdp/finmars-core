@@ -46,13 +46,12 @@ class NamedModel(models.Model):
     def __str__(self):
         return self.name
 
-    def save(self, force_insert=False, force_update=False, using=None, update_fields=None):
+    def save(self, *args, **kwargs):
         if not self.user_code:
-            self.user_code = Truncator(self.name).chars(25)
+            self.user_code = Truncator(self.name).chars(25, truncate='')
         if not self.short_name:
-            self.short_name = Truncator(self.name).chars(50)
-        super(NamedModel, self).save(force_insert=force_insert, force_update=force_update, using=using,
-                                     update_fields=update_fields)
+            self.short_name = Truncator(self.name).chars(50, truncate='')
+        super(NamedModel, self).save(*args, **kwargs)
 
 
 class TimeStampedModel(models.Model):
