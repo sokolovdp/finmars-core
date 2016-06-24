@@ -15,7 +15,6 @@ class StrategyClassifierBaseFilterSet(ClassifierFilterSetBase):
     tags = TagFakeFilter()
 
     class Meta(ClassifierFilterSetBase.Meta):
-        model = Strategy1
         fields = ClassifierFilterSetBase.Meta.fields + ['tags', ]
 
 
