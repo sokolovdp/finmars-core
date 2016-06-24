@@ -23,3 +23,9 @@ class AttributeTypeViewSetBase(PomsViewSetBase):
     def get_queryset(self):
         qs = super(AttributeTypeViewSetBase, self).get_queryset()
         return qs.prefetch_related('options')
+
+    def get_serializer(self, *args, **kwargs):
+        hide_classifiers = (self.action == 'list')
+        read_only_value_type = (self.action != 'create')
+        return super(AttributeTypeViewSetBase, self).get_serializer(*args, hide_classifiers=hide_classifiers,
+                                                                    read_only_value_type=read_only_value_type, **kwargs)

@@ -40,17 +40,15 @@ class AttributeTypeSerializerBase(ModelWithObjectPermissionSerializer, ModelWith
     class Meta:
         fields = ['url', 'id', 'master_user', 'user_code', 'name', 'short_name', 'public_name', 'notes', 'value_type',
                   'order', 'is_hidden']
-        update_read_only_fields = ['value_type']
 
     def __init__(self, *args, **kwargs):
+        hide_classifiers = kwargs.pop('hide_classifiers', False)
+        read_only_value_type = kwargs.pop('read_only_value_type', False)
         super(AttributeTypeSerializerBase, self).__init__(*args, **kwargs)
-
-        request = self.context.get('request', None)
-        if request and request.method in ['PUT', 'PATCH']:
-            update_read_only_fields = getattr(self.Meta, 'update_read_only_fields', None)
-            for name, field in six.iteritems(self.fields):
-                if name in update_read_only_fields:
-                    field.read_only = True
+        if hide_classifiers:
+            self.fields.pop('classifiers', None)
+        if read_only_value_type:
+            self.fields['value_type'].read_only = True
 
     def validate(self, attrs):
         attrs = super(AttributeTypeSerializerBase, self).validate(attrs)
