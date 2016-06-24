@@ -3,6 +3,8 @@ from __future__ import unicode_literals
 import ipaddress
 from threading import local
 
+from django.conf import settings
+
 
 def get_ip(request):
     user_ip = None
@@ -53,6 +55,21 @@ def get_ip(request):
 
     if not user_ip:
         user_ip = '127.0.0.1'
+
+    if settings.DEBUG:
+        ip = ipaddress.ip_address(user_ip)
+        if ip.is_private or ip.is_reserved:
+            # user_ip_source = 'X_FORWARDED_FOR'
+            # user_ip_source = 'X_REAL_IP'
+            user_ip_source = 'REMOTE_ADDR'
+            # user_ip = '95.165.168.246'  # москва
+            # user_ip = '195.19.204.76' # питер
+            # user_ip = '77.221.130.2' # норильск
+            # user_ip = '93.88.13.132' # владивосток
+            # user_ip = '8.8.8.8'
+            # user_ip = '185.76.80.1'
+            # user_ip = '91.219.220.8' # Ukraine
+            user_ip = '128.199.165.82' # Singapore
 
     return user_ip
 

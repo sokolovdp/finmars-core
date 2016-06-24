@@ -69,6 +69,12 @@ INSTALLED_APPS = [
 
     'django_extensions',
     # 'rest_framework_swagger',
+
+    # 'django_otp',
+    # 'django_otp.plugins.otp_hotp',
+    # 'django_otp.plugins.otp_totp',
+    # 'django_otp.plugins.otp_email',
+    # 'django_otp.plugins.otp_static',
 ]
 
 if ADMIN:
