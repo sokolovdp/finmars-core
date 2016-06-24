@@ -396,83 +396,60 @@ class BaseApiTestCase(APITestCase):
         data.update(kwargs)
         return data
 
-    def _test_play1(self):
-        master_user = self.get_master_user('a')
+    def test_list(self):
+        obj = self._create_obj('obj')
+        obj_a1 = self._create_obj('obj_a1')
+        self.assign_perms(obj_a1, 'a', users=['a1'], perms=self.all_permissions)
+        obj_g2 = self._create_obj('obj_g2')
+        self.assign_perms(obj_g2, 'a', groups=['g2'], perms=self.all_permissions)
 
-        client = self.client
-        client.login(username='a', password='a')
-        response = client.get('/api/v1/users/master-user/', format='json')
-        print('response', response)
-        print('response.json', json.dumps(response.data, indent=4))
-
+        # owner
+        response = self._list('a')
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(response.data['count'], 1)
-        data = response.data['results']
-        self.assertEqual(data[0], {
-            "url": "http://testserver/api/v1/users/master-user/%s/" % master_user.id,
-            "id": master_user.id,
-            "name": "a",
-            "currency": master_user.currency_id,
-            "language": "en",
-            "timezone": "UTC",
-            "is_current": True
-        })
+        self.assertEqual(response.data['count'], 3)
 
-        client.logout()
+    def test_get(self):
+        obj = self._create_obj('obj')
+        obj12 = self._create_obj('obj_a1')
+        self.assign_perms(obj12, 'a', users=['a1'], groups=['g2'], perms=self.all_permissions)
 
-        account = self.create_account('acc2', 'a')
-        self.assign_perms(account, 'a', groups=['g1'])
-
-        client.login(username='a', password='a')
-        response = client.get('/api/v1/accounts/account/', format='json')
-        print('-  response', response)
-        print('-  response.json', json.dumps(response.data, indent=2))
+        # owner
+        response = self._get('a', obj.id)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(response.data['count'], 2)
-        client.logout()
 
-        client.login(username='a1', password='a1')
-        response = client.get('/api/v1/accounts/account/', format='json')
+    def test_add(self):
+        data = self._make_new_data()
+        response = self._add('a', data)
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+
+    def test_update(self):
+        obj = self._create_obj(self.create_name())
+        response = self._get('a', obj.id)
+        udata = response.data.copy()
+
+        # create by owner
+        udata['name'] = self.create_name()
+        response = self._update('a', obj.id, udata)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(response.data['count'], 1)
-        print('1  response', response)
-        print('1  response.json', json.dumps(response.data, indent=2))
-        response = client.get('/api/v1/accounts/account/%s/' % account.id, format='json')
-        print('11 response', response)
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        client.logout()
 
-        client.login(username='a2', password='a2')
-        response = client.get('/api/v1/accounts/account/', format='json')
-        print('2  response', response)
-        print('2  response.json', json.dumps(response.data, indent=2))
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(response.data['count'], 0)
-        response = client.get('/api/v1/accounts/account/%s/' % account.id, format='json')
-        print('21 response', response)
-        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+    def test_delete(self):
+        only_change_perms = get_perms_codename(self.model, ['change'])
 
-        tag1 = self.create_tag('tag1', 'a', [Account])
-        self.assign_perms(tag1, 'a', groups=['g2'])
-        tag2 = self.create_tag('tag2', 'a', [Account, AccountType])
-        self.assign_perms(tag2, 'a', groups=['g2'])
+        obj = self._create_obj('obj_a')
+        response = self._delete('a', obj.id)
+        self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
 
-        response = client.post('/api/v1/accounts/account/', data={
-            'name': 'acc3',
-            # 'user_code':'acc3',
-            'tags': [tag1.id, tag2.id]
-        }, format='json')
-        print('22 response', response)
-        print('22 response.json', json.dumps(response.data, indent=2))
-        client.logout()
+    def test_list_sorting(self):
+        pass
+
+    def test_list_filter(self):
+        pass
+
 
 
 class BaseApiWithPermissionTestCase(BaseApiTestCase):
     def setUp(self):
         super(BaseApiWithPermissionTestCase, self).setUp()
-
-
-        # self.create_account_type('-', 'a')
 
     def _create_list_data(self):
         self._create_obj('obj_root')
@@ -563,7 +540,7 @@ class BaseApiWithPermissionTestCase(BaseApiTestCase):
             self.assertFalse('user_object_permissions' in obj)
             self.assertFalse('group_object_permissions' in obj)
 
-    def test_list(self):
+    def test_permissions_list(self):
         obj = self._create_obj('obj')
         obj_a1 = self._create_obj('obj_a1')
         self.assign_perms(obj_a1, 'a', users=['a1'], perms=self.default_owner_permissions)
@@ -592,7 +569,7 @@ class BaseApiWithPermissionTestCase(BaseApiTestCase):
         self.assertEqual(response.data['count'], 1)
         self.check_obj_list_perm(response.data['results'], self.default_owner_permissions, False)
 
-    def test_get(self):
+    def test_permissions_get(self):
         obj = self._create_obj('obj')
         obj12 = self._create_obj('obj_a1')
         self.assign_perms(obj12, 'a', users=['a1'], groups=['g2'], perms=self.default_owner_permissions)
@@ -631,7 +608,7 @@ class BaseApiWithPermissionTestCase(BaseApiTestCase):
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.check_obj_perm(response.data, self.default_owner_permissions, False)
 
-    def test_add(self):
+    def test_permissions_add(self):
         data = self._make_new_data()
         response = self._add('a', data)
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
@@ -655,7 +632,7 @@ class BaseApiWithPermissionTestCase(BaseApiTestCase):
         response = self._get('a2', response_wperms.data['id'])
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
-    def test_update(self):
+    def test_permissions_update(self):
         obj = self._create_obj(self.create_name())
         response = self._get('a', obj.id)
         udata = response.data.copy()
@@ -690,7 +667,7 @@ class BaseApiWithPermissionTestCase(BaseApiTestCase):
         response = self._update('a2', obj.id, udata)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
-    def test_delete(self):
+    def test_permissions_delete(self):
         only_change_perms = get_perms_codename(self.model, ['change'])
 
         obj = self._create_obj('obj_a')
@@ -834,6 +811,11 @@ class BaseApiWithTagsTestCase(BaseApiTestCase):
         data['tags'] = {self.tag4_ctype2.id}
         response = self._update('a', data['id'], data)
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+    def test_tags_filter(self):
+        if not self.feature_tags:
+            return
+        pass
 
 
 class BaseAttributeTypeApiTestCase(BaseApiWithPermissionTestCase):
