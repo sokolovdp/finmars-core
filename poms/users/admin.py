@@ -27,6 +27,7 @@ class MasterUserAdmin(HistoricalAdmin):
     model = MasterUser
     inlines = [MemberInline]
     list_display = ['id', '__str__']
+    raw_id_fields = ['currency']
 
 
 admin.site.register(MasterUser, MasterUserAdmin)
@@ -67,6 +68,12 @@ class UserProfileInline(admin.StackedInline):
 
 class UserWithProfileAdmin(HistoricalAdmin, UserAdmin):
     inlines = [UserProfileInline]
+
+    def get_inline_instances(self, request, obj=None):
+        if obj:
+            return super(UserWithProfileAdmin, self).get_inline_instances(request, obj=obj)
+        else:
+            return []
 
 
 admin.site.unregister(User)

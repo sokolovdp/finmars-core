@@ -84,7 +84,10 @@ class UserSerializer(serializers.ModelSerializer):
     def create(self, validated_data):
         profile_data = validated_data.pop('profile', {})
         user = User.objects.create(**validated_data)
-        UserProfile.objects.create(user=user, **profile_data)
+        user.profile.language = profile_data.get('language', settings.LANGUAGE_CODE)
+        user.profile.timezone = profile_data.get('timezone', settings.TIME_ZONE)
+        user.profile.save()
+        # UserProfile.objects.create(user=user, **profile_data)
         return user
 
     def update(self, instance, validated_data):
