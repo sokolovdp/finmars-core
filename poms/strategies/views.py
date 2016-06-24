@@ -11,12 +11,11 @@ from poms.tags.filters import TagFakeFilter, TagFilterBackend
 
 
 class StrategyClassifierBaseFilterSet(ClassifierFilterSetBase):
-    all = AllFakeFilter()
     tags = TagFakeFilter()
 
     class Meta(ClassifierFilterSetBase.Meta):
         model = Strategy1
-        fields = ClassifierFilterSetBase.Meta.fields + ['all', 'tags', ]
+        fields = ClassifierFilterSetBase.Meta.fields + ['tags', ]
 
 
 class StrategyBaseViewSet(ClassifierViewSetBase):

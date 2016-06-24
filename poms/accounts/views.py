@@ -14,12 +14,11 @@ from poms.users.filters import OwnerByMasterUserFilter
 
 
 class AccountTypeFilterSet(FilterSet):
-    all = AllFakeFilter()
     tags = TagFakeFilter()
 
     class Meta:
         model = AccountType
-        fields = ['user_code', 'name', 'short_name', 'all', 'tags']
+        fields = ['user_code', 'name', 'short_name', 'tags']
 
     @staticmethod
     def tags_filter(queryset, value):
@@ -70,12 +69,11 @@ class AccountAttributeTypeViewSet(AttributeTypeViewSetBase):
 
 
 class AccountFilterSet(FilterSet):
-    all = AllFakeFilter()
     tags = TagFakeFilter()
 
     class Meta:
         model = Account
-        fields = ['user_code', 'name', 'short_name', 'all', 'tags']
+        fields = ['user_code', 'name', 'short_name', 'tags']
 
 
 class AccountViewSet(PomsViewSetBase):

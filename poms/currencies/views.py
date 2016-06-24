@@ -14,12 +14,11 @@ from poms.users.filters import OwnerByMasterUserFilter
 
 
 class CurrencyFilterSet(FilterSet):
-    all = AllFakeFilter()
     tags = TagFakeFilter()
 
     class Meta:
         model = Currency
-        fields = ['user_code', 'name', 'short_name', 'all', 'tags']
+        fields = ['user_code', 'name', 'short_name', 'tags']
 
 
 class CurrencyViewSet(PomsViewSetBase):

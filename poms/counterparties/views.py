@@ -41,12 +41,11 @@ class CounterpartyAttributeTypeViewSet(AttributeTypeViewSetBase):
 
 
 class CounterpartyFilterSet(FilterSet):
-    all = AllFakeFilter()
     tags = TagFakeFilter()
 
     class Meta:
         model = Counterparty
-        fields = ['user_code', 'name', 'short_name', 'all', 'tags']
+        fields = ['user_code', 'name', 'short_name', 'tags']
 
 
 class CounterpartyViewSet(PomsViewSetBase):
@@ -95,12 +94,11 @@ class ResponsibleAttributeTypeViewSet(AttributeTypeViewSetBase):
 
 
 class ResponsibleFilterSet(FilterSet):
-    all = AllFakeFilter()
     tags = TagFakeFilter()
 
     class Meta:
         model = Responsible
-        fields = ['user_code', 'name', 'short_name', 'all', 'tags']
+        fields = ['user_code', 'name', 'short_name', 'tags']
 
 
 class ResponsibleViewSet(PomsViewSetBase):

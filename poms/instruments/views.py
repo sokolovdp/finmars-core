@@ -14,7 +14,7 @@ from poms.instruments.serializers import InstrumentSerializer, PriceHistorySeria
     InstrumentAttributeTypeSerializer, PricingPolicySerializer
 from poms.obj_attrs.filters import AttributePrefetchFilter
 from poms.obj_attrs.views import AttributeTypeViewSetBase
-from poms.obj_perms.filters import AllFakeFilter, ObjectPermissionBackend
+from poms.obj_perms.filters import ObjectPermissionBackend
 from poms.obj_perms.permissions import ObjectPermissionBase
 from poms.tags.filters import TagFakeFilter, TagFilterBackend
 from poms.users.filters import OwnerByMasterUserFilter
@@ -68,12 +68,11 @@ class PricingPolicyViewSet(PomsViewSetBase):
 
 
 class InstrumentTypeFilterSet(FilterSet):
-    all = AllFakeFilter()
     tags = TagFakeFilter()
 
     class Meta:
         model = InstrumentType
-        fields = ['user_code', 'name', 'short_name', 'all', 'tags']
+        fields = ['user_code', 'name', 'short_name', 'tags']
 
 
 class InstrumentTypeViewSet(PomsViewSetBase):
@@ -143,13 +142,11 @@ class InstrumentFilterSet(FilterSet):
     user_text_1 = django_filters.CharFilter(lookup_expr='icontains')
     user_text_2 = django_filters.CharFilter(lookup_expr='icontains')
     user_text_3 = django_filters.CharFilter(lookup_expr='icontains')
-    all = AllFakeFilter()
     tags = TagFakeFilter()
 
     class Meta:
         model = Instrument
-        fields = ['user_code', 'name', 'short_name', 'user_text_1', 'user_text_2', 'user_text_3',
-                  'all', 'tags']
+        fields = ['user_code', 'name', 'short_name', 'user_text_1', 'user_text_2', 'user_text_3', 'tags']
 
 
 class InstrumentViewSet(PomsViewSetBase):

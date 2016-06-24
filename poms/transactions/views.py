@@ -51,12 +51,11 @@ class TransactionTypeGroupViewSet(PomsViewSetBase):
 
 
 class TransactionTypeFilterSet(FilterSet):
-    all = AllFakeFilter()
     tags = TagFakeFilter()
 
     class Meta:
         model = TransactionType
-        fields = ['user_code', 'name', 'short_name', 'all', 'tags']
+        fields = ['user_code', 'name', 'short_name', 'tags']
 
     @staticmethod
     def tags_filter(queryset, value):
