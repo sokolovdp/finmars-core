@@ -5,13 +5,12 @@ from rest_framework import status
 from poms.accounts.models import AccountAttributeType, Account, AccountType, AccountClassifier
 from poms.common.tests import BaseApiWithPermissionTestCase, BaseApiWithAttributesTestCase, \
     BaseAttributeTypeApiTestCase, \
-    BaseApiWithTagsTestCase
+    BaseApiWithTagsTestCase, BaseNamedModelTestCase
 from poms.obj_perms.utils import get_perms_codename
 
 
-class AccountTypeApiTestCase(BaseApiWithPermissionTestCase, BaseApiWithTagsTestCase):
+class AccountTypeApiTestCase(BaseNamedModelTestCase, BaseApiWithPermissionTestCase, BaseApiWithTagsTestCase):
     model = AccountType
-    ordering_fields = ['user_code', 'name', 'short_name', ]
 
     def setUp(self):
         super(AccountTypeApiTestCase, self).setUp()
@@ -39,7 +38,8 @@ class AccountAttributeTypeApiTestCase(BaseAttributeTypeApiTestCase):
         self._change_permission = 'change_accountattributetype'
 
 
-class AccountApiTestCase(BaseApiWithPermissionTestCase, BaseApiWithTagsTestCase, BaseApiWithAttributesTestCase):
+class AccountApiTestCase(BaseNamedModelTestCase, BaseApiWithPermissionTestCase, BaseApiWithTagsTestCase,
+                         BaseApiWithAttributesTestCase):
     model = Account
     attribute_type_model = AccountAttributeType
     classifier_model = AccountClassifier

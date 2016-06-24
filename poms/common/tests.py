@@ -28,12 +28,17 @@ from poms.users.models import MasterUser, Member, Group
 
 
 def load_tests(loader, standard_tests, pattern):
+    print('-' * 79)
+    print('load_tests: loader=%s, standard_tests=%s, pattern=%s' % (loader, standard_tests, pattern,))
     result = []
-    abstract_tests = (BaseApiTestCase,
-                      BaseApiWithPermissionTestCase,
-                      BaseApiWithAttributesTestCase,
-                      BaseApiWithTagsTestCase,
-                      BaseAttributeTypeApiTestCase)
+    abstract_tests = (
+        BaseApiTestCase,
+        BaseNamedModelTestCase,
+        BaseApiWithPermissionTestCase,
+        BaseApiWithAttributesTestCase,
+        BaseApiWithTagsTestCase,
+        BaseAttributeTypeApiTestCase,
+    )
     for test_case in standard_tests:
         if type(test_case._tests[0]) in abstract_tests:
             continue
@@ -438,33 +443,52 @@ class BaseApiTestCase(APITestCase):
         response = self._delete('a', obj.id)
         self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
 
-    def test_list_ordering(self):
-        if not self.ordering_fields:
-            return
 
+class BaseNamedModelTestCase(BaseApiTestCase):
+    def test_list_ordering(self):
         self._create_obj('obj1')
         self._create_obj('obj2')
         self._create_obj('obj3')
 
-        for f in self.ordering_fields:
-            # ordering=-user_code
-            response = self._list('a', data={'ordering': f})
-            self.assertEqual(response.status_code, status.HTTP_200_OK, "field: %s" % f)
-            self.assertEqual(response.data['count'], 3, "field: %s" % f)
+        response = self._list('a', data={'ordering': 'user_code'})
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data['count'], 3)
 
-            response = self._list('a', data={'ordering': '-%s' % f})
-            self.assertEqual(response.status_code, status.HTTP_200_OK, "field: %s" % f)
-            self.assertEqual(response.data['count'], 3, "field: %s" % f)
+        response = self._list('a', data={'ordering': '-user_code'})
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data['count'], 3)
+
+        response = self._list('a', data={'ordering': 'name'})
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data['count'], 3)
+
+        response = self._list('a', data={'ordering': '-name'})
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data['count'], 3)
+
+        response = self._list('a', data={'ordering': 'short_name'})
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data['count'], 3)
+
+        response = self._list('a', data={'ordering': '-short_name'})
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data['count'], 3)
 
     def test_list_filtering(self):
-        if not self.filtering_fields:
-            return
-
         self._create_obj('obj1')
         self._create_obj('obj2')
-        self._create_obj('obj3')
 
-        pass
+        response = self._list('a', data={'user_code': 'obj1'})
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data['count'], 1)
+
+        response = self._list('a', data={'name': 'obj1'})
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data['count'], 1)
+
+        response = self._list('a', data={'short_name': 'obj1'})
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data['count'], 1)
 
 
 class BaseApiWithPermissionTestCase(BaseApiTestCase):
@@ -836,7 +860,7 @@ class BaseApiWithTagsTestCase(BaseApiTestCase):
         pass
 
 
-class BaseAttributeTypeApiTestCase(BaseApiWithPermissionTestCase):
+class BaseAttributeTypeApiTestCase(BaseNamedModelTestCase, BaseApiWithPermissionTestCase):
     classifier_model = None
 
     def create_default_attrs(self):
@@ -1052,6 +1076,7 @@ class BaseApiWithAttributesTestCase(BaseApiTestCase):
         self.assertEqual(expected, attributes[0][value_key])
 
     def _simple_attrs(self, attr, value1, value2):
+        # create attr
         data = self._make_new_data()
         data = self.add_attr_value(data, attr, value1)
         response = self._add('a', data)
@@ -1060,6 +1085,7 @@ class BaseApiWithAttributesTestCase(BaseApiTestCase):
         self.assertEqual(len(response.data['attributes']), 1)
         self.assertAttrEqual(attr, value1, response.data['attributes'])
 
+        # update attr
         data2 = data.copy()
         data2 = self.add_attr_value(data2, attr, value2)
         response = self._update('a', data2['id'], data2)
@@ -1067,11 +1093,16 @@ class BaseApiWithAttributesTestCase(BaseApiTestCase):
         self.assertEqual(len(response.data['attributes']), 1)
         self.assertAttrEqual(attr, value2, response.data['attributes'])
 
+        # update with None (currently attr doesn't deleted)
         data3 = data.copy()
         data3 = self.add_attr_value(data3, attr, None)
         response = self._update('a', data3['id'], data3)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(len(response.data['attributes']), 0)
+        self.assertEqual(len(response.data['attributes']), 1)
+
+        # # delete attr
+        # response = self._delete('a', data3['id'])
+        # self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
 
     def test_attrs_str(self):
         self._simple_attrs('str', 'value1', 'value2')
@@ -1089,7 +1120,7 @@ class BaseApiWithAttributesTestCase(BaseApiTestCase):
         classifier2 = self.get_model_classifier('clsfr1', 'clsfr1_n21')
         self._simple_attrs('clsfr1', classifier1.id, classifier2.id)
 
-    def test_attrs_2_str_and_num(self):
+    def test_attrs_2_attrs(self):
         data = self._make_new_data()
         data = self.add_attr_value(data, 'str', 'value1')
         response = self._add('a', data)
@@ -1113,9 +1144,8 @@ class BaseApiWithAttributesTestCase(BaseApiTestCase):
         self.assertAttrEqual('str', 'value1', response.data['attributes'])
         self.assertAttrEqual('num', None, response.data['attributes'])
 
-    def test_attrs_with_user_perms(self):
-        # self.assign_perms(self.attr_str, 'a', users=['a1'])
-        self.assign_perms(self.attr_num, 'a', users=['a1'])
+    def test_attrs_with_perms(self):
+        self.assign_perms(self.attr_num, 'a', users=['a1'], perms=get_all_perms(self.attribute_type_model))
 
         data = self._make_new_data()
         data = self.add_attr_value(data, 'str', 'value1')
@@ -1129,12 +1159,14 @@ class BaseApiWithAttributesTestCase(BaseApiTestCase):
         # user see only attrs with types perms
         response = self._get('a1', data['id'])
         self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertTrue('attributes' in response.data)
         self.assertEqual(len(response.data['attributes']), 0)
 
+        # user add attribute
         data2 = response.data.copy()
         data2 = self.add_attr_value(data2, 'num', 123)
         response = self._update('a1', data2['id'], data2)
-        self.assertEqual(response.status_code, status.HTTP_200_OK, msg=six.text_type(response.data))
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(len(response.data['attributes']), 1)
 
         # superuser see all attrs
@@ -1142,7 +1174,7 @@ class BaseApiWithAttributesTestCase(BaseApiTestCase):
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(len(response.data['attributes']), 2)
 
-        # try update with attrs without types perms
+        # try update attrs without type perms
         data3 = data.copy()
         data3 = self.add_attr_value(data3, 'num', 123)
         response = self._update('a1', data3['id'], data3)

@@ -148,11 +148,12 @@ class AttributeSerializerBase(serializers.ModelSerializer):
         attribute_type = attrs['attribute_type']
         if attribute_type.value_type == AttributeTypeBase.CLASSIFIER:
             classifier = attrs.get('classifier', None)
-            if classifier is None:
-                raise ValidationError({'classifier': _('This field may not be null.')})
-            if classifier.attribute_type_id != attribute_type.id:
-                raise ValidationError(
-                    {'classifier': _('Invalid pk "%(pk)s" - object does not exist.') % {'pk': classifier.id}})
+            if classifier:
+                if classifier.attribute_type_id != attribute_type.id:
+                    raise ValidationError(
+                        {'classifier': _('Invalid pk "%(pk)s" - object does not exist.') % {'pk': classifier.id}})
+            # else:
+            #     raise ValidationError({'classifier': _('This field may not be null.')})
         return attrs
 
 
