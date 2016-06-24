@@ -1,11 +1,12 @@
 from __future__ import unicode_literals
 
+import django_filters
 from rest_framework.filters import DjangoFilterBackend, OrderingFilter, SearchFilter, FilterSet
 
 from poms.common.views import PomsViewSetBase
-from poms.obj_attrs.filters import AttributePrefetchFilter, OrderingWithAttributesFilter
+from poms.obj_attrs.filters import AttributePrefetchFilter
 from poms.obj_attrs.views import AttributeTypeViewSetBase
-from poms.obj_perms.filters import AllFakeFilter, ObjectPermissionBackend
+from poms.obj_perms.filters import ObjectPermissionBackend
 from poms.obj_perms.permissions import ObjectPermissionBase
 from poms.portfolios.models import Portfolio, PortfolioAttributeType
 from poms.portfolios.serializers import PortfolioSerializer, PortfolioAttributeTypeSerializer
@@ -13,24 +14,11 @@ from poms.tags.filters import TagFakeFilter, TagFilterBackend
 from poms.users.filters import OwnerByMasterUserFilter
 
 
-# class PortfolioClassifierFilterSet(ClassifierFilterSetBase):
-#     class Meta(ClassifierFilterSetBase.Meta):
-#         model = PortfolioClassifier
-#
-#
-# class PortfolioClassifierViewSet(ClassifierViewSetBase):
-#     queryset = PortfolioClassifier.objects.all()
-#     serializer_class = PortfolioClassifierSerializer
-#     filter_class = PortfolioClassifierFilterSet
-#
-#
-# class PortfolioClassifierNodeViewSet(ClassifierNodeViewSetBase):
-#     queryset = PortfolioClassifier.objects.all()
-#     serializer_class = PortfolioClassifierNodeSerializer
-#     filter_class = PortfolioClassifierFilterSet
-
-
 class PortfolioAttributeTypeFilterSet(FilterSet):
+    user_code = django_filters.CharFilter(lookup_expr='icontains')
+    name = django_filters.CharFilter(lookup_expr='icontains')
+    short_name = django_filters.CharFilter(lookup_expr='icontains')
+
     class Meta:
         model = PortfolioAttributeType
         fields = ['user_code', 'name', 'short_name']
@@ -55,6 +43,9 @@ class PortfolioAttributeTypeViewSet(AttributeTypeViewSetBase):
 
 
 class PortfolioFilterSet(FilterSet):
+    user_code = django_filters.CharFilter(lookup_expr='icontains')
+    name = django_filters.CharFilter(lookup_expr='icontains')
+    short_name = django_filters.CharFilter(lookup_expr='icontains')
     tags = TagFakeFilter()
 
     class Meta:

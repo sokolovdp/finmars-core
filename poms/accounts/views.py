@@ -1,19 +1,23 @@
 from __future__ import unicode_literals
 
+import django_filters
 from rest_framework.filters import FilterSet, DjangoFilterBackend, OrderingFilter, SearchFilter
 
 from poms.accounts.models import Account, AccountType, AccountAttributeType
 from poms.accounts.serializers import AccountSerializer, AccountTypeSerializer, AccountAttributeTypeSerializer
 from poms.common.views import PomsViewSetBase
-from poms.obj_attrs.filters import AttributePrefetchFilter, OrderingWithAttributesFilter
+from poms.obj_attrs.filters import AttributePrefetchFilter
 from poms.obj_attrs.views import AttributeTypeViewSetBase
-from poms.obj_perms.filters import AllFakeFilter, ObjectPermissionBackend
+from poms.obj_perms.filters import ObjectPermissionBackend
 from poms.obj_perms.permissions import ObjectPermissionBase
 from poms.tags.filters import TagFakeFilter, TagFilterBackend
 from poms.users.filters import OwnerByMasterUserFilter
 
 
 class AccountTypeFilterSet(FilterSet):
+    user_code = django_filters.CharFilter(lookup_expr='icontains')
+    name = django_filters.CharFilter(lookup_expr='icontains')
+    short_name = django_filters.CharFilter(lookup_expr='icontains')
     tags = TagFakeFilter()
 
     class Meta:
@@ -45,6 +49,10 @@ class AccountTypeViewSet(PomsViewSetBase):
 
 
 class AccountAttributeTypeFilterSet(FilterSet):
+    user_code = django_filters.CharFilter(lookup_expr='icontains')
+    name = django_filters.CharFilter(lookup_expr='icontains')
+    short_name = django_filters.CharFilter(lookup_expr='icontains')
+
     class Meta:
         model = AccountAttributeType
         fields = ['user_code', 'name', 'short_name']
@@ -69,11 +77,15 @@ class AccountAttributeTypeViewSet(AttributeTypeViewSetBase):
 
 
 class AccountFilterSet(FilterSet):
+    user_code = django_filters.CharFilter(lookup_expr='icontains')
+    name = django_filters.CharFilter(lookup_expr='icontains')
+    short_name = django_filters.CharFilter(lookup_expr='icontains')
+    type = django_filters.Filter(name='type')
     tags = TagFakeFilter()
 
     class Meta:
         model = Account
-        fields = ['user_code', 'name', 'short_name', 'tags']
+        fields = ['user_code', 'name', 'short_name', 'type', 'tags']
 
 
 class AccountViewSet(PomsViewSetBase):

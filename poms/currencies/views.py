@@ -14,6 +14,9 @@ from poms.users.filters import OwnerByMasterUserFilter
 
 
 class CurrencyFilterSet(FilterSet):
+    user_code = django_filters.CharFilter(lookup_expr='icontains')
+    name = django_filters.CharFilter(lookup_expr='icontains')
+    short_name = django_filters.CharFilter(lookup_expr='icontains')
     tags = TagFakeFilter()
 
     class Meta:

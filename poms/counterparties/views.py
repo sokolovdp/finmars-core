@@ -1,5 +1,6 @@
 from __future__ import unicode_literals
 
+import django_filters
 from rest_framework.filters import DjangoFilterBackend, SearchFilter, FilterSet, OrderingFilter
 
 from poms.common.views import PomsViewSetBase
@@ -7,16 +8,19 @@ from poms.counterparties.models import Counterparty, Responsible, CounterpartyAt
 from poms.counterparties.serializers import CounterpartySerializer, ResponsibleSerializer, \
     CounterpartyAttributeTypeSerializer, \
     ResponsibleAttributeTypeSerializer
-from poms.obj_attrs.filters import AttributePrefetchFilter, OrderingWithAttributesFilter
+from poms.obj_attrs.filters import AttributePrefetchFilter
 from poms.obj_attrs.views import AttributeTypeViewSetBase
-from poms.obj_perms.filters import AllFakeFilter, \
-    ObjectPermissionBackend
+from poms.obj_perms.filters import ObjectPermissionBackend
 from poms.obj_perms.permissions import ObjectPermissionBase
 from poms.tags.filters import TagFakeFilter, TagFilterBackend
 from poms.users.filters import OwnerByMasterUserFilter
 
 
 class CounterpartyAttributeTypeFilterSet(FilterSet):
+    user_code = django_filters.CharFilter(lookup_expr='icontains')
+    name = django_filters.CharFilter(lookup_expr='icontains')
+    short_name = django_filters.CharFilter(lookup_expr='icontains')
+
     class Meta:
         model = CounterpartyAttributeType
         fields = ['user_code', 'name', 'short_name']
@@ -41,6 +45,9 @@ class CounterpartyAttributeTypeViewSet(AttributeTypeViewSetBase):
 
 
 class CounterpartyFilterSet(FilterSet):
+    user_code = django_filters.CharFilter(lookup_expr='icontains')
+    name = django_filters.CharFilter(lookup_expr='icontains')
+    short_name = django_filters.CharFilter(lookup_expr='icontains')
     tags = TagFakeFilter()
 
     class Meta:
@@ -70,6 +77,10 @@ class CounterpartyViewSet(PomsViewSetBase):
 
 
 class ResponsibleAttributeTypeFilterSet(FilterSet):
+    user_code = django_filters.CharFilter(lookup_expr='icontains')
+    name = django_filters.CharFilter(lookup_expr='icontains')
+    short_name = django_filters.CharFilter(lookup_expr='icontains')
+
     class Meta:
         model = ResponsibleAttributeType
         fields = ['user_code', 'name', 'short_name']
@@ -94,6 +105,9 @@ class ResponsibleAttributeTypeViewSet(AttributeTypeViewSetBase):
 
 
 class ResponsibleFilterSet(FilterSet):
+    user_code = django_filters.CharFilter(lookup_expr='icontains')
+    name = django_filters.CharFilter(lookup_expr='icontains')
+    short_name = django_filters.CharFilter(lookup_expr='icontains')
     tags = TagFakeFilter()
 
     class Meta:

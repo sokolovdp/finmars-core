@@ -68,6 +68,9 @@ class PricingPolicyViewSet(PomsViewSetBase):
 
 
 class InstrumentTypeFilterSet(FilterSet):
+    user_code = django_filters.CharFilter(lookup_expr='icontains')
+    name = django_filters.CharFilter(lookup_expr='icontains')
+    short_name = django_filters.CharFilter(lookup_expr='icontains')
     tags = TagFakeFilter()
 
     class Meta:
@@ -112,6 +115,10 @@ class InstrumentTypeViewSet(PomsViewSetBase):
 
 
 class InstrumentAttributeTypeFilterSet(FilterSet):
+    user_code = django_filters.CharFilter(lookup_expr='icontains')
+    name = django_filters.CharFilter(lookup_expr='icontains')
+    short_name = django_filters.CharFilter(lookup_expr='icontains')
+
     class Meta:
         model = InstrumentAttributeType
         fields = ['user_code', 'name', 'short_name']
@@ -142,6 +149,7 @@ class InstrumentFilterSet(FilterSet):
     user_text_1 = django_filters.CharFilter(lookup_expr='icontains')
     user_text_2 = django_filters.CharFilter(lookup_expr='icontains')
     user_text_3 = django_filters.CharFilter(lookup_expr='icontains')
+    instrument_type = django_filters.Filter(name='instrument_type')
     tags = TagFakeFilter()
 
     class Meta:

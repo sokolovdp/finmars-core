@@ -8,7 +8,7 @@ from rest_framework.response import Response
 from poms.common.views import PomsClassViewSetBase, PomsViewSetBase
 from poms.obj_attrs.filters import AttributePrefetchFilter
 from poms.obj_attrs.views import AttributeTypeViewSetBase
-from poms.obj_perms.filters import AllFakeFilter, ObjectPermissionBackend
+from poms.obj_perms.filters import ObjectPermissionBackend
 from poms.obj_perms.permissions import ObjectPermissionBase
 from poms.tags.filters import TagFakeFilter, TagFilterBackend
 from poms.transactions.filters import TransactionObjectPermissionFilter
@@ -27,6 +27,10 @@ class TransactionClassViewSet(PomsClassViewSetBase):
 
 
 class TransactionTypeGroupFilterSet(FilterSet):
+    user_code = django_filters.CharFilter(lookup_expr='icontains')
+    name = django_filters.CharFilter(lookup_expr='icontains')
+    short_name = django_filters.CharFilter(lookup_expr='icontains')
+
     class Meta:
         model = TransactionTypeGroup
         fields = ['user_code', 'name', 'short_name']
@@ -51,11 +55,15 @@ class TransactionTypeGroupViewSet(PomsViewSetBase):
 
 
 class TransactionTypeFilterSet(FilterSet):
+    user_code = django_filters.CharFilter(lookup_expr='icontains')
+    name = django_filters.CharFilter(lookup_expr='icontains')
+    short_name = django_filters.CharFilter(lookup_expr='icontains')
+    group = django_filters.Filter(name='group')
     tags = TagFakeFilter()
 
     class Meta:
         model = TransactionType
-        fields = ['user_code', 'name', 'short_name', 'tags']
+        fields = ['user_code', 'name', 'short_name', 'group', 'tags']
 
     @staticmethod
     def tags_filter(queryset, value):
@@ -176,6 +184,10 @@ class TransactionTypeViewSet(PomsViewSetBase):
 
 
 class TransactionAttributeTypeFilterSet(FilterSet):
+    user_code = django_filters.CharFilter(lookup_expr='icontains')
+    name = django_filters.CharFilter(lookup_expr='icontains')
+    short_name = django_filters.CharFilter(lookup_expr='icontains')
+
     class Meta:
         model = TransactionAttributeType
         fields = ['user_code', 'name', 'short_name']
@@ -214,6 +226,7 @@ class TransactionViewSet(PomsViewSetBase):
     # queryset = Transaction.objects
     queryset = Transaction.objects.select_related(
         'master_user',
+        'complex_transaction', 'complex_transaction__transaction_type',
         'transaction_class',
         'instrument', 'transaction_currency', 'settlement_currency',
         'portfolio', 'account_cash', 'account_position', 'account_interim',

@@ -1,5 +1,6 @@
 from __future__ import unicode_literals
 
+import django_filters
 from rest_framework.filters import DjangoFilterBackend, OrderingFilter, SearchFilter, FilterSet
 
 from poms.common.views import PomsViewSetBase
@@ -11,6 +12,10 @@ from poms.users.filters import OwnerByMasterUserFilter
 
 
 class TagFilterSet(FilterSet):
+    user_code = django_filters.CharFilter(lookup_expr='icontains')
+    name = django_filters.CharFilter(lookup_expr='icontains')
+    short_name = django_filters.CharFilter(lookup_expr='icontains')
+
     class Meta:
         model = Tag
         fields = ['user_code', 'name', 'short_name']

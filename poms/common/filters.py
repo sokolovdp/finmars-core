@@ -1,3 +1,4 @@
+import django_filters
 from rest_framework.filters import BaseFilterBackend, FilterSet
 
 
@@ -22,7 +23,9 @@ class ClassifierPrefetchFilter(BaseFilterBackend):
 
 
 class ClassifierFilterSetBase(FilterSet):
-    # parent = django_filters.MethodFilter(name='parent', label=_('Parent'))
+    user_code = django_filters.CharFilter(lookup_expr='icontains')
+    name = django_filters.CharFilter(lookup_expr='icontains')
+    short_name = django_filters.CharFilter(lookup_expr='icontains')
 
     class Meta:
         # fields = ['parent', 'user_code', 'name', 'short_name']

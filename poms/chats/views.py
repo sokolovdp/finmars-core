@@ -32,6 +32,7 @@ class ThreadStatusViewSet(PomsViewSetBase):
 
 
 class ThreadFilterSet(FilterSet):
+    subject = django_filters.CharFilter(lookup_expr='icontains')
     created = django_filters.DateFilter()
 
     class Meta:
