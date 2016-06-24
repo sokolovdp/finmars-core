@@ -207,34 +207,3 @@ class ModelWithAttributesSerializer(serializers.ModelSerializer):
                 processed.add(attr_type.id)
 
         instance.attributes.exclude(attribute_type_id__in=processed).delete()
-
-        # cur_attrs = {a.attribute_type_id: a for a in instance.attributes.all()}
-        # new_attrs = {a['attribute_type'].id: a for a in attributes}
-        #
-        # has_changes = False
-        #
-        # processed = set()
-        # for new_attr in attributes:
-        #     attribute_type_id = new_attr['attribute_type'].id
-        #     if attribute_type_id in processed:
-        #         raise ValidationError("Duplicated attribute type %s" % attribute_type_id)
-        #     processed.add(attribute_type_id)
-        #     if attribute_type_id in cur_attrs:
-        #         cur_attr = cur_attrs[attribute_type_id]
-        #         # TODO: verify value_ and classifier
-        #         for k, v in six.iteritems(new_attr):
-        #             if k not in ['id', 'attribute_type']:
-        #                 setattr(cur_attr, k, v)
-        #         cur_attr.save()
-        #     else:
-        #         has_changes = True
-        #         instance.attributes.create(**new_attr)
-        #
-        # for k, v in six.iteritems(cur_attrs):
-        #     if k not in new_attrs:
-        #         has_changes = True
-        #         instance.attributes.exclude(attribute_type_id__in=processed).delete()
-
-        # TODO: invalidate cache for instance.attributes, how prefetch related?
-        # need only on add and delete operation
-        instance.attributes.update()

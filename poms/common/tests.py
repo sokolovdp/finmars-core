@@ -1174,6 +1174,18 @@ class BaseApiWithAttributesTestCase(BaseApiTestCase):
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(len(response.data['attributes']), 2)
 
+        # user delete attribute
+        data2 = response.data.copy()
+        data2['attributes'] = []
+        response = self._update('a1', data2['id'], data2)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(len(response.data['attributes']), 0)
+
+        # superuser see 1 attr
+        response = self._get('a', data['id'])
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(len(response.data['attributes']), 1)
+
         # try update attrs without type perms
         data3 = data.copy()
         data3 = self.add_attr_value(data3, 'num', 123)
