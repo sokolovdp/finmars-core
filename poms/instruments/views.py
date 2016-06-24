@@ -159,7 +159,7 @@ class InstrumentFilterSet(FilterSet):
 
 class InstrumentViewSet(PomsViewSetBase):
     queryset = Instrument.objects.prefetch_related(
-        # 'pricing_currency', 'accrued_currency',
+        'pricing_currency', 'accrued_currency',
         'manual_pricing_formulas', 'accrual_calculation_schedules', 'factor_schedules', 'event_schedules')
     serializer_class = InstrumentSerializer
     filter_backends = [
@@ -176,8 +176,10 @@ class InstrumentViewSet(PomsViewSetBase):
     permission_classes = PomsViewSetBase.permission_classes + [
         ObjectPermissionBase
     ]
-    ordering_fields = ['user_code', 'name', 'short_name', ]
-    search_fields = ['user_code', 'name', 'short_name', ]
+    ordering_fields = ['user_code', 'name', 'short_name', 'instrument_type__user_code', 'instrument_type__name',
+                       'instrument_type__short_name']
+    search_fields = ['user_code', 'name', 'short_name', 'instrument_type__user_code', 'instrument_type__name',
+                     'instrument_type__short_name']
 
 
 class PriceHistoryFilterSet(FilterSet):

@@ -105,5 +105,5 @@ class AccountViewSet(PomsViewSetBase):
     permission_classes = PomsViewSetBase.permission_classes + [
         ObjectPermissionBase
     ]
-    ordering_fields = ['user_code', 'name', 'short_name', ]
-    search_fields = ['user_code', 'name', 'short_name', ]
+    ordering_fields = ['user_code', 'name', 'short_name', 'type__user_code', 'type__name', 'type__short_name']
+    search_fields = ['user_code', 'name', 'short_name', 'type__user_code', 'type__name', 'type__short_name']

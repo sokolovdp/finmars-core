@@ -131,8 +131,8 @@ class TransactionTypeViewSet(PomsViewSetBase):
         ObjectPermissionBase,
     ]
     filter_class = TransactionTypeFilterSet
-    ordering_fields = ['user_code', 'name', 'short_name']
-    search_fields = ['user_code', 'name', 'short_name']
+    ordering_fields = ['user_code', 'name', 'short_name', 'group__user_code', 'group__name', 'group__short_name']
+    search_fields = ['user_code', 'name', 'short_name', 'group__user_code', 'group__name', 'group__short_name']
 
     # def get_serializer(self, *args, **kwargs):
     #     if self.request.path.endswith('/process/') or self.request.path.endswith('/check/'):
@@ -216,6 +216,7 @@ class TransactionFilterSet(FilterSet):
     transaction_date = django_filters.DateFromToRangeFilter()
     accounting_date = django_filters.DateFromToRangeFilter()
     cash_date = django_filters.DateFromToRangeFilter()
+    complex_transaction = django_filters.Filter(name='complex_transaction')
 
     class Meta:
         model = Transaction
@@ -273,3 +274,6 @@ class TransactionViewSet(PomsViewSetBase):
     filter_class = TransactionFilterSet
     ordering_fields = ['transaction_code', 'transaction_date', 'accounting_date', 'cash_date']
     search_fields = ['transaction_code']
+
+    ordering_fields = ['user_code', 'name', 'short_name', 'group__user_code', 'group__name', 'group__short_name']
+    search_fields = ['user_code', 'name', 'short_name', 'group__user_code', 'group__name', 'group__short_name']
