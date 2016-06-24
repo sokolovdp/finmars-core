@@ -367,14 +367,8 @@ class TransactionTypeProcessSerializer(serializers.Serializer):
 
 
 class TransactionAttributeTypeSerializer(AttributeTypeSerializerBase):
-    # strategy_position_root = StrategyRootField(required=False, allow_null=True)
-    # strategy_cash_root = StrategyRootField(required=False, allow_null=True)
-
     class Meta(AttributeTypeSerializerBase.Meta):
         model = TransactionAttributeType
-        # fields = AttributeTypeSerializerBase.Meta.fields + ['strategy_position_root', 'strategy_cash_root']
-        # update_read_only_fields = AttributeTypeSerializerBase.Meta.update_read_only_fields + \
-        #                           ['strategy_position_root', 'strategy_cash_root']
 
     def validate_value_type(self, value_type):
         if value_type == AttributeTypeBase.CLASSIFIER:

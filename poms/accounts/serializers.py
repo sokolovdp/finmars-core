@@ -35,14 +35,11 @@ class AccountTypeSerializer(ModelWithObjectPermissionSerializer, ModelWithUserCo
 
 
 class AccountAttributeTypeSerializer(AttributeTypeSerializerBase):
-    # classifier_root = AccountClassifierRootField(required=False, allow_null=True)
-    # classifiers = AccountClassifierSerializer2(required=False, allow_null=True, many=True)
     classifiers = AccountClassifierSerializer(required=False, allow_null=True, many=True)
 
     class Meta(AttributeTypeSerializerBase.Meta):
         model = AccountAttributeType
         fields = AttributeTypeSerializerBase.Meta.fields + ['classifiers']
-        # update_read_only_fields = AttributeTypeSerializerBase.Meta.update_read_only_fields + ['classifiers']
 
 
 class AccountAttributeSerializer(AttributeSerializerBase):
