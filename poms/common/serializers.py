@@ -199,7 +199,6 @@ class ClassifierSerializerBase(ModelWithUserCodeSerializer, serializers.ModelSer
         if hide_children:
             self.fields.pop('children')
 
-
     def create(self, validated_data):
         validated_data.pop('id', None)
         children = validated_data.pop('get_children', None)
