@@ -4,6 +4,7 @@ from poms.common.filters import ClassifierFilterSetBase
 from poms.common.views import ClassifierViewSetBase, ClassifierNodeViewSetBase
 from poms.obj_perms.filters import AllFakeFilter, ObjectPermissionBackend
 from poms.obj_perms.permissions import ObjectPermissionBase
+from poms.strategies.filters import StrategyFilter
 from poms.strategies.models import Strategy1, Strategy2, Strategy3
 from poms.strategies.serializers import Strategy1Serializer, Strategy1NodeSerializer, Strategy2Serializer, \
     Strategy2NodeSerializer, Strategy3Serializer, Strategy3NodeSerializer
@@ -20,6 +21,7 @@ class StrategyClassifierBaseFilterSet(ClassifierFilterSetBase):
 
 class StrategyBaseViewSet(ClassifierViewSetBase):
     filter_backends = ClassifierViewSetBase.filter_backends + [
+        StrategyFilter,
         TagFilterBackend,
         ObjectPermissionBackend,
     ]
@@ -70,7 +72,6 @@ class Strategy2NodeViewSet(StrategyBaseNodeViewSet):
     queryset = Strategy2.objects
     serializer_class = Strategy2NodeSerializer
     filter_class = Strategy2ClassifierFilterSet
-
 
 class Strategy3ClassifierFilterSet(StrategyClassifierBaseFilterSet):
     class Meta(StrategyClassifierBaseFilterSet.Meta):
