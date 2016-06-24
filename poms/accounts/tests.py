@@ -11,6 +11,7 @@ from poms.obj_perms.utils import get_perms_codename
 
 class AccountTypeApiTestCase(BaseApiWithPermissionTestCase, BaseApiWithTagsTestCase):
     model = AccountType
+    ordering_fields = ['user_code', 'name', 'short_name', ]
 
     def setUp(self):
         super(AccountTypeApiTestCase, self).setUp()

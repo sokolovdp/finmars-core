@@ -55,6 +55,8 @@ def tests_user_logged_out(user=None, **kwargs):
 
 class BaseApiTestCase(APITestCase):
     model = None
+    ordering_fields = None
+    filtering_fields = None
 
     def __init__(self, *args, **kwargs):
         super(BaseApiTestCase, self).__init__(*args, **kwargs)
@@ -343,9 +345,9 @@ class BaseApiTestCase(APITestCase):
         raise NotImplementedError()
         # return self.get_account(name, 'a')
 
-    def _list(self, user):
+    def _list(self, user, data=None):
         self.client.login(username=user, password=user)
-        response = self.client.get(self._url_list, format='json')
+        response = self.client.get(self._url_list, format='json', data=data)
         self.client.logout()
         return response
 
@@ -397,11 +399,9 @@ class BaseApiTestCase(APITestCase):
         return data
 
     def test_list(self):
-        obj = self._create_obj('obj')
-        obj_a1 = self._create_obj('obj_a1')
-        self.assign_perms(obj_a1, 'a', users=['a1'], perms=self.all_permissions)
-        obj_g2 = self._create_obj('obj_g2')
-        self.assign_perms(obj_g2, 'a', groups=['g2'], perms=self.all_permissions)
+        self._create_obj('obj1')
+        self._create_obj('obj2')
+        self._create_obj('obj3')
 
         # owner
         response = self._list('a')
@@ -409,9 +409,7 @@ class BaseApiTestCase(APITestCase):
         self.assertEqual(response.data['count'], 3)
 
     def test_get(self):
-        obj = self._create_obj('obj')
-        obj12 = self._create_obj('obj_a1')
-        self.assign_perms(obj12, 'a', users=['a1'], groups=['g2'], perms=self.all_permissions)
+        obj = self._create_obj('obj1')
 
         # owner
         response = self._get('a', obj.id)
@@ -423,7 +421,8 @@ class BaseApiTestCase(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
 
     def test_update(self):
-        obj = self._create_obj(self.create_name())
+        obj = self._create_obj('obj1')
+
         response = self._get('a', obj.id)
         udata = response.data.copy()
 
@@ -439,12 +438,33 @@ class BaseApiTestCase(APITestCase):
         response = self._delete('a', obj.id)
         self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
 
-    def test_list_sorting(self):
-        pass
+    def test_list_ordering(self):
+        if not self.ordering_fields:
+            return
 
-    def test_list_filter(self):
-        pass
+        self._create_obj('obj1')
+        self._create_obj('obj2')
+        self._create_obj('obj3')
 
+        for f in self.ordering_fields:
+            # ordering=-user_code
+            response = self._list('a', data={'ordering': f})
+            self.assertEqual(response.status_code, status.HTTP_200_OK, "field: %s" % f)
+            self.assertEqual(response.data['count'], 3, "field: %s" % f)
+
+            response = self._list('a', data={'ordering': '-%s' % f})
+            self.assertEqual(response.status_code, status.HTTP_200_OK, "field: %s" % f)
+            self.assertEqual(response.data['count'], 3, "field: %s" % f)
+
+    def test_list_filtering(self):
+        if not self.filtering_fields:
+            return
+
+        self._create_obj('obj1')
+        self._create_obj('obj2')
+        self._create_obj('obj3')
+
+        pass
 
 
 class BaseApiWithPermissionTestCase(BaseApiTestCase):
@@ -813,8 +833,6 @@ class BaseApiWithTagsTestCase(BaseApiTestCase):
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
 
     def test_tags_filter(self):
-        if not self.feature_tags:
-            return
         pass
 
 
