@@ -35,37 +35,6 @@ class TagContentTypeFilter(BaseFilterBackend):
         return queryset.filter(pk__in=ctypes)
 
 
-# class TagPrefetchFilter(BaseFilterBackend):
-#     def filter_queryset(self, request, queryset, view):
-#         # return queryset.prefetch_related(
-#         #     'tags',
-#         #     # 'tags__user_object_permissions',
-#         #     # 'tags__user_object_permissions__permission',
-#         #     'tags__group_object_permissions',
-#         #     'tags__group_object_permissions__permission',
-#         # )
-#         return tags_prefetch(queryset)
-#
-#
-# class ByTagNameFilter(BaseFilterBackend):
-#     def filter_queryset(self, request, queryset, view):
-#         tags = request.query_params.get('tags', None)
-#         if not tags:
-#             return queryset
-#
-#         tags = force_text(tags).split(',')
-#         f = Q()
-#         for t in tags:
-#             f |= Q(name__istartswith=t)
-#         tag_queryset = Tag.objects.filter(f)
-#
-#         member = request.user.member
-#         if not member.is_superuser:
-#             tag_queryset = obj_perms_filter_objects(member, ['view_tag', 'change_tag'], tag_queryset, prefetch=False)
-#
-#         return queryset.filter(tags__id__in=tag_queryset)
-
-
 class TagFilterBackend(BaseFilterBackend):
     def filter_queryset(self, request, queryset, view):
         queryset = queryset.prefetch_related(
@@ -80,10 +49,17 @@ class TagFilterBackend(BaseFilterBackend):
         if not tags:
             return queryset
         tags = force_text(tags).split(',')
-        f = Q()
-        for t in tags:
-            if t:
-                f |= Q(name__icontains=t)
+
+        # # as name
+        # f = Q()
+        # for t in tags:
+        #     if t:
+        #         f |= Q(name__icontains=t) | Q(name__icontains=t)
+
+        # as id
+        ids = [int(t) for t in tags if t]
+        f = Q(id__in=ids)
+
         tag_qs = obj_perms_filter_objects_for_view(
             request.user.member,
             queryset=Tag.objects.filter(f, master_user=request.user.master_user),
