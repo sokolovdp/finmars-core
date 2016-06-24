@@ -6,7 +6,6 @@ from rest_framework.serializers import ListSerializer
 
 from poms.common.fields import FilteredPrimaryKeyRelatedField, UserCodeField
 from poms.common.filters import ClassifierRootFilter
-from poms.obj_perms.serializers import ModelWithObjectPermissionSerializer
 from poms.users.filters import OwnerByMasterUserFilter
 
 
@@ -30,7 +29,6 @@ class PomsClassSerializer(PomsSerializerBase):
 class ModelWithUserCodeSerializer(serializers.ModelSerializer):
     def __init__(self, *args, **kwargs):
         super(ModelWithUserCodeSerializer, self).__init__(*args, **kwargs)
-
         self.fields['user_code'] = UserCodeField()
 
     def to_internal_value(self, data):
@@ -177,7 +175,7 @@ class ClassifierListSerializer(serializers.ListSerializer):
         return tree
 
 
-class ClassifierSerializerBase(serializers.ModelSerializer):
+class ClassifierSerializerBase(ModelWithUserCodeSerializer, serializers.ModelSerializer):
     id = serializers.IntegerField(read_only=False, required=False, allow_null=True)
     children = ClassifierRecursiveField(source='get_children', many=True, required=False, allow_null=True)
 
@@ -186,14 +184,21 @@ class ClassifierSerializerBase(serializers.ModelSerializer):
         fields = [
             # 'url',
             'id',
-            'user_code',
+            # 'user_code',
             'name',
             'short_name',
             'notes',
             'level',
             'children'
         ]
-        extra_kwargs = {'user_code': {'required': False}}
+        # extra_kwargs = {'user_code': {'required': False}}
+
+    def __init__(self, *args, **kwargs):
+        hide_children = kwargs.pop('hide_children', False)
+        super(ClassifierSerializerBase, self).__init__(*args, **kwargs)
+        if hide_children:
+            self.fields.pop('children')
+
 
     def create(self, validated_data):
         validated_data.pop('id', None)
@@ -256,13 +261,13 @@ class ClassifierSerializerBase(serializers.ModelSerializer):
             node.get_family().exclude(pk__in=processed).delete()
 
 
-class ClassifierNodeSerializerBase(PomsSerializerBase, ModelWithObjectPermissionSerializer):
+class ClassifierNodeSerializerBase(PomsSerializerBase, ModelWithUserCodeSerializer):
     parent = serializers.PrimaryKeyRelatedField(read_only=True)
     children = serializers.PrimaryKeyRelatedField(many=True, read_only=True)
 
     class Meta(PomsSerializerBase.Meta):
         fields = PomsSerializerBase.Meta.fields + [
-            'user_code',
+            # 'user_code',
             'name',
             'short_name',
             'notes',
@@ -270,7 +275,7 @@ class ClassifierNodeSerializerBase(PomsSerializerBase, ModelWithObjectPermission
             'parent',
             'children'
         ]
-        extra_kwargs = {'user_code': {'required': False}}
+        # extra_kwargs = {'user_code': {'required': False}}
 
         # def to_representation(self, instance):
         #     ret = super(ClassifierNodeSerializerBase, self).to_representation(instance)

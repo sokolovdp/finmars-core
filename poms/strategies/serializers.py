@@ -8,26 +8,6 @@ from poms.strategies.models import Strategy1, Strategy2, Strategy3
 from poms.tags.fields import TagField
 
 
-# class StrategySerializer(ClassifierSerializerBase):
-#     tags = TagField(many=True)
-#
-#     class Meta(ClassifierSerializerBase.Meta):
-#         model = Strategy
-#         fields = ClassifierSerializerBase.Meta.fields + ['tags']
-#
-#
-# class StrategyNodeSerializer(ClassifierNodeSerializerBase):
-#     url = serializers.HyperlinkedIdentityField(view_name='strategynode-detail')
-#     tags = TagField(many=True)
-#
-#     class Meta(ClassifierNodeSerializerBase.Meta):
-#         model = Strategy
-#         fields = ClassifierNodeSerializerBase.Meta.fields + ['tags']
-#
-#
-# -------------
-
-
 class StrategyBaseSerializer(ClassifierSerializerBase, ModelWithObjectPermissionSerializer):
     tags = TagField(many=True, required=False, allow_null=True)
 
@@ -43,14 +23,9 @@ class StrategyBaseSerializer(ClassifierSerializerBase, ModelWithObjectPermission
             ret.pop("group_object_permissions", None)
         return ret
 
-    def save_object_permission(self, instance, user_object_permissions=None, group_object_permissions=None,
-                               created=False):
+    def save_object_permission(self, instance, *args, **kwargs):
         if instance.is_root_node():
-            super(StrategyBaseSerializer, self).save_object_permission(
-                instance=instance,
-                user_object_permissions=user_object_permissions,
-                group_object_permissions=group_object_permissions,
-                created=created)
+            super(StrategyBaseSerializer, self).save_object_permission(*args, **kwargs)
 
 
 class StrategyBaseNodeSerializer(ClassifierNodeSerializerBase, ModelWithObjectPermissionSerializer):
@@ -67,14 +42,9 @@ class StrategyBaseNodeSerializer(ClassifierNodeSerializerBase, ModelWithObjectPe
             ret.pop("group_object_permissions", None)
         return ret
 
-    def save_object_permission(self, instance, user_object_permissions=None, group_object_permissions=None,
-                               created=False):
+    def save_object_permission(self, instance, *args, **kwargs):
         if instance.is_root_node():
-            super(StrategyBaseNodeSerializer, self).save_object_permission(
-                instance=instance,
-                user_object_permissions=user_object_permissions,
-                group_object_permissions=group_object_permissions,
-                created=created)
+            super(StrategyBaseNodeSerializer, self).save_object_permission(*args, **kwargs)
 
 
 class Strategy1Serializer(StrategyBaseSerializer):

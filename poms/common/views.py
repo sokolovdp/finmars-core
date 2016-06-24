@@ -3,13 +3,12 @@ from __future__ import unicode_literals
 from django.http import Http404
 from mptt.utils import get_cached_trees
 from rest_framework.filters import DjangoFilterBackend, OrderingFilter, SearchFilter
-from rest_framework.mixins import UpdateModelMixin
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.viewsets import ModelViewSet, ReadOnlyModelViewSet
 
 from poms.audit.mixins import HistoricalMixin
-from poms.common.filters import ClassifierPrefetchFilter
+from poms.common.filters import ClassifierFilter, ClassifierPrefetchFilter
 from poms.common.mixins import DbTransactionMixin
 from poms.users.filters import OwnerByMasterUserFilter
 
@@ -49,18 +48,23 @@ class PomsClassViewSetBase(ReadOnlyModelViewSet):
 
 
 class ClassifierViewSetBase(PomsViewSetBase):
-    # ClassifierFilter
-    filter_backends = [OwnerByMasterUserFilter,
-                       DjangoFilterBackend, OrderingFilter, SearchFilter]
+    filter_backends = [
+        OwnerByMasterUserFilter,
+        ClassifierFilter,
+        DjangoFilterBackend,
+        OrderingFilter,
+        SearchFilter
+    ]
     ordering_fields = ['user_code', 'name', 'short_name']
     search_fields = ['user_code', 'name', 'short_name']
-    pagination_class = None
 
-    def list(self, request, *args, **kwargs):
-        queryset = self.filter_queryset(self.get_queryset())
-        roots = get_cached_trees(queryset)
-        serializer = self.get_serializer(roots, many=True)
-        return Response(serializer.data)
+    # pagination_class = None
+
+    # def list(self, request, *args, **kwargs):
+    #     queryset = self.filter_queryset(self.get_queryset())
+    #     roots = get_cached_trees(queryset)
+    #     serializer = self.get_serializer(roots, many=True)
+    #     return Response(serializer.data)
 
     def get_object(self):
         obj = super(ClassifierViewSetBase, self).get_object()
@@ -83,7 +87,8 @@ class ClassifierViewSetBase(PomsViewSetBase):
         return Response(serializer.data)
 
 
-class ClassifierNodeViewSetBase(DbTransactionMixin, HistoricalMixin, UpdateModelMixin, ReadOnlyModelViewSet):
+# class ClassifierNodeViewSetBase(DbTransactionMixin, HistoricalMixin, UpdateModelMixin, ReadOnlyModelViewSet):
+class ClassifierNodeViewSetBase(DbTransactionMixin, HistoricalMixin, ModelViewSet):
     filter_backends = [
         OwnerByMasterUserFilter,
         ClassifierPrefetchFilter,

@@ -2,14 +2,22 @@ import django_filters
 from rest_framework.filters import BaseFilterBackend, FilterSet
 
 
+# class ClassifierFilter(BaseFilterBackend):
+#     def filter_queryset(self, request, queryset, view):
+#         parent_id = request.query_params.get('parent', None)
+#         if parent_id:
+#             parent = queryset.get(id=parent_id)
+#             return parent.get_family()
+#         else:
+#             return queryset.filter(parent__isnull=True)
+
+
 class ClassifierFilter(BaseFilterBackend):
     def filter_queryset(self, request, queryset, view):
-        parent_id = request.query_params.get('parent', None)
-        if parent_id:
-            parent = queryset.get(id=parent_id)
-            return parent.get_family()
-        else:
+        # queryset = queryset.prefetch_related('parent', 'children')
+        if view and view.action == 'list':
             return queryset.filter(parent__isnull=True)
+        return queryset.prefetch_related('parent', 'children')
 
 
 class ClassifierRootFilter(BaseFilterBackend):
