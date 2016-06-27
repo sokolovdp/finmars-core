@@ -2,15 +2,14 @@ from __future__ import unicode_literals
 
 import django_filters
 from rest_framework.filters import DjangoFilterBackend, OrderingFilter, SearchFilter, FilterSet
-from rest_framework.permissions import IsAuthenticated
 
 from poms.common.views import PomsViewSetBase
 from poms.currencies.filters import OwnerByCurrencyFilter
 from poms.currencies.models import Currency, CurrencyHistory
 from poms.currencies.serializers import CurrencySerializer, CurrencyHistorySerializer
-from poms.obj_perms.filters import AllFakeFilter
 from poms.tags.filters import TagFakeFilter, TagFilterBackend
 from poms.users.filters import OwnerByMasterUserFilter
+from poms.users.permissions import SuperUserOrReadOnly
 
 
 class CurrencyFilterSet(FilterSet):
@@ -27,7 +26,9 @@ class CurrencyFilterSet(FilterSet):
 class CurrencyViewSet(PomsViewSetBase):
     queryset = Currency.objects
     serializer_class = CurrencySerializer
-    permission_classes = [IsAuthenticated]
+    permission_classes = PomsViewSetBase.permission_classes + [
+        SuperUserOrReadOnly,
+    ]
     filter_backends = [
         OwnerByMasterUserFilter,
         TagFilterBackend,
@@ -52,7 +53,9 @@ class CurrencyHistoryFilterSet(FilterSet):
 class CurrencyHistoryViewSet(PomsViewSetBase):
     queryset = CurrencyHistory.objects.prefetch_related('currency')
     serializer_class = CurrencyHistorySerializer
-    permission_classes = [IsAuthenticated, ]
+    permission_classes = PomsViewSetBase.permission_classes + [
+        SuperUserOrReadOnly,
+    ]
     filter_backends = [
         OwnerByCurrencyFilter,
         DjangoFilterBackend,
