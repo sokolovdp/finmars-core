@@ -4,7 +4,6 @@ from datetime import date
 
 from django.contrib.contenttypes.models import ContentType
 from django.db import models
-from django.utils import timezone
 from django.utils.encoding import python_2_unicode_compatible
 from django.utils.translation import ugettext_lazy as _
 
@@ -135,11 +134,14 @@ MULTIPLIERS = (
 
 @python_2_unicode_compatible
 class BaseReportItem(object):
-    def __init__(self, pk=None, portfolio=None, account=None, strategies=None, instrument=None, name=None):
+    def __init__(self, pk=None, portfolio=None, account=None, strategy1=None, strategy2=None, strategy3=None,
+                 instrument=None, name=None):
         self.pk = pk
         self.portfolio = portfolio  # -> Portfolio
         self.account = account  # -> Account
-        self.strategies = strategies  # -> sorted strategy list
+        self.strategy1 = strategy1  # -> Strategy1
+        self.strategy2 = strategy2  # -> Strategy2
+        self.strategy3 = strategy3  # -> Strategy3
         self.instrument = instrument  # -> Instrument
         self.name = name
 

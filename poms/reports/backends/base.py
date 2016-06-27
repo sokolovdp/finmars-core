@@ -4,7 +4,6 @@ from __future__ import unicode_literals, division
 import datetime
 from collections import Counter
 
-import six
 from django.conf import settings
 from django.db.models import Q
 from django.utils import timezone
@@ -509,17 +508,21 @@ class BaseReport2Builder(object):
             price_history = self.find_price_history(instrument)
             obj.price_history = price_history
 
-    def make_key(self, portfolio=None, account=None, instrument=None, currency=None, ext=None, strategies=None):
+    def make_key(self, portfolio=None, account=None, instrument=None, currency=None, ext=None,
+                 strategy1=None, strategy2=None, strategy3=None):
         portfolio = getattr(portfolio, 'pk', None) if self._use_portfolio else ''
         account = getattr(account, 'pk', None) if self._use_account else ''
-        strategies = ','.join(six.text_type(s.pk) for s in strategies) if self._use_strategy and strategies else ''
-
+        strategy1 = getattr(strategy1, 'pk', None) if self._use_strategy else ''
+        strategy2 = getattr(strategy2, 'pk', None) if self._use_strategy else ''
+        strategy3 = getattr(strategy3, 'pk', None) if self._use_strategy else ''
+        # strategies = ','.join(six.text_type(s.pk) for s in strategies) if self._use_strategy and strategies else ''
         instrument = getattr(instrument, 'pk', None) if instrument else ''
         currency = getattr(currency, 'pk', None) if currency else ''
 
         ext = ext if ext is not None else ''
 
-        return 'p(%s),a(%s),i(%s),c(%s),e(%s),s(%s)' % (portfolio, account, instrument, currency, ext, strategies)
+        return 'p:%s|s1:%s|s2:%s|s3:%s|a:%s|i:%s|c:%s|e:%s' % (
+            portfolio, strategy1, strategy2, strategy3, account, instrument, currency, ext,)
 
     def make_item(self, item_cls, key, portfolio=None, account=None, **kwargs):
         item = item_cls(pk=key,

@@ -184,24 +184,26 @@ class BalanceReport2Builder(BaseReport2Builder):
         self._items = {}
 
     def _get_item0(self, items, trn, instr=None, ccy=None, acc=None, ext=None):
+        strategy1 = None
+        strategy2 = None
+        strategy3 = None
         if self._use_strategy:
             if instr:
-                strategies = trn.strategies_position
-                # strategies = None
+                strategy1 = trn.strategy1_position
+                strategy2 = trn.strategy2_position
+                strategy3 = trn.strategy3_position
             elif ccy:
-                strategies = trn.strategies_cash
-            else:
-                strategies = None
-        else:
-            strategies = None
+                strategy1 = trn.strategy1_cash
+                strategy2 = trn.strategy2_cash
+                strategy3 = trn.strategy3_cash
         # strategies = []
         t_key = self.make_key(portfolio=trn.portfolio, account=acc, instrument=instr, currency=ccy, ext=ext,
-                              strategies=strategies)
+                              strategy1=strategy1, strategy2=strategy2, strategy3=strategy3)
         try:
             return items[t_key]
         except KeyError:
             item = self.make_item(BalanceReportItem, key=t_key, portfolio=trn.portfolio, account=acc, instrument=instr,
-                                  currency=ccy,strategies=strategies)
+                                  currency=ccy, strategy1=strategy1, strategy2=strategy2, strategy3=strategy3)
             items[t_key] = item
             return item
 
@@ -290,7 +292,8 @@ class BalanceReport2Builder(BaseReport2Builder):
                 if self._use_strategy:
                     multiplier_attr = self.multiplier_attr
                     multiplier = getattr(t, multiplier_attr)
-                    self._process_instrument(t, val=t.position_size_with_sign*(1.-multiplier), acc=t.account_position, case=case)
+                    self._process_instrument(t, val=t.position_size_with_sign * (1. - multiplier),
+                                             acc=t.account_position, case=case)
                 else:
                     self._process_instrument(t, val=t.position_size_with_sign, acc=t.account_position, case=case)
                 # self._process_instrument(t, val=t.position_size_with_sign, acc=t.account_position, case=case)

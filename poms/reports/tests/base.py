@@ -10,6 +10,7 @@ from poms.accounts.models import Account, AccountType
 from poms.currencies.models import Currency, CurrencyHistory
 from poms.instruments.models import Instrument, PriceHistory, InstrumentType, InstrumentClass
 from poms.portfolios.models import Portfolio
+from poms.strategies.models import Strategy1, Strategy3, Strategy2
 from poms.transactions.models import Transaction, TransactionClass
 from poms.users.models import MasterUser
 
@@ -111,12 +112,26 @@ class BaseReportTestCase(TestCase):
         self.p1 = Portfolio.objects.create(master_user=m, name='p1')
         self.p2 = Portfolio.objects.create(master_user=m, name='p2')
 
-        # self.s1 = Strategy.objects.create(master_user=m, name='s1')
-        # self.s11 = Strategy.objects.create(master_user=m, name='s11', parent=self.s1)
-        # self.s12 = Strategy.objects.create(master_user=m, name='s12', parent=self.s1)
-        # self.s2 = Strategy.objects.create(master_user=m, name='s2')
-        # self.s21 = Strategy.objects.create(master_user=m, name='s21', parent=self.s2)
-        # self.s22 = Strategy.objects.create(master_user=m, name='s22', parent=self.s2)
+        self.s1_1 = Strategy1.objects.create(master_user=m, name='s1_1')
+        self.s1_11 = Strategy1.objects.create(master_user=m, name='s1_11', parent=self.s1_1)
+        self.s1_12 = Strategy1.objects.create(master_user=m, name='s1_12', parent=self.s1_1)
+        self.s1_2 = Strategy1.objects.create(master_user=m, name='s1_2')
+        self.s1_21 = Strategy1.objects.create(master_user=m, name='s1_21', parent=self.s1_2)
+        self.s1_22 = Strategy1.objects.create(master_user=m, name='s1_22', parent=self.s1_2)
+
+        self.s2_1 = Strategy2.objects.create(master_user=m, name='s2_1')
+        self.s2_11 = Strategy2.objects.create(master_user=m, name='s2_11', parent=self.s2_1)
+        self.s2_12 = Strategy2.objects.create(master_user=m, name='s2_12', parent=self.s2_1)
+        self.s2_2 = Strategy2.objects.create(master_user=m, name='s2_2')
+        self.s2_21 = Strategy2.objects.create(master_user=m, name='s2_21', parent=self.s2_2)
+        self.s2_22 = Strategy2.objects.create(master_user=m, name='s2_22', parent=self.s2_2)
+
+        self.s3_1 = Strategy3.objects.create(master_user=m, name='s3_1')
+        self.s3_11 = Strategy3.objects.create(master_user=m, name='s3_11', parent=self.s3_1)
+        self.s3_12 = Strategy3.objects.create(master_user=m, name='s3_12', parent=self.s3_1)
+        self.s3_2 = Strategy3.objects.create(master_user=m, name='s3_2')
+        self.s3_21 = Strategy3.objects.create(master_user=m, name='s3_21', parent=self.s3_2)
+        self.s3_22 = Strategy3.objects.create(master_user=m, name='s3_22', parent=self.s3_2)
 
         # self.t_in = Transaction.objects.create(
         #     master_user=m,
@@ -528,7 +543,7 @@ class BaseReportTestCase(TestCase):
           position=None, settlement_ccy=None, cash_consideration=None, principal=0., carry=0., overheads=0.,
           acc_date=None, acc_date_delta=None, cash_date=None, cash_date_delta=None,
           acc_pos=None, acc_cash=None, acc_interim=None, fx_rate=None,
-          strategies=None):
+          s1_position=None, s1_cash=None, s2_position=None, s2_cash=None, s3_position=None, s3_cash=None):
 
         # if p is None:
         #     p = self.p1
@@ -585,10 +600,12 @@ class BaseReportTestCase(TestCase):
         t.account_interim = acc_interim if acc_interim else self.prov_acc1
         t.reference_fx_rate = fx_rate
 
-        if strategies:
-            for strategy in strategies:
-                t.strategy_position = strategy.get('position', None)
-                t.strategy_cash = strategy.get('cash', None)
+        t.strategy1_position = s1_position
+        t.strategy1_cash = s1_cash
+        t.strategy2_position = s2_position
+        t.strategy2_cash = s2_cash
+        t.strategy3_position = s3_position
+        t.strategy3_cash = s3_cash
 
         t.save()
         return t
