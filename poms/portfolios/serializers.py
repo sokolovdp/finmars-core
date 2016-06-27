@@ -49,4 +49,5 @@ class PortfolioSerializer(ModelWithObjectPermissionSerializer, ModelWithAttribut
 
     class Meta:
         model = Portfolio
-        fields = ['url', 'id', 'master_user', 'user_code', 'name', 'short_name', 'notes', 'attributes', 'tags']
+        fields = ['url', 'id', 'master_user', 'user_code', 'name', 'short_name', 'public_name', 'notes', 'attributes',
+                  'tags']
