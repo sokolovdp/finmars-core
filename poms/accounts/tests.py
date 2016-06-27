@@ -4,8 +4,7 @@ from rest_framework import status
 
 from poms.accounts.models import AccountAttributeType, Account, AccountType, AccountClassifier
 from poms.common.tests import BaseApiWithPermissionTestCase, BaseApiWithAttributesTestCase, \
-    BaseAttributeTypeApiTestCase, \
-    BaseApiWithTagsTestCase, BaseNamedModelTestCase
+    BaseAttributeTypeApiTestCase, BaseApiWithTagsTestCase, BaseNamedModelTestCase
 from poms.obj_perms.utils import get_perms_codename
 
 
@@ -66,10 +65,10 @@ class AccountApiTestCase(BaseNamedModelTestCase, BaseApiWithPermissionTestCase, 
         self.type3_g2 = self.create_account_type('type3_g2', 'a')
         self.assign_perms(self.type3_g2, 'a', groups=['g2'])
 
-    def _create_obj(self, name='acc'):
+    def _create_obj(self, name='account'):
         return self.create_account(name, 'a')
 
-    def _get_obj(self, name='acc'):
+    def _get_obj(self, name='account'):
         return self.get_account(name, 'a')
 
     def _make_new_data(self, **kwargs):
