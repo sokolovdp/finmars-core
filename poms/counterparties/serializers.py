@@ -6,7 +6,7 @@ from poms.common.serializers import ClassifierSerializerBase, ClassifierNodeSeri
 from poms.counterparties.fields import ResponsibleClassifierField, \
     CounterpartyAttributeTypeField, ResponsibleAttributeTypeField
 from poms.counterparties.models import CounterpartyClassifier, Counterparty, Responsible, ResponsibleClassifier, \
-    CounterpartyAttributeType, CounterpartyAttribute, ResponsibleAttributeType
+    CounterpartyAttributeType, CounterpartyAttribute, ResponsibleAttributeType, ResponsibleAttribute
 from poms.obj_attrs.serializers import AttributeTypeSerializerBase, AttributeSerializerBase, \
     ModelWithAttributesSerializer
 from poms.tags.fields import TagField
@@ -77,7 +77,7 @@ class ResponsibleAttributeSerializer(AttributeSerializerBase):
     classifier = ResponsibleClassifierField(required=False, allow_null=True)
 
     class Meta(AttributeSerializerBase.Meta):
-        model = CounterpartyAttribute
+        model = ResponsibleAttribute
         fields = AttributeSerializerBase.Meta.fields + ['attribute_type', 'classifier']
 
 
