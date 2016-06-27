@@ -210,13 +210,13 @@ class BaseApiTestCase(APITestCase):
     def get_counterparty(self, name, master_user):
         return Counterparty.objects.get(name=name, master_user__name=master_user)
 
-    def create_counterparty_attribute_type(self, name, master_user, value_type=AttributeTypeBase.STRING,
-                                           classifiers=None):
-        return self.create_attribute_type(CounterpartyAttributeType, name, master_user, value_type=value_type,
-                                          classifier_model=CounterpartyClassifier, classifier_tree=classifiers)
+    # def create_counterparty_attribute_type(self, name, master_user, value_type=AttributeTypeBase.STRING,
+    #                                        classifiers=None):
+    #     return self.create_attribute_type(CounterpartyAttributeType, name, master_user, value_type=value_type,
+    #                                       classifier_model=CounterpartyClassifier, classifier_tree=classifiers)
 
-    def get_counterparty_attribute_type(self, name, master_user):
-        return self.get_attribute_type(CounterpartyAttributeType, name, master_user)
+    # def get_counterparty_attribute_type(self, name, master_user):
+    #     return self.get_attribute_type(CounterpartyAttributeType, name, master_user)
 
     def create_responsible(self, name, master_user):
         master_user = self.get_master_user(master_user)
@@ -226,13 +226,13 @@ class BaseApiTestCase(APITestCase):
     def get_responsible(self, name, master_user):
         return Responsible.objects.get(name=name, master_user__name=master_user)
 
-    def create_responsible_attribute_type(self, name, master_user, value_type=AttributeTypeBase.STRING,
-                                          classifiers=None):
-        return self.create_attribute_type(ResponsibleAttributeType, name, master_user, value_type=value_type,
-                                          classifier_model=ResponsibleClassifier, classifier_tree=classifiers)
+    # def create_responsible_attribute_type(self, name, master_user, value_type=AttributeTypeBase.STRING,
+    #                                       classifiers=None):
+    #     return self.create_attribute_type(ResponsibleAttributeType, name, master_user, value_type=value_type,
+    #                                       classifier_model=ResponsibleClassifier, classifier_tree=classifiers)
 
-    def get_responsible_attribute_type(self, name, master_user):
-        return self.get_attribute_type(ResponsibleAttributeType, name, master_user)
+    # def get_responsible_attribute_type(self, name, master_user):
+    #     return self.get_attribute_type(ResponsibleAttributeType, name, master_user)
 
     def create_portfolio(self, name, master_user):
         master_user = self.get_master_user(master_user)
@@ -242,13 +242,13 @@ class BaseApiTestCase(APITestCase):
     def get_portfolio(self, name, master_user):
         return Portfolio.objects.get(name=name, master_user__name=master_user)
 
-    def create_portfolio_attribute_type(self, name, master_user, value_type=AttributeTypeBase.STRING,
-                                        classifiers=None):
-        return self.create_attribute_type(PortfolioAttributeType, name, master_user, value_type=value_type,
-                                          classifier_model=PortfolioClassifier, classifier_tree=classifiers)
+    # def create_portfolio_attribute_type(self, name, master_user, value_type=AttributeTypeBase.STRING,
+    #                                     classifiers=None):
+    #     return self.create_attribute_type(PortfolioAttributeType, name, master_user, value_type=value_type,
+    #                                       classifier_model=PortfolioClassifier, classifier_tree=classifiers)
 
-    def get_portfolio_attribute_type(self, name, master_user):
-        return self.get_attribute_type(PortfolioAttributeType, name, master_user)
+    # def get_portfolio_attribute_type(self, name, master_user):
+    #     return self.get_attribute_type(PortfolioAttributeType, name, master_user)
 
     def create_instrument_type(self, name, master_user, instrument_class=None):
         master_user = self.get_master_user(master_user)
@@ -272,13 +272,13 @@ class BaseApiTestCase(APITestCase):
     def get_instrument(self, name, master_user):
         return Instrument.objects.get(name=name, master_user__name=master_user)
 
-    def create_instrument_attribute_type(self, name, master_user, value_type=AccountAttributeType.STRING,
-                                         classifiers=None):
-        return self.create_attribute_type(InstrumentAttributeType, name, master_user, value_type=value_type,
-                                          classifier_model=InstrumentClassifier, classifier_tree=classifiers)
+    # def create_instrument_attribute_type(self, name, master_user, value_type=AccountAttributeType.STRING,
+    #                                      classifiers=None):
+    #     return self.create_attribute_type(InstrumentAttributeType, name, master_user, value_type=value_type,
+    #                                       classifier_model=InstrumentClassifier, classifier_tree=classifiers)
 
-    def get_instrument_attribute_type(self, name, master_user):
-        return self.get_attribute_type(InstrumentAttributeType, name, master_user)
+    # def get_instrument_attribute_type(self, name, master_user):
+    #     return self.get_attribute_type(InstrumentAttributeType, name, master_user)
 
     def create_strategy(self, model, name, master_user, parent=None):
         parent = self.get_strategy(model, parent, master_user) if parent else None

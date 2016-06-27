@@ -69,7 +69,7 @@ class ResponsibleApiTestCase(BaseNamedModelTestCase, BaseApiWithPermissionTestCa
         self._change_permission = 'change_responsible'
 
     def _create_obj(self, name='responsible'):
-        return self.create_counterparty(name, 'a')
+        return self.create_responsible(name, 'a')
 
     def _get_obj(self, name='responsible'):
-        return self.get_counterparty(name, 'a')
+        return self.get_responsible(name, 'a')

@@ -2,7 +2,7 @@ from __future__ import unicode_literals
 
 from poms.common.fields import FilteredPrimaryKeyRelatedField
 from poms.counterparties.models import CounterpartyClassifier, Counterparty, Responsible, ResponsibleClassifier, \
-    CounterpartyAttributeType
+    CounterpartyAttributeType, ResponsibleAttributeType
 from poms.obj_attrs.filters import AttributeClassifierBaseField
 from poms.obj_perms.filters import FieldObjectPermissionBackend
 from poms.users.filters import OwnerByMasterUserFilter
@@ -34,7 +34,7 @@ class CounterpartyField(FilteredPrimaryKeyRelatedField):
 
 
 class ResponsibleAttributeTypeField(FilteredPrimaryKeyRelatedField):
-    queryset = CounterpartyAttributeType.objects
+    queryset = ResponsibleAttributeType.objects
     filter_backends = [
         OwnerByMasterUserFilter,
         FieldObjectPermissionBackend,

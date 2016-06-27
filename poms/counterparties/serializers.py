@@ -4,7 +4,7 @@ from rest_framework import serializers
 
 from poms.common.serializers import ClassifierSerializerBase, ClassifierNodeSerializerBase, ModelWithUserCodeSerializer
 from poms.counterparties.fields import ResponsibleClassifierField, \
-    CounterpartyAttributeTypeField, ResponsibleAttributeTypeField
+    CounterpartyAttributeTypeField, ResponsibleAttributeTypeField, CounterpartyClassifierField
 from poms.counterparties.models import CounterpartyClassifier, Counterparty, Responsible, ResponsibleClassifier, \
     CounterpartyAttributeType, CounterpartyAttribute, ResponsibleAttributeType, ResponsibleAttribute
 from poms.obj_attrs.serializers import AttributeTypeSerializerBase, AttributeSerializerBase, \
@@ -36,7 +36,7 @@ class CounterpartyAttributeTypeSerializer(AttributeTypeSerializerBase):
 
 class CounterpartyAttributeSerializer(AttributeSerializerBase):
     attribute_type = CounterpartyAttributeTypeField()
-    classifier = ResponsibleClassifierField(required=False, allow_null=True)
+    classifier = CounterpartyClassifierField(required=False, allow_null=True)
 
     class Meta(AttributeSerializerBase.Meta):
         model = CounterpartyAttribute
