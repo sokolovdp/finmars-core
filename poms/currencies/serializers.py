@@ -20,8 +20,8 @@ class CurrencySerializer(ModelWithUserCodeSerializer):
 
     class Meta:
         model = Currency
-        fields = ['url', 'id', 'master_user', 'user_code', 'name', 'short_name', 'notes', 'tags']
-        readonly_fields = ['is_system', 'is_global']
+        fields = ['url', 'id', 'master_user', 'user_code', 'name', 'short_name', 'notes', 'tags', 'is_system']
+        readonly_fields = ['is_system']
 
 
 class CurrencyHistorySerializer(serializers.ModelSerializer):
