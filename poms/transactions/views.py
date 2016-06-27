@@ -226,12 +226,23 @@ class TransactionFilterSet(FilterSet):
     account_cash = django_filters.Filter(name='account_cash')
     account_position = django_filters.Filter(name='account_position')
     account_interim = django_filters.Filter(name='account_interim')
+    strategy1_position = django_filters.Filter(name='strategy1_position')
+    strategy1_cash = django_filters.Filter(name='strategy1_cash')
+    strategy2_position = django_filters.Filter(name='strategy2_position')
+    strategy2_cash = django_filters.Filter(name='strategy2_cash')
+    strategy3_position = django_filters.Filter(name='strategy3_position')
+    strategy3_cash = django_filters.Filter(name='strategy3_cash')
 
     class Meta:
         model = Transaction
         fields = ['transaction_code', 'transaction_date', 'accounting_date', 'cash_date',
                   'complex_transaction', 'complex_transaction__code',
-                  'complex_transaction__transaction_type']
+                  'complex_transaction__transaction_type',
+                  'portfolio', 'instrument', 'transaction_currency', 'settlement_currency',
+                  'account_cash', 'account_position', 'account_interim',
+                  'strategy1_position', 'strategy1_cash',
+                  'strategy2_position', 'strategy2_cash',
+                  'strategy3_position', 'strategy3_cash', ]
 
 
 class TransactionViewSet(PomsViewSetBase):
@@ -298,6 +309,6 @@ class TransactionViewSet(PomsViewSetBase):
         'strategy2_position__user_code', 'strategy2_position__name', 'strategy2_position__short_name',
         'strategy2_cash__user_code', 'strategy2_cash__name', 'strategy2_cash__short_name',
         'strategy3_position__user_code', 'strategy3_position__name', 'strategy3_position__short_name',
-        'strategy3_cash__user_code', '__name', 'strategy3_cash__short_name',
+        'strategy3_cash__user_code', 'strategy3_cash__name', 'strategy3_cash__short_name',
     ]
     search_fields = ['transaction_code', 'complex_transaction__code', 'complex_transaction_order']
