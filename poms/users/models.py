@@ -205,7 +205,6 @@ class FakeSequence(models.Model):
 
 @receiver(post_save, dispatch_uid='create_profile', sender=settings.AUTH_USER_MODEL)
 def create_profile(sender, instance=None, created=None, **kwargs):
-    print('create_profile ' * 5)
     if created:
         UserProfile.objects.create(
             user=instance,
