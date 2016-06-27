@@ -17,7 +17,9 @@ class BalanceTestCase(BaseReportTestCase):
                                  'account_position', 'account_cash', 'account_interim',
                                  'accounting_date', 'cash_date',
                                  'reference_fx_rate',
-                                 'strategies_position', 'strategies_cash',
+                                 'strategy1_position', 'strategy1_cash',
+                                 'strategy2_position', 'strategy2_cash',
+                                 'strategy3_position', 'strategy3_cash',
                                  'avco_multiplier',
                                  'fifo_multiplier')
 
@@ -68,7 +70,7 @@ class BalanceTestCase(BaseReportTestCase):
             self.assertEqual(ri.account, ei.account, 'account: id=%s, index=%s' % (ri.pk, i))
             self.assertEqual(ri.instrument, ei.instrument, 'instrument: id=%s, index=%s' % (ri.pk, i))
             self.assertEqual(ri.currency, ei.currency, 'currency: id=%s, index=%s' % (ri.pk, i))
-            
+
             # self.assertEqual(ri.strategies, ei.strategies, 'strategies: id=%s, index=%s' % (ri.pk, i))
             self.assertEqual(ri.strategy1, ei.strategy1, 'strategy1: id=%s, index=%s' % (ri.pk, i))
             self.assertEqual(ri.strategy2, ei.strategy2, 'strategy2: id=%s, index=%s' % (ri.pk, i))
@@ -1026,19 +1028,6 @@ class BalanceTestCase(BaseReportTestCase):
                     portfolio=None, account=self.acc1, instrument=self.instr1_bond_chf, currency=None,
                     strategy1=self.s1_11, strategy2=self.s2_11, strategy3=self.s3_11,
                     balance_position=0., market_value_system_ccy=0.),
-
-                BalanceReportItem(
-                    pk=b.make_key(portfolio=None, account=self.acc1, instrument=None, currency=self.usd,
-                                  strategy1=self.s1_11, strategy2=self.s2_11, strategy3=self.s3_11),
-                    portfolio=None, account=self.acc1, instrument=None, currency=self.usd,
-                    strategy1=self.s1_11, strategy2=self.s2_11, strategy3=self.s3_11,
-                    balance_position=-100., market_value_system_ccy=-100.),
-                BalanceReportItem(
-                    pk=b.make_key(portfolio=None, account=self.acc1, instrument=None, currency=self.usd,
-                                  strategy1=self.s1_11, strategy2=self.s2_11, strategy3=self.s3_11),
-                    portfolio=None, account=self.acc1, instrument=None, currency=self.usd,
-                    strategy1=self.s1_11, strategy2=self.s2_11, strategy3=self.s3_11,
-                    balance_position=70., market_value_system_ccy=70.),
             ],
             summary=BalanceReportSummary(invested_value_system_ccy=0,
                                          current_value_system_ccy=-28.155,
