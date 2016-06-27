@@ -9,6 +9,11 @@ from poms.common.tests import BaseApiWithPermissionTestCase, BaseApiWithAttribut
 from poms.obj_perms.utils import get_perms_codename
 
 
+def load_tests(loader, standard_tests, pattern):
+    from poms.common.tests import load_tests as t
+    return t(loader, standard_tests, pattern)
+
+
 class AccountTypeApiTestCase(BaseNamedModelTestCase, BaseApiWithPermissionTestCase, BaseApiWithTagsTestCase):
     model = AccountType
 

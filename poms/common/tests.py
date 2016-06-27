@@ -28,8 +28,6 @@ from poms.users.models import MasterUser, Member, Group
 
 
 def load_tests(loader, standard_tests, pattern):
-    print('-' * 79)
-    print('load_tests: loader=%s, standard_tests=%s, pattern=%s' % (loader, standard_tests, pattern,))
     result = []
     abstract_tests = (
         BaseApiTestCase,
@@ -40,9 +38,11 @@ def load_tests(loader, standard_tests, pattern):
         BaseAttributeTypeApiTestCase,
     )
     for test_case in standard_tests:
+        print('        test_case=%s' % (test_case,))
         if type(test_case._tests[0]) in abstract_tests:
             continue
         result.append(test_case)
+    print('    result=%s' % (result,))
     return loader.suiteClass(result)
 
 
