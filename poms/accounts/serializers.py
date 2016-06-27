@@ -30,7 +30,7 @@ class AccountTypeSerializer(ModelWithObjectPermissionSerializer, ModelWithUserCo
 
     class Meta:
         model = AccountType
-        fields = ['url', 'id', 'master_user', 'user_code', 'name', 'public_name', 'short_name', 'notes',
+        fields = ['url', 'id', 'master_user', 'user_code', 'name', 'short_name', 'public_name', 'notes',
                   'show_transaction_details', 'transaction_details_expr', 'tags']
 
 
@@ -60,5 +60,5 @@ class AccountSerializer(ModelWithObjectPermissionSerializer, ModelWithAttributes
 
     class Meta:
         model = Account
-        fields = ['url', 'id', 'master_user', 'type', 'user_code', 'name', 'public_name', 'short_name', 'notes',
+        fields = ['url', 'id', 'master_user', 'type', 'user_code', 'name', 'short_name', 'public_name', 'notes',
                   'tags', 'attributes', ]

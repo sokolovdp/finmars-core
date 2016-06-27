@@ -9,6 +9,7 @@ from poms.counterparties.models import CounterpartyClassifier, Counterparty, Res
     CounterpartyAttributeType, CounterpartyAttribute, ResponsibleAttributeType, ResponsibleAttribute
 from poms.obj_attrs.serializers import AttributeTypeSerializerBase, AttributeSerializerBase, \
     ModelWithAttributesSerializer
+from poms.obj_perms.serializers import ModelWithObjectPermissionSerializer
 from poms.tags.fields import TagField
 from poms.users.fields import MasterUserField
 
@@ -42,14 +43,16 @@ class CounterpartyAttributeSerializer(AttributeSerializerBase):
         fields = AttributeSerializerBase.Meta.fields + ['attribute_type', 'classifier']
 
 
-class CounterpartySerializer(ModelWithAttributesSerializer, ModelWithUserCodeSerializer):
+class CounterpartySerializer(ModelWithObjectPermissionSerializer, ModelWithAttributesSerializer,
+                             ModelWithUserCodeSerializer):
     master_user = MasterUserField()
     attributes = CounterpartyAttributeSerializer(many=True, required=False, allow_null=True)
     tags = TagField(many=True, required=False, allow_null=True)
 
     class Meta:
         model = Counterparty
-        fields = ['url', 'id', 'master_user', 'user_code', 'name', 'short_name', 'notes', 'attributes', 'tags']
+        fields = ['url', 'id', 'master_user', 'user_code', 'name', 'short_name', 'public_name', 'notes', 'attributes',
+                  'tags']
 
 
 class ResponsibleClassifierSerializer(ClassifierSerializerBase):
@@ -81,11 +84,13 @@ class ResponsibleAttributeSerializer(AttributeSerializerBase):
         fields = AttributeSerializerBase.Meta.fields + ['attribute_type', 'classifier']
 
 
-class ResponsibleSerializer(ModelWithAttributesSerializer, ModelWithUserCodeSerializer):
+class ResponsibleSerializer(ModelWithObjectPermissionSerializer, ModelWithAttributesSerializer,
+                            ModelWithUserCodeSerializer):
     master_user = MasterUserField()
     attributes = ResponsibleAttributeSerializer(many=True, required=False, allow_null=True)
     tags = TagField(many=True, required=False, allow_null=True)
 
     class Meta:
         model = Responsible
-        fields = ['url', 'id', 'master_user', 'user_code', 'name', 'short_name', 'notes', 'attributes', 'tags']
+        fields = ['url', 'id', 'master_user', 'user_code', 'name', 'short_name', 'public_name', 'notes', 'attributes',
+                  'tags']
