@@ -28,12 +28,8 @@ class Currency(NamedModel):
         return self.name
 
     @property
-    def is_global(self):
-        return self.master_user_id is None
-
-    @property
     def is_system(self):
-        return self.is_global and self.user_code == settings.CURRENCY_CODE
+        return self.user_code == settings.CURRENCY_CODE
 
 
 class CurrencyUserObjectPermission(UserObjectPermissionBase):

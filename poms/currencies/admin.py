@@ -32,13 +32,6 @@ class CurrencyAdmin(HistoricalAdmin):
     list_filter = [GlobalCurrencyFilter]
     raw_id_fields = ['master_user']
 
-    def is_global(self, obj):
-        return obj.is_global
-
-    is_global.short_name = _('is global')
-    is_global.boolean = True
-    is_global.admin_order_field = 'master_user'
-
     def is_system(self, obj):
         return obj.is_system
 

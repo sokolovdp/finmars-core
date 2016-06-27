@@ -465,14 +465,15 @@ class BaseReport2Builder(object):
     def find_currency_history(self, ccy, date=None):
         assert ccy is not None, 'ccy is None!'
         d = date or self._end_date
-        if ccy.is_system:
-            return CurrencyHistory(currency=ccy, date=d, fx_rate=1.)
         key = '%s:%s' % (ccy.id, d)
         h = self._currency_history_cache.get(key, None)
         if h is None:
-            h = CurrencyHistory.objects.filter(currency=ccy, date__lte=d).order_by('date').last()
-            if h is None:
-                h = CurrencyHistory(currency=ccy, date=d, fx_rate=0.)
+            if ccy.is_system:
+                h = CurrencyHistory(currency=ccy, date=d, fx_rate=1.)
+            else:
+                h = CurrencyHistory.objects.filter(currency=ccy, date__lte=d).order_by('date').last()
+                if h is None:
+                    h = CurrencyHistory(currency=ccy, date=d, fx_rate=0.)
             self._currency_history_cache[key] = h
         return h
 

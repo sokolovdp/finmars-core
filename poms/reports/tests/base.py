@@ -139,6 +139,7 @@ class BaseReportTestCase(TestCase):
         #     reference_fx_rate=1.3
         # )
         self.t_in = self.t(t_class=self.cash_inflow, transaction_ccy=self.eur, position=1000, fx_rate=1.3)
+
         # self.t_in2 = Transaction.objects.create(
         #     master_user=m,
         #     transaction_class=self.cash_inflow,
@@ -185,6 +186,7 @@ class BaseReportTestCase(TestCase):
         self.t_buy_bond = self.t(
             t_class=self.buy, instr=self.instr1_bond_chf, position=100, settlement_ccy=self.usd,
             principal=-180., carry=-5., overheads=-15., acc_date_delta=3, cash_date_delta=5)
+
         # self.t_buy_bond_acc2 = Transaction.objects.create(
         #     master_user=m,
         #     transaction_class=self.buy,
@@ -209,6 +211,7 @@ class BaseReportTestCase(TestCase):
             t_class=self.buy, instr=self.instr1_bond_chf, position=100, settlement_ccy=self.usd,
             principal=-180., carry=-5., overheads=-15., acc_date_delta=3, cash_date_delta=5,
             acc_pos=self.acc2, acc_cash=self.acc2, acc_interim=self.prov_acc2)
+
         # self.t_buy_bond_p2 = Transaction.objects.create(
         #     master_user=m,
         #     transaction_class=self.buy,
@@ -257,6 +260,7 @@ class BaseReportTestCase(TestCase):
         self.t_sell_stock = self.t(
             t_class=self.buy, instr=self.instr2_stock, position=-200, settlement_ccy=self.rub,
             principal=1100., carry=0., overheads=-100., acc_date_delta=5, cash_date_delta=3)
+
         # self.t_sell_stock_acc2 = Transaction.objects.create(
         #     master_user=m,
         #     transaction_class=self.sell,
@@ -281,6 +285,7 @@ class BaseReportTestCase(TestCase):
             t_class=self.buy, instr=self.instr2_stock, position=-200, settlement_ccy=self.rub,
             principal=1100., carry=0., overheads=-100., acc_date_delta=5, cash_date_delta=3,
             acc_pos=self.acc2, acc_cash=self.acc2, acc_interim=self.prov_acc2)
+
         # self.t_sell_stock_p2 = Transaction.objects.create(
         #     master_user=m,
         #     transaction_class=self.sell,
@@ -378,6 +383,7 @@ class BaseReportTestCase(TestCase):
         self.t_instrpl_bond = self.t(
             t_class=self.instrument_pl, instr=self.instr1_bond_chf, position=0., settlement_ccy=self.chf,
             principal=0., carry=20., overheads=0., acc_date_delta=8, cash_date_delta=8)
+
         # self.t_instrpl_bond_acc2 = Transaction.objects.create(
         #     master_user=m,
         #     transaction_class=self.instrument_pl,
@@ -402,6 +408,7 @@ class BaseReportTestCase(TestCase):
             t_class=self.instrument_pl, instr=self.instr1_bond_chf, position=0., settlement_ccy=self.chf,
             principal=0., carry=20., overheads=0., acc_date_delta=8, cash_date_delta=8,
             acc_pos=self.acc2, acc_cash=self.acc2, acc_interim=self.prov_acc2)
+
         # self.t_instrpl_bond_p2 = Transaction.objects.create(
         #     master_user=m,
         #     transaction_class=self.instrument_pl,
@@ -512,7 +519,7 @@ class BaseReportTestCase(TestCase):
         ]
 
     def d(self, days=None):
-        if days is None:
+        if days is None or days == 0:
             return self.base_date
         else:
             return self.base_date + timedelta(days=days)
