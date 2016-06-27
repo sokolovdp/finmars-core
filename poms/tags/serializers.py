@@ -29,7 +29,7 @@ class TagSerializer(ModelWithObjectPermissionSerializer, ModelWithUserCodeSerial
     class Meta:
         model = Tag
         fields = [
-            'url', 'id', 'master_user', 'user_code', 'name', 'short_name', 'notes', 'content_types',
+            'url', 'id', 'master_user', 'user_code', 'name', 'short_name', 'public_name', 'notes', 'content_types',
             'account_types', 'accounts', 'currencies', 'instrument_types', 'instruments',
             'counterparties', 'responsibles', 'strategies1', 'strategies2', 'strategies3',
             'portfolios', 'transaction_types'

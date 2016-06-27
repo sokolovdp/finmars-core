@@ -4,8 +4,18 @@ from django.db.models import Q
 from django.utils.encoding import force_text
 from rest_framework.filters import BaseFilterBackend
 
+from poms.accounts.models import Account
+from poms.accounts.models import AccountType
+from poms.counterparties.models import Counterparty
+from poms.counterparties.models import Responsible
+from poms.currencies.models import Currency
+from poms.instruments.models import Instrument
+from poms.instruments.models import InstrumentType
 from poms.obj_perms.utils import obj_perms_filter_objects_for_view
+from poms.portfolios.models import Portfolio
+from poms.strategies.models import Strategy1, Strategy2, Strategy3
 from poms.tags.models import Tag
+from poms.transactions.models import TransactionType
 
 
 class TagFakeFilter(django_filters.Filter):
@@ -18,17 +28,6 @@ class TagFakeFilter(django_filters.Filter):
 
 class TagContentTypeFilter(BaseFilterBackend):
     def filter_queryset(self, request, queryset, view):
-        from poms.accounts.models import AccountType
-        from poms.accounts.models import Account
-        from poms.currencies.models import Currency
-        from poms.instruments.models import InstrumentType
-        from poms.instruments.models import Instrument
-        from poms.counterparties.models import Counterparty
-        from poms.counterparties.models import Responsible
-        from poms.strategies.models import Strategy1, Strategy2, Strategy3
-        from poms.portfolios.models import Portfolio
-        from poms.transactions.models import TransactionType
-
         models = [AccountType, Account, Currency, InstrumentType, Instrument, Counterparty, Responsible,
                   Strategy1, Strategy2, Strategy3, Portfolio, TransactionType]
         ctypes = [ContentType.objects.get_for_model(model).pk for model in models]

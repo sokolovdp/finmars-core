@@ -1,18 +1,11 @@
 from __future__ import unicode_literals
 
 from django.contrib import admin
-from django.contrib.contenttypes.models import ContentType
 
-from poms.accounts.models import AccountType, Account
 from poms.audit.admin import HistoricalAdmin
-from poms.counterparties.models import Counterparty, Responsible
-from poms.currencies.models import Currency
-from poms.instruments.models import InstrumentType, Instrument
 from poms.obj_perms.admin import GroupObjectPermissionAdmin, UserObjectPermissionAdmin
-from poms.portfolios.models import Portfolio
-from poms.strategies.models import Strategy1, Strategy2, Strategy3
+from poms.tags.filters import TagContentTypeFilter
 from poms.tags.models import Tag, TagGroupObjectPermission, TagUserObjectPermission
-from poms.transactions.models import TransactionType
 
 
 class TagAdmin(HistoricalAdmin):
@@ -26,12 +19,7 @@ class TagAdmin(HistoricalAdmin):
     def formfield_for_manytomany(self, db_field, request=None, **kwargs):
         if db_field.name == 'content_types':
             qs = kwargs.get('queryset', db_field.remote_field.model.objects)
-            models = [AccountType, Account, Currency, InstrumentType, Instrument, Counterparty, Responsible,
-                      Portfolio, TransactionType, Strategy1, Strategy2, Strategy3, ]
-            ctypes = [ContentType.objects.get_for_model(model).pk for model in models]
-            kwargs['queryset'] = qs.filter(pk__in=ctypes)
-            # kwargs['queryset'] = qs.annotate(c=Concat('app_label', Value('.'), 'model')). \
-            #     filter(c__in=[])
+            kwargs['queryset'] = TagContentTypeFilter().filter_queryset(request, qs, None)
         return super(TagAdmin, self).formfield_for_manytomany(db_field, request=request, **kwargs)
 
 
