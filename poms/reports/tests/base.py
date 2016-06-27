@@ -8,9 +8,8 @@ from django.test import TestCase
 
 from poms.accounts.models import Account, AccountType
 from poms.currencies.models import Currency, CurrencyHistory
-from poms.instruments.models import Instrument, PriceHistory
+from poms.instruments.models import Instrument, PriceHistory, InstrumentType, InstrumentClass
 from poms.portfolios.models import Portfolio
-from poms.strategies.models import Strategy
 from poms.transactions.models import Transaction, TransactionClass
 from poms.users.models import MasterUser
 
@@ -57,14 +56,14 @@ class BaseReportTestCase(TestCase):
         self.transfer = TransactionClass.objects.get(id=TransactionClass.TRANSFER)
         self.fx_transfer = TransactionClass.objects.get(id=TransactionClass.FX_TRANSFER)
 
-        self.ccy_ = Currency.objects.create(user_code='-', master_user=None)
-        self.usd = Currency.objects.create(user_code='USD', name='USD', master_user=None)
-        self.eur = Currency.objects.create(user_code='EUR', name='EUR', master_user=None)
-        self.chf = Currency.objects.create(user_code='CHF', name='CHF', master_user=None)
-        self.cad = Currency.objects.create(user_code='CAD', name='CAD', master_user=None)
-        self.mex = Currency.objects.create(user_code='MEX', name='MEX', master_user=None)
-        self.rub = Currency.objects.create(user_code='RUB', name='RUB', master_user=None)
-        self.gbp = Currency.objects.create(user_code='GBP', name='GBP', master_user=None)
+        self.ccy_ = Currency.objects.create(user_code='-', master_user=self.m)
+        self.usd = Currency.objects.create(user_code='USD', name='USD', master_user=self.m)
+        self.eur = Currency.objects.create(user_code='EUR', name='EUR', master_user=self.m)
+        self.chf = Currency.objects.create(user_code='CHF', name='CHF', master_user=self.m)
+        self.cad = Currency.objects.create(user_code='CAD', name='CAD', master_user=self.m)
+        self.mex = Currency.objects.create(user_code='MEX', name='MEX', master_user=self.m)
+        self.rub = Currency.objects.create(user_code='RUB', name='RUB', master_user=self.m)
+        self.gbp = Currency.objects.create(user_code='GBP', name='GBP', master_user=self.m)
 
         self.base_date = date(2016, 3, 1)
 
@@ -84,11 +83,17 @@ class BaseReportTestCase(TestCase):
         CurrencyHistory.objects.create(currency=self.rub, date=cd2, fx_rate=1. / 100.)
         CurrencyHistory.objects.create(currency=self.gbp, date=cd2, fx_rate=1.5)
 
+        self.instr_t = InstrumentType.objects.create(
+            name='-', master_user=self.m,
+            instrument_class=InstrumentClass.objects.get(id=InstrumentClass.GENERAL))
+
         self.instr1_bond_chf = Instrument.objects.create(
             master_user=m, name="instr1-bond, CHF",
+            instrument_type=self.instr_t,
             pricing_currency=self.chf, price_multiplier=0.01, accrued_currency=self.chf, accrued_multiplier=0.01)
         self.instr2_stock = Instrument.objects.create(
             master_user=m, name="instr2-stock",
+            instrument_type=self.instr_t,
             pricing_currency=self.gbp, price_multiplier=1., accrued_currency=self.rub, accrued_multiplier=1.)
 
         phd1 = self.d()
@@ -106,12 +111,12 @@ class BaseReportTestCase(TestCase):
         self.p1 = Portfolio.objects.create(master_user=m, name='p1')
         self.p2 = Portfolio.objects.create(master_user=m, name='p2')
 
-        self.s1 = Strategy.objects.create(master_user=m, name='s1')
-        self.s11 = Strategy.objects.create(master_user=m, name='s11', parent=self.s1)
-        self.s12 = Strategy.objects.create(master_user=m, name='s12', parent=self.s1)
-        self.s2 = Strategy.objects.create(master_user=m, name='s2')
-        self.s21 = Strategy.objects.create(master_user=m, name='s21', parent=self.s2)
-        self.s22 = Strategy.objects.create(master_user=m, name='s22', parent=self.s2)
+        # self.s1 = Strategy.objects.create(master_user=m, name='s1')
+        # self.s11 = Strategy.objects.create(master_user=m, name='s11', parent=self.s1)
+        # self.s12 = Strategy.objects.create(master_user=m, name='s12', parent=self.s1)
+        # self.s2 = Strategy.objects.create(master_user=m, name='s2')
+        # self.s21 = Strategy.objects.create(master_user=m, name='s21', parent=self.s2)
+        # self.s22 = Strategy.objects.create(master_user=m, name='s22', parent=self.s2)
 
         # self.t_in = Transaction.objects.create(
         #     master_user=m,
