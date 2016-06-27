@@ -27,8 +27,8 @@ def n(v):
 class BaseReportTestCase(TestCase):
     def setUp(self):
         if pd:
-            pd.set_option('display.width', 1000)
-            pd.set_option('display.max_rows', 1000)
+            pd.set_option('display.width', 2000)
+            pd.set_option('display.max_rows', 2000)
 
         u = User.objects.create_user('a1')
         self.m = m = MasterUser.objects.create()
@@ -89,17 +89,29 @@ class BaseReportTestCase(TestCase):
             instrument_class=InstrumentClass.objects.get(id=InstrumentClass.GENERAL))
 
         self.instr1_bond_chf = Instrument.objects.create(
-            master_user=m, name="instr1-bond, CHF",
-            instrument_type=self.instr_t,
-            pricing_currency=self.chf, price_multiplier=0.01, accrued_currency=self.chf, accrued_multiplier=0.01)
+            master_user=m, name="instr1-bond, CHF", instrument_type=self.instr_t,
+            pricing_currency=self.chf, price_multiplier=0.01,
+            accrued_currency=self.chf, accrued_multiplier=0.01)
         self.instr2_stock = Instrument.objects.create(
             master_user=m, name="instr2-stock",
             instrument_type=self.instr_t,
-            pricing_currency=self.gbp, price_multiplier=1., accrued_currency=self.rub, accrued_multiplier=1.)
+            pricing_currency=self.gbp, price_multiplier=1.,
+            accrued_currency=self.rub, accrued_multiplier=1.)
+
+        self.instr1_bond_sys = Instrument.objects.create(
+            master_user=m, name="instr1-bond, USD", instrument_type=self.instr_t,
+            pricing_currency=self.usd, price_multiplier=0.01,
+            accrued_currency=self.usd, accrued_multiplier=0.01)
+        self.instr2_stock_sys = Instrument.objects.create(
+            master_user=m, name="instr2-stock, USD", instrument_type=self.instr_t,
+            pricing_currency=self.usd, price_multiplier=1.,
+            accrued_currency=self.usd, accrued_multiplier=1.)
 
         phd1 = self.d()
         PriceHistory.objects.create(instrument=self.instr1_bond_chf, date=phd1, principal_price=20., accrued_price=0.5)
         PriceHistory.objects.create(instrument=self.instr2_stock, date=phd1, principal_price=1.5, accrued_price=2)
+        PriceHistory.objects.create(instrument=self.instr1_bond_sys, date=phd1, principal_price=20., accrued_price=0.5)
+        PriceHistory.objects.create(instrument=self.instr2_stock_sys, date=phd1, principal_price=1.5, accrued_price=2)
 
         self.acc_t = AccountType.objects.create(master_user=m, name='Def', show_transaction_details=False)
         self.prov_acc_t = AccountType.objects.create(master_user=m, name='Prov', show_transaction_details=False)

@@ -11,17 +11,17 @@ class BalanceTestCase(BaseReportTestCase):
         self._print_transactions(transactions,
                                  'pk',
                                  'transaction_class',
+                                 'accounting_date', 'cash_date',
                                  'portfolio',
                                  'instrument', 'transaction_currency', 'position_size_with_sign',
                                  'settlement_currency', 'cash_consideration',
                                  'account_position', 'account_cash', 'account_interim',
-                                 'accounting_date', 'cash_date',
-                                 'reference_fx_rate',
                                  'strategy1_position', 'strategy1_cash',
                                  'strategy2_position', 'strategy2_cash',
                                  'strategy3_position', 'strategy3_cash',
                                  'avco_multiplier',
-                                 'fifo_multiplier')
+                                 'fifo_multiplier',
+                                 'reference_fx_rate')
 
     def _print_balance(self, instance):
         columns = ['pk', 'portfolio', 'account', 'strategy1', 'strategy2', 'strategy3', 'instrument', 'currency',
@@ -990,24 +990,26 @@ class BalanceTestCase(BaseReportTestCase):
 
     def test_strategies_1(self):
         t1 = self.t(
-            t_class=self.buy, instr=self.instr1_bond_chf, position=20., settlement_ccy=self.usd,
+            t_class=self.buy, instr=self.instr1_bond_sys, position=20., settlement_ccy=self.usd,
             principal=-100., carry=0., overheads=0., acc_date_delta=3, cash_date_delta=3,
-            s1_position=self.s1_11, s1_cash=self.s1_22, s2_position=self.s2_11, s2_cash=self.s2_22,
+            s1_position=self.s1_11, s1_cash=self.s1_22,
+            s2_position=self.s2_11, s2_cash=self.s2_22,
             s3_position=self.s3_11, s3_cash=self.s3_22)
 
         t2 = self.t(
-            t_class=self.sell, instr=self.instr1_bond_chf, position=-10., settlement_ccy=self.usd,
+            t_class=self.sell, instr=self.instr1_bond_sys, position=-10., settlement_ccy=self.usd,
             principal=70., carry=0., overheads=0., acc_date_delta=4, cash_date_delta=4,
-            s1_position=self.s1_11, s1_cash=self.s1_22, s2_position=self.s2_11, s2_cash=self.s2_22,
+            s1_position=self.s1_11, s1_cash=self.s1_22,
+            s2_position=self.s2_11, s2_cash=self.s2_22,
             s3_position=self.s3_11, s3_cash=self.s3_22)
 
         queryset = Transaction.objects.filter(pk__in=[
             t1.pk, t2.pk
         ])
         instance = BalanceReport(master_user=self.m,
-                                 begin_date=None, end_date=self.d(5),
-                                 use_portfolio=False, use_account=True,
-                                 use_strategy=True, multiplier_class=MULTIPLIER_AVCO,
+                                 begin_date=None, end_date=self.d(6),
+                                 use_portfolio=False, use_account=True, use_strategy=True,
+                                 multiplier_class=MULTIPLIER_AVCO,
                                  show_transaction_details=False)
         b = BalanceReport2Builder(instance=instance, queryset=queryset)
         b.build()
@@ -1017,17 +1019,17 @@ class BalanceTestCase(BaseReportTestCase):
         self._assertEqualBalance(instance, BalanceReport(
             items=[
                 BalanceReportItem(
-                    pk=b.make_key(portfolio=None, account=self.acc1, instrument=self.instr1_bond_chf, currency=None,
+                    pk=b.make_key(portfolio=None, account=self.acc1, instrument=self.instr1_bond_sys, currency=None,
                                   strategy1=self.s1_11, strategy2=self.s2_11, strategy3=self.s3_11),
-                    portfolio=None, account=self.acc1, instrument=self.instr1_bond_chf, currency=None,
+                    portfolio=None, account=self.acc1, instrument=self.instr1_bond_sys, currency=None,
                     strategy1=self.s1_11, strategy2=self.s2_11, strategy3=self.s3_11,
-                    balance_position=10., market_value_system_ccy=1.845),
+                    balance_position=10., market_value_system_ccy=2.05),
                 BalanceReportItem(
-                    pk=b.make_key(portfolio=None, account=self.acc1, instrument=self.instr1_bond_chf, currency=None,
-                                  strategy1=self.s1_11, strategy2=self.s2_11, strategy3=self.s3_11),
-                    portfolio=None, account=self.acc1, instrument=self.instr1_bond_chf, currency=None,
-                    strategy1=self.s1_11, strategy2=self.s2_11, strategy3=self.s3_11,
-                    balance_position=0., market_value_system_ccy=0.),
+                    pk=b.make_key(portfolio=None, account=self.acc1, instrument=None, currency=self.usd,
+                                  strategy1=self.s1_22, strategy2=self.s2_22, strategy3=self.s3_22),
+                    portfolio=None, account=self.acc1, instrument=None, currency=self.usd,
+                    strategy1=self.s1_22, strategy2=self.s2_22, strategy3=self.s3_22,
+                    balance_position=-30., market_value_system_ccy=0.),
             ],
             summary=BalanceReportSummary(invested_value_system_ccy=0,
                                          current_value_system_ccy=-28.155,
