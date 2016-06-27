@@ -38,11 +38,9 @@ def load_tests(loader, standard_tests, pattern):
         BaseAttributeTypeApiTestCase,
     )
     for test_case in standard_tests:
-        print('        test_case=%s' % (test_case,))
         if type(test_case._tests[0]) in abstract_tests:
             continue
         result.append(test_case)
-    print('    result=%s' % (result,))
     return loader.suiteClass(result)
 
 
@@ -356,6 +354,21 @@ class BaseApiTestCase(APITestCase):
         self.client.logout()
         return response
 
+    def _list_order(self, user, field, count):
+        response = self._list(user, data={'ordering': '%s' % field})
+        self.assertEqual(response.status_code, status.HTTP_200_OK, 'Failed ordering: field=%s' % field)
+        self.assertEqual(response.data['count'], count, 'Failed ordering: field=%s' % field)
+
+        response = self._list(user, data={'ordering': '-%s' % field})
+        self.assertEqual(response.status_code, status.HTTP_200_OK, 'Failed ordering: field=-%s' % field)
+        self.assertEqual(response.data['count'], count, 'Failed ordering: field=-%s' % field)
+
+    def _list_filter(self, user, field, value, count):
+        response = self._list(user, data={field: value})
+        self.assertEqual(response.status_code, status.HTTP_200_OK, 'Failed filtering: field=-%s' % field)
+        self.assertEqual(response.data['count'], count, 'Failed filtering: field=-%s' % field)
+        return response
+
     def _get(self, user, id):
         self.client.login(username=user, password=user)
         response = self.client.get(self._url_object % id, format='json')
@@ -450,45 +463,17 @@ class BaseNamedModelTestCase(BaseApiTestCase):
         self._create_obj('obj2')
         self._create_obj('obj3')
 
-        response = self._list('a', data={'ordering': 'user_code'})
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(response.data['count'], 3)
-
-        response = self._list('a', data={'ordering': '-user_code'})
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(response.data['count'], 3)
-
-        response = self._list('a', data={'ordering': 'name'})
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(response.data['count'], 3)
-
-        response = self._list('a', data={'ordering': '-name'})
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(response.data['count'], 3)
-
-        response = self._list('a', data={'ordering': 'short_name'})
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(response.data['count'], 3)
-
-        response = self._list('a', data={'ordering': '-short_name'})
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(response.data['count'], 3)
+        self._list_order('a', 'user_code', 3)
+        self._list_order('a', 'name', 3)
+        self._list_order('a', 'short_name', 3)
 
     def test_list_filtering(self):
         self._create_obj('obj1')
         self._create_obj('obj2')
 
-        response = self._list('a', data={'user_code': 'obj1'})
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(response.data['count'], 1)
-
-        response = self._list('a', data={'name': 'obj1'})
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(response.data['count'], 1)
-
-        response = self._list('a', data={'short_name': 'obj1'})
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(response.data['count'], 1)
+        self._list_filter('a', 'user_code', 'obj1', 1)
+        self._list_filter('a', 'name', 'obj1', 1)
+        self._list_filter('a', 'short_name', 'obj1', 1)
 
 
 class BaseApiWithPermissionTestCase(BaseApiTestCase):
