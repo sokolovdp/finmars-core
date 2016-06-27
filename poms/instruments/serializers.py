@@ -77,7 +77,8 @@ class InstrumentTypeSerializer(ModelWithObjectPermissionSerializer, ModelWithUse
 
     class Meta:
         model = InstrumentType
-        fields = ['url', 'id', 'master_user', 'user_code', 'name', 'short_name', 'notes', 'instrument_class', 'tags']
+        fields = ['url', 'id', 'master_user', 'user_code', 'name', 'short_name', 'public_name', 'notes',
+                  'instrument_class', 'tags']
 
 
 class InstrumentAttributeTypeSerializer(AttributeTypeSerializerBase):
@@ -157,8 +158,8 @@ class InstrumentSerializer(ModelWithAttributesSerializer, ModelWithObjectPermiss
 
     class Meta:
         model = Instrument
-        fields = ['url', 'id', 'master_user', 'instrument_type', 'user_code', 'name', 'short_name', 'notes',
-                  'is_active',
+        fields = ['url', 'id', 'master_user', 'instrument_type', 'user_code', 'name', 'short_name', 'public_name',
+                  'notes', 'is_active',
                   'pricing_currency', 'price_multiplier', 'accrued_currency', 'accrued_multiplier',
                   'daily_pricing_model', 'payment_size_detail', 'default_price', 'default_accrued',
                   'user_text_1', 'user_text_2', 'user_text_3',

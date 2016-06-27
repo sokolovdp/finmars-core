@@ -14,14 +14,12 @@ from rest_framework import status
 from rest_framework.test import APITestCase
 
 from poms.accounts.models import AccountType, Account, AccountAttributeType, AccountClassifier
-from poms.counterparties.models import Counterparty, Responsible, CounterpartyAttributeType, ResponsibleAttributeType, \
-    ResponsibleClassifier, CounterpartyClassifier
+from poms.counterparties.models import Counterparty, Responsible
 from poms.currencies.models import Currency
-from poms.instruments.models import InstrumentClass, InstrumentType, Instrument, InstrumentAttributeType, \
-    InstrumentClassifier
+from poms.instruments.models import InstrumentClass, InstrumentType, Instrument
 from poms.obj_attrs.models import AttributeTypeBase
 from poms.obj_perms.utils import assign_perms, get_all_perms, get_default_owner_permissions, get_perms_codename
-from poms.portfolios.models import Portfolio, PortfolioAttributeType, PortfolioClassifier
+from poms.portfolios.models import Portfolio
 from poms.strategies.models import Strategy1, Strategy2, Strategy3
 from poms.tags.models import Tag
 from poms.users.models import MasterUser, Member, Group
@@ -261,11 +259,11 @@ class BaseApiTestCase(APITestCase):
         return InstrumentType.objects.get(name=name, master_user__name=master_user)
 
     def create_instrument(self, name, master_user, instrument_type=None, pricing_currency=None, accrued_currency=None):
-        instrument_type = self.get_instrument_type(name, master_user)
+        instrument_type = self.get_instrument_type(instrument_type, master_user)
         pricing_currency = self.get_currency(pricing_currency, master_user)
         accrued_currency = self.get_currency(accrued_currency, master_user)
         master_user = self.get_master_user(master_user)
-        instrument = Instrument.objects.create(master_user=master_user, type=instrument_type, name=name,
+        instrument = Instrument.objects.create(master_user=master_user, instrument_type=instrument_type, name=name,
                                                pricing_currency=pricing_currency, accrued_currency=accrued_currency)
         return instrument
 
@@ -450,8 +448,6 @@ class BaseApiTestCase(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
     def test_delete(self):
-        only_change_perms = get_perms_codename(self.model, ['change'])
-
         obj = self._create_obj('obj_a')
         response = self._delete('a', obj.id)
         self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
@@ -836,6 +832,7 @@ class BaseApiWithTagsTestCase(BaseApiTestCase):
 
         data = self._make_new_data(tags={self.tag1.id})
         response = self._add('a', data)
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
         data = response.data.copy()
         data['tags'] = {self.tag4_ctype2.id}
         response = self._update('a', data['id'], data)
