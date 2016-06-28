@@ -187,6 +187,7 @@ class ClassifierSerializerBase(ModelWithUserCodeSerializer, serializers.ModelSer
             # 'user_code',
             'name',
             'short_name',
+            'public_name',
             'notes',
             'level',
             'children'

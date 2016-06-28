@@ -20,24 +20,17 @@ from poms.instruments.models import InstrumentClass, InstrumentType, Instrument
 from poms.obj_attrs.models import AttributeTypeBase
 from poms.obj_perms.utils import assign_perms, get_all_perms, get_default_owner_permissions, get_perms_codename
 from poms.portfolios.models import Portfolio
-from poms.strategies.models import Strategy1, Strategy2, Strategy3
 from poms.tags.models import Tag
 from poms.transactions.models import TransactionTypeGroup, TransactionType
 from poms.users.models import MasterUser, Member, Group
 
+ABSTRACT_TESTS = list()
+
 
 def load_tests(loader, standard_tests, pattern):
     result = []
-    abstract_tests = (
-        BaseApiTestCase,
-        BaseNamedModelTestCase,
-        BaseApiWithPermissionTestCase,
-        BaseApiWithAttributesTestCase,
-        BaseApiWithTagsTestCase,
-        BaseAttributeTypeApiTestCase,
-    )
     for test_case in standard_tests:
-        if type(test_case._tests[0]) in abstract_tests:
+        if type(test_case._tests[0]) in ABSTRACT_TESTS:
             continue
         result.append(test_case)
     return loader.suiteClass(result)
@@ -256,23 +249,23 @@ class BaseApiTestCase(APITestCase):
     def get_strategy(self, model, name, master_user):
         return model.objects.get(name=name, master_user__name=master_user)
 
-    def create_strategy1(self, name, master_user, parent=None):
-        return self.create_strategy(Strategy1, name, master_user, parent=parent)
-
-    def get_strategy1(self, name, master_user):
-        return self.get_strategy(Strategy1, name, master_user)
-
-    def create_strategy2(self, name, master_user, parent=None):
-        return self.create_strategy(Strategy2, name, master_user, parent=parent)
-
-    def get_strategy2(self, name, master_user):
-        return self.get_strategy(Strategy2, name, master_user)
-
-    def create_strategy3(self, name, master_user, parent=None):
-        return self.create_strategy(Strategy3, name, master_user, parent=parent)
-
-    def get_strategy3(self, name, master_user):
-        return self.get_strategy(Strategy3, name, master_user)
+    # def create_strategy1(self, name, master_user, parent=None):
+    #     return self.create_strategy(Strategy1, name, master_user, parent=parent)
+    #
+    # def get_strategy1(self, name, master_user):
+    #     return self.get_strategy(Strategy1, name, master_user)
+    #
+    # def create_strategy2(self, name, master_user, parent=None):
+    #     return self.create_strategy(Strategy2, name, master_user, parent=parent)
+    #
+    # def get_strategy2(self, name, master_user):
+    #     return self.get_strategy(Strategy2, name, master_user)
+    #
+    # def create_strategy3(self, name, master_user, parent=None):
+    #     return self.create_strategy(Strategy3, name, master_user, parent=parent)
+    #
+    # def get_strategy3(self, name, master_user):
+    #     return self.get_strategy(Strategy3, name, master_user)
 
     def create_tag(self, name, master_user, content_types=None):
         master_user = self.get_master_user(master_user)
@@ -1170,3 +1163,11 @@ class BaseApiWithAttributesTestCase(BaseApiTestCase):
         data3 = self.add_attr_value(data3, 'num', 123)
         response = self._update('a1', data3['id'], data3)
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST, msg=six.text_type(response.data))
+
+
+ABSTRACT_TESTS.append(BaseApiTestCase)
+ABSTRACT_TESTS.append(BaseNamedModelTestCase)
+ABSTRACT_TESTS.append(BaseApiWithPermissionTestCase)
+ABSTRACT_TESTS.append(BaseApiWithAttributesTestCase)
+ABSTRACT_TESTS.append(BaseApiWithTagsTestCase)
+ABSTRACT_TESTS.append(BaseAttributeTypeApiTestCase)

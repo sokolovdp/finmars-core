@@ -6,13 +6,15 @@ from poms.common.serializers import ClassifierSerializerBase, ClassifierNodeSeri
 from poms.obj_perms.serializers import ModelWithObjectPermissionSerializer
 from poms.strategies.models import Strategy1, Strategy2, Strategy3
 from poms.tags.fields import TagField
+from poms.users.fields import MasterUserField
 
 
 class StrategyBaseSerializer(ClassifierSerializerBase, ModelWithObjectPermissionSerializer):
+    master_user = MasterUserField()
     tags = TagField(many=True, required=False, allow_null=True)
 
     class Meta(ClassifierSerializerBase.Meta):
-        fields = ['url', ] + ClassifierSerializerBase.Meta.fields + ['tags', ]
+        fields = ['url', 'master_user', ] + ClassifierSerializerBase.Meta.fields + ['tags', ]
 
     def to_representation(self, instance):
         ret = super(StrategyBaseSerializer, self).to_representation(instance)
@@ -25,7 +27,7 @@ class StrategyBaseSerializer(ClassifierSerializerBase, ModelWithObjectPermission
 
     def save_object_permission(self, instance, *args, **kwargs):
         if instance.is_root_node():
-            super(StrategyBaseSerializer, self).save_object_permission(*args, **kwargs)
+            super(StrategyBaseSerializer, self).save_object_permission(instance, *args, **kwargs)
 
 
 class StrategyBaseNodeSerializer(ClassifierNodeSerializerBase, ModelWithObjectPermissionSerializer):
