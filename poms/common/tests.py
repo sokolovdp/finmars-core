@@ -14,7 +14,7 @@ from rest_framework import status
 from rest_framework.test import APITestCase
 
 from poms.accounts.models import AccountType, Account, AccountAttributeType, AccountClassifier
-from poms.chats.models import ThreadStatus, Thread
+from poms.chats.models import ThreadStatus, Thread, Message, DirectMessage
 from poms.counterparties.models import Counterparty, Responsible
 from poms.currencies.models import Currency
 from poms.instruments.models import InstrumentClass, InstrumentType, Instrument
@@ -304,14 +304,33 @@ class BaseApiTestCase(APITestCase):
     def get_thread_status(self, name, master_user):
         return ThreadStatus.objects.get(name=name, master_user__name=master_user)
 
-    def create_thread(self, name, master_user, status=None):
+    def create_thread(self, subject, master_user, status=None):
         master_user = self.get_master_user(master_user)
         status = self.get_thread_status(status, master_user)
-        thread_status = Thread.objects.create(master_user=master_user, subject=name, status=status)
+        thread_status = Thread.objects.create(master_user=master_user, subject=subject, status=status)
         return thread_status
 
-    def get_thread(self, name, master_user):
-        return Thread.objects.get(subject=name, master_user__name=master_user)
+    def get_thread(self, subject, master_user):
+        return Thread.objects.get(subject=subject, master_user__name=master_user)
+
+    def create_message(self, text, sender, master_user, thread):
+        thread = self.get_thread(thread, master_user)
+        sender = self.get_member(sender, master_user)
+        message = Message.objects.create(text=text, sender=sender, thread=thread)
+        return message
+
+    def get_message(self, text, master_user):
+        return Message.objects.get(text=text, thread__master_user__name=master_user)
+
+    def create_direct_message(self, text, master_user, sender, recipient):
+        sender = self.get_member(sender, master_user)
+        recipient = self.get_member(recipient, master_user)
+        message = DirectMessage.objects.create(text=text, sender=sender, recipient=recipient)
+        return message
+
+    def get_direct_message(self, text, master_user):
+        return DirectMessage.objects.get(text=text, sender__master_user__name=master_user,
+                                         recipient__master_user__name=master_user)
 
     def assign_perms(self, obj, master_user, users=None, groups=None, perms=None):
         if users:
