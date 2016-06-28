@@ -1,5 +1,7 @@
 from __future__ import unicode_literals
 
+from rest_framework import status
+
 from poms.chats.models import ThreadStatus, Thread
 from poms.common.tests import BaseApiTestCase, BaseApiWithPermissionTestCase
 
@@ -23,6 +25,30 @@ class ThreadStatusApiTestCase(BaseApiTestCase):
 
     def _get_obj(self, name='thread_status'):
         return self.get_thread_status(name, 'a')
+
+    def test_permissions(self):
+        obj = self._create_obj('obj')
+
+        response = self._get('a', obj.id)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        data = response.data.copy()
+        response = self._get('a0', obj.id)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        response = self._get('a1', obj.id)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        response = self._get('a2', obj.id)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        response = self._update('a', obj.id, data)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        response = self._update('a0', obj.id, data)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        # only superuser can change
+        response = self._update('a1', obj.id, data)
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+        response = self._update('a2', obj.id, data)
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
 
 
 class ThreadApiTestCase(BaseApiWithPermissionTestCase):
@@ -51,5 +77,13 @@ class ThreadApiTestCase(BaseApiWithPermissionTestCase):
         return data
 
     def test_permissions_get_not_visible(self):
-        # feature not supported
-        pass
+        obj = self._create_obj('obj')
+
+        response = self._get('a', obj.id)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        response = self._get('a0', obj.id)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        response = self._get('a1', obj.id)
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+        response = self._get('a2', obj.id)
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
