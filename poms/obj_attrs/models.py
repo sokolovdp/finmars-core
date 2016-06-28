@@ -97,6 +97,7 @@ from poms.users.models import MasterUser
 #         return None
 
 
+@python_2_unicode_compatible
 class AttributeTypeBase(NamedModel):
     STRING = 10
     NUMBER = 20
@@ -133,6 +134,9 @@ class AttributeTypeBase(NamedModel):
         elif self.value_type == self.CLASSIFIER:
             return 'classifier'
         raise ValueError('Unknown value_type: %s' % self.value_type)
+
+    def __str__(self):
+        return '%s (%s)' % (self.name, self.get_value_type_display())
 
 
 @python_2_unicode_compatible
