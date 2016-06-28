@@ -997,6 +997,9 @@ class TransactionAttributeType(AttributeTypeBase):
     class Meta(AttributeTypeBase.Meta):
         verbose_name = _('transaction attribute type')
         verbose_name_plural = _('transaction attribute types')
+        permissions = [
+            ('view_transactionattributetype', 'Can view transaction attribute type')
+        ]
 
 
 class TransactionAttributeTypeOption(AttributeTypeOptionBase):
@@ -1145,7 +1148,7 @@ history.register(TransactionTypeInput)
 history.register(TransactionTypeActionInstrument)
 history.register(TransactionTypeActionTransaction)
 history.register(TransactionAttributeType,
-                 follow=['classifiers', 'options', 'user_object_permissions', 'group_object_permissions'])
+                 follow=['options', 'user_object_permissions', 'group_object_permissions'])
 history.register(TransactionAttributeTypeUserObjectPermission)
 history.register(TransactionAttributeTypeGroupObjectPermission)
 history.register(TransactionAttributeTypeOption)

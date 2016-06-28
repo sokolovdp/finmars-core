@@ -42,7 +42,7 @@ class TransactionTypeGroupSerializer(ModelWithObjectPermissionSerializer, ModelW
 
     class Meta:
         model = TransactionTypeGroup
-        fields = ['url', 'id', 'master_user', 'user_code', 'name', 'short_name', 'notes']
+        fields = ['url', 'id', 'master_user', 'user_code', 'name', 'short_name', 'public_name', 'notes']
 
 
 class TransactionInputField(serializers.CharField):
@@ -227,8 +227,8 @@ class TransactionTypeSerializer(ModelWithObjectPermissionSerializer, ModelWithUs
 
     class Meta:
         model = TransactionType
-        fields = ['url', 'id', 'master_user', 'group', 'user_code', 'name', 'short_name', 'notes', 'display_expr',
-                  'instrument_types', 'portfolios', 'tags', 'inputs', 'actions']
+        fields = ['url', 'id', 'master_user', 'group', 'user_code', 'name', 'short_name', 'public_name', 'notes',
+                  'display_expr', 'instrument_types', 'portfolios', 'tags', 'inputs', 'actions']
 
     def validate(self, attrs):
         # TODO: validate *_input...

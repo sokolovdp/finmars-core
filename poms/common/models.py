@@ -18,18 +18,18 @@ class NamedModel(models.Model):
         max_length=255,
         verbose_name=_('name')
     )
+    short_name = models.CharField(
+        max_length=50,
+        null=True,
+        blank=True,
+        verbose_name=_('short name')
+    )
     public_name = models.CharField(
         max_length=255,
         verbose_name=_('public name'),
         null=True,
         blank=True,
         help_text=_('used if user does not have permissions to view object')
-    )
-    short_name = models.CharField(
-        max_length=50,
-        null=True,
-        blank=True,
-        verbose_name=_('short name')
     )
     notes = models.TextField(
         null=True,
