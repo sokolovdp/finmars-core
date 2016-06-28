@@ -14,6 +14,7 @@ from rest_framework import status
 from rest_framework.test import APITestCase
 
 from poms.accounts.models import AccountType, Account, AccountAttributeType, AccountClassifier
+from poms.chats.models import ThreadStatus, Thread
 from poms.counterparties.models import Counterparty, Responsible
 from poms.currencies.models import Currency
 from poms.instruments.models import InstrumentClass, InstrumentType, Instrument
@@ -294,6 +295,23 @@ class BaseApiTestCase(APITestCase):
 
     def get_transaction_type(self, name, master_user):
         return TransactionType.objects.get(name=name, master_user__name=master_user)
+
+    def create_thread_status(self, name, master_user, is_closed=False):
+        master_user = self.get_master_user(master_user)
+        thread_status = ThreadStatus.objects.create(master_user=master_user, name=name, is_closed=is_closed)
+        return thread_status
+
+    def get_thread_status(self, name, master_user):
+        return ThreadStatus.objects.get(name=name, master_user__name=master_user)
+
+    def create_thread(self, name, master_user, status=None):
+        master_user = self.get_master_user(master_user)
+        status = self.get_thread_status(status, master_user)
+        thread_status = Thread.objects.create(master_user=master_user, subject=name, status=status)
+        return thread_status
+
+    def get_thread(self, name, master_user):
+        return Thread.objects.get(subject=name, master_user__name=master_user)
 
     def assign_perms(self, obj, master_user, users=None, groups=None, perms=None):
         if users:
@@ -589,18 +607,6 @@ class BaseApiWithPermissionTestCase(BaseApiTestCase):
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.check_obj_perm(response.data, self.all_permissions, True)
 
-        # restricted access
-        response = self._get('a1', obj.id)
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(set(six.iterkeys(response.data)),
-                         {'url', 'id', 'public_name', 'display_name', 'granted_permissions'})
-
-        # restricted access
-        response = self._get('a2', obj.id)
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(set(six.iterkeys(response.data)),
-                         {'url', 'id', 'public_name', 'display_name', 'granted_permissions'})
-
         response = self._get('a', obj12.id)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.check_obj_perm(response.data, self.all_permissions, True)
@@ -612,6 +618,21 @@ class BaseApiWithPermissionTestCase(BaseApiTestCase):
         response = self._get('a2', obj12.id)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.check_obj_perm(response.data, self.default_owner_permissions, False)
+
+    def test_permissions_get_not_visible(self):
+        obj = self._create_obj('obj')
+        obj12 = self._create_obj('obj_a1')
+        self.assign_perms(obj12, 'a', users=['a1'], groups=['g2'], perms=self.default_owner_permissions)
+
+        response = self._get('a1', obj.id)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(set(six.iterkeys(response.data)),
+                         {'url', 'id', 'public_name', 'display_name', 'granted_permissions'})
+
+        response = self._get('a2', obj.id)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(set(six.iterkeys(response.data)),
+                         {'url', 'id', 'public_name', 'display_name', 'granted_permissions'})
 
     def test_permissions_add(self):
         data = self._make_new_data()
