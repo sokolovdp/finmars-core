@@ -119,11 +119,10 @@ class Message(TimeStampedModel):
     @property
     def short_text(self):
         return Truncator(self.text).chars(50)
-        # return self.text[:50] if self.text else None
 
     @property
     def timesince(self):
-        locale = Locale.parse(get_language(), sep='-')
+        locale = Locale.parse(get_language() or settings.LANGUAGE_CODE, sep='-')
         return format_timedelta(self.created - timezone.now(), add_direction=True, locale=locale)
 
 
@@ -174,7 +173,7 @@ class DirectMessage(TimeStampedModel):
 
     @property
     def timesince(self):
-        locale = Locale.parse(get_language(), sep='-')
+        locale = Locale.parse(get_language() or settings.LANGUAGE_CODE, sep='-')
         return format_timedelta(self.created - timezone.now(), add_direction=True, locale=locale)
 
 

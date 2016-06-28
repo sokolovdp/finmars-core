@@ -260,6 +260,11 @@ LOGGING = {
             'level': 'DEBUG',
             'handlers': ['console'],
         },
+        'werkzeug': {
+            'level': 'DEBUG',
+            'handlers': ['console'],
+            'propagate': True,
+        },
     }
 }
 

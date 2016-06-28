@@ -1145,6 +1145,7 @@ history.register(TransactionType, follow=['inputs', 'actions', 'user_object_perm
 history.register(TransactionTypeUserObjectPermission)
 history.register(TransactionTypeGroupObjectPermission)
 history.register(TransactionTypeInput)
+history.register(TransactionTypeAction)
 history.register(TransactionTypeActionInstrument)
 history.register(TransactionTypeActionTransaction)
 history.register(TransactionAttributeType,
