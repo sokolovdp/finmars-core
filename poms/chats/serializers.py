@@ -4,6 +4,7 @@ from rest_framework import serializers
 
 from poms.chats.fields import ThreadField, ThreadStatusField
 from poms.chats.models import Thread, Message, DirectMessage, ThreadStatus
+from poms.common.fields import DateTimeTzAwareField
 from poms.obj_perms.serializers import ModelWithObjectPermissionSerializer
 from poms.users.fields import MasterUserField, HiddenMemberField, MemberField
 
@@ -21,6 +22,8 @@ class ThreadSerializer(ModelWithObjectPermissionSerializer):
     url = serializers.HyperlinkedIdentityField(view_name='chatthread-detail')
     master_user = MasterUserField()
     status = ThreadStatusField()
+    created = DateTimeTzAwareField()
+    modified = DateTimeTzAwareField()
 
     class Meta:
         model = Thread
@@ -32,6 +35,8 @@ class MessageSerializer(serializers.ModelSerializer):
     url = serializers.HyperlinkedIdentityField(view_name='chatmessage-detail')
     thread = ThreadField()
     sender = HiddenMemberField()
+    created = DateTimeTzAwareField()
+    modified = DateTimeTzAwareField()
 
     class Meta:
         model = Message
@@ -41,10 +46,10 @@ class MessageSerializer(serializers.ModelSerializer):
 
 class DirectMessageSerializer(serializers.ModelSerializer):
     url = serializers.HyperlinkedIdentityField(view_name='chatdirectmessage-detail')
-    # sender = HiddenUserField()
-    # recipient = UserField()
     sender = HiddenMemberField()
     recipient = MemberField()
+    created = DateTimeTzAwareField()
+    modified = DateTimeTzAwareField()
 
     class Meta:
         model = DirectMessage

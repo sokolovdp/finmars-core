@@ -15,6 +15,8 @@ from __future__ import unicode_literals
 import os
 
 # Build paths inside the project like this: os.path.join(BASE_DIR, ...)
+from rest_framework import ISO_8601
+
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 # Quick-start development settings - unsuitable for production
@@ -304,6 +306,9 @@ REST_FRAMEWORK = {
     #     'anon': '10/second',
     #     'user': '50/second'
     # },
+
+    # 'DATETIME_FORMAT': '%Y-%m-%dT%H:%M:%S %Z',
+    # 'DATETIME_INPUT_FORMATS': (ISO_8601, '%c', '%Y-%m-%d %H:%M:%S %Z'),
 }
 
 if DEV:

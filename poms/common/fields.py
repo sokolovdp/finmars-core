@@ -1,6 +1,7 @@
 from __future__ import unicode_literals
 
-from rest_framework.fields import CharField
+from django.utils import timezone
+from rest_framework.fields import CharField, DateTimeField
 from rest_framework.relations import PrimaryKeyRelatedField, SlugRelatedField
 
 
@@ -53,3 +54,9 @@ class UserCodeField(CharField):
         kwargs['allow_null'] = True
         kwargs['allow_blank'] = True
         super(UserCodeField, self).__init__(**kwargs)
+
+
+class DateTimeTzAwareField(DateTimeField):
+    def to_representation(self, value):
+        value = timezone.localtime(value)
+        return super(DateTimeTzAwareField, self).to_representation(value)

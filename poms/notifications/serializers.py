@@ -5,11 +5,14 @@ import json
 from django.utils.encoding import force_text
 from rest_framework import serializers
 
+from poms.common.fields import DateTimeTzAwareField
 from poms.notifications.models import Notification
 
 
 class NotificationSerializer(serializers.ModelSerializer):
     url = serializers.HyperlinkedIdentityField(view_name='notification-detail')
+    create_date = DateTimeTzAwareField()
+    read_date = DateTimeTzAwareField()
     message = serializers.SerializerMethodField()
     actor = serializers.SerializerMethodField()
     actor_type = serializers.SerializerMethodField()
