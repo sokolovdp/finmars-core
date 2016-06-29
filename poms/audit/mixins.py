@@ -3,9 +3,11 @@ from __future__ import unicode_literals
 from django.utils.translation import ugettext as _
 from rest_framework import permissions
 from rest_framework.decorators import detail_route, list_route
+from rest_framework.generics import GenericAPIView
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
-from reversion import revisions as reversion
+import reversion
+from reversion.models import Version
 
 from poms.audit import history
 from poms.audit.models import VersionInfo
@@ -20,7 +22,7 @@ from poms.users.permissions import SuperUserOnly
 
 
 # TODO: request is to hard for DB, can't prefetch or any optimization
-class HistoricalMixin(object):
+class HistoricalMixin(GenericAPIView):
     ignore_duplicate_revisions = False
     history_latest_first = True
 
@@ -69,7 +71,8 @@ class HistoricalMixin(object):
         # master_user = get_master_user(request)
         master_user = request.user.master_user
         model = self.get_queryset().model
-        deleted_list = reversion.get_deleted(model).filter(revision__info__master_user=master_user)
+
+        deleted_list = Version.objects.get_deleted(model).filter(revision__info__master_user=master_user)
 
         self._version_id = request.query_params.get('version_id')
         if self._version_id:
@@ -85,7 +88,7 @@ class HistoricalMixin(object):
         # master_user = get_master_user(request)
         master_user = request.user.master_user
         model = self.get_queryset().model
-        version_list = reversion.get_for_object_reference(model, pk).filter(revision__info__master_user=master_user)
+        version_list = Version.objects.get_for_object_reference(model, pk).filter(revision__info__master_user=master_user)
 
         self._version_id = request.query_params.get('version_id')
         if self._version_id:

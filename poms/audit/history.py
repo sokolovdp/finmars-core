@@ -83,8 +83,8 @@ def object_deleted(obj):
 class ModelProxy(object):
     def __init__(self, version):
         self._version = version
-        self._object = version.object_version.object
-        self._m2m_data = version.object_version.m2m_data
+        self._object = version._object_version.object
+        self._m2m_data = version._object_version.m2m_data
         self._cache = {}
 
     def __getattr__(self, item):
@@ -115,7 +115,7 @@ class ModelProxy(object):
                 ct = ContentType.objects.get_for_model(f.related_model)
                 res = []
                 for related_obj in self._version.revision.version_set.filter(content_type=ct):
-                    val = related_obj.object_version.object
+                    val = related_obj._object_version.object
                     res.append(val)
                 self._cache[item] = res
                 return res if res else None
