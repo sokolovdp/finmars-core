@@ -36,10 +36,12 @@ class ThreadStatusViewSet(PomsViewSetBase):
 class ThreadFilterSet(FilterSet):
     subject = CharFilter()
     created = django_filters.DateFromToRangeFilter()
+    status = ModelMultipleChoiceFilter(model=ThreadStatus)
+    status__is_closed = django_filters.BooleanFilter()
 
     class Meta:
         model = Thread
-        fields = ['subject', 'created']
+        fields = ['subject', 'created', 'status', 'status__is_closed']
 
 
 class ThreadViewSet(PomsViewSetBase):
@@ -74,7 +76,10 @@ class MessageFilterSet(FilterSet):
 class MessageViewSet(PomsViewSetBase):
     queryset = Message.objects.all()
     serializer_class = MessageSerializer
-    permission_classes = [IsAuthenticated, MessagePermission]
+    permission_classes = [
+        IsAuthenticated,
+        MessagePermission
+    ]
     filter_backends = [
         MessagePermissionFilter,
         DjangoFilterBackend,
@@ -92,7 +97,7 @@ class DirectMessageFilterSet(FilterSet):
 
     class Meta:
         model = DirectMessage
-        fields = ['created']
+        fields = ['created', 'recipient', 'sender']
 
 
 class DirectMessageViewSet(PomsViewSetBase):

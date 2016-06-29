@@ -180,7 +180,7 @@ class DirectMessage(TimeStampedModel):
 # register_model(Thread)
 
 history.register(ThreadStatus)
-history.register(Thread)
+history.register(Thread, follow=['user_object_permissions', 'group_object_permissions'])
 history.register(ThreadUserObjectPermission)
 history.register(ThreadGroupObjectPermission)
 history.register(Message)
