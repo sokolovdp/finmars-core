@@ -56,7 +56,6 @@ class MessagePermission(BasePermission):
             return True
         # allow change message
         if view:
-            print(view.action, obj)
             if view.action == 'update' or view.action == 'partial_update':
                 member = request.user.member
                 return obj.sender_id == member.id

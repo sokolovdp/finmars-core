@@ -114,7 +114,7 @@ class Message(TimeStampedModel):
         verbose_name_plural = _('messages')
 
     def __str__(self):
-        return '%s sent %s - %s' % (self.sender, self.timesince, self.short_text)
+        return self.short_text
 
     @property
     def short_text(self):
@@ -165,7 +165,7 @@ class DirectMessage(TimeStampedModel):
         verbose_name_plural = _('direct messages')
 
     def __str__(self):
-        return '%s sent to %s %s - %s' % (self.sender, self.recipient, self.timesince, self.short_text)
+        return self.short_text
 
     @property
     def short_text(self):

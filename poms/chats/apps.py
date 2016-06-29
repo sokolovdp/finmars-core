@@ -7,3 +7,7 @@ class ChatsConfig(AppConfig):
     name = 'poms.chats'
     # label = 'poms'
     verbose_name = _('Chats')
+
+    def ready(self):
+        # noinspection PyUnresolvedReferences
+        import poms.chats.handlers
