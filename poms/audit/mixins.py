@@ -1,7 +1,7 @@
 from __future__ import unicode_literals
 
 from django.utils.translation import ugettext as _
-from rest_framework import permissions
+from rest_framework import permissions, status
 from rest_framework.decorators import detail_route, list_route
 from rest_framework.generics import GenericAPIView
 from rest_framework.permissions import IsAuthenticated
@@ -121,6 +121,8 @@ class HistoricalMixin(GenericAPIView):
 
         if self._version_id:
             version = queryset.first()
+            if version is None:
+                return Response(status=status.HTTP_404_NOT_FOUND)
             self._history_load_object(version)
             serializer = VersionSerializer(version)
             return Response(serializer.data)
