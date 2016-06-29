@@ -1,7 +1,10 @@
 from __future__ import unicode_literals
 
+from django.db.models import ProtectedError
 from django.http import Http404
+from django.utils.translation import ugettext_lazy as _
 from mptt.utils import get_cached_trees
+from rest_framework import status
 from rest_framework.filters import DjangoFilterBackend, OrderingFilter, SearchFilter
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
@@ -19,11 +22,24 @@ class PomsViewSetBase(DbTransactionMixin, HistoricalMixin, ModelViewSet):
     ]
 
     def update(self, request, *args, **kwargs):
-        super(PomsViewSetBase, self).update(request, *args, **kwargs)
+        response = super(PomsViewSetBase, self).update(request, *args, **kwargs)
         # total reload object, due many to many don't correctly returned
+        if response.status_code == status.HTTP_200_OK:
+            instance = self.get_object()
+            serializer = self.get_serializer(instance)
+            return Response(serializer.data)
+        return response
+
+    def destroy(self, request, *args, **kwargs):
         instance = self.get_object()
-        serializer = self.get_serializer(instance)
-        return Response(serializer.data)
+        try:
+            self.perform_destroy(instance)
+        except ProtectedError:
+            return Response({
+                'non_fields_error': _(
+                    'Cannot delete instance because they are referenced through a protected foreign key'),
+            }, status=status.HTTP_409_CONFLICT)
+        return Response(status=status.HTTP_204_NO_CONTENT)
 
 
 class PomsClassViewSetBase(ReadOnlyModelViewSet):
