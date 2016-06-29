@@ -124,7 +124,7 @@ class HistoricalMixin(GenericAPIView):
             if version is None:
                 return Response(status=status.HTTP_404_NOT_FOUND)
             self._history_load_object(version)
-            serializer = VersionSerializer(version)
+            serializer = VersionSerializer(version, context=self.get_serializer_context())
             return Response(serializer.data)
 
         if self.history_latest_first:
@@ -135,11 +135,11 @@ class HistoricalMixin(GenericAPIView):
         page = self.paginate_queryset(queryset)
         if page is not None:
             self._history_load_objects(page)
-            serializer = VersionSerializer(page, many=True)
+            serializer = VersionSerializer(page, many=True, context=self.get_serializer_context())
             return self.get_paginated_response(serializer.data)
 
         self._history_load_objects(queryset)
-        serializer = VersionSerializer(queryset, many=True)
+        serializer = VersionSerializer(queryset, many=True, context=self.get_serializer_context())
         return Response(serializer.data)
 
 # class BaseAuditModelMixin(object):

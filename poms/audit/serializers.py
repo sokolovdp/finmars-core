@@ -13,6 +13,7 @@ class AuthLogEntrySerializer(serializers.ModelSerializer):
 
 
 class VersionSerializer(serializers.ModelSerializer):
+    url = serializers.SerializerMethodField()
     date = serializers.SerializerMethodField()
     user = serializers.SerializerMethodField()
     username = serializers.SerializerMethodField()
@@ -21,7 +22,11 @@ class VersionSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Version
-        fields = ['id', 'date', 'user', 'username', 'comment', 'object']
+        fields = ['url', 'id', 'date', 'user', 'username', 'comment', 'object']
+
+    def get_url(self, value):
+        request = self.context['request']
+        return '%s?version_id=%s' % (request.build_absolute_uri(location=request.path), value.id)
 
     def get_date(self, value):
         return value.revision.date_created
