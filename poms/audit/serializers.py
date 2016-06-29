@@ -9,6 +9,8 @@ from poms.common.fields import DateTimeTzAwareField
 
 
 class AuthLogEntrySerializer(serializers.ModelSerializer):
+    date = DateTimeTzAwareField()
+
     class Meta:
         model = AuthLogEntry
         fields = ['url', 'id', 'date', 'user_ip', 'user_agent', 'is_success']

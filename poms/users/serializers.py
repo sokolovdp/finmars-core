@@ -9,6 +9,7 @@ from django.utils.translation import ugettext_lazy as _
 from rest_framework import serializers
 from rest_framework.authtoken.serializers import AuthTokenSerializer
 
+from poms.common.fields import DateTimeTzAwareField
 from poms.currencies.fields import CurrencyField
 from poms.users.fields import MasterUserField
 from poms.users.models import MasterUser, UserProfile, Group, Member, TIMEZONE_CHOICES
@@ -158,6 +159,7 @@ class MemberSerializer(serializers.ModelSerializer):
     url = serializers.HyperlinkedIdentityField(view_name='member-detail')
     master_user = MasterUserField()
     is_current = serializers.SerializerMethodField()
+    join_date = DateTimeTzAwareField()
 
     class Meta:
         model = Member
@@ -166,9 +168,7 @@ class MemberSerializer(serializers.ModelSerializer):
         read_only_fields = ['is_owner', 'join_date', 'first_name', 'last_name', 'email']
 
     def get_is_current(self, obj):
-        request = self.context['request']
-        # member = get_member(request)
-        member = request.user.member
+        member = self.context['request'].user.member
         return obj.id == member.id
 
 
