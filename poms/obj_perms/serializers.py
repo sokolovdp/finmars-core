@@ -94,16 +94,18 @@ class ModelWithObjectPermissionSerializer(serializers.ModelSerializer):
 
     def save_object_permission(self, instance, user_object_permissions=None, group_object_permissions=None,
                                created=False):
-        if created:
-            member = self.context['request'].user.member
-            user_object_permissions = user_object_permissions or []
-            user_object_permissions += [{'member': member, 'permission': p}
-                                        for p in get_default_owner_permissions(instance)]
-            assign_perms_from_list(instance,
-                                   user_object_permissions=user_object_permissions,
-                                   group_object_permissions=group_object_permissions)
+        member = self.context['request'].user.member
+        if member.is_superuser:
+            if created:
+                member = self.context['request'].user.member
+                user_object_permissions = user_object_permissions or []
+                user_object_permissions += [{'member': member, 'permission': p}
+                                            for p in get_default_owner_permissions(instance)]
+                assign_perms_from_list(instance,
+                                       user_object_permissions=user_object_permissions,
+                                       group_object_permissions=group_object_permissions)
 
-        else:
-            assign_perms_from_list(instance,
-                                   user_object_permissions=user_object_permissions,
-                                   group_object_permissions=group_object_permissions)
+            else:
+                assign_perms_from_list(instance,
+                                       user_object_permissions=user_object_permissions,
+                                       group_object_permissions=group_object_permissions)
