@@ -1,9 +1,11 @@
 from __future__ import unicode_literals
 
+from django.utils import timezone
 from rest_framework import serializers
 from reversion.models import Version
 
 from poms.audit.models import AuthLogEntry
+from poms.common.fields import DateTimeTzAwareField
 
 
 class AuthLogEntrySerializer(serializers.ModelSerializer):
@@ -29,7 +31,7 @@ class VersionSerializer(serializers.ModelSerializer):
         return '%s?version_id=%s' % (request.build_absolute_uri(location=request.path), value.id)
 
     def get_date(self, value):
-        return value.revision.date_created
+        return timezone.localtime(value.revision.date_created)
 
     def get_user(self, value):
         return value.revision.user_id
