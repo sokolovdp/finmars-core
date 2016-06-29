@@ -8,6 +8,7 @@ from django.views.decorators.csrf import ensure_csrf_cookie
 from rest_framework.authtoken.models import Token
 from rest_framework.authtoken.serializers import AuthTokenSerializer
 from rest_framework.decorators import detail_route
+from rest_framework.filters import DjangoFilterBackend, OrderingFilter, SearchFilter, FilterSet
 from rest_framework.mixins import UpdateModelMixin, DestroyModelMixin
 from rest_framework.parsers import JSONParser, MultiPartParser, FormParser
 from rest_framework.permissions import IsAuthenticated, AllowAny
@@ -15,6 +16,7 @@ from rest_framework.response import Response
 from rest_framework.viewsets import ViewSet, ModelViewSet, ReadOnlyModelViewSet
 
 from poms.audit.mixins import HistoricalMixin
+from poms.common.filters import CharFilter
 from poms.users.filters import OwnerByMasterUserFilter, MasterUserFilter, UserFilter
 from poms.users.models import MasterUser, Member, Group
 from poms.users.permissions import SuperUserOrReadOnly, IsCurrentMasterUser, IsCurrentUser
@@ -113,7 +115,14 @@ class MasterUserViewSet(HistoricalMixin, ModelViewSet):
         IsCurrentMasterUser,
         SuperUserOrReadOnly,
     ]
-    filter_backends = [MasterUserFilter]
+    filter_backends = [
+        MasterUserFilter,
+        DjangoFilterBackend,
+        OrderingFilter,
+        SearchFilter,
+    ]
+    ordering_fields = ['name', ]
+    search_fields = ['name', ]
 
     @detail_route(methods=('PUT', 'PATCH',), url_path='set-current', permission_classes=[IsAuthenticated],
                   serializer_class=MasterUserSetCurrentSerializer)
@@ -130,7 +139,22 @@ class MemberViewSet(HistoricalMixin, UpdateModelMixin, DestroyModelMixin, ReadOn
         IsAuthenticated,
         SuperUserOrReadOnly
     ]
-    filter_backends = [OwnerByMasterUserFilter]
+    filter_backends = [
+        OwnerByMasterUserFilter,
+        DjangoFilterBackend,
+        OrderingFilter,
+        SearchFilter,
+    ]
+    ordering_fields = ['username', ]
+    search_fields = ['username', ]
+
+
+class GroupFilterSet(FilterSet):
+    name = CharFilter()
+
+    class Meta:
+        model = Group
+        fields = ['name', ]
 
 
 class GroupViewSet(HistoricalMixin, ModelViewSet):
@@ -140,4 +164,11 @@ class GroupViewSet(HistoricalMixin, ModelViewSet):
         IsAuthenticated,
         SuperUserOrReadOnly
     ]
-    filter_backends = [OwnerByMasterUserFilter]
+    filter_backends = [
+        OwnerByMasterUserFilter,
+        DjangoFilterBackend,
+        OrderingFilter,
+        SearchFilter,
+    ]
+    ordering_fields = ['name', ]
+    search_fields = ['name', ]

@@ -3,24 +3,25 @@ from __future__ import unicode_literals
 import django_filters
 from rest_framework.filters import DjangoFilterBackend, OrderingFilter, SearchFilter, FilterSet
 
+from poms.common.filters import CharFilter, ModelMultipleChoiceFilter
 from poms.common.views import PomsViewSetBase
 from poms.currencies.filters import OwnerByCurrencyFilter
 from poms.currencies.models import Currency, CurrencyHistory
 from poms.currencies.serializers import CurrencySerializer, CurrencyHistorySerializer
-from poms.tags.filters import TagFakeFilter, TagFilterBackend
+from poms.tags.filters import TagFilterBackend, TagFilter
 from poms.users.filters import OwnerByMasterUserFilter
 from poms.users.permissions import SuperUserOrReadOnly
 
 
 class CurrencyFilterSet(FilterSet):
-    user_code = django_filters.CharFilter(lookup_expr='icontains')
-    name = django_filters.CharFilter(lookup_expr='icontains')
-    short_name = django_filters.CharFilter(lookup_expr='icontains')
-    tags = TagFakeFilter()
+    user_code = CharFilter()
+    name = CharFilter()
+    short_name = CharFilter()
+    tag = TagFilter(model=Currency)
 
     class Meta:
         model = Currency
-        fields = ['user_code', 'name', 'short_name', 'tags']
+        fields = ['user_code', 'name', 'short_name', 'tag']
 
 
 class CurrencyViewSet(PomsViewSetBase):
@@ -42,7 +43,7 @@ class CurrencyViewSet(PomsViewSetBase):
 
 
 class CurrencyHistoryFilterSet(FilterSet):
-    currency = django_filters.Filter(name='currency')
+    currency = ModelMultipleChoiceFilter(model=Currency)
     date = django_filters.DateFromToRangeFilter()
 
     class Meta:

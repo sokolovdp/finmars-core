@@ -23,3 +23,10 @@ class PriceHistoryObjectPermissionFilter(BaseFilterBackend):
         instrument_qs = obj_perms_filter_objects_for_view(member, Instrument.objects.filter(master_user=master_user))
         queryset = queryset.filter(instrument__in=instrument_qs)
         return queryset
+
+# class InstrumentTypeFilter(ModelWithPermissionMultipleChoiceFilter):
+#     model = InstrumentType
+#
+#
+# class InstrumentFilter(ModelWithPermissionMultipleChoiceFilter):
+#     model = Instrument

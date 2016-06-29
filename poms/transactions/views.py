@@ -5,12 +5,18 @@ from rest_framework.decorators import detail_route
 from rest_framework.filters import FilterSet, DjangoFilterBackend, OrderingFilter, SearchFilter
 from rest_framework.response import Response
 
+from poms.accounts.models import Account
+from poms.common.filters import CharFilter, ModelWithPermissionMultipleChoiceFilter, ModelMultipleChoiceFilter
 from poms.common.views import PomsClassViewSetBase, PomsViewSetBase
+from poms.currencies.models import Currency
+from poms.instruments.models import Instrument
 from poms.obj_attrs.filters import AttributePrefetchFilter
 from poms.obj_attrs.views import AttributeTypeViewSetBase
 from poms.obj_perms.filters import ObjectPermissionBackend
 from poms.obj_perms.permissions import ObjectPermissionBase
-from poms.tags.filters import TagFakeFilter, TagFilterBackend
+from poms.portfolios.models import Portfolio
+from poms.strategies.models import Strategy1, Strategy2, Strategy3
+from poms.tags.filters import TagFilterBackend, TagFilter
 from poms.transactions.filters import TransactionObjectPermissionFilter
 from poms.transactions.models import TransactionClass, Transaction, TransactionType, TransactionAttributeType, \
     TransactionTypeGroup
@@ -27,9 +33,9 @@ class TransactionClassViewSet(PomsClassViewSetBase):
 
 
 class TransactionTypeGroupFilterSet(FilterSet):
-    user_code = django_filters.CharFilter(lookup_expr='icontains')
-    name = django_filters.CharFilter(lookup_expr='icontains')
-    short_name = django_filters.CharFilter(lookup_expr='icontains')
+    user_code = CharFilter()
+    name = CharFilter()
+    short_name = CharFilter()
 
     class Meta:
         model = TransactionTypeGroup
@@ -55,19 +61,15 @@ class TransactionTypeGroupViewSet(PomsViewSetBase):
 
 
 class TransactionTypeFilterSet(FilterSet):
-    user_code = django_filters.CharFilter(lookup_expr='icontains')
-    name = django_filters.CharFilter(lookup_expr='icontains')
-    short_name = django_filters.CharFilter(lookup_expr='icontains')
-    group = django_filters.Filter(name='group')
-    tags = TagFakeFilter()
+    user_code = CharFilter()
+    name = CharFilter()
+    short_name = CharFilter()
+    group = ModelWithPermissionMultipleChoiceFilter(model=TransactionTypeGroup)
+    tag = TagFilter(model=TransactionType)
 
     class Meta:
         model = TransactionType
-        fields = ['user_code', 'name', 'short_name', 'group', 'tags']
-
-    @staticmethod
-    def tags_filter(queryset, value):
-        return queryset
+        fields = ['user_code', 'name', 'short_name', 'group', 'tag']
 
 
 class TransactionTypeViewSet(PomsViewSetBase):
@@ -184,9 +186,9 @@ class TransactionTypeViewSet(PomsViewSetBase):
 
 
 class TransactionAttributeTypeFilterSet(FilterSet):
-    user_code = django_filters.CharFilter(lookup_expr='icontains')
-    name = django_filters.CharFilter(lookup_expr='icontains')
-    short_name = django_filters.CharFilter(lookup_expr='icontains')
+    user_code = CharFilter()
+    name = CharFilter()
+    short_name = CharFilter()
 
     class Meta:
         model = TransactionAttributeType
@@ -216,22 +218,37 @@ class TransactionFilterSet(FilterSet):
     transaction_date = django_filters.DateFromToRangeFilter()
     accounting_date = django_filters.DateFromToRangeFilter()
     cash_date = django_filters.DateFromToRangeFilter()
+    portfolio = ModelWithPermissionMultipleChoiceFilter(model=Portfolio)
+    instrument = ModelWithPermissionMultipleChoiceFilter(model=Instrument)
+    transaction_currency = ModelMultipleChoiceFilter(model=Currency)
+    settlement_currency = ModelMultipleChoiceFilter(model=Currency)
+    account_cash = ModelWithPermissionMultipleChoiceFilter(model=Account)
+    account_position = ModelWithPermissionMultipleChoiceFilter(model=Account)
+    account_interim = ModelWithPermissionMultipleChoiceFilter(model=Account)
+    strategy1_position = ModelWithPermissionMultipleChoiceFilter(model=Strategy1)
+    strategy1_cash = ModelWithPermissionMultipleChoiceFilter(model=Strategy1)
+    strategy2_position = ModelWithPermissionMultipleChoiceFilter(model=Strategy2)
+    strategy2_cash = ModelWithPermissionMultipleChoiceFilter(model=Strategy2)
+    strategy3_position = ModelWithPermissionMultipleChoiceFilter(model=Strategy3)
+    strategy3_cash = ModelWithPermissionMultipleChoiceFilter(model=Strategy3)
+
     complex_transaction = django_filters.Filter(name='complex_transaction')
     complex_transaction__code = django_filters.RangeFilter()
     complex_transaction__transaction_type = django_filters.Filter(name='complex_transaction__transaction_type')
-    portfolio = django_filters.Filter(name='portfolio')
-    instrument = django_filters.Filter(name='instrument')
-    transaction_currency = django_filters.Filter(name='transaction_currency')
-    settlement_currency = django_filters.Filter(name='settlement_currency')
-    account_cash = django_filters.Filter(name='account_cash')
-    account_position = django_filters.Filter(name='account_position')
-    account_interim = django_filters.Filter(name='account_interim')
-    strategy1_position = django_filters.Filter(name='strategy1_position')
-    strategy1_cash = django_filters.Filter(name='strategy1_cash')
-    strategy2_position = django_filters.Filter(name='strategy2_position')
-    strategy2_cash = django_filters.Filter(name='strategy2_cash')
-    strategy3_position = django_filters.Filter(name='strategy3_position')
-    strategy3_cash = django_filters.Filter(name='strategy3_cash')
+
+    # portfolio = django_filters.Filter(name='portfolio')
+    # instrument = django_filters.Filter(name='instrument')
+    # transaction_currency = django_filters.Filter(name='transaction_currency')
+    # settlement_currency = django_filters.Filter(name='settlement_currency')
+    # account_cash = django_filters.Filter(name='account_cash')
+    # account_position = django_filters.Filter(name='account_position')
+    # account_interim = django_filters.Filter(name='account_interim')
+    # strategy1_position = django_filters.Filter(name='strategy1_position')
+    # strategy1_cash = django_filters.Filter(name='strategy1_cash')
+    # strategy2_position = django_filters.Filter(name='strategy2_position')
+    # strategy2_cash = django_filters.Filter(name='strategy2_cash')
+    # strategy3_position = django_filters.Filter(name='strategy3_position')
+    # strategy3_cash = django_filters.Filter(name='strategy3_cash')
 
     class Meta:
         model = Transaction

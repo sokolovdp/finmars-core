@@ -11,3 +11,6 @@ class OwnerByCurrencyFilter(BaseFilterBackend):
         currencies = Currency.objects.all()
         currencies = OwnerByMasterUserFilter().filter_queryset(request, currencies, view)
         return queryset.filter(currency__in=currencies)
+
+# class CurrencyFilter(ModelMultipleChoiceFilter):
+#     model = Currency

@@ -1,32 +1,28 @@
 from __future__ import unicode_literals
 
-import django_filters
 from rest_framework.filters import FilterSet, DjangoFilterBackend, OrderingFilter, SearchFilter
 
 from poms.accounts.models import Account, AccountType, AccountAttributeType
 from poms.accounts.serializers import AccountSerializer, AccountTypeSerializer, AccountAttributeTypeSerializer
+from poms.common.filters import CharFilter, ModelWithPermissionMultipleChoiceFilter
 from poms.common.views import PomsViewSetBase
 from poms.obj_attrs.filters import AttributePrefetchFilter
 from poms.obj_attrs.views import AttributeTypeViewSetBase
 from poms.obj_perms.filters import ObjectPermissionBackend
 from poms.obj_perms.permissions import ObjectPermissionBase
-from poms.tags.filters import TagFakeFilter, TagFilterBackend
+from poms.tags.filters import TagFilterBackend, TagFilter
 from poms.users.filters import OwnerByMasterUserFilter
 
 
 class AccountTypeFilterSet(FilterSet):
-    user_code = django_filters.CharFilter(lookup_expr='icontains')
-    name = django_filters.CharFilter(lookup_expr='icontains')
-    short_name = django_filters.CharFilter(lookup_expr='icontains')
-    tags = TagFakeFilter()
+    user_code = CharFilter()
+    name = CharFilter()
+    short_name = CharFilter()
+    tag = TagFilter(model=AccountType)
 
     class Meta:
         model = AccountType
         fields = ['user_code', 'name', 'short_name', 'tags']
-
-    @staticmethod
-    def tags_filter(queryset, value):
-        return queryset
 
 
 class AccountTypeViewSet(PomsViewSetBase):
@@ -49,9 +45,9 @@ class AccountTypeViewSet(PomsViewSetBase):
 
 
 class AccountAttributeTypeFilterSet(FilterSet):
-    user_code = django_filters.CharFilter(lookup_expr='icontains')
-    name = django_filters.CharFilter(lookup_expr='icontains')
-    short_name = django_filters.CharFilter(lookup_expr='icontains')
+    user_code = CharFilter()
+    name = CharFilter()
+    short_name = CharFilter()
 
     class Meta:
         model = AccountAttributeType
@@ -77,15 +73,15 @@ class AccountAttributeTypeViewSet(AttributeTypeViewSetBase):
 
 
 class AccountFilterSet(FilterSet):
-    user_code = django_filters.CharFilter(lookup_expr='icontains')
-    name = django_filters.CharFilter(lookup_expr='icontains')
-    short_name = django_filters.CharFilter(lookup_expr='icontains')
-    type = django_filters.Filter(name='type')
-    tags = TagFakeFilter()
+    user_code = CharFilter()
+    name = CharFilter()
+    short_name = CharFilter()
+    type = ModelWithPermissionMultipleChoiceFilter(model=AccountType)
+    tag = TagFilter(model=Account)
 
     class Meta:
         model = Account
-        fields = ['user_code', 'name', 'short_name', 'type', 'tags']
+        fields = ['user_code', 'name', 'short_name', 'type', 'tag']
 
 
 class AccountViewSet(PomsViewSetBase):

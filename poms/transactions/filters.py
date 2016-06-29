@@ -39,3 +39,6 @@ class TransactionTypeInputContentTypeFilter(BaseFilterBackend):
                   Strategy1, Strategy2, Strategy3, DailyPricingModel, PaymentSizeDetail, Portfolio]
         ctypes = [ContentType.objects.get_for_model(model).pk for model in models]
         return queryset.filter(pk__in=ctypes)
+
+# class TransactionTypeGroupFilter(ModelWithPermissionMultipleChoiceFilter):
+#     model = TransactionTypeGroup

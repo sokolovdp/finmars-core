@@ -1,8 +1,8 @@
 from __future__ import unicode_literals
 
-import django_filters
 from rest_framework.filters import DjangoFilterBackend, OrderingFilter, SearchFilter, FilterSet
 
+from poms.common.filters import CharFilter
 from poms.common.views import PomsViewSetBase
 from poms.obj_attrs.filters import AttributePrefetchFilter
 from poms.obj_attrs.views import AttributeTypeViewSetBase
@@ -10,14 +10,14 @@ from poms.obj_perms.filters import ObjectPermissionBackend
 from poms.obj_perms.permissions import ObjectPermissionBase
 from poms.portfolios.models import Portfolio, PortfolioAttributeType
 from poms.portfolios.serializers import PortfolioSerializer, PortfolioAttributeTypeSerializer
-from poms.tags.filters import TagFakeFilter, TagFilterBackend
+from poms.tags.filters import TagFilterBackend, TagFilter
 from poms.users.filters import OwnerByMasterUserFilter
 
 
 class PortfolioAttributeTypeFilterSet(FilterSet):
-    user_code = django_filters.CharFilter(lookup_expr='icontains')
-    name = django_filters.CharFilter(lookup_expr='icontains')
-    short_name = django_filters.CharFilter(lookup_expr='icontains')
+    user_code = CharFilter()
+    name = CharFilter()
+    short_name = CharFilter()
 
     class Meta:
         model = PortfolioAttributeType
@@ -43,18 +43,14 @@ class PortfolioAttributeTypeViewSet(AttributeTypeViewSetBase):
 
 
 class PortfolioFilterSet(FilterSet):
-    user_code = django_filters.CharFilter(lookup_expr='icontains')
-    name = django_filters.CharFilter(lookup_expr='icontains')
-    short_name = django_filters.CharFilter(lookup_expr='icontains')
-    tags = TagFakeFilter()
+    user_code = CharFilter()
+    name = CharFilter()
+    short_name = CharFilter()
+    tag = TagFilter(model=Portfolio)
 
     class Meta:
         model = Portfolio
-        fields = ['user_code', 'name', 'short_name', 'tags']
-
-    @staticmethod
-    def tags_filter(queryset, value):
-        return queryset
+        fields = ['user_code', 'name', 'short_name', 'tag']
 
 
 class PortfolioViewSet(PomsViewSetBase):

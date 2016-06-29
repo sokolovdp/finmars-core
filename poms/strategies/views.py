@@ -7,17 +7,15 @@ from poms.obj_perms.permissions import ObjectPermissionBase
 from poms.strategies.models import Strategy1, Strategy2, Strategy3
 from poms.strategies.serializers import Strategy1Serializer, Strategy1NodeSerializer, Strategy2Serializer, \
     Strategy2NodeSerializer, Strategy3Serializer, Strategy3NodeSerializer
-from poms.tags.filters import TagFakeFilter, TagFilterBackend
+from poms.tags.filters import TagFilterBackend, TagFilter
 
 
-class StrategyClassifierBaseFilterSet(ClassifierFilterSetBase):
-    tags = TagFakeFilter()
-
+class AbstractStrategyFilterSet(ClassifierFilterSetBase):
     class Meta(ClassifierFilterSetBase.Meta):
-        fields = ClassifierFilterSetBase.Meta.fields + ['tags', ]
+        fields = ClassifierFilterSetBase.Meta.fields + ['tag', ]
 
 
-class StrategyBaseViewSet(ClassifierViewSetBase):
+class AbstractStrategyViewSet(ClassifierViewSetBase):
     filter_backends = ClassifierViewSetBase.filter_backends + [
         TagFilterBackend,
         ObjectPermissionBackend,
@@ -27,10 +25,11 @@ class StrategyBaseViewSet(ClassifierViewSetBase):
     ]
 
     def get_serializer(self, *args, **kwargs):
-        return super(StrategyBaseViewSet, self).get_serializer(*args, hide_children=(self.action == 'list'), **kwargs)
+        return super(AbstractStrategyViewSet, self).get_serializer(*args, hide_children=(self.action == 'list'),
+                                                                   **kwargs)
 
 
-class StrategyBaseNodeViewSet(ClassifierNodeViewSetBase):
+class AbstractStrategyNodeViewSet(ClassifierNodeViewSetBase):
     filter_backends = ClassifierNodeViewSetBase.filter_backends + [
         TagFilterBackend,
         ObjectPermissionBackend,
@@ -40,52 +39,64 @@ class StrategyBaseNodeViewSet(ClassifierNodeViewSetBase):
     ]
 
 
-class Strategy1ClassifierFilterSet(StrategyClassifierBaseFilterSet):
-    class Meta(StrategyClassifierBaseFilterSet.Meta):
+# Strategy1
+
+class Strategy1ClassifierFilterSet(AbstractStrategyFilterSet):
+    tag = TagFilter(model=Strategy1)
+
+    class Meta(AbstractStrategyFilterSet.Meta):
         model = Strategy1
 
 
-class Strategy1ViewSet(StrategyBaseViewSet):
+class Strategy1ViewSet(AbstractStrategyViewSet):
     queryset = Strategy1.objects
     serializer_class = Strategy1Serializer
     filter_class = Strategy1ClassifierFilterSet
 
 
-class Strategy1NodeViewSet(StrategyBaseNodeViewSet):
+class Strategy1NodeViewSet(AbstractStrategyNodeViewSet):
     queryset = Strategy1.objects
     serializer_class = Strategy1NodeSerializer
     filter_class = Strategy1ClassifierFilterSet
 
 
-class Strategy2ClassifierFilterSet(StrategyClassifierBaseFilterSet):
-    class Meta(StrategyClassifierBaseFilterSet.Meta):
+# Strategy2
+
+class Strategy2ClassifierFilterSet(AbstractStrategyFilterSet):
+    tag = TagFilter(model=Strategy2)
+
+    class Meta(AbstractStrategyFilterSet.Meta):
         model = Strategy2
 
 
-class Strategy2ViewSet(StrategyBaseViewSet):
+class Strategy2ViewSet(AbstractStrategyViewSet):
     queryset = Strategy2.objects
     serializer_class = Strategy2Serializer
     filter_class = Strategy2ClassifierFilterSet
 
 
-class Strategy2NodeViewSet(StrategyBaseNodeViewSet):
+class Strategy2NodeViewSet(AbstractStrategyNodeViewSet):
     queryset = Strategy2.objects
     serializer_class = Strategy2NodeSerializer
     filter_class = Strategy2ClassifierFilterSet
 
 
-class Strategy3ClassifierFilterSet(StrategyClassifierBaseFilterSet):
-    class Meta(StrategyClassifierBaseFilterSet.Meta):
+# Strategy3
+
+class Strategy3ClassifierFilterSet(AbstractStrategyFilterSet):
+    tag = TagFilter(model=Strategy3)
+
+    class Meta(AbstractStrategyFilterSet.Meta):
         model = Strategy3
 
 
-class Strategy3ViewSet(StrategyBaseViewSet):
+class Strategy3ViewSet(AbstractStrategyViewSet):
     queryset = Strategy3.objects
     serializer_class = Strategy3Serializer
     filter_class = Strategy3ClassifierFilterSet
 
 
-class Strategy3NodeViewSet(StrategyBaseNodeViewSet):
+class Strategy3NodeViewSet(AbstractStrategyNodeViewSet):
     queryset = Strategy3.objects
     serializer_class = Strategy3NodeSerializer
     filter_class = Strategy3ClassifierFilterSet

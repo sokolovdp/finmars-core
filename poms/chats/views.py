@@ -8,10 +8,12 @@ from poms.chats.filters import MessagePermissionFilter, DirectMessagePermissionF
 from poms.chats.models import Thread, Message, DirectMessage, ThreadStatus
 from poms.chats.permissions import MessagePermission, DirectMessagePermission
 from poms.chats.serializers import ThreadSerializer, MessageSerializer, DirectMessageSerializer, ThreadStatusSerializer
+from poms.common.filters import CharFilter, ModelWithPermissionMultipleChoiceFilter, ModelMultipleChoiceFilter
 from poms.common.views import PomsViewSetBase
 from poms.obj_perms.filters import FieldObjectPermissionBackend
 from poms.obj_perms.permissions import ObjectPermissionBase
 from poms.users.filters import OwnerByMasterUserFilter
+from poms.users.models import Member
 from poms.users.permissions import SuperUserOrReadOnly
 
 
@@ -32,12 +34,12 @@ class ThreadStatusViewSet(PomsViewSetBase):
 
 
 class ThreadFilterSet(FilterSet):
-    subject = django_filters.CharFilter(lookup_expr='icontains')
-    created = django_filters.DateFilter()
+    subject = CharFilter()
+    created = django_filters.DateFromToRangeFilter()
 
     class Meta:
         model = Thread
-        fields = ['subject', 'created', 'modified']
+        fields = ['subject', 'created']
 
 
 class ThreadViewSet(PomsViewSetBase):
@@ -60,8 +62,9 @@ class ThreadViewSet(PomsViewSetBase):
 
 
 class MessageFilterSet(FilterSet):
-    thread = django_filters.NumberFilter()
+    thread = ModelWithPermissionMultipleChoiceFilter(model=Thread, field_name='subject')
     created = django_filters.DateFilter()
+    sender = ModelMultipleChoiceFilter(model=Member, field_name='username')
 
     class Meta:
         model = Message
@@ -82,6 +85,16 @@ class MessageViewSet(PomsViewSetBase):
     ordering_fields = ['id', 'created']
 
 
+class DirectMessageFilterSet(FilterSet):
+    created = django_filters.DateFromToRangeFilter()
+    recipient = ModelMultipleChoiceFilter(model=Member, field_name='username')
+    sender = ModelMultipleChoiceFilter(model=Member, field_name='username')
+
+    class Meta:
+        model = DirectMessage
+        fields = ['created']
+
+
 class DirectMessageViewSet(PomsViewSetBase):
     queryset = DirectMessage.objects.all()
     serializer_class = DirectMessageSerializer
@@ -92,4 +105,5 @@ class DirectMessageViewSet(PomsViewSetBase):
         OrderingFilter,
         SearchFilter,
     ]
+    filter_class = DirectMessageFilterSet
     ordering_fields = ['id', 'created']

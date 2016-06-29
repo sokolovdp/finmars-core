@@ -1,11 +1,12 @@
+from functools import partial
+
 import django_filters
 from django.contrib.contenttypes.models import ContentType
-from django.db.models import Q
-from django.utils.encoding import force_text
 from rest_framework.filters import BaseFilterBackend
 
 from poms.accounts.models import Account
 from poms.accounts.models import AccountType
+from poms.common.middleware import get_request
 from poms.counterparties.models import Counterparty
 from poms.counterparties.models import Responsible
 from poms.currencies.models import Currency
@@ -43,24 +44,21 @@ class TagFilterBackend(BaseFilterBackend):
             'tags__group_object_permissions',
             'tags__group_object_permissions__permission',
         )
+        return queryset
 
-        tags = request.query_params.get('tags', None)
-        if not tags:
-            return queryset
-        tags = force_text(tags).split(',')
 
-        # # as name
-        # f = Q()
-        # for t in tags:
-        #     if t:
-        #         f |= Q(name__icontains=t) | Q(name__icontains=t)
+def tags_choices(model=None):
+    master_user = get_request().user.master_user
+    member = get_request().user.member
+    content_type = ContentType.objects.get_for_model(model)
+    qs = Tag.objects.filter(master_user=master_user, content_types__in=[content_type.id]).order_by('name')
+    for t in obj_perms_filter_objects_for_view(member, qs, prefetch=False):
+        yield t.id, t.name
 
-        # as id
-        ids = [int(t) for t in tags if t]
-        f = Q(id__in=ids)
 
-        tag_qs = obj_perms_filter_objects_for_view(
-            request.user.member,
-            queryset=Tag.objects.filter(f, master_user=request.user.master_user),
-            prefetch=False)
-        return queryset.filter(tags__id__in=tag_qs)
+class TagFilter(django_filters.MultipleChoiceFilter):
+    def __init__(self, *args, **kwargs):
+        model = kwargs.pop('model')
+        kwargs['name'] = 'tags'
+        kwargs['choices'] = partial(tags_choices, model=model)
+        super(TagFilter, self).__init__(*args, **kwargs)

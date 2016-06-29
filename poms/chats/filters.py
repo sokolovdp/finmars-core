@@ -39,3 +39,8 @@ class DirectMessagePermissionFilter(BaseFilterBackend):
         # user = request.user
         member = request.user.member
         return queryset.filter(Q(recipient=member) | Q(sender=member))
+
+
+# class ThreadFilter(ModelWithPermissionMultipleChoiceFilter):
+#     model = Thread
+#     field_name = 'subject'

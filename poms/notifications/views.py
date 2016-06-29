@@ -10,6 +10,7 @@ from rest_framework.response import Response
 from rest_framework.viewsets import ReadOnlyModelViewSet
 
 from poms import notifications
+from poms.common.filters import CharFilter
 from poms.common.mixins import DbTransactionMixin
 from poms.notifications.filters import OwnerByRecipientFilter
 from poms.notifications.models import Notification
@@ -19,7 +20,7 @@ from poms.notifications.serializers import NotificationSerializer
 class NotificationFilterSet(FilterSet):
     all = django_filters.MethodFilter(action='show_all', widget=BooleanWidget())
     level = django_filters.MultipleChoiceFilter(choices=notifications.LEVELS)
-    type = django_filters.CharFilter(lookup_expr='startswith')
+    type = CharFilter()
 
     class Meta:
         model = Notification

@@ -3,6 +3,7 @@ from __future__ import unicode_literals
 import django_filters
 from rest_framework.filters import DjangoFilterBackend, OrderingFilter, SearchFilter, FilterSet
 
+from poms.common.filters import CharFilter, ModelWithPermissionMultipleChoiceFilter
 from poms.common.views import PomsClassViewSetBase, PomsViewSetBase
 from poms.instruments.filters import OwnerByInstrumentFilter, PriceHistoryObjectPermissionFilter
 from poms.instruments.models import Instrument, PriceHistory, InstrumentClass, DailyPricingModel, \
@@ -16,7 +17,7 @@ from poms.obj_attrs.filters import AttributePrefetchFilter
 from poms.obj_attrs.views import AttributeTypeViewSetBase
 from poms.obj_perms.filters import ObjectPermissionBackend
 from poms.obj_perms.permissions import ObjectPermissionBase
-from poms.tags.filters import TagFakeFilter, TagFilterBackend
+from poms.tags.filters import TagFilterBackend, TagFilter
 from poms.users.filters import OwnerByMasterUserFilter
 from poms.users.permissions import SuperUserOrReadOnly
 
@@ -68,14 +69,14 @@ class PricingPolicyViewSet(PomsViewSetBase):
 
 
 class InstrumentTypeFilterSet(FilterSet):
-    user_code = django_filters.CharFilter(lookup_expr='icontains')
-    name = django_filters.CharFilter(lookup_expr='icontains')
-    short_name = django_filters.CharFilter(lookup_expr='icontains')
-    tags = TagFakeFilter()
+    user_code = CharFilter()
+    name = CharFilter()
+    short_name = CharFilter()
+    tag = TagFilter(model=InstrumentType)
 
     class Meta:
         model = InstrumentType
-        fields = ['user_code', 'name', 'short_name', 'tags']
+        fields = ['user_code', 'name', 'short_name', 'tag']
 
 
 class InstrumentTypeViewSet(PomsViewSetBase):
@@ -98,9 +99,9 @@ class InstrumentTypeViewSet(PomsViewSetBase):
 
 
 class InstrumentAttributeTypeFilterSet(FilterSet):
-    user_code = django_filters.CharFilter(lookup_expr='icontains')
-    name = django_filters.CharFilter(lookup_expr='icontains')
-    short_name = django_filters.CharFilter(lookup_expr='icontains')
+    user_code = CharFilter()
+    name = CharFilter()
+    short_name = CharFilter()
 
     class Meta:
         model = InstrumentAttributeType
@@ -126,18 +127,18 @@ class InstrumentAttributeTypeViewSet(AttributeTypeViewSetBase):
 
 
 class InstrumentFilterSet(FilterSet):
-    user_code = django_filters.CharFilter(lookup_expr='icontains')
-    name = django_filters.CharFilter(lookup_expr='icontains')
-    short_name = django_filters.CharFilter(lookup_expr='icontains')
-    user_text_1 = django_filters.CharFilter(lookup_expr='icontains')
-    user_text_2 = django_filters.CharFilter(lookup_expr='icontains')
-    user_text_3 = django_filters.CharFilter(lookup_expr='icontains')
-    instrument_type = django_filters.Filter(name='instrument_type')
-    tags = TagFakeFilter()
+    user_code = CharFilter()
+    name = CharFilter()
+    short_name = CharFilter()
+    user_text_1 = CharFilter()
+    user_text_2 = CharFilter()
+    user_text_3 = CharFilter()
+    instrument_type = ModelWithPermissionMultipleChoiceFilter(model=InstrumentType)
+    tag = TagFilter(model=Instrument)
 
     class Meta:
         model = Instrument
-        fields = ['user_code', 'name', 'short_name', 'user_text_1', 'user_text_2', 'user_text_3', 'tags']
+        fields = ['user_code', 'name', 'short_name', 'user_text_1', 'user_text_2', 'user_text_3', 'tag']
 
 
 class InstrumentViewSet(PomsViewSetBase):
@@ -166,7 +167,7 @@ class InstrumentViewSet(PomsViewSetBase):
 
 
 class PriceHistoryFilterSet(FilterSet):
-    instrument = django_filters.Filter(name='instrument')
+    instrument = ModelWithPermissionMultipleChoiceFilter(model=Instrument)
     date = django_filters.DateFromToRangeFilter()
 
     class Meta:
