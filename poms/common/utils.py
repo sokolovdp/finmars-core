@@ -9,9 +9,18 @@ def db_class_check_data(model, verbosity, using):
             if verbosity >= 2:
                 print('create %s class -> %s:%s' % (model._meta.verbose_name, id, name))
             try:
-                model.objects.using(using).create(pk=id, system_code=name, name=name, description=name)
+                model.objects.using(using).create(pk=id, system_code=name,
+                                                  name=name, description=name,
+                                                  name_en=name, description_en=name)
             except IntegrityError:
                 pass
+        else:
+            obj = model.objects.using(using).get(pk=id)
+            if not obj.name_en:
+                obj.name_en = name
+            if not obj.description_en:
+                obj.description_en = name
+            obj.save()
 
 
 def date_now():

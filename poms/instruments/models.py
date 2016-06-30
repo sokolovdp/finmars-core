@@ -99,7 +99,7 @@ class AccrualCalculationModel(ClassModelBase):
         (BUS_DAYS_252, _("BUS DAYS/252")),
         (GERMAN_30_360_EOM, _("GERMAN-30/360 (EOM)")),
         (GERMAN_30_360_NO_EOM, _("GERMAN-30/360 (NO EOM)")),
-        (NONE, _("Reversed ACT/365")),
+        (REVERSED_ACT_365, _("Reversed ACT/365")),
     )
 
     class Meta(ClassModelBase.Meta):

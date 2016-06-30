@@ -1,5 +1,6 @@
 from django.utils.html import format_html
 from django.utils.translation import ugettext_lazy as _
+from modeltranslation.admin import TranslationAdmin
 from mptt.admin import MPTTModelAdmin
 
 from poms.audit.admin import HistoricalAdmin
@@ -27,7 +28,7 @@ class ClassifierAdmin(HistoricalAdmin, TreeModelAdmin):
     fields = ['parent', 'user_code', 'name', 'short_name', 'notes']
 
 
-class ClassModelAdmin(HistoricalAdmin):
+class ClassModelAdmin(HistoricalAdmin, TranslationAdmin):
     list_display = ['id', 'system_code', 'name']
     ordering = ['id']
     fields = ['id', 'system_code', 'name', 'description']

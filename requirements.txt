@@ -16,3 +16,4 @@ six==1.10.0
 django-otp==0.3.5
 qrcode==5.3
 django_extensions==1.6.7
+django-modeltranslation==0.11

@@ -46,6 +46,7 @@ INSTALLED_APPS = [
     'kombu.transport.django',
     # 'djcelery',
 
+    'modeltranslation',
     'mptt',
     'reversion',
 
