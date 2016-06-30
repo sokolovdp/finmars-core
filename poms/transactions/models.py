@@ -171,12 +171,12 @@ class TransactionType(NamedModel):
         blank=True,
         verbose_name=_('instrument types')
     )
-    portfolios = models.ManyToManyField(
-        'portfolios.Portfolio',
-        related_name='transaction_types',
-        blank=True,
-        verbose_name=_('instrument types')
-    )
+    # portfolios = models.ManyToManyField(
+    #     'portfolios.Portfolio',
+    #     related_name='transaction_types',
+    #     blank=True,
+    #     verbose_name=_('portfolios')
+    # )
 
     class Meta(NamedModel.Meta):
         verbose_name = _('transaction type')

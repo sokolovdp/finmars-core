@@ -9,7 +9,7 @@ from poms.accounts.models import Account
 from poms.common.filters import CharFilter, ModelWithPermissionMultipleChoiceFilter, ModelMultipleChoiceFilter
 from poms.common.views import PomsClassViewSetBase, PomsViewSetBase
 from poms.currencies.models import Currency
-from poms.instruments.models import Instrument
+from poms.instruments.models import Instrument, InstrumentType
 from poms.obj_attrs.filters import AttributePrefetchFilter
 from poms.obj_attrs.views import AttributeTypeViewSetBase
 from poms.obj_perms.filters import ObjectPermissionBackend
@@ -65,17 +65,26 @@ class TransactionTypeFilterSet(FilterSet):
     name = CharFilter()
     short_name = CharFilter()
     group = ModelWithPermissionMultipleChoiceFilter(model=TransactionTypeGroup)
+    portfolio = ModelWithPermissionMultipleChoiceFilter(model=Portfolio, name='portfolios')
+    instrument_type = ModelWithPermissionMultipleChoiceFilter(model=InstrumentType, name='instrument_types')
     tag = TagFilter(model=TransactionType)
 
     class Meta:
         model = TransactionType
-        fields = ['user_code', 'name', 'short_name', 'group', 'tag']
+        fields = ['user_code', 'name', 'short_name', 'group', 'portfolio', 'instrument_type', 'tag']
 
 
 class TransactionTypeViewSet(PomsViewSetBase):
     queryset = TransactionType.objects.prefetch_related(
         'inputs',
         'inputs__content_type',
+
+        'portfolios',
+        'portfolios__user_object_permissions', 'portfolios__user_object_permissions__permission',
+        'portfolios__group_object_permissions', 'portfolios__group_object_permissions__permission',
+        'instrument_types',
+        'instrument_types__user_object_permissions', 'instrument_types__user_object_permissions__permission',
+        'instrument_types__group_object_permissions', 'instrument_types__group_object_permissions__permission',
 
         'actions',
 
@@ -264,36 +273,43 @@ class TransactionFilterSet(FilterSet):
 
 class TransactionViewSet(PomsViewSetBase):
     # queryset = Transaction.objects
-    queryset = Transaction.objects.select_related(
-        'complex_transaction', 'complex_transaction__transaction_type',
-        'instrument', 'transaction_currency', 'settlement_currency',
-        'portfolio', 'account_cash', 'account_position', 'account_interim',
-        'strategy1_position', 'strategy1_cash',
-        'strategy2_position', 'strategy2_cash',
-        'strategy3_position', 'strategy3_cash'
-    ).prefetch_related(
+    queryset = Transaction.objects.prefetch_related(
         'master_user',
+        'complex_transaction', 'complex_transaction__transaction_type',
         'transaction_class',
+        'portfolio',
         'portfolio__user_object_permissions', 'portfolio__user_object_permissions__permission',
         'portfolio__group_object_permissions', 'portfolio__group_object_permissions__permission',
+        'instrument',
         'instrument__user_object_permissions', 'instrument__user_object_permissions__permission',
         'instrument__group_object_permissions', 'instrument__group_object_permissions__permission',
+        'transaction_currency',
+        'settlement_currency',
+        'account_cash',
         'account_cash__user_object_permissions', 'account_cash__user_object_permissions__permission',
         'account_cash__group_object_permissions', 'account_cash__group_object_permissions__permission',
+        'account_position',
         'account_position__user_object_permissions', 'account_position__user_object_permissions__permission',
         'account_position__group_object_permissions', 'account_position__group_object_permissions__permission',
+        'account_interim',
         'account_interim__user_object_permissions', 'account_interim__user_object_permissions__permission',
         'account_interim__group_object_permissions', 'account_interim__group_object_permissions__permission',
+        'strategy1_position',
         'strategy1_position__user_object_permissions', 'strategy1_position__user_object_permissions__permission',
         'strategy1_position__group_object_permissions', 'strategy1_position__group_object_permissions__permission',
+        'strategy1_cash',
         'strategy1_cash__user_object_permissions', 'strategy1_cash__user_object_permissions__permission',
         'strategy1_cash__group_object_permissions', 'strategy1_cash__group_object_permissions__permission',
+        'strategy2_position',
         'strategy2_position__user_object_permissions', 'strategy2_position__user_object_permissions__permission',
         'strategy2_position__group_object_permissions', 'strategy2_position__group_object_permissions__permission',
+        'strategy2_cash',
         'strategy2_cash__user_object_permissions', 'strategy2_cash__user_object_permissions__permission',
         'strategy2_cash__group_object_permissions', 'strategy2_cash__group_object_permissions__permission',
+        'strategy3_position',
         'strategy3_position__user_object_permissions', 'strategy3_position__user_object_permissions__permission',
         'strategy3_position__group_object_permissions', 'strategy3_position__group_object_permissions__permission',
+        'strategy3_cash',
         'strategy3_cash__user_object_permissions', 'strategy3_cash__user_object_permissions__permission',
         'strategy3_cash__group_object_permissions', 'strategy3_cash__group_object_permissions__permission',
     )

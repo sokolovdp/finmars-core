@@ -27,6 +27,7 @@ class PortfolioAdmin(HistoricalAdmin):
     list_display = ['id', 'master_user', 'name']
     list_select_related = ['master_user']
     raw_id_fields = ['master_user']
+    filter_horizontal = ['accounts', 'responsibles', 'counterparties', 'transaction_types']
     inlines = [PortfolioAttributeInline]
 
 

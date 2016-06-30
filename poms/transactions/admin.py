@@ -228,7 +228,7 @@ class TransactionTypeAdmin(HistoricalAdmin):
     list_display = ['id', 'name', 'master_user']
     list_select_related = ['master_user']
     raw_id_fields = ['master_user', 'group']
-    filter_horizontal = ['instrument_types', 'portfolios']
+    filter_horizontal = ['instrument_types']
     inlines = [
         TransactionTypeInputInline,
         TransactionTypeActionInstrumentInline,

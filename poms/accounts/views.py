@@ -10,6 +10,7 @@ from poms.obj_attrs.filters import AttributePrefetchFilter
 from poms.obj_attrs.views import AttributeTypeViewSetBase
 from poms.obj_perms.filters import ObjectPermissionBackend
 from poms.obj_perms.permissions import ObjectPermissionBase
+from poms.portfolios.models import Portfolio
 from poms.tags.filters import TagFilterBackend, TagFilter
 from poms.users.filters import OwnerByMasterUserFilter
 
@@ -76,16 +77,24 @@ class AccountFilterSet(FilterSet):
     user_code = CharFilter()
     name = CharFilter()
     short_name = CharFilter()
+    portfolio = ModelWithPermissionMultipleChoiceFilter(model=Portfolio, name='portfolios')
     type = ModelWithPermissionMultipleChoiceFilter(model=AccountType)
     tag = TagFilter(model=Account)
 
     class Meta:
         model = Account
-        fields = ['user_code', 'name', 'short_name', 'type', 'tag']
+        fields = ['user_code', 'name', 'short_name', 'type', 'portfolio', 'tag']
 
 
 class AccountViewSet(PomsViewSetBase):
-    queryset = Account.objects
+    queryset = Account.objects.prefetch_related(
+        'type',
+        'type__user_object_permissions', 'type__user_object_permissions__permission',
+        'type__group_object_permissions', 'type__group_object_permissions__permission',
+        'portfolios',
+        'portfolios__user_object_permissions', 'portfolios__user_object_permissions__permission',
+        'portfolios__group_object_permissions', 'portfolios__group_object_permissions__permission',
+    )
     serializer_class = AccountSerializer
     filter_backends = [
         OwnerByMasterUserFilter,
@@ -101,5 +110,11 @@ class AccountViewSet(PomsViewSetBase):
     permission_classes = PomsViewSetBase.permission_classes + [
         ObjectPermissionBase
     ]
-    ordering_fields = ['user_code', 'name', 'short_name', 'type__user_code', 'type__name', 'type__short_name']
-    search_fields = ['user_code', 'name', 'short_name', 'type__user_code', 'type__name', 'type__short_name']
+    ordering_fields = [
+        'user_code', 'name', 'short_name',
+        'type__user_code', 'type__name', 'type__short_name',
+    ]
+    search_fields = [
+        'user_code', 'name', 'short_name',
+        'type__user_code', 'type__name', 'type__short_name',
+    ]

@@ -1,9 +1,8 @@
 from __future__ import unicode_literals
 
-import django_filters
 from rest_framework.filters import DjangoFilterBackend, SearchFilter, FilterSet, OrderingFilter
 
-from poms.common.filters import CharFilter
+from poms.common.filters import CharFilter, ModelWithPermissionMultipleChoiceFilter
 from poms.common.views import PomsViewSetBase
 from poms.counterparties.models import Counterparty, Responsible, CounterpartyAttributeType, ResponsibleAttributeType
 from poms.counterparties.serializers import CounterpartySerializer, ResponsibleSerializer, \
@@ -13,7 +12,8 @@ from poms.obj_attrs.filters import AttributePrefetchFilter
 from poms.obj_attrs.views import AttributeTypeViewSetBase
 from poms.obj_perms.filters import ObjectPermissionBackend
 from poms.obj_perms.permissions import ObjectPermissionBase
-from poms.tags.filters import TagFakeFilter, TagFilterBackend, TagFilter
+from poms.portfolios.models import Portfolio
+from poms.tags.filters import TagFilterBackend, TagFilter
 from poms.users.filters import OwnerByMasterUserFilter
 
 
@@ -49,15 +49,20 @@ class CounterpartyFilterSet(FilterSet):
     user_code = CharFilter()
     name = CharFilter()
     short_name = CharFilter()
+    portfolio = ModelWithPermissionMultipleChoiceFilter(model=Portfolio, name='portfolios')
     tag = TagFilter(model=Counterparty)
 
     class Meta:
         model = Counterparty
-        fields = ['user_code', 'name', 'short_name', 'tag']
+        fields = ['user_code', 'name', 'short_name', 'tag', 'portfolio']
 
 
 class CounterpartyViewSet(PomsViewSetBase):
-    queryset = Counterparty.objects
+    queryset = Counterparty.objects.prefetch_related(
+        'portfolios',
+        'portfolios__user_object_permissions', 'portfolios__user_object_permissions__permission',
+        'portfolios__group_object_permissions', 'portfolios__group_object_permissions__permission',
+    )
     serializer_class = CounterpartySerializer
     filter_backends = [
         OwnerByMasterUserFilter,
@@ -109,15 +114,20 @@ class ResponsibleFilterSet(FilterSet):
     user_code = CharFilter()
     name = CharFilter()
     short_name = CharFilter()
+    portfolio = ModelWithPermissionMultipleChoiceFilter(model=Portfolio, name='portfolios')
     tag = TagFilter(model=Responsible)
 
     class Meta:
         model = Responsible
-        fields = ['user_code', 'name', 'short_name', 'tag']
+        fields = ['user_code', 'name', 'short_name', 'portfolio', 'tag']
 
 
 class ResponsibleViewSet(PomsViewSetBase):
-    queryset = Responsible.objects
+    queryset = Responsible.objects.prefetch_related(
+        'portfolios',
+        'portfolios__user_object_permissions', 'portfolios__user_object_permissions__permission',
+        'portfolios__group_object_permissions', 'portfolios__group_object_permissions__permission',
+    )
     serializer_class = ResponsibleSerializer
     filter_backends = [
         OwnerByMasterUserFilter,

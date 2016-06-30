@@ -10,6 +10,7 @@ from poms.counterparties.models import CounterpartyClassifier, Counterparty, Res
 from poms.obj_attrs.serializers import AttributeTypeSerializerBase, AttributeSerializerBase, \
     ModelWithAttributesSerializer
 from poms.obj_perms.serializers import ModelWithObjectPermissionSerializer
+from poms.portfolios.fields import PortfolioField
 from poms.tags.fields import TagField
 from poms.users.fields import MasterUserField
 
@@ -46,13 +47,14 @@ class CounterpartyAttributeSerializer(AttributeSerializerBase):
 class CounterpartySerializer(ModelWithObjectPermissionSerializer, ModelWithAttributesSerializer,
                              ModelWithUserCodeSerializer):
     master_user = MasterUserField()
+    portfolios = PortfolioField(many=True)
     attributes = CounterpartyAttributeSerializer(many=True, required=False, allow_null=True)
     tags = TagField(many=True, required=False, allow_null=True)
 
     class Meta:
         model = Counterparty
-        fields = ['url', 'id', 'master_user', 'user_code', 'name', 'short_name', 'public_name', 'notes', 'attributes',
-                  'tags']
+        fields = ['url', 'id', 'master_user', 'user_code', 'name', 'short_name', 'public_name', 'notes', 'portfolios',
+                  'attributes', 'tags']
 
 
 class ResponsibleClassifierSerializer(ClassifierSerializerBase):
@@ -87,10 +89,11 @@ class ResponsibleAttributeSerializer(AttributeSerializerBase):
 class ResponsibleSerializer(ModelWithObjectPermissionSerializer, ModelWithAttributesSerializer,
                             ModelWithUserCodeSerializer):
     master_user = MasterUserField()
+    portfolios = PortfolioField(many=True)
     attributes = ResponsibleAttributeSerializer(many=True, required=False, allow_null=True)
     tags = TagField(many=True, required=False, allow_null=True)
 
     class Meta:
         model = Responsible
-        fields = ['url', 'id', 'master_user', 'user_code', 'name', 'short_name', 'public_name', 'notes', 'attributes',
-                  'tags']
+        fields = ['url', 'id', 'master_user', 'user_code', 'name', 'short_name', 'public_name', 'notes', 'portfolios',
+                  'attributes', 'tags']

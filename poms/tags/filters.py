@@ -39,10 +39,8 @@ class TagFilterBackend(BaseFilterBackend):
     def filter_queryset(self, request, queryset, view):
         queryset = queryset.prefetch_related(
             'tags',
-            'tags__user_object_permissions',
-            'tags__user_object_permissions__permission',
-            'tags__group_object_permissions',
-            'tags__group_object_permissions__permission',
+            'tags__user_object_permissions', 'tags__user_object_permissions__permission',
+            'tags__group_object_permissions', 'tags__group_object_permissions__permission',
         )
         return queryset
 

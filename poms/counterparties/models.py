@@ -17,6 +17,12 @@ from poms.users.models import MasterUser, Member
 class Counterparty(NamedModel):
     master_user = models.ForeignKey(MasterUser, related_name='counterparties',
                                     verbose_name=_('master user'))
+    # portfolios = models.ManyToManyField(
+    #     'portfolios.Portfolio',
+    #     related_name='counterparties',
+    #     blank=True,
+    #     verbose_name=_('portfolios')
+    # )
 
     class Meta(NamedModel.Meta):
         verbose_name = _('counterparty')
@@ -143,6 +149,12 @@ class CounterpartyAttribute(AttributeBase):
 class Responsible(NamedModel):
     master_user = models.ForeignKey(MasterUser, related_name='responsibles',
                                     verbose_name=_('master user'))
+    # portfolios = models.ManyToManyField(
+    #     'portfolios.Portfolio',
+    #     related_name='responsibles',
+    #     blank=True,
+    #     verbose_name=_('portfolios')
+    # )
 
     class Meta(NamedModel.Meta):
         verbose_name = _('responsible')
