@@ -6,6 +6,7 @@ from threading import local
 
 from django.conf import settings
 from django.contrib.gis.geoip2 import GeoIP2
+from django.utils.cache import get_max_age, patch_cache_control, add_never_cache_headers
 from django.utils.functional import SimpleLazyObject
 from geoip2.errors import AddressNotFoundError
 
@@ -128,4 +129,14 @@ class CommonMiddleware(object):
 
     def process_response(self, request, response):
         deactivate()
+        return response
+
+
+class NoCacheMiddleware(object):
+    def process_response(self, request, response):
+        max_age = get_max_age(response)
+        if max_age:
+            patch_cache_control(response, private=True)
+        else:
+            add_never_cache_headers(response)
         return response

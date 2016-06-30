@@ -94,6 +94,7 @@ MIDDLEWARE_CLASSES = [
     # 'django.middleware.cache.UpdateCacheMiddleware',
     'django.middleware.security.SecurityMiddleware',
     'django.middleware.http.ConditionalGetMiddleware',
+    # 'poms.common.middleware.NoCacheMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'poms.http_sessions.middleware.SessionMiddleware',
     'django.middleware.locale.LocaleMiddleware',
