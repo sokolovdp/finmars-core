@@ -5,6 +5,9 @@ import ipaddress
 from threading import local
 
 from django.conf import settings
+from django.contrib.gis.geoip2 import GeoIP2
+from django.utils.functional import SimpleLazyObject
+from geoip2.errors import AddressNotFoundError
 
 
 def get_ip(request):
@@ -60,9 +63,6 @@ def get_ip(request):
     if settings.DEBUG:
         ip = ipaddress.ip_address(user_ip)
         if ip.is_private or ip.is_reserved:
-            # user_ip_source = 'X_FORWARDED_FOR'
-            # user_ip_source = 'X_REAL_IP'
-            user_ip_source = 'REMOTE_ADDR'
             # user_ip = '95.165.168.246'  # москва
             # user_ip = '195.19.204.76' # питер
             # user_ip = '77.221.130.2' # норильск
@@ -70,13 +70,27 @@ def get_ip(request):
             # user_ip = '8.8.8.8'
             # user_ip = '185.76.80.1'
             # user_ip = '91.219.220.8' # Ukraine
-            user_ip = '128.199.165.82' # Singapore
+            user_ip = '128.199.165.82'  # Singapore
 
     return user_ip
 
 
 def get_user_agent(request):
     return request.META.get('HTTP_USER_AGENT', None)
+
+
+_geoip = SimpleLazyObject(lambda: GeoIP2())
+
+
+def get_city_by_ip(ip):
+    try:
+        return _geoip.city(ip)
+    except AddressNotFoundError:
+        try:
+            return _geoip.country(ip)
+        except AddressNotFoundError:
+            pass
+    return None
 
 
 _active = local()
@@ -102,8 +116,14 @@ def get_request():
 
 class CommonMiddleware(object):
     def process_request(self, request):
-        request.user_ip = get_ip(request)
-        request.user_agent = get_user_agent(request)
+        # request.user_ip = get_ip(request)
+        # request.user_agent = get_user_agent(request)
+        # request.user_city = get_city_by_ip(request.user_ip)
+
+        request.user_ip = SimpleLazyObject(lambda: get_ip(request))
+        request.user_agent = SimpleLazyObject(lambda: get_user_agent(request))
+        request.user_city = SimpleLazyObject(lambda: get_city_by_ip(request))
+
         activate(request)
 
     def process_response(self, request, response):

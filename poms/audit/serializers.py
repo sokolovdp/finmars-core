@@ -1,19 +1,28 @@
 from __future__ import unicode_literals
 
+from collections import OrderedDict
+
+import six
 from django.utils import timezone
 from rest_framework import serializers
 from reversion.models import Version
 
 from poms.audit.models import AuthLogEntry
 from poms.common.fields import DateTimeTzAwareField
+from poms.common.middleware import get_city_by_ip
 
 
 class AuthLogEntrySerializer(serializers.ModelSerializer):
     date = DateTimeTzAwareField()
+    user_location = serializers.SerializerMethodField()
 
     class Meta:
         model = AuthLogEntry
-        fields = ['url', 'id', 'date', 'user_ip', 'user_agent', 'is_success']
+        fields = ('url', 'id', 'date', 'user_ip', 'user_agent', 'is_success', 'user_location',)
+
+    def get_user_location(self, instance):
+        loc = get_city_by_ip(instance.user_ip)
+        return OrderedDict(sorted(six.iteritems(loc))) if loc else None
 
 
 class VersionSerializer(serializers.ModelSerializer):
@@ -26,7 +35,7 @@ class VersionSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Version
-        fields = ['url', 'id', 'date', 'user', 'username', 'comment', 'object']
+        fields = ('url', 'id', 'date', 'user', 'username', 'comment', 'object',)
 
     def get_url(self, value):
         request = self.context['request']

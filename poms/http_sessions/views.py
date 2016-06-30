@@ -17,7 +17,7 @@ class SessionFilterSet(FilterSet):
 
     class Meta:
         model = Session
-        fields = ['user_ip', 'user_agent']
+        fields = ('user_ip', 'user_agent',)
 
 
 class SessionViewSet(DbTransactionMixin, DestroyModelMixin, ReadOnlyModelViewSet):
@@ -34,5 +34,5 @@ class SessionViewSet(DbTransactionMixin, DestroyModelMixin, ReadOnlyModelViewSet
         SearchFilter,
     )
     filter_class = SessionFilterSet
-    ordering_fields = ['user_ip']
-    search_fields = ['user_ip', 'user_agent']
+    ordering_fields = ('user_ip',)
+    search_fields = ('user_ip', 'user_agent',)

@@ -16,13 +16,15 @@ class AuthLogEntryFilterSet(FilterSet):
 
     class Meta:
         model = AuthLogEntry
-        fields = ['user_ip', 'is_success', 'date']
+        fields = ('user_ip', 'is_success', 'date',)
 
 
 class AuthLogEntryViewSet(ReadOnlyModelViewSet):
     queryset = AuthLogEntry.objects.select_related('user')
     serializer_class = AuthLogEntrySerializer
-    permission_classes = (IsAuthenticated,)
+    permission_classes = (
+        IsAuthenticated,
+    )
     filter_backends = (
         OwnerByUserFilter,
         DjangoFilterBackend,
@@ -30,5 +32,5 @@ class AuthLogEntryViewSet(ReadOnlyModelViewSet):
         SearchFilter,
     )
     filter_class = AuthLogEntryFilterSet
-    ordering_fields = ['date']
-    search_fields = ['user_ip', 'user_agent']
+    ordering_fields = ('date',)
+    search_fields = ('user_ip', 'user_agent',)
