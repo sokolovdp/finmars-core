@@ -285,6 +285,8 @@ def has_view_perms(member, obj):
 
 def perms_prefetch(queryset):
     return queryset.prefetch_related(
+        'user_object_permissions',
+        'user_object_permissions__permission',
         'group_object_permissions',
         'group_object_permissions__permission',
     )

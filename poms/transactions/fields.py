@@ -6,25 +6,36 @@ from django.utils.encoding import smart_text
 from rest_framework.fields import CharField, empty
 
 from poms.common.fields import FilteredPrimaryKeyRelatedField, FilteredSlugRelatedField
-from poms.obj_perms.filters import FieldObjectPermissionBackend
+from poms.obj_perms.fields import PrimaryKeyRelatedFilteredWithObjectPermissionField
+from poms.obj_perms.filters import ObjectPermissionBackend
 from poms.transactions.filters import TransactionTypeInputContentTypeFilter
 from poms.transactions.models import TransactionType, TransactionAttributeType, TransactionTypeGroup
 from poms.users.filters import OwnerByMasterUserFilter
 
 
-class TransactionTypeGroupField(FilteredPrimaryKeyRelatedField):
+# class TransactionTypeGroupField(FilteredPrimaryKeyRelatedField):
+#     queryset = TransactionTypeGroup.objects
+#     filter_backends = [
+#         OwnerByMasterUserFilter,
+#         FieldObjectPermissionBackend,
+#     ]
+class TransactionTypeGroupField(PrimaryKeyRelatedFilteredWithObjectPermissionField):
     queryset = TransactionTypeGroup.objects
     filter_backends = [
         OwnerByMasterUserFilter,
-        FieldObjectPermissionBackend,
     ]
 
 
-class TransactionTypeField(FilteredPrimaryKeyRelatedField):
+# class TransactionTypeField(FilteredPrimaryKeyRelatedField):
+#     queryset = TransactionType.objects
+#     filter_backends = [
+#         OwnerByMasterUserFilter,
+#         FieldObjectPermissionBackend,
+#     ]
+class TransactionTypeField(PrimaryKeyRelatedFilteredWithObjectPermissionField):
     queryset = TransactionType.objects
     filter_backends = [
         OwnerByMasterUserFilter,
-        FieldObjectPermissionBackend,
     ]
 
 
@@ -32,7 +43,7 @@ class TransactionAttributeTypeField(FilteredPrimaryKeyRelatedField):
     queryset = TransactionAttributeType.objects
     filter_backends = [
         OwnerByMasterUserFilter,
-        FieldObjectPermissionBackend,
+        ObjectPermissionBackend,
     ]
 
 

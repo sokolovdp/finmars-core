@@ -10,7 +10,7 @@ from poms.chats.permissions import MessagePermission, DirectMessagePermission
 from poms.chats.serializers import ThreadSerializer, MessageSerializer, DirectMessageSerializer, ThreadStatusSerializer
 from poms.common.filters import CharFilter, ModelWithPermissionMultipleChoiceFilter, ModelMultipleChoiceFilter
 from poms.common.views import PomsViewSetBase
-from poms.obj_perms.filters import FieldObjectPermissionBackend
+from poms.obj_perms.filters import ObjectPermissionBackend
 from poms.obj_perms.permissions import ObjectPermissionBase
 from poms.users.filters import OwnerByMasterUserFilter
 from poms.users.models import Member
@@ -53,7 +53,7 @@ class ThreadViewSet(PomsViewSetBase):
     ]
     filter_backends = [
         OwnerByMasterUserFilter,
-        FieldObjectPermissionBackend,
+        ObjectPermissionBackend,
         DjangoFilterBackend,
         OrderingFilter,
         SearchFilter,

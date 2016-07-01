@@ -4,7 +4,7 @@ from rest_framework.filters import BaseFilterBackend, OrderingFilter
 
 from poms.common.fields import FilteredPrimaryKeyRelatedField
 from poms.obj_attrs.utils import get_attr_model, get_attr_type_model
-from poms.obj_perms.filters import FieldObjectPermissionBackend
+from poms.obj_perms.filters import ObjectPermissionBackend
 from poms.obj_perms.utils import obj_perms_filter_objects_for_view
 
 
@@ -31,7 +31,7 @@ class ClassifierPermissionBackend(BaseFilterBackend):
     def filter_queryset(self, request, queryset, view):
         attribute_type_model = queryset.model._meta.get_field('attribute_type').related_model
         attribute_type_qs = attribute_type_model.objects.all()
-        attribute_type_qs = FieldObjectPermissionBackend().filter_queryset(request, attribute_type_qs, view)
+        attribute_type_qs = ObjectPermissionBackend().filter_queryset(request, attribute_type_qs, view)
         queryset = queryset.filter(attribute_type__in=attribute_type_qs)
         return queryset
 

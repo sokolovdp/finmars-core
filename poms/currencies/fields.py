@@ -7,4 +7,6 @@ from poms.users.filters import OwnerByMasterUserFilter
 
 class CurrencyField(FilteredPrimaryKeyRelatedField):
     queryset = Currency.objects
-    filter_backends = [OwnerByMasterUserFilter]
+    filter_backends = (
+        OwnerByMasterUserFilter,
+    )

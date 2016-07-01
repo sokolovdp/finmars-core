@@ -1,74 +1,44 @@
 from __future__ import unicode_literals
 
-from poms.common.fields import FilteredPrimaryKeyRelatedField
-from poms.obj_perms.filters import FieldObjectPermissionBackend
+from poms.obj_perms.fields import PrimaryKeyRelatedFilteredWithObjectPermissionField
 from poms.strategies.models import Strategy1, Strategy2, Strategy3
 from poms.users.filters import OwnerByMasterUserFilter
 
 
-# class StrategyField(FilteredPrimaryKeyRelatedField):
-#     queryset = Strategy.objects
+# class Strategy1Field(FilteredPrimaryKeyRelatedField):
+#     queryset = Strategy1.objects
 #     filter_backends = [
 #         OwnerByMasterUserFilter,
-#         ObjectPermissionPrefetchFilter,
-#         ObjectPermissionFilter,
+#         FieldObjectPermissionBackend,
 #     ]
-
-
-# class StrategyRootField(FilteredPrimaryKeyRelatedField):
-#     queryset = Strategy.objects.filter(parent__isnull=True)
-#     filter_backends = [
-#         OwnerByMasterUserFilter,
-#         ObjectPermissionPrefetchFilter,
-#         ObjectPermissionFilter,
-#     ]
-
-
-class Strategy1Field(FilteredPrimaryKeyRelatedField):
+class Strategy1Field(PrimaryKeyRelatedFilteredWithObjectPermissionField):
     queryset = Strategy1.objects
     filter_backends = [
         OwnerByMasterUserFilter,
-        FieldObjectPermissionBackend,
     ]
 
 
-# class Strategy1RootField(FilteredPrimaryKeyRelatedField):
-#     queryset = Strategy1.objects.filter(parent__isnull=True)
+# class Strategy2Field(FilteredPrimaryKeyRelatedField):
+#     queryset = Strategy2.objects
 #     filter_backends = [
 #         OwnerByMasterUserFilter,
-#         ObjectPermissionPrefetchFilter,
-#         ObjectPermissionFilter,
+#         FieldObjectPermissionBackend,
 #     ]
-
-
-class Strategy2Field(FilteredPrimaryKeyRelatedField):
+class Strategy2Field(PrimaryKeyRelatedFilteredWithObjectPermissionField):
     queryset = Strategy2.objects
     filter_backends = [
         OwnerByMasterUserFilter,
-        FieldObjectPermissionBackend,
     ]
 
 
-# class Strategy2RootField(FilteredPrimaryKeyRelatedField):
-#     queryset = Strategy2.objects.filter(parent__isnull=True)
+# class Strategy3Field(FilteredPrimaryKeyRelatedField):
+#     queryset = Strategy3.objects
 #     filter_backends = [
 #         OwnerByMasterUserFilter,
-#         ObjectPermissionPrefetchFilter,
-#         ObjectPermissionFilter,
+#         FieldObjectPermissionBackend,
 #     ]
-
-
-class Strategy3Field(FilteredPrimaryKeyRelatedField):
+class Strategy3Field(PrimaryKeyRelatedFilteredWithObjectPermissionField):
     queryset = Strategy3.objects
     filter_backends = [
         OwnerByMasterUserFilter,
-        FieldObjectPermissionBackend,
     ]
-
-# class Strategy3RootField(FilteredPrimaryKeyRelatedField):
-#     queryset = Strategy3.objects.filter(parent__isnull=True)
-#     filter_backends = [
-#         OwnerByMasterUserFilter,
-#         ObjectPermissionPrefetchFilter,
-#         ObjectPermissionFilter,
-#     ]

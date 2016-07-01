@@ -62,9 +62,8 @@ class AllFakeFilter(django_filters.Filter):
 #         )
 
 
-class BaseObjectPermissionBackend(BaseFilterBackend):
+class ObjectPermissionBackend(BaseFilterBackend):
     codename_set = ['view_%(model_name)s', 'change_%(model_name)s', 'manage_%(model_name)s']
-    can_view_all = True
 
     def get_codename_set(self, model_cls):
         kwargs = {
@@ -85,17 +84,11 @@ class BaseObjectPermissionBackend(BaseFilterBackend):
             'group_object_permissions__permission',
             # 'group_object_permissions__permission__content_type',
         )
-        if self.can_view_all:
-            # if request.query_params.get('all', '') in ['1', 'yes', 'true']:
-            #     return queryset
-            if view and view.action == 'retrieve':
-                return queryset
+        # if self.can_view_all:
+        #     # if request.query_params.get('all', '') in ['1', 'yes', 'true']:
+        #     #     return queryset
+        #     if view and view.action == 'retrieve':
+        #         return queryset
+        if view and view.action == 'retrieve':
+            return queryset
         return obj_perms_filter_objects(request.user.member, self.get_codename_set(queryset.model), queryset)
-
-
-class ObjectPermissionBackend(BaseObjectPermissionBackend):
-    can_view_all = True
-
-
-class FieldObjectPermissionBackend(BaseObjectPermissionBackend):
-    can_view_all = False
