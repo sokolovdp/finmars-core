@@ -343,13 +343,17 @@ EMAIL_TIMEOUT = 10
 
 if DEV:
     ADMINS = MANAGERS = [
-        ['ailyukhin', 'ailyukhin@quadrogroup.ru'],
-        ['alyakhov', 'alyakhov@quadrogroup.ru'],
+        ['ailyukhin', 'ailyukhin@vitaminsoft.ru'],
+        ['alyakhov', 'alyakhov@vitaminsoft.ru'],
     ]
     EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
 else:
-    ADMINS = []
-    MANAGERS = []
+    ADMINS = [
+        ['admin', 'site-admins@finmars.com'],
+    ]
+    MANAGERS = [
+        ['admin', 'site-managers@finmars.com'],
+    ]
     EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
 
 MESSAGE_STORAGE = 'poms.notifications.message_storage.FallbackStorage'
@@ -370,8 +374,8 @@ BROKER_URL = 'django://'
 KOMBU_POLLING_INTERVAL = 1
 CELERY_RESULT_BACKEND = 'djcelery.backends.database:DatabaseBackend'
 CELERYBEAT_SCHEDULER = 'djcelery.schedulers.DatabaseScheduler'
-# CELERY_ALWAYS_EAGER = DEBUG
-# CELERY_EAGER_PROPAGATES_EXCEPTIONS = DEBUG
+CELERY_ALWAYS_EAGER = DEBUG
+CELERY_EAGER_PROPAGATES_EXCEPTIONS = DEBUG
 
 CELERY_ENABLE_UTC = True
 CELERY_TIMEZONE = 'UTC'
