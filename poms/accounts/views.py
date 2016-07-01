@@ -44,6 +44,10 @@ class AccountTypeViewSet(PomsViewSetBase):
     ordering_fields = ['user_code', 'name', 'short_name', ]
     search_fields = ['user_code', 'name', 'short_name', ]
 
+    def get_serializer(self, *args, **kwargs):
+        kwargs['show_object_permissions'] = (self.action != 'list')
+        return super(AccountTypeViewSet, self).get_serializer(*args, **kwargs)
+
 
 class AccountAttributeTypeFilterSet(FilterSet):
     user_code = CharFilter()
@@ -71,6 +75,10 @@ class AccountAttributeTypeViewSet(AttributeTypeViewSetBase):
     ]
     ordering_fields = ['user_code', 'name', 'short_name', ]
     search_fields = ['user_code', 'name', 'short_name', ]
+
+    def get_serializer(self, *args, **kwargs):
+        kwargs['show_object_permissions'] = (self.action != 'list')
+        return super(AccountAttributeTypeViewSet, self).get_serializer(*args, **kwargs)
 
 
 class AccountFilterSet(FilterSet):
@@ -118,3 +126,7 @@ class AccountViewSet(PomsViewSetBase):
         'user_code', 'name', 'short_name',
         'type__user_code', 'type__name', 'type__short_name',
     ]
+
+    def get_serializer(self, *args, **kwargs):
+        kwargs['show_object_permissions'] = (self.action != 'list')
+        return super(AccountViewSet, self).get_serializer(*args, **kwargs)

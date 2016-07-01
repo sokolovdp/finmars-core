@@ -44,6 +44,10 @@ class CounterpartyAttributeTypeViewSet(AttributeTypeViewSetBase):
     ordering_fields = ['user_code', 'name', 'short_name', ]
     search_fields = ['user_code', 'name', 'short_name', ]
 
+    def get_serializer(self, *args, **kwargs):
+        kwargs['show_object_permissions'] = (self.action != 'list')
+        return super(CounterpartyAttributeTypeViewSet, self).get_serializer(*args, **kwargs)
+
 
 class CounterpartyFilterSet(FilterSet):
     user_code = CharFilter()
@@ -81,6 +85,10 @@ class CounterpartyViewSet(PomsViewSetBase):
     ordering_fields = ['user_code', 'name', 'short_name']
     search_fields = ['user_code', 'name', 'short_name']
 
+    def get_serializer(self, *args, **kwargs):
+        kwargs['show_object_permissions'] = (self.action != 'list')
+        return super(CounterpartyViewSet, self).get_serializer(*args, **kwargs)
+
 
 class ResponsibleAttributeTypeFilterSet(FilterSet):
     user_code = CharFilter()
@@ -108,6 +116,10 @@ class ResponsibleAttributeTypeViewSet(AttributeTypeViewSetBase):
     ]
     ordering_fields = ['user_code', 'name', 'short_name', ]
     search_fields = ['user_code', 'name', 'short_name', ]
+
+    def get_serializer(self, *args, **kwargs):
+        kwargs['show_object_permissions'] = (self.action != 'list')
+        return super(ResponsibleAttributeTypeViewSet, self).get_serializer(*args, **kwargs)
 
 
 class ResponsibleFilterSet(FilterSet):
@@ -145,3 +157,7 @@ class ResponsibleViewSet(PomsViewSetBase):
     ]
     ordering_fields = ['user_code', 'name', 'short_name']
     search_fields = ['user_code', 'name', 'short_name']
+
+    def get_serializer(self, *args, **kwargs):
+        kwargs['show_object_permissions'] = (self.action != 'list')
+        return super(ResponsibleViewSet, self).get_serializer(*args, **kwargs)

@@ -197,9 +197,9 @@ class ClassifierSerializerBase(ModelWithUserCodeSerializer, serializers.ModelSer
         # extra_kwargs = {'user_code': {'required': False}}
 
     def __init__(self, *args, **kwargs):
-        hide_children = kwargs.pop('hide_children', False)
+        show_children = kwargs.pop('show_children', False)
         super(ClassifierSerializerBase, self).__init__(*args, **kwargs)
-        if hide_children:
+        if not show_children:
             self.fields.pop('children')
 
     def create(self, validated_data):

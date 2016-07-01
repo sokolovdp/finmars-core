@@ -26,13 +26,14 @@ class GroupObjectPermissionSerializer(serializers.Serializer):
 
 class ModelWithObjectPermissionSerializer(serializers.ModelSerializer):
     def __init__(self, *args, **kwargs):
+        show_object_permissions = kwargs.pop('show_object_permissions', False)
         super(ModelWithObjectPermissionSerializer, self).__init__(*args, **kwargs)
 
         self.fields['display_name'] = serializers.SerializerMethodField()
         self.fields['granted_permissions'] = GrantedPermissionField()
 
         member = self.context['request'].user.member
-        if member.is_superuser:
+        if member.is_superuser and show_object_permissions:
             self.fields['user_object_permissions'] = UserObjectPermissionSerializer(
                 many=True, required=False, allow_null=True)
             self.fields['group_object_permissions'] = GroupObjectPermissionSerializer(

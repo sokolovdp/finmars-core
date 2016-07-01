@@ -97,6 +97,10 @@ class InstrumentTypeViewSet(PomsViewSetBase):
     ordering_fields = ['user_code', 'name', 'short_name']
     search_fields = ['user_code', 'name', 'short_name']
 
+    def get_serializer(self, *args, **kwargs):
+        kwargs['show_object_permissions'] = (self.action != 'list')
+        return super(InstrumentTypeViewSet, self).get_serializer(*args, **kwargs)
+
 
 class InstrumentAttributeTypeFilterSet(FilterSet):
     user_code = CharFilter()
@@ -124,6 +128,10 @@ class InstrumentAttributeTypeViewSet(AttributeTypeViewSetBase):
     ]
     ordering_fields = ['user_code', 'name', 'short_name', ]
     search_fields = ['user_code', 'name', 'short_name', ]
+
+    def get_serializer(self, *args, **kwargs):
+        kwargs['show_object_permissions'] = (self.action != 'list')
+        return super(InstrumentAttributeTypeViewSet, self).get_serializer(*args, **kwargs)
 
 
 class InstrumentFilterSet(FilterSet):
@@ -165,6 +173,10 @@ class InstrumentViewSet(PomsViewSetBase):
     search_fields = ['user_code', 'name', 'short_name', 'instrument_type__user_code', 'instrument_type__name',
                      'instrument_type__short_name']
 
+    def get_serializer(self, *args, **kwargs):
+        kwargs['show_object_permissions'] = (self.action != 'list')
+        return super(InstrumentViewSet, self).get_serializer(*args, **kwargs)
+
 
 class PriceHistoryFilterSet(FilterSet):
     instrument = ModelWithPermissionMultipleChoiceFilter(model=Instrument)
@@ -192,26 +204,3 @@ class PriceHistoryViewSet(PomsViewSetBase):
     filter_class = PriceHistoryFilterSet
     ordering_fields = ['-date']
     search_fields = ['instrument__user_code', 'instrument__name', 'instrument__short_name', ]
-
-# class ManualPricingFormulaViewSet(PomsViewSetBase):
-#     queryset = ManualPricingFormula.objects
-#     serializer_class = ManualPricingFormulaSerializer
-#     filter_backends = [OwnerByInstrumentFilter, DjangoFilterBackend, OrderingFilter]
-
-
-# class AccrualCalculationScheduleViewSet(PomsViewSetBase):
-#     queryset = AccrualCalculationSchedule.objects
-#     serializer_class = AccrualCalculationScheduleSerializer
-#     filter_backends = [OwnerByInstrumentFilter, DjangoFilterBackend, OrderingFilter]
-
-
-# class InstrumentFactorScheduleViewSet(PomsViewSetBase):
-#     queryset = InstrumentFactorSchedule.objects
-#     serializer_class = InstrumentFactorScheduleSerializer
-#     filter_backends = [OwnerByInstrumentFilter, DjangoFilterBackend, OrderingFilter]
-
-
-# class EventScheduleViewSet(PomsViewSetBase):
-#     queryset = EventSchedule.objects
-#     serializer_class = EventScheduleSerializer
-#     filter_backends = [OwnerByInstrumentFilter, DjangoFilterBackend, OrderingFilter]

@@ -44,6 +44,10 @@ class PortfolioAttributeTypeViewSet(AttributeTypeViewSetBase):
     ordering_fields = ['user_code', 'name', 'short_name', ]
     search_fields = ['user_code', 'name', 'short_name', ]
 
+    def get_serializer(self, *args, **kwargs):
+        kwargs['show_object_permissions'] = (self.action != 'list')
+        return super(PortfolioAttributeTypeViewSet, self).get_serializer(*args, **kwargs)
+
 
 class PortfolioFilterSet(FilterSet):
     user_code = CharFilter()
@@ -93,3 +97,7 @@ class PortfolioViewSet(PomsViewSetBase):
     ]
     ordering_fields = ['user_code', 'name', 'short_name']
     search_fields = ['user_code', 'name', 'short_name']
+
+    def get_serializer(self, *args, **kwargs):
+        kwargs['show_object_permissions'] = (self.action != 'list')
+        return super(PortfolioViewSet, self).get_serializer(*args, **kwargs)

@@ -25,8 +25,9 @@ class AbstractStrategyViewSet(ClassifierViewSetBase):
     ]
 
     def get_serializer(self, *args, **kwargs):
-        return super(AbstractStrategyViewSet, self).get_serializer(*args, hide_children=(self.action == 'list'),
-                                                                   **kwargs)
+        kwargs['show_children'] = (self.action != 'list')
+        kwargs['show_object_permissions'] = (self.action != 'list')
+        return super(AbstractStrategyViewSet, self).get_serializer(*args, **kwargs)
 
 
 class AbstractStrategyNodeViewSet(ClassifierNodeViewSetBase):
@@ -37,6 +38,10 @@ class AbstractStrategyNodeViewSet(ClassifierNodeViewSetBase):
     permission_classes = ClassifierNodeViewSetBase.permission_classes + [
         ObjectPermissionBase
     ]
+
+    def get_serializer(self, *args, **kwargs):
+        kwargs['show_object_permissions'] = (self.action != 'list')
+        return super(AbstractStrategyNodeViewSet, self).get_serializer(*args, **kwargs)
 
 
 # Strategy1

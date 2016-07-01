@@ -62,6 +62,10 @@ class ThreadViewSet(PomsViewSetBase):
     ordering_fields = ['id', 'created', 'subject']
     search_fields = ['subject']
 
+    def get_serializer(self, *args, **kwargs):
+        kwargs['show_object_permissions'] = (self.action != 'list')
+        return super(ThreadViewSet, self).get_serializer(*args, **kwargs)
+
 
 class MessageFilterSet(FilterSet):
     thread = ModelWithPermissionMultipleChoiceFilter(model=Thread, field_name='subject')

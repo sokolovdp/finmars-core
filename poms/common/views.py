@@ -18,8 +18,13 @@ from poms.users.filters import OwnerByMasterUserFilter
 
 class PomsViewSetBase(DbTransactionMixin, HistoricalMixin, ModelViewSet):
     permission_classes = [
-        IsAuthenticated
+        # IsAuthenticated
     ]
+
+    def get_permissions(self):
+        return super(PomsViewSetBase, self).get_permissions() + [
+            IsAuthenticated()
+        ]
 
     def update(self, request, *args, **kwargs):
         response = super(PomsViewSetBase, self).update(request, *args, **kwargs)
@@ -104,7 +109,7 @@ class ClassifierViewSetBase(PomsViewSetBase):
 
 
 # class ClassifierNodeViewSetBase(DbTransactionMixin, HistoricalMixin, UpdateModelMixin, ReadOnlyModelViewSet):
-class ClassifierNodeViewSetBase(DbTransactionMixin, HistoricalMixin, ModelViewSet):
+class ClassifierNodeViewSetBase(PomsViewSetBase):
     filter_backends = [
         OwnerByMasterUserFilter,
         ClassifierPrefetchFilter,
