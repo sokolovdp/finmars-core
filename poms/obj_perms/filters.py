@@ -2,7 +2,7 @@ import django_filters
 from django import forms
 from rest_framework.filters import BaseFilterBackend
 
-from poms.obj_perms.utils import obj_perms_filter_objects, perms_prefetch
+from poms.obj_perms.utils import obj_perms_filter_objects, obj_perms_prefetch
 
 
 class AllFakeFilter(django_filters.Filter):
@@ -90,5 +90,5 @@ class ObjectPermissionBackend(BaseFilterBackend):
         #     if view and view.action == 'retrieve':
         #         return queryset
         if view and view.action == 'retrieve':
-            return perms_prefetch(queryset)
+            return obj_perms_prefetch(queryset)
         return obj_perms_filter_objects(request.user.member, self.get_codename_set(queryset.model), queryset)

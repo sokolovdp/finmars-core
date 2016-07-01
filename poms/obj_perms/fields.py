@@ -7,7 +7,7 @@ from rest_framework.relations import MANY_RELATION_KWARGS
 
 from poms.common.fields import FilteredPrimaryKeyRelatedField
 from poms.obj_perms.utils import get_granted_permissions, obj_perms_filter_object_list_for_view, \
-    obj_perms_filter_objects_for_view, perms_prefetch, has_view_perms
+    obj_perms_filter_objects_for_view, obj_perms_prefetch, has_view_perms
 
 
 class PermissionField(serializers.SlugRelatedField):
@@ -50,7 +50,7 @@ class ManyRelatedWithObjectPermissionField(serializers.ManyRelatedField):
         if not member.is_superuser and instance:
             # add not visible for current member tag to list...
             # hidden_tags = []
-            for t in perms_prefetch(self.get_attribute(instance)):
+            for t in obj_perms_prefetch(self.get_attribute(instance)):
                 if not has_view_perms(member, t) and t.id not in data:
                     data.add(t.id)
                     res.append(t)
