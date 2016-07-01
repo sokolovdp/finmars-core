@@ -44,7 +44,7 @@ INSTALLED_APPS = [
     'rest_framework',
 
     'kombu.transport.django',
-    # 'djcelery',
+    'djcelery',
 
     'modeltranslation',
     'mptt',
@@ -264,8 +264,12 @@ LOGGING = {
             'level': 'DEBUG',
             'handlers': ['console'],
         },
+        'celery': {
+            'level': 'INFO',
+            'handlers': ['console'],
+        },
         'werkzeug': {
-            'level': 'DEBUG',
+            'level': 'INFO',
             'handlers': ['console'],
             'propagate': True,
         },
@@ -355,3 +359,28 @@ GEOIP_PATH = os.path.join(BASE_DIR, 'poms')
 GEOIP_COUNTRY = "GeoLite2-Country.mmdb"
 GEOIP_CITY = "GeoLite2-City.mmdb"
 
+
+# CELERY ------------------------------------------------
+
+import djcelery
+djcelery.setup_loader()
+
+BROKER_URL = 'django://'
+# BROKER_URL = 'redis://127.0.0.1:6379/15'
+KOMBU_POLLING_INTERVAL = 1
+CELERY_RESULT_BACKEND = 'djcelery.backends.database:DatabaseBackend'
+CELERYBEAT_SCHEDULER = 'djcelery.schedulers.DatabaseScheduler'
+# CELERY_ALWAYS_EAGER = DEBUG
+# CELERY_EAGER_PROPAGATES_EXCEPTIONS = DEBUG
+
+CELERY_ENABLE_UTC = True
+CELERY_TIMEZONE = 'UTC'
+CELERY_ACCEPT_CONTENT = ['json']
+CELERY_TASK_SERIALIZER = 'json'
+CELERY_RESULT_SERIALIZER = 'json'
+CELERYD_CONCURRENCY = 1
+CELERYD_TASK_TIME_LIMIT = 1
+
+CELERY_TRACK_STARTED = True
+CELERY_SEND_EVENTS = True
+CELERY_SEND_TASK_SENT_EVENT = True
