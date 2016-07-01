@@ -4,8 +4,8 @@ from django.contrib import admin
 
 from poms.audit.admin import HistoricalAdmin
 from poms.common.admin import ClassifierAdmin
-from poms.obj_attrs.admin import AttributeTypeAdminBase, AttributeTypeOptionAdminBase, AttributeInlineBase, \
-    AttributeTypeClassifierInlineBase
+from poms.obj_attrs.admin import AbstractAttributeTypeAdmin, AbstractAttributeTypeOptionAdmin, AbstractAttributeInline, \
+    AbstractAttributeTypeClassifierInline
 from poms.obj_perms.admin import GroupObjectPermissionAdmin, UserObjectPermissionAdmin
 from poms.portfolios.models import Portfolio, PortfolioClassifier, PortfolioGroupObjectPermission, \
     PortfolioAttributeType, PortfolioAttributeTypeOption, PortfolioAttributeTypeGroupObjectPermission, \
@@ -18,7 +18,7 @@ admin.site.register(PortfolioClassifier, ClassifierAdmin)
 # admin.site.register(PortfolioClassifierGroupObjectPermission, GroupObjectPermissionAdmin)
 
 
-class PortfolioAttributeInline(AttributeInlineBase):
+class PortfolioAttributeInline(AbstractAttributeInline):
     model = PortfolioAttribute
 
 
@@ -36,15 +36,15 @@ admin.site.register(PortfolioUserObjectPermission, UserObjectPermissionAdmin)
 admin.site.register(PortfolioGroupObjectPermission, GroupObjectPermissionAdmin)
 
 
-class PortfolioAttributeTypeClassifierInline(AttributeTypeClassifierInlineBase):
+class PortfolioAttributeTypeClassifierInline(AbstractAttributeTypeClassifierInline):
     model = PortfolioClassifier
 
 
-class AccountAttributeTypeAdmin(AttributeTypeAdminBase):
+class AccountAttributeTypeAdmin(AbstractAttributeTypeAdmin):
     inlines = [PortfolioAttributeTypeClassifierInline]
 
 
 admin.site.register(PortfolioAttributeType, AccountAttributeTypeAdmin)
-admin.site.register(PortfolioAttributeTypeOption, AttributeTypeOptionAdminBase)
+admin.site.register(PortfolioAttributeTypeOption, AbstractAttributeTypeOptionAdmin)
 admin.site.register(PortfolioAttributeTypeUserObjectPermission, UserObjectPermissionAdmin)
 admin.site.register(PortfolioAttributeTypeGroupObjectPermission, GroupObjectPermissionAdmin)

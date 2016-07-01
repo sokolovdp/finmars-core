@@ -3,7 +3,7 @@ from __future__ import unicode_literals
 from rest_framework.filters import DjangoFilterBackend, OrderingFilter, SearchFilter, FilterSet
 
 from poms.common.filters import CharFilter
-from poms.obj_perms.views import AbstractViewSetWithObjectPermission
+from poms.obj_perms.views import AbstractWithObjectPermissionViewSet
 from poms.tags.models import Tag
 from poms.tags.serializers import TagSerializer
 from poms.users.filters import OwnerByMasterUserFilter
@@ -19,7 +19,7 @@ class TagFilterSet(FilterSet):
         fields = ['user_code', 'name', 'short_name']
 
 
-class TagViewSet(AbstractViewSetWithObjectPermission):
+class TagViewSet(AbstractWithObjectPermissionViewSet):
     queryset = Tag.objects.prefetch_related(
         'content_types',
         'account_types',

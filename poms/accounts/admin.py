@@ -8,8 +8,8 @@ from poms.accounts.models import Account, AccountType, AccountClassifier, Accoun
     AccountAttributeTypeUserObjectPermission
 from poms.audit.admin import HistoricalAdmin
 from poms.common.admin import ClassifierAdmin
-from poms.obj_attrs.admin import AttributeTypeAdminBase, AttributeInlineBase, AttributeTypeOptionAdminBase, \
-    AttributeTypeClassifierInlineBase
+from poms.obj_attrs.admin import AbstractAttributeTypeAdmin, AbstractAttributeInline, AbstractAttributeTypeOptionAdmin, \
+    AbstractAttributeTypeClassifierInline
 from poms.obj_perms.admin import GroupObjectPermissionAdmin, UserObjectPermissionAdmin
 
 
@@ -25,7 +25,7 @@ admin.site.register(AccountTypeUserObjectPermission, UserObjectPermissionAdmin)
 admin.site.register(AccountTypeGroupObjectPermission, GroupObjectPermissionAdmin)
 
 
-class AccountAttributeInline(AttributeInlineBase):
+class AccountAttributeInline(AbstractAttributeInline):
     model = AccountAttribute
 
 
@@ -42,16 +42,16 @@ admin.site.register(AccountUserObjectPermission, UserObjectPermissionAdmin)
 admin.site.register(AccountGroupObjectPermission, GroupObjectPermissionAdmin)
 
 
-class AccountAttributeTypeClassifierInline(AttributeTypeClassifierInlineBase):
+class AccountAttributeTypeClassifierInline(AbstractAttributeTypeClassifierInline):
     model = AccountClassifier
 
 
-class AccountAttributeTypeAdmin(AttributeTypeAdminBase):
+class AccountAttributeTypeAdmin(AbstractAttributeTypeAdmin):
     inlines = [AccountAttributeTypeClassifierInline]
 
 
 admin.site.register(AccountAttributeType, AccountAttributeTypeAdmin)
-admin.site.register(AccountAttributeTypeOption, AttributeTypeOptionAdminBase)
+admin.site.register(AccountAttributeTypeOption, AbstractAttributeTypeOptionAdmin)
 admin.site.register(AccountAttributeTypeUserObjectPermission, UserObjectPermissionAdmin)
 admin.site.register(AccountAttributeTypeGroupObjectPermission, GroupObjectPermissionAdmin)
 

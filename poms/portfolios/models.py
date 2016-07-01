@@ -8,7 +8,7 @@ from mptt.models import MPTTModel
 
 from poms.audit import history
 from poms.common.models import NamedModel
-from poms.obj_attrs.models import AttributeTypeBase, AttributeBase, AttributeTypeOptionBase
+from poms.obj_attrs.models import AbstractAttributeType, AbstractAttribute, AbstractAttributeTypeOption
 from poms.obj_perms.models import AbstractGroupObjectPermission, AbstractUserObjectPermission
 from poms.users.models import MasterUser, Member
 
@@ -48,8 +48,8 @@ class PortfolioGroupObjectPermission(AbstractGroupObjectPermission):
         verbose_name_plural = _('portfolios - group permissions')
 
 
-class PortfolioAttributeType(AttributeTypeBase):
-    class Meta(AttributeTypeBase.Meta):
+class PortfolioAttributeType(AbstractAttributeType):
+    class Meta(AbstractAttributeType.Meta):
         verbose_name = _('portfolio attribute type')
         verbose_name_plural = _('portfolio attribute types')
         permissions = [
@@ -88,21 +88,21 @@ class PortfolioClassifier(MPTTModel, NamedModel):
         ]
 
 
-class PortfolioAttributeTypeOption(AttributeTypeOptionBase):
+class PortfolioAttributeTypeOption(AbstractAttributeTypeOption):
     member = models.ForeignKey(Member, related_name='portfolio_attribute_type_options')
     attribute_type = models.ForeignKey(PortfolioAttributeType, related_name='options')
 
-    class Meta(AttributeTypeOptionBase.Meta):
+    class Meta(AbstractAttributeTypeOption.Meta):
         verbose_name = _('portfolio attribute types - option')
         verbose_name_plural = _('portfolio attribute types - options')
 
 
-class PortfolioAttribute(AttributeBase):
+class PortfolioAttribute(AbstractAttribute):
     attribute_type = models.ForeignKey(PortfolioAttributeType, related_name='attributes', on_delete=models.PROTECT)
     content_object = models.ForeignKey(Portfolio, related_name='attributes')
     classifier = models.ForeignKey(PortfolioClassifier, on_delete=models.PROTECT, null=True, blank=True)
 
-    class Meta(AttributeBase.Meta):
+    class Meta(AbstractAttribute.Meta):
         verbose_name = _('portfolio attribute')
         verbose_name_plural = _('portfolio attributes')
 

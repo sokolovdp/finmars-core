@@ -5,7 +5,7 @@ from rest_framework import serializers
 from poms.accounts.fields import AccountField
 from poms.common.serializers import ClassifierSerializerBase, ClassifierNodeSerializerBase, ModelWithUserCodeSerializer
 from poms.counterparties.fields import ResponsibleField, CounterpartyField
-from poms.obj_attrs.serializers import AttributeTypeSerializerBase, AttributeSerializerBase, \
+from poms.obj_attrs.serializers import AbstractAttributeTypeSerializer, AbstractAttributeSerializer, \
     ModelWithAttributesSerializer
 from poms.obj_perms.serializers import ModelWithObjectPermissionSerializer
 from poms.portfolios.fields import PortfolioClassifierField, PortfolioAttributeTypeField
@@ -27,21 +27,21 @@ class PortfolioClassifierNodeSerializer(ClassifierNodeSerializerBase):
         model = PortfolioClassifier
 
 
-class PortfolioAttributeTypeSerializer(AttributeTypeSerializerBase):
+class PortfolioAttributeTypeSerializer(AbstractAttributeTypeSerializer):
     classifiers = PortfolioClassifierSerializer(required=False, allow_null=True, many=True)
 
-    class Meta(AttributeTypeSerializerBase.Meta):
+    class Meta(AbstractAttributeTypeSerializer.Meta):
         model = PortfolioAttributeType
-        fields = AttributeTypeSerializerBase.Meta.fields + ['classifiers']
+        fields = AbstractAttributeTypeSerializer.Meta.fields + ['classifiers']
 
 
-class PortfolioAttributeSerializer(AttributeSerializerBase):
+class PortfolioAttributeSerializer(AbstractAttributeSerializer):
     attribute_type = PortfolioAttributeTypeField()
     classifier = PortfolioClassifierField(required=False, allow_null=True)
 
-    class Meta(AttributeSerializerBase.Meta):
+    class Meta(AbstractAttributeSerializer.Meta):
         model = PortfolioAttribute
-        fields = AttributeSerializerBase.Meta.fields + ['attribute_type', 'classifier']
+        fields = AbstractAttributeSerializer.Meta.fields + ['attribute_type', 'classifier']
 
 
 class PortfolioSerializer(ModelWithObjectPermissionSerializer, ModelWithAttributesSerializer,

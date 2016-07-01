@@ -12,8 +12,8 @@ from poms.instruments.models import Instrument, PriceHistory, InstrumentClassifi
     InstrumentAttribute, InstrumentFactorSchedule, EventSchedule, \
     PricingPolicy, PaymentSizeDetail, InstrumentTypeUserObjectPermission, InstrumentUserObjectPermission, \
     InstrumentAttributeTypeUserObjectPermission
-from poms.obj_attrs.admin import AttributeTypeAdminBase, AttributeTypeOptionAdminBase, AttributeInlineBase, \
-    AttributeTypeClassifierInlineBase
+from poms.obj_attrs.admin import AbstractAttributeTypeAdmin, AbstractAttributeTypeOptionAdmin, AbstractAttributeInline, \
+    AbstractAttributeTypeClassifierInline
 from poms.obj_perms.admin import GroupObjectPermissionAdmin, UserObjectPermissionAdmin
 
 admin.site.register(InstrumentClass, ClassModelAdmin)
@@ -53,7 +53,7 @@ admin.site.register(InstrumentClassifier, ClassifierAdmin)
 # admin.site.register(InstrumentClassifierGroupObjectPermission, GroupObjectPermissionAdmin)
 
 
-class InstrumentAttributeInline(AttributeInlineBase):
+class InstrumentAttributeInline(AbstractAttributeInline):
     model = InstrumentAttribute
 
 
@@ -102,15 +102,15 @@ class PriceHistoryAdmin(HistoricalAdmin):
 admin.site.register(PriceHistory, PriceHistoryAdmin)
 
 
-class InstrumentAttributeTypeClassifierInline(AttributeTypeClassifierInlineBase):
+class InstrumentAttributeTypeClassifierInline(AbstractAttributeTypeClassifierInline):
     model = InstrumentClassifier
 
 
-class InstrumentAttributeTypeAdmin(AttributeTypeAdminBase):
+class InstrumentAttributeTypeAdmin(AbstractAttributeTypeAdmin):
     inlines = [InstrumentAttributeTypeClassifierInline]
 
 
 admin.site.register(InstrumentAttributeType, InstrumentAttributeTypeAdmin)
-admin.site.register(InstrumentAttributeTypeOption, AttributeTypeOptionAdminBase)
+admin.site.register(InstrumentAttributeTypeOption, AbstractAttributeTypeOptionAdmin)
 admin.site.register(InstrumentAttributeTypeUserObjectPermission, UserObjectPermissionAdmin)
 admin.site.register(InstrumentAttributeTypeGroupObjectPermission, GroupObjectPermissionAdmin)

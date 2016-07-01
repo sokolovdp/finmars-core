@@ -98,7 +98,7 @@ from poms.users.models import MasterUser
 
 
 @python_2_unicode_compatible
-class AttributeTypeBase(NamedModel):
+class AbstractAttributeType(NamedModel):
     STRING = 10
     NUMBER = 20
     CLASSIFIER = 30
@@ -140,7 +140,7 @@ class AttributeTypeBase(NamedModel):
 
 
 @python_2_unicode_compatible
-class AttributeTypeOptionBase(models.Model):
+class AbstractAttributeTypeOption(models.Model):
     # attribute_type -> actual attribute model
 
     is_hidden = models.BooleanField(default=False,
@@ -157,7 +157,7 @@ class AttributeTypeOptionBase(models.Model):
 
 
 @python_2_unicode_compatible
-class AttributeBase(models.Model):
+class AbstractAttribute(models.Model):
     # attribute_type -> actual attribute model
     # content_object -> actual object
 
@@ -179,25 +179,25 @@ class AttributeBase(models.Model):
 
     def get_value(self):
         t = self.attribute_type.value_type
-        if t == AttributeTypeBase.STRING:
+        if t == AbstractAttributeType.STRING:
             return self.value_string
-        elif t == AttributeTypeBase.NUMBER:
+        elif t == AbstractAttributeType.NUMBER:
             return self.value_float
-        elif t == AttributeTypeBase.DATE:
+        elif t == AbstractAttributeType.DATE:
             return self.value_date
-        elif t == AttributeTypeBase.CLASSIFIER:
+        elif t == AbstractAttributeType.CLASSIFIER:
             return self.classifier
         return None
 
     def set_value(self, value):
         t = self.attribute_type.value_type
-        if t == AttributeTypeBase.STRING:
+        if t == AbstractAttributeType.STRING:
             self.value_string = value
-        elif t == AttributeTypeBase.NUMBER:
+        elif t == AbstractAttributeType.NUMBER:
             self.value_float = value
-        elif t == AttributeTypeBase.DATE:
+        elif t == AbstractAttributeType.DATE:
             self.value_date = value
-        elif t == AttributeTypeBase.CLASSIFIER:
+        elif t == AbstractAttributeType.CLASSIFIER:
             self.classifier = value
 
     value = property(get_value, set_value)

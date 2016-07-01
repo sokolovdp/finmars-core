@@ -6,8 +6,8 @@ from poms.accounts.models import Account
 from poms.common.filters import CharFilter, ModelWithPermissionMultipleChoiceFilter
 from poms.counterparties.models import Responsible, Counterparty
 from poms.obj_attrs.filters import AttributePrefetchFilter
-from poms.obj_attrs.views import AttributeTypeViewSetBase
-from poms.obj_perms.views import AbstractViewSetWithObjectPermission
+from poms.obj_attrs.views import AbstractAttributeTypeViewSet
+from poms.obj_perms.views import AbstractWithObjectPermissionViewSet
 from poms.portfolios.models import Portfolio, PortfolioAttributeType
 from poms.portfolios.serializers import PortfolioSerializer, PortfolioAttributeTypeSerializer
 from poms.tags.filters import TagFilterBackend, TagFilter
@@ -25,7 +25,7 @@ class PortfolioAttributeTypeFilterSet(FilterSet):
         fields = ['user_code', 'name', 'short_name']
 
 
-class PortfolioAttributeTypeViewSet(AttributeTypeViewSetBase):
+class PortfolioAttributeTypeViewSet(AbstractAttributeTypeViewSet):
     queryset = PortfolioAttributeType.objects.prefetch_related('classifiers')
     serializer_class = PortfolioAttributeTypeSerializer
     # filter_backends = [
@@ -63,7 +63,7 @@ class PortfolioFilterSet(FilterSet):
                   'tag', ]
 
 
-class PortfolioViewSet(AbstractViewSetWithObjectPermission):
+class PortfolioViewSet(AbstractWithObjectPermissionViewSet):
     queryset = Portfolio.objects.prefetch_related(
         'accounts',
         # 'accounts__user_object_permissions', 'accounts__user_object_permissions__permission',

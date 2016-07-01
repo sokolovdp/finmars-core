@@ -15,8 +15,8 @@ from poms.currencies.fields import CurrencyField
 from poms.currencies.models import Currency
 from poms.instruments.fields import InstrumentField, InstrumentTypeField
 from poms.instruments.models import Instrument, InstrumentType, DailyPricingModel, PaymentSizeDetail
-from poms.obj_attrs.models import AttributeTypeBase
-from poms.obj_attrs.serializers import AttributeTypeSerializerBase, AttributeSerializerBase, \
+from poms.obj_attrs.models import AbstractAttributeType
+from poms.obj_attrs.serializers import AbstractAttributeTypeSerializer, AbstractAttributeSerializer, \
     ModelWithAttributesSerializer
 from poms.obj_perms.serializers import ModelWithObjectPermissionSerializer
 from poms.portfolios.fields import PortfolioField
@@ -366,25 +366,25 @@ class TransactionTypeProcessSerializer(serializers.Serializer):
                     raise RuntimeError('Unknown value type %s' % i.value_type)
 
 
-class TransactionAttributeTypeSerializer(AttributeTypeSerializerBase):
-    class Meta(AttributeTypeSerializerBase.Meta):
+class TransactionAttributeTypeSerializer(AbstractAttributeTypeSerializer):
+    class Meta(AbstractAttributeTypeSerializer.Meta):
         model = TransactionAttributeType
 
     def validate_value_type(self, value_type):
-        if value_type == AttributeTypeBase.CLASSIFIER:
+        if value_type == AbstractAttributeType.CLASSIFIER:
             raise ValidationError({'value_type': _('Value type classifier is unsupported')})
         return value_type
 
 
-class TransactionAttributeSerializer(AttributeSerializerBase):
+class TransactionAttributeSerializer(AbstractAttributeSerializer):
     attribute_type = TransactionAttributeTypeField()
 
     # strategy_position = StrategyRootField(required=False, allow_null=True)
     # strategy_cash = StrategyRootField(required=False, allow_null=True)
 
-    class Meta(AttributeSerializerBase.Meta):
+    class Meta(AbstractAttributeSerializer.Meta):
         model = TransactionAttribute
-        fields = AttributeSerializerBase.Meta.fields + ['attribute_type']
+        fields = AbstractAttributeSerializer.Meta.fields + ['attribute_type']
 
 
 class TransactionSerializer(ModelWithAttributesSerializer):

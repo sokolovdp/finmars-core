@@ -14,8 +14,8 @@ from poms.instruments.serializers import InstrumentSerializer, PriceHistorySeria
     PaymentSizeDetailSerializer, PeriodicityPeriodSerializer, CostMethodSerializer, InstrumentTypeSerializer, \
     InstrumentAttributeTypeSerializer, PricingPolicySerializer
 from poms.obj_attrs.filters import AttributePrefetchFilter
-from poms.obj_attrs.views import AttributeTypeViewSetBase
-from poms.obj_perms.views import AbstractViewSetWithObjectPermission
+from poms.obj_attrs.views import AbstractAttributeTypeViewSet
+from poms.obj_perms.views import AbstractWithObjectPermissionViewSet
 from poms.tags.filters import TagFilterBackend, TagFilter
 from poms.users.filters import OwnerByMasterUserFilter
 from poms.users.permissions import SuperUserOrReadOnly
@@ -78,7 +78,7 @@ class InstrumentTypeFilterSet(FilterSet):
         fields = ['user_code', 'name', 'short_name', 'tag']
 
 
-class InstrumentTypeViewSet(AbstractViewSetWithObjectPermission):
+class InstrumentTypeViewSet(AbstractWithObjectPermissionViewSet):
     queryset = InstrumentType.objects
     serializer_class = InstrumentTypeSerializer
     filter_backends = [
@@ -111,7 +111,7 @@ class InstrumentAttributeTypeFilterSet(FilterSet):
         fields = ['user_code', 'name', 'short_name']
 
 
-class InstrumentAttributeTypeViewSet(AttributeTypeViewSetBase):
+class InstrumentAttributeTypeViewSet(AbstractAttributeTypeViewSet):
     queryset = InstrumentAttributeType.objects.prefetch_related('classifiers')
     serializer_class = InstrumentAttributeTypeSerializer
     # filter_backends = [
@@ -148,7 +148,7 @@ class InstrumentFilterSet(FilterSet):
         fields = ['user_code', 'name', 'short_name', 'user_text_1', 'user_text_2', 'user_text_3', 'tag']
 
 
-class InstrumentViewSet(AbstractViewSetWithObjectPermission):
+class InstrumentViewSet(AbstractWithObjectPermissionViewSet):
     queryset = Instrument.objects.prefetch_related(
         'pricing_currency', 'accrued_currency', 'manual_pricing_formulas', 'accrual_calculation_schedules',
         'factor_schedules', 'event_schedules')

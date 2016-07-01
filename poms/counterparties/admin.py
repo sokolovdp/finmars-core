@@ -11,12 +11,12 @@ from poms.counterparties.models import Counterparty, Responsible, CounterpartyCl
     ResponsibleAttributeTypeGroupObjectPermission, CounterpartyAttribute, \
     ResponsibleAttribute, CounterpartyUserObjectPermission, CounterpartyAttributeTypeUserObjectPermission, \
     ResponsibleUserObjectPermission, ResponsibleAttributeTypeUserObjectPermission
-from poms.obj_attrs.admin import AttributeTypeAdminBase, AttributeTypeOptionAdminBase, AttributeInlineBase, \
-    AttributeTypeClassifierInlineBase
+from poms.obj_attrs.admin import AbstractAttributeTypeAdmin, AbstractAttributeTypeOptionAdmin, AbstractAttributeInline, \
+    AbstractAttributeTypeClassifierInline
 from poms.obj_perms.admin import GroupObjectPermissionAdmin, UserObjectPermissionAdmin
 
 
-class CounterpartyAttributeInline(AttributeInlineBase):
+class CounterpartyAttributeInline(AbstractAttributeInline):
     model = CounterpartyAttribute
 
 
@@ -33,16 +33,16 @@ admin.site.register(CounterpartyUserObjectPermission, UserObjectPermissionAdmin)
 admin.site.register(CounterpartyGroupObjectPermission, GroupObjectPermissionAdmin)
 
 
-class CounterpartyAttributeTypeClassifierInline(AttributeTypeClassifierInlineBase):
+class CounterpartyAttributeTypeClassifierInline(AbstractAttributeTypeClassifierInline):
     model = CounterpartyClassifier
 
 
-class CounterpartyAttributeTypeAdmin(AttributeTypeAdminBase):
+class CounterpartyAttributeTypeAdmin(AbstractAttributeTypeAdmin):
     inlines = [CounterpartyAttributeTypeClassifierInline]
 
 
 admin.site.register(CounterpartyAttributeType, CounterpartyAttributeTypeAdmin)
-admin.site.register(CounterpartyAttributeTypeOption, AttributeTypeOptionAdminBase)
+admin.site.register(CounterpartyAttributeTypeOption, AbstractAttributeTypeOptionAdmin)
 admin.site.register(CounterpartyAttributeTypeUserObjectPermission, UserObjectPermissionAdmin)
 admin.site.register(CounterpartyAttributeTypeGroupObjectPermission, GroupObjectPermissionAdmin)
 
@@ -53,7 +53,7 @@ admin.site.register(CounterpartyClassifier, ClassifierAdmin)
 # admin.site.register(CounterpartyClassifierGroupObjectPermission, GroupObjectPermissionAdmin)
 
 
-class ResponsibleAttributeInline(AttributeInlineBase):
+class ResponsibleAttributeInline(AbstractAttributeInline):
     model = ResponsibleAttribute
 
 
@@ -70,16 +70,16 @@ admin.site.register(ResponsibleUserObjectPermission, UserObjectPermissionAdmin)
 admin.site.register(ResponsibleGroupObjectPermission, GroupObjectPermissionAdmin)
 
 
-class ResponsibleAttributeTypeClassifierInline(AttributeTypeClassifierInlineBase):
+class ResponsibleAttributeTypeClassifierInline(AbstractAttributeTypeClassifierInline):
     model = ResponsibleClassifier
 
 
-class ResponsibleAttributeTypeAdmin(AttributeTypeAdminBase):
+class ResponsibleAttributeTypeAdmin(AbstractAttributeTypeAdmin):
     inlines = [ResponsibleAttributeTypeClassifierInline]
 
 
 admin.site.register(ResponsibleAttributeType, ResponsibleAttributeTypeAdmin)
-admin.site.register(ResponsibleAttributeTypeOption, AttributeTypeOptionAdminBase)
+admin.site.register(ResponsibleAttributeTypeOption, AbstractAttributeTypeOptionAdmin)
 admin.site.register(ResponsibleAttributeTypeUserObjectPermission, UserObjectPermissionAdmin)
 admin.site.register(ResponsibleAttributeTypeGroupObjectPermission, GroupObjectPermissionAdmin)
 

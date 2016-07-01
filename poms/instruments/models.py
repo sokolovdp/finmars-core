@@ -10,7 +10,7 @@ from poms.audit import history
 from poms.common.models import NamedModel, ClassModelBase
 from poms.common.utils import date_now
 from poms.currencies.models import Currency
-from poms.obj_attrs.models import AttributeTypeBase, AttributeBase, AttributeTypeOptionBase
+from poms.obj_attrs.models import AbstractAttributeType, AbstractAttribute, AbstractAttributeTypeOption
 from poms.obj_perms.models import AbstractGroupObjectPermission, AbstractUserObjectPermission
 from poms.users.models import MasterUser, Member
 
@@ -292,7 +292,7 @@ class InstrumentGroupObjectPermission(AbstractGroupObjectPermission):
         verbose_name_plural = _('instruments - group permissions')
 
 
-class InstrumentAttributeType(AttributeTypeBase):
+class InstrumentAttributeType(AbstractAttributeType):
     # classifier_root = models.OneToOneField(
     #     InstrumentClassifier,
     #     on_delete=models.PROTECT,
@@ -301,7 +301,7 @@ class InstrumentAttributeType(AttributeTypeBase):
     #     verbose_name=_('classifier')
     # )
 
-    class Meta(AttributeTypeBase.Meta):
+    class Meta(AbstractAttributeType.Meta):
         verbose_name = _('instrument attribute type')
         verbose_name_plural = _('instrument attribute types')
         permissions = [
@@ -361,18 +361,18 @@ class InstrumentClassifier(MPTTModel, NamedModel):
         return self.name
 
 
-class InstrumentAttributeTypeOption(AttributeTypeOptionBase):
+class InstrumentAttributeTypeOption(AbstractAttributeTypeOption):
     member = models.ForeignKey(Member, related_name='instrument_attribute_type_options',
                                verbose_name=_('member'))
     attribute_type = models.ForeignKey(InstrumentAttributeType, related_name='options',
                                        verbose_name=_('attribute type'))
 
-    class Meta(AttributeTypeOptionBase.Meta):
+    class Meta(AbstractAttributeTypeOption.Meta):
         verbose_name = _('instrument attribute types - option')
         verbose_name_plural = _('instrument attribute types - options')
 
 
-class InstrumentAttribute(AttributeBase):
+class InstrumentAttribute(AbstractAttribute):
     attribute_type = models.ForeignKey(InstrumentAttributeType, related_name='attributes', on_delete=models.PROTECT,
                                        verbose_name=_('attribute type'))
     content_object = models.ForeignKey(Instrument, related_name='attributes',
@@ -380,7 +380,7 @@ class InstrumentAttribute(AttributeBase):
     classifier = models.ForeignKey(InstrumentClassifier, on_delete=models.PROTECT, null=True, blank=True,
                                    verbose_name=_('classifier'))
 
-    class Meta(AttributeBase.Meta):
+    class Meta(AbstractAttribute.Meta):
         verbose_name = _('instrument attribute')
         verbose_name_plural = _('instrument attributes')
 

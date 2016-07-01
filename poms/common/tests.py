@@ -18,7 +18,7 @@ from poms.chats.models import ThreadStatus, Thread, Message, DirectMessage
 from poms.counterparties.models import Counterparty, Responsible
 from poms.currencies.models import Currency
 from poms.instruments.models import InstrumentClass, InstrumentType, Instrument
-from poms.obj_attrs.models import AttributeTypeBase
+from poms.obj_attrs.models import AbstractAttributeType
 from poms.obj_perms.utils import assign_perms, get_all_perms, get_default_owner_permissions, get_perms_codename
 from poms.portfolios.models import Portfolio
 from poms.tags.models import Tag
@@ -133,11 +133,11 @@ class BaseApiTestCase(APITestCase):
     def get_group(self, name, master_user):
         return Group.objects.get(name=name, master_user__name=master_user)
 
-    def create_attribute_type(self, model, name, master_user, value_type=AttributeTypeBase.STRING,
+    def create_attribute_type(self, model, name, master_user, value_type=AbstractAttributeType.STRING,
                               classifier_model=None, classifier_tree=None):
         master_user = self.get_master_user(master_user)
         attribute_type = model.objects.create(master_user=master_user, name=name, value_type=value_type)
-        if classifier_model and classifier_tree and value_type == AttributeTypeBase.CLASSIFIER:
+        if classifier_model and classifier_tree and value_type == AbstractAttributeType.CLASSIFIER:
             for root in classifier_tree:
                 self.create_classifier(attribute_type, classifier_model, root, None)
         return attribute_type
@@ -178,7 +178,7 @@ class BaseApiTestCase(APITestCase):
     def get_account_type(self, name, master_user):
         return AccountType.objects.get(name=name, master_user__name=master_user)
 
-    def create_account_attribute_type(self, name, master_user, value_type=AttributeTypeBase.STRING,
+    def create_account_attribute_type(self, name, master_user, value_type=AbstractAttributeType.STRING,
                                       classifiers=None):
         return self.create_attribute_type(AccountAttributeType, name, master_user, value_type=value_type,
                                           classifier_model=AccountClassifier, classifier_tree=classifiers)
@@ -867,14 +867,14 @@ class BaseAttributeTypeApiTestCase(BaseNamedModelTestCase, BaseApiWithPermission
 
     def create_default_attrs(self):
         self.attr_str = self.create_attribute_type(self.model, 'str', 'a',
-                                                   value_type=AttributeTypeBase.STRING)
+                                                   value_type=AbstractAttributeType.STRING)
         self.attr_num = self.create_attribute_type(self.model, 'num', 'a',
-                                                   value_type=AttributeTypeBase.NUMBER)
+                                                   value_type=AbstractAttributeType.NUMBER)
         self.attr_date = self.create_attribute_type(self.model, 'date', 'a',
-                                                    value_type=AttributeTypeBase.DATE)
+                                                    value_type=AbstractAttributeType.DATE)
         if self.classifier_model:
             self.attr_clsfr1 = self.create_attribute_type(self.model, 'clsfr1', 'a',
-                                                          value_type=AttributeTypeBase.CLASSIFIER,
+                                                          value_type=AbstractAttributeType.CLASSIFIER,
                                                           classifier_model=self.classifier_model,
                                                           classifier_tree=[{
                                                               'name': 'clsfr1_n1',
@@ -890,7 +890,7 @@ class BaseAttributeTypeApiTestCase(BaseNamedModelTestCase, BaseApiWithPermission
                                                               ]
                                                           }, ])
             self.attr_clsfr2 = self.create_attribute_type(self.model, 'clsfr2', 'a',
-                                                          value_type=AttributeTypeBase.CLASSIFIER,
+                                                          value_type=AbstractAttributeType.CLASSIFIER,
                                                           classifier_model=self.classifier_model,
                                                           classifier_tree=[{
                                                               'name': 'clsfr2_n1',
@@ -946,7 +946,7 @@ class BaseAttributeTypeApiTestCase(BaseNamedModelTestCase, BaseApiWithPermission
         else:
             return None
 
-    def _make_new_data_with_classifiers(self, value_type=AttributeTypeBase.CLASSIFIER, **kwargs):
+    def _make_new_data_with_classifiers(self, value_type=AbstractAttributeType.CLASSIFIER, **kwargs):
         if self.classifier_model:
             data = self._make_new_data(value_type=value_type, **kwargs)
             data['classifiers'] = self._gen_classifiers()
@@ -976,14 +976,14 @@ class BaseAttributeTypeApiTestCase(BaseNamedModelTestCase, BaseApiWithPermission
             self.assertEqual(len(response.data['classifiers']), 2)
 
             # try create with classifier with other value type
-            data = self._make_new_data_with_classifiers(value_type=AttributeTypeBase.STRING)
+            data = self._make_new_data_with_classifiers(value_type=AbstractAttributeType.STRING)
             response = self._add('a', data)
             self.assertEqual(response.status_code, status.HTTP_201_CREATED)
             self.assertEqual(response.data['classifiers'], [])
 
     def test_classifiers_update(self):
         if self.classifier_model:
-            data = self._make_new_data(value_type=AttributeTypeBase.CLASSIFIER)
+            data = self._make_new_data(value_type=AbstractAttributeType.CLASSIFIER)
             response = self._add('a', data)
             self.assertEqual(response.status_code, status.HTTP_201_CREATED)
             self.assertEqual(len(response.data['classifiers']), 0)
@@ -995,7 +995,7 @@ class BaseAttributeTypeApiTestCase(BaseNamedModelTestCase, BaseApiWithPermission
             self.assertEqual(len(response.data['classifiers']), 2)
 
             # try add classifier to other value type
-            data = self._make_new_data(value_type=AttributeTypeBase.STRING)
+            data = self._make_new_data(value_type=AbstractAttributeType.STRING)
             response = self._add('a', data)
             self.assertEqual(response.status_code, status.HTTP_201_CREATED)
 
@@ -1015,13 +1015,13 @@ class BaseApiWithAttributesTestCase(BaseApiTestCase):
         super(BaseApiWithAttributesTestCase, self).setUp()
 
         self.attr_str = self.create_attribute_type(self.attribute_type_model, 'str', 'a',
-                                                   value_type=AttributeTypeBase.STRING)
+                                                   value_type=AbstractAttributeType.STRING)
         self.attr_num = self.create_attribute_type(self.attribute_type_model, 'num', 'a',
-                                                   value_type=AttributeTypeBase.NUMBER)
+                                                   value_type=AbstractAttributeType.NUMBER)
         self.attr_date = self.create_attribute_type(self.attribute_type_model, 'date', 'a',
-                                                    value_type=AttributeTypeBase.DATE)
+                                                    value_type=AbstractAttributeType.DATE)
         self.attr_clsfr1 = self.create_attribute_type(self.attribute_type_model, 'clsfr1', 'a',
-                                                      value_type=AttributeTypeBase.CLASSIFIER,
+                                                      value_type=AbstractAttributeType.CLASSIFIER,
                                                       classifier_model=self.classifier_model,
                                                       classifier_tree=[{
                                                           'name': 'clsfr1_n1',
@@ -1037,7 +1037,7 @@ class BaseApiWithAttributesTestCase(BaseApiTestCase):
                                                           ]
                                                       }, ])
         self.attr_clsfr2 = self.create_attribute_type(self.attribute_type_model, 'clsfr2', 'a',
-                                                      value_type=AttributeTypeBase.CLASSIFIER,
+                                                      value_type=AbstractAttributeType.CLASSIFIER,
                                                       classifier_model=self.classifier_model,
                                                       classifier_tree=[{
                                                           'name': 'clsfr2_n1',
@@ -1058,13 +1058,13 @@ class BaseApiWithAttributesTestCase(BaseApiTestCase):
                                    classifier_name=classifier_name)
 
     def attr_value_key(self, value_type):
-        if value_type == AttributeTypeBase.STRING:
+        if value_type == AbstractAttributeType.STRING:
             return 'value_string'
-        elif value_type == AttributeTypeBase.NUMBER:
+        elif value_type == AbstractAttributeType.NUMBER:
             return 'value_float'
-        elif value_type == AttributeTypeBase.DATE:
+        elif value_type == AbstractAttributeType.DATE:
             return 'value_date'
-        elif value_type == AttributeTypeBase.CLASSIFIER:
+        elif value_type == AbstractAttributeType.CLASSIFIER:
             return 'classifier'
         else:
             self.fail('invalid value_type %s' % (value_type))

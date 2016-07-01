@@ -7,7 +7,7 @@ from rest_framework import serializers
 from rest_framework.exceptions import ValidationError
 
 from poms.common.serializers import ModelWithUserCodeSerializer
-from poms.obj_attrs.models import AttributeTypeBase
+from poms.obj_attrs.models import AbstractAttributeType
 from poms.obj_attrs.utils import get_attr_type_model, get_attr_type_view_perms
 from poms.obj_perms.serializers import ModelWithObjectPermissionSerializer
 from poms.obj_perms.utils import obj_perms_filter_objects, has_view_perms
@@ -33,7 +33,7 @@ class AttributeTypeOptionIsHiddenField(serializers.BooleanField):
         return False
 
 
-class AttributeTypeSerializerBase(ModelWithObjectPermissionSerializer, ModelWithUserCodeSerializer):
+class AbstractAttributeTypeSerializer(ModelWithObjectPermissionSerializer, ModelWithUserCodeSerializer):
     master_user = MasterUserField()
     is_hidden = AttributeTypeOptionIsHiddenField()
 
@@ -44,14 +44,14 @@ class AttributeTypeSerializerBase(ModelWithObjectPermissionSerializer, ModelWith
     def __init__(self, *args, **kwargs):
         hide_classifiers = kwargs.pop('hide_classifiers', False)
         read_only_value_type = kwargs.pop('read_only_value_type', False)
-        super(AttributeTypeSerializerBase, self).__init__(*args, **kwargs)
+        super(AbstractAttributeTypeSerializer, self).__init__(*args, **kwargs)
         if hide_classifiers:
             self.fields.pop('classifiers', None)
         if read_only_value_type:
             self.fields['value_type'].read_only = True
 
     def validate(self, attrs):
-        attrs = super(AttributeTypeSerializerBase, self).validate(attrs)
+        attrs = super(AbstractAttributeTypeSerializer, self).validate(attrs)
         classifiers = attrs.get('classifiers', None)
         if classifiers:
             self._validate_classifiers(classifiers, id_set=set(), user_code_set=set())
@@ -76,7 +76,7 @@ class AttributeTypeSerializerBase(ModelWithObjectPermissionSerializer, ModelWith
         member = self.context['request'].user.member
         is_hidden = validated_data.pop('is_hidden', False)
         classifiers = validated_data.pop('classifiers', None)
-        instance = super(AttributeTypeSerializerBase, self).create(validated_data)
+        instance = super(AbstractAttributeTypeSerializer, self).create(validated_data)
         instance.options.create(member=member, is_hidden=is_hidden)
         self.save_classifiers(instance, classifiers)
         return instance
@@ -85,13 +85,13 @@ class AttributeTypeSerializerBase(ModelWithObjectPermissionSerializer, ModelWith
         member = self.context['request'].user.member
         is_hidden = validated_data.pop('is_hidden', False)
         classifiers = validated_data.pop('classifiers', None)
-        instance = super(AttributeTypeSerializerBase, self).update(instance, validated_data)
+        instance = super(AbstractAttributeTypeSerializer, self).update(instance, validated_data)
         instance.options.update_or_create(member=member, defaults={'is_hidden': is_hidden})
         self.save_classifiers(instance, classifiers)
         return instance
 
     def save_classifiers(self, instance, classifier_tree):
-        if instance.value_type != AttributeTypeBase.CLASSIFIER:
+        if instance.value_type != AbstractAttributeType.CLASSIFIER:
             return
         if classifier_tree is None:
             return
@@ -139,14 +139,14 @@ class AttributeListSerializer(serializers.ListSerializer):
         return instance.attributes.filter(attribute_type__in=attr_types)
 
 
-class AttributeSerializerBase(serializers.ModelSerializer):
+class AbstractAttributeSerializer(serializers.ModelSerializer):
     class Meta:
         list_serializer_class = AttributeListSerializer
         fields = ['value_string', 'value_float', 'value_date']
 
     def validate(self, attrs):
         attribute_type = attrs['attribute_type']
-        if attribute_type.value_type == AttributeTypeBase.CLASSIFIER:
+        if attribute_type.value_type == AbstractAttributeType.CLASSIFIER:
             classifier = attrs.get('classifier', None)
             if classifier:
                 if classifier.attribute_type_id != attribute_type.id:

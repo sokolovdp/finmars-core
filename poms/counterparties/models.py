@@ -8,7 +8,7 @@ from mptt.models import MPTTModel
 
 from poms.audit import history
 from poms.common.models import NamedModel
-from poms.obj_attrs.models import AttributeTypeBase, AttributeBase, AttributeTypeOptionBase
+from poms.obj_attrs.models import AbstractAttributeType, AbstractAttribute, AbstractAttributeTypeOption
 from poms.obj_perms.models import AbstractGroupObjectPermission, AbstractUserObjectPermission
 from poms.users.models import MasterUser, Member
 
@@ -53,7 +53,7 @@ class CounterpartyGroupObjectPermission(AbstractGroupObjectPermission):
         verbose_name_plural = _('counterparties - group permissions')
 
 
-class CounterpartyAttributeType(AttributeTypeBase):
+class CounterpartyAttributeType(AbstractAttributeType):
     # classifier_root = models.OneToOneField(
     #     CounterpartyClassifier,
     #     on_delete=models.PROTECT,
@@ -62,7 +62,7 @@ class CounterpartyAttributeType(AttributeTypeBase):
     #     verbose_name=_('classifier)')
     # )
 
-    class Meta(AttributeTypeBase.Meta):
+    class Meta(AbstractAttributeType.Meta):
         verbose_name = _('counterparty attribute type')
         verbose_name_plural = _('counterparty attribute types')
         permissions = [
@@ -118,13 +118,13 @@ class CounterpartyClassifier(MPTTModel, NamedModel):
         ]
 
 
-class CounterpartyAttributeTypeOption(AttributeTypeOptionBase):
+class CounterpartyAttributeTypeOption(AbstractAttributeTypeOption):
     member = models.ForeignKey(Member, related_name='counterparty_attribute_type_options',
                                verbose_name=_('member'))
     attribute_type = models.ForeignKey(CounterpartyAttributeType, related_name='options',
                                        verbose_name=_('attribute type'))
 
-    class Meta(AttributeTypeOptionBase.Meta):
+    class Meta(AbstractAttributeTypeOption.Meta):
         verbose_name = _('counterparty attribute types - option')
         verbose_name_plural = _('counterparty attribute types - options')
         unique_together = [
@@ -132,7 +132,7 @@ class CounterpartyAttributeTypeOption(AttributeTypeOptionBase):
         ]
 
 
-class CounterpartyAttribute(AttributeBase):
+class CounterpartyAttribute(AbstractAttribute):
     attribute_type = models.ForeignKey(CounterpartyAttributeType, related_name='attributes', on_delete=models.PROTECT,
                                        verbose_name=_('attribute type'))
     content_object = models.ForeignKey(Counterparty, related_name='attributes',
@@ -140,7 +140,7 @@ class CounterpartyAttribute(AttributeBase):
     classifier = models.ForeignKey(CounterpartyClassifier, on_delete=models.PROTECT, null=True, blank=True,
                                    verbose_name=_('classifier'))
 
-    class Meta(AttributeBase.Meta):
+    class Meta(AbstractAttribute.Meta):
         verbose_name = _('counterparty attribute')
         verbose_name_plural = _('counterparty attributes')
 
@@ -185,7 +185,7 @@ class ResponsibleGroupObjectPermission(AbstractGroupObjectPermission):
         verbose_name_plural = _('responsibles - group permissions')
 
 
-class ResponsibleAttributeType(AttributeTypeBase):
+class ResponsibleAttributeType(AbstractAttributeType):
     # classifier_root = models.OneToOneField(
     #     ResponsibleClassifier,
     #     on_delete=models.PROTECT,
@@ -194,7 +194,7 @@ class ResponsibleAttributeType(AttributeTypeBase):
     #     verbose_name=_('classifier (root)')
     # )
 
-    class Meta(AttributeTypeBase.Meta):
+    class Meta(AbstractAttributeType.Meta):
         verbose_name = _('responsible attribute type')
         verbose_name_plural = _('responsible attribute types')
         permissions = [
@@ -250,13 +250,13 @@ class ResponsibleClassifier(MPTTModel, NamedModel):
         ]
 
 
-class ResponsibleAttributeTypeOption(AttributeTypeOptionBase):
+class ResponsibleAttributeTypeOption(AbstractAttributeTypeOption):
     member = models.ForeignKey(Member, related_name='responsible_attribute_type_options',
                                verbose_name=_('meber'))
     attribute_type = models.ForeignKey(ResponsibleAttributeType, related_name='options',
                                        verbose_name=_('attribute type'))
 
-    class Meta(AttributeTypeOptionBase.Meta):
+    class Meta(AbstractAttributeTypeOption.Meta):
         verbose_name = _('responsible attribute types - option')
         verbose_name_plural = _('responsible attribute types - options')
         unique_together = [
@@ -264,7 +264,7 @@ class ResponsibleAttributeTypeOption(AttributeTypeOptionBase):
         ]
 
 
-class ResponsibleAttribute(AttributeBase):
+class ResponsibleAttribute(AbstractAttribute):
     attribute_type = models.ForeignKey(ResponsibleAttributeType, related_name='attributes', on_delete=models.PROTECT,
                                        verbose_name=_('attribute type'))
     content_object = models.ForeignKey(Responsible, related_name='attributes',
@@ -272,7 +272,7 @@ class ResponsibleAttribute(AttributeBase):
     classifier = models.ForeignKey(ResponsibleClassifier, on_delete=models.PROTECT, null=True, blank=True,
                                    verbose_name=_('classifier'))
 
-    class Meta(AttributeBase.Meta):
+    class Meta(AbstractAttribute.Meta):
         verbose_name = _('responsible attribute')
         verbose_name_plural = _('responsible attributes')
 

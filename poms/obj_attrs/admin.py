@@ -5,14 +5,14 @@ from django.db import models
 from poms.audit.admin import HistoricalAdmin
 
 
-class AttributeTypeAdminBase(HistoricalAdmin):
+class AbstractAttributeTypeAdmin(HistoricalAdmin):
     list_display = ['id', 'master_user', 'name', 'value_type', ]
     list_select_related = ['master_user', ]
     raw_id_fields = ['master_user']
     save_as = True
 
 
-class AttributeTypeClassifierInlineBase(admin.TabularInline):
+class AbstractAttributeTypeClassifierInline(admin.TabularInline):
     extra = 0
     # raw_id_fields = ['parent']
     formfield_overrides = {
@@ -32,19 +32,19 @@ class AttributeTypeClassifierInlineBase(admin.TabularInline):
     #     return super(AttributeTypeClassifierInlineBase, self).formfield_for_foreignkey(db_field, request=request, **kwargs)
 
 
-class AttributeTypeOptionInlineBase(admin.TabularInline):
+class AbstractAttributeTypeOptionInline(admin.TabularInline):
     extra = 0
     raw_id_fields = ['member']
 
 
-class AttributeTypeOptionAdminBase(HistoricalAdmin):
+class AbstractAttributeTypeOptionAdmin(HistoricalAdmin):
     extra = 0
     list_display = ['id', 'member', 'attribute_type', 'is_hidden']
     fields = ['member', 'attribute_type', 'is_hidden']
     raw_id_fields = ['member']
 
 
-class AttributeInlineBase(admin.TabularInline):
+class AbstractAttributeInline(admin.TabularInline):
     extra = 0
     fields = ['attribute_type', 'value_string', 'value_float', 'value_date', 'classifier']
     raw_id_fields = ['attribute_type', 'classifier']

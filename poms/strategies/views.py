@@ -2,7 +2,7 @@ from __future__ import unicode_literals
 
 from poms.common.filters import ClassifierFilterSetBase
 from poms.common.views import AbstractClassifierViewSet, AbstractClassifierNodeViewSet
-from poms.obj_perms.views import AbstractViewSetWithObjectPermission
+from poms.obj_perms.views import AbstractWithObjectPermissionViewSet
 from poms.strategies.models import Strategy1, Strategy2, Strategy3
 from poms.strategies.serializers import Strategy1Serializer, Strategy1NodeSerializer, Strategy2Serializer, \
     Strategy2NodeSerializer, Strategy3Serializer, Strategy3NodeSerializer
@@ -14,7 +14,7 @@ class AbstractStrategyFilterSet(ClassifierFilterSetBase):
         fields = ClassifierFilterSetBase.Meta.fields + ['tag', ]
 
 
-class AbstractStrategyViewSet(AbstractViewSetWithObjectPermission, AbstractClassifierViewSet):
+class AbstractStrategyViewSet(AbstractWithObjectPermissionViewSet, AbstractClassifierViewSet):
     filter_backends = AbstractClassifierViewSet.filter_backends + [
         TagFilterBackend,
         # ObjectPermissionBackend,
@@ -30,7 +30,7 @@ class AbstractStrategyViewSet(AbstractViewSetWithObjectPermission, AbstractClass
         return super(AbstractStrategyViewSet, self).get_serializer(*args, **kwargs)
 
 
-class AbstractStrategyNodeViewSet(AbstractViewSetWithObjectPermission, AbstractClassifierNodeViewSet):
+class AbstractStrategyNodeViewSet(AbstractWithObjectPermissionViewSet, AbstractClassifierNodeViewSet):
     filter_backends = AbstractClassifierNodeViewSet.filter_backends + [
         TagFilterBackend,
         # ObjectPermissionBackend,

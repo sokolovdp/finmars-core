@@ -1,10 +1,10 @@
 from rest_framework.filters import DjangoFilterBackend, OrderingFilter, SearchFilter
 
-from poms.obj_perms.views import AbstractViewSetWithObjectPermission
+from poms.obj_perms.views import AbstractWithObjectPermissionViewSet
 from poms.users.filters import OwnerByMasterUserFilter
 
 
-class AttributeTypeViewSetBase(AbstractViewSetWithObjectPermission):
+class AbstractAttributeTypeViewSet(AbstractWithObjectPermissionViewSet):
     filter_backends = [
         OwnerByMasterUserFilter,
         # ObjectPermissionBackend,
@@ -19,7 +19,7 @@ class AttributeTypeViewSetBase(AbstractViewSetWithObjectPermission):
     search_fields = ['user_code', 'name', 'short_name']
 
     def get_queryset(self):
-        qs = super(AttributeTypeViewSetBase, self).get_queryset()
+        qs = super(AbstractAttributeTypeViewSet, self).get_queryset()
         return qs.prefetch_related('options')
 
     def get_serializer(self, *args, **kwargs):
@@ -28,4 +28,4 @@ class AttributeTypeViewSetBase(AbstractViewSetWithObjectPermission):
         kwargs['hide_classifiers'] = (self.action == 'list')
         kwargs['read_only_value_type'] = (self.action != 'create')
         # kwargs['show_object_permissions'] = (self.action != 'list')
-        return super(AttributeTypeViewSetBase, self).get_serializer(*args, **kwargs)
+        return super(AbstractAttributeTypeViewSet, self).get_serializer(*args, **kwargs)

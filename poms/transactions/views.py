@@ -11,9 +11,9 @@ from poms.common.views import AbstractClassModelViewSet, AbstractModelViewSet
 from poms.currencies.models import Currency
 from poms.instruments.models import Instrument, InstrumentType
 from poms.obj_attrs.filters import AttributePrefetchFilter
-from poms.obj_attrs.views import AttributeTypeViewSetBase
+from poms.obj_attrs.views import AbstractAttributeTypeViewSet
 from poms.obj_perms.utils import obj_perms_prefetch
-from poms.obj_perms.views import AbstractViewSetWithObjectPermission
+from poms.obj_perms.views import AbstractWithObjectPermissionViewSet
 from poms.portfolios.models import Portfolio
 from poms.strategies.models import Strategy1, Strategy2, Strategy3
 from poms.tags.filters import TagFilterBackend, TagFilter
@@ -42,7 +42,7 @@ class TransactionTypeGroupFilterSet(FilterSet):
         fields = ['user_code', 'name', 'short_name']
 
 
-class TransactionTypeGroupViewSet(AbstractViewSetWithObjectPermission):
+class TransactionTypeGroupViewSet(AbstractWithObjectPermissionViewSet):
     queryset = TransactionTypeGroup.objects
     serializer_class = TransactionTypeGroupSerializer
     filter_backends = [
@@ -74,7 +74,7 @@ class TransactionTypeFilterSet(FilterSet):
         fields = ['user_code', 'name', 'short_name', 'group', 'portfolio', 'instrument_type', 'tag']
 
 
-class TransactionTypeViewSet(AbstractViewSetWithObjectPermission):
+class TransactionTypeViewSet(AbstractWithObjectPermissionViewSet):
     queryset = TransactionType.objects
         #     .prefetch_related(
     #     'inputs',
@@ -225,7 +225,7 @@ class TransactionAttributeTypeFilterSet(FilterSet):
         fields = ['user_code', 'name', 'short_name']
 
 
-class TransactionAttributeTypeViewSet(AttributeTypeViewSetBase):
+class TransactionAttributeTypeViewSet(AbstractAttributeTypeViewSet):
     queryset = TransactionAttributeType.objects
     serializer_class = TransactionAttributeTypeSerializer
     # filter_backends = [

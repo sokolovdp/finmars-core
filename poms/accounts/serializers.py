@@ -5,7 +5,7 @@ from rest_framework import serializers
 from poms.accounts.fields import AccountClassifierField, AccountAttributeTypeField, AccountTypeField
 from poms.accounts.models import Account, AccountType, AccountClassifier, AccountAttributeType, AccountAttribute
 from poms.common.serializers import ClassifierSerializerBase, ClassifierNodeSerializerBase, ModelWithUserCodeSerializer
-from poms.obj_attrs.serializers import AttributeTypeSerializerBase, AttributeSerializerBase, \
+from poms.obj_attrs.serializers import AbstractAttributeTypeSerializer, AbstractAttributeSerializer, \
     ModelWithAttributesSerializer
 from poms.obj_perms.serializers import ModelWithObjectPermissionSerializer
 from poms.portfolios.fields import PortfolioField
@@ -35,21 +35,21 @@ class AccountTypeSerializer(ModelWithObjectPermissionSerializer, ModelWithUserCo
                   'show_transaction_details', 'transaction_details_expr', 'tags']
 
 
-class AccountAttributeTypeSerializer(AttributeTypeSerializerBase):
+class AccountAttributeTypeSerializer(AbstractAttributeTypeSerializer):
     classifiers = AccountClassifierSerializer(required=False, allow_null=True, many=True)
 
-    class Meta(AttributeTypeSerializerBase.Meta):
+    class Meta(AbstractAttributeTypeSerializer.Meta):
         model = AccountAttributeType
-        fields = AttributeTypeSerializerBase.Meta.fields + ['classifiers']
+        fields = AbstractAttributeTypeSerializer.Meta.fields + ['classifiers']
 
 
-class AccountAttributeSerializer(AttributeSerializerBase):
+class AccountAttributeSerializer(AbstractAttributeSerializer):
     attribute_type = AccountAttributeTypeField()
     classifier = AccountClassifierField(required=False, allow_null=True)
 
-    class Meta(AttributeSerializerBase.Meta):
+    class Meta(AbstractAttributeSerializer.Meta):
         model = AccountAttribute
-        fields = AttributeSerializerBase.Meta.fields + ['attribute_type', 'classifier']
+        fields = AbstractAttributeSerializer.Meta.fields + ['attribute_type', 'classifier']
 
 
 class AccountSerializer(ModelWithObjectPermissionSerializer, ModelWithAttributesSerializer,

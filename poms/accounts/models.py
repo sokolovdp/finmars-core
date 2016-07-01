@@ -9,7 +9,7 @@ from mptt.models import MPTTModel
 from poms.audit import history
 from poms.common.models import NamedModel, TagModelBase
 from poms.currencies.models import Currency
-from poms.obj_attrs.models import AttributeTypeBase, AttributeBase, AttributeTypeOptionBase
+from poms.obj_attrs.models import AbstractAttributeType, AbstractAttribute, AbstractAttributeTypeOption
 from poms.obj_perms.models import AbstractGroupObjectPermission, AbstractUserObjectPermission
 from poms.users.models import MasterUser, Member
 
@@ -94,7 +94,7 @@ class AccountGroupObjectPermission(AbstractGroupObjectPermission):
         verbose_name_plural = _('accounts - group permissions')
 
 
-class AccountAttributeType(AttributeTypeBase):
+class AccountAttributeType(AbstractAttributeType):
     # classifier_root = models.OneToOneField(
     #     AccountClassifier,
     #     null=True,
@@ -103,7 +103,7 @@ class AccountAttributeType(AttributeTypeBase):
     #     verbose_name=_('classifier')
     # )
 
-    class Meta(AttributeTypeBase.Meta):
+    class Meta(AbstractAttributeType.Meta):
         verbose_name = _('account attribute type')
         verbose_name_plural = _('account attribute types')
         permissions = [
@@ -155,13 +155,13 @@ class AccountClassifier(MPTTModel, NamedModel):
         ]
 
 
-class AccountAttributeTypeOption(AttributeTypeOptionBase):
+class AccountAttributeTypeOption(AbstractAttributeTypeOption):
     member = models.ForeignKey(Member, related_name='account_attribute_type_options',
                                verbose_name=_('member'))
     attribute_type = models.ForeignKey(AccountAttributeType, related_name='options',
                                        verbose_name=_('attribute type'))
 
-    class Meta(AttributeTypeOptionBase.Meta):
+    class Meta(AbstractAttributeTypeOption.Meta):
         verbose_name = _('account attribute types - option')
         verbose_name_plural = _('account attribute types - options')
 
@@ -175,7 +175,7 @@ class AccountAttributeTypeUserObjectPermission(AbstractUserObjectPermission):
         verbose_name_plural = _('account attribute types - user permissions')
 
 
-class AccountAttribute(AttributeBase):
+class AccountAttribute(AbstractAttribute):
     attribute_type = models.ForeignKey(AccountAttributeType, on_delete=models.PROTECT, related_name='attributes',
                                        verbose_name=_('attribute type'))
     content_object = models.ForeignKey(Account, related_name='attributes',
@@ -183,7 +183,7 @@ class AccountAttribute(AttributeBase):
     classifier = models.ForeignKey(AccountClassifier, on_delete=models.PROTECT, null=True, blank=True,
                                    verbose_name=_('classifier'))
 
-    class Meta(AttributeBase.Meta):
+    class Meta(AbstractAttribute.Meta):
         verbose_name = _('account attribute')
         verbose_name_plural = _('account attributes')
 

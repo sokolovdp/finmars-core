@@ -13,7 +13,7 @@ from poms.instruments.models import InstrumentClassifier, Instrument, PriceHisto
     AccrualCalculationModel, PaymentSizeDetail, PeriodicityPeriod, CostMethod, InstrumentType, InstrumentAttributeType, \
     InstrumentAttribute, ManualPricingFormula, AccrualCalculationSchedule, InstrumentFactorSchedule, EventSchedule, \
     PricingPolicy
-from poms.obj_attrs.serializers import AttributeSerializerBase, AttributeTypeSerializerBase, \
+from poms.obj_attrs.serializers import AbstractAttributeSerializer, AbstractAttributeTypeSerializer, \
     ModelWithAttributesSerializer
 from poms.obj_perms.serializers import ModelWithObjectPermissionSerializer
 from poms.tags.fields import TagField
@@ -81,12 +81,12 @@ class InstrumentTypeSerializer(ModelWithObjectPermissionSerializer, ModelWithUse
                   'instrument_class', 'tags']
 
 
-class InstrumentAttributeTypeSerializer(AttributeTypeSerializerBase):
+class InstrumentAttributeTypeSerializer(AbstractAttributeTypeSerializer):
     classifiers = InstrumentClassifierSerializer(required=False, allow_null=True, many=True)
 
-    class Meta(AttributeTypeSerializerBase.Meta):
+    class Meta(AbstractAttributeTypeSerializer.Meta):
         model = InstrumentAttributeType
-        fields = AttributeTypeSerializerBase.Meta.fields + ['classifiers']
+        fields = AbstractAttributeTypeSerializer.Meta.fields + ['classifiers']
 
 
 class ManualPricingFormulaSerializer(serializers.ModelSerializer):
@@ -132,13 +132,13 @@ class EventScheduleSerializer(serializers.ModelSerializer):
                   'notification_date', 'effective_date']
 
 
-class InstrumentAttributeSerializer(AttributeSerializerBase):
+class InstrumentAttributeSerializer(AbstractAttributeSerializer):
     attribute_type = InstrumentAttributeTypeField()
     classifier = InstrumentClassifierField(required=False, allow_null=True)
 
-    class Meta(AttributeSerializerBase.Meta):
+    class Meta(AbstractAttributeSerializer.Meta):
         model = InstrumentAttribute
-        fields = AttributeSerializerBase.Meta.fields + ['attribute_type', 'classifier']
+        fields = AbstractAttributeSerializer.Meta.fields + ['attribute_type', 'classifier']
 
 
 class InstrumentSerializer(ModelWithAttributesSerializer, ModelWithObjectPermissionSerializer,

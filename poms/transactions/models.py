@@ -12,7 +12,7 @@ from poms.common.utils import date_now
 from poms.counterparties.models import Responsible, Counterparty
 from poms.currencies.models import Currency
 from poms.instruments.models import Instrument
-from poms.obj_attrs.models import AttributeTypeBase, AttributeBase, AttributeTypeOptionBase
+from poms.obj_attrs.models import AbstractAttributeType, AbstractAttribute, AbstractAttributeTypeOption
 from poms.obj_perms.models import AbstractGroupObjectPermission, AbstractUserObjectPermission
 from poms.portfolios.models import Portfolio
 from poms.strategies.models import Strategy1, Strategy2, Strategy3
@@ -986,7 +986,7 @@ class Transaction(models.Model):
         super(Transaction, self).save(*args, **kwargs)
 
 
-class TransactionAttributeType(AttributeTypeBase):
+class TransactionAttributeType(AbstractAttributeType):
     # strategy_position_root = models.ForeignKey(Strategy, related_name='strategy_transaction_attribute_types',
     #                                            on_delete=models.PROTECT, null=True, blank=True,
     #                                            verbose_name=_("strategy position (root)"))
@@ -994,7 +994,7 @@ class TransactionAttributeType(AttributeTypeBase):
     #                                        on_delete=models.PROTECT, null=True, blank=True,
     #                                        verbose_name=_("strategy cash (root)"))
 
-    class Meta(AttributeTypeBase.Meta):
+    class Meta(AbstractAttributeType.Meta):
         verbose_name = _('transaction attribute type')
         verbose_name_plural = _('transaction attribute types')
         permissions = [
@@ -1002,13 +1002,13 @@ class TransactionAttributeType(AttributeTypeBase):
         ]
 
 
-class TransactionAttributeTypeOption(AttributeTypeOptionBase):
+class TransactionAttributeTypeOption(AbstractAttributeTypeOption):
     member = models.ForeignKey(Member, related_name='transaction_attribute_type_options',
                                verbose_name=_("member"))
     attribute_type = models.ForeignKey(TransactionAttributeType, related_name='options',
                                        verbose_name=_("attribute type"))
 
-    class Meta(AttributeTypeOptionBase.Meta):
+    class Meta(AbstractAttributeTypeOption.Meta):
         verbose_name = _('transaction attribute types - option')
         verbose_name_plural = _('transaction attribute types - options')
 
@@ -1031,7 +1031,7 @@ class TransactionAttributeTypeGroupObjectPermission(AbstractGroupObjectPermissio
         verbose_name_plural = _('transaction attribute types - group permissions')
 
 
-class TransactionAttribute(AttributeBase):
+class TransactionAttribute(AbstractAttribute):
     attribute_type = models.ForeignKey(TransactionAttributeType, related_name='attributes', on_delete=models.PROTECT,
                                        verbose_name=_("attribute type"))
     content_object = models.ForeignKey(Transaction, related_name='attributes',
@@ -1044,7 +1044,7 @@ class TransactionAttribute(AttributeBase):
     #                                   verbose_name=_("strategy cash"))
     classifier = None
 
-    class Meta(AttributeBase.Meta):
+    class Meta(AbstractAttribute.Meta):
         verbose_name = _('transaction attribute')
         verbose_name_plural = _('transaction attributes')
 

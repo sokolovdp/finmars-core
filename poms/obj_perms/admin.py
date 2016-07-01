@@ -1,10 +1,9 @@
 from django.contrib import admin
 
-# from poms.obj_perms.models import UserObjectPermission, GroupObjectPermission
 from django.contrib.contenttypes.models import ContentType
 
 
-class UserObjectPermissionAdminBase(admin.ModelAdmin):
+class AbstractUserObjectPermissionAdmin(admin.ModelAdmin):
     def formfield_for_foreignkey(self, db_field, request=None, **kwargs):
         if db_field.name == 'permission':
             qs = kwargs.get('queryset', db_field.remote_field.model.objects)
@@ -12,10 +11,10 @@ class UserObjectPermissionAdminBase(admin.ModelAdmin):
             obj_ctype = ContentType.objects.get_for_model(obj_field.rel.to)
             kwargs['queryset'] = qs.select_related('content_type').filter(content_type=obj_ctype)
             # kwargs['queryset'] = qs.select_related('content_type')
-        return super(UserObjectPermissionAdminBase, self).formfield_for_foreignkey(db_field, request=request, **kwargs)
+        return super(AbstractUserObjectPermissionAdmin, self).formfield_for_foreignkey(db_field, request=request, **kwargs)
 
 
-class UserObjectPermissionAdmin(UserObjectPermissionAdminBase):
+class UserObjectPermissionAdmin(AbstractUserObjectPermissionAdmin):
     list_display = ['id', 'member', 'content_object', 'permission', ]
     search_fields = ['content_object__id', 'member__id', 'member__user__username']
     list_select_related = ['member', 'content_object', 'permission', 'permission__content_type']
@@ -25,7 +24,7 @@ class UserObjectPermissionAdmin(UserObjectPermissionAdminBase):
     # list_filter = ['permission']
 
 
-class GroupObjectPermissionAdmin(UserObjectPermissionAdminBase):
+class GroupObjectPermissionAdmin(AbstractUserObjectPermissionAdmin):
     list_display = ['id', 'group', 'content_object', 'permission', ]
     search_fields = ['content_object__id', 'group__id', 'group__name']
     list_select_related = ['group', 'content_object', 'permission', 'permission__content_type']

@@ -7,7 +7,7 @@ from poms.counterparties.fields import ResponsibleClassifierField, \
     CounterpartyAttributeTypeField, ResponsibleAttributeTypeField, CounterpartyClassifierField
 from poms.counterparties.models import CounterpartyClassifier, Counterparty, Responsible, ResponsibleClassifier, \
     CounterpartyAttributeType, CounterpartyAttribute, ResponsibleAttributeType, ResponsibleAttribute
-from poms.obj_attrs.serializers import AttributeTypeSerializerBase, AttributeSerializerBase, \
+from poms.obj_attrs.serializers import AbstractAttributeTypeSerializer, AbstractAttributeSerializer, \
     ModelWithAttributesSerializer
 from poms.obj_perms.serializers import ModelWithObjectPermissionSerializer
 from poms.portfolios.fields import PortfolioField
@@ -27,21 +27,21 @@ class CounterpartyClassifierNodeSerializer(ClassifierNodeSerializerBase):
         model = CounterpartyClassifier
 
 
-class CounterpartyAttributeTypeSerializer(AttributeTypeSerializerBase):
+class CounterpartyAttributeTypeSerializer(AbstractAttributeTypeSerializer):
     classifiers = CounterpartyClassifierSerializer(required=False, allow_null=True, many=True)
 
-    class Meta(AttributeTypeSerializerBase.Meta):
+    class Meta(AbstractAttributeTypeSerializer.Meta):
         model = CounterpartyAttributeType
-        fields = AttributeTypeSerializerBase.Meta.fields + ['classifiers']
+        fields = AbstractAttributeTypeSerializer.Meta.fields + ['classifiers']
 
 
-class CounterpartyAttributeSerializer(AttributeSerializerBase):
+class CounterpartyAttributeSerializer(AbstractAttributeSerializer):
     attribute_type = CounterpartyAttributeTypeField()
     classifier = CounterpartyClassifierField(required=False, allow_null=True)
 
-    class Meta(AttributeSerializerBase.Meta):
+    class Meta(AbstractAttributeSerializer.Meta):
         model = CounterpartyAttribute
-        fields = AttributeSerializerBase.Meta.fields + ['attribute_type', 'classifier']
+        fields = AbstractAttributeSerializer.Meta.fields + ['attribute_type', 'classifier']
 
 
 class CounterpartySerializer(ModelWithObjectPermissionSerializer, ModelWithAttributesSerializer,
@@ -69,21 +69,21 @@ class ResponsibleClassifierNodeSerializer(ClassifierNodeSerializerBase):
         model = ResponsibleClassifier
 
 
-class ResponsibleAttributeTypeSerializer(AttributeTypeSerializerBase):
+class ResponsibleAttributeTypeSerializer(AbstractAttributeTypeSerializer):
     classifiers = ResponsibleClassifierSerializer(required=False, allow_null=True, many=True)
 
-    class Meta(AttributeTypeSerializerBase.Meta):
+    class Meta(AbstractAttributeTypeSerializer.Meta):
         model = ResponsibleAttributeType
-        fields = AttributeTypeSerializerBase.Meta.fields + ['classifiers']
+        fields = AbstractAttributeTypeSerializer.Meta.fields + ['classifiers']
 
 
-class ResponsibleAttributeSerializer(AttributeSerializerBase):
+class ResponsibleAttributeSerializer(AbstractAttributeSerializer):
     attribute_type = ResponsibleAttributeTypeField()
     classifier = ResponsibleClassifierField(required=False, allow_null=True)
 
-    class Meta(AttributeSerializerBase.Meta):
+    class Meta(AbstractAttributeSerializer.Meta):
         model = ResponsibleAttribute
-        fields = AttributeSerializerBase.Meta.fields + ['attribute_type', 'classifier']
+        fields = AbstractAttributeSerializer.Meta.fields + ['attribute_type', 'classifier']
 
 
 class ResponsibleSerializer(ModelWithObjectPermissionSerializer, ModelWithAttributesSerializer,

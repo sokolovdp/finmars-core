@@ -9,7 +9,7 @@ from poms.common.admin import ClassModelAdmin
 from poms.counterparties.models import Counterparty, Responsible
 from poms.currencies.models import Currency
 from poms.instruments.models import Instrument, InstrumentType, DailyPricingModel, PaymentSizeDetail
-from poms.obj_attrs.admin import AttributeTypeAdminBase, AttributeTypeOptionAdminBase, AttributeInlineBase
+from poms.obj_attrs.admin import AbstractAttributeTypeAdmin, AbstractAttributeTypeOptionAdmin, AbstractAttributeInline
 from poms.obj_perms.admin import GroupObjectPermissionAdmin, UserObjectPermissionAdmin
 from poms.portfolios.models import Portfolio
 from poms.strategies.models import Strategy1, Strategy2, Strategy3
@@ -285,7 +285,7 @@ admin.site.register(ComplexTransaction, ComplexTransactionAdmin)
 # admin.site.register(EventToHandle, HistoricalAdmin)
 
 
-class TransactionAttributeInline(AttributeInlineBase):
+class TransactionAttributeInline(AbstractAttributeInline):
     model = TransactionAttribute
     fields = ['attribute_type', 'value_string', 'value_float', 'value_date']
     raw_id_fields = ['attribute_type']
@@ -345,14 +345,14 @@ class TransactionAdmin(HistoricalAdmin):
 admin.site.register(Transaction, TransactionAdmin)
 
 
-class TransactionAttributeTypeAdmin(AttributeTypeAdminBase):
+class TransactionAttributeTypeAdmin(AbstractAttributeTypeAdmin):
     list_display = ['id', 'master_user', 'name', 'value_type']
     list_select_related = ['master_user']
     raw_id_fields = ['master_user']
 
 
 admin.site.register(TransactionAttributeType, TransactionAttributeTypeAdmin)
-admin.site.register(TransactionAttributeTypeOption, AttributeTypeOptionAdminBase)
+admin.site.register(TransactionAttributeTypeOption, AbstractAttributeTypeOptionAdmin)
 admin.site.register(TransactionAttributeTypeUserObjectPermission, UserObjectPermissionAdmin)
 admin.site.register(TransactionAttributeTypeGroupObjectPermission, GroupObjectPermissionAdmin)
 

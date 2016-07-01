@@ -6,8 +6,8 @@ from poms.accounts.models import Account, AccountType, AccountAttributeType
 from poms.accounts.serializers import AccountSerializer, AccountTypeSerializer, AccountAttributeTypeSerializer
 from poms.common.filters import CharFilter, ModelWithPermissionMultipleChoiceFilter
 from poms.obj_attrs.filters import AttributePrefetchFilter
-from poms.obj_attrs.views import AttributeTypeViewSetBase
-from poms.obj_perms.views import AbstractViewSetWithObjectPermission
+from poms.obj_attrs.views import AbstractAttributeTypeViewSet
+from poms.obj_perms.views import AbstractWithObjectPermissionViewSet
 from poms.portfolios.models import Portfolio
 from poms.tags.filters import TagFilterBackend, TagFilter
 from poms.users.filters import OwnerByMasterUserFilter
@@ -24,7 +24,7 @@ class AccountTypeFilterSet(FilterSet):
         fields = ['user_code', 'name', 'short_name', 'tags']
 
 
-class AccountTypeViewSet(AbstractViewSetWithObjectPermission):
+class AccountTypeViewSet(AbstractWithObjectPermissionViewSet):
     queryset = AccountType.objects
     serializer_class = AccountTypeSerializer
     filter_backends = [
@@ -57,7 +57,7 @@ class AccountAttributeTypeFilterSet(FilterSet):
         fields = ['user_code', 'name', 'short_name']
 
 
-class AccountAttributeTypeViewSet(AttributeTypeViewSetBase):
+class AccountAttributeTypeViewSet(AbstractAttributeTypeViewSet):
     queryset = AccountAttributeType.objects.prefetch_related('classifiers')
     serializer_class = AccountAttributeTypeSerializer
     # filter_backends = [
@@ -92,7 +92,7 @@ class AccountFilterSet(FilterSet):
         fields = ['user_code', 'name', 'short_name', 'type', 'portfolio', 'tag']
 
 
-class AccountViewSet(AbstractViewSetWithObjectPermission):
+class AccountViewSet(AbstractWithObjectPermissionViewSet):
     queryset = Account.objects.prefetch_related(
         'type',
         # 'type__user_object_permissions', 'type__user_object_permissions__permission',

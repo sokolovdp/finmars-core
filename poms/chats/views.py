@@ -9,7 +9,7 @@ from poms.chats.permissions import MessagePermission, DirectMessagePermission
 from poms.chats.serializers import ThreadSerializer, MessageSerializer, DirectMessageSerializer, ThreadStatusSerializer
 from poms.common.filters import CharFilter, ModelWithPermissionMultipleChoiceFilter, ModelMultipleChoiceFilter
 from poms.common.views import AbstractModelViewSet
-from poms.obj_perms.views import AbstractViewSetWithObjectPermission
+from poms.obj_perms.views import AbstractWithObjectPermissionViewSet
 from poms.users.filters import OwnerByMasterUserFilter
 from poms.users.models import Member
 from poms.users.permissions import SuperUserOrReadOnly
@@ -42,7 +42,7 @@ class ThreadFilterSet(FilterSet):
         fields = ['subject', 'created', 'status', 'status__is_closed']
 
 
-class ThreadViewSet(AbstractViewSetWithObjectPermission):
+class ThreadViewSet(AbstractWithObjectPermissionViewSet):
     queryset = Thread.objects.all()
     serializer_class = ThreadSerializer
     # permission_classes = [
