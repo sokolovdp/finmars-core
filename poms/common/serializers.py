@@ -34,11 +34,13 @@ class ModelWithUserCodeSerializer(serializers.ModelSerializer):
     def to_internal_value(self, data):
         ret = super(ModelWithUserCodeSerializer, self).to_internal_value(data)
 
+        # for correct message on unique error
         user_code = ret.get('user_code', None)
         if not user_code:
-            name = ret.get('name', '')
-            user_code = Truncator(name).chars(25)
+            user_code = ret.get('name', '')
+            user_code = Truncator(user_code).chars(25, truncate='')
             ret['user_code'] = user_code
+
         return ret
 
 
