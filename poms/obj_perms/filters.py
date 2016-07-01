@@ -2,7 +2,7 @@ import django_filters
 from django import forms
 from rest_framework.filters import BaseFilterBackend
 
-from poms.obj_perms.utils import obj_perms_filter_objects
+from poms.obj_perms.utils import obj_perms_filter_objects, perms_prefetch
 
 
 class AllFakeFilter(django_filters.Filter):
@@ -73,22 +73,22 @@ class ObjectPermissionBackend(BaseFilterBackend):
         return {perm % kwargs for perm in self.codename_set}
 
     def filter_queryset(self, request, queryset, view):
-        queryset = queryset.prefetch_related(
-            'user_object_permissions',
-            'user_object_permissions__member',
-            'user_object_permissions__member__groups',
-            'user_object_permissions__permission',
-            # 'user_object_permissions__permission__content_type',
-            'group_object_permissions',
-            # 'group_object_permissions__group',
-            'group_object_permissions__permission',
-            # 'group_object_permissions__permission__content_type',
-        )
+        # queryset = queryset.prefetch_related(
+        #     'user_object_permissions',
+        #     'user_object_permissions__member',
+        #     'user_object_permissions__member__groups',
+        #     'user_object_permissions__permission',
+        #     # 'user_object_permissions__permission__content_type',
+        #     'group_object_permissions',
+        #     # 'group_object_permissions__group',
+        #     'group_object_permissions__permission',
+        #     # 'group_object_permissions__permission__content_type',
+        # )
         # if self.can_view_all:
         #     # if request.query_params.get('all', '') in ['1', 'yes', 'true']:
         #     #     return queryset
         #     if view and view.action == 'retrieve':
         #         return queryset
         if view and view.action == 'retrieve':
-            return queryset
+            return perms_prefetch(queryset)
         return obj_perms_filter_objects(request.user.member, self.get_codename_set(queryset.model), queryset)

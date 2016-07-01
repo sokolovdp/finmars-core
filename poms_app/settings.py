@@ -250,11 +250,11 @@ LOGGING = {
         }
     },
     'loggers': {
-        'django': {
-            'level': 'INFO',
+        'py.warnings': {
             'handlers': ['console'],
         },
-        'py.warnings': {
+        'django': {
+            'level': 'INFO',
             'handlers': ['console'],
         },
         # 'django.db': {
