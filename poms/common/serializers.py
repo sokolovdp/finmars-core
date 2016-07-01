@@ -4,7 +4,7 @@ from rest_framework import serializers
 from rest_framework.exceptions import ValidationError
 from rest_framework.serializers import ListSerializer
 
-from poms.common.fields import FilteredPrimaryKeyRelatedField, UserCodeField
+from poms.common.fields import PrimaryKeyRelatedFilteredField, UserCodeField
 from poms.common.filters import ClassifierRootFilter
 from poms.users.filters import OwnerByMasterUserFilter
 
@@ -44,13 +44,13 @@ class ModelWithUserCodeSerializer(serializers.ModelSerializer):
         return ret
 
 
-class ClassifierFieldBase(FilteredPrimaryKeyRelatedField):
+class ClassifierFieldBase(PrimaryKeyRelatedFilteredField):
     filter_backends = [
         OwnerByMasterUserFilter
     ]
 
 
-class ClassifierRootFieldBase(FilteredPrimaryKeyRelatedField):
+class ClassifierRootFieldBase(PrimaryKeyRelatedFilteredField):
     filter_backends = [
         OwnerByMasterUserFilter,
         ClassifierRootFilter

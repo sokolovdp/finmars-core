@@ -2,7 +2,7 @@ from collections import OrderedDict
 
 from rest_framework.filters import BaseFilterBackend, OrderingFilter
 
-from poms.common.fields import FilteredPrimaryKeyRelatedField
+from poms.common.fields import PrimaryKeyRelatedFilteredField
 from poms.obj_attrs.utils import get_attr_model, get_attr_type_model
 from poms.obj_perms.filters import ObjectPermissionBackend
 from poms.obj_perms.utils import obj_perms_filter_objects_for_view
@@ -36,7 +36,7 @@ class ClassifierPermissionBackend(BaseFilterBackend):
         return queryset
 
 
-class AttributeClassifierBaseField(FilteredPrimaryKeyRelatedField):
+class AttributeClassifierBaseField(PrimaryKeyRelatedFilteredField):
     filter_backends = [
         OwnerByAttributeTypeFilter,
         ClassifierPermissionBackend,

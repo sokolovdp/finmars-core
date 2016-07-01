@@ -1,6 +1,6 @@
 from __future__ import unicode_literals
 
-from poms.common.fields import FilteredPrimaryKeyRelatedField
+from poms.common.fields import PrimaryKeyRelatedFilteredField
 from poms.counterparties.models import CounterpartyClassifier, Counterparty, Responsible, ResponsibleClassifier, \
     CounterpartyAttributeType, ResponsibleAttributeType
 from poms.obj_attrs.filters import AttributeClassifierBaseField
@@ -9,7 +9,7 @@ from poms.obj_perms.filters import ObjectPermissionBackend
 from poms.users.filters import OwnerByMasterUserFilter
 
 
-class CounterpartyAttributeTypeField(FilteredPrimaryKeyRelatedField):
+class CounterpartyAttributeTypeField(PrimaryKeyRelatedFilteredField):
     queryset = CounterpartyAttributeType.objects
     filter_backends = [
         OwnerByMasterUserFilter,
@@ -34,7 +34,7 @@ class CounterpartyField(PrimaryKeyRelatedFilteredWithObjectPermissionField):
     ]
 
 
-class ResponsibleAttributeTypeField(FilteredPrimaryKeyRelatedField):
+class ResponsibleAttributeTypeField(PrimaryKeyRelatedFilteredField):
     queryset = ResponsibleAttributeType.objects
     filter_backends = [
         OwnerByMasterUserFilter,

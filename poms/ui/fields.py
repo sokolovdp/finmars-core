@@ -4,11 +4,11 @@ from django.contrib.contenttypes.models import ContentType
 from django.core.exceptions import ObjectDoesNotExist
 from django.utils.encoding import smart_text
 
-from poms.common.fields import FilteredSlugRelatedField
+from poms.common.fields import SlugRelatedFilteredField
 from poms.ui.filters import LayoutContentTypeFilter
 
 
-class LayoutContentTypeField(FilteredSlugRelatedField):
+class LayoutContentTypeField(SlugRelatedFilteredField):
     queryset = ContentType.objects
     filter_backends = [
         LayoutContentTypeFilter

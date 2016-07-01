@@ -1,6 +1,6 @@
 from __future__ import unicode_literals
 
-from poms.common.fields import FilteredPrimaryKeyRelatedField
+from poms.common.fields import PrimaryKeyRelatedFilteredField
 from poms.obj_attrs.filters import AttributeClassifierBaseField
 from poms.obj_perms.fields import PrimaryKeyRelatedFilteredWithObjectPermissionField
 from poms.obj_perms.filters import ObjectPermissionBackend
@@ -12,7 +12,7 @@ class PortfolioClassifierField(AttributeClassifierBaseField):
     queryset = PortfolioClassifier.objects
 
 
-class PortfolioAttributeTypeField(FilteredPrimaryKeyRelatedField):
+class PortfolioAttributeTypeField(PrimaryKeyRelatedFilteredField):
     queryset = PortfolioAttributeType.objects
     filter_backends = [
         OwnerByMasterUserFilter,

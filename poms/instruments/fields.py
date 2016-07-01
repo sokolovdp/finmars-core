@@ -1,6 +1,6 @@
 from __future__ import unicode_literals
 
-from poms.common.fields import FilteredPrimaryKeyRelatedField
+from poms.common.fields import PrimaryKeyRelatedFilteredField
 from poms.instruments.models import InstrumentClassifier, Instrument, InstrumentAttributeType, InstrumentType, \
     PricingPolicy
 from poms.obj_attrs.filters import AttributeClassifierBaseField
@@ -18,7 +18,7 @@ class InstrumentClassifierField(AttributeClassifierBaseField):
 #     filter_backends = [OwnerByMasterUserFilter]
 
 
-class InstrumentAttributeTypeField(FilteredPrimaryKeyRelatedField):
+class InstrumentAttributeTypeField(PrimaryKeyRelatedFilteredField):
     queryset = InstrumentAttributeType.objects
     filter_backends = [
         OwnerByMasterUserFilter,
@@ -52,7 +52,7 @@ class InstrumentField(PrimaryKeyRelatedFilteredWithObjectPermissionField):
     ]
 
 
-class PricingPolicyField(FilteredPrimaryKeyRelatedField):
+class PricingPolicyField(PrimaryKeyRelatedFilteredField):
     queryset = PricingPolicy.objects
     filter_backends = [
         OwnerByMasterUserFilter,

@@ -4,7 +4,7 @@ from django.contrib.auth.models import User
 from rest_framework import serializers
 from rest_framework.fields import CurrentUserDefault
 
-from poms.common.fields import FilteredPrimaryKeyRelatedField
+from poms.common.fields import PrimaryKeyRelatedFilteredField
 from poms.users.filters import OwnerByMasterUserFilter
 from poms.users.models import Member, Group
 
@@ -52,15 +52,15 @@ class HiddenUserField(serializers.PrimaryKeyRelatedField):
         super(HiddenUserField, self).__init__(**kwargs)
 
 
-class MemberField(FilteredPrimaryKeyRelatedField):
+class MemberField(PrimaryKeyRelatedFilteredField):
     queryset = Member.objects
     filter_backends = [OwnerByMasterUserFilter]
 
 
-class UserField(FilteredPrimaryKeyRelatedField):
+class UserField(PrimaryKeyRelatedFilteredField):
     queryset = User.objects.all()
 
 
-class GroupField(FilteredPrimaryKeyRelatedField):
+class GroupField(PrimaryKeyRelatedFilteredField):
     queryset = Group.objects.all()
     filter_backends = [OwnerByMasterUserFilter]

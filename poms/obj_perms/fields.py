@@ -5,7 +5,7 @@ from django.contrib.contenttypes.models import ContentType
 from rest_framework import serializers
 from rest_framework.relations import MANY_RELATION_KWARGS
 
-from poms.common.fields import FilteredPrimaryKeyRelatedField
+from poms.common.fields import PrimaryKeyRelatedFilteredField
 from poms.obj_perms.utils import get_granted_permissions, obj_perms_filter_object_list_for_view, \
     obj_perms_filter_objects_for_view, obj_perms_prefetch, has_view_perms
 
@@ -57,7 +57,7 @@ class ManyRelatedWithObjectPermissionField(serializers.ManyRelatedField):
         return res
 
 
-class PrimaryKeyRelatedFilteredWithObjectPermissionField(FilteredPrimaryKeyRelatedField):
+class PrimaryKeyRelatedFilteredWithObjectPermissionField(PrimaryKeyRelatedFilteredField):
     # queryset = Tag.objects
     # filter_backends = [
     #     OwnerByMasterUserFilter,

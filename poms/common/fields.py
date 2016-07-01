@@ -5,16 +5,16 @@ from rest_framework.fields import CharField, DateTimeField
 from rest_framework.relations import PrimaryKeyRelatedField, SlugRelatedField
 
 
-class FilteredPrimaryKeyRelatedField(PrimaryKeyRelatedField):
+class PrimaryKeyRelatedFilteredField(PrimaryKeyRelatedField):
     filter_backends = None
 
     def __init__(self, filter_backends=None, **kwargs):
         if filter_backends:
             self.filter_backends = filter_backends
-        super(FilteredPrimaryKeyRelatedField, self).__init__(**kwargs)
+        super(PrimaryKeyRelatedFilteredField, self).__init__(**kwargs)
 
     def get_queryset(self):
-        queryset = super(FilteredPrimaryKeyRelatedField, self).get_queryset()
+        queryset = super(PrimaryKeyRelatedFilteredField, self).get_queryset()
         queryset = self.filter_queryset(queryset)
         return queryset
 
@@ -26,16 +26,16 @@ class FilteredPrimaryKeyRelatedField(PrimaryKeyRelatedField):
         return queryset
 
 
-class FilteredSlugRelatedField(SlugRelatedField):
+class SlugRelatedFilteredField(SlugRelatedField):
     filter_backends = None
 
     def __init__(self, filter_backends=None, **kwargs):
         if filter_backends:
             self.filter_backends = filter_backends
-        super(FilteredSlugRelatedField, self).__init__(**kwargs)
+        super(SlugRelatedFilteredField, self).__init__(**kwargs)
 
     def get_queryset(self):
-        queryset = super(FilteredSlugRelatedField, self).get_queryset()
+        queryset = super(SlugRelatedFilteredField, self).get_queryset()
         queryset = self.filter_queryset(queryset)
         return queryset
 

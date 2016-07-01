@@ -4,14 +4,14 @@ from django.contrib.contenttypes.models import ContentType
 from django.core.exceptions import ObjectDoesNotExist
 from django.utils.encoding import smart_text
 
-from poms.common.fields import FilteredSlugRelatedField
+from poms.common.fields import SlugRelatedFilteredField
 from poms.obj_perms.fields import PrimaryKeyRelatedFilteredWithObjectPermissionField
 from poms.tags.filters import TagContentTypeFilter
 from poms.tags.models import Tag
 from poms.users.filters import OwnerByMasterUserFilter
 
 
-class TagContentTypeField(FilteredSlugRelatedField):
+class TagContentTypeField(SlugRelatedFilteredField):
     queryset = ContentType.objects
     filter_backends = [
         TagContentTypeFilter

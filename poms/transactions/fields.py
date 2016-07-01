@@ -5,7 +5,7 @@ from django.core.exceptions import ObjectDoesNotExist
 from django.utils.encoding import smart_text
 from rest_framework.fields import CharField, empty
 
-from poms.common.fields import FilteredPrimaryKeyRelatedField, FilteredSlugRelatedField
+from poms.common.fields import PrimaryKeyRelatedFilteredField, SlugRelatedFilteredField
 from poms.obj_perms.fields import PrimaryKeyRelatedFilteredWithObjectPermissionField
 from poms.obj_perms.filters import ObjectPermissionBackend
 from poms.transactions.filters import TransactionTypeInputContentTypeFilter
@@ -39,7 +39,7 @@ class TransactionTypeField(PrimaryKeyRelatedFilteredWithObjectPermissionField):
     ]
 
 
-class TransactionAttributeTypeField(FilteredPrimaryKeyRelatedField):
+class TransactionAttributeTypeField(PrimaryKeyRelatedFilteredField):
     queryset = TransactionAttributeType.objects
     filter_backends = [
         OwnerByMasterUserFilter,
@@ -47,7 +47,7 @@ class TransactionAttributeTypeField(FilteredPrimaryKeyRelatedField):
     ]
 
 
-class TransactionTypeInputContentTypeField(FilteredSlugRelatedField):
+class TransactionTypeInputContentTypeField(SlugRelatedFilteredField):
     queryset = ContentType.objects
     filter_backends = [
         TransactionTypeInputContentTypeFilter
