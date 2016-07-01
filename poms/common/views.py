@@ -62,6 +62,9 @@ class AbstractReadOnlyModelViewSet(ReadOnlyModelViewSet):
         OrderingFilter,
         SearchFilter
     ]
+
+
+class AbstractClassModelViewSet(AbstractReadOnlyModelViewSet):
     ordering_fields = [
         'id',
         'system_code',

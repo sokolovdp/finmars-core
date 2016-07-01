@@ -7,7 +7,7 @@ from rest_framework.response import Response
 
 from poms.accounts.models import Account
 from poms.common.filters import CharFilter, ModelWithPermissionMultipleChoiceFilter, ModelMultipleChoiceFilter
-from poms.common.views import AbstractReadOnlyModelViewSet, AbstractModelViewSet
+from poms.common.views import AbstractClassModelViewSet, AbstractModelViewSet
 from poms.currencies.models import Currency
 from poms.instruments.models import Instrument, InstrumentType
 from poms.obj_attrs.filters import AttributePrefetchFilter
@@ -27,7 +27,7 @@ from poms.transactions.serializers import TransactionClassSerializer, Transactio
 from poms.users.filters import OwnerByMasterUserFilter
 
 
-class TransactionClassViewSet(AbstractReadOnlyModelViewSet):
+class TransactionClassViewSet(AbstractClassModelViewSet):
     queryset = TransactionClass.objects
     serializer_class = TransactionClassSerializer
 

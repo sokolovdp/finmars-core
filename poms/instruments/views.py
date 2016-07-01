@@ -4,7 +4,7 @@ import django_filters
 from rest_framework.filters import DjangoFilterBackend, OrderingFilter, SearchFilter, FilterSet
 
 from poms.common.filters import CharFilter, ModelWithPermissionMultipleChoiceFilter
-from poms.common.views import AbstractReadOnlyModelViewSet, AbstractModelViewSet
+from poms.common.views import AbstractClassModelViewSet, AbstractModelViewSet
 from poms.instruments.filters import OwnerByInstrumentFilter, PriceHistoryObjectPermissionFilter
 from poms.instruments.models import Instrument, PriceHistory, InstrumentClass, DailyPricingModel, \
     AccrualCalculationModel, PaymentSizeDetail, PeriodicityPeriod, CostMethod, InstrumentType, InstrumentAttributeType, \
@@ -21,32 +21,32 @@ from poms.users.filters import OwnerByMasterUserFilter
 from poms.users.permissions import SuperUserOrReadOnly
 
 
-class InstrumentClassViewSet(AbstractReadOnlyModelViewSet):
+class InstrumentClassViewSet(AbstractClassModelViewSet):
     queryset = InstrumentClass.objects
     serializer_class = InstrumentClassSerializer
 
 
-class DailyPricingModelViewSet(AbstractReadOnlyModelViewSet):
+class DailyPricingModelViewSet(AbstractClassModelViewSet):
     queryset = DailyPricingModel.objects
     serializer_class = DailyPricingModelSerializer
 
 
-class AccrualCalculationModelClassViewSet(AbstractReadOnlyModelViewSet):
+class AccrualCalculationModelClassViewSet(AbstractClassModelViewSet):
     queryset = AccrualCalculationModel.objects
     serializer_class = AccrualCalculationModelSerializer
 
 
-class PaymentSizeDetailViewSet(AbstractReadOnlyModelViewSet):
+class PaymentSizeDetailViewSet(AbstractClassModelViewSet):
     queryset = PaymentSizeDetail.objects
     serializer_class = PaymentSizeDetailSerializer
 
 
-class PeriodicityPeriodViewSet(AbstractReadOnlyModelViewSet):
+class PeriodicityPeriodViewSet(AbstractClassModelViewSet):
     queryset = PeriodicityPeriod.objects
     serializer_class = PeriodicityPeriodSerializer
 
 
-class CostMethodViewSet(AbstractReadOnlyModelViewSet):
+class CostMethodViewSet(AbstractClassModelViewSet):
     queryset = CostMethod.objects
     serializer_class = CostMethodSerializer
 

@@ -84,9 +84,9 @@ class UserViewSet(HistoricalMixin, UpdateModelMixin, AbstractReadOnlyModelViewSe
         # IsAuthenticated,
         IsCurrentUser,
     ]
-    filter_backends = [
-        UserFilter
-    ]
+    # filter_backends = AbstractReadOnlyModelViewSet.filter_backends + [
+    #     UserFilter
+    # ]
 
     # def get_serializer_class(self):
     #     # print(self.action)
