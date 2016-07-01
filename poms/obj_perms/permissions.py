@@ -8,10 +8,16 @@ class ObjectPermissionBase(BasePermission):
         'GET': [],
         'OPTIONS': [],
         'HEAD': [],
+
+        # 'POST': ['add_%(model_name)s'],
+        # 'PUT': ['change_%(model_name)s'],
+        # 'PATCH': ['change_%(model_name)s'],
+        # 'DELETE': ['delete_%(model_name)s'],
+
         'POST': ['add_%(model_name)s'],
         'PUT': ['change_%(model_name)s'],
         'PATCH': ['change_%(model_name)s'],
-        'DELETE': ['delete_%(model_name)s'],
+        'DELETE': ['change_%(model_name)s'],
     }
 
     def get_required_object_permissions(self, method, model_cls):

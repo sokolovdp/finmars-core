@@ -4,7 +4,7 @@ import django_filters
 from rest_framework.filters import DjangoFilterBackend, OrderingFilter, SearchFilter, FilterSet
 
 from poms.common.filters import CharFilter, ModelMultipleChoiceFilter
-from poms.common.views import PomsViewSetBase
+from poms.common.views import AbstractModelViewSet
 from poms.currencies.filters import OwnerByCurrencyFilter
 from poms.currencies.models import Currency, CurrencyHistory
 from poms.currencies.serializers import CurrencySerializer, CurrencyHistorySerializer
@@ -24,10 +24,10 @@ class CurrencyFilterSet(FilterSet):
         fields = ['user_code', 'name', 'short_name', 'tag']
 
 
-class CurrencyViewSet(PomsViewSetBase):
+class CurrencyViewSet(AbstractModelViewSet):
     queryset = Currency.objects
     serializer_class = CurrencySerializer
-    permission_classes = PomsViewSetBase.permission_classes + [
+    permission_classes = AbstractModelViewSet.permission_classes + [
         SuperUserOrReadOnly,
     ]
     filter_backends = [
@@ -51,10 +51,10 @@ class CurrencyHistoryFilterSet(FilterSet):
         fields = ['currency', 'date']
 
 
-class CurrencyHistoryViewSet(PomsViewSetBase):
+class CurrencyHistoryViewSet(AbstractModelViewSet):
     queryset = CurrencyHistory.objects.prefetch_related('currency')
     serializer_class = CurrencyHistorySerializer
-    permission_classes = PomsViewSetBase.permission_classes + [
+    permission_classes = AbstractModelViewSet.permission_classes + [
         SuperUserOrReadOnly,
     ]
     filter_backends = [

@@ -1,10 +1,10 @@
-from poms.common.views import PomsViewSetBase
+from poms.common.views import AbstractModelViewSet
 from poms.obj_perms.filters import ObjectPermissionBackend
 from poms.obj_perms.permissions import ObjectPermissionBase
 from poms.obj_perms.utils import obj_perms_prefetch
 
 
-class AbstractViewSetWithObjectPermission(PomsViewSetBase):
+class AbstractViewSetWithObjectPermission(AbstractModelViewSet):
     prefetch_permissions_for = ()
 
     def filter_queryset(self, queryset):

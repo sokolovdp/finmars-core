@@ -8,17 +8,17 @@ from poms.chats.models import Thread, Message, DirectMessage, ThreadStatus
 from poms.chats.permissions import MessagePermission, DirectMessagePermission
 from poms.chats.serializers import ThreadSerializer, MessageSerializer, DirectMessageSerializer, ThreadStatusSerializer
 from poms.common.filters import CharFilter, ModelWithPermissionMultipleChoiceFilter, ModelMultipleChoiceFilter
-from poms.common.views import PomsViewSetBase
+from poms.common.views import AbstractModelViewSet
 from poms.obj_perms.views import AbstractViewSetWithObjectPermission
 from poms.users.filters import OwnerByMasterUserFilter
 from poms.users.models import Member
 from poms.users.permissions import SuperUserOrReadOnly
 
 
-class ThreadStatusViewSet(PomsViewSetBase):
+class ThreadStatusViewSet(AbstractModelViewSet):
     queryset = ThreadStatus.objects.all()
     serializer_class = ThreadStatusSerializer
-    permission_classes = PomsViewSetBase.permission_classes + [
+    permission_classes = AbstractModelViewSet.permission_classes + [
         # IsAuthenticated,
         SuperUserOrReadOnly
     ]
@@ -75,10 +75,10 @@ class MessageFilterSet(FilterSet):
         fields = ['thread', 'created']
 
 
-class MessageViewSet(PomsViewSetBase):
+class MessageViewSet(AbstractModelViewSet):
     queryset = Message.objects
     serializer_class = MessageSerializer
-    permission_classes = PomsViewSetBase.permission_classes + [
+    permission_classes = AbstractModelViewSet.permission_classes + [
         MessagePermission,
     ]
     filter_backends = [
@@ -101,10 +101,10 @@ class DirectMessageFilterSet(FilterSet):
         fields = ['created', 'recipient', 'sender']
 
 
-class DirectMessageViewSet(PomsViewSetBase):
+class DirectMessageViewSet(AbstractModelViewSet):
     queryset = DirectMessage.objects.all()
     serializer_class = DirectMessageSerializer
-    permission_classes = PomsViewSetBase.permission_classes + [
+    permission_classes = AbstractModelViewSet.permission_classes + [
         DirectMessagePermission,
     ]
     filter_backends = [

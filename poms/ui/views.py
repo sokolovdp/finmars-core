@@ -3,7 +3,7 @@ import six
 from django_filters.fields import Lookup
 from rest_framework.filters import FilterSet, DjangoFilterBackend, OrderingFilter, SearchFilter
 
-from poms.common.views import PomsViewSetBase
+from poms.common.views import AbstractModelViewSet
 from poms.ui.models import TemplateListLayout, TemplateEditLayout, ListLayout, EditLayout
 from poms.ui.serializers import TemplateListLayoutSerializer, ListLayoutSerializer, TemplateEditLayoutSerializer, \
     EditLayoutSerializer
@@ -39,7 +39,7 @@ class TemplateListLayoutFilterSet(FilterSet):
         fields = ['name', 'content_type']
 
 
-class TemplateListLayoutViewSet(PomsViewSetBase):
+class TemplateListLayoutViewSet(AbstractModelViewSet):
     queryset = TemplateListLayout.objects.prefetch_related('master_user', 'content_type')
     serializer_class = TemplateListLayoutSerializer
     filter_backends = [
@@ -49,7 +49,7 @@ class TemplateListLayoutViewSet(PomsViewSetBase):
         SearchFilter,
     ]
     filter_class = TemplateListLayoutFilterSet
-    permission_classes = PomsViewSetBase.permission_classes + [
+    permission_classes = AbstractModelViewSet.permission_classes + [
         SuperUserOnly
     ]
     ordering_fields = ['name']
@@ -64,7 +64,7 @@ class TemplateEditLayoutFilterSet(FilterSet):
         fields = ['content_type']
 
 
-class TemplateEditLayoutViewSet(PomsViewSetBase):
+class TemplateEditLayoutViewSet(AbstractModelViewSet):
     queryset = TemplateEditLayout.objects.prefetch_related('master_user', 'content_type')
     serializer_class = TemplateEditLayoutSerializer
     filter_backends = [
@@ -72,7 +72,7 @@ class TemplateEditLayoutViewSet(PomsViewSetBase):
         OrderingFilter,
         SearchFilter,
     ]
-    permission_classes = PomsViewSetBase.permission_classes + [
+    permission_classes = AbstractModelViewSet.permission_classes + [
         SuperUserOnly
     ]
     filter_class = TemplateEditLayoutFilterSet
@@ -88,7 +88,7 @@ class ListLayoutFilterSet(FilterSet):
         fields = ['name', 'content_type']
 
 
-class ListLayoutViewSet(PomsViewSetBase):
+class ListLayoutViewSet(AbstractModelViewSet):
     queryset = ListLayout.objects.prefetch_related('member', 'content_type')
     serializer_class = ListLayoutSerializer
     filter_backends = [
@@ -110,7 +110,7 @@ class EditLayoutFilterSet(FilterSet):
         fields = ['content_type']
 
 
-class EditLayoutViewSet(PomsViewSetBase):
+class EditLayoutViewSet(AbstractModelViewSet):
     queryset = EditLayout.objects.select_related('member', 'content_type')
     serializer_class = EditLayoutSerializer
     filter_backends = [

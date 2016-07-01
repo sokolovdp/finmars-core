@@ -7,7 +7,7 @@ from rest_framework.response import Response
 
 from poms.accounts.models import Account
 from poms.common.filters import CharFilter, ModelWithPermissionMultipleChoiceFilter, ModelMultipleChoiceFilter
-from poms.common.views import PomsClassViewSetBase, PomsViewSetBase
+from poms.common.views import AbstractReadOnlyModelViewSet, AbstractModelViewSet
 from poms.currencies.models import Currency
 from poms.instruments.models import Instrument, InstrumentType
 from poms.obj_attrs.filters import AttributePrefetchFilter
@@ -27,7 +27,7 @@ from poms.transactions.serializers import TransactionClassSerializer, Transactio
 from poms.users.filters import OwnerByMasterUserFilter
 
 
-class TransactionClassViewSet(PomsClassViewSetBase):
+class TransactionClassViewSet(AbstractReadOnlyModelViewSet):
     queryset = TransactionClass.objects
     serializer_class = TransactionClassSerializer
 
@@ -292,7 +292,7 @@ class TransactionFilterSet(FilterSet):
                   'strategy3_position', 'strategy3_cash', ]
 
 
-class TransactionViewSet(PomsViewSetBase):
+class TransactionViewSet(AbstractModelViewSet):
     queryset = Transaction.objects.prefetch_related(
         'master_user',
         'complex_transaction', 'complex_transaction__transaction_type',
@@ -345,7 +345,7 @@ class TransactionViewSet(PomsViewSetBase):
         OrderingFilter,
         SearchFilter,
     ]
-    permission_classes = PomsViewSetBase.permission_classes + [
+    permission_classes = AbstractModelViewSet.permission_classes + [
         TransactionObjectPermission,
     ]
     filter_class = TransactionFilterSet

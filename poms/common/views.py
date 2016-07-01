@@ -16,18 +16,18 @@ from poms.common.mixins import DbTransactionMixin
 from poms.users.filters import OwnerByMasterUserFilter
 
 
-class PomsViewSetBase(DbTransactionMixin, HistoricalMixin, ModelViewSet):
+class AbstractModelViewSet(DbTransactionMixin, HistoricalMixin, ModelViewSet):
     permission_classes = [
         # IsAuthenticated
     ]
 
     def get_permissions(self):
-        return super(PomsViewSetBase, self).get_permissions() + [
+        return super(AbstractModelViewSet, self).get_permissions() + [
             IsAuthenticated()
         ]
 
     def update(self, request, *args, **kwargs):
-        response = super(PomsViewSetBase, self).update(request, *args, **kwargs)
+        response = super(AbstractModelViewSet, self).update(request, *args, **kwargs)
         # total reload object, due many to many don't correctly returned
         if response.status_code == status.HTTP_200_OK:
             instance = self.get_object()
@@ -47,7 +47,7 @@ class PomsViewSetBase(DbTransactionMixin, HistoricalMixin, ModelViewSet):
         return Response(status=status.HTTP_204_NO_CONTENT)
 
 
-class PomsClassViewSetBase(ReadOnlyModelViewSet):
+class AbstractReadOnlyModelViewSet(ReadOnlyModelViewSet):
     permission_classes = [
         IsAuthenticated
     ]
@@ -68,7 +68,7 @@ class PomsClassViewSetBase(ReadOnlyModelViewSet):
     pagination_class = None
 
 
-class ClassifierViewSetBase(PomsViewSetBase):
+class AbstractClassifierViewSet(AbstractModelViewSet):
     filter_backends = [
         OwnerByMasterUserFilter,
         ClassifierFilter,
@@ -88,7 +88,7 @@ class ClassifierViewSetBase(PomsViewSetBase):
     #     return Response(serializer.data)
 
     def get_object(self):
-        obj = super(ClassifierViewSetBase, self).get_object()
+        obj = super(AbstractClassifierViewSet, self).get_object()
         if not obj.is_root_node():
             raise Http404
         trees = get_cached_trees(self.filter_queryset(obj.get_family()))
@@ -109,7 +109,7 @@ class ClassifierViewSetBase(PomsViewSetBase):
 
 
 # class ClassifierNodeViewSetBase(DbTransactionMixin, HistoricalMixin, UpdateModelMixin, ReadOnlyModelViewSet):
-class ClassifierNodeViewSetBase(PomsViewSetBase):
+class AbstractClassifierNodeViewSet(AbstractModelViewSet):
     filter_backends = [
         OwnerByMasterUserFilter,
         ClassifierPrefetchFilter,

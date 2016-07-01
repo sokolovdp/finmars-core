@@ -4,7 +4,7 @@ import django_filters
 from rest_framework.filters import DjangoFilterBackend, OrderingFilter, SearchFilter, FilterSet
 
 from poms.common.filters import CharFilter, ModelWithPermissionMultipleChoiceFilter
-from poms.common.views import PomsClassViewSetBase, PomsViewSetBase
+from poms.common.views import AbstractReadOnlyModelViewSet, AbstractModelViewSet
 from poms.instruments.filters import OwnerByInstrumentFilter, PriceHistoryObjectPermissionFilter
 from poms.instruments.models import Instrument, PriceHistory, InstrumentClass, DailyPricingModel, \
     AccrualCalculationModel, PaymentSizeDetail, PeriodicityPeriod, CostMethod, InstrumentType, InstrumentAttributeType, \
@@ -21,37 +21,37 @@ from poms.users.filters import OwnerByMasterUserFilter
 from poms.users.permissions import SuperUserOrReadOnly
 
 
-class InstrumentClassViewSet(PomsClassViewSetBase):
+class InstrumentClassViewSet(AbstractReadOnlyModelViewSet):
     queryset = InstrumentClass.objects
     serializer_class = InstrumentClassSerializer
 
 
-class DailyPricingModelViewSet(PomsClassViewSetBase):
+class DailyPricingModelViewSet(AbstractReadOnlyModelViewSet):
     queryset = DailyPricingModel.objects
     serializer_class = DailyPricingModelSerializer
 
 
-class AccrualCalculationModelClassViewSet(PomsClassViewSetBase):
+class AccrualCalculationModelClassViewSet(AbstractReadOnlyModelViewSet):
     queryset = AccrualCalculationModel.objects
     serializer_class = AccrualCalculationModelSerializer
 
 
-class PaymentSizeDetailViewSet(PomsClassViewSetBase):
+class PaymentSizeDetailViewSet(AbstractReadOnlyModelViewSet):
     queryset = PaymentSizeDetail.objects
     serializer_class = PaymentSizeDetailSerializer
 
 
-class PeriodicityPeriodViewSet(PomsClassViewSetBase):
+class PeriodicityPeriodViewSet(AbstractReadOnlyModelViewSet):
     queryset = PeriodicityPeriod.objects
     serializer_class = PeriodicityPeriodSerializer
 
 
-class CostMethodViewSet(PomsClassViewSetBase):
+class CostMethodViewSet(AbstractReadOnlyModelViewSet):
     queryset = CostMethod.objects
     serializer_class = CostMethodSerializer
 
 
-class PricingPolicyViewSet(PomsViewSetBase):
+class PricingPolicyViewSet(AbstractModelViewSet):
     queryset = PricingPolicy.objects
     serializer_class = PricingPolicySerializer
     filter_backends = [
@@ -60,7 +60,7 @@ class PricingPolicyViewSet(PomsViewSetBase):
         OrderingFilter,
         SearchFilter
     ]
-    permission_classes = PomsViewSetBase.permission_classes + [
+    permission_classes = AbstractModelViewSet.permission_classes + [
         SuperUserOrReadOnly,
     ]
     ordering_fields = ['user_code', 'name', 'short_name']
@@ -186,7 +186,7 @@ class PriceHistoryFilterSet(FilterSet):
         fields = ['instrument', 'date', ]
 
 
-class PriceHistoryViewSet(PomsViewSetBase):
+class PriceHistoryViewSet(AbstractModelViewSet):
     queryset = PriceHistory.objects.prefetch_related(
         'instrument',
         'instrument__user_object_permissions', 'instrument__user_object_permissions__permission',
