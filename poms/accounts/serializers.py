@@ -8,6 +8,7 @@ from poms.common.serializers import ClassifierSerializerBase, ClassifierNodeSeri
 from poms.obj_attrs.serializers import AttributeTypeSerializerBase, AttributeSerializerBase, \
     ModelWithAttributesSerializer
 from poms.obj_perms.serializers import ModelWithObjectPermissionSerializer
+from poms.portfolios.fields import PortfolioField
 from poms.tags.fields import TagField
 from poms.users.fields import MasterUserField
 
@@ -55,10 +56,11 @@ class AccountSerializer(ModelWithObjectPermissionSerializer, ModelWithAttributes
                         ModelWithUserCodeSerializer):
     master_user = MasterUserField()
     type = AccountTypeField()
+    portfolios = PortfolioField(many=True, required=False, allow_null=True)
     attributes = AccountAttributeSerializer(many=True, required=False, allow_null=True)
     tags = TagField(many=True, required=False, allow_null=True)
 
     class Meta:
         model = Account
         fields = ['url', 'id', 'master_user', 'type', 'user_code', 'name', 'short_name', 'public_name', 'notes',
-                  'tags', 'attributes', ]
+                  'portfolios', 'tags', 'attributes', ]

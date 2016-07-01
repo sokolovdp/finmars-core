@@ -47,7 +47,7 @@ class CounterpartyAttributeSerializer(AttributeSerializerBase):
 class CounterpartySerializer(ModelWithObjectPermissionSerializer, ModelWithAttributesSerializer,
                              ModelWithUserCodeSerializer):
     master_user = MasterUserField()
-    portfolios = PortfolioField(many=True)
+    portfolios = PortfolioField(many=True, required=False, allow_null=True)
     attributes = CounterpartyAttributeSerializer(many=True, required=False, allow_null=True)
     tags = TagField(many=True, required=False, allow_null=True)
 
@@ -89,7 +89,7 @@ class ResponsibleAttributeSerializer(AttributeSerializerBase):
 class ResponsibleSerializer(ModelWithObjectPermissionSerializer, ModelWithAttributesSerializer,
                             ModelWithUserCodeSerializer):
     master_user = MasterUserField()
-    portfolios = PortfolioField(many=True)
+    portfolios = PortfolioField(many=True, required=False, allow_null=True)
     attributes = ResponsibleAttributeSerializer(many=True, required=False, allow_null=True)
     tags = TagField(many=True, required=False, allow_null=True)
 
