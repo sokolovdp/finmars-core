@@ -1,4 +1,5 @@
 from celery import shared_task
+from celery.exceptions import TimeoutError
 
 
 @shared_task(name='backend.health_check')
