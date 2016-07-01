@@ -2,19 +2,19 @@ from __future__ import unicode_literals
 
 from rest_framework import serializers
 
-from poms.common.serializers import ClassifierSerializerBase, ClassifierNodeSerializerBase
+from poms.common.serializers import AbstractClassifierSerializer, AbstractClassifierNodeSerializer
 from poms.obj_perms.serializers import ModelWithObjectPermissionSerializer
 from poms.strategies.models import Strategy1, Strategy2, Strategy3
 from poms.tags.fields import TagField
 from poms.users.fields import MasterUserField
 
 
-class StrategyBaseSerializer(ClassifierSerializerBase, ModelWithObjectPermissionSerializer):
+class StrategyBaseSerializer(AbstractClassifierSerializer, ModelWithObjectPermissionSerializer):
     master_user = MasterUserField()
     tags = TagField(many=True, required=False, allow_null=True)
 
-    class Meta(ClassifierSerializerBase.Meta):
-        fields = ['url', 'master_user', ] + ClassifierSerializerBase.Meta.fields + ['tags', ]
+    class Meta(AbstractClassifierSerializer.Meta):
+        fields = ['url', 'master_user', ] + AbstractClassifierSerializer.Meta.fields + ['tags', ]
 
     def to_representation(self, instance):
         ret = super(StrategyBaseSerializer, self).to_representation(instance)
@@ -30,11 +30,11 @@ class StrategyBaseSerializer(ClassifierSerializerBase, ModelWithObjectPermission
             super(StrategyBaseSerializer, self).save_object_permission(instance, *args, **kwargs)
 
 
-class StrategyBaseNodeSerializer(ClassifierNodeSerializerBase, ModelWithObjectPermissionSerializer):
+class StrategyBaseNodeSerializer(AbstractClassifierNodeSerializer, ModelWithObjectPermissionSerializer):
     tags = TagField(many=True, required=False, allow_null=True)
 
-    class Meta(ClassifierNodeSerializerBase.Meta):
-        fields = ClassifierNodeSerializerBase.Meta.fields + ['tags']
+    class Meta(AbstractClassifierNodeSerializer.Meta):
+        fields = AbstractClassifierNodeSerializer.Meta.fields + ['tags']
 
     def to_representation(self, instance):
         ret = super(StrategyBaseNodeSerializer, self).to_representation(instance)

@@ -1,6 +1,6 @@
 from __future__ import unicode_literals
 
-from poms.common.filters import ClassifierFilterSetBase
+from poms.common.filters import AbstractClassifierFilterSet
 from poms.common.views import AbstractClassifierViewSet, AbstractClassifierNodeViewSet
 from poms.obj_perms.views import AbstractWithObjectPermissionViewSet
 from poms.strategies.models import Strategy1, Strategy2, Strategy3
@@ -9,9 +9,9 @@ from poms.strategies.serializers import Strategy1Serializer, Strategy1NodeSerial
 from poms.tags.filters import TagFilterBackend, TagFilter
 
 
-class AbstractStrategyFilterSet(ClassifierFilterSetBase):
-    class Meta(ClassifierFilterSetBase.Meta):
-        fields = ClassifierFilterSetBase.Meta.fields + ['tag', ]
+class AbstractStrategyFilterSet(AbstractClassifierFilterSet):
+    class Meta(AbstractClassifierFilterSet.Meta):
+        fields = AbstractClassifierFilterSet.Meta.fields + ['tag', ]
 
 
 class AbstractStrategyViewSet(AbstractWithObjectPermissionViewSet, AbstractClassifierViewSet):

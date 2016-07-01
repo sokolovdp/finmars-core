@@ -4,7 +4,7 @@ import six
 from django.core.exceptions import ObjectDoesNotExist
 from rest_framework import serializers
 
-from poms.common.serializers import PomsClassSerializer, ClassifierSerializerBase, ClassifierNodeSerializerBase, \
+from poms.common.serializers import PomsClassSerializer, AbstractClassifierSerializer, AbstractClassifierNodeSerializer, \
     ModelWithUserCodeSerializer
 from poms.currencies.serializers import CurrencyField
 from poms.instruments.fields import InstrumentClassifierField, InstrumentField, InstrumentAttributeTypeField, \
@@ -59,15 +59,15 @@ class PricingPolicySerializer(ModelWithUserCodeSerializer):
         fields = ['url', 'id', 'master_user', 'user_code', 'name', 'short_name', 'notes', 'expr']
 
 
-class InstrumentClassifierSerializer(ClassifierSerializerBase):
-    class Meta(ClassifierSerializerBase.Meta):
+class InstrumentClassifierSerializer(AbstractClassifierSerializer):
+    class Meta(AbstractClassifierSerializer.Meta):
         model = InstrumentClassifier
 
 
-class InstrumentClassifierNodeSerializer(ClassifierNodeSerializerBase):
+class InstrumentClassifierNodeSerializer(AbstractClassifierNodeSerializer):
     url = serializers.HyperlinkedIdentityField(view_name='instrumentclassifiernode-detail')
 
-    class Meta(ClassifierNodeSerializerBase.Meta):
+    class Meta(AbstractClassifierNodeSerializer.Meta):
         model = InstrumentClassifier
 
 

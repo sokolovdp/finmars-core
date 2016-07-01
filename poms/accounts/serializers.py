@@ -4,7 +4,7 @@ from rest_framework import serializers
 
 from poms.accounts.fields import AccountClassifierField, AccountAttributeTypeField, AccountTypeField
 from poms.accounts.models import Account, AccountType, AccountClassifier, AccountAttributeType, AccountAttribute
-from poms.common.serializers import ClassifierSerializerBase, ClassifierNodeSerializerBase, ModelWithUserCodeSerializer
+from poms.common.serializers import AbstractClassifierSerializer, AbstractClassifierNodeSerializer, ModelWithUserCodeSerializer
 from poms.obj_attrs.serializers import AbstractAttributeTypeSerializer, AbstractAttributeSerializer, \
     ModelWithAttributesSerializer
 from poms.obj_perms.serializers import ModelWithObjectPermissionSerializer
@@ -13,15 +13,15 @@ from poms.tags.fields import TagField
 from poms.users.fields import MasterUserField
 
 
-class AccountClassifierSerializer(ClassifierSerializerBase):
-    class Meta(ClassifierSerializerBase.Meta):
+class AccountClassifierSerializer(AbstractClassifierSerializer):
+    class Meta(AbstractClassifierSerializer.Meta):
         model = AccountClassifier
 
 
-class AccountClassifierNodeSerializer(ClassifierNodeSerializerBase):
+class AccountClassifierNodeSerializer(AbstractClassifierNodeSerializer):
     url = serializers.HyperlinkedIdentityField(view_name='accountclassifiernode-detail')
 
-    class Meta(ClassifierNodeSerializerBase.Meta):
+    class Meta(AbstractClassifierNodeSerializer.Meta):
         model = AccountClassifier
 
 

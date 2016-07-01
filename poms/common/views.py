@@ -117,7 +117,6 @@ class AbstractClassifierViewSet(AbstractModelViewSet):
         return Response(serializer.data)
 
 
-# class ClassifierNodeViewSetBase(DbTransactionMixin, HistoricalMixin, UpdateModelMixin, ReadOnlyModelViewSet):
 class AbstractClassifierNodeViewSet(AbstractModelViewSet):
     filter_backends = [
         OwnerByMasterUserFilter,

@@ -9,7 +9,7 @@ from poms.common.filters import ClassifierRootFilter
 from poms.users.filters import OwnerByMasterUserFilter
 
 
-class PomsSerializerBase(serializers.ModelSerializer):
+class AbstractPomsSerializer(serializers.ModelSerializer):
     class Meta:
         fields = [
             'url',
@@ -17,9 +17,9 @@ class PomsSerializerBase(serializers.ModelSerializer):
         ]
 
 
-class PomsClassSerializer(PomsSerializerBase):
-    class Meta(PomsSerializerBase.Meta):
-        fields = PomsSerializerBase.Meta.fields + [
+class PomsClassSerializer(AbstractPomsSerializer):
+    class Meta(AbstractPomsSerializer.Meta):
+        fields = AbstractPomsSerializer.Meta.fields + [
             'system_code',
             'name',
             'description'
@@ -44,13 +44,13 @@ class ModelWithUserCodeSerializer(serializers.ModelSerializer):
         return ret
 
 
-class ClassifierFieldBase(PrimaryKeyRelatedFilteredField):
+class AbstractClassifierField(PrimaryKeyRelatedFilteredField):
     filter_backends = [
         OwnerByMasterUserFilter
     ]
 
 
-class ClassifierRootFieldBase(PrimaryKeyRelatedFilteredField):
+class AbstractClassifierRootField(PrimaryKeyRelatedFilteredField):
     filter_backends = [
         OwnerByMasterUserFilter,
         ClassifierRootFilter
@@ -177,11 +177,11 @@ class ClassifierListSerializer(serializers.ListSerializer):
         return tree
 
 
-class ClassifierSerializerBase(ModelWithUserCodeSerializer, serializers.ModelSerializer):
+class AbstractClassifierSerializer(ModelWithUserCodeSerializer, serializers.ModelSerializer):
     id = serializers.IntegerField(read_only=False, required=False, allow_null=True)
     children = ClassifierRecursiveField(source='get_children', many=True, required=False, allow_null=True)
 
-    class Meta(PomsSerializerBase.Meta):
+    class Meta(AbstractPomsSerializer.Meta):
         list_serializer_class = ClassifierListSerializer
         fields = [
             # 'url',
@@ -198,21 +198,21 @@ class ClassifierSerializerBase(ModelWithUserCodeSerializer, serializers.ModelSer
 
     def __init__(self, *args, **kwargs):
         show_children = kwargs.pop('show_children', False)
-        super(ClassifierSerializerBase, self).__init__(*args, **kwargs)
+        super(AbstractClassifierSerializer, self).__init__(*args, **kwargs)
         if not show_children:
             self.fields.pop('children')
 
     def create(self, validated_data):
         validated_data.pop('id', None)
         children = validated_data.pop('get_children', None)
-        instance = super(ClassifierSerializerBase, self).create(validated_data)
+        instance = super(AbstractClassifierSerializer, self).create(validated_data)
         self.save_tree(instance, children)
         return instance
 
     def update(self, instance, validated_data):
         validated_data.pop('id', None)
         children = validated_data.pop('get_children', [])
-        instance = super(ClassifierSerializerBase, self).update(instance, validated_data)
+        instance = super(AbstractClassifierSerializer, self).update(instance, validated_data)
         # if instance.is_root_node() or not instance.is_leaf_node() or settings.CLASSIFIER_RELAX_UPDATE_MODE:
         self.save_tree(instance, children)
         # else:
@@ -263,12 +263,12 @@ class ClassifierSerializerBase(ModelWithUserCodeSerializer, serializers.ModelSer
             node.get_family().exclude(pk__in=processed).delete()
 
 
-class ClassifierNodeSerializerBase(PomsSerializerBase, ModelWithUserCodeSerializer):
+class AbstractClassifierNodeSerializer(AbstractPomsSerializer, ModelWithUserCodeSerializer):
     parent = serializers.PrimaryKeyRelatedField(read_only=True)
     children = serializers.PrimaryKeyRelatedField(many=True, read_only=True)
 
-    class Meta(PomsSerializerBase.Meta):
-        fields = PomsSerializerBase.Meta.fields + [
+    class Meta(AbstractPomsSerializer.Meta):
+        fields = AbstractPomsSerializer.Meta.fields + [
             # 'user_code',
             'name',
             'short_name',

@@ -78,7 +78,7 @@ class ClassifierPrefetchFilter(BaseFilterBackend):
         return queryset.prefetch_related('parent', 'children')
 
 
-class ClassifierFilterSetBase(FilterSet):
+class AbstractClassifierFilterSet(FilterSet):
     user_code = CharFilter()
     name = CharFilter()
     short_name = CharFilter()

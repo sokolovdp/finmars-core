@@ -3,7 +3,7 @@ from __future__ import unicode_literals
 from rest_framework import serializers
 
 from poms.accounts.fields import AccountField
-from poms.common.serializers import ClassifierSerializerBase, ClassifierNodeSerializerBase, ModelWithUserCodeSerializer
+from poms.common.serializers import AbstractClassifierSerializer, AbstractClassifierNodeSerializer, ModelWithUserCodeSerializer
 from poms.counterparties.fields import ResponsibleField, CounterpartyField
 from poms.obj_attrs.serializers import AbstractAttributeTypeSerializer, AbstractAttributeSerializer, \
     ModelWithAttributesSerializer
@@ -15,15 +15,15 @@ from poms.transactions.fields import TransactionTypeField
 from poms.users.fields import MasterUserField
 
 
-class PortfolioClassifierSerializer(ClassifierSerializerBase):
-    class Meta(ClassifierSerializerBase.Meta):
+class PortfolioClassifierSerializer(AbstractClassifierSerializer):
+    class Meta(AbstractClassifierSerializer.Meta):
         model = PortfolioClassifier
 
 
-class PortfolioClassifierNodeSerializer(ClassifierNodeSerializerBase):
+class PortfolioClassifierNodeSerializer(AbstractClassifierNodeSerializer):
     url = serializers.HyperlinkedIdentityField(view_name='portfolioclassifiernode-detail')
 
-    class Meta(ClassifierNodeSerializerBase.Meta):
+    class Meta(AbstractClassifierNodeSerializer.Meta):
         model = PortfolioClassifier
 
 

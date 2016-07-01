@@ -2,7 +2,7 @@ from __future__ import unicode_literals
 
 from rest_framework import serializers
 
-from poms.common.serializers import ClassifierSerializerBase, ClassifierNodeSerializerBase, ModelWithUserCodeSerializer
+from poms.common.serializers import AbstractClassifierSerializer, AbstractClassifierNodeSerializer, ModelWithUserCodeSerializer
 from poms.counterparties.fields import ResponsibleClassifierField, \
     CounterpartyAttributeTypeField, ResponsibleAttributeTypeField, CounterpartyClassifierField
 from poms.counterparties.models import CounterpartyClassifier, Counterparty, Responsible, ResponsibleClassifier, \
@@ -15,15 +15,15 @@ from poms.tags.fields import TagField
 from poms.users.fields import MasterUserField
 
 
-class CounterpartyClassifierSerializer(ClassifierSerializerBase):
-    class Meta(ClassifierSerializerBase.Meta):
+class CounterpartyClassifierSerializer(AbstractClassifierSerializer):
+    class Meta(AbstractClassifierSerializer.Meta):
         model = CounterpartyClassifier
 
 
-class CounterpartyClassifierNodeSerializer(ClassifierNodeSerializerBase):
+class CounterpartyClassifierNodeSerializer(AbstractClassifierNodeSerializer):
     url = serializers.HyperlinkedIdentityField(view_name='counterpartyclassifiernode-detail')
 
-    class Meta(ClassifierNodeSerializerBase.Meta):
+    class Meta(AbstractClassifierNodeSerializer.Meta):
         model = CounterpartyClassifier
 
 
@@ -57,15 +57,15 @@ class CounterpartySerializer(ModelWithObjectPermissionSerializer, ModelWithAttri
                   'attributes', 'tags']
 
 
-class ResponsibleClassifierSerializer(ClassifierSerializerBase):
-    class Meta(ClassifierSerializerBase.Meta):
+class ResponsibleClassifierSerializer(AbstractClassifierSerializer):
+    class Meta(AbstractClassifierSerializer.Meta):
         model = ResponsibleClassifier
 
 
-class ResponsibleClassifierNodeSerializer(ClassifierNodeSerializerBase):
+class ResponsibleClassifierNodeSerializer(AbstractClassifierNodeSerializer):
     url = serializers.HyperlinkedIdentityField(view_name='responsibleclassifiernode-detail')
 
-    class Meta(ClassifierNodeSerializerBase.Meta):
+    class Meta(AbstractClassifierNodeSerializer.Meta):
         model = ResponsibleClassifier
 
 
