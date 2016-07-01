@@ -21,6 +21,12 @@ class AbstractModelViewSet(DbTransactionMixin, HistoricalMixin, ModelViewSet):
         # IsAuthenticated
     ]
 
+    filter_backends = [
+        # DjangoFilterBackend,
+        # OrderingFilter,
+        # SearchFilter,
+    ]
+
     def get_permissions(self):
         return super(AbstractModelViewSet, self).get_permissions() + [
             IsAuthenticated()

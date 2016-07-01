@@ -13,10 +13,11 @@ from rest_framework.mixins import UpdateModelMixin, DestroyModelMixin
 from rest_framework.parsers import JSONParser, MultiPartParser, FormParser
 from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework.response import Response
-from rest_framework.viewsets import ViewSet, ModelViewSet, ReadOnlyModelViewSet
+from rest_framework.viewsets import ViewSet, ReadOnlyModelViewSet
 
 from poms.audit.mixins import HistoricalMixin
 from poms.common.filters import CharFilter
+from poms.common.views import AbstractModelViewSet, AbstractReadOnlyModelViewSet
 from poms.users.filters import OwnerByMasterUserFilter, MasterUserFilter, UserFilter
 from poms.users.models import MasterUser, Member, Group
 from poms.users.permissions import SuperUserOrReadOnly, IsCurrentMasterUser, IsCurrentUser
@@ -76,11 +77,16 @@ class LogoutViewSet(ViewSet):
         return Response({'success': True})
 
 
-class UserViewSet(HistoricalMixin, UpdateModelMixin, ReadOnlyModelViewSet):
+class UserViewSet(HistoricalMixin, UpdateModelMixin, AbstractReadOnlyModelViewSet):
     queryset = User.objects
     serializer_class = UserSerializer
-    permission_classes = [IsAuthenticated, IsCurrentUser]
-    filter_backends = [UserFilter]
+    permission_classes = [
+        # IsAuthenticated,
+        IsCurrentUser,
+    ]
+    filter_backends = [
+        UserFilter
+    ]
 
     # def get_serializer_class(self):
     #     # print(self.action)
@@ -107,11 +113,11 @@ class UserViewSet(HistoricalMixin, UpdateModelMixin, ReadOnlyModelViewSet):
         return Response()
 
 
-class MasterUserViewSet(HistoricalMixin, ModelViewSet):
+class MasterUserViewSet(AbstractModelViewSet):
     queryset = MasterUser.objects
     serializer_class = MasterUserSerializer
-    permission_classes = [
-        IsAuthenticated,
+    permission_classes = AbstractModelViewSet.permission_classes + [
+        # IsAuthenticated,
         IsCurrentMasterUser,
         SuperUserOrReadOnly,
     ]
@@ -132,18 +138,18 @@ class MasterUserViewSet(HistoricalMixin, ModelViewSet):
         return Response({'success': True})
 
 
-class MemberViewSet(HistoricalMixin, UpdateModelMixin, DestroyModelMixin, ReadOnlyModelViewSet):
+class MemberViewSet(HistoricalMixin, UpdateModelMixin, DestroyModelMixin, AbstractReadOnlyModelViewSet):
     queryset = Member.objects.select_related('user')
     serializer_class = MemberSerializer
-    permission_classes = [
-        IsAuthenticated,
+    permission_classes = AbstractModelViewSet.permission_classes + [
+        # IsAuthenticated,
         SuperUserOrReadOnly
     ]
-    filter_backends = [
+    filter_backends = AbstractReadOnlyModelViewSet.filter_backends + [
         OwnerByMasterUserFilter,
-        DjangoFilterBackend,
-        OrderingFilter,
-        SearchFilter,
+        # DjangoFilterBackend,
+        # OrderingFilter,
+        # SearchFilter,
     ]
     ordering_fields = ['username', ]
     search_fields = ['username', ]
@@ -157,14 +163,14 @@ class GroupFilterSet(FilterSet):
         fields = ['name', ]
 
 
-class GroupViewSet(HistoricalMixin, ModelViewSet):
+class GroupViewSet(AbstractModelViewSet):
     queryset = Group.objects.select_related('master_user')
     serializer_class = GroupSerializer
-    permission_classes = [
-        IsAuthenticated,
+    permission_classes = AbstractModelViewSet.permission_classes + [
+        # IsAuthenticated,
         SuperUserOrReadOnly
     ]
-    filter_backends = [
+    filter_backends = AbstractModelViewSet.filter_backends + [
         OwnerByMasterUserFilter,
         DjangoFilterBackend,
         OrderingFilter,
