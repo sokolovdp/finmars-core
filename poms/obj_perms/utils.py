@@ -23,13 +23,13 @@ def get_obj_perms_model(obj, base_cls):
 
 
 def get_user_obj_perms_model(obj):
-    from poms.obj_perms.models import UserObjectPermissionBase
-    return get_obj_perms_model(obj, UserObjectPermissionBase)
+    from poms.obj_perms.models import AbstractUserObjectPermission
+    return get_obj_perms_model(obj, AbstractUserObjectPermission)
 
 
 def get_group_obj_perms_model(obj):
-    from poms.obj_perms.models import GroupObjectPermissionBase
-    return get_obj_perms_model(obj, GroupObjectPermissionBase)
+    from poms.obj_perms.models import AbstractGroupObjectPermission
+    return get_obj_perms_model(obj, AbstractGroupObjectPermission)
 
 
 def obj_perms_filter_objects(member, perms, queryset, model_cls=None, prefetch=True):

@@ -10,7 +10,7 @@ from poms.audit import history
 from poms.common.models import NamedModel, TagModelBase
 from poms.currencies.models import Currency
 from poms.obj_attrs.models import AttributeTypeBase, AttributeBase, AttributeTypeOptionBase
-from poms.obj_perms.models import GroupObjectPermissionBase, UserObjectPermissionBase
+from poms.obj_perms.models import AbstractGroupObjectPermission, AbstractUserObjectPermission
 from poms.users.models import MasterUser, Member
 
 
@@ -34,20 +34,20 @@ class AccountType(NamedModel):
         return self.name
 
 
-class AccountTypeUserObjectPermission(UserObjectPermissionBase):
+class AccountTypeUserObjectPermission(AbstractUserObjectPermission):
     content_object = models.ForeignKey(AccountType, related_name='user_object_permissions',
                                        verbose_name=_('content object'))
 
-    class Meta(UserObjectPermissionBase.Meta):
+    class Meta(AbstractUserObjectPermission.Meta):
         verbose_name = _('account types - user permission')
         verbose_name_plural = _('account types - user permissions')
 
 
-class AccountTypeGroupObjectPermission(GroupObjectPermissionBase):
+class AccountTypeGroupObjectPermission(AbstractGroupObjectPermission):
     content_object = models.ForeignKey(AccountType, related_name='group_object_permissions',
                                        verbose_name=_('content object'))
 
-    class Meta(GroupObjectPermissionBase.Meta):
+    class Meta(AbstractGroupObjectPermission.Meta):
         verbose_name = _('account types - group permission')
         verbose_name_plural = _('account types - group permissions')
 
@@ -76,20 +76,20 @@ class Account(NamedModel):
         return self.name
 
 
-class AccountUserObjectPermission(UserObjectPermissionBase):
+class AccountUserObjectPermission(AbstractUserObjectPermission):
     content_object = models.ForeignKey(Account, related_name='user_object_permissions',
                                        verbose_name=_('content object'))
 
-    class Meta(UserObjectPermissionBase.Meta):
+    class Meta(AbstractUserObjectPermission.Meta):
         verbose_name = _('accounts - user permission')
         verbose_name_plural = _('accounts - user permissions')
 
 
-class AccountGroupObjectPermission(GroupObjectPermissionBase):
+class AccountGroupObjectPermission(AbstractGroupObjectPermission):
     content_object = models.ForeignKey(Account, related_name='group_object_permissions',
                                        verbose_name=_('content object'))
 
-    class Meta(GroupObjectPermissionBase.Meta):
+    class Meta(AbstractGroupObjectPermission.Meta):
         verbose_name = _('accounts - group permission')
         verbose_name_plural = _('accounts - group permissions')
 
@@ -111,11 +111,11 @@ class AccountAttributeType(AttributeTypeBase):
         ]
 
 
-class AccountAttributeTypeGroupObjectPermission(GroupObjectPermissionBase):
+class AccountAttributeTypeGroupObjectPermission(AbstractGroupObjectPermission):
     content_object = models.ForeignKey(AccountAttributeType, related_name='group_object_permissions',
                                        verbose_name=_('content object'))
 
-    class Meta(GroupObjectPermissionBase.Meta):
+    class Meta(AbstractGroupObjectPermission.Meta):
         verbose_name = _('account attribute types - group permission')
         verbose_name_plural = _('account attribute types - group permissions')
 
@@ -166,11 +166,11 @@ class AccountAttributeTypeOption(AttributeTypeOptionBase):
         verbose_name_plural = _('account attribute types - options')
 
 
-class AccountAttributeTypeUserObjectPermission(UserObjectPermissionBase):
+class AccountAttributeTypeUserObjectPermission(AbstractUserObjectPermission):
     content_object = models.ForeignKey(AccountAttributeType, related_name='user_object_permissions',
                                        verbose_name=_('content object'))
 
-    class Meta(UserObjectPermissionBase.Meta):
+    class Meta(AbstractUserObjectPermission.Meta):
         verbose_name = _('account attribute types - user permission')
         verbose_name_plural = _('account attribute types - user permissions')
 

@@ -7,7 +7,7 @@ from mptt.fields import TreeManyToManyField
 
 from poms.audit import history
 from poms.common.models import TagModelBase
-from poms.obj_perms.models import GroupObjectPermissionBase, UserObjectPermissionBase
+from poms.obj_perms.models import AbstractGroupObjectPermission, AbstractUserObjectPermission
 
 
 class Tag(TagModelBase):
@@ -111,26 +111,26 @@ class Tag(TagModelBase):
         ]
 
 
-class TagUserObjectPermission(UserObjectPermissionBase):
+class TagUserObjectPermission(AbstractUserObjectPermission):
     content_object = models.ForeignKey(
         Tag,
         related_name='user_object_permissions',
         verbose_name=_('content object')
     )
 
-    class Meta(UserObjectPermissionBase.Meta):
+    class Meta(AbstractUserObjectPermission.Meta):
         verbose_name = _('tags - user permission')
         verbose_name_plural = _('tags - user permissions')
 
 
-class TagGroupObjectPermission(GroupObjectPermissionBase):
+class TagGroupObjectPermission(AbstractGroupObjectPermission):
     content_object = models.ForeignKey(
         Tag,
         related_name='group_object_permissions',
         verbose_name=_('content object')
     )
 
-    class Meta(GroupObjectPermissionBase.Meta):
+    class Meta(AbstractGroupObjectPermission.Meta):
         verbose_name = _('tags - group permission')
         verbose_name_plural = _('tags - group permissions')
 

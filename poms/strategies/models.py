@@ -9,7 +9,7 @@ from mptt.models import MPTTModel
 
 from poms.audit import history
 from poms.common.models import NamedModel
-from poms.obj_perms.models import GroupObjectPermissionBase, UserObjectPermissionBase
+from poms.obj_perms.models import AbstractGroupObjectPermission, AbstractUserObjectPermission
 from poms.users.models import MasterUser
 
 
@@ -74,26 +74,26 @@ class Strategy1(MPTTModel, NamedModel):
         ]
 
 
-class Strategy1UserObjectPermission(UserObjectPermissionBase):
+class Strategy1UserObjectPermission(AbstractUserObjectPermission):
     content_object = models.ForeignKey(
         Strategy1,
         related_name='user_object_permissions',
         verbose_name=_('content object')
     )
 
-    class Meta(UserObjectPermissionBase.Meta):
+    class Meta(AbstractUserObjectPermission.Meta):
         verbose_name = _('strategies - 1 - user permission')
         verbose_name_plural = _('strategies - 1 - user permissions')
 
 
-class Strategy1GroupObjectPermission(GroupObjectPermissionBase):
+class Strategy1GroupObjectPermission(AbstractGroupObjectPermission):
     content_object = models.ForeignKey(
         Strategy1,
         related_name='group_object_permissions',
         verbose_name=_('content object')
     )
 
-    class Meta(GroupObjectPermissionBase.Meta):
+    class Meta(AbstractGroupObjectPermission.Meta):
         verbose_name = _('strategies - 1 - group permission')
         verbose_name_plural = _('strategies - 1 - group permissions')
 
@@ -124,26 +124,26 @@ class Strategy2(MPTTModel, NamedModel):
         ]
 
 
-class Strategy2UserObjectPermission(UserObjectPermissionBase):
+class Strategy2UserObjectPermission(AbstractUserObjectPermission):
     content_object = models.ForeignKey(
         Strategy2,
         related_name='user_object_permissions',
         verbose_name=_('content object')
     )
 
-    class Meta(UserObjectPermissionBase.Meta):
+    class Meta(AbstractUserObjectPermission.Meta):
         verbose_name = _('strategies - 2 - user permission')
         verbose_name_plural = _('strategies - 2 - user permissions')
 
 
-class Strategy2GroupObjectPermission(GroupObjectPermissionBase):
+class Strategy2GroupObjectPermission(AbstractGroupObjectPermission):
     content_object = models.ForeignKey(
         Strategy2,
         related_name='group_object_permissions',
         verbose_name=_('content object')
     )
 
-    class Meta(GroupObjectPermissionBase.Meta):
+    class Meta(AbstractGroupObjectPermission.Meta):
         verbose_name = _('strategies - 2 - group permission')
         verbose_name_plural = _('strategies - 2 - group permissions')
 
@@ -174,26 +174,26 @@ class Strategy3(MPTTModel, NamedModel):
         ]
 
 
-class Strategy3UserObjectPermission(UserObjectPermissionBase):
+class Strategy3UserObjectPermission(AbstractUserObjectPermission):
     content_object = models.ForeignKey(
         Strategy3,
         related_name='user_object_permissions',
         verbose_name=_('content object')
     )
 
-    class Meta(UserObjectPermissionBase.Meta):
+    class Meta(AbstractUserObjectPermission.Meta):
         verbose_name = _('strategies - 3 - user permission')
         verbose_name_plural = _('strategies - 3 - user permissions')
 
 
-class Strategy3GroupObjectPermission(GroupObjectPermissionBase):
+class Strategy3GroupObjectPermission(AbstractGroupObjectPermission):
     content_object = models.ForeignKey(
         Strategy3,
         related_name='group_object_permissions',
         verbose_name=_('content object')
     )
 
-    class Meta(GroupObjectPermissionBase.Meta):
+    class Meta(AbstractGroupObjectPermission.Meta):
         verbose_name = _('strategies - 3 - group permission')
         verbose_name_plural = _('strategies - 3 - group permissions')
 

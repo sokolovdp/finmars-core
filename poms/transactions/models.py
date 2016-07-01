@@ -13,7 +13,7 @@ from poms.counterparties.models import Responsible, Counterparty
 from poms.currencies.models import Currency
 from poms.instruments.models import Instrument
 from poms.obj_attrs.models import AttributeTypeBase, AttributeBase, AttributeTypeOptionBase
-from poms.obj_perms.models import GroupObjectPermissionBase, UserObjectPermissionBase
+from poms.obj_perms.models import AbstractGroupObjectPermission, AbstractUserObjectPermission
 from poms.portfolios.models import Portfolio
 from poms.strategies.models import Strategy1, Strategy2, Strategy3
 from poms.users.models import MasterUser, Member, FakeSequence
@@ -130,20 +130,20 @@ class TransactionTypeGroup(NamedModel):
         ]
 
 
-class TransactionTypeGroupUserObjectPermission(UserObjectPermissionBase):
+class TransactionTypeGroupUserObjectPermission(AbstractUserObjectPermission):
     content_object = models.ForeignKey(TransactionTypeGroup, related_name='user_object_permissions',
                                        verbose_name=_('content object'))
 
-    class Meta(UserObjectPermissionBase.Meta):
+    class Meta(AbstractUserObjectPermission.Meta):
         verbose_name = _('transaction type groups - user permission')
         verbose_name_plural = _('transaction type groups - user permissions')
 
 
-class TransactionTypeGroupGroupObjectPermission(GroupObjectPermissionBase):
+class TransactionTypeGroupGroupObjectPermission(AbstractGroupObjectPermission):
     content_object = models.ForeignKey(TransactionTypeGroup, related_name='group_object_permissions',
                                        verbose_name=_('content object'))
 
-    class Meta(GroupObjectPermissionBase.Meta):
+    class Meta(AbstractGroupObjectPermission.Meta):
         verbose_name = _('transaction type groups - group permission')
         verbose_name_plural = _('transaction type groups - group permissions')
 
@@ -189,20 +189,20 @@ class TransactionType(NamedModel):
         ]
 
 
-class TransactionTypeUserObjectPermission(UserObjectPermissionBase):
+class TransactionTypeUserObjectPermission(AbstractUserObjectPermission):
     content_object = models.ForeignKey(TransactionType, related_name='user_object_permissions',
                                        verbose_name=_('content object'))
 
-    class Meta(UserObjectPermissionBase.Meta):
+    class Meta(AbstractUserObjectPermission.Meta):
         verbose_name = _('transaction types - user permission')
         verbose_name_plural = _('transaction types - user permissions')
 
 
-class TransactionTypeGroupObjectPermission(GroupObjectPermissionBase):
+class TransactionTypeGroupObjectPermission(AbstractGroupObjectPermission):
     content_object = models.ForeignKey(TransactionType, related_name='group_object_permissions',
                                        verbose_name=_('content object'))
 
-    class Meta(GroupObjectPermissionBase.Meta):
+    class Meta(AbstractGroupObjectPermission.Meta):
         verbose_name = _('transaction types - group permission')
         verbose_name_plural = _('transaction types - group permissions')
 
@@ -1013,20 +1013,20 @@ class TransactionAttributeTypeOption(AttributeTypeOptionBase):
         verbose_name_plural = _('transaction attribute types - options')
 
 
-class TransactionAttributeTypeUserObjectPermission(UserObjectPermissionBase):
+class TransactionAttributeTypeUserObjectPermission(AbstractUserObjectPermission):
     content_object = models.ForeignKey(TransactionAttributeType, related_name='user_object_permissions',
                                        verbose_name=_("content object"))
 
-    class Meta(UserObjectPermissionBase.Meta):
+    class Meta(AbstractUserObjectPermission.Meta):
         verbose_name = _('transaction attribute types - user permission')
         verbose_name_plural = _('transaction attribute types - user permissions')
 
 
-class TransactionAttributeTypeGroupObjectPermission(GroupObjectPermissionBase):
+class TransactionAttributeTypeGroupObjectPermission(AbstractGroupObjectPermission):
     content_object = models.ForeignKey(TransactionAttributeType, related_name='group_object_permissions',
                                        verbose_name=_("content object"))
 
-    class Meta(GroupObjectPermissionBase.Meta):
+    class Meta(AbstractGroupObjectPermission.Meta):
         verbose_name = _('transaction attribute types - group permission')
         verbose_name_plural = _('transaction attribute types - group permissions')
 

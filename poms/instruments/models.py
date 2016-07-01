@@ -11,7 +11,7 @@ from poms.common.models import NamedModel, ClassModelBase
 from poms.common.utils import date_now
 from poms.currencies.models import Currency
 from poms.obj_attrs.models import AttributeTypeBase, AttributeBase, AttributeTypeOptionBase
-from poms.obj_perms.models import GroupObjectPermissionBase, UserObjectPermissionBase
+from poms.obj_perms.models import AbstractGroupObjectPermission, AbstractUserObjectPermission
 from poms.users.models import MasterUser, Member
 
 
@@ -213,20 +213,20 @@ class InstrumentType(NamedModel):
         return self.name
 
 
-class InstrumentTypeUserObjectPermission(UserObjectPermissionBase):
+class InstrumentTypeUserObjectPermission(AbstractUserObjectPermission):
     content_object = models.ForeignKey(InstrumentType, related_name='user_object_permissions',
                                        verbose_name=_('content object'))
 
-    class Meta(UserObjectPermissionBase.Meta):
+    class Meta(AbstractUserObjectPermission.Meta):
         verbose_name = _('instrument types - user permission')
         verbose_name_plural = _('instrument types - user permissions')
 
 
-class InstrumentTypeGroupObjectPermission(GroupObjectPermissionBase):
+class InstrumentTypeGroupObjectPermission(AbstractGroupObjectPermission):
     content_object = models.ForeignKey(InstrumentType, related_name='group_object_permissions',
                                        verbose_name=_('content object'))
 
-    class Meta(GroupObjectPermissionBase.Meta):
+    class Meta(AbstractGroupObjectPermission.Meta):
         verbose_name = _('instrument types - group permission')
         verbose_name_plural = _('instrument types - group permissions')
 
@@ -274,20 +274,20 @@ class Instrument(NamedModel):
         return self.name
 
 
-class InstrumentUserObjectPermission(UserObjectPermissionBase):
+class InstrumentUserObjectPermission(AbstractUserObjectPermission):
     content_object = models.ForeignKey(Instrument, related_name='user_object_permissions',
                                        verbose_name=_('content object'))
 
-    class Meta(UserObjectPermissionBase.Meta):
+    class Meta(AbstractUserObjectPermission.Meta):
         verbose_name = _('instruments - user permission')
         verbose_name_plural = _('instruments - user permissions')
 
 
-class InstrumentGroupObjectPermission(GroupObjectPermissionBase):
+class InstrumentGroupObjectPermission(AbstractGroupObjectPermission):
     content_object = models.ForeignKey(Instrument, related_name='group_object_permissions',
                                        verbose_name=_('content object'))
 
-    class Meta(GroupObjectPermissionBase.Meta):
+    class Meta(AbstractGroupObjectPermission.Meta):
         verbose_name = _('instruments - group permission')
         verbose_name_plural = _('instruments - group permissions')
 
@@ -309,20 +309,20 @@ class InstrumentAttributeType(AttributeTypeBase):
         ]
 
 
-class InstrumentAttributeTypeUserObjectPermission(UserObjectPermissionBase):
+class InstrumentAttributeTypeUserObjectPermission(AbstractUserObjectPermission):
     content_object = models.ForeignKey(InstrumentAttributeType, related_name='user_object_permissions',
                                        verbose_name=_('content object'))
 
-    class Meta(UserObjectPermissionBase.Meta):
+    class Meta(AbstractUserObjectPermission.Meta):
         verbose_name = _('instrument attribute types - user permission')
         verbose_name_plural = _('instrument attribute types - user permissions')
 
 
-class InstrumentAttributeTypeGroupObjectPermission(GroupObjectPermissionBase):
+class InstrumentAttributeTypeGroupObjectPermission(AbstractGroupObjectPermission):
     content_object = models.ForeignKey(InstrumentAttributeType, related_name='group_object_permissions',
                                        verbose_name=_('content object'))
 
-    class Meta(GroupObjectPermissionBase.Meta):
+    class Meta(AbstractGroupObjectPermission.Meta):
         verbose_name = _('instrument attribute types - group permission')
         verbose_name_plural = _('instrument attribute types - group permissions')
 

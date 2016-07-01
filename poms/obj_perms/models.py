@@ -9,7 +9,7 @@ from django.utils.translation import ugettext_lazy as _
 from poms.users.models import Member, Group
 
 
-class ObjectPermissionBase(models.Model):
+class AbstractObjectPermission(models.Model):
     # content_object -> actual object
 
     permission = models.ForeignKey(Permission,
@@ -20,13 +20,13 @@ class ObjectPermissionBase(models.Model):
 
 
 @python_2_unicode_compatible
-class UserObjectPermissionBase(ObjectPermissionBase):
+class AbstractUserObjectPermission(AbstractObjectPermission):
     # content_object -> actual object
 
     member = models.ForeignKey(Member,
                                verbose_name=_('member'))
 
-    class Meta(ObjectPermissionBase.Meta):
+    class Meta(AbstractObjectPermission.Meta):
         abstract = True
         unique_together = [
             ['content_object', 'member', 'permission']
@@ -37,13 +37,13 @@ class UserObjectPermissionBase(ObjectPermissionBase):
 
 
 @python_2_unicode_compatible
-class GroupObjectPermissionBase(ObjectPermissionBase):
+class AbstractGroupObjectPermission(AbstractObjectPermission):
     # content_object -> actual object
 
     group = models.ForeignKey(Group,
                               verbose_name=_('group'))
 
-    class Meta(ObjectPermissionBase.Meta):
+    class Meta(AbstractObjectPermission.Meta):
         abstract = True
         unique_together = [
             ['content_object', 'group', 'permission']
