@@ -1,6 +1,6 @@
 from poms.common.views import AbstractModelViewSet
 from poms.obj_perms.filters import ObjectPermissionBackend
-from poms.obj_perms.permissions import ObjectPermissionBase
+from poms.obj_perms.permissions import PomsObjectPermission
 from poms.obj_perms.utils import obj_perms_prefetch
 
 
@@ -16,7 +16,7 @@ class AbstractViewSetWithObjectPermission(AbstractModelViewSet):
 
     def get_permissions(self):
         return super(AbstractViewSetWithObjectPermission, self).get_permissions() + [
-            ObjectPermissionBase()
+            PomsObjectPermission()
         ]
 
     def get_serializer(self, *args, **kwargs):

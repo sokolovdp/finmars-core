@@ -1,6 +1,6 @@
 from rest_framework.permissions import BasePermission
 
-from poms.obj_perms.permissions import ObjectPermissionBase
+from poms.obj_perms.permissions import PomsObjectPermission
 
 
 class TransactionObjectPermission(BasePermission):
@@ -8,7 +8,7 @@ class TransactionObjectPermission(BasePermission):
         member = request.user.member
         if member.is_superuser:
             return True
-        p = lambda obj1: ObjectPermissionBase().simple_has_object_permission(member, 'GET', obj1)
+        p = lambda obj1: PomsObjectPermission().simple_has_object_permission(member, 'GET', obj1)
         # print('p(obj.portfolio) -> %s' % p(obj.portfolio))
         # print('p(obj.account_position) -> %s' % p(obj.account_position))
         # print('p(obj.account_cash) -> %s' % p(obj.account_cash))

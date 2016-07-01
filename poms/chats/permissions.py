@@ -1,9 +1,9 @@
 from rest_framework.permissions import BasePermission, SAFE_METHODS
 
-from poms.obj_perms.permissions import ObjectPermissionBase
+from poms.obj_perms.permissions import PomsObjectPermission
 
 
-class ThreadObjectPermission(ObjectPermissionBase):
+class ThreadObjectPermission(PomsObjectPermission):
     pass
     # perms_map = {
     #     'GET': [],

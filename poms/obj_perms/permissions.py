@@ -3,7 +3,7 @@ from rest_framework.permissions import BasePermission
 from poms.obj_perms.utils import get_granted_permissions
 
 
-class ObjectPermissionBase(BasePermission):
+class PomsObjectPermission(BasePermission):
     perms_map = {
         'GET': [],
         'OPTIONS': [],
