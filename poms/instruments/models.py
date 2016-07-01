@@ -7,7 +7,7 @@ from mptt.fields import TreeForeignKey
 from mptt.models import MPTTModel
 
 from poms.audit import history
-from poms.common.models import NamedModel, ClassModelBase
+from poms.common.models import NamedModel, AbstractClassModel
 from poms.common.utils import date_now
 from poms.currencies.models import Currency
 from poms.obj_attrs.models import AbstractAttributeType, AbstractAttribute, AbstractAttributeTypeOption
@@ -15,7 +15,7 @@ from poms.obj_perms.models import AbstractGroupObjectPermission, AbstractUserObj
 from poms.users.models import MasterUser, Member
 
 
-class InstrumentClass(ClassModelBase):
+class InstrumentClass(AbstractClassModel):
     GENERAL = 1
     EVENT_AT_MATURITY = 2
     REGULAR_EVENT_AT_MATURITY = 3
@@ -30,12 +30,12 @@ class InstrumentClass(ClassModelBase):
         (CONTRACT_FOR_DIFFERENCE, "Contract for Difference"),
     )
 
-    class Meta(ClassModelBase.Meta):
+    class Meta(AbstractClassModel.Meta):
         verbose_name = _('instrument class')
         verbose_name_plural = _('instrument classes')
 
 
-class DailyPricingModel(ClassModelBase):
+class DailyPricingModel(AbstractClassModel):
     # TODO: add "values"
     SKIP = 1
     MANUAL = 2
@@ -46,12 +46,12 @@ class DailyPricingModel(ClassModelBase):
         (BLOOMBERG, _("Bloomberg")),
     )
 
-    class Meta(ClassModelBase.Meta):
+    class Meta(AbstractClassModel.Meta):
         verbose_name = _('daily pricing model')
         verbose_name_plural = _('daily pricing models')
 
 
-class AccrualCalculationModel(ClassModelBase):
+class AccrualCalculationModel(AbstractClassModel):
     NONE = 1
     ACT_ACT = 2
     ACT_ACT_ISDA = 3
@@ -102,7 +102,7 @@ class AccrualCalculationModel(ClassModelBase):
         (REVERSED_ACT_365, _("Reversed ACT/365")),
     )
 
-    class Meta(ClassModelBase.Meta):
+    class Meta(AbstractClassModel.Meta):
         verbose_name = _('accrual calculation model')
         verbose_name_plural = _('accrual calculation models')
 
@@ -115,7 +115,7 @@ class AccrualCalculationModel(ClassModelBase):
 #         verbose_name = _('payment frequency')
 #         verbose_name_plural = _('payment frequencies')
 
-class PaymentSizeDetail(ClassModelBase):
+class PaymentSizeDetail(AbstractClassModel):
     PERCENT = 1
     PER_ANNUM = 2
     PER_QUARTER = 3
@@ -131,12 +131,12 @@ class PaymentSizeDetail(ClassModelBase):
         (PER_DAY, _("per day")),
     )
 
-    class Meta(ClassModelBase.Meta):
+    class Meta(AbstractClassModel.Meta):
         verbose_name = _('payment size detail')
         verbose_name_plural = _('payment size details')
 
 
-class PeriodicityPeriod(ClassModelBase):
+class PeriodicityPeriod(AbstractClassModel):
     DAY = 1
     WEEK = 2
     MONTH = 3
@@ -152,12 +152,12 @@ class PeriodicityPeriod(ClassModelBase):
         (YEAR_DAY, _("N Years (same date)")),
     )
 
-    class Meta(ClassModelBase.Meta):
+    class Meta(AbstractClassModel.Meta):
         verbose_name = _('periodicity period')
         verbose_name_plural = _('periodicity periods')
 
 
-class CostMethod(ClassModelBase):
+class CostMethod(AbstractClassModel):
     # TODO: add "values"
     AVCO = 1
     FIFO = 2
@@ -168,7 +168,7 @@ class CostMethod(ClassModelBase):
         # (LIFO, _('LIFO')),
     )
 
-    class Meta(ClassModelBase.Meta):
+    class Meta(AbstractClassModel.Meta):
         verbose_name = _('cost method')
         verbose_name_plural = _('cost methods')
 
@@ -187,7 +187,7 @@ class PricingPolicy(NamedModel):
     expr = models.TextField(default='',
                             verbose_name=_('expression'))
 
-    class Meta(ClassModelBase.Meta):
+    class Meta(AbstractClassModel.Meta):
         verbose_name = _('pricing policy')
         verbose_name_plural = _('pricing policies')
         unique_together = [

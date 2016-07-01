@@ -7,7 +7,7 @@ from mptt.fields import TreeForeignKey
 from mptt.models import MPTTModel
 
 from poms.audit import history
-from poms.common.models import NamedModel, TagModelBase
+from poms.common.models import NamedModel
 from poms.currencies.models import Currency
 from poms.obj_attrs.models import AbstractAttributeType, AbstractAttribute, AbstractAttributeTypeOption
 from poms.obj_perms.models import AbstractGroupObjectPermission, AbstractUserObjectPermission
@@ -58,6 +58,7 @@ class Account(NamedModel):
                                     verbose_name=_('master user'))
     type = models.ForeignKey(AccountType, on_delete=models.PROTECT, null=True, blank=True,
                              verbose_name=_('account type'))
+
     # portfolios = models.ManyToManyField(
     #     'portfolios.Portfolio',
     #     related_name='accounts',

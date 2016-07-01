@@ -6,11 +6,11 @@ from django.utils.translation import ugettext_lazy as _
 from mptt.fields import TreeManyToManyField
 
 from poms.audit import history
-from poms.common.models import TagModelBase
+from poms.common.models import NamedModel
 from poms.obj_perms.models import AbstractGroupObjectPermission, AbstractUserObjectPermission
 
 
-class Tag(TagModelBase):
+class Tag(NamedModel):
     master_user = models.ForeignKey(
         'users.MasterUser',
         related_name='tags',
@@ -102,7 +102,7 @@ class Tag(TagModelBase):
         verbose_name=_('strategies 3')
     )
 
-    class Meta(TagModelBase.Meta):
+    class Meta(NamedModel.Meta):
         verbose_name = _('tag')
         verbose_name_plural = _('tags')
         permissions = [

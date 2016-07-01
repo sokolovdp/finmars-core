@@ -7,13 +7,13 @@ from django.db import models
 from django.utils.encoding import python_2_unicode_compatible
 from django.utils.translation import ugettext_lazy as _
 
-from poms.common.models import NamedModel, ClassModelBase
+from poms.common.models import NamedModel, AbstractClassModel
 from poms.common.utils import date_now
 from poms.obj_perms.models import AbstractGroupObjectPermission, AbstractUserObjectPermission
 from poms.users.models import MasterUser
 
 
-class ReportClass(ClassModelBase):
+class ReportClass(AbstractClassModel):
     # TODO: add "values"
     BALANCE = 1
     P_L = 2
@@ -26,7 +26,7 @@ class ReportClass(ClassModelBase):
         (YTM, _('YTM')),
     )
 
-    class Meta(ClassModelBase.Meta):
+    class Meta(AbstractClassModel.Meta):
         abstract = True
         verbose_name = _('report class')
         verbose_name_plural = _('report classes')

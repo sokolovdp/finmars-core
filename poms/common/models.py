@@ -74,13 +74,8 @@ class TimeStampedModel(models.Model):
         ordering = ('-modified', '-created',)
 
 
-class TagModelBase(NamedModel):
-    class Meta(NamedModel.Meta):
-        abstract = True
-
-
 @python_2_unicode_compatible
-class ClassModelBase(models.Model):
+class AbstractClassModel(models.Model):
     id = models.PositiveSmallIntegerField(
         primary_key=True,
         verbose_name=_('ID')

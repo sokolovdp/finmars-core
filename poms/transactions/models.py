@@ -7,7 +7,7 @@ from django.utils.translation import ugettext_lazy as _
 
 from poms.accounts.models import Account
 from poms.audit import history
-from poms.common.models import NamedModel, TagModelBase, ClassModelBase
+from poms.common.models import NamedModel, AbstractClassModel
 from poms.common.utils import date_now
 from poms.counterparties.models import Responsible, Counterparty
 from poms.currencies.models import Currency
@@ -19,7 +19,7 @@ from poms.strategies.models import Strategy1, Strategy2, Strategy3
 from poms.users.models import MasterUser, Member, FakeSequence
 
 
-class TransactionClass(ClassModelBase):
+class TransactionClass(AbstractClassModel):
     BUY = 1
     SELL = 2
     FX_TRADE = 3
@@ -42,12 +42,12 @@ class TransactionClass(ClassModelBase):
         (CASH_OUTFLOW, "Cash-Outflow"),
     )
 
-    class Meta(ClassModelBase.Meta):
+    class Meta(AbstractClassModel.Meta):
         verbose_name = _('transaction class')
         verbose_name_plural = _('transaction classes')
 
 
-class ActionClass(ClassModelBase):
+class ActionClass(AbstractClassModel):
     CREATE_INSTRUMENT = 1
     CREATE_INSTRUMENT_PARAMETER = 2
 
@@ -56,28 +56,28 @@ class ActionClass(ClassModelBase):
         (CREATE_INSTRUMENT_PARAMETER, "Create instrument parameter"),
     )
 
-    class Meta(ClassModelBase.Meta):
+    class Meta(AbstractClassModel.Meta):
         verbose_name = _('action class')
         verbose_name_plural = _('action classes')
 
 
-class EventClass(ClassModelBase):
+class EventClass(AbstractClassModel):
     CLASSES = tuple()
 
-    class Meta(ClassModelBase.Meta):
+    class Meta(AbstractClassModel.Meta):
         verbose_name = _('event class')
         verbose_name_plural = _('event classes')
 
 
-class NotificationClass(ClassModelBase):
+class NotificationClass(AbstractClassModel):
     CLASSES = tuple()
 
-    class Meta(ClassModelBase.Meta):
+    class Meta(AbstractClassModel.Meta):
         verbose_name = _('notification class')
         verbose_name_plural = _('notification classes')
 
 
-class PeriodicityGroup(ClassModelBase):
+class PeriodicityGroup(AbstractClassModel):
     DAILY = 1
     WEEKLY = 2
     WEEKLY_EOW = 3
@@ -107,7 +107,7 @@ class PeriodicityGroup(ClassModelBase):
         (ANUALLY_CALENDAR, "anually (eoy)"),
     )
 
-    class Meta(ClassModelBase.Meta):
+    class Meta(AbstractClassModel.Meta):
         verbose_name = _('periodicity group')
         verbose_name_plural = _('periodicity group')
 
@@ -171,6 +171,7 @@ class TransactionType(NamedModel):
         blank=True,
         verbose_name=_('instrument types')
     )
+
     # portfolios = models.ManyToManyField(
     #     'portfolios.Portfolio',
     #     related_name='transaction_types',
