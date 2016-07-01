@@ -2,7 +2,6 @@ from __future__ import unicode_literals
 
 import django_filters
 from rest_framework.filters import OrderingFilter, SearchFilter, DjangoFilterBackend, FilterSet
-from rest_framework.permissions import IsAuthenticated
 
 from poms.chats.filters import MessagePermissionFilter, DirectMessagePermissionFilter
 from poms.chats.models import Thread, Message, DirectMessage, ThreadStatus
@@ -10,8 +9,7 @@ from poms.chats.permissions import MessagePermission, DirectMessagePermission
 from poms.chats.serializers import ThreadSerializer, MessageSerializer, DirectMessageSerializer, ThreadStatusSerializer
 from poms.common.filters import CharFilter, ModelWithPermissionMultipleChoiceFilter, ModelMultipleChoiceFilter
 from poms.common.views import PomsViewSetBase
-from poms.obj_perms.filters import ObjectPermissionBackend
-from poms.obj_perms.permissions import ObjectPermissionBase
+from poms.obj_perms.views import AbstractViewSetWithObjectPermission
 from poms.users.filters import OwnerByMasterUserFilter
 from poms.users.models import Member
 from poms.users.permissions import SuperUserOrReadOnly
@@ -20,8 +18,8 @@ from poms.users.permissions import SuperUserOrReadOnly
 class ThreadStatusViewSet(PomsViewSetBase):
     queryset = ThreadStatus.objects.all()
     serializer_class = ThreadStatusSerializer
-    permission_classes = [
-        IsAuthenticated,
+    permission_classes = PomsViewSetBase.permission_classes + [
+        # IsAuthenticated,
         SuperUserOrReadOnly
     ]
     filter_backends = [
@@ -44,16 +42,16 @@ class ThreadFilterSet(FilterSet):
         fields = ['subject', 'created', 'status', 'status__is_closed']
 
 
-class ThreadViewSet(PomsViewSetBase):
+class ThreadViewSet(AbstractViewSetWithObjectPermission):
     queryset = Thread.objects.all()
     serializer_class = ThreadSerializer
-    permission_classes = [
-        IsAuthenticated,
-        ObjectPermissionBase
-    ]
+    # permission_classes = [
+    #     IsAuthenticated,
+    #     ObjectPermissionBase
+    # ]
     filter_backends = [
         OwnerByMasterUserFilter,
-        ObjectPermissionBackend,
+        # ObjectPermissionBackend,
         DjangoFilterBackend,
         OrderingFilter,
         SearchFilter,
@@ -62,9 +60,9 @@ class ThreadViewSet(PomsViewSetBase):
     ordering_fields = ['id', 'created', 'subject']
     search_fields = ['subject']
 
-    def get_serializer(self, *args, **kwargs):
-        kwargs['show_object_permissions'] = (self.action != 'list')
-        return super(ThreadViewSet, self).get_serializer(*args, **kwargs)
+    # def get_serializer(self, *args, **kwargs):
+    #     kwargs['show_object_permissions'] = (self.action != 'list')
+    #     return super(ThreadViewSet, self).get_serializer(*args, **kwargs)
 
 
 class MessageFilterSet(FilterSet):
@@ -78,11 +76,10 @@ class MessageFilterSet(FilterSet):
 
 
 class MessageViewSet(PomsViewSetBase):
-    queryset = Message.objects.all()
+    queryset = Message.objects
     serializer_class = MessageSerializer
-    permission_classes = [
-        IsAuthenticated,
-        MessagePermission
+    permission_classes = PomsViewSetBase.permission_classes + [
+        MessagePermission,
     ]
     filter_backends = [
         MessagePermissionFilter,
@@ -107,7 +104,9 @@ class DirectMessageFilterSet(FilterSet):
 class DirectMessageViewSet(PomsViewSetBase):
     queryset = DirectMessage.objects.all()
     serializer_class = DirectMessageSerializer
-    permission_classes = [IsAuthenticated, DirectMessagePermission]
+    permission_classes = PomsViewSetBase.permission_classes + [
+        DirectMessagePermission,
+    ]
     filter_backends = [
         DirectMessagePermissionFilter,
         DjangoFilterBackend,

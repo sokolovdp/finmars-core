@@ -12,8 +12,8 @@ from poms.currencies.models import Currency
 from poms.instruments.models import Instrument, InstrumentType
 from poms.obj_attrs.filters import AttributePrefetchFilter
 from poms.obj_attrs.views import AttributeTypeViewSetBase
-from poms.obj_perms.filters import ObjectPermissionBackend
-from poms.obj_perms.permissions import ObjectPermissionBase
+from poms.obj_perms.utils import obj_perms_prefetch
+from poms.obj_perms.views import AbstractViewSetWithObjectPermission
 from poms.portfolios.models import Portfolio
 from poms.strategies.models import Strategy1, Strategy2, Strategy3
 from poms.tags.filters import TagFilterBackend, TagFilter
@@ -42,20 +42,20 @@ class TransactionTypeGroupFilterSet(FilterSet):
         fields = ['user_code', 'name', 'short_name']
 
 
-class TransactionTypeGroupViewSet(PomsViewSetBase):
+class TransactionTypeGroupViewSet(AbstractViewSetWithObjectPermission):
     queryset = TransactionTypeGroup.objects
     serializer_class = TransactionTypeGroupSerializer
     filter_backends = [
         OwnerByMasterUserFilter,
-        ObjectPermissionBackend,
+        # ObjectPermissionBackend,
         DjangoFilterBackend,
         OrderingFilter,
         SearchFilter,
     ]
     filter_class = TransactionTypeGroupFilterSet
-    permission_classes = PomsViewSetBase.permission_classes + [
-        ObjectPermissionBase,
-    ]
+    # permission_classes = PomsViewSetBase.permission_classes + [
+    #     ObjectPermissionBase,
+    # ]
     ordering_fields = ['user_code', 'name', 'short_name']
     search_fields = ['user_code', 'name', 'short_name']
 
@@ -74,83 +74,104 @@ class TransactionTypeFilterSet(FilterSet):
         fields = ['user_code', 'name', 'short_name', 'group', 'portfolio', 'instrument_type', 'tag']
 
 
-class TransactionTypeViewSet(PomsViewSetBase):
-    queryset = TransactionType.objects.prefetch_related(
-        'inputs',
-        'inputs__content_type',
-
-        'portfolios',
-        'portfolios__user_object_permissions', 'portfolios__user_object_permissions__permission',
-        'portfolios__group_object_permissions', 'portfolios__group_object_permissions__permission',
-        'instrument_types',
-        'instrument_types__user_object_permissions', 'instrument_types__user_object_permissions__permission',
-        'instrument_types__group_object_permissions', 'instrument_types__group_object_permissions__permission',
-
-        'actions',
-
-        'actions__transactiontypeactioninstrument',
-        'actions__transactiontypeactioninstrument__instrument_type',
-        'actions__transactiontypeactioninstrument__instrument_type_input',
-        'actions__transactiontypeactioninstrument__pricing_currency',
-        'actions__transactiontypeactioninstrument__pricing_currency_input',
-        'actions__transactiontypeactioninstrument__accrued_currency',
-        'actions__transactiontypeactioninstrument__accrued_currency_input',
-        'actions__transactiontypeactioninstrument__daily_pricing_model',
-        'actions__transactiontypeactioninstrument__daily_pricing_model_input',
-        'actions__transactiontypeactioninstrument__payment_size_detail',
-        'actions__transactiontypeactioninstrument__payment_size_detail_input',
-
-        'actions__transactiontypeactiontransaction',
-        'actions__transactiontypeactiontransaction__portfolio',
-        'actions__transactiontypeactiontransaction__portfolio_input',
-        'actions__transactiontypeactiontransaction__instrument',
-        'actions__transactiontypeactiontransaction__instrument_input',
-        'actions__transactiontypeactiontransaction__instrument_phantom',
-        'actions__transactiontypeactiontransaction__transaction_currency',
-        'actions__transactiontypeactiontransaction__transaction_currency_input',
-        'actions__transactiontypeactiontransaction__settlement_currency',
-        'actions__transactiontypeactiontransaction__settlement_currency_input',
-        'actions__transactiontypeactiontransaction__account_position',
-        'actions__transactiontypeactiontransaction__account_position_input',
-        'actions__transactiontypeactiontransaction__account_cash',
-        'actions__transactiontypeactiontransaction__account_cash_input',
-        'actions__transactiontypeactiontransaction__account_interim',
-        'actions__transactiontypeactiontransaction__account_interim_input',
-        'actions__transactiontypeactiontransaction__strategy1_position',
-        'actions__transactiontypeactiontransaction__strategy1_position_input',
-        'actions__transactiontypeactiontransaction__strategy2_position',
-        'actions__transactiontypeactiontransaction__strategy2_position_input',
-        'actions__transactiontypeactiontransaction__strategy3_position',
-        'actions__transactiontypeactiontransaction__strategy3_position_input',
-        'actions__transactiontypeactiontransaction__strategy3_position',
-        'actions__transactiontypeactiontransaction__strategy3_position_input',
-        'actions__transactiontypeactiontransaction__responsible',
-        'actions__transactiontypeactiontransaction__responsible_input',
-        'actions__transactiontypeactiontransaction__counterparty',
-        'actions__transactiontypeactiontransaction__counterparty_input',
+class TransactionTypeViewSet(AbstractViewSetWithObjectPermission):
+    queryset = TransactionType.objects
+        #     .prefetch_related(
+    #     'inputs',
+    #     'inputs__content_type',
+    #
+    #     'group',
+    #
+    #     'portfolios',
+    #     # 'portfolios__user_object_permissions', 'portfolios__user_object_permissions__permission',
+    #     # 'portfolios__group_object_permissions', 'portfolios__group_object_permissions__permission',
+    #     'instrument_types',
+    #     # 'instrument_types__user_object_permissions', 'instrument_types__user_object_permissions__permission',
+    #     # 'instrument_types__group_object_permissions', 'instrument_types__group_object_permissions__permission',
+    #
+    #     'actions',
+    #
+    #     'actions__transactiontypeactioninstrument',
+    #     # 'actions__transactiontypeactioninstrument__instrument_type',
+    #     # 'actions__transactiontypeactioninstrument__instrument_type_input',
+    #     # 'actions__transactiontypeactioninstrument__pricing_currency',
+    #     # 'actions__transactiontypeactioninstrument__pricing_currency_input',
+    #     # 'actions__transactiontypeactioninstrument__accrued_currency',
+    #     # 'actions__transactiontypeactioninstrument__accrued_currency_input',
+    #     # 'actions__transactiontypeactioninstrument__daily_pricing_model',
+    #     # 'actions__transactiontypeactioninstrument__daily_pricing_model_input',
+    #     # 'actions__transactiontypeactioninstrument__payment_size_detail',
+    #     # 'actions__transactiontypeactioninstrument__payment_size_detail_input',
+    #
+    #     # 'actions__transactiontypeactiontransaction',
+    #     # 'actions__transactiontypeactiontransaction__portfolio',
+    #     # 'actions__transactiontypeactiontransaction__portfolio_input',
+    #     # 'actions__transactiontypeactiontransaction__instrument',
+    #     # 'actions__transactiontypeactiontransaction__instrument_input',
+    #     # 'actions__transactiontypeactiontransaction__instrument_phantom',
+    #     # 'actions__transactiontypeactiontransaction__transaction_currency',
+    #     # 'actions__transactiontypeactiontransaction__transaction_currency_input',
+    #     # 'actions__transactiontypeactiontransaction__settlement_currency',
+    #     # 'actions__transactiontypeactiontransaction__settlement_currency_input',
+    #     # 'actions__transactiontypeactiontransaction__account_position',
+    #     # 'actions__transactiontypeactiontransaction__account_position_input',
+    #     # 'actions__transactiontypeactiontransaction__account_cash',
+    #     # 'actions__transactiontypeactiontransaction__account_cash_input',
+    #     # 'actions__transactiontypeactiontransaction__account_interim',
+    #     # 'actions__transactiontypeactiontransaction__account_interim_input',
+    #     # 'actions__transactiontypeactiontransaction__strategy1_position',
+    #     # 'actions__transactiontypeactiontransaction__strategy1_position_input',
+    #     # 'actions__transactiontypeactiontransaction__strategy2_position',
+    #     # 'actions__transactiontypeactiontransaction__strategy2_position_input',
+    #     # 'actions__transactiontypeactiontransaction__strategy3_position',
+    #     # 'actions__transactiontypeactiontransaction__strategy3_position_input',
+    #     # 'actions__transactiontypeactiontransaction__strategy3_position',
+    #     # 'actions__transactiontypeactiontransaction__strategy3_position_input',
+    #     # 'actions__transactiontypeactiontransaction__responsible',
+    #     # 'actions__transactiontypeactiontransaction__responsible_input',
+    #     # 'actions__transactiontypeactiontransaction__counterparty',
+    #     # 'actions__transactiontypeactiontransaction__counterparty_input',
+    # )
+    prefetch_permissions_for = ('group', 'portfolios', 'instrument_types')
+    prefetch_action_instruments = (
+        'instrument_type', 'instrument_type_input', 'pricing_currency', 'pricing_currency_input', 'accrued_currency',
+        'accrued_currency_input', 'daily_pricing_model', 'daily_pricing_model_input', 'payment_size_detail',
+        'payment_size_detail_input',
+    )
+    prefetch_action_trunsactions = (
+        'portfolio', 'portfolio_input', 'instrument', 'instrument_input', 'instrument_phantom', 'transaction_currency',
+        'transaction_currency_input', 'settlement_currency', 'settlement_currency_input', 'account_position',
+        'account_position_input', 'account_cash', 'account_cash_input', 'account_interim', 'account_interim_input',
+        'strategy1_position', 'strategy1_position_input', 'strategy2_position', 'strategy2_position_input',
+        'strategy3_position', 'strategy3_position_input', 'strategy3_position', 'strategy3_position_input',
+        'responsible', 'responsible_input', 'counterparty', 'counterparty_input',
     )
     serializer_class = TransactionTypeSerializer
     filter_backends = [
         OwnerByMasterUserFilter,
-        ObjectPermissionBackend,
+        # ObjectPermissionBackend,
         TagFilterBackend,
         DjangoFilterBackend,
         OrderingFilter,
         SearchFilter
     ]
-    permission_classes = PomsViewSetBase.permission_classes + [
-        ObjectPermissionBase,
-    ]
+    # permission_classes = PomsViewSetBase.permission_classes + [
+    #     ObjectPermissionBase,
+    # ]
     filter_class = TransactionTypeFilterSet
     ordering_fields = ['user_code', 'name', 'short_name', 'group__user_code', 'group__name', 'group__short_name']
     search_fields = ['user_code', 'name', 'short_name', 'group__user_code', 'group__name', 'group__short_name']
 
-    # def get_serializer(self, *args, **kwargs):
-    #     if self.request.path.endswith('/process/') or self.request.path.endswith('/check/'):
-    #         kwargs['context'] = self.get_serializer_context()
-    #         return TransactionTypeProcessSerializer(transaction_type=self._detail_instance, **kwargs)
-    #     else:
-    #         return super(TransactionTypeViewSet, self).get_serializer(*args, **kwargs)
+    def get_queryset(self):
+        queryset = super(TransactionTypeViewSet, self).get_queryset()
+        related = [
+            'inputs', 'inputs__content_type', 'group', 'portfolios', 'instrument_types',
+            'actions', 'actions__transactiontypeactioninstrument', 'actions__transactiontypeactiontransaction',
+        ]
+        related += ['actions__transactiontypeactioninstrument__%s' % n for n in self.prefetch_action_instruments]
+        related += ['actions__transactiontypeactiontransaction__%s' % n for n in self.prefetch_action_trunsactions]
+        queryset = queryset.prefetch_related(*related)
+        return queryset
 
     def get_serializer_context(self):
         context = super(TransactionTypeViewSet, self).get_serializer_context()
@@ -207,19 +228,19 @@ class TransactionAttributeTypeFilterSet(FilterSet):
 class TransactionAttributeTypeViewSet(AttributeTypeViewSetBase):
     queryset = TransactionAttributeType.objects
     serializer_class = TransactionAttributeTypeSerializer
-    filter_backends = [
-        OwnerByMasterUserFilter,
-        ObjectPermissionBackend,
-        DjangoFilterBackend,
-        OrderingFilter,
-        SearchFilter,
-    ]
+    # filter_backends = [
+    #     OwnerByMasterUserFilter,
+    #     # ObjectPermissionBackend,
+    #     DjangoFilterBackend,
+    #     OrderingFilter,
+    #     SearchFilter,
+    # ]
     filter_class = TransactionAttributeTypeFilterSet
-    permission_classes = PomsViewSetBase.permission_classes + [
-        ObjectPermissionBase,
-    ]
-    ordering_fields = ['user_code', 'name', 'short_name', ]
-    search_fields = ['user_code', 'name', 'short_name', ]
+    # permission_classes = PomsViewSetBase.permission_classes + [
+    #     ObjectPermissionBase,
+    # ]
+    # ordering_fields = ['user_code', 'name', 'short_name', ]
+    # search_fields = ['user_code', 'name', 'short_name', ]
 
 
 class TransactionFilterSet(FilterSet):
@@ -272,46 +293,47 @@ class TransactionFilterSet(FilterSet):
 
 
 class TransactionViewSet(PomsViewSetBase):
-    # queryset = Transaction.objects
     queryset = Transaction.objects.prefetch_related(
         'master_user',
         'complex_transaction', 'complex_transaction__transaction_type',
         'transaction_class',
         'portfolio',
-        'portfolio__user_object_permissions', 'portfolio__user_object_permissions__permission',
-        'portfolio__group_object_permissions', 'portfolio__group_object_permissions__permission',
+        # 'portfolio__user_object_permissions', 'portfolio__user_object_permissions__permission',
+        # 'portfolio__group_object_permissions', 'portfolio__group_object_permissions__permission',
         'instrument',
-        'instrument__user_object_permissions', 'instrument__user_object_permissions__permission',
-        'instrument__group_object_permissions', 'instrument__group_object_permissions__permission',
-        'transaction_currency',
-        'settlement_currency',
+        # 'instrument__user_object_permissions', 'instrument__user_object_permissions__permission',
+        # 'instrument__group_object_permissions', 'instrument__group_object_permissions__permission',
         'account_cash',
-        'account_cash__user_object_permissions', 'account_cash__user_object_permissions__permission',
-        'account_cash__group_object_permissions', 'account_cash__group_object_permissions__permission',
+        # 'account_cash__user_object_permissions', 'account_cash__user_object_permissions__permission',
+        # 'account_cash__group_object_permissions', 'account_cash__group_object_permissions__permission',
         'account_position',
-        'account_position__user_object_permissions', 'account_position__user_object_permissions__permission',
-        'account_position__group_object_permissions', 'account_position__group_object_permissions__permission',
+        # 'account_position__user_object_permissions', 'account_position__user_object_permissions__permission',
+        # 'account_position__group_object_permissions', 'account_position__group_object_permissions__permission',
         'account_interim',
-        'account_interim__user_object_permissions', 'account_interim__user_object_permissions__permission',
-        'account_interim__group_object_permissions', 'account_interim__group_object_permissions__permission',
+        # 'account_interim__user_object_permissions', 'account_interim__user_object_permissions__permission',
+        # 'account_interim__group_object_permissions', 'account_interim__group_object_permissions__permission',
         'strategy1_position',
-        'strategy1_position__user_object_permissions', 'strategy1_position__user_object_permissions__permission',
-        'strategy1_position__group_object_permissions', 'strategy1_position__group_object_permissions__permission',
+        # 'strategy1_position__user_object_permissions', 'strategy1_position__user_object_permissions__permission',
+        # 'strategy1_position__group_object_permissions', 'strategy1_position__group_object_permissions__permission',
         'strategy1_cash',
-        'strategy1_cash__user_object_permissions', 'strategy1_cash__user_object_permissions__permission',
-        'strategy1_cash__group_object_permissions', 'strategy1_cash__group_object_permissions__permission',
+        # 'strategy1_cash__user_object_permissions', 'strategy1_cash__user_object_permissions__permission',
+        # 'strategy1_cash__group_object_permissions', 'strategy1_cash__group_object_permissions__permission',
         'strategy2_position',
-        'strategy2_position__user_object_permissions', 'strategy2_position__user_object_permissions__permission',
-        'strategy2_position__group_object_permissions', 'strategy2_position__group_object_permissions__permission',
+        # 'strategy2_position__user_object_permissions', 'strategy2_position__user_object_permissions__permission',
+        # 'strategy2_position__group_object_permissions', 'strategy2_position__group_object_permissions__permission',
         'strategy2_cash',
-        'strategy2_cash__user_object_permissions', 'strategy2_cash__user_object_permissions__permission',
-        'strategy2_cash__group_object_permissions', 'strategy2_cash__group_object_permissions__permission',
+        # 'strategy2_cash__user_object_permissions', 'strategy2_cash__user_object_permissions__permission',
+        # 'strategy2_cash__group_object_permissions', 'strategy2_cash__group_object_permissions__permission',
         'strategy3_position',
-        'strategy3_position__user_object_permissions', 'strategy3_position__user_object_permissions__permission',
-        'strategy3_position__group_object_permissions', 'strategy3_position__group_object_permissions__permission',
+        # 'strategy3_position__user_object_permissions', 'strategy3_position__user_object_permissions__permission',
+        # 'strategy3_position__group_object_permissions', 'strategy3_position__group_object_permissions__permission',
         'strategy3_cash',
-        'strategy3_cash__user_object_permissions', 'strategy3_cash__user_object_permissions__permission',
-        'strategy3_cash__group_object_permissions', 'strategy3_cash__group_object_permissions__permission',
+        # 'strategy3_cash__user_object_permissions', 'strategy3_cash__user_object_permissions__permission',
+        # 'strategy3_cash__group_object_permissions', 'strategy3_cash__group_object_permissions__permission',
+    )
+    prefetch_permissions_for = (
+        'portfolio', 'instrument', 'account_cash', 'account_position', 'account_interim', 'strategy1_position',
+        'strategy1_cash', 'strategy2_position', 'strategy2_cash', 'strategy3_position', 'strategy3_cash',
     )
     serializer_class = TransactionSerializer
     filter_backends = [
@@ -345,3 +367,8 @@ class TransactionViewSet(PomsViewSetBase):
         'strategy3_cash__user_code', 'strategy3_cash__name', 'strategy3_cash__short_name',
     ]
     search_fields = ['transaction_code', 'complex_transaction__code', 'complex_transaction_order']
+
+    def get_queryset(self):
+        queryset = super(TransactionViewSet, self).get_queryset()
+        queryset = obj_perms_prefetch(queryset, my=False, lookups_related=self.prefetch_permissions_for)
+        return queryset

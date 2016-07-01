@@ -283,21 +283,30 @@ def has_view_perms(member, obj):
     return has_perms(member, obj, perms)
 
 
-def obj_perms_prefetch(queryset, lookups_related=None):
+_perms_lookups = [
+    'user_object_permissions',
+    'user_object_permissions__permission',
+    'group_object_permissions',
+    'group_object_permissions__permission',
+]
+
+
+def obj_perms_prefetch(queryset, my=True, lookups_related=None):
     # return queryset.prefetch_related(
     #     'user_object_permissions', 'user_object_permissions__permission',
     #     'group_object_permissions', 'group_object_permissions__permission',
     # )
-    lookups = [
-        'user_object_permissions', 'user_object_permissions__permission',
-        'group_object_permissions', 'group_object_permissions__permission',
-    ]
+    lookups = []
+    if my:
+        lookups += _perms_lookups
     if lookups_related:
         for name in lookups_related:
-            lookups.append('%s__user_object_permissions' % name)
-            # lookups.append('%s__user_object_permissions_member' % name)
-            lookups.append('%s__user_object_permissions__permission' % name)
-            lookups.append('%s__group_object_permissions' % name)
-            # lookups.append('%s__group_object_permissions__group' % name)
-            lookups.append('%s__group_object_permissions__permission' % name)
+            # lookups.append('%s__user_object_permissions' % name)
+            # # lookups.append('%s__user_object_permissions_member' % name)
+            # lookups.append('%s__user_object_permissions__permission' % name)
+            # lookups.append('%s__group_object_permissions' % name)
+            # # lookups.append('%s__group_object_permissions__group' % name)
+            # lookups.append('%s__group_object_permissions__permission' % name)
+            for lookup in _perms_lookups:
+                lookups.append('%s__%s' % (name, lookup))
     return queryset.prefetch_related(*lookups)

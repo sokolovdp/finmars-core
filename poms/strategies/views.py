@@ -2,8 +2,7 @@ from __future__ import unicode_literals
 
 from poms.common.filters import ClassifierFilterSetBase
 from poms.common.views import ClassifierViewSetBase, ClassifierNodeViewSetBase
-from poms.obj_perms.filters import ObjectPermissionBackend
-from poms.obj_perms.permissions import ObjectPermissionBase
+from poms.obj_perms.views import AbstractViewSetWithObjectPermission
 from poms.strategies.models import Strategy1, Strategy2, Strategy3
 from poms.strategies.serializers import Strategy1Serializer, Strategy1NodeSerializer, Strategy2Serializer, \
     Strategy2NodeSerializer, Strategy3Serializer, Strategy3NodeSerializer
@@ -15,33 +14,34 @@ class AbstractStrategyFilterSet(ClassifierFilterSetBase):
         fields = ClassifierFilterSetBase.Meta.fields + ['tag', ]
 
 
-class AbstractStrategyViewSet(ClassifierViewSetBase):
+class AbstractStrategyViewSet(AbstractViewSetWithObjectPermission, ClassifierViewSetBase):
     filter_backends = ClassifierViewSetBase.filter_backends + [
         TagFilterBackend,
-        ObjectPermissionBackend,
+        # ObjectPermissionBackend,
     ]
-    permission_classes = ClassifierNodeViewSetBase.permission_classes + [
-        ObjectPermissionBase
-    ]
+
+    # permission_classes = ClassifierNodeViewSetBase.permission_classes + [
+    #     ObjectPermissionBase
+    # ]
 
     def get_serializer(self, *args, **kwargs):
         kwargs['show_children'] = (self.action != 'list')
-        kwargs['show_object_permissions'] = (self.action != 'list')
+        # kwargs['show_object_permissions'] = (self.action != 'list')
         return super(AbstractStrategyViewSet, self).get_serializer(*args, **kwargs)
 
 
-class AbstractStrategyNodeViewSet(ClassifierNodeViewSetBase):
+class AbstractStrategyNodeViewSet(AbstractViewSetWithObjectPermission, ClassifierNodeViewSetBase):
     filter_backends = ClassifierNodeViewSetBase.filter_backends + [
         TagFilterBackend,
-        ObjectPermissionBackend,
+        # ObjectPermissionBackend,
     ]
-    permission_classes = ClassifierNodeViewSetBase.permission_classes + [
-        ObjectPermissionBase
-    ]
+    # permission_classes = ClassifierNodeViewSetBase.permission_classes + [
+    #     ObjectPermissionBase
+    # ]
 
-    def get_serializer(self, *args, **kwargs):
-        kwargs['show_object_permissions'] = (self.action != 'list')
-        return super(AbstractStrategyNodeViewSet, self).get_serializer(*args, **kwargs)
+    # def get_serializer(self, *args, **kwargs):
+    #     kwargs['show_object_permissions'] = (self.action != 'list')
+    #     return super(AbstractStrategyNodeViewSet, self).get_serializer(*args, **kwargs)
 
 
 # Strategy1
