@@ -17,12 +17,12 @@ class NotificationSerializer(serializers.ModelSerializer):
     actor = serializers.SerializerMethodField()
     actor_type = serializers.SerializerMethodField()
     actor_repr = serializers.SerializerMethodField()
-    target = serializers.SerializerMethodField()
-    target_type = serializers.SerializerMethodField()
-    target_repr = serializers.SerializerMethodField()
     action_object = serializers.SerializerMethodField()
     action_object_type = serializers.SerializerMethodField()
     action_object_repr = serializers.SerializerMethodField()
+    target = serializers.SerializerMethodField()
+    target_type = serializers.SerializerMethodField()
+    target_repr = serializers.SerializerMethodField()
     data = serializers.SerializerMethodField()
 
     class Meta:
@@ -32,8 +32,8 @@ class NotificationSerializer(serializers.ModelSerializer):
                   'message',
                   'actor', 'actor_type', 'actor_repr',
                   'verb',
-                  'target', 'target_type', 'target_repr',
                   'action_object', 'action_object_type', 'action_object_repr',
+                  'target', 'target_type', 'target_repr',
                   'data']
 
     def get_message(self, value):
@@ -54,21 +54,6 @@ class NotificationSerializer(serializers.ModelSerializer):
             return '%s' % value.actor
         return None
 
-    def get_target(self, value):
-        if value.target_object_id:
-            return int(value.target_object_id)
-        return None
-
-    def get_target_type(self, value):
-        if value.target_content_type_id:
-            return '%s.%s' % (value.target_content_type.app_label, value.target_content_type.model)
-        return None
-
-    def get_target_repr(self, value):
-        if value.target_object_id:
-            return '%s' % value.target
-        return None
-
     def get_action_object(self, value):
         if value.action_object_object_id:
             return int(value.action_object_object_id)
@@ -82,6 +67,21 @@ class NotificationSerializer(serializers.ModelSerializer):
     def get_action_object_repr(self, value):
         if value.action_object_object_id:
             return '%s' % value.action_object
+        return None
+
+    def get_target(self, value):
+        if value.target_object_id:
+            return int(value.target_object_id)
+        return None
+
+    def get_target_type(self, value):
+        if value.target_content_type_id:
+            return '%s.%s' % (value.target_content_type.app_label, value.target_content_type.model)
+        return None
+
+    def get_target_repr(self, value):
+        if value.target_object_id:
+            return '%s' % value.target
         return None
 
     def get_data(self, value):

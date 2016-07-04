@@ -35,6 +35,10 @@ class NotificationConfig(models.Model):
         return '%s - %s: %s' % (self.user, self.level, self.is_send_email)
 
 
+# Actor         :  The object that performed the activity.
+# Verb          :  The verb phrase that identifies the action of the activity.
+# Action Object :  The object linked to the action itself.
+# Target        :  The object to which the activity was performed.
 @python_2_unicode_compatible
 class Notification(models.Model):
     recipient = models.ForeignKey(settings.AUTH_USER_MODEL, related_name='notifications', blank=False)
@@ -104,36 +108,75 @@ class Notification(models.Model):
             self.read_date = None
             self.save(update_fields=['read_date'])
 
-#
-# def notify_handler(sender=None, recipient=None, nf_type=None, message=None, verb=None, action_object=None, target=None,
-#                    create_date=None, level=None, data=None, **kwargs):
-#     # Check if User or Group
-#     if isinstance(recipient, Group):
-#         recipients = recipient.user_set.all()
-#     elif isinstance(recipient, (list, tuple, models.QuerySet, models.Manager)):
-#         recipients = recipient
-#     else:
-#         recipients = [recipient]
-#
-#     ret = []
-#     for recipient in recipients:
-#         # profile = getattr(recipient, 'profile', None)
-#         # language = getattr(profile, 'language', settings.LANGUAGE_CODE)
-#         # with override(language):
-#         n = Notification.objects.create(
-#             recipient=recipient,
-#             level=level or LEVEL_INFO,
-#             type=nf_type,
-#             message=message,
-#             actor=sender,
-#             verb=force_text(verb),
-#             target=target,
-#             action_object=action_object,
-#             data=json.dumps(data, sort_keys=True) if data else None,
-#             create_date=create_date or timezone.now()
-#         )
-#         ret.append(n)
-#     return ret
+
+# v4 ---
+
+@python_2_unicode_compatible
+class Notification4Class(models.Model):
+    code = models.CharField(max_length=30, unique=True)
+    name = models.CharField(max_length=255)
+
+    class Meta:
+        abstract = True
+
+    def __str__(self):
+        return self.name
 
 
-# connect the signal
+@python_2_unicode_compatible
+class Notification4Setting(models.Model):
+    member = models.ForeignKey('users.Member', related_name='notification4_settings')
+    notification_class = models.ForeignKey(Notification4Class)
+
+    is_email_enabled = models.BooleanField(default=True)
+
+    class Meta:
+        abstract = True
+        unique_together = (
+            ('member', 'notification_class')
+        )
+
+    def __str__(self):
+        return '%s[%s]->%s' % (self.notification_type, self.member, self.is_email_enabled)
+
+    @classmethod
+    def can_send_email(cls, member, notification_class):
+        try:
+            obj = cls.objects.get(member=member, notification_class__code=notification_class)
+        except models.ObjectDoesNotExist:
+            return False
+        else:
+            return obj.is_email_enabled
+
+
+@python_2_unicode_compatible
+class Notification4(models.Model):
+    recipient = models.ForeignKey('users.Member', related_name='notifications4')
+    notification_class = models.ForeignKey(Notification4Class, related_name='notifications4', on_delete=models.PROTECT)
+    message = models.TextField(blank=True, null=True)
+    create_date = models.DateTimeField(default=timezone.now, db_index=True)
+    read_date = models.DateTimeField(null=True, blank=True, db_index=True)
+    email_sent = models.DateTimeField(null=True, blank=True, db_index=True)
+    data = models.TextField(blank=True, null=True)
+
+    # linked object
+    content_type = models.ForeignKey(ContentType, null=True, blank=True)
+    object_id = models.IntegerField(max_length=255, null=True, blank=True)
+    content_object = GenericForeignKey()
+
+    class Meta:
+        abstract = True
+        ordering = ['-create_date']
+
+    def __str__(self):
+        return self.message
+
+    def mark_as_read(self):
+        if self.read_date is None:
+            self.read_date = timezone.now()
+            self.save(update_fields=['read_at'])
+
+    def mark_as_unread(self):
+        if self.read_date is not None:
+            self.read_date = None
+            self.save(update_fields=['read_at'])
