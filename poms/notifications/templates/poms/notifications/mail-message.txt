@@ -1,7 +1,1 @@
 {{notification}}
-1
-{% if notification.message %}Message is: {{notification.message}}{% endif %}
-
-2
-
-3

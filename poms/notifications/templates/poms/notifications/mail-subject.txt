@@ -1,1 +1,1 @@
-Notification: {{notification.verb}}
+Finmars notification: {{notification}}

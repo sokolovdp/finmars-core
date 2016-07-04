@@ -1,15 +1,30 @@
 <html>
 <head>
     <title>
-        Notification: {{ notification.verb }}
+        Finmars notification: {{ notification }}
     </title>
 </head>
 <body>
-<h1>Notification: {{ notification.verb }}</h1>
-{% if notification.message %}
-    <p>
-        {{ notification.message }}
-    </p>
-{% endif %}
+<h1>Finmars notification: {{ notification }}</h1>
+<table>
+    <tr>
+        <td>Date:</td><td>{{ notification.create_date|date:"DATETIME_FORMAT" }}</td>
+    </tr>
+    <tr>
+        <td>Level:</td><td>{{ notification.get_level_display }}</td>
+    </tr>
+    <tr>
+        <td>Actor:</td><td>{{ notification.actor }}</td>
+    </tr>
+    <tr>
+        <td>Verb:</td><td>{{ notification.verb }}</td>
+    </tr>
+    <tr>
+        <td>Target:</td><td>{{ notification.target }}</td>
+    </tr>
+    <tr>
+        <td>Action object:</td><td>{{ notification.action_object }}</td>
+    </tr>
+</table>
 </body>
 </html>
