@@ -16,7 +16,7 @@ urlpatterns += [
     url(r'^api/', include('poms.api.urls')),
 ]
 
-if settings.ADMIN:
+if 'django.contrib.admin' in settings.INSTALLED_APPS:
     if 'grappelli' in settings.INSTALLED_APPS:
         urlpatterns += [
             url(r'^admin/grappelli/', include('grappelli.urls')),

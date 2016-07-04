@@ -41,6 +41,8 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'django.contrib.humanize',
+    'django.contrib.admin',
+    'django.contrib.admindocs',
     'rest_framework',
 
     'kombu.transport.django',
@@ -80,12 +82,6 @@ INSTALLED_APPS = [
     # 'django_otp.plugins.otp_static',
 ]
 
-if ADMIN:
-    INSTALLED_APPS += [
-        # 'grappelli',
-        'django.contrib.admin',
-        'django.contrib.admindocs',
-    ]
 
 if DEBUG:
     INSTALLED_APPS += ['debug_toolbar', ]
@@ -247,7 +243,12 @@ LOGGING = {
             'level': 'DEBUG',
             'class': 'logging.StreamHandler',
             'formatter': 'verbose'
-        }
+        },
+        'mail_admins': {
+            'level': 'ERROR',
+            'class': 'django.utils.log.AdminEmailHandler',
+            # 'filters': ['special']
+        },
     },
     'loggers': {
         'py.warnings': {
@@ -256,6 +257,11 @@ LOGGING = {
         'django': {
             'level': 'INFO',
             'handlers': ['console'],
+        },
+        'django.request': {
+            'handlers': ['mail_admins'],
+            'level': 'ERROR',
+            'propagate': False,
         },
         # 'django.db': {
         #     'level': 'DEBUG',
@@ -277,7 +283,7 @@ LOGGING = {
 }
 
 REST_FRAMEWORK = {
-    'DEFAULT_PAGINATION_CLASS' : 'poms.common.pagination.PageNumberPaginationExt',
+    'DEFAULT_PAGINATION_CLASS': 'poms.common.pagination.PageNumberPaginationExt',
     'PAGE_SIZE': 20,
     'DEFAULT_AUTHENTICATION_CLASSES': (
         'rest_framework.authentication.SessionAuthentication',
@@ -341,7 +347,7 @@ EMAIL_HOST_PASSWORD = os.environ.get('EMAIL_HOST_PASSWORD', None)
 EMAIL_USE_TLS = True
 EMAIL_TIMEOUT = 10
 
-if DEV:
+if DEBUG:
     ADMINS = MANAGERS = [
         ['ailyukhin', 'ailyukhin@vitaminsoft.ru'],
         ['alyakhov', 'alyakhov@vitaminsoft.ru'],
@@ -349,20 +355,18 @@ if DEV:
     EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
 else:
     ADMINS = [
-        ['admin', 'site-admins@finmars.com'],
+        ['Site Admins', 'site-admins@finmars.com'],
     ]
     MANAGERS = [
-        ['admin', 'site-managers@finmars.com'],
+        ['Site Managers', 'site-managers@finmars.com'],
     ]
     EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
 
 MESSAGE_STORAGE = 'poms.notifications.message_storage.FallbackStorage'
 
-
 GEOIP_PATH = os.path.join(BASE_DIR, 'poms')
 GEOIP_COUNTRY = "GeoLite2-Country.mmdb"
 GEOIP_CITY = "GeoLite2-City.mmdb"
-
 
 # CELERY ------------------------------------------------
 
