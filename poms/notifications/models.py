@@ -41,11 +41,13 @@ class NotificationSetting(models.Model):
 @python_2_unicode_compatible
 class Notification(models.Model):
     recipient = models.ForeignKey(settings.AUTH_USER_MODEL, related_name='notifications', blank=False)
+    # recipient_member = models.ForeignKey('users.Member', related_name='notifications', null=True)
 
-    # TODO: !!!
-
+    # REMOVE
     level = models.PositiveSmallIntegerField(choices=LEVELS, default=messages.INFO)
+    # REMOVE
     type = models.CharField(max_length=30, null=True, blank=True)
+
     message = models.TextField(blank=True, null=True)
 
     actor_content_type = models.ForeignKey(ContentType, related_name='+', null=True, blank=True)

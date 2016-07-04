@@ -105,6 +105,7 @@ MIDDLEWARE_CLASSES = [
     # 'poms.users.middleware.LocaleMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    # 'poms.notifications.middleware.NotificationMiddleware',
     # 'django.middleware.cache.FetchFromCacheMiddleware',
 ]
 

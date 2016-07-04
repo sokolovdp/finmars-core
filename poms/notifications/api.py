@@ -2,11 +2,8 @@ import json
 
 from django.utils.encoding import force_text
 
-from poms.notifications import constants
 
-
-def send(recipients, level=constants.INFO, type=None, message=None,
-        actor=None, verb=None, action_object=None, target=None, data=None, throttle=False):
+def send(recipients, message=None, actor=None, verb=None, action_object=None, target=None, data=None, throttle=False):
     from poms.notifications.models import Notification
     from poms.notifications.throttling import allow_notification
 
@@ -17,8 +14,8 @@ def send(recipients, level=constants.INFO, type=None, message=None,
     for recipient in recipients:
         n = Notification.objects.create(
             recipient=recipient,
-            level=level,
-            type=type,
+            # level=level,
+            # type=type,
             message=message,
             actor=actor,
             verb=force_text(verb),
@@ -28,7 +25,6 @@ def send(recipients, level=constants.INFO, type=None, message=None,
         )
         ret.append(n)
     return ret
-
 
 # def debug(*args, **kwargs):
 #     kwargs['level'] = constants.DEBUG
