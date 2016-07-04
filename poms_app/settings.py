@@ -223,11 +223,11 @@ CACHES = {
     #     'LOCATION': 'http_cache',
     #     'KEY_PREFIX': 'http_cache',
     # },
-    # 'throttling': {
-    #     'BACKEND': 'django.core.cache.backends.locmem.LocMemCache',
-    #     'LOCATION': 'throttling',
-    #     'KEY_PREFIX': 'throttling',
-    # },
+    'throttling': {
+        'BACKEND': 'django.core.cache.backends.locmem.LocMemCache',
+        'LOCATION': 'throttling',
+        'KEY_PREFIX': 'throttling',
+    },
 }
 
 SESSION_ENGINE = "poms.http_sessions.backends.db"
@@ -339,7 +339,7 @@ AUTHENTICATION_BACKENDS = (
 
 # email config
 
-DEFAULT_FROM_EMAIL = '"FinMars" <no-reply@finmars.com>'
+DEFAULT_FROM_EMAIL = '"Finmars Notifications" <no-reply@finmars.com>'
 SERVER_EMAIL = '"ADMIN: FinMars" <no-reply@finmars.com>'
 EMAIL_HOST = os.environ.get('EMAIL_HOST', None)
 EMAIL_PORT = int(os.environ.get('EMAIL_HOST', "587"))
@@ -349,12 +349,17 @@ EMAIL_USE_TLS = True
 EMAIL_TIMEOUT = 10
 
 if DEBUG:
+    DEFAULT_FROM_EMAIL = '"DEBUG: Finmars Notifications" <no-reply@finmars.com>'
+    SERVER_EMAIL = '"DEBUG-ADMIN: FinMars" <no-reply@finmars.com>'
     ADMINS = MANAGERS = [
         ['ailyukhin', 'ailyukhin@vitaminsoft.ru'],
         ['alyakhov', 'alyakhov@vitaminsoft.ru'],
     ]
     EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
 else:
+    if DEV:
+        DEFAULT_FROM_EMAIL = '"DEV: Finmars Notifications" <no-reply@finmars.com>'
+        SERVER_EMAIL = '"DEV-ADMIN: FinMars" <no-reply@finmars.com>'
     ADMINS = [
         ['Site Admins', 'site-admins@finmars.com'],
     ]

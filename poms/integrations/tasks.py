@@ -20,24 +20,25 @@ def health_check():
 
 
 @shared_task(name='backend.send_mail_async', ignore_result=True)
-def send_mail_async(subject, message, from_email, recipient_list):
+def send_mail_async(subject, message, from_email, recipient_list, html_message=None):
     from django.core.mail import send_mail
-    send_mail(subject, message, from_email, recipient_list, fail_silently=True, )
+    send_mail(subject, message, from_email, recipient_list, fail_silently=True, html_message=html_message)
 
 
-def send_mail(subject, message, from_email, recipient_list):
+def send_mail(subject, message, from_email, recipient_list, html_message=None):
     send_mail_async.apply_async(kwargs={
         'subject': subject,
         'message': message,
         'from_email': from_email,
         'recipient_list': recipient_list,
+        'html_message': html_message,
     })
 
 
 @shared_task(name='backend.send_mass_mail', ignore_result=True)
 def send_mass_mail_async(messages):
     from django.core.mail import send_mass_mail
-    send_mass_mail(messages, fail_silently=True, )
+    send_mass_mail(messages, fail_silently=True)
 
 
 def send_mass_mail(messages):

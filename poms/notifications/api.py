@@ -6,8 +6,12 @@ from poms.notifications import constants
 
 
 def add(recipients, level=constants.INFO, type=None, message=None,
-        actor=None, verb=None, target=None, action_object=None, data=None):
+        actor=None, verb=None, target=None, action_object=None, data=None, throttle=False):
     from poms.notifications.models import Notification
+    from poms.notifications.throttling import allow_notification
+
+    if throttle and not allow_notification():
+        return
 
     ret = []
     for recipient in recipients:

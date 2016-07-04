@@ -19,6 +19,7 @@ def audit_user_logged_in(request=None, user=None, **kwargs):
     AuthLogEntry.objects.create(user=user, is_success=True,
                                 user_agent=getattr(request, 'user_agent', None),
                                 user_ip=getattr(request, 'user_ip', None))
+    notifications.info([user], actor=user, verb='logged in')
 
 
 @receiver(user_login_failed, dispatch_uid='audit_user_login_failed')
@@ -34,10 +35,10 @@ def audit_user_login_failed(credentials=None, **kwargs):
     except user_model.DoesNotExist:
         return
     request = get_request()
-    AuthLogEntry.objects.create(user=user, is_success=False,
+    AuthLogEntry.objects.create(user=user,
+                                is_success=False,
                                 user_agent=getattr(request, 'user_agent', None),
                                 user_ip=getattr(request, 'user_ip', None))
-
     notifications.warning([user], actor=user, verb='login failed')
 
 
@@ -94,7 +95,6 @@ def tracker_on_delete(sender, instance=None, **kwargs):
     if not is_track_enabled(instance):
         return
     history.object_deleted(instance)
-
 
 # post_init.connect(_tracker_init, dispatch_uid='tracker_init')
 # post_save.connect(_tracker_save, dispatch_uid='tracker_save')

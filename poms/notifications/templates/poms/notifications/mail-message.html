@@ -1,0 +1,15 @@
+<html>
+<head>
+    <title>
+        Notification: {{ notification.verb }}
+    </title>
+</head>
+<body>
+<h1>Notification: {{ notification.verb }}</h1>
+{% if notification.message %}
+    <p>
+        {{ notification.message }}
+    </p>
+{% endif %}
+</body>
+</html>
