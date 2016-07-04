@@ -41,8 +41,6 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'django.contrib.humanize',
-    'django.contrib.admin',
-    'django.contrib.admindocs',
     'rest_framework',
 
     'kombu.transport.django',
@@ -71,6 +69,9 @@ INSTALLED_APPS = [
     'poms.integrations',
     'poms.reports',
     'poms.api',
+
+    'django.contrib.admin',
+    'django.contrib.admindocs',
 
     'django_extensions',
     # 'rest_framework_swagger',

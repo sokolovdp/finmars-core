@@ -4,10 +4,9 @@ from django.contrib import admin
 
 from poms.audit.admin import HistoricalAdmin
 from poms.common.admin import TreeModelAdmin
-from poms.obj_perms.admin import GroupObjectPermissionAdmin, UserObjectPermissionAdmin
-from poms.strategies.models import Strategy1, Strategy1GroupObjectPermission, Strategy2, Strategy2GroupObjectPermission, \
-    Strategy3, Strategy3GroupObjectPermission, Strategy1UserObjectPermission, Strategy2UserObjectPermission, \
-    Strategy3UserObjectPermission
+from poms.obj_perms.admin import UserObjectPermissionInline, \
+    GroupObjectPermissionInline
+from poms.strategies.models import Strategy1, Strategy2, Strategy3
 
 
 class StrategyAdmin(HistoricalAdmin, TreeModelAdmin):
@@ -15,9 +14,18 @@ class StrategyAdmin(HistoricalAdmin, TreeModelAdmin):
     list_select_related = ['master_user', 'parent']
     raw_id_fields = ['master_user', 'parent']
     fields = ['master_user', 'parent', 'user_code', 'name', 'short_name', 'notes']
+    inlines = [
+        UserObjectPermissionInline,
+        GroupObjectPermissionInline,
+    ]
 
     def rebuild_permissions(self):
         pass
+
+    def get_inline_instances(self, request, obj=None):
+        if obj is None or not obj.is_root_node():
+            return []
+        return super(StrategyAdmin, self).get_inline_instances(request, obj=obj)
 
 
 # admin.site.register(Strategy, StrategyAdmin)
@@ -25,13 +33,13 @@ class StrategyAdmin(HistoricalAdmin, TreeModelAdmin):
 # admin.site.register(StrategyGroupObjectPermission, GroupObjectPermissionAdmin)
 
 admin.site.register(Strategy1, StrategyAdmin)
-admin.site.register(Strategy1UserObjectPermission, UserObjectPermissionAdmin)
-admin.site.register(Strategy1GroupObjectPermission, GroupObjectPermissionAdmin)
+# admin.site.register(Strategy1UserObjectPermission, UserObjectPermissionAdmin)
+# admin.site.register(Strategy1GroupObjectPermission, GroupObjectPermissionAdmin)
 
 admin.site.register(Strategy2, StrategyAdmin)
-admin.site.register(Strategy2UserObjectPermission, UserObjectPermissionAdmin)
-admin.site.register(Strategy2GroupObjectPermission, GroupObjectPermissionAdmin)
+# admin.site.register(Strategy2UserObjectPermission, UserObjectPermissionAdmin)
+# admin.site.register(Strategy2GroupObjectPermission, GroupObjectPermissionAdmin)
 
 admin.site.register(Strategy3, StrategyAdmin)
-admin.site.register(Strategy3UserObjectPermission, UserObjectPermissionAdmin)
-admin.site.register(Strategy3GroupObjectPermission, GroupObjectPermissionAdmin)
+# admin.site.register(Strategy3UserObjectPermission, UserObjectPermissionAdmin)
+# admin.site.register(Strategy3GroupObjectPermission, GroupObjectPermissionAdmin)

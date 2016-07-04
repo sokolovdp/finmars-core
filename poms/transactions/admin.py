@@ -9,19 +9,17 @@ from poms.common.admin import ClassModelAdmin
 from poms.counterparties.models import Counterparty, Responsible
 from poms.currencies.models import Currency
 from poms.instruments.models import Instrument, InstrumentType, DailyPricingModel, PaymentSizeDetail
-from poms.obj_attrs.admin import AbstractAttributeTypeAdmin, AbstractAttributeTypeOptionAdmin, AbstractAttributeInline
-from poms.obj_perms.admin import GroupObjectPermissionAdmin, UserObjectPermissionAdmin
+from poms.obj_attrs.admin import AbstractAttributeTypeAdmin, AbstractAttributeInline, \
+    AbstractAttributeTypeOptionInline
+from poms.obj_perms.admin import UserObjectPermissionInline, \
+    GroupObjectPermissionInline
 from poms.portfolios.models import Portfolio
 from poms.strategies.models import Strategy1, Strategy2, Strategy3
 from poms.transactions.models import TransactionClass, Transaction, TransactionType, TransactionTypeInput, \
-    TransactionTypeGroupObjectPermission, \
-    TransactionAttributeType, TransactionAttributeTypeOption, TransactionAttributeTypeGroupObjectPermission, \
-    TransactionAttribute, ActionClass, EventToHandle, \
+    TransactionAttributeType, TransactionAttribute, ActionClass, EventToHandle, \
     ExternalCashFlow, ExternalCashFlowStrategy, NotificationClass, EventClass, PeriodicityGroup, \
-    TransactionTypeUserObjectPermission, TransactionAttributeTypeUserObjectPermission, TransactionTypeActionInstrument, \
-    TransactionTypeActionTransaction, ComplexTransaction, TransactionTypeGroup, \
-    TransactionTypeGroupUserObjectPermission, \
-    TransactionTypeGroupGroupObjectPermission
+    TransactionTypeActionInstrument, \
+    TransactionTypeActionTransaction, ComplexTransaction, TransactionTypeGroup
 
 admin.site.register(TransactionClass, ClassModelAdmin)
 admin.site.register(ActionClass, ClassModelAdmin)
@@ -34,11 +32,17 @@ class TransactionTypeGroupAdmin(HistoricalAdmin):
     model = TransactionTypeGroup
     list_display = ['id', 'name', 'master_user']
     raw_id_fields = ['master_user']
+    inlines = [
+        UserObjectPermissionInline,
+        GroupObjectPermissionInline,
+    ]
 
 
 admin.site.register(TransactionTypeGroup, TransactionTypeGroupAdmin)
-admin.site.register(TransactionTypeGroupUserObjectPermission, UserObjectPermissionAdmin)
-admin.site.register(TransactionTypeGroupGroupObjectPermission, GroupObjectPermissionAdmin)
+
+
+# admin.site.register(TransactionTypeGroupUserObjectPermission, UserObjectPermissionAdmin)
+# admin.site.register(TransactionTypeGroupGroupObjectPermission, GroupObjectPermissionAdmin)
 
 
 class TransactionTypeInputInline(admin.TabularInline):
@@ -234,6 +238,8 @@ class TransactionTypeAdmin(HistoricalAdmin):
         TransactionTypeActionInstrumentInline,
         TransactionTypeActionTransactionInline,
         EventToHandleInline,
+        UserObjectPermissionInline,
+        GroupObjectPermissionInline,
     ]
 
     def get_inline_instances(self, request, obj=None):
@@ -257,8 +263,10 @@ class TransactionTypeAdmin(HistoricalAdmin):
 
 
 admin.site.register(TransactionType, TransactionTypeAdmin)
-admin.site.register(TransactionTypeUserObjectPermission, UserObjectPermissionAdmin)
-admin.site.register(TransactionTypeGroupObjectPermission, GroupObjectPermissionAdmin)
+
+
+# admin.site.register(TransactionTypeUserObjectPermission, UserObjectPermissionAdmin)
+# admin.site.register(TransactionTypeGroupObjectPermission, GroupObjectPermissionAdmin)
 
 
 class ComplexTransactionAdmin(HistoricalAdmin):
@@ -313,7 +321,8 @@ class TransactionAdmin(HistoricalAdmin):
     list_filter = ['is_canceled']
     ordering = ['transaction_date', 'id']
     date_hierarchy = 'transaction_date'
-    raw_id_fields = ['master_user', 'complex_transaction', 'portfolio', 'instrument', 'transaction_currency', 'settlement_currency',
+    raw_id_fields = ['master_user', 'complex_transaction', 'portfolio', 'instrument', 'transaction_currency',
+                     'settlement_currency',
                      'account_position', 'account_cash', 'account_interim', 'responsible', 'counterparty',
                      'strategy1_position', 'strategy1_cash', 'strategy2_position', 'strategy2_cash',
                      'strategy3_position', 'strategy3_cash', ]
@@ -349,12 +358,19 @@ class TransactionAttributeTypeAdmin(AbstractAttributeTypeAdmin):
     list_display = ['id', 'master_user', 'name', 'value_type']
     list_select_related = ['master_user']
     raw_id_fields = ['master_user']
+    inlines = [
+        AbstractAttributeTypeOptionInline,
+        UserObjectPermissionInline,
+        GroupObjectPermissionInline,
+    ]
 
 
 admin.site.register(TransactionAttributeType, TransactionAttributeTypeAdmin)
-admin.site.register(TransactionAttributeTypeOption, AbstractAttributeTypeOptionAdmin)
-admin.site.register(TransactionAttributeTypeUserObjectPermission, UserObjectPermissionAdmin)
-admin.site.register(TransactionAttributeTypeGroupObjectPermission, GroupObjectPermissionAdmin)
+
+
+# admin.site.register(TransactionAttributeTypeOption, AbstractAttributeTypeOptionAdmin)
+# admin.site.register(TransactionAttributeTypeUserObjectPermission, UserObjectPermissionAdmin)
+# admin.site.register(TransactionAttributeTypeGroupObjectPermission, GroupObjectPermissionAdmin)
 
 
 class ExternalCashFlowStrategyInline(admin.TabularInline):

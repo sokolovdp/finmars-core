@@ -4,7 +4,7 @@ from django.contrib.contenttypes.models import ContentType
 from django.db.models import Q
 
 
-def get_obj_perms_model(obj, base_cls):
+def get_rel_model(obj, attr_name, base_cls):
     from django.db.models import Model
 
     if isinstance(obj, Model):
@@ -16,10 +16,29 @@ def get_obj_perms_model(obj, base_cls):
     for attr in fields:
         model = getattr(attr, 'related_model', None)
         if model and issubclass(model, base_cls):
-            fk = model._meta.get_field('content_object')
+            fk = model._meta.get_field(attr_name)
             if ctype == ContentType.objects.get_for_model(fk.rel.to):
                 return attr.name, model
     return None, None
+
+
+def get_obj_perms_model(obj, base_cls):
+    # from django.db.models import Model
+    #
+    # if isinstance(obj, Model):
+    #     obj = obj.__class__
+    # from django.contrib.contenttypes.models import ContentType
+    # ctype = ContentType.objects.get_for_model(obj)
+    #
+    # fields = (f for f in obj._meta.get_fields() if (f.one_to_many or f.one_to_one) and f.auto_created)
+    # for attr in fields:
+    #     model = getattr(attr, 'related_model', None)
+    #     if model and issubclass(model, base_cls):
+    #         fk = model._meta.get_field('content_object')
+    #         if ctype == ContentType.objects.get_for_model(fk.rel.to):
+    #             return attr.name, model
+    # return None, None
+    return get_rel_model(obj, 'content_object', base_cls)
 
 
 def get_user_obj_perms_model(obj):

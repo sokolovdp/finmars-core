@@ -3,9 +3,9 @@ from __future__ import unicode_literals
 from django.contrib import admin
 
 from poms.audit.admin import HistoricalAdmin
-from poms.chats.models import Thread, Message, DirectMessage, ThreadStatus, ThreadGroupObjectPermission, \
-    ThreadUserObjectPermission
-from poms.obj_perms.admin import GroupObjectPermissionAdmin, UserObjectPermissionAdmin
+from poms.chats.models import Thread, Message, DirectMessage, ThreadStatus
+from poms.obj_perms.admin import UserObjectPermissionInline, \
+    GroupObjectPermissionInline
 
 
 class ThreadStatusAdmin(HistoricalAdmin):
@@ -34,11 +34,17 @@ class ThreadAdmin(HistoricalAdmin):
     raw_id_fields = ['master_user', 'status']
     # inlines = [MessageInline]
     search_fields = ['id', 'subject']
+    inlines = [
+        UserObjectPermissionInline,
+        GroupObjectPermissionInline
+    ]
 
 
 admin.site.register(Thread, ThreadAdmin)
-admin.site.register(ThreadUserObjectPermission, UserObjectPermissionAdmin)
-admin.site.register(ThreadGroupObjectPermission, GroupObjectPermissionAdmin)
+
+
+# admin.site.register(ThreadUserObjectPermission, UserObjectPermissionAdmin)
+# admin.site.register(ThreadGroupObjectPermission, GroupObjectPermissionAdmin)
 
 
 class MessageAdmin(HistoricalAdmin):

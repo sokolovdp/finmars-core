@@ -3,18 +3,16 @@ from __future__ import unicode_literals
 from django.contrib import admin
 
 from poms.audit.admin import HistoricalAdmin
-from poms.common.admin import ClassModelAdmin, ClassifierAdmin
-from poms.instruments.models import Instrument, PriceHistory, InstrumentClassifier, InstrumentClass, InstrumentType, \
+from poms.common.admin import ClassModelAdmin
+from poms.instruments.models import Instrument, PriceHistory, InstrumentClass, InstrumentType, \
     DailyPricingModel, AccrualCalculationModel, PeriodicityPeriod, CostMethod, \
-    ManualPricingFormula, AccrualCalculationSchedule, InstrumentTypeGroupObjectPermission, \
-    InstrumentGroupObjectPermission, \
-    InstrumentAttributeType, InstrumentAttributeTypeOption, InstrumentAttributeTypeGroupObjectPermission, \
-    InstrumentAttribute, InstrumentFactorSchedule, EventSchedule, \
-    PricingPolicy, PaymentSizeDetail, InstrumentTypeUserObjectPermission, InstrumentUserObjectPermission, \
-    InstrumentAttributeTypeUserObjectPermission
-from poms.obj_attrs.admin import AbstractAttributeTypeAdmin, AbstractAttributeTypeOptionAdmin, AbstractAttributeInline, \
-    AbstractAttributeTypeClassifierInline
-from poms.obj_perms.admin import GroupObjectPermissionAdmin, UserObjectPermissionAdmin
+    ManualPricingFormula, AccrualCalculationSchedule, InstrumentAttributeType, InstrumentAttribute, \
+    InstrumentFactorSchedule, EventSchedule, \
+    PricingPolicy, PaymentSizeDetail
+from poms.obj_attrs.admin import AbstractAttributeTypeAdmin, AbstractAttributeInline, \
+    AbstractAttributeTypeClassifierInline, AbstractAttributeTypeOptionInline
+from poms.obj_perms.admin import UserObjectPermissionInline, \
+    GroupObjectPermissionInline
 
 admin.site.register(InstrumentClass, ClassModelAdmin)
 admin.site.register(DailyPricingModel, ClassModelAdmin)
@@ -40,13 +38,17 @@ class InstrumentTypeAdmin(HistoricalAdmin):
     list_select_related = ['master_user', 'instrument_class']
     list_filter = ['instrument_class']
     raw_id_fields = ['master_user']
+    inlines = [
+        UserObjectPermissionInline,
+        GroupObjectPermissionInline,
+    ]
 
 
 admin.site.register(InstrumentType, InstrumentTypeAdmin)
-admin.site.register(InstrumentTypeUserObjectPermission, UserObjectPermissionAdmin)
-admin.site.register(InstrumentTypeGroupObjectPermission, GroupObjectPermissionAdmin)
 
-admin.site.register(InstrumentClassifier, ClassifierAdmin)
+
+# admin.site.register(InstrumentTypeUserObjectPermission, UserObjectPermissionAdmin)
+# admin.site.register(InstrumentTypeGroupObjectPermission, GroupObjectPermissionAdmin)
 
 
 # admin.site.register(InstrumentClassifierUserObjectPermission, UserObjectPermissionAdmin)
@@ -82,13 +84,22 @@ class InstrumentAdmin(HistoricalAdmin):
     list_display = ['id', 'master_user', 'name', 'instrument_type', 'pricing_currency', 'accrued_currency']
     list_select_related = ['master_user', 'instrument_type', 'pricing_currency', 'accrued_currency']
     raw_id_fields = ['master_user', 'instrument_type', 'pricing_currency', 'accrued_currency']
-    inlines = [InstrumentAttributeInline, ManualPricingFormulaInline, AccrualCalculationScheduleInline,
-               InstrumentFactorScheduleInline, EventScheduleInline]
+    inlines = [
+        InstrumentAttributeInline,
+        ManualPricingFormulaInline,
+        AccrualCalculationScheduleInline,
+        InstrumentFactorScheduleInline,
+        EventScheduleInline,
+        UserObjectPermissionInline,
+        GroupObjectPermissionInline,
+    ]
 
 
 admin.site.register(Instrument, InstrumentAdmin)
-admin.site.register(InstrumentUserObjectPermission, UserObjectPermissionAdmin)
-admin.site.register(InstrumentGroupObjectPermission, GroupObjectPermissionAdmin)
+
+
+# admin.site.register(InstrumentUserObjectPermission, UserObjectPermissionAdmin)
+# admin.site.register(InstrumentGroupObjectPermission, GroupObjectPermissionAdmin)
 
 
 class PriceHistoryAdmin(HistoricalAdmin):
@@ -102,15 +113,22 @@ class PriceHistoryAdmin(HistoricalAdmin):
 admin.site.register(PriceHistory, PriceHistoryAdmin)
 
 
-class InstrumentAttributeTypeClassifierInline(AbstractAttributeTypeClassifierInline):
-    model = InstrumentClassifier
+# class InstrumentAttributeTypeClassifierInline(AbstractAttributeTypeClassifierInline):
+#     model = InstrumentClassifier
 
 
 class InstrumentAttributeTypeAdmin(AbstractAttributeTypeAdmin):
-    inlines = [InstrumentAttributeTypeClassifierInline]
+    # inlines = [InstrumentAttributeTypeClassifierInline]
+    inlines = [
+        AbstractAttributeTypeClassifierInline,
+        AbstractAttributeTypeOptionInline,
+        UserObjectPermissionInline,
+        GroupObjectPermissionInline,
+    ]
 
 
 admin.site.register(InstrumentAttributeType, InstrumentAttributeTypeAdmin)
-admin.site.register(InstrumentAttributeTypeOption, AbstractAttributeTypeOptionAdmin)
-admin.site.register(InstrumentAttributeTypeUserObjectPermission, UserObjectPermissionAdmin)
-admin.site.register(InstrumentAttributeTypeGroupObjectPermission, GroupObjectPermissionAdmin)
+# admin.site.register(InstrumentAttributeTypeOption, AbstractAttributeTypeOptionAdmin)
+# admin.site.register(InstrumentAttributeTypeUserObjectPermission, UserObjectPermissionAdmin)
+# admin.site.register(InstrumentAttributeTypeGroupObjectPermission, GroupObjectPermissionAdmin)
+# admin.site.register(InstrumentClassifier, ClassifierAdmin)
