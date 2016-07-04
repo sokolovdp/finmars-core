@@ -17,8 +17,8 @@ import poms.reports.views as reports
 import poms.strategies.views as strategies
 import poms.tags.views as tags
 import poms.transactions.views as transactions
-import poms.users.views as users
 import poms.ui.views as ui
+import poms.users.views as users
 
 router = routers.DefaultRouter()
 router.register(r'users/login', users.LoginViewSet, 'login')
@@ -106,6 +106,8 @@ router.register(r'reports/ytm', reports.YTMReport2ViewSet, "ytmreport2")
 router.register(r'reports/simple-multipliers', reports.SimpleMultipliersReport2ViewSet, "simplemultipliersreport2")
 
 router.register(r'notifications/notification', notifications.NotificationViewSet)
+# router.register(r'notifications/message', notifications.MessageViewSet, 'django-message')
+
 router.register(r'chats/thread-status', chats.ThreadStatusViewSet, 'chatthreadstatus')
 router.register(r'chats/thread', chats.ThreadViewSet, 'chatthread')
 router.register(r'chats/message', chats.MessageViewSet, 'chatmessage')

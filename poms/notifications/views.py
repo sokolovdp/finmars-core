@@ -1,13 +1,14 @@
 from __future__ import unicode_literals
 
 import django_filters
+from django.contrib.messages import get_messages, info, success
 from django.utils import timezone
 from django_filters.widgets import BooleanWidget
 from rest_framework.decorators import list_route, detail_route
 from rest_framework.filters import DjangoFilterBackend, OrderingFilter, SearchFilter, FilterSet
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
-from rest_framework.viewsets import ReadOnlyModelViewSet
+from rest_framework.viewsets import ReadOnlyModelViewSet, ViewSet
 
 from poms import notifications
 from poms.common.filters import CharFilter
@@ -61,3 +62,13 @@ class NotificationViewSet(DbTransactionMixin, ReadOnlyModelViewSet):
         instance.mark_as_read()
         serializer = self.get_serializer(instance=instance)
         return Response(serializer.data)
+
+
+class MessageViewSet(ViewSet):
+    def list(self, request, *args, **kwargs):
+        data = []
+        info(request._request, 'info1')
+        success(request._request, 'success1')
+        for m in get_messages(request):
+            data.append([m.level, m.message])
+        return Response(data)
