@@ -28,7 +28,8 @@ class Counterparty(NamedModel):
         verbose_name = _('counterparty')
         verbose_name_plural = _('counterparties')
         permissions = [
-            ('view_counterparty', 'Can view counterparty')
+            ('view_counterparty', 'Can view counterparty'),
+            ('manage_counterparty', 'Can manage counterparty'),
         ]
 
     def __str__(self):
@@ -66,7 +67,8 @@ class CounterpartyAttributeType(AbstractAttributeType):
         verbose_name = _('counterparty attribute type')
         verbose_name_plural = _('counterparty attribute types')
         permissions = [
-            ('view_counterpartyattributetype', 'Can view counterparty attribute type')
+            ('view_counterpartyattributetype', 'Can view counterparty attribute type'),
+            ('manage_counterpartyattributetype', 'Can manage counterparty attribute type'),
         ]
 
 
@@ -160,7 +162,8 @@ class Responsible(NamedModel):
         verbose_name = _('responsible')
         verbose_name_plural = _('responsibles')
         permissions = [
-            ('view_responsible', 'Can view responsible')
+            ('view_responsible', 'Can view responsible'),
+            ('manage_responsible', 'Can manage responsible'),
         ]
 
     def __str__(self):
@@ -198,7 +201,8 @@ class ResponsibleAttributeType(AbstractAttributeType):
         verbose_name = _('responsible attribute type')
         verbose_name_plural = _('responsible attribute types')
         permissions = [
-            ('view_responsibleattributetype', 'Can view responsible attribute type')
+            ('view_responsibleattributetype', 'Can view responsible attribute type'),
+            ('manage_responsibleattributetype', 'Can manage responsible attribute type'),
         ]
 
 

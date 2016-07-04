@@ -126,7 +126,8 @@ class TransactionTypeGroup(NamedModel):
             ['master_user', 'user_code']
         ]
         permissions = [
-            ('view_transactiontypegroup', 'Can view transaction type group')
+            ('view_transactiontypegroup', 'Can view transaction type group'),
+            ('manage_transactiontypegroup', 'Can manage transaction type group'),
         ]
 
 
@@ -186,7 +187,8 @@ class TransactionType(NamedModel):
             ['master_user', 'user_code']
         ]
         permissions = [
-            ('view_transactiontype', 'Can view transaction type')
+            ('view_transactiontype', 'Can view transaction type'),
+            ('manage_transactiontype', 'Can manage transaction type'),
         ]
 
 
@@ -999,7 +1001,8 @@ class TransactionAttributeType(AbstractAttributeType):
         verbose_name = _('transaction attribute type')
         verbose_name_plural = _('transaction attribute types')
         permissions = [
-            ('view_transactionattributetype', 'Can view transaction attribute type')
+            ('view_transactionattributetype', 'Can view transaction attribute type'),
+            ('manage_transactionattributetype', 'Can manage transaction attribute type'),
         ]
 
 

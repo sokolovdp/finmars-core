@@ -63,7 +63,7 @@ class Thread(TimeStampedModel):
         verbose_name_plural = _('threads')
         permissions = [
             ('view_thread', 'Can view thread'),
-            # ('manage_thread', 'Can manage thread'),
+            ('manage_thread', 'Can manage thread'),
         ]
 
     def __str__(self):

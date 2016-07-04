@@ -27,7 +27,8 @@ class AccountType(NamedModel):
         verbose_name = _('account type')
         verbose_name_plural = _('account types')
         permissions = [
-            ('view_accounttype', 'Can view account type')
+            ('view_accounttype', 'Can view account type'),
+            ('manage_accounttype', 'Can manage account type'),
         ]
 
     def __str__(self):
@@ -70,7 +71,8 @@ class Account(NamedModel):
         verbose_name = _('account')
         verbose_name_plural = _('accounts')
         permissions = [
-            ('view_account', 'Can view account')
+            ('view_account', 'Can view account'),
+            ('manage_account', 'Can manage account'),
         ]
 
     def __str__(self):
@@ -108,7 +110,8 @@ class AccountAttributeType(AbstractAttributeType):
         verbose_name = _('account attribute type')
         verbose_name_plural = _('account attribute types')
         permissions = [
-            ('view_accountattributetype', 'Can view account attribute type')
+            ('view_accountattributetype', 'Can view account attribute type'),
+            ('manage_accountattributetype', 'Can manage account attribute type'),
         ]
 
 

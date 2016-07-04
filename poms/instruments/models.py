@@ -206,7 +206,8 @@ class InstrumentType(NamedModel):
         verbose_name = _('instrument type')
         verbose_name_plural = _('instrument types')
         permissions = [
-            ('view_instrumenttype', 'Can view instrument type')
+            ('view_instrumenttype', 'Can view instrument type'),
+            ('manage_instrumenttype', 'Can manage instrument type'),
         ]
 
     def __str__(self):
@@ -267,7 +268,8 @@ class Instrument(NamedModel):
         verbose_name = _('instrument')
         verbose_name_plural = _('instruments')
         permissions = [
-            ('view_instrument', 'Can view instrument')
+            ('view_instrument', 'Can view instrument'),
+            ('manage_instrument', 'Can manage instrument'),
         ]
 
     def __str__(self):
@@ -305,7 +307,8 @@ class InstrumentAttributeType(AbstractAttributeType):
         verbose_name = _('instrument attribute type')
         verbose_name_plural = _('instrument attribute types')
         permissions = [
-            ('view_instrumentattributetype', 'Can view instrument attribute type')
+            ('view_instrumentattributetype', 'Can view instrument attribute type'),
+            ('manage_instrumentattributetype', 'Can manage instrument attribute type'),
         ]
 
 

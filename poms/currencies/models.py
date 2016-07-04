@@ -21,7 +21,8 @@ class Currency(NamedModel):
         verbose_name = _('currency')
         verbose_name_plural = _('currencies')
         permissions = [
-            ('view_currency', 'Can view currency')
+            ('view_currency', 'Can view currency'),
+            ('manage_currency', 'Can manage currency'),
         ]
 
     def __str__(self):
@@ -71,9 +72,6 @@ class CurrencyHistory(models.Model):
             ['currency', 'date']
         ]
         ordering = ['-date']
-        permissions = [
-            ('view_currencyhistory', 'Can view currency history')
-        ]
 
     def __str__(self):
         return '%s @ %s - %s' % (self.currency, self.date, self.fx_rate,)

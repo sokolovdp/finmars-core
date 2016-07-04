@@ -26,6 +26,7 @@ class Portfolio(NamedModel):
         verbose_name_plural = _('portfolios')
         permissions = (
             ('view_portfolio', 'Can view portfolio'),
+            ('manage_portfolio', 'Can manage portfolio'),
         )
 
     def __str__(self):
@@ -53,7 +54,8 @@ class PortfolioAttributeType(AbstractAttributeType):
         verbose_name = _('portfolio attribute type')
         verbose_name_plural = _('portfolio attribute types')
         permissions = [
-            ('view_portfolioattributetype', 'Can view portfolio attribute type')
+            ('view_portfolioattributetype', 'Can view portfolio attribute type'),
+            ('manage_portfolioattributetype', 'Can manage portfolio attribute type'),
         ]
 
 

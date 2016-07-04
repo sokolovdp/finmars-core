@@ -70,7 +70,8 @@ class Strategy1(MPTTModel, NamedModel):
         verbose_name = _('strategy - 1')
         verbose_name_plural = _('strategies - 1')
         permissions = [
-            ('view_strategy1', 'Can view strategy1')
+            ('view_strategy1', 'Can view strategy1'),
+            ('manage_strategy1', 'Can manage strategy1'),
         ]
 
 
@@ -120,7 +121,8 @@ class Strategy2(MPTTModel, NamedModel):
         verbose_name = _('strategy - 2')
         verbose_name_plural = _('strategies - 2')
         permissions = [
-            ('view_strategy2', 'Can view strategy2')
+            ('view_strategy2', 'Can view strategy2'),
+            ('manage_strategy2', 'Can manage strategy2'),
         ]
 
 
@@ -170,7 +172,8 @@ class Strategy3(MPTTModel, NamedModel):
         verbose_name = _('strategy - 3')
         verbose_name_plural = _('strategies - 3')
         permissions = [
-            ('view_strategy3', 'Can view strategy3')
+            ('view_strategy3', 'Can view strategy3'),
+            ('manage_strategy3', 'Can manage strategy3'),
         ]
 
 

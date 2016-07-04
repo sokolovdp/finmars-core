@@ -107,7 +107,7 @@ class Tag(NamedModel):
         verbose_name_plural = _('tags')
         permissions = [
             ('view_tag', 'Can view tag'),
-            # ('manage_tag', 'Can manage tag'),
+            ('manage_tag', 'Can manage tag'),
         ]
 
 
