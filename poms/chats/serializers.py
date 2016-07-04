@@ -22,8 +22,8 @@ class ThreadSerializer(ModelWithObjectPermissionSerializer):
     url = serializers.HyperlinkedIdentityField(view_name='chatthread-detail')
     master_user = MasterUserField()
     status = ThreadStatusField()
-    created = DateTimeTzAwareField()
-    modified = DateTimeTzAwareField()
+    created = DateTimeTzAwareField(read_only=True)
+    modified = DateTimeTzAwareField(read_only=True)
 
     class Meta:
         model = Thread
@@ -35,8 +35,8 @@ class MessageSerializer(serializers.ModelSerializer):
     url = serializers.HyperlinkedIdentityField(view_name='chatmessage-detail')
     thread = ThreadField()
     sender = HiddenMemberField()
-    created = DateTimeTzAwareField()
-    modified = DateTimeTzAwareField()
+    created = DateTimeTzAwareField(read_only=True)
+    modified = DateTimeTzAwareField(read_only=True)
 
     class Meta:
         model = Message
@@ -48,8 +48,8 @@ class DirectMessageSerializer(serializers.ModelSerializer):
     url = serializers.HyperlinkedIdentityField(view_name='chatdirectmessage-detail')
     sender = HiddenMemberField()
     recipient = MemberField()
-    created = DateTimeTzAwareField()
-    modified = DateTimeTzAwareField()
+    created = DateTimeTzAwareField(read_only=True)
+    modified = DateTimeTzAwareField(read_only=True)
 
     class Meta:
         model = DirectMessage

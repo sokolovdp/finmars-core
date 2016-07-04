@@ -13,10 +13,10 @@ from poms.users.models import Member
 @receiver(post_save, dispatch_uid='chat_message_created', sender=Message)
 def chat_message_created(sender, instance=None, created=None, **kwargs):
     if created:
-        me = get_request().user.member
+        # me = get_request().user.member
         master_user = instance.thread.master_user
         thread = instance.thread
-        qs = Member.objects.filter(master_user=master_user).exclude(id=me.id)
+        qs = Member.objects.filter(master_user=master_user).exclude(id=instance.sender_id)
         recipients = [m.user for m in qs if has_view_perms(m, thread)]
         notifications.info(recipients,
                            actor=instance.sender,
@@ -27,7 +27,7 @@ def chat_message_created(sender, instance=None, created=None, **kwargs):
 
 @receiver(post_save, dispatch_uid='direct_chat_message_created', sender=DirectMessage)
 def direct_chat_message_created(sender, instance=None, created=None, **kwargs):
-    if created:
+    if created and instance.sender_id != instance.recipient_id:
         notifications.info([instance.recipient.user],
                            actor=instance.sender,
                            verb='sent',
