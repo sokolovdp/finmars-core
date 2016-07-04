@@ -13,16 +13,16 @@ from rest_framework.mixins import UpdateModelMixin, DestroyModelMixin
 from rest_framework.parsers import JSONParser, MultiPartParser, FormParser
 from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework.response import Response
-from rest_framework.viewsets import ViewSet, ReadOnlyModelViewSet
+from rest_framework.viewsets import ViewSet
 
 from poms.audit.mixins import HistoricalMixin
 from poms.common.filters import CharFilter
 from poms.common.views import AbstractModelViewSet, AbstractReadOnlyModelViewSet
-from poms.users.filters import OwnerByMasterUserFilter, MasterUserFilter, UserFilter
+from poms.users.filters import OwnerByMasterUserFilter, MasterUserFilter
 from poms.users.models import MasterUser, Member, Group
 from poms.users.permissions import SuperUserOrReadOnly, IsCurrentMasterUser, IsCurrentUser
 from poms.users.serializers import GroupSerializer, UserSerializer, MasterUserSerializer, MemberSerializer, \
-    PingSerializer, UserSetPasswordSerializer, MasterUserSetCurrentSerializer
+    PingSerializer, UserSetPasswordSerializer, MasterUserSetCurrentSerializer, UserUnsubscribeSerializer
 from poms.users.utils import set_master_user
 
 
@@ -84,6 +84,7 @@ class UserViewSet(HistoricalMixin, UpdateModelMixin, AbstractReadOnlyModelViewSe
         # IsAuthenticated,
         IsCurrentUser,
     ]
+
     # filter_backends = AbstractReadOnlyModelViewSet.filter_backends + [
     #     UserFilter
     # ]
@@ -103,8 +104,17 @@ class UserViewSet(HistoricalMixin, UpdateModelMixin, AbstractReadOnlyModelViewSe
     def get_object(self):
         return self.request.user
 
-    @detail_route(methods=('PUT', 'PATCH',), url_path='set-password', serializer_class=UserSetPasswordSerializer)
+    @detail_route(methods=('PUT',), url_path='set-password', serializer_class=UserSetPasswordSerializer)
     def set_password(self, request, pk=None):
+        # user = self.get_object()
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+        # return Response(serializer.data)
+        return Response()
+
+    @detail_route(methods=('PUT',), url_path='unsubscribe', serializer_class=UserUnsubscribeSerializer)
+    def unsubscribe(self, request, pk=None):
         # user = self.get_object()
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)

@@ -121,7 +121,24 @@ class UserSetPasswordSerializer(serializers.Serializer):
 
     def create(self, validated_data):
         user = self.context['request'].user
-        # user.set_password(validated_data['new_password'])
+        user.set_password(validated_data['new_password'])
+        return validated_data
+
+    def update(self, instance, validated_data):
+        return self.create(validated_data)
+
+
+class UserUnsubscribeSerializer(serializers.Serializer):
+    email = serializers.EmailField(allow_null=False, allow_blank=False, required=True, write_only=True)
+
+    def validate(self, attrs):
+        user = self.context['request'].user
+        if attrs['email'] != user.email:
+            raise serializers.ValidationError({'email': 'Invalid email'})
+        return attrs
+
+    def create(self, validated_data):
+        email = validated_data['email']
         return validated_data
 
     def update(self, instance, validated_data):
@@ -147,7 +164,6 @@ class MasterUserSerializer(serializers.ModelSerializer):
 
 
 class MasterUserSetCurrentSerializer(serializers.Serializer):
-
     def create(self, validated_data):
         return validated_data
 

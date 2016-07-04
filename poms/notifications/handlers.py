@@ -19,7 +19,7 @@ def notification_post_save(sender, instance=None, created=None, **kwargs):
 
 def notification_created(instance):
     context = Context({
-        'notification': instance
+        'notification': instance,
     })
     subject = get_template('poms/notifications/mail-subject.txt').render(context).strip()
     message = get_template('poms/notifications/mail-message.txt').render(context)
