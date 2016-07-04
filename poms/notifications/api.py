@@ -5,8 +5,8 @@ from django.utils.encoding import force_text
 from poms.notifications import constants
 
 
-def add(recipients, level=constants.INFO, type=None, message=None,
-        actor=None, verb=None, target=None, action_object=None, data=None, throttle=False):
+def send(recipients, level=constants.INFO, type=None, message=None,
+        actor=None, verb=None, action_object=None, target=None, data=None, throttle=False):
     from poms.notifications.models import Notification
     from poms.notifications.throttling import allow_notification
 
@@ -22,34 +22,34 @@ def add(recipients, level=constants.INFO, type=None, message=None,
             message=message,
             actor=actor,
             verb=force_text(verb),
-            target=target,
             action_object=action_object,
+            target=target,
             data=json.dumps(data, sort_keys=True) if data else None,
         )
         ret.append(n)
     return ret
 
 
-def debug(*args, **kwargs):
-    kwargs['level'] = constants.DEBUG
-    add(*args, **kwargs)
-
-
-def info(*args, **kwargs):
-    kwargs['level'] = constants.INFO
-    add(*args, **kwargs)
-
-
-def success(*args, **kwargs):
-    kwargs['level'] = constants.SUCCESS
-    add(*args, **kwargs)
-
-
-def warning(*args, **kwargs):
-    kwargs['level'] = constants.WARNING
-    add(*args, **kwargs)
-
-
-def error(*args, **kwargs):
-    kwargs['level'] = constants.ERROR
-    add(*args, **kwargs)
+# def debug(*args, **kwargs):
+#     kwargs['level'] = constants.DEBUG
+#     send(*args, **kwargs)
+#
+#
+# def info(*args, **kwargs):
+#     kwargs['level'] = constants.INFO
+#     send(*args, **kwargs)
+#
+#
+# def success(*args, **kwargs):
+#     kwargs['level'] = constants.SUCCESS
+#     send(*args, **kwargs)
+#
+#
+# def warning(*args, **kwargs):
+#     kwargs['level'] = constants.WARNING
+#     send(*args, **kwargs)
+#
+#
+# def error(*args, **kwargs):
+#     kwargs['level'] = constants.ERROR
+#     send(*args, **kwargs)

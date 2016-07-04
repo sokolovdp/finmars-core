@@ -18,7 +18,7 @@ def chat_message_created(sender, instance=None, created=None, **kwargs):
         thread = instance.thread
         qs = Member.objects.filter(master_user=master_user).exclude(id=instance.sender_id)
         recipients = [m.user for m in qs if has_view_perms(m, thread)]
-        notifications.info(recipients,
+        notifications.send(recipients,
                            actor=instance.sender,
                            verb='sent',
                            action_object=instance,
@@ -28,7 +28,7 @@ def chat_message_created(sender, instance=None, created=None, **kwargs):
 @receiver(post_save, dispatch_uid='direct_chat_message_created', sender=DirectMessage)
 def direct_chat_message_created(sender, instance=None, created=None, **kwargs):
     if created and instance.sender_id != instance.recipient_id:
-        notifications.info([instance.recipient.user],
+        notifications.send([instance.recipient.user],
                            actor=instance.sender,
                            verb='sent',
                            action_object=instance)

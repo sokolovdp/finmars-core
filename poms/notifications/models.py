@@ -16,23 +16,22 @@ from poms.notifications import LEVELS
 
 
 @python_2_unicode_compatible
-class NotificationConfig(models.Model):
-    user = models.ForeignKey(settings.AUTH_USER_MODEL)
+class NotificationSetting(models.Model):
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, related_name='notification_settings')
+    member = models.ForeignKey('users.Member', related_name='notification_settings', null=True)
 
-    # TODO: !!!
-    content_type = models.ForeignKey(ContentType, related_name='notificatins_config', null=True, blank=True)
-    type = models.CharField(max_length=30, null=True, blank=True)
+    actor_content_type = models.ForeignKey(ContentType, related_name='notify_actor', null=True, blank=True)
+    target_content_type = models.ForeignKey(ContentType, related_name='notify_actor', null=True, blank=True)
+    action_object_content_type = models.ForeignKey(ContentType, related_name='notify_actor', null=True, blank=True)
 
     level = models.PositiveSmallIntegerField(choices=LEVELS, default=messages.INFO)
-    is_enabled = models.BooleanField(default=True)
     is_email_enabled = models.BooleanField(default=True)
-    is_web_enabled = models.BooleanField(default=True)
 
     class Meta:
         abstract = True
 
     def __str__(self):
-        return '%s - %s: %s' % (self.user, self.level, self.is_send_email)
+        return '%s - %s: %s' % (self.member, self.level, self.is_send_email)
 
 
 # Actor         :  The object that performed the activity.
@@ -49,20 +48,19 @@ class Notification(models.Model):
     type = models.CharField(max_length=30, null=True, blank=True)
     message = models.TextField(blank=True, null=True)
 
-    actor_content_type = models.ForeignKey(ContentType, related_name='notify_actor', null=True, blank=True)
+    actor_content_type = models.ForeignKey(ContentType, related_name='+', null=True, blank=True)
     actor_object_id = models.CharField(max_length=255, null=True, blank=True)
     actor = GenericForeignKey('actor_content_type', 'actor_object_id')
 
     verb = models.CharField(max_length=255, null=True, blank=True)
 
-    target_content_type = models.ForeignKey(ContentType, related_name='notify_target', blank=True, null=True)
-    target_object_id = models.CharField(max_length=255, blank=True, null=True)
-    target = GenericForeignKey('target_content_type', 'target_object_id')
-
-    action_object_content_type = models.ForeignKey(ContentType, blank=True, null=True,
-                                                   related_name='notify_action_object')
+    action_object_content_type = models.ForeignKey(ContentType, blank=True, null=True, related_name='+')
     action_object_object_id = models.CharField(max_length=255, blank=True, null=True)
     action_object = GenericForeignKey('action_object_content_type', 'action_object_object_id')
+
+    target_content_type = models.ForeignKey(ContentType, blank=True, null=True, related_name='+')
+    target_object_id = models.CharField(max_length=255, blank=True, null=True)
+    target = GenericForeignKey('target_content_type', 'target_object_id')
 
     create_date = models.DateTimeField(default=timezone.now, db_index=True)
     read_date = models.DateTimeField(null=True, blank=True, db_index=True)
