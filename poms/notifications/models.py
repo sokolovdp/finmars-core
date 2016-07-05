@@ -1,5 +1,6 @@
 from __future__ import unicode_literals
 
+import six
 from babel import Locale
 from babel.dates import format_timedelta
 from django.conf import settings
@@ -10,6 +11,7 @@ from django.contrib.contenttypes.models import ContentType
 from django.db import models
 from django.utils import timezone
 from django.utils.encoding import python_2_unicode_compatible
+from django.utils.text import Truncator
 from django.utils.translation import ugettext_lazy as _, get_language
 
 from poms.notifications import LEVELS
@@ -92,6 +94,13 @@ class Notification(models.Model):
             return _('%(actor)s %(verb)s %(timesince)s') % ctx
         else:
             return self.message
+
+    @property
+    def subject(self):
+        message = six.text_type(self)
+        if message:
+            return Truncator(self.name).chars(25)
+        return ''
 
     def timesince(self, now=None):
         locale = Locale.parse(get_language(), sep='-')

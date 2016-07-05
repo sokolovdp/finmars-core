@@ -1,1 +1,1 @@
-Finmars notification: {{notification}}
+Finmars notification: {{ notification|truncatechars:25 }}
