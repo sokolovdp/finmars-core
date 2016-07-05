@@ -28,7 +28,7 @@ from poms.transactions.fields import TransactionAttributeTypeField, TransactionT
     ExpressionField, TransactionTypeGroupField
 from poms.transactions.models import TransactionClass, Transaction, TransactionType, TransactionAttributeType, \
     TransactionAttribute, TransactionTypeAction, TransactionTypeActionTransaction, TransactionTypeActionInstrument, \
-    TransactionTypeInput, TransactionTypeGroup
+    TransactionTypeInput, TransactionTypeGroup, ComplexTransaction
 from poms.users.fields import MasterUserField
 
 
@@ -431,3 +431,12 @@ class TransactionSerializer(ModelWithAttributesSerializer):
                   'principal_amount', 'carry_amount', 'overheads',
                   'responsible', 'counterparty',
                   'attributes']
+
+
+class ComplexTransactionSerializer(serializers.ModelSerializer):
+    transaction_type = serializers.PrimaryKeyRelatedField(read_only=True)
+    transactions = serializers.PrimaryKeyRelatedField(read_only=True, many=True)
+
+    class Meta:
+        model = ComplexTransaction
+        fields = ['url', 'id', 'code', 'transaction_type', 'transactions']

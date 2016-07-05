@@ -7,7 +7,7 @@ from rest_framework.response import Response
 
 from poms.accounts.models import Account
 from poms.common.filters import CharFilter, ModelWithPermissionMultipleChoiceFilter, ModelMultipleChoiceFilter
-from poms.common.views import AbstractClassModelViewSet, AbstractModelViewSet
+from poms.common.views import AbstractClassModelViewSet, AbstractModelViewSet, AbstractReadOnlyModelViewSet
 from poms.currencies.models import Currency
 from poms.instruments.models import Instrument, InstrumentType
 from poms.obj_attrs.filters import AttributePrefetchFilter
@@ -17,13 +17,14 @@ from poms.obj_perms.views import AbstractWithObjectPermissionViewSet
 from poms.portfolios.models import Portfolio
 from poms.strategies.models import Strategy1, Strategy2, Strategy3
 from poms.tags.filters import TagFilterBackend, TagFilter
-from poms.transactions.filters import TransactionObjectPermissionFilter
+from poms.transactions.filters import TransactionObjectPermissionFilter, ComplexTransactionPermissionFilter
 from poms.transactions.models import TransactionClass, Transaction, TransactionType, TransactionAttributeType, \
-    TransactionTypeGroup
+    TransactionTypeGroup, ComplexTransaction
 from poms.transactions.permissions import TransactionObjectPermission
 from poms.transactions.processor import TransactionTypeProcessor
 from poms.transactions.serializers import TransactionClassSerializer, TransactionSerializer, TransactionTypeSerializer, \
-    TransactionAttributeTypeSerializer, TransactionTypeProcessSerializer, TransactionTypeGroupSerializer
+    TransactionAttributeTypeSerializer, TransactionTypeProcessSerializer, TransactionTypeGroupSerializer, \
+    ComplexTransactionSerializer
 from poms.users.filters import OwnerByMasterUserFilter
 
 
@@ -76,7 +77,7 @@ class TransactionTypeFilterSet(FilterSet):
 
 class TransactionTypeViewSet(AbstractWithObjectPermissionViewSet):
     queryset = TransactionType.objects
-        #     .prefetch_related(
+    #     .prefetch_related(
     #     'inputs',
     #     'inputs__content_type',
     #
@@ -371,4 +372,38 @@ class TransactionViewSet(AbstractModelViewSet):
     def get_queryset(self):
         queryset = super(TransactionViewSet, self).get_queryset()
         queryset = obj_perms_prefetch(queryset, my=False, lookups_related=self.prefetch_permissions_for)
+        return queryset
+
+
+class ComplexTransactionFilterSet(FilterSet):
+    code = django_filters.RangeFilter()
+
+    class Meta:
+        model = ComplexTransaction
+        fields = ['code', ]
+
+
+class ComplexTransactionViewSet(AbstractReadOnlyModelViewSet):
+    queryset = ComplexTransaction.objects.prefetch_related(
+        'transaction_type',
+        'transaction_type__master_user',
+        'transactions',
+        'transactions__master_user',
+    )
+    serializer_class = ComplexTransactionSerializer
+    filter_backends = [
+        ComplexTransactionPermissionFilter,
+        DjangoFilterBackend,
+        OrderingFilter,
+        SearchFilter,
+    ]
+    filter_class = ComplexTransactionFilterSet
+    ordering_fields = [
+        'code'
+    ]
+    search_fields = ['code']
+
+    def get_queryset(self):
+        queryset = super(ComplexTransactionViewSet, self).get_queryset()
+        # queryset = obj_perms_prefetch(queryset, my=False, lookups_related=self.prefetch_permissions_for)
         return queryset

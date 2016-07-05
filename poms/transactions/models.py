@@ -822,7 +822,8 @@ class ComplexTransaction(models.Model):
 class Transaction(models.Model):
     master_user = models.ForeignKey(MasterUser, related_name='transactions',
                                     verbose_name=_('master user'))
-    complex_transaction = models.ForeignKey(ComplexTransaction, null=True, blank=True, on_delete=models.PROTECT)
+    complex_transaction = models.ForeignKey(ComplexTransaction, on_delete=models.PROTECT, null=True, blank=True,
+                                            related_name='transactions')
     complex_transaction_order = models.PositiveSmallIntegerField(default=0.)
     transaction_code = models.IntegerField(default=0,
                                            verbose_name=_('transaction code'))

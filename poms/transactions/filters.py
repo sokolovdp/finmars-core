@@ -10,6 +10,7 @@ from poms.instruments.models import InstrumentType, Instrument, DailyPricingMode
 from poms.obj_perms.utils import obj_perms_filter_objects_for_view
 from poms.portfolios.models import Portfolio
 from poms.strategies.models import Strategy1, Strategy2, Strategy3
+from poms.transactions.models import Transaction
 
 
 class TransactionObjectPermissionFilter(BaseFilterBackend):
@@ -40,5 +41,15 @@ class TransactionTypeInputContentTypeFilter(BaseFilterBackend):
         ctypes = [ContentType.objects.get_for_model(model).pk for model in models]
         return queryset.filter(pk__in=ctypes)
 
+
 # class TransactionTypeGroupFilter(ModelWithPermissionMultipleChoiceFilter):
 #     model = TransactionTypeGroup
+
+
+class ComplexTransactionPermissionFilter(BaseFilterBackend):
+    def filter_queryset(self, request, queryset, view):
+        # member = get_member(request)
+        # member = request.user.member
+        trn_qs = Transaction.objects.filter(master_user=request.user.master_user)
+        trn_qs = TransactionObjectPermissionFilter().filter_queryset(request, trn_qs, view)
+        return queryset.filter(transactions__in=trn_qs)

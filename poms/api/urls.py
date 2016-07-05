@@ -93,6 +93,7 @@ router.register(r'transactions/transaction-type-group', transactions.Transaction
 router.register(r'transactions/transaction-type', transactions.TransactionTypeViewSet)
 router.register(r'transactions/transaction-attribute-type', transactions.TransactionAttributeTypeViewSet)
 router.register(r'transactions/transaction', transactions.TransactionViewSet)
+router.register(r'transactions/complex-transaction', transactions.ComplexTransactionViewSet)
 
 router.register(r'ui/list-layout', ui.ListLayoutViewSet)
 router.register(r'ui/edit-layout', ui.EditLayoutViewSet)
