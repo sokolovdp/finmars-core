@@ -2,6 +2,7 @@ import six
 from django.contrib.auth.models import Permission
 from django.contrib.contenttypes.models import ContentType
 from django.db.models import Q
+from django.utils.functional import SimpleLazyObject
 
 
 def get_rel_model(obj, attr_name, base_cls):
@@ -156,86 +157,113 @@ def get_granted_permissions(member, obj):
 
 
 def assign_perms(obj, members=None, groups=None, perms=None):
-    ctype = ContentType.objects.get_for_model(obj)
-    permissions = list(Permission.objects.filter(content_type=ctype))
-
-    user_lookup_name, user_obj_perms_model = get_user_obj_perms_model(obj)
-    group_lookup_name, group_obj_perms_model = get_group_obj_perms_model(obj)
-
-    if members and user_obj_perms_model:
-        # user_obj_perms_model.objects.filter(content_object=obj, member__in=members).delete()
-        user_obj_perms_qs = getattr(obj, user_lookup_name)
-        user_obj_perms_qs.all().delete()
-        user_perms = []
+    # ctype = ContentType.objects.get_for_model(obj)
+    # permissions = list(Permission.objects.filter(content_type=ctype))
+    #
+    # user_lookup_name, user_obj_perms_model = get_user_obj_perms_model(obj)
+    # group_lookup_name, group_obj_perms_model = get_group_obj_perms_model(obj)
+    #
+    # if members and user_obj_perms_model:
+    #     user_perms = []
+    #     for m in members:
+    #         for p in permissions:
+    #             if p.codename in perms:
+    #                 user_perms.append(
+    #                     user_obj_perms_model(content_object=obj, member=m, permission=p)
+    #                 )
+    #     getattr(obj, user_lookup_name).filter(member__in=members).delete()
+    #     if user_perms:
+    #         user_obj_perms_model.objects.bulk_create(user_perms)
+    #
+    # if groups:
+    #     group_perms = []
+    #     for g in groups:
+    #         for p in permissions:
+    #             if p.codename in perms:
+    #                 group_perms.append(
+    #                     group_obj_perms_model(content_object=obj, group=g, permission=p)
+    #                 )
+    #     getattr(obj, group_lookup_name).filter(group__in=groups).delete()
+    #     if group_perms:
+    #         group_obj_perms_model.objects.bulk_create(group_perms)
+    members = members or []
+    groups = groups or []
+    user_perms = []
+    group_perms = []
+    for p in perms:
         for m in members:
-            for p in permissions:
-                if p.codename in perms:
-                    user_perms.append(
-                        user_obj_perms_model(content_object=obj, member=m, permission=p)
-                    )
-        if user_perms:
-            user_obj_perms_model.objects.bulk_create(user_perms)
-
-    if groups:
-        # group_obj_perms_model.objects.filter(content_object=obj, group__in=groups).delete()
-        group_obj_perms_qs = getattr(obj, group_lookup_name)
-        group_obj_perms_qs.all().delete()
-        group_perms = []
+            user_perms.append({'member': m, 'permission': p})
         for g in groups:
-            for p in permissions:
-                if p.codename in perms:
-                    group_perms.append(
-                        group_obj_perms_model(content_object=obj, group=g, permission=p)
-                    )
-        if group_perms:
-            group_obj_perms_model.objects.bulk_create(group_perms)
+            group_perms.append({'group': g, 'permission': p})
+    assign_perms2(obj, user_perms=user_perms, group_perms=group_perms)
 
 
-def _assign_perms(obj, perms_lookup_name, perms_model, member_or_group_lookup_name, perm_list):
-    obj_perms_qs = getattr(obj, perms_lookup_name)
+def assign_perms2(obj, user_perms=None, group_perms=None):
+    ctype = ContentType.objects.get_for_model(obj)
+    perms_map = SimpleLazyObject(lambda: {p.codename: p for p in Permission.objects.filter(content_type=ctype)})
 
-    cur_perms = {(getattr(p, member_or_group_lookup_name), getattr(p, 'permission')): p for p in obj_perms_qs.all()}
-    new_perms = {(p[member_or_group_lookup_name], p['permission']): p for p in perm_list}
+    def rebuild_perms(src):
+        dst = []
+        for p in src:
+            p = p.copy()
+            if isinstance(p['permission'], six.string_types):
+                p['permission'] = perms_map[p['permission']]
+            dst.append(p)
+        return dst
 
-    has_changes = False
-
-    for k, v in six.iteritems(new_perms):
-        if k not in cur_perms:
-            has_changes = True
-            # obj_perms_qs.add(perms_model(**{
-            #     member_or_group_lookup_name: k[0],
-            #     'permission': k[1]
-            # }))
-            obj_perms_qs.create(**{
-                member_or_group_lookup_name: k[0],
-                'permission': k[1]
-            })
-
-    for k, v in six.iteritems(cur_perms):
-        if k not in new_perms:
-            has_changes = True
-            # obj_perms_qs.remove(v)
-            obj_perms_qs.filter(**{
-                member_or_group_lookup_name: k[0],
-                'permission': k[1]
-            }).delete()
-
-    # TODO: invalidate cache for *_object_permission, how prefetch related?
-    if has_changes:
-        # need only on add and delete operation
-        obj_perms_qs.update()
-        # setattr(obj, perms_lookup_name, obj_perms_qs.select_related('permission').all()) # called update :(
-
-
-def assign_perms_from_list(obj, user_object_permissions=None, group_object_permissions=None):
     user_lookup_name, user_obj_perms_model = get_user_obj_perms_model(obj)
     group_lookup_name, group_obj_perms_model = get_group_obj_perms_model(obj)
 
-    if user_object_permissions is not None and user_obj_perms_model:
-        _assign_perms(obj, user_lookup_name, user_obj_perms_model, 'member', user_object_permissions)
+    if user_perms and user_obj_perms_model:
+        user_perms = rebuild_perms(user_perms)
+        getattr(obj, user_lookup_name).all().delete()
+        user_obj_perms_model.objects.bulk_create([user_obj_perms_model(content_object=obj, member=p['member'],
+                                                                       permission=p['permission'])
+                                                  for p in user_perms])
 
-    if group_object_permissions is not None:
-        _assign_perms(obj, group_lookup_name, group_obj_perms_model, 'group', group_object_permissions)
+    if group_perms and group_lookup_name:
+        group_perms = rebuild_perms(group_perms)
+        getattr(obj, group_lookup_name).all().delete()
+        group_obj_perms_model.objects.bulk_create([group_obj_perms_model(content_object=obj, group=p['group'],
+                                                                         permission=p['permission'])
+                                                   for p in group_perms])
+
+
+# def _assign_perms(obj, perms_lookup_name, perms_model, member_or_group_lookup_name, perm_list):
+#     obj_perms_qs = getattr(obj, perms_lookup_name)
+#
+#     cur_perms = {(getattr(p, member_or_group_lookup_name), getattr(p, 'permission')): p for p in obj_perms_qs.all()}
+#     new_perms = {(p[member_or_group_lookup_name], p['permission']): p for p in perm_list}
+#
+#     for k, v in six.iteritems(new_perms):
+#         if k not in cur_perms:
+#             # obj_perms_qs.add(perms_model(**{
+#             #     member_or_group_lookup_name: k[0],
+#             #     'permission': k[1]
+#             # }))
+#             obj_perms_qs.create(**{
+#                 member_or_group_lookup_name: k[0],
+#                 'permission': k[1]
+#             })
+#
+#     for k, v in six.iteritems(cur_perms):
+#         if k not in new_perms:
+#             # obj_perms_qs.remove(v)
+#             obj_perms_qs.filter(**{
+#                 member_or_group_lookup_name: k[0],
+#                 'permission': k[1]
+#             }).delete()
+
+
+# def assign_perms_from_list(obj, user_object_permissions=None, group_object_permissions=None):
+#     user_lookup_name, user_obj_perms_model = get_user_obj_perms_model(obj)
+#     group_lookup_name, group_obj_perms_model = get_group_obj_perms_model(obj)
+#
+#     if user_object_permissions is not None and user_obj_perms_model:
+#         _assign_perms(obj, user_lookup_name, user_obj_perms_model, 'member', user_object_permissions)
+#
+#     if group_object_permissions is not None:
+#         _assign_perms(obj, group_lookup_name, group_obj_perms_model, 'group', group_object_permissions)
 
 
 def get_perms_codename(model, actions):

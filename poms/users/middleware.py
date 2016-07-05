@@ -1,5 +1,4 @@
 from django.utils import timezone, translation
-from django.utils.functional import SimpleLazyObject
 
 
 class AuthenticationMiddleware(object):
@@ -7,8 +6,15 @@ class AuthenticationMiddleware(object):
         from poms.users.utils import get_master_user, get_member
 
         # TODO: not worked for rest basic and token authentication
-        request.user.master_user = SimpleLazyObject(lambda: get_master_user(request))
-        request.user.member = SimpleLazyObject(lambda: get_member(request))
+        # request.user.master_user = SimpleLazyObject(lambda: get_master_user(request))
+        # request.user.member = SimpleLazyObject(lambda: get_member(request))
+        if request.user.is_authenticated():
+            request.user.master_user = get_master_user(request)
+            request.user.member = get_member(request)
+        else:
+            request.user.master_user = None
+            request.user.member = None
+
 
 
 class LocaleMiddleware(object):
