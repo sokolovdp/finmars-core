@@ -11,7 +11,7 @@ from rest_framework.response import Response
 from rest_framework.viewsets import ReadOnlyModelViewSet, ViewSet
 
 from poms.common.mixins import DbTransactionMixin
-from poms.notifications.filters import OwnerByRecipientFilter
+from poms.notifications.filters import NotificationFilter
 from poms.notifications.models import Notification
 from poms.notifications.serializers import NotificationSerializer
 
@@ -37,7 +37,12 @@ class NotificationViewSet(DbTransactionMixin, ReadOnlyModelViewSet):
     )
     serializer_class = NotificationSerializer
     permission_classes = (IsAuthenticated,)
-    filter_backends = (OwnerByRecipientFilter, DjangoFilterBackend, OrderingFilter, SearchFilter,)
+    filter_backends = (
+        NotificationFilter,
+        DjangoFilterBackend,
+        OrderingFilter,
+        SearchFilter,
+    )
     filter_class = NotificationFilterSet
     ordering_fields = ['level', 'create_date']
 
