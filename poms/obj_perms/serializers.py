@@ -95,17 +95,6 @@ class ModelWithObjectPermissionSerializer(serializers.ModelSerializer):
 
     def save_object_permission(self, instance, user_object_permissions=None, group_object_permissions=None,
                                created=False):
-        member = self.context['request'].user.member
-        member_perms = [{'member': member, 'permission': p,} for p in get_all_perms(instance)]
-        if member.is_superuser:
-            if user_object_permissions:
-                user_object_permissions = [uop for uop in user_object_permissions if uop['member'].id != member.id]
-            else:
-                user_object_permissions = []
-            user_object_permissions += member_perms
-            assign_perms2(instance, user_perms=user_object_permissions, group_perms=group_object_permissions)
-        else:
-            assign_perms2(instance, user_perms=member_perms)
         # if created:
         #         member = self.context['request'].user.member
         #         user_object_permissions = user_object_permissions or []
@@ -119,40 +108,14 @@ class ModelWithObjectPermissionSerializer(serializers.ModelSerializer):
         #         assign_perms_from_list(instance,
         #                                user_object_permissions=user_object_permissions,
         #                                group_object_permissions=group_object_permissions)
-        pass
-
-
-a = {
-    "url": "http://127.0.0.1:8000/api/v1/accounts/account/7/",
-    "id": 7,
-    "type": 1,
-    "user_code": "lol",
-    "name": "lol",
-    "short_name": "lol",
-    "public_name": "",
-    "notes": "",
-    "portfolios": [],
-    "tags": [],
-    "attributes": [],
-    "display_name": "lol",
-    "granted_permissions": [
-        "change_account",
-        "delete_account",
-        "view_account"
-    ],
-    "user_object_permissions": [
-        {
-            "member": 2,
-            "permission": "change_account"
-        },
-        {
-            "member": 2,
-            "permission": "delete_account"
-        },
-        {
-            "member": 2,
-            "permission": "view_account"
-        }
-    ],
-    "group_object_permissions": []
-}
+        member = self.context['request'].user.member
+        member_perms = [{'member': member, 'permission': p,} for p in get_all_perms(instance)]
+        if member.is_superuser:
+            if user_object_permissions:
+                user_object_permissions = [uop for uop in user_object_permissions if uop['member'].id != member.id]
+            else:
+                user_object_permissions = []
+            user_object_permissions += member_perms
+            assign_perms2(instance, user_perms=user_object_permissions, group_perms=group_object_permissions)
+        else:
+            assign_perms2(instance, user_perms=member_perms)

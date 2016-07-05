@@ -19,7 +19,7 @@ from poms.counterparties.models import Counterparty, Responsible
 from poms.currencies.models import Currency
 from poms.instruments.models import InstrumentClass, InstrumentType, Instrument
 from poms.obj_attrs.models import AbstractAttributeType
-from poms.obj_perms.utils import assign_perms, get_all_perms, get_default_owner_permissions, get_perms_codename
+from poms.obj_perms.utils import assign_perms, get_all_perms, get_perms_codename
 from poms.portfolios.models import Portfolio
 from poms.tags.models import Tag
 from poms.transactions.models import TransactionTypeGroup, TransactionType
@@ -65,7 +65,7 @@ class BaseApiTestCase(APITestCase):
         self._change_permission = None
 
         self.all_permissions = set(get_all_perms(self.model))
-        self.default_owner_permissions = set([p.codename for p in get_default_owner_permissions(self.model)])
+        self.default_owner_permissions = set(get_all_perms(self.model))
 
         self.create_master_user('a')
         self.create_group('g1', 'a')
