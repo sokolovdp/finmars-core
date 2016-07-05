@@ -20,9 +20,9 @@ def notification_created(instance):
     context = {
         'notification': instance,
     }
-    subject = get_template('poms/notifications/mail-subject.txt').render(context).strip()
-    message = get_template('poms/notifications/mail-message.txt').render(context)
-    html_message = get_template('poms/notifications/mail-message.html').render(context)
+    subject = get_template('poms/notifications/mail/subject.txt').render(context).strip()
+    message = get_template('poms/notifications/mail/message.txt').render(context)
+    html_message = get_template('poms/notifications/mail/message.html').render(context)
     recipient_list = [
         instance.recipient.email
     ]
