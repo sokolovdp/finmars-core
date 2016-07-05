@@ -14,8 +14,6 @@ def send(recipients, message=None, actor=None, verb=None, action_object=None, ta
     for recipient in recipients:
         n = Notification.objects.create(
             recipient=recipient,
-            # level=level,
-            # type=type,
             message=message,
             actor=actor,
             verb=force_text(verb),

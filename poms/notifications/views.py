@@ -10,8 +10,6 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.viewsets import ReadOnlyModelViewSet, ViewSet
 
-from poms import notifications
-from poms.common.filters import CharFilter
 from poms.common.mixins import DbTransactionMixin
 from poms.notifications.filters import OwnerByRecipientFilter
 from poms.notifications.models import Notification
@@ -20,12 +18,10 @@ from poms.notifications.serializers import NotificationSerializer
 
 class NotificationFilterSet(FilterSet):
     all = django_filters.MethodFilter(action='show_all', widget=BooleanWidget())
-    level = django_filters.MultipleChoiceFilter(choices=notifications.LEVELS)
-    type = CharFilter()
 
     class Meta:
         model = Notification
-        fields = ['all', 'level']
+        fields = ['all']
 
     def show_all(self, qs, value):
         # used only for show attr in filter, see OwnerByRecipientFilter
@@ -33,9 +29,12 @@ class NotificationFilterSet(FilterSet):
 
 
 class NotificationViewSet(DbTransactionMixin, ReadOnlyModelViewSet):
-    queryset = Notification.objects.prefetch_related('actor_content_type', 'actor',
-                                                     'target_content_type', 'target',
-                                                     'action_object_content_type', 'action_object')
+    queryset = Notification.objects.prefetch_related(
+        'recipient', 'recipient_member',
+        'actor', 'actor_content_type',
+        'action_object', 'action_object_content_type',
+        'target', 'target_content_type'
+    )
     serializer_class = NotificationSerializer
     permission_classes = (IsAuthenticated,)
     filter_backends = (OwnerByRecipientFilter, DjangoFilterBackend, OrderingFilter, SearchFilter,)

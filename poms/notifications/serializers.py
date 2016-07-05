@@ -27,8 +27,7 @@ class NotificationSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Notification
-        fields = ['url', 'id', 'level', 'type',
-                  'create_date', 'read_date', 'timesince',
+        fields = ['url', 'id', 'create_date', 'read_date', 'timesince',
                   'message',
                   'actor', 'actor_type', 'actor_repr',
                   'verb',

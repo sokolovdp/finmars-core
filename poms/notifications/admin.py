@@ -7,15 +7,15 @@ from poms.notifications.models import Notification
 
 class NotificationAdmin(admin.ModelAdmin):
     model = Notification
-    list_display = ['id', 'recipient', 'create_date', 'type', 'message',
-                    'actor', 'verb', 'target', 'action_object']
-    list_select_related = ['recipient']
-    raw_id_fields = ['recipient']
+    list_display = ['id', 'recipient', 'recipient_member', 'create_date', '__str__',
+                    'actor', 'verb', 'action_object', 'target']
+    list_select_related = ['recipient', 'recipient_member',]
+    raw_id_fields = ['recipient', 'recipient_member']
     date_hierarchy = 'create_date'
 
     def get_queryset(self, request):
         queryset = super(NotificationAdmin, self).get_queryset(request)
-        queryset.prefetch_related('actor', 'target', 'action_object')
+        queryset.prefetch_related('actor', 'action_object', 'target')
         return queryset
 
 

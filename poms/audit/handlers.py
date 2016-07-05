@@ -39,7 +39,7 @@ def audit_user_login_failed(credentials=None, **kwargs):
                                 is_success=False,
                                 user_agent=getattr(request, 'user_agent', None),
                                 user_ip=getattr(request, 'user_ip', None))
-    notifications.send([user], actor=user, verb='login failed')
+    # notifications.send([user], actor=user, verb='login failed')
 
 
 def is_track_enabled(obj):
