@@ -810,7 +810,7 @@ class ComplexTransaction(models.Model):
         ]
 
     def __str__(self):
-        return "ComplexTransaction #%s" % self.id
+        return "ComplexTransaction #%s" % self.code
 
     def save(self, *args, **kwargs):
         if self.code is None or self.code == 0:

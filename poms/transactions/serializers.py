@@ -436,7 +436,12 @@ class TransactionSerializer(ModelWithAttributesSerializer):
 class ComplexTransactionSerializer(serializers.ModelSerializer):
     transaction_type = serializers.PrimaryKeyRelatedField(read_only=True)
     transactions = serializers.PrimaryKeyRelatedField(read_only=True, many=True)
+    text = serializers.SerializerMethodField()
 
     class Meta:
         model = ComplexTransaction
-        fields = ['url', 'id', 'code', 'transaction_type', 'transactions']
+        fields = ['url', 'id', 'code', 'text',
+                  'transaction_type', 'transactions']
+
+    def get_text(self, obj):
+        return six.text_type(obj)
