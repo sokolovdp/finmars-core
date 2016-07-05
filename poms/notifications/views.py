@@ -10,6 +10,7 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.viewsets import ReadOnlyModelViewSet, ViewSet
 
+from poms.common.filters import CharFilter
 from poms.common.mixins import DbTransactionMixin
 from poms.notifications.filters import NotificationFilter
 from poms.notifications.models import Notification
@@ -18,10 +19,11 @@ from poms.notifications.serializers import NotificationSerializer
 
 class NotificationFilterSet(FilterSet):
     all = django_filters.MethodFilter(action='show_all', widget=BooleanWidget())
+    verb = CharFilter()
 
     class Meta:
         model = Notification
-        fields = ['all']
+        fields = ['all', 'verb']
 
     def show_all(self, qs, value):
         # used only for show attr in filter, see OwnerByRecipientFilter
@@ -44,9 +46,8 @@ class NotificationViewSet(DbTransactionMixin, ReadOnlyModelViewSet):
         SearchFilter,
     )
     filter_class = NotificationFilterSet
-    ordering_fields = ['level', 'create_date']
-
-    # search_fields = ['verb']
+    ordering_fields = ['create_date']
+    search_fields = ['verb']
 
     @list_route(methods=['get'], url_path='status')
     def get_status(self, request, pk=None):
