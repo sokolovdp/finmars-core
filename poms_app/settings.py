@@ -83,7 +83,6 @@ INSTALLED_APPS = [
     # 'django_otp.plugins.otp_static',
 ]
 
-
 if DEBUG:
     INSTALLED_APPS += ['debug_toolbar', ]
 
@@ -260,11 +259,11 @@ LOGGING = {
             'level': 'INFO',
             'handlers': ['console'],
         },
-        'django.request': {
-            'handlers': ['mail_admins'],
-            'level': 'ERROR',
-            'propagate': False,
-        },
+        # 'django.request': {
+        #     'handlers': ['mail_admins'],
+        #     'level': 'ERROR',
+        #     'propagate': False,
+        # },
         # 'django.db': {
         #     'level': 'DEBUG',
         # },
@@ -283,6 +282,12 @@ LOGGING = {
         },
     }
 }
+if not DEBUG:
+    LOGGING['loggers']['django.request'] = {
+        'handlers': ['mail_admins'],
+        'level': 'ERROR',
+        'propagate': False,
+    }
 
 REST_FRAMEWORK = {
     'DEFAULT_PAGINATION_CLASS': 'poms.common.pagination.PageNumberPaginationExt',
@@ -378,6 +383,7 @@ GEOIP_CITY = "GeoLite2-City.mmdb"
 # CELERY ------------------------------------------------
 
 import djcelery
+
 djcelery.setup_loader()
 
 BROKER_URL = 'django://'
