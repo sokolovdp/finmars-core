@@ -214,19 +214,50 @@ def assign_perms2(obj, user_perms=None, group_perms=None):
     user_lookup_name, user_obj_perms_model = get_user_obj_perms_model(obj)
     group_lookup_name, group_obj_perms_model = get_group_obj_perms_model(obj)
 
-    if user_perms and user_obj_perms_model:
+    if user_perms is not None and user_obj_perms_model:
         user_perms = rebuild_perms(user_perms)
-        getattr(obj, user_lookup_name).all().delete()
-        user_obj_perms_model.objects.bulk_create([user_obj_perms_model(content_object=obj, member=p['member'],
-                                                                       permission=p['permission'])
-                                                  for p in user_perms])
 
-    if group_perms and group_lookup_name:
+        member_map = {m['member'].id: m['member'] for m in user_perms}
+        perms_map = {m['permission'].codename: m['permission'] for m in user_perms}
+        pcur = {(p.member_id, p.permission.codename) for p in getattr(obj, user_lookup_name).all()}
+        pnew = {(p['member'].id, p['permission'].codename) for p in user_perms}
+
+        pdelete = pcur - pnew
+        if pdelete:
+            for member_id, permission in pdelete:
+                getattr(obj, user_lookup_name).filter(member=member_id, permission__codename=permission).delete()
+
+        padd = pnew - pcur
+        if padd:
+            for member_id, permission in padd:
+                user_obj_perms_model(content_object=obj,
+                                     member=member_map[member_id],
+                                     permission=perms_map[permission]).save()
+
+    if group_perms is not None and group_lookup_name:
         group_perms = rebuild_perms(group_perms)
-        getattr(obj, group_lookup_name).all().delete()
-        group_obj_perms_model.objects.bulk_create([group_obj_perms_model(content_object=obj, group=p['group'],
-                                                                         permission=p['permission'])
-                                                   for p in group_perms])
+        # getattr(obj, group_lookup_name).all().delete()
+        # group_obj_perms_model.objects.bulk_create([group_obj_perms_model(content_object=obj, group=p['group'],
+        #                                                                  permission=p['permission'])
+        #                                            for p in group_perms])
+
+
+        group_map = {m['group'].id: m['group'] for m in group_perms}
+        perms_map = {m['permission'].codename: m['permission'] for m in group_perms}
+        pcur = {(p.group_id, p.permission.codename) for p in getattr(obj, group_lookup_name).all()}
+        pnew = {(p['group'].id, p['permission'].codename) for p in group_perms}
+
+        pdelete = pcur - pnew
+        if pdelete:
+            for group_id, permission in pdelete:
+                getattr(obj, group_lookup_name).filter(group=group_id, permission__codename=permission).delete()
+
+        padd = pnew - pcur
+        if padd:
+            for group_id, permission in padd:
+                group_obj_perms_model(content_object=obj,
+                                      group=group_map[group_id],
+                                      permission=perms_map[permission]).save()
 
 
 # def _assign_perms(obj, perms_lookup_name, perms_model, member_or_group_lookup_name, perm_list):

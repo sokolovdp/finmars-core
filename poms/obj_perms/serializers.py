@@ -111,11 +111,13 @@ class ModelWithObjectPermissionSerializer(serializers.ModelSerializer):
         member = self.context['request'].user.member
         member_perms = [{'member': member, 'permission': p,} for p in get_all_perms(instance)]
         if member.is_superuser:
-            if user_object_permissions:
-                user_object_permissions = [uop for uop in user_object_permissions if uop['member'].id != member.id]
-            else:
-                user_object_permissions = []
-            user_object_permissions += member_perms
+            if created:
+                if user_object_permissions:
+                    user_object_permissions = [uop for uop in user_object_permissions if uop['member'].id != member.id]
+                else:
+                    user_object_permissions = []
+                user_object_permissions += member_perms
             assign_perms2(instance, user_perms=user_object_permissions, group_perms=group_object_permissions)
         else:
-            assign_perms2(instance, user_perms=member_perms)
+            if created:
+                assign_perms2(instance, user_perms=member_perms)
