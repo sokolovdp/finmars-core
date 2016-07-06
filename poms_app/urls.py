@@ -3,7 +3,7 @@ from __future__ import unicode_literals
 from django.conf import settings
 from django.conf.urls import url, include
 from django.contrib import admin
-
+from django.views.generic import RedirectView
 
 urlpatterns = []
 
@@ -26,4 +26,7 @@ if 'django.contrib.admin' in settings.INSTALLED_APPS:
         url(r'^admin/', admin.site.urls),
     ]
 
-
+if settings.DEBUG:
+    urlpatterns += [
+        url(r'^$', RedirectView.as_view(url='/admin/'), name='redirect-to-admin'),
+    ]
