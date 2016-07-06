@@ -10,10 +10,8 @@ from poms.users.models import Member, Group
 
 
 class AbstractObjectPermission(models.Model):
-    # content_object -> actual object
-
-    permission = models.ForeignKey(Permission,
-                                   verbose_name=_('permission'))
+    # in child object: content_object -> actual object
+    permission = models.ForeignKey(Permission, verbose_name=_('permission'))
 
     class Meta:
         abstract = True
@@ -21,16 +19,16 @@ class AbstractObjectPermission(models.Model):
 
 @python_2_unicode_compatible
 class AbstractUserObjectPermission(AbstractObjectPermission):
-    # content_object -> actual object
-
-    member = models.ForeignKey(Member,
-                               verbose_name=_('member'))
+    # in child object: content_object -> actual object
+    member = models.ForeignKey(Member, verbose_name=_('member'))
 
     class Meta(AbstractObjectPermission.Meta):
         abstract = True
         unique_together = [
             ['content_object', 'member', 'permission']
         ]
+        verbose_name = _('user permission')
+        verbose_name_plural = _('user permissions')
 
     def __str__(self):
         return '%s %s %s' % (self.member, self.permission.name, self.content_object)
@@ -38,16 +36,16 @@ class AbstractUserObjectPermission(AbstractObjectPermission):
 
 @python_2_unicode_compatible
 class AbstractGroupObjectPermission(AbstractObjectPermission):
-    # content_object -> actual object
-
-    group = models.ForeignKey(Group,
-                              verbose_name=_('group'))
+    # in child object: content_object -> actual object
+    group = models.ForeignKey(Group, verbose_name=_('group'))
 
     class Meta(AbstractObjectPermission.Meta):
         abstract = True
         unique_together = [
             ['content_object', 'group', 'permission']
         ]
+        verbose_name = _('group permission')
+        verbose_name_plural = _('group permissions')
 
     def __str__(self):
         return '%s %s %s' % (self.group, self.permission.name, self.content_object)

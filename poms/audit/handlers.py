@@ -85,8 +85,11 @@ def tracker_on_save(sender, instance=None, created=None, **kwargs):
                 fields = []
                 for attr, v in changed:
                     f = instance._meta.get_field(attr)
-                    fields.append(force_text(f.verbose_name))
-                fields.sort()
+                    fields.append({
+                        'name': six.text_type(f.name),
+                        'verbose_name': six.text_type(f.verbose_name),
+                    })
+                # fields.sort()
                 history.object_changed(instance, fields)
 
 
