@@ -4,16 +4,13 @@ from celery.exceptions import TimeoutError
 
 @shared_task(name='backend.health_check')
 def health_check_async():
-    send_mail('send_mail', 'send_mail', None, ['ailyukhin@vitaminsoft.com'])
-    mail_admins('mail_admins', 'mail_admins')
-    mail_managers('mail_managers', 'mail_managers')
     return True
 
 
 def health_check():
     result = health_check_async.apply_async()
     try:
-        return result.get(timeout=1, interval=0.1)
+        return result.get(timeout=0.5, interval=0.1)
     except TimeoutError:
         pass
     return False
