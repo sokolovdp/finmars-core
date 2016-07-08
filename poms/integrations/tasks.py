@@ -3,7 +3,7 @@ import logging
 from celery import shared_task
 from celery.exceptions import TimeoutError
 
-_l = logging.getLogger('poms.integrations')
+_l = logging.getLogger(__name__)
 
 
 @shared_task(name='backend.health_check')
