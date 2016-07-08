@@ -405,3 +405,10 @@ CELERYD_TASK_TIME_LIMIT = 1
 CELERY_TRACK_STARTED = True
 CELERY_SEND_EVENTS = True
 CELERY_SEND_TASK_SENT_EVENT = True
+
+CELERYBEAT_SCHEDULE = {
+    'backend.auth_log_statistics': {
+        'task': 'backend.auth_log_statistics',
+        'schedule': 3600,
+    },
+}

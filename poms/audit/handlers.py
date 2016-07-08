@@ -1,17 +1,20 @@
 from __future__ import unicode_literals
 
+import logging
+
 import six
 from django.contrib.auth import user_logged_in, user_login_failed, get_user_model
 from django.core import serializers as django_serializers
 from django.db.models.signals import post_init, post_save, post_delete
 from django.dispatch import receiver
-from django.utils.encoding import force_text
 from reversion import revisions as reversion
 
 from poms import notifications
 from poms.audit import history
 from poms.audit.models import AuthLogEntry
 from poms.common.middleware import get_request
+
+_l = logging.getLogger('poms.audit')
 
 
 @receiver(user_logged_in, dispatch_uid='audit_user_logged_in')
@@ -26,6 +29,7 @@ def audit_user_logged_in(request=None, user=None, **kwargs):
 def audit_user_login_failed(credentials=None, **kwargs):
     if credentials is None:
         return
+    request = get_request()
     username = credentials.get('username', None)
     if username is None:
         return
@@ -34,7 +38,6 @@ def audit_user_login_failed(credentials=None, **kwargs):
         user = user_model.objects.get(username=username)
     except user_model.DoesNotExist:
         return
-    request = get_request()
     AuthLogEntry.objects.create(user=user,
                                 is_success=False,
                                 user_agent=getattr(request, 'user_agent', None),
@@ -98,7 +101,3 @@ def tracker_on_delete(sender, instance=None, **kwargs):
     if not is_track_enabled(instance):
         return
     history.object_deleted(instance)
-
-# post_init.connect(_tracker_init, dispatch_uid='tracker_init')
-# post_save.connect(_tracker_save, dispatch_uid='tracker_save')
-# post_delete.connect(_tracker_delete, dispatch_uid='tracker_delete')

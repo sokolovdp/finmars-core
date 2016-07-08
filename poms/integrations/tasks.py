@@ -1,5 +1,9 @@
+import logging
+
 from celery import shared_task
 from celery.exceptions import TimeoutError
+
+_l = logging.getLogger('poms.integrations')
 
 
 @shared_task(name='backend.health_check')
@@ -68,3 +72,18 @@ def mail_managers(subject, message):
         'subject': subject,
         'message': message,
     })
+
+
+@shared_task(name='backend.auth_log_statistics', ignore_result=True)
+def auth_log_statistics():
+    from django.utils import timezone
+    from poms.audit.models import AuthLogEntry
+
+    logged_in_count = AuthLogEntry.objects.filter(is_success=True).count()
+    login_failed_count = AuthLogEntry.objects.filter(is_success=False).count()
+    _l.debug('auth (total): logged_in=%s, login_failed=%s', logged_in_count, login_failed_count)
+
+    now = timezone.now().date()
+    logged_in_count = AuthLogEntry.objects.filter(is_success=True, date__startswith=now).count()
+    login_failed_count = AuthLogEntry.objects.filter(is_success=False, date__startswith=now).count()
+    _l.debug('auth (today): logged_in=%s, login_failed=%s', logged_in_count, login_failed_count)
