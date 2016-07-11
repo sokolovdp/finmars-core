@@ -1,12 +1,12 @@
 from __future__ import unicode_literals
 
+import reversion
 from django.utils.translation import ugettext as _
 from rest_framework import permissions, status
 from rest_framework.decorators import detail_route, list_route
 from rest_framework.generics import GenericAPIView
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
-import reversion
 from reversion.models import Version
 
 from poms.audit import history
@@ -45,14 +45,10 @@ class HistoricalMixin(GenericAPIView):
 
         if self._history_is_active:
             reversion.set_user(request.user)
-            # reversion.set_ignore_duplicates(True)
-
-            # instance = self.get_object()
-            # serializer = self.get_serializer(instance)
-            # self._o1 = serializer.data
-            #
-            master_user = request.user.master_user
-            reversion.add_meta(VersionInfo, master_user=master_user, username=request.user.username)
+            reversion.add_meta(VersionInfo,
+                               master_user=request.user.master_user,
+                               member=request.user.member,
+                               username=request.user.username)
 
     def finalize_response(self, request, response, *args, **kwargs):
         # if self._history_is_active:
@@ -80,6 +76,23 @@ class HistoricalMixin(GenericAPIView):
 
         return self._make_historical_reponse(deleted_list)
 
+    @list_route(permission_classes=(IsAuthenticated, SuperUserOnly,))
+    def histories(self, request, pk=None):
+        # instance = self.get_object()
+        # version_list = reversion.get_for_object(instance)
+
+        # master_user = get_master_user(request)
+        master_user = request.user.master_user
+        model = self.get_queryset().model
+        version_list = Version.objects.get_for_model(model).filter(
+            revision__info__master_user=master_user)
+
+        self._version_id = request.query_params.get('version_id')
+        if self._version_id:
+            version_list = version_list.filter(pk=self._version_id)
+
+        return self._make_historical_reponse(version_list)
+
     @detail_route(permission_classes=(IsAuthenticated, SuperUserOnly,))
     def history(self, request, pk=None):
         # instance = self.get_object()
@@ -88,7 +101,8 @@ class HistoricalMixin(GenericAPIView):
         # master_user = get_master_user(request)
         master_user = request.user.master_user
         model = self.get_queryset().model
-        version_list = Version.objects.get_for_object_reference(model, pk).filter(revision__info__master_user=master_user)
+        version_list = Version.objects.get_for_object_reference(model, pk).filter(
+            revision__info__master_user=master_user)
 
         self._version_id = request.query_params.get('version_id')
         if self._version_id:

@@ -13,31 +13,11 @@ from reversion.models import Revision
 
 @python_2_unicode_compatible
 class AuthLogEntry(models.Model):
-    date = models.DateTimeField(
-        auto_now_add=True,
-        db_index=True,
-        verbose_name=_('create date')
-    )
-    user = models.ForeignKey(
-        settings.AUTH_USER_MODEL,
-        verbose_name=_('user')
-    )
-    user_ip = models.GenericIPAddressField(
-        null=True,
-        blank=True,
-        verbose_name=_('user ip')
-    )
-    user_agent = models.CharField(
-        max_length=255,
-        null=True,
-        blank=True,
-        verbose_name=_('user agent')
-    )
-    is_success = models.BooleanField(
-        default=False,
-        db_index=True,
-        verbose_name=_('is_success')
-    )
+    date = models.DateTimeField(auto_now_add=True, db_index=True)
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, verbose_name=_('user'))
+    user_ip = models.GenericIPAddressField(null=True, blank=True)
+    user_agent = models.CharField(max_length=255, null=True, blank=True)
+    is_success = models.BooleanField(default=False, db_index=True)
 
     class Meta:
         verbose_name = _('authenticate log')
@@ -52,9 +32,9 @@ class AuthLogEntry(models.Model):
 
 
 class VersionInfo(models.Model):
-    # There must be a relationship with Revision called `revision`.
     revision = models.ForeignKey(Revision, related_name='info')
     master_user = models.ForeignKey('users.MasterUser')
+    member = models.ForeignKey('users.Member', null=True, blank=True)
     username = models.CharField(max_length=255, null=True, blank=True)
 
 
@@ -69,34 +49,16 @@ class HistoryEntry(models.Model):
         (DELETION, 'Deleted'),
     )
 
-    master_user = models.ForeignKey(
-        'users.MasterUser'
-    )
-    member = models.ForeignKey(
-        'users.Member',
-    )
-    created = models.DateTimeField(
-        auto_now_add=True,
-        db_index=True
-    )
-    content_type = models.ForeignKey(
-        ContentType,
-        related_name='histories',
-    )
+    master_user = models.ForeignKey('users.MasterUser', related_name='histories')
+    member = models.ForeignKey('users.Member', related_name='histories')
+    created = models.DateTimeField(auto_now_add=True, db_index=True)
+    version = models.IntegerField(default=0)
+    content_type = models.ForeignKey(ContentType, related_name='histories')
     object_id = models.BigIntegerField()
     content_object = GenericForeignKey()
-    action_flag = models.PositiveSmallIntegerField(
-        choices=FLAG_CHOICES
-    )
-    message = models.TextField(
-        null=True,
-        blank=True
-    )
-    json_version = models.IntegerField(default=0)
-    json = models.TextField(
-        null=True,
-        blank=True
-    )
+    action_flag = models.PositiveSmallIntegerField(choices=FLAG_CHOICES)
+    message = models.TextField(null=True, blank=True)
+    json = models.TextField(null=True, blank=True)
 
     class Meta:
         abstract = True

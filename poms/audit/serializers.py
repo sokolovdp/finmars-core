@@ -5,7 +5,6 @@ from collections import OrderedDict
 
 import six
 from django.utils import timezone
-from django.utils.encoding import force_text
 from django.utils.text import get_text_list
 from django.utils.translation import ugettext as _
 from rest_framework import serializers
@@ -32,15 +31,16 @@ class AuthLogEntrySerializer(serializers.ModelSerializer):
 class VersionSerializer(serializers.ModelSerializer):
     url = serializers.SerializerMethodField()
     date = serializers.SerializerMethodField()
-    user = serializers.SerializerMethodField()
-    username = serializers.SerializerMethodField()
+    member = serializers.SerializerMethodField()
     comment = serializers.SerializerMethodField()
     object = serializers.SerializerMethodField()
+    object_id = serializers.SerializerMethodField()
+    object_repr = serializers.SerializerMethodField()
     data = serializers.SerializerMethodField()
 
     class Meta:
         model = Version
-        fields = ('url', 'id', 'date', 'user', 'username', 'comment', 'object', 'data')
+        fields = ('url', 'id', 'date', 'member', 'comment', 'object', 'object_id', 'object_repr', 'data')
 
     def get_url(self, value):
         request = self.context['request']
@@ -49,17 +49,9 @@ class VersionSerializer(serializers.ModelSerializer):
     def get_date(self, value):
         return timezone.localtime(value.revision.date_created)
 
-    def get_user(self, value):
-        return value.revision.user_id
-
-    def get_username(self, value):
-        info = getattr(value.revision, 'info', None)
-        if info is None:
-            info = list(info.all())
-            if len(info) > 0:
-                info = info[0]
-                return getattr(info, 'username', None)
-        return None
+    def get_member(self, value):
+        info = getattr(value.revision, 'info', None).first()
+        return info.member_id if info else None
 
     def get_comment(self, value):
         changes = value.revision.comment
@@ -111,6 +103,12 @@ class VersionSerializer(serializers.ModelSerializer):
 
     def get_object(self, value):
         return getattr(value, 'object_json', None)
+
+    def get_object_id(self, value):
+        return int(value.object_id)
+
+    def get_object_repr(self, value):
+        return six.text_type(value._object_version.object)
 
     def get_data(self, value):
         changes = value.revision.comment
