@@ -5,6 +5,7 @@ from django.contrib.auth.models import User
 from django.utils import timezone
 from django.utils.decorators import method_decorator
 from django.views.decorators.csrf import ensure_csrf_cookie
+from django_filters import MethodFilter
 from rest_framework.authtoken.models import Token
 from rest_framework.authtoken.serializers import AuthTokenSerializer
 from rest_framework.decorators import detail_route
@@ -148,6 +149,19 @@ class MasterUserViewSet(AbstractModelViewSet):
         return Response({'success': True})
 
 
+class MemberFilterSet(FilterSet):
+    is_deleted = MethodFilter(action='filter_is_deleted')
+    username = CharFilter()
+
+    class Meta:
+        model = Member
+        fields = ['is_deleted']
+
+    def filter_is_deleted(self, qs, value):
+        # if value = 1
+        return qs
+
+
 class MemberViewSet(HistoricalMixin, UpdateModelMixin, DestroyModelMixin, AbstractReadOnlyModelViewSet):
     queryset = Member.objects.select_related('user')
     serializer_class = MemberSerializer
@@ -157,10 +171,11 @@ class MemberViewSet(HistoricalMixin, UpdateModelMixin, DestroyModelMixin, Abstra
     ]
     filter_backends = AbstractReadOnlyModelViewSet.filter_backends + [
         OwnerByMasterUserFilter,
-        # DjangoFilterBackend,
-        # OrderingFilter,
-        # SearchFilter,
+        DjangoFilterBackend,
+        OrderingFilter,
+        SearchFilter,
     ]
+    filter_class = MemberFilterSet
     ordering_fields = ['username', ]
     search_fields = ['username', ]
 
