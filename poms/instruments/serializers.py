@@ -12,7 +12,7 @@ from poms.instruments.fields import InstrumentClassifierField, InstrumentField, 
 from poms.instruments.models import InstrumentClassifier, Instrument, PriceHistory, InstrumentClass, DailyPricingModel, \
     AccrualCalculationModel, PaymentSizeDetail, PeriodicityPeriod, CostMethod, InstrumentType, InstrumentAttributeType, \
     InstrumentAttribute, ManualPricingFormula, AccrualCalculationSchedule, InstrumentFactorSchedule, EventSchedule, \
-    PricingPolicy
+    PricingPolicy, PriceDownloadMode
 from poms.obj_attrs.serializers import AbstractAttributeSerializer, AbstractAttributeTypeSerializer, \
     ModelWithAttributesSerializer
 from poms.obj_perms.serializers import ModelWithObjectPermissionSerializer
@@ -49,6 +49,11 @@ class PeriodicityPeriodSerializer(PomsClassSerializer):
 class CostMethodSerializer(PomsClassSerializer):
     class Meta(PomsClassSerializer.Meta):
         model = CostMethod
+
+
+class PriceDownloadModeSerializer(PomsClassSerializer):
+    class Meta(PomsClassSerializer.Meta):
+        model = PriceDownloadMode
 
 
 class PricingPolicySerializer(ModelWithUserCodeSerializer):
@@ -161,7 +166,8 @@ class InstrumentSerializer(ModelWithAttributesSerializer, ModelWithObjectPermiss
         fields = ['url', 'id', 'master_user', 'instrument_type', 'user_code', 'name', 'short_name', 'public_name',
                   'notes', 'is_active',
                   'pricing_currency', 'price_multiplier', 'accrued_currency', 'accrued_multiplier',
-                  'daily_pricing_model', 'payment_size_detail', 'default_price', 'default_accrued',
+                  'daily_pricing_model', 'payment_size_detail', 'price_download_mode',
+                  'default_price', 'default_accrued',
                   'user_text_1', 'user_text_2', 'user_text_3',
                   'manual_pricing_formulas', 'accrual_calculation_schedules', 'factor_schedules', 'event_schedules',
                   'attributes', 'tags']

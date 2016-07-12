@@ -16,6 +16,7 @@ from poms.users.models import MasterUser
 class Currency(NamedModel):
     master_user = models.ForeignKey(MasterUser, related_name='currencies',
                                     verbose_name=_('master user'))
+    history_download_mode = models.ForeignKey('instruments.PriceDownloadMode', null=True, blank=True)
 
     class Meta(NamedModel.Meta):
         verbose_name = _('currency')

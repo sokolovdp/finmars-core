@@ -8,11 +8,11 @@ from poms.common.views import AbstractClassModelViewSet, AbstractModelViewSet
 from poms.instruments.filters import OwnerByInstrumentFilter, PriceHistoryObjectPermissionFilter
 from poms.instruments.models import Instrument, PriceHistory, InstrumentClass, DailyPricingModel, \
     AccrualCalculationModel, PaymentSizeDetail, PeriodicityPeriod, CostMethod, InstrumentType, InstrumentAttributeType, \
-    PricingPolicy
+    PricingPolicy, PriceDownloadMode
 from poms.instruments.serializers import InstrumentSerializer, PriceHistorySerializer, \
     InstrumentClassSerializer, DailyPricingModelSerializer, AccrualCalculationModelSerializer, \
     PaymentSizeDetailSerializer, PeriodicityPeriodSerializer, CostMethodSerializer, InstrumentTypeSerializer, \
-    InstrumentAttributeTypeSerializer, PricingPolicySerializer
+    InstrumentAttributeTypeSerializer, PricingPolicySerializer, PriceDownloadModeSerializer
 from poms.obj_attrs.filters import AttributePrefetchFilter
 from poms.obj_attrs.views import AbstractAttributeTypeViewSet
 from poms.obj_perms.views import AbstractWithObjectPermissionViewSet
@@ -49,6 +49,11 @@ class PeriodicityPeriodViewSet(AbstractClassModelViewSet):
 class CostMethodViewSet(AbstractClassModelViewSet):
     queryset = CostMethod.objects
     serializer_class = CostMethodSerializer
+
+
+class PriceDownloadModeViewSet(AbstractClassModelViewSet):
+    queryset = PriceDownloadMode.objects
+    serializer_class = PriceDownloadModeSerializer
 
 
 class PricingPolicyViewSet(AbstractModelViewSet):

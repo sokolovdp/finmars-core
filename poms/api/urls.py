@@ -59,6 +59,7 @@ router.register(r'instruments/payment-size-detail', instruments.PaymentSizeDetai
 router.register(r'instruments/periodicity-period', instruments.PeriodicityPeriodViewSet)
 router.register(r'instruments/cost-method', instruments.CostMethodViewSet)
 router.register(r'instruments/pricing-policy', instruments.PricingPolicyViewSet)
+router.register(r'instruments/price-download-mode', instruments.PriceDownloadModeViewSet)
 # router.register(r'instruments/instrument-classifier/node', instruments.InstrumentClassifierNodeViewSet,
 #                 'instrumentclassifiernode')
 # router.register(r'instruments/instrument-classifier', instruments.InstrumentClassifierViewSet)

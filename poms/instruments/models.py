@@ -173,6 +173,21 @@ class CostMethod(AbstractClassModel):
         verbose_name_plural = _('cost methods')
 
 
+class PriceDownloadMode(AbstractClassModel):
+    AUTO = 1
+    MANUAL = 2
+    IF_PORTFOLIO = 3
+    CLASSES = (
+        (AUTO, _('Auto')),
+        (MANUAL, _('Manual')),
+        (IF_PORTFOLIO, _('If portfolios specified')),
+    )
+
+    class Meta(AbstractClassModel.Meta):
+        verbose_name = _('cost method')
+        verbose_name_plural = _('cost methods')
+
+
 class PricingPolicy(NamedModel):
     # DISABLED = 0
     # BLOOMBERG = 1
@@ -263,6 +278,7 @@ class Instrument(NamedModel):
                                    help_text=_('User specified field'))
     user_text_3 = models.CharField(max_length=255, null=True, blank=True,
                                    help_text=_('User specified field'))
+    price_download_mode = models.ForeignKey(PriceDownloadMode, null=True, blank=True)
 
     class Meta(NamedModel.Meta):
         verbose_name = _('instrument')
