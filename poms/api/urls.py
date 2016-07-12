@@ -11,6 +11,7 @@ import poms.counterparties.views as counterparties
 import poms.currencies.views as currencies
 import poms.http_sessions.views as sessions
 import poms.instruments.views as instruments
+import poms.integrations.views as integrations
 import poms.notifications.views as notifications
 import poms.portfolios.views as portfolios
 import poms.reports.views as reports
@@ -117,6 +118,9 @@ router.register(r'chats/direct-message', chats.DirectMessageViewSet, 'chatdirect
 
 router.register(r'security/http-session', sessions.SessionViewSet)
 router.register(r'audit/auth-log', audit.AuthLogEntryViewSet)
+
+router.register(r'integrations/import', integrations.AbstractImportViewSet, 'AbstractImportViewSet')
+router.register(r'integrations/bloomberg', integrations.BloombergInstrumentViewSet, 'BloombergInstrumentViewSet')
 
 urlpatterns = [
     url(r'^v1/', include(router.urls, namespace='v1')),

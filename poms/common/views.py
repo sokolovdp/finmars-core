@@ -8,12 +8,34 @@ from rest_framework import status
 from rest_framework.filters import DjangoFilterBackend, OrderingFilter, SearchFilter
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
-from rest_framework.viewsets import ModelViewSet, ReadOnlyModelViewSet
+from rest_framework.viewsets import ModelViewSet, ReadOnlyModelViewSet, ViewSet
 
 from poms.audit.mixins import HistoricalMixin
 from poms.common.filters import ClassifierFilter, ClassifierPrefetchFilter
 from poms.common.mixins import DbTransactionMixin
 from poms.users.filters import OwnerByMasterUserFilter
+
+
+class AbstractViewSet(ViewSet):
+    serializer_class = None
+    permission_classes = [
+        IsAuthenticated
+    ]
+
+    def get_serializer(self, *args, **kwargs):
+        serializer_class = self.get_serializer_class()
+        kwargs['context'] = self.get_serializer_context()
+        return serializer_class(*args, **kwargs)
+
+    def get_serializer_class(self):
+        return self.serializer_class
+
+    def get_serializer_context(self):
+        return {
+            'request': self.request,
+            'format': self.format_kwarg,
+            'view': self
+        }
 
 
 class AbstractModelViewSet(DbTransactionMixin, HistoricalMixin, ModelViewSet):

@@ -44,7 +44,7 @@ INSTALLED_APPS = [
     'rest_framework',
 
     'kombu.transport.django',
-    'djcelery',
+    # 'djcelery',
 
     'modeltranslation',
     'mptt',
@@ -380,6 +380,9 @@ GEOIP_PATH = os.path.join(BASE_DIR, 'poms')
 GEOIP_COUNTRY = "GeoLite2-Country.mmdb"
 GEOIP_CITY = "GeoLite2-City.mmdb"
 
+MEDIA_ROOT = os.path.join(BASE_DIR, "media")
+MEDIA_URL = '/media/'
+
 # CELERY ------------------------------------------------
 
 import djcelery
@@ -389,8 +392,8 @@ djcelery.setup_loader()
 BROKER_URL = 'django://'
 # BROKER_URL = 'redis://127.0.0.1:6379/15'
 KOMBU_POLLING_INTERVAL = 1
-CELERY_RESULT_BACKEND = 'djcelery.backends.database:DatabaseBackend'
-CELERYBEAT_SCHEDULER = 'djcelery.schedulers.DatabaseScheduler'
+# CELERY_RESULT_BACKEND = 'djcelery.backends.database:DatabaseBackend'
+# CELERYBEAT_SCHEDULER = 'djcelery.schedulers.DatabaseScheduler'
 CELERY_ALWAYS_EAGER = DEBUG
 CELERY_EAGER_PROPAGATES_EXCEPTIONS = DEBUG
 
