@@ -74,6 +74,18 @@ def mail_managers(subject, message):
     })
 
 
+@shared_task(name='backend.delete_temp_file', ignore_result=True)
+def delete_temp_file_async(name):
+    print(name)
+
+
+def delete_temp_file(name):
+    countdown = 600
+    delete_temp_file_async.apply_async(countdown=countdown, kwargs={
+        'name': name,
+    })
+
+
 @shared_task(name='backend.auth_log_statistics', ignore_result=True)
 def auth_log_statistics():
     from django.utils import timezone

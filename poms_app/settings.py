@@ -412,8 +412,8 @@ CELERY_SEND_EVENTS = True
 CELERY_SEND_TASK_SENT_EVENT = True
 
 CELERYBEAT_SCHEDULE = {
-    'backend.auth_log_statistics': {
-        'task': 'backend.auth_log_statistics',
-        'schedule': 1,
-    },
+    # 'backend.auth_log_statistics': {
+    #     'task': 'backend.auth_log_statistics',
+    #     'schedule': 1,
+    # },
 }

@@ -11,6 +11,7 @@ from rest_framework.response import Response
 
 from poms.common.utils import date_now
 from poms.common.views import AbstractViewSet
+from poms.integrations.tasks import delete_temp_file
 
 import_storage = SimpleLazyObject(lambda: FileSystemStorage(location=os.path.join(settings.MEDIA_ROOT, "import")))
 
@@ -63,6 +64,7 @@ class AbstractImportViewSet(AbstractViewSet):
             if not file:
                 raise ValidationError({'data': 'data is required'})
             tmp_file_name = '%s' % (uuid.uuid4().hex)
+            delete_temp_file(tmp_file_name)
             data['data_key'] = signing.TimestampSigner().sign(tmp_file_name)
             import_storage.save(tmp_file_name, file)
         else:
