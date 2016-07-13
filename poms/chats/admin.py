@@ -3,18 +3,18 @@ from __future__ import unicode_literals
 from django.contrib import admin
 
 from poms.audit.admin import HistoricalAdmin
-from poms.chats.models import Thread, Message, DirectMessage, ThreadStatus
+from poms.chats.models import Thread, Message, DirectMessage
 from poms.obj_perms.admin import UserObjectPermissionInline, \
     GroupObjectPermissionInline
 
 
-class ThreadStatusAdmin(HistoricalAdmin):
-    model = ThreadStatus
-    list_display = ['id', 'master_user', 'name', 'is_closed']
-    raw_id_fields = ['master_user']
-
-
-admin.site.register(ThreadStatus, ThreadStatusAdmin)
+# class ThreadStatusAdmin(HistoricalAdmin):
+#     model = ThreadStatus
+#     list_display = ['id', 'master_user', 'name', 'is_closed']
+#     raw_id_fields = ['master_user']
+#
+#
+# admin.site.register(ThreadStatus, ThreadStatusAdmin)
 
 
 # class MessageInline(admin.StackedInline):
@@ -27,11 +27,11 @@ admin.site.register(ThreadStatus, ThreadStatusAdmin)
 
 class ThreadAdmin(HistoricalAdmin):
     model = Thread
-    list_display = ['id', 'master_user', 'created', 'subject', 'status']
-    list_select_related = ['master_user', 'status']
+    list_display = ['id', 'master_user', 'subject', 'created', 'closed', ]
+    list_select_related = ['master_user',]
     date_hierarchy = 'created'
     ordering = ['created']
-    raw_id_fields = ['master_user', 'status']
+    raw_id_fields = ['master_user',]
     # inlines = [MessageInline]
     search_fields = ['id', 'subject']
     inlines = [

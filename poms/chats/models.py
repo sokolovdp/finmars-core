@@ -15,30 +15,30 @@ from poms.obj_perms.models import AbstractGroupObjectPermission, AbstractUserObj
 from poms.users.models import MasterUser, Member
 
 
-class ThreadStatus(models.Model):
-    master_user = models.ForeignKey(
-        MasterUser,
-        related_name='chat_thread_statuses',
-        verbose_name=_('master user')
-    )
-    name = models.CharField(
-        max_length=255,
-        verbose_name=_('name')
-    )
-    is_closed = models.BooleanField(
-        default=False,
-        verbose_name=_('is closed')
-    )
-
-    class Meta:
-        verbose_name = _('thread status')
-        verbose_name_plural = _('thread statuses')
-        unique_together = [
-            ['master_user', 'name']
-        ]
-
-    def __str__(self):
-        return self.name
+# class ThreadStatus(models.Model):
+#     master_user = models.ForeignKey(
+#         MasterUser,
+#         related_name='chat_thread_statuses',
+#         verbose_name=_('master user')
+#     )
+#     name = models.CharField(
+#         max_length=255,
+#         verbose_name=_('name')
+#     )
+#     is_closed = models.BooleanField(
+#         default=False,
+#         verbose_name=_('is closed')
+#     )
+#
+#     class Meta:
+#         verbose_name = _('thread status')
+#         verbose_name_plural = _('thread statuses')
+#         unique_together = [
+#             ['master_user', 'name']
+#         ]
+#
+#     def __str__(self):
+#         return self.name
 
 
 @python_2_unicode_compatible
@@ -52,11 +52,12 @@ class Thread(TimeStampedModel):
         max_length=255,
         verbose_name=_('subject')
     )
-    status = models.ForeignKey(
-        ThreadStatus,
-        on_delete=models.PROTECT,
-        verbose_name=_('status')
-    )
+    # status = models.ForeignKey(
+    #     ThreadStatus,
+    #     on_delete=models.PROTECT,
+    #     verbose_name=_('status')
+    # )
+    closed = models.DateTimeField(db_index=True, null=True, blank=True)
 
     class Meta(TimeStampedModel.Meta):
         verbose_name = _('thread')
@@ -68,6 +69,10 @@ class Thread(TimeStampedModel):
 
     def __str__(self):
         return self.subject
+
+    @property
+    def is_closed(self):
+        return self.closed is None
 
 
 class ThreadUserObjectPermission(AbstractUserObjectPermission):
@@ -179,7 +184,7 @@ class DirectMessage(TimeStampedModel):
 
 # register_model(Thread)
 
-history.register(ThreadStatus)
+# history.register(ThreadStatus)
 history.register(Thread, follow=['user_object_permissions', 'group_object_permissions'])
 history.register(ThreadUserObjectPermission)
 history.register(ThreadGroupObjectPermission)

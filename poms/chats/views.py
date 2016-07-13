@@ -1,45 +1,57 @@
 from __future__ import unicode_literals
 
 import django_filters
+from django.utils import timezone
+from rest_framework.decorators import detail_route
 from rest_framework.filters import OrderingFilter, SearchFilter, DjangoFilterBackend, FilterSet
+from rest_framework.response import Response
 
 from poms.chats.filters import MessagePermissionFilter, DirectMessagePermissionFilter
-from poms.chats.models import Thread, Message, DirectMessage, ThreadStatus
+from poms.chats.models import Thread, Message, DirectMessage
 from poms.chats.permissions import MessagePermission, DirectMessagePermission
-from poms.chats.serializers import ThreadSerializer, MessageSerializer, DirectMessageSerializer, ThreadStatusSerializer
+from poms.chats.serializers import ThreadSerializer, MessageSerializer, DirectMessageSerializer
 from poms.common.filters import CharFilter, ModelWithPermissionMultipleChoiceFilter, ModelMultipleChoiceFilter
 from poms.common.views import AbstractModelViewSet
 from poms.obj_perms.views import AbstractWithObjectPermissionViewSet
 from poms.users.filters import OwnerByMasterUserFilter
 from poms.users.models import Member
-from poms.users.permissions import SuperUserOrReadOnly
 
 
-class ThreadStatusViewSet(AbstractModelViewSet):
-    queryset = ThreadStatus.objects.all()
-    serializer_class = ThreadStatusSerializer
-    permission_classes = AbstractModelViewSet.permission_classes + [
-        # IsAuthenticated,
-        SuperUserOrReadOnly
-    ]
-    filter_backends = [
-        OwnerByMasterUserFilter,
-        OrderingFilter,
-        SearchFilter,
-    ]
-    ordering_fields = ['id', 'name']
-    search_fields = ['name']
+# class ThreadStatusViewSet(AbstractModelViewSet):
+#     queryset = ThreadStatus.objects.all()
+#     serializer_class = ThreadStatusSerializer
+#     permission_classes = AbstractModelViewSet.permission_classes + [
+#         # IsAuthenticated,
+#         SuperUserOrReadOnly
+#     ]
+#     filter_backends = [
+#         OwnerByMasterUserFilter,
+#         OrderingFilter,
+#         SearchFilter,
+#     ]
+#     ordering_fields = ['id', 'name']
+#     search_fields = ['name']
 
 
 class ThreadFilterSet(FilterSet):
     subject = CharFilter()
     created = django_filters.DateFromToRangeFilter()
-    status = ModelMultipleChoiceFilter(model=ThreadStatus)
-    status__is_closed = django_filters.BooleanFilter()
+    closed = django_filters.DateFromToRangeFilter()
+    # status = ModelMultipleChoiceFilter(model=ThreadStatus)
+    is_closed = django_filters.MethodFilter(action='filter_is_closed')
 
     class Meta:
         model = Thread
-        fields = ['subject', 'created', 'status', 'status__is_closed']
+        fields = ['subject', 'created', 'closed', 'is_closed']
+
+    def filter_is_closed(self, qs, value):
+        if value:
+            value = value.lower()
+            if value in ['0', 'false', 'no']:
+                return qs.filter(closed__isnull=True)
+            if value in ['1', 'true', 'yes']:
+                return qs.filter(closed__isnull=False)
+        return qs
 
 
 class ThreadViewSet(AbstractWithObjectPermissionViewSet):
@@ -63,6 +75,22 @@ class ThreadViewSet(AbstractWithObjectPermissionViewSet):
     # def get_serializer(self, *args, **kwargs):
     #     kwargs['show_object_permissions'] = (self.action != 'list')
     #     return super(ThreadViewSet, self).get_serializer(*args, **kwargs)
+
+    @detail_route(url_path='close')
+    def close(self, request, pk=None):
+        instance = self.get_object()
+        instance.closed = timezone.now()
+        instance.save()
+        serializer = self.get_serializer(instance)
+        return Response(serializer.data)
+
+    @detail_route(url_path='reopen')
+    def reopen(self, request, pk=None):
+        instance = self.get_object()
+        instance.closed = None
+        instance.save()
+        serializer = self.get_serializer(instance)
+        return Response(serializer.data)
 
 
 class MessageFilterSet(FilterSet):

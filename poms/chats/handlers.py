@@ -5,7 +5,6 @@ from django.dispatch import receiver
 
 from poms import notifications
 from poms.chats.models import Message, DirectMessage
-from poms.common.middleware import get_request
 from poms.obj_perms.utils import has_view_perms
 from poms.users.models import Member
 

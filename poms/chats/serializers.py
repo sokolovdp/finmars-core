@@ -2,33 +2,33 @@ from __future__ import unicode_literals
 
 from rest_framework import serializers
 
-from poms.chats.fields import ThreadField, ThreadStatusField
-from poms.chats.models import Thread, Message, DirectMessage, ThreadStatus
+from poms.chats.fields import ThreadField
+from poms.chats.models import Thread, Message, DirectMessage
 from poms.common.fields import DateTimeTzAwareField
 from poms.obj_perms.serializers import ModelWithObjectPermissionSerializer
 from poms.users.fields import MasterUserField, HiddenMemberField, MemberField
 
 
-class ThreadStatusSerializer(serializers.ModelSerializer):
-    url = serializers.HyperlinkedIdentityField(view_name='chatthreadstatus-detail')
-    master_user = MasterUserField()
-
-    class Meta:
-        model = ThreadStatus
-        fields = ['url', 'id', 'master_user', 'name', 'is_closed']
+# class ThreadStatusSerializer(serializers.ModelSerializer):
+#     url = serializers.HyperlinkedIdentityField(view_name='chatthreadstatus-detail')
+#     master_user = MasterUserField()
+#
+#     class Meta:
+#         model = ThreadStatus
+#         fields = ['url', 'id', 'master_user', 'name', 'is_closed']
 
 
 class ThreadSerializer(ModelWithObjectPermissionSerializer):
     url = serializers.HyperlinkedIdentityField(view_name='chatthread-detail')
     master_user = MasterUserField()
-    status = ThreadStatusField()
     created = DateTimeTzAwareField(read_only=True)
     modified = DateTimeTzAwareField(read_only=True)
+    closed = DateTimeTzAwareField(read_only=True)
 
     class Meta:
         model = Thread
-        fields = ['url', 'id', 'master_user', 'created', 'modified', 'subject', 'status']
-        read_only_fields = ['created', 'modified']
+        fields = ['url', 'id', 'master_user', 'created', 'modified', 'closed', 'subject',]
+        read_only_fields = ['created', 'modified', 'closed']
 
 
 class MessageSerializer(serializers.ModelSerializer):

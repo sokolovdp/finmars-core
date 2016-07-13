@@ -11,6 +11,7 @@ from rest_framework.response import Response
 
 from poms.common.utils import date_now
 from poms.common.views import AbstractViewSet
+from poms.instruments.fields import InstrumentTypeField
 from poms.integrations.tasks import delete_temp_file
 
 import_storage = SimpleLazyObject(lambda: FileSystemStorage(location=os.path.join(settings.MEDIA_ROOT, "import")))
@@ -29,6 +30,8 @@ class ImportSerializer(serializers.Serializer):
     encoding = serializers.CharField(max_length=10, initial='utf-8')
     mapping = serializers.DictField(required=False)
     preview = serializers.JSONField(read_only=True)
+
+    instrument_type = InstrumentTypeField(required=False, allow_null=True)
 
     def create(self, validated_data):
         print('create: validated_data=%s' % (validated_data,))
