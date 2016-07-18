@@ -398,8 +398,17 @@ GEOIP_PATH = os.path.join(BASE_DIR, 'poms')
 GEOIP_COUNTRY = "GeoLite2-Country.mmdb"
 GEOIP_CITY = "GeoLite2-City.mmdb"
 
-MEDIA_ROOT = os.path.join(BASE_DIR, "media")
-MEDIA_URL = '/media/'
+MEDIA_ROOT = os.path.join(BASE_DIR, 'tmp', 'media')
+MEDIA_URL = '/api/media/'
+MEDIA_SERVE = True
+
+DATA_IMPORT_STORAGE = {
+    'BACKEND': 'django.core.files.storage.FileSystemStorage',
+    'KWARGS': {
+        'location': os.path.join(BASE_DIR, 'tmp', 'import'),
+        'base_url': '/api/import/'
+    }
+}
 
 # CELERY ------------------------------------------------
 

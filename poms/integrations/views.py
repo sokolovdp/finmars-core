@@ -1,10 +1,6 @@
-import os
 import uuid
 
-from django.conf import settings
 from django.core import signing
-from django.core.files.storage import FileSystemStorage
-from django.utils.functional import SimpleLazyObject
 from rest_framework import status, serializers
 from rest_framework.exceptions import ValidationError
 from rest_framework.response import Response
@@ -12,9 +8,11 @@ from rest_framework.response import Response
 from poms.common.utils import date_now
 from poms.common.views import AbstractViewSet
 from poms.instruments.fields import InstrumentTypeField
+from poms.integrations.storages import DataImportStorage
 from poms.integrations.tasks import delete_temp_file
 
-import_storage = SimpleLazyObject(lambda: FileSystemStorage(location=os.path.join(settings.MEDIA_ROOT, "import")))
+
+# import_storage = SimpleLazyObject(lambda: FileSystemStorage(location=os.path.join(settings.MEDIA_ROOT, "import")))
 
 
 class ImportSerializer(serializers.Serializer):
@@ -56,27 +54,34 @@ class AbstractImportViewSet(AbstractViewSet):
             'view': self
         }
 
+    def get_file_path(self, key):
+        return '%s/%s/%s' % (self.request.user.id, key[0:4], key)
+
     def create(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
 
+        storage = DataImportStorage()
+
         data = serializer.data
-        print(data)
         if data.get('data_key', '') == '':
             file = request.data['data']
             if not file:
                 raise ValidationError({'data': 'data is required'})
-            tmp_file_name = '%s' % (uuid.uuid4().hex)
+            key = '%s' % (uuid.uuid4().hex, )
+            data['data_key'] = signing.TimestampSigner().sign(key)
+            tmp_file_name = self.get_file_path(key)
             delete_temp_file(tmp_file_name)
-            data['data_key'] = signing.TimestampSigner().sign(tmp_file_name)
-            import_storage.save(tmp_file_name, file)
+            storage.save(tmp_file_name, file)
         else:
-            tmp_file_name = data.get('data_key')
-            tmp_file_name = signing.TimestampSigner().unsign(tmp_file_name)
+            key = data.get('data_key')
+            key = signing.TimestampSigner().unsign(key)
+
+            tmp_file_name = self.get_file_path(key)
 
             import csv
 
-            with import_storage.open(tmp_file_name, 'rt') as f:
+            with storage.open(tmp_file_name, 'rt') as f:
                 ret = []
                 for row in csv.reader(f):
                     ret.append(row)

@@ -30,3 +30,7 @@ if settings.DEBUG:
     urlpatterns += [
         url(r'^$', RedirectView.as_view(url='/admin/'), name='redirect-to-admin'),
     ]
+
+if getattr(settings, 'MEDIA_SERVE', False):
+    urlpatterns += [
+        url(r'^media/(?P<path>.*)$', 'django.views.static.serve', {'document_root': settings.MEDIA_ROOT})]
