@@ -7,6 +7,8 @@ import os
 os.environ['DJANGO_DEBUG'] = 'True'
 os.environ['POMS_DEV'] = 'True'
 
+os.environ['REDIS_HOSTNAME'] = '192.168.57.2'
+
 from .settings import *
 
 SECRET_KEY = 's#)m^ug%_jr0dtko#83_55rd_we&xu#f9p#!1gh@k&$=5&3e67'

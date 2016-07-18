@@ -29,6 +29,7 @@ SECRET_KEY = 'jrixf-%65l5&#@hbmq()sa-pzy@e)=zpdr6g0cg8a!i_&w-c!)'
 DEBUG = str(os.environ.get('DJANGO_DEBUG', 'True')).lower() == 'true'
 DEV = DEBUG or str(os.environ.get('POMS_DEV', 'True')).lower() == 'true'
 ADMIN = True
+REDIS = os.environ.get('REDIS', None)
 
 ALLOWED_HOSTS = ['*']
 
@@ -43,7 +44,7 @@ INSTALLED_APPS = [
     'django.contrib.humanize',
     'rest_framework',
 
-    'kombu.transport.django',
+    # 'kombu.transport.django',
     # 'djcelery',
 
     'modeltranslation',
@@ -74,7 +75,7 @@ INSTALLED_APPS = [
     'django.contrib.admindocs',
 
     'django_extensions',
-    # 'rest_framework_swagger',
+    'redisboard',
 
     # 'django_otp',
     # 'django_otp.plugins.otp_hotp',
@@ -162,21 +163,23 @@ if DEBUG:
 # Password validation
 # https://docs.djangoproject.com/en/1.9/ref/settings/#auth-password-validators
 
-if not DEBUG:
-    AUTH_PASSWORD_VALIDATORS = [
-        {
-            'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator',
-        },
-        {
-            'NAME': 'django.contrib.auth.password_validation.MinimumLengthValidator',
-        },
-        {
-            'NAME': 'django.contrib.auth.password_validation.CommonPasswordValidator',
-        },
-        {
-            'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator',
-        },
-    ]
+AUTH_PASSWORD_VALIDATORS = [
+    {
+        'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator',
+    },
+    {
+        'NAME': 'django.contrib.auth.password_validation.MinimumLengthValidator',
+    },
+    {
+        'NAME': 'django.contrib.auth.password_validation.CommonPasswordValidator',
+    },
+    {
+        'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator',
+    },
+]
+
+if DEBUG:
+    AUTH_PASSWORD_VALIDATORS = []
 
 # Internationalization
 # https://docs.djangoproject.com/en/1.9/topics/i18n/
@@ -207,30 +210,45 @@ CSRF_COOKIE_SECURE = not DEBUG
 STATIC_URL = '/api/static/'
 STATIC_ROOT = os.path.join(BASE_DIR, "static")
 
-CACHES = {
-    'default': {
-        'BACKEND': 'django.core.cache.backends.db.DatabaseCache',
-        'LOCATION': 'cache_default',
-        'KEY_PREFIX': 'default',
-        'VERSION': 1,
-        'TIMEOUT': 300,
-        'OPTIONS': {
-            'MAX_ENTRIES': 1000000,
-        }
-    },
-    # 'http_cache': {
-    #     'BACKEND': 'django.core.cache.backends.locmem.LocMemCache',
-    #     'LOCATION': 'http_cache',
-    #     'KEY_PREFIX': 'http_cache',
-    # },
-    'throttling': {
-        'BACKEND': 'django.core.cache.backends.locmem.LocMemCache',
-        'LOCATION': 'throttling',
-        'KEY_PREFIX': 'throttling',
-    },
-}
+if REDIS:
+    CACHES = {
+        'default': {
+            "BACKEND": "django_redis.cache.RedisCache",
+            "LOCATION": "redis://%s/1" % REDIS,
+            'KEY_PREFIX': 'default',
+        },
+        'http_session': {
+            "BACKEND": "django_redis.cache.RedisCache",
+            "LOCATION": "redis://%s/1" % REDIS,
+            'KEY_PREFIX': 'http_session',
+            'TIMEOUT': 3600,
+        },
+        'throttling': {
+            "BACKEND": "django_redis.cache.RedisCache",
+            "LOCATION": "redis://%s/1" % REDIS,
+            'KEY_PREFIX': 'throttling',
+            'TIMEOUT': 3600,
+        },
+    }
+else:
+    CACHES = {
+        'default': {
+            'BACKEND': 'django.core.cache.backends.db.DatabaseCache',
+            'LOCATION': 'cache_default',
+            'KEY_PREFIX': 'default',
+        },
+        'throttling': {
+            'BACKEND': 'django.core.cache.backends.locmem.LocMemCache',
+            'LOCATION': 'throttling',
+            'KEY_PREFIX': 'throttling',
+        },
+    }
 
-SESSION_ENGINE = "poms.http_sessions.backends.db"
+if 'http_session' in CACHES:
+    SESSION_ENGINE = "poms.http_sessions.backends.cached_db"
+    SESSION_CACHE_ALIAS = 'http_session'
+else:
+    SESSION_ENGINE = "poms.http_sessions.backends.db"
 
 LOGGING = {
     'version': 1,
@@ -385,15 +403,19 @@ MEDIA_URL = '/media/'
 
 # CELERY ------------------------------------------------
 
-import djcelery
+if REDIS:
+    BROKER_URL = 'redis://%s/15' % REDIS
+    CELERY_RESULT_BACKEND = 'redis://%s/15' % REDIS
+else:
+    import djcelery
 
-djcelery.setup_loader()
+    djcelery.setup_loader()
 
-BROKER_URL = 'django://'
-# BROKER_URL = 'redis://127.0.0.1:6379/15'
-KOMBU_POLLING_INTERVAL = 1
-# CELERY_RESULT_BACKEND = 'djcelery.backends.database:DatabaseBackend'
-# CELERYBEAT_SCHEDULER = 'djcelery.schedulers.DatabaseScheduler'
+    BROKER_URL = 'django://'
+    CELERY_RESULT_BACKEND = 'djcelery.backends.database:DatabaseBackend'
+    # CELERYBEAT_SCHEDULER = 'djcelery.schedulers.DatabaseScheduler'
+    KOMBU_POLLING_INTERVAL = 1
+
 CELERY_ALWAYS_EAGER = DEBUG
 CELERY_EAGER_PROPAGATES_EXCEPTIONS = DEBUG
 
