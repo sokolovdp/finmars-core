@@ -102,6 +102,17 @@ class Tag(NamedModel):
         verbose_name=_('strategies 3')
     )
 
+    thread_groups = models.ManyToManyField(
+        'chats.ThreadGroup',
+        related_name='tags',
+        blank=True
+    )
+    threads = models.ManyToManyField(
+        'chats.Thread',
+        related_name='tags',
+        blank=True
+    )
+
     class Meta(NamedModel.Meta):
         verbose_name = _('tag')
         verbose_name_plural = _('tags')

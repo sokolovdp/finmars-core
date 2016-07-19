@@ -3,7 +3,7 @@ from __future__ import unicode_literals
 from django.contrib import admin
 
 from poms.audit.admin import HistoricalAdmin
-from poms.chats.models import Thread, Message, DirectMessage
+from poms.chats.models import Thread, Message, DirectMessage, ThreadGroup
 from poms.obj_perms.admin import UserObjectPermissionInline, \
     GroupObjectPermissionInline
 
@@ -25,13 +25,24 @@ from poms.obj_perms.admin import UserObjectPermissionInline, \
 #     extra = 0
 
 
+class ThreadGroupAdmin(HistoricalAdmin):
+    model = ThreadGroup
+    list_display = ['id', 'master_user', 'name', ]
+    list_select_related = ['master_user', ]
+    raw_id_fields = ['master_user', ]
+    search_fields = ['id', 'name']
+
+
+admin.site.register(ThreadGroup, ThreadGroupAdmin)
+
+
 class ThreadAdmin(HistoricalAdmin):
     model = Thread
-    list_display = ['id', 'master_user', 'subject', 'created', 'closed', ]
-    list_select_related = ['master_user',]
+    list_display = ['id', 'master_user', 'thread_group', 'subject', 'created', 'closed', ]
+    list_select_related = ['master_user', 'thread_group', ]
     date_hierarchy = 'created'
     ordering = ['created']
-    raw_id_fields = ['master_user',]
+    raw_id_fields = ['master_user', 'thread_group', ]
     # inlines = [MessageInline]
     search_fields = ['id', 'subject']
     inlines = [

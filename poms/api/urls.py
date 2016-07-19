@@ -112,6 +112,7 @@ router.register(r'notifications/notification', notifications.NotificationViewSet
 # router.register(r'notifications/message', notifications.MessageViewSet, 'django-message')
 
 # router.register(r'chats/thread-status', chats.ThreadStatusViewSet, 'chatthreadstatus')
+router.register(r'chats/thread-group', chats.ThreadGroupViewSet, 'chatthreadgroup')
 router.register(r'chats/thread', chats.ThreadViewSet, 'chatthread')
 router.register(r'chats/message', chats.MessageViewSet, 'chatmessage')
 router.register(r'chats/direct-message', chats.DirectMessageViewSet, 'chatdirectmessage')

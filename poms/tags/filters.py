@@ -6,6 +6,7 @@ from rest_framework.filters import BaseFilterBackend
 
 from poms.accounts.models import Account
 from poms.accounts.models import AccountType
+from poms.chats.models import ThreadGroup, Thread
 from poms.common.middleware import get_request
 from poms.counterparties.models import Counterparty
 from poms.counterparties.models import Responsible
@@ -30,7 +31,7 @@ class TagFakeFilter(django_filters.Filter):
 class TagContentTypeFilter(BaseFilterBackend):
     def filter_queryset(self, request, queryset, view):
         models = [AccountType, Account, Currency, InstrumentType, Instrument, Counterparty, Responsible,
-                  Strategy1, Strategy2, Strategy3, Portfolio, TransactionType]
+                  Strategy1, Strategy2, Strategy3, Portfolio, TransactionType, ThreadGroup, Thread]
         ctypes = [ContentType.objects.get_for_model(model).pk for model in models]
         return queryset.filter(pk__in=ctypes)
 

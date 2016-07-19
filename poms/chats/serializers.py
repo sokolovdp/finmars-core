@@ -2,10 +2,11 @@ from __future__ import unicode_literals
 
 from rest_framework import serializers
 
-from poms.chats.fields import ThreadField
-from poms.chats.models import Thread, Message, DirectMessage
+from poms.chats.fields import ThreadField, ThreadGroupField
+from poms.chats.models import Thread, Message, DirectMessage, ThreadGroup
 from poms.common.fields import DateTimeTzAwareField
 from poms.obj_perms.serializers import ModelWithObjectPermissionSerializer
+from poms.tags.fields import TagField
 from poms.users.fields import MasterUserField, HiddenMemberField, MemberField
 
 
@@ -18,16 +19,28 @@ from poms.users.fields import MasterUserField, HiddenMemberField, MemberField
 #         fields = ['url', 'id', 'master_user', 'name', 'is_closed']
 
 
+class ThreadGroupSerializer(serializers.ModelSerializer):
+    url = serializers.HyperlinkedIdentityField(view_name='chatthreadgroup-detail')
+    master_user = MasterUserField()
+    tags = TagField(many=True, required=False, allow_null=True)
+
+    class Meta:
+        model = ThreadGroup
+        fields = ['url', 'id', 'master_user', 'name', 'tags', ]
+
+
 class ThreadSerializer(ModelWithObjectPermissionSerializer):
     url = serializers.HyperlinkedIdentityField(view_name='chatthread-detail')
     master_user = MasterUserField()
+    thread_group = ThreadGroupField()
     created = DateTimeTzAwareField(read_only=True)
     modified = DateTimeTzAwareField(read_only=True)
     closed = DateTimeTzAwareField(read_only=True)
+    tags = TagField(many=True, required=False, allow_null=True)
 
     class Meta:
         model = Thread
-        fields = ['url', 'id', 'master_user', 'created', 'modified', 'closed', 'subject',]
+        fields = ['url', 'id', 'master_user', 'thread_group', 'created', 'modified', 'closed', 'subject', 'tags',]
         read_only_fields = ['created', 'modified', 'closed']
 
 

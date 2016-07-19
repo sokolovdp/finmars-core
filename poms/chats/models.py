@@ -10,53 +10,37 @@ from django.utils.text import Truncator
 from django.utils.translation import ugettext_lazy as _, get_language
 
 from poms.audit import history
-from poms.common.models import TimeStampedModel
+from poms.common.models import TimeStampedModel, NamedModel
 from poms.obj_perms.models import AbstractGroupObjectPermission, AbstractUserObjectPermission
 from poms.users.models import MasterUser, Member
 
 
-# class ThreadStatus(models.Model):
-#     master_user = models.ForeignKey(
-#         MasterUser,
-#         related_name='chat_thread_statuses',
-#         verbose_name=_('master user')
-#     )
-#     name = models.CharField(
-#         max_length=255,
-#         verbose_name=_('name')
-#     )
-#     is_closed = models.BooleanField(
-#         default=False,
-#         verbose_name=_('is closed')
-#     )
-#
-#     class Meta:
-#         verbose_name = _('thread status')
-#         verbose_name_plural = _('thread statuses')
-#         unique_together = [
-#             ['master_user', 'name']
-#         ]
-#
-#     def __str__(self):
-#         return self.name
+@python_2_unicode_compatible
+class ThreadGroup(models.Model):
+    master_user = models.ForeignKey(MasterUser, related_name='chat_threadgroups')
+    name = models.CharField(
+        max_length=255,
+        verbose_name=_('name')
+    )
+
+    class Meta(TimeStampedModel.Meta):
+        verbose_name = _('thread group')
+        verbose_name_plural = _('thread groups')
+        ordering = ('name',)
+        permissions = [
+            ('view_threadgroup', 'Can view thread group'),
+            ('manage_threadgroup', 'Can manage thread group'),
+        ]
+
+    def __str__(self):
+        return self.name
 
 
 @python_2_unicode_compatible
 class Thread(TimeStampedModel):
-    master_user = models.ForeignKey(
-        MasterUser,
-        related_name='chat_threads',
-        verbose_name=_('master user')
-    )
-    subject = models.CharField(
-        max_length=255,
-        verbose_name=_('subject')
-    )
-    # status = models.ForeignKey(
-    #     ThreadStatus,
-    #     on_delete=models.PROTECT,
-    #     verbose_name=_('status')
-    # )
+    master_user = models.ForeignKey(MasterUser, related_name='chat_threads')
+    thread_group = models.ForeignKey(ThreadGroup, related_name='groups', null=True, blank=True)
+    subject = models.CharField(max_length=255)
     closed = models.DateTimeField(db_index=True, null=True, blank=True)
 
     class Meta(TimeStampedModel.Meta):
@@ -185,6 +169,7 @@ class DirectMessage(TimeStampedModel):
 # register_model(Thread)
 
 # history.register(ThreadStatus)
+history.register(ThreadGroup)
 history.register(Thread, follow=['user_object_permissions', 'group_object_permissions'])
 history.register(ThreadUserObjectPermission)
 history.register(ThreadGroupObjectPermission)
