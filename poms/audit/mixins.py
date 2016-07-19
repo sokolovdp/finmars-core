@@ -36,9 +36,15 @@ class HistoricalMixin(GenericAPIView):
             self._history_is_active = True
             with reversion.create_revision(), history.enable():
                 response = super(HistoricalMixin, self).dispatch(request, *args, **kwargs)
-                if not reversion.get_comment():
-                    reversion.set_comment(_('No fields changed.'))
+                # if not reversion.get_comment():
+                #     reversion.set_comment(_('No fields changed.'))
                 return response
+
+    def get_object(self):
+        obj = super(HistoricalMixin, self).get_object()
+        if self._history_is_active:
+            reversion.add_to_revision(obj)
+        return obj
 
     def initial(self, request, *args, **kwargs):
         super(HistoricalMixin, self).initial(request, *args, **kwargs)
