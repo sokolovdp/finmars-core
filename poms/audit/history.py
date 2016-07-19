@@ -7,11 +7,8 @@ from django.contrib.contenttypes.models import ContentType
 from django.core.exceptions import FieldDoesNotExist
 from django.utils.decorators import ContextDecorator
 from django.utils.encoding import force_text
-from django.utils.text import get_text_list
-from django.utils.translation import ugettext as _
 from reversion import revisions as reversion
 from reversion.errors import RevisionManagementError
-
 
 _active = local()
 
@@ -62,7 +59,7 @@ def add_comment(message):
                 comment = json.loads(comment)
             except ValueError:
                 comment = []
-        else :
+        else:
             comment = []
         ctype = message['content_type']
         message['content_type'] = '%s.%s' % (ctype.app_label, ctype.model)

@@ -5,10 +5,13 @@ from django_filters import FilterSet
 from rest_framework.filters import DjangoFilterBackend, OrderingFilter, SearchFilter
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.viewsets import ReadOnlyModelViewSet
+from reversion.models import Revision
 
+from poms.audit.filters import HistoryFilter
 from poms.audit.models import AuthLogEntry
 from poms.audit.serializers import AuthLogEntrySerializer
 from poms.users.filters import OwnerByUserFilter
+from poms.users.permissions import SuperUserOnly
 
 
 class AuthLogEntryFilterSet(FilterSet):
@@ -27,6 +30,24 @@ class AuthLogEntryViewSet(ReadOnlyModelViewSet):
     )
     filter_backends = (
         OwnerByUserFilter,
+        DjangoFilterBackend,
+        OrderingFilter,
+        SearchFilter,
+    )
+    filter_class = AuthLogEntryFilterSet
+    ordering_fields = ('date',)
+    search_fields = ('user_ip', 'user_agent',)
+
+
+class HistoryViewSet(ReadOnlyModelViewSet):
+    queryset = Revision.objects.select_related('user')
+    serializer_class = AuthLogEntrySerializer
+    permission_classes = (
+        IsAuthenticated,
+        SuperUserOnly
+    )
+    filter_backends = (
+        HistoryFilter,
         DjangoFilterBackend,
         OrderingFilter,
         SearchFilter,
