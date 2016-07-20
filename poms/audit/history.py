@@ -1,6 +1,7 @@
 from __future__ import unicode_literals
 
 import json
+import logging
 from threading import local
 
 from django.contrib.contenttypes.models import ContentType
@@ -9,6 +10,8 @@ from django.utils.decorators import ContextDecorator
 from django.utils.encoding import force_text
 from reversion import revisions as reversion
 from reversion.errors import RevisionManagementError
+
+_l = logging.getLogger('poms.audit')
 
 _active = local()
 
@@ -53,70 +56,121 @@ def add_comment(message):
     # except RevisionManagementError:
     #     pass
     try:
-        comment = reversion.get_comment()
-        if comment:
+        changes = reversion.get_comment()
+        if changes:
             try:
-                comment = json.loads(comment)
+                changes = json.loads(changes)
             except ValueError:
-                comment = []
+                changes = []
         else:
-            comment = []
+            changes = []
         ctype = message['content_type']
         message['content_type'] = '%s.%s' % (ctype.app_label, ctype.model)
-        comment.append(message)
-        reversion.set_comment(json.dumps(comment))
+        changes.append(message)
+        set_comment(changes)
+        # reversion.set_comment(json.dumps(comment))
+        # _l.debug('> %s', audit_get_comment(reversion.get_comment()))
     except RevisionManagementError:
         pass
 
 
+def set_comment(changes):
+    reversion.set_comment(json.dumps(changes))
+
+
+def get_comment():
+    comment = reversion.get_comment()
+    if comment:
+        try:
+            return json.loads(comment)
+        except ValueError:
+            pass
+    return {}
+
+
 def object_added(obj):
-    if is_active():
-        # message = _('Added %(name)s "%(object)s".') % {
-        #     'name': force_text(obj._meta.verbose_name),
-        #     'object': force_text(obj)
-        # }
-        # add_comment(message)
-        add_comment({
-            'action': 'add',
-            'object_name': force_text(obj._meta.verbose_name),
-            'object_repr': force_text(obj),
-            'content_type': ContentType.objects.get_for_model(obj),
-            'object_id': obj.id,
-        })
+    if not is_active():
+        return
+    add_comment({
+        'action': 'add',
+        'object_name': force_text(obj._meta.verbose_name),
+        'object_repr': force_text(obj),
+        'content_type': ContentType.objects.get_for_model(obj),
+        'object_id': obj.id,
+    })
 
 
 def object_changed(obj, fields):
-    if is_active():
-        # message = _('Changed %(list)s for %(name)s "%(object)s".') % {
-        #     'list': get_text_list(fields, _('and')),
-        #     'name': force_text(obj._meta.verbose_name),
-        #     'object': force_text(obj)
-        # }
-        # add_comment(message)
-        add_comment({
-            'action': 'change',
-            'object_name': force_text(obj._meta.verbose_name),
-            'object_repr': force_text(obj),
-            'fields': fields,
-            'content_type': ContentType.objects.get_for_model(obj),
-            'object_id': obj.id,
-        })
+    if not is_active():
+        return
+    add_comment({
+        'action': 'change',
+        'object_name': force_text(obj._meta.verbose_name),
+        'object_repr': force_text(obj),
+        'fields': fields,
+        'content_type': ContentType.objects.get_for_model(obj),
+        'object_id': obj.id,
+    })
+
+
+def object_changed_get_field(obj, name):
+    if not is_active():
+        return
+
+    ctype = ContentType.objects.get_for_model(obj)
+    content_type = '%s.%s' % (ctype.app_label, ctype.model)
+
+    obj_change = None
+    for o in get_comment():
+        if o['object_id'] == obj.id and (o['content_type'] == content_type):
+            obj_change = o
+
+    if obj_change is not None:
+        for f in obj_change.get('fields', []):
+            if f['name'] == name:
+                return f
+    return None
+
+
+def object_changed_update_field(obj, field):
+    if not is_active():
+        return
+
+    ctype = ContentType.objects.get_for_model(obj)
+    content_type = '%s.%s' % (ctype.app_label, ctype.model)
+
+    obj_change = None
+
+    changes = []
+    for o in get_comment():
+        if o['object_id'] == obj.id and (o['content_type'] == content_type):
+            obj_change = o
+        else:
+            changes.append(o)
+
+    obj_fields = []
+    if obj_change is not None:
+        for f in obj_change.get('fields', []):
+            if f['name'] == field['name']:
+                continue
+            else:
+                obj_fields.append(f)
+    obj_fields.append(field)
+
+    set_comment(changes)
+    object_changed(obj, obj_fields)
 
 
 def object_deleted(obj):
-    if is_active():
-        # message = _('Deleted %(name)s "%(object)s".') % {
-        #     'name': force_text(obj._meta.verbose_name),
-        #     'object': force_text(obj)
-        # }
-        # add_comment(message)
-        add_comment({
-            'action': 'delete',
-            'object_name': force_text(obj._meta.verbose_name),
-            'object_repr': force_text(obj),
-            'content_type': ContentType.objects.get_for_model(obj),
-            'object_id': obj.id,
-        })
+    if not is_active():
+        return
+    add_comment({
+        'action': 'delete',
+        'object_name': force_text(obj._meta.verbose_name),
+        'object_repr': force_text(obj),
+        'content_type': ContentType.objects.get_for_model(obj),
+        'object_id': obj.id,
+    })
 
 
 class ModelProxy(object):

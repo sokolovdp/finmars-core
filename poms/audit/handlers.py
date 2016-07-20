@@ -48,7 +48,8 @@ def audit_user_login_failed(credentials=None, **kwargs):
 
 
 def is_track_enabled(obj):
-    ret = history.is_active() and reversion.is_registered(obj)
+    # ret = history.is_active() and reversion.is_registered(obj)
+    ret = reversion.is_registered(obj)
     # _l.debug('track_enabled: %s -> %s', repr(obj), ret)
     return ret
 
@@ -106,19 +107,33 @@ def tracker_post_save(sender, instance=None, created=None, **kwargs):
                 fields = []
                 for attr, v in changed:
                     f = instance._meta.get_field(attr)
-                    old_value = i['fields'].get(attr, None)
-                    new_value = c['fields'].get(attr, None)
+                    old_value_id = i['fields'].get(attr, None)
+                    new_value_id = c['fields'].get(attr, None)
+                    old_value = None
+                    new_value = None
 
                     if f.one_to_one or f.one_to_many:
                         ct = ContentType.objects.get_for_model(f.related_model)
-                        if old_value:
-                            old_value = ct.get_object_for_this_type(pk=old_value)
-                            old_value = force_text(old_value)
-                        if new_value:
-                            new_value = ct.get_object_for_this_type(pk=new_value)
-                            new_value = force_text(new_value)
-                    elif f.many_to_many:
-                        pass
+                        if old_value_id:
+                            obj = ct.get_object_for_this_type(pk=old_value_id)
+                            old_value = {
+                                'id': obj.id,
+                                'object_repr': force_text(obj),
+                            }
+                        if new_value_id:
+                            obj = ct.get_object_for_this_type(pk=new_value_id)
+                            new_value = {
+                                'id': obj.id,
+                                'object_repr': force_text(obj),
+                            }
+                    else:
+                        old_value = old_value_id
+                        new_value = new_value_id
+                    # elif f.many_to_many:
+                    #     # ct = ContentType.objects.get_for_model(f.related_model)
+                    #     # old_value = [force_text(ct.get_object_for_this_type(pk=rpk)) for rpk in old_value]
+                    #     # new_value = [force_text(ct.get_object_for_this_type(pk=rpk)) for rpk in new_value]
+                    #     pass
                     old_value = _to_json_value(old_value)
                     new_value = _to_json_value(new_value)
                     fields.append({
@@ -138,25 +153,82 @@ def tracker_on_m2m_changed(sender, instance=None, action=None, reverse=None, mod
     if not hasattr(instance, '_tracker_data'):
         return
 
-    _l.debug('m2m_changed: sender=%s, instance=%s, action=%s, reverse=%s, model=%s, pk_set=%s, kwargs=%s',
-             sender, instance, action, reverse, model, pk_set, kwargs)
+    _l.debug('m2m_changed.%s: sender=%s, instance=%s, reverse=%s, model=%s, pk_set=%s, kwargs=%s',
+             action, sender, instance, reverse, model, pk_set, kwargs)
 
+    if action not in ['pre_remove', 'pre_add']:
+        return
+
+    attr = None
+    attr_ctype = ContentType.objects.get_for_model(model)
+    for f in instance._meta.get_fields():
+        if f.many_to_many:
+            if f.auto_created:
+                if f.through == sender:
+                    # f = ft
+                    attr = f.related_name
+                    break
+            else:
+                if f.rel.through == sender:
+                    # f = ft
+                    attr = f.name
+                    break
+    if attr is None:
+        return
+
+    if attr not in instance._tracker_data:
+        instance._tracker_data[attr] = [o.pk for o in getattr(instance, attr).all()]
+    _l.info('\t %s - %s -> %s', attr, attr_ctype, instance._tracker_data[attr])
+
+    field_data = history.object_changed_get_field(instance, attr)
+    if field_data is None:
+        field_data = {
+            'name': six.text_type(attr),
+            'verbose_name': six.text_type(model._meta.verbose_name_plural),
+        }
+
+        value = []
+        for pk in instance._tracker_data[attr]:
+            obj = attr_ctype.get_object_for_this_type(pk=pk)
+            value.append({
+                'id': obj.id,
+                'object_repr': force_text(obj),
+            })
+
+        field_data['old_value'] = value
+        field_data['new_value'] = value
+
+    new_value = set(x['id'] for x in field_data['new_value'])
     if action == 'pre_remove':
-        pass
-    if action == 'post_add':
-        pass
+        new_value = new_value.difference(pk_set)
+    elif action == 'pre_add':
+        new_value = new_value.union(pk_set)
 
-    # m2m_changed: sender=<class 'poms.tags.models.Tag_thread_groups'>, instance=G2, action=pre_remove, reverse=True, model=<class 'poms.tags.models.Tag'>, pk_set={4}, kwargs={'signal': <django.db.models.signals.ModelSignal object at 0x101fe5438>, 'using': 'default'}
-    # m2m_changed: sender=<class 'poms.tags.models.Tag_thread_groups'>, instance=G2, action=post_remove, reverse=True, model=<class 'poms.tags.models.Tag'>, pk_set={4}, kwargs={'signal': <django.db.models.signals.ModelSignal object at 0x101fe5438>, 'using': 'default'}
-    # m2m_changed: sender=<class 'poms.tags.models.Tag_thread_groups'>, instance=G2, action=pre_add, reverse=True, model=<class 'poms.tags.models.Tag'>, pk_set={1, 5, 6}, kwargs={'signal': <django.db.models.signals.ModelSignal object at 0x101fe5438>, 'using': 'default'}
-    # m2m_changed: sender=<class 'poms.tags.models.Tag_thread_groups'>, instance=G2, action=post_add, reverse=True, model=<class 'poms.tags.models.Tag'>, pk_set={1, 5, 6}, kwargs={'signal': <django.db.models.signals.ModelSignal object at 0x101fe5438>, 'using': 'default'}
-    # post_save: sender=<class 'poms.chats.models.ThreadGroup'>, instance=G2, created=False, kwargs={'signal': <django.db.models.signals.ModelSignal object at 0x101fe5240>, 'raw': False, 'update_fields': None, 'using': 'default'}
+    value = []
+    for pk in new_value:
+        obj = attr_ctype.get_object_for_this_type(pk=pk)
+        value.append({
+            'id': obj.id,
+            'object_repr': force_text(obj),
+        })
+    field_data['new_value'] = value
 
-    # m2m_changed: sender=<class 'poms.tags.models.Tag_thread_groups'>, instance=G2, action=pre_remove, reverse=True, model=<class 'poms.tags.models.Tag'>, pk_set={6}, kwargs={'signal': <django.db.models.signals.ModelSignal object at 0x101fe5438>, 'using': 'default'}
-    # m2m_changed: sender=<class 'poms.tags.models.Tag_thread_groups'>, instance=G2, action=post_remove, reverse=True, model=<class 'poms.tags.models.Tag'>, pk_set={6}, kwargs={'signal': <django.db.models.signals.ModelSignal object at 0x101fe5438>, 'using': 'default'}
-    # m2m_changed: sender=<class 'poms.tags.models.Tag_thread_groups'>, instance=G2, action=pre_add, reverse=True, model=<class 'poms.tags.models.Tag'>, pk_set={4}, kwargs={'signal': <django.db.models.signals.ModelSignal object at 0x101fe5438>, 'using': 'default'}
-    # m2m_changed: sender=<class 'poms.tags.models.Tag_thread_groups'>, instance=G2, action=post_add, reverse=True, model=<class 'poms.tags.models.Tag'>, pk_set={4}, kwargs={'signal': <django.db.models.signals.ModelSignal object at 0x101fe5438>, 'using': 'default'}
-    # post_save: sender=<class 'poms.chats.models.ThreadGroup'>, instance=G2, created=False, kwargs={'signal': <django.db.models.signals.ModelSignal object at 0x101fe5240>, 'raw': False, 'update_fields': None, 'using': 'default'}
+    # if old_value:
+    #     obj = ct.get_object_for_this_type(pk=old_value_id)
+    #     old_value = {
+    #         'object_id': obj.id,
+    #         'object_repr': force_text(obj),
+    #     }
+    # if new_value_id:
+    #     obj = ct.get_object_for_this_type(pk=new_value_id)
+    #     new_value = {
+    #         'object_id': obj.id,
+    #         'object_repr': force_text(obj),
+    #     }
+    history.object_changed_update_field(instance, field_data)
+
+    _l.info('\t %s: %s -> %s', attr, field_data['old_value'], field_data['new_value'])
+
     pass
 
 
