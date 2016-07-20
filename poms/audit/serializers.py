@@ -35,11 +35,11 @@ class VersionSerializer(serializers.ModelSerializer):
     # object = serializers.SerializerMethodField()
     object_id = serializers.SerializerMethodField()
     object_repr = serializers.SerializerMethodField()
-    data = serializers.SerializerMethodField()
+    # data = serializers.SerializerMethodField()
 
     class Meta:
         model = Version
-        fields = ('url', 'id', 'date', 'member', 'comment', 'object_id', 'object_repr', 'data')
+        fields = ('url', 'id', 'date', 'member', 'comment', 'object_id', 'object_repr')
 
     def get_url(self, value):
         request = self.context['request']
@@ -67,7 +67,7 @@ class VersionSerializer(serializers.ModelSerializer):
 
     def get_data(self, value):
         changes = value.revision.comment
-        if changes and changes.startswith('['):
+        if changes and changes.startswith('{'):
             try:
                 return json.loads(changes)
             except ValueError:

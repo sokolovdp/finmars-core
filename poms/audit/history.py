@@ -75,8 +75,8 @@ def _reversion_set_comment():
         'changed': _state.changed,
         'deleted': _state.deleted,
     }
-    print('changes', '-' * 70)
-    pprint.pprint(changes)
+    # print('changes', '-' * 70)
+    # pprint.pprint(changes)
     reversion.set_comment(json.dumps(changes))
 
 
@@ -517,7 +517,9 @@ def _get_display_value(value):
 
 
 def make_comment(changes):
-    if isinstance(changes, six.string_types):
+    if not changes:
+        return None
+    if isinstance(changes, six.string_types) and changes.startswith('{'):
         try:
             data = json.loads(changes)
         except ValueError:
