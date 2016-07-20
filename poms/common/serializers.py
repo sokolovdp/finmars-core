@@ -197,7 +197,7 @@ class AbstractClassifierSerializer(ModelWithUserCodeSerializer, serializers.Mode
         # extra_kwargs = {'user_code': {'required': False}}
 
     def __init__(self, *args, **kwargs):
-        show_children = kwargs.pop('show_children', False)
+        show_children = kwargs.pop('show_children', True)
         super(AbstractClassifierSerializer, self).__init__(*args, **kwargs)
         if not show_children:
             self.fields.pop('children')
