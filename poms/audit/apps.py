@@ -12,3 +12,5 @@ class AuditConfig(AppConfig):
     def ready(self):
         # noinspection PyUnresolvedReferences
         import poms.audit.handlers
+        # noinspection PyUnresolvedReferences
+        import poms.audit.history

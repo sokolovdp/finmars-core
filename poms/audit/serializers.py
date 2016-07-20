@@ -5,12 +5,10 @@ from collections import OrderedDict
 
 import six
 from django.utils import timezone
-from django.utils.encoding import force_text
-from django.utils.text import get_text_list
-from django.utils.translation import ugettext as _
 from rest_framework import serializers
 from reversion.models import Version
 
+from poms.audit.history import make_comment
 from poms.audit.models import AuthLogEntry
 from poms.common.fields import DateTimeTzAwareField
 from poms.common.middleware import get_city_by_ip
@@ -56,7 +54,7 @@ class VersionSerializer(serializers.ModelSerializer):
 
     def get_comment(self, value):
         changes = value.revision.comment
-        return audit_get_comment(changes)
+        return make_comment(changes)
 
     # def get_object(self, value):
     #     return getattr(value, 'object_json', None)
@@ -76,65 +74,65 @@ class VersionSerializer(serializers.ModelSerializer):
                 return None
         return None
 
-
-def audit_get_comment(changes):
-    if changes and changes.startswith('['):
-        try:
-            changes = json.loads(changes)
-        except ValueError:
-            return changes
-        messages = []
-        for m in changes:
-            action = m.get('action', None)
-            object_repr = m.get('object_repr', '')
-            name = m.get('object_name', m.get('content_type', ''))
-
-            if action == 'add':
-                message = _('Added %(name)s "%(object)s".') % {
-                    'name': name,
-                    'object': object_repr
-                }
-                messages.append(message)
-
-            elif action == 'change':
-                try:
-                    for f in m.get('fields', []):
-                        message = _('Changed %(field)s for %(name)s "%(object)s" from %(old_value)s to %(new_value)s.') % {
-                            'field': f['verbose_name'],
-                            'name': name,
-                            'object': object_repr,
-                            'old_value': force_text(f['old_value']),
-                            'new_value': force_text(f['new_value']),
-                        }
-                        messages.append(message)
-                except KeyError:
-                    pass
-
-                # fields = m.get('fields', [])
-                # fields_repr = []
-                # for f in fields:
-                #     if isinstance(f, six.string_types):
-                #         fields_repr.append('"%s"' % f)
-                #     else:
-                #         fields_repr.append('"%s"' % f['verbose_name'])
-                # if fields_repr:
-                #     fields_repr.sort()
-                #     message = _('Changed %(list)s for %(name)s "%(object)s".') % {
-                #         'list': get_text_list(fields_repr, _('and')),
-                #         'name': name,
-                #         'object': object_repr
-                #     }
-                # else:
-                #     message = _('Changed %(name)s "%(object)s".') % {
-                #         'name': name,
-                #         'object': object_repr
-                #     }
-
-            elif action == 'delete':
-                message = _('Deleted %(name)s "%(object)s".') % {
-                    'name': name,
-                    'object': object_repr
-                }
-                messages.append(message)
-        return ' '.join(messages)
-    return changes
+# def audit_get_comment(changes):
+#     if changes and changes.startswith('['):
+#         try:
+#             changes = json.loads(changes)
+#         except ValueError:
+#             return changes
+#         messages = []
+#         for m in changes:
+#             action = m.get('action', None)
+#             object_repr = m.get('object_repr', '')
+#             name = m.get('object_name', m.get('content_type', ''))
+#
+#             if action == 'add':
+#                 message = _('Added %(name)s "%(object)s".') % {
+#                     'name': name,
+#                     'object': object_repr
+#                 }
+#                 messages.append(message)
+#
+#             elif action == 'change':
+#                 try:
+#                     for f in m.get('fields', []):
+#                         message = _(
+#                             'Changed %(field)s for %(name)s "%(object)s" from %(old_value)s to %(new_value)s.') % {
+#                                       'field': f['verbose_name'],
+#                                       'name': name,
+#                                       'object': object_repr,
+#                                       'old_value': force_text(f['old_value']),
+#                                       'new_value': force_text(f['new_value']),
+#                                   }
+#                         messages.append(message)
+#                 except KeyError:
+#                     pass
+#
+#                     # fields = m.get('fields', [])
+#                     # fields_repr = []
+#                     # for f in fields:
+#                     #     if isinstance(f, six.string_types):
+#                     #         fields_repr.append('"%s"' % f)
+#                     #     else:
+#                     #         fields_repr.append('"%s"' % f['verbose_name'])
+#                     # if fields_repr:
+#                     #     fields_repr.sort()
+#                     #     message = _('Changed %(list)s for %(name)s "%(object)s".') % {
+#                     #         'list': get_text_list(fields_repr, _('and')),
+#                     #         'name': name,
+#                     #         'object': object_repr
+#                     #     }
+#                     # else:
+#                     #     message = _('Changed %(name)s "%(object)s".') % {
+#                     #         'name': name,
+#                     #         'object': object_repr
+#                     #     }
+#
+#             elif action == 'delete':
+#                 message = _('Deleted %(name)s "%(object)s".') % {
+#                     'name': name,
+#                     'object': object_repr
+#                 }
+#                 messages.append(message)
+#         return ' '.join(messages)
+#     return changes
