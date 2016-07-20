@@ -2,7 +2,6 @@ from __future__ import unicode_literals
 
 import json
 import logging
-import pprint
 from threading import local
 
 import six
@@ -508,11 +507,18 @@ def _instance_post_delete(sender, instance=None, **kwargs):
 
 
 def _get_display_value(value):
-    if isinstance(value, dict):
-        return value['display']
+    if value is None:
+        return None
+    elif isinstance(value, dict):
+        try:
+            return _get_display_value(value['display'])
+        except KeyError:
+            return _get_display_value(value.get('value', None))
     elif isinstance(value, (list, tuple, set,)):
         l = sorted([_get_display_value(v) for v in value])
         return '[%s]' % (', '.join(l))
+    elif isinstance(value, six.string_types):
+        return '"%s"' % value
     return value
 
 
@@ -556,7 +562,7 @@ def make_comment(changes):
                     else:
                         f_verbose_name = getattr(f, 'verbose_name', of['name'])
                     message = _(
-                        'Changed "%(field)s" in %(name)s "%(object)s" from %(old_value)s to %(new_value)s.') % {
+                        'Changed %(field)s in %(name)s "%(object)s" from %(old_value)s to %(new_value)s.') % {
                                   'field': f_verbose_name,
                                   # 'field': of['name'],
                                   'name': model._meta.verbose_name,
