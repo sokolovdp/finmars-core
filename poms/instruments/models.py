@@ -404,7 +404,7 @@ class InstrumentAttribute(AbstractAttribute):
         verbose_name_plural = _('instrument attributes')
 
 
-# @python_2_unicode_compatible
+@python_2_unicode_compatible
 class ManualPricingFormula(models.Model):
     instrument = models.ForeignKey(Instrument, related_name='manual_pricing_formulas',
                                    verbose_name=_('instrument'))
@@ -424,7 +424,7 @@ class ManualPricingFormula(models.Model):
         ]
 
     def __str__(self):
-        return '%s - %s' % (self.instrument, self.pricing_policy)
+        return '%s' % (self.id,)
 
 
 @python_2_unicode_compatible
@@ -452,9 +452,10 @@ class PriceHistory(models.Model):
         ]
 
     def __str__(self):
-        return '%s at %s - %s' % (self.instrument, self.date, self.principal_price,)
+        return '%s [@%s]' % (self.principal_price, self.date,)
 
 
+@python_2_unicode_compatible
 class AccrualCalculationSchedule(models.Model):
     instrument = models.ForeignKey(Instrument, related_name='accrual_calculation_schedules',
                                    verbose_name=_('instrument'))
@@ -475,7 +476,11 @@ class AccrualCalculationSchedule(models.Model):
         verbose_name = _('accrual calculation schedule')
         verbose_name_plural = _('accrual calculation schedules')
 
+    def __str__(self):
+        return '%s' % (self.id,)
 
+
+@python_2_unicode_compatible
 class InstrumentFactorSchedule(models.Model):
     instrument = models.ForeignKey(Instrument, related_name='factor_schedules',
                                    verbose_name=_('instrument'))
@@ -487,6 +492,9 @@ class InstrumentFactorSchedule(models.Model):
     class Meta:
         verbose_name = _('instrument factor schedule')
         verbose_name_plural = _('instrument factor schedules')
+
+    def __str__(self):
+        return '%s' % (self.id,)
 
 
 class EventSchedule(models.Model):
@@ -510,6 +518,9 @@ class EventSchedule(models.Model):
     class Meta:
         verbose_name = _('event schedule')
         verbose_name_plural = _('event schedules')
+
+    def __str__(self):
+        return '%s' % (self.id,)
 
 
 history.register(InstrumentClass)
