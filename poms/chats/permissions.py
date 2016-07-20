@@ -60,7 +60,7 @@ class MessagePermission(BasePermission):
                 member = request.user.member
                 return obj.sender_id == member.id
             if view.action == 'create':
-                if obj and not obj.thread.status.is_closed:
+                if obj and not obj.thread.is_closed:
                     return True
         return False
 
