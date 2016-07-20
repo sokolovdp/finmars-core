@@ -4,7 +4,7 @@ import six
 from rest_framework import serializers
 
 from poms.obj_perms.fields import PermissionField, GrantedPermissionField
-from poms.obj_perms.utils import has_view_perms, get_all_perms, assign_perms2
+from poms.obj_perms.utils import has_view_perms, get_all_perms, assign_perms2, has_manage_perm
 from poms.users.fields import MemberField, GroupField
 
 
@@ -32,8 +32,9 @@ class ModelWithObjectPermissionSerializer(serializers.ModelSerializer):
         self.fields['display_name'] = serializers.SerializerMethodField()
         self.fields['granted_permissions'] = GrantedPermissionField()
 
-        member = self.context['request'].user.member
-        if member.is_superuser and show_object_permissions:
+        # member = self.context['request'].user.member
+        # if member.is_superuser and show_object_permissions:
+        if show_object_permissions:
             self.fields['user_object_permissions'] = UserObjectPermissionSerializer(
                 many=True, required=False, allow_null=True)
             self.fields['group_object_permissions'] = GroupObjectPermissionSerializer(
@@ -71,6 +72,10 @@ class ModelWithObjectPermissionSerializer(serializers.ModelSerializer):
             for k in list(six.iterkeys(ret)):
                 if k not in ['url', 'id', 'public_name', 'display_name', 'granted_permissions']:
                     ret.pop(k)
+        if not has_manage_perm(member, instance):
+            for k in list(six.iterkeys(ret)):
+                if k in ['user_object_permissions', 'group_object_permissions']:
+                    ret.pop(k)
         return ret
 
     def create(self, validated_data):
@@ -95,29 +100,16 @@ class ModelWithObjectPermissionSerializer(serializers.ModelSerializer):
 
     def save_object_permission(self, instance, user_object_permissions=None, group_object_permissions=None,
                                created=False):
-        # if created:
-        #         member = self.context['request'].user.member
-        #         user_object_permissions = user_object_permissions or []
-        #         user_object_permissions += [{'member': member, 'permission': p}
-        #                                     for p in get_default_owner_permissions(instance)]
-        #         assign_perms_from_list(instance,
-        #                                user_object_permissions=user_object_permissions,
-        #                                group_object_permissions=group_object_permissions)
-        #
-        #     else:
-        #         assign_perms_from_list(instance,
-        #                                user_object_permissions=user_object_permissions,
-        #                                group_object_permissions=group_object_permissions)
         member = self.context['request'].user.member
         member_perms = [{'member': member, 'permission': p,} for p in get_all_perms(instance)]
-        if member.is_superuser:
-            if created:
-                if user_object_permissions:
-                    user_object_permissions = [uop for uop in user_object_permissions if uop['member'].id != member.id]
-                else:
-                    user_object_permissions = []
-                user_object_permissions += member_perms
+
+        if created:
+            if user_object_permissions:
+                user_object_permissions = [uop for uop in user_object_permissions if uop['member'].id != member.id]
+            else:
+                user_object_permissions = []
+            user_object_permissions += member_perms
             assign_perms2(instance, user_perms=user_object_permissions, group_perms=group_object_permissions)
         else:
-            if created:
-                assign_perms2(instance, user_perms=member_perms)
+            if has_manage_perm(member, instance):
+                assign_perms2(instance, user_perms=user_object_permissions, group_perms=group_object_permissions)
