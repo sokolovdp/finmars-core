@@ -48,7 +48,9 @@ def audit_user_login_failed(credentials=None, **kwargs):
 
 
 def is_track_enabled(obj):
-    return history.is_active() and reversion.is_registered(obj)
+    ret = history.is_active() and reversion.is_registered(obj)
+    # _l.debug('track_enabled: %s -> %s', repr(obj), ret)
+    return ret
 
 
 def fields_to_set(fields):
@@ -84,6 +86,8 @@ def tracker_post_init(sender, instance=None, **kwargs):
 @receiver(post_save, dispatch_uid='tracker_on_save')
 def tracker_post_save(sender, instance=None, created=None, **kwargs):
     if not is_track_enabled(instance):
+        return
+    if not hasattr(instance, '_tracker_data'):
         return
     _l.debug('post_save: sender=%s, instance=%s, created=%s, kwargs=%s',
              sender, instance, created, kwargs)
@@ -131,7 +135,6 @@ def tracker_post_save(sender, instance=None, created=None, **kwargs):
 def tracker_on_m2m_changed(sender, instance=None, action=None, reverse=None, model=None, pk_set=None, **kwargs):
     if not is_track_enabled(instance):
         return
-
     if not hasattr(instance, '_tracker_data'):
         return
 
@@ -160,6 +163,8 @@ def tracker_on_m2m_changed(sender, instance=None, action=None, reverse=None, mod
 @receiver(post_delete, dispatch_uid='tracker_on_delete')
 def tracker_post_delete(sender, instance=None, **kwargs):
     if not is_track_enabled(instance):
+        return
+    if not hasattr(instance, '_tracker_data'):
         return
     _l.debug('post_delete: sender=%s, instance=%s, kwargs=%s',
              sender, instance, kwargs)
