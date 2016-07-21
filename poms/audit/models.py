@@ -1,7 +1,5 @@
 from __future__ import unicode_literals
 
-import json
-
 from django.conf import settings
 from django.contrib.contenttypes.fields import GenericForeignKey
 from django.contrib.contenttypes.models import ContentType
@@ -39,7 +37,7 @@ class VersionInfo(models.Model):
 
 
 @python_2_unicode_compatible
-class HistoryEntry(models.Model):
+class ObjectHistoryEntry(models.Model):
     ADDITION = 1
     CHANGE = 2
     DELETION = 3
@@ -50,20 +48,21 @@ class HistoryEntry(models.Model):
     )
 
     master_user = models.ForeignKey('users.MasterUser', related_name='histories')
-    member = models.ForeignKey('users.Member', related_name='histories')
+    member = models.ForeignKey('users.Member', related_name='histories', null=True, blank=None,
+                               on_delete=models.SET_NULL)
+
     created = models.DateTimeField(auto_now_add=True, db_index=True)
     version = models.IntegerField(default=0)
-    content_type = models.ForeignKey(ContentType, related_name='histories')
-    object_id = models.BigIntegerField()
-    content_object = GenericForeignKey()
     action_flag = models.PositiveSmallIntegerField(choices=FLAG_CHOICES)
     message = models.TextField(null=True, blank=True)
-    json = models.TextField(null=True, blank=True)
+
+    content_type = models.ForeignKey(ContentType, related_name='histories', blank=True, null=True)
+    object_id = models.BigIntegerField(blank=True, null=True)
+    content_object = GenericForeignKey()
 
     class Meta:
-        abstract = True
-        verbose_name = _('history')
-        verbose_name_plural = _('histories')
+        verbose_name = _('object history')
+        verbose_name_plural = _('object histories')
         index_together = (
             ('master_user', 'created')
         )
@@ -74,10 +73,6 @@ class HistoryEntry(models.Model):
     def __str__(self):
         return self.message
 
-    def get_data(self):
-        return json.loads(self.json) if self.json else None
-
-    def set_data(self, data):
-        self.json = json.dumps(data, sort_keys=True) if data else None
-
-    data = property(get_data, set_data)
+    @property
+    def comment(self):
+        return self.message

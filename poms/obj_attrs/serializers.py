@@ -2,6 +2,7 @@ from __future__ import unicode_literals
 
 import six
 from django.core.exceptions import ObjectDoesNotExist
+from django.db import IntegrityError
 from django.utils.translation import ugettext_lazy as _
 from rest_framework import serializers
 from rest_framework.exceptions import ValidationError
@@ -120,7 +121,10 @@ class AbstractAttributeTypeSerializer(ModelWithObjectPermissionSerializer, Model
         children = node.pop('get_children', node.pop('children', []))
         for k, v in six.iteritems(node):
             setattr(o, k, v)
-        o.save()
+        try:
+            o.save()
+        except IntegrityError:
+            raise ValidationError("non unique user_code")
         processed.add(o.id)
 
         for c in children:

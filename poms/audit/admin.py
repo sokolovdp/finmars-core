@@ -6,7 +6,7 @@ from django.contrib.contenttypes.models import ContentType
 from django.utils.translation import ugettext_lazy as _
 from reversion.admin import VersionAdmin
 
-from poms.audit.models import AuthLogEntry, HistoryEntry
+from poms.audit.models import AuthLogEntry, ObjectHistoryEntry
 from poms.users.models import MasterUser, Member
 
 
@@ -69,42 +69,49 @@ class HistoricalAdmin(VersionAdmin):
 #             return queryset.filter(content_type=int(self.value()))
 #         else:
 #             return queryset
-#
-#
-# class HistoryEntryAdmin(admin.ModelAdmin):
-#     model = HistoryEntry
-#     # form = HistoryEntryForm
-#     list_display = ('id', 'created', 'master_user', 'member', 'action_flag', 'content_type', 'content_object',
-#                     'message',)
-#     list_select_related = ('master_user', 'member',)
-#     fields = (
-#         'id',
-#         ('master_user', 'member'),
-#         ('created', 'action_flag'),
-#         ('content_type', 'object_id', 'content_object'),
-#         'message',
-#         'json',
-#     )
-#     readonly_fields = ('id', 'created', 'content_object',)
-#     raw_id_fields = ('master_user', 'member',)
-#     list_filter = ('action_flag', ContentTypeFilter)
-#
-#     def get_queryset(self, request):
-#         qs = super(HistoryEntryAdmin, self).get_queryset(request)
-#         qs = qs.prefetch_related('content_object')
-#         return qs
-#
-#     def formfield_for_foreignkey(self, db_field, request=None, **kwargs):
-#         if db_field.name == 'content_type':
-#             qs = kwargs.get('queryset', db_field.remote_field.model.objects)
-#             kwargs['queryset'] = qs.order_by('model')
-#         return super(HistoryEntryAdmin, self).formfield_for_foreignkey(db_field, request=request, **kwargs)
-#
-#         # def has_add_permission(self, request):
-#         #     return False
-#
-#         # def has_delete_permission(self, request, obj=None):
-#         #     return False
-#
-#
-# admin.site.register(HistoryEntry, HistoryEntryAdmin)
+
+
+class ObjectHistoryEntryAdmin(admin.ModelAdmin):
+    model = ObjectHistoryEntry
+    # form = HistoryEntryForm
+    list_display = ('id', 'created', 'master_user', 'member', 'action_flag', 'content_type', 'object_id',
+                    'message',)
+    list_select_related = ('master_user', 'member',)
+    fields = (
+        'id',
+        ('master_user', 'member'),
+        ('created', 'action_flag'),
+        ('content_type', 'object_id', 'content_object'),
+        'message'
+    )
+    list_filter = ('action_flag', )
+    date_hierarchy = 'created'
+    search_fields = ('object_id',)
+    readonly_fields = ('id', 'created', 'content_object', 'master_user', 'member', 'created', 'action_flag',
+                       'content_type', 'object_id', 'content_object', 'message')
+    raw_id_fields = ('master_user', 'member',)
+    # list_filter = ('action_flag', ContentTypeFilter)
+
+    def get_queryset(self, request):
+        qs = super(ObjectHistoryEntryAdmin, self).get_queryset(request)
+        qs = qs.prefetch_related('content_object')
+        return qs
+
+    def formfield_for_foreignkey(self, db_field, request=None, **kwargs):
+        if db_field.name == 'content_type':
+            qs = kwargs.get('queryset', db_field.remote_field.model.objects)
+            kwargs['queryset'] = qs.order_by('model')
+        return super(ObjectHistoryEntryAdmin, self).formfield_for_foreignkey(db_field, request=request, **kwargs)
+
+        # def has_add_permission(self, request):
+        #     return False
+
+        # def has_delete_permission(self, request, obj=None):
+        #     return False
+
+    def has_add_permission(self, request):
+        return False
+
+
+
+admin.site.register(ObjectHistoryEntry, ObjectHistoryEntryAdmin)

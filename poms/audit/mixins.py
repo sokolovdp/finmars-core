@@ -37,6 +37,7 @@ class HistoricalMixin(GenericAPIView):
     def get_object(self):
         obj = super(HistoricalMixin, self).get_object()
         if self._history_is_active:
+            # history.set_content_object(obj)
             reversion.add_to_revision(obj)
         return obj
 
@@ -44,6 +45,13 @@ class HistoricalMixin(GenericAPIView):
         super(HistoricalMixin, self).initial(request, *args, **kwargs)
 
         if self._history_is_active:
+            # if self.action == 'create':
+            #     history.set_flag_addition()
+            # elif self.action == 'update' or self.action == 'partial_update':
+            #     history.set_flag_change()
+            # elif self.action == 'destroy':
+            #     history.set_flag_deletion()
+
             reversion.set_user(request.user)
             reversion.add_meta(VersionInfo,
                                master_user=request.user.master_user,
@@ -61,6 +69,22 @@ class HistoricalMixin(GenericAPIView):
         #     pprint.pprint(self._o1)
         #     pprint.pprint(self._o2)
         return super(HistoricalMixin, self).finalize_response(request, response, *args, **kwargs)
+
+    def perform_create(self, serializer):
+        history.set_flag_addition()
+        super(HistoricalMixin, self).perform_create(serializer)
+        history.set_content_object(serializer.instance)
+
+    def perform_update(self, serializer):
+        history.set_flag_change()
+        history.set_content_object(serializer.instance)
+        super(HistoricalMixin, self).perform_update(serializer)
+
+    def perform_destroy(self, instance):
+        history.set_flag_deletion()
+        history.set_content_object(instance)
+        super(HistoricalMixin, self).perform_destroy(instance)
+
 
     @list_route(permission_classes=(IsAuthenticated, SuperUserOnly,))
     def deleted(self, request, pk=None):

@@ -118,7 +118,8 @@ router.register(r'chats/message', chats.MessageViewSet, 'chatmessage')
 router.register(r'chats/direct-message', chats.DirectMessageViewSet, 'chatdirectmessage')
 
 router.register(r'security/http-session', sessions.SessionViewSet)
-router.register(r'audit/auth-log', audit.AuthLogEntryViewSet)
+router.register(r'audit/auth-log', audit.AuthLogViewSet)
+router.register(r'audit/history', audit.ObjectHistoryViewSet)
 
 router.register(r'integrations/import', integrations.AbstractImportViewSet, 'AbstractImportViewSet')
 router.register(r'integrations/bloomberg', integrations.BloombergInstrumentViewSet, 'BloombergInstrumentViewSet')

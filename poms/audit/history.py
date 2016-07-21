@@ -15,6 +15,9 @@ from django.utils.encoding import force_text
 from django.utils.translation import ugettext as _
 from reversion import revisions as reversion
 
+from poms.audit.models import ObjectHistoryEntry
+from poms.common.middleware import get_request
+
 _l = logging.getLogger('poms.audit')
 
 _state = local()
@@ -32,9 +35,27 @@ def activate():
     _state.added = []
     _state.changed = []
     _state.deleted = []
+    _state.flag = ObjectHistoryEntry.DELETION
+    _state.content_object = None
 
 
 def deactivate():
+    if getattr(_state, "active", True):
+        request = get_request()
+        content_object = _state.content_object
+        message = json.dumps({
+            'added': _state.added,
+            'changed': _state.changed,
+            'deleted': _state.deleted,
+        })
+        ObjectHistoryEntry.objects.create(
+            master_user=request.user.master_user,
+            member=request.user.member,
+            action_flag=_state.flag,
+            message=message,
+            content_object=content_object,
+        )
+
     if hasattr(_state, "active"):
         del _state.active
     if hasattr(_state, "added"):
@@ -43,10 +64,30 @@ def deactivate():
         del _state.changed
     if hasattr(_state, "deleted"):
         del _state.deleted
+    if hasattr(_state, "flag"):
+        del _state.flag
+    if hasattr(_state, "content_object"):
+        del _state.content_object
 
 
 def is_active():
     return getattr(_state, "active", False)
+
+
+def set_content_object(content_object):
+    _state.content_object = content_object
+
+
+def set_flag_addition():
+    _state.flag = ObjectHistoryEntry.ADDITION
+
+
+def set_flag_change():
+    _state.flag = ObjectHistoryEntry.CHANGE
+
+
+def set_flag_deletion():
+    _state.flag = ObjectHistoryEntry.DELETION
 
 
 class enable(ContextDecorator):

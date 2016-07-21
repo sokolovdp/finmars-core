@@ -8,8 +8,9 @@ from django.utils import timezone
 from rest_framework import serializers
 from reversion.models import Version
 
+from poms.audit.fields import ObjectHistoryContentTypeField
 from poms.audit.history import make_comment
-from poms.audit.models import AuthLogEntry
+from poms.audit.models import AuthLogEntry, ObjectHistoryEntry
 from poms.common.fields import DateTimeTzAwareField
 from poms.common.middleware import get_city_by_ip
 
@@ -35,6 +36,7 @@ class VersionSerializer(serializers.ModelSerializer):
     # object = serializers.SerializerMethodField()
     object_id = serializers.SerializerMethodField()
     object_repr = serializers.SerializerMethodField()
+
     # data = serializers.SerializerMethodField()
 
     class Meta:
@@ -72,6 +74,27 @@ class VersionSerializer(serializers.ModelSerializer):
                 return json.loads(changes)
             except ValueError:
                 return None
+        return None
+
+
+class ObjectHistoryEntrySerializer(serializers.ModelSerializer):
+    content_type = ObjectHistoryContentTypeField()
+    comment = serializers.SerializerMethodField()
+    message = serializers.SerializerMethodField()
+
+    class Meta:
+        model = ObjectHistoryEntry
+        fields = ('url', 'id', 'member', 'created', 'action_flag', 'content_type', 'object_id', 'comment', 'message')
+
+    def get_comment(self, value):
+        return make_comment(value.message)
+
+    def get_message(self, value):
+        if value.message:
+            try:
+                return json.loads(value.message)
+            except ValueError:
+                pass
         return None
 
 # def audit_get_comment(changes):
