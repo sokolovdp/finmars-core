@@ -78,23 +78,23 @@ class AuthLogEntrySerializer(serializers.ModelSerializer):
 
 class ObjectHistoryEntrySerializer(serializers.ModelSerializer):
     content_type = ObjectHistoryContentTypeField()
-    comment = serializers.SerializerMethodField()
-    message = serializers.SerializerMethodField()
+    # comment = serializers.SerializerMethodField()
+    # message = serializers.SerializerMethodField()
 
     class Meta:
         model = ObjectHistoryEntry
         fields = ('url', 'id', 'member', 'created', 'action_flag', 'content_type', 'object_id', 'comment', 'message')
 
-    def get_comment(self, value):
-        return make_comment(value.message)
+    # def get_comment(self, value):
+    #     return make_comment(value.message)
 
-    def get_message(self, value):
-        # if value.message:
-        #     try:
-        #         return json.loads(value.message)
-        #     except ValueError:
-        #         pass
-        return None
+    # def get_message(self, value):
+    #     if value.message:
+    #         try:
+    #             return json.loads(value.message)
+    #         except ValueError:
+    #             pass
+    #     return None
 
 # def audit_get_comment(changes):
 #     if changes and changes.startswith('['):

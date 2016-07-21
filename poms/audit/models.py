@@ -74,4 +74,5 @@ class ObjectHistoryEntry(models.Model):
 
     @property
     def comment(self):
-        return self.message
+        from poms.audit.history import make_comment
+        return make_comment(self.message)
