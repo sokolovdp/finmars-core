@@ -76,7 +76,7 @@ class ObjectHistoryEntryAdmin(admin.ModelAdmin):
     # form = HistoryEntryForm
     list_display = ('id', 'created', 'master_user', 'member', 'action_flag', 'content_type', 'object_id',
                     'message', 'comment')
-    list_select_related = ('master_user', 'member',)
+    list_select_related = ('master_user', 'member', 'content_type',)
     fields = (
         'id',
         ('master_user', 'member'),
@@ -85,7 +85,13 @@ class ObjectHistoryEntryAdmin(admin.ModelAdmin):
         'comment',
         'message',
     )
-    list_filter = ('action_flag',)
+    list_filter = (
+        'action_flag',
+        'created',
+        # ('master_user', admin.RelatedOnlyFieldListFilter),
+        # ('member', admin.RelatedOnlyFieldListFilter),
+        # ('content_type', admin.RelatedOnlyFieldListFilter),
+    )
     date_hierarchy = 'created'
     search_fields = ('object_id',)
     readonly_fields = ('id', 'created', 'content_object', 'master_user', 'member', 'created', 'action_flag',

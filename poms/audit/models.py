@@ -70,7 +70,7 @@ class ObjectHistoryEntry(models.Model):
         ]
 
     def __str__(self):
-        return self.message
+        return 'Entry #%s' % self.id
 
     @property
     def comment(self):
