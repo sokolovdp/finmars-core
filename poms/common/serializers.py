@@ -70,14 +70,15 @@ class ClassifierRecursiveField(serializers.Serializer):
         return cls(instance=instance, context=self.context).data
 
     def to_internal_value(self, data):
-        # if isinstance(self.parent, ListSerializer):
-        #     cls = self.parent.parent.__class__
-        # else:
-        #     cls = self.parent.__class__
-        # s = cls(context=self.context, data=data)
-        # s.is_valid(raise_exception=True)
-        # return s.validated_data
-        return data
+        # print(data)
+        if isinstance(self.parent, ListSerializer):
+            cls = self.parent.parent.__class__
+        else:
+            cls = self.parent.__class__
+        s = cls(context=self.context, data=data)
+        s.is_valid(raise_exception=True)
+        return s.validated_data
+        # return data
 
 
 # class ClassifierSerializerBase(PomsSerializerBase, ModelWithObjectPermissionSerializer):
