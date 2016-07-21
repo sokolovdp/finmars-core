@@ -39,7 +39,7 @@ def activate():
 
 
 def deactivate():
-    if getattr(_state, "active", True):
+    if getattr(_state, "active", True) and (_state.added or _state.changed or  _state.deleted):
         request = get_request()
         content_object = _state.content_object
         message = json.dumps({
