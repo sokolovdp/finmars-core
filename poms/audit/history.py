@@ -46,7 +46,7 @@ def deactivate():
             'added': _state.added,
             'changed': _state.changed,
             'deleted': _state.deleted,
-        })
+        }, sort_keys=True)
         ObjectHistoryEntry.objects.create(
             master_user=request.user.master_user,
             member=request.user.member,
