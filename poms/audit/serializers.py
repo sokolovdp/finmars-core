@@ -89,11 +89,11 @@ class ObjectHistoryEntrySerializer(serializers.ModelSerializer):
         return make_comment(value.message)
 
     def get_message(self, value):
-        if value.message:
-            try:
-                return json.loads(value.message)
-            except ValueError:
-                pass
+        # if value.message:
+        #     try:
+        #         return json.loads(value.message)
+        #     except ValueError:
+        #         pass
         return None
 
 # def audit_get_comment(changes):
