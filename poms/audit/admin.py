@@ -1,13 +1,9 @@
 from __future__ import unicode_literals
 
-from django import forms
 from django.contrib import admin
-from django.contrib.contenttypes.models import ContentType
-from django.utils.translation import ugettext_lazy as _
-from reversion.admin import VersionAdmin
+# from reversion.admin import VersionAdmin
 
 from poms.audit.models import AuthLogEntry, ObjectHistoryEntry
-from poms.users.models import MasterUser, Member
 
 
 class AuthLogEntryAdmin(admin.ModelAdmin):
@@ -26,7 +22,11 @@ class AuthLogEntryAdmin(admin.ModelAdmin):
 admin.site.register(AuthLogEntry, AuthLogEntryAdmin)
 
 
-class HistoricalAdmin(VersionAdmin):
+# class HistoricalAdmin(VersionAdmin):
+#     history_latest_first = True
+#     ignore_duplicate_revisions = True
+
+class HistoricalAdmin(admin.ModelAdmin):
     history_latest_first = True
     ignore_duplicate_revisions = True
 
@@ -84,12 +84,13 @@ class ObjectHistoryEntryAdmin(admin.ModelAdmin):
         ('content_type', 'object_id', 'content_object'),
         'message'
     )
-    list_filter = ('action_flag', )
+    list_filter = ('action_flag',)
     date_hierarchy = 'created'
     search_fields = ('object_id',)
     readonly_fields = ('id', 'created', 'content_object', 'master_user', 'member', 'created', 'action_flag',
                        'content_type', 'object_id', 'content_object', 'message')
     raw_id_fields = ('master_user', 'member',)
+
     # list_filter = ('action_flag', ContentTypeFilter)
 
     def get_queryset(self, request):
@@ -111,7 +112,6 @@ class ObjectHistoryEntryAdmin(admin.ModelAdmin):
 
     def has_add_permission(self, request):
         return False
-
 
 
 admin.site.register(ObjectHistoryEntry, ObjectHistoryEntryAdmin)

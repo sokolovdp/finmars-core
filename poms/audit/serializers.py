@@ -6,7 +6,6 @@ from collections import OrderedDict
 import six
 from django.utils import timezone
 from rest_framework import serializers
-from reversion.models import Version
 
 from poms.audit.fields import ObjectHistoryContentTypeField
 from poms.audit.history import make_comment
@@ -28,53 +27,53 @@ class AuthLogEntrySerializer(serializers.ModelSerializer):
         return OrderedDict(sorted(six.iteritems(loc))) if loc else None
 
 
-class VersionSerializer(serializers.ModelSerializer):
-    url = serializers.SerializerMethodField()
-    date = serializers.SerializerMethodField()
-    member = serializers.SerializerMethodField()
-    comment = serializers.SerializerMethodField()
-    # object = serializers.SerializerMethodField()
-    object_id = serializers.SerializerMethodField()
-    object_repr = serializers.SerializerMethodField()
-
-    # data = serializers.SerializerMethodField()
-
-    class Meta:
-        model = Version
-        fields = ('url', 'id', 'date', 'member', 'comment', 'object_id', 'object_repr')
-
-    def get_url(self, value):
-        request = self.context['request']
-        return '%s?version_id=%s' % (request.build_absolute_uri(location=request.path), value.id)
-
-    def get_date(self, value):
-        return timezone.localtime(value.revision.date_created)
-
-    def get_member(self, value):
-        info = getattr(value.revision, 'info', None).first()
-        return info.member_id if info else None
-
-    def get_comment(self, value):
-        changes = value.revision.comment
-        return make_comment(changes)
-
-    # def get_object(self, value):
-    #     return getattr(value, 'object_json', None)
-
-    def get_object_id(self, value):
-        return int(value.object_id)
-
-    def get_object_repr(self, value):
-        return six.text_type(value._object_version.object)
-
-    def get_data(self, value):
-        changes = value.revision.comment
-        if changes and changes.startswith('{'):
-            try:
-                return json.loads(changes)
-            except ValueError:
-                return None
-        return None
+# class VersionSerializer(serializers.ModelSerializer):
+#     url = serializers.SerializerMethodField()
+#     date = serializers.SerializerMethodField()
+#     member = serializers.SerializerMethodField()
+#     comment = serializers.SerializerMethodField()
+#     # object = serializers.SerializerMethodField()
+#     object_id = serializers.SerializerMethodField()
+#     object_repr = serializers.SerializerMethodField()
+#
+#     # data = serializers.SerializerMethodField()
+#
+#     class Meta:
+#         model = Version
+#         fields = ('url', 'id', 'date', 'member', 'comment', 'object_id', 'object_repr')
+#
+#     def get_url(self, value):
+#         request = self.context['request']
+#         return '%s?version_id=%s' % (request.build_absolute_uri(location=request.path), value.id)
+#
+#     def get_date(self, value):
+#         return timezone.localtime(value.revision.date_created)
+#
+#     def get_member(self, value):
+#         info = getattr(value.revision, 'info', None).first()
+#         return info.member_id if info else None
+#
+#     def get_comment(self, value):
+#         changes = value.revision.comment
+#         return make_comment(changes)
+#
+#     # def get_object(self, value):
+#     #     return getattr(value, 'object_json', None)
+#
+#     def get_object_id(self, value):
+#         return int(value.object_id)
+#
+#     def get_object_repr(self, value):
+#         return six.text_type(value._object_version.object)
+#
+#     def get_data(self, value):
+#         changes = value.revision.comment
+#         if changes and changes.startswith('{'):
+#             try:
+#                 return json.loads(changes)
+#             except ValueError:
+#                 return None
+#         return None
 
 
 class ObjectHistoryEntrySerializer(serializers.ModelSerializer):

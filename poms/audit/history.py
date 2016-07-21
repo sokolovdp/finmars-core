@@ -13,7 +13,6 @@ from django.dispatch import receiver
 from django.utils.decorators import ContextDecorator
 from django.utils.encoding import force_text
 from django.utils.translation import ugettext as _
-from reversion import revisions as reversion
 
 from poms.audit.models import ObjectHistoryEntry
 from poms.common.middleware import get_request
@@ -98,26 +97,28 @@ class enable(ContextDecorator):
         deactivate()
 
 
-def is_historical_proxy(obj):
-    return isinstance(obj, ModelProxy)
+# def is_historical_proxy(obj):
+#     return isinstance(obj, ModelProxy)
 
 
 def register(model, **kwargs):
-    reversion.register(model, **kwargs)
+    # reversion.register(model, **kwargs)
+    pass
 
 
-def _reversion_set_comment():
-    if not is_active():
-        return
-
-    changes = {
-        'added': _state.added,
-        'changed': _state.changed,
-        'deleted': _state.deleted,
-    }
-    # print('changes', '-' * 70)
-    # pprint.pprint(changes)
-    reversion.set_comment(json.dumps(changes))
+# def _reversion_set_comment():
+#     # if not is_active():
+#     #     return
+#     #
+#     # changes = {
+#     #     'added': _state.added,
+#     #     'changed': _state.changed,
+#     #     'deleted': _state.deleted,
+#     # }
+#     # # print('changes', '-' * 70)
+#     # # pprint.pprint(changes)
+#     # reversion.set_comment(json.dumps(changes))
+#     pass
 
 
 # def add_comment(message):
@@ -248,65 +249,66 @@ def _reversion_set_comment():
 #     })
 
 
-class ModelProxy(object):
-    def __init__(self, version):
-        self._version = version
-        self._object = version._object_version.object
-        self._m2m_data = version._object_version.m2m_data
-        self._cache = {}
-
-    def __getattr__(self, item):
-        obj = self._object
-        try:
-            f = obj._meta.get_field(item)
-        except FieldDoesNotExist:
-            f = None
-        # print('-' * 10)
-        # print(item, ':', f)
-        if f:
-            # print('one_to_one: ', f.one_to_one)
-            # print('many_to_many: ', f.many_to_many)
-            # print('related_model: ', f.related_model)
-
-            if item in self._cache:
-                return self._cache[item]
-            if f.one_to_one:
-                ct = ContentType.objects.get_for_model(f.related_model)
-                related_obj = self._version.revision.version_set.filter(content_type=ct).first()
-                if related_obj:
-                    val = related_obj.object_version.object
-                    self._cache[item] = val
-                    return val
-                self._cache[item] = None
-                return None
-            elif f.one_to_many:
-                ct = ContentType.objects.get_for_model(f.related_model)
-                res = []
-                for related_obj in self._version.revision.version_set.filter(content_type=ct):
-                    val = related_obj._object_version.object
-                    res.append(val)
-                self._cache[item] = res
-                return res if res else None
-            elif f.many_to_many:
-                m2m_d = self._m2m_data
-                if m2m_d and item in m2m_d:
-                    val = list(f.related_model.objects.filter(id__in=m2m_d[item]))
-                    self._cache[item] = val
-                    return val
-                self._cache[item] = None
-                return None
-        val = getattr(obj, item)
-        return val
-
-    def save(self, *args, **kwargs):
-        raise NotImplementedError()
-
-    def delete(self, *args, **kwargs):
-        raise NotImplementedError()
+# class ModelProxy(object):
+#     def __init__(self, version):
+#         self._version = version
+#         self._object = version._object_version.object
+#         self._m2m_data = version._object_version.m2m_data
+#         self._cache = {}
+#
+#     def __getattr__(self, item):
+#         obj = self._object
+#         try:
+#             f = obj._meta.get_field(item)
+#         except FieldDoesNotExist:
+#             f = None
+#         # print('-' * 10)
+#         # print(item, ':', f)
+#         if f:
+#             # print('one_to_one: ', f.one_to_one)
+#             # print('many_to_many: ', f.many_to_many)
+#             # print('related_model: ', f.related_model)
+#
+#             if item in self._cache:
+#                 return self._cache[item]
+#             if f.one_to_one:
+#                 ct = ContentType.objects.get_for_model(f.related_model)
+#                 related_obj = self._version.revision.version_set.filter(content_type=ct).first()
+#                 if related_obj:
+#                     val = related_obj.object_version.object
+#                     self._cache[item] = val
+#                     return val
+#                 self._cache[item] = None
+#                 return None
+#             elif f.one_to_many:
+#                 ct = ContentType.objects.get_for_model(f.related_model)
+#                 res = []
+#                 for related_obj in self._version.revision.version_set.filter(content_type=ct):
+#                     val = related_obj._object_version.object
+#                     res.append(val)
+#                 self._cache[item] = res
+#                 return res if res else None
+#             elif f.many_to_many:
+#                 m2m_d = self._m2m_data
+#                 if m2m_d and item in m2m_d:
+#                     val = list(f.related_model.objects.filter(id__in=m2m_d[item]))
+#                     self._cache[item] = val
+#                     return val
+#                 self._cache[item] = None
+#                 return None
+#         val = getattr(obj, item)
+#         return val
+#
+#     def save(self, *args, **kwargs):
+#         raise NotImplementedError()
+#
+#     def delete(self, *args, **kwargs):
+#         raise NotImplementedError()
 
 
 def _is_enabled(obj):
-    return is_active() and reversion.is_registered(obj)
+    # return is_active() and reversion.is_registered(obj)
+    return is_active()
 
 
 def _is_disabled(obj):
@@ -405,7 +407,7 @@ def _instance_post_save(sender, instance=None, created=None, **kwargs):
             'object_id': instance.id,
             'object_repr': force_text(instance),
         })
-        _reversion_set_comment()
+        # _reversion_set_comment()
     else:
         i = instance._poms_history_initial_state
         c = _serialize(instance)
@@ -446,7 +448,7 @@ def _instance_post_save(sender, instance=None, created=None, **kwargs):
                     'object_repr': force_text(instance),
                     'fields': fields
                 })
-                _reversion_set_comment()
+                # _reversion_set_comment()
 
 
 @receiver(m2m_changed, dispatch_uid='poms_history_m2m_changed')
@@ -525,7 +527,7 @@ def _instance_m2m_changed(sender, instance=None, action=None, reverse=None, mode
         new_value = new_value.union(pk_set)
 
     field['new_value'] = _make_rel_value(model, new_value)
-    _reversion_set_comment()
+    # _reversion_set_comment()
 
 
 @receiver(post_delete, dispatch_uid='poms_history_on_delete')
@@ -544,7 +546,7 @@ def _instance_post_delete(sender, instance=None, **kwargs):
         'object_id': instance.id,
         'object_repr': force_text(instance),
     })
-    _reversion_set_comment()
+    # _reversion_set_comment()
 
 
 def _get_display_value(value):

@@ -6,7 +6,6 @@ from django.contrib.contenttypes.models import ContentType
 from django.db import models
 from django.utils.encoding import python_2_unicode_compatible
 from django.utils.translation import ugettext_lazy as _
-from reversion.models import Revision
 
 
 @python_2_unicode_compatible
@@ -29,11 +28,11 @@ class AuthLogEntry(models.Model):
         return msg % (self.user, self.user_ip, self.date, self.user_agent)
 
 
-class VersionInfo(models.Model):
-    revision = models.ForeignKey(Revision, related_name='info')
-    master_user = models.ForeignKey('users.MasterUser')
-    member = models.ForeignKey('users.Member', null=True, blank=True)
-    username = models.CharField(max_length=255, null=True, blank=True)
+# class VersionInfo(models.Model):
+#     revision = models.ForeignKey(Revision, related_name='info')
+#     master_user = models.ForeignKey('users.MasterUser')
+#     member = models.ForeignKey('users.Member', null=True, blank=True)
+#     username = models.CharField(max_length=255, null=True, blank=True)
 
 
 @python_2_unicode_compatible
