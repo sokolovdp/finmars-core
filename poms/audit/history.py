@@ -7,29 +7,52 @@ from threading import local
 import six
 from django.contrib.contenttypes.models import ContentType
 from django.core import serializers
-from django.core.exceptions import FieldDoesNotExist
 from django.db.models.signals import post_init, post_save, post_delete, m2m_changed
 from django.dispatch import receiver
 from django.utils.decorators import ContextDecorator
 from django.utils.encoding import force_text
 from django.utils.translation import ugettext as _
 
-from poms.audit.models import ObjectHistoryEntry
 from poms.common.middleware import get_request
 
 _l = logging.getLogger('poms.audit')
 
 _state = local()
 
+_history_model_list = None
 
-# ___changes = {
-#     'added': [],
-#     'chaned': [],
-#     'deleted': [],
-# }
+
+def get_history_model_list():
+    from poms.accounts.models import Account, AccountType, AccountAttributeType
+    from poms.chats.models import ThreadGroup, Thread, Message, DirectMessage
+    from poms.counterparties.models import Counterparty, CounterpartyAttributeType, Responsible, \
+        ResponsibleAttributeType
+    from poms.currencies.models import Currency, CurrencyHistory
+    from poms.instruments.models import Instrument, InstrumentType, InstrumentAttributeType, PriceHistory
+    from poms.portfolios.models import Portfolio, PortfolioAttributeType
+    from poms.strategies.models import Strategy1, Strategy2, Strategy3
+    from poms.transactions.models import TransactionType, Transaction, TransactionAttributeType
+    from poms.users.models import MasterUser, Member
+
+    global _history_model_list
+    if _history_model_list is None:
+        _history_model_list = (
+            AccountType, Account, AccountAttributeType,
+            ThreadGroup, Thread, Message, DirectMessage,
+            Counterparty, CounterpartyAttributeType, Responsible, ResponsibleAttributeType,
+            Currency, CurrencyHistory,
+            InstrumentType, Instrument, InstrumentAttributeType, PriceHistory,
+            Portfolio, PortfolioAttributeType,
+            Strategy1, Strategy2, Strategy3,
+            TransactionType, Transaction, TransactionAttributeType,
+            MasterUser, Member,
+        )
+    return _history_model_list
 
 
 def activate():
+    from poms.audit.models import ObjectHistoryEntry
+
     _state.active = True
     _state.added = []
     _state.changed = []
@@ -39,21 +62,24 @@ def activate():
 
 
 def deactivate():
-    if getattr(_state, "active", True) and (_state.added or _state.changed or  _state.deleted):
-        request = get_request()
-        content_object = _state.content_object
-        message = json.dumps({
-            'added': _state.added,
-            'changed': _state.changed,
-            'deleted': _state.deleted,
-        }, sort_keys=True)
-        ObjectHistoryEntry.objects.create(
-            master_user=request.user.master_user,
-            member=request.user.member,
-            action_flag=_state.flag,
-            message=message,
-            content_object=content_object,
-        )
+    from poms.audit.models import ObjectHistoryEntry
+
+    if getattr(_state, "active", True) and (_state.added or _state.changed or _state.deleted):
+        if isinstance(_state.content_object, get_history_model_list()):
+            request = get_request()
+            content_object = _state.content_object
+            message = json.dumps({
+                'added': _state.added,
+                'changed': _state.changed,
+                'deleted': _state.deleted,
+            }, sort_keys=True)
+            ObjectHistoryEntry.objects.create(
+                master_user=request.user.master_user,
+                member=request.user.member,
+                action_flag=_state.flag,
+                message=message,
+                content_object=content_object,
+            )
 
     if hasattr(_state, "active"):
         del _state.active
@@ -78,14 +104,20 @@ def set_content_object(content_object):
 
 
 def set_flag_addition():
+    from poms.audit.models import ObjectHistoryEntry
+
     _state.flag = ObjectHistoryEntry.ADDITION
 
 
 def set_flag_change():
+    from poms.audit.models import ObjectHistoryEntry
+
     _state.flag = ObjectHistoryEntry.CHANGE
 
 
 def set_flag_deletion():
+    from poms.audit.models import ObjectHistoryEntry
+
     _state.flag = ObjectHistoryEntry.DELETION
 
 
