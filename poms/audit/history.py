@@ -23,19 +23,20 @@ _history_model_list = None
 
 
 def get_history_model_list():
-    from poms.accounts.models import Account, AccountType, AccountAttributeType
-    from poms.chats.models import ThreadGroup, Thread, Message, DirectMessage
-    from poms.counterparties.models import Counterparty, CounterpartyAttributeType, Responsible, \
-        ResponsibleAttributeType
-    from poms.currencies.models import Currency, CurrencyHistory
-    from poms.instruments.models import Instrument, InstrumentType, InstrumentAttributeType, PriceHistory
-    from poms.portfolios.models import Portfolio, PortfolioAttributeType
-    from poms.strategies.models import Strategy1, Strategy2, Strategy3
-    from poms.transactions.models import TransactionType, Transaction, TransactionAttributeType
-    from poms.users.models import MasterUser, Member
-
     global _history_model_list
     if _history_model_list is None:
+        from poms.accounts.models import Account, AccountType, AccountAttributeType
+        from poms.chats.models import ThreadGroup, Thread, Message, DirectMessage
+        from poms.counterparties.models import Counterparty, CounterpartyAttributeType, Responsible, \
+            ResponsibleAttributeType
+        from poms.currencies.models import Currency, CurrencyHistory
+        from poms.instruments.models import Instrument, InstrumentType, InstrumentAttributeType, PriceHistory
+        from poms.portfolios.models import Portfolio, PortfolioAttributeType
+        from poms.strategies.models import Strategy1, Strategy2, Strategy3
+        from poms.transactions.models import TransactionType, Transaction, TransactionAttributeType
+        from poms.users.models import MasterUser, Member
+        from poms.integrations.models import InstrumentMapping
+
         _history_model_list = (
             AccountType, Account, AccountAttributeType,
             ThreadGroup, Thread, Message, DirectMessage,
@@ -46,6 +47,7 @@ def get_history_model_list():
             Strategy1, Strategy2, Strategy3,
             TransactionType, Transaction, TransactionAttributeType,
             MasterUser, Member,
+            InstrumentMapping,
         )
     return _history_model_list
 
@@ -59,6 +61,8 @@ def activate():
     _state.deleted = []
     _state.flag = ObjectHistoryEntry.DELETION
     _state.content_object = None
+    _state.content_type = None
+    _state.object_id = None
 
 
 def deactivate():
@@ -78,7 +82,9 @@ def deactivate():
                 member=request.user.member,
                 action_flag=_state.flag,
                 message=message,
-                content_object=content_object,
+                # content_object=content_object,
+                content_type=_state.content_type,
+                object_id=_state.object_id
             )
 
     if hasattr(_state, "active"):
@@ -93,6 +99,10 @@ def deactivate():
         del _state.flag
     if hasattr(_state, "content_object"):
         del _state.content_object
+    if hasattr(_state, "content_type"):
+        del _state.content_type
+    if hasattr(_state, "object_id"):
+        del _state.object_id
 
 
 def is_active():
@@ -101,6 +111,8 @@ def is_active():
 
 def set_content_object(content_object):
     _state.content_object = content_object
+    _state.content_type = ContentType.objects.get_for_model(content_object)
+    _state.object_id = content_object.id
 
 
 def set_flag_addition():

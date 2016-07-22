@@ -1,8 +1,7 @@
 from __future__ import unicode_literals
 
 from django.contrib import admin
-# from reversion.admin import VersionAdmin
-from poms.audit.history import make_comment
+
 from poms.audit.models import AuthLogEntry, ObjectHistoryEntry
 
 
@@ -75,7 +74,7 @@ class ObjectHistoryEntryAdmin(admin.ModelAdmin):
     model = ObjectHistoryEntry
     # form = HistoryEntryForm
     list_display = ('id', 'created', 'master_user', 'member', 'action_flag', 'content_type', 'object_id',
-                    'message', 'comment')
+                    'comment',)
     list_select_related = ('master_user', 'member', 'content_type',)
     fields = (
         'id',
