@@ -49,7 +49,7 @@ INSTALLED_APPS = [
 
     'modeltranslation',
     'mptt',
-    'reversion',
+    'reversion', # really not used
 
     'poms.http_sessions',
     'poms.users',
@@ -216,18 +216,36 @@ if REDIS:
             "BACKEND": "django_redis.cache.RedisCache",
             "LOCATION": "redis://%s/1" % REDIS,
             'KEY_PREFIX': 'default',
+            'OPTIONS': {
+                'SERIALIZER': "django_redis.serializers.json.JSONSerializer",
+            }
         },
         'http_session': {
             "BACKEND": "django_redis.cache.RedisCache",
             "LOCATION": "redis://%s/1" % REDIS,
             'KEY_PREFIX': 'http_session',
             'TIMEOUT': 3600,
+            'OPTIONS': {
+                'SERIALIZER': "django_redis.serializers.json.JSONSerializer",
+            }
         },
         'throttling': {
             "BACKEND": "django_redis.cache.RedisCache",
             "LOCATION": "redis://%s/1" % REDIS,
             'KEY_PREFIX': 'throttling',
             'TIMEOUT': 3600,
+            'OPTIONS': {
+                'SERIALIZER': "django_redis.serializers.json.JSONSerializer",
+            }
+        },
+        'bloomberg': {
+            "BACKEND": "django_redis.cache.RedisCache",
+            "LOCATION": "redis://%s/1" % REDIS,
+            'KEY_PREFIX': 'bloomberg',
+            'TIMEOUT': 3600,
+            'OPTIONS': {
+                'SERIALIZER': "django_redis.serializers.json.JSONSerializer",
+            }
         },
     }
 else:
@@ -242,8 +260,14 @@ else:
             'LOCATION': 'throttling',
             'KEY_PREFIX': 'throttling',
         },
+        'bloomberg': {
+            'BACKEND': 'django.core.cache.backends.db.DatabaseCache',
+            'LOCATION': 'cache_default',
+            'KEY_PREFIX': 'bloomberg',
+        },
     }
 
+# SESSION_SERIALIZER = 'django.contrib.sessions.serializers.JSONSerializer'
 if 'http_session' in CACHES:
     SESSION_ENGINE = "poms.http_sessions.backends.cached_db"
     SESSION_CACHE_ALIAS = 'http_session'
@@ -327,22 +351,14 @@ REST_FRAMEWORK = {
     #     'rest_framework.parsers.FormParser',
     #     'rest_framework.parsers.MultiPartParser',
     # ),
-    # 'DEFAULT_FILTER_BACKENDS': (
-    #     'rest_framework.filters.DjangoFilterBackend',
-    #     'rest_framework.filters.OrderingFilter',
-    # ),
-    # 'DEFAULT_THROTTLE_CLASSES': (
-    #     'hr_api.throttling.CustomAnonRateThrottle',
-    #     'hr_api.throttling.CustomUserRateThrottle',
-    # ),
-    # 'DEFAULT_THROTTLE_CLASSES': (
-    #     'rest_framework.throttling.AnonRateThrottle',
-    #     'rest_framework.throttling.UserRateThrottle'
-    # ),
-    # 'DEFAULT_THROTTLE_RATES': {
-    #     'anon': '10/second',
-    #     'user': '50/second'
-    # },
+    'DEFAULT_THROTTLE_CLASSES': (
+        'rest_framework.throttling.AnonRateThrottle',
+        'rest_framework.throttling.UserRateThrottle'
+    ),
+    'DEFAULT_THROTTLE_RATES': {
+        'anon': '5/second',
+        'user': '50/second'
+    },
 
     # 'DATETIME_FORMAT': '%Y-%m-%dT%H:%M:%S %Z',
     # 'DATETIME_INPUT_FORMATS': (ISO_8601, '%c', '%Y-%m-%d %H:%M:%S %Z'),
@@ -402,7 +418,7 @@ MEDIA_ROOT = os.path.join(BASE_DIR, 'tmp', 'media')
 MEDIA_URL = '/api/media/'
 MEDIA_SERVE = True
 
-DATA_IMPORT_STORAGE = {
+FILE_IMPORT_STORAGE = {
     'BACKEND': 'django.core.files.storage.FileSystemStorage',
     'KWARGS': {
         'location': os.path.join(BASE_DIR, 'tmp', 'import'),

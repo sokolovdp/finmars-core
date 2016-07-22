@@ -3,11 +3,11 @@ from django.utils.functional import LazyObject
 from django.utils.module_loading import import_string
 
 
-class DataImportStorage(LazyObject):
+class FileImportStorage(LazyObject):
     def _setup(self):
-        clazz = import_string(settings.DATA_IMPORT_STORAGE['BACKEND'])
-        kwargs = settings.DATA_IMPORT_STORAGE['KWARGS'] or {}
+        clazz = import_string(settings.FILE_IMPORT_STORAGE['BACKEND'])
+        kwargs = settings.FILE_IMPORT_STORAGE['KWARGS'] or {}
         self._wrapped = clazz(**kwargs)
 
     def deconstruct(self):
-        return 'poms.integrations.data_import.DataImportStorage', [], {}
+        return 'poms.integrations.data_import.FileImportStorage', [], {}

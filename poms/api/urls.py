@@ -121,8 +121,10 @@ router.register(r'security/http-session', sessions.SessionViewSet)
 router.register(r'audit/auth-log', audit.AuthLogViewSet)
 router.register(r'audit/history', audit.ObjectHistoryViewSet)
 
-router.register(r'integrations/import', integrations.AbstractImportViewSet, 'AbstractImportViewSet')
-router.register(r'integrations/bloomberg', integrations.BloombergInstrumentViewSet, 'BloombergInstrumentViewSet')
+router.register(r'import/instrument/file', integrations.InstrumentFileImportViewSet,
+                'InstrumentFileImportViewSet')
+router.register(r'import/instrument/bloomberg', integrations.InstrumentBloombergImportViewSet,
+                'InstrumentBloombergImportViewSet')
 
 urlpatterns = [
     url(r'^v1/', include(router.urls, namespace='v1')),

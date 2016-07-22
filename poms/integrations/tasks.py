@@ -1,9 +1,9 @@
-import logging
+from logging import getLogger
 
 from celery import shared_task
 from celery.exceptions import TimeoutError
 
-_l = logging.getLogger(__name__)
+_l = getLogger('poms.integrations')
 
 
 @shared_task(name='backend.health_check')
@@ -74,15 +74,23 @@ def mail_managers(subject, message):
     })
 
 
-@shared_task(name='backend.delete_temp_file', ignore_result=True)
-def delete_temp_file_async(name):
-    print(name)
+@shared_task(name='backend.file_import_delete', ignore_result=True)
+def file_import_delete_async(path):
+    _l.debug('file_import_delete: path=%s', path)
+    # from poms.integrations.storages import FileImportStorage
+    # storage = FileImportStorage()
+    # try:
+    #     storage.delete(path)
+    # except Exception as e:
+    #     _l.error("Can't delete file %s", path, exc_info=True)
 
 
-def delete_temp_file(name):
-    countdown = 600
-    delete_temp_file_async.apply_async(countdown=countdown, kwargs={
-        'name': name,
+def schedule_file_import_delete(path, countdown=None):
+    if countdown is None:
+        countdown = 600
+    _l.debug('schedule_file_import_delete: path=%s, countdown=%s', path, countdown)
+    file_import_delete_async.apply_async(countdown=countdown, kwargs={
+        'path': path,
     })
 
 
