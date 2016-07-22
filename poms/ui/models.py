@@ -65,7 +65,7 @@ class EditLayout(BaseLayout):
         ]
 
 
-history.register(TemplateListLayout)
-history.register(TemplateEditLayout)
-history.register(ListLayout)
-history.register(EditLayout)
+# history.register(TemplateListLayout)
+# history.register(TemplateEditLayout)
+# history.register(ListLayout)
+# history.register(EditLayout)

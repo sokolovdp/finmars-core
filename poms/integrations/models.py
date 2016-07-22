@@ -1,11 +1,12 @@
 from django.db import models
 from django.utils.encoding import python_2_unicode_compatible
-
-from poms.common.models import TimeStampedModel
 from django.utils.translation import ugettext_lazy as _
 
+from poms.audit import history
+from poms.common.models import TimeStampedModel
 
 MAPPING_FIELD_MAX_LENGTH = 32
+
 
 @python_2_unicode_compatible
 class InstrumentMapping(models.Model):
@@ -33,9 +34,8 @@ class InstrumentMapping(models.Model):
     price_download_mode = models.CharField(max_length=MAPPING_FIELD_MAX_LENGTH, null=True, blank=True)
 
     class Meta:
-        abstract = True
         index_together = (
-            ('mapping', 'mapping_name')
+            ('master_user', 'mapping_name')
         )
         verbose_name = _('instrument mapping')
         verbose_name_plural = _('instrument mappings')
@@ -55,13 +55,13 @@ class InstrumentAttributeMapping(models.Model):
     name = models.CharField(max_length=MAPPING_FIELD_MAX_LENGTH)
 
     class Meta:
-        abstract = True
         unique_together = (
             ('mapping', 'attribute_type')
         )
+        ordering = ('attribute_type__name',)
 
     def __str__(self):
-        return '%s -> %s' % (self.external_name, self.attribute_type)
+        return '%s -> %s' % (self.name, self.attribute_type)
 
 
 @python_2_unicode_compatible
@@ -69,18 +69,22 @@ class BloombergRequestLogEntry(TimeStampedModel):
     master_user = models.ForeignKey('users.MasterUser')
     member = models.ForeignKey('users.Member')
 
-    request_id = models.CharField(max_length=36)
+    token = models.CharField(max_length=36, null=True, blank=True, db_index=True)
+    is_success = models.NullBooleanField(db_index=True)
+    is_user_got_response = models.NullBooleanField(db_index=True)
+
+    request_id = models.CharField(max_length=36, null=True, blank=True, db_index=True)
     request = models.TextField(null=True, blank=True)
     response = models.TextField(null=True, blank=True)
 
-    is_success = models.NullBooleanField()
-    is_user_got_response = models.NullBooleanField()
-
     class Meta:
-        abstract = True
-        index_together = (
-            ('master_user', 'request_id')
-        )
+        verbose_name = _('bloomberg request log')
+        verbose_name_plural = _('bloomberg request logs')
+        ordering = ('created',)
 
     def __str__(self):
         return '%s' % self.request_id
+
+
+history.register(InstrumentMapping, follow=['attributes'])
+history.register(InstrumentAttributeMapping)

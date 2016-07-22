@@ -1,7 +1,38 @@
+from rest_framework.filters import FilterSet, DjangoFilterBackend, OrderingFilter, SearchFilter
 from rest_framework.response import Response
 
-from poms.common.views import AbstractViewSet
-from poms.integrations.serializers import InstrumentBloombergImportSerializer, InstrumentFileImportSerializer
+from poms.common.filters import CharFilter
+from poms.common.views import AbstractViewSet, AbstractModelViewSet
+from poms.integrations.models import InstrumentMapping
+from poms.integrations.serializers import InstrumentBloombergImportSerializer, InstrumentFileImportSerializer, \
+    InstrumentMappingSerializer
+from poms.users.filters import OwnerByMasterUserFilter
+from poms.users.permissions import SuperUserOrReadOnly
+
+
+class InstrumentMappingFilterSet(FilterSet):
+    mapping_name = CharFilter()
+
+    class Meta:
+        model = InstrumentMapping
+        fields = ['mapping_name', ]
+
+
+class InstrumentMappingViewSet(AbstractModelViewSet):
+    queryset = InstrumentMapping.objects.prefetch_related('attributes', 'attributes__attribute_type')
+    serializer_class = InstrumentMappingSerializer
+    permission_classes = AbstractModelViewSet.permission_classes + [
+        SuperUserOrReadOnly,
+    ]
+    filter_backends = [
+        OwnerByMasterUserFilter,
+        DjangoFilterBackend,
+        OrderingFilter,
+        SearchFilter,
+    ]
+    filter_class = InstrumentMappingFilterSet
+    ordering_fields = ['mapping_name']
+    search_fields = ['mapping_name']
 
 
 class AbstractIntegrationViewSet(AbstractViewSet):

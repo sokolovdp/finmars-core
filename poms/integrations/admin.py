@@ -2,6 +2,9 @@ from django.conf import settings
 from django.contrib import admin
 from kombu.transport.django.models import Queue, Message
 
+from poms.audit.admin import HistoricalAdmin
+from poms.integrations.models import InstrumentMapping, InstrumentAttributeMapping, BloombergRequestLogEntry
+
 if settings.DEBUG and 'kombu.transport.django' in settings.INSTALLED_APPS:
     class QueueAdmin(admin.ModelAdmin):
         model = Queue
@@ -31,3 +34,43 @@ if settings.DEBUG and 'kombu.transport.django' in settings.INSTALLED_APPS:
 
 
     admin.site.register(Message, MessageAdmin)
+
+
+class InstrumentAttributeMappingInline(admin.TabularInline):
+    model = InstrumentAttributeMapping
+    extra = 0
+    raw_id_fields = ['attribute_type']
+
+
+class InstrumentMappingAdmin(HistoricalAdmin):
+    model = InstrumentMapping
+    inlines = [InstrumentAttributeMappingInline]
+    list_display = ['id', 'master_user', 'mapping_name']
+    list_select_related = ['master_user', ]
+    raw_id_fields = ['master_user', ]
+    search_fields = ['mapping_name', ]
+
+
+admin.site.register(InstrumentMapping, InstrumentMappingAdmin)
+
+
+class BloombergRequestLogEntryAdmin(admin.ModelAdmin):
+    model = BloombergRequestLogEntry
+    list_display = ['id', 'created', 'master_user', 'member', 'token', 'request_id', 'is_success',
+                    'is_user_got_response']
+    list_select_related = ['master_user', 'member', ]
+    raw_id_fields = ['master_user', 'member', ]
+    search_fields = ['request_id', 'token', ]
+    list_filter = ['created', 'is_success', 'is_user_got_response']
+    date_hierarchy = 'created'
+
+    if not settings.DEBUG:
+        readonly_fields = ['id', 'created', 'modified', 'master_user', 'member', 'token',
+                           'is_success', 'is_user_got_response',
+                           'request_id', 'request', 'response', ]
+
+    def has_add_permission(self, request):
+        return settings.DEBUG
+
+
+admin.site.register(BloombergRequestLogEntry, BloombergRequestLogEntryAdmin)

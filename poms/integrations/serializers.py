@@ -1,12 +1,15 @@
 import uuid
 from logging import getLogger
 
+import six
 from django.core.cache import caches
+from django.core.exceptions import ObjectDoesNotExist
 from django.core.signing import TimestampSigner, BadSignature
 from rest_framework import serializers
 from rest_framework.exceptions import ValidationError
 
-from poms.instruments.fields import InstrumentTypeField
+from poms.instruments.fields import InstrumentTypeField, InstrumentAttributeTypeField
+from poms.integrations.models import InstrumentMapping, InstrumentAttributeMapping
 from poms.integrations.storages import FileImportStorage
 from poms.integrations.tasks import schedule_file_import_delete
 from poms.users.fields import MasterUserField
@@ -27,6 +30,58 @@ FILE_FORMAT_CHOICES = (
 )
 
 bloomberg_cache = caches['bloomberg']
+
+
+class InstrumentAttributeMappingSerializer(serializers.ModelSerializer):
+    id = serializers.IntegerField()
+    attribute_type = InstrumentAttributeTypeField()
+
+    class Meta:
+        model = InstrumentAttributeMapping
+        fields = ['id', 'attribute_type', 'name']
+
+
+class InstrumentMappingSerializer(serializers.ModelSerializer):
+    master_user = MasterUserField()
+    attributes = InstrumentAttributeMappingSerializer(many=True, read_only=False)
+
+    class Meta:
+        model = InstrumentMapping
+        fields = ['url', 'id', 'master_user', 'mapping_name', 'user_code', 'name', 'short_name', 'public_name', 'notes',
+                  'instrument_type', 'pricing_currency', 'price_multiplier', 'accrued_currency', 'accrued_multiplier',
+                  'daily_pricing_model', 'payment_size_detail', 'default_price', 'default_accrued',
+                  'user_text_1', 'user_text_2', 'user_text_3', 'price_download_mode',
+                  'attributes']
+
+    def create(self, validated_data):
+        attributes = validated_data.pop('attributes', None) or tuple()
+        instance = super(InstrumentMappingSerializer, self).create(validated_data)
+        self.save_attributes(instance, attributes)
+        return instance
+
+    def update(self, instance, validated_data):
+        attributes = validated_data.pop('attributes', None) or tuple()
+        instance = super(InstrumentMappingSerializer, self).update(instance, validated_data)
+        self.save_attributes(instance, attributes)
+        return instance
+
+    def save_attributes(self, instance, attributes):
+        attrs = set()
+        for attr_values in attributes:
+            attr_id = attr_values.pop('id', None)
+            attr = None
+            if attr_id:
+                try:
+                    attr = instance.attributes.get(pk=attr_id)
+                except ObjectDoesNotExist:
+                    pass
+            if attr is None:
+                attr = InstrumentAttributeMapping(mapping=instance)
+            for name, value in six.iteritems(attr_values):
+                setattr(attr, name, value)
+            attr.save()
+            attrs.add(attr.id)
+        instance.attributes.exclude(pk__in=attrs).delete()
 
 
 class InstrumentFileImportSerializer(serializers.Serializer):

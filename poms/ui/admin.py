@@ -1,11 +1,10 @@
 from django.contrib import admin
 
-from poms.audit.admin import HistoricalAdmin
 from poms.ui.filters import LayoutContentTypeFilter
 from poms.ui.models import TemplateListLayout, TemplateEditLayout, ListLayout, EditLayout
 
 
-class BaseLayoutAdmin(HistoricalAdmin):
+class BaseLayoutAdmin(admin.ModelAdmin):
     def formfield_for_foreignkey(self, db_field, request=None, **kwargs):
         if db_field.name == 'content_type':
             qs = kwargs.get('queryset', db_field.remote_field.model.objects)
