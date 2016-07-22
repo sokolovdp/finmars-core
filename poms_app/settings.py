@@ -216,6 +216,7 @@ if REDIS:
             "BACKEND": "django_redis.cache.RedisCache",
             "LOCATION": "redis://%s/1" % REDIS,
             'KEY_PREFIX': 'default',
+            'TIMEOUT': 300,
             'OPTIONS': {
                 'SERIALIZER': "django_redis.serializers.json.JSONSerializer",
             }
@@ -233,7 +234,7 @@ if REDIS:
             "BACKEND": "django_redis.cache.RedisCache",
             "LOCATION": "redis://%s/1" % REDIS,
             'KEY_PREFIX': 'throttling',
-            'TIMEOUT': 3600,
+            'TIMEOUT': 60,
             'OPTIONS': {
                 'SERIALIZER': "django_redis.serializers.json.JSONSerializer",
             }
@@ -352,12 +353,14 @@ REST_FRAMEWORK = {
     #     'rest_framework.parsers.MultiPartParser',
     # ),
     'DEFAULT_THROTTLE_CLASSES': (
-        'rest_framework.throttling.AnonRateThrottle',
-        'rest_framework.throttling.UserRateThrottle'
+        'poms.api.throttling.AnonRateThrottleExt',
+        'poms.api.throttling.UserRateThrottleExt'
     ),
     'DEFAULT_THROTTLE_RATES': {
-        'anon': '5/second',
-        'user': '50/second'
+        # 'anon': '5/second',
+        # 'user': '50/second',
+        'anon': '100/hour',
+        'user': '10000/hour',
     },
 
     # 'DATETIME_FORMAT': '%Y-%m-%dT%H:%M:%S %Z',
