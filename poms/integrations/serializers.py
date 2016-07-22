@@ -84,7 +84,7 @@ class InstrumentBloombergImportSerializer(serializers.Serializer):
     master_user = MasterUserField()
     mode = serializers.ChoiceField(choices=IMPORT_MODE_CHOICES)
     token = serializers.CharField(required=False, allow_blank=True, allow_null=True)
-    name = serializers.CharField(required=True)
+    name = serializers.CharField(required=False, allow_null=True, allow_blank=True)
 
     def get_import_cache_key(self, token):
         return 'import:%s' % token

@@ -49,7 +49,7 @@ INSTALLED_APPS = [
 
     'modeltranslation',
     'mptt',
-    'reversion', # really not used
+    'reversion',  # really not used
 
     'poms.http_sessions',
     'poms.users',
@@ -211,6 +211,12 @@ STATIC_URL = '/api/static/'
 STATIC_ROOT = os.path.join(BASE_DIR, "static")
 
 if REDIS:
+    CACHE_SERIALIZER = "django_redis.serializers.json.JSONSerializer"
+    if DEBUG:
+        CACHE_COMPRESSOR = 'django_redis.compressors.identity.IdentityCompressor'
+        # CACHE_COMPRESSOR = 'django_redis.compressors.zlib.ZlibCompressor'
+    else:
+        CACHE_COMPRESSOR = 'django_redis.compressors.zlib.ZlibCompressor'
     CACHES = {
         'default': {
             "BACKEND": "django_redis.cache.RedisCache",
@@ -218,7 +224,8 @@ if REDIS:
             'KEY_PREFIX': 'default',
             'TIMEOUT': 300,
             'OPTIONS': {
-                'SERIALIZER': "django_redis.serializers.json.JSONSerializer",
+                'SERIALIZER': CACHE_SERIALIZER,
+                'COMPRESSOR': CACHE_COMPRESSOR,
             }
         },
         'http_session': {
@@ -227,7 +234,8 @@ if REDIS:
             'KEY_PREFIX': 'http_session',
             'TIMEOUT': 3600,
             'OPTIONS': {
-                'SERIALIZER': "django_redis.serializers.json.JSONSerializer",
+                'SERIALIZER': CACHE_SERIALIZER,
+                'COMPRESSOR': CACHE_COMPRESSOR,
             }
         },
         'throttling': {
@@ -236,7 +244,8 @@ if REDIS:
             'KEY_PREFIX': 'throttling',
             'TIMEOUT': 60,
             'OPTIONS': {
-                'SERIALIZER': "django_redis.serializers.json.JSONSerializer",
+                'SERIALIZER': CACHE_SERIALIZER,
+                'COMPRESSOR': CACHE_COMPRESSOR,
             }
         },
         'bloomberg': {
@@ -245,7 +254,8 @@ if REDIS:
             'KEY_PREFIX': 'bloomberg',
             'TIMEOUT': 3600,
             'OPTIONS': {
-                'SERIALIZER': "django_redis.serializers.json.JSONSerializer",
+                'SERIALIZER': CACHE_SERIALIZER,
+                'COMPRESSOR': CACHE_COMPRESSOR,
             }
         },
     }
