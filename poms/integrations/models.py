@@ -61,7 +61,8 @@ class InstrumentAttributeMapping(models.Model):
         ordering = ('attribute_type__name',)
 
     def __str__(self):
-        return '%s -> %s' % (self.name, self.attribute_type)
+        # return '%s -> %s' % (self.name, self.attribute_type)
+        return '%s' % (self.attribute_type,)
 
 
 @python_2_unicode_compatible
