@@ -124,12 +124,22 @@ class Member(models.Model):
         ]
 
     def __str__(self):
-        # return '%s@%s' % (self.user.username, self.master_user)
         return '%s@%s' % (self.user.username, self.master_user)
 
     @property
     def is_superuser(self):
         return self.is_owner or self.is_admin
+
+    @property
+    def is_deleted(self):
+        return self.user is None
+
+    @property
+    def display_name(self):
+        if self.first_name or self.last_name:
+            return ' '.join([self.first_name, self.last_name])
+        else:
+            return self.username
 
 
 @python_2_unicode_compatible

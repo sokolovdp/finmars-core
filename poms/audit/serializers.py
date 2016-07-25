@@ -1,17 +1,15 @@
 from __future__ import unicode_literals
 
-import json
 from collections import OrderedDict
 
 import six
-from django.utils import timezone
 from rest_framework import serializers
 
 from poms.audit.fields import ObjectHistoryContentTypeField
-from poms.audit.history import make_comment
 from poms.audit.models import AuthLogEntry, ObjectHistoryEntry
 from poms.common.fields import DateTimeTzAwareField
 from poms.common.middleware import get_city_by_ip
+from poms.users.models import Member
 
 
 class AuthLogEntrySerializer(serializers.ModelSerializer):
@@ -76,25 +74,37 @@ class AuthLogEntrySerializer(serializers.ModelSerializer):
 #         return None
 
 
+class HistoryMemberSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Member
+        fields = ['id', 'username', 'first_name', 'last_name', 'display_name', ]
+        read_only_fields = ['id', 'username', 'first_name', 'last_name', 'display_name', ]
+
+    def get_is_current(self, obj):
+        member = self.context['request'].user.member
+        return obj.id == member.id
+
+
 class ObjectHistoryEntrySerializer(serializers.ModelSerializer):
     content_type = ObjectHistoryContentTypeField()
     # comment = serializers.SerializerMethodField()
     # message = serializers.SerializerMethodField()
+    member = HistoryMemberSerializer(read_only=True)
 
     class Meta:
         model = ObjectHistoryEntry
         fields = ('url', 'id', 'member', 'created', 'action_flag', 'content_type', 'object_id', 'comment', 'message')
 
-    # def get_comment(self, value):
-    #     return make_comment(value.message)
+        # def get_comment(self, value):
+        #     return make_comment(value.message)
 
-    # def get_message(self, value):
-    #     if value.message:
-    #         try:
-    #             return json.loads(value.message)
-    #         except ValueError:
-    #             pass
-    #     return None
+        # def get_message(self, value):
+        #     if value.message:
+        #         try:
+        #             return json.loads(value.message)
+        #         except ValueError:
+        #             pass
+        #     return None
 
 # def audit_get_comment(changes):
 #     if changes and changes.startswith('['):

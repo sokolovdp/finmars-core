@@ -176,20 +176,17 @@ class MemberSerializer(serializers.ModelSerializer):
     master_user = MasterUserField()
     is_current = serializers.SerializerMethodField()
     join_date = DateTimeTzAwareField()
-    is_deleted = serializers.SerializerMethodField()
 
     class Meta:
         model = Member
-        fields = ['url', 'id', 'master_user', 'is_owner', 'is_admin', 'is_superuser', 'join_date', 'is_current',
-                  'first_name', 'last_name', 'email', 'is_deleted']
-        read_only_fields = ['is_owner', 'is_superuser', 'join_date', 'first_name', 'last_name', 'email']
+        fields = ['url', 'id', 'master_user', 'join_date', 'is_owner', 'is_admin', 'is_superuser', 'is_current',
+                  'is_deleted', 'username', 'first_name', 'last_name', 'display_name', 'email', ]
+        read_only_fields = ['master_user', 'join_date', 'is_superuser', 'is_current', 'is_deleted', 'username',
+                            'first_name', 'last_name', 'display_name', 'email', ]
 
     def get_is_current(self, obj):
         member = self.context['request'].user.member
         return obj.id == member.id
-
-    def get_is_deleted(self, obj):
-        return obj.user is None
 
 
 class GroupSerializer(serializers.ModelSerializer):

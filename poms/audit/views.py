@@ -52,7 +52,7 @@ class ObjectHistoryEntryFilterSet(FilterSet):
 
 
 class ObjectHistoryViewSet(ReadOnlyModelViewSet):
-    queryset = ObjectHistoryEntry.objects.prefetch_related('master_user', 'member', 'content_type')
+    queryset = ObjectHistoryEntry.objects.select_related('master_user', 'member', 'content_type')
     serializer_class = ObjectHistoryEntrySerializer
     permission_classes = (
         IsAuthenticated,
