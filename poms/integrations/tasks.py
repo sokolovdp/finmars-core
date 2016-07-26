@@ -1,3 +1,5 @@
+from __future__ import unicode_literals, print_function
+
 from logging import getLogger
 
 from celery import shared_task

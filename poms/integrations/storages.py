@@ -1,3 +1,5 @@
+from __future__ import unicode_literals, print_function
+
 from django.conf import settings
 from django.utils.functional import LazyObject
 from django.utils.module_loading import import_string
