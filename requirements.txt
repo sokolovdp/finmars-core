@@ -20,6 +20,7 @@ qrcode==5.3
 simpleeval==0.8.7
 requests==2.10.0
 pyOpenSSL==16.0.0
+suds-jurko==0.6
 
 # scheduled to remove
 django-celery==3.1.17
