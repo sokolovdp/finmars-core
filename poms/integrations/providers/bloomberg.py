@@ -1,18 +1,26 @@
 import base64
+import json
 import os
 import uuid
 from datetime import datetime
+from logging import getLogger
 from tempfile import NamedTemporaryFile
 from time import sleep
 
 import requests
 import six
 from OpenSSL import crypto
+from django.utils.encoding import force_text
 from suds.client import Client
 from suds.transport import Reply
 from suds.transport.http import HttpAuthenticated
 
 __author__ = 'alyakhov'
+
+_l = getLogger('poms.integrations.providers.bloomberg')
+
+
+# _l = getLogger(__name__)
 
 
 class BloombergException(Exception):
@@ -206,7 +214,9 @@ class BloomberDataProvider(object):
             ]
         )
 
-        return six.text_type(resp.responseId)
+        response_id = six.text_type(resp.responseId)
+        _l.debug('get_instrument_send_request: response_id=%s', response_id)
+        return response_id
 
     def get_instrument_get_response(self, response_id):
         """
@@ -218,6 +228,7 @@ class BloomberDataProvider(object):
         """
 
         resp = self.soap_client.service.retrieveGetDataResponse(responseId=response_id)
+        _l.debug('get_instrument_get_response: response_id=%s, resp=%s', response_id, resp)
 
         if resp.statusCode.code == 0:
             res = {}
@@ -234,15 +245,15 @@ class BloomberDataProvider(object):
     def get_instrument_sync(self, instrument, fields):
         response_id = self.get_instrument_send_request(instrument, fields)
         attempt = 0
-        while attempt < 100:
+        while attempt < 1000:
             sleep(0.5)
+            _l.debug('get_instrument_sync: response_id=%s, attempt=%s', response_id, attempt)
             res = self.get_instrument_get_response(response_id)
             if not res:
                 attempt += 1
                 continue
             else:
                 return res
-
         raise BloombergDataProviderException("Failed after %d attempts" % attempt)
 
     def get_pricing_latest_send_request(self, instruments):
@@ -270,7 +281,9 @@ class BloomberDataProvider(object):
             instruments=instruments_data
         )
 
-        return six.text_type(resp.responseId)
+        response_id = six.text_type(resp.responseId)
+        _l.debug('get_pricing_latest_send_request: response_id=%s', response_id)
+        return response_id
 
     def get_pricing_latest_get_response(self, response_id):
         """
@@ -281,6 +294,7 @@ class BloomberDataProvider(object):
         @rtype: dict
         """
         resp = self.soap_client.service.retrieveGetDataResponse(responseId=response_id)
+        _l.debug('get_pricing_latest_get_response: response_id=%s, resp=%s', response_id, resp)
 
         if resp.statusCode.code == 0:
             res = {}
@@ -308,15 +322,15 @@ class BloomberDataProvider(object):
 
         response_id = self.get_pricing_latest_send_request(instruments)
         attempt = 0
-        while attempt < 100:
+        while attempt < 1000:
             sleep(0.5)
+            _l.debug('get_pricing_latest_sync: response_id=%s, attempt=%s', response_id, attempt)
             res = self.get_pricing_latest_get_response(response_id)
             if not res:
                 attempt += 1
                 continue
             else:
                 return res
-
         raise BloombergDataProviderException("Failed after %d attempts" % attempt)
 
     def get_pricing_history_send_request(self, date_from, date_to, instruments):
@@ -350,7 +364,9 @@ class BloomberDataProvider(object):
             instruments=instruments_data
         )
 
-        return six.text_type(resp.responseId)
+        response_id = six.text_type(resp.responseId)
+        _l.debug('get_pricing_history_send_request: response_id=%s', response_id)
+        return response_id
 
     def get_pricing_history_get_response(self, response_id):
         """
@@ -362,6 +378,7 @@ class BloomberDataProvider(object):
         """
 
         resp = self.soap_client.service.retrieveGetHistoryResponse(responseId=response_id)
+        _l.debug('get_pricing_history_get_response: response_id=%s, resp=%s', response_id, resp)
 
         if resp.statusCode.code == 0:
             res = {}
@@ -371,10 +388,17 @@ class BloomberDataProvider(object):
                 # for field in resp.fields[0]:
                 #     instrument_fields[field] = instrument.data[i]._value
                 #     i += 1
-                instrument_fields = {}
+                date = instrument.date  # actual is datetime.date
+                date = force_text(date)
+
+                instrument_fields = {'date': date}
                 for i, field in enumerate(resp.fields[0]):
                     instrument_fields[field] = instrument.data[i]._value
-                res[instrument.instrument.id] = instrument_fields
+
+                if instrument.instrument.id in res:
+                    res[instrument.instrument.id].append(instrument_fields)
+                else:
+                    res[instrument.instrument.id] = [instrument_fields]
             return res
         return None
 
@@ -393,15 +417,15 @@ class BloomberDataProvider(object):
 
         response_id = self.get_pricing_history_send_request(date_from, date_to, instruments)
         attempt = 0
-        while attempt < 100:
+        while attempt < 1000:
             sleep(0.5)
+            _l.debug('get_pricing_history_sync: response_id=%s, attempt=%s', response_id, attempt)
             res = self.get_pricing_history_get_response(response_id)
             if not res:
                 attempt += 1
                 continue
             else:
                 return res
-
         raise BloombergDataProviderException("Failed after %d attempts" % attempt)
 
     def __str__(self):
@@ -430,6 +454,7 @@ class FakeBloomberDataProvider(BloomberDataProvider):
             'instrument': instrument,
             'fields': fields,
         }
+        _l.debug('get_instrument_send_request: response_id=%s', id)
         return id
 
     def get_instrument_get_response(self, response_id):
@@ -439,6 +464,7 @@ class FakeBloomberDataProvider(BloomberDataProvider):
         res = {}
         for field in req['fields']:
             res[field] = field
+        _l.debug('get_instrument_get_response: response_id=%s, res=%s', response_id, res)
         return res
 
     def get_pricing_latest_send_request(self, instruments):
@@ -450,6 +476,7 @@ class FakeBloomberDataProvider(BloomberDataProvider):
             'fields': ['PX_YEST_BID', 'PX_YEST_ASK', 'PX_YEST_CLOSE', 'PX_CLOSE_1D', 'ACCRUED_FACTOR', 'CPN',
                        'SECURITY_TYP']
         }
+        _l.debug('get_pricing_latest_send_request: response_id=%s', id)
         return id
 
     def get_pricing_latest_get_response(self, response_id):
@@ -462,6 +489,7 @@ class FakeBloomberDataProvider(BloomberDataProvider):
             for field in req['fields']:
                 instrument_fields[field] = field
             res[instrument['code']] = instrument_fields
+        _l.debug('get_pricing_latest_get_response: response_id=%s, res=%s', response_id, res)
         return res
 
     def get_pricing_history_send_request(self, date_from, date_to, instruments):
@@ -474,6 +502,7 @@ class FakeBloomberDataProvider(BloomberDataProvider):
             'date_to': date_to,
             'fields': ['PX_BID', 'PX_ASK', 'PX_LAST'],
         }
+        _l.debug('get_pricing_history_send_request: response_id=%s', id)
         return id
 
     def get_pricing_history_get_response(self, response_id):
@@ -486,6 +515,7 @@ class FakeBloomberDataProvider(BloomberDataProvider):
             for field in req['fields']:
                 instrument_fields[field] = field
             res[instrument['code']] = instrument_fields
+        _l.debug('get_pricing_history_get_response: response_id=%s, res=%s', response_id, res)
         return res
 
 
@@ -493,8 +523,7 @@ def test_instrument_data(b):
     """
     Test instrument data methods
     """
-    import pprint
-    print('get_instrument', '-' * 60)
+    _l.info('test_instrument_data ------')
 
     instrument_fields = [
         "CRNCY", "SECURITY_TYP", "ISSUER", "CNTRY_OF_RISK", "INDUSTRY_SECTOR", "INDUSTRY_SUBGROUP", "SECURITY_DES",
@@ -510,38 +539,127 @@ def test_instrument_data(b):
     }
 
     res = b.get_instrument_sync(instrument, instrument_fields)
-    pprint.pprint(res)
+
+    # res = {
+    #     "ACCRUED_FACTOR": "1.000000000",
+    #     "CALC_TYP": "1",
+    #     "CALC_TYP_DES": "STREET CONVENTION",
+    #     "CNTRY_OF_RISK": "N.S.",
+    #     "COUPON_FREQUENCY_DESCRIPTION": "S/A",
+    #     "CPN": "5.375000",
+    #     "CPN_FREQ": "2",
+    #     "CPN_TYP": "FIXED",
+    #     "CPN_TYP_SPECIFIC": "",
+    #     "CRNCY": "USD",
+    #     "CUR_CPN": "",
+    #     "DAYS_TO_SETTLE": "2",
+    #     "DAY_CNT": "20",
+    #     "DAY_CNT_DES": "ISMA-30/360",
+    #     "DES_NOTES": "",
+    #     "FIRST_CPN_DT": "12/16/2016",
+    #     "FIRST_SETTLE_DT": "06/16/2016",
+    #     "ID_BB_GLOBAL": "BBG00D2QX2B8",
+    #     "ID_CUSIP": "LW4068711",
+    #     "ID_ISIN": "XS1433454243",
+    #     "INDUSTRY_SECTOR": "Industrial",
+    #     "INDUSTRY_SUBGROUP": "Transport-Marine",
+    #     "INT_ACC_DT": "06/16/2016",
+    #     "ISSUER": "SCF CAPITAL LTD",
+    #     "MATURITY": "06/16/2023",
+    #     "MTY_TYP": "AT MATURITY",
+    #     "OPT_PUT_CALL": "",
+    #     "PAYMENT_RANK": "Sr Unsecured",
+    #     "SECURITY_DES": "SCFRU 5 3/8 06/16/23",
+    #     "SECURITY_TYP": "EURO-DOLLAR"
+    # }
+
+    _l.info('res: %s', json.dumps(res, sort_keys=True, indent=4))
+
+
+def test_pricing_latest(b):
+    """
+    Test pricing data methods
+    """
+    _l.info('test_pricing_latest ------')
+
+    instrument1 = {"code": 'XS1433454243', "industry": "Corp"}
+    instrument2 = {"code": 'USL9326VAA46', "industry": "Corp"}
+
+    res = b.get_pricing_latest_sync([instrument1, instrument2])
+    # res = {
+    #     "USL9326VAA46": {
+    #         "ACCRUED_FACTOR": "1.000000000",
+    #         "CPN": "6.625000",
+    #         "PX_CLOSE_1D": "N.S.",
+    #         "PX_YEST_ASK": "N.S.",
+    #         "PX_YEST_BID": "N.S.",
+    #         "PX_YEST_CLOSE": "N.S.",
+    #         "SECURITY_TYP": "EURO-DOLLAR"
+    #     },
+    #     "XS1433454243": {
+    #         "ACCRUED_FACTOR": "1.000000000",
+    #         "CPN": "5.375000",
+    #         "PX_CLOSE_1D": "N.S.",
+    #         "PX_YEST_ASK": "N.S.",
+    #         "PX_YEST_BID": "N.S.",
+    #         "PX_YEST_CLOSE": "N.S.",
+    #         "SECURITY_TYP": "EURO-DOLLAR"
+    #     }
+    # }
+    _l.info('res: %s', json.dumps(res, sort_keys=True, indent=4))
 
 
 def test_pricing_history(b):
     """
     Test pricing data methods
     """
-    import pprint
+    _l.info('test_pricing_history ------')
 
     instrument1 = {"code": 'XS1433454243', "industry": "Corp"}
     instrument2 = {"code": 'USL9326VAA46', "industry": "Corp"}
 
-    print('get_pricing_latest', '-' * 60)
-    pprint.pprint(b.get_pricing_latest_sync([instrument1, instrument2]))
-
-    print('get_pricing_history', '-' * 60)
-    pprint.pprint(b.get_pricing_history_sync(datetime(year=2016, month=6, day=14),
+    res = b.get_pricing_history_sync(datetime(year=2016, month=6, day=15),
                                      datetime(year=2016, month=6, day=15),
-                                     [instrument1, instrument2]))
+                                     [instrument1, instrument2])
+
+    # res = {
+    #     "USL9326VAA46": [
+    #         {
+    #             "PX_ASK": "94.413",
+    #             "PX_BID": "93.108",
+    #             "PX_LAST": "93.761",
+    #             "date": "2016-06-15"
+    #         }
+    #     ],
+    #     "XS1433454243": [
+    #         {
+    #             "PX_ASK": "100.302",
+    #             "PX_BID": "99.88",
+    #             "PX_LAST": "100.091",
+    #             "date": "2016-06-15"
+    #         }
+    #     ]
+    # }
+
+    _l.info('res: %s', json.dumps(res, sort_keys=True, indent=4))
 
 
 if __name__ == "__main__":
     # noinspection PyUnresolvedReferences
     import env_ai
 
+    import django
+
+    django.setup()
+
     p12cert = os.environ['TEST_BLOOMBERG_CERT']
     password = os.environ['TEST_BLOOMBERG_CERT_PASSWORD']
 
     cert, key = get_certs_from_file(p12cert, password)
 
-    # b = BloomberDataProvider(wsdl="https://service.bloomberg.com/assets/dl/dlws.wsdl", cert=cert, key=key)
-    b = FakeBloomberDataProvider(wsdl="https://service.bloomberg.com/assets/dl/dlws.wsdl", cert=cert, key=key)
-    print(b.get_fields())
-    test_instrument_data(b)
+    b = BloomberDataProvider(wsdl="https://service.bloomberg.com/assets/dl/dlws.wsdl", cert=cert, key=key)
+    # b = FakeBloomberDataProvider(wsdl="https://service.bloomberg.com/assets/dl/dlws.wsdl", cert=cert, key=key)
+    # pprint.pprint(b.get_fields())
+    # test_instrument_data(b)
+    # test_pricing_latest(b)
     test_pricing_history(b)
