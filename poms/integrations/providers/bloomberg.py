@@ -22,12 +22,12 @@ _l = getLogger('poms.integrations.providers.bloomberg')
 # _l = getLogger(__name__)
 
 
-request_sending = Signal(providing_args=['action', 'params', 'response_id'])
-response_received = Signal(providing_args=['action', 'response_id', 'is_success', 'result'])
+request_sent = Signal(providing_args=['context', 'action', 'params', 'response_id'])
+response_received = Signal(providing_args=['context', 'action', 'response_id', 'is_success', 'result'])
 
 
-@receiver(request_sending, dispatch_uid='bloomberg.request_sending')
-def _request_sending(sender, action=None, params=None, response_id=None, context=None, **kwargs):
+@receiver(request_sent, dispatch_uid='bloomberg.request_sent')
+def _request_sent(sender, action=None, params=None, response_id=None, context=None, **kwargs):
     from poms.integrations.models import BloombergRequestLogEntry
     context = context or {}
     m = BloombergRequestLogEntry()
@@ -264,11 +264,11 @@ class BloomberDataProvider(object):
 
         response_id = six.text_type(response.responseId)
         _l.debug('get_instrument_send_request: response_id=%s', response_id)
-        request_sending.send(self.__class__,
-                             context=self.context,
-                             action='instrument',
-                             params={'instrument': instrument, 'fields': fields},
-                             response_id=response_id)
+        request_sent.send(self.__class__,
+                          context=self.context,
+                          action='instrument',
+                          params={'instrument': instrument, 'fields': fields},
+                          response_id=response_id)
 
         return response_id
 
@@ -354,11 +354,11 @@ class BloomberDataProvider(object):
 
         response_id = six.text_type(response.responseId)
         _l.debug('get_pricing_latest_send_request: response_id=%s', response_id)
-        request_sending.send(self.__class__,
-                             context=self.context,
-                             action='pricing_latest',
-                             params={'instruments': instruments, 'fields': fields},
-                             response_id=response_id)
+        request_sent.send(self.__class__,
+                          context=self.context,
+                          action='pricing_latest',
+                          params={'instruments': instruments, 'fields': fields},
+                          response_id=response_id)
 
         return response_id
 
@@ -464,12 +464,12 @@ class BloomberDataProvider(object):
 
         response_id = six.text_type(response.responseId)
         _l.debug('get_pricing_history_send_request: response_id=%s', response_id)
-        request_sending.send(self.__class__,
-                             context=self.context,
-                             action='pricing_history',
-                             params={'instruments': instruments, 'fields': fields, 'date_from': date_from,
-                                     'date_to': date_to},
-                             response_id=response_id)
+        request_sent.send(self.__class__,
+                          context=self.context,
+                          action='pricing_history',
+                          params={'instruments': instruments, 'fields': fields, 'date_from': date_from,
+                                  'date_to': date_to},
+                          response_id=response_id)
 
         return response_id
 
@@ -576,11 +576,11 @@ class FakeBloomberDataProvider(BloomberDataProvider):
             'response_id': response_id,
         }
         _l.debug('get_instrument_send_request: response_id=%s', response_id)
-        request_sending.send(self.__class__,
-                             context=self.context,
-                             action='instrument',
-                             params={'instrument': instrument, 'fields': fields},
-                             response_id=response_id)
+        request_sent.send(self.__class__,
+                          context=self.context,
+                          action='instrument',
+                          params={'instrument': instrument, 'fields': fields},
+                          response_id=response_id)
         return response_id
 
     def get_instrument_get_response(self, response_id):
@@ -646,11 +646,11 @@ class FakeBloomberDataProvider(BloomberDataProvider):
             'response_id': response_id,
         }
         _l.debug('get_pricing_latest_send_request: response_id=%s', response_id)
-        request_sending.send(self.__class__,
-                             context=self.context,
-                             action='pricing_latest',
-                             params={'instruments': instruments, 'fields': fields,},
-                             response_id=response_id)
+        request_sent.send(self.__class__,
+                          context=self.context,
+                          action='pricing_latest',
+                          params={'instruments': instruments, 'fields': fields,},
+                          response_id=response_id)
         return response_id
 
     def get_pricing_latest_get_response(self, response_id):
@@ -696,12 +696,12 @@ class FakeBloomberDataProvider(BloomberDataProvider):
             'response_id': response_id,
         }
         _l.debug('get_pricing_history_send_request: response_id=%s', response_id)
-        request_sending.send(self.__class__,
-                             context=self.context,
-                             action='pricing_history',
-                             params={'instruments': instruments, 'fields': fields, 'date_from': date_from,
-                                     'date_to': date_to},
-                             response_id=response_id)
+        request_sent.send(self.__class__,
+                          context=self.context,
+                          action='pricing_history',
+                          params={'instruments': instruments, 'fields': fields, 'date_from': date_from,
+                                  'date_to': date_to},
+                          response_id=response_id)
         return response_id
 
     def get_pricing_history_get_response(self, response_id):
