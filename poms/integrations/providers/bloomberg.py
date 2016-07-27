@@ -60,10 +60,6 @@ class BloombergTransportException(BloombergException):
     pass
 
 
-class BloombergDataProviderException(BloombergException):
-    pass
-
-
 def get_certs_from_file(p12cert, password):
     """
     Convert pkcs#12 bloomberg certificate into pem format certificates, used by authorized DLWS access.
@@ -183,13 +179,13 @@ class BloomberDataProvider(object):
         """
 
         if not wsdl:
-            raise BloombergDataProviderException("wsdl should be provided")
+            raise BloombergException("wsdl should be provided")
 
         if not cert:
-            raise BloombergDataProviderException("client certificate pem file should be provided")
+            raise BloombergException("client certificate pem file should be provided")
 
         if not key:
-            raise BloombergDataProviderException("private key pem file should be provided")
+            raise BloombergException("private key pem file should be provided")
 
         self.context = context
 
@@ -199,6 +195,21 @@ class BloomberDataProvider(object):
             "SOAPAction": ""
         }
         self.soap_client = Client(wsdl, headers=headers, transport=transport)
+
+    def _response_is_valid(self, response, pending=False, raise_exception=True):
+        if response.statusCode.code == 0:
+            return True
+        elif pending and response.statusCode.code == 100:
+            return True
+        else:
+            if raise_exception:
+                raise BloombergException(
+                    "Bloomberg failed with code %s and description '%s'" % (
+                        response.statusCode.code, response.description))
+            return False
+
+    def _data_is_ready(self, response):
+        return response.statusCode.code == 0
 
     def _invoke_sync(self, name, request_func, request_kwargs, response_func):
         _l.debug('%s: >', name)
@@ -211,15 +222,21 @@ class BloomberDataProvider(object):
                 _l.debug('%s: <', name)
                 return result
         _l.debug('%s: failed', name)
-        raise BloombergDataProviderException("%s('%s') failed" % (name, response_id,))
+        raise BloombergException("%s('%s') failed" % (name, response_id,))
+
+    def _notify_request_sent(self, action=None, params=None, response_id=None):
+        request_sent.send(self.__class__, context=self.context, action=action, params=params, response_id=response_id)
+
+    def _notify_response_received(self, action=None, response_id=None, is_success=False, result=None):
+        response_received.send(self.__class__, context=self.context, action=action, response_id=response_id,
+                               is_success=is_success, result=result)
 
     def get_fields(self):
         """
-        Test method to check SSL connectivity.
+        Test method to check SSL connectivity. (is free!)
         @return: bloomberg mnemonic test data.
         @rtype: dict
         """
-        # request = {"mnemonic": "NAME"}
         _l.debug('get_fields')
 
         response = self.soap_client.service.getFields(
@@ -228,7 +245,10 @@ class BloomberDataProvider(object):
             }
         )
         _l.debug('get_fields: response=%s', response)
-
+        response_id = uuid.uuid4().hex
+        self._notify_request_sent('fields', None, response_id)
+        self._response_is_valid(response)
+        self._notify_response_received('fields', response_id, True, response)
         return response
 
     def get_instrument_send_request(self, instrument, fields):
@@ -261,14 +281,11 @@ class BloomberDataProvider(object):
             ]
         )
         _l.debug('get_instrument_send_request: response=%s', response)
+        self._response_is_valid(response)
 
         response_id = six.text_type(response.responseId)
         _l.debug('get_instrument_send_request: response_id=%s', response_id)
-        request_sent.send(self.__class__,
-                          context=self.context,
-                          action='instrument',
-                          params={'instrument': instrument, 'fields': fields},
-                          response_id=response_id)
+        self._notify_request_sent('instrument', {'instrument': instrument, 'fields': fields}, response_id)
 
         return response_id
 
@@ -284,7 +301,26 @@ class BloomberDataProvider(object):
         response = self.soap_client.service.retrieveGetDataResponse(responseId=response_id)
         _l.debug('get_instrument_get_response: response_id=%s, response=%s', response_id, response)
 
-        if response.statusCode.code == 0:
+        # if response.statusCode.code == 0:
+        #     result = {}
+        #     # i = 0
+        #     # for field in resp.fields[0]:
+        #     #     res[field] = resp.instrumentDatas[0][0].data[i]._value
+        #     #     i += 1
+        #     for i, field in enumerate(response.fields[0]):
+        #         result[field] = response.instrumentDatas[0][0].data[i]._value
+        #
+        #     _l.debug('get_instrument_get_response: response_id=%s, result=%s', response_id, result)
+        #     response_received.send(self.__class__,
+        #                            context=self.context,
+        #                            action='instrument',
+        #                            response_id=response_id,
+        #                            is_success=True,
+        #                            result=result)
+        #
+        #     return result
+        self._response_is_valid(response, pending=True)
+        if self._data_is_ready(response):
             result = {}
             # i = 0
             # for field in resp.fields[0]:
@@ -294,15 +330,9 @@ class BloomberDataProvider(object):
                 result[field] = response.instrumentDatas[0][0].data[i]._value
 
             _l.debug('get_instrument_get_response: response_id=%s, result=%s', response_id, result)
-            response_received.send(self.__class__,
-                                   context=self.context,
-                                   action='instrument',
-                                   response_id=response_id,
-                                   is_success=True,
-                                   result=result)
+            self._notify_response_received('instrument', response_id, True, result)
 
             return result
-
         return None
 
     def get_instrument_sync(self, instrument, fields):
@@ -351,14 +381,11 @@ class BloomberDataProvider(object):
             instruments=instruments_data
         )
         _l.debug('get_pricing_latest_send_request: response=%s', response)
+        self._response_is_valid(response)
 
         response_id = six.text_type(response.responseId)
         _l.debug('get_pricing_latest_send_request: response_id=%s', response_id)
-        request_sent.send(self.__class__,
-                          context=self.context,
-                          action='pricing_latest',
-                          params={'instruments': instruments, 'fields': fields},
-                          response_id=response_id)
+        self._notify_request_sent('pricing_latest', {'instruments': instruments, 'fields': fields}, response_id)
 
         return response_id
 
@@ -373,7 +400,30 @@ class BloomberDataProvider(object):
         response = self.soap_client.service.retrieveGetDataResponse(responseId=response_id)
         _l.debug('get_pricing_latest_get_response: response_id=%s, response=%s', response_id, response)
 
-        if response.statusCode.code == 0:
+        # if response.statusCode.code == 0:
+        #     result = {}
+        #     for instrument in response.instrumentDatas[0]:
+        #         # i = 0
+        #         # instrument_fields = {}
+        #         # for field in resp.fields[0]:
+        #         #     instrument_fields[field] = instrument.data[i]._value
+        #         #     i += 1
+        #         instrument_fields = {}
+        #         for i, field in enumerate(response.fields[0]):
+        #             instrument_fields[field] = instrument.data[i]._value
+        #         result[instrument.instrument.id] = instrument_fields
+        #
+        #     _l.debug('get_pricing_latest_get_response: response_id=%s, result=%s', response_id, result)
+        #     response_received.send(self.__class__,
+        #                            context=self.context,
+        #                            action='pricing_latest',
+        #                            response_id=response_id,
+        #                            is_success=True,
+        #                            result=result)
+        #     return result
+        # return None
+        self._response_is_valid(response, pending=True)
+        if self._data_is_ready(response):
             result = {}
             for instrument in response.instrumentDatas[0]:
                 # i = 0
@@ -387,15 +437,8 @@ class BloomberDataProvider(object):
                 result[instrument.instrument.id] = instrument_fields
 
             _l.debug('get_pricing_latest_get_response: response_id=%s, result=%s', response_id, result)
-            response_received.send(self.__class__,
-                                   context=self.context,
-                                   action='pricing_latest',
-                                   response_id=response_id,
-                                   is_success=True,
-                                   result=result)
-
+            self._notify_response_received('pricing_latest', response_id, True, result)
             return result
-
         return None
 
     def get_pricing_latest_sync(self, instruments):
@@ -461,15 +504,13 @@ class BloomberDataProvider(object):
             instruments=instruments_data
         )
         _l.debug('get_pricing_history_send_request: response=%s', response)
+        self._response_is_valid(response)
 
         response_id = six.text_type(response.responseId)
         _l.debug('get_pricing_history_send_request: response_id=%s', response_id)
-        request_sent.send(self.__class__,
-                          context=self.context,
-                          action='pricing_history',
-                          params={'instruments': instruments, 'fields': fields, 'date_from': date_from,
-                                  'date_to': date_to},
-                          response_id=response_id)
+        self._notify_request_sent('pricing_history',
+                                  {'instruments': instruments, 'fields': fields, 'date_from': date_from,
+                                   'date_to': date_to}, response_id)
 
         return response_id
 
@@ -485,18 +526,47 @@ class BloomberDataProvider(object):
         response = self.soap_client.service.retrieveGetHistoryResponse(responseId=response_id)
         _l.debug('get_pricing_history_get_response: response_id=%s, response=%s', response_id, response)
 
-        if response.statusCode.code == 0:
+        # if response.statusCode.code == 0:
+        #     result = {}
+        #     for instrument in response.instrumentDatas[0]:
+        #         # i = 0
+        #         # instrument_fields = {}
+        #         # for field in resp.fields[0]:
+        #         #     instrument_fields[field] = instrument.data[i]._value
+        #         #     i += 1
+        #         instrument_fields = {
+        #             'date': instrument.date,
+        #         }
+        #         for i, field in enumerate(response.fields[0]):
+        #             instrument_fields[field] = instrument.data[i]._value
+        #
+        #         if instrument.instrument.id in result:
+        #             result[instrument.instrument.id].append(instrument_fields)
+        #         else:
+        #             result[instrument.instrument.id] = [instrument_fields]
+        #
+        #     _l.debug('get_pricing_history_get_response: response_id=%s, result=%s', response_id, result)
+        #     response_received.send(self.__class__,
+        #                            context=self.context,
+        #                            action='pricing_history',
+        #                            response_id=response_id,
+        #                            is_success=True,
+        #                            result=result)
+        #
+        #     return result
+        # return None
+        self._response_is_valid(response, pending=True)
+        if self._data_is_ready(response):
             result = {}
-
             for instrument in response.instrumentDatas[0]:
+                instrument_fields = {
+                    'date': instrument.date,
+                }
                 # i = 0
                 # instrument_fields = {}
                 # for field in resp.fields[0]:
                 #     instrument_fields[field] = instrument.data[i]._value
                 #     i += 1
-                instrument_fields = {
-                    'date': instrument.date,
-                }
                 for i, field in enumerate(response.fields[0]):
                     instrument_fields[field] = instrument.data[i]._value
 
@@ -504,15 +574,8 @@ class BloomberDataProvider(object):
                     result[instrument.instrument.id].append(instrument_fields)
                 else:
                     result[instrument.instrument.id] = [instrument_fields]
-
             _l.debug('get_pricing_history_get_response: response_id=%s, result=%s', response_id, result)
-            response_received.send(self.__class__,
-                                   context=self.context,
-                                   action='pricing_history',
-                                   response_id=response_id,
-                                   is_success=True,
-                                   result=result)
-
+            self._notify_response_received('pricing_history', response_id, True, result)
             return result
         return None
 
@@ -563,8 +626,8 @@ class FakeBloomberDataProvider(BloomberDataProvider):
     def _make_id(self):
         return '%s' % uuid.uuid4()
 
-    def get_fields(self):
-        return 'fake'
+    # def get_fields(self):
+    #     return 'fake'
 
     def get_instrument_send_request(self, instrument, fields):
         _l.debug('get_instrument_send_request: instrument=%s, fields=%s', instrument, fields)
@@ -576,11 +639,7 @@ class FakeBloomberDataProvider(BloomberDataProvider):
             'response_id': response_id,
         }
         _l.debug('get_instrument_send_request: response_id=%s', response_id)
-        request_sent.send(self.__class__,
-                          context=self.context,
-                          action='instrument',
-                          params={'instrument': instrument, 'fields': fields},
-                          response_id=response_id)
+        self._notify_request_sent('instrument', {'instrument': instrument, 'fields': fields}, response_id)
         return response_id
 
     def get_instrument_get_response(self, response_id):
@@ -626,13 +685,7 @@ class FakeBloomberDataProvider(BloomberDataProvider):
         for field in req['fields']:
             result[field] = fake_data.get(field, None)
         _l.debug('get_instrument_get_response: response_id=%s, result=%s', response_id, result)
-
-        response_received.send(self.__class__,
-                               context=self.context,
-                               action='instrument',
-                               response_id=response_id,
-                               is_success=True,
-                               result=result)
+        self._notify_response_received('instrument', response_id, True, result)
         return result
 
     def get_pricing_latest_send_request(self, instruments):
@@ -646,11 +699,7 @@ class FakeBloomberDataProvider(BloomberDataProvider):
             'response_id': response_id,
         }
         _l.debug('get_pricing_latest_send_request: response_id=%s', response_id)
-        request_sent.send(self.__class__,
-                          context=self.context,
-                          action='pricing_latest',
-                          params={'instruments': instruments, 'fields': fields,},
-                          response_id=response_id)
+        self._notify_request_sent('pricing_latest', {'instruments': instruments, 'fields': fields}, response_id)
         return response_id
 
     def get_pricing_latest_get_response(self, response_id):
@@ -674,12 +723,7 @@ class FakeBloomberDataProvider(BloomberDataProvider):
                 instrument_fields[field] = fake_data.get(field, None)
             result[instrument['code']] = instrument_fields
         _l.debug('get_pricing_latest_get_response: response_id=%s, result=%s', response_id, result)
-        response_received.send(self.__class__,
-                               context=self.context,
-                               action='pricing_latest',
-                               response_id=response_id,
-                               is_success=True,
-                               result=result)
+        self._notify_response_received('pricing_latest', response_id, True, result)
         return result
 
     def get_pricing_history_send_request(self, instruments, date_from, date_to):
@@ -696,12 +740,9 @@ class FakeBloomberDataProvider(BloomberDataProvider):
             'response_id': response_id,
         }
         _l.debug('get_pricing_history_send_request: response_id=%s', response_id)
-        request_sent.send(self.__class__,
-                          context=self.context,
-                          action='pricing_history',
-                          params={'instruments': instruments, 'fields': fields, 'date_from': date_from,
-                                  'date_to': date_to},
-                          response_id=response_id)
+        self._notify_request_sent('pricing_history',
+                                  {'instruments': instruments, 'fields': fields, 'date_from': date_from,
+                                   'date_to': date_to}, response_id)
         return response_id
 
     def get_pricing_history_get_response(self, response_id):
@@ -733,12 +774,7 @@ class FakeBloomberDataProvider(BloomberDataProvider):
 
                 d += timedelta(days=1)
         _l.debug('get_pricing_history_get_response: response_id=%s, result=%s', response_id, result)
-        response_received.send(self.__class__,
-                               context=self.context,
-                               action='pricing_history',
-                               response_id=response_id,
-                               is_success=True,
-                               result=result)
+        self._notify_response_received('pricing_history', response_id, True, result)
         return result
 
 
@@ -880,21 +916,23 @@ if __name__ == "__main__":
     master_user = MasterUser.objects.first()
     # member = master_user.members.first()
     member = None
+    context = {'master_user': master_user, 'member': member}
 
     p12cert = os.environ['TEST_BLOOMBERG_CERT']
     password = os.environ['TEST_BLOOMBERG_CERT_PASSWORD']
 
     cert, key = get_certs_from_file(p12cert, password)
 
-    # # b = BloomberDataProvider(wsdl="https://service.bloomberg.com/assets/dl/dlws.wsdl", cert=cert, key=key)
+    # b = BloomberDataProvider(wsdl="https://service.bloomberg.com/assets/dl/dlws.wsdl", cert=cert, key=key,
+    #                          context=context)
     b = FakeBloomberDataProvider(wsdl="https://service.bloomberg.com/assets/dl/dlws.wsdl", cert=cert, key=key,
-                                 context={'master_user': master_user, 'member': member})
-    # print(b.get_fields())
+                                 context=context)
+    print(b.get_fields())
     test_instrument_data(b)
     test_pricing_latest(b)
     test_pricing_history(b)
 
-    from dateutil import parser
-
-    _l.info('1: %s', parser.parse("06/16/2023"))
-    _l.info('2: %s', parser.parse("2016-06-15"))
+    # from dateutil import parser
+    # _l.info('1: %s', parser.parse("06/16/2023"))
+    # _l.info('2: %s', parser.parse("2016-06-15"))
+    pass
