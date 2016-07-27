@@ -70,14 +70,14 @@ class InstrumentAttributeMapping(models.Model):
 @python_2_unicode_compatible
 class BloombergRequestLogEntry(TimeStampedModel):
     master_user = models.ForeignKey('users.MasterUser')
-    member = models.ForeignKey('users.Member')
+    member = models.ForeignKey('users.Member', null=True, blank=True)
 
-    token = models.CharField(max_length=36, null=True, blank=True, db_index=True)
+    token = models.UUIDField(null=True, blank=True, db_index=True)
     is_success = models.NullBooleanField(db_index=True)
     is_user_got_response = models.NullBooleanField(db_index=True)
 
-    request_id = models.CharField(max_length=36, null=True, blank=True, db_index=True)
     request = models.TextField(null=True, blank=True)
+    response_id = models.CharField(max_length=64, null=True, blank=True, db_index=True)
     response = models.TextField(null=True, blank=True)
 
     class Meta:
@@ -86,7 +86,7 @@ class BloombergRequestLogEntry(TimeStampedModel):
         ordering = ('created',)
 
     def __str__(self):
-        return '%s' % self.request_id
+        return '%s' % self.token
 
 
 history.register(InstrumentMapping, follow=['attributes'])

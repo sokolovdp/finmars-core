@@ -58,7 +58,7 @@ admin.site.register(InstrumentMapping, InstrumentMappingAdmin)
 
 class BloombergRequestLogEntryAdmin(admin.ModelAdmin):
     model = BloombergRequestLogEntry
-    list_display = ['id', 'created', 'master_user', 'member', 'token', 'request_id', 'is_success',
+    list_display = ['id', 'created', 'master_user', 'member', 'token', 'response_id', 'is_success',
                     'is_user_got_response']
     list_select_related = ['master_user', 'member', ]
     raw_id_fields = ['master_user', 'member', ]
@@ -68,8 +68,7 @@ class BloombergRequestLogEntryAdmin(admin.ModelAdmin):
 
     if not settings.DEBUG:
         readonly_fields = ['id', 'created', 'modified', 'master_user', 'member', 'token',
-                           'is_success', 'is_user_got_response',
-                           'request_id', 'request', 'response', ]
+                           'request', 'response_id', 'response', 'is_success', 'is_user_got_response', ]
 
     def has_add_permission(self, request):
         return settings.DEBUG
