@@ -76,6 +76,7 @@ class BloombergRequestLogEntry(TimeStampedModel):
     is_success = models.NullBooleanField(db_index=True)
     is_user_got_response = models.NullBooleanField(db_index=True)
 
+    action = models.CharField(max_length=32, null=True, blank=True, db_index=True)
     request = models.TextField(null=True, blank=True)
     response_id = models.CharField(max_length=64, null=True, blank=True, db_index=True)
     response = models.TextField(null=True, blank=True)
@@ -83,10 +84,10 @@ class BloombergRequestLogEntry(TimeStampedModel):
     class Meta:
         verbose_name = _('bloomberg request log')
         verbose_name_plural = _('bloomberg request logs')
-        ordering = ('created',)
+        ordering = ('-created',)
 
     def __str__(self):
-        return '%s' % self.token
+        return '%s' % self.id
 
 
 history.register(InstrumentMapping, follow=['attributes'])

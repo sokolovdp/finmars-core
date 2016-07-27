@@ -440,10 +440,12 @@ FILE_IMPORT_STORAGE = {
 # CELERY ------------------------------------------------
 
 
-
 if REDIS_HOST:
     BROKER_URL = 'redis://%s/10' % REDIS_HOST
     CELERY_RESULT_BACKEND = 'redis://%s/10' % REDIS_HOST
+
+    CELERY_ALWAYS_EAGER = DEBUG
+    CELERY_EAGER_PROPAGATES_EXCEPTIONS = DEBUG
 else:
     # import djcelery
     #
@@ -453,10 +455,10 @@ else:
     # # CELERY_RESULT_BACKEND = 'djcelery.backends.database:DatabaseBackend'
     # # CELERYBEAT_SCHEDULER = 'djcelery.schedulers.DatabaseScheduler'
     # KOMBU_POLLING_INTERVAL = 1
-    raise Exception('REDIS_HOST required!')
+    # raise Exception('REDIS_HOST required!')
 
-CELERY_ALWAYS_EAGER = DEBUG
-CELERY_EAGER_PROPAGATES_EXCEPTIONS = DEBUG
+    CELERY_ALWAYS_EAGER = True
+    CELERY_EAGER_PROPAGATES_EXCEPTIONS = True
 
 CELERY_DEFAULT_QUEUE = 'poms_celery'
 CELERY_ENABLE_UTC = True

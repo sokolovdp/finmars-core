@@ -1,6 +1,6 @@
 import base64
-import json
 import os
+import pprint
 import uuid
 from datetime import timedelta, date
 from logging import getLogger
@@ -10,7 +10,7 @@ from time import sleep
 import requests
 import six
 from OpenSSL import crypto
-from django.utils.encoding import force_text
+from django.dispatch import Signal, receiver
 from suds.client import Client
 from suds.transport import Reply
 from suds.transport.http import HttpAuthenticated
@@ -19,8 +19,37 @@ __author__ = 'alyakhov'
 
 _l = getLogger('poms.integrations.providers.bloomberg')
 
-
 # _l = getLogger(__name__)
+
+
+request_sending = Signal(providing_args=['action', 'params', 'response_id'])
+response_received = Signal(providing_args=['action', 'response_id', 'is_success', 'result'])
+
+
+@receiver(request_sending, dispatch_uid='bloomberg.request_sending')
+def _request_sending(sender, action=None, params=None, response_id=None, context=None, **kwargs):
+    from poms.integrations.models import BloombergRequestLogEntry
+    context = context or {}
+    m = BloombergRequestLogEntry()
+    m.master_user = context.get('master_user', None)
+    m.member = context.get('member', None)
+    m.action = action
+    m.request = pprint.pformat(params)
+    m.response_id = response_id
+    m.save()
+
+
+@receiver(response_received, dispatch_uid='bloomberg.response_received')
+def _response_received(sender, action=None, response_id=None, is_success=None, result=None, context=None, **kwargs):
+    from poms.integrations.models import BloombergRequestLogEntry
+    try:
+        m = BloombergRequestLogEntry.objects.get(action=action, response_id=response_id)
+        m.is_success = is_success
+        m.is_user_got_response = True
+        m.response = pprint.pformat(result)
+        m.save()
+    except BloombergRequestLogEntry.DoesNotExist:
+        _l.warn('bloomberg request not found: action=%s, response_id=%s', action, response_id)
 
 
 class BloombergException(Exception):
@@ -140,7 +169,7 @@ class BloomberDataProvider(object):
     Bloomberg python client for Finmars.
     """
 
-    def __init__(self, wsdl=None, cert=None, key=None):
+    def __init__(self, wsdl=None, cert=None, key=None, context=None):
         """
         Constructor for BloomberDataProvider
         @param wsdl: url for WSDL file
@@ -161,6 +190,8 @@ class BloomberDataProvider(object):
 
         if not key:
             raise BloombergDataProviderException("private key pem file should be provided")
+
+        self.context = context
 
         transport = RequestsTransport(cert=cert, key=key)
         headers = {
@@ -233,6 +264,11 @@ class BloomberDataProvider(object):
 
         response_id = six.text_type(response.responseId)
         _l.debug('get_instrument_send_request: response_id=%s', response_id)
+        request_sending.send(self.__class__,
+                             context=self.context,
+                             action='instrument',
+                             params={'instrument': instrument, 'fields': fields},
+                             response_id=response_id)
 
         return response_id
 
@@ -256,7 +292,15 @@ class BloomberDataProvider(object):
             #     i += 1
             for i, field in enumerate(response.fields[0]):
                 result[field] = response.instrumentDatas[0][0].data[i]._value
+
             _l.debug('get_instrument_get_response: response_id=%s, result=%s', response_id, result)
+            response_received.send(self.__class__,
+                                   context=self.context,
+                                   action='instrument',
+                                   response_id=response_id,
+                                   is_success=True,
+                                   result=result)
+
             return result
 
         return None
@@ -289,23 +333,32 @@ class BloomberDataProvider(object):
         """
         _l.debug('get_pricing_latest_send_request: instrument=%s', instruments)
 
+        fields = ['PX_YEST_BID', 'PX_YEST_ASK', 'PX_YEST_CLOSE', 'PX_CLOSE_1D', 'ACCRUED_FACTOR', 'CPN', 'SECURITY_TYP']
+
         fields_data = self.soap_client.factory.create('Fields')
-        fields_data.field = ['PX_YEST_BID', 'PX_YEST_ASK', 'PX_YEST_CLOSE', 'PX_CLOSE_1D', 'ACCRUED_FACTOR', 'CPN',
-                             'SECURITY_TYP']
+        fields_data.field = fields
 
         instruments_data = self.soap_client.factory.create('Instruments')
         for instrument in instruments:
-            instruments_data.instrument.append({"id": instrument["code"], "yellowkey": instrument["industry"]})
+            instruments_data.instrument.append({
+                "id": instrument["code"],
+                "yellowkey": instrument["industry"],
+            })
 
         response = self.soap_client.service.submitGetDataRequest(
             headers={"secmaster": True},
             fields=fields_data,
             instruments=instruments_data
         )
-        _l.debug('get_instrument_send_request: reponse=%s', response)
+        _l.debug('get_pricing_latest_send_request: response=%s', response)
 
         response_id = six.text_type(response.responseId)
         _l.debug('get_pricing_latest_send_request: response_id=%s', response_id)
+        request_sending.send(self.__class__,
+                             context=self.context,
+                             action='pricing_latest',
+                             params={'instruments': instruments, 'fields': fields},
+                             response_id=response_id)
 
         return response_id
 
@@ -332,8 +385,17 @@ class BloomberDataProvider(object):
                 for i, field in enumerate(response.fields[0]):
                     instrument_fields[field] = instrument.data[i]._value
                 result[instrument.instrument.id] = instrument_fields
+
             _l.debug('get_pricing_latest_get_response: response_id=%s, result=%s', response_id, result)
+            response_received.send(self.__class__,
+                                   context=self.context,
+                                   action='pricing_latest',
+                                   response_id=response_id,
+                                   is_success=True,
+                                   result=result)
+
             return result
+
         return None
 
     def get_pricing_latest_sync(self, instruments):
@@ -363,9 +425,9 @@ class BloomberDataProvider(object):
         """
         Async retrieval of historical pricing data. Return None is data is not ready.
         @param date_from: start of historical range
-        @type datetime
+        @type datetime.date
         @param date_to: inclusive end of historical range
-        @type datetime
+        @type datetime.date
         @param instruments: list of instrument tuples. Each tuple - (ISIN,Insustry)
         @type tuple
         @return: dictionary, where key - ISIN, value - dict with {bloomberg_field:value} dicts
@@ -376,25 +438,38 @@ class BloomberDataProvider(object):
 
         start = date_from.strftime("%Y-%m-%d")
         end = date_to.strftime("%Y-%m-%d")
-
-        daterange = {"daterange": {"period": {"start": start, "end": end}}}
+        fields = ['PX_BID', 'PX_ASK', 'PX_LAST']
+        date_range = {
+            "daterange": {
+                "period": {
+                    "start": start,
+                    "end": end
+                }
+            }
+        }
 
         fields_data = self.soap_client.factory.create('Fields')
-        fields_data.field = ['PX_BID', 'PX_ASK', 'PX_LAST']
+        fields_data.field = fields
 
         instruments_data = self.soap_client.factory.create('Instruments')
         for instrument in instruments:
             instruments_data.instrument.append({"id": instrument["code"], "yellowkey": instrument["industry"]})
 
         response = self.soap_client.service.submitGetHistoryRequest(
-            headers=daterange,
+            headers=date_range,
             fields=fields_data,
             instruments=instruments_data
         )
-        _l.debug('get_instrument_send_request: reponse=%s', response)
+        _l.debug('get_pricing_history_send_request: response=%s', response)
 
         response_id = six.text_type(response.responseId)
         _l.debug('get_pricing_history_send_request: response_id=%s', response_id)
+        request_sending.send(self.__class__,
+                             context=self.context,
+                             action='pricing_history',
+                             params={'instruments': instruments, 'fields': fields, 'date_from': date_from,
+                                     'date_to': date_to},
+                             response_id=response_id)
 
         return response_id
 
@@ -412,16 +487,16 @@ class BloomberDataProvider(object):
 
         if response.statusCode.code == 0:
             result = {}
+
             for instrument in response.instrumentDatas[0]:
                 # i = 0
                 # instrument_fields = {}
                 # for field in resp.fields[0]:
                 #     instrument_fields[field] = instrument.data[i]._value
                 #     i += 1
-                date = instrument.date  # actual is datetime.date
-                date = force_text(date)
-
-                instrument_fields = {'date': date}
+                instrument_fields = {
+                    'date': instrument.date,
+                }
                 for i, field in enumerate(response.fields[0]):
                     instrument_fields[field] = instrument.data[i]._value
 
@@ -429,7 +504,15 @@ class BloomberDataProvider(object):
                     result[instrument.instrument.id].append(instrument_fields)
                 else:
                     result[instrument.instrument.id] = [instrument_fields]
+
             _l.debug('get_pricing_history_get_response: response_id=%s, result=%s', response_id, result)
+            response_received.send(self.__class__,
+                                   context=self.context,
+                                   action='pricing_history',
+                                   response_id=response_id,
+                                   is_success=True,
+                                   result=result)
+
             return result
         return None
 
@@ -485,15 +568,20 @@ class FakeBloomberDataProvider(BloomberDataProvider):
 
     def get_instrument_send_request(self, instrument, fields):
         _l.debug('get_instrument_send_request: instrument=%s, fields=%s', instrument, fields)
-        id = self._make_id()
-        self._requests[id] = {
+        response_id = self._make_id()
+        self._requests[response_id] = {
             'action': 'instrument',
-            'id': id,
             'instrument': instrument,
             'fields': fields,
+            'response_id': response_id,
         }
-        _l.debug('get_instrument_send_request: response_id=%s', id)
-        return id
+        _l.debug('get_instrument_send_request: response_id=%s', response_id)
+        request_sending.send(self.__class__,
+                             context=self.context,
+                             action='instrument',
+                             params={'instrument': instrument, 'fields': fields},
+                             response_id=response_id)
+        return response_id
 
     def get_instrument_get_response(self, response_id):
         _l.debug('get_instrument_get_response: response_id=%s', response_id)
@@ -538,20 +626,32 @@ class FakeBloomberDataProvider(BloomberDataProvider):
         for field in req['fields']:
             result[field] = fake_data.get(field, None)
         _l.debug('get_instrument_get_response: response_id=%s, result=%s', response_id, result)
+
+        response_received.send(self.__class__,
+                               context=self.context,
+                               action='instrument',
+                               response_id=response_id,
+                               is_success=True,
+                               result=result)
         return result
 
     def get_pricing_latest_send_request(self, instruments):
         _l.debug('get_pricing_latest_send_request: instruments=%s', instruments)
-        id = self._make_id()
-        self._requests[id] = {
+        response_id = self._make_id()
+        fields = ['PX_YEST_BID', 'PX_YEST_ASK', 'PX_YEST_CLOSE', 'PX_CLOSE_1D', 'ACCRUED_FACTOR', 'CPN', 'SECURITY_TYP']
+        self._requests[response_id] = {
             'action': 'pricing_latest',
-            'id': id,
             'instruments': instruments,
-            'fields': ['PX_YEST_BID', 'PX_YEST_ASK', 'PX_YEST_CLOSE', 'PX_CLOSE_1D', 'ACCRUED_FACTOR', 'CPN',
-                       'SECURITY_TYP']
+            'fields': fields,
+            'response_id': response_id,
         }
-        _l.debug('get_pricing_latest_send_request: response_id=%s', id)
-        return id
+        _l.debug('get_pricing_latest_send_request: response_id=%s', response_id)
+        request_sending.send(self.__class__,
+                             context=self.context,
+                             action='pricing_latest',
+                             params={'instruments': instruments, 'fields': fields,},
+                             response_id=response_id)
+        return response_id
 
     def get_pricing_latest_get_response(self, response_id):
         _l.debug('get_pricing_latest_get_response: response_id=%s', response_id)
@@ -574,22 +674,35 @@ class FakeBloomberDataProvider(BloomberDataProvider):
                 instrument_fields[field] = fake_data.get(field, None)
             result[instrument['code']] = instrument_fields
         _l.debug('get_pricing_latest_get_response: response_id=%s, result=%s', response_id, result)
+        response_received.send(self.__class__,
+                               context=self.context,
+                               action='pricing_latest',
+                               response_id=response_id,
+                               is_success=True,
+                               result=result)
         return result
 
     def get_pricing_history_send_request(self, instruments, date_from, date_to):
         _l.debug('get_pricing_history_send_request: instrument=%s, date_from=%s, date_to=%s',
                  instruments, date_from, date_to)
-        id = self._make_id()
-        self._requests[id] = {
+        response_id = self._make_id()
+        fields = ['PX_BID', 'PX_ASK', 'PX_LAST']
+        self._requests[response_id] = {
             'action': 'pricing_history',
-            'id': id,
             'instruments': instruments,
             'date_from': date_from,
             'date_to': date_to,
-            'fields': ['PX_BID', 'PX_ASK', 'PX_LAST'],
+            'fields': fields,
+            'response_id': response_id,
         }
-        _l.debug('get_pricing_history_send_request: response_id=%s', id)
-        return id
+        _l.debug('get_pricing_history_send_request: response_id=%s', response_id)
+        request_sending.send(self.__class__,
+                             context=self.context,
+                             action='pricing_history',
+                             params={'instruments': instruments, 'fields': fields, 'date_from': date_from,
+                                     'date_to': date_to},
+                             response_id=response_id)
+        return response_id
 
     def get_pricing_history_get_response(self, response_id):
         _l.debug('get_pricing_history_get_response: response_id=%s', response_id)
@@ -607,7 +720,7 @@ class FakeBloomberDataProvider(BloomberDataProvider):
             d = req['date_from']
             while d <= req['date_to']:
                 instrument_fields = {
-                    'date': force_text(d)
+                    'date': d
                 }
                 for i, field in enumerate(req['fields']):
                     instrument_fields[field] = fake_data.get(field, None)
@@ -619,8 +732,13 @@ class FakeBloomberDataProvider(BloomberDataProvider):
                     result[instrument_code] = [instrument_fields]
 
                 d += timedelta(days=1)
-
         _l.debug('get_pricing_history_get_response: response_id=%s, result=%s', response_id, result)
+        response_received.send(self.__class__,
+                               context=self.context,
+                               action='pricing_history',
+                               response_id=response_id,
+                               is_success=True,
+                               result=result)
         return result
 
 
@@ -643,7 +761,7 @@ def test_instrument_data(b):
         "industry": "Corp"
     }
 
-    res = b.get_instrument_sync(instrument, instrument_fields)
+    response = b.get_instrument_sync(instrument, instrument_fields)
 
     # res = {
     #     "ACCRUED_FACTOR": "1.000000000",
@@ -678,7 +796,7 @@ def test_instrument_data(b):
     #     "SECURITY_TYP": "EURO-DOLLAR"
     # }
 
-    _l.info('res: %s', json.dumps(res, sort_keys=True, indent=4))
+    _l.info('response: %s', pprint.pformat(response))
 
 
 def test_pricing_latest(b):
@@ -690,7 +808,7 @@ def test_pricing_latest(b):
     instrument1 = {"code": 'XS1433454243', "industry": "Corp"}
     instrument2 = {"code": 'USL9326VAA46', "industry": "Corp"}
 
-    res = b.get_pricing_latest_sync([instrument1, instrument2])
+    response = b.get_pricing_latest_sync([instrument1, instrument2])
     # res = {
     #     "USL9326VAA46": {
     #         "ACCRUED_FACTOR": "1.000000000",
@@ -711,7 +829,7 @@ def test_pricing_latest(b):
     #         "SECURITY_TYP": "EURO-DOLLAR"
     #     }
     # }
-    _l.info('res: %s', json.dumps(res, sort_keys=True, indent=4))
+    _l.info('response: %s', pprint.pformat(response))
 
 
 def test_pricing_history(b):
@@ -723,9 +841,9 @@ def test_pricing_history(b):
     instrument1 = {"code": 'XS1433454243', "industry": "Corp"}
     instrument2 = {"code": 'USL9326VAA46', "industry": "Corp"}
 
-    res = b.get_pricing_history_sync(instruments=[instrument1, instrument2],
-                                     date_from=date(year=2016, month=6, day=14),
-                                     date_to=date(year=2016, month=6, day=15))
+    response = b.get_pricing_history_sync(instruments=[instrument1, instrument2],
+                                          date_from=date(year=2016, month=6, day=14),
+                                          date_to=date(year=2016, month=6, day=15))
 
     # res = {
     #     "USL9326VAA46": [
@@ -746,7 +864,7 @@ def test_pricing_history(b):
     #     ]
     # }
 
-    _l.info('res: %s', json.dumps(res, sort_keys=True, indent=4))
+    _l.info('response: %s', pprint.pformat(response))
 
 
 if __name__ == "__main__":
@@ -757,13 +875,20 @@ if __name__ == "__main__":
 
     django.setup()
 
+    from poms.users.models import MasterUser
+
+    master_user = MasterUser.objects.first()
+    # member = master_user.members.first()
+    member = None
+
     p12cert = os.environ['TEST_BLOOMBERG_CERT']
     password = os.environ['TEST_BLOOMBERG_CERT_PASSWORD']
 
     cert, key = get_certs_from_file(p12cert, password)
 
     # # b = BloomberDataProvider(wsdl="https://service.bloomberg.com/assets/dl/dlws.wsdl", cert=cert, key=key)
-    b = FakeBloomberDataProvider(wsdl="https://service.bloomberg.com/assets/dl/dlws.wsdl", cert=cert, key=key)
+    b = FakeBloomberDataProvider(wsdl="https://service.bloomberg.com/assets/dl/dlws.wsdl", cert=cert, key=key,
+                                 context={'master_user': master_user, 'member': member})
     # print(b.get_fields())
     test_instrument_data(b)
     test_pricing_latest(b)

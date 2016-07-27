@@ -58,20 +58,19 @@ admin.site.register(InstrumentMapping, InstrumentMappingAdmin)
 
 class BloombergRequestLogEntryAdmin(admin.ModelAdmin):
     model = BloombergRequestLogEntry
-    list_display = ['id', 'created', 'master_user', 'member', 'token', 'response_id', 'is_success',
-                    'is_user_got_response']
+    list_display = ['id', 'created', 'master_user', 'member', 'action', 'response_id', 'is_success',]
     list_select_related = ['master_user', 'member', ]
     raw_id_fields = ['master_user', 'member', ]
-    search_fields = ['request_id', 'token', ]
-    list_filter = ['created', 'is_success', 'is_user_got_response']
+    search_fields = ['action', 'token', 'response_id']
+    list_filter = ['created', 'is_success', 'action']
     date_hierarchy = 'created'
 
-    if not settings.DEBUG:
-        readonly_fields = ['id', 'created', 'modified', 'master_user', 'member', 'token',
-                           'request', 'response_id', 'response', 'is_success', 'is_user_got_response', ]
+    # if not settings.DEBUG:
+    readonly_fields = ['id', 'created', 'modified', 'master_user', 'member', 'action', 'token',
+                       'request', 'response_id', 'response', 'is_success', 'is_user_got_response', ]
 
-    def has_add_permission(self, request):
-        return settings.DEBUG
+    # def has_add_permission(self, request):
+    #     return settings.DEBUG
 
 
 admin.site.register(BloombergRequestLogEntry, BloombergRequestLogEntryAdmin)
