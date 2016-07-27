@@ -2,7 +2,7 @@ import base64
 import json
 import os
 import uuid
-from datetime import datetime
+from datetime import timedelta, date
 from logging import getLogger
 from tempfile import NamedTemporaryFile
 from time import sleep
@@ -458,12 +458,45 @@ class FakeBloomberDataProvider(BloomberDataProvider):
         return id
 
     def get_instrument_get_response(self, response_id):
+        fake_data = {
+            "ACCRUED_FACTOR": "1.000000000",
+            "CALC_TYP": "1",
+            "CALC_TYP_DES": "STREET CONVENTION",
+            "CNTRY_OF_RISK": "N.S.",
+            "COUPON_FREQUENCY_DESCRIPTION": "S/A",
+            "CPN": "5.375000",
+            "CPN_FREQ": "2",
+            "CPN_TYP": "FIXED",
+            "CPN_TYP_SPECIFIC": "",
+            "CRNCY": "USD",
+            "CUR_CPN": "",
+            "DAYS_TO_SETTLE": "2",
+            "DAY_CNT": "20",
+            "DAY_CNT_DES": "ISMA-30/360",
+            "DES_NOTES": "",
+            "FIRST_CPN_DT": "12/16/2016",
+            "FIRST_SETTLE_DT": "06/16/2016",
+            "ID_BB_GLOBAL": "BBG00D2QX2B8",
+            "ID_CUSIP": "LW4068711",
+            "ID_ISIN": "XS1433454243",
+            "INDUSTRY_SECTOR": "Industrial",
+            "INDUSTRY_SUBGROUP": "Transport-Marine",
+            "INT_ACC_DT": "06/16/2016",
+            "ISSUER": "SCF CAPITAL LTD",
+            "MATURITY": "06/16/2023",
+            "MTY_TYP": "AT MATURITY",
+            "OPT_PUT_CALL": "",
+            "PAYMENT_RANK": "Sr Unsecured",
+            "SECURITY_DES": "SCFRU 5 3/8 06/16/23",
+            "SECURITY_TYP": "EURO-DOLLAR"
+        }
+
         req = self._requests.pop(response_id, None)
         if not req:
             return None
         res = {}
         for field in req['fields']:
-            res[field] = field
+            res[field] = fake_data.get(field, None)
         _l.debug('get_instrument_get_response: response_id=%s, res=%s', response_id, res)
         return res
 
@@ -480,6 +513,15 @@ class FakeBloomberDataProvider(BloomberDataProvider):
         return id
 
     def get_pricing_latest_get_response(self, response_id):
+        fake_data = {
+            "ACCRUED_FACTOR": "1.000000000",
+            "CPN": "6.625000",
+            "PX_CLOSE_1D": "N.S.",
+            "PX_YEST_ASK": "N.S.",
+            "PX_YEST_BID": "N.S.",
+            "PX_YEST_CLOSE": "N.S.",
+            "SECURITY_TYP": "EURO-DOLLAR"
+        }
         req = self._requests.pop(response_id, None)
         if not req:
             return None
@@ -487,7 +529,7 @@ class FakeBloomberDataProvider(BloomberDataProvider):
         for instrument in req['instruments']:
             instrument_fields = {}
             for field in req['fields']:
-                instrument_fields[field] = field
+                instrument_fields[field] = fake_data.get(field, None)
             res[instrument['code']] = instrument_fields
         _l.debug('get_pricing_latest_get_response: response_id=%s, res=%s', response_id, res)
         return res
@@ -506,15 +548,34 @@ class FakeBloomberDataProvider(BloomberDataProvider):
         return id
 
     def get_pricing_history_get_response(self, response_id):
+        fake_data = {
+            "PX_ASK": "94.413",
+            "PX_BID": "93.108",
+            "PX_LAST": "93.761",
+            "date": "<REPLACE>"
+        }
         req = self._requests.pop(response_id, None)
         if not req:
             return None
         res = {}
         for instrument in req['instruments']:
-            instrument_fields = {}
-            for field in req['fields']:
-                instrument_fields[field] = field
-            res[instrument['code']] = instrument_fields
+
+            date = req['date_from']
+            while date <= req['date_to']:
+                instrument_fields = {
+                    'date': force_text(date)
+                }
+                for i, field in enumerate(req['fields']):
+                    instrument_fields[field] = fake_data.get(field, None)
+
+                instrument_code = instrument['code']
+                if instrument_code in res:
+                    res[instrument_code].append(instrument_fields)
+                else:
+                    res[instrument_code] = [instrument_fields]
+
+                date += timedelta(days=1)
+
         _l.debug('get_pricing_history_get_response: response_id=%s, res=%s', response_id, res)
         return res
 
@@ -618,8 +679,8 @@ def test_pricing_history(b):
     instrument1 = {"code": 'XS1433454243', "industry": "Corp"}
     instrument2 = {"code": 'USL9326VAA46', "industry": "Corp"}
 
-    res = b.get_pricing_history_sync(datetime(year=2016, month=6, day=15),
-                                     datetime(year=2016, month=6, day=15),
+    res = b.get_pricing_history_sync(date(year=2016, month=6, day=14),
+                                     date(year=2016, month=6, day=15),
                                      [instrument1, instrument2])
 
     # res = {
@@ -657,9 +718,14 @@ if __name__ == "__main__":
 
     cert, key = get_certs_from_file(p12cert, password)
 
-    b = BloomberDataProvider(wsdl="https://service.bloomberg.com/assets/dl/dlws.wsdl", cert=cert, key=key)
-    # b = FakeBloomberDataProvider(wsdl="https://service.bloomberg.com/assets/dl/dlws.wsdl", cert=cert, key=key)
-    # pprint.pprint(b.get_fields())
-    # test_instrument_data(b)
-    # test_pricing_latest(b)
+    # # b = BloomberDataProvider(wsdl="https://service.bloomberg.com/assets/dl/dlws.wsdl", cert=cert, key=key)
+    b = FakeBloomberDataProvider(wsdl="https://service.bloomberg.com/assets/dl/dlws.wsdl", cert=cert, key=key)
+    # print(b.get_fields())
+    test_instrument_data(b)
+    test_pricing_latest(b)
     test_pricing_history(b)
+
+    from dateutil import parser
+
+    _l.info('1: %s', parser.parse("06/16/2023"))
+    _l.info('2: %s', parser.parse("2016-06-15"))
