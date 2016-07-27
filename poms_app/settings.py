@@ -443,22 +443,19 @@ FILE_IMPORT_STORAGE = {
 if REDIS_HOST:
     BROKER_URL = 'redis://%s/10' % REDIS_HOST
     CELERY_RESULT_BACKEND = 'redis://%s/10' % REDIS_HOST
-
-    CELERY_ALWAYS_EAGER = DEBUG
-    CELERY_EAGER_PROPAGATES_EXCEPTIONS = DEBUG
 else:
     # import djcelery
     #
     # djcelery.setup_loader()
     #
-    # BROKER_URL = 'django://'
+    BROKER_URL = 'django://'
     # # CELERY_RESULT_BACKEND = 'djcelery.backends.database:DatabaseBackend'
     # # CELERYBEAT_SCHEDULER = 'djcelery.schedulers.DatabaseScheduler'
     # KOMBU_POLLING_INTERVAL = 1
     # raise Exception('REDIS_HOST required!')
 
-    CELERY_ALWAYS_EAGER = True
-    CELERY_EAGER_PROPAGATES_EXCEPTIONS = True
+# CELERY_ALWAYS_EAGER = True
+# CELERY_EAGER_PROPAGATES_EXCEPTIONS = True
 
 CELERY_DEFAULT_QUEUE = 'poms_celery'
 CELERY_ENABLE_UTC = True
@@ -467,7 +464,7 @@ CELERY_ACCEPT_CONTENT = ['json']
 CELERY_TASK_SERIALIZER = 'json'
 CELERY_RESULT_SERIALIZER = 'json'
 CELERYD_CONCURRENCY = 1
-CELERYD_TASK_TIME_LIMIT = 1
+# CELERYD_TASK_TIME_LIMIT = 1
 CELERYD_HIJACK_ROOT_LOGGER = False
 CELERY_REDIRECT_STDOUTS = False
 
@@ -481,3 +478,9 @@ CELERYBEAT_SCHEDULE = {
     #     'schedule': 1,
     # },
 }
+
+
+# BLOOMBERG ------------------------------------------------
+
+BLOOMBERG_SANDBOX = True
+BLOOMBERG_WSDL = 'https://service.bloomberg.com/assets/dl/dlws.wsdl'

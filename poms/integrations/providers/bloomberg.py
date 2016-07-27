@@ -11,6 +11,9 @@ from time import sleep
 import requests
 import six
 from OpenSSL import crypto
+from celery.result import AsyncResult
+from dateutil import parser
+from django.conf import settings
 from django.core.serializers.json import DjangoJSONEncoder
 from django.dispatch import Signal, receiver
 from django.utils.encoding import force_text
@@ -41,6 +44,8 @@ def _request_sent(sender, action=None, params=None, response_id=None, context=No
     m.request = json.dumps(params, sort_keys=True, cls=DjangoJSONEncoder)
     m.response_id = response_id
     m.save()
+    # from poms.integrations.tasks import bloomberg_get_response
+    # bloomberg_get_response(m.id)
 
 
 @receiver(response_received, dispatch_uid='bloomberg.response_received')
@@ -184,23 +189,27 @@ class BloomberDataProvider(object):
         @rtype: BloomberDataProvider
         """
 
-        if not wsdl:
-            raise BloombergException("wsdl should be provided")
+        wsdl = wsdl or settings.BLOOMBERG_WSDL
 
-        if not cert:
-            raise BloombergException("client certificate pem file should be provided")
-
-        if not key:
-            raise BloombergException("private key pem file should be provided")
+        if not settings.DEBUG:
+            if not wsdl:
+                raise BloombergException("wsdl should be provided")
+            if not cert:
+                raise BloombergException("client certificate pem file should be provided")
+            if not key:
+                raise BloombergException("private key pem file should be provided")
 
         self.context = context
 
-        transport = RequestsTransport(cert=cert, key=key)
-        headers = {
-            "Content-Type": "text/xml;charset=UTF-8",
-            "SOAPAction": ""
-        }
-        self.soap_client = Client(wsdl, headers=headers, transport=transport)
+        if cert and key:
+            transport = RequestsTransport(cert=cert, key=key)
+            headers = {
+                "Content-Type": "text/xml;charset=UTF-8",
+                "SOAPAction": ""
+            }
+            self.soap_client = Client(wsdl, headers=headers, transport=transport)
+        else:
+            self.soap_client = None
 
     def _response_is_valid(self, response, pending=False, raise_exception=True):
         if response.statusCode.code == 0:
@@ -627,25 +636,31 @@ class FakeBloomberDataProvider(BloomberDataProvider):
 
     def __init__(self, *args, **kwargs):
         super(FakeBloomberDataProvider, self).__init__(*args, **kwargs)
-        self._requests = {}
+
+        from django.core.cache import caches
+        self._cache = caches['default']
 
     def _make_id(self):
         return '%s' % uuid.uuid4()
 
-    # def get_fields(self):
-    #     return 'fake'
+    def get_fields(self):
+        return 'fake'
 
     def get_instrument_send_request(self, instrument, fields):
         _l.debug('get_instrument_send_request: instrument=%s, fields=%s', instrument, fields)
         response_id = self._make_id()
-        self._requests[response_id] = {
+
+        key = 'instrument.%s' % response_id
+        self._cache.set(key, {
             'action': 'instrument',
             'instrument': instrument,
             'fields': fields,
             'response_id': response_id,
-        }
+        }, timeout=30)
+
         _l.debug('get_instrument_send_request: response_id=%s', response_id)
         self._notify_request_sent('instrument', {'instrument': instrument, 'fields': fields}, response_id)
+
         return response_id
 
     def get_instrument_get_response(self, response_id):
@@ -684,9 +699,11 @@ class FakeBloomberDataProvider(BloomberDataProvider):
             "SECURITY_TYP": "EURO-DOLLAR"
         }
 
-        req = self._requests.pop(response_id, None)
+        key = 'instrument.%s' % response_id
+        req = self._cache.get(key)
         if not req:
-            return None
+            raise RuntimeError('invalid response_id')
+
         result = {}
         for field in req['fields']:
             result[field] = fake_data.get(field, None)
@@ -698,14 +715,18 @@ class FakeBloomberDataProvider(BloomberDataProvider):
         _l.debug('get_pricing_latest_send_request: instruments=%s', instruments)
         response_id = self._make_id()
         fields = ['PX_YEST_BID', 'PX_YEST_ASK', 'PX_YEST_CLOSE', 'PX_CLOSE_1D', 'ACCRUED_FACTOR', 'CPN', 'SECURITY_TYP']
-        self._requests[response_id] = {
+
+        key = 'pricing_latest.%s' % response_id
+        self._cache.set(key, {
             'action': 'pricing_latest',
             'instruments': instruments,
             'fields': fields,
             'response_id': response_id,
-        }
+        }, timeout=30)
+
         _l.debug('get_pricing_latest_send_request: response_id=%s', response_id)
         self._notify_request_sent('pricing_latest', {'instruments': instruments, 'fields': fields}, response_id)
+
         return response_id
 
     def get_pricing_latest_get_response(self, response_id):
@@ -719,9 +740,12 @@ class FakeBloomberDataProvider(BloomberDataProvider):
             "PX_YEST_CLOSE": "N.S.",
             "SECURITY_TYP": "EURO-DOLLAR"
         }
-        req = self._requests.pop(response_id, None)
+
+        key = 'pricing_latest.%s' % response_id
+        req = self._cache.get(key)
         if not req:
-            return None
+            raise RuntimeError('invalid response_id')
+
         result = {}
         for instrument in req['instruments']:
             instrument_fields = {}
@@ -737,18 +761,22 @@ class FakeBloomberDataProvider(BloomberDataProvider):
                  instruments, date_from, date_to)
         response_id = self._make_id()
         fields = ['PX_BID', 'PX_ASK', 'PX_LAST']
-        self._requests[response_id] = {
+
+        key = 'pricing_history.%s' % response_id
+        self._cache.set(key, {
             'action': 'pricing_history',
             'instruments': instruments,
-            'date_from': date_from,
-            'date_to': date_to,
+            'date_from': '%s' % date_from,
+            'date_to': '%s' % date_to,
             'fields': fields,
             'response_id': response_id,
-        }
+        }, timeout=30)
+
         _l.debug('get_pricing_history_send_request: response_id=%s', response_id)
         self._notify_request_sent('pricing_history',
                                   {'instruments': instruments, 'fields': fields, 'date_from': date_from,
                                    'date_to': date_to}, response_id)
+
         return response_id
 
     def get_pricing_history_get_response(self, response_id):
@@ -759,13 +787,19 @@ class FakeBloomberDataProvider(BloomberDataProvider):
             "PX_LAST": "93.761",
             "date": "<REPLACE>"
         }
-        req = self._requests.pop(response_id, None)
+
+        key = 'pricing_history.%s' % response_id
+        req = self._cache.get(key)
         if not req:
-            return None
+            raise RuntimeError('invalid response_id')
+
+        date_from = parser.parse(req['date_from']).date()
+        date_to = parser.parse(req['date_from']).date()
+
         result = {}
         for instrument in req['instruments']:
-            d = req['date_from']
-            while d <= req['date_to']:
+            d = date_from
+            while d <= date_to:
                 instrument_fields = {
                     'date': d
                 }
@@ -931,14 +965,47 @@ if __name__ == "__main__":
 
     # b = BloomberDataProvider(wsdl="https://service.bloomberg.com/assets/dl/dlws.wsdl", cert=cert, key=key,
     #                          context=context)
-    b = FakeBloomberDataProvider(wsdl="https://service.bloomberg.com/assets/dl/dlws.wsdl", cert=cert, key=key,
-                                 context=context)
-    b.get_fields()
-    test_instrument_data(b)
-    test_pricing_latest(b)
-    test_pricing_history(b)
+    b = FakeBloomberDataProvider(cert=cert, key=key, context=context)
+    # b.get_fields()
+    # test_instrument_data(b)
+    # test_pricing_latest(b)
+    # test_pricing_history(b)
 
     # from dateutil import parser
     # _l.info('1: %s', parser.parse("06/16/2023"))
     # _l.info('2: %s', parser.parse("2016-06-15"))
+
+    from poms.integrations.tasks import bloomberg_async
+
+    # a = test123.delay(0)
+    # a = bloomberg_async(master_user.id, action='fields', params=None)
+    # a = bloomberg_async(master_user.id, action='instrument', params={
+    #     'instrument': {
+    #         "code": 'XS1433454243',
+    #         "industry": "Corp"
+    #     },
+    #     'fields': ['CRNCY']
+    # })
+    # a = bloomberg_async(master_user.id, action='pricing_latest', params={
+    #     'instruments': [
+    #         {"code": 'XS1433454243', "industry": "Corp"},
+    #         {"code": 'USL9326VAA46', "industry": "Corp"},
+    #     ]
+    # })
+    a = bloomberg_async(master_user.id, action='pricing_history', params={
+        'instruments': [
+            {"code": 'XS1433454243', "industry": "Corp"},
+            {"code": 'USL9326VAA46', "industry": "Corp"},
+        ],
+        'date_from': date(year=2016, month=6, day=14),
+        'date_to': date(year=2016, month=6, day=15),
+    })
+    print('a ->', a)
+
+    if getattr(settings, 'CELERY_ALWAYS_EAGER', False):
+        print('a.get ->', a.get(timeout=60, interval=0.1))
+    else:
+        b = AsyncResult(a.id)
+        print('b.get ->', b.get(timeout=60, interval=0.1))
+
     pass

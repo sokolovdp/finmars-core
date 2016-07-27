@@ -2,8 +2,10 @@ from __future__ import unicode_literals, print_function
 
 from logging import getLogger
 
-from celery import shared_task
-from celery.exceptions import TimeoutError
+import six
+from celery import shared_task, chain
+from celery.exceptions import TimeoutError, MaxRetriesExceededError
+from dateutil import parser
 
 _l = getLogger('poms.integrations')
 
@@ -109,3 +111,135 @@ def auth_log_statistics():
     logged_in_count = AuthLogEntry.objects.filter(is_success=True, date__startswith=now).count()
     login_failed_count = AuthLogEntry.objects.filter(is_success=False, date__startswith=now).count()
     _l.debug('auth (today): logged_in=%s, login_failed=%s', logged_in_count, login_failed_count)
+
+
+@shared_task(name='backend.bloomberg_get_response', bind=True, ignore_result=True,
+             default_retry_delay=1, max_retries=10)
+def bloomberg_get_response_async(self, entry_id):
+    from poms.integrations.models import BloombergRequestLogEntry
+    _l.info('bloomberg_receive_async: entry_id=%s, attempt=%s', entry_id, self.request.retries)
+    try:
+        BloombergRequestLogEntry.objects.get(pk=entry_id)
+        raise self.retry()
+    except BloombergRequestLogEntry.DoesNotExist:
+        pass
+    except MaxRetriesExceededError:
+        _l.error('bloomberg_receive_async: entry_id=%s, MaxRetriesExceededError', entry_id)
+        pass
+
+
+def bloomberg_get_response(entry_id):
+    bloomberg_get_response_async.apply_async(
+        kwargs={
+            'entry_id': entry_id
+        },
+        countdown=1
+    )
+
+
+@shared_task(name='backend.test123', bind=True, default_retry_delay=1, max_retries=10)
+def test123(self, v):
+    # some call bloomberg
+    if self.request.retries == 0:
+        # first call
+        pass
+
+    is_ready = self.request.retries > 3
+    if is_ready:
+        if v == 0:
+            raise ValueError()
+        import uuid
+        return uuid.uuid4().hex
+    raise self.retry()
+
+
+@shared_task(name='backend.bloomberg_send_request', bind=True)
+def bloomberg_send_request(self, master_user_id, action, params):
+    _l.info('bloomberg_send_request: master_user=%s, action=%s, params=%s', master_user_id, action, params)
+    from poms.users.models import MasterUser
+    from poms.integrations.providers.bloomberg import FakeBloomberDataProvider
+    master_user = MasterUser.objects.get(pk=master_user_id)
+    context = {'master_user': master_user, 'member': None}
+    # p12cert = os.environ['TEST_BLOOMBERG_CERT']
+    # password = os.environ['TEST_BLOOMBERG_CERT_PASSWORD']
+    # cert, key = get_certs_from_file(p12cert, password)
+    # b = FakeBloomberDataProvider(cert=cert, key=key, context=context)
+    b = FakeBloomberDataProvider(context=context)
+
+    if action == 'fields':
+        return master_user_id, action, None
+
+    elif action == 'instrument':
+        response_id = b.get_instrument_send_request(
+            instrument=params['instrument'],
+            fields=params['fields']
+        )
+        return master_user_id, action, response_id
+
+    elif action == 'pricing_latest':
+        response_id = b.get_pricing_latest_send_request(
+            instruments=params['instruments']
+        )
+        return master_user_id, action, response_id
+
+    elif action == 'pricing_history':
+        response_id = b.get_pricing_history_send_request(
+            instruments=params['instruments'],
+            date_from=parser.parse(params['date_from']).date(),
+            date_to=parser.parse(params['date_to']).date()
+        )
+        return master_user_id, action, response_id
+
+    raise RuntimeError('Unknown action')
+
+
+@shared_task(name='backend.bloomberg_wait_reponse', bind=True, default_retry_delay=1, max_retries=10)
+def bloomberg_wait_reponse(self, req):
+    master_user_id, action, response_id = req
+    _l.info('bloomberg_wait_reponse: master_user=%s, action=%s, response_id=%s', master_user_id, action, response_id)
+
+    from poms.users.models import MasterUser
+    from poms.integrations.providers.bloomberg import FakeBloomberDataProvider
+    master_user = MasterUser.objects.get(pk=master_user_id)
+    context = {'master_user': master_user, 'member': None}
+    # p12cert = os.environ['TEST_BLOOMBERG_CERT']
+    # password = os.environ['TEST_BLOOMBERG_CERT_PASSWORD']
+    # cert, key = get_certs_from_file(p12cert, password)
+    # b = FakeBloomberDataProvider(cert=cert, key=key, context=context)
+    b = FakeBloomberDataProvider(context=context)
+
+    if action == 'fields':
+        b.get_fields()
+        return 'OK'
+
+    elif action == 'instrument':
+        result = b.get_instrument_get_response(response_id)
+        if result is None:
+            raise self.retry()
+        return result
+    elif action == 'pricing_latest':
+        result = b.get_pricing_latest_get_response(response_id)
+        if result is None:
+            raise self.retry()
+        return result
+    elif action == 'pricing_history':
+        result = b.get_pricing_history_get_response(response_id)
+        if result is None:
+            raise self.retry()
+        for k, instr in six.iteritems(result):
+            for r in instr:
+                r['date'] = '%s' % r['date']
+        return result
+
+    raise RuntimeError('Unknown action')
+
+
+def bloomberg_async(master_user_id, action, params):
+    if 'date_from' in params:
+        params['date_from'] = '%s' % params['date_from']
+    if 'date_to' in params:
+        params['date_to'] = '%s' % params['date_to']
+    return chain(
+        bloomberg_send_request.s(),
+        bloomberg_wait_reponse.s()
+    ).apply_async([master_user_id, action, params])
