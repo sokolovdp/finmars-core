@@ -1,4 +1,5 @@
 import base64
+import json
 import os
 import pprint
 import uuid
@@ -10,7 +11,9 @@ from time import sleep
 import requests
 import six
 from OpenSSL import crypto
+from django.core.serializers.json import DjangoJSONEncoder
 from django.dispatch import Signal, receiver
+from django.utils.encoding import force_text
 from suds.client import Client
 from suds.transport import Reply
 from suds.transport.http import HttpAuthenticated
@@ -34,7 +37,8 @@ def _request_sent(sender, action=None, params=None, response_id=None, context=No
     m.master_user = context.get('master_user', None)
     m.member = context.get('member', None)
     m.action = action
-    m.request = pprint.pformat(params)
+    # m.request = pprint.pformat(params)
+    m.request = json.dumps(params, sort_keys=True, cls=DjangoJSONEncoder)
     m.response_id = response_id
     m.save()
 
@@ -46,7 +50,9 @@ def _response_received(sender, action=None, response_id=None, is_success=None, r
         m = BloombergRequestLogEntry.objects.get(action=action, response_id=response_id)
         m.is_success = is_success
         m.is_user_got_response = True
-        m.response = pprint.pformat(result)
+        # m.response = pprint.pformat(result)
+        m.response = json.dumps(result, sort_keys=True, cls=DjangoJSONEncoder)
+
         m.save()
     except BloombergRequestLogEntry.DoesNotExist:
         _l.warn('bloomberg request not found: action=%s, response_id=%s', action, response_id)
@@ -248,7 +254,7 @@ class BloomberDataProvider(object):
         response_id = uuid.uuid4().hex
         self._notify_request_sent('fields', None, response_id)
         self._response_is_valid(response)
-        self._notify_response_received('fields', response_id, True, response)
+        self._notify_response_received('fields', response_id, True, force_text(response))
         return response
 
     def get_instrument_send_request(self, instrument, fields):
@@ -927,7 +933,7 @@ if __name__ == "__main__":
     #                          context=context)
     b = FakeBloomberDataProvider(wsdl="https://service.bloomberg.com/assets/dl/dlws.wsdl", cert=cert, key=key,
                                  context=context)
-    print(b.get_fields())
+    b.get_fields()
     test_instrument_data(b)
     test_pricing_latest(b)
     test_pricing_history(b)
