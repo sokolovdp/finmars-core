@@ -6,6 +6,7 @@ from logging import getLogger
 
 from celery import shared_task, chain
 from celery.exceptions import TimeoutError
+from django.conf import settings
 from django.core.serializers.json import DjangoJSONEncoder
 
 _l = getLogger('poms.integrations')
@@ -171,7 +172,7 @@ def bloomberg_send_request(self, task_id):
     return task_id
 
 
-@shared_task(name='backend.bloomberg_wait_reponse', bind=True, default_retry_delay=1, max_retries=10)
+@shared_task(name='backend.bloomberg_wait_reponse', bind=True)
 def bloomberg_wait_reponse(self, task_id):
     _l.info('bloomberg_wait_reponse: task_id=%s', task_id)
 
@@ -221,12 +222,14 @@ def bloomberg_wait_reponse(self, task_id):
         raise
 
     if result is None:
-
         if self.request.is_eager:
             import time
-            time.sleep(1)
+            time.sleep(settings.BLOOMBERG_RETRY_DELAY)
 
-        raise self.retry()
+        raise self.retry(
+            countdown=settings.BLOOMBERG_RETRY_DELAY,
+            max_retries=settings.BLOOMBERG_MAX_RETRIES,
+        )
 
     with transaction.atomic():
         task.result = json.dumps(result, cls=DjangoJSONEncoder, sort_keys=True, indent=2)

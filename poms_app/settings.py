@@ -484,6 +484,8 @@ CELERYBEAT_SCHEDULE = {
 
 BLOOMBERG_SANDBOX = False
 BLOOMBERG_WSDL = 'https://service.bloomberg.com/assets/dl/dlws.wsdl'
+BLOOMBERG_RETRY_DELAY = 1
+BLOOMBERG_MAX_RETRIES = 60
 BLOOMBERG_STORAGE = {
     'BACKEND': 'django.core.files.storage.FileSystemStorage',
     'KWARGS': {
