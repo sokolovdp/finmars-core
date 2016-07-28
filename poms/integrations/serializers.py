@@ -20,7 +20,7 @@ from poms.instruments.models import Instrument, PriceHistory
 from poms.instruments.serializers import InstrumentAttributeSerializer, PriceHistorySerializer
 from poms.integrations.fields import InstrumentMappingField
 from poms.integrations.models import InstrumentMapping, InstrumentAttributeMapping, BloombergConfig, BloombergTask
-from poms.integrations.storages import FileImportStorage
+from poms.integrations.storage import FileImportStorage
 from poms.integrations.tasks import schedule_file_import_delete, bloomberg_instrument, bloomberg_pricing_history
 from poms.users.fields import MasterUserField, MemberField, HiddenMemberField
 
@@ -98,13 +98,18 @@ class BloombergConfigSerializer(serializers.ModelSerializer):
     master_user = MasterUserField()
     p12cert = serializers.FileField(allow_null=True, allow_empty_file=False, write_only=True)
     password = serializers.CharField(allow_null=True, allow_blank=True, write_only=True)
-    cert = serializers.FileField(allow_null=True, allow_empty_file=False, write_only=True)
-    key = serializers.FileField(allow_null=True, allow_empty_file=False, write_only=True)
+
+    # cert = serializers.FileField(allow_null=True, allow_empty_file=False, write_only=True)
+    # key = serializers.FileField(allow_null=True, allow_empty_file=False, write_only=True)
 
     class Meta:
         model = BloombergConfig
-        fields = ['url', 'id', 'master_user', 'p12cert', 'password', 'cert', 'key',
-                  'has_p12cert', 'has_password', 'has_cert', 'has_key']
+        fields = [
+            'url', 'id', 'master_user', 'p12cert', 'password',
+            # 'cert', 'key',
+            'has_p12cert', 'has_password',
+            # 'has_cert', 'has_key'
+        ]
 
 
 class BloombergTaskSerializer(serializers.ModelSerializer):

@@ -12,7 +12,7 @@ class FileImportStorage(LazyObject):
         self._wrapped = clazz(**kwargs)
 
     def deconstruct(self):
-        return 'poms.integrations.data_import.FileImportStorage', [], {}
+        return 'poms.integrations.storage.FileImportStorage', [], {}
 
 
 class BloombergStorage(LazyObject):
@@ -22,4 +22,4 @@ class BloombergStorage(LazyObject):
         self._wrapped = clazz(**kwargs)
 
     def deconstruct(self):
-        return 'poms.integrations.data_import.BloombergStorage', [], {}
+        return 'poms.integrations.storage.BloombergStorage', [], {}
