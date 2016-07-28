@@ -129,6 +129,10 @@ router.register(r'import/instrument/file', integrations.InstrumentFileImportView
                 'InstrumentFileImportViewSet')
 router.register(r'import/instrument/bloomberg', integrations.InstrumentBloombergImportViewSet,
                 'InstrumentBloombergImportViewSet')
+router.register(r'import/price-hostory/bloomberg', integrations.PriceHistoryBloombergImportViewSet,
+                'PriceHistoryBloombergImportViewSet')
+router.register(r'import/currency-history/bloomberg', integrations.CurrencyHistoryBloombergImportViewSet,
+                'CurrencyHistoryBloombergImportViewSet')
 
 urlpatterns = [
     url(r'^v1/', include(router.urls, namespace='v1')),

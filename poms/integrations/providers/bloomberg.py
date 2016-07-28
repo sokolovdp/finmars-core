@@ -725,23 +725,23 @@ class FakeBloomberDataProvider(object):
             raise RuntimeError('invalid response_id')
 
         date_from = parser.parse(req['date_from']).date()
-        date_to = parser.parse(req['date_from']).date()
+        date_to = parser.parse(req['date_to']).date()
 
         result = {}
         for instrument in req['instruments']:
             d = date_from
             while d <= date_to:
-                instrument_fields = {
+                price_fields = {
                     'date': d
                 }
                 for i, field in enumerate(req['fields']):
-                    instrument_fields[field] = fake_data.get(field, None)
+                    price_fields[field] = fake_data.get(field, None)
 
                 instrument_code = instrument['code']
                 if instrument_code in result:
-                    result[instrument_code].append(instrument_fields)
+                    result[instrument_code].append(price_fields)
                 else:
-                    result[instrument_code] = [instrument_fields]
+                    result[instrument_code] = [price_fields]
 
                 d += timedelta(days=1)
         _l.debug('get_pricing_history_get_response: response_id=%s, result=%s', response_id, result)
