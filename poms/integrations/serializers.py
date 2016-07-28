@@ -1,5 +1,6 @@
 from __future__ import unicode_literals, print_function
 
+import json
 import uuid
 from logging import getLogger
 
@@ -11,10 +12,10 @@ from rest_framework import serializers
 from rest_framework.exceptions import ValidationError
 
 from poms.instruments.fields import InstrumentTypeField, InstrumentAttributeTypeField
-from poms.integrations.models import InstrumentMapping, InstrumentAttributeMapping, BloombergConfig
+from poms.integrations.models import InstrumentMapping, InstrumentAttributeMapping, BloombergConfig, BloombergTask
 from poms.integrations.storages import FileImportStorage
 from poms.integrations.tasks import schedule_file_import_delete
-from poms.users.fields import MasterUserField
+from poms.users.fields import MasterUserField, MemberField
 
 _l = getLogger('poms.integrations')
 
@@ -98,6 +99,27 @@ class BloombergConfigSerializer(serializers.ModelSerializer):
         fields = ['url', 'id', 'master_user', 'p12cert', 'password', 'cert', 'key',
                   'has_p12cert', 'has_password', 'has_cert', 'has_key']
 
+
+class BloombergTaskSerializer(serializers.ModelSerializer):
+    master_user = MasterUserField()
+    member = MemberField()
+
+    kwargs = serializers.SerializerMethodField()
+    result = serializers.SerializerMethodField()
+
+    class Meta:
+        model = BloombergTask
+        fields = ['url', 'id', 'master_user', 'member', 'action', 'created', 'modified', 'status', 'kwargs', 'result']
+
+    def get_kwargs(self, obj):
+        if obj.kwargs:
+            return json.loads(obj.kwargs)
+        return None
+
+    def get_result(self, obj):
+        if obj.result:
+            return json.loads(obj.result)
+        return None
 
 
 class InstrumentFileImportSerializer(serializers.Serializer):

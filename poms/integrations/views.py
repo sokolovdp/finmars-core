@@ -1,14 +1,17 @@
 from __future__ import unicode_literals, print_function
 
+import django_filters
 from rest_framework.filters import FilterSet, DjangoFilterBackend, OrderingFilter, SearchFilter
 from rest_framework.response import Response
 
-from poms.common.filters import CharFilter
-from poms.common.views import AbstractViewSet, AbstractModelViewSet
-from poms.integrations.models import InstrumentMapping, BloombergConfig
+from poms.common.filters import CharFilter, ModelWithPermissionMultipleChoiceFilter
+from poms.common.views import AbstractViewSet, AbstractModelViewSet, AbstractReadOnlyModelViewSet
+from poms.integrations.filters import BloombergTaskFilter
+from poms.integrations.models import InstrumentMapping, BloombergConfig, BloombergTask
 from poms.integrations.serializers import InstrumentBloombergImportSerializer, InstrumentFileImportSerializer, \
-    InstrumentMappingSerializer, BloombergConfigSerializer
+    InstrumentMappingSerializer, BloombergConfigSerializer, BloombergTaskSerializer
 from poms.users.filters import OwnerByMasterUserFilter
+from poms.users.models import Member
 from poms.users.permissions import SuperUserOrReadOnly, SuperUserOnly
 
 
@@ -46,6 +49,31 @@ class BloombergConfigViewSet(AbstractModelViewSet):
     filter_backends = [
         OwnerByMasterUserFilter,
     ]
+
+
+class BloombergTaskFilterSet(FilterSet):
+    member = ModelWithPermissionMultipleChoiceFilter(model=Member, field_name='username')
+    action = CharFilter()
+    created = django_filters.DateFromToRangeFilter()
+    modified = django_filters.DateFromToRangeFilter()
+
+    class Meta:
+        model = BloombergTask
+        fields = ['member', 'action', 'created', 'modified']
+
+
+class BloombergTaskViewSet(AbstractReadOnlyModelViewSet):
+    queryset = BloombergTask.objects
+    serializer_class = BloombergTaskSerializer
+    filter_backends = [
+        BloombergTaskFilter,
+        DjangoFilterBackend,
+        OrderingFilter,
+        SearchFilter,
+    ]
+    filter_class = BloombergTaskFilterSet
+    ordering_fields = ['action', 'created', 'modified']
+    search_fields = ['action']
 
 
 class AbstractIntegrationViewSet(AbstractViewSet):
