@@ -19,11 +19,10 @@ MAPPING_FIELD_MAX_LENGTH = 32
 
 @python_2_unicode_compatible
 class InstrumentMapping(models.Model):
-    BASIC_FIELDS = ['user_code', 'name', 'short_name', 'public_name', 'notes', 'pricing_currency',
-                    'price_multiplier', 'accrued_currency', 'accrued_multiplier', 'daily_pricing_model',
-                    'payment_size_detail', 'default_price', 'default_accrued', 'user_text_1', 'user_text_2',
-                    'user_text_3',
-                    'price_download_mode', ]
+    BASIC_FIELDS = ['user_code', 'name', 'short_name', 'public_name', 'notes', 'instrument_type',
+                    'pricing_currency', 'price_multiplier', 'accrued_currency', 'accrued_multiplier',
+                    'daily_pricing_model', 'payment_size_detail', 'default_price', 'default_accrued',
+                    'user_text_1', 'user_text_2', 'user_text_3', 'price_download_mode', ]
 
     master_user = models.ForeignKey('users.MasterUser')
     mapping_name = models.CharField(max_length=255)
@@ -97,11 +96,6 @@ class InstrumentMapping(models.Model):
         def get_str(v):
             return v
 
-        def get_ccy(v):
-            if v:
-                return self.master_user.currencies.get(user_code=v)
-            return None
-
         def get_date(v):
             if v:
                 v = parser.parse(v)
@@ -119,7 +113,12 @@ class InstrumentMapping(models.Model):
             if n:
                 v = get_val(n)
                 if attr in ['pricing_currency', 'accrued_currency']:
-                    v = get_ccy(v)
+                    if v:
+                        v = self.master_user.currencies.get(user_code=v)
+                    setattr(instr, attr, v)
+                if attr in ['instrument_type']:
+                    if v:
+                        v = self.master_user.instrument_types.get(user_code=v)
                     setattr(instr, attr, v)
                 elif attr in ['price_multiplier', 'accrued_multiplier', 'default_price', 'default_accrued']:
                     v = get_num(v)
