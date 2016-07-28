@@ -9,7 +9,7 @@ from poms.audit.fields import ObjectHistoryContentTypeField
 from poms.audit.models import AuthLogEntry, ObjectHistoryEntry
 from poms.common.fields import DateTimeTzAwareField
 from poms.common.middleware import get_city_by_ip
-from poms.users.models import Member
+from poms.users.serializers import MemberMiniSerializer
 
 
 class AuthLogEntrySerializer(serializers.ModelSerializer):
@@ -74,22 +74,11 @@ class AuthLogEntrySerializer(serializers.ModelSerializer):
 #         return None
 
 
-class HistoryMemberSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = Member
-        fields = ['id', 'username', 'first_name', 'last_name', 'display_name', ]
-        read_only_fields = ['id', 'username', 'first_name', 'last_name', 'display_name', ]
-
-    def get_is_current(self, obj):
-        member = self.context['request'].user.member
-        return obj.id == member.id
-
-
 class ObjectHistoryEntrySerializer(serializers.ModelSerializer):
     content_type = ObjectHistoryContentTypeField()
     # comment = serializers.SerializerMethodField()
     # message = serializers.SerializerMethodField()
-    member = HistoryMemberSerializer(read_only=True)
+    member = MemberMiniSerializer(read_only=True)
 
     class Meta:
         model = ObjectHistoryEntry
