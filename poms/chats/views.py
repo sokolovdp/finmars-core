@@ -72,7 +72,7 @@ class ThreadFilterSet(FilterSet):
 
 
 class ThreadViewSet(AbstractWithObjectPermissionViewSet):
-    queryset = Thread.objects.all()
+    queryset = Thread.objects
     serializer_class = ThreadSerializer
     # permission_classes = [
     #     IsAuthenticated,
@@ -122,7 +122,7 @@ class MessageFilterSet(FilterSet):
 
 
 class MessageViewSet(AbstractModelViewSet):
-    queryset = Message.objects
+    queryset = Message.objects.select_related('thread', 'sender')
     serializer_class = MessageSerializer
     permission_classes = AbstractModelViewSet.permission_classes + [
         MessagePermission,
@@ -148,7 +148,7 @@ class DirectMessageFilterSet(FilterSet):
 
 
 class DirectMessageViewSet(AbstractModelViewSet):
-    queryset = DirectMessage.objects.all()
+    queryset = DirectMessage.objects.select_related('sender', 'recipient')
     serializer_class = DirectMessageSerializer
     permission_classes = AbstractModelViewSet.permission_classes + [
         DirectMessagePermission,

@@ -17,6 +17,7 @@ from poms.users.fields import MasterUserField, HiddenMemberField, MemberField
 #     class Meta:
 #         model = ThreadStatus
 #         fields = ['url', 'id', 'master_user', 'name', 'is_closed']
+from poms.users.serializers import MemberMiniSerializer
 
 
 class ThreadGroupSerializer(serializers.ModelSerializer):
@@ -51,9 +52,11 @@ class MessageSerializer(serializers.ModelSerializer):
     created = DateTimeTzAwareField(read_only=True)
     modified = DateTimeTzAwareField(read_only=True)
 
+    sender_object = MemberMiniSerializer(read_only=True, source='sender')
+
     class Meta:
         model = Message
-        fields = ['url', 'id', 'thread', 'sender', 'created', 'modified', 'text']
+        fields = ['url', 'id', 'thread', 'sender', 'created', 'modified', 'text', 'sender_object']
         read_only_fields = ['created', 'modified']
 
 
@@ -64,7 +67,10 @@ class DirectMessageSerializer(serializers.ModelSerializer):
     created = DateTimeTzAwareField(read_only=True)
     modified = DateTimeTzAwareField(read_only=True)
 
+    sender_object = MemberMiniSerializer(read_only=True, source='sender')
+    recipient_object = MemberMiniSerializer(read_only=True, source='sender')
+
     class Meta:
         model = DirectMessage
-        fields = ['url', 'id', 'sender', 'recipient', 'created', 'modified', 'text']
+        fields = ['url', 'id', 'sender', 'recipient', 'created', 'modified', 'text', 'sender_object', 'recipient_object']
         read_only_fields = ['created', 'modified']
