@@ -245,7 +245,14 @@ class InstrumentBloombergImportSerializer(serializers.Serializer):
 
     def create(self, validated_data):
         instance = InstrumentBloombergImport(**validated_data)
-        if not instance.task_id:
+        if instance.task_id:
+            if instance.task.status == BloombergTask.STATUS_DONE:
+                values = instance.task.result_object
+                if instance.mode == IMPORT_PREVIEW:
+                    instance.instrument = instance.mapping.create_instrument(values, save=False)
+                else:
+                    instance.instrument = instance.mapping.create_instrument(values, save=True)
+        else:
             instance.task_id = bloomberg_instrument(
                 master_user=instance.master_user, member=instance.member,
                 instrument={
@@ -253,13 +260,6 @@ class InstrumentBloombergImportSerializer(serializers.Serializer):
                     'industry': instance.industry,
                 },
                 fields=list(instance.mapping.mapping_fields))
-
-        if instance.task.status == BloombergTask.STATUS_DONE:
-            values = instance.task.result_object
-            if instance.mode == IMPORT_PREVIEW:
-                instance.instrument = instance.mapping.create_instrument(values, save=False)
-            else:
-                instance.instrument = instance.mapping.create_instrument(values, save=True)
 
         return instance
 
