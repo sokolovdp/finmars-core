@@ -1,6 +1,5 @@
 from __future__ import unicode_literals, print_function
 
-import json
 import uuid
 from logging import getLogger
 
@@ -12,10 +11,12 @@ from rest_framework import serializers
 from rest_framework.exceptions import ValidationError
 
 from poms.instruments.fields import InstrumentTypeField, InstrumentAttributeTypeField
+from poms.instruments.serializers import InstrumentSerializer
+from poms.integrations.fields import InstrumentMappingField
 from poms.integrations.models import InstrumentMapping, InstrumentAttributeMapping, BloombergConfig, BloombergTask
 from poms.integrations.storages import FileImportStorage
-from poms.integrations.tasks import schedule_file_import_delete
-from poms.users.fields import MasterUserField, MemberField
+from poms.integrations.tasks import schedule_file_import_delete, bloomberg_instrument
+from poms.users.fields import MasterUserField, MemberField, HiddenMemberField
 
 _l = getLogger('poms.integrations')
 
@@ -104,22 +105,24 @@ class BloombergTaskSerializer(serializers.ModelSerializer):
     master_user = MasterUserField()
     member = MemberField()
 
-    kwargs = serializers.SerializerMethodField()
-    result = serializers.SerializerMethodField()
+    # kwargs = serializers.SerializerMethodField()
+    # result = serializers.SerializerMethodField()
 
     class Meta:
         model = BloombergTask
-        fields = ['url', 'id', 'master_user', 'member', 'action', 'created', 'modified', 'status', 'kwargs', 'result']
+        fields = ['url', 'id', 'master_user', 'member', 'action', 'created', 'modified', 'status',
+                  # 'kwargs', 'result'
+                  ]
 
-    def get_kwargs(self, obj):
-        if obj.kwargs:
-            return json.loads(obj.kwargs)
-        return None
-
-    def get_result(self, obj):
-        if obj.result:
-            return json.loads(obj.result)
-        return None
+        # def get_kwargs(self, obj):
+        #     if obj.kwargs:
+        #         return json.loads(obj.kwargs)
+        #     return None
+        #
+        # def get_result(self, obj):
+        #     if obj.result:
+        #         return json.loads(obj.result)
+        #     return None
 
 
 class InstrumentFileImportSerializer(serializers.Serializer):
@@ -173,37 +176,61 @@ class InstrumentFileImportSerializer(serializers.Serializer):
         return '%s/%s/%s' % (owner.pk, token[0:4], token)
 
 
+class InstrumentBloombergImport(object):
+    def __init__(self, master_user=None, member=None, mapping=None, mode=None, code=None, industry=None, task_id=None,
+                 instrument=None):
+        self.master_user = master_user
+        self.member = member
+        self.mapping = mapping
+        self.mode = mode
+        self.code = code
+        self.industry = industry
+        self.task_id = task_id
+        self._task = None
+        self.instrument = instrument
+
+    @property
+    def task(self):
+        if self.task_id:
+            self._task = self.master_user.bloomberg_tasks.get(pk=self.task_id)
+        return self._task
+
+
 class InstrumentBloombergImportSerializer(serializers.Serializer):
     master_user = MasterUserField()
+    member = HiddenMemberField()
+    mapping = InstrumentMappingField()
     mode = serializers.ChoiceField(choices=IMPORT_MODE_CHOICES)
-    token = serializers.CharField(required=False, allow_blank=True, allow_null=True)
-    name = serializers.CharField(required=False, allow_null=True, allow_blank=True)
-
-    def get_import_cache_key(self, token):
-        return 'import:%s' % token
+    code = serializers.CharField(required=False, allow_null=True, allow_blank=True, initial='XS1433454243')
+    industry = serializers.CharField(required=False, allow_null=True, allow_blank=True, initial='Corp')
+    task_id = serializers.CharField(required=False, allow_blank=True, allow_null=True)
+    task = BloombergTaskSerializer(read_only=True)
+    instrument = InstrumentSerializer(read_only=True)
 
     def create(self, validated_data):
-        _l.info('BloombergInstrumentImportSerializer.create: %s', validated_data)
+        instance = InstrumentBloombergImport(**validated_data)
+        if not instance.task_id:
+            instance.task_id = bloomberg_instrument(
+                master_user=instance.master_user, member=instance.member,
+                instrument={
+                    'code': instance.code,
+                    'industry': instance.industry,
+                },
+                fields=list(instance.mapping.mapping_fields))
 
-        if validated_data.get('token', None):
-            try:
-                token = TimestampSigner().unsign(validated_data['token'])
-            except BadSignature:
-                raise ValidationError({'token': 'Invalid value.'})
+        if instance.task.status == BloombergTask.STATUS_DONE:
+            values = instance.task.result_object
+            if instance.mode == IMPORT_PREVIEW:
+                instance.instrument = instance.mapping.create_instrument(values, preview=True)
+            else:
+                pass
 
-            cache_key = self.get_import_cache_key(token)
-            bloomberg_token = bloomberg_cache.get(cache_key)
-            _l.info('bloomberg_token.get: %s', bloomberg_token)
-        else:
-            name = validated_data['name']
-            if not name:
-                raise ValidationError({'name': 'This field is required.'})
-            token = '%s' % (uuid.uuid4().hex,)
-            validated_data['token'] = TimestampSigner().sign(token)
+        return instance
 
-            cache_key = self.get_import_cache_key(token)
-            bloomberg_token = '%s-%s' % (uuid.uuid4().hex, uuid.uuid1().hex)
-            bloomberg_cache.set(cache_key, bloomberg_token, timeout=600)
-            _l.info('bloomberg_token.set: %s', bloomberg_token)
-
-        return validated_data
+        # def update(self, instance, validated_data):
+        #     instance = InstrumentBloombergImport(**validated_data)
+        #
+        #     for attr, value in validated_data.items():
+        #         setattr(instance, attr, value)
+        #
+        #     return instance

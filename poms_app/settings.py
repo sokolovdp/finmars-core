@@ -482,7 +482,7 @@ CELERYBEAT_SCHEDULE = {
 
 # BLOOMBERG ------------------------------------------------
 
-BLOOMBERG_SANDBOX = False
+BLOOMBERG_SANDBOX = True
 BLOOMBERG_WSDL = 'https://service.bloomberg.com/assets/dl/dlws.wsdl'
 BLOOMBERG_RETRY_DELAY = 1
 BLOOMBERG_MAX_RETRIES = 60

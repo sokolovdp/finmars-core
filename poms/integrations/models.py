@@ -1,20 +1,30 @@
 from __future__ import unicode_literals, print_function
 
+import json
 import uuid
 
+from dateutil import parser
 from django.db import models
 from django.utils.encoding import python_2_unicode_compatible
 from django.utils.translation import ugettext_lazy as _
 
 from poms.audit import history
 from poms.common.models import TimeStampedModel
+from poms.instruments.models import Instrument, InstrumentAttribute
 from poms.integrations.storages import BloombergStorage
+from poms.obj_attrs.models import AbstractAttributeType
 
 MAPPING_FIELD_MAX_LENGTH = 32
 
 
 @python_2_unicode_compatible
 class InstrumentMapping(models.Model):
+    BASIC_FIELDS = ['user_code', 'name', 'short_name', 'public_name', 'notes', 'pricing_currency',
+                    'price_multiplier', 'accrued_currency', 'accrued_multiplier', 'daily_pricing_model',
+                    'payment_size_detail', 'default_price', 'default_accrued', 'user_text_1', 'user_text_2',
+                    'user_text_3',
+                    'price_download_mode', ]
+
     master_user = models.ForeignKey('users.MasterUser')
     mapping_name = models.CharField(max_length=255)
 
@@ -50,7 +60,91 @@ class InstrumentMapping(models.Model):
         ]
 
     def __str__(self):
-        return self.name
+        return self.mapping_name
+
+    def clean_mapping(self, name):
+        if name is None:
+            return None
+        return name.strip()
+
+    @property
+    def mapping_fields(self):
+        f = set()
+
+        def add(n):
+            n = self.clean_mapping(n)
+            if n:
+                f.add(n)
+
+        for attr in self.BASIC_FIELDS:
+            add(getattr(self, attr))
+
+        for attr in self.attributes.all():
+            add(attr.name)
+
+        return f
+
+    def create_instrument(self, values, preview=True):
+        instr = Instrument(master_user=self.master_user)
+        instr.instrument_type = self.master_user.instrument_types.first()
+
+        def get_val(n):
+            n = self.clean_mapping(n)
+            if n and n in values:
+                return values.get(n)
+            return None
+
+        def get_str(v):
+            return v
+
+        def get_ccy(v):
+            if v:
+                return self.master_user.currencies.get(user_code=v)
+            return None
+
+        def get_date(v):
+            if v:
+                return parser.parse(v)
+            return None
+
+        def get_num(v):
+            if v:
+                return float(v)
+            return None
+
+        for attr in self.BASIC_FIELDS:
+            n = getattr(self, attr)
+            v = get_val(n)
+            if attr in ['pricing_currency', 'accrued_currency']:
+                v = get_ccy(v)
+                setattr(instr, attr, v)
+            elif attr in ['price_multiplier', 'accrued_multiplier', 'default_price', 'default_accrued']:
+                v = get_num(v)
+                setattr(instr, attr, v)
+            else:
+                v = get_str(v)
+                setattr(instr, attr, v)
+
+        iattrs = []
+        for attr in self.attributes.select_related('attribute_type').all():
+            tattr = attr.attribute_type
+
+            iattr = InstrumentAttribute(content_object=instr, attribute_type=tattr)
+            iattrs.append(iattr)
+
+            v = get_val(attr.name)
+            if tattr.value_type == AbstractAttributeType.STRING:
+                iattr.value_string = get_str(v)
+            elif tattr.value_type == AbstractAttributeType.NUMBER:
+                iattr.value_float = get_num(v)
+            elif tattr.value_type == AbstractAttributeType.DATE:
+                iattr.value_date = get_date(v)
+            elif tattr.value_type == AbstractAttributeType.CLASSIFIER:
+                pass
+
+        # instr.attributes = iattrs
+
+        return instr
 
 
 @python_2_unicode_compatible
@@ -158,6 +252,14 @@ class BloombergTask(TimeStampedModel):
 
     def __str__(self):
         return '%s' % self.id
+
+    @property
+    def kwargs_object(self):
+        return json.loads(self.kwargs)
+
+    @property
+    def result_object(self):
+        return json.loads(self.result)
 
 
 history.register(InstrumentMapping, follow=['attributes'])
