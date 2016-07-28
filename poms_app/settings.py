@@ -486,7 +486,7 @@ BLOOMBERG_SANDBOX = True
 BLOOMBERG_WSDL = 'https://service.bloomberg.com/assets/dl/dlws.wsdl'
 BLOOMBERG_RETRY_DELAY = 1
 BLOOMBERG_MAX_RETRIES = 60
-BLOOMBERG_STORAGE = {
+BLOOMBERG_CERT_STORAGE = {
     'BACKEND': 'django.core.files.storage.FileSystemStorage',
     'KWARGS': {
         'location': os.path.join(BASE_DIR, 'tmp', 'bloomberg'),

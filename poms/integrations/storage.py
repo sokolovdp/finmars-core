@@ -1,13 +1,13 @@
 from __future__ import unicode_literals, print_function
 
 from django.conf import settings
+from django.core.files.storage import get_storage_class
 from django.utils.functional import LazyObject
-from django.utils.module_loading import import_string
 
 
 class FileImportStorage(LazyObject):
     def _setup(self):
-        clazz = import_string(settings.FILE_IMPORT_STORAGE['BACKEND'])
+        clazz = get_storage_class(settings.FILE_IMPORT_STORAGE['BACKEND'])
         kwargs = settings.FILE_IMPORT_STORAGE['KWARGS'] or {}
         self._wrapped = clazz(**kwargs)
 
@@ -15,11 +15,17 @@ class FileImportStorage(LazyObject):
         return 'poms.integrations.storage.FileImportStorage', [], {}
 
 
-class BloombergStorage(LazyObject):
+file_import_storage = FileImportStorage()
+
+
+class BloombergCertStorage(LazyObject):
     def _setup(self):
-        clazz = import_string(settings.BLOOMBERG_STORAGE['BACKEND'])
-        kwargs = settings.BLOOMBERG_STORAGE['KWARGS'] or {}
+        clazz = get_storage_class(settings.BLOOMBERG_CERT_STORAGE['BACKEND'])
+        kwargs = settings.BLOOMBERG_CERT_STORAGE['KWARGS'] or {}
         self._wrapped = clazz(**kwargs)
 
     def deconstruct(self):
         return 'poms.integrations.storage.BloombergStorage', [], {}
+
+
+bloomberg_cert_storage = BloombergCertStorage()

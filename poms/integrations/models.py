@@ -11,7 +11,7 @@ from django.utils.translation import ugettext_lazy as _
 from poms.audit import history
 from poms.common.models import TimeStampedModel
 from poms.instruments.models import Instrument, InstrumentAttribute
-from poms.integrations.storage import BloombergStorage
+from poms.integrations.storage import bloomberg_cert_storage
 from poms.obj_attrs.models import AbstractAttributeType
 
 MAPPING_FIELD_MAX_LENGTH = 32
@@ -174,17 +174,17 @@ class InstrumentAttributeMapping(models.Model):
         return '%s' % (self.attribute_type,)
 
 
-def bloomberg_filename(instance, filename):
+def bloomberg_cert_upload_to(instance, filename):
     # return '%s/%s' % (instance.master_user_id, filename)
     return '%s/%s' % (instance.master_user_id, uuid.uuid4().hex)
 
 
 class BloombergConfig(models.Model):
     master_user = models.OneToOneField('users.MasterUser', related_name='bloomberg_config')
-    p12cert = models.FileField(null=True, blank=True, upload_to=bloomberg_filename, storage=BloombergStorage())
+    p12cert = models.FileField(null=True, blank=True, upload_to=bloomberg_cert_upload_to, storage=bloomberg_cert_storage)
     password = models.CharField(max_length=64, null=True, blank=True)
-    cert = models.FileField(null=True, blank=True, upload_to=bloomberg_filename, storage=BloombergStorage())
-    key = models.FileField(null=True, blank=True, upload_to=bloomberg_filename, storage=BloombergStorage())
+    cert = models.FileField(null=True, blank=True, upload_to=bloomberg_cert_upload_to, storage=bloomberg_cert_storage)
+    key = models.FileField(null=True, blank=True, upload_to=bloomberg_cert_upload_to, storage=bloomberg_cert_storage)
 
     class Meta:
         verbose_name = _('bloomberg config')

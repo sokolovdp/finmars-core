@@ -20,10 +20,10 @@ class Migration(migrations.Migration):
             name='BloombergConfig',
             fields=[
                 ('id', models.AutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('p12cert', models.FileField(blank=True, null=True, storage=django.core.files.storage.FileSystemStorage(base_url='/api/bloomberg/', location='/Users/ailyukhin/develop/workspaces/mars/backend/tmp/bloomberg'), upload_to=poms.integrations.models.bloomberg_filename)),
+                ('p12cert', models.FileField(blank=True, null=True, storage=django.core.files.storage.FileSystemStorage(base_url='/api/bloomberg/', location='/Users/ailyukhin/develop/workspaces/mars/backend/tmp/bloomberg'), upload_to=poms.integrations.models.bloomberg_cert_upload_to)),
                 ('password', models.CharField(blank=True, max_length=64, null=True)),
-                ('cert', models.FileField(blank=True, null=True, storage=django.core.files.storage.FileSystemStorage(base_url='/api/bloomberg/', location='/Users/ailyukhin/develop/workspaces/mars/backend/tmp/bloomberg'), upload_to=poms.integrations.models.bloomberg_filename)),
-                ('key', models.FileField(blank=True, null=True, storage=django.core.files.storage.FileSystemStorage(base_url='/api/bloomberg/', location='/Users/ailyukhin/develop/workspaces/mars/backend/tmp/bloomberg'), upload_to=poms.integrations.models.bloomberg_filename)),
+                ('cert', models.FileField(blank=True, null=True, storage=django.core.files.storage.FileSystemStorage(base_url='/api/bloomberg/', location='/Users/ailyukhin/develop/workspaces/mars/backend/tmp/bloomberg'), upload_to=poms.integrations.models.bloomberg_cert_upload_to)),
+                ('key', models.FileField(blank=True, null=True, storage=django.core.files.storage.FileSystemStorage(base_url='/api/bloomberg/', location='/Users/ailyukhin/develop/workspaces/mars/backend/tmp/bloomberg'), upload_to=poms.integrations.models.bloomberg_cert_upload_to)),
                 ('master_user', models.OneToOneField(on_delete=django.db.models.deletion.CASCADE, related_name='bloomberg_config', to='users.MasterUser')),
             ],
             options={
