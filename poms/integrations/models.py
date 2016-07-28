@@ -84,7 +84,7 @@ class InstrumentMapping(models.Model):
 
         return f
 
-    def create_instrument(self, values, preview=True):
+    def create_instrument(self, values, save=True):
         instr = Instrument(master_user=self.master_user)
         instr.instrument_type = self.master_user.instrument_types.first()
 
@@ -104,7 +104,9 @@ class InstrumentMapping(models.Model):
 
         def get_date(v):
             if v:
-                return parser.parse(v)
+                v = parser.parse(v)
+                if v:
+                    return v.date()
             return None
 
         def get_num(v):
@@ -114,16 +116,20 @@ class InstrumentMapping(models.Model):
 
         for attr in self.BASIC_FIELDS:
             n = getattr(self, attr)
-            v = get_val(n)
-            if attr in ['pricing_currency', 'accrued_currency']:
-                v = get_ccy(v)
-                setattr(instr, attr, v)
-            elif attr in ['price_multiplier', 'accrued_multiplier', 'default_price', 'default_accrued']:
-                v = get_num(v)
-                setattr(instr, attr, v)
-            else:
-                v = get_str(v)
-                setattr(instr, attr, v)
+            if n:
+                v = get_val(n)
+                if attr in ['pricing_currency', 'accrued_currency']:
+                    v = get_ccy(v)
+                    setattr(instr, attr, v)
+                elif attr in ['price_multiplier', 'accrued_multiplier', 'default_price', 'default_accrued']:
+                    v = get_num(v)
+                    setattr(instr, attr, v)
+                else:
+                    v = get_str(v)
+                    setattr(instr, attr, v)
+
+        if save:
+            instr.save()
 
         iattrs = []
         for attr in self.attributes.select_related('attribute_type').all():
@@ -142,7 +148,12 @@ class InstrumentMapping(models.Model):
             elif tattr.value_type == AbstractAttributeType.CLASSIFIER:
                 pass
 
-        # instr.attributes = iattrs
+            if save:
+                iattr.save()
+
+        instr.attributes_preview = iattrs
+        # if not preview:
+        #     instr.attributes = iattrs
 
         return instr
 

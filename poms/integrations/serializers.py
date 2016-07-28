@@ -11,7 +11,8 @@ from rest_framework import serializers
 from rest_framework.exceptions import ValidationError
 
 from poms.instruments.fields import InstrumentTypeField, InstrumentAttributeTypeField
-from poms.instruments.serializers import InstrumentSerializer
+from poms.instruments.models import Instrument
+from poms.instruments.serializers import InstrumentSerializer, InstrumentAttributeSerializer
 from poms.integrations.fields import InstrumentMappingField
 from poms.integrations.models import InstrumentMapping, InstrumentAttributeMapping, BloombergConfig, BloombergTask
 from poms.integrations.storages import FileImportStorage
@@ -196,6 +197,41 @@ class InstrumentBloombergImport(object):
         return self._task
 
 
+class ImportInstrumentSerializer(serializers.ModelSerializer):
+    # instrument_type = serializers.PrimaryKeyRelatedField(read_only=True)
+    # pricing_currency = serializers.PrimaryKeyRelatedField(read_only=True)
+    # accrued_currency = serializers.PrimaryKeyRelatedField(read_only=True)
+
+    # manual_pricing_formulas = ManualPricingFormulaSerializer(many=True, read_only=True)
+    # accrual_calculation_schedules = AccrualCalculationScheduleSerializer(many=True, read_only=True)
+    # factor_schedules = InstrumentFactorScheduleSerializer(many=True, read_only=True)
+    # event_schedules = EventScheduleSerializer(many=True, read_only=True)
+
+    # attributes = InstrumentAttributeSerializer(many=True, read_only=True)
+    attributes = serializers.SerializerMethodField()
+
+    # tags = TagField(many=True, read_only=True)
+
+    class Meta:
+        model = Instrument
+        fields = ['id', 'instrument_type', 'user_code', 'name', 'short_name', 'public_name',
+                  'notes', 'is_active',
+                  'pricing_currency', 'price_multiplier', 'accrued_currency', 'accrued_multiplier',
+                  'daily_pricing_model', 'payment_size_detail', 'price_download_mode',
+                  'default_price', 'default_accrued',
+                  'user_text_1', 'user_text_2', 'user_text_3',
+                  # 'manual_pricing_formulas', 'accrual_calculation_schedules', 'factor_schedules', 'event_schedules',
+                  'attributes',
+                  # 'tags',
+                  ]
+
+    def get_attributes(self, obj):
+        if hasattr(obj, 'attributes_preview'):
+            return InstrumentAttributeSerializer(instance=obj.attributes_preview, many=True, read_only=True).data
+        else:
+            return InstrumentAttributeSerializer(instance=obj.attributes.all(), many=True, read_only=True).data
+
+
 class InstrumentBloombergImportSerializer(serializers.Serializer):
     master_user = MasterUserField()
     member = HiddenMemberField()
@@ -205,7 +241,7 @@ class InstrumentBloombergImportSerializer(serializers.Serializer):
     industry = serializers.CharField(required=False, allow_null=True, allow_blank=True, initial='Corp')
     task_id = serializers.CharField(required=False, allow_blank=True, allow_null=True)
     task = BloombergTaskSerializer(read_only=True)
-    instrument = InstrumentSerializer(read_only=True)
+    instrument = ImportInstrumentSerializer(read_only=True)
 
     def create(self, validated_data):
         instance = InstrumentBloombergImport(**validated_data)
@@ -221,9 +257,9 @@ class InstrumentBloombergImportSerializer(serializers.Serializer):
         if instance.task.status == BloombergTask.STATUS_DONE:
             values = instance.task.result_object
             if instance.mode == IMPORT_PREVIEW:
-                instance.instrument = instance.mapping.create_instrument(values, preview=True)
+                instance.instrument = instance.mapping.create_instrument(values, save=False)
             else:
-                pass
+                instance.instrument = instance.mapping.create_instrument(values, save=True)
 
         return instance
 
