@@ -107,6 +107,22 @@ class BloombergConfig(models.Model):
             return get_certs(self.p12cert.read(), self.password, is_base64=False)
         return None, None
 
+    @property
+    def has_p12cert(self):
+        return bool(self.p12cert)
+
+    @property
+    def has_password(self):
+        return bool(self.password)
+
+    @property
+    def has_cert(self):
+        return bool(self.cert)
+
+    @property
+    def has_key(self):
+        return bool(self.key)
+
 
 @python_2_unicode_compatible
 class BloombergTask(TimeStampedModel):

@@ -11,7 +11,7 @@ from rest_framework import serializers
 from rest_framework.exceptions import ValidationError
 
 from poms.instruments.fields import InstrumentTypeField, InstrumentAttributeTypeField
-from poms.integrations.models import InstrumentMapping, InstrumentAttributeMapping
+from poms.integrations.models import InstrumentMapping, InstrumentAttributeMapping, BloombergConfig
 from poms.integrations.storages import FileImportStorage
 from poms.integrations.tasks import schedule_file_import_delete
 from poms.users.fields import MasterUserField
@@ -84,6 +84,20 @@ class InstrumentMappingSerializer(serializers.ModelSerializer):
             attr.save()
             attrs.add(attr.id)
         instance.attributes.exclude(pk__in=attrs).delete()
+
+
+class BloombergConfigSerializer(serializers.ModelSerializer):
+    master_user = MasterUserField()
+    p12cert = serializers.FileField(allow_null=True, allow_empty_file=False, write_only=True)
+    password = serializers.CharField(allow_null=True, allow_blank=True, write_only=True)
+    cert = serializers.FileField(allow_null=True, allow_empty_file=False, write_only=True)
+    key = serializers.FileField(allow_null=True, allow_empty_file=False, write_only=True)
+
+    class Meta:
+        model = BloombergConfig
+        fields = ['url', 'id', 'master_user', 'p12cert', 'password', 'cert', 'key',
+                  'has_p12cert', 'has_password', 'has_cert', 'has_key']
+
 
 
 class InstrumentFileImportSerializer(serializers.Serializer):

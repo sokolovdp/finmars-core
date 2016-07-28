@@ -5,11 +5,11 @@ from rest_framework.response import Response
 
 from poms.common.filters import CharFilter
 from poms.common.views import AbstractViewSet, AbstractModelViewSet
-from poms.integrations.models import InstrumentMapping
+from poms.integrations.models import InstrumentMapping, BloombergConfig
 from poms.integrations.serializers import InstrumentBloombergImportSerializer, InstrumentFileImportSerializer, \
-    InstrumentMappingSerializer
+    InstrumentMappingSerializer, BloombergConfigSerializer
 from poms.users.filters import OwnerByMasterUserFilter
-from poms.users.permissions import SuperUserOrReadOnly
+from poms.users.permissions import SuperUserOrReadOnly, SuperUserOnly
 
 
 class InstrumentMappingFilterSet(FilterSet):
@@ -35,6 +35,17 @@ class InstrumentMappingViewSet(AbstractModelViewSet):
     filter_class = InstrumentMappingFilterSet
     ordering_fields = ['mapping_name']
     search_fields = ['mapping_name']
+
+
+class BloombergConfigViewSet(AbstractModelViewSet):
+    queryset = BloombergConfig.objects
+    serializer_class = BloombergConfigSerializer
+    permission_classes = AbstractModelViewSet.permission_classes + [
+        SuperUserOnly,
+    ]
+    filter_backends = [
+        OwnerByMasterUserFilter,
+    ]
 
 
 class AbstractIntegrationViewSet(AbstractViewSet):
