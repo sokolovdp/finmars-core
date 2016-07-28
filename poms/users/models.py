@@ -112,7 +112,7 @@ class Member(models.Model):
     is_owner = models.BooleanField(default=False, verbose_name=_('is owner'))
     is_admin = models.BooleanField(default=False, verbose_name=_('is admin'))
 
-    groups = models.ManyToManyField('Group', blank=True, verbose_name=_('groups'))
+    groups = models.ManyToManyField('Group', blank=True, related_name='members', verbose_name=_('groups'))
 
     # permissions = models.ManyToManyField(Permission, blank=True)
 

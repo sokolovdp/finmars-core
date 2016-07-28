@@ -171,6 +171,17 @@ class MasterUserSetCurrentSerializer(serializers.Serializer):
         return self.create(validated_data)
 
 
+class MemberMiniSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Member
+        fields = ['id', 'username', 'first_name', 'last_name', 'display_name', ]
+        read_only_fields = ['id', 'username', 'first_name', 'last_name', 'display_name', ]
+
+    def get_is_current(self, obj):
+        member = self.context['request'].user.member
+        return obj.id == member.id
+
+
 class MemberSerializer(serializers.ModelSerializer):
     url = serializers.HyperlinkedIdentityField(view_name='member-detail')
     master_user = MasterUserField()

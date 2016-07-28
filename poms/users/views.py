@@ -17,7 +17,9 @@ from rest_framework.response import Response
 from rest_framework.viewsets import ViewSet
 
 from poms.audit.mixins import HistoricalMixin
+from poms.common import pagination
 from poms.common.filters import CharFilter
+from poms.common.pagination import BigPagination
 from poms.common.views import AbstractModelViewSet, AbstractReadOnlyModelViewSet
 from poms.users.filters import OwnerByMasterUserFilter, MasterUserFilter
 from poms.users.models import MasterUser, Member, Group
@@ -140,6 +142,7 @@ class MasterUserViewSet(AbstractModelViewSet):
     ]
     ordering_fields = ['name', ]
     search_fields = ['name', ]
+    pagination_class = BigPagination
 
     @detail_route(methods=('PUT', 'PATCH',), url_path='set-current', permission_classes=[IsAuthenticated],
                   serializer_class=MasterUserSetCurrentSerializer)
@@ -163,7 +166,7 @@ class MemberFilterSet(FilterSet):
 
 
 class MemberViewSet(HistoricalMixin, UpdateModelMixin, DestroyModelMixin, AbstractReadOnlyModelViewSet):
-    queryset = Member.objects.select_related('user')
+    queryset = Member.objects.select_related('user').prefetch_related('groups')
     serializer_class = MemberSerializer
     permission_classes = AbstractModelViewSet.permission_classes + [
         # IsAuthenticated,
@@ -178,6 +181,7 @@ class MemberViewSet(HistoricalMixin, UpdateModelMixin, DestroyModelMixin, Abstra
     filter_class = MemberFilterSet
     ordering_fields = ['username', ]
     search_fields = ['username', ]
+    pagination_class = BigPagination
 
 
 class GroupFilterSet(FilterSet):
@@ -189,7 +193,7 @@ class GroupFilterSet(FilterSet):
 
 
 class GroupViewSet(AbstractModelViewSet):
-    queryset = Group.objects.select_related('master_user')
+    queryset = Group.objects.select_related('master_user').prefetch_related('members')
     serializer_class = GroupSerializer
     permission_classes = AbstractModelViewSet.permission_classes + [
         # IsAuthenticated,
@@ -203,3 +207,4 @@ class GroupViewSet(AbstractModelViewSet):
     ]
     ordering_fields = ['name', ]
     search_fields = ['name', ]
+    pagination_class = BigPagination
