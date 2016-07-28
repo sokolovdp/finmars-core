@@ -1,11 +1,14 @@
 from __future__ import unicode_literals, print_function
 
+import uuid
+
 from django.db import models
 from django.utils.encoding import python_2_unicode_compatible
 from django.utils.translation import ugettext_lazy as _
 
 from poms.audit import history
 from poms.common.models import TimeStampedModel
+from poms.integrations.storages import BloombergStorage
 
 MAPPING_FIELD_MAX_LENGTH = 32
 
@@ -67,23 +70,74 @@ class InstrumentAttributeMapping(models.Model):
         return '%s' % (self.attribute_type,)
 
 
-@python_2_unicode_compatible
-class BloombergRequestLogEntry(TimeStampedModel):
-    master_user = models.ForeignKey('users.MasterUser')
-    member = models.ForeignKey('users.Member', null=True, blank=True)
+def bloomberg_filename(instance, filename):
+    # return '%s/%s' % (instance.master_user_id, filename)
+    return '%s/%s' % (instance.master_user_id, uuid.uuid4().hex)
 
-    token = models.UUIDField(null=True, blank=True, db_index=True)
-    is_success = models.NullBooleanField(db_index=True)
-    is_user_got_response = models.NullBooleanField(db_index=True)
 
-    action = models.CharField(max_length=32, null=True, blank=True, db_index=True)
-    request = models.TextField(null=True, blank=True)
-    response_id = models.CharField(max_length=64, null=True, blank=True, db_index=True)
-    response = models.TextField(null=True, blank=True)
+class BloombergConfig(models.Model):
+    master_user = models.OneToOneField('users.MasterUser', related_name='bloomberg_config')
+    p12cert = models.FileField(null=True, blank=True, storage=BloombergStorage(), upload_to=bloomberg_filename)
+    password = models.CharField(max_length=64, null=True, blank=True)
+    cert = models.FileField(null=True, blank=True, storage=BloombergStorage(), upload_to=bloomberg_filename)
+    key = models.FileField(null=True, blank=True, storage=BloombergStorage(), upload_to=bloomberg_filename)
 
     class Meta:
-        verbose_name = _('bloomberg request log')
-        verbose_name_plural = _('bloomberg request logs')
+        verbose_name = _('bloomberg config')
+        verbose_name_plural = _('bloomberg configs')
+
+    def __str__(self):
+        return '%s' % self.master_user
+
+    # def delete(self, using=None, keep_parents=False):
+    #     if self.p12cert:
+    #         self.p12cert.delete(save=False)
+    #     if self.cert:
+    #         self.cert.delete(save=False)
+    #     if self.key:
+    #         self.key.delete(save=False)
+    #     super(BloombergConfig, self).delete(using=using, keep_parents=keep_parents)
+
+    @property
+    def pair(self):
+        if self.cert and self.key:
+            return self.cert, self.key
+        elif self.p12cert:
+            from poms.integrations.providers.bloomberg import get_certs
+            return get_certs(self.p12cert.read(), self.password, is_base64=False)
+        return None, None
+
+
+@python_2_unicode_compatible
+class BloombergTask(TimeStampedModel):
+    STATUS_PENDING = 0
+    STATUS_REQUEST_SENT = 1
+    STATUS_WAIT_RESPONSE = 2
+    STATUS_DONE = 3
+    STATUS_ERROR = -1
+    STATUS_TIMEOUT = -2
+    STATUS_CHOICES = (
+        (STATUS_PENDING, 'STATUS_PENDING'),
+        (STATUS_REQUEST_SENT, 'STATUS_REQUEST_SENT'),
+        (STATUS_WAIT_RESPONSE, 'STATUS_WAIT_RESPONSE'),
+        (STATUS_DONE, 'STATUS_DONE'),
+        (STATUS_ERROR, 'STATUS_ERROR'),
+        (STATUS_TIMEOUT, 'STATUS_TIMEOUT'),
+    )
+
+    master_user = models.ForeignKey('users.MasterUser', related_name='bloomberg_tasks')
+    member = models.ForeignKey('users.Member', related_name='bloomberg_tasks', null=True, blank=True)
+
+    status = models.SmallIntegerField(default=STATUS_PENDING, choices=STATUS_CHOICES)
+
+    action = models.CharField(max_length=32, null=True, blank=True, db_index=True)
+    response_id = models.CharField(max_length=64, null=True, blank=True, db_index=True)
+    kwargs = models.TextField(null=True, blank=True)
+    result = models.TextField(null=True, blank=True)
+
+    class Meta:
+        verbose_name = _('bloomberg task')
+        verbose_name_plural = _('bloomberg tasks')
         ordering = ('-created',)
 
     def __str__(self):
@@ -92,3 +146,4 @@ class BloombergRequestLogEntry(TimeStampedModel):
 
 history.register(InstrumentMapping, follow=['attributes'])
 history.register(InstrumentAttributeMapping)
+history.register(BloombergConfig)

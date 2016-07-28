@@ -1,5 +1,4 @@
 import base64
-import json
 import os
 import pprint
 import uuid
@@ -11,12 +10,8 @@ from time import sleep
 import requests
 import six
 from OpenSSL import crypto
-from celery.result import AsyncResult
 from dateutil import parser
 from django.conf import settings
-from django.core.serializers.json import DjangoJSONEncoder
-from django.dispatch import Signal, receiver
-from django.utils.encoding import force_text
 from suds.client import Client
 from suds.transport import Reply
 from suds.transport.http import HttpAuthenticated
@@ -25,42 +20,8 @@ __author__ = 'alyakhov'
 
 _l = getLogger('poms.integrations.providers.bloomberg')
 
+
 # _l = getLogger(__name__)
-
-
-request_sent = Signal(providing_args=['context', 'action', 'params', 'response_id'])
-response_received = Signal(providing_args=['context', 'action', 'response_id', 'is_success', 'result'])
-
-
-@receiver(request_sent, dispatch_uid='bloomberg.request_sent')
-def _request_sent(sender, action=None, params=None, response_id=None, context=None, **kwargs):
-    from poms.integrations.models import BloombergRequestLogEntry
-    context = context or {}
-    m = BloombergRequestLogEntry()
-    m.master_user = context.get('master_user', None)
-    m.member = context.get('member', None)
-    m.action = action
-    # m.request = pprint.pformat(params)
-    m.request = json.dumps(params, sort_keys=True, cls=DjangoJSONEncoder)
-    m.response_id = response_id
-    m.save()
-    # from poms.integrations.tasks import bloomberg_get_response
-    # bloomberg_get_response(m.id)
-
-
-@receiver(response_received, dispatch_uid='bloomberg.response_received')
-def _response_received(sender, action=None, response_id=None, is_success=None, result=None, context=None, **kwargs):
-    from poms.integrations.models import BloombergRequestLogEntry
-    try:
-        m = BloombergRequestLogEntry.objects.get(action=action, response_id=response_id)
-        m.is_success = is_success
-        m.is_user_got_response = True
-        # m.response = pprint.pformat(result)
-        m.response = json.dumps(result, sort_keys=True, cls=DjangoJSONEncoder)
-
-        m.save()
-    except BloombergRequestLogEntry.DoesNotExist:
-        _l.warn('bloomberg request not found: action=%s, response_id=%s', action, response_id)
 
 
 class BloombergException(Exception):
@@ -176,7 +137,7 @@ class BloomberDataProvider(object):
     Bloomberg python client for Finmars.
     """
 
-    def __init__(self, wsdl=None, cert=None, key=None, context=None):
+    def __init__(self, cert=None, key=None, wsdl=None):
         """
         Constructor for BloomberDataProvider
         @param wsdl: url for WSDL file
@@ -191,25 +152,19 @@ class BloomberDataProvider(object):
 
         wsdl = wsdl or settings.BLOOMBERG_WSDL
 
-        if not settings.DEBUG:
-            if not wsdl:
-                raise BloombergException("wsdl should be provided")
-            if not cert:
-                raise BloombergException("client certificate pem file should be provided")
-            if not key:
-                raise BloombergException("private key pem file should be provided")
+        if not wsdl:
+            raise BloombergException("wsdl should be provided")
+        if not cert:
+            raise BloombergException("client certificate pem file should be provided")
+        if not key:
+            raise BloombergException("private key pem file should be provided")
 
-        self.context = context
-
-        if cert and key:
-            transport = RequestsTransport(cert=cert, key=key)
-            headers = {
-                "Content-Type": "text/xml;charset=UTF-8",
-                "SOAPAction": ""
-            }
-            self.soap_client = Client(wsdl, headers=headers, transport=transport)
-        else:
-            self.soap_client = None
+        transport = RequestsTransport(cert=cert, key=key)
+        headers = {
+            "Content-Type": "text/xml;charset=UTF-8",
+            "SOAPAction": ""
+        }
+        self.soap_client = Client(wsdl, headers=headers, transport=transport)
 
     def _response_is_valid(self, response, pending=False, raise_exception=True):
         if response.statusCode.code == 0:
@@ -239,13 +194,6 @@ class BloomberDataProvider(object):
         _l.debug('%s: failed', name)
         raise BloombergException("%s('%s') failed" % (name, response_id,))
 
-    def _notify_request_sent(self, action=None, params=None, response_id=None):
-        request_sent.send(self.__class__, context=self.context, action=action, params=params, response_id=response_id)
-
-    def _notify_response_received(self, action=None, response_id=None, is_success=False, result=None):
-        response_received.send(self.__class__, context=self.context, action=action, response_id=response_id,
-                               is_success=is_success, result=result)
-
     def get_fields(self):
         """
         Test method to check SSL connectivity. (is free!)
@@ -261,9 +209,7 @@ class BloomberDataProvider(object):
         )
         _l.debug('get_fields: response=%s', response)
         response_id = uuid.uuid4().hex
-        self._notify_request_sent('fields', None, response_id)
         self._response_is_valid(response)
-        self._notify_response_received('fields', response_id, True, force_text(response))
         return response
 
     def get_instrument_send_request(self, instrument, fields):
@@ -300,7 +246,6 @@ class BloomberDataProvider(object):
 
         response_id = six.text_type(response.responseId)
         _l.debug('get_instrument_send_request: response_id=%s', response_id)
-        self._notify_request_sent('instrument', {'instrument': instrument, 'fields': fields}, response_id)
 
         return response_id
 
@@ -345,7 +290,6 @@ class BloomberDataProvider(object):
                 result[field] = response.instrumentDatas[0][0].data[i]._value
 
             _l.debug('get_instrument_get_response: response_id=%s, result=%s', response_id, result)
-            self._notify_response_received('instrument', response_id, True, result)
 
             return result
         return None
@@ -400,7 +344,6 @@ class BloomberDataProvider(object):
 
         response_id = six.text_type(response.responseId)
         _l.debug('get_pricing_latest_send_request: response_id=%s', response_id)
-        self._notify_request_sent('pricing_latest', {'instruments': instruments, 'fields': fields}, response_id)
 
         return response_id
 
@@ -452,7 +395,6 @@ class BloomberDataProvider(object):
                 result[instrument.instrument.id] = instrument_fields
 
             _l.debug('get_pricing_latest_get_response: response_id=%s, result=%s', response_id, result)
-            self._notify_response_received('pricing_latest', response_id, True, result)
             return result
         return None
 
@@ -523,9 +465,6 @@ class BloomberDataProvider(object):
 
         response_id = six.text_type(response.responseId)
         _l.debug('get_pricing_history_send_request: response_id=%s', response_id)
-        self._notify_request_sent('pricing_history',
-                                  {'instruments': instruments, 'fields': fields, 'date_from': date_from,
-                                   'date_to': date_to}, response_id)
 
         return response_id
 
@@ -590,7 +529,6 @@ class BloomberDataProvider(object):
                 else:
                     result[instrument.instrument.id] = [instrument_fields]
             _l.debug('get_pricing_history_get_response: response_id=%s, result=%s', response_id, result)
-            self._notify_response_received('pricing_history', response_id, True, result)
             return result
         return None
 
@@ -629,13 +567,13 @@ class BloomberDataProvider(object):
 
 # ----------------------------------------------------------------------------------------------------------------------
 
-class FakeBloomberDataProvider(BloomberDataProvider):
+class FakeBloomberDataProvider(object):
     """
     Bloomberg python client for Finmars.
     """
 
     def __init__(self, *args, **kwargs):
-        super(FakeBloomberDataProvider, self).__init__(*args, **kwargs)
+        # super(FakeBloomberDataProvider, self).__init__(*args, **kwargs)
 
         from django.core.cache import caches
         self._cache = caches['default']
@@ -659,7 +597,6 @@ class FakeBloomberDataProvider(BloomberDataProvider):
         }, timeout=30)
 
         _l.debug('get_instrument_send_request: response_id=%s', response_id)
-        self._notify_request_sent('instrument', {'instrument': instrument, 'fields': fields}, response_id)
 
         return response_id
 
@@ -708,7 +645,6 @@ class FakeBloomberDataProvider(BloomberDataProvider):
         for field in req['fields']:
             result[field] = fake_data.get(field, None)
         _l.debug('get_instrument_get_response: response_id=%s, result=%s', response_id, result)
-        self._notify_response_received('instrument', response_id, True, result)
         return result
 
     def get_pricing_latest_send_request(self, instruments):
@@ -725,7 +661,6 @@ class FakeBloomberDataProvider(BloomberDataProvider):
         }, timeout=30)
 
         _l.debug('get_pricing_latest_send_request: response_id=%s', response_id)
-        self._notify_request_sent('pricing_latest', {'instruments': instruments, 'fields': fields}, response_id)
 
         return response_id
 
@@ -753,7 +688,6 @@ class FakeBloomberDataProvider(BloomberDataProvider):
                 instrument_fields[field] = fake_data.get(field, None)
             result[instrument['code']] = instrument_fields
         _l.debug('get_pricing_latest_get_response: response_id=%s, result=%s', response_id, result)
-        self._notify_response_received('pricing_latest', response_id, True, result)
         return result
 
     def get_pricing_history_send_request(self, instruments, date_from, date_to):
@@ -773,9 +707,6 @@ class FakeBloomberDataProvider(BloomberDataProvider):
         }, timeout=30)
 
         _l.debug('get_pricing_history_send_request: response_id=%s', response_id)
-        self._notify_request_sent('pricing_history',
-                                  {'instruments': instruments, 'fields': fields, 'date_from': date_from,
-                                   'date_to': date_to}, response_id)
 
         return response_id
 
@@ -814,8 +745,19 @@ class FakeBloomberDataProvider(BloomberDataProvider):
 
                 d += timedelta(days=1)
         _l.debug('get_pricing_history_get_response: response_id=%s, result=%s', response_id, result)
-        self._notify_response_received('pricing_history', response_id, True, result)
         return result
+
+
+def get_provider_class():
+    if settings.BLOOMBERG_SANDBOX:
+        return FakeBloomberDataProvider
+    else:
+        return BloomberDataProvider
+
+
+def get_provider(*args, **kwargs):
+    clazz = get_provider_class()
+    return clazz(*args, **kwargs)
 
 
 def test_instrument_data(b):
@@ -951,21 +893,13 @@ if __name__ == "__main__":
 
     django.setup()
 
-    from poms.users.models import MasterUser
-
-    master_user = MasterUser.objects.first()
-    # member = master_user.members.first()
-    member = None
-    context = {'master_user': master_user, 'member': member}
-
     p12cert = os.environ['TEST_BLOOMBERG_CERT']
     password = os.environ['TEST_BLOOMBERG_CERT_PASSWORD']
 
     cert, key = get_certs_from_file(p12cert, password)
 
-    # b = BloomberDataProvider(wsdl="https://service.bloomberg.com/assets/dl/dlws.wsdl", cert=cert, key=key,
-    #                          context=context)
-    b = FakeBloomberDataProvider(cert=cert, key=key, context=context)
+    # b = BloomberDataProvider(wsdl="https://service.bloomberg.com/assets/dl/dlws.wsdl", cert=cert, key=key)
+    b = FakeBloomberDataProvider(wsdl="https://service.bloomberg.com/assets/dl/dlws.wsdl", cert=cert, key=key)
     # b.get_fields()
     # test_instrument_data(b)
     # test_pricing_latest(b)
@@ -975,37 +909,45 @@ if __name__ == "__main__":
     # _l.info('1: %s', parser.parse("06/16/2023"))
     # _l.info('2: %s', parser.parse("2016-06-15"))
 
-    from poms.integrations.tasks import bloomberg_async
+    from poms.integrations.tasks import bloomberg_call, bloomberg_instrument, bloomberg_pricing_latest, \
+        bloomberg_pricing_history
+    from poms.users.models import MasterUser
 
-    # a = test123.delay(0)
-    # a = bloomberg_async(master_user.id, action='fields', params=None)
-    # a = bloomberg_async(master_user.id, action='instrument', params={
-    #     'instrument': {
+    master_user = MasterUser.objects.first()
+
+    a = bloomberg_call(
+        master_user=master_user,
+        action='fields'
+    )
+    # a = bloomberg_instrument(
+    #     master_user=master_user,
+    #     instrument={
     #         "code": 'XS1433454243',
     #         "industry": "Corp"
     #     },
-    #     'fields': ['CRNCY']
-    # })
-    # a = bloomberg_async(master_user.id, action='pricing_latest', params={
-    #     'instruments': [
+    #     fields=['CRNCY']
+    # )
+    # a = bloomberg_pricing_latest(
+    #     master_user=master_user,
+    #     instruments=[
     #         {"code": 'XS1433454243', "industry": "Corp"},
     #         {"code": 'USL9326VAA46', "industry": "Corp"},
     #     ]
-    # })
-    a = bloomberg_async(master_user.id, action='pricing_history', params={
-        'instruments': [
-            {"code": 'XS1433454243', "industry": "Corp"},
-            {"code": 'USL9326VAA46', "industry": "Corp"},
-        ],
-        'date_from': date(year=2016, month=6, day=14),
-        'date_to': date(year=2016, month=6, day=15),
-    })
-    print('a ->', a)
+    # )
+    # a = bloomberg_pricing_history(
+    #     master_user=master_user,
+    #     instruments=[
+    #         {"code": 'XS1433454243', "industry": "Corp"},
+    #         {"code": 'USL9326VAA46', "industry": "Corp"},
+    #     ],
+    #     date_from=date(year=2016, month=6, day=14),
+    #     date_to=date(year=2016, month=6, day=15),
+    # )
 
-    if getattr(settings, 'CELERY_ALWAYS_EAGER', False):
-        print('a.get ->', a.get(timeout=60, interval=0.1))
-    else:
-        b = AsyncResult(a.id)
-        print('b.get ->', b.get(timeout=60, interval=0.1))
+    # if getattr(settings, 'CELERY_ALWAYS_EAGER', False):
+    #     print('a.get ->', a.get(timeout=60, interval=0.1))
+    # else:
+    #     b = AsyncResult(a.id)
+    #     print('b.get ->', b.get(timeout=60, interval=0.1))
 
     pass

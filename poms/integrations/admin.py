@@ -1,11 +1,12 @@
 from __future__ import unicode_literals, print_function
 
+from django import forms
 from django.conf import settings
 from django.contrib import admin
 from kombu.transport.django.models import Queue, Message
 
 from poms.audit.admin import HistoricalAdmin
-from poms.integrations.models import InstrumentMapping, InstrumentAttributeMapping, BloombergRequestLogEntry
+from poms.integrations.models import InstrumentMapping, InstrumentAttributeMapping, BloombergTask, BloombergConfig
 
 if settings.DEBUG and 'kombu.transport.django' in settings.INSTALLED_APPS:
     class QueueAdmin(admin.ModelAdmin):
@@ -56,21 +57,40 @@ class InstrumentMappingAdmin(HistoricalAdmin):
 admin.site.register(InstrumentMapping, InstrumentMappingAdmin)
 
 
-class BloombergRequestLogEntryAdmin(admin.ModelAdmin):
-    model = BloombergRequestLogEntry
-    list_display = ['id', 'created', 'master_user', 'member', 'action', 'response_id', 'is_success',]
+class BloombergConfigForm(forms.ModelForm):
+    password = forms.CharField(widget=forms.PasswordInput(), required=False)
+
+    class Meta:
+        model = BloombergConfig
+        fields = ['master_user', 'p12cert', 'password', 'cert', 'key']
+
+
+class BloombergConfigAdmin(HistoricalAdmin):
+    model = BloombergConfig
+    form = BloombergConfigForm
+    list_display = ['id', 'master_user', ]
+    list_select_related = ['master_user', ]
+    raw_id_fields = ['master_user', ]
+
+
+admin.site.register(BloombergConfig, BloombergConfigAdmin)
+
+
+class BloombergTaskAdmin(admin.ModelAdmin):
+    model = BloombergTask
+    list_display = ['id', 'created', 'master_user', 'member', 'action', 'status', ]
     list_select_related = ['master_user', 'member', ]
     raw_id_fields = ['master_user', 'member', ]
-    search_fields = ['action', 'token', 'response_id']
-    list_filter = ['created', 'is_success', 'action']
+    search_fields = ['action', 'response_id', ]
+    list_filter = ['created', 'action', 'status', ]
     date_hierarchy = 'created'
 
     # if not settings.DEBUG:
-    readonly_fields = ['id', 'created', 'modified', 'master_user', 'member', 'action', 'token',
-                       'request', 'response_id', 'response', 'is_success', 'is_user_got_response', ]
-
     # def has_add_permission(self, request):
     #     return settings.DEBUG
 
+    def save_model(self, request, obj, form, change):
+        pass
 
-admin.site.register(BloombergRequestLogEntry, BloombergRequestLogEntryAdmin)
+
+admin.site.register(BloombergTask, BloombergTaskAdmin)

@@ -1,11 +1,12 @@
 from __future__ import unicode_literals, print_function
 
+import json
+from datetime import datetime
 from logging import getLogger
 
-import six
 from celery import shared_task, chain
-from celery.exceptions import TimeoutError, MaxRetriesExceededError
-from dateutil import parser
+from celery.exceptions import TimeoutError
+from django.core.serializers.json import DjangoJSONEncoder
 
 _l = getLogger('poms.integrations')
 
@@ -113,133 +114,189 @@ def auth_log_statistics():
     _l.debug('auth (today): logged_in=%s, login_failed=%s', logged_in_count, login_failed_count)
 
 
-@shared_task(name='backend.bloomberg_get_response', bind=True, ignore_result=True,
-             default_retry_delay=1, max_retries=10)
-def bloomberg_get_response_async(self, entry_id):
-    from poms.integrations.models import BloombergRequestLogEntry
-    _l.info('bloomberg_receive_async: entry_id=%s, attempt=%s', entry_id, self.request.retries)
-    try:
-        BloombergRequestLogEntry.objects.get(pk=entry_id)
-        raise self.retry()
-    except BloombergRequestLogEntry.DoesNotExist:
-        pass
-    except MaxRetriesExceededError:
-        _l.error('bloomberg_receive_async: entry_id=%s, MaxRetriesExceededError', entry_id)
-        pass
-
-
-def bloomberg_get_response(entry_id):
-    bloomberg_get_response_async.apply_async(
-        kwargs={
-            'entry_id': entry_id
-        },
-        countdown=1
-    )
-
-
-@shared_task(name='backend.test123', bind=True, default_retry_delay=1, max_retries=10)
-def test123(self, v):
-    # some call bloomberg
-    if self.request.retries == 0:
-        # first call
-        pass
-
-    is_ready = self.request.retries > 3
-    if is_ready:
-        if v == 0:
-            raise ValueError()
-        import uuid
-        return uuid.uuid4().hex
-    raise self.retry()
-
-
 @shared_task(name='backend.bloomberg_send_request', bind=True)
-def bloomberg_send_request(self, master_user_id, action, params):
-    _l.info('bloomberg_send_request: master_user=%s, action=%s, params=%s', master_user_id, action, params)
-    from poms.users.models import MasterUser
-    from poms.integrations.providers.bloomberg import FakeBloomberDataProvider
-    master_user = MasterUser.objects.get(pk=master_user_id)
-    context = {'master_user': master_user, 'member': None}
-    # p12cert = os.environ['TEST_BLOOMBERG_CERT']
-    # password = os.environ['TEST_BLOOMBERG_CERT_PASSWORD']
-    # cert, key = get_certs_from_file(p12cert, password)
-    # b = FakeBloomberDataProvider(cert=cert, key=key, context=context)
-    b = FakeBloomberDataProvider(context=context)
+def bloomberg_send_request(self, task_id):
+    _l.info('bloomberg_send_request: task_id=%s', task_id)
 
-    if action == 'fields':
-        return master_user_id, action, None
+    from django.db import transaction
+    from poms.integrations.models import BloombergTask
+    from poms.integrations.providers.bloomberg import get_provider, BloombergException
 
-    elif action == 'instrument':
-        response_id = b.get_instrument_send_request(
-            instrument=params['instrument'],
-            fields=params['fields']
-        )
-        return master_user_id, action, response_id
+    task = BloombergTask.objects.select_related('master_user', 'master_user__bloomberg_config').get(pk=task_id)
+    master_user = task.master_user
+    config = master_user.bloomberg_config
+    cert, key = config.pair
+    provider = get_provider(cert=cert, key=key)
+    action = task.action
+    params = json.loads(task.kwargs)
 
-    elif action == 'pricing_latest':
-        response_id = b.get_pricing_latest_send_request(
-            instruments=params['instruments']
-        )
-        return master_user_id, action, response_id
+    try:
+        if action == 'fields':
+            response_id = None
 
-    elif action == 'pricing_history':
-        response_id = b.get_pricing_history_send_request(
-            instruments=params['instruments'],
-            date_from=parser.parse(params['date_from']).date(),
-            date_to=parser.parse(params['date_to']).date()
-        )
-        return master_user_id, action, response_id
+        elif action == 'instrument':
+            response_id = provider.get_instrument_send_request(
+                instrument=params['instrument'],
+                fields=params['fields']
+            )
 
-    raise RuntimeError('Unknown action')
+        elif action == 'pricing_latest':
+            response_id = provider.get_pricing_latest_send_request(
+                instruments=params['instruments']
+            )
+
+        elif action == 'pricing_history':
+            date_from = datetime.strptime(params['date_from'], '%Y-%m-%d').date()
+            date_to = datetime.strptime(params['date_to'], '%Y-%m-%d').date()
+            response_id = provider.get_pricing_history_send_request(
+                instruments=params['instruments'],
+                date_from=date_from,
+                date_to=date_to
+            )
+
+        else:
+            raise BloombergException('Unknown action')
+
+    except BloombergException:
+        with transaction.atomic():
+            task.status = BloombergTask.STATUS_ERROR
+            task.save()
+        raise
+
+    with transaction.atomic():
+        task.response_id = response_id
+        task.status = BloombergTask.STATUS_REQUEST_SENT
+        task.save()
+
+    return task_id
 
 
 @shared_task(name='backend.bloomberg_wait_reponse', bind=True, default_retry_delay=1, max_retries=10)
-def bloomberg_wait_reponse(self, req):
-    master_user_id, action, response_id = req
-    _l.info('bloomberg_wait_reponse: master_user=%s, action=%s, response_id=%s', master_user_id, action, response_id)
+def bloomberg_wait_reponse(self, task_id):
+    _l.info('bloomberg_wait_reponse: task_id=%s', task_id)
 
-    from poms.users.models import MasterUser
-    from poms.integrations.providers.bloomberg import FakeBloomberDataProvider
-    master_user = MasterUser.objects.get(pk=master_user_id)
-    context = {'master_user': master_user, 'member': None}
-    # p12cert = os.environ['TEST_BLOOMBERG_CERT']
-    # password = os.environ['TEST_BLOOMBERG_CERT_PASSWORD']
-    # cert, key = get_certs_from_file(p12cert, password)
-    # b = FakeBloomberDataProvider(cert=cert, key=key, context=context)
-    b = FakeBloomberDataProvider(context=context)
+    from django.db import transaction
+    from poms.integrations.models import BloombergTask
+    from poms.integrations.providers.bloomberg import get_provider, BloombergException
 
-    if action == 'fields':
-        b.get_fields()
-        return 'OK'
+    task = BloombergTask.objects.select_related('master_user', 'master_user__bloomberg_config').get(pk=task_id)
 
-    elif action == 'instrument':
-        result = b.get_instrument_get_response(response_id)
-        if result is None:
-            raise self.retry()
-        return result
-    elif action == 'pricing_latest':
-        result = b.get_pricing_latest_get_response(response_id)
-        if result is None:
-            raise self.retry()
-        return result
-    elif action == 'pricing_history':
-        result = b.get_pricing_history_get_response(response_id)
-        if result is None:
-            raise self.retry()
-        for k, instr in six.iteritems(result):
-            for r in instr:
-                r['date'] = '%s' % r['date']
-        return result
+    if task.status == BloombergTask.STATUS_REQUEST_SENT:
+        with transaction.atomic():
+            task.status = BloombergTask.STATUS_WAIT_RESPONSE
+            task.save()
+    elif task.status == BloombergTask.STATUS_WAIT_RESPONSE:
+        pass
+    else:
+        return
 
-    raise RuntimeError('Unknown action')
+    master_user = task.master_user
+    config = master_user.bloomberg_config
+    cert, key = config.pair
+    provider = get_provider(cert=cert, key=key)
+    action = task.action
+    response_id = task.response_id
+
+    try:
+        if action == 'fields':
+            provider.get_fields()
+            result = 'fields'
+
+        elif action == 'instrument':
+            result = provider.get_instrument_get_response(response_id)
+
+        elif action == 'pricing_latest':
+            result = provider.get_pricing_latest_get_response(response_id)
+
+        elif action == 'pricing_history':
+            result = provider.get_pricing_history_get_response(response_id)
+
+        else:
+            raise BloombergException('Unknown action')
+
+    except BloombergException:
+        with transaction.atomic():
+            task.status = BloombergTask.STATUS_ERROR
+            task.save()
+        raise
+
+    if result is None:
+
+        if self.request.is_eager:
+            import time
+            time.sleep(1)
+
+        raise self.retry()
+
+    with transaction.atomic():
+        task.result = json.dumps(result, cls=DjangoJSONEncoder, sort_keys=True, indent=2)
+        task.status = BloombergTask.STATUS_DONE
+        task.save()
+
+    return task.id
 
 
-def bloomberg_async(master_user_id, action, params):
-    if 'date_from' in params:
-        params['date_from'] = '%s' % params['date_from']
-    if 'date_to' in params:
-        params['date_to'] = '%s' % params['date_to']
-    return chain(
-        bloomberg_send_request.s(),
-        bloomberg_wait_reponse.s()
-    ).apply_async([master_user_id, action, params])
+def bloomberg_call(master_user=None, member=None, action=None, params=None):
+    from django.db import transaction, models
+    from poms.integrations.models import BloombergTask
+
+    master_user_id = master_user.id if isinstance(master_user, models.Model)  else master_user
+    if member:
+        member_id = member.id if isinstance(member, models.Model) else member
+    else:
+        member_id = None
+
+    with transaction.atomic():
+        bt = BloombergTask.objects.create(
+            master_user_id=master_user_id,
+            member_id=member_id,
+            status=BloombergTask.STATUS_PENDING,
+            action=action,
+            kwargs=json.dumps(params, cls=DjangoJSONEncoder, sort_keys=True, indent=2),
+        )
+        transaction.on_commit(lambda: chain(
+            bloomberg_send_request.s(bt.pk),
+            bloomberg_wait_reponse.s()
+        ).apply_async(countdown=1))
+
+    return bt.pk
+    # return chain(
+    #     bloomberg_send_request.s(bt.id),
+    #     bloomberg_wait_reponse.s()
+    # ).apply_async(countdown=1)
+
+
+def bloomberg_instrument(master_user=None, member=None, instrument=None, fields=None):
+    return bloomberg_call(
+        master_user=master_user,
+        member=member,
+        action='instrument',
+        params={
+            'instrument': instrument,
+            'fields': fields,
+        }
+    )
+
+
+def bloomberg_pricing_latest(master_user=None, member=None, instruments=None):
+    return bloomberg_call(
+        master_user=master_user,
+        member=member,
+        action='pricing_latest',
+        params={
+            'instruments': instruments,
+        }
+    )
+
+
+def bloomberg_pricing_history(master_user=None, member=None, instruments=None, date_from=None, date_to=None):
+    return bloomberg_call(
+        master_user=master_user,
+        member=member,
+        action='pricing_history',
+        params={
+            'instruments': instruments,
+            'date_from': date_from,
+            'date_to': date_to,
+        }
+    )

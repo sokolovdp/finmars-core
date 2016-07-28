@@ -454,8 +454,8 @@ else:
     # KOMBU_POLLING_INTERVAL = 1
     # raise Exception('REDIS_HOST required!')
 
-# CELERY_ALWAYS_EAGER = True
-# CELERY_EAGER_PROPAGATES_EXCEPTIONS = True
+CELERY_ALWAYS_EAGER = True
+CELERY_EAGER_PROPAGATES_EXCEPTIONS = True
 
 CELERY_DEFAULT_QUEUE = 'poms_celery'
 CELERY_ENABLE_UTC = True
@@ -482,5 +482,12 @@ CELERYBEAT_SCHEDULE = {
 
 # BLOOMBERG ------------------------------------------------
 
-BLOOMBERG_SANDBOX = True
+BLOOMBERG_SANDBOX = False
 BLOOMBERG_WSDL = 'https://service.bloomberg.com/assets/dl/dlws.wsdl'
+BLOOMBERG_STORAGE = {
+    'BACKEND': 'django.core.files.storage.FileSystemStorage',
+    'KWARGS': {
+        'location': os.path.join(BASE_DIR, 'tmp', 'bloomberg'),
+        'base_url': '/api/bloomberg/'
+    }
+}

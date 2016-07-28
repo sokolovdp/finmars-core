@@ -13,3 +13,13 @@ class FileImportStorage(LazyObject):
 
     def deconstruct(self):
         return 'poms.integrations.data_import.FileImportStorage', [], {}
+
+
+class BloombergStorage(LazyObject):
+    def _setup(self):
+        clazz = import_string(settings.BLOOMBERG_STORAGE['BACKEND'])
+        kwargs = settings.BLOOMBERG_STORAGE['KWARGS'] or {}
+        self._wrapped = clazz(**kwargs)
+
+    def deconstruct(self):
+        return 'poms.integrations.data_import.BloombergStorage', [], {}
