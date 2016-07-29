@@ -257,10 +257,8 @@ def bloomberg_call(master_user=None, member=None, action=None, params=None):
             action=action,
             kwargs=json.dumps(params, cls=DjangoJSONEncoder, sort_keys=True, indent=2),
         )
-        transaction.on_commit(lambda: chain(
-            bloomberg_send_request.s(bt.pk),
-            bloomberg_wait_reponse.s()
-        ).apply_async(countdown=1))
+        transaction.on_commit(
+            lambda: chain(bloomberg_send_request.s(bt.pk), bloomberg_wait_reponse.s()).apply_async(countdown=1))
 
     return bt.pk
     # return chain(

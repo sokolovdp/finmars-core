@@ -8,6 +8,7 @@ from poms.common.filters import CharFilter, ModelWithPermissionMultipleChoiceFil
 from poms.common.views import AbstractViewSet, AbstractModelViewSet, AbstractReadOnlyModelViewSet
 from poms.integrations.filters import BloombergTaskFilter
 from poms.integrations.models import InstrumentMapping, BloombergConfig, BloombergTask
+from poms.integrations.permissions import BloombergConfigured
 from poms.integrations.serializers import InstrumentBloombergImportSerializer, InstrumentFileImportSerializer, \
     InstrumentMappingSerializer, BloombergConfigSerializer, BloombergTaskSerializer, \
     PriceHistoryBloombergImportSerializer, CurrencyHistoryBloombergImportSerializer
@@ -77,26 +78,11 @@ class BloombergTaskViewSet(AbstractReadOnlyModelViewSet):
     search_fields = ['action']
 
 
-class AbstractIntegrationViewSet(AbstractViewSet):
-    serializer_class = None
-
-    def get_serializer(self, *args, **kwargs):
-        serializer_class = self.get_serializer_class()
-        kwargs['context'] = self.get_serializer_context()
-        return serializer_class(*args, **kwargs)
-
-    def get_serializer_class(self):
-        return self.serializer_class
-
-    def get_serializer_context(self):
-        return {
-            'request': self.request,
-            'format': self.format_kwarg,
-            'view': self
-        }
+class AbstractImportViewSet(AbstractViewSet):
+    pass
 
 
-class InstrumentFileImportViewSet(AbstractIntegrationViewSet):
+class InstrumentFileImportViewSet(AbstractImportViewSet):
     serializer_class = InstrumentFileImportSerializer
 
     def create(self, request, *args, **kwargs):
@@ -106,8 +92,11 @@ class InstrumentFileImportViewSet(AbstractIntegrationViewSet):
         return Response(serializer.data)
 
 
-class InstrumentBloombergImportViewSet(AbstractIntegrationViewSet):
+class InstrumentBloombergImportViewSet(AbstractImportViewSet):
     serializer_class = InstrumentBloombergImportSerializer
+    permission_classes = AbstractImportViewSet.permission_classes + [
+        BloombergConfigured,
+    ]
 
     def create(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)
@@ -116,8 +105,11 @@ class InstrumentBloombergImportViewSet(AbstractIntegrationViewSet):
         return Response(serializer.data)
 
 
-class PriceHistoryBloombergImportViewSet(AbstractIntegrationViewSet):
+class PriceHistoryBloombergImportViewSet(AbstractImportViewSet):
     serializer_class = PriceHistoryBloombergImportSerializer
+    permission_classes = AbstractImportViewSet.permission_classes + [
+        BloombergConfigured,
+    ]
 
     def create(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)
@@ -126,8 +118,11 @@ class PriceHistoryBloombergImportViewSet(AbstractIntegrationViewSet):
         return Response(serializer.data)
 
 
-class CurrencyHistoryBloombergImportViewSet(AbstractIntegrationViewSet):
+class CurrencyHistoryBloombergImportViewSet(AbstractImportViewSet):
     serializer_class = CurrencyHistoryBloombergImportSerializer
+    permission_classes = AbstractImportViewSet.permission_classes + [
+        BloombergConfigured,
+    ]
 
     def create(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)

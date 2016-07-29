@@ -227,6 +227,9 @@ class BloombergConfig(models.Model):
     def has_key(self):
         return bool(self.key)
 
+    @property
+    def is_ready(self):
+        return (self.has_p12cert and self.has_password) or (self.has_cert and self.has_key)
 
 @python_2_unicode_compatible
 class BloombergTask(TimeStampedModel):
