@@ -328,6 +328,10 @@ def bloomberg_price_history_auto(self):
     _l.debug('-' * 79)
     _l.debug('bloomberg_price_history_auto: >')
 
+    if not settings.BLOOMBERG_SANDBOX:
+        _l.warn('method not ready yet')
+        _l.debug('bloomberg_price_history_auto: <')
+
     now = timezone.now().date()
     download_modes = [PriceDownloadMode.AUTO, PriceDownloadMode.IF_PORTFOLIO]
 
