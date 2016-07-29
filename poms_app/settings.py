@@ -209,7 +209,7 @@ CSRF_COOKIE_SECURE = not DEBUG
 STATIC_URL = '/api/static/'
 STATIC_ROOT = os.path.join(BASE_DIR, "static")
 
-REDIS_HOST = os.environ.get('REDIS_HOST', None)
+REDIS_HOST = os.environ.get('REDIS_HOST', '127.0.0.1:6379')
 
 if REDIS_HOST:
     CACHE_SERIALIZER = "django_redis.serializers.json.JSONSerializer"

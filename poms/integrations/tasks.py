@@ -124,10 +124,14 @@ def bloomberg_send_request(self, task_id):
     from poms.integrations.providers.bloomberg import get_provider, BloombergException
 
     task = BloombergTask.objects.select_related('master_user', 'master_user__bloomberg_config').get(pk=task_id)
-    master_user = task.master_user
-    config = master_user.bloomberg_config
-    cert, key = config.pair
-    provider = get_provider(cert=cert, key=key)
+    if settings.BLOOMBERG_SANDBOX:
+        provider = get_provider()
+    else:
+        master_user = task.master_user
+        config = master_user.bloomberg_config
+        cert, key = config.pair
+        provider = get_provider(cert=cert, key=key)
+
     action = task.action
     params = json.loads(task.kwargs)
 
@@ -191,10 +195,14 @@ def bloomberg_wait_reponse(self, task_id):
     else:
         return
 
-    master_user = task.master_user
-    config = master_user.bloomberg_config
-    cert, key = config.pair
-    provider = get_provider(cert=cert, key=key)
+    if settings.BLOOMBERG_SANDBOX:
+        provider = get_provider()
+    else:
+        master_user = task.master_user
+        config = master_user.bloomberg_config
+        cert, key = config.pair
+        provider = get_provider(cert=cert, key=key)
+
     action = task.action
     response_id = task.response_id
 
