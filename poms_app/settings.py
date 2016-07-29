@@ -155,7 +155,7 @@ if DEBUG:
     # }
     DATABASES['default'] = {
         'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': os.path.join(BASE_DIR, 'db.sqlite3'),
+        'NAME': os.path.join(BASE_DIR, 'db-tests.sqlite3'),
         # 'NAME': ':memory:',
     }
 
@@ -213,77 +213,56 @@ REDIS_HOST = os.environ.get('REDIS_HOST', '127.0.0.1:6379')
 if DEBUG and REDIS_HOST == '127.0.0.1:6379':
     REDIS_HOST = '192.168.57.2:6379'
 
-if REDIS_HOST:
-    CACHE_SERIALIZER = "django_redis.serializers.json.JSONSerializer"
-    CACHE_COMPRESSOR = 'django_redis.compressors.identity.IdentityCompressor'
-    # CACHE_COMPRESSOR = 'django_redis.compressors.zlib.ZlibCompressor'
-    CACHES = {
-        'default': {
-            "BACKEND": "django_redis.cache.RedisCache",
-            "LOCATION": "redis://%s/10" % REDIS_HOST,
-            'KEY_PREFIX': 'fmbe_default',
-            'TIMEOUT': 300,
-            'OPTIONS': {
-                'SERIALIZER': CACHE_SERIALIZER,
-                'COMPRESSOR': CACHE_COMPRESSOR,
-            }
-        },
-        'http_session': {
-            "BACKEND": "django_redis.cache.RedisCache",
-            "LOCATION": "redis://%s/10" % REDIS_HOST,
-            'KEY_PREFIX': 'fmbe_http_session',
-            'TIMEOUT': 3600,
-            'OPTIONS': {
-                'SERIALIZER': CACHE_SERIALIZER,
-                'COMPRESSOR': CACHE_COMPRESSOR,
-            }
-        },
-        'throttling': {
-            "BACKEND": "django_redis.cache.RedisCache",
-            "LOCATION": "redis://%s/10" % REDIS_HOST,
-            'KEY_PREFIX': 'fmbe_throttling',
-            'TIMEOUT': 60,
-            'OPTIONS': {
-                'SERIALIZER': CACHE_SERIALIZER,
-                'COMPRESSOR': CACHE_COMPRESSOR,
-            }
-        },
-        'bloomberg': {
-            "BACKEND": "django_redis.cache.RedisCache",
-            "LOCATION": "redis://%s/10" % REDIS_HOST,
-            'KEY_PREFIX': 'fmbe_bloomberg',
-            'TIMEOUT': 3600,
-            'OPTIONS': {
-                'SERIALIZER': CACHE_SERIALIZER,
-                'COMPRESSOR': CACHE_COMPRESSOR,
-            }
-        },
-    }
-else:
-    CACHES = {
-        'default': {
-            'BACKEND': 'django.core.cache.backends.db.DatabaseCache',
-            'LOCATION': 'cache_default',
-            'KEY_PREFIX': 'default',
-        },
-        'throttling': {
-            'BACKEND': 'django.core.cache.backends.locmem.LocMemCache',
-            'LOCATION': 'throttling',
-            'KEY_PREFIX': 'throttling',
-        },
-        'bloomberg': {
-            'BACKEND': 'django.core.cache.backends.db.DatabaseCache',
-            'LOCATION': 'cache_default',
-            'KEY_PREFIX': 'bloomberg',
-        },
-    }
+CACHE_SERIALIZER = "django_redis.serializers.json.JSONSerializer"
+CACHE_COMPRESSOR = 'django_redis.compressors.identity.IdentityCompressor'
+# CACHE_COMPRESSOR = 'django_redis.compressors.zlib.ZlibCompressor'
+CACHES = {
+    'default': {
+        "BACKEND": "django_redis.cache.RedisCache",
+        "LOCATION": "redis://%s/10" % REDIS_HOST,
+        'KEY_PREFIX': 'fmbe_default',
+        'TIMEOUT': 300,
+        'OPTIONS': {
+            'SERIALIZER': CACHE_SERIALIZER,
+            'COMPRESSOR': CACHE_COMPRESSOR,
+        }
+    },
+    'http_session': {
+        "BACKEND": "django_redis.cache.RedisCache",
+        "LOCATION": "redis://%s/10" % REDIS_HOST,
+        'KEY_PREFIX': 'fmbe_http_session',
+        'TIMEOUT': 3600,
+        'OPTIONS': {
+            'SERIALIZER': CACHE_SERIALIZER,
+            'COMPRESSOR': CACHE_COMPRESSOR,
+        }
+    },
+    'throttling': {
+        "BACKEND": "django_redis.cache.RedisCache",
+        "LOCATION": "redis://%s/10" % REDIS_HOST,
+        'KEY_PREFIX': 'fmbe_throttling',
+        'TIMEOUT': 60,
+        'OPTIONS': {
+            'SERIALIZER': CACHE_SERIALIZER,
+            'COMPRESSOR': CACHE_COMPRESSOR,
+        }
+    },
+    'bloomberg': {
+        "BACKEND": "django_redis.cache.RedisCache",
+        "LOCATION": "redis://%s/10" % REDIS_HOST,
+        'KEY_PREFIX': 'fmbe_bloomberg',
+        'TIMEOUT': 3600,
+        'OPTIONS': {
+            'SERIALIZER': CACHE_SERIALIZER,
+            'COMPRESSOR': CACHE_COMPRESSOR,
+        }
+    },
+}
 
 # SESSION_SERIALIZER = 'django.contrib.sessions.serializers.JSONSerializer'
-if 'http_session' in CACHES:
-    SESSION_ENGINE = "poms.http_sessions.backends.cached_db"
-    SESSION_CACHE_ALIAS = 'http_session'
-else:
-    SESSION_ENGINE = "poms.http_sessions.backends.db"
+SESSION_ENGINE = "poms.http_sessions.backends.cached_db"
+SESSION_CACHE_ALIAS = 'http_session'
+
 
 LOGGING = {
     'version': 1,
@@ -380,7 +359,7 @@ REST_FRAMEWORK = {
     # 'DATETIME_INPUT_FORMATS': (ISO_8601, '%c', '%Y-%m-%d %H:%M:%S %Z'),
 }
 
-if DEV:
+if DEBUG or DEV:
     REST_FRAMEWORK['DEFAULT_RENDERER_CLASSES'] += (
         'rest_framework.renderers.BrowsableAPIRenderer',
         'rest_framework.renderers.AdminRenderer',
@@ -445,19 +424,15 @@ FILE_IMPORT_STORAGE = {
 # CELERY ------------------------------------------------
 
 
-if REDIS_HOST:
-    BROKER_URL = 'redis://%s/10' % REDIS_HOST
-    CELERY_RESULT_BACKEND = 'redis://%s/10' % REDIS_HOST
-else:
-    # import djcelery
-    #
-    # djcelery.setup_loader()
-    #
-    BROKER_URL = 'django://'
-    # # CELERY_RESULT_BACKEND = 'djcelery.backends.database:DatabaseBackend'
-    # # CELERYBEAT_SCHEDULER = 'djcelery.schedulers.DatabaseScheduler'
-    # KOMBU_POLLING_INTERVAL = 1
-    # raise Exception('REDIS_HOST required!')
+BROKER_URL = 'redis://%s/10' % REDIS_HOST
+CELERY_RESULT_BACKEND = 'redis://%s/10' % REDIS_HOST
+
+# import djcelery
+# djcelery.setup_loader()
+#
+# CELERY_RESULT_BACKEND = 'djcelery.backends.database:DatabaseBackend'
+# CELERYBEAT_SCHEDULER = 'djcelery.schedulers.DatabaseScheduler'
+# KOMBU_POLLING_INTERVAL = 1
 
 # CELERY_ALWAYS_EAGER = True
 # CELERY_EAGER_PROPAGATES_EXCEPTIONS = True
