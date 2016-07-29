@@ -155,7 +155,7 @@ if DEBUG:
     # }
     DATABASES['default'] = {
         'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': os.path.join(BASE_DIR, 'db-tests.sqlite3'),
+        'NAME': os.path.join(BASE_DIR, 'db.sqlite3'),
         # 'NAME': ':memory:',
     }
 
@@ -215,46 +215,73 @@ if DEBUG and REDIS_HOST == '127.0.0.1:6379':
 
 CACHE_SERIALIZER = "django_redis.serializers.json.JSONSerializer"
 CACHE_COMPRESSOR = 'django_redis.compressors.identity.IdentityCompressor'
+CACHE_SOCKET_CONNECT_TIMEOUT = 1
+CACHE_SOCKET_TIMEOUT = 1
 # CACHE_COMPRESSOR = 'django_redis.compressors.zlib.ZlibCompressor'
+
+# 1 -> celery
+# 2 -> default
+# 3 -> http_cache, http_session
+# 4 -> all "poms"
 CACHES = {
     'default': {
         "BACKEND": "django_redis.cache.RedisCache",
-        "LOCATION": "redis://%s/10" % REDIS_HOST,
+        "LOCATION": "redis://%s/2" % REDIS_HOST,
         'KEY_PREFIX': 'fmbe_default',
         'TIMEOUT': 300,
         'OPTIONS': {
             'SERIALIZER': CACHE_SERIALIZER,
             'COMPRESSOR': CACHE_COMPRESSOR,
+            "SOCKET_CONNECT_TIMEOUT": CACHE_SOCKET_CONNECT_TIMEOUT,
+            "SOCKET_TIMEOUT": CACHE_SOCKET_TIMEOUT,
         }
     },
-    'http_session': {
+    'http_cache': {
         "BACKEND": "django_redis.cache.RedisCache",
-        "LOCATION": "redis://%s/10" % REDIS_HOST,
+        "LOCATION": "redis://%s/3" % REDIS_HOST,
         'KEY_PREFIX': 'fmbe_http_session',
         'TIMEOUT': 3600,
         'OPTIONS': {
             'SERIALIZER': CACHE_SERIALIZER,
             'COMPRESSOR': CACHE_COMPRESSOR,
+            "SOCKET_CONNECT_TIMEOUT": CACHE_SOCKET_CONNECT_TIMEOUT,
+            "SOCKET_TIMEOUT": CACHE_SOCKET_TIMEOUT,
+        }
+    },
+    'http_session': {
+        "BACKEND": "django_redis.cache.RedisCache",
+        "LOCATION": "redis://%s/3" % REDIS_HOST,
+        'KEY_PREFIX': 'fmbe_http_session',
+        'TIMEOUT': 3600,
+        'OPTIONS': {
+            'SERIALIZER': CACHE_SERIALIZER,
+            'COMPRESSOR': CACHE_COMPRESSOR,
+            "SOCKET_CONNECT_TIMEOUT": CACHE_SOCKET_CONNECT_TIMEOUT,
+            "SOCKET_TIMEOUT": CACHE_SOCKET_TIMEOUT,
         }
     },
     'throttling': {
         "BACKEND": "django_redis.cache.RedisCache",
-        "LOCATION": "redis://%s/10" % REDIS_HOST,
+        "LOCATION": "redis://%s/4" % REDIS_HOST,
         'KEY_PREFIX': 'fmbe_throttling',
         'TIMEOUT': 60,
         'OPTIONS': {
             'SERIALIZER': CACHE_SERIALIZER,
             'COMPRESSOR': CACHE_COMPRESSOR,
+            "SOCKET_CONNECT_TIMEOUT": CACHE_SOCKET_CONNECT_TIMEOUT,
+            "SOCKET_TIMEOUT": CACHE_SOCKET_TIMEOUT,
         }
     },
     'bloomberg': {
         "BACKEND": "django_redis.cache.RedisCache",
-        "LOCATION": "redis://%s/10" % REDIS_HOST,
+        "LOCATION": "redis://%s/4" % REDIS_HOST,
         'KEY_PREFIX': 'fmbe_bloomberg',
         'TIMEOUT': 3600,
         'OPTIONS': {
             'SERIALIZER': CACHE_SERIALIZER,
             'COMPRESSOR': CACHE_COMPRESSOR,
+            "SOCKET_CONNECT_TIMEOUT": CACHE_SOCKET_CONNECT_TIMEOUT,
+            "SOCKET_TIMEOUT": CACHE_SOCKET_TIMEOUT,
         }
     },
 }
@@ -424,8 +451,8 @@ FILE_IMPORT_STORAGE = {
 # CELERY ------------------------------------------------
 
 
-BROKER_URL = 'redis://%s/10' % REDIS_HOST
-CELERY_RESULT_BACKEND = 'redis://%s/10' % REDIS_HOST
+BROKER_URL = 'redis://%s/1' % REDIS_HOST
+CELERY_RESULT_BACKEND = 'redis://%s/1' % REDIS_HOST
 
 # import djcelery
 # djcelery.setup_loader()
