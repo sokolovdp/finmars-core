@@ -132,7 +132,7 @@ class RequestsTransport(HttpAuthenticated):
             return result
 
 
-class BloomberDataProvider(object):
+class BloombergDataProvider(object):
     """
     Bloomberg python client for Finmars.
     """
@@ -147,7 +147,7 @@ class BloomberDataProvider(object):
         @param key: SSL client pem private key as string
         @type: str
         @return: BloomberDataProvider object
-        @rtype: BloomberDataProvider
+        @rtype: BloombergDataProvider
         """
 
         wsdl = wsdl or settings.BLOOMBERG_WSDL
@@ -567,7 +567,7 @@ class BloomberDataProvider(object):
 
 # ----------------------------------------------------------------------------------------------------------------------
 
-class FakeBloomberDataProvider(object):
+class FakeBloombergDataProvider(object):
     """
     Bloomberg python client for Finmars.
     """
@@ -750,9 +750,9 @@ class FakeBloomberDataProvider(object):
 
 def get_provider_class():
     if settings.BLOOMBERG_SANDBOX:
-        return FakeBloomberDataProvider
+        return FakeBloombergDataProvider
     else:
-        return BloomberDataProvider
+        return BloombergDataProvider
 
 
 def get_provider(*args, **kwargs):
@@ -899,7 +899,7 @@ if __name__ == "__main__":
     cert, key = get_certs_from_file(p12cert, password)
 
     # b = BloomberDataProvider(wsdl="https://service.bloomberg.com/assets/dl/dlws.wsdl", cert=cert, key=key)
-    b = FakeBloomberDataProvider(wsdl="https://service.bloomberg.com/assets/dl/dlws.wsdl", cert=cert, key=key)
+    b = FakeBloombergDataProvider(wsdl="https://service.bloomberg.com/assets/dl/dlws.wsdl", cert=cert, key=key)
     # b.get_fields()
     # test_instrument_data(b)
     # test_pricing_latest(b)
