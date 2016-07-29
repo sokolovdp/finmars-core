@@ -210,6 +210,8 @@ STATIC_URL = '/api/static/'
 STATIC_ROOT = os.path.join(BASE_DIR, "static")
 
 REDIS_HOST = os.environ.get('REDIS_HOST', '127.0.0.1:6379')
+if DEBUG and REDIS_HOST == '127.0.0.1:6379':
+    REDIS_HOST = '192.168.57.2:6379'
 
 if REDIS_HOST:
     CACHE_SERIALIZER = "django_redis.serializers.json.JSONSerializer"
@@ -287,7 +289,16 @@ LOGGING = {
     'version': 1,
     'formatters': {
         'verbose': {
-            'format': '%(asctime)s %(levelname)s %(process)d/%(thread)d %(module)s - %(message)s'
+            # 'format': '%(asctime)s %(levelname)s %(process)d/%(thread)d %(module)s - %(message)s'
+            'format': '[%(levelname)1.1s %(asctime)s %(process)d:%(thread)d %(name)s %(module)s:%(lineno)d] %(message)s',
+        },
+    },
+    'filters': {
+        'require_debug_true': {
+            '()': 'django.utils.log.RequireDebugTrue',
+        },
+        'require_debug_false': {
+            '()': 'django.utils.log.RequireDebugFalse',
         },
     },
     'handlers': {
@@ -299,7 +310,7 @@ LOGGING = {
         'mail_admins': {
             'level': 'ERROR',
             'class': 'django.utils.log.AdminEmailHandler',
-            # 'filters': ['special']
+            'filters': ['require_debug_false']
         },
     },
     'loggers': {
@@ -310,11 +321,11 @@ LOGGING = {
             'level': 'INFO',
             'handlers': ['console'],
         },
-        # 'django.request': {
-        #     'handlers': ['mail_admins'],
-        #     'level': 'ERROR',
-        #     'propagate': False,
-        # },
+        'django.request': {
+            'handlers': ['mail_admins'],
+            'level': 'ERROR',
+            'propagate': True,
+        },
         # 'django.db': {
         #     'level': 'DEBUG',
         # },
@@ -333,12 +344,6 @@ LOGGING = {
         },
     }
 }
-if not DEBUG:
-    LOGGING['loggers']['django.request'] = {
-        'handlers': ['mail_admins'],
-        'level': 'ERROR',
-        'propagate': False,
-    }
 
 REST_FRAMEWORK = {
     'DEFAULT_PAGINATION_CLASS': 'poms.common.pagination.PageNumberPaginationExt',
@@ -454,8 +459,8 @@ else:
     # KOMBU_POLLING_INTERVAL = 1
     # raise Exception('REDIS_HOST required!')
 
-CELERY_ALWAYS_EAGER = True
-CELERY_EAGER_PROPAGATES_EXCEPTIONS = True
+# CELERY_ALWAYS_EAGER = True
+# CELERY_EAGER_PROPAGATES_EXCEPTIONS = True
 
 CELERY_DEFAULT_QUEUE = 'poms_celery'
 CELERY_ENABLE_UTC = True
@@ -473,12 +478,11 @@ CELERY_SEND_EVENTS = True
 CELERY_SEND_TASK_SENT_EVENT = True
 
 CELERYBEAT_SCHEDULE = {
-    # 'backend.auth_log_statistics': {
-    #     'task': 'backend.auth_log_statistics',
-    #     'schedule': 1,
+    # 'backend.bloomberg_price_history_auto': {
+    #     'task': 'backend.bloomberg_price_history_auto',
+    #     'schedule': 10,
     # },
 }
-
 
 # BLOOMBERG ------------------------------------------------
 

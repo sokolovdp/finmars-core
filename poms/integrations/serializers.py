@@ -340,7 +340,8 @@ class PriceHistoryBloombergImportSerializer(serializers.Serializer):
                 if instance.date_to is None:
                     instance.date_to = timezone.now().date()
                 instance.task_id = bloomberg_pricing_history(
-                    master_user=instance.master_user, member=instance.member,
+                    master_user=instance.master_user,
+                    member=instance.member,
                     instruments=instruments,
                     date_from=instance.date_from,
                     date_to=instance.date_to
@@ -414,7 +415,8 @@ class CurrencyHistoryBloombergImportSerializer(serializers.Serializer):
                 if instance.date_to is None:
                     instance.date_to = timezone.now().date()
                 instance.task_id = bloomberg_pricing_history(
-                    master_user=instance.master_user, member=instance.member,
+                    master_user=instance.master_user,
+                    member=instance.member,
                     instruments=currencies,
                     date_from=instance.date_from,
                     date_to=instance.date_to

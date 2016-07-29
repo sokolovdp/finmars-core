@@ -8,6 +8,7 @@ from celery import shared_task, chain
 from celery.exceptions import TimeoutError
 from django.conf import settings
 from django.core.serializers.json import DjangoJSONEncoder
+from django.utils import timezone
 
 _l = getLogger('poms.integrations')
 
@@ -311,6 +312,73 @@ def bloomberg_pricing_history(master_user=None, member=None, instruments=None, d
     )
 
 
+@shared_task(name='backend.bloomberg_price_history_auto_save', bind=True, ignore_result=True)
+def bloomberg_price_history_auto_save(self, task_id):
+    _l.debug('bloomberg_price_history_auto_saver: task_id=%s', task_id)
+    pass
+
+
 @shared_task(name='backend.bloomberg_price_history_auto', bind=True, ignore_result=True)
 def bloomberg_price_history_auto(self):
-    pass
+    from django.db import transaction
+    from poms.users.models import MasterUser
+    from poms.instruments.models import PriceDownloadMode
+    from poms.integrations.models import BloombergTask
+
+    _l.debug('-' * 79)
+    _l.debug('bloomberg_price_history_auto: >')
+
+    now = timezone.now().date()
+    download_modes = [PriceDownloadMode.AUTO, PriceDownloadMode.IF_PORTFOLIO]
+
+    for master_user in MasterUser.objects. \
+            filter(bloomberg_config__isnull=False). \
+            select_related('bloomberg_config'). \
+            prefetch_related('instruments', 'currencies'):
+
+        bloomberg_config = master_user.bloomberg_config
+        if not bloomberg_config.is_ready:
+            continue
+
+        _l.debug('process master_user: %s', master_user.id)
+
+        instruments = []
+
+        for ccy in master_user.currencies.all():
+            if ccy.history_download_mode_id not in download_modes:
+                continue
+            _l.debug('process currency: %s', ccy.id)
+
+            instruments.append({
+                'code': ccy.id,
+                'industry': 'currency',
+            })
+
+        for instr in master_user.instruments.all():
+            if instr.price_download_mode_id not in download_modes:
+                continue
+            _l.debug('process instrument: %s', instr.id)
+
+            instruments.append({
+                'code': instr.id,
+                'industry': 'instrument',
+            })
+
+        params = {
+            'instruments': instruments,
+            'date_from': now,
+            'date_to': now,
+        }
+
+        with transaction.atomic():
+            bt = BloombergTask.objects.create(
+                master_user_id=master_user.id,
+                status=BloombergTask.STATUS_PENDING,
+                action='pricing_history',
+                kwargs=json.dumps(params, cls=DjangoJSONEncoder, sort_keys=True, indent=2),
+            )
+            transaction.on_commit(
+                lambda: chain(bloomberg_send_request.s(bt.pk), bloomberg_wait_reponse.s(),
+                              bloomberg_price_history_auto_save.s()).apply_async())
+
+    _l.debug('bloomberg_price_history_auto: <')
