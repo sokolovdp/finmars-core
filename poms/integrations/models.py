@@ -181,7 +181,8 @@ def bloomberg_cert_upload_to(instance, filename):
 
 class BloombergConfig(models.Model):
     master_user = models.OneToOneField('users.MasterUser', related_name='bloomberg_config')
-    p12cert = models.FileField(null=True, blank=True, upload_to=bloomberg_cert_upload_to, storage=bloomberg_cert_storage)
+    p12cert = models.FileField(null=True, blank=True, upload_to=bloomberg_cert_upload_to,
+                               storage=bloomberg_cert_storage)
     password = models.CharField(max_length=64, null=True, blank=True)
     cert = models.FileField(null=True, blank=True, upload_to=bloomberg_cert_upload_to, storage=bloomberg_cert_storage)
     key = models.FileField(null=True, blank=True, upload_to=bloomberg_cert_upload_to, storage=bloomberg_cert_storage)
@@ -230,6 +231,7 @@ class BloombergConfig(models.Model):
     @property
     def is_ready(self):
         return (self.has_p12cert and self.has_password) or (self.has_cert and self.has_key)
+
 
 @python_2_unicode_compatible
 class BloombergTask(TimeStampedModel):
