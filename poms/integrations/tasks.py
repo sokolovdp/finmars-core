@@ -115,7 +115,7 @@ def auth_log_statistics():
     _l.debug('auth (today): logged_in=%s, login_failed=%s', logged_in_count, login_failed_count)
 
 
-@shared_task(name='backend.bloomberg_send_request', bind=True)
+@shared_task(name='backend.bloomberg_send_request', bind=True, ignore_result=True)
 def bloomberg_send_request(self, task_id):
     _l.info('bloomberg_send_request: task_id=%s', task_id)
 
@@ -176,7 +176,7 @@ def bloomberg_send_request(self, task_id):
     return task_id
 
 
-@shared_task(name='backend.bloomberg_wait_reponse', bind=True)
+@shared_task(name='backend.bloomberg_wait_reponse', bind=True, ignore_result=True)
 def bloomberg_wait_reponse(self, task_id):
     _l.info('bloomberg_wait_reponse: task_id=%s', task_id)
 
@@ -309,3 +309,8 @@ def bloomberg_pricing_history(master_user=None, member=None, instruments=None, d
             'date_to': date_to,
         }
     )
+
+
+@shared_task(name='backend.bloomberg_price_history_auto', bind=True, ignore_result=True)
+def bloomberg_price_history_auto(self):
+    pass
