@@ -3,7 +3,7 @@ from __future__ import unicode_literals
 import six
 from django.utils import timezone
 from rest_framework.exceptions import ValidationError
-from rest_framework.fields import CharField, DateTimeField, FloatField, empty
+from rest_framework.fields import CharField, DateTimeField, FloatField, empty, RegexField
 from rest_framework.relations import PrimaryKeyRelatedField, SlugRelatedField
 
 from poms.common import formula
@@ -111,3 +111,22 @@ class FloatEvalField(FloatField):
                 return formula.safe_eval(expr)
             except (formula.InvalidExpression, ArithmeticError):
                 raise ValidationError('Invalid expression')
+
+
+class ISINField(RegexField):
+    REGEX = '\S+ \S+'
+
+    def __init__(self, **kwargs):
+        super(ISINField, self).__init__(ISINField.REGEX, **kwargs)
+
+    def to_representation(self, value):
+        if isinstance(value, (tuple, list)):
+            return ' '.join(value)
+        else:
+            return six.text_type(value)
+
+    def to_internal_value(self, data):
+        data = super(ISINField, self).to_internal_value(data)
+        if data is not None:
+            return data.split(maxsplit=1)
+        return None
