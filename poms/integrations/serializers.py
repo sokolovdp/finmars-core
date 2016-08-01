@@ -348,19 +348,34 @@ class PriceHistoryBloombergImportSerializer(serializers.Serializer):
                 })
 
             if instruments:
+                yesterday = timezone.now().date() - timedelta(days=1)
+                action = BloombergTask.ACTION_PRICE_HISTORY
+                if (instance.date_from is None and instance.date_to is None) or \
+                        (instance.date_from == yesterday and instance.date_to == yesterday):
+                    action = BloombergTask.ACTION_PRICING_LATEST
                 if instance.date_from is None:
-                    instance.date_from = timezone.now().date() - timedelta(days=1)
+                    instance.date_from = yesterday
                 if instance.date_to is None:
-                    instance.date_to = timezone.now().date() - timedelta(days=1)
+                    instance.date_to = yesterday
 
-                from poms.integrations.tasks import bloomberg_pricing_history
-                instance.task = bloomberg_pricing_history(
-                    master_user=instance.master_user,
-                    member=instance.member,
-                    instruments=instruments,
-                    date_from=instance.date_from,
-                    date_to=instance.date_to
-                )
+                if action == BloombergTask.ACTION_PRICING_LATEST:
+                    from poms.integrations.tasks import bloomberg_pricing_latest
+                    instance.task = bloomberg_pricing_latest(
+                        master_user=instance.master_user,
+                        member=instance.member,
+                        instruments=instruments,
+                        date_from=instance.date_from,
+                        date_to=instance.date_to
+                    )
+                else:
+                    from poms.integrations.tasks import bloomberg_pricing_history
+                    instance.task = bloomberg_pricing_history(
+                        master_user=instance.master_user,
+                        member=instance.member,
+                        instruments=instruments,
+                        date_from=instance.date_from,
+                        date_to=instance.date_to
+                    )
 
         return instance
 
@@ -426,21 +441,37 @@ class CurrencyHistoryBloombergImportSerializer(serializers.Serializer):
             for ccy in instance.currencies:
                 currencies.append({
                     'code': ccy.id,
-                    'industry': 'Corp',
+                    'industry': 'CCY',
                 })
             if currencies:
+                yesterday = timezone.now().date() - timedelta(days=1)
+                action = BloombergTask.ACTION_PRICE_HISTORY
+                if (instance.date_from is None and instance.date_to is None) or \
+                        (instance.date_from == yesterday and instance.date_to == yesterday):
+                    action = BloombergTask.ACTION_PRICING_LATEST
                 if instance.date_from is None:
-                    instance.date_from = timezone.now().date() - timedelta(days=1)
+                    instance.date_from = yesterday
                 if instance.date_to is None:
-                    instance.date_to = timezone.now().date() - timedelta(days=1)
+                    instance.date_to = yesterday
 
                 from poms.integrations.tasks import bloomberg_pricing_history
-                instance.task = bloomberg_pricing_history(
-                    master_user=instance.master_user,
-                    member=instance.member,
-                    instruments=currencies,
-                    date_from=instance.date_from,
-                    date_to=instance.date_to
-                )
+                if action == BloombergTask.ACTION_PRICING_LATEST:
+                    from poms.integrations.tasks import bloomberg_pricing_latest
+                    instance.task = bloomberg_pricing_latest(
+                        master_user=instance.master_user,
+                        member=instance.member,
+                        instruments=currencies,
+                        date_from=instance.date_from,
+                        date_to=instance.date_to
+                    )
+                else:
+                    from poms.integrations.tasks import bloomberg_pricing_history
+                    instance.task = bloomberg_pricing_history(
+                        master_user=instance.master_user,
+                        member=instance.member,
+                        instruments=currencies,
+                        date_from=instance.date_from,
+                        date_to=instance.date_to
+                    )
 
         return instance

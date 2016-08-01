@@ -20,6 +20,7 @@ from suds.transport.http import HttpAuthenticated
 from poms.common import formula
 from poms.currencies.models import CurrencyHistory
 from poms.instruments.models import PriceHistory
+from poms.integrations.models import BloombergTask
 
 __author__ = 'alyakhov'
 
@@ -435,7 +436,7 @@ class BloombergDataProvider(object):
             result = {}
             for instrument in response.instrumentDatas[0]:
                 instrument_fields = {
-                    'date': instrument.date,
+                    'DATE': instrument.date,
                 }
                 for i, field in enumerate(response.fields[0]):
                     instrument_fields[field] = instrument.data[i]._value
@@ -620,7 +621,7 @@ class FakeBloombergDataProvider(object):
             "PX_ASK": "94.413",
             "PX_BID": "93.108",
             "PX_LAST": "93.761",
-            "date": "<REPLACE>"
+            "DATE": "<REPLACE>"
         }
 
         key = 'pricing_history.%s' % response_id
@@ -636,7 +637,7 @@ class FakeBloombergDataProvider(object):
             d = date_from
             while d <= date_to:
                 price_fields = {
-                    'date': d
+                    'DATE': d
                 }
                 for i, field in enumerate(req['fields']):
                     price_fields[field] = fake_data.get(field, None)
@@ -675,10 +676,22 @@ def _safe_float(v):
 
 def fix_pricing_latest(value):
     ret = {
-        'MODE': 'L',
+        'FM_PRICING': 'L',
+
+        'ACCRUED_FACTOR': None,
+        'CPN': None,
+        'PX_CLOSE_1D': None,
+        'PX_YEST_ASK': None,
+        'PX_YEST_BID': None,
+        'PX_YEST_CLOSE': None,
+
+        'DATE': None,
+        'PX_ASK': None,
+        'PX_BID': None,
+        'PX_LAST': None,
     }
     for k, v in six.iteritems(value):
-        if k in ['date', 'SECURITY_TYP']:
+        if k in ['SECURITY_TYP']:
             ret[k] = v
         elif k in ["ACCRUED_FACTOR", "CPN", "PX_CLOSE_1D", "PX_YEST_ASK", "PX_YEST_BID", "PX_YEST_CLOSE"]:
             tk = k
@@ -692,12 +705,24 @@ def fix_pricing_latest(value):
     return ret
 
 
-def fix_pricing_history(value):
+def fix_price_history(value):
     ret = {
-        'MODE': 'H',
+        'FM_PRICING': 'H',
+
+        'ACCRUED_FACTOR': None,
+        'CPN': None,
+        'PX_CLOSE_1D': None,
+        'PX_YEST_ASK': None,
+        'PX_YEST_BID': None,
+        'PX_YEST_CLOSE': None,
+
+        'DATE': None,
+        'PX_ASK': None,
+        'PX_BID': None,
+        'PX_LAST': None,
     }
     for k, v in six.iteritems(value):
-        if k in ['date', 'SECURITY_TYP']:
+        if k in ['DATE']:
             ret[k] = v
         elif k in ["PX_ASK", "PX_BID", "PX_LAST"]:
             tk = k
@@ -720,10 +745,10 @@ def date_to_str(value):
 
 
 def create_instrument_price_history(task, instruments=None, pricing_policies=None, save=False,
-                                    map_func=None, fail_silently=True, delete_exists=False,
-                                    date_range=None, bulk=False):
+                                    fail_silently=True, delete_exists=False, date_range=None, bulk=False):
     _l.debug('> create_instrument_price_history: task_id=%s', task.id)
 
+    kwargs = task.kwargs_object
     result = task.result_object
 
     if instruments is None:
@@ -743,43 +768,52 @@ def create_instrument_price_history(task, instruments=None, pricing_policies=Non
             )
 
     histories = []
+
+    def _create(instr, price_data, price_date):
+        for pp in pricing_policies:
+            p = PriceHistory()
+            p.instrument = instr
+            if price_date is not None:
+                p.date = price_date
+            else:
+                p.date = str_to_date(price_data['DATE'])
+            p.pricing_policy = pp
+            p.principal_price = formula.safe_eval(pp.expr, names=price_data)
+            p.accrued_price = 0.0
+            p.factor = price_data['ACCRUED_FACTOR'] if 'ACCRUED_FACTOR' in price_data else 1.0
+
+            if fail_silently and (p.instrument_id, p.pricing_policy_id, p.date) in exists:
+                continue
+
+            if save and not bulk:
+                try:
+                    p.save()
+                except IntegrityError:
+                    if not fail_silently:
+                        raise
+
+            histories.append(p)
+
     for instr_code, values in result.items():
         instr = instr_map.get(instr_code, None)
         if instr is None:
             continue
-        for pd in values:
-            if map_func:
-                pd = map_func(pd)
-            for pp in pricing_policies:
-                p = PriceHistory()
-                p.instrument = instr
-                p.date = str_to_date(pd['date'])
-                p.pricing_policy = pp
-                p.principal_price = formula.safe_eval(pp.expr, names=pd)
-                p.accrued_price = 0.0
-                p.factor = pd['ACCRUED_FACTOR'] if 'ACCRUED_FACTOR' in pd else 1.0
 
-                if fail_silently and (p.instrument_id, p.pricing_policy_id, p.date) in exists:
-                    continue
+        if task.action == BloombergTask.ACTION_PRICING_LATEST:
+            values = fix_pricing_latest(values)
+            _create(instr, values, price_date=kwargs['date_from'])
 
-                if save and not bulk:
-                    try:
-                        p.save()
-                    except IntegrityError:
-                        if not fail_silently:
-                            raise
+        elif task.action == BloombergTask.ACTION_PRICE_HISTORY:
+            for pd in values:
+                pd = fix_price_history(pd)
+                _create(instr, pd, price_date=None)
 
-                histories.append(p)
+        else:
+            raise RuntimeError('Invalid action "%s" in task "%s"' % (task.action, task.id))
+
 
     if save and bulk:
         PriceHistory.objects.bulk_create(histories)
-
-    # if _l.isEnabledFor(logging.DEBUG):
-    #     _l.debug('PriceHistory ->')
-    #     for p in histories:
-    #         _l.debug(
-    #             '\tid=%s, instrument=%s, date=%s, pricing_policy=%s, principal_price=%s, accrued_price=%s, factor=%s',
-    #             p.id, p.instrument.id, p.date, p.pricing_policy.id, p.principal_price, p.accrued_price, p.factor)
 
     _l.debug('< %s', histories)
 
@@ -787,10 +821,10 @@ def create_instrument_price_history(task, instruments=None, pricing_policies=Non
 
 
 def create_currency_price_history(task, currencies=None, pricing_policies=None, save=False,
-                                  map_func=None, fail_silently=False, delete_exists=False,
-                                  date_range=None, bulk=False):
+                                  fail_silently=False, delete_exists=False, date_range=None, bulk=False):
     _l.debug('> create_currency_price_history: task_id=%s', task.id)
 
+    kwargs = task.kwargs_object
     result = task.result_object
 
     if currencies is None:
@@ -811,41 +845,73 @@ def create_currency_price_history(task, currencies=None, pricing_policies=None, 
             )
 
     histories = []
+
+    def _create(ccy, price_data, price_date):
+        for pp in pricing_policies:
+            p = CurrencyHistory()
+            p.currency = ccy
+            if price_date:
+                p.date = price_date
+            else:
+                p.date = str_to_date(price_data['DATE'])
+            p.pricing_policy = pp
+            p.fx_rate = formula.safe_eval(pp.expr, names=price_data)
+
+            if fail_silently and (p.currency_id, p.pricing_policy_id, p.date) in exists:
+                continue
+
+            if save and not bulk:
+                try:
+                    p.save()
+                except IntegrityError:
+                    if not fail_silently:
+                        raise
+
+            histories.append(p)
+
     for ccy_code, values in result.items():
         ccy = ccy_map.get(ccy_code, None)
         if ccy is None:
             continue
-        for pd in values:
-            if map_func:
-                pd = map_func(pd)
-            for pp in pricing_policies:
-                p = CurrencyHistory()
-                p.currency = ccy
-                p.date = str_to_date(pd['date'])
-                p.pricing_policy = pp
-                p.fx_rate = formula.safe_eval(pp.expr, names=pd)
 
-                if fail_silently and (p.currency_id, p.pricing_policy_id, p.date) in exists:
-                    continue
+        if task.action == BloombergTask.ACTION_PRICING_LATEST:
+            values = fix_pricing_latest(values)
+            _create(ccy, values, price_date=kwargs['date_from'])
 
-                if save and not bulk:
-                    try:
-                        p.save()
-                    except IntegrityError:
-                        if not fail_silently:
-                            raise
+        elif task.action == BloombergTask.ACTION_PRICE_HISTORY:
+            for pd in values:
+                pd = fix_price_history(pd)
+                _create(ccy, pd, price_date=None)
 
-                histories.append(p)
+        else:
+            raise RuntimeError('Invalid action "%s" in task "%s"' % (task.action, task.id))
+
+        # for pd in values:
+        #     pd = map_func(pd)
+        #     for pp in pricing_policies:
+        #         p = CurrencyHistory()
+        #         p.currency = ccy
+        #         if fixed_date:
+        #             p.date = fixed_date
+        #         else:
+        #             p.date = str_to_date(pd['DATE'])
+        #         p.pricing_policy = pp
+        #         p.fx_rate = formula.safe_eval(pp.expr, names=pd)
+        #
+        #         if fail_silently and (p.currency_id, p.pricing_policy_id, p.date) in exists:
+        #             continue
+        #
+        #         if save and not bulk:
+        #             try:
+        #                 p.save()
+        #             except IntegrityError:
+        #                 if not fail_silently:
+        #                     raise
+        #
+        #         histories.append(p)
 
     if save and bulk:
         PriceHistory.objects.bulk_create(histories)
-
-    # if _l.isEnabledFor(logging.DEBUG):
-    #     _l.debug('CurrencyHistory ->')
-    #     for p in histories:
-    #         _l.debug(
-    #             '\tid=%s, currency=%s, date=%s, pricing_policy=%s, fx_rate=%s',
-    #             p.id, p.currency.id, p.date, p.pricing_policy.id, p.fx_rate)
 
     _l.debug('< %s', histories)
 

@@ -235,6 +235,10 @@ class BloombergConfig(models.Model):
 
 @python_2_unicode_compatible
 class BloombergTask(TimeStampedModel):
+    ACTION_INSTRUMENT = 'instrument'
+    ACTION_PRICING_LATEST = 'pricing_latest'
+    ACTION_PRICE_HISTORY = 'pricing_history'
+
     STATUS_PENDING = 0
     STATUS_REQUEST_SENT = 1
     STATUS_WAIT_RESPONSE = 2
