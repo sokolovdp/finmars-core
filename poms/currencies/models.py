@@ -69,9 +69,9 @@ class CurrencyHistory(models.Model):
     class Meta:
         verbose_name = _('currency history')
         verbose_name_plural = _('currency histories')
-        index_together = [
-            ['currency', 'date']
-        ]
+        unique_together = (
+            ('currency', 'pricing_policy', 'date',)
+        )
         ordering = ['-date']
 
     def __str__(self):

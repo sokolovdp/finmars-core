@@ -447,9 +447,9 @@ class PriceHistory(models.Model):
     class Meta:
         verbose_name = _('price history')
         verbose_name_plural = _('price histories')
-        index_together = [
-            ['instrument', 'date']
-        ]
+        unique_together = (
+            ('instrument', 'pricing_policy', 'date',)
+        )
 
     def __str__(self):
         return '%s [@%s]' % (self.principal_price, self.date,)
