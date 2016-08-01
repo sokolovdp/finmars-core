@@ -17,8 +17,8 @@ from django.utils import timezone
 from poms.audit.models import AuthLogEntry
 from poms.instruments.models import PriceDownloadMode
 from poms.integrations.models import BloombergTask
-from poms.integrations.providers.bloomberg import get_provider, BloombergException, str_to_date
-from poms.integrations.serializers import create_instrument_price_history, create_currency_price_history
+from poms.integrations.providers.bloomberg import get_provider, BloombergException, str_to_date, \
+    create_instrument_price_history, create_currency_price_history
 from poms.integrations.storage import file_import_storage
 from poms.users.models import MasterUser
 

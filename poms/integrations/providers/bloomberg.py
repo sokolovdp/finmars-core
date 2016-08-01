@@ -12,9 +12,14 @@ import six
 from OpenSSL import crypto
 from dateutil import parser
 from django.conf import settings
+from django.db import IntegrityError
 from suds.client import Client
 from suds.transport import Reply
 from suds.transport.http import HttpAuthenticated
+
+from poms.common import formula
+from poms.currencies.models import CurrencyHistory
+from poms.instruments.models import PriceHistory
 
 __author__ = 'alyakhov'
 
@@ -693,6 +698,123 @@ def str_to_date(value):
 
 def date_to_str(value):
     return value.strftime(value, '%Y-%m-%d')
+
+
+def create_instrument_price_history(task, instruments=None, pricing_policies=None, save=False,
+                                    map_func=map_pricing_history, fail_silently=True, delete_exists=False,
+                                    date_range=None):
+    result = task.result_object
+
+    if instruments is None:
+        instruments = list(task.master_user.instruments.all())
+    instr_map = {six.text_type(i.id): i for i in instruments}
+
+    if pricing_policies is None:
+        pricing_policies = list(task.master_user.pricing_policies.all())
+
+    if delete_exists and date_range:
+        PriceHistory.objects.filter(instrument__in=instruments, date__range=date_range).delete()
+    exists = set()
+    if fail_silently and date_range and not delete_exists:
+        for p in PriceHistory.objects.filter(instrument__in=instruments, date__range=date_range):
+            exists.add(
+                (p.instrument_id, p.pricing_policy_id, p.date)
+            )
+
+    histories = []
+    for instr_code, values in result.items():
+        instr = instr_map.get(instr_code, None)
+        if instr is None:
+            continue
+        for pd in values:
+            pd = map_func(pd)
+            for pp in pricing_policies:
+                p = PriceHistory()
+                p.instrument = instr
+                p.date = str_to_date(pd['date'])
+                p.pricing_policy = pp
+                p.principal_price = formula.safe_eval(pp.expr, names=pd)
+                p.accrued_price = 0.0
+                p.factor = 1.0
+
+                if fail_silently and (p.instrument_id, p.pricing_policy_id, p.date) in exists:
+                    continue
+
+                if save:
+                    try:
+                        p.save()
+                    except IntegrityError:
+                        if not fail_silently:
+                            raise
+
+                _l.debug(
+                    'saved PriceHistory: id=%s, instrument=%s, date=%s, pricing_policy=%s, principal_price=%s, accrued_price=%s, factor=%s',
+                    p.id, p.instrument.id, p.date, p.pricing_policy.id, p.principal_price, p.accrued_price, p.factor)
+
+                histories.append(p)
+
+    # if save:
+    #     PriceHistory.objects.bulk_create(histories)
+
+    return histories
+
+
+def create_currency_price_history(task, currencies=None, pricing_policies=None, save=False,
+                                  map_func=map_pricing_history, fail_silently=False, delete_exists=False,
+                                  date_range=None):
+    result = task.result_object
+
+    if currencies is None:
+        currencies = list(task.master_user.currencies.all())
+
+    ccy_map = {six.text_type(i.id): i for i in currencies}
+
+    if pricing_policies is None:
+        pricing_policies = list(task.master_user.pricing_policies.all())
+
+    if delete_exists and date_range:
+        CurrencyHistory.objects.filter(currency__in=currencies, date__range=date_range).delete()
+    exists = set()
+    if fail_silently and date_range and not delete_exists:
+        for p in CurrencyHistory.objects.filter(currency__in=currencies, date__range=date_range):
+            exists.add(
+                (p.currency_id, p.pricing_policy_id, p.date)
+            )
+
+    histories = []
+    for ccy_code, values in result.items():
+        ccy = ccy_map.get(ccy_code, None)
+        if ccy is None:
+            continue
+        for pd in values:
+            pd = map_func(pd)
+            for pp in pricing_policies:
+                p = CurrencyHistory()
+                p.currency = ccy
+                p.date = str_to_date(pd['date'])
+                p.pricing_policy = pp
+                p.fx_rate = formula.safe_eval(pp.expr, names=pd)
+
+                if fail_silently and (p.currency_id, p.pricing_policy_id, p.date) in exists:
+                    continue
+
+                if save:
+                    try:
+                        p.save()
+                    except IntegrityError:
+                        if not fail_silently:
+                            raise
+
+                histories.append(p)
+
+                _l.debug(
+                    'saved CurrencyHistory: id=%s, currency=%s, date=%s, pricing_policy=%s, fx_rate=%s',
+                    p.id, p.currency.id, p.date, p.pricing_policy.id, p.fx_rate)
+
+    # if save:
+    #     PriceHistory.objects.bulk_create(histories)
+
+    return histories
 
 
 def test_instrument_data(b):
