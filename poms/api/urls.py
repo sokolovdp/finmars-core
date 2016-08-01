@@ -124,14 +124,16 @@ router.register(r'audit/history', audit.ObjectHistoryViewSet)
 router.register(r'bloomberg/config', integrations.BloombergConfigViewSet)
 router.register(r'bloomberg/task', integrations.BloombergTaskViewSet)
 
-router.register(r'import/instrument/mapping', integrations.InstrumentMappingViewSet)
-router.register(r'import/instrument/file', integrations.InstrumentFileImportViewSet,
+router.register(r'import/instuments/instrument/mapping', integrations.InstrumentMappingViewSet)
+
+router.register(r'import/instuments/instrument/file', integrations.InstrumentFileImportViewSet,
                 'InstrumentFileImportViewSet')
-router.register(r'import/instrument/bloomberg', integrations.InstrumentBloombergImportViewSet,
+
+router.register(r'import/instuments/instrument/bloomberg', integrations.InstrumentBloombergImportViewSet,
                 'InstrumentBloombergImportViewSet')
-router.register(r'import/price-hostory/bloomberg', integrations.PriceHistoryBloombergImportViewSet,
+router.register(r'import/instuments/price-history/bloomberg', integrations.PriceHistoryBloombergImportViewSet,
                 'PriceHistoryBloombergImportViewSet')
-router.register(r'import/currency-history/bloomberg', integrations.CurrencyHistoryBloombergImportViewSet,
+router.register(r'import/currencies/currency-history/bloomberg', integrations.CurrencyHistoryBloombergImportViewSet,
                 'CurrencyHistoryBloombergImportViewSet')
 
 urlpatterns = [
