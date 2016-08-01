@@ -2,7 +2,7 @@ import base64
 import os
 import pprint
 import uuid
-from datetime import timedelta, date
+from datetime import timedelta, date, datetime
 from logging import getLogger
 from tempfile import NamedTemporaryFile
 from time import sleep
@@ -760,6 +760,42 @@ def get_provider(*args, **kwargs):
     return clazz(*args, **kwargs)
 
 
+def _safe_float(v):
+    if v is None:
+        return None
+    try:
+        return float(v)
+    except ValueError:
+        return 0.0
+
+
+def _map_pricing(value, pricing_map):
+    ret = {
+        'date': value['date'],
+    }
+    for t, o in six.iteritems(pricing_map):
+        v = value.get(o, None)
+        v = _safe_float(v)
+        ret[t] = v
+    return ret
+
+
+def map_pricing_latest(value):
+    return _map_pricing(value, settings.BLOOMBERG_PRICING_MAP['LAST'])
+
+
+def map_pricing_history(value):
+    return _map_pricing(value, settings.BLOOMBERG_PRICING_MAP['HISTORY'])
+
+
+def str_to_date(value):
+    return datetime.strptime(value, '%Y-%m-%d').date()
+
+
+def date_to_str(value):
+    return value.strftime(value, '%Y-%m-%d')
+
+
 def test_instrument_data(b):
     """
     Test instrument data methods
@@ -909,8 +945,7 @@ if __name__ == "__main__":
     # _l.info('1: %s', parser.parse("06/16/2023"))
     # _l.info('2: %s', parser.parse("2016-06-15"))
 
-    from poms.integrations.tasks import bloomberg_call, bloomberg_instrument, bloomberg_pricing_latest, \
-        bloomberg_pricing_history
+    from poms.integrations.tasks import bloomberg_call
     from poms.users.models import MasterUser
 
     master_user = MasterUser.objects.first()

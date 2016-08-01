@@ -83,8 +83,8 @@ INSTALLED_APPS = [
     # 'django_otp.plugins.otp_static',
 ]
 
-if DEBUG:
-    INSTALLED_APPS += ['debug_toolbar', ]
+# if DEBUG:
+#     INSTALLED_APPS += ['debug_toolbar', ]
 
 MIDDLEWARE_CLASSES = [
     'poms.common.middleware.CommonMiddleware',
@@ -461,8 +461,8 @@ CELERY_RESULT_BACKEND = 'redis://%s/1' % REDIS_HOST
 # CELERYBEAT_SCHEDULER = 'djcelery.schedulers.DatabaseScheduler'
 # KOMBU_POLLING_INTERVAL = 1
 
-# CELERY_ALWAYS_EAGER = True
-# CELERY_EAGER_PROPAGATES_EXCEPTIONS = True
+CELERY_ALWAYS_EAGER = True
+CELERY_EAGER_PROPAGATES_EXCEPTIONS = True
 
 CELERY_DEFAULT_QUEUE = 'poms_celery'
 CELERY_ENABLE_UTC = True
@@ -497,5 +497,17 @@ BLOOMBERG_CERT_STORAGE = {
     'KWARGS': {
         'location': os.path.join(BASE_DIR, 'tmp', 'bloomberg'),
         'base_url': '/api/bloomberg/'
+    }
+}
+BLOOMBERG_PRICING_MAP = {
+    'LAST': {
+        'ASK': 'PX_YEST_ASK',
+        'BID': 'PX_YEST_BID',
+        'LAST': 'PX_YEST_CLOSE',
+    },
+    'HISTORY': {
+        'ASK': 'PX_ASK',
+        'BID': 'PX_BID',
+        'LAST': 'PX_LAST',
     }
 }
