@@ -1,8 +1,12 @@
 from __future__ import unicode_literals
 
+import six
 from django.utils import timezone
-from rest_framework.fields import CharField, DateTimeField
+from rest_framework.exceptions import ValidationError
+from rest_framework.fields import CharField, DateTimeField, FloatField, empty
 from rest_framework.relations import PrimaryKeyRelatedField, SlugRelatedField
+
+from poms.common import formula
 
 
 class PrimaryKeyRelatedFilteredField(PrimaryKeyRelatedField):
@@ -60,3 +64,50 @@ class DateTimeTzAwareField(DateTimeField):
     def to_representation(self, value):
         value = timezone.localtime(value)
         return super(DateTimeTzAwareField, self).to_representation(value)
+
+
+class ExpressionField(CharField):
+    def __init__(self, **kwargs):
+        kwargs['allow_null'] = kwargs.get('allow_null', False)
+        kwargs['allow_blank'] = kwargs.get('allow_blank', False)
+        super(ExpressionField, self).__init__(**kwargs)
+
+    def run_validation(self, data=empty):
+        value = super(ExpressionField, self).run_validation(data)
+        if data:
+            formula.validate(data)
+            # try:
+            #     formula.try_parse(data)
+            # except formula.InvalidExpression as e:
+            #     raise ValidationError('Invalid expression: %s' % e)
+        return value
+
+
+class FloatEvalField(FloatField):
+    def __init__(self, **kwargs):
+        # kwargs['allow_null'] = kwargs.get('allow_null', False)
+        # kwargs['allow_blank'] = kwargs.get('allow_blank', False)
+        super(FloatEvalField, self).__init__(**kwargs)
+
+    def run_validation(self, data=empty):
+        value = super(FloatEvalField, self).run_validation(data)
+        if data is not None:
+            expr = six.text_type(data)
+            formula.validate(expr)
+            # try:
+            #     formula.try_parse(data)
+            # except formula.InvalidExpression as e:
+            #     raise ValidationError('Invalid expression: %s' % e)
+        return value
+
+    def to_internal_value(self, data):
+        try:
+            return super(FloatEvalField, self).to_internal_value(data)
+        except ValidationError:
+            pass
+        if data is not None:
+            try:
+                expr = six.text_type(data)
+                return formula.safe_eval(expr)
+            except (formula.InvalidExpression, ArithmeticError):
+                raise ValidationError('Invalid expression')

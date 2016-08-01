@@ -4,6 +4,7 @@ import six
 from django.core.exceptions import ObjectDoesNotExist
 from rest_framework import serializers
 
+from poms.common.fields import ExpressionField, FloatEvalField
 from poms.common.serializers import PomsClassSerializer, AbstractClassifierSerializer, AbstractClassifierNodeSerializer, \
     ModelWithUserCodeSerializer
 from poms.currencies.serializers import CurrencyField
@@ -58,6 +59,7 @@ class PriceDownloadModeSerializer(PomsClassSerializer):
 
 class PricingPolicySerializer(ModelWithUserCodeSerializer):
     master_user = MasterUserField()
+    expr = ExpressionField(allow_blank=False, allow_null=False)
 
     class Meta:
         model = PricingPolicy
@@ -289,6 +291,9 @@ class InstrumentSerializer(ModelWithAttributesSerializer, ModelWithObjectPermiss
 class PriceHistorySerializer(serializers.ModelSerializer):
     instrument = InstrumentField()
     pricing_policy = PricingPolicyField(allow_null=False)
+    principal_price = FloatEvalField()
+    accrued_price = FloatEvalField()
+    factor = FloatEvalField()
 
     class Meta:
         model = PriceHistory

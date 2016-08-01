@@ -8,6 +8,7 @@ from rest_framework.exceptions import ValidationError
 
 from poms.accounts.fields import AccountField
 from poms.accounts.models import Account
+from poms.common.fields import ExpressionField
 from poms.common.serializers import PomsClassSerializer, ModelWithUserCodeSerializer
 from poms.counterparties.fields import ResponsibleField, CounterpartyField
 from poms.counterparties.models import Counterparty, Responsible
@@ -25,7 +26,7 @@ from poms.strategies.fields import Strategy1Field, Strategy2Field, Strategy3Fiel
 from poms.strategies.models import Strategy1, Strategy2, Strategy3
 from poms.tags.fields import TagField
 from poms.transactions.fields import TransactionAttributeTypeField, TransactionTypeInputContentTypeField, \
-    ExpressionField, TransactionTypeGroupField
+    TransactionTypeGroupField
 from poms.transactions.models import TransactionClass, Transaction, TransactionType, TransactionAttributeType, \
     TransactionAttribute, TransactionTypeAction, TransactionTypeActionTransaction, TransactionTypeActionInstrument, \
     TransactionTypeInput, TransactionTypeGroup, ComplexTransaction
@@ -211,7 +212,7 @@ class TransactionTypeActionSerializer(serializers.ModelSerializer):
         read_only_fields = ['order']
 
     def validate(self, attrs):
-        # TODO: transaction or instrument prsent
+        # TODO: transaction or instrument present
         return attrs
 
 
