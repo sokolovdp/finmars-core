@@ -452,7 +452,7 @@ class PriceHistory(models.Model):
         )
 
     def __str__(self):
-        return '%s [@%s]' % (self.principal_price, self.date,)
+        return '%s/%s@%s' % (self.instrument_id, self.pricing_policy_id, self.date,)
 
 
 @python_2_unicode_compatible
