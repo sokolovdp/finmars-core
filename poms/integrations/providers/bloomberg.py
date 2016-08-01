@@ -673,23 +673,42 @@ def _safe_float(v):
         return 0.0
 
 
-def _map_pricing(value, pricing_map):
+def fix_pricing_latest(value):
     ret = {
-        'date': value['date'],
+        'MODE': 'L',
     }
-    for t, o in six.iteritems(pricing_map):
-        v = value.get(o, None)
-        v = _safe_float(v)
-        ret[t] = v
+    for k, v in six.iteritems(value):
+        if k in ['date', 'SECURITY_TYP']:
+            ret[k] = v
+        elif k in ["ACCRUED_FACTOR", "CPN", "PX_CLOSE_1D", "PX_YEST_ASK", "PX_YEST_BID", "PX_YEST_CLOSE"]:
+            tk = k
+            # if k == 'PX_YEST_ASK':
+            #     tk = 'ASK'
+            # elif k == 'PX_YEST_BID':
+            #     tk = 'BID'
+            # elif k == 'PX_YEST_CLOSE':
+            #     tk = 'LAST'
+            ret[tk] = _safe_float(v)
     return ret
 
 
-def map_pricing_latest(value):
-    return _map_pricing(value, settings.BLOOMBERG_PRICING_MAP['LAST'])
-
-
-def map_pricing_history(value):
-    return _map_pricing(value, settings.BLOOMBERG_PRICING_MAP['HISTORY'])
+def fix_pricing_history(value):
+    ret = {
+        'MODE': 'H',
+    }
+    for k, v in six.iteritems(value):
+        if k in ['date', 'SECURITY_TYP']:
+            ret[k] = v
+        elif k in ["PX_ASK", "PX_BID", "PX_LAST"]:
+            tk = k
+            # if k == 'PX_ASK':
+            #     tk = 'ASK'
+            # elif k == 'PX_BID':
+            #     tk = 'BID'
+            # elif k == 'PX_LAST':
+            #     tk = 'LAST'
+            ret[tk] = _safe_float(v)
+    return ret
 
 
 def str_to_date(value):
@@ -701,7 +720,7 @@ def date_to_str(value):
 
 
 def create_instrument_price_history(task, instruments=None, pricing_policies=None, save=False,
-                                    map_func=map_pricing_history, fail_silently=True, delete_exists=False,
+                                    map_func=None, fail_silently=True, delete_exists=False,
                                     date_range=None, bulk=False):
     _l.debug('> create_instrument_price_history: task_id=%s', task.id)
 
@@ -729,7 +748,8 @@ def create_instrument_price_history(task, instruments=None, pricing_policies=Non
         if instr is None:
             continue
         for pd in values:
-            pd = map_func(pd)
+            if map_func:
+                pd = map_func(pd)
             for pp in pricing_policies:
                 p = PriceHistory()
                 p.instrument = instr
@@ -737,7 +757,7 @@ def create_instrument_price_history(task, instruments=None, pricing_policies=Non
                 p.pricing_policy = pp
                 p.principal_price = formula.safe_eval(pp.expr, names=pd)
                 p.accrued_price = 0.0
-                p.factor = 1.0
+                p.factor = pd['ACCRUED_FACTOR'] if 'ACCRUED_FACTOR' in pd else 1.0
 
                 if fail_silently and (p.instrument_id, p.pricing_policy_id, p.date) in exists:
                     continue
@@ -767,7 +787,7 @@ def create_instrument_price_history(task, instruments=None, pricing_policies=Non
 
 
 def create_currency_price_history(task, currencies=None, pricing_policies=None, save=False,
-                                  map_func=map_pricing_history, fail_silently=False, delete_exists=False,
+                                  map_func=None, fail_silently=False, delete_exists=False,
                                   date_range=None, bulk=False):
     _l.debug('> create_currency_price_history: task_id=%s', task.id)
 
@@ -796,7 +816,8 @@ def create_currency_price_history(task, currencies=None, pricing_policies=None, 
         if ccy is None:
             continue
         for pd in values:
-            pd = map_func(pd)
+            if map_func:
+                pd = map_func(pd)
             for pp in pricing_policies:
                 p = CurrencyHistory()
                 p.currency = ccy

@@ -509,15 +509,3 @@ BLOOMBERG_CERT_STORAGE = {
         'base_url': '/api/bloomberg/'
     }
 }
-BLOOMBERG_PRICING_MAP = {
-    'LAST': {
-        'ASK': 'PX_YEST_ASK',
-        'BID': 'PX_YEST_BID',
-        'LAST': 'PX_YEST_CLOSE',
-    },
-    'HISTORY': {
-        'ASK': 'PX_ASK',
-        'BID': 'PX_BID',
-        'LAST': 'PX_LAST',
-    }
-}
