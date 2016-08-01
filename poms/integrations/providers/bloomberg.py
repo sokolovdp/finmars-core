@@ -1,9 +1,9 @@
 import base64
+import logging
 import os
 import pprint
 import uuid
 from datetime import timedelta, date, datetime
-from logging import getLogger
 from tempfile import NamedTemporaryFile
 from time import sleep
 
@@ -23,7 +23,7 @@ from poms.instruments.models import PriceHistory
 
 __author__ = 'alyakhov'
 
-_l = getLogger('poms.integrations.providers.bloomberg')
+_l = logging.getLogger('poms.integrations.providers.bloomberg')
 
 
 # _l = getLogger(__name__)
@@ -702,7 +702,9 @@ def date_to_str(value):
 
 def create_instrument_price_history(task, instruments=None, pricing_policies=None, save=False,
                                     map_func=map_pricing_history, fail_silently=True, delete_exists=False,
-                                    date_range=None):
+                                    date_range=None, bulk=False):
+    _l.debug('> create_instrument_price_history: task_id=%s', task.id)
+
     result = task.result_object
 
     if instruments is None:
@@ -740,28 +742,35 @@ def create_instrument_price_history(task, instruments=None, pricing_policies=Non
                 if fail_silently and (p.instrument_id, p.pricing_policy_id, p.date) in exists:
                     continue
 
-                if save:
+                if save and not bulk:
                     try:
                         p.save()
                     except IntegrityError:
                         if not fail_silently:
                             raise
 
-                _l.debug(
-                    'saved PriceHistory: id=%s, instrument=%s, date=%s, pricing_policy=%s, principal_price=%s, accrued_price=%s, factor=%s',
-                    p.id, p.instrument.id, p.date, p.pricing_policy.id, p.principal_price, p.accrued_price, p.factor)
-
                 histories.append(p)
 
-    # if save:
-    #     PriceHistory.objects.bulk_create(histories)
+    if save and bulk:
+        PriceHistory.objects.bulk_create(histories)
+
+    # if _l.isEnabledFor(logging.DEBUG):
+    #     _l.debug('PriceHistory ->')
+    #     for p in histories:
+    #         _l.debug(
+    #             '\tid=%s, instrument=%s, date=%s, pricing_policy=%s, principal_price=%s, accrued_price=%s, factor=%s',
+    #             p.id, p.instrument.id, p.date, p.pricing_policy.id, p.principal_price, p.accrued_price, p.factor)
+
+    _l.debug('< %s', histories)
 
     return histories
 
 
 def create_currency_price_history(task, currencies=None, pricing_policies=None, save=False,
                                   map_func=map_pricing_history, fail_silently=False, delete_exists=False,
-                                  date_range=None):
+                                  date_range=None, bulk=False):
+    _l.debug('> create_currency_price_history: task_id=%s', task.id)
+
     result = task.result_object
 
     if currencies is None:
@@ -798,7 +807,7 @@ def create_currency_price_history(task, currencies=None, pricing_policies=None, 
                 if fail_silently and (p.currency_id, p.pricing_policy_id, p.date) in exists:
                     continue
 
-                if save:
+                if save and not bulk:
                     try:
                         p.save()
                     except IntegrityError:
@@ -807,12 +816,17 @@ def create_currency_price_history(task, currencies=None, pricing_policies=None, 
 
                 histories.append(p)
 
-                _l.debug(
-                    'saved CurrencyHistory: id=%s, currency=%s, date=%s, pricing_policy=%s, fx_rate=%s',
-                    p.id, p.currency.id, p.date, p.pricing_policy.id, p.fx_rate)
+    if save and bulk:
+        PriceHistory.objects.bulk_create(histories)
 
-    # if save:
-    #     PriceHistory.objects.bulk_create(histories)
+    # if _l.isEnabledFor(logging.DEBUG):
+    #     _l.debug('CurrencyHistory ->')
+    #     for p in histories:
+    #         _l.debug(
+    #             '\tid=%s, currency=%s, date=%s, pricing_policy=%s, fx_rate=%s',
+    #             p.id, p.currency.id, p.date, p.pricing_policy.id, p.fx_rate)
+
+    _l.debug('< %s', histories)
 
     return histories
 

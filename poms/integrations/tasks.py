@@ -235,7 +235,7 @@ def bloomberg_wait_reponse(self, task_id):
         )
 
     with transaction.atomic():
-        task.result = json.dumps(result, cls=DjangoJSONEncoder, sort_keys=True, indent=2)
+        task.result = json.dumps(result, cls=DjangoJSONEncoder, sort_keys=True, indent=1)
         task.status = BloombergTask.STATUS_DONE
         task.save()
 
@@ -255,7 +255,7 @@ def bloomberg_call(master_user=None, member=None, action=None, params=None):
             member_id=member_id,
             status=BloombergTask.STATUS_PENDING,
             action=action,
-            kwargs=json.dumps(params, cls=DjangoJSONEncoder, sort_keys=True, indent=2),
+            kwargs=json.dumps(params, cls=DjangoJSONEncoder, sort_keys=True, indent=1),
         )
         transaction.on_commit(
             lambda: chain(bloomberg_send_request.s(bt.pk), bloomberg_wait_reponse.s()).apply_async(countdown=1))
@@ -411,7 +411,7 @@ def bloomberg_price_history_auto(self):
                 master_user_id=master_user.id,
                 status=BloombergTask.STATUS_PENDING,
                 action='pricing_history',
-                kwargs=json.dumps(params, cls=DjangoJSONEncoder, sort_keys=True, indent=2),
+                kwargs=json.dumps(params, cls=DjangoJSONEncoder, sort_keys=True, indent=1),
             )
             transaction.on_commit(
                 lambda: chain(bloomberg_send_request.s(bt.pk), bloomberg_wait_reponse.s(),
