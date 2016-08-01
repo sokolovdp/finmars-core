@@ -1,14 +1,25 @@
 from __future__ import unicode_literals, print_function
 
 import json
+import time
 from datetime import datetime, timedelta
 from logging import getLogger
 
 from celery import shared_task, chain
 from celery.exceptions import TimeoutError
 from django.conf import settings
+from django.core.mail import send_mail as django_send_mail, send_mass_mail as django_send_mass_mail, \
+    mail_admins as django_mail_admins, mail_managers as django_mail_managers
 from django.core.serializers.json import DjangoJSONEncoder
+from django.db import transaction, models
 from django.utils import timezone
+
+from poms.audit.models import AuthLogEntry
+from poms.instruments.models import PriceDownloadMode
+from poms.integrations.models import BloombergTask
+from poms.integrations.providers.bloomberg import get_provider, BloombergException
+from poms.integrations.serializers import create_instrument_price_history, create_currency_price_history
+from poms.users.models import MasterUser
 
 _l = getLogger('poms.integrations')
 
@@ -29,8 +40,7 @@ def health_check():
 
 @shared_task(name='backend.send_mail_async', ignore_result=True)
 def send_mail_async(subject, message, from_email, recipient_list, html_message=None):
-    from django.core.mail import send_mail
-    send_mail(subject, message, from_email, recipient_list, fail_silently=True, html_message=html_message)
+    django_send_mail(subject, message, from_email, recipient_list, fail_silently=True, html_message=html_message)
 
 
 def send_mail(subject, message, from_email, recipient_list, html_message=None):
@@ -45,8 +55,7 @@ def send_mail(subject, message, from_email, recipient_list, html_message=None):
 
 @shared_task(name='backend.send_mass_mail', ignore_result=True)
 def send_mass_mail_async(messages):
-    from django.core.mail import send_mass_mail
-    send_mass_mail(messages, fail_silently=True)
+    django_send_mass_mail(messages, fail_silently=True)
 
 
 def send_mass_mail(messages):
@@ -57,8 +66,7 @@ def send_mass_mail(messages):
 
 @shared_task(name='backend.mail_admins', ignore_result=True)
 def mail_admins_async(subject, message):
-    from django.core.mail import mail_admins
-    mail_admins(subject, message, fail_silently=True, )
+    django_mail_admins(subject, message, fail_silently=True, )
 
 
 def mail_admins(subject, message):
@@ -70,8 +78,7 @@ def mail_admins(subject, message):
 
 @shared_task(name='backend.mail_managers', ignore_result=True)
 def mail_managers_async(subject, message):
-    from django.core.mail import mail_managers
-    mail_managers(subject, message, fail_silently=True, )
+    django_mail_managers(subject, message, fail_silently=True, )
 
 
 def mail_managers(subject, message):
@@ -103,9 +110,6 @@ def schedule_file_import_delete(path, countdown=None):
 
 @shared_task(name='backend.auth_log_statistics', ignore_result=True)
 def auth_log_statistics():
-    from django.utils import timezone
-    from poms.audit.models import AuthLogEntry
-
     logged_in_count = AuthLogEntry.objects.filter(is_success=True).count()
     login_failed_count = AuthLogEntry.objects.filter(is_success=False).count()
     _l.debug('auth (total): logged_in=%s, login_failed=%s', logged_in_count, login_failed_count)
@@ -119,10 +123,6 @@ def auth_log_statistics():
 @shared_task(name='backend.bloomberg_send_request', bind=True, ignore_result=True)
 def bloomberg_send_request(self, task_id):
     _l.info('bloomberg_send_request: task_id=%s', task_id)
-
-    from django.db import transaction
-    from poms.integrations.models import BloombergTask
-    from poms.integrations.providers.bloomberg import get_provider, BloombergException
 
     task = BloombergTask.objects.select_related('master_user', 'master_user__bloomberg_config').get(pk=task_id)
     if settings.BLOOMBERG_SANDBOX:
@@ -181,10 +181,6 @@ def bloomberg_send_request(self, task_id):
 def bloomberg_wait_reponse(self, task_id):
     _l.info('bloomberg_wait_reponse: task_id=%s', task_id)
 
-    from django.db import transaction
-    from poms.integrations.models import BloombergTask
-    from poms.integrations.providers.bloomberg import get_provider, BloombergException
-
     task = BloombergTask.objects.select_related('master_user', 'master_user__bloomberg_config').get(pk=task_id)
 
     if task.status == BloombergTask.STATUS_REQUEST_SENT:
@@ -232,7 +228,6 @@ def bloomberg_wait_reponse(self, task_id):
 
     if result is None:
         if self.request.is_eager:
-            import time
             time.sleep(settings.BLOOMBERG_RETRY_DELAY)
 
         raise self.retry(
@@ -249,9 +244,6 @@ def bloomberg_wait_reponse(self, task_id):
 
 
 def bloomberg_call(master_user=None, member=None, action=None, params=None):
-    from django.db import transaction, models
-    from poms.integrations.models import BloombergTask
-
     master_user_id = master_user.id if isinstance(master_user, models.Model)  else master_user
     if member:
         member_id = member.id if isinstance(member, models.Model) else member
@@ -314,10 +306,6 @@ def bloomberg_pricing_history(master_user=None, member=None, instruments=None, d
 
 @shared_task(name='backend.bloomberg_price_history_auto_save', bind=True, ignore_result=True)
 def bloomberg_price_history_auto_save(self, task_id):
-    from poms.integrations.models import BloombergTask
-    from poms.integrations.serializers import create_instrument_price_history, create_currency_price_history
-    from poms.instruments.models import PriceDownloadMode
-
     _l.debug('> bloomberg_price_history_auto_save: task_id=%s', task_id)
 
     task = BloombergTask.objects.get(pk=task_id)
@@ -344,13 +332,13 @@ def bloomberg_price_history_auto_save(self, task_id):
             _l.debug('currency=%s', ccy.id)
             currencies.append(ccy)
 
-    instr_histories = create_instrument_price_history(
+    create_instrument_price_history(
         task=task,
         instruments=instruments,
         pricing_policies=pricing_policies,
         save=False
     )
-    ccy_histories = create_currency_price_history(
+    create_currency_price_history(
         task=task,
         currencies=currencies,
         pricing_policies=pricing_policies,
@@ -362,11 +350,6 @@ def bloomberg_price_history_auto_save(self, task_id):
 
 @shared_task(name='backend.bloomberg_price_history_auto', bind=True, ignore_result=True)
 def bloomberg_price_history_auto(self):
-    from django.db import transaction
-    from poms.users.models import MasterUser
-    from poms.instruments.models import PriceDownloadMode
-    from poms.integrations.models import BloombergTask
-
     _l.debug('-' * 79)
     _l.debug('bloomberg_price_history_auto: >')
 

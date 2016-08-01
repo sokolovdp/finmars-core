@@ -1,12 +1,14 @@
 from __future__ import unicode_literals, print_function
 
 import uuid
+from datetime import timedelta
 from logging import getLogger
 
 import six
 from django.core.cache import caches
 from django.core.exceptions import ObjectDoesNotExist
 from django.core.signing import TimestampSigner, BadSignature
+from django.db import IntegrityError
 from django.utils import timezone
 from rest_framework import serializers
 from rest_framework.exceptions import ValidationError
@@ -23,7 +25,6 @@ from poms.integrations.fields import InstrumentMappingField
 from poms.integrations.models import InstrumentMapping, InstrumentAttributeMapping, BloombergConfig, BloombergTask
 from poms.integrations.providers.bloomberg import str_to_date, map_pricing_history
 from poms.integrations.storage import FileImportStorage
-from poms.integrations.tasks import schedule_file_import_delete, bloomberg_instrument, bloomberg_pricing_history
 from poms.users.fields import MasterUserField, MemberField, HiddenMemberField
 
 _l = getLogger('poms.integrations')
@@ -173,6 +174,8 @@ class InstrumentFileImportSerializer(serializers.Serializer):
             validated_data['token'] = TimestampSigner().sign(token)
             tmp_file_name = self.get_file_path(master_user, token)
             storage.save(tmp_file_name, file)
+
+            from poms.integrations.tasks import schedule_file_import_delete
             schedule_file_import_delete(tmp_file_name)
 
         with storage.open(tmp_file_name, 'rt') as f:
@@ -274,6 +277,7 @@ class InstrumentBloombergImportSerializer(serializers.Serializer):
                 else:
                     instance.instrument = instance.mapping.create_instrument(values, save=True)
         else:
+            from poms.integrations.tasks import bloomberg_instrument
             instance.task = bloomberg_instrument(
                 master_user=instance.master_user, member=instance.member,
                 instrument=instance.to_request,
@@ -283,7 +287,8 @@ class InstrumentBloombergImportSerializer(serializers.Serializer):
 
 
 def create_instrument_price_history(task, instruments=None, pricing_policies=None, save=False,
-                                    map_func=map_pricing_history):
+                                    map_func=map_pricing_history, delete_exists=False, fail_silently=False,
+                                    date_range=None):
     result = task.result_object
 
     if instruments is None:
@@ -292,6 +297,15 @@ def create_instrument_price_history(task, instruments=None, pricing_policies=Non
 
     if pricing_policies is None:
         pricing_policies = list(task.master_user.pricing_policies.all())
+
+    exists = set()
+    if fail_silently and date_range:
+        for p in PriceHistory.objects.filter(instrument__in=instruments, date__range=date_range):
+            exists.add(
+                (p.instrument_id, p.pricing_policy_id, p.date)
+            )
+    if delete_exists and date_range:
+        PriceHistory.objects.filter(instrument__in=instruments, date__range=date_range).delete()
 
     histories = []
     for instr_code, values in result.items():
@@ -308,21 +322,32 @@ def create_instrument_price_history(task, instruments=None, pricing_policies=Non
                 p.principal_price = formula.safe_eval(pp.expr, names=pd)
                 p.accrued_price = 0.0
                 p.factor = 1.0
-                # if save:
-                #     p.save()
+
+                if fail_silently and (p.instrument_id, p.pricing_policy_id, p.date) in exists:
+                    continue
+
+                if save:
+                    try:
+                        p.save()
+                    except IntegrityError:
+                        if not fail_silently:
+                            raise
+
                 _l.debug(
-                    'PriceHistory: instrument=%s, date=%s, pricing_policy=%s, principal_price=%s, accrued_price=%s, factor=%s',
-                    p.instrument.id, p.date, p.pricing_policy.id, p.principal_price, p.accrued_price, p.factor)
+                    'PriceHistory: id=%s, instrument=%s, date=%s, pricing_policy=%s, principal_price=%s, accrued_price=%s, factor=%s',
+                    p.id, p.instrument.id, p.date, p.pricing_policy.id, p.principal_price, p.accrued_price, p.factor)
+
                 histories.append(p)
 
-    if save:
-        PriceHistory.objects.bulk_create(histories)
+    # if save:
+    #     PriceHistory.objects.bulk_create(histories)
 
     return histories
 
 
 def create_currency_price_history(task, currencies=None, pricing_policies=None, save=False,
-                                  map_func=map_pricing_history):
+                                  map_func=map_pricing_history, delete_exists=False, fail_silently=False,
+                                  date_range=None):
     result = task.result_object
 
     if currencies is None:
@@ -332,6 +357,15 @@ def create_currency_price_history(task, currencies=None, pricing_policies=None, 
 
     if pricing_policies is None:
         pricing_policies = list(task.master_user.pricing_policies.all())
+
+    exists = set()
+    if fail_silently and date_range:
+        for p in CurrencyHistory.objects.filter(currency__in=currencies, date__range=date_range):
+            exists.add(
+                (p.currency_id, p.pricing_policy_id, p.date)
+            )
+    if delete_exists and date_range:
+        CurrencyHistory.objects.filter(currency__in=currencies, date__range=date_range).delete()
 
     histories = []
     for ccy_code, values in result.items():
@@ -346,16 +380,25 @@ def create_currency_price_history(task, currencies=None, pricing_policies=None, 
                 p.date = str_to_date(pd['date'])
                 p.pricing_policy = pp
                 p.fx_rate = formula.safe_eval(pp.expr, names=pd)
-                # if save:
-                #     p.save()
+
+                if fail_silently and (p.currency_id, p.pricing_policy_id, p.date) in exists:
+                    continue
+
+                if save:
+                    try:
+                        p.save()
+                    except IntegrityError:
+                        if not fail_silently:
+                            raise
+
                 histories.append(p)
 
                 _l.debug(
-                    'CurrencyHistory: currency=%s, date=%s, pricing_policy=%s, fx_rate=%s',
-                    p.currency.id, p.date, p.pricing_policy.id, p.fx_rate)
+                    'CurrencyHistory: id=%s, currency=%s, date=%s, pricing_policy=%s, fx_rate=%s',
+                    p.id, p.currency.id, p.date, p.pricing_policy.id, p.fx_rate)
 
-    if save:
-        PriceHistory.objects.bulk_create(histories)
+    # if save:
+    #     PriceHistory.objects.bulk_create(histories)
 
     return histories
 
@@ -415,7 +458,9 @@ class PriceHistoryBloombergImportSerializer(serializers.Serializer):
                 instance.histories = create_instrument_price_history(
                     task=instance.task_object,
                     instruments=instance.instruments,
-                    save=instance.mode == IMPORT_PROCESS
+                    save=instance.mode == IMPORT_PROCESS,
+                    date_range=(instance.date_from, instance.date_to),
+                    fail_silently=True
                 )
         else:
             instruments = []
@@ -427,9 +472,11 @@ class PriceHistoryBloombergImportSerializer(serializers.Serializer):
 
             if instruments:
                 if instance.date_from is None:
-                    instance.date_from = timezone.now().date()
+                    instance.date_from = timezone.now().date() - timedelta(days=1)
                 if instance.date_to is None:
-                    instance.date_to = timezone.now().date()
+                    instance.date_to = timezone.now().date() - timedelta(days=1)
+
+                from poms.integrations.tasks import bloomberg_pricing_history
                 instance.task = bloomberg_pricing_history(
                     master_user=instance.master_user,
                     member=instance.member,
@@ -495,7 +542,9 @@ class CurrencyHistoryBloombergImportSerializer(serializers.Serializer):
                 instance.histories = create_currency_price_history(
                     task=instance.task_object,
                     currencies=instance.currencies,
-                    save=instance.mode == IMPORT_PROCESS
+                    save=instance.mode == IMPORT_PROCESS,
+                    date_range=(instance.date_from, instance.date_to),
+                    fail_silently=True
                 )
         else:
             currencies = []
@@ -506,9 +555,11 @@ class CurrencyHistoryBloombergImportSerializer(serializers.Serializer):
                 })
             if currencies:
                 if instance.date_from is None:
-                    instance.date_from = timezone.now().date()
+                    instance.date_from = timezone.now().date() - timedelta(days=1)
                 if instance.date_to is None:
-                    instance.date_to = timezone.now().date()
+                    instance.date_to = timezone.now().date() - timedelta(days=1)
+
+                from poms.integrations.tasks import bloomberg_pricing_history
                 instance.task = bloomberg_pricing_history(
                     master_user=instance.master_user,
                     member=instance.member,
