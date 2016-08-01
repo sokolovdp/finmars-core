@@ -574,10 +574,14 @@ class FakeBloombergDataProvider(object):
         fake_data = {
             "ACCRUED_FACTOR": "1.000000000",
             "CPN": "6.625000",
-            "PX_CLOSE_1D": "N.S.",
-            "PX_YEST_ASK": "N.S.",
-            "PX_YEST_BID": "N.S.",
-            "PX_YEST_CLOSE": "N.S.",
+            # "PX_CLOSE_1D": "N.S.",
+            # "PX_YEST_ASK": "N.S.",
+            # "PX_YEST_BID": "N.S.",
+            # "PX_YEST_CLOSE": "N.S.",
+            # "PX_CLOSE_1D": "N.S.",
+            "PX_YEST_ASK": "10.0",
+            "PX_YEST_BID": "11.0",
+            "PX_YEST_CLOSE": "12.0",
             "SECURITY_TYP": "EURO-DOLLAR"
         }
 
@@ -618,10 +622,10 @@ class FakeBloombergDataProvider(object):
     def get_pricing_history_get_response(self, response_id):
         _l.debug('> get_pricing_history_get_response: response_id=%s', response_id)
         fake_data = {
-            "PX_ASK": "94.413",
-            "PX_BID": "93.108",
-            "PX_LAST": "93.761",
-            "DATE": "<REPLACE>"
+            "DATE": "<REPLACE>",
+            "PX_ASK": "20.0",
+            "PX_BID": "21.0",
+            "PX_LAST": "22.0",
         }
 
         key = 'pricing_history.%s' % response_id

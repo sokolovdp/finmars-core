@@ -373,7 +373,7 @@ def bloomberg_price_history_auto(self):
     for master_user in MasterUser.objects. \
             filter(bloomberg_config__isnull=False). \
             select_related('bloomberg_config'). \
-            prefetch_related('instruments', 'currencies'):
+            prefetch_related('instruments', 'currencies', 'pricing_policies'):
 
         bloomberg_config = master_user.bloomberg_config
         if not bloomberg_config.is_ready:
@@ -384,6 +384,7 @@ def bloomberg_price_history_auto(self):
         instruments = []
 
         pricing_policies = {pp.pk for pp in master_user.pricing_policies.all()}
+        _l.info('pricing_policies=%s', pricing_policies)
 
         instr_history_exists = {}
         for p in PriceHistory.objects.filter(instrument__in=master_user.instruments.all(), date=yesterday):
@@ -398,9 +399,10 @@ def bloomberg_price_history_auto(self):
                 continue
 
             h = instr_history_exists.get(instr.id, None)
+            _l.debug('currency=%s, history=%s', instr.id, h)
+
             if h is not None and len(h) == 0:
                 continue
-            _l.debug('instrument=%s', instr.id)
 
             instruments.append({
                 'code': str(instr.id),
@@ -418,11 +420,13 @@ def bloomberg_price_history_auto(self):
         for ccy in master_user.currencies.all():
             if ccy.history_download_mode_id not in download_modes:
                 continue
-            _l.debug('currency=%s', ccy.id)
 
             h = ccy_history_exists.get(ccy.id, None)
+            _l.debug('currency=%s, history=%s', ccy.id, h)
+
             if h is not None and len(h) == 0:
                 continue
+
             instruments.append({
                 'code': str(ccy.id),
                 'industry': 'CCY',
@@ -435,7 +439,6 @@ def bloomberg_price_history_auto(self):
                 'date_from': yesterday,
                 'date_to': yesterday,
             }
-
             with transaction.atomic():
                 bt = BloombergTask.objects.create(
                     master_user_id=master_user.id,
