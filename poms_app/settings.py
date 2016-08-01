@@ -480,8 +480,8 @@ CELERY_TASK_SERIALIZER = 'json'
 CELERY_RESULT_SERIALIZER = 'json'
 CELERYD_CONCURRENCY = 1
 # CELERYD_TASK_TIME_LIMIT = 1
-CELERYD_HIJACK_ROOT_LOGGER = False
-CELERY_REDIRECT_STDOUTS = False
+# CELERYD_HIJACK_ROOT_LOGGER = False
+# CELERY_REDIRECT_STDOUTS = False
 CELERYD_LOG_COLOR = False
 CELERYD_LOG_FORMAT = '[%(levelname)1.1s %(asctime)s %(process)d:%(thread)d %(name)s %(module)s:%(lineno)d] %(message)s'
 
