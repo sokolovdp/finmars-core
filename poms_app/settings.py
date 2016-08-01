@@ -322,15 +322,17 @@ LOGGING = {
     'loggers': {
         'py.warnings': {
             'handlers': ['console'],
+            'propagate': False,
         },
         'django': {
             'level': 'INFO',
             'handlers': ['console'],
+            'propagate': False,
         },
         'django.request': {
-            'handlers': ['mail_admins'],
+            'handlers': ['console', 'mail_admins'],
             'level': 'ERROR',
-            'propagate': True,
+            'propagate': False,
         },
         # 'django.db': {
         #     'level': 'DEBUG',
@@ -338,15 +340,21 @@ LOGGING = {
         'poms': {
             'level': 'DEBUG',
             'handlers': ['console'],
+            'propagate': False,
         },
-        'celery': {
+        # 'celery': {
+        #     'level': 'INFO',
+        #     'handlers': ['console'],
+        # },
+        'kombu': {
             'level': 'INFO',
             'handlers': ['console'],
+            'propagate': False,
         },
         'werkzeug': {
             'level': 'INFO',
             'handlers': ['console'],
-            'propagate': True,
+            'propagate': False,
         },
     }
 }
@@ -461,8 +469,8 @@ CELERY_RESULT_BACKEND = 'redis://%s/1' % REDIS_HOST
 # CELERYBEAT_SCHEDULER = 'djcelery.schedulers.DatabaseScheduler'
 # KOMBU_POLLING_INTERVAL = 1
 
-CELERY_ALWAYS_EAGER = True
-CELERY_EAGER_PROPAGATES_EXCEPTIONS = True
+# CELERY_ALWAYS_EAGER = True
+# CELERY_EAGER_PROPAGATES_EXCEPTIONS = True
 
 CELERY_DEFAULT_QUEUE = 'poms_celery'
 CELERY_ENABLE_UTC = True
@@ -474,16 +482,18 @@ CELERYD_CONCURRENCY = 1
 # CELERYD_TASK_TIME_LIMIT = 1
 CELERYD_HIJACK_ROOT_LOGGER = False
 CELERY_REDIRECT_STDOUTS = False
+CELERYD_LOG_COLOR = False
+CELERYD_LOG_FORMAT = '[%(levelname)1.1s %(asctime)s %(process)d:%(thread)d %(name)s %(module)s:%(lineno)d] %(message)s'
 
 CELERY_TRACK_STARTED = True
 CELERY_SEND_EVENTS = True
 CELERY_SEND_TASK_SENT_EVENT = True
 
 CELERYBEAT_SCHEDULE = {
-    # 'backend.bloomberg_price_history_auto': {
-    #     'task': 'backend.bloomberg_price_history_auto',
-    #     'schedule': 10,
-    # },
+    'backend.bloomberg_price_history_auto': {
+        'task': 'backend.bloomberg_price_history_auto',
+        'schedule': 10,
+    },
 }
 
 # BLOOMBERG ------------------------------------------------
