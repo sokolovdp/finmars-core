@@ -17,7 +17,6 @@ from rest_framework.response import Response
 from rest_framework.viewsets import ViewSet
 
 from poms.audit.mixins import HistoricalMixin
-from poms.common import pagination
 from poms.common.filters import CharFilter
 from poms.common.pagination import BigPagination
 from poms.common.views import AbstractModelViewSet, AbstractReadOnlyModelViewSet
@@ -144,6 +143,13 @@ class MasterUserViewSet(AbstractModelViewSet):
     search_fields = ['name', ]
     pagination_class = BigPagination
 
+    def get_object(self):
+        lookup_url_kwarg = self.lookup_url_kwarg or self.lookup_field
+        lookup_value = self.kwargs[lookup_url_kwarg]
+        if lookup_value == '0':
+            return self.request.user.master_user
+        return super(MasterUserViewSet, self).get_object()
+
     @detail_route(methods=('PUT', 'PATCH',), url_path='set-current', permission_classes=[IsAuthenticated],
                   serializer_class=MasterUserSetCurrentSerializer)
     def set_current(self, request, pk=None):
@@ -182,6 +188,13 @@ class MemberViewSet(HistoricalMixin, UpdateModelMixin, DestroyModelMixin, Abstra
     ordering_fields = ['username', ]
     search_fields = ['username', ]
     pagination_class = BigPagination
+
+    def get_object(self):
+        lookup_url_kwarg = self.lookup_url_kwarg or self.lookup_field
+        lookup_value = self.kwargs[lookup_url_kwarg]
+        if lookup_value == '0':
+            return self.request.user.member
+        return super(MemberViewSet, self).get_object()
 
 
 class GroupFilterSet(FilterSet):
