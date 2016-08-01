@@ -287,7 +287,7 @@ class InstrumentBloombergImportSerializer(serializers.Serializer):
 
 
 def create_instrument_price_history(task, instruments=None, pricing_policies=None, save=False,
-                                    map_func=map_pricing_history, delete_exists=False, fail_silently=False,
+                                    map_func=map_pricing_history, fail_silently=True, delete_exists=False,
                                     date_range=None):
     result = task.result_object
 
@@ -298,14 +298,14 @@ def create_instrument_price_history(task, instruments=None, pricing_policies=Non
     if pricing_policies is None:
         pricing_policies = list(task.master_user.pricing_policies.all())
 
+    if delete_exists and date_range:
+        PriceHistory.objects.filter(instrument__in=instruments, date__range=date_range).delete()
     exists = set()
-    if fail_silently and date_range:
+    if fail_silently and date_range and not delete_exists:
         for p in PriceHistory.objects.filter(instrument__in=instruments, date__range=date_range):
             exists.add(
                 (p.instrument_id, p.pricing_policy_id, p.date)
             )
-    if delete_exists and date_range:
-        PriceHistory.objects.filter(instrument__in=instruments, date__range=date_range).delete()
 
     histories = []
     for instr_code, values in result.items():
@@ -346,7 +346,7 @@ def create_instrument_price_history(task, instruments=None, pricing_policies=Non
 
 
 def create_currency_price_history(task, currencies=None, pricing_policies=None, save=False,
-                                  map_func=map_pricing_history, delete_exists=False, fail_silently=False,
+                                  map_func=map_pricing_history, fail_silently=False, delete_exists=False,
                                   date_range=None):
     result = task.result_object
 
@@ -358,14 +358,14 @@ def create_currency_price_history(task, currencies=None, pricing_policies=None, 
     if pricing_policies is None:
         pricing_policies = list(task.master_user.pricing_policies.all())
 
+    if delete_exists and date_range:
+        CurrencyHistory.objects.filter(currency__in=currencies, date__range=date_range).delete()
     exists = set()
-    if fail_silently and date_range:
+    if fail_silently and date_range and not delete_exists:
         for p in CurrencyHistory.objects.filter(currency__in=currencies, date__range=date_range):
             exists.add(
                 (p.currency_id, p.pricing_policy_id, p.date)
             )
-    if delete_exists and date_range:
-        CurrencyHistory.objects.filter(currency__in=currencies, date__range=date_range).delete()
 
     histories = []
     for ccy_code, values in result.items():

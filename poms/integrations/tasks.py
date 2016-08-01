@@ -17,8 +17,9 @@ from django.utils import timezone
 from poms.audit.models import AuthLogEntry
 from poms.instruments.models import PriceDownloadMode
 from poms.integrations.models import BloombergTask
-from poms.integrations.providers.bloomberg import get_provider, BloombergException
+from poms.integrations.providers.bloomberg import get_provider, BloombergException, str_to_date
 from poms.integrations.serializers import create_instrument_price_history, create_currency_price_history
+from poms.integrations.storage import file_import_storage
 from poms.users.models import MasterUser
 
 _l = getLogger('poms.integrations')
@@ -90,13 +91,11 @@ def mail_managers(subject, message):
 
 @shared_task(name='backend.file_import_delete', ignore_result=True)
 def file_import_delete_async(path):
-    _l.debug('file_import_delete: path=%s', path)
-    # from poms.integrations.storages import FileImportStorage
-    # storage = FileImportStorage()
-    # try:
-    #     storage.delete(path)
-    # except Exception as e:
-    #     _l.error("Can't delete file %s", path, exc_info=True)
+    _l.debug('> file_import_delete: path=%s', path)
+    try:
+        file_import_storage.delete(path)
+    except Exception:
+        _l.error("Can't delete file %s", path, exc_info=True)
 
 
 def schedule_file_import_delete(path, countdown=None):
@@ -310,9 +309,13 @@ def bloomberg_price_history_auto_save(self, task_id):
 
     task = BloombergTask.objects.get(pk=task_id)
     master_user = task.master_user
+    kwargs = task.kwargs_object
     task_res = task.result_object
     pricing_policies = list(task.master_user.pricing_policies.all())
     download_modes = [PriceDownloadMode.AUTO, PriceDownloadMode.IF_PORTFOLIO]
+
+    date_from = str_to_date(kwargs['date_from'])
+    date_to = str_to_date(kwargs['date_to'])
 
     _l.debug('master_user=%s', master_user.id)
 
@@ -336,13 +339,17 @@ def bloomberg_price_history_auto_save(self, task_id):
         task=task,
         instruments=instruments,
         pricing_policies=pricing_policies,
-        save=False
+        save=False,
+        date_range=(date_from, date_to),
+        fail_silently=True
     )
     create_currency_price_history(
         task=task,
         currencies=currencies,
         pricing_policies=pricing_policies,
-        save=False
+        save=False,
+        date_range=(date_from, date_to),
+        fail_silently=True
     )
 
     _l.debug('<')
@@ -357,7 +364,7 @@ def bloomberg_price_history_auto(self):
         _l.warn('only sandbox')
         _l.debug('<')
 
-    now = timezone.now().date() - timedelta(days=1)
+    req_date = timezone.now().date() - timedelta(days=1)
     download_modes = [PriceDownloadMode.AUTO, PriceDownloadMode.IF_PORTFOLIO]
 
     for master_user in MasterUser.objects. \
@@ -395,8 +402,8 @@ def bloomberg_price_history_auto(self):
 
         params = {
             'instruments': instruments,
-            'date_from': now,
-            'date_to': now,
+            'date_from': req_date,
+            'date_to': req_date,
         }
 
         with transaction.atomic():
