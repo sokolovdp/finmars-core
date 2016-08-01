@@ -1,7 +1,7 @@
 from __future__ import unicode_literals, print_function
 
 import json
-from datetime import datetime
+from datetime import datetime, timedelta
 from logging import getLogger
 
 from celery import shared_task, chain
@@ -314,8 +314,50 @@ def bloomberg_pricing_history(master_user=None, member=None, instruments=None, d
 
 @shared_task(name='backend.bloomberg_price_history_auto_save', bind=True, ignore_result=True)
 def bloomberg_price_history_auto_save(self, task_id):
-    _l.debug('bloomberg_price_history_auto_saver: task_id=%s', task_id)
-    pass
+    from poms.integrations.models import BloombergTask
+    from poms.integrations.serializers import create_instrument_price_history, create_currency_price_history
+    from poms.instruments.models import PriceDownloadMode
+
+    _l.debug('> bloomberg_price_history_auto_save: task_id=%s', task_id)
+
+    task = BloombergTask.objects.get(pk=task_id)
+    master_user = task.master_user
+    task_res = task.result_object
+    pricing_policies = list(task.master_user.pricing_policies.all())
+    download_modes = [PriceDownloadMode.AUTO, PriceDownloadMode.IF_PORTFOLIO]
+
+    _l.debug('master_user=%s', master_user.id)
+
+    instruments = []
+    for instr in master_user.instruments.order_by('id').all():
+        if instr.price_download_mode_id not in download_modes:
+            continue
+        if str(instr.id) in task_res:
+            _l.debug('instrument=%s', instr.id)
+            instruments.append(instr)
+
+    currencies = []
+    for ccy in master_user.currencies.order_by('id').all():
+        if ccy.history_download_mode_id not in download_modes:
+            continue
+        if str(ccy.id) in task_res:
+            _l.debug('currency=%s', ccy.id)
+            currencies.append(ccy)
+
+    instr_histories = create_instrument_price_history(
+        task=task,
+        instruments=instruments,
+        pricing_policies=pricing_policies,
+        save=False
+    )
+    ccy_histories = create_currency_price_history(
+        task=task,
+        currencies=currencies,
+        pricing_policies=pricing_policies,
+        save=False
+    )
+
+    _l.debug('<')
 
 
 @shared_task(name='backend.bloomberg_price_history_auto', bind=True, ignore_result=True)
@@ -329,10 +371,10 @@ def bloomberg_price_history_auto(self):
     _l.debug('bloomberg_price_history_auto: >')
 
     if not settings.BLOOMBERG_SANDBOX:
-        _l.warn('method not ready yet')
-        _l.debug('bloomberg_price_history_auto: <')
+        _l.warn('only sandbox')
+        _l.debug('<')
 
-    now = timezone.now().date()
+    now = timezone.now().date() - timedelta(days=1)
     download_modes = [PriceDownloadMode.AUTO, PriceDownloadMode.IF_PORTFOLIO]
 
     for master_user in MasterUser.objects. \
@@ -344,28 +386,28 @@ def bloomberg_price_history_auto(self):
         if not bloomberg_config.is_ready:
             continue
 
-        _l.debug('process master_user: %s', master_user.id)
+        _l.debug('master_user=%s', master_user.id)
 
         instruments = []
-
-        for ccy in master_user.currencies.all():
-            if ccy.history_download_mode_id not in download_modes:
-                continue
-            _l.debug('process currency: %s', ccy.id)
-
-            instruments.append({
-                'code': ccy.id,
-                'industry': 'currency',
-            })
 
         for instr in master_user.instruments.all():
             if instr.price_download_mode_id not in download_modes:
                 continue
-            _l.debug('process instrument: %s', instr.id)
+            _l.debug('instrument=%s', instr.id)
 
             instruments.append({
-                'code': instr.id,
-                'industry': 'instrument',
+                'code': str(instr.id),
+                'industry': 'Corp',
+            })
+
+        for ccy in master_user.currencies.all():
+            if ccy.history_download_mode_id not in download_modes:
+                continue
+            _l.debug('currency=%s', ccy.id)
+
+            instruments.append({
+                'code': str(ccy.id),
+                'industry': 'CCY',
             })
 
         params = {
@@ -385,4 +427,4 @@ def bloomberg_price_history_auto(self):
                 lambda: chain(bloomberg_send_request.s(bt.pk), bloomberg_wait_reponse.s(),
                               bloomberg_price_history_auto_save.s()).apply_async())
 
-    _l.debug('bloomberg_price_history_auto: <')
+    _l.debug('<')

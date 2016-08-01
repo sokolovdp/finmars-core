@@ -4,7 +4,6 @@ import uuid
 from logging import getLogger
 
 import six
-from dateutil import parser
 from django.core.cache import caches
 from django.core.exceptions import ObjectDoesNotExist
 from django.core.signing import TimestampSigner, BadSignature
@@ -283,6 +282,84 @@ class InstrumentBloombergImportSerializer(serializers.Serializer):
         return instance
 
 
+def create_instrument_price_history(task, instruments=None, pricing_policies=None, save=False,
+                                    map_func=map_pricing_history):
+    result = task.result_object
+
+    if instruments is None:
+        instruments = list(task.master_user.instruments.all())
+    instr_map = {six.text_type(i.id): i for i in instruments}
+
+    if pricing_policies is None:
+        pricing_policies = list(task.master_user.pricing_policies.all())
+
+    histories = []
+    for instr_code, values in result.items():
+        instr = instr_map.get(instr_code, None)
+        if instr is None:
+            continue
+        for pd in values:
+            pd = map_func(pd)
+            for pp in pricing_policies:
+                p = PriceHistory()
+                p.instrument = instr
+                p.date = str_to_date(pd['date'])
+                p.pricing_policy = pp
+                p.principal_price = formula.safe_eval(pp.expr, names=pd)
+                p.accrued_price = 0.0
+                p.factor = 1.0
+                # if save:
+                #     p.save()
+                _l.debug(
+                    'PriceHistory: instrument=%s, date=%s, pricing_policy=%s, principal_price=%s, accrued_price=%s, factor=%s',
+                    p.instrument.id, p.date, p.pricing_policy.id, p.principal_price, p.accrued_price, p.factor)
+                histories.append(p)
+
+    if save:
+        PriceHistory.objects.bulk_create(histories)
+
+    return histories
+
+
+def create_currency_price_history(task, currencies=None, pricing_policies=None, save=False,
+                                  map_func=map_pricing_history):
+    result = task.result_object
+
+    if currencies is None:
+        currencies = list(task.master_user.currencies.all())
+
+    ccy_map = {six.text_type(i.id): i for i in currencies}
+
+    if pricing_policies is None:
+        pricing_policies = list(task.master_user.pricing_policies.all())
+
+    histories = []
+    for ccy_code, values in result.items():
+        ccy = ccy_map.get(ccy_code, None)
+        if ccy is None:
+            continue
+        for pd in values:
+            pd = map_func(pd)
+            for pp in pricing_policies:
+                p = CurrencyHistory()
+                p.currency = ccy
+                p.date = str_to_date(pd['date'])
+                p.pricing_policy = pp
+                p.fx_rate = formula.safe_eval(pp.expr, names=pd)
+                # if save:
+                #     p.save()
+                histories.append(p)
+
+                _l.debug(
+                    'CurrencyHistory: currency=%s, date=%s, pricing_policy=%s, fx_rate=%s',
+                    p.currency.id, p.date, p.pricing_policy.id, p.fx_rate)
+
+    if save:
+        PriceHistory.objects.bulk_create(histories)
+
+    return histories
+
+
 class PriceHistoryBloombergImport(object):
     def __init__(self, master_user=None, member=None, mode=None, instruments=None,
                  date_from=None, date_to=None, task=None, histories=None):
@@ -317,25 +394,29 @@ class PriceHistoryBloombergImportSerializer(serializers.Serializer):
         instance = PriceHistoryBloombergImport(**validated_data)
         if instance.task:
             if instance.task_object.status == BloombergTask.STATUS_DONE:
-                values = instance.task_object.result_object
-                instance.histories = []
-                instr_map = {str(i.id): i for i in instance.instruments}
-                pricing_policy = list(instance.master_user.pricing_policies.all())
-                for instr_code, values in values.items():
-                    instr = instr_map[instr_code]
-                    for pd in values:
-                        pd = map_pricing_history(pd)
-                        for pp in pricing_policy:
-                            p = PriceHistory()
-                            p.instrument = instr
-                            p.date = str_to_date(pd['date'])
-                            p.pricing_policy = pp
-                            p.principal_price = formula.safe_eval(pp.expr, names=pd)
-                            p.accrued_price = 0.0
-                            p.factor = 1.0
-                            if instance.mode == IMPORT_PROCESS:
-                                p.save()
-                            instance.histories.append(p)
+                # values = instance.task_object.result_object
+                # instr_map = {str(i.id): i for i in instance.instruments}
+                # pricing_policies = list(instance.master_user.pricing_policies.all())
+                # for instr_code, values in values.items():
+                #     instr = instr_map[instr_code]
+                #     for pd in values:
+                #         pd = map_pricing_history(pd)
+                #         for pp in pricing_policies:
+                #             p = PriceHistory()
+                #             p.instrument = instr
+                #             p.date = str_to_date(pd['date'])
+                #             p.pricing_policy = pp
+                #             p.principal_price = formula.safe_eval(pp.expr, names=pd)
+                #             p.accrued_price = 0.0
+                #             p.factor = 1.0
+                #             if instance.mode == IMPORT_PROCESS:
+                #                 p.save()
+                #             instance.histories.append(p)
+                instance.histories = create_instrument_price_history(
+                    task=instance.task_object,
+                    instruments=instance.instruments,
+                    save=instance.mode == IMPORT_PROCESS
+                )
         else:
             instruments = []
             for instr in instance.instruments:
@@ -394,23 +475,28 @@ class CurrencyHistoryBloombergImportSerializer(serializers.Serializer):
         instance = CurrencyHistoryBloombergImport(**validated_data)
         if instance.task:
             if instance.task_object.status == BloombergTask.STATUS_DONE:
-                values = instance.task_object.result_object
-                instance.histories = []
-                ccy_map = {str(i.id): i for i in instance.currencies}
-                pricing_policy = list(instance.master_user.pricing_policies.all())
-                for ccy_code, values in values.items():
-                    ccy = ccy_map[ccy_code]
-                    for pd in values:
-                        pd = map_pricing_history(pd)
-                        for pp in pricing_policy:
-                            p = CurrencyHistory()
-                            p.currency = ccy
-                            p.date = str_to_date(pd['date'])
-                            p.pricing_policy = pp
-                            p.fx_rate = formula.safe_eval(pp.expr, names=pd)
-                            if instance.mode == IMPORT_PROCESS:
-                                p.save()
-                            instance.histories.append(p)
+                # values = instance.task_object.result_object
+                # instance.histories = []
+                # ccy_map = {str(i.id): i for i in instance.currencies}
+                # pricing_policies = list(instance.master_user.pricing_policies.all())
+                # for ccy_code, values in values.items():
+                #     ccy = ccy_map[ccy_code]
+                #     for pd in values:
+                #         pd = map_pricing_history(pd)
+                #         for pp in pricing_policies:
+                #             p = CurrencyHistory()
+                #             p.currency = ccy
+                #             p.date = str_to_date(pd['date'])
+                #             p.pricing_policy = pp
+                #             p.fx_rate = formula.safe_eval(pp.expr, names=pd)
+                #             if instance.mode == IMPORT_PROCESS:
+                #                 p.save()
+                #             instance.histories.append(p)
+                instance.histories = create_currency_price_history(
+                    task=instance.task_object,
+                    currencies=instance.currencies,
+                    save=instance.mode == IMPORT_PROCESS
+                )
         else:
             currencies = []
             for ccy in instance.currencies:
