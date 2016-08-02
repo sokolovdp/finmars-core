@@ -24,4 +24,3 @@ suds-jurko==0.6
 
 # scheduled to remove
 django-celery==3.1.17
-django-reversion==2.0.6

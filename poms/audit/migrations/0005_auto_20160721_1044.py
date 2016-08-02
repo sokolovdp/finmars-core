@@ -20,10 +20,10 @@ class Migration(migrations.Migration):
             model_name='versioninfo',
             name='member',
         ),
-        migrations.RemoveField(
-            model_name='versioninfo',
-            name='revision',
-        ),
+        # migrations.RemoveField(
+        #     model_name='versioninfo',
+        #     name='revision',
+        # ),
         migrations.DeleteModel(
             name='VersionInfo',
         ),

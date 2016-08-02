@@ -48,7 +48,7 @@ INSTALLED_APPS = [
 
     'modeltranslation',
     'mptt',
-    'reversion',  # really not used
+    # 'reversion',  # really not used
 
     'poms.http_sessions',
     'poms.users',
@@ -73,8 +73,8 @@ INSTALLED_APPS = [
     'django.contrib.admin',
     'django.contrib.admindocs',
 
-    'django_extensions',
-    'redisboard',
+    # 'django_extensions',
+    # 'redisboard',
 
     # 'django_otp',
     # 'django_otp.plugins.otp_hotp',
@@ -85,6 +85,11 @@ INSTALLED_APPS = [
 
 # if DEBUG:
 #     INSTALLED_APPS += ['debug_toolbar', ]
+
+if DEBUG or DEV:
+    INSTALLED_APPS += [
+        'redisboard',
+    ]
 
 MIDDLEWARE_CLASSES = [
     'poms.common.middleware.CommonMiddleware',

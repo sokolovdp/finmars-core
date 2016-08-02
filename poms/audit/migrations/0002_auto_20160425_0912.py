@@ -13,7 +13,7 @@ class Migration(migrations.Migration):
 
     dependencies = [
         ('users', '0001_initial'),
-        ('reversion', '0002_auto_20141216_1509'),
+        # ('reversion', '0002_auto_20141216_1509'),
         migrations.swappable_dependency(settings.AUTH_USER_MODEL),
         ('audit', '0001_initial'),
     ]
@@ -24,11 +24,11 @@ class Migration(migrations.Migration):
             name='master_user',
             field=models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to='users.MasterUser'),
         ),
-        migrations.AddField(
-            model_name='versioninfo',
-            name='revision',
-            field=models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='info', to='reversion.Revision'),
-        ),
+        # migrations.AddField(
+        #     model_name='versioninfo',
+        #     name='revision',
+        #     field=models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='info', to='reversion.Revision'),
+        # ),
         migrations.AddField(
             model_name='authlogentry',
             name='user',
