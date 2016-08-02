@@ -28,23 +28,7 @@ class PortfolioAttributeTypeFilterSet(FilterSet):
 class PortfolioAttributeTypeViewSet(AbstractAttributeTypeViewSet):
     queryset = PortfolioAttributeType.objects.prefetch_related('classifiers')
     serializer_class = PortfolioAttributeTypeSerializer
-    # filter_backends = [
-    #     OwnerByMasterUserFilter,
-    #     # ObjectPermissionBackend,
-    #     DjangoFilterBackend,
-    #     OrderingFilter,
-    #     SearchFilter,
-    # ]
     filter_class = PortfolioAttributeTypeFilterSet
-    # permission_classes = PomsViewSetBase.permission_classes + [
-    #     ObjectPermissionBase,
-    # ]
-    # ordering_fields = ['user_code', 'name', 'short_name', ]
-    # search_fields = ['user_code', 'name', 'short_name', ]
-
-    # def get_serializer(self, *args, **kwargs):
-    #     kwargs['show_object_permissions'] = (self.action != 'list')
-    #     return super(PortfolioAttributeTypeViewSet, self).get_serializer(*args, **kwargs)
 
 
 class PortfolioFilterSet(FilterSet):
@@ -80,23 +64,11 @@ class PortfolioViewSet(AbstractWithObjectPermissionViewSet):
     )
     prefetch_permissions_for = ('accounts', 'responsibles', 'counterparties', 'transaction_types',)
     serializer_class = PortfolioSerializer
-    filter_backends = [
+    filter_backends = AbstractWithObjectPermissionViewSet.filter_backends + [
         OwnerByMasterUserFilter,
-        # ObjectPermissionBackend,
         TagFilterBackend,
         AttributePrefetchFilter,
-        DjangoFilterBackend,
-        OrderingFilter,
-        # OrderingWithAttributesFilter,
-        SearchFilter,
     ]
     filter_class = PortfolioFilterSet
-    # permission_classes = PomsViewSetBase.permission_classes + [
-    #     ObjectPermissionBase
-    # ]
     ordering_fields = ['user_code', 'name', 'short_name']
     search_fields = ['user_code', 'name', 'short_name']
-
-    # def get_serializer(self, *args, **kwargs):
-    #     kwargs['show_object_permissions'] = (self.action != 'list')
-    #     return super(PortfolioViewSet, self).get_serializer(*args, **kwargs)

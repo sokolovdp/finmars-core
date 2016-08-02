@@ -1,22 +1,57 @@
 from __future__ import unicode_literals
 
+from django.conf import settings
 from django.db.models import ProtectedError
 from django.http import Http404
+from django.utils import timezone
 from django.utils.translation import ugettext_lazy as _
 from mptt.utils import get_cached_trees
+from rest_framework import permissions
 from rest_framework import status
 from rest_framework.filters import DjangoFilterBackend, OrderingFilter, SearchFilter
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
+from rest_framework.views import APIView
 from rest_framework.viewsets import ModelViewSet, ReadOnlyModelViewSet, ViewSet
 
-from poms.audit.mixins import HistoricalMixin
 from poms.common.filters import ClassifierFilter, ClassifierPrefetchFilter
-from poms.common.mixins import DbTransactionMixin
 from poms.users.filters import OwnerByMasterUserFilter
+from poms.users.utils import get_master_user
+from poms.users.utils import get_member
 
 
-class AbstractViewSet(ViewSet):
+class AbstractApiView(APIView):
+    atomic = True
+
+    def perform_authentication(self, request):
+        super(AbstractApiView, self).perform_authentication(request)
+        if request.user.is_authenticated():
+            request.user.master_user = get_master_user(request)
+            request.user.member = get_member(request)
+
+    def initial(self, request, *args, **kwargs):
+        super(AbstractApiView, self).initial(request, *args, **kwargs)
+
+        if request.user.is_authenticated():
+            master_user = request.user.master_user
+            if master_user and master_user.timezone:
+                timezone.activate(master_user.timezone)
+            else:
+                timezone.activate(settings.TIME_ZONE)
+
+    def dispatch(self, request, *args, **kwargs):
+        if self.atomic:
+            if request.method.upper() in permissions.SAFE_METHODS:
+                return super(AbstractApiView, self).dispatch(request, *args, **kwargs)
+            else:
+                from django.db import transaction
+                with transaction.atomic():
+                    return super(AbstractApiView, self).dispatch(request, *args, **kwargs)
+        else:
+            return super(AbstractApiView, self).dispatch(request, *args, **kwargs)
+
+
+class AbstractViewSet(AbstractApiView, ViewSet):
     serializer_class = None
     permission_classes = [
         IsAuthenticated
@@ -38,21 +73,20 @@ class AbstractViewSet(ViewSet):
         }
 
 
-class AbstractModelViewSet(DbTransactionMixin, HistoricalMixin, ModelViewSet):
+class AbstractModelViewSet(AbstractApiView, ModelViewSet):
     permission_classes = [
-        # IsAuthenticated
+        IsAuthenticated
     ]
-
     filter_backends = [
-        # DjangoFilterBackend,
-        # OrderingFilter,
-        # SearchFilter,
+        DjangoFilterBackend,
+        OrderingFilter,
+        SearchFilter,
     ]
 
-    def get_permissions(self):
-        return super(AbstractModelViewSet, self).get_permissions() + [
-            IsAuthenticated()
-        ]
+    # def get_permissions(self):
+    #     return super(AbstractModelViewSet, self).get_permissions() + [
+    #         IsAuthenticated()
+    #     ]
 
     def update(self, request, *args, **kwargs):
         response = super(AbstractModelViewSet, self).update(request, *args, **kwargs)
@@ -75,7 +109,7 @@ class AbstractModelViewSet(DbTransactionMixin, HistoricalMixin, ModelViewSet):
         return Response(status=status.HTTP_204_NO_CONTENT)
 
 
-class AbstractReadOnlyModelViewSet(ReadOnlyModelViewSet):
+class AbstractReadOnlyModelViewSet(AbstractApiView, ReadOnlyModelViewSet):
     permission_classes = [
         IsAuthenticated
     ]
@@ -87,28 +121,18 @@ class AbstractReadOnlyModelViewSet(ReadOnlyModelViewSet):
 
 
 class AbstractClassModelViewSet(AbstractReadOnlyModelViewSet):
-    ordering_fields = [
-        'id',
-        'system_code',
-        'name'
-    ]
-    search_fields = [
-        'system_code',
-        'name'
-    ]
+    ordering_fields = ['id', 'system_code', 'name', ]
+    search_fields = ['system_code', 'name', ]
     pagination_class = None
 
 
 class AbstractClassifierViewSet(AbstractModelViewSet):
-    filter_backends = [
+    filter_backends = AbstractModelViewSet.filter_backends + [
         OwnerByMasterUserFilter,
         ClassifierFilter,
-        DjangoFilterBackend,
-        OrderingFilter,
-        SearchFilter
     ]
-    ordering_fields = ['user_code', 'name', 'short_name']
-    search_fields = ['user_code', 'name', 'short_name']
+    ordering_fields = ['user_code', 'name', 'short_name', ]
+    search_fields = ['user_code', 'name', 'short_name', ]
 
     # pagination_class = None
 
@@ -140,20 +164,9 @@ class AbstractClassifierViewSet(AbstractModelViewSet):
 
 
 class AbstractClassifierNodeViewSet(AbstractModelViewSet):
-    filter_backends = [
+    filter_backends = AbstractModelViewSet.filter_backends + [
         OwnerByMasterUserFilter,
         ClassifierPrefetchFilter,
-        DjangoFilterBackend,
-        OrderingFilter,
-        SearchFilter
     ]
-    ordering_fields = [
-        'user_code',
-        'name',
-        'short_name'
-    ]
-    search_fields = [
-        'user_code',
-        'name',
-        'short_name'
-    ]
+    ordering_fields = ['user_code', 'name', 'short_name', ]
+    search_fields = ['user_code', 'name', 'short_name', ]

@@ -1,6 +1,6 @@
 from __future__ import unicode_literals
 
-from rest_framework.filters import DjangoFilterBackend, OrderingFilter, SearchFilter, FilterSet
+from rest_framework.filters import FilterSet
 
 from poms.common.filters import CharFilter
 from poms.obj_perms.views import AbstractWithObjectPermissionViewSet
@@ -64,20 +64,9 @@ class TagViewSet(AbstractWithObjectPermissionViewSet):
         'strategies1', 'strategies2', 'strategies3', 'portfolios', 'transaction_types',
     )
     serializer_class = TagSerializer
-    filter_backends = [
+    filter_backends = AbstractWithObjectPermissionViewSet.filter_backends + [
         OwnerByMasterUserFilter,
-        # ObjectPermissionBackend,
-        DjangoFilterBackend,
-        OrderingFilter,
-        SearchFilter,
     ]
     filter_class = TagFilterSet
-    # permission_classes = PomsViewSetBase.permission_classes + [
-    #     ObjectPermissionBase
-    # ]
     ordering_fields = ['user_code', 'name', 'short_name']
     search_fields = ['user_code', 'name', 'short_name']
-
-    # def get_serializer(self, *args, **kwargs):
-    #     kwargs['show_object_permissions'] = (self.action != 'list')
-    #     return super(TagViewSet, self).get_serializer(*args, **kwargs)

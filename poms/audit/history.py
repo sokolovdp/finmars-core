@@ -7,6 +7,7 @@ from threading import local
 import six
 from django.contrib.contenttypes.models import ContentType
 from django.core import serializers
+from django.core.exceptions import FieldDoesNotExist
 from django.db.models.signals import post_init, post_save, post_delete, m2m_changed
 from django.dispatch import receiver
 from django.utils.decorators import ContextDecorator
@@ -658,7 +659,7 @@ def make_comment(changes):
                                   'new_value': _get_display_value(of['new_value']),
                               }
                     messages.append(message)
-                except KeyError:
+                except (KeyError, FieldDoesNotExist):
                     pass
         except KeyError:
             pass

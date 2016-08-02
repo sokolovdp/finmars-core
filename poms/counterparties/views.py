@@ -1,6 +1,6 @@
 from __future__ import unicode_literals
 
-from rest_framework.filters import DjangoFilterBackend, SearchFilter, FilterSet, OrderingFilter
+from rest_framework.filters import FilterSet
 
 from poms.common.filters import CharFilter, ModelWithPermissionMultipleChoiceFilter
 from poms.counterparties.models import Counterparty, Responsible, CounterpartyAttributeType, ResponsibleAttributeType
@@ -28,19 +28,7 @@ class CounterpartyAttributeTypeFilterSet(FilterSet):
 class CounterpartyAttributeTypeViewSet(AbstractAttributeTypeViewSet):
     queryset = CounterpartyAttributeType.objects.prefetch_related('classifiers')
     serializer_class = CounterpartyAttributeTypeSerializer
-    # filter_backends = [
-    #     OwnerByMasterUserFilter,
-    #     # ObjectPermissionBackend,
-    #     DjangoFilterBackend,
-    #     OrderingFilter,
-    #     SearchFilter,
-    # ]
     filter_class = CounterpartyAttributeTypeFilterSet
-    # permission_classes = PomsViewSetBase.permission_classes + [
-    #     ObjectPermissionBase,
-    # ]
-    # ordering_fields = ['user_code', 'name', 'short_name', ]
-    # search_fields = ['user_code', 'name', 'short_name', ]
 
 
 class CounterpartyFilterSet(FilterSet):
@@ -61,26 +49,14 @@ class CounterpartyViewSet(AbstractWithObjectPermissionViewSet):
     )
     prefetch_permissions_for = ('portfolios',)
     serializer_class = CounterpartySerializer
-    filter_backends = [
+    filter_backends = AbstractWithObjectPermissionViewSet.filter_backends + [
         OwnerByMasterUserFilter,
-        # ObjectPermissionBackend,
         TagFilterBackend,
         AttributePrefetchFilter,
-        DjangoFilterBackend,
-        OrderingFilter,
-        # OrderingWithAttributesFilter,
-        SearchFilter,
     ]
     filter_class = CounterpartyFilterSet
-    # permission_classes = PomsViewSetBase.permission_classes + [
-    #     ObjectPermissionBase
-    # ]
     ordering_fields = ['user_code', 'name', 'short_name']
     search_fields = ['user_code', 'name', 'short_name']
-
-    def get_serializer(self, *args, **kwargs):
-        kwargs['show_object_permissions'] = (self.action != 'list')
-        return super(CounterpartyViewSet, self).get_serializer(*args, **kwargs)
 
 
 # Responsible ----
@@ -99,23 +75,7 @@ class ResponsibleAttributeTypeFilterSet(FilterSet):
 class ResponsibleAttributeTypeViewSet(AbstractAttributeTypeViewSet):
     queryset = ResponsibleAttributeType.objects.prefetch_related('classifiers')
     serializer_class = ResponsibleAttributeTypeSerializer
-    # filter_backends = [
-    #     OwnerByMasterUserFilter,
-    #     ObjectPermissionBackend,
-    #     DjangoFilterBackend,
-    #     OrderingFilter,
-    #     SearchFilter,
-    # ]
     filter_class = ResponsibleAttributeTypeFilterSet
-    # permission_classes = PomsViewSetBase.permission_classes + [
-    #     ObjectPermissionBase,
-    # ]
-    # ordering_fields = ['user_code', 'name', 'short_name', ]
-    # search_fields = ['user_code', 'name', 'short_name', ]
-
-    # def get_serializer(self, *args, **kwargs):
-    #     kwargs['show_object_permissions'] = (self.action != 'list')
-    #     return super(ResponsibleAttributeTypeViewSet, self).get_serializer(*args, **kwargs)
 
 
 class ResponsibleFilterSet(FilterSet):
@@ -136,23 +96,11 @@ class ResponsibleViewSet(AbstractWithObjectPermissionViewSet):
     )
     prefetch_permissions_for = ('portfolios',)
     serializer_class = ResponsibleSerializer
-    filter_backends = [
+    filter_backends = AbstractWithObjectPermissionViewSet.filter_backends + [
         OwnerByMasterUserFilter,
-        # ObjectPermissionBackend,
         TagFilterBackend,
         AttributePrefetchFilter,
-        DjangoFilterBackend,
-        OrderingFilter,
-        # OrderingWithAttributesFilter,
-        SearchFilter,
     ]
     filter_class = ResponsibleFilterSet
-    # permission_classes = PomsViewSetBase.permission_classes + [
-    #     ObjectPermissionBase
-    # ]
     ordering_fields = ['user_code', 'name', 'short_name']
     search_fields = ['user_code', 'name', 'short_name']
-
-    def get_serializer(self, *args, **kwargs):
-        kwargs['show_object_permissions'] = (self.action != 'list')
-        return super(ResponsibleViewSet, self).get_serializer(*args, **kwargs)

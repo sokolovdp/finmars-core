@@ -1,7 +1,7 @@
 from __future__ import unicode_literals, print_function
 
 import django_filters
-from rest_framework.filters import FilterSet, DjangoFilterBackend, OrderingFilter, SearchFilter
+from rest_framework.filters import FilterSet
 from rest_framework.response import Response
 
 from poms.common.filters import CharFilter, ModelWithPermissionMultipleChoiceFilter
@@ -31,11 +31,8 @@ class InstrumentMappingViewSet(AbstractModelViewSet):
     permission_classes = AbstractModelViewSet.permission_classes + [
         SuperUserOrReadOnly,
     ]
-    filter_backends = [
+    filter_backends = AbstractModelViewSet.filter_backends + [
         OwnerByMasterUserFilter,
-        DjangoFilterBackend,
-        OrderingFilter,
-        SearchFilter,
     ]
     filter_class = InstrumentMappingFilterSet
     ordering_fields = ['mapping_name']
@@ -48,7 +45,7 @@ class BloombergConfigViewSet(AbstractModelViewSet):
     permission_classes = AbstractModelViewSet.permission_classes + [
         SuperUserOnly,
     ]
-    filter_backends = [
+    filter_backends = AbstractModelViewSet.filter_backends + [
         OwnerByMasterUserFilter,
     ]
 
@@ -67,22 +64,15 @@ class BloombergTaskFilterSet(FilterSet):
 class BloombergTaskViewSet(AbstractReadOnlyModelViewSet):
     queryset = BloombergTask.objects
     serializer_class = BloombergTaskSerializer
-    filter_backends = [
+    filter_backends = AbstractReadOnlyModelViewSet.filter_backends + [
         BloombergTaskFilter,
-        DjangoFilterBackend,
-        OrderingFilter,
-        SearchFilter,
     ]
     filter_class = BloombergTaskFilterSet
     ordering_fields = ['action', 'created', 'modified']
     search_fields = ['action']
 
 
-class AbstractImportViewSet(AbstractViewSet):
-    pass
-
-
-class FileInstrumentImportViewSet(AbstractImportViewSet):
+class FileInstrumentImportViewSet(AbstractViewSet):
     serializer_class = FileInstrumentImportSerializer
 
     def create(self, request, *args, **kwargs):
@@ -92,9 +82,9 @@ class FileInstrumentImportViewSet(AbstractImportViewSet):
         return Response(serializer.data)
 
 
-class BloombergInstrumentImportViewSet(AbstractImportViewSet):
+class BloombergInstrumentImportViewSet(AbstractViewSet):
     serializer_class = BloombergInstrumentImportSerializer
-    permission_classes = AbstractImportViewSet.permission_classes + [
+    permission_classes = AbstractViewSet.permission_classes + [
         BloombergConfigured,
     ]
 
@@ -105,9 +95,9 @@ class BloombergInstrumentImportViewSet(AbstractImportViewSet):
         return Response(serializer.data)
 
 
-class BloombergPriceHistoryImportViewSet(AbstractImportViewSet):
+class BloombergPriceHistoryImportViewSet(AbstractViewSet):
     serializer_class = BloombergPriceHistoryImportSerializer
-    permission_classes = AbstractImportViewSet.permission_classes + [
+    permission_classes = AbstractViewSet.permission_classes + [
         BloombergConfigured,
     ]
 
@@ -118,9 +108,9 @@ class BloombergPriceHistoryImportViewSet(AbstractImportViewSet):
         return Response(serializer.data)
 
 
-class BloombergCurrencyHistoryImportViewSet(AbstractImportViewSet):
+class BloombergCurrencyHistoryImportViewSet(AbstractViewSet):
     serializer_class = BloombergCurrencyHistoryImportSerializer
-    permission_classes = AbstractImportViewSet.permission_classes + [
+    permission_classes = AbstractViewSet.permission_classes + [
         BloombergConfigured,
     ]
 

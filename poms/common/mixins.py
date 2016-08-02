@@ -5,10 +5,10 @@ from rest_framework import permissions
 from rest_framework.views import APIView
 
 
-class DbTransactionMixin(APIView):
-    def dispatch(self, request, *args, **kwargs):
-        if request.method.upper() in permissions.SAFE_METHODS:
-            return super(DbTransactionMixin, self).dispatch(request, *args, **kwargs)
-        else:
-            with transaction.atomic():
-                return super(DbTransactionMixin, self).dispatch(request, *args, **kwargs)
+# class DbTransactionMixin(APIView):
+#     def dispatch(self, request, *args, **kwargs):
+#         if request.method.upper() in permissions.SAFE_METHODS:
+#             return super(DbTransactionMixin, self).dispatch(request, *args, **kwargs)
+#         else:
+#             with transaction.atomic():
+#                 return super(DbTransactionMixin, self).dispatch(request, *args, **kwargs)

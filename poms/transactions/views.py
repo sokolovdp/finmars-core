@@ -2,7 +2,7 @@ from __future__ import unicode_literals
 
 import django_filters
 from rest_framework.decorators import detail_route
-from rest_framework.filters import FilterSet, DjangoFilterBackend, OrderingFilter, SearchFilter
+from rest_framework.filters import FilterSet
 from rest_framework.response import Response
 
 from poms.accounts.models import Account
@@ -46,17 +46,10 @@ class TransactionTypeGroupFilterSet(FilterSet):
 class TransactionTypeGroupViewSet(AbstractWithObjectPermissionViewSet):
     queryset = TransactionTypeGroup.objects
     serializer_class = TransactionTypeGroupSerializer
-    filter_backends = [
+    filter_backends = AbstractWithObjectPermissionViewSet.filter_backends + [
         OwnerByMasterUserFilter,
-        # ObjectPermissionBackend,
-        DjangoFilterBackend,
-        OrderingFilter,
-        SearchFilter,
     ]
     filter_class = TransactionTypeGroupFilterSet
-    # permission_classes = PomsViewSetBase.permission_classes + [
-    #     ObjectPermissionBase,
-    # ]
     ordering_fields = ['user_code', 'name', 'short_name']
     search_fields = ['user_code', 'name', 'short_name']
 
@@ -148,17 +141,10 @@ class TransactionTypeViewSet(AbstractWithObjectPermissionViewSet):
         'responsible', 'responsible_input', 'counterparty', 'counterparty_input',
     )
     serializer_class = TransactionTypeSerializer
-    filter_backends = [
+    filter_backends = AbstractWithObjectPermissionViewSet.filter_backends + [
         OwnerByMasterUserFilter,
-        # ObjectPermissionBackend,
         TagFilterBackend,
-        DjangoFilterBackend,
-        OrderingFilter,
-        SearchFilter
     ]
-    # permission_classes = PomsViewSetBase.permission_classes + [
-    #     ObjectPermissionBase,
-    # ]
     filter_class = TransactionTypeFilterSet
     ordering_fields = ['user_code', 'name', 'short_name', 'group__user_code', 'group__name', 'group__short_name']
     search_fields = ['user_code', 'name', 'short_name', 'group__user_code', 'group__name', 'group__short_name']
@@ -229,19 +215,7 @@ class TransactionAttributeTypeFilterSet(FilterSet):
 class TransactionAttributeTypeViewSet(AbstractAttributeTypeViewSet):
     queryset = TransactionAttributeType.objects
     serializer_class = TransactionAttributeTypeSerializer
-    # filter_backends = [
-    #     OwnerByMasterUserFilter,
-    #     # ObjectPermissionBackend,
-    #     DjangoFilterBackend,
-    #     OrderingFilter,
-    #     SearchFilter,
-    # ]
     filter_class = TransactionAttributeTypeFilterSet
-    # permission_classes = PomsViewSetBase.permission_classes + [
-    #     ObjectPermissionBase,
-    # ]
-    # ordering_fields = ['user_code', 'name', 'short_name', ]
-    # search_fields = ['user_code', 'name', 'short_name', ]
 
 
 class TransactionFilterSet(FilterSet):
@@ -337,14 +311,10 @@ class TransactionViewSet(AbstractModelViewSet):
         'strategy1_cash', 'strategy2_position', 'strategy2_cash', 'strategy3_position', 'strategy3_cash',
     )
     serializer_class = TransactionSerializer
-    filter_backends = [
+    filter_backends = AbstractModelViewSet.filter_backends + [
         OwnerByMasterUserFilter,
         TransactionObjectPermissionFilter,
         AttributePrefetchFilter,
-        DjangoFilterBackend,
-        # OrderingWithAttributesFilter,
-        OrderingFilter,
-        SearchFilter,
     ]
     permission_classes = AbstractModelViewSet.permission_classes + [
         TransactionObjectPermission,
@@ -391,19 +361,14 @@ class ComplexTransactionViewSet(AbstractReadOnlyModelViewSet):
         'transactions__master_user',
     )
     serializer_class = ComplexTransactionSerializer
-    filter_backends = [
+    filter_backends = AbstractReadOnlyModelViewSet.filter_backends + [
         ComplexTransactionPermissionFilter,
-        DjangoFilterBackend,
-        OrderingFilter,
-        SearchFilter,
     ]
     filter_class = ComplexTransactionFilterSet
-    ordering_fields = [
-        'code'
-    ]
-    search_fields = ['code']
+    ordering_fields = ['code', ]
+    search_fields = ['code', ]
 
-    def get_queryset(self):
-        queryset = super(ComplexTransactionViewSet, self).get_queryset()
-        # queryset = obj_perms_prefetch(queryset, my=False, lookups_related=self.prefetch_permissions_for)
-        return queryset
+    # def get_queryset(self):
+    #     queryset = super(ComplexTransactionViewSet, self).get_queryset()
+    #     # queryset = obj_perms_prefetch(queryset, my=False, lookups_related=self.prefetch_permissions_for)
+    #     return queryset

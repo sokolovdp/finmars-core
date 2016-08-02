@@ -4,7 +4,6 @@ import django_filters
 from django.utils import timezone
 from rest_framework.decorators import detail_route
 from rest_framework.filters import OrderingFilter, SearchFilter, DjangoFilterBackend, FilterSet
-from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
 from poms.chats.filters import MessagePermissionFilter, DirectMessagePermissionFilter
@@ -32,16 +31,12 @@ class ThreadGroupFilterSet(FilterSet):
 class ThreadGroupViewSet(AbstractModelViewSet):
     queryset = ThreadGroup.objects
     serializer_class = ThreadGroupSerializer
-    permission_classes = [
-        IsAuthenticated,
+    permission_classes = AbstractModelViewSet.permission_classes + [
         SuperUserOrReadOnly
     ]
-    filter_backends = [
+    filter_backends = AbstractModelViewSet.filter_backends + [
         OwnerByMasterUserFilter,
         TagFilterBackend,
-        DjangoFilterBackend,
-        OrderingFilter,
-        SearchFilter,
     ]
     filter_class = ThreadGroupFilterSet
     ordering_fields = ['id', 'name']
@@ -74,25 +69,13 @@ class ThreadFilterSet(FilterSet):
 class ThreadViewSet(AbstractWithObjectPermissionViewSet):
     queryset = Thread.objects
     serializer_class = ThreadSerializer
-    # permission_classes = [
-    #     IsAuthenticated,
-    #     ObjectPermissionBase
-    # ]
-    filter_backends = [
+    filter_backends = AbstractWithObjectPermissionViewSet.filter_backends + [
         OwnerByMasterUserFilter,
         TagFilterBackend,
-        # ObjectPermissionBackend,
-        DjangoFilterBackend,
-        OrderingFilter,
-        SearchFilter,
     ]
     filter_class = ThreadFilterSet
     ordering_fields = ['id', 'created', 'subject']
     search_fields = ['subject']
-
-    # def get_serializer(self, *args, **kwargs):
-    #     kwargs['show_object_permissions'] = (self.action != 'list')
-    #     return super(ThreadViewSet, self).get_serializer(*args, **kwargs)
 
     @detail_route(url_path='close')
     def close(self, request, pk=None):
@@ -127,11 +110,8 @@ class MessageViewSet(AbstractModelViewSet):
     permission_classes = AbstractModelViewSet.permission_classes + [
         MessagePermission,
     ]
-    filter_backends = [
+    filter_backends = AbstractModelViewSet.filter_backends + [
         MessagePermissionFilter,
-        DjangoFilterBackend,
-        OrderingFilter,
-        SearchFilter,
     ]
     filter_class = MessageFilterSet
     ordering_fields = ['id', 'created']
@@ -153,11 +133,8 @@ class DirectMessageViewSet(AbstractModelViewSet):
     permission_classes = AbstractModelViewSet.permission_classes + [
         DirectMessagePermission,
     ]
-    filter_backends = [
+    filter_backends = AbstractModelViewSet.filter_backends + [
         DirectMessagePermissionFilter,
-        DjangoFilterBackend,
-        OrderingFilter,
-        SearchFilter,
     ]
     filter_class = DirectMessageFilterSet
     ordering_fields = ['id', 'created']

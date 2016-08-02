@@ -1,17 +1,15 @@
 from __future__ import unicode_literals
 
 import django_filters
-from django.contrib.messages import get_messages, info, success
 from django.utils import timezone
 from django_filters.widgets import BooleanWidget
 from rest_framework.decorators import list_route, detail_route
-from rest_framework.filters import DjangoFilterBackend, OrderingFilter, SearchFilter, FilterSet
+from rest_framework.filters import FilterSet
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
-from rest_framework.viewsets import ReadOnlyModelViewSet, ViewSet
 
 from poms.common.filters import CharFilter
-from poms.common.mixins import DbTransactionMixin
+from poms.common.views import AbstractReadOnlyModelViewSet
 from poms.notifications.filters import NotificationFilter
 from poms.notifications.models import Notification
 from poms.notifications.serializers import NotificationSerializer
@@ -30,7 +28,7 @@ class NotificationFilterSet(FilterSet):
         return qs
 
 
-class NotificationViewSet(DbTransactionMixin, ReadOnlyModelViewSet):
+class NotificationViewSet(AbstractReadOnlyModelViewSet):
     queryset = Notification.objects.prefetch_related(
         'recipient', 'recipient_member',
         'actor', 'actor_content_type',
@@ -39,12 +37,9 @@ class NotificationViewSet(DbTransactionMixin, ReadOnlyModelViewSet):
     )
     serializer_class = NotificationSerializer
     permission_classes = (IsAuthenticated,)
-    filter_backends = (
+    filter_backends = AbstractReadOnlyModelViewSet.filter_backends + [
         NotificationFilter,
-        DjangoFilterBackend,
-        OrderingFilter,
-        SearchFilter,
-    )
+    ]
     filter_class = NotificationFilterSet
     ordering_fields = ['create_date']
     search_fields = ['verb']
@@ -68,12 +63,11 @@ class NotificationViewSet(DbTransactionMixin, ReadOnlyModelViewSet):
         serializer = self.get_serializer(instance=instance)
         return Response(serializer.data)
 
-
-class MessageViewSet(ViewSet):
-    def list(self, request, *args, **kwargs):
-        data = []
-        info(request._request, 'info1')
-        success(request._request, 'success1')
-        for m in get_messages(request):
-            data.append([m.level, m.message])
-        return Response(data)
+# class MessageViewSet(ViewSet):
+#     def list(self, request, *args, **kwargs):
+#         data = []
+#         info(request._request, 'info1')
+#         success(request._request, 'success1')
+#         for m in get_messages(request):
+#             data.append([m.level, m.message])
+#         return Response(data)

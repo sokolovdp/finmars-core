@@ -1,7 +1,7 @@
 from __future__ import unicode_literals
 
 import django_filters
-from rest_framework.filters import DjangoFilterBackend, OrderingFilter, SearchFilter, FilterSet
+from rest_framework.filters import FilterSet
 
 from poms.common.filters import CharFilter, ModelWithPermissionMultipleChoiceFilter
 from poms.common.views import AbstractClassModelViewSet, AbstractModelViewSet
@@ -59,11 +59,8 @@ class PriceDownloadModeViewSet(AbstractClassModelViewSet):
 class PricingPolicyViewSet(AbstractModelViewSet):
     queryset = PricingPolicy.objects
     serializer_class = PricingPolicySerializer
-    filter_backends = [
+    filter_backends = AbstractModelViewSet.filter_backends + [
         OwnerByMasterUserFilter,
-        DjangoFilterBackend,
-        OrderingFilter,
-        SearchFilter
     ]
     permission_classes = AbstractModelViewSet.permission_classes + [
         SuperUserOrReadOnly,
@@ -86,24 +83,13 @@ class InstrumentTypeFilterSet(FilterSet):
 class InstrumentTypeViewSet(AbstractWithObjectPermissionViewSet):
     queryset = InstrumentType.objects
     serializer_class = InstrumentTypeSerializer
-    filter_backends = [
+    filter_backends = AbstractWithObjectPermissionViewSet.filter_backends + [
         OwnerByMasterUserFilter,
-        # ObjectPermissionBackend,
         TagFilterBackend,
-        DjangoFilterBackend,
-        OrderingFilter,
-        SearchFilter,
     ]
     filter_class = InstrumentTypeFilterSet
-    # permission_classes = PomsViewSetBase.permission_classes + [
-    #     ObjectPermissionBase,
-    # ]
     ordering_fields = ['user_code', 'name', 'short_name']
     search_fields = ['user_code', 'name', 'short_name']
-
-    # def get_serializer(self, *args, **kwargs):
-    #     kwargs['show_object_permissions'] = (self.action != 'list')
-    #     return super(InstrumentTypeViewSet, self).get_serializer(*args, **kwargs)
 
 
 class InstrumentAttributeTypeFilterSet(FilterSet):
@@ -119,23 +105,7 @@ class InstrumentAttributeTypeFilterSet(FilterSet):
 class InstrumentAttributeTypeViewSet(AbstractAttributeTypeViewSet):
     queryset = InstrumentAttributeType.objects.prefetch_related('classifiers')
     serializer_class = InstrumentAttributeTypeSerializer
-    # filter_backends = [
-    #     OwnerByMasterUserFilter,
-    #     # ObjectPermissionBackend,
-    #     DjangoFilterBackend,
-    #     OrderingFilter,
-    #     SearchFilter,
-    # ]
     filter_class = InstrumentAttributeTypeFilterSet
-    # permission_classes = PomsViewSetBase.permission_classes + [
-    #     ObjectPermissionBase,
-    # ]
-    # ordering_fields = ['user_code', 'name', 'short_name', ]
-    # search_fields = ['user_code', 'name', 'short_name', ]
-
-    # def get_serializer(self, *args, **kwargs):
-    #     kwargs['show_object_permissions'] = (self.action != 'list')
-    #     return super(InstrumentAttributeTypeViewSet, self).get_serializer(*args, **kwargs)
 
 
 class InstrumentFilterSet(FilterSet):
@@ -158,28 +128,16 @@ class InstrumentViewSet(AbstractWithObjectPermissionViewSet):
         'pricing_currency', 'accrued_currency', 'manual_pricing_formulas', 'accrual_calculation_schedules',
         'factor_schedules', 'event_schedules')
     serializer_class = InstrumentSerializer
-    filter_backends = [
+    filter_backends = AbstractWithObjectPermissionViewSet.filter_backends + [
         OwnerByMasterUserFilter,
-        # ObjectPermissionBackend,
         AttributePrefetchFilter,
         TagFilterBackend,
-        DjangoFilterBackend,
-        OrderingFilter,
-        # OrderingWithAttributesFilter,
-        SearchFilter,
     ]
     filter_class = InstrumentFilterSet
-    # permission_classes = PomsViewSetBase.permission_classes + [
-    #     ObjectPermissionBase
-    # ]
     ordering_fields = ['user_code', 'name', 'short_name', 'instrument_type__user_code', 'instrument_type__name',
                        'instrument_type__short_name']
     search_fields = ['user_code', 'name', 'short_name', 'instrument_type__user_code', 'instrument_type__name',
                      'instrument_type__short_name']
-
-    def get_serializer(self, *args, **kwargs):
-        kwargs['show_object_permissions'] = (self.action != 'list')
-        return super(InstrumentViewSet, self).get_serializer(*args, **kwargs)
 
 
 class PriceHistoryFilterSet(FilterSet):
@@ -198,12 +156,9 @@ class PriceHistoryViewSet(AbstractModelViewSet):
         'instrument__group_object_permissions', 'instrument__group_object_permissions__permission',
     )
     serializer_class = PriceHistorySerializer
-    filter_backends = [
+    filter_backends = AbstractModelViewSet.filter_backends + [
         OwnerByInstrumentFilter,
         PriceHistoryObjectPermissionFilter,
-        DjangoFilterBackend,
-        OrderingFilter,
-        SearchFilter,
     ]
     filter_class = PriceHistoryFilterSet
     ordering_fields = ['-date']

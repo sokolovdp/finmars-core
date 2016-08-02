@@ -1,6 +1,6 @@
 from __future__ import unicode_literals
 
-from rest_framework.filters import FilterSet, DjangoFilterBackend, OrderingFilter, SearchFilter
+from rest_framework.filters import FilterSet
 
 from poms.accounts.models import Account, AccountType, AccountAttributeType
 from poms.accounts.serializers import AccountSerializer, AccountTypeSerializer, AccountAttributeTypeSerializer
@@ -27,24 +27,13 @@ class AccountTypeFilterSet(FilterSet):
 class AccountTypeViewSet(AbstractWithObjectPermissionViewSet):
     queryset = AccountType.objects
     serializer_class = AccountTypeSerializer
-    filter_backends = [
+    filter_backends = AbstractWithObjectPermissionViewSet.filter_backends + [
         OwnerByMasterUserFilter,
-        # ObjectPermissionBackend,
         TagFilterBackend,
-        DjangoFilterBackend,
-        OrderingFilter,
-        SearchFilter,
     ]
     filter_class = AccountTypeFilterSet
-    # permission_classes = PomsViewSetBase.permission_classes + [
-    #     ObjectPermissionBase,
-    # ]
     ordering_fields = ['user_code', 'name', 'short_name', ]
     search_fields = ['user_code', 'name', 'short_name', ]
-
-    # def get_serializer(self, *args, **kwargs):
-    #     kwargs['show_object_permissions'] = (self.action != 'list')
-    #     return super(AccountTypeViewSet, self).get_serializer(*args, **kwargs)
 
 
 class AccountAttributeTypeFilterSet(FilterSet):
@@ -60,23 +49,7 @@ class AccountAttributeTypeFilterSet(FilterSet):
 class AccountAttributeTypeViewSet(AbstractAttributeTypeViewSet):
     queryset = AccountAttributeType.objects.prefetch_related('classifiers')
     serializer_class = AccountAttributeTypeSerializer
-    # filter_backends = [
-    #     OwnerByMasterUserFilter,
-    #     # ObjectPermissionBackend,
-    #     DjangoFilterBackend,
-    #     OrderingFilter,
-    #     SearchFilter,
-    # ]
     filter_class = AccountAttributeTypeFilterSet
-    # permission_classes = PomsViewSetBase.permission_classes + [
-    #     ObjectPermissionBase,
-    # ]
-    # ordering_fields = ['user_code', 'name', 'short_name', ]
-    # search_fields = ['user_code', 'name', 'short_name', ]
-
-    # def get_serializer(self, *args, **kwargs):
-    #     kwargs['show_object_permissions'] = (self.action != 'list')
-    #     return super(AccountAttributeTypeViewSet, self).get_serializer(*args, **kwargs)
 
 
 class AccountFilterSet(FilterSet):
@@ -103,20 +76,12 @@ class AccountViewSet(AbstractWithObjectPermissionViewSet):
     )
     prefetch_permissions_for = ('type', 'portfolios',)
     serializer_class = AccountSerializer
-    filter_backends = [
+    filter_backends = AbstractWithObjectPermissionViewSet.filter_backends + [
         OwnerByMasterUserFilter,
-        # ObjectPermissionBackend,
         TagFilterBackend,
         AttributePrefetchFilter,
-        DjangoFilterBackend,
-        OrderingFilter,
-        # OrderingWithAttributesFilter,
-        SearchFilter,
     ]
     filter_class = AccountFilterSet
-    # permission_classes = PomsViewSetBase.permission_classes + [
-    #     ObjectPermissionBase
-    # ]
     ordering_fields = [
         'user_code', 'name', 'short_name',
         'type__user_code', 'type__name', 'type__short_name',
@@ -125,7 +90,3 @@ class AccountViewSet(AbstractWithObjectPermissionViewSet):
         'user_code', 'name', 'short_name',
         'type__user_code', 'type__name', 'type__short_name',
     ]
-
-    def get_serializer(self, *args, **kwargs):
-        kwargs['show_object_permissions'] = (self.action != 'list')
-        return super(AccountViewSet, self).get_serializer(*args, **kwargs)

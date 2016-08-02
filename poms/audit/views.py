@@ -2,14 +2,12 @@ from __future__ import unicode_literals
 
 import django_filters
 from django_filters import FilterSet
-from rest_framework.filters import DjangoFilterBackend, OrderingFilter, SearchFilter
-from rest_framework.permissions import IsAuthenticated
-from rest_framework.viewsets import ReadOnlyModelViewSet
 
 from poms.audit.filters import ObjectHistoryContentTypeMultipleChoiceFilter
 from poms.audit.models import AuthLogEntry, ObjectHistoryEntry
 from poms.audit.serializers import AuthLogEntrySerializer, ObjectHistoryEntrySerializer
 from poms.common.filters import ModelWithPermissionMultipleChoiceFilter
+from poms.common.views import AbstractReadOnlyModelViewSet
 from poms.users.filters import OwnerByUserFilter
 from poms.users.models import Member
 from poms.users.permissions import SuperUserOnly
@@ -23,18 +21,12 @@ class AuthLogEntryFilterSet(FilterSet):
         fields = ('user_ip', 'is_success', 'date',)
 
 
-class AuthLogViewSet(ReadOnlyModelViewSet):
+class AuthLogViewSet(AbstractReadOnlyModelViewSet):
     queryset = AuthLogEntry.objects.select_related('user')
     serializer_class = AuthLogEntrySerializer
-    permission_classes = (
-        IsAuthenticated,
-    )
-    filter_backends = (
+    filter_backends = AbstractReadOnlyModelViewSet.filter_backends + [
         OwnerByUserFilter,
-        DjangoFilterBackend,
-        OrderingFilter,
-        SearchFilter,
-    )
+    ]
     filter_class = AuthLogEntryFilterSet
     ordering_fields = ('date',)
     search_fields = ('user_ip', 'user_agent',)
@@ -43,7 +35,6 @@ class AuthLogViewSet(ReadOnlyModelViewSet):
 class ObjectHistoryEntryFilterSet(FilterSet):
     created = django_filters.DateFromToRangeFilter()
     member = ModelWithPermissionMultipleChoiceFilter(model=Member, field_name='username')
-    # content_type = django_filters.ModelChoiceFilter(queryset=ContentType.objects.order_by('app_label', 'model'))
     content_type = ObjectHistoryContentTypeMultipleChoiceFilter()
 
     class Meta:
@@ -51,18 +42,12 @@ class ObjectHistoryEntryFilterSet(FilterSet):
         fields = ('created', 'member', 'content_type', 'object_id')
 
 
-class ObjectHistoryViewSet(ReadOnlyModelViewSet):
+class ObjectHistoryViewSet(AbstractReadOnlyModelViewSet):
     queryset = ObjectHistoryEntry.objects.select_related('master_user', 'member', 'content_type')
     serializer_class = ObjectHistoryEntrySerializer
-    permission_classes = (
-        IsAuthenticated,
-        SuperUserOnly
-    )
-    filter_backends = (
-        DjangoFilterBackend,
-        OrderingFilter,
-        SearchFilter,
-    )
+    permission_classes = AbstractReadOnlyModelViewSet.permission_classes + [
+        SuperUserOnly,
+    ]
     filter_class = ObjectHistoryEntryFilterSet
     ordering_fields = ('created', 'content_type',)
     search_fields = ('created',)

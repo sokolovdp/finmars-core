@@ -17,34 +17,21 @@ class AbstractStrategyFilterSet(AbstractClassifierFilterSet):
 class AbstractStrategyViewSet(AbstractWithObjectPermissionViewSet, AbstractClassifierViewSet):
     filter_backends = AbstractClassifierViewSet.filter_backends + [
         TagFilterBackend,
-        # ObjectPermissionBackend,
     ]
-
-    # permission_classes = ClassifierNodeViewSetBase.permission_classes + [
-    #     ObjectPermissionBase
-    # ]
 
     def get_serializer(self, *args, **kwargs):
         kwargs['show_children'] = (self.action != 'list')
-        # kwargs['show_object_permissions'] = (self.action != 'list')
         return super(AbstractStrategyViewSet, self).get_serializer(*args, **kwargs)
 
 
 class AbstractStrategyNodeViewSet(AbstractWithObjectPermissionViewSet, AbstractClassifierNodeViewSet):
     filter_backends = AbstractClassifierNodeViewSet.filter_backends + [
         TagFilterBackend,
-        # ObjectPermissionBackend,
     ]
-    # permission_classes = ClassifierNodeViewSetBase.permission_classes + [
-    #     ObjectPermissionBase
-    # ]
-
-    # def get_serializer(self, *args, **kwargs):
-    #     kwargs['show_object_permissions'] = (self.action != 'list')
-    #     return super(AbstractStrategyNodeViewSet, self).get_serializer(*args, **kwargs)
 
 
 # Strategy1
+
 
 class Strategy1ClassifierFilterSet(AbstractStrategyFilterSet):
     tag = TagFilter(model=Strategy1)

@@ -1,7 +1,7 @@
 import django_filters
 import six
 from django_filters.fields import Lookup
-from rest_framework.filters import FilterSet, DjangoFilterBackend, OrderingFilter, SearchFilter
+from rest_framework.filters import FilterSet
 
 from poms.common.views import AbstractModelViewSet
 from poms.ui.models import TemplateListLayout, TemplateEditLayout, ListLayout, EditLayout
@@ -42,11 +42,8 @@ class TemplateListLayoutFilterSet(FilterSet):
 class TemplateListLayoutViewSet(AbstractModelViewSet):
     queryset = TemplateListLayout.objects.prefetch_related('master_user', 'content_type')
     serializer_class = TemplateListLayoutSerializer
-    filter_backends = [
+    filter_backends = AbstractModelViewSet.filter_backends + [
         OwnerByMasterUserFilter,
-        DjangoFilterBackend,
-        OrderingFilter,
-        SearchFilter,
     ]
     filter_class = TemplateListLayoutFilterSet
     permission_classes = AbstractModelViewSet.permission_classes + [
@@ -67,10 +64,8 @@ class TemplateEditLayoutFilterSet(FilterSet):
 class TemplateEditLayoutViewSet(AbstractModelViewSet):
     queryset = TemplateEditLayout.objects.prefetch_related('master_user', 'content_type')
     serializer_class = TemplateEditLayoutSerializer
-    filter_backends = [
+    filter_backends = AbstractModelViewSet.filter_backends + [
         OwnerByMasterUserFilter,
-        OrderingFilter,
-        SearchFilter,
     ]
     permission_classes = AbstractModelViewSet.permission_classes + [
         SuperUserOnly
@@ -91,11 +86,8 @@ class ListLayoutFilterSet(FilterSet):
 class ListLayoutViewSet(AbstractModelViewSet):
     queryset = ListLayout.objects.prefetch_related('member', 'content_type')
     serializer_class = ListLayoutSerializer
-    filter_backends = [
+    filter_backends = AbstractModelViewSet.filter_backends + [
         OwnerByMemberFilter,
-        DjangoFilterBackend,
-        OrderingFilter,
-        SearchFilter,
     ]
     filter_class = ListLayoutFilterSet
     ordering_fields = ['name']
@@ -113,11 +105,8 @@ class EditLayoutFilterSet(FilterSet):
 class EditLayoutViewSet(AbstractModelViewSet):
     queryset = EditLayout.objects.select_related('member', 'content_type')
     serializer_class = EditLayoutSerializer
-    filter_backends = [
+    filter_backends = AbstractModelViewSet.filter_backends + [
         OwnerByMemberFilter,
-        DjangoFilterBackend,
-        OrderingFilter,
-        SearchFilter,
     ]
     filter_class = EditLayoutFilterSet
     ordering_fields = []

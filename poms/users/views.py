@@ -9,18 +9,16 @@ from django_filters import MethodFilter
 from rest_framework.authtoken.models import Token
 from rest_framework.authtoken.serializers import AuthTokenSerializer
 from rest_framework.decorators import detail_route
-from rest_framework.filters import DjangoFilterBackend, OrderingFilter, SearchFilter, FilterSet
+from rest_framework.filters import FilterSet
 from rest_framework.mixins import UpdateModelMixin, DestroyModelMixin
 from rest_framework.parsers import JSONParser, MultiPartParser, FormParser
 from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework.response import Response
 from rest_framework.viewsets import ViewSet
 
-from poms.audit.mixins import HistoricalMixin
 from poms.common.filters import CharFilter
-from poms.common.mixins import DbTransactionMixin
 from poms.common.pagination import BigPagination
-from poms.common.views import AbstractModelViewSet, AbstractReadOnlyModelViewSet
+from poms.common.views import AbstractModelViewSet, AbstractReadOnlyModelViewSet, AbstractApiView
 from poms.users.filters import OwnerByMasterUserFilter, MasterUserFilter
 from poms.users.models import MasterUser, Member, Group
 from poms.users.permissions import SuperUserOrReadOnly, IsCurrentMasterUser, IsCurrentUser
@@ -30,7 +28,7 @@ from poms.users.serializers import GroupSerializer, UserSerializer, MasterUserSe
 from poms.users.utils import set_master_user
 
 
-class ObtainAuthTokenViewSet(DbTransactionMixin, ViewSet):
+class ObtainAuthTokenViewSet(AbstractApiView, ViewSet):
     parser_classes = (FormParser, MultiPartParser, JSONParser,)
     serializer_class = AuthTokenSerializer
 
@@ -43,8 +41,8 @@ class ObtainAuthTokenViewSet(DbTransactionMixin, ViewSet):
         return Response({'token': token.key})
 
 
-class PingViewSet(ViewSet):
-    permission_classes = [AllowAny]
+class PingViewSet(AbstractApiView, ViewSet):
+    permission_classes = [AllowAny, ]
 
     @method_decorator(ensure_csrf_cookie)
     def list(self, request, *args, **kwargs):
@@ -59,12 +57,12 @@ class PingViewSet(ViewSet):
 
 
 class ProtectedPingViewSet(PingViewSet):
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated, ]
 
 
 class LoginViewSet(ViewSet):
-    permission_classes = ()
-    parser_classes = (FormParser, MultiPartParser, JSONParser,)
+    permission_classes = []
+    parser_classes = [FormParser, MultiPartParser, JSONParser, ]
     serializer_class = AuthTokenSerializer
 
     def create(self, request, *args, **kwargs):
@@ -81,10 +79,10 @@ class LogoutViewSet(ViewSet):
         return Response({'success': True})
 
 
-class UserRegisterViewSet(DbTransactionMixin, ViewSet):
+class UserRegisterViewSet(AbstractApiView, ViewSet):
     serializer_class = UserRegisterSerializer
-    permission_classes = ()
-    authentication_classes = ()
+    permission_classes = []
+    authentication_classes = []
 
     def create(self, request, *args, **kwargs):
         serializer = self.serializer_class(data=request.data)
@@ -95,7 +93,7 @@ class UserRegisterViewSet(DbTransactionMixin, ViewSet):
         return Response({'success': True})
 
 
-class UserViewSet(HistoricalMixin, UpdateModelMixin, AbstractReadOnlyModelViewSet):
+class UserViewSet(UpdateModelMixin, AbstractReadOnlyModelViewSet):
     queryset = User.objects
     serializer_class = UserSerializer
     permission_classes = AbstractReadOnlyModelViewSet.permission_classes + [
@@ -147,11 +145,8 @@ class MasterUserViewSet(AbstractModelViewSet):
         IsCurrentMasterUser,
         SuperUserOrReadOnly,
     ]
-    filter_backends = [
+    filter_backends = AbstractModelViewSet.filter_backends + [
         MasterUserFilter,
-        DjangoFilterBackend,
-        OrderingFilter,
-        SearchFilter,
     ]
     ordering_fields = ['name', ]
     search_fields = ['name', ]
@@ -185,18 +180,14 @@ class MemberFilterSet(FilterSet):
         return qs
 
 
-class MemberViewSet(HistoricalMixin, UpdateModelMixin, DestroyModelMixin, AbstractReadOnlyModelViewSet):
+class MemberViewSet(UpdateModelMixin, DestroyModelMixin, AbstractReadOnlyModelViewSet):
     queryset = Member.objects.select_related('user').prefetch_related('groups')
     serializer_class = MemberSerializer
     permission_classes = AbstractModelViewSet.permission_classes + [
-        # IsAuthenticated,
-        SuperUserOrReadOnly
+        SuperUserOrReadOnly,
     ]
     filter_backends = AbstractReadOnlyModelViewSet.filter_backends + [
         OwnerByMasterUserFilter,
-        DjangoFilterBackend,
-        OrderingFilter,
-        SearchFilter,
     ]
     filter_class = MemberFilterSet
     ordering_fields = ['username', ]
@@ -223,14 +214,10 @@ class GroupViewSet(AbstractModelViewSet):
     queryset = Group.objects.select_related('master_user').prefetch_related('members')
     serializer_class = GroupSerializer
     permission_classes = AbstractModelViewSet.permission_classes + [
-        # IsAuthenticated,
-        SuperUserOrReadOnly
+        SuperUserOrReadOnly,
     ]
     filter_backends = AbstractModelViewSet.filter_backends + [
         OwnerByMasterUserFilter,
-        DjangoFilterBackend,
-        OrderingFilter,
-        SearchFilter,
     ]
     ordering_fields = ['name', ]
     search_fields = ['name', ]

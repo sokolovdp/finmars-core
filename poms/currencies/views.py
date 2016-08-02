@@ -30,12 +30,9 @@ class CurrencyViewSet(AbstractModelViewSet):
     permission_classes = AbstractModelViewSet.permission_classes + [
         SuperUserOrReadOnly,
     ]
-    filter_backends = [
+    filter_backends = AbstractModelViewSet.filter_backends + [
         OwnerByMasterUserFilter,
         TagFilterBackend,
-        DjangoFilterBackend,
-        OrderingFilter,
-        SearchFilter,
     ]
     filter_class = CurrencyFilterSet
     ordering_fields = ['user_code', 'name', 'short_name']
@@ -57,11 +54,8 @@ class CurrencyHistoryViewSet(AbstractModelViewSet):
     permission_classes = AbstractModelViewSet.permission_classes + [
         SuperUserOrReadOnly,
     ]
-    filter_backends = [
+    filter_backends = AbstractModelViewSet.filter_backends + [
         OwnerByCurrencyFilter,
-        DjangoFilterBackend,
-        OrderingFilter,
-        SearchFilter,
     ]
     filter_class = CurrencyHistoryFilterSet
     ordering_fields = ['date', ]
