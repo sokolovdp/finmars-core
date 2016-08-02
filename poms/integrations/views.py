@@ -9,9 +9,9 @@ from poms.common.views import AbstractViewSet, AbstractModelViewSet, AbstractRea
 from poms.integrations.filters import BloombergTaskFilter
 from poms.integrations.models import InstrumentMapping, BloombergConfig, BloombergTask
 from poms.integrations.permissions import BloombergConfigured
-from poms.integrations.serializers import InstrumentBloombergImportSerializer, InstrumentFileImportSerializer, \
-    InstrumentMappingSerializer, BloombergConfigSerializer, BloombergTaskSerializer, \
-    PriceHistoryBloombergImportSerializer, CurrencyHistoryBloombergImportSerializer
+from poms.integrations.serializers import FileInstrumentImportSerializer, InstrumentMappingSerializer, \
+    BloombergConfigSerializer, BloombergTaskSerializer, BloombergInstrumentImportSerializer, \
+    BloombergPriceHistoryImportSerializer, BloombergCurrencyHistoryImportSerializer
 from poms.users.filters import OwnerByMasterUserFilter
 from poms.users.models import Member
 from poms.users.permissions import SuperUserOrReadOnly, SuperUserOnly
@@ -82,8 +82,8 @@ class AbstractImportViewSet(AbstractViewSet):
     pass
 
 
-class InstrumentFileImportViewSet(AbstractImportViewSet):
-    serializer_class = InstrumentFileImportSerializer
+class FileInstrumentImportViewSet(AbstractImportViewSet):
+    serializer_class = FileInstrumentImportSerializer
 
     def create(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)
@@ -92,8 +92,8 @@ class InstrumentFileImportViewSet(AbstractImportViewSet):
         return Response(serializer.data)
 
 
-class InstrumentBloombergImportViewSet(AbstractImportViewSet):
-    serializer_class = InstrumentBloombergImportSerializer
+class BloombergInstrumentImportViewSet(AbstractImportViewSet):
+    serializer_class = BloombergInstrumentImportSerializer
     permission_classes = AbstractImportViewSet.permission_classes + [
         BloombergConfigured,
     ]
@@ -105,8 +105,8 @@ class InstrumentBloombergImportViewSet(AbstractImportViewSet):
         return Response(serializer.data)
 
 
-class PriceHistoryBloombergImportViewSet(AbstractImportViewSet):
-    serializer_class = PriceHistoryBloombergImportSerializer
+class BloombergPriceHistoryImportViewSet(AbstractImportViewSet):
+    serializer_class = BloombergPriceHistoryImportSerializer
     permission_classes = AbstractImportViewSet.permission_classes + [
         BloombergConfigured,
     ]
@@ -118,8 +118,8 @@ class PriceHistoryBloombergImportViewSet(AbstractImportViewSet):
         return Response(serializer.data)
 
 
-class CurrencyHistoryBloombergImportViewSet(AbstractImportViewSet):
-    serializer_class = CurrencyHistoryBloombergImportSerializer
+class BloombergCurrencyHistoryImportViewSet(AbstractImportViewSet):
+    serializer_class = BloombergCurrencyHistoryImportSerializer
     permission_classes = AbstractImportViewSet.permission_classes + [
         BloombergConfigured,
     ]

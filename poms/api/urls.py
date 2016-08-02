@@ -126,15 +126,15 @@ router.register(r'bloomberg/task', integrations.BloombergTaskViewSet)
 
 router.register(r'import/instuments/instrument/mapping', integrations.InstrumentMappingViewSet)
 
-router.register(r'import/instuments/instrument/file', integrations.InstrumentFileImportViewSet,
-                'InstrumentFileImportViewSet')
+router.register(r'import/file/instuments/instrument', integrations.FileInstrumentImportViewSet,
+                'FileInstrumentImportViewSet')
 
-router.register(r'import/instuments/instrument/bloomberg', integrations.InstrumentBloombergImportViewSet,
-                'InstrumentBloombergImportViewSet')
-router.register(r'import/instuments/price-history/bloomberg', integrations.PriceHistoryBloombergImportViewSet,
-                'PriceHistoryBloombergImportViewSet')
-router.register(r'import/currencies/currency-history/bloomberg', integrations.CurrencyHistoryBloombergImportViewSet,
-                'CurrencyHistoryBloombergImportViewSet')
+router.register(r'import/bloomberg/instuments/instrument', integrations.BloombergInstrumentImportViewSet,
+                'BloombergInstrumentImportViewSet')
+router.register(r'import/bloomberg/instuments/price-history', integrations.BloombergPriceHistoryImportViewSet,
+                'BloombergPriceHistoryImportViewSet')
+router.register(r'import/bloomberg/currencies/currency-history', integrations.BloombergCurrencyHistoryImportViewSet,
+                'BloombergCurrencyHistoryImportViewSet')
 
 urlpatterns = [
     url(r'^v1/', include(router.urls, namespace='v1')),
