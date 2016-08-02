@@ -18,17 +18,19 @@ from rest_framework.viewsets import ViewSet
 
 from poms.audit.mixins import HistoricalMixin
 from poms.common.filters import CharFilter
+from poms.common.mixins import DbTransactionMixin
 from poms.common.pagination import BigPagination
 from poms.common.views import AbstractModelViewSet, AbstractReadOnlyModelViewSet
 from poms.users.filters import OwnerByMasterUserFilter, MasterUserFilter
 from poms.users.models import MasterUser, Member, Group
 from poms.users.permissions import SuperUserOrReadOnly, IsCurrentMasterUser, IsCurrentUser
 from poms.users.serializers import GroupSerializer, UserSerializer, MasterUserSerializer, MemberSerializer, \
-    PingSerializer, UserSetPasswordSerializer, MasterUserSetCurrentSerializer, UserUnsubscribeSerializer
+    PingSerializer, UserSetPasswordSerializer, MasterUserSetCurrentSerializer, UserUnsubscribeSerializer, \
+    UserRegisterSerializer
 from poms.users.utils import set_master_user
 
 
-class ObtainAuthTokenViewSet(ViewSet):
+class ObtainAuthTokenViewSet(DbTransactionMixin, ViewSet):
     parser_classes = (FormParser, MultiPartParser, JSONParser,)
     serializer_class = AuthTokenSerializer
 
@@ -79,11 +81,24 @@ class LogoutViewSet(ViewSet):
         return Response({'success': True})
 
 
+class UserRegisterViewSet(DbTransactionMixin, ViewSet):
+    serializer_class = UserRegisterSerializer
+    permission_classes = ()
+    authentication_classes = ()
+
+    def create(self, request, *args, **kwargs):
+        serializer = self.serializer_class(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        validated_data = serializer.save()
+        user = validated_data['user']
+        login(request, user)
+        return Response({'success': True})
+
+
 class UserViewSet(HistoricalMixin, UpdateModelMixin, AbstractReadOnlyModelViewSet):
     queryset = User.objects
     serializer_class = UserSerializer
-    permission_classes = [
-        # IsAuthenticated,
+    permission_classes = AbstractReadOnlyModelViewSet.permission_classes + [
         IsCurrentUser,
     ]
 
@@ -129,7 +144,6 @@ class MasterUserViewSet(AbstractModelViewSet):
     queryset = MasterUser.objects
     serializer_class = MasterUserSerializer
     permission_classes = AbstractModelViewSet.permission_classes + [
-        # IsAuthenticated,
         IsCurrentMasterUser,
         SuperUserOrReadOnly,
     ]

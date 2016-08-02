@@ -22,32 +22,57 @@ TIMEZONE_COMMON_CHOICES = sorted(list((k, k) for k in pytz.common_timezones))
 
 
 class MasterUserManager(models.Manager):
-    def create(self, **kwargs):
+    def create_master_user(self, user=None, **kwargs):
         from poms.currencies.models import Currency
         from poms.accounts.models import AccountType, Account
         from poms.counterparties.models import Counterparty, Responsible
         from poms.portfolios.models import Portfolio
         from poms.instruments.models import InstrumentClass, InstrumentType, Instrument
+        from poms.strategies.models import Strategy1, Strategy2, Strategy3
+        from poms.obj_perms.utils import assign_perms2, get_change_perms
 
-        obj = super(MasterUserManager, self).create(kwargs)
+        obj = MasterUser(**kwargs)
+        obj.save()
 
-        ccy = Currency.objects.create(master_user=obj, name='-')
-        Currency.objects.create(master_user=obj, name=settings.CURRENCY_CODE)
+        ccy = Currency.objects.create(master_user=obj, name=settings.CURRENCY_CODE)
+
+        account_type = AccountType.objects.create(master_user=obj, name='-')
+        account = Account.objects.create(master_user=obj, type=account_type, name='-')
+
+        counterparty = Counterparty.objects.create(master_user=obj, name='-')
+        responsible = Responsible.objects.create(master_user=obj, name='-')
+
+        portfolio = Portfolio.objects.create(master_user=obj, name='-')
+
+        instrument_class = InstrumentClass.objects.get(pk=InstrumentClass.GENERAL)
+        instrument_type = InstrumentType.objects.create(master_user=obj, instrument_class=instrument_class, name='-')
+        # instrument = Instrument.objects.create(master_user=obj, instrument_type=instrument_type, pricing_currency=ccy,
+        #                                        accrued_currency=ccy, name='-')
+
+        strategy1 = Strategy1.objects.create(master_user=obj, name='-')
+        strategy2 = Strategy2.objects.create(master_user=obj, name='-')
+        strategy3 = Strategy3.objects.create(master_user=obj, name='-')
+
+        member = Member.objects.create(user=user, master_user=obj, is_owner=True, is_admin=True)
+        group = Group.objects.create(master_user=obj, name='Default')
+
         obj.currency = ccy
-        obj.save(update_fields=['currency'])
+        obj.account_type = account_type
+        obj.account = account
+        obj.counterparty = counterparty
+        obj.responsible = responsible
+        obj.portfolio = portfolio
+        obj.instrument_type = instrument_type
+        # obj.instrument = instrument
+        obj.strategy1 = strategy1
+        obj.strategy2 = strategy2
+        obj.strategy3 = strategy3
+        obj.save()
 
-        acc_t = AccountType.objects.create(master_user=obj, name='-')
-        acc = Account.objects.create(master_user=obj, type=acc_t, name='-')
-
-        Counterparty.objects.create(master_user=obj, name='-')
-        Responsible.objects.create(master_user=obj, name='-')
-
-        Portfolio.objects.create(master_user=obj, name='-')
-
-        instr_cls = InstrumentClass.objects.get(pk=InstrumentClass.GENERAL)
-        instr_t = InstrumentType.objects.create(master_user=obj, instrument_class=instr_cls, name='-')
-        instr = Instrument.objects.create(master_user=obj, type=instr_t, pricing_currency=acc, accrued_currency=acc,
-                                          name='-')
+        for c in [account_type, account, counterparty, responsible, portfolio, instrument_type, strategy1, strategy2,
+                  strategy3]:
+            for p in get_change_perms(c):
+                assign_perms2(c, group_perms=[{'group': group, 'permission': p}])
 
         return obj
 
@@ -73,6 +98,8 @@ class MasterUser(models.Model):
     strategy1 = models.ForeignKey('strategies.Strategy1', null=True, blank=True, on_delete=models.PROTECT)
     strategy2 = models.ForeignKey('strategies.Strategy2', null=True, blank=True, on_delete=models.PROTECT)
     strategy3 = models.ForeignKey('strategies.Strategy3', null=True, blank=True, on_delete=models.PROTECT)
+
+    objects = MasterUserManager()
 
     class Meta:
         verbose_name = _('master user')
@@ -124,7 +151,7 @@ class Member(models.Model):
         ]
 
     def __str__(self):
-        return '%s@%s' % (self.user.username, self.master_user)
+        return '%s@%s' % (self.username, self.master_user)
 
     @property
     def is_superuser(self):

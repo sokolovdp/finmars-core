@@ -32,13 +32,17 @@ class LoginSerializer(AuthTokenSerializer):
     pass
 
 
-class RegisterSerializer(AuthTokenSerializer):
-    username = serializers.CharField(required=True, max_length=30)
-    password = serializers.CharField(required=True, max_length=128, style={'input_type': 'password'})
+class UserRegisterSerializer(serializers.Serializer):
+    username = serializers.CharField(max_length=30, required=True)
+    password = serializers.CharField(max_length=128, required=True, style={'input_type': 'password'})
+    first_name = serializers.CharField(max_length=30, required=False, allow_blank=True)
+    last_name = serializers.CharField(max_length=30, required=False, allow_blank=True)
 
     def create(self, validated_data):
         username = validated_data.get('username')
         password = validated_data.get('password')
+        first_name = validated_data.get('first_name', '')
+        last_name = validated_data.get('last_name', '')
 
         user_model = get_user_model()
 
@@ -46,8 +50,9 @@ class RegisterSerializer(AuthTokenSerializer):
             msg = _('User already exist.')
             raise serializers.ValidationError(msg)
 
-        user = user_model.objects.create_user(username=username, password=password)
-        master_user = MasterUser.objects.create(user=user, language=translation.get_language())
+        user = user_model.objects.create_user(username=username, password=password,
+                                              first_name=first_name, last_name=last_name)
+        MasterUser.objects.create_master_user(user=user, language=translation.get_language())
 
         user = authenticate(username=username, password=password)
 
