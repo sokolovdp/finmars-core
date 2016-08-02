@@ -9,8 +9,13 @@ from django.utils.translation import ugettext_lazy as _
 from rest_framework import serializers
 from rest_framework.authtoken.serializers import AuthTokenSerializer
 
+from poms.accounts.fields import AccountTypeField, AccountField
 from poms.common.fields import DateTimeTzAwareField
+from poms.counterparties.fields import CounterpartyField, ResponsibleField
 from poms.currencies.fields import CurrencyField
+from poms.instruments.fields import InstrumentTypeField
+from poms.portfolios.fields import PortfolioField
+from poms.strategies.fields import Strategy1Field, Strategy2Field, Strategy3Field
 from poms.users.fields import MasterUserField
 from poms.users.models import MasterUser, UserProfile, Group, Member, TIMEZONE_CHOICES
 
@@ -147,14 +152,25 @@ class UserUnsubscribeSerializer(serializers.Serializer):
 
 class MasterUserSerializer(serializers.ModelSerializer):
     url = serializers.HyperlinkedIdentityField(view_name='masteruser-detail')
-    currency = CurrencyField()
     language = serializers.ChoiceField(choices=settings.LANGUAGES, default=settings.LANGUAGE_CODE)
     timezone = serializers.ChoiceField(choices=TIMEZONE_CHOICES)
     is_current = serializers.SerializerMethodField()
+    currency = CurrencyField()
+
+    account_type = AccountTypeField()
+    account = AccountField()
+    counterparty = CounterpartyField(allow_null=True, allow_empty=True)
+    responsible = ResponsibleField(allow_null=True, allow_empty=True)
+    instrument_type = InstrumentTypeField()
+    portfolio = PortfolioField()
+    strategy1 = Strategy1Field()
+    strategy2 = Strategy2Field()
+    strategy3 = Strategy3Field()
 
     class Meta:
         model = MasterUser
-        fields = ['url', 'id', 'name', 'currency', 'language', 'timezone', 'is_current']
+        fields = ['url', 'id', 'name', 'language', 'timezone', 'is_current', 'currency', 'account_type', 'account',
+                  'counterparty', 'responsible', 'instrument_type', 'portfolio', 'strategy1', 'strategy2', 'strategy3']
 
     def get_is_current(self, obj):
         request = self.context['request']

@@ -20,12 +20,15 @@ class PortfolioAttributeTypeField(PrimaryKeyRelatedFilteredField):
     ]
 
 
-# class PortfolioField(FilteredPrimaryKeyRelatedField):
-#     queryset = Portfolio.objects
-#     filter_backends = [
-#         OwnerByMasterUserFilter,
-#         FieldObjectPermissionBackend,
-#     ]
+class PortfolioDefault(object):
+    def set_context(self, serializer_field):
+        request = serializer_field.context['request']
+        self._master_user = request.user.master_user
+
+    def __call__(self):
+        return self._master_user.portfolio
+
+
 class PortfolioField(PrimaryKeyRelatedFilteredWithObjectPermissionField):
     queryset = Portfolio.objects
     filter_backends = [

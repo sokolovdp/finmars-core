@@ -7,9 +7,10 @@ from rest_framework import serializers
 from poms.common.fields import ExpressionField, FloatEvalField
 from poms.common.serializers import PomsClassSerializer, AbstractClassifierSerializer, AbstractClassifierNodeSerializer, \
     ModelWithUserCodeSerializer
+from poms.currencies.fields import CurrencyDefault
 from poms.currencies.serializers import CurrencyField
 from poms.instruments.fields import InstrumentClassifierField, InstrumentField, InstrumentAttributeTypeField, \
-    InstrumentTypeField, PricingPolicyField
+    InstrumentTypeField, PricingPolicyField, InstrumentTypeDefault
 from poms.instruments.models import InstrumentClassifier, Instrument, PriceHistory, InstrumentClass, DailyPricingModel, \
     AccrualCalculationModel, PaymentSizeDetail, PeriodicityPeriod, CostMethod, InstrumentType, InstrumentAttributeType, \
     InstrumentAttribute, ManualPricingFormula, AccrualCalculationSchedule, InstrumentFactorSchedule, EventSchedule, \
@@ -151,9 +152,9 @@ class InstrumentAttributeSerializer(AbstractAttributeSerializer):
 class InstrumentSerializer(ModelWithAttributesSerializer, ModelWithObjectPermissionSerializer,
                            ModelWithUserCodeSerializer):
     master_user = MasterUserField()
-    instrument_type = InstrumentTypeField()
-    pricing_currency = CurrencyField(read_only=False)
-    accrued_currency = CurrencyField(read_only=False)
+    instrument_type = InstrumentTypeField(default=InstrumentTypeDefault())
+    pricing_currency = CurrencyField(default=CurrencyDefault())
+    accrued_currency = CurrencyField(default=CurrencyDefault())
 
     manual_pricing_formulas = ManualPricingFormulaSerializer(many=True, required=False, allow_null=True)
     accrual_calculation_schedules = AccrualCalculationScheduleSerializer(many=True, required=False, allow_null=True)

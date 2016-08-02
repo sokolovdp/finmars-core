@@ -18,12 +18,15 @@ class AccountAttributeTypeField(PrimaryKeyRelatedFilteredField):
     ]
 
 
-# class AccountTypeField(FilteredPrimaryKeyRelatedField):
-#     queryset = AccountType.objects
-#     filter_backends = [
-#         OwnerByMasterUserFilter,
-#         FieldObjectPermissionBackend,
-#     ]
+class AccountTypeDefault(object):
+    def set_context(self, serializer_field):
+        request = serializer_field.context['request']
+        self._master_user = request.user.master_user
+
+    def __call__(self):
+        return self._master_user.account_type
+
+
 class AccountTypeField(PrimaryKeyRelatedFilteredWithObjectPermissionField):
     queryset = AccountType.objects
     filter_backends = [
@@ -31,12 +34,15 @@ class AccountTypeField(PrimaryKeyRelatedFilteredWithObjectPermissionField):
     ]
 
 
-# class AccountField(FilteredPrimaryKeyRelatedField):
-#     queryset = Account.objects
-#     filter_backends = [
-#         OwnerByMasterUserFilter,
-#         FieldObjectPermissionBackend,
-#     ]
+class AccountDefault(object):
+    def set_context(self, serializer_field):
+        request = serializer_field.context['request']
+        self._master_user = request.user.master_user
+
+    def __call__(self):
+        return self._master_user.account
+
+
 class AccountField(PrimaryKeyRelatedFilteredWithObjectPermissionField):
     queryset = Account.objects
     filter_backends = [

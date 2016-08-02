@@ -2,7 +2,7 @@ from __future__ import unicode_literals
 
 from rest_framework import serializers
 
-from poms.accounts.fields import AccountClassifierField, AccountAttributeTypeField, AccountTypeField
+from poms.accounts.fields import AccountClassifierField, AccountAttributeTypeField, AccountTypeField, AccountTypeDefault
 from poms.accounts.models import Account, AccountType, AccountClassifier, AccountAttributeType, AccountAttribute
 from poms.common.serializers import AbstractClassifierSerializer, AbstractClassifierNodeSerializer, ModelWithUserCodeSerializer
 from poms.obj_attrs.serializers import AbstractAttributeTypeSerializer, AbstractAttributeSerializer, \
@@ -55,7 +55,7 @@ class AccountAttributeSerializer(AbstractAttributeSerializer):
 class AccountSerializer(ModelWithObjectPermissionSerializer, ModelWithAttributesSerializer,
                         ModelWithUserCodeSerializer):
     master_user = MasterUserField()
-    type = AccountTypeField()
+    type = AccountTypeField(default=AccountTypeDefault())
     portfolios = PortfolioField(many=True, required=False, allow_null=True)
     attributes = AccountAttributeSerializer(many=True, required=False, allow_null=True)
     tags = TagField(many=True, required=False, allow_null=True)

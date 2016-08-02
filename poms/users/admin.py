@@ -27,7 +27,8 @@ class MasterUserAdmin(HistoricalAdmin):
     model = MasterUser
     inlines = [MemberInline]
     list_display = ['id', '__str__']
-    raw_id_fields = ['currency']
+    raw_id_fields = ['currency', 'account_type', 'account', 'counterparty', 'responsible', 'instrument_type',
+                     'portfolio', 'strategy1', 'strategy2', 'strategy3']
 
 
 admin.site.register(MasterUser, MasterUserAdmin)

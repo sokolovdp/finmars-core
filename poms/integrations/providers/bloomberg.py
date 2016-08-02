@@ -760,7 +760,8 @@ def create_instrument_price_history(task, instruments=None, pricing_policies=Non
     instr_map = {six.text_type(i.id): i for i in instruments}
 
     if pricing_policies is None:
-        pricing_policies = list(task.master_user.pricing_policies.all())
+        pricing_policies = task.master_user.pricing_policies.all()
+    pricing_policies = [pp for pp in pricing_policies if pp.expr]
 
     if delete_exists and date_range:
         PriceHistory.objects.filter(instrument__in=instruments, date__range=date_range).delete()
@@ -838,6 +839,7 @@ def create_currency_price_history(task, currencies=None, pricing_policies=None, 
 
     if pricing_policies is None:
         pricing_policies = list(task.master_user.pricing_policies.all())
+    pricing_policies = [pp for pp in pricing_policies if pp.expr]
 
     if delete_exists and date_range:
         CurrencyHistory.objects.filter(currency__in=currencies, date__range=date_range).delete()

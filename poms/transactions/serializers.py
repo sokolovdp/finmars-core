@@ -6,13 +6,13 @@ from django.utils.translation import ugettext_lazy as _
 from rest_framework import serializers
 from rest_framework.exceptions import ValidationError
 
-from poms.accounts.fields import AccountField
+from poms.accounts.fields import AccountField, AccountDefault
 from poms.accounts.models import Account
 from poms.common.fields import ExpressionField
 from poms.common.serializers import PomsClassSerializer, ModelWithUserCodeSerializer
-from poms.counterparties.fields import ResponsibleField, CounterpartyField
+from poms.counterparties.fields import ResponsibleField, CounterpartyField, ResponsibleDefault, CounterpartyDefault
 from poms.counterparties.models import Counterparty, Responsible
-from poms.currencies.fields import CurrencyField
+from poms.currencies.fields import CurrencyField, CurrencyDefault
 from poms.currencies.models import Currency
 from poms.instruments.fields import InstrumentField, InstrumentTypeField
 from poms.instruments.models import Instrument, InstrumentType, DailyPricingModel, PaymentSizeDetail
@@ -20,9 +20,10 @@ from poms.obj_attrs.models import AbstractAttributeType
 from poms.obj_attrs.serializers import AbstractAttributeTypeSerializer, AbstractAttributeSerializer, \
     ModelWithAttributesSerializer
 from poms.obj_perms.serializers import ModelWithObjectPermissionSerializer
-from poms.portfolios.fields import PortfolioField
+from poms.portfolios.fields import PortfolioField, PortfolioDefault
 from poms.portfolios.models import Portfolio
-from poms.strategies.fields import Strategy1Field, Strategy2Field, Strategy3Field
+from poms.strategies.fields import Strategy1Field, Strategy2Field, Strategy3Field, Strategy1Default, Strategy2Default, \
+    Strategy3Default
 from poms.strategies.models import Strategy1, Strategy2, Strategy3
 from poms.tags.fields import TagField
 from poms.transactions.fields import TransactionAttributeTypeField, TransactionTypeInputContentTypeField, \
@@ -392,22 +393,21 @@ class TransactionSerializer(ModelWithAttributesSerializer):
     master_user = MasterUserField()
     complex_transaction = serializers.PrimaryKeyRelatedField(read_only=True)
     complex_transaction_order = serializers.IntegerField(read_only=True)
-    portfolio = PortfolioField(required=False, allow_null=True)
-    transaction_currency = CurrencyField(required=False, allow_null=True)
+    portfolio = PortfolioField(default=PortfolioDefault())
+    transaction_currency = CurrencyField(default=CurrencyDefault())
     instrument = InstrumentField(required=False, allow_null=True)
-    settlement_currency = CurrencyField(required=False, allow_null=True)
-    account_cash = AccountField(required=False, allow_null=True)
-    account_position = AccountField(required=False, allow_null=True)
-    account_interim = AccountField(required=False, allow_null=True)
-    strategy1_position = Strategy1Field(required=False, allow_null=True)
-    strategy1_cash = Strategy1Field(required=False, allow_null=True)
-    strategy2_position = Strategy2Field(required=False, allow_null=True)
-    strategy2_cash = Strategy2Field(required=False, allow_null=True)
-    strategy3_position = Strategy3Field(required=False, allow_null=True)
-    strategy3_cash = Strategy3Field(required=False, allow_null=True)
-
-    responsible = ResponsibleField(required=False, allow_null=True)
-    counterparty = CounterpartyField(required=False, allow_null=True)
+    settlement_currency = CurrencyField(default=CurrencyDefault())
+    account_cash = AccountField(default=AccountDefault())
+    account_position = AccountField(default=AccountDefault())
+    account_interim = AccountField(default=AccountDefault())
+    strategy1_position = Strategy1Field(default=Strategy1Default())
+    strategy1_cash = Strategy1Field(default=Strategy1Default())
+    strategy2_position = Strategy2Field(default=Strategy2Default())
+    strategy2_cash = Strategy2Field(default=Strategy2Default())
+    strategy3_position = Strategy3Field(default=Strategy3Default())
+    strategy3_cash = Strategy3Field(default=Strategy3Default())
+    responsible = ResponsibleField(default=ResponsibleDefault())
+    counterparty = CounterpartyField(default=CounterpartyDefault())
     attributes = TransactionAttributeSerializer(many=True, required=False, allow_null=True)
 
     class Meta:

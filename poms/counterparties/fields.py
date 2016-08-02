@@ -21,12 +21,15 @@ class CounterpartyClassifierField(AttributeClassifierBaseField):
     queryset = CounterpartyClassifier.objects
 
 
-# class CounterpartyField(FilteredPrimaryKeyRelatedField):
-#     queryset = Counterparty.objects
-#     filter_backends = [
-#         OwnerByMasterUserFilter,
-#         FieldObjectPermissionBackend,
-#     ]
+class CounterpartyDefault(object):
+    def set_context(self, serializer_field):
+        request = serializer_field.context['request']
+        self._master_user = request.user.master_user
+
+    def __call__(self):
+        return self._master_user.counterparty
+
+
 class CounterpartyField(PrimaryKeyRelatedFilteredWithObjectPermissionField):
     queryset = Counterparty.objects
     filter_backends = [
@@ -44,15 +47,17 @@ class ResponsibleAttributeTypeField(PrimaryKeyRelatedFilteredField):
 
 class ResponsibleClassifierField(AttributeClassifierBaseField):
     queryset = ResponsibleClassifier.objects
-    # filter_backends = [OwnerByMasterUserFilter]
 
 
-# class ResponsibleField(FilteredPrimaryKeyRelatedField):
-#     queryset = Responsible.objects
-#     filter_backends = [
-#         OwnerByMasterUserFilter,
-#         FieldObjectPermissionBackend,
-#     ]
+class ResponsibleDefault(object):
+    def set_context(self, serializer_field):
+        request = serializer_field.context['request']
+        self._master_user = request.user.master_user
+
+    def __call__(self):
+        return self._master_user.responsible
+
+
 class ResponsibleField(PrimaryKeyRelatedFilteredWithObjectPermissionField):
     queryset = Responsible.objects
     filter_backends = [

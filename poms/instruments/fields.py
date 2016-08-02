@@ -13,11 +13,6 @@ class InstrumentClassifierField(AttributeClassifierBaseField):
     queryset = InstrumentClassifier.objects
 
 
-# class InstrumentClassifierRootField(FilteredPrimaryKeyRelatedField):
-#     queryset = InstrumentClassifier.objects.filter(parent__isnull=True)
-#     filter_backends = [OwnerByMasterUserFilter]
-
-
 class InstrumentAttributeTypeField(PrimaryKeyRelatedFilteredField):
     queryset = InstrumentAttributeType.objects
     filter_backends = [
@@ -26,12 +21,15 @@ class InstrumentAttributeTypeField(PrimaryKeyRelatedFilteredField):
     ]
 
 
-# class InstrumentTypeField(FilteredPrimaryKeyRelatedField):
-#     queryset = InstrumentType.objects
-#     filter_backends = [
-#         OwnerByMasterUserFilter,
-#         FieldObjectPermissionBackend,
-#     ]
+class InstrumentTypeDefault(object):
+    def set_context(self, serializer_field):
+        request = serializer_field.context['request']
+        self._master_user = request.user.master_user
+
+    def __call__(self):
+        return self._master_user.instrument_type
+
+
 class InstrumentTypeField(PrimaryKeyRelatedFilteredWithObjectPermissionField):
     queryset = InstrumentType.objects
     filter_backends = [
@@ -39,12 +37,6 @@ class InstrumentTypeField(PrimaryKeyRelatedFilteredWithObjectPermissionField):
     ]
 
 
-# class InstrumentField(FilteredPrimaryKeyRelatedField):
-#     queryset = Instrument.objects
-#     filter_backends = [
-#         OwnerByMasterUserFilter,
-#         FieldObjectPermissionBackend,
-#     ]
 class InstrumentField(PrimaryKeyRelatedFilteredWithObjectPermissionField):
     queryset = Instrument.objects
     filter_backends = [
