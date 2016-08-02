@@ -36,7 +36,7 @@ class TemplateListLayoutFilterSet(FilterSet):
 
     class Meta:
         model = TemplateListLayout
-        fields = ['name', 'content_type']
+        fields = ['name', 'is_default', 'content_type']
 
 
 class TemplateListLayoutViewSet(AbstractModelViewSet):
@@ -47,10 +47,10 @@ class TemplateListLayoutViewSet(AbstractModelViewSet):
     ]
     filter_class = TemplateListLayoutFilterSet
     permission_classes = AbstractModelViewSet.permission_classes + [
-        SuperUserOnly
+        SuperUserOnly,
     ]
-    ordering_fields = ['name']
-    search_fields = ['name']
+    ordering_fields = ['name', 'is_default']
+    search_fields = ['name', 'is_default']
 
 
 class TemplateEditLayoutFilterSet(FilterSet):
@@ -68,7 +68,7 @@ class TemplateEditLayoutViewSet(AbstractModelViewSet):
         OwnerByMasterUserFilter,
     ]
     permission_classes = AbstractModelViewSet.permission_classes + [
-        SuperUserOnly
+        SuperUserOnly,
     ]
     filter_class = TemplateEditLayoutFilterSet
     ordering_fields = []
@@ -80,7 +80,7 @@ class ListLayoutFilterSet(FilterSet):
 
     class Meta:
         model = ListLayout
-        fields = ['name', 'content_type']
+        fields = ['name', 'is_default', 'content_type']
 
 
 class ListLayoutViewSet(AbstractModelViewSet):
@@ -90,8 +90,8 @@ class ListLayoutViewSet(AbstractModelViewSet):
         OwnerByMemberFilter,
     ]
     filter_class = ListLayoutFilterSet
-    ordering_fields = ['name']
-    search_fields = ['name']
+    ordering_fields = ['name', 'is_default']
+    search_fields = ['name', 'is_default']
 
 
 class EditLayoutFilterSet(FilterSet):

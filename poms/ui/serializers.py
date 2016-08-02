@@ -14,7 +14,7 @@ class TemplateListLayoutSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = TemplateListLayout
-        fields = ['url', 'id', 'master_user', 'content_type', 'name', 'data']
+        fields = ['url', 'id', 'master_user', 'content_type', 'name', 'is_default', 'data']
 
 
 class TemplateEditLayoutSerializer(serializers.ModelSerializer):
@@ -34,7 +34,7 @@ class ListLayoutSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = ListLayout
-        fields = ['url', 'id', 'member', 'content_type', 'name', 'data']
+        fields = ['url', 'id', 'member', 'content_type', 'name', 'is_default', 'data']
 
 
 class EditLayoutSerializer(serializers.ModelSerializer):
