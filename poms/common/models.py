@@ -1,6 +1,7 @@
 from __future__ import unicode_literals
 
 from django.db import models
+from django.utils import translation
 from django.utils.encoding import python_2_unicode_compatible
 from django.utils.text import Truncator
 from django.utils.translation import ugettext_lazy as _
@@ -87,18 +88,29 @@ class AbstractClassModel(models.Model):
         unique=True,
         verbose_name=_('system code')
     )
-    name = models.CharField(
-        max_length=255,
-        verbose_name=_('name')
-    )
-    description = models.TextField(
-        null=True,
-        blank=True,
-        verbose_name=_('description')
-    )
+    name_en = models.CharField(max_length=255, null=True, blank=True, verbose_name=_('name (en)'))
+    name_ru = models.CharField(max_length=255, null=True, blank=True, verbose_name=_('name (ru)'))
+    name_es = models.CharField(max_length=255, null=True, blank=True, verbose_name=_('name (es)'))
+    name_de = models.CharField(max_length=255, null=True, blank=True, verbose_name=_('name (de)'))
+    description_en = models.TextField(null=True, blank=True, verbose_name=_('description (en)'))
+    description_ru = models.TextField(null=True, blank=True, verbose_name=_('description (ru)'))
+    description_es = models.TextField(null=True, blank=True, verbose_name=_('description (es)'))
+    description_de = models.TextField(null=True, blank=True, verbose_name=_('description (de)'))
 
     class Meta:
         abstract = True
 
     def __str__(self):
         return self.name
+
+    @property
+    def name(self):
+        lang = translation.get_language()
+        n = getattr(self, 'name_%s' % lang, None)
+        return n or self.name_en
+
+    @property
+    def description(self):
+        lang = translation.get_language()
+        n = getattr(self, 'description_%s' % lang, None)
+        return n or self.description_en
