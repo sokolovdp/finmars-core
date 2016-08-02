@@ -41,7 +41,7 @@ class TemplateListLayout(BaseLayout):
             qs = TemplateListLayout.objects.filter(master_user=self.master_user, content_type=self.content_type,
                                                    is_default=True)
             if self.pk:
-                qs.exclude(pk=self.pk)
+                qs = qs.exclude(pk=self.pk)
             qs.update(is_default=False)
         return super(TemplateListLayout, self).save(*args, **kwargs)
 
@@ -69,7 +69,7 @@ class ListLayout(BaseLayout):
         if self.is_default:
             qs = ListLayout.objects.filter(member=self.member, content_type=self.content_type, is_default=True)
             if self.pk:
-                qs.exclude(pk=self.pk)
+                qs = qs.exclude(pk=self.pk)
             qs.update(is_default=False)
         return super(ListLayout, self).save(*args, **kwargs)
 
