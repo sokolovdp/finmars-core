@@ -344,7 +344,8 @@ def bloomberg_price_history_auto_save(self, task_id):
         pricing_policies=pricing_policies,
         save=True,
         date_range=(date_from, date_to),
-        fail_silently=True
+        fail_silently=True,
+        expr_fail_silently=True
     )
     create_currency_price_history(
         task=task,
@@ -352,7 +353,8 @@ def bloomberg_price_history_auto_save(self, task_id):
         pricing_policies=pricing_policies,
         save=True,
         date_range=(date_from, date_to),
-        fail_silently=True
+        fail_silently=True,
+        expr_fail_silently=True
     )
 
     _l.debug('<')

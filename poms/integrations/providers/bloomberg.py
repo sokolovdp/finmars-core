@@ -749,7 +749,8 @@ def date_to_str(value):
 
 
 def create_instrument_price_history(task, instruments=None, pricing_policies=None, save=False,
-                                    fail_silently=True, delete_exists=False, date_range=None, bulk=False):
+                                    fail_silently=True, delete_exists=False, date_range=None, bulk=False,
+                                    expr_fail_silently=False):
     _l.debug('> create_instrument_price_history: task_id=%s', task.id)
 
     kwargs = task.kwargs_object
@@ -776,6 +777,8 @@ def create_instrument_price_history(task, instruments=None, pricing_policies=Non
 
     def _create(instr, price_data, price_date):
         for pp in pricing_policies:
+            if not pp.expr:
+                continue
             p = PriceHistory()
             p.instrument = instr
             if price_date is not None:
@@ -783,7 +786,13 @@ def create_instrument_price_history(task, instruments=None, pricing_policies=Non
             else:
                 p.date = str_to_date(price_data['DATE'])
             p.pricing_policy = pp
-            p.principal_price = formula.safe_eval(pp.expr, names=price_data)
+            try:
+                p.principal_price = formula.safe_eval(pp.expr, names=price_data)
+            except formula.InvalidExpression:
+                if expr_fail_silently:
+                    continue
+                else:
+                    raise
             p.accrued_price = 0.0
             p.factor = price_data['ACCRUED_FACTOR'] if 'ACCRUED_FACTOR' in price_data else 1.0
 
@@ -826,7 +835,8 @@ def create_instrument_price_history(task, instruments=None, pricing_policies=Non
 
 
 def create_currency_price_history(task, currencies=None, pricing_policies=None, save=False,
-                                  fail_silently=False, delete_exists=False, date_range=None, bulk=False):
+                                  fail_silently=False, delete_exists=False, date_range=None, bulk=False,
+                                  expr_fail_silently=False):
     _l.debug('> create_currency_price_history: task_id=%s', task.id)
 
     kwargs = task.kwargs_object
@@ -854,6 +864,8 @@ def create_currency_price_history(task, currencies=None, pricing_policies=None, 
 
     def _create(ccy, price_data, price_date):
         for pp in pricing_policies:
+            if not pp.expr:
+                continue
             p = CurrencyHistory()
             p.currency = ccy
             if price_date:
@@ -861,7 +873,13 @@ def create_currency_price_history(task, currencies=None, pricing_policies=None, 
             else:
                 p.date = str_to_date(price_data['DATE'])
             p.pricing_policy = pp
-            p.fx_rate = formula.safe_eval(pp.expr, names=price_data)
+            try:
+                p.fx_rate = formula.safe_eval(pp.expr, names=price_data)
+            except formula.InvalidExpression:
+                if expr_fail_silently:
+                    continue
+                else:
+                    raise
 
             if fail_silently and (p.currency_id, p.pricing_policy_id, p.date) in exists:
                 continue

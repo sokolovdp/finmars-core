@@ -12,6 +12,7 @@ from django.utils import timezone
 from rest_framework import serializers
 from rest_framework.exceptions import ValidationError
 
+from poms.common import formula
 from poms.common.fields import ISINField
 from poms.currencies.fields import CurrencyField
 from poms.currencies.serializers import CurrencyHistorySerializer
@@ -316,13 +317,16 @@ class BloombergPriceHistoryImportSerializer(serializers.Serializer):
         instance = BloombergPriceHistoryImportEntry(**validated_data)
         if instance.task:
             if instance.task_object.status == BloombergTask.STATUS_DONE:
-                instance.histories = create_instrument_price_history(
-                    task=instance.task_object,
-                    instruments=instance.instruments,
-                    save=instance.mode == IMPORT_PROCESS,
-                    date_range=(instance.date_from, instance.date_to),
-                    fail_silently=True
-                )
+                try:
+                    instance.histories = create_instrument_price_history(
+                        task=instance.task_object,
+                        instruments=instance.instruments,
+                        save=instance.mode == IMPORT_PROCESS,
+                        date_range=(instance.date_from, instance.date_to),
+                        fail_silently=True
+                    )
+                except formula.InvalidExpression:
+                    raise ValidationError('Invalid pricing policy expression')
         else:
             instruments = []
             for instr in instance.instruments:
@@ -413,13 +417,16 @@ class BloombergCurrencyHistoryImportSerializer(serializers.Serializer):
         instance = BloombergCurrencyHistoryImportEntry(**validated_data)
         if instance.task:
             if instance.task_object.status == BloombergTask.STATUS_DONE:
-                instance.histories = create_currency_price_history(
-                    task=instance.task_object,
-                    currencies=instance.currencies,
-                    save=instance.mode == IMPORT_PROCESS,
-                    date_range=(instance.date_from, instance.date_to),
-                    fail_silently=True
-                )
+                try:
+                    instance.histories = create_currency_price_history(
+                        task=instance.task_object,
+                        currencies=instance.currencies,
+                        save=instance.mode == IMPORT_PROCESS,
+                        date_range=(instance.date_from, instance.date_to),
+                        fail_silently=True
+                    )
+                except formula.InvalidExpression:
+                    raise ValidationError('Invalid pricing policy expression')
         else:
             currencies = []
             for ccy in instance.currencies:
