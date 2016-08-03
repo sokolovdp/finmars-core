@@ -33,6 +33,10 @@ class Currency(NamedModel):
     def is_system(self):
         return self.user_code == settings.CURRENCY_CODE
 
+    @property
+    def is_default(self):
+        return self.master_user.currency_id == self.id if self.master_user_id else False
+
 
 class CurrencyUserObjectPermission(AbstractUserObjectPermission):
     content_object = models.ForeignKey(Currency, related_name='user_object_permissions',

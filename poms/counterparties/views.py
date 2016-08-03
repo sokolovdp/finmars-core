@@ -45,7 +45,7 @@ class CounterpartyFilterSet(FilterSet):
 
 
 class CounterpartyViewSet(AbstractWithObjectPermissionViewSet):
-    queryset = Counterparty.objects.prefetch_related(
+    queryset = Counterparty.objects.select_related('master_user').prefetch_related(
         'portfolios'
     )
     prefetch_permissions_for = ('portfolios',)
@@ -93,7 +93,7 @@ class ResponsibleFilterSet(FilterSet):
 
 
 class ResponsibleViewSet(AbstractWithObjectPermissionViewSet):
-    queryset = Responsible.objects.prefetch_related(
+    queryset = Responsible.objects.select_related('master_user').prefetch_related(
         'portfolios'
     )
     prefetch_permissions_for = ('portfolios',)

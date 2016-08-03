@@ -3,7 +3,7 @@ from __future__ import unicode_literals
 import django_filters
 from rest_framework.filters import DjangoFilterBackend, OrderingFilter, SearchFilter, FilterSet
 
-from poms.common.filters import CharFilter, ModelMultipleChoiceFilter
+from poms.common.filters import CharFilter, ModelMultipleChoiceFilter, IsDefaultFilter
 from poms.common.views import AbstractModelViewSet
 from poms.currencies.filters import OwnerByCurrencyFilter
 from poms.currencies.models import Currency, CurrencyHistory
@@ -17,15 +17,16 @@ class CurrencyFilterSet(FilterSet):
     user_code = CharFilter()
     name = CharFilter()
     short_name = CharFilter()
+    is_default = IsDefaultFilter(source='currency')
     tag = TagFilter(model=Currency)
 
     class Meta:
         model = Currency
-        fields = ['user_code', 'name', 'short_name', 'tag']
+        fields = ['user_code', 'name', 'short_name', 'is_default', 'tag']
 
 
 class CurrencyViewSet(AbstractModelViewSet):
-    queryset = Currency.objects
+    queryset = Currency.objects.select_related('master_user')
     serializer_class = CurrencySerializer
     permission_classes = AbstractModelViewSet.permission_classes + [
         SuperUserOrReadOnly,
@@ -49,7 +50,7 @@ class CurrencyHistoryFilterSet(FilterSet):
 
 
 class CurrencyHistoryViewSet(AbstractModelViewSet):
-    queryset = CurrencyHistory.objects.prefetch_related('currency')
+    queryset = CurrencyHistory.objects.select_related('currency')
     serializer_class = CurrencyHistorySerializer
     permission_classes = AbstractModelViewSet.permission_classes + [
         SuperUserOrReadOnly,

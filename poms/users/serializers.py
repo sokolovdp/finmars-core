@@ -16,7 +16,7 @@ from poms.currencies.fields import CurrencyField
 from poms.instruments.fields import InstrumentTypeField
 from poms.portfolios.fields import PortfolioField
 from poms.strategies.fields import Strategy1Field, Strategy2Field, Strategy3Field
-from poms.users.fields import MasterUserField
+from poms.users.fields import MasterUserField, MemberField, GroupField
 from poms.users.models import MasterUser, UserProfile, Group, Member, TIMEZONE_CHOICES
 
 
@@ -208,11 +208,12 @@ class MemberSerializer(serializers.ModelSerializer):
     master_user = MasterUserField()
     is_current = serializers.SerializerMethodField()
     join_date = DateTimeTzAwareField()
+    groups = GroupField(many=True)
 
     class Meta:
         model = Member
         fields = ['url', 'id', 'master_user', 'join_date', 'is_owner', 'is_admin', 'is_superuser', 'is_current',
-                  'is_deleted', 'username', 'first_name', 'last_name', 'display_name', 'email', ]
+                  'is_deleted', 'username', 'first_name', 'last_name', 'display_name', 'email', 'groups']
         read_only_fields = ['master_user', 'join_date', 'is_superuser', 'is_current', 'is_deleted', 'username',
                             'first_name', 'last_name', 'display_name', 'email', ]
 
@@ -224,7 +225,8 @@ class MemberSerializer(serializers.ModelSerializer):
 class GroupSerializer(serializers.ModelSerializer):
     url = serializers.HyperlinkedIdentityField(view_name='group-detail')
     master_user = MasterUserField()
+    members = MemberField(many=True)
 
     class Meta:
         model = Group
-        fields = ['url', 'id', 'master_user', 'name']
+        fields = ['url', 'id', 'master_user', 'name', 'members']

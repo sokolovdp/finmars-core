@@ -49,7 +49,7 @@ class PortfolioFilterSet(FilterSet):
 
 
 class PortfolioViewSet(AbstractWithObjectPermissionViewSet):
-    queryset = Portfolio.objects.prefetch_related(
+    queryset = Portfolio.objects.select_related('master_user').prefetch_related(
         'accounts',
         # 'accounts__user_object_permissions', 'accounts__user_object_permissions__permission',
         # 'accounts__group_object_permissions', 'accounts__group_object_permissions__permission',

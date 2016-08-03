@@ -1,6 +1,7 @@
 from __future__ import unicode_literals
 
 from django.conf import settings
+from django.db import transaction
 from django.db.models import ProtectedError
 from django.http import Http404
 from django.utils import timezone
@@ -44,7 +45,6 @@ class AbstractApiView(APIView):
             if request.method.upper() in permissions.SAFE_METHODS:
                 return super(AbstractApiView, self).dispatch(request, *args, **kwargs)
             else:
-                from django.db import transaction
                 with transaction.atomic():
                     return super(AbstractApiView, self).dispatch(request, *args, **kwargs)
         else:
@@ -82,11 +82,6 @@ class AbstractModelViewSet(AbstractApiView, ModelViewSet):
         OrderingFilter,
         SearchFilter,
     ]
-
-    # def get_permissions(self):
-    #     return super(AbstractModelViewSet, self).get_permissions() + [
-    #         IsAuthenticated()
-    #     ]
 
     def update(self, request, *args, **kwargs):
         response = super(AbstractModelViewSet, self).update(request, *args, **kwargs)

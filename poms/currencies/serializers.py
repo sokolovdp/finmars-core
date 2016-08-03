@@ -19,7 +19,7 @@ class CurrencySerializer(ModelWithUserCodeSerializer):
     class Meta:
         model = Currency
         fields = ['url', 'id', 'master_user', 'user_code', 'name', 'short_name', 'notes', 'history_download_mode',
-                  'tags']
+                  'is_default', 'tags']
 
 
 class CurrencyHistorySerializer(serializers.ModelSerializer):
@@ -34,4 +34,3 @@ class CurrencyHistorySerializer(serializers.ModelSerializer):
     class Meta:
         model = CurrencyHistory
         fields = ['url', 'id', 'currency', 'pricing_policy', 'date', 'fx_rate']
-

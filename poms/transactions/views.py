@@ -354,9 +354,12 @@ class ComplexTransactionFilterSet(FilterSet):
 
 
 class ComplexTransactionViewSet(AbstractReadOnlyModelViewSet):
-    queryset = ComplexTransaction.objects.prefetch_related(
+    queryset = ComplexTransaction.objects.select_related(
         'transaction_type',
-        'transaction_type__master_user',
+        'transaction_type__master_user'
+    ).prefetch_related(
+        # 'transaction_type',
+        # 'transaction_type__master_user',
         'transactions',
         'transactions__master_user',
     )

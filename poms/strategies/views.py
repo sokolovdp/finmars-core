@@ -41,13 +41,13 @@ class Strategy1ClassifierFilterSet(AbstractStrategyFilterSet):
 
 
 class Strategy1ViewSet(AbstractStrategyViewSet):
-    queryset = Strategy1.objects
+    queryset = Strategy1.objects.select_related('master_user')
     serializer_class = Strategy1Serializer
     filter_class = Strategy1ClassifierFilterSet
 
 
 class Strategy1NodeViewSet(AbstractStrategyNodeViewSet):
-    queryset = Strategy1.objects
+    queryset = Strategy1.objects.select_related('master_user')
     serializer_class = Strategy1NodeSerializer
     filter_class = Strategy1ClassifierFilterSet
 
@@ -62,13 +62,13 @@ class Strategy2ClassifierFilterSet(AbstractStrategyFilterSet):
 
 
 class Strategy2ViewSet(AbstractStrategyViewSet):
-    queryset = Strategy2.objects
+    queryset = Strategy2.objects.select_related('master_user')
     serializer_class = Strategy2Serializer
     filter_class = Strategy2ClassifierFilterSet
 
 
 class Strategy2NodeViewSet(AbstractStrategyNodeViewSet):
-    queryset = Strategy2.objects
+    queryset = Strategy2.objects.select_related('master_user')
     serializer_class = Strategy2NodeSerializer
     filter_class = Strategy2ClassifierFilterSet
 
@@ -83,12 +83,12 @@ class Strategy3ClassifierFilterSet(AbstractStrategyFilterSet):
 
 
 class Strategy3ViewSet(AbstractStrategyViewSet):
-    queryset = Strategy3.objects
+    queryset = Strategy3.objects.select_related('master_user')
     serializer_class = Strategy3Serializer
     filter_class = Strategy3ClassifierFilterSet
 
 
 class Strategy3NodeViewSet(AbstractStrategyNodeViewSet):
-    queryset = Strategy3.objects
+    queryset = Strategy3.objects.select_related('master_user')
     serializer_class = Strategy3NodeSerializer
     filter_class = Strategy3ClassifierFilterSet

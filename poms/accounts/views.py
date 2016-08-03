@@ -26,7 +26,7 @@ class AccountTypeFilterSet(FilterSet):
 
 
 class AccountTypeViewSet(AbstractWithObjectPermissionViewSet):
-    queryset = AccountType.objects
+    queryset = AccountType.objects.select_related('master_user')
     serializer_class = AccountTypeSerializer
     filter_backends = AbstractWithObjectPermissionViewSet.filter_backends + [
         OwnerByMasterUserFilter,
@@ -68,8 +68,8 @@ class AccountFilterSet(FilterSet):
 
 
 class AccountViewSet(AbstractWithObjectPermissionViewSet):
-    queryset = Account.objects.prefetch_related(
-        'type',
+    queryset = Account.objects.select_related('master_user', 'type').prefetch_related(
+        # 'type',
         # 'type__user_object_permissions', 'type__user_object_permissions__permission',
         # 'type__group_object_permissions', 'type__group_object_permissions__permission',
         'portfolios',

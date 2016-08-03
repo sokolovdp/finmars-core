@@ -9,8 +9,9 @@ from django_filters import MethodFilter
 from rest_framework.authtoken.models import Token
 from rest_framework.authtoken.serializers import AuthTokenSerializer
 from rest_framework.decorators import detail_route
+from rest_framework.exceptions import PermissionDenied
 from rest_framework.filters import FilterSet
-from rest_framework.mixins import UpdateModelMixin, DestroyModelMixin
+from rest_framework.mixins import UpdateModelMixin
 from rest_framework.parsers import JSONParser, MultiPartParser, FormParser
 from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework.response import Response
@@ -180,13 +181,13 @@ class MemberFilterSet(FilterSet):
         return qs
 
 
-class MemberViewSet(UpdateModelMixin, DestroyModelMixin, AbstractReadOnlyModelViewSet):
+class MemberViewSet(AbstractModelViewSet):
     queryset = Member.objects.select_related('user').prefetch_related('groups')
     serializer_class = MemberSerializer
     permission_classes = AbstractModelViewSet.permission_classes + [
         SuperUserOrReadOnly,
     ]
-    filter_backends = AbstractReadOnlyModelViewSet.filter_backends + [
+    filter_backends = AbstractModelViewSet.filter_backends + [
         OwnerByMasterUserFilter,
     ]
     filter_class = MemberFilterSet
@@ -200,6 +201,9 @@ class MemberViewSet(UpdateModelMixin, DestroyModelMixin, AbstractReadOnlyModelVi
         if lookup_value == '0':
             return self.request.user.member
         return super(MemberViewSet, self).get_object()
+
+    def create(self, request, *args, **kwargs):
+        raise PermissionDenied()
 
 
 class GroupFilterSet(FilterSet):
