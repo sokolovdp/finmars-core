@@ -94,10 +94,10 @@ class UserRegisterViewSet(AbstractApiView, ViewSet):
         return Response({'success': True})
 
 
-class UserViewSet(UpdateModelMixin, AbstractReadOnlyModelViewSet):
+class UserViewSet(AbstractModelViewSet):
     queryset = User.objects
     serializer_class = UserSerializer
-    permission_classes = AbstractReadOnlyModelViewSet.permission_classes + [
+    permission_classes = AbstractModelViewSet.permission_classes + [
         IsCurrentUser,
     ]
 
@@ -119,6 +119,9 @@ class UserViewSet(UpdateModelMixin, AbstractReadOnlyModelViewSet):
 
     def get_object(self):
         return self.request.user
+
+    def create(self, request, *args, **kwargs):
+        raise PermissionDenied()
 
     @detail_route(methods=('PUT',), url_path='set-password', serializer_class=UserSetPasswordSerializer)
     def set_password(self, request, pk=None):
@@ -159,6 +162,9 @@ class MasterUserViewSet(AbstractModelViewSet):
         if lookup_value == '0':
             return self.request.user.master_user
         return super(MasterUserViewSet, self).get_object()
+
+    def create(self, request, *args, **kwargs):
+        raise PermissionDenied()
 
     @detail_route(methods=('PUT', 'PATCH',), url_path='set-current', permission_classes=[IsAuthenticated],
                   serializer_class=MasterUserSetCurrentSerializer)

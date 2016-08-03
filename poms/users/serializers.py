@@ -91,21 +91,23 @@ class UserSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
         fields = ['url', 'id', 'username', 'first_name', 'last_name', 'email', 'profile']
+        read_only_fields = ['username']
 
     def create(self, validated_data):
-        profile_data = validated_data.pop('profile', {})
-        user = User.objects.create(**validated_data)
-        user.profile.language = profile_data.get('language', settings.LANGUAGE_CODE)
-        user.profile.timezone = profile_data.get('timezone', settings.TIME_ZONE)
-        user.profile.save()
-        # UserProfile.objects.create(user=user, **profile_data)
-        return user
+        # profile_data = validated_data.pop('profile', {})
+        # user = User.objects.create(**validated_data)
+        # user.profile.language = profile_data.get('language', settings.LANGUAGE_CODE)
+        # user.profile.timezone = profile_data.get('timezone', settings.TIME_ZONE)
+        # user.profile.save()
+        # # UserProfile.objects.create(user=user, **profile_data)
+        return None
 
     def update(self, instance, validated_data):
         profile_data = validated_data.pop('profile', None)
 
         instance.first_name = validated_data.get('first_name', instance.first_name)
         instance.last_name = validated_data.get('last_name', instance.last_name)
+        instance.email = validated_data.get('email', instance.email)
         instance.save()
 
         if profile_data:
