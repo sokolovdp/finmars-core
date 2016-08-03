@@ -32,6 +32,10 @@ class Portfolio(NamedModel):
     def __str__(self):
         return self.name
 
+    @property
+    def is_default(self):
+        return self.master_user.portfolio_id == self.id if self.master_user_id else False
+
 
 class PortfolioUserObjectPermission(AbstractUserObjectPermission):
     content_object = models.ForeignKey(Portfolio, related_name='user_object_permissions')

@@ -4,7 +4,7 @@ from rest_framework.filters import FilterSet
 
 from poms.accounts.models import Account, AccountType, AccountAttributeType
 from poms.accounts.serializers import AccountSerializer, AccountTypeSerializer, AccountAttributeTypeSerializer
-from poms.common.filters import CharFilter, ModelWithPermissionMultipleChoiceFilter
+from poms.common.filters import CharFilter, ModelWithPermissionMultipleChoiceFilter, IsDefaultFilter
 from poms.obj_attrs.filters import AttributePrefetchFilter
 from poms.obj_attrs.views import AbstractAttributeTypeViewSet
 from poms.obj_perms.views import AbstractWithObjectPermissionViewSet
@@ -17,11 +17,12 @@ class AccountTypeFilterSet(FilterSet):
     user_code = CharFilter()
     name = CharFilter()
     short_name = CharFilter()
+    is_default = IsDefaultFilter(source='account_type')
     tag = TagFilter(model=AccountType)
 
     class Meta:
         model = AccountType
-        fields = ['user_code', 'name', 'short_name', 'tags']
+        fields = ['user_code', 'name', 'short_name', 'is_default', 'tags']
 
 
 class AccountTypeViewSet(AbstractWithObjectPermissionViewSet):
@@ -56,13 +57,14 @@ class AccountFilterSet(FilterSet):
     user_code = CharFilter()
     name = CharFilter()
     short_name = CharFilter()
+    is_default = IsDefaultFilter(source='account')
     portfolio = ModelWithPermissionMultipleChoiceFilter(model=Portfolio, name='portfolios')
     type = ModelWithPermissionMultipleChoiceFilter(model=AccountType)
     tag = TagFilter(model=Account)
 
     class Meta:
         model = Account
-        fields = ['user_code', 'name', 'short_name', 'type', 'portfolio', 'tag']
+        fields = ['user_code', 'name', 'short_name', 'is_default', 'type', 'portfolio', 'tag']
 
 
 class AccountViewSet(AbstractWithObjectPermissionViewSet):

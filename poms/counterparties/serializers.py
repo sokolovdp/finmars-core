@@ -2,7 +2,8 @@ from __future__ import unicode_literals
 
 from rest_framework import serializers
 
-from poms.common.serializers import AbstractClassifierSerializer, AbstractClassifierNodeSerializer, ModelWithUserCodeSerializer
+from poms.common.serializers import AbstractClassifierSerializer, AbstractClassifierNodeSerializer, \
+    ModelWithUserCodeSerializer
 from poms.counterparties.fields import ResponsibleClassifierField, \
     CounterpartyAttributeTypeField, ResponsibleAttributeTypeField, CounterpartyClassifierField
 from poms.counterparties.models import CounterpartyClassifier, Counterparty, Responsible, ResponsibleClassifier, \
@@ -53,8 +54,8 @@ class CounterpartySerializer(ModelWithObjectPermissionSerializer, ModelWithAttri
 
     class Meta:
         model = Counterparty
-        fields = ['url', 'id', 'master_user', 'user_code', 'name', 'short_name', 'public_name', 'notes', 'portfolios',
-                  'attributes', 'tags']
+        fields = ['url', 'id', 'master_user', 'user_code', 'name', 'short_name', 'public_name', 'notes', 'is_default',
+                  'portfolios', 'attributes', 'tags']
 
 
 class ResponsibleClassifierSerializer(AbstractClassifierSerializer):
@@ -95,5 +96,5 @@ class ResponsibleSerializer(ModelWithObjectPermissionSerializer, ModelWithAttrib
 
     class Meta:
         model = Responsible
-        fields = ['url', 'id', 'master_user', 'user_code', 'name', 'short_name', 'public_name', 'notes', 'portfolios',
-                  'attributes', 'tags']
+        fields = ['url', 'id', 'master_user', 'user_code', 'name', 'short_name', 'public_name', 'notes', 'is_default',
+                  'portfolios', 'attributes', 'tags']

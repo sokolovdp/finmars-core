@@ -2,7 +2,7 @@ from __future__ import unicode_literals
 
 from rest_framework.filters import FilterSet
 
-from poms.common.filters import CharFilter, ModelWithPermissionMultipleChoiceFilter
+from poms.common.filters import CharFilter, ModelWithPermissionMultipleChoiceFilter, IsDefaultFilter
 from poms.counterparties.models import Counterparty, Responsible, CounterpartyAttributeType, ResponsibleAttributeType
 from poms.counterparties.serializers import CounterpartySerializer, ResponsibleSerializer, \
     CounterpartyAttributeTypeSerializer, \
@@ -35,12 +35,13 @@ class CounterpartyFilterSet(FilterSet):
     user_code = CharFilter()
     name = CharFilter()
     short_name = CharFilter()
+    is_default = IsDefaultFilter(source='counterparty')
     portfolio = ModelWithPermissionMultipleChoiceFilter(model=Portfolio, name='portfolios')
     tag = TagFilter(model=Counterparty)
 
     class Meta:
         model = Counterparty
-        fields = ['user_code', 'name', 'short_name', 'tag', 'portfolio']
+        fields = ['user_code', 'name', 'short_name', 'is_default', 'tag', 'portfolio']
 
 
 class CounterpartyViewSet(AbstractWithObjectPermissionViewSet):
@@ -82,12 +83,13 @@ class ResponsibleFilterSet(FilterSet):
     user_code = CharFilter()
     name = CharFilter()
     short_name = CharFilter()
+    is_default = IsDefaultFilter(source='account_type')
     portfolio = ModelWithPermissionMultipleChoiceFilter(model=Portfolio, name='portfolios')
     tag = TagFilter(model=Responsible)
 
     class Meta:
         model = Responsible
-        fields = ['user_code', 'name', 'short_name', 'portfolio', 'tag']
+        fields = ['user_code', 'name', 'short_name', 'is_default', 'portfolio', 'tag']
 
 
 class ResponsibleViewSet(AbstractWithObjectPermissionViewSet):

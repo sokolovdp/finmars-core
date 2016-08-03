@@ -1,6 +1,7 @@
 from functools import partial
 
 import django_filters
+from django.db.models import F
 from rest_framework.filters import BaseFilterBackend, FilterSet
 
 from poms.common.middleware import get_request
@@ -88,3 +89,21 @@ class AbstractClassifierFilterSet(FilterSet):
 
     def parent_filter(self, qs, value):
         return qs
+
+
+class IsDefaultFilter(django_filters.BooleanFilter):
+    def __init__(self, *args, **kwargs):
+        self.source = kwargs.pop('source')
+        super(IsDefaultFilter, self).__init__(*args, **kwargs)
+
+    def filter(self, qs, value):
+        if value in ([], (), {}, None, ''):
+            return qs
+        if self.distinct:
+            qs = qs.distinct()
+        if value is None:
+            return qs
+        elif value:
+            return qs.filter(**{'pk': F('master_user__%s__id' % self.source)})
+        else:
+            return qs.exclude(**{'pk': F('master_user__%s__id' % self.source)})

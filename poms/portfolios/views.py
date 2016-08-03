@@ -1,9 +1,9 @@
 from __future__ import unicode_literals
 
-from rest_framework.filters import DjangoFilterBackend, OrderingFilter, SearchFilter, FilterSet
+from rest_framework.filters import FilterSet
 
 from poms.accounts.models import Account
-from poms.common.filters import CharFilter, ModelWithPermissionMultipleChoiceFilter
+from poms.common.filters import CharFilter, ModelWithPermissionMultipleChoiceFilter, IsDefaultFilter
 from poms.counterparties.models import Responsible, Counterparty
 from poms.obj_attrs.filters import AttributePrefetchFilter
 from poms.obj_attrs.views import AbstractAttributeTypeViewSet
@@ -35,6 +35,7 @@ class PortfolioFilterSet(FilterSet):
     user_code = CharFilter()
     name = CharFilter()
     short_name = CharFilter()
+    is_default = IsDefaultFilter(source='portfolio')
     account = ModelWithPermissionMultipleChoiceFilter(model=Account, name='accounts')
     responsible = ModelWithPermissionMultipleChoiceFilter(model=Responsible, name='responsibles')
     counterparty = ModelWithPermissionMultipleChoiceFilter(model=Counterparty, name='counterparties')
@@ -43,8 +44,8 @@ class PortfolioFilterSet(FilterSet):
 
     class Meta:
         model = Portfolio
-        fields = ['user_code', 'name', 'short_name', 'account', 'responsible', 'counterparty', 'transaction_type',
-                  'tag', ]
+        fields = ['user_code', 'name', 'short_name', 'is_default', 'account', 'responsible', 'counterparty',
+                  'transaction_type', 'tag', ]
 
 
 class PortfolioViewSet(AbstractWithObjectPermissionViewSet):

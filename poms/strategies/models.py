@@ -74,6 +74,10 @@ class Strategy1(MPTTModel, NamedModel):
             ('manage_strategy1', 'Can manage strategy1'),
         ]
 
+    @property
+    def is_default(self):
+        return self.master_user.strategy1_id == self.id if self.master_user_id else False
+
 
 class Strategy1UserObjectPermission(AbstractUserObjectPermission):
     content_object = models.ForeignKey(
@@ -125,6 +129,10 @@ class Strategy2(MPTTModel, NamedModel):
             ('manage_strategy2', 'Can manage strategy2'),
         ]
 
+    @property
+    def is_default(self):
+        return self.master_user.strategy2_id == self.id if self.master_user_id else False
+
 
 class Strategy2UserObjectPermission(AbstractUserObjectPermission):
     content_object = models.ForeignKey(
@@ -175,6 +183,10 @@ class Strategy3(MPTTModel, NamedModel):
             ('view_strategy3', 'Can view strategy3'),
             ('manage_strategy3', 'Can manage strategy3'),
         ]
+
+    @property
+    def is_default(self):
+        return self.master_user.strategy3_id == self.id if self.master_user_id else False
 
 
 class Strategy3UserObjectPermission(AbstractUserObjectPermission):

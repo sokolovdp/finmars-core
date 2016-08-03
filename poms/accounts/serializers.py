@@ -4,7 +4,8 @@ from rest_framework import serializers
 
 from poms.accounts.fields import AccountClassifierField, AccountAttributeTypeField, AccountTypeField, AccountTypeDefault
 from poms.accounts.models import Account, AccountType, AccountClassifier, AccountAttributeType, AccountAttribute
-from poms.common.serializers import AbstractClassifierSerializer, AbstractClassifierNodeSerializer, ModelWithUserCodeSerializer
+from poms.common.serializers import AbstractClassifierSerializer, AbstractClassifierNodeSerializer, \
+    ModelWithUserCodeSerializer
 from poms.obj_attrs.serializers import AbstractAttributeTypeSerializer, AbstractAttributeSerializer, \
     ModelWithAttributesSerializer
 from poms.obj_perms.serializers import ModelWithObjectPermissionSerializer
@@ -32,7 +33,7 @@ class AccountTypeSerializer(ModelWithObjectPermissionSerializer, ModelWithUserCo
     class Meta:
         model = AccountType
         fields = ['url', 'id', 'master_user', 'user_code', 'name', 'short_name', 'public_name', 'notes',
-                  'show_transaction_details', 'transaction_details_expr', 'tags']
+                  'show_transaction_details', 'transaction_details_expr', 'is_default', 'tags']
 
 
 class AccountAttributeTypeSerializer(AbstractAttributeTypeSerializer):
@@ -63,4 +64,4 @@ class AccountSerializer(ModelWithObjectPermissionSerializer, ModelWithAttributes
     class Meta:
         model = Account
         fields = ['url', 'id', 'master_user', 'type', 'user_code', 'name', 'short_name', 'public_name', 'notes',
-                  'portfolios', 'tags', 'attributes', ]
+                  'is_default', 'portfolios', 'tags', 'attributes', ]

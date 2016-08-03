@@ -3,7 +3,7 @@ from __future__ import unicode_literals
 import django_filters
 from rest_framework.filters import FilterSet
 
-from poms.common.filters import CharFilter, ModelWithPermissionMultipleChoiceFilter
+from poms.common.filters import CharFilter, ModelWithPermissionMultipleChoiceFilter, IsDefaultFilter
 from poms.common.views import AbstractClassModelViewSet, AbstractModelViewSet
 from poms.instruments.filters import OwnerByInstrumentFilter, PriceHistoryObjectPermissionFilter
 from poms.instruments.models import Instrument, PriceHistory, InstrumentClass, DailyPricingModel, \
@@ -73,11 +73,12 @@ class InstrumentTypeFilterSet(FilterSet):
     user_code = CharFilter()
     name = CharFilter()
     short_name = CharFilter()
+    is_default = IsDefaultFilter(source='instrument_type')
     tag = TagFilter(model=InstrumentType)
 
     class Meta:
         model = InstrumentType
-        fields = ['user_code', 'name', 'short_name', 'tag']
+        fields = ['user_code', 'name', 'short_name', 'is_default', 'tag']
 
 
 class InstrumentTypeViewSet(AbstractWithObjectPermissionViewSet):

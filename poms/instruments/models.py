@@ -228,6 +228,10 @@ class InstrumentType(NamedModel):
     def __str__(self):
         return self.name
 
+    @property
+    def is_default(self):
+        return self.master_user.instrument_type_id == self.id if self.master_user_id else False
+
 
 class InstrumentTypeUserObjectPermission(AbstractUserObjectPermission):
     content_object = models.ForeignKey(InstrumentType, related_name='user_object_permissions',

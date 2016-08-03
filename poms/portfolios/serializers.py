@@ -3,7 +3,8 @@ from __future__ import unicode_literals
 from rest_framework import serializers
 
 from poms.accounts.fields import AccountField
-from poms.common.serializers import AbstractClassifierSerializer, AbstractClassifierNodeSerializer, ModelWithUserCodeSerializer
+from poms.common.serializers import AbstractClassifierSerializer, AbstractClassifierNodeSerializer, \
+    ModelWithUserCodeSerializer
 from poms.counterparties.fields import ResponsibleField, CounterpartyField
 from poms.obj_attrs.serializers import AbstractAttributeTypeSerializer, AbstractAttributeSerializer, \
     ModelWithAttributesSerializer
@@ -56,5 +57,5 @@ class PortfolioSerializer(ModelWithObjectPermissionSerializer, ModelWithAttribut
 
     class Meta:
         model = Portfolio
-        fields = ['url', 'id', 'master_user', 'user_code', 'name', 'short_name', 'public_name', 'notes',
+        fields = ['url', 'id', 'master_user', 'user_code', 'name', 'short_name', 'public_name', 'notes', 'is_default',
                   'accounts', 'responsibles', 'counterparties', 'transaction_types', 'attributes', 'tags']

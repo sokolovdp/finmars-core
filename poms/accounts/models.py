@@ -34,6 +34,10 @@ class AccountType(NamedModel):
     def __str__(self):
         return self.name
 
+    @property
+    def is_default(self):
+        return self.master_user.account_type_id == self.id if self.master_user_id else False
+
 
 class AccountTypeUserObjectPermission(AbstractUserObjectPermission):
     content_object = models.ForeignKey(AccountType, related_name='user_object_permissions',
@@ -60,13 +64,6 @@ class Account(NamedModel):
     type = models.ForeignKey(AccountType, on_delete=models.PROTECT, null=True, blank=True,
                              verbose_name=_('account type'))
 
-    # portfolios = models.ManyToManyField(
-    #     'portfolios.Portfolio',
-    #     related_name='accounts',
-    #     blank=True,
-    #     verbose_name=_('portfolios')
-    # )
-
     class Meta(NamedModel.Meta):
         verbose_name = _('account')
         verbose_name_plural = _('accounts')
@@ -77,6 +74,10 @@ class Account(NamedModel):
 
     def __str__(self):
         return self.name
+
+    @property
+    def is_default(self):
+        return self.master_user.account_id == self.id if self.master_user_id else False
 
 
 class AccountUserObjectPermission(AbstractUserObjectPermission):
