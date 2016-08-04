@@ -104,7 +104,7 @@ admin.site.register(Instrument, InstrumentAdmin)
 
 class PriceHistoryAdmin(HistoricalAdmin):
     model = PriceHistory
-    list_display = ['id', 'date', 'instrument', 'principal_price', 'accrued_price', 'factor']
+    list_display = ['id', 'date', 'instrument', 'principal_price', 'accrued_price']
     list_select_related = ['instrument']
     date_hierarchy = 'date'
     raw_id_fields = ['instrument', 'pricing_policy']

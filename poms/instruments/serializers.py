@@ -294,8 +294,7 @@ class PriceHistorySerializer(serializers.ModelSerializer):
     pricing_policy = PricingPolicyField(allow_null=False)
     principal_price = FloatEvalField()
     accrued_price = FloatEvalField()
-    factor = FloatEvalField()
 
     class Meta:
         model = PriceHistory
-        fields = ['url', 'id', 'instrument', 'pricing_policy', 'date', 'principal_price', 'accrued_price', 'factor']
+        fields = ['url', 'id', 'instrument', 'pricing_policy', 'date', 'principal_price', 'accrued_price']

@@ -1,26 +1,19 @@
 from __future__ import unicode_literals
 
-import six
 from django.contrib.contenttypes.models import ContentType
 from django.core.exceptions import ObjectDoesNotExist
 from django.utils.encoding import smart_text
-from rest_framework.fields import CharField, empty, FloatField
-from rest_framework.exceptions import ValidationError
 
 from poms.common.fields import PrimaryKeyRelatedFilteredField, SlugRelatedFilteredField
+from poms.obj_attrs.filters import AttributeClassifierBaseField
 from poms.obj_perms.fields import PrimaryKeyRelatedFilteredWithObjectPermissionField
 from poms.obj_perms.filters import ObjectPermissionBackend
 from poms.transactions.filters import TransactionTypeInputContentTypeFilter
-from poms.transactions.models import TransactionType, TransactionAttributeType, TransactionTypeGroup
+from poms.transactions.models import TransactionType, TransactionAttributeType, TransactionTypeGroup, \
+    TransactionClassifier
 from poms.users.filters import OwnerByMasterUserFilter
 
 
-# class TransactionTypeGroupField(FilteredPrimaryKeyRelatedField):
-#     queryset = TransactionTypeGroup.objects
-#     filter_backends = [
-#         OwnerByMasterUserFilter,
-#         FieldObjectPermissionBackend,
-#     ]
 class TransactionTypeGroupField(PrimaryKeyRelatedFilteredWithObjectPermissionField):
     queryset = TransactionTypeGroup.objects
     filter_backends = [
@@ -28,17 +21,15 @@ class TransactionTypeGroupField(PrimaryKeyRelatedFilteredWithObjectPermissionFie
     ]
 
 
-# class TransactionTypeField(FilteredPrimaryKeyRelatedField):
-#     queryset = TransactionType.objects
-#     filter_backends = [
-#         OwnerByMasterUserFilter,
-#         FieldObjectPermissionBackend,
-#     ]
 class TransactionTypeField(PrimaryKeyRelatedFilteredWithObjectPermissionField):
     queryset = TransactionType.objects
     filter_backends = [
         OwnerByMasterUserFilter,
     ]
+
+
+class TransactionClassifierField(AttributeClassifierBaseField):
+    queryset = TransactionClassifier.objects
 
 
 class TransactionAttributeTypeField(PrimaryKeyRelatedFilteredField):
@@ -70,4 +61,3 @@ class TransactionTypeInputContentTypeField(SlugRelatedFilteredField):
 
     def to_representation(self, obj):
         return '%s.%s' % (obj.app_label, obj.model)
-

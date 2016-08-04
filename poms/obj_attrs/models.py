@@ -140,6 +140,25 @@ class AbstractAttributeType(NamedModel):
 
 
 @python_2_unicode_compatible
+class AbstractClassifier(MPTTModel):
+    # attribute_type
+    # parent
+    name = models.CharField(
+        max_length=255,
+        verbose_name=_('name')
+    )
+
+    class MPTTMeta:
+        order_insertion_by = ['attribute_type', 'name']
+
+    class Meta:
+        abstract = True
+
+    def __str__(self):
+        return self.name
+
+
+@python_2_unicode_compatible
 class AbstractAttributeTypeOption(models.Model):
     # attribute_type -> actual attribute model
 
@@ -176,7 +195,7 @@ class AbstractAttribute(models.Model):
 
     def __str__(self):
         # return '%s' % (self.get_value(), )
-        return '%s' % (self.attribute_type, )
+        return '%s' % (self.attribute_type,)
 
     def get_value(self):
         t = self.attribute_type.value_type

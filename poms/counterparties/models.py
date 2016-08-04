@@ -8,7 +8,8 @@ from mptt.models import MPTTModel
 
 from poms.audit import history
 from poms.common.models import NamedModel
-from poms.obj_attrs.models import AbstractAttributeType, AbstractAttribute, AbstractAttributeTypeOption
+from poms.obj_attrs.models import AbstractAttributeType, AbstractAttribute, AbstractAttributeTypeOption, \
+    AbstractClassifier
 from poms.obj_perms.models import AbstractGroupObjectPermission, AbstractUserObjectPermission
 from poms.users.models import MasterUser, Member
 
@@ -95,9 +96,7 @@ class CounterpartyAttributeTypeGroupObjectPermission(AbstractGroupObjectPermissi
         verbose_name_plural = _('counterparty attribute types - group permissions')
 
 
-class CounterpartyClassifier(MPTTModel, NamedModel):
-    # master_user = models.ForeignKey(MasterUser, related_name='counterparty_classifiers',
-    #                                 verbose_name=_('master user'))
+class CounterpartyClassifier(AbstractClassifier):
     attribute_type = models.ForeignKey(
         CounterpartyAttributeType,
         null=True,
@@ -114,15 +113,9 @@ class CounterpartyClassifier(MPTTModel, NamedModel):
         verbose_name=_('parent')
     )
 
-    class MPTTMeta:
-        order_insertion_by = ['attribute_type', 'name']
-
-    class Meta(NamedModel.Meta):
+    class Meta(AbstractClassifier.Meta):
         verbose_name = _('counterparty classifier')
         verbose_name_plural = _('counterparty classifiers')
-        unique_together = [
-            ['attribute_type', 'user_code']
-        ]
 
 
 class CounterpartyAttributeTypeOption(AbstractAttributeTypeOption):
@@ -227,9 +220,7 @@ class ResponsibleAttributeTypeGroupObjectPermission(AbstractGroupObjectPermissio
         verbose_name_plural = _('responsible attribute types - group permissions')
 
 
-class ResponsibleClassifier(MPTTModel, NamedModel):
-    # master_user = models.ForeignKey(MasterUser, related_name='responsible_classifiers',
-    #                                 verbose_name=_('master user'))
+class ResponsibleClassifier(AbstractClassifier):
     attribute_type = models.ForeignKey(
         ResponsibleAttributeType,
         null=True,
@@ -246,15 +237,9 @@ class ResponsibleClassifier(MPTTModel, NamedModel):
         verbose_name=_('parent')
     )
 
-    class MPTTMeta:
-        order_insertion_by = ['attribute_type', 'name']
-
-    class Meta(NamedModel.Meta):
+    class Meta(AbstractClassifier.Meta):
         verbose_name = _('responsible classifier')
         verbose_name_plural = _('responsible classifiers')
-        unique_together = [
-            ['attribute_type', 'user_code']
-        ]
 
 
 class ResponsibleAttributeTypeOption(AbstractAttributeTypeOption):

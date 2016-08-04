@@ -185,13 +185,8 @@ class AbstractClassifierSerializer(ModelWithUserCodeSerializer, serializers.Mode
     class Meta(AbstractPomsSerializer.Meta):
         list_serializer_class = ClassifierListSerializer
         fields = [
-            # 'url',
             'id',
-            # 'user_code',
             'name',
-            'short_name',
-            'public_name',
-            'notes',
             'level',
             'children'
         ]

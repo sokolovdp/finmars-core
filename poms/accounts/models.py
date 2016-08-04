@@ -9,7 +9,8 @@ from mptt.models import MPTTModel
 from poms.audit import history
 from poms.common.models import NamedModel
 from poms.currencies.models import Currency
-from poms.obj_attrs.models import AbstractAttributeType, AbstractAttribute, AbstractAttributeTypeOption
+from poms.obj_attrs.models import AbstractAttributeType, AbstractAttribute, AbstractAttributeTypeOption, \
+    AbstractClassifier
 from poms.obj_perms.models import AbstractGroupObjectPermission, AbstractUserObjectPermission
 from poms.users.models import MasterUser, Member
 
@@ -116,6 +117,15 @@ class AccountAttributeType(AbstractAttributeType):
         ]
 
 
+class AccountAttributeTypeUserObjectPermission(AbstractUserObjectPermission):
+    content_object = models.ForeignKey(AccountAttributeType, related_name='user_object_permissions',
+                                       verbose_name=_('content object'))
+
+    class Meta(AbstractUserObjectPermission.Meta):
+        verbose_name = _('account attribute types - user permission')
+        verbose_name_plural = _('account attribute types - user permissions')
+
+
 class AccountAttributeTypeGroupObjectPermission(AbstractGroupObjectPermission):
     content_object = models.ForeignKey(AccountAttributeType, related_name='group_object_permissions',
                                        verbose_name=_('content object'))
@@ -125,14 +135,7 @@ class AccountAttributeTypeGroupObjectPermission(AbstractGroupObjectPermission):
         verbose_name_plural = _('account attribute types - group permissions')
 
 
-class AccountClassifier(MPTTModel, NamedModel):
-    # master_user = models.ForeignKey(
-    #     MasterUser,
-    #     null=True,
-    #     blank=True,
-    #     related_name='account_classifiers',
-    #     verbose_name=_('master user')
-    # )
+class AccountClassifier(AbstractClassifier):
     attribute_type = models.ForeignKey(
         AccountAttributeType,
         null=True,
@@ -149,15 +152,9 @@ class AccountClassifier(MPTTModel, NamedModel):
         verbose_name=_('parent')
     )
 
-    class MPTTMeta:
-        order_insertion_by = ['attribute_type', 'name']
-
-    class Meta(NamedModel.Meta):
+    class Meta(AbstractClassifier.Meta):
         verbose_name = _('account classifier')
         verbose_name_plural = _('account classifiers')
-        unique_together = [
-            ['attribute_type', 'user_code']
-        ]
 
 
 class AccountAttributeTypeOption(AbstractAttributeTypeOption):
@@ -169,15 +166,6 @@ class AccountAttributeTypeOption(AbstractAttributeTypeOption):
     class Meta(AbstractAttributeTypeOption.Meta):
         verbose_name = _('account attribute types - option')
         verbose_name_plural = _('account attribute types - options')
-
-
-class AccountAttributeTypeUserObjectPermission(AbstractUserObjectPermission):
-    content_object = models.ForeignKey(AccountAttributeType, related_name='user_object_permissions',
-                                       verbose_name=_('content object'))
-
-    class Meta(AbstractUserObjectPermission.Meta):
-        verbose_name = _('account attribute types - user permission')
-        verbose_name_plural = _('account attribute types - user permissions')
 
 
 class AccountAttribute(AbstractAttribute):

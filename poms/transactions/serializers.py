@@ -2,21 +2,18 @@ from __future__ import unicode_literals
 
 import six
 from django.core.exceptions import ObjectDoesNotExist
-from django.utils.translation import ugettext_lazy as _
 from rest_framework import serializers
-from rest_framework.exceptions import ValidationError
 
 from poms.accounts.fields import AccountField, AccountDefault
 from poms.accounts.models import Account
 from poms.common.fields import ExpressionField
-from poms.common.serializers import PomsClassSerializer, ModelWithUserCodeSerializer
+from poms.common.serializers import PomsClassSerializer, ModelWithUserCodeSerializer, AbstractClassifierSerializer
 from poms.counterparties.fields import ResponsibleField, CounterpartyField, ResponsibleDefault, CounterpartyDefault
 from poms.counterparties.models import Counterparty, Responsible
 from poms.currencies.fields import CurrencyField, CurrencyDefault
 from poms.currencies.models import Currency
 from poms.instruments.fields import InstrumentField, InstrumentTypeField
 from poms.instruments.models import Instrument, InstrumentType, DailyPricingModel, PaymentSizeDetail
-from poms.obj_attrs.models import AbstractAttributeType
 from poms.obj_attrs.serializers import AbstractAttributeTypeSerializer, AbstractAttributeSerializer, \
     ModelWithAttributesSerializer
 from poms.obj_perms.serializers import ModelWithObjectPermissionSerializer
@@ -27,10 +24,10 @@ from poms.strategies.fields import Strategy1Field, Strategy2Field, Strategy3Fiel
 from poms.strategies.models import Strategy1, Strategy2, Strategy3
 from poms.tags.fields import TagField
 from poms.transactions.fields import TransactionAttributeTypeField, TransactionTypeInputContentTypeField, \
-    TransactionTypeGroupField
+    TransactionTypeGroupField, TransactionClassifierField
 from poms.transactions.models import TransactionClass, Transaction, TransactionType, TransactionAttributeType, \
     TransactionAttribute, TransactionTypeAction, TransactionTypeActionTransaction, TransactionTypeActionInstrument, \
-    TransactionTypeInput, TransactionTypeGroup, ComplexTransaction
+    TransactionTypeInput, TransactionTypeGroup, ComplexTransaction, TransactionClassifier
 from poms.users.fields import MasterUserField
 
 
@@ -368,25 +365,26 @@ class TransactionTypeProcessSerializer(serializers.Serializer):
                     raise RuntimeError('Unknown value type %s' % i.value_type)
 
 
+class TransactionClassifierSerializer(AbstractClassifierSerializer):
+    class Meta(AbstractClassifierSerializer.Meta):
+        model = TransactionClassifier
+
+
 class TransactionAttributeTypeSerializer(AbstractAttributeTypeSerializer):
+    classifiers = TransactionClassifierSerializer(required=False, allow_null=True, many=True)
+
     class Meta(AbstractAttributeTypeSerializer.Meta):
         model = TransactionAttributeType
-
-    def validate_value_type(self, value_type):
-        if value_type == AbstractAttributeType.CLASSIFIER:
-            raise ValidationError({'value_type': _('Value type classifier is unsupported')})
-        return value_type
+        fields = AbstractAttributeTypeSerializer.Meta.fields + ['classifiers']
 
 
 class TransactionAttributeSerializer(AbstractAttributeSerializer):
     attribute_type = TransactionAttributeTypeField()
-
-    # strategy_position = StrategyRootField(required=False, allow_null=True)
-    # strategy_cash = StrategyRootField(required=False, allow_null=True)
+    classifier = TransactionClassifierField(required=False, allow_null=True)
 
     class Meta(AbstractAttributeSerializer.Meta):
         model = TransactionAttribute
-        fields = AbstractAttributeSerializer.Meta.fields + ['attribute_type']
+        fields = AbstractAttributeSerializer.Meta.fields + ['attribute_type', 'classifier']
 
 
 class TransactionSerializer(ModelWithAttributesSerializer):
@@ -394,7 +392,7 @@ class TransactionSerializer(ModelWithAttributesSerializer):
     complex_transaction = serializers.PrimaryKeyRelatedField(read_only=True)
     complex_transaction_order = serializers.IntegerField(read_only=True)
     portfolio = PortfolioField(default=PortfolioDefault())
-    transaction_currency = CurrencyField(default=CurrencyDefault())
+    transaction_currency = CurrencyField(default=CurrencyDefault(), required=False, allow_null=True)
     instrument = InstrumentField(required=False, allow_null=True)
     settlement_currency = CurrencyField(default=CurrencyDefault())
     account_cash = AccountField(default=AccountDefault())
@@ -406,8 +404,8 @@ class TransactionSerializer(ModelWithAttributesSerializer):
     strategy2_cash = Strategy2Field(default=Strategy2Default())
     strategy3_position = Strategy3Field(default=Strategy3Default())
     strategy3_cash = Strategy3Field(default=Strategy3Default())
-    responsible = ResponsibleField(default=ResponsibleDefault())
-    counterparty = CounterpartyField(default=CounterpartyDefault())
+    responsible = ResponsibleField(default=ResponsibleDefault(), required=False, allow_null=True)
+    counterparty = CounterpartyField(default=CounterpartyDefault(), required=False, allow_null=True)
     attributes = TransactionAttributeSerializer(many=True, required=False, allow_null=True)
 
     class Meta:

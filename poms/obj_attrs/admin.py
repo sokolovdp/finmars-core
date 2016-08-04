@@ -4,7 +4,7 @@ from django.db import models
 
 from poms.audit.admin import HistoricalAdmin
 from poms.common.models import NamedModel
-from poms.obj_attrs.models import AbstractAttributeTypeOption, AbstractAttribute
+from poms.obj_attrs.models import AbstractAttributeTypeOption, AbstractAttribute, AbstractClassifier
 
 
 class AbstractAttributeTypeAdmin(HistoricalAdmin):
@@ -16,13 +16,13 @@ class AbstractAttributeTypeAdmin(HistoricalAdmin):
 
 class AbstractAttributeTypeClassifierInline(admin.TabularInline):
     extra = 0
-    fields = ['id', 'user_code', 'name', 'short_name', 'public_name', 'notes', 'parent']
+    fields = ['id', 'name', 'parent']
     raw_id_fields = ['parent']
     readonly_fields = ['id']
-    formfield_overrides = {
-        models.TextField: {'widget': widgets.AdminTextInputWidget},
-    }
-    model = NamedModel
+    # formfield_overrides = {
+    #     models.TextField: {'widget': widgets.AdminTextInputWidget},
+    # }
+    model = AbstractClassifier
 
     def __init__(self, parent_model, *args, **kwargs):
         # _, self.model = get_rel_model(parent_model, 'attribute_type', MPTTModel)

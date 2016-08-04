@@ -10,7 +10,7 @@ from poms.counterparties.models import Counterparty, Responsible
 from poms.currencies.models import Currency
 from poms.instruments.models import Instrument, InstrumentType, DailyPricingModel, PaymentSizeDetail
 from poms.obj_attrs.admin import AbstractAttributeTypeAdmin, AbstractAttributeInline, \
-    AbstractAttributeTypeOptionInline
+    AbstractAttributeTypeOptionInline, AbstractAttributeTypeClassifierInline
 from poms.obj_perms.admin import UserObjectPermissionInline, \
     GroupObjectPermissionInline
 from poms.portfolios.models import Portfolio
@@ -293,10 +293,10 @@ admin.site.register(ComplexTransaction, ComplexTransactionAdmin)
 # admin.site.register(EventToHandle, HistoricalAdmin)
 
 
-class TransactionAttributeInline(AbstractAttributeInline):
-    model = TransactionAttribute
-    fields = ['attribute_type', 'value_string', 'value_float', 'value_date']
-    raw_id_fields = ['attribute_type']
+# class TransactionAttributeInline(AbstractAttributeInline):
+#     model = TransactionAttribute
+#     fields = ['attribute_type', 'value_string', 'value_float', 'value_date']
+#     raw_id_fields = ['attribute_type']
 
 
 class TransactionAdmin(HistoricalAdmin):
@@ -326,7 +326,9 @@ class TransactionAdmin(HistoricalAdmin):
                      'account_position', 'account_cash', 'account_interim', 'responsible', 'counterparty',
                      'strategy1_position', 'strategy1_cash', 'strategy2_position', 'strategy2_cash',
                      'strategy3_position', 'strategy3_cash', ]
-    inlines = [TransactionAttributeInline]
+    inlines = [
+        AbstractAttributeInline,
+    ]
     fields = (
         'master_user',
         'transaction_code',
@@ -359,6 +361,7 @@ class TransactionAttributeTypeAdmin(AbstractAttributeTypeAdmin):
     list_select_related = ['master_user']
     raw_id_fields = ['master_user']
     inlines = [
+        AbstractAttributeTypeClassifierInline,
         AbstractAttributeTypeOptionInline,
         UserObjectPermissionInline,
         GroupObjectPermissionInline,

@@ -8,7 +8,8 @@ from mptt.models import MPTTModel
 
 from poms.audit import history
 from poms.common.models import NamedModel
-from poms.obj_attrs.models import AbstractAttributeType, AbstractAttribute, AbstractAttributeTypeOption
+from poms.obj_attrs.models import AbstractAttributeType, AbstractAttribute, AbstractAttributeTypeOption, \
+    AbstractClassifier
 from poms.obj_perms.models import AbstractGroupObjectPermission, AbstractUserObjectPermission
 from poms.users.models import MasterUser, Member
 
@@ -79,19 +80,25 @@ class PortfolioAttributeTypeGroupObjectPermission(AbstractGroupObjectPermission)
         verbose_name_plural = _('portfolio attribute types - group permissions')
 
 
-class PortfolioClassifier(MPTTModel, NamedModel):
-    attribute_type = models.ForeignKey(PortfolioAttributeType, null=True, blank=True, related_name='classifiers')
-    parent = TreeForeignKey('self', null=True, blank=True, related_name='children', db_index=True)
+class PortfolioClassifier(AbstractClassifier):
+    attribute_type = models.ForeignKey(
+        PortfolioAttributeType,
+        null=True,
+        blank=True,
+        related_name='classifiers'
+    )
+    parent = TreeForeignKey(
+        'self',
+        null=True,
+        blank=True,
+        related_name='children',
+        db_index=True,
+        verbose_name=_('parent')
+    )
 
-    class MPTTMeta:
-        order_insertion_by = ['attribute_type', 'name']
-
-    class Meta(NamedModel.Meta):
+    class Meta(AbstractClassifier.Meta):
         verbose_name = _('portfolio classifier')
         verbose_name_plural = _('portfolio classifiers')
-        unique_together = [
-            ['attribute_type', 'user_code']
-        ]
 
 
 class PortfolioAttributeTypeOption(AbstractAttributeTypeOption):

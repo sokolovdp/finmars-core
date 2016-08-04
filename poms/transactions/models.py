@@ -4,6 +4,8 @@ from django.contrib.contenttypes.models import ContentType
 from django.db import models
 from django.utils.encoding import python_2_unicode_compatible
 from django.utils.translation import ugettext_lazy as _
+from mptt.fields import TreeForeignKey
+from mptt.models import MPTTModel
 
 from poms.accounts.models import Account
 from poms.audit import history
@@ -12,7 +14,8 @@ from poms.common.utils import date_now
 from poms.counterparties.models import Responsible, Counterparty
 from poms.currencies.models import Currency
 from poms.instruments.models import Instrument
-from poms.obj_attrs.models import AbstractAttributeType, AbstractAttribute, AbstractAttributeTypeOption
+from poms.obj_attrs.models import AbstractAttributeType, AbstractAttribute, AbstractAttributeTypeOption, \
+    AbstractClassifier
 from poms.obj_perms.models import AbstractGroupObjectPermission, AbstractUserObjectPermission
 from poms.portfolios.models import Portfolio
 from poms.strategies.models import Strategy1, Strategy2, Strategy3
@@ -1007,17 +1010,6 @@ class TransactionAttributeType(AbstractAttributeType):
         ]
 
 
-class TransactionAttributeTypeOption(AbstractAttributeTypeOption):
-    member = models.ForeignKey(Member, related_name='transaction_attribute_type_options',
-                               verbose_name=_("member"))
-    attribute_type = models.ForeignKey(TransactionAttributeType, related_name='options',
-                                       verbose_name=_("attribute type"))
-
-    class Meta(AbstractAttributeTypeOption.Meta):
-        verbose_name = _('transaction attribute types - option')
-        verbose_name_plural = _('transaction attribute types - options')
-
-
 class TransactionAttributeTypeUserObjectPermission(AbstractUserObjectPermission):
     content_object = models.ForeignKey(TransactionAttributeType, related_name='user_object_permissions',
                                        verbose_name=_("content object"))
@@ -1036,36 +1028,50 @@ class TransactionAttributeTypeGroupObjectPermission(AbstractGroupObjectPermissio
         verbose_name_plural = _('transaction attribute types - group permissions')
 
 
+class TransactionClassifier(AbstractClassifier):
+    attribute_type = models.ForeignKey(
+        TransactionAttributeType,
+        null=True,
+        blank=True,
+        related_name='classifiers',
+        verbose_name=_('attribute type')
+    )
+    parent = TreeForeignKey(
+        'self',
+        null=True,
+        blank=True,
+        related_name='children',
+        db_index=True,
+        verbose_name=_('parent')
+    )
+
+    class Meta(AbstractClassifier.Meta):
+        verbose_name = _('transaction classifier')
+        verbose_name_plural = _('transaction classifiers')
+
+
+class TransactionAttributeTypeOption(AbstractAttributeTypeOption):
+    member = models.ForeignKey(Member, related_name='transaction_attribute_type_options',
+                               verbose_name=_("member"))
+    attribute_type = models.ForeignKey(TransactionAttributeType, related_name='options',
+                                       verbose_name=_("attribute type"))
+
+    class Meta(AbstractAttributeTypeOption.Meta):
+        verbose_name = _('transaction attribute types - option')
+        verbose_name_plural = _('transaction attribute types - options')
+
+
 class TransactionAttribute(AbstractAttribute):
     attribute_type = models.ForeignKey(TransactionAttributeType, related_name='attributes', on_delete=models.PROTECT,
                                        verbose_name=_("attribute type"))
     content_object = models.ForeignKey(Transaction, related_name='attributes',
                                        verbose_name=_("content object"))
-    # strategy_position = models.ForeignKey(Strategy, related_name='strategy_transaction_attributes',
-    #                                       on_delete=models.PROTECT, null=True, blank=True,
-    #                                       verbose_name=_("strategy position"))
-    # strategy_cash = models.ForeignKey(Strategy, related_name='cash_transaction_attributes', on_delete=models.PROTECT,
-    #                                   null=True, blank=True,
-    #                                   verbose_name=_("strategy cash"))
-    classifier = None
+    classifier = models.ForeignKey(TransactionClassifier, on_delete=models.PROTECT, null=True, blank=True,
+                                   verbose_name=_('classifier'))
 
     class Meta(AbstractAttribute.Meta):
         verbose_name = _('transaction attribute')
         verbose_name_plural = _('transaction attributes')
-
-        # def get_value(self):
-        #     t = self.attribute_type.value_type
-        #     if t == AttributeTypeBase.CLASSIFIER:
-        #         return self.strategy_position, self.strategy_position
-        #     else:
-        #         return super(TransactionAttribute, self).get_value()
-        #
-        # def set_value(self, value):
-        #     t = self.attribute_type.value_type
-        #     if t == AttributeTypeBase.CLASSIFIER:
-        #         self.strategy_position, self.strategy_position = value
-        #     else:
-        #         super(TransactionAttribute, self).set_value(value)
 
 
 @python_2_unicode_compatible

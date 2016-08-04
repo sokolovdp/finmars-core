@@ -10,7 +10,8 @@ from poms.audit import history
 from poms.common.models import NamedModel, AbstractClassModel
 from poms.common.utils import date_now
 from poms.currencies.models import Currency
-from poms.obj_attrs.models import AbstractAttributeType, AbstractAttribute, AbstractAttributeTypeOption
+from poms.obj_attrs.models import AbstractAttributeType, AbstractAttribute, AbstractAttributeTypeOption, \
+    AbstractClassifier
 from poms.obj_perms.models import AbstractGroupObjectPermission, AbstractUserObjectPermission
 from poms.users.models import MasterUser, Member
 
@@ -351,9 +352,7 @@ class InstrumentAttributeTypeGroupObjectPermission(AbstractGroupObjectPermission
 
 
 @python_2_unicode_compatible
-class InstrumentClassifier(MPTTModel, NamedModel):
-    # master_user = models.ForeignKey(MasterUser, related_name='instrument_classifiers',
-    #                                 verbose_name=_('master user'))
+class InstrumentClassifier(AbstractClassifier):
     attribute_type = models.ForeignKey(
         InstrumentAttributeType,
         null=True,
@@ -370,18 +369,9 @@ class InstrumentClassifier(MPTTModel, NamedModel):
         verbose_name=_('parent')
     )
 
-    class MPTTMeta:
-        order_insertion_by = ['attribute_type', 'name']
-
-    class Meta(NamedModel.Meta):
+    class Meta(AbstractClassifier.Meta):
         verbose_name = _('instrument classifier')
         verbose_name_plural = _('instrument classifiers')
-        unique_together = [
-            ['attribute_type', 'user_code']
-        ]
-
-    def __str__(self):
-        return self.name
 
 
 class InstrumentAttributeTypeOption(AbstractAttributeTypeOption):
@@ -443,11 +433,7 @@ class PriceHistory(models.Model):
                                         verbose_name=_('principal price'))
     accrued_price = models.FloatField(null=True, blank=True,
                                       verbose_name=_('accrued price'))
-    factor = models.FloatField(null=True, blank=True,
-                               verbose_name=_('factor'))
 
-    # coupon = models.FloatField(null=True, blank=True)
-    # delta = models.FloatField(null=True, blank=True)
     class Meta:
         verbose_name = _('price history')
         verbose_name_plural = _('price histories')
