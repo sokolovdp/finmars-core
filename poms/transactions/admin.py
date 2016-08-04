@@ -6,17 +6,17 @@ from django.contrib.contenttypes.models import ContentType
 from poms.accounts.models import Account
 from poms.audit.admin import HistoricalAdmin
 from poms.common.admin import ClassModelAdmin
-from poms.counterparties.models import Counterparty, Responsible
+from poms.counterparties.models import Responsible, Counterparty
 from poms.currencies.models import Currency
-from poms.instruments.models import Instrument, InstrumentType, DailyPricingModel, PaymentSizeDetail
+from poms.instruments.models import Instrument, PaymentSizeDetail, DailyPricingModel, InstrumentType
 from poms.obj_attrs.admin import AbstractAttributeTypeAdmin, AbstractAttributeInline, \
     AbstractAttributeTypeOptionInline, AbstractAttributeTypeClassifierInline
 from poms.obj_perms.admin import UserObjectPermissionInline, \
     GroupObjectPermissionInline
 from poms.portfolios.models import Portfolio
-from poms.strategies.models import Strategy1, Strategy2, Strategy3
+from poms.strategies.models import Strategy3, Strategy2, Strategy1
 from poms.transactions.models import TransactionClass, Transaction, TransactionType, TransactionTypeInput, \
-    TransactionAttributeType, TransactionAttribute, ActionClass, EventToHandle, \
+    TransactionAttributeType, ActionClass, EventToHandle, \
     ExternalCashFlow, ExternalCashFlowStrategy, NotificationClass, EventClass, PeriodicityGroup, \
     TransactionTypeActionInstrument, \
     TransactionTypeActionTransaction, ComplexTransaction, TransactionTypeGroup
@@ -54,8 +54,8 @@ class TransactionTypeInputInline(admin.TabularInline):
     def formfield_for_foreignkey(self, db_field, request=None, **kwargs):
         if db_field.name == 'content_type':
             qs = kwargs.get('queryset', db_field.remote_field.model.objects)
-            models = [Account, Instrument, InstrumentType, Currency, Counterparty, Responsible,
-                      Strategy1, Strategy2, Strategy3, DailyPricingModel, PaymentSizeDetail, Portfolio]
+            models = [Account, Instrument, InstrumentType, Currency, Counterparty, Responsible, Strategy1, Strategy2,
+                      Strategy3, DailyPricingModel, PaymentSizeDetail, Portfolio]
             ctypes = [ContentType.objects.get_for_model(model).pk for model in models]
             kwargs['queryset'] = qs.filter(pk__in=ctypes)
         return super(TransactionTypeInputInline, self).formfield_for_foreignkey(db_field, request=request, **kwargs)
@@ -122,23 +122,23 @@ class TransactionTypeActionInstrumentInline(admin.StackedInline):
         ('user_text_1', 'user_text_2', 'user_text_3',),
     )
 
-    # raw_id_fields = (
-    #     # 'instrument_type', 'instrument_type_input',
-    #     # 'pricing_currency', 'pricing_currency_input',
-    #     # 'accrued_currency', 'accrued_currency_input',
-    #     # 'daily_pricing_model_input',
-    #     # 'payment_size_detail_input',
-    # )
+    raw_id_fields = (
+        'instrument_type', 'instrument_type_input',
+        'pricing_currency', 'pricing_currency_input',
+        'accrued_currency', 'accrued_currency_input',
+        'daily_pricing_model_input',
+        'payment_size_detail_input',
+    )
 
-    def get_formset(self, request, obj=None, **kwargs):
-        f = super(TransactionTypeActionInstrumentInline, self).get_formset(request, obj=obj, **kwargs)
-        input_filter_by_master_user(f.form, 'instrument_type', obj.master_user)
-        input_filter_owner(f.form, 'instrument_type_input', obj)
-        input_filter_by_master_user(f.form, 'pricing_currency', obj.master_user)
-        input_filter_owner(f.form, 'pricing_currency_input', obj)
-        input_filter_by_master_user(f.form, 'accrued_currency', obj.master_user)
-        input_filter_owner(f.form, 'accrued_currency_input', obj)
-        return f
+    # def get_formset(self, request, obj=None, **kwargs):
+    #     f = super(TransactionTypeActionInstrumentInline, self).get_formset(request, obj=obj, **kwargs)
+    #     input_filter_by_master_user(f.form, 'instrument_type', obj.master_user)
+    #     input_filter_owner(f.form, 'instrument_type_input', obj)
+    #     input_filter_by_master_user(f.form, 'pricing_currency', obj.master_user)
+    #     input_filter_owner(f.form, 'pricing_currency_input', obj)
+    #     input_filter_by_master_user(f.form, 'accrued_currency', obj.master_user)
+    #     input_filter_owner(f.form, 'accrued_currency_input', obj)
+    #     return f
 
     def formfield_for_foreignkey(self, db_field, request=None, **kwargs):
         if db_field.name.endswith('_input'):
@@ -182,35 +182,52 @@ class TransactionTypeActionTransactionInline(admin.StackedInline):
         ('responsible', 'responsible_input'),
         ('counterparty', 'counterparty_input'),
     )
+    raw_id_fields = (
+        'portfolio',
+        'instrument',
+        'transaction_currency',
+        'settlement_currency',
+        'account_position',
+        'account_cash',
+        'account_interim',
+        'strategy1_position',
+        'strategy1_cash',
+        'strategy2_position',
+        'strategy2_cash',
+        'strategy3_position',
+        'strategy3_cash',
+        'responsible',
+        'counterparty',
+    )
 
-    def get_formset(self, request, obj=None, **kwargs):
-        f = super(TransactionTypeActionTransactionInline, self).get_formset(request, obj=obj, **kwargs)
-        input_filter_by_master_user(f.form, 'portfolio', obj.master_user)
-        input_filter_owner(f.form, 'portfolio_input', obj)
-        input_filter_by_master_user(f.form, 'instrument', obj.master_user)
-        input_filter_owner(f.form, 'instrument_input', obj)
-        input_filter_owner(f.form, 'instrument_phantom', obj)
-        input_filter_by_master_user(f.form, 'transaction_currency', obj.master_user)
-        input_filter_owner(f.form, 'transaction_currency_input', obj)
-        input_filter_by_master_user(f.form, 'settlement_currency', obj.master_user)
-        input_filter_owner(f.form, 'settlement_currency_input', obj)
-        input_filter_by_master_user(f.form, 'account_position', obj.master_user)
-        input_filter_owner(f.form, 'account_position_input', obj)
-        input_filter_by_master_user(f.form, 'account_cash', obj.master_user)
-        input_filter_owner(f.form, 'account_cash_input', obj)
-        input_filter_by_master_user(f.form, 'account_interim', obj.master_user)
-        input_filter_owner(f.form, 'account_interim_input', obj)
-        input_filter_by_master_user(f.form, 'strategy1_position', obj.master_user)
-        input_filter_owner(f.form, 'strategy1_position_input', obj)
-        input_filter_by_master_user(f.form, 'strategy2_position', obj.master_user)
-        input_filter_owner(f.form, 'strategy2_position_input', obj)
-        input_filter_by_master_user(f.form, 'strategy3_position', obj.master_user)
-        input_filter_owner(f.form, 'strategy3_position_input', obj)
-        input_filter_by_master_user(f.form, 'responsible', obj.master_user)
-        input_filter_owner(f.form, 'responsible_input', obj)
-        input_filter_by_master_user(f.form, 'counterparty', obj.master_user)
-        input_filter_owner(f.form, 'counterparty_input', obj)
-        return f
+    # def get_formset(self, request, obj=None, **kwargs):
+    #     f = super(TransactionTypeActionTransactionInline, self).get_formset(request, obj=obj, **kwargs)
+    #     input_filter_by_master_user(f.form, 'portfolio', obj.master_user)
+    #     input_filter_owner(f.form, 'portfolio_input', obj)
+    #     input_filter_by_master_user(f.form, 'instrument', obj.master_user)
+    #     input_filter_owner(f.form, 'instrument_input', obj)
+    #     input_filter_owner(f.form, 'instrument_phantom', obj)
+    #     input_filter_by_master_user(f.form, 'transaction_currency', obj.master_user)
+    #     input_filter_owner(f.form, 'transaction_currency_input', obj)
+    #     input_filter_by_master_user(f.form, 'settlement_currency', obj.master_user)
+    #     input_filter_owner(f.form, 'settlement_currency_input', obj)
+    #     input_filter_by_master_user(f.form, 'account_position', obj.master_user)
+    #     input_filter_owner(f.form, 'account_position_input', obj)
+    #     input_filter_by_master_user(f.form, 'account_cash', obj.master_user)
+    #     input_filter_owner(f.form, 'account_cash_input', obj)
+    #     input_filter_by_master_user(f.form, 'account_interim', obj.master_user)
+    #     input_filter_owner(f.form, 'account_interim_input', obj)
+    #     input_filter_by_master_user(f.form, 'strategy1_position', obj.master_user)
+    #     input_filter_owner(f.form, 'strategy1_position_input', obj)
+    #     input_filter_by_master_user(f.form, 'strategy2_position', obj.master_user)
+    #     input_filter_owner(f.form, 'strategy2_position_input', obj)
+    #     input_filter_by_master_user(f.form, 'strategy3_position', obj.master_user)
+    #     input_filter_owner(f.form, 'strategy3_position_input', obj)
+    #     input_filter_by_master_user(f.form, 'responsible', obj.master_user)
+    #     input_filter_owner(f.form, 'responsible_input', obj)
+    #     input_filter_by_master_user(f.form, 'counterparty', obj.master_user)
+    #     input_filter_owner(f.form, 'counterparty_input', obj)
+    #     return f
 
     def formfield_for_foreignkey(self, db_field, request=None, **kwargs):
         if db_field.name.endswith('_input'):

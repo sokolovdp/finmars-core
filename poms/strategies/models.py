@@ -1,77 +1,104 @@
 from __future__ import unicode_literals
 
 from django.db import models
-from django.db.models.signals import post_save, post_delete
-from django.dispatch import receiver
 from django.utils.translation import ugettext_lazy as _
-from mptt.fields import TreeForeignKey
 from mptt.models import MPTTModel
 
-from poms.audit import history
 from poms.common.models import NamedModel
 from poms.obj_perms.models import AbstractGroupObjectPermission, AbstractUserObjectPermission
 from poms.users.models import MasterUser
 
 
-# class Strategy(MPTTModel, NamedModel):
-#     master_user = models.ForeignKey(MasterUser, related_name='strategies',
-#                                     verbose_name=_('master user'))
-#     parent = TreeForeignKey('self', related_name='children', null=True, blank=True, db_index=True,
-#                             verbose_name=_('parent'))
-#
-#     class MPTTMeta:
-#         order_insertion_by = ['master_user', 'name']
-#
-#     class Meta(NamedModel.Meta):
-#         verbose_name = _('strategy')
-#         verbose_name_plural = _('strategies')
-#         permissions = [
-#             ('view_strategy', 'Can view strategy')
-#         ]
-#
-#
-# class StrategyUserObjectPermission(UserObjectPermissionBase):
-#     content_object = models.ForeignKey(Strategy, related_name='user_object_permissions',
-#                                        verbose_name=_('content object'))
-#
-#     class Meta(UserObjectPermissionBase.Meta):
-#         verbose_name = _('strategies - user permission')
-#         verbose_name_plural = _('strategies - user permissions')
-#
-#
-# class StrategyGroupObjectPermission(GroupObjectPermissionBase):
-#     content_object = models.ForeignKey(Strategy, related_name='group_object_permissions',
-#                                        verbose_name=_('content object'))
-#
-#     class Meta(GroupObjectPermissionBase.Meta):
-#         verbose_name = _('strategies - group permission')
-#         verbose_name_plural = _('strategies - group permissions')
+# 1 --
 
 
-class Strategy1(MPTTModel, NamedModel):
-    master_user = models.ForeignKey(
-        MasterUser,
-        related_name='strategies1',
-        verbose_name=_('master user')
-    )
-    parent = TreeForeignKey(
-        'self',
-        related_name='children',
-        null=True,
-        blank=True,
-        db_index=True,
-        verbose_name=_('parent')
-    )
-
-    class MPTTMeta:
-        order_insertion_by = ['master_user', 'name']
+class Strategy1Group(NamedModel):
+    master_user = models.ForeignKey(MasterUser, related_name='strategy1_groups', verbose_name=_('master user'))
 
     class Meta(NamedModel.Meta):
-        verbose_name = _('strategy - 1')
-        verbose_name_plural = _('strategies - 1')
+        verbose_name = _('strategy1 group')
+        verbose_name_plural = _('strategy1 groups')
+        permissions = [
+            ('view_strategy1group', 'Can view strategy1 group'),
+            ('manage_strategy1group', 'Can manage strategy1 group'),
+        ]
+        unique_together = [
+            ['master_user', 'user_code']
+        ]
+
+    @property
+    def is_default(self):
+        return self.master_user.strategy1_group_id == self.id if self.master_user_id else False
+
+
+class Strategy1GroupUserObjectPermission(AbstractUserObjectPermission):
+    content_object = models.ForeignKey(Strategy1Group, related_name='user_object_permissions',
+                                       verbose_name=_('content object'))
+
+    class Meta(AbstractUserObjectPermission.Meta):
+        verbose_name = _('strategy1 groups - user permission')
+        verbose_name_plural = _('strategy1 groups - user permissions')
+
+
+class Strategy1GroupGroupObjectPermission(AbstractGroupObjectPermission):
+    content_object = models.ForeignKey(Strategy1Group, related_name='group_object_permissions',
+                                       verbose_name=_('content object'))
+
+    class Meta(AbstractGroupObjectPermission.Meta):
+        verbose_name = _('strategy1 groups - group permission')
+        verbose_name_plural = _('strategy1 groups - group permissions')
+
+
+class Strategy1Subgroup(NamedModel):
+    group = models.ForeignKey(Strategy1Group, null=True, blank=True, on_delete=models.PROTECT, related_name='subgroups')
+
+    class Meta(NamedModel.Meta):
+        verbose_name = _('strategy1 subgroup')
+        verbose_name_plural = _('strategy1 subgroups')
+        permissions = [
+            ('view_strategy1subgroup', 'Can view strategy1 subgroup'),
+            ('manage_strategy1subgroup', 'Can manage strategy1 subgroup'),
+        ]
+        unique_together = [
+            ['group', 'user_code']
+        ]
+
+    @property
+    def is_default(self):
+        return self.master_user.strategy1_subgroup_id == self.id if self.master_user_id else False
+
+
+class Strategy1SubgroupUserObjectPermission(AbstractUserObjectPermission):
+    content_object = models.ForeignKey(Strategy1Subgroup, related_name='user_object_permissions',
+                                       verbose_name=_('content object'))
+
+    class Meta(AbstractUserObjectPermission.Meta):
+        verbose_name = _('strategy1 subgroups - user permission')
+        verbose_name_plural = _('strategy1 subgroups - user permissions')
+
+
+class Strategy1SubgroupGroupObjectPermission(AbstractGroupObjectPermission):
+    content_object = models.ForeignKey(Strategy1Subgroup, related_name='group_object_permissions',
+                                       verbose_name=_('content object'))
+
+    class Meta(AbstractGroupObjectPermission.Meta):
+        verbose_name = _('strategy1 subgroups - group permission')
+        verbose_name_plural = _('strategy1 subgroups - group permissions')
+
+
+class Strategy1(NamedModel):
+    subgroup = models.ForeignKey(Strategy1Subgroup, null=True, blank=True, on_delete=models.PROTECT,
+                                 related_name='strategies')
+
+    class Meta(NamedModel.Meta):
+        verbose_name = _('strategy1')
+        verbose_name_plural = _('strategies1')
         permissions = [
             ('view_strategy1', 'Can view strategy1'),
             ('manage_strategy1', 'Can manage strategy1'),
+        ]
+        unique_together = [
+            ['subgroup', 'user_code']
         ]
 
     @property
@@ -80,53 +107,113 @@ class Strategy1(MPTTModel, NamedModel):
 
 
 class Strategy1UserObjectPermission(AbstractUserObjectPermission):
-    content_object = models.ForeignKey(
-        Strategy1,
-        related_name='user_object_permissions',
-        verbose_name=_('content object')
-    )
+    content_object = models.ForeignKey(Strategy1, related_name='user_object_permissions',
+                                       verbose_name=_('content object'))
 
     class Meta(AbstractUserObjectPermission.Meta):
-        verbose_name = _('strategies - 1 - user permission')
-        verbose_name_plural = _('strategies - 1 - user permissions')
+        verbose_name = _('strategies - user permission')
+        verbose_name_plural = _('strategies - user permissions')
 
 
 class Strategy1GroupObjectPermission(AbstractGroupObjectPermission):
-    content_object = models.ForeignKey(
-        Strategy1,
-        related_name='group_object_permissions',
-        verbose_name=_('content object')
-    )
+    content_object = models.ForeignKey(Strategy1, related_name='group_object_permissions',
+                                       verbose_name=_('content object'))
 
     class Meta(AbstractGroupObjectPermission.Meta):
-        verbose_name = _('strategies - 1 - group permission')
-        verbose_name_plural = _('strategies - 1 - group permissions')
+        verbose_name = _('strategies - group permission')
+        verbose_name_plural = _('strategies - group permissions')
 
 
-class Strategy2(MPTTModel, NamedModel):
-    master_user = models.ForeignKey(
-        MasterUser,
-        related_name='strategies2',
-        verbose_name=_('master user')
-    )
-    parent = TreeForeignKey(
-        'self',
-        related_name='children',
-        null=True,
-        blank=True,
-        db_index=True,
-        verbose_name=_('parent')
-    )
+# 2 --
 
-    class MPTTMeta:
-        order_insertion_by = ['master_user', 'name']
+
+class Strategy2Group(NamedModel):
+    master_user = models.ForeignKey(MasterUser, related_name='strategy2_groups', verbose_name=_('master user'))
 
     class Meta(NamedModel.Meta):
-        verbose_name = _('strategy - 2')
-        verbose_name_plural = _('strategies - 2')
+        verbose_name = _('strategy2 group')
+        verbose_name_plural = _('strategy2 groups')
+        permissions = [
+            ('view_strategy2group', 'Can view strategy2 group'),
+            ('manage_strategy2group', 'Can manage strategy2 group'),
+        ]
+        unique_together = [
+            ['master_user', 'user_code']
+        ]
+
+    @property
+    def is_default(self):
+        return self.master_user.strategy2_group_id == self.id if self.master_user_id else False
+
+
+class Strategy2GroupUserObjectPermission(AbstractUserObjectPermission):
+    content_object = models.ForeignKey(Strategy2Group, related_name='user_object_permissions',
+                                       verbose_name=_('content object'))
+
+    class Meta(AbstractUserObjectPermission.Meta):
+        verbose_name = _('strategy2 groups - user permission')
+        verbose_name_plural = _('strategy2 groups - user permissions')
+
+
+class Strategy2GroupGroupObjectPermission(AbstractGroupObjectPermission):
+    content_object = models.ForeignKey(Strategy2Group, related_name='group_object_permissions',
+                                       verbose_name=_('content object'))
+
+    class Meta(AbstractGroupObjectPermission.Meta):
+        verbose_name = _('strategy2 groups - group permission')
+        verbose_name_plural = _('strategy2 groups - group permissions')
+
+
+class Strategy2Subgroup(NamedModel):
+    group = models.ForeignKey(Strategy2Group, null=True, blank=True, on_delete=models.PROTECT, related_name='subgroups')
+
+    class Meta(NamedModel.Meta):
+        verbose_name = _('strategy2 subgroup')
+        verbose_name_plural = _('strategy2 subgroups')
+        permissions = [
+            ('view_strategy2subgroup', 'Can view strategy2 subgroup'),
+            ('manage_strategy2subgroup', 'Can manage strategy2 subgroup'),
+        ]
+        unique_together = [
+            ['group', 'user_code']
+        ]
+
+    @property
+    def is_default(self):
+        return self.master_user.strategy2_subgroup_id == self.id if self.master_user_id else False
+
+
+class Strategy2SubgroupUserObjectPermission(AbstractUserObjectPermission):
+    content_object = models.ForeignKey(Strategy2Subgroup, related_name='user_object_permissions',
+                                       verbose_name=_('content object'))
+
+    class Meta(AbstractUserObjectPermission.Meta):
+        verbose_name = _('strategy2 subgroups - user permission')
+        verbose_name_plural = _('strategy2 subgroups - user permissions')
+
+
+class Strategy2SubgroupGroupObjectPermission(AbstractGroupObjectPermission):
+    content_object = models.ForeignKey(Strategy2Subgroup, related_name='group_object_permissions',
+                                       verbose_name=_('content object'))
+
+    class Meta(AbstractGroupObjectPermission.Meta):
+        verbose_name = _('strategy2 subgroups - group permission')
+        verbose_name_plural = _('strategy2 subgroups - group permissions')
+
+
+class Strategy2(NamedModel):
+    subgroup = models.ForeignKey(Strategy2Subgroup, null=True, blank=True, on_delete=models.PROTECT,
+                                 related_name='strategies')
+
+    class Meta(NamedModel.Meta):
+        verbose_name = _('strategy2')
+        verbose_name_plural = _('strategies2')
         permissions = [
             ('view_strategy2', 'Can view strategy2'),
             ('manage_strategy2', 'Can manage strategy2'),
+        ]
+        unique_together = [
+            ['subgroup', 'user_code']
         ]
 
     @property
@@ -135,53 +222,113 @@ class Strategy2(MPTTModel, NamedModel):
 
 
 class Strategy2UserObjectPermission(AbstractUserObjectPermission):
-    content_object = models.ForeignKey(
-        Strategy2,
-        related_name='user_object_permissions',
-        verbose_name=_('content object')
-    )
+    content_object = models.ForeignKey(Strategy2, related_name='user_object_permissions',
+                                       verbose_name=_('content object'))
 
     class Meta(AbstractUserObjectPermission.Meta):
-        verbose_name = _('strategies - 2 - user permission')
-        verbose_name_plural = _('strategies - 2 - user permissions')
+        verbose_name = _('strategies - user permission')
+        verbose_name_plural = _('strategies - user permissions')
 
 
 class Strategy2GroupObjectPermission(AbstractGroupObjectPermission):
-    content_object = models.ForeignKey(
-        Strategy2,
-        related_name='group_object_permissions',
-        verbose_name=_('content object')
-    )
+    content_object = models.ForeignKey(Strategy2, related_name='group_object_permissions',
+                                       verbose_name=_('content object'))
 
     class Meta(AbstractGroupObjectPermission.Meta):
-        verbose_name = _('strategies - 2 - group permission')
-        verbose_name_plural = _('strategies - 2 - group permissions')
+        verbose_name = _('strategies - group permission')
+        verbose_name_plural = _('strategies - group permissions')
 
 
-class Strategy3(MPTTModel, NamedModel):
-    master_user = models.ForeignKey(
-        MasterUser,
-        related_name='strategies3',
-        verbose_name=_('master user')
-    )
-    parent = TreeForeignKey(
-        'self',
-        related_name='children',
-        null=True,
-        blank=True,
-        db_index=True,
-        verbose_name=_('parent')
-    )
+# 3 --
 
-    class MPTTMeta:
-        order_insertion_by = ['master_user', 'name']
+
+class Strategy3Group(NamedModel):
+    master_user = models.ForeignKey(MasterUser, related_name='strategy3_groups', verbose_name=_('master user'))
 
     class Meta(NamedModel.Meta):
-        verbose_name = _('strategy - 3')
-        verbose_name_plural = _('strategies - 3')
+        verbose_name = _('strategy3 group')
+        verbose_name_plural = _('strategy3 groups')
+        permissions = [
+            ('view_strategy3group', 'Can view strategy3 group'),
+            ('manage_strategy3group', 'Can manage strategy3 group'),
+        ]
+        unique_together = [
+            ['master_user', 'user_code']
+        ]
+
+    @property
+    def is_default(self):
+        return self.master_user.strategy3_group_id == self.id if self.master_user_id else False
+
+
+class Strategy3GroupUserObjectPermission(AbstractUserObjectPermission):
+    content_object = models.ForeignKey(Strategy3Group, related_name='user_object_permissions',
+                                       verbose_name=_('content object'))
+
+    class Meta(AbstractUserObjectPermission.Meta):
+        verbose_name = _('strategy3 groups - user permission')
+        verbose_name_plural = _('strategy3 groups - user permissions')
+
+
+class Strategy3GroupGroupObjectPermission(AbstractGroupObjectPermission):
+    content_object = models.ForeignKey(Strategy3Group, related_name='group_object_permissions',
+                                       verbose_name=_('content object'))
+
+    class Meta(AbstractGroupObjectPermission.Meta):
+        verbose_name = _('strategy3 groups - group permission')
+        verbose_name_plural = _('strategy3 groups - group permissions')
+
+
+class Strategy3Subgroup(NamedModel):
+    group = models.ForeignKey(Strategy3Group, null=True, blank=True, on_delete=models.PROTECT, related_name='subgroups')
+
+    class Meta(NamedModel.Meta):
+        verbose_name = _('strategy3 subgroup')
+        verbose_name_plural = _('strategy3 subgroups')
+        permissions = [
+            ('view_strategy3subgroup', 'Can view strategy3 subgroup'),
+            ('manage_strategy3subgroup', 'Can manage strategy3 subgroup'),
+        ]
+        unique_together = [
+            ['group', 'user_code']
+        ]
+
+    @property
+    def is_default(self):
+        return self.master_user.strategy3_subgroup_id == self.id if self.master_user_id else False
+
+
+class Strategy3SubgroupUserObjectPermission(AbstractUserObjectPermission):
+    content_object = models.ForeignKey(Strategy3Subgroup, related_name='user_object_permissions',
+                                       verbose_name=_('content object'))
+
+    class Meta(AbstractUserObjectPermission.Meta):
+        verbose_name = _('strategy3 subgroups - user permission')
+        verbose_name_plural = _('strategy3 subgroups - user permissions')
+
+
+class Strategy3SubgroupGroupObjectPermission(AbstractGroupObjectPermission):
+    content_object = models.ForeignKey(Strategy3Subgroup, related_name='group_object_permissions',
+                                       verbose_name=_('content object'))
+
+    class Meta(AbstractGroupObjectPermission.Meta):
+        verbose_name = _('strategy3 subgroups - group permission')
+        verbose_name_plural = _('strategy3 subgroups - group permissions')
+
+
+class Strategy3(NamedModel):
+    subgroup = models.ForeignKey(Strategy3Subgroup, null=True, blank=True, on_delete=models.PROTECT,
+                                 related_name='strategies')
+
+    class Meta(NamedModel.Meta):
+        verbose_name = _('strategy3')
+        verbose_name_plural = _('strategies3')
         permissions = [
             ('view_strategy3', 'Can view strategy3'),
             ('manage_strategy3', 'Can manage strategy3'),
+        ]
+        unique_together = [
+            ['subgroup', 'user_code']
         ]
 
     @property
@@ -190,123 +337,18 @@ class Strategy3(MPTTModel, NamedModel):
 
 
 class Strategy3UserObjectPermission(AbstractUserObjectPermission):
-    content_object = models.ForeignKey(
-        Strategy3,
-        related_name='user_object_permissions',
-        verbose_name=_('content object')
-    )
+    content_object = models.ForeignKey(Strategy3, related_name='user_object_permissions',
+                                       verbose_name=_('content object'))
 
     class Meta(AbstractUserObjectPermission.Meta):
-        verbose_name = _('strategies - 3 - user permission')
-        verbose_name_plural = _('strategies - 3 - user permissions')
+        verbose_name = _('strategies - user permission')
+        verbose_name_plural = _('strategies - user permissions')
 
 
 class Strategy3GroupObjectPermission(AbstractGroupObjectPermission):
-    content_object = models.ForeignKey(
-        Strategy3,
-        related_name='group_object_permissions',
-        verbose_name=_('content object')
-    )
+    content_object = models.ForeignKey(Strategy3, related_name='group_object_permissions',
+                                       verbose_name=_('content object'))
 
     class Meta(AbstractGroupObjectPermission.Meta):
-        verbose_name = _('strategies - 3 - group permission')
-        verbose_name_plural = _('strategies - 3 - group permissions')
-
-
-def _strategy_post_save(instance, created, group_object_permission_model):
-    if created and not instance.is_root_node():
-        root = instance.get_root()
-        perms = []
-        for gop in root.group_object_permissions.all():
-            perms.append(group_object_permission_model(content_object=instance,
-                                                       group=gop.group,
-                                                       permission=gop.permission))
-        # group_object_permission_model.objects.filter(content_object=instance).delete()
-        group_object_permission_model.objects.bulk_create(perms)
-
-
-def _strategy_group_object_permission_post_save(instance, created, group_object_permission_model):
-    if instance.content_object.is_root_node():
-        if created:
-            perms = []
-            for o in instance.content_object.get_family():
-                if o.is_root_node():
-                    continue
-                perms.append(group_object_permission_model(content_object=o,
-                                                           group=instance.group,
-                                                           permission=instance.permission))
-            group_object_permission_model.objects.bulk_create(perms)
-        else:
-            group_object_permission_model.objects.filter(
-                id__in=instance.content_object.get_family().exclude(id=instance.content_object_id)).update(
-                group=instance.group,
-                permission=instance.permission
-            )
-
-
-def _strategy_group_object_permission_post_delete(instance, group_object_permission_model):
-    if instance.content_object.is_root_node():
-        group_object_permission_model.objects.filter(content_object__in=instance.content_object.get_family()).delete()
-
-
-@receiver(post_save, sender=Strategy1, dispatch_uid='strategy1_post_save')
-def strategy1_post_save(sender, instance=None, created=None, **kwargs):
-    _strategy_post_save(instance, created, Strategy1GroupObjectPermission)
-
-
-@receiver(post_save, sender=Strategy1GroupObjectPermission,
-          dispatch_uid='strategy1_group_object_permission_post_save')
-def strategy1_group_object_permission_post_save(sender, instance=None, created=None, **kwargs):
-    _strategy_group_object_permission_post_save(instance, created, Strategy1GroupObjectPermission)
-
-
-@receiver(post_delete, sender=Strategy1GroupObjectPermission,
-          dispatch_uid='strategy1_group_object_permission_post_delete')
-def strategy1_group_object_permission_post_delete(sender, instance=None, **kwargs):
-    _strategy_group_object_permission_post_delete(instance, Strategy1GroupObjectPermission)
-
-
-@receiver(post_save, sender=Strategy2, dispatch_uid='strategy2_post_save')
-def strategy2_post_save(sender, instance=None, created=None, **kwargs):
-    _strategy_post_save(instance, created, Strategy2GroupObjectPermission)
-
-
-@receiver(post_save, sender=Strategy2GroupObjectPermission,
-          dispatch_uid='strategy2_group_object_permission_post_save')
-def strategy2_group_object_permission_post_save(sender, instance=None, created=None, **kwargs):
-    _strategy_group_object_permission_post_save(instance, created, Strategy2GroupObjectPermission)
-
-
-@receiver(post_delete, sender=Strategy2GroupObjectPermission,
-          dispatch_uid='strategy2_group_object_permission_post_delete')
-def strategy2_group_object_permission_post_delete(sender, instance=None, **kwargs):
-    _strategy_group_object_permission_post_delete(instance, Strategy2GroupObjectPermission)
-
-
-@receiver(post_save, sender=Strategy3, dispatch_uid='strategy3_post_save')
-def strategy3_post_save(sender, instance=None, created=None, **kwargs):
-    _strategy_post_save(instance, created, Strategy3GroupObjectPermission)
-
-
-@receiver(post_save, sender=Strategy3GroupObjectPermission,
-          dispatch_uid='strategy3_group_object_permission_post_save')
-def strategy3_group_object_permission_post_save(sender, instance=None, created=None, **kwargs):
-    _strategy_group_object_permission_post_save(instance, created, Strategy3GroupObjectPermission)
-
-
-@receiver(post_delete, sender=Strategy3GroupObjectPermission,
-          dispatch_uid='strategy3_group_object_permission_post_delete')
-def strategy3_group_object_permission_post_delete(sender, instance=None, **kwargs):
-    _strategy_group_object_permission_post_delete(instance, Strategy3GroupObjectPermission)
-
-
-# history.register(Strategy)
-history.register(Strategy1, follow=['tags', 'user_object_permissions', 'group_object_permissions'])
-history.register(Strategy1UserObjectPermission)
-history.register(Strategy1GroupObjectPermission)
-history.register(Strategy2, follow=['tags', 'user_object_permissions', 'group_object_permissions'])
-history.register(Strategy2UserObjectPermission)
-history.register(Strategy2GroupObjectPermission)
-history.register(Strategy3, follow=['tags', 'user_object_permissions', 'group_object_permissions'])
-history.register(Strategy3UserObjectPermission)
-history.register(Strategy3GroupObjectPermission)
+        verbose_name = _('strategies - group permission')
+        verbose_name_plural = _('strategies - group permissions')

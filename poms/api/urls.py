@@ -82,12 +82,25 @@ router.register(r'portfolios/portfolio', portfolios.PortfolioViewSet)
 
 # router.register(r'strategies/strategy/node', strategies.StrategyNodeViewSet, 'strategynode')
 # router.register(r'strategies/strategy', strategies.StrategyViewSet)
-router.register(r'strategies/strategy1/node', strategies.Strategy1NodeViewSet, 'strategy1node')
-router.register(r'strategies/strategy1', strategies.Strategy1ViewSet)
-router.register(r'strategies/strategy2/node', strategies.Strategy2NodeViewSet, 'strategy2node')
-router.register(r'strategies/strategy2', strategies.Strategy2ViewSet)
-router.register(r'strategies/strategy3/node', strategies.Strategy3NodeViewSet, 'strategy3node')
-router.register(r'strategies/strategy3', strategies.Strategy3ViewSet)
+
+router.register(r'strategies/1/group', strategies.Strategy1GroupViewSet)
+router.register(r'strategies/1/subgroup', strategies.Strategy1SubgroupViewSet)
+router.register(r'strategies/1/strategy', strategies.Strategy1ViewSet)
+
+router.register(r'strategies/2/group', strategies.Strategy2GroupViewSet)
+router.register(r'strategies/2/subgroup', strategies.Strategy2SubgroupViewSet)
+router.register(r'strategies/2/strategy', strategies.Strategy2ViewSet)
+
+router.register(r'strategies/3/group', strategies.Strategy3GroupViewSet)
+router.register(r'strategies/3/subgroup', strategies.Strategy3SubgroupViewSet)
+router.register(r'strategies/3/strategy', strategies.Strategy3ViewSet)
+
+# router.register(r'strategies/strategy1/node', strategies.Strategy1NodeViewSet, 'strategy1node')
+# router.register(r'strategies/strategy1', strategies.Strategy1ViewSet)
+# router.register(r'strategies/strategy2/node', strategies.Strategy2NodeViewSet, 'strategy2node')
+# router.register(r'strategies/strategy2', strategies.Strategy2ViewSet)
+# router.register(r'strategies/strategy3/node', strategies.Strategy3NodeViewSet, 'strategy3node')
+# router.register(r'strategies/strategy3', strategies.Strategy3ViewSet)
 
 router.register(r'tags/tag', tags.TagViewSet)
 

@@ -1,94 +1,163 @@
 from __future__ import unicode_literals
 
-from poms.common.filters import AbstractClassifierFilterSet
-from poms.common.views import AbstractClassifierViewSet, AbstractClassifierNodeViewSet
+from rest_framework.filters import FilterSet
+
+from poms.common.filters import CharFilter
 from poms.obj_perms.views import AbstractWithObjectPermissionViewSet
-from poms.strategies.models import Strategy1, Strategy2, Strategy3
-from poms.strategies.serializers import Strategy1Serializer, Strategy1NodeSerializer, Strategy2Serializer, \
-    Strategy2NodeSerializer, Strategy3Serializer, Strategy3NodeSerializer
+from poms.strategies.filters import SubgroupOwnerByGroupUserFilter, StrategyOwnerBySubgroupUserFilter
+from poms.strategies.models import Strategy1Group, Strategy1Subgroup, Strategy1, Strategy2Group, Strategy2Subgroup, \
+    Strategy2, Strategy3Group, Strategy3Subgroup, Strategy3
+from poms.strategies.serializers import Strategy1GroupSerializer, Strategy1Serializer, Strategy2GroupSerializer, \
+    Strategy2SubgroupSerializer, Strategy2Serializer, Strategy1SubgroupSerializer, Strategy3GroupSerializer, \
+    Strategy3SubgroupSerializer, Strategy3Serializer
 from poms.tags.filters import TagFilterBackend, TagFilter
+from poms.users.filters import OwnerByMasterUserFilter
 
 
-class AbstractStrategyFilterSet(AbstractClassifierFilterSet):
-    class Meta(AbstractClassifierFilterSet.Meta):
-        fields = AbstractClassifierFilterSet.Meta.fields + ['tag', ]
+class Strategy1GroupFilterSet(FilterSet):
+    user_code = CharFilter()
+    name = CharFilter()
+    short_name = CharFilter()
+    tag = TagFilter(model=Strategy1Group)
+
+    class Meta:
+        model = Strategy1Group
+        fields = ['user_code', 'name', 'short_name', 'tag']
 
 
-class AbstractStrategyViewSet(AbstractWithObjectPermissionViewSet, AbstractClassifierViewSet):
-    filter_backends = AbstractClassifierViewSet.filter_backends + [
+class Strategy1GroupViewSet(AbstractWithObjectPermissionViewSet):
+    queryset = Strategy1Group.objects.select_related('master_user')
+    serializer_class = Strategy1GroupSerializer
+    filter_backends = AbstractWithObjectPermissionViewSet.filter_backends + [
+        OwnerByMasterUserFilter,
         TagFilterBackend,
     ]
-
-    def get_serializer(self, *args, **kwargs):
-        kwargs['show_children'] = (self.action != 'list')
-        return super(AbstractStrategyViewSet, self).get_serializer(*args, **kwargs)
+    filter_class = Strategy1GroupFilterSet
 
 
-class AbstractStrategyNodeViewSet(AbstractWithObjectPermissionViewSet, AbstractClassifierNodeViewSet):
-    filter_backends = AbstractClassifierNodeViewSet.filter_backends + [
+class Strategy1SubgroupFilterSet(FilterSet):
+    user_code = CharFilter()
+    name = CharFilter()
+    short_name = CharFilter()
+    tag = TagFilter(model=Strategy1Subgroup)
+
+    class Meta:
+        model = Strategy1Subgroup
+        fields = ['user_code', 'name', 'short_name', 'tag']
+
+
+class Strategy1SubgroupViewSet(AbstractWithObjectPermissionViewSet):
+    queryset = Strategy1Subgroup.objects.select_related('group', 'group__master_user')
+    serializer_class = Strategy1SubgroupSerializer
+    filter_backends = AbstractWithObjectPermissionViewSet.filter_backends + [
+        SubgroupOwnerByGroupUserFilter,
         TagFilterBackend,
     ]
+    filter_class = Strategy1SubgroupFilterSet
 
 
-# Strategy1
-
-
-class Strategy1ClassifierFilterSet(AbstractStrategyFilterSet):
+class Strategy1FilterSet(FilterSet):
+    user_code = CharFilter()
+    name = CharFilter()
+    short_name = CharFilter()
     tag = TagFilter(model=Strategy1)
 
-    class Meta(AbstractStrategyFilterSet.Meta):
+    class Meta:
         model = Strategy1
+        fields = ['user_code', 'name', 'short_name', 'tag']
 
 
-class Strategy1ViewSet(AbstractStrategyViewSet):
-    queryset = Strategy1.objects.select_related('master_user')
+class Strategy1ViewSet(AbstractWithObjectPermissionViewSet):
+    queryset = Strategy1.objects.select_related('subgroup', 'subgroup__group', 'subgroup__group__master_user')
     serializer_class = Strategy1Serializer
-    filter_class = Strategy1ClassifierFilterSet
+    filter_backends = AbstractWithObjectPermissionViewSet.filter_backends + [
+        StrategyOwnerBySubgroupUserFilter,
+        TagFilterBackend,
+    ]
+    filter_class = Strategy1FilterSet
 
 
-class Strategy1NodeViewSet(AbstractStrategyNodeViewSet):
-    queryset = Strategy1.objects.select_related('master_user')
-    serializer_class = Strategy1NodeSerializer
-    filter_class = Strategy1ClassifierFilterSet
+# 2
 
 
-# Strategy2
+class Strategy2GroupFilterSet(Strategy1GroupFilterSet):
+    tag = TagFilter(model=Strategy2Group)
 
-class Strategy2ClassifierFilterSet(AbstractStrategyFilterSet):
+    class Meta(Strategy1GroupFilterSet.Meta):
+        model = Strategy2Group
+        fields = ['user_code', 'name', 'short_name', 'tag']
+
+
+class Strategy2GroupViewSet(Strategy1GroupViewSet):
+    queryset = Strategy2Group.objects.select_related('master_user')
+    serializer_class = Strategy2GroupSerializer
+    filter_class = Strategy2GroupFilterSet
+
+
+class Strategy2SubgroupFilterSet(Strategy1SubgroupFilterSet):
+    tag = TagFilter(model=Strategy2Subgroup)
+
+    class Meta(Strategy1SubgroupFilterSet.Meta):
+        model = Strategy2Subgroup
+
+
+class Strategy2SubgroupViewSet(Strategy1SubgroupViewSet):
+    queryset = Strategy2Subgroup.objects.select_related('group', 'group__master_user')
+    serializer_class = Strategy2SubgroupSerializer
+    filter_class = Strategy2SubgroupFilterSet
+
+
+class Strategy2FilterSet(Strategy1FilterSet):
     tag = TagFilter(model=Strategy2)
 
-    class Meta(AbstractStrategyFilterSet.Meta):
+    class Meta:
         model = Strategy2
 
 
-class Strategy2ViewSet(AbstractStrategyViewSet):
-    queryset = Strategy2.objects.select_related('master_user')
+class Strategy2ViewSet(Strategy1ViewSet):
+    queryset = Strategy2.objects.select_related('subgroup', 'subgroup__group', 'subgroup__group__master_user')
     serializer_class = Strategy2Serializer
-    filter_class = Strategy2ClassifierFilterSet
+    filter_class = Strategy2FilterSet
 
 
-class Strategy2NodeViewSet(AbstractStrategyNodeViewSet):
-    queryset = Strategy2.objects.select_related('master_user')
-    serializer_class = Strategy2NodeSerializer
-    filter_class = Strategy2ClassifierFilterSet
+# 3
 
 
-# Strategy3
+class Strategy3GroupFilterSet(Strategy1GroupFilterSet):
+    tag = TagFilter(model=Strategy3Group)
 
-class Strategy3ClassifierFilterSet(AbstractStrategyFilterSet):
+    class Meta(Strategy1GroupFilterSet.Meta):
+        model = Strategy3Group
+        fields = ['user_code', 'name', 'short_name', 'tag']
+
+
+class Strategy3GroupViewSet(Strategy1GroupViewSet):
+    queryset = Strategy3Group.objects.select_related('master_user')
+    serializer_class = Strategy3GroupSerializer
+    filter_class = Strategy3GroupFilterSet
+
+
+class Strategy3SubgroupFilterSet(Strategy1SubgroupFilterSet):
+    tag = TagFilter(model=Strategy3Subgroup)
+
+    class Meta(Strategy1SubgroupFilterSet.Meta):
+        model = Strategy3Subgroup
+
+
+class Strategy3SubgroupViewSet(Strategy1SubgroupViewSet):
+    queryset = Strategy3Subgroup.objects.select_related('group', 'group__master_user')
+    serializer_class = Strategy3SubgroupSerializer
+    filter_class = Strategy3SubgroupFilterSet
+
+
+class Strategy3FilterSet(Strategy1FilterSet):
     tag = TagFilter(model=Strategy3)
 
-    class Meta(AbstractStrategyFilterSet.Meta):
+    class Meta:
         model = Strategy3
 
 
-class Strategy3ViewSet(AbstractStrategyViewSet):
-    queryset = Strategy3.objects.select_related('master_user')
+class Strategy3ViewSet(Strategy1ViewSet):
+    queryset = Strategy3.objects.select_related('subgroup', 'subgroup__group', 'subgroup__group__master_user')
     serializer_class = Strategy3Serializer
-    filter_class = Strategy3ClassifierFilterSet
-
-
-class Strategy3NodeViewSet(AbstractStrategyNodeViewSet):
-    queryset = Strategy3.objects.select_related('master_user')
-    serializer_class = Strategy3NodeSerializer
-    filter_class = Strategy3ClassifierFilterSet
+    filter_class = Strategy3FilterSet

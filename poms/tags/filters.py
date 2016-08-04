@@ -15,7 +15,8 @@ from poms.instruments.models import Instrument
 from poms.instruments.models import InstrumentType
 from poms.obj_perms.utils import obj_perms_filter_objects_for_view
 from poms.portfolios.models import Portfolio
-from poms.strategies.models import Strategy1, Strategy2, Strategy3
+from poms.strategies.models import Strategy1Group, Strategy1Subgroup, Strategy1, Strategy2Group, Strategy2Subgroup, \
+    Strategy2, Strategy3Group, Strategy3Subgroup, Strategy3
 from poms.tags.models import Tag
 from poms.transactions.models import TransactionType
 
@@ -31,7 +32,10 @@ class TagFakeFilter(django_filters.Filter):
 class TagContentTypeFilter(BaseFilterBackend):
     def filter_queryset(self, request, queryset, view):
         models = [AccountType, Account, Currency, InstrumentType, Instrument, Counterparty, Responsible,
-                  Strategy1, Strategy2, Strategy3, Portfolio, TransactionType, ThreadGroup, Thread]
+                  Strategy1Group, Strategy1Subgroup, Strategy1,
+                  Strategy2Group, Strategy2Subgroup, Strategy2,
+                  Strategy3Group, Strategy3Subgroup, Strategy3,
+                  Portfolio, TransactionType, ThreadGroup, Thread]
         ctypes = [ContentType.objects.get_for_model(model).pk for model in models]
         return queryset.filter(pk__in=ctypes)
 

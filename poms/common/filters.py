@@ -18,17 +18,17 @@ from poms.obj_perms.utils import obj_perms_filter_objects_for_view
 #             return queryset.filter(parent__isnull=True)
 
 
-def _model_choices(model, field_name='name'):
+def _model_choices(model, field_name, master_user_path):
     master_user = get_request().user.master_user
-    qs = model.objects.filter(master_user=master_user).order_by(field_name)
+    qs = model.objects.filter(**{master_user_path: master_user}).order_by(field_name)
     for t in qs:
         yield t.id, getattr(t, field_name)
 
 
-def _model_with_perms_choices(model, field_name='name'):
+def _model_with_perms_choices(model, field_name, master_user_path):
     master_user = get_request().user.master_user
     member = get_request().user.member
-    qs = model.objects.filter(master_user=master_user).order_by(field_name)
+    qs = model.objects.filter(**{master_user_path: master_user}).order_by(field_name)
     for t in obj_perms_filter_objects_for_view(member, qs, prefetch=False):
         yield t.id, getattr(t, field_name)
 
@@ -36,22 +36,28 @@ def _model_with_perms_choices(model, field_name='name'):
 class ModelMultipleChoiceFilter(django_filters.MultipleChoiceFilter):
     model = None
     field_name = 'name'
+    master_user_path = 'master_user'
 
     def __init__(self, *args, **kwargs):
         self.model = kwargs.pop('model', self.model)
         self.field_name = kwargs.pop('field_name', self.field_name)
-        kwargs['choices'] = partial(_model_choices, model=self.model, field_name=self.field_name)
+        self.master_user_path = kwargs.pop('master_user_path', self.master_user_path)
+        kwargs['choices'] = partial(_model_choices, model=self.model, field_name=self.field_name,
+                                    master_user_path=self.master_user_path)
         super(ModelMultipleChoiceFilter, self).__init__(*args, **kwargs)
 
 
 class ModelWithPermissionMultipleChoiceFilter(django_filters.MultipleChoiceFilter):
     model = None
     field_name = 'name'
+    master_user_path = 'master_user'
 
     def __init__(self, *args, **kwargs):
         self.model = kwargs.pop('model', self.model)
         self.field_name = kwargs.pop('field_name', self.field_name)
-        kwargs['choices'] = partial(_model_with_perms_choices, model=self.model, field_name=self.field_name)
+        self.master_user_path = kwargs.pop('master_user_path', self.master_user_path)
+        kwargs['choices'] = partial(_model_with_perms_choices, model=self.model, field_name=self.field_name,
+                                    master_user_path=self.master_user_path)
         super(ModelWithPermissionMultipleChoiceFilter, self).__init__(*args, **kwargs)
 
 

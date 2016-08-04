@@ -95,9 +95,27 @@ class MasterUser(models.Model):
     instrument_type = models.ForeignKey('instruments.InstrumentType', null=True, blank=True, on_delete=models.PROTECT)
     # instrument = models.ForeignKey('instruments.Instrument', null=True, blank=True, on_delete=models.PROTECT)
     portfolio = models.ForeignKey('portfolios.Portfolio', null=True, blank=True, on_delete=models.PROTECT)
-    strategy1 = models.ForeignKey('strategies.Strategy1', null=True, blank=True, on_delete=models.PROTECT)
-    strategy2 = models.ForeignKey('strategies.Strategy2', null=True, blank=True, on_delete=models.PROTECT)
-    strategy3 = models.ForeignKey('strategies.Strategy3', null=True, blank=True, on_delete=models.PROTECT)
+
+    strategy1_group = models.ForeignKey('strategies.Strategy1Group', null=True, blank=True, on_delete=models.PROTECT,
+                                        related_name='master_user_strategy1_group')
+    strategy1_subgroup = models.ForeignKey('strategies.Strategy1Subgroup', null=True, blank=True,
+                                           on_delete=models.PROTECT, related_name='master_user_strategy1_subgroup')
+    strategy1 = models.ForeignKey('strategies.Strategy1', null=True, blank=True, on_delete=models.PROTECT,
+                                  related_name='master_user_strategy1')
+
+    strategy2_group = models.ForeignKey('strategies.Strategy2Group', null=True, blank=True, on_delete=models.PROTECT,
+                                        related_name='master_user_strategy2_group')
+    strategy2_subgroup = models.ForeignKey('strategies.Strategy2Subgroup', null=True, blank=True,
+                                           on_delete=models.PROTECT, related_name='master_user_strategy2_subgroup')
+    strategy2 = models.ForeignKey('strategies.Strategy2', null=True, blank=True, on_delete=models.PROTECT,
+                                  related_name='master_user_strategy2')
+
+    strategy3_group = models.ForeignKey('strategies.Strategy3Group', null=True, blank=True, on_delete=models.PROTECT,
+                                        related_name='master_user_strategy3_group')
+    strategy3_subgroup = models.ForeignKey('strategies.Strategy3Subgroup', null=True, blank=True,
+                                           on_delete=models.PROTECT, related_name='master_user_strategy3_subgroup')
+    strategy3 = models.ForeignKey('strategies.Strategy3', null=True, blank=True, on_delete=models.PROTECT,
+                                  related_name='master_user_strategy3')
 
     objects = MasterUserManager()
 

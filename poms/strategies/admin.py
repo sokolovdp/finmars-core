@@ -3,43 +3,100 @@ from __future__ import unicode_literals
 from django.contrib import admin
 
 from poms.audit.admin import HistoricalAdmin
-from poms.common.admin import TreeModelAdmin
 from poms.obj_perms.admin import UserObjectPermissionInline, \
     GroupObjectPermissionInline
-from poms.strategies.models import Strategy1, Strategy2, Strategy3
+from poms.strategies.models import Strategy1Group, Strategy2Subgroup, Strategy3, Strategy1Subgroup, Strategy1, \
+    Strategy2Group, Strategy2, Strategy3Group, Strategy3Subgroup
 
 
-class StrategyAdmin(HistoricalAdmin, TreeModelAdmin):
-    list_display = ['id', 'master_user', 'formatted_name', 'parent', ]
-    list_select_related = ['master_user', 'parent']
-    raw_id_fields = ['master_user', 'parent']
-    fields = ['master_user', 'parent', 'user_code', 'name', 'short_name', 'notes']
+class Strategy1GroupAdmin(HistoricalAdmin):
+    model = Strategy1Group
+    list_display = ['id', 'master_user', 'name']
+    list_select_related = ['master_user']
+    raw_id_fields = ['master_user']
     inlines = [
         UserObjectPermissionInline,
         GroupObjectPermissionInline,
     ]
 
-    def rebuild_permissions(self):
-        pass
 
-    def get_inline_instances(self, request, obj=None):
-        if obj is None or not obj.is_root_node():
-            return []
-        return super(StrategyAdmin, self).get_inline_instances(request, obj=obj)
+admin.site.register(Strategy1Group, Strategy1GroupAdmin)
 
 
-# admin.site.register(Strategy, StrategyAdmin)
-# # admin.site.register(StrategyUserObjectPermission, UserObjectPermissionAdmin)
-# admin.site.register(StrategyGroupObjectPermission, GroupObjectPermissionAdmin)
+class Strategy1SubgroupAdmin(HistoricalAdmin):
+    model = Strategy1Subgroup
+    list_display = ['id', 'master_user', 'group', 'name']
+    list_select_related = ['group', 'group__master_user']
+    raw_id_fields = ['group']
+    inlines = [
+        UserObjectPermissionInline,
+        GroupObjectPermissionInline,
+    ]
 
-admin.site.register(Strategy1, StrategyAdmin)
-# admin.site.register(Strategy1UserObjectPermission, UserObjectPermissionAdmin)
-# admin.site.register(Strategy1GroupObjectPermission, GroupObjectPermissionAdmin)
+    def master_user(self, obj):
+        return obj.group.master_user
 
-admin.site.register(Strategy2, StrategyAdmin)
-# admin.site.register(Strategy2UserObjectPermission, UserObjectPermissionAdmin)
-# admin.site.register(Strategy2GroupObjectPermission, GroupObjectPermissionAdmin)
 
-admin.site.register(Strategy3, StrategyAdmin)
-# admin.site.register(Strategy3UserObjectPermission, UserObjectPermissionAdmin)
-# admin.site.register(Strategy3GroupObjectPermission, GroupObjectPermissionAdmin)
+admin.site.register(Strategy1Subgroup, Strategy1SubgroupAdmin)
+
+
+class Strategy1Admin(HistoricalAdmin):
+    model = Strategy1Subgroup
+    list_display = ['id', 'master_user', 'group', 'subgroup', 'name']
+    list_select_related = ['subgroup', 'subgroup__group', 'subgroup__group__master_user']
+    raw_id_fields = ['subgroup']
+    inlines = [
+        UserObjectPermissionInline,
+        GroupObjectPermissionInline,
+    ]
+
+    def master_user(self, obj):
+        return obj.subgroup.group.master_user
+
+    def group(self, obj):
+        return obj.subgroup.group
+
+
+admin.site.register(Strategy1, Strategy1Admin)
+
+
+class Strategy2GroupAdmin(Strategy1GroupAdmin):
+    model = Strategy2Group
+
+
+admin.site.register(Strategy2Group, Strategy2GroupAdmin)
+
+
+class Strategy2SubgroupAdmin(Strategy1SubgroupAdmin):
+    model = Strategy2Subgroup
+
+
+admin.site.register(Strategy2Subgroup, Strategy2SubgroupAdmin)
+
+
+class Strategy2Admin(Strategy1Admin):
+    model = Strategy2
+
+
+admin.site.register(Strategy2, Strategy2Admin)
+
+
+class Strategy3GroupAdmin(Strategy1GroupAdmin):
+    model = Strategy3Group
+
+
+admin.site.register(Strategy3Group, Strategy3GroupAdmin)
+
+
+class Strategy3SubgroupAdmin(Strategy1SubgroupAdmin):
+    model = Strategy3Subgroup
+
+
+admin.site.register(Strategy3Subgroup, Strategy3SubgroupAdmin)
+
+
+class Strategy3Admin(Strategy1Admin):
+    model = Strategy3
+
+
+admin.site.register(Strategy3, Strategy3Admin)

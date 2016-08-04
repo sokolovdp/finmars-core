@@ -15,7 +15,8 @@ from poms.counterparties.fields import CounterpartyField, ResponsibleField
 from poms.currencies.fields import CurrencyField
 from poms.instruments.fields import InstrumentTypeField
 from poms.portfolios.fields import PortfolioField
-from poms.strategies.fields import Strategy1Field, Strategy2Field, Strategy3Field
+from poms.strategies.fields import Strategy1Field, Strategy2Field, Strategy3Field, Strategy1SubgroupField, \
+    Strategy1GroupField, Strategy2GroupField, Strategy2SubgroupField, Strategy3GroupField, Strategy3SubgroupField
 from poms.users.fields import MasterUserField, MemberField, GroupField
 from poms.users.models import MasterUser, UserProfile, Group, Member, TIMEZONE_CHOICES
 
@@ -170,14 +171,24 @@ class MasterUserSerializer(serializers.ModelSerializer):
     responsible = ResponsibleField(allow_null=True, allow_empty=True)
     instrument_type = InstrumentTypeField()
     portfolio = PortfolioField()
+    strategy1_group = Strategy1GroupField()
+    strategy1_subgroup = Strategy1SubgroupField()
     strategy1 = Strategy1Field()
+    strategy2_group = Strategy2GroupField()
+    strategy2_subgroup = Strategy2SubgroupField()
     strategy2 = Strategy2Field()
+    strategy3_group = Strategy3GroupField()
+    strategy3_subgroup = Strategy3SubgroupField()
     strategy3 = Strategy3Field()
 
     class Meta:
         model = MasterUser
         fields = ['url', 'id', 'name', 'language', 'timezone', 'is_current', 'currency', 'account_type', 'account',
-                  'counterparty', 'responsible', 'instrument_type', 'portfolio', 'strategy1', 'strategy2', 'strategy3']
+                  'counterparty', 'responsible', 'instrument_type', 'portfolio',
+                  'strategy1_group', 'strategy1_subgroup', 'strategy1',
+                  'strategy2_group', 'strategy2_subgroup', 'strategy2',
+                  'strategy3_group', 'strategy3_subgroup', 'strategy3',
+                  ]
 
     def get_is_current(self, obj):
         request = self.context['request']

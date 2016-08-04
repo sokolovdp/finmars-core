@@ -15,7 +15,7 @@ from poms.obj_attrs.views import AbstractAttributeTypeViewSet
 from poms.obj_perms.utils import obj_perms_prefetch
 from poms.obj_perms.views import AbstractWithObjectPermissionViewSet
 from poms.portfolios.models import Portfolio
-from poms.strategies.models import Strategy1, Strategy2, Strategy3
+from poms.strategies.models import Strategy1, Strategy2,Strategy3
 from poms.tags.filters import TagFilterBackend, TagFilter
 from poms.transactions.filters import TransactionObjectPermissionFilter, ComplexTransactionPermissionFilter
 from poms.transactions.models import TransactionClass, Transaction, TransactionType, TransactionAttributeType, \
@@ -70,62 +70,6 @@ class TransactionTypeFilterSet(FilterSet):
 
 class TransactionTypeViewSet(AbstractWithObjectPermissionViewSet):
     queryset = TransactionType.objects
-    #     .prefetch_related(
-    #     'inputs',
-    #     'inputs__content_type',
-    #
-    #     'group',
-    #
-    #     'portfolios',
-    #     # 'portfolios__user_object_permissions', 'portfolios__user_object_permissions__permission',
-    #     # 'portfolios__group_object_permissions', 'portfolios__group_object_permissions__permission',
-    #     'instrument_types',
-    #     # 'instrument_types__user_object_permissions', 'instrument_types__user_object_permissions__permission',
-    #     # 'instrument_types__group_object_permissions', 'instrument_types__group_object_permissions__permission',
-    #
-    #     'actions',
-    #
-    #     'actions__transactiontypeactioninstrument',
-    #     # 'actions__transactiontypeactioninstrument__instrument_type',
-    #     # 'actions__transactiontypeactioninstrument__instrument_type_input',
-    #     # 'actions__transactiontypeactioninstrument__pricing_currency',
-    #     # 'actions__transactiontypeactioninstrument__pricing_currency_input',
-    #     # 'actions__transactiontypeactioninstrument__accrued_currency',
-    #     # 'actions__transactiontypeactioninstrument__accrued_currency_input',
-    #     # 'actions__transactiontypeactioninstrument__daily_pricing_model',
-    #     # 'actions__transactiontypeactioninstrument__daily_pricing_model_input',
-    #     # 'actions__transactiontypeactioninstrument__payment_size_detail',
-    #     # 'actions__transactiontypeactioninstrument__payment_size_detail_input',
-    #
-    #     # 'actions__transactiontypeactiontransaction',
-    #     # 'actions__transactiontypeactiontransaction__portfolio',
-    #     # 'actions__transactiontypeactiontransaction__portfolio_input',
-    #     # 'actions__transactiontypeactiontransaction__instrument',
-    #     # 'actions__transactiontypeactiontransaction__instrument_input',
-    #     # 'actions__transactiontypeactiontransaction__instrument_phantom',
-    #     # 'actions__transactiontypeactiontransaction__transaction_currency',
-    #     # 'actions__transactiontypeactiontransaction__transaction_currency_input',
-    #     # 'actions__transactiontypeactiontransaction__settlement_currency',
-    #     # 'actions__transactiontypeactiontransaction__settlement_currency_input',
-    #     # 'actions__transactiontypeactiontransaction__account_position',
-    #     # 'actions__transactiontypeactiontransaction__account_position_input',
-    #     # 'actions__transactiontypeactiontransaction__account_cash',
-    #     # 'actions__transactiontypeactiontransaction__account_cash_input',
-    #     # 'actions__transactiontypeactiontransaction__account_interim',
-    #     # 'actions__transactiontypeactiontransaction__account_interim_input',
-    #     # 'actions__transactiontypeactiontransaction__strategy1_position',
-    #     # 'actions__transactiontypeactiontransaction__strategy1_position_input',
-    #     # 'actions__transactiontypeactiontransaction__strategy2_position',
-    #     # 'actions__transactiontypeactiontransaction__strategy2_position_input',
-    #     # 'actions__transactiontypeactiontransaction__strategy3_position',
-    #     # 'actions__transactiontypeactiontransaction__strategy3_position_input',
-    #     # 'actions__transactiontypeactiontransaction__strategy3_position',
-    #     # 'actions__transactiontypeactiontransaction__strategy3_position_input',
-    #     # 'actions__transactiontypeactiontransaction__responsible',
-    #     # 'actions__transactiontypeactiontransaction__responsible_input',
-    #     # 'actions__transactiontypeactiontransaction__counterparty',
-    #     # 'actions__transactiontypeactiontransaction__counterparty_input',
-    # )
     prefetch_permissions_for = ('group', 'portfolios', 'instrument_types')
     prefetch_action_instruments = (
         'instrument_type', 'instrument_type_input', 'pricing_currency', 'pricing_currency_input', 'accrued_currency',
@@ -230,12 +174,12 @@ class TransactionFilterSet(FilterSet):
     account_cash = ModelWithPermissionMultipleChoiceFilter(model=Account)
     account_position = ModelWithPermissionMultipleChoiceFilter(model=Account)
     account_interim = ModelWithPermissionMultipleChoiceFilter(model=Account)
-    strategy1_position = ModelWithPermissionMultipleChoiceFilter(model=Strategy1)
-    strategy1_cash = ModelWithPermissionMultipleChoiceFilter(model=Strategy1)
-    strategy2_position = ModelWithPermissionMultipleChoiceFilter(model=Strategy2)
-    strategy2_cash = ModelWithPermissionMultipleChoiceFilter(model=Strategy2)
-    strategy3_position = ModelWithPermissionMultipleChoiceFilter(model=Strategy3)
-    strategy3_cash = ModelWithPermissionMultipleChoiceFilter(model=Strategy3)
+    strategy1_position = ModelWithPermissionMultipleChoiceFilter(model=Strategy1, master_user_path='subgroup__group__master_user')
+    strategy1_cash = ModelWithPermissionMultipleChoiceFilter(model=Strategy1, master_user_path='subgroup__group__master_user')
+    strategy2_position = ModelWithPermissionMultipleChoiceFilter(model=Strategy2, master_user_path='subgroup__group__master_user')
+    strategy2_cash = ModelWithPermissionMultipleChoiceFilter(model=Strategy2, master_user_path='subgroup__group__master_user')
+    strategy3_position = ModelWithPermissionMultipleChoiceFilter(model=Strategy3, master_user_path='subgroup__group__master_user')
+    strategy3_cash = ModelWithPermissionMultipleChoiceFilter(model=Strategy3, master_user_path='subgroup__group__master_user')
 
     complex_transaction = django_filters.Filter(name='complex_transaction')
     complex_transaction__code = django_filters.RangeFilter()

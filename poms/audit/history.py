@@ -33,7 +33,8 @@ def get_history_model_list():
         from poms.currencies.models import Currency, CurrencyHistory
         from poms.instruments.models import Instrument, InstrumentType, InstrumentAttributeType, PriceHistory
         from poms.portfolios.models import Portfolio, PortfolioAttributeType
-        from poms.strategies.models import Strategy1, Strategy2, Strategy3
+        from poms.strategies.models import Strategy1Group, Strategy1Subgroup, Strategy1, Strategy2Group, \
+            Strategy2Subgroup, Strategy2, Strategy3Group, Strategy3Subgroup, Strategy3
         from poms.transactions.models import TransactionType, Transaction, TransactionAttributeType
         from poms.users.models import MasterUser, Member
         from poms.integrations.models import InstrumentMapping
@@ -45,7 +46,8 @@ def get_history_model_list():
             Currency, CurrencyHistory,
             InstrumentType, Instrument, InstrumentAttributeType, PriceHistory,
             Portfolio, PortfolioAttributeType,
-            Strategy1, Strategy2, Strategy3,
+            Strategy1Group, Strategy1Subgroup, Strategy1, Strategy2Group, Strategy2Subgroup, Strategy2, Strategy3Group,
+            Strategy3Subgroup, Strategy3,
             TransactionType, Transaction, TransactionAttributeType,
             MasterUser, Member,
             InstrumentMapping,
