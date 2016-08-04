@@ -33,9 +33,6 @@ class Strategy1SubgroupAdmin(HistoricalAdmin):
         GroupObjectPermissionInline,
     ]
 
-    def master_user(self, obj):
-        return obj.group.master_user
-
 
 admin.site.register(Strategy1Subgroup, Strategy1SubgroupAdmin)
 
@@ -49,9 +46,6 @@ class Strategy1Admin(HistoricalAdmin):
         UserObjectPermissionInline,
         GroupObjectPermissionInline,
     ]
-
-    def master_user(self, obj):
-        return obj.subgroup.group.master_user
 
     def group(self, obj):
         return obj.subgroup.group

@@ -50,6 +50,7 @@ class Strategy1GroupGroupObjectPermission(AbstractGroupObjectPermission):
 
 
 class Strategy1Subgroup(NamedModel):
+    master_user = models.ForeignKey(MasterUser, related_name='strategy1_subgroups', verbose_name=_('master user'))
     group = models.ForeignKey(Strategy1Group, null=True, blank=True, on_delete=models.PROTECT, related_name='subgroups')
 
     class Meta(NamedModel.Meta):
@@ -87,6 +88,7 @@ class Strategy1SubgroupGroupObjectPermission(AbstractGroupObjectPermission):
 
 
 class Strategy1(NamedModel):
+    master_user = models.ForeignKey(MasterUser, related_name='strategies1', verbose_name=_('master user'))
     subgroup = models.ForeignKey(Strategy1Subgroup, null=True, blank=True, on_delete=models.PROTECT,
                                  related_name='strategies')
 
@@ -165,6 +167,7 @@ class Strategy2GroupGroupObjectPermission(AbstractGroupObjectPermission):
 
 
 class Strategy2Subgroup(NamedModel):
+    master_user = models.ForeignKey(MasterUser, related_name='strategy2_subgroups', verbose_name=_('master user'))
     group = models.ForeignKey(Strategy2Group, null=True, blank=True, on_delete=models.PROTECT, related_name='subgroups')
 
     class Meta(NamedModel.Meta):
@@ -202,6 +205,7 @@ class Strategy2SubgroupGroupObjectPermission(AbstractGroupObjectPermission):
 
 
 class Strategy2(NamedModel):
+    master_user = models.ForeignKey(MasterUser, related_name='strategies2', verbose_name=_('master user'))
     subgroup = models.ForeignKey(Strategy2Subgroup, null=True, blank=True, on_delete=models.PROTECT,
                                  related_name='strategies')
 
@@ -280,6 +284,7 @@ class Strategy3GroupGroupObjectPermission(AbstractGroupObjectPermission):
 
 
 class Strategy3Subgroup(NamedModel):
+    master_user = models.ForeignKey(MasterUser, related_name='strategy3_subgroups', verbose_name=_('master user'))
     group = models.ForeignKey(Strategy3Group, null=True, blank=True, on_delete=models.PROTECT, related_name='subgroups')
 
     class Meta(NamedModel.Meta):
@@ -317,6 +322,7 @@ class Strategy3SubgroupGroupObjectPermission(AbstractGroupObjectPermission):
 
 
 class Strategy3(NamedModel):
+    master_user = models.ForeignKey(MasterUser, related_name='strategies3', verbose_name=_('master user'))
     subgroup = models.ForeignKey(Strategy3Subgroup, null=True, blank=True, on_delete=models.PROTECT,
                                  related_name='strategies')
 

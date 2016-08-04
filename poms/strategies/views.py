@@ -2,9 +2,8 @@ from __future__ import unicode_literals
 
 from rest_framework.filters import FilterSet
 
-from poms.common.filters import CharFilter
+from poms.common.filters import CharFilter, ModelWithPermissionMultipleChoiceFilter
 from poms.obj_perms.views import AbstractWithObjectPermissionViewSet
-from poms.strategies.filters import SubgroupOwnerByGroupUserFilter, StrategyOwnerBySubgroupUserFilter
 from poms.strategies.models import Strategy1Group, Strategy1Subgroup, Strategy1, Strategy2Group, Strategy2Subgroup, \
     Strategy2, Strategy3Group, Strategy3Subgroup, Strategy3
 from poms.strategies.serializers import Strategy1GroupSerializer, Strategy1Serializer, Strategy2GroupSerializer, \
@@ -39,18 +38,20 @@ class Strategy1SubgroupFilterSet(FilterSet):
     user_code = CharFilter()
     name = CharFilter()
     short_name = CharFilter()
+    group = ModelWithPermissionMultipleChoiceFilter(model=Strategy1Group)
     tag = TagFilter(model=Strategy1Subgroup)
 
     class Meta:
         model = Strategy1Subgroup
-        fields = ['user_code', 'name', 'short_name', 'tag']
+        fields = ['user_code', 'name', 'short_name', 'group', 'tag']
 
 
 class Strategy1SubgroupViewSet(AbstractWithObjectPermissionViewSet):
-    queryset = Strategy1Subgroup.objects.select_related('group', 'group__master_user')
+    queryset = Strategy1Subgroup.objects.select_related('master_user', 'group')
+    prefetch_permissions_for = ['group']
     serializer_class = Strategy1SubgroupSerializer
     filter_backends = AbstractWithObjectPermissionViewSet.filter_backends + [
-        SubgroupOwnerByGroupUserFilter,
+        OwnerByMasterUserFilter,
         TagFilterBackend,
     ]
     filter_class = Strategy1SubgroupFilterSet
@@ -60,18 +61,21 @@ class Strategy1FilterSet(FilterSet):
     user_code = CharFilter()
     name = CharFilter()
     short_name = CharFilter()
+    subgroup__group = ModelWithPermissionMultipleChoiceFilter(model=Strategy1Group)
+    subgroup = ModelWithPermissionMultipleChoiceFilter(model=Strategy1Subgroup)
     tag = TagFilter(model=Strategy1)
 
     class Meta:
         model = Strategy1
-        fields = ['user_code', 'name', 'short_name', 'tag']
+        fields = ['user_code', 'name', 'short_name', 'subgroup__group', 'subgroup', 'tag']
 
 
 class Strategy1ViewSet(AbstractWithObjectPermissionViewSet):
-    queryset = Strategy1.objects.select_related('subgroup', 'subgroup__group', 'subgroup__group__master_user')
+    queryset = Strategy1.objects.select_related('master_user', 'subgroup', 'subgroup__group')
+    prefetch_permissions_for = ['subgroup', 'subgroup__group']
     serializer_class = Strategy1Serializer
     filter_backends = AbstractWithObjectPermissionViewSet.filter_backends + [
-        StrategyOwnerBySubgroupUserFilter,
+        OwnerByMasterUserFilter,
         TagFilterBackend,
     ]
     filter_class = Strategy1FilterSet
@@ -96,26 +100,29 @@ class Strategy2GroupViewSet(Strategy1GroupViewSet):
 
 class Strategy2SubgroupFilterSet(Strategy1SubgroupFilterSet):
     tag = TagFilter(model=Strategy2Subgroup)
+    group = ModelWithPermissionMultipleChoiceFilter(model=Strategy2Group)
 
     class Meta(Strategy1SubgroupFilterSet.Meta):
         model = Strategy2Subgroup
 
 
 class Strategy2SubgroupViewSet(Strategy1SubgroupViewSet):
-    queryset = Strategy2Subgroup.objects.select_related('group', 'group__master_user')
+    queryset = Strategy2Subgroup.objects.select_related('master_user', 'group')
     serializer_class = Strategy2SubgroupSerializer
     filter_class = Strategy2SubgroupFilterSet
 
 
 class Strategy2FilterSet(Strategy1FilterSet):
     tag = TagFilter(model=Strategy2)
+    subgroup__group = ModelWithPermissionMultipleChoiceFilter(model=Strategy2Group)
+    subgroup = ModelWithPermissionMultipleChoiceFilter(model=Strategy2Subgroup)
 
     class Meta:
         model = Strategy2
 
 
 class Strategy2ViewSet(Strategy1ViewSet):
-    queryset = Strategy2.objects.select_related('subgroup', 'subgroup__group', 'subgroup__group__master_user')
+    queryset = Strategy2.objects.select_related('master_user', 'subgroup', 'subgroup__group')
     serializer_class = Strategy2Serializer
     filter_class = Strategy2FilterSet
 
@@ -139,25 +146,28 @@ class Strategy3GroupViewSet(Strategy1GroupViewSet):
 
 class Strategy3SubgroupFilterSet(Strategy1SubgroupFilterSet):
     tag = TagFilter(model=Strategy3Subgroup)
+    group = ModelWithPermissionMultipleChoiceFilter(model=Strategy3Group)
 
     class Meta(Strategy1SubgroupFilterSet.Meta):
         model = Strategy3Subgroup
 
 
 class Strategy3SubgroupViewSet(Strategy1SubgroupViewSet):
-    queryset = Strategy3Subgroup.objects.select_related('group', 'group__master_user')
+    queryset = Strategy3Subgroup.objects.select_related('master_user', 'group')
     serializer_class = Strategy3SubgroupSerializer
     filter_class = Strategy3SubgroupFilterSet
 
 
 class Strategy3FilterSet(Strategy1FilterSet):
     tag = TagFilter(model=Strategy3)
+    subgroup__group = ModelWithPermissionMultipleChoiceFilter(model=Strategy3Group)
+    subgroup = ModelWithPermissionMultipleChoiceFilter(model=Strategy3Subgroup)
 
     class Meta:
         model = Strategy3
 
 
 class Strategy3ViewSet(Strategy1ViewSet):
-    queryset = Strategy3.objects.select_related('subgroup', 'subgroup__group', 'subgroup__group__master_user')
+    queryset = Strategy3.objects.select_related('master_user', 'subgroup', 'subgroup__group')
     serializer_class = Strategy3Serializer
     filter_class = Strategy3FilterSet

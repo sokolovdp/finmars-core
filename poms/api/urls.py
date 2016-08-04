@@ -33,22 +33,14 @@ router.register(r'users/master-user', users.MasterUserViewSet)
 router.register(r'users/member', users.MemberViewSet)
 router.register(r'users/group', users.GroupViewSet)
 
-# router.register(r'accounts/account-classifier/node', accounts.AccountClassifierNodeViewSet, 'accountclassifiernode')
-# router.register(r'accounts/account-classifier', accounts.AccountClassifierViewSet)
 router.register(r'accounts/account-type', accounts.AccountTypeViewSet)
 router.register(r'accounts/account-attribute-type', accounts.AccountAttributeTypeViewSet)
 router.register(r'accounts/account', accounts.AccountViewSet)
 
-# router.register(r'counterparties/counterparty-classifier/node', counterparties.CounterpartyClassifierNodeViewSet,
-#                 'counterpartyclassifiernode')
-# router.register(r'counterparties/counterparty-classifier', counterparties.CounterpartyClassifierViewSet)
 router.register(r'counterparties/counterparty-attribute-type', counterparties.CounterpartyAttributeTypeViewSet)
 router.register(r'counterparties/counterparty-group', counterparties.CounterpartyGroupViewSet)
 router.register(r'counterparties/counterparty', counterparties.CounterpartyViewSet)
 
-# router.register(r'counterparties/responsible-classifier/node', counterparties.ResponsibleClassifierNodeViewSet,
-#                 'responsibleclassifiernode')
-# router.register(r'counterparties/responsible-classifier', counterparties.ResponsibleClassifierViewSet)
 router.register(r'counterparties/responsible-attribute-type', counterparties.ResponsibleAttributeTypeViewSet)
 router.register(r'counterparties/responsible-group', counterparties.ResponsibleGroupViewSet)
 router.register(r'counterparties/responsible', counterparties.ResponsibleViewSet)
@@ -64,26 +56,13 @@ router.register(r'instruments/periodicity-period', instruments.PeriodicityPeriod
 router.register(r'instruments/cost-method', instruments.CostMethodViewSet)
 router.register(r'instruments/pricing-policy', instruments.PricingPolicyViewSet)
 router.register(r'instruments/price-download-mode', instruments.PriceDownloadModeViewSet)
-# router.register(r'instruments/instrument-classifier/node', instruments.InstrumentClassifierNodeViewSet,
-#                 'instrumentclassifiernode')
-# router.register(r'instruments/instrument-classifier', instruments.InstrumentClassifierViewSet)
 router.register(r'instruments/instrument-type', instruments.InstrumentTypeViewSet)
 router.register(r'instruments/instrument-attribute-type', instruments.InstrumentAttributeTypeViewSet)
 router.register(r'instruments/instrument', instruments.InstrumentViewSet)
 router.register(r'instruments/price-history', instruments.PriceHistoryViewSet)
-# router.register(r'instruments/manual-pricing-formula', instruments.ManualPricingFormulaViewSet)
-# router.register(r'instruments/accrual-calculation-schedule', instruments.AccrualCalculationScheduleViewSet)
-# router.register(r'instruments/instrument-factor-schedule', instruments.InstrumentFactorScheduleViewSet)
-# router.register(r'instruments/event-schedule', instruments.EventScheduleViewSet)
 
-# router.register(r'portfolios/portfolio-classifier/node', portfolios.PortfolioClassifierNodeViewSet,
-#                 'portfolioclassifiernode')
-# router.register(r'portfolios/portfolio-classifier', portfolios.PortfolioClassifierViewSet)
 router.register(r'portfolios/portfolio-attribute-type', portfolios.PortfolioAttributeTypeViewSet)
 router.register(r'portfolios/portfolio', portfolios.PortfolioViewSet)
-
-# router.register(r'strategies/strategy/node', strategies.StrategyNodeViewSet, 'strategynode')
-# router.register(r'strategies/strategy', strategies.StrategyViewSet)
 
 router.register(r'strategies/1/group', strategies.Strategy1GroupViewSet)
 router.register(r'strategies/1/subgroup', strategies.Strategy1SubgroupViewSet)
@@ -96,13 +75,6 @@ router.register(r'strategies/2/strategy', strategies.Strategy2ViewSet)
 router.register(r'strategies/3/group', strategies.Strategy3GroupViewSet)
 router.register(r'strategies/3/subgroup', strategies.Strategy3SubgroupViewSet)
 router.register(r'strategies/3/strategy', strategies.Strategy3ViewSet)
-
-# router.register(r'strategies/strategy1/node', strategies.Strategy1NodeViewSet, 'strategy1node')
-# router.register(r'strategies/strategy1', strategies.Strategy1ViewSet)
-# router.register(r'strategies/strategy2/node', strategies.Strategy2NodeViewSet, 'strategy2node')
-# router.register(r'strategies/strategy2', strategies.Strategy2ViewSet)
-# router.register(r'strategies/strategy3/node', strategies.Strategy3NodeViewSet, 'strategy3node')
-# router.register(r'strategies/strategy3', strategies.Strategy3ViewSet)
 
 router.register(r'tags/tag', tags.TagViewSet)
 
