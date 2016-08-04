@@ -90,10 +90,15 @@ class MasterUser(models.Model):
 
     account_type = models.ForeignKey('accounts.AccountType', null=True, blank=True, on_delete=models.PROTECT)
     account = models.ForeignKey('accounts.Account', null=True, blank=True, on_delete=models.PROTECT)
+
+    counterparty_group = models.ForeignKey('counterparties.CounterpartyGroup', null=True, blank=True, on_delete=models.PROTECT)
     counterparty = models.ForeignKey('counterparties.Counterparty', null=True, blank=True, on_delete=models.PROTECT)
+    responsible_group = models.ForeignKey('counterparties.ResponsibleGroup', null=True, blank=True, on_delete=models.PROTECT)
     responsible = models.ForeignKey('counterparties.Responsible', null=True, blank=True, on_delete=models.PROTECT)
+
     instrument_type = models.ForeignKey('instruments.InstrumentType', null=True, blank=True, on_delete=models.PROTECT)
     # instrument = models.ForeignKey('instruments.Instrument', null=True, blank=True, on_delete=models.PROTECT)
+
     portfolio = models.ForeignKey('portfolios.Portfolio', null=True, blank=True, on_delete=models.PROTECT)
 
     strategy1_group = models.ForeignKey('strategies.Strategy1Group', null=True, blank=True, on_delete=models.PROTECT,

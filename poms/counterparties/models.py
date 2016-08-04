@@ -15,16 +15,47 @@ from poms.users.models import MasterUser, Member
 
 
 @python_2_unicode_compatible
-class Counterparty(NamedModel):
-    master_user = models.ForeignKey(MasterUser, related_name='counterparties',
-                                    verbose_name=_('master user'))
+class CounterpartyGroup(NamedModel):
+    master_user = models.ForeignKey(MasterUser, related_name='counterparty_groups', verbose_name=_('master user'))
 
-    # portfolios = models.ManyToManyField(
-    #     'portfolios.Portfolio',
-    #     related_name='counterparties',
-    #     blank=True,
-    #     verbose_name=_('portfolios')
-    # )
+    class Meta(NamedModel.Meta):
+        verbose_name = _('counterparty group')
+        verbose_name_plural = _('counterparty groups')
+        permissions = [
+            ('view_counterparty', 'Can view counterparty group'),
+            ('manage_counterparty', 'Can manage counterparty group'),
+        ]
+
+    def __str__(self):
+        return self.name
+
+    @property
+    def is_default(self):
+        return self.master_user.counterparty_group_id == self.id if self.master_user_id else False
+
+
+class CounterpartyGroupUserObjectPermission(AbstractUserObjectPermission):
+    content_object = models.ForeignKey(CounterpartyGroup, related_name='user_object_permissions',
+                                       verbose_name=_('content object'))
+
+    class Meta(AbstractUserObjectPermission.Meta):
+        verbose_name = _('counterparty groups - user permission')
+        verbose_name_plural = _('counterparty groups - user permissions')
+
+
+class CounterpartyGroupGroupObjectPermission(AbstractGroupObjectPermission):
+    content_object = models.ForeignKey(CounterpartyGroup, related_name='group_object_permissions',
+                                       verbose_name=_('content object'))
+
+    class Meta(AbstractGroupObjectPermission.Meta):
+        verbose_name = _('counterparty groups - group permission')
+        verbose_name_plural = _('counterparty groups - group permissions')
+
+
+@python_2_unicode_compatible
+class Counterparty(NamedModel):
+    master_user = models.ForeignKey(MasterUser, related_name='counterparties', verbose_name=_('master user'))
+    group = models.ForeignKey(CounterpartyGroup, related_name='counterparties', null=True, blank=True)
 
     class Meta(NamedModel.Meta):
         verbose_name = _('counterparty')
@@ -61,14 +92,6 @@ class CounterpartyGroupObjectPermission(AbstractGroupObjectPermission):
 
 
 class CounterpartyAttributeType(AbstractAttributeType):
-    # classifier_root = models.OneToOneField(
-    #     CounterpartyClassifier,
-    #     on_delete=models.PROTECT,
-    #     null=True,
-    #     blank=True,
-    #     verbose_name=_('classifier)')
-    # )
-
     class Meta(AbstractAttributeType.Meta):
         verbose_name = _('counterparty attribute type')
         verbose_name_plural = _('counterparty attribute types')
@@ -97,21 +120,10 @@ class CounterpartyAttributeTypeGroupObjectPermission(AbstractGroupObjectPermissi
 
 
 class CounterpartyClassifier(AbstractClassifier):
-    attribute_type = models.ForeignKey(
-        CounterpartyAttributeType,
-        null=True,
-        blank=True,
-        related_name='classifiers',
-        verbose_name=_('attribute type')
-    )
-    parent = TreeForeignKey(
-        'self',
-        related_name='children',
-        null=True,
-        blank=True,
-        db_index=True,
-        verbose_name=_('parent')
-    )
+    attribute_type = models.ForeignKey(CounterpartyAttributeType, null=True, blank=True, related_name='classifiers',
+                                       verbose_name=_('attribute type'))
+    parent = TreeForeignKey('self', related_name='children', null=True, blank=True, db_index=True,
+                            verbose_name=_('parent'))
 
     class Meta(AbstractClassifier.Meta):
         verbose_name = _('counterparty classifier')
@@ -145,10 +157,51 @@ class CounterpartyAttribute(AbstractAttribute):
         verbose_name_plural = _('counterparty attributes')
 
 
+# -----
+
+
+@python_2_unicode_compatible
+class ResponsibleGroup(NamedModel):
+    master_user = models.ForeignKey(MasterUser, related_name='responsible_groups', verbose_name=_('master user'))
+
+    class Meta(NamedModel.Meta):
+        verbose_name = _('responsible group')
+        verbose_name_plural = _('responsible groups')
+        permissions = [
+            ('view_counterparty', 'Can view responsible group'),
+            ('manage_counterparty', 'Can manage responsible group'),
+        ]
+
+    def __str__(self):
+        return self.name
+
+    @property
+    def is_default(self):
+        return self.master_user.counterparty_group_id == self.id if self.master_user_id else False
+
+
+class ResponsibleGroupUserObjectPermission(AbstractUserObjectPermission):
+    content_object = models.ForeignKey(ResponsibleGroup, related_name='user_object_permissions',
+                                       verbose_name=_('content object'))
+
+    class Meta(AbstractUserObjectPermission.Meta):
+        verbose_name = _('responsible groups - user permission')
+        verbose_name_plural = _('responsible groups - user permissions')
+
+
+class ResponsibleGroupGroupObjectPermission(AbstractGroupObjectPermission):
+    content_object = models.ForeignKey(ResponsibleGroup, related_name='group_object_permissions',
+                                       verbose_name=_('content object'))
+
+    class Meta(AbstractGroupObjectPermission.Meta):
+        verbose_name = _('responsible groups - group permission')
+        verbose_name_plural = _('responsible groups - group permissions')
+
+
 @python_2_unicode_compatible
 class Responsible(NamedModel):
-    master_user = models.ForeignKey(MasterUser, related_name='responsibles',
-                                    verbose_name=_('master user'))
+    master_user = models.ForeignKey(MasterUser, related_name='responsibles', verbose_name=_('master user'))
+    group = models.ForeignKey(ResponsibleGroup, related_name='responsibles', null=True, blank=True)
 
     class Meta(NamedModel.Meta):
         verbose_name = _('responsible')
@@ -185,14 +238,6 @@ class ResponsibleGroupObjectPermission(AbstractGroupObjectPermission):
 
 
 class ResponsibleAttributeType(AbstractAttributeType):
-    # classifier_root = models.OneToOneField(
-    #     ResponsibleClassifier,
-    #     on_delete=models.PROTECT,
-    #     null=True,
-    #     blank=True,
-    #     verbose_name=_('classifier (root)')
-    # )
-
     class Meta(AbstractAttributeType.Meta):
         verbose_name = _('responsible attribute type')
         verbose_name_plural = _('responsible attribute types')
@@ -221,21 +266,10 @@ class ResponsibleAttributeTypeGroupObjectPermission(AbstractGroupObjectPermissio
 
 
 class ResponsibleClassifier(AbstractClassifier):
-    attribute_type = models.ForeignKey(
-        ResponsibleAttributeType,
-        null=True,
-        blank=True,
-        related_name='classifiers',
-        verbose_name=_('attribute type')
-    )
-    parent = TreeForeignKey(
-        'self',
-        related_name='children',
-        null=True,
-        blank=True,
-        db_index=True,
-        verbose_name=_('parent')
-    )
+    attribute_type = models.ForeignKey(ResponsibleAttributeType, null=True, blank=True, related_name='classifiers',
+                                       verbose_name=_('attribute type'))
+    parent = TreeForeignKey('self', related_name='children', null=True, blank=True, db_index=True,
+                            verbose_name=_('parent'))
 
     class Meta(AbstractClassifier.Meta):
         verbose_name = _('responsible classifier')

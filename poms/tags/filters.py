@@ -8,7 +8,7 @@ from poms.accounts.models import Account
 from poms.accounts.models import AccountType
 from poms.chats.models import ThreadGroup, Thread
 from poms.common.middleware import get_request
-from poms.counterparties.models import Counterparty
+from poms.counterparties.models import Counterparty, CounterpartyGroup, ResponsibleGroup
 from poms.counterparties.models import Responsible
 from poms.currencies.models import Currency
 from poms.instruments.models import Instrument
@@ -31,7 +31,9 @@ class TagFakeFilter(django_filters.Filter):
 
 class TagContentTypeFilter(BaseFilterBackend):
     def filter_queryset(self, request, queryset, view):
-        models = [AccountType, Account, Currency, InstrumentType, Instrument, Counterparty, Responsible,
+        models = [AccountType, Account, Currency, InstrumentType, Instrument,
+                  CounterpartyGroup, Counterparty,
+                  ResponsibleGroup, Responsible,
                   Strategy1Group, Strategy1Subgroup, Strategy1,
                   Strategy2Group, Strategy2Subgroup, Strategy2,
                   Strategy3Group, Strategy3Subgroup, Strategy3,

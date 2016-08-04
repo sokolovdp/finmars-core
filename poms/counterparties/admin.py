@@ -3,23 +3,33 @@ from __future__ import unicode_literals
 from django.contrib import admin
 
 from poms.audit.admin import HistoricalAdmin
-from poms.counterparties.models import Counterparty, Responsible, CounterpartyAttributeType, ResponsibleAttributeType
+from poms.counterparties.models import Counterparty, Responsible, CounterpartyAttributeType, ResponsibleAttributeType, \
+    CounterpartyGroup, ResponsibleGroup
 from poms.obj_attrs.admin import AbstractAttributeTypeAdmin, AbstractAttributeInline, \
     AbstractAttributeTypeClassifierInline, AbstractAttributeTypeOptionInline
 from poms.obj_perms.admin import UserObjectPermissionInline, \
     GroupObjectPermissionInline
 
 
-# class CounterpartyAttributeInline(AbstractAttributeInline):
-#     model = CounterpartyAttribute
+class CounterpartyGroupAdmin(HistoricalAdmin):
+    model = CounterpartyGroup
+    list_display = ['id', 'master_user', 'name']
+    list_select_related = ['master_user']
+    raw_id_fields = ['master_user']
+    inlines = [
+        UserObjectPermissionInline,
+        GroupObjectPermissionInline,
+    ]
+
+
+admin.site.register(CounterpartyGroup, CounterpartyGroupAdmin)
 
 
 class CounterpartyAdmin(HistoricalAdmin):
     model = Counterparty
-    list_display = ['id', 'name', 'master_user']
-    list_select_related = ['master_user']
-    raw_id_fields = ['master_user']
-    # inlines = [CounterpartyAttributeInline]
+    list_display = ['id', 'master_user', 'group', 'name']
+    list_select_related = ['master_user', 'group']
+    raw_id_fields = ['master_user', 'group']
     inlines = [
         AbstractAttributeInline,
         UserObjectPermissionInline,
@@ -62,12 +72,28 @@ admin.site.register(CounterpartyAttributeType, CounterpartyAttributeTypeAdmin)
 #     model = ResponsibleAttribute
 
 
-class ResponsibleAdmin(HistoricalAdmin):
-    model = Responsible
-    list_display = ['id', 'name', 'master_user']
+# ------
+
+
+class ResponsibleGroupAdmin(HistoricalAdmin):
+    model = ResponsibleGroup
+    list_display = ['id', 'master_user', 'name']
     list_select_related = ['master_user']
     raw_id_fields = ['master_user']
-    # inlines = [ResponsibleAttributeInline]
+    inlines = [
+        UserObjectPermissionInline,
+        GroupObjectPermissionInline,
+    ]
+
+
+admin.site.register(ResponsibleGroup, ResponsibleGroupAdmin)
+
+
+class ResponsibleAdmin(HistoricalAdmin):
+    model = Responsible
+    list_display = ['id', 'master_user', 'group', 'name']
+    list_select_related = ['master_user', 'group']
+    raw_id_fields = ['master_user', 'group']
     inlines = [
         AbstractAttributeInline,
         UserObjectPermissionInline,

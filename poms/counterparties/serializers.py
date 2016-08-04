@@ -5,9 +5,11 @@ from rest_framework import serializers
 from poms.common.serializers import AbstractClassifierSerializer, AbstractClassifierNodeSerializer, \
     ModelWithUserCodeSerializer
 from poms.counterparties.fields import ResponsibleClassifierField, \
-    CounterpartyAttributeTypeField, ResponsibleAttributeTypeField, CounterpartyClassifierField
+    CounterpartyAttributeTypeField, ResponsibleAttributeTypeField, CounterpartyClassifierField, CounterpartyGroupField, \
+    ResponsibleGroupField
 from poms.counterparties.models import CounterpartyClassifier, Counterparty, Responsible, ResponsibleClassifier, \
-    CounterpartyAttributeType, CounterpartyAttribute, ResponsibleAttributeType, ResponsibleAttribute
+    CounterpartyAttributeType, CounterpartyAttribute, ResponsibleAttributeType, ResponsibleAttribute, CounterpartyGroup, \
+    ResponsibleGroup
 from poms.obj_attrs.serializers import AbstractAttributeTypeSerializer, AbstractAttributeSerializer, \
     ModelWithAttributesSerializer
 from poms.obj_perms.serializers import ModelWithObjectPermissionSerializer
@@ -45,18 +47,32 @@ class CounterpartyAttributeSerializer(AbstractAttributeSerializer):
         fields = AbstractAttributeSerializer.Meta.fields + ['attribute_type', 'classifier']
 
 
+class CounterpartyGroupSerializer(ModelWithObjectPermissionSerializer, ModelWithUserCodeSerializer):
+    master_user = MasterUserField()
+    tags = TagField(many=True, required=False, allow_null=True)
+
+    class Meta:
+        model = CounterpartyGroup
+        fields = ['url', 'id', 'master_user', 'user_code', 'name', 'short_name', 'public_name', 'notes', 'is_default',
+                  'tags', ]
+
+
 class CounterpartySerializer(ModelWithObjectPermissionSerializer, ModelWithAttributesSerializer,
                              ModelWithUserCodeSerializer):
     master_user = MasterUserField()
+    group = CounterpartyGroupField()
     portfolios = PortfolioField(many=True, required=False, allow_null=True)
     attributes = CounterpartyAttributeSerializer(many=True, required=False, allow_null=True)
     tags = TagField(many=True, required=False, allow_null=True)
 
     class Meta:
         model = Counterparty
-        fields = ['url', 'id', 'master_user', 'user_code', 'name', 'short_name', 'public_name', 'notes', 'is_default',
+        fields = ['url', 'id', 'master_user', 'group', 'user_code', 'name', 'short_name', 'public_name', 'notes',
+                  'is_default',
                   'portfolios', 'attributes', 'tags']
 
+
+# ----
 
 class ResponsibleClassifierSerializer(AbstractClassifierSerializer):
     class Meta(AbstractClassifierSerializer.Meta):
@@ -87,14 +103,25 @@ class ResponsibleAttributeSerializer(AbstractAttributeSerializer):
         fields = AbstractAttributeSerializer.Meta.fields + ['attribute_type', 'classifier']
 
 
+class ResponsibleGroupSerializer(ModelWithObjectPermissionSerializer, ModelWithUserCodeSerializer):
+    master_user = MasterUserField()
+    tags = TagField(many=True, required=False, allow_null=True)
+
+    class Meta:
+        model = ResponsibleGroup
+        fields = ['url', 'id', 'master_user', 'user_code', 'name', 'short_name', 'public_name', 'notes', 'is_default',
+                  'tags', ]
+
+
 class ResponsibleSerializer(ModelWithObjectPermissionSerializer, ModelWithAttributesSerializer,
                             ModelWithUserCodeSerializer):
     master_user = MasterUserField()
+    group = ResponsibleGroupField()
     portfolios = PortfolioField(many=True, required=False, allow_null=True)
     attributes = ResponsibleAttributeSerializer(many=True, required=False, allow_null=True)
     tags = TagField(many=True, required=False, allow_null=True)
 
     class Meta:
         model = Responsible
-        fields = ['url', 'id', 'master_user', 'user_code', 'name', 'short_name', 'public_name', 'notes', 'is_default',
-                  'portfolios', 'attributes', 'tags']
+        fields = ['url', 'id', 'master_user', 'group', 'user_code', 'name', 'short_name', 'public_name', 'notes',
+                  'is_default', 'portfolios', 'attributes', 'tags']

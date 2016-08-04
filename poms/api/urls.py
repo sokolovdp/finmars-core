@@ -43,12 +43,14 @@ router.register(r'accounts/account', accounts.AccountViewSet)
 #                 'counterpartyclassifiernode')
 # router.register(r'counterparties/counterparty-classifier', counterparties.CounterpartyClassifierViewSet)
 router.register(r'counterparties/counterparty-attribute-type', counterparties.CounterpartyAttributeTypeViewSet)
+router.register(r'counterparties/counterparty-group', counterparties.CounterpartyGroupViewSet)
 router.register(r'counterparties/counterparty', counterparties.CounterpartyViewSet)
 
 # router.register(r'counterparties/responsible-classifier/node', counterparties.ResponsibleClassifierNodeViewSet,
 #                 'responsibleclassifiernode')
 # router.register(r'counterparties/responsible-classifier', counterparties.ResponsibleClassifierViewSet)
 router.register(r'counterparties/responsible-attribute-type', counterparties.ResponsibleAttributeTypeViewSet)
+router.register(r'counterparties/responsible-group', counterparties.ResponsibleGroupViewSet)
 router.register(r'counterparties/responsible', counterparties.ResponsibleViewSet)
 
 router.register(r'currencies/currency', currencies.CurrencyViewSet)

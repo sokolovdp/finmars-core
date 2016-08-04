@@ -3,10 +3,12 @@ from __future__ import unicode_literals
 from rest_framework.filters import FilterSet
 
 from poms.common.filters import CharFilter, ModelWithPermissionMultipleChoiceFilter, IsDefaultFilter
-from poms.counterparties.models import Counterparty, Responsible, CounterpartyAttributeType, ResponsibleAttributeType
+from poms.common.views import AbstractModelViewSet
+from poms.counterparties.models import Counterparty, Responsible, CounterpartyAttributeType, ResponsibleAttributeType, \
+    CounterpartyGroup, ResponsibleGroup
 from poms.counterparties.serializers import CounterpartySerializer, ResponsibleSerializer, \
     CounterpartyAttributeTypeSerializer, \
-    ResponsibleAttributeTypeSerializer
+    ResponsibleAttributeTypeSerializer, CounterpartyGroupSerializer, ResponsibleGroupSerializer
 from poms.obj_attrs.filters import AttributePrefetchFilter
 from poms.obj_attrs.views import AbstractAttributeTypeViewSet
 from poms.obj_perms.views import AbstractWithObjectPermissionViewSet
@@ -31,24 +33,47 @@ class CounterpartyAttributeTypeViewSet(AbstractAttributeTypeViewSet):
     filter_class = CounterpartyAttributeTypeFilterSet
 
 
+class CounterpartyGroupFilterSet(FilterSet):
+    user_code = CharFilter()
+    name = CharFilter()
+    short_name = CharFilter()
+    is_default = IsDefaultFilter(source='counterparty_group')
+    tag = TagFilter(model=CounterpartyGroup)
+
+    class Meta:
+        model = CounterpartyGroup
+        fields = ['user_code', 'name', 'short_name', 'is_default', 'tag']
+
+
+class CounterpartyGroupViewSet(AbstractModelViewSet):
+    queryset = CounterpartyGroup.objects.select_related('master_user')
+    serializer_class = CounterpartyGroupSerializer
+    filter_backends = AbstractModelViewSet.filter_backends + [
+        OwnerByMasterUserFilter,
+        TagFilterBackend,
+    ]
+    filter_class = CounterpartyGroupFilterSet
+    ordering_fields = ['user_code', 'name', 'short_name']
+    search_fields = ['user_code', 'name', 'short_name']
+
+
 class CounterpartyFilterSet(FilterSet):
     user_code = CharFilter()
     name = CharFilter()
     short_name = CharFilter()
     is_default = IsDefaultFilter(source='counterparty')
+    group = ModelWithPermissionMultipleChoiceFilter(model=CounterpartyGroup)
     portfolio = ModelWithPermissionMultipleChoiceFilter(model=Portfolio, name='portfolios')
     tag = TagFilter(model=Counterparty)
 
     class Meta:
         model = Counterparty
-        fields = ['user_code', 'name', 'short_name', 'is_default', 'tag', 'portfolio']
+        fields = ['user_code', 'name', 'short_name', 'is_default', 'group', 'tag', 'portfolio']
 
 
 class CounterpartyViewSet(AbstractWithObjectPermissionViewSet):
-    queryset = Counterparty.objects.select_related('master_user').prefetch_related(
-        'portfolios'
-    )
-    prefetch_permissions_for = ('portfolios',)
+    queryset = Counterparty.objects.select_related('master_user', 'group').prefetch_related('portfolios')
+    prefetch_permissions_for = ('group', 'portfolios',)
     serializer_class = CounterpartySerializer
     filter_backends = AbstractWithObjectPermissionViewSet.filter_backends + [
         OwnerByMasterUserFilter,
@@ -79,24 +104,47 @@ class ResponsibleAttributeTypeViewSet(AbstractAttributeTypeViewSet):
     filter_class = ResponsibleAttributeTypeFilterSet
 
 
+class ResponsibleGroupFilterSet(FilterSet):
+    user_code = CharFilter()
+    name = CharFilter()
+    short_name = CharFilter()
+    is_default = IsDefaultFilter(source='responsible_group')
+    tag = TagFilter(model=ResponsibleGroup)
+
+    class Meta:
+        model = ResponsibleGroup
+        fields = ['user_code', 'name', 'short_name', 'is_default', 'tag']
+
+
+class ResponsibleGroupViewSet(AbstractModelViewSet):
+    queryset = ResponsibleGroup.objects.select_related('master_user')
+    serializer_class = ResponsibleGroupSerializer
+    filter_backends = AbstractModelViewSet.filter_backends + [
+        OwnerByMasterUserFilter,
+        TagFilterBackend,
+    ]
+    filter_class = ResponsibleGroupFilterSet
+    ordering_fields = ['user_code', 'name', 'short_name']
+    search_fields = ['user_code', 'name', 'short_name']
+
+
 class ResponsibleFilterSet(FilterSet):
     user_code = CharFilter()
     name = CharFilter()
     short_name = CharFilter()
-    is_default = IsDefaultFilter(source='account_type')
+    is_default = IsDefaultFilter(source='responsible')
+    group = ModelWithPermissionMultipleChoiceFilter(model=CounterpartyGroup)
     portfolio = ModelWithPermissionMultipleChoiceFilter(model=Portfolio, name='portfolios')
     tag = TagFilter(model=Responsible)
 
     class Meta:
         model = Responsible
-        fields = ['user_code', 'name', 'short_name', 'is_default', 'portfolio', 'tag']
+        fields = ['user_code', 'name', 'short_name', 'is_default', 'group', 'portfolio', 'tag']
 
 
 class ResponsibleViewSet(AbstractWithObjectPermissionViewSet):
-    queryset = Responsible.objects.select_related('master_user').prefetch_related(
-        'portfolios'
-    )
-    prefetch_permissions_for = ('portfolios',)
+    queryset = Responsible.objects.select_related('master_user', 'group').prefetch_related('portfolios')
+    prefetch_permissions_for = ('group', 'portfolios',)
     serializer_class = ResponsibleSerializer
     filter_backends = AbstractWithObjectPermissionViewSet.filter_backends + [
         OwnerByMasterUserFilter,

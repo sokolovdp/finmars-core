@@ -17,18 +17,27 @@ class Tag(NamedModel):
     account_types = models.ManyToManyField('accounts.AccountType', related_name='tags', blank=True,
                                            verbose_name=_('account types'))
     accounts = models.ManyToManyField('accounts.Account', related_name='tags', blank=True, verbose_name=_('accounts'))
+
     currencies = models.ManyToManyField('currencies.Currency', related_name='tags', blank=True,
                                         verbose_name=_('currencies'))
+
     instrument_types = models.ManyToManyField('instruments.InstrumentType', related_name='tags', blank=True,
                                               verbose_name=_('instrument types'))
     instruments = models.ManyToManyField('instruments.Instrument', related_name='tags', blank=True,
                                          verbose_name=_('instruments'))
+
+    counterparty_groups = models.ManyToManyField('counterparties.CounterpartyGroup', related_name='tags', blank=True,
+                                            verbose_name=_('counterparty groups'))
     counterparties = models.ManyToManyField('counterparties.Counterparty', related_name='tags', blank=True,
                                             verbose_name=_('counterparties'))
+    responsible_groups = models.ManyToManyField('counterparties.ResponsibleGroup', related_name='tags', blank=True,
+                                          verbose_name=_('responsible groups'))
     responsibles = models.ManyToManyField('counterparties.Responsible', related_name='tags', blank=True,
                                           verbose_name=_('responsibles'))
+
     portfolios = models.ManyToManyField('portfolios.Portfolio', related_name='tags', blank=True,
                                         verbose_name=_('portfolios'))
+
     transaction_types = models.ManyToManyField('transactions.TransactionType', related_name='tags', blank=True,
                                                verbose_name=_('transaction types'))
 

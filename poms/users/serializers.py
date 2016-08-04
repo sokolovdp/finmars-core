@@ -11,7 +11,8 @@ from rest_framework.authtoken.serializers import AuthTokenSerializer
 
 from poms.accounts.fields import AccountTypeField, AccountField
 from poms.common.fields import DateTimeTzAwareField
-from poms.counterparties.fields import CounterpartyField, ResponsibleField
+from poms.counterparties.fields import CounterpartyField, ResponsibleField, CounterpartyGroupField, \
+    ResponsibleGroupField
 from poms.currencies.fields import CurrencyField
 from poms.instruments.fields import InstrumentTypeField
 from poms.portfolios.fields import PortfolioField
@@ -167,8 +168,10 @@ class MasterUserSerializer(serializers.ModelSerializer):
 
     account_type = AccountTypeField()
     account = AccountField()
-    counterparty = CounterpartyField(allow_null=True, allow_empty=True)
-    responsible = ResponsibleField(allow_null=True, allow_empty=True)
+    counterparty_group = CounterpartyGroupField()
+    counterparty = CounterpartyField()
+    responsible_group = ResponsibleGroupField()
+    responsible = ResponsibleField()
     instrument_type = InstrumentTypeField()
     portfolio = PortfolioField()
     strategy1_group = Strategy1GroupField()

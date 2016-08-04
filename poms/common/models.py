@@ -9,34 +9,12 @@ from django.utils.translation import ugettext_lazy as _
 
 @python_2_unicode_compatible
 class NamedModel(models.Model):
-    user_code = models.CharField(
-        max_length=25,
-        null=True,
-        blank=True,
-        verbose_name=_('user code')
-    )
-    name = models.CharField(
-        max_length=255,
-        verbose_name=_('name')
-    )
-    short_name = models.CharField(
-        max_length=50,
-        null=True,
-        blank=True,
-        verbose_name=_('short name')
-    )
-    public_name = models.CharField(
-        max_length=255,
-        verbose_name=_('public name'),
-        null=True,
-        blank=True,
-        help_text=_('used if user does not have permissions to view object')
-    )
-    notes = models.TextField(
-        null=True,
-        blank=True,
-        verbose_name=_('notes')
-    )
+    user_code = models.CharField(max_length=25, null=True, blank=True, verbose_name=_('user code'))
+    name = models.CharField(max_length=255, verbose_name=_('name'))
+    short_name = models.CharField(max_length=50, null=True, blank=True, verbose_name=_('short name'))
+    public_name = models.CharField(max_length=255, verbose_name=_('public name'), null=True, blank=True,
+                                   help_text=_('used if user does not have permissions to view object'))
+    notes = models.TextField(null=True, blank=True, verbose_name=_('notes'))
 
     class Meta:
         abstract = True
@@ -56,18 +34,8 @@ class NamedModel(models.Model):
 
 
 class TimeStampedModel(models.Model):
-    created = models.DateTimeField(
-        auto_now_add=True,
-        editable=False,
-        db_index=True,
-        verbose_name=_('created')
-    )
-    modified = models.DateTimeField(
-        auto_now=True,
-        editable=False,
-        db_index=True,
-        verbose_name=_('modified')
-    )
+    created = models.DateTimeField(auto_now_add=True, editable=False, db_index=True, verbose_name=_('created'))
+    modified = models.DateTimeField(auto_now=True, editable=False, db_index=True, verbose_name=_('modified'))
 
     class Meta:
         abstract = True
@@ -77,17 +45,8 @@ class TimeStampedModel(models.Model):
 
 @python_2_unicode_compatible
 class AbstractClassModel(models.Model):
-    id = models.PositiveSmallIntegerField(
-        primary_key=True,
-        verbose_name=_('ID')
-    )
-    system_code = models.CharField(
-        max_length=50,
-        null=True,
-        blank=True,
-        unique=True,
-        verbose_name=_('system code')
-    )
+    id = models.PositiveSmallIntegerField(primary_key=True, verbose_name=_('ID'))
+    system_code = models.CharField(max_length=50, null=True, blank=True, unique=True, verbose_name=_('system code'))
     name_en = models.CharField(max_length=255, null=True, blank=True, verbose_name=_('name (en)'))
     name_ru = models.CharField(max_length=255, null=True, blank=True, verbose_name=_('name (ru)'))
     name_es = models.CharField(max_length=255, null=True, blank=True, verbose_name=_('name (es)'))
@@ -106,11 +65,15 @@ class AbstractClassModel(models.Model):
     @property
     def name(self):
         lang = translation.get_language()
+        if lang is None:
+            return self.name_en
         n = getattr(self, 'name_%s' % lang, None)
         return n or self.name_en
 
     @property
     def description(self):
         lang = translation.get_language()
+        if lang is None:
+            return self.description_en
         n = getattr(self, 'description_%s' % lang, None)
         return n or self.description_en

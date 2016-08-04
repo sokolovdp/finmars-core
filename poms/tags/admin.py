@@ -12,13 +12,19 @@ from poms.tags.models import Tag
 class TagAdmin(HistoricalAdmin):
     model = Tag
     list_display = ['id', 'master_user', 'name']
-    filter_horizontal = ['content_types', 'account_types', 'accounts', 'currencies', 'instrument_types', 'instruments',
-                         'counterparties', 'responsibles', 'portfolios', 'transaction_types',
-                         'strategy1_groups', 'strategy1_subgroups', 'strategies1',
-                         'strategy2_groups', 'strategy2_subgroups', 'strategies2',
-                         'strategy3_groups', 'strategy3_subgroups', 'strategies3',
-                         'thread_groups', 'threads']
-    raw_id_fields = ['master_user', 'account_types']
+    filter_horizontal = ['content_types',
+                         ]
+    raw_id_fields = [
+        'master_user', 'account_types', 'accounts', 'currencies', 'instrument_types', 'instruments',
+        'counterparty_groups', 'counterparties',
+        'responsible_groups', 'responsibles',
+        'portfolios',
+        'transaction_types',
+        'strategy1_groups', 'strategy1_subgroups', 'strategies1',
+        'strategy2_groups', 'strategy2_subgroups', 'strategies2',
+        'strategy3_groups', 'strategy3_subgroups', 'strategies3',
+        'thread_groups', 'threads'
+    ]
     inlines = [
         UserObjectPermissionInline,
         GroupObjectPermissionInline,
