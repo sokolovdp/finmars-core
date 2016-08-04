@@ -15,13 +15,14 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework.viewsets import ModelViewSet, ReadOnlyModelViewSet, ViewSet
 
+from poms.audit.mixins import HistoricalMixin
 from poms.common.filters import ClassifierFilter, ClassifierPrefetchFilter
 from poms.users.filters import OwnerByMasterUserFilter
 from poms.users.utils import get_master_user
 from poms.users.utils import get_member
 
 
-class AbstractApiView(APIView):
+class AbstractApiView(HistoricalMixin, APIView):
     atomic = True
 
     def perform_authentication(self, request):

@@ -29,7 +29,7 @@ def get_history_model_list():
         from poms.accounts.models import Account, AccountType, AccountAttributeType
         from poms.chats.models import ThreadGroup, Thread, Message, DirectMessage
         from poms.counterparties.models import Counterparty, CounterpartyAttributeType, Responsible, \
-            ResponsibleAttributeType
+            ResponsibleAttributeType, CounterpartyGroup, ResponsibleGroup
         from poms.currencies.models import Currency, CurrencyHistory
         from poms.instruments.models import Instrument, InstrumentType, InstrumentAttributeType, PriceHistory
         from poms.portfolios.models import Portfolio, PortfolioAttributeType
@@ -42,12 +42,14 @@ def get_history_model_list():
         _history_model_list = (
             AccountType, Account, AccountAttributeType,
             ThreadGroup, Thread, Message, DirectMessage,
-            Counterparty, CounterpartyAttributeType, Responsible, ResponsibleAttributeType,
+            CounterpartyGroup, Counterparty, CounterpartyAttributeType,
+            ResponsibleGroup, Responsible, ResponsibleAttributeType,
             Currency, CurrencyHistory,
             InstrumentType, Instrument, InstrumentAttributeType, PriceHistory,
             Portfolio, PortfolioAttributeType,
-            Strategy1Group, Strategy1Subgroup, Strategy1, Strategy2Group, Strategy2Subgroup, Strategy2, Strategy3Group,
-            Strategy3Subgroup, Strategy3,
+            Strategy1Group, Strategy1Subgroup, Strategy1,
+            Strategy2Group, Strategy2Subgroup, Strategy2,
+            Strategy3Group, Strategy3Subgroup, Strategy3,
             TransactionType, Transaction, TransactionAttributeType,
             MasterUser, Member,
             InstrumentMapping,
@@ -355,6 +357,9 @@ def register(model, **kwargs):
 
 def _is_enabled(obj):
     # return is_active() and reversion.is_registered(obj)
+    from poms.audit.models import ObjectHistoryEntry
+    if isinstance(obj, ObjectHistoryEntry):
+        return False
     return is_active()
 
 
