@@ -20,6 +20,7 @@ import poms.tags.views as tags
 import poms.transactions.views as transactions
 import poms.ui.views as ui
 import poms.users.views as users
+import poms.api.views as api
 
 router = routers.DefaultRouter()
 router.register(r'users/login', users.LoginViewSet, 'login')
@@ -32,6 +33,8 @@ router.register(r'users/user', users.UserViewSet)
 router.register(r'users/master-user', users.MasterUserViewSet)
 router.register(r'users/member', users.MemberViewSet)
 router.register(r'users/group', users.GroupViewSet)
+router.register(r'users/language', api.LanguageViewSet, 'LanguageViewSet')
+router.register(r'users/timezone', api.TimezoneViewSet, 'TimezoneViewSet')
 
 router.register(r'accounts/account-type', accounts.AccountTypeViewSet)
 router.register(r'accounts/account-attribute-type', accounts.AccountAttributeTypeViewSet)
