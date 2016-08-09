@@ -113,19 +113,19 @@ class InstrumentMapping(models.Model):
                     _l.debug('Invalid expression "%s"', attr, exc_info=True)
                     v = None
                 if attr in ['pricing_currency', 'accrued_currency']:
-                    if v:
+                    if v is not None:
                         v = self.master_user.currencies.get(user_code=v)
                         setattr(instr, attr, v)
                 elif attr in ['instrument_type']:
-                    if v:
+                    if v is not None:
                         v = self.master_user.instrument_types.get(user_code=v)
                         setattr(instr, attr, v)
                 elif attr in ['price_multiplier', 'accrued_multiplier', 'default_price', 'default_accrued']:
-                    if v:
+                    if v is not None:
                         v = float(v)
                         setattr(instr, attr, v)
                 else:
-                    if v:
+                    if v is not None:
                         v = six.text_type(v)
                         setattr(instr, attr, v)
 
@@ -146,15 +146,19 @@ class InstrumentMapping(models.Model):
                     _l.debug('Invalid expression "%s"', attr.value, exc_info=True)
                     v = None
                 if tattr.value_type == AbstractAttributeType.STRING:
-                    iattr.value_string = six.text_type(v)
+                    if v is not None:
+                        iattr.value_string = six.text_type(v)
                 elif tattr.value_type == AbstractAttributeType.NUMBER:
-                    iattr.value_float = float(v)
+                    if v is not None:
+                        iattr.value_float = float(v)
                 elif tattr.value_type == AbstractAttributeType.DATE:
-                    iattr.value_date = get_date(v)
+                    if v is not None:
+                        iattr.value_date = get_date(v)
                 elif tattr.value_type == AbstractAttributeType.CLASSIFIER:
-                    v = six.text_type(v)
-                    v = tattr.classifiers.filter(name=v).first()
-                    iattr.classifier = v
+                    if v is not None:
+                        v = six.text_type(v)
+                        v = tattr.classifiers.filter(name=v).first()
+                        iattr.classifier = v
 
             if save:
                 iattr.save()
