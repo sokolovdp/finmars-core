@@ -8,13 +8,14 @@ from poms.common.views import AbstractClassModelViewSet, AbstractModelViewSet
 from poms.instruments.filters import OwnerByInstrumentFilter, PriceHistoryObjectPermissionFilter
 from poms.instruments.models import Instrument, PriceHistory, InstrumentClass, DailyPricingModel, \
     AccrualCalculationModel, PaymentSizeDetail, PeriodicityPeriod, CostMethod, InstrumentType, InstrumentAttributeType, \
-    PricingPolicy, PriceDownloadMode
+    PricingPolicy, PriceDownloadMode, InstrumentClassifier
 from poms.instruments.serializers import InstrumentSerializer, PriceHistorySerializer, \
     InstrumentClassSerializer, DailyPricingModelSerializer, AccrualCalculationModelSerializer, \
     PaymentSizeDetailSerializer, PeriodicityPeriodSerializer, CostMethodSerializer, InstrumentTypeSerializer, \
-    InstrumentAttributeTypeSerializer, PricingPolicySerializer, PriceDownloadModeSerializer
+    InstrumentAttributeTypeSerializer, PricingPolicySerializer, PriceDownloadModeSerializer, \
+    InstrumentClassifierNodeSerializer
 from poms.obj_attrs.filters import AttributePrefetchFilter
-from poms.obj_attrs.views import AbstractAttributeTypeViewSet
+from poms.obj_attrs.views import AbstractAttributeTypeViewSet, AbstractClassifierViewSet
 from poms.obj_perms.views import AbstractWithObjectPermissionViewSet
 from poms.tags.filters import TagFilterBackend, TagFilter
 from poms.users.filters import OwnerByMasterUserFilter
@@ -107,6 +108,23 @@ class InstrumentAttributeTypeViewSet(AbstractAttributeTypeViewSet):
     queryset = InstrumentAttributeType.objects.prefetch_related('classifiers')
     serializer_class = InstrumentAttributeTypeSerializer
     filter_class = InstrumentAttributeTypeFilterSet
+
+
+class InstrumentClassifierFilterSet(FilterSet):
+    name = CharFilter()
+    attribute_type = ModelWithPermissionMultipleChoiceFilter(model=InstrumentAttributeType)
+
+    # parent = ModelWithPermissionMultipleChoiceFilter(model=InstrumentClassifier, master_user_path='attribute_type__master_user')
+
+    class Meta:
+        model = InstrumentClassifier
+        fields = ['name', 'level', 'attribute_type', ]
+
+
+class InstrumentClassifierViewSet(AbstractClassifierViewSet):
+    queryset = InstrumentClassifier.objects
+    serializer_class = InstrumentClassifierNodeSerializer
+    filter_class = InstrumentClassifierFilterSet
 
 
 class InstrumentFilterSet(FilterSet):

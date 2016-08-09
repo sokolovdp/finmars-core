@@ -20,7 +20,7 @@ class AccountClassifierSerializer(AbstractClassifierSerializer):
 
 
 class AccountClassifierNodeSerializer(AbstractClassifierNodeSerializer):
-    url = serializers.HyperlinkedIdentityField(view_name='accountclassifiernode-detail')
+    # url = serializers.HyperlinkedIdentityField(view_name='accountclassifiernode-detail')
 
     class Meta(AbstractClassifierNodeSerializer.Meta):
         model = AccountClassifier

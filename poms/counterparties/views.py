@@ -5,12 +5,13 @@ from rest_framework.filters import FilterSet
 from poms.common.filters import CharFilter, ModelWithPermissionMultipleChoiceFilter, IsDefaultFilter
 from poms.common.views import AbstractModelViewSet
 from poms.counterparties.models import Counterparty, Responsible, CounterpartyAttributeType, ResponsibleAttributeType, \
-    CounterpartyGroup, ResponsibleGroup
+    CounterpartyGroup, ResponsibleGroup, CounterpartyClassifier, ResponsibleClassifier
 from poms.counterparties.serializers import CounterpartySerializer, ResponsibleSerializer, \
     CounterpartyAttributeTypeSerializer, \
-    ResponsibleAttributeTypeSerializer, CounterpartyGroupSerializer, ResponsibleGroupSerializer
+    ResponsibleAttributeTypeSerializer, CounterpartyGroupSerializer, ResponsibleGroupSerializer, \
+    CounterpartyClassifierNodeSerializer, ResponsibleClassifierNodeSerializer
 from poms.obj_attrs.filters import AttributePrefetchFilter
-from poms.obj_attrs.views import AbstractAttributeTypeViewSet
+from poms.obj_attrs.views import AbstractAttributeTypeViewSet, AbstractClassifierViewSet
 from poms.obj_perms.views import AbstractWithObjectPermissionViewSet
 from poms.portfolios.models import Portfolio
 from poms.tags.filters import TagFilterBackend, TagFilter
@@ -31,6 +32,23 @@ class CounterpartyAttributeTypeViewSet(AbstractAttributeTypeViewSet):
     queryset = CounterpartyAttributeType.objects.prefetch_related('classifiers')
     serializer_class = CounterpartyAttributeTypeSerializer
     filter_class = CounterpartyAttributeTypeFilterSet
+
+
+class CounterpartyClassifierFilterSet(FilterSet):
+    name = CharFilter()
+    attribute_type = ModelWithPermissionMultipleChoiceFilter(model=CounterpartyAttributeType)
+
+    # parent = ModelWithPermissionMultipleChoiceFilter(model=CounterpartyClassifier, master_user_path='attribute_type__master_user')
+
+    class Meta:
+        model = CounterpartyClassifier
+        fields = ['name', 'level', 'attribute_type', ]
+
+
+class CounterpartyClassifierViewSet(AbstractClassifierViewSet):
+    queryset = CounterpartyClassifier.objects
+    serializer_class = CounterpartyClassifierNodeSerializer
+    filter_class = CounterpartyClassifierFilterSet
 
 
 class CounterpartyGroupFilterSet(FilterSet):
@@ -102,6 +120,23 @@ class ResponsibleAttributeTypeViewSet(AbstractAttributeTypeViewSet):
     queryset = ResponsibleAttributeType.objects.prefetch_related('classifiers')
     serializer_class = ResponsibleAttributeTypeSerializer
     filter_class = ResponsibleAttributeTypeFilterSet
+
+
+class ResponsibleClassifierFilterSet(FilterSet):
+    name = CharFilter()
+    attribute_type = ModelWithPermissionMultipleChoiceFilter(model=ResponsibleAttributeType)
+
+    # parent = ModelWithPermissionMultipleChoiceFilter(model=ResponsibleClassifier, master_user_path='attribute_type__master_user')
+
+    class Meta:
+        model = ResponsibleClassifier
+        fields = ['name', 'level', 'attribute_type', ]
+
+
+class ResponsibleClassifierViewSet(AbstractClassifierViewSet):
+    queryset = ResponsibleClassifier.objects
+    serializer_class = ResponsibleClassifierNodeSerializer
+    filter_class = ResponsibleClassifierFilterSet
 
 
 class ResponsibleGroupFilterSet(FilterSet):

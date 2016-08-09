@@ -11,20 +11,20 @@ from poms.common.views import AbstractClassModelViewSet, AbstractModelViewSet, A
 from poms.currencies.models import Currency
 from poms.instruments.models import Instrument, InstrumentType
 from poms.obj_attrs.filters import AttributePrefetchFilter
-from poms.obj_attrs.views import AbstractAttributeTypeViewSet
+from poms.obj_attrs.views import AbstractAttributeTypeViewSet, AbstractClassifierViewSet
 from poms.obj_perms.utils import obj_perms_prefetch
 from poms.obj_perms.views import AbstractWithObjectPermissionViewSet
 from poms.portfolios.models import Portfolio
-from poms.strategies.models import Strategy1, Strategy2,Strategy3
+from poms.strategies.models import Strategy1, Strategy2, Strategy3
 from poms.tags.filters import TagFilterBackend, TagFilter
 from poms.transactions.filters import TransactionObjectPermissionFilter, ComplexTransactionPermissionFilter
 from poms.transactions.models import TransactionClass, Transaction, TransactionType, TransactionAttributeType, \
-    TransactionTypeGroup, ComplexTransaction
+    TransactionTypeGroup, ComplexTransaction, TransactionClassifier
 from poms.transactions.permissions import TransactionObjectPermission
 from poms.transactions.processor import TransactionTypeProcessor
 from poms.transactions.serializers import TransactionClassSerializer, TransactionSerializer, TransactionTypeSerializer, \
     TransactionAttributeTypeSerializer, TransactionTypeProcessSerializer, TransactionTypeGroupSerializer, \
-    ComplexTransactionSerializer
+    ComplexTransactionSerializer, TransactionClassifierNodeSerializer
 from poms.users.filters import OwnerByMasterUserFilter
 
 
@@ -162,6 +162,23 @@ class TransactionAttributeTypeViewSet(AbstractAttributeTypeViewSet):
     filter_class = TransactionAttributeTypeFilterSet
 
 
+class TransactionClassifierFilterSet(FilterSet):
+    name = CharFilter()
+    attribute_type = ModelWithPermissionMultipleChoiceFilter(model=TransactionAttributeType)
+
+    # parent = ModelWithPermissionMultipleChoiceFilter(model=TransactionClassifier, master_user_path='attribute_type__master_user')
+
+    class Meta:
+        model = TransactionClassifier
+        fields = ['name', 'level', 'attribute_type', ]
+
+
+class TransactionClassifierViewSet(AbstractClassifierViewSet):
+    queryset = TransactionClassifier.objects
+    serializer_class = TransactionClassifierNodeSerializer
+    filter_class = TransactionClassifierFilterSet
+
+
 class TransactionFilterSet(FilterSet):
     transaction_code = django_filters.RangeFilter()
     transaction_date = django_filters.DateFromToRangeFilter()
@@ -174,12 +191,18 @@ class TransactionFilterSet(FilterSet):
     account_cash = ModelWithPermissionMultipleChoiceFilter(model=Account)
     account_position = ModelWithPermissionMultipleChoiceFilter(model=Account)
     account_interim = ModelWithPermissionMultipleChoiceFilter(model=Account)
-    strategy1_position = ModelWithPermissionMultipleChoiceFilter(model=Strategy1, master_user_path='subgroup__group__master_user')
-    strategy1_cash = ModelWithPermissionMultipleChoiceFilter(model=Strategy1, master_user_path='subgroup__group__master_user')
-    strategy2_position = ModelWithPermissionMultipleChoiceFilter(model=Strategy2, master_user_path='subgroup__group__master_user')
-    strategy2_cash = ModelWithPermissionMultipleChoiceFilter(model=Strategy2, master_user_path='subgroup__group__master_user')
-    strategy3_position = ModelWithPermissionMultipleChoiceFilter(model=Strategy3, master_user_path='subgroup__group__master_user')
-    strategy3_cash = ModelWithPermissionMultipleChoiceFilter(model=Strategy3, master_user_path='subgroup__group__master_user')
+    strategy1_position = ModelWithPermissionMultipleChoiceFilter(model=Strategy1,
+                                                                 master_user_path='subgroup__group__master_user')
+    strategy1_cash = ModelWithPermissionMultipleChoiceFilter(model=Strategy1,
+                                                             master_user_path='subgroup__group__master_user')
+    strategy2_position = ModelWithPermissionMultipleChoiceFilter(model=Strategy2,
+                                                                 master_user_path='subgroup__group__master_user')
+    strategy2_cash = ModelWithPermissionMultipleChoiceFilter(model=Strategy2,
+                                                             master_user_path='subgroup__group__master_user')
+    strategy3_position = ModelWithPermissionMultipleChoiceFilter(model=Strategy3,
+                                                                 master_user_path='subgroup__group__master_user')
+    strategy3_cash = ModelWithPermissionMultipleChoiceFilter(model=Strategy3,
+                                                             master_user_path='subgroup__group__master_user')
 
     complex_transaction = django_filters.Filter(name='complex_transaction')
     complex_transaction__code = django_filters.RangeFilter()

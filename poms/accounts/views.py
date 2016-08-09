@@ -2,11 +2,12 @@ from __future__ import unicode_literals
 
 from rest_framework.filters import FilterSet
 
-from poms.accounts.models import Account, AccountType, AccountAttributeType
-from poms.accounts.serializers import AccountSerializer, AccountTypeSerializer, AccountAttributeTypeSerializer
+from poms.accounts.models import Account, AccountType, AccountAttributeType, AccountClassifier
+from poms.accounts.serializers import AccountSerializer, AccountTypeSerializer, AccountAttributeTypeSerializer, \
+    AccountClassifierNodeSerializer
 from poms.common.filters import CharFilter, ModelWithPermissionMultipleChoiceFilter, IsDefaultFilter
 from poms.obj_attrs.filters import AttributePrefetchFilter
-from poms.obj_attrs.views import AbstractAttributeTypeViewSet
+from poms.obj_attrs.views import AbstractAttributeTypeViewSet, AbstractClassifierViewSet
 from poms.obj_perms.views import AbstractWithObjectPermissionViewSet
 from poms.portfolios.models import Portfolio
 from poms.tags.filters import TagFilterBackend, TagFilter
@@ -51,6 +52,22 @@ class AccountAttributeTypeViewSet(AbstractAttributeTypeViewSet):
     queryset = AccountAttributeType.objects.prefetch_related('classifiers')
     serializer_class = AccountAttributeTypeSerializer
     filter_class = AccountAttributeTypeFilterSet
+
+
+class AccountClassifierFilterSet(FilterSet):
+    name = CharFilter()
+    attribute_type = ModelWithPermissionMultipleChoiceFilter(model=AccountAttributeType)
+    # parent = ModelWithPermissionMultipleChoiceFilter(model=AccountClassifier, master_user_path='attribute_type__master_user')
+
+    class Meta:
+        model = AccountClassifier
+        fields = ['name', 'level', 'attribute_type', ]
+
+
+class AccountClassifierViewSet(AbstractClassifierViewSet):
+    queryset = AccountClassifier.objects
+    serializer_class = AccountClassifierNodeSerializer
+    filter_class = AccountClassifierFilterSet
 
 
 class AccountFilterSet(FilterSet):

@@ -7,7 +7,8 @@ from rest_framework import serializers
 from poms.accounts.fields import AccountField, AccountDefault
 from poms.accounts.models import Account
 from poms.common.fields import ExpressionField
-from poms.common.serializers import PomsClassSerializer, ModelWithUserCodeSerializer, AbstractClassifierSerializer
+from poms.common.serializers import PomsClassSerializer, ModelWithUserCodeSerializer, AbstractClassifierSerializer, \
+    AbstractClassifierNodeSerializer
 from poms.counterparties.fields import ResponsibleField, CounterpartyField, ResponsibleDefault, CounterpartyDefault
 from poms.counterparties.models import Counterparty, Responsible
 from poms.currencies.fields import CurrencyField, CurrencyDefault
@@ -367,6 +368,13 @@ class TransactionTypeProcessSerializer(serializers.Serializer):
 
 class TransactionClassifierSerializer(AbstractClassifierSerializer):
     class Meta(AbstractClassifierSerializer.Meta):
+        model = TransactionClassifier
+
+
+class TransactionClassifierNodeSerializer(AbstractClassifierNodeSerializer):
+    # url = serializers.HyperlinkedIdentityField(view_name='transactionclassifiernode-detail')
+
+    class Meta(AbstractClassifierNodeSerializer.Meta):
         model = TransactionClassifier
 
 

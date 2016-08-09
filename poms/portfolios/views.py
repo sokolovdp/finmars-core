@@ -6,10 +6,11 @@ from poms.accounts.models import Account
 from poms.common.filters import CharFilter, ModelWithPermissionMultipleChoiceFilter, IsDefaultFilter
 from poms.counterparties.models import Responsible, Counterparty
 from poms.obj_attrs.filters import AttributePrefetchFilter
-from poms.obj_attrs.views import AbstractAttributeTypeViewSet
+from poms.obj_attrs.views import AbstractAttributeTypeViewSet, AbstractClassifierViewSet
 from poms.obj_perms.views import AbstractWithObjectPermissionViewSet
-from poms.portfolios.models import Portfolio, PortfolioAttributeType
-from poms.portfolios.serializers import PortfolioSerializer, PortfolioAttributeTypeSerializer
+from poms.portfolios.models import Portfolio, PortfolioAttributeType, PortfolioClassifier
+from poms.portfolios.serializers import PortfolioSerializer, PortfolioAttributeTypeSerializer, \
+    PortfolioClassifierNodeSerializer
 from poms.tags.filters import TagFilterBackend, TagFilter
 from poms.transactions.models import TransactionType
 from poms.users.filters import OwnerByMasterUserFilter
@@ -29,6 +30,23 @@ class PortfolioAttributeTypeViewSet(AbstractAttributeTypeViewSet):
     queryset = PortfolioAttributeType.objects.prefetch_related('classifiers')
     serializer_class = PortfolioAttributeTypeSerializer
     filter_class = PortfolioAttributeTypeFilterSet
+
+
+class PortfolioClassifierFilterSet(FilterSet):
+    name = CharFilter()
+    attribute_type = ModelWithPermissionMultipleChoiceFilter(model=PortfolioAttributeType)
+
+    # parent = ModelWithPermissionMultipleChoiceFilter(model=PortfolioClassifier, master_user_path='attribute_type__master_user')
+
+    class Meta:
+        model = PortfolioClassifier
+        fields = ['name', 'level', 'attribute_type', ]
+
+
+class PortfolioClassifierViewSet(AbstractClassifierViewSet):
+    queryset = PortfolioClassifier.objects
+    serializer_class = PortfolioClassifierNodeSerializer
+    filter_class = PortfolioClassifierFilterSet
 
 
 class PortfolioFilterSet(FilterSet):

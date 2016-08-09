@@ -73,7 +73,7 @@ class InstrumentClassifierSerializer(AbstractClassifierSerializer):
 
 
 class InstrumentClassifierNodeSerializer(AbstractClassifierNodeSerializer):
-    url = serializers.HyperlinkedIdentityField(view_name='instrumentclassifiernode-detail')
+    # url = serializers.HyperlinkedIdentityField(view_name='instrumentclassifiernode-detail')
 
     class Meta(AbstractClassifierNodeSerializer.Meta):
         model = InstrumentClassifier

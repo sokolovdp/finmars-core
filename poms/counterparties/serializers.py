@@ -1,7 +1,5 @@
 from __future__ import unicode_literals
 
-from rest_framework import serializers
-
 from poms.common.serializers import AbstractClassifierSerializer, AbstractClassifierNodeSerializer, \
     ModelWithUserCodeSerializer
 from poms.counterparties.fields import ResponsibleClassifierField, \
@@ -24,7 +22,7 @@ class CounterpartyClassifierSerializer(AbstractClassifierSerializer):
 
 
 class CounterpartyClassifierNodeSerializer(AbstractClassifierNodeSerializer):
-    url = serializers.HyperlinkedIdentityField(view_name='counterpartyclassifiernode-detail')
+    # url = serializers.HyperlinkedIdentityField(view_name='counterpartyclassifiernode-detail')
 
     class Meta(AbstractClassifierNodeSerializer.Meta):
         model = CounterpartyClassifier
@@ -80,7 +78,7 @@ class ResponsibleClassifierSerializer(AbstractClassifierSerializer):
 
 
 class ResponsibleClassifierNodeSerializer(AbstractClassifierNodeSerializer):
-    url = serializers.HyperlinkedIdentityField(view_name='responsibleclassifiernode-detail')
+    # url = serializers.HyperlinkedIdentityField(view_name='responsibleclassifiernode-detail')
 
     class Meta(AbstractClassifierNodeSerializer.Meta):
         model = ResponsibleClassifier

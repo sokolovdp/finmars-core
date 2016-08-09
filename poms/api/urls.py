@@ -38,13 +38,16 @@ router.register(r'users/timezone', api.TimezoneViewSet, 'TimezoneViewSet')
 
 router.register(r'accounts/account-type', accounts.AccountTypeViewSet)
 router.register(r'accounts/account-attribute-type', accounts.AccountAttributeTypeViewSet)
+router.register(r'accounts/account-classifier', accounts.AccountClassifierViewSet)
 router.register(r'accounts/account', accounts.AccountViewSet)
 
 router.register(r'counterparties/counterparty-attribute-type', counterparties.CounterpartyAttributeTypeViewSet)
+router.register(r'counterparties/counterparty-classifier', counterparties.CounterpartyClassifierViewSet)
 router.register(r'counterparties/counterparty-group', counterparties.CounterpartyGroupViewSet)
 router.register(r'counterparties/counterparty', counterparties.CounterpartyViewSet)
 
 router.register(r'counterparties/responsible-attribute-type', counterparties.ResponsibleAttributeTypeViewSet)
+router.register(r'counterparties/responsible-classifier', counterparties.ResponsibleClassifierViewSet)
 router.register(r'counterparties/responsible-group', counterparties.ResponsibleGroupViewSet)
 router.register(r'counterparties/responsible', counterparties.ResponsibleViewSet)
 
@@ -59,12 +62,15 @@ router.register(r'instruments/periodicity-period', instruments.PeriodicityPeriod
 router.register(r'instruments/cost-method', instruments.CostMethodViewSet)
 router.register(r'instruments/pricing-policy', instruments.PricingPolicyViewSet)
 router.register(r'instruments/price-download-mode', instruments.PriceDownloadModeViewSet)
+
 router.register(r'instruments/instrument-type', instruments.InstrumentTypeViewSet)
 router.register(r'instruments/instrument-attribute-type', instruments.InstrumentAttributeTypeViewSet)
+router.register(r'instruments/instrument-classifier', instruments.InstrumentClassifierViewSet)
 router.register(r'instruments/instrument', instruments.InstrumentViewSet)
 router.register(r'instruments/price-history', instruments.PriceHistoryViewSet)
 
 router.register(r'portfolios/portfolio-attribute-type', portfolios.PortfolioAttributeTypeViewSet)
+router.register(r'portfolios/portfolio-classifier', portfolios.PortfolioClassifierViewSet)
 router.register(r'portfolios/portfolio', portfolios.PortfolioViewSet)
 
 router.register(r'strategies/1/group', strategies.Strategy1GroupViewSet)
@@ -82,9 +88,11 @@ router.register(r'strategies/3/strategy', strategies.Strategy3ViewSet)
 router.register(r'tags/tag', tags.TagViewSet)
 
 router.register(r'transactions/transaction-class', transactions.TransactionClassViewSet)
+
 router.register(r'transactions/transaction-type-group', transactions.TransactionTypeGroupViewSet)
 router.register(r'transactions/transaction-type', transactions.TransactionTypeViewSet)
 router.register(r'transactions/transaction-attribute-type', transactions.TransactionAttributeTypeViewSet)
+router.register(r'transactions/transaction-classifier', transactions.TransactionClassifierViewSet)
 router.register(r'transactions/transaction', transactions.TransactionViewSet)
 router.register(r'transactions/complex-transaction', transactions.ComplexTransactionViewSet)
 
