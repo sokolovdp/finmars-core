@@ -41,7 +41,7 @@ def format_date(x, fmt=None, locale=None):
             locale = translation.get_language()
         return dates.format_date(x, fmt, locale=locale)
     else:
-        force_text(x)
+        return six.text_type(x)
 
 
 def format_decimal(x, fmt=None, locale=None):
@@ -51,7 +51,7 @@ def format_decimal(x, fmt=None, locale=None):
             locale = translation.get_language()
         return numbers.format_decimal(x, fmt, locale=locale)
     else:
-        return force_text(x)
+        return six.text_type(x)
 
 
 def format_currency(x, ccy, locale=None):
@@ -66,7 +66,7 @@ def w_random():
 
 
 DEFAULT_FUNCTIONS = {
-    "str": lambda x: force_text(x),
+    "str": lambda x: six.text_type(x),
     "int": lambda x: int(x),
     "float": lambda x: float(x),
     "round": lambda x: round(x),
@@ -277,7 +277,6 @@ if __name__ == "__main__":
     django.setup()
 
     from django.utils import timezone, translation
-    from django.utils.encoding import force_text
 
 
     # names = {

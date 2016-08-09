@@ -2,12 +2,15 @@ from __future__ import unicode_literals, print_function
 
 import json
 import uuid
+from datetime import date, datetime
 
+import six
 from dateutil import parser
 from django.db import models
 from django.utils.encoding import python_2_unicode_compatible
 from django.utils.translation import ugettext_lazy as _
 
+from poms.common import formula
 from poms.common.models import TimeStampedModel
 from poms.instruments.models import Instrument, InstrumentAttribute
 from poms.integrations.storage import bloomberg_cert_storage
@@ -26,25 +29,25 @@ class InstrumentMapping(models.Model):
     master_user = models.ForeignKey('users.MasterUser')
     mapping_name = models.CharField(max_length=255)
 
-    user_code = models.CharField(max_length=MAPPING_FIELD_MAX_LENGTH, null=True, blank=True)
-    name = models.CharField(max_length=MAPPING_FIELD_MAX_LENGTH)
+    user_code = models.CharField(max_length=255, blank=True, default='')
+    name = models.CharField(max_length=255)
     short_name = models.CharField(max_length=MAPPING_FIELD_MAX_LENGTH, null=True, blank=True)
     public_name = models.CharField(max_length=MAPPING_FIELD_MAX_LENGTH, null=True, blank=True)
     notes = models.CharField(max_length=MAPPING_FIELD_MAX_LENGTH, null=True, blank=True)
 
-    instrument_type = models.CharField(max_length=MAPPING_FIELD_MAX_LENGTH, null=True, blank=True)
-    pricing_currency = models.CharField(max_length=MAPPING_FIELD_MAX_LENGTH, null=True, blank=True)
-    price_multiplier = models.CharField(max_length=MAPPING_FIELD_MAX_LENGTH, null=True, blank=True)
-    accrued_currency = models.CharField(max_length=MAPPING_FIELD_MAX_LENGTH, null=True, blank=True)
-    accrued_multiplier = models.CharField(max_length=MAPPING_FIELD_MAX_LENGTH, null=True, blank=True)
-    daily_pricing_model = models.CharField(max_length=MAPPING_FIELD_MAX_LENGTH, null=True, blank=True)
-    payment_size_detail = models.CharField(max_length=MAPPING_FIELD_MAX_LENGTH, null=True, blank=True)
-    default_price = models.CharField(max_length=MAPPING_FIELD_MAX_LENGTH, null=True, blank=True)
-    default_accrued = models.CharField(max_length=MAPPING_FIELD_MAX_LENGTH, null=True, blank=True)
-    user_text_1 = models.CharField(max_length=MAPPING_FIELD_MAX_LENGTH, null=True, blank=True)
-    user_text_2 = models.CharField(max_length=MAPPING_FIELD_MAX_LENGTH, null=True, blank=True)
-    user_text_3 = models.CharField(max_length=MAPPING_FIELD_MAX_LENGTH, null=True, blank=True)
-    price_download_mode = models.CharField(max_length=MAPPING_FIELD_MAX_LENGTH, null=True, blank=True)
+    instrument_type = models.CharField(max_length=255, blank=True, default='')
+    pricing_currency = models.CharField(max_length=255, blank=True, default='')
+    price_multiplier = models.CharField(max_length=255, blank=True, default='1.0')
+    accrued_currency = models.CharField(max_length=255, blank=True, default='')
+    accrued_multiplier = models.CharField(max_length=255, blank=True, default='1.0')
+    daily_pricing_model = models.CharField(max_length=255, blank=True, default='')
+    payment_size_detail = models.CharField(max_length=255, blank=True, default='')
+    default_price = models.CharField(max_length=255, blank=True, default='0.0')
+    default_accrued = models.CharField(max_length=255, blank=True, default='0.0')
+    user_text_1 = models.CharField(max_length=255, blank=True, default='')
+    user_text_2 = models.CharField(max_length=255, blank=True, default='')
+    user_text_3 = models.CharField(max_length=255, blank=True, default='')
+    price_download_mode = models.CharField(max_length=255, blank=True, default='')
 
     class Meta:
         index_together = (
@@ -65,65 +68,64 @@ class InstrumentMapping(models.Model):
             return None
         return name.strip()
 
-    @property
-    def mapping_fields(self):
-        f = set()
-
-        def add(n):
-            n = self.clean_mapping(n)
-            if n:
-                f.add(n)
-
-        for attr in self.BASIC_FIELDS:
-            add(getattr(self, attr))
-
-        for attr in self.attributes.all():
-            add(attr.name)
-
-        return f
+    # @property
+    # def mapping_fields(self):
+    #     f = set()
+    #
+    #     def add(n):
+    #         n = self.clean_mapping(n)
+    #         if n:
+    #             f.add(n)
+    #
+    #     for attr in self.BASIC_FIELDS:
+    #         add(getattr(self, attr))
+    #
+    #     for attr in self.attributes.all():
+    #         add(attr.name)
+    #
+    #     return f
 
     def create_instrument(self, values, save=True):
         instr = Instrument(master_user=self.master_user)
-        instr.instrument_type = self.master_user.instrument_types.first()
 
-        def get_val(n):
-            n = self.clean_mapping(n)
-            if n and n in values:
-                return values.get(n)
-            return None
-
-        def get_str(v):
-            return v
+        instr.instrument_type = self.master_user.instrument_type
+        instr.pricing_currency = self.master_user.currency
+        instr.accrued_currency = self.master_user.currency
 
         def get_date(v):
-            if v:
-                v = parser.parse(v)
-                if v:
+            if v is not None:
+                if isinstance(v, date):
+                    return v
+                elif isinstance(v, datetime):
                     return v.date()
+                else:
+                    v = parser.parse(v)
+                    if v:
+                        return v.date()
             return None
 
         def get_num(v):
-            if v:
+            if v is not None:
                 return float(v)
             return None
 
         for attr in self.BASIC_FIELDS:
-            n = getattr(self, attr)
-            if n:
-                v = get_val(n)
+            expr = getattr(self, attr)
+            if expr:
+                v = formula.safe_eval(expr, names=values)
                 if attr in ['pricing_currency', 'accrued_currency']:
                     if v:
                         v = self.master_user.currencies.get(user_code=v)
-                    setattr(instr, attr, v)
-                if attr in ['instrument_type']:
+                        setattr(instr, attr, v)
+                elif attr in ['instrument_type']:
                     if v:
                         v = self.master_user.instrument_types.get(user_code=v)
-                    setattr(instr, attr, v)
+                        setattr(instr, attr, v)
                 elif attr in ['price_multiplier', 'accrued_multiplier', 'default_price', 'default_accrued']:
                     v = get_num(v)
                     setattr(instr, attr, v)
                 else:
-                    v = get_str(v)
+                    v = six.text_type(v)
                     setattr(instr, attr, v)
 
         if save:
@@ -136,15 +138,18 @@ class InstrumentMapping(models.Model):
             iattr = InstrumentAttribute(content_object=instr, attribute_type=tattr)
             iattrs.append(iattr)
 
-            v = get_val(attr.name)
-            if tattr.value_type == AbstractAttributeType.STRING:
-                iattr.value_string = get_str(v)
-            elif tattr.value_type == AbstractAttributeType.NUMBER:
-                iattr.value_float = get_num(v)
-            elif tattr.value_type == AbstractAttributeType.DATE:
-                iattr.value_date = get_date(v)
-            elif tattr.value_type == AbstractAttributeType.CLASSIFIER:
-                pass
+            if attr.value:
+                v = formula.safe_eval(attr.value, names=values)
+                if tattr.value_type == AbstractAttributeType.STRING:
+                    iattr.value_string = six.text_type(v)
+                elif tattr.value_type == AbstractAttributeType.NUMBER:
+                    iattr.value_float = get_num(v)
+                elif tattr.value_type == AbstractAttributeType.DATE:
+                    iattr.value_date = get_date(v)
+                elif tattr.value_type == AbstractAttributeType.CLASSIFIER:
+                    v = six.text_type(v)
+                    v = tattr.classifiers.filter(name=v).first()
+                    iattr.classifier = v
 
             if save:
                 iattr.save()
@@ -156,11 +161,25 @@ class InstrumentMapping(models.Model):
         return instr
 
 
+class InstrumentMappingInput(models.Model):
+    mapping = models.ForeignKey(InstrumentMapping, related_name='inputs')
+    name = models.CharField(max_length=32)
+
+    class Meta:
+        unique_together = (
+            ('mapping', 'name')
+        )
+        ordering = ('name',)
+
+    def __str__(self):
+        return self.name
+
+
 @python_2_unicode_compatible
-class InstrumentAttributeMapping(models.Model):
+class InstrumentMappingAttribute(models.Model):
     mapping = models.ForeignKey(InstrumentMapping, related_name='attributes')
     attribute_type = models.ForeignKey('instruments.InstrumentAttributeType', null=True, blank=True)
-    name = models.CharField(max_length=MAPPING_FIELD_MAX_LENGTH)
+    value = models.CharField(max_length=255, blank=True, default='')
 
     class Meta:
         unique_together = (

@@ -6,7 +6,8 @@ from django.contrib import admin
 from kombu.transport.django.models import Queue, Message
 
 from poms.audit.admin import HistoricalAdmin
-from poms.integrations.models import InstrumentMapping, InstrumentAttributeMapping, BloombergTask, BloombergConfig
+from poms.integrations.models import InstrumentMapping, InstrumentMappingAttribute, BloombergTask, BloombergConfig, \
+    InstrumentMappingInput
 
 if settings.DEBUG and 'kombu.transport.django' in settings.INSTALLED_APPS:
     class QueueAdmin(admin.ModelAdmin):
@@ -39,15 +40,23 @@ if settings.DEBUG and 'kombu.transport.django' in settings.INSTALLED_APPS:
     admin.site.register(Message, MessageAdmin)
 
 
-class InstrumentAttributeMappingInline(admin.TabularInline):
-    model = InstrumentAttributeMapping
+class InstrumentMappingInputInline(admin.TabularInline):
+    model = InstrumentMappingInput
+    extra = 0
+
+
+class InstrumentMappingAttributeInline(admin.TabularInline):
+    model = InstrumentMappingAttribute
     extra = 0
     raw_id_fields = ['attribute_type']
 
 
 class InstrumentMappingAdmin(HistoricalAdmin):
     model = InstrumentMapping
-    inlines = [InstrumentAttributeMappingInline]
+    inlines = [
+        InstrumentMappingInputInline,
+        InstrumentMappingAttributeInline,
+    ]
     list_display = ['id', 'master_user', 'mapping_name']
     list_select_related = ['master_user', ]
     raw_id_fields = ['master_user', ]

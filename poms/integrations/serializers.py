@@ -1,5 +1,6 @@
 from __future__ import unicode_literals, print_function
 
+import json
 import uuid
 from datetime import timedelta
 from logging import getLogger
@@ -13,13 +14,14 @@ from rest_framework import serializers
 from rest_framework.exceptions import ValidationError
 
 from poms.common import formula
-from poms.common.fields import ISINField
+from poms.common.fields import ISINField, ExpressionField
 from poms.currencies.fields import CurrencyField
 from poms.currencies.serializers import CurrencyHistorySerializer
 from poms.instruments.fields import InstrumentTypeField, InstrumentAttributeTypeField, InstrumentField
 from poms.instruments.serializers import InstrumentAttributeSerializer, PriceHistorySerializer, InstrumentSerializer
 from poms.integrations.fields import InstrumentMappingField
-from poms.integrations.models import InstrumentMapping, InstrumentAttributeMapping, BloombergConfig, BloombergTask
+from poms.integrations.models import InstrumentMapping, InstrumentMappingInput, InstrumentMappingAttribute, \
+    BloombergConfig, BloombergTask
 from poms.integrations.providers.bloomberg import create_instrument_price_history, create_currency_price_history
 from poms.integrations.storage import FileImportStorage
 from poms.users.fields import MasterUserField, MemberField, HiddenMemberField
@@ -42,41 +44,96 @@ FILE_FORMAT_CHOICES = (
 bloomberg_cache = caches['bloomberg']
 
 
+class InstrumentMappingInputSerializer(serializers.ModelSerializer):
+    id = serializers.IntegerField()
+
+    class Meta:
+        model = InstrumentMappingInput
+        fields = ['id', 'name']
+
+
 class InstrumentAttributeMappingSerializer(serializers.ModelSerializer):
     id = serializers.IntegerField()
     attribute_type = InstrumentAttributeTypeField()
+    value = ExpressionField(allow_blank=True)
 
     class Meta:
-        model = InstrumentAttributeMapping
-        fields = ['id', 'attribute_type', 'name']
+        model = InstrumentMappingAttribute
+        fields = ['id', 'attribute_type', 'value']
 
 
 class InstrumentMappingSerializer(serializers.ModelSerializer):
     master_user = MasterUserField()
+
+    inputs = InstrumentMappingInputSerializer(many=True, read_only=False)
+
+    user_code = ExpressionField(allow_blank=True)
+    name = ExpressionField()
+    short_name = ExpressionField(allow_blank=True)
+    public_name = ExpressionField(allow_blank=True)
+    notes = ExpressionField(allow_blank=True)
+    instrument_type = ExpressionField(allow_blank=True)
+    pricing_currency = ExpressionField(allow_blank=True)
+    price_multiplier = ExpressionField(allow_blank=True)
+    accrued_currency = ExpressionField(allow_blank=True)
+    accrued_multiplier = ExpressionField(allow_blank=True)
+    daily_pricing_model = ExpressionField(allow_blank=True)
+    payment_size_detail = ExpressionField(allow_blank=True)
+    default_price = ExpressionField(allow_blank=True)
+    default_accrued = ExpressionField(allow_blank=True)
+    user_text_1 = ExpressionField(allow_blank=True)
+    user_text_2 = ExpressionField(allow_blank=True)
+    user_text_3 = ExpressionField(allow_blank=True)
+    price_download_mode = ExpressionField(allow_blank=True)
     attributes = InstrumentAttributeMappingSerializer(many=True, read_only=False)
 
     class Meta:
         model = InstrumentMapping
-        fields = ['url', 'id', 'master_user', 'mapping_name', 'user_code', 'name', 'short_name', 'public_name', 'notes',
-                  'instrument_type', 'pricing_currency', 'price_multiplier', 'accrued_currency', 'accrued_multiplier',
-                  'daily_pricing_model', 'payment_size_detail', 'default_price', 'default_accrued',
-                  'user_text_1', 'user_text_2', 'user_text_3', 'price_download_mode',
-                  'attributes']
+        fields = [
+            'url', 'id', 'master_user', 'mapping_name',
+            'inputs',
+            'user_code', 'name', 'short_name', 'public_name', 'notes',
+            'instrument_type', 'pricing_currency', 'price_multiplier', 'accrued_currency', 'accrued_multiplier',
+            'daily_pricing_model', 'payment_size_detail', 'default_price', 'default_accrued', 'user_text_1',
+            'user_text_2', 'user_text_3', 'price_download_mode', 'attributes'
+        ]
 
     def create(self, validated_data):
-        attributes = validated_data.pop('attributes', None) or tuple()
+        inputs = validated_data.pop('inputs', None) or []
+        attributes = validated_data.pop('attributes', None) or []
         instance = super(InstrumentMappingSerializer, self).create(validated_data)
+        self.save_inputs(instance, inputs)
         self.save_attributes(instance, attributes)
         return instance
 
     def update(self, instance, validated_data):
-        attributes = validated_data.pop('attributes', None) or tuple()
+        inputs = validated_data.pop('inputs', None) or []
+        attributes = validated_data.pop('attributes', None) or []
         instance = super(InstrumentMappingSerializer, self).update(instance, validated_data)
+        self.save_inputs(instance, inputs)
         self.save_attributes(instance, attributes)
         return instance
 
+    def save_inputs(self, instance, inputs):
+        pk_set = set()
+        for input_values in inputs:
+            input_id = input_values.pop('id', None)
+            input0 = None
+            if input_id:
+                try:
+                    input0 = instance.inputs.get(pk=input_id)
+                except ObjectDoesNotExist:
+                    pass
+            if input0 is None:
+                input0 = InstrumentMappingInput(mapping=instance)
+            for name, value in six.iteritems(input_values):
+                setattr(input0, name, value)
+            input0.save()
+            pk_set.add(input0.id)
+        instance.inputs.exclude(pk__in=pk_set).delete()
+
     def save_attributes(self, instance, attributes):
-        attrs = set()
+        pk_set = set()
         for attr_values in attributes:
             attr_id = attr_values.pop('id', None)
             attr = None
@@ -86,12 +143,12 @@ class InstrumentMappingSerializer(serializers.ModelSerializer):
                 except ObjectDoesNotExist:
                     pass
             if attr is None:
-                attr = InstrumentAttributeMapping(mapping=instance)
+                attr = InstrumentMappingAttribute(mapping=instance)
             for name, value in six.iteritems(attr_values):
                 setattr(attr, name, value)
             attr.save()
-            attrs.add(attr.id)
-        instance.attributes.exclude(pk__in=attrs).delete()
+            pk_set.add(attr.id)
+        instance.attributes.exclude(pk__in=pk_set).delete()
 
 
 class BloombergConfigSerializer(serializers.ModelSerializer):
@@ -99,41 +156,22 @@ class BloombergConfigSerializer(serializers.ModelSerializer):
     p12cert = serializers.FileField(allow_null=True, allow_empty_file=False, write_only=True)
     password = serializers.CharField(allow_null=True, allow_blank=True, write_only=True)
 
-    # cert = serializers.FileField(allow_null=True, allow_empty_file=False, write_only=True)
-    # key = serializers.FileField(allow_null=True, allow_empty_file=False, write_only=True)
-
     class Meta:
         model = BloombergConfig
-        fields = [
-            'url', 'id', 'master_user', 'p12cert', 'password',
-            # 'cert', 'key',
-            'has_p12cert', 'has_password',
-            # 'has_cert', 'has_key'
-        ]
+        fields = ['url', 'id', 'master_user', 'p12cert', 'password', 'has_p12cert', 'has_password', ]
 
 
 class BloombergTaskSerializer(serializers.ModelSerializer):
     master_user = MasterUserField()
     member = MemberField()
 
-    # kwargs = serializers.SerializerMethodField()
-    # result = serializers.SerializerMethodField()
+    # kwargs_json = serializers.JSONField(read_only=True)
+    # result_json = serializers.JSONField(read_only=True)
 
     class Meta:
         model = BloombergTask
         fields = ['url', 'id', 'master_user', 'member', 'action', 'created', 'modified', 'status',
-                  # 'kwargs', 'result'
-                  ]
-
-        # def get_kwargs(self, obj):
-        #     if obj.kwargs:
-        #         return json.loads(obj.kwargs)
-        #     return None
-        #
-        # def get_result(self, obj):
-        #     if obj.result:
-        #         return json.loads(obj.result)
-        #     return None
+                  'kwargs_object', 'result_object', ]
 
 
 class FileInstrumentImportSerializer(serializers.Serializer):
@@ -191,7 +229,7 @@ class FileInstrumentImportSerializer(serializers.Serializer):
 
 class BloombergInstrumentImportEntry(object):
     def __init__(self, master_user=None, member=None, mapping=None, mode=None, isin=None, task=None,
-                 instrument=None):
+                 task_result_overrides=None, instrument=None):
         self.master_user = master_user
         self.member = member
         self.mapping = mapping
@@ -199,6 +237,7 @@ class BloombergInstrumentImportEntry(object):
         self.isin = isin
         self.task = task
         self._task_object = None
+        self.task_result_overrides = task_result_overrides
         self.instrument = instrument
 
     @property
@@ -216,6 +255,8 @@ class BloombergInstrumentImportEntry(object):
 
 
 class ImportInstrumentSerializer(InstrumentSerializer):
+    attributes = serializers.SerializerMethodField()
+
     def __init__(self, *args, **kwargs):
         super(ImportInstrumentSerializer, self).__init__(*args, **kwargs)
         self.fields.pop('manual_pricing_formulas')
@@ -223,7 +264,7 @@ class ImportInstrumentSerializer(InstrumentSerializer):
         self.fields.pop('factor_schedules')
         self.fields.pop('event_schedules')
         self.fields.pop('tags')
-        self.fields.pop('attributes')
+        # self.fields.pop('attributes')
         self.fields.pop('granted_permissions')
         self.fields.pop('user_object_permissions', None)
         self.fields.pop('group_object_permissions', None)
@@ -242,28 +283,34 @@ class BloombergInstrumentImportSerializer(serializers.Serializer):
     mode = serializers.ChoiceField(choices=IMPORT_MODE_CHOICES)
 
     isin = ISINField(required=True, initial='XS1433454243 Corp')
-    # code = serializers.CharField(required=False, allow_null=True, allow_blank=True, initial='XS1433454243')
-    # industry = serializers.CharField(required=False, allow_null=True, allow_blank=True, initial='Corp')
 
     task = serializers.CharField(required=False, allow_blank=True, allow_null=True)
     task_object = BloombergTaskSerializer(read_only=True)
+    task_result_overrides = serializers.JSONField(default={})
+
     instrument = ImportInstrumentSerializer(read_only=True)
 
     def create(self, validated_data):
+        task_result_overrides = validated_data.get('task_result_overrides', None)
+        if task_result_overrides and (task_result_overrides.startswith('[') or task_result_overrides.startswith('{')):
+            task_result_overrides = json.loads(task_result_overrides)
         instance = BloombergInstrumentImportEntry(**validated_data)
         if instance.task:
             if instance.task_object.status == BloombergTask.STATUS_DONE:
                 values = instance.task_object.result_object
+                if task_result_overrides:
+                    values.update(task_result_overrides)
                 if instance.mode == IMPORT_PREVIEW:
                     instance.instrument = instance.mapping.create_instrument(values, save=False)
                 else:
                     instance.instrument = instance.mapping.create_instrument(values, save=True)
         else:
             from poms.integrations.tasks import bloomberg_instrument
+            fields = [i.name for i in instance.mapping.inputs.all()]
             instance.task = bloomberg_instrument(
                 master_user=instance.master_user, member=instance.member,
                 instrument=instance.to_request,
-                fields=list(instance.mapping.mapping_fields))
+                fields=fields)
 
         return instance
 
