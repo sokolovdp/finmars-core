@@ -1,11 +1,11 @@
 from __future__ import unicode_literals, print_function, division
 
 import ast
+import collections
 import datetime
-import json
+import random
 from collections import Callable
 
-import collections
 import simpleeval
 import six
 from babel import dates, numbers
@@ -17,7 +17,7 @@ class InvalidExpression(Exception):
         self.message = getattr(e, "message", str(e))
 
 
-def now():
+def now_date():
     from django.utils import timezone
     return timezone.now().date()
 
@@ -61,6 +61,10 @@ def format_currency(x, ccy, locale=None):
     return numbers.format_currency(x, ccy, locale=locale)
 
 
+def w_random():
+    return random.random()
+
+
 DEFAULT_FUNCTIONS = {
     "str": lambda x: force_text(x),
     "int": lambda x: int(x),
@@ -68,7 +72,7 @@ DEFAULT_FUNCTIONS = {
     "round": lambda x: round(x),
     "trunc": lambda x: int(x),
     "iff": lambda x, v1, v2: v1 if x else v2,
-    "now": now,
+    "now": now_date,
     "days": lambda x: datetime.timedelta(days=x),
     "add_days": lambda d, x: d + datetime.timedelta(days=x),
     "add_weeks": lambda d, x: d + datetime.timedelta(weeks=x),
@@ -76,6 +80,7 @@ DEFAULT_FUNCTIONS = {
     "format_date": format_date,
     "format_decimal": format_decimal,
     "format_currency": format_currency,
+    "random": w_random,
 }
 
 
