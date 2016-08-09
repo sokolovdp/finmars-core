@@ -4,8 +4,8 @@ import django_filters
 from django_filters import FilterSet
 
 from poms.audit.filters import ObjectHistoryContentTypeMultipleChoiceFilter
-from poms.audit.models import AuthLogEntry, ObjectHistoryEntry
-from poms.audit.serializers import AuthLogEntrySerializer, ObjectHistoryEntrySerializer
+from poms.audit.models import AuthLogEntry, ObjectHistory4Entry
+from poms.audit.serializers import AuthLogEntrySerializer, ObjectHistory4EntrySerializer
 from poms.common.filters import ModelWithPermissionMultipleChoiceFilter
 from poms.common.views import AbstractReadOnlyModelViewSet
 from poms.users.filters import OwnerByUserFilter
@@ -32,22 +32,34 @@ class AuthLogViewSet(AbstractReadOnlyModelViewSet):
     search_fields = ('user_ip', 'user_agent',)
 
 
-class ObjectHistoryEntryFilterSet(FilterSet):
+class ObjectHistory4EntryFilterSet(FilterSet):
     created = django_filters.DateFromToRangeFilter()
     member = ModelWithPermissionMultipleChoiceFilter(model=Member, field_name='username')
+    actor_content_type = ObjectHistoryContentTypeMultipleChoiceFilter()
     content_type = ObjectHistoryContentTypeMultipleChoiceFilter()
+    value_content_type = ObjectHistoryContentTypeMultipleChoiceFilter()
+    old_value_content_type = ObjectHistoryContentTypeMultipleChoiceFilter()
 
     class Meta:
-        model = ObjectHistoryEntry
-        fields = ('created', 'member', 'content_type', 'object_id')
+        model = ObjectHistory4Entry
+        fields = (
+            'created', 'member', 'group_id',
+            'actor_content_type', 'actor_object_id', 'actor_object_repr',
+            'action_flag',
+            'content_type', 'object_id', 'object_repr',
+            'value', 'value_content_type', 'value_object_id',
+            'old_value', 'old_value_content_type', 'old_value_object_id',
+        )
 
 
-class ObjectHistoryViewSet(AbstractReadOnlyModelViewSet):
-    queryset = ObjectHistoryEntry.objects.select_related('master_user', 'member', 'content_type')
-    serializer_class = ObjectHistoryEntrySerializer
+class ObjectHistory4ViewSet(AbstractReadOnlyModelViewSet):
+    queryset = ObjectHistory4Entry.objects.prefetch_related(
+        'master_user', 'member', 'actor_content_type', 'content_type', 'value_content_type', 'old_value_content_type',
+        'actor_content_object', 'content_object', 'value_content_object', 'old_value_content_object')
+    serializer_class = ObjectHistory4EntrySerializer
     permission_classes = AbstractReadOnlyModelViewSet.permission_classes + [
         SuperUserOnly,
     ]
-    filter_class = ObjectHistoryEntryFilterSet
-    ordering_fields = ('created', 'content_type',)
+    filter_class = ObjectHistory4EntryFilterSet
+    ordering_fields = ('created',)
     search_fields = ('created',)

@@ -35,3 +35,23 @@ class ObjectHistoryContentTypeMultipleChoiceFilter(django_filters.MultipleChoice
             ctype = ContentType.objects.get_by_natural_key(*ctype)
             cvalue.append(ctype.id)
         return super(ObjectHistoryContentTypeMultipleChoiceFilter, self).filter(qs, cvalue)
+
+
+class ObjectHistory4ContentTypeMultipleChoiceFilter(django_filters.MultipleChoiceFilter):
+    def __init__(self, *args, **kwargs):
+        queryset = ContentType.objects.all().order_by('app_label', 'model')
+        queryset = ObjectHistoryContentTypeFilter().filter_queryset(None, queryset, None)
+        kwargs['choices'] = [
+            ('%s.%s' % (c.app_label, c.model), c.model_class()._meta.verbose_name)
+            for c in queryset
+            ]
+        super(ObjectHistory4ContentTypeMultipleChoiceFilter, self).__init__(*args, **kwargs)
+
+    def filter(self, qs, value):
+        value = value or tuple()
+        cvalue = []
+        for v in value:
+            ctype = v.split('.')
+            ctype = ContentType.objects.get_by_natural_key(*ctype)
+            cvalue.append(ctype.id)
+        return super(ObjectHistory4ContentTypeMultipleChoiceFilter, self).filter(qs, cvalue)

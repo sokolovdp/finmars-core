@@ -2,7 +2,7 @@ from __future__ import unicode_literals
 
 from django.contrib import admin
 
-from poms.audit.models import AuthLogEntry, ObjectHistoryEntry
+from poms.audit.models import AuthLogEntry, ObjectHistory4Entry
 
 
 class AuthLogEntryAdmin(admin.ModelAdmin):
@@ -21,103 +21,50 @@ class AuthLogEntryAdmin(admin.ModelAdmin):
 admin.site.register(AuthLogEntry, AuthLogEntryAdmin)
 
 
-# class HistoricalAdmin(VersionAdmin):
-#     history_latest_first = True
-#     ignore_duplicate_revisions = True
-
 class HistoricalAdmin(admin.ModelAdmin):
-    history_latest_first = True
-    ignore_duplicate_revisions = True
+    # history_latest_first = True
+    # ignore_duplicate_revisions = True
+    pass
 
 
-# class HistoryEntryForm(forms.ModelForm):
-#     # id = forms.IntegerField(widget=forms.TextInput())
-#     master_user = forms.ModelChoiceField(queryset=MasterUser.objects)
-#     member = forms.ModelChoiceField(queryset=Member.objects)
-#     action_flag = forms.ChoiceField(choices=HistoryEntry.FLAG_CHOICES)
-#
-#     class Meta:
-#         model = HistoryEntry
-#         fields = [
-#             # 'id',
-#             'master_user',
-#             'member',
-#             # 'created',
-#             'action_flag',
-#             'content_type',
-#             'object_id',
-#             # 'content_object',
-#             'message',
-#             'json',
-#         ]
-#         readonly_fields = ('id', 'created', 'content_object')
-#         raw_id_fields = ('master_user', 'member')
-#
-#
-# class ContentTypeFilter(admin.SimpleListFilter):
-#     title = _('content type')
-#     parameter_name = 'content_type'
-#
-#     def lookups(self, request, model_admin):
-#         qs = ContentType.objects.order_by('app_label', 'model').exclude(model__endswith="objectpermission")
-#         # return [(ctype.id, '%s.%s' % (ctype.app_label, ctype.model)) for ctype in qs]
-#         return [(ctype.id, '%s.%s' % (ctype.app_label, ctype.model)) for ctype in qs]
-#
-#     def queryset(self, request, queryset):
-#         if self.value():
-#             return queryset.filter(content_type=int(self.value()))
-#         else:
-#             return queryset
+class ObjectHistory4EntryAdmin(admin.ModelAdmin):
+    model = ObjectHistory4Entry
+    list_display = ['id', 'created', 'master_user', 'member', 'group_id',
+                    'actor_content_type', 'actor_object_repr',
+                    'action_flag',
+                    'content_type', 'object_repr',
+                    'field_name', 'value', 'old_value']
 
-
-class ObjectHistoryEntryAdmin(admin.ModelAdmin):
-    model = ObjectHistoryEntry
-    # form = HistoryEntryForm
-    list_display = ('id', 'created', 'master_user', 'member', 'action_flag', 'content_type', 'object_id',
-                    'comment',)
-    list_select_related = ('master_user', 'member', 'content_type',)
-    fields = (
-        'id',
-        ('master_user', 'member'),
-        ('created', 'action_flag'),
-        ('content_type', 'object_id', 'content_object'),
-        'comment',
-        'message',
-    )
-    list_filter = (
-        'action_flag',
-        'created',
-        # ('master_user', admin.RelatedOnlyFieldListFilter),
-        # ('member', admin.RelatedOnlyFieldListFilter),
-        # ('content_type', admin.RelatedOnlyFieldListFilter),
-    )
+    list_filter = ['created', 'action_flag']
     date_hierarchy = 'created'
-    search_fields = ('object_id',)
-    readonly_fields = ('id', 'created', 'content_object', 'master_user', 'member', 'created', 'action_flag',
-                       'content_type', 'object_id', 'content_object', 'comment', 'message')
-    raw_id_fields = ('master_user', 'member',)
+    list_select_related = ['master_user', 'actor_content_type', 'content_type', 'value_content_type',
+                           'old_value_content_type']
+    raw_id_fields = ['master_user', 'member']
+    search_fields = ['group_id', 'actor_object_repr', 'object_repr', 'field_name', 'value', 'old_value']
+    ordering = ['-created']
 
-    # list_filter = ('action_flag', ContentTypeFilter)
-
-    def get_queryset(self, request):
-        qs = super(ObjectHistoryEntryAdmin, self).get_queryset(request)
-        qs = qs.prefetch_related('content_object')
-        return qs
+    readonly_fields = [
+        'id', 'master_user', 'member',
+        'group_id', 'created',
+        'actor_content_type', 'actor_object_id', 'actor_content_object', 'actor_object_repr',
+        'action_flag',
+        'content_type', 'object_id', 'content_object', 'object_repr',
+        'field_name',
+        'value', 'value_content_type', 'value_object_id', 'value_content_object',
+        'old_value', 'old_value_content_type', 'old_value_object_id', 'old_value_content_object',
+    ]
 
     def formfield_for_foreignkey(self, db_field, request=None, **kwargs):
         if db_field.name == 'content_type':
             qs = kwargs.get('queryset', db_field.remote_field.model.objects)
             kwargs['queryset'] = qs.order_by('model')
-        return super(ObjectHistoryEntryAdmin, self).formfield_for_foreignkey(db_field, request=request, **kwargs)
-
-        # def has_add_permission(self, request):
-        #     return False
-
-        # def has_delete_permission(self, request, obj=None):
-        #     return False
+        return super(ObjectHistory4EntryAdmin, self).formfield_for_foreignkey(db_field, request=request, **kwargs)
 
     def has_add_permission(self, request):
         return False
 
+    def save_model(self, request, obj, form, change):
+        pass
 
-admin.site.register(ObjectHistoryEntry, ObjectHistoryEntryAdmin)
+
+admin.site.register(ObjectHistory4Entry, ObjectHistory4EntryAdmin)

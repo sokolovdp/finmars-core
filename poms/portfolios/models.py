@@ -6,7 +6,6 @@ from django.utils.translation import ugettext_lazy as _
 from mptt.fields import TreeForeignKey
 from mptt.models import MPTTModel
 
-from poms.audit import history
 from poms.common.models import NamedModel
 from poms.obj_attrs.models import AbstractAttributeType, AbstractAttribute, AbstractAttributeTypeOption, \
     AbstractClassifier
@@ -118,15 +117,3 @@ class PortfolioAttribute(AbstractAttribute):
     class Meta(AbstractAttribute.Meta):
         verbose_name = _('portfolio attribute')
         verbose_name_plural = _('portfolio attributes')
-
-
-history.register(Portfolio, follow=['attributes', 'tags', 'user_object_permissions', 'group_object_permissions'])
-history.register(PortfolioUserObjectPermission)
-history.register(PortfolioGroupObjectPermission)
-history.register(PortfolioAttributeType,
-                 follow=['classifiers', 'options', 'user_object_permissions', 'group_object_permissions'])
-history.register(PortfolioAttributeTypeUserObjectPermission)
-history.register(PortfolioAttributeTypeGroupObjectPermission)
-history.register(PortfolioClassifier)
-history.register(PortfolioAttributeTypeOption)
-history.register(PortfolioAttribute)

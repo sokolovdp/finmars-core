@@ -110,7 +110,7 @@ router.register(r'chats/direct-message', chats.DirectMessageViewSet, 'chatdirect
 
 router.register(r'security/http-session', sessions.SessionViewSet)
 router.register(r'audit/auth-log', audit.AuthLogViewSet)
-router.register(r'audit/history', audit.ObjectHistoryViewSet)
+router.register(r'audit/history', audit.ObjectHistory4ViewSet)
 
 router.register(r'bloomberg/config', integrations.BloombergConfigViewSet)
 router.register(r'bloomberg/task', integrations.BloombergTaskViewSet)

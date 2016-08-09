@@ -6,7 +6,6 @@ from django.utils.translation import ugettext_lazy as _
 from mptt.fields import TreeForeignKey
 from mptt.models import MPTTModel
 
-from poms.audit import history
 from poms.common.models import NamedModel
 from poms.currencies.models import Currency
 from poms.obj_attrs.models import AbstractAttributeType, AbstractAttribute, AbstractAttributeTypeOption, \
@@ -179,18 +178,3 @@ class AccountAttribute(AbstractAttribute):
     class Meta(AbstractAttribute.Meta):
         verbose_name = _('account attribute')
         verbose_name_plural = _('account attributes')
-
-
-history.register(AccountType, follow=['tags', 'user_object_permissions', 'group_object_permissions'])
-history.register(AccountTypeUserObjectPermission)
-history.register(AccountTypeGroupObjectPermission)
-history.register(Account, follow=['attributes', 'tags', 'user_object_permissions', 'group_object_permissions'])
-history.register(AccountUserObjectPermission)
-history.register(AccountGroupObjectPermission)
-history.register(AccountAttributeType,
-                 follow=['classifiers', 'options', 'user_object_permissions', 'group_object_permissions'])
-history.register(AccountAttributeTypeUserObjectPermission)
-history.register(AccountAttributeTypeGroupObjectPermission)
-history.register(AccountClassifier)
-history.register(AccountAttributeTypeOption)
-history.register(AccountAttribute)

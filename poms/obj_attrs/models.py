@@ -136,7 +136,8 @@ class AbstractAttributeType(NamedModel):
         raise ValueError('Unknown value_type: %s' % self.value_type)
 
     def __str__(self):
-        return '%s (%s)' % (self.name, self.get_value_type_display())
+        # return '%s (%s)' % (self.name, self.get_value_type_display())
+        return '%s' % (self.name,)
 
 
 @python_2_unicode_compatible
@@ -172,7 +173,8 @@ class AbstractAttributeTypeOption(models.Model):
         ]
 
     def __str__(self):
-        return '%s - %s' % (self.member, self.attribute_type)
+        # return '%s - %s' % (self.member, self.attribute_type)
+        return '%s' % (self.attribute_type,)
 
 
 @python_2_unicode_compatible

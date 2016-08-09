@@ -8,7 +8,6 @@ from django.db import models
 from django.utils.encoding import python_2_unicode_compatible
 from django.utils.translation import ugettext_lazy as _
 
-from poms.audit import history
 from poms.common.models import TimeStampedModel
 from poms.instruments.models import Instrument, InstrumentAttribute
 from poms.integrations.storage import bloomberg_cert_storage
@@ -279,8 +278,3 @@ class BloombergTask(TimeStampedModel):
     @property
     def result_object(self):
         return json.loads(self.result)
-
-
-history.register(InstrumentMapping, follow=['attributes'])
-history.register(InstrumentAttributeMapping)
-history.register(BloombergConfig)

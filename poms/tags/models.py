@@ -4,7 +4,6 @@ from django.contrib.contenttypes.models import ContentType
 from django.db import models
 from django.utils.translation import ugettext_lazy as _
 
-from poms.audit import history
 from poms.common.models import NamedModel
 from poms.obj_perms.models import AbstractGroupObjectPermission, AbstractUserObjectPermission
 
@@ -27,11 +26,11 @@ class Tag(NamedModel):
                                          verbose_name=_('instruments'))
 
     counterparty_groups = models.ManyToManyField('counterparties.CounterpartyGroup', related_name='tags', blank=True,
-                                            verbose_name=_('counterparty groups'))
+                                                 verbose_name=_('counterparty groups'))
     counterparties = models.ManyToManyField('counterparties.Counterparty', related_name='tags', blank=True,
                                             verbose_name=_('counterparties'))
     responsible_groups = models.ManyToManyField('counterparties.ResponsibleGroup', related_name='tags', blank=True,
-                                          verbose_name=_('responsible groups'))
+                                                verbose_name=_('responsible groups'))
     responsibles = models.ManyToManyField('counterparties.Responsible', related_name='tags', blank=True,
                                           verbose_name=_('responsibles'))
 
@@ -88,8 +87,3 @@ class TagGroupObjectPermission(AbstractGroupObjectPermission):
     class Meta(AbstractGroupObjectPermission.Meta):
         verbose_name = _('tags - group permission')
         verbose_name_plural = _('tags - group permissions')
-
-
-history.register(Tag, follow=['user_object_permissions', 'group_object_permissions'])
-history.register(TagUserObjectPermission)
-history.register(TagGroupObjectPermission)

@@ -9,7 +9,6 @@ from django.utils.encoding import python_2_unicode_compatible
 from django.utils.text import Truncator
 from django.utils.translation import ugettext_lazy as _, get_language
 
-from poms.audit import history
 from poms.common.models import TimeStampedModel, NamedModel
 from poms.obj_perms.models import AbstractGroupObjectPermission, AbstractUserObjectPermission
 from poms.users.models import MasterUser, Member
@@ -164,14 +163,3 @@ class DirectMessage(TimeStampedModel):
     def timesince(self):
         locale = Locale.parse(get_language() or settings.LANGUAGE_CODE, sep='-')
         return format_timedelta(self.created - timezone.now(), add_direction=True, locale=locale)
-
-
-# register_model(Thread)
-
-# history.register(ThreadStatus)
-history.register(ThreadGroup, follow=['tags'])
-history.register(Thread, follow=['tags', 'user_object_permissions', 'group_object_permissions'])
-history.register(ThreadUserObjectPermission)
-history.register(ThreadGroupObjectPermission)
-history.register(Message)
-history.register(DirectMessage)

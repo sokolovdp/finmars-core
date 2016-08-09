@@ -8,7 +8,6 @@ from mptt.fields import TreeForeignKey
 from mptt.models import MPTTModel
 
 from poms.accounts.models import Account
-from poms.audit import history
 from poms.common.models import NamedModel, AbstractClassModel
 from poms.common.utils import date_now
 from poms.counterparties.models import Responsible, Counterparty
@@ -585,7 +584,7 @@ class Transaction(models.Model):
         ]
 
     def __str__(self):
-        return '%s #%s' % (self.master_user, self.id)
+        return 'Transaction #%s' % (self.transaction_code)
 
     def save(self, *args, **kwargs):
         self.transaction_date = min(self.accounting_date, self.cash_date)
@@ -700,30 +699,3 @@ class ExternalCashFlowStrategy(models.Model):
 
     def __str__(self):
         return '%s' % self.strategy
-
-
-history.register(TransactionClass)
-history.register(ActionClass)
-history.register(EventClass)
-history.register(NotificationClass)
-history.register(PeriodicityGroup)
-
-history.register(TransactionTypeGroup, follow=['user_object_permissions', 'group_object_permissions'])
-history.register(TransactionTypeGroupUserObjectPermission)
-history.register(TransactionTypeGroupGroupObjectPermission)
-history.register(TransactionType, follow=['inputs', 'actions', 'user_object_permissions', 'group_object_permissions'])
-history.register(TransactionTypeUserObjectPermission)
-history.register(TransactionTypeGroupObjectPermission)
-history.register(TransactionTypeInput)
-history.register(TransactionTypeAction)
-history.register(TransactionTypeActionInstrument)
-history.register(TransactionTypeActionTransaction)
-history.register(TransactionAttributeType,
-                 follow=['options', 'user_object_permissions', 'group_object_permissions'])
-history.register(TransactionAttributeTypeUserObjectPermission)
-history.register(TransactionAttributeTypeGroupObjectPermission)
-history.register(TransactionAttributeTypeOption)
-history.register(TransactionAttribute)
-history.register(Transaction, follow=['attributes'])
-history.register(ExternalCashFlow, follow=['strategies'])
-history.register(ExternalCashFlowStrategy, follow=['external_cash_flow'])

@@ -9,7 +9,6 @@ from django.dispatch import receiver
 from django.utils.encoding import python_2_unicode_compatible
 from django.utils.translation import ugettext_lazy as _
 
-from poms.audit import history
 from poms.common.models import NamedModel
 
 AVAILABLE_APPS = ['accounts', 'counterparties', 'currencies', 'instruments', 'portfolios', 'strategies', 'transactions',
@@ -91,9 +90,11 @@ class MasterUser(models.Model):
     account_type = models.ForeignKey('accounts.AccountType', null=True, blank=True, on_delete=models.PROTECT)
     account = models.ForeignKey('accounts.Account', null=True, blank=True, on_delete=models.PROTECT)
 
-    counterparty_group = models.ForeignKey('counterparties.CounterpartyGroup', null=True, blank=True, on_delete=models.PROTECT)
+    counterparty_group = models.ForeignKey('counterparties.CounterpartyGroup', null=True, blank=True,
+                                           on_delete=models.PROTECT)
     counterparty = models.ForeignKey('counterparties.Counterparty', null=True, blank=True, on_delete=models.PROTECT)
-    responsible_group = models.ForeignKey('counterparties.ResponsibleGroup', null=True, blank=True, on_delete=models.PROTECT)
+    responsible_group = models.ForeignKey('counterparties.ResponsibleGroup', null=True, blank=True,
+                                          on_delete=models.PROTECT)
     responsible = models.ForeignKey('counterparties.Responsible', null=True, blank=True, on_delete=models.PROTECT)
 
     instrument_type = models.ForeignKey('instruments.InstrumentType', null=True, blank=True, on_delete=models.PROTECT)
@@ -303,10 +304,3 @@ def update_member_when_user_updated(sender, instance=None, created=None, **kwarg
             last_name=instance.last_name,
             email=instance.email
         )
-
-
-history.register(MasterUser)
-history.register(Member)
-history.register(User, follow=['profile'], exclude=['password'])
-history.register(UserProfile, follow=['user'])
-history.register(Group)

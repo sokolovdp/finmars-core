@@ -6,10 +6,8 @@ from django.utils.translation import ugettext_lazy as _
 from mptt.fields import TreeForeignKey
 from mptt.models import MPTTModel
 
-from poms.audit import history
 from poms.common.models import NamedModel, AbstractClassModel
 from poms.common.utils import date_now
-from poms.currencies.models import Currency
 from poms.obj_attrs.models import AbstractAttributeType, AbstractAttribute, AbstractAttributeTypeOption, \
     AbstractClassifier
 from poms.obj_perms.models import AbstractGroupObjectPermission, AbstractUserObjectPermission
@@ -260,12 +258,12 @@ class Instrument(NamedModel):
                                         verbose_name=_('instrument type'))
     is_active = models.BooleanField(default=True,
                                     verbose_name=_('is active'))
-    pricing_currency = models.ForeignKey(Currency, on_delete=models.PROTECT,
+    pricing_currency = models.ForeignKey('currencies.Currency', on_delete=models.PROTECT,
                                          verbose_name=_('pricing currency'))
     price_multiplier = models.FloatField(default=1.,
                                          verbose_name=_('price multiplier'))
-    accrued_currency = models.ForeignKey(Currency, related_name='instruments_accrued', on_delete=models.PROTECT,
-                                         verbose_name=_('accrued currency'))
+    accrued_currency = models.ForeignKey('currencies.Currency', related_name='instruments_accrued',
+                                         on_delete=models.PROTECT, verbose_name=_('accrued currency'))
     accrued_multiplier = models.FloatField(default=1.,
                                            verbose_name=_('accrued multiplier'))
 
@@ -442,7 +440,8 @@ class PriceHistory(models.Model):
         )
 
     def __str__(self):
-        return '%s/%s@%s' % (self.instrument_id, self.pricing_policy_id, self.date,)
+        return '%s/%s@%s,%s,%s' % (
+            self.instrument, self.pricing_policy, self.date, self.principal_price, self.accrued_price)
 
 
 @python_2_unicode_compatible
@@ -511,31 +510,3 @@ class EventSchedule(models.Model):
 
     def __str__(self):
         return '%s' % (self.id,)
-
-
-history.register(InstrumentClass)
-history.register(DailyPricingModel)
-history.register(AccrualCalculationModel)
-history.register(PaymentSizeDetail)
-history.register(PeriodicityPeriod)
-history.register(CostMethod)
-history.register(InstrumentType, follow=['tags', 'user_object_permissions', 'group_object_permissions'])
-history.register(InstrumentTypeUserObjectPermission)
-history.register(InstrumentTypeGroupObjectPermission)
-history.register(Instrument, follow=['manual_pricing_formulas', 'accrual_calculation_schedules', 'factor_schedules',
-                                     'event_schedules', 'attributes', 'tags', 'user_object_permissions',
-                                     'group_object_permissions'])
-history.register(InstrumentUserObjectPermission)
-history.register(InstrumentGroupObjectPermission)
-history.register(InstrumentAttributeType,
-                 follow=['classifiers', 'options', 'user_object_permissions', 'group_object_permissions'])
-history.register(InstrumentAttributeTypeUserObjectPermission)
-history.register(InstrumentAttributeTypeGroupObjectPermission)
-history.register(InstrumentClassifier)
-history.register(InstrumentAttributeTypeOption)
-history.register(InstrumentAttribute)
-history.register(ManualPricingFormula)
-history.register(PriceHistory)
-history.register(AccrualCalculationSchedule)
-history.register(InstrumentFactorSchedule)
-history.register(EventSchedule)

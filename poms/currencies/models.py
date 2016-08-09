@@ -5,9 +5,9 @@ from django.db import models
 from django.utils.encoding import python_2_unicode_compatible
 from django.utils.translation import ugettext_lazy as _
 
-from poms.audit import history
 from poms.common.models import NamedModel
 from poms.common.utils import date_now
+from poms.instruments.models import PriceDownloadMode
 from poms.obj_perms.models import AbstractUserObjectPermission, AbstractGroupObjectPermission
 from poms.users.models import MasterUser
 
@@ -16,7 +16,7 @@ from poms.users.models import MasterUser
 class Currency(NamedModel):
     master_user = models.ForeignKey(MasterUser, related_name='currencies',
                                     verbose_name=_('master user'))
-    history_download_mode = models.ForeignKey('instruments.PriceDownloadMode', null=True, blank=True)
+    history_download_mode = models.ForeignKey(PriceDownloadMode, default=PriceDownloadMode.MANUAL)
 
     class Meta(NamedModel.Meta):
         verbose_name = _('currency')
@@ -79,10 +79,4 @@ class CurrencyHistory(models.Model):
         ordering = ['-date']
 
     def __str__(self):
-        return '%s/%s@%s' % (self.currency_id, self.pricing_policy_id, self.date,)
-
-
-history.register(Currency, follow=['user_object_permissions', 'group_object_permissions'])
-history.register(CurrencyUserObjectPermission)
-history.register(CurrencyGroupObjectPermission)
-history.register(CurrencyHistory)
+        return '%s/%s@%s,%s' % (self.currency, self.pricing_policy, self.date, self.fx_rate)
