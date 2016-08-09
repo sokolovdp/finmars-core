@@ -35,6 +35,30 @@ class ThreadGroup(models.Model):
         return self.name
 
 
+class ThreadGroupUserObjectPermission(AbstractUserObjectPermission):
+    content_object = models.ForeignKey(
+        ThreadGroup,
+        related_name='user_object_permissions',
+        verbose_name=_('content object')
+    )
+
+    class Meta(AbstractUserObjectPermission.Meta):
+        verbose_name = _('thread groups - user permission')
+        verbose_name_plural = _('thread groups - user permissions')
+
+
+class ThreadGroupGroupObjectPermission(AbstractGroupObjectPermission):
+    content_object = models.ForeignKey(
+        ThreadGroup,
+        related_name='group_object_permissions',
+        verbose_name=_('content object')
+    )
+
+    class Meta(AbstractGroupObjectPermission.Meta):
+        verbose_name = _('thread groups - group permission')
+        verbose_name_plural = _('thread groups - group permissions')
+
+
 @python_2_unicode_compatible
 class Thread(TimeStampedModel):
     master_user = models.ForeignKey(MasterUser, related_name='chat_threads')
