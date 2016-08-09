@@ -178,7 +178,7 @@ class ClassifierListSerializer(serializers.ListSerializer):
         return tree
 
 
-class AbstractClassifierSerializer(ModelWithUserCodeSerializer, serializers.ModelSerializer):
+class AbstractClassifierSerializer(serializers.ModelSerializer):
     id = serializers.IntegerField(read_only=False, required=False, allow_null=True)
     children = ClassifierRecursiveField(source='get_children', many=True, required=False, allow_null=True)
 
@@ -259,19 +259,19 @@ class AbstractClassifierSerializer(ModelWithUserCodeSerializer, serializers.Mode
             node.get_family().exclude(pk__in=processed).delete()
 
 
-class AbstractClassifierNodeSerializer(AbstractPomsSerializer, ModelWithUserCodeSerializer):
+class AbstractClassifierNodeSerializer(AbstractPomsSerializer):
     parent = serializers.PrimaryKeyRelatedField(read_only=True)
-    children = serializers.PrimaryKeyRelatedField(many=True, read_only=True)
+    # children = serializers.PrimaryKeyRelatedField(many=True, read_only=True)
 
     class Meta(AbstractPomsSerializer.Meta):
         fields = AbstractPomsSerializer.Meta.fields + [
             # 'user_code',
             'name',
-            'short_name',
-            'notes',
+            # 'short_name',
+            # 'notes',
             'level',
             'parent',
-            'children'
+            # 'children'
         ]
         # extra_kwargs = {'user_code': {'required': False}}
 
