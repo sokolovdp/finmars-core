@@ -108,7 +108,7 @@ class InstrumentMapping(models.Model):
             expr = getattr(self, attr)
             if expr:
                 try:
-                    v = formula.safe_eval(attr, names=values)
+                    v = formula.safe_eval(expr, names=values)
                 except formula.InvalidExpression:
                     _l.debug('Invalid expression "%s"', attr, exc_info=True)
                     v = None
