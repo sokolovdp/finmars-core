@@ -49,27 +49,30 @@ def activate():
 
 def deactivate():
     if getattr(_state, "active", True) and _state.entries4:
-        group_id = 0
-        actor_content_type = ContentType.objects.get_for_model(_state.actor_content_object)
-        actor_object_id = _state.actor_content_object_id
-        actor_object_repr = six.text_type(_state.actor_content_object)
-        user = get_request().user
+        if _state.actor_content_object:
+            group_id = 0
+            actor_content_type = ContentType.objects.get_for_model(_state.actor_content_object)
+            actor_object_id = _state.actor_content_object_id
+            actor_object_repr = six.text_type(_state.actor_content_object)
+            user = get_request().user
 
-        for e in _state.entries4:
-            e.master_user = user.master_user
-            e.member = user.member
-            e.group_id = group_id
-
-            e.actor_content_type = actor_content_type
-            e.actor_object_id = actor_object_id
-            e.actor_object_repr = actor_object_repr
-
-            e.save()
-
-            if group_id == 0:
-                group_id = e.id
+            for e in _state.entries4:
+                e.master_user = user.master_user
+                e.member = user.member
                 e.group_id = group_id
-                e.save(update_fields=['group_id'])
+
+                e.actor_content_type = actor_content_type
+                e.actor_object_id = actor_object_id
+                e.actor_object_repr = actor_object_repr
+
+                e.save()
+
+                if group_id == 0:
+                    group_id = e.id
+                    e.group_id = group_id
+                    e.save(update_fields=['group_id'])
+        else:
+            _l.debug('actor_content_object is not defined (maybe registration)')
 
     if hasattr(_state, "active"):
         del _state.active
