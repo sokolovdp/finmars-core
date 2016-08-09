@@ -1,4 +1,3 @@
-import six
 from django.utils.text import Truncator
 from mptt.utils import get_cached_trees
 from rest_framework import serializers
@@ -263,39 +262,13 @@ class AbstractClassifierSerializer(serializers.ModelSerializer):
 class AbstractClassifierNodeSerializer(AbstractPomsSerializer):
     attribute_type = serializers.PrimaryKeyRelatedField(read_only=True)
     parent = serializers.PrimaryKeyRelatedField(read_only=True)
-    # children = serializers.PrimaryKeyRelatedField(many=True, read_only=True)
-    # path = serializers.SerializerMethodField()
 
     class Meta(AbstractPomsSerializer.Meta):
         fields = AbstractPomsSerializer.Meta.fields + [
-            # 'user_code',
             'attribute_type',
             'name',
-            # 'short_name',
-            # 'notes',
-            'level',
             'parent',
+            'level',
+            'tree_id',
             # 'children',
         ]
-        # extra_kwargs = {'user_code': {'required': False}}
-
-        # def to_representation(self, instance):
-        #     ret = super(ClassifierNodeSerializerBase, self).to_representation(instance)
-        #     if not instance.is_root_node():
-        #         ret.pop("granted_permissions", None)
-        #         ret.pop("user_object_permissions", None)
-        #         ret.pop("group_object_permissions", None)
-        #     return ret
-
-        # def save_object_permission(self, instance, user_object_permissions, group_object_permissions, created):
-        #     if instance.is_root_node():
-        #         super(ClassifierNodeSerializerBase, self).save_object_permission(instance, user_object_permissions,
-        #                                                                          group_object_permissions, created)
-
-    # def get_path(self, obj):
-    #     path = [
-    #         six.text_type(obj.attribute_type)
-    #     ]
-    #     for c in obj.get_ancestors(include_self=True):
-    #         path.append(six.text_type(c))
-    #     return ' / '.join(path)
