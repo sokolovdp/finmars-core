@@ -21,9 +21,13 @@ _history_model_list = None
 
 
 def _accept(model):
+    from poms.common.models import AbstractClassModel
+
     app_label = getattr(model._meta, 'app_label', None)
     if app_label not in ['users', 'chats', 'tags', 'accounts', 'counterparties', 'currencies', 'instruments',
                          'portfolios', 'strategies', 'transactions', 'integrations', ]:
+        return False
+    if isinstance(model, AbstractClassModel):
         return False
     return True
 
@@ -122,13 +126,15 @@ class enable(ContextDecorator):
 
 
 def _is_enabled(obj):
-    # return is_active() and reversion.is_registered(obj)
     from poms.audit.models import ObjectHistory4Entry
+
+    if not is_active():
+        return False
     if isinstance(obj, (ObjectHistory4Entry)):
         return False
     if isinstance(obj, get_history_model_list()):
         return True
-    return is_active()
+    return True
 
 
 def _is_disabled(obj):
