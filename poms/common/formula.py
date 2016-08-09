@@ -8,7 +8,8 @@ from collections import Callable
 
 import simpleeval
 import six
-from babel import dates, numbers
+from babel import numbers
+from dateutil import parser
 
 
 class InvalidExpression(Exception):
@@ -39,9 +40,19 @@ def format_date(x, fmt=None, locale=None):
         from django.utils import translation
         if locale is None:
             locale = translation.get_language()
-        return dates.format_date(x, fmt, locale=locale)
+        # return dates.format_date(x, fmt, locale=locale)
+        return x.strftime(fmt)
     else:
         return six.text_type(x)
+
+
+def parse_date(x, fmt=None, locale=None):
+    if fmt is None:
+        return parser.parse(x).date()
+    from django.utils import translation
+    if locale is None:
+        locale = translation.get_language()
+    return datetime.datetime.strptime(x, fmt).date()
 
 
 def format_decimal(x, fmt=None, locale=None):
@@ -78,6 +89,7 @@ DEFAULT_FUNCTIONS = {
     "add_weeks": lambda d, x: d + datetime.timedelta(weeks=x),
     "add_workdays": add_workdays,
     "format_date": format_date,
+    "parse_date": parse_date,
     "format_decimal": format_decimal,
     "format_currency": format_currency,
     "random": w_random,

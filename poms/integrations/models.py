@@ -3,6 +3,7 @@ from __future__ import unicode_literals, print_function
 import json
 import uuid
 from datetime import date, datetime
+from logging import getLogger
 
 import six
 from dateutil import parser
@@ -16,7 +17,7 @@ from poms.instruments.models import Instrument, InstrumentAttribute
 from poms.integrations.storage import bloomberg_cert_storage
 from poms.obj_attrs.models import AbstractAttributeType
 
-MAPPING_FIELD_MAX_LENGTH = 32
+_l = getLogger('poms.integrations')
 
 
 @python_2_unicode_compatible
@@ -31,10 +32,9 @@ class InstrumentMapping(models.Model):
 
     user_code = models.CharField(max_length=255, blank=True, default='')
     name = models.CharField(max_length=255)
-    short_name = models.CharField(max_length=MAPPING_FIELD_MAX_LENGTH, null=True, blank=True)
-    public_name = models.CharField(max_length=MAPPING_FIELD_MAX_LENGTH, null=True, blank=True)
-    notes = models.CharField(max_length=MAPPING_FIELD_MAX_LENGTH, null=True, blank=True)
-
+    short_name = models.CharField(max_length=255, blank=True, default='')
+    public_name = models.CharField(max_length=255, blank=True, default='')
+    notes = models.CharField(max_length=255, blank=True, default='')
     instrument_type = models.CharField(max_length=255, blank=True, default='')
     pricing_currency = models.CharField(max_length=255, blank=True, default='')
     price_multiplier = models.CharField(max_length=255, blank=True, default='1.0')
@@ -104,15 +104,14 @@ class InstrumentMapping(models.Model):
                         return v.date()
             return None
 
-        def get_num(v):
-            if v is not None:
-                return float(v)
-            return None
-
         for attr in self.BASIC_FIELDS:
             expr = getattr(self, attr)
             if expr:
-                v = formula.safe_eval(expr, names=values)
+                try:
+                    v = formula.safe_eval(attr, names=values)
+                except formula.InvalidExpression:
+                    _l.debug('Invalid expression "%s"', attr, exc_info=True)
+                    v = None
                 if attr in ['pricing_currency', 'accrued_currency']:
                     if v:
                         v = self.master_user.currencies.get(user_code=v)
@@ -122,11 +121,13 @@ class InstrumentMapping(models.Model):
                         v = self.master_user.instrument_types.get(user_code=v)
                         setattr(instr, attr, v)
                 elif attr in ['price_multiplier', 'accrued_multiplier', 'default_price', 'default_accrued']:
-                    v = get_num(v)
-                    setattr(instr, attr, v)
+                    if v:
+                        v = float(v)
+                        setattr(instr, attr, v)
                 else:
-                    v = six.text_type(v)
-                    setattr(instr, attr, v)
+                    if v:
+                        v = six.text_type(v)
+                        setattr(instr, attr, v)
 
         if save:
             instr.save()
@@ -139,11 +140,15 @@ class InstrumentMapping(models.Model):
             iattrs.append(iattr)
 
             if attr.value:
-                v = formula.safe_eval(attr.value, names=values)
+                try:
+                    v = formula.safe_eval(attr.value, names=values)
+                except formula.InvalidExpression as e:
+                    _l.debug('Invalid expression "%s"', attr.value, exc_info=True)
+                    v = None
                 if tattr.value_type == AbstractAttributeType.STRING:
                     iattr.value_string = six.text_type(v)
                 elif tattr.value_type == AbstractAttributeType.NUMBER:
-                    iattr.value_float = get_num(v)
+                    iattr.value_float = float(v)
                 elif tattr.value_type == AbstractAttributeType.DATE:
                     iattr.value_date = get_date(v)
                 elif tattr.value_type == AbstractAttributeType.CLASSIFIER:
@@ -292,8 +297,12 @@ class BloombergTask(TimeStampedModel):
 
     @property
     def kwargs_object(self):
+        if self.kwargs is None:
+            return None
         return json.loads(self.kwargs)
 
     @property
     def result_object(self):
+        if self.result is None:
+            return None
         return json.loads(self.result)
