@@ -2,8 +2,9 @@ from __future__ import unicode_literals
 
 from django.contrib import admin
 
-from poms.accounts.models import Account, AccountType, AccountAttributeType
+from poms.accounts.models import Account, AccountType, AccountAttributeType, AccountClassifier
 from poms.audit.admin import HistoricalAdmin
+from poms.common.admin import ClassifierAdmin
 from poms.obj_attrs.admin import AbstractAttributeTypeAdmin, AbstractAttributeInline, \
     AbstractAttributeTypeClassifierInline, AbstractAttributeTypeOptionInline
 from poms.obj_perms.admin import UserObjectPermissionInline, \
@@ -24,14 +25,6 @@ class AccountTypeAdmin(HistoricalAdmin):
 admin.site.register(AccountType, AccountTypeAdmin)
 
 
-# admin.site.register(AccountTypeUserObjectPermission, UserObjectPermissionAdmin)
-# admin.site.register(AccountTypeGroupObjectPermission, GroupObjectPermissionAdmin)
-
-
-# class AccountAttributeInline(AbstractAttributeInline):
-#     model = AccountAttribute
-
-
 class AccountAdmin(HistoricalAdmin):
     model = Account
     list_display = ['id', 'master_user', 'name', 'type']
@@ -47,14 +40,6 @@ class AccountAdmin(HistoricalAdmin):
 admin.site.register(Account, AccountAdmin)
 
 
-# admin.site.register(AccountUserObjectPermission, UserObjectPermissionAdmin)
-# admin.site.register(AccountGroupObjectPermission, GroupObjectPermissionAdmin)
-
-
-# class AccountAttributeTypeClassifierInline(AbstractAttributeTypeClassifierInline):
-#     model = AccountClassifier
-
-
 class AccountAttributeTypeAdmin(AbstractAttributeTypeAdmin):
     inlines = [
         AbstractAttributeTypeClassifierInline,
@@ -65,10 +50,5 @@ class AccountAttributeTypeAdmin(AbstractAttributeTypeAdmin):
 
 
 admin.site.register(AccountAttributeType, AccountAttributeTypeAdmin)
-# admin.site.register(AccountAttributeTypeOption, AbstractAttributeTypeOptionAdmin)
-# admin.site.register(AccountAttributeTypeUserObjectPermission, UserObjectPermissionAdmin)
-# admin.site.register(AccountAttributeTypeGroupObjectPermission, GroupObjectPermissionAdmin)
 
-# admin.site.register(AccountClassifier, ClassifierAdmin)
-# admin.site.register(AccountClassifierUserObjectPermission, UserObjectPermissionAdmin)
-# admin.site.register(AccountClassifierGroupObjectPermission, GroupObjectPermissionAdmin)
+admin.site.register(AccountClassifier, ClassifierAdmin)

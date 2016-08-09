@@ -5,7 +5,7 @@ from django.contrib.contenttypes.models import ContentType
 
 from poms.accounts.models import Account
 from poms.audit.admin import HistoricalAdmin
-from poms.common.admin import ClassModelAdmin
+from poms.common.admin import ClassModelAdmin, ClassifierAdmin
 from poms.counterparties.models import Responsible, Counterparty
 from poms.currencies.models import Currency
 from poms.instruments.models import Instrument, PaymentSizeDetail, DailyPricingModel, InstrumentType
@@ -16,10 +16,9 @@ from poms.obj_perms.admin import UserObjectPermissionInline, \
 from poms.portfolios.models import Portfolio
 from poms.strategies.models import Strategy3, Strategy2, Strategy1
 from poms.transactions.models import TransactionClass, Transaction, TransactionType, TransactionTypeInput, \
-    TransactionAttributeType, ActionClass, EventToHandle, \
-    ExternalCashFlow, ExternalCashFlowStrategy, NotificationClass, EventClass, PeriodicityGroup, \
-    TransactionTypeActionInstrument, \
-    TransactionTypeActionTransaction, ComplexTransaction, TransactionTypeGroup
+    TransactionAttributeType, ActionClass, EventToHandle, ExternalCashFlow, ExternalCashFlowStrategy, NotificationClass, \
+    EventClass, PeriodicityGroup, TransactionTypeActionInstrument, TransactionTypeActionTransaction, ComplexTransaction, \
+    TransactionTypeGroup, TransactionClassifier
 
 admin.site.register(TransactionClass, ClassModelAdmin)
 admin.site.register(ActionClass, ClassModelAdmin)
@@ -39,10 +38,6 @@ class TransactionTypeGroupAdmin(HistoricalAdmin):
 
 
 admin.site.register(TransactionTypeGroup, TransactionTypeGroupAdmin)
-
-
-# admin.site.register(TransactionTypeGroupUserObjectPermission, UserObjectPermissionAdmin)
-# admin.site.register(TransactionTypeGroupGroupObjectPermission, GroupObjectPermissionAdmin)
 
 
 class TransactionTypeInputInline(admin.TabularInline):
@@ -282,10 +277,6 @@ class TransactionTypeAdmin(HistoricalAdmin):
 admin.site.register(TransactionType, TransactionTypeAdmin)
 
 
-# admin.site.register(TransactionTypeUserObjectPermission, UserObjectPermissionAdmin)
-# admin.site.register(TransactionTypeGroupObjectPermission, GroupObjectPermissionAdmin)
-
-
 class ComplexTransactionAdmin(HistoricalAdmin):
     model = ComplexTransaction
     list_select_related = ['transaction_type', 'transaction_type__master_user']
@@ -386,6 +377,8 @@ class TransactionAttributeTypeAdmin(AbstractAttributeTypeAdmin):
 
 
 admin.site.register(TransactionAttributeType, TransactionAttributeTypeAdmin)
+
+admin.site.register(TransactionClassifier, ClassifierAdmin)
 
 
 # admin.site.register(TransactionAttributeTypeOption, AbstractAttributeTypeOptionAdmin)

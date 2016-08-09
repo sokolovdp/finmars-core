@@ -3,12 +3,12 @@ from __future__ import unicode_literals
 from django.contrib import admin
 
 from poms.audit.admin import HistoricalAdmin
-from poms.common.admin import ClassModelAdmin
+from poms.common.admin import ClassModelAdmin, ClassifierAdmin
 from poms.instruments.models import Instrument, PriceHistory, InstrumentClass, InstrumentType, \
     DailyPricingModel, AccrualCalculationModel, PeriodicityPeriod, CostMethod, \
     ManualPricingFormula, AccrualCalculationSchedule, InstrumentAttributeType, InstrumentAttribute, \
     InstrumentFactorSchedule, EventSchedule, \
-    PricingPolicy, PaymentSizeDetail
+    PricingPolicy, PaymentSizeDetail, InstrumentClassifier
 from poms.obj_attrs.admin import AbstractAttributeTypeAdmin, AbstractAttributeInline, \
     AbstractAttributeTypeClassifierInline, AbstractAttributeTypeOptionInline
 from poms.obj_perms.admin import UserObjectPermissionInline, \
@@ -45,14 +45,6 @@ class InstrumentTypeAdmin(HistoricalAdmin):
 
 
 admin.site.register(InstrumentType, InstrumentTypeAdmin)
-
-
-# admin.site.register(InstrumentTypeUserObjectPermission, UserObjectPermissionAdmin)
-# admin.site.register(InstrumentTypeGroupObjectPermission, GroupObjectPermissionAdmin)
-
-
-# admin.site.register(InstrumentClassifierUserObjectPermission, UserObjectPermissionAdmin)
-# admin.site.register(InstrumentClassifierGroupObjectPermission, GroupObjectPermissionAdmin)
 
 
 class InstrumentAttributeInline(AbstractAttributeInline):
@@ -98,10 +90,6 @@ class InstrumentAdmin(HistoricalAdmin):
 admin.site.register(Instrument, InstrumentAdmin)
 
 
-# admin.site.register(InstrumentUserObjectPermission, UserObjectPermissionAdmin)
-# admin.site.register(InstrumentGroupObjectPermission, GroupObjectPermissionAdmin)
-
-
 class PriceHistoryAdmin(HistoricalAdmin):
     model = PriceHistory
     list_display = ['id', 'date', 'instrument', 'principal_price', 'accrued_price']
@@ -113,12 +101,7 @@ class PriceHistoryAdmin(HistoricalAdmin):
 admin.site.register(PriceHistory, PriceHistoryAdmin)
 
 
-# class InstrumentAttributeTypeClassifierInline(AbstractAttributeTypeClassifierInline):
-#     model = InstrumentClassifier
-
-
 class InstrumentAttributeTypeAdmin(AbstractAttributeTypeAdmin):
-    # inlines = [InstrumentAttributeTypeClassifierInline]
     inlines = [
         AbstractAttributeTypeClassifierInline,
         AbstractAttributeTypeOptionInline,
@@ -128,7 +111,5 @@ class InstrumentAttributeTypeAdmin(AbstractAttributeTypeAdmin):
 
 
 admin.site.register(InstrumentAttributeType, InstrumentAttributeTypeAdmin)
-# admin.site.register(InstrumentAttributeTypeOption, AbstractAttributeTypeOptionAdmin)
-# admin.site.register(InstrumentAttributeTypeUserObjectPermission, UserObjectPermissionAdmin)
-# admin.site.register(InstrumentAttributeTypeGroupObjectPermission, GroupObjectPermissionAdmin)
-# admin.site.register(InstrumentClassifier, ClassifierAdmin)
+
+admin.site.register(InstrumentClassifier, ClassifierAdmin)
