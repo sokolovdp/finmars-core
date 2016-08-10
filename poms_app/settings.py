@@ -80,6 +80,7 @@ INSTALLED_APPS = [
     # 'django_otp.plugins.otp_totp',
     # 'django_otp.plugins.otp_email',
     # 'django_otp.plugins.otp_static',
+    # 'two_factor',
 ]
 
 # if DEBUG:
@@ -103,6 +104,7 @@ MIDDLEWARE_CLASSES = [
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.auth.middleware.SessionAuthenticationMiddleware',
+    # 'django_otp.middleware.OTPMiddleware',
     # 'poms.users.middleware.AuthenticationMiddleware',
     # 'poms.users.middleware.TimezoneMiddleware',
     # 'poms.users.middleware.LocaleMiddleware',
@@ -231,7 +233,7 @@ CACHES = {
     'default': {
         "BACKEND": "django_redis.cache.RedisCache",
         "LOCATION": "redis://%s/2" % REDIS_HOST,
-        'KEY_PREFIX': 'fmbe_default',
+        'KEY_PREFIX': 'default',
         'TIMEOUT': 300,
         'OPTIONS': {
             'SERIALIZER': CACHE_SERIALIZER,
@@ -243,7 +245,7 @@ CACHES = {
     'http_cache': {
         "BACKEND": "django_redis.cache.RedisCache",
         "LOCATION": "redis://%s/3" % REDIS_HOST,
-        'KEY_PREFIX': 'fmbe_http_session',
+        'KEY_PREFIX': 'http_cache',
         'TIMEOUT': 3600,
         'OPTIONS': {
             'SERIALIZER': CACHE_SERIALIZER,
@@ -255,7 +257,7 @@ CACHES = {
     'http_session': {
         "BACKEND": "django_redis.cache.RedisCache",
         "LOCATION": "redis://%s/3" % REDIS_HOST,
-        'KEY_PREFIX': 'fmbe_http_session',
+        'KEY_PREFIX': 'http_session',
         'TIMEOUT': 3600,
         'OPTIONS': {
             'SERIALIZER': CACHE_SERIALIZER,
@@ -267,7 +269,7 @@ CACHES = {
     'throttling': {
         "BACKEND": "django_redis.cache.RedisCache",
         "LOCATION": "redis://%s/4" % REDIS_HOST,
-        'KEY_PREFIX': 'fmbe_throttling',
+        'KEY_PREFIX': 'throttling',
         'TIMEOUT': 60,
         'OPTIONS': {
             'SERIALIZER': CACHE_SERIALIZER,
@@ -279,11 +281,11 @@ CACHES = {
     'bloomberg': {
         "BACKEND": "django_redis.cache.RedisCache",
         "LOCATION": "redis://%s/4" % REDIS_HOST,
-        'KEY_PREFIX': 'fmbe_bloomberg',
+        'KEY_PREFIX': 'bloomberg',
         'TIMEOUT': 3600,
         'OPTIONS': {
             'SERIALIZER': CACHE_SERIALIZER,
-            'COMPRESSOR': CACHE_COMPRESSOR,
+            'COMPRESSOR': 'django_redis.compressors.zlib.ZlibCompressor',
             "SOCKET_CONNECT_TIMEOUT": CACHE_SOCKET_CONNECT_TIMEOUT,
             "SOCKET_TIMEOUT": CACHE_SOCKET_TIMEOUT,
         }
@@ -427,7 +429,6 @@ if DEBUG:
     SERVER_EMAIL = '"DEBUG-ADMIN: FinMars" <no-reply@finmars.com>'
     ADMINS = MANAGERS = [
         ['ailyukhin', 'ailyukhin@vitaminsoft.ru'],
-        ['alyakhov', 'alyakhov@vitaminsoft.ru'],
     ]
     EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
 else:
@@ -448,17 +449,9 @@ GEOIP_PATH = os.path.join(BASE_DIR, 'poms')
 GEOIP_COUNTRY = "GeoLite2-Country.mmdb"
 GEOIP_CITY = "GeoLite2-City.mmdb"
 
-MEDIA_ROOT = os.path.join(BASE_DIR, 'tmp', 'media')
 MEDIA_URL = '/api/media/'
+MEDIA_ROOT = os.path.join(BASE_DIR, 'tmp', 'media')
 MEDIA_SERVE = True
-
-FILE_IMPORT_STORAGE = {
-    'BACKEND': 'django.core.files.storage.FileSystemStorage',
-    'KWARGS': {
-        'location': os.path.join(BASE_DIR, 'tmp', 'import'),
-        'base_url': '/api/import/'
-    }
-}
 
 # CELERY ------------------------------------------------
 
@@ -466,17 +459,9 @@ FILE_IMPORT_STORAGE = {
 BROKER_URL = 'redis://%s/1' % REDIS_HOST
 CELERY_RESULT_BACKEND = 'redis://%s/1' % REDIS_HOST
 
-# import djcelery
-# djcelery.setup_loader()
-#
-# CELERY_RESULT_BACKEND = 'djcelery.backends.database:DatabaseBackend'
-# CELERYBEAT_SCHEDULER = 'djcelery.schedulers.DatabaseScheduler'
-# KOMBU_POLLING_INTERVAL = 1
-
 CELERY_ALWAYS_EAGER = True
 CELERY_EAGER_PROPAGATES_EXCEPTIONS = True
 
-CELERY_DEFAULT_QUEUE = 'poms_celery'
 CELERY_ENABLE_UTC = True
 CELERY_TIMEZONE = 'UTC'
 CELERY_ACCEPT_CONTENT = ['json']
@@ -493,14 +478,32 @@ CELERY_TRACK_STARTED = True
 CELERY_SEND_EVENTS = True
 CELERY_SEND_TASK_SENT_EVENT = True
 
-CELERYBEAT_SCHEDULE = {
-    'backend.bloomberg_price_history_auto': {
-        'task': 'backend.bloomberg_price_history_auto',
-        'schedule': 10,
-    },
+if DEBUG:
+    CELERYBEAT_SCHEDULE = {
+        'backend.bloomberg_price_history_auto': {
+            'task': 'backend.bloomberg_price_history_auto',
+            'schedule': 10,
+        },
+    }
+else:
+    CELERYBEAT_SCHEDULE = {
+    }
+
+
+# FILE_IMPORT ------------------------------------------------
+
+
+FILE_IMPORT_STORAGE = {
+    'BACKEND': 'django.core.files.storage.FileSystemStorage',
+    'KWARGS': {
+        'location': os.path.join(BASE_DIR, 'tmp', 'import'),
+        'base_url': '/api/import/'
+    }
 }
 
+
 # BLOOMBERG ------------------------------------------------
+
 
 BLOOMBERG_SANDBOX = True
 BLOOMBERG_WSDL = 'https://service.bloomberg.com/assets/dl/dlws.wsdl'
@@ -513,3 +516,7 @@ BLOOMBERG_CERT_STORAGE = {
         'base_url': '/api/bloomberg/'
     }
 }
+
+
+LOGIN_URL = 'two_factor:login'
+LOGIN_REDIRECT_URL = 'two_factor:profile'
