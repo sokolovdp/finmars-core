@@ -29,6 +29,7 @@ class MasterUserManager(models.Manager):
         from poms.instruments.models import InstrumentClass, InstrumentType
         from poms.strategies.models import Strategy1Group, Strategy1Subgroup, Strategy1, Strategy2Group, \
             Strategy2Subgroup, Strategy2, Strategy3Group, Strategy3Subgroup, Strategy3
+        from poms.chats.models import ThreadGroup
         from poms.obj_perms.utils import assign_perms2, get_change_perms
 
         obj = MasterUser(**kwargs)
@@ -64,7 +65,9 @@ class MasterUserManager(models.Manager):
         strategy3_subgroup = Strategy3Subgroup.objects.create(master_user=obj, group=strategy3_group, name='-')
         strategy3 = Strategy3.objects.create(master_user=obj, subgroup=strategy3_subgroup, name='-')
 
-        member = Member.objects.create(user=user, master_user=obj, is_owner=True, is_admin=True)
+        thread_group = ThreadGroup.objects.create(master_user=obj, name='-')
+
+        Member.objects.create(user=user, master_user=obj, is_owner=True, is_admin=True)
         group = Group.objects.create(master_user=obj, name='%s' % _('Default'))
 
         obj.currency = ccy
@@ -90,7 +93,7 @@ class MasterUserManager(models.Manager):
 
         for c in [account_type, account, counterparty_group, counterparty, responsible_group, responsible, portfolio,
                   instrument_type, strategy1_group, strategy1_subgroup, strategy1, strategy2_group, strategy2_subgroup,
-                  strategy2, strategy3_group, strategy3_subgroup, strategy3]:
+                  strategy2, strategy3_group, strategy3_subgroup, strategy3, thread_group]:
             for p in get_change_perms(c):
                 assign_perms2(c, group_perms=[{'group': group, 'permission': p}])
 
@@ -143,6 +146,9 @@ class MasterUser(models.Model):
                                            on_delete=models.PROTECT, related_name='master_user_strategy3_subgroup')
     strategy3 = models.ForeignKey('strategies.Strategy3', null=True, blank=True, on_delete=models.PROTECT,
                                   related_name='master_user_strategy3')
+
+    thread_group = models.ForeignKey('chats.ThreadGroup', null=True, blank=True, on_delete=models.PROTECT,
+                                     related_name='master_user_thread_group')
 
     objects = MasterUserManager()
 

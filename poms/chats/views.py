@@ -1,9 +1,10 @@
 from __future__ import unicode_literals
 
 import django_filters
+from django.db.models import Count, Prefetch
 from django.utils import timezone
 from rest_framework.decorators import detail_route
-from rest_framework.filters import OrderingFilter, SearchFilter, DjangoFilterBackend, FilterSet
+from rest_framework.filters import FilterSet
 from rest_framework.response import Response
 
 from poms.chats.filters import MessagePermissionFilter, DirectMessagePermissionFilter
@@ -16,7 +17,7 @@ from poms.obj_perms.views import AbstractWithObjectPermissionViewSet
 from poms.tags.filters import TagFilterBackend, TagFilter
 from poms.users.filters import OwnerByMasterUserFilter
 from poms.users.models import Member
-from poms.users.permissions import SuperUserOrReadOnly
+from poms.users.permissions import SuperUserOrReadOnly, SuperUserOnly
 
 
 class ThreadGroupFilterSet(FilterSet):
@@ -49,8 +50,8 @@ class ThreadFilterSet(FilterSet):
     closed = django_filters.DateFromToRangeFilter()
     # status = ModelMultipleChoiceFilter(model=ThreadStatus)
     is_closed = django_filters.MethodFilter(action='filter_is_closed')
-    tag = TagFilter(model=Thread)
     thread_group = ModelWithPermissionMultipleChoiceFilter(model=ThreadGroup)
+    tag = TagFilter(model=Thread)
 
     class Meta:
         model = Thread
@@ -67,7 +68,15 @@ class ThreadFilterSet(FilterSet):
 
 
 class ThreadViewSet(AbstractWithObjectPermissionViewSet):
-    queryset = Thread.objects
+    queryset = Thread.objects.select_related('thread_group'). \
+        annotate(messages_count=Count('messages')). \
+        prefetch_related(Prefetch("messages", to_attr="messages_last",
+                                  queryset=Message.objects.select_related('sender').filter(
+                                      pk__in=Message.objects.distinct('thread').
+                                          order_by('thread_id', '-created', '-id').
+                                          values_list('id', flat=True))
+                                  ))
+
     serializer_class = ThreadSerializer
     filter_backends = AbstractWithObjectPermissionViewSet.filter_backends + [
         OwnerByMasterUserFilter,
@@ -77,7 +86,8 @@ class ThreadViewSet(AbstractWithObjectPermissionViewSet):
     ordering_fields = ['id', 'created', 'subject']
     search_fields = ['subject']
 
-    @detail_route(url_path='close')
+    @detail_route(url_path='close',
+                  permission_classes=AbstractWithObjectPermissionViewSet.permission_classes + [SuperUserOnly, ])
     def close(self, request, pk=None):
         instance = self.get_object()
         instance.closed = timezone.now()
@@ -85,7 +95,8 @@ class ThreadViewSet(AbstractWithObjectPermissionViewSet):
         serializer = self.get_serializer(instance)
         return Response(serializer.data)
 
-    @detail_route(url_path='reopen')
+    @detail_route(url_path='reopen',
+                  permission_classes=AbstractWithObjectPermissionViewSet.permission_classes + [SuperUserOnly, ])
     def reopen(self, request, pk=None):
         instance = self.get_object()
         instance.closed = None
@@ -96,7 +107,7 @@ class ThreadViewSet(AbstractWithObjectPermissionViewSet):
 
 class MessageFilterSet(FilterSet):
     thread = ModelWithPermissionMultipleChoiceFilter(model=Thread, field_name='subject')
-    created = django_filters.DateFilter()
+    created = django_filters.DateRangeFilter()
     sender = ModelMultipleChoiceFilter(model=Member, field_name='username')
 
     class Meta:

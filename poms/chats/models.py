@@ -16,11 +16,8 @@ from poms.users.models import MasterUser, Member
 
 @python_2_unicode_compatible
 class ThreadGroup(models.Model):
-    master_user = models.ForeignKey(MasterUser, related_name='chat_threadgroups')
-    name = models.CharField(
-        max_length=255,
-        verbose_name=_('name')
-    )
+    master_user = models.ForeignKey(MasterUser, related_name='chat_thread_groups')
+    name = models.CharField(max_length=255, verbose_name=_('name'))
 
     class Meta(TimeStampedModel.Meta):
         verbose_name = _('thread group')
@@ -36,11 +33,8 @@ class ThreadGroup(models.Model):
 
 
 class ThreadGroupUserObjectPermission(AbstractUserObjectPermission):
-    content_object = models.ForeignKey(
-        ThreadGroup,
-        related_name='user_object_permissions',
-        verbose_name=_('content object')
-    )
+    content_object = models.ForeignKey(ThreadGroup, related_name='user_object_permissions',
+                                       verbose_name=_('content object'))
 
     class Meta(AbstractUserObjectPermission.Meta):
         verbose_name = _('thread groups - user permission')
@@ -48,11 +42,8 @@ class ThreadGroupUserObjectPermission(AbstractUserObjectPermission):
 
 
 class ThreadGroupGroupObjectPermission(AbstractGroupObjectPermission):
-    content_object = models.ForeignKey(
-        ThreadGroup,
-        related_name='group_object_permissions',
-        verbose_name=_('content object')
-    )
+    content_object = models.ForeignKey(ThreadGroup, related_name='group_object_permissions',
+                                       verbose_name=_('content object'))
 
     class Meta(AbstractGroupObjectPermission.Meta):
         verbose_name = _('thread groups - group permission')
@@ -83,11 +74,7 @@ class Thread(TimeStampedModel):
 
 
 class ThreadUserObjectPermission(AbstractUserObjectPermission):
-    content_object = models.ForeignKey(
-        Thread,
-        related_name='user_object_permissions',
-        verbose_name=_('content object')
-    )
+    content_object = models.ForeignKey(Thread, related_name='user_object_permissions', verbose_name=_('content object'))
 
     class Meta(AbstractUserObjectPermission.Meta):
         verbose_name = _('threads - user permission')
@@ -95,11 +82,8 @@ class ThreadUserObjectPermission(AbstractUserObjectPermission):
 
 
 class ThreadGroupObjectPermission(AbstractGroupObjectPermission):
-    content_object = models.ForeignKey(
-        Thread,
-        related_name='group_object_permissions',
-        verbose_name=_('content object')
-    )
+    content_object = models.ForeignKey(Thread, related_name='group_object_permissions',
+                                       verbose_name=_('content object'))
 
     class Meta(AbstractGroupObjectPermission.Meta):
         verbose_name = _('threads - group permission')
@@ -108,22 +92,16 @@ class ThreadGroupObjectPermission(AbstractGroupObjectPermission):
 
 @python_2_unicode_compatible
 class Message(TimeStampedModel):
-    thread = models.ForeignKey(
-        Thread,
-        verbose_name=_('thread')
-    )
-    sender = models.ForeignKey(
-        Member,
-        related_name='chat_sent_messages',
-        verbose_name=_('sender')
-    )
-    text = models.TextField(
-        verbose_name=_('text')
-    )
+    thread = models.ForeignKey(Thread, related_name='messages', verbose_name=_('thread'))
+    sender = models.ForeignKey(Member, related_name='chat_sent_messages', verbose_name=_('sender'))
+    text = models.TextField(verbose_name=_('text'))
 
     class Meta(TimeStampedModel.Meta):
         verbose_name = _('message')
         verbose_name_plural = _('messages')
+        index_together = [
+            ['thread', 'created']
+        ]
 
     def __str__(self):
         return self.short_text
@@ -154,23 +132,11 @@ class DirectMessage(TimeStampedModel):
     #     related_name='chat_sent_direct_messages',
     #     verbose_name=_('sender')
     # )
-    recipient = models.ForeignKey(
-        Member,
-        # null=True,
-        # blank=True,
-        related_name='chat_received_direct_messages',
-        verbose_name=_('recipient')
-    )
-    sender = models.ForeignKey(
-        Member,
-        # null=True,
-        # blank=True,
-        related_name='chat_sent_direct_messages',
-        verbose_name=_('sender')
-    )
-    text = models.TextField(
-        verbose_name=_('text')
-    )
+    recipient = models.ForeignKey(Member, on_delete=models.PROTECT, related_name='chat_received_direct_messages',
+                                  verbose_name=_('recipient'))
+    sender = models.ForeignKey(Member, on_delete=models.PROTECT, related_name='chat_sent_direct_messages',
+                               verbose_name=_('sender'))
+    text = models.TextField(verbose_name=_('text'))
 
     class Meta(TimeStampedModel.Meta):
         verbose_name = _('direct message')

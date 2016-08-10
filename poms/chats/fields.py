@@ -4,6 +4,15 @@ from poms.obj_perms.fields import PrimaryKeyRelatedFilteredWithObjectPermissionF
 from poms.users.filters import OwnerByMasterUserFilter
 
 
+class ThreadGroupDefault(object):
+    def set_context(self, serializer_field):
+        request = serializer_field.context['request']
+        self._master_user = request.user.master_user
+
+    def __call__(self):
+        return self._master_user.thread_group
+
+
 class ThreadGroupField(PrimaryKeyRelatedFilteredField):
     queryset = ThreadGroup.objects
     filter_backends = [

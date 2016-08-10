@@ -10,6 +10,7 @@ from rest_framework import serializers
 from rest_framework.authtoken.serializers import AuthTokenSerializer
 
 from poms.accounts.fields import AccountTypeField, AccountField
+from poms.chats.fields import ThreadGroupField
 from poms.common.fields import DateTimeTzAwareField
 from poms.counterparties.fields import CounterpartyField, ResponsibleField, CounterpartyGroupField, \
     ResponsibleGroupField
@@ -183,6 +184,7 @@ class MasterUserSerializer(serializers.ModelSerializer):
     strategy3_group = Strategy3GroupField()
     strategy3_subgroup = Strategy3SubgroupField()
     strategy3 = Strategy3Field()
+    thread_group = ThreadGroupField()
 
     class Meta:
         model = MasterUser
@@ -191,6 +193,7 @@ class MasterUserSerializer(serializers.ModelSerializer):
                   'strategy1_group', 'strategy1_subgroup', 'strategy1',
                   'strategy2_group', 'strategy2_subgroup', 'strategy2',
                   'strategy3_group', 'strategy3_subgroup', 'strategy3',
+                  'thread_group',
                   ]
 
     def get_is_current(self, obj):
