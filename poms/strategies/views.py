@@ -32,6 +32,7 @@ class Strategy1GroupViewSet(AbstractWithObjectPermissionViewSet):
         TagFilterBackend,
     ]
     filter_class = Strategy1GroupFilterSet
+    search_fields = ['user_code', 'name', 'short_name', ]
 
 
 class Strategy1SubgroupFilterSet(FilterSet):
@@ -55,6 +56,7 @@ class Strategy1SubgroupViewSet(AbstractWithObjectPermissionViewSet):
         TagFilterBackend,
     ]
     filter_class = Strategy1SubgroupFilterSet
+    search_fields = ['user_code', 'name', 'short_name', ]
 
 
 class Strategy1FilterSet(FilterSet):
@@ -79,6 +81,7 @@ class Strategy1ViewSet(AbstractWithObjectPermissionViewSet):
         TagFilterBackend,
     ]
     filter_class = Strategy1FilterSet
+    search_fields = ['user_code', 'name', 'short_name', ]
 
 
 # 2
