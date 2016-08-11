@@ -242,18 +242,18 @@ CACHES = {
             "SOCKET_TIMEOUT": CACHE_SOCKET_TIMEOUT,
         }
     },
-    'http_cache': {
-        "BACKEND": "django_redis.cache.RedisCache",
-        "LOCATION": "redis://%s/3" % REDIS_HOST,
-        'KEY_PREFIX': 'http_cache',
-        'TIMEOUT': 3600,
-        'OPTIONS': {
-            'SERIALIZER': CACHE_SERIALIZER,
-            'COMPRESSOR': CACHE_COMPRESSOR,
-            "SOCKET_CONNECT_TIMEOUT": CACHE_SOCKET_CONNECT_TIMEOUT,
-            "SOCKET_TIMEOUT": CACHE_SOCKET_TIMEOUT,
-        }
-    },
+    # 'http_cache': {
+    #     "BACKEND": "django_redis.cache.RedisCache",
+    #     "LOCATION": "redis://%s/3" % REDIS_HOST,
+    #     'KEY_PREFIX': 'http_cache',
+    #     'TIMEOUT': 3600,
+    #     'OPTIONS': {
+    #         'SERIALIZER': CACHE_SERIALIZER,
+    #         'COMPRESSOR': CACHE_COMPRESSOR,
+    #         "SOCKET_CONNECT_TIMEOUT": CACHE_SOCKET_CONNECT_TIMEOUT,
+    #         "SOCKET_TIMEOUT": CACHE_SOCKET_TIMEOUT,
+    #     }
+    # },
     'http_session': {
         "BACKEND": "django_redis.cache.RedisCache",
         "LOCATION": "redis://%s/3" % REDIS_HOST,
@@ -285,7 +285,7 @@ CACHES = {
         'TIMEOUT': 3600,
         'OPTIONS': {
             'SERIALIZER': CACHE_SERIALIZER,
-            'COMPRESSOR': 'django_redis.compressors.zlib.ZlibCompressor',
+            'COMPRESSOR': CACHE_COMPRESSOR,
             "SOCKET_CONNECT_TIMEOUT": CACHE_SOCKET_CONNECT_TIMEOUT,
             "SOCKET_TIMEOUT": CACHE_SOCKET_TIMEOUT,
         }

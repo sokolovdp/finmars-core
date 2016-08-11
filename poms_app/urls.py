@@ -36,3 +36,8 @@ if getattr(settings, 'MEDIA_SERVE', False):
     urlpatterns += [
         url(r'^media/(?P<path>.*)$', static.serve, {'document_root': settings.MEDIA_ROOT})
     ]
+
+if 'two_factor' in settings.INSTALLED_APPS:
+    urlpatterns += [
+        url(r'admin/', include('two_factor.urls', 'two_factor')),
+    ]
