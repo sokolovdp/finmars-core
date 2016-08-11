@@ -41,7 +41,7 @@ FILE_FORMAT_CHOICES = (
     (FILE_FORMAT_CSV, 'CSV'),
 )
 
-bloomberg_cache = caches['bloomberg']
+# bloomberg_cache = caches['bloomberg']
 
 
 class InstrumentMappingInputSerializer(serializers.ModelSerializer):

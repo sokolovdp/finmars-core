@@ -278,18 +278,18 @@ CACHES = {
             "SOCKET_TIMEOUT": CACHE_SOCKET_TIMEOUT,
         }
     },
-    'bloomberg': {
-        "BACKEND": "django_redis.cache.RedisCache",
-        "LOCATION": "redis://%s/4" % REDIS_HOST,
-        'KEY_PREFIX': 'bloomberg',
-        'TIMEOUT': 3600,
-        'OPTIONS': {
-            'SERIALIZER': CACHE_SERIALIZER,
-            'COMPRESSOR': CACHE_COMPRESSOR,
-            "SOCKET_CONNECT_TIMEOUT": CACHE_SOCKET_CONNECT_TIMEOUT,
-            "SOCKET_TIMEOUT": CACHE_SOCKET_TIMEOUT,
-        }
-    },
+    # 'bloomberg': {
+    #     "BACKEND": "django_redis.cache.RedisCache",
+    #     "LOCATION": "redis://%s/4" % REDIS_HOST,
+    #     'KEY_PREFIX': 'bloomberg',
+    #     'TIMEOUT': 3600,
+    #     'OPTIONS': {
+    #         'SERIALIZER': CACHE_SERIALIZER,
+    #         'COMPRESSOR': CACHE_COMPRESSOR,
+    #         "SOCKET_CONNECT_TIMEOUT": CACHE_SOCKET_CONNECT_TIMEOUT,
+    #         "SOCKET_TIMEOUT": CACHE_SOCKET_TIMEOUT,
+    #     }
+    # },
 }
 
 # SESSION_SERIALIZER = 'django.contrib.sessions.serializers.JSONSerializer'
