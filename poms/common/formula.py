@@ -11,16 +11,13 @@ import six
 from babel import numbers
 from dateutil import parser
 
+from poms.common.utils import date_now
+
 
 class InvalidExpression(Exception):
     def __init__(self, e):
         super(InvalidExpression, self).__init__(e)
         self.message = getattr(e, "message", str(e))
-
-
-def now_date():
-    from django.utils import timezone
-    return timezone.now().date()
 
 
 def add_workdays(d, x, only_workdays=True):
@@ -83,7 +80,7 @@ DEFAULT_FUNCTIONS = {
     "round": lambda x: round(x),
     "trunc": lambda x: int(x),
     "iff": lambda x, v1, v2: v1 if x else v2,
-    "now": now_date,
+    "now": date_now,
     "days": lambda x: datetime.timedelta(days=x),
     "add_days": lambda d, x: d + datetime.timedelta(days=x),
     "add_weeks": lambda d, x: d + datetime.timedelta(weeks=x),
