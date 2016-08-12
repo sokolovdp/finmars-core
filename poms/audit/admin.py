@@ -35,7 +35,7 @@ class ObjectHistory4EntryAdmin(admin.ModelAdmin):
                     'content_type', 'object_repr',
                     'field_name', 'value', 'old_value']
 
-    list_filter = ['created', 'action_flag']
+    list_filter = ['created', 'action_flag', 'actor_content_type']
     date_hierarchy = 'created'
     list_select_related = ['master_user', 'actor_content_type', 'content_type', 'value_content_type',
                            'old_value_content_type']
