@@ -243,8 +243,7 @@ class TransactionTypeAdmin(HistoricalAdmin):
     model = TransactionType
     list_display = ['id', 'name', 'master_user']
     list_select_related = ['master_user']
-    raw_id_fields = ['master_user', 'group']
-    filter_horizontal = ['instrument_types']
+    raw_id_fields = ['master_user', 'group', 'instrument_types']
     inlines = [
         TransactionTypeInputInline,
         TransactionTypeActionInstrumentInline,

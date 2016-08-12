@@ -21,6 +21,7 @@ class ClassifierAdmin(HistoricalAdmin, TreeModelAdmin):
     list_display = ['id', 'master_user', 'attribute_type', 'name', 'parent', ]
     list_select_related = ['attribute_type', 'attribute_type__master_user', 'parent']
     raw_id_fields = ['attribute_type', 'parent']
+    search_fields = ['attribute_type__name']
 
     def master_user(self, obj):
         return obj.attribute_type.master_user

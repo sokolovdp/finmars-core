@@ -36,6 +36,7 @@ class MasterUserAdmin(HistoricalAdmin):
                      'strategy1_group', 'strategy1_subgroup', 'strategy1',
                      'strategy2_group', 'strategy2_subgroup', 'strategy2',
                      'strategy3_group', 'strategy3_subgroup', 'strategy3',
+                     'thread_group',
                      ]
 
 
