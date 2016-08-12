@@ -1,9 +1,26 @@
 from __future__ import unicode_literals, print_function
 
 from django.apps import AppConfig
+from django.db import DEFAULT_DB_ALIAS
 from django.utils.translation import ugettext_lazy as _
 
 
 class IntegrationsConfig(AppConfig):
     name = 'poms.integrations'
     verbose_name = _('Integrations')
+
+    def ready(self):
+        from django.db.models.signals import post_migrate
+        post_migrate.connect(self.update_transaction_classes)
+        pass
+
+    def update_transaction_classes(self, app_config, verbosity=2, using=DEFAULT_DB_ALIAS, **kwargs):
+        from poms.common.utils import db_class_check_data
+        from .models import ProviderClass, FactorScheduleMethod, AccrualCalculationScheduleMethod
+
+        if not isinstance(app_config, IntegrationsConfig):
+            return
+
+        db_class_check_data(ProviderClass, verbosity, using)
+        db_class_check_data(FactorScheduleMethod, verbosity, using)
+        db_class_check_data(AccrualCalculationScheduleMethod, verbosity, using)

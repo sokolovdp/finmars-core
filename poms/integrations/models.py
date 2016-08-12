@@ -12,7 +12,7 @@ from django.utils.encoding import python_2_unicode_compatible
 from django.utils.translation import ugettext_lazy as _
 
 from poms.common import formula
-from poms.common.models import TimeStampedModel
+from poms.common.models import TimeStampedModel, AbstractClassModel
 from poms.instruments.models import Instrument, InstrumentAttribute
 from poms.integrations.storage import bloomberg_cert_storage
 from poms.obj_attrs.models import AbstractAttributeType
@@ -20,16 +20,65 @@ from poms.obj_attrs.models import AbstractAttributeType
 _l = getLogger('poms.integrations')
 
 
+class ProviderClass(AbstractClassModel):
+    BLOOMBERG = 1
+    CLASSES = (
+        (BLOOMBERG, _("Bloomberg")),
+    )
+
+    class Meta(AbstractClassModel.Meta):
+        pass
+
+
+class FactorScheduleMethod(AbstractClassModel):
+    DISABLED = 1
+    DEFAULT_BLOOMBERG = 100
+    CLASSES = (
+        (DISABLED, _("-")),
+        (DEFAULT_BLOOMBERG, _("Default bloomberg method")),
+    )
+
+    MAP = {
+        ProviderClass.BLOOMBERG: [DISABLED, DEFAULT_BLOOMBERG, ]
+    }
+
+    class Meta(AbstractClassModel.Meta):
+        pass
+
+
+class AccrualCalculationScheduleMethod(AbstractClassModel):
+    DISABLED = 1
+    DEFAULT_BLOOMBERG = 100
+    CLASSES = (
+        (DISABLED, _("-")),
+        (DEFAULT_BLOOMBERG, _("Default bloomberg method")),
+    )
+
+    MAP = {
+        ProviderClass.BLOOMBERG: [DISABLED, DEFAULT_BLOOMBERG, ]
+    }
+
+    class Meta(AbstractClassModel.Meta):
+        pass
+
+
 @python_2_unicode_compatible
 class InstrumentMapping(models.Model):
-    BASIC_FIELDS = ['user_code', 'name', 'short_name', 'public_name', 'notes', 'instrument_type',
+    BASIC_FIELDS = ['isin', 'user_code', 'name', 'short_name', 'public_name', 'notes', 'instrument_type',
                     'pricing_currency', 'price_multiplier', 'accrued_currency', 'accrued_multiplier',
-                    'daily_pricing_model', 'payment_size_detail', 'default_price', 'default_accrued',
-                    'user_text_1', 'user_text_2', 'user_text_3', 'price_download_mode', ]
+                    'user_text_1', 'user_text_2', 'user_text_3',
+                    # 'daily_pricing_model',
+                    # 'payment_size_detail',
+                    # 'default_price',
+                    # 'default_accrued',
+                    # 'price_download_mode',
+                    ]
 
     master_user = models.ForeignKey('users.MasterUser')
     mapping_name = models.CharField(max_length=255)
+    provider = models.ForeignKey(ProviderClass)
 
+    isin = models.CharField(max_length=255, blank=True, default='')
     user_code = models.CharField(max_length=255, blank=True, default='')
     name = models.CharField(max_length=255)
     short_name = models.CharField(max_length=255, blank=True, default='')
@@ -40,14 +89,18 @@ class InstrumentMapping(models.Model):
     price_multiplier = models.CharField(max_length=255, blank=True, default='1.0')
     accrued_currency = models.CharField(max_length=255, blank=True, default='')
     accrued_multiplier = models.CharField(max_length=255, blank=True, default='1.0')
-    daily_pricing_model = models.CharField(max_length=255, blank=True, default='')
-    payment_size_detail = models.CharField(max_length=255, blank=True, default='')
-    default_price = models.CharField(max_length=255, blank=True, default='0.0')
-    default_accrued = models.CharField(max_length=255, blank=True, default='0.0')
+    # daily_pricing_model = models.CharField(max_length=255, blank=True, default='')
+    # payment_size_detail = models.CharField(max_length=255, blank=True, default='')
+    # default_price = models.CharField(max_length=255, blank=True, default='0.0')
+    # default_accrued = models.CharField(max_length=255, blank=True, default='0.0')
     user_text_1 = models.CharField(max_length=255, blank=True, default='')
     user_text_2 = models.CharField(max_length=255, blank=True, default='')
     user_text_3 = models.CharField(max_length=255, blank=True, default='')
-    price_download_mode = models.CharField(max_length=255, blank=True, default='')
+
+    # price_download_mode = models.CharField(max_length=255, blank=True, default='')
+
+    factor_schedule_method = models.ForeignKey(FactorScheduleMethod, null=True, blank=True)
+    accrual_calculation_schedule_method = models.ForeignKey(AccrualCalculationScheduleMethod, null=True, blank=True)
 
     class Meta:
         index_together = (
@@ -62,28 +115,6 @@ class InstrumentMapping(models.Model):
 
     def __str__(self):
         return self.mapping_name
-
-    def clean_mapping(self, name):
-        if name is None:
-            return None
-        return name.strip()
-
-    # @property
-    # def mapping_fields(self):
-    #     f = set()
-    #
-    #     def add(n):
-    #         n = self.clean_mapping(n)
-    #         if n:
-    #             f.add(n)
-    #
-    #     for attr in self.BASIC_FIELDS:
-    #         add(getattr(self, attr))
-    #
-    #     for attr in self.attributes.all():
-    #         add(attr.name)
-    #
-    #     return f
 
     def create_instrument(self, values, save=True):
         instr = Instrument(master_user=self.master_user)
@@ -172,12 +203,10 @@ class InstrumentMapping(models.Model):
 
 class InstrumentMappingInput(models.Model):
     mapping = models.ForeignKey(InstrumentMapping, related_name='inputs')
-    name = models.CharField(max_length=32)
+    name = models.CharField(max_length=32, blank=True, default='')
+    field = models.CharField(max_length=32, blank=True, default='')
 
     class Meta:
-        unique_together = (
-            ('mapping', 'name')
-        )
         ordering = ('name',)
 
     def __str__(self):
@@ -199,6 +228,120 @@ class InstrumentMappingAttribute(models.Model):
     def __str__(self):
         # return '%s -> %s' % (self.name, self.attribute_type)
         return '%s' % (self.attribute_type,)
+
+
+class PricingFieldMapping(models.Model):
+    master_user = models.ForeignKey('users.MasterUser')
+    provider = models.ForeignKey(ProviderClass)
+    pricing_model = models.ForeignKey('instruments.DailyPricingModel')
+
+    bid_multiplier = models.FloatField(default=1.0)
+    bid0 = models.CharField(max_length=50, blank=True)
+    bid1 = models.CharField(max_length=50, blank=True)
+    bid2 = models.CharField(max_length=50, blank=True)
+    bid_history = models.CharField(max_length=50, blank=True)
+
+    ask_multiplier = models.FloatField(default=1.0)
+    ask0 = models.CharField(max_length=50, blank=True)
+    ask1 = models.CharField(max_length=50, blank=True)
+    ask2 = models.CharField(max_length=50, blank=True)
+    ask_history = models.CharField(max_length=50, blank=True)
+
+    last = models.CharField(max_length=50, blank=True)
+    mid = models.CharField(max_length=50, blank=True)
+
+    class Meta:
+        unique_together = [
+            ['master_user', 'provider']
+        ]
+
+    def __str__(self):
+        return '%s - %s' % (self.pricing_model, self.provider)
+
+    def _get_fields(self, *args):
+        ret = set()
+        for attr_name in args:
+            field_name = getattr(self, attr_name)
+            if field_name:
+                ret.add(field_name)
+        return sorted(ret)
+
+    def _get_value(self, values, *args):
+        for attr_name in args:
+            field_name = getattr(self, attr_name)
+            if field_name and field_name in values:
+                return values[field_name]
+        return 0.0
+
+    @property
+    def fields(self):
+        return self._get_fields('bid0', 'bid1', 'bid2',
+                                'ask0', 'ask1', 'ask2',
+                                'last', 'mid')
+
+    @property
+    def history_fields(self):
+        return self._get_fields('bid_history', 'ask_history')
+
+    def get_bid(self, values):
+        value = self._get_value(values, 'bid0', 'bid1', 'bid2')
+        return value * self.bid_multiplier
+
+    def get_bid_history(self, values):
+        value = self._get_value(values, 'bid_history')
+        return value * self.bid_multiplier
+
+    def get_ask(self, values):
+        value = self._get_value(values, 'ask0', 'ask1', 'ask2')
+        return value * self.ask_multiplier
+
+    def get_ask_history(self, values):
+        value = self._get_value(values, 'ask_history')
+        return value * self.ask_multiplier
+
+
+class CurrencyMapping(models.Model):
+    provider = models.ForeignKey(ProviderClass)
+    value = models.CharField(max_length=255)
+    currency = models.ForeignKey('currencies.Currency')
+
+    class Meta:
+        pass
+
+    def __str__(self):
+        return '%s / %s -> %s' % (self.provider, self.value, self.currency)
+
+
+class InstrumentTypeMapping(models.Model):
+    provider = models.ForeignKey(ProviderClass)
+    value = models.CharField(max_length=255)
+    instrument_type = models.ForeignKey('instruments.InstrumentType')
+
+    class Meta:
+        pass
+
+    def __str__(self):
+        return '%s / %s -> %s' % (self.provider, self.value, self.instrument_type)
+
+
+class InstrumentAttributeValueMapping(models.Model):
+    provider = models.ForeignKey(ProviderClass)
+    value = models.CharField(max_length=255)
+
+    attribute_type = models.ForeignKey('instruments.InstrumentAttributeType', on_delete=models.PROTECT,
+                                       verbose_name=_('attribute type'))
+    value_string = models.CharField(max_length=255, null=True, blank=True, verbose_name=_('value (String)'))
+    value_float = models.FloatField(null=True, blank=True, verbose_name=_('value (Float)'))
+    value_date = models.DateField(null=True, blank=True, verbose_name=_('value (Date)'))
+    classifier = models.ForeignKey('instruments.InstrumentClassifier', on_delete=models.PROTECT, null=True, blank=True,
+                                   verbose_name=_('classifier'))
+
+    class Meta:
+        pass
+
+    def __str__(self):
+        value = self.attribute_type.get_value(self)
+        return '%s / %s -> %s / %s' % (self.provider, self.value, self.attribute_type, value)
 
 
 def bloomberg_cert_upload_to(instance, filename):

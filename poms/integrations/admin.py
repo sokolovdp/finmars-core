@@ -6,8 +6,10 @@ from django.contrib import admin
 from kombu.transport.django.models import Queue, Message
 
 from poms.audit.admin import HistoricalAdmin
+from poms.common.admin import ClassModelAdmin
 from poms.integrations.models import InstrumentMapping, InstrumentMappingAttribute, BloombergTask, BloombergConfig, \
-    InstrumentMappingInput
+    InstrumentMappingInput, ProviderClass, FactorScheduleMethod, AccrualCalculationScheduleMethod, PricingFieldMapping, \
+    CurrencyMapping, InstrumentTypeMapping, InstrumentAttributeValueMapping
 
 if settings.DEBUG and 'kombu.transport.django' in settings.INSTALLED_APPS:
     class QueueAdmin(admin.ModelAdmin):
@@ -103,3 +105,67 @@ class BloombergTaskAdmin(admin.ModelAdmin):
 
 
 admin.site.register(BloombergTask, BloombergTaskAdmin)
+
+admin.site.register(ProviderClass, ClassModelAdmin)
+admin.site.register(FactorScheduleMethod, ClassModelAdmin)
+admin.site.register(AccrualCalculationScheduleMethod, ClassModelAdmin)
+
+
+class PricingFieldMappingAdmin(admin.ModelAdmin):
+    model = PricingFieldMapping
+    list_display = ['id', 'master_user', 'provider']
+    list_select_related = ['master_user', 'provider']
+    raw_id_fields = ['master_user']
+
+
+admin.site.register(PricingFieldMapping, PricingFieldMappingAdmin)
+
+
+class CurrencyMappingAdmin(admin.ModelAdmin):
+    model = CurrencyMapping
+    list_display = ['id', 'master_user', 'provider', 'value', 'currency']
+    list_select_related = ['currency__master_user', 'currency', 'provider']
+    raw_id_fields = ['currency']
+
+    def master_user(self, obj):
+        return obj.currency.master_user
+
+
+admin.site.register(CurrencyMapping, CurrencyMappingAdmin)
+
+
+class InstrumentTypeMappingAdmin(admin.ModelAdmin):
+    model = InstrumentTypeMapping
+    list_display = ['id', 'master_user', 'provider', 'value', 'instrument_type']
+    list_select_related = ['instrument_type__master_user', 'instrument_type', 'provider']
+    raw_id_fields = ['instrument_type']
+
+    def master_user(self, obj):
+        return obj.instrument_type.master_user
+
+
+admin.site.register(InstrumentTypeMapping, InstrumentTypeMappingAdmin)
+
+
+class InstrumentAttributeValueMappingAdmin(admin.ModelAdmin):
+    model = InstrumentAttributeValueMapping
+    list_display = ['id', 'master_user', 'provider', 'value', 'attribute_type']
+    list_select_related = ['attribute_type__master_user', 'attribute_type', 'classifier', 'provider']
+    raw_id_fields = ['attribute_type', 'classifier']
+
+    def master_user(self, obj):
+        return obj.attribute_type.master_user
+
+        # provider = models.ForeignKey(ProviderClass)
+        # value = models.CharField(max_length=255)
+        #
+        # attribute_type = models.ForeignKey('instruments.InstrumentAttributeType', on_delete=models.PROTECT,
+        #                                    verbose_name=_('attribute type'))
+        # value_string = models.CharField(max_length=255, null=True, blank=True, verbose_name=_('value (String)'))
+        # value_float = models.FloatField(null=True, blank=True, verbose_name=_('value (Float)'))
+        # value_date = models.DateField(null=True, blank=True, verbose_name=_('value (Date)'))
+        # classifier = models.ForeignKey('instruments.InstrumentClassifier', on_delete=models.PROTECT, null=True, blank=True,
+        #                                verbose_name=_('classifier'))
+
+
+admin.site.register(InstrumentAttributeValueMapping, InstrumentAttributeValueMappingAdmin)
