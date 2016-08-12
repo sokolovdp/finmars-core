@@ -46,6 +46,10 @@ class AbstractAttributeType(NamedModel):
             return 'classifier'
         raise ValueError('Unknown value_type: %s' % self.value_type)
 
+    def get_value(self, obj):
+        attr_name = self.get_value_atr()
+        return getattr(obj, attr_name)
+
     def __str__(self):
         # return '%s (%s)' % (self.name, self.get_value_type_display())
         return '%s' % (self.name,)
