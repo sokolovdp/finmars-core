@@ -254,33 +254,26 @@ class InstrumentTypeGroupObjectPermission(AbstractGroupObjectPermission):
 class Instrument(NamedModel):
     master_user = models.ForeignKey(MasterUser, related_name='instruments',
                                     verbose_name=_('master user'))
+    isin = models.CharField(max_length=100, blank=True, default='', verbose_name=_('ISIN'))
     instrument_type = models.ForeignKey(InstrumentType, on_delete=models.PROTECT,
                                         verbose_name=_('instrument type'))
-    is_active = models.BooleanField(default=True,
-                                    verbose_name=_('is active'))
+    is_active = models.BooleanField(default=True, verbose_name=_('is active'))
     pricing_currency = models.ForeignKey('currencies.Currency', on_delete=models.PROTECT,
                                          verbose_name=_('pricing currency'))
-    price_multiplier = models.FloatField(default=1.,
-                                         verbose_name=_('price multiplier'))
+    price_multiplier = models.FloatField(default=1., verbose_name=_('price multiplier'))
     accrued_currency = models.ForeignKey('currencies.Currency', related_name='instruments_accrued',
                                          on_delete=models.PROTECT, verbose_name=_('accrued currency'))
-    accrued_multiplier = models.FloatField(default=1.,
-                                           verbose_name=_('accrued multiplier'))
+    accrued_multiplier = models.FloatField(default=1., verbose_name=_('accrued multiplier'))
 
     daily_pricing_model = models.ForeignKey(DailyPricingModel, on_delete=models.PROTECT, null=True, blank=True,
                                             verbose_name=_('daily pricing model'))
     payment_size_detail = models.ForeignKey(PaymentSizeDetail, on_delete=models.PROTECT, null=True, blank=True,
                                             verbose_name=_('payment size detail'))
-    default_price = models.FloatField(default=0.,
-                                      verbose_name=_('default price'))
-    default_accrued = models.FloatField(default=0.,
-                                        verbose_name=_('default accrued'))
-    user_text_1 = models.CharField(max_length=255, null=True, blank=True,
-                                   help_text=_('User specified field'))
-    user_text_2 = models.CharField(max_length=255, null=True, blank=True,
-                                   help_text=_('User specified field'))
-    user_text_3 = models.CharField(max_length=255, null=True, blank=True,
-                                   help_text=_('User specified field'))
+    default_price = models.FloatField(default=0., verbose_name=_('default price'))
+    default_accrued = models.FloatField(default=0., verbose_name=_('default accrued'))
+    user_text_1 = models.CharField(max_length=255, null=True, blank=True, help_text=_('User specified field'))
+    user_text_2 = models.CharField(max_length=255, null=True, blank=True, help_text=_('User specified field'))
+    user_text_3 = models.CharField(max_length=255, null=True, blank=True, help_text=_('User specified field'))
     price_download_mode = models.ForeignKey(PriceDownloadMode, null=True, blank=True)
 
     class Meta(NamedModel.Meta):

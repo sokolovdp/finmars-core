@@ -166,8 +166,8 @@ class InstrumentSerializer(ModelWithAttributesSerializer, ModelWithObjectPermiss
 
     class Meta:
         model = Instrument
-        fields = ['url', 'id', 'master_user', 'instrument_type', 'user_code', 'name', 'short_name', 'public_name',
-                  'notes', 'is_active',
+        fields = ['url', 'id', 'master_user', 'isin', 'instrument_type', 'user_code', 'name', 'short_name',
+                  'public_name', 'notes', 'is_active',
                   'pricing_currency', 'price_multiplier', 'accrued_currency', 'accrued_multiplier',
                   'daily_pricing_model', 'payment_size_detail', 'price_download_mode',
                   'default_price', 'default_accrued',

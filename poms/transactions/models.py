@@ -292,6 +292,7 @@ class TransactionTypeAction(models.Model):
 
 
 class TransactionTypeActionInstrument(TransactionTypeAction):
+    isin = models.CharField(max_length=255, blank=True, default='')
     user_code = models.CharField(max_length=255, blank=True, default='')
     name = models.CharField(max_length=255, blank=True, default='')
     public_name = models.CharField(max_length=255, blank=True, default='')

@@ -1,7 +1,7 @@
 from __future__ import unicode_literals
 
 import django_filters
-from rest_framework.filters import DjangoFilterBackend, OrderingFilter, SearchFilter, FilterSet
+from rest_framework.filters import FilterSet
 
 from poms.common.filters import CharFilter, ModelMultipleChoiceFilter, IsDefaultFilter
 from poms.common.views import AbstractModelViewSet
@@ -14,6 +14,7 @@ from poms.users.permissions import SuperUserOrReadOnly
 
 
 class CurrencyFilterSet(FilterSet):
+    isin = CharFilter()
     user_code = CharFilter()
     name = CharFilter()
     short_name = CharFilter()
@@ -22,7 +23,7 @@ class CurrencyFilterSet(FilterSet):
 
     class Meta:
         model = Currency
-        fields = ['user_code', 'name', 'short_name', 'is_default', 'tag']
+        fields = ['isin', 'user_code', 'name', 'short_name', 'is_default', 'tag']
 
 
 class CurrencyViewSet(AbstractModelViewSet):
@@ -36,8 +37,8 @@ class CurrencyViewSet(AbstractModelViewSet):
         TagFilterBackend,
     ]
     filter_class = CurrencyFilterSet
-    ordering_fields = ['user_code', 'name', 'short_name']
-    search_fields = ['user_code', 'name', 'short_name']
+    ordering_fields = ['isin', 'user_code', 'name', 'short_name']
+    search_fields = ['isin', 'user_code', 'name', 'short_name']
 
 
 class CurrencyHistoryFilterSet(FilterSet):

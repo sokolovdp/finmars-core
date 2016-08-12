@@ -81,6 +81,7 @@ class TransactionTypeInputSerializer(serializers.ModelSerializer):
 
 
 class TransactionTypeActionInstrumentSerializer(serializers.ModelSerializer):
+    isin = ExpressionField(allow_blank=True)
     user_code = ExpressionField(allow_blank=True)
     name = ExpressionField(allow_blank=False)
     public_name = ExpressionField(allow_blank=True)
@@ -105,11 +106,7 @@ class TransactionTypeActionInstrumentSerializer(serializers.ModelSerializer):
     class Meta:
         model = TransactionTypeActionInstrument
         fields = [
-            'user_code',
-            'name',
-            'public_name',
-            'short_name',
-            'notes',
+            'isin', 'user_code', 'name', 'public_name', 'short_name', 'notes',
             'instrument_type', 'instrument_type_input',
             'pricing_currency', 'pricing_currency_input',
             'price_multiplier',

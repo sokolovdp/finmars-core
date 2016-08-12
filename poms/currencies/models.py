@@ -14,8 +14,8 @@ from poms.users.models import MasterUser
 
 @python_2_unicode_compatible
 class Currency(NamedModel):
-    master_user = models.ForeignKey(MasterUser, related_name='currencies',
-                                    verbose_name=_('master user'))
+    master_user = models.ForeignKey(MasterUser, related_name='currencies', verbose_name=_('master user'))
+    isin = models.CharField(max_length=100, blank=True, default='', verbose_name=_('ISIN'))
     history_download_mode = models.ForeignKey(PriceDownloadMode, default=PriceDownloadMode.MANUAL)
 
     class Meta(NamedModel.Meta):

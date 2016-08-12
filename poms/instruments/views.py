@@ -128,6 +128,7 @@ class InstrumentClassifierViewSet(AbstractClassifierViewSet):
 
 
 class InstrumentFilterSet(FilterSet):
+    isin = CharFilter()
     user_code = CharFilter()
     name = CharFilter()
     short_name = CharFilter()
@@ -139,7 +140,7 @@ class InstrumentFilterSet(FilterSet):
 
     class Meta:
         model = Instrument
-        fields = ['user_code', 'name', 'short_name', 'user_text_1', 'user_text_2', 'user_text_3', 'tag']
+        fields = ['isin', 'user_code', 'name', 'short_name', 'user_text_1', 'user_text_2', 'user_text_3', 'tag']
 
 
 class InstrumentViewSet(AbstractWithObjectPermissionViewSet):
@@ -153,10 +154,10 @@ class InstrumentViewSet(AbstractWithObjectPermissionViewSet):
         TagFilterBackend,
     ]
     filter_class = InstrumentFilterSet
-    ordering_fields = ['user_code', 'name', 'short_name', 'instrument_type__user_code', 'instrument_type__name',
-                       'instrument_type__short_name']
-    search_fields = ['user_code', 'name', 'short_name', 'instrument_type__user_code', 'instrument_type__name',
-                     'instrument_type__short_name']
+    ordering_fields = ['isin', 'user_code', 'name', 'short_name',
+                       'instrument_type__user_code', 'instrument_type__name', 'instrument_type__short_name']
+    search_fields = ['isin', 'user_code', 'name', 'short_name',
+                     'instrument_type__user_code', 'instrument_type__name', 'instrument_type__short_name']
 
 
 class PriceHistoryFilterSet(FilterSet):
