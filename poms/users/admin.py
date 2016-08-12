@@ -46,9 +46,8 @@ class MemberAdmin(admin.ModelAdmin):
     model = Member
     list_display = ['id', 'master_user', 'user', 'is_owner', 'is_admin']
     list_select_related = ['master_user', 'user']
-    filter_horizontal = ('groups',)
     ordering = ['user', 'master_user']
-    raw_id_fields = ['master_user', 'user']
+    raw_id_fields = ['master_user', 'user', 'groups']
 
     # def formfield_for_manytomany(self, db_field, request=None, **kwargs):
     #     if db_field.name == 'permissions':
