@@ -1,5 +1,6 @@
 from __future__ import unicode_literals
 
+import six
 from django.conf import settings
 from django.contrib.contenttypes.fields import GenericForeignKey
 from django.contrib.contenttypes.models import ContentType
@@ -27,6 +28,17 @@ class AuthLogEntry(models.Model):
         else:
             msg = 'User %s login failed from %s at %s using "%s"'
         return msg % (self.user, self.user_ip, self.date, self.user_agent)
+
+    @property
+    def human_user_agent(self):
+        if not self.user_agent:
+            return None
+        try:
+            from user_agents import parse
+            ret = parse(self.user_agent)
+            return six.text_type(ret)
+        except ImportError:
+            return None
 
 
 @python_2_unicode_compatible

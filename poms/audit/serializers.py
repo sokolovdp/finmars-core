@@ -18,7 +18,7 @@ class AuthLogEntrySerializer(serializers.ModelSerializer):
 
     class Meta:
         model = AuthLogEntry
-        fields = ('url', 'id', 'date', 'user_ip', 'user_agent', 'is_success', 'user_location',)
+        fields = ('url', 'id', 'date', 'user_ip', 'user_agent', 'human_user_agent', 'is_success', 'user_location',)
 
     def get_user_location(self, instance):
         loc = get_city_by_ip(instance.user_ip)

@@ -21,3 +21,5 @@ django-redisboard==3.0.0
 
 django-otp==0.3.5
 qrcode==5.3
+
+user-agents==1.0.1
