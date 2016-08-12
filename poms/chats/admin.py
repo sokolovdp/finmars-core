@@ -8,29 +8,16 @@ from poms.obj_perms.admin import UserObjectPermissionInline, \
     GroupObjectPermissionInline
 
 
-# class ThreadStatusAdmin(HistoricalAdmin):
-#     model = ThreadStatus
-#     list_display = ['id', 'master_user', 'name', 'is_closed']
-#     raw_id_fields = ['master_user']
-#
-#
-# admin.site.register(ThreadStatus, ThreadStatusAdmin)
-
-
-# class MessageInline(admin.StackedInline):
-#     model = Message
-#     list_select_related = ['sender']
-#     raw_id_fields = ['sender']
-#     ordering = ['created']
-#     extra = 0
-
-
 class ThreadGroupAdmin(HistoricalAdmin):
     model = ThreadGroup
     list_display = ['id', 'master_user', 'name', ]
     list_select_related = ['master_user', ]
     raw_id_fields = ['master_user', ]
     search_fields = ['id', 'name']
+    inlines = [
+        UserObjectPermissionInline,
+        GroupObjectPermissionInline
+    ]
 
 
 admin.site.register(ThreadGroup, ThreadGroupAdmin)
@@ -43,7 +30,6 @@ class ThreadAdmin(HistoricalAdmin):
     date_hierarchy = 'created'
     ordering = ['created']
     raw_id_fields = ['master_user', 'thread_group', ]
-    # inlines = [MessageInline]
     search_fields = ['id', 'subject']
     inlines = [
         UserObjectPermissionInline,
@@ -52,10 +38,6 @@ class ThreadAdmin(HistoricalAdmin):
 
 
 admin.site.register(Thread, ThreadAdmin)
-
-
-# admin.site.register(ThreadUserObjectPermission, UserObjectPermissionAdmin)
-# admin.site.register(ThreadGroupObjectPermission, GroupObjectPermissionAdmin)
 
 
 class MessageAdmin(HistoricalAdmin):
@@ -85,5 +67,3 @@ class DirectMessageAdmin(HistoricalAdmin):
 
 
 admin.site.register(DirectMessage, DirectMessageAdmin)
-
-# register_admin(Thread)
