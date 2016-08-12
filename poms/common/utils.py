@@ -1,7 +1,10 @@
 def db_class_check_data(model, verbosity, using):
-    from django.db import IntegrityError
+    from django.db import IntegrityError, ProgrammingError
 
-    exists = set(model.objects.using(using).values_list('pk', flat=True))
+    try:
+        exists = set(model.objects.using(using).values_list('pk', flat=True))
+    except ProgrammingError:
+        return
     if verbosity >= 2:
         print('existed transaction classes -> %s' % exists)
     for id, name in model.CLASSES:
@@ -12,7 +15,7 @@ def db_class_check_data(model, verbosity, using):
                 model.objects.using(using).create(pk=id, system_code=name,
                                                   name=name, description=name,
                                                   name_en=name, description_en=name)
-            except IntegrityError:
+            except (IntegrityError, ProgrammingError):
                 pass
         else:
             obj = model.objects.using(using).get(pk=id)
