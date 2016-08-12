@@ -31,7 +31,7 @@ class AbstractUserObjectPermission(AbstractObjectPermission):
         verbose_name_plural = _('user permissions')
 
     def __str__(self):
-        return '%s %s %s' % (self.member, self.permission.name, self.content_object)
+        return 'Member "%s" %s "%s"' % (self.member, self.permission.name.lower(), self.content_object)
 
 
 @python_2_unicode_compatible
@@ -48,4 +48,4 @@ class AbstractGroupObjectPermission(AbstractObjectPermission):
         verbose_name_plural = _('group permissions')
 
     def __str__(self):
-        return '%s %s %s' % (self.group, self.permission.name, self.content_object)
+        return 'Group "%s" %s "%s"' % (self.group, self.permission.name.lower(), self.content_object)

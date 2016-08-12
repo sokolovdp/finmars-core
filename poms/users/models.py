@@ -202,7 +202,8 @@ class Member(models.Model):
         ]
 
     def __str__(self):
-        return '%s@%s' % (self.username, self.master_user)
+        # return '%s@%s' % (self.username, self.master_user)
+        return self.username
 
     @property
     def is_superuser(self):
