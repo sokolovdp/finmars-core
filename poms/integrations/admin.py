@@ -101,10 +101,14 @@ class TaskAdmin(admin.ModelAdmin):
     search_fields = ['action', 'response_id', ]
     list_filter = ['provider', 'created', 'action', 'status', ]
     date_hierarchy = 'created'
+    readonly_fields = [
+        'id', 'master_user', 'member', 'provider', 'action', 'status',
+        'isin', 'instruments', 'currencies', 'date_from', 'date_to',
+        'kwargs', 'response_id', 'result',
+    ]
 
-    # if not settings.DEBUG:
-    # def has_add_permission(self, request):
-    #     return settings.DEBUG
+    def has_add_permission(self, request):
+        return False
 
     def save_model(self, request, obj, form, change):
         pass

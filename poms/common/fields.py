@@ -125,8 +125,8 @@ class ISINField(RegexField):
         else:
             return six.text_type(value)
 
-    def to_internal_value(self, data):
-        data = super(ISINField, self).to_internal_value(data)
-        if data is not None:
-            return data.split(maxsplit=1)
-        return None
+    # def to_internal_value(self, data):
+    #     data = super(ISINField, self).to_internal_value(data)
+    #     if data is not None:
+    #         return data.split(maxsplit=1)
+    #     return None

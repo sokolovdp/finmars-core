@@ -31,15 +31,15 @@ class ProviderClass(AbstractClassModel):
 
 
 class FactorScheduleMethod(AbstractClassModel):
-    DISABLED = 1
+    IGNORE = 1
     DEFAULT_BLOOMBERG = 100
     CLASSES = (
-        (DISABLED, _("-")),
+        (IGNORE, _("Ignore")),
         (DEFAULT_BLOOMBERG, _("Default bloomberg method")),
     )
 
     MAP = {
-        ProviderClass.BLOOMBERG: [DISABLED, DEFAULT_BLOOMBERG, ]
+        ProviderClass.BLOOMBERG: [IGNORE, DEFAULT_BLOOMBERG, ]
     }
 
     class Meta(AbstractClassModel.Meta):
@@ -47,15 +47,15 @@ class FactorScheduleMethod(AbstractClassModel):
 
 
 class AccrualCalculationScheduleMethod(AbstractClassModel):
-    DISABLED = 1
+    IGNORE = 1
     DEFAULT_BLOOMBERG = 100
     CLASSES = (
-        (DISABLED, _("-")),
+        (IGNORE, _("Ignore")),
         (DEFAULT_BLOOMBERG, _("Default bloomberg method")),
     )
 
     MAP = {
-        ProviderClass.BLOOMBERG: [DISABLED, DEFAULT_BLOOMBERG, ]
+        ProviderClass.BLOOMBERG: [IGNORE, DEFAULT_BLOOMBERG, ]
     }
 
     class Meta(AbstractClassModel.Meta):
@@ -442,9 +442,11 @@ class Task(TimeStampedModel):
 
     # request
     kwargs = models.TextField(null=True, blank=True)
-    isin = models.CharField(max_length=100)
+    isin = models.CharField(max_length=100, null=True, blank=True)
     instruments = models.ManyToManyField('instruments.Instrument', blank=True)
     currencies = models.ManyToManyField('currencies.Currency', blank=True)
+    date_from = models.DateField(null=True, blank=True)
+    date_to = models.DateField(null=True, blank=True)
 
     response_id = models.CharField(max_length=64, null=True, blank=True, db_index=True)
     result = models.TextField(null=True, blank=True)

@@ -243,7 +243,8 @@ def bloomberg_wait_reponse(self, task_id):
     return task.id
 
 
-def bloomberg_call(master_user=None, member=None, action=None, params=None):
+def bloomberg_call(master_user=None, member=None, action=None, params=None,
+                   isin=None, instruments=None, currencies=None, date_from=None, date_to=None):
     master_user_id = master_user.id if isinstance(master_user, models.Model)  else master_user
     if member:
         member_id = member.id if isinstance(member, models.Model) else member
@@ -258,7 +259,14 @@ def bloomberg_call(master_user=None, member=None, action=None, params=None):
             status=Task.STATUS_PENDING,
             action=action,
             kwargs=json.dumps(params, cls=DjangoJSONEncoder, sort_keys=True, indent=1),
+            isin=isin,
+            date_from=date_from,
+            date_to=date_to
         )
+        if instruments:
+            bt.instruments.add(*instruments)
+        if currencies:
+            bt.currencies.add(*currencies)
         transaction.on_commit(
             lambda: chain(bloomberg_send_request.s(bt.pk), bloomberg_wait_reponse.s()).apply_async(countdown=1))
 
@@ -269,38 +277,70 @@ def bloomberg_call(master_user=None, member=None, action=None, params=None):
     # ).apply_async(countdown=1)
 
 
-def bloomberg_instrument(master_user=None, member=None, instrument=None, fields=None):
+def bloomberg_instrument(master_user=None, member=None, isin=None, fields=None):
+    isin0 = isin.split()
     return bloomberg_call(
         master_user=master_user,
         member=member,
         action=Task.ACTION_INSTRUMENT,
+        isin=isin,
         params={
-            'instrument': instrument,
+            'instrument': {
+                'code': isin0[0],
+                'industry': isin0[1],
+            },
             'fields': fields,
         }
     )
 
 
-def bloomberg_pricing_latest(master_user=None, member=None, instruments=None, date_from=None, date_to=None):
+def _bloomberg_instrument_convert(instruments=None, currencies=None):
+    ret = []
+    for instr in instruments:
+        if instr.isin:
+            ret.append({
+                'code': instr.isin,
+                'industry': 'Corp',
+            })
+    for instr in currencies:
+        if instr.isin:
+            ret.append({
+                'code': instr.isin,
+                'industry': 'Ccy',
+            })
+    return ret
+
+
+def bloomberg_pricing_latest(master_user=None, member=None, instruments=None, currencies=None, date_from=None,
+                             date_to=None):
     return bloomberg_call(
         master_user=master_user,
         member=member,
         action=Task.ACTION_PRICING_LATEST,
+        instruments=instruments,
+        currencies=currencies,
+        date_from=date_from,
+        date_to=date_to,
         params={
-            'instruments': instruments,
+            'instruments': _bloomberg_instrument_convert(instruments=instruments, currencies=currencies),
             'date_from': date_from,
             'date_to': date_to,
         }
     )
 
 
-def bloomberg_pricing_history(master_user=None, member=None, instruments=None, date_from=None, date_to=None):
+def bloomberg_pricing_history(master_user=None, member=None, instruments=None, currencies=None, date_from=None,
+                              date_to=None):
     return bloomberg_call(
         master_user=master_user,
         member=member,
         action=Task.ACTION_PRICE_HISTORY,
+        instruments=instruments,
+        currencies=currencies,
+        date_from=date_from,
+        date_to=date_to,
         params={
-            'instruments': instruments,
+            'instruments': _bloomberg_instrument_convert(instruments=instruments, currencies=currencies),
             'date_from': date_from,
             'date_to': date_to,
         }

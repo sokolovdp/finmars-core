@@ -5,6 +5,7 @@ from django.conf.urls import url, include
 from rest_framework import routers
 
 import poms.accounts.views as accounts
+import poms.api.views as api
 import poms.audit.views as audit
 import poms.chats.views as chats
 import poms.counterparties.views as counterparties
@@ -20,7 +21,6 @@ import poms.tags.views as tags
 import poms.transactions.views as transactions
 import poms.ui.views as ui
 import poms.users.views as users
-import poms.api.views as api
 
 router = routers.DefaultRouter()
 router.register(r'users/login', users.LoginViewSet, 'login')
@@ -125,15 +125,10 @@ router.register(r'import/task', integrations.TaskViewSet)
 
 router.register(r'import/mapping/instrument/', integrations.InstrumentMappingViewSet)
 
-router.register(r'import/file/instrument', integrations.ImportFileInstrumentViewSet,
-                'ImportFileInstrumentViewSet')
+router.register(r'import/file/instrument', integrations.ImportFileInstrumentViewSet, 'ImportFileInstrumentViewSet')
 
-router.register(r'import/instrument', integrations.ImportInstrumentViewSet,
-                'ImportInstrumentViewSet')
-router.register(r'import/instrument-price-history', integrations.ImportPriceHistoryViewSet,
-                'ImportPriceHistoryViewSet')
-router.register(r'import/currency-history', integrations.ImportCurrencyHistoryViewSet,
-                'ImportCurrencyHistoryViewSet')
+router.register(r'import/instrument', integrations.ImportInstrumentViewSet, 'ImportInstrumentViewSet')
+router.register(r'import/instrument-and-currency-history', integrations.ImportHistoryViewSet, 'ImportHistoryViewSet')
 
 urlpatterns = [
     url(r'^v1/', include(router.urls, namespace='v1')),

@@ -18,7 +18,8 @@ from poms.currencies.fields import CurrencyField
 from poms.currencies.serializers import CurrencyHistorySerializer
 from poms.instruments.fields import InstrumentTypeField, InstrumentAttributeTypeField, InstrumentField
 from poms.instruments.serializers import InstrumentAttributeSerializer, PriceHistorySerializer, InstrumentSerializer
-from poms.integrations.fields import InstrumentMappingField, ProviderClassField
+from poms.integrations.fields import InstrumentMappingField, ProviderClassField, FactorScheduleMethodField, \
+    AccrualCalculationScheduleMethodField
 from poms.integrations.models import InstrumentMapping, InstrumentMappingInput, InstrumentMappingAttribute, \
     ImportConfig, Task, ProviderClass
 from poms.integrations.providers.bloomberg import create_instrument_price_history, create_currency_price_history
@@ -87,6 +88,9 @@ class InstrumentMappingSerializer(serializers.ModelSerializer):
     # price_download_mode = ExpressionField(allow_blank=True)
     attributes = InstrumentAttributeMappingSerializer(many=True, read_only=False)
 
+    factor_schedule_method = FactorScheduleMethodField()
+    accrual_calculation_schedule_method = AccrualCalculationScheduleMethodField()
+
     class Meta:
         model = InstrumentMapping
         fields = [
@@ -97,7 +101,8 @@ class InstrumentMappingSerializer(serializers.ModelSerializer):
             # 'daily_pricing_model', 'payment_size_detail', 'default_price', 'default_accrued',
             'user_text_1', 'user_text_2', 'user_text_3',
             # 'price_download_mode',
-            'attributes'
+            'attributes',
+            'factor_schedule_method', 'accrual_calculation_schedule_method',
         ]
 
     def create(self, validated_data):
@@ -172,8 +177,8 @@ class TaskSerializer(serializers.ModelSerializer):
         fields = ['url', 'id', 'master_user', 'member', 'provider',
                   'action',
                   'created', 'modified', 'status',
+                  'isin', 'instruments', 'currencies', 'date_from', 'date_to',
                   'kwargs_object',
-                  'isin', 'instruments', 'currencies',
                   'result_object', ]
 
 
@@ -250,13 +255,6 @@ class ImportInstrumentEntry(object):
             self._task_object = self.master_user.bloomberg_tasks.get(pk=self.task)
         return self._task_object
 
-    @property
-    def to_request(self):
-        return {
-            'code': self.isin[0],
-            'industry': self.isin[1],
-        }
-
 
 class InstrumentMiniSerializer(InstrumentSerializer):
     attributes = serializers.SerializerMethodField()
@@ -315,25 +313,27 @@ class ImportInstrumentSerializer(serializers.Serializer):
                 fields = [i.name for i in instance.mapping.inputs.all()]
                 instance.task = bloomberg_instrument(
                     master_user=instance.master_user, member=instance.member,
-                    instrument=instance.to_request,
-                    fields=fields)
+                    isin=instance.isin, fields=fields)
 
         return instance
 
 
-class ImportPriceHistoryEntry(object):
-    def __init__(self, master_user=None, member=None, provider=None, mode=None, instruments=None,
-                 date_from=None, date_to=None, task=None, histories=None):
+class ImportHistoryEntry(object):
+    def __init__(self, master_user=None, member=None, provider=None, mode=None,
+                 instruments=None, currencies=None, date_from=None, date_to=None, task=None,
+                 instrument_histories=None, currency_histories=None):
         self.master_user = master_user
         self.member = member
         self.provider = provider
         self.mode = mode
         self.instruments = instruments
+        self.currencies = currencies
         self.date_from = date_from
         self.date_to = date_to
         self.task = task
         self._task_object = None
-        self.histories = histories
+        self.instrument_histories = instrument_histories
+        self.currency_histories = currency_histories
 
     @property
     def task_object(self):
@@ -342,22 +342,26 @@ class ImportPriceHistoryEntry(object):
         return self._task_object
 
 
-class ImportPriceHistorySerializer(serializers.Serializer):
+class ImportHistorySerializer(serializers.Serializer):
     master_user = MasterUserField()
     member = HiddenMemberField()
     provider = ProviderClassField()
 
     mode = serializers.ChoiceField(choices=IMPORT_MODE_CHOICES)
 
-    instruments = InstrumentField(many=True, allow_empty=False)
+    instruments = InstrumentField(many=True)
+    currencies = CurrencyField(many=True)
+
     date_from = serializers.DateField(allow_null=True, required=False)
     date_to = serializers.DateField(allow_null=True, required=False)
     task = serializers.CharField(required=False, allow_blank=True, allow_null=True)
     task_object = TaskSerializer(read_only=True)
-    histories = PriceHistorySerializer(many=True, read_only=True)
+
+    instrument_histories = PriceHistorySerializer(many=True, read_only=True)
+    currency_histories = CurrencyHistorySerializer(many=True, read_only=True)
 
     def validate(self, attrs):
-        attrs = super(ImportPriceHistorySerializer, self).validate(attrs)
+        attrs = super(ImportHistorySerializer, self).validate(attrs)
         date_from = attrs.get('date_from', None)
         date_to = attrs.get('date_to', None)
         if date_from or date_to:
@@ -372,117 +376,19 @@ class ImportPriceHistorySerializer(serializers.Serializer):
         return attrs
 
     def create(self, validated_data):
-        instance = ImportPriceHistoryEntry(**validated_data)
+        instance = ImportHistoryEntry(**validated_data)
         if instance.task:
             if instance.task_object.status == Task.STATUS_DONE:
                 try:
-                    instance.histories = create_instrument_price_history(
+                    instance.instrument_histories = create_instrument_price_history(
                         task=instance.task_object,
                         instruments=instance.instruments,
                         save=instance.mode == IMPORT_PROCESS,
                         date_range=(instance.date_from, instance.date_to),
                         fail_silently=True
                     )
-                except formula.InvalidExpression:
-                    raise ValidationError('Invalid pricing policy expression')
-        else:
-            instruments = []
-            for instr in instance.instruments:
-                instruments.append({
-                    'code': instr.id,
-                    'industry': 'Corp',
-                })
 
-            if instruments:
-                yesterday = timezone.now().date() - timedelta(days=1)
-                action = Task.ACTION_PRICE_HISTORY
-                if (instance.date_from is None and instance.date_to is None) or \
-                        (instance.date_from == yesterday and instance.date_to == yesterday):
-                    action = Task.ACTION_PRICING_LATEST
-                if instance.date_from is None:
-                    instance.date_from = yesterday
-                if instance.date_to is None:
-                    instance.date_to = yesterday
-
-                if action == Task.ACTION_PRICING_LATEST:
-                    if instance.provider.id == ProviderClass.BLOOMBERG:
-                        from poms.integrations.tasks import bloomberg_pricing_latest
-                        instance.task = bloomberg_pricing_latest(
-                            master_user=instance.master_user,
-                            member=instance.member,
-                            instruments=instruments,
-                            date_from=instance.date_from,
-                            date_to=instance.date_to
-                        )
-                else:
-                    if instance.provider.id == ProviderClass.BLOOMBERG:
-                        from poms.integrations.tasks import bloomberg_pricing_history
-                        instance.task = bloomberg_pricing_history(
-                            master_user=instance.master_user,
-                            member=instance.member,
-                            instruments=instruments,
-                            date_from=instance.date_from,
-                            date_to=instance.date_to
-                        )
-
-        return instance
-
-
-class ImportCurrencyHistoryEntry(object):
-    def __init__(self, master_user=None, member=None, provider=None, mode=None, currencies=None,
-                 date_from=None, date_to=None, task=None, histories=None):
-        self.master_user = master_user
-        self.member = member
-        self.provider = provider
-        self.mode = mode
-        self.currencies = currencies
-        self.date_from = date_from
-        self.date_to = date_to
-        self.task = task
-        self._task_object = None
-        self.histories = histories
-
-    @property
-    def task_object(self):
-        if self.task:
-            self._task_object = self.master_user.bloomberg_tasks.get(pk=self.task)
-        return self._task_object
-
-
-class ImportCurrencyHistorySerializer(serializers.Serializer):
-    master_user = MasterUserField()
-    member = HiddenMemberField()
-    provider = ProviderClassField()
-
-    mode = serializers.ChoiceField(choices=IMPORT_MODE_CHOICES)
-    currencies = CurrencyField(many=True, allow_empty=False)
-    date_from = serializers.DateField(allow_null=True, required=False)
-    date_to = serializers.DateField(allow_null=True, required=False)
-    task = serializers.CharField(required=False, allow_blank=True, allow_null=True)
-    task_object = TaskSerializer(read_only=True)
-    histories = CurrencyHistorySerializer(many=True, read_only=True)
-
-    def validate(self, attrs):
-        attrs = super(ImportCurrencyHistorySerializer, self).validate(attrs)
-        date_from = attrs.get('date_from', None)
-        date_to = attrs.get('date_to', None)
-        if date_from or date_to:
-            now = timezone.now().date()
-            date_from = date_from or now
-            date_to = date_to or now
-            if date_from > date_to:
-                raise ValidationError({
-                    'date_from': 'Invalid date range',
-                    'date_to': 'Invalid date range',
-                })
-        return attrs
-
-    def create(self, validated_data):
-        instance = ImportCurrencyHistoryEntry(**validated_data)
-        if instance.task:
-            if instance.task_object.status == Task.STATUS_DONE:
-                try:
-                    instance.histories = create_currency_price_history(
+                    instance.currency_histories = create_currency_price_history(
                         task=instance.task_object,
                         currencies=instance.currencies,
                         save=instance.mode == IMPORT_PROCESS,
@@ -492,43 +398,38 @@ class ImportCurrencyHistorySerializer(serializers.Serializer):
                 except formula.InvalidExpression:
                     raise ValidationError('Invalid pricing policy expression')
         else:
-            currencies = []
-            for ccy in instance.currencies:
-                currencies.append({
-                    'code': ccy.id,
-                    'industry': 'CCY',
-                })
-            if currencies:
-                yesterday = timezone.now().date() - timedelta(days=1)
-                action = Task.ACTION_PRICE_HISTORY
-                if (instance.date_from is None and instance.date_to is None) or \
-                        (instance.date_from == yesterday and instance.date_to == yesterday):
-                    action = Task.ACTION_PRICING_LATEST
-                if instance.date_from is None:
-                    instance.date_from = yesterday
-                if instance.date_to is None:
-                    instance.date_to = yesterday
+            yesterday = timezone.now().date() - timedelta(days=1)
+            action = Task.ACTION_PRICE_HISTORY
 
-                from poms.integrations.tasks import bloomberg_pricing_history
+            if (instance.date_from is None and instance.date_to is None) or \
+                    (instance.date_from == yesterday and instance.date_to == yesterday):
+                action = Task.ACTION_PRICING_LATEST
+
+            if instance.date_from is None:
+                instance.date_from = yesterday
+            if instance.date_to is None:
+                instance.date_to = yesterday
+
+            if instance.provider.id == ProviderClass.BLOOMBERG:
                 if action == Task.ACTION_PRICING_LATEST:
-                    if instance.provider.id == ProviderClass.BLOOMBERG:
-                        from poms.integrations.tasks import bloomberg_pricing_latest
-                        instance.task = bloomberg_pricing_latest(
-                            master_user=instance.master_user,
-                            member=instance.member,
-                            instruments=currencies,
-                            date_from=instance.date_from,
-                            date_to=instance.date_to
-                        )
+                    from poms.integrations.tasks import bloomberg_pricing_latest
+                    instance.task = bloomberg_pricing_latest(
+                        master_user=instance.master_user,
+                        member=instance.member,
+                        instruments=instance.instruments,
+                        currencies=instance.currencies,
+                        date_from=instance.date_from,
+                        date_to=instance.date_to
+                    )
                 else:
-                    if instance.provider.id == ProviderClass.BLOOMBERG:
-                        from poms.integrations.tasks import bloomberg_pricing_history
-                        instance.task = bloomberg_pricing_history(
-                            master_user=instance.master_user,
-                            member=instance.member,
-                            instruments=currencies,
-                            date_from=instance.date_from,
-                            date_to=instance.date_to
-                        )
+                    from poms.integrations.tasks import bloomberg_pricing_history
+                    instance.task = bloomberg_pricing_history(
+                        master_user=instance.master_user,
+                        member=instance.member,
+                        instruments=instance.instruments,
+                        currencies=instance.currencies,
+                        date_from=instance.date_from,
+                        date_to=instance.date_to
+                    )
 
         return instance

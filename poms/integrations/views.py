@@ -9,8 +9,7 @@ from poms.common.views import AbstractViewSet, AbstractModelViewSet, AbstractRea
 from poms.integrations.filters import TaskFilter
 from poms.integrations.models import InstrumentMapping, ImportConfig, Task
 from poms.integrations.serializers import InstrumentMappingSerializer, ImportConfigSerializer, TaskSerializer, \
-    ImportFileInstrumentSerializer, ImportInstrumentSerializer, ImportPriceHistorySerializer, \
-    ImportCurrencyHistorySerializer
+    ImportFileInstrumentSerializer, ImportInstrumentSerializer, ImportHistorySerializer
 from poms.users.filters import OwnerByMasterUserFilter
 from poms.users.models import Member
 from poms.users.permissions import SuperUserOrReadOnly, SuperUserOnly
@@ -91,18 +90,8 @@ class ImportInstrumentViewSet(AbstractViewSet):
         return Response(serializer.data)
 
 
-class ImportPriceHistoryViewSet(AbstractViewSet):
-    serializer_class = ImportPriceHistorySerializer
-
-    def create(self, request, *args, **kwargs):
-        serializer = self.get_serializer(data=request.data)
-        serializer.is_valid(raise_exception=True)
-        serializer.save()
-        return Response(serializer.data)
-
-
-class ImportCurrencyHistoryViewSet(AbstractViewSet):
-    serializer_class = ImportCurrencyHistorySerializer
+class ImportHistoryViewSet(AbstractViewSet):
+    serializer_class = ImportHistorySerializer
 
     def create(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)
