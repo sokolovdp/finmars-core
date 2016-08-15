@@ -13,6 +13,7 @@ from poms.integrations.models import InstrumentMapping, InstrumentMappingAttribu
 if settings.DEBUG and 'kombu.transport.django' in settings.INSTALLED_APPS:
     from kombu.transport.django.models import Queue, Message
 
+
     class QueueAdmin(admin.ModelAdmin):
         model = Queue
         list_display = ('id', 'name')
@@ -64,8 +65,8 @@ class InstrumentMappingAdmin(HistoricalAdmin):
         InstrumentMappingInputInline,
         InstrumentMappingAttributeInline,
     ]
-    list_display = ['id', 'master_user', 'mapping_name']
-    list_select_related = ['master_user', ]
+    list_display = ['id', 'master_user', 'provider', 'mapping_name']
+    list_select_related = ['master_user', 'provider', ]
     raw_id_fields = ['master_user', ]
     search_fields = ['mapping_name', ]
 
@@ -84,8 +85,8 @@ class ImportConfigForm(forms.ModelForm):
 class ImportConfigAdmin(HistoricalAdmin):
     model = ImportConfig
     form = ImportConfigForm
-    list_display = ['id', 'master_user', ]
-    list_select_related = ['master_user', ]
+    list_display = ['id', 'master_user', 'provider', ]
+    list_select_related = ['master_user', 'provider', ]
     raw_id_fields = ['master_user', ]
 
 
@@ -94,8 +95,8 @@ admin.site.register(ImportConfig, ImportConfigAdmin)
 
 class TaskAdmin(admin.ModelAdmin):
     model = Task
-    list_display = ['id', 'created', 'master_user', 'member', 'action', 'status', ]
-    list_select_related = ['master_user', 'member', ]
+    list_display = ['id', 'created', 'master_user', 'member', 'provider', 'action', 'status', ]
+    list_select_related = ['master_user', 'member', 'provider']
     raw_id_fields = ['master_user', 'member', 'instruments', 'currencies']
     search_fields = ['action', 'response_id', ]
     list_filter = ['provider', 'created', 'action', 'status', ]
