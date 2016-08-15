@@ -14,7 +14,7 @@ from django.utils.translation import ugettext_lazy as _
 from poms.common import formula
 from poms.common.models import TimeStampedModel, AbstractClassModel
 from poms.instruments.models import Instrument, InstrumentAttribute
-from poms.integrations.storage import bloomberg_cert_storage
+from poms.integrations.storage import import_config_storage
 from poms.obj_attrs.models import AbstractAttributeType
 
 _l = getLogger('poms.integrations')
@@ -344,22 +344,25 @@ class InstrumentAttributeValueMapping(models.Model):
         return '%s / %s -> %s / %s' % (self.provider, self.value, self.attribute_type, value)
 
 
-def bloomberg_cert_upload_to(instance, filename):
+def import_cert_upload_to(instance, filename):
     # return '%s/%s' % (instance.master_user_id, filename)
-    return '%s/%s' % (instance.master_user_id, uuid.uuid4().hex)
+    return '/'.join([instance.master_user_id, instance.provider_id, uuid.uuid4().hex])
 
 
-class BloombergConfig(models.Model):
+class ImportConfig(models.Model):
     master_user = models.OneToOneField('users.MasterUser', related_name='bloomberg_config')
-    p12cert = models.FileField(null=True, blank=True, upload_to=bloomberg_cert_upload_to,
-                               storage=bloomberg_cert_storage)
+    provider = models.ForeignKey(ProviderClass)
+    p12cert = models.FileField(null=True, blank=True, upload_to=import_cert_upload_to, storage=import_config_storage)
     password = models.CharField(max_length=64, null=True, blank=True)
-    cert = models.FileField(null=True, blank=True, upload_to=bloomberg_cert_upload_to, storage=bloomberg_cert_storage)
-    key = models.FileField(null=True, blank=True, upload_to=bloomberg_cert_upload_to, storage=bloomberg_cert_storage)
+    cert = models.FileField(null=True, blank=True, upload_to=import_cert_upload_to, storage=import_config_storage)
+    key = models.FileField(null=True, blank=True, upload_to=import_cert_upload_to, storage=import_config_storage)
 
     class Meta:
-        verbose_name = _('bloomberg config')
-        verbose_name_plural = _('bloomberg configs')
+        verbose_name = _('import config')
+        verbose_name_plural = _('import configs')
+        unique_together = [
+            ['master_user', 'provider']
+        ]
 
     def __str__(self):
         return '%s' % self.master_user
@@ -404,10 +407,15 @@ class BloombergConfig(models.Model):
 
 
 @python_2_unicode_compatible
-class BloombergTask(TimeStampedModel):
-    ACTION_INSTRUMENT = 'instrument'
-    ACTION_PRICING_LATEST = 'pricing_latest'
-    ACTION_PRICE_HISTORY = 'pricing_history'
+class Task(TimeStampedModel):
+    ACTION_INSTRUMENT = 1
+    ACTION_PRICING_LATEST = 2
+    ACTION_PRICE_HISTORY = 3
+    ACTION_CHOICES = (
+        (ACTION_INSTRUMENT, 'instrument'),
+        (ACTION_PRICING_LATEST, 'pricing_latest'),
+        (ACTION_PRICE_HISTORY, 'pricing_history'),
+    )
 
     STATUS_PENDING = 0
     STATUS_REQUEST_SENT = 1
@@ -416,12 +424,12 @@ class BloombergTask(TimeStampedModel):
     STATUS_ERROR = -1
     STATUS_TIMEOUT = -2
     STATUS_CHOICES = (
-        (STATUS_PENDING, 'STATUS_PENDING'),
-        (STATUS_REQUEST_SENT, 'STATUS_REQUEST_SENT'),
-        (STATUS_WAIT_RESPONSE, 'STATUS_WAIT_RESPONSE'),
-        (STATUS_DONE, 'STATUS_DONE'),
-        (STATUS_ERROR, 'STATUS_ERROR'),
-        (STATUS_TIMEOUT, 'STATUS_TIMEOUT'),
+        (STATUS_PENDING, 'PENDING'),
+        (STATUS_REQUEST_SENT, 'REQUEST_SENT'),
+        (STATUS_WAIT_RESPONSE, 'WAIT_RESPONSE'),
+        (STATUS_DONE, 'DONE'),
+        (STATUS_ERROR, 'ERROR'),
+        (STATUS_TIMEOUT, 'TIMEOUT'),
     )
 
     master_user = models.ForeignKey('users.MasterUser', related_name='bloomberg_tasks')
@@ -429,14 +437,21 @@ class BloombergTask(TimeStampedModel):
 
     status = models.SmallIntegerField(default=STATUS_PENDING, choices=STATUS_CHOICES)
 
-    action = models.CharField(max_length=32, null=True, blank=True, db_index=True)
-    response_id = models.CharField(max_length=64, null=True, blank=True, db_index=True)
+    provider = models.ForeignKey(ProviderClass)
+    action = models.SmallIntegerField(choices=ACTION_CHOICES, db_index=True)
+
+    # request
     kwargs = models.TextField(null=True, blank=True)
+    isin = models.CharField(max_length=100)
+    instruments = models.ManyToManyField('instruments.Instrument', blank=True)
+    currencies = models.ManyToManyField('currencies.Currency', blank=True)
+
+    response_id = models.CharField(max_length=64, null=True, blank=True, db_index=True)
     result = models.TextField(null=True, blank=True)
 
     class Meta:
-        verbose_name = _('bloomberg task')
-        verbose_name_plural = _('bloomberg tasks')
+        verbose_name = _('task')
+        verbose_name_plural = _('tasks')
         ordering = ('-created',)
 
     def __str__(self):

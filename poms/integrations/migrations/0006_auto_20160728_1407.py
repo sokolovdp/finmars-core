@@ -17,19 +17,19 @@ class Migration(migrations.Migration):
         migrations.AlterField(
             model_name='bloombergconfig',
             name='cert',
-            field=models.FileField(blank=True, null=True, storage=poms.integrations.storage.BloombergCertStorage(),
-                                   upload_to=poms.integrations.models.bloomberg_cert_upload_to),
+            field=models.FileField(blank=True, null=True, storage=poms.integrations.storage.ImportConfigStorage(),
+                                   upload_to=poms.integrations.models.import_cert_upload_to),
         ),
         migrations.AlterField(
             model_name='bloombergconfig',
             name='key',
-            field=models.FileField(blank=True, null=True, storage=poms.integrations.storage.BloombergCertStorage(),
-                                   upload_to=poms.integrations.models.bloomberg_cert_upload_to),
+            field=models.FileField(blank=True, null=True, storage=poms.integrations.storage.ImportConfigStorage(),
+                                   upload_to=poms.integrations.models.import_cert_upload_to),
         ),
         migrations.AlterField(
             model_name='bloombergconfig',
             name='p12cert',
-            field=models.FileField(blank=True, null=True, storage=poms.integrations.storage.BloombergCertStorage(),
-                                   upload_to=poms.integrations.models.bloomberg_cert_upload_to),
+            field=models.FileField(blank=True, null=True, storage=poms.integrations.storage.ImportConfigStorage(),
+                                   upload_to=poms.integrations.models.import_cert_upload_to),
         ),
     ]

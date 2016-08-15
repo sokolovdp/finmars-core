@@ -6,7 +6,6 @@ from datetime import timedelta
 from logging import getLogger
 
 import six
-from django.core.cache import caches
 from django.core.exceptions import ObjectDoesNotExist
 from django.core.signing import TimestampSigner, BadSignature
 from django.utils import timezone
@@ -19,9 +18,9 @@ from poms.currencies.fields import CurrencyField
 from poms.currencies.serializers import CurrencyHistorySerializer
 from poms.instruments.fields import InstrumentTypeField, InstrumentAttributeTypeField, InstrumentField
 from poms.instruments.serializers import InstrumentAttributeSerializer, PriceHistorySerializer, InstrumentSerializer
-from poms.integrations.fields import InstrumentMappingField
+from poms.integrations.fields import InstrumentMappingField, ProviderClassField
 from poms.integrations.models import InstrumentMapping, InstrumentMappingInput, InstrumentMappingAttribute, \
-    BloombergConfig, BloombergTask
+    ImportConfig, Task, ProviderClass
 from poms.integrations.providers.bloomberg import create_instrument_price_history, create_currency_price_history
 from poms.integrations.storage import FileImportStorage
 from poms.users.fields import MasterUserField, MemberField, HiddenMemberField
@@ -40,6 +39,7 @@ FILE_FORMAT_CSV = 1
 FILE_FORMAT_CHOICES = (
     (FILE_FORMAT_CSV, 'CSV'),
 )
+
 
 # bloomberg_cache = caches['bloomberg']
 
@@ -77,14 +77,14 @@ class InstrumentMappingSerializer(serializers.ModelSerializer):
     price_multiplier = ExpressionField(allow_blank=True)
     accrued_currency = ExpressionField(allow_blank=True)
     accrued_multiplier = ExpressionField(allow_blank=True)
-    daily_pricing_model = ExpressionField(allow_blank=True)
-    payment_size_detail = ExpressionField(allow_blank=True)
-    default_price = ExpressionField(allow_blank=True)
-    default_accrued = ExpressionField(allow_blank=True)
+    # daily_pricing_model = ExpressionField(allow_blank=True)
+    # payment_size_detail = ExpressionField(allow_blank=True)
+    # default_price = ExpressionField(allow_blank=True)
+    # default_accrued = ExpressionField(allow_blank=True)
     user_text_1 = ExpressionField(allow_blank=True)
     user_text_2 = ExpressionField(allow_blank=True)
     user_text_3 = ExpressionField(allow_blank=True)
-    price_download_mode = ExpressionField(allow_blank=True)
+    # price_download_mode = ExpressionField(allow_blank=True)
     attributes = InstrumentAttributeMappingSerializer(many=True, read_only=False)
 
     class Meta:
@@ -94,8 +94,10 @@ class InstrumentMappingSerializer(serializers.ModelSerializer):
             'inputs',
             'user_code', 'name', 'short_name', 'public_name', 'notes',
             'instrument_type', 'pricing_currency', 'price_multiplier', 'accrued_currency', 'accrued_multiplier',
-            'daily_pricing_model', 'payment_size_detail', 'default_price', 'default_accrued', 'user_text_1',
-            'user_text_2', 'user_text_3', 'price_download_mode', 'attributes'
+            # 'daily_pricing_model', 'payment_size_detail', 'default_price', 'default_accrued',
+            'user_text_1', 'user_text_2', 'user_text_3',
+            # 'price_download_mode',
+            'attributes'
         ]
 
     def create(self, validated_data):
@@ -151,30 +153,31 @@ class InstrumentMappingSerializer(serializers.ModelSerializer):
         instance.attributes.exclude(pk__in=pk_set).delete()
 
 
-class BloombergConfigSerializer(serializers.ModelSerializer):
+class ImportConfigSerializer(serializers.ModelSerializer):
     master_user = MasterUserField()
     p12cert = serializers.FileField(allow_null=True, allow_empty_file=False, write_only=True)
     password = serializers.CharField(allow_null=True, allow_blank=True, write_only=True)
 
     class Meta:
-        model = BloombergConfig
-        fields = ['url', 'id', 'master_user', 'p12cert', 'password', 'has_p12cert', 'has_password', ]
+        model = ImportConfig
+        fields = ['url', 'id', 'master_user', 'provider', 'p12cert', 'password', 'has_p12cert', 'has_password', ]
 
 
-class BloombergTaskSerializer(serializers.ModelSerializer):
+class TaskSerializer(serializers.ModelSerializer):
     master_user = MasterUserField()
     member = MemberField()
 
-    # kwargs_json = serializers.JSONField(read_only=True)
-    # result_json = serializers.JSONField(read_only=True)
-
     class Meta:
-        model = BloombergTask
-        fields = ['url', 'id', 'master_user', 'member', 'action', 'created', 'modified', 'status',
-                  'kwargs_object', 'result_object', ]
+        model = Task
+        fields = ['url', 'id', 'master_user', 'member', 'provider',
+                  'action',
+                  'created', 'modified', 'status',
+                  'kwargs_object',
+                  'isin', 'instruments', 'currencies',
+                  'result_object', ]
 
 
-class FileInstrumentImportSerializer(serializers.Serializer):
+class ImportFileInstrumentSerializer(serializers.Serializer):
     master_user = MasterUserField()
     mode = serializers.ChoiceField(choices=IMPORT_MODE_CHOICES)
 
@@ -227,11 +230,12 @@ class FileInstrumentImportSerializer(serializers.Serializer):
         return '%s/%s/%s' % (owner.pk, token[0:4], token)
 
 
-class BloombergInstrumentImportEntry(object):
-    def __init__(self, master_user=None, member=None, mapping=None, mode=None, isin=None, task=None,
+class ImportInstrumentEntry(object):
+    def __init__(self, master_user=None, member=None, provider=None, mapping=None, mode=None, isin=None, task=None,
                  task_result_overrides=None, instrument=None):
         self.master_user = master_user
         self.member = member
+        self.provider = provider
         self.mapping = mapping
         self.mode = mode
         self.isin = isin
@@ -254,11 +258,11 @@ class BloombergInstrumentImportEntry(object):
         }
 
 
-class ImportInstrumentSerializer(InstrumentSerializer):
+class InstrumentMiniSerializer(InstrumentSerializer):
     attributes = serializers.SerializerMethodField()
 
     def __init__(self, *args, **kwargs):
-        super(ImportInstrumentSerializer, self).__init__(*args, **kwargs)
+        super(InstrumentMiniSerializer, self).__init__(*args, **kwargs)
         self.fields.pop('manual_pricing_formulas')
         self.fields.pop('accrual_calculation_schedules')
         self.fields.pop('factor_schedules')
@@ -276,27 +280,28 @@ class ImportInstrumentSerializer(InstrumentSerializer):
             return InstrumentAttributeSerializer(instance=obj.attributes.all(), many=True, read_only=True).data
 
 
-class BloombergInstrumentImportSerializer(serializers.Serializer):
+class ImportInstrumentSerializer(serializers.Serializer):
     master_user = MasterUserField()
     member = HiddenMemberField()
+    provider = ProviderClassField()
     mapping = InstrumentMappingField()
     mode = serializers.ChoiceField(choices=IMPORT_MODE_CHOICES)
 
     isin = ISINField(required=True, initial='XS1433454243 Corp')
 
     task = serializers.CharField(required=False, allow_blank=True, allow_null=True)
-    task_object = BloombergTaskSerializer(read_only=True)
+    task_object = TaskSerializer(read_only=True)
     task_result_overrides = serializers.JSONField(default={})
 
-    instrument = ImportInstrumentSerializer(read_only=True)
+    instrument = InstrumentMiniSerializer(read_only=True)
 
     def create(self, validated_data):
         task_result_overrides = validated_data.get('task_result_overrides', None)
         if task_result_overrides and (task_result_overrides.startswith('[') or task_result_overrides.startswith('{')):
             task_result_overrides = json.loads(task_result_overrides)
-        instance = BloombergInstrumentImportEntry(**validated_data)
+        instance = ImportInstrumentEntry(**validated_data)
         if instance.task:
-            if instance.task_object.status == BloombergTask.STATUS_DONE:
+            if instance.task_object.status == Task.STATUS_DONE:
                 values = instance.task_object.result_object
                 if task_result_overrides:
                     values.update(task_result_overrides)
@@ -306,20 +311,22 @@ class BloombergInstrumentImportSerializer(serializers.Serializer):
                     instance.instrument = instance.mapping.create_instrument(values, save=True)
         else:
             from poms.integrations.tasks import bloomberg_instrument
-            fields = [i.name for i in instance.mapping.inputs.all()]
-            instance.task = bloomberg_instrument(
-                master_user=instance.master_user, member=instance.member,
-                instrument=instance.to_request,
-                fields=fields)
+            if instance.provider.id == ProviderClass.BLOOMBERG:
+                fields = [i.name for i in instance.mapping.inputs.all()]
+                instance.task = bloomberg_instrument(
+                    master_user=instance.master_user, member=instance.member,
+                    instrument=instance.to_request,
+                    fields=fields)
 
         return instance
 
 
-class BloombergPriceHistoryImportEntry(object):
-    def __init__(self, master_user=None, member=None, mode=None, instruments=None,
+class ImportPriceHistoryEntry(object):
+    def __init__(self, master_user=None, member=None, provider=None, mode=None, instruments=None,
                  date_from=None, date_to=None, task=None, histories=None):
         self.master_user = master_user
         self.member = member
+        self.provider = provider
         self.mode = mode
         self.instruments = instruments
         self.date_from = date_from
@@ -335,18 +342,22 @@ class BloombergPriceHistoryImportEntry(object):
         return self._task_object
 
 
-class BloombergPriceHistoryImportSerializer(serializers.Serializer):
+class ImportPriceHistorySerializer(serializers.Serializer):
     master_user = MasterUserField()
+    member = HiddenMemberField()
+    provider = ProviderClassField()
+
     mode = serializers.ChoiceField(choices=IMPORT_MODE_CHOICES)
+
     instruments = InstrumentField(many=True, allow_empty=False)
     date_from = serializers.DateField(allow_null=True, required=False)
     date_to = serializers.DateField(allow_null=True, required=False)
     task = serializers.CharField(required=False, allow_blank=True, allow_null=True)
-    task_object = BloombergTaskSerializer(read_only=True)
+    task_object = TaskSerializer(read_only=True)
     histories = PriceHistorySerializer(many=True, read_only=True)
 
     def validate(self, attrs):
-        attrs = super(BloombergPriceHistoryImportSerializer, self).validate(attrs)
+        attrs = super(ImportPriceHistorySerializer, self).validate(attrs)
         date_from = attrs.get('date_from', None)
         date_to = attrs.get('date_to', None)
         if date_from or date_to:
@@ -361,9 +372,9 @@ class BloombergPriceHistoryImportSerializer(serializers.Serializer):
         return attrs
 
     def create(self, validated_data):
-        instance = BloombergPriceHistoryImportEntry(**validated_data)
+        instance = ImportPriceHistoryEntry(**validated_data)
         if instance.task:
-            if instance.task_object.status == BloombergTask.STATUS_DONE:
+            if instance.task_object.status == Task.STATUS_DONE:
                 try:
                     instance.histories = create_instrument_price_history(
                         task=instance.task_object,
@@ -384,42 +395,45 @@ class BloombergPriceHistoryImportSerializer(serializers.Serializer):
 
             if instruments:
                 yesterday = timezone.now().date() - timedelta(days=1)
-                action = BloombergTask.ACTION_PRICE_HISTORY
+                action = Task.ACTION_PRICE_HISTORY
                 if (instance.date_from is None and instance.date_to is None) or \
                         (instance.date_from == yesterday and instance.date_to == yesterday):
-                    action = BloombergTask.ACTION_PRICING_LATEST
+                    action = Task.ACTION_PRICING_LATEST
                 if instance.date_from is None:
                     instance.date_from = yesterday
                 if instance.date_to is None:
                     instance.date_to = yesterday
 
-                if action == BloombergTask.ACTION_PRICING_LATEST:
-                    from poms.integrations.tasks import bloomberg_pricing_latest
-                    instance.task = bloomberg_pricing_latest(
-                        master_user=instance.master_user,
-                        member=instance.member,
-                        instruments=instruments,
-                        date_from=instance.date_from,
-                        date_to=instance.date_to
-                    )
+                if action == Task.ACTION_PRICING_LATEST:
+                    if instance.provider.id == ProviderClass.BLOOMBERG:
+                        from poms.integrations.tasks import bloomberg_pricing_latest
+                        instance.task = bloomberg_pricing_latest(
+                            master_user=instance.master_user,
+                            member=instance.member,
+                            instruments=instruments,
+                            date_from=instance.date_from,
+                            date_to=instance.date_to
+                        )
                 else:
-                    from poms.integrations.tasks import bloomberg_pricing_history
-                    instance.task = bloomberg_pricing_history(
-                        master_user=instance.master_user,
-                        member=instance.member,
-                        instruments=instruments,
-                        date_from=instance.date_from,
-                        date_to=instance.date_to
-                    )
+                    if instance.provider.id == ProviderClass.BLOOMBERG:
+                        from poms.integrations.tasks import bloomberg_pricing_history
+                        instance.task = bloomberg_pricing_history(
+                            master_user=instance.master_user,
+                            member=instance.member,
+                            instruments=instruments,
+                            date_from=instance.date_from,
+                            date_to=instance.date_to
+                        )
 
         return instance
 
 
-class BloombergCurrencyHistoryImportEntry(object):
-    def __init__(self, master_user=None, member=None, mode=None, currencies=None,
+class ImportCurrencyHistoryEntry(object):
+    def __init__(self, master_user=None, member=None, provider=None, mode=None, currencies=None,
                  date_from=None, date_to=None, task=None, histories=None):
         self.master_user = master_user
         self.member = member
+        self.provider = provider
         self.mode = mode
         self.currencies = currencies
         self.date_from = date_from
@@ -435,18 +449,21 @@ class BloombergCurrencyHistoryImportEntry(object):
         return self._task_object
 
 
-class BloombergCurrencyHistoryImportSerializer(serializers.Serializer):
+class ImportCurrencyHistorySerializer(serializers.Serializer):
     master_user = MasterUserField()
+    member = HiddenMemberField()
+    provider = ProviderClassField()
+
     mode = serializers.ChoiceField(choices=IMPORT_MODE_CHOICES)
     currencies = CurrencyField(many=True, allow_empty=False)
     date_from = serializers.DateField(allow_null=True, required=False)
     date_to = serializers.DateField(allow_null=True, required=False)
     task = serializers.CharField(required=False, allow_blank=True, allow_null=True)
-    task_object = BloombergTaskSerializer(read_only=True)
+    task_object = TaskSerializer(read_only=True)
     histories = CurrencyHistorySerializer(many=True, read_only=True)
 
     def validate(self, attrs):
-        attrs = super(BloombergCurrencyHistoryImportSerializer, self).validate(attrs)
+        attrs = super(ImportCurrencyHistorySerializer, self).validate(attrs)
         date_from = attrs.get('date_from', None)
         date_to = attrs.get('date_to', None)
         if date_from or date_to:
@@ -461,9 +478,9 @@ class BloombergCurrencyHistoryImportSerializer(serializers.Serializer):
         return attrs
 
     def create(self, validated_data):
-        instance = BloombergCurrencyHistoryImportEntry(**validated_data)
+        instance = ImportCurrencyHistoryEntry(**validated_data)
         if instance.task:
-            if instance.task_object.status == BloombergTask.STATUS_DONE:
+            if instance.task_object.status == Task.STATUS_DONE:
                 try:
                     instance.histories = create_currency_price_history(
                         task=instance.task_object,
@@ -483,33 +500,35 @@ class BloombergCurrencyHistoryImportSerializer(serializers.Serializer):
                 })
             if currencies:
                 yesterday = timezone.now().date() - timedelta(days=1)
-                action = BloombergTask.ACTION_PRICE_HISTORY
+                action = Task.ACTION_PRICE_HISTORY
                 if (instance.date_from is None and instance.date_to is None) or \
                         (instance.date_from == yesterday and instance.date_to == yesterday):
-                    action = BloombergTask.ACTION_PRICING_LATEST
+                    action = Task.ACTION_PRICING_LATEST
                 if instance.date_from is None:
                     instance.date_from = yesterday
                 if instance.date_to is None:
                     instance.date_to = yesterday
 
                 from poms.integrations.tasks import bloomberg_pricing_history
-                if action == BloombergTask.ACTION_PRICING_LATEST:
-                    from poms.integrations.tasks import bloomberg_pricing_latest
-                    instance.task = bloomberg_pricing_latest(
-                        master_user=instance.master_user,
-                        member=instance.member,
-                        instruments=currencies,
-                        date_from=instance.date_from,
-                        date_to=instance.date_to
-                    )
+                if action == Task.ACTION_PRICING_LATEST:
+                    if instance.provider.id == ProviderClass.BLOOMBERG:
+                        from poms.integrations.tasks import bloomberg_pricing_latest
+                        instance.task = bloomberg_pricing_latest(
+                            master_user=instance.master_user,
+                            member=instance.member,
+                            instruments=currencies,
+                            date_from=instance.date_from,
+                            date_to=instance.date_to
+                        )
                 else:
-                    from poms.integrations.tasks import bloomberg_pricing_history
-                    instance.task = bloomberg_pricing_history(
-                        master_user=instance.master_user,
-                        member=instance.member,
-                        instruments=currencies,
-                        date_from=instance.date_from,
-                        date_to=instance.date_to
-                    )
+                    if instance.provider.id == ProviderClass.BLOOMBERG:
+                        from poms.integrations.tasks import bloomberg_pricing_history
+                        instance.task = bloomberg_pricing_history(
+                            master_user=instance.master_user,
+                            member=instance.member,
+                            instruments=currencies,
+                            date_from=instance.date_from,
+                            date_to=instance.date_to
+                        )
 
         return instance

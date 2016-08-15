@@ -18,14 +18,14 @@ class FileImportStorage(LazyObject):
 file_import_storage = FileImportStorage()
 
 
-class BloombergCertStorage(LazyObject):
+class ImportConfigStorage(LazyObject):
     def _setup(self):
-        clazz = get_storage_class(settings.BLOOMBERG_CERT_STORAGE['BACKEND'])
-        kwargs = settings.BLOOMBERG_CERT_STORAGE['KWARGS'] or {}
+        clazz = get_storage_class(settings.IMPORT_CONFIG_STORAGE['BACKEND'])
+        kwargs = settings.IMPORT_CONFIG_STORAGE['KWARGS'] or {}
         self._wrapped = clazz(**kwargs)
 
     def deconstruct(self):
-        return 'poms.integrations.storage.BloombergStorage', [], {}
+        return 'poms.integrations.storage.ImportConfigStorage', [], {}
 
 
-bloomberg_cert_storage = BloombergCertStorage()
+import_config_storage = ImportConfigStorage()

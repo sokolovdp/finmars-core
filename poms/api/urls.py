@@ -120,20 +120,20 @@ router.register(r'security/http-session', sessions.SessionViewSet)
 router.register(r'audit/auth-log', audit.AuthLogViewSet)
 router.register(r'audit/history', audit.ObjectHistory4ViewSet)
 
-router.register(r'bloomberg/config', integrations.BloombergConfigViewSet)
-router.register(r'bloomberg/task', integrations.BloombergTaskViewSet)
+router.register(r'import/config', integrations.ImportConfigViewSet)
+router.register(r'import/task', integrations.TaskViewSet)
 
-router.register(r'import/instuments/instrument/mapping', integrations.InstrumentMappingViewSet)
+router.register(r'import/mapping/instrument/', integrations.InstrumentMappingViewSet)
 
-router.register(r'import/file/instuments/instrument', integrations.FileInstrumentImportViewSet,
-                'FileInstrumentImportViewSet')
+router.register(r'import/file/instrument', integrations.ImportFileInstrumentViewSet,
+                'ImportFileInstrumentViewSet')
 
-router.register(r'import/bloomberg/instuments/instrument', integrations.BloombergInstrumentImportViewSet,
-                'BloombergInstrumentImportViewSet')
-router.register(r'import/bloomberg/instuments/price-history', integrations.BloombergPriceHistoryImportViewSet,
-                'BloombergPriceHistoryImportViewSet')
-router.register(r'import/bloomberg/currencies/currency-history', integrations.BloombergCurrencyHistoryImportViewSet,
-                'BloombergCurrencyHistoryImportViewSet')
+router.register(r'import/instrument', integrations.ImportInstrumentViewSet,
+                'ImportInstrumentViewSet')
+router.register(r'import/instrument-price-history', integrations.ImportPriceHistoryViewSet,
+                'ImportPriceHistoryViewSet')
+router.register(r'import/currency-history', integrations.ImportCurrencyHistoryViewSet,
+                'ImportCurrencyHistoryViewSet')
 
 urlpatterns = [
     url(r'^v1/', include(router.urls, namespace='v1')),

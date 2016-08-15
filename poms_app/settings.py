@@ -504,18 +504,19 @@ FILE_IMPORT_STORAGE = {
 
 # BLOOMBERG ------------------------------------------------
 
+IMPORT_CONFIG_STORAGE = {
+    'BACKEND': 'django.core.files.storage.FileSystemStorage',
+    'KWARGS': {
+        'location': os.path.join(BASE_DIR, 'tmp', 'import-config'),
+        'base_url': '/api/bloomberg/'
+    }
+}
+
 
 BLOOMBERG_SANDBOX = True
 BLOOMBERG_WSDL = 'https://service.bloomberg.com/assets/dl/dlws.wsdl'
 BLOOMBERG_RETRY_DELAY = 1
 BLOOMBERG_MAX_RETRIES = 60
-BLOOMBERG_CERT_STORAGE = {
-    'BACKEND': 'django.core.files.storage.FileSystemStorage',
-    'KWARGS': {
-        'location': os.path.join(BASE_DIR, 'tmp', 'bloomberg'),
-        'base_url': '/api/bloomberg/'
-    }
-}
 
 
 LOGIN_URL = 'two_factor:login'

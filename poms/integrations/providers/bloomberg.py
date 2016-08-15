@@ -20,7 +20,7 @@ from suds.transport.http import HttpAuthenticated
 from poms.common import formula
 from poms.currencies.models import CurrencyHistory
 from poms.instruments.models import PriceHistory
-from poms.integrations.models import BloombergTask
+from poms.integrations.models import Task
 
 __author__ = 'alyakhov'
 
@@ -813,11 +813,11 @@ def create_instrument_price_history(task, instruments=None, pricing_policies=Non
         if instr is None:
             continue
 
-        if task.action == BloombergTask.ACTION_PRICING_LATEST:
+        if task.action == Task.ACTION_PRICING_LATEST:
             values = fix_pricing_latest(values)
             _create(instr, values, price_date=kwargs['date_from'])
 
-        elif task.action == BloombergTask.ACTION_PRICE_HISTORY:
+        elif task.action == Task.ACTION_PRICE_HISTORY:
             for pd in values:
                 pd = fix_price_history(pd)
                 _create(instr, pd, price_date=None)
@@ -898,11 +898,11 @@ def create_currency_price_history(task, currencies=None, pricing_policies=None, 
         if ccy is None:
             continue
 
-        if task.action == BloombergTask.ACTION_PRICING_LATEST:
+        if task.action == Task.ACTION_PRICING_LATEST:
             values = fix_pricing_latest(values)
             _create(ccy, values, price_date=kwargs['date_from'])
 
-        elif task.action == BloombergTask.ACTION_PRICE_HISTORY:
+        elif task.action == Task.ACTION_PRICE_HISTORY:
             for pd in values:
                 pd = fix_price_history(pd)
                 _create(ccy, pd, price_date=None)

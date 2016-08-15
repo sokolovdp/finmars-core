@@ -1,7 +1,7 @@
 from rest_framework.filters import BaseFilterBackend
 
 
-class BloombergTaskFilter(BaseFilterBackend):
+class TaskFilter(BaseFilterBackend):
     def filter_queryset(self, request, queryset, view):
         # master_user = get_master_user(request)
         master_user = request.user.master_user

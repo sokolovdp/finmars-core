@@ -3,15 +3,16 @@ from __future__ import unicode_literals, print_function
 from django import forms
 from django.conf import settings
 from django.contrib import admin
-from kombu.transport.django.models import Queue, Message
 
 from poms.audit.admin import HistoricalAdmin
 from poms.common.admin import ClassModelAdmin
-from poms.integrations.models import InstrumentMapping, InstrumentMappingAttribute, BloombergTask, BloombergConfig, \
+from poms.integrations.models import InstrumentMapping, InstrumentMappingAttribute, Task, ImportConfig, \
     InstrumentMappingInput, ProviderClass, FactorScheduleMethod, AccrualCalculationScheduleMethod, PricingFieldMapping, \
     CurrencyMapping, InstrumentTypeMapping, InstrumentAttributeValueMapping
 
 if settings.DEBUG and 'kombu.transport.django' in settings.INSTALLED_APPS:
+    from kombu.transport.django.models import Queue, Message
+
     class QueueAdmin(admin.ModelAdmin):
         model = Queue
         list_display = ('id', 'name')
@@ -41,6 +42,10 @@ if settings.DEBUG and 'kombu.transport.django' in settings.INSTALLED_APPS:
 
     admin.site.register(Message, MessageAdmin)
 
+admin.site.register(ProviderClass, ClassModelAdmin)
+admin.site.register(FactorScheduleMethod, ClassModelAdmin)
+admin.site.register(AccrualCalculationScheduleMethod, ClassModelAdmin)
+
 
 class InstrumentMappingInputInline(admin.TabularInline):
     model = InstrumentMappingInput
@@ -68,32 +73,32 @@ class InstrumentMappingAdmin(HistoricalAdmin):
 admin.site.register(InstrumentMapping, InstrumentMappingAdmin)
 
 
-class BloombergConfigForm(forms.ModelForm):
+class ImportConfigForm(forms.ModelForm):
     password = forms.CharField(widget=forms.PasswordInput(), required=False)
 
     class Meta:
-        model = BloombergConfig
-        fields = ['master_user', 'p12cert', 'password', 'cert', 'key']
+        model = ImportConfig
+        fields = ['master_user', 'provider', 'p12cert', 'password', 'cert', 'key']
 
 
-class BloombergConfigAdmin(HistoricalAdmin):
-    model = BloombergConfig
-    form = BloombergConfigForm
+class ImportConfigAdmin(HistoricalAdmin):
+    model = ImportConfig
+    form = ImportConfigForm
     list_display = ['id', 'master_user', ]
     list_select_related = ['master_user', ]
     raw_id_fields = ['master_user', ]
 
 
-admin.site.register(BloombergConfig, BloombergConfigAdmin)
+admin.site.register(ImportConfig, ImportConfigAdmin)
 
 
-class BloombergTaskAdmin(admin.ModelAdmin):
-    model = BloombergTask
+class TaskAdmin(admin.ModelAdmin):
+    model = Task
     list_display = ['id', 'created', 'master_user', 'member', 'action', 'status', ]
     list_select_related = ['master_user', 'member', ]
-    raw_id_fields = ['master_user', 'member', ]
+    raw_id_fields = ['master_user', 'member', 'instruments', 'currencies']
     search_fields = ['action', 'response_id', ]
-    list_filter = ['created', 'action', 'status', ]
+    list_filter = ['provider', 'created', 'action', 'status', ]
     date_hierarchy = 'created'
 
     # if not settings.DEBUG:
@@ -104,11 +109,7 @@ class BloombergTaskAdmin(admin.ModelAdmin):
         pass
 
 
-admin.site.register(BloombergTask, BloombergTaskAdmin)
-
-admin.site.register(ProviderClass, ClassModelAdmin)
-admin.site.register(FactorScheduleMethod, ClassModelAdmin)
-admin.site.register(AccrualCalculationScheduleMethod, ClassModelAdmin)
+admin.site.register(Task, TaskAdmin)
 
 
 class PricingFieldMappingAdmin(admin.ModelAdmin):
@@ -124,11 +125,13 @@ admin.site.register(PricingFieldMapping, PricingFieldMappingAdmin)
 class CurrencyMappingAdmin(admin.ModelAdmin):
     model = CurrencyMapping
     list_display = ['id', 'master_user', 'provider', 'value', 'currency']
-    list_select_related = ['currency__master_user', 'currency', 'provider']
+    list_select_related = ['currency', 'currency__master_user', 'provider']
     raw_id_fields = ['currency']
 
     def master_user(self, obj):
-        return obj.currency.master_user
+        return obj.currency.master_user.name
+
+    master_user.admin_order_field = 'currency__master_user__name'
 
 
 admin.site.register(CurrencyMapping, CurrencyMappingAdmin)
@@ -137,11 +140,13 @@ admin.site.register(CurrencyMapping, CurrencyMappingAdmin)
 class InstrumentTypeMappingAdmin(admin.ModelAdmin):
     model = InstrumentTypeMapping
     list_display = ['id', 'master_user', 'provider', 'value', 'instrument_type']
-    list_select_related = ['instrument_type__master_user', 'instrument_type', 'provider']
+    list_select_related = ['instrument_type', 'instrument_type__master_user', 'provider']
     raw_id_fields = ['instrument_type']
 
     def master_user(self, obj):
-        return obj.instrument_type.master_user
+        return obj.instrument_type.master_user.name
+
+    master_user.admin_order_field = 'instrument_type__master_user__name'
 
 
 admin.site.register(InstrumentTypeMapping, InstrumentTypeMappingAdmin)
@@ -156,16 +161,18 @@ class InstrumentAttributeValueMappingAdmin(admin.ModelAdmin):
     def master_user(self, obj):
         return obj.attribute_type.master_user
 
-        # provider = models.ForeignKey(ProviderClass)
-        # value = models.CharField(max_length=255)
-        #
-        # attribute_type = models.ForeignKey('instruments.InstrumentAttributeType', on_delete=models.PROTECT,
-        #                                    verbose_name=_('attribute type'))
-        # value_string = models.CharField(max_length=255, null=True, blank=True, verbose_name=_('value (String)'))
-        # value_float = models.FloatField(null=True, blank=True, verbose_name=_('value (Float)'))
-        # value_date = models.DateField(null=True, blank=True, verbose_name=_('value (Date)'))
-        # classifier = models.ForeignKey('instruments.InstrumentClassifier', on_delete=models.PROTECT, null=True, blank=True,
-        #                                verbose_name=_('classifier'))
+    master_user.admin_order_field = 'attribute_type__master_user__name'
+
+    # provider = models.ForeignKey(ProviderClass)
+    # value = models.CharField(max_length=255)
+    #
+    # attribute_type = models.ForeignKey('instruments.InstrumentAttributeType', on_delete=models.PROTECT,
+    #                                    verbose_name=_('attribute type'))
+    # value_string = models.CharField(max_length=255, null=True, blank=True, verbose_name=_('value (String)'))
+    # value_float = models.FloatField(null=True, blank=True, verbose_name=_('value (Float)'))
+    # value_date = models.DateField(null=True, blank=True, verbose_name=_('value (Date)'))
+    # classifier = models.ForeignKey('instruments.InstrumentClassifier', on_delete=models.PROTECT, null=True, blank=True,
+    #                                verbose_name=_('classifier'))
 
 
 admin.site.register(InstrumentAttributeValueMapping, InstrumentAttributeValueMappingAdmin)
