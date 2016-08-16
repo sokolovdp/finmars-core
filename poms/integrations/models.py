@@ -32,15 +32,21 @@ class ProviderClass(AbstractClassModel):
 
 class FactorScheduleMethod(AbstractClassModel):
     IGNORE = 1
-    DEFAULT_BLOOMBERG = 100
+    DEFAULT = 2
+    # DEFAULT_BLOOMBERG = 100
     CLASSES = (
         (IGNORE, _("Ignore")),
-        (DEFAULT_BLOOMBERG, _("Default bloomberg method")),
+        (DEFAULT, _("Default")),
+        # (DEFAULT_BLOOMBERG, _("Default bloomberg method")),
     )
 
-    MAP = {
-        ProviderClass.BLOOMBERG: [IGNORE, DEFAULT_BLOOMBERG, ]
-    }
+    # MAP = {
+    #     ProviderClass.BLOOMBERG: [IGNORE, DEFAULT_BLOOMBERG, ]
+    # }
+    # PROVIDER_MAP = {
+    #     IGNORE: [ProviderClass.BLOOMBERG,],
+    #     DEFAULT_BLOOMBERG: [ProviderClass.BLOOMBERG,],
+    # }
 
     class Meta(AbstractClassModel.Meta):
         pass
@@ -48,15 +54,21 @@ class FactorScheduleMethod(AbstractClassModel):
 
 class AccrualCalculationScheduleMethod(AbstractClassModel):
     IGNORE = 1
-    DEFAULT_BLOOMBERG = 100
+    DEFAULT = 2
+    # DEFAULT_BLOOMBERG = 100
     CLASSES = (
         (IGNORE, _("Ignore")),
-        (DEFAULT_BLOOMBERG, _("Default bloomberg method")),
+        (DEFAULT, _("Default")),
+        # (DEFAULT_BLOOMBERG, _("Default bloomberg method")),
     )
 
-    MAP = {
-        ProviderClass.BLOOMBERG: [IGNORE, DEFAULT_BLOOMBERG, ]
-    }
+    # MAP = {
+    #     ProviderClass.BLOOMBERG: [IGNORE, DEFAULT_BLOOMBERG, ]
+    # }
+    # PROVIDER_MAP = {
+    #     IGNORE: [ProviderClass.BLOOMBERG,],
+    #     DEFAULT_BLOOMBERG: [ProviderClass.BLOOMBERG,],
+    # }
 
     class Meta(AbstractClassModel.Meta):
         pass
