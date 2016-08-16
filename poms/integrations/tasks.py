@@ -379,24 +379,26 @@ def bloomberg_price_history_auto_save(self, task_id):
             _l.debug('currency=%s', ccy.id)
             currencies.append(ccy)
 
-    create_instrument_price_history(
-        task=task,
-        instruments=instruments,
-        pricing_policies=pricing_policies,
-        save=True,
-        date_range=(date_from, date_to),
-        fail_silently=True,
-        expr_fail_silently=True
-    )
-    create_currency_price_history(
-        task=task,
-        currencies=currencies,
-        pricing_policies=pricing_policies,
-        save=True,
-        date_range=(date_from, date_to),
-        fail_silently=True,
-        expr_fail_silently=True
-    )
+    if instruments:
+        create_instrument_price_history(
+            task=task,
+            instruments=instruments,
+            pricing_policies=pricing_policies,
+            save=True,
+            date_range=(date_from, date_to),
+            fail_silently=True,
+            expr_fail_silently=True
+        )
+    if currencies:
+        create_currency_price_history(
+            task=task,
+            currencies=currencies,
+            pricing_policies=pricing_policies,
+            save=True,
+            date_range=(date_from, date_to),
+            fail_silently=True,
+            expr_fail_silently=True
+        )
 
     _l.debug('<')
 

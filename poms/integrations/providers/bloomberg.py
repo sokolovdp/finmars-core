@@ -231,12 +231,18 @@ class BloombergDataProvider(object):
         """
         _l.debug('> get_instrument_send_request: instrument=%s, fields=%s', instrument, fields)
 
+        headers_data = {
+            "secmaster": True,
+            "pricing": True,
+            "historical": True,
+        }
+
         fields_data = self.soap_client.factory.create('Fields')
         for field in fields:
             fields_data.field.append(field)
 
         response = self.soap_client.service.submitGetDataRequest(
-            headers={"secmaster": True,},
+            headers=headers_data,
             fields=fields_data,
             instruments=[
                 {
@@ -825,7 +831,6 @@ def create_instrument_price_history(task, instruments=None, pricing_policies=Non
         else:
             raise RuntimeError('Invalid action "%s" in task "%s"' % (task.action, task.id))
 
-
     if save and bulk:
         PriceHistory.objects.bulk_create(histories)
 
@@ -910,29 +915,29 @@ def create_currency_price_history(task, currencies=None, pricing_policies=None, 
         else:
             raise RuntimeError('Invalid action "%s" in task "%s"' % (task.action, task.id))
 
-        # for pd in values:
-        #     pd = map_func(pd)
-        #     for pp in pricing_policies:
-        #         p = CurrencyHistory()
-        #         p.currency = ccy
-        #         if fixed_date:
-        #             p.date = fixed_date
-        #         else:
-        #             p.date = str_to_date(pd['DATE'])
-        #         p.pricing_policy = pp
-        #         p.fx_rate = formula.safe_eval(pp.expr, names=pd)
-        #
-        #         if fail_silently and (p.currency_id, p.pricing_policy_id, p.date) in exists:
-        #             continue
-        #
-        #         if save and not bulk:
-        #             try:
-        #                 p.save()
-        #             except IntegrityError:
-        #                 if not fail_silently:
-        #                     raise
-        #
-        #         histories.append(p)
+            # for pd in values:
+            #     pd = map_func(pd)
+            #     for pp in pricing_policies:
+            #         p = CurrencyHistory()
+            #         p.currency = ccy
+            #         if fixed_date:
+            #             p.date = fixed_date
+            #         else:
+            #             p.date = str_to_date(pd['DATE'])
+            #         p.pricing_policy = pp
+            #         p.fx_rate = formula.safe_eval(pp.expr, names=pd)
+            #
+            #         if fail_silently and (p.currency_id, p.pricing_policy_id, p.date) in exists:
+            #             continue
+            #
+            #         if save and not bulk:
+            #             try:
+            #                 p.save()
+            #             except IntegrityError:
+            #                 if not fail_silently:
+            #                     raise
+            #
+            #         histories.append(p)
 
     if save and bulk:
         PriceHistory.objects.bulk_create(histories)
@@ -949,11 +954,40 @@ def test_instrument_data(b):
     _l.info('-' * 79)
 
     instrument_fields = [
-        "CRNCY", "SECURITY_TYP", "ISSUER", "CNTRY_OF_RISK", "INDUSTRY_SECTOR", "INDUSTRY_SUBGROUP", "SECURITY_DES",
-        "ID_ISIN", "ID_CUSIP", "ID_BB_GLOBAL", "MATURITY", "CPN", "CUR_CPN", "CPN_FREQ",
-        "COUPON_FREQUENCY_DESCRIPTION", "CALC_TYP", "CALC_TYP_DES", "DAY_CNT", "DAY_CNT_DES", "INT_ACC_DT",
-        "FIRST_SETTLE_DT", "FIRST_CPN_DT", "OPT_PUT_CALL", "MTY_TYP", "PAYMENT_RANK", "CPN_TYP",
-        "CPN_TYP_SPECIFIC", "ACCRUED_FACTOR", "DAYS_TO_SETTLE", "DES_NOTES",
+        "CRNCY",
+        "SECURITY_TYP",
+        "ISSUER",
+        "CNTRY_OF_RISK",
+        "INDUSTRY_SECTOR",
+        "INDUSTRY_SUBGROUP",
+        "SECURITY_DES",
+        "ID_ISIN",
+        "ID_CUSIP",
+        "ID_BB_GLOBAL",
+        "MATURITY",
+        "CPN",
+        "CUR_CPN",
+        "CPN_FREQ",
+        "COUPON_FREQUENCY_DESCRIPTION",
+        "CALC_TYP",
+        "CALC_TYP_DES",
+        "DAY_CNT",
+        "DAY_CNT_DES",
+        "INT_ACC_DT",
+        "FIRST_SETTLE_DT",
+        "FIRST_CPN_DT",
+        "OPT_PUT_CALL",
+        "MTY_TYP",
+        "PAYMENT_RANK",
+        "CPN_TYP",
+        "CPN_TYP_SPECIFIC",
+        "ACCRUED_FACTOR",
+        "DAYS_TO_SETTLE",
+        "DES_NOTES",
+
+        "PX_YEST_BID",
+        "PX_YEST_ASK",
+        "PX_YEST_CLOSE",
     ]
 
     instrument = {
@@ -1080,10 +1114,10 @@ if __name__ == "__main__":
 
     cert, key = get_certs_from_file(p12cert, password)
 
-    # b = BloomberDataProvider(wsdl="https://service.bloomberg.com/assets/dl/dlws.wsdl", cert=cert, key=key)
-    b = FakeBloombergDataProvider(wsdl="https://service.bloomberg.com/assets/dl/dlws.wsdl", cert=cert, key=key)
+    b = BloombergDataProvider(wsdl="https://service.bloomberg.com/assets/dl/dlws.wsdl", cert=cert, key=key)
+    # b = FakeBloombergDataProvider(wsdl="https://service.bloomberg.com/assets/dl/dlws.wsdl", cert=cert, key=key)
     # b.get_fields()
-    # test_instrument_data(b)
+    test_instrument_data(b)
     # test_pricing_latest(b)
     # test_pricing_history(b)
 
@@ -1091,15 +1125,15 @@ if __name__ == "__main__":
     # _l.info('1: %s', parser.parse("06/16/2023"))
     # _l.info('2: %s', parser.parse("2016-06-15"))
 
-    from poms.integrations.tasks import bloomberg_call
-    from poms.users.models import MasterUser
-
-    master_user = MasterUser.objects.first()
-
-    a = bloomberg_call(
-        master_user=master_user,
-        action='fields'
-    )
+    # from poms.integrations.tasks import bloomberg_call
+    # from poms.users.models import MasterUser
+    #
+    # master_user = MasterUser.objects.first()
+    #
+    # a = bloomberg_call(
+    #     master_user=master_user,
+    #     action='fields'
+    # )
     # a = bloomberg_instrument(
     #     master_user=master_user,
     #     instrument={
