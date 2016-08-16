@@ -86,7 +86,7 @@ INSTALLED_APPS = [
 # if DEBUG:
 #     INSTALLED_APPS += ['debug_toolbar', ]
 
-if DEBUG or DEV:
+if DEBUG:
     INSTALLED_APPS += [
         'redisboard',
     ]
