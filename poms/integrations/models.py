@@ -287,8 +287,8 @@ class PricingFieldMapping(models.Model):
 
     @property
     def fields(self):
-        return self._get_fields('bid0', 'bid1', 'bid2',
-                                'ask0', 'ask1', 'ask2',
+        return self._get_fields('bid0', 'bid1', 'bid2', 'bid_history',
+                                'ask0', 'ask1', 'ask2', 'ask_history',
                                 'last', 'mid')
 
     @property

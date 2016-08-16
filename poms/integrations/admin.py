@@ -3,6 +3,7 @@ from __future__ import unicode_literals, print_function
 from django import forms
 from django.conf import settings
 from django.contrib import admin
+from django.utils.translation import ugettext_lazy as _
 
 from poms.audit.admin import HistoricalAdmin
 from poms.common.admin import ClassModelAdmin
@@ -119,9 +120,18 @@ admin.site.register(Task, TaskAdmin)
 
 class PricingFieldMappingAdmin(admin.ModelAdmin):
     model = PricingFieldMapping
-    list_display = ['id', 'master_user', 'provider']
+    list_display = ['id', 'master_user', 'provider', 'fields0']
     list_select_related = ['master_user', 'provider']
+    list_filter = ['provider']
     raw_id_fields = ['master_user']
+
+    def fields0(self, obj):
+        f = obj.fields
+        if f:
+            return ', '.join(f)
+        return None
+
+    fields0.short_description = _('fields')
 
 
 admin.site.register(PricingFieldMapping, PricingFieldMappingAdmin)
