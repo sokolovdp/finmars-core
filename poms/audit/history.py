@@ -134,7 +134,7 @@ def _is_enabled(obj):
         return False
     if isinstance(obj, get_history_model_list()):
         return True
-    return True
+    return False
 
 
 def _is_disabled(obj):
