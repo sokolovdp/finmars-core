@@ -7,9 +7,10 @@ from django.utils.translation import ugettext_lazy as _
 
 from poms.audit.admin import HistoricalAdmin
 from poms.common.admin import ClassModelAdmin
-from poms.integrations.models import InstrumentMapping, InstrumentMappingAttribute, Task, ImportConfig, \
-    InstrumentMappingInput, ProviderClass, FactorScheduleMethod, AccrualCalculationScheduleMethod, PricingFieldMapping, \
-    CurrencyMapping, InstrumentTypeMapping, InstrumentAttributeValueMapping
+from poms.integrations.models import Task, ImportConfig, ProviderClass, CurrencyMapping, \
+    InstrumentTypeMapping, InstrumentAttributeValueMapping, FactorScheduleDownloadMethod, AccrualScheduleDownloadMethod, \
+    InstrumentDownloadScheme, InstrumentDownloadSchemeInput, InstrumentDownloadSchemeAttribute, PriceDownloadScheme, \
+    AccrualCalculationModelMapping, PeriodicityMapping
 
 if settings.DEBUG and 'kombu.transport.django' in settings.INSTALLED_APPS:
     from kombu.transport.django.models import Queue, Message
@@ -45,34 +46,34 @@ if settings.DEBUG and 'kombu.transport.django' in settings.INSTALLED_APPS:
     admin.site.register(Message, MessageAdmin)
 
 admin.site.register(ProviderClass, ClassModelAdmin)
-admin.site.register(FactorScheduleMethod, ClassModelAdmin)
-admin.site.register(AccrualCalculationScheduleMethod, ClassModelAdmin)
+admin.site.register(FactorScheduleDownloadMethod, ClassModelAdmin)
+admin.site.register(AccrualScheduleDownloadMethod, ClassModelAdmin)
 
 
-class InstrumentMappingInputInline(admin.TabularInline):
-    model = InstrumentMappingInput
+class InstrumentDownloadSchemeInputInline(admin.TabularInline):
+    model = InstrumentDownloadSchemeInput
     extra = 0
 
 
-class InstrumentMappingAttributeInline(admin.TabularInline):
-    model = InstrumentMappingAttribute
+class InstrumentDownloadSchemeAttributeInline(admin.TabularInline):
+    model = InstrumentDownloadSchemeAttribute
     extra = 0
     raw_id_fields = ['attribute_type']
 
 
-class InstrumentMappingAdmin(HistoricalAdmin):
-    model = InstrumentMapping
+class InstrumentDownloadSchemeAdmin(HistoricalAdmin):
+    model = InstrumentDownloadScheme
     inlines = [
-        InstrumentMappingInputInline,
-        InstrumentMappingAttributeInline,
+        InstrumentDownloadSchemeInputInline,
+        InstrumentDownloadSchemeAttributeInline,
     ]
-    list_display = ['id', 'master_user', 'provider', 'mapping_name']
+    list_display = ['id', 'master_user', 'scheme_name', 'provider', ]
     list_select_related = ['master_user', 'provider', ]
     raw_id_fields = ['master_user', ]
-    search_fields = ['mapping_name', ]
+    search_fields = ['scheme_name', ]
 
 
-admin.site.register(InstrumentMapping, InstrumentMappingAdmin)
+admin.site.register(InstrumentDownloadScheme, InstrumentDownloadSchemeAdmin)
 
 
 class ImportConfigForm(forms.ModelForm):
@@ -118,9 +119,9 @@ class TaskAdmin(admin.ModelAdmin):
 admin.site.register(Task, TaskAdmin)
 
 
-class PricingFieldMappingAdmin(admin.ModelAdmin):
-    model = PricingFieldMapping
-    list_display = ['id', 'master_user', 'provider', 'fields0']
+class PriceDownloadSchemeAdmin(admin.ModelAdmin):
+    model = PriceDownloadScheme
+    list_display = ['id', 'master_user', 'scheme_name', 'provider', 'fields0']
     list_select_related = ['master_user', 'provider']
     list_filter = ['provider']
     raw_id_fields = ['master_user']
@@ -134,19 +135,14 @@ class PricingFieldMappingAdmin(admin.ModelAdmin):
     fields0.short_description = _('fields')
 
 
-admin.site.register(PricingFieldMapping, PricingFieldMappingAdmin)
+admin.site.register(PriceDownloadScheme, PriceDownloadSchemeAdmin)
 
 
 class CurrencyMappingAdmin(admin.ModelAdmin):
     model = CurrencyMapping
     list_display = ['id', 'master_user', 'provider', 'value', 'currency']
-    list_select_related = ['currency', 'currency__master_user', 'provider']
-    raw_id_fields = ['currency']
-
-    def master_user(self, obj):
-        return obj.currency.master_user.name
-
-    master_user.admin_order_field = 'currency__master_user__name'
+    list_select_related = ['master_user', 'provider', 'currency']
+    raw_id_fields = ['master_user', 'currency']
 
 
 admin.site.register(CurrencyMapping, CurrencyMappingAdmin)
@@ -155,16 +151,31 @@ admin.site.register(CurrencyMapping, CurrencyMappingAdmin)
 class InstrumentTypeMappingAdmin(admin.ModelAdmin):
     model = InstrumentTypeMapping
     list_display = ['id', 'master_user', 'provider', 'value', 'instrument_type']
-    list_select_related = ['instrument_type', 'instrument_type__master_user', 'provider']
-    raw_id_fields = ['instrument_type']
-
-    def master_user(self, obj):
-        return obj.instrument_type.master_user.name
-
-    master_user.admin_order_field = 'instrument_type__master_user__name'
+    list_select_related = ['master_user', 'provider', 'instrument_type']
+    raw_id_fields = ['master_user', 'instrument_type']
 
 
 admin.site.register(InstrumentTypeMapping, InstrumentTypeMappingAdmin)
+
+
+class AccrualCalculationModelMappingAdmin(admin.ModelAdmin):
+    model = AccrualCalculationModelMapping
+    list_display = ['id', 'master_user', 'provider', 'value', 'accrual_calculation_model']
+    list_select_related = ['master_user', 'currency', 'provider']
+    raw_id_fields = ['master_user', 'accrual_calculation_model']
+
+
+admin.site.register(AccrualCalculationModelMapping, AccrualCalculationModelMappingAdmin)
+
+
+class PeriodicityMappingAdmin(admin.ModelAdmin):
+    model = PeriodicityMapping
+    list_display = ['id', 'master_user', 'provider', 'value', 'periodicity']
+    list_select_related = ['master_user', 'provider', 'periodicity']
+    raw_id_fields = ['master_user', 'periodicity']
+
+
+admin.site.register(PeriodicityMapping, PeriodicityMappingAdmin)
 
 
 class InstrumentAttributeValueMappingAdmin(admin.ModelAdmin):

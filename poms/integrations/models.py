@@ -30,54 +30,97 @@ class ProviderClass(AbstractClassModel):
         pass
 
 
-class FactorScheduleMethod(AbstractClassModel):
+class FactorScheduleDownloadMethod(AbstractClassModel):
     IGNORE = 1
     DEFAULT = 2
-    # DEFAULT_BLOOMBERG = 100
     CLASSES = (
         (IGNORE, _("Ignore")),
         (DEFAULT, _("Default")),
-        # (DEFAULT_BLOOMBERG, _("Default bloomberg method")),
     )
-
-    # MAP = {
-    #     ProviderClass.BLOOMBERG: [IGNORE, DEFAULT_BLOOMBERG, ]
-    # }
-    # PROVIDER_MAP = {
-    #     IGNORE: [ProviderClass.BLOOMBERG,],
-    #     DEFAULT_BLOOMBERG: [ProviderClass.BLOOMBERG,],
-    # }
 
     class Meta(AbstractClassModel.Meta):
         pass
 
 
-class AccrualCalculationScheduleMethod(AbstractClassModel):
+class AccrualScheduleDownloadMethod(AbstractClassModel):
     IGNORE = 1
     DEFAULT = 2
-    # DEFAULT_BLOOMBERG = 100
     CLASSES = (
         (IGNORE, _("Ignore")),
         (DEFAULT, _("Default")),
-        # (DEFAULT_BLOOMBERG, _("Default bloomberg method")),
     )
-
-    # MAP = {
-    #     ProviderClass.BLOOMBERG: [IGNORE, DEFAULT_BLOOMBERG, ]
-    # }
-    # PROVIDER_MAP = {
-    #     IGNORE: [ProviderClass.BLOOMBERG,],
-    #     DEFAULT_BLOOMBERG: [ProviderClass.BLOOMBERG,],
-    # }
 
     class Meta(AbstractClassModel.Meta):
         pass
 
 
+def import_cert_upload_to(instance, filename):
+    # return '%s/%s' % (instance.master_user_id, filename)
+    return '/'.join([instance.master_user_id, instance.provider_id, uuid.uuid4().hex])
+
+
+class ImportConfig(models.Model):
+    master_user = models.OneToOneField('users.MasterUser', related_name='bloomberg_config')
+    provider = models.ForeignKey(ProviderClass)
+    p12cert = models.FileField(null=True, blank=True, upload_to=import_cert_upload_to, storage=import_config_storage)
+    password = models.CharField(max_length=64, null=True, blank=True)
+    cert = models.FileField(null=True, blank=True, upload_to=import_cert_upload_to, storage=import_config_storage)
+    key = models.FileField(null=True, blank=True, upload_to=import_cert_upload_to, storage=import_config_storage)
+
+    class Meta:
+        verbose_name = _('import config')
+        verbose_name_plural = _('import configs')
+        unique_together = [
+            ['master_user', 'provider']
+        ]
+
+    def __str__(self):
+        return '%s' % self.master_user
+
+    # def delete(self, using=None, keep_parents=False):
+    #     if self.p12cert:
+    #         self.p12cert.delete(save=False)
+    #     if self.cert:
+    #         self.cert.delete(save=False)
+    #     if self.key:
+    #         self.key.delete(save=False)
+    #     super(BloombergConfig, self).delete(using=using, keep_parents=keep_parents)
+
+    @property
+    def pair(self):
+        if self.cert and self.key:
+            return self.cert, self.key
+        elif self.p12cert:
+            from poms.integrations.providers.bloomberg import get_certs
+            return get_certs(self.p12cert.read(), self.password, is_base64=False)
+        return None, None
+
+    @property
+    def has_p12cert(self):
+        return bool(self.p12cert)
+
+    @property
+    def has_password(self):
+        return bool(self.password)
+
+    @property
+    def has_cert(self):
+        return bool(self.cert)
+
+    @property
+    def has_key(self):
+        return bool(self.key)
+
+    @property
+    def is_ready(self):
+        return (self.has_p12cert and self.has_password) or (self.has_cert and self.has_key)
+
+
+# TODO: rename to InstrumentDownloadScheme
 @python_2_unicode_compatible
-class InstrumentMapping(models.Model):
-    BASIC_FIELDS = ['isin', 'user_code', 'name', 'short_name', 'public_name', 'notes', 'instrument_type',
-                    'pricing_currency', 'price_multiplier', 'accrued_currency', 'accrued_multiplier',
+class InstrumentDownloadScheme(models.Model):
+    BASIC_FIELDS = ['reference_for_pricing', 'user_code', 'name', 'short_name', 'public_name', 'notes',
+                    'instrument_type', 'pricing_currency', 'price_multiplier', 'accrued_currency', 'accrued_multiplier',
                     'user_text_1', 'user_text_2', 'user_text_3',
                     # 'daily_pricing_model',
                     # 'payment_size_detail',
@@ -87,10 +130,10 @@ class InstrumentMapping(models.Model):
                     ]
 
     master_user = models.ForeignKey('users.MasterUser')
-    mapping_name = models.CharField(max_length=255)
+    scheme_name = models.CharField(max_length=255)
     provider = models.ForeignKey(ProviderClass)
 
-    isin = models.CharField(max_length=255, blank=True, default='')
+    reference_for_pricing = models.CharField(max_length=255, blank=True, default='')
     user_code = models.CharField(max_length=255, blank=True, default='')
     name = models.CharField(max_length=255)
     short_name = models.CharField(max_length=255, blank=True, default='')
@@ -111,22 +154,22 @@ class InstrumentMapping(models.Model):
 
     # price_download_mode = models.CharField(max_length=255, blank=True, default='')
 
-    factor_schedule_method = models.ForeignKey(FactorScheduleMethod, null=True, blank=True)
-    accrual_calculation_schedule_method = models.ForeignKey(AccrualCalculationScheduleMethod, null=True, blank=True)
+    factor_schedule_method = models.ForeignKey(FactorScheduleDownloadMethod, null=True, blank=True)
+    accrual_calculation_schedule_method = models.ForeignKey(AccrualScheduleDownloadMethod, null=True, blank=True)
 
     class Meta:
         index_together = (
-            ('master_user', 'mapping_name')
+            ('master_user', 'scheme_name')
         )
-        verbose_name = _('instrument mapping')
-        verbose_name_plural = _('instrument mappings')
-        permissions = [
-            ('view_instrumentmapping', 'Can view instrument mapping'),
-            ('manage_instrumentmapping', 'Can manage instrument mapping'),
-        ]
+        verbose_name = _('instrument download scheme')
+        verbose_name_plural = _('instrument download schemes')
+        # permissions = [
+        #     ('view_instrumentdownloadscheme', 'Can view instrument download scheme'),
+        #     ('manage_instrumentdownloadscheme', 'Can manage instrument download scheme'),
+        # ]
 
     def __str__(self):
-        return self.mapping_name
+        return self.scheme_name
 
     def create_instrument(self, values, save=True):
         instr = Instrument(master_user=self.master_user)
@@ -206,46 +249,55 @@ class InstrumentMapping(models.Model):
             if save:
                 iattr.save()
 
-        instr.attributes_preview = iattrs
-        # if not preview:
-        #     instr.attributes = iattrs
+        instr._attributes = iattrs
+
+        instr._accrual_calculation_schedules = []
+
+        instr._factor_schedules = []
 
         return instr
 
 
-class InstrumentMappingInput(models.Model):
-    mapping = models.ForeignKey(InstrumentMapping, related_name='inputs')
+class InstrumentDownloadSchemeInput(models.Model):
+    scheme = models.ForeignKey(InstrumentDownloadScheme, related_name='inputs')
     name = models.CharField(max_length=32, blank=True, default='')
     field = models.CharField(max_length=32, blank=True, default='')
 
     class Meta:
+        unique_together = (
+            ('scheme', 'name')
+        )
         ordering = ('name',)
+        verbose_name = _('instrument download scheme input')
+        verbose_name_plural = _('instrument download scheme inputs')
 
     def __str__(self):
         return self.name
 
 
 @python_2_unicode_compatible
-class InstrumentMappingAttribute(models.Model):
-    mapping = models.ForeignKey(InstrumentMapping, related_name='attributes')
+class InstrumentDownloadSchemeAttribute(models.Model):
+    scheme = models.ForeignKey(InstrumentDownloadScheme, related_name='attributes')
     attribute_type = models.ForeignKey('instruments.InstrumentAttributeType', null=True, blank=True)
     value = models.CharField(max_length=255, blank=True, default='')
 
     class Meta:
         unique_together = (
-            ('mapping', 'attribute_type')
+            ('scheme', 'attribute_type')
         )
         ordering = ('attribute_type__name',)
+        verbose_name = _('instrument download scheme attribute')
+        verbose_name_plural = _('instrument download schemes attribute')
 
     def __str__(self):
         # return '%s -> %s' % (self.name, self.attribute_type)
         return '%s' % (self.attribute_type,)
 
 
-class PricingFieldMapping(models.Model):
+class PriceDownloadScheme(models.Model):
     master_user = models.ForeignKey('users.MasterUser')
+    scheme_name = models.CharField(max_length=255)
     provider = models.ForeignKey(ProviderClass)
-    pricing_model = models.ForeignKey('instruments.DailyPricingModel')
 
     bid_multiplier = models.FloatField(default=1.0)
     bid0 = models.CharField(max_length=50, blank=True)
@@ -264,11 +316,13 @@ class PricingFieldMapping(models.Model):
 
     class Meta:
         unique_together = [
-            ['master_user', 'provider']
+            ['master_user', 'scheme_name']
         ]
+        verbose_name = _('price download scheme')
+        verbose_name_plural = _('price download schemes')
 
     def __str__(self):
-        return '%s - %s' % (self.pricing_model, self.provider)
+        return self.scheme_name
 
     def _get_fields(self, *args):
         ret = set()
@@ -312,34 +366,38 @@ class PricingFieldMapping(models.Model):
         return value * self.ask_multiplier
 
 
-class CurrencyMapping(models.Model):
+class AbstractMapping(models.Model):
+    master_user = models.ForeignKey('users.MasterUser')
     provider = models.ForeignKey(ProviderClass)
     value = models.CharField(max_length=255)
+
+    class Meta:
+        abstract = True
+
+
+class CurrencyMapping(AbstractMapping):
     currency = models.ForeignKey('currencies.Currency')
 
     class Meta:
-        pass
+        verbose_name = _('currency mapping')
+        verbose_name_plural = _('currency mappings')
 
     def __str__(self):
         return '%s / %s -> %s' % (self.provider, self.value, self.currency)
 
 
-class InstrumentTypeMapping(models.Model):
-    provider = models.ForeignKey(ProviderClass)
-    value = models.CharField(max_length=255)
+class InstrumentTypeMapping(AbstractMapping):
     instrument_type = models.ForeignKey('instruments.InstrumentType')
 
     class Meta:
-        pass
+        verbose_name = _('instrument type mapping')
+        verbose_name_plural = _('instrument type mappings')
 
     def __str__(self):
         return '%s / %s -> %s' % (self.provider, self.value, self.instrument_type)
 
 
-class InstrumentAttributeValueMapping(models.Model):
-    provider = models.ForeignKey(ProviderClass)
-    value = models.CharField(max_length=255)
-
+class InstrumentAttributeValueMapping(AbstractMapping):
     attribute_type = models.ForeignKey('instruments.InstrumentAttributeType', on_delete=models.PROTECT,
                                        verbose_name=_('attribute type'))
     value_string = models.CharField(max_length=255, null=True, blank=True, verbose_name=_('value (String)'))
@@ -349,73 +407,34 @@ class InstrumentAttributeValueMapping(models.Model):
                                    verbose_name=_('classifier'))
 
     class Meta:
-        pass
+        verbose_name = _('instrument attribute value mapping')
+        verbose_name_plural = _('instrument attribute value mappings')
 
     def __str__(self):
         value = self.attribute_type.get_value(self)
         return '%s / %s -> %s / %s' % (self.provider, self.value, self.attribute_type, value)
 
 
-def import_cert_upload_to(instance, filename):
-    # return '%s/%s' % (instance.master_user_id, filename)
-    return '/'.join([instance.master_user_id, instance.provider_id, uuid.uuid4().hex])
-
-
-class ImportConfig(models.Model):
-    master_user = models.OneToOneField('users.MasterUser', related_name='bloomberg_config')
-    provider = models.ForeignKey(ProviderClass)
-    p12cert = models.FileField(null=True, blank=True, upload_to=import_cert_upload_to, storage=import_config_storage)
-    password = models.CharField(max_length=64, null=True, blank=True)
-    cert = models.FileField(null=True, blank=True, upload_to=import_cert_upload_to, storage=import_config_storage)
-    key = models.FileField(null=True, blank=True, upload_to=import_cert_upload_to, storage=import_config_storage)
+class AccrualCalculationModelMapping(AbstractMapping):
+    accrual_calculation_model = models.ForeignKey('instruments.AccrualCalculationModel')
 
     class Meta:
-        verbose_name = _('import config')
-        verbose_name_plural = _('import configs')
-        unique_together = [
-            ['master_user', 'provider']
-        ]
+        verbose_name = _('accrual calculation model mapping')
+        verbose_name_plural = _('accrual calculation model  mappings')
 
     def __str__(self):
-        return '%s' % self.master_user
+        return '%s / %s -> %s' % (self.provider, self.value, self.accrual_calculation_model)
 
-    # def delete(self, using=None, keep_parents=False):
-    #     if self.p12cert:
-    #         self.p12cert.delete(save=False)
-    #     if self.cert:
-    #         self.cert.delete(save=False)
-    #     if self.key:
-    #         self.key.delete(save=False)
-    #     super(BloombergConfig, self).delete(using=using, keep_parents=keep_parents)
 
-    @property
-    def pair(self):
-        if self.cert and self.key:
-            return self.cert, self.key
-        elif self.p12cert:
-            from poms.integrations.providers.bloomberg import get_certs
-            return get_certs(self.p12cert.read(), self.password, is_base64=False)
-        return None, None
+class PeriodicityMapping(AbstractMapping):
+    periodicity = models.ForeignKey('instruments.Periodicity')
 
-    @property
-    def has_p12cert(self):
-        return bool(self.p12cert)
+    class Meta:
+        verbose_name = _('periodicity mapping')
+        verbose_name_plural = _('periodicity  mappings')
 
-    @property
-    def has_password(self):
-        return bool(self.password)
-
-    @property
-    def has_cert(self):
-        return bool(self.cert)
-
-    @property
-    def has_key(self):
-        return bool(self.key)
-
-    @property
-    def is_ready(self):
-        return (self.has_p12cert and self.has_password) or (self.has_cert and self.has_key)
+    def __str__(self):
+        return '%s / %s -> %s' % (self.provider, self.value, self.periodicity)
 
 
 @python_2_unicode_compatible

@@ -35,14 +35,17 @@ class InstrumentClass(AbstractClassModel):
 
 
 class DailyPricingModel(AbstractClassModel):
-    # TODO: add "values"
     SKIP = 1
-    MANUAL = 2
-    BLOOMBERG = 3
+    FORMULA_ALWAYS = 2
+    FORMULA_IF_OPEN = 3
+    PROVIDER_ALWAYS = 4
+    PROVIDER_IF_OPEN = 5
     CLASSES = (
         (SKIP, _("Skip")),
-        (MANUAL, _("Manual")),
-        (BLOOMBERG, _("Bloomberg")),
+        (FORMULA_ALWAYS, _("Formula (always)")),
+        (FORMULA_IF_OPEN, _("Formula (if open)")),
+        (PROVIDER_ALWAYS, _("Provider (always)")),
+        (PROVIDER_IF_OPEN, _("Provider (if open)")),
     )
 
     class Meta(AbstractClassModel.Meta):
@@ -135,13 +138,20 @@ class PaymentSizeDetail(AbstractClassModel):
         verbose_name_plural = _('payment size details')
 
 
-class PeriodicityPeriod(AbstractClassModel):
+class Periodicity(AbstractClassModel):
     DAY = 1
     WEEK = 2
     MONTH = 3
     MONTH_DAY = 4
     YEAR = 5
     YEAR_DAY = 6
+
+    WEEKLY = 7
+    MONTHLY = 8
+    QUARTERLY = 9
+    SEMI_ANNUALLY = 10
+    ANNUALLY = 11
+
     CLASSES = (
         (DAY, _("N Days")),
         (WEEK, _("N Weeks (eobw)")),
@@ -149,11 +159,17 @@ class PeriodicityPeriod(AbstractClassModel):
         (MONTH_DAY, _("N Months (same date)")),
         (YEAR, _("N Years (eoy)")),
         (YEAR_DAY, _("N Years (same date)")),
+
+        (WEEKLY, _('Weekly')),
+        (MONTHLY, _('Monthly')),
+        (QUARTERLY, _('Quarterly')),
+        (SEMI_ANNUALLY, _('Semi-annually')),
+        (ANNUALLY, _('Annually')),
     )
 
     class Meta(AbstractClassModel.Meta):
-        verbose_name = _('periodicity period')
-        verbose_name_plural = _('periodicity periods')
+        verbose_name = _('periodicity')
+        verbose_name_plural = _('periodicities')
 
 
 class CostMethod(AbstractClassModel):
@@ -165,21 +181,6 @@ class CostMethod(AbstractClassModel):
         (AVCO, _('AVCO')),
         (FIFO, _('FIFO')),
         # (LIFO, _('LIFO')),
-    )
-
-    class Meta(AbstractClassModel.Meta):
-        verbose_name = _('cost method')
-        verbose_name_plural = _('cost methods')
-
-
-class PriceDownloadMode(AbstractClassModel):
-    AUTO = 1
-    MANUAL = 2
-    IF_PORTFOLIO = 3
-    CLASSES = (
-        (AUTO, _('Auto')),
-        (MANUAL, _('Manual')),
-        (IF_PORTFOLIO, _('If portfolios specified')),
     )
 
     class Meta(AbstractClassModel.Meta):
@@ -252,9 +253,8 @@ class InstrumentTypeGroupObjectPermission(AbstractGroupObjectPermission):
 
 @python_2_unicode_compatible
 class Instrument(NamedModel):
-    master_user = models.ForeignKey(MasterUser, related_name='instruments',
-                                    verbose_name=_('master user'))
-    isin = models.CharField(max_length=100, blank=True, default='', verbose_name=_('ISIN'))
+    master_user = models.ForeignKey(MasterUser, related_name='instruments', verbose_name=_('master user'))
+
     instrument_type = models.ForeignKey(InstrumentType, on_delete=models.PROTECT,
                                         verbose_name=_('instrument type'))
     is_active = models.BooleanField(default=True, verbose_name=_('is active'))
@@ -265,16 +265,22 @@ class Instrument(NamedModel):
                                          on_delete=models.PROTECT, verbose_name=_('accrued currency'))
     accrued_multiplier = models.FloatField(default=1., verbose_name=_('accrued multiplier'))
 
-    daily_pricing_model = models.ForeignKey(DailyPricingModel, on_delete=models.PROTECT, null=True, blank=True,
-                                            verbose_name=_('daily pricing model'))
     payment_size_detail = models.ForeignKey(PaymentSizeDetail, on_delete=models.PROTECT, null=True, blank=True,
                                             verbose_name=_('payment size detail'))
+
     default_price = models.FloatField(default=0., verbose_name=_('default price'))
     default_accrued = models.FloatField(default=0., verbose_name=_('default accrued'))
-    user_text_1 = models.CharField(max_length=255, null=True, blank=True, help_text=_('User specified field'))
-    user_text_2 = models.CharField(max_length=255, null=True, blank=True, help_text=_('User specified field'))
-    user_text_3 = models.CharField(max_length=255, null=True, blank=True, help_text=_('User specified field'))
-    price_download_mode = models.ForeignKey(PriceDownloadMode, null=True, blank=True)
+
+    user_text_1 = models.CharField(max_length=255, null=True, blank=True, help_text=_('User specified field 1'))
+    user_text_2 = models.CharField(max_length=255, null=True, blank=True, help_text=_('User specified field 2'))
+    user_text_3 = models.CharField(max_length=255, null=True, blank=True, help_text=_('User specified field 3'))
+
+    reference_for_pricing = models.CharField(max_length=100, blank=True, default='',
+                                             verbose_name=_('reference for pricing'))
+    daily_pricing_model = models.ForeignKey(DailyPricingModel, null=True, blank=True,
+                                            verbose_name=_('daily pricing model'))
+    price_download_scheme = models.ForeignKey('integrations.PriceDownloadScheme', on_delete=models.PROTECT, null=True,
+                                              blank=True, verbose_name=_('price download scheme'))
 
     class Meta(NamedModel.Meta):
         verbose_name = _('instrument')
@@ -449,8 +455,10 @@ class AccrualCalculationSchedule(models.Model):
                                      verbose_name=_('accrual size'))
     accrual_calculation_model = models.ForeignKey(AccrualCalculationModel, on_delete=models.PROTECT,
                                                   verbose_name=_('accrual calculation model'))
-    periodicity_period = models.ForeignKey(PeriodicityPeriod, on_delete=models.PROTECT, null=True, blank=True,
-                                           verbose_name=_('periodicity period'))
+    periodicity = models.ForeignKey(Periodicity, on_delete=models.PROTECT, null=True, blank=True,
+                                    verbose_name=_('periodicity'))
+    n = models.IntegerField(default=0)
+
     notes = models.TextField(null=True, blank=True,
                              verbose_name=_('notes'))
 

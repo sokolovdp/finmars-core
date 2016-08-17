@@ -7,30 +7,12 @@ from poms.audit.admin import HistoricalAdmin
 from poms.currencies.models import Currency, CurrencyHistory
 
 
-class GlobalCurrencyFilter(admin.SimpleListFilter):
-    title = _('is global')
-    parameter_name = 'master_user'
-
-    def lookups(self, request, model_admin):
-        return (
-            ('1', _('Yes')),
-            ('0', _('No')),
-        )
-
-    def queryset(self, request, queryset):
-        if self.value() == '1':
-            return queryset.filter(master_user__isnull=True)
-        if self.value() == '0':
-            return queryset.filter(master_user__isnull=False)
-
-
 class CurrencyAdmin(HistoricalAdmin):
     model = Currency
-    list_display = ['id', 'name', 'master_user']
+    list_display = ['id', 'master_user', 'name', 'reference_for_pricing']
     list_select_related = ['master_user']
-    ordering = ['user_code']
-    list_filter = [GlobalCurrencyFilter]
-    raw_id_fields = ['master_user']
+    raw_id_fields = ['master_user', 'price_download_scheme']
+    ordering = ['master_user', 'user_code']
 
     def is_system(self, obj):
         return obj.is_system

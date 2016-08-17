@@ -16,7 +16,7 @@ from django.utils import timezone
 
 from poms.audit.models import AuthLogEntry
 from poms.currencies.models import CurrencyHistory
-from poms.instruments.models import PriceDownloadMode, PriceHistory
+from poms.instruments.models import PriceHistory, DailyPricingModel
 from poms.integrations.models import Task, ProviderClass
 from poms.integrations.providers.bloomberg import get_provider, BloombergException, str_to_date, \
     create_instrument_price_history, create_currency_price_history
@@ -356,7 +356,6 @@ def bloomberg_price_history_auto_save(self, task_id):
     kwargs = task.kwargs_object
     task_res = task.result_object
     pricing_policies = list(task.master_user.pricing_policies.all())
-    download_modes = [PriceDownloadMode.AUTO, PriceDownloadMode.IF_PORTFOLIO]
 
     date_from = str_to_date(kwargs['date_from'])
     date_to = str_to_date(kwargs['date_to'])
@@ -365,7 +364,7 @@ def bloomberg_price_history_auto_save(self, task_id):
 
     instruments = []
     for instr in master_user.instruments.order_by('id').all():
-        if instr.price_download_mode_id not in download_modes:
+        if instr.daily_pricing_model_id == DailyPricingModel.SKIP:
             continue
         if str(instr.id) in task_res:
             _l.debug('instrument=%s', instr.id)
@@ -373,7 +372,7 @@ def bloomberg_price_history_auto_save(self, task_id):
 
     currencies = []
     for ccy in master_user.currencies.order_by('id').all():
-        if ccy.history_download_mode_id not in download_modes:
+        if ccy.daily_pricing_model_id == DailyPricingModel.SKIP:
             continue
         if str(ccy.id) in task_res:
             _l.debug('currency=%s', ccy.id)
@@ -413,7 +412,6 @@ def bloomberg_price_history_auto(self):
         _l.debug('<')
 
     yesterday = timezone.now().date() - timedelta(days=1)
-    download_modes = [PriceDownloadMode.AUTO, PriceDownloadMode.IF_PORTFOLIO]
 
     for master_user in MasterUser.objects. \
             filter(bloomberg_config__isnull=False). \
@@ -440,7 +438,7 @@ def bloomberg_price_history_auto(self):
         _l.info('instr_history_exists=%s', instr_history_exists)
 
         for instr in master_user.instruments.all():
-            if instr.price_download_mode_id not in download_modes:
+            if instr.daily_pricing_model_id == DailyPricingModel.SKIP:
                 continue
 
             h = instr_history_exists.get(instr.id, None)
@@ -463,7 +461,7 @@ def bloomberg_price_history_auto(self):
         _l.info('ccy_history_exists=%s', ccy_history_exists)
 
         for ccy in master_user.currencies.all():
-            if ccy.history_download_mode_id not in download_modes:
+            if ccy.daily_pricing_model_id == DailyPricingModel.SKIP:
                 continue
 
             h = ccy_history_exists.get(ccy.id, None)

@@ -14,14 +14,18 @@ from rest_framework.exceptions import ValidationError
 
 from poms.common import formula
 from poms.common.fields import ISINField, ExpressionField
+from poms.common.serializers import PomsClassSerializer
 from poms.currencies.fields import CurrencyField
 from poms.currencies.serializers import CurrencyHistorySerializer
-from poms.instruments.fields import InstrumentTypeField, InstrumentAttributeTypeField, InstrumentField
-from poms.instruments.serializers import InstrumentAttributeSerializer, PriceHistorySerializer, InstrumentSerializer
-from poms.integrations.fields import InstrumentMappingField, ProviderClassField, FactorScheduleMethodField, \
-    AccrualCalculationScheduleMethodField
-from poms.integrations.models import InstrumentMapping, InstrumentMappingInput, InstrumentMappingAttribute, \
-    ImportConfig, Task, ProviderClass
+from poms.instruments.fields import InstrumentTypeField, InstrumentAttributeTypeField, InstrumentField, \
+    InstrumentClassifierField
+from poms.instruments.serializers import InstrumentAttributeSerializer, PriceHistorySerializer, InstrumentSerializer, \
+    AccrualCalculationScheduleSerializer, InstrumentFactorScheduleSerializer
+from poms.integrations.fields import ProviderClassField, InstrumentDownloadSchemeField
+from poms.integrations.models import InstrumentDownloadSchemeInput, InstrumentDownloadSchemeAttribute, \
+    InstrumentDownloadScheme, ImportConfig, Task, ProviderClass, FactorScheduleDownloadMethod, \
+    AccrualScheduleDownloadMethod, PriceDownloadScheme, CurrencyMapping, InstrumentTypeMapping, \
+    InstrumentAttributeValueMapping, AccrualCalculationModelMapping, PeriodicityMapping
 from poms.integrations.providers.bloomberg import create_instrument_price_history, create_currency_price_history
 from poms.integrations.storage import FileImportStorage
 from poms.users.fields import MasterUserField, MemberField, HiddenMemberField
@@ -42,31 +46,53 @@ FILE_FORMAT_CHOICES = (
 )
 
 
-# bloomberg_cache = caches['bloomberg']
+class ProviderClassSerializer(PomsClassSerializer):
+    class Meta(PomsClassSerializer.Meta):
+        model = ProviderClass
 
 
-class InstrumentMappingInputSerializer(serializers.ModelSerializer):
+class FactorScheduleDownloadMethodSerializer(PomsClassSerializer):
+    class Meta(PomsClassSerializer.Meta):
+        model = FactorScheduleDownloadMethod
+
+
+class AccrualScheduleDownloadMethodSerializer(PomsClassSerializer):
+    class Meta(PomsClassSerializer.Meta):
+        model = AccrualScheduleDownloadMethod
+
+
+class ImportConfigSerializer(serializers.ModelSerializer):
+    master_user = MasterUserField()
+    p12cert = serializers.FileField(allow_null=True, allow_empty_file=False, write_only=True)
+    password = serializers.CharField(allow_null=True, allow_blank=True, write_only=True)
+
+    class Meta:
+        model = ImportConfig
+        fields = ['url', 'id', 'master_user', 'provider', 'p12cert', 'password', 'has_p12cert', 'has_password', ]
+
+
+class InstrumentDownloadSchemeInputSerializer(serializers.ModelSerializer):
     id = serializers.IntegerField()
 
     class Meta:
-        model = InstrumentMappingInput
+        model = InstrumentDownloadSchemeInput
         fields = ['id', 'name']
 
 
-class InstrumentAttributeMappingSerializer(serializers.ModelSerializer):
+class InstrumentDownloadSchemeAttributeSerializer(serializers.ModelSerializer):
     id = serializers.IntegerField()
     attribute_type = InstrumentAttributeTypeField()
     value = ExpressionField(allow_blank=True)
 
     class Meta:
-        model = InstrumentMappingAttribute
+        model = InstrumentDownloadSchemeAttribute
         fields = ['id', 'attribute_type', 'value']
 
 
-class InstrumentMappingSerializer(serializers.ModelSerializer):
+class InstrumentDownloadSchemeSerializer(serializers.ModelSerializer):
     master_user = MasterUserField()
 
-    inputs = InstrumentMappingInputSerializer(many=True, read_only=False)
+    inputs = InstrumentDownloadSchemeInputSerializer(many=True, read_only=False)
 
     user_code = ExpressionField(allow_blank=True)
     name = ExpressionField()
@@ -86,16 +112,15 @@ class InstrumentMappingSerializer(serializers.ModelSerializer):
     user_text_2 = ExpressionField(allow_blank=True)
     user_text_3 = ExpressionField(allow_blank=True)
     # price_download_mode = ExpressionField(allow_blank=True)
-    attributes = InstrumentAttributeMappingSerializer(many=True, read_only=False)
 
-    factor_schedule_method = FactorScheduleMethodField()
-    accrual_calculation_schedule_method = AccrualCalculationScheduleMethodField()
+    attributes = InstrumentDownloadSchemeAttributeSerializer(many=True, read_only=False)
 
     class Meta:
-        model = InstrumentMapping
+        model = InstrumentDownloadScheme
         fields = [
-            'url', 'id', 'master_user', 'mapping_name',
+            'url', 'id', 'master_user', 'scheme_name',
             'inputs',
+            'reference_for_pricing',
             'user_code', 'name', 'short_name', 'public_name', 'notes',
             'instrument_type', 'pricing_currency', 'price_multiplier', 'accrued_currency', 'accrued_multiplier',
             # 'daily_pricing_model', 'payment_size_detail', 'default_price', 'default_accrued',
@@ -108,7 +133,7 @@ class InstrumentMappingSerializer(serializers.ModelSerializer):
     def create(self, validated_data):
         inputs = validated_data.pop('inputs', None) or []
         attributes = validated_data.pop('attributes', None) or []
-        instance = super(InstrumentMappingSerializer, self).create(validated_data)
+        instance = super(InstrumentDownloadSchemeSerializer, self).create(validated_data)
         self.save_inputs(instance, inputs)
         self.save_attributes(instance, attributes)
         return instance
@@ -116,7 +141,7 @@ class InstrumentMappingSerializer(serializers.ModelSerializer):
     def update(self, instance, validated_data):
         inputs = validated_data.pop('inputs', None) or []
         attributes = validated_data.pop('attributes', None) or []
-        instance = super(InstrumentMappingSerializer, self).update(instance, validated_data)
+        instance = super(InstrumentDownloadSchemeSerializer, self).update(instance, validated_data)
         self.save_inputs(instance, inputs)
         self.save_attributes(instance, attributes)
         return instance
@@ -132,7 +157,7 @@ class InstrumentMappingSerializer(serializers.ModelSerializer):
                 except ObjectDoesNotExist:
                     pass
             if input0 is None:
-                input0 = InstrumentMappingInput(mapping=instance)
+                input0 = InstrumentDownloadSchemeInput(mapping=instance)
             for name, value in six.iteritems(input_values):
                 setattr(input0, name, value)
             input0.save()
@@ -150,7 +175,7 @@ class InstrumentMappingSerializer(serializers.ModelSerializer):
                 except ObjectDoesNotExist:
                     pass
             if attr is None:
-                attr = InstrumentMappingAttribute(mapping=instance)
+                attr = InstrumentDownloadSchemeAttribute(mapping=instance)
             for name, value in six.iteritems(attr_values):
                 setattr(attr, name, value)
             attr.save()
@@ -158,14 +183,80 @@ class InstrumentMappingSerializer(serializers.ModelSerializer):
         instance.attributes.exclude(pk__in=pk_set).delete()
 
 
-class ImportConfigSerializer(serializers.ModelSerializer):
+class PriceDownloadSchemeSerializer(serializers.ModelSerializer):
     master_user = MasterUserField()
-    p12cert = serializers.FileField(allow_null=True, allow_empty_file=False, write_only=True)
-    password = serializers.CharField(allow_null=True, allow_blank=True, write_only=True)
 
     class Meta:
-        model = ImportConfig
-        fields = ['url', 'id', 'master_user', 'provider', 'p12cert', 'password', 'has_p12cert', 'has_password', ]
+        model = PriceDownloadScheme
+        fields = [
+            'url', 'id', 'master_user', 'scheme_name', 'provider',
+            'bid_multiplier', 'bid0', 'bid1', 'bid2', 'bid_history',
+            'ask_multiplier', 'ask0', 'ask1', 'ask2', 'ask_history',
+            'last', 'mid',
+        ]
+
+
+class CurrencyMappingSerializer(serializers.ModelSerializer):
+    master_user = MasterUserField()
+    currency = CurrencyField()
+
+    class Meta:
+        model = CurrencyMapping
+        fields = [
+            'url', 'id', 'master_user', 'provider', 'value', 'currency',
+        ]
+
+
+class InstrumentTypeMappingSerializer(serializers.ModelSerializer):
+    master_user = MasterUserField()
+    instrument_type = InstrumentTypeField()
+
+    class Meta:
+        model = InstrumentTypeMapping
+        fields = [
+            'url', 'id', 'master_user', 'provider', 'value', 'instrument_type',
+        ]
+
+
+class InstrumentAttributeValueMappingSerializer(serializers.ModelSerializer):
+    master_user = MasterUserField()
+    attribute_type = InstrumentAttributeTypeField()
+    classifier = InstrumentClassifierField(allow_empty=True, allow_null=True)
+
+    class Meta:
+        model = InstrumentAttributeValueMapping
+        fields = [
+            'url', 'id', 'master_user', 'provider', 'value',
+            'attribute_type', 'value_string', 'value_float', 'value_date', 'classifier',
+        ]
+
+    def validate(self, attrs):
+        attribute_type = attrs.get('attribute_type')
+        classifier = attrs.get('classifier', None)
+        if classifier:
+            if classifier.attribute_type_id != attribute_type.id:
+                raise ValidationError({'classifier': 'Invalid classifier'})
+        return attrs
+
+
+class AccrualCalculationModelMappingSerializer(serializers.ModelSerializer):
+    master_user = MasterUserField()
+
+    class Meta:
+        model = AccrualCalculationModelMapping
+        fields = [
+            'url', 'id', 'master_user', 'provider', 'value', 'accrual_calculation_model',
+        ]
+
+
+class PeriodicityMappingSerializer(serializers.ModelSerializer):
+    master_user = MasterUserField()
+
+    class Meta:
+        model = PeriodicityMapping
+        fields = [
+            'url', 'id', 'master_user', 'provider', 'value', 'periodicity',
+        ]
 
 
 class TaskSerializer(serializers.ModelSerializer):
@@ -257,13 +348,15 @@ class ImportInstrumentEntry(object):
 
 
 class InstrumentMiniSerializer(InstrumentSerializer):
+    accrual_calculation_schedules = serializers.SerializerMethodField()
+    factor_schedules = serializers.SerializerMethodField()
     attributes = serializers.SerializerMethodField()
 
     def __init__(self, *args, **kwargs):
         super(InstrumentMiniSerializer, self).__init__(*args, **kwargs)
         self.fields.pop('manual_pricing_formulas')
-        self.fields.pop('accrual_calculation_schedules')
-        self.fields.pop('factor_schedules')
+        # self.fields.pop('accrual_calculation_schedules')
+        # self.fields.pop('factor_schedules')
         self.fields.pop('event_schedules')
         self.fields.pop('tags')
         # self.fields.pop('attributes')
@@ -271,18 +364,33 @@ class InstrumentMiniSerializer(InstrumentSerializer):
         self.fields.pop('user_object_permissions', None)
         self.fields.pop('group_object_permissions', None)
 
-    def get_attributes(self, obj):
-        if hasattr(obj, 'attributes_preview'):
-            return InstrumentAttributeSerializer(instance=obj.attributes_preview, many=True, read_only=True).data
+    def get_accrual_calculation_schedules(self, obj):
+        if hasattr(obj, '_accrual_calculation_schedules'):
+            l = obj._accrual_calculation_schedules
         else:
-            return InstrumentAttributeSerializer(instance=obj.attributes.all(), many=True, read_only=True).data
+            l = obj.accrual_calculation_schedules.all()
+        return AccrualCalculationScheduleSerializer(instance=l, many=True, read_only=True).data
+
+    def get_factor_schedules(self, obj):
+        if hasattr(obj, '_factor_schedules'):
+            l = obj._factor_schedules
+        else:
+            l = obj.factor_schedules.all()
+        return InstrumentFactorScheduleSerializer(instance=l, many=True, read_only=True).data
+
+    def get_attributes(self, obj):
+        if hasattr(obj, '_attributes'):
+            l = obj._attributes
+        else:
+            l = obj.attributes.all()
+        return InstrumentAttributeSerializer(instance=l, many=True, read_only=True).data
 
 
 class ImportInstrumentSerializer(serializers.Serializer):
     master_user = MasterUserField()
     member = HiddenMemberField()
     provider = ProviderClassField()
-    mapping = InstrumentMappingField()
+    scheme = InstrumentDownloadSchemeField()
     mode = serializers.ChoiceField(choices=IMPORT_MODE_CHOICES)
 
     isin = ISINField(required=True, initial='XS1433454243 Corp')

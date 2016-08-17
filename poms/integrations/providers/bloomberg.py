@@ -1,9 +1,8 @@
 import base64
 import logging
-import os
 import pprint
 import uuid
-from datetime import timedelta, date, datetime
+from datetime import timedelta, datetime
 from tempfile import NamedTemporaryFile
 from time import sleep
 
@@ -272,6 +271,220 @@ class BloombergDataProvider(object):
 
         response = self.soap_client.service.retrieveGetDataResponse(responseId=response_id)
         _l.debug('> get_instrument_get_response: response_id=%s, response=%s', response_id, response)
+
+        #   statusCode =
+        #      (ResponseStatus){
+        #         code = 0
+        #         description = "Success"
+        #      }
+        #   requestId = "d262e4da-ff39-4dd3-ad85-85754902be43"
+        #   responseId = "1471344254-105267354"
+        #   headers =
+        #      (GetDataHeaders){
+        #         rundate = "20160816"
+        #         programflag = "oneshot"
+        #         historical = True
+        #         secmaster = True
+        #         pricing = True
+        #      }
+        #   fields =
+        #      (Fields){
+        #         field[] =
+        #            "ACCRUED_FACTOR",
+        #            "CALC_TYP",
+        #            "CALC_TYP_DES",
+        #            "CNTRY_OF_RISK",
+        #            "COUPON_FREQUENCY_DESCRIPTION",
+        #            "CPN",
+        #            "CPN_FREQ",
+        #            "CPN_TYP",
+        #            "CPN_TYP_SPECIFIC",
+        #            "CRNCY",
+        #            "CUR_CPN",
+        #            "DAYS_TO_SETTLE",
+        #            "DAY_CNT",
+        #            "DAY_CNT_DES",
+        #            "DES_NOTES",
+        #            "FACTOR_SCHEDULE",
+        #            "FIRST_CPN_DT",
+        #            "FIRST_SETTLE_DT",
+        #            "ID_BB_GLOBAL",
+        #            "ID_CUSIP",
+        #            "ID_ISIN",
+        #            "INDUSTRY_SECTOR",
+        #            "INDUSTRY_SUBGROUP",
+        #            "INT_ACC_DT",
+        #            "ISSUER",
+        #            "MATURITY",
+        #            "MTY_TYP",
+        #            "MULTI_CPN_SCHEDULE",
+        #            "OPT_PUT_CALL",
+        #            "PAYMENT_RANK",
+        #            "PX_YEST_ASK",
+        #            "PX_YEST_BID",
+        #            "PX_YEST_CLOSE",
+        #            "SECURITY_DES",
+        #            "SECURITY_TYP",
+        #      }
+        #   timestarted = 2016-08-16 06:44:35-04:00
+        #   instrumentDatas =
+        #      (InstrumentDatas){
+        #         instrumentData[] =
+        #            (InstrumentData){
+        #               code = "0"
+        #               instrument =
+        #                  (Instrument){
+        #                     id = "USP7807HAK16"
+        #                     yellowkey = "Corp"
+        #                  }
+        #               data[] =
+        #                  (Data){
+        #                     _value = ".666666667"
+        #                  },
+        #                  (Data){
+        #                     _value = "77"
+        #                  },
+        #                  (Data){
+        #                     _value = "PRO-RATA:PAR SINKS"
+        #                  },
+        #                  (Data){
+        #                     _value = "N.S."
+        #                  },
+        #                  (Data){
+        #                     _value = "S/A"
+        #                  },
+        #                  (Data){
+        #                     _value = "8.500000"
+        #                  },
+        #                  (Data){
+        #                     _value = "2"
+        #                  },
+        #                  (Data){
+        #                     _value = "FIXED"
+        #                  },
+        #                  (Data){
+        #                     _value = ""
+        #                  },
+        #                  (Data){
+        #                     _value = "USD"
+        #                  },
+        #                  (Data){
+        #                     _value = ""
+        #                  },
+        #                  (Data){
+        #                     _value = "3"
+        #                  },
+        #                  (Data){
+        #                     _value = "20"
+        #                  },
+        #                  (Data){
+        #                     _value = "ISMA-30/360"
+        #                  },
+        #                  (Data){
+        #                     _value = ""
+        #                  },
+        #                  (Data){
+        #                     _rows = 3
+        #                     _isArray = True
+        #                     bulkarray[] =
+        #                        (BulkArray){
+        #                           _columns = 2
+        #                           data[] =
+        #                              (BulkArrayEntry){
+        #                                 _value = "10/29/2010"
+        #                                 _type = "Date"
+        #                              },
+        #                              (BulkArrayEntry){
+        #                                 _value = "1.000000000"
+        #                                 _type = "Price"
+        #                              },
+        #                        },
+        #                        (BulkArray){
+        #                           _columns = 2
+        #                           data[] =
+        #                              (BulkArrayEntry){
+        #                                 _value = "11/02/2015"
+        #                                 _type = "Date"
+        #                              },
+        #                              (BulkArrayEntry){
+        #                                 _value = ".666666667"
+        #                                 _type = "Price"
+        #                              },
+        #                        },
+        #                        (BulkArray){
+        #                           _columns = 2
+        #                           data[] =
+        #                              (BulkArrayEntry){
+        #                                 _value = "11/02/2016"
+        #                                 _type = "Date"
+        #                              },
+        #                              (BulkArrayEntry){
+        #                                 _value = ".333333333"
+        #                                 _type = "Price"
+        #                              },
+        #                        },
+        #                  },
+        #                  (Data){
+        #                     _value = "05/02/2011"
+        #                  },
+        #                  (Data){
+        #                     _value = "10/29/2010"
+        #                  },
+        #                  (Data){
+        #                     _value = "BBG0016STNW2"
+        #                  },
+        #                  (Data){
+        #                     _value = "EI4173619"
+        #                  },
+        #                  (Data){
+        #                     _value = "USP7807HAK16"
+        #                  },
+        #                  (Data){
+        #                     _value = "Energy"
+        #                  },
+        #                  (Data){
+        #                     _value = "Oil Comp-Integrated"
+        #                  },
+        #                  (Data){
+        #                     _value = "10/29/2010"
+        #                  },
+        #                  (Data){
+        #                     _value = "PETROLEOS DE VENEZUELA S"
+        #                  },
+        #                  (Data){
+        #                     _value = "11/02/2017"
+        #                  },
+        #                  (Data){
+        #                     _value = "SINKABLE"
+        #                  },
+        #                  (Data){
+        #                     _value = ""
+        #                  },
+        #                  (Data){
+        #                     _value = ""
+        #                  },
+        #                  (Data){
+        #                     _value = "Sr Unsecured"
+        #                  },
+        #                  (Data){
+        #                     _value = "73.803000"
+        #                  },
+        #                  (Data){
+        #                     _value = "73.020000"
+        #                  },
+        #                  (Data){
+        #                     _value = "73.411000"
+        #                  },
+        #                  (Data){
+        #                     _value = "PDVSA 8 1/2 11/02/17"
+        #                  },
+        #                  (Data){
+        #                     _value = "EURO-DOLLAR"
+        #                  },
+        #            },
+        #      }
+        #   timefinished = 2016-08-16 06:44:48-04:00
+        # }
 
         self._response_is_valid(response, pending=True)
         if self._data_is_ready(response):
@@ -945,224 +1158,3 @@ def create_currency_price_history(task, currencies=None, pricing_policies=None, 
     _l.debug('< %s', histories)
 
     return histories
-
-
-def test_instrument_data(b):
-    """
-    Test instrument data methods
-    """
-    _l.info('-' * 79)
-
-    instrument_fields = [
-        "CRNCY",
-        "SECURITY_TYP",
-        "ISSUER",
-        "CNTRY_OF_RISK",
-        "INDUSTRY_SECTOR",
-        "INDUSTRY_SUBGROUP",
-        "SECURITY_DES",
-        "ID_ISIN",
-        "ID_CUSIP",
-        "ID_BB_GLOBAL",
-        "MATURITY",
-        "CPN",
-        "CUR_CPN",
-        "CPN_FREQ",
-        "COUPON_FREQUENCY_DESCRIPTION",
-        "CALC_TYP",
-        "CALC_TYP_DES",
-        "DAY_CNT",
-        "DAY_CNT_DES",
-        "INT_ACC_DT",
-        "FIRST_SETTLE_DT",
-        "FIRST_CPN_DT",
-        "OPT_PUT_CALL",
-        "MTY_TYP",
-        "PAYMENT_RANK",
-        "CPN_TYP",
-        "CPN_TYP_SPECIFIC",
-        "ACCRUED_FACTOR",
-        "DAYS_TO_SETTLE",
-        "DES_NOTES",
-
-        "PX_YEST_BID",
-        "PX_YEST_ASK",
-        "PX_YEST_CLOSE",
-    ]
-
-    instrument = {
-        "code": 'XS1433454243',
-        "industry": "Corp"
-    }
-
-    response = b.get_instrument_sync(instrument, instrument_fields)
-
-    # res = {
-    #     "ACCRUED_FACTOR": "1.000000000",
-    #     "CALC_TYP": "1",
-    #     "CALC_TYP_DES": "STREET CONVENTION",
-    #     "CNTRY_OF_RISK": "N.S.",
-    #     "COUPON_FREQUENCY_DESCRIPTION": "S/A",
-    #     "CPN": "5.375000",
-    #     "CPN_FREQ": "2",
-    #     "CPN_TYP": "FIXED",
-    #     "CPN_TYP_SPECIFIC": "",
-    #     "CRNCY": "USD",
-    #     "CUR_CPN": "",
-    #     "DAYS_TO_SETTLE": "2",
-    #     "DAY_CNT": "20",
-    #     "DAY_CNT_DES": "ISMA-30/360",
-    #     "DES_NOTES": "",
-    #     "FIRST_CPN_DT": "12/16/2016",
-    #     "FIRST_SETTLE_DT": "06/16/2016",
-    #     "ID_BB_GLOBAL": "BBG00D2QX2B8",
-    #     "ID_CUSIP": "LW4068711",
-    #     "ID_ISIN": "XS1433454243",
-    #     "INDUSTRY_SECTOR": "Industrial",
-    #     "INDUSTRY_SUBGROUP": "Transport-Marine",
-    #     "INT_ACC_DT": "06/16/2016",
-    #     "ISSUER": "SCF CAPITAL LTD",
-    #     "MATURITY": "06/16/2023",
-    #     "MTY_TYP": "AT MATURITY",
-    #     "OPT_PUT_CALL": "",
-    #     "PAYMENT_RANK": "Sr Unsecured",
-    #     "SECURITY_DES": "SCFRU 5 3/8 06/16/23",
-    #     "SECURITY_TYP": "EURO-DOLLAR"
-    # }
-
-    _l.info('response: %s', pprint.pformat(response))
-
-
-def test_pricing_latest(b):
-    """
-    Test pricing data methods
-    """
-    _l.info('-' * 79)
-
-    instrument1 = {"code": 'XS1433454243', "industry": "Corp"}
-    instrument2 = {"code": 'USL9326VAA46', "industry": "Corp"}
-
-    response = b.get_pricing_latest_sync([instrument1, instrument2])
-    # res = {
-    #     "USL9326VAA46": {
-    #         "ACCRUED_FACTOR": "1.000000000",
-    #         "CPN": "6.625000",
-    #         "PX_CLOSE_1D": "N.S.",
-    #         "PX_YEST_ASK": "N.S.",
-    #         "PX_YEST_BID": "N.S.",
-    #         "PX_YEST_CLOSE": "N.S.",
-    #         "SECURITY_TYP": "EURO-DOLLAR"
-    #     },
-    #     "XS1433454243": {
-    #         "ACCRUED_FACTOR": "1.000000000",
-    #         "CPN": "5.375000",
-    #         "PX_CLOSE_1D": "N.S.",
-    #         "PX_YEST_ASK": "N.S.",
-    #         "PX_YEST_BID": "N.S.",
-    #         "PX_YEST_CLOSE": "N.S.",
-    #         "SECURITY_TYP": "EURO-DOLLAR"
-    #     }
-    # }
-    _l.info('response: %s', pprint.pformat(response))
-
-
-def test_pricing_history(b):
-    """
-    Test pricing data methods
-    """
-    _l.info('-' * 79)
-
-    instrument1 = {"code": 'XS1433454243', "industry": "Corp"}
-    instrument2 = {"code": 'USL9326VAA46', "industry": "Corp"}
-
-    response = b.get_pricing_history_sync(instruments=[instrument1, instrument2],
-                                          date_from=date(year=2016, month=6, day=14),
-                                          date_to=date(year=2016, month=6, day=15))
-
-    # res = {
-    #     "USL9326VAA46": [
-    #         {
-    #             "PX_ASK": "94.413",
-    #             "PX_BID": "93.108",
-    #             "PX_LAST": "93.761",
-    #             "date": "2016-06-15"
-    #         }
-    #     ],
-    #     "XS1433454243": [
-    #         {
-    #             "PX_ASK": "100.302",
-    #             "PX_BID": "99.88",
-    #             "PX_LAST": "100.091",
-    #             "date": "2016-06-15"
-    #         }
-    #     ]
-    # }
-
-    _l.info('response: %s', pprint.pformat(response))
-
-
-if __name__ == "__main__":
-    # noinspection PyUnresolvedReferences
-    import env_ai
-
-    import django
-
-    django.setup()
-
-    p12cert = os.environ['TEST_BLOOMBERG_CERT']
-    password = os.environ['TEST_BLOOMBERG_CERT_PASSWORD']
-
-    cert, key = get_certs_from_file(p12cert, password)
-
-    b = BloombergDataProvider(wsdl="https://service.bloomberg.com/assets/dl/dlws.wsdl", cert=cert, key=key)
-    # b = FakeBloombergDataProvider(wsdl="https://service.bloomberg.com/assets/dl/dlws.wsdl", cert=cert, key=key)
-    # b.get_fields()
-    test_instrument_data(b)
-    # test_pricing_latest(b)
-    # test_pricing_history(b)
-
-    # from dateutil import parser
-    # _l.info('1: %s', parser.parse("06/16/2023"))
-    # _l.info('2: %s', parser.parse("2016-06-15"))
-
-    # from poms.integrations.tasks import bloomberg_call
-    # from poms.users.models import MasterUser
-    #
-    # master_user = MasterUser.objects.first()
-    #
-    # a = bloomberg_call(
-    #     master_user=master_user,
-    #     action='fields'
-    # )
-    # a = bloomberg_instrument(
-    #     master_user=master_user,
-    #     instrument={
-    #         "code": 'XS1433454243',
-    #         "industry": "Corp"
-    #     },
-    #     fields=['CRNCY']
-    # )
-    # a = bloomberg_pricing_latest(
-    #     master_user=master_user,
-    #     instruments=[
-    #         {"code": 'XS1433454243', "industry": "Corp"},
-    #         {"code": 'USL9326VAA46', "industry": "Corp"},
-    #     ]
-    # )
-    # a = bloomberg_pricing_history(
-    #     master_user=master_user,
-    #     instruments=[
-    #         {"code": 'XS1433454243', "industry": "Corp"},
-    #         {"code": 'USL9326VAA46', "industry": "Corp"},
-    #     ],
-    #     date_from=date(year=2016, month=6, day=14),
-    #     date_to=date(year=2016, month=6, day=15),
-    # )
-
-    # if getattr(settings, 'CELERY_ALWAYS_EAGER', False):
-    #     print('a.get ->', a.get(timeout=60, interval=0.1))
-    # else:
-    #     b = AsyncResult(a.id)
-    #     print('b.get ->', b.get(timeout=60, interval=0.1))
-
-    pass

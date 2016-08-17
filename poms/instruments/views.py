@@ -7,13 +7,12 @@ from poms.common.filters import CharFilter, ModelWithPermissionMultipleChoiceFil
 from poms.common.views import AbstractClassModelViewSet, AbstractModelViewSet
 from poms.instruments.filters import OwnerByInstrumentFilter, PriceHistoryObjectPermissionFilter
 from poms.instruments.models import Instrument, PriceHistory, InstrumentClass, DailyPricingModel, \
-    AccrualCalculationModel, PaymentSizeDetail, PeriodicityPeriod, CostMethod, InstrumentType, InstrumentAttributeType, \
-    PricingPolicy, PriceDownloadMode, InstrumentClassifier
+    AccrualCalculationModel, PaymentSizeDetail, Periodicity, CostMethod, InstrumentType, InstrumentAttributeType, \
+    PricingPolicy, InstrumentClassifier
 from poms.instruments.serializers import InstrumentSerializer, PriceHistorySerializer, \
     InstrumentClassSerializer, DailyPricingModelSerializer, AccrualCalculationModelSerializer, \
-    PaymentSizeDetailSerializer, PeriodicityPeriodSerializer, CostMethodSerializer, InstrumentTypeSerializer, \
-    InstrumentAttributeTypeSerializer, PricingPolicySerializer, PriceDownloadModeSerializer, \
-    InstrumentClassifierNodeSerializer
+    PaymentSizeDetailSerializer, PeriodicitySerializer, CostMethodSerializer, InstrumentTypeSerializer, \
+    InstrumentAttributeTypeSerializer, PricingPolicySerializer, InstrumentClassifierNodeSerializer
 from poms.obj_attrs.filters import AttributePrefetchFilter
 from poms.obj_attrs.views import AbstractAttributeTypeViewSet, AbstractClassifierViewSet
 from poms.obj_perms.views import AbstractWithObjectPermissionViewSet
@@ -42,19 +41,14 @@ class PaymentSizeDetailViewSet(AbstractClassModelViewSet):
     serializer_class = PaymentSizeDetailSerializer
 
 
-class PeriodicityPeriodViewSet(AbstractClassModelViewSet):
-    queryset = PeriodicityPeriod.objects
-    serializer_class = PeriodicityPeriodSerializer
+class PeriodicityViewSet(AbstractClassModelViewSet):
+    queryset = Periodicity.objects
+    serializer_class = PeriodicitySerializer
 
 
 class CostMethodViewSet(AbstractClassModelViewSet):
     queryset = CostMethod.objects
     serializer_class = CostMethodSerializer
-
-
-class PriceDownloadModeViewSet(AbstractClassModelViewSet):
-    queryset = PriceDownloadMode.objects
-    serializer_class = PriceDownloadModeSerializer
 
 
 class PricingPolicyViewSet(AbstractModelViewSet):

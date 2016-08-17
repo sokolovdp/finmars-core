@@ -5,7 +5,7 @@ from django.contrib import admin
 from poms.audit.admin import HistoricalAdmin
 from poms.common.admin import ClassModelAdmin, ClassifierAdmin
 from poms.instruments.models import Instrument, PriceHistory, InstrumentClass, InstrumentType, \
-    DailyPricingModel, AccrualCalculationModel, PeriodicityPeriod, CostMethod, \
+    DailyPricingModel, AccrualCalculationModel, Periodicity, CostMethod, \
     ManualPricingFormula, AccrualCalculationSchedule, InstrumentAttributeType, InstrumentAttribute, \
     InstrumentFactorSchedule, EventSchedule, \
     PricingPolicy, PaymentSizeDetail, InstrumentClassifier
@@ -17,7 +17,7 @@ from poms.obj_perms.admin import UserObjectPermissionInline, \
 admin.site.register(InstrumentClass, ClassModelAdmin)
 admin.site.register(DailyPricingModel, ClassModelAdmin)
 admin.site.register(AccrualCalculationModel, ClassModelAdmin)
-admin.site.register(PeriodicityPeriod, ClassModelAdmin)
+admin.site.register(Periodicity, ClassModelAdmin)
 admin.site.register(CostMethod, ClassModelAdmin)
 admin.site.register(PaymentSizeDetail, ClassModelAdmin)
 
@@ -73,9 +73,10 @@ class EventScheduleInline(admin.StackedInline):
 
 class InstrumentAdmin(HistoricalAdmin):
     model = Instrument
-    list_display = ['id', 'master_user', 'name', 'instrument_type', 'pricing_currency', 'accrued_currency']
+    list_display = ['id', 'master_user', 'name', 'instrument_type', 'pricing_currency', 'accrued_currency',
+                    'reference_for_pricing']
     list_select_related = ['master_user', 'instrument_type', 'pricing_currency', 'accrued_currency']
-    raw_id_fields = ['master_user', 'instrument_type', 'pricing_currency', 'accrued_currency']
+    raw_id_fields = ['master_user', 'instrument_type', 'pricing_currency', 'accrued_currency', 'price_download_scheme']
     inlines = [
         InstrumentAttributeInline,
         ManualPricingFormulaInline,

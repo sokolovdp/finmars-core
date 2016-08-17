@@ -12,9 +12,10 @@ from poms.currencies.serializers import CurrencyField
 from poms.instruments.fields import InstrumentClassifierField, InstrumentField, InstrumentAttributeTypeField, \
     InstrumentTypeField, PricingPolicyField, InstrumentTypeDefault
 from poms.instruments.models import InstrumentClassifier, Instrument, PriceHistory, InstrumentClass, DailyPricingModel, \
-    AccrualCalculationModel, PaymentSizeDetail, PeriodicityPeriod, CostMethod, InstrumentType, InstrumentAttributeType, \
+    AccrualCalculationModel, PaymentSizeDetail, Periodicity, CostMethod, InstrumentType, InstrumentAttributeType, \
     InstrumentAttribute, ManualPricingFormula, AccrualCalculationSchedule, InstrumentFactorSchedule, EventSchedule, \
-    PricingPolicy, PriceDownloadMode
+    PricingPolicy
+from poms.integrations.fields import PriceDownloadSchemeField
 from poms.obj_attrs.serializers import AbstractAttributeSerializer, AbstractAttributeTypeSerializer, \
     ModelWithAttributesSerializer
 from poms.obj_perms.serializers import ModelWithObjectPermissionSerializer
@@ -43,19 +44,14 @@ class PaymentSizeDetailSerializer(PomsClassSerializer):
         model = PaymentSizeDetail
 
 
-class PeriodicityPeriodSerializer(PomsClassSerializer):
+class PeriodicitySerializer(PomsClassSerializer):
     class Meta(PomsClassSerializer.Meta):
-        model = PeriodicityPeriod
+        model = Periodicity
 
 
 class CostMethodSerializer(PomsClassSerializer):
     class Meta(PomsClassSerializer.Meta):
         model = CostMethod
-
-
-class PriceDownloadModeSerializer(PomsClassSerializer):
-    class Meta(PomsClassSerializer.Meta):
-        model = PriceDownloadMode
 
 
 class PricingPolicySerializer(ModelWithUserCodeSerializer):
@@ -116,7 +112,7 @@ class AccrualCalculationScheduleSerializer(serializers.ModelSerializer):
     class Meta:
         model = AccrualCalculationSchedule
         fields = ['id', 'accrual_start_date', 'first_payment_date', 'accrual_size',
-                  'accrual_calculation_model', 'periodicity_period', 'notes']
+                  'accrual_calculation_model', 'periodicity', 'notes']
 
 
 class InstrumentFactorScheduleSerializer(serializers.ModelSerializer):
@@ -155,6 +151,7 @@ class InstrumentSerializer(ModelWithAttributesSerializer, ModelWithObjectPermiss
     instrument_type = InstrumentTypeField(default=InstrumentTypeDefault())
     pricing_currency = CurrencyField(default=CurrencyDefault())
     accrued_currency = CurrencyField(default=CurrencyDefault())
+    price_download_scheme = PriceDownloadSchemeField(allow_null=True)
 
     manual_pricing_formulas = ManualPricingFormulaSerializer(many=True, required=False, allow_null=True)
     accrual_calculation_schedules = AccrualCalculationScheduleSerializer(many=True, required=False, allow_null=True)
@@ -166,12 +163,12 @@ class InstrumentSerializer(ModelWithAttributesSerializer, ModelWithObjectPermiss
 
     class Meta:
         model = Instrument
-        fields = ['url', 'id', 'master_user', 'isin', 'instrument_type', 'user_code', 'name', 'short_name',
+        fields = ['url', 'id', 'master_user', 'instrument_type', 'user_code', 'name', 'short_name',
                   'public_name', 'notes', 'is_active',
                   'pricing_currency', 'price_multiplier', 'accrued_currency', 'accrued_multiplier',
-                  'daily_pricing_model', 'payment_size_detail', 'price_download_mode',
-                  'default_price', 'default_accrued',
+                  'payment_size_detail', 'default_price', 'default_accrued',
                   'user_text_1', 'user_text_2', 'user_text_3',
+                  'reference_for_pricing', 'daily_pricing_model', 'price_download_scheme',
                   'manual_pricing_formulas', 'accrual_calculation_schedules', 'factor_schedules', 'event_schedules',
                   'attributes', 'tags']
 

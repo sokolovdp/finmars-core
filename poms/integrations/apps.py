@@ -16,11 +16,11 @@ class IntegrationsConfig(AppConfig):
 
     def update_transaction_classes(self, app_config, verbosity=2, using=DEFAULT_DB_ALIAS, **kwargs):
         from poms.common.utils import db_class_check_data
-        from .models import ProviderClass, FactorScheduleMethod, AccrualCalculationScheduleMethod
+        from .models import ProviderClass, FactorScheduleDownloadMethod, AccrualScheduleDownloadMethod
 
         if not isinstance(app_config, IntegrationsConfig):
             return
 
         db_class_check_data(ProviderClass, verbosity, using)
-        db_class_check_data(FactorScheduleMethod, verbosity, using)
-        db_class_check_data(AccrualCalculationScheduleMethod, verbosity, using)
+        db_class_check_data(FactorScheduleDownloadMethod, verbosity, using)
+        db_class_check_data(AccrualScheduleDownloadMethod, verbosity, using)

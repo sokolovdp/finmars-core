@@ -7,7 +7,6 @@ from django.utils.translation import ugettext_lazy as _
 
 from poms.common.models import NamedModel
 from poms.common.utils import date_now
-from poms.instruments.models import PriceDownloadMode
 from poms.obj_perms.models import AbstractUserObjectPermission, AbstractGroupObjectPermission
 from poms.users.models import MasterUser
 
@@ -15,8 +14,13 @@ from poms.users.models import MasterUser
 @python_2_unicode_compatible
 class Currency(NamedModel):
     master_user = models.ForeignKey(MasterUser, related_name='currencies', verbose_name=_('master user'))
-    isin = models.CharField(max_length=100, blank=True, default='', verbose_name=_('ISIN'))
-    history_download_mode = models.ForeignKey(PriceDownloadMode, default=PriceDownloadMode.MANUAL)
+
+    reference_for_pricing = models.CharField(max_length=100, blank=True, default='',
+                                             verbose_name=_('reference for pricing'))
+    daily_pricing_model = models.ForeignKey('instruments.DailyPricingModel', null=True, blank=True,
+                                            verbose_name=_('daily pricing model'))
+    price_download_scheme = models.ForeignKey('integrations.PriceDownloadScheme', on_delete=models.PROTECT, null=True,
+                                              blank=True, verbose_name=_('price download scheme'))
 
     class Meta(NamedModel.Meta):
         verbose_name = _('currency')

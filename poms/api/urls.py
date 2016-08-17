@@ -58,10 +58,9 @@ router.register(r'instruments/instrument-class', instruments.InstrumentClassView
 router.register(r'instruments/daily-pricing-model', instruments.DailyPricingModelViewSet)
 router.register(r'instruments/accrual-calculation-model', instruments.AccrualCalculationModelClassViewSet)
 router.register(r'instruments/payment-size-detail', instruments.PaymentSizeDetailViewSet)
-router.register(r'instruments/periodicity-period', instruments.PeriodicityPeriodViewSet)
+router.register(r'instruments/periodicity', instruments.PeriodicityViewSet)
 router.register(r'instruments/cost-method', instruments.CostMethodViewSet)
 router.register(r'instruments/pricing-policy', instruments.PricingPolicyViewSet)
-router.register(r'instruments/price-download-mode', instruments.PriceDownloadModeViewSet)
 
 router.register(r'instruments/instrument-type', instruments.InstrumentTypeViewSet)
 router.register(r'instruments/instrument-attribute-type', instruments.InstrumentAttributeTypeViewSet)
@@ -121,14 +120,26 @@ router.register(r'audit/auth-log', audit.AuthLogViewSet)
 router.register(r'audit/history', audit.ObjectHistory4ViewSet)
 
 router.register(r'import/config', integrations.ImportConfigViewSet)
-router.register(r'import/task', integrations.TaskViewSet)
 
-router.register(r'import/mapping/instrument/', integrations.InstrumentMappingViewSet)
+router.register(r'import/provider', integrations.ProviderClassViewSet)
+router.register(r'import/factor-schedule-download-method', integrations.FactorScheduleDownloadMethodViewSet)
+router.register(r'import/accrual-schedule-download-method', integrations.AccrualScheduleDownloadMethodViewSet)
+
+router.register(r'import/instrument-scheme', integrations.InstrumentDownloadSchemeViewSet)
+router.register(r'import/price-download-scheme', integrations.PriceDownloadSchemeViewSet)
+
+router.register(r'import/currency-mapping', integrations.CurrencyMappingViewSet)
+router.register(r'import/instrument-type-mapping', integrations.InstrumentTypeMappingViewSet)
+router.register(r'import/instrument-attribute-value-mapping', integrations.InstrumentAttributeValueMappingViewSet)
+router.register(r'import/accrual-calculation-model-mapping', integrations.AccrualCalculationModelMappingViewSet)
+router.register(r'import/periodicity-mapping', integrations.PeriodicityMappingViewSet)
 
 router.register(r'import/file/instrument', integrations.ImportFileInstrumentViewSet, 'ImportFileInstrumentViewSet')
 
 router.register(r'import/instrument', integrations.ImportInstrumentViewSet, 'ImportInstrumentViewSet')
 router.register(r'import/instrument-and-currency-history', integrations.ImportHistoryViewSet, 'ImportHistoryViewSet')
+
+router.register(r'import/task', integrations.TaskViewSet)
 
 urlpatterns = [
     url(r'^v1/', include(router.urls, namespace='v1')),
