@@ -20,7 +20,7 @@ class CurrencySerializer(ModelWithUserCodeSerializer):
 
     class Meta:
         model = Currency
-        fields = ['url', 'id', 'master_user', 'isin', 'user_code', 'name', 'short_name', 'notes',
+        fields = ['url', 'id', 'master_user', 'user_code', 'name', 'short_name', 'notes',
                   'reference_for_pricing', 'daily_pricing_model', 'price_download_scheme',
                   'is_default', 'tags']
 
