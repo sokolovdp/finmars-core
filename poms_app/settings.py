@@ -296,7 +296,6 @@ CACHES = {
 SESSION_ENGINE = "poms.http_sessions.backends.cached_db"
 SESSION_CACHE_ALIAS = 'http_session'
 
-
 LOGGING = {
     'version': 1,
     'formatters': {
@@ -352,6 +351,11 @@ LOGGING = {
         #     'level': 'INFO',
         #     'handlers': ['console'],
         # },
+        'suds': {
+            'level': 'INFO',
+            'handlers': ['console'],
+            'propagate': False,
+        },
         'kombu': {
             'level': 'INFO',
             'handlers': ['console'],
@@ -489,7 +493,6 @@ else:
     CELERYBEAT_SCHEDULE = {
     }
 
-
 # FILE_IMPORT ------------------------------------------------
 
 
@@ -501,7 +504,6 @@ FILE_IMPORT_STORAGE = {
     }
 }
 
-
 # BLOOMBERG ------------------------------------------------
 
 IMPORT_CONFIG_STORAGE = {
@@ -512,12 +514,11 @@ IMPORT_CONFIG_STORAGE = {
     }
 }
 
-
 BLOOMBERG_SANDBOX = True
 BLOOMBERG_WSDL = 'https://service.bloomberg.com/assets/dl/dlws.wsdl'
-BLOOMBERG_RETRY_DELAY = 1
+BLOOMBERG_RETRY_DELAY = 5
 BLOOMBERG_MAX_RETRIES = 60
+BLOOMBERG_DATE_INPUT_FORMAT = '%m/%d/%y'
 
-
-LOGIN_URL = 'two_factor:login'
-LOGIN_REDIRECT_URL = 'two_factor:profile'
+# LOGIN_URL = 'two_factor:login'
+# LOGIN_REDIRECT_URL = 'two_factor:profile'

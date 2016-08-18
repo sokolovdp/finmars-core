@@ -2,6 +2,7 @@ import base64
 import logging
 import pprint
 import uuid
+from collections import OrderedDict
 from datetime import timedelta, datetime
 from tempfile import NamedTemporaryFile
 from time import sleep
@@ -170,6 +171,7 @@ class BloombergDataProvider(object):
             "SOAPAction": ""
         }
         self.soap_client = Client(wsdl, headers=headers, transport=transport)
+        _l.info('soap client: %s', self.soap_client)
 
     def _response_is_valid(self, response, pending=False, raise_exception=True):
         if response.statusCode.code == 0:
@@ -190,8 +192,8 @@ class BloombergDataProvider(object):
         _l.debug('> %s', name)
         response_id = request_func(**request_kwargs)
         _l.debug('response_id=%s', response_id)
-        for attempt in six.moves.range(1000):
-            sleep(0.5)
+        for attempt in six.moves.range(settings.BLOOMBERG_MAX_RETRIES):
+            sleep(settings.BLOOMBERG_RETRY_DELAY)
             _l.debug('attempt=%s', attempt)
             result = response_func(response_id)
             if result:
@@ -488,9 +490,19 @@ class BloombergDataProvider(object):
 
         self._response_is_valid(response, pending=True)
         if self._data_is_ready(response):
-            result = {}
+            result = OrderedDict()
             for i, field in enumerate(response.fields[0]):
-                result[field] = response.instrumentDatas[0][0].data[i]._value
+                d = response.instrumentDatas[0][0].data[i]
+                if getattr(d, '_isArray', False):
+                    value = []
+                    for row in d.bulkarray:
+                        cols = []
+                        for c in row.data:
+                            cols.append(c._value)
+                        value.append(cols)
+                else:
+                    value = response.instrumentDatas[0][0].data[i]._value
+                result[field] = value
             _l.debug('< result=%s', result)
             return result
         return None
