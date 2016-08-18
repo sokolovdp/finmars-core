@@ -1,5 +1,7 @@
 from __future__ import unicode_literals
 
+from datetime import date
+
 from django.db import models
 from django.utils.encoding import python_2_unicode_compatible
 from django.utils.translation import ugettext_lazy as _
@@ -217,6 +219,11 @@ class InstrumentType(NamedModel):
     instrument_class = models.ForeignKey(InstrumentClass, related_name='instrument_types', on_delete=models.PROTECT,
                                          verbose_name=_('instrument class'))
 
+    one_off_event = models.ForeignKey('transactions.TransactionType', null=True, blank=True, on_delete=models.PROTECT,
+                                      related_name='instrument_types_one_off_event', verbose_name=_('one-off event'))
+    regular_event = models.ForeignKey('transactions.TransactionType', null=True, blank=True, on_delete=models.PROTECT,
+                                      related_name='instrument_types_regular_event', verbose_name=_('regular event'))
+
     class Meta(NamedModel.Meta):
         verbose_name = _('instrument type')
         verbose_name_plural = _('instrument types')
@@ -260,16 +267,16 @@ class Instrument(NamedModel):
     is_active = models.BooleanField(default=True, verbose_name=_('is active'))
     pricing_currency = models.ForeignKey('currencies.Currency', on_delete=models.PROTECT,
                                          verbose_name=_('pricing currency'))
-    price_multiplier = models.FloatField(default=1., verbose_name=_('price multiplier'))
+    price_multiplier = models.FloatField(default=1.0, verbose_name=_('price multiplier'))
     accrued_currency = models.ForeignKey('currencies.Currency', related_name='instruments_accrued',
                                          on_delete=models.PROTECT, verbose_name=_('accrued currency'))
-    accrued_multiplier = models.FloatField(default=1., verbose_name=_('accrued multiplier'))
+    accrued_multiplier = models.FloatField(default=1.0, verbose_name=_('accrued multiplier'))
 
     payment_size_detail = models.ForeignKey(PaymentSizeDetail, on_delete=models.PROTECT, null=True, blank=True,
                                             verbose_name=_('payment size detail'))
 
-    default_price = models.FloatField(default=0., verbose_name=_('default price'))
-    default_accrued = models.FloatField(default=0., verbose_name=_('default accrued'))
+    default_price = models.FloatField(default=0.0, verbose_name=_('default price'))
+    default_accrued = models.FloatField(default=0.0, verbose_name=_('default accrued'))
 
     user_text_1 = models.CharField(max_length=255, null=True, blank=True, help_text=_('User specified field 1'))
     user_text_2 = models.CharField(max_length=255, null=True, blank=True, help_text=_('User specified field 2'))
@@ -281,6 +288,7 @@ class Instrument(NamedModel):
                                             verbose_name=_('daily pricing model'))
     price_download_scheme = models.ForeignKey('integrations.PriceDownloadScheme', on_delete=models.PROTECT, null=True,
                                               blank=True, verbose_name=_('price download scheme'))
+    maturity_date = models.DateField(default=date.max, verbose_name=_('maturity date'))
 
     class Meta(NamedModel.Meta):
         verbose_name = _('instrument')
@@ -420,16 +428,12 @@ class ManualPricingFormula(models.Model):
 
 @python_2_unicode_compatible
 class PriceHistory(models.Model):
-    instrument = models.ForeignKey(Instrument, related_name='prices',
-                                   verbose_name=_('instrument'))
+    instrument = models.ForeignKey(Instrument, related_name='prices', verbose_name=_('instrument'))
     pricing_policy = models.ForeignKey(PricingPolicy, on_delete=models.PROTECT, null=True, blank=True,
                                        verbose_name=_('pricing policy'))
-    date = models.DateField(db_index=True, default=date_now,
-                            verbose_name=_('date'))
-    principal_price = models.FloatField(default=0.0,
-                                        verbose_name=_('principal price'))
-    accrued_price = models.FloatField(null=True, blank=True,
-                                      verbose_name=_('accrued price'))
+    date = models.DateField(db_index=True, default=date_now, verbose_name=_('date'))
+    principal_price = models.FloatField(default=0.0, verbose_name=_('principal price'))
+    accrued_price = models.FloatField(default=0.0, verbose_name=_('accrued price'))
 
     class Meta:
         verbose_name = _('price history')
@@ -447,20 +451,15 @@ class PriceHistory(models.Model):
 class AccrualCalculationSchedule(models.Model):
     instrument = models.ForeignKey(Instrument, related_name='accrual_calculation_schedules',
                                    verbose_name=_('instrument'))
-    accrual_start_date = models.DateField(default=date_now,
-                                          verbose_name=_('accrual start date'))
-    first_payment_date = models.DateField(default=date_now,
-                                          verbose_name=_('first payment date'))
-    accrual_size = models.FloatField(default=0.,
-                                     verbose_name=_('accrual size'))
+    accrual_start_date = models.DateField(default=date_now, verbose_name=_('accrual start date'))
+    first_payment_date = models.DateField(default=date_now, verbose_name=_('first payment date'))
+    accrual_size = models.FloatField(default=0.0, verbose_name=_('accrual size'))
     accrual_calculation_model = models.ForeignKey(AccrualCalculationModel, on_delete=models.PROTECT,
                                                   verbose_name=_('accrual calculation model'))
     periodicity = models.ForeignKey(Periodicity, on_delete=models.PROTECT, null=True, blank=True,
                                     verbose_name=_('periodicity'))
-    n = models.IntegerField(default=0)
-
-    notes = models.TextField(null=True, blank=True,
-                             verbose_name=_('notes'))
+    periodicity_n = models.IntegerField(default=0, verbose_name=_('periodicity n'))
+    notes = models.TextField(blank=True, default='', verbose_name=_('notes'))
 
     class Meta:
         verbose_name = _('accrual calculation schedule')
@@ -472,12 +471,9 @@ class AccrualCalculationSchedule(models.Model):
 
 @python_2_unicode_compatible
 class InstrumentFactorSchedule(models.Model):
-    instrument = models.ForeignKey(Instrument, related_name='factor_schedules',
-                                   verbose_name=_('instrument'))
-    effective_date = models.DateField(default=date_now,
-                                      verbose_name=_('effective date'))
-    factor_value = models.FloatField(default=0.,
-                                     verbose_name=_('factor value'))
+    instrument = models.ForeignKey(Instrument, related_name='factor_schedules', verbose_name=_('instrument'))
+    effective_date = models.DateField(default=date_now, verbose_name=_('effective date'))
+    factor_value = models.FloatField(default=0., verbose_name=_('factor value'))
 
     class Meta:
         verbose_name = _('instrument factor schedule')
@@ -488,26 +484,42 @@ class InstrumentFactorSchedule(models.Model):
 
 
 class EventSchedule(models.Model):
-    instrument = models.ForeignKey(Instrument, related_name='event_schedules',
-                                   verbose_name=_('instrument'))
-    name = models.CharField(max_length=255,
-                            verbose_name=_('name'))
-    description = models.TextField(null=True, blank=True,
-                                   verbose_name=_('description'))
-    transaction_types = models.ManyToManyField('transactions.TransactionType', blank=True,
-                                               verbose_name=_('transaction types'))
-    event_class = models.ForeignKey('transactions.EventClass', on_delete=models.PROTECT,
-                                    verbose_name=_('event class'))
+    instrument = models.ForeignKey(Instrument, related_name='event_schedules', verbose_name=_('instrument'))
+    name = models.CharField(max_length=255, verbose_name=_('name'))
+    description = models.TextField(blank=True, default='', verbose_name=_('description'))
+
+    event_class = models.ForeignKey('transactions.EventClass', on_delete=models.PROTECT, verbose_name=_('event class'))
     notification_class = models.ForeignKey('transactions.NotificationClass', on_delete=models.PROTECT,
                                            verbose_name=_('notification class'))
-    notification_date = models.DateField(null=True, blank=True,
-                                         verbose_name=_('notification date'))
-    effective_date = models.DateField(null=True, blank=True,
-                                      verbose_name=_('effective date'))
+
+    effective_date = models.DateField(null=True, blank=True, verbose_name=_('effective date'))
+    notify_in_n_days = models.IntegerField(default=0)
+    # notification_date = models.DateField(null=True, blank=True, verbose_name=_('notification date'))
+
+    # initial_date -> effective_date
+    periodicity = models.ForeignKey(Periodicity, null=True, blank=True, on_delete=models.PROTECT)
+    periodicity_n = models.IntegerField(default=0)
+    final_date = models.DateField(default=date.max)
 
     class Meta:
         verbose_name = _('event schedule')
         verbose_name_plural = _('event schedules')
 
     def __str__(self):
-        return '%s' % (self.id,)
+        return self.name
+
+
+class EventScheduleAction(models.Model):
+    event_schedule = models.ForeignKey(EventSchedule, related_name='actions', verbose_name=_('event schedule'))
+    transaction_type = models.ForeignKey('transactions.TransactionType', on_delete=models.PROTECT)
+    text = models.CharField(max_length=100, blank=True, default='')
+    is_sent_to_pending = models.BooleanField(default=True)
+    is_default = models.BooleanField(default=False)
+    button_position = models.IntegerField(default=0)
+
+    class Meta:
+        verbose_name = _('event schedule action')
+        verbose_name_plural = _('event schedule actions')
+
+    def __str__(self):
+        return self.text

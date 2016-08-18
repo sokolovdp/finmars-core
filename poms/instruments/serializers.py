@@ -112,7 +112,7 @@ class AccrualCalculationScheduleSerializer(serializers.ModelSerializer):
     class Meta:
         model = AccrualCalculationSchedule
         fields = ['id', 'accrual_start_date', 'first_payment_date', 'accrual_size',
-                  'accrual_calculation_model', 'periodicity', 'notes']
+                  'accrual_calculation_model', 'periodicity', 'periodicity_n', 'notes']
 
 
 class InstrumentFactorScheduleSerializer(serializers.ModelSerializer):

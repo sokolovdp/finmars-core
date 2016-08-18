@@ -111,6 +111,8 @@ class MasterUser(models.Model):
     timezone = models.CharField(max_length=TIMEZONE_MAX_LENGTH, default=settings.TIME_ZONE,
                                 verbose_name=_('timezone'))
 
+    notification_business_days = models.IntegerField(default=0)
+
     account_type = models.ForeignKey('accounts.AccountType', null=True, blank=True, on_delete=models.PROTECT)
     account = models.ForeignKey('accounts.Account', null=True, blank=True, on_delete=models.PROTECT)
 

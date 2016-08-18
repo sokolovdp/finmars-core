@@ -8,7 +8,7 @@ from poms.instruments.models import Instrument, PriceHistory, InstrumentClass, I
     DailyPricingModel, AccrualCalculationModel, Periodicity, CostMethod, \
     ManualPricingFormula, AccrualCalculationSchedule, InstrumentAttributeType, InstrumentAttribute, \
     InstrumentFactorSchedule, EventSchedule, \
-    PricingPolicy, PaymentSizeDetail, InstrumentClassifier
+    PricingPolicy, PaymentSizeDetail, InstrumentClassifier, EventScheduleAction
 from poms.obj_attrs.admin import AbstractAttributeTypeAdmin, AbstractAttributeInline, \
     AbstractAttributeTypeClassifierInline, AbstractAttributeTypeOptionInline
 from poms.obj_perms.admin import UserObjectPermissionInline, \
@@ -66,9 +66,9 @@ class InstrumentFactorScheduleInline(admin.StackedInline):
     extra = 0
 
 
-class EventScheduleInline(admin.StackedInline):
-    model = EventSchedule
-    extra = 0
+# class EventScheduleInline(admin.StackedInline):
+#     model = EventSchedule
+#     extra = 0
 
 
 class InstrumentAdmin(HistoricalAdmin):
@@ -82,13 +82,36 @@ class InstrumentAdmin(HistoricalAdmin):
         ManualPricingFormulaInline,
         AccrualCalculationScheduleInline,
         InstrumentFactorScheduleInline,
-        EventScheduleInline,
+        # EventScheduleInline,
         UserObjectPermissionInline,
         GroupObjectPermissionInline,
     ]
 
 
 admin.site.register(Instrument, InstrumentAdmin)
+
+
+class EventScheduleActionInline(admin.TabularInline):
+    model = EventScheduleAction
+    extra = 0
+
+
+class EventScheduleAdmin(admin.ModelAdmin):
+    model = EventSchedule
+    list_display = ['id', 'master_user', 'instrument', 'name', 'event_class', 'notification_class', 'effective_date',
+                    'notify_in_n_days']
+    list_select_related = ['instrument', 'instrument__master_user', 'event_class', 'notification_class']
+    raw_id_fields = ['instrument']
+
+    inlines = [
+        EventScheduleActionInline
+    ]
+
+    def master_user(self, obj):
+        return obj.instrument.master_user
+
+
+admin.site.register(EventSchedule, EventScheduleAdmin)
 
 
 class PriceHistoryAdmin(HistoricalAdmin):
