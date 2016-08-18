@@ -22,11 +22,11 @@ class InstrumentClass(AbstractClassModel):
     CONTRACT_FOR_DIFFERENCE = 5
 
     CLASSES = (
-        (GENERAL, "General Class"),
-        (EVENT_AT_MATURITY, "Event at Maturity"),
-        (REGULAR_EVENT_AT_MATURITY, "Regular Event with Maturity"),
-        (PERPETUAL_REGULAR_EVENT, "Perpetual Regular Event"),
-        (CONTRACT_FOR_DIFFERENCE, "Contract for Difference"),
+        (GENERAL, 'GENERAL', "General Class"),
+        (EVENT_AT_MATURITY, 'EVENT_AT_MATURITY', "Event at Maturity"),
+        (REGULAR_EVENT_AT_MATURITY, 'REGULAR_EVENT_AT_MATURITY', "Regular Event with Maturity"),
+        (PERPETUAL_REGULAR_EVENT, 'PERPETUAL_REGULAR_EVENT', "Perpetual Regular Event"),
+        (CONTRACT_FOR_DIFFERENCE, 'CONTRACT_FOR_DIFFERENCE', "Contract for Difference"),
     )
 
     class Meta(AbstractClassModel.Meta):
@@ -41,11 +41,11 @@ class DailyPricingModel(AbstractClassModel):
     PROVIDER_ALWAYS = 4
     PROVIDER_IF_OPEN = 5
     CLASSES = (
-        (SKIP, _("Skip")),
-        (FORMULA_ALWAYS, _("Formula (always)")),
-        (FORMULA_IF_OPEN, _("Formula (if open)")),
-        (PROVIDER_ALWAYS, _("Provider (always)")),
-        (PROVIDER_IF_OPEN, _("Provider (if open)")),
+        (SKIP, 'SKIP', _("Skip")),
+        (FORMULA_ALWAYS, 'FORMULA_ALWAYS', _("Formula (always)")),
+        (FORMULA_IF_OPEN, 'FORMULA_IF_OPEN', _("Formula (if open)")),
+        (PROVIDER_ALWAYS, 'PROVIDER_ALWAYS', _("Provider (always)")),
+        (PROVIDER_IF_OPEN, 'PROVIDER_IF_OPEN', _("Provider (if open)")),
     )
 
     class Meta(AbstractClassModel.Meta):
@@ -79,29 +79,29 @@ class AccrualCalculationModel(AbstractClassModel):
     REVERSED_ACT_365 = 23
 
     CLASSES = (
-        (NONE, _("none")),
-        (ACT_ACT, _("ACT/ACT")),
-        (ACT_ACT_ISDA, _("ACT/ACT - ISDA")),
-        (ACT_360, _("ACT/360")),
-        (ACT_365, _("ACT/365")),
-        (ACT_365_25, _("Act/365.25")),
-        (ACT_365_366, _("Act/365(366)")),
-        (ACT_1_365, _("Act+1/365")),
-        (ACT_1_360, _("Act+1/360")),
-        (C_30_ACT, _("30/ACT")),
-        (C_30_360, _("30/360")),
-        (C_30_360_NO_EOM, _("30/360 (NO EOM)")),
-        (C_30E_P_360_ITL, _("30E+/360.ITL")),
-        (NL_365, _("NL/365")),
-        (NL_365_NO_EOM, _("NL/365 (NO-EOM)")),
-        (ISMA_30_365, _("ISMA-30/360")),
-        (ISMA_30_365_NO_EOM, _("ISMA-30/360 (NO EOM)")),
-        (US_MINI_30_360_EOM, _("US MUNI-30/360 (EOM)")),
-        (US_MINI_30_360_NO_EOM, _("US MUNI-30/360 (NO EOM)")),
-        (BUS_DAYS_252, _("BUS DAYS/252")),
-        (GERMAN_30_360_EOM, _("GERMAN-30/360 (EOM)")),
-        (GERMAN_30_360_NO_EOM, _("GERMAN-30/360 (NO EOM)")),
-        (REVERSED_ACT_365, _("Reversed ACT/365")),
+        (NONE, 'NONE', _("none")),
+        (ACT_ACT, 'ACT_ACT', _("ACT/ACT")),
+        (ACT_ACT_ISDA, 'ACT_ACT_ISDA', _("ACT/ACT - ISDA")),
+        (ACT_360, 'ACT_360', _("ACT/360")),
+        (ACT_365, 'ACT_365', _("ACT/365")),
+        (ACT_365_25, 'ACT_365_25', _("Act/365.25")),
+        (ACT_365_366, 'ACT_365_366', _("Act/365(366)")),
+        (ACT_1_365, 'ACT_1_365', _("Act+1/365")),
+        (ACT_1_360, 'ACT_1_360', _("Act+1/360")),
+        (C_30_ACT, 'C_30_ACT', _("30/ACT")),
+        (C_30_360, 'C_30_360', _("30/360")),
+        (C_30_360_NO_EOM, 'C_30_360_NO_EOM', _("30/360 (NO EOM)")),
+        (C_30E_P_360_ITL, 'C_30E_P_360_ITL', _("30E+/360.ITL")),
+        (NL_365, 'NL_365', _("NL/365")),
+        (NL_365_NO_EOM, 'NL_365_NO_EOM', _("NL/365 (NO-EOM)")),
+        (ISMA_30_365, 'ISMA_30_365', _("ISMA-30/360")),
+        (ISMA_30_365_NO_EOM, 'ISMA_30_365_NO_EOM', _("ISMA-30/360 (NO EOM)")),
+        (US_MINI_30_360_EOM, 'US_MINI_30_360_EOM', _("US MUNI-30/360 (EOM)")),
+        (US_MINI_30_360_NO_EOM, 'US_MINI_30_360_NO_EOM', _("US MUNI-30/360 (NO EOM)")),
+        (BUS_DAYS_252, 'BUS_DAYS_252', _("BUS DAYS/252")),
+        (GERMAN_30_360_EOM, 'GERMAN_30_360_EOM', _("GERMAN-30/360 (EOM)")),
+        (GERMAN_30_360_NO_EOM, 'GERMAN_30_360_NO_EOM', _("GERMAN-30/360 (NO EOM)")),
+        (REVERSED_ACT_365, 'REVERSED_ACT_365', _("Reversed ACT/365")),
     )
 
     class Meta(AbstractClassModel.Meta):
@@ -125,12 +125,12 @@ class PaymentSizeDetail(AbstractClassModel):
     PER_WEEK = 5
     PER_DAY = 6
     CLASSES = (
-        (PERCENT, _("% per annum")),
-        (PER_ANNUM, _("per annum")),
-        (PER_QUARTER, _("per quarter")),
-        (PER_MONTH, _("per month")),
-        (PER_WEEK, _("per week")),
-        (PER_DAY, _("per day")),
+        (PERCENT, 'PERCENT', _("% per annum")),
+        (PER_ANNUM, 'PER_ANNUM', _("per annum")),
+        (PER_QUARTER, 'PER_QUARTER', _("per quarter")),
+        (PER_MONTH, 'PER_MONTH', _("per month")),
+        (PER_WEEK, 'PER_WEEK', _("per week")),
+        (PER_DAY, 'PER_DAY', _("per day")),
     )
 
     class Meta(AbstractClassModel.Meta):
@@ -139,12 +139,12 @@ class PaymentSizeDetail(AbstractClassModel):
 
 
 class Periodicity(AbstractClassModel):
-    DAY = 1
-    WEEK = 2
-    MONTH = 3
-    MONTH_DAY = 4
-    YEAR = 5
-    YEAR_DAY = 6
+    N_DAY = 1
+    N_WEEK = 2
+    N_MONTH = 3
+    N_MONTH_DAY = 4
+    N_YEAR = 5
+    N_YEAR_DAY = 6
 
     WEEKLY = 7
     MONTHLY = 8
@@ -153,18 +153,18 @@ class Periodicity(AbstractClassModel):
     ANNUALLY = 11
 
     CLASSES = (
-        (DAY, _("N Days")),
-        (WEEK, _("N Weeks (eobw)")),
-        (MONTH, _("N Months (eom)")),
-        (MONTH_DAY, _("N Months (same date)")),
-        (YEAR, _("N Years (eoy)")),
-        (YEAR_DAY, _("N Years (same date)")),
+        (N_DAY, 'N_DAY', _("N Days")),
+        (N_WEEK, 'N_WEEK', _("N Weeks (eobw)")),
+        (N_MONTH, 'N_MONTH', _("N Months (eom)")),
+        (N_MONTH_DAY, 'N_MONTH_DAY', _("N Months (same date)")),
+        (N_YEAR, 'N_YEAR', _("N Years (eoy)")),
+        (N_YEAR_DAY, 'N_YEAR_DAY', _("N Years (same date)")),
 
-        (WEEKLY, _('Weekly')),
-        (MONTHLY, _('Monthly')),
-        (QUARTERLY, _('Quarterly')),
-        (SEMI_ANNUALLY, _('Semi-annually')),
-        (ANNUALLY, _('Annually')),
+        (WEEKLY, 'WEEKLY', _('Weekly')),
+        (MONTHLY, 'MONTHLY', _('Monthly')),
+        (QUARTERLY, 'QUARTERLY', _('Quarterly')),
+        (SEMI_ANNUALLY, 'SEMI_ANNUALLY', _('Semi-annually')),
+        (ANNUALLY, 'ANNUALLY', _('Annually')),
     )
 
     class Meta(AbstractClassModel.Meta):
@@ -178,8 +178,8 @@ class CostMethod(AbstractClassModel):
     FIFO = 2
     LIFO = 3
     CLASSES = (
-        (AVCO, _('AVCO')),
-        (FIFO, _('FIFO')),
+        (AVCO, 'AVCO', _('AVCO')),
+        (FIFO, 'FIFO', _('FIFO')),
         # (LIFO, _('LIFO')),
     )
 

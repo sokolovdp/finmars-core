@@ -28,8 +28,18 @@ from poms.transactions.fields import TransactionAttributeTypeField, TransactionT
     TransactionTypeGroupField, TransactionClassifierField
 from poms.transactions.models import TransactionClass, Transaction, TransactionType, TransactionAttributeType, \
     TransactionAttribute, TransactionTypeAction, TransactionTypeActionTransaction, TransactionTypeActionInstrument, \
-    TransactionTypeInput, TransactionTypeGroup, ComplexTransaction, TransactionClassifier
+    TransactionTypeInput, TransactionTypeGroup, ComplexTransaction, TransactionClassifier, EventClass, NotificationClass
 from poms.users.fields import MasterUserField
+
+
+class EventClassSerializer(PomsClassSerializer):
+    class Meta(PomsClassSerializer.Meta):
+        model = EventClass
+
+
+class NotificationClassSerializer(PomsClassSerializer):
+    class Meta(PomsClassSerializer.Meta):
+        model = NotificationClass
 
 
 class TransactionClassSerializer(PomsClassSerializer):

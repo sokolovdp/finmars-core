@@ -20,10 +20,10 @@ class ReportClass(AbstractClassModel):
     COST = 3
     YTM = 3
     CLASSES = (
-        (BALANCE, _('BALANCE')),
-        (P_L, _('P&L')),
-        (COST, _('COST')),
-        (YTM, _('YTM')),
+        (BALANCE, 'BALANCE', _('BALANCE')),
+        (P_L, 'P_L', _('P&L')),
+        (COST, 'COST', _('COST')),
+        (YTM, 'YTM', _('YTM')),
     )
 
     class Meta(AbstractClassModel.Meta):

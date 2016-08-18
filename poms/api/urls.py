@@ -86,6 +86,8 @@ router.register(r'strategies/3/strategy', strategies.Strategy3ViewSet)
 
 router.register(r'tags/tag', tags.TagViewSet)
 
+router.register(r'transactions/event-class', transactions.EventClassViewSet)
+router.register(r'transactions/notification-class', transactions.NotificationClassViewSet)
 router.register(r'transactions/transaction-class', transactions.TransactionClassViewSet)
 
 router.register(r'transactions/transaction-type-group', transactions.TransactionTypeGroupViewSet)

@@ -33,15 +33,15 @@ class TransactionClass(AbstractClassModel):
     CASH_OUTFLOW = 9
 
     CLASSES = (
-        (BUY, "Buy"),
-        (SELL, "Sell"),
-        (FX_TRADE, "FX Trade"),
-        (INSTRUMENT_PL, "Instrument PL"),
-        (TRANSACTION_PL, "Transaction PL"),
-        (TRANSFER, "Transfer"),
-        (FX_TRANSFER, "FX Transfer"),
-        (CASH_INFLOW, "Cash-Inflow"),
-        (CASH_OUTFLOW, "Cash-Outflow"),
+        (BUY, 'BUY', _("Buy")),
+        (SELL, 'SELL', _("Sell")),
+        (FX_TRADE, 'FX_TRADE', _("FX Trade")),
+        (INSTRUMENT_PL, 'INSTRUMENT_PL', _("Instrument PL")),
+        (TRANSACTION_PL, 'TRANSACTION_PL', _("Transaction PL")),
+        (TRANSFER, 'TRANSFER', _("Transfer")),
+        (FX_TRANSFER, 'FX_TRANSFER', _("FX Transfer")),
+        (CASH_INFLOW, 'CASH_INFLOW', _("Cash-Inflow")),
+        (CASH_OUTFLOW, 'CASH_OUTFLOW', _("Cash-Outflow")),
     )
 
     class Meta(AbstractClassModel.Meta):
@@ -54,8 +54,8 @@ class ActionClass(AbstractClassModel):
     CREATE_INSTRUMENT_PARAMETER = 2
 
     CLASSES = (
-        (CREATE_INSTRUMENT, "Create instrument"),
-        (CREATE_INSTRUMENT_PARAMETER, "Create instrument parameter"),
+        (CREATE_INSTRUMENT, 'CREATE_INSTRUMENT', _("Create instrument")),
+        (CREATE_INSTRUMENT_PARAMETER, 'CREATE_INSTRUMENT_PARAMETER', _("Create instrument parameter")),
     )
 
     class Meta(AbstractClassModel.Meta):
@@ -64,7 +64,13 @@ class ActionClass(AbstractClassModel):
 
 
 class EventClass(AbstractClassModel):
-    CLASSES = tuple()
+    ONE_OFF = 1
+    REGULAR = 2
+
+    CLASSES = (
+        (ONE_OFF, 'ONE_OFF', _('One-off')),
+        (REGULAR, 'REGULAR', _('Regular')),
+    )
 
     class Meta(AbstractClassModel.Meta):
         verbose_name = _('event class')
@@ -72,7 +78,56 @@ class EventClass(AbstractClassModel):
 
 
 class NotificationClass(AbstractClassModel):
-    CLASSES = tuple()
+    # NDATE -> notification_date
+    # EDATE -> effective_date
+
+    DONT_REACT = 1
+    APPLY_DEF_ON_EDATE = 2
+    APPLY_DEF_ON_NDATE = 3
+
+    INFORM_ON_NDATE_WITH_REACT = 4
+    INFORM_ON_NDATE_APPLY_DEF = 5
+    INFORM_ON_NDATE_DONT_REACT = 6
+    INFORM_ON_EDATE_WITH_REACT = 7
+    INFORM_ON_EDATE_APPLY_DEF = 8
+    INFORM_ON_EDATE_DONT_REACT = 9
+
+    INFORM_ON_NDATE_AND_EDATE_WITH_REACT_ON_EDATE = 10
+    INFORM_ON_NDATE_AND_EDATE_WITH_REACT_ON_NDATE = 11
+    INFORM_ON_NDATE_AND_EDATE_APPLY_DEF_ON_EDATE = 12
+    INFORM_ON_NDATE_AND_EDATE_APPLY_DEF_ON_NDATE = 13
+    INFORM_ON_NDATE_AND_EDATE_DONT_REACT = 14
+
+    CLASSES = (
+        (DONT_REACT, 'DONT_REACT',
+         _("Don't inform (don't react)")),
+        (APPLY_DEF_ON_EDATE, 'APPLY_DEF_ON_EDATE',
+         _("Don't inform (apply default on effective date)")),
+        (APPLY_DEF_ON_NDATE, 'APPLY_DEF_ON_NDATE',
+         _("Don't inform (apply default on notification date)")),
+        (INFORM_ON_NDATE_WITH_REACT, 'INFORM_ON_NDATE_WITH_REACT',
+         _("Inform on notification date (with reaction)")),
+        (INFORM_ON_NDATE_APPLY_DEF, 'INFORM_ON_NDATE_APPLY_DEF',
+         _("Inform on notification date (apply default)")),
+        (INFORM_ON_NDATE_DONT_REACT, 'INFORM_ON_NDATE_DONT_REACT',
+         _("Inform on notification date (don't react)")),
+        (INFORM_ON_EDATE_WITH_REACT, 'INFORM_ON_EDATE_WITH_REACT',
+         _("Inform on effective date (with reaction)")),
+        (INFORM_ON_EDATE_APPLY_DEF, 'INFORM_ON_EDATE_APPLY_DEF',
+         _("Inform on effective date (apply default)")),
+        (INFORM_ON_EDATE_DONT_REACT, 'INFORM_ON_EDATE_DONT_REACT',
+         _("Inform on effective date (don't react)")),
+        (INFORM_ON_NDATE_AND_EDATE_WITH_REACT_ON_EDATE, 'INFORM_ON_NDATE_AND_EDATE_WITH_REACT_ON_EDATE',
+         _("Inform on notification date & effective date (with reaction on effective date)")),
+        (INFORM_ON_NDATE_AND_EDATE_WITH_REACT_ON_NDATE, 'INFORM_ON_NDATE_AND_EDATE_WITH_REACT_ON_NDATE',
+         _("Inform on notification date & effective date (with reaction on notification date)")),
+        (INFORM_ON_NDATE_AND_EDATE_APPLY_DEF_ON_EDATE, 'INFORM_ON_NDATE_AND_EDATE_APPLY_DEF_ON_EDATE',
+         _("Inform on notification date & effective date (apply default on effective date)")),
+        (INFORM_ON_NDATE_AND_EDATE_APPLY_DEF_ON_NDATE, 'INFORM_ON_NDATE_AND_EDATE_APPLY_DEF_ON_NDATE',
+         _("Inform on notification date & effective date (apply default on notification date)")),
+        (INFORM_ON_NDATE_AND_EDATE_DONT_REACT, 'INFORM_ON_NDATE_AND_EDATE_DONT_REACT',
+         _("Inform on notification date & effective date (don't react)")),
+    )
 
     class Meta(AbstractClassModel.Meta):
         verbose_name = _('notification class')
@@ -94,19 +149,19 @@ class PeriodicityGroup(AbstractClassModel):
     ANUALLY = 12
     ANUALLY_CALENDAR = 13
     CLASSES = (
-        (DAILY, "daily"),
-        (WEEKLY, "weekly (+7d)"),
-        (WEEKLY_EOW, "weekly (eow)"),
-        (BE_WEEKLY, "bi-weekly (+14d)"),
-        (BE_WEEKLY_EOW, "bi-weekly (eow)"),
-        (MONTHLY, "monthly (+1m)"),
-        (MONTHLY_EOM, "monthly (eom)"),
-        (QUARTERLY, "quarterly (+3m)"),
-        (QUARTERLY_CALENDAR, "quarterly (calendar)"),
-        (SEMI_ANUALLY, "semi-anually (+6m)"),
-        (SEMI_ANUALLY_CALENDAR, "semi-anually (calendar)"),
-        (ANUALLY, "anually (+12m)"),
-        (ANUALLY_CALENDAR, "anually (eoy)"),
+        (DAILY, 'DAILY', _("daily")),
+        (WEEKLY, 'WEEKLY', _("weekly (+7d)")),
+        (WEEKLY_EOW, 'WEEKLY_EOW', _("weekly (eow)")),
+        (BE_WEEKLY, 'BE_WEEKLY', _("bi-weekly (+14d)")),
+        (BE_WEEKLY_EOW, 'BE_WEEKLY_EOW', _("bi-weekly (eow)")),
+        (MONTHLY, 'MONTHLY', _("monthly (+1m)")),
+        (MONTHLY_EOM, 'MONTHLY_EOM', _("monthly (eom)")),
+        (QUARTERLY, 'QUARTERLY', _("quarterly (+3m)")),
+        (QUARTERLY_CALENDAR, 'QUARTERLY_CALENDAR',_( "quarterly (calendar)")),
+        (SEMI_ANUALLY, 'SEMI_ANUALLY', _("semi-anually (+6m)")),
+        (SEMI_ANUALLY_CALENDAR, 'SEMI_ANUALLY_CALENDAR', _("semi-anually (calendar)")),
+        (ANUALLY, 'ANUALLY', _("anually (+12m)")),
+        (ANUALLY_CALENDAR, 'ANUALLY_CALENDAR', _("anually (eoy)")),
     )
 
     class Meta(AbstractClassModel.Meta):

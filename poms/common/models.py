@@ -46,15 +46,15 @@ class TimeStampedModel(models.Model):
 @python_2_unicode_compatible
 class AbstractClassModel(models.Model):
     id = models.PositiveSmallIntegerField(primary_key=True, verbose_name=_('ID'))
-    system_code = models.CharField(max_length=50, null=True, blank=True, unique=True, verbose_name=_('system code'))
-    name_en = models.CharField(max_length=255, null=True, blank=True, verbose_name=_('name (en)'))
-    name_ru = models.CharField(max_length=255, null=True, blank=True, verbose_name=_('name (ru)'))
-    name_es = models.CharField(max_length=255, null=True, blank=True, verbose_name=_('name (es)'))
-    name_de = models.CharField(max_length=255, null=True, blank=True, verbose_name=_('name (de)'))
-    description_en = models.TextField(null=True, blank=True, verbose_name=_('description (en)'))
-    description_ru = models.TextField(null=True, blank=True, verbose_name=_('description (ru)'))
-    description_es = models.TextField(null=True, blank=True, verbose_name=_('description (es)'))
-    description_de = models.TextField(null=True, blank=True, verbose_name=_('description (de)'))
+    system_code = models.CharField(max_length=255, unique=True, verbose_name=_('system code'))
+    name_en = models.CharField(max_length=255, blank=True, default='', verbose_name=_('name (en)'))
+    name_ru = models.CharField(max_length=255, blank=True, default='', verbose_name=_('name (ru)'))
+    name_es = models.CharField(max_length=255, blank=True, default='', verbose_name=_('name (es)'))
+    name_de = models.CharField(max_length=255, blank=True, default='', verbose_name=_('name (de)'))
+    description_en = models.TextField(blank=True, default='', verbose_name=_('description (en)'))
+    description_ru = models.TextField(blank=True, default='', verbose_name=_('description (ru)'))
+    description_es = models.TextField(blank=True, default='', verbose_name=_('description (es)'))
+    description_de = models.TextField(blank=True, default='', verbose_name=_('description (de)'))
 
     class Meta:
         abstract = True

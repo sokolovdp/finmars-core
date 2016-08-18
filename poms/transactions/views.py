@@ -19,13 +19,23 @@ from poms.strategies.models import Strategy1, Strategy2, Strategy3
 from poms.tags.filters import TagFilterBackend, TagFilter
 from poms.transactions.filters import TransactionObjectPermissionFilter, ComplexTransactionPermissionFilter
 from poms.transactions.models import TransactionClass, Transaction, TransactionType, TransactionAttributeType, \
-    TransactionTypeGroup, ComplexTransaction, TransactionClassifier
+    TransactionTypeGroup, ComplexTransaction, TransactionClassifier, EventClass, NotificationClass
 from poms.transactions.permissions import TransactionObjectPermission
 from poms.transactions.processor import TransactionTypeProcessor
 from poms.transactions.serializers import TransactionClassSerializer, TransactionSerializer, TransactionTypeSerializer, \
     TransactionAttributeTypeSerializer, TransactionTypeProcessSerializer, TransactionTypeGroupSerializer, \
-    ComplexTransactionSerializer, TransactionClassifierNodeSerializer
+    ComplexTransactionSerializer, TransactionClassifierNodeSerializer, EventClassSerializer, NotificationClassSerializer
 from poms.users.filters import OwnerByMasterUserFilter
+
+
+class EventClassViewSet(AbstractClassModelViewSet):
+    queryset = EventClass.objects
+    serializer_class = EventClassSerializer
+
+
+class NotificationClassViewSet(AbstractClassModelViewSet):
+    queryset = NotificationClass.objects
+    serializer_class = NotificationClassSerializer
 
 
 class TransactionClassViewSet(AbstractClassModelViewSet):

@@ -23,7 +23,7 @@ _l = getLogger('poms.integrations')
 class ProviderClass(AbstractClassModel):
     BLOOMBERG = 1
     CLASSES = (
-        (BLOOMBERG, _("Bloomberg")),
+        (BLOOMBERG, 'BLOOMBERG', _("Bloomberg")),
     )
 
     class Meta(AbstractClassModel.Meta):
@@ -34,8 +34,8 @@ class FactorScheduleDownloadMethod(AbstractClassModel):
     IGNORE = 1
     DEFAULT = 2
     CLASSES = (
-        (IGNORE, _("Ignore")),
-        (DEFAULT, _("Default")),
+        (IGNORE, 'IGNORE', _("Ignore")),
+        (DEFAULT, 'DEFAULT', _("Default")),
     )
 
     class Meta(AbstractClassModel.Meta):
@@ -46,8 +46,8 @@ class AccrualScheduleDownloadMethod(AbstractClassModel):
     IGNORE = 1
     DEFAULT = 2
     CLASSES = (
-        (IGNORE, _("Ignore")),
-        (DEFAULT, _("Default")),
+        (IGNORE, 'IGNORE', _("Ignore")),
+        (DEFAULT, 'DEFAULT', _("Default")),
     )
 
     class Meta(AbstractClassModel.Meta):
