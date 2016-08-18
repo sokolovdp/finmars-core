@@ -3,7 +3,6 @@ import os
 import pprint
 from datetime import date
 
-
 __author__ = 'alyakhov'
 
 _l = logging.getLogger('poms.integrations.providers.bloomberg')
@@ -57,7 +56,8 @@ def test_instrument_data(b):
 
     instrument = {
         # "code": 'XS1433454243',
-        "code": 'USP7807HAK16',
+        # "code": 'USP7807HAK16',
+        "code": 'USP16394AG62',
         "industry": "Corp"
     }
 
