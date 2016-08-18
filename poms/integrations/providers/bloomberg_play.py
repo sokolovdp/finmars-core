@@ -1,3 +1,11 @@
+# noinspection PyUnresolvedReferences
+import env_ai
+import django
+
+django.setup()
+
+from poms.integrations.providers.bloomberg import get_certs_from_file, FakeBloombergDataProvider
+
 import logging
 import os
 import pprint
@@ -168,21 +176,12 @@ def test_pricing_history(b):
 
 
 if __name__ == "__main__":
-    # noinspection PyUnresolvedReferences
-    import env_ai
-
-    import django
-
-    django.setup()
-
-    from poms.integrations.providers.bloomberg import get_certs_from_file, BloombergDataProvider
-
     p12cert = os.environ['TEST_BLOOMBERG_CERT']
     password = os.environ['TEST_BLOOMBERG_CERT_PASSWORD']
     cert, key = get_certs_from_file(p12cert, password)
 
-    b = BloombergDataProvider(wsdl="https://service.bloomberg.com/assets/dl/dlws.wsdl", cert=cert, key=key)
-    # b = FakeBloombergDataProvider(wsdl="https://service.bloomberg.com/assets/dl/dlws.wsdl", cert=cert, key=key)
+    # b = BloombergDataProvider(wsdl="https://service.bloomberg.com/assets/dl/dlws.wsdl", cert=cert, key=key)
+    b = FakeBloombergDataProvider(wsdl="https://service.bloomberg.com/assets/dl/dlws.wsdl", cert=cert, key=key)
     # b.get_fields()
     test_instrument_data(b)
     # test_pricing_latest(b)
