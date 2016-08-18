@@ -14,7 +14,7 @@ from poms.instruments.fields import InstrumentClassifierField, InstrumentField, 
 from poms.instruments.models import InstrumentClassifier, Instrument, PriceHistory, InstrumentClass, DailyPricingModel, \
     AccrualCalculationModel, PaymentSizeDetail, Periodicity, CostMethod, InstrumentType, InstrumentAttributeType, \
     InstrumentAttribute, ManualPricingFormula, AccrualCalculationSchedule, InstrumentFactorSchedule, EventSchedule, \
-    PricingPolicy
+    PricingPolicy, EventScheduleAction
 from poms.integrations.fields import PriceDownloadSchemeField
 from poms.obj_attrs.serializers import AbstractAttributeSerializer, AbstractAttributeTypeSerializer, \
     ModelWithAttributesSerializer
@@ -77,12 +77,15 @@ class InstrumentClassifierNodeSerializer(AbstractClassifierNodeSerializer):
 
 class InstrumentTypeSerializer(ModelWithObjectPermissionSerializer, ModelWithUserCodeSerializer):
     master_user = MasterUserField()
+    one_off_event = TransactionTypeField(allow_null=True, required=False)
+    regular_event = TransactionTypeField(allow_null=True, required=False)
     tags = TagField(many=True, required=False, allow_null=True)
 
     class Meta:
         model = InstrumentType
         fields = ['url', 'id', 'master_user', 'user_code', 'name', 'short_name', 'public_name', 'notes', 'is_default',
-                  'instrument_class', 'tags']
+                  'instrument_class', 'one_off_event', 'regular_event',
+                  'tags']
 
 
 class InstrumentAttributeTypeSerializer(AbstractAttributeTypeSerializer):
@@ -107,8 +110,6 @@ class ManualPricingFormulaSerializer(serializers.ModelSerializer):
 class AccrualCalculationScheduleSerializer(serializers.ModelSerializer):
     id = serializers.IntegerField(read_only=False, required=False, allow_null=True)
 
-    # instrument = InstrumentField()
-
     class Meta:
         model = AccrualCalculationSchedule
         fields = ['id', 'accrual_start_date', 'first_payment_date', 'accrual_size',
@@ -125,15 +126,25 @@ class InstrumentFactorScheduleSerializer(serializers.ModelSerializer):
         fields = ['id', 'effective_date', 'factor_value']
 
 
+class EventScheduleActionSerializer(serializers.ModelSerializer):
+    id = serializers.IntegerField(read_only=False, required=False, allow_null=True)
+    transaction_type = TransactionTypeField()
+
+    class Meta:
+        model = EventScheduleAction
+        fields = ['id', 'transaction_type', 'text', 'is_sent_to_pending', 'is_default',
+                  'button_position']
+
+
 class EventScheduleSerializer(serializers.ModelSerializer):
     id = serializers.IntegerField(read_only=False, required=False, allow_null=True)
-    # instrument = InstrumentField()
-    transaction_types = TransactionTypeField(many=True)
+    actions = EventScheduleActionSerializer(many=True)
 
     class Meta:
         model = EventSchedule
-        fields = ['id', 'transaction_types', 'event_class', 'notification_class',
-                  'notification_date', 'effective_date']
+        fields = ['id', 'name', 'description', 'event_class', 'notification_class',
+                  'effective_date', 'notify_in_n_days', 'periodicity', 'periodicity_n', 'final_date',
+                  'actions']
 
 
 class InstrumentAttributeSerializer(AbstractAttributeSerializer):
@@ -169,6 +180,7 @@ class InstrumentSerializer(ModelWithAttributesSerializer, ModelWithObjectPermiss
                   'payment_size_detail', 'default_price', 'default_accrued',
                   'user_text_1', 'user_text_2', 'user_text_3',
                   'reference_for_pricing', 'daily_pricing_model', 'price_download_scheme',
+                  'maturity_date',
                   'manual_pricing_formulas', 'accrual_calculation_schedules', 'factor_schedules', 'event_schedules',
                   'attributes', 'tags']
 
@@ -206,74 +218,63 @@ class InstrumentSerializer(ModelWithAttributesSerializer, ModelWithObjectPermiss
         if validated_data is None:
             return
 
-        if created:
-            if validated_data:
-                objs = []
-                for attr in validated_data:
+        # if created:
+        #     if validated_data:
+        #         for attr in validated_data:
+        #             o = model(instrument=instrument)
+        #             for k, v in six.iteritems(attr):
+        #                 if k not in ['id', 'instrument', 'actions']:
+        #                     setattr(o, k, v)
+        #             o.save()
+        #             attr['id'] = o.id
+        # else:
+        #     related_attr = getattr(instrument, instrument_attr)
+        #     if validated_data:
+        #         processed = set()
+        #         for attr in validated_data:
+        #             oid = attr.get('id', None)
+        #             if oid:
+        #                 try:
+        #                     o = related_attr.get(id=oid)
+        #                 except ObjectDoesNotExist:
+        #                     o = model(instrument=instrument)
+        #             else:
+        #                 o = model(instrument=instrument)
+        #             for k, v in six.iteritems(attr):
+        #                 if k not in ['id', 'instrument', 'actions']:
+        #                     setattr(o, k, v)
+        #             o.save()
+        #             processed.add(o.id)
+        #             attr['id'] = o.id
+        #         related_attr.exclude(id__in=processed).delete()
+        #     else:
+        #         related_attr.all().delete()
+
+        related_attr = getattr(instrument, instrument_attr)
+        processed = set()
+
+        for attr in validated_data:
+            oid = attr.get('id', None)
+            if oid:
+                try:
+                    o = related_attr.get(id=oid)
+                except ObjectDoesNotExist:
                     o = model(instrument=instrument)
-                    for k, v in six.iteritems(attr):
-                        if k not in ['id', 'instrument']:
-                            setattr(o, k, v)
-                    objs.append(o)
-                model.objects.bulk_create(objs)
-        else:
-            related_attr = getattr(instrument, instrument_attr)
-            if validated_data:
-                processed = set()
-                for attr in validated_data:
-                    oid = attr.get('id', None)
-                    if oid:
-                        try:
-                            o = related_attr.get(id=oid)
-                        except ObjectDoesNotExist:
-                            o = model(instrument=instrument)
-                    else:
-                        o = model(instrument=instrument)
-                    for k, v in six.iteritems(attr):
-                        if k not in ['id', 'instrument']:
-                            setattr(o, k, v)
-                    o.save()
-                    processed.add(o.id)
-                related_attr.exclude(id__in=processed).delete()
             else:
-                related_attr.all().delete()
+                o = model(instrument=instrument)
+            for k, v in six.iteritems(attr):
+                if k not in ['id', 'instrument', 'actions']:
+                    setattr(o, k, v)
+            o.save()
+            processed.add(o.id)
+            attr['id'] = o.id
+
+        if not created:
+            related_attr.exclude(id__in=processed).delete()
 
     def save_manual_pricing_formulas(self, instrument, created, manual_pricing_formulas):
         self.save_instr_related(instrument, created, 'manual_pricing_formulas', ManualPricingFormula,
                                 manual_pricing_formulas)
-        # if manual_pricing_formulas is None:
-        #     return
-        #
-        # if created:
-        #     if manual_pricing_formulas:
-        #         objs = []
-        #         for attr in manual_pricing_formulas:
-        #             o = ManualPricingFormula(instrument=instrument)
-        #             for k, v in six.iteritems(attr):
-        #                 if k not in ['id', 'instrument']:
-        #                     setattr(o, k, v)
-        #             objs.append(o)
-        #         ManualPricingFormula.objects.bulk_create(objs)
-        # else:
-        #     if manual_pricing_formulas:
-        #         processed = set()
-        #         for attr in manual_pricing_formulas:
-        #             oid = attr.get('id', None)
-        #             if oid:
-        #                 try:
-        #                     o = instrument.manual_pricing_formulas.get(id=oid)
-        #                 except ObjectDoesNotExist:
-        #                     o = ManualPricingFormula(instrument=instrument)
-        #             else:
-        #                 o = ManualPricingFormula(instrument=instrument)
-        #             for k, v in six.iteritems(attr):
-        #                 if k not in ['id', 'instrument']:
-        #                     setattr(o, k, v)
-        #             o.save()
-        #             processed.add(o.id)
-        #         instrument.manual_pricing_formulas.exclude(id__in=processed).delete()
-        #     else:
-        #         instrument.manual_pricing_formulas.all().delete()
 
     def save_accrual_calculation_schedules(self, instrument, created, accrual_calculation_schedules):
         self.save_instr_related(instrument, created, 'accrual_calculation_schedules', AccrualCalculationSchedule,
@@ -284,6 +285,35 @@ class InstrumentSerializer(ModelWithAttributesSerializer, ModelWithObjectPermiss
 
     def save_event_schedules(self, instrument, created, event_schedules):
         self.save_instr_related(instrument, created, 'event_schedules', EventSchedule, event_schedules)
+
+        if event_schedules:
+            for es in event_schedules:
+                event_schedule = instrument.event_schedules.get(pk=es['id'])
+
+                actions_data = es.get('actions', None)
+                if actions_data is None:
+                    continue
+
+                processed = set()
+                for action_data in actions_data:
+                    oid = action_data.get('id', None)
+                    if oid:
+                        try:
+                            o = event_schedule.actions.get(id=oid)
+                        except ObjectDoesNotExist:
+                            o = EventScheduleAction(event_schedule=event_schedule)
+                    else:
+                        o = EventScheduleAction(event_schedule=event_schedule)
+
+                    for k, v in six.iteritems(action_data):
+                        if k not in ['id', 'event_schedule',]:
+                            setattr(o, k, v)
+                    o.save()
+                    processed.add(o.id)
+                    action_data['id'] = o.id
+
+                if not created:
+                    event_schedule.actions.exclude(id__in=processed).delete()
 
 
 class PriceHistorySerializer(serializers.ModelSerializer):
