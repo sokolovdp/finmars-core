@@ -40,6 +40,12 @@ class AccrualScheduleDownloadMethodViewSet(AbstractClassModelViewSet):
     serializer_class = AccrualScheduleDownloadMethodSerializer
 
 
+class IImportConfigFilterSet(FilterSet):
+    class Meta:
+        model = ImportConfig
+        fields = ['provider', ]
+
+
 class ImportConfigViewSet(AbstractModelViewSet):
     queryset = ImportConfig.objects
     serializer_class = ImportConfigSerializer
