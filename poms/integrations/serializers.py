@@ -72,15 +72,15 @@ class ImportConfigSerializer(serializers.ModelSerializer):
 
 
 class InstrumentDownloadSchemeInputSerializer(serializers.ModelSerializer):
-    id = serializers.IntegerField()
+    id = serializers.IntegerField(read_only=False, required=False, allow_null=True)
 
     class Meta:
         model = InstrumentDownloadSchemeInput
-        fields = ['id', 'name']
+        fields = ['id', 'name', 'field']
 
 
 class InstrumentDownloadSchemeAttributeSerializer(serializers.ModelSerializer):
-    id = serializers.IntegerField()
+    id = serializers.IntegerField(read_only=False, required=False, allow_null=True)
     attribute_type = InstrumentAttributeTypeField()
     value = ExpressionField(allow_blank=True)
 
@@ -118,7 +118,7 @@ class InstrumentDownloadSchemeSerializer(serializers.ModelSerializer):
     class Meta:
         model = InstrumentDownloadScheme
         fields = [
-            'url', 'id', 'master_user', 'scheme_name',
+            'url', 'id', 'master_user', 'scheme_name', 'provider',
             'inputs',
             'reference_for_pricing',
             'user_code', 'name', 'short_name', 'public_name', 'notes',
@@ -157,7 +157,7 @@ class InstrumentDownloadSchemeSerializer(serializers.ModelSerializer):
                 except ObjectDoesNotExist:
                     pass
             if input0 is None:
-                input0 = InstrumentDownloadSchemeInput(mapping=instance)
+                input0 = InstrumentDownloadSchemeInput(scheme=instance)
             for name, value in six.iteritems(input_values):
                 setattr(input0, name, value)
             input0.save()
@@ -175,7 +175,7 @@ class InstrumentDownloadSchemeSerializer(serializers.ModelSerializer):
                 except ObjectDoesNotExist:
                     pass
             if attr is None:
-                attr = InstrumentDownloadSchemeAttribute(mapping=instance)
+                attr = InstrumentDownloadSchemeAttribute(scheme=instance)
             for name, value in six.iteritems(attr_values):
                 setattr(attr, name, value)
             attr.save()
