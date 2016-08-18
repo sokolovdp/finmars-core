@@ -188,7 +188,9 @@ class MasterUserSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = MasterUser
-        fields = ['url', 'id', 'name', 'language', 'timezone', 'is_current', 'currency', 'account_type', 'account',
+        fields = ['url', 'id', 'name', 'is_current', 'language', 'timezone',
+                  'notification_business_days',
+                  'currency', 'account_type', 'account',
                   'counterparty', 'responsible', 'instrument_type', 'portfolio',
                   'strategy1_group', 'strategy1_subgroup', 'strategy1',
                   'strategy2_group', 'strategy2_subgroup', 'strategy2',
