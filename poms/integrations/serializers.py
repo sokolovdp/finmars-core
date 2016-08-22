@@ -189,9 +189,11 @@ class PriceDownloadSchemeSerializer(serializers.ModelSerializer):
         model = PriceDownloadScheme
         fields = [
             'url', 'id', 'master_user', 'scheme_name', 'provider',
-            'bid_multiplier', 'bid0', 'bid1', 'bid2', 'bid_history',
-            'ask_multiplier', 'ask0', 'ask1', 'ask2', 'ask_history',
-            'last', 'mid',
+            'bid0', 'bid1', 'bid2', 'bid_multiplier', 'ask0', 'ask1', 'ask2', 'ask_multiplier', 'last',
+            'last_multiplier', 'mid', 'mid_multiplier',
+            'bid_history', 'bid_history_multiplier', 'ask_history', 'ask_history_multiplier', 'mid_history',
+            'mid_history_multiplier', 'last_history', 'last_history_multiplier',
+            'currency_fxrate', 'currency_fxrate_multiplier',
         ]
 
 
