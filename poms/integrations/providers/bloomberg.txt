@@ -1,0 +1,733 @@
+{
+   statusCode =
+      (ResponseStatus){
+         code = 0
+         description = "Success"
+      }
+   requestId = "2c85a49d-5d43-4e79-9339-2d8ab5202a76"
+   responseId = "1471523547-721486280"
+   headers =
+      (GetDataHeaders){
+         rundate = "20160818"
+         programflag = "oneshot"
+         historical = True
+         secmaster = True
+         pricing = True
+      }
+   fields =
+      (Fields){
+         field[] =
+            "ACCRUED_FACTOR",
+            "CALC_TYP",
+            "CALC_TYP_DES",
+            "CNTRY_OF_RISK",
+            "COUPON_FREQUENCY_DESCRIPTION",
+            "CPN",
+            "CPN_FREQ",
+            "CPN_TYP",
+            "CPN_TYP_SPECIFIC",
+            "CRNCY",
+            "CUR_CPN",
+            "DAYS_TO_SETTLE",
+            "DAY_CNT",
+            "DAY_CNT_DES",
+            "DES_NOTES",
+            "FACTOR_SCHEDULE",
+            "FIRST_CPN_DT",
+            "FIRST_SETTLE_DT",
+            "ID_BB_GLOBAL",
+            "ID_CUSIP",
+            "ID_ISIN",
+            "INDUSTRY_SECTOR",
+            "INDUSTRY_SUBGROUP",
+            "INT_ACC_DT",
+            "ISSUER",
+            "MATURITY",
+            "MTY_TYP",
+            "MULTI_CPN_SCHEDULE",
+            "OPT_PUT_CALL",
+            "PAYMENT_RANK",
+            "PX_YEST_ASK",
+            "PX_YEST_BID",
+            "PX_YEST_CLOSE",
+            "SECURITY_DES",
+            "SECURITY_TYP",
+      }
+   timestarted = 2016-08-18 08:32:38-04:00
+   instrumentDatas =
+      (InstrumentDatas){
+         instrumentData[] =
+            (InstrumentData){
+               code = "0"
+               instrument =
+                  (Instrument){
+                     id = "USP16394AG62"
+                     yellowkey = "Corp"
+                  }
+               data[] =
+                  (Data){
+                     _value = "1.000000000"
+                  },
+                  (Data){
+                     _value = "1311"
+                  },
+                  (Data){
+                     _value = "MULTI-STEP CPN BND"
+                  },
+                  (Data){
+                     _value = "N.S."
+                  },
+                  (Data){
+                     _value = "S/A"
+                  },
+                  (Data){
+                     _value = "5.000000"
+                  },
+                  (Data){
+                     _value = "2"
+                  },
+                  (Data){
+                     _value = "STEP CPN"
+                  },
+                  (Data){
+                     _value = ""
+                  },
+                  (Data){
+                     _value = "USD"
+                  },
+                  (Data){
+                     _value = ""
+                  },
+                  (Data){
+                     _value = "3"
+                  },
+                  (Data){
+                     _value = "20"
+                  },
+                  (Data){
+                     _value = "ISMA-30/360"
+                  },
+                  (Data){
+                     _value = "ISS'D IN EXCH OF 144A/REGS 07782GAF0/USP16394AF89"
+                  },
+                  (Data){
+                     _isArray = True
+                     _rows = 38
+                     bulkarray[] =
+                        (BulkArray){
+                           _columns = 2
+                           data[] =
+                              (BulkArrayEntry){
+                                 _type = "Date"
+                                 _value = "03/20/2013"
+                              },
+                              (BulkArrayEntry){
+                                 _type = "Price"
+                                 _value = "1.000000000"
+                              },
+                        },
+                        (BulkArray){
+                           _columns = 2
+                           data[] =
+                              (BulkArrayEntry){
+                                 _type = "Date"
+                                 _value = "08/20/2019"
+                              },
+                              (BulkArrayEntry){
+                                 _type = "Price"
+                                 _value = ".973684211"
+                              },
+                        },
+                        (BulkArray){
+                           _columns = 2
+                           data[] =
+                              (BulkArrayEntry){
+                                 _type = "Date"
+                                 _value = "02/20/2020"
+                              },
+                              (BulkArrayEntry){
+                                 _type = "Price"
+                                 _value = ".947368421"
+                              },
+                        },
+                        (BulkArray){
+                           _columns = 2
+                           data[] =
+                              (BulkArrayEntry){
+                                 _type = "Date"
+                                 _value = "08/20/2020"
+                              },
+                              (BulkArrayEntry){
+                                 _type = "Price"
+                                 _value = ".921052632"
+                              },
+                        },
+                        (BulkArray){
+                           _columns = 2
+                           data[] =
+                              (BulkArrayEntry){
+                                 _type = "Date"
+                                 _value = "02/20/2021"
+                              },
+                              (BulkArrayEntry){
+                                 _type = "Price"
+                                 _value = ".894736842"
+                              },
+                        },
+                        (BulkArray){
+                           _columns = 2
+                           data[] =
+                              (BulkArrayEntry){
+                                 _type = "Date"
+                                 _value = "08/20/2021"
+                              },
+                              (BulkArrayEntry){
+                                 _type = "Price"
+                                 _value = ".868421053"
+                              },
+                        },
+                        (BulkArray){
+                           _columns = 2
+                           data[] =
+                              (BulkArrayEntry){
+                                 _type = "Date"
+                                 _value = "02/20/2022"
+                              },
+                              (BulkArrayEntry){
+                                 _type = "Price"
+                                 _value = ".842105263"
+                              },
+                        },
+                        (BulkArray){
+                           _columns = 2
+                           data[] =
+                              (BulkArrayEntry){
+                                 _type = "Date"
+                                 _value = "08/20/2022"
+                              },
+                              (BulkArrayEntry){
+                                 _type = "Price"
+                                 _value = ".815789474"
+                              },
+                        },
+                        (BulkArray){
+                           _columns = 2
+                           data[] =
+                              (BulkArrayEntry){
+                                 _type = "Date"
+                                 _value = "02/20/2023"
+                              },
+                              (BulkArrayEntry){
+                                 _type = "Price"
+                                 _value = ".789473684"
+                              },
+                        },
+                        (BulkArray){
+                           _columns = 2
+                           data[] =
+                              (BulkArrayEntry){
+                                 _type = "Date"
+                                 _value = "08/20/2023"
+                              },
+                              (BulkArrayEntry){
+                                 _type = "Price"
+                                 _value = ".763157895"
+                              },
+                        },
+                        (BulkArray){
+                           _columns = 2
+                           data[] =
+                              (BulkArrayEntry){
+                                 _type = "Date"
+                                 _value = "02/20/2024"
+                              },
+                              (BulkArrayEntry){
+                                 _type = "Price"
+                                 _value = ".736842105"
+                              },
+                        },
+                        (BulkArray){
+                           _columns = 2
+                           data[] =
+                              (BulkArrayEntry){
+                                 _type = "Date"
+                                 _value = "08/20/2024"
+                              },
+                              (BulkArrayEntry){
+                                 _type = "Price"
+                                 _value = ".710526316"
+                              },
+                        },
+                        (BulkArray){
+                           _columns = 2
+                           data[] =
+                              (BulkArrayEntry){
+                                 _type = "Date"
+                                 _value = "02/20/2025"
+                              },
+                              (BulkArrayEntry){
+                                 _type = "Price"
+                                 _value = ".684210526"
+                              },
+                        },
+                        (BulkArray){
+                           _columns = 2
+                           data[] =
+                              (BulkArrayEntry){
+                                 _type = "Date"
+                                 _value = "08/20/2025"
+                              },
+                              (BulkArrayEntry){
+                                 _type = "Price"
+                                 _value = ".657894737"
+                              },
+                        },
+                        (BulkArray){
+                           _columns = 2
+                           data[] =
+                              (BulkArrayEntry){
+                                 _type = "Date"
+                                 _value = "02/20/2026"
+                              },
+                              (BulkArrayEntry){
+                                 _type = "Price"
+                                 _value = ".631578947"
+                              },
+                        },
+                        (BulkArray){
+                           _columns = 2
+                           data[] =
+                              (BulkArrayEntry){
+                                 _type = "Date"
+                                 _value = "08/20/2026"
+                              },
+                              (BulkArrayEntry){
+                                 _type = "Price"
+                                 _value = ".605263158"
+                              },
+                        },
+                        (BulkArray){
+                           _columns = 2
+                           data[] =
+                              (BulkArrayEntry){
+                                 _type = "Date"
+                                 _value = "02/20/2027"
+                              },
+                              (BulkArrayEntry){
+                                 _type = "Price"
+                                 _value = ".578947368"
+                              },
+                        },
+                        (BulkArray){
+                           _columns = 2
+                           data[] =
+                              (BulkArrayEntry){
+                                 _type = "Date"
+                                 _value = "08/20/2027"
+                              },
+                              (BulkArrayEntry){
+                                 _type = "Price"
+                                 _value = ".552631579"
+                              },
+                        },
+                        (BulkArray){
+                           _columns = 2
+                           data[] =
+                              (BulkArrayEntry){
+                                 _type = "Date"
+                                 _value = "02/20/2028"
+                              },
+                              (BulkArrayEntry){
+                                 _type = "Price"
+                                 _value = ".526315790"
+                              },
+                        },
+                        (BulkArray){
+                           _columns = 2
+                           data[] =
+                              (BulkArrayEntry){
+                                 _type = "Date"
+                                 _value = "08/20/2028"
+                              },
+                              (BulkArrayEntry){
+                                 _type = "Price"
+                                 _value = ".500000000"
+                              },
+                        },
+                        (BulkArray){
+                           _columns = 2
+                           data[] =
+                              (BulkArrayEntry){
+                                 _type = "Date"
+                                 _value = "02/20/2029"
+                              },
+                              (BulkArrayEntry){
+                                 _type = "Price"
+                                 _value = ".473684211"
+                              },
+                        },
+                        (BulkArray){
+                           _columns = 2
+                           data[] =
+                              (BulkArrayEntry){
+                                 _type = "Date"
+                                 _value = "08/20/2029"
+                              },
+                              (BulkArrayEntry){
+                                 _type = "Price"
+                                 _value = ".447368421"
+                              },
+                        },
+                        (BulkArray){
+                           _columns = 2
+                           data[] =
+                              (BulkArrayEntry){
+                                 _type = "Date"
+                                 _value = "02/20/2030"
+                              },
+                              (BulkArrayEntry){
+                                 _type = "Price"
+                                 _value = ".421052632"
+                              },
+                        },
+                        (BulkArray){
+                           _columns = 2
+                           data[] =
+                              (BulkArrayEntry){
+                                 _type = "Date"
+                                 _value = "08/20/2030"
+                              },
+                              (BulkArrayEntry){
+                                 _type = "Price"
+                                 _value = ".394736842"
+                              },
+                        },
+                        (BulkArray){
+                           _columns = 2
+                           data[] =
+                              (BulkArrayEntry){
+                                 _type = "Date"
+                                 _value = "02/20/2031"
+                              },
+                              (BulkArrayEntry){
+                                 _type = "Price"
+                                 _value = ".368421053"
+                              },
+                        },
+                        (BulkArray){
+                           _columns = 2
+                           data[] =
+                              (BulkArrayEntry){
+                                 _type = "Date"
+                                 _value = "08/20/2031"
+                              },
+                              (BulkArrayEntry){
+                                 _type = "Price"
+                                 _value = ".342105263"
+                              },
+                        },
+                        (BulkArray){
+                           _columns = 2
+                           data[] =
+                              (BulkArrayEntry){
+                                 _type = "Date"
+                                 _value = "02/20/2032"
+                              },
+                              (BulkArrayEntry){
+                                 _type = "Price"
+                                 _value = ".315789474"
+                              },
+                        },
+                        (BulkArray){
+                           _columns = 2
+                           data[] =
+                              (BulkArrayEntry){
+                                 _type = "Date"
+                                 _value = "08/20/2032"
+                              },
+                              (BulkArrayEntry){
+                                 _type = "Price"
+                                 _value = ".289473684"
+                              },
+                        },
+                        (BulkArray){
+                           _columns = 2
+                           data[] =
+                              (BulkArrayEntry){
+                                 _type = "Date"
+                                 _value = "02/20/2033"
+                              },
+                              (BulkArrayEntry){
+                                 _type = "Price"
+                                 _value = ".263157895"
+                              },
+                        },
+                        (BulkArray){
+                           _columns = 2
+                           data[] =
+                              (BulkArrayEntry){
+                                 _type = "Date"
+                                 _value = "08/20/2033"
+                              },
+                              (BulkArrayEntry){
+                                 _type = "Price"
+                                 _value = ".236842105"
+                              },
+                        },
+                        (BulkArray){
+                           _columns = 2
+                           data[] =
+                              (BulkArrayEntry){
+                                 _type = "Date"
+                                 _value = "02/20/2034"
+                              },
+                              (BulkArrayEntry){
+                                 _type = "Price"
+                                 _value = ".210526316"
+                              },
+                        },
+                        (BulkArray){
+                           _columns = 2
+                           data[] =
+                              (BulkArrayEntry){
+                                 _type = "Date"
+                                 _value = "08/20/2034"
+                              },
+                              (BulkArrayEntry){
+                                 _type = "Price"
+                                 _value = ".184210526"
+                              },
+                        },
+                        (BulkArray){
+                           _columns = 2
+                           data[] =
+                              (BulkArrayEntry){
+                                 _type = "Date"
+                                 _value = "02/20/2035"
+                              },
+                              (BulkArrayEntry){
+                                 _type = "Price"
+                                 _value = ".157894737"
+                              },
+                        },
+                        (BulkArray){
+                           _columns = 2
+                           data[] =
+                              (BulkArrayEntry){
+                                 _type = "Date"
+                                 _value = "08/20/2035"
+                              },
+                              (BulkArrayEntry){
+                                 _type = "Price"
+                                 _value = ".131578947"
+                              },
+                        },
+                        (BulkArray){
+                           _columns = 2
+                           data[] =
+                              (BulkArrayEntry){
+                                 _type = "Date"
+                                 _value = "02/20/2036"
+                              },
+                              (BulkArrayEntry){
+                                 _type = "Price"
+                                 _value = ".105263158"
+                              },
+                        },
+                        (BulkArray){
+                           _columns = 2
+                           data[] =
+                              (BulkArrayEntry){
+                                 _type = "Date"
+                                 _value = "08/20/2036"
+                              },
+                              (BulkArrayEntry){
+                                 _type = "Price"
+                                 _value = ".078947369"
+                              },
+                        },
+                        (BulkArray){
+                           _columns = 2
+                           data[] =
+                              (BulkArrayEntry){
+                                 _type = "Date"
+                                 _value = "02/20/2037"
+                              },
+                              (BulkArrayEntry){
+                                 _type = "Price"
+                                 _value = ".052631579"
+                              },
+                        },
+                        (BulkArray){
+                           _columns = 2
+                           data[] =
+                              (BulkArrayEntry){
+                                 _type = "Date"
+                                 _value = "08/20/2037"
+                              },
+                              (BulkArrayEntry){
+                                 _type = "Price"
+                                 _value = ".026315790"
+                              },
+                        },
+                  },
+                  (Data){
+                     _value = "08/20/2013"
+                  },
+                  (Data){
+                     _value = "03/20/2013"
+                  },
+                  (Data){
+                     _value = "BBG004C31TG9"
+                  },
+                  (Data){
+                     _value = "EJ6033694"
+                  },
+                  (Data){
+                     _value = "USP16394AG62"
+                  },
+                  (Data){
+                     _value = "Government"
+                  },
+                  (Data){
+                     _value = "Sovereign"
+                  },
+                  (Data){
+                     _value = "03/20/2013"
+                  },
+                  (Data){
+                     _value = "REPUBLIC OF BELIZE"
+                  },
+                  (Data){
+                     _value = "02/20/2038"
+                  },
+                  (Data){
+                     _value = "SINKABLE"
+                  },
+                  (Data){
+                     _isArray = True
+                     _rows = 2
+                     bulkarray[] =
+                        (BulkArray){
+                           _columns = 2
+                           data[] =
+                              (BulkArrayEntry){
+                                 _type = "Date"
+                                 _value = "08/20/2017"
+                              },
+                              (BulkArrayEntry){
+                                 _type = "Numeric"
+                                 _value = "5.0000"
+                              },
+                        },
+                        (BulkArray){
+                           _columns = 2
+                           data[] =
+                              (BulkArrayEntry){
+                                 _type = "Date"
+                                 _value = "02/20/2038"
+                              },
+                              (BulkArrayEntry){
+                                 _type = "Numeric"
+                                 _value = "6.7670"
+                              },
+                        },
+                  },
+                  (Data){
+                     _value = ""
+                  },
+                  (Data){
+                     _value = "Sr Unsecured"
+                  },
+                  (Data){
+                     _value = "N.A."
+                  },
+                  (Data){
+                     _value = "N.A."
+                  },
+                  (Data){
+                     _value = "N.A."
+                  },
+                  (Data){
+                     _value = "BELIZE 5 02/20/38"
+                  },
+                  (Data){
+                     _value = "EURO-DOLLAR"
+                  },
+            },
+      }
+   timefinished = 2016-08-18 08:32:55-04:00
+ }
+
+{ACCRUED_FACTOR: 1.000000000,
+ CALC_TYP: 1311,
+ CALC_TYP_DES: MULTI-STEP CPN BND,
+ CNTRY_OF_RISK: N.S.,
+ COUPON_FREQUENCY_DESCRIPTION: S/A,
+ CPN: 5.000000,
+ CPN_FREQ: 2,
+ CPN_TYP: STEP CPN,
+ CPN_TYP_SPECIFIC: ,
+ CRNCY: USD,
+ CUR_CPN: ,
+ DAYS_TO_SETTLE: 3,
+ DAY_CNT: 20,
+ DAY_CNT_DES: ISMA-30/360,
+ DES_NOTES: ISS'D IN EXCH OF 144A/REGS 07782GAF0/USP16394AF89,
+ FACTOR_SCHEDULE: [[03/20/2013, 1.000000000],
+                   [08/20/2019, .973684211],
+                   [02/20/2020, .947368421],
+                   [08/20/2020, .921052632],
+                   [02/20/2021, .894736842],
+                   [08/20/2021, .868421053],
+                   [02/20/2022, .842105263],
+                   [08/20/2022, .815789474],
+                   [02/20/2023, .789473684],
+                   [08/20/2023, .763157895],
+                   [02/20/2024, .736842105],
+                   [08/20/2024, .710526316],
+                   [02/20/2025, .684210526],
+                   [08/20/2025, .657894737],
+                   [02/20/2026, .631578947],
+                   [08/20/2026, .605263158],
+                   [02/20/2027, .578947368],
+                   [08/20/2027, .552631579],
+                   [02/20/2028, .526315790],
+                   [08/20/2028, .500000000],
+                   [02/20/2029, .473684211],
+                   [08/20/2029, .447368421],
+                   [02/20/2030, .421052632],
+                   [08/20/2030, .394736842],
+                   [02/20/2031, .368421053],
+                   [08/20/2031, .342105263],
+                   [02/20/2032, .315789474],
+                   [08/20/2032, .289473684],
+                   [02/20/2033, .263157895],
+                   [08/20/2033, .236842105],
+                   [02/20/2034, .210526316],
+                   [08/20/2034, .184210526],
+                   [02/20/2035, .157894737],
+                   [08/20/2035, .131578947],
+                   [02/20/2036, .105263158],
+                   [08/20/2036, .078947369],
+                   [02/20/2037, .052631579],
+                   [08/20/2037, .026315790]],
+ FIRST_CPN_DT: 08/20/2013,
+ FIRST_SETTLE_DT: 03/20/2013,
+ ID_BB_GLOBAL: BBG004C31TG9,
+ ID_CUSIP: EJ6033694,
+ ID_ISIN: USP16394AG62,
+ INDUSTRY_SECTOR: Government,
+ INDUSTRY_SUBGROUP: Sovereign,
+ INT_ACC_DT: 03/20/2013,
+ ISSUER: REPUBLIC OF BELIZE,
+ MATURITY: 02/20/2038,
+ MTY_TYP: SINKABLE,
+ MULTI_CPN_SCHEDULE: [[08/20/2017, 5.0000], [02/20/2038, 6.7670]],
+ OPT_PUT_CALL: ,
+ PAYMENT_RANK: Sr Unsecured,
+ PX_YEST_ASK: N.A.,
+ PX_YEST_BID: N.A.,
+ PX_YEST_CLOSE: N.A.,
+ SECURITY_DES: BELIZE 5 02/20/38,
+ SECURITY_TYP: EURO-DOLLAR}

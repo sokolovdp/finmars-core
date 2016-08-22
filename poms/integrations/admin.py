@@ -50,32 +50,6 @@ admin.site.register(FactorScheduleDownloadMethod, ClassModelAdmin)
 admin.site.register(AccrualScheduleDownloadMethod, ClassModelAdmin)
 
 
-class InstrumentDownloadSchemeInputInline(admin.TabularInline):
-    model = InstrumentDownloadSchemeInput
-    extra = 0
-
-
-class InstrumentDownloadSchemeAttributeInline(admin.TabularInline):
-    model = InstrumentDownloadSchemeAttribute
-    extra = 0
-    raw_id_fields = ['attribute_type']
-
-
-class InstrumentDownloadSchemeAdmin(HistoricalAdmin):
-    model = InstrumentDownloadScheme
-    inlines = [
-        InstrumentDownloadSchemeInputInline,
-        InstrumentDownloadSchemeAttributeInline,
-    ]
-    list_display = ['id', 'master_user', 'scheme_name', 'provider', ]
-    list_select_related = ['master_user', 'provider', ]
-    raw_id_fields = ['master_user', ]
-    search_fields = ['scheme_name', ]
-
-
-admin.site.register(InstrumentDownloadScheme, InstrumentDownloadSchemeAdmin)
-
-
 class ImportConfigForm(forms.ModelForm):
     password = forms.CharField(widget=forms.PasswordInput(), required=False)
 
@@ -95,44 +69,64 @@ class ImportConfigAdmin(HistoricalAdmin):
 admin.site.register(ImportConfig, ImportConfigAdmin)
 
 
-class TaskAdmin(admin.ModelAdmin):
-    model = Task
-    list_display = ['id', 'created', 'master_user', 'member', 'provider', 'action', 'status', ]
-    list_select_related = ['master_user', 'member', 'provider']
-    raw_id_fields = ['master_user', 'member', 'instruments', 'currencies']
-    search_fields = ['action', 'response_id', ]
-    list_filter = ['provider', 'created', 'action', 'status', ]
-    date_hierarchy = 'created'
-    readonly_fields = [
-        'id', 'master_user', 'member', 'provider', 'action', 'status',
-        'isin', 'instruments', 'currencies', 'date_from', 'date_to',
-        'kwargs', 'response_id', 'result',
+class InstrumentDownloadSchemeInputInline(admin.TabularInline):
+    model = InstrumentDownloadSchemeInput
+    extra = 0
+
+
+class InstrumentDownloadSchemeAttributeInline(admin.TabularInline):
+    model = InstrumentDownloadSchemeAttribute
+    extra = 0
+    raw_id_fields = ['attribute_type']
+
+
+class InstrumentDownloadSchemeAdmin(HistoricalAdmin):
+    model = InstrumentDownloadScheme
+    list_display = ['id', 'master_user', 'scheme_name', 'provider', ]
+    list_select_related = ['master_user', 'provider', ]
+    raw_id_fields = ['master_user', ]
+    search_fields = ['scheme_name', ]
+    inlines = [
+        InstrumentDownloadSchemeInputInline,
+        InstrumentDownloadSchemeAttributeInline,
     ]
 
-    def has_add_permission(self, request):
-        return False
 
-    def save_model(self, request, obj, form, change):
-        pass
-
-
-admin.site.register(Task, TaskAdmin)
+admin.site.register(InstrumentDownloadScheme, InstrumentDownloadSchemeAdmin)
 
 
 class PriceDownloadSchemeAdmin(admin.ModelAdmin):
     model = PriceDownloadScheme
-    list_display = ['id', 'master_user', 'scheme_name', 'provider', 'fields0']
+    list_display = ['id', 'master_user', 'scheme_name', 'provider', 'instrument_yesterday_fields0',
+                    'instrument_history_fields0', 'currency_history_fields0']
     list_select_related = ['master_user', 'provider']
+    search_fields = ['scheme_name']
     list_filter = ['provider']
     raw_id_fields = ['master_user']
 
-    def fields0(self, obj):
-        f = obj.fields
+    def instrument_yesterday_fields0(self, obj):
+        f = obj.instrument_yesterday_fields
         if f:
             return ', '.join(f)
         return None
 
-    fields0.short_description = _('fields')
+    instrument_yesterday_fields0.short_description = _('instrument yesterday fields')
+
+    def instrument_history_fields0(self, obj):
+        f = obj.instrument_history_fields
+        if f:
+            return ', '.join(f)
+        return None
+
+    instrument_history_fields0.short_description = _('instrument history fields')
+
+    def currency_history_fields0(self, obj):
+        f = obj.currency_history_fields
+        if f:
+            return ', '.join(f)
+        return None
+
+    currency_history_fields0.short_description = _('currency history fields')
 
 
 admin.site.register(PriceDownloadScheme, PriceDownloadSchemeAdmin)
@@ -161,7 +155,7 @@ admin.site.register(InstrumentTypeMapping, InstrumentTypeMappingAdmin)
 class AccrualCalculationModelMappingAdmin(admin.ModelAdmin):
     model = AccrualCalculationModelMapping
     list_display = ['id', 'master_user', 'provider', 'value', 'accrual_calculation_model']
-    list_select_related = ['master_user', 'currency', 'provider']
+    list_select_related = ['master_user', 'accrual_calculation_model', 'provider']
     raw_id_fields = ['master_user', 'accrual_calculation_model']
 
 
@@ -202,3 +196,29 @@ class InstrumentAttributeValueMappingAdmin(admin.ModelAdmin):
 
 
 admin.site.register(InstrumentAttributeValueMapping, InstrumentAttributeValueMappingAdmin)
+
+
+class TaskAdmin(admin.ModelAdmin):
+    model = Task
+    list_display = ['id', 'created', 'master_user', 'member', 'provider', 'action', 'status', 'response_id']
+    list_select_related = ['master_user', 'member', 'provider']
+    raw_id_fields = ['master_user', 'member', 'instruments', 'currencies',
+                     'instrument_download_scheme', 'price_download_scheme']
+    search_fields = ['response_id', ]
+    list_filter = ['provider', 'created', 'action', 'status', ]
+    date_hierarchy = 'created'
+
+    # readonly_fields = [
+    #     'id', 'master_user', 'member', 'provider', 'action', 'status',
+    #     'instrument_code', 'instruments', 'currencies', 'date_from', 'date_to',
+    #     'kwargs', 'response_id', 'result',
+    # ]
+
+    def has_add_permission(self, request):
+        return False
+
+    def save_model(self, request, obj, form, change):
+        pass
+
+
+admin.site.register(Task, TaskAdmin)

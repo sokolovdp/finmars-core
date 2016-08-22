@@ -2,7 +2,6 @@ from __future__ import unicode_literals, print_function
 
 import json
 import time
-from datetime import datetime, timedelta
 from logging import getLogger
 
 from celery import shared_task, chain
@@ -15,13 +14,10 @@ from django.db import transaction, models
 from django.utils import timezone
 
 from poms.audit.models import AuthLogEntry
-from poms.currencies.models import CurrencyHistory
-from poms.instruments.models import PriceHistory, DailyPricingModel
 from poms.integrations.models import Task, ProviderClass
-from poms.integrations.providers.bloomberg import get_provider, BloombergException, str_to_date, \
-    create_instrument_price_history, create_currency_price_history
+from poms.integrations.providers.base import get_provider
+from poms.integrations.providers.bloomberg import BloombergException
 from poms.integrations.storage import file_import_storage
-from poms.users.models import MasterUser
 
 _l = getLogger('poms.integrations')
 
@@ -124,40 +120,45 @@ def auth_log_statistics():
 def bloomberg_send_request(self, task_id):
     _l.info('bloomberg_send_request: task_id=%s', task_id)
 
-    task = Task.objects.select_related('master_user', 'master_user__bloomberg_config').get(pk=task_id)
-    if settings.BLOOMBERG_SANDBOX:
-        provider = get_provider()
-    else:
-        master_user = task.master_user
-        config = master_user.bloomberg_config
-        cert, key = config.pair
-        provider = get_provider(cert=cert, key=key)
+    task = Task.objects.get(pk=task_id)
+    try:
+        provider = get_provider(task.master_user, task.provider_id)
+    except:
+        with transaction.atomic():
+            task.status = Task.STATUS_ERROR
+            task.save()
+        raise
 
     action = task.action
-    params = json.loads(task.kwargs)
+    kwargs = json.loads(task.kwargs)
 
     try:
         if action == 'fields':
             response_id = None
 
         elif action == Task.ACTION_INSTRUMENT:
-            response_id = provider.get_instrument_send_request(
-                instrument=params['instrument'],
-                fields=params['fields']
+            response_id, fields = provider.get_instrument_send_request(
+                instrument=task.instrument_code,
+                fields=kwargs['fields'],
+                factor_schedule_method=task.instrument_download_scheme.factor_schedule_method_id,
+                accrual_calculation_schedule_method=task.instrument_download_scheme.accrual_calculation_schedule_method_id
             )
+            kwargs['fields'] = fields
 
         elif action == Task.ACTION_PRICING_LATEST:
             response_id = provider.get_pricing_latest_send_request(
-                instruments=params['instruments']
+                instruments=kwargs['instruments'],
+                currencies=kwargs['currencies'],
+                fields=kwargs['fields'],
             )
 
         elif action == Task.ACTION_PRICE_HISTORY:
-            date_from = datetime.strptime(params['date_from'], '%Y-%m-%d').date()
-            date_to = datetime.strptime(params['date_to'], '%Y-%m-%d').date()
             response_id = provider.get_pricing_history_send_request(
-                instruments=params['instruments'],
-                date_from=date_from,
-                date_to=date_to
+                instruments=kwargs['instruments'],
+                currencies=kwargs['currencies'],
+                fields=kwargs['fields'],
+                date_from=task.date_from,
+                date_to=task.date_to
             )
 
         else:
@@ -170,6 +171,7 @@ def bloomberg_send_request(self, task_id):
         raise
 
     with transaction.atomic():
+        task.kwargs = json.dumps(kwargs, cls=DjangoJSONEncoder, sort_keys=True, indent=1)
         task.response_id = response_id
         task.status = Task.STATUS_REQUEST_SENT
         task.save()
@@ -181,8 +183,7 @@ def bloomberg_send_request(self, task_id):
 def bloomberg_wait_reponse(self, task_id):
     _l.info('bloomberg_wait_reponse: task_id=%s', task_id)
 
-    task = Task.objects.select_related('master_user', 'master_user__bloomberg_config').get(pk=task_id)
-
+    task = Task.objects.get(pk=task_id)
     if task.status == Task.STATUS_REQUEST_SENT:
         with transaction.atomic():
             task.status = Task.STATUS_WAIT_RESPONSE
@@ -192,13 +193,13 @@ def bloomberg_wait_reponse(self, task_id):
     else:
         return
 
-    if settings.BLOOMBERG_SANDBOX:
-        provider = get_provider()
-    else:
-        master_user = task.master_user
-        config = master_user.bloomberg_config
-        cert, key = config.pair
-        provider = get_provider(cert=cert, key=key)
+    try:
+        provider = get_provider(task.master_user, task.provider_id)
+    except:
+        with transaction.atomic():
+            task.status = Task.STATUS_ERROR
+            task.save()
+        raise
 
     action = task.action
     response_id = task.response_id
@@ -243,8 +244,10 @@ def bloomberg_wait_reponse(self, task_id):
     return task.id
 
 
-def bloomberg_call(master_user=None, member=None, action=None, params=None,
-                   isin=None, instruments=None, currencies=None, date_from=None, date_to=None):
+def bloomberg_call(master_user=None, member=None, action=None,
+                   instrument=None, instrument_download_scheme=None,
+                   instruments=None, currencies=None, price_download_scheme=None,
+                   date_from=None, date_to=None):
     master_user_id = master_user.id if isinstance(master_user, models.Model)  else master_user
     if member:
         member_id = member.id if isinstance(member, models.Model) else member
@@ -252,246 +255,251 @@ def bloomberg_call(master_user=None, member=None, action=None, params=None,
         member_id = None
 
     with transaction.atomic():
+        kwargs = {
+            'fields': None,
+            'instruments': None,
+            'currencies': None,
+        }
+
+        if action == Task.ACTION_INSTRUMENT:
+            if instrument_download_scheme is None:
+                return None
+            kwargs['instrument'] = instrument
+            kwargs['fields'] = instrument_download_scheme.fields
+            kwargs['factor_schedule_method'] = instrument_download_scheme.factor_schedule_method_id
+            kwargs['accrual_calculation_schedule_method'] = \
+                instrument_download_scheme.accrual_calculation_schedule_method_id
+        elif action == Task.ACTION_PRICING_LATEST:
+            if price_download_scheme is None:
+                return None
+            kwargs['fields'] = price_download_scheme.fields
+        elif action == Task.ACTION_PRICE_HISTORY:
+            if price_download_scheme is None:
+                return None
+            kwargs['fields'] = price_download_scheme.fields
+        else:
+            return None
+
+        if action in [Task.ACTION_PRICING_LATEST, Task.ACTION_PRICE_HISTORY]:
+            if instruments:
+                r = []
+                for i in instruments:
+                    if i.reference_for_pricing:
+                        r.append(i.reference_for_pricing)
+                kwargs['instruments'] = r
+
+            if currencies:
+                r = []
+                for c in currencies:
+                    if c.reference_for_pricing:
+                        r.append(c.reference_for_pricing)
+                kwargs['currencies'] = r
+
         bt = Task.objects.create(
             master_user_id=master_user_id,
             member_id=member_id,
             provider_id=ProviderClass.BLOOMBERG,
             status=Task.STATUS_PENDING,
             action=action,
-            kwargs=json.dumps(params, cls=DjangoJSONEncoder, sort_keys=True, indent=1),
-            isin=isin,
+            instrument_code=instrument,
+            instrument_download_scheme=instrument_download_scheme,
+            price_download_scheme=price_download_scheme,
             date_from=date_from,
-            date_to=date_to
+            date_to=date_to,
+            kwargs=json.dumps(kwargs, cls=DjangoJSONEncoder, sort_keys=True, indent=1),
         )
+
         if instruments:
             bt.instruments.add(*instruments)
         if currencies:
             bt.currencies.add(*currencies)
+
         transaction.on_commit(
             lambda: chain(bloomberg_send_request.s(bt.pk), bloomberg_wait_reponse.s()).apply_async(countdown=1))
 
     return bt.pk
-    # return chain(
-    #     bloomberg_send_request.s(bt.id),
-    #     bloomberg_wait_reponse.s()
-    # ).apply_async(countdown=1)
 
 
-def bloomberg_instrument(master_user=None, member=None, isin=None, fields=None):
-    isin0 = isin.split()
+def bloomberg_instrument(master_user=None, member=None, instrument=None, instrument_download_scheme=None):
     return bloomberg_call(
         master_user=master_user,
         member=member,
         action=Task.ACTION_INSTRUMENT,
-        isin=isin,
-        params={
-            'instrument': {
-                'code': isin0[0],
-                'industry': isin0[1],
-            },
-            'fields': fields,
-        }
+        instrument=instrument,
+        instrument_download_scheme=instrument_download_scheme
     )
 
 
-def _bloomberg_instrument_convert(instruments=None, currencies=None):
-    ret = []
-    for instr in instruments:
-        if instr.isin:
-            ret.append({
-                'code': instr.isin,
-                'industry': 'Corp',
-            })
-    for instr in currencies:
-        if instr.isin:
-            ret.append({
-                'code': instr.isin,
-                'industry': 'Ccy',
-            })
-    return ret
-
-
-def bloomberg_pricing_latest(master_user=None, member=None, instruments=None, currencies=None, date_from=None,
-                             date_to=None):
+def bloomberg_pricing_latest(master_user=None, member=None, price_download_scheme=None,
+                             instruments=None, currencies=None):
     return bloomberg_call(
         master_user=master_user,
         member=member,
         action=Task.ACTION_PRICING_LATEST,
         instruments=instruments,
         currencies=currencies,
-        date_from=date_from,
-        date_to=date_to,
-        params={
-            'instruments': _bloomberg_instrument_convert(instruments=instruments, currencies=currencies),
-            'date_from': date_from,
-            'date_to': date_to,
-        }
+        price_download_scheme=price_download_scheme,
     )
 
 
-def bloomberg_pricing_history(master_user=None, member=None, instruments=None, currencies=None, date_from=None,
-                              date_to=None):
+def bloomberg_pricing_history(master_user=None, member=None, price_download_scheme=None,
+                              instruments=None, currencies=None, date_from=None, date_to=None):
     return bloomberg_call(
         master_user=master_user,
         member=member,
         action=Task.ACTION_PRICE_HISTORY,
         instruments=instruments,
         currencies=currencies,
+        price_download_scheme=price_download_scheme,
         date_from=date_from,
         date_to=date_to,
-        params={
-            'instruments': _bloomberg_instrument_convert(instruments=instruments, currencies=currencies),
-            'date_from': date_from,
-            'date_to': date_to,
-        }
     )
 
-
-@shared_task(name='backend.bloomberg_price_history_auto_save', bind=True, ignore_result=True)
-def bloomberg_price_history_auto_save(self, task_id):
-    _l.debug('> bloomberg_price_history_auto_save: task_id=%s', task_id)
-
-    task = Task.objects.get(pk=task_id)
-    master_user = task.master_user
-    kwargs = task.kwargs_object
-    task_res = task.result_object
-    pricing_policies = list(task.master_user.pricing_policies.all())
-
-    date_from = str_to_date(kwargs['date_from'])
-    date_to = str_to_date(kwargs['date_to'])
-
-    _l.debug('master_user=%s', master_user.id)
-
-    instruments = []
-    for instr in master_user.instruments.order_by('id').all():
-        if instr.daily_pricing_model_id == DailyPricingModel.SKIP:
-            continue
-        if str(instr.id) in task_res:
-            _l.debug('instrument=%s', instr.id)
-            instruments.append(instr)
-
-    currencies = []
-    for ccy in master_user.currencies.order_by('id').all():
-        if ccy.daily_pricing_model_id == DailyPricingModel.SKIP:
-            continue
-        if str(ccy.id) in task_res:
-            _l.debug('currency=%s', ccy.id)
-            currencies.append(ccy)
-
-    if instruments:
-        create_instrument_price_history(
-            task=task,
-            instruments=instruments,
-            pricing_policies=pricing_policies,
-            save=True,
-            date_range=(date_from, date_to),
-            fail_silently=True,
-            expr_fail_silently=True
-        )
-    if currencies:
-        create_currency_price_history(
-            task=task,
-            currencies=currencies,
-            pricing_policies=pricing_policies,
-            save=True,
-            date_range=(date_from, date_to),
-            fail_silently=True,
-            expr_fail_silently=True
-        )
-
-    _l.debug('<')
-
-
-@shared_task(name='backend.bloomberg_price_history_auto', bind=True, ignore_result=True)
-def bloomberg_price_history_auto(self):
-    _l.debug('-' * 79)
-    _l.debug('bloomberg_price_history_auto: >')
-
-    if not settings.BLOOMBERG_SANDBOX:
-        _l.warn('only sandbox')
-        _l.debug('<')
-
-    yesterday = timezone.now().date() - timedelta(days=1)
-
-    for master_user in MasterUser.objects. \
-            filter(bloomberg_config__isnull=False). \
-            select_related('bloomberg_config'). \
-            prefetch_related('instruments', 'currencies', 'pricing_policies'):
-
-        bloomberg_config = master_user.bloomberg_config
-        if not bloomberg_config.is_ready:
-            continue
-
-        _l.debug('master_user=%s', master_user.id)
-
-        instruments = []
-
-        pricing_policies = {pp.pk for pp in master_user.pricing_policies.all()}
-        _l.info('pricing_policies=%s', pricing_policies)
-
-        instr_history_exists = {}
-        for p in PriceHistory.objects.filter(instrument__in=master_user.instruments.all(), date=yesterday):
-            ipm = instr_history_exists.get(p.instrument_id, None)
-            if ipm is None:
-                instr_history_exists[p.instrument_id] = ipm = pricing_policies.copy()
-            ipm.remove(p.pricing_policy_id)
-        _l.info('instr_history_exists=%s', instr_history_exists)
-
-        for instr in master_user.instruments.all():
-            if instr.daily_pricing_model_id == DailyPricingModel.SKIP:
-                continue
-
-            h = instr_history_exists.get(instr.id, None)
-            _l.debug('currency=%s, history=%s', instr.id, h)
-
-            if h is not None and len(h) == 0:
-                continue
-
-            instruments.append({
-                'code': str(instr.id),
-                'industry': 'Corp',
-            })
-
-        ccy_history_exists = {}
-        for p in CurrencyHistory.objects.filter(currency__in=master_user.currencies.all(), date=yesterday):
-            cpm = ccy_history_exists.get(p.currency_id, None)
-            if cpm is None:
-                ccy_history_exists[p.currency_id] = cpm = pricing_policies.copy()
-            cpm.remove(p.pricing_policy_id)
-        _l.info('ccy_history_exists=%s', ccy_history_exists)
-
-        for ccy in master_user.currencies.all():
-            if ccy.daily_pricing_model_id == DailyPricingModel.SKIP:
-                continue
-
-            h = ccy_history_exists.get(ccy.id, None)
-            _l.debug('currency=%s, history=%s', ccy.id, h)
-
-            if h is not None and len(h) == 0:
-                continue
-
-            instruments.append({
-                'code': str(ccy.id),
-                'industry': 'CCY',
-            })
-
-        _l.info('instruments=%s', instruments)
-        if instruments:
-            params = {
-                'instruments': instruments,
-                'date_from': yesterday,
-                'date_to': yesterday,
-            }
-            with transaction.atomic():
-                bt = Task.objects.create(
-                    master_user_id=master_user.id,
-                    provider_id=ProviderClass.BLOOMBERG,
-                    status=Task.STATUS_PENDING,
-                    action=Task.ACTION_PRICING_LATEST,
-                    kwargs=json.dumps(params, cls=DjangoJSONEncoder, sort_keys=True, indent=1),
-                )
-                transaction.on_commit(
-                    lambda: chain(bloomberg_send_request.s(bt.pk), bloomberg_wait_reponse.s(),
-                                  bloomberg_price_history_auto_save.s()).apply_async())
-
-    _l.debug('<')
+# @shared_task(name='backend.bloomberg_price_history_auto_save', bind=True, ignore_result=True)
+# def bloomberg_price_history_auto_save(self, task_id):
+#     _l.debug('> bloomberg_price_history_auto_save: task_id=%s', task_id)
+#
+#     task = Task.objects.get(pk=task_id)
+#     master_user = task.master_user
+#     kwargs = task.kwargs_object
+#     task_res = task.result_object
+#     pricing_policies = list(task.master_user.pricing_policies.all())
+#
+#     date_from = str_to_date(kwargs['date_from'])
+#     date_to = str_to_date(kwargs['date_to'])
+#
+#     _l.debug('master_user=%s', master_user.id)
+#
+#     instruments = []
+#     for instr in master_user.instruments.order_by('id').all():
+#         if instr.daily_pricing_model_id == DailyPricingModel.SKIP:
+#             continue
+#         if str(instr.id) in task_res:
+#             _l.debug('instrument=%s', instr.id)
+#             instruments.append(instr)
+#
+#     currencies = []
+#     for ccy in master_user.currencies.order_by('id').all():
+#         if ccy.daily_pricing_model_id == DailyPricingModel.SKIP:
+#             continue
+#         if str(ccy.id) in task_res:
+#             _l.debug('currency=%s', ccy.id)
+#             currencies.append(ccy)
+#
+#     if instruments:
+#         create_instrument_price_history(
+#             task=task,
+#             instruments=instruments,
+#             pricing_policies=pricing_policies,
+#             save=True,
+#             date_range=(date_from, date_to),
+#             fail_silently=True,
+#             expr_fail_silently=True
+#         )
+#     if currencies:
+#         create_currency_price_history(
+#             task=task,
+#             currencies=currencies,
+#             pricing_policies=pricing_policies,
+#             save=True,
+#             date_range=(date_from, date_to),
+#             fail_silently=True,
+#             expr_fail_silently=True
+#         )
+#
+#     _l.debug('<')
+#
+#
+# @shared_task(name='backend.bloomberg_price_history_auto', bind=True, ignore_result=True)
+# def bloomberg_price_history_auto(self):
+#     _l.debug('-' * 79)
+#     _l.debug('bloomberg_price_history_auto: >')
+#
+#     if not settings.BLOOMBERG_SANDBOX:
+#         _l.warn('only sandbox')
+#         _l.debug('<')
+#
+#     yesterday = timezone.now().date() - timedelta(days=1)
+#
+#     for master_user in MasterUser.objects. \
+#             filter(bloomberg_config__isnull=False). \
+#             select_related('bloomberg_config'). \
+#             prefetch_related('instruments', 'currencies', 'pricing_policies'):
+#
+#         bloomberg_config = master_user.bloomberg_config
+#         if not bloomberg_config.is_ready:
+#             continue
+#
+#         _l.debug('master_user=%s', master_user.id)
+#
+#         instruments = []
+#
+#         pricing_policies = {pp.pk for pp in master_user.pricing_policies.all()}
+#         _l.info('pricing_policies=%s', pricing_policies)
+#
+#         instr_history_exists = {}
+#         for p in PriceHistory.objects.filter(instrument__in=master_user.instruments.all(), date=yesterday):
+#             ipm = instr_history_exists.get(p.instrument_id, None)
+#             if ipm is None:
+#                 instr_history_exists[p.instrument_id] = ipm = pricing_policies.copy()
+#             ipm.remove(p.pricing_policy_id)
+#         _l.info('instr_history_exists=%s', instr_history_exists)
+#
+#         for instr in master_user.instruments.all():
+#             if instr.daily_pricing_model_id == DailyPricingModel.SKIP:
+#                 continue
+#
+#             h = instr_history_exists.get(instr.id, None)
+#             _l.debug('currency=%s, history=%s', instr.id, h)
+#
+#             if h is not None and len(h) == 0:
+#                 continue
+#
+#             instruments.append({
+#                 'code': str(instr.id),
+#                 'industry': 'Corp',
+#             })
+#
+#         ccy_history_exists = {}
+#         for p in CurrencyHistory.objects.filter(currency__in=master_user.currencies.all(), date=yesterday):
+#             cpm = ccy_history_exists.get(p.currency_id, None)
+#             if cpm is None:
+#                 ccy_history_exists[p.currency_id] = cpm = pricing_policies.copy()
+#             cpm.remove(p.pricing_policy_id)
+#         _l.info('ccy_history_exists=%s', ccy_history_exists)
+#
+#         for ccy in master_user.currencies.all():
+#             if ccy.daily_pricing_model_id == DailyPricingModel.SKIP:
+#                 continue
+#
+#             h = ccy_history_exists.get(ccy.id, None)
+#             _l.debug('currency=%s, history=%s', ccy.id, h)
+#
+#             if h is not None and len(h) == 0:
+#                 continue
+#
+#             instruments.append({
+#                 'code': str(ccy.id),
+#                 'industry': 'CCY',
+#             })
+#
+#         _l.info('instruments=%s', instruments)
+#         if instruments:
+#             params = {
+#                 'instruments': instruments,
+#                 'date_from': yesterday,
+#                 'date_to': yesterday,
+#             }
+#             with transaction.atomic():
+#                 bt = Task.objects.create(
+#                     master_user_id=master_user.id,
+#                     provider_id=ProviderClass.BLOOMBERG,
+#                     status=Task.STATUS_PENDING,
+#                     action=Task.ACTION_PRICING_LATEST,
+#                     kwargs=json.dumps(params, cls=DjangoJSONEncoder, sort_keys=True, indent=1),
+#                 )
+#                 transaction.on_commit(
+#                     lambda: chain(bloomberg_send_request.s(bt.pk), bloomberg_wait_reponse.s(),
+#                                   bloomberg_price_history_auto_save.s()).apply_async())
+#
+#     _l.debug('<')

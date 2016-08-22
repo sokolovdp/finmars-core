@@ -484,10 +484,10 @@ CELERY_SEND_TASK_SENT_EVENT = True
 
 if DEBUG:
     CELERYBEAT_SCHEDULE = {
-        'backend.bloomberg_price_history_auto': {
-            'task': 'backend.bloomberg_price_history_auto',
-            'schedule': 10,
-        },
+        # 'backend.bloomberg_price_history_auto': {
+        #     'task': 'backend.bloomberg_price_history_auto',
+        #     'schedule': 10,
+        # },
     }
 else:
     CELERYBEAT_SCHEDULE = {
@@ -516,9 +516,9 @@ IMPORT_CONFIG_STORAGE = {
 
 BLOOMBERG_SANDBOX = True
 BLOOMBERG_WSDL = 'https://service.bloomberg.com/assets/dl/dlws.wsdl'
-BLOOMBERG_RETRY_DELAY = 5
+BLOOMBERG_RETRY_DELAY = 5 if not BLOOMBERG_SANDBOX else 0.1
 BLOOMBERG_MAX_RETRIES = 60
-BLOOMBERG_DATE_INPUT_FORMAT = '%m/%d/%y'
+BLOOMBERG_DATE_INPUT_FORMAT = '%m/%d/%Y'
 
 # LOGIN_URL = 'two_factor:login'
 # LOGIN_REDIRECT_URL = 'two_factor:profile'

@@ -2,16 +2,12 @@ from __future__ import unicode_literals, print_function
 
 import json
 import uuid
-from datetime import date, datetime
 from logging import getLogger
 
-import six
-from dateutil import parser
 from django.db import models
 from django.utils.encoding import python_2_unicode_compatible
 from django.utils.translation import ugettext_lazy as _
 
-from poms.common import formula
 from poms.common.models import TimeStampedModel, AbstractClassModel
 from poms.instruments.models import Instrument, InstrumentAttribute
 from poms.integrations.storage import import_config_storage
@@ -60,7 +56,7 @@ def import_cert_upload_to(instance, filename):
 
 
 class ImportConfig(models.Model):
-    master_user = models.OneToOneField('users.MasterUser', related_name='bloomberg_config')
+    master_user = models.ForeignKey('users.MasterUser', related_name='import_configs')
     provider = models.ForeignKey(ProviderClass)
     p12cert = models.FileField(null=True, blank=True, upload_to=import_cert_upload_to, storage=import_config_storage)
     password = models.CharField(max_length=64, null=True, blank=True)
@@ -171,91 +167,9 @@ class InstrumentDownloadScheme(models.Model):
     def __str__(self):
         return self.scheme_name
 
-    def create_instrument(self, values, save=True):
-        instr = Instrument(master_user=self.master_user)
-
-        instr.instrument_type = self.master_user.instrument_type
-        instr.pricing_currency = self.master_user.currency
-        instr.accrued_currency = self.master_user.currency
-
-        def get_date(v):
-            if v is not None:
-                if isinstance(v, date):
-                    return v
-                elif isinstance(v, datetime):
-                    return v.date()
-                else:
-                    v = parser.parse(v)
-                    if v:
-                        return v.date()
-            return None
-
-        for attr in self.BASIC_FIELDS:
-            expr = getattr(self, attr)
-            if expr:
-                try:
-                    v = formula.safe_eval(expr, names=values)
-                except formula.InvalidExpression:
-                    _l.debug('Invalid expression "%s"', attr, exc_info=True)
-                    v = None
-                if attr in ['pricing_currency', 'accrued_currency']:
-                    if v is not None:
-                        v = self.master_user.currencies.get(user_code=v)
-                        setattr(instr, attr, v)
-                elif attr in ['instrument_type']:
-                    if v is not None:
-                        v = self.master_user.instrument_types.get(user_code=v)
-                        setattr(instr, attr, v)
-                elif attr in ['price_multiplier', 'accrued_multiplier', 'default_price', 'default_accrued']:
-                    if v is not None:
-                        v = float(v)
-                        setattr(instr, attr, v)
-                else:
-                    if v is not None:
-                        v = six.text_type(v)
-                        setattr(instr, attr, v)
-
-        if save:
-            instr.save()
-
-        iattrs = []
-        for attr in self.attributes.select_related('attribute_type').all():
-            tattr = attr.attribute_type
-
-            iattr = InstrumentAttribute(content_object=instr, attribute_type=tattr)
-            iattrs.append(iattr)
-
-            if attr.value:
-                try:
-                    v = formula.safe_eval(attr.value, names=values)
-                except formula.InvalidExpression as e:
-                    _l.debug('Invalid expression "%s"', attr.value, exc_info=True)
-                    v = None
-                if tattr.value_type == AbstractAttributeType.STRING:
-                    if v is not None:
-                        iattr.value_string = six.text_type(v)
-                elif tattr.value_type == AbstractAttributeType.NUMBER:
-                    if v is not None:
-                        iattr.value_float = float(v)
-                elif tattr.value_type == AbstractAttributeType.DATE:
-                    if v is not None:
-                        iattr.value_date = get_date(v)
-                elif tattr.value_type == AbstractAttributeType.CLASSIFIER:
-                    if v is not None:
-                        v = six.text_type(v)
-                        v = tattr.classifiers.filter(name=v).first()
-                        iattr.classifier = v
-
-            if save:
-                iattr.save()
-
-        instr._attributes = iattrs
-
-        instr._accrual_calculation_schedules = []
-
-        instr._factor_schedules = []
-
-        return instr
+    @property
+    def fields(self):
+        return [f.field for f in self.inputs.all() if f.field]
 
 
 class InstrumentDownloadSchemeInput(models.Model):
@@ -299,20 +213,30 @@ class PriceDownloadScheme(models.Model):
     scheme_name = models.CharField(max_length=255)
     provider = models.ForeignKey(ProviderClass)
 
-    bid_multiplier = models.FloatField(default=1.0)
     bid0 = models.CharField(max_length=50, blank=True)
     bid1 = models.CharField(max_length=50, blank=True)
     bid2 = models.CharField(max_length=50, blank=True)
-    bid_history = models.CharField(max_length=50, blank=True)
-
-    ask_multiplier = models.FloatField(default=1.0)
+    bid_multiplier = models.FloatField(default=1.0)
     ask0 = models.CharField(max_length=50, blank=True)
     ask1 = models.CharField(max_length=50, blank=True)
     ask2 = models.CharField(max_length=50, blank=True)
-    ask_history = models.CharField(max_length=50, blank=True)
-
+    ask_multiplier = models.FloatField(default=1.0)
     last = models.CharField(max_length=50, blank=True)
+    last_multiplier = models.FloatField(default=1.0)
     mid = models.CharField(max_length=50, blank=True)
+    mid_multiplier = models.FloatField(default=1.0)
+
+    bid_history = models.CharField(max_length=50, blank=True)
+    bid_history_multiplier = models.FloatField(default=1.0)
+    ask_history = models.CharField(max_length=50, blank=True)
+    ask_history_multiplier = models.FloatField(default=1.0)
+    mid_history = models.CharField(max_length=50, blank=True)
+    mid_history_multiplier = models.FloatField(default=1.0)
+    last_history = models.CharField(max_length=50, blank=True)
+    last_history_multiplier = models.FloatField(default=1.0)
+
+    currency_fxrate = models.CharField(max_length=50, blank=True)
+    currency_fxrate_multiplier = models.FloatField(default=1.0)
 
     class Meta:
         unique_together = [
@@ -340,30 +264,16 @@ class PriceDownloadScheme(models.Model):
         return 0.0
 
     @property
-    def fields(self):
-        return self._get_fields('bid0', 'bid1', 'bid2', 'bid_history',
-                                'ask0', 'ask1', 'ask2', 'ask_history',
-                                'last', 'mid')
+    def instrument_yesterday_fields(self):
+        return self._get_fields('bid0', 'bid1', 'bid2', 'ask0', 'ask1', 'ask2', 'last', 'mid')
 
     @property
-    def history_fields(self):
-        return self._get_fields('bid_history', 'ask_history')
+    def instrument_history_fields(self):
+        return self._get_fields('bid_history', 'ask_history', 'mid_history', 'last_history')
 
-    def get_bid(self, values):
-        value = self._get_value(values, 'bid0', 'bid1', 'bid2')
-        return value * self.bid_multiplier
-
-    def get_bid_history(self, values):
-        value = self._get_value(values, 'bid_history')
-        return value * self.bid_multiplier
-
-    def get_ask(self, values):
-        value = self._get_value(values, 'ask0', 'ask1', 'ask2')
-        return value * self.ask_multiplier
-
-    def get_ask_history(self, values):
-        value = self._get_value(values, 'ask_history')
-        return value * self.ask_multiplier
+    @property
+    def currency_history_fields(self):
+        return self._get_fields('currency_fxrate')
 
 
 class AbstractMapping(models.Model):
@@ -472,14 +382,19 @@ class Task(TimeStampedModel):
     action = models.SmallIntegerField(choices=ACTION_CHOICES, db_index=True)
 
     # request
-    kwargs = models.TextField(null=True, blank=True)
-    isin = models.CharField(max_length=100, null=True, blank=True)
+    instrument_code = models.CharField(max_length=100, null=True, blank=True)
+    instrument_download_scheme = models.ForeignKey(InstrumentDownloadScheme, null=True, blank=True,
+                                                   on_delete=models.SET_NULL)
+
     instruments = models.ManyToManyField('instruments.Instrument', blank=True)
     currencies = models.ManyToManyField('currencies.Currency', blank=True)
+    price_download_scheme = models.ForeignKey(PriceDownloadScheme, null=True, blank=True, on_delete=models.SET_NULL)
     date_from = models.DateField(null=True, blank=True)
     date_to = models.DateField(null=True, blank=True)
 
-    response_id = models.CharField(max_length=64, null=True, blank=True, db_index=True)
+    kwargs = models.TextField(null=True, blank=True)
+    request_id = models.CharField(max_length=64, null=True, db_index=True)
+    response_id = models.CharField(max_length=64, null=True, db_index=True)
     result = models.TextField(null=True, blank=True)
 
     class Meta:

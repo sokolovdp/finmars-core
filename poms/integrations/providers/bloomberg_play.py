@@ -62,12 +62,9 @@ def test_instrument_data(b):
         "MULTI_CPN_SCHEDULE",
     })
 
-    instrument = {
-        # "code": 'XS1433454243',
-        # "code": 'USP7807HAK16',
-        "code": 'USP16394AG62',
-        "industry": "Corp"
-    }
+    # instrument = 'XS1433454243 Corp'
+    # instrument = 'USP7807HAK16 Corp'
+    instrument = 'USP16394AG62 Corp'
 
     response = b.get_instrument_sync(instrument, instrument_fields)
 

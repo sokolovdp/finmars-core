@@ -17,8 +17,9 @@ from suds.transport.http import HttpAuthenticated
 
 from poms.common import formula
 from poms.currencies.models import CurrencyHistory
-from poms.instruments.models import PriceHistory
-from poms.integrations.models import Task
+from poms.instruments.models import PriceHistory, AccrualCalculationSchedule, Periodicity, InstrumentFactorSchedule
+from poms.integrations.models import Task, FactorScheduleDownloadMethod, AccrualScheduleDownloadMethod, ProviderClass
+from poms.integrations.providers.base import AbstractProvider
 
 __author__ = 'alyakhov'
 
@@ -136,7 +137,7 @@ class RequestsTransport(HttpAuthenticated):
             return result
 
 
-class BloombergDataProvider(object):
+class BloombergDataProvider(AbstractProvider):
     """
     Bloomberg python client for Finmars.
     """
@@ -154,22 +155,29 @@ class BloombergDataProvider(object):
         @rtype: BloombergDataProvider
         """
 
-        wsdl = wsdl or settings.BLOOMBERG_WSDL
+        self._wsdl = wsdl or settings.BLOOMBERG_WSDL
+        self._cert = cert
+        self._key = key
+        self._soap_client = None
 
-        if not wsdl:
-            raise BloombergException("wsdl should be provided")
-        if not cert:
-            raise BloombergException("client certificate pem file should be provided")
-        if not key:
-            raise BloombergException("private key pem file should be provided")
+    @property
+    def soap_client(self):
+        if not self._soap_client:
+            if not self._wsdl:
+                raise BloombergException("wsdl should be provided")
+            if not self._cert:
+                raise BloombergException("client certificate pem file should be provided")
+            if not self._key:
+                raise BloombergException("private key pem file should be provided")
 
-        transport = RequestsTransport(cert=cert, key=key)
-        headers = {
-            "Content-Type": "text/xml;charset=UTF-8",
-            "SOAPAction": ""
-        }
-        self.soap_client = Client(wsdl, headers=headers, transport=transport)
-        _l.info('soap client: %s', self.soap_client)
+            transport = RequestsTransport(cert=self._cert, key=self._key)
+            headers = {
+                "Content-Type": "text/xml;charset=UTF-8",
+                "SOAPAction": ""
+            }
+            self._soap_client = Client(self._wsdl, headers=headers, transport=transport)
+            _l.info('soap client: %s', self._soap_client)
+        return self._soap_client
 
     def _response_is_valid(self, response, pending=False, raise_exception=True):
         if response.statusCode.code == 0:
@@ -186,19 +194,40 @@ class BloombergDataProvider(object):
     def _data_is_ready(self, response):
         return response.statusCode.code == 0
 
+    def _bbg_instr(self, code):
+        instr = code.split(maxsplit=2)
+        if len(instr) != 2:
+            instr = [instr[0], '']
+        instr_id = instr[0]
+        instr_yellowkey = instr[1]
+        return {"id": instr_id, "yellowkey": instr_yellowkey,}
+
+    def instrument_add_fields(self, fields, factor_schedule_method=None, accrual_calculation_schedule_method=None):
+        if factor_schedule_method == FactorScheduleDownloadMethod.DEFAULT:
+            fields = fields + ['FACTOR_SCHEDULE']
+
+        if accrual_calculation_schedule_method == AccrualScheduleDownloadMethod.DEFAULT:
+            fields = fields + ['START_ACC_DT', 'FIRST_CPN_DT', 'CPN', 'DAY_CNT', 'CPN_FREQ', 'MULTI_CPN_SCHEDULE']
+        return sorted(set(fields))
+
     def _invoke_sync(self, name, request_func, request_kwargs, response_func):
-        _l.debug('> %s', name)
+        _l.debug('|> %s', name)
         response_id = request_func(**request_kwargs)
-        _l.debug('response_id=%s', response_id)
+        _l.debug('|  response_id=%s', response_id)
         for attempt in six.moves.range(settings.BLOOMBERG_MAX_RETRIES):
             sleep(settings.BLOOMBERG_RETRY_DELAY)
-            _l.debug('attempt=%s', attempt)
+            _l.debug('|  attempt=%s', attempt)
             result = response_func(response_id)
             if result:
-                _l.debug('<')
+                _l.debug('|<')
                 return result
-        _l.debug('< failed')
+        _l.debug('|< failed')
         raise BloombergException("%s('%s') failed" % (name, response_id,))
+
+    def parse_date(self, value):
+        if value and value.lower() != 'n.s.':
+            return datetime.strptime(value, settings.BLOOMBERG_DATE_INPUT_FORMAT).date()
+        return None
 
     def get_fields(self):
         """
@@ -217,7 +246,8 @@ class BloombergDataProvider(object):
         self._response_is_valid(response)
         return response
 
-    def get_instrument_send_request(self, instrument, fields):
+    def get_instrument_send_request(self, instrument, fields, factor_schedule_method=None,
+                                    accrual_calculation_schedule_method=None):
         """
         Get single instrument data using instrument ISIN and industry code. Async mode. Instrument data should be
         retrieved by get_instrument_get_response further call.
@@ -228,7 +258,16 @@ class BloombergDataProvider(object):
         @return: response id, used by get_instrument_get_response method
         @rtype: str
         """
-        _l.debug('> get_instrument_send_request: instrument=%s, fields=%s', instrument, fields)
+        _l.debug('> get_instrument_send_request: instrument="%s", fields=%s, factor_schedule_method=%s, '
+                 'accrual_calculation_schedule_method=%s',
+                 instrument, fields, factor_schedule_method, accrual_calculation_schedule_method)
+
+        fields = self.instrument_add_fields(fields=fields, factor_schedule_method=factor_schedule_method,
+                                            accrual_calculation_schedule_method=accrual_calculation_schedule_method)
+
+        if not instrument or not fields:
+            _l.debug('< response_id=%s', None)
+            return None
 
         headers_data = {
             "secmaster": True,
@@ -243,14 +282,7 @@ class BloombergDataProvider(object):
         response = self.soap_client.service.submitGetDataRequest(
             headers=headers_data,
             fields=fields_data,
-            instruments=[
-                {
-                    "instrument": {
-                        "id": instrument["code"],
-                        "yellowkey": instrument["industry"],
-                    },
-                }
-            ]
+            instruments=[{"instrument": self._bbg_instr(instrument)}]
         )
         _l.debug('response=%s', response)
         self._response_is_valid(response)
@@ -258,7 +290,7 @@ class BloombergDataProvider(object):
         response_id = six.text_type(response.responseId)
         _l.debug('< response_id=%s', response_id)
 
-        return response_id
+        return response_id, fields
 
     def get_instrument_get_response(self, response_id):
         """
@@ -269,742 +301,14 @@ class BloombergDataProvider(object):
         @rtype: dict
         """
 
+        _l.debug('> get_instrument_get_response: response_id=%s', response_id)
+
+        if response_id is None:
+            _l.debug('< result=%s', None)
+            return None
+
         response = self.soap_client.service.retrieveGetDataResponse(responseId=response_id)
-        _l.debug('> get_instrument_get_response: response_id=%s, response=%s', response_id, response)
-
-        # {
-        #    statusCode =
-        #       (ResponseStatus){
-        #          code = 0
-        #          description = "Success"
-        #       }
-        #    requestId = "2c85a49d-5d43-4e79-9339-2d8ab5202a76"
-        #    responseId = "1471523547-721486280"
-        #    headers =
-        #       (GetDataHeaders){
-        #          rundate = "20160818"
-        #          programflag = "oneshot"
-        #          historical = True
-        #          secmaster = True
-        #          pricing = True
-        #       }
-        #    fields =
-        #       (Fields){
-        #          field[] =
-        #             "ACCRUED_FACTOR",
-        #             "CALC_TYP",
-        #             "CALC_TYP_DES",
-        #             "CNTRY_OF_RISK",
-        #             "COUPON_FREQUENCY_DESCRIPTION",
-        #             "CPN",
-        #             "CPN_FREQ",
-        #             "CPN_TYP",
-        #             "CPN_TYP_SPECIFIC",
-        #             "CRNCY",
-        #             "CUR_CPN",
-        #             "DAYS_TO_SETTLE",
-        #             "DAY_CNT",
-        #             "DAY_CNT_DES",
-        #             "DES_NOTES",
-        #             "FACTOR_SCHEDULE",
-        #             "FIRST_CPN_DT",
-        #             "FIRST_SETTLE_DT",
-        #             "ID_BB_GLOBAL",
-        #             "ID_CUSIP",
-        #             "ID_ISIN",
-        #             "INDUSTRY_SECTOR",
-        #             "INDUSTRY_SUBGROUP",
-        #             "INT_ACC_DT",
-        #             "ISSUER",
-        #             "MATURITY",
-        #             "MTY_TYP",
-        #             "MULTI_CPN_SCHEDULE",
-        #             "OPT_PUT_CALL",
-        #             "PAYMENT_RANK",
-        #             "PX_YEST_ASK",
-        #             "PX_YEST_BID",
-        #             "PX_YEST_CLOSE",
-        #             "SECURITY_DES",
-        #             "SECURITY_TYP",
-        #       }
-        #    timestarted = 2016-08-18 08:32:38-04:00
-        #    instrumentDatas =
-        #       (InstrumentDatas){
-        #          instrumentData[] =
-        #             (InstrumentData){
-        #                code = "0"
-        #                instrument =
-        #                   (Instrument){
-        #                      id = "USP16394AG62"
-        #                      yellowkey = "Corp"
-        #                   }
-        #                data[] =
-        #                   (Data){
-        #                      _value = "1.000000000"
-        #                   },
-        #                   (Data){
-        #                      _value = "1311"
-        #                   },
-        #                   (Data){
-        #                      _value = "MULTI-STEP CPN BND"
-        #                   },
-        #                   (Data){
-        #                      _value = "N.S."
-        #                   },
-        #                   (Data){
-        #                      _value = "S/A"
-        #                   },
-        #                   (Data){
-        #                      _value = "5.000000"
-        #                   },
-        #                   (Data){
-        #                      _value = "2"
-        #                   },
-        #                   (Data){
-        #                      _value = "STEP CPN"
-        #                   },
-        #                   (Data){
-        #                      _value = ""
-        #                   },
-        #                   (Data){
-        #                      _value = "USD"
-        #                   },
-        #                   (Data){
-        #                      _value = ""
-        #                   },
-        #                   (Data){
-        #                      _value = "3"
-        #                   },
-        #                   (Data){
-        #                      _value = "20"
-        #                   },
-        #                   (Data){
-        #                      _value = "ISMA-30/360"
-        #                   },
-        #                   (Data){
-        #                      _value = "ISS'D IN EXCH OF 144A/REGS 07782GAF0/USP16394AF89"
-        #                   },
-        #                   (Data){
-        #                      _isArray = True
-        #                      _rows = 38
-        #                      bulkarray[] =
-        #                         (BulkArray){
-        #                            _columns = 2
-        #                            data[] =
-        #                               (BulkArrayEntry){
-        #                                  _type = "Date"
-        #                                  _value = "03/20/2013"
-        #                               },
-        #                               (BulkArrayEntry){
-        #                                  _type = "Price"
-        #                                  _value = "1.000000000"
-        #                               },
-        #                         },
-        #                         (BulkArray){
-        #                            _columns = 2
-        #                            data[] =
-        #                               (BulkArrayEntry){
-        #                                  _type = "Date"
-        #                                  _value = "08/20/2019"
-        #                               },
-        #                               (BulkArrayEntry){
-        #                                  _type = "Price"
-        #                                  _value = ".973684211"
-        #                               },
-        #                         },
-        #                         (BulkArray){
-        #                            _columns = 2
-        #                            data[] =
-        #                               (BulkArrayEntry){
-        #                                  _type = "Date"
-        #                                  _value = "02/20/2020"
-        #                               },
-        #                               (BulkArrayEntry){
-        #                                  _type = "Price"
-        #                                  _value = ".947368421"
-        #                               },
-        #                         },
-        #                         (BulkArray){
-        #                            _columns = 2
-        #                            data[] =
-        #                               (BulkArrayEntry){
-        #                                  _type = "Date"
-        #                                  _value = "08/20/2020"
-        #                               },
-        #                               (BulkArrayEntry){
-        #                                  _type = "Price"
-        #                                  _value = ".921052632"
-        #                               },
-        #                         },
-        #                         (BulkArray){
-        #                            _columns = 2
-        #                            data[] =
-        #                               (BulkArrayEntry){
-        #                                  _type = "Date"
-        #                                  _value = "02/20/2021"
-        #                               },
-        #                               (BulkArrayEntry){
-        #                                  _type = "Price"
-        #                                  _value = ".894736842"
-        #                               },
-        #                         },
-        #                         (BulkArray){
-        #                            _columns = 2
-        #                            data[] =
-        #                               (BulkArrayEntry){
-        #                                  _type = "Date"
-        #                                  _value = "08/20/2021"
-        #                               },
-        #                               (BulkArrayEntry){
-        #                                  _type = "Price"
-        #                                  _value = ".868421053"
-        #                               },
-        #                         },
-        #                         (BulkArray){
-        #                            _columns = 2
-        #                            data[] =
-        #                               (BulkArrayEntry){
-        #                                  _type = "Date"
-        #                                  _value = "02/20/2022"
-        #                               },
-        #                               (BulkArrayEntry){
-        #                                  _type = "Price"
-        #                                  _value = ".842105263"
-        #                               },
-        #                         },
-        #                         (BulkArray){
-        #                            _columns = 2
-        #                            data[] =
-        #                               (BulkArrayEntry){
-        #                                  _type = "Date"
-        #                                  _value = "08/20/2022"
-        #                               },
-        #                               (BulkArrayEntry){
-        #                                  _type = "Price"
-        #                                  _value = ".815789474"
-        #                               },
-        #                         },
-        #                         (BulkArray){
-        #                            _columns = 2
-        #                            data[] =
-        #                               (BulkArrayEntry){
-        #                                  _type = "Date"
-        #                                  _value = "02/20/2023"
-        #                               },
-        #                               (BulkArrayEntry){
-        #                                  _type = "Price"
-        #                                  _value = ".789473684"
-        #                               },
-        #                         },
-        #                         (BulkArray){
-        #                            _columns = 2
-        #                            data[] =
-        #                               (BulkArrayEntry){
-        #                                  _type = "Date"
-        #                                  _value = "08/20/2023"
-        #                               },
-        #                               (BulkArrayEntry){
-        #                                  _type = "Price"
-        #                                  _value = ".763157895"
-        #                               },
-        #                         },
-        #                         (BulkArray){
-        #                            _columns = 2
-        #                            data[] =
-        #                               (BulkArrayEntry){
-        #                                  _type = "Date"
-        #                                  _value = "02/20/2024"
-        #                               },
-        #                               (BulkArrayEntry){
-        #                                  _type = "Price"
-        #                                  _value = ".736842105"
-        #                               },
-        #                         },
-        #                         (BulkArray){
-        #                            _columns = 2
-        #                            data[] =
-        #                               (BulkArrayEntry){
-        #                                  _type = "Date"
-        #                                  _value = "08/20/2024"
-        #                               },
-        #                               (BulkArrayEntry){
-        #                                  _type = "Price"
-        #                                  _value = ".710526316"
-        #                               },
-        #                         },
-        #                         (BulkArray){
-        #                            _columns = 2
-        #                            data[] =
-        #                               (BulkArrayEntry){
-        #                                  _type = "Date"
-        #                                  _value = "02/20/2025"
-        #                               },
-        #                               (BulkArrayEntry){
-        #                                  _type = "Price"
-        #                                  _value = ".684210526"
-        #                               },
-        #                         },
-        #                         (BulkArray){
-        #                            _columns = 2
-        #                            data[] =
-        #                               (BulkArrayEntry){
-        #                                  _type = "Date"
-        #                                  _value = "08/20/2025"
-        #                               },
-        #                               (BulkArrayEntry){
-        #                                  _type = "Price"
-        #                                  _value = ".657894737"
-        #                               },
-        #                         },
-        #                         (BulkArray){
-        #                            _columns = 2
-        #                            data[] =
-        #                               (BulkArrayEntry){
-        #                                  _type = "Date"
-        #                                  _value = "02/20/2026"
-        #                               },
-        #                               (BulkArrayEntry){
-        #                                  _type = "Price"
-        #                                  _value = ".631578947"
-        #                               },
-        #                         },
-        #                         (BulkArray){
-        #                            _columns = 2
-        #                            data[] =
-        #                               (BulkArrayEntry){
-        #                                  _type = "Date"
-        #                                  _value = "08/20/2026"
-        #                               },
-        #                               (BulkArrayEntry){
-        #                                  _type = "Price"
-        #                                  _value = ".605263158"
-        #                               },
-        #                         },
-        #                         (BulkArray){
-        #                            _columns = 2
-        #                            data[] =
-        #                               (BulkArrayEntry){
-        #                                  _type = "Date"
-        #                                  _value = "02/20/2027"
-        #                               },
-        #                               (BulkArrayEntry){
-        #                                  _type = "Price"
-        #                                  _value = ".578947368"
-        #                               },
-        #                         },
-        #                         (BulkArray){
-        #                            _columns = 2
-        #                            data[] =
-        #                               (BulkArrayEntry){
-        #                                  _type = "Date"
-        #                                  _value = "08/20/2027"
-        #                               },
-        #                               (BulkArrayEntry){
-        #                                  _type = "Price"
-        #                                  _value = ".552631579"
-        #                               },
-        #                         },
-        #                         (BulkArray){
-        #                            _columns = 2
-        #                            data[] =
-        #                               (BulkArrayEntry){
-        #                                  _type = "Date"
-        #                                  _value = "02/20/2028"
-        #                               },
-        #                               (BulkArrayEntry){
-        #                                  _type = "Price"
-        #                                  _value = ".526315790"
-        #                               },
-        #                         },
-        #                         (BulkArray){
-        #                            _columns = 2
-        #                            data[] =
-        #                               (BulkArrayEntry){
-        #                                  _type = "Date"
-        #                                  _value = "08/20/2028"
-        #                               },
-        #                               (BulkArrayEntry){
-        #                                  _type = "Price"
-        #                                  _value = ".500000000"
-        #                               },
-        #                         },
-        #                         (BulkArray){
-        #                            _columns = 2
-        #                            data[] =
-        #                               (BulkArrayEntry){
-        #                                  _type = "Date"
-        #                                  _value = "02/20/2029"
-        #                               },
-        #                               (BulkArrayEntry){
-        #                                  _type = "Price"
-        #                                  _value = ".473684211"
-        #                               },
-        #                         },
-        #                         (BulkArray){
-        #                            _columns = 2
-        #                            data[] =
-        #                               (BulkArrayEntry){
-        #                                  _type = "Date"
-        #                                  _value = "08/20/2029"
-        #                               },
-        #                               (BulkArrayEntry){
-        #                                  _type = "Price"
-        #                                  _value = ".447368421"
-        #                               },
-        #                         },
-        #                         (BulkArray){
-        #                            _columns = 2
-        #                            data[] =
-        #                               (BulkArrayEntry){
-        #                                  _type = "Date"
-        #                                  _value = "02/20/2030"
-        #                               },
-        #                               (BulkArrayEntry){
-        #                                  _type = "Price"
-        #                                  _value = ".421052632"
-        #                               },
-        #                         },
-        #                         (BulkArray){
-        #                            _columns = 2
-        #                            data[] =
-        #                               (BulkArrayEntry){
-        #                                  _type = "Date"
-        #                                  _value = "08/20/2030"
-        #                               },
-        #                               (BulkArrayEntry){
-        #                                  _type = "Price"
-        #                                  _value = ".394736842"
-        #                               },
-        #                         },
-        #                         (BulkArray){
-        #                            _columns = 2
-        #                            data[] =
-        #                               (BulkArrayEntry){
-        #                                  _type = "Date"
-        #                                  _value = "02/20/2031"
-        #                               },
-        #                               (BulkArrayEntry){
-        #                                  _type = "Price"
-        #                                  _value = ".368421053"
-        #                               },
-        #                         },
-        #                         (BulkArray){
-        #                            _columns = 2
-        #                            data[] =
-        #                               (BulkArrayEntry){
-        #                                  _type = "Date"
-        #                                  _value = "08/20/2031"
-        #                               },
-        #                               (BulkArrayEntry){
-        #                                  _type = "Price"
-        #                                  _value = ".342105263"
-        #                               },
-        #                         },
-        #                         (BulkArray){
-        #                            _columns = 2
-        #                            data[] =
-        #                               (BulkArrayEntry){
-        #                                  _type = "Date"
-        #                                  _value = "02/20/2032"
-        #                               },
-        #                               (BulkArrayEntry){
-        #                                  _type = "Price"
-        #                                  _value = ".315789474"
-        #                               },
-        #                         },
-        #                         (BulkArray){
-        #                            _columns = 2
-        #                            data[] =
-        #                               (BulkArrayEntry){
-        #                                  _type = "Date"
-        #                                  _value = "08/20/2032"
-        #                               },
-        #                               (BulkArrayEntry){
-        #                                  _type = "Price"
-        #                                  _value = ".289473684"
-        #                               },
-        #                         },
-        #                         (BulkArray){
-        #                            _columns = 2
-        #                            data[] =
-        #                               (BulkArrayEntry){
-        #                                  _type = "Date"
-        #                                  _value = "02/20/2033"
-        #                               },
-        #                               (BulkArrayEntry){
-        #                                  _type = "Price"
-        #                                  _value = ".263157895"
-        #                               },
-        #                         },
-        #                         (BulkArray){
-        #                            _columns = 2
-        #                            data[] =
-        #                               (BulkArrayEntry){
-        #                                  _type = "Date"
-        #                                  _value = "08/20/2033"
-        #                               },
-        #                               (BulkArrayEntry){
-        #                                  _type = "Price"
-        #                                  _value = ".236842105"
-        #                               },
-        #                         },
-        #                         (BulkArray){
-        #                            _columns = 2
-        #                            data[] =
-        #                               (BulkArrayEntry){
-        #                                  _type = "Date"
-        #                                  _value = "02/20/2034"
-        #                               },
-        #                               (BulkArrayEntry){
-        #                                  _type = "Price"
-        #                                  _value = ".210526316"
-        #                               },
-        #                         },
-        #                         (BulkArray){
-        #                            _columns = 2
-        #                            data[] =
-        #                               (BulkArrayEntry){
-        #                                  _type = "Date"
-        #                                  _value = "08/20/2034"
-        #                               },
-        #                               (BulkArrayEntry){
-        #                                  _type = "Price"
-        #                                  _value = ".184210526"
-        #                               },
-        #                         },
-        #                         (BulkArray){
-        #                            _columns = 2
-        #                            data[] =
-        #                               (BulkArrayEntry){
-        #                                  _type = "Date"
-        #                                  _value = "02/20/2035"
-        #                               },
-        #                               (BulkArrayEntry){
-        #                                  _type = "Price"
-        #                                  _value = ".157894737"
-        #                               },
-        #                         },
-        #                         (BulkArray){
-        #                            _columns = 2
-        #                            data[] =
-        #                               (BulkArrayEntry){
-        #                                  _type = "Date"
-        #                                  _value = "08/20/2035"
-        #                               },
-        #                               (BulkArrayEntry){
-        #                                  _type = "Price"
-        #                                  _value = ".131578947"
-        #                               },
-        #                         },
-        #                         (BulkArray){
-        #                            _columns = 2
-        #                            data[] =
-        #                               (BulkArrayEntry){
-        #                                  _type = "Date"
-        #                                  _value = "02/20/2036"
-        #                               },
-        #                               (BulkArrayEntry){
-        #                                  _type = "Price"
-        #                                  _value = ".105263158"
-        #                               },
-        #                         },
-        #                         (BulkArray){
-        #                            _columns = 2
-        #                            data[] =
-        #                               (BulkArrayEntry){
-        #                                  _type = "Date"
-        #                                  _value = "08/20/2036"
-        #                               },
-        #                               (BulkArrayEntry){
-        #                                  _type = "Price"
-        #                                  _value = ".078947369"
-        #                               },
-        #                         },
-        #                         (BulkArray){
-        #                            _columns = 2
-        #                            data[] =
-        #                               (BulkArrayEntry){
-        #                                  _type = "Date"
-        #                                  _value = "02/20/2037"
-        #                               },
-        #                               (BulkArrayEntry){
-        #                                  _type = "Price"
-        #                                  _value = ".052631579"
-        #                               },
-        #                         },
-        #                         (BulkArray){
-        #                            _columns = 2
-        #                            data[] =
-        #                               (BulkArrayEntry){
-        #                                  _type = "Date"
-        #                                  _value = "08/20/2037"
-        #                               },
-        #                               (BulkArrayEntry){
-        #                                  _type = "Price"
-        #                                  _value = ".026315790"
-        #                               },
-        #                         },
-        #                   },
-        #                   (Data){
-        #                      _value = "08/20/2013"
-        #                   },
-        #                   (Data){
-        #                      _value = "03/20/2013"
-        #                   },
-        #                   (Data){
-        #                      _value = "BBG004C31TG9"
-        #                   },
-        #                   (Data){
-        #                      _value = "EJ6033694"
-        #                   },
-        #                   (Data){
-        #                      _value = "USP16394AG62"
-        #                   },
-        #                   (Data){
-        #                      _value = "Government"
-        #                   },
-        #                   (Data){
-        #                      _value = "Sovereign"
-        #                   },
-        #                   (Data){
-        #                      _value = "03/20/2013"
-        #                   },
-        #                   (Data){
-        #                      _value = "REPUBLIC OF BELIZE"
-        #                   },
-        #                   (Data){
-        #                      _value = "02/20/2038"
-        #                   },
-        #                   (Data){
-        #                      _value = "SINKABLE"
-        #                   },
-        #                   (Data){
-        #                      _isArray = True
-        #                      _rows = 2
-        #                      bulkarray[] =
-        #                         (BulkArray){
-        #                            _columns = 2
-        #                            data[] =
-        #                               (BulkArrayEntry){
-        #                                  _type = "Date"
-        #                                  _value = "08/20/2017"
-        #                               },
-        #                               (BulkArrayEntry){
-        #                                  _type = "Numeric"
-        #                                  _value = "5.0000"
-        #                               },
-        #                         },
-        #                         (BulkArray){
-        #                            _columns = 2
-        #                            data[] =
-        #                               (BulkArrayEntry){
-        #                                  _type = "Date"
-        #                                  _value = "02/20/2038"
-        #                               },
-        #                               (BulkArrayEntry){
-        #                                  _type = "Numeric"
-        #                                  _value = "6.7670"
-        #                               },
-        #                         },
-        #                   },
-        #                   (Data){
-        #                      _value = ""
-        #                   },
-        #                   (Data){
-        #                      _value = "Sr Unsecured"
-        #                   },
-        #                   (Data){
-        #                      _value = "N.A."
-        #                   },
-        #                   (Data){
-        #                      _value = "N.A."
-        #                   },
-        #                   (Data){
-        #                      _value = "N.A."
-        #                   },
-        #                   (Data){
-        #                      _value = "BELIZE 5 02/20/38"
-        #                   },
-        #                   (Data){
-        #                      _value = "EURO-DOLLAR"
-        #                   },
-        #             },
-        #       }
-        #    timefinished = 2016-08-18 08:32:55-04:00
-        #  }
-
-        # {ACCRUED_FACTOR: 1.000000000,
-        #  CALC_TYP: 1311,
-        #  CALC_TYP_DES: MULTI-STEP CPN BND,
-        #  CNTRY_OF_RISK: N.S.,
-        #  COUPON_FREQUENCY_DESCRIPTION: S/A,
-        #  CPN: 5.000000,
-        #  CPN_FREQ: 2,
-        #  CPN_TYP: STEP CPN,
-        #  CPN_TYP_SPECIFIC: ,
-        #  CRNCY: USD,
-        #  CUR_CPN: ,
-        #  DAYS_TO_SETTLE: 3,
-        #  DAY_CNT: 20,
-        #  DAY_CNT_DES: ISMA-30/360,
-        #  DES_NOTES: ISS'D IN EXCH OF 144A/REGS 07782GAF0/USP16394AF89,
-        #  FACTOR_SCHEDULE: [[03/20/2013, 1.000000000],
-        #                    [08/20/2019, .973684211],
-        #                    [02/20/2020, .947368421],
-        #                    [08/20/2020, .921052632],
-        #                    [02/20/2021, .894736842],
-        #                    [08/20/2021, .868421053],
-        #                    [02/20/2022, .842105263],
-        #                    [08/20/2022, .815789474],
-        #                    [02/20/2023, .789473684],
-        #                    [08/20/2023, .763157895],
-        #                    [02/20/2024, .736842105],
-        #                    [08/20/2024, .710526316],
-        #                    [02/20/2025, .684210526],
-        #                    [08/20/2025, .657894737],
-        #                    [02/20/2026, .631578947],
-        #                    [08/20/2026, .605263158],
-        #                    [02/20/2027, .578947368],
-        #                    [08/20/2027, .552631579],
-        #                    [02/20/2028, .526315790],
-        #                    [08/20/2028, .500000000],
-        #                    [02/20/2029, .473684211],
-        #                    [08/20/2029, .447368421],
-        #                    [02/20/2030, .421052632],
-        #                    [08/20/2030, .394736842],
-        #                    [02/20/2031, .368421053],
-        #                    [08/20/2031, .342105263],
-        #                    [02/20/2032, .315789474],
-        #                    [08/20/2032, .289473684],
-        #                    [02/20/2033, .263157895],
-        #                    [08/20/2033, .236842105],
-        #                    [02/20/2034, .210526316],
-        #                    [08/20/2034, .184210526],
-        #                    [02/20/2035, .157894737],
-        #                    [08/20/2035, .131578947],
-        #                    [02/20/2036, .105263158],
-        #                    [08/20/2036, .078947369],
-        #                    [02/20/2037, .052631579],
-        #                    [08/20/2037, .026315790]],
-        #  FIRST_CPN_DT: 08/20/2013,
-        #  FIRST_SETTLE_DT: 03/20/2013,
-        #  ID_BB_GLOBAL: BBG004C31TG9,
-        #  ID_CUSIP: EJ6033694,
-        #  ID_ISIN: USP16394AG62,
-        #  INDUSTRY_SECTOR: Government,
-        #  INDUSTRY_SUBGROUP: Sovereign,
-        #  INT_ACC_DT: 03/20/2013,
-        #  ISSUER: REPUBLIC OF BELIZE,
-        #  MATURITY: 02/20/2038,
-        #  MTY_TYP: SINKABLE,
-        #  MULTI_CPN_SCHEDULE: [[08/20/2017, 5.0000], [02/20/2038, 6.7670]],
-        #  OPT_PUT_CALL: ,
-        #  PAYMENT_RANK: Sr Unsecured,
-        #  PX_YEST_ASK: N.A.,
-        #  PX_YEST_BID: N.A.,
-        #  PX_YEST_CLOSE: N.A.,
-        #  SECURITY_DES: BELIZE 5 02/20/38,
-        #  SECURITY_TYP: EURO-DOLLAR}
+        _l.debug('response=%s', response_id, response)
 
         self._response_is_valid(response, pending=True)
         if self._data_is_ready(response):
@@ -1040,7 +344,7 @@ class BloombergDataProvider(object):
                                  request_kwargs={'instrument': instrument, 'fields': fields},
                                  response_func=self.get_instrument_get_response)
 
-    def get_pricing_latest_send_request(self, instruments):
+    def get_pricing_latest_send_request(self, instruments, currencies, fields):
         """
         Async method to get pricing data. Would return response id, used in
         get_pricing_latest_get_response method.
@@ -1053,17 +357,19 @@ class BloombergDataProvider(object):
         """
         _l.debug('> get_pricing_latest_send_request: instrument=%s', instruments)
 
-        fields = ['PX_YEST_BID', 'PX_YEST_ASK', 'PX_YEST_CLOSE', 'PX_CLOSE_1D', 'ACCRUED_FACTOR', 'CPN', 'SECURITY_TYP']
+        instrs = (instruments or []) + (currencies or [])
+        # fields = ['PX_YEST_BID', 'PX_YEST_ASK', 'PX_YEST_CLOSE', 'PX_CLOSE_1D', 'ACCRUED_FACTOR', 'CPN', 'SECURITY_TYP']
+
+        if not instrs or not fields:
+            _l.debug('< response_id=%s', None)
+            return None
 
         fields_data = self.soap_client.factory.create('Fields')
         fields_data.field = fields
 
         instruments_data = self.soap_client.factory.create('Instruments')
-        for instrument in instruments:
-            instruments_data.instrument.append({
-                "id": instrument["code"],
-                "yellowkey": instrument["industry"],
-            })
+        for code in instrs:
+            instruments_data.instrument.append(self._bbg_instr(code))
 
         response = self.soap_client.service.submitGetDataRequest(
             headers={"secmaster": True},
@@ -1086,6 +392,10 @@ class BloombergDataProvider(object):
         @return: dictionary, where key - ISIN, value - dict with {bloomberg_field:value} dicts
         @rtype: dict
         """
+        if response_id is None:
+            _l.debug('< result=%s', None)
+            return None
+
         response = self.soap_client.service.retrieveGetDataResponse(responseId=response_id)
         _l.debug('> get_pricing_latest_get_response: response_id=%s, response=%s', response_id, response)
 
@@ -1107,7 +417,7 @@ class BloombergDataProvider(object):
             return result
         return None
 
-    def get_pricing_latest_sync(self, instruments):
+    def get_pricing_latest_sync(self, instruments, currencies, fields):
         """
         Sync method to get pricing data. Would block until response is ready.
         @param instruments: list of instrument tuples. Each tuple - (ISIN,Insustry)
@@ -1118,10 +428,14 @@ class BloombergDataProvider(object):
 
         return self._invoke_sync(name='get_pricing_latest_sync',
                                  request_func=self.get_pricing_latest_send_request,
-                                 request_kwargs={'instruments': instruments},
+                                 request_kwargs={
+                                     'instruments': instruments,
+                                     'currencies': currencies,
+                                     'fields': fields
+                                 },
                                  response_func=self.get_pricing_latest_get_response)
 
-    def get_pricing_history_send_request(self, instruments, date_from, date_to):
+    def get_pricing_history_send_request(self, instruments, currencies, fields, date_from, date_to):
         """
         Async retrieval of historical pricing data. Return None is data is not ready.
         @param date_from: start of historical range
@@ -1136,10 +450,17 @@ class BloombergDataProvider(object):
         _l.debug('> get_pricing_history_send_request: instrument=%s, date_from=%s, date_to=%s',
                  instruments, date_from, date_to)
 
+        instrs = (instruments or []) + (currencies or [])
+
+        if not instrs or not fields or not date_from or not date_to:
+            _l.debug('< response_id=%s', None)
+            return None
+
         start = date_from.strftime("%Y-%m-%d")
         end = date_to.strftime("%Y-%m-%d")
-        fields = ['PX_BID', 'PX_ASK', 'PX_LAST']
-        date_range = {
+        # fields = ['PX_BID', 'PX_ASK', 'PX_LAST']
+
+        headers = {
             "daterange": {
                 "period": {
                     "start": start,
@@ -1152,11 +473,11 @@ class BloombergDataProvider(object):
         fields_data.field = fields
 
         instruments_data = self.soap_client.factory.create('Instruments')
-        for instrument in instruments:
-            instruments_data.instrument.append({"id": instrument["code"], "yellowkey": instrument["industry"]})
+        for code in instrs:
+            instruments_data.instrument.append(self._bbg_instr(code))
 
         response = self.soap_client.service.submitGetHistoryRequest(
-            headers=date_range,
+            headers=headers,
             fields=fields_data,
             instruments=instruments_data
         )
@@ -1176,6 +497,10 @@ class BloombergDataProvider(object):
         @return: dictionary, where key - ISIN, value - dict with {bloomberg_field:value} dicts
         @rtype: dict
         """
+
+        if response_id is None:
+            _l.debug('< result=%s', None)
+            return None
 
         response = self.soap_client.service.retrieveGetHistoryResponse(responseId=response_id)
         _l.debug('> get_pricing_history_get_response: response_id=%s, response=%s', response_id, response)
@@ -1198,7 +523,7 @@ class BloombergDataProvider(object):
             return result
         return None
 
-    def get_pricing_history_sync(self, instruments, date_from, date_to):
+    def get_pricing_history_sync(self, instruments, currencies, fields, date_from, date_to):
         """
         Sync method to get historical pricing data. Would block until response is ready.
         @param date_from: start of historical range
@@ -1213,9 +538,116 @@ class BloombergDataProvider(object):
 
         return self._invoke_sync(name='get_pricing_history_sync',
                                  request_func=self.get_pricing_history_send_request,
-                                 request_kwargs={'instruments': instruments, 'date_from': date_from,
-                                                 'date_to': date_to},
+                                 request_kwargs={
+                                     'instruments': instruments,
+                                     'currencies': currencies,
+                                     'fields': fields,
+                                     'date_from': date_from,
+                                     'date_to': date_to
+                                 },
                                  response_func=self.get_pricing_history_get_response)
+
+    def create_accrual_calculation_schedules(self, task, instrument, values, accrual_calculation_schedule_method=None,
+                                             save=False):
+        if accrual_calculation_schedule_method != AccrualScheduleDownloadMethod.DEFAULT:
+            return
+        start_acc_dt = values['START_ACC_DT']
+        first_cpn_dt = values['FIRST_CPN_DT']
+        cpn = values['CPN']
+        day_cnt = values['DAY_CNT']
+        cpn_freq = values['CPN_FREQ']
+        multi_cpn_schedule = values['MULTI_CPN_SCHEDULE']
+
+        is_multi_cpn_schedule = multi_cpn_schedule \
+                                and not isinstance(multi_cpn_schedule, six.string_types) \
+                                and isinstance(multi_cpn_schedule, (tuple, list))
+
+        accrual_start_date = self.parse_date(start_acc_dt)
+        first_payment_date = self.parse_date(first_cpn_dt)
+        accrual_size = self.parse_float(cpn)
+
+        # TODO: map day_cnt ->  AccrualCalculationModel
+        accrual_calculation_model = self.get_accrual_calculation_model(instrument.master_user, ProviderClass.BLOOMBERG,
+                                                                       day_cnt)
+
+        # TODO: map cpn_freq -> Periodicity
+        periodicity = self.get_periodicity(instrument.master_user, ProviderClass.BLOOMBERG, cpn_freq)
+
+        accrual_calculation_schedules = []
+        if is_multi_cpn_schedule:
+
+            # multi_cpn_schedule = [
+            #     ['08/20/2017', '5.0000'],
+            #     ['02/20/2038', '6.7670']
+            # ]
+
+            for row in multi_cpn_schedule:
+                accrual_size = self.parse_float(row[1])
+
+                s = AccrualCalculationSchedule()
+                s.instrument = instrument
+                if accrual_start_date:
+                    s.accrual_start_date = accrual_start_date
+                if first_payment_date:
+                    s.first_payment_date = first_payment_date
+                if accrual_size:
+                    s.accrual_size = accrual_size
+                if accrual_calculation_model:
+                    s.accrual_calculation_model = accrual_calculation_model
+                if periodicity:
+                    s.periodicity = periodicity
+
+                if save:
+                    s.save()
+                accrual_calculation_schedules.append(s)
+                # next row
+                accrual_start_date = self.parse_date(row[0])
+                first_payment_date = accrual_start_date + Periodicity.to_timedelta(periodicity)
+        else:
+            s = AccrualCalculationSchedule()
+            s.instrument = instrument
+            if accrual_start_date:
+                s.accrual_start_date = accrual_start_date
+            if first_payment_date:
+                s.first_payment_date = first_payment_date
+            if accrual_size:
+                s.accrual_size = accrual_size
+            if accrual_calculation_model:
+                s.accrual_calculation_model = accrual_calculation_model
+            if periodicity:
+                s.periodicity = periodicity
+
+            if save:
+                s.save()
+            accrual_calculation_schedules.append(s)
+
+        return accrual_calculation_schedules
+
+    def create_factor_schedules(self, task, instrument, values, factor_schedule_method=None, save=False):
+        if factor_schedule_method != FactorScheduleDownloadMethod.DEFAULT:
+            return
+        # FACTOR_SCHEDULE = [
+        #     ['03/20/2013', '1.000000000'],
+        #     ['08/20/2019', '.973684211'],
+        # ]
+        factor_schedule = values['FACTOR_SCHEDULE']
+
+        if factor_schedule and isinstance(factor_schedule, (list, tuple)):
+            factor_schedules = []
+            for r in factor_schedule:
+                effective_date = self.parse_date(r[0])
+                factor_value = self.parse_float(r[1])
+                factor_schedules.append(
+                    InstrumentFactorSchedule(
+                        instrument=instrument,
+                        effective_date=effective_date,
+                        factor_value=factor_value
+                    )
+                )
+                pass
+            return factor_schedules
+
+        return None
 
     def __str__(self):
         return six.text_type(self.soap_client)
@@ -1223,26 +655,40 @@ class BloombergDataProvider(object):
 
 # ----------------------------------------------------------------------------------------------------------------------
 
-class FakeBloombergDataProvider(object):
+class FakeBloombergDataProvider(BloombergDataProvider):
     """
     Bloomberg python client for Finmars.
     """
 
     def __init__(self, *args, **kwargs):
+        super(FakeBloombergDataProvider, self).__init__(*args, **kwargs)
         from django.core.cache import caches
         self._cache = caches['default']
 
-    def _make_id(self):
-        return '%s' % uuid.uuid4()
+    def _new_response_id(self):
+        return uuid.uuid4().hex
+
+    def _make_key(self, key):
+        return 'bloomberg.fake.%s' % key
 
     def get_fields(self):
         return 'fake'
 
-    def get_instrument_send_request(self, instrument, fields):
-        _l.debug('> get_instrument_send_request: instrument=%s, fields=%s', instrument, fields)
-        response_id = self._make_id()
+    def get_instrument_send_request(self, instrument, fields, factor_schedule_method=None,
+                                    accrual_calculation_schedule_method=None):
+        _l.debug('> get_instrument_send_request: instrument="%s", fields=%s, factor_schedule_method=%s,'
+                 ' accrual_calculation_schedule_method=%s',
+                 instrument, fields, factor_schedule_method, accrual_calculation_schedule_method)
 
-        key = 'instrument.%s' % response_id
+        fields = self.instrument_add_fields(fields=fields, factor_schedule_method=factor_schedule_method,
+                                            accrual_calculation_schedule_method=accrual_calculation_schedule_method)
+        if not instrument or not fields:
+            _l.debug('< response_id=%s', None)
+            return None
+
+        response_id = self._new_response_id()
+
+        key = self._make_key(response_id)
         self._cache.set(key, {
             'action': 'instrument',
             'instrument': instrument,
@@ -1252,10 +698,23 @@ class FakeBloombergDataProvider(object):
 
         _l.debug('< response_id=%s', response_id)
 
-        return response_id
+        return response_id, fields
 
     def get_instrument_get_response(self, response_id):
         _l.debug('> get_instrument_get_response: response_id=%s', response_id)
+
+        if response_id is None:
+            _l.debug('< result=%s', None)
+            return None
+
+        key = self._make_key(response_id)
+        req = self._cache.get(key)
+        if not req:
+            raise RuntimeError('invalid response_id')
+
+        instr = req['instrument'].split(maxsplit=2)
+        instr_id = instr[0]
+        instr_yellowkey = instr[1]
 
         fake_data = {
             "ACCRUED_FACTOR": "1.000000000",
@@ -1288,56 +747,62 @@ class FakeBloombergDataProvider(object):
             "PAYMENT_RANK": "Sr Unsecured",
             "SECURITY_DES": "SCFRU 5 3/8 06/16/23",
             "SECURITY_TYP": "EURO-DOLLAR",
-
-             "FACTOR_SCHEDULE": [
-                               ['03/20/2013', '1.000000000'],
-                               ['08/20/2019', '.973684211'],
-                               ['02/20/2020', '.947368421'],
-                               ['08/20/2020', '.921052632'],
-                               ['02/20/2021', '.894736842'],
-                               ['08/20/2021', '.868421053'],
-                               ['02/20/2022', '.842105263'],
-                               ['08/20/2022', '.815789474'],
-                               ['02/20/2023', '.789473684'],
-                               ['08/20/2023', '.763157895'],
-                               ['02/20/2024', '.736842105'],
-                               ['08/20/2024', '.710526316'],
-                               ['02/20/2025', '.684210526'],
-                               ['08/20/2025', '.657894737'],
-                               ['02/20/2026', '.631578947'],
-                               ['08/20/2026', '.605263158'],
-                               ['02/20/2027', '.578947368'],
-                               ['08/20/2027', '.552631579'],
-                               ['02/20/2028', '.526315790'],
-                               ['08/20/2028', '.500000000'],
-                               ['02/20/2029', '.473684211'],
-                               ['08/20/2029', '.447368421'],
-                               ['02/20/2030', '.421052632'],
-                               ['08/20/2030', '.394736842'],
-                               ['02/20/2031', '.368421053'],
-                               ['08/20/2031', '.342105263'],
-                               ['02/20/2032', '.315789474'],
-                               ['08/20/2032', '.289473684'],
-                               ['02/20/2033', '.263157895'],
-                               ['08/20/2033', '.236842105'],
-                               ['02/20/2034', '.210526316'],
-                               ['08/20/2034', '.184210526'],
-                               ['02/20/2035', '.157894737'],
-                               ['08/20/2035', '.131578947'],
-                               ['02/20/2036', '.105263158'],
-                               ['08/20/2036', '.078947369'],
-                               ['02/20/2037', '.052631579'],
-                               ['08/20/2037', '.026315790']
-             ],
-             "MULTI_CPN_SCHEDULE": [
-                 ['08/20/2017', '5.0000'], ['02/20/2038', '6.7670']
-             ],
         }
 
-        key = 'instrument.%s' % response_id
-        req = self._cache.get(key)
-        if not req:
-            raise RuntimeError('invalid response_id')
+        fake_data['ID_ISIN'] = instr_id
+
+        code = req['instrument']
+        if 'cpn' in code or 'USP16394AG62' in code:
+            fake_data['START_ACC_DT'] = "06/16/2016"
+            fake_data['FIRST_CPN_DT'] = "07/16/2016"
+            fake_data['CPN'] = '5.0000'
+            fake_data['DAY_CNT'] = '30'
+            fake_data['CPN_FREQ'] = '1'
+            fake_data['MULTI_CPN_SCHEDULE'] = [
+                ['08/20/2017', '5.0000'],
+                ['02/20/2038', '6.7670']
+            ]
+        if 'factor' in code or 'USP16394AG62' in code:
+            fake_data['FACTOR_SCHEDULE'] = [
+                ['03/20/2013', '1.000000000'],
+                ['08/20/2019', '.973684211'],
+                ['02/20/2020', '.947368421'],
+                ['08/20/2020', '.921052632'],
+                ['02/20/2021', '.894736842'],
+                ['08/20/2021', '.868421053'],
+                ['02/20/2022', '.842105263'],
+                ['08/20/2022', '.815789474'],
+                ['02/20/2023', '.789473684'],
+                ['08/20/2023', '.763157895'],
+                ['02/20/2024', '.736842105'],
+                ['08/20/2024', '.710526316'],
+                ['02/20/2025', '.684210526'],
+                ['08/20/2025', '.657894737'],
+                ['02/20/2026', '.631578947'],
+                ['08/20/2026', '.605263158'],
+                ['02/20/2027', '.578947368'],
+                ['08/20/2027', '.552631579'],
+                ['02/20/2028', '.526315790'],
+                ['08/20/2028', '.500000000'],
+                ['02/20/2029', '.473684211'],
+                ['08/20/2029', '.447368421'],
+                ['02/20/2030', '.421052632'],
+                ['08/20/2030', '.394736842'],
+                ['02/20/2031', '.368421053'],
+                ['08/20/2031', '.342105263'],
+                ['02/20/2032', '.315789474'],
+                ['08/20/2032', '.289473684'],
+                ['02/20/2033', '.263157895'],
+                ['08/20/2033', '.236842105'],
+                ['02/20/2034', '.210526316'],
+                ['08/20/2034', '.184210526'],
+                ['02/20/2035', '.157894737'],
+                ['08/20/2035', '.131578947'],
+                ['02/20/2036', '.105263158'],
+                ['08/20/2036', '.078947369'],
+                ['02/20/2037', '.052631579'],
+                ['08/20/2037', '.026315790']
+            ]
 
         result = {}
         for field in req['fields']:
@@ -1345,15 +810,25 @@ class FakeBloombergDataProvider(object):
         _l.debug('< result=%s', result)
         return result
 
-    def get_pricing_latest_send_request(self, instruments):
-        _l.debug('> get_pricing_latest_send_request: instruments=%s', instruments)
-        response_id = self._make_id()
-        fields = ['PX_YEST_BID', 'PX_YEST_ASK', 'PX_YEST_CLOSE', 'PX_CLOSE_1D', 'ACCRUED_FACTOR', 'CPN', 'SECURITY_TYP']
+    def get_pricing_latest_send_request(self, instruments, currencies, fields):
+        _l.debug('> get_pricing_latest_send_request: instruments=%s, currencies=%s,fields=%s',
+                 instruments, currencies, fields)
 
-        key = 'pricing_latest.%s' % response_id
+        instrs = (instruments or []) + (currencies or [])
+        if not instrs or not fields:
+            _l.debug('< response_id=%s', None)
+            return None
+
+        response_id = self._new_response_id()
+        # if not fields:
+        #     fields = ['PX_YEST_BID', 'PX_YEST_ASK', 'PX_YEST_CLOSE', 'PX_CLOSE_1D', 'ACCRUED_FACTOR', 'CPN',
+        #               'SECURITY_TYP']
+
+        key = self._make_key(response_id)
         self._cache.set(key, {
             'action': 'pricing_latest',
             'instruments': instruments,
+            'currencies': currencies,
             'fields': fields,
             'response_id': response_id,
         }, timeout=30)
@@ -1364,6 +839,11 @@ class FakeBloombergDataProvider(object):
 
     def get_pricing_latest_get_response(self, response_id):
         _l.debug('> get_pricing_latest_get_response: response_id=%s', response_id)
+
+        if response_id is None:
+            _l.debug('< result=%s', None)
+            return None
+
         fake_data = {
             "ACCRUED_FACTOR": "1.000000000",
             "CPN": "6.625000",
@@ -1378,33 +858,47 @@ class FakeBloombergDataProvider(object):
             "SECURITY_TYP": "EURO-DOLLAR"
         }
 
-        key = 'pricing_latest.%s' % response_id
+        key = self._make_key(response_id)
         req = self._cache.get(key)
         if not req:
             raise RuntimeError('invalid response_id')
 
+        instrs = (req['instruments'] or []) + (req['currencies'] or [])
+        fields = req['fields']
+
         result = {}
-        for instrument in req['instruments']:
+        for instrument in instrs:
             instrument_fields = {}
-            for field in req['fields']:
+            for field in fields:
                 instrument_fields[field] = fake_data.get(field, None)
-            result[instrument['code']] = instrument_fields
+            instr = self._bbg_instr(instrument)
+            instr_id = instr['id']
+            result[instr_id] = instrument_fields
         _l.debug('< result=%s', result)
         return result
 
-    def get_pricing_history_send_request(self, instruments, date_from, date_to):
+    def get_pricing_history_send_request(self, instruments, currencies, fields, date_from, date_to):
         _l.debug('> get_pricing_history_send_request: instrument=%s, date_from=%s, date_to=%s',
                  instruments, date_from, date_to)
-        response_id = self._make_id()
-        fields = ['PX_BID', 'PX_ASK', 'PX_LAST']
 
-        key = 'pricing_history.%s' % response_id
+        instrs = (instruments or []) + (currencies or [])
+        if not instrs or not fields or not date_from or not date_to:
+            _l.debug('< response_id=%s', None)
+            return None
+
+        response_id = self._new_response_id()
+
+        # if not fields:
+        #     fields = ['PX_BID', 'PX_ASK', 'PX_LAST']
+
+        key = self._make_key(response_id)
         self._cache.set(key, {
             'action': 'pricing_history',
             'instruments': instruments,
+            'currencies': currencies,
+            'fields': fields,
             'date_from': '%s' % date_from,
             'date_to': '%s' % date_to,
-            'fields': fields,
             'response_id': response_id,
         }, timeout=30)
 
@@ -1414,6 +908,11 @@ class FakeBloombergDataProvider(object):
 
     def get_pricing_history_get_response(self, response_id):
         _l.debug('> get_pricing_history_get_response: response_id=%s', response_id)
+
+        if response_id is None:
+            _l.debug('< result=%s', None)
+            return None
+
         fake_data = {
             "DATE": "<REPLACE>",
             "PX_ASK": "20.0",
@@ -1421,124 +920,106 @@ class FakeBloombergDataProvider(object):
             "PX_LAST": "22.0",
         }
 
-        key = 'pricing_history.%s' % response_id
+        key = self._make_key(response_id)
         req = self._cache.get(key)
         if not req:
             raise RuntimeError('invalid response_id')
 
+        instrs = (req['instruments'] or []) + (req['currencies'] or [])
+        fields = req['fields']
         date_from = parser.parse(req['date_from']).date()
         date_to = parser.parse(req['date_to']).date()
 
         result = {}
-        for instrument in req['instruments']:
+        for instrument in instrs:
             d = date_from
             while d <= date_to:
                 price_fields = {
                     'DATE': d
                 }
-                for i, field in enumerate(req['fields']):
+                for i, field in enumerate(fields):
                     price_fields[field] = fake_data.get(field, None)
 
-                instrument_code = instrument['code']
-                if instrument_code in result:
-                    result[instrument_code].append(price_fields)
+                instr = self._bbg_instr(instrument)
+                instr_id = instr['id']
+                if instr_id in result:
+                    result[instr_id].append(price_fields)
                 else:
-                    result[instrument_code] = [price_fields]
+                    result[instr_id] = [price_fields]
 
                 d += timedelta(days=1)
         _l.debug('< result=%s', result)
         return result
 
 
-def get_provider_class():
-    if settings.BLOOMBERG_SANDBOX:
-        return FakeBloombergDataProvider
-    else:
-        return BloombergDataProvider
+# def fix_pricing_latest(value):
+#     ret = {
+#         'FM_PRICING': 'L',
+#
+#         'ACCRUED_FACTOR': None,
+#         'CPN': None,
+#         'PX_CLOSE_1D': None,
+#         'PX_YEST_ASK': None,
+#         'PX_YEST_BID': None,
+#         'PX_YEST_CLOSE': None,
+#
+#         'DATE': None,
+#         'PX_ASK': None,
+#         'PX_BID': None,
+#         'PX_LAST': None,
+#     }
+#     for k, v in six.iteritems(value):
+#         if k in ['SECURITY_TYP']:
+#             ret[k] = v
+#         elif k in ["ACCRUED_FACTOR", "CPN", "PX_CLOSE_1D", "PX_YEST_ASK", "PX_YEST_BID", "PX_YEST_CLOSE"]:
+#             tk = k
+#             # if k == 'PX_YEST_ASK':
+#             #     tk = 'ASK'
+#             # elif k == 'PX_YEST_BID':
+#             #     tk = 'BID'
+#             # elif k == 'PX_YEST_CLOSE':
+#             #     tk = 'LAST'
+#             ret[tk] = _safe_float(v)
+#     return ret
+#
+#
+# def fix_price_history(value):
+#     ret = {
+#         'FM_PRICING': 'H',
+#
+#         'ACCRUED_FACTOR': None,
+#         'CPN': None,
+#         'PX_CLOSE_1D': None,
+#         'PX_YEST_ASK': None,
+#         'PX_YEST_BID': None,
+#         'PX_YEST_CLOSE': None,
+#
+#         'DATE': None,
+#         'PX_ASK': None,
+#         'PX_BID': None,
+#         'PX_LAST': None,
+#     }
+#     for k, v in six.iteritems(value):
+#         if k in ['DATE']:
+#             ret[k] = v
+#         elif k in ["PX_ASK", "PX_BID", "PX_LAST"]:
+#             tk = k
+#             # if k == 'PX_ASK':
+#             #     tk = 'ASK'
+#             # elif k == 'PX_BID':
+#             #     tk = 'BID'
+#             # elif k == 'PX_LAST':
+#             #     tk = 'LAST'
+#             ret[tk] = _safe_float(v)
+#     return ret
 
 
-def get_provider(*args, **kwargs):
-    clazz = get_provider_class()
-    return clazz(*args, **kwargs)
-
-
-def _safe_float(v):
-    if v is None:
-        return None
-    try:
-        return float(v)
-    except ValueError:
-        return 0.0
-
-
-def fix_pricing_latest(value):
-    ret = {
-        'FM_PRICING': 'L',
-
-        'ACCRUED_FACTOR': None,
-        'CPN': None,
-        'PX_CLOSE_1D': None,
-        'PX_YEST_ASK': None,
-        'PX_YEST_BID': None,
-        'PX_YEST_CLOSE': None,
-
-        'DATE': None,
-        'PX_ASK': None,
-        'PX_BID': None,
-        'PX_LAST': None,
-    }
-    for k, v in six.iteritems(value):
-        if k in ['SECURITY_TYP']:
-            ret[k] = v
-        elif k in ["ACCRUED_FACTOR", "CPN", "PX_CLOSE_1D", "PX_YEST_ASK", "PX_YEST_BID", "PX_YEST_CLOSE"]:
-            tk = k
-            # if k == 'PX_YEST_ASK':
-            #     tk = 'ASK'
-            # elif k == 'PX_YEST_BID':
-            #     tk = 'BID'
-            # elif k == 'PX_YEST_CLOSE':
-            #     tk = 'LAST'
-            ret[tk] = _safe_float(v)
-    return ret
-
-
-def fix_price_history(value):
-    ret = {
-        'FM_PRICING': 'H',
-
-        'ACCRUED_FACTOR': None,
-        'CPN': None,
-        'PX_CLOSE_1D': None,
-        'PX_YEST_ASK': None,
-        'PX_YEST_BID': None,
-        'PX_YEST_CLOSE': None,
-
-        'DATE': None,
-        'PX_ASK': None,
-        'PX_BID': None,
-        'PX_LAST': None,
-    }
-    for k, v in six.iteritems(value):
-        if k in ['DATE']:
-            ret[k] = v
-        elif k in ["PX_ASK", "PX_BID", "PX_LAST"]:
-            tk = k
-            # if k == 'PX_ASK':
-            #     tk = 'ASK'
-            # elif k == 'PX_BID':
-            #     tk = 'BID'
-            # elif k == 'PX_LAST':
-            #     tk = 'LAST'
-            ret[tk] = _safe_float(v)
-    return ret
-
-
-def str_to_date(value):
-    return datetime.strptime(value, '%Y-%m-%d').date()
-
-
-def date_to_str(value):
-    return value.strftime(value, '%Y-%m-%d')
+# def str_to_date(value):
+#     return datetime.strptime(value, '%Y-%m-%d').date()
+#
+#
+# def date_to_str(value):
+#     return value.strftime(value, '%Y-%m-%d')
 
 
 def create_instrument_price_history(task, instruments=None, pricing_policies=None, save=False,
