@@ -37,7 +37,7 @@ class InstrumentTypeAdmin(HistoricalAdmin):
     list_display = ['id', 'name', 'master_user', 'instrument_class']
     list_select_related = ['master_user', 'instrument_class']
     list_filter = ['instrument_class']
-    raw_id_fields = ['master_user']
+    raw_id_fields = ['master_user', 'one_off_event', 'regular_event']
     inlines = [
         UserObjectPermissionInline,
         GroupObjectPermissionInline,

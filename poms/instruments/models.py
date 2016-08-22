@@ -2,6 +2,7 @@ from __future__ import unicode_literals
 
 from datetime import date
 
+from dateutil.relativedelta import relativedelta
 from django.db import models
 from django.utils.encoding import python_2_unicode_compatible
 from django.utils.translation import ugettext_lazy as _
@@ -172,6 +173,36 @@ class Periodicity(AbstractClassModel):
     class Meta(AbstractClassModel.Meta):
         verbose_name = _('periodicity')
         verbose_name_plural = _('periodicities')
+
+    @staticmethod
+    def to_timedelta(periodicity, delta=None, same_date=None):
+        if isinstance(periodicity, Periodicity):
+            periodicity = periodicity.id
+        if periodicity == Periodicity.N_DAY:
+            return relativedelta(days=delta)
+        elif periodicity == Periodicity.N_WEEK:
+            return relativedelta(days=7 * delta)
+        elif periodicity == Periodicity.N_MONTH:
+            return relativedelta(months=7 * delta)
+        elif periodicity == Periodicity.N_MONTH_DAY:
+            # TODO: verify
+            return relativedelta(months=7 * delta, day=same_date.day)
+        elif periodicity == Periodicity.N_YEAR:
+            return relativedelta(years=delta)
+        elif periodicity == Periodicity.N_YEAR_DAY:
+            # TODO: verify
+            return relativedelta(years=delta, month=same_date.month, day=same_date.day)
+        elif periodicity == Periodicity.WEEKLY:
+            return relativedelta(days=7)
+        elif periodicity == Periodicity.MONTHLY:
+            return relativedelta(months=1)
+        elif periodicity == Periodicity.QUARTERLY:
+            return relativedelta(months=3)
+        elif periodicity == Periodicity.SEMI_ANNUALLY:
+            return relativedelta(months=6)
+        elif periodicity == Periodicity.ANNUALLY:
+            return relativedelta(years=1)
+        return None
 
 
 class CostMethod(AbstractClassModel):
