@@ -168,13 +168,11 @@ class InstrumentDownloadSchemeSerializer(serializers.ModelSerializer):
     def save_attributes(self, instance, attributes):
         pk_set = set()
         for attr_values in attributes:
-            attr_id = attr_values.pop('id', None)
-            attr = None
-            if attr_id:
-                try:
-                    attr = instance.attributes.get(pk=attr_id)
-                except ObjectDoesNotExist:
-                    pass
+            attribute_type = attr_values['attribute_type']
+            try:
+                attr = instance.attributes.get(attribute_type=attribute_type)
+            except ObjectDoesNotExist:
+                pass
             if attr is None:
                 attr = InstrumentDownloadSchemeAttribute(scheme=instance)
             for name, value in six.iteritems(attr_values):

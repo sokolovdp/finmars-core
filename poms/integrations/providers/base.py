@@ -63,7 +63,7 @@ class AbstractProvider(object):
             obj = InstrumentAttributeValueMapping.objects.select_related('classifier').get(
                 master_user=master_user, provider=provider, attribute_type=attribute_type, value=value)
         except InstrumentAttributeValueMapping.DoesNotExist:
-            return None, None, None, None
+            return None
         return obj.value_string, obj.value_float, obj.value_date, obj.classifier
 
     def get_accrual_calculation_model(self, master_user, provider, value):
@@ -142,20 +142,24 @@ class AbstractProvider(object):
                 except formula.InvalidExpression as e:
                     _l.debug('Invalid expression "%s"', attr.value, exc_info=True)
                     v = None
-                if tattr.value_type == AbstractAttributeType.STRING:
-                    if v is not None:
-                        iattr.value_string = six.text_type(v)
-                elif tattr.value_type == AbstractAttributeType.NUMBER:
-                    if v is not None:
-                        iattr.value_float = float(v)
-                elif tattr.value_type == AbstractAttributeType.DATE:
-                    if v is not None:
-                        iattr.value_date = self.parse_date(v)
-                elif tattr.value_type == AbstractAttributeType.CLASSIFIER:
-                    if v is not None:
-                        v = six.text_type(v)
-                        v = tattr.classifiers.filter(name=v).first()
-                        iattr.classifier = v
+                attr_mapped_values = self.get_instrument_attribute_value(master_user, provider, tattr, v)
+                if attr_mapped_values:
+                    iattr.value_string, iattr.value_float, iattr.value_date, iattr.classifier = attr_mapped_values
+                else:
+                    if tattr.value_type == AbstractAttributeType.STRING:
+                        if v is not None:
+                            iattr.value_string = six.text_type(v)
+                    elif tattr.value_type == AbstractAttributeType.NUMBER:
+                        if v is not None:
+                            iattr.value_float = float(v)
+                    elif tattr.value_type == AbstractAttributeType.DATE:
+                        if v is not None:
+                            iattr.value_date = self.parse_date(v)
+                    elif tattr.value_type == AbstractAttributeType.CLASSIFIER:
+                        if v is not None:
+                            v = six.text_type(v)
+                            v = tattr.classifiers.filter(name=v).first()
+                            iattr.classifier = v
 
             if save:
                 iattr.save()

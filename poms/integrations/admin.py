@@ -176,7 +176,7 @@ class InstrumentAttributeValueMappingAdmin(admin.ModelAdmin):
     model = InstrumentAttributeValueMapping
     list_display = ['id', 'master_user', 'provider', 'value', 'attribute_type']
     list_select_related = ['attribute_type__master_user', 'attribute_type', 'classifier', 'provider']
-    raw_id_fields = ['attribute_type', 'classifier']
+    raw_id_fields = ['master_user', 'attribute_type', 'classifier']
 
     def master_user(self, obj):
         return obj.attribute_type.master_user
