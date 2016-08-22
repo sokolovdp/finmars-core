@@ -69,6 +69,14 @@ def format_currency(x, ccy, locale=None):
     return numbers.format_currency(x, ccy, locale=locale)
 
 
+def map_str(value, value_map):
+    if value is None or value_map is None:
+        return None
+    if not isinstance(value_map, dict):
+        raise InvalidExpression('Required dict')
+    return value_map.get(value, None)
+
+
 def w_random():
     return random.random()
 
@@ -90,6 +98,7 @@ DEFAULT_FUNCTIONS = {
     "format_decimal": format_decimal,
     "format_currency": format_currency,
     "random": w_random,
+    "map_str": map_str
 }
 
 
@@ -249,6 +258,23 @@ class SimpleEval2(object):  # pylint: disable=too-few-public-methods
         #         step = self._eval(node.step)
         #     return slice(lower, upper, step)
 
+        elif isinstance(node, ast.Dict):
+            d = {}
+            for k, v in zip(node.keys, node.values):
+                k = self._eval(k)
+                v = self._eval(v)
+                d[k] = v
+            return d
+
+        elif isinstance(node, (ast.List, ast.Tuple)):
+            d = []
+            for v in node.elts:
+                v = self._eval(v)
+                d.append(v)
+            if isinstance(node, ast.Tuple):
+                return tuple(d)
+            return d
+
         else:
             raise simpleeval.FeatureNotAvailable("Sorry, {0} is not available in this "
                                                  "evaluator".format(type(node).__name__))
@@ -285,8 +311,7 @@ if __name__ == "__main__":
 
     django.setup()
 
-    from django.utils import timezone, translation
-
+    from django.utils import translation
 
     # names = {
     #     "v0": 1.00001,
@@ -311,7 +336,9 @@ if __name__ == "__main__":
     # print(safe_eval('(1).__class__.__bases__', names=names))
     # print(safe_eval2('(1).__class__.__bases__', names=names))
     # print(safe_eval3('(1).__class__.__bases__[0].__subclasses__()', names=names))
-    # print(safe_eval('5 % 2'))
+    print(safe_eval('{"a":1, "b":2}'))
+    # print(safe_eval('[1,]'))
+    # print(safe_eval('(1,)'))
 
     def demo():
         import pprint
@@ -395,4 +422,4 @@ if __name__ == "__main__":
             # print(add_workdays(datetime.date(2016, 6, 15), 4))
 
 
-    demo()
+            # demo()
