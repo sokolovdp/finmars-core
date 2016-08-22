@@ -4,19 +4,18 @@ import json
 import time
 from logging import getLogger
 
-from celery import shared_task, chain
+from celery import shared_task
 from celery.exceptions import TimeoutError
 from django.conf import settings
 from django.core.mail import send_mail as django_send_mail, send_mass_mail as django_send_mass_mail, \
     mail_admins as django_mail_admins, mail_managers as django_mail_managers
 from django.core.serializers.json import DjangoJSONEncoder
-from django.db import transaction, models
+from django.db import transaction
 from django.utils import timezone
 
 from poms.audit.models import AuthLogEntry
-from poms.integrations.models import Task, ProviderClass
-from poms.integrations.providers.base import get_provider
-from poms.integrations.providers.bloomberg import BloombergException
+from poms.integrations.models import Task
+from poms.integrations.providers.base import get_provider, ProviderException
 from poms.integrations.storage import file_import_storage
 
 _l = getLogger('poms.integrations')
@@ -139,9 +138,7 @@ def bloomberg_send_request(self, task_id):
         elif action == Task.ACTION_INSTRUMENT:
             response_id, fields = provider.get_instrument_send_request(
                 instrument=task.instrument_code,
-                fields=kwargs['fields'],
-                factor_schedule_method=task.instrument_download_scheme.factor_schedule_method_id,
-                accrual_calculation_schedule_method=task.instrument_download_scheme.accrual_calculation_schedule_method_id
+                fields=kwargs['fields']
             )
             kwargs['fields'] = fields
 
@@ -162,9 +159,9 @@ def bloomberg_send_request(self, task_id):
             )
 
         else:
-            raise BloombergException('Unknown action')
+            raise ProviderException('Unknown action')
 
-    except BloombergException:
+    except ProviderException:
         with transaction.atomic():
             task.status = Task.STATUS_ERROR
             task.save()
@@ -219,9 +216,9 @@ def bloomberg_wait_reponse(self, task_id):
             result = provider.get_pricing_history_get_response(response_id)
 
         else:
-            raise BloombergException('Unknown action')
+            raise ProviderException('Unknown action')
 
-    except BloombergException:
+    except ProviderException:
         with transaction.atomic():
             task.status = Task.STATUS_ERROR
             task.save()
@@ -243,117 +240,116 @@ def bloomberg_wait_reponse(self, task_id):
 
     return task.id
 
-
-def bloomberg_call(master_user=None, member=None, action=None,
-                   instrument=None, instrument_download_scheme=None,
-                   instruments=None, currencies=None, price_download_scheme=None,
-                   date_from=None, date_to=None):
-    master_user_id = master_user.id if isinstance(master_user, models.Model)  else master_user
-    if member:
-        member_id = member.id if isinstance(member, models.Model) else member
-    else:
-        member_id = None
-
-    with transaction.atomic():
-        kwargs = {
-            'fields': None,
-            'instruments': None,
-            'currencies': None,
-        }
-
-        if action == Task.ACTION_INSTRUMENT:
-            if instrument_download_scheme is None:
-                return None
-            kwargs['instrument'] = instrument
-            kwargs['fields'] = instrument_download_scheme.fields
-            kwargs['factor_schedule_method'] = instrument_download_scheme.factor_schedule_method_id
-            kwargs['accrual_calculation_schedule_method'] = \
-                instrument_download_scheme.accrual_calculation_schedule_method_id
-        elif action == Task.ACTION_PRICING_LATEST:
-            if price_download_scheme is None:
-                return None
-            kwargs['fields'] = price_download_scheme.fields
-        elif action == Task.ACTION_PRICE_HISTORY:
-            if price_download_scheme is None:
-                return None
-            kwargs['fields'] = price_download_scheme.fields
-        else:
-            return None
-
-        if action in [Task.ACTION_PRICING_LATEST, Task.ACTION_PRICE_HISTORY]:
-            if instruments:
-                r = []
-                for i in instruments:
-                    if i.reference_for_pricing:
-                        r.append(i.reference_for_pricing)
-                kwargs['instruments'] = r
-
-            if currencies:
-                r = []
-                for c in currencies:
-                    if c.reference_for_pricing:
-                        r.append(c.reference_for_pricing)
-                kwargs['currencies'] = r
-
-        bt = Task.objects.create(
-            master_user_id=master_user_id,
-            member_id=member_id,
-            provider_id=ProviderClass.BLOOMBERG,
-            status=Task.STATUS_PENDING,
-            action=action,
-            instrument_code=instrument,
-            instrument_download_scheme=instrument_download_scheme,
-            price_download_scheme=price_download_scheme,
-            date_from=date_from,
-            date_to=date_to,
-            kwargs=json.dumps(kwargs, cls=DjangoJSONEncoder, sort_keys=True, indent=1),
-        )
-
-        if instruments:
-            bt.instruments.add(*instruments)
-        if currencies:
-            bt.currencies.add(*currencies)
-
-        transaction.on_commit(
-            lambda: chain(bloomberg_send_request.s(bt.pk), bloomberg_wait_reponse.s()).apply_async(countdown=1))
-
-    return bt.pk
-
-
-def bloomberg_instrument(master_user=None, member=None, instrument=None, instrument_download_scheme=None):
-    return bloomberg_call(
-        master_user=master_user,
-        member=member,
-        action=Task.ACTION_INSTRUMENT,
-        instrument=instrument,
-        instrument_download_scheme=instrument_download_scheme
-    )
-
-
-def bloomberg_pricing_latest(master_user=None, member=None, price_download_scheme=None,
-                             instruments=None, currencies=None):
-    return bloomberg_call(
-        master_user=master_user,
-        member=member,
-        action=Task.ACTION_PRICING_LATEST,
-        instruments=instruments,
-        currencies=currencies,
-        price_download_scheme=price_download_scheme,
-    )
-
-
-def bloomberg_pricing_history(master_user=None, member=None, price_download_scheme=None,
-                              instruments=None, currencies=None, date_from=None, date_to=None):
-    return bloomberg_call(
-        master_user=master_user,
-        member=member,
-        action=Task.ACTION_PRICE_HISTORY,
-        instruments=instruments,
-        currencies=currencies,
-        price_download_scheme=price_download_scheme,
-        date_from=date_from,
-        date_to=date_to,
-    )
+# def bloomberg_call(master_user=None, member=None, action=None,
+#                    instrument=None, instrument_download_scheme=None,
+#                    instruments=None, currencies=None, price_download_scheme=None,
+#                    date_from=None, date_to=None):
+#     master_user_id = master_user.id if isinstance(master_user, models.Model)  else master_user
+#     if member:
+#         member_id = member.id if isinstance(member, models.Model) else member
+#     else:
+#         member_id = None
+#
+#     with transaction.atomic():
+#         kwargs = {
+#             'fields': None,
+#             'instruments': None,
+#             'currencies': None,
+#         }
+#
+#         if action == Task.ACTION_INSTRUMENT:
+#             if instrument_download_scheme is None:
+#                 return None
+#             kwargs['instrument'] = instrument
+#             kwargs['fields'] = instrument_download_scheme.fields
+#             kwargs['factor_schedule_method'] = instrument_download_scheme.factor_schedule_method_id
+#             kwargs['accrual_calculation_schedule_method'] = \
+#                 instrument_download_scheme.accrual_calculation_schedule_method_id
+#         elif action == Task.ACTION_PRICING_LATEST:
+#             if price_download_scheme is None:
+#                 return None
+#             kwargs['fields'] = price_download_scheme.fields
+#         elif action == Task.ACTION_PRICE_HISTORY:
+#             if price_download_scheme is None:
+#                 return None
+#             kwargs['fields'] = price_download_scheme.fields
+#         else:
+#             return None
+#
+#         if action in [Task.ACTION_PRICING_LATEST, Task.ACTION_PRICE_HISTORY]:
+#             if instruments:
+#                 r = []
+#                 for i in instruments:
+#                     if i.reference_for_pricing:
+#                         r.append(i.reference_for_pricing)
+#                 kwargs['instruments'] = r
+#
+#             if currencies:
+#                 r = []
+#                 for c in currencies:
+#                     if c.reference_for_pricing:
+#                         r.append(c.reference_for_pricing)
+#                 kwargs['currencies'] = r
+#
+#         bt = Task.objects.create(
+#             master_user_id=master_user_id,
+#             member_id=member_id,
+#             provider_id=ProviderClass.BLOOMBERG,
+#             status=Task.STATUS_PENDING,
+#             action=action,
+#             instrument_code=instrument,
+#             instrument_download_scheme=instrument_download_scheme,
+#             price_download_scheme=price_download_scheme,
+#             date_from=date_from,
+#             date_to=date_to,
+#             kwargs=json.dumps(kwargs, cls=DjangoJSONEncoder, sort_keys=True, indent=1),
+#         )
+#
+#         if instruments:
+#             bt.instruments.add(*instruments)
+#         if currencies:
+#             bt.currencies.add(*currencies)
+#
+#         transaction.on_commit(
+#             lambda: chain(bloomberg_send_request.s(bt.pk), bloomberg_wait_reponse.s()).apply_async(countdown=1))
+#
+#     return bt.pk
+#
+#
+# def bloomberg_instrument(master_user=None, member=None, instrument=None, instrument_download_scheme=None):
+#     return bloomberg_call(
+#         master_user=master_user,
+#         member=member,
+#         action=Task.ACTION_INSTRUMENT,
+#         instrument=instrument,
+#         instrument_download_scheme=instrument_download_scheme
+#     )
+#
+#
+# def bloomberg_pricing_latest(master_user=None, member=None, price_download_scheme=None,
+#                              instruments=None, currencies=None):
+#     return bloomberg_call(
+#         master_user=master_user,
+#         member=member,
+#         action=Task.ACTION_PRICING_LATEST,
+#         instruments=instruments,
+#         currencies=currencies,
+#         price_download_scheme=price_download_scheme,
+#     )
+#
+#
+# def bloomberg_pricing_history(master_user=None, member=None, price_download_scheme=None,
+#                               instruments=None, currencies=None, date_from=None, date_to=None):
+#     return bloomberg_call(
+#         master_user=master_user,
+#         member=member,
+#         action=Task.ACTION_PRICE_HISTORY,
+#         instruments=instruments,
+#         currencies=currencies,
+#         price_download_scheme=price_download_scheme,
+#         date_from=date_from,
+#         date_to=date_to,
+#     )
 
 # @shared_task(name='backend.bloomberg_price_history_auto_save', bind=True, ignore_result=True)
 # def bloomberg_price_history_auto_save(self, task_id):

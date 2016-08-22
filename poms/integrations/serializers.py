@@ -27,7 +27,6 @@ from poms.integrations.models import InstrumentDownloadSchemeInput, InstrumentDo
     AccrualScheduleDownloadMethod, PriceDownloadScheme, CurrencyMapping, InstrumentTypeMapping, \
     InstrumentAttributeValueMapping, AccrualCalculationModelMapping, PeriodicityMapping
 from poms.integrations.providers.base import get_provider
-from poms.integrations.providers.bloomberg import create_instrument_price_history, create_currency_price_history
 from poms.integrations.storage import FileImportStorage
 from poms.users.fields import MasterUserField, MemberField, HiddenMemberField
 
@@ -367,36 +366,46 @@ class InstrumentMiniSerializer(InstrumentSerializer):
 
 
 class ImportInstrumentEntry(object):
-    def __init__(self, master_user=None, member=None, provider=None, scheme=None, mode=None, instrument_code=None,
+    def __init__(self, mode=None, master_user=None, member=None,
+                 instrument_code=None, instrument_download_scheme=None,
                  task=None, task_result_overrides=None, instrument=None):
+        self.mode = mode
         self.master_user = master_user
         self.member = member
-        self.provider = provider
-        self.scheme = scheme
-        self.mode = mode
         self.instrument_code = instrument_code
+        self.instrument_download_scheme = instrument_download_scheme
         self.task = task
         self._task_object = None
         self.task_result_overrides = task_result_overrides
         self.instrument = instrument
 
-    @property
-    def task_object(self):
-        if self.task:
+    def get_task_object(self):
+        if not self._task_object and self.task:
             self._task_object = self.master_user.bloomberg_tasks.get(pk=self.task)
         return self._task_object
+
+    def set_task_object(self, value):
+        self._task_object = value
+        self.task = getattr(value, 'pk', None)
+
+    task_object = property(get_task_object, set_task_object)
+
+    @property
+    def status(self):
+        return getattr(self.task_object, 'status', Task.STATUS_PENDING)
 
 
 class ImportInstrumentSerializer(serializers.Serializer):
     master_user = MasterUserField()
     member = HiddenMemberField()
-    provider = ProviderClassField()
-    scheme = InstrumentDownloadSchemeField()
+    # provider = ProviderClassField()
+    instrument_download_scheme = InstrumentDownloadSchemeField()
     mode = serializers.ChoiceField(choices=IMPORT_MODE_CHOICES)
 
     instrument_code = serializers.CharField(required=True, initial='USP16394AG62 Corp')
 
     task = serializers.CharField(required=False, allow_blank=True, allow_null=True)
+    status = serializers.CharField(read_only=True)
     task_object = TaskSerializer(read_only=True)
     task_result_overrides = serializers.JSONField(default={})
 
@@ -408,22 +417,28 @@ class ImportInstrumentSerializer(serializers.Serializer):
             task_result_overrides = json.loads(task_result_overrides)
         instance = ImportInstrumentEntry(**validated_data)
         if instance.task:
-            if instance.task_object.status == Task.STATUS_DONE:
-                provider = get_provider(task=instance.task_object)
-                instance.instrument = provider.create_instrument(
-                    task=instance.task_object,
-                    value_overrides=task_result_overrides,
-                    save=(instance.mode == IMPORT_PROCESS))
+            provider = get_provider(task=instance.task_object)
+            task, instrument = provider.create_instrument_async(
+                # instrument_code=instance.instrument_code,
+                # instrument_download_scheme=instance.instrument_download_scheme,
+                # master_user=instance.master_user,
+                # member=instance.member,
+                task=instance.task_object,
+                value_overrides=task_result_overrides,
+                save=(instance.mode == IMPORT_PROCESS)
+            )
+            instance.task_object = task
+            instance.instrument = instrument
         else:
-            from poms.integrations.tasks import bloomberg_instrument
-            if instance.provider.id == ProviderClass.BLOOMBERG:
-                instance.task = bloomberg_instrument(
-                    master_user=instance.master_user,
-                    member=instance.member,
-                    instrument=instance.instrument_code,
-                    instrument_download_scheme=instance.scheme
-                )
-
+            provider = get_provider(master_user=instance.master_user, provider=instance.instrument_download_scheme.provider_id)
+            task, instrument = provider.create_instrument_async(
+                instrument_code=instance.instrument_code,
+                instrument_download_scheme=instance.instrument_download_scheme,
+                master_user=instance.master_user,
+                member=instance.member
+            )
+            instance.task_object = task
+            instance.instrument = instrument
         return instance
 
 
@@ -491,21 +506,22 @@ class ImportHistorySerializer(serializers.Serializer):
         if instance.task:
             if instance.task_object.status == Task.STATUS_DONE:
                 try:
-                    instance.instrument_histories = create_instrument_price_history(
-                        task=instance.task_object,
-                        instruments=instance.instruments,
-                        save=instance.mode == IMPORT_PROCESS,
-                        date_range=(instance.date_from, instance.date_to),
-                        fail_silently=True
-                    )
-
-                    instance.currency_histories = create_currency_price_history(
-                        task=instance.task_object,
-                        currencies=instance.currencies,
-                        save=instance.mode == IMPORT_PROCESS,
-                        date_range=(instance.date_from, instance.date_to),
-                        fail_silently=True
-                    )
+                    # instance.instrument_histories = create_instrument_price_history(
+                    #     task=instance.task_object,
+                    #     instruments=instance.instruments,
+                    #     save=instance.mode == IMPORT_PROCESS,
+                    #     date_range=(instance.date_from, instance.date_to),
+                    #     fail_silently=True
+                    # )
+                    #
+                    # instance.currency_histories = create_currency_price_history(
+                    #     task=instance.task_object,
+                    #     currencies=instance.currencies,
+                    #     save=instance.mode == IMPORT_PROCESS,
+                    #     date_range=(instance.date_from, instance.date_to),
+                    #     fail_silently=True
+                    # )
+                    pass
                 except formula.InvalidExpression:
                     raise ValidationError('Invalid pricing policy expression')
         else:

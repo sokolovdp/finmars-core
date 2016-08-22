@@ -82,7 +82,7 @@ class InstrumentDownloadSchemeAttributeInline(admin.TabularInline):
 
 class InstrumentDownloadSchemeAdmin(HistoricalAdmin):
     model = InstrumentDownloadScheme
-    list_display = ['id', 'master_user', 'scheme_name', 'provider', ]
+    list_display = ['id', 'master_user', 'scheme_name', 'provider', 'fields0']
     list_select_related = ['master_user', 'provider', ]
     raw_id_fields = ['master_user', ]
     search_fields = ['scheme_name', ]
@@ -90,6 +90,15 @@ class InstrumentDownloadSchemeAdmin(HistoricalAdmin):
         InstrumentDownloadSchemeInputInline,
         InstrumentDownloadSchemeAttributeInline,
     ]
+    save_as = True
+
+    def fields0(self, obj):
+        f = obj.fields
+        if f:
+            return ', '.join(f)
+        return None
+
+    fields0.short_description = _('fields')
 
 
 admin.site.register(InstrumentDownloadScheme, InstrumentDownloadSchemeAdmin)
@@ -182,17 +191,6 @@ class InstrumentAttributeValueMappingAdmin(admin.ModelAdmin):
         return obj.attribute_type.master_user
 
     master_user.admin_order_field = 'attribute_type__master_user__name'
-
-    # provider = models.ForeignKey(ProviderClass)
-    # value = models.CharField(max_length=255)
-    #
-    # attribute_type = models.ForeignKey('instruments.InstrumentAttributeType', on_delete=models.PROTECT,
-    #                                    verbose_name=_('attribute type'))
-    # value_string = models.CharField(max_length=255, null=True, blank=True, verbose_name=_('value (String)'))
-    # value_float = models.FloatField(null=True, blank=True, verbose_name=_('value (Float)'))
-    # value_date = models.DateField(null=True, blank=True, verbose_name=_('value (Date)'))
-    # classifier = models.ForeignKey('instruments.InstrumentClassifier', on_delete=models.PROTECT, null=True, blank=True,
-    #                                verbose_name=_('classifier'))
 
 
 admin.site.register(InstrumentAttributeValueMapping, InstrumentAttributeValueMappingAdmin)

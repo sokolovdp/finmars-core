@@ -15,6 +15,10 @@ from poms.obj_attrs.models import AbstractAttributeType
 _l = getLogger('poms.integrations')
 
 
+class ProviderException(Exception):
+    pass
+
+
 class AbstractProvider(object):
     def parse_date(self, v):
         if v is not None:
@@ -129,11 +133,26 @@ class AbstractProvider(object):
         if save:
             instr.save()
 
+        instr._attributes = self.create_instrument_attributes(
+            task=task, instrument=instr, values=values, save=save)
+
+        instr._accrual_calculation_schedules = self.create_accrual_calculation_schedules(
+            task=task, instrument=instr, values=values, save=save)
+
+        instr._factor_schedules = self.create_factor_schedules(
+            task=task, instrument=instr, values=values, save=save)
+
+        return instr
+
+    def create_instrument_attributes(self, task, instrument, values, save=False):
         iattrs = []
+        master_user = task.master_user
+        scheme = task.instrument_download_scheme
+        provider = task.provider
         for attr in scheme.attributes.select_related('attribute_type').all():
             tattr = attr.attribute_type
 
-            iattr = InstrumentAttribute(content_object=instr, attribute_type=tattr)
+            iattr = InstrumentAttribute(content_object=instrument, attribute_type=tattr)
             iattrs.append(iattr)
 
             if attr.value:
@@ -164,34 +183,20 @@ class AbstractProvider(object):
             if save:
                 iattr.save()
 
-        instr._attributes = iattrs
+        return iattrs
 
-        accrual_calculation_schedule_method = scheme.accrual_calculation_schedule_method_id
-        instr._accrual_calculation_schedules = self.create_accrual_calculation_schedules(
-            task=task,
-            instrument=instr,
-            values=values,
-            accrual_calculation_schedule_method=accrual_calculation_schedule_method,
-            save=save
-        )
-
-        factor_schedule_method = scheme.factor_schedule_method_id
-        instr._factor_schedules = self.create_factor_schedules(
-            task=task,
-            instrument=instr,
-            values=values,
-            factor_schedule_method=factor_schedule_method,
-            save=save
-        )
-
-        return instr
-
-    def create_accrual_calculation_schedules(self, task, instrument, values, accrual_calculation_schedule_method=None,
-                                             save=False):
+    def create_accrual_calculation_schedules(self, task, instrument, values, save=False):
         return []
 
-    def create_factor_schedules(self, task, instrument, values, factor_schedule_method=None, save=False):
+    def create_factor_schedules(self, task, instrument, values, save=False):
         return []
+
+    def create_instrument_async(self,
+                                # request attrs
+                                instrument_code=None, instrument_download_scheme=None, master_user=None, member=None,
+                                # wait response attrs
+                                task=None, value_overrides=None, save=False):
+        return None, None
 
 
 def get_provider(master_user=None, provider=None, task=None):

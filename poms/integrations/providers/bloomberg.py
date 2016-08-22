@@ -1,4 +1,5 @@
 import base64
+import json
 import logging
 import uuid
 from datetime import timedelta, datetime
@@ -8,18 +9,18 @@ from time import sleep
 import requests
 import six
 from OpenSSL import crypto
+from celery import chain
 from dateutil import parser
 from django.conf import settings
-from django.db import IntegrityError
+from django.core.serializers.json import DjangoJSONEncoder
+from django.db import transaction
 from suds.client import Client
 from suds.transport import Reply
 from suds.transport.http import HttpAuthenticated
 
-from poms.common import formula
-from poms.currencies.models import CurrencyHistory
-from poms.instruments.models import PriceHistory, AccrualCalculationSchedule, Periodicity, InstrumentFactorSchedule
+from poms.instruments.models import AccrualCalculationSchedule, Periodicity, InstrumentFactorSchedule
 from poms.integrations.models import Task, FactorScheduleDownloadMethod, AccrualScheduleDownloadMethod, ProviderClass
-from poms.integrations.providers.base import AbstractProvider
+from poms.integrations.providers.base import AbstractProvider, ProviderException
 
 __author__ = 'alyakhov'
 
@@ -29,7 +30,7 @@ _l = logging.getLogger('poms.integrations.providers.bloomberg')
 # _l = getLogger(__name__)
 
 
-class BloombergException(Exception):
+class BloombergException(ProviderException):
     pass
 
 
@@ -202,7 +203,7 @@ class BloombergDataProvider(AbstractProvider):
         instr_yellowkey = instr[1]
         return {"id": instr_id, "yellowkey": instr_yellowkey,}
 
-    def instrument_add_fields(self, fields, factor_schedule_method=None, accrual_calculation_schedule_method=None):
+    def _instrument_add_fields(self, fields, factor_schedule_method=None, accrual_calculation_schedule_method=None):
         if factor_schedule_method == FactorScheduleDownloadMethod.DEFAULT:
             fields = fields + ['FACTOR_SCHEDULE']
 
@@ -246,8 +247,48 @@ class BloombergDataProvider(AbstractProvider):
         self._response_is_valid(response)
         return response
 
-    def get_instrument_send_request(self, instrument, fields, factor_schedule_method=None,
-                                    accrual_calculation_schedule_method=None):
+    def create_instrument_async(self,
+                                # request attrs
+                                instrument_code=None, instrument_download_scheme=None, master_user=None, member=None,
+                                # wait response attrs
+                                task=None, value_overrides=None, save=False):
+        if task is None:
+            from poms.integrations.tasks import bloomberg_send_request, bloomberg_wait_reponse
+
+            if not master_user:
+                master_user = instrument_download_scheme.master_user
+
+            fields = instrument_download_scheme.fields
+            fields = self._instrument_add_fields(
+                fields=fields,
+                factor_schedule_method=instrument_download_scheme.factor_schedule_method_id,
+                accrual_calculation_schedule_method=instrument_download_scheme.accrual_calculation_schedule_method_id
+            )
+
+            kwargs = {
+                'instrument': instrument_code,
+                'fields': fields
+            }
+            with transaction.atomic():
+                task = Task.objects.create(
+                    master_user=master_user,
+                    member=member,
+                    provider_id=ProviderClass.BLOOMBERG,
+                    status=Task.STATUS_PENDING,
+                    action=Task.ACTION_INSTRUMENT,
+                    instrument_code=instrument_code,
+                    instrument_download_scheme=instrument_download_scheme,
+                    kwargs=json.dumps(kwargs, cls=DjangoJSONEncoder, sort_keys=True, indent=1)
+                )
+                transaction.on_commit(
+                    lambda: chain(bloomberg_send_request.s(task.pk), bloomberg_wait_reponse.s()).apply_async())
+        else:
+            if task.status == Task.STATUS_DONE:
+                instrument = self.create_instrument(task, value_overrides, save=save)
+                return task, instrument
+        return task, None
+
+    def get_instrument_send_request(self, instrument, fields):
         """
         Get single instrument data using instrument ISIN and industry code. Async mode. Instrument data should be
         retrieved by get_instrument_get_response further call.
@@ -258,12 +299,8 @@ class BloombergDataProvider(AbstractProvider):
         @return: response id, used by get_instrument_get_response method
         @rtype: str
         """
-        _l.debug('> get_instrument_send_request: instrument="%s", fields=%s, factor_schedule_method=%s, '
-                 'accrual_calculation_schedule_method=%s',
-                 instrument, fields, factor_schedule_method, accrual_calculation_schedule_method)
-
-        fields = self.instrument_add_fields(fields=fields, factor_schedule_method=factor_schedule_method,
-                                            accrual_calculation_schedule_method=accrual_calculation_schedule_method)
+        _l.debug('> get_instrument_send_request: instrument="%s", fields=%s',
+                 instrument, fields)
 
         if not instrument or not fields:
             _l.debug('< response_id=%s', None)
@@ -344,7 +381,7 @@ class BloombergDataProvider(AbstractProvider):
                                  request_kwargs={'instrument': instrument, 'fields': fields},
                                  response_func=self.get_instrument_get_response)
 
-    def get_pricing_latest_send_request(self, instruments, currencies, fields):
+    def get_pricing_latest_send_request(self, instruments, fields):
         """
         Async method to get pricing data. Would return response id, used in
         get_pricing_latest_get_response method.
@@ -357,10 +394,9 @@ class BloombergDataProvider(AbstractProvider):
         """
         _l.debug('> get_pricing_latest_send_request: instrument=%s', instruments)
 
-        instrs = (instruments or []) + (currencies or [])
         # fields = ['PX_YEST_BID', 'PX_YEST_ASK', 'PX_YEST_CLOSE', 'PX_CLOSE_1D', 'ACCRUED_FACTOR', 'CPN', 'SECURITY_TYP']
 
-        if not instrs or not fields:
+        if not instruments or not fields:
             _l.debug('< response_id=%s', None)
             return None
 
@@ -368,7 +404,7 @@ class BloombergDataProvider(AbstractProvider):
         fields_data.field = fields
 
         instruments_data = self.soap_client.factory.create('Instruments')
-        for code in instrs:
+        for code in instruments:
             instruments_data.instrument.append(self._bbg_instr(code))
 
         response = self.soap_client.service.submitGetDataRequest(
@@ -417,7 +453,7 @@ class BloombergDataProvider(AbstractProvider):
             return result
         return None
 
-    def get_pricing_latest_sync(self, instruments, currencies, fields):
+    def get_pricing_latest_sync(self, instruments, fields):
         """
         Sync method to get pricing data. Would block until response is ready.
         @param instruments: list of instrument tuples. Each tuple - (ISIN,Insustry)
@@ -430,12 +466,11 @@ class BloombergDataProvider(AbstractProvider):
                                  request_func=self.get_pricing_latest_send_request,
                                  request_kwargs={
                                      'instruments': instruments,
-                                     'currencies': currencies,
                                      'fields': fields
                                  },
                                  response_func=self.get_pricing_latest_get_response)
 
-    def get_pricing_history_send_request(self, instruments, currencies, fields, date_from, date_to):
+    def get_pricing_history_send_request(self, instruments, fields, date_from, date_to):
         """
         Async retrieval of historical pricing data. Return None is data is not ready.
         @param date_from: start of historical range
@@ -450,9 +485,7 @@ class BloombergDataProvider(AbstractProvider):
         _l.debug('> get_pricing_history_send_request: instrument=%s, date_from=%s, date_to=%s',
                  instruments, date_from, date_to)
 
-        instrs = (instruments or []) + (currencies or [])
-
-        if not instrs or not fields or not date_from or not date_to:
+        if not instruments or not fields or not date_from or not date_to:
             _l.debug('< response_id=%s', None)
             return None
 
@@ -473,7 +506,7 @@ class BloombergDataProvider(AbstractProvider):
         fields_data.field = fields
 
         instruments_data = self.soap_client.factory.create('Instruments')
-        for code in instrs:
+        for code in instruments:
             instruments_data.instrument.append(self._bbg_instr(code))
 
         response = self.soap_client.service.submitGetHistoryRequest(
@@ -523,7 +556,7 @@ class BloombergDataProvider(AbstractProvider):
             return result
         return None
 
-    def get_pricing_history_sync(self, instruments, currencies, fields, date_from, date_to):
+    def get_pricing_history_sync(self, instruments, fields, date_from, date_to):
         """
         Sync method to get historical pricing data. Would block until response is ready.
         @param date_from: start of historical range
@@ -540,17 +573,16 @@ class BloombergDataProvider(AbstractProvider):
                                  request_func=self.get_pricing_history_send_request,
                                  request_kwargs={
                                      'instruments': instruments,
-                                     'currencies': currencies,
                                      'fields': fields,
                                      'date_from': date_from,
                                      'date_to': date_to
                                  },
                                  response_func=self.get_pricing_history_get_response)
 
-    def create_accrual_calculation_schedules(self, task, instrument, values, accrual_calculation_schedule_method=None,
-                                             save=False):
+    def create_accrual_calculation_schedules(self, task, instrument, values, save=False):
+        accrual_calculation_schedule_method = task.instrument_download_scheme.accrual_calculation_schedule_method_id
         if accrual_calculation_schedule_method != AccrualScheduleDownloadMethod.DEFAULT:
-            return
+            return []
         start_acc_dt = values['START_ACC_DT']
         first_cpn_dt = values['FIRST_CPN_DT']
         cpn = values['CPN']
@@ -558,28 +590,25 @@ class BloombergDataProvider(AbstractProvider):
         cpn_freq = values['CPN_FREQ']
         multi_cpn_schedule = values['MULTI_CPN_SCHEDULE']
 
-        is_multi_cpn_schedule = multi_cpn_schedule \
-                                and not isinstance(multi_cpn_schedule, six.string_types) \
-                                and isinstance(multi_cpn_schedule, (tuple, list))
+        # multi_cpn_schedule = [
+        #     ['08/20/2017', '5.0000'],
+        #     ['02/20/2038', '6.7670']
+        # ]
+
+        is_multi_cpn_schedule = multi_cpn_schedule and \
+                                not isinstance(multi_cpn_schedule, six.string_types) and \
+                                isinstance(multi_cpn_schedule, (tuple, list))
 
         accrual_start_date = self.parse_date(start_acc_dt)
         first_payment_date = self.parse_date(first_cpn_dt)
         accrual_size = self.parse_float(cpn)
 
-        # TODO: map day_cnt ->  AccrualCalculationModel
-        accrual_calculation_model = self.get_accrual_calculation_model(instrument.master_user, ProviderClass.BLOOMBERG,
-                                                                       day_cnt)
-
-        # TODO: map cpn_freq -> Periodicity
+        accrual_calculation_model = self.get_accrual_calculation_model(
+            instrument.master_user, ProviderClass.BLOOMBERG, day_cnt)
         periodicity = self.get_periodicity(instrument.master_user, ProviderClass.BLOOMBERG, cpn_freq)
 
         accrual_calculation_schedules = []
         if is_multi_cpn_schedule:
-
-            # multi_cpn_schedule = [
-            #     ['08/20/2017', '5.0000'],
-            #     ['02/20/2038', '6.7670']
-            # ]
 
             for row in multi_cpn_schedule:
                 accrual_size = self.parse_float(row[1])
@@ -623,14 +652,17 @@ class BloombergDataProvider(AbstractProvider):
 
         return accrual_calculation_schedules
 
-    def create_factor_schedules(self, task, instrument, values, factor_schedule_method=None, save=False):
+    def create_factor_schedules(self, task, instrument, values, save=False):
+        factor_schedule_method = task.instrument_download_scheme.factor_schedule_method_id
         if factor_schedule_method != FactorScheduleDownloadMethod.DEFAULT:
-            return
-        # FACTOR_SCHEDULE = [
+            return []
+
+        factor_schedule = values['FACTOR_SCHEDULE']
+
+        # factor_schedule = [
         #     ['03/20/2013', '1.000000000'],
         #     ['08/20/2019', '.973684211'],
         # ]
-        factor_schedule = values['FACTOR_SCHEDULE']
 
         if factor_schedule and isinstance(factor_schedule, (list, tuple)):
             factor_schedules = []
@@ -665,23 +697,20 @@ class FakeBloombergDataProvider(BloombergDataProvider):
         from django.core.cache import caches
         self._cache = caches['default']
 
-    def _new_response_id(self):
+    @staticmethod
+    def _new_response_id():
         return uuid.uuid4().hex
 
-    def _make_key(self, key):
+    @staticmethod
+    def _make_key(key):
         return 'bloomberg.fake.%s' % key
 
     def get_fields(self):
         return 'fake'
 
-    def get_instrument_send_request(self, instrument, fields, factor_schedule_method=None,
-                                    accrual_calculation_schedule_method=None):
-        _l.debug('> get_instrument_send_request: instrument="%s", fields=%s, factor_schedule_method=%s,'
-                 ' accrual_calculation_schedule_method=%s',
-                 instrument, fields, factor_schedule_method, accrual_calculation_schedule_method)
-
-        fields = self.instrument_add_fields(fields=fields, factor_schedule_method=factor_schedule_method,
-                                            accrual_calculation_schedule_method=accrual_calculation_schedule_method)
+    def get_instrument_send_request(self, instrument, fields):
+        _l.debug('> get_instrument_send_request: instrument="%s", fields=%s', instrument, fields)
+        fields = self._instrument_add_fields(fields=fields)
         if not instrument or not fields:
             _l.debug('< response_id=%s', None)
             return None
@@ -714,7 +743,7 @@ class FakeBloombergDataProvider(BloombergDataProvider):
 
         instr = req['instrument'].split(maxsplit=2)
         instr_id = instr[0]
-        instr_yellowkey = instr[1]
+        # instr_yellowkey = instr[1]
 
         fake_data = {
             "ACCRUED_FACTOR": "1.000000000",
@@ -736,7 +765,7 @@ class FakeBloombergDataProvider(BloombergDataProvider):
             "FIRST_SETTLE_DT": "06/16/2016",
             "ID_BB_GLOBAL": "BBG00D2QX2B8",
             "ID_CUSIP": "LW4068711",
-            "ID_ISIN": "XS1433454243",
+            "ID_ISIN": instr_id,
             "INDUSTRY_SECTOR": "Industrial",
             "INDUSTRY_SUBGROUP": "Transport-Marine",
             "INT_ACC_DT": "06/16/2016",
@@ -748,8 +777,6 @@ class FakeBloombergDataProvider(BloombergDataProvider):
             "SECURITY_DES": "SCFRU 5 3/8 06/16/23",
             "SECURITY_TYP": "EURO-DOLLAR",
         }
-
-        fake_data['ID_ISIN'] = instr_id
 
         code = req['instrument']
         if 'cpn' in code or 'USP16394AG62' in code:
@@ -810,12 +837,11 @@ class FakeBloombergDataProvider(BloombergDataProvider):
         _l.debug('< result=%s', result)
         return result
 
-    def get_pricing_latest_send_request(self, instruments, currencies, fields):
-        _l.debug('> get_pricing_latest_send_request: instruments=%s, currencies=%s,fields=%s',
-                 instruments, currencies, fields)
+    def get_pricing_latest_send_request(self, instruments, fields):
+        _l.debug('> get_pricing_latest_send_request: instruments=%s, fields=%s',
+                 instruments, fields)
 
-        instrs = (instruments or []) + (currencies or [])
-        if not instrs or not fields:
+        if not instruments or not fields:
             _l.debug('< response_id=%s', None)
             return None
 
@@ -828,7 +854,6 @@ class FakeBloombergDataProvider(BloombergDataProvider):
         self._cache.set(key, {
             'action': 'pricing_latest',
             'instruments': instruments,
-            'currencies': currencies,
             'fields': fields,
             'response_id': response_id,
         }, timeout=30)
@@ -877,12 +902,11 @@ class FakeBloombergDataProvider(BloombergDataProvider):
         _l.debug('< result=%s', result)
         return result
 
-    def get_pricing_history_send_request(self, instruments, currencies, fields, date_from, date_to):
+    def get_pricing_history_send_request(self, instruments, fields, date_from, date_to):
         _l.debug('> get_pricing_history_send_request: instrument=%s, date_from=%s, date_to=%s',
                  instruments, date_from, date_to)
 
-        instrs = (instruments or []) + (currencies or [])
-        if not instrs or not fields or not date_from or not date_to:
+        if not instruments or not fields or not date_from or not date_to:
             _l.debug('< response_id=%s', None)
             return None
 
@@ -895,7 +919,6 @@ class FakeBloombergDataProvider(BloombergDataProvider):
         self._cache.set(key, {
             'action': 'pricing_history',
             'instruments': instruments,
-            'currencies': currencies,
             'fields': fields,
             'date_from': '%s' % date_from,
             'date_to': '%s' % date_to,
@@ -950,7 +973,6 @@ class FakeBloombergDataProvider(BloombergDataProvider):
                 d += timedelta(days=1)
         _l.debug('< result=%s', result)
         return result
-
 
 # def fix_pricing_latest(value):
 #     ret = {
@@ -1022,194 +1044,194 @@ class FakeBloombergDataProvider(BloombergDataProvider):
 #     return value.strftime(value, '%Y-%m-%d')
 
 
-def create_instrument_price_history(task, instruments=None, pricing_policies=None, save=False,
-                                    fail_silently=True, delete_exists=False, date_range=None, bulk=False,
-                                    expr_fail_silently=False):
-    _l.debug('> create_instrument_price_history: task_id=%s', task.id)
-
-    kwargs = task.kwargs_object
-    result = task.result_object
-
-    if instruments is None:
-        instruments = list(task.master_user.instruments.all())
-    instr_map = {six.text_type(i.id): i for i in instruments}
-
-    if pricing_policies is None:
-        pricing_policies = task.master_user.pricing_policies.all()
-    pricing_policies = [pp for pp in pricing_policies if pp.expr]
-
-    if delete_exists and date_range:
-        PriceHistory.objects.filter(instrument__in=instruments, date__range=date_range).delete()
-    exists = set()
-    if fail_silently and date_range and not delete_exists:
-        for p in PriceHistory.objects.filter(instrument__in=instruments, date__range=date_range):
-            exists.add(
-                (p.instrument_id, p.pricing_policy_id, p.date)
-            )
-
-    histories = []
-
-    def _create(instr, price_data, price_date):
-        for pp in pricing_policies:
-            if not pp.expr:
-                continue
-            p = PriceHistory()
-            p.instrument = instr
-            if price_date is not None:
-                p.date = price_date
-            else:
-                p.date = str_to_date(price_data['DATE'])
-            p.pricing_policy = pp
-            try:
-                p.principal_price = formula.safe_eval(pp.expr, names=price_data)
-            except formula.InvalidExpression:
-                if expr_fail_silently:
-                    continue
-                else:
-                    raise
-            p.accrued_price = 0.0
-            p.factor = price_data['ACCRUED_FACTOR'] if 'ACCRUED_FACTOR' in price_data else 1.0
-
-            if fail_silently and (p.instrument_id, p.pricing_policy_id, p.date) in exists:
-                continue
-
-            if save and not bulk:
-                try:
-                    p.save()
-                except IntegrityError:
-                    if not fail_silently:
-                        raise
-
-            histories.append(p)
-
-    for instr_code, values in result.items():
-        instr = instr_map.get(instr_code, None)
-        if instr is None:
-            continue
-
-        if task.action == Task.ACTION_PRICING_LATEST:
-            values = fix_pricing_latest(values)
-            _create(instr, values, price_date=kwargs['date_from'])
-
-        elif task.action == Task.ACTION_PRICE_HISTORY:
-            for pd in values:
-                pd = fix_price_history(pd)
-                _create(instr, pd, price_date=None)
-
-        else:
-            raise RuntimeError('Invalid action "%s" in task "%s"' % (task.action, task.id))
-
-    if save and bulk:
-        PriceHistory.objects.bulk_create(histories)
-
-    _l.debug('< %s', histories)
-
-    return histories
-
-
-def create_currency_price_history(task, currencies=None, pricing_policies=None, save=False,
-                                  fail_silently=False, delete_exists=False, date_range=None, bulk=False,
-                                  expr_fail_silently=False):
-    _l.debug('> create_currency_price_history: task_id=%s', task.id)
-
-    kwargs = task.kwargs_object
-    result = task.result_object
-
-    if currencies is None:
-        currencies = list(task.master_user.currencies.all())
-
-    ccy_map = {six.text_type(i.id): i for i in currencies}
-
-    if pricing_policies is None:
-        pricing_policies = list(task.master_user.pricing_policies.all())
-    pricing_policies = [pp for pp in pricing_policies if pp.expr]
-
-    if delete_exists and date_range:
-        CurrencyHistory.objects.filter(currency__in=currencies, date__range=date_range).delete()
-    exists = set()
-    if fail_silently and date_range and not delete_exists:
-        for p in CurrencyHistory.objects.filter(currency__in=currencies, date__range=date_range):
-            exists.add(
-                (p.currency_id, p.pricing_policy_id, p.date)
-            )
-
-    histories = []
-
-    def _create(ccy, price_data, price_date):
-        for pp in pricing_policies:
-            if not pp.expr:
-                continue
-            p = CurrencyHistory()
-            p.currency = ccy
-            if price_date:
-                p.date = price_date
-            else:
-                p.date = str_to_date(price_data['DATE'])
-            p.pricing_policy = pp
-            try:
-                p.fx_rate = formula.safe_eval(pp.expr, names=price_data)
-            except formula.InvalidExpression:
-                if expr_fail_silently:
-                    continue
-                else:
-                    raise
-
-            if fail_silently and (p.currency_id, p.pricing_policy_id, p.date) in exists:
-                continue
-
-            if save and not bulk:
-                try:
-                    p.save()
-                except IntegrityError:
-                    if not fail_silently:
-                        raise
-
-            histories.append(p)
-
-    for ccy_code, values in result.items():
-        ccy = ccy_map.get(ccy_code, None)
-        if ccy is None:
-            continue
-
-        if task.action == Task.ACTION_PRICING_LATEST:
-            values = fix_pricing_latest(values)
-            _create(ccy, values, price_date=kwargs['date_from'])
-
-        elif task.action == Task.ACTION_PRICE_HISTORY:
-            for pd in values:
-                pd = fix_price_history(pd)
-                _create(ccy, pd, price_date=None)
-
-        else:
-            raise RuntimeError('Invalid action "%s" in task "%s"' % (task.action, task.id))
-
-            # for pd in values:
-            #     pd = map_func(pd)
-            #     for pp in pricing_policies:
-            #         p = CurrencyHistory()
-            #         p.currency = ccy
-            #         if fixed_date:
-            #             p.date = fixed_date
-            #         else:
-            #             p.date = str_to_date(pd['DATE'])
-            #         p.pricing_policy = pp
-            #         p.fx_rate = formula.safe_eval(pp.expr, names=pd)
-            #
-            #         if fail_silently and (p.currency_id, p.pricing_policy_id, p.date) in exists:
-            #             continue
-            #
-            #         if save and not bulk:
-            #             try:
-            #                 p.save()
-            #             except IntegrityError:
-            #                 if not fail_silently:
-            #                     raise
-            #
-            #         histories.append(p)
-
-    if save and bulk:
-        PriceHistory.objects.bulk_create(histories)
-
-    _l.debug('< %s', histories)
-
-    return histories
+# def create_instrument_price_history(task, instruments=None, pricing_policies=None, save=False,
+#                                     fail_silently=True, delete_exists=False, date_range=None, bulk=False,
+#                                     expr_fail_silently=False):
+#     _l.debug('> create_instrument_price_history: task_id=%s', task.id)
+#
+#     kwargs = task.kwargs_object
+#     result = task.result_object
+#
+#     if instruments is None:
+#         instruments = list(task.master_user.instruments.all())
+#     instr_map = {six.text_type(i.id): i for i in instruments}
+#
+#     if pricing_policies is None:
+#         pricing_policies = task.master_user.pricing_policies.all()
+#     pricing_policies = [pp for pp in pricing_policies if pp.expr]
+#
+#     if delete_exists and date_range:
+#         PriceHistory.objects.filter(instrument__in=instruments, date__range=date_range).delete()
+#     exists = set()
+#     if fail_silently and date_range and not delete_exists:
+#         for p in PriceHistory.objects.filter(instrument__in=instruments, date__range=date_range):
+#             exists.add(
+#                 (p.instrument_id, p.pricing_policy_id, p.date)
+#             )
+#
+#     histories = []
+#
+#     def _create(instr, price_data, price_date):
+#         for pp in pricing_policies:
+#             if not pp.expr:
+#                 continue
+#             p = PriceHistory()
+#             p.instrument = instr
+#             if price_date is not None:
+#                 p.date = price_date
+#             else:
+#                 p.date = str_to_date(price_data['DATE'])
+#             p.pricing_policy = pp
+#             try:
+#                 p.principal_price = formula.safe_eval(pp.expr, names=price_data)
+#             except formula.InvalidExpression:
+#                 if expr_fail_silently:
+#                     continue
+#                 else:
+#                     raise
+#             p.accrued_price = 0.0
+#             p.factor = price_data['ACCRUED_FACTOR'] if 'ACCRUED_FACTOR' in price_data else 1.0
+#
+#             if fail_silently and (p.instrument_id, p.pricing_policy_id, p.date) in exists:
+#                 continue
+#
+#             if save and not bulk:
+#                 try:
+#                     p.save()
+#                 except IntegrityError:
+#                     if not fail_silently:
+#                         raise
+#
+#             histories.append(p)
+#
+#     for instr_code, values in result.items():
+#         instr = instr_map.get(instr_code, None)
+#         if instr is None:
+#             continue
+#
+#         if task.action == Task.ACTION_PRICING_LATEST:
+#             values = fix_pricing_latest(values)
+#             _create(instr, values, price_date=kwargs['date_from'])
+#
+#         elif task.action == Task.ACTION_PRICE_HISTORY:
+#             for pd in values:
+#                 pd = fix_price_history(pd)
+#                 _create(instr, pd, price_date=None)
+#
+#         else:
+#             raise RuntimeError('Invalid action "%s" in task "%s"' % (task.action, task.id))
+#
+#     if save and bulk:
+#         PriceHistory.objects.bulk_create(histories)
+#
+#     _l.debug('< %s', histories)
+#
+#     return histories
+#
+#
+# def create_currency_price_history(task, currencies=None, pricing_policies=None, save=False,
+#                                   fail_silently=False, delete_exists=False, date_range=None, bulk=False,
+#                                   expr_fail_silently=False):
+#     _l.debug('> create_currency_price_history: task_id=%s', task.id)
+#
+#     kwargs = task.kwargs_object
+#     result = task.result_object
+#
+#     if currencies is None:
+#         currencies = list(task.master_user.currencies.all())
+#
+#     ccy_map = {six.text_type(i.id): i for i in currencies}
+#
+#     if pricing_policies is None:
+#         pricing_policies = list(task.master_user.pricing_policies.all())
+#     pricing_policies = [pp for pp in pricing_policies if pp.expr]
+#
+#     if delete_exists and date_range:
+#         CurrencyHistory.objects.filter(currency__in=currencies, date__range=date_range).delete()
+#     exists = set()
+#     if fail_silently and date_range and not delete_exists:
+#         for p in CurrencyHistory.objects.filter(currency__in=currencies, date__range=date_range):
+#             exists.add(
+#                 (p.currency_id, p.pricing_policy_id, p.date)
+#             )
+#
+#     histories = []
+#
+#     def _create(ccy, price_data, price_date):
+#         for pp in pricing_policies:
+#             if not pp.expr:
+#                 continue
+#             p = CurrencyHistory()
+#             p.currency = ccy
+#             if price_date:
+#                 p.date = price_date
+#             else:
+#                 p.date = str_to_date(price_data['DATE'])
+#             p.pricing_policy = pp
+#             try:
+#                 p.fx_rate = formula.safe_eval(pp.expr, names=price_data)
+#             except formula.InvalidExpression:
+#                 if expr_fail_silently:
+#                     continue
+#                 else:
+#                     raise
+#
+#             if fail_silently and (p.currency_id, p.pricing_policy_id, p.date) in exists:
+#                 continue
+#
+#             if save and not bulk:
+#                 try:
+#                     p.save()
+#                 except IntegrityError:
+#                     if not fail_silently:
+#                         raise
+#
+#             histories.append(p)
+#
+#     for ccy_code, values in result.items():
+#         ccy = ccy_map.get(ccy_code, None)
+#         if ccy is None:
+#             continue
+#
+#         if task.action == Task.ACTION_PRICING_LATEST:
+#             values = fix_pricing_latest(values)
+#             _create(ccy, values, price_date=kwargs['date_from'])
+#
+#         elif task.action == Task.ACTION_PRICE_HISTORY:
+#             for pd in values:
+#                 pd = fix_price_history(pd)
+#                 _create(ccy, pd, price_date=None)
+#
+#         else:
+#             raise RuntimeError('Invalid action "%s" in task "%s"' % (task.action, task.id))
+#
+#             # for pd in values:
+#             #     pd = map_func(pd)
+#             #     for pp in pricing_policies:
+#             #         p = CurrencyHistory()
+#             #         p.currency = ccy
+#             #         if fixed_date:
+#             #             p.date = fixed_date
+#             #         else:
+#             #             p.date = str_to_date(pd['DATE'])
+#             #         p.pricing_policy = pp
+#             #         p.fx_rate = formula.safe_eval(pp.expr, names=pd)
+#             #
+#             #         if fail_silently and (p.currency_id, p.pricing_policy_id, p.date) in exists:
+#             #             continue
+#             #
+#             #         if save and not bulk:
+#             #             try:
+#             #                 p.save()
+#             #             except IntegrityError:
+#             #                 if not fail_silently:
+#             #                     raise
+#             #
+#             #         histories.append(p)
+#
+#     if save and bulk:
+#         PriceHistory.objects.bulk_create(histories)
+#
+#     _l.debug('< %s', histories)
+#
+#     return histories
