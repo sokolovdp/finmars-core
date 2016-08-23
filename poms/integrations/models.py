@@ -4,6 +4,7 @@ import json
 import uuid
 from logging import getLogger
 
+from django.core.serializers.json import DjangoJSONEncoder
 from django.db import models
 from django.utils.encoding import python_2_unicode_compatible
 from django.utils.translation import ugettext_lazy as _
@@ -375,21 +376,21 @@ class PeriodicityMapping(AbstractMapping):
 
 @python_2_unicode_compatible
 class Task(TimeStampedModel):
-    ACTION_INSTRUMENT = 1
-    ACTION_PRICING_LATEST = 2
-    ACTION_PRICE_HISTORY = 3
-    ACTION_CHOICES = (
-        (ACTION_INSTRUMENT, 'instrument'),
-        (ACTION_PRICING_LATEST, 'pricing_latest'),
-        (ACTION_PRICE_HISTORY, 'pricing_history'),
-    )
+    ACTION_INSTRUMENT = 'instrument'
+    ACTION_PRICING_LATEST = 'pricing_latest'
+    ACTION_PRICE_HISTORY = 'pricing_history'
+    # ACTION_CHOICES = (
+    #     (ACTION_INSTRUMENT, 'instrument'),
+    #     (ACTION_PRICING_LATEST, 'pricing_latest'),
+    #     (ACTION_PRICE_HISTORY, 'pricing_history'),
+    # )
 
-    STATUS_PENDING = 0
-    STATUS_REQUEST_SENT = 1
-    STATUS_WAIT_RESPONSE = 2
-    STATUS_DONE = 3
-    STATUS_ERROR = -1
-    STATUS_TIMEOUT = -2
+    STATUS_PENDING = 'P'
+    STATUS_REQUEST_SENT = 'S'
+    STATUS_WAIT_RESPONSE = 'W'
+    STATUS_DONE = 'D'
+    STATUS_ERROR = 'E'
+    STATUS_TIMEOUT = 'T'
     STATUS_CHOICES = (
         (STATUS_PENDING, 'PENDING'),
         (STATUS_REQUEST_SENT, 'REQUEST_SENT'),
@@ -402,45 +403,62 @@ class Task(TimeStampedModel):
     master_user = models.ForeignKey('users.MasterUser', related_name='bloomberg_tasks')
     member = models.ForeignKey('users.Member', related_name='bloomberg_tasks', null=True, blank=True)
 
-    status = models.SmallIntegerField(default=STATUS_PENDING, choices=STATUS_CHOICES)
-
+    status = models.CharField(max_length=1, default=STATUS_PENDING, choices=STATUS_CHOICES)
     provider = models.ForeignKey(ProviderClass, null=True, blank=True)
-    action = models.SmallIntegerField(choices=ACTION_CHOICES, db_index=True)
+    action = models.CharField(max_length=20, db_index=True)
 
-    # instrument
-    instrument_code = models.CharField(max_length=100, null=True, blank=True)
-    instrument_download_scheme = models.ForeignKey(InstrumentDownloadScheme, null=True, blank=True,
-                                                   on_delete=models.SET_NULL)
+    # # instrument
+    # instrument_code = models.CharField(max_length=100, null=True, blank=True)
+    # instrument_download_scheme = models.ForeignKey(InstrumentDownloadScheme, null=True, blank=True,
+    #                                                on_delete=models.SET_NULL)
+    #
+    # # pricing
+    # date_from = models.DateField(null=True, blank=True)
+    # date_to = models.DateField(null=True, blank=True)
+    # balance_date = models.DateField(null=True, blank=True)
+    # is_yesterday = models.NullBooleanField()
+    # fill_days = models.IntegerField(null=True, blank=True)
+    # override_existed = models.NullBooleanField()
+    # price_download_scheme
 
-    # pricing
-    date_from = models.DateField(null=True, blank=True)
-    date_to = models.DateField(null=True, blank=True)
-    balance_date = models.DateField(null=True, blank=True)
-    is_yesterday = models.NullBooleanField()
-    fill_days = models.IntegerField(null=True, blank=True)
-    override_existed = models.NullBooleanField()
-
-    kwargs = models.TextField(null=True, blank=True)
+    options = models.TextField(null=True, blank=True)
     result = models.TextField(null=True, blank=True)
-    request_id = models.CharField(max_length=64, null=True, db_index=True)
-    response_id = models.CharField(max_length=64, null=True, db_index=True)
+    request_id = models.CharField(max_length=50, null=True, db_index=True)
+    response_id = models.CharField(max_length=50, null=True, db_index=True)
 
     class Meta:
         verbose_name = _('task')
         verbose_name_plural = _('tasks')
+        index_together = (
+            ('master_user', 'created')
+        )
         ordering = ('-created',)
 
     def __str__(self):
         return '%s' % self.id
 
     @property
-    def kwargs_object(self):
-        if self.kwargs is None:
+    def options_object(self):
+        if self.options is None:
             return None
-        return json.loads(self.kwargs)
+        return json.loads(self.options)
+
+    @options_object.setter
+    def options_object(self, value):
+        if value is None:
+            self.options = None
+        else:
+            self.options = json.dumps(value, cls=DjangoJSONEncoder, sort_keys=True, indent=1)
 
     @property
     def result_object(self):
         if self.result is None:
             return None
         return json.loads(self.result)
+
+    @result_object.setter
+    def result_object(self, value):
+        if value is None:
+            self.result = None
+        else:
+            self.result = json.dumps(value, cls=DjangoJSONEncoder, sort_keys=True, indent=1)

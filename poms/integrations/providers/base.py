@@ -202,11 +202,13 @@ class AbstractProvider(object):
     def create_factor_schedules(self, instrument_download_scheme, instrument, values, save=False):
         return []
 
-        # def create_instrument_pricing(self, price_download_scheme, values, save=False):
-        #     return []
-        #
-        # def create_currency_pricing(self, price_download_scheme, values, save=False):
-        #     return []
+    def create_instrument_pricing(self, price_download_scheme, options, values, instruments, pricing_policies,
+                                  save=False):
+        return []
+
+    def create_currency_pricing(self, price_download_scheme, options, values, currencies, pricing_policies,
+                                save=False):
+        return []
 
 
 def get_provider(master_user=None, provider=None, task=None):

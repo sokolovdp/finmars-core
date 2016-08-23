@@ -1,7 +1,7 @@
 from __future__ import unicode_literals, print_function
 
 import itertools
-import json
+import pprint
 import time
 from collections import defaultdict
 from datetime import timedelta
@@ -14,7 +14,6 @@ from dateutil.rrule import rrule, DAILY
 from django.conf import settings
 from django.core.mail import send_mail as django_send_mail, send_mass_mail as django_send_mass_mail, \
     mail_admins as django_mail_admins, mail_managers as django_mail_managers
-from django.core.serializers.json import DjangoJSONEncoder
 from django.db import transaction
 from django.utils import timezone
 
@@ -22,7 +21,7 @@ from poms.audit.models import AuthLogEntry
 from poms.common import formula
 from poms.currencies.models import Currency, CurrencyHistory
 from poms.instruments.models import Instrument, DailyPricingModel, PricingPolicy, PriceHistory
-from poms.integrations.models import Task, PriceDownloadScheme
+from poms.integrations.models import Task, PriceDownloadScheme, InstrumentDownloadScheme
 from poms.integrations.providers.base import get_provider, parse_date_iso, fill_instrument_price
 from poms.integrations.storage import file_import_storage
 
@@ -135,7 +134,7 @@ def download_instrument_async(self, task_id=None):
         task.save()
         return
 
-    options = task.kwargs_object
+    options = task.options_object
 
     if task.status in [Task.STATUS_PENDING, Task.STATUS_WAIT_RESPONSE]:
         result, is_ready = provider.download_instrument(options)
@@ -147,10 +146,10 @@ def download_instrument_async(self, task_id=None):
 
             if is_ready:
                 task.status = Task.STATUS_DONE
-                task.result = json.dumps(result, cls=DjangoJSONEncoder, sort_keys=True, indent=1)
+                task.result_object = result
             else:
                 task.status = Task.STATUS_WAIT_RESPONSE
-            task.kwargs = json.dumps(options, cls=DjangoJSONEncoder, sort_keys=True, indent=1)
+            task.options_object = options
             task.save()
 
         if not is_ready:
@@ -164,21 +163,20 @@ def download_instrument_async(self, task_id=None):
 def download_instrument(instrument_code=None, instrument_download_scheme=None, master_user=None, member=None,
                         task=None, value_overrides=None, save=False):
     if task is None:
-        kwargs = {
+        options = {
             'instrument_download_scheme_id': instrument_download_scheme.id,
             'instrument_code': instrument_code,
         }
         with transaction.atomic():
-            task = Task.objects.create(
+            task = Task(
                 master_user=master_user,
                 member=member,
                 provider=instrument_download_scheme.provider,
                 status=Task.STATUS_PENDING,
-                action=Task.ACTION_INSTRUMENT,
-                instrument_code=instrument_code,
-                instrument_download_scheme=instrument_download_scheme,
-                kwargs=json.dumps(kwargs, cls=DjangoJSONEncoder, sort_keys=True, indent=1)
+                action=Task.ACTION_INSTRUMENT
             )
+            task.options_object = options
+            task.save()
             transaction.on_commit(
                 lambda: download_instrument_async.apply_async(kwargs={'task_id': task.id}, countdown=1))
         return task, None, False
@@ -186,11 +184,15 @@ def download_instrument(instrument_code=None, instrument_download_scheme=None, m
         if task.status == Task.STATUS_DONE:
             provider = get_provider(task.master_user, task.provider_id)
 
+            options = task.options_object
             values = task.result_object.copy()
             if value_overrides:
                 values.update(value_overrides)
 
-            instrument = provider.create_instrument(task.instrument_download_scheme, values, save=save)
+            instrument_download_scheme_id = options['instrument_download_scheme_id']
+            instrument_download_scheme = InstrumentDownloadScheme.objects.get(pk=instrument_download_scheme_id)
+
+            instrument = provider.create_instrument(instrument_download_scheme, values, save=save)
             return task, instrument, True
         return task, None, False
 
@@ -207,7 +209,7 @@ def download_instrument_pricing_async(self, task_id):
         task.save()
         return
 
-    options = task.kwargs_object
+    options = task.options_object
 
     if task.status in [Task.STATUS_PENDING, Task.STATUS_WAIT_RESPONSE]:
         result, is_ready = provider.download_instrument_pricing(options)
@@ -219,10 +221,10 @@ def download_instrument_pricing_async(self, task_id):
 
             if is_ready:
                 task.status = Task.STATUS_DONE
-                task.result = json.dumps(result, cls=DjangoJSONEncoder, sort_keys=True, indent=1)
+                task.result_object = result
             else:
                 task.status = Task.STATUS_WAIT_RESPONSE
-            task.kwargs = json.dumps(options, cls=DjangoJSONEncoder, sort_keys=True, indent=1)
+            task.options_object = options
             task.save()
 
         if not is_ready:
@@ -245,7 +247,7 @@ def download_currency_pricing_async(self, task_id):
         task.save()
         return
 
-    options = task.kwargs_object
+    options = task.options_object
 
     if task.status in [Task.STATUS_PENDING, Task.STATUS_WAIT_RESPONSE]:
         result, is_ready = provider.download_currency_pricing(options)
@@ -257,10 +259,10 @@ def download_currency_pricing_async(self, task_id):
 
             if is_ready:
                 task.status = Task.STATUS_DONE
-                task.result = json.dumps(result, cls=DjangoJSONEncoder, sort_keys=True, indent=1)
+                task.result_object = result
             else:
                 task.status = Task.STATUS_WAIT_RESPONSE
-            task.kwargs = json.dumps(options, cls=DjangoJSONEncoder, sort_keys=True, indent=1)
+            task.options_object = options
             task.save()
 
         if not is_ready:
@@ -284,8 +286,8 @@ def download_pricing_async(self, task_id):
         return
 
     master_user = task.master_user
-    kwargs = task.kwargs_object
-    is_yesterday = kwargs['is_yesterday']
+    options = task.options_object
+    is_yesterday = options['is_yesterday']
 
     instruments = Instrument.objects.select_related('price_download_scheme').filter(
         master_user=master_user,
@@ -341,19 +343,21 @@ def download_pricing_async(self, task_id):
     instrument_task = defaultdict(list)
     for scheme_id, instruments0 in six.iteritems(instruments_by_scheme):
         price_download_scheme = price_download_schemes[scheme_id]
-        sub_kwargs = kwargs.copy()
-        sub_kwargs['price_download_scheme_id'] = price_download_scheme.id
-        sub_kwargs['instruments'] = [i.reference_for_pricing for i in instruments0]
-        sub_kwargs['instruments_pk'] = [i.id for i in instruments0]
+        sub_options = options.copy()
+        sub_options['price_download_scheme_id'] = price_download_scheme.id
+        sub_options['instruments'] = [i.reference_for_pricing for i in instruments0]
+        sub_options['instruments_pk'] = [i.id for i in instruments0]
 
-        sub_task = Task.objects.create(
+        sub_task = Task(
             master_user=master_user,
             member=task.member,
             provider=price_download_scheme.provider,
             status=Task.STATUS_PENDING,
-            action=Task.ACTION_PRICING_LATEST if is_yesterday else Task.ACTION_PRICE_HISTORY,
-            kwargs=json.dumps(sub_kwargs, cls=DjangoJSONEncoder, sort_keys=True, indent=1)
+            action=Task.ACTION_PRICING_LATEST if is_yesterday else Task.ACTION_PRICE_HISTORY
         )
+        sub_task.options_object = sub_options
+        sub_task.save()
+
         sub_tasks.append(sub_task.id)
         celery_sub_task = download_instrument_pricing_async.apply_async(
             kwargs={'task_id': sub_task.id}, countdown=1)
@@ -369,10 +373,10 @@ def download_pricing_async(self, task_id):
     currency_task = defaultdict(list)
     for scheme_id, currencies0 in six.iteritems(currencies_by_scheme):
         price_download_scheme = price_download_schemes[scheme_id]
-        sub_kwargs = kwargs.copy()
-        sub_kwargs['price_download_scheme_id'] = price_download_scheme.id
-        sub_kwargs['currencies'] = [i.reference_for_pricing for i in currencies0]
-        sub_kwargs['currencies_pk'] = [i.id for i in currencies0]
+        sub_options = options.copy()
+        sub_options['price_download_scheme_id'] = price_download_scheme.id
+        sub_options['currencies'] = [i.reference_for_pricing for i in currencies0]
+        sub_options['currencies_pk'] = [i.id for i in currencies0]
 
         sub_task = Task.objects.create(
             master_user=master_user,
@@ -380,8 +384,10 @@ def download_pricing_async(self, task_id):
             provider=price_download_scheme.provider,
             status=Task.STATUS_PENDING,
             action=Task.ACTION_PRICING_LATEST if is_yesterday else Task.ACTION_PRICE_HISTORY,
-            kwargs=json.dumps(sub_kwargs, cls=DjangoJSONEncoder, sort_keys=True, indent=1)
         )
+        sub_task.options_object = sub_options
+        sub_task.save()
+
         sub_tasks.append(sub_task.id)
         celery_sub_task = download_currency_pricing_async.apply_async(
             kwargs={'task_id': sub_task.id}, countdown=1)
@@ -390,14 +396,12 @@ def download_pricing_async(self, task_id):
         for i in currencies0:
             currency_task[i.id] = sub_task.id
 
-    result = {
-        # 'instruments': [i.id for i in instruments],
-        'instrument_task': instrument_task,
-        # 'currencies': [i.id for i in currencies],
-        'currency_task': currency_task,
-        'sub_tasks': sub_tasks,
-    }
-    task.result = json.dumps(result, cls=DjangoJSONEncoder, sort_keys=True, indent=1)
+    options['instrument_task'] = instrument_task
+    options['currency_task'] = currency_task
+    options['sub_tasks'] = sub_tasks
+
+    task.options_object = options
+
     task.save()
 
     if self.request.is_eager:
@@ -416,16 +420,17 @@ def download_pricing_wait(self, sub_tasks_id, task_id):
 
     pricing_policies = [p for p in PricingPolicy.objects.filter(master_user=task.master_user)]
 
-    options = task.kwargs_object
+    options = task.options_object
     date_from = parse_date_iso(options['date_from'])
     date_to = parse_date_iso(options['date_to'])
     is_yesterday = options['is_yesterday']
     override_existed = options['override_existed']
     fill_days = options['fill_days']
+    sub_tasks_id = options['sub_tasks']
+    instrument_task = options['instrument_task']
+    currency_task = options['currency_task']
 
-    result = task.result_object
-    sub_tasks_id = result['sub_tasks']
-    instrument_task = result['instrument_task']
+    result = {}
     # currency_task = result['currency_task']
 
     instrument_prices = []
@@ -434,7 +439,7 @@ def download_pricing_wait(self, sub_tasks_id, task_id):
     for sub_task in Task.objects.filter(pk__in=sub_tasks_id):
         provider = get_provider(task=sub_task)
 
-        subtask_options = sub_task.kwargs_object
+        subtask_options = sub_task.options_object
 
         if 'instruments_pk' in subtask_options:
             instruments_pk = subtask_options['instruments_pk']
@@ -472,14 +477,12 @@ def download_pricing_wait(self, sub_tasks_id, task_id):
         instruments=instrument_for_manual_price
     )
 
-
     with transaction.atomic():
         existed_instrument_prices = {
             (p.instrument_id, p.pricing_policy_id, p.date): p
             for p in PriceHistory.objects.filter(instrument__in={np.instrument_id for np in instrument_prices},
                                                  date__range=(date_from, date_to + timedelta(days=fill_days)))
             }
-
         for p in instrument_prices:
             op = existed_instrument_prices.get(
                 (p.instrument_id, p.pricing_policy_id, p.date),
@@ -498,7 +501,6 @@ def download_pricing_wait(self, sub_tasks_id, task_id):
             for p in CurrencyHistory.objects.filter(currency__in={np.currency_id for np in currency_prices},
                                                     date__range=(date_from, date_to + timedelta(days=fill_days)))
             }
-
         for p in currency_prices:
             op = existed_currency_prices.get(
                 (p.currency_id, p.pricing_policy_id, p.date),
@@ -527,12 +529,12 @@ def download_pricing_wait(self, sub_tasks_id, task_id):
             instrument_price_expected = set()
             currency_price_expected = set()
             for pp in pricing_policies:
-                for i_id, task_id in six.iteritems(result['instrument_task']):
+                for i_id, task_id in six.iteritems(instrument_task):
                     instrument_price_expected.add(
                         (int(i_id), pp.id)
                     )
 
-                for c_id, task_id in six.iteritems(result['currency_task']):
+                for c_id, task_id in six.iteritems(currency_task):
                     currency_price_expected.add(
                         (int(c_id), pp.id)
                     )
@@ -550,7 +552,7 @@ def download_pricing_wait(self, sub_tasks_id, task_id):
                 for v in currency_price_missed
                 ]
 
-        task.result = json.dumps(result, cls=DjangoJSONEncoder, sort_keys=True, indent=1)
+        task.result_object = result
         task.status = Task.STATUS_DONE
         task.save()
 
@@ -611,7 +613,7 @@ def download_pricing(master_user=None, member=None, date_from=None, date_to=None
                      fill_days=None, override_existed=None, task=None, save=False):
     if task is None:
         with transaction.atomic():
-            kwargs = {
+            options = {
                 'date_from': date_from,
                 'date_to': date_to,
                 'is_yesterday': is_yesterday,
@@ -619,20 +621,16 @@ def download_pricing(master_user=None, member=None, date_from=None, date_to=None
                 'fill_days': fill_days,
                 'override_existed': override_existed,
             }
-            task = Task.objects.create(
+            task = Task(
                 master_user=master_user,
                 member=member,
                 provider_id=None,
                 status=Task.STATUS_PENDING,
-                action=Task.ACTION_PRICING_LATEST if is_yesterday else Task.ACTION_PRICING_LATEST,
-                # date_from=date_from,
-                # date_to=date_to,
-                # balance_date=balance_date,
-                # is_yesterday=is_yesterday,
-                # fill_days=fill_days,
-                # override_existed=override_existed,
-                kwargs=json.dumps(kwargs, cls=DjangoJSONEncoder, sort_keys=True, indent=1),
+                action=Task.ACTION_PRICING_LATEST if is_yesterday else Task.ACTION_PRICING_LATEST
             )
+            task.options_object = options
+            task.save()
+
             transaction.on_commit(
                 lambda: download_pricing_async.apply_async(kwargs={'task_id': task.id}, countdown=1))
         return task, False

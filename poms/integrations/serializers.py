@@ -267,8 +267,7 @@ class TaskSerializer(serializers.ModelSerializer):
         fields = [
             'url', 'id', 'master_user', 'member', 'provider', 'action',
             'created', 'modified', 'status',
-            # 'instrument_code', 'instruments', 'currencies', 'date_from', 'date_to',
-            'kwargs_object', 'result_object',
+            # 'options_object', 'result_object',
         ]
 
 

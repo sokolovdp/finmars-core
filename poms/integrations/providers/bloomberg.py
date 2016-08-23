@@ -740,7 +740,7 @@ class BloombergDataProvider(AbstractProvider):
                 instr_values = values.get(instr_id)
 
                 for instr_day_value in instr_values:
-                    d = instr_day_value['DATE']
+                    d = parse_date_iso(instr_day_value['DATE'])
                     instr_day_value = price_download_scheme.instrument_yesterday_values(instr_day_value)
                     for pp in pricing_policies:
                         if pp.expr:
@@ -791,7 +791,7 @@ class BloombergDataProvider(AbstractProvider):
                 instr_values = values.get(instr_id)
 
                 for instr_day_value in instr_values:
-                    d = instr_day_value['DATE']
+                    d = parse_date_iso(instr_day_value['DATE'])
                     instr_day_value = price_download_scheme.instrument_yesterday_values(instr_day_value)
                     for pp in pricing_policies:
                         if pp.expr:
