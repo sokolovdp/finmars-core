@@ -1,5 +1,4 @@
 import base64
-import json
 import logging
 import uuid
 from datetime import timedelta, datetime
@@ -9,18 +8,19 @@ from time import sleep
 import requests
 import six
 from OpenSSL import crypto
-from celery import chain
 from dateutil import parser
 from django.conf import settings
-from django.core.serializers.json import DjangoJSONEncoder
-from django.db import transaction
 from suds.client import Client
 from suds.transport import Reply
 from suds.transport.http import HttpAuthenticated
 
-from poms.instruments.models import AccrualCalculationSchedule, Periodicity, InstrumentFactorSchedule
-from poms.integrations.models import Task, FactorScheduleDownloadMethod, AccrualScheduleDownloadMethod, ProviderClass
-from poms.integrations.providers.base import AbstractProvider, ProviderException
+from poms.common import formula
+from poms.currencies.models import CurrencyHistory
+from poms.instruments.models import AccrualCalculationSchedule, Periodicity, InstrumentFactorSchedule, PriceHistory
+from poms.integrations.models import FactorScheduleDownloadMethod, AccrualScheduleDownloadMethod, ProviderClass, \
+    InstrumentDownloadScheme, PriceDownloadScheme
+from poms.integrations.providers.base import AbstractProvider, ProviderException, parse_date_iso, fill_instrument_price, \
+    fill_currency_price
 
 __author__ = 'alyakhov'
 
@@ -211,6 +211,16 @@ class BloombergDataProvider(AbstractProvider):
             fields = fields + ['START_ACC_DT', 'FIRST_CPN_DT', 'CPN', 'DAY_CNT', 'CPN_FREQ', 'MULTI_CPN_SCHEDULE']
         return sorted(set(fields))
 
+    def get_factor_schedule_method_fields(self, factor_schedule_method=None):
+        if factor_schedule_method == FactorScheduleDownloadMethod.DEFAULT:
+            return ['FACTOR_SCHEDULE']
+        return []
+
+    def get_accrual_calculation_schedule_method_fields(self, accrual_calculation_schedule_method=None):
+        if accrual_calculation_schedule_method == AccrualScheduleDownloadMethod.DEFAULT:
+            return ['START_ACC_DT', 'FIRST_CPN_DT', 'CPN', 'DAY_CNT', 'CPN_FREQ', 'MULTI_CPN_SCHEDULE']
+        return []
+
     def _invoke_sync(self, name, request_func, request_kwargs, response_func):
         _l.debug('|> %s', name)
         response_id = request_func(**request_kwargs)
@@ -247,46 +257,86 @@ class BloombergDataProvider(AbstractProvider):
         self._response_is_valid(response)
         return response
 
-    def create_instrument_async(self,
-                                # request attrs
-                                instrument_code=None, instrument_download_scheme=None, master_user=None, member=None,
-                                # wait response attrs
-                                task=None, value_overrides=None, save=False):
-        if task is None:
-            from poms.integrations.tasks import bloomberg_send_request, bloomberg_wait_reponse
+    def download_instrument(self, options):
+        _l.debug('download_instrument: %s', options)
 
-            if not master_user:
-                master_user = instrument_download_scheme.master_user
+        response_id = options.get('response_id', None)
+        if response_id is None:
+            instrument_download_scheme_id = options['instrument_download_scheme_id']
+            instrument_code = options['instrument_code']
+
+            instrument_download_scheme = InstrumentDownloadScheme.objects.get(pk=instrument_download_scheme_id)
 
             fields = instrument_download_scheme.fields
-            fields = self._instrument_add_fields(
-                fields=fields,
-                factor_schedule_method=instrument_download_scheme.factor_schedule_method_id,
-                accrual_calculation_schedule_method=instrument_download_scheme.accrual_calculation_schedule_method_id
-            )
+            factor_schedule_method_fields = self.get_factor_schedule_method_fields(
+                instrument_download_scheme.factor_schedule_method_id)
+            accrual_calculation_schedule_method_fields = self.get_accrual_calculation_schedule_method_fields(
+                instrument_download_scheme.accrual_calculation_schedule_method_id)
 
-            kwargs = {
-                'instrument': instrument_code,
-                'fields': fields
-            }
-            with transaction.atomic():
-                task = Task.objects.create(
-                    master_user=master_user,
-                    member=member,
-                    provider_id=ProviderClass.BLOOMBERG,
-                    status=Task.STATUS_PENDING,
-                    action=Task.ACTION_INSTRUMENT,
-                    instrument_code=instrument_code,
-                    instrument_download_scheme=instrument_download_scheme,
-                    kwargs=json.dumps(kwargs, cls=DjangoJSONEncoder, sort_keys=True, indent=1)
-                )
-                transaction.on_commit(
-                    lambda: chain(bloomberg_send_request.s(task.pk), bloomberg_wait_reponse.s()).apply_async())
+            options['fields'] = fields
+            options['factor_schedule_method_fields'] = factor_schedule_method_fields
+            options['accrual_calculation_schedule_method_fields'] = accrual_calculation_schedule_method_fields
+
+            fields = fields + factor_schedule_method_fields + accrual_calculation_schedule_method_fields
+            response_id = self.get_instrument_send_request(instrument_code, fields)
+
+            options['response_id'] = response_id
+            return None, False
         else:
-            if task.status == Task.STATUS_DONE:
-                instrument = self.create_instrument(task, value_overrides, save=save)
-                return task, instrument
-        return task, None
+            result = self.get_instrument_get_response(response_id)
+            return result, result is not None
+
+    def download_instrument_pricing(self, options):
+        _l.debug('download_instrument_pricing: %s', options)
+
+        is_yesterday = options['is_yesterday']
+        response_id = options.get('response_id', None)
+        if response_id is None:
+            price_download_scheme_id = options['price_download_scheme_id']
+            price_download_scheme = PriceDownloadScheme.objects.get(pk=price_download_scheme_id)
+            instruments = options['instruments']
+            if is_yesterday:
+                fields = price_download_scheme.instrument_yesterday_fields
+                response_id = self.get_pricing_latest_send_request(instruments, fields)
+            else:
+                fields = price_download_scheme.instrument_history_fields
+                date_from = parse_date_iso(options['date_from'])
+                date_to = parse_date_iso(options['date_to'])
+                response_id = self.get_pricing_history_send_request(instruments, fields, date_from, date_to)
+            options['response_id'] = response_id
+            return None, False
+        else:
+            if is_yesterday:
+                result = self.get_pricing_latest_get_response(response_id)
+            else:
+                result = self.get_pricing_history_get_response(response_id)
+            return result, result is not None
+
+    def download_currency_pricing(self, options):
+        _l.debug('download_currency_pricing: %s', options)
+
+        is_yesterday = options['is_yesterday']
+        response_id = options.get('response_id', None)
+        if response_id is None:
+            price_download_scheme_id = options['price_download_scheme_id']
+            price_download_scheme = PriceDownloadScheme.objects.get(pk=price_download_scheme_id)
+            currencies = options['currencies']
+            if is_yesterday:
+                fields = price_download_scheme.currency_history_fields
+                response_id = self.get_pricing_latest_send_request(currencies, fields)
+            else:
+                fields = price_download_scheme.currency_history_fields
+                date_from = parse_date_iso(options['date_from'])
+                date_to = parse_date_iso(options['date_to'])
+                response_id = self.get_pricing_history_send_request(currencies, fields, date_from, date_to)
+            options['response_id'] = response_id
+            return None, False
+        else:
+            if is_yesterday:
+                result = self.get_pricing_latest_get_response(response_id)
+            else:
+                result = self.get_pricing_history_get_response(response_id)
+            return result, result is not None
 
     def get_instrument_send_request(self, instrument, fields):
         """
@@ -327,7 +377,7 @@ class BloombergDataProvider(AbstractProvider):
         response_id = six.text_type(response.responseId)
         _l.debug('< response_id=%s', response_id)
 
-        return response_id, fields
+        return response_id
 
     def get_instrument_get_response(self, response_id):
         """
@@ -454,14 +504,6 @@ class BloombergDataProvider(AbstractProvider):
         return None
 
     def get_pricing_latest_sync(self, instruments, fields):
-        """
-        Sync method to get pricing data. Would block until response is ready.
-        @param instruments: list of instrument tuples. Each tuple - (ISIN,Insustry)
-        @type tuple
-        @return: dictionary, where key - ISIN, value - dict with {bloomberg_field:value} dicts
-        @rtype: dict
-        """
-
         return self._invoke_sync(name='get_pricing_latest_sync',
                                  request_func=self.get_pricing_latest_send_request,
                                  request_kwargs={
@@ -471,17 +513,6 @@ class BloombergDataProvider(AbstractProvider):
                                  response_func=self.get_pricing_latest_get_response)
 
     def get_pricing_history_send_request(self, instruments, fields, date_from, date_to):
-        """
-        Async retrieval of historical pricing data. Return None is data is not ready.
-        @param date_from: start of historical range
-        @type datetime.date
-        @param date_to: inclusive end of historical range
-        @type datetime.date
-        @param instruments: list of instrument tuples. Each tuple - (ISIN,Insustry)
-        @type tuple
-        @return: dictionary, where key - ISIN, value - dict with {bloomberg_field:value} dicts
-        @rtype: dict
-        """
         _l.debug('> get_pricing_history_send_request: instrument=%s, date_from=%s, date_to=%s',
                  instruments, date_from, date_to)
 
@@ -523,14 +554,6 @@ class BloombergDataProvider(AbstractProvider):
         return response_id
 
     def get_pricing_history_get_response(self, response_id):
-        """
-        Retrieval of historical pricing data. Return None is data is not ready.
-        @param response_id: request-response reference, received in get_pricing_history_send_request
-        @type str
-        @return: dictionary, where key - ISIN, value - dict with {bloomberg_field:value} dicts
-        @rtype: dict
-        """
-
         if response_id is None:
             _l.debug('< result=%s', None)
             return None
@@ -579,8 +602,8 @@ class BloombergDataProvider(AbstractProvider):
                                  },
                                  response_func=self.get_pricing_history_get_response)
 
-    def create_accrual_calculation_schedules(self, task, instrument, values, save=False):
-        accrual_calculation_schedule_method = task.instrument_download_scheme.accrual_calculation_schedule_method_id
+    def create_accrual_calculation_schedules(self, instrument_download_scheme, instrument, values, save=False):
+        accrual_calculation_schedule_method = instrument_download_scheme.accrual_calculation_schedule_method_id
         if accrual_calculation_schedule_method != AccrualScheduleDownloadMethod.DEFAULT:
             return []
         start_acc_dt = values['START_ACC_DT']
@@ -609,7 +632,6 @@ class BloombergDataProvider(AbstractProvider):
 
         accrual_calculation_schedules = []
         if is_multi_cpn_schedule:
-
             for row in multi_cpn_schedule:
                 accrual_size = self.parse_float(row[1])
 
@@ -652,8 +674,8 @@ class BloombergDataProvider(AbstractProvider):
 
         return accrual_calculation_schedules
 
-    def create_factor_schedules(self, task, instrument, values, save=False):
-        factor_schedule_method = task.instrument_download_scheme.factor_schedule_method_id
+    def create_factor_schedules(self, instrument_download_scheme, instrument, values, save=False):
+        factor_schedule_method = instrument_download_scheme.factor_schedule_method_id
         if factor_schedule_method != FactorScheduleDownloadMethod.DEFAULT:
             return []
 
@@ -681,8 +703,108 @@ class BloombergDataProvider(AbstractProvider):
 
         return None
 
-    def __str__(self):
-        return six.text_type(self.soap_client)
+    def create_instrument_pricing(self, price_download_scheme, options, values, instruments, pricing_policies,
+                                  save=False):
+        date_from = parse_date_iso(options['date_from'])
+        date_to = parse_date_iso(options['date_to'])
+        is_yesterday = options['is_yesterday']
+        fill_days = options['fill_days']
+        # price_download_scheme_id = options['price_download_scheme_id']
+
+        prices = []
+
+        if is_yesterday:
+            for i in instruments:
+                instr = self._bbg_instr(i.reference_for_pricing)
+                instr_id = instr['id']
+                instr_values = values.get(instr_id)
+
+                instr_day_value = price_download_scheme.instrument_yesterday_values(instr_values)
+                for pp in pricing_policies:
+                    if pp.expr:
+                        principal_price = formula.safe_eval(pp.expr, names=instr_day_value)
+                        price = PriceHistory(
+                            instrument=i,
+                            pricing_policy=pp,
+                            date=date_to,
+                            principal_price=principal_price
+                        )
+                        prices.append(price)
+
+                        if fill_days:
+                            prices += fill_instrument_price(date_to + timedelta(days=1), fill_days, price)
+        else:
+            for i in instruments:
+                instr = self._bbg_instr(i.reference_for_pricing)
+                instr_id = instr['id']
+                instr_values = values.get(instr_id)
+
+                for instr_day_value in instr_values:
+                    d = instr_day_value['DATE']
+                    instr_day_value = price_download_scheme.instrument_yesterday_values(instr_day_value)
+                    for pp in pricing_policies:
+                        if pp.expr:
+                            principal_price = formula.safe_eval(pp.expr, names=instr_day_value)
+                            price = PriceHistory(
+                                instrument=i,
+                                pricing_policy=pp,
+                                date=d,
+                                principal_price=principal_price
+                            )
+                            prices.append(price)
+
+        return prices
+
+    def create_currency_pricing(self, price_download_scheme, options, values, currencies, pricing_policies,
+                                save=False):
+        date_from = parse_date_iso(options['date_from'])
+        date_to = parse_date_iso(options['date_to'])
+        is_yesterday = options['is_yesterday']
+        fill_days = options['fill_days']
+        # price_download_scheme_id = options['price_download_scheme_id']
+
+        prices = []
+
+        if is_yesterday:
+            for i in currencies:
+                instr = self._bbg_instr(i.reference_for_pricing)
+                instr_id = instr['id']
+                instr_values = values.get(instr_id)
+
+                instr_day_value = price_download_scheme.currency_history_values(instr_values)
+                for pp in pricing_policies:
+                    if pp.expr:
+                        fx_rate = formula.safe_eval(pp.expr, names=instr_day_value)
+                        price = CurrencyHistory(
+                            currency=i,
+                            pricing_policy=pp,
+                            date=date_to,
+                            fx_rate=fx_rate
+                        )
+                        prices.append(price)
+                        if fill_days:
+                            prices += fill_currency_price(date_to + timedelta(days=1), fill_days, price)
+        else:
+            for i in currencies:
+                instr = self._bbg_instr(i.reference_for_pricing)
+                instr_id = instr['id']
+                instr_values = values.get(instr_id)
+
+                for instr_day_value in instr_values:
+                    d = instr_day_value['DATE']
+                    instr_day_value = price_download_scheme.instrument_yesterday_values(instr_day_value)
+                    for pp in pricing_policies:
+                        if pp.expr:
+                            fx_rate = formula.safe_eval(pp.expr, names=instr_day_value)
+                            price = CurrencyHistory(
+                                currency=i,
+                                pricing_policy=pp,
+                                date=d,
+                                fx_rate=fx_rate
+                            )
+                            prices.append(price)
+
+        return prices
 
 
 # ----------------------------------------------------------------------------------------------------------------------
@@ -727,7 +849,7 @@ class FakeBloombergDataProvider(BloombergDataProvider):
 
         _l.debug('< response_id=%s', response_id)
 
-        return response_id, fields
+        return response_id
 
     def get_instrument_get_response(self, response_id):
         _l.debug('> get_instrument_get_response: response_id=%s', response_id)
@@ -880,7 +1002,11 @@ class FakeBloombergDataProvider(BloombergDataProvider):
             "PX_YEST_ASK": "10.0",
             "PX_YEST_BID": "11.0",
             "PX_YEST_CLOSE": "12.0",
-            "SECURITY_TYP": "EURO-DOLLAR"
+            "SECURITY_TYP": "EURO-DOLLAR",
+
+            "PX_ASK": "20.0",
+            "PX_BID": "21.0",
+            "PX_LAST": "22.0",
         }
 
         key = self._make_key(response_id)
@@ -888,11 +1014,11 @@ class FakeBloombergDataProvider(BloombergDataProvider):
         if not req:
             raise RuntimeError('invalid response_id')
 
-        instrs = (req['instruments'] or []) + (req['currencies'] or [])
+        instruments = req['instruments'] or []
         fields = req['fields']
 
         result = {}
-        for instrument in instrs:
+        for instrument in instruments:
             instrument_fields = {}
             for field in fields:
                 instrument_fields[field] = fake_data.get(field, None)
@@ -948,7 +1074,7 @@ class FakeBloombergDataProvider(BloombergDataProvider):
         if not req:
             raise RuntimeError('invalid response_id')
 
-        instrs = (req['instruments'] or []) + (req['currencies'] or [])
+        instrs = req['instruments'] or []
         fields = req['fields']
         date_from = parser.parse(req['date_from']).date()
         date_to = parser.parse(req['date_to']).date()

@@ -165,7 +165,7 @@ class AccrualCalculationModelMappingAdmin(admin.ModelAdmin):
     model = AccrualCalculationModelMapping
     list_display = ['id', 'master_user', 'provider', 'value', 'accrual_calculation_model']
     list_select_related = ['master_user', 'accrual_calculation_model', 'provider']
-    raw_id_fields = ['master_user', 'accrual_calculation_model']
+    raw_id_fields = ['master_user']
 
 
 admin.site.register(AccrualCalculationModelMapping, AccrualCalculationModelMappingAdmin)
@@ -175,7 +175,7 @@ class PeriodicityMappingAdmin(admin.ModelAdmin):
     model = PeriodicityMapping
     list_display = ['id', 'master_user', 'provider', 'value', 'periodicity']
     list_select_related = ['master_user', 'provider', 'periodicity']
-    raw_id_fields = ['master_user', 'periodicity']
+    raw_id_fields = ['master_user']
 
 
 admin.site.register(PeriodicityMapping, PeriodicityMappingAdmin)
@@ -200,8 +200,7 @@ class TaskAdmin(admin.ModelAdmin):
     model = Task
     list_display = ['id', 'created', 'master_user', 'member', 'provider', 'action', 'status', 'response_id']
     list_select_related = ['master_user', 'member', 'provider']
-    raw_id_fields = ['master_user', 'member', 'instruments', 'currencies',
-                     'instrument_download_scheme', 'price_download_scheme']
+    raw_id_fields = ['master_user', 'member', 'instrument_download_scheme']
     search_fields = ['response_id', ]
     list_filter = ['provider', 'created', 'action', 'status', ]
     date_hierarchy = 'created'

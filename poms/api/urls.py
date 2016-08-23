@@ -139,7 +139,7 @@ router.register(r'import/periodicity-mapping', integrations.PeriodicityMappingVi
 router.register(r'import/file/instrument', integrations.ImportFileInstrumentViewSet, 'ImportFileInstrumentViewSet')
 
 router.register(r'import/instrument', integrations.ImportInstrumentViewSet, 'ImportInstrumentViewSet')
-router.register(r'import/instrument-and-currency-history', integrations.ImportHistoryViewSet, 'ImportHistoryViewSet')
+router.register(r'import/pricing', integrations.ImportPricingViewSet, 'ImportPricingViewSet')
 
 router.register(r'import/task', integrations.TaskViewSet)
 

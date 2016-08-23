@@ -14,7 +14,7 @@ from poms.integrations.models import ImportConfig, Task, InstrumentDownloadSchem
     FactorScheduleDownloadMethod, AccrualScheduleDownloadMethod, PriceDownloadScheme, CurrencyMapping, \
     InstrumentTypeMapping, InstrumentAttributeValueMapping, AccrualCalculationModelMapping, PeriodicityMapping
 from poms.integrations.serializers import ImportConfigSerializer, TaskSerializer, \
-    ImportFileInstrumentSerializer, ImportInstrumentSerializer, ImportHistorySerializer, \
+    ImportFileInstrumentSerializer, ImportInstrumentSerializer, ImportPricingSerializer, \
     InstrumentDownloadSchemeSerializer, ProviderClassSerializer, FactorScheduleDownloadMethodSerializer, \
     AccrualScheduleDownloadMethodSerializer, PriceDownloadSchemeSerializer, CurrencyMappingSerializer, \
     InstrumentTypeMappingSerializer, InstrumentAttributeValueMappingSerializer, \
@@ -246,8 +246,8 @@ class ImportInstrumentViewSet(AbstractViewSet):
         return Response(serializer.data)
 
 
-class ImportHistoryViewSet(AbstractViewSet):
-    serializer_class = ImportHistorySerializer
+class ImportPricingViewSet(AbstractViewSet):
+    serializer_class = ImportPricingSerializer
 
     def create(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)

@@ -1,11 +1,16 @@
 from __future__ import unicode_literals, print_function
 
+import itertools
 import json
 import time
+from collections import defaultdict
+from datetime import timedelta
 from logging import getLogger
 
-from celery import shared_task
+import six
+from celery import shared_task, chord
 from celery.exceptions import TimeoutError
+from dateutil.rrule import rrule, DAILY
 from django.conf import settings
 from django.core.mail import send_mail as django_send_mail, send_mass_mail as django_send_mass_mail, \
     mail_admins as django_mail_admins, mail_managers as django_mail_managers
@@ -14,8 +19,11 @@ from django.db import transaction
 from django.utils import timezone
 
 from poms.audit.models import AuthLogEntry
-from poms.integrations.models import Task
-from poms.integrations.providers.base import get_provider, ProviderException
+from poms.common import formula
+from poms.currencies.models import Currency, CurrencyHistory
+from poms.instruments.models import Instrument, DailyPricingModel, PricingPolicy, PriceHistory
+from poms.integrations.models import Task, PriceDownloadScheme
+from poms.integrations.providers.base import get_provider, parse_date_iso, fill_instrument_price
 from poms.integrations.storage import file_import_storage
 
 _l = getLogger('poms.integrations')
@@ -115,387 +123,603 @@ def auth_log_statistics():
     _l.debug('auth (today): logged_in=%s, login_failed=%s', logged_in_count, login_failed_count)
 
 
-@shared_task(name='backend.bloomberg_send_request', bind=True, ignore_result=True)
-def bloomberg_send_request(self, task_id):
-    _l.info('bloomberg_send_request: task_id=%s', task_id)
+@shared_task(name='backend.download_instrument', bind=True, ignore_result=True)
+def download_instrument_async(self, task_id=None):
+    _l.debug('download_instrument_async: task_id=%s', task_id)
 
     task = Task.objects.get(pk=task_id)
     try:
         provider = get_provider(task.master_user, task.provider_id)
     except:
-        with transaction.atomic():
-            task.status = Task.STATUS_ERROR
-            task.save()
-        raise
-
-    action = task.action
-    kwargs = json.loads(task.kwargs)
-
-    try:
-        if action == 'fields':
-            response_id = None
-
-        elif action == Task.ACTION_INSTRUMENT:
-            response_id, fields = provider.get_instrument_send_request(
-                instrument=task.instrument_code,
-                fields=kwargs['fields']
-            )
-            kwargs['fields'] = fields
-
-        elif action == Task.ACTION_PRICING_LATEST:
-            response_id = provider.get_pricing_latest_send_request(
-                instruments=kwargs['instruments'],
-                currencies=kwargs['currencies'],
-                fields=kwargs['fields'],
-            )
-
-        elif action == Task.ACTION_PRICE_HISTORY:
-            response_id = provider.get_pricing_history_send_request(
-                instruments=kwargs['instruments'],
-                currencies=kwargs['currencies'],
-                fields=kwargs['fields'],
-                date_from=task.date_from,
-                date_to=task.date_to
-            )
-
-        else:
-            raise ProviderException('Unknown action')
-
-    except ProviderException:
-        with transaction.atomic():
-            task.status = Task.STATUS_ERROR
-            task.save()
-        raise
-
-    with transaction.atomic():
-        task.kwargs = json.dumps(kwargs, cls=DjangoJSONEncoder, sort_keys=True, indent=1)
-        task.response_id = response_id
-        task.status = Task.STATUS_REQUEST_SENT
+        task.status = Task.STATUS_ERROR
         task.save()
+        return
 
-    return task_id
+    options = task.kwargs_object
+
+    if task.status in [Task.STATUS_PENDING, Task.STATUS_WAIT_RESPONSE]:
+        result, is_ready = provider.download_instrument(options)
+
+        with transaction.atomic():
+            response_id = options.get('response_id', None)
+            if response_id:
+                task.response_id = response_id
+
+            if is_ready:
+                task.status = Task.STATUS_DONE
+                task.result = json.dumps(result, cls=DjangoJSONEncoder, sort_keys=True, indent=1)
+            else:
+                task.status = Task.STATUS_WAIT_RESPONSE
+            task.kwargs = json.dumps(options, cls=DjangoJSONEncoder, sort_keys=True, indent=1)
+            task.save()
+
+        if not is_ready:
+            if self.request.is_eager:
+                time.sleep(settings.BLOOMBERG_RETRY_DELAY)
+            self.retry(countdown=settings.BLOOMBERG_RETRY_DELAY, max_retries=settings.BLOOMBERG_MAX_RETRIES,
+                       throw=False)
+            # raise self.retry(countdown=settings.BLOOMBERG_RETRY_DELAY, max_retries=settings.BLOOMBERG_MAX_RETRIES)
 
 
-@shared_task(name='backend.bloomberg_wait_reponse', bind=True, ignore_result=True)
-def bloomberg_wait_reponse(self, task_id):
-    _l.info('bloomberg_wait_reponse: task_id=%s', task_id)
+def download_instrument(instrument_code=None, instrument_download_scheme=None, master_user=None, member=None,
+                        task=None, value_overrides=None, save=False):
+    if task is None:
+        kwargs = {
+            'instrument_download_scheme_id': instrument_download_scheme.id,
+            'instrument_code': instrument_code,
+        }
+        with transaction.atomic():
+            task = Task.objects.create(
+                master_user=master_user,
+                member=member,
+                provider=instrument_download_scheme.provider,
+                status=Task.STATUS_PENDING,
+                action=Task.ACTION_INSTRUMENT,
+                instrument_code=instrument_code,
+                instrument_download_scheme=instrument_download_scheme,
+                kwargs=json.dumps(kwargs, cls=DjangoJSONEncoder, sort_keys=True, indent=1)
+            )
+            transaction.on_commit(
+                lambda: download_instrument_async.apply_async(kwargs={'task_id': task.id}, countdown=1))
+        return task, None, False
+    else:
+        if task.status == Task.STATUS_DONE:
+            provider = get_provider(task.master_user, task.provider_id)
+
+            values = task.result_object.copy()
+            if value_overrides:
+                values.update(value_overrides)
+
+            instrument = provider.create_instrument(task.instrument_download_scheme, values, save=save)
+            return task, instrument, True
+        return task, None, False
+
+
+@shared_task(name='backend.download_instrument_pricing_async', bind=True, ignore_result=True)
+def download_instrument_pricing_async(self, task_id):
+    _l.debug('download_instrument_pricing_async: task_id=%s', task_id)
 
     task = Task.objects.get(pk=task_id)
-    if task.status == Task.STATUS_REQUEST_SENT:
+    try:
+        provider = get_provider(task.master_user, task.provider_id)
+    except:
+        task.status = Task.STATUS_ERROR
+        task.save()
+        return
+
+    options = task.kwargs_object
+
+    if task.status in [Task.STATUS_PENDING, Task.STATUS_WAIT_RESPONSE]:
+        result, is_ready = provider.download_instrument_pricing(options)
+
+        with transaction.atomic():
+            response_id = options.get('response_id', None)
+            if response_id:
+                task.response_id = response_id
+
+            if is_ready:
+                task.status = Task.STATUS_DONE
+                task.result = json.dumps(result, cls=DjangoJSONEncoder, sort_keys=True, indent=1)
+            else:
+                task.status = Task.STATUS_WAIT_RESPONSE
+            task.kwargs = json.dumps(options, cls=DjangoJSONEncoder, sort_keys=True, indent=1)
+            task.save()
+
+        if not is_ready:
+            if self.request.is_eager:
+                time.sleep(settings.BLOOMBERG_RETRY_DELAY)
+            self.retry(countdown=settings.BLOOMBERG_RETRY_DELAY, max_retries=settings.BLOOMBERG_MAX_RETRIES,
+                       throw=False)
+            # raise self.retry(countdown=settings.BLOOMBERG_RETRY_DELAY, max_retries=settings.BLOOMBERG_MAX_RETRIES)
+
+
+@shared_task(name='backend.download_currency_pricing_async', bind=True, ignore_result=True)
+def download_currency_pricing_async(self, task_id):
+    _l.debug('download_currency_pricing_async: task_id=%s', task_id)
+
+    task = Task.objects.get(pk=task_id)
+    try:
+        provider = get_provider(task.master_user, task.provider_id)
+    except:
+        task.status = Task.STATUS_ERROR
+        task.save()
+        return
+
+    options = task.kwargs_object
+
+    if task.status in [Task.STATUS_PENDING, Task.STATUS_WAIT_RESPONSE]:
+        result, is_ready = provider.download_currency_pricing(options)
+
+        with transaction.atomic():
+            response_id = options.get('response_id', None)
+            if response_id:
+                task.response_id = response_id
+
+            if is_ready:
+                task.status = Task.STATUS_DONE
+                task.result = json.dumps(result, cls=DjangoJSONEncoder, sort_keys=True, indent=1)
+            else:
+                task.status = Task.STATUS_WAIT_RESPONSE
+            task.kwargs = json.dumps(options, cls=DjangoJSONEncoder, sort_keys=True, indent=1)
+            task.save()
+
+        if not is_ready:
+            if self.request.is_eager:
+                time.sleep(settings.BLOOMBERG_RETRY_DELAY)
+            self.retry(countdown=settings.BLOOMBERG_RETRY_DELAY, max_retries=settings.BLOOMBERG_MAX_RETRIES,
+                       throw=False)
+            # raise self.retry(countdown=settings.BLOOMBERG_RETRY_DELAY, max_retries=settings.BLOOMBERG_MAX_RETRIES)
+
+
+@shared_task(name='backend.download_pricing_async', bind=True, ignore_result=True)
+def download_pricing_async(self, task_id):
+    _l.debug('> download_pricing_send_request: task_id=%s', task_id)
+
+    task = Task.objects.get(pk=task_id)
+    if task.status == Task.STATUS_PENDING:
         with transaction.atomic():
             task.status = Task.STATUS_WAIT_RESPONSE
             task.save()
-    elif task.status == Task.STATUS_WAIT_RESPONSE:
-        pass
     else:
         return
 
-    try:
-        provider = get_provider(task.master_user, task.provider_id)
-    except:
-        with transaction.atomic():
-            task.status = Task.STATUS_ERROR
-            task.save()
-        raise
+    master_user = task.master_user
+    kwargs = task.kwargs_object
+    is_yesterday = kwargs['is_yesterday']
 
-    action = task.action
-    response_id = task.response_id
+    instruments = Instrument.objects.select_related('price_download_scheme').filter(
+        master_user=master_user,
+    ).exclude(
+        daily_pricing_model=DailyPricingModel.SKIP,
+    )
+    _l.debug('instruments: %s', instruments)
 
-    try:
-        if action == 'fields':
-            provider.get_fields()
-            result = 'fields'
+    currencies = Currency.objects.select_related('price_download_scheme').filter(
+        master_user=master_user,
+    ).exclude(
+        daily_pricing_model=DailyPricingModel.SKIP,
+    )
+    _l.debug('currencies: %s', currencies)
 
-        elif action == Task.ACTION_INSTRUMENT:
-            result = provider.get_instrument_get_response(response_id)
+    is_calculate_balance = False
+    for i in itertools.chain(instruments, currencies):
+        if i.daily_pricing_model_id in [DailyPricingModel.FORMULA_IF_OPEN, DailyPricingModel.PROVIDER_IF_OPEN]:
+            is_calculate_balance = True
+        if is_calculate_balance:
+            break
+    _l.debug('is_calculate_balance: %s', is_calculate_balance)
 
-        elif action == Task.ACTION_PRICING_LATEST:
-            result = provider.get_pricing_latest_get_response(response_id)
+    if is_calculate_balance:
+        # TODO: calculate balance and than filter instruments & currencies
+        pass
 
-        elif action == Task.ACTION_PRICE_HISTORY:
-            result = provider.get_pricing_history_get_response(response_id)
+    sub_tasks = []
+    celery_sub_tasks = []
 
-        else:
-            raise ProviderException('Unknown action')
+    price_download_schemes = {}
 
-    except ProviderException:
-        with transaction.atomic():
-            task.status = Task.STATUS_ERROR
-            task.save()
-        raise
+    instruments_by_scheme = defaultdict(list)
+    instruments_by_formula = []
+    for i in instruments:
+        if i.daily_pricing_model_id in [DailyPricingModel.PROVIDER_ALWAYS, DailyPricingModel.PROVIDER_IF_OPEN]:
+            if i.price_download_scheme_id and i.reference_for_pricing:
+                instruments_by_scheme[i.price_download_scheme.id].append(i)
+                price_download_schemes[i.price_download_scheme.id] = i.price_download_scheme
+        elif i.daily_pricing_model_id in [DailyPricingModel.FORMULA_ALWAYS, DailyPricingModel.FORMULA_IF_OPEN]:
+            instruments_by_formula.append(i)
+    _l.debug('instruments_by_scheme: %s', instruments_by_scheme)
+    _l.debug('instruments_by_formula: %s', instruments_by_formula)
 
-    if result is None:
-        if self.request.is_eager:
-            time.sleep(settings.BLOOMBERG_RETRY_DELAY)
+    currencies_by_scheme = defaultdict(list)
+    for i in currencies:
+        if i.daily_pricing_model_id in [DailyPricingModel.PROVIDER_ALWAYS, DailyPricingModel.PROVIDER_IF_OPEN]:
+            if i.price_download_scheme_id and i.reference_for_pricing:
+                currencies_by_scheme[i.price_download_scheme.id].append(i)
+                price_download_schemes[i.price_download_scheme.id] = i.price_download_scheme
+    _l.debug('currencies_by_scheme: %s', currencies_by_scheme)
 
-        raise self.retry(
-            countdown=settings.BLOOMBERG_RETRY_DELAY,
-            max_retries=settings.BLOOMBERG_MAX_RETRIES,
+    instrument_task = defaultdict(list)
+    for scheme_id, instruments0 in six.iteritems(instruments_by_scheme):
+        price_download_scheme = price_download_schemes[scheme_id]
+        sub_kwargs = kwargs.copy()
+        sub_kwargs['price_download_scheme_id'] = price_download_scheme.id
+        sub_kwargs['instruments'] = [i.reference_for_pricing for i in instruments0]
+        sub_kwargs['instruments_pk'] = [i.id for i in instruments0]
+
+        sub_task = Task.objects.create(
+            master_user=master_user,
+            member=task.member,
+            provider=price_download_scheme.provider,
+            status=Task.STATUS_PENDING,
+            action=Task.ACTION_PRICING_LATEST if is_yesterday else Task.ACTION_PRICE_HISTORY,
+            kwargs=json.dumps(sub_kwargs, cls=DjangoJSONEncoder, sort_keys=True, indent=1)
         )
+        sub_tasks.append(sub_task.id)
+        celery_sub_task = download_instrument_pricing_async.apply_async(
+            kwargs={'task_id': sub_task.id}, countdown=1)
+        celery_sub_tasks.append(celery_sub_task)
+
+        for i in instruments0:
+            instrument_task[i.id] = sub_task.id
+
+    # for manual formula& calculate on final stage
+    for i in instruments_by_formula:
+        instrument_task[i.id] = None
+
+    currency_task = defaultdict(list)
+    for scheme_id, currencies0 in six.iteritems(currencies_by_scheme):
+        price_download_scheme = price_download_schemes[scheme_id]
+        sub_kwargs = kwargs.copy()
+        sub_kwargs['price_download_scheme_id'] = price_download_scheme.id
+        sub_kwargs['currencies'] = [i.reference_for_pricing for i in currencies0]
+        sub_kwargs['currencies_pk'] = [i.id for i in currencies0]
+
+        sub_task = Task.objects.create(
+            master_user=master_user,
+            member=task.member,
+            provider=price_download_scheme.provider,
+            status=Task.STATUS_PENDING,
+            action=Task.ACTION_PRICING_LATEST if is_yesterday else Task.ACTION_PRICE_HISTORY,
+            kwargs=json.dumps(sub_kwargs, cls=DjangoJSONEncoder, sort_keys=True, indent=1)
+        )
+        sub_tasks.append(sub_task.id)
+        celery_sub_task = download_currency_pricing_async.apply_async(
+            kwargs={'task_id': sub_task.id}, countdown=1)
+        celery_sub_tasks.append(celery_sub_task)
+
+        for i in currencies0:
+            currency_task[i.id] = sub_task.id
+
+    result = {
+        # 'instruments': [i.id for i in instruments],
+        'instrument_task': instrument_task,
+        # 'currencies': [i.id for i in currencies],
+        'currency_task': currency_task,
+        'sub_tasks': sub_tasks,
+    }
+    task.result = json.dumps(result, cls=DjangoJSONEncoder, sort_keys=True, indent=1)
+    task.save()
+
+    if self.request.is_eager:
+        download_pricing_wait.apply_async(kwargs={'sub_tasks_id': sub_tasks, 'task_id': task_id})
+    else:
+        chord(celery_sub_tasks, download_pricing_wait.s(task_id=task_id)).apply_async()
+
+
+@shared_task(name='backend.download_pricing_send_wait_reponse', bind=True, ignore_result=True)
+def download_pricing_wait(self, sub_tasks_id, task_id):
+    _l.debug('> download_pricing_send_wait_reponse: task_id=%s, task_id_set=%s', task_id, sub_tasks_id)
+
+    task = Task.objects.get(pk=task_id)
+    if task.status != Task.STATUS_WAIT_RESPONSE:
+        return
+
+    pricing_policies = [p for p in PricingPolicy.objects.filter(master_user=task.master_user)]
+
+    options = task.kwargs_object
+    date_from = parse_date_iso(options['date_from'])
+    date_to = parse_date_iso(options['date_to'])
+    is_yesterday = options['is_yesterday']
+    override_existed = options['override_existed']
+    fill_days = options['fill_days']
+
+    result = task.result_object
+    sub_tasks_id = result['sub_tasks']
+    instrument_task = result['instrument_task']
+    # currency_task = result['currency_task']
+
+    instrument_prices = []
+    currency_prices = []
+
+    for sub_task in Task.objects.filter(pk__in=sub_tasks_id):
+        provider = get_provider(task=sub_task)
+
+        subtask_options = sub_task.kwargs_object
+
+        if 'instruments_pk' in subtask_options:
+            instruments_pk = subtask_options['instruments_pk']
+            instruments = Instrument.objects.filter(pk__in=instruments_pk)
+            price_download_scheme_id = subtask_options['price_download_scheme_id']
+            price_download_scheme = PriceDownloadScheme.objects.get(pk=price_download_scheme_id)
+
+            instrument_prices += provider.create_instrument_pricing(
+                price_download_scheme=price_download_scheme,
+                options=subtask_options,
+                values=sub_task.result_object,
+                instruments=instruments,
+                pricing_policies=pricing_policies,
+                save=False,
+            )
+
+        elif 'currencies_pk' in subtask_options:
+            currencies_pk = subtask_options['currencies_pk']
+            currencies = Currency.objects.filter(pk__in=currencies_pk)
+            price_download_scheme_id = subtask_options['price_download_scheme_id']
+            price_download_scheme = PriceDownloadScheme.objects.get(pk=price_download_scheme_id)
+
+            currency_prices += provider.create_currency_pricing(
+                price_download_scheme=price_download_scheme,
+                options=subtask_options,
+                values=sub_task.result_object,
+                currencies=currencies,
+                pricing_policies=pricing_policies,
+                save=False,
+            )
+
+    instrument_for_manual_price = [i_id for i_id, task_id in six.iteritems(instrument_task) if task_id is None]
+    instrument_prices += _create_instrument_manual_prices(
+        options=options,
+        instruments=instrument_for_manual_price
+    )
+
 
     with transaction.atomic():
+        existed_instrument_prices = {
+            (p.instrument_id, p.pricing_policy_id, p.date): p
+            for p in PriceHistory.objects.filter(instrument__in={np.instrument_id for np in instrument_prices},
+                                                 date__range=(date_from, date_to + timedelta(days=fill_days)))
+            }
+
+        for p in instrument_prices:
+            op = existed_instrument_prices.get(
+                (p.instrument_id, p.pricing_policy_id, p.date),
+                None
+            )
+            if op is None:
+                p.save()
+            else:
+                if override_existed:
+                    op.principal_price = p.principal_price
+                    op.accrued_price = p.accrued_price
+                    op.save()
+
+        existed_currency_prices = {
+            (p.currency_id, p.pricing_policy_id, p.date): p
+            for p in CurrencyHistory.objects.filter(currency__in={np.currency_id for np in currency_prices},
+                                                    date__range=(date_from, date_to + timedelta(days=fill_days)))
+            }
+
+        for p in currency_prices:
+            op = existed_currency_prices.get(
+                (p.currency_id, p.pricing_policy_id, p.date),
+                None
+            )
+
+            if op is None:
+                p.save()
+            else:
+                if override_existed:
+                    op.fx_rate = p.fx_rate
+                    op.save()
+
+        if is_yesterday:
+            instrument_price_real = {
+                (p.instrument_id, p.pricing_policy_id)
+                for p in instrument_prices
+                if p.date == date_to
+                }
+            currency_price_real = {
+                (p.currency_id, p.pricing_policy_id)
+                for p in currency_prices
+                if p.date == date_to
+                }
+
+            instrument_price_expected = set()
+            currency_price_expected = set()
+            for pp in pricing_policies:
+                for i_id, task_id in six.iteritems(result['instrument_task']):
+                    instrument_price_expected.add(
+                        (int(i_id), pp.id)
+                    )
+
+                for c_id, task_id in six.iteritems(result['currency_task']):
+                    currency_price_expected.add(
+                        (int(c_id), pp.id)
+                    )
+
+            instrument_price_missed = instrument_price_expected.difference(instrument_price_real)
+            currency_price_missed = currency_price_expected.difference(currency_price_real)
+
+            result['instrument_price_missed'] = [
+                {'instrument': v[0], 'pricing_policy': v[1],}
+                for v in instrument_price_missed
+                ]
+
+            result['currency_price_missed'] = [
+                {'currency': v[0], 'pricing_policy': v[1],}
+                for v in currency_price_missed
+                ]
+
         task.result = json.dumps(result, cls=DjangoJSONEncoder, sort_keys=True, indent=1)
         task.status = Task.STATUS_DONE
         task.save()
 
-    return task.id
 
-# def bloomberg_call(master_user=None, member=None, action=None,
-#                    instrument=None, instrument_download_scheme=None,
-#                    instruments=None, currencies=None, price_download_scheme=None,
-#                    date_from=None, date_to=None):
-#     master_user_id = master_user.id if isinstance(master_user, models.Model)  else master_user
-#     if member:
-#         member_id = member.id if isinstance(member, models.Model) else member
-#     else:
-#         member_id = None
-#
-#     with transaction.atomic():
-#         kwargs = {
-#             'fields': None,
-#             'instruments': None,
-#             'currencies': None,
-#         }
-#
-#         if action == Task.ACTION_INSTRUMENT:
-#             if instrument_download_scheme is None:
-#                 return None
-#             kwargs['instrument'] = instrument
-#             kwargs['fields'] = instrument_download_scheme.fields
-#             kwargs['factor_schedule_method'] = instrument_download_scheme.factor_schedule_method_id
-#             kwargs['accrual_calculation_schedule_method'] = \
-#                 instrument_download_scheme.accrual_calculation_schedule_method_id
-#         elif action == Task.ACTION_PRICING_LATEST:
-#             if price_download_scheme is None:
-#                 return None
-#             kwargs['fields'] = price_download_scheme.fields
-#         elif action == Task.ACTION_PRICE_HISTORY:
-#             if price_download_scheme is None:
-#                 return None
-#             kwargs['fields'] = price_download_scheme.fields
-#         else:
-#             return None
-#
-#         if action in [Task.ACTION_PRICING_LATEST, Task.ACTION_PRICE_HISTORY]:
-#             if instruments:
-#                 r = []
-#                 for i in instruments:
-#                     if i.reference_for_pricing:
-#                         r.append(i.reference_for_pricing)
-#                 kwargs['instruments'] = r
-#
-#             if currencies:
-#                 r = []
-#                 for c in currencies:
-#                     if c.reference_for_pricing:
-#                         r.append(c.reference_for_pricing)
-#                 kwargs['currencies'] = r
-#
-#         bt = Task.objects.create(
-#             master_user_id=master_user_id,
-#             member_id=member_id,
-#             provider_id=ProviderClass.BLOOMBERG,
-#             status=Task.STATUS_PENDING,
-#             action=action,
-#             instrument_code=instrument,
-#             instrument_download_scheme=instrument_download_scheme,
-#             price_download_scheme=price_download_scheme,
-#             date_from=date_from,
-#             date_to=date_to,
-#             kwargs=json.dumps(kwargs, cls=DjangoJSONEncoder, sort_keys=True, indent=1),
-#         )
-#
-#         if instruments:
-#             bt.instruments.add(*instruments)
-#         if currencies:
-#             bt.currencies.add(*currencies)
-#
-#         transaction.on_commit(
-#             lambda: chain(bloomberg_send_request.s(bt.pk), bloomberg_wait_reponse.s()).apply_async(countdown=1))
-#
-#     return bt.pk
-#
-#
-# def bloomberg_instrument(master_user=None, member=None, instrument=None, instrument_download_scheme=None):
-#     return bloomberg_call(
-#         master_user=master_user,
-#         member=member,
-#         action=Task.ACTION_INSTRUMENT,
-#         instrument=instrument,
-#         instrument_download_scheme=instrument_download_scheme
-#     )
-#
-#
-# def bloomberg_pricing_latest(master_user=None, member=None, price_download_scheme=None,
-#                              instruments=None, currencies=None):
-#     return bloomberg_call(
-#         master_user=master_user,
-#         member=member,
-#         action=Task.ACTION_PRICING_LATEST,
-#         instruments=instruments,
-#         currencies=currencies,
-#         price_download_scheme=price_download_scheme,
-#     )
-#
-#
-# def bloomberg_pricing_history(master_user=None, member=None, price_download_scheme=None,
-#                               instruments=None, currencies=None, date_from=None, date_to=None):
-#     return bloomberg_call(
-#         master_user=master_user,
-#         member=member,
-#         action=Task.ACTION_PRICE_HISTORY,
-#         instruments=instruments,
-#         currencies=currencies,
-#         price_download_scheme=price_download_scheme,
-#         date_from=date_from,
-#         date_to=date_to,
-#     )
+def _create_instrument_manual_prices(options, instruments):
+    date_from = parse_date_iso(options['date_from'])
+    date_to = parse_date_iso(options['date_to'])
+    is_yesterday = options['is_yesterday']
+    fill_days = options['fill_days']
 
-# @shared_task(name='backend.bloomberg_price_history_auto_save', bind=True, ignore_result=True)
-# def bloomberg_price_history_auto_save(self, task_id):
-#     _l.debug('> bloomberg_price_history_auto_save: task_id=%s', task_id)
-#
-#     task = Task.objects.get(pk=task_id)
-#     master_user = task.master_user
-#     kwargs = task.kwargs_object
-#     task_res = task.result_object
-#     pricing_policies = list(task.master_user.pricing_policies.all())
-#
-#     date_from = str_to_date(kwargs['date_from'])
-#     date_to = str_to_date(kwargs['date_to'])
-#
-#     _l.debug('master_user=%s', master_user.id)
-#
-#     instruments = []
-#     for instr in master_user.instruments.order_by('id').all():
-#         if instr.daily_pricing_model_id == DailyPricingModel.SKIP:
-#             continue
-#         if str(instr.id) in task_res:
-#             _l.debug('instrument=%s', instr.id)
-#             instruments.append(instr)
-#
-#     currencies = []
-#     for ccy in master_user.currencies.order_by('id').all():
-#         if ccy.daily_pricing_model_id == DailyPricingModel.SKIP:
-#             continue
-#         if str(ccy.id) in task_res:
-#             _l.debug('currency=%s', ccy.id)
-#             currencies.append(ccy)
-#
-#     if instruments:
-#         create_instrument_price_history(
-#             task=task,
-#             instruments=instruments,
-#             pricing_policies=pricing_policies,
-#             save=True,
-#             date_range=(date_from, date_to),
-#             fail_silently=True,
-#             expr_fail_silently=True
-#         )
-#     if currencies:
-#         create_currency_price_history(
-#             task=task,
-#             currencies=currencies,
-#             pricing_policies=pricing_policies,
-#             save=True,
-#             date_range=(date_from, date_to),
-#             fail_silently=True,
-#             expr_fail_silently=True
-#         )
-#
-#     _l.debug('<')
-#
-#
-# @shared_task(name='backend.bloomberg_price_history_auto', bind=True, ignore_result=True)
-# def bloomberg_price_history_auto(self):
-#     _l.debug('-' * 79)
-#     _l.debug('bloomberg_price_history_auto: >')
-#
-#     if not settings.BLOOMBERG_SANDBOX:
-#         _l.warn('only sandbox')
-#         _l.debug('<')
-#
-#     yesterday = timezone.now().date() - timedelta(days=1)
-#
-#     for master_user in MasterUser.objects. \
-#             filter(bloomberg_config__isnull=False). \
-#             select_related('bloomberg_config'). \
-#             prefetch_related('instruments', 'currencies', 'pricing_policies'):
-#
-#         bloomberg_config = master_user.bloomberg_config
-#         if not bloomberg_config.is_ready:
-#             continue
-#
-#         _l.debug('master_user=%s', master_user.id)
-#
-#         instruments = []
-#
-#         pricing_policies = {pp.pk for pp in master_user.pricing_policies.all()}
-#         _l.info('pricing_policies=%s', pricing_policies)
-#
-#         instr_history_exists = {}
-#         for p in PriceHistory.objects.filter(instrument__in=master_user.instruments.all(), date=yesterday):
-#             ipm = instr_history_exists.get(p.instrument_id, None)
-#             if ipm is None:
-#                 instr_history_exists[p.instrument_id] = ipm = pricing_policies.copy()
-#             ipm.remove(p.pricing_policy_id)
-#         _l.info('instr_history_exists=%s', instr_history_exists)
-#
-#         for instr in master_user.instruments.all():
-#             if instr.daily_pricing_model_id == DailyPricingModel.SKIP:
-#                 continue
-#
-#             h = instr_history_exists.get(instr.id, None)
-#             _l.debug('currency=%s, history=%s', instr.id, h)
-#
-#             if h is not None and len(h) == 0:
-#                 continue
-#
-#             instruments.append({
-#                 'code': str(instr.id),
-#                 'industry': 'Corp',
-#             })
-#
-#         ccy_history_exists = {}
-#         for p in CurrencyHistory.objects.filter(currency__in=master_user.currencies.all(), date=yesterday):
-#             cpm = ccy_history_exists.get(p.currency_id, None)
-#             if cpm is None:
-#                 ccy_history_exists[p.currency_id] = cpm = pricing_policies.copy()
-#             cpm.remove(p.pricing_policy_id)
-#         _l.info('ccy_history_exists=%s', ccy_history_exists)
-#
-#         for ccy in master_user.currencies.all():
-#             if ccy.daily_pricing_model_id == DailyPricingModel.SKIP:
-#                 continue
-#
-#             h = ccy_history_exists.get(ccy.id, None)
-#             _l.debug('currency=%s, history=%s', ccy.id, h)
-#
-#             if h is not None and len(h) == 0:
-#                 continue
-#
-#             instruments.append({
-#                 'code': str(ccy.id),
-#                 'industry': 'CCY',
-#             })
-#
-#         _l.info('instruments=%s', instruments)
-#         if instruments:
-#             params = {
-#                 'instruments': instruments,
-#                 'date_from': yesterday,
-#                 'date_to': yesterday,
-#             }
-#             with transaction.atomic():
-#                 bt = Task.objects.create(
-#                     master_user_id=master_user.id,
-#                     provider_id=ProviderClass.BLOOMBERG,
-#                     status=Task.STATUS_PENDING,
-#                     action=Task.ACTION_PRICING_LATEST,
-#                     kwargs=json.dumps(params, cls=DjangoJSONEncoder, sort_keys=True, indent=1),
-#                 )
-#                 transaction.on_commit(
-#                     lambda: chain(bloomberg_send_request.s(bt.pk), bloomberg_wait_reponse.s(),
-#                                   bloomberg_price_history_auto_save.s()).apply_async())
-#
-#     _l.debug('<')
+    prices = []
+    if is_yesterday:
+        for i in Instrument.objects.filter(pk__in=instruments):
+            for mf in i.manual_pricing_formulas.all():
+                if not mf.expr:
+                    continue
+                values = {
+                    'd': date_to
+                }
+                principal_price = formula.safe_eval(mf.expr, names=values)
+                price = PriceHistory(
+                    instrument=i,
+                    pricing_policy=mf.pricing_policy,
+                    date=date_to,
+                    principal_price=principal_price
+                )
+                prices.append(price)
+
+                if fill_days:
+                    prices += fill_instrument_price(date_to + timedelta(days=1), fill_days, price)
+    else:
+        days = (date_to - date_from).days + 1
+
+        for i in Instrument.objects.filter(pk__in=instruments):
+            safe_instrument = {
+                'id': i.id,
+            }
+            for mf in i.manual_pricing_formulas.all():
+                if not mf.expr:
+                    continue
+                for d in rrule(freq=DAILY, count=days, dtstart=date_from):
+                    values = {
+                        'd': d.date(),
+                        'instrument': safe_instrument,
+                    }
+                    principal_price = formula.safe_eval(mf.expr, names=values)
+                    price = PriceHistory(
+                        instrument=i,
+                        pricing_policy=mf.pricing_policy,
+                        date=d,
+                        principal_price=principal_price
+                    )
+                    prices.append(price)
+    return prices
+
+
+def download_pricing(master_user=None, member=None, date_from=None, date_to=None, is_yesterday=None, balance_date=None,
+                     fill_days=None, override_existed=None, task=None, save=False):
+    if task is None:
+        with transaction.atomic():
+            kwargs = {
+                'date_from': date_from,
+                'date_to': date_to,
+                'is_yesterday': is_yesterday,
+                'balance_date': balance_date,
+                'fill_days': fill_days,
+                'override_existed': override_existed,
+            }
+            task = Task.objects.create(
+                master_user=master_user,
+                member=member,
+                provider_id=None,
+                status=Task.STATUS_PENDING,
+                action=Task.ACTION_PRICING_LATEST if is_yesterday else Task.ACTION_PRICING_LATEST,
+                # date_from=date_from,
+                # date_to=date_to,
+                # balance_date=balance_date,
+                # is_yesterday=is_yesterday,
+                # fill_days=fill_days,
+                # override_existed=override_existed,
+                kwargs=json.dumps(kwargs, cls=DjangoJSONEncoder, sort_keys=True, indent=1),
+            )
+            transaction.on_commit(
+                lambda: download_pricing_async.apply_async(kwargs={'task_id': task.id}, countdown=1))
+        return task, False
+    else:
+        if task.status == Task.STATUS_DONE:
+            # pricing_policies = [p for p in PricingPolicy.objects.filter(master_user=task.master_user)]
+            #
+            # options = task.kwargs_object
+            # override_existed = override_existed if override_existed is not None else options['override_existed']
+            #
+            # result = task.result_object
+            # sub_tasks_id = result['sub_tasks']
+            # instrument_task = result['instrument_task']
+            # # currency_task = result['currency_task']
+            #
+            # instrument_prices = []
+            # currency_prices = []
+            # for sub_task in Task.objects.filter(pk__in=sub_tasks_id):
+            #     provider = get_provider(task=sub_task)
+            #
+            #     subtask_options = sub_task.kwargs_object
+            #
+            #     if 'instruments_pk' in subtask_options:
+            #         instruments_pk = subtask_options['instruments_pk']
+            #         instruments = Instrument.objects.filter(pk__in=instruments_pk)
+            #         price_download_scheme_id = subtask_options['price_download_scheme_id']
+            #         price_download_scheme = PriceDownloadScheme.objects.get(pk=price_download_scheme_id)
+            #
+            #         instrument_prices += provider.create_instrument_pricing(
+            #             price_download_scheme=price_download_scheme,
+            #             options=subtask_options,
+            #             values=sub_task.result_object,
+            #             instruments=instruments,
+            #             pricing_policies=pricing_policies,
+            #             save=False,
+            #         )
+            #     elif 'currencies_pk' in subtask_options:
+            #         currencies_pk = subtask_options['currencies_pk']
+            #         currencies = Currency.objects.filter(pk__in=currencies_pk)
+            #         price_download_scheme_id = subtask_options['price_download_scheme_id']
+            #         price_download_scheme = PriceDownloadScheme.objects.get(pk=price_download_scheme_id)
+            #
+            #         currency_prices += provider.create_currency_pricing(
+            #             price_download_scheme=price_download_scheme,
+            #             options=subtask_options,
+            #             values=sub_task.result_object,
+            #             currencies=currencies,
+            #             pricing_policies=pricing_policies,
+            #             save=False,
+            #         )
+            #
+            # instrument_prices += _create_instrument_manual_prices(
+            #     options=options,
+            #     instruments=[i_id for i_id, task_id in six.iteritems(instrument_task) if task_id is None]
+            # )
+            #
+            # pprint.pprint(('instrument_prices', instrument_prices))
+            # pprint.pprint(('currency_prices', currency_prices))
+            #
+            # for p in instrument_prices:
+            #     try:
+            #         b = PriceHistory.objects.get(
+            #             instrument=p.instrument,
+            #             pricing_policy=p.pricing_policy,
+            #             date=p.date,
+            #         )
+            #     except PriceHistory.DoesNotExist:
+            #         p.save()
+            #     else:
+            #         if override_existed:
+            #             b.principal_price = p.principal_price
+            #             b.accrued_price = p.accrued_price
+            #             b.save()
+            #
+            # for p in currency_prices:
+            #     try:
+            #         b = CurrencyHistory.objects.get(
+            #             currency=p.currency,
+            #             pricing_policy=p.pricing_policy,
+            #             date=p.date,
+            #         )
+            #     except PriceHistory.DoesNotExist:
+            #         p.save()
+            #     else:
+            #         if override_existed:
+            #             b.fx_rate = p.fx_rate
+            #             b.save()
+
+            return task, True
+        return task, False

@@ -260,7 +260,8 @@ class PriceDownloadScheme(models.Model):
         for attr_name in args:
             field_name = getattr(self, attr_name)
             if field_name and field_name in values:
-                return values[field_name]
+                value = values[field_name]
+                return float(value) if value is not None else 0.0
         return 0.0
 
     @property
@@ -274,6 +275,31 @@ class PriceDownloadScheme(models.Model):
     @property
     def currency_history_fields(self):
         return self._get_fields('currency_fxrate')
+
+    def instrument_yesterday_values(self, values):
+        return {
+            'bid': self._get_value(values, 'bid0', 'bid1', 'bid2') * self.bid_multiplier,
+            'ask': self._get_value(values, 'ask0', 'ask1', 'ask2') * self.ask_multiplier,
+            'mid': self._get_value(values, 'mid') * self.last_multiplier,
+            'last': self._get_value(values, 'last') * self.mid_multiplier,
+        }
+
+    def instrument_history_values(self, values):
+        return {
+            'bid': self._get_value(values, 'bid_history') * self.bid_history_multiplier,
+            'ask': self._get_value(values, 'ask_history') * self.ask_history_multiplier,
+            'mid': self._get_value(values, 'last_history') * self.last_history_multiplier,
+            'last': self._get_value(values, 'mid_history') * self.mid_history_multiplier,
+        }
+
+    def currency_history_values(self, values):
+        value = self._get_value(values, 'currency_fxrate')
+        return {
+            'bid': value * self.currency_fxrate_multiplier,
+            'ask': value * self.currency_fxrate_multiplier,
+            'mid': value * self.currency_fxrate_multiplier,
+            'last': value * self.currency_fxrate_multiplier,
+        }
 
 
 class AbstractMapping(models.Model):
@@ -378,24 +404,26 @@ class Task(TimeStampedModel):
 
     status = models.SmallIntegerField(default=STATUS_PENDING, choices=STATUS_CHOICES)
 
-    provider = models.ForeignKey(ProviderClass)
+    provider = models.ForeignKey(ProviderClass, null=True, blank=True)
     action = models.SmallIntegerField(choices=ACTION_CHOICES, db_index=True)
 
-    # request
+    # instrument
     instrument_code = models.CharField(max_length=100, null=True, blank=True)
     instrument_download_scheme = models.ForeignKey(InstrumentDownloadScheme, null=True, blank=True,
                                                    on_delete=models.SET_NULL)
 
-    instruments = models.ManyToManyField('instruments.Instrument', blank=True)
-    currencies = models.ManyToManyField('currencies.Currency', blank=True)
-    price_download_scheme = models.ForeignKey(PriceDownloadScheme, null=True, blank=True, on_delete=models.SET_NULL)
+    # pricing
     date_from = models.DateField(null=True, blank=True)
     date_to = models.DateField(null=True, blank=True)
+    balance_date = models.DateField(null=True, blank=True)
+    is_yesterday = models.NullBooleanField()
+    fill_days = models.IntegerField(null=True, blank=True)
+    override_existed = models.NullBooleanField()
 
     kwargs = models.TextField(null=True, blank=True)
+    result = models.TextField(null=True, blank=True)
     request_id = models.CharField(max_length=64, null=True, db_index=True)
     response_id = models.CharField(max_length=64, null=True, db_index=True)
-    result = models.TextField(null=True, blank=True)
 
     class Meta:
         verbose_name = _('task')

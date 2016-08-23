@@ -3,11 +3,13 @@ from logging import getLogger
 
 import six
 from dateutil import parser
+from dateutil.rrule import rrule, DAILY
 from django.conf import settings
 from django.core.exceptions import ObjectDoesNotExist
 
 from poms.common import formula
-from poms.instruments.models import Instrument, InstrumentAttribute
+from poms.currencies.models import CurrencyHistory
+from poms.instruments.models import Instrument, InstrumentAttribute, PriceHistory
 from poms.integrations.models import InstrumentDownloadScheme, ProviderClass, CurrencyMapping, InstrumentTypeMapping, \
     InstrumentAttributeValueMapping, AccrualCalculationModelMapping, PeriodicityMapping
 from poms.obj_attrs.models import AbstractAttributeType
@@ -20,6 +22,21 @@ class ProviderException(Exception):
 
 
 class AbstractProvider(object):
+    def get_factor_schedule_method_fields(self, factor_schedule_method=None):
+        return []
+
+    def get_accrual_calculation_schedule_method_fields(self, accrual_calculation_schedule_method=None):
+        return []
+
+    def download_instrument(self, options):
+        return None, True
+
+    def download_instrument_pricing(self, options):
+        return None, True
+
+    def download_currency_pricing(self, options):
+        return None, True
+
     def parse_date(self, v):
         if v is not None:
             if isinstance(v, date):
@@ -90,14 +107,9 @@ class AbstractProvider(object):
             return None
         return obj.periodicity
 
-    def create_instrument(self, task, value_overrides, save=False):
-        master_user = task.master_user
-        provider = task.provider
-        scheme = task.instrument_download_scheme
-
-        values = task.result_object.copy()
-        if value_overrides:
-            values.update(value_overrides)
+    def create_instrument(self, instrument_download_scheme, values, save=False):
+        master_user = instrument_download_scheme.master_user
+        provider = instrument_download_scheme.provider
 
         instr = Instrument(master_user=master_user)
 
@@ -106,7 +118,7 @@ class AbstractProvider(object):
         # instr.accrued_currency = master_user.currency
 
         for attr in InstrumentDownloadScheme.BASIC_FIELDS:
-            expr = getattr(scheme, attr)
+            expr = getattr(instrument_download_scheme, attr)
             if expr:
                 try:
                     v = formula.safe_eval(expr, names=values)
@@ -134,22 +146,21 @@ class AbstractProvider(object):
             instr.save()
 
         instr._attributes = self.create_instrument_attributes(
-            task=task, instrument=instr, values=values, save=save)
+            instrument_download_scheme=instrument_download_scheme, instrument=instr, values=values, save=save)
 
         instr._accrual_calculation_schedules = self.create_accrual_calculation_schedules(
-            task=task, instrument=instr, values=values, save=save)
+            instrument_download_scheme=instrument_download_scheme, instrument=instr, values=values, save=save)
 
         instr._factor_schedules = self.create_factor_schedules(
-            task=task, instrument=instr, values=values, save=save)
+            instrument_download_scheme=instrument_download_scheme, instrument=instr, values=values, save=save)
 
         return instr
 
-    def create_instrument_attributes(self, task, instrument, values, save=False):
+    def create_instrument_attributes(self, instrument_download_scheme, instrument, values, save=False):
         iattrs = []
-        master_user = task.master_user
-        scheme = task.instrument_download_scheme
-        provider = task.provider
-        for attr in scheme.attributes.select_related('attribute_type').all():
+        master_user = instrument_download_scheme.master_user
+        provider = instrument_download_scheme.provider
+        for attr in instrument_download_scheme.attributes.select_related('attribute_type').all():
             tattr = attr.attribute_type
 
             iattr = InstrumentAttribute(content_object=instrument, attribute_type=tattr)
@@ -185,18 +196,17 @@ class AbstractProvider(object):
 
         return iattrs
 
-    def create_accrual_calculation_schedules(self, task, instrument, values, save=False):
+    def create_accrual_calculation_schedules(self, instrument_download_scheme, instrument, values, save=False):
         return []
 
-    def create_factor_schedules(self, task, instrument, values, save=False):
+    def create_factor_schedules(self, instrument_download_scheme, instrument, values, save=False):
         return []
 
-    def create_instrument_async(self,
-                                # request attrs
-                                instrument_code=None, instrument_download_scheme=None, master_user=None, member=None,
-                                # wait response attrs
-                                task=None, value_overrides=None, save=False):
-        return None, None
+        # def create_instrument_pricing(self, price_download_scheme, values, save=False):
+        #     return []
+        #
+        # def create_currency_pricing(self, price_download_scheme, values, save=False):
+        #     return []
 
 
 def get_provider(master_user=None, provider=None, task=None):
@@ -219,3 +229,33 @@ def get_provider(master_user=None, provider=None, task=None):
                 # fo
                 return BloombergDataProvider()
     return None
+
+
+def parse_date_iso(v):
+    if v is not None:
+        return datetime.strptime(v, "%Y-%m-%d").date()
+    return None
+
+
+def fill_instrument_price(date_from, days, original):
+    ret = []
+    for d in rrule(freq=DAILY, count=days, dtstart=date_from):
+        ret.append(PriceHistory(
+            instrument=original.instrument,
+            pricing_policy=original.pricing_policy,
+            date=d.date(),
+            principal_price=original.principal_price
+        ))
+    return ret
+
+
+def fill_currency_price(date_from, days, original):
+    ret = []
+    for d in rrule(freq=DAILY, count=days, dtstart=date_from):
+        ret.append(CurrencyHistory(
+            currency=original.currency,
+            pricing_policy=original.pricing_policy,
+            date=d.date(),
+            fx_rate=original.fx_rate
+        ))
+    return ret

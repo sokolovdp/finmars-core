@@ -12,22 +12,21 @@ from django.utils import timezone
 from rest_framework import serializers
 from rest_framework.exceptions import ValidationError
 
-from poms.common import formula
 from poms.common.fields import ExpressionField
 from poms.common.serializers import PomsClassSerializer
 from poms.currencies.fields import CurrencyField
-from poms.currencies.serializers import CurrencyHistorySerializer
-from poms.instruments.fields import InstrumentTypeField, InstrumentAttributeTypeField, InstrumentField, \
-    InstrumentClassifierField
-from poms.instruments.serializers import InstrumentAttributeSerializer, PriceHistorySerializer, InstrumentSerializer, \
+from poms.currencies.models import Currency
+from poms.instruments.fields import InstrumentTypeField, InstrumentAttributeTypeField, InstrumentClassifierField
+from poms.instruments.models import Instrument
+from poms.instruments.serializers import InstrumentAttributeSerializer, InstrumentSerializer, \
     AccrualCalculationScheduleSerializer, InstrumentFactorScheduleSerializer
-from poms.integrations.fields import ProviderClassField, InstrumentDownloadSchemeField, PriceDownloadSchemeField
+from poms.integrations.fields import InstrumentDownloadSchemeField
 from poms.integrations.models import InstrumentDownloadSchemeInput, InstrumentDownloadSchemeAttribute, \
     InstrumentDownloadScheme, ImportConfig, Task, ProviderClass, FactorScheduleDownloadMethod, \
     AccrualScheduleDownloadMethod, PriceDownloadScheme, CurrencyMapping, InstrumentTypeMapping, \
     InstrumentAttributeValueMapping, AccrualCalculationModelMapping, PeriodicityMapping
-from poms.integrations.providers.base import get_provider
 from poms.integrations.storage import FileImportStorage
+from poms.integrations.tasks import download_pricing, download_instrument
 from poms.users.fields import MasterUserField, MemberField, HiddenMemberField
 
 _l = getLogger('poms.integrations')
@@ -268,7 +267,7 @@ class TaskSerializer(serializers.ModelSerializer):
         fields = [
             'url', 'id', 'master_user', 'member', 'provider', 'action',
             'created', 'modified', 'status',
-            'instrument_code', 'instruments', 'currencies', 'date_from', 'date_to',
+            # 'instrument_code', 'instruments', 'currencies', 'date_from', 'date_to',
             'kwargs_object', 'result_object',
         ]
 
@@ -406,6 +405,7 @@ class ImportInstrumentSerializer(serializers.Serializer):
 
     task = serializers.CharField(required=False, allow_blank=True, allow_null=True)
     status = serializers.CharField(read_only=True)
+
     task_object = TaskSerializer(read_only=True)
     task_result_overrides = serializers.JSONField(default={})
 
@@ -417,8 +417,7 @@ class ImportInstrumentSerializer(serializers.Serializer):
             task_result_overrides = json.loads(task_result_overrides)
         instance = ImportInstrumentEntry(**validated_data)
         if instance.task:
-            provider = get_provider(task=instance.task_object)
-            task, instrument = provider.create_instrument_async(
+            task, instrument, is_ready = download_instrument(
                 # instrument_code=instance.instrument_code,
                 # instrument_download_scheme=instance.instrument_download_scheme,
                 # master_user=instance.master_user,
@@ -429,9 +428,9 @@ class ImportInstrumentSerializer(serializers.Serializer):
             )
             instance.task_object = task
             instance.instrument = instrument
+
         else:
-            provider = get_provider(master_user=instance.master_user, provider=instance.instrument_download_scheme.provider_id)
-            task, instrument = provider.create_instrument_async(
+            task, instrument, is_ready = download_instrument(
                 instrument_code=instance.instrument_code,
                 instrument_download_scheme=instance.instrument_download_scheme,
                 master_user=instance.master_user,
@@ -443,122 +442,119 @@ class ImportInstrumentSerializer(serializers.Serializer):
 
 
 class ImportHistoryEntry(object):
-    def __init__(self, master_user=None, member=None, provider=None, mode=None,
-                 instruments=None, currencies=None, scheme=None, date_from=None, date_to=None, task=None,
-                 instrument_histories=None, currency_histories=None):
+    def __init__(self, master_user=None, member=None, mode=None,
+                 instruments=None, currencies=None,
+                 date_from=None, date_to=None, is_yesterday=None,
+                 balance_date=None, fill_days=None, override_existed=False,
+                 task=None, instrument_histories=None, currency_histories=None):
         self.master_user = master_user
         self.member = member
-        self.provider = provider
         self.mode = mode
         self.instruments = instruments
         self.currencies = currencies
-        self.scheme = scheme
+
         self.date_from = date_from
         self.date_to = date_to
+        self.is_yesterday = is_yesterday
+        self.balance_date = balance_date
+        self.fill_days = fill_days
+        self.override_existed = override_existed
+
         self.task = task
         self._task_object = None
         self.instrument_histories = instrument_histories
         self.currency_histories = currency_histories
 
-    @property
-    def task_object(self):
-        if self.task:
+    def get_task_object(self):
+        if not self._task_object and self.task:
             self._task_object = self.master_user.bloomberg_tasks.get(pk=self.task)
         return self._task_object
 
+    def set_task_object(self, value):
+        self._task_object = value
+        self.task = getattr(value, 'pk', None)
 
-class ImportHistorySerializer(serializers.Serializer):
+    task_object = property(get_task_object, set_task_object)
+
+    @property
+    def status(self):
+        return getattr(self.task_object, 'status', Task.STATUS_PENDING)
+
+    @property
+    def instrument_price_missed(self):
+        result = getattr(self.task_object, 'result_object', {})
+        return result.get('instrument_price_missed', None)
+
+    @property
+    def currency_price_missed(self):
+        result = getattr(self.task_object, 'result_object', {})
+        return result.get('currency_price_missed', None)
+
+
+class ImportPricingSerializer(serializers.Serializer):
     master_user = MasterUserField()
     member = HiddenMemberField()
-    provider = ProviderClassField()
 
     mode = serializers.ChoiceField(choices=IMPORT_MODE_CHOICES)
 
-    instruments = InstrumentField(many=True)
-    currencies = CurrencyField(many=True)
-    scheme = PriceDownloadSchemeField()
-
     date_from = serializers.DateField(allow_null=True, required=False)
     date_to = serializers.DateField(allow_null=True, required=False)
+    is_yesterday = serializers.BooleanField(read_only=True)
+    balance_date = serializers.DateField(allow_null=True, required=False)
+    fill_days = serializers.IntegerField(initial=0, default=0)
+    override_existed = serializers.BooleanField()
+
     task = serializers.CharField(required=False, allow_blank=True, allow_null=True)
     task_object = TaskSerializer(read_only=True)
 
-    instrument_histories = PriceHistorySerializer(many=True, read_only=True)
-    currency_histories = CurrencyHistorySerializer(many=True, read_only=True)
+    status = serializers.ReadOnlyField()
+    instrument_price_missed = serializers.ReadOnlyField()
+    currency_price_missed = serializers.ReadOnlyField()
 
     def validate(self, attrs):
-        attrs = super(ImportHistorySerializer, self).validate(attrs)
-        date_from = attrs.get('date_from', None)
-        date_to = attrs.get('date_to', None)
-        if date_from or date_to:
-            now = timezone.now().date()
-            date_from = date_from or now
-            date_to = date_to or now
-            if date_from > date_to:
-                raise ValidationError({
-                    'date_from': 'Invalid date range',
-                    'date_to': 'Invalid date range',
-                })
+        attrs = super(ImportPricingSerializer, self).validate(attrs)
+
+        yesterday = timezone.now().date() - timedelta(days=1)
+
+        date_from = attrs.get('date_from', yesterday) or yesterday
+        date_to = attrs.get('date_to', yesterday) or yesterday
+        if date_from > date_to:
+            raise ValidationError({
+                'date_from': 'Invalid date range',
+                'date_to': 'Invalid date range',
+            })
+
+        balance_date = attrs.get('balance_date', date_to) or date_to
+
+        attrs['date_from'] = date_from
+        attrs['date_to'] = date_to
+        attrs['is_yesterday'] = (date_from == yesterday) and (date_to == yesterday)
+
+        attrs['balance_date'] = balance_date
+
         return attrs
 
     def create(self, validated_data):
         instance = ImportHistoryEntry(**validated_data)
+
         if instance.task:
-            if instance.task_object.status == Task.STATUS_DONE:
-                try:
-                    # instance.instrument_histories = create_instrument_price_history(
-                    #     task=instance.task_object,
-                    #     instruments=instance.instruments,
-                    #     save=instance.mode == IMPORT_PROCESS,
-                    #     date_range=(instance.date_from, instance.date_to),
-                    #     fail_silently=True
-                    # )
-                    #
-                    # instance.currency_histories = create_currency_price_history(
-                    #     task=instance.task_object,
-                    #     currencies=instance.currencies,
-                    #     save=instance.mode == IMPORT_PROCESS,
-                    #     date_range=(instance.date_from, instance.date_to),
-                    #     fail_silently=True
-                    # )
-                    pass
-                except formula.InvalidExpression:
-                    raise ValidationError('Invalid pricing policy expression')
+            task, is_ready = download_pricing(
+                fill_days=instance.fill_days,
+                override_existed=instance.override_existed,
+                task=instance.task_object,
+                save=(instance.mode == IMPORT_PROCESS)
+            )
+            instance.task_object = task
         else:
-            yesterday = timezone.now().date() - timedelta(days=1)
-            action = Task.ACTION_PRICE_HISTORY
-
-            if (instance.date_from is None and instance.date_to is None) or \
-                    (instance.date_from == yesterday and instance.date_to == yesterday):
-                action = Task.ACTION_PRICING_LATEST
-
-            if instance.date_from is None:
-                instance.date_from = yesterday
-            if instance.date_to is None:
-                instance.date_to = yesterday
-
-            if instance.provider.id == ProviderClass.BLOOMBERG:
-                if action == Task.ACTION_PRICING_LATEST:
-                    from poms.integrations.tasks import bloomberg_pricing_latest
-                    instance.task = bloomberg_pricing_latest(
-                        master_user=instance.master_user,
-                        member=instance.member,
-                        price_download_scheme=instance.scheme,
-                        instruments=instance.instruments,
-                        currencies=instance.currencies,
-                        # date_from=instance.date_from,
-                        # date_to=instance.date_to
-                    )
-                else:
-                    from poms.integrations.tasks import bloomberg_pricing_history
-                    instance.task = bloomberg_pricing_history(
-                        master_user=instance.master_user,
-                        member=instance.member,
-                        price_download_scheme=instance.scheme,
-                        instruments=instance.instruments,
-                        currencies=instance.currencies,
-                        date_from=instance.date_from,
-                        date_to=instance.date_to
-                    )
-
+            task, is_ready = download_pricing(
+                master_user=instance.master_user,
+                member=instance.member,
+                date_from=instance.date_from,
+                date_to=instance.date_to,
+                is_yesterday=instance.is_yesterday,
+                balance_date=instance.balance_date,
+                fill_days=instance.fill_days,
+                override_existed=instance.override_existed
+            )
+            instance.task_object = task
         return instance
