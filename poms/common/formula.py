@@ -77,33 +77,47 @@ def map_str(value, value_map):
     return value_map.get(value, None)
 
 
+def simple_price(date, date1, value1, date2, value2):
+    if date < date1:
+        return None
+    if date == date1:
+        return value1
+    if date > date2:
+        return None
+    if date == date2:
+        return value2
+    d = 1.0 * (date - date1).days / (date2 - date1).days
+    return value1 + d * (value2 - value1)
+
+
 def w_random():
     return random.random()
 
 
 DEFAULT_FUNCTIONS = {
-    "str": lambda x: six.text_type(x),
-    "int": lambda x: int(x),
-    "float": lambda x: float(x),
-    "round": lambda x: round(x),
-    "trunc": lambda x: int(x),
-    "iff": lambda x, v1, v2: v1 if x else v2,
-    "now": date_now,
-    "days": lambda x: datetime.timedelta(days=x),
-    "add_days": lambda d, x: d + datetime.timedelta(days=x),
-    "add_weeks": lambda d, x: d + datetime.timedelta(weeks=x),
-    "add_workdays": add_workdays,
-    "format_date": format_date,
-    "parse_date": parse_date,
-    "format_decimal": format_decimal,
-    "format_currency": format_currency,
-    "random": w_random,
-    "map_str": map_str
+    'str': lambda x: six.text_type(x),
+    'int': lambda x: int(x),
+    'float': lambda x: float(x),
+    'round': lambda x: round(x),
+    'trunc': lambda x: int(x),
+    'iff': lambda x, v1, v2: v1 if x else v2,
+    'now': date_now,
+    'days': lambda x: datetime.timedelta(days=x),
+    'add_days': lambda d, x: d + datetime.timedelta(days=x),
+    'add_weeks': lambda d, x: d + datetime.timedelta(weeks=x),
+    'add_workdays': add_workdays,
+    'format_date': format_date,
+    'parse_date': parse_date,
+    'format_decimal': format_decimal,
+    'format_currency': format_currency,
+    'random': w_random,
+    'simple_price': simple_price,
+    'map_str': map_str,
 }
 
 
 class SimpleEval2(object):  # pylint: disable=too-few-public-methods
-    expr = ""
+    expr = ''
 
     def __init__(self, operators=None, functions=None, names=None):
         '''
@@ -336,9 +350,11 @@ if __name__ == "__main__":
     # print(safe_eval('(1).__class__.__bases__', names=names))
     # print(safe_eval2('(1).__class__.__bases__', names=names))
     # print(safe_eval3('(1).__class__.__bases__[0].__subclasses__()', names=names))
-    print(safe_eval('{"a":1, "b":2}'))
+    # print(safe_eval('{"a":1, "b":2}'))
     # print(safe_eval('[1,]'))
     # print(safe_eval('(1,)'))
+    # print(safe_eval('parse_date("2000-01-01") + days(100)'))
+    # print(safe_eval('simple_price(parse_date("2000-01-02"), parse_date("2000-01-01"), 0, parse_date("2000-04-10"), 100)'))
 
     def demo():
         import pprint

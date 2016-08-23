@@ -26,6 +26,7 @@ class PricingPolicyAdmin(HistoricalAdmin):
     model = PricingPolicy
     list_display = ['id', 'name', 'master_user']
     list_select_related = ['master_user']
+    raw_id_fields = ['master_user']
     ordering = ['user_code']
 
 
@@ -74,7 +75,7 @@ class InstrumentFactorScheduleInline(admin.StackedInline):
 class InstrumentAdmin(HistoricalAdmin):
     model = Instrument
     list_display = ['id', 'master_user', 'name', 'instrument_type', 'pricing_currency', 'accrued_currency',
-                    'reference_for_pricing']
+                    'reference_for_pricing', 'daily_pricing_model', 'price_download_scheme']
     list_select_related = ['master_user', 'instrument_type', 'pricing_currency', 'accrued_currency']
     raw_id_fields = ['master_user', 'instrument_type', 'pricing_currency', 'accrued_currency', 'price_download_scheme']
     inlines = [

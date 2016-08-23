@@ -22,12 +22,13 @@ _history_model_list = None
 
 def _accept(model):
     from poms.common.models import AbstractClassModel
+    from poms.integrations.models import Task
 
     app_label = getattr(model._meta, 'app_label', None)
     if app_label not in ['users', 'chats', 'tags', 'accounts', 'counterparties', 'currencies', 'instruments',
                          'portfolios', 'strategies', 'transactions', 'integrations', ]:
         return False
-    if isinstance(model, AbstractClassModel):
+    if issubclass(model, (AbstractClassModel, Task)):
         return False
     return True
 

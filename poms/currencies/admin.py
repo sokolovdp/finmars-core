@@ -9,7 +9,7 @@ from poms.currencies.models import Currency, CurrencyHistory
 
 class CurrencyAdmin(HistoricalAdmin):
     model = Currency
-    list_display = ['id', 'master_user', 'name', 'reference_for_pricing']
+    list_display = ['id', 'master_user', 'name', 'reference_for_pricing', 'daily_pricing_model', 'price_download_scheme']
     list_select_related = ['master_user']
     raw_id_fields = ['master_user', 'price_download_scheme']
     ordering = ['master_user', 'user_code']
