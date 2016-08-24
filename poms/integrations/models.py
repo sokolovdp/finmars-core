@@ -407,6 +407,8 @@ class Task(TimeStampedModel):
     provider = models.ForeignKey(ProviderClass, null=True, blank=True)
     action = models.CharField(max_length=20, db_index=True)
 
+    # parent_task = models.ForeignKey('self', null=True, blank=True)
+
     # # instrument
     # instrument_code = models.CharField(max_length=100, null=True, blank=True)
     # instrument_download_scheme = models.ForeignKey(InstrumentDownloadScheme, null=True, blank=True,

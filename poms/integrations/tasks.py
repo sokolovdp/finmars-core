@@ -610,7 +610,7 @@ def _create_instrument_manual_prices(options, instruments):
 
 
 def download_pricing(master_user=None, member=None, date_from=None, date_to=None, is_yesterday=None, balance_date=None,
-                     fill_days=None, override_existed=None, task=None, save=False):
+                     fill_days=None, override_existed=None, task=None):
     if task is None:
         with transaction.atomic():
             options = {
@@ -636,88 +636,5 @@ def download_pricing(master_user=None, member=None, date_from=None, date_to=None
         return task, False
     else:
         if task.status == Task.STATUS_DONE:
-            # pricing_policies = [p for p in PricingPolicy.objects.filter(master_user=task.master_user)]
-            #
-            # options = task.kwargs_object
-            # override_existed = override_existed if override_existed is not None else options['override_existed']
-            #
-            # result = task.result_object
-            # sub_tasks_id = result['sub_tasks']
-            # instrument_task = result['instrument_task']
-            # # currency_task = result['currency_task']
-            #
-            # instrument_prices = []
-            # currency_prices = []
-            # for sub_task in Task.objects.filter(pk__in=sub_tasks_id):
-            #     provider = get_provider(task=sub_task)
-            #
-            #     subtask_options = sub_task.kwargs_object
-            #
-            #     if 'instruments_pk' in subtask_options:
-            #         instruments_pk = subtask_options['instruments_pk']
-            #         instruments = Instrument.objects.filter(pk__in=instruments_pk)
-            #         price_download_scheme_id = subtask_options['price_download_scheme_id']
-            #         price_download_scheme = PriceDownloadScheme.objects.get(pk=price_download_scheme_id)
-            #
-            #         instrument_prices += provider.create_instrument_pricing(
-            #             price_download_scheme=price_download_scheme,
-            #             options=subtask_options,
-            #             values=sub_task.result_object,
-            #             instruments=instruments,
-            #             pricing_policies=pricing_policies,
-            #             save=False,
-            #         )
-            #     elif 'currencies_pk' in subtask_options:
-            #         currencies_pk = subtask_options['currencies_pk']
-            #         currencies = Currency.objects.filter(pk__in=currencies_pk)
-            #         price_download_scheme_id = subtask_options['price_download_scheme_id']
-            #         price_download_scheme = PriceDownloadScheme.objects.get(pk=price_download_scheme_id)
-            #
-            #         currency_prices += provider.create_currency_pricing(
-            #             price_download_scheme=price_download_scheme,
-            #             options=subtask_options,
-            #             values=sub_task.result_object,
-            #             currencies=currencies,
-            #             pricing_policies=pricing_policies,
-            #             save=False,
-            #         )
-            #
-            # instrument_prices += _create_instrument_manual_prices(
-            #     options=options,
-            #     instruments=[i_id for i_id, task_id in six.iteritems(instrument_task) if task_id is None]
-            # )
-            #
-            # pprint.pprint(('instrument_prices', instrument_prices))
-            # pprint.pprint(('currency_prices', currency_prices))
-            #
-            # for p in instrument_prices:
-            #     try:
-            #         b = PriceHistory.objects.get(
-            #             instrument=p.instrument,
-            #             pricing_policy=p.pricing_policy,
-            #             date=p.date,
-            #         )
-            #     except PriceHistory.DoesNotExist:
-            #         p.save()
-            #     else:
-            #         if override_existed:
-            #             b.principal_price = p.principal_price
-            #             b.accrued_price = p.accrued_price
-            #             b.save()
-            #
-            # for p in currency_prices:
-            #     try:
-            #         b = CurrencyHistory.objects.get(
-            #             currency=p.currency,
-            #             pricing_policy=p.pricing_policy,
-            #             date=p.date,
-            #         )
-            #     except PriceHistory.DoesNotExist:
-            #         p.save()
-            #     else:
-            #         if override_existed:
-            #             b.fx_rate = p.fx_rate
-            #             b.save()
-
             return task, True
         return task, False
