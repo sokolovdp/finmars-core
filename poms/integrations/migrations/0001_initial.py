@@ -5,7 +5,7 @@ from __future__ import unicode_literals
 import django.core.files.storage
 from django.db import migrations, models
 import poms.integrations.models
-
+import poms.integrations.storage
 
 class Migration(migrations.Migration):
 
@@ -77,10 +77,10 @@ class Migration(migrations.Migration):
             name='ImportConfig',
             fields=[
                 ('id', models.AutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('p12cert', models.FileField(blank=True, null=True, storage=django.core.files.storage.FileSystemStorage(base_url='/api/bloomberg/', location='/Users/ailyukhin/develop/workspaces/mars/backend/tmp/import-config'), upload_to=poms.integrations.models.import_cert_upload_to)),
+                ('p12cert', models.FileField(blank=True, null=True, storage=poms.integrations.storage.ImportConfigStorage(), upload_to=poms.integrations.models.import_cert_upload_to)),
                 ('password', models.CharField(blank=True, max_length=64, null=True)),
-                ('cert', models.FileField(blank=True, null=True, storage=django.core.files.storage.FileSystemStorage(base_url='/api/bloomberg/', location='/Users/ailyukhin/develop/workspaces/mars/backend/tmp/import-config'), upload_to=poms.integrations.models.import_cert_upload_to)),
-                ('key', models.FileField(blank=True, null=True, storage=django.core.files.storage.FileSystemStorage(base_url='/api/bloomberg/', location='/Users/ailyukhin/develop/workspaces/mars/backend/tmp/import-config'), upload_to=poms.integrations.models.import_cert_upload_to)),
+                ('cert', models.FileField(blank=True, null=True, storage=poms.integrations.storage.ImportConfigStorage(), upload_to=poms.integrations.models.import_cert_upload_to)),
+                ('key', models.FileField(blank=True, null=True, storage=poms.integrations.storage.ImportConfigStorage(), upload_to=poms.integrations.models.import_cert_upload_to)),
             ],
             options={
                 'verbose_name_plural': 'import configs',
