@@ -1,7 +1,6 @@
 from __future__ import unicode_literals, print_function
 
 import itertools
-import pprint
 import time
 from collections import defaultdict
 from datetime import timedelta
@@ -11,7 +10,6 @@ import six
 from celery import shared_task, chord
 from celery.exceptions import TimeoutError
 from dateutil.rrule import rrule, DAILY
-from django.conf import settings
 from django.core.mail import send_mail as django_send_mail, send_mass_mail as django_send_mass_mail, \
     mail_admins as django_mail_admins, mail_managers as django_mail_managers
 from django.db import transaction
@@ -154,14 +152,14 @@ def download_instrument_async(self, task_id=None):
 
         if not is_ready:
             if self.request.is_eager:
-                time.sleep(settings.BLOOMBERG_RETRY_DELAY)
-            self.retry(countdown=settings.BLOOMBERG_RETRY_DELAY, max_retries=settings.BLOOMBERG_MAX_RETRIES,
-                       throw=False)
+                time.sleep(provider.get_retry_delay())
             # raise self.retry(countdown=settings.BLOOMBERG_RETRY_DELAY, max_retries=settings.BLOOMBERG_MAX_RETRIES)
+            self.retry(countdown=provider.get_retry_delay(), max_retries=provider.get_max_retries(), throw=False)
+            return
 
 
 def download_instrument(instrument_code=None, instrument_download_scheme=None, master_user=None, member=None,
-                        task=None, value_overrides=None, save=False):
+                        task=None, value_overrides=None):
     if task is None:
         options = {
             'instrument_download_scheme_id': instrument_download_scheme.id,
@@ -179,7 +177,7 @@ def download_instrument(instrument_code=None, instrument_download_scheme=None, m
             task.save()
             transaction.on_commit(
                 lambda: download_instrument_async.apply_async(kwargs={'task_id': task.id}, countdown=1))
-        return task, None, False
+        return task, None
     else:
         if task.status == Task.STATUS_DONE:
             provider = get_provider(task.master_user, task.provider_id)
@@ -192,9 +190,9 @@ def download_instrument(instrument_code=None, instrument_download_scheme=None, m
             instrument_download_scheme_id = options['instrument_download_scheme_id']
             instrument_download_scheme = InstrumentDownloadScheme.objects.get(pk=instrument_download_scheme_id)
 
-            instrument = provider.create_instrument(instrument_download_scheme, values, save=save)
-            return task, instrument, True
-        return task, None, False
+            instrument = provider.create_instrument(instrument_download_scheme, values)
+            return task, instrument
+        return task, None
 
 
 @shared_task(name='backend.download_instrument_pricing_async', bind=True, ignore_result=True)
@@ -229,10 +227,10 @@ def download_instrument_pricing_async(self, task_id):
 
         if not is_ready:
             if self.request.is_eager:
-                time.sleep(settings.BLOOMBERG_RETRY_DELAY)
-            self.retry(countdown=settings.BLOOMBERG_RETRY_DELAY, max_retries=settings.BLOOMBERG_MAX_RETRIES,
-                       throw=False)
+                time.sleep(provider.get_retry_delay())
             # raise self.retry(countdown=settings.BLOOMBERG_RETRY_DELAY, max_retries=settings.BLOOMBERG_MAX_RETRIES)
+            self.retry(countdown=provider.get_retry_delay(), max_retries=provider.get_max_retries(), throw=False)
+            return
 
 
 @shared_task(name='backend.download_currency_pricing_async', bind=True, ignore_result=True)
@@ -267,10 +265,10 @@ def download_currency_pricing_async(self, task_id):
 
         if not is_ready:
             if self.request.is_eager:
-                time.sleep(settings.BLOOMBERG_RETRY_DELAY)
-            self.retry(countdown=settings.BLOOMBERG_RETRY_DELAY, max_retries=settings.BLOOMBERG_MAX_RETRIES,
-                       throw=False)
+                time.sleep(provider.get_retry_delay())
             # raise self.retry(countdown=settings.BLOOMBERG_RETRY_DELAY, max_retries=settings.BLOOMBERG_MAX_RETRIES)
+            self.retry(countdown=provider.get_retry_delay(), max_retries=provider.get_max_retries(), throw=False)
+            return
 
 
 @shared_task(name='backend.download_pricing_async', bind=True, ignore_result=True)
@@ -452,8 +450,7 @@ def download_pricing_wait(self, sub_tasks_id, task_id):
                 options=subtask_options,
                 values=sub_task.result_object,
                 instruments=instruments,
-                pricing_policies=pricing_policies,
-                save=False,
+                pricing_policies=pricing_policies
             )
 
         elif 'currencies_pk' in subtask_options:
@@ -467,8 +464,7 @@ def download_pricing_wait(self, sub_tasks_id, task_id):
                 options=subtask_options,
                 values=sub_task.result_object,
                 currencies=currencies,
-                pricing_policies=pricing_policies,
-                save=False,
+                pricing_policies=pricing_policies
             )
 
     instrument_for_manual_price = [i_id for i_id, task_id in six.iteritems(instrument_task) if task_id is None]

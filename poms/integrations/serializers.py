@@ -15,9 +15,7 @@ from rest_framework.exceptions import ValidationError
 from poms.common.fields import ExpressionField
 from poms.common.serializers import PomsClassSerializer
 from poms.currencies.fields import CurrencyField
-from poms.currencies.models import Currency
 from poms.instruments.fields import InstrumentTypeField, InstrumentAttributeTypeField, InstrumentClassifierField
-from poms.instruments.models import Instrument
 from poms.instruments.serializers import InstrumentAttributeSerializer, InstrumentSerializer, \
     AccrualCalculationScheduleSerializer, InstrumentFactorScheduleSerializer
 from poms.integrations.fields import InstrumentDownloadSchemeField
@@ -364,10 +362,9 @@ class InstrumentMiniSerializer(InstrumentSerializer):
 
 
 class ImportInstrumentEntry(object):
-    def __init__(self, mode=None, master_user=None, member=None,
+    def __init__(self, master_user=None, member=None,
                  instrument_code=None, instrument_download_scheme=None,
                  task=None, task_result_overrides=None, instrument=None):
-        self.mode = mode
         self.master_user = master_user
         self.member = member
         self.instrument_code = instrument_code
@@ -398,7 +395,6 @@ class ImportInstrumentSerializer(serializers.Serializer):
     member = HiddenMemberField()
     # provider = ProviderClassField()
     instrument_download_scheme = InstrumentDownloadSchemeField()
-    mode = serializers.ChoiceField(choices=IMPORT_MODE_CHOICES)
 
     instrument_code = serializers.CharField(required=True, initial='USP16394AG62 Corp')
 
@@ -416,20 +412,19 @@ class ImportInstrumentSerializer(serializers.Serializer):
             task_result_overrides = json.loads(task_result_overrides)
         instance = ImportInstrumentEntry(**validated_data)
         if instance.task:
-            task, instrument, is_ready = download_instrument(
+            task, instrument = download_instrument(
                 # instrument_code=instance.instrument_code,
                 # instrument_download_scheme=instance.instrument_download_scheme,
                 # master_user=instance.master_user,
                 # member=instance.member,
                 task=instance.task_object,
-                value_overrides=task_result_overrides,
-                save=(instance.mode == IMPORT_PROCESS)
+                value_overrides=task_result_overrides
             )
             instance.task_object = task
             instance.instrument = instrument
 
         else:
-            task, instrument, is_ready = download_instrument(
+            task, instrument = download_instrument(
                 instrument_code=instance.instrument_code,
                 instrument_download_scheme=instance.instrument_download_scheme,
                 master_user=instance.master_user,
@@ -440,15 +435,14 @@ class ImportInstrumentSerializer(serializers.Serializer):
         return instance
 
 
-class ImportHistoryEntry(object):
-    def __init__(self, master_user=None, member=None, mode=None,
+class ImportPricingEntry(object):
+    def __init__(self, master_user=None, member=None,
                  instruments=None, currencies=None,
                  date_from=None, date_to=None, is_yesterday=None,
                  balance_date=None, fill_days=None, override_existed=False,
                  task=None, instrument_histories=None, currency_histories=None):
         self.master_user = master_user
         self.member = member
-        self.mode = mode
         self.instruments = instruments
         self.currencies = currencies
 
@@ -494,8 +488,6 @@ class ImportPricingSerializer(serializers.Serializer):
     master_user = MasterUserField()
     member = HiddenMemberField()
 
-    mode = serializers.ChoiceField(choices=IMPORT_MODE_CHOICES)
-
     date_from = serializers.DateField(allow_null=True, required=False)
     date_to = serializers.DateField(allow_null=True, required=False)
     is_yesterday = serializers.BooleanField(read_only=True)
@@ -534,14 +526,13 @@ class ImportPricingSerializer(serializers.Serializer):
         return attrs
 
     def create(self, validated_data):
-        instance = ImportHistoryEntry(**validated_data)
+        instance = ImportPricingEntry(**validated_data)
 
         if instance.task:
             task, is_ready = download_pricing(
                 fill_days=instance.fill_days,
                 override_existed=instance.override_existed,
-                task=instance.task_object,
-                save=(instance.mode == IMPORT_PROCESS)
+                task=instance.task_object
             )
             instance.task_object = task
         else:

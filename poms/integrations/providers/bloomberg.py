@@ -203,24 +203,6 @@ class BloombergDataProvider(AbstractProvider):
         instr_yellowkey = instr[1]
         return {"id": instr_id, "yellowkey": instr_yellowkey,}
 
-    def _instrument_add_fields(self, fields, factor_schedule_method=None, accrual_calculation_schedule_method=None):
-        if factor_schedule_method == FactorScheduleDownloadMethod.DEFAULT:
-            fields = fields + ['FACTOR_SCHEDULE']
-
-        if accrual_calculation_schedule_method == AccrualScheduleDownloadMethod.DEFAULT:
-            fields = fields + ['START_ACC_DT', 'FIRST_CPN_DT', 'CPN', 'DAY_CNT', 'CPN_FREQ', 'MULTI_CPN_SCHEDULE']
-        return sorted(set(fields))
-
-    def get_factor_schedule_method_fields(self, factor_schedule_method=None):
-        if factor_schedule_method == FactorScheduleDownloadMethod.DEFAULT:
-            return ['FACTOR_SCHEDULE']
-        return []
-
-    def get_accrual_calculation_schedule_method_fields(self, accrual_calculation_schedule_method=None):
-        if accrual_calculation_schedule_method == AccrualScheduleDownloadMethod.DEFAULT:
-            return ['START_ACC_DT', 'FIRST_CPN_DT', 'CPN', 'DAY_CNT', 'CPN_FREQ', 'MULTI_CPN_SCHEDULE']
-        return []
-
     def _invoke_sync(self, name, request_func, request_kwargs, response_func):
         _l.debug('|> %s', name)
         response_id = request_func(**request_kwargs)
@@ -235,27 +217,29 @@ class BloombergDataProvider(AbstractProvider):
         _l.debug('|< failed')
         raise BloombergException("%s('%s') failed" % (name, response_id,))
 
+    def get_max_retries(self):
+        return settings.BLOOMBERG_MAX_RETRIES
+
+    def get_retry_delay(self):
+        return settings.BLOOMBERG_RETRY_DELAY
+
+    def get_factor_schedule_method_fields(self, factor_schedule_method=None):
+        if factor_schedule_method == FactorScheduleDownloadMethod.DEFAULT:
+            return ['FACTOR_SCHEDULE']
+        return []
+
+    def get_accrual_calculation_schedule_method_fields(self, accrual_calculation_schedule_method=None):
+        if accrual_calculation_schedule_method == AccrualScheduleDownloadMethod.DEFAULT:
+            return ['START_ACC_DT', 'FIRST_CPN_DT', 'CPN', 'DAY_CNT', 'CPN_FREQ', 'MULTI_CPN_SCHEDULE']
+        return []
+
     def parse_date(self, value):
         if value and value.lower() != 'n.s.':
-            return datetime.strptime(value, settings.BLOOMBERG_DATE_INPUT_FORMAT).date()
+            try:
+                return datetime.strptime(value, settings.BLOOMBERG_DATE_INPUT_FORMAT).date()
+            except ValueError:
+                return None
         return None
-
-    def get_fields(self):
-        """
-        Test method to check SSL connectivity. (is free!)
-        @return: bloomberg mnemonic test data.
-        @rtype: dict
-        """
-        _l.debug('get_fields >')
-
-        response = self.soap_client.service.getFields(
-            criteria={
-                "mnemonic": "NAME"
-            }
-        )
-        _l.debug('response=%s', response)
-        self._response_is_valid(response)
-        return response
 
     def download_instrument(self, options):
         _l.debug('download_instrument: %s', options)
@@ -277,8 +261,8 @@ class BloombergDataProvider(AbstractProvider):
             options['factor_schedule_method_fields'] = factor_schedule_method_fields
             options['accrual_calculation_schedule_method_fields'] = accrual_calculation_schedule_method_fields
 
-            fields = fields + factor_schedule_method_fields + accrual_calculation_schedule_method_fields
-            response_id = self.get_instrument_send_request(instrument_code, fields)
+            request_fields = fields + factor_schedule_method_fields + accrual_calculation_schedule_method_fields
+            response_id = self.get_instrument_send_request(instrument_code, request_fields)
 
             options['response_id'] = response_id
             return None, False
@@ -430,6 +414,23 @@ class BloombergDataProvider(AbstractProvider):
                                  request_func=self.get_instrument_send_request,
                                  request_kwargs={'instrument': instrument, 'fields': fields},
                                  response_func=self.get_instrument_get_response)
+
+    def get_fields(self):
+        """
+        Test method to check SSL connectivity. (is free!)
+        @return: bloomberg mnemonic test data.
+        @rtype: dict
+        """
+        _l.debug('get_fields >')
+
+        response = self.soap_client.service.getFields(
+            criteria={
+                "mnemonic": "NAME"
+            }
+        )
+        _l.debug('response=%s', response)
+        self._response_is_valid(response)
+        return response
 
     def get_pricing_latest_send_request(self, instruments, fields):
         """
@@ -602,7 +603,7 @@ class BloombergDataProvider(AbstractProvider):
                                  },
                                  response_func=self.get_pricing_history_get_response)
 
-    def create_accrual_calculation_schedules(self, instrument_download_scheme, instrument, values, save=False):
+    def create_accrual_calculation_schedules(self, instrument_download_scheme, instrument, values):
         accrual_calculation_schedule_method = instrument_download_scheme.accrual_calculation_schedule_method_id
         if accrual_calculation_schedule_method != AccrualScheduleDownloadMethod.DEFAULT:
             return []
@@ -648,8 +649,6 @@ class BloombergDataProvider(AbstractProvider):
                 if periodicity:
                     s.periodicity = periodicity
 
-                if save:
-                    s.save()
                 accrual_calculation_schedules.append(s)
                 # next row
                 accrual_start_date = self.parse_date(row[0])
@@ -668,13 +667,11 @@ class BloombergDataProvider(AbstractProvider):
             if periodicity:
                 s.periodicity = periodicity
 
-            if save:
-                s.save()
             accrual_calculation_schedules.append(s)
 
         return accrual_calculation_schedules
 
-    def create_factor_schedules(self, instrument_download_scheme, instrument, values, save=False):
+    def create_factor_schedules(self, instrument_download_scheme, instrument, values):
         factor_schedule_method = instrument_download_scheme.factor_schedule_method_id
         if factor_schedule_method != FactorScheduleDownloadMethod.DEFAULT:
             return []
@@ -703,8 +700,7 @@ class BloombergDataProvider(AbstractProvider):
 
         return None
 
-    def create_instrument_pricing(self, price_download_scheme, options, values, instruments, pricing_policies,
-                                  save=False):
+    def create_instrument_pricing(self, price_download_scheme, options, values, instruments, pricing_policies):
         date_from = parse_date_iso(options['date_from'])
         date_to = parse_date_iso(options['date_to'])
         is_yesterday = options['is_yesterday']
@@ -755,8 +751,7 @@ class BloombergDataProvider(AbstractProvider):
 
         return prices
 
-    def create_currency_pricing(self, price_download_scheme, options, values, currencies, pricing_policies,
-                                save=False):
+    def create_currency_pricing(self, price_download_scheme, options, values, currencies, pricing_policies):
         date_from = parse_date_iso(options['date_from'])
         date_to = parse_date_iso(options['date_to'])
         is_yesterday = options['is_yesterday']
@@ -832,7 +827,6 @@ class FakeBloombergDataProvider(BloombergDataProvider):
 
     def get_instrument_send_request(self, instrument, fields):
         _l.debug('> get_instrument_send_request: instrument="%s", fields=%s', instrument, fields)
-        fields = self._instrument_add_fields(fields=fields)
         if not instrument or not fields:
             _l.debug('< response_id=%s', None)
             return None

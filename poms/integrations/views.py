@@ -216,7 +216,7 @@ class TaskFilterSet(FilterSet):
 
 
 class TaskViewSet(AbstractReadOnlyModelViewSet):
-    queryset = Task.objects.prefetch_related('instruments', 'currencies')
+    queryset = Task.objects
     serializer_class = TaskSerializer
     filter_backends = AbstractReadOnlyModelViewSet.filter_backends + [
         TaskFilter,

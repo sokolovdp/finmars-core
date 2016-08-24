@@ -22,6 +22,34 @@ class ProviderException(Exception):
 
 
 class AbstractProvider(object):
+    def get_max_retries(self):
+        return 3
+
+    def get_retry_delay(self):
+        return 5
+
+    def parse_date(self, v):
+        if v is not None:
+            if isinstance(v, date):
+                return v
+            elif isinstance(v, datetime):
+                return v.date()
+            else:
+                try:
+                    v = parser.parse(v)
+                    return v.date()
+                except ValueError:
+                    return None
+        return None
+
+    def parse_float(self, v):
+        if v is None:
+            return None
+        try:
+            return float(v)
+        except ValueError:
+            return 0.0
+
     def get_factor_schedule_method_fields(self, factor_schedule_method=None):
         return []
 
@@ -36,26 +64,6 @@ class AbstractProvider(object):
 
     def download_currency_pricing(self, options):
         return None, True
-
-    def parse_date(self, v):
-        if v is not None:
-            if isinstance(v, date):
-                return v
-            elif isinstance(v, datetime):
-                return v.date()
-            else:
-                v = parser.parse(v)
-                if v:
-                    return v.date()
-        return None
-
-    def parse_float(self, v):
-        if v is None:
-            return None
-        try:
-            return float(v)
-        except ValueError:
-            return 0.0
 
     def get_currency(self, master_user, provider, value):
         if not value:
@@ -107,7 +115,7 @@ class AbstractProvider(object):
             return None
         return obj.periodicity
 
-    def create_instrument(self, instrument_download_scheme, values, save=False):
+    def create_instrument(self, instrument_download_scheme, values):
         master_user = instrument_download_scheme.master_user
         provider = instrument_download_scheme.provider
 
@@ -142,21 +150,18 @@ class AbstractProvider(object):
                         v = six.text_type(v)
                         setattr(instr, attr, v)
 
-        if save:
-            instr.save()
-
         instr._attributes = self.create_instrument_attributes(
-            instrument_download_scheme=instrument_download_scheme, instrument=instr, values=values, save=save)
+            instrument_download_scheme=instrument_download_scheme, instrument=instr, values=values)
 
         instr._accrual_calculation_schedules = self.create_accrual_calculation_schedules(
-            instrument_download_scheme=instrument_download_scheme, instrument=instr, values=values, save=save)
+            instrument_download_scheme=instrument_download_scheme, instrument=instr, values=values)
 
         instr._factor_schedules = self.create_factor_schedules(
-            instrument_download_scheme=instrument_download_scheme, instrument=instr, values=values, save=save)
+            instrument_download_scheme=instrument_download_scheme, instrument=instr, values=values)
 
         return instr
 
-    def create_instrument_attributes(self, instrument_download_scheme, instrument, values, save=False):
+    def create_instrument_attributes(self, instrument_download_scheme, instrument, values):
         iattrs = []
         master_user = instrument_download_scheme.master_user
         provider = instrument_download_scheme.provider
@@ -191,23 +196,18 @@ class AbstractProvider(object):
                             v = tattr.classifiers.filter(name=v).first()
                             iattr.classifier = v
 
-            if save:
-                iattr.save()
-
         return iattrs
 
-    def create_accrual_calculation_schedules(self, instrument_download_scheme, instrument, values, save=False):
+    def create_accrual_calculation_schedules(self, instrument_download_scheme, instrument, values):
         return []
 
-    def create_factor_schedules(self, instrument_download_scheme, instrument, values, save=False):
+    def create_factor_schedules(self, instrument_download_scheme, instrument, values):
         return []
 
-    def create_instrument_pricing(self, price_download_scheme, options, values, instruments, pricing_policies,
-                                  save=False):
+    def create_instrument_pricing(self, price_download_scheme, options, values, instruments, pricing_policies):
         return []
 
-    def create_currency_pricing(self, price_download_scheme, options, values, currencies, pricing_policies,
-                                save=False):
+    def create_currency_pricing(self, price_download_scheme, options, values, currencies, pricing_policies):
         return []
 
 
