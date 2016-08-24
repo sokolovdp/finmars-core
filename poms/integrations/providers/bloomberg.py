@@ -713,7 +713,9 @@ class BloombergDataProvider(AbstractProvider):
             for i in instruments:
                 instr = self._bbg_instr(i.reference_for_pricing)
                 instr_id = instr['id']
-                instr_values = values.get(instr_id)
+                instr_values = values.get(instr_id, None)
+                if not instr_values:
+                    continue
 
                 instr_day_value = price_download_scheme.instrument_yesterday_values(instr_values)
                 for pp in pricing_policies:
@@ -734,6 +736,8 @@ class BloombergDataProvider(AbstractProvider):
                 instr = self._bbg_instr(i.reference_for_pricing)
                 instr_id = instr['id']
                 instr_values = values.get(instr_id)
+                if not instr_values:
+                    continue
 
                 for instr_day_value in instr_values:
                     d = parse_date_iso(instr_day_value['DATE'])
@@ -765,6 +769,8 @@ class BloombergDataProvider(AbstractProvider):
                 instr = self._bbg_instr(i.reference_for_pricing)
                 instr_id = instr['id']
                 instr_values = values.get(instr_id)
+                if not instr_values:
+                    continue
 
                 instr_day_value = price_download_scheme.currency_history_values(instr_values)
                 for pp in pricing_policies:
@@ -784,6 +790,8 @@ class BloombergDataProvider(AbstractProvider):
                 instr = self._bbg_instr(i.reference_for_pricing)
                 instr_id = instr['id']
                 instr_values = values.get(instr_id)
+                if not instr_values:
+                    continue
 
                 for instr_day_value in instr_values:
                     d = parse_date_iso(instr_day_value['DATE'])
@@ -1013,11 +1021,15 @@ class FakeBloombergDataProvider(BloombergDataProvider):
 
         result = {}
         for instrument in instruments:
+            instr = self._bbg_instr(instrument)
+            instr_id = instr['id']
+            if 'skip' in instr_id:
+                continue
+
             instrument_fields = {}
             for field in fields:
                 instrument_fields[field] = fake_data.get(field, None)
-            instr = self._bbg_instr(instrument)
-            instr_id = instr['id']
+
             result[instr_id] = instrument_fields
         _l.debug('< result=%s', result)
         return result

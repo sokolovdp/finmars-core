@@ -259,15 +259,24 @@ class PeriodicityMappingSerializer(serializers.ModelSerializer):
 class TaskSerializer(serializers.ModelSerializer):
     master_user = MasterUserField()
     member = MemberField()
+    is_yesterday = serializers.SerializerMethodField()
 
     class Meta:
         model = Task
         fields = [
-            'url', 'id', 'master_user', 'member', 'provider', 'action',
+            'url', 'id', 'master_user', 'member', 'provider',
             'created', 'modified', 'status',
+            'action',
+            'is_yesterday',
             'parent', 'children',
             # 'options_object', 'result_object',
         ]
+
+    def get_is_yesterday(self, obj):
+        if obj.action == Task.ACTION_PRICING:
+            options = obj.options_object or {}
+            return options.get('is_yesterday', None)
+        return None
 
 
 class ImportFileInstrumentSerializer(serializers.Serializer):
@@ -386,10 +395,6 @@ class ImportInstrumentEntry(object):
 
     task_object = property(get_task_object, set_task_object)
 
-    @property
-    def status(self):
-        return getattr(self.task_object, 'status', Task.STATUS_PENDING)
-
 
 class ImportInstrumentSerializer(serializers.Serializer):
     master_user = MasterUserField()
@@ -400,7 +405,6 @@ class ImportInstrumentSerializer(serializers.Serializer):
     instrument_code = serializers.CharField(required=True, initial='USP16394AG62 Corp')
 
     task = serializers.CharField(required=False, allow_blank=True, allow_null=True)
-    status = serializers.CharField(read_only=True)
 
     task_object = TaskSerializer(read_only=True)
     task_result_overrides = serializers.JSONField(default={})
@@ -471,10 +475,6 @@ class ImportPricingEntry(object):
     task_object = property(get_task_object, set_task_object)
 
     @property
-    def status(self):
-        return getattr(self.task_object, 'status', Task.STATUS_PENDING)
-
-    @property
     def instrument_price_missed(self):
         result = getattr(self.task_object, 'result_object', {})
         return result.get('instrument_price_missed', None)
@@ -499,7 +499,6 @@ class ImportPricingSerializer(serializers.Serializer):
     task = serializers.CharField(required=False, allow_blank=True, allow_null=True)
     task_object = TaskSerializer(read_only=True)
 
-    status = serializers.ReadOnlyField()
     instrument_price_missed = serializers.ReadOnlyField()
     currency_price_missed = serializers.ReadOnlyField()
 

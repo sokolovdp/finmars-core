@@ -205,11 +205,11 @@ class TaskAdmin(admin.ModelAdmin):
     list_filter = ['provider', 'created', 'action', 'status', ]
     date_hierarchy = 'created'
 
-    # readonly_fields = [
-    #     'id', 'master_user', 'member', 'provider', 'action', 'status',
-    #     'instrument_code', 'instruments', 'currencies', 'date_from', 'date_to',
-    #     'kwargs', 'response_id', 'result',
-    # ]
+    readonly_fields = [
+        'id', 'master_user', 'member', 'parent',
+        'provider', 'action', 'status',
+        'request_id', 'response_id', 'options', 'result',
+    ]
 
     def has_add_permission(self, request):
         return False
