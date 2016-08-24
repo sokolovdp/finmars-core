@@ -81,6 +81,8 @@ INSTALLED_APPS = [
     # 'django_otp.plugins.otp_email',
     # 'django_otp.plugins.otp_static',
     # 'two_factor',
+
+    'djcelery',
 ]
 
 # if DEBUG:
@@ -461,7 +463,7 @@ MEDIA_SERVE = True
 
 
 BROKER_URL = 'redis://%s/1' % REDIS_HOST
-CELERY_RESULT_BACKEND = 'redis://%s/1' % REDIS_HOST
+# CELERY_RESULT_BACKEND = 'redis://%s/1' % REDIS_HOST
 
 if DEBUG:
     CELERY_ALWAYS_EAGER = True
@@ -482,6 +484,9 @@ CELERYD_LOG_FORMAT = '[%(levelname)1.1s %(asctime)s %(process)d:%(thread)d %(nam
 CELERY_TRACK_STARTED = True
 CELERY_SEND_EVENTS = True
 CELERY_SEND_TASK_SENT_EVENT = True
+
+CELERYBEAT_SCHEDULER = 'djcelery.schedulers.DatabaseScheduler'
+CELERY_RESULT_BACKEND = 'djcelery.backends.database:DatabaseBackend'
 
 if DEBUG:
     CELERYBEAT_SCHEDULE = {

@@ -152,6 +152,12 @@ class MasterUser(models.Model):
     thread_group = models.ForeignKey('chats.ThreadGroup', null=True, blank=True, on_delete=models.PROTECT,
                                      related_name='master_user_thread_group')
 
+    # pricing_automated_schedule_is_enabled = models.BooleanField(default=True)
+    # pricing_automated_schedule_cron_expr = models.CharField(max_length=255, blank=True, default='')
+    # pricing_automated_schedule_balance_day = models.SmallIntegerField(default=0)
+    # pricing_automated_schedule_override_existed = models.BooleanField(default=True)
+    # pricing_automated_schedule_fill_days = models.SmallIntegerField(default=0)
+
     objects = MasterUserManager()
 
     class Meta:
@@ -159,15 +165,7 @@ class MasterUser(models.Model):
         verbose_name_plural = _('master users')
 
     def __str__(self):
-        if self.name:
-            return self.name
-        else:
-            try:
-                return self._cached_str
-            except AttributeError:
-                ul = Member.objects.filter(master_user=self, is_owner=True).values_list('username', flat=True)
-                self._cached_str = ', '.join(ul)
-                return self._cached_str
+        return self.name
 
 
 @python_2_unicode_compatible

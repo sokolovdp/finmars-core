@@ -12,7 +12,9 @@ class IntegrationsConfig(AppConfig):
     def ready(self):
         from django.db.models.signals import post_migrate
         post_migrate.connect(self.update_transaction_classes)
-        pass
+
+        # noinspection PyUnresolvedReferences
+        import poms.integrations.handlers
 
     def update_transaction_classes(self, app_config, verbosity=2, using=DEFAULT_DB_ALIAS, **kwargs):
         from poms.common.utils import db_class_check_data

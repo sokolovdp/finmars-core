@@ -7,14 +7,14 @@ from django.contrib.auth.admin import UserAdmin
 from django.contrib.auth.models import User, Permission
 
 from poms.audit.admin import HistoricalAdmin
+from poms.integrations.models import PricingAutomatedSchedule
 from poms.users.models import MasterUser, UserProfile, Member, Group, TIMEZONE_CHOICES, FakeSequence
 
 
-class MemberInline(admin.StackedInline):
+class MemberInline(admin.TabularInline):
     model = Member
     extra = 0
-    raw_id_fields = ['master_user', 'user']
-    filter_horizontal = ('groups',)
+    raw_id_fields = ['groups', 'user']
 
     # def formfield_for_manytomany(self, db_field, request=None, **kwargs):
     #     if db_field.name == 'permissions':
@@ -23,10 +23,18 @@ class MemberInline(admin.StackedInline):
     #     return super(MemberInline, self).formfield_for_manytomany(db_field, request=request, **kwargs)
 
 
+class PricingAutomatedScheduleInline(admin.TabularInline):
+    model = PricingAutomatedSchedule
+    can_delete = False
+
+
 class MasterUserAdmin(HistoricalAdmin):
     model = MasterUser
-    inlines = [MemberInline]
-    list_display = ['id', '__str__']
+    inlines = [
+        PricingAutomatedScheduleInline,
+        MemberInline
+    ]
+    list_display = ['id', 'name']
     raw_id_fields = ['currency',
                      'account_type', 'account',
                      'counterparty_group', 'counterparty',

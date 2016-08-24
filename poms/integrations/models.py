@@ -4,6 +4,7 @@ import json
 import uuid
 from logging import getLogger
 
+from django.core.exceptions import ValidationError
 from django.core.serializers.json import DjangoJSONEncoder
 from django.db import models
 from django.utils.encoding import python_2_unicode_compatible
@@ -458,3 +459,59 @@ class Task(TimeStampedModel):
             self.result = None
         else:
             self.result = json.dumps(value, cls=DjangoJSONEncoder, sort_keys=True, indent=1)
+
+
+def to_crontab(value):
+    from celery.schedules import crontab
+
+    if value:
+        elmts = value.split()
+        if len(elmts) != 5:
+            raise ValueError('Invalid crontab expression')
+
+        minute = elmts[0]
+        hour = elmts[1]
+        day_of_week = elmts[2]
+        day_of_month = elmts[3]
+        month_of_year = elmts[4]
+        try:
+            return crontab(
+                minute=minute,
+                hour=hour,
+                day_of_week=day_of_week,
+                day_of_month=day_of_month,
+                month_of_year=month_of_year
+            )
+        except (TypeError, ValueError):
+            raise ValueError('Invalid crontab expression')
+
+
+def validate_crontab(value):
+    try:
+        to_crontab(value)
+    except ValueError as e:
+        raise ValidationError(e)
+
+
+class PricingAutomatedSchedule(models.Model):
+    master_user = models.OneToOneField('users.MasterUser', related_name='pricing_automated_schedule',
+                                       verbose_name=_('master user'))
+
+    is_enabled = models.BooleanField(default=True)
+    cron_expr = models.CharField(max_length=255, blank=True, default='', validators=[validate_crontab],
+                                 help_text=_('Format is "* * * * *" (m/h/d/dM/MY)'))
+    balance_day = models.SmallIntegerField(default=0)
+    override_existed = models.BooleanField(default=True)
+    fill_days = models.SmallIntegerField(default=0)
+
+    class Meta:
+        verbose_name = _('pricing automated schedule')
+        verbose_name_plural = _('pricing automated schedules')
+
+    def __str__(self):
+        return 'pricing automated schedule'
+
+    def to_crontab(self):
+        if self.is_enabled and self.cron_expr:
+            return to_crontab(self.cron_expr)
+        return None

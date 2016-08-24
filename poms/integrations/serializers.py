@@ -22,7 +22,7 @@ from poms.integrations.fields import InstrumentDownloadSchemeField
 from poms.integrations.models import InstrumentDownloadSchemeInput, InstrumentDownloadSchemeAttribute, \
     InstrumentDownloadScheme, ImportConfig, Task, ProviderClass, FactorScheduleDownloadMethod, \
     AccrualScheduleDownloadMethod, PriceDownloadScheme, CurrencyMapping, InstrumentTypeMapping, \
-    InstrumentAttributeValueMapping, AccrualCalculationModelMapping, PeriodicityMapping
+    InstrumentAttributeValueMapping, AccrualCalculationModelMapping, PeriodicityMapping, PricingAutomatedSchedule
 from poms.integrations.storage import FileImportStorage
 from poms.integrations.tasks import download_pricing, download_instrument
 from poms.users.fields import MasterUserField, MemberField, HiddenMemberField
@@ -270,6 +270,23 @@ class TaskSerializer(serializers.ModelSerializer):
             'is_yesterday',
             'parent', 'children',
             # 'options_object', 'result_object',
+        ]
+
+    def get_is_yesterday(self, obj):
+        if obj.action == Task.ACTION_PRICING:
+            options = obj.options_object or {}
+            return options.get('is_yesterday', None)
+        return None
+
+
+class PricingAutomatedScheduleSerializer(serializers.ModelSerializer):
+    master_user = MasterUserField()
+
+    class Meta:
+        model = PricingAutomatedSchedule
+        fields = [
+            'url', 'id', 'master_user',
+            'is_enabled', 'cron_expr', 'balance_day', 'override_existed', 'fill_days'
         ]
 
     def get_is_yesterday(self, obj):

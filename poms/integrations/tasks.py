@@ -10,6 +10,7 @@ import six
 from celery import shared_task, chord
 from celery.exceptions import TimeoutError
 from dateutil.rrule import rrule, DAILY
+from django.core.exceptions import ObjectDoesNotExist
 from django.core.mail import send_mail as django_send_mail, send_mass_mail as django_send_mass_mail, \
     mail_admins as django_mail_admins, mail_managers as django_mail_managers
 from django.db import transaction
@@ -22,6 +23,7 @@ from poms.instruments.models import Instrument, DailyPricingModel, PricingPolicy
 from poms.integrations.models import Task, PriceDownloadScheme, InstrumentDownloadScheme
 from poms.integrations.providers.base import get_provider, parse_date_iso, fill_instrument_price
 from poms.integrations.storage import file_import_storage
+from poms.users.models import MasterUser
 
 _l = getLogger('poms.integrations')
 
@@ -639,3 +641,15 @@ def download_pricing(master_user=None, member=None, date_from=None, date_to=None
         if task.status == Task.STATUS_DONE:
             return task, True
         return task, False
+
+
+@shared_task(name='backend.download_pricing_auto', bind=True, ignore_result=True)
+def download_pricing_auto(self, master_user_id):
+    _l.info('download_pricing_auto: master_user=%s', master_user_id)
+    try:
+        master_user = MasterUser.objects.get(pk=master_user_id)
+        pricing_automated_schedule = master_user.pricing_automated_schedule
+    except ObjectDoesNotExist:
+        from poms.integrations.handlers import pricing_auto_cancel
+        pricing_auto_cancel(master_user_id)
+        return

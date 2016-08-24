@@ -1,6 +1,7 @@
 from __future__ import unicode_literals, print_function
 
 import django_filters
+from django.core.exceptions import ObjectDoesNotExist
 from rest_framework.filters import FilterSet
 from rest_framework.response import Response
 
@@ -12,14 +13,15 @@ from poms.instruments.models import InstrumentType, InstrumentAttributeType
 from poms.integrations.filters import TaskFilter
 from poms.integrations.models import ImportConfig, Task, InstrumentDownloadScheme, ProviderClass, \
     FactorScheduleDownloadMethod, AccrualScheduleDownloadMethod, PriceDownloadScheme, CurrencyMapping, \
-    InstrumentTypeMapping, InstrumentAttributeValueMapping, AccrualCalculationModelMapping, PeriodicityMapping
+    InstrumentTypeMapping, InstrumentAttributeValueMapping, AccrualCalculationModelMapping, PeriodicityMapping, \
+    PricingAutomatedSchedule
 from poms.integrations.serializers import ImportConfigSerializer, TaskSerializer, \
     ImportFileInstrumentSerializer, ImportInstrumentSerializer, ImportPricingSerializer, \
     InstrumentDownloadSchemeSerializer, ProviderClassSerializer, FactorScheduleDownloadMethodSerializer, \
     AccrualScheduleDownloadMethodSerializer, PriceDownloadSchemeSerializer, CurrencyMappingSerializer, \
     InstrumentTypeMappingSerializer, InstrumentAttributeValueMappingSerializer, \
     AccrualCalculationModelMappingSerializer, \
-    PeriodicityMappingSerializer
+    PeriodicityMappingSerializer, PricingAutomatedScheduleSerializer
 from poms.users.filters import OwnerByMasterUserFilter
 from poms.users.models import Member
 from poms.users.permissions import SuperUserOrReadOnly, SuperUserOnly
@@ -224,6 +226,25 @@ class TaskViewSet(AbstractReadOnlyModelViewSet):
     filter_class = TaskFilterSet
     ordering_fields = ['action', 'created', 'modified']
     search_fields = ['action']
+
+
+class PricingAutomatedScheduleViewSet(AbstractModelViewSet):
+    queryset = PricingAutomatedSchedule.objects
+    serializer_class = PricingAutomatedScheduleSerializer
+    permission_classes = AbstractModelViewSet.permission_classes + [
+        SuperUserOrReadOnly,
+    ]
+    filter_backends = AbstractReadOnlyModelViewSet.filter_backends + [
+        OwnerByMasterUserFilter,
+    ]
+
+    def get_object(self):
+        try:
+            return self.request.user.master_user.pricing_automated_schedule
+        except ObjectDoesNotExist:
+            obj = PricingAutomatedSchedule.objects.create(master_user=self.request.user.master_user)
+            return obj
+
 
 
 class ImportFileInstrumentViewSet(AbstractViewSet):

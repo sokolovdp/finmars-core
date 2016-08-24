@@ -140,8 +140,10 @@ router.register(r'import/file/instrument', integrations.ImportFileInstrumentView
 
 router.register(r'import/instrument', integrations.ImportInstrumentViewSet, 'ImportInstrumentViewSet')
 router.register(r'import/pricing', integrations.ImportPricingViewSet, 'ImportPricingViewSet')
+router.register(r'import/pricing-automated-schedule', integrations.PricingAutomatedScheduleViewSet)
 
 router.register(r'import/task', integrations.TaskViewSet)
+
 
 urlpatterns = [
     url(r'^v1/', include(router.urls, namespace='v1')),
