@@ -19,7 +19,9 @@ from django.utils import timezone
 from poms.audit.models import AuthLogEntry
 from poms.common import formula
 from poms.currencies.models import Currency, CurrencyHistory
+from poms.currencies.serializers import CurrencyHistorySerializer
 from poms.instruments.models import Instrument, DailyPricingModel, PricingPolicy, PriceHistory
+from poms.instruments.serializers import PriceHistorySerializer
 from poms.integrations.models import Task, PriceDownloadScheme, InstrumentDownloadScheme
 from poms.integrations.providers.base import get_provider, parse_date_iso, fill_instrument_price
 from poms.integrations.storage import file_import_storage
@@ -543,17 +545,33 @@ def download_pricing_wait(self, sub_tasks_id, task_id):
                     )
 
             instrument_price_missed = instrument_price_expected.difference(instrument_price_real)
+            instrument_price_missed_objects = []
+            for instrument_id, pricing_policy_id in instrument_price_missed:
+                instrument_price_missed_objects.append(
+                    PriceHistory(instrument_id=instrument_id, pricing_policy_id=pricing_policy_id, date=date_to)
+                )
+            result['instrument_price_missed'] = PriceHistorySerializer(instance=instrument_price_missed_objects,
+                                                                       many=True).data
+
             currency_price_missed = currency_price_expected.difference(currency_price_real)
+            currency_price_missed_objects = []
+            for currency_id, pricing_policy_id in currency_price_missed:
+                currency_price_missed_objects.append(
+                    CurrencyHistory(currency_id=currency_id, pricing_policy_id=pricing_policy_id, date=date_to)
+                )
 
-            result['instrument_price_missed'] = [
-                {'instrument': v[0], 'pricing_policy': v[1],}
-                for v in instrument_price_missed
-                ]
+            result['currency_price_missed'] = CurrencyHistorySerializer(instance=currency_price_missed_objects,
+                                                                        many=True).data
 
-            result['currency_price_missed'] = [
-                {'currency': v[0], 'pricing_policy': v[1],}
-                for v in currency_price_missed
-                ]
+            # result['instrument_price_missed'] = [
+            #     {'instrument': v[0], 'pricing_policy': v[1],}
+            #     for v in instrument_price_missed
+            #     ]
+            #
+            # result['currency_price_missed'] = [
+            #     {'currency': v[0], 'pricing_policy': v[1],}
+            #     for v in currency_price_missed
+            #     ]
 
         task.result_object = result
         task.status = Task.STATUS_DONE

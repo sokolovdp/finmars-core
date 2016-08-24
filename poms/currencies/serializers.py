@@ -37,3 +37,8 @@ class CurrencyHistorySerializer(serializers.ModelSerializer):
     class Meta:
         model = CurrencyHistory
         fields = ['url', 'id', 'currency', 'pricing_policy', 'date', 'fx_rate']
+
+    def __init__(self, *args, **kwargs):
+        super(CurrencyHistorySerializer, self).__init__(*args, **kwargs)
+        if 'request' not in self.context:
+            self.fields.pop('url')

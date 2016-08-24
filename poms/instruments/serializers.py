@@ -3,6 +3,7 @@ from __future__ import unicode_literals
 import six
 from django.core.exceptions import ObjectDoesNotExist
 from rest_framework import serializers
+from rest_framework.fields import empty
 
 from poms.common.fields import ExpressionField, FloatEvalField
 from poms.common.serializers import PomsClassSerializer, AbstractClassifierSerializer, AbstractClassifierNodeSerializer, \
@@ -306,7 +307,7 @@ class InstrumentSerializer(ModelWithAttributesSerializer, ModelWithObjectPermiss
                         o = EventScheduleAction(event_schedule=event_schedule)
 
                     for k, v in six.iteritems(action_data):
-                        if k not in ['id', 'event_schedule',]:
+                        if k not in ['id', 'event_schedule', ]:
                             setattr(o, k, v)
                     o.save()
                     processed.add(o.id)
@@ -325,3 +326,8 @@ class PriceHistorySerializer(serializers.ModelSerializer):
     class Meta:
         model = PriceHistory
         fields = ['url', 'id', 'instrument', 'pricing_policy', 'date', 'principal_price', 'accrued_price']
+
+    def __init__(self, *args, **kwargs):
+        super(PriceHistorySerializer, self).__init__(*args, **kwargs)
+        if 'request' not in self.context:
+            self.fields.pop('url')
