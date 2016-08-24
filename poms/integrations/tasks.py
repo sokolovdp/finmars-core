@@ -349,9 +349,10 @@ def download_pricing_async(self, task_id):
         sub_task = Task(
             master_user=master_user,
             member=task.member,
+            parent=task,
             provider=price_download_scheme.provider,
             status=Task.STATUS_PENDING,
-            action=Task.ACTION_PRICING_LATEST if is_yesterday else Task.ACTION_PRICE_HISTORY
+            action=Task.ACTION_PRICING
         )
         sub_task.options_object = sub_options
         sub_task.save()
@@ -379,9 +380,10 @@ def download_pricing_async(self, task_id):
         sub_task = Task.objects.create(
             master_user=master_user,
             member=task.member,
+            parent=task,
             provider=price_download_scheme.provider,
             status=Task.STATUS_PENDING,
-            action=Task.ACTION_PRICING_LATEST if is_yesterday else Task.ACTION_PRICE_HISTORY,
+            action=Task.ACTION_PRICING
         )
         sub_task.options_object = sub_options
         sub_task.save()
@@ -622,7 +624,7 @@ def download_pricing(master_user=None, member=None, date_from=None, date_to=None
                 member=member,
                 provider_id=None,
                 status=Task.STATUS_PENDING,
-                action=Task.ACTION_PRICING_LATEST if is_yesterday else Task.ACTION_PRICING_LATEST
+                action=Task.ACTION_PRICING
             )
             task.options_object = options
             task.save()

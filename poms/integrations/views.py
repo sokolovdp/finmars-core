@@ -216,7 +216,7 @@ class TaskFilterSet(FilterSet):
 
 
 class TaskViewSet(AbstractReadOnlyModelViewSet):
-    queryset = Task.objects
+    queryset = Task.objects.prefetch_related('parent', 'children')
     serializer_class = TaskSerializer
     filter_backends = AbstractReadOnlyModelViewSet.filter_backends + [
         TaskFilter,

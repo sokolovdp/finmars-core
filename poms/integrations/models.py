@@ -377,13 +377,7 @@ class PeriodicityMapping(AbstractMapping):
 @python_2_unicode_compatible
 class Task(TimeStampedModel):
     ACTION_INSTRUMENT = 'instrument'
-    ACTION_PRICING_LATEST = 'pricing_latest'
-    ACTION_PRICE_HISTORY = 'pricing_history'
-    # ACTION_CHOICES = (
-    #     (ACTION_INSTRUMENT, 'instrument'),
-    #     (ACTION_PRICING_LATEST, 'pricing_latest'),
-    #     (ACTION_PRICE_HISTORY, 'pricing_history'),
-    # )
+    ACTION_PRICING = 'pricing'
 
     STATUS_PENDING = 'P'
     STATUS_REQUEST_SENT = 'S'
@@ -407,7 +401,7 @@ class Task(TimeStampedModel):
     provider = models.ForeignKey(ProviderClass, null=True, blank=True)
     action = models.CharField(max_length=20, db_index=True)
 
-    # parent_task = models.ForeignKey('self', null=True, blank=True)
+    parent = models.ForeignKey('self', null=True, blank=True, related_name='children')
 
     # # instrument
     # instrument_code = models.CharField(max_length=100, null=True, blank=True)

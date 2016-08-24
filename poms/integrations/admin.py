@@ -198,9 +198,9 @@ admin.site.register(InstrumentAttributeValueMapping, InstrumentAttributeValueMap
 
 class TaskAdmin(admin.ModelAdmin):
     model = Task
-    list_display = ['id', 'created', 'master_user', 'member', 'provider', 'action', 'status', 'response_id']
+    list_display = ['id', 'created', 'master_user', 'member', 'parent', 'provider', 'action', 'status', 'response_id']
     list_select_related = ['master_user', 'member', 'provider']
-    raw_id_fields = ['master_user', 'member']
+    raw_id_fields = ['master_user', 'member', 'parent']
     search_fields = ['response_id', ]
     list_filter = ['provider', 'created', 'action', 'status', ]
     date_hierarchy = 'created'
