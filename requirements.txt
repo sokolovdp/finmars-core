@@ -1,11 +1,12 @@
 psycopg2==2.6.2
 Babel==2.3.4
-celery==3.1.23
 Django==1.9.9
 django-filter==0.14.0
 django-mptt==0.8.6
 djangorestframework==3.4.6
 django-redis==4.4.4
+celery==3.1.23
+django-celery==3.1.17
 six==1.10.0
 python-dateutil==2.5.3
 redis==2.10.5
