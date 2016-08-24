@@ -407,7 +407,10 @@ def download_pricing_async(self, task_id):
     if self.request.is_eager:
         download_pricing_wait.apply_async(kwargs={'sub_tasks_id': sub_tasks, 'task_id': task_id})
     else:
-        chord(celery_sub_tasks, download_pricing_wait.s(task_id=task_id)).apply_async()
+        if celery_sub_tasks:
+            chord(celery_sub_tasks, download_pricing_wait.s(task_id=task_id)).apply_async()
+        else:
+            download_pricing_wait.apply_async(kwargs={'sub_tasks_id': [], 'task_id': task_id})
 
 
 @shared_task(name='backend.download_pricing_send_wait_reponse', bind=True, ignore_result=True)
