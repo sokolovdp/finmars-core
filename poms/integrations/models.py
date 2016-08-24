@@ -501,8 +501,9 @@ class PricingAutomatedSchedule(models.Model):
     cron_expr = models.CharField(max_length=255, blank=True, default='', validators=[validate_crontab],
                                  help_text=_('Format is "* * * * *" (m/h/d/dM/MY)'))
     balance_day = models.SmallIntegerField(default=0)
-    override_existed = models.BooleanField(default=True)
+    load_days = models.SmallIntegerField(default=1)
     fill_days = models.SmallIntegerField(default=0)
+    override_existed = models.BooleanField(default=True)
 
     class Meta:
         verbose_name = _('pricing automated schedule')

@@ -286,7 +286,7 @@ class PricingAutomatedScheduleSerializer(serializers.ModelSerializer):
         model = PricingAutomatedSchedule
         fields = [
             'url', 'id', 'master_user',
-            'is_enabled', 'cron_expr', 'balance_day', 'override_existed', 'fill_days'
+            'is_enabled', 'cron_expr', 'balance_day', 'load_days', 'fill_days', 'override_existed',
         ]
 
     def get_is_yesterday(self, obj):
