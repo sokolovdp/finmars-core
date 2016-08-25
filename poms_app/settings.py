@@ -510,6 +510,13 @@ FILE_IMPORT_STORAGE = {
     }
 }
 
+
+# PRICING ------------------------------------------------
+
+
+PRICING_AUTO_DOWNLOAD_ENABLED = False
+
+
 # BLOOMBERG ------------------------------------------------
 
 IMPORT_CONFIG_STORAGE = {

@@ -1,5 +1,6 @@
 from __future__ import unicode_literals, print_function
 
+import json
 import time
 from collections import defaultdict
 from datetime import timedelta, date
@@ -9,14 +10,17 @@ import six
 from celery import shared_task, chord
 from celery.exceptions import TimeoutError, MaxRetriesExceededError
 from dateutil.rrule import rrule, DAILY
+from django.conf import settings
 from django.core.exceptions import ObjectDoesNotExist
 from django.core.mail import send_mail as django_send_mail, send_mass_mail as django_send_mass_mail, \
     mail_admins as django_mail_admins, mail_managers as django_mail_managers
+from django.core.serializers.json import DjangoJSONEncoder
 from django.db import transaction
 from django.utils import timezone
 
 from poms.audit.models import AuthLogEntry
 from poms.common import formula
+from poms.common.utils import date_now
 from poms.currencies.models import Currency, CurrencyHistory
 from poms.currencies.serializers import CurrencyHistorySerializer
 from poms.instruments.models import Instrument, DailyPricingModel, PricingPolicy, PriceHistory
@@ -511,6 +515,7 @@ def download_pricing_wait(self, sub_tasks_id, task_id):
     currency_prices = []
 
     for sub_task in Task.objects.filter(pk__in=sub_tasks_id):
+        _l.debug('sub_task: sub_task_id=%s, status=%s', sub_task.id, sub_task.status)
         if sub_task.status != Task.STATUS_DONE:
             continue
 
@@ -548,6 +553,13 @@ def download_pricing_wait(self, sub_tasks_id, task_id):
 
     instrument_for_manual_price = [i_id for i_id, task_id in six.iteritems(instrument_task) if task_id is None]
     instrument_prices += _create_instrument_manual_prices(options=options, instruments=instrument_for_manual_price)
+
+    _l.debug('instrument prices: %s',
+             json.dumps([(p.instrument_id, p.pricing_policy_id, p.date) for p in instrument_prices],
+                        cls=DjangoJSONEncoder))
+    _l.debug('currency prices: %s',
+             json.dumps([(p.currency_id, p.pricing_policy_id, p.date) for p in currency_prices],
+                        cls=DjangoJSONEncoder))
 
     with transaction.atomic():
         existed_instrument_prices = {
@@ -617,8 +629,8 @@ def download_pricing_wait(self, sub_tasks_id, task_id):
                 instrument_price_missed_objects.append(
                     PriceHistory(instrument_id=instrument_id, pricing_policy_id=pricing_policy_id, date=date_to)
                 )
-            result['instrument_price_missed'] = PriceHistorySerializer(instance=instrument_price_missed_objects,
-                                                                       many=True).data
+            instrument_price_missed = PriceHistorySerializer(instance=instrument_price_missed_objects, many=True).data
+            result['instrument_price_missed'] = instrument_price_missed
 
             currency_price_missed = currency_price_expected.difference(currency_price_real)
             currency_price_missed_objects = []
@@ -626,19 +638,15 @@ def download_pricing_wait(self, sub_tasks_id, task_id):
                 currency_price_missed_objects.append(
                     CurrencyHistory(currency_id=currency_id, pricing_policy_id=pricing_policy_id, date=date_to)
                 )
+            currency_price_missed = CurrencyHistorySerializer(instance=currency_price_missed_objects, many=True).data
+            result['currency_price_missed'] = currency_price_missed
 
-            result['currency_price_missed'] = CurrencyHistorySerializer(instance=currency_price_missed_objects,
-                                                                        many=True).data
-
-            # result['instrument_price_missed'] = [
-            #     {'instrument': v[0], 'pricing_policy': v[1],}
-            #     for v in instrument_price_missed
-            #     ]
-            #
-            # result['currency_price_missed'] = [
-            #     {'currency': v[0], 'pricing_policy': v[1],}
-            #     for v in currency_price_missed
-            #     ]
+            _l.debug('missed instrument prices: %s',
+                     json.dumps([(p.instrument_id, p.pricing_policy_id, p.date) for p in instrument_price_missed_objects],
+                                cls=DjangoJSONEncoder))
+            _l.debug('missed currency prices: %s',
+                     json.dumps([(p.currency_id, p.pricing_policy_id, p.date) for p in currency_price_missed_objects],
+                                cls=DjangoJSONEncoder))
 
         task.options_object = options
         task.result_object = result
@@ -647,6 +655,8 @@ def download_pricing_wait(self, sub_tasks_id, task_id):
 
 
 def _create_instrument_manual_prices(options, instruments):
+    _l.debug('create_instrument_manual_prices: instruments=%s', instruments)
+
     date_from = parse_date_iso(options['date_from'])
     date_to = parse_date_iso(options['date_to'])
     is_yesterday = options['is_yesterday']
@@ -682,9 +692,10 @@ def _create_instrument_manual_prices(options, instruments):
             for mf in i.manual_pricing_formulas.all():
                 if not mf.expr:
                     continue
-                for d in rrule(freq=DAILY, count=days, dtstart=date_from):
+                for dt in rrule(freq=DAILY, count=days, dtstart=date_from):
+                    d = dt.date()
                     values = {
-                        'd': d.date(),
+                        'd': d,
                         'instrument': safe_instrument,
                     }
                     principal_price = formula.safe_eval(mf.expr, names=values)
@@ -700,6 +711,10 @@ def _create_instrument_manual_prices(options, instruments):
 
 def download_pricing(master_user=None, member=None, date_from=None, date_to=None, is_yesterday=None, balance_date=None,
                      fill_days=None, override_existed=None, task=None):
+    _l.debug('download_pricing: master_user_id=%s, task_id=%s, date_from=%s, date_to=%s, is_yesterday=%s,'
+             ' balance_date=%s, fill_days=%s, override_existed=%s',
+             master_user.id, getattr(task, 'id', None), date_from, date_to, is_yesterday,
+             balance_date, fill_days, override_existed)
     if task is None:
         with transaction.atomic():
             options = {
@@ -739,3 +754,33 @@ def download_pricing_auto(self, master_user_id):
         from poms.integrations.handlers import pricing_auto_cancel
         pricing_auto_cancel(master_user_id)
         return
+
+    if not settings.PRICING_AUTO_DOWNLOAD_ENABLED:
+        _l.warning('PRICING_AUTO_DOWNLOAD_ENABLED is False')
+        return
+
+    # class PricingAutomatedSchedule(models.Model):
+    #     master_user = models.OneToOneField('users.MasterUser', related_name='pricing_automated_schedule',
+    #                                        verbose_name=_('master user'))
+    #
+    #     is_enabled = models.BooleanField(default=True)
+    #     cron_expr = models.CharField(max_length=255, blank=True, default='', validators=[validate_crontab],
+    #                                  help_text=_('Format is "* * * * *" (m/h/d/dM/MY)'))
+    #     balance_day = models.SmallIntegerField(default=0)
+    #     load_days = models.SmallIntegerField(default=1)
+    #     fill_days = models.SmallIntegerField(default=0)
+    #     override_existed = models.BooleanField(default=True)
+
+    now = date_now() - timedelta(days=1)
+    date_from = now - timedelta(days=abs(pricing_automated_schedule.load_days))
+    date_to = now
+    is_yesterday = (date_from == now) and (date_to == now)
+    balance_date = now - timedelta(days=abs(pricing_automated_schedule.balance_day))
+    download_pricing(
+        master_user=master_user,
+        date_from=date_from,
+        date_to=date_to,
+        is_yesterday=is_yesterday, balance_date=balance_date,
+        fill_days=pricing_automated_schedule.fill_days,
+        override_existed=pricing_automated_schedule.override_existed
+    )
