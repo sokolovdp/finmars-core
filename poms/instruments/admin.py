@@ -1,6 +1,8 @@
 from __future__ import unicode_literals
 
 from django.contrib import admin
+from django.db import models
+from django.forms import widgets
 
 from poms.audit.admin import HistoricalAdmin
 from poms.common.admin import ClassModelAdmin, ClassifierAdmin
@@ -52,17 +54,23 @@ class InstrumentAttributeInline(AbstractAttributeInline):
     model = InstrumentAttribute
 
 
-class ManualPricingFormulaInline(admin.StackedInline):
+class ManualPricingFormulaInline(admin.TabularInline):
     model = ManualPricingFormula
     extra = 0
+    formfield_overrides = {
+        models.TextField: {'widget': widgets.Textarea(attrs={'cols': '40', 'rows': '3'})},
+    }
 
 
-class AccrualCalculationScheduleInline(admin.StackedInline):
+class AccrualCalculationScheduleInline(admin.TabularInline):
     model = AccrualCalculationSchedule
     extra = 0
+    formfield_overrides = {
+        models.TextField: {'widget': widgets.Textarea(attrs={'cols': '40', 'rows': '3'})},
+    }
 
 
-class InstrumentFactorScheduleInline(admin.StackedInline):
+class InstrumentFactorScheduleInline(admin.TabularInline):
     model = InstrumentFactorSchedule
     extra = 0
 
