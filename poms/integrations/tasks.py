@@ -126,9 +126,8 @@ def auth_log_statistics():
 
 @shared_task(name='backend.download_instrument', bind=True, ignore_result=True)
 def download_instrument_async(self, task_id=None):
-    _l.debug('download_instrument_async: task_id=%s', task_id)
-
     task = Task.objects.get(pk=task_id)
+    _l.debug('download_instrument_async: master_user_id=%s, task_id=%s', task.master_user_id, task.id)
 
     try:
         provider = get_provider(task.master_user, task.provider_id)
@@ -215,9 +214,8 @@ def download_instrument(instrument_code=None, instrument_download_scheme=None, m
 
 @shared_task(name='backend.download_instrument_pricing_async', bind=True, ignore_result=True)
 def download_instrument_pricing_async(self, task_id):
-    _l.debug('download_instrument_pricing_async: task_id=%s', task_id)
-
     task = Task.objects.get(pk=task_id)
+    _l.debug('download_instrument_pricing_async: master_user_id=%s, task_id=%s', task.master_user_id, task.id)
 
     try:
         provider = get_provider(task.master_user, task.provider_id)
@@ -267,9 +265,8 @@ def download_instrument_pricing_async(self, task_id):
 
 @shared_task(name='backend.download_currency_pricing_async', bind=True, ignore_result=True)
 def download_currency_pricing_async(self, task_id):
-    _l.debug('download_currency_pricing_async: task_id=%s', task_id)
-
     task = Task.objects.get(pk=task_id)
+    _l.debug('download_currency_pricing_async: master_user_id=%s, task_id=%s', task.master_user_id, task.id)
 
     try:
         provider = get_provider(task.master_user, task.provider_id)
@@ -352,9 +349,11 @@ def download_pricing_async(self, task_id):
             is_calculate_balance = True
         if is_calculate_balance:
             break
-    _l.debug('is_calculate_balance: %s', is_calculate_balance)
 
+    _l.debug('is_calculate_balance: %s', is_calculate_balance)
     if is_calculate_balance:
+        balance_date = parse_date_iso(options['balance_date'])
+        _l.debug('calculate balance on %s', balance_date)
         # TODO: calculate balance and than filter instruments & currencies
         pass
 
