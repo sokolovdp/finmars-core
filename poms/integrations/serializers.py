@@ -23,7 +23,7 @@ from poms.integrations.models import InstrumentDownloadSchemeInput, InstrumentDo
     InstrumentDownloadScheme, ImportConfig, Task, ProviderClass, FactorScheduleDownloadMethod, \
     AccrualScheduleDownloadMethod, PriceDownloadScheme, CurrencyMapping, InstrumentTypeMapping, \
     InstrumentAttributeValueMapping, AccrualCalculationModelMapping, PeriodicityMapping, PricingAutomatedSchedule
-from poms.integrations.storage import FileImportStorage
+from poms.integrations.storage import import_file_storage
 from poms.integrations.tasks import download_pricing, download_instrument
 from poms.users.fields import MasterUserField, MemberField, HiddenMemberField
 
@@ -313,8 +313,6 @@ class ImportFileInstrumentSerializer(serializers.Serializer):
 
     def create(self, validated_data):
         _l.info('InstrumentFileImportSerializer.create: %s', validated_data)
-        storage = FileImportStorage()
-
         master_user = validated_data['master_user']
 
         if validated_data.get('token', None):
@@ -330,12 +328,12 @@ class ImportFileInstrumentSerializer(serializers.Serializer):
             token = '%s' % (uuid.uuid4().hex,)
             validated_data['token'] = TimestampSigner().sign(token)
             tmp_file_name = self.get_file_path(master_user, token)
-            storage.save(tmp_file_name, file)
+            import_file_storage.save(tmp_file_name, file)
 
             from poms.integrations.tasks import schedule_file_import_delete
             schedule_file_import_delete(tmp_file_name)
 
-        with storage.open(tmp_file_name, 'rt') as f:
+        with import_file_storage.open(tmp_file_name, 'rt') as f:
             # ret = []
             # import csv
             # for row in csv.reader(f):

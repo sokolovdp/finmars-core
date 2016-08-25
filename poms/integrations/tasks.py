@@ -27,7 +27,7 @@ from poms.instruments.models import Instrument, DailyPricingModel, PricingPolicy
 from poms.instruments.serializers import PriceHistorySerializer
 from poms.integrations.models import Task, PriceDownloadScheme, InstrumentDownloadScheme
 from poms.integrations.providers.base import get_provider, parse_date_iso, fill_instrument_price
-from poms.integrations.storage import file_import_storage
+from poms.integrations.storage import import_file_storage
 from poms.reports.backends.balance import BalanceReport2PositionBuilder
 from poms.reports.models import BalanceReport
 from poms.users.models import MasterUser
@@ -103,7 +103,7 @@ def mail_managers(subject, message):
 def file_import_delete_async(path):
     _l.debug('> file_import_delete: path=%s', path)
     try:
-        file_import_storage.delete(path)
+        import_file_storage.delete(path)
     except Exception:
         _l.error("Can't delete file %s", path, exc_info=True)
 

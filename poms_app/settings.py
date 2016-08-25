@@ -502,30 +502,30 @@ else:
 # FILE_IMPORT ------------------------------------------------
 
 
-FILE_IMPORT_STORAGE = {
+
+# INTEGRATIONS ------------------------------------------------
+
+
+IMPORT_CONFIG_STORAGE = {
     'BACKEND': 'django.core.files.storage.FileSystemStorage',
     'KWARGS': {
-        'location': os.path.join(BASE_DIR, 'tmp', 'import'),
-        'base_url': '/api/import/'
+        'location': os.path.join(BASE_DIR, 'tmp', 'import', 'config'),
+        'base_url': '/api/hidden/'
     }
 }
 
-
-# PRICING ------------------------------------------------
-
+IMPORT_FILE_STORAGE = {
+    'BACKEND': 'django.core.files.storage.FileSystemStorage',
+    'KWARGS': {
+        'location': os.path.join(BASE_DIR, 'tmp', 'import', 'files'),
+        'base_url': '/api/import/'
+    }
+}
 
 PRICING_AUTO_DOWNLOAD_ENABLED = False
 
 
 # BLOOMBERG ------------------------------------------------
-
-IMPORT_CONFIG_STORAGE = {
-    'BACKEND': 'django.core.files.storage.FileSystemStorage',
-    'KWARGS': {
-        'location': os.path.join(BASE_DIR, 'tmp', 'import-config'),
-        'base_url': '/api/bloomberg/'
-    }
-}
 
 BLOOMBERG_WSDL = 'https://service.bloomberg.com/assets/dl/dlws.wsdl'
 BLOOMBERG_RETRY_DELAY = 5

@@ -5,17 +5,17 @@ from django.core.files.storage import get_storage_class
 from django.utils.functional import LazyObject
 
 
-class FileImportStorage(LazyObject):
+class ImportFileStorage(LazyObject):
     def _setup(self):
-        clazz = get_storage_class(settings.FILE_IMPORT_STORAGE['BACKEND'])
-        kwargs = settings.FILE_IMPORT_STORAGE['KWARGS'] or {}
+        clazz = get_storage_class(settings.IMPORT_FILE_STORAGE['BACKEND'])
+        kwargs = settings.IMPORT_FILE_STORAGE['KWARGS'] or {}
         self._wrapped = clazz(**kwargs)
 
     def deconstruct(self):
         return 'poms.integrations.storage.FileImportStorage', [], {}
 
 
-file_import_storage = FileImportStorage()
+import_file_storage = ImportFileStorage()
 
 
 class ImportConfigStorage(LazyObject):
