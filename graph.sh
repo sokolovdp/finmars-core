@@ -19,6 +19,9 @@ echo "currencies"
 echo "instruments"
 ./manage.py graph_models -X NamedModel,TimeStampedModel,TagModelBase,ClassModelBase,ObjectPermissionBase,AttributeTypeOptionBase,AttributeBase,AttributeTypeOptionBase instruments  -o ~/tmp/instruments.png
 
+echo "integrations"
+./manage.py graph_models -X NamedModel,TimeStampedModel,TagModelBase,ClassModelBase,ObjectPermissionBase,AttributeTypeOptionBase,AttributeBase,AttributeTypeOptionBase instruments  -o ~/tmp/integrations.png
+
 echo "portfolios"
 ./manage.py graph_models -X NamedModel,TimeStampedModel,TagModelBase,ClassModelBase,ObjectPermissionBase,AttributeTypeOptionBase,AttributeBase,AttributeTypeOptionBase portfolios  -o ~/tmp/portfolios.png
 
