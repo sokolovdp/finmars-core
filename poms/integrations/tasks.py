@@ -8,7 +8,7 @@ from logging import getLogger
 
 import six
 from celery import shared_task, chord
-from celery.exceptions import TimeoutError
+from celery.exceptions import TimeoutError, MaxRetriesExceededError
 from dateutil.rrule import rrule, DAILY
 from django.core.exceptions import ObjectDoesNotExist
 from django.core.mail import send_mail as django_send_mail, send_mass_mail as django_send_mass_mail, \
@@ -129,37 +129,51 @@ def download_instrument_async(self, task_id=None):
     _l.debug('download_instrument_async: task_id=%s', task_id)
 
     task = Task.objects.get(pk=task_id)
+
     try:
         provider = get_provider(task.master_user, task.provider_id)
     except:
         task.status = Task.STATUS_ERROR
         task.save()
+        raise
+
+    if provider is None:
+        task.status = Task.STATUS_ERROR
+        task.save()
         return
 
+    if task.status not in [Task.STATUS_PENDING, Task.STATUS_WAIT_RESPONSE]:
+        return
     options = task.options_object
 
-    if task.status in [Task.STATUS_PENDING, Task.STATUS_WAIT_RESPONSE]:
+    try:
         result, is_ready = provider.download_instrument(options)
+    except Exception:
+        task.status = Task.STATUS_ERROR
+        _l.error('fatal provider error', exc_info=True)
+    else:
+        if is_ready:
+            task.status = Task.STATUS_DONE
+            task.result_object = result
+        else:
+            task.status = Task.STATUS_WAIT_RESPONSE
 
-        with transaction.atomic():
-            response_id = options.get('response_id', None)
-            if response_id:
-                task.response_id = response_id
+    response_id = options.get('response_id', None)
+    if response_id:
+        task.response_id = response_id
 
-            if is_ready:
-                task.status = Task.STATUS_DONE
-                task.result_object = result
-            else:
-                task.status = Task.STATUS_WAIT_RESPONSE
-            task.options_object = options
-            task.save()
+    task.options_object = options
+    task.save()
 
-        if not is_ready:
-            if self.request.is_eager:
-                time.sleep(provider.get_retry_delay())
-            # raise self.retry(countdown=settings.BLOOMBERG_RETRY_DELAY, max_retries=settings.BLOOMBERG_MAX_RETRIES)
+    if task.status == Task.STATUS_WAIT_RESPONSE:
+        if self.request.is_eager:
+            time.sleep(provider.get_retry_delay())
+        try:
             self.retry(countdown=provider.get_retry_delay(), max_retries=provider.get_max_retries(), throw=False)
-            return
+        except MaxRetriesExceededError:
+            task.status = Task.STATUS_TIMEOUT
+            task.save()
+        return
 
 
 def download_instrument(instrument_code=None, instrument_download_scheme=None, master_user=None, member=None,
@@ -204,6 +218,7 @@ def download_instrument_pricing_async(self, task_id):
     _l.debug('download_instrument_pricing_async: task_id=%s', task_id)
 
     task = Task.objects.get(pk=task_id)
+
     try:
         provider = get_provider(task.master_user, task.provider_id)
     except:
@@ -211,30 +226,43 @@ def download_instrument_pricing_async(self, task_id):
         task.save()
         return
 
+    if provider is None:
+        task.status = Task.STATUS_ERROR
+        task.save()
+        return
+
+    if task.status not in [Task.STATUS_PENDING, Task.STATUS_WAIT_RESPONSE]:
+        return
+
     options = task.options_object
 
-    if task.status in [Task.STATUS_PENDING, Task.STATUS_WAIT_RESPONSE]:
+    try:
         result, is_ready = provider.download_instrument_pricing(options)
+    except Exception:
+        task.status = Task.STATUS_ERROR
+        _l.error('fatal provider error', exc_info=True)
+    else:
+        if is_ready:
+            task.status = Task.STATUS_DONE
+            task.result_object = result
+        else:
+            task.status = Task.STATUS_WAIT_RESPONSE
 
-        with transaction.atomic():
-            response_id = options.get('response_id', None)
-            if response_id:
-                task.response_id = response_id
+    response_id = options.get('response_id', None)
+    if response_id:
+        task.response_id = response_id
+    task.options_object = options
+    task.save()
 
-            if is_ready:
-                task.status = Task.STATUS_DONE
-                task.result_object = result
-            else:
-                task.status = Task.STATUS_WAIT_RESPONSE
-            task.options_object = options
-            task.save()
-
-        if not is_ready:
-            if self.request.is_eager:
-                time.sleep(provider.get_retry_delay())
-            # raise self.retry(countdown=settings.BLOOMBERG_RETRY_DELAY, max_retries=settings.BLOOMBERG_MAX_RETRIES)
+    if task.status == Task.STATUS_WAIT_RESPONSE:
+        if self.request.is_eager:
+            time.sleep(provider.get_retry_delay())
+        try:
             self.retry(countdown=provider.get_retry_delay(), max_retries=provider.get_max_retries(), throw=False)
-            return
+        except MaxRetriesExceededError:
+            task.status = Task.STATUS_TIMEOUT
+            task.save()
+        return
 
 
 @shared_task(name='backend.download_currency_pricing_async', bind=True, ignore_result=True)
@@ -242,6 +270,7 @@ def download_currency_pricing_async(self, task_id):
     _l.debug('download_currency_pricing_async: task_id=%s', task_id)
 
     task = Task.objects.get(pk=task_id)
+
     try:
         provider = get_provider(task.master_user, task.provider_id)
     except:
@@ -249,30 +278,44 @@ def download_currency_pricing_async(self, task_id):
         task.save()
         return
 
+    if provider is None:
+        task.status = Task.STATUS_ERROR
+        task.save()
+        return
+
+    if task.status not in [Task.STATUS_PENDING, Task.STATUS_WAIT_RESPONSE]:
+        return
+
     options = task.options_object
 
-    if task.status in [Task.STATUS_PENDING, Task.STATUS_WAIT_RESPONSE]:
+    try:
         result, is_ready = provider.download_currency_pricing(options)
+    except Exception:
+        task.status = Task.STATUS_ERROR
+        _l.error('fatal provider error', exc_info=True)
+    else:
+        if is_ready:
+            task.status = Task.STATUS_DONE
+            task.result_object = result
+        else:
+            task.status = Task.STATUS_WAIT_RESPONSE
 
-        with transaction.atomic():
-            response_id = options.get('response_id', None)
-            if response_id:
-                task.response_id = response_id
+    response_id = options.get('response_id', None)
+    if response_id:
+        task.response_id = response_id
 
-            if is_ready:
-                task.status = Task.STATUS_DONE
-                task.result_object = result
-            else:
-                task.status = Task.STATUS_WAIT_RESPONSE
-            task.options_object = options
-            task.save()
+    task.options_object = options
+    task.save()
 
-        if not is_ready:
-            if self.request.is_eager:
-                time.sleep(provider.get_retry_delay())
-            # raise self.retry(countdown=settings.BLOOMBERG_RETRY_DELAY, max_retries=settings.BLOOMBERG_MAX_RETRIES)
+    if task.status == Task.STATUS_WAIT_RESPONSE:
+        if self.request.is_eager:
+            time.sleep(provider.get_retry_delay())
+        try:
             self.retry(countdown=provider.get_retry_delay(), max_retries=provider.get_max_retries(), throw=False)
-            return
+        except MaxRetriesExceededError:
+            task.status = Task.STATUS_TIMEOUT
+            task.save()
+        return
 
 
 @shared_task(name='backend.download_pricing_async', bind=True, ignore_result=True)
@@ -280,30 +323,28 @@ def download_pricing_async(self, task_id):
     _l.debug('> download_pricing_send_request: task_id=%s', task_id)
 
     task = Task.objects.get(pk=task_id)
-    if task.status == Task.STATUS_PENDING:
-        with transaction.atomic():
-            task.status = Task.STATUS_WAIT_RESPONSE
-            task.save()
-    else:
+
+    if task.status not in [Task.STATUS_PENDING, Task.STATUS_WAIT_RESPONSE]:
         return
+
+    task.status = Task.STATUS_WAIT_RESPONSE
 
     master_user = task.master_user
     options = task.options_object
-    is_yesterday = options['is_yesterday']
 
     instruments = Instrument.objects.select_related('price_download_scheme').filter(
-        master_user=master_user,
+        master_user=master_user
     ).exclude(
-        daily_pricing_model=DailyPricingModel.SKIP,
+        daily_pricing_model=DailyPricingModel.SKIP
     )
-    _l.debug('instruments: %s', instruments)
+    # _l.debug('instruments: %s', instruments)
 
     currencies = Currency.objects.select_related('price_download_scheme').filter(
-        master_user=master_user,
+        master_user=master_user
     ).exclude(
-        daily_pricing_model=DailyPricingModel.SKIP,
+        daily_pricing_model=DailyPricingModel.SKIP
     )
-    _l.debug('currencies: %s', currencies)
+    # _l.debug('currencies: %s', currencies)
 
     is_calculate_balance = False
     for i in itertools.chain(instruments, currencies):
@@ -319,7 +360,6 @@ def download_pricing_async(self, task_id):
 
     sub_tasks = []
     celery_sub_tasks = []
-
     price_download_schemes = {}
 
     instruments_by_scheme = defaultdict(list)
@@ -362,8 +402,7 @@ def download_pricing_async(self, task_id):
         sub_task.save()
 
         sub_tasks.append(sub_task.id)
-        celery_sub_task = download_instrument_pricing_async.apply_async(
-            kwargs={'task_id': sub_task.id}, countdown=1)
+        celery_sub_task = download_instrument_pricing_async.apply_async(kwargs={'task_id': sub_task.id})
         celery_sub_tasks.append(celery_sub_task)
 
         for i in instruments0:
@@ -381,7 +420,7 @@ def download_pricing_async(self, task_id):
         sub_options['currencies'] = [i.reference_for_pricing for i in currencies0]
         sub_options['currencies_pk'] = [i.id for i in currencies0]
 
-        sub_task = Task.objects.create(
+        sub_task = Task(
             master_user=master_user,
             member=task.member,
             parent=task,
@@ -393,8 +432,7 @@ def download_pricing_async(self, task_id):
         sub_task.save()
 
         sub_tasks.append(sub_task.id)
-        celery_sub_task = download_currency_pricing_async.apply_async(
-            kwargs={'task_id': sub_task.id}, countdown=1)
+        celery_sub_task = download_currency_pricing_async.apply_async(kwargs={'task_id': sub_task.id})
         celery_sub_tasks.append(celery_sub_task)
 
         for i in currencies0:
@@ -417,9 +455,9 @@ def download_pricing_async(self, task_id):
             download_pricing_wait.apply_async(kwargs={'sub_tasks_id': [], 'task_id': task_id})
 
 
-@shared_task(name='backend.download_pricing_send_wait_reponse', bind=True, ignore_result=True)
+@shared_task(name='backend.download_pricing_wait', bind=True, ignore_result=True)
 def download_pricing_wait(self, sub_tasks_id, task_id):
-    _l.debug('> download_pricing_send_wait_reponse: task_id=%s, task_id_set=%s', task_id, sub_tasks_id)
+    _l.debug('> download_pricing_wait: task_id=%s, task_id_set=%s', task_id, sub_tasks_id)
 
     task = Task.objects.get(pk=task_id)
     if task.status != Task.STATUS_WAIT_RESPONSE:
@@ -444,6 +482,9 @@ def download_pricing_wait(self, sub_tasks_id, task_id):
     currency_prices = []
 
     for sub_task in Task.objects.filter(pk__in=sub_tasks_id):
+        if sub_task.status != Task.STATUS_DONE:
+            continue
+
         provider = get_provider(task=sub_task)
 
         subtask_options = sub_task.options_object

@@ -264,6 +264,9 @@ class BloombergDataProvider(AbstractProvider):
             request_fields = fields + factor_schedule_method_fields + accrual_calculation_schedule_method_fields
             response_id = self.get_instrument_send_request(instrument_code, request_fields)
 
+            if response_id is None:
+                raise BloombergException("Can't send request")
+
             options['response_id'] = response_id
             return None, False
         else:
@@ -287,6 +290,10 @@ class BloombergDataProvider(AbstractProvider):
                 date_from = parse_date_iso(options['date_from'])
                 date_to = parse_date_iso(options['date_to'])
                 response_id = self.get_pricing_history_send_request(instruments, fields, date_from, date_to)
+
+            if response_id is None:
+                raise BloombergException("Can't send request")
+
             options['response_id'] = response_id
             return None, False
         else:
@@ -313,6 +320,10 @@ class BloombergDataProvider(AbstractProvider):
                 date_from = parse_date_iso(options['date_from'])
                 date_to = parse_date_iso(options['date_to'])
                 response_id = self.get_pricing_history_send_request(currencies, fields, date_from, date_to)
+
+            if response_id is None:
+                raise BloombergException("Can't send request")
+
             options['response_id'] = response_id
             return None, False
         else:
@@ -835,6 +846,14 @@ class FakeBloombergDataProvider(BloombergDataProvider):
 
     def get_instrument_send_request(self, instrument, fields):
         _l.debug('> get_instrument_send_request: instrument="%s", fields=%s', instrument, fields)
+
+        if settings.BLOOMBERG_SANDBOX_SEND_EMPTY:
+            _l.debug('< get_instrument_send_request: BLOOMBERG_SANDBOX_SEND_EMPTY')
+            return None
+        if settings.BLOOMBERG_SANDBOX_SEND_FAIL:
+            _l.debug('< get_instrument_send_request: BLOOMBERG_SANDBOX_SEND_FAIL')
+            raise BloombergException('BLOOMBERG_SANDBOX_SEND_FAIL')
+
         if not instrument or not fields:
             _l.debug('< response_id=%s', None)
             return None
@@ -855,6 +874,10 @@ class FakeBloombergDataProvider(BloombergDataProvider):
 
     def get_instrument_get_response(self, response_id):
         _l.debug('> get_instrument_get_response: response_id=%s', response_id)
+
+        if settings.BLOOMBERG_SANDBOX_WAIT_FAIL:
+            _l.debug('< get_instrument_get_response: BLOOMBERG_SANDBOX_WAIT_FAIL')
+            raise BloombergException('BLOOMBERG_SANDBOX_WAIT_FAIL')
 
         if response_id is None:
             _l.debug('< result=%s', None)
@@ -965,6 +988,13 @@ class FakeBloombergDataProvider(BloombergDataProvider):
         _l.debug('> get_pricing_latest_send_request: instruments=%s, fields=%s',
                  instruments, fields)
 
+        if settings.BLOOMBERG_SANDBOX_SEND_EMPTY:
+            _l.debug('< get_pricing_latest_send_request: BLOOMBERG_SANDBOX_SEND_EMPTY')
+            return None
+        if settings.BLOOMBERG_SANDBOX_SEND_FAIL:
+            _l.debug('< get_pricing_latest_send_request: BLOOMBERG_SANDBOX_SEND_FAIL')
+            raise BloombergException('BLOOMBERG_SANDBOX_SEND_FAIL')
+
         if not instruments or not fields:
             _l.debug('< response_id=%s', None)
             return None
@@ -988,6 +1018,10 @@ class FakeBloombergDataProvider(BloombergDataProvider):
 
     def get_pricing_latest_get_response(self, response_id):
         _l.debug('> get_pricing_latest_get_response: response_id=%s', response_id)
+
+        if settings.BLOOMBERG_SANDBOX_WAIT_FAIL:
+            _l.debug('< get_pricing_latest_get_response: BLOOMBERG_SANDBOX_WAIT_FAIL')
+            raise BloombergException('BLOOMBERG_SANDBOX_WAIT_FAIL')
 
         if response_id is None:
             _l.debug('< result=%s', None)
@@ -1038,6 +1072,13 @@ class FakeBloombergDataProvider(BloombergDataProvider):
         _l.debug('> get_pricing_history_send_request: instrument=%s, date_from=%s, date_to=%s',
                  instruments, date_from, date_to)
 
+        if settings.BLOOMBERG_SANDBOX_SEND_EMPTY:
+            _l.debug('< get_pricing_history_send_request: BLOOMBERG_SANDBOX_SEND_EMPTY')
+            return None
+        if settings.BLOOMBERG_SANDBOX_SEND_FAIL:
+            _l.debug('< get_pricing_history_send_request: BLOOMBERG_SANDBOX_SEND_FAIL')
+            raise BloombergException('BLOOMBERG_SANDBOX_SEND_FAIL')
+
         if not instruments or not fields or not date_from or not date_to:
             _l.debug('< response_id=%s', None)
             return None
@@ -1063,6 +1104,10 @@ class FakeBloombergDataProvider(BloombergDataProvider):
 
     def get_pricing_history_get_response(self, response_id):
         _l.debug('> get_pricing_history_get_response: response_id=%s', response_id)
+
+        if settings.BLOOMBERG_SANDBOX_WAIT_FAIL:
+            _l.debug('< get_pricing_history_get_response: BLOOMBERG_SANDBOX_WAIT_FAIL')
+            raise BloombergException('BLOOMBERG_SANDBOX_WAIT_FAIL')
 
         if response_id is None:
             _l.debug('< result=%s', None)
