@@ -466,3 +466,11 @@ class BalanceReport2Builder(BaseReport2Builder):
         self.instance.transactions = self.transactions
 
         return self.instance
+
+
+class BalanceReport2PositionBuilder(BalanceReport2Builder):
+    def find_currency_history(self, ccy, date=None):
+        return None
+
+    def find_price_history(self, instr, date=None):
+        return None

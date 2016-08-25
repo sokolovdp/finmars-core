@@ -1,9 +1,8 @@
 from __future__ import unicode_literals, print_function
 
-import itertools
 import time
 from collections import defaultdict
-from datetime import timedelta
+from datetime import timedelta, date
 from logging import getLogger
 
 import six
@@ -25,6 +24,8 @@ from poms.instruments.serializers import PriceHistorySerializer
 from poms.integrations.models import Task, PriceDownloadScheme, InstrumentDownloadScheme
 from poms.integrations.providers.base import get_provider, parse_date_iso, fill_instrument_price
 from poms.integrations.storage import file_import_storage
+from poms.reports.backends.balance import BalanceReport2PositionBuilder
+from poms.reports.models import BalanceReport
 from poms.users.models import MasterUser
 
 _l = getLogger('poms.integrations')
@@ -317,9 +318,8 @@ def download_currency_pricing_async(self, task_id):
 
 @shared_task(name='backend.download_pricing_async', bind=True, ignore_result=True)
 def download_pricing_async(self, task_id):
-    _l.debug('> download_pricing_send_request: task_id=%s', task_id)
-
     task = Task.objects.get(pk=task_id)
+    _l.debug('download_pricing_async: master_user_id=%s, task_id=%s', task.master_user_id, task.id)
 
     if task.status not in [Task.STATUS_PENDING, Task.STATUS_WAIT_RESPONSE]:
         return
@@ -334,28 +334,59 @@ def download_pricing_async(self, task_id):
     ).exclude(
         daily_pricing_model=DailyPricingModel.SKIP
     )
-    # _l.debug('instruments: %s', instruments)
+    _l.debug('instruments: %s', [i.id for i in instruments])
 
     currencies = Currency.objects.select_related('price_download_scheme').filter(
         master_user=master_user
     ).exclude(
         daily_pricing_model=DailyPricingModel.SKIP
     )
-    # _l.debug('currencies: %s', currencies)
+    _l.debug('currencies: %s', [i.id for i in currencies])
 
-    is_calculate_balance = False
-    for i in itertools.chain(instruments, currencies):
+    instruments_always = set()
+    instruments_if_open = set()
+    instruments_opened = set()
+    for i in instruments:
         if i.daily_pricing_model_id in [DailyPricingModel.FORMULA_IF_OPEN, DailyPricingModel.PROVIDER_IF_OPEN]:
-            is_calculate_balance = True
-        if is_calculate_balance:
-            break
+            instruments_if_open.add(i.id)
+        elif i.daily_pricing_model_id in [DailyPricingModel.FORMULA_ALWAYS, DailyPricingModel.PROVIDER_ALWAYS]:
+            instruments_always.add(i.id)
 
-    _l.debug('is_calculate_balance: %s', is_calculate_balance)
-    if is_calculate_balance:
-        balance_date = parse_date_iso(options['balance_date'])
-        _l.debug('calculate balance on %s', balance_date)
+    currencies_always = set()
+    currencies_if_open = set()
+    currencies_opened = set()
+    for i in currencies:
+        if i.daily_pricing_model_id in [DailyPricingModel.FORMULA_IF_OPEN, DailyPricingModel.PROVIDER_IF_OPEN]:
+            currencies_if_open.add(i.id)
+        elif i.daily_pricing_model_id in [DailyPricingModel.FORMULA_ALWAYS, DailyPricingModel.PROVIDER_ALWAYS]:
+            currencies_always.add(i.id)
+
+    _l.debug('always: instruments=%s, currencies=%s',
+             sorted(instruments_always), sorted(currencies_always))
+
+    balance_date = parse_date_iso(options['balance_date'])
+    _l.debug('calculate position report on %s for: instruments=%s, currencies=%s',
+             balance_date, sorted(instruments_if_open), sorted(currencies_if_open))
+
+    if balance_date and (instruments_if_open or currencies_if_open):
         # TODO: calculate balance and than filter instruments & currencies
-        pass
+        report = BalanceReport(master_user=task.master_user, begin_date=date.min, end_date=balance_date,
+                               use_portfolio=True, show_transaction_details=False)
+        _l.debug('calculate position report: %s', report)
+        builder = BalanceReport2PositionBuilder(instance=report)
+        builder.build()
+        for i in report.items:
+            if i.instrument:
+                instruments_opened.add(i.instrument.id)
+            elif i.currency:
+                currencies_opened.add(i.currency.id)
+        _l.debug('opened: instruments=%s, currencies=%s', sorted(instruments_opened), sorted(currencies_opened))
+
+    instruments = instruments.filter(pk__in=(instruments_always | instruments_opened))
+    _l.debug('instruments: %s', [i.id for i in instruments])
+
+    currencies = currencies.filter(pk__in=(currencies_always | currencies_opened))
+    _l.debug('currencies: %s', [i.id for i in currencies])
 
     sub_tasks = []
     celery_sub_tasks = []
@@ -442,7 +473,6 @@ def download_pricing_async(self, task_id):
     options['sub_tasks'] = sub_tasks
 
     task.options_object = options
-
     task.save()
 
     if self.request.is_eager:
@@ -456,9 +486,9 @@ def download_pricing_async(self, task_id):
 
 @shared_task(name='backend.download_pricing_wait', bind=True, ignore_result=True)
 def download_pricing_wait(self, sub_tasks_id, task_id):
-    _l.debug('> download_pricing_wait: task_id=%s, task_id_set=%s', task_id, sub_tasks_id)
-
     task = Task.objects.get(pk=task_id)
+    _l.debug('download_pricing_wait: master_user_id=%s, task_id=%s', task.master_user_id, task.id)
+
     if task.status != Task.STATUS_WAIT_RESPONSE:
         return
 
@@ -517,10 +547,7 @@ def download_pricing_wait(self, sub_tasks_id, task_id):
             )
 
     instrument_for_manual_price = [i_id for i_id, task_id in six.iteritems(instrument_task) if task_id is None]
-    instrument_prices += _create_instrument_manual_prices(
-        options=options,
-        instruments=instrument_for_manual_price
-    )
+    instrument_prices += _create_instrument_manual_prices(options=options, instruments=instrument_for_manual_price)
 
     with transaction.atomic():
         existed_instrument_prices = {
@@ -613,6 +640,7 @@ def download_pricing_wait(self, sub_tasks_id, task_id):
             #     for v in currency_price_missed
             #     ]
 
+        task.options_object = options
         task.result_object = result
         task.status = Task.STATUS_DONE
         task.save()
