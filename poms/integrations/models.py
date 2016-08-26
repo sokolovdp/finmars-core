@@ -436,6 +436,10 @@ class Task(TimeStampedModel):
         return '%s:%s' % (self.id, self.status)
 
     def add_celery_task_id(self, celery_task_id):
+        if not celery_task_id:
+            return
+        if self.celery_tasks_id is None:
+            self.celery_tasks_id = ''
         if celery_task_id in self.celery_tasks_id:
             return
         if self.celery_tasks_id:
@@ -513,6 +517,9 @@ class PricingAutomatedSchedule(models.Model):
     load_days = models.SmallIntegerField(default=1)
     fill_days = models.SmallIntegerField(default=0)
     override_existed = models.BooleanField(default=True)
+
+    latest_running = models.DateTimeField(null=True, blank=True, editable=False)
+    latest_task = models.ForeignKey(Task, null=True, blank=True, on_delete=models.SET_NULL, editable=False)
 
     class Meta:
         verbose_name = _('pricing automated schedule')

@@ -825,7 +825,7 @@ def download_pricing_auto(self, master_user_id):
     date_to = now
     is_yesterday = (date_from == now) and (date_to == now)
     balance_date = now - timedelta(days=abs(pricing_automated_schedule.balance_day))
-    download_pricing(
+    task, _ = download_pricing(
         master_user=master_user,
         date_from=date_from,
         date_to=date_to,
@@ -833,3 +833,7 @@ def download_pricing_auto(self, master_user_id):
         fill_days=pricing_automated_schedule.fill_days,
         override_existed=pricing_automated_schedule.override_existed
     )
+
+    pricing_automated_schedule.latest_running = timezone.now()
+    pricing_automated_schedule.latest_task = task
+    pricing_automated_schedule.save(update_fields=['latest_running', 'latest_task'])

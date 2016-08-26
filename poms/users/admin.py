@@ -26,6 +26,7 @@ class MemberInline(admin.TabularInline):
 class PricingAutomatedScheduleInline(admin.TabularInline):
     model = PricingAutomatedSchedule
     can_delete = False
+    readonly_fields = ['latest_running', 'latest_task']
 
 
 class MasterUserAdmin(HistoricalAdmin):

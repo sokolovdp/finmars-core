@@ -10,7 +10,7 @@ from poms.common.admin import ClassModelAdmin
 from poms.integrations.models import Task, ImportConfig, ProviderClass, CurrencyMapping, \
     InstrumentTypeMapping, InstrumentAttributeValueMapping, FactorScheduleDownloadMethod, AccrualScheduleDownloadMethod, \
     InstrumentDownloadScheme, InstrumentDownloadSchemeInput, InstrumentDownloadSchemeAttribute, PriceDownloadScheme, \
-    AccrualCalculationModelMapping, PeriodicityMapping
+    AccrualCalculationModelMapping, PeriodicityMapping, PricingAutomatedSchedule
 
 if settings.DEBUG and 'kombu.transport.django' in settings.INSTALLED_APPS:
     from kombu.transport.django.models import Queue, Message
@@ -220,3 +220,14 @@ class TaskAdmin(admin.ModelAdmin):
 
 
 admin.site.register(Task, TaskAdmin)
+
+
+class PricingAutomatedScheduleAdmin(admin.ModelAdmin):
+    model = PricingAutomatedSchedule
+    list_display = ['id', 'master_user', 'is_enabled', 'cron_expr', 'latest_running', 'latest_task']
+    list_select_related = ['master_user', 'latest_task']
+    raw_id_fields = ['master_user', ]
+    readonly_fields = ['latest_running', 'latest_task']
+
+
+admin.site.register(PricingAutomatedSchedule, PricingAutomatedScheduleAdmin)
