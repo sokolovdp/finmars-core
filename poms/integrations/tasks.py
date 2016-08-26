@@ -126,10 +126,10 @@ def auth_log_statistics():
     _l.debug('auth (today): logged_in=%s, login_failed=%s', logged_in_count, login_failed_count)
 
 
-@shared_task(name='backend.download_instrument', bind=True, ignore_result=True)
+@shared_task(name='backend.download_instrument', bind=True, ignore_result=False)
 def download_instrument_async(self, task_id=None):
     task = Task.objects.get(pk=task_id)
-    _l.debug('download_instrument_async: master_user_id=%s, task=%s', task.master_user_id, task.id, task)
+    _l.debug('download_instrument_async: master_user_id=%s, task=%s', task.master_user_id, task)
 
     try:
         provider = get_provider(task.master_user, task.provider_id)
@@ -326,7 +326,7 @@ def download_currency_pricing_async(self, task_id):
     return task_id
 
 
-@shared_task(name='backend.download_pricing_async', bind=True, ignore_result=True)
+@shared_task(name='backend.download_pricing_async', bind=True, ignore_result=False)
 def download_pricing_async(self, task_id):
     task = Task.objects.get(pk=task_id)
     _l.debug('download_pricing_async: master_user_id=%s, task=%s', task.master_user_id, task)
@@ -443,6 +443,7 @@ def download_pricing_async(self, task_id):
         # else:
         if celery_sub_tasks:
             sub_tasks = instrument_sub_tasks + currency_sub_tasks
+            # chord required result!!! (don't use ignore_result or set ignore_result=False)
             chord(celery_sub_tasks, download_pricing_wait.si(sub_tasks_id=sub_tasks, task_id=task_id)).apply_async()
         else:
             download_pricing_wait.apply_async(kwargs={'sub_tasks_id': [], 'task_id': task_id})
@@ -521,8 +522,10 @@ def download_pricing_async(self, task_id):
 
         transaction.on_commit(sub_tasks_submit)
 
+    return task_id
 
-@shared_task(name='backend.download_pricing_wait', bind=True, ignore_result=True)
+
+@shared_task(name='backend.download_pricing_wait', bind=True, ignore_result=False)
 def download_pricing_wait(self, sub_tasks_id, task_id):
     task = Task.objects.get(pk=task_id)
     _l.debug('download_pricing_wait: master_user_id=%s, task=%s', task.master_user_id, task)
@@ -781,7 +784,7 @@ def download_pricing(master_user=None, member=None, date_from=None, date_to=None
         return task, False
 
 
-@shared_task(name='backend.download_pricing_auto', bind=True, ignore_result=True)
+@shared_task(name='backend.download_pricing_auto', bind=True, ignore_result=False)
 def download_pricing_auto(self, master_user_id):
     _l.info('download_pricing_auto: master_user=%s', master_user_id)
     try:
