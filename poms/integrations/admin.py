@@ -206,7 +206,8 @@ class TaskAdmin(admin.ModelAdmin):
     date_hierarchy = 'created'
 
     readonly_fields = [
-        'id', 'master_user', 'member', 'parent',
+        'id', 'celery_tasks_id',
+        'master_user', 'member', 'parent',
         'provider', 'action', 'status',
         'request_id', 'response_id', 'options', 'result',
     ]

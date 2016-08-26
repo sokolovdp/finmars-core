@@ -131,6 +131,8 @@ def download_instrument_async(self, task_id=None):
     task = Task.objects.get(pk=task_id)
     _l.debug('download_instrument_async: master_user_id=%s, task=%s', task.master_user_id, task)
 
+    task.add_celery_task_id(self.request.id)
+
     try:
         provider = get_provider(task.master_user, task.provider_id)
     except:
@@ -224,6 +226,8 @@ def download_instrument_pricing_async(self, task_id):
     task = Task.objects.get(pk=task_id)
     _l.debug('download_instrument_pricing_async: master_user_id=%s, task=%s', task.master_user_id, task)
 
+    task.add_celery_task_id(self.request.id)
+
     try:
         provider = get_provider(task.master_user, task.provider_id)
     except:
@@ -276,6 +280,8 @@ def download_instrument_pricing_async(self, task_id):
 def download_currency_pricing_async(self, task_id):
     task = Task.objects.get(pk=task_id)
     _l.debug('download_currency_pricing_async: master_user_id=%s, task=%s', task.master_user_id, task)
+
+    task.add_celery_task_id(self.request.id)
 
     try:
         provider = get_provider(task.master_user, task.provider_id)
@@ -334,6 +340,7 @@ def download_pricing_async(self, task_id):
     if task.status not in [Task.STATUS_PENDING, Task.STATUS_WAIT_RESPONSE]:
         return
 
+    task.add_celery_task_id(self.request.id)
     task.status = Task.STATUS_WAIT_RESPONSE
 
     master_user = task.master_user
@@ -532,6 +539,8 @@ def download_pricing_wait(self, sub_tasks_id, task_id):
 
     if task.status != Task.STATUS_WAIT_RESPONSE:
         return
+
+    task.add_celery_task_id(self.request.id)
 
     pricing_policies = [p for p in PricingPolicy.objects.filter(master_user=task.master_user)]
 
