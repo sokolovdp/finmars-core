@@ -432,7 +432,7 @@ class Task(TimeStampedModel):
         ordering = ('-created',)
 
     def __str__(self):
-        return '%s' % self.id
+        return '%s:%s' % (self.id, self.status)
 
     @property
     def options_object(self):

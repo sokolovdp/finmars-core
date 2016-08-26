@@ -487,6 +487,7 @@ CELERY_SEND_TASK_SENT_EVENT = True
 
 CELERYBEAT_SCHEDULER = 'djcelery.schedulers.DatabaseScheduler'
 CELERY_RESULT_BACKEND = 'djcelery.backends.database:DatabaseBackend'
+CELERY_STORE_ERRORS_EVEN_IF_IGNORED = True
 # if DEBUG:
 #     CELERYBEAT_SCHEDULE = {
 #         # 'backend.bloomberg_price_history_auto': {
