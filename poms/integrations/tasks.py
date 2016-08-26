@@ -101,11 +101,8 @@ def mail_managers(subject, message):
 
 @shared_task(name='backend.file_import_delete', ignore_result=True)
 def file_import_delete_async(path):
-    _l.debug('> file_import_delete: path=%s', path)
-    try:
-        import_file_storage.delete(path)
-    except Exception:
-        _l.error("Can't delete file %s", path, exc_info=True)
+    _l.debug('file_import_delete_async: path=%s', path)
+    import_file_storage.delete(path)
 
 
 def schedule_file_import_delete(path, countdown=None):
@@ -392,8 +389,6 @@ def download_pricing_async(self, task_id):
     currencies = currencies.filter(pk__in=(currencies_always | currencies_opened))
     _l.debug('currencies: %s', [i.id for i in currencies])
 
-    sub_tasks = []
-    celery_sub_tasks = []
     price_download_schemes = {}
 
     instruments_by_scheme = defaultdict(list)
@@ -416,77 +411,105 @@ def download_pricing_async(self, task_id):
                 price_download_schemes[i.price_download_scheme.id] = i.price_download_scheme
     _l.debug('currencies_by_scheme: %s', currencies_by_scheme)
 
-    instrument_task = defaultdict(list)
-    for scheme_id, instruments0 in six.iteritems(instruments_by_scheme):
-        price_download_scheme = price_download_schemes[scheme_id]
-        sub_options = options.copy()
-        sub_options['price_download_scheme_id'] = price_download_scheme.id
-        sub_options['instruments'] = [i.reference_for_pricing for i in instruments0]
-        sub_options['instruments_pk'] = [i.id for i in instruments0]
+    # sub_tasks = []
+    # celery_sub_tasks = []
 
-        sub_task = Task(
-            master_user=master_user,
-            member=task.member,
-            parent=task,
-            provider=price_download_scheme.provider,
-            status=Task.STATUS_PENDING,
-            action=Task.ACTION_PRICING
-        )
-        sub_task.options_object = sub_options
-        sub_task.save()
+    instrument_sub_tasks = []
+    currency_sub_tasks = []
 
-        sub_tasks.append(sub_task.id)
-        celery_sub_task = download_instrument_pricing_async.apply_async(kwargs={'task_id': sub_task.id})
-        celery_sub_tasks.append(celery_sub_task)
+    def sub_tasks_apply_async():
+        celery_sub_tasks = []
 
-        for i in instruments0:
-            instrument_task[i.id] = sub_task.id
+        for sub_task_id in instrument_sub_tasks:
+            ct = download_instrument_pricing_async.apply_async(kwargs={'task_id': sub_task_id})
+            celery_sub_tasks.append(ct)
 
-    # for manual formula& calculate on final stage
-    for i in instruments_by_formula:
-        instrument_task[i.id] = None
+        for sub_task_id in currency_sub_tasks:
+            ct = download_currency_pricing_async.apply_async(kwargs={'task_id': sub_task_id})
+            celery_sub_tasks.append(ct)
 
-    currency_task = defaultdict(list)
-    for scheme_id, currencies0 in six.iteritems(currencies_by_scheme):
-        price_download_scheme = price_download_schemes[scheme_id]
-        sub_options = options.copy()
-        sub_options['price_download_scheme_id'] = price_download_scheme.id
-        sub_options['currencies'] = [i.reference_for_pricing for i in currencies0]
-        sub_options['currencies_pk'] = [i.id for i in currencies0]
-
-        sub_task = Task(
-            master_user=master_user,
-            member=task.member,
-            parent=task,
-            provider=price_download_scheme.provider,
-            status=Task.STATUS_PENDING,
-            action=Task.ACTION_PRICING
-        )
-        sub_task.options_object = sub_options
-        sub_task.save()
-
-        sub_tasks.append(sub_task.id)
-        celery_sub_task = download_currency_pricing_async.apply_async(kwargs={'task_id': sub_task.id})
-        celery_sub_tasks.append(celery_sub_task)
-
-        for i in currencies0:
-            currency_task[i.id] = sub_task.id
-
-    options['instrument_task'] = instrument_task
-    options['currency_task'] = currency_task
-    options['sub_tasks'] = sub_tasks
-
-    task.options_object = options
-    task.save()
-
-    if self.request.is_eager:
-        download_pricing_wait.apply_async(kwargs={'sub_tasks_id': sub_tasks, 'task_id': task_id})
-    else:
-        if celery_sub_tasks:
-            chord(celery_sub_tasks, download_pricing_wait.s(task_id=task_id)).apply_async()
+        if self.request.is_eager:
+            sub_tasks = instrument_sub_tasks + currency_sub_tasks
+            download_pricing_wait.apply_async(kwargs={'sub_tasks_id': sub_tasks, 'task_id': task_id})
         else:
-            download_pricing_wait.apply_async(kwargs={'sub_tasks_id': [], 'task_id': task_id})
+            if celery_sub_tasks:
+                chord(celery_sub_tasks, download_pricing_wait.s(task_id=task_id)).apply_async()
+            else:
+                download_pricing_wait.apply_async(kwargs={'sub_tasks_id': [], 'task_id': task_id})
 
+    with transaction.atomic():
+        instrument_task = defaultdict(list)
+        for scheme_id, instruments0 in six.iteritems(instruments_by_scheme):
+            price_download_scheme = price_download_schemes[scheme_id]
+            sub_options = options.copy()
+            sub_options['price_download_scheme_id'] = price_download_scheme.id
+            sub_options['instruments'] = [i.reference_for_pricing for i in instruments0]
+            sub_options['instruments_pk'] = [i.id for i in instruments0]
+
+            sub_task = Task(
+                master_user=master_user,
+                member=task.member,
+                parent=task,
+                provider=price_download_scheme.provider,
+                status=Task.STATUS_PENDING,
+                action=Task.ACTION_PRICING
+            )
+            sub_task.options_object = sub_options
+            sub_task.save()
+
+            instrument_sub_tasks.append(sub_task.id)
+            # celery_sub_task = download_instrument_pricing_async.apply_async(kwargs={'task_id': sub_task.id})
+            # celery_sub_tasks.append(celery_sub_task)
+
+            for i in instruments0:
+                instrument_task[i.id] = sub_task.id
+
+        # for manual formula& calculate on final stage
+        for i in instruments_by_formula:
+            instrument_task[i.id] = None
+
+        currency_task = defaultdict(list)
+        for scheme_id, currencies0 in six.iteritems(currencies_by_scheme):
+            price_download_scheme = price_download_schemes[scheme_id]
+            sub_options = options.copy()
+            sub_options['price_download_scheme_id'] = price_download_scheme.id
+            sub_options['currencies'] = [i.reference_for_pricing for i in currencies0]
+            sub_options['currencies_pk'] = [i.id for i in currencies0]
+
+            sub_task = Task(
+                master_user=master_user,
+                member=task.member,
+                parent=task,
+                provider=price_download_scheme.provider,
+                status=Task.STATUS_PENDING,
+                action=Task.ACTION_PRICING
+            )
+            sub_task.options_object = sub_options
+            sub_task.save()
+
+            currency_sub_tasks.append(sub_task.id)
+            # celery_sub_task = download_currency_pricing_async.apply_async(kwargs={'task_id': sub_task.id})
+            # celery_sub_tasks.append(celery_sub_task)
+
+            for i in currencies0:
+                currency_task[i.id] = sub_task.id
+
+        options['instrument_task'] = instrument_task
+        options['currency_task'] = currency_task
+        options['sub_tasks'] = instrument_sub_tasks + currency_sub_tasks
+
+        task.options_object = options
+        task.save()
+
+        # if self.request.is_eager:
+        #     download_pricing_wait.apply_async(kwargs={'sub_tasks_id': sub_tasks, 'task_id': task_id})
+        # else:
+        #     if celery_sub_tasks:
+        #         chord(celery_sub_tasks, download_pricing_wait.s(task_id=task_id)).apply_async()
+        #     else:
+        #         download_pricing_wait.apply_async(kwargs={'sub_tasks_id': [], 'task_id': task_id})
+
+        transaction.on_commit(sub_tasks_apply_async)
 
 @shared_task(name='backend.download_pricing_wait', bind=True, ignore_result=True)
 def download_pricing_wait(self, sub_tasks_id, task_id):
@@ -713,7 +736,7 @@ def download_pricing(master_user=None, member=None, date_from=None, date_to=None
                      fill_days=None, override_existed=None, task=None):
     _l.debug('download_pricing: master_user_id=%s, task_id=%s, date_from=%s, date_to=%s, is_yesterday=%s,'
              ' balance_date=%s, fill_days=%s, override_existed=%s',
-             master_user.id, getattr(task, 'id', None), date_from, date_to, is_yesterday,
+             getattr(master_user, 'id', None), getattr(task, 'id', None), date_from, date_to, is_yesterday,
              balance_date, fill_days, override_existed)
     if task is None:
         with transaction.atomic():
@@ -755,7 +778,7 @@ def download_pricing_auto(self, master_user_id):
         pricing_auto_cancel(master_user_id)
         return
 
-    if not settings.PRICING_AUTO_DOWNLOAD_ENABLED:
+    if getattr(settings, 'PRICING_AUTO_DOWNLOAD_ENABLED', True):
         _l.warning('PRICING_AUTO_DOWNLOAD_ENABLED is False')
         return
 

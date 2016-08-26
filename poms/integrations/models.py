@@ -395,8 +395,8 @@ class Task(TimeStampedModel):
         (STATUS_TIMEOUT, 'TIMEOUT'),
     )
 
-    master_user = models.ForeignKey('users.MasterUser', related_name='bloomberg_tasks')
-    member = models.ForeignKey('users.Member', related_name='bloomberg_tasks', null=True, blank=True)
+    master_user = models.ForeignKey('users.MasterUser', related_name='tasks')
+    member = models.ForeignKey('users.Member', related_name='tasks', null=True, blank=True)
 
     status = models.CharField(max_length=1, default=STATUS_PENDING, choices=STATUS_CHOICES)
     provider = models.ForeignKey(ProviderClass, null=True, blank=True)

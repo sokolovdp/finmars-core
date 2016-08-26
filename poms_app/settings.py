@@ -487,20 +487,16 @@ CELERY_SEND_TASK_SENT_EVENT = True
 
 CELERYBEAT_SCHEDULER = 'djcelery.schedulers.DatabaseScheduler'
 CELERY_RESULT_BACKEND = 'djcelery.backends.database:DatabaseBackend'
-
-if DEBUG:
-    CELERYBEAT_SCHEDULE = {
-        # 'backend.bloomberg_price_history_auto': {
-        #     'task': 'backend.bloomberg_price_history_auto',
-        #     'schedule': 10,
-        # },
-    }
-else:
-    CELERYBEAT_SCHEDULE = {
-    }
-
-# FILE_IMPORT ------------------------------------------------
-
+# if DEBUG:
+#     CELERYBEAT_SCHEDULE = {
+#         # 'backend.bloomberg_price_history_auto': {
+#         #     'task': 'backend.bloomberg_price_history_auto',
+#         #     'schedule': 10,
+#         # },
+#     }
+# else:
+#     CELERYBEAT_SCHEDULE = {
+#     }
 
 
 # INTEGRATIONS ------------------------------------------------
@@ -524,8 +520,6 @@ IMPORT_FILE_STORAGE = {
 
 PRICING_AUTO_DOWNLOAD_ENABLED = False
 
-
-# BLOOMBERG ------------------------------------------------
 
 BLOOMBERG_WSDL = 'https://service.bloomberg.com/assets/dl/dlws.wsdl'
 BLOOMBERG_RETRY_DELAY = 5

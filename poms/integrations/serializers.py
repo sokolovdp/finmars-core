@@ -401,7 +401,7 @@ class ImportInstrumentEntry(object):
 
     def get_task_object(self):
         if not self._task_object and self.task:
-            self._task_object = self.master_user.bloomberg_tasks.get(pk=self.task)
+            self._task_object = self.master_user.tasks.get(pk=self.task)
         return self._task_object
 
     def set_task_object(self, value):
@@ -480,7 +480,7 @@ class ImportPricingEntry(object):
 
     def get_task_object(self):
         if not self._task_object and self.task:
-            self._task_object = self.master_user.bloomberg_tasks.get(pk=self.task)
+            self._task_object = self.master_user.tasks.get(pk=self.task)
         return self._task_object
 
     def set_task_object(self, value):
@@ -545,6 +545,7 @@ class ImportPricingSerializer(serializers.Serializer):
 
         if instance.task:
             task, is_ready = download_pricing(
+                master_user=instance.master_user,
                 fill_days=instance.fill_days,
                 override_existed=instance.override_existed,
                 task=instance.task_object
