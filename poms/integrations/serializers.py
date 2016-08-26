@@ -423,10 +423,10 @@ class ImportInstrumentSerializer(serializers.Serializer):
 
     instrument_code = serializers.CharField(required=True, initial='USP16394AG62 Corp')
 
-    task = serializers.CharField(required=False, allow_blank=True, allow_null=True)
+    task = serializers.IntegerField(required=False, allow_null=True)
 
     task_object = TaskSerializer(read_only=True)
-    task_result_overrides = serializers.JSONField(default={})
+    task_result_overrides = serializers.JSONField(default={}, allow_null=True)
 
     instrument = InstrumentMiniSerializer(read_only=True)
 
@@ -442,7 +442,8 @@ class ImportInstrumentSerializer(serializers.Serializer):
 
     def create(self, validated_data):
         task_result_overrides = validated_data.get('task_result_overrides', None)
-        if task_result_overrides and (task_result_overrides.startswith('[') or task_result_overrides.startswith('{')):
+        if task_result_overrides and (isinstance(task_result_overrides, six.string_types) and (
+                    task_result_overrides.startswith('[') or task_result_overrides.startswith('{'))):
             task_result_overrides = json.loads(task_result_overrides)
         instance = ImportInstrumentEntry(**validated_data)
         if instance.task:
@@ -525,7 +526,7 @@ class ImportPricingSerializer(serializers.Serializer):
     fill_days = serializers.IntegerField(initial=0, default=0, min_value=0)
     override_existed = serializers.BooleanField()
 
-    task = serializers.CharField(required=False, allow_blank=True, allow_null=True)
+    task = serializers.IntegerField(required=False, allow_null=True)
     task_object = TaskSerializer(read_only=True)
 
     instrument_price_missed = serializers.ReadOnlyField()
