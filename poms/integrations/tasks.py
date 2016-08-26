@@ -798,7 +798,7 @@ def download_pricing_auto(self, master_user_id):
     _l.info('download_pricing_auto: master_user=%s', master_user_id)
     try:
         master_user = MasterUser.objects.get(pk=master_user_id)
-        pricing_automated_schedule = master_user.pricing_automated_schedule
+        sched = master_user.pricing_automated_schedule
     except ObjectDoesNotExist:
         from poms.integrations.handlers import pricing_auto_cancel
         pricing_auto_cancel(master_user_id)
@@ -821,19 +821,19 @@ def download_pricing_auto(self, master_user_id):
     #     override_existed = models.BooleanField(default=True)
 
     now = date_now() - timedelta(days=1)
-    date_from = now - timedelta(days=abs(pricing_automated_schedule.load_days))
+    date_from = now - timedelta(days=(sched.load_days if sched.load_days > 1 else 0))
     date_to = now
     is_yesterday = (date_from == now) and (date_to == now)
-    balance_date = now - timedelta(days=abs(pricing_automated_schedule.balance_day))
+    balance_date = now - timedelta(days=sched.balance_day)
     task, _ = download_pricing(
         master_user=master_user,
         date_from=date_from,
         date_to=date_to,
         is_yesterday=is_yesterday, balance_date=balance_date,
-        fill_days=pricing_automated_schedule.fill_days,
-        override_existed=pricing_automated_schedule.override_existed
+        fill_days=sched.fill_days,
+        override_existed=sched.override_existed
     )
 
-    pricing_automated_schedule.latest_running = timezone.now()
-    pricing_automated_schedule.latest_task = task
-    pricing_automated_schedule.save(update_fields=['latest_running', 'latest_task'])
+    sched.latest_running = timezone.now()
+    sched.latest_task = task
+    sched.save(update_fields=['latest_running', 'latest_task'])

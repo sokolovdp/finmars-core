@@ -398,9 +398,9 @@ class Task(TimeStampedModel):
     master_user = models.ForeignKey('users.MasterUser', related_name='tasks')
     member = models.ForeignKey('users.Member', related_name='tasks', null=True, blank=True)
 
-    status = models.CharField(max_length=1, default=STATUS_PENDING, choices=STATUS_CHOICES)
-    provider = models.ForeignKey(ProviderClass, null=True, blank=True)
+    provider = models.ForeignKey(ProviderClass, null=True, blank=True, db_index=True)
     action = models.CharField(max_length=20, db_index=True)
+    status = models.CharField(max_length=1, default=STATUS_PENDING, choices=STATUS_CHOICES)
 
     celery_tasks_id = models.CharField(max_length=255, blank=True, default='')
     parent = models.ForeignKey('self', null=True, blank=True, related_name='children')
@@ -513,9 +513,9 @@ class PricingAutomatedSchedule(models.Model):
     is_enabled = models.BooleanField(default=True)
     cron_expr = models.CharField(max_length=255, blank=True, default='', validators=[validate_crontab],
                                  help_text=_('Format is "* * * * *" (m/h/d/dM/MY)'))
-    balance_day = models.SmallIntegerField(default=0)
-    load_days = models.SmallIntegerField(default=1)
-    fill_days = models.SmallIntegerField(default=0)
+    balance_day = models.PositiveSmallIntegerField(default=0)
+    load_days = models.PositiveSmallIntegerField(default=1)
+    fill_days = models.PositiveSmallIntegerField(default=0)
     override_existed = models.BooleanField(default=True)
 
     latest_running = models.DateTimeField(null=True, blank=True, editable=False)

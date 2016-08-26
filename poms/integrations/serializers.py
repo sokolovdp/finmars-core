@@ -287,7 +287,9 @@ class PricingAutomatedScheduleSerializer(serializers.ModelSerializer):
         fields = [
             'url', 'id', 'master_user',
             'is_enabled', 'cron_expr', 'balance_day', 'load_days', 'fill_days', 'override_existed',
+            'latest_running', 'latest_task'
         ]
+        read_only_fields = ['latest_running', 'latest_task']
 
     def get_is_yesterday(self, obj):
         if obj.action == Task.ACTION_PRICING:
@@ -508,7 +510,7 @@ class ImportPricingSerializer(serializers.Serializer):
     date_to = serializers.DateField(allow_null=True, required=False)
     is_yesterday = serializers.BooleanField(read_only=True)
     balance_date = serializers.DateField(allow_null=True, required=False)
-    fill_days = serializers.IntegerField(initial=0, default=0)
+    fill_days = serializers.IntegerField(initial=0, default=0, min_value=0)
     override_existed = serializers.BooleanField()
 
     task = serializers.CharField(required=False, allow_blank=True, allow_null=True)
