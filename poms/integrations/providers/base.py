@@ -56,6 +56,9 @@ class AbstractProvider(object):
     def get_accrual_calculation_schedule_method_fields(self, accrual_calculation_schedule_method=None):
         return []
 
+    def is_valid_reference(self, value):
+        return True
+
     def download_instrument(self, options):
         return None, True
 

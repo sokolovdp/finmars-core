@@ -23,6 +23,7 @@ from poms.integrations.models import InstrumentDownloadSchemeInput, InstrumentDo
     InstrumentDownloadScheme, ImportConfig, Task, ProviderClass, FactorScheduleDownloadMethod, \
     AccrualScheduleDownloadMethod, PriceDownloadScheme, CurrencyMapping, InstrumentTypeMapping, \
     InstrumentAttributeValueMapping, AccrualCalculationModelMapping, PeriodicityMapping, PricingAutomatedSchedule
+from poms.integrations.providers.base import get_provider
 from poms.integrations.storage import import_file_storage
 from poms.integrations.tasks import download_pricing, download_instrument
 from poms.users.fields import MasterUserField, MemberField, HiddenMemberField
@@ -269,7 +270,8 @@ class TaskSerializer(serializers.ModelSerializer):
             'action',
             'is_yesterday',
             'parent', 'children',
-            # 'options_object', 'result_object',
+            # 'options_object',
+            'result_object',
         ]
 
     def get_is_yesterday(self, obj):
@@ -401,16 +403,16 @@ class ImportInstrumentEntry(object):
         self.task_result_overrides = task_result_overrides
         self.instrument = instrument
 
-    def get_task_object(self):
+    @property
+    def task_object(self):
         if not self._task_object and self.task:
             self._task_object = self.master_user.tasks.get(pk=self.task)
         return self._task_object
 
-    def set_task_object(self, value):
+    @task_object.setter
+    def task_object(self, value):
         self._task_object = value
         self.task = getattr(value, 'pk', None)
-
-    task_object = property(get_task_object, set_task_object)
 
 
 class ImportInstrumentSerializer(serializers.Serializer):
@@ -427,6 +429,16 @@ class ImportInstrumentSerializer(serializers.Serializer):
     task_result_overrides = serializers.JSONField(default={})
 
     instrument = InstrumentMiniSerializer(read_only=True)
+
+    def validate(self, attrs):
+        master_user = attrs['master_user']
+        instrument_download_scheme = attrs['instrument_download_scheme']
+        instrument_code = attrs['instrument_code']
+        provider = get_provider(master_user=master_user, provider=instrument_download_scheme.provider_id)
+        if not provider.is_valid_reference(instrument_code):
+            raise ValidationError(
+                {'instrument_code': 'Invalid value for provider %s' % instrument_download_scheme.provider.name})
+        return attrs
 
     def create(self, validated_data):
         task_result_overrides = validated_data.get('task_result_overrides', None)

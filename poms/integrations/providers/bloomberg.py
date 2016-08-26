@@ -241,6 +241,13 @@ class BloombergDataProvider(AbstractProvider):
                 return None
         return None
 
+    def is_valid_reference(self, value):
+        if value:
+            value = value.split(maxsplit=2)
+            if len(value) == 2:
+                return True
+        return False
+
     def download_instrument(self, options):
         _l.debug('download_instrument: %s', options)
 
