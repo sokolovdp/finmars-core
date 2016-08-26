@@ -200,7 +200,7 @@ admin.site.register(InstrumentAttributeValueMapping, InstrumentAttributeValueMap
 
 class TaskAdmin(admin.ModelAdmin):
     model = Task
-    list_display = ['id', 'parent', 'created', 'master_user', 'member', 'parent', 'provider', 'action', 'status', 'response_id']
+    list_display = ['__str__', 'parent', 'created', 'master_user', 'member', 'provider', 'action', 'response_id']
     list_select_related = ['parent', 'master_user', 'member', 'provider']
     raw_id_fields = ['master_user', 'member', 'parent']
     search_fields = ['response_id', ]
