@@ -1,20 +1,24 @@
 from __future__ import unicode_literals, division
 
-from poms.instruments.models import AccrualCalculationModel
+import calendar
+from datetime import date, datetime
+
+from dateutil import relativedelta, rrule
 
 
-def _is_leap(year):
-    # year -> 1 if leap year, else 0.
-    return year % 4 == 0 and (year % 100 != 0 or year % 400 == 0)
+def coupon_accrual_factor(accrual_calculation_model, freq, dt1, dt2, dt3, maturity_date):
+    from poms.instruments.models import AccrualCalculationModel
 
-
-def coupon_accrual_factor(accrual, freq, dt1, dt2, dt3, maturity_date):
-    # day_convention_code - accrual calculation model
+    # day_convention_code - accrual_calculation_model
     # freq
-    # dt1
-    # dt2
-    # dt3
-    # maturity_date - instrument.matutity_date
+    # dt1 - first accrual date - берется из AccrualCalculationSchedule
+    # dt2 - дата на которую идет расчет accrued interest
+    # dt3 - first coupon date - берется из AccrualCalculationSchedule
+    # maturity_date - instrument.maturity_date
+
+    # accrual = accrual_calculation_model
+    if isinstance(accrual_calculation_model, AccrualCalculationModel):
+        accrual_calculation_model = accrual_calculation_model.id
 
     # CouponAccrualFactor:
     # day_convention_code As Integer -> accrual_calculation_model
@@ -24,7 +28,7 @@ def coupon_accrual_factor(accrual, freq, dt1, dt2, dt3, maturity_date):
     # ByVal dt3 As Date -> ?
     # MaturityDate As Date -> instrument.maturity_date
 
-    if accrual is None or freq is None or dt1 is None or dt2 is None or dt3 is None:
+    if accrual_calculation_model is None or freq is None or dt1 is None or dt2 is None or dt3 is None:
         return 0.0
 
     # k = 0
@@ -47,25 +51,26 @@ def coupon_accrual_factor(accrual, freq, dt1, dt2, dt3, maturity_date):
     #     dt3 = MaturityDate
     # End If
 
-    d1 = dt1.day
-    M1 = dt1.month
-    y1 = dt1.year
-    d2 = dt2.day
-    M2 = dt2.month
-    y2 = dt2.year
-    d3 = dt3.day
-    M3 = dt3.month
-    y3 = dt3.year
+    # d1 = dt1.day
+    # M1 = dt1.month
+    # y1 = dt1.year
+    # d2 = dt2.day
+    # M2 = dt2.month
+    # y2 = dt2.year
+    # d3 = dt3.day
+    # M3 = dt3.month
+    # y3 = dt3.year
+    is_leay = calendar.isleap(dt1.year)
 
-    if accrual == AccrualCalculationModel.NONE:  # 1
+    if accrual_calculation_model == AccrualCalculationModel.NONE:  # 1
         # Case 0  'none
         #     CouponAccrualFactor = 0
         return 0.0
-    elif accrual == AccrualCalculationModel.ACT_ACT:  # 2
+    elif accrual_calculation_model == AccrualCalculationModel.ACT_ACT:  # 2
         # Case 1  'ACT/ACT
         #     CouponAccrualFactor = (dt2 - dt1) / (dt3 - dt1) / freq
-        return 0
-    elif accrual == AccrualCalculationModel.ACT_ACT_ISDA:  # 3
+        return (dt2 - dt1).days / (dt3 - dt1).days / freq
+    elif accrual_calculation_model == AccrualCalculationModel.ACT_ACT_ISDA:  # 3
         # Case 100  'ACT/ACT  - ISDA
         #     Ndays1 = DateSerial(y1, 1, 1) - DateSerial(y1, 12, 31)
         #     Ndays2 = DateSerial(y2, 1, 1) - DateSerial(y2, 12, 31)
@@ -77,19 +82,19 @@ def coupon_accrual_factor(accrual, freq, dt1, dt2, dt3, maturity_date):
         #         CouponAccrualFactor = (dt2 - dt1) / 365
         #     End If
         return 0
-    elif accrual == AccrualCalculationModel.ACT_360:  # 4
+    elif accrual_calculation_model == AccrualCalculationModel.ACT_360:  # 4
         # Case 2  'ACT/360
         #     CouponAccrualFactor = (dt2 - dt1) / 360
-        return 0
-    elif accrual == AccrualCalculationModel.ACT_365:  # 5
+        return (dt2 - dt1).days / 360
+    elif accrual_calculation_model == AccrualCalculationModel.ACT_365:  # 5
         # Case 3  'ACT/365
         #     CouponAccrualFactor = (dt2 - dt1) / 365
-        return 0
-    elif accrual == AccrualCalculationModel.ACT_365_25:  # 6
+        return (dt2 - dt1).days / 365
+    elif accrual_calculation_model == AccrualCalculationModel.ACT_365_25:  # 6
         # Case 106  'Act/365.25
         #     CouponAccrualFactor = (dt2 - dt1) / 365.25
-        return 0
-    elif accrual == AccrualCalculationModel.ACT_365_366:  # 7
+        return (dt2 - dt1).days / 365.25
+    elif accrual_calculation_model == AccrualCalculationModel.ACT_365_366:  # 7
         # Case 107  'Act/365(366)
         #     If y1 < y2 Then
         #         If (Month(DateSerial(y1, 2, 29)) = 2 Or Month(DateSerial(y2, 2, 29)) = 2) And _
@@ -100,26 +105,26 @@ def coupon_accrual_factor(accrual, freq, dt1, dt2, dt3, maturity_date):
         #         End If
         #     End If
         return 0
-    elif accrual == AccrualCalculationModel.ACT_1_365:  # 8
+    elif accrual_calculation_model == AccrualCalculationModel.ACT_1_365:  # 8
         # Case 104  'Act+1/365
         #     CouponAccrualFactor = (dt2 - dt1 + 1) / 365
-        return 0
-    elif accrual == AccrualCalculationModel.ACT_1_360:  # 9
+        return ((dt2 - dt1).days + 1) / 365
+    elif accrual_calculation_model == AccrualCalculationModel.ACT_1_360:  # 9
         # CouponAccrualFactor = (dt2 - dt1 + 1) / 360
-        return 0
-    elif accrual == AccrualCalculationModel.C_30_360:  # 11
+        return ((dt2 - dt1).days + 1) / 360
+    elif accrual_calculation_model == AccrualCalculationModel.C_30_360:  # 11
         # Case 5  '30/360
         #     If d1 = 31 Then d1 = 30
         #     If d2 = 31 And (d1 = 30 Or d1 = 31) Then d2 = 30
         #     CouponAccrualFactor = ((y2 - y1) * 360 + (M2 - M1) * 30 + (d2 - d1)) / 360
         return 0
-    elif accrual == AccrualCalculationModel.C_30_360_NO_EOM:  # 12
+    elif accrual_calculation_model == AccrualCalculationModel.C_30_360_NO_EOM:  # 12
         # Case 14  '30/360 (NO EOM)
         #     If d1 = 31 Then d1 = 30
         #     If d2 = 31 And (d1 = 30 Or d1 = 31) Then d2 = 30
         #     CouponAccrualFactor = ((y2 - y1) * 360 + (M2 - M1) * 30 + (d2 - d1)) / 360
         return 0
-    elif accrual == AccrualCalculationModel.C_30E_P_360:  # 24
+    elif accrual_calculation_model == AccrualCalculationModel.C_30E_P_360:  # 24
         # Case 101  '30E+/360
         #     If d1 = 31 Then d1 = 30
         #     If d2 = 31 Then
@@ -128,13 +133,13 @@ def coupon_accrual_factor(accrual, freq, dt1, dt2, dt3, maturity_date):
         #     End If
         #     CouponAccrualFactor = ((y2 - y1) * 360 + (M2 - M1) * 30 + (d2 - d1)) / 360
         return 0
-    elif accrual == AccrualCalculationModel.C_30E_P_360_ITL:  # 13
+    elif accrual_calculation_model == AccrualCalculationModel.C_30E_P_360_ITL:  # 13
         # Case 102  '30E+/360.ITL
         #     If d1 = 31 Then d1 = 30
         #     If d2 = 31 Then d2 = 30
         #     CouponAccrualFactor = ((y2 - y1) * 360 + (M2 - M1) * 30 + (d2 - d1 + 1)) / 360
         return 0
-    elif accrual == AccrualCalculationModel.NL_365:  # 14
+    elif accrual_calculation_model == AccrualCalculationModel.NL_365:  # 14
         # Case 9  'NL/365
         #     Y1_leap = Month(DateSerial(Year(dt1), 2, 29)) = 2
         #     Y2_leap = Month(DateSerial(Year(dt2), 2, 29)) = 2
@@ -143,7 +148,7 @@ def coupon_accrual_factor(accrual, freq, dt1, dt2, dt3, maturity_date):
         #     If Y2_leap And dt2 >= DateSerial(Year(dt2), 2, 29) And dt1 < DateSerial(Year(dt2), 2, 29) Then k = 1
         #     CouponAccrualFactor = (dt2 - dt1 - k) / 365
         return 0
-    elif accrual == AccrualCalculationModel.NL_365_NO_EOM:  # 15
+    elif accrual_calculation_model == AccrualCalculationModel.NL_365_NO_EOM:  # 15
         # Case 18  'NL/365 (NO-EOM)
         #     Y1_leap = Month(DateSerial(Year(dt1), 2, 29)) = 2
         #     Y2_leap = Month(DateSerial(Year(dt2), 2, 29)) = 2
@@ -152,19 +157,19 @@ def coupon_accrual_factor(accrual, freq, dt1, dt2, dt3, maturity_date):
         #     If Y2_leap And dt2 >= DateSerial(Year(dt2), 2, 29) And dt1 < DateSerial(Year(dt2), 2, 29) Then k = 1
         #     CouponAccrualFactor = (dt2 - dt1 - k) / 365
         return 0
-    elif accrual == AccrualCalculationModel.ISMA_30_365:  # 16
+    elif accrual_calculation_model == AccrualCalculationModel.ISMA_30_365:  # 16
         # Case 20  'ISMA-30/360 = 30E/360
         #     If d1 = 31 Then d1 = 30
         #     If d2 = 31 Then d2 = 30
         #     CouponAccrualFactor = ((y2 - y1) * 360 + (M2 - M1) * 30 + (d2 - d1)) / 360
         return 0
-    elif accrual == AccrualCalculationModel.ISMA_30_365_NO_EOM:  # 17
+    elif accrual_calculation_model == AccrualCalculationModel.ISMA_30_365_NO_EOM:  # 17
         # Case 23  'ISMA-30/360 (NO EOM)
         #     If d1 = 31 Then d1 = 30
         #     If d2 = 31 Then d2 = 30
         #     CouponAccrualFactor = ((y2 - y1) * 360 + (M2 - M1) * 30 + (d2 - d1)) / 360
         return 0
-    elif accrual == AccrualCalculationModel.US_MINI_30_360_EOM:  # 18
+    elif accrual_calculation_model == AccrualCalculationModel.US_MINI_30_360_EOM:  # 18
         # Case 29  'US MUNI-30/360 (EOM)
         #     If d1 = 31 Then d1 = 30
         #     If d2 = 31 And (d1 = 30 Or d1 = 31) Then d2 = 30
@@ -174,18 +179,18 @@ def coupon_accrual_factor(accrual, freq, dt1, dt2, dt3, maturity_date):
         #     If lastDay1 And lastDay2 Then d2 = 30
         #     CouponAccrualFactor = ((y2 - y1) * 360 + (M2 - M1) * 30 + (d2 - d1)) / 360
         return 0
-    elif accrual == AccrualCalculationModel.US_MINI_30_360_NO_EOM:  # 19
+    elif accrual_calculation_model == AccrualCalculationModel.US_MINI_30_360_NO_EOM:  # 19
         # Case 32  'US MUNI-30/360 (NO EOM)
         #     If d1 = 31 Then d1 = 30
         #     If d2 = 31 And (d1 = 30 Or d1 = 31) Then d2 = 30
         #     CouponAccrualFactor = ((y2 - y1) * 360 + (M2 - M1) * 30 + (d2 - d1)) / 360
         return 0
-    elif accrual == AccrualCalculationModel.BUS_DAYS_252:  # 20
+    elif accrual_calculation_model == AccrualCalculationModel.BUS_DAYS_252:  # 20
         # Case 33  'BUS DAYS/252
         #     CouponAccrualFactor = (DateDiff("d", dt1, dt2) - DateDiff("ww", dt1, dt2, vbSaturday) - _
-        #         DateDiff("d", dt1, dt2, vbSunday)) / 252
+        #       DateDiff("ww", dt1, dt2, vbSunday)) / 252
         return 0
-    elif accrual == AccrualCalculationModel.GERMAN_30_360_EOM:  # 21
+    elif accrual_calculation_model == AccrualCalculationModel.GERMAN_30_360_EOM:  # 21
         # Case 35  'GERMAN-30/360 (EOM)
         #     If IsNull(MaturityDate) Then
         #         CouponAccrualFactor = 0
@@ -197,7 +202,7 @@ def coupon_accrual_factor(accrual, freq, dt1, dt2, dt3, maturity_date):
         #     If lastDay2 And Not ((dt2 = MaturityDate) And Month(dt2) = 2) Then d2 = 30
         #     CouponAccrualFactor = ((y2 - y1) * 360 + (M2 - M1) * 30 + (d2 - d1)) / 360
         return 0
-    elif accrual == AccrualCalculationModel.GERMAN_30_360_NO_EOM:  # 22
+    elif accrual_calculation_model == AccrualCalculationModel.GERMAN_30_360_NO_EOM:  # 22
         # Case 38  'GERMAN-30/360 (NO EOM)
         #     If IsNull(MaturityDate) Then
         #         CouponAccrualFactor = 0
@@ -209,8 +214,98 @@ def coupon_accrual_factor(accrual, freq, dt1, dt2, dt3, maturity_date):
         #     If lastDay2 And Not ((dt2 = MaturityDate) And Month(dt2) = 2) Then d2 = 30
         #     CouponAccrualFactor = ((y2 - y1) * 360 + (M2 - M1) * 30 + (d2 - d1)) / 360
         return 0
-    elif accrual == AccrualCalculationModel.REVERSED_ACT_365:  # 23
+    elif accrual_calculation_model == AccrualCalculationModel.REVERSED_ACT_365:  # 23
         # Case 1001  'reversed ACT/365
         #     CouponAccrualFactor = (dt3 - dt2) / 365
-        return 0
-    pass
+        return (dt3 - dt2).days / 365
+    return 0.0
+
+
+if __name__ == "__main__":
+    import os
+
+    os.environ.setdefault("DJANGO_SETTINGS_MODULE", "poms_app.settings")
+    import django
+
+    django.setup()
+
+    from poms.instruments.models import AccrualCalculationModel, Periodicity
+
+    # print('1 -> ', coupon_accrual_factor(
+    #     accrual_calculation_model=AccrualCalculationModel.NONE,
+    #     freq=12,
+    #     dt1=date(2016, 1, 1),
+    #     dt2=date(2016, 1, 15),
+    #     dt3=date(2016, 2, 1),
+    #     maturity_date=date(2016, 12, 31)
+    # ))
+
+    d0 = date(2016, 2, 29)
+    d1 = date(2016, 1, 31)
+    d2 = date(2016, 2, 11)
+    d3 = date(2016, 3, 3)
+    for d in [d0, d1, d2, d3]:
+        print(d, d.strftime('%A'))
+
+    print('-' * 10)
+    for id, code, name in Periodicity.CLASSES:
+        d = d0
+        td0 = Periodicity.to_timedelta(id, delta=0, same_date=d)
+        td1 = Periodicity.to_timedelta(id, delta=1, same_date=d)
+        td2 = Periodicity.to_timedelta(id, delta=2, same_date=d)
+        print(0, id, code, td0, td1, td2)
+        print('\t', d + td0, d + td1, d + td2)
+
+    print('-' * 10)
+    print(101, 'd2 - d1', d2 - d1)
+    print(102, 'd2 - d1', relativedelta.relativedelta(d2, d1))
+    print(103, 'd3 - d1', relativedelta.relativedelta(d3, d1))
+    print(104, 'max - min', date.max - date.min)
+    print(103, 'max - min', relativedelta.relativedelta(date.max, date.min))
+
+    print('-' * 10)
+    print(200, d1 + relativedelta.relativedelta(days=5))
+    print(201, d1 + relativedelta.relativedelta(days=5, weekday=relativedelta.MO))
+    print(202, d1 + relativedelta.relativedelta(days=20, weekday=relativedelta.MO))
+    print(203, d1 + relativedelta.relativedelta(days=5, weekday=relativedelta.MO) +
+          relativedelta.relativedelta(days=5, weekday=relativedelta.MO) +
+          relativedelta.relativedelta(days=5, weekday=relativedelta.MO) +
+          relativedelta.relativedelta(days=5, weekday=relativedelta.MO))
+    print(204, d1 + relativedelta.relativedelta(day=31))
+    print(205, d1 + relativedelta.relativedelta(months=1, day=31))
+
+    print('-' * 10)
+    print(300, [d.date().isoformat() for d in rrule.rrule(dtstart=d1, count=4, freq=rrule.WEEKLY)])
+    print(300, [d.date().isoformat() for d in rrule.rrule(dtstart=d1, count=4, freq=rrule.WEEKLY,
+                                                          byweekday=[rrule.FR])])
+
+    print(301, [d.date().isoformat() for d in rrule.rrule(dtstart=d1, count=4, freq=rrule.MONTHLY)])
+
+    print(302, [d.date().isoformat() for d in rrule.rrule(dtstart=d1, count=7, freq=rrule.DAILY)])
+    print(303, [d.date().isoformat() for d in rrule.rrule(dtstart=d1, count=7, freq=rrule.DAILY,
+                                                          byweekday=[rrule.FR])])
+    print(304, [d.date().isoformat() for d in rrule.rrule(dtstart=d1, count=7, freq=rrule.DAILY,
+                                                          byweekday=[rrule.MO, rrule.TU, rrule.WE, rrule.TH,
+                                                                     rrule.FR])])
+    print(305, [d.date().isoformat() for d in rrule.rrule(dtstart=d1, count=4, freq=rrule.MONTHLY,
+                                                          bymonthday=[31], bysetpos=-1)])
+
+    print('-' * 10)
+    # s = datetime.utcnow()
+    # count = 0
+    # for d in rrule.rrule(dtstart=date.min, until=date.max, freq=rrule.MONTHLY):
+    #     count += 1
+    # print(400, date.min, date.max, count, datetime.utcnow() - s)
+
+    # s = datetime.utcnow()
+    # sd = date.min
+    # count = 0
+    # while True:
+    #     try:
+    #         d = sd + relativedelta.relativedelta(days=count)
+    #     except ValueError:
+    #         break
+    #     count += 1
+    #     if d >= date.max:
+    #         break
+    # print(401, date.min, date.max, count, datetime.utcnow() - s)

@@ -2,7 +2,7 @@ from __future__ import unicode_literals
 
 from datetime import date
 
-from dateutil.relativedelta import relativedelta
+from dateutil import relativedelta, rrule
 from django.db import models
 from django.utils.encoding import python_2_unicode_compatible
 from django.utils.translation import ugettext_lazy as _
@@ -145,28 +145,30 @@ class PaymentSizeDetail(AbstractClassModel):
 
 class Periodicity(AbstractClassModel):
     N_DAY = 1
-    N_WEEK = 2
-    N_MONTH = 3
-    N_MONTH_DAY = 4
-    N_YEAR = 5
-    N_YEAR_DAY = 6
+    N_WEEK_EOBW = 2
+    N_MONTH_EOM = 3
+    N_MONTH_SAME_DAY = 4
+    N_YEAR_EOY = 5
+    N_YEAR_SAME_DAY = 6
 
     WEEKLY = 7
     MONTHLY = 8
     QUARTERLY = 9
     SEMI_ANNUALLY = 10
     ANNUALLY = 11
+    BIMONTHLY = 12
 
     CLASSES = (
         (N_DAY, 'N_DAY', _("N Days")),
-        (N_WEEK, 'N_WEEK', _("N Weeks (eobw)")),
-        (N_MONTH, 'N_MONTH', _("N Months (eom)")),
-        (N_MONTH_DAY, 'N_MONTH_DAY', _("N Months (same date)")),
-        (N_YEAR, 'N_YEAR', _("N Years (eoy)")),
-        (N_YEAR_DAY, 'N_YEAR_DAY', _("N Years (same date)")),
+        (N_WEEK_EOBW, 'N_WEEK_EOBW', _("N Weeks (eobw)")),
+        (N_MONTH_EOM, 'N_MONTH_EOM', _("N Months (eom)")),
+        (N_MONTH_SAME_DAY, 'N_MONTH_SAME_DAY', _("N Months (same date)")),
+        (N_YEAR_EOY, 'N_YEAR_EOY', _("N Years (eoy)")),
+        (N_YEAR_SAME_DAY, 'N_YEAR_SAME_DAY', _("N Years (same date)")),
 
         (WEEKLY, 'WEEKLY', _('Weekly')),
         (MONTHLY, 'MONTHLY', _('Monthly')),
+        (BIMONTHLY, 'BIMONTHLY', _('Bimonthly')),
         (QUARTERLY, 'QUARTERLY', _('Quarterly')),
         (SEMI_ANNUALLY, 'SEMI_ANNUALLY', _('Semi-annually')),
         (ANNUALLY, 'ANNUALLY', _('Annually')),
@@ -180,32 +182,100 @@ class Periodicity(AbstractClassModel):
     def to_timedelta(periodicity, delta=None, same_date=None):
         if isinstance(periodicity, Periodicity):
             periodicity = periodicity.id
+
+        if delta is None:
+            delta = 1
+
         if periodicity == Periodicity.N_DAY:
-            return relativedelta(days=delta)
-        elif periodicity == Periodicity.N_WEEK:
-            return relativedelta(days=7 * delta)
-        elif periodicity == Periodicity.N_MONTH:
-            return relativedelta(months=7 * delta)
-        elif periodicity == Periodicity.N_MONTH_DAY:
-            # TODO: verify
-            return relativedelta(months=7 * delta, day=same_date.day)
-        elif periodicity == Periodicity.N_YEAR:
-            return relativedelta(years=delta)
-        elif periodicity == Periodicity.N_YEAR_DAY:
-            # TODO: verify
-            return relativedelta(years=delta, month=same_date.month, day=same_date.day)
+            return relativedelta.relativedelta(days=delta)
+        elif periodicity == Periodicity.N_WEEK_EOBW:
+            # return relativedelta.relativedelta(days=7 * delta, weekday=relativedelta.FR)
+            return relativedelta.relativedelta(weeks=delta, weekday=relativedelta.FR)
+        elif periodicity == Periodicity.N_MONTH_EOM:
+            return relativedelta.relativedelta(months=delta, day=31)
+        elif periodicity == Periodicity.N_MONTH_SAME_DAY:
+            return relativedelta.relativedelta(months=delta, day=same_date.day)
+        elif periodicity == Periodicity.N_YEAR_EOY:
+            return relativedelta.relativedelta(years=delta, month=12, day=31)
+        elif periodicity == Periodicity.N_YEAR_SAME_DAY:
+            return relativedelta.relativedelta(years=delta, month=same_date.month, day=same_date.day)
         elif periodicity == Periodicity.WEEKLY:
-            return relativedelta(days=7)
+            return relativedelta.relativedelta(weeks=1 * delta)
         elif periodicity == Periodicity.MONTHLY:
-            return relativedelta(months=1)
+            return relativedelta.relativedelta(months=1 * delta)
+        elif periodicity == Periodicity.BIMONTHLY:
+            return relativedelta.relativedelta(months=2 * delta)
         elif periodicity == Periodicity.QUARTERLY:
-            return relativedelta(months=3)
+            return relativedelta.relativedelta(months=3 * delta)
         elif periodicity == Periodicity.SEMI_ANNUALLY:
-            return relativedelta(months=6)
+            return relativedelta.relativedelta(months=6 * delta)
         elif periodicity == Periodicity.ANNUALLY:
-            return relativedelta(years=1)
+            return relativedelta.relativedelta(years=1 * delta)
         return None
 
+    @staticmethod
+    def to_rrule(periodicity, dtstart=None, count=None, until=None):
+        if isinstance(periodicity, Periodicity):
+            periodicity = periodicity.id
+
+        if periodicity == Periodicity.N_DAY:
+            return rrule.rrule(dtstart=dtstart, count=count, until=until, freq=rrule.DAILY)
+        elif periodicity == Periodicity.N_WEEK_EOBW:
+            return rrule.rrule(dtstart=dtstart, count=count, until=until, freq=rrule.WEEKLY,
+                               byweekday=[rrule.FR])
+        elif periodicity == Periodicity.N_MONTH_EOM:
+            raise ValueError()
+        elif periodicity == Periodicity.N_MONTH_SAME_DAY:
+            raise ValueError()
+        elif periodicity == Periodicity.N_YEAR_EOY:
+            raise ValueError()
+        elif periodicity == Periodicity.N_YEAR_SAME_DAY:
+            return rrule.rrule(dtstart=dtstart, count=count, until=until, freq=rrule.WEEKLY)
+        elif periodicity == Periodicity.WEEKLY:
+            return rrule.rrule(dtstart=dtstart, count=count, until=until, freq=rrule.WEEKLY)
+        elif periodicity == Periodicity.MONTHLY:
+            return rrule.rrule(dtstart=dtstart, count=count, until=until, freq=rrule.MONTHLY)
+        elif periodicity == Periodicity.BIMONTHLY:
+            return rrule.rrule(dtstart=dtstart, count=count, interval=2, until=until, freq=rrule.MONTHLY)
+        elif periodicity == Periodicity.QUARTERLY:
+            return rrule.rrule(dtstart=dtstart, count=count, interval=3, until=until, freq=rrule.MONTHLY)
+        elif periodicity == Periodicity.SEMI_ANNUALLY:
+            return rrule.rrule(dtstart=dtstart, count=count, interval=6, until=until, freq=rrule.MONTHLY)
+        elif periodicity == Periodicity.ANNUALLY:
+            return rrule.rrule(dtstart=dtstart, count=count, until=until, freq=rrule.YEARLY)
+        return None
+
+
+    @staticmethod
+    def to_freq(periodicity):
+        if isinstance(periodicity, Periodicity):
+            periodicity = periodicity.id
+
+        if periodicity == Periodicity.N_DAY:
+            return 0.0
+        elif periodicity == Periodicity.N_WEEK:
+            return 0.0
+        elif periodicity == Periodicity.N_MONTH:
+            return 0.0
+        elif periodicity == Periodicity.N_MONTH_DAY:
+            return 0.0
+        elif periodicity == Periodicity.N_YEAR:
+            return 0.0
+        elif periodicity == Periodicity.N_YEAR_DAY:
+            return 0.0
+        elif periodicity == Periodicity.WEEKLY:
+            return 52.0
+        elif periodicity == Periodicity.MONTHLY:
+            return 12.0
+        elif periodicity == Periodicity.BIMONTHLY:
+            return 6.0
+        elif periodicity == Periodicity.QUARTERLY:
+            return 4.0
+        elif periodicity == Periodicity.SEMI_ANNUALLY:
+            return 2.0
+        elif periodicity == Periodicity.ANNUALLY:
+            return 1.0
+        return 0.
 
 class CostMethod(AbstractClassModel):
     # TODO: add "values"
