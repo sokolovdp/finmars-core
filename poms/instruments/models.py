@@ -66,14 +66,15 @@ class AccrualCalculationModel(AbstractClassModel):
     ACT_365_366 = 7
     ACT_1_365 = 8
     ACT_1_360 = 9
-    C_30_ACT = 10
+    # C_30_ACT = 10
     C_30_360 = 11
     C_30_360_NO_EOM = 12
+    C_30E_P_360 = 24
     C_30E_P_360_ITL = 13
     NL_365 = 14
     NL_365_NO_EOM = 15
-    ISMA_30_365 = 16
-    ISMA_30_365_NO_EOM = 17
+    ISMA_30_360 = 16
+    ISMA_30_360_NO_EOM = 17
     US_MINI_30_360_EOM = 18
     US_MINI_30_360_NO_EOM = 19
     BUS_DAYS_252 = 20
@@ -91,20 +92,21 @@ class AccrualCalculationModel(AbstractClassModel):
         (ACT_365_366, 'ACT_365_366', _("Act/365(366)")),
         (ACT_1_365, 'ACT_1_365', _("Act+1/365")),
         (ACT_1_360, 'ACT_1_360', _("Act+1/360")),
-        (C_30_ACT, 'C_30_ACT', _("30/ACT")),
+        # (C_30_ACT, 'C_30_ACT', _("30/ACT")),
         (C_30_360, 'C_30_360', _("30/360")),
         (C_30_360_NO_EOM, 'C_30_360_NO_EOM', _("30/360 (NO EOM)")),
         (C_30E_P_360_ITL, 'C_30E_P_360_ITL', _("30E+/360.ITL")),
         (NL_365, 'NL_365', _("NL/365")),
         (NL_365_NO_EOM, 'NL_365_NO_EOM', _("NL/365 (NO-EOM)")),
-        (ISMA_30_365, 'ISMA_30_365', _("ISMA-30/360")),
-        (ISMA_30_365_NO_EOM, 'ISMA_30_365_NO_EOM', _("ISMA-30/360 (NO EOM)")),
+        (ISMA_30_360, 'ISMA_30_360', _("ISMA-30/360")),
+        (ISMA_30_360_NO_EOM, 'ISMA_30_360_NO_EOM', _("ISMA-30/360 (NO EOM)")),
         (US_MINI_30_360_EOM, 'US_MINI_30_360_EOM', _("US MUNI-30/360 (EOM)")),
         (US_MINI_30_360_NO_EOM, 'US_MINI_30_360_NO_EOM', _("US MUNI-30/360 (NO EOM)")),
         (BUS_DAYS_252, 'BUS_DAYS_252', _("BUS DAYS/252")),
         (GERMAN_30_360_EOM, 'GERMAN_30_360_EOM', _("GERMAN-30/360 (EOM)")),
         (GERMAN_30_360_NO_EOM, 'GERMAN_30_360_NO_EOM', _("GERMAN-30/360 (NO EOM)")),
         (REVERSED_ACT_365, 'REVERSED_ACT_365', _("Reversed ACT/365")),
+        (C_30E_P_360, 'C_30E_P_360', _('30E+/360'))
     )
 
     class Meta(AbstractClassModel.Meta):
@@ -388,21 +390,10 @@ class InstrumentAttributeTypeGroupObjectPermission(AbstractGroupObjectPermission
 
 @python_2_unicode_compatible
 class InstrumentClassifier(AbstractClassifier):
-    attribute_type = models.ForeignKey(
-        InstrumentAttributeType,
-        null=True,
-        blank=True,
-        related_name='classifiers',
-        verbose_name=_('attribute type')
-    )
-    parent = TreeForeignKey(
-        'self',
-        null=True,
-        blank=True,
-        related_name='children',
-        db_index=True,
-        verbose_name=_('parent')
-    )
+    attribute_type = models.ForeignKey(InstrumentAttributeType, null=True, blank=True, related_name='classifiers',
+                                       verbose_name=_('attribute type'))
+    parent = TreeForeignKey('self', null=True, blank=True, related_name='children', db_index=True,
+                            verbose_name=_('parent'))
 
     class Meta(AbstractClassifier.Meta):
         verbose_name = _('instrument classifier')
@@ -423,8 +414,7 @@ class InstrumentAttributeTypeOption(AbstractAttributeTypeOption):
 class InstrumentAttribute(AbstractAttribute):
     attribute_type = models.ForeignKey(InstrumentAttributeType, related_name='attributes', on_delete=models.PROTECT,
                                        verbose_name=_('attribute type'))
-    content_object = models.ForeignKey(Instrument, related_name='attributes',
-                                       verbose_name=_('content object'))
+    content_object = models.ForeignKey(Instrument, related_name='attributes', verbose_name=_('content object'))
     classifier = models.ForeignKey(InstrumentClassifier, on_delete=models.PROTECT, null=True, blank=True,
                                    verbose_name=_('classifier'))
 
@@ -435,15 +425,11 @@ class InstrumentAttribute(AbstractAttribute):
 
 @python_2_unicode_compatible
 class ManualPricingFormula(models.Model):
-    instrument = models.ForeignKey(Instrument, related_name='manual_pricing_formulas',
-                                   verbose_name=_('instrument'))
-    pricing_policy = models.ForeignKey(PricingPolicy, on_delete=models.PROTECT,
-                                       related_name='manual_pricing_formulas',
+    instrument = models.ForeignKey(Instrument, related_name='manual_pricing_formulas', verbose_name=_('instrument'))
+    pricing_policy = models.ForeignKey(PricingPolicy, on_delete=models.PROTECT, related_name='manual_pricing_formulas',
                                        verbose_name=_('pricing policy'))
-    expr = models.CharField(max_length=255, blank=True, default='',
-                            verbose_name=_('expression'))
-    notes = models.TextField(blank=True, default='',
-                             verbose_name=_('notes'))
+    expr = models.CharField(max_length=255, blank=True, default='', verbose_name=_('expression'))
+    notes = models.TextField(blank=True, default='', verbose_name=_('notes'))
 
     class Meta:
         verbose_name = _('manual pricing formula')
