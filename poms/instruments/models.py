@@ -252,30 +252,30 @@ class Periodicity(AbstractClassModel):
             periodicity = periodicity.id
 
         if periodicity == Periodicity.N_DAY:
-            return 0.0
-        elif periodicity == Periodicity.N_WEEK:
-            return 0.0
-        elif periodicity == Periodicity.N_MONTH:
-            return 0.0
-        elif periodicity == Periodicity.N_MONTH_DAY:
-            return 0.0
-        elif periodicity == Periodicity.N_YEAR:
-            return 0.0
-        elif periodicity == Periodicity.N_YEAR_DAY:
-            return 0.0
+            return 0
+        elif periodicity == Periodicity.N_WEEK_EOBW:
+            return 0
+        elif periodicity == Periodicity.N_MONTH_EOM:
+            return 0
+        elif periodicity == Periodicity.N_MONTH_SAME_DAY:
+            return 0
+        elif periodicity == Periodicity.N_YEAR_EOY:
+            return 0
+        elif periodicity == Periodicity.N_YEAR_SAME_DAY:
+            return 0
         elif periodicity == Periodicity.WEEKLY:
-            return 52.0
+            return 52
         elif periodicity == Periodicity.MONTHLY:
-            return 12.0
+            return 12
         elif periodicity == Periodicity.BIMONTHLY:
-            return 6.0
+            return 6
         elif periodicity == Periodicity.QUARTERLY:
-            return 4.0
+            return 4
         elif periodicity == Periodicity.SEMI_ANNUALLY:
-            return 2.0
+            return 2
         elif periodicity == Periodicity.ANNUALLY:
-            return 1.0
-        return 0.
+            return 1
+        return 0
 
 class CostMethod(AbstractClassModel):
     # TODO: add "values"
