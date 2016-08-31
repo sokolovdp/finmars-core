@@ -15,6 +15,7 @@ from poms.currencies.fields import CurrencyField, CurrencyDefault
 from poms.currencies.models import Currency
 from poms.instruments.fields import InstrumentField, InstrumentTypeField
 from poms.instruments.models import Instrument, InstrumentType, DailyPricingModel, PaymentSizeDetail
+from poms.integrations.fields import PriceDownloadSchemeField
 from poms.obj_attrs.serializers import AbstractAttributeTypeSerializer, AbstractAttributeSerializer, \
     ModelWithAttributesSerializer
 from poms.obj_perms.serializers import ModelWithObjectPermissionSerializer
@@ -91,7 +92,6 @@ class TransactionTypeInputSerializer(serializers.ModelSerializer):
 
 
 class TransactionTypeActionInstrumentSerializer(serializers.ModelSerializer):
-    isin = ExpressionField(allow_blank=True)
     user_code = ExpressionField(allow_blank=True)
     name = ExpressionField(allow_blank=False)
     public_name = ExpressionField(allow_blank=True)
@@ -105,7 +105,6 @@ class TransactionTypeActionInstrumentSerializer(serializers.ModelSerializer):
     accrued_currency = CurrencyField(allow_null=True)
     accrued_currency_input = TransactionInputField(allow_null=True)
     accrued_multiplier = ExpressionField(default="1.0")
-    daily_pricing_model_input = TransactionInputField(allow_null=True)
     payment_size_detail_input = TransactionInputField(allow_null=True)
     default_price = ExpressionField(default="0.0")
     default_accrued = ExpressionField(default="0.0")
@@ -113,19 +112,28 @@ class TransactionTypeActionInstrumentSerializer(serializers.ModelSerializer):
     user_text_2 = ExpressionField(allow_blank=True)
     user_text_3 = ExpressionField(allow_blank=True)
 
+    reference_for_pricing = ExpressionField(allow_blank=True)
+    daily_pricing_model_input = TransactionInputField(allow_null=True)
+    price_download_scheme = PriceDownloadSchemeField(allow_null=True)
+    price_download_scheme_input = TransactionInputField(allow_null=True)
+    maturity_date = ExpressionField(allow_blank=True)
+
     class Meta:
         model = TransactionTypeActionInstrument
         fields = [
-            'isin', 'user_code', 'name', 'public_name', 'short_name', 'notes',
+            'user_code', 'name', 'public_name', 'short_name', 'notes',
             'instrument_type', 'instrument_type_input',
             'pricing_currency', 'pricing_currency_input',
             'price_multiplier',
             'accrued_currency', 'accrued_currency_input',
             'accrued_multiplier',
-            'daily_pricing_model', 'daily_pricing_model_input',
             'payment_size_detail', 'payment_size_detail_input',
             'default_price', 'default_accrued',
             'user_text_1', 'user_text_2', 'user_text_3',
+            'reference_for_pricing',
+            'price_download_scheme', 'daily_pricing_model_input',
+            'daily_pricing_model', 'price_download_scheme_input',
+            'maturity_date',
         ]
 
 

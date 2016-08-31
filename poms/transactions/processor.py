@@ -74,13 +74,17 @@ class TransactionTypeProcessor(object):
                 self._set_simple(instr, 'price_multiplier', ainstr, 'price_multiplier', input_values)
                 self._set_relation(instr, 'accrued_currency', ainstr, 'accrued_currency', input_values)
                 self._set_simple(instr, 'accrued_multiplier', ainstr, 'accrued_multiplier', input_values)
-                self._set_relation(instr, 'daily_pricing_model', ainstr, 'daily_pricing_model', input_values)
                 self._set_relation(instr, 'payment_size_detail', ainstr, 'payment_size_detail', input_values)
                 self._set_simple(instr, 'default_price', ainstr, 'default_price', input_values)
                 self._set_simple(instr, 'default_accrued', ainstr, 'default_accrued', input_values)
                 self._set_simple(instr, 'user_text_1', ainstr, 'user_text_1', input_values)
                 self._set_simple(instr, 'user_text_2', ainstr, 'user_text_2', input_values)
                 self._set_simple(instr, 'user_text_3', ainstr, 'user_text_3', input_values)
+                self._set_simple(instr, 'reference_for_pricing', ainstr, 'reference_for_pricing', input_values)
+                self._set_relation(instr, 'price_download_scheme', ainstr, 'price_download_scheme', input_values)
+                self._set_relation(instr, 'daily_pricing_model', ainstr, 'daily_pricing_model', input_values)
+                self._set_simple(instr, 'maturity_date', ainstr, 'maturity_date', input_values)
+
                 if self.check_mode:
                     instr.id = -order
                 else:

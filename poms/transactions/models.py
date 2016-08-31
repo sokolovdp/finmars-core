@@ -157,7 +157,7 @@ class PeriodicityGroup(AbstractClassModel):
         (MONTHLY, 'MONTHLY', _("monthly (+1m)")),
         (MONTHLY_EOM, 'MONTHLY_EOM', _("monthly (eom)")),
         (QUARTERLY, 'QUARTERLY', _("quarterly (+3m)")),
-        (QUARTERLY_CALENDAR, 'QUARTERLY_CALENDAR',_( "quarterly (calendar)")),
+        (QUARTERLY_CALENDAR, 'QUARTERLY_CALENDAR', _("quarterly (calendar)")),
         (SEMI_ANUALLY, 'SEMI_ANUALLY', _("semi-anually (+6m)")),
         (SEMI_ANUALLY_CALENDAR, 'SEMI_ANUALLY_CALENDAR', _("semi-anually (calendar)")),
         (ANUALLY, 'ANUALLY', _("anually (+12m)")),
@@ -347,7 +347,6 @@ class TransactionTypeAction(models.Model):
 
 
 class TransactionTypeActionInstrument(TransactionTypeAction):
-    isin = models.CharField(max_length=255, blank=True, default='')
     user_code = models.CharField(max_length=255, blank=True, default='')
     name = models.CharField(max_length=255, blank=True, default='')
     public_name = models.CharField(max_length=255, blank=True, default='')
@@ -373,29 +372,36 @@ class TransactionTypeActionInstrument(TransactionTypeAction):
 
     accrued_multiplier = models.CharField(max_length=255, default='0.')
 
-    daily_pricing_model = models.ForeignKey('instruments.DailyPricingModel', null=True, blank=True,
-                                            on_delete=models.PROTECT, related_name='+')
-    daily_pricing_model_input = models.ForeignKey(TransactionTypeInput, null=True, blank=True, on_delete=models.PROTECT,
-                                                  related_name='+')
-
     payment_size_detail = models.ForeignKey('instruments.PaymentSizeDetail', null=True, blank=True,
                                             on_delete=models.PROTECT, related_name='+')
     payment_size_detail_input = models.ForeignKey(TransactionTypeInput, null=True, blank=True, on_delete=models.PROTECT,
                                                   related_name='+')
 
     default_price = models.CharField(max_length=255, default='0.')
-
     default_accrued = models.CharField(max_length=255, default='0.')
 
     user_text_1 = models.CharField(max_length=255, blank=True, default='')
-
     user_text_2 = models.CharField(max_length=255, blank=True, default='')
-
     user_text_3 = models.CharField(max_length=255, blank=True, default='')
 
+    reference_for_pricing = models.CharField(max_length=100, blank=True, default='',
+                                             verbose_name=_('reference for pricing'))
+    daily_pricing_model = models.ForeignKey('instruments.DailyPricingModel', null=True, blank=True,
+                                            on_delete=models.PROTECT, related_name='+')
+    daily_pricing_model_input = models.ForeignKey(TransactionTypeInput, null=True, blank=True, on_delete=models.PROTECT,
+                                                  related_name='+')
+    price_download_scheme = models.ForeignKey('integrations.PriceDownloadScheme', on_delete=models.PROTECT, null=True,
+                                              blank=True, verbose_name=_('price download scheme'))
+    price_download_scheme_input = models.ForeignKey(TransactionTypeInput, null=True, blank=True,
+                                                    on_delete=models.PROTECT, related_name='+')
+    maturity_date = models.CharField(max_length=255, default='now()')
+
     class Meta:
-        verbose_name = _('action instrument')
-        verbose_name_plural = _('action instruments')
+        verbose_name = _('transaction type action instrument')
+        verbose_name_plural = _('transaction type action instruments')
+
+    def __str__(self):
+        return 'Instrument action #%s' % self.order
 
 
 class TransactionTypeActionTransaction(TransactionTypeAction):
@@ -488,8 +494,11 @@ class TransactionTypeActionTransaction(TransactionTypeAction):
                                            related_name='+')
 
     class Meta:
-        verbose_name = _('action transaction')
-        verbose_name_plural = _('action transactions')
+        verbose_name = _('transaction type action transaction')
+        verbose_name_plural = _('transaction type action transactions')
+
+    def __str__(self):
+        return 'Transaction action #%s' % self.order
 
 
 class EventToHandle(NamedModel):
