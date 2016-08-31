@@ -139,11 +139,13 @@ class AbstractProvider(object):
                 if attr in ['pricing_currency', 'accrued_currency']:
                     if v is not None:
                         v = self.get_currency(master_user, provider, v)
-                        setattr(instr, attr, v)
+                        if v:
+                            setattr(instr, attr, v)
                 elif attr in ['instrument_type']:
                     if v is not None:
                         v = self.get_instrument_type(master_user, provider, v)
-                        setattr(instr, attr, v)
+                        if v:
+                            setattr(instr, attr, v)
                 elif attr in ['price_multiplier', 'accrued_multiplier', 'default_price', 'default_accrued']:
                     if v is not None:
                         v = float(v)
