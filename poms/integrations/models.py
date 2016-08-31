@@ -55,7 +55,7 @@ class AccrualScheduleDownloadMethod(AbstractClassModel):
 
 def import_cert_upload_to(instance, filename):
     # return '%s/%s' % (instance.master_user_id, filename)
-    return '%s-%s/%s' % (instance.master_user_id, instance.provider_id, uuid.uuid4().hex)
+    return '%s/%s-%s' % (instance.master_user_id, instance.provider_id, uuid.uuid4().hex)
 
 
 class ImportConfig(models.Model):
