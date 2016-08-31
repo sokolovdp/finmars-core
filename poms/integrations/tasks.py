@@ -26,7 +26,7 @@ from poms.currencies.serializers import CurrencyHistorySerializer
 from poms.instruments.models import Instrument, DailyPricingModel, PricingPolicy, PriceHistory
 from poms.instruments.serializers import PriceHistorySerializer
 from poms.integrations.models import Task, PriceDownloadScheme, InstrumentDownloadScheme
-from poms.integrations.providers.base import get_provider, parse_date_iso, fill_instrument_price
+from poms.integrations.providers.base import get_provider, parse_date_iso, fill_instrument_price, fill_currency_price
 from poms.integrations.storage import import_file_storage
 from poms.reports.backends.balance import BalanceReport2PositionBuilder
 from poms.reports.models import BalanceReport
@@ -600,6 +600,22 @@ def download_pricing_wait(self, sub_tasks_id, task_id):
     instrument_for_manual_price = [i_id for i_id, task_id in six.iteritems(instrument_task) if task_id is None]
     instrument_prices += _create_instrument_manual_prices(options=options, instruments=instrument_for_manual_price)
 
+    if fill_days > 0:
+        fill_date_from = date_to + timedelta(days=1)
+        instrument_last_price = [p for p in instrument_prices if p.date == date_to]
+        _l.debug('instrument last prices: %s',
+                 json.dumps([(p.instrument_id, p.pricing_policy_id, p.date) for p in instrument_last_price],
+                            cls=DjangoJSONEncoder))
+        for p in instrument_last_price:
+            instrument_prices + fill_instrument_price(fill_date_from, fill_days, p)
+
+        currency_last_price = [p for p in currency_prices if p.date == date_to]
+        _l.debug('currency last prices: %s',
+                 json.dumps([(p.currency_id, p.pricing_policy_id, p.date) for p in currency_last_price],
+                            cls=DjangoJSONEncoder))
+        for p in currency_last_price:
+            currency_prices += fill_currency_price(fill_date_from, fill_days, p)
+
     _l.debug('instrument prices: %s',
              json.dumps([(p.instrument_id, p.pricing_policy_id, p.date) for p in instrument_prices],
                         cls=DjangoJSONEncoder))
@@ -645,29 +661,19 @@ def download_pricing_wait(self, sub_tasks_id, task_id):
                     op.save()
 
         if is_yesterday:
-            instrument_price_real = {
-                (p.instrument_id, p.pricing_policy_id)
-                for p in instrument_prices
-                if p.date == date_to
-                }
-            currency_price_real = {
-                (p.currency_id, p.pricing_policy_id)
-                for p in currency_prices
-                if p.date == date_to
-                }
+            instrument_price_real = {(p.instrument_id, p.pricing_policy_id) for p in instrument_prices
+                                     if p.date == date_to}
+            currency_price_real = {(p.currency_id, p.pricing_policy_id) for p in currency_prices
+                                   if p.date == date_to}
 
             instrument_price_expected = set()
             currency_price_expected = set()
             for pp in pricing_policies:
                 for i_id, task_id in six.iteritems(instrument_task):
-                    instrument_price_expected.add(
-                        (int(i_id), pp.id)
-                    )
+                    instrument_price_expected.add((int(i_id), pp.id))
 
                 for c_id, task_id in six.iteritems(currency_task):
-                    currency_price_expected.add(
-                        (int(c_id), pp.id)
-                    )
+                    currency_price_expected.add((int(c_id), pp.id))
 
             instrument_price_missed = instrument_price_expected.difference(instrument_price_real)
             instrument_price_missed_objects = []
@@ -729,8 +735,8 @@ def _create_instrument_manual_prices(options, instruments):
                 )
                 prices.append(price)
 
-                if fill_days:
-                    prices += fill_instrument_price(date_to + timedelta(days=1), fill_days, price)
+                # if fill_days:
+                #     prices += fill_instrument_price(date_to + timedelta(days=1), fill_days, price)
     else:
         days = (date_to - date_from).days + 1
 
@@ -755,6 +761,7 @@ def _create_instrument_manual_prices(options, instruments):
                         principal_price=principal_price
                     )
                     prices.append(price)
+
     return prices
 
 

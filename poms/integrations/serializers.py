@@ -546,12 +546,13 @@ class ImportPricingSerializer(serializers.Serializer):
             })
 
         balance_date = attrs.get('balance_date', date_to) or date_to
+        is_yesterday = (date_from == yesterday) and (date_to == yesterday)
 
         attrs['date_from'] = date_from
         attrs['date_to'] = date_to
-        attrs['is_yesterday'] = (date_from == yesterday) and (date_to == yesterday)
-
         attrs['balance_date'] = balance_date
+        attrs['is_yesterday'] = is_yesterday
+        attrs['fill_days'] = attrs.get('fill_days', 0) if is_yesterday else 0
 
         return attrs
 

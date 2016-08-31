@@ -747,8 +747,8 @@ class BloombergDataProvider(AbstractProvider):
                         )
                         prices.append(price)
 
-                        if fill_days:
-                            prices += fill_instrument_price(date_to + timedelta(days=1), fill_days, price)
+                        # if fill_days:
+                        #     prices += fill_instrument_price(date_to + timedelta(days=1), fill_days, price)
         else:
             for i in instruments:
                 instr = self._bbg_instr(i.reference_for_pricing)
@@ -801,8 +801,8 @@ class BloombergDataProvider(AbstractProvider):
                             fx_rate=fx_rate
                         )
                         prices.append(price)
-                        if fill_days:
-                            prices += fill_currency_price(date_to + timedelta(days=1), fill_days, price)
+                        # if fill_days:
+                        #     prices += fill_currency_price(date_to + timedelta(days=1), fill_days, price)
         else:
             for i in currencies:
                 instr = self._bbg_instr(i.reference_for_pricing)
