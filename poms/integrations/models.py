@@ -4,6 +4,7 @@ import json
 import uuid
 from logging import getLogger
 
+import six
 from django.core.exceptions import ValidationError
 from django.core.serializers.json import DjangoJSONEncoder
 from django.db import models
@@ -54,7 +55,7 @@ class AccrualScheduleDownloadMethod(AbstractClassModel):
 
 def import_cert_upload_to(instance, filename):
     # return '%s/%s' % (instance.master_user_id, filename)
-    return '/'.join([instance.master_user_id, instance.provider_id, uuid.uuid4().hex])
+    return '%s-%s/%s' % (instance.master_user_id, instance.provider_id, uuid.uuid4().hex)
 
 
 class ImportConfig(models.Model):
