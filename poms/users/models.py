@@ -89,6 +89,7 @@ class MasterUserManager(models.Manager):
         obj.strategy3_group = strategy3_group
         obj.strategy3_subgroup = strategy3_subgroup
         obj.strategy3 = strategy3
+        obj.thread_group = thread_group
         obj.save()
 
         for c in [account_type, account, counterparty_group, counterparty, responsible_group, responsible, portfolio,
