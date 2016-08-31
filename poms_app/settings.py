@@ -72,9 +72,6 @@ INSTALLED_APPS = [
     'django.contrib.admin',
     'django.contrib.admindocs',
 
-    # 'django_extensions',
-    # 'redisboard',
-
     # 'django_otp',
     # 'django_otp.plugins.otp_hotp',
     # 'django_otp.plugins.otp_totp',
@@ -88,10 +85,11 @@ INSTALLED_APPS = [
 # if DEBUG:
 #     INSTALLED_APPS += ['debug_toolbar', ]
 
-if DEBUG:
-    INSTALLED_APPS += [
-        'redisboard',
-    ]
+# not worked in django 1.10
+# if DEBUG:
+#     INSTALLED_APPS += [
+#         'redisboard',
+#     ]
 
 MIDDLEWARE_CLASSES = [
     'poms.common.middleware.CommonMiddleware',
