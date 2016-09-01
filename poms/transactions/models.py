@@ -301,6 +301,9 @@ class TransactionTypeInput(models.Model):
     value_type = models.PositiveSmallIntegerField(default=NUMBER, choices=TYPES, verbose_name=_('value type'))
     content_type = models.ForeignKey(ContentType, null=True, blank=True, verbose_name=_('content type'))
     order = models.IntegerField(default=0, verbose_name=_('order'))
+    # TODO: add expression for "default" value
+    # TODO: add default value for relations
+    # TODO: add flag for fill from context (used in  coupon)
 
     class Meta:
         verbose_name = _('transaction type input')

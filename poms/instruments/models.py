@@ -541,6 +541,7 @@ class AccrualCalculationSchedule(models.Model):
                                    verbose_name=_('instrument'))
     accrual_start_date = models.DateField(default=date_now, verbose_name=_('accrual start date'))
     first_payment_date = models.DateField(default=date_now, verbose_name=_('first payment date'))
+    # TODO: is %
     accrual_size = models.FloatField(default=0.0, verbose_name=_('accrual size'))
     accrual_calculation_model = models.ForeignKey(AccrualCalculationModel, on_delete=models.PROTECT,
                                                   verbose_name=_('accrual calculation model'))
@@ -573,21 +574,32 @@ class InstrumentFactorSchedule(models.Model):
 
 class EventSchedule(models.Model):
     instrument = models.ForeignKey(Instrument, related_name='event_schedules', verbose_name=_('instrument'))
+
+    # TODO: name & description is expression
+    # TODO: default settings.POMS_EVENT_*
     name = models.CharField(max_length=255, verbose_name=_('name'))
     description = models.TextField(blank=True, default='', verbose_name=_('description'))
 
     event_class = models.ForeignKey('transactions.EventClass', on_delete=models.PROTECT, verbose_name=_('event class'))
+
+    # TODO: add to MasterUser defaults
     notification_class = models.ForeignKey('transactions.NotificationClass', on_delete=models.PROTECT,
                                            verbose_name=_('notification class'))
 
+    # TODO: is first_payment_date for regular
+    # TODO: is instrument.maturity for one-off
     effective_date = models.DateField(null=True, blank=True, verbose_name=_('effective date'))
+    # TODO: default settings.POMS_EVENT_*
     notify_in_n_days = models.IntegerField(default=0)
     # notification_date = models.DateField(null=True, blank=True, verbose_name=_('notification date'))
 
-    # initial_date -> effective_date
     periodicity = models.ForeignKey(Periodicity, null=True, blank=True, on_delete=models.PROTECT)
     periodicity_n = models.IntegerField(default=0)
+    # TODO: =see next accrual_calculation_schedule.accrual_start_date or instrument.maturity_date (if last)
     final_date = models.DateField(default=date.max)
+
+    # TODO: add field
+    # is_auto_generated = models.BooleanField(default=False)
 
     class Meta:
         verbose_name = _('event schedule')
@@ -598,11 +610,16 @@ class EventSchedule(models.Model):
 
 
 class EventScheduleAction(models.Model):
+    # TODO: for auto generated alway one
     event_schedule = models.ForeignKey(EventSchedule, related_name='actions', verbose_name=_('event schedule'))
     transaction_type = models.ForeignKey('transactions.TransactionType', on_delete=models.PROTECT)
+    # TODO: on auto generate fill 'Book: ' + transaction_type
     text = models.CharField(max_length=100, blank=True, default='')
+    # TODO: add to MasterUser defaults
     is_sent_to_pending = models.BooleanField(default=True)
-    is_default = models.BooleanField(default=False)
+    # TODO: add to MasterUser defaults
+    # TODO: rename to: is_book_automatic (used when now notification)
+    is_default = models.BooleanField(default=True)
     button_position = models.IntegerField(default=0)
 
     class Meta:
