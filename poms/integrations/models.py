@@ -4,7 +4,6 @@ import json
 import uuid
 from logging import getLogger
 
-import six
 from django.core.exceptions import ValidationError
 from django.core.serializers.json import DjangoJSONEncoder
 from django.db import models
