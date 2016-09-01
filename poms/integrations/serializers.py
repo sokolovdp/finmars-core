@@ -442,8 +442,8 @@ class ImportInstrumentSerializer(serializers.Serializer):
             try:
                 task_result_overrides = json.loads(task_result_overrides)
             except ValueError:
-                raise ValidationError({'task_result_overrides': 'Invalid value'})
-        if not isinstance(task_result_overrides, (dict)):
+                raise ValidationError({'task_result_overrides': 'Invalid JSON string'})
+        if not isinstance(task_result_overrides, dict):
             raise ValidationError({'task_result_overrides': 'Invalid value'})
         task_result_overrides = {k: v for k, v in task_result_overrides.items()
                                  if k in instrument_download_scheme.fields}
