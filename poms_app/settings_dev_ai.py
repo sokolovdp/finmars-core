@@ -6,6 +6,9 @@ import env_ai
 # noinspection PyUnresolvedReferences
 from .settings import *
 
+# LOGGING['loggers']['django.db'] = {'level': 'DEBUG'}
+LOGGING['loggers']['poms']['level'] = 'DEBUG'
+
 SECRET_KEY = 's#)m^ug%_jr0dtko#83_55rd_we&xu#f9p#!1gh@k&$=5&3e67'
 
 AUTH_PASSWORD_VALIDATORS = []
