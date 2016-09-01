@@ -110,6 +110,9 @@ class InstrumentDownloadSchemeSerializer(serializers.ModelSerializer):
     user_text_2 = ExpressionField(allow_blank=True)
     user_text_3 = ExpressionField(allow_blank=True)
     # price_download_mode = ExpressionField(allow_blank=True)
+    maturity_date = ExpressionField(allow_blank=True)
+
+    price_download_scheme = PriceDownloadSchemeField()
 
     attributes = InstrumentDownloadSchemeAttributeSerializer(many=True, read_only=False)
 
@@ -121,10 +124,10 @@ class InstrumentDownloadSchemeSerializer(serializers.ModelSerializer):
             'reference_for_pricing',
             'user_code', 'name', 'short_name', 'public_name', 'notes',
             'instrument_type', 'pricing_currency', 'price_multiplier', 'accrued_currency', 'accrued_multiplier',
-            # 'daily_pricing_model', 'payment_size_detail', 'default_price', 'default_accrued',
             'user_text_1', 'user_text_2', 'user_text_3',
-            # 'price_download_mode',
-            'daily_pricing_model', 'price_download_scheme', 'default_price', 'default_accrued',
+            'maturity_date',
+            'payment_size_detail', 'daily_pricing_model', 'price_download_scheme',
+            'default_price', 'default_accrued',
             'attributes',
             'factor_schedule_method', 'accrual_calculation_schedule_method',
         ]

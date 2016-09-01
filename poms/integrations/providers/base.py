@@ -156,6 +156,9 @@ class AbstractProvider(object):
                     if v is not None:
                         v = float(v)
                         setattr(instr, attr, v)
+                elif attr in ['maturity_date']:
+                    if v is not None:
+                        setattr(instr, attr, v)
                 else:
                     if v is not None:
                         v = six.text_type(v)

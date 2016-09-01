@@ -150,6 +150,9 @@ class InstrumentDownloadScheme(models.Model):
     user_text_2 = models.CharField(max_length=255, blank=True, default='')
     user_text_3 = models.CharField(max_length=255, blank=True, default='')
 
+    # TODO: add maturity_date
+    maturity_date = models.CharField(max_length=255, blank=True, default='')
+
     payment_size_detail = models.ForeignKey('instruments.PaymentSizeDetail', on_delete=models.PROTECT,
                                             null=True, blank=True, verbose_name=_('payment size detail'))
     daily_pricing_model = models.ForeignKey('instruments.DailyPricingModel', null=True, blank=True,
