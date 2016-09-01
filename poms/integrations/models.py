@@ -150,7 +150,14 @@ class InstrumentDownloadScheme(models.Model):
     user_text_2 = models.CharField(max_length=255, blank=True, default='')
     user_text_3 = models.CharField(max_length=255, blank=True, default='')
 
-    # price_download_mode = models.CharField(max_length=255, blank=True, default='')
+    payment_size_detail = models.ForeignKey('instruments.PaymentSizeDetail', on_delete=models.PROTECT,
+                                            null=True, blank=True, verbose_name=_('payment size detail'))
+    daily_pricing_model = models.ForeignKey('instruments.DailyPricingModel', null=True, blank=True,
+                                            verbose_name=_('daily pricing model'))
+    price_download_scheme = models.ForeignKey('integrations.PriceDownloadScheme', on_delete=models.PROTECT, null=True,
+                                              blank=True, verbose_name=_('price download scheme'))
+    default_price = models.FloatField(default=0.0, verbose_name=_('default price'))
+    default_accrued = models.FloatField(default=0.0, verbose_name=_('default accrued'))
 
     factor_schedule_method = models.ForeignKey(FactorScheduleDownloadMethod, null=True, blank=True)
     accrual_calculation_schedule_method = models.ForeignKey(AccrualScheduleDownloadMethod, null=True, blank=True)

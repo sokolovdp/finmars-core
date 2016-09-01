@@ -128,6 +128,12 @@ class AbstractProvider(object):
         # instr.pricing_currency = master_user.currency
         # instr.accrued_currency = master_user.currency
 
+        instr.payment_size_detail = instrument_download_scheme.payment_size_detail
+        instr.daily_pricing_model = instrument_download_scheme.daily_pricing_model
+        instr.price_download_scheme = instrument_download_scheme.price_download_scheme
+        instr.default_price = instrument_download_scheme.default_price
+        instr.default_accrued = instrument_download_scheme.default_accrued
+
         for attr in InstrumentDownloadScheme.BASIC_FIELDS:
             expr = getattr(instrument_download_scheme, attr)
             if expr:

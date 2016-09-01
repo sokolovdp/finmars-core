@@ -18,7 +18,7 @@ from poms.currencies.fields import CurrencyField
 from poms.instruments.fields import InstrumentTypeField, InstrumentAttributeTypeField, InstrumentClassifierField
 from poms.instruments.serializers import InstrumentAttributeSerializer, InstrumentSerializer, \
     AccrualCalculationScheduleSerializer, InstrumentFactorScheduleSerializer
-from poms.integrations.fields import InstrumentDownloadSchemeField
+from poms.integrations.fields import InstrumentDownloadSchemeField, PriceDownloadSchemeField
 from poms.integrations.models import InstrumentDownloadSchemeInput, InstrumentDownloadSchemeAttribute, \
     InstrumentDownloadScheme, ImportConfig, Task, ProviderClass, FactorScheduleDownloadMethod, \
     AccrualScheduleDownloadMethod, PriceDownloadScheme, CurrencyMapping, InstrumentTypeMapping, \
@@ -124,6 +124,7 @@ class InstrumentDownloadSchemeSerializer(serializers.ModelSerializer):
             # 'daily_pricing_model', 'payment_size_detail', 'default_price', 'default_accrued',
             'user_text_1', 'user_text_2', 'user_text_3',
             # 'price_download_mode',
+            'daily_pricing_model', 'price_download_scheme', 'default_price', 'default_accrued',
             'attributes',
             'factor_schedule_method', 'accrual_calculation_schedule_method',
         ]
