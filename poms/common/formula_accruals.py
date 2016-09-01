@@ -6,7 +6,10 @@ from datetime import date, timedelta
 from dateutil import relativedelta, rrule
 
 
-def coupon_accrual_factor(accrual_calculation_model, periodicity, dt1, dt2, dt3, maturity_date):
+def coupon_accrual_factor(
+        accrual_calculation_schedule=None,
+        accrual_calculation_model=None, periodicity=None, periodicity_n=None,
+        dt1=None, dt2=None, dt3=None, maturity_date=None):
     from poms.instruments.models import AccrualCalculationModel, Periodicity
 
     # day_convention_code - accrual_calculation_model
@@ -16,10 +19,17 @@ def coupon_accrual_factor(accrual_calculation_model, periodicity, dt1, dt2, dt3,
     # dt3 - first coupon date - берется из AccrualCalculationSchedule
     # maturity_date - instrument.maturity_date
 
-    if isinstance(accrual_calculation_model, AccrualCalculationModel):
-        accrual_calculation_model = accrual_calculation_model.id
-    if isinstance(periodicity, Periodicity):
-        periodicity = periodicity.id
+    if accrual_calculation_schedule:
+        accrual_calculation_model = accrual_calculation_schedule.accrual_calculation_model_id
+        periodicity = accrual_calculation_schedule.periodicity_id
+        periodicity_n = accrual_calculation_schedule.periodicity_n
+        if maturity_date is None:
+            maturity_date = accrual_calculation_schedule.instrument.maturity_date
+    else:
+        if isinstance(accrual_calculation_model, AccrualCalculationModel):
+            accrual_calculation_model = accrual_calculation_model.id
+        if isinstance(periodicity, Periodicity):
+            periodicity = periodicity.id
 
     if accrual_calculation_model is None or periodicity is None or dt1 is None or dt2 is None or dt3 is None:
         return 0.0
