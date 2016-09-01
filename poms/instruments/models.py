@@ -114,14 +114,6 @@ class AccrualCalculationModel(AbstractClassModel):
         verbose_name_plural = _('accrual calculation models')
 
 
-# class PaymentFrequency(ClassModelBase):
-#     # TODO: add "values"
-#     CLASSES = tuple()
-#
-#     class Meta:
-#         verbose_name = _('payment frequency')
-#         verbose_name_plural = _('payment frequencies')
-
 class PaymentSizeDetail(AbstractClassModel):
     PERCENT = 1
     PER_ANNUM = 2
@@ -245,7 +237,6 @@ class Periodicity(AbstractClassModel):
             return rrule.rrule(dtstart=dtstart, count=count, until=until, freq=rrule.YEARLY)
         return None
 
-
     @staticmethod
     def to_freq(periodicity):
         if isinstance(periodicity, Periodicity):
@@ -277,8 +268,8 @@ class Periodicity(AbstractClassModel):
             return 1
         return 0
 
+
 class CostMethod(AbstractClassModel):
-    # TODO: add "values"
     AVCO = 1
     FIFO = 2
     LIFO = 3

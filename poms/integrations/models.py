@@ -114,7 +114,6 @@ class ImportConfig(models.Model):
         return (self.has_p12cert and self.has_password) or (self.has_cert and self.has_key)
 
 
-# TODO: rename to InstrumentDownloadScheme
 @python_2_unicode_compatible
 class InstrumentDownloadScheme(models.Model):
     BASIC_FIELDS = ['reference_for_pricing', 'user_code', 'name', 'short_name', 'public_name', 'notes',
@@ -150,7 +149,6 @@ class InstrumentDownloadScheme(models.Model):
     user_text_2 = models.CharField(max_length=255, blank=True, default='')
     user_text_3 = models.CharField(max_length=255, blank=True, default='')
 
-    # TODO: add maturity_date
     maturity_date = models.CharField(max_length=255, blank=True, default='')
 
     payment_size_detail = models.ForeignKey('instruments.PaymentSizeDetail', on_delete=models.PROTECT,

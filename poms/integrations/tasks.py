@@ -387,7 +387,6 @@ def download_pricing_async(self, task_id):
              balance_date, sorted(instruments_if_open), sorted(currencies_if_open))
 
     if balance_date and (instruments_if_open or currencies_if_open):
-        # TODO: calculate balance and than filter instruments & currencies
         report = BalanceReport(master_user=task.master_user, begin_date=date.min, end_date=balance_date,
                                use_portfolio=True, show_transaction_details=False)
         _l.debug('calculate position report: %s', report)
