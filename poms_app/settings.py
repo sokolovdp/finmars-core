@@ -153,12 +153,20 @@ DATABASES = {
 }
 
 if DEBUG:
+    # DATABASES['default'] = {
+    #     'ENGINE': 'django.db.backends.postgresql',
+    #     'NAME': 'poms_dev2',
+    #     'USER': 'poms_dev',
+    #     'PASSWORD': 'sqlsql',
+    #     'HOST': '192.168.57.2',
+    #     'PORT': '',
+    # }
     DATABASES['default'] = {
         'ENGINE': 'django.db.backends.postgresql',
         'NAME': 'poms_dev2',
         'USER': 'poms_dev',
         'PASSWORD': 'sqlsql',
-        'HOST': '192.168.57.2',
+        'HOST': '127.0.0.1',
         'PORT': '',
     }
     # DATABASES['default'] = {
@@ -166,6 +174,7 @@ if DEBUG:
     #     'NAME': os.path.join(BASE_DIR, 'db.sqlite3'),
     #     # 'NAME': ':memory:',
     # }
+    pass
 
 # Password validation
 # https://docs.djangoproject.com/en/1.9/ref/settings/#auth-password-validators
@@ -218,8 +227,8 @@ STATIC_URL = '/api/static/'
 STATIC_ROOT = os.path.join(BASE_DIR, "static")
 
 REDIS_HOST = os.environ.get('REDIS_HOST', '127.0.0.1:6379')
-if DEBUG and REDIS_HOST == '127.0.0.1:6379':
-    REDIS_HOST = '192.168.57.2:6379'
+# if DEBUG and REDIS_HOST == '127.0.0.1:6379':
+#     REDIS_HOST = '192.168.57.2:6379'
 
 CACHE_SERIALIZER = "django_redis.serializers.json.JSONSerializer"
 CACHE_COMPRESSOR = 'django_redis.compressors.identity.IdentityCompressor'
