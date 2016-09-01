@@ -271,7 +271,7 @@ class TaskSerializer(serializers.ModelSerializer):
             'is_yesterday',
             'parent', 'children',
             # 'options_object',
-            'result_object',
+            # 'result_object',
         ]
 
     def get_is_yesterday(self, obj):
@@ -418,14 +418,12 @@ class ImportInstrumentEntry(object):
 class ImportInstrumentSerializer(serializers.Serializer):
     master_user = MasterUserField()
     member = HiddenMemberField()
-    # provider = ProviderClassField()
     instrument_download_scheme = InstrumentDownloadSchemeField()
-
     instrument_code = serializers.CharField(required=True, initial='USP16394AG62 Corp')
 
     task = serializers.IntegerField(required=False, allow_null=True)
-
     task_object = TaskSerializer(read_only=True)
+    task_result = serializers.SerializerMethodField()
     task_result_overrides = serializers.JSONField(default={}, allow_null=True)
 
     instrument = InstrumentMiniSerializer(read_only=True)
@@ -438,13 +436,22 @@ class ImportInstrumentSerializer(serializers.Serializer):
         if not provider.is_valid_reference(instrument_code):
             raise ValidationError(
                 {'instrument_code': 'Invalid value for provider %s' % instrument_download_scheme.provider.name})
+
+        task_result_overrides = attrs.get('task_result_overrides', None) or {}
+        if isinstance(task_result_overrides, six.string_types):
+            try:
+                task_result_overrides = json.loads(task_result_overrides)
+            except ValueError:
+                raise ValidationError({'task_result_overrides': 'Invalid value'})
+        if not isinstance(task_result_overrides, (dict)):
+            raise ValidationError({'task_result_overrides': 'Invalid value'})
+        task_result_overrides = {k: v for k, v in task_result_overrides.items()
+                                 if k in instrument_download_scheme.fields}
+        attrs['task_result_overrides'] = task_result_overrides
         return attrs
 
     def create(self, validated_data):
         task_result_overrides = validated_data.get('task_result_overrides', None)
-        if task_result_overrides and (isinstance(task_result_overrides, six.string_types) and (
-                    task_result_overrides.startswith('[') or task_result_overrides.startswith('{'))):
-            task_result_overrides = json.loads(task_result_overrides)
         instance = ImportInstrumentEntry(**validated_data)
         if instance.task:
             task, instrument = download_instrument(
@@ -468,6 +475,13 @@ class ImportInstrumentSerializer(serializers.Serializer):
             instance.task_object = task
             instance.instrument = instrument
         return instance
+
+    def get_task_result(self, obj):
+        if obj.task_object.status == Task.STATUS_DONE:
+            fields = obj.task_object.options_object['fields']
+            result_object = obj.task_object.result_object
+            return {k: v for k, v in result_object.items() if k in fields}
+        return {}
 
 
 class ImportPricingEntry(object):
