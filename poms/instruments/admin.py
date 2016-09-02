@@ -1,6 +1,6 @@
 from __future__ import unicode_literals
 
-from django.contrib import admin
+from django.contrib import admin, messages
 from django.db import models
 from django.forms import widgets
 
@@ -99,7 +99,10 @@ class InstrumentAdmin(HistoricalAdmin):
 
     def rebuild_event_schedules(self, request, queryset):
         for instr in queryset:
-            instr.rebuild_event_schedules()
+            try:
+                instr.rebuild_event_schedules(fail_silently=False)
+            except ValueError as e:
+                messages.error(request, '%s: %s' % (instr, e))
 
     rebuild_event_schedules.short_description = "Rebuild event schedules"
 

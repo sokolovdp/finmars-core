@@ -394,46 +394,58 @@ class Instrument(NamedModel):
     def __str__(self):
         return self.name
 
-    def rebuild_event_schedules(self):
+    def rebuild_event_schedules(self, fail_silently=False):
         from poms.transactions.models import EventClass
 
         self.event_schedules.filter(is_auto_generated=True).delete()
+
         master_user = self.master_user
         instrument_type = self.instrument_type
         config = master_user.instrument_event_schedule_config
 
+        add_one_off = instrument_type.instrument_class_id in [
+            InstrumentClass.EVENT_AT_MATURITY, InstrumentClass.REGULAR_EVENT_AT_MATURITY]
+        add_regular = instrument_type.instrument_class_id in [
+            InstrumentClass.REGULAR_EVENT_AT_MATURITY, InstrumentClass.PERPETUAL_REGULAR_EVENT]
+
+        if add_one_off and instrument_type.one_off_event_id is None:
+            if fail_silently:
+                return None
+            else:
+                raise ValueError('Field one-off event in instrument type "%s" must be set' % instrument_type)
+        if add_regular and instrument_type.regular_event_id is None:
+            if fail_silently:
+                return None
+            else:
+                raise ValueError('Field regular event in instrument type "%s" must be set' % instrument_type)
+
         accruals = [a for a in self.accrual_calculation_schedules.order_by('accrual_start_date')]
         for i, accrual in enumerate(accruals):
-            add_one_off = instrument_type.instrument_class_id in [InstrumentClass.EVENT_AT_MATURITY,
-                                                                  InstrumentClass.REGULAR_EVENT_AT_MATURITY]
-            add_regular = instrument_type.instrument_class_id in [InstrumentClass.REGULAR_EVENT_AT_MATURITY,
-                                                                  InstrumentClass.PERPETUAL_REGULAR_EVENT]
-
             try:
                 accrual_next = accruals[i + 1]
             except IndexError:
                 accrual_next = None
 
-            if add_one_off:
-                e = EventSchedule(instrument=self, accrual_calculation_schedule=accrual, is_auto_generated=True)
-                e.name = config.name
-                e.description = config.description
-                e.event_class_id = EventClass.ONE_OFF
-                e.notification_class = config.notification_class
-                e.effective_date = self.maturity_date
-                e.notify_in_n_days = config.notify_in_n_days
-                e.periodicity = accrual.periodicity
-                e.periodicity_n = accrual.periodicity_n
-                e.final_date = self.maturity_date
-                e.save()
-
-                a = EventScheduleAction(event_schedule=e)
-                a.text = config.action_text
-                a.transaction_type = instrument_type.one_off_event
-                a.is_sent_to_pending = config.action_is_sent_to_pending
-                a.is_book_automatic = config.action_is_book_automatic
-                a.button_position = 1
-                a.save()
+            # if add_one_off:
+            #     e = EventSchedule(instrument=self, accrual_calculation_schedule=accrual, is_auto_generated=True)
+            #     e.name = config.name
+            #     e.description = config.description
+            #     e.event_class_id = EventClass.ONE_OFF
+            #     e.notification_class = config.notification_class
+            #     e.effective_date = self.maturity_date
+            #     e.notify_in_n_days = config.notify_in_n_days
+            #     e.periodicity = accrual.periodicity
+            #     e.periodicity_n = accrual.periodicity_n
+            #     e.final_date = self.maturity_date
+            #     e.save()
+            #
+            #     a = EventScheduleAction(event_schedule=e)
+            #     a.text = config.action_text
+            #     a.transaction_type = instrument_type.one_off_event
+            #     a.is_sent_to_pending = config.action_is_sent_to_pending
+            #     a.is_book_automatic = config.action_is_book_automatic
+            #     a.button_position = 1
+            #     a.save()
 
             if add_regular:
                 e = EventSchedule(instrument=self, accrual_calculation_schedule=accrual, is_auto_generated=True)
@@ -455,6 +467,25 @@ class Instrument(NamedModel):
                 a.is_book_automatic = config.action_is_book_automatic
                 a.button_position = 1
                 a.save()
+
+        if add_one_off:
+            e = EventSchedule(instrument=self, is_auto_generated=True)
+            e.name = config.name
+            e.description = config.description
+            e.event_class_id = EventClass.ONE_OFF
+            e.notification_class = config.notification_class
+            e.effective_date = self.maturity_date
+            e.notify_in_n_days = config.notify_in_n_days
+            e.final_date = self.maturity_date
+            e.save()
+
+            a = EventScheduleAction(event_schedule=e)
+            a.text = config.action_text
+            a.transaction_type = instrument_type.one_off_event
+            a.is_sent_to_pending = config.action_is_sent_to_pending
+            a.is_book_automatic = config.action_is_book_automatic
+            a.button_position = 1
+            a.save()
 
 
 class InstrumentUserObjectPermission(AbstractUserObjectPermission):
