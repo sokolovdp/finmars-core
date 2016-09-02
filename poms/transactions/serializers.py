@@ -77,9 +77,25 @@ class TransactionTypeInputSerializer(serializers.ModelSerializer):
                                  ])
     content_type = TransactionTypeInputContentTypeField(allow_null=True, allow_empty=True)
 
+    account = AccountField(allow_null=True)
+    instrument_type = InstrumentTypeField(allow_null=True)
+    instrument = InstrumentField(allow_null=True)
+    currency = CurrencyField(allow_null=True)
+    counterparty = CounterpartyField(allow_null=True)
+    responsible = ResponsibleField(allow_null=True)
+    portfolio = PortfolioField(allow_null=True)
+    strategy1 = Strategy1Field(allow_null=True)
+    strategy2 = Strategy2Field(allow_null=True)
+    strategy3 = Strategy3Field(allow_null=True)
+    price_download_scheme = PriceDownloadSchemeField(allow_null=True)
+
     class Meta:
         model = TransactionTypeInput
-        fields = ['id', 'name', 'verbose_name', 'value_type', 'content_type', 'order']
+        fields = ['id', 'name', 'verbose_name', 'value_type', 'content_type', 'order',
+                  'is_fill_from_context', 'value',
+                  'account', 'instrument_type', 'instrument', 'currency', 'counterparty', 'responsible', 'portfolio',
+                  'strategy1', 'strategy2', 'strategy3', 'daily_pricing_model', 'payment_size_detail',
+                  'price_download_scheme', ]
         read_only_fields = ['order']
 
     def validate(self, data):
