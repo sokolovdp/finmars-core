@@ -141,10 +141,6 @@ class InstrumentDownloadScheme(models.Model):
     price_multiplier = models.CharField(max_length=255, blank=True, default='1.0')
     accrued_currency = models.CharField(max_length=255, blank=True, default='')
     accrued_multiplier = models.CharField(max_length=255, blank=True, default='1.0')
-    # daily_pricing_model = models.CharField(max_length=255, blank=True, default='')
-    # payment_size_detail = models.CharField(max_length=255, blank=True, default='')
-    # default_price = models.CharField(max_length=255, blank=True, default='0.0')
-    # default_accrued = models.CharField(max_length=255, blank=True, default='0.0')
     user_text_1 = models.CharField(max_length=255, blank=True, default='')
     user_text_2 = models.CharField(max_length=255, blank=True, default='')
     user_text_3 = models.CharField(max_length=255, blank=True, default='')
@@ -412,20 +408,6 @@ class Task(TimeStampedModel):
 
     celery_tasks_id = models.CharField(max_length=255, blank=True, default='')
     parent = models.ForeignKey('self', null=True, blank=True, related_name='children')
-
-    # # instrument
-    # instrument_code = models.CharField(max_length=100, null=True, blank=True)
-    # instrument_download_scheme = models.ForeignKey(InstrumentDownloadScheme, null=True, blank=True,
-    #                                                on_delete=models.SET_NULL)
-    #
-    # # pricing
-    # date_from = models.DateField(null=True, blank=True)
-    # date_to = models.DateField(null=True, blank=True)
-    # balance_date = models.DateField(null=True, blank=True)
-    # is_yesterday = models.NullBooleanField()
-    # fill_days = models.IntegerField(null=True, blank=True)
-    # override_existed = models.NullBooleanField()
-    # price_download_scheme
 
     options = models.TextField(null=True, blank=True)
     result = models.TextField(null=True, blank=True)

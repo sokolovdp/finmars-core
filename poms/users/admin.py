@@ -7,6 +7,7 @@ from django.contrib.auth.admin import UserAdmin
 from django.contrib.auth.models import User, Permission
 
 from poms.audit.admin import HistoricalAdmin
+from poms.instruments.models import EventScheduleConfig
 from poms.integrations.models import PricingAutomatedSchedule
 from poms.users.models import MasterUser, UserProfile, Member, Group, TIMEZONE_CHOICES, FakeSequence
 
@@ -23,17 +24,23 @@ class MemberInline(admin.TabularInline):
     #     return super(MemberInline, self).formfield_for_manytomany(db_field, request=request, **kwargs)
 
 
-class PricingAutomatedScheduleInline(admin.TabularInline):
+class PricingAutomatedScheduleInline(admin.StackedInline):
     model = PricingAutomatedSchedule
     can_delete = False
     readonly_fields = ['latest_running', 'latest_task']
+
+
+class EventScheduleConfigInline(admin.StackedInline):
+    model = EventScheduleConfig
+    can_delete = False
 
 
 class MasterUserAdmin(HistoricalAdmin):
     model = MasterUser
     inlines = [
         PricingAutomatedScheduleInline,
-        MemberInline
+        EventScheduleConfigInline,
+        MemberInline,
     ]
     list_display = ['id', 'name']
     raw_id_fields = ['currency',
@@ -47,6 +54,19 @@ class MasterUserAdmin(HistoricalAdmin):
                      'strategy3_group', 'strategy3_subgroup', 'strategy3',
                      'thread_group',
                      ]
+    fieldsets = (
+        (None, {
+            'fields': ('name', 'currency', 'language', 'timezone', 'notification_business_days',)
+        }),
+        ('Defaults', {
+            'fields': ('account_type', 'account',
+                       'counterparty_group', 'counterparty', 'responsible_group', 'responsible', 'instrument_type',
+                       'portfolio', 'strategy1_group', 'strategy1_subgroup', 'strategy1',
+                       'strategy2_group', 'strategy2_subgroup', 'strategy2',
+                       'strategy3_group', 'strategy3_subgroup', 'strategy3',
+                       'thread_group',),
+        }),
+    )
 
 
 admin.site.register(MasterUser, MasterUserAdmin)

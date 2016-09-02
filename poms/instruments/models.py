@@ -566,31 +566,34 @@ class InstrumentFactorSchedule(models.Model):
 class EventSchedule(models.Model):
     instrument = models.ForeignKey(Instrument, related_name='event_schedules', verbose_name=_('instrument'))
 
-    # TODO: name & description is expression
-    # TODO: default settings.POMS_EVENT_*
+    # T O D O: name & description is expression
+    # T O D O: default settings.POMS_EVENT_*
     name = models.CharField(max_length=255, verbose_name=_('name'))
     description = models.TextField(blank=True, default='', verbose_name=_('description'))
 
     event_class = models.ForeignKey('transactions.EventClass', on_delete=models.PROTECT, verbose_name=_('event class'))
 
-    # TODO: add to MasterUser defaults
+    # T O D O: add to MasterUser defaults
     notification_class = models.ForeignKey('transactions.NotificationClass', on_delete=models.PROTECT,
                                            verbose_name=_('notification class'))
 
     # TODO: is first_payment_date for regular
     # TODO: is instrument.maturity for one-off
     effective_date = models.DateField(null=True, blank=True, verbose_name=_('effective date'))
-    # TODO: default settings.POMS_EVENT_*
-    notify_in_n_days = models.IntegerField(default=0)
-    # notification_date = models.DateField(null=True, blank=True, verbose_name=_('notification date'))
+    notify_in_n_days = models.PositiveIntegerField(default=0)
 
     periodicity = models.ForeignKey(Periodicity, null=True, blank=True, on_delete=models.PROTECT)
     periodicity_n = models.IntegerField(default=0)
     # TODO: =see next accrual_calculation_schedule.accrual_start_date or instrument.maturity_date (if last)
     final_date = models.DateField(default=date.max)
 
-    # TODO: add field
-    # is_auto_generated = models.BooleanField(default=False)
+    is_auto_generated = models.BooleanField(default=False)
+    accrual_calculation_schedule = models.ForeignKey(AccrualCalculationSchedule, null=True, blank=True, editable=False,
+                                                     related_name='event_schedules',
+                                                     help_text=_('Used for store link when is_auto_generated is True'))
+    factor_schedule = models.ForeignKey(InstrumentFactorSchedule, null=True, blank=True, editable=False,
+                                        related_name='event_schedules',
+                                        help_text=_('Used for store link when is_auto_generated is True'))
 
     class Meta:
         verbose_name = _('event schedule')
@@ -601,16 +604,16 @@ class EventSchedule(models.Model):
 
 
 class EventScheduleAction(models.Model):
-    # TODO: for auto generated alway one
+    # TODO: for auto generated always one
     event_schedule = models.ForeignKey(EventSchedule, related_name='actions', verbose_name=_('event schedule'))
     transaction_type = models.ForeignKey('transactions.TransactionType', on_delete=models.PROTECT)
-    # TODO: on auto generate fill 'Book: ' + transaction_type
+    # T O D O: on auto generate fill 'Book: ' + transaction_type
     text = models.CharField(max_length=100, blank=True, default='')
-    # TODO: add to MasterUser defaults
+    # T O D O: add to MasterUser defaults
     is_sent_to_pending = models.BooleanField(default=True)
-    # TODO: add to MasterUser defaults
-    # TODO: rename to: is_book_automatic (used when now notification)
-    is_default = models.BooleanField(default=True)
+    # T O D O: add to MasterUser defaults
+    # T O D O: rename to: is_book_automatic (used when now notification)
+    is_book_automatic = models.BooleanField(default=True)
     button_position = models.IntegerField(default=0)
 
     class Meta:
@@ -619,3 +622,24 @@ class EventScheduleAction(models.Model):
 
     def __str__(self):
         return self.text
+
+
+class EventScheduleConfig(models.Model):
+    master_user = models.OneToOneField('users.MasterUser', related_name='instrument_event_schedule_config',
+                                       verbose_name=_('master user'))
+
+    name = models.CharField(max_length=255, blank=True, default='', verbose_name=_('name'))
+    description = models.CharField(max_length=255, blank=True, default='', verbose_name=_('description'))
+    notification_class = models.ForeignKey('transactions.NotificationClass', null=True, blank=True,
+                                           on_delete=models.PROTECT, verbose_name=_('notification class'))
+    notify_in_n_days = models.PositiveSmallIntegerField(default=0, verbose_name=_('notify in N days'))
+    action_text = models.CharField(max_length=255, blank=True, default='', verbose_name=_('action text'))
+    action_is_sent_to_pending = models.BooleanField(default=True)
+    action_is_book_automatic = models.BooleanField(default=True)
+
+    class Meta:
+        verbose_name = _('event schedule config')
+        verbose_name_plural = _('event schedule configs')
+
+    def __str__(self):
+        return 'event schedule config'

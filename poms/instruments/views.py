@@ -1,6 +1,7 @@
 from __future__ import unicode_literals
 
 import django_filters
+from django.core.exceptions import ObjectDoesNotExist
 from rest_framework.filters import FilterSet
 
 from poms.common.filters import CharFilter, ModelWithPermissionMultipleChoiceFilter, IsDefaultFilter
@@ -8,11 +9,12 @@ from poms.common.views import AbstractClassModelViewSet, AbstractModelViewSet
 from poms.instruments.filters import OwnerByInstrumentFilter, PriceHistoryObjectPermissionFilter
 from poms.instruments.models import Instrument, PriceHistory, InstrumentClass, DailyPricingModel, \
     AccrualCalculationModel, PaymentSizeDetail, Periodicity, CostMethod, InstrumentType, InstrumentAttributeType, \
-    PricingPolicy, InstrumentClassifier
+    PricingPolicy, InstrumentClassifier, EventScheduleConfig
 from poms.instruments.serializers import InstrumentSerializer, PriceHistorySerializer, \
     InstrumentClassSerializer, DailyPricingModelSerializer, AccrualCalculationModelSerializer, \
     PaymentSizeDetailSerializer, PeriodicitySerializer, CostMethodSerializer, InstrumentTypeSerializer, \
-    InstrumentAttributeTypeSerializer, PricingPolicySerializer, InstrumentClassifierNodeSerializer
+    InstrumentAttributeTypeSerializer, PricingPolicySerializer, InstrumentClassifierNodeSerializer, \
+    EventScheduleConfigSerializer
 from poms.obj_attrs.filters import AttributePrefetchFilter
 from poms.obj_attrs.views import AbstractAttributeTypeViewSet, AbstractClassifierViewSet
 from poms.obj_perms.views import AbstractWithObjectPermissionViewSet
@@ -176,3 +178,22 @@ class PriceHistoryViewSet(AbstractModelViewSet):
     filter_class = PriceHistoryFilterSet
     ordering_fields = ['-date']
     search_fields = ['instrument__user_code', 'instrument__name', 'instrument__short_name', ]
+
+
+class EventScheduleConfigViewSet(AbstractModelViewSet):
+    queryset = EventScheduleConfig.objects
+    serializer_class = EventScheduleConfigSerializer
+    permission_classes = AbstractModelViewSet.permission_classes + [
+        SuperUserOrReadOnly,
+    ]
+    filter_backends = AbstractModelViewSet.filter_backends + [
+        OwnerByMasterUserFilter,
+    ]
+
+    def get_object(self):
+        try:
+            return self.request.user.master_user.instrument_event_schedule_config
+        except ObjectDoesNotExist:
+            obj = EventScheduleConfig.objects.create(master_user=self.request.user.master_user)
+            return obj
+

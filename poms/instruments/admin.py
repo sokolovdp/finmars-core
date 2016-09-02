@@ -10,7 +10,7 @@ from poms.instruments.models import Instrument, PriceHistory, InstrumentClass, I
     DailyPricingModel, AccrualCalculationModel, Periodicity, CostMethod, \
     ManualPricingFormula, AccrualCalculationSchedule, InstrumentAttributeType, InstrumentAttribute, \
     InstrumentFactorSchedule, EventSchedule, \
-    PricingPolicy, PaymentSizeDetail, InstrumentClassifier, EventScheduleAction
+    PricingPolicy, PaymentSizeDetail, InstrumentClassifier, EventScheduleAction, EventScheduleConfig
 from poms.obj_attrs.admin import AbstractAttributeTypeAdmin, AbstractAttributeInline, \
     AbstractAttributeTypeClassifierInline, AbstractAttributeTypeOptionInline
 from poms.obj_perms.admin import UserObjectPermissionInline, \
@@ -100,8 +100,24 @@ class InstrumentAdmin(HistoricalAdmin):
 admin.site.register(Instrument, InstrumentAdmin)
 
 
+class AccrualCalculationScheduleAdmin(admin.ModelAdmin):
+    model = AccrualCalculationSchedule
+    list_display = ['id', 'master_user', 'instrument', 'accrual_start_date', 'first_payment_date',
+                    'accrual_calculation_model', 'periodicity']
+    list_select_related = ['instrument', 'instrument__master_user', 'accrual_calculation_model', 'periodicity']
+    raw_id_fields = ['instrument']
+    search_fields = ['instrument__name']
+
+    def master_user(self, obj):
+        return obj.instrument.master_user
+
+
+admin.site.register(AccrualCalculationSchedule, AccrualCalculationScheduleAdmin)
+
+
 class EventScheduleActionInline(admin.TabularInline):
     model = EventScheduleAction
+    raw_id_fields = ['transaction_type']
     extra = 0
 
 
@@ -110,7 +126,8 @@ class EventScheduleAdmin(admin.ModelAdmin):
     list_display = ['id', 'master_user', 'instrument', 'name', 'event_class', 'notification_class', 'effective_date',
                     'notify_in_n_days']
     list_select_related = ['instrument', 'instrument__master_user', 'event_class', 'notification_class']
-    raw_id_fields = ['instrument']
+    raw_id_fields = ['instrument', 'accrual_calculation_schedule']
+    search_fields = ['instrument__name']
 
     inlines = [
         EventScheduleActionInline
@@ -146,3 +163,16 @@ class InstrumentAttributeTypeAdmin(AbstractAttributeTypeAdmin):
 admin.site.register(InstrumentAttributeType, InstrumentAttributeTypeAdmin)
 
 admin.site.register(InstrumentClassifier, ClassifierAdmin)
+
+
+class EventScheduleConfigAdmin(admin.ModelAdmin):
+    model = EventScheduleConfig
+    list_display = ('id', 'master_user', 'notification_class')
+    list_select_related = ('master_user', 'notification_class',)
+    raw_id_fields = ('master_user',)
+
+    def master_user(self, obj):
+        return obj.instrument.master_user
+
+
+admin.site.register(EventScheduleConfig, EventScheduleConfigAdmin)

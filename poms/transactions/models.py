@@ -305,6 +305,23 @@ class TransactionTypeInput(models.Model):
     # TODO: add default value for relations
     # TODO: add flag for fill from context (used in  coupon)
 
+    is_fill_from_context = models.BooleanField(default=False)
+    value = models.CharField(max_length=255, null=True, blank=True, help_text=_('is expression'))
+    account = models.ForeignKey('accounts.Account', null=True, blank=True, on_delete=models.PROTECT, related_name='+')
+    instrument_type = models.ForeignKey('instruments.InstrumentType', null=True, blank=True, on_delete=models.PROTECT, related_name='+')
+    instrument = models.ForeignKey('instruments.Instrument', null=True, blank=True, on_delete=models.PROTECT, related_name='+')
+    currency = models.ForeignKey('currencies.Currency', null=True, blank=True, on_delete=models.PROTECT, related_name='+')
+    counterparty = models.ForeignKey('counterparties.Counterparty', null=True, blank=True, on_delete=models.PROTECT, related_name='+')
+    responsible = models.ForeignKey('counterparties.Responsible', null=True, blank=True, on_delete=models.PROTECT, related_name='+')
+    portfolio = models.ForeignKey('portfolios.Portfolio', null=True, blank=True, on_delete=models.PROTECT, related_name='+')
+    strategy1 = models.ForeignKey('strategies.Strategy1', null=True, blank=True, on_delete=models.PROTECT, related_name='+')
+    strategy2 = models.ForeignKey('strategies.Strategy2', null=True, blank=True, on_delete=models.PROTECT, related_name='+')
+    strategy3 = models.ForeignKey('strategies.Strategy3', null=True, blank=True, on_delete=models.PROTECT, related_name='+')
+    daily_pricing_model = models.ForeignKey('instruments.DailyPricingModel', null=True, blank=True, on_delete=models.PROTECT, related_name='+')
+    payment_size_detail = models.ForeignKey('instruments.PaymentSizeDetail', null=True, blank=True, on_delete=models.PROTECT, related_name='+')
+    price_download_scheme = models.ForeignKey('integrations.PriceDownloadScheme', null=True, blank=True, on_delete=models.PROTECT, related_name='+')
+
+
     class Meta:
         verbose_name = _('transaction type input')
         verbose_name_plural = _('transaction type inputs')

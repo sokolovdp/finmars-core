@@ -3,7 +3,6 @@ from __future__ import unicode_literals
 import six
 from django.core.exceptions import ObjectDoesNotExist
 from rest_framework import serializers
-from rest_framework.fields import empty
 
 from poms.common.fields import ExpressionField, FloatEvalField
 from poms.common.serializers import PomsClassSerializer, AbstractClassifierSerializer, AbstractClassifierNodeSerializer, \
@@ -15,7 +14,7 @@ from poms.instruments.fields import InstrumentClassifierField, InstrumentField, 
 from poms.instruments.models import InstrumentClassifier, Instrument, PriceHistory, InstrumentClass, DailyPricingModel, \
     AccrualCalculationModel, PaymentSizeDetail, Periodicity, CostMethod, InstrumentType, InstrumentAttributeType, \
     InstrumentAttribute, ManualPricingFormula, AccrualCalculationSchedule, InstrumentFactorSchedule, EventSchedule, \
-    PricingPolicy, EventScheduleAction
+    PricingPolicy, EventScheduleAction, EventScheduleConfig
 from poms.integrations.fields import PriceDownloadSchemeField
 from poms.obj_attrs.serializers import AbstractAttributeSerializer, AbstractAttributeTypeSerializer, \
     ModelWithAttributesSerializer
@@ -219,38 +218,6 @@ class InstrumentSerializer(ModelWithAttributesSerializer, ModelWithObjectPermiss
         if validated_data is None:
             return
 
-        # if created:
-        #     if validated_data:
-        #         for attr in validated_data:
-        #             o = model(instrument=instrument)
-        #             for k, v in six.iteritems(attr):
-        #                 if k not in ['id', 'instrument', 'actions']:
-        #                     setattr(o, k, v)
-        #             o.save()
-        #             attr['id'] = o.id
-        # else:
-        #     related_attr = getattr(instrument, instrument_attr)
-        #     if validated_data:
-        #         processed = set()
-        #         for attr in validated_data:
-        #             oid = attr.get('id', None)
-        #             if oid:
-        #                 try:
-        #                     o = related_attr.get(id=oid)
-        #                 except ObjectDoesNotExist:
-        #                     o = model(instrument=instrument)
-        #             else:
-        #                 o = model(instrument=instrument)
-        #             for k, v in six.iteritems(attr):
-        #                 if k not in ['id', 'instrument', 'actions']:
-        #                     setattr(o, k, v)
-        #             o.save()
-        #             processed.add(o.id)
-        #             attr['id'] = o.id
-        #         related_attr.exclude(id__in=processed).delete()
-        #     else:
-        #         related_attr.all().delete()
-
         related_attr = getattr(instrument, instrument_attr)
         processed = set()
 
@@ -331,3 +298,16 @@ class PriceHistorySerializer(serializers.ModelSerializer):
         super(PriceHistorySerializer, self).__init__(*args, **kwargs)
         if 'request' not in self.context:
             self.fields.pop('url')
+
+
+class EventScheduleConfigSerializer(serializers.ModelSerializer):
+    master_user = MasterUserField()
+    name = ExpressionField()
+    description = ExpressionField()
+
+    class Meta:
+        model = EventScheduleConfig
+        fields = [
+            'url', 'id', 'master_user', 'name', 'description', 'notification_class', 'notify_in_n_days', 'action_text',
+            'action_is_sent_to_pending', 'action_is_book_automatic',
+        ]
