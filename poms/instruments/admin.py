@@ -95,6 +95,13 @@ class InstrumentAdmin(HistoricalAdmin):
         UserObjectPermissionInline,
         GroupObjectPermissionInline,
     ]
+    actions = ['rebuild_event_schedules']
+
+    def rebuild_event_schedules(self, request, queryset):
+        for instr in queryset:
+            instr.rebuild_event_schedules()
+
+    rebuild_event_schedules.short_description = "Rebuild event schedules"
 
 
 admin.site.register(Instrument, InstrumentAdmin)
@@ -124,7 +131,7 @@ class EventScheduleActionInline(admin.TabularInline):
 class EventScheduleAdmin(admin.ModelAdmin):
     model = EventSchedule
     list_display = ['id', 'master_user', 'instrument', 'name', 'event_class', 'notification_class', 'effective_date',
-                    'notify_in_n_days']
+                    'periodicity', 'final_date', 'is_auto_generated', 'accrual_calculation_schedule', 'factor_schedule']
     list_select_related = ['instrument', 'instrument__master_user', 'event_class', 'notification_class']
     raw_id_fields = ['instrument', 'accrual_calculation_schedule']
     search_fields = ['instrument__name']
