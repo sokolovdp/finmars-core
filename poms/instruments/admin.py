@@ -100,7 +100,7 @@ class InstrumentAdmin(HistoricalAdmin):
     def rebuild_event_schedules(self, request, queryset):
         for instr in queryset:
             try:
-                instr.rebuild_event_schedules(fail_silently=False)
+                instr.rebuild_event_schedules()
             except ValueError as e:
                 messages.error(request, '%s: %s' % (instr, e))
 
