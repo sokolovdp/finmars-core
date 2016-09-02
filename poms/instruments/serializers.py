@@ -299,7 +299,8 @@ class InstrumentSerializer(ModelWithAttributesSerializer, ModelWithObjectPermiss
 
                 if not created:
                     event_schedule.actions.exclude(id__in=processed).delete()
-        # instrument.rebuild_event_schedules()
+        if created:
+            instrument.rebuild_event_schedules()
 
 
 class PriceHistorySerializer(serializers.ModelSerializer):

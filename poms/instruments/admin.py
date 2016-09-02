@@ -95,7 +95,7 @@ class InstrumentAdmin(HistoricalAdmin):
         UserObjectPermissionInline,
         GroupObjectPermissionInline,
     ]
-    actions = ['rebuild_event_schedules']
+    actions = ['rebuild_event_schedules', 'calculate_prices_accrued_price']
 
     def rebuild_event_schedules(self, request, queryset):
         for instr in queryset:
@@ -105,6 +105,12 @@ class InstrumentAdmin(HistoricalAdmin):
                 messages.error(request, '%s: %s' % (instr, e))
 
     rebuild_event_schedules.short_description = "Rebuild event schedules"
+
+    def calculate_prices_accrued_price(self, request, queryset):
+        for instr in queryset:
+            instr.calculate_prices_accrued_price(save=True)
+
+    calculate_prices_accrued_price.short_description = "Calculate accrued price for prices"
 
 
 admin.site.register(Instrument, InstrumentAdmin)
@@ -156,6 +162,13 @@ class PriceHistoryAdmin(HistoricalAdmin):
     list_select_related = ['instrument']
     date_hierarchy = 'date'
     raw_id_fields = ['instrument', 'pricing_policy']
+    actions = ['calculate_accrued_price']
+
+    def calculate_accrued_price(self, request, queryset):
+        for p in queryset:
+            p.calculate_accrued_price(save=True)
+
+    calculate_accrued_price.short_description = "Calculate accrued price"
 
 
 admin.site.register(PriceHistory, PriceHistoryAdmin)

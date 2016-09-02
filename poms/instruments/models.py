@@ -36,6 +36,14 @@ class InstrumentClass(AbstractClassModel):
         verbose_name = _('instrument class')
         verbose_name_plural = _('instrument classes')
 
+    @property
+    def has_one_off_event(self):
+        return self.id in [self.EVENT_AT_MATURITY, self.REGULAR_EVENT_AT_MATURITY]
+
+    @property
+    def has_regular_event(self):
+        return self.id in [self.REGULAR_EVENT_AT_MATURITY, self.PERPETUAL_REGULAR_EVENT]
+
 
 class DailyPricingModel(AbstractClassModel):
     SKIP = 1
@@ -401,19 +409,15 @@ class Instrument(NamedModel):
 
         master_user = self.master_user
         instrument_type = self.instrument_type
+        instrument_class = instrument_type.instrument_class
         config = master_user.instrument_event_schedule_config
 
-        add_one_off = instrument_type.instrument_class_id in [
-            InstrumentClass.EVENT_AT_MATURITY, InstrumentClass.REGULAR_EVENT_AT_MATURITY]
-        add_regular = instrument_type.instrument_class_id in [
-            InstrumentClass.REGULAR_EVENT_AT_MATURITY, InstrumentClass.PERPETUAL_REGULAR_EVENT]
-
-        if add_one_off and instrument_type.one_off_event_id is None:
+        if instrument_class.has_one_off_event and instrument_type.one_off_event_id is None:
             if fail_silently:
                 return None
             else:
                 raise ValueError('Field one-off event in instrument type "%s" must be set' % instrument_type)
-        if add_regular and instrument_type.regular_event_id is None:
+        if instrument_class.has_regular_event and instrument_type.regular_event_id is None:
             if fail_silently:
                 return None
             else:
@@ -426,7 +430,7 @@ class Instrument(NamedModel):
             except IndexError:
                 accrual_next = None
 
-            # if add_one_off:
+            # if instrument_class.has_one_off_event:
             #     e = EventSchedule(instrument=self, accrual_calculation_schedule=accrual, is_auto_generated=True)
             #     e.name = config.name
             #     e.description = config.description
@@ -447,7 +451,7 @@ class Instrument(NamedModel):
             #     a.button_position = 1
             #     a.save()
 
-            if add_regular:
+            if instrument_class.has_regular_event:
                 e = EventSchedule(instrument=self, accrual_calculation_schedule=accrual, is_auto_generated=True)
                 e.name = config.name
                 e.description = config.description
@@ -468,7 +472,7 @@ class Instrument(NamedModel):
                 a.button_position = 1
                 a.save()
 
-        if add_one_off:
+        if instrument_class.has_one_off_event:
             e = EventSchedule(instrument=self, is_auto_generated=True)
             e.name = config.name
             e.description = config.description
@@ -486,6 +490,20 @@ class Instrument(NamedModel):
             a.is_book_automatic = config.action_is_book_automatic
             a.button_position = 1
             a.save()
+
+    def find_accrual(self, price_date, accruals=None):
+        if accruals is None:
+            accruals = self.accrual_calculation_schedules.order_by('accrual_start_date').all()
+        accrual = None
+        for a in accruals:
+            if a.accrual_start_date <= price_date:
+                accrual = a
+        return accrual
+
+    def calculate_prices_accrued_price(self, save=False):
+        accruals = [a for a in self.accrual_calculation_schedules.order_by('accrual_start_date')]
+        for p in self.prices.order_by('date'):
+            p.calculate_accrued_price(accruals=accruals, save=save)
 
 
 class InstrumentUserObjectPermission(AbstractUserObjectPermission):
@@ -617,6 +635,24 @@ class PriceHistory(models.Model):
         #     self.instrument, self.pricing_policy, self.date, self.principal_price, self.accrued_price)
         return '%s:%s:%s:%s:%s' % (
             self.instrument_id, self.pricing_policy_id, self.date, self.principal_price, self.accrued_price)
+
+    def find_accrual(self, price_date, accruals=None):
+        return self.instrument.find_accrual(self.date, accruals=accruals)
+
+    def calculate_accrued_price(self, accrual=None, accruals=None, save=False):
+        if accrual is None:
+            accrual = self.find_accrual(self.date, accruals=accruals)
+        if accrual is None:
+            self.accrued_price = 0.
+        else:
+            from poms.common.formula_accruals import coupon_accrual_factor
+            factor = coupon_accrual_factor(accrual_calculation_schedule=accrual,
+                                           dt1=accrual.accrual_start_date,
+                                           dt2=self.date,
+                                           dt3=accrual.first_payment_date)
+            self.accrued_price = accrual.accrual_size * factor
+        if save:
+            self.save(update_fields=['accrued_price'])
 
 
 @python_2_unicode_compatible

@@ -623,7 +623,22 @@ def download_pricing_wait(self, sub_tasks_id, task_id):
              json.dumps([(p.currency_id, p.pricing_policy_id, p.date) for p in currency_prices],
                         cls=DjangoJSONEncoder))
 
-    calculate_instrument_accruals(prices=instrument_prices)
+    for p in instrument_prices:
+        p.calculate_accrued_price(save=False)
+        # instr = p.instrument
+        # accrl = None
+        # for a in instr.accrual_calculation_schedules.order_by('accrual_start_date').all():
+        #     if a.accrual_start_date <= p.date:
+        #         accrl = a
+        # _l.debug('price=%s, instrument=%s, accrual=%s', p, instr.id, getattr(accrl, 'id', None))
+        # if accrl is None:
+        #     continue
+        # factor = coupon_accrual_factor(accrual_calculation_schedule=accrl,
+        #                                dt1=accrl.accrual_start_date,
+        #                                dt2=p.date,
+        #                                dt3=accrl.first_payment_date)
+        # _l.debug('coupon_accrual_factor=%s', factor)
+        # p.accrued_price = accrl.accrual_size * factor
 
     with transaction.atomic():
         existed_instrument_prices = {
@@ -765,26 +780,6 @@ def _create_instrument_manual_prices(options, instruments):
                     prices.append(price)
 
     return prices
-
-
-def calculate_instrument_accruals(prices=None, instruments=None):
-    _l.debug('calculate_instrument_accruals: %s', prices)
-
-    for p in prices:
-        instr = p.instrument
-        accrl = None
-        for a in instr.accrual_calculation_schedules.order_by('accrual_start_date').all():
-            if a.accrual_start_date <= p.date:
-                accrl = a
-        _l.debug('price=%s, instrument=%s, accrual=%s', p, instr.id, getattr(accrl, 'id', None))
-        if accrl is None:
-            continue
-        factor = coupon_accrual_factor(accrual_calculation_schedule=accrl,
-                                       dt1=accrl.accrual_start_date,
-                                       dt2=p.date,
-                                       dt3=accrl.first_payment_date)
-        _l.debug('coupon_accrual_factor=%s', factor)
-        p.accrued_price = accrl.accrual_size * factor
 
 
 def download_pricing(master_user=None, member=None, date_from=None, date_to=None, is_yesterday=None, balance_date=None,
