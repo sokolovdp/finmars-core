@@ -3,6 +3,7 @@ from __future__ import unicode_literals
 import six
 from django.core.exceptions import ObjectDoesNotExist
 from rest_framework import serializers
+from rest_framework.exceptions import ValidationError
 
 from poms.common.fields import ExpressionField, FloatEvalField
 from poms.common.serializers import PomsClassSerializer, AbstractClassifierSerializer, AbstractClassifierNodeSerializer, \
@@ -86,6 +87,22 @@ class InstrumentTypeSerializer(ModelWithObjectPermissionSerializer, ModelWithUse
         fields = ['url', 'id', 'master_user', 'user_code', 'name', 'short_name', 'public_name', 'notes', 'is_default',
                   'instrument_class', 'one_off_event', 'regular_event',
                   'tags']
+
+    def validate(self, attrs):
+        instrument_class = attrs['instrument_class']
+        one_off_event = attrs.get('one_off_event', None)
+        regular_event = attrs.get('regular_event', None)
+
+        errors = {}
+        if instrument_class.has_one_off_event and one_off_event is None:
+            errors['one_off_event'] = self.fields['one_off_event'].error_messages['required']
+        if instrument_class.has_regular_event and regular_event is None:
+            errors['regular_event'] = self.fields['regular_event'].error_messages['required']
+
+        if errors:
+            raise ValidationError(errors)
+
+        return attrs
 
 
 class InstrumentAttributeTypeSerializer(AbstractAttributeTypeSerializer):
@@ -282,6 +299,7 @@ class InstrumentSerializer(ModelWithAttributesSerializer, ModelWithObjectPermiss
 
                 if not created:
                     event_schedule.actions.exclude(id__in=processed).delete()
+        # instrument.rebuild_event_schedules()
 
 
 class PriceHistorySerializer(serializers.ModelSerializer):
