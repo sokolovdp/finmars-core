@@ -491,14 +491,25 @@ class Instrument(NamedModel):
             a.button_position = 1
             a.save()
 
-    def find_accrual(self, price_date, accruals=None):
+    def find_accrual(self, some_date, accruals=None):
         if accruals is None:
+            # TODO: verify that use queryset cache
             accruals = self.accrual_calculation_schedules.order_by('accrual_start_date').all()
         accrual = None
         for a in accruals:
-            if a.accrual_start_date <= price_date:
+            if a.accrual_start_date <= some_date:
                 accrual = a
         return accrual
+
+    def find_factor(self, some_date, factors=None):
+        if factors is None:
+            # TODO: verify that use queryset cache
+            factors = self.factor_schedules.order_by('effective_date').all()
+        factor = None
+        for f in factors:
+            if f.effective_date <= some_date:
+                factor = f
+        return factor
 
     def calculate_prices_accrued_price(self, save=False):
         accruals = [a for a in self.accrual_calculation_schedules.order_by('accrual_start_date')]
@@ -636,12 +647,12 @@ class PriceHistory(models.Model):
         return '%s:%s:%s:%s:%s' % (
             self.instrument_id, self.pricing_policy_id, self.date, self.principal_price, self.accrued_price)
 
-    def find_accrual(self, price_date, accruals=None):
+    def find_accrual(self, accruals=None):
         return self.instrument.find_accrual(self.date, accruals=accruals)
 
     def calculate_accrued_price(self, accrual=None, accruals=None, save=False):
         if accrual is None:
-            accrual = self.find_accrual(self.date, accruals=accruals)
+            accrual = self.find_accrual(accruals=accruals)
         old_accrued_price = self.accrued_price
         if accrual is None:
             self.accrued_price = 0.
