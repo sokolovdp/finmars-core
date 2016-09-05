@@ -40,12 +40,15 @@ class UserRegisterSerializer(serializers.Serializer):
     password = serializers.CharField(max_length=128, required=True, style={'input_type': 'password'})
     first_name = serializers.CharField(max_length=30, required=False, allow_blank=True)
     last_name = serializers.CharField(max_length=30, required=False, allow_blank=True)
+    name = serializers.CharField(max_length=30, required=False, allow_blank=True)
 
     def create(self, validated_data):
         username = validated_data.get('username')
         password = validated_data.get('password')
         first_name = validated_data.get('first_name', '')
         last_name = validated_data.get('last_name', '')
+        name = validated_data.get('last_name', '')
+        name = name or ('%s %s' % (last_name, first_name))
 
         user_model = get_user_model()
 
@@ -55,7 +58,7 @@ class UserRegisterSerializer(serializers.Serializer):
 
         user = user_model.objects.create_user(username=username, password=password,
                                               first_name=first_name, last_name=last_name)
-        MasterUser.objects.create_master_user(user=user, language=translation.get_language())
+        MasterUser.objects.create_master_user(user=user, name=name, language=translation.get_language())
 
         user = authenticate(username=username, password=password)
 

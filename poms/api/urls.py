@@ -62,6 +62,8 @@ router.register(r'instruments/periodicity', instruments.PeriodicityViewSet)
 router.register(r'instruments/cost-method', instruments.CostMethodViewSet)
 router.register(r'instruments/pricing-policy', instruments.PricingPolicyViewSet)
 
+router.register(r'instruments/event-schedule-config', instruments.EventScheduleConfigViewSet)
+
 router.register(r'instruments/instrument-type', instruments.InstrumentTypeViewSet)
 router.register(r'instruments/instrument-attribute-type', instruments.InstrumentAttributeTypeViewSet)
 router.register(r'instruments/instrument-classifier', instruments.InstrumentClassifierViewSet)

@@ -85,8 +85,8 @@ INSTALLED_APPS = [
 # if DEBUG:
 #     INSTALLED_APPS += ['debug_toolbar', ]
 
-# not worked in django 1.10
-# if DEBUG:
+# if DEV:
+#     # Not worjed in django 1.10.*
 #     INSTALLED_APPS += [
 #         'redisboard',
 #     ]
@@ -150,20 +150,29 @@ DATABASES = {
     }
 }
 
-if DEBUG:
-    DATABASES['default'] = {
-        'ENGINE': 'django.db.backends.postgresql',
-        'NAME': 'poms_dev2',
-        'USER': 'poms_dev',
-        'PASSWORD': 'sqlsql',
-        'HOST': '192.168.57.2',
-        'PORT': '',
-    }
-    # DATABASES['default'] = {
-    #     'ENGINE': 'django.db.backends.sqlite3',
-    #     'NAME': os.path.join(BASE_DIR, 'db.sqlite3'),
-    #     # 'NAME': ':memory:',
-    # }
+# if DEBUG:
+#     # DATABASES['default'] = {
+#     #     'ENGINE': 'django.db.backends.postgresql',
+#     #     'NAME': 'poms_dev2',
+#     #     'USER': 'poms_dev',
+#     #     'PASSWORD': 'sqlsql',
+#     #     'HOST': '192.168.57.2',
+#     #     'PORT': '',
+#     # }
+#     DATABASES['default'] = {
+#         'ENGINE': 'django.db.backends.postgresql',
+#         'NAME': 'poms_dev2',
+#         'USER': 'poms_dev',
+#         'PASSWORD': 'sqlsql',
+#         'HOST': '127.0.0.1',
+#         'PORT': '',
+#     }
+#     # DATABASES['default'] = {
+#     #     'ENGINE': 'django.db.backends.sqlite3',
+#     #     'NAME': os.path.join(BASE_DIR, 'db.sqlite3'),
+#     #     # 'NAME': ':memory:',
+#     # }
+#     pass
 
 # Password validation
 # https://docs.djangoproject.com/en/1.9/ref/settings/#auth-password-validators
@@ -216,8 +225,8 @@ STATIC_URL = '/api/static/'
 STATIC_ROOT = os.path.join(BASE_DIR, "static")
 
 REDIS_HOST = os.environ.get('REDIS_HOST', '127.0.0.1:6379')
-if DEBUG and REDIS_HOST == '127.0.0.1:6379':
-    REDIS_HOST = '192.168.57.2:6379'
+# if DEBUG and REDIS_HOST == '127.0.0.1:6379':
+#     REDIS_HOST = '192.168.57.2:6379'
 
 CACHE_SERIALIZER = "django_redis.serializers.json.JSONSerializer"
 CACHE_COMPRESSOR = 'django_redis.compressors.identity.IdentityCompressor'
@@ -428,24 +437,17 @@ EMAIL_HOST_PASSWORD = os.environ.get('EMAIL_HOST_PASSWORD', None)
 EMAIL_USE_TLS = True
 EMAIL_TIMEOUT = 10
 
-if DEBUG:
-    DEFAULT_FROM_EMAIL = '"DEBUG: Finmars Notifications" <no-reply@finmars.com>'
-    SERVER_EMAIL = '"DEBUG-ADMIN: FinMars" <no-reply@finmars.com>'
-    ADMINS = MANAGERS = [
-        ['ailyukhin', 'ailyukhin@vitaminsoft.ru'],
-    ]
-    EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
-else:
-    if DEV:
-        DEFAULT_FROM_EMAIL = '"DEV: Finmars Notifications" <no-reply@finmars.com>'
-        SERVER_EMAIL = '"DEV-ADMIN: FinMars" <no-reply@finmars.com>'
-    ADMINS = [
-        ['Site Admins', 'site-admins@finmars.com'],
-    ]
-    MANAGERS = [
-        ['Site Managers', 'site-managers@finmars.com'],
-    ]
-    EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
+if DEV:
+    DEFAULT_FROM_EMAIL = '"DEV: Finmars Notifications" <no-reply@finmars.com>'
+    SERVER_EMAIL = '"DEV-ADMIN: FinMars" <no-reply@finmars.com>'
+ADMINS = [
+    ['Site Admins', 'site-admins@finmars.com'],
+]
+MANAGERS = [
+    ['Site Managers', 'site-managers@finmars.com'],
+]
+EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
+
 
 # MESSAGE_STORAGE = 'poms.notifications.message_storage.FallbackStorage'
 
@@ -454,7 +456,7 @@ GEOIP_COUNTRY = "GeoLite2-Country.mmdb"
 GEOIP_CITY = "GeoLite2-City.mmdb"
 
 MEDIA_URL = '/api/media/'
-MEDIA_ROOT = os.path.join(BASE_DIR, 'tmp', 'media')
+MEDIA_ROOT = '/tmp/finmars-media'
 MEDIA_SERVE = True
 
 # CELERY ------------------------------------------------
@@ -462,10 +464,6 @@ MEDIA_SERVE = True
 
 BROKER_URL = 'redis://%s/1' % REDIS_HOST
 # CELERY_RESULT_BACKEND = 'redis://%s/1' % REDIS_HOST
-
-if DEBUG:
-    CELERY_ALWAYS_EAGER = True
-    CELERY_EAGER_PROPAGATES_EXCEPTIONS = True
 
 CELERY_ENABLE_UTC = True
 CELERY_TIMEZONE = 'UTC'
@@ -505,7 +503,7 @@ CELERY_STORE_ERRORS_EVEN_IF_IGNORED = True
 IMPORT_CONFIG_STORAGE = {
     'BACKEND': 'django.core.files.storage.FileSystemStorage',
     'KWARGS': {
-        'location': os.path.join(BASE_DIR, 'tmp', 'import', 'config'),
+        'location': '/tmp/finmars-import/config',
         'base_url': '/api/hidden/'
     }
 }
@@ -513,10 +511,11 @@ IMPORT_CONFIG_STORAGE = {
 IMPORT_FILE_STORAGE = {
     'BACKEND': 'django.core.files.storage.FileSystemStorage',
     'KWARGS': {
-        'location': os.path.join(BASE_DIR, 'tmp', 'import', 'files'),
+        'location': '/tmp/finmars-import/files',
         'base_url': '/api/import/'
     }
 }
+
 
 PRICING_AUTO_DOWNLOAD_ENABLED = False
 

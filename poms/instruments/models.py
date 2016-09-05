@@ -36,6 +36,14 @@ class InstrumentClass(AbstractClassModel):
         verbose_name = _('instrument class')
         verbose_name_plural = _('instrument classes')
 
+    @property
+    def has_one_off_event(self):
+        return self.id in [self.EVENT_AT_MATURITY, self.REGULAR_EVENT_AT_MATURITY]
+
+    @property
+    def has_regular_event(self):
+        return self.id in [self.REGULAR_EVENT_AT_MATURITY, self.PERPETUAL_REGULAR_EVENT]
+
 
 class DailyPricingModel(AbstractClassModel):
     SKIP = 1
@@ -113,14 +121,6 @@ class AccrualCalculationModel(AbstractClassModel):
         verbose_name = _('accrual calculation model')
         verbose_name_plural = _('accrual calculation models')
 
-
-# class PaymentFrequency(ClassModelBase):
-#     # TODO: add "values"
-#     CLASSES = tuple()
-#
-#     class Meta:
-#         verbose_name = _('payment frequency')
-#         verbose_name_plural = _('payment frequencies')
 
 class PaymentSizeDetail(AbstractClassModel):
     PERCENT = 1
@@ -245,7 +245,6 @@ class Periodicity(AbstractClassModel):
             return rrule.rrule(dtstart=dtstart, count=count, until=until, freq=rrule.YEARLY)
         return None
 
-
     @staticmethod
     def to_freq(periodicity):
         if isinstance(periodicity, Periodicity):
@@ -277,8 +276,8 @@ class Periodicity(AbstractClassModel):
             return 1
         return 0
 
+
 class CostMethod(AbstractClassModel):
-    # TODO: add "values"
     AVCO = 1
     FIFO = 2
     LIFO = 3
@@ -402,6 +401,120 @@ class Instrument(NamedModel):
 
     def __str__(self):
         return self.name
+
+    def rebuild_event_schedules(self, fail_silently=False):
+        from poms.transactions.models import EventClass
+
+        self.event_schedules.filter(is_auto_generated=True).delete()
+
+        master_user = self.master_user
+        instrument_type = self.instrument_type
+        instrument_class = instrument_type.instrument_class
+        config = master_user.instrument_event_schedule_config
+
+        if instrument_class.has_one_off_event and instrument_type.one_off_event_id is None:
+            if fail_silently:
+                return None
+            else:
+                raise ValueError('Field one-off event in instrument type "%s" must be set' % instrument_type)
+        if instrument_class.has_regular_event and instrument_type.regular_event_id is None:
+            if fail_silently:
+                return None
+            else:
+                raise ValueError('Field regular event in instrument type "%s" must be set' % instrument_type)
+
+        accruals = [a for a in self.accrual_calculation_schedules.order_by('accrual_start_date')]
+        for i, accrual in enumerate(accruals):
+            try:
+                accrual_next = accruals[i + 1]
+            except IndexError:
+                accrual_next = None
+
+            # if instrument_class.has_one_off_event:
+            #     e = EventSchedule(instrument=self, accrual_calculation_schedule=accrual, is_auto_generated=True)
+            #     e.name = config.name
+            #     e.description = config.description
+            #     e.event_class_id = EventClass.ONE_OFF
+            #     e.notification_class = config.notification_class
+            #     e.effective_date = self.maturity_date
+            #     e.notify_in_n_days = config.notify_in_n_days
+            #     e.periodicity = accrual.periodicity
+            #     e.periodicity_n = accrual.periodicity_n
+            #     e.final_date = self.maturity_date
+            #     e.save()
+            #
+            #     a = EventScheduleAction(event_schedule=e)
+            #     a.text = config.action_text
+            #     a.transaction_type = instrument_type.one_off_event
+            #     a.is_sent_to_pending = config.action_is_sent_to_pending
+            #     a.is_book_automatic = config.action_is_book_automatic
+            #     a.button_position = 1
+            #     a.save()
+
+            if instrument_class.has_regular_event:
+                e = EventSchedule(instrument=self, accrual_calculation_schedule=accrual, is_auto_generated=True)
+                e.name = config.name
+                e.description = config.description
+                e.event_class_id = EventClass.REGULAR
+                e.notification_class = config.notification_class
+                e.effective_date = accrual.first_payment_date
+                e.notify_in_n_days = config.notify_in_n_days
+                e.periodicity = accrual.periodicity
+                e.periodicity_n = accrual.periodicity_n
+                e.final_date = accrual_next.accrual_start_date if accrual_next else self.maturity_date
+                e.save()
+
+                a = EventScheduleAction(event_schedule=e)
+                a.text = config.action_text
+                a.transaction_type = instrument_type.regular_event
+                a.is_sent_to_pending = config.action_is_sent_to_pending
+                a.is_book_automatic = config.action_is_book_automatic
+                a.button_position = 1
+                a.save()
+
+        if instrument_class.has_one_off_event:
+            e = EventSchedule(instrument=self, is_auto_generated=True)
+            e.name = config.name
+            e.description = config.description
+            e.event_class_id = EventClass.ONE_OFF
+            e.notification_class = config.notification_class
+            e.effective_date = self.maturity_date
+            e.notify_in_n_days = config.notify_in_n_days
+            e.final_date = self.maturity_date
+            e.save()
+
+            a = EventScheduleAction(event_schedule=e)
+            a.text = config.action_text
+            a.transaction_type = instrument_type.one_off_event
+            a.is_sent_to_pending = config.action_is_sent_to_pending
+            a.is_book_automatic = config.action_is_book_automatic
+            a.button_position = 1
+            a.save()
+
+    def find_accrual(self, some_date, accruals=None):
+        if accruals is None:
+            # TODO: verify that use queryset cache
+            accruals = self.accrual_calculation_schedules.order_by('accrual_start_date').all()
+        accrual = None
+        for a in accruals:
+            if a.accrual_start_date <= some_date:
+                accrual = a
+        return accrual
+
+    def find_factor(self, some_date, factors=None):
+        if factors is None:
+            # TODO: verify that use queryset cache
+            factors = self.factor_schedules.order_by('effective_date').all()
+        factor = None
+        for f in factors:
+            if f.effective_date <= some_date:
+                factor = f
+        return factor
+
+    def calculate_prices_accrued_price(self, save=False):
+        accruals = [a for a in self.accrual_calculation_schedules.order_by('accrual_start_date')]
+        for p in self.prices.order_by('date'):
+            p.calculate_accrued_price(accruals=accruals, save=save)
 
 
 class InstrumentUserObjectPermission(AbstractUserObjectPermission):
@@ -534,6 +647,25 @@ class PriceHistory(models.Model):
         return '%s:%s:%s:%s:%s' % (
             self.instrument_id, self.pricing_policy_id, self.date, self.principal_price, self.accrued_price)
 
+    def find_accrual(self, accruals=None):
+        return self.instrument.find_accrual(self.date, accruals=accruals)
+
+    def calculate_accrued_price(self, accrual=None, accruals=None, save=False):
+        if accrual is None:
+            accrual = self.find_accrual(accruals=accruals)
+        old_accrued_price = self.accrued_price
+        if accrual is None:
+            self.accrued_price = 0.
+        else:
+            from poms.common.formula_accruals import coupon_accrual_factor
+            factor = coupon_accrual_factor(accrual_calculation_schedule=accrual,
+                                           dt1=accrual.accrual_start_date,
+                                           dt2=self.date,
+                                           dt3=accrual.first_payment_date)
+            self.accrued_price = accrual.accrual_size * factor
+        if save and old_accrued_price != self.accrued_price:
+            self.save(update_fields=['accrued_price'])
+
 
 @python_2_unicode_compatible
 class AccrualCalculationSchedule(models.Model):
@@ -541,6 +673,7 @@ class AccrualCalculationSchedule(models.Model):
                                    verbose_name=_('instrument'))
     accrual_start_date = models.DateField(default=date_now, verbose_name=_('accrual start date'))
     first_payment_date = models.DateField(default=date_now, verbose_name=_('first payment date'))
+    # TODO: is %
     accrual_size = models.FloatField(default=0.0, verbose_name=_('accrual size'))
     accrual_calculation_model = models.ForeignKey(AccrualCalculationModel, on_delete=models.PROTECT,
                                                   verbose_name=_('accrual calculation model'))
@@ -573,21 +706,35 @@ class InstrumentFactorSchedule(models.Model):
 
 class EventSchedule(models.Model):
     instrument = models.ForeignKey(Instrument, related_name='event_schedules', verbose_name=_('instrument'))
+
+    # T O D O: name & description is expression
+    # T O D O: default settings.POMS_EVENT_*
     name = models.CharField(max_length=255, verbose_name=_('name'))
     description = models.TextField(blank=True, default='', verbose_name=_('description'))
 
     event_class = models.ForeignKey('transactions.EventClass', on_delete=models.PROTECT, verbose_name=_('event class'))
+
+    # T O D O: add to MasterUser defaults
     notification_class = models.ForeignKey('transactions.NotificationClass', on_delete=models.PROTECT,
                                            verbose_name=_('notification class'))
 
+    # TODO: is first_payment_date for regular
+    # TODO: is instrument.maturity for one-off
     effective_date = models.DateField(null=True, blank=True, verbose_name=_('effective date'))
-    notify_in_n_days = models.IntegerField(default=0)
-    # notification_date = models.DateField(null=True, blank=True, verbose_name=_('notification date'))
+    notify_in_n_days = models.PositiveIntegerField(default=0)
 
-    # initial_date -> effective_date
     periodicity = models.ForeignKey(Periodicity, null=True, blank=True, on_delete=models.PROTECT)
     periodicity_n = models.IntegerField(default=0)
+    # TODO: =see next accrual_calculation_schedule.accrual_start_date or instrument.maturity_date (if last)
     final_date = models.DateField(default=date.max)
+
+    is_auto_generated = models.BooleanField(default=False)
+    accrual_calculation_schedule = models.ForeignKey(AccrualCalculationSchedule, null=True, blank=True, editable=False,
+                                                     related_name='event_schedules',
+                                                     help_text=_('Used for store link when is_auto_generated is True'))
+    factor_schedule = models.ForeignKey(InstrumentFactorSchedule, null=True, blank=True, editable=False,
+                                        related_name='event_schedules',
+                                        help_text=_('Used for store link when is_auto_generated is True'))
 
     class Meta:
         verbose_name = _('event schedule')
@@ -598,11 +745,16 @@ class EventSchedule(models.Model):
 
 
 class EventScheduleAction(models.Model):
+    # TODO: for auto generated always one
     event_schedule = models.ForeignKey(EventSchedule, related_name='actions', verbose_name=_('event schedule'))
     transaction_type = models.ForeignKey('transactions.TransactionType', on_delete=models.PROTECT)
+    # T O D O: on auto generate fill 'Book: ' + transaction_type
     text = models.CharField(max_length=100, blank=True, default='')
+    # T O D O: add to MasterUser defaults
     is_sent_to_pending = models.BooleanField(default=True)
-    is_default = models.BooleanField(default=False)
+    # T O D O: add to MasterUser defaults
+    # T O D O: rename to: is_book_automatic (used when now notification)
+    is_book_automatic = models.BooleanField(default=True)
     button_position = models.IntegerField(default=0)
 
     class Meta:
@@ -611,3 +763,24 @@ class EventScheduleAction(models.Model):
 
     def __str__(self):
         return self.text
+
+
+class EventScheduleConfig(models.Model):
+    master_user = models.OneToOneField('users.MasterUser', related_name='instrument_event_schedule_config',
+                                       verbose_name=_('master user'))
+
+    name = models.CharField(max_length=255, blank=True, default='', verbose_name=_('name'))
+    description = models.CharField(max_length=255, blank=True, default='', verbose_name=_('description'))
+    notification_class = models.ForeignKey('transactions.NotificationClass', null=True, blank=True,
+                                           on_delete=models.PROTECT, verbose_name=_('notification class'))
+    notify_in_n_days = models.PositiveSmallIntegerField(default=0, verbose_name=_('notify in N days'))
+    action_text = models.CharField(max_length=255, blank=True, default='', verbose_name=_('action text'))
+    action_is_sent_to_pending = models.BooleanField(default=True)
+    action_is_book_automatic = models.BooleanField(default=True)
+
+    class Meta:
+        verbose_name = _('event schedule config')
+        verbose_name_plural = _('event schedule configs')
+
+    def __str__(self):
+        return 'event schedule config'

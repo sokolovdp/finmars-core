@@ -86,7 +86,7 @@ class InstrumentDownloadSchemeAdmin(HistoricalAdmin):
     model = InstrumentDownloadScheme
     list_display = ['id', 'master_user', 'scheme_name', 'provider', 'fields0']
     list_select_related = ['master_user', 'provider', ]
-    raw_id_fields = ['master_user', ]
+    raw_id_fields = ['master_user', 'price_download_scheme']
     search_fields = ['scheme_name', ]
     inlines = [
         InstrumentDownloadSchemeInputInline,

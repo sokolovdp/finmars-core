@@ -10,14 +10,13 @@ from django.core import serializers
 from django.db.models.signals import post_init, post_save, post_delete, m2m_changed
 from django.dispatch import receiver
 from django.utils.decorators import ContextDecorator
+from django.utils.functional import SimpleLazyObject
 
 from poms.common.middleware import get_request
 
 _l = logging.getLogger('poms.audit')
 
 _state = local()
-
-_history_model_list = None
 
 
 def _accept(model):
@@ -33,11 +32,14 @@ def _accept(model):
     return True
 
 
+def _load_history_model_list():
+    return (m for m in apps.get_models() if _accept(m))
+
+
+_history_model_list = SimpleLazyObject(func=_load_history_model_list)
+
+
 def get_history_model_list():
-    global _history_model_list
-    if _history_model_list is None:
-        _history_model_list = [m for m in apps.get_models() if _accept(m)]
-        _history_model_list = tuple(_history_model_list)
     return _history_model_list
 
 
@@ -131,9 +133,9 @@ def _is_enabled(obj):
 
     if not is_active():
         return False
-    if isinstance(obj, (ObjectHistory4Entry)):
+    if isinstance(obj, ObjectHistory4Entry):
         return False
-    if isinstance(obj, get_history_model_list()):
+    if isinstance(obj, tuple(get_history_model_list())):
         return True
     return False
 
@@ -304,31 +306,31 @@ def _instance_post_save(sender, instance=None, created=None, **kwargs):
                     e4.old_value = _value_to_str(old_value)
                     _state.entries4.append(e4)
 
-            #     if f.one_to_one or f.one_to_many or f.many_to_one:
-            #         old_value = _make_rel_value(f.related_model, old_value)
-            #         new_value = _make_rel_value(f.related_model, new_value)
-            #     elif f.many_to_many:
-            #         # processed in _instance_m2m_changed
-            #         continue
-            #     else:
-            #         old_value = _make_value(old_value)
-            #         new_value = _make_value(new_value)
-            #
-            #     fields.append({
-            #         'name': six.text_type(f.name),
-            #         'old_value': old_value,
-            #         'new_value': new_value,
-            #     })
-            #
-            # if fields:
-            #     _state.changed.append({
-            #         'action': 'changed',
-            #         'content_type': _get_content_type(instance),
-            #         'object_id': instance.id,
-            #         'object_repr': force_text(instance),
-            #         'fields': fields
-            #     })
-                # _reversion_set_comment()
+                    #     if f.one_to_one or f.one_to_many or f.many_to_one:
+                    #         old_value = _make_rel_value(f.related_model, old_value)
+                    #         new_value = _make_rel_value(f.related_model, new_value)
+                    #     elif f.many_to_many:
+                    #         # processed in _instance_m2m_changed
+                    #         continue
+                    #     else:
+                    #         old_value = _make_value(old_value)
+                    #         new_value = _make_value(new_value)
+                    #
+                    #     fields.append({
+                    #         'name': six.text_type(f.name),
+                    #         'old_value': old_value,
+                    #         'new_value': new_value,
+                    #     })
+                    #
+                    # if fields:
+                    #     _state.changed.append({
+                    #         'action': 'changed',
+                    #         'content_type': _get_content_type(instance),
+                    #         'object_id': instance.id,
+                    #         'object_repr': force_text(instance),
+                    #         'fields': fields
+                    #     })
+                    # _reversion_set_comment()
 
 
 @receiver(m2m_changed, dispatch_uid='poms_history_m2m_changed')
@@ -389,49 +391,49 @@ def _instance_m2m_changed(sender, instance=None, action=None, reverse=None, mode
             e4.action_flag = ObjectHistory4Entry.M2M_DELETION
             _state.entries4.append(e4)
 
-    # instance_ctype = _get_content_type(instance)
-    # state = None
-    #
-    # for s in _state.changed:
-    #     if s['content_type'] == instance_ctype and s['object_id'] == instance.id:
-    #         state = s
-    #         break
-    #
-    # if state is None:
-    #     fields = []
-    #     state = {
-    #         'action': 'changed',
-    #         'content_type': instance_ctype,
-    #         'object_id': instance.id,
-    #         'object_repr': force_text(instance),
-    #         'fields': fields
-    #     }
-    #     _state.changed.append(state)
-    # else:
-    #     fields = state['fields']
-    #
-    # field = None
-    # for f in fields:
-    #     if f['name'] == attr:
-    #         field = f
-    #         break
-    # if field is None:
-    #     value = _make_rel_value(model, instance._poms_history_initial_state[attr])
-    #     field = {
-    #         'name': attr,
-    #         'old_value': value,
-    #         'new_value': value.copy(),
-    #     }
-    #     fields.append(field)
-    #
-    # new_value = set(x['value'] for x in field['new_value'])
-    # if action == 'pre_remove':
-    #     new_value = new_value.difference(pk_set)
-    # elif action == 'pre_add':
-    #     new_value = new_value.union(pk_set)
-    #
-    # field['new_value'] = _make_rel_value(model, new_value)
-    # # _reversion_set_comment()
+            # instance_ctype = _get_content_type(instance)
+            # state = None
+            #
+            # for s in _state.changed:
+            #     if s['content_type'] == instance_ctype and s['object_id'] == instance.id:
+            #         state = s
+            #         break
+            #
+            # if state is None:
+            #     fields = []
+            #     state = {
+            #         'action': 'changed',
+            #         'content_type': instance_ctype,
+            #         'object_id': instance.id,
+            #         'object_repr': force_text(instance),
+            #         'fields': fields
+            #     }
+            #     _state.changed.append(state)
+            # else:
+            #     fields = state['fields']
+            #
+            # field = None
+            # for f in fields:
+            #     if f['name'] == attr:
+            #         field = f
+            #         break
+            # if field is None:
+            #     value = _make_rel_value(model, instance._poms_history_initial_state[attr])
+            #     field = {
+            #         'name': attr,
+            #         'old_value': value,
+            #         'new_value': value.copy(),
+            #     }
+            #     fields.append(field)
+            #
+            # new_value = set(x['value'] for x in field['new_value'])
+            # if action == 'pre_remove':
+            #     new_value = new_value.difference(pk_set)
+            # elif action == 'pre_add':
+            #     new_value = new_value.union(pk_set)
+            #
+            # field['new_value'] = _make_rel_value(model, new_value)
+            # # _reversion_set_comment()
 
 
 @receiver(post_delete, dispatch_uid='poms_history_on_delete')
@@ -457,7 +459,6 @@ def _instance_post_delete(sender, instance=None, **kwargs):
         object_id=instance.id,
         object_repr=six.text_type(instance)
     ))
-
 
 # def _get_display_value(value):
 #     if value is None:

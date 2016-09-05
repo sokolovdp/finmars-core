@@ -128,6 +128,12 @@ class AbstractProvider(object):
         # instr.pricing_currency = master_user.currency
         # instr.accrued_currency = master_user.currency
 
+        instr.payment_size_detail = instrument_download_scheme.payment_size_detail
+        instr.daily_pricing_model = instrument_download_scheme.daily_pricing_model
+        instr.price_download_scheme = instrument_download_scheme.price_download_scheme
+        instr.default_price = instrument_download_scheme.default_price
+        instr.default_accrued = instrument_download_scheme.default_accrued
+
         for attr in InstrumentDownloadScheme.BASIC_FIELDS:
             expr = getattr(instrument_download_scheme, attr)
             if expr:
@@ -139,14 +145,19 @@ class AbstractProvider(object):
                 if attr in ['pricing_currency', 'accrued_currency']:
                     if v is not None:
                         v = self.get_currency(master_user, provider, v)
-                        setattr(instr, attr, v)
+                        if v:
+                            setattr(instr, attr, v)
                 elif attr in ['instrument_type']:
                     if v is not None:
                         v = self.get_instrument_type(master_user, provider, v)
-                        setattr(instr, attr, v)
+                        if v:
+                            setattr(instr, attr, v)
                 elif attr in ['price_multiplier', 'accrued_multiplier', 'default_price', 'default_accrued']:
                     if v is not None:
                         v = float(v)
+                        setattr(instr, attr, v)
+                elif attr in ['maturity_date']:
+                    if v is not None:
                         setattr(instr, attr, v)
                 else:
                     if v is not None:

@@ -1,0 +1,65 @@
+from __future__ import unicode_literals
+
+# noinspection PyUnresolvedReferences
+import env_ai
+
+# noinspection PyUnresolvedReferences
+from .settings import *
+
+# LOGGING['loggers']['django.db'] = {'level': 'DEBUG'}
+LOGGING['loggers']['poms']['level'] = 'DEBUG'
+
+SECRET_KEY = 's#)m^ug%_jr0dtko#83_55rd_we&xu#f9p#!1gh@k&$=5&3e67'
+
+AUTH_PASSWORD_VALIDATORS = []
+
+
+DEFAULT_FROM_EMAIL = '"AI: Finmars Notifications" <no-reply@finmars.com>'
+SERVER_EMAIL = '"AI-ADMIN: FinMars" <no-reply@finmars.com>'
+ADMINS = MANAGERS = [
+    ['ailyukhin', 'ailyukhin@vitaminsoft.ru'],
+]
+EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
+
+
+MEDIA_URL = '/api/media/'
+MEDIA_ROOT = os.path.join(BASE_DIR, 'tmp', 'media')
+MEDIA_SERVE = True
+
+
+# CELERY ------------------------------------------------
+
+
+CELERY_ALWAYS_EAGER = True
+CELERY_EAGER_PROPAGATES_EXCEPTIONS = True
+
+
+# INTEGRATIONS ------------------------------------------------
+
+
+IMPORT_CONFIG_STORAGE = {
+    'BACKEND': 'django.core.files.storage.FileSystemStorage',
+    'KWARGS': {
+        'location': os.path.join(BASE_DIR, 'tmp', 'import', 'config'),
+        'base_url': '/api/hidden/'
+    }
+}
+
+IMPORT_FILE_STORAGE = {
+    'BACKEND': 'django.core.files.storage.FileSystemStorage',
+    'KWARGS': {
+        'location': os.path.join(BASE_DIR, 'tmp', 'import', 'files'),
+        'base_url': '/api/import/'
+    }
+}
+
+
+PRICING_AUTO_DOWNLOAD_ENABLED = False
+
+
+BLOOMBERG_SANDBOX = True
+if BLOOMBERG_SANDBOX:
+    BLOOMBERG_RETRY_DELAY = 0.1
+BLOOMBERG_SANDBOX_SEND_EMPTY = False
+BLOOMBERG_SANDBOX_SEND_FAIL = False
+BLOOMBERG_SANDBOX_WAIT_FAIL = False

@@ -234,7 +234,7 @@ class PricingAutomatedScheduleViewSet(AbstractModelViewSet):
     permission_classes = AbstractModelViewSet.permission_classes + [
         SuperUserOrReadOnly,
     ]
-    filter_backends = AbstractReadOnlyModelViewSet.filter_backends + [
+    filter_backends = AbstractModelViewSet.filter_backends + [
         OwnerByMasterUserFilter,
     ]
 

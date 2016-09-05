@@ -397,7 +397,7 @@ class BloombergDataProvider(AbstractProvider):
             return None
 
         response = self.soap_client.service.retrieveGetDataResponse(responseId=response_id)
-        _l.debug('response=%s', response_id, response)
+        _l.debug('response=%s', response)
 
         self._response_is_valid(response, pending=True)
         if self._data_is_ready(response):

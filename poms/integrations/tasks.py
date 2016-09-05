@@ -20,6 +20,7 @@ from django.utils import timezone
 
 from poms.audit.models import AuthLogEntry
 from poms.common import formula
+from poms.common.formula_accruals import coupon_accrual_factor
 from poms.common.utils import date_now
 from poms.currencies.models import Currency, CurrencyHistory
 from poms.currencies.serializers import CurrencyHistorySerializer
@@ -386,7 +387,6 @@ def download_pricing_async(self, task_id):
              balance_date, sorted(instruments_if_open), sorted(currencies_if_open))
 
     if balance_date and (instruments_if_open or currencies_if_open):
-        # TODO: calculate balance and than filter instruments & currencies
         report = BalanceReport(master_user=task.master_user, begin_date=date.min, end_date=balance_date,
                                use_portfolio=True, show_transaction_details=False)
         _l.debug('calculate position report: %s', report)
@@ -622,6 +622,23 @@ def download_pricing_wait(self, sub_tasks_id, task_id):
     _l.debug('currency prices: %s',
              json.dumps([(p.currency_id, p.pricing_policy_id, p.date) for p in currency_prices],
                         cls=DjangoJSONEncoder))
+
+    for p in instrument_prices:
+        p.calculate_accrued_price(save=False)
+        # instr = p.instrument
+        # accrl = None
+        # for a in instr.accrual_calculation_schedules.order_by('accrual_start_date').all():
+        #     if a.accrual_start_date <= p.date:
+        #         accrl = a
+        # _l.debug('price=%s, instrument=%s, accrual=%s', p, instr.id, getattr(accrl, 'id', None))
+        # if accrl is None:
+        #     continue
+        # factor = coupon_accrual_factor(accrual_calculation_schedule=accrl,
+        #                                dt1=accrl.accrual_start_date,
+        #                                dt2=p.date,
+        #                                dt3=accrl.first_payment_date)
+        # _l.debug('coupon_accrual_factor=%s', factor)
+        # p.accrued_price = accrl.accrual_size * factor
 
     with transaction.atomic():
         existed_instrument_prices = {
