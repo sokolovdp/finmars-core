@@ -642,6 +642,7 @@ class PriceHistory(models.Model):
     def calculate_accrued_price(self, accrual=None, accruals=None, save=False):
         if accrual is None:
             accrual = self.find_accrual(self.date, accruals=accruals)
+        old_accrued_price = self.accrued_price
         if accrual is None:
             self.accrued_price = 0.
         else:
@@ -651,7 +652,7 @@ class PriceHistory(models.Model):
                                            dt2=self.date,
                                            dt3=accrual.first_payment_date)
             self.accrued_price = accrual.accrual_size * factor
-        if save:
+        if save and old_accrued_price != self.accrued_price:
             self.save(update_fields=['accrued_price'])
 
 
