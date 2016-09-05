@@ -7,6 +7,7 @@ from threading import local
 from django.conf import settings
 from django.contrib.gis.geoip2 import GeoIP2
 from django.utils.cache import get_max_age, patch_cache_control, add_never_cache_headers
+from django.utils.deprecation import MiddlewareMixin
 from django.utils.functional import SimpleLazyObject
 from geoip2.errors import AddressNotFoundError
 
@@ -115,7 +116,7 @@ def get_request():
     # raise RuntimeError('request not found')
 
 
-class CommonMiddleware(object):
+class CommonMiddleware(MiddlewareMixin):
     def process_request(self, request):
         request.user_ip = get_ip(request)
         request.user_agent = get_user_agent(request)
@@ -132,7 +133,7 @@ class CommonMiddleware(object):
         return response
 
 
-class NoCacheMiddleware(object):
+class NoCacheMiddleware(MiddlewareMixin):
     def process_response(self, request, response):
         max_age = get_max_age(response)
         if max_age:

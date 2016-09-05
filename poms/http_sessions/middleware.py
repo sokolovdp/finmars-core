@@ -1,7 +1,9 @@
 from __future__ import unicode_literals
 
+from django.utils.deprecation import MiddlewareMixin
 
-class SessionMiddleware(object):
+
+class SessionMiddleware(MiddlewareMixin):
     # def process_request(self, request):
     #     if hasattr(request, 'session'):
     #         if request.session.get('user_agent', None) != request.user_agent:

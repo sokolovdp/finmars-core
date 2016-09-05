@@ -72,9 +72,6 @@ INSTALLED_APPS = [
     'django.contrib.admin',
     'django.contrib.admindocs',
 
-    # 'django_extensions',
-    # 'redisboard',
-
     # 'django_otp',
     # 'django_otp.plugins.otp_hotp',
     # 'django_otp.plugins.otp_totp',
