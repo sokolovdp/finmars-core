@@ -85,7 +85,9 @@ class InstrumentAdmin(HistoricalAdmin):
     list_display = ['id', 'master_user', 'name', 'instrument_type', 'pricing_currency', 'accrued_currency',
                     'reference_for_pricing', 'daily_pricing_model', 'price_download_scheme']
     list_select_related = ['master_user', 'instrument_type', 'pricing_currency', 'accrued_currency']
+    list_filter = ['instrument_type__instrument_class']
     raw_id_fields = ['master_user', 'instrument_type', 'pricing_currency', 'accrued_currency', 'price_download_scheme']
+    search_fields = ['name']
     inlines = [
         InstrumentAttributeInline,
         ManualPricingFormulaInline,
@@ -121,6 +123,7 @@ class AccrualCalculationScheduleAdmin(admin.ModelAdmin):
     list_display = ['id', 'master_user', 'instrument', 'accrual_start_date', 'first_payment_date',
                     'accrual_calculation_model', 'periodicity']
     list_select_related = ['instrument', 'instrument__master_user', 'accrual_calculation_model', 'periodicity']
+    list_filter = ['accrual_calculation_model', 'periodicity']
     raw_id_fields = ['instrument']
     search_fields = ['instrument__name']
 
@@ -160,6 +163,8 @@ class PriceHistoryAdmin(HistoricalAdmin):
     model = PriceHistory
     list_display = ['id', 'date', 'instrument', 'principal_price', 'accrued_price']
     list_select_related = ['instrument']
+    list_filter = ['date']
+    search_fields = ['instrument__name']
     date_hierarchy = 'date'
     raw_id_fields = ['instrument', 'pricing_policy']
     actions = ['calculate_accrued_price']
