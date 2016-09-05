@@ -10,7 +10,6 @@ from django.core import serializers
 from django.db.models.signals import post_init, post_save, post_delete, m2m_changed
 from django.dispatch import receiver
 from django.utils.decorators import ContextDecorator
-from django.utils.functional import SimpleLazyObject
 
 from poms.common.middleware import get_request
 
@@ -25,21 +24,20 @@ def _accept(model):
 
     app_label = getattr(model._meta, 'app_label', None)
     if app_label not in ['users', 'chats', 'tags', 'accounts', 'counterparties', 'currencies', 'instruments',
-                         'portfolios', 'strategies', 'transactions', 'integrations', ]:
+                         'integrations', 'portfolios', 'strategies', 'transactions', ]:
         return False
     if issubclass(model, (AbstractClassModel, Task)):
         return False
     return True
 
 
-def _load_history_model_list():
-    return (m for m in apps.get_models() if _accept(m))
-
-
-_history_model_list = SimpleLazyObject(func=_load_history_model_list)
+_history_model_list = None
 
 
 def get_history_model_list():
+    global _history_model_list
+    if _history_model_list is None:
+        _history_model_list = tuple(m for m in apps.get_models() if _accept(m))
     return _history_model_list
 
 
@@ -135,7 +133,7 @@ def _is_enabled(obj):
         return False
     if isinstance(obj, ObjectHistory4Entry):
         return False
-    if isinstance(obj, tuple(get_history_model_list())):
+    if isinstance(obj, get_history_model_list()):
         return True
     return False
 
