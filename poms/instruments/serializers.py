@@ -149,7 +149,7 @@ class EventScheduleActionSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = EventScheduleAction
-        fields = ['id', 'transaction_type', 'text', 'is_sent_to_pending', 'is_default',
+        fields = ['id', 'transaction_type', 'text', 'is_sent_to_pending', 'is_book_automatic',
                   'button_position']
 
 
@@ -214,6 +214,8 @@ class InstrumentSerializer(ModelWithAttributesSerializer, ModelWithObjectPermiss
         self.save_factor_schedules(instance, True, factor_schedules)
         self.save_event_schedules(instance, True, event_schedules)
 
+        instance.rebuild_event_schedules()
+
         return instance
 
     def update(self, instance, validated_data):
@@ -228,6 +230,9 @@ class InstrumentSerializer(ModelWithAttributesSerializer, ModelWithObjectPermiss
         self.save_accrual_calculation_schedules(instance, False, accrual_calculation_schedules)
         self.save_factor_schedules(instance, False, factor_schedules)
         self.save_event_schedules(instance, False, event_schedules)
+
+        instance.rebuild_event_schedules()
+        instance.calculate_prices_accrued_price(save=True)
 
         return instance
 
@@ -299,8 +304,6 @@ class InstrumentSerializer(ModelWithAttributesSerializer, ModelWithObjectPermiss
 
                 if not created:
                     event_schedule.actions.exclude(id__in=processed).delete()
-        if created:
-            instrument.rebuild_event_schedules()
 
 
 class PriceHistorySerializer(serializers.ModelSerializer):

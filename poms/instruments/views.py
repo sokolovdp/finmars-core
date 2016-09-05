@@ -142,7 +142,7 @@ class InstrumentFilterSet(FilterSet):
 class InstrumentViewSet(AbstractWithObjectPermissionViewSet):
     queryset = Instrument.objects.select_related('instrument_type', 'pricing_currency', 'accrued_currency'). \
         prefetch_related('manual_pricing_formulas', 'accrual_calculation_schedules', 'factor_schedules',
-                         'event_schedules')
+                         'event_schedules', 'event_schedules__actions')
     serializer_class = InstrumentSerializer
     filter_backends = AbstractWithObjectPermissionViewSet.filter_backends + [
         OwnerByMasterUserFilter,

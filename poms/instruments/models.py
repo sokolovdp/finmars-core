@@ -2,6 +2,7 @@ from __future__ import unicode_literals
 
 from datetime import date
 
+import math
 from dateutil import relativedelta, rrule
 from django.db import models
 from django.utils.encoding import python_2_unicode_compatible
@@ -404,6 +405,7 @@ class Instrument(NamedModel):
 
     def rebuild_event_schedules(self, fail_silently=False):
         from poms.transactions.models import EventClass
+        # TODO: add validate equality before process
 
         self.event_schedules.filter(is_auto_generated=True).delete()
 
@@ -429,27 +431,6 @@ class Instrument(NamedModel):
                 accrual_next = accruals[i + 1]
             except IndexError:
                 accrual_next = None
-
-            # if instrument_class.has_one_off_event:
-            #     e = EventSchedule(instrument=self, accrual_calculation_schedule=accrual, is_auto_generated=True)
-            #     e.name = config.name
-            #     e.description = config.description
-            #     e.event_class_id = EventClass.ONE_OFF
-            #     e.notification_class = config.notification_class
-            #     e.effective_date = self.maturity_date
-            #     e.notify_in_n_days = config.notify_in_n_days
-            #     e.periodicity = accrual.periodicity
-            #     e.periodicity_n = accrual.periodicity_n
-            #     e.final_date = self.maturity_date
-            #     e.save()
-            #
-            #     a = EventScheduleAction(event_schedule=e)
-            #     a.text = config.action_text
-            #     a.transaction_type = instrument_type.one_off_event
-            #     a.is_sent_to_pending = config.action_is_sent_to_pending
-            #     a.is_book_automatic = config.action_is_book_automatic
-            #     a.button_position = 1
-            #     a.save()
 
             if instrument_class.has_regular_event:
                 e = EventSchedule(instrument=self, accrual_calculation_schedule=accrual, is_auto_generated=True)
@@ -663,7 +644,7 @@ class PriceHistory(models.Model):
                                            dt2=self.date,
                                            dt3=accrual.first_payment_date)
             self.accrued_price = accrual.accrual_size * factor
-        if save and old_accrued_price != self.accrued_price:
+        if save and not math.isclose(old_accrued_price, self.accrued_price):
             self.save(update_fields=['accrued_price'])
 
 
