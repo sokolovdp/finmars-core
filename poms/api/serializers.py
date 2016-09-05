@@ -1,5 +1,8 @@
 from rest_framework import serializers
 
+from poms.common import formula
+from poms.common.fields import ExpressionField
+
 
 class Language(object):
     def __init__(self, code='', name=''):
@@ -44,3 +47,18 @@ class TimezoneSerializer(serializers.Serializer):
         instance.code = validated_data.get('code', instance.code)
         instance.name = validated_data.get('name', instance.name)
         return instance
+
+
+class ExpressionSerializer(serializers.Serializer):
+    expression = ExpressionField(required=True)
+    names = serializers.DictField(required=False, allow_null=True)
+    is_eval = serializers.BooleanField()
+    result = serializers.ReadOnlyField()
+
+    def validate(self, attrs):
+        expression = attrs['expression']
+        names = attrs.get('names', None)
+        is_eval = attrs.get('is_eval', False)
+        if is_eval:
+            attrs['result'] = formula.safe_eval(expression, names)
+        return attrs

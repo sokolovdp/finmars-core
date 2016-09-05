@@ -7,9 +7,10 @@ from babel import Locale
 from babel.dates import get_timezone, get_timezone_gmt, get_timezone_name
 from django.conf import settings
 from django.utils import translation, timezone
+from rest_framework import status
 from rest_framework.response import Response
 
-from poms.api.serializers import LanguageSerializer, Language, TimezoneSerializer, Timezone
+from poms.api.serializers import LanguageSerializer, Language, TimezoneSerializer, Timezone, ExpressionSerializer
 from poms.common.views import AbstractViewSet
 
 _languages = [Language(code, name) for code, name in settings.LANGUAGES]
@@ -55,3 +56,12 @@ class TimezoneViewSet(AbstractViewSet):
         timezones = get_timezones()
         serializer = self.get_serializer(instance=timezones, many=True)
         return Response(serializer.data)
+
+
+class ExpressionViewSet(AbstractViewSet):
+    serializer_class = ExpressionSerializer
+
+    def create(self, request, *args, **kwargs):
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)

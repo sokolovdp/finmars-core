@@ -146,6 +146,7 @@ router.register(r'import/pricing-automated-schedule', integrations.PricingAutoma
 
 router.register(r'import/task', integrations.TaskViewSet)
 
+router.register(r'utils/expression', api.ExpressionViewSet, 'ExpressionViewSet')
 
 urlpatterns = [
     url(r'^v1/', include(router.urls, namespace='v1')),
