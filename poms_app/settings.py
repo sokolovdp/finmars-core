@@ -88,10 +88,11 @@ INSTALLED_APPS = [
 # if DEBUG:
 #     INSTALLED_APPS += ['debug_toolbar', ]
 
-if DEV:
-    INSTALLED_APPS += [
-        'redisboard',
-    ]
+# if DEV:
+#     # Not worjed in django 1.10.*
+#     INSTALLED_APPS += [
+#         'redisboard',
+#     ]
 
 MIDDLEWARE_CLASSES = [
     'poms.common.middleware.CommonMiddleware',
