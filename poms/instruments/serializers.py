@@ -161,7 +161,8 @@ class EventScheduleSerializer(serializers.ModelSerializer):
         model = EventSchedule
         fields = ['id', 'name', 'description', 'event_class', 'notification_class',
                   'effective_date', 'notify_in_n_days', 'periodicity', 'periodicity_n', 'final_date',
-                  'actions']
+                  'is_auto_generated', 'actions']
+        read_only_fields = ['is_auto_generated']
 
 
 class InstrumentAttributeSerializer(AbstractAttributeSerializer):
@@ -214,7 +215,7 @@ class InstrumentSerializer(ModelWithAttributesSerializer, ModelWithObjectPermiss
         self.save_factor_schedules(instance, True, factor_schedules)
         self.save_event_schedules(instance, True, event_schedules)
 
-        instance.rebuild_event_schedules()
+        self.rebuild_event_schedules(instance, True)
 
         return instance
 
@@ -231,17 +232,17 @@ class InstrumentSerializer(ModelWithAttributesSerializer, ModelWithObjectPermiss
         self.save_factor_schedules(instance, False, factor_schedules)
         self.save_event_schedules(instance, False, event_schedules)
 
-        instance.rebuild_event_schedules()
-        instance.calculate_prices_accrued_price(save=True)
+        self.calculate_prices_accrued_price(instance, False)
+        self.rebuild_event_schedules(instance, False)
 
         return instance
 
-    def save_instr_related(self, instrument, created, instrument_attr, model, validated_data):
+    def save_instr_related(self, instrument, created, instrument_attr, model, validated_data, accept=None):
         if validated_data is None:
             return
 
         related_attr = getattr(instrument, instrument_attr)
-        processed = set()
+        processed = {}
 
         for attr in validated_data:
             oid = attr.get('id', None)
@@ -252,15 +253,22 @@ class InstrumentSerializer(ModelWithAttributesSerializer, ModelWithObjectPermiss
                     o = model(instrument=instrument)
             else:
                 o = model(instrument=instrument)
+            if callable(accept):
+                if not accept(attr, o):
+                    if o:
+                        processed[o.id] = o
+                    continue
             for k, v in six.iteritems(attr):
                 if k not in ['id', 'instrument', 'actions']:
                     setattr(o, k, v)
             o.save()
-            processed.add(o.id)
+            processed[o.id] = o
             attr['id'] = o.id
 
         if not created:
-            related_attr.exclude(id__in=processed).delete()
+            related_attr.exclude(id__in=processed.keys()).delete()
+
+        return processed
 
     def save_manual_pricing_formulas(self, instrument, created, manual_pricing_formulas):
         self.save_instr_related(instrument, created, 'manual_pricing_formulas', ManualPricingFormula,
@@ -274,11 +282,17 @@ class InstrumentSerializer(ModelWithAttributesSerializer, ModelWithObjectPermiss
         self.save_instr_related(instrument, created, 'factor_schedules', InstrumentFactorSchedule, factor_schedules)
 
     def save_event_schedules(self, instrument, created, event_schedules):
-        self.save_instr_related(instrument, created, 'event_schedules', EventSchedule, event_schedules)
+        events = self.save_instr_related(instrument, created, 'event_schedules', EventSchedule, event_schedules,
+                                         accept=lambda attr, obj: not obj.is_auto_generated if obj else True)
 
         if event_schedules:
             for es in event_schedules:
-                event_schedule = instrument.event_schedules.get(pk=es['id'])
+                try:
+                    event_schedule = events[es['id']]
+                except KeyError:
+                    continue
+                if event_schedule.is_auto_generated:
+                    continue
 
                 actions_data = es.get('actions', None)
                 if actions_data is None:
@@ -304,6 +318,15 @@ class InstrumentSerializer(ModelWithAttributesSerializer, ModelWithObjectPermiss
 
                 if not created:
                     event_schedule.actions.exclude(id__in=processed).delete()
+
+    def calculate_prices_accrued_price(self, instrument, created):
+        instrument.calculate_prices_accrued_price(save=True)
+
+    def rebuild_event_schedules(self, instrument, created):
+        try:
+            instrument.rebuild_event_schedules()
+        except ValueError as e:
+            raise ValidationError({'instrument_type': '%s' % e})
 
 
 class PriceHistorySerializer(serializers.ModelSerializer):

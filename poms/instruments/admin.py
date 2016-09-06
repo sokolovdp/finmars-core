@@ -3,6 +3,7 @@ from __future__ import unicode_literals
 from django.contrib import admin, messages
 from django.db import models
 from django.forms import widgets
+from django.utils.translation import ugettext_lazy as _
 
 from poms.audit.admin import HistoricalAdmin
 from poms.common.admin import ClassModelAdmin, ClassifierAdmin
@@ -40,7 +41,7 @@ class InstrumentTypeAdmin(HistoricalAdmin):
     list_display = ['id', 'name', 'master_user', 'instrument_class']
     list_select_related = ['master_user', 'instrument_class']
     list_filter = ['instrument_class']
-    raw_id_fields = ['master_user', 'one_off_event', 'regular_event']
+    raw_id_fields = ['master_user', 'one_off_event', 'regular_event', 'factor_same', 'factor_up', 'factor_down']
     inlines = [
         UserObjectPermissionInline,
         GroupObjectPermissionInline,
@@ -134,6 +135,21 @@ class AccrualCalculationScheduleAdmin(admin.ModelAdmin):
 admin.site.register(AccrualCalculationSchedule, AccrualCalculationScheduleAdmin)
 
 
+class InstrumentFactorScheduleAdmin(admin.ModelAdmin):
+    model = InstrumentFactorSchedule
+    list_display = ['id', 'master_user', 'instrument', 'effective_date', 'factor_value']
+    list_select_related = ['instrument', 'instrument__master_user']
+    list_filter = ['effective_date']
+    raw_id_fields = ['instrument']
+    search_fields = ['instrument__name']
+
+    def master_user(self, obj):
+        return obj.instrument.master_user
+
+
+admin.site.register(InstrumentFactorSchedule, InstrumentFactorScheduleAdmin)
+
+
 class EventScheduleActionInline(admin.TabularInline):
     model = EventScheduleAction
     raw_id_fields = ['transaction_type']
@@ -143,7 +159,8 @@ class EventScheduleActionInline(admin.TabularInline):
 class EventScheduleAdmin(admin.ModelAdmin):
     model = EventSchedule
     list_display = ['id', 'master_user', 'instrument', 'name', 'event_class', 'notification_class', 'effective_date',
-                    'periodicity', 'final_date', 'is_auto_generated', 'accrual_calculation_schedule', 'factor_schedule']
+                    'periodicity', 'final_date', 'is_auto_generated', 'accrual_calculation_schedule', 'factor_schedule',
+                    '_actions']
     list_select_related = ['instrument', 'instrument__master_user', 'event_class', 'notification_class']
     raw_id_fields = ['instrument', 'accrual_calculation_schedule']
     search_fields = ['instrument__name']
@@ -152,8 +169,20 @@ class EventScheduleAdmin(admin.ModelAdmin):
         EventScheduleActionInline
     ]
 
+    def get_queryset(self, request):
+        qs = super(EventScheduleAdmin, self).get_queryset(request)
+        return qs.prefetch_related('actions', 'actions__transaction_type')
+
     def master_user(self, obj):
         return obj.instrument.master_user
+
+    def _actions(self, obj):
+        n = []
+        for a in obj.actions.all():
+            n.append(a.transaction_type.name)
+        return ', '.join(n)
+
+    _actions.short_description = _('Actions')
 
 
 admin.site.register(EventSchedule, EventScheduleAdmin)
