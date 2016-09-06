@@ -1,6 +1,9 @@
 from __future__ import unicode_literals
 
-from django.utils.deprecation import MiddlewareMixin
+try:
+    from django.utils.deprecation import MiddlewareMixin
+except ImportError:
+    MiddlewareMixin = object
 
 
 class SessionMiddleware(MiddlewareMixin):

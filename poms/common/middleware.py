@@ -7,9 +7,13 @@ from threading import local
 from django.conf import settings
 from django.contrib.gis.geoip2 import GeoIP2
 from django.utils.cache import get_max_age, patch_cache_control, add_never_cache_headers
-from django.utils.deprecation import MiddlewareMixin
 from django.utils.functional import SimpleLazyObject
 from geoip2.errors import AddressNotFoundError
+
+try:
+    from django.utils.deprecation import MiddlewareMixin
+except ImportError:
+    MiddlewareMixin = object
 
 
 def get_ip(request):
