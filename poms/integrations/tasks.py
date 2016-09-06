@@ -204,7 +204,7 @@ def download_instrument(instrument_code=None, instrument_download_scheme=None, m
             task.save()
             transaction.on_commit(
                 lambda: download_instrument_async.apply_async(kwargs={'task_id': task.id}, countdown=1))
-        return task, None
+        return task, None, None
     else:
         if task.status == Task.STATUS_DONE:
             provider = get_provider(task.master_user, task.provider_id)
@@ -217,8 +217,8 @@ def download_instrument(instrument_code=None, instrument_download_scheme=None, m
             instrument_download_scheme_id = options['instrument_download_scheme_id']
             instrument_download_scheme = InstrumentDownloadScheme.objects.get(pk=instrument_download_scheme_id)
 
-            instrument = provider.create_instrument(instrument_download_scheme, values)
-            return task, instrument
+            instrument, errors = provider.create_instrument(instrument_download_scheme, values)
+            return task, instrument, errors
         return task, None
 
 

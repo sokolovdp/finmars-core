@@ -395,9 +395,8 @@ class InstrumentMiniSerializer(InstrumentSerializer):
 
 
 class ImportInstrumentEntry(object):
-    def __init__(self, master_user=None, member=None,
-                 instrument_code=None, instrument_download_scheme=None,
-                 task=None, task_result_overrides=None, instrument=None):
+    def __init__(self, master_user=None, member=None, instrument_code=None, instrument_download_scheme=None,
+                 task=None, task_result_overrides=None, instrument=None, errors=None):
         self.master_user = master_user
         self.member = member
         self.instrument_code = instrument_code
@@ -406,6 +405,7 @@ class ImportInstrumentEntry(object):
         self._task_object = None
         self.task_result_overrides = task_result_overrides
         self.instrument = instrument
+        self.errors = errors
 
     @property
     def task_object(self):
@@ -431,6 +431,7 @@ class ImportInstrumentSerializer(serializers.Serializer):
     task_result_overrides = serializers.JSONField(default={}, allow_null=True)
 
     instrument = InstrumentMiniSerializer(read_only=True)
+    errors = serializers.ReadOnlyField()
 
     def validate(self, attrs):
         master_user = attrs['master_user']
@@ -458,7 +459,7 @@ class ImportInstrumentSerializer(serializers.Serializer):
         task_result_overrides = validated_data.get('task_result_overrides', None)
         instance = ImportInstrumentEntry(**validated_data)
         if instance.task:
-            task, instrument = download_instrument(
+            task, instrument, errors = download_instrument(
                 # instrument_code=instance.instrument_code,
                 # instrument_download_scheme=instance.instrument_download_scheme,
                 # master_user=instance.master_user,
@@ -468,9 +469,9 @@ class ImportInstrumentSerializer(serializers.Serializer):
             )
             instance.task_object = task
             instance.instrument = instrument
-
+            instance.errors = errors
         else:
-            task, instrument = download_instrument(
+            task, instrument, errors = download_instrument(
                 instrument_code=instance.instrument_code,
                 instrument_download_scheme=instance.instrument_download_scheme,
                 master_user=instance.master_user,
@@ -478,6 +479,7 @@ class ImportInstrumentSerializer(serializers.Serializer):
             )
             instance.task_object = task
             instance.instrument = instrument
+            instance.errors = errors
         return instance
 
     def get_task_result(self, obj):

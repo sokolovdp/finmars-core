@@ -1,3 +1,4 @@
+from collections import OrderedDict
 from datetime import date, datetime
 from logging import getLogger
 
@@ -6,6 +7,7 @@ from dateutil import parser
 from dateutil.rrule import rrule, DAILY
 from django.conf import settings
 from django.core.exceptions import ObjectDoesNotExist
+from django.utils.translation import ugettext_lazy as _
 
 from poms.common import formula
 from poms.currencies.models import CurrencyHistory
@@ -119,14 +121,15 @@ class AbstractProvider(object):
         return obj.periodicity
 
     def create_instrument(self, instrument_download_scheme, values):
+        errors = OrderedDict()
         master_user = instrument_download_scheme.master_user
         provider = instrument_download_scheme.provider
 
         instr = Instrument(master_user=master_user)
 
         instr.instrument_type = master_user.instrument_type
-        # instr.pricing_currency = master_user.currency
-        # instr.accrued_currency = master_user.currency
+        instr.pricing_currency = master_user.currency
+        instr.accrued_currency = master_user.currency
 
         instr.payment_size_detail = instrument_download_scheme.payment_size_detail
         instr.daily_pricing_model = instrument_download_scheme.daily_pricing_model
@@ -136,36 +139,49 @@ class AbstractProvider(object):
 
         for attr in InstrumentDownloadScheme.BASIC_FIELDS:
             expr = getattr(instrument_download_scheme, attr)
-            if expr:
-                try:
-                    v = formula.safe_eval(expr, names=values)
-                except formula.InvalidExpression:
-                    _l.debug('Invalid expression "%s"', attr, exc_info=True)
-                    continue
-                if attr in ['pricing_currency', 'accrued_currency']:
-                    if v is not None:
-                        v = self.get_currency(master_user, provider, v)
-                        if v:
-                            setattr(instr, attr, v)
-                elif attr in ['instrument_type']:
-                    if v is not None:
-                        v = self.get_instrument_type(master_user, provider, v)
-                        if v:
-                            setattr(instr, attr, v)
-                elif attr in ['price_multiplier', 'accrued_multiplier', 'default_price', 'default_accrued']:
-                    if v is not None:
-                        v = float(v)
+            if not expr:
+                continue
+            try:
+                v = formula.safe_eval(expr, names=values)
+            except formula.InvalidExpression as e:
+                # _l.debug('Invalid expression "%s"', attr, exc_info=True)
+                errors[attr] = [_('Invalid expression'), six.text_type(e)]
+                continue
+            if attr in ['pricing_currency', 'accrued_currency']:
+                if v is not None:
+                    v = self.get_currency(master_user, provider, v)
+                    if v:
                         setattr(instr, attr, v)
-                elif attr in ['maturity_date']:
-                    if v is not None:
+                    else:
+                        errors[attr] = [_('This field is required.')]
+            elif attr in ['instrument_type']:
+                if v is not None:
+                    v = self.get_instrument_type(master_user, provider, v)
+                    if v:
                         setattr(instr, attr, v)
-                else:
-                    if v is not None:
-                        v = six.text_type(v)
+                    else:
+                        errors[attr] = [_('This field is required.')]
+            elif attr in ['price_multiplier', 'accrued_multiplier', 'default_price', 'default_accrued']:
+                if v is not None:
+                    try:
+                        setattr(instr, attr, float(v))
+                    except (ValueError, TypeError):
+                        errors[attr] = [_('A valid number is required.')]
+            elif attr in ['maturity_date']:
+                if v is not None:
+                    if isinstance(v, datetime):
+                        v = v.date()
+                    if isinstance(v, date):
                         setattr(instr, attr, v)
+                    else:
+                        errors[attr] = [_('A valid date is required.')]
+            else:
+                if v is not None:
+                    v = six.text_type(v)
+                    setattr(instr, attr, v)
 
         instr._attributes = self.create_instrument_attributes(
-            instrument_download_scheme=instrument_download_scheme, instrument=instr, values=values)
+            instrument_download_scheme=instrument_download_scheme, instrument=instr, values=values, errors=errors)
 
         instr._accrual_calculation_schedules = self.create_accrual_calculation_schedules(
             instrument_download_scheme=instrument_download_scheme, instrument=instr, values=values)
@@ -173,9 +189,9 @@ class AbstractProvider(object):
         instr._factor_schedules = self.create_factor_schedules(
             instrument_download_scheme=instrument_download_scheme, instrument=instr, values=values)
 
-        return instr
+        return instr, errors
 
-    def create_instrument_attributes(self, instrument_download_scheme, instrument, values):
+    def create_instrument_attributes(self, instrument_download_scheme, instrument, values, errors):
         iattrs = []
         master_user = instrument_download_scheme.master_user
         provider = instrument_download_scheme.provider
@@ -185,12 +201,15 @@ class AbstractProvider(object):
             iattr = InstrumentAttribute(content_object=instrument, attribute_type=tattr)
             iattrs.append(iattr)
 
+            err_name = 'attribute_type:%s' % attr.attribute_type.id
+
             if attr.value:
                 try:
                     v = formula.safe_eval(attr.value, names=values)
                 except formula.InvalidExpression as e:
-                    _l.debug('Invalid expression "%s"', attr.value, exc_info=True)
-                    v = None
+                    # _l.debug('Invalid expression "%s"', attr.value, exc_info=True)
+                    errors[err_name] = [_('Invalid expression'), six.text_type(e)]
+                    continue
                 attr_mapped_values = self.get_instrument_attribute_value(master_user, provider, tattr, v)
                 if attr_mapped_values:
                     iattr.value_string, iattr.value_float, iattr.value_date, iattr.classifier = attr_mapped_values
@@ -200,16 +219,28 @@ class AbstractProvider(object):
                             iattr.value_string = six.text_type(v)
                     elif tattr.value_type == AbstractAttributeType.NUMBER:
                         if v is not None:
-                            iattr.value_float = float(v)
+                            try:
+                                iattr.value_float = float(v)
+                            except (ValueError, TypeError):
+                                errors[err_name] = [_('A valid number is required.')]
                     elif tattr.value_type == AbstractAttributeType.DATE:
                         if v is not None:
-                            iattr.value_date = self.parse_date(v)
+                            if isinstance(v, datetime):
+                                v = v.date()
+                            if isinstance(v, date):
+                                iattr.value_date = v
+                            else:
+                                errors[err_name] = [_('A valid date is required.')]
                     elif tattr.value_type == AbstractAttributeType.CLASSIFIER:
                         if v is not None:
                             v = six.text_type(v)
                             v = tattr.classifiers.filter(name=v).first()
-                            iattr.classifier = v
-
+                            if v:
+                                iattr.classifier = v
+                            else:
+                                errors[err_name] = [_('This field is required.')]
+            else:
+                errors[err_name] = [_('Expression required')]
         return iattrs
 
     def create_accrual_calculation_schedules(self, instrument_download_scheme, instrument, values):
