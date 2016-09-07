@@ -213,6 +213,7 @@ class TransactionType(NamedModel):
     instrument_types = models.ManyToManyField('instruments.InstrumentType', related_name='transaction_types',
                                               blank=True, verbose_name=_('instrument types'))
     is_valid_for_all_portfolios = models.BooleanField(default=True)
+    is_valid_for_all_instruments = models.BooleanField(default=True)
 
     # portfolios = models.ManyToManyField(
     #     'portfolios.Portfolio',
