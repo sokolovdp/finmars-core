@@ -54,6 +54,7 @@ class ExpressionSerializer(serializers.Serializer):
     names = serializers.DictField(required=False, allow_null=True)
     is_eval = serializers.BooleanField()
     result = serializers.ReadOnlyField()
+    help = serializers.SerializerMethodField()
 
     def validate(self, attrs):
         expression = attrs['expression']
@@ -62,3 +63,6 @@ class ExpressionSerializer(serializers.Serializer):
         if is_eval:
             attrs['result'] = formula.safe_eval(expression, names)
         return attrs
+
+    def get_help(self, obj):
+        return formula.HELP.split('\n')

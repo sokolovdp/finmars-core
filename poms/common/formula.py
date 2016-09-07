@@ -247,7 +247,7 @@ DEFAULT_FUNCTIONS = {
     'random': _random,
 }
 
-"""
+HELP = """
 TYPES:
 
 string: '' or ""
@@ -256,7 +256,7 @@ date: date object
 boolean: True/False
 
 
-# OPERATORS
+OPERATORS:
 
     +, -, /, *, ==, !=, >, >=, <, <=
 
