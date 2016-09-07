@@ -7,11 +7,12 @@ from babel import Locale
 from babel.dates import get_timezone, get_timezone_gmt, get_timezone_name
 from django.conf import settings
 from django.utils import translation, timezone
+from rest_framework import response, schemas
 from rest_framework import status
 from rest_framework.response import Response
 
 from poms.api.serializers import LanguageSerializer, Language, TimezoneSerializer, Timezone, ExpressionSerializer
-from poms.common.views import AbstractViewSet
+from poms.common.views import AbstractViewSet, AbstractApiView
 
 _languages = [Language(code, name) for code, name in settings.LANGUAGES]
 
@@ -70,3 +71,15 @@ class ExpressionViewSet(AbstractViewSet):
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
+
+
+if 'rest_framework_swagger' in settings.INSTALLED_APPS:
+    from rest_framework_swagger.renderers import SwaggerUIRenderer, OpenAPIRenderer
+
+
+    class SchemaViewSet(AbstractApiView):
+        renderer_classes = [SwaggerUIRenderer, OpenAPIRenderer]
+
+        def get(self, request, **kwargs):
+            generator = schemas.SchemaGenerator(title='FinMars API')
+            return response.Response(generator.get_schema(request=request))
