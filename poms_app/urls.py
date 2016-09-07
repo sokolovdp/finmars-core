@@ -8,11 +8,6 @@ from django.views import static
 
 urlpatterns = []
 
-if 'rest_framework_swagger' in settings.INSTALLED_APPS:
-    urlpatterns += [
-        url(r'^api/doc/', include('rest_framework_swagger.urls')),
-    ]
-
 urlpatterns += [
     url(r'^api/', include('poms.api.urls')),
 ]
