@@ -113,6 +113,7 @@ class AbstractReadOnlyModelViewSet(AbstractApiView, ReadOnlyModelViewSet):
 
 
 class AbstractClassModelViewSet(AbstractReadOnlyModelViewSet):
-    ordering_fields = ['id', 'system_code', 'name', ]
-    search_fields = ['system_code', 'name', ]
+    # ordering_fields = ['id', 'system_code', 'name', ]
+    ordering_fields = []
+    search_fields = ['system_code', 'name_en', ]
     pagination_class = None
