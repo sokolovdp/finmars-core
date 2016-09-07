@@ -4,7 +4,7 @@ import os
 
 from celery import Celery
 
-os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'poms_app.settings')
+os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'poms_app.settings_dev_ai')
 
 from django.conf import settings
 

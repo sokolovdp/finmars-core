@@ -1,3 +1,6 @@
+from django.views.generic.dates import timezone_today
+
+
 def db_class_check_data(model, verbosity, using):
     from django.db import IntegrityError, ProgrammingError
 
@@ -27,5 +30,6 @@ def db_class_check_data(model, verbosity, using):
 
 
 def date_now():
-    from django.utils import timezone
-    return timezone.now().date()
+    # from django.utils import timezone
+    # return timezone.now().date()
+    return timezone_today()

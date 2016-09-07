@@ -3,13 +3,13 @@ from __future__ import unicode_literals, print_function, division
 import ast
 import collections
 import datetime
+import math
 import random
-from collections import Callable
+import time
 
 import simpleeval
 import six
-from babel import numbers
-from dateutil import parser
+from django.utils import numberformat
 
 from poms.common.utils import date_now
 
@@ -20,7 +20,96 @@ class InvalidExpression(Exception):
         self.message = getattr(e, "message", str(e))
 
 
-def add_workdays(d, x, only_workdays=True):
+def _check_string(x):
+    if not isinstance(x, six.string_types):
+        raise InvalidExpression('Value error')
+
+
+def _check_number(x):
+    if not isinstance(x, six.integer_types) and not isinstance(x, float):
+        raise InvalidExpression('Value error')
+
+
+def _check_date(x):
+    if not isinstance(x, datetime.date):
+        raise InvalidExpression('Value error')
+
+
+def _check_timedelta(x):
+    if not isinstance(x, datetime.timedelta):
+        raise InvalidExpression('Value error')
+
+
+def _str(x):
+    return six.text_type(x)
+
+
+def _int(x):
+    return int(x)
+
+
+def _float(x):
+    return float(x)
+
+
+def _round(x):
+    _check_number(x)
+    return round(x)
+
+
+def _trunc(x):
+    _check_number(x)
+    return int(x)
+
+
+def _iff(x, v1, v2):
+    return v1 if x else v2
+
+
+def _isclose(a, b, rel_tol=1e-09, abs_tol=0.0):
+    _check_number(a)
+    _check_number(b)
+    return math.isclose(a, b, rel_tol=rel_tol, abs_tol=abs_tol)
+
+
+def _now():
+    return date_now()
+
+
+def _date(year, month=1, day=1):
+    _check_number(year)
+    _check_number(month)
+    _check_number(day)
+    return datetime.date(year=year, month=month, day=day)
+
+
+def _days(x):
+    if isinstance(x, datetime.timedelta):
+        return x
+    _check_number(x)
+    return datetime.timedelta(days=x)
+
+
+def _add_days(d, x):
+    _check_date(d)
+    if not isinstance(x, datetime.timedelta):
+        _check_number(x)
+        x = datetime.timedelta(days=x)
+    return d + x
+
+
+def _add_weeks(d, x):
+    _check_date(d)
+    if not isinstance(x, datetime.timedelta):
+        _check_number(x)
+        x = datetime.timedelta(weeks=x)
+    return d + x
+
+
+def _add_workdays(d, x, only_workdays=True):
+    _check_date(d)
+    _check_number(x)
+
     weeks = int(x / 5)
     days_remainder = x % 5
     d = d + datetime.timedelta(weeks=weeks, days=days_remainder)
@@ -32,89 +121,228 @@ def add_workdays(d, x, only_workdays=True):
     return d
 
 
-def format_date(x, fmt=None, locale=None):
-    if fmt:
-        from django.utils import translation
-        if locale is None:
-            locale = translation.get_language()
-        # return dates.format_date(x, fmt, locale=locale)
-        return x.strftime(fmt)
-    else:
-        return six.text_type(x)
-
-
-def parse_date(x, fmt=None, locale=None):
+def _format_date(d, fmt=None):
+    if d is None:
+        return ''
+    _check_date(d)
     if fmt is None:
-        return parser.parse(x).date()
-    from django.utils import translation
-    if locale is None:
-        locale = translation.get_language()
+        fmt = '%Y-%m-%d'
+    _check_string(fmt)
+    return d.strftime(fmt)
+
+
+def _parse_date(x, fmt=None):
+    if not x:
+        return None
+    _check_string(x)
+    if fmt is None:
+        fmt = '%Y-%m-%d'
+    _check_string(fmt)
     return datetime.datetime.strptime(x, fmt).date()
 
 
-def format_decimal(x, fmt=None, locale=None):
-    if fmt:
-        from django.utils import translation
-        if locale is None:
-            locale = translation.get_language()
-        return numbers.format_decimal(x, fmt, locale=locale)
-    else:
-        return six.text_type(x)
+def _format_number(x, decimal_sep='.', decimal_pos=None, grouping=0, thousand_sep='', use_grouping=False):
+    _check_number(x)
+    if decimal_sep is not None:
+        _check_string(decimal_sep)
+    if decimal_pos is not None:
+        _check_number(decimal_pos)
+    if grouping is not None:
+        _check_number(grouping)
+    if thousand_sep is not None:
+        _check_string(thousand_sep)
+    return numberformat.format(x, decimal_sep, decimal_pos=decimal_pos, grouping=grouping, thousand_sep=thousand_sep,
+                               force_grouping=use_grouping)
 
 
-def format_currency(x, ccy, locale=None):
-    from django.utils import translation
-    if locale is None:
-        locale = translation.get_language()
-    return numbers.format_currency(x, ccy, locale=locale)
+def _parse_number(x):
+    return float(x)
 
 
-def map_str(value, value_map):
-    if value is None or value_map is None:
-        return None
-    if not isinstance(value_map, dict):
-        raise InvalidExpression('Required dict')
-    return value_map.get(value, None)
+# def format_percent(x, fmt=None, locale=None):
+#     if fmt:
+#         from django.utils import translation
+#         if locale is None:
+#             locale = translation.get_language()
+#         return numbers.format_percent(x, fmt, locale=locale)
+#     else:
+#         return '%s%%' % six.text_type(x * 100)
 
 
-def simple_price(date, date1, value1, date2, value2):
+# def format_currency(x, ccy, fmt, locale=None):
+#     from django.utils import translation
+#     if locale is None:
+#         locale = translation.get_language()
+#     return numbers.format_currency(x, ccy, format=fmt, locale=locale)
+
+
+# def parse_number(x, locale=None):
+#     from django.utils import translation
+#     if locale is None:
+#         locale = translation.get_language()
+#     return numbers.parse_number(x, locale=locale)
+
+
+# def map_str(value, value_map):
+#     if value is None or value_map is None:
+#         return None
+#     if not isinstance(value_map, dict):
+#         raise InvalidExpression('Required dict')
+#     return value_map.get(value, None)
+
+
+def _simple_price(date, date1, value1, date2, value2):
+    if isinstance(date, six.string_types):
+        date = _parse_date(date)
+    if isinstance(date1, six.string_types):
+        date1 = _parse_date(date1)
+    if isinstance(date2, six.string_types):
+        date2 = _parse_date(date2)
+    _check_date(date)
+    _check_date(date1)
+    _check_date(date2)
+    _check_number(value1)
+    _check_number(value2)
+    if math.isclose(value1, value2):
+        return value1
+    if date1 == date2:
+        if math.isclose(value1, value2):
+            return value1
+        raise ValueError()
     if date < date1:
-        return None
+        return 0.0
     if date == date1:
         return value1
     if date > date2:
-        return None
+        return 0.0
     if date == date2:
         return value2
     d = 1.0 * (date - date1).days / (date2 - date1).days
     return value1 + d * (value2 - value1)
 
 
-def w_random():
+def _random():
     return random.random()
 
 
 DEFAULT_FUNCTIONS = {
-    'str': lambda x: six.text_type(x),
-    'int': lambda x: int(x),
-    'float': lambda x: float(x),
-    'round': lambda x: round(x),
-    'trunc': lambda x: int(x),
-    'iff': lambda x, v1, v2: v1 if x else v2,
-    'now': date_now,
-    'days': lambda x: datetime.timedelta(days=x),
-    'add_days': lambda d, x: d + datetime.timedelta(days=x),
-    'add_weeks': lambda d, x: d + datetime.timedelta(weeks=x),
-    'add_workdays': add_workdays,
-    'format_date': format_date,
-    'parse_date': parse_date,
-    'format_decimal': format_decimal,
-    'format_currency': format_currency,
-    'random': w_random,
-    'simple_price': simple_price,
-    'map_str': map_str,
+    'str': _str,
+    'int': _int,
+    'float': _float,
+    'round': _round,
+    'trunc': _trunc,
+    'iff': _iff,
+    'isclose': _isclose,
+    'now': _now,
+    'date': _date,
+    'days': _days,
+    'add_days': _add_days,
+    'add_weeks': _add_weeks,
+    'add_workdays': _add_workdays,
+    'format_date': _format_date,
+    'parse_date': _parse_date,
+    'format_number': _format_number,
+    'parse_number': _parse_number,
+    'simple_price': _simple_price,
+    'random': _random,
 }
 
+"""
+TYPES:
+
+string: '' or ""
+number: 1 or 1.0
+date: date object
+boolean: True/False
+
+
+# OPERATORS
+
+    +, -, /, *, ==, !=, >, >=, <, <=
+
+
+VARIABLES:
+
+access to context value in formulas
+    x * 10
+    context['x'] * 10
+    instrument.price_multiplier
+    instrument['price_multiplier']
+    context['instrument']['price_multiplier']
+
+
+FUNCTIONS:
+
+function description
+    function_name(arg1, arg2=<default value for arg>)
+
+example of function call->
+    iff(d==now(), 1, 2)
+    iff(d==now(), v1=1, v2=2)
+
+supported functions:
+
+str(x)
+    any value to string
+float(x)
+    convert string to number
+round(x)
+    math round float
+trunc(x)
+    math truncate float
+iff(x, v1, v2)
+    return v1 if x is True else v2
+isclose(a, b)
+    compare to float number to equality
+now()
+    current date
+date(year, month=1, day=1)
+    create date object
+days(x)
+    create date delta object
+    "now() + 10" not worked must be "now() - days(10)"
+add_days(d, x)
+    d + days(x)
+add_weeks(d, x)
+    d + days(x * 7)
+add_workdays(d, x)
+    add "x" workdays to d
+format_date(x, format='%Y-%m-%d')
+    format date, if format is None then return in iso format
+parse_date(x, format='%Y-%m-%d')
+    parse date, if format is None then use format='%Y-%m-%d'
+format_number(x, decimal_sep='.', decimal_pos=None, grouping=0, thousand_sep='', use_grouping=False) :
+    decimal_sep: Decimal separator symbol (for example ".")
+    decimal_pos: Number of decimal positions
+    grouping: Number of digits in every group limited by thousand separator
+    thousand_sep: Thousand separator symbol (for example ",")
+    use_grouping: use thousand separator
+parse_number(x)
+    same as float(x)
+simple_price(date, date1, value1, date2, value2)
+    calculate price on date using 2 point
+    date, date1, date2 - date or string in format '%Y-%m-%d'
+
+
+DATE format string:
+    %w 	Weekday as a decimal number, where 0 is Sunday and 6 is Saturday - 0, 1, ..., 6
+    %d 	Day of the month as a zero-padded decimal number - 01, 02, ..., 31
+    %m 	Month as a zero-padded decimal number - 01, 02, ..., 12
+    %y 	Year without century as a zero-padded decimal number - 00, 01, ..., 99
+    %Y 	Year with century as a decimal number - 1970, 1988, 2001, 2013
+    %j 	Day of the year as a zero-padded decimal number - 001, 002, ..., 366
+    %U 	Week number of the year (Sunday as the first day of the week) as a zero padded decimal number.
+        All days in a new year preceding the first Sunday are considered to be in week 0. - 00, 01, ..., 53
+    %W 	Week number of the year (Monday as the first day of the week) as a decimal number.
+        All days in a new year preceding the first Monday are considered to be in week 0. - 00, 01, ..., 53
+    %% 	A literal '%' character - %
+"""
+
+
+# %a 	Weekday as locale’s abbreviated name - Sun, Mon, ..., Sat (en_US)
+# %A 	Weekday as locale’s full name - Sunday, Monday, ..., Saturday (en_US);
+# %b 	Month as locale’s abbreviated name - Jan, Feb, ..., Dec (en_US)
+# %B 	Month as locale’s full name  - January, February, ..., December (en_US);
 
 class SimpleEval2(object):  # pylint: disable=too-few-public-methods
     expr = ''
@@ -133,7 +361,7 @@ class SimpleEval2(object):  # pylint: disable=too-few-public-methods
 
         self.operators = operators
         self.functions = functions
-        self.names = names
+        self.names = deep_value(names)
 
     @staticmethod
     def is_valid(expr):
@@ -230,15 +458,14 @@ class SimpleEval2(object):  # pylint: disable=too-few-public-methods
                 # (the compiler rejects it, so you can't even pass that to ast.parse)
                 if node.id == "None":
                     return None
-                elif isinstance(self.names, dict):
+                if node.id == "context" or node.id == "CONTEXT" and isinstance(self.names, dict):
+                    return self.names
+                if isinstance(self.names, dict):
                     return self.names[node.id]
-                elif isinstance(self.names, Callable):
-                    return self.names(node)
-                else:
-                    raise InvalidExpression('Trying to use name (variable) "{0}"'
-                                            ' when no "names" defined for'
-                                            ' evaluator'.format(node.id))
-
+                if callable(self.names):
+                    return self.names(node.id)
+                raise InvalidExpression(
+                    'Trying to use name (variable) "%s" when no "names" defined for  evaluator' % (node.id,))
             except KeyError:
                 raise simpleeval.NameNotDefined(node.id, self.expr)
 
@@ -317,47 +544,75 @@ def safe_eval(s, names=None, functions=None):
         raise InvalidExpression(e)
 
 
+def deep_dict(data):
+    ret = {}
+    for k, v in six.iteritems(data):
+        ret[k] = deep_value(v)
+    return ret
+
+
+def deep_list(data):
+    ret = []
+    for v in data:
+        ret.append(deep_value(v))
+    return ret
+
+
+def deep_tuple(data):
+    return tuple(deep_list(data))
+
+
+def deep_value(data):
+    if isinstance(data, (dict, collections.OrderedDict)):
+        return deep_dict(data)
+    if isinstance(data, list):
+        return deep_list(data)
+    if isinstance(data, tuple):
+        return deep_tuple(data)
+    return data
+
+
 if __name__ == "__main__":
     import os
 
-    os.environ.setdefault("DJANGO_SETTINGS_MODULE", "poms_app.settings")
+    os.environ.setdefault("DJANGO_SETTINGS_MODULE", "poms_app.settings_dev_ai")
     import django
 
     django.setup()
 
-    from django.utils import translation
+    names = {
+        "v0": 1.00001,
+        "v1": "str",
+        "v2": {
+            "id": 1,
+            "name": "V2",
+            "code": 12354
+        },
+        "v3": [
+            {
+                "id": 2,
+                "name": "V31"
+            },
+            {
+                "id": 3,
+                "name": "V32"
+            },
+        ],
+    }
 
-    # names = {
-    #     "v0": 1.00001,
-    #     "v1": "str",
-    #     "v2": {
-    #         "id": 1,
-    #         "name": "V2",
-    #         "code": 12354
-    #     },
-    #     "v3": [
-    #         {
-    #             "id": 2,
-    #             "name": "V31"
-    #         },
-    #         {
-    #             "id": 3,
-    #             "name": "V32"
-    #         },
-    #     ],
-    # }
 
     # print(safe_eval('(1).__class__.__bases__', names=names))
-    # print(safe_eval2('(1).__class__.__bases__', names=names))
-    # print(safe_eval3('(1).__class__.__bases__[0].__subclasses__()', names=names))
     # print(safe_eval('{"a":1, "b":2}'))
     # print(safe_eval('[1,]'))
     # print(safe_eval('(1,)'))
     # print(safe_eval('parse_date("2000-01-01") + days(100)'))
     # print(safe_eval('simple_price(parse_date("2000-01-02"), parse_date("2000-01-01"), 0, parse_date("2000-04-10"), 100)'))
+    # print(safe_eval('simple_price("2000-01-02", "2000-01-01", 0, "2000-04-10", 100)'))
+    # print(safe_eval('v0 * 10', names=names))
+    # print(safe_eval('context["v0"] * 10', names=names))
+
 
     def demo():
-        import pprint
         from poms.instruments.models import Instrument
         from poms.transactions.models import Transaction
         from poms.common.formula_serializers import EvalInstrumentSerializer, EvalTransactionSerializer
@@ -367,9 +622,11 @@ if __name__ == "__main__":
                 res = safe_eval(expr, names=names)
             except InvalidExpression as e:
                 res = "<ERROR1: %s>" % e.message
+                time.sleep(1)
+                raise e
             except Exception as e:
                 res = "<ERROR2: %s>" % e
-            print('\t%-60s -> %s' % (expr, res))
+            print("\t%-60s -> %s" % (expr, res))
 
         names = {
             "v0": 1.00001,
@@ -379,63 +636,64 @@ if __name__ == "__main__":
             "instr": collections.OrderedDict(EvalInstrumentSerializer(instance=Instrument.objects.first()).data),
             "trns": [collections.OrderedDict(EvalTransactionSerializer(instance=t).data)
                      for t in Transaction.objects.all()[:2]],
+
         }
-        print('test variables:')
-        for n in sorted(six.iterkeys(names)):
-            print(n, '\n')
-            pprint.pprint(names[n])
-            # print('\t%s -> %s' % (n, json.dumps(names[n], sort_keys=True, indent=2)))
+        print("test variables:\n", names)
+        print("test variables:\n", deep_value(names))
+        # for n in sorted(six.iterkeys(names)):
+        #     print(n, "\n")
+        #     pprint.pprint(names[n])
+        #     # print("\t%s -> %s" % (n, json.dumps(names[n], sort_keys=True, indent=2)))
+
+        print("simple:")
+        play("2 * 2 + 2", names)
+        play("2 * (2 + 2)", names)
+        play("16 ** 16", names)
+        play("5 / 2", names)
+        play("5 % 2", names)
 
         print()
-        print('simple:')
-        play('2 * 2 + 2', names)
-        play('2 * (2 + 2)', names)
-        play('16 ** 16', names)
-        play('5 / 2', names)
-        play('5 % 2', names)
+        print("with variables:")
+        play("v0 + 1", names)
+        play("v1 + ' & ' + str(v0)", names)
+        play("v2.name", names)
+        play("v2.num * 3", names)
+        play("v3[1].name", names)
+        play("v3[1].name", names)
+        play("instr.name", names)
+        play("instr.instrument_type.id", names)
+        play("instr.instrument_type.user_code", names)
+
+        play("instr.price_multiplier", names)
+        play("instr['price_multiplier']", names)
+        play("context['instr']", names)
+        play("context['instr'].price_multiplier", names)
+        play("context['instr']['price_multiplier']", names)
 
         print()
-        print('with variables:')
-        play('v0 + 1', names)
-        play('v1 + " & " + str(v0)', names)
-        play('v2.name', names)
-        play('v2.num * 3', names)
-        play('v3[1].name', names)
-        play('v3[1].name', names)
-        play('instr.name', names)
-        play('instr.instrument_type.id', names)
-        play('instr.instrument_type.user_code', names)
+        print("functions: ")
+        play("round(1.5)", names)
+        play("trunc(1.5)", names)
+        play("int(1.5)", names)
+        play("now()", names)
+        play("add_days(now(), 10)", names)
+        play("add_workdays(now(), 10)", names)
+        play("iff(1.001 > 1.002, 'really?', 'ok')", names)
+        play("'really?' if 1.001 > 1.002 else 'ok'", names)
+        play("'N' + format_date(now(), '%Y%m%d') + '/' + str(v2.trn_code)", names)
 
-        print()
-        print('functions: ')
-        play('round(1.5)', names)
-        play('trunc(1.5)', names)
-        play('int(1.5)', names)
-        play('now()', names)
-        play('add_days(now(), 10)', names)
-        play('add_workdays(now(), 10)', names)
-        play('iff(1.001 > 1.002, "really?", "ok")', names)
-        play('"really?" if 1.001 > 1.002 else "ok"', names)
-        play('"N" + format_date(now(), "YMMdd") + "/" + str(v2.trn_code)', names)
+        play("format_date(now())", names)
+        play("format_date(now(), '%Y/%m/%d')", names)
+        play("format_number(1234.234)", names)
+        play("format_number(1234.234, '.', 2)", names)
 
-        for lang in ['ru', 'en', 'de', 'fr']:
-            print()
-            print('localized (from master user settings): language=%s' % lang)
-            translation.activate(lang)
-            play('format_date(now(), "full")', names)
-            play('format_date(now(), "long")', names)
-            play('format_date(now(), "short")', names)
-            play('format_decimal(1234.234, "#,##0.##;-#")', names)
-            play('format_currency(1234.234, "USD")', names)
-            play('format_currency(1234.234, "RUB")', names)
-
-            # r = safe_eval3('"%r" % now()', names=names, functions=functions)
-            # r = safe_eval('format_date(now(), "EEE, MMM d, yy")')
-            # print(repr(r))
-            # print(add_workdays(datetime.date(2016, 6, 15), 3, only_workdays=False))
-            # print(add_workdays(datetime.date(2016, 6, 15), 4, only_workdays=False))
-            # print(add_workdays(datetime.date(2016, 6, 15), 3))
-            # print(add_workdays(datetime.date(2016, 6, 15), 4))
+        # r = safe_eval3('"%r" % now()', names=names, functions=functions)
+        # r = safe_eval('format_date(now(), "EEE, MMM d, yy")')
+        # print(repr(r))
+        # print(add_workdays(datetime.date(2016, 6, 15), 3, only_workdays=False))
+        # print(add_workdays(datetime.date(2016, 6, 15), 4, only_workdays=False))
+        # print(add_workdays(datetime.date(2016, 6, 15), 3))
+        # print(add_workdays(datetime.date(2016, 6, 15), 4))
 
 
-            # demo()
+    demo()
