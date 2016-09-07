@@ -1,4 +1,5 @@
 from rest_framework import serializers
+from rest_framework.exceptions import ValidationError
 
 from poms.common import formula
 from poms.common.fields import ExpressionField
@@ -62,7 +63,10 @@ class ExpressionSerializer(serializers.Serializer):
         names = attrs.get('names', None)
         is_eval = attrs.get('is_eval', False)
         if is_eval:
-            attrs['result'] = formula.safe_eval(expression, names)
+            try:
+                attrs['result'] = formula.safe_eval(expression, names)
+            except formula.InvalidExpression as e:
+                raise ValidationError({'expression': 'Invalid expression: %s' % e})
         return attrs
 
     def get_help(self, obj):
