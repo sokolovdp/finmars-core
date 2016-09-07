@@ -20,50 +20,50 @@ class InvalidExpression(Exception):
         self.message = getattr(e, "message", str(e))
 
 
-def _check_string(x):
-    if not isinstance(x, six.string_types):
+def _check_string(a):
+    if not isinstance(a, six.string_types):
         raise InvalidExpression('Value error')
 
 
-def _check_number(x):
-    if not isinstance(x, six.integer_types) and not isinstance(x, float):
+def _check_number(a):
+    if not isinstance(a, six.integer_types) and not isinstance(a, float):
         raise InvalidExpression('Value error')
 
 
-def _check_date(x):
-    if not isinstance(x, datetime.date):
+def _check_date(a):
+    if not isinstance(a, datetime.date):
         raise InvalidExpression('Value error')
 
 
-def _check_timedelta(x):
-    if not isinstance(x, datetime.timedelta):
+def _check_timedelta(a):
+    if not isinstance(a, datetime.timedelta):
         raise InvalidExpression('Value error')
 
 
-def _str(x):
-    return six.text_type(x)
+def _str(a):
+    return six.text_type(a)
 
 
-def _int(x):
-    return int(x)
+def _int(a):
+    return int(a)
 
 
-def _float(x):
-    return float(x)
+def _float(a):
+    return float(a)
 
 
-def _round(x):
-    _check_number(x)
-    return round(x)
+def _round(number):
+    _check_number(number)
+    return round(number)
 
 
-def _trunc(x):
-    _check_number(x)
-    return int(x)
+def _trunc(number):
+    _check_number(number)
+    return int(number)
 
 
-def _iff(x, v1, v2):
-    return v1 if x else v2
+def _iff(expr, a, b):
+    return a if expr else b
 
 
 def _isclose(a, b, rel_tol=1e-09, abs_tol=0.0):
@@ -83,66 +83,66 @@ def _date(year, month=1, day=1):
     return datetime.date(year=year, month=month, day=day)
 
 
-def _days(x):
-    if isinstance(x, datetime.timedelta):
-        return x
-    _check_number(x)
-    return datetime.timedelta(days=x)
+def _days(days):
+    if isinstance(days, datetime.timedelta):
+        return days
+    _check_number(days)
+    return datetime.timedelta(days=days)
 
 
-def _add_days(d, x):
-    _check_date(d)
-    if not isinstance(x, datetime.timedelta):
-        _check_number(x)
-        x = datetime.timedelta(days=x)
-    return d + x
+def _add_days(date, days):
+    _check_date(date)
+    if not isinstance(days, datetime.timedelta):
+        _check_number(days)
+        days = datetime.timedelta(days=days)
+    return date + days
 
 
-def _add_weeks(d, x):
-    _check_date(d)
-    if not isinstance(x, datetime.timedelta):
-        _check_number(x)
-        x = datetime.timedelta(weeks=x)
-    return d + x
+def _add_weeks(date, weeks):
+    _check_date(date)
+    if not isinstance(weeks, datetime.timedelta):
+        _check_number(weeks)
+        weeks = datetime.timedelta(weeks=weeks)
+    return date + weeks
 
 
-def _add_workdays(d, x, only_workdays=True):
-    _check_date(d)
-    _check_number(x)
+def _add_workdays(date, workdays, only_workdays=True):
+    _check_date(date)
+    _check_number(workdays)
 
-    weeks = int(x / 5)
-    days_remainder = x % 5
-    d = d + datetime.timedelta(weeks=weeks, days=days_remainder)
+    weeks = int(workdays / 5)
+    days_remainder = workdays % 5
+    date = date + datetime.timedelta(weeks=weeks, days=days_remainder)
     if only_workdays:
-        if d.weekday() == 5:
-            return d + datetime.timedelta(days=2)
-        if d.weekday() == 6:
-            return d + datetime.timedelta(days=1)
-    return d
+        if date.weekday() == 5:
+            return date + datetime.timedelta(days=2)
+        if date.weekday() == 6:
+            return date + datetime.timedelta(days=1)
+    return date
 
 
-def _format_date(d, fmt=None):
-    if d is None:
+def _format_date(date, format=None):
+    if date is None:
         return ''
-    _check_date(d)
-    if fmt is None:
-        fmt = '%Y-%m-%d'
-    _check_string(fmt)
-    return d.strftime(fmt)
+    _check_date(date)
+    if format is None:
+        format = '%Y-%m-%d'
+    _check_string(format)
+    return date.strftime(format)
 
 
-def _parse_date(x, fmt=None):
-    if not x:
+def _parse_date(date_string, format=None):
+    if not date_string:
         return None
-    _check_string(x)
-    if fmt is None:
-        fmt = '%Y-%m-%d'
-    _check_string(fmt)
-    return datetime.datetime.strptime(x, fmt).date()
+    _check_string(date_string)
+    if format is None:
+        format = '%Y-%m-%d'
+    _check_string(format)
+    return datetime.datetime.strptime(date_string, format).date()
 
 
-def _format_number(x, decimal_sep='.', decimal_pos=None, grouping=0, thousand_sep='', use_grouping=False):
-    _check_number(x)
+def _format_number(number, decimal_sep='.', decimal_pos=None, grouping=3, thousand_sep='', use_grouping=False):
+    _check_number(number)
     if decimal_sep is not None:
         _check_string(decimal_sep)
     if decimal_pos is not None:
@@ -151,44 +151,12 @@ def _format_number(x, decimal_sep='.', decimal_pos=None, grouping=0, thousand_se
         _check_number(grouping)
     if thousand_sep is not None:
         _check_string(thousand_sep)
-    return numberformat.format(x, decimal_sep, decimal_pos=decimal_pos, grouping=grouping, thousand_sep=thousand_sep,
-                               force_grouping=use_grouping)
+    return numberformat.format(number, decimal_sep, decimal_pos=decimal_pos, grouping=grouping,
+                               thousand_sep=thousand_sep, force_grouping=use_grouping)
 
 
-def _parse_number(x):
-    return float(x)
-
-
-# def format_percent(x, fmt=None, locale=None):
-#     if fmt:
-#         from django.utils import translation
-#         if locale is None:
-#             locale = translation.get_language()
-#         return numbers.format_percent(x, fmt, locale=locale)
-#     else:
-#         return '%s%%' % six.text_type(x * 100)
-
-
-# def format_currency(x, ccy, fmt, locale=None):
-#     from django.utils import translation
-#     if locale is None:
-#         locale = translation.get_language()
-#     return numbers.format_currency(x, ccy, format=fmt, locale=locale)
-
-
-# def parse_number(x, locale=None):
-#     from django.utils import translation
-#     if locale is None:
-#         locale = translation.get_language()
-#     return numbers.parse_number(x, locale=locale)
-
-
-# def map_str(value, value_map):
-#     if value is None or value_map is None:
-#         return None
-#     if not isinstance(value_map, dict):
-#         raise InvalidExpression('Required dict')
-#     return value_map.get(value, None)
+def _parse_number(a):
+    return float(a)
 
 
 def _simple_price(date, date1, value1, date2, value2):
@@ -252,9 +220,11 @@ TYPES:
 
 string: '' or ""
 number: 1 or 1.0
-date: date object
 boolean: True/False
 
+hidden types
+date: date object
+timedelta: time delta object for operations with dates
 
 OPERATORS:
 
@@ -282,43 +252,44 @@ example of function call->
 
 supported functions:
 
-str(x)
+str(a)
     any value to string
-float(x)
+float(a)
     convert string to number
-round(x)
+round(number)
     math round float
-trunc(x)
+trunc(number)
     math truncate float
-iff(x, v1, v2)
-    return v1 if x is True else v2
+iff(expr, a, b)
+    return a if x is True else v2
 isclose(a, b)
     compare to float number to equality
 now()
     current date
 date(year, month=1, day=1)
     create date object
-days(x)
-    create date delta object
-    "now() + 10" not worked must be "now() - days(10)"
-add_days(d, x)
-    d + days(x)
-add_weeks(d, x)
-    d + days(x * 7)
-add_workdays(d, x)
-    add "x" workdays to d
-format_date(x, format='%Y-%m-%d')
-    format date, if format is None then return in iso format
-parse_date(x, format='%Y-%m-%d')
-    parse date, if format is None then use format='%Y-%m-%d'
-format_number(x, decimal_sep='.', decimal_pos=None, grouping=0, thousand_sep='', use_grouping=False) :
+days(days)
+    create timedelta object for operations with dates
+    now() - days(10)
+    now() + days(10)
+add_days(date, days)
+    same as date + days(x)
+add_weeks(date, days)
+    same as d + days(x * 7)
+add_workdays(date, workdays)
+    add "x" work days to d
+format_date(date, format='%Y-%m-%d')
+    format date, by default format is '%Y-%m-%d'
+parse_date(date_string, format='%Y-%m-%d')
+    parse date from string, by default format is '%Y-%m-%d'
+format_number(number, decimal_sep='.', decimal_pos=None, grouping=3, thousand_sep='', use_grouping=False)
     decimal_sep: Decimal separator symbol (for example ".")
     decimal_pos: Number of decimal positions
     grouping: Number of digits in every group limited by thousand separator
     thousand_sep: Thousand separator symbol (for example ",")
     use_grouping: use thousand separator
-parse_number(x)
-    same as float(x)
+parse_number(a)
+    same as float(a)
 simple_price(date, date1, value1, date2, value2)
     calculate price on date using 2 point
     date, date1, date2 - date or string in format '%Y-%m-%d'
