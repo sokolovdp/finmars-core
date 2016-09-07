@@ -259,7 +259,8 @@ class TransactionTypeSerializer(ModelWithObjectPermissionSerializer, ModelWithUs
     class Meta:
         model = TransactionType
         fields = ['url', 'id', 'master_user', 'group', 'user_code', 'name', 'short_name', 'public_name', 'notes',
-                  'display_expr', 'instrument_types', 'portfolios', 'tags', 'inputs', 'actions']
+                  'display_expr', 'is_valid_for_all_portfolios', 'instrument_types', 'portfolios', 'tags', 'inputs',
+                  'actions']
 
     def validate(self, attrs):
         # TODO: validate *_input...

@@ -55,6 +55,7 @@ class CounterpartyGroupGroupObjectPermission(AbstractGroupObjectPermission):
 class Counterparty(NamedModel):
     master_user = models.ForeignKey(MasterUser, related_name='counterparties', verbose_name=_('master user'))
     group = models.ForeignKey(CounterpartyGroup, related_name='counterparties', null=True, blank=True)
+    is_valid_for_all_portfolios = models.BooleanField(default=True)
 
     class Meta(NamedModel.Meta):
         verbose_name = _('counterparty')
@@ -201,6 +202,7 @@ class ResponsibleGroupGroupObjectPermission(AbstractGroupObjectPermission):
 class Responsible(NamedModel):
     master_user = models.ForeignKey(MasterUser, related_name='responsibles', verbose_name=_('master user'))
     group = models.ForeignKey(ResponsibleGroup, related_name='responsibles', null=True, blank=True)
+    is_valid_for_all_portfolios = models.BooleanField(default=True)
 
     class Meta(NamedModel.Meta):
         verbose_name = _('responsible')

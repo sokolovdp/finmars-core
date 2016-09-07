@@ -3,7 +3,6 @@ from logging import getLogger
 
 from django.db.models.signals import post_save, post_delete
 from django.dispatch import receiver
-from djcelery.models import CrontabSchedule, PeriodicTask
 
 from poms.integrations.models import PricingAutomatedSchedule
 from poms.integrations.tasks import download_pricing_auto
@@ -16,6 +15,8 @@ def get_pricing_automated_schedule_task_name(master_user_id):
 
 
 def pricing_auto_cancel(master_user_id):
+    from djcelery.models import PeriodicTask
+
     task_name = get_pricing_automated_schedule_task_name(master_user_id)
     _l.info('pricing auto cancel: master_user=%s, task_name=%s', master_user_id, task_name)
     PeriodicTask.objects.filter(name=task_name).delete()
@@ -23,6 +24,8 @@ def pricing_auto_cancel(master_user_id):
 
 @receiver(post_save, dispatch_uid='pricing_automated_schedule_reschedule', sender=PricingAutomatedSchedule)
 def pricing_automated_schedule_reschedule(sender, instance=None, **kwargs):
+    from djcelery.models import CrontabSchedule, PeriodicTask
+
     task_name = get_pricing_automated_schedule_task_name(instance.master_user_id)
     if instance.is_enabled and instance.cron_expr:
         _l.info('pricing automated schedule: master_user=%s, is_enabled=%s', instance.master_user_id,

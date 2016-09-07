@@ -66,8 +66,7 @@ class CounterpartySerializer(ModelWithObjectPermissionSerializer, ModelWithAttri
     class Meta:
         model = Counterparty
         fields = ['url', 'id', 'master_user', 'group', 'user_code', 'name', 'short_name', 'public_name', 'notes',
-                  'is_default',
-                  'portfolios', 'attributes', 'tags']
+                  'is_default', 'is_valid_for_all_portfolios', 'portfolios', 'attributes', 'tags']
 
 
 # ----
@@ -122,4 +121,4 @@ class ResponsibleSerializer(ModelWithObjectPermissionSerializer, ModelWithAttrib
     class Meta:
         model = Responsible
         fields = ['url', 'id', 'master_user', 'group', 'user_code', 'name', 'short_name', 'public_name', 'notes',
-                  'is_default', 'portfolios', 'attributes', 'tags']
+                  'is_default', 'is_valid_for_all_portfolios', 'portfolios', 'attributes', 'tags']

@@ -63,6 +63,7 @@ class Account(NamedModel):
                                     verbose_name=_('master user'))
     type = models.ForeignKey(AccountType, on_delete=models.PROTECT, null=True, blank=True,
                              verbose_name=_('account type'))
+    is_valid_for_all_portfolios = models.BooleanField(default=True)
 
     class Meta(NamedModel.Meta):
         verbose_name = _('account')

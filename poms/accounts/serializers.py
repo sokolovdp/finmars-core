@@ -64,4 +64,4 @@ class AccountSerializer(ModelWithObjectPermissionSerializer, ModelWithAttributes
     class Meta:
         model = Account
         fields = ['url', 'id', 'master_user', 'type', 'user_code', 'name', 'short_name', 'public_name', 'notes',
-                  'is_default', 'portfolios', 'tags', 'attributes', ]
+                  'is_default', 'is_valid_for_all_portfolios', 'portfolios', 'tags', 'attributes', ]
