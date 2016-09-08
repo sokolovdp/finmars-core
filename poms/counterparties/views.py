@@ -86,7 +86,8 @@ class CounterpartyFilterSet(FilterSet):
 
     class Meta:
         model = Counterparty
-        fields = ['user_code', 'name', 'short_name', 'is_default', 'group', 'tag', 'portfolio']
+        fields = ['user_code', 'name', 'short_name', 'is_valid_for_all_portfolios', 'is_default',
+                  'group', 'tag', 'portfolio']
 
 
 class CounterpartyViewSet(AbstractWithObjectPermissionViewSet):
@@ -125,8 +126,6 @@ class ResponsibleAttributeTypeViewSet(AbstractAttributeTypeViewSet):
 class ResponsibleClassifierFilterSet(FilterSet):
     name = CharFilter()
     attribute_type = ModelWithPermissionMultipleChoiceFilter(model=ResponsibleAttributeType)
-
-    # parent = ModelWithPermissionMultipleChoiceFilter(model=ResponsibleClassifier, master_user_path='attribute_type__master_user')
 
     class Meta:
         model = ResponsibleClassifier
@@ -174,7 +173,8 @@ class ResponsibleFilterSet(FilterSet):
 
     class Meta:
         model = Responsible
-        fields = ['user_code', 'name', 'short_name', 'is_default', 'group', 'portfolio', 'tag']
+        fields = ['user_code', 'name', 'short_name', 'is_valid_for_all_portfolios', 'is_default',
+                  'group', 'portfolio', 'tag']
 
 
 class ResponsibleViewSet(AbstractWithObjectPermissionViewSet):

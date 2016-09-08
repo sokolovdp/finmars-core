@@ -36,6 +36,7 @@ class AccountTypeViewSet(AbstractWithObjectPermissionViewSet):
     filter_class = AccountTypeFilterSet
     ordering_fields = [
         'user_code', 'name', 'short_name',
+        'tags__user_code',
     ]
     search_fields = [
         'user_code', 'name', 'short_name',

@@ -79,7 +79,8 @@ class TransactionTypeFilterSet(FilterSet):
 
     class Meta:
         model = TransactionType
-        fields = ['user_code', 'name', 'short_name', 'group', 'portfolio', 'instrument_type', 'tag']
+        fields = ['user_code', 'name', 'short_name', 'is_valid_for_all_portfolios', 'is_valid_for_all_instruments',
+                  'group', 'portfolio', 'instrument_type', 'tag']
 
 
 class TransactionTypeViewSet(AbstractWithObjectPermissionViewSet):
