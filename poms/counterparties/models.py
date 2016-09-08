@@ -21,8 +21,8 @@ class CounterpartyGroup(NamedModel):
         verbose_name = _('counterparty group')
         verbose_name_plural = _('counterparty groups')
         permissions = [
-            ('view_counterparty', 'Can view counterparty group'),
-            ('manage_counterparty', 'Can manage counterparty group'),
+            ('view_counterpartygroup', 'Can view counterparty group'),
+            ('manage_counterpartygroup', 'Can manage counterparty group'),
         ]
 
     def __str__(self):
@@ -168,8 +168,8 @@ class ResponsibleGroup(NamedModel):
         verbose_name = _('responsible group')
         verbose_name_plural = _('responsible groups')
         permissions = [
-            ('view_counterparty', 'Can view responsible group'),
-            ('manage_counterparty', 'Can manage responsible group'),
+            ('view_responsiblegroup', 'Can view responsible group'),
+            ('manage_responsiblegroup', 'Can manage responsible group'),
         ]
 
     def __str__(self):
