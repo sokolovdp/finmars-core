@@ -243,7 +243,8 @@ class TransactionFilterSet(FilterSet):
 
     class Meta:
         model = Transaction
-        fields = ['transaction_code', 'transaction_date', 'accounting_date', 'cash_date',
+        fields = ['transaction_class', 'transaction_code',
+                  'transaction_date', 'accounting_date', 'cash_date',
                   'complex_transaction', 'complex_transaction__code',
                   'complex_transaction__transaction_type',
                   'portfolio', 'instrument', 'transaction_currency', 'settlement_currency',
