@@ -569,18 +569,15 @@ class ComplexTransaction(models.Model):
 
 @python_2_unicode_compatible
 class Transaction(models.Model):
-    master_user = models.ForeignKey(MasterUser, related_name='transactions',
-                                    verbose_name=_('master user'))
+    master_user = models.ForeignKey(MasterUser, related_name='transactions', verbose_name=_('master user'))
     complex_transaction = models.ForeignKey(ComplexTransaction, on_delete=models.PROTECT, null=True, blank=True,
                                             related_name='transactions')
     complex_transaction_order = models.PositiveSmallIntegerField(default=0.)
-    transaction_code = models.IntegerField(default=0,
-                                           verbose_name=_('transaction code'))
+    transaction_code = models.IntegerField(default=0, verbose_name=_('transaction code'))
     transaction_class = models.ForeignKey(TransactionClass, on_delete=models.PROTECT,
                                           verbose_name=_("transaction class"))
 
-    portfolio = models.ForeignKey(Portfolio, on_delete=models.PROTECT,
-                                  verbose_name=_("portfolio"))
+    portfolio = models.ForeignKey(Portfolio, on_delete=models.PROTECT, verbose_name=_("portfolio"))
 
     # Position related
     instrument = models.ForeignKey(Instrument, on_delete=models.PROTECT, null=True, blank=True,
@@ -588,40 +585,29 @@ class Transaction(models.Model):
     transaction_currency = models.ForeignKey(Currency, related_name='transactions_as_instrument',
                                              on_delete=models.PROTECT, null=True, blank=True,
                                              verbose_name=_("transaction currency"))
-    position_size_with_sign = models.FloatField(null=True, blank=True,
-                                                verbose_name=_("position size with sign"))
+    position_size_with_sign = models.FloatField(default=0.0, verbose_name=_("position size with sign"))
 
     # Cash related
     settlement_currency = models.ForeignKey(Currency, related_name='transactions', on_delete=models.PROTECT,
                                             verbose_name=_("settlement currency"))
-    cash_consideration = models.FloatField(null=True, blank=True,
-                                           verbose_name=_("cash consideration"))
+    cash_consideration = models.FloatField(default=0.0, verbose_name=_("cash consideration"))
 
     # P&L related
-    principal_with_sign = models.FloatField(null=True, blank=True,
-                                            verbose_name=_("principal with sign"))
-    carry_with_sign = models.FloatField(null=True, blank=True,
-                                        verbose_name=_("carry with sign"))
-    overheads_with_sign = models.FloatField(null=True, blank=True,
-                                            verbose_name=_("overheads with sign"))
+    principal_with_sign = models.FloatField(default=0.0, verbose_name=_("principal with sign"))
+    carry_with_sign = models.FloatField(default=0.0, verbose_name=_("carry with sign"))
+    overheads_with_sign = models.FloatField(default=0.0, verbose_name=_("overheads with sign"))
 
     # accounting dates
-    transaction_date = models.DateField(editable=False, default=date_now,
-                                        verbose_name=_("transaction date"))
-    accounting_date = models.DateField(default=date_now,
-                                       verbose_name=_("accounting date"))
-    cash_date = models.DateField(default=date_now,
-                                 verbose_name=_("cash date"))
+    transaction_date = models.DateField(editable=False, default=date_now, verbose_name=_("transaction date"))
+    accounting_date = models.DateField(default=date_now, verbose_name=_("accounting date"))
+    cash_date = models.DateField(default=date_now, verbose_name=_("cash date"))
 
     account_position = models.ForeignKey(Account, related_name='account_positions', on_delete=models.PROTECT, null=True,
-                                         blank=True,
-                                         verbose_name=_("account position"))
+                                         blank=True, verbose_name=_("account position"))
     account_cash = models.ForeignKey(Account, related_name='transaction_cashs', on_delete=models.PROTECT, null=True,
-                                     blank=True,
-                                     verbose_name=_("account cash"))
+                                     blank=True, verbose_name=_("account cash"))
     account_interim = models.ForeignKey(Account, related_name='account_interims', on_delete=models.PROTECT, null=True,
-                                        blank=True,
-                                        verbose_name=_("account interim"))
+                                        blank=True, verbose_name=_("account interim"))
 
     strategy1_position = models.ForeignKey(Strategy1, null=True, blank=True, related_name='transaction_as_position1',
                                            on_delete=models.PROTECT, verbose_name=_("strategy - 1 - cash"))
@@ -636,33 +622,25 @@ class Transaction(models.Model):
     strategy3_cash = models.ForeignKey(Strategy3, null=True, blank=True, on_delete=models.PROTECT,
                                        related_name='transaction_as_cash3', verbose_name=_("strategy - 3 - position"))
 
-    reference_fx_rate = models.FloatField(null=True, blank=True,
-                                          verbose_name=_("reference fx-rate"),
+    reference_fx_rate = models.FloatField(default=0.0, verbose_name=_("reference fx-rate"),
                                           help_text=_("FX rate to convert from Settlement ccy to Instrument "
                                                       "Ccy on Accounting Date (trade date)"))
 
     # other
-    is_locked = models.BooleanField(default=False,
-                                    verbose_name=_("is locked"),
+    is_locked = models.BooleanField(default=False, verbose_name=_("is locked"),
                                     help_text=_('If checked - transaction cannot be changed'))
-    is_canceled = models.BooleanField(default=False,
-                                      verbose_name=_("is canceled"),
+    is_canceled = models.BooleanField(default=False, verbose_name=_("is canceled"),
                                       help_text=_('If checked - transaction is cancelled'))
-    factor = models.FloatField(null=True, blank=True,
-                               verbose_name=_("factor"),
+    factor = models.FloatField(default=0.0, verbose_name=_("factor"),
                                help_text=_('Multiplier (for calculations on the form)'))
-    trade_price = models.FloatField(null=True, blank=True,
-                                    verbose_name=_("trade price"),
+    trade_price = models.FloatField(default=0.0, verbose_name=_("trade price"),
                                     help_text=_('Price (for calculations on the form)'))
-    principal_amount = models.FloatField(null=True, blank=True,
-                                         verbose_name=_("principal amount"),
+    principal_amount = models.FloatField(default=0.0, verbose_name=_("principal amount"),
                                          help_text=_(
                                              'Absolute value of Principal with Sign (for calculations on the form)'))
-    carry_amount = models.FloatField(null=True, blank=True,
-                                     verbose_name=_("carry amount"),
+    carry_amount = models.FloatField(default=0.0, verbose_name=_("carry amount"),
                                      help_text=_('Absolute value of Carry with Sign (for calculations on the form)'))
-    overheads = models.FloatField(null=True, blank=True,
-                                  verbose_name=_("overheads"),
+    overheads = models.FloatField(default=0.0, verbose_name=_("overheads"),
                                   help_text=_('Absolute value of Carry with Sign (for calculations on the form)'))
 
     responsible = models.ForeignKey(Responsible, on_delete=models.PROTECT, null=True, blank=True,

@@ -79,7 +79,7 @@ INSTALLED_APPS = [
     # 'django_otp.plugins.otp_static',
     # 'two_factor',
 
-    'djcelery',
+    # 'djcelery',
     # 'rest_framework_swagger',
 ]
 

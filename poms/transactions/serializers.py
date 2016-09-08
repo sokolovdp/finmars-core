@@ -445,8 +445,8 @@ class TransactionSerializer(ModelWithAttributesSerializer):
     strategy2_cash = Strategy2Field(default=Strategy2Default())
     strategy3_position = Strategy3Field(default=Strategy3Default())
     strategy3_cash = Strategy3Field(default=Strategy3Default())
-    responsible = ResponsibleField(default=ResponsibleDefault(), required=False, allow_null=True)
-    counterparty = CounterpartyField(default=CounterpartyDefault(), required=False, allow_null=True)
+    responsible = ResponsibleField(default=ResponsibleDefault())
+    counterparty = CounterpartyField(default=CounterpartyDefault())
     attributes = TransactionAttributeSerializer(many=True, required=False, allow_null=True)
 
     class Meta:
