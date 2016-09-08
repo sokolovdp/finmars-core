@@ -14,16 +14,16 @@ from poms.users.permissions import SuperUserOrReadOnly
 
 
 class CurrencyFilterSet(FilterSet):
-    isin = CharFilter()
     user_code = CharFilter()
     name = CharFilter()
     short_name = CharFilter()
+    reference_for_pricing = CharFilter()
     is_default = IsDefaultFilter(source='currency')
     tag = TagFilter(model=Currency)
 
     class Meta:
         model = Currency
-        fields = ['isin', 'user_code', 'name', 'short_name', 'is_default', 'tag']
+        fields = ['user_code', 'name', 'short_name', 'is_default', 'reference_for_pricing', 'tag']
 
 
 class CurrencyViewSet(AbstractModelViewSet):
@@ -37,8 +37,12 @@ class CurrencyViewSet(AbstractModelViewSet):
         TagFilterBackend,
     ]
     filter_class = CurrencyFilterSet
-    ordering_fields = ['isin', 'user_code', 'name', 'short_name']
-    search_fields = ['isin', 'user_code', 'name', 'short_name']
+    ordering_fields = [
+        'user_code', 'name', 'short_name', 'reference_for_pricing',
+    ]
+    search_fields = [
+        'user_code', 'name', 'short_name', 'reference_for_pricing'
+    ]
 
 
 class CurrencyHistoryFilterSet(FilterSet):
@@ -60,5 +64,8 @@ class CurrencyHistoryViewSet(AbstractModelViewSet):
         OwnerByCurrencyFilter,
     ]
     filter_class = CurrencyHistoryFilterSet
-    ordering_fields = ['date', ]
-    search_fields = ['currency__user_code', 'currency__name', 'currency__short_name']
+    ordering_fields = [
+        'date',
+        'currency__user_code', 'currency__name', 'currency__short_name',
+    ]
+    search_fields = []

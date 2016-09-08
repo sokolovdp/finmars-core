@@ -32,7 +32,12 @@ class Strategy1GroupViewSet(AbstractWithObjectPermissionViewSet):
         TagFilterBackend,
     ]
     filter_class = Strategy1GroupFilterSet
-    search_fields = ['user_code', 'name', 'short_name', ]
+    ordering_fields = [
+        'user_code', 'name', 'short_name'
+    ]
+    search_fields = [
+        'user_code', 'name', 'short_name',
+    ]
 
 
 class Strategy1SubgroupFilterSet(FilterSet):
@@ -56,7 +61,13 @@ class Strategy1SubgroupViewSet(AbstractWithObjectPermissionViewSet):
         TagFilterBackend,
     ]
     filter_class = Strategy1SubgroupFilterSet
-    search_fields = ['user_code', 'name', 'short_name', ]
+    ordering_fields = [
+        'user_code', 'name', 'short_name',
+        'group__user_code', 'group__name', 'group__short_name',
+    ]
+    search_fields = [
+        'user_code', 'name', 'short_name',
+    ]
 
 
 class Strategy1FilterSet(FilterSet):
@@ -81,7 +92,14 @@ class Strategy1ViewSet(AbstractWithObjectPermissionViewSet):
         TagFilterBackend,
     ]
     filter_class = Strategy1FilterSet
-    search_fields = ['user_code', 'name', 'short_name', ]
+    ordering_fields = [
+        'user_code', 'name', 'short_name',
+        'subgroup__user_code', 'subgroup__name', 'subgroup__short_name',
+        'subgroup__group__user_code', 'subgroup__group__name', 'subgroup__group__short_name',
+    ]
+    search_fields = [
+        'user_code', 'name', 'short_name',
+    ]
 
 
 # 2

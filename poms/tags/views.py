@@ -40,5 +40,9 @@ class TagViewSet(AbstractWithObjectPermissionViewSet):
         OwnerByMasterUserFilter,
     ]
     filter_class = TagFilterSet
-    ordering_fields = ['user_code', 'name', 'short_name']
-    search_fields = ['user_code', 'name', 'short_name']
+    ordering_fields = [
+        'user_code', 'name', 'short_name'
+    ]
+    search_fields = [
+        'user_code', 'name', 'short_name'
+    ]

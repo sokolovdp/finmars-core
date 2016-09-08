@@ -75,7 +75,7 @@ class InstrumentTypeFilterSet(FilterSet):
 
     class Meta:
         model = InstrumentType
-        fields = ['user_code', 'name', 'short_name', 'is_default', 'tag']
+        fields = ['user_code', 'name', 'short_name', 'is_default', 'instrument_class', 'tag']
 
 
 class InstrumentTypeViewSet(AbstractWithObjectPermissionViewSet):
@@ -124,19 +124,20 @@ class InstrumentClassifierViewSet(AbstractClassifierViewSet):
 
 
 class InstrumentFilterSet(FilterSet):
-    isin = CharFilter()
     user_code = CharFilter()
     name = CharFilter()
     short_name = CharFilter()
     user_text_1 = CharFilter()
     user_text_2 = CharFilter()
     user_text_3 = CharFilter()
+    reference_for_pricing = CharFilter()
     instrument_type = ModelWithPermissionMultipleChoiceFilter(model=InstrumentType)
     tag = TagFilter(model=Instrument)
 
     class Meta:
         model = Instrument
-        fields = ['isin', 'user_code', 'name', 'short_name', 'user_text_1', 'user_text_2', 'user_text_3', 'tag']
+        fields = ['user_code', 'name', 'short_name', 'user_text_1', 'user_text_2', 'user_text_3',
+                  'reference_for_pricing', 'tag']
 
 
 class InstrumentViewSet(AbstractWithObjectPermissionViewSet):
@@ -150,10 +151,12 @@ class InstrumentViewSet(AbstractWithObjectPermissionViewSet):
         TagFilterBackend,
     ]
     filter_class = InstrumentFilterSet
-    ordering_fields = ['isin', 'user_code', 'name', 'short_name',
-                       'instrument_type__user_code', 'instrument_type__name', 'instrument_type__short_name']
-    search_fields = ['isin', 'user_code', 'name', 'short_name',
-                     'instrument_type__user_code', 'instrument_type__name', 'instrument_type__short_name']
+    ordering_fields = [
+        'user_code', 'name', 'short_name', 'reference_for_pricing',
+        'instrument_type__user_code', 'instrument_type__name', 'instrument_type__short_name']
+    search_fields = [
+        'user_code', 'name', 'short_name', 'reference_for_pricing',
+    ]
 
 
 class PriceHistoryFilterSet(FilterSet):
@@ -176,8 +179,13 @@ class PriceHistoryViewSet(AbstractModelViewSet):
         PriceHistoryObjectPermissionFilter,
     ]
     filter_class = PriceHistoryFilterSet
-    ordering_fields = ['-date']
-    search_fields = ['instrument__user_code', 'instrument__name', 'instrument__short_name', ]
+    ordering_fields = [
+        'date',
+        'instrument__user_code', 'instrument__name', 'instrument__short_name',
+    ]
+    search_fields = [
+        'instrument__user_code', 'instrument__name', 'instrument__short_name',
+    ]
 
 
 class EventScheduleConfigViewSet(AbstractModelViewSet):
@@ -196,4 +204,3 @@ class EventScheduleConfigViewSet(AbstractModelViewSet):
         except ObjectDoesNotExist:
             obj = EventScheduleConfig.objects.create(master_user=self.request.user.master_user)
             return obj
-

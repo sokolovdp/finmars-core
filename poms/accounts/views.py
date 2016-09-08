@@ -27,15 +27,19 @@ class AccountTypeFilterSet(FilterSet):
 
 
 class AccountTypeViewSet(AbstractWithObjectPermissionViewSet):
-    queryset = AccountType.objects.select_related('master_user')
+    queryset = AccountType.objects.prefetch_related('master_user')
     serializer_class = AccountTypeSerializer
     filter_backends = AbstractWithObjectPermissionViewSet.filter_backends + [
         OwnerByMasterUserFilter,
         TagFilterBackend,
     ]
     filter_class = AccountTypeFilterSet
-    ordering_fields = ['user_code', 'name', 'short_name', ]
-    search_fields = ['user_code', 'name', 'short_name', ]
+    ordering_fields = [
+        'user_code', 'name', 'short_name',
+    ]
+    search_fields = [
+        'user_code', 'name', 'short_name',
+    ]
 
 
 class AccountAttributeTypeFilterSet(FilterSet):
@@ -57,6 +61,7 @@ class AccountAttributeTypeViewSet(AbstractAttributeTypeViewSet):
 class AccountClassifierFilterSet(FilterSet):
     name = CharFilter()
     attribute_type = ModelWithPermissionMultipleChoiceFilter(model=AccountAttributeType)
+
     # parent = ModelWithPermissionMultipleChoiceFilter(model=AccountClassifier, master_user_path='attribute_type__master_user')
 
     class Meta:
@@ -81,7 +86,8 @@ class AccountFilterSet(FilterSet):
 
     class Meta:
         model = Account
-        fields = ['user_code', 'name', 'short_name', 'is_default', 'type', 'portfolio', 'tag']
+        fields = ['user_code', 'name', 'short_name', 'is_valid_for_all_portfolios', 'is_default', 'type', 'portfolio',
+                  'tag']
 
 
 class AccountViewSet(AbstractWithObjectPermissionViewSet):
@@ -102,10 +108,9 @@ class AccountViewSet(AbstractWithObjectPermissionViewSet):
     ]
     filter_class = AccountFilterSet
     ordering_fields = [
-        'user_code', 'name', 'short_name',
+        'user_code', 'name', 'short_name', 'is_valid_for_all_portfolios',
         'type__user_code', 'type__name', 'type__short_name',
     ]
     search_fields = [
         'user_code', 'name', 'short_name',
-        'type__user_code', 'type__name', 'type__short_name',
     ]

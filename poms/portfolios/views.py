@@ -89,5 +89,9 @@ class PortfolioViewSet(AbstractWithObjectPermissionViewSet):
         AttributePrefetchFilter,
     ]
     filter_class = PortfolioFilterSet
-    ordering_fields = ['user_code', 'name', 'short_name']
-    search_fields = ['user_code', 'name', 'short_name']
+    ordering_fields = [
+        'user_code', 'name', 'short_name'
+    ]
+    search_fields = [
+        'user_code', 'name', 'short_name'
+    ]

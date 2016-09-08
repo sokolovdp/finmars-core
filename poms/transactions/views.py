@@ -60,8 +60,12 @@ class TransactionTypeGroupViewSet(AbstractWithObjectPermissionViewSet):
         OwnerByMasterUserFilter,
     ]
     filter_class = TransactionTypeGroupFilterSet
-    ordering_fields = ['user_code', 'name', 'short_name']
-    search_fields = ['user_code', 'name', 'short_name']
+    ordering_fields = [
+        'user_code', 'name', 'short_name'
+    ]
+    search_fields = [
+        'user_code', 'name', 'short_name'
+    ]
 
 
 class TransactionTypeFilterSet(FilterSet):
@@ -100,8 +104,13 @@ class TransactionTypeViewSet(AbstractWithObjectPermissionViewSet):
         TagFilterBackend,
     ]
     filter_class = TransactionTypeFilterSet
-    ordering_fields = ['user_code', 'name', 'short_name', 'group__user_code', 'group__name', 'group__short_name']
-    search_fields = ['user_code', 'name', 'short_name', 'group__user_code', 'group__name', 'group__short_name']
+    ordering_fields = [
+        'user_code', 'name', 'short_name',
+        'group__user_code', 'group__name', 'group__short_name'
+    ]
+    search_fields = [
+        'user_code', 'name', 'short_name',
+    ]
 
     def get_queryset(self):
         queryset = super(TransactionTypeViewSet, self).get_queryset()
