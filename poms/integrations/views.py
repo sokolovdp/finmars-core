@@ -2,6 +2,7 @@ from __future__ import unicode_literals, print_function
 
 import django_filters
 from django.core.exceptions import ObjectDoesNotExist
+from rest_framework.exceptions import MethodNotAllowed
 from rest_framework.filters import FilterSet
 from rest_framework.response import Response
 
@@ -245,6 +246,8 @@ class PricingAutomatedScheduleViewSet(AbstractModelViewSet):
             obj = PricingAutomatedSchedule.objects.create(master_user=self.request.user.master_user)
             return obj
 
+    def destroy(self, request, *args, **kwargs):
+        raise MethodNotAllowed(method=request.method)
 
 
 class ImportFileInstrumentViewSet(AbstractViewSet):
