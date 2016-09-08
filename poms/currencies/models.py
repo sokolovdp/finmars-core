@@ -31,7 +31,7 @@ class Currency(NamedModel):
         ]
 
     def __str__(self):
-        return self.name
+        return self.user_code
 
     @property
     def is_system(self):

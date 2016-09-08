@@ -8,7 +8,7 @@ from django.core.exceptions import ValidationError
 from django.core.serializers.json import DjangoJSONEncoder
 from django.db import models
 from django.utils.encoding import python_2_unicode_compatible
-from django.utils.translation import ugettext_lazy as _
+from django.utils.translation import ugettext_lazy as _, ugettext
 
 from poms.common.models import TimeStampedModel, AbstractClassModel
 from poms.instruments.models import Instrument, InstrumentAttribute
@@ -73,7 +73,7 @@ class ImportConfig(models.Model):
         ]
 
     def __str__(self):
-        return '%s' % self.master_user
+        return '%s' % self.provider.name
 
     # def delete(self, using=None, keep_parents=False):
     #     if self.p12cert:
@@ -345,7 +345,7 @@ class InstrumentAttributeValueMapping(AbstractMapping):
     value_string = models.CharField(max_length=255, null=True, blank=True, verbose_name=_('value (String)'))
     value_float = models.FloatField(null=True, blank=True, verbose_name=_('value (Float)'))
     value_date = models.DateField(null=True, blank=True, verbose_name=_('value (Date)'))
-    classifier = models.ForeignKey('instruments.InstrumentClassifier', on_delete=models.PROTECT, null=True, blank=True,
+    classifier = models.ForeignKey('instruments.InstrumentClassifier', on_delete=models.SET_NULL, null=True, blank=True,
                                    verbose_name=_('classifier'))
 
     class Meta:
@@ -423,7 +423,7 @@ class Task(TimeStampedModel):
         ordering = ('-created',)
 
     def __str__(self):
-        return '%s:%s' % (self.id, self.status)
+        return '%s / %s' % (self.id, self.status)
 
     def add_celery_task_id(self, celery_task_id):
         if not celery_task_id:
@@ -516,7 +516,7 @@ class PricingAutomatedSchedule(models.Model):
         verbose_name_plural = _('pricing automated schedules')
 
     def __str__(self):
-        return 'pricing automated schedule'
+        return ugettext('pricing automated schedule')
 
     def to_crontab(self):
         if self.is_enabled and self.cron_expr:

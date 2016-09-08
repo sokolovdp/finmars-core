@@ -717,7 +717,7 @@ class TransactionAttributeTypeGroupObjectPermission(AbstractGroupObjectPermissio
 
 
 class TransactionClassifier(AbstractClassifier):
-    attribute_type = models.ForeignKey(TransactionAttributeType, null=True, blank=True, related_name='classifiers',
+    attribute_type = models.ForeignKey(TransactionAttributeType, related_name='classifiers',
                                        verbose_name=_('attribute type'))
     parent = TreeForeignKey('self', null=True, blank=True, related_name='children', db_index=True,
                             verbose_name=_('parent'))
@@ -739,11 +739,11 @@ class TransactionAttributeTypeOption(AbstractAttributeTypeOption):
 
 
 class TransactionAttribute(AbstractAttribute):
-    attribute_type = models.ForeignKey(TransactionAttributeType, related_name='attributes', on_delete=models.PROTECT,
+    attribute_type = models.ForeignKey(TransactionAttributeType, related_name='attributes',
                                        verbose_name=_("attribute type"))
     content_object = models.ForeignKey(Transaction, related_name='attributes',
                                        verbose_name=_("content object"))
-    classifier = models.ForeignKey(TransactionClassifier, on_delete=models.PROTECT, null=True, blank=True,
+    classifier = models.ForeignKey(TransactionClassifier, on_delete=models.SET_NULL, null=True, blank=True,
                                    verbose_name=_('classifier'))
 
     class Meta(AbstractAttribute.Meta):

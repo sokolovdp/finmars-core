@@ -26,7 +26,7 @@ class CounterpartyGroup(NamedModel):
         ]
 
     def __str__(self):
-        return self.name
+        return self.user_code
 
     @property
     def is_default(self):
@@ -66,7 +66,7 @@ class Counterparty(NamedModel):
         ]
 
     def __str__(self):
-        return self.name
+        return self.user_code
 
     @property
     def is_default(self):
@@ -120,7 +120,7 @@ class CounterpartyAttributeTypeGroupObjectPermission(AbstractGroupObjectPermissi
 
 
 class CounterpartyClassifier(AbstractClassifier):
-    attribute_type = models.ForeignKey(CounterpartyAttributeType, null=True, blank=True, related_name='classifiers',
+    attribute_type = models.ForeignKey(CounterpartyAttributeType, related_name='classifiers',
                                        verbose_name=_('attribute type'))
     parent = TreeForeignKey('self', related_name='children', null=True, blank=True, db_index=True,
                             verbose_name=_('parent'))
@@ -145,11 +145,11 @@ class CounterpartyAttributeTypeOption(AbstractAttributeTypeOption):
 
 
 class CounterpartyAttribute(AbstractAttribute):
-    attribute_type = models.ForeignKey(CounterpartyAttributeType, related_name='attributes', on_delete=models.PROTECT,
+    attribute_type = models.ForeignKey(CounterpartyAttributeType, related_name='attributes',
                                        verbose_name=_('attribute type'))
     content_object = models.ForeignKey(Counterparty, related_name='attributes',
                                        verbose_name=_('content object'))
-    classifier = models.ForeignKey(CounterpartyClassifier, on_delete=models.PROTECT, null=True, blank=True,
+    classifier = models.ForeignKey(CounterpartyClassifier, on_delete=models.SET_NULL, null=True, blank=True,
                                    verbose_name=_('classifier'))
 
     class Meta(AbstractAttribute.Meta):
@@ -173,7 +173,7 @@ class ResponsibleGroup(NamedModel):
         ]
 
     def __str__(self):
-        return self.name
+        return self.user_code
 
     @property
     def is_default(self):
@@ -213,7 +213,7 @@ class Responsible(NamedModel):
         ]
 
     def __str__(self):
-        return self.name
+        return self.user_code
 
     @property
     def is_default(self):
@@ -267,7 +267,7 @@ class ResponsibleAttributeTypeGroupObjectPermission(AbstractGroupObjectPermissio
 
 
 class ResponsibleClassifier(AbstractClassifier):
-    attribute_type = models.ForeignKey(ResponsibleAttributeType, null=True, blank=True, related_name='classifiers',
+    attribute_type = models.ForeignKey(ResponsibleAttributeType, related_name='classifiers',
                                        verbose_name=_('attribute type'))
     parent = TreeForeignKey('self', related_name='children', null=True, blank=True, db_index=True,
                             verbose_name=_('parent'))
@@ -279,7 +279,7 @@ class ResponsibleClassifier(AbstractClassifier):
 
 class ResponsibleAttributeTypeOption(AbstractAttributeTypeOption):
     member = models.ForeignKey(Member, related_name='responsible_attribute_type_options',
-                               verbose_name=_('meber'))
+                               verbose_name=_('member'))
     attribute_type = models.ForeignKey(ResponsibleAttributeType, related_name='options',
                                        verbose_name=_('attribute type'))
 
@@ -292,11 +292,11 @@ class ResponsibleAttributeTypeOption(AbstractAttributeTypeOption):
 
 
 class ResponsibleAttribute(AbstractAttribute):
-    attribute_type = models.ForeignKey(ResponsibleAttributeType, related_name='attributes', on_delete=models.PROTECT,
+    attribute_type = models.ForeignKey(ResponsibleAttributeType, related_name='attributes',
                                        verbose_name=_('attribute type'))
     content_object = models.ForeignKey(Responsible, related_name='attributes',
                                        verbose_name=_('content object'))
-    classifier = models.ForeignKey(ResponsibleClassifier, on_delete=models.PROTECT, null=True, blank=True,
+    classifier = models.ForeignKey(ResponsibleClassifier, on_delete=models.SET_NULL, null=True, blank=True,
                                    verbose_name=_('classifier'))
 
     class Meta(AbstractAttribute.Meta):

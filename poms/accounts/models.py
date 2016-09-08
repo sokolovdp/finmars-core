@@ -32,7 +32,7 @@ class AccountType(NamedModel):
         ]
 
     def __str__(self):
-        return self.name
+        return self.user_code
 
     @property
     def is_default(self):
@@ -74,7 +74,7 @@ class Account(NamedModel):
         ]
 
     def __str__(self):
-        return self.name
+        return self.user_code
 
     @property
     def is_default(self):
@@ -136,21 +136,10 @@ class AccountAttributeTypeGroupObjectPermission(AbstractGroupObjectPermission):
 
 
 class AccountClassifier(AbstractClassifier):
-    attribute_type = models.ForeignKey(
-        AccountAttributeType,
-        null=True,
-        blank=True,
-        related_name='classifiers',
-        verbose_name=_('attribute type')
-    )
-    parent = TreeForeignKey(
-        'self',
-        null=True,
-        blank=True,
-        related_name='children',
-        db_index=True,
-        verbose_name=_('parent')
-    )
+    attribute_type = models.ForeignKey(AccountAttributeType, related_name='classifiers',
+                                       verbose_name=_('attribute type'))
+    parent = TreeForeignKey('self', null=True, blank=True, related_name='children', db_index=True,
+                            verbose_name=_('parent'))
 
     class Meta(AbstractClassifier.Meta):
         verbose_name = _('account classifier')
@@ -169,11 +158,11 @@ class AccountAttributeTypeOption(AbstractAttributeTypeOption):
 
 
 class AccountAttribute(AbstractAttribute):
-    attribute_type = models.ForeignKey(AccountAttributeType, on_delete=models.PROTECT, related_name='attributes',
+    attribute_type = models.ForeignKey(AccountAttributeType, related_name='attributes',
                                        verbose_name=_('attribute type'))
     content_object = models.ForeignKey(Account, related_name='attributes',
                                        verbose_name=_('content object'))
-    classifier = models.ForeignKey(AccountClassifier, on_delete=models.PROTECT, null=True, blank=True,
+    classifier = models.ForeignKey(AccountClassifier, on_delete=models.SET_NULL, null=True, blank=True,
                                    verbose_name=_('classifier'))
 
     class Meta(AbstractAttribute.Meta):

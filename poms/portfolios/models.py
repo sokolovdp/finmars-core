@@ -30,7 +30,7 @@ class Portfolio(NamedModel):
         )
 
     def __str__(self):
-        return self.name
+        return self.user_code
 
     @property
     def is_default(self):
@@ -80,20 +80,10 @@ class PortfolioAttributeTypeGroupObjectPermission(AbstractGroupObjectPermission)
 
 
 class PortfolioClassifier(AbstractClassifier):
-    attribute_type = models.ForeignKey(
-        PortfolioAttributeType,
-        null=True,
-        blank=True,
-        related_name='classifiers'
-    )
-    parent = TreeForeignKey(
-        'self',
-        null=True,
-        blank=True,
-        related_name='children',
-        db_index=True,
-        verbose_name=_('parent')
-    )
+    attribute_type = models.ForeignKey(PortfolioAttributeType, related_name='classifiers',
+                                       verbose_name=_('attribute type'))
+    parent = TreeForeignKey('self', null=True, blank=True, related_name='children', db_index=True,
+                            verbose_name=_('parent'))
 
     class Meta(AbstractClassifier.Meta):
         verbose_name = _('portfolio classifier')
@@ -110,9 +100,10 @@ class PortfolioAttributeTypeOption(AbstractAttributeTypeOption):
 
 
 class PortfolioAttribute(AbstractAttribute):
-    attribute_type = models.ForeignKey(PortfolioAttributeType, related_name='attributes', on_delete=models.PROTECT)
+    attribute_type = models.ForeignKey(PortfolioAttributeType, related_name='attributes',
+                                       verbose_name=_('attribute type'))
     content_object = models.ForeignKey(Portfolio, related_name='attributes')
-    classifier = models.ForeignKey(PortfolioClassifier, on_delete=models.PROTECT, null=True, blank=True)
+    classifier = models.ForeignKey(PortfolioClassifier, on_delete=models.SET_NULL, null=True, blank=True)
 
     class Meta(AbstractAttribute.Meta):
         verbose_name = _('portfolio attribute')

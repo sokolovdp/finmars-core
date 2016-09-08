@@ -7,7 +7,7 @@ from dateutil import relativedelta, rrule
 from django.core import serializers
 from django.db import models
 from django.utils.encoding import python_2_unicode_compatible
-from django.utils.translation import ugettext_lazy as _
+from django.utils.translation import ugettext_lazy as _, ugettext
 from mptt.fields import TreeForeignKey
 from mptt.models import MPTTModel
 
@@ -343,7 +343,7 @@ class InstrumentType(NamedModel):
         ]
 
     def __str__(self):
-        return self.name
+        return self.user_code
 
     @property
     def is_default(self):
@@ -409,7 +409,7 @@ class Instrument(NamedModel):
         ]
 
     def __str__(self):
-        return self.name
+        return self.user_code
 
     def rebuild_event_schedules(self):
         from poms.transactions.models import EventClass
@@ -685,7 +685,7 @@ class InstrumentAttributeTypeGroupObjectPermission(AbstractGroupObjectPermission
 
 @python_2_unicode_compatible
 class InstrumentClassifier(AbstractClassifier):
-    attribute_type = models.ForeignKey(InstrumentAttributeType, null=True, blank=True, related_name='classifiers',
+    attribute_type = models.ForeignKey(InstrumentAttributeType, related_name='classifiers',
                                        verbose_name=_('attribute type'))
     parent = TreeForeignKey('self', null=True, blank=True, related_name='children', db_index=True,
                             verbose_name=_('parent'))
@@ -707,10 +707,10 @@ class InstrumentAttributeTypeOption(AbstractAttributeTypeOption):
 
 
 class InstrumentAttribute(AbstractAttribute):
-    attribute_type = models.ForeignKey(InstrumentAttributeType, related_name='attributes', on_delete=models.PROTECT,
+    attribute_type = models.ForeignKey(InstrumentAttributeType, related_name='attributes',
                                        verbose_name=_('attribute type'))
     content_object = models.ForeignKey(Instrument, related_name='attributes', verbose_name=_('content object'))
-    classifier = models.ForeignKey(InstrumentClassifier, on_delete=models.PROTECT, null=True, blank=True,
+    classifier = models.ForeignKey(InstrumentClassifier, on_delete=models.SET_NULL, null=True, blank=True,
                                    verbose_name=_('classifier'))
 
     class Meta(AbstractAttribute.Meta):
@@ -734,7 +734,7 @@ class ManualPricingFormula(models.Model):
         ]
 
     def __str__(self):
-        return '%s' % (self.id,)
+        return self.expr
 
 
 @python_2_unicode_compatible
@@ -799,7 +799,7 @@ class AccrualCalculationSchedule(models.Model):
         verbose_name_plural = _('accrual calculation schedules')
 
     def __str__(self):
-        return '%s' % (self.id,)
+        return '%s,%s' % (self.instrument_id, self.accrual_start_date)
 
 
 @python_2_unicode_compatible
@@ -813,7 +813,7 @@ class InstrumentFactorSchedule(models.Model):
         verbose_name_plural = _('instrument factor schedules')
 
     def __str__(self):
-        return '%s' % (self.id,)
+        return '%s,%s' % (self.instrument_id, self.effective_date)
 
 
 class EventSchedule(models.Model):
@@ -895,4 +895,4 @@ class EventScheduleConfig(models.Model):
         verbose_name_plural = _('event schedule configs')
 
     def __str__(self):
-        return 'event schedule config'
+        return ugettext('event schedule config')

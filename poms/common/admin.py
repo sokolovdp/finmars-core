@@ -1,3 +1,4 @@
+from django.contrib import admin
 from mptt.admin import MPTTModelAdmin
 
 from poms.audit.admin import HistoricalAdmin
@@ -12,16 +13,16 @@ class TreeModelAdmin(MPTTModelAdmin):
     # formatted_name.short_description = _('name')
 
 
-class ClassifierAdmin(HistoricalAdmin, TreeModelAdmin):
+class ClassifierAdmin(HistoricalAdmin, admin.ModelAdmin):
     # list_display = ['id', 'master_user', 'formatted_name', 'parent', ]
     # list_select_related = ['master_user', 'parent']
     # raw_id_fields = ['master_user', 'parent']
     # fields = ['master_user', 'parent', 'user_code', 'name', 'short_name', 'notes']
 
-    list_display = ['id', 'master_user', 'attribute_type', 'name', 'parent', ]
+    list_display = ['id', 'master_user', 'attribute_type', 'parent', 'name', ]
     list_select_related = ['attribute_type', 'attribute_type__master_user', 'parent']
     raw_id_fields = ['attribute_type', 'parent']
-    search_fields = ['attribute_type__name']
+    search_fields = ['attribute_type__name', 'parent__name']
 
     def master_user(self, obj):
         return obj.attribute_type.master_user
