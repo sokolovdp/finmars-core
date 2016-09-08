@@ -26,7 +26,7 @@ class MasterUserManager(models.Manager):
         from poms.accounts.models import AccountType, Account
         from poms.counterparties.models import Counterparty, CounterpartyGroup, Responsible, ResponsibleGroup
         from poms.portfolios.models import Portfolio
-        from poms.instruments.models import InstrumentClass, InstrumentType
+        from poms.instruments.models import InstrumentClass, InstrumentType, EventScheduleConfig
         from poms.strategies.models import Strategy1Group, Strategy1Subgroup, Strategy1, Strategy2Group, \
             Strategy2Subgroup, Strategy2, Strategy3Group, Strategy3Subgroup, Strategy3
         from poms.chats.models import ThreadGroup
@@ -34,6 +34,8 @@ class MasterUserManager(models.Manager):
 
         obj = MasterUser(**kwargs)
         obj.save()
+
+        EventScheduleConfig.objects.create(master_user=obj)
 
         ccy = Currency.objects.create(master_user=obj, name=settings.CURRENCY_CODE)
 
