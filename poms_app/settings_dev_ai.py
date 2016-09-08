@@ -6,6 +6,11 @@ import env_ai
 # noinspection PyUnresolvedReferences
 from .settings import *
 
+INSTALLED_APPS += [
+    'redisboard',
+    # 'debug_toolbar',
+]
+
 LOGGING['formatters']['verbose']['format'] = '[%(levelname)1.1s %(asctime)s %(name)s %(module)s:%(lineno)d] %(message)s'
 # LOGGING['loggers']['django.db'] = {'level': 'DEBUG'}
 LOGGING['loggers']['poms']['level'] = 'DEBUG'

@@ -83,15 +83,6 @@ INSTALLED_APPS = [
     # 'rest_framework_swagger',
 ]
 
-# if DEBUG:
-#     INSTALLED_APPS += ['debug_toolbar', ]
-
-# if DEV:
-#     # Not worjed in django 1.10.*
-#     INSTALLED_APPS += [
-#         'redisboard',
-#     ]
-
 MIDDLEWARE_CLASSES = [
     'poms.common.middleware.CommonMiddleware',
     # 'django.middleware.cache.UpdateCacheMiddleware',
