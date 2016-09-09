@@ -3,7 +3,7 @@ from __future__ import unicode_literals, print_function
 from django import forms
 from django.conf import settings
 from django.contrib import admin
-from django.core.urlresolvers import reverse, reverse_lazy
+from django.core.urlresolvers import reverse_lazy
 from django.utils.html import escape
 from django.utils.translation import ugettext_lazy as _
 
@@ -200,7 +200,7 @@ admin.site.register(InstrumentAttributeValueMapping, InstrumentAttributeValueMap
 
 class TaskAdmin(admin.ModelAdmin):
     model = Task
-    list_display = ['__str__', 'parent', 'created', 'master_user', 'member', 'provider', 'action', 'response_id']
+    list_display = ['__str__', 'parent', 'created', 'status', 'master_user', 'member', 'provider', 'action', 'response_id']
     list_select_related = ['parent', 'master_user', 'member', 'provider']
     raw_id_fields = ['master_user', 'member', 'parent']
     search_fields = ['response_id', ]
@@ -226,22 +226,22 @@ admin.site.register(Task, TaskAdmin)
 
 class PricingAutomatedScheduleAdmin(admin.ModelAdmin):
     model = PricingAutomatedSchedule
-    list_display = ['id', 'master_user', 'is_enabled', 'cron_expr', 'latest_running', 'latest_task_url']
-    list_select_related = ['master_user', 'latest_task']
+    list_display = ['id', 'master_user', 'is_enabled', 'cron_expr', 'last_run_at', 'next_run_at', 'last_run_task_url']
+    list_select_related = ['master_user', ]
+    list_filter = ['is_enabled', 'last_run_at', 'next_run_at']
+    date_hierarchy = 'next_run_at'
     raw_id_fields = ['master_user', ]
-    readonly_fields = ['latest_running', 'latest_task']
 
-    def latest_task_url(self, obj):
-        task = obj.latest_task
-        if task:
-            return '<a href="%s">%s</a>' % (
-                reverse_lazy("admin:integrations_task_change", args=(task.id,)),
-                escape(task.id)
-            )
+    # readonly_fields = ['latest_running', 'latest_task']
+
+    def last_run_task_url(self, obj):
+        t = obj.last_run_task
+        if t:
+            return '<a href="%s">%s</a>' % (reverse_lazy("admin:integrations_task_change", args=(t.id,)), escape(t.id))
         return None
 
-    latest_task_url.allow_tags = True
-    latest_task_url.short_description = _('latest task')
+    last_run_task_url.allow_tags = True
+    last_run_task_url.short_description = _('last run task')
 
 
 admin.site.register(PricingAutomatedSchedule, PricingAutomatedScheduleAdmin)

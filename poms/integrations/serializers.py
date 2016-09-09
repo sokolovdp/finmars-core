@@ -293,15 +293,9 @@ class PricingAutomatedScheduleSerializer(serializers.ModelSerializer):
         fields = [
             'url', 'id', 'master_user',
             'is_enabled', 'cron_expr', 'balance_day', 'load_days', 'fill_days', 'override_existed',
-            'latest_running', 'latest_task'
+            'last_run_at', 'next_run_at', 'last_run_task',
         ]
-        read_only_fields = ['latest_running', 'latest_task']
-
-    def get_is_yesterday(self, obj):
-        if obj.action == Task.ACTION_PRICING:
-            options = obj.options_object or {}
-            return options.get('is_yesterday', None)
-        return None
+        read_only_fields = ['last_run_at', 'next_run_at', 'last_run_task']
 
 
 class ImportFileInstrumentSerializer(serializers.Serializer):

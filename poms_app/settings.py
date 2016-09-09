@@ -41,13 +41,10 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'django.contrib.humanize',
+    'django.contrib.admin',
+    'django.contrib.admindocs',
     'rest_framework',
-
-    # 'kombu.transport.django',
-    # 'djcelery',
-
     'mptt',
-    # 'reversion',  # really not used
 
     'poms.http_sessions',
     'poms.users',
@@ -69,9 +66,6 @@ INSTALLED_APPS = [
     'poms.reports',
     'poms.api',
 
-    'django.contrib.admin',
-    'django.contrib.admindocs',
-
     # 'django_otp',
     # 'django_otp.plugins.otp_hotp',
     # 'django_otp.plugins.otp_totp',
@@ -79,7 +73,7 @@ INSTALLED_APPS = [
     # 'django_otp.plugins.otp_static',
     # 'two_factor',
 
-    'djcelery',
+    # 'djcelery',
     # 'rest_framework_swagger',
 ]
 
@@ -447,7 +441,6 @@ MANAGERS = [
 ]
 EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
 
-
 # MESSAGE_STORAGE = 'poms.notifications.message_storage.FallbackStorage'
 
 GEOIP_PATH = os.path.join(BASE_DIR, 'data')
@@ -462,7 +455,7 @@ MEDIA_SERVE = True
 
 
 BROKER_URL = 'redis://%s/1' % REDIS_HOST
-# CELERY_RESULT_BACKEND = 'redis://%s/1' % REDIS_HOST
+CELERY_RESULT_BACKEND = 'redis://%s/1?new_join=1' % REDIS_HOST
 
 CELERY_ENABLE_UTC = True
 CELERY_TIMEZONE = 'UTC'
@@ -470,8 +463,7 @@ CELERY_ACCEPT_CONTENT = ['json']
 CELERY_TASK_SERIALIZER = 'json'
 CELERY_RESULT_SERIALIZER = 'json'
 CELERYD_CONCURRENCY = 1
-# CELERYD_TASK_TIME_LIMIT = 1
-# CELERYD_HIJACK_ROOT_LOGGER = False
+CELERY_TASK_RESULT_EXPIRES = 3600
 CELERY_REDIRECT_STDOUTS = False
 CELERYD_LOG_COLOR = False
 CELERYD_LOG_FORMAT = '[%(levelname)1.1s %(asctime)s %(process)d:%(thread)d %(name)s %(module)s:%(lineno)d] %(message)s'
@@ -480,21 +472,17 @@ CELERY_TRACK_STARTED = True
 CELERY_SEND_EVENTS = True
 CELERY_SEND_TASK_SENT_EVENT = True
 
-CELERYBEAT_SCHEDULER = 'djcelery.schedulers.DatabaseScheduler'
-CELERY_RESULT_BACKEND = 'djcelery.backends.database:DatabaseBackend'
+# CELERYBEAT_SCHEDULER = 'djcelery.schedulers.DatabaseScheduler'
+# CELERY_RESULT_BACKEND = 'djcelery.backends.database:DatabaseBackend'
 # CELERY_IGNORE_RESULT = False
-CELERY_STORE_ERRORS_EVEN_IF_IGNORED = True
-# if DEBUG:
-#     CELERYBEAT_SCHEDULE = {
-#         # 'backend.bloomberg_price_history_auto': {
-#         #     'task': 'backend.bloomberg_price_history_auto',
-#         #     'schedule': 10,
-#         # },
-#     }
-# else:
-#     CELERYBEAT_SCHEDULE = {
-#     }
+# CELERY_STORE_ERRORS_EVEN_IF_IGNORED = True
 
+CELERYBEAT_SCHEDULE = {
+    'backend.download_pricing_auto_scheduler': {
+        'task': 'backend.download_pricing_auto_scheduler',
+        'schedule': 30,
+    },
+}
 
 # INTEGRATIONS ------------------------------------------------
 
@@ -515,9 +503,8 @@ IMPORT_FILE_STORAGE = {
     }
 }
 
-
 PRICING_AUTO_DOWNLOAD_ENABLED = False
-
+PRICING_AUTO_DOWNLOAD_MIN_TIMEDELTA = 120
 
 BLOOMBERG_WSDL = 'https://service.bloomberg.com/assets/dl/dlws.wsdl'
 BLOOMBERG_RETRY_DELAY = 5

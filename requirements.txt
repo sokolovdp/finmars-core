@@ -6,7 +6,6 @@ django-mptt==0.8.6
 djangorestframework==3.4.6
 django-redis==4.4.4
 celery==3.1.23
-django-celery==3.1.17
 six==1.10.0
 python-dateutil==2.5.3
 redis==2.10.5
@@ -18,9 +17,9 @@ requests==2.11.1
 pyOpenSSL==16.0.0
 suds-jurko==0.6
 
+croniter==0.3.12
 django-redisboard==3.0.0
+user-agents==1.0.1
 
 django-otp==0.3.6
 qrcode==5.3
-
-user-agents==1.0.1

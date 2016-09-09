@@ -2,12 +2,15 @@ from __future__ import unicode_literals, print_function
 
 import json
 import uuid
+from datetime import date, datetime, timedelta
 from logging import getLogger
 
-from datetime import date
+from croniter import croniter
+from django.conf import settings
 from django.core.exceptions import ValidationError
 from django.core.serializers.json import DjangoJSONEncoder
 from django.db import models
+from django.utils import timezone
 from django.utils.encoding import python_2_unicode_compatible
 from django.utils.translation import ugettext_lazy as _, ugettext
 
@@ -426,6 +429,14 @@ class Task(TimeStampedModel):
     def __str__(self):
         return '%s / %s' % (self.id, self.status)
 
+    @property
+    def is_running(self):
+        return self.status in [self.STATUS_PENDING, self.STATUS_REQUEST_SENT, self.STATUS_WAIT_RESPONSE]
+
+    @property
+    def is_finished(self):
+        return self.status in [self.STATUS_DONE, self.STATUS_ERROR, self.STATUS_TIMEOUT]
+
     def add_celery_task_id(self, celery_task_id):
         if not celery_task_id:
             return
@@ -465,36 +476,37 @@ class Task(TimeStampedModel):
             self.result = json.dumps(value, cls=DjangoJSONEncoder, sort_keys=True, indent=1)
 
 
-def to_crontab(value):
-    from celery.schedules import crontab
-
-    if value:
-        elmts = value.split()
-        if len(elmts) != 5:
-            raise ValueError('Invalid crontab expression')
-
-        minute = elmts[0]
-        hour = elmts[1]
-        day_of_week = elmts[2]
-        day_of_month = elmts[3]
-        month_of_year = elmts[4]
-        try:
-            return crontab(
-                minute=minute,
-                hour=hour,
-                day_of_week=day_of_week,
-                day_of_month=day_of_month,
-                month_of_year=month_of_year
-            )
-        except (TypeError, ValueError):
-            raise ValueError('Invalid crontab expression')
+# def to_crontab(value):
+#     from celery.schedules import crontab
+#
+#     if value:
+#         elmts = value.split()
+#         if len(elmts) != 5:
+#             raise ValueError('Invalid crontab expression')
+#
+#         minute = elmts[0]
+#         hour = elmts[1]
+#         day_of_week = elmts[2]
+#         day_of_month = elmts[3]
+#         month_of_year = elmts[4]
+#         try:
+#             return crontab(
+#                 minute=minute,
+#                 hour=hour,
+#                 day_of_week=day_of_week,
+#                 day_of_month=day_of_month,
+#                 month_of_year=month_of_year
+#             )
+#         except (TypeError, ValueError):
+#             raise ValueError('Invalid crontab expression')
 
 
 def validate_crontab(value):
     try:
-        to_crontab(value)
-    except ValueError as e:
-        raise ValidationError(e)
+        # to_crontab(value)
+        croniter(value, timezone.now())
+    except (ValueError, KeyError):
+        raise ValidationError(_('A valid cron string is required.'))
 
 
 class PricingAutomatedSchedule(models.Model):
@@ -509,17 +521,48 @@ class PricingAutomatedSchedule(models.Model):
     fill_days = models.PositiveSmallIntegerField(default=0)
     override_existed = models.BooleanField(default=True)
 
-    latest_running = models.DateTimeField(null=True, blank=True, editable=False)
-    latest_task = models.ForeignKey(Task, null=True, blank=True, on_delete=models.SET_NULL, editable=False)
+    # latest_running = models.DateTimeField(null=True, blank=True, editable=False)
+    # latest_task = models.ForeignKey(Task, null=True, blank=True, on_delete=models.SET_NULL, editable=False)
+
+    last_run_at = models.DateTimeField(default=timezone.now, editable=False, db_index=True)
+    next_run_at = models.DateTimeField(default=timezone.now, editable=False, db_index=True)
+    last_run_task = models.ForeignKey(Task, null=True, blank=True, on_delete=models.SET_NULL, editable=False, db_index=True)
 
     class Meta:
         verbose_name = _('pricing automated schedule')
         verbose_name_plural = _('pricing automated schedules')
+        index_together = (
+            ('is_enabled', 'next_run_at'),
+        )
 
     def __str__(self):
         return ugettext('pricing automated schedule')
 
-    def to_crontab(self):
-        if self.is_enabled and self.cron_expr:
-            return to_crontab(self.cron_expr)
-        return None
+    def save(self, force_insert=False, force_update=False, using=None, update_fields=None):
+        if self.is_enabled:
+            self.schedule(save=False)
+        super(PricingAutomatedSchedule, self).save(force_insert=force_insert, force_update=force_update, using=using,
+                                                   update_fields=update_fields)
+
+    # def to_crontab(self):
+    #     if self.is_enabled and self.cron_expr:
+    #         return to_crontab(self.cron_expr)
+    #     return None
+
+    def can_schedule(self):
+        return self.latest_task is None or self.latest_task.is_finished
+
+    def schedule(self, save=False):
+        self.last_run_at = timezone.localtime(timezone.now())
+        cron = croniter(self.cron_expr, self.last_run_at)
+        self.next_run_at = cron.get_next(datetime)
+
+        min_timedelta = settings.PRICING_AUTO_DOWNLOAD_MIN_TIMEDELTA
+        if min_timedelta:
+            if not isinstance(min_timedelta, timedelta):
+                min_timedelta = timedelta(seconds=min_timedelta)
+            if (self.next_run_at - self.last_run_at) < min_timedelta:
+                self.next_run_at = self.last_run_at + min_timedelta
+
+        if save:
+            self.save(update_fields=['last_run_at', 'next_run_at', ])

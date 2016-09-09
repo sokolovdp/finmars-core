@@ -27,7 +27,7 @@ class MemberInline(admin.TabularInline):
 class PricingAutomatedScheduleInline(admin.StackedInline):
     model = PricingAutomatedSchedule
     can_delete = False
-    readonly_fields = ['latest_running', 'latest_task']
+    # readonly_fields = ['latest_running', 'latest_task']
 
 
 class EventScheduleConfigInline(admin.StackedInline):

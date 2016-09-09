@@ -20,13 +20,12 @@ from django.utils import timezone
 
 from poms.audit.models import AuthLogEntry
 from poms.common import formula
-from poms.common.formula_accruals import coupon_accrual_factor
 from poms.common.utils import date_now
 from poms.currencies.models import Currency, CurrencyHistory
 from poms.currencies.serializers import CurrencyHistorySerializer
 from poms.instruments.models import Instrument, DailyPricingModel, PricingPolicy, PriceHistory
 from poms.instruments.serializers import PriceHistorySerializer
-from poms.integrations.models import Task, PriceDownloadScheme, InstrumentDownloadScheme
+from poms.integrations.models import Task, PriceDownloadScheme, InstrumentDownloadScheme, PricingAutomatedSchedule
 from poms.integrations.providers.base import get_provider, parse_date_iso, fill_instrument_price, fill_currency_price
 from poms.integrations.storage import import_file_storage
 from poms.reports.backends.balance import BalanceReport2PositionBuilder
@@ -110,9 +109,7 @@ def schedule_file_import_delete(path, countdown=None):
     if countdown is None:
         countdown = 600
     _l.debug('schedule_file_import_delete: path=%s, countdown=%s', path, countdown)
-    file_import_delete_async.apply_async(countdown=countdown, kwargs={
-        'path': path,
-    })
+    file_import_delete_async.apply_async(kwargs={'path': path}, countdown=countdown)
 
 
 @shared_task(name='backend.auth_log_statistics', ignore_result=True)
@@ -202,8 +199,9 @@ def download_instrument(instrument_code=None, instrument_download_scheme=None, m
             )
             task.options_object = options
             task.save()
-            transaction.on_commit(
-                lambda: download_instrument_async.apply_async(kwargs={'task_id': task.id}, countdown=1))
+            # transaction.on_commit(
+            #     lambda: download_instrument_async.apply_async(kwargs={'task_id': task.id}, countdown=1))
+            transaction.on_commit(lambda: download_instrument_async.apply_async(kwargs={'task_id': task.id}))
         return task, None, None
     else:
         if task.status == Task.STATUS_DONE:
@@ -808,8 +806,8 @@ def download_pricing(master_user=None, member=None, date_from=None, date_to=None
             task.options_object = options
             task.save()
 
-            transaction.on_commit(
-                lambda: download_pricing_async.apply_async(kwargs={'task_id': task.id}, countdown=1))
+            # transaction.on_commit(lambda: download_pricing_async.apply_async(kwargs={'task_id': task.id}, countdown=1))
+            transaction.on_commit(lambda: download_pricing_async.apply_async(kwargs={'task_id': task.id}))
         return task, False
     else:
         if task.status == Task.STATUS_DONE:
@@ -817,15 +815,15 @@ def download_pricing(master_user=None, member=None, date_from=None, date_to=None
         return task, False
 
 
-@shared_task(name='backend.download_pricing_auto', bind=True, ignore_result=False)
+@shared_task(name='backend.download_pricing_auto', bind=True, ignore_result=True)
 def download_pricing_auto(self, master_user_id):
     _l.info('download_pricing_auto: master_user=%s', master_user_id)
     try:
         master_user = MasterUser.objects.get(pk=master_user_id)
         sched = master_user.pricing_automated_schedule
     except ObjectDoesNotExist:
-        from poms.integrations.handlers import pricing_auto_cancel
-        pricing_auto_cancel(master_user_id)
+        # from poms.integrations.handlers import pricing_auto_cancel
+        # pricing_auto_cancel(master_user_id)
         return
 
     if getattr(settings, 'PRICING_AUTO_DOWNLOAD_ENABLED', True):
@@ -858,6 +856,22 @@ def download_pricing_auto(self, master_user_id):
         override_existed=sched.override_existed
     )
 
-    sched.latest_running = timezone.now()
-    sched.latest_task = task
-    sched.save(update_fields=['latest_running', 'latest_task'])
+    # sched.latest_running = timezone.now()
+    sched.last_run_task = task
+    sched.save(update_fields=['last_run_task'])
+
+
+@shared_task(name='backend.download_pricing_auto_scheduler', bind=True, ignore_result=True)
+def download_pricing_auto_scheduler(self):
+    _l.debug('download_pricing_auto_scheduler')
+    for s in PricingAutomatedSchedule.objects.select_related('master_user').filter(is_enabled=True,
+                                                                                   next_run_at__lte=timezone.now()):
+        master_user = s.master_user
+        with timezone.override(master_user.timezone or settings.TIME_ZONE):
+            last_run_at = s.last_run_at
+            s.schedule(save=True)
+            next_run_at = s.next_run_at
+            _l.debug('run: master_user=%s, timezone=%s, last_run_at=%s, next_run_at=%s',
+                     master_user.id, master_user.timezone, last_run_at, next_run_at)
+        # download_pricing_auto.apply_async(kwargs={'master_user_id': master_user.id}, countdown=1)
+        download_pricing_auto.apply_async(kwargs={'master_user_id': master_user.id})
