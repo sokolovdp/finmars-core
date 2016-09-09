@@ -1,6 +1,5 @@
 from __future__ import unicode_literals
 
-import six
 from django.conf import settings
 from django.contrib.contenttypes.fields import GenericForeignKey
 from django.contrib.contenttypes.models import ContentType
@@ -36,7 +35,7 @@ class AuthLogEntry(models.Model):
         try:
             from user_agents import parse
             ret = parse(self.user_agent)
-            return six.text_type(ret)
+            return str(ret)
         except ImportError:
             return None
 

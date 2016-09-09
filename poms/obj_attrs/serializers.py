@@ -1,6 +1,5 @@
 from __future__ import unicode_literals
 
-import six
 from django.core.exceptions import ObjectDoesNotExist
 from django.db import IntegrityError
 from django.utils.translation import ugettext_lazy as _
@@ -119,7 +118,7 @@ class AbstractAttributeTypeSerializer(ModelWithObjectPermissionSerializer, Model
         o.parent = parent
         o.attribute_type = instance
         children = node.pop('get_children', node.pop('children', []))
-        for k, v in six.iteritems(node):
+        for k, v in node.items():
             setattr(o, k, v)
         try:
             o.save()
@@ -193,7 +192,7 @@ class ModelWithAttributesSerializer(serializers.ModelSerializer):
                 if attr_type.id in cur_attrs:
                     cur_attr = cur_attrs[attr_type.id]
                     # verify value_ and classifier -> DONE in AttributeSerializerBase
-                    for k, v in six.iteritems(attr):
+                    for k, v in attr.items():
                         if k not in ['id', 'attribute_type']:
                             setattr(cur_attr, k, v)
                     cur_attr.save()
@@ -204,7 +203,7 @@ class ModelWithAttributesSerializer(serializers.ModelSerializer):
                 # perms error...
                 pass
 
-        for attr in six.itervalues(cur_attrs):
+        for attr in cur_attrs.values():
             # add attrs that not visible for current member
             attr_type = attr.attribute_type
             if not has_view_perms(member, attr_type):

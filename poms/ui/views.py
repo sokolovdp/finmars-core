@@ -1,5 +1,4 @@
 import django_filters
-import six
 from django_filters.fields import Lookup
 from rest_framework.filters import FilterSet
 
@@ -14,7 +13,7 @@ from poms.users.permissions import SuperUserOnly
 class LayoutContentTypeFilter(django_filters.CharFilter):
     def filter(self, qs, value):
         if isinstance(value, Lookup):
-            lookup = six.text_type(value.lookup_type)
+            lookup = str(value.lookup_type)
             value = value.value
         else:
             lookup = self.lookup_expr

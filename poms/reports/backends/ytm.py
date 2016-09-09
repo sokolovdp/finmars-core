@@ -1,7 +1,6 @@
 # -*- coding: utf-8 -*-
 from __future__ import unicode_literals, division
 
-import six
 
 from poms.reports.backends.base import BaseReportBuilder, BaseReport2Builder
 from poms.reports.models import YTMReportItem
@@ -55,7 +54,7 @@ class YTMReportBuilder(BaseReportBuilder):
                 item.ytm += t.weighted_ytm
                 item.time_invested += t.weighted_time_invested
 
-        items = [i for i in six.itervalues(items)]
+        items = [i for i in items.values()]
         items = sorted(items, key=lambda x: x.pk)
 
         self.instance.transactions = self.transactions
@@ -111,7 +110,7 @@ class YTMReport2Builder(BaseReport2Builder):
                 item.ytm += t.weighted_ytm
                 item.time_invested += t.weighted_time_invested
 
-        items = [i for i in six.itervalues(self._items)]
+        items = [i for i in self._items.values()]
         items = sorted(items, key=lambda x: x.pk)
 
         self.instance.transactions = self.transactions

@@ -1,4 +1,3 @@
-import six
 from django.contrib.auth.models import Permission
 from django.contrib.contenttypes.models import ContentType
 from django.db.models import Q
@@ -162,7 +161,7 @@ def assign_perms2(obj, user_perms=None, group_perms=None):
         dst = []
         for p in src:
             p = p.copy()
-            if isinstance(p['permission'], six.string_types):
+            if isinstance(p['permission'], str):
                 p['permission'] = perms_map[p['permission']]
             dst.append(p)
         return dst

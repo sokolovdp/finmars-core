@@ -6,7 +6,6 @@ from collections import defaultdict
 from datetime import timedelta, date
 from logging import getLogger
 
-import six
 from celery import shared_task, chord
 from celery.exceptions import TimeoutError, MaxRetriesExceededError
 from dateutil.rrule import rrule, DAILY
@@ -455,7 +454,7 @@ def download_pricing_async(self, task_id):
 
     with transaction.atomic():
         instrument_task = defaultdict(list)
-        for scheme_id, instruments0 in six.iteritems(instruments_by_scheme):
+        for scheme_id, instruments0 in instruments_by_scheme.items():
             price_download_scheme = price_download_schemes[scheme_id]
             sub_options = options.copy()
             sub_options['price_download_scheme_id'] = price_download_scheme.id
@@ -485,7 +484,7 @@ def download_pricing_async(self, task_id):
             instrument_task[i.id] = None
 
         currency_task = defaultdict(list)
-        for scheme_id, currencies0 in six.iteritems(currencies_by_scheme):
+        for scheme_id, currencies0 in currencies_by_scheme.items():
             price_download_scheme = price_download_schemes[scheme_id]
             sub_options = options.copy()
             sub_options['price_download_scheme_id'] = price_download_scheme.id
@@ -595,7 +594,7 @@ def download_pricing_wait(self, sub_tasks_id, task_id):
                 pricing_policies=pricing_policies
             )
 
-    instrument_for_manual_price = [i_id for i_id, task_id in six.iteritems(instrument_task) if task_id is None]
+    instrument_for_manual_price = [i_id for i_id, task_id in instrument_task.items() if task_id is None]
     instrument_prices += _create_instrument_manual_prices(options=options, instruments=instrument_for_manual_price)
 
     if fill_days > 0:
@@ -684,10 +683,10 @@ def download_pricing_wait(self, sub_tasks_id, task_id):
             instrument_price_expected = set()
             currency_price_expected = set()
             for pp in pricing_policies:
-                for i_id, task_id in six.iteritems(instrument_task):
+                for i_id, task_id in instrument_task.items():
                     instrument_price_expected.add((int(i_id), pp.id))
 
-                for c_id, task_id in six.iteritems(currency_task):
+                for c_id, task_id in currency_task.items():
                     currency_price_expected.add((int(c_id), pp.id))
 
             instrument_price_missed = instrument_price_expected.difference(instrument_price_real)

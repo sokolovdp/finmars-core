@@ -1,8 +1,5 @@
 from __future__ import unicode_literals
 
-from collections import OrderedDict
-
-import six
 from django.conf import settings
 from rest_framework import serializers
 
@@ -26,4 +23,4 @@ class SessionSerializer(serializers.ModelSerializer):
 
     def get_user_location(self, instance):
         loc = get_city_by_ip(instance.user_ip)
-        return OrderedDict(sorted(six.iteritems(loc))) if loc else None
+        return loc

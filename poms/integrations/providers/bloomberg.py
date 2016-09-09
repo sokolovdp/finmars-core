@@ -6,7 +6,6 @@ from tempfile import NamedTemporaryFile
 from time import sleep
 
 import requests
-import six
 from OpenSSL import crypto
 from dateutil import parser
 from django.conf import settings
@@ -207,7 +206,7 @@ class BloombergDataProvider(AbstractProvider):
         _l.debug('|> %s', name)
         response_id = request_func(**request_kwargs)
         _l.debug('|  response_id=%s', response_id)
-        for attempt in six.moves.range(settings.BLOOMBERG_MAX_RETRIES):
+        for attempt in range(settings.BLOOMBERG_MAX_RETRIES):
             sleep(settings.BLOOMBERG_RETRY_DELAY)
             _l.debug('|  attempt=%s', attempt)
             result = response_func(response_id)
@@ -376,7 +375,7 @@ class BloombergDataProvider(AbstractProvider):
         _l.debug('response=%s', response)
         self._response_is_valid(response)
 
-        response_id = six.text_type(response.responseId)
+        response_id = str(response.responseId)
         _l.debug('< response_id=%s', response_id)
 
         return response_id
@@ -484,7 +483,7 @@ class BloombergDataProvider(AbstractProvider):
         _l.debug('response=%s', response)
         self._response_is_valid(response)
 
-        response_id = six.text_type(response.responseId)
+        response_id = str(response.responseId)
         _l.debug('< response_id=%s', response_id)
 
         return response_id
@@ -567,7 +566,7 @@ class BloombergDataProvider(AbstractProvider):
         _l.debug('response=%s', response)
         self._response_is_valid(response)
 
-        response_id = six.text_type(response.responseId)
+        response_id = str(response.responseId)
         _l.debug('< response_id=%s', response_id)
 
         return response_id
@@ -638,7 +637,7 @@ class BloombergDataProvider(AbstractProvider):
         # ]
 
         is_multi_cpn_schedule = multi_cpn_schedule and \
-                                not isinstance(multi_cpn_schedule, six.string_types) and \
+                                not isinstance(multi_cpn_schedule, str) and \
                                 isinstance(multi_cpn_schedule, (tuple, list))
 
         accrual_start_date = self.parse_date(start_acc_dt)

@@ -1,6 +1,5 @@
 from __future__ import unicode_literals
 
-import six
 from babel import Locale
 from babel.dates import format_timedelta
 from django.conf import settings
@@ -95,7 +94,7 @@ class Notification(models.Model):
 
     @property
     def subject(self):
-        message = six.text_type(self)
+        message = str(self)
         if message:
             return Truncator(self.name).chars(25)
         return ''

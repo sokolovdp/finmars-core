@@ -1,6 +1,5 @@
 from __future__ import unicode_literals
 
-import six
 from django.utils import timezone
 from rest_framework.exceptions import ValidationError
 from rest_framework.fields import CharField, DateTimeField, FloatField, empty, RegexField
@@ -92,7 +91,7 @@ class FloatEvalField(FloatField):
     def run_validation(self, data=empty):
         value = super(FloatEvalField, self).run_validation(data)
         if data is not None:
-            expr = six.text_type(data)
+            expr = str(data)
             formula.validate(expr)
             # try:
             #     formula.try_parse(data)
@@ -107,7 +106,7 @@ class FloatEvalField(FloatField):
             pass
         if data is not None:
             try:
-                expr = six.text_type(data)
+                expr = str(data)
                 return formula.safe_eval(expr)
             except (formula.InvalidExpression, ArithmeticError):
                 raise ValidationError('Invalid expression')
@@ -123,7 +122,7 @@ class ISINField(RegexField):
         if isinstance(value, (tuple, list)):
             return ' '.join(value)
         else:
-            return six.text_type(value)
+            return str(value)
 
     # def to_internal_value(self, data):
     #     data = super(ISINField, self).to_internal_value(data)

@@ -6,13 +6,13 @@ import timeit
 from collections import OrderedDict
 
 import simpleeval
-import six
 
 results = OrderedDict()
 
+
 def test1(count, show=False):
     v = 0.
-    for i in six.moves.range(0, count):
+    for i in range(0, count):
         v += 100 * random.random() + i
     if show:
         print('v', v)
@@ -21,7 +21,7 @@ def test1(count, show=False):
 
 def test2(count, show=False):
     v = 0.
-    for i in six.moves.range(0, count):
+    for i in range(0, count):
         v += simpleeval.simple_eval('100 * rnd + i', names={'rnd': random.random(), 'i': i,})
     if show:
         print('v', v)
@@ -32,7 +32,7 @@ def test3(count, show=False):
     v = 0.
     s = simpleeval.SimpleEval()
     parsed = simpleeval.ast.parse('100 * rnd + i').body[0].value
-    for i in six.moves.range(0, count):
+    for i in range(0, count):
         s.names = {'rnd': random.random(), 'i': i,}
         v += s._eval(parsed)
     if show:

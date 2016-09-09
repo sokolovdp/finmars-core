@@ -1,6 +1,5 @@
 from __future__ import unicode_literals
 
-import six
 from django.core.exceptions import ObjectDoesNotExist
 from rest_framework import serializers
 from rest_framework.exceptions import ValidationError
@@ -258,7 +257,7 @@ class InstrumentSerializer(ModelWithAttributesSerializer, ModelWithObjectPermiss
                     if o:
                         processed[o.id] = o
                     continue
-            for k, v in six.iteritems(attr):
+            for k, v in attr.items():
                 if k not in ['id', 'instrument', 'actions']:
                     setattr(o, k, v)
             o.save()
@@ -309,7 +308,7 @@ class InstrumentSerializer(ModelWithAttributesSerializer, ModelWithObjectPermiss
                     else:
                         o = EventScheduleAction(event_schedule=event_schedule)
 
-                    for k, v in six.iteritems(action_data):
+                    for k, v in action_data.items():
                         if k not in ['id', 'event_schedule', ]:
                             setattr(o, k, v)
                     o.save()

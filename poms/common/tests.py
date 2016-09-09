@@ -3,7 +3,6 @@ from __future__ import unicode_literals, division, print_function
 import json
 import uuid
 
-import six
 from django.conf import settings
 from django.contrib.auth import user_logged_in, user_logged_out
 from django.contrib.auth.models import User
@@ -14,7 +13,7 @@ from rest_framework import status
 from rest_framework.test import APITestCase
 
 from poms.accounts.models import AccountType, Account, AccountAttributeType, AccountClassifier
-from poms.chats.models import ThreadStatus, Thread, Message, DirectMessage
+from poms.chats.models import Thread, Message, DirectMessage
 from poms.counterparties.models import Counterparty, Responsible
 from poms.currencies.models import Currency
 from poms.instruments.models import InstrumentClass, InstrumentType, Instrument

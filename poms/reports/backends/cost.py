@@ -1,8 +1,6 @@
 # -*- coding: utf-8 -*-
 from __future__ import unicode_literals, division
 
-import six
-
 from poms.reports.backends.base import BaseReportBuilder, BaseReport2Builder
 from poms.reports.models import CostReportItem
 from poms.transactions.models import TransactionClass
@@ -45,7 +43,7 @@ class CostReportBuilder(BaseReportBuilder):
                 item.position += t.remaining_position
                 item.cost_system_ccy += t.remaining_position_cost_system_ccy
 
-        items = [i for i in six.itervalues(items)]
+        items = [i for i in items.values()]
         items = sorted(items, key=lambda x: x.pk)
 
         for item in items:
@@ -98,7 +96,7 @@ class CostReport2Builder(BaseReport2Builder):
                 item.position += t.remaining_position
                 item.cost_system_ccy += t.remaining_position_cost_system_ccy
 
-        items = [i for i in six.itervalues(self._items)]
+        items = [i for i in self._items.values()]
         items = sorted(items, key=lambda x: x.pk)
 
         for item in items:

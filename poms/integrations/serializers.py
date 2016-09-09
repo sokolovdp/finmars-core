@@ -5,7 +5,6 @@ import uuid
 from datetime import timedelta
 from logging import getLogger
 
-import six
 from django.core.exceptions import ObjectDoesNotExist
 from django.core.signing import TimestampSigner, BadSignature
 from django.utils import timezone
@@ -437,7 +436,7 @@ class ImportInstrumentSerializer(serializers.Serializer):
                 {'instrument_code': 'Invalid value for provider %s' % instrument_download_scheme.provider.name})
 
         task_result_overrides = attrs.get('task_result_overrides', None) or {}
-        if isinstance(task_result_overrides, six.string_types):
+        if isinstance(task_result_overrides, str):
             try:
                 task_result_overrides = json.loads(task_result_overrides)
             except ValueError:

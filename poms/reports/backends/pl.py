@@ -1,8 +1,6 @@
 # -*- coding: utf-8 -*-
 from __future__ import unicode_literals, division
 
-import six
-
 from poms.reports.backends.balance import BalanceReportBuilder
 from poms.reports.backends.base import BaseReport2Builder
 from poms.reports.models import PLReportItem, BalanceReportItem
@@ -94,7 +92,7 @@ class PLReportBuilder(BalanceReportBuilder):
         #                            summary.carry_with_sign_system_ccy + \
         #                            summary.overheads_with_sign_system_ccy
 
-        items = [i for i in six.itervalues(items)]
+        items = [i for i in items.values()]
         items = sorted(items, key=lambda x: x.pk)
         for i in items:
             i.total_system_ccy = i.principal_with_sign_system_ccy + \
@@ -238,7 +236,7 @@ class PLReport2Builder(BaseReport2Builder):
                 # make 2 transactions for buy/sell
                 pass
 
-        for i in six.itervalues(self._balance_items):
+        for i in self._balance_items.values():
             self.calc_balance_instrument(i)
 
             pli = self._items[i.pk]
@@ -246,7 +244,7 @@ class PLReport2Builder(BaseReport2Builder):
             pli.carry_with_sign_system_ccy += i.accrued_value_system_ccy
 
         summary = self.instance.summary
-        for i in six.itervalues(self._items):
+        for i in self._items.values():
             i.total_system_ccy = i.principal_with_sign_system_ccy + \
                                  i.carry_with_sign_system_ccy + \
                                  i.overheads_with_sign_system_ccy
@@ -256,7 +254,7 @@ class PLReport2Builder(BaseReport2Builder):
             summary.overheads_with_sign_system_ccy += i.overheads_with_sign_system_ccy
             summary.total_system_ccy += i.total_system_ccy
 
-        items = [i for i in six.itervalues(self._items)]
+        items = [i for i in self._items.values()]
         items = sorted(items, key=lambda x: '%s' % (x.pk,))
 
         self.instance.items = items

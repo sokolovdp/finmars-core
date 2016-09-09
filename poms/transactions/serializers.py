@@ -1,6 +1,5 @@
 from __future__ import unicode_literals
 
-import six
 from django.core.exceptions import ObjectDoesNotExist
 from rest_framework import serializers
 
@@ -281,7 +280,7 @@ class TransactionTypeSerializer(ModelWithObjectPermissionSerializer, ModelWithUs
         inputs = self.save_inputs(instance, inputs, False)
         self.save_actions(instance, actions, False)
         if inputs:
-            instance.inputs.exclude(id__in=[i.id for i in six.itervalues(inputs)]).delete()
+            instance.inputs.exclude(id__in=[i.id for i in inputs.values()]).delete()
         return instance
 
     def save_inputs(self, instance, inputs_data, created):
@@ -293,7 +292,7 @@ class TransactionTypeSerializer(ModelWithObjectPermissionSerializer, ModelWithUs
             if input is None:
                 input = TransactionTypeInput(transaction_type=instance)
             input.order = order
-            for attr, value in six.iteritems(input_data):
+            for attr, value in input_data.items():
                 setattr(input, attr, value)
             input.save()
             new_inputs[input.name] = input
@@ -310,7 +309,7 @@ class TransactionTypeSerializer(ModelWithObjectPermissionSerializer, ModelWithUs
             data = instrument_data or transaction_data
 
             # replace input name to input object
-            for attr, value in six.iteritems(data):
+            for attr, value in data.items():
                 if attr.endswith('_input') and value:
                     # print('name=%s, value=%s' % (name, value,))
                     data[attr] = inputs[value]
@@ -336,7 +335,7 @@ class TransactionTypeSerializer(ModelWithObjectPermissionSerializer, ModelWithUs
                 if action is None:
                     raise RuntimeError('unknown action')
             action.order = order
-            for attr, value in six.iteritems(data):
+            for attr, value in data.items():
                 setattr(action, attr, value)
             action.save()
             actions.append(action)
@@ -484,4 +483,4 @@ class ComplexTransactionSerializer(serializers.ModelSerializer):
                   'transaction_type', 'transactions']
 
     def get_text(self, obj):
-        return six.text_type(obj)
+        return str(obj)

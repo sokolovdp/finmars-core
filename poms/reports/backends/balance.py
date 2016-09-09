@@ -5,8 +5,6 @@ import logging
 from datetime import date
 from functools import reduce
 
-import six
-
 from poms.reports.backends.base import BaseReportBuilder, BaseReport2Builder
 from poms.reports.models import BalanceReportItem
 from poms.transactions.models import TransactionClass
@@ -112,12 +110,12 @@ class BalanceReportBuilder(BaseReportBuilder):
                                                         self.get_transaction_details(case, account_cash, t))
                     cash_item.balance_position += -t.cash_consideration
 
-        for i in six.itervalues(invested_items):
+        for i in invested_items.values():
             i.currency_history = self.find_currency_history(i.currency)
             i.currency_fx_rate = getattr(i.currency_history, 'fx_rate', 0.)
             i.market_value_system_ccy = i.balance_position * i.currency_fx_rate
 
-        for i in six.itervalues(items):
+        for i in items.values():
             if i.instrument:
                 i.price_history = self.find_price_history(i.instrument, self.instance.end_date)
                 i.instrument_principal_currency_history = self.find_currency_history(i.instrument.pricing_currency)
@@ -146,10 +144,10 @@ class BalanceReportBuilder(BaseReportBuilder):
                 i.principal_value_system_ccy = i.balance_position * i.currency_fx_rate
                 i.market_value_system_ccy = i.principal_value_system_ccy
 
-        invested_items = [i for i in six.itervalues(invested_items)]
+        invested_items = [i for i in invested_items.values()]
         invested_items = sorted(invested_items, key=lambda x: x.pk)
 
-        items = [i for i in six.itervalues(items)]
+        items = [i for i in items.values()]
         items = sorted(items, key=lambda x: x.pk)
 
         # TODO:
@@ -432,22 +430,22 @@ class BalanceReport2Builder(BaseReport2Builder):
                 # make 2 transactions for buy/sell
                 pass
 
-        for i in six.itervalues(self._invested_items):
+        for i in self._invested_items.values():
             if i.instrument:
                 self.calc_balance_instrument(i)
                 # elif i.currency:
                 #     self.calc_balance_ccy(i)
 
-        for i in six.itervalues(self._items):
+        for i in self._items.values():
             if i.instrument:
                 self.calc_balance_instrument(i)
                 # elif i.currency:
                 #     self.calc_balance_ccy(i)
 
-        invested_items = [i for i in six.itervalues(self._invested_items)]
+        invested_items = [i for i in self._invested_items.values()]
         invested_items = sorted(invested_items, key=lambda x: x.pk)
 
-        items = [i for i in six.itervalues(self._items)]
+        items = [i for i in self._items.values()]
         items = sorted(items, key=lambda x: x.pk)
 
         return items, invested_items

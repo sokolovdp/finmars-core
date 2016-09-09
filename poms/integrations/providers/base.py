@@ -2,7 +2,6 @@ from collections import OrderedDict
 from datetime import date, datetime
 from logging import getLogger
 
-import six
 from dateutil import parser
 from dateutil.rrule import rrule, DAILY
 from django.conf import settings
@@ -145,7 +144,7 @@ class AbstractProvider(object):
                 v = formula.safe_eval(expr, names=values)
             except formula.InvalidExpression as e:
                 # _l.debug('Invalid expression "%s"', attr, exc_info=True)
-                errors[attr] = [_('Invalid expression'), six.text_type(e)]
+                errors[attr] = [_('Invalid expression')]
                 continue
             if attr in ['pricing_currency', 'accrued_currency']:
                 if v is not None:
@@ -177,7 +176,7 @@ class AbstractProvider(object):
                         errors[attr] = [_('A valid date is required.')]
             else:
                 if v is not None:
-                    v = six.text_type(v)
+                    v = str(v)
                     setattr(instr, attr, v)
 
         instr._attributes = self.create_instrument_attributes(
@@ -208,7 +207,7 @@ class AbstractProvider(object):
                     v = formula.safe_eval(attr.value, names=values)
                 except formula.InvalidExpression as e:
                     # _l.debug('Invalid expression "%s"', attr.value, exc_info=True)
-                    errors[err_name] = [_('Invalid expression'), six.text_type(e)]
+                    errors[err_name] = [_('Invalid expression')]
                     continue
                 attr_mapped_values = self.get_instrument_attribute_value(master_user, provider, tattr, v)
                 if attr_mapped_values:
@@ -216,7 +215,7 @@ class AbstractProvider(object):
                 else:
                     if tattr.value_type == AbstractAttributeType.STRING:
                         if v is not None:
-                            iattr.value_string = six.text_type(v)
+                            iattr.value_string = str(v)
                     elif tattr.value_type == AbstractAttributeType.NUMBER:
                         if v is not None:
                             try:
@@ -233,7 +232,7 @@ class AbstractProvider(object):
                                 errors[err_name] = [_('A valid date is required.')]
                     elif tattr.value_type == AbstractAttributeType.CLASSIFIER:
                         if v is not None:
-                            v = six.text_type(v)
+                            v = str(v)
                             v = tattr.classifiers.filter(name=v).first()
                             if v:
                                 iattr.classifier = v

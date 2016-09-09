@@ -1,6 +1,5 @@
 from __future__ import unicode_literals
 
-import six
 from rest_framework import serializers
 
 from poms.obj_perms.fields import PermissionField, GrantedPermissionField
@@ -69,11 +68,11 @@ class ModelWithObjectPermissionSerializer(serializers.ModelSerializer):
         ret = super(ModelWithObjectPermissionSerializer, self).to_representation(instance)
         member = self.context['request'].user.member
         if not has_view_perms(member, instance):
-            for k in list(six.iterkeys(ret)):
+            for k in ret.keys():
                 if k not in ['url', 'id', 'public_name', 'display_name', 'granted_permissions']:
                     ret.pop(k)
         if not has_manage_perm(member, instance):
-            for k in list(six.iterkeys(ret)):
+            for k in ret.keys():
                 if k in ['user_object_permissions', 'group_object_permissions']:
                     ret.pop(k)
         return ret

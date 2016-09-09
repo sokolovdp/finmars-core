@@ -3,7 +3,6 @@ from __future__ import unicode_literals
 import logging
 from threading import local
 
-import six
 from django.apps import apps
 from django.contrib.contenttypes.models import ContentType
 from django.core import serializers
@@ -58,7 +57,7 @@ def deactivate():
             group_id = 0
             actor_content_type = ContentType.objects.get_for_model(_state.actor_content_object)
             actor_object_id = _state.actor_content_object_id
-            actor_object_repr = six.text_type(_state.actor_content_object)
+            actor_object_repr = str(_state.actor_content_object)
             user = get_request().user
 
             for e in _state.entries4:
@@ -144,7 +143,7 @@ def _is_disabled(obj):
 
 def _fields_to_set(fields):
     ret = set()
-    for k, v in six.iteritems(fields):
+    for k, v in fields.items():
         if isinstance(v, list):
             ret.add((k, tuple(v)))
         else:
@@ -207,12 +206,12 @@ def _get_content_type(instance):
 
 
 def _value_to_str(value):
-    if isinstance(value, six.string_types):
+    if isinstance(value, str):
         return value
     elif isinstance(value, bool):
         return 'true' if value else 'false'
     else:
-        return six.text_type(value)
+        return str(value)
 
 
 @receiver(post_init, dispatch_uid='poms_history_post_init')
@@ -249,7 +248,7 @@ def _instance_post_save(sender, instance=None, created=None, **kwargs):
             action_flag=ObjectHistory4Entry.ADDITION,
             content_type=ContentType.objects.get_for_model(instance),
             object_id=instance.id,
-            object_repr=six.text_type(instance)
+            object_repr=str(instance)
         ))
 
     else:
@@ -272,9 +271,9 @@ def _instance_post_save(sender, instance=None, created=None, **kwargs):
                     action_flag=ObjectHistory4Entry.CHANGE,
                     content_type=ContentType.objects.get_for_model(instance),
                     object_id=instance.id,
-                    object_repr=six.text_type(instance),
+                    object_repr=str(instance),
 
-                    field_name=six.text_type(f.name)
+                    field_name=str(f.name)
                 )
 
                 if f.one_to_one:
@@ -289,12 +288,12 @@ def _instance_post_save(sender, instance=None, created=None, **kwargs):
                     if new_value:
                         e4.value_content_type = fctype
                         e4.value_object_id = new_value
-                        e4.value = six.text_type(fctype.get_object_for_this_type(pk=new_value))
+                        e4.value = str(fctype.get_object_for_this_type(pk=new_value))
 
                     if old_value:
                         e4.old_value_content_type = fctype
                         e4.old_value_object_id = old_value
-                        e4.old_value = six.text_type(fctype.get_object_for_this_type(pk=old_value))
+                        e4.old_value = str(fctype.get_object_for_this_type(pk=old_value))
 
                     _state.entries4.append(e4)
                 elif f.many_to_many:
@@ -315,7 +314,7 @@ def _instance_post_save(sender, instance=None, created=None, **kwargs):
                     #         new_value = _make_value(new_value)
                     #
                     #     fields.append({
-                    #         'name': six.text_type(f.name),
+                    #         'name': str(f.name),
                     #         'old_value': old_value,
                     #         'new_value': new_value,
                     #     })
@@ -374,12 +373,12 @@ def _instance_m2m_changed(sender, instance=None, action=None, reverse=None, mode
         e4 = ObjectHistory4Entry(
             content_type=ContentType.objects.get_for_model(instance),
             object_id=instance.id,
-            object_repr=six.text_type(instance),
+            object_repr=str(instance),
 
-            field_name=six.text_type(attr),
+            field_name=str(attr),
             value_content_type=attr_ctype,
             value_object_id=pk,
-            value=six.text_type(attr_ctype.get_object_for_this_type(pk=pk))
+            value=str(attr_ctype.get_object_for_this_type(pk=pk))
         )
 
         if action == 'pre_add':
@@ -455,7 +454,7 @@ def _instance_post_delete(sender, instance=None, **kwargs):
         action_flag=ObjectHistory4Entry.DELETION,
         content_type=ContentType.objects.get_for_model(instance),
         object_id=instance.id,
-        object_repr=six.text_type(instance)
+        object_repr=str(instance)
     ))
 
 # def _get_display_value(value):

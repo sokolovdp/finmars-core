@@ -8,7 +8,6 @@ import random
 import time
 
 import simpleeval
-import six
 from django.utils import numberformat
 
 from poms.common.utils import date_now
@@ -21,12 +20,12 @@ class InvalidExpression(Exception):
 
 
 def _check_string(a):
-    if not isinstance(a, six.string_types):
+    if not isinstance(a, str):
         raise InvalidExpression('Value error')
 
 
 def _check_number(a):
-    if not isinstance(a, six.integer_types) and not isinstance(a, float):
+    if not isinstance(a, (int, float)):
         raise InvalidExpression('Value error')
 
 
@@ -41,7 +40,7 @@ def _check_timedelta(a):
 
 
 def _str(a):
-    return six.text_type(a)
+    return str(a)
 
 
 def _int(a):
@@ -160,11 +159,11 @@ def _parse_number(a):
 
 
 def _simple_price(date, date1, value1, date2, value2):
-    if isinstance(date, six.string_types):
+    if isinstance(date, str):
         date = _parse_date(date)
-    if isinstance(date1, six.string_types):
+    if isinstance(date1, str):
         date1 = _parse_date(date1)
-    if isinstance(date2, six.string_types):
+    if isinstance(date2, str):
         date2 = _parse_date(date2)
     _check_date(date)
     _check_date(date1)
@@ -397,7 +396,7 @@ class SimpleEval2(object):  # pylint: disable=too-few-public-methods
             #     raise simpleeval.InvalidExpression("Invalid first argument")
             # if isinstance(node.op, ast.Mod) and isinstance(l, str):
             #     raise simpleeval.InvalidExpression("Invalid first argument")
-            if isinstance(node.op, (ast.Mult, ast.Mod,)) and isinstance(l, (six.text_type, six.binary_type)):
+            if isinstance(node.op, (ast.Mult, ast.Mod,)) and isinstance(l, str):
                 raise simpleeval.InvalidExpression("Binary operation does't support string")
             return self.operators[type(node.op)](l, r)
 
@@ -517,7 +516,7 @@ def safe_eval(s, names=None, functions=None):
 
 def deep_dict(data):
     ret = {}
-    for k, v in six.iteritems(data):
+    for k, v in data.items():
         ret[k] = deep_value(v)
     return ret
 
