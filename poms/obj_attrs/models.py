@@ -1,3 +1,4 @@
+from datetime import date
 from django.contrib.contenttypes.models import ContentType
 from django.db import models
 from django.utils.encoding import python_2_unicode_compatible
@@ -91,9 +92,9 @@ class AbstractAttribute(models.Model):
     # attribute_type -> actual attribute model
     # content_object -> actual object
 
-    value_string = models.CharField(max_length=255, null=True, blank=True, verbose_name=_('value (String)'))
-    value_float = models.FloatField(null=True, blank=True, verbose_name=_('value (Float)'))
-    value_date = models.DateField(null=True, blank=True, verbose_name=_('value (Date)'))
+    value_string = models.CharField(max_length=255, default='', blank=True, verbose_name=_('value (String)'))
+    value_float = models.FloatField(default=0.0, verbose_name=_('value (Float)'))
+    value_date = models.DateField(default=date.min, verbose_name=_('value (Date)'))
 
     class Meta:
         abstract = True

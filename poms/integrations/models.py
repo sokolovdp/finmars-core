@@ -4,6 +4,7 @@ import json
 import uuid
 from logging import getLogger
 
+from datetime import date
 from django.core.exceptions import ValidationError
 from django.core.serializers.json import DjangoJSONEncoder
 from django.db import models
@@ -342,9 +343,9 @@ class InstrumentTypeMapping(AbstractMapping):
 class InstrumentAttributeValueMapping(AbstractMapping):
     attribute_type = models.ForeignKey('instruments.InstrumentAttributeType', on_delete=models.PROTECT,
                                        verbose_name=_('attribute type'))
-    value_string = models.CharField(max_length=255, null=True, blank=True, verbose_name=_('value (String)'))
-    value_float = models.FloatField(null=True, blank=True, verbose_name=_('value (Float)'))
-    value_date = models.DateField(null=True, blank=True, verbose_name=_('value (Date)'))
+    value_string = models.CharField(max_length=255, default='', blank=True, verbose_name=_('value (String)'))
+    value_float = models.FloatField(default=0.0, verbose_name=_('value (Float)'))
+    value_date = models.DateField(default=date.min, verbose_name=_('value (Date)'))
     classifier = models.ForeignKey('instruments.InstrumentClassifier', on_delete=models.SET_NULL, null=True, blank=True,
                                    verbose_name=_('classifier'))
 
