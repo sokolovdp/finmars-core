@@ -33,11 +33,15 @@ class ModelWithObjectPermissionSerializer(serializers.ModelSerializer):
 
         # member = self.context['request'].user.member
         # if member.is_superuser and show_object_permissions:
-        if show_object_permissions:
-            self.fields['user_object_permissions'] = UserObjectPermissionSerializer(
-                many=True, required=False, allow_null=True)
-            self.fields['group_object_permissions'] = GroupObjectPermissionSerializer(
-                many=True, required=False, allow_null=True)
+        # if show_object_permissions:
+        #     self.fields['user_object_permissions'] = UserObjectPermissionSerializer(
+        #         many=True, required=False, allow_null=True)
+        #     self.fields['group_object_permissions'] = GroupObjectPermissionSerializer(
+        #         many=True, required=False, allow_null=True)
+        self.fields['user_object_permissions'] = UserObjectPermissionSerializer(
+            many=True, required=False, allow_null=True)
+        self.fields['group_object_permissions'] = GroupObjectPermissionSerializer(
+            many=True, required=False, allow_null=True)
 
     def get_display_name(self, instance):
         member = self.context['request'].user.member
@@ -68,11 +72,11 @@ class ModelWithObjectPermissionSerializer(serializers.ModelSerializer):
         ret = super(ModelWithObjectPermissionSerializer, self).to_representation(instance)
         member = self.context['request'].user.member
         if not has_view_perms(member, instance):
-            for k in ret.keys():
+            for k in [ret.keys()]:
                 if k not in ['url', 'id', 'public_name', 'display_name', 'granted_permissions']:
                     ret.pop(k)
         if not has_manage_perm(member, instance):
-            for k in ret.keys():
+            for k in [ret.keys()]:
                 if k in ['user_object_permissions', 'group_object_permissions']:
                     ret.pop(k)
         return ret
