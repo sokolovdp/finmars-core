@@ -237,7 +237,7 @@ class TransactionTypeActionSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = TransactionTypeAction
-        fields = ['id', 'order', 'transaction', 'instrument']
+        fields = ['id', 'order', 'action_notes', 'transaction', 'instrument']
         read_only_fields = ['order']
 
     def validate(self, attrs):

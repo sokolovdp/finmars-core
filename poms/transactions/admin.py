@@ -136,6 +136,7 @@ class TransactionTypeActionInstrumentInline(admin.StackedInline):
     extra = 0
     fields = (
         'order',
+        'action_notes',
         'user_code',
         ('name', 'short_name', 'public_name',),
         'notes',

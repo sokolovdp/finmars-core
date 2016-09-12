@@ -360,6 +360,7 @@ class TransactionTypeInput(models.Model):
 class TransactionTypeAction(models.Model):
     transaction_type = models.ForeignKey(TransactionType, related_name='actions', on_delete=models.PROTECT)
     order = models.IntegerField(default=0)
+    action_notes = models.TextField(blank=True, default='')
 
     class Meta:
         verbose_name = _('action')
