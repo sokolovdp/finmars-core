@@ -11,11 +11,11 @@ from __future__ import unicode_literals
 
 import os
 
-import djcelery
 from django.contrib.staticfiles.handlers import StaticFilesHandler
 from django.core.wsgi import get_wsgi_application
 
-djcelery.setup_loader()
+# import djcelery
+# djcelery.setup_loader()
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "poms_app.settings")
 
 application = get_wsgi_application()
