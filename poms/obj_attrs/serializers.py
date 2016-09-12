@@ -142,10 +142,44 @@ class AttributeListSerializer(serializers.ListSerializer):
         return instance.attributes.filter(attribute_type__in=attr_types)
 
 
+class ReadOnlyAttributeTypeSerializer(serializers.Serializer):
+    id = serializers.IntegerField(read_only=True)
+    user_code = serializers.CharField(read_only=True)
+    name = serializers.CharField(read_only=True)
+    short_name = serializers.CharField(read_only=True)
+    order = serializers.CharField(read_only=True)
+    is_hidden = serializers.BooleanField(read_only=True)
+
+
+class ReadOnlyClassifierSerializer(serializers.Serializer):
+    id = serializers.IntegerField(read_only=True)
+    name = serializers.CharField(read_only=True)
+    level = serializers.IntegerField(read_only=True)
+
+
 class AbstractAttributeSerializer(serializers.ModelSerializer):
+    attribute_type_object = ReadOnlyAttributeTypeSerializer(source='attribute_type', read_only=True)
+    classifier_object = ReadOnlyAttributeTypeSerializer(source='classifier', read_only=True)
+
     class Meta:
         list_serializer_class = AttributeListSerializer
-        fields = ['value_string', 'value_float', 'value_date']
+        fields = ['value_string', 'value_float', 'value_date', 'attribute_type_object', 'classifier_object']
+
+    def __init__(self, *args, **kwargs):
+        super(AbstractAttributeSerializer, self).__init__(*args, **kwargs)
+        # if self.instance:
+        #     value_type = self.instance.attribute_type.value_type
+        #     value_fields = ['value_string', 'value_float', 'value_date', 'classifier']
+        #     if value_type == AbstractAttributeType.STRING:
+        #         value_fields.remove('value_string')
+        #     elif value_type == AbstractAttributeType.NUMBER:
+        #         value_fields.remove('value_float')
+        #     elif value_type == AbstractAttributeType.CLASSIFIER:
+        #         value_fields.remove('classifier')
+        #     elif value_type == AbstractAttributeType.DATE:
+        #         value_fields.remove('value_date')
+        #     for f in value_fields:
+        #         self.fields.pop(f, None)
 
     def validate(self, attrs):
         attribute_type = attrs['attribute_type']
@@ -155,8 +189,8 @@ class AbstractAttributeSerializer(serializers.ModelSerializer):
                 if classifier.attribute_type_id != attribute_type.id:
                     raise ValidationError(
                         {'classifier': _('Invalid pk "%(pk)s" - object does not exist.') % {'pk': classifier.id}})
-            # else:
-            #     raise ValidationError({'classifier': _('This field may not be null.')})
+                    # else:
+                    #     raise ValidationError({'classifier': _('This field may not be null.')})
         return attrs
 
 
