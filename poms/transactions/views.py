@@ -10,7 +10,6 @@ from poms.common.filters import CharFilter, ModelWithPermissionMultipleChoiceFil
 from poms.common.views import AbstractClassModelViewSet, AbstractModelViewSet, AbstractReadOnlyModelViewSet
 from poms.currencies.models import Currency
 from poms.instruments.models import Instrument, InstrumentType
-from poms.obj_attrs.filters import AttributePrefetchFilter
 from poms.obj_attrs.views import AbstractAttributeTypeViewSet, AbstractClassifierViewSet
 from poms.obj_perms.utils import obj_perms_prefetch
 from poms.obj_perms.views import AbstractWithObjectPermissionViewSet
@@ -257,52 +256,21 @@ class TransactionFilterSet(FilterSet):
 
 class TransactionViewSet(AbstractModelViewSet):
     queryset = Transaction.objects.prefetch_related(
-        'master_user',
-        'complex_transaction', 'complex_transaction__transaction_type',
-        'transaction_class',
-        'portfolio',
-        # 'portfolio__user_object_permissions', 'portfolio__user_object_permissions__permission',
-        # 'portfolio__group_object_permissions', 'portfolio__group_object_permissions__permission',
-        'instrument',
-        # 'instrument__user_object_permissions', 'instrument__user_object_permissions__permission',
-        # 'instrument__group_object_permissions', 'instrument__group_object_permissions__permission',
-        'account_cash',
-        # 'account_cash__user_object_permissions', 'account_cash__user_object_permissions__permission',
-        # 'account_cash__group_object_permissions', 'account_cash__group_object_permissions__permission',
-        'account_position',
-        # 'account_position__user_object_permissions', 'account_position__user_object_permissions__permission',
-        # 'account_position__group_object_permissions', 'account_position__group_object_permissions__permission',
-        'account_interim',
-        # 'account_interim__user_object_permissions', 'account_interim__user_object_permissions__permission',
-        # 'account_interim__group_object_permissions', 'account_interim__group_object_permissions__permission',
-        'strategy1_position',
-        # 'strategy1_position__user_object_permissions', 'strategy1_position__user_object_permissions__permission',
-        # 'strategy1_position__group_object_permissions', 'strategy1_position__group_object_permissions__permission',
-        'strategy1_cash',
-        # 'strategy1_cash__user_object_permissions', 'strategy1_cash__user_object_permissions__permission',
-        # 'strategy1_cash__group_object_permissions', 'strategy1_cash__group_object_permissions__permission',
-        'strategy2_position',
-        # 'strategy2_position__user_object_permissions', 'strategy2_position__user_object_permissions__permission',
-        # 'strategy2_position__group_object_permissions', 'strategy2_position__group_object_permissions__permission',
-        'strategy2_cash',
-        # 'strategy2_cash__user_object_permissions', 'strategy2_cash__user_object_permissions__permission',
-        # 'strategy2_cash__group_object_permissions', 'strategy2_cash__group_object_permissions__permission',
-        'strategy3_position',
-        # 'strategy3_position__user_object_permissions', 'strategy3_position__user_object_permissions__permission',
-        # 'strategy3_position__group_object_permissions', 'strategy3_position__group_object_permissions__permission',
-        'strategy3_cash',
-        # 'strategy3_cash__user_object_permissions', 'strategy3_cash__user_object_permissions__permission',
-        # 'strategy3_cash__group_object_permissions', 'strategy3_cash__group_object_permissions__permission',
+        'master_user', 'complex_transaction', 'complex_transaction__transaction_type', 'transaction_class',
+        'portfolio', 'instrument', 'account_cash', 'account_position', 'account_interim',
+        'strategy1_position', 'strategy1_cash', 'strategy2_position', 'strategy2_cash',
+        'strategy3_position', 'strategy3_cash',
+        'attributes', 'attributes__attribute_type'
     )
     prefetch_permissions_for = (
         'portfolio', 'instrument', 'account_cash', 'account_position', 'account_interim', 'strategy1_position',
         'strategy1_cash', 'strategy2_position', 'strategy2_cash', 'strategy3_position', 'strategy3_cash',
+        'attributes__attribute_type',
     )
     serializer_class = TransactionSerializer
     filter_backends = AbstractModelViewSet.filter_backends + [
         OwnerByMasterUserFilter,
         TransactionObjectPermissionFilter,
-        AttributePrefetchFilter,
     ]
     permission_classes = AbstractModelViewSet.permission_classes + [
         TransactionObjectPermission,

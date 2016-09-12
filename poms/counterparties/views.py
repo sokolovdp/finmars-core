@@ -10,7 +10,6 @@ from poms.counterparties.serializers import CounterpartySerializer, ResponsibleS
     CounterpartyAttributeTypeSerializer, \
     ResponsibleAttributeTypeSerializer, CounterpartyGroupSerializer, ResponsibleGroupSerializer, \
     CounterpartyClassifierNodeSerializer, ResponsibleClassifierNodeSerializer
-from poms.obj_attrs.filters import AttributePrefetchFilter
 from poms.obj_attrs.views import AbstractAttributeTypeViewSet, AbstractClassifierViewSet
 from poms.obj_perms.views import AbstractWithObjectPermissionViewSet
 from poms.portfolios.models import Portfolio
@@ -91,13 +90,14 @@ class CounterpartyFilterSet(FilterSet):
 
 
 class CounterpartyViewSet(AbstractWithObjectPermissionViewSet):
-    queryset = Counterparty.objects.select_related('master_user', 'group').prefetch_related('portfolios')
-    prefetch_permissions_for = ('group', 'portfolios',)
+    queryset = Counterparty.objects.prefetch_related(
+        'master_user', 'group', 'portfolios', 'attributes', 'attributes__attribute_type'
+    )
+    prefetch_permissions_for = ('group', 'portfolios', 'attributes__attribute_type')
     serializer_class = CounterpartySerializer
     filter_backends = AbstractWithObjectPermissionViewSet.filter_backends + [
         OwnerByMasterUserFilter,
         TagFilterBackend,
-        AttributePrefetchFilter,
     ]
     filter_class = CounterpartyFilterSet
     ordering_fields = ['user_code', 'name', 'short_name']
@@ -178,13 +178,14 @@ class ResponsibleFilterSet(FilterSet):
 
 
 class ResponsibleViewSet(AbstractWithObjectPermissionViewSet):
-    queryset = Responsible.objects.select_related('master_user', 'group').prefetch_related('portfolios')
-    prefetch_permissions_for = ('group', 'portfolios',)
+    queryset = Responsible.objects.prefetch_related(
+        'master_user', 'group', 'portfolios', 'attributes', 'attributes__attribute_type'
+    )
+    prefetch_permissions_for = ('group', 'portfolios', 'attributes__attribute_type')
     serializer_class = ResponsibleSerializer
     filter_backends = AbstractWithObjectPermissionViewSet.filter_backends + [
         OwnerByMasterUserFilter,
         TagFilterBackend,
-        AttributePrefetchFilter,
     ]
     filter_class = ResponsibleFilterSet
     ordering_fields = ['user_code', 'name', 'short_name']

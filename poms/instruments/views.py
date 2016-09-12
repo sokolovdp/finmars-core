@@ -16,7 +16,6 @@ from poms.instruments.serializers import InstrumentSerializer, PriceHistorySeria
     PaymentSizeDetailSerializer, PeriodicitySerializer, CostMethodSerializer, InstrumentTypeSerializer, \
     InstrumentAttributeTypeSerializer, PricingPolicySerializer, InstrumentClassifierNodeSerializer, \
     EventScheduleConfigSerializer
-from poms.obj_attrs.filters import AttributePrefetchFilter
 from poms.obj_attrs.views import AbstractAttributeTypeViewSet, AbstractClassifierViewSet
 from poms.obj_perms.views import AbstractWithObjectPermissionViewSet
 from poms.tags.filters import TagFilterBackend, TagFilter
@@ -142,13 +141,13 @@ class InstrumentFilterSet(FilterSet):
 
 
 class InstrumentViewSet(AbstractWithObjectPermissionViewSet):
-    queryset = Instrument.objects.select_related('instrument_type', 'pricing_currency', 'accrued_currency'). \
-        prefetch_related('manual_pricing_formulas', 'accrual_calculation_schedules', 'factor_schedules',
-                         'event_schedules', 'event_schedules__actions')
+    queryset = Instrument.objects.prefetch_related(
+        'instrument_type', 'pricing_currency', 'accrued_currency', 'attributes', 'attributes__attribute_type',
+        'manual_pricing_formulas', 'accrual_calculation_schedules', 'factor_schedules',
+        'event_schedules', 'event_schedules__actions')
     serializer_class = InstrumentSerializer
     filter_backends = AbstractWithObjectPermissionViewSet.filter_backends + [
         OwnerByMasterUserFilter,
-        AttributePrefetchFilter,
         TagFilterBackend,
     ]
     filter_class = InstrumentFilterSet

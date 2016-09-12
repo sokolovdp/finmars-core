@@ -5,7 +5,6 @@ from rest_framework.filters import FilterSet
 from poms.accounts.models import Account
 from poms.common.filters import CharFilter, ModelWithPermissionMultipleChoiceFilter, IsDefaultFilter
 from poms.counterparties.models import Responsible, Counterparty
-from poms.obj_attrs.filters import AttributePrefetchFilter
 from poms.obj_attrs.views import AbstractAttributeTypeViewSet, AbstractClassifierViewSet
 from poms.obj_perms.views import AbstractWithObjectPermissionViewSet
 from poms.portfolios.models import Portfolio, PortfolioAttributeType, PortfolioClassifier
@@ -67,26 +66,16 @@ class PortfolioFilterSet(FilterSet):
 
 
 class PortfolioViewSet(AbstractWithObjectPermissionViewSet):
-    queryset = Portfolio.objects.select_related('master_user').prefetch_related(
-        'accounts',
-        # 'accounts__user_object_permissions', 'accounts__user_object_permissions__permission',
-        # 'accounts__group_object_permissions', 'accounts__group_object_permissions__permission',
-        'responsibles',
-        # 'responsibles__user_object_permissions', 'responsibles__user_object_permissions__permission',
-        # 'responsibles__group_object_permissions', 'responsibles__group_object_permissions__permission',
-        'counterparties',
-        # 'counterparties__user_object_permissions', 'counterparties__user_object_permissions__permission',
-        # 'counterparties__group_object_permissions', 'counterparties__group_object_permissions__permission',
-        'transaction_types',
-        # 'transaction_types__user_object_permissions', 'transaction_types__user_object_permissions__permission',
-        # 'transaction_types__group_object_permissions', 'transaction_types__group_object_permissions__permission',
+    queryset = Portfolio.objects.select_related().prefetch_related(
+        'master_user', 'accounts', 'responsibles', 'counterparties', 'transaction_types',
+        'attributes', 'attributes__attribute_type'
     )
-    prefetch_permissions_for = ('accounts', 'responsibles', 'counterparties', 'transaction_types',)
+    prefetch_permissions_for = ('counterparties', 'transaction_types', 'accounts', 'responsibles',
+                                'attributes__attribute_type',)
     serializer_class = PortfolioSerializer
     filter_backends = AbstractWithObjectPermissionViewSet.filter_backends + [
         OwnerByMasterUserFilter,
         TagFilterBackend,
-        AttributePrefetchFilter,
     ]
     filter_class = PortfolioFilterSet
     ordering_fields = [

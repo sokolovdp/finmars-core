@@ -5,13 +5,14 @@ from rest_framework.filters import FilterSet
 from poms.accounts.models import Account, AccountType, AccountAttributeType, AccountClassifier
 from poms.accounts.serializers import AccountSerializer, AccountTypeSerializer, AccountAttributeTypeSerializer, \
     AccountClassifierNodeSerializer
-from poms.common.filters import CharFilter, ModelWithPermissionMultipleChoiceFilter, IsDefaultFilter
-from poms.obj_attrs.filters import AttributePrefetchFilter
+from poms.common.filters import CharFilter, ModelWithPermissionMultipleChoiceFilter, IsDefaultFilter, \
+    ModelMultipleChoiceFilter
 from poms.obj_attrs.views import AbstractAttributeTypeViewSet, AbstractClassifierViewSet
 from poms.obj_perms.views import AbstractWithObjectPermissionViewSet
 from poms.portfolios.models import Portfolio
 from poms.tags.filters import TagFilterBackend, TagFilter
 from poms.users.filters import OwnerByMasterUserFilter
+from poms.users.models import Member, Group
 
 
 class AccountTypeFilterSet(FilterSet):
@@ -84,28 +85,24 @@ class AccountFilterSet(FilterSet):
     portfolio = ModelWithPermissionMultipleChoiceFilter(model=Portfolio, name='portfolios')
     type = ModelWithPermissionMultipleChoiceFilter(model=AccountType)
     tag = TagFilter(model=Account)
+    user_object_permissions__member = ModelMultipleChoiceFilter(model=Member, field_name='username')
+    group_object_permissions__group = ModelMultipleChoiceFilter(model=Group, field_name='name')
 
     class Meta:
         model = Account
         fields = ['user_code', 'name', 'short_name', 'is_valid_for_all_portfolios', 'is_default', 'type', 'portfolio',
-                  'tag']
+                  'tag', 'user_object_permissions__member', 'group_object_permissions__group', ]
 
 
 class AccountViewSet(AbstractWithObjectPermissionViewSet):
-    queryset = Account.objects.select_related('master_user', 'type').prefetch_related(
-        # 'type',
-        # 'type__user_object_permissions', 'type__user_object_permissions__permission',
-        # 'type__group_object_permissions', 'type__group_object_permissions__permission',
-        'portfolios',
-        # 'portfolios__user_object_permissions', 'portfolios__user_object_permissions__permission',
-        # 'portfolios__group_object_permissions', 'portfolios__group_object_permissions__permission',
+    queryset = Account.objects.prefetch_related(
+        'master_user', 'type', 'portfolios', 'attributes', 'attributes__attribute_type'
     )
-    prefetch_permissions_for = ('type', 'portfolios',)
+    prefetch_permissions_for = ('type', 'portfolios', 'attributes__attribute_type')
     serializer_class = AccountSerializer
     filter_backends = AbstractWithObjectPermissionViewSet.filter_backends + [
         OwnerByMasterUserFilter,
         TagFilterBackend,
-        AttributePrefetchFilter,
     ]
     filter_class = AccountFilterSet
     ordering_fields = [
