@@ -25,7 +25,7 @@ class Strategy1GroupFilterSet(FilterSet):
 
 
 class Strategy1GroupViewSet(AbstractWithObjectPermissionViewSet):
-    queryset = Strategy1Group.objects.select_related('master_user')
+    queryset = Strategy1Group.objects.prefetch_related('master_user')
     serializer_class = Strategy1GroupSerializer
     filter_backends = AbstractWithObjectPermissionViewSet.filter_backends + [
         OwnerByMasterUserFilter,
@@ -53,7 +53,7 @@ class Strategy1SubgroupFilterSet(FilterSet):
 
 
 class Strategy1SubgroupViewSet(AbstractWithObjectPermissionViewSet):
-    queryset = Strategy1Subgroup.objects.select_related('master_user', 'group')
+    queryset = Strategy1Subgroup.objects.prefetch_related('master_user', 'group')
     prefetch_permissions_for = ['group']
     serializer_class = Strategy1SubgroupSerializer
     filter_backends = AbstractWithObjectPermissionViewSet.filter_backends + [
@@ -84,7 +84,7 @@ class Strategy1FilterSet(FilterSet):
 
 
 class Strategy1ViewSet(AbstractWithObjectPermissionViewSet):
-    queryset = Strategy1.objects.select_related('master_user', 'subgroup', 'subgroup__group')
+    queryset = Strategy1.objects.prefetch_related('master_user', 'subgroup', 'subgroup__group')
     prefetch_permissions_for = ['subgroup', 'subgroup__group']
     serializer_class = Strategy1Serializer
     filter_backends = AbstractWithObjectPermissionViewSet.filter_backends + [
@@ -114,7 +114,7 @@ class Strategy2GroupFilterSet(Strategy1GroupFilterSet):
 
 
 class Strategy2GroupViewSet(Strategy1GroupViewSet):
-    queryset = Strategy2Group.objects.select_related('master_user')
+    queryset = Strategy2Group.objects.prefetch_related('master_user')
     serializer_class = Strategy2GroupSerializer
     filter_class = Strategy2GroupFilterSet
 
@@ -128,7 +128,7 @@ class Strategy2SubgroupFilterSet(Strategy1SubgroupFilterSet):
 
 
 class Strategy2SubgroupViewSet(Strategy1SubgroupViewSet):
-    queryset = Strategy2Subgroup.objects.select_related('master_user', 'group')
+    queryset = Strategy2Subgroup.objects.prefetch_related('master_user', 'group')
     serializer_class = Strategy2SubgroupSerializer
     filter_class = Strategy2SubgroupFilterSet
 
@@ -143,7 +143,7 @@ class Strategy2FilterSet(Strategy1FilterSet):
 
 
 class Strategy2ViewSet(Strategy1ViewSet):
-    queryset = Strategy2.objects.select_related('master_user', 'subgroup', 'subgroup__group')
+    queryset = Strategy2.objects.prefetch_related('master_user', 'subgroup', 'subgroup__group')
     serializer_class = Strategy2Serializer
     filter_class = Strategy2FilterSet
 
@@ -160,7 +160,7 @@ class Strategy3GroupFilterSet(Strategy1GroupFilterSet):
 
 
 class Strategy3GroupViewSet(Strategy1GroupViewSet):
-    queryset = Strategy3Group.objects.select_related('master_user')
+    queryset = Strategy3Group.objects.prefetch_related('master_user')
     serializer_class = Strategy3GroupSerializer
     filter_class = Strategy3GroupFilterSet
 
@@ -174,7 +174,7 @@ class Strategy3SubgroupFilterSet(Strategy1SubgroupFilterSet):
 
 
 class Strategy3SubgroupViewSet(Strategy1SubgroupViewSet):
-    queryset = Strategy3Subgroup.objects.select_related('master_user', 'group')
+    queryset = Strategy3Subgroup.objects.prefetch_related('master_user', 'group')
     serializer_class = Strategy3SubgroupSerializer
     filter_class = Strategy3SubgroupFilterSet
 
@@ -189,6 +189,6 @@ class Strategy3FilterSet(Strategy1FilterSet):
 
 
 class Strategy3ViewSet(Strategy1ViewSet):
-    queryset = Strategy3.objects.select_related('master_user', 'subgroup', 'subgroup__group')
+    queryset = Strategy3.objects.prefetch_related('master_user', 'subgroup', 'subgroup__group')
     serializer_class = Strategy3Serializer
     filter_class = Strategy3FilterSet

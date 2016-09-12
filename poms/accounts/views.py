@@ -85,6 +85,7 @@ class AccountFilterSet(FilterSet):
     portfolio = ModelWithPermissionMultipleChoiceFilter(model=Portfolio, name='portfolios')
     type = ModelWithPermissionMultipleChoiceFilter(model=AccountType)
     tag = TagFilter(model=Account)
+    # Incorrect, need use user.groups
     # user_object_permissions__member = ModelMultipleChoiceFilter(model=Member, field_name='username')
     # group_object_permissions__group = ModelMultipleChoiceFilter(model=Group, field_name='name')
 

@@ -27,7 +27,7 @@ class CurrencyFilterSet(FilterSet):
 
 
 class CurrencyViewSet(AbstractModelViewSet):
-    queryset = Currency.objects.select_related('master_user')
+    queryset = Currency.objects.prefetch_related('master_user')
     serializer_class = CurrencySerializer
     permission_classes = AbstractModelViewSet.permission_classes + [
         SuperUserOrReadOnly,
@@ -55,7 +55,7 @@ class CurrencyHistoryFilterSet(FilterSet):
 
 
 class CurrencyHistoryViewSet(AbstractModelViewSet):
-    queryset = CurrencyHistory.objects.select_related('currency')
+    queryset = CurrencyHistory.objects.prefetch_related('currency')
     serializer_class = CurrencyHistorySerializer
     permission_classes = AbstractModelViewSet.permission_classes + [
         SuperUserOrReadOnly,

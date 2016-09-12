@@ -79,7 +79,7 @@ class InstrumentTypeFilterSet(FilterSet):
 
 
 class InstrumentTypeViewSet(AbstractWithObjectPermissionViewSet):
-    queryset = InstrumentType.objects.select_related('master_user')
+    queryset = InstrumentType.objects.prefetch_related('master_user')
     serializer_class = InstrumentTypeSerializer
     filter_backends = AbstractWithObjectPermissionViewSet.filter_backends + [
         OwnerByMasterUserFilter,
@@ -169,7 +169,8 @@ class PriceHistoryFilterSet(FilterSet):
 
 
 class PriceHistoryViewSet(AbstractModelViewSet):
-    queryset = PriceHistory.objects.select_related('instrument').prefetch_related(
+    queryset = PriceHistory.objects.prefetch_related(
+        'instrument',
         'instrument__user_object_permissions', 'instrument__user_object_permissions__permission',
         'instrument__group_object_permissions', 'instrument__group_object_permissions__permission',
     )

@@ -39,7 +39,7 @@ class TemplateListLayoutFilterSet(FilterSet):
 
 
 class TemplateListLayoutViewSet(AbstractModelViewSet):
-    queryset = TemplateListLayout.objects.select_related('master_user', 'content_type')
+    queryset = TemplateListLayout.objects.prefetch_related('master_user', 'content_type')
     serializer_class = TemplateListLayoutSerializer
     filter_backends = AbstractModelViewSet.filter_backends + [
         OwnerByMasterUserFilter,
@@ -61,7 +61,7 @@ class TemplateEditLayoutFilterSet(FilterSet):
 
 
 class TemplateEditLayoutViewSet(AbstractModelViewSet):
-    queryset = TemplateEditLayout.objects.select_related('master_user', 'content_type')
+    queryset = TemplateEditLayout.objects.prefetch_related('master_user', 'content_type')
     serializer_class = TemplateEditLayoutSerializer
     filter_backends = AbstractModelViewSet.filter_backends + [
         OwnerByMasterUserFilter,
@@ -83,7 +83,7 @@ class ListLayoutFilterSet(FilterSet):
 
 
 class ListLayoutViewSet(AbstractModelViewSet):
-    queryset = ListLayout.objects.select_related('member', 'content_type')
+    queryset = ListLayout.objects.prefetch_related('member', 'content_type')
     serializer_class = ListLayoutSerializer
     filter_backends = AbstractModelViewSet.filter_backends + [
         OwnerByMemberFilter,
@@ -102,7 +102,7 @@ class EditLayoutFilterSet(FilterSet):
 
 
 class EditLayoutViewSet(AbstractModelViewSet):
-    queryset = EditLayout.objects.select_related('member', 'content_type')
+    queryset = EditLayout.objects.prefetch_related('member', 'content_type')
     serializer_class = EditLayoutSerializer
     filter_backends = AbstractModelViewSet.filter_backends + [
         OwnerByMemberFilter,

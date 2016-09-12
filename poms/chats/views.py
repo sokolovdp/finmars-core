@@ -68,14 +68,16 @@ class ThreadFilterSet(FilterSet):
 
 
 class ThreadViewSet(AbstractWithObjectPermissionViewSet):
-    queryset = Thread.objects.select_related('thread_group'). \
+    queryset = Thread.objects.\
         annotate(messages_count=Count('messages')). \
-        prefetch_related(Prefetch("messages", to_attr="messages_last",
-                                  queryset=Message.objects.select_related('sender').filter(
+        prefetch_related('thread_group',
+                         Prefetch("messages", to_attr="messages_last",
+                                  queryset=Message.objects.prefetch_related('sender').filter(
                                       pk__in=Message.objects.distinct('thread').
                                           order_by('thread_id', '-created', '-id').
                                           values_list('id', flat=True))
                                   ))
+    prefetch_permissions_for = []
 
     serializer_class = ThreadSerializer
     filter_backends = AbstractWithObjectPermissionViewSet.filter_backends + [
@@ -116,7 +118,7 @@ class MessageFilterSet(FilterSet):
 
 
 class MessageViewSet(AbstractModelViewSet):
-    queryset = Message.objects.select_related('thread', 'sender')
+    queryset = Message.objects.prefetch_related('thread', 'sender')
     serializer_class = MessageSerializer
     permission_classes = AbstractModelViewSet.permission_classes + [
         MessagePermission,
@@ -139,7 +141,7 @@ class DirectMessageFilterSet(FilterSet):
 
 
 class DirectMessageViewSet(AbstractModelViewSet):
-    queryset = DirectMessage.objects.select_related('sender', 'recipient')
+    queryset = DirectMessage.objects.prefetch_related('sender', 'recipient')
     serializer_class = DirectMessageSerializer
     permission_classes = AbstractModelViewSet.permission_classes + [
         DirectMessagePermission,

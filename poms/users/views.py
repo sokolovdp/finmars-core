@@ -11,7 +11,6 @@ from rest_framework.authtoken.serializers import AuthTokenSerializer
 from rest_framework.decorators import detail_route
 from rest_framework.exceptions import PermissionDenied
 from rest_framework.filters import FilterSet
-from rest_framework.mixins import UpdateModelMixin
 from rest_framework.parsers import JSONParser, MultiPartParser, FormParser
 from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework.response import Response
@@ -19,7 +18,7 @@ from rest_framework.viewsets import ViewSet
 
 from poms.common.filters import CharFilter
 from poms.common.pagination import BigPagination
-from poms.common.views import AbstractModelViewSet, AbstractReadOnlyModelViewSet, AbstractApiView
+from poms.common.views import AbstractModelViewSet, AbstractApiView
 from poms.users.filters import OwnerByMasterUserFilter, MasterUserFilter
 from poms.users.models import MasterUser, Member, Group
 from poms.users.permissions import SuperUserOrReadOnly, IsCurrentMasterUser, IsCurrentUser
@@ -188,7 +187,7 @@ class MemberFilterSet(FilterSet):
 
 
 class MemberViewSet(AbstractModelViewSet):
-    queryset = Member.objects.select_related('user').prefetch_related('groups')
+    queryset = Member.objects.prefetch_related('user', 'groups')
     serializer_class = MemberSerializer
     permission_classes = AbstractModelViewSet.permission_classes + [
         SuperUserOrReadOnly,
@@ -221,7 +220,7 @@ class GroupFilterSet(FilterSet):
 
 
 class GroupViewSet(AbstractModelViewSet):
-    queryset = Group.objects.select_related('master_user').prefetch_related('members')
+    queryset = Group.objects.prefetch_related('master_user', 'members')
     serializer_class = GroupSerializer
     permission_classes = AbstractModelViewSet.permission_classes + [
         SuperUserOrReadOnly,

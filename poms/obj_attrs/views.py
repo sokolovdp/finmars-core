@@ -84,7 +84,7 @@ class AbstractClassifierViewSet(AbstractModelViewSet):
         at_qs = f_attribute_type.objects.filter(master_user=self.request.user.master_user)
         # at_qs = ObjectPermissionBackend().filter_queryset(self.request, at_qs, self)
 
-        return qs.filter(attribute_type__in=at_qs).select_related('attribute_type')
+        return qs.filter(attribute_type__in=at_qs).prefetch_related('attribute_type')
 
     def create(self, request, *args, **kwargs):
         raise MethodNotAllowed(request.method)

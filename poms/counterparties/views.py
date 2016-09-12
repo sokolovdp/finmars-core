@@ -63,7 +63,7 @@ class CounterpartyGroupFilterSet(FilterSet):
 
 
 class CounterpartyGroupViewSet(AbstractModelViewSet):
-    queryset = CounterpartyGroup.objects.select_related('master_user')
+    queryset = CounterpartyGroup.objects.prefetch_related('master_user')
     serializer_class = CounterpartyGroupSerializer
     filter_backends = AbstractModelViewSet.filter_backends + [
         OwnerByMasterUserFilter,
@@ -151,7 +151,7 @@ class ResponsibleGroupFilterSet(FilterSet):
 
 
 class ResponsibleGroupViewSet(AbstractModelViewSet):
-    queryset = ResponsibleGroup.objects.select_related('master_user')
+    queryset = ResponsibleGroup.objects.prefetch_related('master_user')
     serializer_class = ResponsibleGroupSerializer
     filter_backends = AbstractModelViewSet.filter_backends + [
         OwnerByMasterUserFilter,

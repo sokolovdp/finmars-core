@@ -66,7 +66,7 @@ class PortfolioFilterSet(FilterSet):
 
 
 class PortfolioViewSet(AbstractWithObjectPermissionViewSet):
-    queryset = Portfolio.objects.select_related().prefetch_related(
+    queryset = Portfolio.objects.prefetch_related(
         'master_user', 'accounts', 'responsibles', 'counterparties', 'transaction_types',
         'attributes', 'attributes__attribute_type'
     )

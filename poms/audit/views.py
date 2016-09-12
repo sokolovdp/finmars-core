@@ -22,7 +22,7 @@ class AuthLogEntryFilterSet(FilterSet):
 
 
 class AuthLogViewSet(AbstractReadOnlyModelViewSet):
-    queryset = AuthLogEntry.objects.select_related('user')
+    queryset = AuthLogEntry.objects.prefetch_related('user')
     serializer_class = AuthLogEntrySerializer
     filter_backends = AbstractReadOnlyModelViewSet.filter_backends + [
         OwnerByUserFilter,
