@@ -40,6 +40,10 @@ def get_history_model_list():
     return _history_model_list
 
 
+def get_history_model_content_type_list():
+    return [ContentType.objects.get_for_model(model).pk for model in get_history_model_list()]
+
+
 def activate():
     _state.active = True
 
