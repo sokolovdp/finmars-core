@@ -148,7 +148,7 @@ class TransactionTypeActionInstrumentInline(admin.StackedInline):
         ('default_price', 'default_accrued',),
         ('user_text_1', 'user_text_2', 'user_text_3',),
         ('daily_pricing_model', 'daily_pricing_model_input',),
-        ('price_download_scheme', 'price_download_scheme_input',),
+        ('reference_for_pricing', 'price_download_scheme', 'price_download_scheme_input',),
         ('maturity_date',),
     )
 
