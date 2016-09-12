@@ -50,7 +50,7 @@ def get_member(request):
         # raise NotFound()
         # member = Member.objects.select_related('master_user').prefetch_related('groups').get(
         #     master_user=master_user, user=user)
-        member = Member.objects.get(master_user=master_user, user=user)
+        member = Member.objects.prefetch_related('groups').get(master_user=master_user, user=user)
         return member
     except ObjectDoesNotExist:
         raise NotFound()
