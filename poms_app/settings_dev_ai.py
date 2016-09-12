@@ -7,7 +7,7 @@ import env_ai
 from .settings import *
 
 INSTALLED_APPS += [
-    'redisboard',
+    # 'redisboard',
     # 'debug_toolbar',
 ]
 
