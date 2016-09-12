@@ -21,6 +21,17 @@ from poms.tags.models import Tag
 from poms.transactions.models import TransactionType
 
 
+def get_tag_content_types():
+    models = [AccountType, Account, Currency, InstrumentType, Instrument,
+              CounterpartyGroup, Counterparty,
+              ResponsibleGroup, Responsible,
+              Strategy1Group, Strategy1Subgroup, Strategy1,
+              Strategy2Group, Strategy2Subgroup, Strategy2,
+              Strategy3Group, Strategy3Subgroup, Strategy3,
+              Portfolio, TransactionType, ThreadGroup, Thread]
+    return [ContentType.objects.get_for_model(model).pk for model in models]
+
+
 class TagFakeFilter(django_filters.Filter):
     def __init__(self, *args, **kwargs):
         super(TagFakeFilter, self).__init__(*args, **kwargs)
@@ -29,17 +40,9 @@ class TagFakeFilter(django_filters.Filter):
         return qs
 
 
-class TagContentTypeFilter(BaseFilterBackend):
+class TagContentTypeFilterBackend(BaseFilterBackend):
     def filter_queryset(self, request, queryset, view):
-        models = [AccountType, Account, Currency, InstrumentType, Instrument,
-                  CounterpartyGroup, Counterparty,
-                  ResponsibleGroup, Responsible,
-                  Strategy1Group, Strategy1Subgroup, Strategy1,
-                  Strategy2Group, Strategy2Subgroup, Strategy2,
-                  Strategy3Group, Strategy3Subgroup, Strategy3,
-                  Portfolio, TransactionType, ThreadGroup, Thread]
-        ctypes = [ContentType.objects.get_for_model(model).pk for model in models]
-        return queryset.filter(pk__in=ctypes)
+        return queryset.filter(pk__in=get_tag_content_types())
 
 
 class TagFilterBackend(BaseFilterBackend):
@@ -67,3 +70,20 @@ class TagFilter(django_filters.MultipleChoiceFilter):
         kwargs['name'] = 'tags'
         kwargs['choices'] = partial(tags_choices, model=model)
         super(TagFilter, self).__init__(*args, **kwargs)
+
+
+class TagContentTypeFilter(django_filters.MultipleChoiceFilter):
+    def __init__(self, *args, **kwargs):
+        queryset = ContentType.objects.all().order_by('app_label', 'model').filter(pk__in=get_tag_content_types())
+        kwargs['choices'] = [('%s.%s' % (c.app_label, c.model), c.model_class()._meta.verbose_name)
+                             for c in queryset]
+        super(TagContentTypeFilter, self).__init__(*args, **kwargs)
+
+    def filter(self, qs, value):
+        value = value or tuple()
+        cvalue = []
+        for v in value:
+            ctype = v.split('.')
+            ctype = ContentType.objects.get_by_natural_key(*ctype)
+            cvalue.append(ctype.id)
+        return super(TagContentTypeFilter, self).filter(qs, cvalue)

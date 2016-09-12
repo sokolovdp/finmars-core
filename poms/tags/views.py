@@ -4,6 +4,7 @@ from rest_framework.filters import FilterSet
 
 from poms.common.filters import CharFilter
 from poms.obj_perms.views import AbstractWithObjectPermissionViewSet
+from poms.tags.filters import TagContentTypeFilter
 from poms.tags.models import Tag
 from poms.tags.serializers import TagSerializer
 from poms.users.filters import OwnerByMasterUserFilter
@@ -13,10 +14,11 @@ class TagFilterSet(FilterSet):
     user_code = CharFilter()
     name = CharFilter()
     short_name = CharFilter()
+    content_type = TagContentTypeFilter(name='content_types')
 
     class Meta:
         model = Tag
-        fields = ['user_code', 'name', 'short_name']
+        fields = ['user_code', 'name', 'short_name', 'content_type']
 
 
 class TagViewSet(AbstractWithObjectPermissionViewSet):
