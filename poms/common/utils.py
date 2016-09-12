@@ -1,3 +1,5 @@
+import math
+
 from django.views.generic.dates import timezone_today
 
 
@@ -33,3 +35,10 @@ def date_now():
     # from django.utils import timezone
     # return timezone.now().date()
     return timezone_today()
+
+
+try:
+    isclose = math.isclose
+except AttributeError:
+    def isclose(a, b, rel_tol=1e-09, abs_tol=0.0):
+        return abs(a - b) <= max(rel_tol * max(abs(a), abs(b)), abs_tol)

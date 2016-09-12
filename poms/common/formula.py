@@ -10,7 +10,7 @@ import time
 import simpleeval
 from django.utils import numberformat
 
-from poms.common.utils import date_now
+from poms.common.utils import date_now, isclose
 
 
 class InvalidExpression(Exception):
@@ -68,7 +68,7 @@ def _iff(expr, a, b):
 def _isclose(a, b, rel_tol=1e-09, abs_tol=0.0):
     _check_number(a)
     _check_number(b)
-    return math.isclose(a, b, rel_tol=rel_tol, abs_tol=abs_tol)
+    return isclose(a, b, rel_tol=rel_tol, abs_tol=abs_tol)
 
 
 def _now():
@@ -170,10 +170,10 @@ def _simple_price(date, date1, value1, date2, value2):
     _check_date(date2)
     _check_number(value1)
     _check_number(value2)
-    if math.isclose(value1, value2):
+    if isclose(value1, value2):
         return value1
     if date1 == date2:
-        if math.isclose(value1, value2):
+        if isclose(value1, value2):
             return value1
         raise ValueError()
     if date < date1:

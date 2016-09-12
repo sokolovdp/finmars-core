@@ -12,7 +12,7 @@ from mptt.fields import TreeForeignKey
 from mptt.models import MPTTModel
 
 from poms.common.models import NamedModel, AbstractClassModel
-from poms.common.utils import date_now
+from poms.common.utils import date_now, isclose
 from poms.obj_attrs.models import AbstractAttributeType, AbstractAttribute, AbstractAttributeTypeOption, \
     AbstractClassifier
 from poms.obj_perms.models import AbstractGroupObjectPermission, AbstractUserObjectPermission
@@ -550,7 +550,7 @@ class Instrument(NamedModel):
             except IndexError:
                 fprev = None
 
-            if math.isclose(f.factor_value, fprev.factor_value):
+            if isclose(f.factor_value, fprev.factor_value):
                 transaction_type = instrument_type.factor_same
                 cmp = 1
             elif f.factor_value > fprev.factor_value:
@@ -775,7 +775,7 @@ class PriceHistory(models.Model):
                                            dt2=self.date,
                                            dt3=accrual.first_payment_date)
             self.accrued_price = accrual.accrual_size * factor
-        if save and not math.isclose(old_accrued_price, self.accrued_price):
+        if save and not isclose(old_accrued_price, self.accrued_price):
             self.save(update_fields=['accrued_price'])
 
 
