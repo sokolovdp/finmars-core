@@ -144,6 +144,7 @@ class AttributeListSerializer(serializers.ListSerializer):
 
 class ReadOnlyAttributeTypeSerializer(serializers.Serializer):
     id = serializers.IntegerField(read_only=True)
+    value_type = serializers.PrimaryKeyRelatedField(read_only=True)
     user_code = serializers.CharField(read_only=True)
     name = serializers.CharField(read_only=True)
     short_name = serializers.CharField(read_only=True)
@@ -159,7 +160,7 @@ class ReadOnlyClassifierSerializer(serializers.Serializer):
 
 class AbstractAttributeSerializer(serializers.ModelSerializer):
     attribute_type_object = ReadOnlyAttributeTypeSerializer(source='attribute_type', read_only=True)
-    classifier_object = ReadOnlyAttributeTypeSerializer(source='classifier', read_only=True)
+    classifier_object = ReadOnlyClassifierSerializer(source='classifier', read_only=True)
 
     class Meta:
         list_serializer_class = AttributeListSerializer
