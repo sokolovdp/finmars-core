@@ -16,8 +16,7 @@ class AbstractWithObjectPermissionViewSet(AbstractModelViewSet):
     def filter_queryset(self, queryset):
         queryset = super(AbstractWithObjectPermissionViewSet, self).filter_queryset(queryset)
         # queryset = ObjectPermissionBackend().filter_queryset(self.request, queryset, self)
-        if self.prefetch_permissions_for:
-            queryset = obj_perms_prefetch(queryset, self.prefetch_permissions_for)
+        queryset = obj_perms_prefetch(queryset, lookups_related=self.prefetch_permissions_for)
         return queryset
 
     # def get_permissions(self):
