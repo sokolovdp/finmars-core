@@ -85,13 +85,15 @@ class AccountFilterSet(FilterSet):
     portfolio = ModelWithPermissionMultipleChoiceFilter(model=Portfolio, name='portfolios')
     type = ModelWithPermissionMultipleChoiceFilter(model=AccountType)
     tag = TagFilter(model=Account)
-    user_object_permissions__member = ModelMultipleChoiceFilter(model=Member, field_name='username')
-    group_object_permissions__group = ModelMultipleChoiceFilter(model=Group, field_name='name')
+    # user_object_permissions__member = ModelMultipleChoiceFilter(model=Member, field_name='username')
+    # group_object_permissions__group = ModelMultipleChoiceFilter(model=Group, field_name='name')
 
     class Meta:
         model = Account
         fields = ['user_code', 'name', 'short_name', 'is_valid_for_all_portfolios', 'is_default', 'type', 'portfolio',
-                  'tag', 'user_object_permissions__member', 'group_object_permissions__group', ]
+                  'tag',
+                  # 'user_object_permissions__member', 'group_object_permissions__group',
+                  ]
 
 
 class AccountViewSet(AbstractWithObjectPermissionViewSet):
