@@ -10,9 +10,12 @@ from rest_framework.response import Response
 from poms.chats.filters import MessagePermissionFilter, DirectMessagePermissionFilter
 from poms.chats.models import Thread, Message, DirectMessage, ThreadGroup
 from poms.chats.permissions import MessagePermission, DirectMessagePermission
-from poms.chats.serializers import ThreadSerializer, MessageSerializer, DirectMessageSerializer, ThreadGroupSerializer
+from poms.chats.serializers import ThreadSerializer, MessageSerializer, DirectMessageSerializer, ThreadGroupSerializer, \
+    ThreadBulkObjectPermissionSerializer
 from poms.common.filters import CharFilter, ModelWithPermissionMultipleChoiceFilter, ModelMultipleChoiceFilter
 from poms.common.views import AbstractModelViewSet
+from poms.obj_perms.filters import ObjectPermissionMemberFilter, ObjectPermissionGroupFilter, \
+    ObjectPermissionPermissionFilter
 from poms.obj_perms.views import AbstractWithObjectPermissionViewSet
 from poms.tags.filters import TagFilterBackend, TagFilter
 from poms.users.filters import OwnerByMasterUserFilter
@@ -52,10 +55,16 @@ class ThreadFilterSet(FilterSet):
     is_closed = django_filters.MethodFilter(action='filter_is_closed')
     thread_group = ModelWithPermissionMultipleChoiceFilter(model=ThreadGroup)
     tag = TagFilter(model=Thread)
+    member = ObjectPermissionMemberFilter(object_permission_model=Thread)
+    member_group = ObjectPermissionGroupFilter(object_permission_model=Thread)
+    permission = ObjectPermissionPermissionFilter(object_permission_model=Thread)
 
     class Meta:
         model = Thread
-        fields = ['subject', 'created', 'closed', 'is_closed', 'tag', 'thread_group']
+        fields = [
+            'subject', 'created', 'closed', 'is_closed', 'tag', 'thread_group',
+            'member', 'member_group', 'permission',
+        ]
 
     def filter_is_closed(self, qs, value):
         if value:
@@ -68,7 +77,7 @@ class ThreadFilterSet(FilterSet):
 
 
 class ThreadViewSet(AbstractWithObjectPermissionViewSet):
-    queryset = Thread.objects.\
+    queryset = Thread.objects. \
         annotate(messages_count=Count('messages')). \
         prefetch_related('thread_group',
                          Prefetch("messages", to_attr="messages_last",
@@ -78,14 +87,16 @@ class ThreadViewSet(AbstractWithObjectPermissionViewSet):
                                           values_list('id', flat=True))
                                   ))
     prefetch_permissions_for = []
-
     serializer_class = ThreadSerializer
+    bulk_objects_permissions_serializer_class = ThreadBulkObjectPermissionSerializer
     filter_backends = AbstractWithObjectPermissionViewSet.filter_backends + [
         OwnerByMasterUserFilter,
         TagFilterBackend,
     ]
     filter_class = ThreadFilterSet
-    ordering_fields = ['id', 'created', 'subject']
+    ordering_fields = [
+        'id', 'created', 'subject', 'thread_group__name',
+    ]
     search_fields = ['subject']
 
     @detail_route(url_path='close',

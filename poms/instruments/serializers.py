@@ -18,7 +18,7 @@ from poms.instruments.models import InstrumentClassifier, Instrument, PriceHisto
 from poms.integrations.fields import PriceDownloadSchemeField
 from poms.obj_attrs.serializers import AbstractAttributeSerializer, AbstractAttributeTypeSerializer, \
     ModelWithAttributesSerializer
-from poms.obj_perms.serializers import ModelWithObjectPermissionSerializer
+from poms.obj_perms.serializers import ModelWithObjectPermissionSerializer, AbstractBulkObjectPermissionSerializer
 from poms.tags.fields import TagField
 from poms.transactions.fields import TransactionTypeField
 from poms.users.fields import MasterUserField
@@ -69,8 +69,6 @@ class InstrumentClassifierSerializer(AbstractClassifierSerializer):
 
 
 class InstrumentClassifierNodeSerializer(AbstractClassifierNodeSerializer):
-    # url = serializers.HyperlinkedIdentityField(view_name='instrumentclassifiernode-detail')
-
     class Meta(AbstractClassifierNodeSerializer.Meta):
         model = InstrumentClassifier
 
@@ -104,12 +102,26 @@ class InstrumentTypeSerializer(ModelWithObjectPermissionSerializer, ModelWithUse
         return attrs
 
 
+class InstrumentTypeBulkObjectPermissionSerializer(AbstractBulkObjectPermissionSerializer):
+    content_objects = InstrumentTypeField(many=True, allow_null=False, allow_empty=False)
+
+    class Meta:
+        model = InstrumentType
+
+
 class InstrumentAttributeTypeSerializer(AbstractAttributeTypeSerializer):
     classifiers = InstrumentClassifierSerializer(required=False, allow_null=True, many=True)
 
     class Meta(AbstractAttributeTypeSerializer.Meta):
         model = InstrumentAttributeType
         fields = AbstractAttributeTypeSerializer.Meta.fields + ['classifiers']
+
+
+class InstrumentAttributeTypeBulkObjectPermissionSerializer(AbstractBulkObjectPermissionSerializer):
+    content_objects = InstrumentAttributeTypeField(many=True, allow_null=False, allow_empty=False)
+
+    class Meta:
+        model = InstrumentAttributeType
 
 
 class ManualPricingFormulaSerializer(serializers.ModelSerializer):
@@ -326,6 +338,13 @@ class InstrumentSerializer(ModelWithAttributesSerializer, ModelWithObjectPermiss
             instrument.rebuild_event_schedules()
         except ValueError as e:
             raise ValidationError({'instrument_type': '%s' % e})
+
+
+class InstrumentBulkObjectPermissionSerializer(AbstractBulkObjectPermissionSerializer):
+    content_objects = InstrumentField(many=True, allow_null=False, allow_empty=False)
+
+    class Meta:
+        model = Instrument
 
 
 class PriceHistorySerializer(serializers.ModelSerializer):

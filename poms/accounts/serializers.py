@@ -1,14 +1,14 @@
 from __future__ import unicode_literals
 
-from rest_framework import serializers
-
-from poms.accounts.fields import AccountClassifierField, AccountAttributeTypeField, AccountTypeField, AccountTypeDefault
+from poms.accounts.fields import AccountClassifierField, AccountAttributeTypeField, AccountTypeField, \
+    AccountTypeDefault, \
+    AccountField
 from poms.accounts.models import Account, AccountType, AccountClassifier, AccountAttributeType, AccountAttribute
 from poms.common.serializers import AbstractClassifierSerializer, AbstractClassifierNodeSerializer, \
     ModelWithUserCodeSerializer
 from poms.obj_attrs.serializers import AbstractAttributeTypeSerializer, AbstractAttributeSerializer, \
     ModelWithAttributesSerializer
-from poms.obj_perms.serializers import ModelWithObjectPermissionSerializer
+from poms.obj_perms.serializers import ModelWithObjectPermissionSerializer, AbstractBulkObjectPermissionSerializer
 from poms.portfolios.fields import PortfolioField
 from poms.tags.fields import TagField
 from poms.users.fields import MasterUserField
@@ -20,8 +20,6 @@ class AccountClassifierSerializer(AbstractClassifierSerializer):
 
 
 class AccountClassifierNodeSerializer(AbstractClassifierNodeSerializer):
-    # url = serializers.HyperlinkedIdentityField(view_name='accountclassifiernode-detail')
-
     class Meta(AbstractClassifierNodeSerializer.Meta):
         model = AccountClassifier
 
@@ -36,12 +34,26 @@ class AccountTypeSerializer(ModelWithObjectPermissionSerializer, ModelWithUserCo
                   'show_transaction_details', 'transaction_details_expr', 'is_default', 'tags']
 
 
+class AccountTypeBulkObjectPermissionSerializer(AbstractBulkObjectPermissionSerializer):
+    content_objects = AccountTypeField(many=True, allow_null=False, allow_empty=False)
+
+    class Meta:
+        model = AccountType
+
+
 class AccountAttributeTypeSerializer(AbstractAttributeTypeSerializer):
     classifiers = AccountClassifierSerializer(required=False, allow_null=True, many=True)
 
     class Meta(AbstractAttributeTypeSerializer.Meta):
         model = AccountAttributeType
         fields = AbstractAttributeTypeSerializer.Meta.fields + ['classifiers']
+
+
+class AccountAttributeTypeBulkObjectPermissionSerializer(AbstractBulkObjectPermissionSerializer):
+    content_objects = AccountAttributeTypeField(many=True, allow_null=False, allow_empty=False)
+
+    class Meta:
+        model = AccountAttributeType
 
 
 class AccountAttributeSerializer(AbstractAttributeSerializer):
@@ -65,3 +77,10 @@ class AccountSerializer(ModelWithObjectPermissionSerializer, ModelWithAttributes
         model = Account
         fields = ['url', 'id', 'master_user', 'type', 'user_code', 'name', 'short_name', 'public_name', 'notes',
                   'is_default', 'is_valid_for_all_portfolios', 'portfolios', 'tags', 'attributes', ]
+
+
+class AccountBulkObjectPermissionSerializer(AbstractBulkObjectPermissionSerializer):
+    content_objects = AccountField(many=True, allow_null=False, allow_empty=False)
+
+    class Meta:
+        model = Account

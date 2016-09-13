@@ -6,8 +6,8 @@ from poms.common.serializers import AbstractClassifierSerializer, AbstractClassi
 from poms.counterparties.fields import ResponsibleField, CounterpartyField
 from poms.obj_attrs.serializers import AbstractAttributeTypeSerializer, AbstractAttributeSerializer, \
     ModelWithAttributesSerializer
-from poms.obj_perms.serializers import ModelWithObjectPermissionSerializer
-from poms.portfolios.fields import PortfolioClassifierField, PortfolioAttributeTypeField
+from poms.obj_perms.serializers import ModelWithObjectPermissionSerializer, AbstractBulkObjectPermissionSerializer
+from poms.portfolios.fields import PortfolioClassifierField, PortfolioAttributeTypeField, PortfolioField
 from poms.portfolios.models import PortfolioClassifier, Portfolio, PortfolioAttributeType, PortfolioAttribute
 from poms.tags.fields import TagField
 from poms.transactions.fields import TransactionTypeField
@@ -20,8 +20,6 @@ class PortfolioClassifierSerializer(AbstractClassifierSerializer):
 
 
 class PortfolioClassifierNodeSerializer(AbstractClassifierNodeSerializer):
-    # url = serializers.HyperlinkedIdentityField(view_name='portfolioclassifiernode-detail')
-
     class Meta(AbstractClassifierNodeSerializer.Meta):
         model = PortfolioClassifier
 
@@ -32,6 +30,13 @@ class PortfolioAttributeTypeSerializer(AbstractAttributeTypeSerializer):
     class Meta(AbstractAttributeTypeSerializer.Meta):
         model = PortfolioAttributeType
         fields = AbstractAttributeTypeSerializer.Meta.fields + ['classifiers']
+
+
+class PortfolioAttributeTypeBulkObjectPermissionSerializer(AbstractBulkObjectPermissionSerializer):
+    content_objects = PortfolioAttributeTypeField(many=True, allow_null=False, allow_empty=False)
+
+    class Meta:
+        model = PortfolioAttributeType
 
 
 class PortfolioAttributeSerializer(AbstractAttributeSerializer):
@@ -57,3 +62,10 @@ class PortfolioSerializer(ModelWithObjectPermissionSerializer, ModelWithAttribut
         model = Portfolio
         fields = ['url', 'id', 'master_user', 'user_code', 'name', 'short_name', 'public_name', 'notes', 'is_default',
                   'accounts', 'responsibles', 'counterparties', 'transaction_types', 'attributes', 'tags']
+
+
+class PortfolioBulkObjectPermissionSerializer(AbstractBulkObjectPermissionSerializer):
+    content_objects = PortfolioField(many=True, allow_null=False, allow_empty=False)
+
+    class Meta:
+        model = Portfolio

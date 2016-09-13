@@ -5,17 +5,9 @@ from rest_framework import serializers
 from poms.chats.fields import ThreadField, ThreadGroupField, ThreadGroupDefault
 from poms.chats.models import Thread, Message, DirectMessage, ThreadGroup
 from poms.common.fields import DateTimeTzAwareField
-from poms.obj_perms.serializers import ModelWithObjectPermissionSerializer
+from poms.obj_perms.serializers import ModelWithObjectPermissionSerializer, AbstractBulkObjectPermissionSerializer
 from poms.tags.fields import TagField
 from poms.users.fields import MasterUserField, HiddenMemberField, MemberField
-
-# class ThreadStatusSerializer(serializers.ModelSerializer):
-#     url = serializers.HyperlinkedIdentityField(view_name='chatthreadstatus-detail')
-#     master_user = MasterUserField()
-#
-#     class Meta:
-#         model = ThreadStatus
-#         fields = ['url', 'id', 'master_user', 'name', 'is_closed']
 from poms.users.serializers import MemberMiniSerializer
 
 
@@ -59,6 +51,13 @@ class ThreadSerializer(ModelWithObjectPermissionSerializer):
         fields = ['url', 'id', 'master_user', 'thread_group', 'created', 'modified', 'closed', 'subject', 'tags',
                   'messages_count', 'messages_last']
         read_only_fields = ['created', 'modified', 'closed']
+
+
+class ThreadBulkObjectPermissionSerializer(AbstractBulkObjectPermissionSerializer):
+    content_objects = ThreadField(many=True, allow_null=False, allow_empty=False)
+
+    class Meta:
+        model = Thread
 
 
 class DirectMessageSerializer(serializers.ModelSerializer):

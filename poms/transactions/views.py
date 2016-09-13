@@ -11,19 +11,26 @@ from poms.common.views import AbstractClassModelViewSet, AbstractModelViewSet, A
 from poms.currencies.models import Currency
 from poms.instruments.models import Instrument, InstrumentType
 from poms.obj_attrs.views import AbstractAttributeTypeViewSet, AbstractClassifierViewSet
+from poms.obj_perms.filters import ObjectPermissionMemberFilter, ObjectPermissionGroupFilter, \
+    ObjectPermissionPermissionFilter
 from poms.obj_perms.utils import obj_perms_prefetch
 from poms.obj_perms.views import AbstractWithObjectPermissionViewSet
 from poms.portfolios.models import Portfolio
 from poms.strategies.models import Strategy1, Strategy2, Strategy3
 from poms.tags.filters import TagFilterBackend, TagFilter
-from poms.transactions.filters import TransactionObjectPermissionFilter, ComplexTransactionPermissionFilter
+from poms.transactions.filters import TransactionObjectPermissionFilter, ComplexTransactionPermissionFilter, \
+    TransactionObjectPermissionMemberFilter, TransactionObjectPermissionGroupFilter, \
+    TransactionObjectPermissionPermissionFilter
 from poms.transactions.models import TransactionClass, Transaction, TransactionType, TransactionAttributeType, \
     TransactionTypeGroup, ComplexTransaction, TransactionClassifier, EventClass, NotificationClass
 from poms.transactions.permissions import TransactionObjectPermission
 from poms.transactions.processor import TransactionTypeProcessor
 from poms.transactions.serializers import TransactionClassSerializer, TransactionSerializer, TransactionTypeSerializer, \
     TransactionAttributeTypeSerializer, TransactionTypeProcessSerializer, TransactionTypeGroupSerializer, \
-    ComplexTransactionSerializer, TransactionClassifierNodeSerializer, EventClassSerializer, NotificationClassSerializer
+    ComplexTransactionSerializer, TransactionClassifierNodeSerializer, EventClassSerializer, \
+    NotificationClassSerializer, \
+    TransactionTypeGroupBulkObjectPermissionSerializer, TransactionTypeBulkObjectPermissionSerializer, \
+    TransactionAttributeTypeBulkObjectPermissionSerializer
 from poms.users.filters import OwnerByMasterUserFilter
 
 
@@ -46,15 +53,21 @@ class TransactionTypeGroupFilterSet(FilterSet):
     user_code = CharFilter()
     name = CharFilter()
     short_name = CharFilter()
+    member = ObjectPermissionMemberFilter(object_permission_model=TransactionTypeGroup)
+    member_group = ObjectPermissionGroupFilter(object_permission_model=TransactionTypeGroup)
+    permission = ObjectPermissionPermissionFilter(object_permission_model=TransactionTypeGroup)
 
     class Meta:
         model = TransactionTypeGroup
-        fields = ['user_code', 'name', 'short_name']
+        fields = [
+            'user_code', 'name', 'short_name', 'member', 'member_group', 'permission',
+        ]
 
 
 class TransactionTypeGroupViewSet(AbstractWithObjectPermissionViewSet):
     queryset = TransactionTypeGroup.objects
     serializer_class = TransactionTypeGroupSerializer
+    bulk_objects_permissions_serializer_class = TransactionTypeGroupBulkObjectPermissionSerializer
     filter_backends = AbstractWithObjectPermissionViewSet.filter_backends + [
         OwnerByMasterUserFilter,
     ]
@@ -75,11 +88,16 @@ class TransactionTypeFilterSet(FilterSet):
     portfolio = ModelWithPermissionMultipleChoiceFilter(model=Portfolio, name='portfolios')
     instrument_type = ModelWithPermissionMultipleChoiceFilter(model=InstrumentType, name='instrument_types')
     tag = TagFilter(model=TransactionType)
+    member = ObjectPermissionMemberFilter(object_permission_model=TransactionType)
+    member_group = ObjectPermissionGroupFilter(object_permission_model=TransactionType)
+    permission = ObjectPermissionPermissionFilter(object_permission_model=TransactionType)
 
     class Meta:
         model = TransactionType
-        fields = ['user_code', 'name', 'short_name', 'is_valid_for_all_portfolios', 'is_valid_for_all_instruments',
-                  'group', 'portfolio', 'instrument_type', 'tag']
+        fields = [
+            'user_code', 'name', 'short_name', 'is_valid_for_all_portfolios', 'is_valid_for_all_instruments',
+            'group', 'portfolio', 'instrument_type', 'tag', 'member', 'member_group', 'permission',
+        ]
 
 
 class TransactionTypeViewSet(AbstractWithObjectPermissionViewSet):
@@ -99,6 +117,7 @@ class TransactionTypeViewSet(AbstractWithObjectPermissionViewSet):
         'responsible', 'responsible_input', 'counterparty', 'counterparty_input',
     )
     serializer_class = TransactionTypeSerializer
+    bulk_objects_permissions_serializer_class = TransactionTypeBulkObjectPermissionSerializer
     filter_backends = AbstractWithObjectPermissionViewSet.filter_backends + [
         OwnerByMasterUserFilter,
         TagFilterBackend,
@@ -169,23 +188,27 @@ class TransactionAttributeTypeFilterSet(FilterSet):
     user_code = CharFilter()
     name = CharFilter()
     short_name = CharFilter()
+    member = ObjectPermissionMemberFilter(object_permission_model=TransactionAttributeType)
+    member_group = ObjectPermissionGroupFilter(object_permission_model=TransactionAttributeType)
+    permission = ObjectPermissionPermissionFilter(object_permission_model=TransactionAttributeType)
 
     class Meta:
         model = TransactionAttributeType
-        fields = ['user_code', 'name', 'short_name']
+        fields = [
+            'user_code', 'name', 'short_name', 'member', 'member_group', 'permission',
+        ]
 
 
 class TransactionAttributeTypeViewSet(AbstractAttributeTypeViewSet):
     queryset = TransactionAttributeType.objects
     serializer_class = TransactionAttributeTypeSerializer
+    bulk_objects_permissions_serializer_class = TransactionAttributeTypeBulkObjectPermissionSerializer
     filter_class = TransactionAttributeTypeFilterSet
 
 
 class TransactionClassifierFilterSet(FilterSet):
     name = CharFilter()
     attribute_type = ModelWithPermissionMultipleChoiceFilter(model=TransactionAttributeType)
-
-    # parent = ModelWithPermissionMultipleChoiceFilter(model=TransactionClassifier, master_user_path='attribute_type__master_user')
 
     class Meta:
         model = TransactionClassifier
@@ -210,62 +233,54 @@ class TransactionFilterSet(FilterSet):
     account_cash = ModelWithPermissionMultipleChoiceFilter(model=Account)
     account_position = ModelWithPermissionMultipleChoiceFilter(model=Account)
     account_interim = ModelWithPermissionMultipleChoiceFilter(model=Account)
-    strategy1_position = ModelWithPermissionMultipleChoiceFilter(model=Strategy1,
-                                                                 master_user_path='subgroup__group__master_user')
-    strategy1_cash = ModelWithPermissionMultipleChoiceFilter(model=Strategy1,
-                                                             master_user_path='subgroup__group__master_user')
-    strategy2_position = ModelWithPermissionMultipleChoiceFilter(model=Strategy2,
-                                                                 master_user_path='subgroup__group__master_user')
-    strategy2_cash = ModelWithPermissionMultipleChoiceFilter(model=Strategy2,
-                                                             master_user_path='subgroup__group__master_user')
-    strategy3_position = ModelWithPermissionMultipleChoiceFilter(model=Strategy3,
-                                                                 master_user_path='subgroup__group__master_user')
-    strategy3_cash = ModelWithPermissionMultipleChoiceFilter(model=Strategy3,
-                                                             master_user_path='subgroup__group__master_user')
+    strategy1_position = ModelWithPermissionMultipleChoiceFilter(model=Strategy1)
+    strategy1_cash = ModelWithPermissionMultipleChoiceFilter(model=Strategy1)
+    strategy2_position = ModelWithPermissionMultipleChoiceFilter(model=Strategy2)
+    strategy2_cash = ModelWithPermissionMultipleChoiceFilter(model=Strategy2)
+    strategy3_position = ModelWithPermissionMultipleChoiceFilter(model=Strategy3)
+    strategy3_cash = ModelWithPermissionMultipleChoiceFilter(model=Strategy3)
 
     complex_transaction = django_filters.Filter(name='complex_transaction')
     complex_transaction__code = django_filters.RangeFilter()
     complex_transaction__transaction_type = django_filters.Filter(name='complex_transaction__transaction_type')
 
-    # portfolio = django_filters.Filter(name='portfolio')
-    # instrument = django_filters.Filter(name='instrument')
-    # transaction_currency = django_filters.Filter(name='transaction_currency')
-    # settlement_currency = django_filters.Filter(name='settlement_currency')
-    # account_cash = django_filters.Filter(name='account_cash')
-    # account_position = django_filters.Filter(name='account_position')
-    # account_interim = django_filters.Filter(name='account_interim')
-    # strategy1_position = django_filters.Filter(name='strategy1_position')
-    # strategy1_cash = django_filters.Filter(name='strategy1_cash')
-    # strategy2_position = django_filters.Filter(name='strategy2_position')
-    # strategy2_cash = django_filters.Filter(name='strategy2_cash')
-    # strategy3_position = django_filters.Filter(name='strategy3_position')
-    # strategy3_cash = django_filters.Filter(name='strategy3_cash')
+    account_member = TransactionObjectPermissionMemberFilter(object_permission_model=Account)
+    account_member_group = TransactionObjectPermissionGroupFilter(object_permission_model=Account)
+    account_permission = TransactionObjectPermissionPermissionFilter(object_permission_model=Account)
+    portfolio_member = TransactionObjectPermissionMemberFilter(object_permission_model=Portfolio)
+    portfolio_member_group = TransactionObjectPermissionGroupFilter(object_permission_model=Portfolio)
+    portfolio_permission = TransactionObjectPermissionPermissionFilter(object_permission_model=Portfolio)
 
     class Meta:
         model = Transaction
-        fields = ['transaction_class', 'transaction_code',
-                  'transaction_date', 'accounting_date', 'cash_date',
-                  'complex_transaction', 'complex_transaction__code',
-                  'complex_transaction__transaction_type',
-                  'portfolio', 'instrument', 'transaction_currency', 'settlement_currency',
-                  'account_cash', 'account_position', 'account_interim',
-                  'strategy1_position', 'strategy1_cash',
-                  'strategy2_position', 'strategy2_cash',
-                  'strategy3_position', 'strategy3_cash', ]
+        fields = [
+            'transaction_class', 'transaction_code',
+            'transaction_date', 'accounting_date', 'cash_date',
+            'complex_transaction', 'complex_transaction__code',
+            'complex_transaction__transaction_type',
+            'portfolio', 'instrument', 'transaction_currency', 'settlement_currency',
+            'account_cash', 'account_position', 'account_interim',
+            'strategy1_position', 'strategy1_cash',
+            'strategy2_position', 'strategy2_cash',
+            'strategy3_position', 'strategy3_cash',
+            'account_member', 'account_member_group', 'account_permission',
+            'portfolio_member', 'portfolio_member_group', 'portfolio_permission',
+        ]
 
 
 class TransactionViewSet(AbstractModelViewSet):
     queryset = Transaction.objects.prefetch_related(
         'master_user', 'complex_transaction', 'complex_transaction__transaction_type', 'transaction_class',
-        'portfolio', 'instrument', 'account_cash', 'account_position', 'account_interim',
+        'portfolio', 'instrument', 'transaction_currency', 'settlement_currency',
+        'account_cash', 'account_position', 'account_interim',
         'strategy1_position', 'strategy1_cash', 'strategy2_position', 'strategy2_cash',
         'strategy3_position', 'strategy3_cash',
         'attributes', 'attributes__attribute_type'
     )
     prefetch_permissions_for = (
-        'portfolio', 'instrument', 'account_cash', 'account_position', 'account_interim', 'strategy1_position',
-        'strategy1_cash', 'strategy2_position', 'strategy2_cash', 'strategy3_position', 'strategy3_cash',
-        'attributes__attribute_type',
+        'portfolio', 'instrument', 'account_cash', 'account_position', 'account_interim',
+        'strategy1_position', 'strategy1_cash', 'strategy2_position', 'strategy2_cash',
+        'strategy3_position', 'strategy3_cash', 'attributes__attribute_type',
     )
     serializer_class = TransactionSerializer
     filter_backends = AbstractModelViewSet.filter_backends + [
@@ -311,11 +326,26 @@ class ComplexTransactionFilterSet(FilterSet):
 
 class ComplexTransactionViewSet(AbstractReadOnlyModelViewSet):
     queryset = ComplexTransaction.objects.prefetch_related(
-        'transaction_type',
-        'transaction_type__master_user'
-        'transactions',
-        'transactions__master_user',
+        'transaction_type', 'transaction_type__master_user',
+        'transactions', 'transactions__master_user',
+        'transactions__transaction_class',
+        'transactions__portfolio', 'transactions__instrument', 'transactions__transaction_currency',
+        'transactions__settlement_currency',
+        'transactions__account_cash', 'transactions__account_position', 'transactions__account_interim',
+        'transactions__strategy1_position', 'transactions__strategy1_cash',
+        'transactions__strategy2_position', 'transactions__strategy2_cash',
+        'transactions__strategy3_position', 'transactions__strategy3_cash',
+        'transactions__attributes', 'transactions__attributes__attribute_type'
     )
+    prefetch_permissions_for = [
+        'transaction_type',
+        'transaction_type__portfolio', 'transaction_type__instrument',
+        'transaction_type__account_cash', 'transaction_type__account_position', 'transaction_type__account_interim',
+        'transaction_type__strategy1_position', 'transaction_type__strategy1_cash',
+        'transaction_type__strategy2_position', 'transaction_type__strategy2_cash',
+        'transaction_type__strategy3_position', 'transaction_type__strategy3_cash',
+        'transaction_type__attributes__attribute_type',
+    ]
     serializer_class = ComplexTransactionSerializer
     filter_backends = AbstractReadOnlyModelViewSet.filter_backends + [
         ComplexTransactionPermissionFilter,
@@ -324,7 +354,7 @@ class ComplexTransactionViewSet(AbstractReadOnlyModelViewSet):
     ordering_fields = ['code', ]
     search_fields = ['code', ]
 
-    # def get_queryset(self):
-    #     queryset = super(ComplexTransactionViewSet, self).get_queryset()
-    #     # queryset = obj_perms_prefetch(queryset, my=False, lookups_related=self.prefetch_permissions_for)
-    #     return queryset
+    def get_queryset(self):
+        queryset = super(ComplexTransactionViewSet, self).get_queryset()
+        queryset = obj_perms_prefetch(queryset, my=False, lookups_related=self.prefetch_permissions_for)
+        return queryset

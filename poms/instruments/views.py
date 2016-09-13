@@ -15,8 +15,11 @@ from poms.instruments.serializers import InstrumentSerializer, PriceHistorySeria
     InstrumentClassSerializer, DailyPricingModelSerializer, AccrualCalculationModelSerializer, \
     PaymentSizeDetailSerializer, PeriodicitySerializer, CostMethodSerializer, InstrumentTypeSerializer, \
     InstrumentAttributeTypeSerializer, PricingPolicySerializer, InstrumentClassifierNodeSerializer, \
-    EventScheduleConfigSerializer
+    EventScheduleConfigSerializer, InstrumentTypeBulkObjectPermissionSerializer, \
+    InstrumentAttributeTypeBulkObjectPermissionSerializer, InstrumentBulkObjectPermissionSerializer
 from poms.obj_attrs.views import AbstractAttributeTypeViewSet, AbstractClassifierViewSet
+from poms.obj_perms.filters import ObjectPermissionMemberFilter, ObjectPermissionGroupFilter, \
+    ObjectPermissionPermissionFilter
 from poms.obj_perms.views import AbstractWithObjectPermissionViewSet
 from poms.tags.filters import TagFilterBackend, TagFilter
 from poms.users.filters import OwnerByMasterUserFilter
@@ -72,37 +75,54 @@ class InstrumentTypeFilterSet(FilterSet):
     short_name = CharFilter()
     is_default = IsDefaultFilter(source='instrument_type')
     tag = TagFilter(model=InstrumentType)
+    member = ObjectPermissionMemberFilter(object_permission_model=InstrumentType)
+    member_group = ObjectPermissionGroupFilter(object_permission_model=InstrumentType)
+    permission = ObjectPermissionPermissionFilter(object_permission_model=InstrumentType)
 
     class Meta:
         model = InstrumentType
-        fields = ['user_code', 'name', 'short_name', 'is_default', 'instrument_class', 'tag']
+        fields = [
+            'user_code', 'name', 'short_name', 'is_default', 'instrument_class', 'tag',
+            'member', 'member_group', 'permission',
+        ]
 
 
 class InstrumentTypeViewSet(AbstractWithObjectPermissionViewSet):
     queryset = InstrumentType.objects.prefetch_related('master_user')
     serializer_class = InstrumentTypeSerializer
+    bulk_objects_permissions_serializer_class = InstrumentTypeBulkObjectPermissionSerializer
     filter_backends = AbstractWithObjectPermissionViewSet.filter_backends + [
         OwnerByMasterUserFilter,
         TagFilterBackend,
     ]
     filter_class = InstrumentTypeFilterSet
-    ordering_fields = ['user_code', 'name', 'short_name']
-    search_fields = ['user_code', 'name', 'short_name']
+    ordering_fields = [
+        'user_code', 'name', 'short_name',
+    ]
+    search_fields = [
+        'user_code', 'name', 'short_name',
+    ]
 
 
 class InstrumentAttributeTypeFilterSet(FilterSet):
     user_code = CharFilter()
     name = CharFilter()
     short_name = CharFilter()
+    member = ObjectPermissionMemberFilter(object_permission_model=InstrumentAttributeType)
+    member_group = ObjectPermissionGroupFilter(object_permission_model=InstrumentAttributeType)
+    permission = ObjectPermissionPermissionFilter(object_permission_model=InstrumentAttributeType)
 
     class Meta:
         model = InstrumentAttributeType
-        fields = ['user_code', 'name', 'short_name']
+        fields = [
+            'user_code', 'name', 'short_name', 'member', 'member_group', 'permission',
+        ]
 
 
 class InstrumentAttributeTypeViewSet(AbstractAttributeTypeViewSet):
     queryset = InstrumentAttributeType.objects.prefetch_related('classifiers')
     serializer_class = InstrumentAttributeTypeSerializer
+    bulk_objects_permissions_serializer_class = InstrumentAttributeTypeBulkObjectPermissionSerializer
     filter_class = InstrumentAttributeTypeFilterSet
 
 
@@ -133,11 +153,16 @@ class InstrumentFilterSet(FilterSet):
     reference_for_pricing = CharFilter()
     instrument_type = ModelWithPermissionMultipleChoiceFilter(model=InstrumentType)
     tag = TagFilter(model=Instrument)
+    member = ObjectPermissionMemberFilter(object_permission_model=InstrumentAttributeType)
+    member_group = ObjectPermissionGroupFilter(object_permission_model=InstrumentAttributeType)
+    permission = ObjectPermissionPermissionFilter(object_permission_model=InstrumentAttributeType)
 
     class Meta:
         model = Instrument
-        fields = ['user_code', 'name', 'short_name', 'user_text_1', 'user_text_2', 'user_text_3',
-                  'reference_for_pricing', 'tag']
+        fields = [
+            'user_code', 'name', 'short_name', 'user_text_1', 'user_text_2', 'user_text_3', 'reference_for_pricing',
+            'tag', 'member', 'member_group', 'permission',
+        ]
 
 
 class InstrumentViewSet(AbstractWithObjectPermissionViewSet):
@@ -146,6 +171,7 @@ class InstrumentViewSet(AbstractWithObjectPermissionViewSet):
         'manual_pricing_formulas', 'accrual_calculation_schedules', 'factor_schedules',
         'event_schedules', 'event_schedules__actions')
     serializer_class = InstrumentSerializer
+    bulk_objects_permissions_serializer_class = InstrumentBulkObjectPermissionSerializer
     filter_backends = AbstractWithObjectPermissionViewSet.filter_backends + [
         OwnerByMasterUserFilter,
         TagFilterBackend,

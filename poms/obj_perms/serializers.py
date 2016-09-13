@@ -1,6 +1,7 @@
 from __future__ import unicode_literals
 
 from rest_framework import serializers
+from rest_framework.exceptions import PermissionDenied
 
 from poms.obj_perms.fields import PermissionField, GrantedPermissionField
 from poms.obj_perms.utils import has_view_perms, get_all_perms, assign_perms2, has_manage_perm
@@ -21,6 +22,37 @@ class GroupObjectPermissionSerializer(serializers.Serializer):
 
     class Meta:
         fields = ['id', 'member', 'permission']
+
+
+class BulkObjectPermission(object):
+    def __init__(self, content_objects=None, user_object_permissions=None, group_object_permissions=None, success=None):
+        self.content_objects = content_objects or []
+        self.user_object_permissions = user_object_permissions or []
+        self.group_object_permissions = group_object_permissions or []
+        self.success = success or {}
+
+
+class AbstractBulkObjectPermissionSerializer(serializers.Serializer):
+    user_object_permissions = UserObjectPermissionSerializer(many=True, required=False, allow_null=True)
+    group_object_permissions = GroupObjectPermissionSerializer(many=True, required=False, allow_null=True)
+    success = serializers.ReadOnlyField()
+
+    def create(self, validated_data):
+        ret = BulkObjectPermission(**validated_data)
+
+        member = self.context['request'].user.member
+        for content_object in ret.content_objects:
+            if has_manage_perm(member, content_object):
+                ret.success[content_object.id] = True
+                assign_perms2(content_object, user_perms=ret.user_object_permissions,
+                              group_perms=ret.group_object_permissions)
+            else:
+                ret.success[content_object.id] = False
+
+        return ret
+
+    def update(self, instance, validated_data):
+        raise PermissionDenied()
 
 
 class ModelWithObjectPermissionSerializer(serializers.ModelSerializer):

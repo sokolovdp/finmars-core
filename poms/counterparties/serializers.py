@@ -4,13 +4,13 @@ from poms.common.serializers import AbstractClassifierSerializer, AbstractClassi
     ModelWithUserCodeSerializer
 from poms.counterparties.fields import ResponsibleClassifierField, \
     CounterpartyAttributeTypeField, ResponsibleAttributeTypeField, CounterpartyClassifierField, CounterpartyGroupField, \
-    ResponsibleGroupField
+    ResponsibleGroupField, CounterpartyField, ResponsibleField
 from poms.counterparties.models import CounterpartyClassifier, Counterparty, Responsible, ResponsibleClassifier, \
     CounterpartyAttributeType, CounterpartyAttribute, ResponsibleAttributeType, ResponsibleAttribute, CounterpartyGroup, \
     ResponsibleGroup
 from poms.obj_attrs.serializers import AbstractAttributeTypeSerializer, AbstractAttributeSerializer, \
     ModelWithAttributesSerializer
-from poms.obj_perms.serializers import ModelWithObjectPermissionSerializer
+from poms.obj_perms.serializers import ModelWithObjectPermissionSerializer, AbstractBulkObjectPermissionSerializer
 from poms.portfolios.fields import PortfolioField
 from poms.tags.fields import TagField
 from poms.users.fields import MasterUserField
@@ -22,8 +22,6 @@ class CounterpartyClassifierSerializer(AbstractClassifierSerializer):
 
 
 class CounterpartyClassifierNodeSerializer(AbstractClassifierNodeSerializer):
-    # url = serializers.HyperlinkedIdentityField(view_name='counterpartyclassifiernode-detail')
-
     class Meta(AbstractClassifierNodeSerializer.Meta):
         model = CounterpartyClassifier
 
@@ -34,6 +32,13 @@ class CounterpartyAttributeTypeSerializer(AbstractAttributeTypeSerializer):
     class Meta(AbstractAttributeTypeSerializer.Meta):
         model = CounterpartyAttributeType
         fields = AbstractAttributeTypeSerializer.Meta.fields + ['classifiers']
+
+
+class CounterpartyAttributeTypeBulkObjectPermissionSerializer(AbstractBulkObjectPermissionSerializer):
+    content_objects = CounterpartyAttributeTypeField(many=True, allow_null=False, allow_empty=False)
+
+    class Meta:
+        model = CounterpartyAttributeType
 
 
 class CounterpartyAttributeSerializer(AbstractAttributeSerializer):
@@ -55,6 +60,13 @@ class CounterpartyGroupSerializer(ModelWithObjectPermissionSerializer, ModelWith
                   'tags', ]
 
 
+class CounterpartyGroupBulkObjectPermissionSerializer(AbstractBulkObjectPermissionSerializer):
+    content_objects = CounterpartyGroupField(many=True, allow_null=False, allow_empty=False)
+
+    class Meta:
+        model = CounterpartyGroup
+
+
 class CounterpartySerializer(ModelWithObjectPermissionSerializer, ModelWithAttributesSerializer,
                              ModelWithUserCodeSerializer):
     master_user = MasterUserField()
@@ -69,6 +81,13 @@ class CounterpartySerializer(ModelWithObjectPermissionSerializer, ModelWithAttri
                   'is_default', 'is_valid_for_all_portfolios', 'portfolios', 'attributes', 'tags']
 
 
+class CounterpartyBulkObjectPermissionSerializer(AbstractBulkObjectPermissionSerializer):
+    content_objects = CounterpartyField(many=True, allow_null=False, allow_empty=False)
+
+    class Meta:
+        model = Counterparty
+
+
 # ----
 
 class ResponsibleClassifierSerializer(AbstractClassifierSerializer):
@@ -77,8 +96,6 @@ class ResponsibleClassifierSerializer(AbstractClassifierSerializer):
 
 
 class ResponsibleClassifierNodeSerializer(AbstractClassifierNodeSerializer):
-    # url = serializers.HyperlinkedIdentityField(view_name='responsibleclassifiernode-detail')
-
     class Meta(AbstractClassifierNodeSerializer.Meta):
         model = ResponsibleClassifier
 
@@ -89,6 +106,13 @@ class ResponsibleAttributeTypeSerializer(AbstractAttributeTypeSerializer):
     class Meta(AbstractAttributeTypeSerializer.Meta):
         model = ResponsibleAttributeType
         fields = AbstractAttributeTypeSerializer.Meta.fields + ['classifiers']
+
+
+class ResponsibleAttributeTypeBulkObjectPermissionSerializer(AbstractBulkObjectPermissionSerializer):
+    content_objects = ResponsibleAttributeTypeField(many=True, allow_null=False, allow_empty=False)
+
+    class Meta:
+        model = ResponsibleAttributeType
 
 
 class ResponsibleAttributeSerializer(AbstractAttributeSerializer):
@@ -106,8 +130,16 @@ class ResponsibleGroupSerializer(ModelWithObjectPermissionSerializer, ModelWithU
 
     class Meta:
         model = ResponsibleGroup
-        fields = ['url', 'id', 'master_user', 'user_code', 'name', 'short_name', 'public_name', 'notes', 'is_default',
-                  'tags', ]
+        fields = [
+            'url', 'id', 'master_user', 'user_code', 'name', 'short_name', 'public_name', 'notes', 'is_default', 'tags',
+        ]
+
+
+class ResponsibleGroupBulkObjectPermissionSerializer(AbstractBulkObjectPermissionSerializer):
+    content_objects = ResponsibleGroupField(many=True, allow_null=False, allow_empty=False)
+
+    class Meta:
+        model = ResponsibleGroup
 
 
 class ResponsibleSerializer(ModelWithObjectPermissionSerializer, ModelWithAttributesSerializer,
@@ -122,3 +154,10 @@ class ResponsibleSerializer(ModelWithObjectPermissionSerializer, ModelWithAttrib
         model = Responsible
         fields = ['url', 'id', 'master_user', 'group', 'user_code', 'name', 'short_name', 'public_name', 'notes',
                   'is_default', 'is_valid_for_all_portfolios', 'portfolios', 'attributes', 'tags']
+
+
+class ResponsibleBulkObjectPermissionSerializer(AbstractBulkObjectPermissionSerializer):
+    content_objects = ResponsibleField(many=True, allow_null=False, allow_empty=False)
+
+    class Meta:
+        model = Responsible

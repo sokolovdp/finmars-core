@@ -3,10 +3,12 @@ from __future__ import unicode_literals
 from rest_framework.filters import FilterSet
 
 from poms.common.filters import CharFilter
+from poms.obj_perms.filters import ObjectPermissionMemberFilter, ObjectPermissionGroupFilter, \
+    ObjectPermissionPermissionFilter
 from poms.obj_perms.views import AbstractWithObjectPermissionViewSet
 from poms.tags.filters import TagContentTypeFilter
 from poms.tags.models import Tag
-from poms.tags.serializers import TagSerializer
+from poms.tags.serializers import TagSerializer, TagBulkObjectPermissionSerializer
 from poms.users.filters import OwnerByMasterUserFilter
 
 
@@ -15,10 +17,15 @@ class TagFilterSet(FilterSet):
     name = CharFilter()
     short_name = CharFilter()
     content_type = TagContentTypeFilter(name='content_types')
+    member = ObjectPermissionMemberFilter(object_permission_model=Tag)
+    member_group = ObjectPermissionGroupFilter(object_permission_model=Tag)
+    permission = ObjectPermissionPermissionFilter(object_permission_model=Tag)
 
     class Meta:
         model = Tag
-        fields = ['user_code', 'name', 'short_name', 'content_type']
+        fields = [
+            'user_code', 'name', 'short_name', 'content_type', 'member', 'member_group', 'permission',
+        ]
 
 
 class TagViewSet(AbstractWithObjectPermissionViewSet):
@@ -38,6 +45,7 @@ class TagViewSet(AbstractWithObjectPermissionViewSet):
         'portfolios', 'transaction_types',
     )
     serializer_class = TagSerializer
+    bulk_objects_permissions_serializer_class = TagBulkObjectPermissionSerializer
     filter_backends = AbstractWithObjectPermissionViewSet.filter_backends + [
         OwnerByMasterUserFilter,
     ]
