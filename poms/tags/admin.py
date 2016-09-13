@@ -3,17 +3,15 @@ from __future__ import unicode_literals
 from django.contrib import admin
 
 from poms.audit.admin import HistoricalAdmin
-from poms.obj_perms.admin import UserObjectPermissionInline, \
-    GroupObjectPermissionInline
-from poms.tags.filters import TagContentTypeFilter
+from poms.obj_perms.admin import UserObjectPermissionInline, GroupObjectPermissionInline
+from poms.tags.filters import get_tag_content_types
 from poms.tags.models import Tag
 
 
 class TagAdmin(HistoricalAdmin):
     model = Tag
     list_display = ['id', 'master_user', 'name']
-    filter_horizontal = ['content_types',
-                         ]
+    filter_horizontal = ['content_types', ]
     raw_id_fields = [
         'master_user', 'account_types', 'accounts', 'currencies', 'instrument_types', 'instruments',
         'counterparty_groups', 'counterparties',
@@ -33,10 +31,8 @@ class TagAdmin(HistoricalAdmin):
     def formfield_for_manytomany(self, db_field, request=None, **kwargs):
         if db_field.name == 'content_types':
             qs = kwargs.get('queryset', db_field.remote_field.model.objects)
-            kwargs['queryset'] = TagContentTypeFilter().filter_queryset(request, qs, None).order_by('model')
+            kwargs['queryset'] = qs.filter(pk__in=get_tag_content_types())
         return super(TagAdmin, self).formfield_for_manytomany(db_field, request=request, **kwargs)
 
 
 admin.site.register(Tag, TagAdmin)
-# admin.site.register(TagUserObjectPermission, UserObjectPermissionAdmin)
-# admin.site.register(TagGroupObjectPermission, GroupObjectPermissionAdmin)
