@@ -29,21 +29,21 @@ class TagFilterSet(FilterSet):
 
 
 class TagViewSet(AbstractWithObjectPermissionViewSet):
-    queryset = Tag.objects.prefetch_related(
-        'content_types', 'account_types', 'accounts', 'currencies', 'instrument_types', 'instruments', 'counterparties',
-        'responsibles',
-        'strategy1_groups', 'strategy1_subgroups', 'strategies1',
-        'strategy2_groups', 'strategy2_subgroups', 'strategies2',
-        'strategy3_groups', 'strategy3_subgroups', 'strategies3',
-        'portfolios', 'transaction_types',
-    )
-    prefetch_permissions_for = (
-        'account_types', 'accounts', 'currencies', 'instrument_types', 'instruments', 'counterparties', 'responsibles',
-        'strategy1_groups', 'strategy1_subgroups', 'strategies1',
-        'strategy2_groups', 'strategy2_subgroups', 'strategies2',
-        'strategy3_groups', 'strategy3_subgroups', 'strategies3',
-        'portfolios', 'transaction_types',
-    )
+    queryset = Tag.objects
+    # prefetch_related(
+    #     'content_types', 'account_types', 'accounts', 'currencies', 'instrument_types', 'instruments', 'counterparties',
+    #     'responsibles', 'portfolios', 'transaction_type_groups', 'transaction_types',
+    #     'strategy1_groups', 'strategy1_subgroups', 'strategies1',
+    #     'strategy2_groups', 'strategy2_subgroups', 'strategies2',
+    #     'strategy3_groups', 'strategy3_subgroups', 'strategies3',
+    # )
+    # prefetch_permissions_for = (
+    #     'account_types', 'accounts', 'currencies', 'instrument_types', 'instruments', 'counterparties', 'responsibles',
+    #     'portfolios', 'transaction_type_groups', 'transaction_types',
+    #     'strategy1_groups', 'strategy1_subgroups', 'strategies1',
+    #     'strategy2_groups', 'strategy2_subgroups', 'strategies2',
+    #     'strategy3_groups', 'strategy3_subgroups', 'strategies3',
+    # )
     serializer_class = TagSerializer
     bulk_objects_permissions_serializer_class = TagBulkObjectPermissionSerializer
     filter_backends = AbstractWithObjectPermissionViewSet.filter_backends + [

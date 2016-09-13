@@ -17,7 +17,7 @@ class TagAdmin(HistoricalAdmin):
         'counterparty_groups', 'counterparties',
         'responsible_groups', 'responsibles',
         'portfolios',
-        'transaction_types',
+        'transaction_type_groups', 'transaction_types',
         'strategy1_groups', 'strategy1_subgroups', 'strategies1',
         'strategy2_groups', 'strategy2_subgroups', 'strategies2',
         'strategy3_groups', 'strategy3_subgroups', 'strategies3',

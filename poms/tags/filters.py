@@ -18,17 +18,16 @@ from poms.portfolios.models import Portfolio
 from poms.strategies.models import Strategy1Group, Strategy1Subgroup, Strategy1, Strategy2Group, Strategy2Subgroup, \
     Strategy2, Strategy3Group, Strategy3Subgroup, Strategy3
 from poms.tags.models import Tag
-from poms.transactions.models import TransactionType
+from poms.transactions.models import TransactionType, TransactionTypeGroup
 
 
 def get_tag_content_types():
-    models = [AccountType, Account, Currency, InstrumentType, Instrument,
-              CounterpartyGroup, Counterparty,
-              ResponsibleGroup, Responsible,
+    models = [AccountType, Account, Currency, InstrumentType, Instrument, Portfolio,
+              CounterpartyGroup, Counterparty, ResponsibleGroup, Responsible,
               Strategy1Group, Strategy1Subgroup, Strategy1,
               Strategy2Group, Strategy2Subgroup, Strategy2,
               Strategy3Group, Strategy3Subgroup, Strategy3,
-              Portfolio, TransactionType, ThreadGroup, Thread]
+              TransactionTypeGroup, TransactionType, ThreadGroup, Thread]
     return [ContentType.objects.get_for_model(model).pk for model in models]
 
 

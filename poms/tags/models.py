@@ -37,6 +37,8 @@ class Tag(NamedModel):
     portfolios = models.ManyToManyField('portfolios.Portfolio', related_name='tags', blank=True,
                                         verbose_name=_('portfolios'))
 
+    transaction_type_groups = models.ManyToManyField('transactions.TransactionTypeGroup', related_name='tags',
+                                                     blank=True, verbose_name=_('transaction type groups'))
     transaction_types = models.ManyToManyField('transactions.TransactionType', related_name='tags', blank=True,
                                                verbose_name=_('transaction types'))
 

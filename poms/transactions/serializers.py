@@ -49,10 +49,11 @@ class TransactionClassSerializer(PomsClassSerializer):
 
 class TransactionTypeGroupSerializer(ModelWithObjectPermissionSerializer, ModelWithUserCodeSerializer):
     master_user = MasterUserField()
+    tags = TagField(many=True, required=False, allow_null=True)
 
     class Meta:
         model = TransactionTypeGroup
-        fields = ['url', 'id', 'master_user', 'user_code', 'name', 'short_name', 'public_name', 'notes']
+        fields = ['url', 'id', 'master_user', 'user_code', 'name', 'short_name', 'public_name', 'notes', 'tags']
 
 
 class TransactionTypeGroupBulkObjectPermissionSerializer(AbstractBulkObjectPermissionSerializer):

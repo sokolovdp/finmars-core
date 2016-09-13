@@ -53,6 +53,7 @@ class TransactionTypeGroupFilterSet(FilterSet):
     user_code = CharFilter()
     name = CharFilter()
     short_name = CharFilter()
+    tag = TagFilter(model=Account)
     member = ObjectPermissionMemberFilter(object_permission_model=TransactionTypeGroup)
     member_group = ObjectPermissionGroupFilter(object_permission_model=TransactionTypeGroup)
     permission = ObjectPermissionPermissionFilter(object_permission_model=TransactionTypeGroup)
@@ -60,7 +61,7 @@ class TransactionTypeGroupFilterSet(FilterSet):
     class Meta:
         model = TransactionTypeGroup
         fields = [
-            'user_code', 'name', 'short_name', 'member', 'member_group', 'permission',
+            'user_code', 'name', 'short_name', 'tag', 'member', 'member_group', 'permission',
         ]
 
 
@@ -70,6 +71,7 @@ class TransactionTypeGroupViewSet(AbstractWithObjectPermissionViewSet):
     bulk_objects_permissions_serializer_class = TransactionTypeGroupBulkObjectPermissionSerializer
     filter_backends = AbstractWithObjectPermissionViewSet.filter_backends + [
         OwnerByMasterUserFilter,
+        TagFilterBackend,
     ]
     filter_class = TransactionTypeGroupFilterSet
     ordering_fields = [
