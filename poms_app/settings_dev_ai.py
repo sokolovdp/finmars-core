@@ -6,11 +6,12 @@ import env_ai
 # noinspection PyUnresolvedReferences
 from .settings import *
 
-INSTALLED_APPS += [
-    'crispy_forms',
-    'redisboard',
-    # 'debug_toolbar',
-]
+if 'crispy_forms' not in INSTALLED_APPS:
+    INSTALLED_APPS += ['crispy_forms', ]
+if 'redisboard' not in INSTALLED_APPS:
+    INSTALLED_APPS += ['redisboard', ]
+if 'debug_toolbar' not in INSTALLED_APPS:
+    INSTALLED_APPS += ['debug_toolbar', ]
 
 LOGGING['formatters']['verbose']['format'] = '[%(levelname)1.1s %(asctime)s %(name)s %(module)s:%(lineno)d] %(message)s'
 # LOGGING['loggers']['django.db'] = {'level': 'DEBUG'}
@@ -34,8 +35,8 @@ MEDIA_SERVE = True
 # CELERY ------------------------------------------------
 
 
-# CELERY_ALWAYS_EAGER = True
-# CELERY_EAGER_PROPAGATES_EXCEPTIONS = True
+CELERY_ALWAYS_EAGER = True
+CELERY_EAGER_PROPAGATES_EXCEPTIONS = True
 CELERYD_LOG_FORMAT = LOGGING['formatters']['verbose']['format']
 CELERY_TASK_RESULT_EXPIRES = 600
 
