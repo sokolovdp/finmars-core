@@ -16,10 +16,11 @@ simpleeval==0.8.7
 requests==2.11.1
 pyOpenSSL==16.0.0
 suds-jurko==0.6
-
 croniter==0.3.12
-django-redisboard==3.0.0
+
 user-agents==1.0.1
+django-redisboard==3.0.1
 
 django-otp==0.3.6
 qrcode==5.3
+django-crispy-forms==1.6.0
