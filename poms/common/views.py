@@ -4,7 +4,7 @@ from django.conf import settings
 from django.db import transaction
 from django.db.models import ProtectedError
 from django.utils import timezone
-from django.utils.translation import ugettext_lazy as _
+from django.utils.translation import ugettext_lazy
 from rest_framework import permissions
 from rest_framework import status
 from rest_framework.filters import DjangoFilterBackend, OrderingFilter, SearchFilter
@@ -104,7 +104,7 @@ class AbstractModelViewSet(AbstractApiView, ModelViewSet):
             self.perform_destroy(instance)
         except ProtectedError:
             return Response({
-                'non_fields_error': _(
+                'non_fields_error': ugettext_lazy(
                     'Cannot delete instance because they are referenced through a protected foreign key'),
             }, status=status.HTTP_409_CONFLICT)
         return Response(status=status.HTTP_204_NO_CONTENT)

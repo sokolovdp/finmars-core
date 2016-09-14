@@ -2,7 +2,7 @@ from __future__ import unicode_literals, print_function
 
 from django.db import models
 from django.utils.encoding import python_2_unicode_compatible
-from django.utils.translation import ugettext_lazy as _
+from django.utils.translation import ugettext_lazy
 from mptt.fields import TreeForeignKey
 from mptt.models import MPTTModel
 
@@ -17,15 +17,15 @@ from poms.users.models import MasterUser, Member
 @python_2_unicode_compatible
 class AccountType(NamedModel, FakeDeletableModel):
     master_user = models.ForeignKey(MasterUser, related_name='account_types',
-                                    verbose_name=_('master user'))
+                                    verbose_name=ugettext_lazy('master user'))
     show_transaction_details = models.BooleanField(default=False,
-                                                   verbose_name=_('show transaction details'))
+                                                   verbose_name=ugettext_lazy('show transaction details'))
     transaction_details_expr = models.CharField(max_length=255, null=True, blank=True,
-                                                verbose_name=_('transaction details expr'))
+                                                verbose_name=ugettext_lazy('transaction details expr'))
 
     class Meta(NamedModel.Meta):
-        verbose_name = _('account type')
-        verbose_name_plural = _('account types')
+        verbose_name = ugettext_lazy('account type')
+        verbose_name_plural = ugettext_lazy('account types')
         permissions = [
             ('view_accounttype', 'Can view account type'),
             ('manage_accounttype', 'Can manage account type'),
@@ -41,33 +41,33 @@ class AccountType(NamedModel, FakeDeletableModel):
 
 class AccountTypeUserObjectPermission(AbstractUserObjectPermission):
     content_object = models.ForeignKey(AccountType, related_name='user_object_permissions',
-                                       verbose_name=_('content object'))
+                                       verbose_name=ugettext_lazy('content object'))
 
     class Meta(AbstractUserObjectPermission.Meta):
-        verbose_name = _('account types - user permission')
-        verbose_name_plural = _('account types - user permissions')
+        verbose_name = ugettext_lazy('account types - user permission')
+        verbose_name_plural = ugettext_lazy('account types - user permissions')
 
 
 class AccountTypeGroupObjectPermission(AbstractGroupObjectPermission):
     content_object = models.ForeignKey(AccountType, related_name='group_object_permissions',
-                                       verbose_name=_('content object'))
+                                       verbose_name=ugettext_lazy('content object'))
 
     class Meta(AbstractGroupObjectPermission.Meta):
-        verbose_name = _('account types - group permission')
-        verbose_name_plural = _('account types - group permissions')
+        verbose_name = ugettext_lazy('account types - group permission')
+        verbose_name_plural = ugettext_lazy('account types - group permissions')
 
 
 @python_2_unicode_compatible
 class Account(NamedModel, FakeDeletableModel):
     master_user = models.ForeignKey(MasterUser, related_name='accounts',
-                                    verbose_name=_('master user'))
+                                    verbose_name=ugettext_lazy('master user'))
     type = models.ForeignKey(AccountType, on_delete=models.PROTECT, null=True, blank=True,
-                             verbose_name=_('account type'))
+                             verbose_name=ugettext_lazy('account type'))
     is_valid_for_all_portfolios = models.BooleanField(default=True)
 
     class Meta(NamedModel.Meta):
-        verbose_name = _('account')
-        verbose_name_plural = _('accounts')
+        verbose_name = ugettext_lazy('account')
+        verbose_name_plural = ugettext_lazy('accounts')
         permissions = [
             ('view_account', 'Can view account'),
             ('manage_account', 'Can manage account'),
@@ -83,20 +83,20 @@ class Account(NamedModel, FakeDeletableModel):
 
 class AccountUserObjectPermission(AbstractUserObjectPermission):
     content_object = models.ForeignKey(Account, related_name='user_object_permissions',
-                                       verbose_name=_('content object'))
+                                       verbose_name=ugettext_lazy('content object'))
 
     class Meta(AbstractUserObjectPermission.Meta):
-        verbose_name = _('accounts - user permission')
-        verbose_name_plural = _('accounts - user permissions')
+        verbose_name = ugettext_lazy('accounts - user permission')
+        verbose_name_plural = ugettext_lazy('accounts - user permissions')
 
 
 class AccountGroupObjectPermission(AbstractGroupObjectPermission):
     content_object = models.ForeignKey(Account, related_name='group_object_permissions',
-                                       verbose_name=_('content object'))
+                                       verbose_name=ugettext_lazy('content object'))
 
     class Meta(AbstractGroupObjectPermission.Meta):
-        verbose_name = _('accounts - group permission')
-        verbose_name_plural = _('accounts - group permissions')
+        verbose_name = ugettext_lazy('accounts - group permission')
+        verbose_name_plural = ugettext_lazy('accounts - group permissions')
 
 
 class AccountAttributeType(AbstractAttributeType):
@@ -105,12 +105,12 @@ class AccountAttributeType(AbstractAttributeType):
     #     null=True,
     #     blank=True,
     #     on_delete=models.PROTECT,
-    #     verbose_name=_('classifier')
+    #     verbose_name=ugettext_lazy('classifier')
     # )
 
     class Meta(AbstractAttributeType.Meta):
-        verbose_name = _('account attribute type')
-        verbose_name_plural = _('account attribute types')
+        verbose_name = ugettext_lazy('account attribute type')
+        verbose_name_plural = ugettext_lazy('account attribute types')
         permissions = [
             ('view_accountattributetype', 'Can view account attribute type'),
             ('manage_accountattributetype', 'Can manage account attribute type'),
@@ -119,52 +119,52 @@ class AccountAttributeType(AbstractAttributeType):
 
 class AccountAttributeTypeUserObjectPermission(AbstractUserObjectPermission):
     content_object = models.ForeignKey(AccountAttributeType, related_name='user_object_permissions',
-                                       verbose_name=_('content object'))
+                                       verbose_name=ugettext_lazy('content object'))
 
     class Meta(AbstractUserObjectPermission.Meta):
-        verbose_name = _('account attribute types - user permission')
-        verbose_name_plural = _('account attribute types - user permissions')
+        verbose_name = ugettext_lazy('account attribute types - user permission')
+        verbose_name_plural = ugettext_lazy('account attribute types - user permissions')
 
 
 class AccountAttributeTypeGroupObjectPermission(AbstractGroupObjectPermission):
     content_object = models.ForeignKey(AccountAttributeType, related_name='group_object_permissions',
-                                       verbose_name=_('content object'))
+                                       verbose_name=ugettext_lazy('content object'))
 
     class Meta(AbstractGroupObjectPermission.Meta):
-        verbose_name = _('account attribute types - group permission')
-        verbose_name_plural = _('account attribute types - group permissions')
+        verbose_name = ugettext_lazy('account attribute types - group permission')
+        verbose_name_plural = ugettext_lazy('account attribute types - group permissions')
 
 
 class AccountClassifier(AbstractClassifier):
     attribute_type = models.ForeignKey(AccountAttributeType, related_name='classifiers',
-                                       verbose_name=_('attribute type'))
+                                       verbose_name=ugettext_lazy('attribute type'))
     parent = TreeForeignKey('self', null=True, blank=True, related_name='children', db_index=True,
-                            verbose_name=_('parent'))
+                            verbose_name=ugettext_lazy('parent'))
 
     class Meta(AbstractClassifier.Meta):
-        verbose_name = _('account classifier')
-        verbose_name_plural = _('account classifiers')
+        verbose_name = ugettext_lazy('account classifier')
+        verbose_name_plural = ugettext_lazy('account classifiers')
 
 
 class AccountAttributeTypeOption(AbstractAttributeTypeOption):
     member = models.ForeignKey(Member, related_name='account_attribute_type_options',
-                               verbose_name=_('member'))
+                               verbose_name=ugettext_lazy('member'))
     attribute_type = models.ForeignKey(AccountAttributeType, related_name='options',
-                                       verbose_name=_('attribute type'))
+                                       verbose_name=ugettext_lazy('attribute type'))
 
     class Meta(AbstractAttributeTypeOption.Meta):
-        verbose_name = _('account attribute types - option')
-        verbose_name_plural = _('account attribute types - options')
+        verbose_name = ugettext_lazy('account attribute types - option')
+        verbose_name_plural = ugettext_lazy('account attribute types - options')
 
 
 class AccountAttribute(AbstractAttribute):
     attribute_type = models.ForeignKey(AccountAttributeType, related_name='attributes',
-                                       verbose_name=_('attribute type'))
+                                       verbose_name=ugettext_lazy('attribute type'))
     content_object = models.ForeignKey(Account, related_name='attributes',
-                                       verbose_name=_('content object'))
+                                       verbose_name=ugettext_lazy('content object'))
     classifier = models.ForeignKey(AccountClassifier, on_delete=models.SET_NULL, null=True, blank=True,
-                                   verbose_name=_('classifier'))
+                                   verbose_name=ugettext_lazy('classifier'))
 
     class Meta(AbstractAttribute.Meta):
-        verbose_name = _('account attribute')
-        verbose_name_plural = _('account attributes')
+        verbose_name = ugettext_lazy('account attribute')
+        verbose_name_plural = ugettext_lazy('account attributes')

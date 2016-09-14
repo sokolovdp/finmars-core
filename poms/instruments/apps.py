@@ -2,13 +2,13 @@ from __future__ import unicode_literals
 
 from django.apps import AppConfig
 from django.db import DEFAULT_DB_ALIAS
-from django.utils.translation import ugettext_lazy as _
+from django.utils.translation import ugettext_lazy
 
 
 class InstrumentsConfig(AppConfig):
     name = 'poms.instruments'
     # label = 'poms'
-    verbose_name = _('Instruments')
+    verbose_name = ugettext_lazy('Instruments')
 
     def ready(self):
         from django.db.models.signals import post_migrate

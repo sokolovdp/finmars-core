@@ -831,11 +831,11 @@ def download_pricing_auto(self, master_user_id):
 
     # class PricingAutomatedSchedule(models.Model):
     #     master_user = models.OneToOneField('users.MasterUser', related_name='pricing_automated_schedule',
-    #                                        verbose_name=_('master user'))
+    #                                        verbose_name=ugettext_lazy('master user'))
     #
     #     is_enabled = models.BooleanField(default=True)
     #     cron_expr = models.CharField(max_length=255, blank=True, default='', validators=[validate_crontab],
-    #                                  help_text=_('Format is "* * * * *" (m/h/d/dM/MY)'))
+    #                                  help_text=ugettext_lazy('Format is "* * * * *" (m/h/d/dM/MY)'))
     #     balance_day = models.SmallIntegerField(default=0)
     #     load_days = models.SmallIntegerField(default=1)
     #     fill_days = models.SmallIntegerField(default=0)

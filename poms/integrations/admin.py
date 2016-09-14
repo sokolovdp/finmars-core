@@ -5,7 +5,7 @@ from django.conf import settings
 from django.contrib import admin
 from django.core.urlresolvers import reverse_lazy
 from django.utils.html import escape
-from django.utils.translation import ugettext_lazy as _
+from django.utils.translation import ugettext_lazy
 
 from poms.audit.admin import HistoricalAdmin
 from poms.common.admin import ClassModelAdmin
@@ -100,7 +100,7 @@ class InstrumentDownloadSchemeAdmin(HistoricalAdmin):
             return ', '.join(f)
         return None
 
-    fields0.short_description = _('fields')
+    fields0.short_description = ugettext_lazy('fields')
 
 
 admin.site.register(InstrumentDownloadScheme, InstrumentDownloadSchemeAdmin)
@@ -121,7 +121,7 @@ class PriceDownloadSchemeAdmin(admin.ModelAdmin):
             return ', '.join(f)
         return None
 
-    instrument_yesterday_fields0.short_description = _('instrument yesterday fields')
+    instrument_yesterday_fields0.short_description = ugettext_lazy('instrument yesterday fields')
 
     def instrument_history_fields0(self, obj):
         f = obj.instrument_history_fields
@@ -129,7 +129,7 @@ class PriceDownloadSchemeAdmin(admin.ModelAdmin):
             return ', '.join(f)
         return None
 
-    instrument_history_fields0.short_description = _('instrument history fields')
+    instrument_history_fields0.short_description = ugettext_lazy('instrument history fields')
 
     def currency_history_fields0(self, obj):
         f = obj.currency_history_fields
@@ -137,7 +137,7 @@ class PriceDownloadSchemeAdmin(admin.ModelAdmin):
             return ', '.join(f)
         return None
 
-    currency_history_fields0.short_description = _('currency history fields')
+    currency_history_fields0.short_description = ugettext_lazy('currency history fields')
 
 
 admin.site.register(PriceDownloadScheme, PriceDownloadSchemeAdmin)
@@ -200,7 +200,8 @@ admin.site.register(InstrumentAttributeValueMapping, InstrumentAttributeValueMap
 
 class TaskAdmin(admin.ModelAdmin):
     model = Task
-    list_display = ['__str__', 'parent', 'created', 'status', 'master_user', 'member', 'provider', 'action', 'response_id']
+    list_display = ['__str__', 'parent', 'created', 'status', 'master_user', 'member', 'provider', 'action',
+                    'response_id']
     list_select_related = ['parent', 'master_user', 'member', 'provider']
     raw_id_fields = ['master_user', 'member', 'parent']
     search_fields = ['response_id', ]
@@ -241,7 +242,7 @@ class PricingAutomatedScheduleAdmin(admin.ModelAdmin):
         return None
 
     last_run_task_url.allow_tags = True
-    last_run_task_url.short_description = _('last run task')
+    last_run_task_url.short_description = ugettext_lazy('last run task')
 
 
 admin.site.register(PricingAutomatedSchedule, PricingAutomatedScheduleAdmin)

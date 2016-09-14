@@ -12,7 +12,7 @@ from django.core.serializers.json import DjangoJSONEncoder
 from django.db import models
 from django.utils import timezone
 from django.utils.encoding import python_2_unicode_compatible
-from django.utils.translation import ugettext_lazy as _, ugettext
+from django.utils.translation import ugettext, ugettext_lazy
 
 from poms.common.models import TimeStampedModel, AbstractClassModel
 from poms.instruments.models import Instrument, InstrumentAttribute
@@ -25,7 +25,7 @@ _l = getLogger('poms.integrations')
 class ProviderClass(AbstractClassModel):
     BLOOMBERG = 1
     CLASSES = (
-        (BLOOMBERG, 'BLOOMBERG', _("Bloomberg")),
+        (BLOOMBERG, 'BLOOMBERG', ugettext_lazy("Bloomberg")),
     )
 
     class Meta(AbstractClassModel.Meta):
@@ -36,8 +36,8 @@ class FactorScheduleDownloadMethod(AbstractClassModel):
     IGNORE = 1
     DEFAULT = 2
     CLASSES = (
-        (IGNORE, 'IGNORE', _("Ignore")),
-        (DEFAULT, 'DEFAULT', _("Default")),
+        (IGNORE, 'IGNORE', ugettext_lazy("Ignore")),
+        (DEFAULT, 'DEFAULT', ugettext_lazy("Default")),
     )
 
     class Meta(AbstractClassModel.Meta):
@@ -48,8 +48,8 @@ class AccrualScheduleDownloadMethod(AbstractClassModel):
     IGNORE = 1
     DEFAULT = 2
     CLASSES = (
-        (IGNORE, 'IGNORE', _("Ignore")),
-        (DEFAULT, 'DEFAULT', _("Default")),
+        (IGNORE, 'IGNORE', ugettext_lazy("Ignore")),
+        (DEFAULT, 'DEFAULT', ugettext_lazy("Default")),
     )
 
     class Meta(AbstractClassModel.Meta):
@@ -70,8 +70,8 @@ class ImportConfig(models.Model):
     key = models.FileField(null=True, blank=True, upload_to=import_cert_upload_to, storage=import_config_storage)
 
     class Meta:
-        verbose_name = _('import config')
-        verbose_name_plural = _('import configs')
+        verbose_name = ugettext_lazy('import config')
+        verbose_name_plural = ugettext_lazy('import configs')
         unique_together = [
             ['master_user', 'provider']
         ]
@@ -152,13 +152,13 @@ class InstrumentDownloadScheme(models.Model):
     maturity_date = models.CharField(max_length=255, blank=True, default='')
 
     payment_size_detail = models.ForeignKey('instruments.PaymentSizeDetail', on_delete=models.PROTECT,
-                                            null=True, blank=True, verbose_name=_('payment size detail'))
+                                            null=True, blank=True, verbose_name=ugettext_lazy('payment size detail'))
     daily_pricing_model = models.ForeignKey('instruments.DailyPricingModel', null=True, blank=True,
-                                            verbose_name=_('daily pricing model'))
+                                            verbose_name=ugettext_lazy('daily pricing model'))
     price_download_scheme = models.ForeignKey('integrations.PriceDownloadScheme', on_delete=models.PROTECT, null=True,
-                                              blank=True, verbose_name=_('price download scheme'))
-    default_price = models.FloatField(default=0.0, verbose_name=_('default price'))
-    default_accrued = models.FloatField(default=0.0, verbose_name=_('default accrued'))
+                                              blank=True, verbose_name=ugettext_lazy('price download scheme'))
+    default_price = models.FloatField(default=0.0, verbose_name=ugettext_lazy('default price'))
+    default_accrued = models.FloatField(default=0.0, verbose_name=ugettext_lazy('default accrued'))
 
     factor_schedule_method = models.ForeignKey(FactorScheduleDownloadMethod, null=True, blank=True)
     accrual_calculation_schedule_method = models.ForeignKey(AccrualScheduleDownloadMethod, null=True, blank=True)
@@ -167,8 +167,8 @@ class InstrumentDownloadScheme(models.Model):
         index_together = (
             ('master_user', 'scheme_name')
         )
-        verbose_name = _('instrument download scheme')
-        verbose_name_plural = _('instrument download schemes')
+        verbose_name = ugettext_lazy('instrument download scheme')
+        verbose_name_plural = ugettext_lazy('instrument download schemes')
         # permissions = [
         #     ('view_instrumentdownloadscheme', 'Can view instrument download scheme'),
         #     ('manage_instrumentdownloadscheme', 'Can manage instrument download scheme'),
@@ -192,8 +192,8 @@ class InstrumentDownloadSchemeInput(models.Model):
             ('scheme', 'name')
         )
         ordering = ('name',)
-        verbose_name = _('instrument download scheme input')
-        verbose_name_plural = _('instrument download scheme inputs')
+        verbose_name = ugettext_lazy('instrument download scheme input')
+        verbose_name_plural = ugettext_lazy('instrument download scheme inputs')
 
     def __str__(self):
         return self.name
@@ -210,8 +210,8 @@ class InstrumentDownloadSchemeAttribute(models.Model):
             ('scheme', 'attribute_type')
         )
         ordering = ('attribute_type__name',)
-        verbose_name = _('instrument download scheme attribute')
-        verbose_name_plural = _('instrument download schemes attribute')
+        verbose_name = ugettext_lazy('instrument download scheme attribute')
+        verbose_name_plural = ugettext_lazy('instrument download schemes attribute')
 
     def __str__(self):
         # return '%s -> %s' % (self.name, self.attribute_type)
@@ -252,8 +252,8 @@ class PriceDownloadScheme(models.Model):
         unique_together = [
             ['master_user', 'scheme_name']
         ]
-        verbose_name = _('price download scheme')
-        verbose_name_plural = _('price download schemes')
+        verbose_name = ugettext_lazy('price download scheme')
+        verbose_name_plural = ugettext_lazy('price download schemes')
 
     def __str__(self):
         return self.scheme_name
@@ -325,8 +325,8 @@ class CurrencyMapping(AbstractMapping):
     currency = models.ForeignKey('currencies.Currency')
 
     class Meta:
-        verbose_name = _('currency mapping')
-        verbose_name_plural = _('currency mappings')
+        verbose_name = ugettext_lazy('currency mapping')
+        verbose_name_plural = ugettext_lazy('currency mappings')
 
     def __str__(self):
         return '%s / %s -> %s' % (self.provider, self.value, self.currency)
@@ -336,8 +336,8 @@ class InstrumentTypeMapping(AbstractMapping):
     instrument_type = models.ForeignKey('instruments.InstrumentType')
 
     class Meta:
-        verbose_name = _('instrument type mapping')
-        verbose_name_plural = _('instrument type mappings')
+        verbose_name = ugettext_lazy('instrument type mapping')
+        verbose_name_plural = ugettext_lazy('instrument type mappings')
 
     def __str__(self):
         return '%s / %s -> %s' % (self.provider, self.value, self.instrument_type)
@@ -345,16 +345,17 @@ class InstrumentTypeMapping(AbstractMapping):
 
 class InstrumentAttributeValueMapping(AbstractMapping):
     attribute_type = models.ForeignKey('instruments.InstrumentAttributeType', on_delete=models.PROTECT,
-                                       verbose_name=_('attribute type'))
-    value_string = models.CharField(max_length=255, default='', blank=True, verbose_name=_('value (String)'))
-    value_float = models.FloatField(default=0.0, verbose_name=_('value (Float)'))
-    value_date = models.DateField(default=date.min, verbose_name=_('value (Date)'))
+                                       verbose_name=ugettext_lazy('attribute type'))
+    value_string = models.CharField(max_length=255, default='', blank=True,
+                                    verbose_name=ugettext_lazy('value (String)'))
+    value_float = models.FloatField(default=0.0, verbose_name=ugettext_lazy('value (Float)'))
+    value_date = models.DateField(default=date.min, verbose_name=ugettext_lazy('value (Date)'))
     classifier = models.ForeignKey('instruments.InstrumentClassifier', on_delete=models.SET_NULL, null=True, blank=True,
-                                   verbose_name=_('classifier'))
+                                   verbose_name=ugettext_lazy('classifier'))
 
     class Meta:
-        verbose_name = _('instrument attribute value mapping')
-        verbose_name_plural = _('instrument attribute value mappings')
+        verbose_name = ugettext_lazy('instrument attribute value mapping')
+        verbose_name_plural = ugettext_lazy('instrument attribute value mappings')
 
     def __str__(self):
         value = self.attribute_type.get_value(self)
@@ -365,8 +366,8 @@ class AccrualCalculationModelMapping(AbstractMapping):
     accrual_calculation_model = models.ForeignKey('instruments.AccrualCalculationModel')
 
     class Meta:
-        verbose_name = _('accrual calculation model mapping')
-        verbose_name_plural = _('accrual calculation model  mappings')
+        verbose_name = ugettext_lazy('accrual calculation model mapping')
+        verbose_name_plural = ugettext_lazy('accrual calculation model  mappings')
 
     def __str__(self):
         return '%s / %s -> %s' % (self.provider, self.value, self.accrual_calculation_model)
@@ -376,8 +377,8 @@ class PeriodicityMapping(AbstractMapping):
     periodicity = models.ForeignKey('instruments.Periodicity')
 
     class Meta:
-        verbose_name = _('periodicity mapping')
-        verbose_name_plural = _('periodicity  mappings')
+        verbose_name = ugettext_lazy('periodicity mapping')
+        verbose_name_plural = ugettext_lazy('periodicity  mappings')
 
     def __str__(self):
         return '%s / %s -> %s' % (self.provider, self.value, self.periodicity)
@@ -419,8 +420,8 @@ class Task(TimeStampedModel):
     response_id = models.CharField(max_length=50, null=True, db_index=True)
 
     class Meta:
-        verbose_name = _('task')
-        verbose_name_plural = _('tasks')
+        verbose_name = ugettext_lazy('task')
+        verbose_name_plural = ugettext_lazy('tasks')
         index_together = (
             ('master_user', 'created')
         )
@@ -506,16 +507,16 @@ def validate_crontab(value):
         # to_crontab(value)
         croniter(value, timezone.now())
     except (ValueError, KeyError):
-        raise ValidationError(_('A valid cron string is required.'))
+        raise ValidationError(ugettext_lazy('A valid cron string is required.'))
 
 
 class PricingAutomatedSchedule(models.Model):
     master_user = models.OneToOneField('users.MasterUser', related_name='pricing_automated_schedule',
-                                       verbose_name=_('master user'))
+                                       verbose_name=ugettext_lazy('master user'))
 
     is_enabled = models.BooleanField(default=True)
     cron_expr = models.CharField(max_length=255, blank=True, default='', validators=[validate_crontab],
-                                 help_text=_('Format is "* * * * *" (m/h/d/dM/MY)'))
+                                 help_text=ugettext_lazy('Format is "* * * * *" (m/h/d/dM/MY)'))
     balance_day = models.PositiveSmallIntegerField(default=0)
     load_days = models.PositiveSmallIntegerField(default=1)
     fill_days = models.PositiveSmallIntegerField(default=0)
@@ -526,11 +527,12 @@ class PricingAutomatedSchedule(models.Model):
 
     last_run_at = models.DateTimeField(default=timezone.now, editable=False, db_index=True)
     next_run_at = models.DateTimeField(default=timezone.now, editable=False, db_index=True)
-    last_run_task = models.ForeignKey(Task, null=True, blank=True, on_delete=models.SET_NULL, editable=False, db_index=True)
+    last_run_task = models.ForeignKey(Task, null=True, blank=True, on_delete=models.SET_NULL, editable=False,
+                                      db_index=True)
 
     class Meta:
-        verbose_name = _('pricing automated schedule')
-        verbose_name_plural = _('pricing automated schedules')
+        verbose_name = ugettext_lazy('pricing automated schedule')
+        verbose_name_plural = ugettext_lazy('pricing automated schedules')
         index_together = (
             ('is_enabled', 'next_run_at'),
         )

@@ -2,7 +2,7 @@ from __future__ import unicode_literals
 
 from django.db import models
 from django.utils.encoding import python_2_unicode_compatible
-from django.utils.translation import ugettext_lazy as _
+from django.utils.translation import ugettext_lazy
 from mptt.fields import TreeForeignKey
 from mptt.models import MPTTModel
 
@@ -22,8 +22,8 @@ class Portfolio(NamedModel, FakeDeletableModel):
     transaction_types = models.ManyToManyField('transactions.TransactionType', related_name='portfolios', blank=True)
 
     class Meta(NamedModel.Meta):
-        verbose_name = _('portfolio')
-        verbose_name_plural = _('portfolios')
+        verbose_name = ugettext_lazy('portfolio')
+        verbose_name_plural = ugettext_lazy('portfolios')
         permissions = (
             ('view_portfolio', 'Can view portfolio'),
             ('manage_portfolio', 'Can manage portfolio'),
@@ -41,22 +41,22 @@ class PortfolioUserObjectPermission(AbstractUserObjectPermission):
     content_object = models.ForeignKey(Portfolio, related_name='user_object_permissions')
 
     class Meta(AbstractUserObjectPermission.Meta):
-        verbose_name = _('portfolios - user permission')
-        verbose_name_plural = _('portfolios - user permissions')
+        verbose_name = ugettext_lazy('portfolios - user permission')
+        verbose_name_plural = ugettext_lazy('portfolios - user permissions')
 
 
 class PortfolioGroupObjectPermission(AbstractGroupObjectPermission):
     content_object = models.ForeignKey(Portfolio, related_name='group_object_permissions')
 
     class Meta(AbstractGroupObjectPermission.Meta):
-        verbose_name = _('portfolios - group permission')
-        verbose_name_plural = _('portfolios - group permissions')
+        verbose_name = ugettext_lazy('portfolios - group permission')
+        verbose_name_plural = ugettext_lazy('portfolios - group permissions')
 
 
 class PortfolioAttributeType(AbstractAttributeType):
     class Meta(AbstractAttributeType.Meta):
-        verbose_name = _('portfolio attribute type')
-        verbose_name_plural = _('portfolio attribute types')
+        verbose_name = ugettext_lazy('portfolio attribute type')
+        verbose_name_plural = ugettext_lazy('portfolio attribute types')
         permissions = [
             ('view_portfolioattributetype', 'Can view portfolio attribute type'),
             ('manage_portfolioattributetype', 'Can manage portfolio attribute type'),
@@ -67,27 +67,27 @@ class PortfolioAttributeTypeUserObjectPermission(AbstractUserObjectPermission):
     content_object = models.ForeignKey(PortfolioAttributeType, related_name='user_object_permissions')
 
     class Meta(AbstractUserObjectPermission.Meta):
-        verbose_name = _('portfolio attribute types - user permission')
-        verbose_name_plural = _('portfolio attribute types - user permissions')
+        verbose_name = ugettext_lazy('portfolio attribute types - user permission')
+        verbose_name_plural = ugettext_lazy('portfolio attribute types - user permissions')
 
 
 class PortfolioAttributeTypeGroupObjectPermission(AbstractGroupObjectPermission):
     content_object = models.ForeignKey(PortfolioAttributeType, related_name='group_object_permissions')
 
     class Meta(AbstractGroupObjectPermission.Meta):
-        verbose_name = _('portfolio attribute types - group permission')
-        verbose_name_plural = _('portfolio attribute types - group permissions')
+        verbose_name = ugettext_lazy('portfolio attribute types - group permission')
+        verbose_name_plural = ugettext_lazy('portfolio attribute types - group permissions')
 
 
 class PortfolioClassifier(AbstractClassifier):
     attribute_type = models.ForeignKey(PortfolioAttributeType, related_name='classifiers',
-                                       verbose_name=_('attribute type'))
+                                       verbose_name=ugettext_lazy('attribute type'))
     parent = TreeForeignKey('self', null=True, blank=True, related_name='children', db_index=True,
-                            verbose_name=_('parent'))
+                            verbose_name=ugettext_lazy('parent'))
 
     class Meta(AbstractClassifier.Meta):
-        verbose_name = _('portfolio classifier')
-        verbose_name_plural = _('portfolio classifiers')
+        verbose_name = ugettext_lazy('portfolio classifier')
+        verbose_name_plural = ugettext_lazy('portfolio classifiers')
 
 
 class PortfolioAttributeTypeOption(AbstractAttributeTypeOption):
@@ -95,16 +95,16 @@ class PortfolioAttributeTypeOption(AbstractAttributeTypeOption):
     attribute_type = models.ForeignKey(PortfolioAttributeType, related_name='options')
 
     class Meta(AbstractAttributeTypeOption.Meta):
-        verbose_name = _('portfolio attribute types - option')
-        verbose_name_plural = _('portfolio attribute types - options')
+        verbose_name = ugettext_lazy('portfolio attribute types - option')
+        verbose_name_plural = ugettext_lazy('portfolio attribute types - options')
 
 
 class PortfolioAttribute(AbstractAttribute):
     attribute_type = models.ForeignKey(PortfolioAttributeType, related_name='attributes',
-                                       verbose_name=_('attribute type'))
+                                       verbose_name=ugettext_lazy('attribute type'))
     content_object = models.ForeignKey(Portfolio, related_name='attributes')
     classifier = models.ForeignKey(PortfolioClassifier, on_delete=models.SET_NULL, null=True, blank=True)
 
     class Meta(AbstractAttribute.Meta):
-        verbose_name = _('portfolio attribute')
-        verbose_name_plural = _('portfolio attributes')
+        verbose_name = ugettext_lazy('portfolio attribute')
+        verbose_name_plural = ugettext_lazy('portfolio attributes')

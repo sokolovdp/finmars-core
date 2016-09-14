@@ -1,8 +1,9 @@
 from datetime import date
+
 from django.contrib.contenttypes.models import ContentType
 from django.db import models
 from django.utils.encoding import python_2_unicode_compatible
-from django.utils.translation import ugettext_lazy as _
+from django.utils.translation import ugettext_lazy
 from mptt.models import MPTTModel
 
 from poms.common.models import NamedModel
@@ -17,18 +18,16 @@ class AbstractAttributeType(NamedModel):
     DATE = 40
 
     VALUE_TYPES = (
-        (NUMBER, _('Number')),
-        (STRING, _('String')),
-        (DATE, _('Date')),
-        (CLASSIFIER, _('Classifier')),
+        (NUMBER, ugettext_lazy('Number')),
+        (STRING, ugettext_lazy('String')),
+        (DATE, ugettext_lazy('Date')),
+        (CLASSIFIER, ugettext_lazy('Classifier')),
     )
 
-    master_user = models.ForeignKey(MasterUser,
-                                    verbose_name=_('master user'))
+    master_user = models.ForeignKey(MasterUser, verbose_name=ugettext_lazy('master user'))
     value_type = models.PositiveSmallIntegerField(choices=VALUE_TYPES, default=STRING,
-                                                  verbose_name=_('value type'))
-    order = models.IntegerField(default=0,
-                                verbose_name=_('order'))
+                                                  verbose_name=ugettext_lazy('value type'))
+    order = models.IntegerField(default=0, verbose_name=ugettext_lazy('order'))
 
     class Meta:
         abstract = True
@@ -59,7 +58,7 @@ class AbstractAttributeType(NamedModel):
 class AbstractClassifier(MPTTModel):
     # attribute_type
     # parent
-    name = models.CharField(max_length=255, blank=True, verbose_name=_('name'))
+    name = models.CharField(max_length=255, blank=True, verbose_name=ugettext_lazy('name'))
 
     class MPTTMeta:
         order_insertion_by = ['attribute_type', 'name']
@@ -74,7 +73,7 @@ class AbstractClassifier(MPTTModel):
 @python_2_unicode_compatible
 class AbstractAttributeTypeOption(models.Model):
     # attribute_type -> actual attribute model
-    is_hidden = models.BooleanField(default=False, verbose_name=_('is hidden'))
+    is_hidden = models.BooleanField(default=False, verbose_name=ugettext_lazy('is hidden'))
 
     class Meta:
         abstract = True
@@ -92,9 +91,10 @@ class AbstractAttribute(models.Model):
     # attribute_type -> actual attribute model
     # content_object -> actual object
 
-    value_string = models.CharField(max_length=255, default='', blank=True, verbose_name=_('value (String)'))
-    value_float = models.FloatField(default=0.0, verbose_name=_('value (Float)'))
-    value_date = models.DateField(default=date.min, verbose_name=_('value (Date)'))
+    value_string = models.CharField(max_length=255, default='', blank=True,
+                                    verbose_name=ugettext_lazy('value (String)'))
+    value_float = models.FloatField(default=0.0, verbose_name=ugettext_lazy('value (Float)'))
+    value_date = models.DateField(default=date.min, verbose_name=ugettext_lazy('value (Date)'))
 
     class Meta:
         abstract = True

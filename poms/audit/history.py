@@ -498,7 +498,7 @@ def _instance_post_delete(sender, instance=None, **kwargs):
 #     for o in added:
 #         try:
 #             model = _get_model(o['content_type'])
-#             message = _('Added %(name)s "%(object)s".') % {
+#             message = ugettext_lazy('Added %(name)s "%(object)s".') % {
 #                 'name': model._meta.verbose_name,
 #                 'object': o['object_repr']
 #             }
@@ -534,7 +534,7 @@ def _instance_post_delete(sender, instance=None, **kwargs):
 #     for o in deleted:
 #         try:
 #             model = _get_model(o['content_type'])
-#             message = _('Deleted %(name)s "%(object)s".') % {
+#             message = ugettext_lazy('Deleted %(name)s "%(object)s".') % {
 #                 'name': model._meta.verbose_name,
 #                 'object': o['object_repr']
 #             }

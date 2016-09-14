@@ -5,7 +5,7 @@ from django.contrib.auth import get_user_model, authenticate
 from django.contrib.auth.models import User
 from django.core.exceptions import PermissionDenied
 from django.utils import translation
-from django.utils.translation import ugettext_lazy as _
+from django.utils.translation import ugettext_lazy
 from rest_framework import serializers
 from rest_framework.authtoken.serializers import AuthTokenSerializer
 
@@ -53,7 +53,7 @@ class UserRegisterSerializer(serializers.Serializer):
         user_model = get_user_model()
 
         if user_model.objects.filter(username=username).exists():
-            msg = _('User already exist.')
+            msg = ugettext_lazy('User already exist.')
             raise serializers.ValidationError(msg)
 
         user = user_model.objects.create_user(username=username, password=password,
@@ -78,7 +78,7 @@ class PasswordChangeSerializer(serializers.Serializer):
             new_password = validated_data['new_password']
             user.set_password(new_password)
             return validated_data
-        raise PermissionDenied(_('Invalid password'))
+        raise PermissionDenied(ugettext_lazy('Invalid password'))
 
 
 class UserProfileSerializer(serializers.ModelSerializer):

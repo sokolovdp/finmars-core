@@ -1,7 +1,7 @@
 from __future__ import unicode_literals
 
 from django.contrib import admin
-from django.utils.translation import ugettext_lazy as _
+from django.utils.translation import ugettext_lazy
 
 from poms.audit.admin import HistoricalAdmin
 from poms.currencies.models import Currency, CurrencyHistory
@@ -18,7 +18,7 @@ class CurrencyAdmin(HistoricalAdmin):
     def is_system(self, obj):
         return obj.is_system
 
-    is_system.short_name = _('is system')
+    is_system.short_name = ugettext_lazy('is system')
     is_system.boolean = True
 
 

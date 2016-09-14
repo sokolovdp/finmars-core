@@ -3,7 +3,7 @@ from __future__ import unicode_literals
 from django.conf import settings
 from django.db import models
 from django.utils.encoding import python_2_unicode_compatible
-from django.utils.translation import ugettext_lazy as _
+from django.utils.translation import ugettext_lazy
 
 from poms.common.models import NamedModel, FakeDeletableModel
 from poms.common.utils import date_now
@@ -13,18 +13,17 @@ from poms.users.models import MasterUser
 
 @python_2_unicode_compatible
 class Currency(NamedModel, FakeDeletableModel):
-    master_user = models.ForeignKey(MasterUser, related_name='currencies', verbose_name=_('master user'))
-
+    master_user = models.ForeignKey(MasterUser, related_name='currencies', verbose_name=ugettext_lazy('master user'))
     reference_for_pricing = models.CharField(max_length=100, blank=True, default='',
-                                             verbose_name=_('reference for pricing'))
+                                             verbose_name=ugettext_lazy('reference for pricing'))
     daily_pricing_model = models.ForeignKey('instruments.DailyPricingModel', null=True, blank=True,
-                                            verbose_name=_('daily pricing model'))
+                                            verbose_name=ugettext_lazy('daily pricing model'))
     price_download_scheme = models.ForeignKey('integrations.PriceDownloadScheme', on_delete=models.PROTECT, null=True,
-                                              blank=True, verbose_name=_('price download scheme'))
+                                              blank=True, verbose_name=ugettext_lazy('price download scheme'))
 
     class Meta(NamedModel.Meta):
-        verbose_name = _('currency')
-        verbose_name_plural = _('currencies')
+        verbose_name = ugettext_lazy('currency')
+        verbose_name_plural = ugettext_lazy('currencies')
         permissions = [
             ('view_currency', 'Can view currency'),
             ('manage_currency', 'Can manage currency'),
@@ -44,20 +43,20 @@ class Currency(NamedModel, FakeDeletableModel):
 
 class CurrencyUserObjectPermission(AbstractUserObjectPermission):
     content_object = models.ForeignKey(Currency, related_name='user_object_permissions',
-                                       verbose_name=_('content object'))
+                                       verbose_name=ugettext_lazy('content object'))
 
     class Meta(AbstractUserObjectPermission.Meta):
-        verbose_name = _('currencies - user permission')
-        verbose_name_plural = _('currencies - user permissions')
+        verbose_name = ugettext_lazy('currencies - user permission')
+        verbose_name_plural = ugettext_lazy('currencies - user permissions')
 
 
 class CurrencyGroupObjectPermission(AbstractGroupObjectPermission):
     content_object = models.ForeignKey(Currency, related_name='group_object_permissions',
-                                       verbose_name=_('content object'))
+                                       verbose_name=ugettext_lazy('content object'))
 
     class Meta(AbstractGroupObjectPermission.Meta):
-        verbose_name = _('currencies - group permission')
-        verbose_name_plural = _('currencies - group permissions')
+        verbose_name = ugettext_lazy('currencies - group permission')
+        verbose_name_plural = ugettext_lazy('currencies - group permissions')
 
 
 # EUR -> USD
@@ -65,18 +64,15 @@ class CurrencyGroupObjectPermission(AbstractGroupObjectPermission):
 # ...
 @python_2_unicode_compatible
 class CurrencyHistory(models.Model):
-    currency = models.ForeignKey(Currency, related_name='histories',
-                                 verbose_name=_('currency'))
+    currency = models.ForeignKey(Currency, related_name='histories', verbose_name=ugettext_lazy('currency'))
     pricing_policy = models.ForeignKey('instruments.PricingPolicy', on_delete=models.PROTECT, null=True, blank=True,
-                                       verbose_name=_('pricing policy'))
-    date = models.DateField(db_index=True, default=date_now,
-                            verbose_name=_('date'))
-    fx_rate = models.FloatField(default=0.,
-                                verbose_name=_('fx rate'))
+                                       verbose_name=ugettext_lazy('pricing policy'))
+    date = models.DateField(db_index=True, default=date_now, verbose_name=ugettext_lazy('date'))
+    fx_rate = models.FloatField(default=0., verbose_name=ugettext_lazy('fx rate'))
 
     class Meta:
-        verbose_name = _('currency history')
-        verbose_name_plural = _('currency histories')
+        verbose_name = ugettext_lazy('currency history')
+        verbose_name_plural = ugettext_lazy('currency histories')
         unique_together = (
             ('currency', 'pricing_policy', 'date',)
         )

@@ -2,7 +2,7 @@ from __future__ import unicode_literals
 
 from django.core.exceptions import ObjectDoesNotExist
 from django.db import IntegrityError
-from django.utils.translation import ugettext_lazy as _
+from django.utils.translation import ugettext_lazy
 from rest_framework import serializers
 from rest_framework.exceptions import ValidationError
 
@@ -189,9 +189,10 @@ class AbstractAttributeSerializer(serializers.ModelSerializer):
             if classifier:
                 if classifier.attribute_type_id != attribute_type.id:
                     raise ValidationError(
-                        {'classifier': _('Invalid pk "%(pk)s" - object does not exist.') % {'pk': classifier.id}})
+                        {'classifier': ugettext_lazy('Invalid pk "%(pk)s" - object does not exist.') % {
+                            'pk': classifier.id}})
                     # else:
-                    #     raise ValidationError({'classifier': _('This field may not be null.')})
+                    #     raise ValidationError({'classifier': ugettext_lazy('This field may not be null.')})
         return attrs
 
 

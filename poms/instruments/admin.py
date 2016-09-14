@@ -3,7 +3,7 @@ from __future__ import unicode_literals
 from django.contrib import admin, messages
 from django.db import models
 from django.forms import widgets
-from django.utils.translation import ugettext_lazy as _
+from django.utils.translation import ugettext_lazy
 
 from poms.audit.admin import HistoricalAdmin
 from poms.common.admin import ClassModelAdmin, ClassifierAdmin
@@ -176,7 +176,7 @@ class EventScheduleAdmin(admin.ModelAdmin):
             n.append(a.transaction_type.name)
         return ', '.join(n)
 
-    _actions.short_description = _('Actions')
+    _actions.short_description = ugettext_lazy('Actions')
 
 
 admin.site.register(EventSchedule, EventScheduleAdmin)

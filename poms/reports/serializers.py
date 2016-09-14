@@ -1,7 +1,7 @@
 from __future__ import unicode_literals
 
 from django.conf import settings
-from django.utils.translation import ugettext_lazy as _
+from django.utils.translation import ugettext_lazy
 from rest_framework import serializers
 
 from poms.currencies.serializers import CurrencyField
@@ -68,15 +68,15 @@ class BaseTransactionSerializer(serializers.ModelSerializer):
 
 
 class BaseReportItemSerializer(serializers.Serializer):
-    id = serializers.UUIDField(read_only=True, source='pk', help_text=_('report item id'))
+    id = serializers.UUIDField(read_only=True, source='pk', help_text=ugettext_lazy('report item id'))
 
-    portfolio = serializers.PrimaryKeyRelatedField(read_only=True, help_text=_('Portfolio'))
+    portfolio = serializers.PrimaryKeyRelatedField(read_only=True, help_text=ugettext_lazy('Portfolio'))
     portfolio_name = serializers.SerializerMethodField()
 
-    account = serializers.PrimaryKeyRelatedField(read_only=True, help_text=_('Account'))
+    account = serializers.PrimaryKeyRelatedField(read_only=True, help_text=ugettext_lazy('Account'))
     account_name = serializers.SerializerMethodField()
 
-    instrument = serializers.PrimaryKeyRelatedField(read_only=True, help_text=_('Instrument'))
+    instrument = serializers.PrimaryKeyRelatedField(read_only=True, help_text=ugettext_lazy('Instrument'))
     instrument_name = serializers.SerializerMethodField()
 
     name = serializers.CharField(read_only=True)
@@ -94,12 +94,12 @@ class BaseReportItemSerializer(serializers.Serializer):
 class BaseReportSerializer(serializers.Serializer):
     master_user = serializers.HiddenField(default=CurrentMasterUserDefault())
 
-    begin_date = serializers.DateField(required=False, allow_null=True, help_text=_('Begin report date'))
-    end_date = serializers.DateField(required=False, allow_null=True, help_text=_('End report date'))
+    begin_date = serializers.DateField(required=False, allow_null=True, help_text=ugettext_lazy('Begin report date'))
+    end_date = serializers.DateField(required=False, allow_null=True, help_text=ugettext_lazy('End report date'))
 
-    use_portfolio = serializers.BooleanField(initial=False, help_text=_('Detalization by portfolio'))
-    use_account = serializers.BooleanField(initial=False, help_text=_('Detalization by account'))
-    use_strategy = serializers.BooleanField(initial=False, help_text=_('Detalization by strategy'))
+    use_portfolio = serializers.BooleanField(initial=False, help_text=ugettext_lazy('Detalization by portfolio'))
+    use_account = serializers.BooleanField(initial=False, help_text=ugettext_lazy('Detalization by account'))
+    use_strategy = serializers.BooleanField(initial=False, help_text=ugettext_lazy('Detalization by strategy'))
 
     multiplier_class = serializers.ChoiceField(default=MULTIPLIER_AVCO, choices=MULTIPLIERS)
 
@@ -111,32 +111,35 @@ class BaseReportSerializer(serializers.Serializer):
 
 
 class BalanceReportItemSerializer(BaseReportItemSerializer):
-    balance_position = serializers.FloatField(read_only=True, help_text=_('Position'))
+    balance_position = serializers.FloatField(read_only=True, help_text=ugettext_lazy('Position'))
 
-    currency = serializers.PrimaryKeyRelatedField(read_only=True, help_text=_('Currency'))
+    currency = serializers.PrimaryKeyRelatedField(read_only=True, help_text=ugettext_lazy('Currency'))
     currency_name = serializers.SerializerMethodField()
-    currency_history = serializers.PrimaryKeyRelatedField(read_only=True, help_text=_('Currency history'))
+    currency_history = serializers.PrimaryKeyRelatedField(read_only=True, help_text=ugettext_lazy('Currency history'))
     currency_fx_rate = serializers.FloatField(read_only=True)
 
     instrument_principal_pricing_ccy = serializers.SerializerMethodField()
     instrument_price_multiplier = serializers.FloatField(read_only=True)
     instrument_accrued_pricing_ccy = serializers.SerializerMethodField()
     instrument_accrued_multiplier = serializers.FloatField(read_only=True)
-    price_history = serializers.PrimaryKeyRelatedField(read_only=True, help_text=_('price history'))
+    price_history = serializers.PrimaryKeyRelatedField(read_only=True, help_text=ugettext_lazy('price history'))
     instrument_principal_price = serializers.FloatField(read_only=True)
     instrument_accrued_price = serializers.FloatField(read_only=True)
     principal_value_instrument_principal_ccy = serializers.FloatField(read_only=True)
     accrued_value_instrument_accrued_ccy = serializers.FloatField(read_only=True)
-    instrument_principal_currency_history = serializers.PrimaryKeyRelatedField(read_only=True, help_text=_(''))
-    instrument_principal_fx_rate = serializers.FloatField(read_only=True, help_text=_(''))
-    instrument_accrued_currency_history = serializers.PrimaryKeyRelatedField(read_only=True, help_text=_(''))
-    instrument_accrued_fx_rate = serializers.FloatField(read_only=True, help_text=_(''))
+    instrument_principal_currency_history = serializers.PrimaryKeyRelatedField(read_only=True,
+                                                                               help_text=ugettext_lazy(''))
+    instrument_principal_fx_rate = serializers.FloatField(read_only=True, help_text=ugettext_lazy(''))
+    instrument_accrued_currency_history = serializers.PrimaryKeyRelatedField(read_only=True,
+                                                                             help_text=ugettext_lazy(''))
+    instrument_accrued_fx_rate = serializers.FloatField(read_only=True, help_text=ugettext_lazy(''))
 
     principal_value_system_ccy = serializers.FloatField(read_only=True)
     accrued_value_system_ccy = serializers.FloatField(read_only=True)
     market_value_system_ccy = serializers.FloatField(read_only=True)
 
-    transaction = serializers.PrimaryKeyRelatedField(read_only=True, help_text=_('Transaction for case 1&2'))
+    transaction = serializers.PrimaryKeyRelatedField(read_only=True,
+                                                     help_text=ugettext_lazy('Transaction for case 1&2'))
 
     def create(self, validated_data):
         return BalanceReportItem(**validated_data)
@@ -159,9 +162,11 @@ class BalanceReportItemSerializer(BaseReportItemSerializer):
 
 
 class BalanceReportSummarySerializer(serializers.Serializer):
-    invested_value_system_ccy = serializers.FloatField(read_only=True, help_text=_('invested value in system currency'))
-    current_value_system_ccy = serializers.FloatField(read_only=True, help_text=_('current value in system currency'))
-    p_l_system_ccy = serializers.FloatField(read_only=True, help_text=_('position size with sign'))
+    invested_value_system_ccy = serializers.FloatField(read_only=True,
+                                                       help_text=ugettext_lazy('invested value in system currency'))
+    current_value_system_ccy = serializers.FloatField(read_only=True,
+                                                      help_text=ugettext_lazy('current value in system currency'))
+    p_l_system_ccy = serializers.FloatField(read_only=True, help_text=ugettext_lazy('position size with sign'))
 
     def create(self, validated_data):
         return BalanceReportSummary(**validated_data)
@@ -172,7 +177,7 @@ class BalanceReportSummarySerializer(serializers.Serializer):
 
 class BalanceReportSerializer(BaseReportSerializer):
     show_transaction_details = serializers.BooleanField(initial=True)
-    items = BalanceReportItemSerializer(many=True, read_only=True, help_text=_('items'))
+    items = BalanceReportItemSerializer(many=True, read_only=True, help_text=ugettext_lazy('items'))
 
     if settings.DEV:
         summary = BalanceReportSummarySerializer(read_only=True)
@@ -216,13 +221,13 @@ class PLReportItemSerializer(BaseReportItemSerializer):
 
 class PLReportSummarySerializer(serializers.Serializer):
     principal_with_sign_system_ccy = serializers.FloatField(read_only=True,
-                                                            help_text=_(''))
+                                                            help_text=ugettext_lazy(''))
     carry_with_sign_system_ccy = serializers.FloatField(read_only=True,
-                                                        help_text=_(''))
+                                                        help_text=ugettext_lazy(''))
     overheads_with_sign_system_ccy = serializers.FloatField(read_only=True,
-                                                            help_text=_(''))
+                                                            help_text=ugettext_lazy(''))
     total_system_ccy = serializers.FloatField(read_only=True,
-                                              help_text=_(''))
+                                              help_text=ugettext_lazy(''))
 
     def create(self, validated_data):
         return PLReportSummary(**validated_data)
@@ -232,7 +237,7 @@ class PLReportSummarySerializer(serializers.Serializer):
 
 
 class PLReportSerializer(BaseReportSerializer):
-    items = PLReportItemSerializer(many=True, read_only=True, help_text=_('items'))
+    items = PLReportItemSerializer(many=True, read_only=True, help_text=ugettext_lazy('items'))
 
     if settings.DEV:
         summary = PLReportSummarySerializer(read_only=True)
@@ -406,7 +411,8 @@ class SimpleMultipliersReportItemSerializer(BaseReportItemSerializer):
 
 
 class SimpleMultipliersReportSerializer(BaseReportSerializer):
-    results = SimpleMultipliersReportItemSerializer(many=True, read_only=True, help_text=_('some help text'))
+    results = SimpleMultipliersReportItemSerializer(many=True, read_only=True,
+                                                    help_text=ugettext_lazy('some help text'))
 
     def create(self, validated_data):
         return BalanceReport(**validated_data)

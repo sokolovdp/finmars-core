@@ -6,20 +6,20 @@ from django.contrib.contenttypes.models import ContentType
 from django.core.exceptions import FieldDoesNotExist
 from django.db import models
 from django.utils.encoding import python_2_unicode_compatible
-from django.utils.translation import ugettext_lazy as _
+from django.utils.translation import ugettext_lazy
 
 
 @python_2_unicode_compatible
 class AuthLogEntry(models.Model):
     date = models.DateTimeField(auto_now_add=True, db_index=True)
-    user = models.ForeignKey(settings.AUTH_USER_MODEL, verbose_name=_('user'))
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, verbose_name=ugettext_lazy('user'))
     user_ip = models.GenericIPAddressField(null=True, blank=True)
     user_agent = models.CharField(max_length=255, null=True, blank=True)
     is_success = models.BooleanField(default=False, db_index=True)
 
     class Meta:
-        verbose_name = _('authenticate log')
-        verbose_name_plural = _('authenticate logs')
+        verbose_name = ugettext_lazy('authenticate log')
+        verbose_name_plural = ugettext_lazy('authenticate logs')
 
     def __str__(self):
         if self.is_success:
@@ -88,8 +88,8 @@ class ObjectHistory4Entry(models.Model):
     old_value_content_object = GenericForeignKey(ct_field='old_value_content_type', fk_field='old_value_object_id')
 
     class Meta:
-        verbose_name = _('object history (v4)')
-        verbose_name_plural = _('object histories (v4)')
+        verbose_name = ugettext_lazy('object history (v4)')
+        verbose_name_plural = ugettext_lazy('object histories (v4)')
         ordering = ['-created']
         index_together = [
             ['master_user', 'created'],
@@ -183,35 +183,35 @@ class ObjectHistory4Entry(models.Model):
         }
         if self.action_flag == self.ADDITION:
             if self.is_root_object:
-                return _('Added "%(object_name)s" "%(object_repr)s".') % data
+                return ugettext_lazy('Added "%(object_name)s" "%(object_repr)s".') % data
             else:
-                return _(
+                return ugettext_lazy(
                     'Added "%(object_name)s" "%(object_repr)s" inside "%(actor_object_name)s" "%(actor_object_repr)s".') % data
         elif self.action_flag == self.DELETION:
             if self.is_root_object:
-                return _('Deleted "%(object_name)s" "%(object_repr)s".') % data
+                return ugettext_lazy('Deleted "%(object_name)s" "%(object_repr)s".') % data
             else:
-                return _(
+                return ugettext_lazy(
                     'Deleted "%(object_name)s" "%(object_repr)s" inside "%(actor_object_name)s" "%(actor_object_repr)s".') % data
         elif self.action_flag == self.CHANGE:
             if self.is_root_object:
-                return _(
+                return ugettext_lazy(
                     'Changed "%(field_name)s" in "%(object_name)s" "%(object_repr)s" from "%(old_value)s" to "%(value)s".') % data
             else:
-                return _(
+                return ugettext_lazy(
                     'Changed "%(field_name)s" in "%(object_name)s" "%(object_repr)s" from "%(old_value)s" to "%(value)s" inside "%(actor_object_name)s" "%(actor_object_repr)s".') % data
         elif self.action_flag == self.M2M_ADDITION:
             if self.is_root_object:
-                return _(
+                return ugettext_lazy(
                     'Added "%(value_object_name)s" "%(value)s" into "%(field_name)s" in "%(object_name)s" "%(object_repr)s".') % data
             else:
-                return _(
+                return ugettext_lazy(
                     'Added "%(value_object_name)s" "%(value)s" into "%(field_name)s" in "%(object_name)s" "%(object_repr)s" inside "%(actor_object_name)s" "%(actor_object_repr)s".') % data
         elif self.action_flag == self.M2M_DELETION:
             if self.is_root_object:
-                return _(
+                return ugettext_lazy(
                     'Deleted "%(value_object_name)s" "%(value)s" from "%(field_name)s" in "%(object_name)s" "%(object_repr)s".') % data
             else:
-                return _(
+                return ugettext_lazy(
                     '"Deleted %(value_object_name)s" "%(value)s" from "%(field_name)s" in "%(object_name)s" "%(object_repr)s" inside "%(actor_object_name)s" "%(actor_object_repr)s".') % data
         return None

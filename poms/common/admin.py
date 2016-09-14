@@ -10,7 +10,7 @@ class TreeModelAdmin(MPTTModelAdmin):
 
     # def formatted_name(self, obj):
     #     return format_html('<div style="padding-left: {}px">{}</div>', self.mptt_level_indent * obj.level, obj.name)
-    # formatted_name.short_description = _('name')
+    # formatted_name.short_description = ugettext_lazy('name')
 
 
 class ClassifierAdmin(HistoricalAdmin, admin.ModelAdmin):

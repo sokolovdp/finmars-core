@@ -5,7 +5,7 @@ from datetime import date
 from django.contrib.contenttypes.models import ContentType
 from django.db import models
 from django.utils.encoding import python_2_unicode_compatible
-from django.utils.translation import ugettext_lazy as _
+from django.utils.translation import ugettext_lazy
 
 from poms.common.models import NamedModel, AbstractClassModel
 from poms.common.utils import date_now
@@ -20,21 +20,21 @@ class ReportClass(AbstractClassModel):
     COST = 3
     YTM = 3
     CLASSES = (
-        (BALANCE, 'BALANCE', _('BALANCE')),
-        (P_L, 'P_L', _('P&L')),
-        (COST, 'COST', _('COST')),
-        (YTM, 'YTM', _('YTM')),
+        (BALANCE, 'BALANCE', ugettext_lazy('BALANCE')),
+        (P_L, 'P_L', ugettext_lazy('P&L')),
+        (COST, 'COST', ugettext_lazy('COST')),
+        (YTM, 'YTM', ugettext_lazy('YTM')),
     )
 
     class Meta(AbstractClassModel.Meta):
         abstract = True
-        verbose_name = _('report class')
-        verbose_name_plural = _('report classes')
+        verbose_name = ugettext_lazy('report class')
+        verbose_name_plural = ugettext_lazy('report classes')
 
 
 class ReportType(NamedModel):
     master_user = models.ForeignKey(MasterUser, related_name='report_types',
-                                    verbose_name=_('master user'))
+                                    verbose_name=ugettext_lazy('master user'))
 
     report_class = models.ForeignKey(ReportClass)
     begin_date = models.DateField(default=date.min)
@@ -53,8 +53,8 @@ class ReportType(NamedModel):
 
     class Meta(NamedModel.Meta):
         abstract = True
-        verbose_name = _('report type')
-        verbose_name_plural = _('report types')
+        verbose_name = ugettext_lazy('report type')
+        verbose_name_plural = ugettext_lazy('report types')
         permissions = [
             ('view_reporttype', 'Can view report type')
         ]
@@ -62,22 +62,22 @@ class ReportType(NamedModel):
 
 class ReportTypeUserObjectPermission(AbstractUserObjectPermission):
     content_object = models.ForeignKey(ReportType, related_name='user_object_permissions',
-                                       verbose_name=_('content object'))
+                                       verbose_name=ugettext_lazy('content object'))
 
     class Meta(AbstractUserObjectPermission.Meta):
         abstract = True
-        verbose_name = _('report types - user permission')
-        verbose_name_plural = _('report types - user permissions')
+        verbose_name = ugettext_lazy('report types - user permission')
+        verbose_name_plural = ugettext_lazy('report types - user permissions')
 
 
 class ReportTypeGroupObjectPermission(AbstractGroupObjectPermission):
     content_object = models.ForeignKey(ReportType, related_name='group_object_permissions',
-                                       verbose_name=_('content object'))
+                                       verbose_name=ugettext_lazy('content object'))
 
     class Meta(AbstractGroupObjectPermission.Meta):
         abstract = True
-        verbose_name = _('report types - group permission')
-        verbose_name_plural = _('report types - group permissions')
+        verbose_name = ugettext_lazy('report types - group permission')
+        verbose_name_plural = ugettext_lazy('report types - group permissions')
 
 
 @python_2_unicode_compatible
@@ -89,28 +89,28 @@ class ReportTypeInput(models.Model):
     RELATION = 100
 
     TYPES = (
-        (NUMBER, _('Number')),
-        (STRING, _('String')),
-        (DATE, _('Date')),
-        (EXPRESSION, _('Expression')),
-        (RELATION, _('Relation')),
+        (NUMBER, ugettext_lazy('Number')),
+        (STRING, ugettext_lazy('String')),
+        (DATE, ugettext_lazy('Date')),
+        (EXPRESSION, ugettext_lazy('Expression')),
+        (RELATION, ugettext_lazy('Relation')),
     )
 
     report_type = models.ForeignKey(ReportType, related_name='inputs',
-                                    verbose_name=_('transaction type'))
+                                    verbose_name=ugettext_lazy('transaction type'))
     value_type = models.PositiveSmallIntegerField(default=NUMBER, choices=TYPES,
-                                                  verbose_name=_('value type'))
+                                                  verbose_name=ugettext_lazy('value type'))
     name = models.CharField(max_length=255, null=True, blank=True,
-                            verbose_name=_('name'))
+                            verbose_name=ugettext_lazy('name'))
     content_type = models.ForeignKey(ContentType, null=True, blank=True,
-                                     verbose_name=_('content type'))
+                                     verbose_name=ugettext_lazy('content type'))
     order = models.IntegerField(default=0,
-                                verbose_name=_('order'))
+                                verbose_name=ugettext_lazy('order'))
 
     class Meta:
         abstract = True
-        verbose_name = _('report type input')
-        verbose_name_plural = _('report type inputs')
+        verbose_name = ugettext_lazy('report type input')
+        verbose_name_plural = ugettext_lazy('report type inputs')
 
     def __str__(self):
         return self.name

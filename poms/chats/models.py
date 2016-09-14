@@ -7,7 +7,7 @@ from django.db import models
 from django.utils import timezone
 from django.utils.encoding import python_2_unicode_compatible
 from django.utils.text import Truncator
-from django.utils.translation import ugettext_lazy as _, get_language
+from django.utils.translation import get_language, ugettext_lazy
 
 from poms.common.models import TimeStampedModel, NamedModel, FakeDeletableModel
 from poms.obj_perms.models import AbstractGroupObjectPermission, AbstractUserObjectPermission
@@ -17,11 +17,11 @@ from poms.users.models import MasterUser, Member
 @python_2_unicode_compatible
 class ThreadGroup(FakeDeletableModel, models.Model):
     master_user = models.ForeignKey(MasterUser, related_name='chat_thread_groups')
-    name = models.CharField(max_length=255, verbose_name=_('name'))
+    name = models.CharField(max_length=255, verbose_name=ugettext_lazy('name'))
 
     class Meta(TimeStampedModel.Meta):
-        verbose_name = _('thread group')
-        verbose_name_plural = _('thread groups')
+        verbose_name = ugettext_lazy('thread group')
+        verbose_name_plural = ugettext_lazy('thread groups')
         ordering = ('name',)
         permissions = [
             ('view_threadgroup', 'Can view thread group'),
@@ -34,20 +34,20 @@ class ThreadGroup(FakeDeletableModel, models.Model):
 
 class ThreadGroupUserObjectPermission(AbstractUserObjectPermission):
     content_object = models.ForeignKey(ThreadGroup, related_name='user_object_permissions',
-                                       verbose_name=_('content object'))
+                                       verbose_name=ugettext_lazy('content object'))
 
     class Meta(AbstractUserObjectPermission.Meta):
-        verbose_name = _('thread groups - user permission')
-        verbose_name_plural = _('thread groups - user permissions')
+        verbose_name = ugettext_lazy('thread groups - user permission')
+        verbose_name_plural = ugettext_lazy('thread groups - user permissions')
 
 
 class ThreadGroupGroupObjectPermission(AbstractGroupObjectPermission):
     content_object = models.ForeignKey(ThreadGroup, related_name='group_object_permissions',
-                                       verbose_name=_('content object'))
+                                       verbose_name=ugettext_lazy('content object'))
 
     class Meta(AbstractGroupObjectPermission.Meta):
-        verbose_name = _('thread groups - group permission')
-        verbose_name_plural = _('thread groups - group permissions')
+        verbose_name = ugettext_lazy('thread groups - group permission')
+        verbose_name_plural = ugettext_lazy('thread groups - group permissions')
 
 
 @python_2_unicode_compatible
@@ -58,8 +58,8 @@ class Thread(TimeStampedModel, FakeDeletableModel):
     closed = models.DateTimeField(db_index=True, null=True, blank=True)
 
     class Meta(TimeStampedModel.Meta):
-        verbose_name = _('thread')
-        verbose_name_plural = _('threads')
+        verbose_name = ugettext_lazy('thread')
+        verbose_name_plural = ugettext_lazy('threads')
         permissions = [
             ('view_thread', 'Can view thread'),
             ('manage_thread', 'Can manage thread'),
@@ -74,31 +74,32 @@ class Thread(TimeStampedModel, FakeDeletableModel):
 
 
 class ThreadUserObjectPermission(AbstractUserObjectPermission):
-    content_object = models.ForeignKey(Thread, related_name='user_object_permissions', verbose_name=_('content object'))
+    content_object = models.ForeignKey(Thread, related_name='user_object_permissions',
+                                       verbose_name=ugettext_lazy('content object'))
 
     class Meta(AbstractUserObjectPermission.Meta):
-        verbose_name = _('threads - user permission')
-        verbose_name_plural = _('threads - user permissions')
+        verbose_name = ugettext_lazy('threads - user permission')
+        verbose_name_plural = ugettext_lazy('threads - user permissions')
 
 
 class ThreadGroupObjectPermission(AbstractGroupObjectPermission):
     content_object = models.ForeignKey(Thread, related_name='group_object_permissions',
-                                       verbose_name=_('content object'))
+                                       verbose_name=ugettext_lazy('content object'))
 
     class Meta(AbstractGroupObjectPermission.Meta):
-        verbose_name = _('threads - group permission')
-        verbose_name_plural = _('threads - group permissions')
+        verbose_name = ugettext_lazy('threads - group permission')
+        verbose_name_plural = ugettext_lazy('threads - group permissions')
 
 
 @python_2_unicode_compatible
 class Message(TimeStampedModel):
-    thread = models.ForeignKey(Thread, related_name='messages', verbose_name=_('thread'))
-    sender = models.ForeignKey(Member, related_name='chat_sent_messages', verbose_name=_('sender'))
-    text = models.TextField(verbose_name=_('text'))
+    thread = models.ForeignKey(Thread, related_name='messages', verbose_name=ugettext_lazy('thread'))
+    sender = models.ForeignKey(Member, related_name='chat_sent_messages', verbose_name=ugettext_lazy('sender'))
+    text = models.TextField(verbose_name=ugettext_lazy('text'))
 
     class Meta(TimeStampedModel.Meta):
-        verbose_name = _('message')
-        verbose_name_plural = _('messages')
+        verbose_name = ugettext_lazy('message')
+        verbose_name_plural = ugettext_lazy('messages')
         index_together = [
             ['thread', 'created']
         ]
@@ -123,24 +124,24 @@ class DirectMessage(TimeStampedModel):
     #     null=True,
     #     blank=True,
     #     related_name='chat_received_direct_messages',
-    #     verbose_name=_('recipient')
+    #     verbose_name=ugettext_lazy('recipient')
     # )
     # sender = models.ForeignKey(
     #     settings.AUTH_USER_MODEL,
     #     null=True,
     #     blank=True,
     #     related_name='chat_sent_direct_messages',
-    #     verbose_name=_('sender')
+    #     verbose_name=ugettext_lazy('sender')
     # )
     recipient = models.ForeignKey(Member, on_delete=models.PROTECT, related_name='chat_received_direct_messages',
-                                  verbose_name=_('recipient'))
+                                  verbose_name=ugettext_lazy('recipient'))
     sender = models.ForeignKey(Member, on_delete=models.PROTECT, related_name='chat_sent_direct_messages',
-                               verbose_name=_('sender'))
-    text = models.TextField(verbose_name=_('text'))
+                               verbose_name=ugettext_lazy('sender'))
+    text = models.TextField(verbose_name=ugettext_lazy('text'))
 
     class Meta(TimeStampedModel.Meta):
-        verbose_name = _('direct message')
-        verbose_name_plural = _('direct messages')
+        verbose_name = ugettext_lazy('direct message')
+        verbose_name_plural = ugettext_lazy('direct messages')
 
     def __str__(self):
         return self.short_text

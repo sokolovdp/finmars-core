@@ -1,7 +1,7 @@
 from __future__ import unicode_literals
 
 from django.db import models
-from django.utils.translation import ugettext_lazy as _
+from django.utils.translation import ugettext_lazy
 from mptt.models import MPTTModel
 
 from poms.common.models import NamedModel, FakeDeletableModel
@@ -13,11 +13,12 @@ from poms.users.models import MasterUser
 
 
 class Strategy1Group(NamedModel, FakeDeletableModel):
-    master_user = models.ForeignKey(MasterUser, related_name='strategy1_groups', verbose_name=_('master user'))
+    master_user = models.ForeignKey(MasterUser, related_name='strategy1_groups',
+                                    verbose_name=ugettext_lazy('master user'))
 
     class Meta(NamedModel.Meta):
-        verbose_name = _('strategy1 group')
-        verbose_name_plural = _('strategy1 groups')
+        verbose_name = ugettext_lazy('strategy1 group')
+        verbose_name_plural = ugettext_lazy('strategy1 groups')
         permissions = [
             ('view_strategy1group', 'Can view strategy1 group'),
             ('manage_strategy1group', 'Can manage strategy1 group'),
@@ -33,29 +34,30 @@ class Strategy1Group(NamedModel, FakeDeletableModel):
 
 class Strategy1GroupUserObjectPermission(AbstractUserObjectPermission):
     content_object = models.ForeignKey(Strategy1Group, related_name='user_object_permissions',
-                                       verbose_name=_('content object'))
+                                       verbose_name=ugettext_lazy('content object'))
 
     class Meta(AbstractUserObjectPermission.Meta):
-        verbose_name = _('strategy1 groups - user permission')
-        verbose_name_plural = _('strategy1 groups - user permissions')
+        verbose_name = ugettext_lazy('strategy1 groups - user permission')
+        verbose_name_plural = ugettext_lazy('strategy1 groups - user permissions')
 
 
 class Strategy1GroupGroupObjectPermission(AbstractGroupObjectPermission):
     content_object = models.ForeignKey(Strategy1Group, related_name='group_object_permissions',
-                                       verbose_name=_('content object'))
+                                       verbose_name=ugettext_lazy('content object'))
 
     class Meta(AbstractGroupObjectPermission.Meta):
-        verbose_name = _('strategy1 groups - group permission')
-        verbose_name_plural = _('strategy1 groups - group permissions')
+        verbose_name = ugettext_lazy('strategy1 groups - group permission')
+        verbose_name_plural = ugettext_lazy('strategy1 groups - group permissions')
 
 
 class Strategy1Subgroup(NamedModel, FakeDeletableModel):
-    master_user = models.ForeignKey(MasterUser, related_name='strategy1_subgroups', verbose_name=_('master user'))
+    master_user = models.ForeignKey(MasterUser, related_name='strategy1_subgroups',
+                                    verbose_name=ugettext_lazy('master user'))
     group = models.ForeignKey(Strategy1Group, null=True, blank=True, on_delete=models.PROTECT, related_name='subgroups')
 
     class Meta(NamedModel.Meta):
-        verbose_name = _('strategy1 subgroup')
-        verbose_name_plural = _('strategy1 subgroups')
+        verbose_name = ugettext_lazy('strategy1 subgroup')
+        verbose_name_plural = ugettext_lazy('strategy1 subgroups')
         permissions = [
             ('view_strategy1subgroup', 'Can view strategy1 subgroup'),
             ('manage_strategy1subgroup', 'Can manage strategy1 subgroup'),
@@ -71,30 +73,30 @@ class Strategy1Subgroup(NamedModel, FakeDeletableModel):
 
 class Strategy1SubgroupUserObjectPermission(AbstractUserObjectPermission):
     content_object = models.ForeignKey(Strategy1Subgroup, related_name='user_object_permissions',
-                                       verbose_name=_('content object'))
+                                       verbose_name=ugettext_lazy('content object'))
 
     class Meta(AbstractUserObjectPermission.Meta):
-        verbose_name = _('strategy1 subgroups - user permission')
-        verbose_name_plural = _('strategy1 subgroups - user permissions')
+        verbose_name = ugettext_lazy('strategy1 subgroups - user permission')
+        verbose_name_plural = ugettext_lazy('strategy1 subgroups - user permissions')
 
 
 class Strategy1SubgroupGroupObjectPermission(AbstractGroupObjectPermission):
     content_object = models.ForeignKey(Strategy1Subgroup, related_name='group_object_permissions',
-                                       verbose_name=_('content object'))
+                                       verbose_name=ugettext_lazy('content object'))
 
     class Meta(AbstractGroupObjectPermission.Meta):
-        verbose_name = _('strategy1 subgroups - group permission')
-        verbose_name_plural = _('strategy1 subgroups - group permissions')
+        verbose_name = ugettext_lazy('strategy1 subgroups - group permission')
+        verbose_name_plural = ugettext_lazy('strategy1 subgroups - group permissions')
 
 
 class Strategy1(NamedModel, FakeDeletableModel):
-    master_user = models.ForeignKey(MasterUser, related_name='strategies1', verbose_name=_('master user'))
+    master_user = models.ForeignKey(MasterUser, related_name='strategies1', verbose_name=ugettext_lazy('master user'))
     subgroup = models.ForeignKey(Strategy1Subgroup, null=True, blank=True, on_delete=models.PROTECT,
                                  related_name='strategies')
 
     class Meta(NamedModel.Meta):
-        verbose_name = _('strategy1')
-        verbose_name_plural = _('strategies1')
+        verbose_name = ugettext_lazy('strategy1')
+        verbose_name_plural = ugettext_lazy('strategies1')
         permissions = [
             ('view_strategy1', 'Can view strategy1'),
             ('manage_strategy1', 'Can manage strategy1'),
@@ -110,31 +112,32 @@ class Strategy1(NamedModel, FakeDeletableModel):
 
 class Strategy1UserObjectPermission(AbstractUserObjectPermission):
     content_object = models.ForeignKey(Strategy1, related_name='user_object_permissions',
-                                       verbose_name=_('content object'))
+                                       verbose_name=ugettext_lazy('content object'))
 
     class Meta(AbstractUserObjectPermission.Meta):
-        verbose_name = _('strategies - user permission')
-        verbose_name_plural = _('strategies - user permissions')
+        verbose_name = ugettext_lazy('strategies - user permission')
+        verbose_name_plural = ugettext_lazy('strategies - user permissions')
 
 
 class Strategy1GroupObjectPermission(AbstractGroupObjectPermission):
     content_object = models.ForeignKey(Strategy1, related_name='group_object_permissions',
-                                       verbose_name=_('content object'))
+                                       verbose_name=ugettext_lazy('content object'))
 
     class Meta(AbstractGroupObjectPermission.Meta):
-        verbose_name = _('strategies - group permission')
-        verbose_name_plural = _('strategies - group permissions')
+        verbose_name = ugettext_lazy('strategies - group permission')
+        verbose_name_plural = ugettext_lazy('strategies - group permissions')
 
 
 # 2 --
 
 
 class Strategy2Group(NamedModel, FakeDeletableModel):
-    master_user = models.ForeignKey(MasterUser, related_name='strategy2_groups', verbose_name=_('master user'))
+    master_user = models.ForeignKey(MasterUser, related_name='strategy2_groups',
+                                    verbose_name=ugettext_lazy('master user'))
 
     class Meta(NamedModel.Meta):
-        verbose_name = _('strategy2 group')
-        verbose_name_plural = _('strategy2 groups')
+        verbose_name = ugettext_lazy('strategy2 group')
+        verbose_name_plural = ugettext_lazy('strategy2 groups')
         permissions = [
             ('view_strategy2group', 'Can view strategy2 group'),
             ('manage_strategy2group', 'Can manage strategy2 group'),
@@ -150,29 +153,30 @@ class Strategy2Group(NamedModel, FakeDeletableModel):
 
 class Strategy2GroupUserObjectPermission(AbstractUserObjectPermission):
     content_object = models.ForeignKey(Strategy2Group, related_name='user_object_permissions',
-                                       verbose_name=_('content object'))
+                                       verbose_name=ugettext_lazy('content object'))
 
     class Meta(AbstractUserObjectPermission.Meta):
-        verbose_name = _('strategy2 groups - user permission')
-        verbose_name_plural = _('strategy2 groups - user permissions')
+        verbose_name = ugettext_lazy('strategy2 groups - user permission')
+        verbose_name_plural = ugettext_lazy('strategy2 groups - user permissions')
 
 
 class Strategy2GroupGroupObjectPermission(AbstractGroupObjectPermission):
     content_object = models.ForeignKey(Strategy2Group, related_name='group_object_permissions',
-                                       verbose_name=_('content object'))
+                                       verbose_name=ugettext_lazy('content object'))
 
     class Meta(AbstractGroupObjectPermission.Meta):
-        verbose_name = _('strategy2 groups - group permission')
-        verbose_name_plural = _('strategy2 groups - group permissions')
+        verbose_name = ugettext_lazy('strategy2 groups - group permission')
+        verbose_name_plural = ugettext_lazy('strategy2 groups - group permissions')
 
 
 class Strategy2Subgroup(NamedModel, FakeDeletableModel):
-    master_user = models.ForeignKey(MasterUser, related_name='strategy2_subgroups', verbose_name=_('master user'))
+    master_user = models.ForeignKey(MasterUser, related_name='strategy2_subgroups',
+                                    verbose_name=ugettext_lazy('master user'))
     group = models.ForeignKey(Strategy2Group, null=True, blank=True, on_delete=models.PROTECT, related_name='subgroups')
 
     class Meta(NamedModel.Meta):
-        verbose_name = _('strategy2 subgroup')
-        verbose_name_plural = _('strategy2 subgroups')
+        verbose_name = ugettext_lazy('strategy2 subgroup')
+        verbose_name_plural = ugettext_lazy('strategy2 subgroups')
         permissions = [
             ('view_strategy2subgroup', 'Can view strategy2 subgroup'),
             ('manage_strategy2subgroup', 'Can manage strategy2 subgroup'),
@@ -188,30 +192,30 @@ class Strategy2Subgroup(NamedModel, FakeDeletableModel):
 
 class Strategy2SubgroupUserObjectPermission(AbstractUserObjectPermission):
     content_object = models.ForeignKey(Strategy2Subgroup, related_name='user_object_permissions',
-                                       verbose_name=_('content object'))
+                                       verbose_name=ugettext_lazy('content object'))
 
     class Meta(AbstractUserObjectPermission.Meta):
-        verbose_name = _('strategy2 subgroups - user permission')
-        verbose_name_plural = _('strategy2 subgroups - user permissions')
+        verbose_name = ugettext_lazy('strategy2 subgroups - user permission')
+        verbose_name_plural = ugettext_lazy('strategy2 subgroups - user permissions')
 
 
 class Strategy2SubgroupGroupObjectPermission(AbstractGroupObjectPermission):
     content_object = models.ForeignKey(Strategy2Subgroup, related_name='group_object_permissions',
-                                       verbose_name=_('content object'))
+                                       verbose_name=ugettext_lazy('content object'))
 
     class Meta(AbstractGroupObjectPermission.Meta):
-        verbose_name = _('strategy2 subgroups - group permission')
-        verbose_name_plural = _('strategy2 subgroups - group permissions')
+        verbose_name = ugettext_lazy('strategy2 subgroups - group permission')
+        verbose_name_plural = ugettext_lazy('strategy2 subgroups - group permissions')
 
 
 class Strategy2(NamedModel, FakeDeletableModel):
-    master_user = models.ForeignKey(MasterUser, related_name='strategies2', verbose_name=_('master user'))
+    master_user = models.ForeignKey(MasterUser, related_name='strategies2', verbose_name=ugettext_lazy('master user'))
     subgroup = models.ForeignKey(Strategy2Subgroup, null=True, blank=True, on_delete=models.PROTECT,
                                  related_name='strategies')
 
     class Meta(NamedModel.Meta):
-        verbose_name = _('strategy2')
-        verbose_name_plural = _('strategies2')
+        verbose_name = ugettext_lazy('strategy2')
+        verbose_name_plural = ugettext_lazy('strategies2')
         permissions = [
             ('view_strategy2', 'Can view strategy2'),
             ('manage_strategy2', 'Can manage strategy2'),
@@ -227,31 +231,32 @@ class Strategy2(NamedModel, FakeDeletableModel):
 
 class Strategy2UserObjectPermission(AbstractUserObjectPermission):
     content_object = models.ForeignKey(Strategy2, related_name='user_object_permissions',
-                                       verbose_name=_('content object'))
+                                       verbose_name=ugettext_lazy('content object'))
 
     class Meta(AbstractUserObjectPermission.Meta):
-        verbose_name = _('strategies - user permission')
-        verbose_name_plural = _('strategies - user permissions')
+        verbose_name = ugettext_lazy('strategies - user permission')
+        verbose_name_plural = ugettext_lazy('strategies - user permissions')
 
 
 class Strategy2GroupObjectPermission(AbstractGroupObjectPermission):
     content_object = models.ForeignKey(Strategy2, related_name='group_object_permissions',
-                                       verbose_name=_('content object'))
+                                       verbose_name=ugettext_lazy('content object'))
 
     class Meta(AbstractGroupObjectPermission.Meta):
-        verbose_name = _('strategies - group permission')
-        verbose_name_plural = _('strategies - group permissions')
+        verbose_name = ugettext_lazy('strategies - group permission')
+        verbose_name_plural = ugettext_lazy('strategies - group permissions')
 
 
 # 3 --
 
 
 class Strategy3Group(NamedModel, FakeDeletableModel):
-    master_user = models.ForeignKey(MasterUser, related_name='strategy3_groups', verbose_name=_('master user'))
+    master_user = models.ForeignKey(MasterUser, related_name='strategy3_groups',
+                                    verbose_name=ugettext_lazy('master user'))
 
     class Meta(NamedModel.Meta):
-        verbose_name = _('strategy3 group')
-        verbose_name_plural = _('strategy3 groups')
+        verbose_name = ugettext_lazy('strategy3 group')
+        verbose_name_plural = ugettext_lazy('strategy3 groups')
         permissions = [
             ('view_strategy3group', 'Can view strategy3 group'),
             ('manage_strategy3group', 'Can manage strategy3 group'),
@@ -267,29 +272,30 @@ class Strategy3Group(NamedModel, FakeDeletableModel):
 
 class Strategy3GroupUserObjectPermission(AbstractUserObjectPermission):
     content_object = models.ForeignKey(Strategy3Group, related_name='user_object_permissions',
-                                       verbose_name=_('content object'))
+                                       verbose_name=ugettext_lazy('content object'))
 
     class Meta(AbstractUserObjectPermission.Meta):
-        verbose_name = _('strategy3 groups - user permission')
-        verbose_name_plural = _('strategy3 groups - user permissions')
+        verbose_name = ugettext_lazy('strategy3 groups - user permission')
+        verbose_name_plural = ugettext_lazy('strategy3 groups - user permissions')
 
 
 class Strategy3GroupGroupObjectPermission(AbstractGroupObjectPermission):
     content_object = models.ForeignKey(Strategy3Group, related_name='group_object_permissions',
-                                       verbose_name=_('content object'))
+                                       verbose_name=ugettext_lazy('content object'))
 
     class Meta(AbstractGroupObjectPermission.Meta):
-        verbose_name = _('strategy3 groups - group permission')
-        verbose_name_plural = _('strategy3 groups - group permissions')
+        verbose_name = ugettext_lazy('strategy3 groups - group permission')
+        verbose_name_plural = ugettext_lazy('strategy3 groups - group permissions')
 
 
 class Strategy3Subgroup(NamedModel, FakeDeletableModel):
-    master_user = models.ForeignKey(MasterUser, related_name='strategy3_subgroups', verbose_name=_('master user'))
+    master_user = models.ForeignKey(MasterUser, related_name='strategy3_subgroups',
+                                    verbose_name=ugettext_lazy('master user'))
     group = models.ForeignKey(Strategy3Group, null=True, blank=True, on_delete=models.PROTECT, related_name='subgroups')
 
     class Meta(NamedModel.Meta):
-        verbose_name = _('strategy3 subgroup')
-        verbose_name_plural = _('strategy3 subgroups')
+        verbose_name = ugettext_lazy('strategy3 subgroup')
+        verbose_name_plural = ugettext_lazy('strategy3 subgroups')
         permissions = [
             ('view_strategy3subgroup', 'Can view strategy3 subgroup'),
             ('manage_strategy3subgroup', 'Can manage strategy3 subgroup'),
@@ -305,30 +311,30 @@ class Strategy3Subgroup(NamedModel, FakeDeletableModel):
 
 class Strategy3SubgroupUserObjectPermission(AbstractUserObjectPermission):
     content_object = models.ForeignKey(Strategy3Subgroup, related_name='user_object_permissions',
-                                       verbose_name=_('content object'))
+                                       verbose_name=ugettext_lazy('content object'))
 
     class Meta(AbstractUserObjectPermission.Meta):
-        verbose_name = _('strategy3 subgroups - user permission')
-        verbose_name_plural = _('strategy3 subgroups - user permissions')
+        verbose_name = ugettext_lazy('strategy3 subgroups - user permission')
+        verbose_name_plural = ugettext_lazy('strategy3 subgroups - user permissions')
 
 
 class Strategy3SubgroupGroupObjectPermission(AbstractGroupObjectPermission):
     content_object = models.ForeignKey(Strategy3Subgroup, related_name='group_object_permissions',
-                                       verbose_name=_('content object'))
+                                       verbose_name=ugettext_lazy('content object'))
 
     class Meta(AbstractGroupObjectPermission.Meta):
-        verbose_name = _('strategy3 subgroups - group permission')
-        verbose_name_plural = _('strategy3 subgroups - group permissions')
+        verbose_name = ugettext_lazy('strategy3 subgroups - group permission')
+        verbose_name_plural = ugettext_lazy('strategy3 subgroups - group permissions')
 
 
 class Strategy3(NamedModel, FakeDeletableModel):
-    master_user = models.ForeignKey(MasterUser, related_name='strategies3', verbose_name=_('master user'))
+    master_user = models.ForeignKey(MasterUser, related_name='strategies3', verbose_name=ugettext_lazy('master user'))
     subgroup = models.ForeignKey(Strategy3Subgroup, null=True, blank=True, on_delete=models.PROTECT,
                                  related_name='strategies')
 
     class Meta(NamedModel.Meta):
-        verbose_name = _('strategy3')
-        verbose_name_plural = _('strategies3')
+        verbose_name = ugettext_lazy('strategy3')
+        verbose_name_plural = ugettext_lazy('strategies3')
         permissions = [
             ('view_strategy3', 'Can view strategy3'),
             ('manage_strategy3', 'Can manage strategy3'),
@@ -344,17 +350,17 @@ class Strategy3(NamedModel, FakeDeletableModel):
 
 class Strategy3UserObjectPermission(AbstractUserObjectPermission):
     content_object = models.ForeignKey(Strategy3, related_name='user_object_permissions',
-                                       verbose_name=_('content object'))
+                                       verbose_name=ugettext_lazy('content object'))
 
     class Meta(AbstractUserObjectPermission.Meta):
-        verbose_name = _('strategies - user permission')
-        verbose_name_plural = _('strategies - user permissions')
+        verbose_name = ugettext_lazy('strategies - user permission')
+        verbose_name_plural = ugettext_lazy('strategies - user permissions')
 
 
 class Strategy3GroupObjectPermission(AbstractGroupObjectPermission):
     content_object = models.ForeignKey(Strategy3, related_name='group_object_permissions',
-                                       verbose_name=_('content object'))
+                                       verbose_name=ugettext_lazy('content object'))
 
     class Meta(AbstractGroupObjectPermission.Meta):
-        verbose_name = _('strategies - group permission')
-        verbose_name_plural = _('strategies - group permissions')
+        verbose_name = ugettext_lazy('strategies - group permission')
+        verbose_name_plural = ugettext_lazy('strategies - group permissions')

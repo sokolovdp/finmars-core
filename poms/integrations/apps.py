@@ -2,12 +2,12 @@ from __future__ import unicode_literals, print_function
 
 from django.apps import AppConfig
 from django.db import DEFAULT_DB_ALIAS
-from django.utils.translation import ugettext_lazy as _
+from django.utils.translation import ugettext_lazy
 
 
 class IntegrationsConfig(AppConfig):
     name = 'poms.integrations'
-    verbose_name = _('Integrations')
+    verbose_name = ugettext_lazy('Integrations')
 
     def ready(self):
         from django.db.models.signals import post_migrate

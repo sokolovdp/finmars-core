@@ -2,7 +2,7 @@ from __future__ import unicode_literals
 
 from django.db import models
 from django.utils.encoding import python_2_unicode_compatible
-from django.utils.translation import ugettext_lazy as _
+from django.utils.translation import ugettext_lazy
 from mptt.fields import TreeForeignKey
 from mptt.models import MPTTModel
 
@@ -15,11 +15,12 @@ from poms.users.models import MasterUser, Member
 
 @python_2_unicode_compatible
 class CounterpartyGroup(NamedModel, FakeDeletableModel):
-    master_user = models.ForeignKey(MasterUser, related_name='counterparty_groups', verbose_name=_('master user'))
+    master_user = models.ForeignKey(MasterUser, related_name='counterparty_groups',
+                                    verbose_name=ugettext_lazy('master user'))
 
     class Meta(NamedModel.Meta):
-        verbose_name = _('counterparty group')
-        verbose_name_plural = _('counterparty groups')
+        verbose_name = ugettext_lazy('counterparty group')
+        verbose_name_plural = ugettext_lazy('counterparty groups')
         permissions = [
             ('view_counterpartygroup', 'Can view counterparty group'),
             ('manage_counterpartygroup', 'Can manage counterparty group'),
@@ -35,31 +36,32 @@ class CounterpartyGroup(NamedModel, FakeDeletableModel):
 
 class CounterpartyGroupUserObjectPermission(AbstractUserObjectPermission):
     content_object = models.ForeignKey(CounterpartyGroup, related_name='user_object_permissions',
-                                       verbose_name=_('content object'))
+                                       verbose_name=ugettext_lazy('content object'))
 
     class Meta(AbstractUserObjectPermission.Meta):
-        verbose_name = _('counterparty groups - user permission')
-        verbose_name_plural = _('counterparty groups - user permissions')
+        verbose_name = ugettext_lazy('counterparty groups - user permission')
+        verbose_name_plural = ugettext_lazy('counterparty groups - user permissions')
 
 
 class CounterpartyGroupGroupObjectPermission(AbstractGroupObjectPermission):
     content_object = models.ForeignKey(CounterpartyGroup, related_name='group_object_permissions',
-                                       verbose_name=_('content object'))
+                                       verbose_name=ugettext_lazy('content object'))
 
     class Meta(AbstractGroupObjectPermission.Meta):
-        verbose_name = _('counterparty groups - group permission')
-        verbose_name_plural = _('counterparty groups - group permissions')
+        verbose_name = ugettext_lazy('counterparty groups - group permission')
+        verbose_name_plural = ugettext_lazy('counterparty groups - group permissions')
 
 
 @python_2_unicode_compatible
 class Counterparty(NamedModel, FakeDeletableModel):
-    master_user = models.ForeignKey(MasterUser, related_name='counterparties', verbose_name=_('master user'))
+    master_user = models.ForeignKey(MasterUser, related_name='counterparties',
+                                    verbose_name=ugettext_lazy('master user'))
     group = models.ForeignKey(CounterpartyGroup, related_name='counterparties', null=True, blank=True)
     is_valid_for_all_portfolios = models.BooleanField(default=True)
 
     class Meta(NamedModel.Meta):
-        verbose_name = _('counterparty')
-        verbose_name_plural = _('counterparties')
+        verbose_name = ugettext_lazy('counterparty')
+        verbose_name_plural = ugettext_lazy('counterparties')
         permissions = [
             ('view_counterparty', 'Can view counterparty'),
             ('manage_counterparty', 'Can manage counterparty'),
@@ -75,26 +77,26 @@ class Counterparty(NamedModel, FakeDeletableModel):
 
 class CounterpartyUserObjectPermission(AbstractUserObjectPermission):
     content_object = models.ForeignKey(Counterparty, related_name='user_object_permissions',
-                                       verbose_name=_('content object'))
+                                       verbose_name=ugettext_lazy('content object'))
 
     class Meta(AbstractUserObjectPermission.Meta):
-        verbose_name = _('counterparties - user permission')
-        verbose_name_plural = _('counterparties - user permissions')
+        verbose_name = ugettext_lazy('counterparties - user permission')
+        verbose_name_plural = ugettext_lazy('counterparties - user permissions')
 
 
 class CounterpartyGroupObjectPermission(AbstractGroupObjectPermission):
     content_object = models.ForeignKey(Counterparty, related_name='group_object_permissions',
-                                       verbose_name=_('content object'))
+                                       verbose_name=ugettext_lazy('content object'))
 
     class Meta(AbstractGroupObjectPermission.Meta):
-        verbose_name = _('counterparties - group permission')
-        verbose_name_plural = _('counterparties - group permissions')
+        verbose_name = ugettext_lazy('counterparties - group permission')
+        verbose_name_plural = ugettext_lazy('counterparties - group permissions')
 
 
 class CounterpartyAttributeType(AbstractAttributeType):
     class Meta(AbstractAttributeType.Meta):
-        verbose_name = _('counterparty attribute type')
-        verbose_name_plural = _('counterparty attribute types')
+        verbose_name = ugettext_lazy('counterparty attribute type')
+        verbose_name_plural = ugettext_lazy('counterparty attribute types')
         permissions = [
             ('view_counterpartyattributetype', 'Can view counterparty attribute type'),
             ('manage_counterpartyattributetype', 'Can manage counterparty attribute type'),
@@ -103,42 +105,42 @@ class CounterpartyAttributeType(AbstractAttributeType):
 
 class CounterpartyAttributeTypeUserObjectPermission(AbstractUserObjectPermission):
     content_object = models.ForeignKey(CounterpartyAttributeType, related_name='user_object_permissions',
-                                       verbose_name=_('content object'))
+                                       verbose_name=ugettext_lazy('content object'))
 
     class Meta(AbstractUserObjectPermission.Meta):
-        verbose_name = _('counterparty attribute types - user permission')
-        verbose_name_plural = _('counterparty attribute types - user permissions')
+        verbose_name = ugettext_lazy('counterparty attribute types - user permission')
+        verbose_name_plural = ugettext_lazy('counterparty attribute types - user permissions')
 
 
 class CounterpartyAttributeTypeGroupObjectPermission(AbstractGroupObjectPermission):
     content_object = models.ForeignKey(CounterpartyAttributeType, related_name='group_object_permissions',
-                                       verbose_name=_('content object'))
+                                       verbose_name=ugettext_lazy('content object'))
 
     class Meta(AbstractGroupObjectPermission.Meta):
-        verbose_name = _('counterparty attribute types - group permission')
-        verbose_name_plural = _('counterparty attribute types - group permissions')
+        verbose_name = ugettext_lazy('counterparty attribute types - group permission')
+        verbose_name_plural = ugettext_lazy('counterparty attribute types - group permissions')
 
 
 class CounterpartyClassifier(AbstractClassifier):
     attribute_type = models.ForeignKey(CounterpartyAttributeType, related_name='classifiers',
-                                       verbose_name=_('attribute type'))
+                                       verbose_name=ugettext_lazy('attribute type'))
     parent = TreeForeignKey('self', related_name='children', null=True, blank=True, db_index=True,
-                            verbose_name=_('parent'))
+                            verbose_name=ugettext_lazy('parent'))
 
     class Meta(AbstractClassifier.Meta):
-        verbose_name = _('counterparty classifier')
-        verbose_name_plural = _('counterparty classifiers')
+        verbose_name = ugettext_lazy('counterparty classifier')
+        verbose_name_plural = ugettext_lazy('counterparty classifiers')
 
 
 class CounterpartyAttributeTypeOption(AbstractAttributeTypeOption):
     member = models.ForeignKey(Member, related_name='counterparty_attribute_type_options',
-                               verbose_name=_('member'))
+                               verbose_name=ugettext_lazy('member'))
     attribute_type = models.ForeignKey(CounterpartyAttributeType, related_name='options',
-                                       verbose_name=_('attribute type'))
+                                       verbose_name=ugettext_lazy('attribute type'))
 
     class Meta(AbstractAttributeTypeOption.Meta):
-        verbose_name = _('counterparty attribute types - option')
-        verbose_name_plural = _('counterparty attribute types - options')
+        verbose_name = ugettext_lazy('counterparty attribute types - option')
+        verbose_name_plural = ugettext_lazy('counterparty attribute types - options')
         unique_together = [
             ['member', 'attribute_type']
         ]
@@ -146,15 +148,15 @@ class CounterpartyAttributeTypeOption(AbstractAttributeTypeOption):
 
 class CounterpartyAttribute(AbstractAttribute):
     attribute_type = models.ForeignKey(CounterpartyAttributeType, related_name='attributes',
-                                       verbose_name=_('attribute type'))
+                                       verbose_name=ugettext_lazy('attribute type'))
     content_object = models.ForeignKey(Counterparty, related_name='attributes',
-                                       verbose_name=_('content object'))
+                                       verbose_name=ugettext_lazy('content object'))
     classifier = models.ForeignKey(CounterpartyClassifier, on_delete=models.SET_NULL, null=True, blank=True,
-                                   verbose_name=_('classifier'))
+                                   verbose_name=ugettext_lazy('classifier'))
 
     class Meta(AbstractAttribute.Meta):
-        verbose_name = _('counterparty attribute')
-        verbose_name_plural = _('counterparty attributes')
+        verbose_name = ugettext_lazy('counterparty attribute')
+        verbose_name_plural = ugettext_lazy('counterparty attributes')
 
 
 # -----
@@ -162,11 +164,12 @@ class CounterpartyAttribute(AbstractAttribute):
 
 @python_2_unicode_compatible
 class ResponsibleGroup(NamedModel, FakeDeletableModel):
-    master_user = models.ForeignKey(MasterUser, related_name='responsible_groups', verbose_name=_('master user'))
+    master_user = models.ForeignKey(MasterUser, related_name='responsible_groups',
+                                    verbose_name=ugettext_lazy('master user'))
 
     class Meta(NamedModel.Meta):
-        verbose_name = _('responsible group')
-        verbose_name_plural = _('responsible groups')
+        verbose_name = ugettext_lazy('responsible group')
+        verbose_name_plural = ugettext_lazy('responsible groups')
         permissions = [
             ('view_responsiblegroup', 'Can view responsible group'),
             ('manage_responsiblegroup', 'Can manage responsible group'),
@@ -182,31 +185,31 @@ class ResponsibleGroup(NamedModel, FakeDeletableModel):
 
 class ResponsibleGroupUserObjectPermission(AbstractUserObjectPermission):
     content_object = models.ForeignKey(ResponsibleGroup, related_name='user_object_permissions',
-                                       verbose_name=_('content object'))
+                                       verbose_name=ugettext_lazy('content object'))
 
     class Meta(AbstractUserObjectPermission.Meta):
-        verbose_name = _('responsible groups - user permission')
-        verbose_name_plural = _('responsible groups - user permissions')
+        verbose_name = ugettext_lazy('responsible groups - user permission')
+        verbose_name_plural = ugettext_lazy('responsible groups - user permissions')
 
 
 class ResponsibleGroupGroupObjectPermission(AbstractGroupObjectPermission):
     content_object = models.ForeignKey(ResponsibleGroup, related_name='group_object_permissions',
-                                       verbose_name=_('content object'))
+                                       verbose_name=ugettext_lazy('content object'))
 
     class Meta(AbstractGroupObjectPermission.Meta):
-        verbose_name = _('responsible groups - group permission')
-        verbose_name_plural = _('responsible groups - group permissions')
+        verbose_name = ugettext_lazy('responsible groups - group permission')
+        verbose_name_plural = ugettext_lazy('responsible groups - group permissions')
 
 
 @python_2_unicode_compatible
 class Responsible(NamedModel, FakeDeletableModel):
-    master_user = models.ForeignKey(MasterUser, related_name='responsibles', verbose_name=_('master user'))
+    master_user = models.ForeignKey(MasterUser, related_name='responsibles', verbose_name=ugettext_lazy('master user'))
     group = models.ForeignKey(ResponsibleGroup, related_name='responsibles', null=True, blank=True)
     is_valid_for_all_portfolios = models.BooleanField(default=True)
 
     class Meta(NamedModel.Meta):
-        verbose_name = _('responsible')
-        verbose_name_plural = _('responsibles')
+        verbose_name = ugettext_lazy('responsible')
+        verbose_name_plural = ugettext_lazy('responsibles')
         permissions = [
             ('view_responsible', 'Can view responsible'),
             ('manage_responsible', 'Can manage responsible'),
@@ -222,26 +225,26 @@ class Responsible(NamedModel, FakeDeletableModel):
 
 class ResponsibleUserObjectPermission(AbstractUserObjectPermission):
     content_object = models.ForeignKey(Responsible, related_name='user_object_permissions',
-                                       verbose_name=_('content object'))
+                                       verbose_name=ugettext_lazy('content object'))
 
     class Meta(AbstractUserObjectPermission.Meta):
-        verbose_name = _('responsibles - user permission')
-        verbose_name_plural = _('responsibles - user permissions')
+        verbose_name = ugettext_lazy('responsibles - user permission')
+        verbose_name_plural = ugettext_lazy('responsibles - user permissions')
 
 
 class ResponsibleGroupObjectPermission(AbstractGroupObjectPermission):
     content_object = models.ForeignKey(Responsible, related_name='group_object_permissions',
-                                       verbose_name=_('content object'))
+                                       verbose_name=ugettext_lazy('content object'))
 
     class Meta(AbstractGroupObjectPermission.Meta):
-        verbose_name = _('responsibles - group permission')
-        verbose_name_plural = _('responsibles - group permissions')
+        verbose_name = ugettext_lazy('responsibles - group permission')
+        verbose_name_plural = ugettext_lazy('responsibles - group permissions')
 
 
 class ResponsibleAttributeType(AbstractAttributeType):
     class Meta(AbstractAttributeType.Meta):
-        verbose_name = _('responsible attribute type')
-        verbose_name_plural = _('responsible attribute types')
+        verbose_name = ugettext_lazy('responsible attribute type')
+        verbose_name_plural = ugettext_lazy('responsible attribute types')
         permissions = [
             ('view_responsibleattributetype', 'Can view responsible attribute type'),
             ('manage_responsibleattributetype', 'Can manage responsible attribute type'),
@@ -250,42 +253,42 @@ class ResponsibleAttributeType(AbstractAttributeType):
 
 class ResponsibleAttributeTypeUserObjectPermission(AbstractUserObjectPermission):
     content_object = models.ForeignKey(ResponsibleAttributeType, related_name='user_object_permissions',
-                                       verbose_name=_('content object'))
+                                       verbose_name=ugettext_lazy('content object'))
 
     class Meta(AbstractUserObjectPermission.Meta):
-        verbose_name = _('responsible attribute types - user permission')
-        verbose_name_plural = _('responsible attribute types - user permissions')
+        verbose_name = ugettext_lazy('responsible attribute types - user permission')
+        verbose_name_plural = ugettext_lazy('responsible attribute types - user permissions')
 
 
 class ResponsibleAttributeTypeGroupObjectPermission(AbstractGroupObjectPermission):
     content_object = models.ForeignKey(ResponsibleAttributeType, related_name='group_object_permissions',
-                                       verbose_name=_('content object'))
+                                       verbose_name=ugettext_lazy('content object'))
 
     class Meta(AbstractGroupObjectPermission.Meta):
-        verbose_name = _('responsible attribute types - group permission')
-        verbose_name_plural = _('responsible attribute types - group permissions')
+        verbose_name = ugettext_lazy('responsible attribute types - group permission')
+        verbose_name_plural = ugettext_lazy('responsible attribute types - group permissions')
 
 
 class ResponsibleClassifier(AbstractClassifier):
     attribute_type = models.ForeignKey(ResponsibleAttributeType, related_name='classifiers',
-                                       verbose_name=_('attribute type'))
+                                       verbose_name=ugettext_lazy('attribute type'))
     parent = TreeForeignKey('self', related_name='children', null=True, blank=True, db_index=True,
-                            verbose_name=_('parent'))
+                            verbose_name=ugettext_lazy('parent'))
 
     class Meta(AbstractClassifier.Meta):
-        verbose_name = _('responsible classifier')
-        verbose_name_plural = _('responsible classifiers')
+        verbose_name = ugettext_lazy('responsible classifier')
+        verbose_name_plural = ugettext_lazy('responsible classifiers')
 
 
 class ResponsibleAttributeTypeOption(AbstractAttributeTypeOption):
     member = models.ForeignKey(Member, related_name='responsible_attribute_type_options',
-                               verbose_name=_('member'))
+                               verbose_name=ugettext_lazy('member'))
     attribute_type = models.ForeignKey(ResponsibleAttributeType, related_name='options',
-                                       verbose_name=_('attribute type'))
+                                       verbose_name=ugettext_lazy('attribute type'))
 
     class Meta(AbstractAttributeTypeOption.Meta):
-        verbose_name = _('responsible attribute types - option')
-        verbose_name_plural = _('responsible attribute types - options')
+        verbose_name = ugettext_lazy('responsible attribute types - option')
+        verbose_name_plural = ugettext_lazy('responsible attribute types - options')
         unique_together = [
             ['member', 'attribute_type']
         ]
@@ -293,12 +296,12 @@ class ResponsibleAttributeTypeOption(AbstractAttributeTypeOption):
 
 class ResponsibleAttribute(AbstractAttribute):
     attribute_type = models.ForeignKey(ResponsibleAttributeType, related_name='attributes',
-                                       verbose_name=_('attribute type'))
+                                       verbose_name=ugettext_lazy('attribute type'))
     content_object = models.ForeignKey(Responsible, related_name='attributes',
-                                       verbose_name=_('content object'))
+                                       verbose_name=ugettext_lazy('content object'))
     classifier = models.ForeignKey(ResponsibleClassifier, on_delete=models.SET_NULL, null=True, blank=True,
-                                   verbose_name=_('classifier'))
+                                   verbose_name=ugettext_lazy('classifier'))
 
     class Meta(AbstractAttribute.Meta):
-        verbose_name = _('responsible attribute')
-        verbose_name_plural = _('responsible attributes')
+        verbose_name = ugettext_lazy('responsible attribute')
+        verbose_name_plural = ugettext_lazy('responsible attributes')

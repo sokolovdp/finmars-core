@@ -7,7 +7,7 @@ from django.db import models
 from django.db.models.signals import post_save
 from django.dispatch import receiver
 from django.utils.encoding import python_2_unicode_compatible
-from django.utils.translation import ugettext_lazy as _
+from django.utils.translation import ugettext_lazy
 
 from poms.common.models import NamedModel, FakeDeletableModel
 
@@ -72,7 +72,7 @@ class MasterUserManager(models.Manager):
         thread_group = ThreadGroup.objects.create(master_user=obj, name='-')
 
         Member.objects.create(user=user, master_user=obj, is_owner=True, is_admin=True)
-        group = Group.objects.create(master_user=obj, name='%s' % _('Default'))
+        group = Group.objects.create(master_user=obj, name='%s' % ugettext_lazy('Default'))
 
         obj.currency = ccy
         obj.account_type = account_type
@@ -108,13 +108,13 @@ class MasterUserManager(models.Manager):
 @python_2_unicode_compatible
 class MasterUser(models.Model):
     name = models.CharField(max_length=255, null=True, blank=True,
-                            verbose_name=_('name'))
+                            verbose_name=ugettext_lazy('name'))
     currency = models.ForeignKey('currencies.Currency', null=True, blank=True, on_delete=models.PROTECT,
-                                 verbose_name=_('currency'))
+                                 verbose_name=ugettext_lazy('currency'))
     language = models.CharField(max_length=LANGUAGE_MAX_LENGTH, default=settings.LANGUAGE_CODE,
-                                verbose_name=_('language'))
+                                verbose_name=ugettext_lazy('language'))
     timezone = models.CharField(max_length=TIMEZONE_MAX_LENGTH, default=settings.TIME_ZONE,
-                                verbose_name=_('timezone'))
+                                verbose_name=ugettext_lazy('timezone'))
 
     account_type = models.ForeignKey('accounts.AccountType', null=True, blank=True, on_delete=models.PROTECT)
     account = models.ForeignKey('accounts.Account', null=True, blank=True, on_delete=models.PROTECT)
@@ -161,8 +161,8 @@ class MasterUser(models.Model):
     objects = MasterUserManager()
 
     class Meta:
-        verbose_name = _('master user')
-        verbose_name_plural = _('master users')
+        verbose_name = ugettext_lazy('master user')
+        verbose_name_plural = ugettext_lazy('master users')
 
     def __str__(self):
         return self.name
@@ -170,26 +170,26 @@ class MasterUser(models.Model):
 
 @python_2_unicode_compatible
 class Member(FakeDeletableModel):
-    master_user = models.ForeignKey(MasterUser, related_name='members', verbose_name=_('master user'))
+    master_user = models.ForeignKey(MasterUser, related_name='members', verbose_name=ugettext_lazy('master user'))
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True,
-                             related_name='members', verbose_name=_('user'), )
+                             related_name='members', verbose_name=ugettext_lazy('user'), )
 
     username = models.CharField(max_length=255, blank=True, default='', editable=False)
     first_name = models.CharField(max_length=30, blank=True, default='', editable=False)
     last_name = models.CharField(max_length=30, blank=True, default='', editable=False)
     email = models.EmailField(blank=True, default='', editable=False)
 
-    join_date = models.DateTimeField(auto_now_add=True, verbose_name=_('join date'))
-    is_owner = models.BooleanField(default=False, verbose_name=_('is owner'))
-    is_admin = models.BooleanField(default=False, verbose_name=_('is admin'))
+    join_date = models.DateTimeField(auto_now_add=True, verbose_name=ugettext_lazy('join date'))
+    is_owner = models.BooleanField(default=False, verbose_name=ugettext_lazy('is owner'))
+    is_admin = models.BooleanField(default=False, verbose_name=ugettext_lazy('is admin'))
 
-    groups = models.ManyToManyField('Group', blank=True, related_name='members', verbose_name=_('groups'))
+    groups = models.ManyToManyField('Group', blank=True, related_name='members', verbose_name=ugettext_lazy('groups'))
 
     # permissions = models.ManyToManyField(Permission, blank=True)
 
     class Meta:
-        verbose_name = _('member')
-        verbose_name_plural = _('members')
+        verbose_name = ugettext_lazy('member')
+        verbose_name_plural = ugettext_lazy('members')
         unique_together = [
             ['master_user', 'user']
         ]
@@ -217,15 +217,15 @@ class Member(FakeDeletableModel):
 @python_2_unicode_compatible
 class UserProfile(models.Model):
     user = models.OneToOneField(settings.AUTH_USER_MODEL, related_name='profile',
-                                verbose_name=_('user'))
+                                verbose_name=ugettext_lazy('user'))
     language = models.CharField(max_length=LANGUAGE_MAX_LENGTH, default=settings.LANGUAGE_CODE,
-                                verbose_name=_('language'))
+                                verbose_name=ugettext_lazy('language'))
     timezone = models.CharField(max_length=TIMEZONE_MAX_LENGTH, default=settings.TIME_ZONE,
-                                verbose_name=_('timezone'))
+                                verbose_name=ugettext_lazy('timezone'))
 
     class Meta:
-        verbose_name = _('profile')
-        verbose_name_plural = _('profiles')
+        verbose_name = ugettext_lazy('profile')
+        verbose_name_plural = ugettext_lazy('profiles')
 
     def __str__(self):
         return self.user.username
@@ -234,16 +234,16 @@ class UserProfile(models.Model):
 @python_2_unicode_compatible
 class Group(models.Model):
     master_user = models.ForeignKey(MasterUser, related_name='groups',
-                                    verbose_name=_('master user'), )
+                                    verbose_name=ugettext_lazy('master user'), )
     name = models.CharField(max_length=80,
-                            verbose_name=_('name'))
+                            verbose_name=ugettext_lazy('name'))
 
-    # permissions = models.ManyToManyField(Permission, verbose_name=_('permissions'), blank=True,
+    # permissions = models.ManyToManyField(Permission, verbose_name=ugettext_lazy('permissions'), blank=True,
     #                                      related_name='poms_groups')
 
     class Meta:
-        verbose_name = _('group')
-        verbose_name_plural = _('groups')
+        verbose_name = ugettext_lazy('group')
+        verbose_name_plural = ugettext_lazy('groups')
         unique_together = [
             ['master_user', 'name']
         ]
@@ -258,13 +258,13 @@ class Group(models.Model):
 @python_2_unicode_compatible
 class FakeSequence(models.Model):
     master_user = models.ForeignKey(MasterUser, related_name='fake_sequences',
-                                    verbose_name=_('master user'), )
+                                    verbose_name=ugettext_lazy('master user'), )
     name = models.CharField(max_length=80)
     value = models.PositiveIntegerField(default=0)
 
     class Meta:
-        verbose_name = _('fake sequence')
-        verbose_name_plural = _('fake sequences')
+        verbose_name = ugettext_lazy('fake sequence')
+        verbose_name_plural = ugettext_lazy('fake sequences')
         unique_together = [
             ['master_user', 'name']
         ]

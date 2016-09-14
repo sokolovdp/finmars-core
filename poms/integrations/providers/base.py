@@ -6,7 +6,7 @@ from dateutil import parser
 from dateutil.rrule import rrule, DAILY
 from django.conf import settings
 from django.core.exceptions import ObjectDoesNotExist
-from django.utils.translation import ugettext_lazy as _
+from django.utils.translation import ugettext_lazy
 
 from poms.common import formula
 from poms.currencies.models import CurrencyHistory
@@ -144,7 +144,7 @@ class AbstractProvider(object):
                 v = formula.safe_eval(expr, names=values)
             except formula.InvalidExpression as e:
                 # _l.debug('Invalid expression "%s"', attr, exc_info=True)
-                errors[attr] = [_('Invalid expression')]
+                errors[attr] = [ugettext_lazy('Invalid expression')]
                 continue
             if attr in ['pricing_currency', 'accrued_currency']:
                 if v is not None:
@@ -152,20 +152,20 @@ class AbstractProvider(object):
                     if v:
                         setattr(instr, attr, v)
                     else:
-                        errors[attr] = [_('This field is required.')]
+                        errors[attr] = [ugettext_lazy('This field is required.')]
             elif attr in ['instrument_type']:
                 if v is not None:
                     v = self.get_instrument_type(master_user, provider, v)
                     if v:
                         setattr(instr, attr, v)
                     else:
-                        errors[attr] = [_('This field is required.')]
+                        errors[attr] = [ugettext_lazy('This field is required.')]
             elif attr in ['price_multiplier', 'accrued_multiplier', 'default_price', 'default_accrued']:
                 if v is not None:
                     try:
                         setattr(instr, attr, float(v))
                     except (ValueError, TypeError):
-                        errors[attr] = [_('A valid number is required.')]
+                        errors[attr] = [ugettext_lazy('A valid number is required.')]
             elif attr in ['maturity_date']:
                 if v is not None:
                     if isinstance(v, datetime):
@@ -173,7 +173,7 @@ class AbstractProvider(object):
                     if isinstance(v, date):
                         setattr(instr, attr, v)
                     else:
-                        errors[attr] = [_('A valid date is required.')]
+                        errors[attr] = [ugettext_lazy('A valid date is required.')]
             else:
                 if v is not None:
                     v = str(v)
@@ -207,7 +207,7 @@ class AbstractProvider(object):
                     v = formula.safe_eval(attr.value, names=values)
                 except formula.InvalidExpression as e:
                     # _l.debug('Invalid expression "%s"', attr.value, exc_info=True)
-                    errors[err_name] = [_('Invalid expression')]
+                    errors[err_name] = [ugettext_lazy('Invalid expression')]
                     continue
                 attr_mapped_values = self.get_instrument_attribute_value(master_user, provider, tattr, v)
                 if attr_mapped_values:
@@ -221,7 +221,7 @@ class AbstractProvider(object):
                             try:
                                 iattr.value_float = float(v)
                             except (ValueError, TypeError):
-                                errors[err_name] = [_('A valid number is required.')]
+                                errors[err_name] = [ugettext_lazy('A valid number is required.')]
                     elif tattr.value_type == AbstractAttributeType.DATE:
                         if v is not None:
                             if isinstance(v, datetime):
@@ -229,7 +229,7 @@ class AbstractProvider(object):
                             if isinstance(v, date):
                                 iattr.value_date = v
                             else:
-                                errors[err_name] = [_('A valid date is required.')]
+                                errors[err_name] = [ugettext_lazy('A valid date is required.')]
                     elif tattr.value_type == AbstractAttributeType.CLASSIFIER:
                         if v is not None:
                             v = str(v)
@@ -237,9 +237,9 @@ class AbstractProvider(object):
                             if v:
                                 iattr.classifier = v
                             else:
-                                errors[err_name] = [_('This field is required.')]
+                                errors[err_name] = [ugettext_lazy('This field is required.')]
             else:
-                errors[err_name] = [_('Expression required')]
+                errors[err_name] = [ugettext_lazy('Expression required')]
         return iattrs
 
     def create_accrual_calculation_schedules(self, instrument_download_scheme, instrument, values):
