@@ -30,7 +30,9 @@ admin.site.register(PeriodicityGroup, ClassModelAdmin)
 
 class TransactionTypeGroupAdmin(HistoricalAdmin):
     model = TransactionTypeGroup
-    list_display = ['id', 'name', 'master_user']
+    list_display = ['id', 'name', 'master_user', 'is_deleted', ]
+    list_select_related = ['master_user']
+    list_filter = ['is_deleted', ]
     raw_id_fields = ['master_user']
     inlines = [
         UserObjectPermissionInline,
@@ -239,8 +241,9 @@ class EventToHandleInline(admin.StackedInline):
 
 class TransactionTypeAdmin(HistoricalAdmin):
     model = TransactionType
-    list_display = ['id', 'name', 'master_user']
+    list_display = ['id', 'master_user', 'name', 'is_deleted', ]
     list_select_related = ['master_user']
+    list_filter = ['is_deleted', ]
     raw_id_fields = ['master_user', 'group', 'instrument_types']
     inlines = [
         TransactionTypeInputInline,

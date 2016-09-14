@@ -53,7 +53,9 @@ class TransactionTypeGroupSerializer(ModelWithObjectPermissionSerializer, ModelW
 
     class Meta:
         model = TransactionTypeGroup
-        fields = ['url', 'id', 'master_user', 'user_code', 'name', 'short_name', 'public_name', 'notes', 'tags']
+        fields = [
+            'url', 'id', 'master_user', 'user_code', 'name', 'short_name', 'public_name', 'notes', 'is_deleted', 'tags'
+        ]
 
 
 class TransactionTypeGroupBulkObjectPermissionSerializer(AbstractBulkObjectPermissionSerializer):
@@ -265,9 +267,11 @@ class TransactionTypeSerializer(ModelWithObjectPermissionSerializer, ModelWithUs
 
     class Meta:
         model = TransactionType
-        fields = ['url', 'id', 'master_user', 'group', 'user_code', 'name', 'short_name', 'public_name', 'notes',
-                  'display_expr', 'is_valid_for_all_portfolios', 'is_valid_for_all_instruments', 'instrument_types',
-                  'portfolios', 'tags', 'inputs', 'actions']
+        fields = [
+            'url', 'id', 'master_user', 'group', 'user_code', 'name', 'short_name', 'public_name', 'notes',
+            'display_expr', 'is_valid_for_all_portfolios', 'is_valid_for_all_instruments', 'is_deleted',
+            'instrument_types', 'portfolios', 'tags', 'inputs', 'actions'
+        ]
 
     def validate(self, attrs):
         # TODO: validate *_input...

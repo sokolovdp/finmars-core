@@ -11,8 +11,9 @@ from poms.strategies.models import Strategy1Group, Strategy2Subgroup, Strategy3,
 
 class Strategy1GroupAdmin(HistoricalAdmin):
     model = Strategy1Group
-    list_display = ['id', 'master_user', 'name']
+    list_display = ['id', 'master_user', 'name', 'is_deleted', ]
     list_select_related = ['master_user']
+    list_filter = ['is_deleted', ]
     raw_id_fields = ['master_user']
     inlines = [
         UserObjectPermissionInline,
@@ -25,8 +26,9 @@ admin.site.register(Strategy1Group, Strategy1GroupAdmin)
 
 class Strategy1SubgroupAdmin(HistoricalAdmin):
     model = Strategy1Subgroup
-    list_display = ['id', 'master_user', 'group', 'name']
+    list_display = ['id', 'master_user', 'group', 'name', 'is_deleted', ]
     list_select_related = ['group', 'group__master_user']
+    list_filter = ['is_deleted', ]
     raw_id_fields = ['group']
     inlines = [
         UserObjectPermissionInline,
@@ -39,8 +41,9 @@ admin.site.register(Strategy1Subgroup, Strategy1SubgroupAdmin)
 
 class Strategy1Admin(HistoricalAdmin):
     model = Strategy1Subgroup
-    list_display = ['id', 'master_user', 'group', 'subgroup', 'name']
+    list_display = ['id', 'master_user', 'group', 'subgroup', 'name', 'is_deleted', ]
     list_select_related = ['subgroup', 'subgroup__group', 'subgroup__group__master_user']
+    list_filter = ['is_deleted', ]
     raw_id_fields = ['subgroup']
     inlines = [
         UserObjectPermissionInline,

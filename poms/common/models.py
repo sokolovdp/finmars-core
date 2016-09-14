@@ -77,3 +77,17 @@ class AbstractClassModel(models.Model):
             return self.description_en
         n = getattr(self, 'description_%s' % lang, None)
         return n or self.description_en
+
+
+class FakeDeletableModel(models.Model):
+    is_deleted = models.BooleanField(default=False, db_index=True)
+
+    class Meta:
+        abstract = True
+        index_together = [
+            ['master_user', 'is_deleted']
+        ]
+
+    def fake_delete(self):
+        self.is_deleted = True
+        self.save(update_fields=['is_deleted'])

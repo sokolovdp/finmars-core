@@ -9,13 +9,13 @@ from django.utils.encoding import python_2_unicode_compatible
 from django.utils.text import Truncator
 from django.utils.translation import ugettext_lazy as _, get_language
 
-from poms.common.models import TimeStampedModel, NamedModel
+from poms.common.models import TimeStampedModel, NamedModel, FakeDeletableModel
 from poms.obj_perms.models import AbstractGroupObjectPermission, AbstractUserObjectPermission
 from poms.users.models import MasterUser, Member
 
 
 @python_2_unicode_compatible
-class ThreadGroup(models.Model):
+class ThreadGroup(FakeDeletableModel, models.Model):
     master_user = models.ForeignKey(MasterUser, related_name='chat_thread_groups')
     name = models.CharField(max_length=255, verbose_name=_('name'))
 
@@ -51,7 +51,7 @@ class ThreadGroupGroupObjectPermission(AbstractGroupObjectPermission):
 
 
 @python_2_unicode_compatible
-class Thread(TimeStampedModel):
+class Thread(TimeStampedModel, FakeDeletableModel):
     master_user = models.ForeignKey(MasterUser, related_name='chat_threads')
     thread_group = models.ForeignKey(ThreadGroup, related_name='groups', null=True, blank=True)
     subject = models.CharField(max_length=255)

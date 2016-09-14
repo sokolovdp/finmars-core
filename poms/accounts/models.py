@@ -6,7 +6,7 @@ from django.utils.translation import ugettext_lazy as _
 from mptt.fields import TreeForeignKey
 from mptt.models import MPTTModel
 
-from poms.common.models import NamedModel
+from poms.common.models import NamedModel, FakeDeletableModel
 from poms.currencies.models import Currency
 from poms.obj_attrs.models import AbstractAttributeType, AbstractAttribute, AbstractAttributeTypeOption, \
     AbstractClassifier
@@ -15,7 +15,7 @@ from poms.users.models import MasterUser, Member
 
 
 @python_2_unicode_compatible
-class AccountType(NamedModel):
+class AccountType(NamedModel, FakeDeletableModel):
     master_user = models.ForeignKey(MasterUser, related_name='account_types',
                                     verbose_name=_('master user'))
     show_transaction_details = models.BooleanField(default=False,
@@ -58,7 +58,7 @@ class AccountTypeGroupObjectPermission(AbstractGroupObjectPermission):
 
 
 @python_2_unicode_compatible
-class Account(NamedModel):
+class Account(NamedModel, FakeDeletableModel):
     master_user = models.ForeignKey(MasterUser, related_name='accounts',
                                     verbose_name=_('master user'))
     type = models.ForeignKey(AccountType, on_delete=models.PROTECT, null=True, blank=True,

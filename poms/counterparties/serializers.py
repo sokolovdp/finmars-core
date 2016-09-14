@@ -56,8 +56,8 @@ class CounterpartyGroupSerializer(ModelWithObjectPermissionSerializer, ModelWith
 
     class Meta:
         model = CounterpartyGroup
-        fields = ['url', 'id', 'master_user', 'user_code', 'name', 'short_name', 'public_name', 'notes', 'is_default',
-                  'tags', ]
+        fields = ['url', 'id', 'master_user', 'user_code', 'name', 'short_name', 'public_name', 'notes',
+                  'is_default', 'is_deleted', 'tags', ]
 
 
 class CounterpartyGroupBulkObjectPermissionSerializer(AbstractBulkObjectPermissionSerializer):
@@ -78,7 +78,7 @@ class CounterpartySerializer(ModelWithObjectPermissionSerializer, ModelWithAttri
     class Meta:
         model = Counterparty
         fields = ['url', 'id', 'master_user', 'group', 'user_code', 'name', 'short_name', 'public_name', 'notes',
-                  'is_default', 'is_valid_for_all_portfolios', 'portfolios', 'attributes', 'tags']
+                  'is_default', 'is_valid_for_all_portfolios', 'is_deleted', 'portfolios', 'attributes', 'tags']
 
 
 class CounterpartyBulkObjectPermissionSerializer(AbstractBulkObjectPermissionSerializer):
@@ -131,7 +131,8 @@ class ResponsibleGroupSerializer(ModelWithObjectPermissionSerializer, ModelWithU
     class Meta:
         model = ResponsibleGroup
         fields = [
-            'url', 'id', 'master_user', 'user_code', 'name', 'short_name', 'public_name', 'notes', 'is_default', 'tags',
+            'url', 'id', 'master_user', 'user_code', 'name', 'short_name', 'public_name', 'notes', 'is_default',
+            'is_deleted', 'tags',
         ]
 
 
@@ -153,7 +154,7 @@ class ResponsibleSerializer(ModelWithObjectPermissionSerializer, ModelWithAttrib
     class Meta:
         model = Responsible
         fields = ['url', 'id', 'master_user', 'group', 'user_code', 'name', 'short_name', 'public_name', 'notes',
-                  'is_default', 'is_valid_for_all_portfolios', 'portfolios', 'attributes', 'tags']
+                  'is_default', 'is_valid_for_all_portfolios', 'is_deleted', 'portfolios', 'attributes', 'tags']
 
 
 class ResponsibleBulkObjectPermissionSerializer(AbstractBulkObjectPermissionSerializer):

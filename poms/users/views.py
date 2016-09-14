@@ -174,16 +174,16 @@ class MasterUserViewSet(AbstractModelViewSet):
 
 
 class MemberFilterSet(FilterSet):
-    is_deleted = MethodFilter(action='filter_is_deleted')
+    # is_deleted = MethodFilter(action='filter_is_deleted')
     username = CharFilter()
 
     class Meta:
         model = Member
         fields = ['is_deleted']
 
-    def filter_is_deleted(self, qs, value):
+    # def filter_is_deleted(self, qs, value):
         # if value = 1
-        return qs
+        # return qs
 
 
 class MemberViewSet(AbstractModelViewSet):
@@ -199,6 +199,7 @@ class MemberViewSet(AbstractModelViewSet):
     ordering_fields = ['username', ]
     search_fields = ['username', ]
     pagination_class = BigPagination
+    has_feature_is_deleted = True
 
     def get_object(self):
         lookup_url_kwarg = self.lookup_url_kwarg or self.lookup_field

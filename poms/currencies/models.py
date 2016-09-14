@@ -5,14 +5,14 @@ from django.db import models
 from django.utils.encoding import python_2_unicode_compatible
 from django.utils.translation import ugettext_lazy as _
 
-from poms.common.models import NamedModel
+from poms.common.models import NamedModel, FakeDeletableModel
 from poms.common.utils import date_now
 from poms.obj_perms.models import AbstractUserObjectPermission, AbstractGroupObjectPermission
 from poms.users.models import MasterUser
 
 
 @python_2_unicode_compatible
-class Currency(NamedModel):
+class Currency(NamedModel, FakeDeletableModel):
     master_user = models.ForeignKey(MasterUser, related_name='currencies', verbose_name=_('master user'))
 
     reference_for_pricing = models.CharField(max_length=100, blank=True, default='',

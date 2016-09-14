@@ -31,7 +31,7 @@ class Strategy1GroupFilterSet(FilterSet):
     class Meta:
         model = Strategy1Group
         fields = [
-            'user_code', 'name', 'short_name', 'tag', 'member', 'member_group', 'permission',
+            'is_deleted', 'user_code', 'name', 'short_name', 'tag', 'member', 'member_group', 'permission',
         ]
 
 
@@ -50,6 +50,7 @@ class Strategy1GroupViewSet(AbstractWithObjectPermissionViewSet):
     search_fields = [
         'user_code', 'name', 'short_name',
     ]
+    has_feature_is_deleted = True
 
 
 class Strategy1SubgroupFilterSet(FilterSet):
@@ -65,7 +66,7 @@ class Strategy1SubgroupFilterSet(FilterSet):
     class Meta:
         model = Strategy1Subgroup
         fields = [
-            'user_code', 'name', 'short_name', 'group', 'tag', 'member', 'member_group', 'permission',
+            'is_deleted', 'user_code', 'name', 'short_name', 'group', 'tag', 'member', 'member_group', 'permission',
         ]
 
 
@@ -86,6 +87,7 @@ class Strategy1SubgroupViewSet(AbstractWithObjectPermissionViewSet):
     search_fields = [
         'user_code', 'name', 'short_name',
     ]
+    has_feature_is_deleted = True
 
 
 class Strategy1FilterSet(FilterSet):
@@ -102,7 +104,7 @@ class Strategy1FilterSet(FilterSet):
     class Meta:
         model = Strategy1
         fields = [
-            'user_code', 'name', 'short_name', 'subgroup__group', 'subgroup', 'tag',
+            'is_deleted', 'user_code', 'name', 'short_name', 'subgroup__group', 'subgroup', 'tag',
             'member', 'member_group', 'permission',
         ]
 
@@ -125,6 +127,7 @@ class Strategy1ViewSet(AbstractWithObjectPermissionViewSet):
     search_fields = [
         'user_code', 'name', 'short_name',
     ]
+    has_feature_is_deleted = True
 
 
 # 2

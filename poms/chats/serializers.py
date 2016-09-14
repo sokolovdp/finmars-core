@@ -18,7 +18,7 @@ class ThreadGroupSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = ThreadGroup
-        fields = ['url', 'id', 'master_user', 'name', 'tags', ]
+        fields = ['url', 'id', 'master_user', 'name', 'is_deleted', 'tags', ]
 
 
 class MessageSerializer(serializers.ModelSerializer):
@@ -48,8 +48,8 @@ class ThreadSerializer(ModelWithObjectPermissionSerializer):
 
     class Meta:
         model = Thread
-        fields = ['url', 'id', 'master_user', 'thread_group', 'created', 'modified', 'closed', 'subject', 'tags',
-                  'messages_count', 'messages_last']
+        fields = ['url', 'id', 'master_user', 'thread_group', 'created', 'modified', 'closed', 'subject', 'is_deleted',
+                  'tags', 'messages_count', 'messages_last']
         read_only_fields = ['created', 'modified', 'closed']
 
 

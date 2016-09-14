@@ -6,7 +6,7 @@ from poms.accounts.models import Account, AccountType, AccountAttributeType, Acc
 from poms.accounts.serializers import AccountSerializer, AccountTypeSerializer, AccountAttributeTypeSerializer, \
     AccountClassifierNodeSerializer, AccountBulkObjectPermissionSerializer, \
     AccountAttributeTypeBulkObjectPermissionSerializer, AccountTypeBulkObjectPermissionSerializer
-from poms.common.filters import CharFilter, ModelWithPermissionMultipleChoiceFilter, IsDefaultFilter
+from poms.common.filters import CharFilter, ModelWithPermissionMultipleChoiceFilter
 from poms.obj_attrs.views import AbstractAttributeTypeViewSet, AbstractClassifierViewSet
 from poms.obj_perms.filters import ObjectPermissionMemberFilter, ObjectPermissionGroupFilter, \
     ObjectPermissionPermissionFilter
@@ -20,7 +20,7 @@ class AccountTypeFilterSet(FilterSet):
     user_code = CharFilter()
     name = CharFilter()
     short_name = CharFilter()
-    is_default = IsDefaultFilter(source='account_type')
+    # is_default = IsDefaultFilter(source='account_type')
     tag = TagFilter(model=AccountType)
     member = ObjectPermissionMemberFilter(object_permission_model=AccountType)
     member_group = ObjectPermissionGroupFilter(object_permission_model=AccountType)
@@ -29,7 +29,8 @@ class AccountTypeFilterSet(FilterSet):
     class Meta:
         model = AccountType
         fields = [
-            'user_code', 'name', 'short_name', 'is_default', 'tag', 'member', 'member_group', 'permission'
+            'is_deleted', 'user_code', 'name', 'short_name', 'tag',
+            'member', 'member_group', 'permission',
         ]
 
 
@@ -48,6 +49,7 @@ class AccountTypeViewSet(AbstractWithObjectPermissionViewSet):
     search_fields = [
         'user_code', 'name', 'short_name',
     ]
+    has_feature_is_deleted = True
 
 
 class AccountAttributeTypeFilterSet(FilterSet):
@@ -93,7 +95,7 @@ class AccountFilterSet(FilterSet):
     user_code = CharFilter()
     name = CharFilter()
     short_name = CharFilter()
-    is_default = IsDefaultFilter(source='account')
+    # is_default = IsDefaultFilter(source='account')
     portfolio = ModelWithPermissionMultipleChoiceFilter(model=Portfolio, name='portfolios')
     type = ModelWithPermissionMultipleChoiceFilter(model=AccountType)
     tag = TagFilter(model=Account)
@@ -104,8 +106,8 @@ class AccountFilterSet(FilterSet):
     class Meta:
         model = Account
         fields = [
-            'user_code', 'name', 'short_name', 'is_valid_for_all_portfolios', 'is_default', 'type', 'portfolio', 'tag',
-            'member', 'member_group', 'permission',
+            'is_deleted', 'user_code', 'name', 'short_name', 'is_valid_for_all_portfolios', 'type',
+            'portfolio', 'tag', 'member', 'member_group', 'permission',
         ]
 
 
@@ -128,3 +130,4 @@ class AccountViewSet(AbstractWithObjectPermissionViewSet):
     search_fields = [
         'user_code', 'name', 'short_name',
     ]
+    has_feature_is_deleted = True

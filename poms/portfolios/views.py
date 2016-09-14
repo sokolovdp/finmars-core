@@ -46,7 +46,9 @@ class PortfolioClassifierFilterSet(FilterSet):
 
     class Meta:
         model = PortfolioClassifier
-        fields = ['name', 'level', 'attribute_type', ]
+        fields = [
+            'name', 'level', 'attribute_type',
+        ]
 
 
 class PortfolioClassifierViewSet(AbstractClassifierViewSet):
@@ -59,7 +61,7 @@ class PortfolioFilterSet(FilterSet):
     user_code = CharFilter()
     name = CharFilter()
     short_name = CharFilter()
-    is_default = IsDefaultFilter(source='portfolio')
+    # is_default = IsDefaultFilter(source='portfolio')
     account = ModelWithPermissionMultipleChoiceFilter(model=Account, name='accounts')
     responsible = ModelWithPermissionMultipleChoiceFilter(model=Responsible, name='responsibles')
     counterparty = ModelWithPermissionMultipleChoiceFilter(model=Counterparty, name='counterparties')
@@ -72,7 +74,7 @@ class PortfolioFilterSet(FilterSet):
     class Meta:
         model = Portfolio
         fields = [
-            'user_code', 'name', 'short_name', 'is_default', 'account', 'responsible', 'counterparty',
+            'is_deleted', 'user_code', 'name', 'short_name', 'account', 'responsible', 'counterparty',
             'transaction_type', 'tag', 'member', 'member_group', 'permission',
         ]
 
@@ -97,3 +99,4 @@ class PortfolioViewSet(AbstractWithObjectPermissionViewSet):
     search_fields = [
         'user_code', 'name', 'short_name'
     ]
+    has_feature_is_deleted = True

@@ -241,8 +241,8 @@ class MemberSerializer(serializers.ModelSerializer):
         model = Member
         fields = ['url', 'id', 'master_user', 'join_date', 'is_owner', 'is_admin', 'is_superuser', 'is_current',
                   'is_deleted', 'username', 'first_name', 'last_name', 'display_name', 'email', 'groups']
-        read_only_fields = ['master_user', 'join_date', 'is_superuser', 'is_current', 'is_deleted', 'username',
-                            'first_name', 'last_name', 'display_name', 'email', ]
+        read_only_fields = ['master_user', 'join_date', 'is_owner', 'is_superuser', 'is_current', 'is_deleted',
+                            'username', 'first_name', 'last_name', 'display_name', 'email', ]
 
     def get_is_current(self, obj):
         member = self.context['request'].user.member

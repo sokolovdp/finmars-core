@@ -8,7 +8,7 @@ from mptt.fields import TreeForeignKey
 from mptt.models import MPTTModel
 
 from poms.accounts.models import Account
-from poms.common.models import NamedModel, AbstractClassModel
+from poms.common.models import NamedModel, AbstractClassModel, FakeDeletableModel
 from poms.common.utils import date_now
 from poms.counterparties.models import Responsible, Counterparty
 from poms.currencies.models import Currency
@@ -169,7 +169,7 @@ class PeriodicityGroup(AbstractClassModel):
         verbose_name_plural = _('periodicity group')
 
 
-class TransactionTypeGroup(NamedModel):
+class TransactionTypeGroup(NamedModel, FakeDeletableModel):
     master_user = models.ForeignKey(
         MasterUser,
         related_name='transaction_type_groups',
@@ -206,7 +206,7 @@ class TransactionTypeGroupGroupObjectPermission(AbstractGroupObjectPermission):
         verbose_name_plural = _('transaction type groups - group permissions')
 
 
-class TransactionType(NamedModel):
+class TransactionType(NamedModel, FakeDeletableModel):
     master_user = models.ForeignKey(MasterUser, related_name='transaction_types', verbose_name=_('master user'))
     group = models.ForeignKey(TransactionTypeGroup, null=True, blank=True, on_delete=models.PROTECT)
     display_expr = models.CharField(max_length=255, blank=True, default='')

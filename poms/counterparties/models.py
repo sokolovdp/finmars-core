@@ -6,7 +6,7 @@ from django.utils.translation import ugettext_lazy as _
 from mptt.fields import TreeForeignKey
 from mptt.models import MPTTModel
 
-from poms.common.models import NamedModel
+from poms.common.models import NamedModel, FakeDeletableModel
 from poms.obj_attrs.models import AbstractAttributeType, AbstractAttribute, AbstractAttributeTypeOption, \
     AbstractClassifier
 from poms.obj_perms.models import AbstractGroupObjectPermission, AbstractUserObjectPermission
@@ -14,7 +14,7 @@ from poms.users.models import MasterUser, Member
 
 
 @python_2_unicode_compatible
-class CounterpartyGroup(NamedModel):
+class CounterpartyGroup(NamedModel, FakeDeletableModel):
     master_user = models.ForeignKey(MasterUser, related_name='counterparty_groups', verbose_name=_('master user'))
 
     class Meta(NamedModel.Meta):
@@ -52,7 +52,7 @@ class CounterpartyGroupGroupObjectPermission(AbstractGroupObjectPermission):
 
 
 @python_2_unicode_compatible
-class Counterparty(NamedModel):
+class Counterparty(NamedModel, FakeDeletableModel):
     master_user = models.ForeignKey(MasterUser, related_name='counterparties', verbose_name=_('master user'))
     group = models.ForeignKey(CounterpartyGroup, related_name='counterparties', null=True, blank=True)
     is_valid_for_all_portfolios = models.BooleanField(default=True)
@@ -161,7 +161,7 @@ class CounterpartyAttribute(AbstractAttribute):
 
 
 @python_2_unicode_compatible
-class ResponsibleGroup(NamedModel):
+class ResponsibleGroup(NamedModel, FakeDeletableModel):
     master_user = models.ForeignKey(MasterUser, related_name='responsible_groups', verbose_name=_('master user'))
 
     class Meta(NamedModel.Meta):
@@ -199,7 +199,7 @@ class ResponsibleGroupGroupObjectPermission(AbstractGroupObjectPermission):
 
 
 @python_2_unicode_compatible
-class Responsible(NamedModel):
+class Responsible(NamedModel, FakeDeletableModel):
     master_user = models.ForeignKey(MasterUser, related_name='responsibles', verbose_name=_('master user'))
     group = models.ForeignKey(ResponsibleGroup, related_name='responsibles', null=True, blank=True)
     is_valid_for_all_portfolios = models.BooleanField(default=True)

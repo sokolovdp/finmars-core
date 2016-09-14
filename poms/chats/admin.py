@@ -10,8 +10,9 @@ from poms.obj_perms.admin import UserObjectPermissionInline, \
 
 class ThreadGroupAdmin(HistoricalAdmin):
     model = ThreadGroup
-    list_display = ['id', 'master_user', 'name', ]
+    list_display = ['id', 'master_user', 'name', 'is_deleted', ]
     list_select_related = ['master_user', ]
+    list_filter = ['is_deleted', ]
     raw_id_fields = ['master_user', ]
     search_fields = ['id', 'name']
     inlines = [
@@ -25,12 +26,13 @@ admin.site.register(ThreadGroup, ThreadGroupAdmin)
 
 class ThreadAdmin(HistoricalAdmin):
     model = Thread
-    list_display = ['id', 'master_user', 'thread_group', 'subject', 'created', 'closed', ]
+    list_display = ['id', 'master_user', 'thread_group', 'subject', 'created', 'closed', 'is_deleted', ]
     list_select_related = ['master_user', 'thread_group', ]
+    list_filter = ['created', 'closed', 'is_deleted', ]
+    search_fields = ['id', 'subject']
     date_hierarchy = 'created'
     ordering = ['created']
     raw_id_fields = ['master_user', 'thread_group', ]
-    search_fields = ['id', 'subject']
     inlines = [
         UserObjectPermissionInline,
         GroupObjectPermissionInline

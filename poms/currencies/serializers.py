@@ -20,9 +20,11 @@ class CurrencySerializer(ModelWithUserCodeSerializer):
 
     class Meta:
         model = Currency
-        fields = ['url', 'id', 'master_user', 'user_code', 'name', 'short_name', 'notes',
-                  'reference_for_pricing', 'daily_pricing_model', 'price_download_scheme',
-                  'is_default', 'tags']
+        fields = [
+            'url', 'id', 'master_user', 'user_code', 'name', 'short_name', 'notes',
+            'reference_for_pricing', 'daily_pricing_model', 'price_download_scheme',
+            'is_default', 'is_deleted', 'tags'
+        ]
 
 
 class CurrencyHistorySerializer(serializers.ModelSerializer):
@@ -30,9 +32,6 @@ class CurrencyHistorySerializer(serializers.ModelSerializer):
     currency = CurrencyField()
     pricing_policy = PricingPolicyField(allow_null=False)
     fx_rate = FloatEvalField()
-
-    # fx_rate_expr = serializers.CharField(max_length=50, write_only=True, required=False, allow_null=True,
-    #                                      help_text=_('Expression to calculate fx rate (for example 1/75)'))
 
     class Meta:
         model = CurrencyHistory

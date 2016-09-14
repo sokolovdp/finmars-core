@@ -61,7 +61,7 @@ class TransactionTypeGroupFilterSet(FilterSet):
     class Meta:
         model = TransactionTypeGroup
         fields = [
-            'user_code', 'name', 'short_name', 'tag', 'member', 'member_group', 'permission',
+            'is_deleted', 'user_code', 'name', 'short_name', 'tag', 'member', 'member_group', 'permission',
         ]
 
 
@@ -80,6 +80,7 @@ class TransactionTypeGroupViewSet(AbstractWithObjectPermissionViewSet):
     search_fields = [
         'user_code', 'name', 'short_name'
     ]
+    has_feature_is_deleted = True
 
 
 class TransactionTypeFilterSet(FilterSet):
@@ -97,8 +98,9 @@ class TransactionTypeFilterSet(FilterSet):
     class Meta:
         model = TransactionType
         fields = [
-            'user_code', 'name', 'short_name', 'is_valid_for_all_portfolios', 'is_valid_for_all_instruments',
-            'group', 'portfolio', 'instrument_type', 'tag', 'member', 'member_group', 'permission',
+            'is_deleted', 'user_code', 'name', 'short_name', 'is_valid_for_all_portfolios',
+            'is_valid_for_all_instruments', 'group', 'portfolio', 'instrument_type', 'tag',
+            'member', 'member_group', 'permission',
         ]
 
 
@@ -132,6 +134,7 @@ class TransactionTypeViewSet(AbstractWithObjectPermissionViewSet):
     search_fields = [
         'user_code', 'name', 'short_name',
     ]
+    has_feature_is_deleted = True
 
     def get_queryset(self):
         queryset = super(TransactionTypeViewSet, self).get_queryset()

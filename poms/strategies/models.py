@@ -4,7 +4,7 @@ from django.db import models
 from django.utils.translation import ugettext_lazy as _
 from mptt.models import MPTTModel
 
-from poms.common.models import NamedModel
+from poms.common.models import NamedModel, FakeDeletableModel
 from poms.obj_perms.models import AbstractGroupObjectPermission, AbstractUserObjectPermission
 from poms.users.models import MasterUser
 
@@ -12,7 +12,7 @@ from poms.users.models import MasterUser
 # 1 --
 
 
-class Strategy1Group(NamedModel):
+class Strategy1Group(NamedModel, FakeDeletableModel):
     master_user = models.ForeignKey(MasterUser, related_name='strategy1_groups', verbose_name=_('master user'))
 
     class Meta(NamedModel.Meta):
@@ -49,7 +49,7 @@ class Strategy1GroupGroupObjectPermission(AbstractGroupObjectPermission):
         verbose_name_plural = _('strategy1 groups - group permissions')
 
 
-class Strategy1Subgroup(NamedModel):
+class Strategy1Subgroup(NamedModel, FakeDeletableModel):
     master_user = models.ForeignKey(MasterUser, related_name='strategy1_subgroups', verbose_name=_('master user'))
     group = models.ForeignKey(Strategy1Group, null=True, blank=True, on_delete=models.PROTECT, related_name='subgroups')
 
@@ -87,7 +87,7 @@ class Strategy1SubgroupGroupObjectPermission(AbstractGroupObjectPermission):
         verbose_name_plural = _('strategy1 subgroups - group permissions')
 
 
-class Strategy1(NamedModel):
+class Strategy1(NamedModel, FakeDeletableModel):
     master_user = models.ForeignKey(MasterUser, related_name='strategies1', verbose_name=_('master user'))
     subgroup = models.ForeignKey(Strategy1Subgroup, null=True, blank=True, on_delete=models.PROTECT,
                                  related_name='strategies')
@@ -129,7 +129,7 @@ class Strategy1GroupObjectPermission(AbstractGroupObjectPermission):
 # 2 --
 
 
-class Strategy2Group(NamedModel):
+class Strategy2Group(NamedModel, FakeDeletableModel):
     master_user = models.ForeignKey(MasterUser, related_name='strategy2_groups', verbose_name=_('master user'))
 
     class Meta(NamedModel.Meta):
@@ -166,7 +166,7 @@ class Strategy2GroupGroupObjectPermission(AbstractGroupObjectPermission):
         verbose_name_plural = _('strategy2 groups - group permissions')
 
 
-class Strategy2Subgroup(NamedModel):
+class Strategy2Subgroup(NamedModel, FakeDeletableModel):
     master_user = models.ForeignKey(MasterUser, related_name='strategy2_subgroups', verbose_name=_('master user'))
     group = models.ForeignKey(Strategy2Group, null=True, blank=True, on_delete=models.PROTECT, related_name='subgroups')
 
@@ -204,7 +204,7 @@ class Strategy2SubgroupGroupObjectPermission(AbstractGroupObjectPermission):
         verbose_name_plural = _('strategy2 subgroups - group permissions')
 
 
-class Strategy2(NamedModel):
+class Strategy2(NamedModel, FakeDeletableModel):
     master_user = models.ForeignKey(MasterUser, related_name='strategies2', verbose_name=_('master user'))
     subgroup = models.ForeignKey(Strategy2Subgroup, null=True, blank=True, on_delete=models.PROTECT,
                                  related_name='strategies')
@@ -246,7 +246,7 @@ class Strategy2GroupObjectPermission(AbstractGroupObjectPermission):
 # 3 --
 
 
-class Strategy3Group(NamedModel):
+class Strategy3Group(NamedModel, FakeDeletableModel):
     master_user = models.ForeignKey(MasterUser, related_name='strategy3_groups', verbose_name=_('master user'))
 
     class Meta(NamedModel.Meta):
@@ -283,7 +283,7 @@ class Strategy3GroupGroupObjectPermission(AbstractGroupObjectPermission):
         verbose_name_plural = _('strategy3 groups - group permissions')
 
 
-class Strategy3Subgroup(NamedModel):
+class Strategy3Subgroup(NamedModel, FakeDeletableModel):
     master_user = models.ForeignKey(MasterUser, related_name='strategy3_subgroups', verbose_name=_('master user'))
     group = models.ForeignKey(Strategy3Group, null=True, blank=True, on_delete=models.PROTECT, related_name='subgroups')
 
@@ -321,7 +321,7 @@ class Strategy3SubgroupGroupObjectPermission(AbstractGroupObjectPermission):
         verbose_name_plural = _('strategy3 subgroups - group permissions')
 
 
-class Strategy3(NamedModel):
+class Strategy3(NamedModel, FakeDeletableModel):
     master_user = models.ForeignKey(MasterUser, related_name='strategies3', verbose_name=_('master user'))
     subgroup = models.ForeignKey(Strategy3Subgroup, null=True, blank=True, on_delete=models.PROTECT,
                                  related_name='strategies')

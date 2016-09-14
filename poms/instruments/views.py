@@ -73,7 +73,7 @@ class InstrumentTypeFilterSet(FilterSet):
     user_code = CharFilter()
     name = CharFilter()
     short_name = CharFilter()
-    is_default = IsDefaultFilter(source='instrument_type')
+    # is_default = IsDefaultFilter(source='instrument_type')
     tag = TagFilter(model=InstrumentType)
     member = ObjectPermissionMemberFilter(object_permission_model=InstrumentType)
     member_group = ObjectPermissionGroupFilter(object_permission_model=InstrumentType)
@@ -82,7 +82,7 @@ class InstrumentTypeFilterSet(FilterSet):
     class Meta:
         model = InstrumentType
         fields = [
-            'user_code', 'name', 'short_name', 'is_default', 'instrument_class', 'tag',
+            'is_deleted', 'user_code', 'name', 'short_name', 'instrument_class', 'tag',
             'member', 'member_group', 'permission',
         ]
 
@@ -102,6 +102,7 @@ class InstrumentTypeViewSet(AbstractWithObjectPermissionViewSet):
     search_fields = [
         'user_code', 'name', 'short_name',
     ]
+    has_feature_is_deleted = True
 
 
 class InstrumentAttributeTypeFilterSet(FilterSet):
@@ -129,8 +130,6 @@ class InstrumentAttributeTypeViewSet(AbstractAttributeTypeViewSet):
 class InstrumentClassifierFilterSet(FilterSet):
     name = CharFilter()
     attribute_type = ModelWithPermissionMultipleChoiceFilter(model=InstrumentAttributeType)
-
-    # parent = ModelWithPermissionMultipleChoiceFilter(model=InstrumentClassifier, master_user_path='attribute_type__master_user')
 
     class Meta:
         model = InstrumentClassifier
@@ -160,8 +159,8 @@ class InstrumentFilterSet(FilterSet):
     class Meta:
         model = Instrument
         fields = [
-            'user_code', 'name', 'short_name', 'user_text_1', 'user_text_2', 'user_text_3', 'reference_for_pricing',
-            'tag', 'member', 'member_group', 'permission',
+            'is_deleted', 'user_code', 'name', 'short_name', 'user_text_1', 'user_text_2', 'user_text_3',
+            'reference_for_pricing', 'tag', 'member', 'member_group', 'permission',
         ]
 
 
@@ -183,6 +182,7 @@ class InstrumentViewSet(AbstractWithObjectPermissionViewSet):
     search_fields = [
         'user_code', 'name', 'short_name', 'reference_for_pricing',
     ]
+    has_feature_is_deleted = True
 
 
 class PriceHistoryFilterSet(FilterSet):

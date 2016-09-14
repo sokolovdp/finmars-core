@@ -11,7 +11,7 @@ from django.utils.translation import ugettext_lazy as _, ugettext
 from mptt.fields import TreeForeignKey
 from mptt.models import MPTTModel
 
-from poms.common.models import NamedModel, AbstractClassModel
+from poms.common.models import NamedModel, AbstractClassModel, FakeDeletableModel
 from poms.common.utils import date_now, isclose
 from poms.obj_attrs.models import AbstractAttributeType, AbstractAttribute, AbstractAttributeTypeOption, \
     AbstractClassifier
@@ -316,7 +316,7 @@ class PricingPolicy(NamedModel):
 
 
 @python_2_unicode_compatible
-class InstrumentType(NamedModel):
+class InstrumentType(NamedModel, FakeDeletableModel):
     master_user = models.ForeignKey(MasterUser, related_name='instrument_types',
                                     verbose_name=_('master user'))
     instrument_class = models.ForeignKey(InstrumentClass, related_name='instrument_types', on_delete=models.PROTECT,
@@ -369,7 +369,7 @@ class InstrumentTypeGroupObjectPermission(AbstractGroupObjectPermission):
 
 
 @python_2_unicode_compatible
-class Instrument(NamedModel):
+class Instrument(NamedModel, FakeDeletableModel):
     master_user = models.ForeignKey(MasterUser, related_name='instruments', verbose_name=_('master user'))
 
     instrument_type = models.ForeignKey(InstrumentType, on_delete=models.PROTECT,

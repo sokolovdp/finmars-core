@@ -80,6 +80,15 @@ class AbstractModelViewSet(AbstractApiView, ModelViewSet):
         SearchFilter,
     ]
 
+    def get_queryset(self):
+        qs = super(AbstractModelViewSet, self).get_queryset()
+        if getattr(self, 'has_feature_is_deleted', False):
+            is_deleted = self.request.query_params.get('is_deleted', None)
+            if is_deleted is None:
+                if getattr(self, 'action', '') == 'list':
+                    qs = qs.filter(is_deleted=False)
+        return qs
+
     def update(self, request, *args, **kwargs):
         response = super(AbstractModelViewSet, self).update(request, *args, **kwargs)
         # total reload object, due many to many don't correctly returned
@@ -99,6 +108,12 @@ class AbstractModelViewSet(AbstractApiView, ModelViewSet):
                     'Cannot delete instance because they are referenced through a protected foreign key'),
             }, status=status.HTTP_409_CONFLICT)
         return Response(status=status.HTTP_204_NO_CONTENT)
+
+    def perform_destroy(self, instance):
+        if getattr(self, 'has_feature_is_deleted', False):
+            instance.fake_delete()
+        else:
+            super(AbstractModelViewSet, self).perform_destroy(instance)
 
 
 class AbstractReadOnlyModelViewSet(AbstractApiView, ReadOnlyModelViewSet):

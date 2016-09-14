@@ -9,7 +9,7 @@ from django.dispatch import receiver
 from django.utils.encoding import python_2_unicode_compatible
 from django.utils.translation import ugettext_lazy as _
 
-from poms.common.models import NamedModel
+from poms.common.models import NamedModel, FakeDeletableModel
 
 AVAILABLE_APPS = ['accounts', 'counterparties', 'currencies', 'instruments', 'portfolios', 'strategies', 'transactions',
                   'reports', 'users']
@@ -169,17 +169,10 @@ class MasterUser(models.Model):
 
 
 @python_2_unicode_compatible
-class Member(models.Model):
-    master_user = models.ForeignKey(MasterUser, related_name='members',
-                                    verbose_name=_('master user'))
-    user = models.ForeignKey(
-        settings.AUTH_USER_MODEL,
-        on_delete=models.SET_NULL,
-        null=True,
-        blank=True,
-        related_name='members',
-        verbose_name=_('user'),
-    )
+class Member(FakeDeletableModel):
+    master_user = models.ForeignKey(MasterUser, related_name='members', verbose_name=_('master user'))
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True,
+                             related_name='members', verbose_name=_('user'), )
 
     username = models.CharField(max_length=255, blank=True, default='', editable=False)
     first_name = models.CharField(max_length=30, blank=True, default='', editable=False)
@@ -202,16 +195,16 @@ class Member(models.Model):
         ]
 
     def __str__(self):
-        # return '%s@%s' % (self.username, self.master_user)
         return self.username
+
+    def fake_delete(self):
+        self.user = None
+        self.is_deleted = True
+        self.save(update_fields=['user', 'is_deleted'])
 
     @property
     def is_superuser(self):
         return self.is_owner or self.is_admin
-
-    @property
-    def is_deleted(self):
-        return self.user is None
 
     @property
     def display_name(self):

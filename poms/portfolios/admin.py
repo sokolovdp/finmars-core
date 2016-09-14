@@ -12,8 +12,9 @@ from poms.portfolios.models import Portfolio, PortfolioAttributeType, PortfolioC
 
 class PortfolioAdmin(HistoricalAdmin):
     model = Portfolio
-    list_display = ['id', 'master_user', 'name']
+    list_display = ['id', 'master_user', 'name', 'is_deleted', ]
     list_select_related = ['master_user']
+    list_filter = ['is_deleted', ]
     raw_id_fields = ['master_user']
     filter_horizontal = ['accounts', 'responsibles', 'counterparties', 'transaction_types']
     inlines = [
@@ -27,7 +28,6 @@ admin.site.register(Portfolio, PortfolioAdmin)
 
 
 class PortfolioAttributeTypeAdmin(AbstractAttributeTypeAdmin):
-    # inlines = [PortfolioAttributeTypeClassifierInline]
     inlines = [
         AbstractAttributeTypeClassifierInline,
         AbstractAttributeTypeOptionInline,

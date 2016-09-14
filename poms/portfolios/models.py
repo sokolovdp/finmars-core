@@ -6,7 +6,7 @@ from django.utils.translation import ugettext_lazy as _
 from mptt.fields import TreeForeignKey
 from mptt.models import MPTTModel
 
-from poms.common.models import NamedModel
+from poms.common.models import NamedModel, FakeDeletableModel
 from poms.obj_attrs.models import AbstractAttributeType, AbstractAttribute, AbstractAttributeTypeOption, \
     AbstractClassifier
 from poms.obj_perms.models import AbstractGroupObjectPermission, AbstractUserObjectPermission
@@ -14,7 +14,7 @@ from poms.users.models import MasterUser, Member
 
 
 @python_2_unicode_compatible
-class Portfolio(NamedModel):
+class Portfolio(NamedModel, FakeDeletableModel):
     master_user = models.ForeignKey(MasterUser, related_name='portfolios')
     accounts = models.ManyToManyField('accounts.Account', related_name='portfolios', blank=True)
     responsibles = models.ManyToManyField('counterparties.Responsible', related_name='portfolios', blank=True)

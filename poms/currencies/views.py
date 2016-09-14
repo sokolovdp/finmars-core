@@ -18,12 +18,14 @@ class CurrencyFilterSet(FilterSet):
     name = CharFilter()
     short_name = CharFilter()
     reference_for_pricing = CharFilter()
-    is_default = IsDefaultFilter(source='currency')
+    # is_default = IsDefaultFilter(source='currency')
     tag = TagFilter(model=Currency)
 
     class Meta:
         model = Currency
-        fields = ['user_code', 'name', 'short_name', 'is_default', 'reference_for_pricing', 'tag']
+        fields = [
+            'is_deleted', 'user_code', 'name', 'short_name', 'reference_for_pricing', 'tag',
+        ]
 
 
 class CurrencyViewSet(AbstractModelViewSet):
@@ -43,6 +45,7 @@ class CurrencyViewSet(AbstractModelViewSet):
     search_fields = [
         'user_code', 'name', 'short_name', 'reference_for_pricing'
     ]
+    has_feature_is_deleted = True
 
 
 class CurrencyHistoryFilterSet(FilterSet):
@@ -51,7 +54,9 @@ class CurrencyHistoryFilterSet(FilterSet):
 
     class Meta:
         model = CurrencyHistory
-        fields = ['currency', 'date']
+        fields = [
+            'currency', 'date'
+        ]
 
 
 class CurrencyHistoryViewSet(AbstractModelViewSet):
@@ -65,7 +70,6 @@ class CurrencyHistoryViewSet(AbstractModelViewSet):
     ]
     filter_class = CurrencyHistoryFilterSet
     ordering_fields = [
-        'date',
-        'currency__user_code', 'currency__name', 'currency__short_name',
+        'date', 'currency__user_code', 'currency__name', 'currency__short_name',
     ]
     search_fields = []

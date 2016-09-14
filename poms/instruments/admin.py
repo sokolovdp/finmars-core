@@ -38,9 +38,9 @@ admin.site.register(PricingPolicy, PricingPolicyAdmin)
 
 class InstrumentTypeAdmin(HistoricalAdmin):
     model = InstrumentType
-    list_display = ['id', 'name', 'master_user', 'instrument_class']
+    list_display = ['id', 'name', 'master_user', 'instrument_class', 'is_deleted', ]
     list_select_related = ['master_user', 'instrument_class']
-    list_filter = ['instrument_class']
+    list_filter = ['instrument_class', 'is_deleted', ]
     raw_id_fields = ['master_user', 'one_off_event', 'regular_event', 'factor_same', 'factor_up', 'factor_down']
     inlines = [
         UserObjectPermissionInline,
@@ -76,17 +76,11 @@ class InstrumentFactorScheduleInline(admin.TabularInline):
     extra = 0
 
 
-# class EventScheduleInline(admin.StackedInline):
-#     model = EventSchedule
-#     extra = 0
-
-
 class InstrumentAdmin(HistoricalAdmin):
     model = Instrument
-    list_display = ['id', 'master_user', 'name', 'instrument_type', 'pricing_currency', 'accrued_currency',
-                    'reference_for_pricing', 'daily_pricing_model', 'price_download_scheme']
+    list_display = ['id', 'master_user', 'instrument_type', 'name', 'is_deleted']
     list_select_related = ['master_user', 'instrument_type', 'pricing_currency', 'accrued_currency']
-    list_filter = ['instrument_type__instrument_class']
+    list_filter = ['instrument_type__instrument_class', 'is_deleted', ]
     raw_id_fields = ['master_user', 'instrument_type', 'pricing_currency', 'accrued_currency', 'price_download_scheme']
     search_fields = ['name']
     inlines = [

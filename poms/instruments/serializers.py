@@ -77,13 +77,18 @@ class InstrumentTypeSerializer(ModelWithObjectPermissionSerializer, ModelWithUse
     master_user = MasterUserField()
     one_off_event = TransactionTypeField(allow_null=True, required=False)
     regular_event = TransactionTypeField(allow_null=True, required=False)
+    factor_same = TransactionTypeField(allow_null=True, required=False)
+    factor_up = TransactionTypeField(allow_null=True, required=False)
+    factor_down = TransactionTypeField(allow_null=True, required=False)
     tags = TagField(many=True, required=False, allow_null=True)
 
     class Meta:
         model = InstrumentType
-        fields = ['url', 'id', 'master_user', 'user_code', 'name', 'short_name', 'public_name', 'notes', 'is_default',
-                  'instrument_class', 'one_off_event', 'regular_event',
-                  'tags']
+        fields = [
+            'url', 'id', 'master_user', 'instrument_class', 'user_code', 'name', 'short_name', 'public_name', 'notes',
+            'is_default', 'is_deleted', 'one_off_event', 'regular_event', 'factor_same', 'factor_up', 'factor_down',
+            'tags'
+        ]
 
     def validate(self, attrs):
         instrument_class = attrs['instrument_class']
@@ -204,7 +209,7 @@ class InstrumentSerializer(ModelWithAttributesSerializer, ModelWithObjectPermiss
     class Meta:
         model = Instrument
         fields = ['url', 'id', 'master_user', 'instrument_type', 'user_code', 'name', 'short_name',
-                  'public_name', 'notes', 'is_active',
+                  'public_name', 'notes', 'is_active', 'is_deleted',
                   'pricing_currency', 'price_multiplier', 'accrued_currency', 'accrued_multiplier',
                   'payment_size_detail', 'default_price', 'default_accrued',
                   'user_text_1', 'user_text_2', 'user_text_3',

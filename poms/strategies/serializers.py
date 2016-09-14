@@ -18,7 +18,9 @@ class Strategy1GroupSerializer(ModelWithObjectPermissionSerializer, ModelWithUse
 
     class Meta:
         model = Strategy1Group
-        fields = ['url', 'id', 'master_user', 'user_code', 'name', 'short_name', 'public_name', 'notes', 'tags']
+        fields = [
+            'url', 'id', 'master_user', 'user_code', 'name', 'short_name', 'public_name', 'notes', 'is_deleted', 'tags'
+        ]
 
 
 class Strategy1GroupBulkObjectPermissionSerializer(AbstractBulkObjectPermissionSerializer):
@@ -35,8 +37,10 @@ class Strategy1SubgroupSerializer(ModelWithObjectPermissionSerializer, ModelWith
 
     class Meta:
         model = Strategy1Subgroup
-        fields = ['url', 'id', 'master_user', 'group', 'user_code', 'name', 'short_name', 'public_name', 'notes',
-                  'tags']
+        fields = [
+            'url', 'id', 'master_user', 'group', 'user_code', 'name', 'short_name', 'public_name', 'is_deleted',
+            'notes', 'tags'
+        ]
 
 
 class Strategy1SubgroupBulkObjectPermissionSerializer(AbstractBulkObjectPermissionSerializer):
@@ -54,8 +58,10 @@ class Strategy1Serializer(ModelWithObjectPermissionSerializer, ModelWithUserCode
 
     class Meta:
         model = Strategy1
-        fields = ['url', 'id', 'master_user', 'group', 'subgroup', 'user_code', 'name', 'short_name', 'public_name',
-                  'notes', 'tags']
+        fields = [
+            'url', 'id', 'master_user', 'group', 'subgroup', 'user_code', 'name', 'short_name', 'public_name',
+            'notes', 'is_deleted', 'tags'
+        ]
 
     def get_group(self, obj):
         subgroup = getattr(obj, 'subgroup', None)

@@ -13,8 +13,9 @@ from poms.obj_perms.admin import UserObjectPermissionInline, \
 
 class AccountTypeAdmin(HistoricalAdmin):
     model = AccountType
-    list_display = ['id', 'master_user', 'name', ]
+    list_display = ['id', 'master_user', 'name', 'is_deleted', ]
     list_select_related = ['master_user']
+    list_filter = ['is_deleted', ]
     raw_id_fields = ['master_user']
     inlines = [
         UserObjectPermissionInline,
@@ -27,8 +28,9 @@ admin.site.register(AccountType, AccountTypeAdmin)
 
 class AccountAdmin(HistoricalAdmin):
     model = Account
-    list_display = ['id', 'master_user', 'name', 'type']
+    list_display = ['id', 'master_user', 'name', 'type', 'is_deleted', ]
     list_select_related = ['master_user', 'type']
+    list_filter = ['is_deleted', ]
     raw_id_fields = ['master_user', 'type']
     inlines = [
         AbstractAttributeInline,

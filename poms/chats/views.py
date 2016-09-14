@@ -29,7 +29,9 @@ class ThreadGroupFilterSet(FilterSet):
 
     class Meta:
         model = ThreadGroup
-        fields = ['name', 'tag']
+        fields = [
+            'is_deleted', 'name', 'tag'
+        ]
 
 
 class ThreadGroupViewSet(AbstractModelViewSet):
@@ -45,6 +47,7 @@ class ThreadGroupViewSet(AbstractModelViewSet):
     filter_class = ThreadGroupFilterSet
     ordering_fields = ['id', 'name']
     search_fields = ['name']
+    has_feature_is_deleted = True
 
 
 class ThreadFilterSet(FilterSet):
@@ -62,7 +65,7 @@ class ThreadFilterSet(FilterSet):
     class Meta:
         model = Thread
         fields = [
-            'subject', 'created', 'closed', 'is_closed', 'tag', 'thread_group',
+            'is_deleted', 'subject', 'created', 'closed', 'is_closed', 'tag', 'thread_group',
             'member', 'member_group', 'permission',
         ]
 
@@ -98,6 +101,7 @@ class ThreadViewSet(AbstractWithObjectPermissionViewSet):
         'id', 'created', 'subject', 'thread_group__name',
     ]
     search_fields = ['subject']
+    has_feature_is_deleted = True
 
     @detail_route(url_path='close',
                   permission_classes=AbstractWithObjectPermissionViewSet.permission_classes + [SuperUserOnly, ])

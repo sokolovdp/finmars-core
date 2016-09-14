@@ -15,13 +15,7 @@ from poms.users.models import MasterUser, UserProfile, Member, Group, TIMEZONE_C
 class MemberInline(admin.TabularInline):
     model = Member
     extra = 0
-    raw_id_fields = ['groups', 'user']
-
-    # def formfield_for_manytomany(self, db_field, request=None, **kwargs):
-    #     if db_field.name == 'permissions':
-    #         qs = kwargs.get('queryset', db_field.remote_field.model.objects)
-    #         kwargs['queryset'] = qs.select_related('content_type')
-    #     return super(MemberInline, self).formfield_for_manytomany(db_field, request=request, **kwargs)
+    raw_id_fields = ['user', 'groups', ]
 
 
 class PricingAutomatedScheduleInline(admin.StackedInline):
@@ -74,8 +68,9 @@ admin.site.register(MasterUser, MasterUserAdmin)
 
 class MemberAdmin(admin.ModelAdmin):
     model = Member
-    list_display = ['id', 'master_user', 'user', 'is_owner', 'is_admin']
+    list_display = ['id', 'master_user', 'user', 'is_deleted', 'is_owner', 'is_admin']
     list_select_related = ['master_user', 'user']
+    list_filter = ['is_deleted', 'is_owner', 'is_admin']
     ordering = ['user', 'master_user']
     raw_id_fields = ['master_user', 'user', 'groups']
 

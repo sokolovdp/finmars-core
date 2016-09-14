@@ -65,7 +65,7 @@ class CounterpartyGroupFilterSet(FilterSet):
     user_code = CharFilter()
     name = CharFilter()
     short_name = CharFilter()
-    is_default = IsDefaultFilter(source='counterparty_group')
+    # is_default = IsDefaultFilter(source='counterparty_group')
     tag = TagFilter(model=CounterpartyGroup)
     member = ObjectPermissionMemberFilter(object_permission_model=CounterpartyGroup)
     member_group = ObjectPermissionGroupFilter(object_permission_model=CounterpartyGroup)
@@ -74,7 +74,8 @@ class CounterpartyGroupFilterSet(FilterSet):
     class Meta:
         model = CounterpartyGroup
         fields = [
-            'user_code', 'name', 'short_name', 'is_default', 'tag', 'member', 'member_group', 'permission',
+            'is_deleted', 'user_code', 'name', 'short_name', 'tag', 'member', 'member_group',
+            'permission',
         ]
 
 
@@ -93,13 +94,14 @@ class CounterpartyGroupViewSet(AbstractWithObjectPermissionViewSet):
     search_fields = [
         'user_code', 'name', 'short_name'
     ]
+    has_feature_is_deleted = True
 
 
 class CounterpartyFilterSet(FilterSet):
     user_code = CharFilter()
     name = CharFilter()
     short_name = CharFilter()
-    is_default = IsDefaultFilter(source='counterparty')
+    # is_default = IsDefaultFilter(source='counterparty')
     group = ModelWithPermissionMultipleChoiceFilter(model=CounterpartyGroup)
     portfolio = ModelWithPermissionMultipleChoiceFilter(model=Portfolio, name='portfolios')
     tag = TagFilter(model=Counterparty)
@@ -110,8 +112,8 @@ class CounterpartyFilterSet(FilterSet):
     class Meta:
         model = Counterparty
         fields = [
-            'user_code', 'name', 'short_name', 'is_valid_for_all_portfolios', 'is_default', 'group', 'tag', 'portfolio',
-            'member', 'member_group', 'permission',
+            'is_deleted', 'user_code', 'name', 'short_name', 'is_valid_for_all_portfolios', 'group',
+            'tag', 'portfolio', 'member', 'member_group', 'permission',
         ]
 
 
@@ -134,6 +136,7 @@ class CounterpartyViewSet(AbstractWithObjectPermissionViewSet):
     search_fields = [
         'user_code', 'name', 'short_name',
     ]
+    has_feature_is_deleted = True
 
 
 # Responsible ----
@@ -180,7 +183,7 @@ class ResponsibleGroupFilterSet(FilterSet):
     user_code = CharFilter()
     name = CharFilter()
     short_name = CharFilter()
-    is_default = IsDefaultFilter(source='responsible_group')
+    # is_default = IsDefaultFilter(source='responsible_group')
     tag = TagFilter(model=ResponsibleGroup)
     member = ObjectPermissionMemberFilter(object_permission_model=ResponsibleGroup)
     member_group = ObjectPermissionGroupFilter(object_permission_model=ResponsibleGroup)
@@ -189,7 +192,8 @@ class ResponsibleGroupFilterSet(FilterSet):
     class Meta:
         model = ResponsibleGroup
         fields = [
-            'user_code', 'name', 'short_name', 'is_default', 'tag', 'member', 'member_group', 'permission',
+            'is_deleted', 'user_code', 'name', 'short_name', 'tag', 'member', 'member_group',
+            'permission',
         ]
 
 
@@ -208,13 +212,14 @@ class ResponsibleGroupViewSet(AbstractWithObjectPermissionViewSet):
     search_fields = [
         'user_code', 'name', 'short_name'
     ]
+    has_feature_is_deleted = True
 
 
 class ResponsibleFilterSet(FilterSet):
     user_code = CharFilter()
     name = CharFilter()
     short_name = CharFilter()
-    is_default = IsDefaultFilter(source='responsible')
+    # is_default = IsDefaultFilter(source='responsible')
     group = ModelWithPermissionMultipleChoiceFilter(model=CounterpartyGroup)
     portfolio = ModelWithPermissionMultipleChoiceFilter(model=Portfolio, name='portfolios')
     tag = TagFilter(model=Responsible)
@@ -225,8 +230,8 @@ class ResponsibleFilterSet(FilterSet):
     class Meta:
         model = Responsible
         fields = [
-            'user_code', 'name', 'short_name', 'is_valid_for_all_portfolios', 'is_default', 'group', 'portfolio', 'tag',
-            'member', 'member_group', 'permission',
+            'is_deleted', 'user_code', 'name', 'short_name', 'is_valid_for_all_portfolios', 'group',
+            'portfolio', 'tag', 'member', 'member_group', 'permission',
         ]
 
 
@@ -249,3 +254,4 @@ class ResponsibleViewSet(AbstractWithObjectPermissionViewSet):
     search_fields = [
         'user_code', 'name', 'short_name'
     ]
+    has_feature_is_deleted = True
