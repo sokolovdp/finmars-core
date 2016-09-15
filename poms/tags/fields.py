@@ -41,7 +41,7 @@ class TagField(PrimaryKeyRelatedFilteredWithObjectPermissionField):
     ]
 
     def get_queryset(self):
-        queryset = super(PrimaryKeyRelatedFilteredWithObjectPermissionField, self).get_queryset()
+        queryset = super(TagField, self).get_queryset()
         if not issubclass(self.root.Meta.model, Tag):
             ctype = ContentType.objects.get_for_model(self.root.Meta.model)
             queryset = queryset.filter(content_types__in=[ctype])
