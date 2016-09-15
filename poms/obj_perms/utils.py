@@ -1,24 +1,27 @@
 from django.contrib.auth.models import Permission
 from django.contrib.contenttypes.models import ContentType
+from django.db.models import Model
 from django.db.models import Q
 from django.utils.functional import SimpleLazyObject
 
 
 def get_rel_model(obj, attr_name, base_cls):
-    from django.db.models import Model
-
     if isinstance(obj, Model):
-        obj = obj.__class__
-    from django.contrib.contenttypes.models import ContentType
-    ctype = ContentType.objects.get_for_model(obj)
+        # obj = obj.__class__
+        model = obj.__class__
+    else:
+        model = obj
+    # ctype = ContentType.objects.get_for_model(obj)
 
     fields = (f for f in obj._meta.get_fields() if (f.one_to_many or f.one_to_one) and f.auto_created)
     for attr in fields:
-        model = getattr(attr, 'related_model', None)
-        if model and issubclass(model, base_cls):
-            fk = model._meta.get_field(attr_name)
-            if ctype == ContentType.objects.get_for_model(fk.rel.to):
-                return attr.name, model
+        related_model = getattr(attr, 'related_model', None)
+        if related_model and issubclass(related_model, base_cls):
+            fk = related_model._meta.get_field(attr_name)
+            # if ctype == ContentType.objects.get_for_model(fk.rel.to):
+            # if model == fk.rel.to:
+            if issubclass(fk.rel.to, model):
+                return attr.name, related_model
     return None, None
 
 
