@@ -71,11 +71,18 @@ class TagFilter(django_filters.MultipleChoiceFilter):
         super(TagFilter, self).__init__(*args, **kwargs)
 
 
+def tag_content_type_choices():
+    queryset = ContentType.objects.all().order_by('app_label', 'model').filter(pk__in=get_tag_content_types())
+    for c in queryset:
+        yield '%s.%s' % (c.app_label, c.model), c.model_class()._meta.verbose_name
+
+
 class TagContentTypeFilter(django_filters.MultipleChoiceFilter):
     def __init__(self, *args, **kwargs):
-        queryset = ContentType.objects.all().order_by('app_label', 'model').filter(pk__in=get_tag_content_types())
-        kwargs['choices'] = [('%s.%s' % (c.app_label, c.model), c.model_class()._meta.verbose_name)
-                             for c in queryset]
+        # queryset = ContentType.objects.all().order_by('app_label', 'model').filter(pk__in=get_tag_content_types())
+        # kwargs['choices'] = [('%s.%s' % (c.app_label, c.model), c.model_class()._meta.verbose_name)
+        #                      for c in queryset]
+        kwargs['choices'] = tag_content_type_choices
         super(TagContentTypeFilter, self).__init__(*args, **kwargs)
 
     def filter(self, qs, value):

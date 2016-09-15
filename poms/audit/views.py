@@ -3,7 +3,7 @@ from __future__ import unicode_literals
 import django_filters
 from rest_framework.filters import FilterSet
 
-from poms.audit.filters import ObjectHistoryContentTypeMultipleChoiceFilter
+from poms.audit.filters import ObjectHistory4ContentTypeMultipleChoiceFilter
 from poms.audit.models import AuthLogEntry, ObjectHistory4Entry
 from poms.audit.serializers import AuthLogEntrySerializer, ObjectHistory4EntrySerializer
 from poms.common.filters import ModelWithPermissionMultipleChoiceFilter
@@ -35,10 +35,10 @@ class AuthLogViewSet(AbstractReadOnlyModelViewSet):
 class ObjectHistory4EntryFilterSet(FilterSet):
     created = django_filters.DateFromToRangeFilter()
     member = ModelWithPermissionMultipleChoiceFilter(model=Member, field_name='username')
-    actor_content_type = ObjectHistoryContentTypeMultipleChoiceFilter()
-    content_type = ObjectHistoryContentTypeMultipleChoiceFilter()
-    value_content_type = ObjectHistoryContentTypeMultipleChoiceFilter()
-    old_value_content_type = ObjectHistoryContentTypeMultipleChoiceFilter()
+    actor_content_type = ObjectHistory4ContentTypeMultipleChoiceFilter()
+    content_type = ObjectHistory4ContentTypeMultipleChoiceFilter()
+    value_content_type = ObjectHistory4ContentTypeMultipleChoiceFilter()
+    old_value_content_type = ObjectHistory4ContentTypeMultipleChoiceFilter()
 
     class Meta:
         model = ObjectHistory4Entry
