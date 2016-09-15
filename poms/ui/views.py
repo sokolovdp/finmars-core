@@ -21,11 +21,14 @@ class LayoutContentTypeFilter(django_filters.CharFilter):
             return qs
         if self.distinct:
             qs = qs.distinct()
-
-        app_label, model = value.split('.')
+        try:
+            app_label, model = value.split('.', maxsplit=1)
+        except ValueError:
+            # skip on invalid value
+            app_label, model = '', ''
         qs = self.get_method(qs)(**{
             'content_type__app_label': app_label,
-            'content_type__model__%s' % (lookup): model,
+            'content_type__model__%s' % lookup: model,
         })
         return qs
 
