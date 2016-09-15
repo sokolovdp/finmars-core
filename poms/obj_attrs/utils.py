@@ -20,12 +20,12 @@ def get_attr_type_model(obj):
 
 def get_attr_model(obj):
     from django.db.models import Model
-    from django.contrib.contenttypes.models import ContentType
+    # from django.contrib.contenttypes.models import ContentType
     from poms.obj_attrs.models import AbstractAttribute
 
     if isinstance(obj, Model):
         obj = obj.__class__
-    ctype = ContentType.objects.get_for_model(obj)
+    # ctype = ContentType.objects.get_for_model(obj)
     base_cls = AbstractAttribute
 
     fields = (f for f in obj._meta.get_fields() if (f.one_to_many or f.one_to_one) and f.auto_created)
