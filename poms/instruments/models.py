@@ -4,6 +4,7 @@ from datetime import date
 
 from dateutil import relativedelta, rrule
 from django.core import serializers
+from django.core.exceptions import ObjectDoesNotExist
 from django.db import models
 from django.utils.encoding import python_2_unicode_compatible
 from django.utils.translation import ugettext, ugettext_lazy
@@ -422,7 +423,10 @@ class Instrument(NamedModel, FakeDeletableModel):
         master_user = self.master_user
         instrument_type = self.instrument_type
         instrument_class = instrument_type.instrument_class
-        config = master_user.instrument_event_schedule_config
+        try:
+            event_schedule_config = master_user.instrument_event_schedule_config
+        except ObjectDoesNotExist:
+            event_schedule_config = EventScheduleConfig.create_default(master_user=master_user)
 
         events = list(self.event_schedules.prefetch_related('actions').filter(is_auto_generated=True))
         events_by_accrual = {e.accrual_calculation_schedule_id: e for e in events
@@ -431,34 +435,6 @@ class Instrument(NamedModel, FakeDeletableModel):
                             if e.factor_schedule_id is not None}
 
         processed = []
-
-        def _to_dict(e, e_actions=None):
-            if e is None:
-                return None
-            es = serializers.serialize("python", [e])[0]
-            if e_actions is None and hasattr(e, 'actions'):
-                e_actions = e_actions or e.actions.all()
-            es['fields']['actions'] = serializers.serialize("python", e_actions)
-            es.pop('pk')
-            for a in es['fields']['actions']:
-                a.pop('pk')
-                a['fields'].pop('event_schedule')
-            return es
-
-        def _is_equal(e, e_actions, eold, eold_actions):
-            es = _to_dict(e, e_actions)
-            eolds = _to_dict(eold, eold_actions)
-            return es == eolds
-
-        def _e_save(e, eold):
-            if not _is_equal(e, [a], eold, None):
-                e.save()
-                a.event_schedule = e
-                a.save()
-                processed.append(e.id)
-            else:
-                if eold:
-                    processed.append(eold.id)
 
         # process accruals
         accruals = list(self.accrual_calculation_schedules.order_by('accrual_start_date'))
@@ -474,33 +450,25 @@ class Instrument(NamedModel, FakeDeletableModel):
                     e.instrument = self
                     e.accrual_calculation_schedule = accrual
                     e.is_auto_generated = True
-                    e.name = config.name
-                    e.description = config.description
+                    e.name = event_schedule_config.name
+                    e.description = event_schedule_config.description
                     e.event_class_id = EventClass.REGULAR
-                    e.notification_class = config.notification_class
+                    e.notification_class = event_schedule_config.notification_class
                     e.effective_date = accrual.first_payment_date
-                    e.notify_in_n_days = config.notify_in_n_days
+                    e.notify_in_n_days = event_schedule_config.notify_in_n_days
                     e.periodicity = accrual.periodicity
                     e.periodicity_n = accrual.periodicity_n
                     e.final_date = accrual_next.accrual_start_date if accrual_next else self.maturity_date
 
                     a = EventScheduleAction()
-                    a.text = config.action_text
+                    a.text = event_schedule_config.action_text
                     a.transaction_type = instrument_type.regular_event
-                    a.is_sent_to_pending = config.action_is_sent_to_pending
-                    a.is_book_automatic = config.action_is_book_automatic
+                    a.is_sent_to_pending = event_schedule_config.action_is_sent_to_pending
+                    a.is_book_automatic = event_schedule_config.action_is_book_automatic
                     a.button_position = 1
 
                     eold = events_by_accrual.get(accrual.id, None)
-                    # if not _is_equal(e, [a], eold, None):
-                    #     e.save()
-                    #     a.event_schedule = e
-                    #     a.save()
-                    #     updated_events.append(e.id)
-                    # else:
-                    #     if eold:
-                    #         updated_events.append(eold.id)
-                    _e_save(e, eold)
+                    self._event_save(processed, e, a, eold)
                 else:
                     raise ValueError('Field regular event in instrument type "%s" must be set' % instrument_type)
 
@@ -509,19 +477,19 @@ class Instrument(NamedModel, FakeDeletableModel):
                 e = EventSchedule()
                 e.instrument = self
                 e.is_auto_generated = True
-                e.name = config.name
-                e.description = config.description
+                e.name = event_schedule_config.name
+                e.description = event_schedule_config.description
                 e.event_class_id = EventClass.ONE_OFF
-                e.notification_class = config.notification_class
+                e.notification_class = event_schedule_config.notification_class
                 e.effective_date = self.maturity_date
-                e.notify_in_n_days = config.notify_in_n_days
+                e.notify_in_n_days = event_schedule_config.notify_in_n_days
                 e.final_date = self.maturity_date
 
                 a = EventScheduleAction()
-                a.text = config.action_text
+                a.text = event_schedule_config.action_text
                 a.transaction_type = instrument_type.one_off_event
-                a.is_sent_to_pending = config.action_is_sent_to_pending
-                a.is_book_automatic = config.action_is_book_automatic
+                a.is_sent_to_pending = event_schedule_config.action_is_sent_to_pending
+                a.is_book_automatic = event_schedule_config.action_is_book_automatic
                 a.button_position = 1
 
                 eold = None
@@ -530,15 +498,7 @@ class Instrument(NamedModel, FakeDeletableModel):
                                     e0.accrual_calculation_schedule_id is None and e0.factor_schedule_id is None:
                         eold = e0
                         break
-                # if not _is_equal(e, [a], eold, None):
-                #     e.save()
-                #     a.event_schedule = e
-                #     a.save()
-                #     updated_events.append(e.id)
-                # else:
-                #     if eold:
-                #         updated_events.append(eold.id)
-                _e_save(e, eold)
+                self._event_save(processed, e, a, eold)
             else:
                 raise ValueError('Field one-off event in instrument type "%s" must be set' % instrument_type)
 
@@ -554,56 +514,74 @@ class Instrument(NamedModel, FakeDeletableModel):
 
             if isclose(f.factor_value, fprev.factor_value):
                 transaction_type = instrument_type.factor_same
-                cmp = 1
+                if transaction_type is None:
+                    continue
+                    # raise ValueError('Field "factor same"  in instrument type "%s" must be set' % instrument_type)
             elif f.factor_value > fprev.factor_value:
                 transaction_type = instrument_type.factor_up
-                cmp = 2
+                if transaction_type is None:
+                    continue
+                    # raise ValueError('Fields "factor up" in instrument type "%s" must be set' % instrument_type)
             else:
                 transaction_type = instrument_type.factor_down
-                cmp = 3
+                if transaction_type is None:
+                    continue
+                    # raise ValueError('Fields "factor down" in instrument type "%s" must be set' % instrument_type)
 
-            if transaction_type:
-                e = EventSchedule()
-                e.instrument = self
-                e.is_auto_generated = True
-                e.factor_schedule = f
-                e.name = config.name
-                e.description = config.description
-                e.event_class_id = EventClass.ONE_OFF
-                e.notification_class = config.notification_class
-                e.effective_date = f.effective_date
-                e.notify_in_n_days = config.notify_in_n_days
-                e.final_date = f.effective_date
+            e = EventSchedule()
+            e.instrument = self
+            e.is_auto_generated = True
+            e.factor_schedule = f
+            e.name = event_schedule_config.name
+            e.description = event_schedule_config.description
+            e.event_class_id = EventClass.ONE_OFF
+            e.notification_class = event_schedule_config.notification_class
+            e.effective_date = f.effective_date
+            e.notify_in_n_days = event_schedule_config.notify_in_n_days
+            e.final_date = f.effective_date
 
-                a = EventScheduleAction()
-                a.text = config.action_text
-                a.transaction_type = transaction_type
-                a.is_sent_to_pending = config.action_is_sent_to_pending
-                a.is_book_automatic = config.action_is_book_automatic
-                a.button_position = 1
+            a = EventScheduleAction()
+            a.text = event_schedule_config.action_text
+            a.transaction_type = transaction_type
+            a.is_sent_to_pending = event_schedule_config.action_is_sent_to_pending
+            a.is_book_automatic = event_schedule_config.action_is_book_automatic
+            a.button_position = 1
 
-                eold = events_by_factor.get(f.id, None)
-                # if not _is_equal(e, [a], eold, None):
-                #     e.save()
-                #     a.event_schedule = e
-                #     a.save()
-                #     updated_events.append(e.id)
-                # else:
-                #     if eold:
-                #         updated_events.append(eold.id)
-                _e_save(e, eold)
-            else:
-                if cmp == 1:
-                    raise ValueError(
-                        'Field factor same  in instrument type "%s" must be set' % instrument_type)
-                elif cmp == 2:
-                    raise ValueError(
-                        'Fields factor up in instrument type "%s" must be set' % instrument_type)
-                elif cmp == 3:
-                    raise ValueError(
-                        'Fields factor down in instrument type "%s" must be set' % instrument_type)
+            eold = events_by_factor.get(f.id, None)
+            self._event_save(processed, e, a, eold)
 
         self.event_schedules.filter(is_auto_generated=True).exclude(pk__in=processed).delete()
+
+    def _event_to_dict(self, event, event_actions=None):
+        # build dict from attrs for compare its
+        if event is None:
+            return None
+        event_values = serializers.serialize("python", [event])[0]
+        if event_actions is None and hasattr(event, 'actions'):
+            event_actions = event_actions or event.actions.all()
+        event_values['fields']['actions'] = serializers.serialize("python", event_actions)
+        event_values.pop('pk')
+        for action_values in event_values['fields']['actions']:
+            action_values.pop('pk')
+            action_values['fields'].pop('event_schedule')
+        return event_values
+
+    def _event_is_equal(self, event, event_actions, old_event, old_event_actions):
+        # compare action by all attrs
+        es = self._event_to_dict(event, event_actions)
+        eolds = self._event_to_dict(old_event, old_event_actions)
+        return es == eolds
+
+    def _event_save(self, processed, event, event_action, old_event):
+        # compare action by all attrs
+        if not self._event_is_equal(event, [event_action], old_event, None):
+            event.save()
+            event_action.event_schedule = event
+            event_action.save()
+            processed.append(event.id)
+        else:
+            if old_event:
+                processed.append(old_event.id)
 
     def find_accrual(self, some_date, accruals=None):
         if accruals is None:
@@ -904,3 +882,14 @@ class EventScheduleConfig(models.Model):
 
     def __str__(self):
         return ugettext('event schedule config')
+
+    @staticmethod
+    def create_default(master_user):
+        from poms.transactions.models import NotificationClass
+        return EventScheduleConfig.objects.create(
+            master_user=master_user,
+            name="''",
+            description="''",
+            notification_class_id=NotificationClass.DONT_REACT,
+            action_text="''",
+        )

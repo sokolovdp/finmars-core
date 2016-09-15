@@ -229,7 +229,7 @@ class EventScheduleConfigViewSet(AbstractModelViewSet):
         try:
             return self.request.user.master_user.instrument_event_schedule_config
         except ObjectDoesNotExist:
-            obj = EventScheduleConfig.objects.create(master_user=self.request.user.master_user)
+            obj = EventScheduleConfig.create_default(master_user=self.request.user.master_user)
             return obj
 
     def destroy(self, request, *args, **kwargs):
