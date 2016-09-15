@@ -20,10 +20,9 @@ class ObjectHistoryContentTypeMultipleChoiceFilter(django_filters.MultipleChoice
     def __init__(self, *args, **kwargs):
         queryset = ContentType.objects.all().order_by('app_label', 'model')
         queryset = ObjectHistoryContentTypeFilter().filter_queryset(None, queryset, None)
-        kwargs['choices'] = [
+        kwargs['choices'] = lambda: [
             ('%s.%s' % (c.app_label, c.model), c.model_class()._meta.verbose_name)
-            for c in queryset
-            ]
+            for c in queryset]
         super(ObjectHistoryContentTypeMultipleChoiceFilter, self).__init__(*args, **kwargs)
 
     def filter(self, qs, value):
@@ -40,8 +39,9 @@ class ObjectHistory4ContentTypeMultipleChoiceFilter(django_filters.MultipleChoic
     def __init__(self, *args, **kwargs):
         queryset = ContentType.objects.all().order_by('app_label', 'model').filter(
             pk__in=get_history_model_content_type_list())
-        kwargs['choices'] = [('%s.%s' % (c.app_label, c.model), c.model_class()._meta.verbose_name)
-                             for c in queryset]
+        kwargs['choices'] = lambda: [
+            ('%s.%s' % (c.app_label, c.model), c.model_class()._meta.verbose_name)
+            for c in queryset]
         super(ObjectHistory4ContentTypeMultipleChoiceFilter, self).__init__(*args, **kwargs)
 
     def filter(self, qs, value):

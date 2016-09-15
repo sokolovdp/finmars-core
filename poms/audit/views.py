@@ -1,7 +1,7 @@
 from __future__ import unicode_literals
 
 import django_filters
-from django_filters import FilterSet
+from rest_framework.filters import FilterSet
 
 from poms.audit.filters import ObjectHistoryContentTypeMultipleChoiceFilter
 from poms.audit.models import AuthLogEntry, ObjectHistory4Entry
