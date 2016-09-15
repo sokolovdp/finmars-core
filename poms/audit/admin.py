@@ -9,6 +9,7 @@ class AuthLogEntryAdmin(admin.ModelAdmin):
     model = AuthLogEntry
     list_display = ['id', 'date', 'user', 'is_success', 'user_ip', 'human_user_agent']
     list_select_related = ['user']
+    search_fields = ['id', 'user__username']
     date_hierarchy = 'date'
     ordering = ('-date',)
     fields = ['id', 'date', 'user', 'is_success', 'user_ip', 'user_agent']

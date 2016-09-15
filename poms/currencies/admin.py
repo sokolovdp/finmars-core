@@ -11,6 +11,7 @@ class CurrencyAdmin(HistoricalAdmin):
     model = Currency
     list_display = ['id', 'master_user', 'name', 'is_deleted', ]
     list_select_related = ['master_user']
+    search_fields = ['id', 'user_code', 'name']
     list_filter = ['is_deleted', ]
     raw_id_fields = ['master_user', 'price_download_scheme']
     ordering = ['master_user', 'user_code']
@@ -29,6 +30,7 @@ class CurrencyHistoryAdmin(HistoricalAdmin):
     model = CurrencyHistory
     list_display = ['id', 'currency', 'master_user', 'date', 'fx_rate']
     list_select_related = ['currency', 'currency__master_user']
+    search_fields = ['currency__id', 'currency__user_code', 'currency__name']
     list_filter = ['date', ]
     date_hierarchy = 'date'
     raw_id_fields = ['currency', 'pricing_policy']

@@ -16,6 +16,7 @@ class TemplateListLayoutAdmin(BaseLayoutAdmin):
     model = TemplateListLayout
     list_display = ['id', 'master_user', 'content_type', 'name']
     list_select_related = ['master_user', 'content_type']
+    search_fields = ['id', 'name']
     raw_id_fields = ['master_user']
 
 
@@ -26,6 +27,7 @@ class TemplateEditLayoutAdmin(BaseLayoutAdmin):
     model = TemplateEditLayout
     list_display = ['id', 'master_user', 'content_type']
     list_select_related = ['master_user', 'content_type']
+    search_fields = ['id']
     raw_id_fields = ['master_user']
 
 
@@ -36,6 +38,7 @@ class ListLayoutAdmin(BaseLayoutAdmin):
     model = ListLayout
     list_display = ['id', 'member', 'content_type', 'name']
     list_select_related = ['member', 'content_type']
+    search_fields = ['id', 'name']
     raw_id_fields = ['member']
 
 
@@ -46,6 +49,7 @@ class EditLayoutAdmin(BaseLayoutAdmin):
     model = EditLayout
     list_display = ['id', 'member', 'content_type']
     list_select_related = ['member', 'content_type']
+    search_fields = ['id']
     raw_id_fields = ['member']
 
 

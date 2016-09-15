@@ -32,6 +32,7 @@ class TransactionTypeGroupAdmin(HistoricalAdmin):
     model = TransactionTypeGroup
     list_display = ['id', 'name', 'master_user', 'is_deleted', ]
     list_select_related = ['master_user']
+    search_fields = ['id', 'user_code', 'name']
     list_filter = ['is_deleted', ]
     raw_id_fields = ['master_user']
     inlines = [
@@ -46,9 +47,9 @@ admin.site.register(TransactionTypeGroup, TransactionTypeGroupAdmin)
 class TransactionTypeInputAdmin(HistoricalAdmin):
     model = TransactionTypeInput
     list_display = ['id', 'master_user', 'transaction_type', 'order', 'name', 'value_type']
+    search_fields = ['id', 'name']
     list_select_related = ['transaction_type', 'transaction_type__master_user']
     raw_id_fields = ['transaction_type']
-    search_fields = ['transaction_type__name', 'name']
 
     def master_user(self, obj):
         return obj.transaction_type.master_user
@@ -60,9 +61,9 @@ admin.site.register(TransactionTypeInput, TransactionTypeInputAdmin)
 class TransactionTypeActionInstrumentAdmin(HistoricalAdmin):
     model = TransactionTypeActionInstrument
     list_display = ['id', 'master_user', 'transaction_type', 'order']
+    search_fields = ['id']
     list_select_related = ['transaction_type', 'transaction_type__master_user']
     raw_id_fields = ['transaction_type']
-    search_fields = ['transaction_type__name']
 
     def master_user(self, obj):
         return obj.transaction_type.master_user
@@ -74,9 +75,9 @@ admin.site.register(TransactionTypeActionInstrument, TransactionTypeActionInstru
 class TransactionTypeActionTransactionAdmin(HistoricalAdmin):
     model = TransactionTypeActionTransaction
     list_display = ['id', 'master_user', 'transaction_type', 'order']
+    search_fields = ['id']
     list_select_related = ['transaction_type', 'transaction_type__master_user']
     raw_id_fields = ['transaction_type']
-    search_fields = ['transaction_type__name']
 
     def master_user(self, obj):
         return obj.transaction_type.master_user
@@ -243,6 +244,7 @@ class TransactionTypeAdmin(HistoricalAdmin):
     model = TransactionType
     list_display = ['id', 'master_user', 'name', 'is_deleted', ]
     list_select_related = ['master_user']
+    search_fields = ['id', 'user_code', 'name']
     list_filter = ['is_deleted', ]
     raw_id_fields = ['master_user', 'group', 'instrument_types']
     inlines = [
@@ -279,8 +281,9 @@ admin.site.register(TransactionType, TransactionTypeAdmin)
 
 class ComplexTransactionAdmin(HistoricalAdmin):
     model = ComplexTransaction
-    list_select_related = ['transaction_type', 'transaction_type__master_user']
     list_display = ['id', 'transaction_type', 'master_user', 'code']
+    list_select_related = ['transaction_type', 'transaction_type__master_user']
+    search_fields = ['id']
     raw_id_fields = ['transaction_type']
 
     def master_user(self, obj):
@@ -324,8 +327,8 @@ class TransactionAdmin(HistoricalAdmin):
                     'principal_with_sign', 'carry_with_sign', 'overheads_with_sign',
                     'account_cash', 'account_position', 'account_interim',
                     'strategy1_position', 'strategy1_cash', 'strategy2_position', 'strategy2_cash',
-                    'strategy3_position', 'strategy3_cash',
-                    ]
+                    'strategy3_position', 'strategy3_cash', ]
+    search_fields = ['id']
     list_filter = ['is_canceled']
     ordering = ['transaction_date', 'id']
     date_hierarchy = 'transaction_date'
@@ -365,9 +368,6 @@ admin.site.register(Transaction, TransactionAdmin)
 
 
 class TransactionAttributeTypeAdmin(AbstractAttributeTypeAdmin):
-    list_display = ['id', 'master_user', 'name', 'value_type']
-    list_select_related = ['master_user']
-    raw_id_fields = ['master_user']
     inlines = [
         AbstractAttributeTypeClassifierInline,
         AbstractAttributeTypeOptionInline,

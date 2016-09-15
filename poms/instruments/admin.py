@@ -29,6 +29,7 @@ class PricingPolicyAdmin(HistoricalAdmin):
     model = PricingPolicy
     list_display = ['id', 'name', 'master_user']
     list_select_related = ['master_user']
+    search_fields = ['id', 'user_code', 'name']
     raw_id_fields = ['master_user']
     ordering = ['user_code']
 
@@ -40,6 +41,7 @@ class InstrumentTypeAdmin(HistoricalAdmin):
     model = InstrumentType
     list_display = ['id', 'name', 'master_user', 'instrument_class', 'is_deleted', ]
     list_select_related = ['master_user', 'instrument_class']
+    search_fields = ['id', 'user_code', 'name']
     list_filter = ['instrument_class', 'is_deleted', ]
     raw_id_fields = ['master_user', 'one_off_event', 'regular_event', 'factor_same', 'factor_up', 'factor_down']
     inlines = [
@@ -80,9 +82,9 @@ class InstrumentAdmin(HistoricalAdmin):
     model = Instrument
     list_display = ['id', 'master_user', 'instrument_type', 'name', 'is_deleted']
     list_select_related = ['master_user', 'instrument_type', 'pricing_currency', 'accrued_currency']
+    search_fields = ['id', 'user_code', 'name']
     list_filter = ['instrument_type__instrument_class', 'is_deleted', ]
     raw_id_fields = ['master_user', 'instrument_type', 'pricing_currency', 'accrued_currency', 'price_download_scheme']
-    search_fields = ['name']
     inlines = [
         InstrumentAttributeInline,
         ManualPricingFormulaInline,
@@ -117,10 +119,10 @@ class AccrualCalculationScheduleAdmin(admin.ModelAdmin):
     model = AccrualCalculationSchedule
     list_display = ['id', 'master_user', 'instrument', 'accrual_start_date', 'first_payment_date',
                     'accrual_calculation_model', 'periodicity']
+    search_fields = ['instrument__id', 'instrument__user_code', 'instrument__name']
     list_select_related = ['instrument', 'instrument__master_user', 'accrual_calculation_model', 'periodicity']
     list_filter = ['accrual_calculation_model', 'periodicity']
     raw_id_fields = ['instrument']
-    search_fields = ['instrument__name']
 
     def master_user(self, obj):
         return obj.instrument.master_user
@@ -133,9 +135,9 @@ class InstrumentFactorScheduleAdmin(admin.ModelAdmin):
     model = InstrumentFactorSchedule
     list_display = ['id', 'master_user', 'instrument', 'effective_date', 'factor_value']
     list_select_related = ['instrument', 'instrument__master_user']
+    search_fields = ['instrument__id', 'instrument__user_code', 'instrument__name']
     list_filter = ['effective_date']
     raw_id_fields = ['instrument']
-    search_fields = ['instrument__name']
 
     def master_user(self, obj):
         return obj.instrument.master_user
@@ -155,9 +157,9 @@ class EventScheduleAdmin(admin.ModelAdmin):
     list_display = ['id', 'master_user', 'instrument', 'name', 'event_class', 'notification_class', 'effective_date',
                     'periodicity', 'final_date', 'is_auto_generated', 'accrual_calculation_schedule', 'factor_schedule',
                     '_actions']
+    search_fields = ['instrument__id', 'instrument__user_code', 'instrument__name']
     list_select_related = ['instrument', 'instrument__master_user', 'event_class', 'notification_class']
     raw_id_fields = ['instrument', 'accrual_calculation_schedule']
-    search_fields = ['instrument__name']
 
     inlines = [
         EventScheduleActionInline
@@ -186,8 +188,8 @@ class PriceHistoryAdmin(HistoricalAdmin):
     model = PriceHistory
     list_display = ['id', 'date', 'instrument', 'principal_price', 'accrued_price']
     list_select_related = ['instrument']
+    search_fields = ['instrument__id', 'instrument__user_code', 'instrument__name']
     list_filter = ['date']
-    search_fields = ['instrument__name']
     date_hierarchy = 'date'
     raw_id_fields = ['instrument', 'pricing_policy']
     actions = ['calculate_accrued_price']

@@ -12,6 +12,7 @@ class TagAdmin(HistoricalAdmin):
     model = Tag
     list_display = ['id', 'master_user', 'name', ]
     list_select_related = ['master_user']
+    search_fields = ['id', 'user_code', 'name']
     filter_horizontal = ['content_types', ]
     raw_id_fields = [
         'master_user', 'account_types', 'accounts', 'currencies', 'instrument_types', 'instruments',

@@ -14,6 +14,7 @@ class PortfolioAdmin(HistoricalAdmin):
     model = Portfolio
     list_display = ['id', 'master_user', 'name', 'is_deleted', ]
     list_select_related = ['master_user']
+    search_fields = ['id', 'user_code', 'name']
     list_filter = ['is_deleted', ]
     raw_id_fields = ['master_user', 'accounts', 'responsibles', 'counterparties', 'transaction_types']
     inlines = [

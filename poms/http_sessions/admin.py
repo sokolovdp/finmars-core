@@ -11,7 +11,7 @@ class SessionAdmin(admin.ModelAdmin):
     list_display = ['session_key', 'user', 'user_ip', 'user_agent', 'expire_date']
     list_display_links = ['session_key']
     list_select_related = ['user']
-    search_fields = ['user__username', 'user_ip']
+    search_fields = ['user__username']
     date_hierarchy = 'expire_date'
     ordering = ('-expire_date',)
     fields = ['id', 'session_key', 'user', 'user_ip', 'user_agent', 'expire_date']

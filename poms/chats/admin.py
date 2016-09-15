@@ -12,9 +12,9 @@ class ThreadGroupAdmin(HistoricalAdmin):
     model = ThreadGroup
     list_display = ['id', 'master_user', 'name', 'is_deleted', ]
     list_select_related = ['master_user', ]
+    search_fields = ['id', 'name']
     list_filter = ['is_deleted', ]
     raw_id_fields = ['master_user', ]
-    search_fields = ['id', 'name']
     inlines = [
         UserObjectPermissionInline,
         GroupObjectPermissionInline
@@ -28,8 +28,8 @@ class ThreadAdmin(HistoricalAdmin):
     model = Thread
     list_display = ['id', 'master_user', 'thread_group', 'subject', 'created', 'closed', 'is_deleted', ]
     list_select_related = ['master_user', 'thread_group', ]
-    list_filter = ['created', 'closed', 'is_deleted', ]
     search_fields = ['id', 'subject']
+    list_filter = ['created', 'closed', 'is_deleted', ]
     date_hierarchy = 'created'
     ordering = ['created']
     raw_id_fields = ['master_user', 'thread_group', ]
@@ -46,10 +46,10 @@ class MessageAdmin(HistoricalAdmin):
     model = Message
     list_display = ['id', 'master_user', 'created', 'thread', 'sender', 'short_text']
     list_select_related = ['thread', 'thread__master_user', 'sender']
+    search_fields = ['thread__id', 'thread__subject']
     date_hierarchy = 'created'
     ordering = ['created']
     raw_id_fields = ['thread', 'sender']
-    search_fields = ['thread__id', 'thread__subject']
 
     def master_user(self, obj):
         return obj.thread.master_user
