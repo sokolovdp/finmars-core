@@ -171,7 +171,7 @@ class EventScheduleActionSerializer(serializers.ModelSerializer):
 
 class EventScheduleSerializer(serializers.ModelSerializer):
     id = serializers.IntegerField(read_only=False, required=False, allow_null=True)
-    actions = EventScheduleActionSerializer(many=True)
+    actions = EventScheduleActionSerializer(many=True, required=False, allow_null=True)
 
     class Meta:
         model = EventSchedule
