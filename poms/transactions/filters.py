@@ -27,7 +27,7 @@ class TransactionObjectPermissionFilter(BaseFilterBackend):
         portfolio_qs = list(portfolio_qs.values_list('id', flat=True))
         account_qs = list(account_qs.values_list('id', flat=True))
         queryset = queryset.filter(
-            Q(portfolio__in=portfolio_qs) &
+            Q(portfolio__in=portfolio_qs) |
             (Q(account_position__in=account_qs) | Q(account_cash__in=account_qs) | Q(account_interim__in=account_qs))
         )
         return queryset
