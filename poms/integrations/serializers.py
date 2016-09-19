@@ -159,7 +159,7 @@ class InstrumentDownloadSchemeSerializer(serializers.ModelSerializer):
                     pass
             if input0 is None:
                 input0 = InstrumentDownloadSchemeInput(scheme=instance)
-            for name, value in six.iteritems(input_values):
+            for name, value in input_values.items():
                 setattr(input0, name, value)
             input0.save()
             pk_set.add(input0.id)
@@ -175,7 +175,7 @@ class InstrumentDownloadSchemeSerializer(serializers.ModelSerializer):
                 pass
             if attr is None:
                 attr = InstrumentDownloadSchemeAttribute(scheme=instance)
-            for name, value in six.iteritems(attr_values):
+            for name, value in attr_values.items():
                 setattr(attr, name, value)
             attr.save()
             pk_set.add(attr.id)
