@@ -216,7 +216,7 @@ def download_instrument(instrument_code=None, instrument_download_scheme=None, m
 
             instrument, errors = provider.create_instrument(instrument_download_scheme, values)
             return task, instrument, errors
-        return task, None
+        return task, None, None
 
 
 @shared_task(name='backend.download_instrument_pricing_async', bind=True, ignore_result=False)
