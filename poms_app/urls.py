@@ -24,7 +24,7 @@ if 'django.contrib.admin' in settings.INSTALLED_APPS:
 
 if settings.DEBUG:
     urlpatterns += [
-        url(r'^$', RedirectView.as_view(url='/admin/'), name='redirect-to-admin'),
+        url(r'^$', RedirectView.as_view(url='/api/v1/'), name='dev-only-root-redirect'),
     ]
 
 if getattr(settings, 'MEDIA_SERVE', False):
