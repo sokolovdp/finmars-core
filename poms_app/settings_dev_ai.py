@@ -35,8 +35,8 @@ MEDIA_SERVE = True
 # CELERY ------------------------------------------------
 
 
-# CELERY_ALWAYS_EAGER = True
-# CELERY_EAGER_PROPAGATES_EXCEPTIONS = True
+CELERY_ALWAYS_EAGER = True
+CELERY_EAGER_PROPAGATES_EXCEPTIONS = True
 CELERYD_LOG_FORMAT = LOGGING['formatters']['verbose']['format']
 CELERY_TASK_RESULT_EXPIRES = 600
 
