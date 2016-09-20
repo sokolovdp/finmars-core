@@ -15,7 +15,6 @@ from __future__ import unicode_literals
 import os
 
 # Build paths inside the project like this: os.path.join(BASE_DIR, ...)
-from rest_framework import ISO_8601
 
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
@@ -504,7 +503,7 @@ IMPORT_FILE_STORAGE = {
 }
 
 PRICING_AUTO_DOWNLOAD_ENABLED = False
-PRICING_AUTO_DOWNLOAD_MIN_TIMEDELTA = 120
+PRICING_AUTO_DOWNLOAD_MIN_TIMEDELTA = 6 * 60  # min delta is 12 hour
 
 BLOOMBERG_WSDL = 'https://service.bloomberg.com/assets/dl/dlws.wsdl'
 BLOOMBERG_RETRY_DELAY = 5

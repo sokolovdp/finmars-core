@@ -555,16 +555,21 @@ class PricingAutomatedSchedule(models.Model):
         return self.latest_task is None or self.latest_task.is_finished
 
     def schedule(self, save=False):
-        self.last_run_at = timezone.localtime(timezone.now())
-        cron = croniter(self.cron_expr, self.last_run_at)
-        self.next_run_at = cron.get_next(datetime)
+        start_time = timezone.localtime(timezone.now())
+        cron = croniter(self.cron_expr, start_time)
+
+        next_run_at = cron.get_next(datetime)
 
         min_timedelta = settings.PRICING_AUTO_DOWNLOAD_MIN_TIMEDELTA
-        if min_timedelta:
+        if min_timedelta is not None:
             if not isinstance(min_timedelta, timedelta):
-                min_timedelta = timedelta(seconds=min_timedelta)
-            if (self.next_run_at - self.last_run_at) < min_timedelta:
-                self.next_run_at = self.last_run_at + min_timedelta
+                min_timedelta = timedelta(minutes=min_timedelta)
+            for i in range(100):
+                if (next_run_at - self.next_run_at) >= min_timedelta:
+                    break
+                next_run_at = cron.get_next(datetime)
+
+        self.next_run_at = next_run_at
 
         if save:
             self.save(update_fields=['last_run_at', 'next_run_at', ])

@@ -825,52 +825,43 @@ def download_pricing_auto(self, master_user_id):
         # pricing_auto_cancel(master_user_id)
         return
 
-    if getattr(settings, 'PRICING_AUTO_DOWNLOAD_ENABLED', True):
-        _l.warning('PRICING_AUTO_DOWNLOAD_ENABLED is False')
-        return
+    with timezone.override(master_user.timezone or settings.TIME_ZONE):
+        if getattr(settings, 'PRICING_AUTO_DOWNLOAD_ENABLED', True):
+            now = date_now() - timedelta(days=1)
+            date_from = now - timedelta(days=(sched.load_days if sched.load_days > 1 else 0))
+            date_to = now
+            is_yesterday = (date_from == now) and (date_to == now)
+            balance_date = now - timedelta(days=sched.balance_day)
+            task, _ = download_pricing(
+                master_user=master_user,
+                date_from=date_from,
+                date_to=date_to,
+                is_yesterday=is_yesterday, balance_date=balance_date,
+                fill_days=sched.fill_days,
+                override_existed=sched.override_existed
+            )
+        else:
+            task = None
 
-    # class PricingAutomatedSchedule(models.Model):
-    #     master_user = models.OneToOneField('users.MasterUser', related_name='pricing_automated_schedule',
-    #                                        verbose_name=ugettext_lazy('master user'))
-    #
-    #     is_enabled = models.BooleanField(default=True)
-    #     cron_expr = models.CharField(max_length=255, blank=True, default='', validators=[validate_crontab],
-    #                                  help_text=ugettext_lazy('Format is "* * * * *" (m/h/d/dM/MY)'))
-    #     balance_day = models.SmallIntegerField(default=0)
-    #     load_days = models.SmallIntegerField(default=1)
-    #     fill_days = models.SmallIntegerField(default=0)
-    #     override_existed = models.BooleanField(default=True)
-
-    now = date_now() - timedelta(days=1)
-    date_from = now - timedelta(days=(sched.load_days if sched.load_days > 1 else 0))
-    date_to = now
-    is_yesterday = (date_from == now) and (date_to == now)
-    balance_date = now - timedelta(days=sched.balance_day)
-    task, _ = download_pricing(
-        master_user=master_user,
-        date_from=date_from,
-        date_to=date_to,
-        is_yesterday=is_yesterday, balance_date=balance_date,
-        fill_days=sched.fill_days,
-        override_existed=sched.override_existed
-    )
-
-    # sched.latest_running = timezone.now()
-    sched.last_run_task = task
-    sched.save(update_fields=['last_run_task'])
+        sched.last_run_at = timezone.now()
+        sched.last_run_task = task
+        sched.save(update_fields=['last_run_at', 'last_run_task'])
 
 
 @shared_task(name='backend.download_pricing_auto_scheduler', bind=True, ignore_result=True)
 def download_pricing_auto_scheduler(self):
-    _l.debug('download_pricing_auto_scheduler')
-    for s in PricingAutomatedSchedule.objects.select_related('master_user').filter(is_enabled=True,
-                                                                                   next_run_at__lte=timezone.now()):
+    _l.debug('pricing_auto')
+    schedules = PricingAutomatedSchedule.objects.select_related('master_user').filter(
+        is_enabled=True, next_run_at__lte=timezone.now()
+    )
+    processed = 0
+    for s in schedules:
         master_user = s.master_user
         with timezone.override(master_user.timezone or settings.TIME_ZONE):
-            last_run_at = s.last_run_at
+            next_run_at = timezone.localtime(s.next_run_at)
             s.schedule(save=True)
-            next_run_at = s.next_run_at
-            _l.debug('run: master_user=%s, timezone=%s, last_run_at=%s, next_run_at=%s',
-                     master_user.id, master_user.timezone, last_run_at, next_run_at)
-        # download_pricing_auto.apply_async(kwargs={'master_user_id': master_user.id}, countdown=1)
+            _l.debug('pricing_auto: master_user=%s, next_run_at=%s',
+                     master_user.id, s.next_run_at)
         download_pricing_auto.apply_async(kwargs={'master_user_id': master_user.id})
+        processed += 1
+    _l.debug('pricing_auto: processed=%s', processed)
