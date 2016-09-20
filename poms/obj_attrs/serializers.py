@@ -136,10 +136,10 @@ class AttributeListSerializer(serializers.ListSerializer):
         if member.is_superuser:
             return instance.attributes
         master_user = self.context['request'].user.master_user
-        attr_type_model = get_attr_type_model(instance)
-        attr_types = attr_type_model.objects.filter(master_user=master_user)
-        attr_types = obj_perms_filter_objects(member, get_attr_type_view_perms(attr_type_model), attr_types)
-        return instance.attributes.filter(attribute_type__in=attr_types)
+        attribute_type_model = getattr(self.child.Meta, 'attribute_type_model', None) or get_attr_type_model(instance)
+        attribute_types = attribute_type_model.objects.filter(master_user=master_user)
+        attribute_types = obj_perms_filter_objects(member, get_attr_type_view_perms(attribute_type_model), attribute_types)
+        return instance.attributes.filter(attribute_type__in=attribute_types)
 
 
 class ReadOnlyAttributeTypeSerializer(serializers.Serializer):

@@ -15,6 +15,7 @@ from poms.common.fields import ExpressionField, DateTimeTzAwareField
 from poms.common.serializers import PomsClassSerializer
 from poms.currencies.fields import CurrencyField
 from poms.instruments.fields import InstrumentTypeField, InstrumentAttributeTypeField, InstrumentClassifierField
+from poms.instruments.models import InstrumentAttributeType
 from poms.instruments.serializers import InstrumentAttributeSerializer, InstrumentSerializer, \
     AccrualCalculationScheduleSerializer, InstrumentFactorScheduleSerializer
 from poms.integrations.fields import InstrumentDownloadSchemeField, PriceDownloadSchemeField
@@ -25,7 +26,8 @@ from poms.integrations.models import InstrumentDownloadSchemeInput, InstrumentDo
 from poms.integrations.providers.base import get_provider
 from poms.integrations.storage import import_file_storage
 from poms.integrations.tasks import download_pricing, download_instrument
-from poms.obj_attrs.serializers import ReadOnlyAttributeTypeSerializer, ReadOnlyClassifierSerializer
+from poms.obj_attrs.serializers import ReadOnlyAttributeTypeSerializer, ReadOnlyClassifierSerializer, \
+    ModelWithAttributesSerializer, AbstractAttributeSerializer
 from poms.users.fields import MasterUserField, MemberField, HiddenMemberField
 
 _l = getLogger('poms.integrations')
@@ -77,17 +79,18 @@ class InstrumentDownloadSchemeInputSerializer(serializers.ModelSerializer):
         fields = ['id', 'name', 'field']
 
 
-class InstrumentDownloadSchemeAttributeSerializer(serializers.ModelSerializer):
+class InstrumentDownloadSchemeAttributeSerializer(AbstractAttributeSerializer):
     id = serializers.IntegerField(read_only=False, required=False, allow_null=True)
     attribute_type = InstrumentAttributeTypeField()
     value = ExpressionField(allow_blank=True)
 
-    class Meta:
+    class Meta(AbstractAttributeSerializer.Meta):
         model = InstrumentDownloadSchemeAttribute
+        attribute_type_model = InstrumentAttributeType
         fields = ['id', 'attribute_type', 'value']
 
 
-class InstrumentDownloadSchemeSerializer(serializers.ModelSerializer):
+class InstrumentDownloadSchemeSerializer(ModelWithAttributesSerializer):
     master_user = MasterUserField()
 
     inputs = InstrumentDownloadSchemeInputSerializer(many=True, read_only=False)
@@ -134,18 +137,18 @@ class InstrumentDownloadSchemeSerializer(serializers.ModelSerializer):
 
     def create(self, validated_data):
         inputs = validated_data.pop('inputs', None) or []
-        attributes = validated_data.pop('attributes', None) or []
+        # attributes = validated_data.pop('attributes', None) or []
         instance = super(InstrumentDownloadSchemeSerializer, self).create(validated_data)
         self.save_inputs(instance, inputs)
-        self.save_attributes(instance, attributes)
+        # self.save_attributes(instance, attributes)
         return instance
 
     def update(self, instance, validated_data):
         inputs = validated_data.pop('inputs', None) or []
-        attributes = validated_data.pop('attributes', None) or []
+        # attributes = validated_data.pop('attributes', None) or []
         instance = super(InstrumentDownloadSchemeSerializer, self).update(instance, validated_data)
         self.save_inputs(instance, inputs)
-        self.save_attributes(instance, attributes)
+        # self.save_attributes(instance, attributes)
         return instance
 
     def save_inputs(self, instance, inputs):
@@ -166,21 +169,21 @@ class InstrumentDownloadSchemeSerializer(serializers.ModelSerializer):
             pk_set.add(input0.id)
         instance.inputs.exclude(pk__in=pk_set).delete()
 
-    def save_attributes(self, instance, attributes):
-        pk_set = set()
-        for attr_values in attributes:
-            attribute_type = attr_values['attribute_type']
-            try:
-                attr = instance.attributes.get(attribute_type=attribute_type)
-            except ObjectDoesNotExist:
-                attr = None
-            if attr is None:
-                attr = InstrumentDownloadSchemeAttribute(scheme=instance)
-            for name, value in attr_values.items():
-                setattr(attr, name, value)
-            attr.save()
-            pk_set.add(attr.id)
-        instance.attributes.exclude(pk__in=pk_set).delete()
+    # def save_attributes(self, instance, attributes):
+    #     pk_set = set()
+    #     for attr_values in attributes:
+    #         attribute_type = attr_values['attribute_type']
+    #         try:
+    #             attr = instance.attributes.get(attribute_type=attribute_type)
+    #         except ObjectDoesNotExist:
+    #             attr = None
+    #         if attr is None:
+    #             attr = InstrumentDownloadSchemeAttribute(scheme=instance)
+    #         for name, value in attr_values.items():
+    #             setattr(attr, name, value)
+    #         attr.save()
+    #         pk_set.add(attr.id)
+    #     instance.attributes.exclude(pk__in=pk_set).delete()
 
 
 class PriceDownloadSchemeSerializer(serializers.ModelSerializer):
