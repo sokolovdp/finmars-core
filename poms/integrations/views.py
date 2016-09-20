@@ -11,7 +11,8 @@ from poms.common.views import AbstractViewSet, AbstractModelViewSet, AbstractRea
     AbstractClassModelViewSet
 from poms.currencies.models import Currency
 from poms.instruments.models import InstrumentType, InstrumentAttributeType
-from poms.integrations.filters import TaskFilter
+from poms.integrations.filters import TaskFilter, InstrumentAttributeValueMappingObjectPermissionFilter, \
+    InstrumentTypeMappingObjectPermissionFilter
 from poms.integrations.models import ImportConfig, Task, InstrumentDownloadScheme, ProviderClass, \
     FactorScheduleDownloadMethod, AccrualScheduleDownloadMethod, PriceDownloadScheme, CurrencyMapping, \
     InstrumentTypeMapping, InstrumentAttributeValueMapping, AccrualCalculationModelMapping, PeriodicityMapping, \
@@ -71,9 +72,9 @@ class InstrumentDownloadSchemeFilterSet(FilterSet):
 class InstrumentDownloadSchemeViewSet(AbstractModelViewSet):
     queryset = InstrumentDownloadScheme.objects.prefetch_related('inputs', 'attributes', 'attributes__attribute_type')
     serializer_class = InstrumentDownloadSchemeSerializer
-    permission_classes = AbstractModelViewSet.permission_classes + [
-        SuperUserOrReadOnly,
-    ]
+    # permission_classes = AbstractModelViewSet.permission_classes + [
+    #     SuperUserOrReadOnly,
+    # ]
     filter_backends = AbstractModelViewSet.filter_backends + [
         OwnerByMasterUserFilter,
     ]
@@ -93,9 +94,9 @@ class PriceDownloadSchemeFilterSet(FilterSet):
 class PriceDownloadSchemeViewSet(AbstractModelViewSet):
     queryset = PriceDownloadScheme.objects.prefetch_related()
     serializer_class = PriceDownloadSchemeSerializer
-    permission_classes = AbstractModelViewSet.permission_classes + [
-        SuperUserOrReadOnly,
-    ]
+    # permission_classes = AbstractModelViewSet.permission_classes + [
+    #     SuperUserOrReadOnly,
+    # ]
     filter_backends = AbstractModelViewSet.filter_backends + [
         OwnerByMasterUserFilter,
     ]
@@ -137,11 +138,12 @@ class InstrumentTypeMappingFilterSet(FilterSet):
 class InstrumentTypeMappingViewSet(AbstractModelViewSet):
     queryset = InstrumentTypeMapping.objects.prefetch_related('master_user', 'instrument_type')
     serializer_class = InstrumentTypeMappingSerializer
-    permission_classes = AbstractModelViewSet.permission_classes + [
-        SuperUserOrReadOnly,
-    ]
+    # permission_classes = AbstractModelViewSet.permission_classes + [
+    #     SuperUserOrReadOnly,
+    # ]
     filter_backends = AbstractModelViewSet.filter_backends + [
         OwnerByMasterUserFilter,
+        InstrumentTypeMappingObjectPermissionFilter,
     ]
     filter_class = InstrumentTypeMappingFilterSet
 
@@ -160,11 +162,12 @@ class InstrumentAttributeValueMappingViewSet(AbstractModelViewSet):
         'master_user', 'attribute_type', 'classifier'
     )
     serializer_class = InstrumentAttributeValueMappingSerializer
-    permission_classes = AbstractModelViewSet.permission_classes + [
-        SuperUserOrReadOnly,
-    ]
+    # permission_classes = AbstractModelViewSet.permission_classes + [
+    #     SuperUserOrReadOnly,
+    # ]
     filter_backends = AbstractModelViewSet.filter_backends + [
         OwnerByMasterUserFilter,
+        InstrumentAttributeValueMappingObjectPermissionFilter,
     ]
     filter_class = InstrumentAttributeValueMappingFilterSet
 
@@ -180,9 +183,9 @@ class AccrualCalculationModelMappingFilterSet(FilterSet):
 class AccrualCalculationModelMappingViewSet(AbstractModelViewSet):
     queryset = AccrualCalculationModelMapping.objects.prefetch_related('master_user', 'accrual_calculation_model')
     serializer_class = AccrualCalculationModelMappingSerializer
-    permission_classes = AbstractModelViewSet.permission_classes + [
-        SuperUserOrReadOnly,
-    ]
+    # permission_classes = AbstractModelViewSet.permission_classes + [
+    #     SuperUserOrReadOnly,
+    # ]
     filter_backends = AbstractModelViewSet.filter_backends + [
         OwnerByMasterUserFilter,
     ]
@@ -200,9 +203,9 @@ class PeriodicityMappingFilterSet(FilterSet):
 class PeriodicityMappingViewSet(AbstractModelViewSet):
     queryset = PeriodicityMapping.objects.prefetch_related('master_user', 'periodicity')
     serializer_class = PeriodicityMappingSerializer
-    permission_classes = AbstractModelViewSet.permission_classes + [
-        SuperUserOrReadOnly,
-    ]
+    # permission_classes = AbstractModelViewSet.permission_classes + [
+    #     SuperUserOrReadOnly,
+    # ]
     filter_backends = AbstractModelViewSet.filter_backends + [
         OwnerByMasterUserFilter,
     ]
