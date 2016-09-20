@@ -5,6 +5,7 @@ from rest_framework.filters import FilterSet
 from poms.accounts.models import Account
 from poms.common.filters import CharFilter, ModelWithPermissionMultipleChoiceFilter, IsDefaultFilter
 from poms.counterparties.models import Responsible, Counterparty
+from poms.obj_attrs.filters import AttributeTypeValueTypeFilter
 from poms.obj_attrs.views import AbstractAttributeTypeViewSet, AbstractClassifierViewSet
 from poms.obj_perms.filters import ObjectPermissionMemberFilter, ObjectPermissionGroupFilter, \
     ObjectPermissionPermissionFilter
@@ -22,6 +23,7 @@ class PortfolioAttributeTypeFilterSet(FilterSet):
     user_code = CharFilter()
     name = CharFilter()
     short_name = CharFilter()
+    value_type = AttributeTypeValueTypeFilter()
     member = ObjectPermissionMemberFilter(object_permission_model=PortfolioAttributeType)
     member_group = ObjectPermissionGroupFilter(object_permission_model=PortfolioAttributeType)
     permission = ObjectPermissionPermissionFilter(object_permission_model=PortfolioAttributeType)
@@ -29,7 +31,7 @@ class PortfolioAttributeTypeFilterSet(FilterSet):
     class Meta:
         model = PortfolioAttributeType
         fields = [
-            'user_code', 'name', 'short_name', 'member', 'member_group', 'permission',
+            'user_code', 'name', 'short_name', 'value_type', 'member', 'member_group', 'permission',
         ]
 
 

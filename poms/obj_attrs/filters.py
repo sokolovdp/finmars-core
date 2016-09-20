@@ -1,8 +1,10 @@
 from collections import OrderedDict
 
+from django_filters import MultipleChoiceFilter
 from rest_framework.filters import BaseFilterBackend, OrderingFilter
 
 from poms.common.fields import PrimaryKeyRelatedFilteredField
+from poms.obj_attrs.models import AbstractAttributeType
 from poms.obj_attrs.utils import get_attr_model, get_attr_type_model
 from poms.obj_perms.filters import ObjectPermissionBackend
 from poms.obj_perms.utils import obj_perms_filter_objects_for_view
@@ -29,6 +31,12 @@ class AttributeClassifierBaseField(PrimaryKeyRelatedFilteredField):
         OwnerByAttributeTypeFilter,
         ClassifierPermissionBackend,
     ]
+
+
+class AttributeTypeValueTypeFilter(MultipleChoiceFilter):
+    def __init__(self, *args, **kwargs):
+        kwargs['choices'] = AbstractAttributeType.VALUE_TYPES
+        super(AttributeTypeValueTypeFilter, self).__init__(*args, **kwargs)
 
 
 class OrderingWithAttributesFilter(OrderingFilter):

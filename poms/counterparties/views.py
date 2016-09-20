@@ -2,7 +2,7 @@ from __future__ import unicode_literals
 
 from rest_framework.filters import FilterSet
 
-from poms.common.filters import CharFilter, ModelWithPermissionMultipleChoiceFilter, IsDefaultFilter
+from poms.common.filters import CharFilter, ModelWithPermissionMultipleChoiceFilter
 from poms.common.views import AbstractModelViewSet
 from poms.counterparties.models import Counterparty, Responsible, CounterpartyAttributeType, ResponsibleAttributeType, \
     CounterpartyGroup, ResponsibleGroup, CounterpartyClassifier, ResponsibleClassifier
@@ -13,6 +13,7 @@ from poms.counterparties.serializers import CounterpartySerializer, ResponsibleS
     CounterpartyAttributeTypeBulkObjectPermissionSerializer, CounterpartyGroupBulkObjectPermissionSerializer, \
     CounterpartyBulkObjectPermissionSerializer, ResponsibleAttributeTypeBulkObjectPermissionSerializer, \
     ResponsibleGroupBulkObjectPermissionSerializer, ResponsibleBulkObjectPermissionSerializer
+from poms.obj_attrs.filters import AttributeTypeValueTypeFilter
 from poms.obj_attrs.views import AbstractAttributeTypeViewSet, AbstractClassifierViewSet
 from poms.obj_perms.filters import ObjectPermissionMemberFilter, ObjectPermissionGroupFilter, \
     ObjectPermissionPermissionFilter
@@ -26,6 +27,7 @@ class CounterpartyAttributeTypeFilterSet(FilterSet):
     user_code = CharFilter()
     name = CharFilter()
     short_name = CharFilter()
+    value_type = AttributeTypeValueTypeFilter()
     member = ObjectPermissionMemberFilter(object_permission_model=CounterpartyAttributeType)
     member_group = ObjectPermissionGroupFilter(object_permission_model=CounterpartyAttributeType)
     permission = ObjectPermissionPermissionFilter(object_permission_model=CounterpartyAttributeType)
@@ -33,7 +35,7 @@ class CounterpartyAttributeTypeFilterSet(FilterSet):
     class Meta:
         model = CounterpartyAttributeType
         fields = [
-            'user_code', 'name', 'short_name', 'member', 'member_group', 'permission',
+            'user_code', 'name', 'short_name', 'value_type', 'member', 'member_group', 'permission',
         ]
 
 
@@ -146,6 +148,7 @@ class ResponsibleAttributeTypeFilterSet(FilterSet):
     user_code = CharFilter()
     name = CharFilter()
     short_name = CharFilter()
+    value_type = AttributeTypeValueTypeFilter()
     member = ObjectPermissionMemberFilter(object_permission_model=ResponsibleAttributeType)
     member_group = ObjectPermissionGroupFilter(object_permission_model=ResponsibleAttributeType)
     permission = ObjectPermissionPermissionFilter(object_permission_model=ResponsibleAttributeType)
@@ -153,7 +156,7 @@ class ResponsibleAttributeTypeFilterSet(FilterSet):
     class Meta:
         model = ResponsibleAttributeType
         fields = [
-            'user_code', 'name', 'short_name', 'member', 'member_group', 'permission',
+            'user_code', 'name', 'short_name', 'value_type', 'member', 'member_group', 'permission',
         ]
 
 

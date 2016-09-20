@@ -1,5 +1,6 @@
 from __future__ import unicode_literals
 
+import django_filters
 from rest_framework.filters import FilterSet
 
 from poms.accounts.models import Account, AccountType, AccountAttributeType, AccountClassifier
@@ -7,6 +8,7 @@ from poms.accounts.serializers import AccountSerializer, AccountTypeSerializer, 
     AccountClassifierNodeSerializer, AccountBulkObjectPermissionSerializer, \
     AccountAttributeTypeBulkObjectPermissionSerializer, AccountTypeBulkObjectPermissionSerializer
 from poms.common.filters import CharFilter, ModelWithPermissionMultipleChoiceFilter
+from poms.obj_attrs.filters import AttributeTypeValueTypeFilter
 from poms.obj_attrs.views import AbstractAttributeTypeViewSet, AbstractClassifierViewSet
 from poms.obj_perms.filters import ObjectPermissionMemberFilter, ObjectPermissionGroupFilter, \
     ObjectPermissionPermissionFilter
@@ -56,6 +58,7 @@ class AccountAttributeTypeFilterSet(FilterSet):
     user_code = CharFilter()
     name = CharFilter()
     short_name = CharFilter()
+    value_type = AttributeTypeValueTypeFilter()
     member = ObjectPermissionMemberFilter(object_permission_model=AccountAttributeType)
     member_group = ObjectPermissionGroupFilter(object_permission_model=AccountAttributeType)
     permission = ObjectPermissionPermissionFilter(object_permission_model=AccountAttributeType)
@@ -63,7 +66,7 @@ class AccountAttributeTypeFilterSet(FilterSet):
     class Meta:
         model = AccountAttributeType
         fields = [
-            'user_code', 'name', 'short_name', 'member', 'member_group', 'permission'
+            'user_code', 'name', 'short_name', 'value_type', 'member', 'member_group', 'permission'
         ]
 
 

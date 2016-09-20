@@ -20,6 +20,7 @@ from poms.instruments.serializers import InstrumentSerializer, PriceHistorySeria
     InstrumentAttributeTypeSerializer, PricingPolicySerializer, InstrumentClassifierNodeSerializer, \
     EventScheduleConfigSerializer, InstrumentTypeBulkObjectPermissionSerializer, \
     InstrumentAttributeTypeBulkObjectPermissionSerializer, InstrumentBulkObjectPermissionSerializer
+from poms.obj_attrs.filters import AttributeTypeValueTypeFilter
 from poms.obj_attrs.views import AbstractAttributeTypeViewSet, AbstractClassifierViewSet
 from poms.obj_perms.filters import ObjectPermissionMemberFilter, ObjectPermissionGroupFilter, \
     ObjectPermissionPermissionFilter
@@ -112,6 +113,7 @@ class InstrumentAttributeTypeFilterSet(FilterSet):
     user_code = CharFilter()
     name = CharFilter()
     short_name = CharFilter()
+    value_type = AttributeTypeValueTypeFilter()
     member = ObjectPermissionMemberFilter(object_permission_model=InstrumentAttributeType)
     member_group = ObjectPermissionGroupFilter(object_permission_model=InstrumentAttributeType)
     permission = ObjectPermissionPermissionFilter(object_permission_model=InstrumentAttributeType)
@@ -119,7 +121,7 @@ class InstrumentAttributeTypeFilterSet(FilterSet):
     class Meta:
         model = InstrumentAttributeType
         fields = [
-            'user_code', 'name', 'short_name', 'member', 'member_group', 'permission',
+            'user_code', 'name', 'short_name', 'value_type', 'member', 'member_group', 'permission',
         ]
 
 

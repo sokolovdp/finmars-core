@@ -10,6 +10,7 @@ from poms.common.filters import CharFilter, ModelWithPermissionMultipleChoiceFil
 from poms.common.views import AbstractClassModelViewSet, AbstractModelViewSet, AbstractReadOnlyModelViewSet
 from poms.currencies.models import Currency
 from poms.instruments.models import Instrument, InstrumentType
+from poms.obj_attrs.filters import AttributeTypeValueTypeFilter
 from poms.obj_attrs.views import AbstractAttributeTypeViewSet, AbstractClassifierViewSet
 from poms.obj_perms.filters import ObjectPermissionMemberFilter, ObjectPermissionGroupFilter, \
     ObjectPermissionPermissionFilter
@@ -193,6 +194,7 @@ class TransactionAttributeTypeFilterSet(FilterSet):
     user_code = CharFilter()
     name = CharFilter()
     short_name = CharFilter()
+    value_type = AttributeTypeValueTypeFilter()
     member = ObjectPermissionMemberFilter(object_permission_model=TransactionAttributeType)
     member_group = ObjectPermissionGroupFilter(object_permission_model=TransactionAttributeType)
     permission = ObjectPermissionPermissionFilter(object_permission_model=TransactionAttributeType)
@@ -200,7 +202,7 @@ class TransactionAttributeTypeFilterSet(FilterSet):
     class Meta:
         model = TransactionAttributeType
         fields = [
-            'user_code', 'name', 'short_name', 'member', 'member_group', 'permission',
+            'user_code', 'name', 'short_name', 'value_type', 'member', 'member_group', 'permission',
         ]
 
 
