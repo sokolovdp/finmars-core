@@ -172,7 +172,7 @@ class InstrumentDownloadSchemeSerializer(serializers.ModelSerializer):
             try:
                 attr = instance.attributes.get(attribute_type=attribute_type)
             except ObjectDoesNotExist:
-                pass
+                attr = None
             if attr is None:
                 attr = InstrumentDownloadSchemeAttribute(scheme=instance)
             for name, value in attr_values.items():
