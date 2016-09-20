@@ -156,7 +156,9 @@ class InstrumentAttributeValueMappingFilterSet(FilterSet):
 
 
 class InstrumentAttributeValueMappingViewSet(AbstractModelViewSet):
-    queryset = InstrumentAttributeValueMapping.objects.prefetch_related('master_user', 'attribute_type', 'classifier')
+    queryset = InstrumentAttributeValueMapping.objects.prefetch_related(
+        'master_user', 'attribute_type', 'classifier'
+    )
     serializer_class = InstrumentAttributeValueMappingSerializer
     permission_classes = AbstractModelViewSet.permission_classes + [
         SuperUserOrReadOnly,

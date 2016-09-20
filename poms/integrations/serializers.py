@@ -25,6 +25,7 @@ from poms.integrations.models import InstrumentDownloadSchemeInput, InstrumentDo
 from poms.integrations.providers.base import get_provider
 from poms.integrations.storage import import_file_storage
 from poms.integrations.tasks import download_pricing, download_instrument
+from poms.obj_attrs.serializers import ReadOnlyAttributeTypeSerializer, ReadOnlyClassifierSerializer
 from poms.users.fields import MasterUserField, MemberField, HiddenMemberField
 
 _l = getLogger('poms.integrations')
@@ -223,12 +224,15 @@ class InstrumentAttributeValueMappingSerializer(serializers.ModelSerializer):
     master_user = MasterUserField()
     attribute_type = InstrumentAttributeTypeField()
     classifier = InstrumentClassifierField(allow_empty=True, allow_null=True)
+    attribute_type_object = ReadOnlyAttributeTypeSerializer(source='attribute_type', read_only=True)
+    classifier_object = ReadOnlyClassifierSerializer(source='classifier', read_only=True)
 
     class Meta:
         model = InstrumentAttributeValueMapping
         fields = [
             'url', 'id', 'master_user', 'provider', 'value',
-            'attribute_type', 'value_string', 'value_float', 'value_date', 'classifier',
+            'attribute_type', 'attribute_type_object', 'value_string', 'value_float', 'value_date',
+            'classifier', 'classifier_object',
         ]
 
     def validate(self, attrs):
