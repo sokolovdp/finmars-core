@@ -2,10 +2,13 @@ from __future__ import unicode_literals
 
 import django_filters
 from django.core.exceptions import ObjectDoesNotExist
+from rest_framework import serializers
+from rest_framework.decorators import list_route
 from rest_framework.exceptions import MethodNotAllowed
 from rest_framework.filters import FilterSet
+from rest_framework.response import Response
 
-from poms.common.filters import CharFilter, ModelWithPermissionMultipleChoiceFilter, IsDefaultFilter
+from poms.common.filters import CharFilter, ModelWithPermissionMultipleChoiceFilter
 from poms.common.views import AbstractClassModelViewSet, AbstractModelViewSet
 from poms.instruments.filters import OwnerByInstrumentFilter, PriceHistoryObjectPermissionFilter
 from poms.instruments.models import Instrument, PriceHistory, InstrumentClass, DailyPricingModel, \
@@ -213,6 +216,22 @@ class PriceHistoryViewSet(AbstractModelViewSet):
     search_fields = [
         'instrument__user_code', 'instrument__name', 'instrument__short_name',
     ]
+
+    @list_route(methods=['post'], url_path='recalculate-prices-accrued-price', serializer_class=serializers.Serializer)
+    def calculate_prices_accrued_price(self, request):
+        queryset = self.filter_queryset(self.get_queryset())
+        instrument_accruals = {}
+        processed = 0
+        for p in queryset:
+            accruals = instrument_accruals.get(p.instrument_id, None)
+            if accruals is None:
+                accruals = list(p.instrument.accrual_calculation_schedules.order_by('accrual_start_date'))
+                if accruals is None:
+                    accruals = []
+                instrument_accruals.get(p.instrument_id, accruals)
+            p.calculate_accrued_price(accruals=accruals, save=True)
+            processed += 1
+        return Response({'processed': processed})
 
 
 class EventScheduleConfigViewSet(AbstractModelViewSet):
