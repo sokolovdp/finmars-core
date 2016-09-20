@@ -1,6 +1,7 @@
 from __future__ import unicode_literals
 
 from django.utils import timezone
+from rest_framework import ISO_8601
 from rest_framework.exceptions import ValidationError
 from rest_framework.fields import CharField, DateTimeField, FloatField, empty, RegexField
 from rest_framework.relations import PrimaryKeyRelatedField, SlugRelatedField
@@ -60,6 +61,10 @@ class UserCodeField(CharField):
 
 
 class DateTimeTzAwareField(DateTimeField):
+    format = '%Y-%m-%dT%H:%M:%S%z'
+    # format = None
+    input_formats = ['%Y-%m-%dT%H:%M:%S%z', ISO_8601, ]
+
     def to_representation(self, value):
         value = timezone.localtime(value)
         return super(DateTimeTzAwareField, self).to_representation(value)
@@ -124,8 +129,8 @@ class ISINField(RegexField):
         else:
             return str(value)
 
-    # def to_internal_value(self, data):
-    #     data = super(ISINField, self).to_internal_value(data)
-    #     if data is not None:
-    #         return data.split(maxsplit=1)
-    #     return None
+            # def to_internal_value(self, data):
+            #     data = super(ISINField, self).to_internal_value(data)
+            #     if data is not None:
+            #         return data.split(maxsplit=1)
+            #     return None

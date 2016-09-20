@@ -11,7 +11,7 @@ from django.utils import timezone
 from rest_framework import serializers
 from rest_framework.exceptions import ValidationError
 
-from poms.common.fields import ExpressionField
+from poms.common.fields import ExpressionField, DateTimeTzAwareField
 from poms.common.serializers import PomsClassSerializer
 from poms.currencies.fields import CurrencyField
 from poms.instruments.fields import InstrumentTypeField, InstrumentAttributeTypeField, InstrumentClassifierField
@@ -286,6 +286,8 @@ class TaskSerializer(serializers.ModelSerializer):
 
 class PricingAutomatedScheduleSerializer(serializers.ModelSerializer):
     master_user = MasterUserField()
+    last_run_at = DateTimeTzAwareField()
+    next_run_at = DateTimeTzAwareField()
 
     class Meta:
         model = PricingAutomatedSchedule
