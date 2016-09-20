@@ -23,7 +23,7 @@ class AbstractAttributeTypeViewSet(AbstractWithObjectPermissionViewSet):
 
     def get_serializer(self, *args, **kwargs):
         if self.action != 'objects_permissions':
-            kwargs['hide_classifiers'] = (self.action == 'list')
+            kwargs['show_classifiers'] = (self.action != 'list') or self.request.query_params.get('show_classifiers', None)
             kwargs['read_only_value_type'] = (self.action != 'create')
         return super(AbstractAttributeTypeViewSet, self).get_serializer(*args, **kwargs)
 

@@ -42,10 +42,10 @@ class AbstractAttributeTypeSerializer(ModelWithObjectPermissionSerializer, Model
                   'order', 'is_hidden']
 
     def __init__(self, *args, **kwargs):
-        hide_classifiers = kwargs.pop('hide_classifiers', False)
+        show_classifiers = kwargs.pop('show_classifiers', False)
         read_only_value_type = kwargs.pop('read_only_value_type', False)
         super(AbstractAttributeTypeSerializer, self).__init__(*args, **kwargs)
-        if hide_classifiers:
+        if not show_classifiers:
             self.fields.pop('classifiers', None)
         if read_only_value_type:
             self.fields['value_type'].read_only = True
