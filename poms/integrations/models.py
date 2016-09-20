@@ -516,7 +516,8 @@ class PricingAutomatedSchedule(models.Model):
 
     is_enabled = models.BooleanField(default=True)
     cron_expr = models.CharField(max_length=255, blank=True, default='', validators=[validate_crontab],
-                                 help_text=ugettext_lazy('Format is "* * * * *" (m/h/d/dM/MY)'))
+                                 help_text=ugettext_lazy(
+                                     'Format is "* * * * *" (minute / hour / day_month / month / day_week)'))
     balance_day = models.PositiveSmallIntegerField(default=0)
     load_days = models.PositiveSmallIntegerField(default=1)
     fill_days = models.PositiveSmallIntegerField(default=0)
@@ -565,7 +566,7 @@ class PricingAutomatedSchedule(models.Model):
             if not isinstance(min_timedelta, timedelta):
                 min_timedelta = timedelta(minutes=min_timedelta)
             for i in range(100):
-                if (next_run_at - self.next_run_at) >= min_timedelta:
+                if (next_run_at - start_time) >= min_timedelta:
                     break
                 next_run_at = cron.get_next(datetime)
 
