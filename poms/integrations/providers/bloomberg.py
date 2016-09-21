@@ -758,7 +758,7 @@ class BloombergDataProvider(AbstractProvider):
 
                 for instr_day_value in instr_values:
                     d = parse_date_iso(instr_day_value['DATE'])
-                    instr_day_value = price_download_scheme.instrument_yesterday_values(instr_day_value)
+                    instr_day_value = price_download_scheme.instrument_history_values(instr_day_value)
                     for pp in pricing_policies:
                         if pp.expr:
                             principal_price = formula.safe_eval(pp.expr, names=instr_day_value)
@@ -812,7 +812,7 @@ class BloombergDataProvider(AbstractProvider):
 
                 for instr_day_value in instr_values:
                     d = parse_date_iso(instr_day_value['DATE'])
-                    instr_day_value = price_download_scheme.instrument_yesterday_values(instr_day_value)
+                    instr_day_value = price_download_scheme.currency_history_values(instr_day_value)
                     for pp in pricing_policies:
                         if pp.expr:
                             fx_rate = formula.safe_eval(pp.expr, names=instr_day_value)
