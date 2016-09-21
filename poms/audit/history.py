@@ -123,6 +123,9 @@ def set_flag_deletion():
 
 
 class enable(ContextDecorator):
+    def __init__(self, activate):
+        self.activate = activate
+
     def __enter__(self):
         activate()
 
