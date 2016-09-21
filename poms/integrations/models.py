@@ -198,6 +198,12 @@ class InstrumentDownloadSchemeInput(models.Model):
     def __str__(self):
         return self.name
 
+    def save(self, force_insert=False, force_update=False, using=None, update_fields=None):
+        if not self.field:
+            self.field = self.name
+        return super(InstrumentDownloadSchemeInput, self).save(
+            force_insert=force_insert, force_update=force_update, using=using, update_fields=update_fields)
+
 
 @python_2_unicode_compatible
 class InstrumentDownloadSchemeAttribute(models.Model):
