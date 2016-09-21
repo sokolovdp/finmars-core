@@ -1,6 +1,5 @@
 from __future__ import unicode_literals, print_function
 
-import json
 import time
 from collections import defaultdict
 from datetime import timedelta, date
@@ -13,7 +12,6 @@ from django.conf import settings
 from django.core.exceptions import ObjectDoesNotExist
 from django.core.mail import send_mail as django_send_mail, send_mass_mail as django_send_mass_mail, \
     mail_admins as django_mail_admins, mail_managers as django_mail_managers
-from django.core.serializers.json import DjangoJSONEncoder
 from django.db import transaction
 from django.utils import timezone
 
@@ -554,8 +552,10 @@ def download_pricing_wait(self, sub_tasks_id, task_id):
     result = {}
     # currency_task = result['currency_task']
 
-    instrument_prices = []
-    currency_prices = []
+    instruments_pk = []
+    instruments_prices = []
+    currencies_pk = []
+    currencies_prices = []
 
     for sub_task in Task.objects.filter(pk__in=sub_tasks_id):
         _l.debug('sub_task: %s', sub_task)
@@ -567,87 +567,70 @@ def download_pricing_wait(self, sub_tasks_id, task_id):
         subtask_options = sub_task.options_object
 
         if 'instruments_pk' in subtask_options:
-            instruments_pk = subtask_options['instruments_pk']
-            instruments = Instrument.objects.filter(pk__in=instruments_pk)
+            task_instruments_pk = subtask_options['instruments_pk']
+            instruments_pk += task_instruments_pk
+            task_instruments = Instrument.objects.filter(pk__in=task_instruments_pk)
+
             price_download_scheme_id = subtask_options['price_download_scheme_id']
             price_download_scheme = PriceDownloadScheme.objects.get(pk=price_download_scheme_id)
 
-            instrument_prices += provider.create_instrument_pricing(
+            instruments_prices += provider.create_instrument_pricing(
                 price_download_scheme=price_download_scheme,
                 options=subtask_options,
                 values=sub_task.result_object,
-                instruments=instruments,
+                instruments=task_instruments,
                 pricing_policies=pricing_policies
             )
 
         elif 'currencies_pk' in subtask_options:
-            currencies_pk = subtask_options['currencies_pk']
-            currencies = Currency.objects.filter(pk__in=currencies_pk)
+            task_currencies_pk = subtask_options['currencies_pk']
+            currencies_pk += task_currencies_pk
+            task_currencies = Currency.objects.filter(pk__in=task_currencies_pk)
+
             price_download_scheme_id = subtask_options['price_download_scheme_id']
             price_download_scheme = PriceDownloadScheme.objects.get(pk=price_download_scheme_id)
 
-            currency_prices += provider.create_currency_pricing(
+            currencies_prices += provider.create_currency_pricing(
                 price_download_scheme=price_download_scheme,
                 options=subtask_options,
                 values=sub_task.result_object,
-                currencies=currencies,
+                currencies=task_currencies,
                 pricing_policies=pricing_policies
             )
 
-    instrument_for_manual_price = [i_id for i_id, task_id in instrument_task.items() if task_id is None]
-    instrument_prices += _create_instrument_manual_prices(options=options, instruments=instrument_for_manual_price)
+    instrument_for_manual_price = [int(i_id) for i_id, task_id in instrument_task.items() if task_id is None]
+    _l.debug('instrument_for_manual_price: %s', instrument_for_manual_price)
+    instruments_pk += instrument_for_manual_price
+    instruments_prices += _create_instrument_manual_prices(options=options, instruments=instrument_for_manual_price)
 
     if fill_days > 0:
         fill_date_from = date_to + timedelta(days=1)
-        instrument_last_price = [p for p in instrument_prices if p.date == date_to]
-        _l.debug('instrument last prices: %s',
-                 json.dumps([(p.instrument_id, p.pricing_policy_id, p.date) for p in instrument_last_price],
-                            cls=DjangoJSONEncoder))
+        instrument_last_price = [p for p in instruments_prices if p.date == date_to]
+        _l.debug('instrument last prices: %s', instrument_last_price)
         for p in instrument_last_price:
-            instrument_prices + fill_instrument_price(fill_date_from, fill_days, p)
+            instruments_prices + fill_instrument_price(fill_date_from, fill_days, p)
 
-        currency_last_price = [p for p in currency_prices if p.date == date_to]
-        _l.debug('currency last prices: %s',
-                 json.dumps([(p.currency_id, p.pricing_policy_id, p.date) for p in currency_last_price],
-                            cls=DjangoJSONEncoder))
+        currency_last_price = [p for p in currencies_prices if p.date == date_to]
+        _l.debug('currency last prices: %s', currency_last_price)
         for p in currency_last_price:
-            currency_prices += fill_currency_price(fill_date_from, fill_days, p)
+            currencies_prices += fill_currency_price(fill_date_from, fill_days, p)
 
-    _l.debug('instrument prices: %s',
-             json.dumps([(p.instrument_id, p.pricing_policy_id, p.date) for p in instrument_prices],
-                        cls=DjangoJSONEncoder))
-    _l.debug('currency prices: %s',
-             json.dumps([(p.currency_id, p.pricing_policy_id, p.date) for p in currency_prices],
-                        cls=DjangoJSONEncoder))
+    _l.debug('instruments_prices: %s', instruments_prices)
+    _l.debug('currencies_prices: %s', currencies_prices)
 
-    for p in instrument_prices:
+    for p in instruments_prices:
         p.calculate_accrued_price(save=False)
-        # instr = p.instrument
-        # accrl = None
-        # for a in instr.accrual_calculation_schedules.order_by('accrual_start_date').all():
-        #     if a.accrual_start_date <= p.date:
-        #         accrl = a
-        # _l.debug('price=%s, instrument=%s, accrual=%s', p, instr.id, getattr(accrl, 'id', None))
-        # if accrl is None:
-        #     continue
-        # factor = coupon_accrual_factor(accrual_calculation_schedule=accrl,
-        #                                dt1=accrl.accrual_start_date,
-        #                                dt2=p.date,
-        #                                dt3=accrl.first_payment_date)
-        # _l.debug('coupon_accrual_factor=%s', factor)
-        # p.accrued_price = accrl.accrual_size * factor
 
     with transaction.atomic():
+        _l.debug('instruments_pk: %s', instruments_pk)
         existed_instrument_prices = {
             (p.instrument_id, p.pricing_policy_id, p.date): p
-            for p in PriceHistory.objects.filter(instrument__in={np.instrument_id for np in instrument_prices},
+            for p in PriceHistory.objects.filter(instrument__in=instruments_pk,
                                                  date__range=(date_from, date_to + timedelta(days=fill_days)))
             }
-        for p in instrument_prices:
-            op = existed_instrument_prices.get(
-                (p.instrument_id, p.pricing_policy_id, p.date),
-                None
-            )
+        _l.debug('existed_instrument_prices: %s', existed_instrument_prices)
+        for p in instruments_prices:
+            op = existed_instrument_prices.get((p.instrument_id, p.pricing_policy_id, p.date), None)
             if op is None:
                 p.save()
             else:
@@ -656,16 +639,15 @@ def download_pricing_wait(self, sub_tasks_id, task_id):
                     op.accrued_price = p.accrued_price
                     op.save()
 
+        _l.debug('currencies_pk: %s', currencies_pk)
         existed_currency_prices = {
             (p.currency_id, p.pricing_policy_id, p.date): p
-            for p in CurrencyHistory.objects.filter(currency__in={np.currency_id for np in currency_prices},
+            for p in CurrencyHistory.objects.filter(currency__in=currencies_pk,
                                                     date__range=(date_from, date_to + timedelta(days=fill_days)))
             }
-        for p in currency_prices:
-            op = existed_currency_prices.get(
-                (p.currency_id, p.pricing_policy_id, p.date),
-                None
-            )
+        _l.debug('existed_currency_prices: %s', existed_currency_prices)
+        for p in currencies_prices:
+            op = existed_currency_prices.get((p.currency_id, p.pricing_policy_id, p.date), None)
 
             if op is None:
                 p.save()
@@ -675,9 +657,9 @@ def download_pricing_wait(self, sub_tasks_id, task_id):
                     op.save()
 
         if is_yesterday:
-            instrument_price_real = {(p.instrument_id, p.pricing_policy_id) for p in instrument_prices
+            instrument_price_real = {(p.instrument_id, p.pricing_policy_id) for p in instruments_prices
                                      if p.date == date_to}
-            currency_price_real = {(p.currency_id, p.pricing_policy_id) for p in currency_prices
+            currency_price_real = {(p.currency_id, p.pricing_policy_id) for p in currencies_prices
                                    if p.date == date_to}
 
             instrument_price_expected = set()
@@ -692,28 +674,25 @@ def download_pricing_wait(self, sub_tasks_id, task_id):
             instrument_price_missed = instrument_price_expected.difference(instrument_price_real)
             instrument_price_missed_objects = []
             for instrument_id, pricing_policy_id in instrument_price_missed:
-                instrument_price_missed_objects.append(
-                    PriceHistory(instrument_id=instrument_id, pricing_policy_id=pricing_policy_id, date=date_to)
-                )
+                op = existed_instrument_prices.get((instrument_id, pricing_policy_id, date_to), None)
+                if op is None:
+                    op = PriceHistory(instrument_id=instrument_id, pricing_policy_id=pricing_policy_id, date=date_to)
+                instrument_price_missed_objects.append(op)
             instrument_price_missed = PriceHistorySerializer(instance=instrument_price_missed_objects, many=True).data
             result['instrument_price_missed'] = instrument_price_missed
 
             currency_price_missed = currency_price_expected.difference(currency_price_real)
             currency_price_missed_objects = []
             for currency_id, pricing_policy_id in currency_price_missed:
-                currency_price_missed_objects.append(
-                    CurrencyHistory(currency_id=currency_id, pricing_policy_id=pricing_policy_id, date=date_to)
-                )
+                op = existed_currency_prices.get((currency_id, pricing_policy_id, date_to), None)
+                if op is None:
+                    op = CurrencyHistory(currency_id=currency_id, pricing_policy_id=pricing_policy_id, date=date_to)
+                currency_price_missed_objects.append(op)
             currency_price_missed = CurrencyHistorySerializer(instance=currency_price_missed_objects, many=True).data
             result['currency_price_missed'] = currency_price_missed
 
-            _l.debug('missed instrument prices: %s',
-                     json.dumps(
-                         [(p.instrument_id, p.pricing_policy_id, p.date) for p in instrument_price_missed_objects],
-                         cls=DjangoJSONEncoder))
-            _l.debug('missed currency prices: %s',
-                     json.dumps([(p.currency_id, p.pricing_policy_id, p.date) for p in currency_price_missed_objects],
-                                cls=DjangoJSONEncoder))
+            _l.debug('instrument_price_missed_objects: %s', instrument_price_missed_objects)
+            _l.debug('currency_price_missed_objects: %s', currency_price_missed_objects)
 
         task.options_object = options
         task.result_object = result
