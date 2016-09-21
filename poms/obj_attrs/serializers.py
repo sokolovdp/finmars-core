@@ -131,6 +131,7 @@ class AbstractAttributeTypeSerializer(ModelWithObjectPermissionSerializer, Model
 
 
 class AttributeListSerializer(serializers.ListSerializer):
+    # Used as list_serializer_class if many=True in AbstractAttributeSerializer
     def get_attribute(self, instance):
         member = self.context['request'].user.member
         if member.is_superuser:
