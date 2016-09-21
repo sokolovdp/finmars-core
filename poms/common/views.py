@@ -7,18 +7,21 @@ from django.utils import timezone
 from django.utils.translation import ugettext_lazy
 from rest_framework import permissions
 from rest_framework import status
+from rest_framework.decorators import list_route
 from rest_framework.filters import DjangoFilterBackend, OrderingFilter, SearchFilter
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework.viewsets import ModelViewSet, ReadOnlyModelViewSet, ViewSet
 
+from poms.audit import history
 from poms.audit.mixins import HistoricalMixin
+from poms.common.serializers import BulkModelSerializer
 from poms.users.utils import get_master_user
 from poms.users.utils import get_member
 
 
-class AbstractApiView(HistoricalMixin, APIView):
+class AbstractApiView(APIView):
     atomic = True
 
     def perform_authentication(self, request):
@@ -46,6 +49,24 @@ class AbstractApiView(HistoricalMixin, APIView):
                     return super(AbstractApiView, self).dispatch(request, *args, **kwargs)
         else:
             return super(AbstractApiView, self).dispatch(request, *args, **kwargs)
+
+    def perform_create(self, serializer):
+        with history.enable():
+            history.set_flag_addition()
+            super(AbstractApiView, self).perform_create(serializer)
+            history.set_actor_content_object(serializer.instance)
+
+    def perform_update(self, serializer):
+        with history.enable():
+            history.set_flag_change()
+            history.set_actor_content_object(serializer.instance)
+            super(AbstractApiView, self).perform_update(serializer)
+
+    def perform_destroy(self, instance):
+        with history.enable():
+            history.set_flag_deletion()
+            history.set_actor_content_object(instance)
+            super(AbstractApiView, self).perform_destroy(instance)
 
 
 class AbstractViewSet(AbstractApiView, ViewSet):
@@ -89,6 +110,11 @@ class AbstractModelViewSet(AbstractApiView, ModelViewSet):
                     qs = qs.filter(is_deleted=False)
         return qs
 
+    def get_serializer(self, *args, **kwargs):
+        # if self.action == 'bulk_save':
+        #     kwargs['child_serializer_class'] = self.serializer_class
+        return super(AbstractModelViewSet, self).get_serializer(*args, **kwargs)
+
     def update(self, request, *args, **kwargs):
         response = super(AbstractModelViewSet, self).update(request, *args, **kwargs)
         # total reload object, due many to many don't correctly returned
@@ -114,6 +140,17 @@ class AbstractModelViewSet(AbstractApiView, ModelViewSet):
             instance.fake_delete()
         else:
             super(AbstractModelViewSet, self).perform_destroy(instance)
+
+    @list_route(methods=['post'], url_path='bulk-save')
+    def bulk_save(self, request):
+        queryset = self.filter_queryset(self.get_queryset())
+        serializer = BulkModelSerializer(child_serializer_class=self.serializer_class,
+                                         queryset=queryset,
+                                         data=request.data,
+                                         context=self.get_serializer_context())
+        serializer.is_valid(raise_exception=True)
+        instances = serializer.save()
+        return Response(serializer.to_representation(instances), status=status.HTTP_200_OK)
 
 
 class AbstractReadOnlyModelViewSet(AbstractApiView, ReadOnlyModelViewSet):

@@ -129,16 +129,20 @@ class enable(ContextDecorator):
         deactivate()
 
 
-def _is_enabled(obj):
+def _is_supported_model(obj):
     from poms.audit.models import ObjectHistory4Entry
 
-    if not is_active():
-        return False
     if isinstance(obj, ObjectHistory4Entry):
         return False
     if isinstance(obj, get_history_model_list()):
         return True
     return False
+
+
+def _is_enabled(obj):
+    if not is_active():
+        return False
+    return _is_supported_model(obj)
 
 
 def _is_disabled(obj):
@@ -169,46 +173,6 @@ def _get_content_type(instance):
     return '%s.%s' % (content_type.app_label, content_type.model)
 
 
-# def _check_value(value):
-#     if type(value) in six.string_types:
-#         return value
-#     elif type(value) in six.integer_types:
-#         return value
-#     elif type(value) in (list, tuple,):
-#         return [_check_value(v) for v in value]
-#     else:
-#         return force_text(value)
-#
-#
-# def _make_rel_value(model, pk):
-#     if pk is None:
-#         return None
-#     ctype = ContentType.objects.get_for_model(model)
-#     if isinstance(pk, (list, tuple, set)):
-#         ret = []
-#         for tpk in pk:
-#             obj = ctype.get_object_for_this_type(pk=tpk)
-#             ret.append({
-#                 'value': obj.id,
-#                 'display': force_text(obj),
-#             })
-#         return ret
-#
-#     obj = ctype.get_object_for_this_type(pk=pk)
-#     return {
-#         'value': obj.id,
-#         'display': force_text(obj),
-#     }
-#
-#
-# def _make_value(value):
-#     value = _check_value(value)
-#     return {
-#         'value': value,
-#         'display': value,
-#     }
-
-
 def _value_to_str(value):
     if isinstance(value, str):
         return value
@@ -220,7 +184,7 @@ def _value_to_str(value):
 
 @receiver(post_init, dispatch_uid='poms_history_post_init')
 def _instance_post_init(sender, instance=None, **kwargs):
-    if _is_disabled(instance):
+    if not _is_supported_model(instance):
         return
     if instance.pk:
         instance._poms_history_initial_state = _serialize(instance)

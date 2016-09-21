@@ -1,9 +1,12 @@
+from django.core.exceptions import ObjectDoesNotExist
 from django.utils.text import Truncator
+from django.utils.translation import ugettext_lazy
 from mptt.utils import get_cached_trees
 from rest_framework import serializers
 from rest_framework.exceptions import ValidationError
 from rest_framework.serializers import ListSerializer
 
+from poms.audit import history
 from poms.common.fields import PrimaryKeyRelatedFilteredField, UserCodeField
 from poms.common.filters import ClassifierRootFilter
 from poms.users.filters import OwnerByMasterUserFilter
@@ -272,3 +275,82 @@ class AbstractClassifierNodeSerializer(AbstractPomsSerializer):
             'tree_id',
             # 'children',
         ]
+
+
+class BulkModelSerializer(serializers.Serializer):
+    default_error_messages = {
+        'invalid': ugettext_lazy('Invalid data')
+    }
+
+    def __init__(self, child_serializer_class=None, queryset=None, **kwargs):
+        super(BulkModelSerializer, self).__init__(**kwargs)
+        self.child_serializer_class = child_serializer_class
+        self.queryset = queryset
+
+    def get_child_serializer(self, instance=None, data=None, many=False):
+        return self.child_serializer_class(context=self.context, instance=instance, data=data, many=many)
+
+    def validate(self, attrs):
+        # print('validate:', 'attrs =', attrs)
+        # for cattrs in attrs:
+        #     print('cattrs =', cattrs)
+        #     self.get_base_serializer(data=cattrs).is_valid(raise_exception=True)
+        return attrs
+
+    def to_internal_value(self, data):
+        ret = []
+        if not isinstance(data, (list, tuple)):
+            self.fail('invalid')
+            # message = self.error_messages['invalid'].format(
+            #     datatype=type(data).__name__
+            # )
+            # raise ValidationError({
+            #     api_settings.NON_FIELD_ERRORS_KEY: [message]
+            # })
+
+        errors = []
+        has_errors = False
+        for cattrs in data:
+            schild = self.get_child_serializer(data=cattrs, many=False)
+            if schild.is_valid(raise_exception=False):
+                data = schild.validated_data
+                if 'id' not in data:
+                    data = data.copy()
+                    data['id'] = int(cattrs.get('id', None))
+                ret.append(data)
+                errors.append({})
+            else:
+                errors.append(schild.errors)
+                has_errors = True
+        if has_errors:
+            raise ValidationError(errors)
+
+        return ret
+
+    def to_representation(self, instance):
+        return self.get_child_serializer(instance=instance, many=True).to_representation(instance)
+
+    def save(self, **kwargs):
+        ret = []
+        for cattrs in self.validated_data:
+            data = cattrs.copy()
+            pk = data.pop('id', None)
+            instance = None
+            if pk is not None:
+                try:
+                    instance = self.queryset.get(pk=pk)
+                except ObjectDoesNotExist:
+                    pass
+            schild = self.get_child_serializer(instance=instance, data=data, many=False)
+
+            with history.enable():
+                if instance is not None:
+                    history.set_flag_change()
+                    instance = schild.update(instance, data)
+                else:
+                    history.set_flag_addition()
+                    instance = schild.create(data)
+                history.set_actor_content_object(instance)
+
+            ret.append(instance)
+        return ret
