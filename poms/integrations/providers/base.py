@@ -1,4 +1,3 @@
-from collections import OrderedDict
 from datetime import date, datetime
 from logging import getLogger
 
@@ -120,7 +119,7 @@ class AbstractProvider(object):
         return obj.periodicity
 
     def create_instrument(self, instrument_download_scheme, values):
-        errors = OrderedDict()
+        errors = {}
         master_user = instrument_download_scheme.master_user
         provider = instrument_download_scheme.provider
 
@@ -142,8 +141,9 @@ class AbstractProvider(object):
                 continue
             try:
                 v = formula.safe_eval(expr, names=values)
-            except formula.InvalidExpression as e:
-                # _l.debug('Invalid expression "%s"', attr, exc_info=True)
+            except formula.InvalidExpression:
+                _l.debug('Invalid instrument attribute expression: id=%s, attr=%s, expr=%s, values=%s',
+                         instrument_download_scheme.id, attr, expr, values)
                 errors[attr] = [ugettext_lazy('Invalid expression')]
                 continue
             if attr in ['pricing_currency', 'accrued_currency']:
@@ -205,8 +205,9 @@ class AbstractProvider(object):
             if attr.value:
                 try:
                     v = formula.safe_eval(attr.value, names=values)
-                except formula.InvalidExpression as e:
-                    # _l.debug('Invalid expression "%s"', attr.value, exc_info=True)
+                except formula.InvalidExpression:
+                    _l.debug('Invalid instrument dynamic attribute expression: id=%s, attr=%s, expr="%s", values=%s',
+                             instrument_download_scheme.id, attr.id, attr.value, values)
                     errors[err_name] = [ugettext_lazy('Invalid expression')]
                     continue
                 attr_mapped_values = self.get_instrument_attribute_value(master_user, provider, tattr, v)
@@ -249,10 +250,33 @@ class AbstractProvider(object):
         return []
 
     def create_instrument_pricing(self, price_download_scheme, options, values, instruments, pricing_policies):
-        return []
+        return [], {}
 
     def create_currency_pricing(self, price_download_scheme, options, values, currencies, pricing_policies):
-        return []
+        return [], {}
+
+    @staticmethod
+    def fail_pricing_policy(errors, pricing_policy, names):
+        msg = ugettext_lazy('Invalid pricing policy expression in "%(pricing_policy)s"') % {
+            'pricing_policy': pricing_policy.name
+        }
+        msgs = errors.get('pricing_policy', None) or []
+        if msg not in msgs:
+            _l.debug('Invalid pricing policy expression: pricing_policy=%s, expr="%s", names=%s',
+                     pricing_policy.id, pricing_policy.expr, names)
+            errors['pricing_policy'] = msgs + [msg]
+
+    @staticmethod
+    def fail_manual_pricing_formula(errors, manual_pricing_formula, names):
+        msg = ugettext_lazy('Invalid manual pricing formula expression in instrument "%(instrument)s"') % {
+            'instrument': manual_pricing_formula.instrument.user_code
+        }
+        msgs = errors.get('manual_pricing_formula', None) or []
+        if msg not in msgs:
+            _l.debug(
+                'Invalid manual formula expression: instrument=%s, manual_pricing_formula=%s, expr="%s", values=%s',
+                manual_pricing_formula.instrument_id, manual_pricing_formula.id, manual_pricing_formula.expr, names)
+            errors['manual_pricing_formula'] = msgs + [msg]
 
 
 def get_provider(master_user=None, provider=None, task=None):

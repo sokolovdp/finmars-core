@@ -9,6 +9,7 @@ import requests
 from OpenSSL import crypto
 from dateutil import parser
 from django.conf import settings
+from django.utils.translation import ugettext_lazy
 from suds.client import Client
 from suds.transport import Reply
 from suds.transport.http import HttpAuthenticated
@@ -18,8 +19,7 @@ from poms.currencies.models import CurrencyHistory
 from poms.instruments.models import AccrualCalculationSchedule, Periodicity, InstrumentFactorSchedule, PriceHistory
 from poms.integrations.models import FactorScheduleDownloadMethod, AccrualScheduleDownloadMethod, ProviderClass, \
     InstrumentDownloadScheme, PriceDownloadScheme
-from poms.integrations.providers.base import AbstractProvider, ProviderException, parse_date_iso, fill_instrument_price, \
-    fill_currency_price
+from poms.integrations.providers.base import AbstractProvider, ProviderException, parse_date_iso
 
 __author__ = 'alyakhov'
 
@@ -724,6 +724,7 @@ class BloombergDataProvider(AbstractProvider):
         fill_days = options['fill_days']
         # price_download_scheme_id = options['price_download_scheme_id']
 
+        errors = {}
         prices = []
 
         if is_yesterday:
@@ -737,7 +738,11 @@ class BloombergDataProvider(AbstractProvider):
                 instr_day_value = price_download_scheme.instrument_yesterday_values(instr_values)
                 for pp in pricing_policies:
                     if pp.expr:
-                        principal_price = formula.safe_eval(pp.expr, names=instr_day_value)
+                        try:
+                            principal_price = formula.safe_eval(pp.expr, names=instr_day_value)
+                        except formula.InvalidExpression:
+                            self.fail_pricing_policy(errors, pp, instr_day_value)
+                            continue
                         price = PriceHistory(
                             instrument=i,
                             pricing_policy=pp,
@@ -745,9 +750,6 @@ class BloombergDataProvider(AbstractProvider):
                             principal_price=principal_price
                         )
                         prices.append(price)
-
-                        # if fill_days:
-                        #     prices += fill_instrument_price(date_to + timedelta(days=1), fill_days, price)
         else:
             for i in instruments:
                 instr = self._bbg_instr(i.reference_for_pricing)
@@ -761,7 +763,11 @@ class BloombergDataProvider(AbstractProvider):
                     instr_day_value = price_download_scheme.instrument_history_values(instr_day_value)
                     for pp in pricing_policies:
                         if pp.expr:
-                            principal_price = formula.safe_eval(pp.expr, names=instr_day_value)
+                            try:
+                                principal_price = formula.safe_eval(pp.expr, names=instr_day_value)
+                            except formula.InvalidExpression:
+                                self.fail_pricing_policy(errors, pp, instr_day_value)
+                                continue
                             price = PriceHistory(
                                 instrument=i,
                                 pricing_policy=pp,
@@ -770,7 +776,7 @@ class BloombergDataProvider(AbstractProvider):
                             )
                             prices.append(price)
 
-        return prices
+        return prices, errors
 
     def create_currency_pricing(self, price_download_scheme, options, values, currencies, pricing_policies):
         date_from = parse_date_iso(options['date_from'])
@@ -779,6 +785,7 @@ class BloombergDataProvider(AbstractProvider):
         fill_days = options['fill_days']
         # price_download_scheme_id = options['price_download_scheme_id']
 
+        errors = {}
         prices = []
 
         if is_yesterday:
@@ -792,7 +799,11 @@ class BloombergDataProvider(AbstractProvider):
                 instr_day_value = price_download_scheme.currency_history_values(instr_values)
                 for pp in pricing_policies:
                     if pp.expr:
-                        fx_rate = formula.safe_eval(pp.expr, names=instr_day_value)
+                        try:
+                            fx_rate = formula.safe_eval(pp.expr, names=instr_day_value)
+                        except formula.InvalidExpression:
+                            self.fail_pricing_policy(errors, pp, instr_day_value)
+                            continue
                         price = CurrencyHistory(
                             currency=i,
                             pricing_policy=pp,
@@ -800,8 +811,6 @@ class BloombergDataProvider(AbstractProvider):
                             fx_rate=fx_rate
                         )
                         prices.append(price)
-                        # if fill_days:
-                        #     prices += fill_currency_price(date_to + timedelta(days=1), fill_days, price)
         else:
             for i in currencies:
                 instr = self._bbg_instr(i.reference_for_pricing)
@@ -815,7 +824,11 @@ class BloombergDataProvider(AbstractProvider):
                     instr_day_value = price_download_scheme.currency_history_values(instr_day_value)
                     for pp in pricing_policies:
                         if pp.expr:
-                            fx_rate = formula.safe_eval(pp.expr, names=instr_day_value)
+                            try:
+                                fx_rate = formula.safe_eval(pp.expr, names=instr_day_value)
+                            except formula.InvalidExpression:
+                                self.fail_pricing_policy(errors, pp, instr_day_value)
+                                continue
                             price = CurrencyHistory(
                                 currency=i,
                                 pricing_policy=pp,
@@ -824,7 +837,7 @@ class BloombergDataProvider(AbstractProvider):
                             )
                             prices.append(price)
 
-        return prices
+        return prices, errors
 
 
 # ----------------------------------------------------------------------------------------------------------------------

@@ -14,6 +14,7 @@ from django.core.mail import send_mail as django_send_mail, send_mass_mail as dj
     mail_admins as django_mail_admins, mail_managers as django_mail_managers
 from django.db import transaction
 from django.utils import timezone
+from django.utils.translation import ugettext_lazy
 
 from poms.audit.models import AuthLogEntry
 from poms.common import formula
@@ -23,7 +24,8 @@ from poms.currencies.serializers import CurrencyHistorySerializer
 from poms.instruments.models import Instrument, DailyPricingModel, PricingPolicy, PriceHistory
 from poms.instruments.serializers import PriceHistorySerializer
 from poms.integrations.models import Task, PriceDownloadScheme, InstrumentDownloadScheme, PricingAutomatedSchedule
-from poms.integrations.providers.base import get_provider, parse_date_iso, fill_instrument_price, fill_currency_price
+from poms.integrations.providers.base import get_provider, parse_date_iso, fill_instrument_price, fill_currency_price, \
+    AbstractProvider
 from poms.integrations.storage import import_file_storage
 from poms.reports.backends.balance import BalanceReport2PositionBuilder
 from poms.reports.models import BalanceReport
@@ -551,6 +553,7 @@ def download_pricing_wait(self, sub_tasks_id, task_id):
     currency_task = options['currency_task']
 
     result = {}
+    errors = {}
     instruments_prices = []
     currencies_prices = []
 
@@ -579,19 +582,16 @@ def download_pricing_wait(self, sub_tasks_id, task_id):
             price_download_scheme_id = sub_task_options['price_download_scheme_id']
             price_download_scheme = PriceDownloadScheme.objects.get(pk=price_download_scheme_id)
 
-            try:
-                instruments_prices += provider.create_instrument_pricing(
-                    price_download_scheme=price_download_scheme,
-                    options=sub_task_options,
-                    values=sub_task.result_object,
-                    instruments=task_instruments,
-                    pricing_policies=pricing_policies
-                )
-            except Exception:
-                task.status = Task.STATUS_ERROR
-                task.save()
-                _l.error('fatal provider error', exc_info=True)
-                return
+            sub_task_instruments_prices, sub_task_errors = provider.create_instrument_pricing(
+                price_download_scheme=price_download_scheme,
+                options=sub_task_options,
+                values=sub_task.result_object,
+                instruments=task_instruments,
+                pricing_policies=pricing_policies
+            )
+
+            instruments_prices += sub_task_instruments_prices
+            errors.update(sub_task_errors)
 
         elif 'currencies_pk' in sub_task_options:
             task_currencies_pk = sub_task_options['currencies_pk']
@@ -600,23 +600,31 @@ def download_pricing_wait(self, sub_tasks_id, task_id):
             price_download_scheme_id = sub_task_options['price_download_scheme_id']
             price_download_scheme = PriceDownloadScheme.objects.get(pk=price_download_scheme_id)
 
-            try:
-                currencies_prices += provider.create_currency_pricing(
-                    price_download_scheme=price_download_scheme,
-                    options=sub_task_options,
-                    values=sub_task.result_object,
-                    currencies=task_currencies,
-                    pricing_policies=pricing_policies
-                )
-            except Exception:
-                task.status = Task.STATUS_ERROR
-                task.save()
-                _l.error('fatal provider error', exc_info=True)
-                return
+            sub_task_currencies_prices, sub_task_errors = provider.create_currency_pricing(
+                price_download_scheme=price_download_scheme,
+                options=sub_task_options,
+                values=sub_task.result_object,
+                currencies=task_currencies,
+                pricing_policies=pricing_policies
+            )
+
+            currencies_prices += sub_task_currencies_prices
+            errors.update(sub_task_errors)
 
     instrument_for_manual_price = [int(i_id) for i_id, task_id in instrument_task.items() if task_id is None]
     _l.debug('instrument_for_manual_price: %s', instrument_for_manual_price)
-    instruments_prices += _create_instrument_manual_prices(options=options, instruments=instrument_for_manual_price)
+    manual_instruments_prices, manual_instruments_errors = _create_instrument_manual_prices(
+        options=options, instruments=instrument_for_manual_price)
+
+    instruments_prices += manual_instruments_prices
+    errors.update(manual_instruments_errors)
+
+    if errors:
+        options['errors'] = errors
+        task.options_object = options
+        task.result_object = result
+        task.status = Task.STATUS_ERROR
+        task.save()
 
     if fill_days > 0:
         fill_date_from = date_to + timedelta(days=1)
@@ -725,26 +733,28 @@ def _create_instrument_manual_prices(options, instruments):
     is_yesterday = options['is_yesterday']
     fill_days = options['fill_days']
 
+    errors = {}
     prices = []
+
     if is_yesterday:
         for i in Instrument.objects.filter(pk__in=instruments):
             for mf in i.manual_pricing_formulas.all():
-                if not mf.expr:
-                    continue
-                values = {
-                    'd': date_to
-                }
-                principal_price = formula.safe_eval(mf.expr, names=values)
-                price = PriceHistory(
-                    instrument=i,
-                    pricing_policy=mf.pricing_policy,
-                    date=date_to,
-                    principal_price=principal_price
-                )
-                prices.append(price)
-
-                # if fill_days:
-                #     prices += fill_instrument_price(date_to + timedelta(days=1), fill_days, price)
+                if mf.expr:
+                    values = {
+                        'd': date_to
+                    }
+                    try:
+                        principal_price = formula.safe_eval(mf.expr, names=values)
+                    except formula.InvalidExpression:
+                        AbstractProvider.fail_manual_pricing_formula(errors, mf, values)
+                        continue
+                    price = PriceHistory(
+                        instrument=i,
+                        pricing_policy=mf.pricing_policy,
+                        date=date_to,
+                        principal_price=principal_price
+                    )
+                    prices.append(price)
     else:
         days = (date_to - date_from).days + 1
 
@@ -753,24 +763,27 @@ def _create_instrument_manual_prices(options, instruments):
                 'id': i.id,
             }
             for mf in i.manual_pricing_formulas.all():
-                if not mf.expr:
-                    continue
-                for dt in rrule(freq=DAILY, count=days, dtstart=date_from):
-                    d = dt.date()
-                    values = {
-                        'd': d,
-                        'instrument': safe_instrument,
-                    }
-                    principal_price = formula.safe_eval(mf.expr, names=values)
-                    price = PriceHistory(
-                        instrument=i,
-                        pricing_policy=mf.pricing_policy,
-                        date=d,
-                        principal_price=principal_price
-                    )
-                    prices.append(price)
+                if mf.expr:
+                    for dt in rrule(freq=DAILY, count=days, dtstart=date_from):
+                        d = dt.date()
+                        values = {
+                            'd': d,
+                            'instrument': safe_instrument,
+                        }
+                        try:
+                            principal_price = formula.safe_eval(mf.expr, names=values)
+                        except formula.InvalidExpression:
+                            AbstractProvider.fail_manual_pricing_formula(errors, mf, values)
+                            continue
+                        price = PriceHistory(
+                            instrument=i,
+                            pricing_policy=mf.pricing_policy,
+                            date=d,
+                            principal_price=principal_price
+                        )
+                        prices.append(price)
 
-    return prices
+    return prices, errors
 
 
 def download_pricing(master_user=None, member=None, date_from=None, date_to=None, is_yesterday=None, balance_date=None,

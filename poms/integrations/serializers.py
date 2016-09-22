@@ -169,21 +169,21 @@ class InstrumentDownloadSchemeSerializer(ModelWithAttributesSerializer):
             pk_set.add(input0.id)
         instance.inputs.exclude(pk__in=pk_set).delete()
 
-    # def save_attributes(self, instance, attributes):
-    #     pk_set = set()
-    #     for attr_values in attributes:
-    #         attribute_type = attr_values['attribute_type']
-    #         try:
-    #             attr = instance.attributes.get(attribute_type=attribute_type)
-    #         except ObjectDoesNotExist:
-    #             attr = None
-    #         if attr is None:
-    #             attr = InstrumentDownloadSchemeAttribute(scheme=instance)
-    #         for name, value in attr_values.items():
-    #             setattr(attr, name, value)
-    #         attr.save()
-    #         pk_set.add(attr.id)
-    #     instance.attributes.exclude(pk__in=pk_set).delete()
+        # def save_attributes(self, instance, attributes):
+        #     pk_set = set()
+        #     for attr_values in attributes:
+        #         attribute_type = attr_values['attribute_type']
+        #         try:
+        #             attr = instance.attributes.get(attribute_type=attribute_type)
+        #         except ObjectDoesNotExist:
+        #             attr = None
+        #         if attr is None:
+        #             attr = InstrumentDownloadSchemeAttribute(scheme=instance)
+        #         for name, value in attr_values.items():
+        #             setattr(attr, name, value)
+        #         attr.save()
+        #         pk_set.add(attr.id)
+        #     instance.attributes.exclude(pk__in=pk_set).delete()
 
 
 class PriceDownloadSchemeSerializer(serializers.ModelSerializer):
@@ -515,16 +515,23 @@ class ImportPricingEntry(object):
         self.instrument_histories = instrument_histories
         self.currency_histories = currency_histories
 
-    def get_task_object(self):
+    @property
+    def task_object(self):
         if not self._task_object and self.task:
             self._task_object = self.master_user.tasks.get(pk=self.task)
         return self._task_object
 
-    def set_task_object(self, value):
+    @task_object.setter
+    def task_object(self, value):
         self._task_object = value
         self.task = getattr(value, 'pk', None)
 
-    task_object = property(get_task_object, set_task_object)
+    @property
+    def errors(self):
+        t = self.task_object
+        if t:
+            return t.options_object.get('errors', None)
+        return None
 
     @property
     def instrument_price_missed(self):
@@ -551,6 +558,7 @@ class ImportPricingSerializer(serializers.Serializer):
     task = serializers.IntegerField(required=False, allow_null=True)
     task_object = TaskSerializer(read_only=True)
 
+    errors = serializers.ReadOnlyField()
     instrument_price_missed = serializers.ReadOnlyField()
     currency_price_missed = serializers.ReadOnlyField()
 
