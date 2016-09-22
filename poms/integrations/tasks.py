@@ -562,6 +562,7 @@ def download_pricing_wait(self, sub_tasks_id, task_id):
     currencies_pk = [int(pk) for pk in currency_task.keys()]
     _l.debug('currencies_pk: %s', currencies_pk)
 
+    _l.debug('sub_tasks_id: %s', sub_tasks_id)
     for sub_task in Task.objects.filter(pk__in=sub_tasks_id):
         _l.debug('sub_task: %s', sub_task.info)
         if sub_task.status != Task.STATUS_DONE:
@@ -569,33 +570,33 @@ def download_pricing_wait(self, sub_tasks_id, task_id):
 
         provider = get_provider(task=sub_task)
 
-        subtask_options = sub_task.options_object
+        sub_task_options = sub_task.options_object
 
-        if 'instruments_pk' in subtask_options:
-            task_instruments_pk = subtask_options['instruments_pk']
+        if 'instruments_pk' in sub_task_options:
+            task_instruments_pk = sub_task_options['instruments_pk']
             task_instruments = Instrument.objects.filter(pk__in=task_instruments_pk)
 
-            price_download_scheme_id = subtask_options['price_download_scheme_id']
+            price_download_scheme_id = sub_task_options['price_download_scheme_id']
             price_download_scheme = PriceDownloadScheme.objects.get(pk=price_download_scheme_id)
 
             instruments_prices += provider.create_instrument_pricing(
                 price_download_scheme=price_download_scheme,
-                options=subtask_options,
+                options=sub_task_options,
                 values=sub_task.result_object,
                 instruments=task_instruments,
                 pricing_policies=pricing_policies
             )
 
-        elif 'currencies_pk' in subtask_options:
-            task_currencies_pk = subtask_options['currencies_pk']
+        elif 'currencies_pk' in sub_task_options:
+            task_currencies_pk = sub_task_options['currencies_pk']
             task_currencies = Currency.objects.filter(pk__in=task_currencies_pk)
 
-            price_download_scheme_id = subtask_options['price_download_scheme_id']
+            price_download_scheme_id = sub_task_options['price_download_scheme_id']
             price_download_scheme = PriceDownloadScheme.objects.get(pk=price_download_scheme_id)
 
             currencies_prices += provider.create_currency_pricing(
                 price_download_scheme=price_download_scheme,
-                options=subtask_options,
+                options=sub_task_options,
                 values=sub_task.result_object,
                 currencies=task_currencies,
                 pricing_policies=pricing_policies
