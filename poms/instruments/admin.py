@@ -60,6 +60,7 @@ class InstrumentAttributeInline(AbstractAttributeInline):
 class ManualPricingFormulaInline(admin.TabularInline):
     model = ManualPricingFormula
     extra = 0
+    raw_id_fields = ['pricing_policy']
     formfield_overrides = {
         models.TextField: {'widget': widgets.Textarea(attrs={'cols': '40', 'rows': '3'})},
     }
