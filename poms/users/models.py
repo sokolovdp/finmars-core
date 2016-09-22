@@ -187,7 +187,7 @@ class Member(FakeDeletableModel):
 
     # permissions = models.ManyToManyField(Permission, blank=True)
 
-    class Meta:
+    class Meta(FakeDeletableModel.Meta):
         verbose_name = ugettext_lazy('member')
         verbose_name_plural = ugettext_lazy('members')
         unique_together = [

@@ -188,12 +188,12 @@ class InstrumentDownloadSchemeInput(models.Model):
     field = models.CharField(max_length=32, blank=True, default='')
 
     class Meta:
+        verbose_name = ugettext_lazy('instrument download scheme input')
+        verbose_name_plural = ugettext_lazy('instrument download scheme inputs')
         unique_together = (
             ('scheme', 'name')
         )
         ordering = ('name',)
-        verbose_name = ugettext_lazy('instrument download scheme input')
-        verbose_name_plural = ugettext_lazy('instrument download scheme inputs')
 
     def __str__(self):
         return self.name
@@ -212,12 +212,12 @@ class InstrumentDownloadSchemeAttribute(models.Model):
     value = models.CharField(max_length=255, blank=True, default='')
 
     class Meta:
+        verbose_name = ugettext_lazy('instrument download scheme attribute')
+        verbose_name_plural = ugettext_lazy('instrument download schemes attribute')
         unique_together = (
             ('scheme', 'attribute_type')
         )
         ordering = ('attribute_type__name',)
-        verbose_name = ugettext_lazy('instrument download scheme attribute')
-        verbose_name_plural = ugettext_lazy('instrument download schemes attribute')
 
     def __str__(self):
         # return '%s -> %s' % (self.name, self.attribute_type)

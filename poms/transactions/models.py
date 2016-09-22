@@ -176,12 +176,9 @@ class TransactionTypeGroup(NamedModel, FakeDeletableModel):
         verbose_name=ugettext_lazy('master user')
     )
 
-    class Meta(NamedModel.Meta):
+    class Meta(NamedModel.Meta, FakeDeletableModel.Meta):
         verbose_name = ugettext_lazy('transaction type group')
         verbose_name_plural = ugettext_lazy('transaction type groups')
-        unique_together = [
-            ['master_user', 'user_code']
-        ]
         permissions = [
             ('view_transactiontypegroup', 'Can view transaction type group'),
             ('manage_transactiontypegroup', 'Can manage transaction type group'),
@@ -223,12 +220,9 @@ class TransactionType(NamedModel, FakeDeletableModel):
     #     verbose_name=ugettext_lazy('portfolios')
     # )
 
-    class Meta(NamedModel.Meta):
+    class Meta(NamedModel.Meta, FakeDeletableModel.Meta):
         verbose_name = ugettext_lazy('transaction type')
         verbose_name_plural = ugettext_lazy('transaction types')
-        unique_together = [
-            ['master_user', 'user_code']
-        ]
         permissions = [
             ('view_transactiontype', 'Can view transaction type'),
             ('manage_transactiontype', 'Can manage transaction type'),

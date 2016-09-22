@@ -23,7 +23,7 @@ class AccountType(NamedModel, FakeDeletableModel):
     transaction_details_expr = models.CharField(max_length=255, null=True, blank=True,
                                                 verbose_name=ugettext_lazy('transaction details expr'))
 
-    class Meta(NamedModel.Meta):
+    class Meta(NamedModel.Meta, FakeDeletableModel.Meta):
         verbose_name = ugettext_lazy('account type')
         verbose_name_plural = ugettext_lazy('account types')
         permissions = [
@@ -65,7 +65,7 @@ class Account(NamedModel, FakeDeletableModel):
                              verbose_name=ugettext_lazy('account type'))
     is_valid_for_all_portfolios = models.BooleanField(default=True)
 
-    class Meta(NamedModel.Meta):
+    class Meta(NamedModel.Meta, FakeDeletableModel.Meta):
         verbose_name = ugettext_lazy('account')
         verbose_name_plural = ugettext_lazy('accounts')
         permissions = [

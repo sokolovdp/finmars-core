@@ -21,7 +21,7 @@ class Currency(NamedModel, FakeDeletableModel):
     price_download_scheme = models.ForeignKey('integrations.PriceDownloadScheme', on_delete=models.PROTECT, null=True,
                                               blank=True, verbose_name=ugettext_lazy('price download scheme'))
 
-    class Meta(NamedModel.Meta):
+    class Meta(NamedModel.Meta, FakeDeletableModel.Meta):
         verbose_name = ugettext_lazy('currency')
         verbose_name_plural = ugettext_lazy('currencies')
         permissions = [
