@@ -579,13 +579,19 @@ def download_pricing_wait(self, sub_tasks_id, task_id):
             price_download_scheme_id = sub_task_options['price_download_scheme_id']
             price_download_scheme = PriceDownloadScheme.objects.get(pk=price_download_scheme_id)
 
-            instruments_prices += provider.create_instrument_pricing(
-                price_download_scheme=price_download_scheme,
-                options=sub_task_options,
-                values=sub_task.result_object,
-                instruments=task_instruments,
-                pricing_policies=pricing_policies
-            )
+            try:
+                instruments_prices += provider.create_instrument_pricing(
+                    price_download_scheme=price_download_scheme,
+                    options=sub_task_options,
+                    values=sub_task.result_object,
+                    instruments=task_instruments,
+                    pricing_policies=pricing_policies
+                )
+            except Exception:
+                task.status = Task.STATUS_ERROR
+                task.save()
+                _l.error('fatal provider error', exc_info=True)
+                return
 
         elif 'currencies_pk' in sub_task_options:
             task_currencies_pk = sub_task_options['currencies_pk']
@@ -594,13 +600,19 @@ def download_pricing_wait(self, sub_tasks_id, task_id):
             price_download_scheme_id = sub_task_options['price_download_scheme_id']
             price_download_scheme = PriceDownloadScheme.objects.get(pk=price_download_scheme_id)
 
-            currencies_prices += provider.create_currency_pricing(
-                price_download_scheme=price_download_scheme,
-                options=sub_task_options,
-                values=sub_task.result_object,
-                currencies=task_currencies,
-                pricing_policies=pricing_policies
-            )
+            try:
+                currencies_prices += provider.create_currency_pricing(
+                    price_download_scheme=price_download_scheme,
+                    options=sub_task_options,
+                    values=sub_task.result_object,
+                    currencies=task_currencies,
+                    pricing_policies=pricing_policies
+                )
+            except Exception:
+                task.status = Task.STATUS_ERROR
+                task.save()
+                _l.error('fatal provider error', exc_info=True)
+                return
 
     instrument_for_manual_price = [int(i_id) for i_id, task_id in instrument_task.items() if task_id is None]
     _l.debug('instrument_for_manual_price: %s', instrument_for_manual_price)
