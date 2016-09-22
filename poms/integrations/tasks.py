@@ -1,6 +1,5 @@
 from __future__ import unicode_literals, print_function
 
-import json
 import time
 from collections import defaultdict
 from datetime import timedelta, date
@@ -13,9 +12,9 @@ from django.conf import settings
 from django.core.exceptions import ObjectDoesNotExist
 from django.core.mail import send_mail as django_send_mail, send_mass_mail as django_send_mass_mail, \
     mail_admins as django_mail_admins, mail_managers as django_mail_managers
-from django.core.serializers.json import DjangoJSONEncoder
 from django.db import transaction
 from django.utils import timezone
+from django.utils.translation import ugettext_lazy
 
 from poms.audit.models import AuthLogEntry
 from poms.common import formula
@@ -25,7 +24,8 @@ from poms.currencies.serializers import CurrencyHistorySerializer
 from poms.instruments.models import Instrument, DailyPricingModel, PricingPolicy, PriceHistory
 from poms.instruments.serializers import PriceHistorySerializer
 from poms.integrations.models import Task, PriceDownloadScheme, InstrumentDownloadScheme, PricingAutomatedSchedule
-from poms.integrations.providers.base import get_provider, parse_date_iso, fill_instrument_price, fill_currency_price
+from poms.integrations.providers.base import get_provider, parse_date_iso, fill_instrument_price, fill_currency_price, \
+    AbstractProvider
 from poms.integrations.storage import import_file_storage
 from poms.reports.backends.balance import BalanceReport2PositionBuilder
 from poms.reports.models import BalanceReport
@@ -126,7 +126,7 @@ def auth_log_statistics():
 @shared_task(name='backend.download_instrument', bind=True, ignore_result=False)
 def download_instrument_async(self, task_id=None):
     task = Task.objects.get(pk=task_id)
-    _l.debug('download_instrument_async: master_user_id=%s, task=%s', task.master_user_id, task)
+    _l.debug('download_instrument_async: master_user_id=%s, task=%s', task.master_user_id, task.info)
 
     task.add_celery_task_id(self.request.id)
 
@@ -169,7 +169,8 @@ def download_instrument_async(self, task_id=None):
         if self.request.is_eager:
             time.sleep(provider.get_retry_delay())
         try:
-            self.retry(countdown=provider.get_retry_delay(), max_retries=provider.get_max_retries(), throw=False)
+            self.retry(countdown=provider.get_retry_delay(), max_retries=provider.get_max_retries())
+            # self.retry(countdown=provider.get_retry_delay(), max_retries=provider.get_max_retries(), throw=False)
         except MaxRetriesExceededError:
             task.status = Task.STATUS_TIMEOUT
             task.save()
@@ -181,7 +182,7 @@ def download_instrument_async(self, task_id=None):
 def download_instrument(instrument_code=None, instrument_download_scheme=None, master_user=None, member=None,
                         task=None, value_overrides=None):
     _l.debug('download_pricing: master_user_id=%s, task=%s, instrument_code=%s, instrument_download_scheme=%s',
-             getattr(master_user, 'id', None), task, instrument_code, instrument_download_scheme)
+             getattr(master_user, 'id', None), getattr(task, 'info', None), instrument_code, instrument_download_scheme)
 
     if task is None:
         options = {
@@ -222,7 +223,7 @@ def download_instrument(instrument_code=None, instrument_download_scheme=None, m
 @shared_task(name='backend.download_instrument_pricing_async', bind=True, ignore_result=False)
 def download_instrument_pricing_async(self, task_id):
     task = Task.objects.get(pk=task_id)
-    _l.debug('download_instrument_pricing_async: master_user_id=%s, task=%s', task.master_user_id, task)
+    _l.debug('download_instrument_pricing_async: master_user_id=%s, task=%s', task.master_user_id, task.info)
 
     task.add_celery_task_id(self.request.id)
 
@@ -265,7 +266,8 @@ def download_instrument_pricing_async(self, task_id):
         if self.request.is_eager:
             time.sleep(provider.get_retry_delay())
         try:
-            self.retry(countdown=provider.get_retry_delay(), max_retries=provider.get_max_retries(), throw=False)
+            self.retry(countdown=provider.get_retry_delay(), max_retries=provider.get_max_retries())
+            # self.retry(countdown=provider.get_retry_delay(), max_retries=provider.get_max_retries(), throw=False)
         except MaxRetriesExceededError:
             task.status = Task.STATUS_TIMEOUT
             task.save()
@@ -277,7 +279,7 @@ def download_instrument_pricing_async(self, task_id):
 @shared_task(name='backend.download_currency_pricing_async', bind=True, ignore_result=False)
 def download_currency_pricing_async(self, task_id):
     task = Task.objects.get(pk=task_id)
-    _l.debug('download_currency_pricing_async: master_user_id=%s, task=%s', task.master_user_id, task)
+    _l.debug('download_currency_pricing_async: master_user_id=%s, task=%s', task.master_user_id, task.info)
 
     task.add_celery_task_id(self.request.id)
 
@@ -321,7 +323,8 @@ def download_currency_pricing_async(self, task_id):
         if self.request.is_eager:
             time.sleep(provider.get_retry_delay())
         try:
-            self.retry(countdown=provider.get_retry_delay(), max_retries=provider.get_max_retries(), throw=False)
+            self.retry(countdown=provider.get_retry_delay(), max_retries=provider.get_max_retries())
+            # self.retry(countdown=provider.get_retry_delay(), max_retries=provider.get_max_retries(), throw=False)
         except MaxRetriesExceededError:
             task.status = Task.STATUS_TIMEOUT
             task.save()
@@ -333,7 +336,7 @@ def download_currency_pricing_async(self, task_id):
 @shared_task(name='backend.download_pricing_async', bind=True, ignore_result=False)
 def download_pricing_async(self, task_id):
     task = Task.objects.get(pk=task_id)
-    _l.debug('download_pricing_async: master_user_id=%s, task=%s', task.master_user_id, task)
+    _l.debug('download_pricing_async: master_user_id=%s, task=%s', task.master_user_id, task.info)
 
     if task.status not in [Task.STATUS_PENDING, Task.STATUS_WAIT_RESPONSE]:
         return
@@ -441,15 +444,13 @@ def download_pricing_async(self, task_id):
             ct = download_currency_pricing_async.s(task_id=sub_task_id)
             celery_sub_tasks.append(ct)
 
-        # if self.request.is_eager:
-        #     sub_tasks = instrument_sub_tasks + currency_sub_tasks
-        #     download_pricing_wait.apply_async(kwargs={'sub_tasks_id': sub_tasks, 'task_id': task_id})
-        # else:
+        _l.info('celery_sub_tasks: %s', celery_sub_tasks)
         if celery_sub_tasks:
+            _l.info('use chord')
             sub_tasks = instrument_sub_tasks + currency_sub_tasks
-            # chord required result!!! (don't use ignore_result or set ignore_result=False)
             chord(celery_sub_tasks, download_pricing_wait.si(sub_tasks_id=sub_tasks, task_id=task_id)).apply_async()
         else:
+            _l.info('use apply_async')
             download_pricing_wait.apply_async(kwargs={'sub_tasks_id': [], 'task_id': task_id})
 
     with transaction.atomic():
@@ -532,7 +533,7 @@ def download_pricing_async(self, task_id):
 @shared_task(name='backend.download_pricing_wait', bind=True, ignore_result=False)
 def download_pricing_wait(self, sub_tasks_id, task_id):
     task = Task.objects.get(pk=task_id)
-    _l.debug('download_pricing_wait: master_user_id=%s, task=%s', task.master_user_id, task)
+    _l.debug('download_pricing_wait: master_user_id=%s, task=%s', task.master_user_id, task.info)
 
     if task.status != Task.STATUS_WAIT_RESPONSE:
         return
@@ -552,102 +553,107 @@ def download_pricing_wait(self, sub_tasks_id, task_id):
     currency_task = options['currency_task']
 
     result = {}
-    # currency_task = result['currency_task']
+    errors = {}
+    instruments_prices = []
+    currencies_prices = []
 
-    instrument_prices = []
-    currency_prices = []
+    _l.debug('instrument_task: %s', instrument_task)
+    _l.debug('currency_task: %s', currency_task)
 
+    instruments_pk = [int(pk) for pk in instrument_task.keys()]
+    _l.debug('instruments_pk: %s', instruments_pk)
+    currencies_pk = [int(pk) for pk in currency_task.keys()]
+    _l.debug('currencies_pk: %s', currencies_pk)
+
+    _l.debug('sub_tasks_id: %s', sub_tasks_id)
     for sub_task in Task.objects.filter(pk__in=sub_tasks_id):
-        _l.debug('sub_task: %s', sub_task)
+        _l.debug('sub_task: %s', sub_task.info)
         if sub_task.status != Task.STATUS_DONE:
             continue
 
         provider = get_provider(task=sub_task)
 
-        subtask_options = sub_task.options_object
+        sub_task_options = sub_task.options_object
 
-        if 'instruments_pk' in subtask_options:
-            instruments_pk = subtask_options['instruments_pk']
-            instruments = Instrument.objects.filter(pk__in=instruments_pk)
-            price_download_scheme_id = subtask_options['price_download_scheme_id']
+        if 'instruments_pk' in sub_task_options:
+            task_instruments_pk = sub_task_options['instruments_pk']
+            task_instruments = Instrument.objects.filter(pk__in=task_instruments_pk)
+
+            price_download_scheme_id = sub_task_options['price_download_scheme_id']
             price_download_scheme = PriceDownloadScheme.objects.get(pk=price_download_scheme_id)
 
-            instrument_prices += provider.create_instrument_pricing(
+            sub_task_instruments_prices, sub_task_errors = provider.create_instrument_pricing(
                 price_download_scheme=price_download_scheme,
-                options=subtask_options,
+                options=sub_task_options,
                 values=sub_task.result_object,
-                instruments=instruments,
+                instruments=task_instruments,
                 pricing_policies=pricing_policies
             )
 
-        elif 'currencies_pk' in subtask_options:
-            currencies_pk = subtask_options['currencies_pk']
-            currencies = Currency.objects.filter(pk__in=currencies_pk)
-            price_download_scheme_id = subtask_options['price_download_scheme_id']
+            instruments_prices += sub_task_instruments_prices
+            errors.update(sub_task_errors)
+
+        elif 'currencies_pk' in sub_task_options:
+            task_currencies_pk = sub_task_options['currencies_pk']
+            task_currencies = Currency.objects.filter(pk__in=task_currencies_pk)
+
+            price_download_scheme_id = sub_task_options['price_download_scheme_id']
             price_download_scheme = PriceDownloadScheme.objects.get(pk=price_download_scheme_id)
 
-            currency_prices += provider.create_currency_pricing(
+            sub_task_currencies_prices, sub_task_errors = provider.create_currency_pricing(
                 price_download_scheme=price_download_scheme,
-                options=subtask_options,
+                options=sub_task_options,
                 values=sub_task.result_object,
-                currencies=currencies,
+                currencies=task_currencies,
                 pricing_policies=pricing_policies
             )
 
-    instrument_for_manual_price = [i_id for i_id, task_id in instrument_task.items() if task_id is None]
-    instrument_prices += _create_instrument_manual_prices(options=options, instruments=instrument_for_manual_price)
+            currencies_prices += sub_task_currencies_prices
+            errors.update(sub_task_errors)
+
+    instrument_for_manual_price = [int(i_id) for i_id, task_id in instrument_task.items() if task_id is None]
+    _l.debug('instrument_for_manual_price: %s', instrument_for_manual_price)
+    manual_instruments_prices, manual_instruments_errors = _create_instrument_manual_prices(
+        options=options, instruments=instrument_for_manual_price)
+
+    instruments_prices += manual_instruments_prices
+    errors.update(manual_instruments_errors)
+
+    if errors:
+        options['errors'] = errors
+        task.options_object = options
+        task.result_object = result
+        task.status = Task.STATUS_ERROR
+        task.save()
 
     if fill_days > 0:
         fill_date_from = date_to + timedelta(days=1)
-        instrument_last_price = [p for p in instrument_prices if p.date == date_to]
-        _l.debug('instrument last prices: %s',
-                 json.dumps([(p.instrument_id, p.pricing_policy_id, p.date) for p in instrument_last_price],
-                            cls=DjangoJSONEncoder))
+        instrument_last_price = [p for p in instruments_prices if p.date == date_to]
+        _l.debug('instrument last prices: %s', instrument_last_price)
         for p in instrument_last_price:
-            instrument_prices + fill_instrument_price(fill_date_from, fill_days, p)
+            instruments_prices + fill_instrument_price(fill_date_from, fill_days, p)
 
-        currency_last_price = [p for p in currency_prices if p.date == date_to]
-        _l.debug('currency last prices: %s',
-                 json.dumps([(p.currency_id, p.pricing_policy_id, p.date) for p in currency_last_price],
-                            cls=DjangoJSONEncoder))
+        currency_last_price = [p for p in currencies_prices if p.date == date_to]
+        _l.debug('currency last prices: %s', currency_last_price)
         for p in currency_last_price:
-            currency_prices += fill_currency_price(fill_date_from, fill_days, p)
+            currencies_prices += fill_currency_price(fill_date_from, fill_days, p)
 
-    _l.debug('instrument prices: %s',
-             json.dumps([(p.instrument_id, p.pricing_policy_id, p.date) for p in instrument_prices],
-                        cls=DjangoJSONEncoder))
-    _l.debug('currency prices: %s',
-             json.dumps([(p.currency_id, p.pricing_policy_id, p.date) for p in currency_prices],
-                        cls=DjangoJSONEncoder))
+    _l.debug('instruments_prices: %s', instruments_prices)
+    _l.debug('currencies_prices: %s', currencies_prices)
 
-    for p in instrument_prices:
+    for p in instruments_prices:
         p.calculate_accrued_price(save=False)
-        # instr = p.instrument
-        # accrl = None
-        # for a in instr.accrual_calculation_schedules.order_by('accrual_start_date').all():
-        #     if a.accrual_start_date <= p.date:
-        #         accrl = a
-        # _l.debug('price=%s, instrument=%s, accrual=%s', p, instr.id, getattr(accrl, 'id', None))
-        # if accrl is None:
-        #     continue
-        # factor = coupon_accrual_factor(accrual_calculation_schedule=accrl,
-        #                                dt1=accrl.accrual_start_date,
-        #                                dt2=p.date,
-        #                                dt3=accrl.first_payment_date)
-        # _l.debug('coupon_accrual_factor=%s', factor)
-        # p.accrued_price = accrl.accrual_size * factor
 
     with transaction.atomic():
+        _l.debug('instruments_pk: %s', instruments_pk)
         existed_instrument_prices = {
             (p.instrument_id, p.pricing_policy_id, p.date): p
-            for p in PriceHistory.objects.filter(instrument__in={np.instrument_id for np in instrument_prices},
+            for p in PriceHistory.objects.filter(instrument__in=instruments_pk,
                                                  date__range=(date_from, date_to + timedelta(days=fill_days)))
             }
-        for p in instrument_prices:
-            op = existed_instrument_prices.get(
-                (p.instrument_id, p.pricing_policy_id, p.date),
-                None
-            )
+        _l.debug('existed_instrument_prices: %s', existed_instrument_prices)
+        for p in instruments_prices:
+            op = existed_instrument_prices.get((p.instrument_id, p.pricing_policy_id, p.date), None)
             if op is None:
                 p.save()
             else:
@@ -656,16 +662,15 @@ def download_pricing_wait(self, sub_tasks_id, task_id):
                     op.accrued_price = p.accrued_price
                     op.save()
 
+        _l.debug('currencies_pk: %s', currencies_pk)
         existed_currency_prices = {
             (p.currency_id, p.pricing_policy_id, p.date): p
-            for p in CurrencyHistory.objects.filter(currency__in={np.currency_id for np in currency_prices},
+            for p in CurrencyHistory.objects.filter(currency__in=currencies_pk,
                                                     date__range=(date_from, date_to + timedelta(days=fill_days)))
             }
-        for p in currency_prices:
-            op = existed_currency_prices.get(
-                (p.currency_id, p.pricing_policy_id, p.date),
-                None
-            )
+        _l.debug('existed_currency_prices: %s', existed_currency_prices)
+        for p in currencies_prices:
+            op = existed_currency_prices.get((p.currency_id, p.pricing_policy_id, p.date), None)
 
             if op is None:
                 p.save()
@@ -675,9 +680,9 @@ def download_pricing_wait(self, sub_tasks_id, task_id):
                     op.save()
 
         if is_yesterday:
-            instrument_price_real = {(p.instrument_id, p.pricing_policy_id) for p in instrument_prices
+            instrument_price_real = {(p.instrument_id, p.pricing_policy_id) for p in instruments_prices
                                      if p.date == date_to}
-            currency_price_real = {(p.currency_id, p.pricing_policy_id) for p in currency_prices
+            currency_price_real = {(p.currency_id, p.pricing_policy_id) for p in currencies_prices
                                    if p.date == date_to}
 
             instrument_price_expected = set()
@@ -692,28 +697,25 @@ def download_pricing_wait(self, sub_tasks_id, task_id):
             instrument_price_missed = instrument_price_expected.difference(instrument_price_real)
             instrument_price_missed_objects = []
             for instrument_id, pricing_policy_id in instrument_price_missed:
-                instrument_price_missed_objects.append(
-                    PriceHistory(instrument_id=instrument_id, pricing_policy_id=pricing_policy_id, date=date_to)
-                )
+                op = existed_instrument_prices.get((instrument_id, pricing_policy_id, date_to), None)
+                if op is None:
+                    op = PriceHistory(instrument_id=instrument_id, pricing_policy_id=pricing_policy_id, date=date_to)
+                instrument_price_missed_objects.append(op)
             instrument_price_missed = PriceHistorySerializer(instance=instrument_price_missed_objects, many=True).data
             result['instrument_price_missed'] = instrument_price_missed
 
             currency_price_missed = currency_price_expected.difference(currency_price_real)
             currency_price_missed_objects = []
             for currency_id, pricing_policy_id in currency_price_missed:
-                currency_price_missed_objects.append(
-                    CurrencyHistory(currency_id=currency_id, pricing_policy_id=pricing_policy_id, date=date_to)
-                )
+                op = existed_currency_prices.get((currency_id, pricing_policy_id, date_to), None)
+                if op is None:
+                    op = CurrencyHistory(currency_id=currency_id, pricing_policy_id=pricing_policy_id, date=date_to)
+                currency_price_missed_objects.append(op)
             currency_price_missed = CurrencyHistorySerializer(instance=currency_price_missed_objects, many=True).data
             result['currency_price_missed'] = currency_price_missed
 
-            _l.debug('missed instrument prices: %s',
-                     json.dumps(
-                         [(p.instrument_id, p.pricing_policy_id, p.date) for p in instrument_price_missed_objects],
-                         cls=DjangoJSONEncoder))
-            _l.debug('missed currency prices: %s',
-                     json.dumps([(p.currency_id, p.pricing_policy_id, p.date) for p in currency_price_missed_objects],
-                                cls=DjangoJSONEncoder))
+            _l.debug('instrument_price_missed_objects: %s', instrument_price_missed_objects)
+            _l.debug('currency_price_missed_objects: %s', currency_price_missed_objects)
 
         task.options_object = options
         task.result_object = result
@@ -731,26 +733,28 @@ def _create_instrument_manual_prices(options, instruments):
     is_yesterday = options['is_yesterday']
     fill_days = options['fill_days']
 
+    errors = {}
     prices = []
+
     if is_yesterday:
         for i in Instrument.objects.filter(pk__in=instruments):
             for mf in i.manual_pricing_formulas.all():
-                if not mf.expr:
-                    continue
-                values = {
-                    'd': date_to
-                }
-                principal_price = formula.safe_eval(mf.expr, names=values)
-                price = PriceHistory(
-                    instrument=i,
-                    pricing_policy=mf.pricing_policy,
-                    date=date_to,
-                    principal_price=principal_price
-                )
-                prices.append(price)
-
-                # if fill_days:
-                #     prices += fill_instrument_price(date_to + timedelta(days=1), fill_days, price)
+                if mf.expr:
+                    values = {
+                        'd': date_to
+                    }
+                    try:
+                        principal_price = formula.safe_eval(mf.expr, names=values)
+                    except formula.InvalidExpression:
+                        AbstractProvider.fail_manual_pricing_formula(errors, mf, values)
+                        continue
+                    price = PriceHistory(
+                        instrument=i,
+                        pricing_policy=mf.pricing_policy,
+                        date=date_to,
+                        principal_price=principal_price
+                    )
+                    prices.append(price)
     else:
         days = (date_to - date_from).days + 1
 
@@ -759,31 +763,34 @@ def _create_instrument_manual_prices(options, instruments):
                 'id': i.id,
             }
             for mf in i.manual_pricing_formulas.all():
-                if not mf.expr:
-                    continue
-                for dt in rrule(freq=DAILY, count=days, dtstart=date_from):
-                    d = dt.date()
-                    values = {
-                        'd': d,
-                        'instrument': safe_instrument,
-                    }
-                    principal_price = formula.safe_eval(mf.expr, names=values)
-                    price = PriceHistory(
-                        instrument=i,
-                        pricing_policy=mf.pricing_policy,
-                        date=d,
-                        principal_price=principal_price
-                    )
-                    prices.append(price)
+                if mf.expr:
+                    for dt in rrule(freq=DAILY, count=days, dtstart=date_from):
+                        d = dt.date()
+                        values = {
+                            'd': d,
+                            'instrument': safe_instrument,
+                        }
+                        try:
+                            principal_price = formula.safe_eval(mf.expr, names=values)
+                        except formula.InvalidExpression:
+                            AbstractProvider.fail_manual_pricing_formula(errors, mf, values)
+                            continue
+                        price = PriceHistory(
+                            instrument=i,
+                            pricing_policy=mf.pricing_policy,
+                            date=d,
+                            principal_price=principal_price
+                        )
+                        prices.append(price)
 
-    return prices
+    return prices, errors
 
 
 def download_pricing(master_user=None, member=None, date_from=None, date_to=None, is_yesterday=None, balance_date=None,
                      fill_days=None, override_existed=None, task=None):
     _l.debug('download_pricing: master_user_id=%s, task=%s, date_from=%s, date_to=%s, is_yesterday=%s,'
              ' balance_date=%s, fill_days=%s, override_existed=%s',
-             getattr(master_user, 'id', None), task, date_from, date_to, is_yesterday,
+             getattr(master_user, 'id', None), getattr(task, 'info', None), date_from, date_to, is_yesterday,
              balance_date, fill_days, override_existed)
     if task is None:
         with transaction.atomic():

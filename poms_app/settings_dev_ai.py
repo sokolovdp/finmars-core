@@ -39,6 +39,8 @@ CELERY_ALWAYS_EAGER = True
 CELERY_EAGER_PROPAGATES_EXCEPTIONS = True
 CELERYD_LOG_FORMAT = LOGGING['formatters']['verbose']['format']
 CELERY_TASK_RESULT_EXPIRES = 600
+CELERYBEAT_SCHEDULE = {}
+
 
 # INTEGRATIONS ------------------------------------------------
 

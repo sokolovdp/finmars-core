@@ -434,7 +434,11 @@ class Task(TimeStampedModel):
         ordering = ('-created',)
 
     def __str__(self):
-        return '%s / %s' % (self.id, self.status)
+        return '%s' % (self.id,)
+
+    @property
+    def info(self):
+        return '%s/%s' % (self.id, self.get_status_display())
 
     @property
     def is_running(self):
