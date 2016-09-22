@@ -125,9 +125,9 @@ class AbstractProvider(object):
 
         instr = Instrument(master_user=master_user)
 
-        instr.instrument_type = master_user.instrument_type
-        instr.pricing_currency = master_user.currency
-        instr.accrued_currency = master_user.currency
+        # instr.instrument_type = master_user.instrument_type
+        # instr.pricing_currency = master_user.currency
+        # instr.accrued_currency = master_user.currency
 
         instr.payment_size_detail = instrument_download_scheme.payment_size_detail
         instr.daily_pricing_model = instrument_download_scheme.daily_pricing_model
