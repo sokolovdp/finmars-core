@@ -647,6 +647,8 @@ class BloombergDataProvider(AbstractProvider):
         accrual_calculation_model = self.get_accrual_calculation_model(
             instrument.master_user, ProviderClass.BLOOMBERG, day_cnt)
         periodicity = self.get_periodicity(instrument.master_user, ProviderClass.BLOOMBERG, cpn_freq)
+        if periodicity is None:
+            return []
 
         accrual_calculation_schedules = []
         if is_multi_cpn_schedule:
