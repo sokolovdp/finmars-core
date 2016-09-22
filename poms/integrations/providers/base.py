@@ -144,7 +144,7 @@ class AbstractProvider(object):
             except formula.InvalidExpression:
                 _l.debug('Invalid instrument attribute expression: id=%s, attr=%s, expr=%s, values=%s',
                          instrument_download_scheme.id, attr, expr, values)
-                errors[attr] = [ugettext_lazy('Invalid expression')]
+                errors[attr] = [ugettext_lazy('Invalid expression.')]
                 continue
             if attr in ['pricing_currency', 'accrued_currency']:
                 if v is not None:
@@ -200,7 +200,7 @@ class AbstractProvider(object):
             iattr = InstrumentAttribute(content_object=instrument, attribute_type=tattr)
             iattrs.append(iattr)
 
-            err_name = 'attribute_type:%s' % attr.attribute_type.id
+            err_name = 'attribute_type_%s' % attr.attribute_type.id
 
             if attr.value:
                 try:
@@ -208,7 +208,7 @@ class AbstractProvider(object):
                 except formula.InvalidExpression:
                     _l.debug('Invalid instrument dynamic attribute expression: id=%s, attr=%s, expr="%s", values=%s',
                              instrument_download_scheme.id, attr.id, attr.value, values)
-                    errors[err_name] = [ugettext_lazy('Invalid expression')]
+                    errors[err_name] = [ugettext_lazy('Invalid expression.')]
                     continue
                 attr_mapped_values = self.get_instrument_attribute_value(master_user, provider, tattr, v)
                 if attr_mapped_values:
@@ -257,7 +257,7 @@ class AbstractProvider(object):
 
     @staticmethod
     def fail_pricing_policy(errors, pricing_policy, names):
-        msg = ugettext_lazy('Invalid pricing policy expression in "%(pricing_policy)s"') % {
+        msg = ugettext_lazy('Invalid pricing policy expression in "%(pricing_policy)s".') % {
             'pricing_policy': pricing_policy.name
         }
         msgs = errors.get('pricing_policy', None) or []
@@ -268,7 +268,7 @@ class AbstractProvider(object):
 
     @staticmethod
     def fail_manual_pricing_formula(errors, manual_pricing_formula, names):
-        msg = ugettext_lazy('Invalid manual pricing formula expression in instrument "%(instrument)s"') % {
+        msg = ugettext_lazy('Invalid manual pricing formula expression in instrument "%(instrument)s".') % {
             'instrument': manual_pricing_formula.instrument.user_code
         }
         msgs = errors.get('manual_pricing_formula', None) or []

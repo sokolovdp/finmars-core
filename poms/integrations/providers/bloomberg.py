@@ -9,7 +9,6 @@ import requests
 from OpenSSL import crypto
 from dateutil import parser
 from django.conf import settings
-from django.utils.translation import ugettext_lazy
 from suds.client import Client
 from suds.transport import Reply
 from suds.transport.http import HttpAuthenticated
