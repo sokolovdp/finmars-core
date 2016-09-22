@@ -18,7 +18,7 @@ class CounterpartyGroup(NamedModel, FakeDeletableModel):
     master_user = models.ForeignKey(MasterUser, related_name='counterparty_groups',
                                     verbose_name=ugettext_lazy('master user'))
 
-    class Meta(NamedModel.Meta):
+    class Meta(NamedModel.Meta, FakeDeletableModel.Meta):
         verbose_name = ugettext_lazy('counterparty group')
         verbose_name_plural = ugettext_lazy('counterparty groups')
         permissions = [
@@ -59,7 +59,7 @@ class Counterparty(NamedModel, FakeDeletableModel):
     group = models.ForeignKey(CounterpartyGroup, related_name='counterparties', null=True, blank=True)
     is_valid_for_all_portfolios = models.BooleanField(default=True)
 
-    class Meta(NamedModel.Meta):
+    class Meta(NamedModel.Meta, FakeDeletableModel.Meta):
         verbose_name = ugettext_lazy('counterparty')
         verbose_name_plural = ugettext_lazy('counterparties')
         permissions = [
@@ -141,9 +141,6 @@ class CounterpartyAttributeTypeOption(AbstractAttributeTypeOption):
     class Meta(AbstractAttributeTypeOption.Meta):
         verbose_name = ugettext_lazy('counterparty attribute types - option')
         verbose_name_plural = ugettext_lazy('counterparty attribute types - options')
-        unique_together = [
-            ['member', 'attribute_type']
-        ]
 
 
 class CounterpartyAttribute(AbstractAttribute):
@@ -167,7 +164,7 @@ class ResponsibleGroup(NamedModel, FakeDeletableModel):
     master_user = models.ForeignKey(MasterUser, related_name='responsible_groups',
                                     verbose_name=ugettext_lazy('master user'))
 
-    class Meta(NamedModel.Meta):
+    class Meta(NamedModel.Meta, FakeDeletableModel.Meta):
         verbose_name = ugettext_lazy('responsible group')
         verbose_name_plural = ugettext_lazy('responsible groups')
         permissions = [
@@ -207,7 +204,7 @@ class Responsible(NamedModel, FakeDeletableModel):
     group = models.ForeignKey(ResponsibleGroup, related_name='responsibles', null=True, blank=True)
     is_valid_for_all_portfolios = models.BooleanField(default=True)
 
-    class Meta(NamedModel.Meta):
+    class Meta(NamedModel.Meta, FakeDeletableModel.Meta):
         verbose_name = ugettext_lazy('responsible')
         verbose_name_plural = ugettext_lazy('responsibles')
         permissions = [
@@ -289,9 +286,6 @@ class ResponsibleAttributeTypeOption(AbstractAttributeTypeOption):
     class Meta(AbstractAttributeTypeOption.Meta):
         verbose_name = ugettext_lazy('responsible attribute types - option')
         verbose_name_plural = ugettext_lazy('responsible attribute types - options')
-        unique_together = [
-            ['member', 'attribute_type']
-        ]
 
 
 class ResponsibleAttribute(AbstractAttribute):

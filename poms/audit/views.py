@@ -8,7 +8,7 @@ from poms.audit.models import AuthLogEntry, ObjectHistory4Entry
 from poms.audit.serializers import AuthLogEntrySerializer, ObjectHistory4EntrySerializer
 from poms.common.filters import ModelWithPermissionMultipleChoiceFilter
 from poms.common.views import AbstractReadOnlyModelViewSet
-from poms.users.filters import OwnerByUserFilter
+from poms.users.filters import OwnerByUserFilter, OwnerByMasterUserFilter
 from poms.users.models import Member
 from poms.users.permissions import SuperUserOnly
 
@@ -57,6 +57,9 @@ class ObjectHistory4ViewSet(AbstractReadOnlyModelViewSet):
         'master_user', 'member', 'actor_content_type', 'content_type', 'value_content_type', 'old_value_content_type',
         'actor_content_object', 'content_object', 'value_content_object', 'old_value_content_object')
     serializer_class = ObjectHistory4EntrySerializer
+    filter_backends = AbstractReadOnlyModelViewSet.filter_backends + [
+        OwnerByMasterUserFilter,
+    ]
     permission_classes = AbstractReadOnlyModelViewSet.permission_classes + [
         SuperUserOnly,
     ]

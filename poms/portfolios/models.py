@@ -21,7 +21,7 @@ class Portfolio(NamedModel, FakeDeletableModel):
     counterparties = models.ManyToManyField('counterparties.Counterparty', related_name='portfolios', blank=True)
     transaction_types = models.ManyToManyField('transactions.TransactionType', related_name='portfolios', blank=True)
 
-    class Meta(NamedModel.Meta):
+    class Meta(NamedModel.Meta, FakeDeletableModel.Meta):
         verbose_name = ugettext_lazy('portfolio')
         verbose_name_plural = ugettext_lazy('portfolios')
         permissions = (

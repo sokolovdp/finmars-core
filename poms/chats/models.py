@@ -19,7 +19,7 @@ class ThreadGroup(FakeDeletableModel, models.Model):
     master_user = models.ForeignKey(MasterUser, related_name='chat_thread_groups')
     name = models.CharField(max_length=255, verbose_name=ugettext_lazy('name'))
 
-    class Meta(TimeStampedModel.Meta):
+    class Meta(FakeDeletableModel.Meta):
         verbose_name = ugettext_lazy('thread group')
         verbose_name_plural = ugettext_lazy('thread groups')
         ordering = ('name',)
@@ -57,7 +57,7 @@ class Thread(TimeStampedModel, FakeDeletableModel):
     subject = models.CharField(max_length=255)
     closed = models.DateTimeField(db_index=True, null=True, blank=True)
 
-    class Meta(TimeStampedModel.Meta):
+    class Meta(TimeStampedModel.Meta, FakeDeletableModel.Meta):
         verbose_name = ugettext_lazy('thread')
         verbose_name_plural = ugettext_lazy('threads')
         permissions = [

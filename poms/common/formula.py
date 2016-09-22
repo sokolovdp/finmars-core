@@ -3,7 +3,6 @@ from __future__ import unicode_literals, print_function, division
 import ast
 import collections
 import datetime
-import math
 import random
 import time
 
@@ -414,7 +413,10 @@ class SimpleEval2(object):  # pylint: disable=too-few-public-methods
 
         elif isinstance(node, ast.Call):  # function...
             try:
-                return self.functions[node.func.id](*(self._eval(a) for a in node.args))
+                f = self.functions[node.func.id]
+                f_args = [self._eval(a) for a in node.args]
+                f_kwargs = {k.arg: self._eval(k.value) for k in node.keywords}
+                return f(*f_args, **f_kwargs)
             except KeyError:
                 #     raise FunctionNotDefined(node.func.id, self.expr)
                 raise
@@ -570,7 +572,6 @@ if __name__ == "__main__":
         ],
     }
 
-
     # print(safe_eval('(1).__class__.__bases__', names=names))
     # print(safe_eval('{"a":1, "b":2}'))
     # print(safe_eval('[1,]'))
@@ -580,6 +581,8 @@ if __name__ == "__main__":
     # print(safe_eval('simple_price("2000-01-02", "2000-01-01", 0, "2000-04-10", 100)'))
     # print(safe_eval('v0 * 10', names=names))
     # print(safe_eval('context["v0"] * 10', names=names))
+
+    print(safe_eval('format_date(now(), format="%d-%m-%Y")'))
 
 
     def demo():
@@ -654,6 +657,7 @@ if __name__ == "__main__":
 
         play("format_date(now())", names)
         play("format_date(now(), '%Y/%m/%d')", names)
+        play("format_date(now(), format='%Y/%m/%d')", names)
         play("format_number(1234.234)", names)
         play("format_number(1234.234, '.', 2)", names)
 
@@ -666,4 +670,4 @@ if __name__ == "__main__":
         # print(add_workdays(datetime.date(2016, 6, 15), 4))
 
 
-    demo()
+        # demo()
