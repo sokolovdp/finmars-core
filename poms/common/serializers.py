@@ -290,23 +290,10 @@ class BulkModelSerializer(serializers.Serializer):
     def get_child_serializer(self, instance=None, data=None, many=False):
         return self.child_serializer_class(context=self.context, instance=instance, data=data, many=many)
 
-    def validate(self, attrs):
-        # print('validate:', 'attrs =', attrs)
-        # for cattrs in attrs:
-        #     print('cattrs =', cattrs)
-        #     self.get_base_serializer(data=cattrs).is_valid(raise_exception=True)
-        return attrs
-
     def to_internal_value(self, data):
         ret = []
         if not isinstance(data, (list, tuple)):
             self.fail('invalid')
-            # message = self.error_messages['invalid'].format(
-            #     datatype=type(data).__name__
-            # )
-            # raise ValidationError({
-            #     api_settings.NON_FIELD_ERRORS_KEY: [message]
-            # })
 
         errors = []
         has_errors = False
@@ -333,24 +320,44 @@ class BulkModelSerializer(serializers.Serializer):
     def save(self, **kwargs):
         ret = []
         for cattrs in self.validated_data:
-            data = cattrs.copy()
-            pk = data.pop('id', None)
-            instance = None
-            if pk is not None:
-                try:
-                    instance = self.queryset.get(pk=pk)
-                except ObjectDoesNotExist:
-                    pass
-            schild = self.get_child_serializer(instance=instance, data=data, many=False)
+            # child_data = cattrs.copy()
+            # child_instance_pk = child_data.pop('id', None)
+            # child_instance = None
+            # if child_instance_pk is not None:
+            #     try:
+            #         child_instance = self.queryset.get(pk=child_instance_pk)
+            #     except ObjectDoesNotExist:
+            #         pass
+            # with history.enable():
+            #     child_serializer = self.get_child_serializer(instance=child_instance, data=child_data, many=False)
+            #     if child_instance is not None:
+            #         history.set_flag_change()
+            #         child_instance = child_serializer.update(child_instance, child_data)
+            #     else:
+            #         history.set_flag_addition()
+            #         child_instance = child_serializer.create(child_data)
+            #     history.set_actor_content_object(child_instance)
+            child_instance = self.save_child_instance(cattrs)
 
-            with history.enable():
-                if instance is not None:
-                    history.set_flag_change()
-                    instance = schild.update(instance, data)
-                else:
-                    history.set_flag_addition()
-                    instance = schild.create(data)
-                history.set_actor_content_object(instance)
-
-            ret.append(instance)
+            ret.append(child_instance)
         return ret
+
+    @history.enable
+    def save_child_instance(self, child_data):
+        child_data = child_data.copy()
+        child_instance_pk = child_data.pop('id', None)
+        child_instance = None
+        if child_instance_pk is not None:
+            try:
+                child_instance = self.queryset.get(pk=child_instance_pk)
+            except ObjectDoesNotExist:
+                pass
+        child_serializer = self.get_child_serializer(instance=child_instance, data=child_data, many=False)
+        if child_instance is not None:
+            history.set_flag_change()
+            child_instance = child_serializer.update(child_instance, child_data)
+        else:
+            history.set_flag_addition()
+            child_instance = child_serializer.create(child_data)
+        history.set_actor_content_object(child_instance)
+        return child_instance

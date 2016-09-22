@@ -50,23 +50,23 @@ class AbstractApiView(APIView):
         else:
             return super(AbstractApiView, self).dispatch(request, *args, **kwargs)
 
+    @history.enable
     def perform_create(self, serializer):
-        with history.enable():
-            history.set_flag_addition()
-            super(AbstractApiView, self).perform_create(serializer)
-            history.set_actor_content_object(serializer.instance)
+        history.set_flag_addition()
+        super(AbstractApiView, self).perform_create(serializer)
+        history.set_actor_content_object(serializer.instance)
 
+    @history.enable
     def perform_update(self, serializer):
-        with history.enable():
-            history.set_flag_change()
-            history.set_actor_content_object(serializer.instance)
-            super(AbstractApiView, self).perform_update(serializer)
+        history.set_flag_change()
+        history.set_actor_content_object(serializer.instance)
+        super(AbstractApiView, self).perform_update(serializer)
 
+    @history.enable
     def perform_destroy(self, instance):
-        with history.enable():
-            history.set_flag_deletion()
-            history.set_actor_content_object(instance)
-            super(AbstractApiView, self).perform_destroy(instance)
+        history.set_flag_deletion()
+        history.set_actor_content_object(instance)
+        super(AbstractApiView, self).perform_destroy(instance)
 
 
 class AbstractViewSet(AbstractApiView, ViewSet):
@@ -111,8 +111,6 @@ class AbstractModelViewSet(AbstractApiView, ModelViewSet):
         return qs
 
     def get_serializer(self, *args, **kwargs):
-        # if self.action == 'bulk_save':
-        #     kwargs['child_serializer_class'] = self.serializer_class
         return super(AbstractModelViewSet, self).get_serializer(*args, **kwargs)
 
     def update(self, request, *args, **kwargs):

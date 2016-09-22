@@ -10,8 +10,8 @@ if 'crispy_forms' not in INSTALLED_APPS:
     INSTALLED_APPS += ['crispy_forms', ]
 if 'redisboard' not in INSTALLED_APPS:
     INSTALLED_APPS += ['redisboard', ]
-if 'debug_toolbar' not in INSTALLED_APPS:
-    INSTALLED_APPS += ['debug_toolbar', ]
+# if 'debug_toolbar' not in INSTALLED_APPS:
+#     INSTALLED_APPS += ['debug_toolbar', ]
 
 LOGGING['formatters']['verbose']['format'] = '[%(levelname)1.1s %(asctime)s %(name)s %(module)s:%(lineno)d] %(message)s'
 # LOGGING['loggers']['django.db'] = {'level': 'DEBUG'}

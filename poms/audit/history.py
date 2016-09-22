@@ -122,15 +122,35 @@ def set_flag_deletion():
     _state.flag = ObjectHistory4Entry.DELETION
 
 
-class enable(ContextDecorator):
-    def __init__(self, activate):
-        self.activate = activate
+# class enable(ContextDecorator):
+#     def __enter__(self):
+#         activate()
+#
+#     def __exit__(self, exc_type, exc_value, traceback):
+#         deactivate()
+
+
+class History(ContextDecorator):
+    def __init__(self):
+        self.is_owner = False
 
     def __enter__(self):
+        if is_active():
+            return
+        self.is_owner = True
         activate()
 
     def __exit__(self, exc_type, exc_value, traceback):
-        deactivate()
+        if self.is_owner:
+            deactivate()
+
+
+def enable(using=None):
+    if callable(using):
+        return History()(using)
+    else:
+        return History()
+
 
 
 def _is_enabled_for_model(obj):
