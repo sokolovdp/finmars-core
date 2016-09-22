@@ -124,7 +124,7 @@ def auth_log_statistics():
 @shared_task(name='backend.download_instrument', bind=True, ignore_result=False)
 def download_instrument_async(self, task_id=None):
     task = Task.objects.get(pk=task_id)
-    _l.debug('download_instrument_async: master_user_id=%s, task=%s', task.master_user_id, task)
+    _l.debug('download_instrument_async: master_user_id=%s, task=%s', task.master_user_id, task.info)
 
     task.add_celery_task_id(self.request.id)
 
@@ -167,7 +167,8 @@ def download_instrument_async(self, task_id=None):
         if self.request.is_eager:
             time.sleep(provider.get_retry_delay())
         try:
-            self.retry(countdown=provider.get_retry_delay(), max_retries=provider.get_max_retries(), throw=False)
+            self.retry(countdown=provider.get_retry_delay(), max_retries=provider.get_max_retries())
+            # self.retry(countdown=provider.get_retry_delay(), max_retries=provider.get_max_retries(), throw=False)
         except MaxRetriesExceededError:
             task.status = Task.STATUS_TIMEOUT
             task.save()
@@ -179,7 +180,7 @@ def download_instrument_async(self, task_id=None):
 def download_instrument(instrument_code=None, instrument_download_scheme=None, master_user=None, member=None,
                         task=None, value_overrides=None):
     _l.debug('download_pricing: master_user_id=%s, task=%s, instrument_code=%s, instrument_download_scheme=%s',
-             getattr(master_user, 'id', None), task, instrument_code, instrument_download_scheme)
+             getattr(master_user, 'id', None), getattr(task, 'info', None), instrument_code, instrument_download_scheme)
 
     if task is None:
         options = {
@@ -220,7 +221,7 @@ def download_instrument(instrument_code=None, instrument_download_scheme=None, m
 @shared_task(name='backend.download_instrument_pricing_async', bind=True, ignore_result=False)
 def download_instrument_pricing_async(self, task_id):
     task = Task.objects.get(pk=task_id)
-    _l.debug('download_instrument_pricing_async: master_user_id=%s, task=%s', task.master_user_id, task)
+    _l.debug('download_instrument_pricing_async: master_user_id=%s, task=%s', task.master_user_id, task.info)
 
     task.add_celery_task_id(self.request.id)
 
@@ -263,7 +264,8 @@ def download_instrument_pricing_async(self, task_id):
         if self.request.is_eager:
             time.sleep(provider.get_retry_delay())
         try:
-            self.retry(countdown=provider.get_retry_delay(), max_retries=provider.get_max_retries(), throw=False)
+            self.retry(countdown=provider.get_retry_delay(), max_retries=provider.get_max_retries())
+            # self.retry(countdown=provider.get_retry_delay(), max_retries=provider.get_max_retries(), throw=False)
         except MaxRetriesExceededError:
             task.status = Task.STATUS_TIMEOUT
             task.save()
@@ -275,7 +277,7 @@ def download_instrument_pricing_async(self, task_id):
 @shared_task(name='backend.download_currency_pricing_async', bind=True, ignore_result=False)
 def download_currency_pricing_async(self, task_id):
     task = Task.objects.get(pk=task_id)
-    _l.debug('download_currency_pricing_async: master_user_id=%s, task=%s', task.master_user_id, task)
+    _l.debug('download_currency_pricing_async: master_user_id=%s, task=%s', task.master_user_id, task.info)
 
     task.add_celery_task_id(self.request.id)
 
@@ -319,7 +321,8 @@ def download_currency_pricing_async(self, task_id):
         if self.request.is_eager:
             time.sleep(provider.get_retry_delay())
         try:
-            self.retry(countdown=provider.get_retry_delay(), max_retries=provider.get_max_retries(), throw=False)
+            self.retry(countdown=provider.get_retry_delay(), max_retries=provider.get_max_retries())
+            # self.retry(countdown=provider.get_retry_delay(), max_retries=provider.get_max_retries(), throw=False)
         except MaxRetriesExceededError:
             task.status = Task.STATUS_TIMEOUT
             task.save()
@@ -331,7 +334,7 @@ def download_currency_pricing_async(self, task_id):
 @shared_task(name='backend.download_pricing_async', bind=True, ignore_result=False)
 def download_pricing_async(self, task_id):
     task = Task.objects.get(pk=task_id)
-    _l.debug('download_pricing_async: master_user_id=%s, task=%s', task.master_user_id, task)
+    _l.debug('download_pricing_async: master_user_id=%s, task=%s', task.master_user_id, task.info)
 
     if task.status not in [Task.STATUS_PENDING, Task.STATUS_WAIT_RESPONSE]:
         return
@@ -439,15 +442,13 @@ def download_pricing_async(self, task_id):
             ct = download_currency_pricing_async.s(task_id=sub_task_id)
             celery_sub_tasks.append(ct)
 
-        # if self.request.is_eager:
-        #     sub_tasks = instrument_sub_tasks + currency_sub_tasks
-        #     download_pricing_wait.apply_async(kwargs={'sub_tasks_id': sub_tasks, 'task_id': task_id})
-        # else:
+        _l.info('celery_sub_tasks: %s', celery_sub_tasks)
         if celery_sub_tasks:
+            _l.info('use chord')
             sub_tasks = instrument_sub_tasks + currency_sub_tasks
-            # chord required result!!! (don't use ignore_result or set ignore_result=False)
             chord(celery_sub_tasks, download_pricing_wait.si(sub_tasks_id=sub_tasks, task_id=task_id)).apply_async()
         else:
+            _l.info('use apply_async')
             download_pricing_wait.apply_async(kwargs={'sub_tasks_id': [], 'task_id': task_id})
 
     with transaction.atomic():
@@ -530,7 +531,7 @@ def download_pricing_async(self, task_id):
 @shared_task(name='backend.download_pricing_wait', bind=True, ignore_result=False)
 def download_pricing_wait(self, sub_tasks_id, task_id):
     task = Task.objects.get(pk=task_id)
-    _l.debug('download_pricing_wait: master_user_id=%s, task=%s', task.master_user_id, task)
+    _l.debug('download_pricing_wait: master_user_id=%s, task=%s', task.master_user_id, task.info)
 
     if task.status != Task.STATUS_WAIT_RESPONSE:
         return
@@ -550,15 +551,19 @@ def download_pricing_wait(self, sub_tasks_id, task_id):
     currency_task = options['currency_task']
 
     result = {}
-    # currency_task = result['currency_task']
-
-    instruments_pk = []
     instruments_prices = []
-    currencies_pk = []
     currencies_prices = []
 
+    _l.debug('instrument_task: %s', instrument_task)
+    _l.debug('currency_task: %s', currency_task)
+
+    instruments_pk = [int(pk) for pk in instrument_task.keys()]
+    _l.debug('instruments_pk: %s', instruments_pk)
+    currencies_pk = [int(pk) for pk in currency_task.keys()]
+    _l.debug('currencies_pk: %s', currencies_pk)
+
     for sub_task in Task.objects.filter(pk__in=sub_tasks_id):
-        _l.debug('sub_task: %s', sub_task)
+        _l.debug('sub_task: %s', sub_task.info)
         if sub_task.status != Task.STATUS_DONE:
             continue
 
@@ -568,7 +573,6 @@ def download_pricing_wait(self, sub_tasks_id, task_id):
 
         if 'instruments_pk' in subtask_options:
             task_instruments_pk = subtask_options['instruments_pk']
-            instruments_pk += task_instruments_pk
             task_instruments = Instrument.objects.filter(pk__in=task_instruments_pk)
 
             price_download_scheme_id = subtask_options['price_download_scheme_id']
@@ -584,7 +588,6 @@ def download_pricing_wait(self, sub_tasks_id, task_id):
 
         elif 'currencies_pk' in subtask_options:
             task_currencies_pk = subtask_options['currencies_pk']
-            currencies_pk += task_currencies_pk
             task_currencies = Currency.objects.filter(pk__in=task_currencies_pk)
 
             price_download_scheme_id = subtask_options['price_download_scheme_id']
@@ -600,7 +603,6 @@ def download_pricing_wait(self, sub_tasks_id, task_id):
 
     instrument_for_manual_price = [int(i_id) for i_id, task_id in instrument_task.items() if task_id is None]
     _l.debug('instrument_for_manual_price: %s', instrument_for_manual_price)
-    instruments_pk += instrument_for_manual_price
     instruments_prices += _create_instrument_manual_prices(options=options, instruments=instrument_for_manual_price)
 
     if fill_days > 0:
@@ -762,7 +764,7 @@ def download_pricing(master_user=None, member=None, date_from=None, date_to=None
                      fill_days=None, override_existed=None, task=None):
     _l.debug('download_pricing: master_user_id=%s, task=%s, date_from=%s, date_to=%s, is_yesterday=%s,'
              ' balance_date=%s, fill_days=%s, override_existed=%s',
-             getattr(master_user, 'id', None), task, date_from, date_to, is_yesterday,
+             getattr(master_user, 'id', None), getattr(task, 'info', None), date_from, date_to, is_yesterday,
              balance_date, fill_days, override_existed)
     if task is None:
         with transaction.atomic():
