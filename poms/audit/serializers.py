@@ -43,6 +43,3 @@ class ObjectHistory4EntrySerializer(serializers.ModelSerializer):
             'message'
         ]
         read_only_fields = fields
-
-    def get_message2(self, obj):
-        return obj.message
