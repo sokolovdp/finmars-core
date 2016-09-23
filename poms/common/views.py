@@ -8,6 +8,7 @@ from django.utils.translation import ugettext_lazy
 from rest_framework import permissions
 from rest_framework import status
 from rest_framework.decorators import list_route
+from rest_framework.exceptions import MethodNotAllowed
 from rest_framework.filters import DjangoFilterBackend, OrderingFilter, SearchFilter
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
@@ -15,8 +16,7 @@ from rest_framework.views import APIView
 from rest_framework.viewsets import ModelViewSet, ReadOnlyModelViewSet, ViewSet
 
 from poms.audit import history
-from poms.audit.mixins import HistoricalMixin
-from poms.common.serializers import BulkModelSerializer
+from poms.common.filters import ByIdFilterBackend, ByIsDeletedFilterBackend
 from poms.users.utils import get_master_user
 from poms.users.utils import get_member
 
@@ -96,19 +96,21 @@ class AbstractModelViewSet(AbstractApiView, ModelViewSet):
         IsAuthenticated
     ]
     filter_backends = [
+        ByIdFilterBackend,
+        ByIsDeletedFilterBackend,
         DjangoFilterBackend,
         OrderingFilter,
         SearchFilter,
     ]
 
-    def get_queryset(self):
-        qs = super(AbstractModelViewSet, self).get_queryset()
-        if getattr(self, 'has_feature_is_deleted', False):
-            is_deleted = self.request.query_params.get('is_deleted', None)
-            if is_deleted is None:
-                if getattr(self, 'action', '') == 'list':
-                    qs = qs.filter(is_deleted=False)
-        return qs
+    # def get_queryset(self):
+    #     qs = super(AbstractModelViewSet, self).get_queryset()
+    #     if getattr(self, 'has_feature_is_deleted', False):
+    #         is_deleted = self.request.query_params.get('is_deleted', None)
+    #         if is_deleted is None:
+    #             if getattr(self, 'action', '') == 'list':
+    #                 qs = qs.filter(is_deleted=False)
+    #     return qs
 
     def get_serializer(self, *args, **kwargs):
         return super(AbstractModelViewSet, self).get_serializer(*args, **kwargs)
@@ -139,16 +141,37 @@ class AbstractModelViewSet(AbstractApiView, ModelViewSet):
         else:
             super(AbstractModelViewSet, self).perform_destroy(instance)
 
-    @list_route(methods=['post'], url_path='bulk-save')
-    def bulk_save(self, request):
+    @list_route(methods=['post', 'put', 'patch', 'delete'], url_path='bulk')
+    def bulk_op(self, request):
         queryset = self.filter_queryset(self.get_queryset())
-        serializer = BulkModelSerializer(child_serializer_class=self.serializer_class,
-                                         queryset=queryset,
-                                         data=request.data,
-                                         context=self.get_serializer_context())
-        serializer.is_valid(raise_exception=True)
-        instances = serializer.save()
-        return Response(serializer.to_representation(instances), status=status.HTTP_200_OK)
+
+        # serializer = BulkModelSerializer(child_serializer_class=self.serializer_class,
+        #                                  queryset=queryset,
+        #                                  data=request.data,
+        #                                  context=self.get_serializer_context())
+        # serializer.is_valid(raise_exception=True)
+        # instances = serializer.save()
+        # return Response(serializer.to_representation(instances), status=status.HTTP_200_OK)
+
+        method = request.method.lower()
+        if method == 'post':
+            return self.bulk_create(request)
+        elif method in ['put', 'patch']:
+            return self.bulk_update(request)
+        elif method in ['delete']:
+            return self.bulk_delete(request)
+
+        raise MethodNotAllowed(request.method)
+
+    def bulk_create(self, request):
+        return Response([], status=status.HTTP_201_CREATED)
+
+    def bulk_update(self, request):
+        partial = request.method.lower() == 'patch'
+        return Response([], status=status.HTTP_200_OK)
+
+    def bulk_delete(self, request):
+        return Response(status=status.HTTP_204_NO_CONTENT)
 
 
 class AbstractReadOnlyModelViewSet(AbstractApiView, ReadOnlyModelViewSet):

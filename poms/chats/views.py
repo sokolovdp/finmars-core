@@ -12,7 +12,8 @@ from poms.chats.models import Thread, Message, DirectMessage, ThreadGroup
 from poms.chats.permissions import MessagePermission, DirectMessagePermission
 from poms.chats.serializers import ThreadSerializer, MessageSerializer, DirectMessageSerializer, ThreadGroupSerializer, \
     ThreadBulkObjectPermissionSerializer
-from poms.common.filters import CharFilter, ModelWithPermissionMultipleChoiceFilter, ModelMultipleChoiceFilter
+from poms.common.filters import CharFilter, ModelWithPermissionMultipleChoiceFilter, ModelMultipleChoiceFilter, \
+    NoOpFilter
 from poms.common.views import AbstractModelViewSet
 from poms.obj_perms.filters import ObjectPermissionMemberFilter, ObjectPermissionGroupFilter, \
     ObjectPermissionPermissionFilter
@@ -24,14 +25,17 @@ from poms.users.permissions import SuperUserOrReadOnly, SuperUserOnly
 
 
 class ThreadGroupFilterSet(FilterSet):
+    id = NoOpFilter()
     name = CharFilter()
+    is_deleted = django_filters.BooleanFilter()
     tag = TagFilter(model=ThreadGroup)
 
     class Meta:
         model = ThreadGroup
-        fields = [
-            'is_deleted', 'name', 'tag'
-        ]
+        fields = []
+    #     fields = [
+    #         'id', 'is_deleted', 'name', 'tag'
+    #     ]
 
 
 class ThreadGroupViewSet(AbstractModelViewSet):

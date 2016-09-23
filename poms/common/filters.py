@@ -61,6 +61,39 @@ class ModelWithPermissionMultipleChoiceFilter(django_filters.MultipleChoiceFilte
         super(ModelWithPermissionMultipleChoiceFilter, self).__init__(*args, **kwargs)
 
 
+class AbstractRelatedFilterBackend(BaseFilterBackend):
+    source = None
+    query_key = None
+
+    def filter_queryset(self, request, queryset, view):
+        pk_set = [int(pk) for pk in request.query_params.getlist(self.query_key) if pk]
+        if pk_set:
+            return queryset.filter(**{'%s__in' % self.query_key: pk_set})
+        return queryset
+
+
+class ByIdFilterBackend(AbstractRelatedFilterBackend):
+    source = 'pk'
+    query_key = 'id'
+
+
+class ByIsDeletedFilterBackend(BaseFilterBackend):
+    def filter_queryset(self, request, queryset, view):
+        if getattr(view, 'has_feature_is_deleted', False):
+            if getattr(view, 'action', '') == 'list':
+                value = request.query_params.get('is_deleted', None)
+                if value is None:
+                    is_deleted = value in (True, 'True', 'true', '1')
+                    queryset = queryset.filter(is_deleted=is_deleted)
+        return queryset
+
+
+class NoOpFilter(django_filters.MethodFilter):
+    # For UI only, real filtering in some AbstractRelatedFilterBackend
+    def filter(self, qs, value):
+        return qs
+
+
 class CharFilter(django_filters.CharFilter):
     def __init__(self, *args, **kwargs):
         kwargs['lookup_expr'] = 'icontains'
