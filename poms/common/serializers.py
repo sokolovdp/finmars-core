@@ -1,12 +1,9 @@
-from django.core.exceptions import ObjectDoesNotExist
 from django.utils.text import Truncator
-from django.utils.translation import ugettext_lazy
 from mptt.utils import get_cached_trees
 from rest_framework import serializers
 from rest_framework.exceptions import ValidationError
 from rest_framework.serializers import ListSerializer
 
-from poms.audit import history
 from poms.common.fields import PrimaryKeyRelatedFilteredField, UserCodeField
 from poms.common.filters import ClassifierRootFilter
 from poms.users.filters import OwnerByMasterUserFilter
@@ -275,89 +272,3 @@ class AbstractClassifierNodeSerializer(AbstractPomsSerializer):
             'tree_id',
             # 'children',
         ]
-
-
-class BulkModelSerializer(serializers.Serializer):
-    default_error_messages = {
-        'invalid': ugettext_lazy('Invalid data')
-    }
-
-    def __init__(self, child_serializer_class=None, queryset=None, **kwargs):
-        super(BulkModelSerializer, self).__init__(**kwargs)
-        self.child_serializer_class = child_serializer_class
-        self.queryset = queryset
-
-    def get_child_serializer(self, instance=None, data=None, many=False):
-        return self.child_serializer_class(context=self.context, instance=instance, data=data, many=many)
-
-    def to_internal_value(self, data):
-        ret = []
-        if not isinstance(data, (list, tuple)):
-            self.fail('invalid')
-
-        errors = []
-        has_errors = False
-        for cattrs in data:
-            schild = self.get_child_serializer(data=cattrs, many=False)
-            if schild.is_valid(raise_exception=False):
-                data = schild.validated_data
-                if 'id' not in data:
-                    data = data.copy()
-                    data['id'] = int(cattrs.get('id', None))
-                ret.append(data)
-                errors.append({})
-            else:
-                errors.append(schild.errors)
-                has_errors = True
-        if has_errors:
-            raise ValidationError(errors)
-
-        return ret
-
-    def to_representation(self, instance):
-        return self.get_child_serializer(instance=instance, many=True).to_representation(instance)
-
-    def save(self, **kwargs):
-        ret = []
-        for cattrs in self.validated_data:
-            # child_data = cattrs.copy()
-            # child_instance_pk = child_data.pop('id', None)
-            # child_instance = None
-            # if child_instance_pk is not None:
-            #     try:
-            #         child_instance = self.queryset.get(pk=child_instance_pk)
-            #     except ObjectDoesNotExist:
-            #         pass
-            # with history.enable():
-            #     child_serializer = self.get_child_serializer(instance=child_instance, data=child_data, many=False)
-            #     if child_instance is not None:
-            #         history.set_flag_change()
-            #         child_instance = child_serializer.update(child_instance, child_data)
-            #     else:
-            #         history.set_flag_addition()
-            #         child_instance = child_serializer.create(child_data)
-            #     history.set_actor_content_object(child_instance)
-            child_instance = self.save_child_instance(cattrs)
-
-            ret.append(child_instance)
-        return ret
-
-    @history.enable
-    def save_child_instance(self, child_data):
-        child_data = child_data.copy()
-        child_instance_pk = child_data.pop('id', None)
-        child_instance = None
-        if child_instance_pk is not None:
-            try:
-                child_instance = self.queryset.get(pk=child_instance_pk)
-            except ObjectDoesNotExist:
-                pass
-        child_serializer = self.get_child_serializer(instance=child_instance, data=child_data, many=False)
-        if child_instance is not None:
-            history.set_flag_change()
-            child_instance = child_serializer.update(child_instance, child_data)
-        else:
-            history.set_flag_addition()
-            child_instance = child_serializer.create(child_data)
-        history.set_actor_content_object(child_instance)
-        return child_instance

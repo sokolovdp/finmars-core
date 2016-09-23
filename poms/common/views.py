@@ -1,6 +1,7 @@
 from __future__ import unicode_literals
 
 from django.conf import settings
+from django.core.exceptions import ObjectDoesNotExist
 from django.db import transaction
 from django.db.models import ProtectedError
 from django.utils import timezone
@@ -8,7 +9,7 @@ from django.utils.translation import ugettext_lazy
 from rest_framework import permissions
 from rest_framework import status
 from rest_framework.decorators import list_route
-from rest_framework.exceptions import MethodNotAllowed
+from rest_framework.exceptions import MethodNotAllowed, ValidationError
 from rest_framework.filters import DjangoFilterBackend, OrderingFilter, SearchFilter
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
@@ -137,24 +138,19 @@ class AbstractModelViewSet(AbstractApiView, ModelViewSet):
 
     def perform_destroy(self, instance):
         if getattr(self, 'has_feature_is_deleted', False):
-            instance.fake_delete()
+            with history.enable():
+                history.set_flag_deletion()
+                history.set_actor_content_object(instance)
+                instance.fake_delete()
         else:
             super(AbstractModelViewSet, self).perform_destroy(instance)
 
-    @list_route(methods=['post', 'put', 'patch', 'delete'], url_path='bulk')
-    def bulk_op(self, request):
-        queryset = self.filter_queryset(self.get_queryset())
-
-        # serializer = BulkModelSerializer(child_serializer_class=self.serializer_class,
-        #                                  queryset=queryset,
-        #                                  data=request.data,
-        #                                  context=self.get_serializer_context())
-        # serializer.is_valid(raise_exception=True)
-        # instances = serializer.save()
-        # return Response(serializer.to_representation(instances), status=status.HTTP_200_OK)
-
+    @list_route(methods=['get', 'post', 'put', 'patch', 'delete'], url_path='bulk')
+    def bulk_ops(self, request):
         method = request.method.lower()
-        if method == 'post':
+        if method == 'get':
+            return self.list(request)
+        elif method == 'post':
             return self.bulk_create(request)
         elif method in ['put', 'patch']:
             return self.bulk_update(request)
@@ -164,13 +160,91 @@ class AbstractModelViewSet(AbstractApiView, ModelViewSet):
         raise MethodNotAllowed(request.method)
 
     def bulk_create(self, request):
-        return Response([], status=status.HTTP_201_CREATED)
+        data = request.data
+        if not isinstance(data, list):
+            raise ValidationError(ugettext_lazy('Required list'))
+
+        has_error = False
+        serializers = []
+        for adata in data:
+            serializer = self.get_serializer(data=adata)
+            if not serializer.is_valid(raise_exception=False):
+                has_error = True
+            serializers.append(serializer)
+
+        if has_error:
+            errors = []
+            for serializer in serializers:
+                errors.append(serializer.errors)
+            raise ValidationError(errors)
+        else:
+            instances = []
+            for serializer in serializers:
+                self.perform_create(serializer)
+                instances.append(serializer.instance)
+            ret_serializer = self.get_serializer(instance=instances, many=True)
+            return Response((a for a in ret_serializer.data), status=status.HTTP_200_OK)
 
     def bulk_update(self, request):
+        data = request.data
+        if not isinstance(data, list):
+            raise ValidationError(ugettext_lazy('Required list'))
         partial = request.method.lower() == 'patch'
-        return Response([], status=status.HTTP_200_OK)
+
+        queryset = self.filter_queryset(self.get_queryset())
+
+        has_error = False
+        serializers = []
+        for adata in data:
+            pk = adata['id']
+            try:
+                instance = queryset.get(pk=pk)
+            except ObjectDoesNotExist:
+                has_error = True
+                serializers.append(None)
+            else:
+                # TODO: validate change permission
+                serializer = self.get_serializer(instance=instance, data=adata, partial=partial)
+                if not serializer.is_valid(raise_exception=False):
+                    has_error = True
+                serializers.append(serializer)
+
+        if has_error:
+            errors = []
+            for serializer in serializers:
+                if serializer:
+                    errors.append(serializer.errors)
+                else:
+                    errors.append('Not Found')
+            raise ValidationError(errors)
+        else:
+            instances = []
+            for serializer in serializers:
+                self.perform_update(serializer)
+                instances.append(serializer.instance)
+            ret_serializer = self.get_serializer(instance=queryset.filter(pk__in=(i.id for i in instances)),
+                                                 many=True)
+            return Response((a for a in ret_serializer.data), status=status.HTTP_200_OK)
 
     def bulk_delete(self, request):
+        queryset = self.filter_queryset(self.get_queryset())
+
+        data = request.data
+        if data is not None and data:
+            if not isinstance(data, list):
+                raise ValidationError(ugettext_lazy('Required list'))
+            pk_set = []
+            for adata in data:
+                if isinstance(data, dict):
+                    pk_set.append(adata['id'])
+                elif isinstance(data, (int, float)):
+                    pk_set.append(int(data))
+            if pk_set:
+                queryset = queryset.filter(pk__in=pk_set)
+
+        for instance in queryset:
+            # print('destroy: ', instance)
+            self.perform_destroy(instance)
         return Response(status=status.HTTP_204_NO_CONTENT)
 
 
