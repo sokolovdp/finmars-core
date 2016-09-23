@@ -219,7 +219,7 @@ def coupon_accrual_factor(
             k = 1
         if is_leap2 and dt2 >= date(dt2.year, 2, 29) and dt1 < date(dt2.year, 2, 29):
             k = 1
-        return (dt2 - dt1 - k) / 365
+        return (dt2 - dt1 - timedelta(days=k)).days / 365
     elif accrual_calculation_model == AccrualCalculationModel.NL_365_NO_EOM:  # 15
         # Case 18  'NL/365 (NO-EOM)
         #     Y1_leap = Month(DateSerial(Year(dt1), 2, 29)) = 2
@@ -235,8 +235,8 @@ def coupon_accrual_factor(
             k = 1
         if is_leap2 and dt2 >= date(dt2.year, 2, 29) and dt1 < date(dt2.year, 2, 29):
             k = 1
-        return (dt2 - dt1 - k) / 365
-    elif accrual_calculation_model == AccrualCalculationModel.ISMA_30_365:  # 16
+        return (dt2 - dt1 - timedelta(days=k)).days / 365
+    elif accrual_calculation_model == AccrualCalculationModel.ISMA_30_360:  # 16
         # Case 20  'ISMA-30/360 = 30E/360
         #     If d1 = 31 Then d1 = 30
         #     If d2 = 31 Then d2 = 30
@@ -248,7 +248,7 @@ def coupon_accrual_factor(
         if d2 == 31:
             d2 = 30
         return ((dt2.year - dt1.year) * 360 + (dt2.month - dt1.month) * 30 + (d2 - d1)) / 360
-    elif accrual_calculation_model == AccrualCalculationModel.ISMA_30_365_NO_EOM:  # 17
+    elif accrual_calculation_model == AccrualCalculationModel.ISMA_30_360_NO_EOM:  # 17
         # Case 23  'ISMA-30/360 (NO EOM)
         #     If d1 = 31 Then d1 = 30
         #     If d2 = 31 Then d2 = 30
@@ -310,8 +310,8 @@ def coupon_accrual_factor(
             return 0
         d1 = dt1.day
         d2 = dt2.day
-        last_day1 = (dt1 + timedelta(days=1)).month = (dt1.month + 1)
-        last_day2 = (dt2 + timedelta(days=1)).month = (dt2.month + 1)
+        last_day1 = (dt1 + timedelta(days=1)).month == (dt1.month + 1)
+        last_day2 = (dt2 + timedelta(days=1)).month == (dt2.month + 1)
         if last_day1:
             d1 = 30
         if last_day2 and not ((dt2 == maturity_date) and dt2.month == 2):
@@ -332,8 +332,8 @@ def coupon_accrual_factor(
             return 0
         d1 = dt1.day
         d2 = dt2.day
-        last_day1 = (dt1 + timedelta(days=1)).month = (dt1.month + 1)
-        last_day2 = (dt2 + timedelta(days=1)).month = (dt2.month + 1)
+        last_day1 = (dt1 + timedelta(days=1)).month == (dt1.month + 1)
+        last_day2 = (dt2 + timedelta(days=1)).month == (dt2.month + 1)
         if last_day1:
             d1 = 30
         if last_day2 and not ((dt2 == maturity_date) and dt2.month == 2):
