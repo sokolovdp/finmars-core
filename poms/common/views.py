@@ -9,7 +9,7 @@ from django.utils.translation import ugettext_lazy
 from rest_framework import permissions
 from rest_framework import status
 from rest_framework.decorators import list_route
-from rest_framework.exceptions import MethodNotAllowed, ValidationError
+from rest_framework.exceptions import MethodNotAllowed, ValidationError, PermissionDenied
 from rest_framework.filters import DjangoFilterBackend, OrderingFilter, SearchFilter
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
@@ -183,7 +183,7 @@ class AbstractModelViewSet(AbstractApiView, ModelViewSet):
                 self.perform_create(serializer)
                 instances.append(serializer.instance)
             ret_serializer = self.get_serializer(instance=instances, many=True)
-            return Response((a for a in ret_serializer.data), status=status.HTTP_200_OK)
+            return Response(list(ret_serializer.data), status=status.HTTP_200_OK)
 
     def bulk_update(self, request):
         data = request.data
@@ -203,7 +203,11 @@ class AbstractModelViewSet(AbstractApiView, ModelViewSet):
                 has_error = True
                 serializers.append(None)
             else:
-                # TODO: validate change permission
+                try:
+                    self.check_object_permissions(request, instance)
+                except PermissionDenied:
+                    raise
+
                 serializer = self.get_serializer(instance=instance, data=adata, partial=partial)
                 if not serializer.is_valid(raise_exception=False):
                     has_error = True
@@ -222,9 +226,10 @@ class AbstractModelViewSet(AbstractApiView, ModelViewSet):
             for serializer in serializers:
                 self.perform_update(serializer)
                 instances.append(serializer.instance)
-            ret_serializer = self.get_serializer(instance=queryset.filter(pk__in=(i.id for i in instances)),
-                                                 many=True)
-            return Response((a for a in ret_serializer.data), status=status.HTTP_200_OK)
+
+            ret_serializer = self.get_serializer(
+                instance=queryset.filter(pk__in=(i.id for i in instances)), many=True)
+            return Response(list(ret_serializer.data), status=status.HTTP_200_OK)
 
     def bulk_delete(self, request):
         queryset = self.filter_queryset(self.get_queryset())
@@ -243,8 +248,12 @@ class AbstractModelViewSet(AbstractApiView, ModelViewSet):
                 queryset = queryset.filter(pk__in=pk_set)
 
         for instance in queryset:
-            # print('destroy: ', instance)
+            try:
+                self.check_object_permissions(request, instance)
+            except PermissionDenied:
+                raise
             self.perform_destroy(instance)
+
         return Response(status=status.HTTP_204_NO_CONTENT)
 
 
