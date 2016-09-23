@@ -3,7 +3,7 @@ from __future__ import unicode_literals
 import django_filters
 from django.core.exceptions import ObjectDoesNotExist
 from rest_framework import serializers
-from rest_framework.decorators import list_route
+from rest_framework.decorators import list_route, detail_route
 from rest_framework.exceptions import MethodNotAllowed
 from rest_framework.filters import FilterSet
 from rest_framework.response import Response
@@ -188,6 +188,27 @@ class InstrumentViewSet(AbstractWithObjectPermissionViewSet):
         'user_code', 'name', 'short_name', 'reference_for_pricing',
     ]
     has_feature_is_deleted = True
+
+    @list_route(methods=['post'], url_path='rebuild-events', serializer_class=serializers.Serializer)
+    def rebuild_all_events(self, request):
+        queryset = self.filter_queryset(self.get_queryset())
+        processed = 0
+        for instance in queryset:
+            try:
+                instance.rebuild_event_schedules()
+            except ValueError as e:
+                pass
+            processed += 1
+        return Response({'processed': processed})
+
+    @detail_route(methods=['put', 'patch'], url_path='rebuild-events', serializer_class=serializers.Serializer)
+    def rebuild_events(self, request, pk):
+        instance = self.get_object()
+        try:
+            instance.rebuild_event_schedules()
+        except ValueError as e:
+            pass
+        return Response({'processed': 1})
 
 
 class PriceHistoryFilterSet(FilterSet):
