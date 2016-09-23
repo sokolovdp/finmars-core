@@ -120,15 +120,11 @@ class ImportConfig(models.Model):
 
 @python_2_unicode_compatible
 class InstrumentDownloadScheme(models.Model):
-    BASIC_FIELDS = ['reference_for_pricing', 'user_code', 'name', 'short_name', 'public_name', 'notes',
-                    'instrument_type', 'pricing_currency', 'price_multiplier', 'accrued_currency', 'accrued_multiplier',
-                    'user_text_1', 'user_text_2', 'user_text_3',
-                    # 'daily_pricing_model',
-                    # 'payment_size_detail',
-                    # 'default_price',
-                    # 'default_accrued',
-                    # 'price_download_mode',
-                    ]
+    BASIC_FIELDS = [
+        'reference_for_pricing', 'user_code', 'name', 'short_name', 'public_name', 'notes', 'instrument_type',
+        'pricing_currency', 'price_multiplier', 'accrued_currency', 'accrued_multiplier', 'maturity_date',
+        'user_text_1', 'user_text_2', 'user_text_3',
+    ]
 
     master_user = models.ForeignKey('users.MasterUser')
     scheme_name = models.CharField(max_length=255)
@@ -145,11 +141,10 @@ class InstrumentDownloadScheme(models.Model):
     price_multiplier = models.CharField(max_length=255, blank=True, default='1.0')
     accrued_currency = models.CharField(max_length=255, blank=True, default='')
     accrued_multiplier = models.CharField(max_length=255, blank=True, default='1.0')
+    maturity_date = models.CharField(max_length=255, blank=True, default='')
     user_text_1 = models.CharField(max_length=255, blank=True, default='')
     user_text_2 = models.CharField(max_length=255, blank=True, default='')
     user_text_3 = models.CharField(max_length=255, blank=True, default='')
-
-    maturity_date = models.CharField(max_length=255, blank=True, default='')
 
     payment_size_detail = models.ForeignKey('instruments.PaymentSizeDetail', on_delete=models.PROTECT,
                                             null=True, blank=True, verbose_name=ugettext_lazy('payment size detail'))
@@ -291,31 +286,6 @@ class PriceDownloadScheme(models.Model):
     @property
     def currency_history_fields(self):
         return self._get_fields('currency_fxrate')
-
-    def instrument_yesterday_values(self, values):
-        return {
-            'bid': self._get_value(values, 'bid0', 'bid1', 'bid2') * self.bid_multiplier,
-            'ask': self._get_value(values, 'ask0', 'ask1', 'ask2') * self.ask_multiplier,
-            'mid': self._get_value(values, 'mid') * self.last_multiplier,
-            'last': self._get_value(values, 'last') * self.mid_multiplier,
-        }
-
-    def instrument_history_values(self, values):
-        return {
-            'bid': self._get_value(values, 'bid_history') * self.bid_history_multiplier,
-            'ask': self._get_value(values, 'ask_history') * self.ask_history_multiplier,
-            'mid': self._get_value(values, 'last_history') * self.last_history_multiplier,
-            'last': self._get_value(values, 'mid_history') * self.mid_history_multiplier,
-        }
-
-    def currency_history_values(self, values):
-        value = self._get_value(values, 'currency_fxrate')
-        return {
-            'bid': value * self.currency_fxrate_multiplier,
-            'ask': value * self.currency_fxrate_multiplier,
-            'mid': value * self.currency_fxrate_multiplier,
-            'last': value * self.currency_fxrate_multiplier,
-        }
 
 
 class AbstractMapping(models.Model):

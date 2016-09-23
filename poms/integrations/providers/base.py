@@ -22,11 +22,17 @@ class ProviderException(Exception):
 
 
 class AbstractProvider(object):
+    def __init__(self):
+        self.empty_value = ()
+
     def get_max_retries(self):
         return 3
 
     def get_retry_delay(self):
         return 5
+
+    def is_empty_value(self, value):
+        return value is None or value in self.empty_value
 
     def parse_date(self, v):
         if v is not None:
@@ -147,27 +153,35 @@ class AbstractProvider(object):
                 errors[attr] = [ugettext_lazy('Invalid expression.')]
                 continue
             if attr in ['pricing_currency', 'accrued_currency']:
-                if v is not None:
+                if self.is_empty_value(v):
+                    pass
+                else:
                     v = self.get_currency(master_user, provider, v)
                     if v:
                         setattr(instr, attr, v)
                     else:
                         errors[attr] = [ugettext_lazy('This field is required.')]
             elif attr in ['instrument_type']:
-                if v is not None:
+                if self.is_empty_value(v):
+                    pass
+                else:
                     v = self.get_instrument_type(master_user, provider, v)
                     if v:
                         setattr(instr, attr, v)
                     else:
                         errors[attr] = [ugettext_lazy('This field is required.')]
             elif attr in ['price_multiplier', 'accrued_multiplier', 'default_price', 'default_accrued']:
-                if v is not None:
+                if self.is_empty_value(v):
+                    pass
+                else:
                     try:
                         setattr(instr, attr, float(v))
                     except (ValueError, TypeError):
                         errors[attr] = [ugettext_lazy('A valid number is required.')]
             elif attr in ['maturity_date']:
-                if v is not None:
+                if self.is_empty_value(v):
+                    pass
+                else:
                     if isinstance(v, datetime):
                         v = v.date()
                     if isinstance(v, date):
@@ -175,7 +189,9 @@ class AbstractProvider(object):
                     else:
                         errors[attr] = [ugettext_lazy('A valid date is required.')]
             else:
-                if v is not None:
+                if self.is_empty_value(v):
+                    pass
+                else:
                     v = str(v)
                     setattr(instr, attr, v)
 
@@ -210,21 +226,30 @@ class AbstractProvider(object):
                              instrument_download_scheme.id, attr.id, attr.value, values)
                     errors[err_name] = [ugettext_lazy('Invalid expression.')]
                     continue
-                attr_mapped_values = self.get_instrument_attribute_value(master_user, provider, tattr, v)
-                if attr_mapped_values:
+                if not self.is_empty_value(v):
+                    attr_mapped_values = self.get_instrument_attribute_value(master_user, provider, tattr, v)
+                else:
+                    attr_mapped_values = None
+                if attr_mapped_values is not None:
                     iattr.value_string, iattr.value_float, iattr.value_date, iattr.classifier = attr_mapped_values
                 else:
                     if tattr.value_type == AbstractAttributeType.STRING:
-                        if v is not None:
+                        if self.is_empty_value(v):
+                            pass
+                        else:
                             iattr.value_string = str(v)
                     elif tattr.value_type == AbstractAttributeType.NUMBER:
-                        if v is not None:
+                        if self.is_empty_value(v):
+                            pass
+                        else:
                             try:
                                 iattr.value_float = float(v)
                             except (ValueError, TypeError):
                                 errors[err_name] = [ugettext_lazy('A valid number is required.')]
                     elif tattr.value_type == AbstractAttributeType.DATE:
-                        if v is not None:
+                        if self.is_empty_value(v):
+                            pass
+                        else:
                             if isinstance(v, datetime):
                                 v = v.date()
                             if isinstance(v, date):
@@ -232,7 +257,9 @@ class AbstractProvider(object):
                             else:
                                 errors[err_name] = [ugettext_lazy('A valid date is required.')]
                     elif tattr.value_type == AbstractAttributeType.CLASSIFIER:
-                        if v is not None:
+                        if self.is_empty_value(v):
+                            pass
+                        else:
                             v = str(v)
                             v = tattr.classifiers.filter(name=v).first()
                             if v:
@@ -254,6 +281,54 @@ class AbstractProvider(object):
 
     def create_currency_pricing(self, price_download_scheme, options, values, currencies, pricing_policies):
         return [], {}
+
+    def price_adapt_value(self, value, multiplier):
+        if self.is_empty_value(value):
+            return None
+        return value * multiplier
+
+    def get_price_scheme_value(self, price_scheme, values, *args):
+        for attr_name in args:
+            field_name = getattr(price_scheme, attr_name)
+            if field_name and field_name in values:
+                value = values[field_name]
+                if value is None or self.is_empty_value(value):
+                    return None
+                return float(value)
+        return None
+
+    def get_instrument_yesterday_values(self, price_scheme, values):
+        bid = self.get_price_scheme_value(price_scheme, values, 'bid0', 'bid1', 'bid2')
+        ask = self.get_price_scheme_value(price_scheme, values, 'ask0', 'ask1', 'ask2')
+        mid = self.get_price_scheme_value(price_scheme, values, 'mid')
+        last = self.get_price_scheme_value(price_scheme, values, 'last')
+        return {
+            'bid': self.price_adapt_value(bid, price_scheme.bid_multiplier),
+            'ask': self.price_adapt_value(ask, price_scheme.ask_multiplier),
+            'mid': self.price_adapt_value(mid, price_scheme.last_multiplier),
+            'last': self.price_adapt_value(last, price_scheme.mid_multiplier),
+        }
+
+    def get_instrument_history_values(self, price_scheme, values):
+        bid = self.get_price_scheme_value(price_scheme, values, 'bid_history')
+        ask = self.get_price_scheme_value(price_scheme, values, 'ask_history')
+        mid = self.get_price_scheme_value(price_scheme, values, 'last_history')
+        last = self.get_price_scheme_value(price_scheme, values, 'mid_history')
+        return {
+            'bid': self.price_adapt_value(bid, price_scheme.bid_history_multiplier),
+            'ask': self.price_adapt_value(ask, price_scheme.ask_history_multiplier),
+            'mid': self.price_adapt_value(mid, price_scheme.last_history_multiplier),
+            'last': self.price_adapt_value(last, price_scheme.mid_history_multiplier),
+        }
+
+    def get_currency_history_values(self, price_scheme, values):
+        value = self.get_price_scheme_value(price_scheme, values, 'currency_fxrate')
+        return {
+            'bid': self.price_adapt_value(value, price_scheme.currency_fxrate_multiplier),
+            'ask': self.price_adapt_value(value, price_scheme.currency_fxrate_multiplier),
+            'mid': self.price_adapt_value(value, price_scheme.currency_fxrate_multiplier),
+            'last': self.price_adapt_value(value, price_scheme.currency_fxrate_multiplier),
+        }
 
     @staticmethod
     def fail_pricing_policy(errors, pricing_policy, names):
