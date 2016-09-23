@@ -287,31 +287,6 @@ class PriceDownloadScheme(models.Model):
     def currency_history_fields(self):
         return self._get_fields('currency_fxrate')
 
-    def instrument_yesterday_values(self, values):
-        return {
-            'bid': self._get_value(values, 'bid0', 'bid1', 'bid2') * self.bid_multiplier,
-            'ask': self._get_value(values, 'ask0', 'ask1', 'ask2') * self.ask_multiplier,
-            'mid': self._get_value(values, 'mid') * self.last_multiplier,
-            'last': self._get_value(values, 'last') * self.mid_multiplier,
-        }
-
-    def instrument_history_values(self, values):
-        return {
-            'bid': self._get_value(values, 'bid_history') * self.bid_history_multiplier,
-            'ask': self._get_value(values, 'ask_history') * self.ask_history_multiplier,
-            'mid': self._get_value(values, 'last_history') * self.last_history_multiplier,
-            'last': self._get_value(values, 'mid_history') * self.mid_history_multiplier,
-        }
-
-    def currency_history_values(self, values):
-        value = self._get_value(values, 'currency_fxrate')
-        return {
-            'bid': value * self.currency_fxrate_multiplier,
-            'ask': value * self.currency_fxrate_multiplier,
-            'mid': value * self.currency_fxrate_multiplier,
-            'last': value * self.currency_fxrate_multiplier,
-        }
-
 
 class AbstractMapping(models.Model):
     master_user = models.ForeignKey('users.MasterUser')
