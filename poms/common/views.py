@@ -327,6 +327,7 @@ class AbstractReadOnlyModelViewSet(AbstractApiView, ReadOnlyModelViewSet):
         IsAuthenticated
     ]
     filter_backends = [
+        ByIdFilterBackend,
         DjangoFilterBackend,
         OrderingFilter,
         SearchFilter

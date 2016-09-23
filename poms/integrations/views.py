@@ -6,11 +6,11 @@ from rest_framework.exceptions import MethodNotAllowed
 from rest_framework.filters import FilterSet
 from rest_framework.response import Response
 
-from poms.common.filters import CharFilter, ModelWithPermissionMultipleChoiceFilter
+from poms.common.filters import CharFilter, ModelWithPermissionMultipleChoiceFilter, NoOpFilter
 from poms.common.views import AbstractViewSet, AbstractModelViewSet, AbstractReadOnlyModelViewSet, \
     AbstractClassModelViewSet
 from poms.currencies.models import Currency
-from poms.instruments.models import InstrumentType, InstrumentAttributeType
+from poms.instruments.models import InstrumentType, InstrumentAttributeType, AccrualCalculationModel, Periodicity
 from poms.integrations.filters import TaskFilter, InstrumentAttributeValueMappingObjectPermissionFilter, \
     InstrumentTypeMappingObjectPermissionFilter
 from poms.integrations.models import ImportConfig, Task, InstrumentDownloadScheme, ProviderClass, \
@@ -62,11 +62,13 @@ class ImportConfigViewSet(AbstractModelViewSet):
 
 
 class InstrumentDownloadSchemeFilterSet(FilterSet):
+    id = NoOpFilter()
     scheme_name = CharFilter()
+    provider = django_filters.ModelMultipleChoiceFilter(queryset=ProviderClass.objects)
 
     class Meta:
         model = InstrumentDownloadScheme
-        fields = ['scheme_name', 'provider', ]
+        fields = []
 
 
 class InstrumentDownloadSchemeViewSet(AbstractModelViewSet):
@@ -84,11 +86,13 @@ class InstrumentDownloadSchemeViewSet(AbstractModelViewSet):
 
 
 class PriceDownloadSchemeFilterSet(FilterSet):
+    id = NoOpFilter()
     scheme_name = CharFilter()
+    provider = django_filters.ModelMultipleChoiceFilter(queryset=ProviderClass.objects)
 
     class Meta:
         model = PriceDownloadScheme
-        fields = ['provider', 'scheme_name', ]
+        fields = []
 
 
 class PriceDownloadSchemeViewSet(AbstractModelViewSet):
@@ -106,12 +110,14 @@ class PriceDownloadSchemeViewSet(AbstractModelViewSet):
 
 
 class CurrencyMappingFilterSet(FilterSet):
+    id = NoOpFilter()
     value = CharFilter()
     currency = ModelWithPermissionMultipleChoiceFilter(model=Currency)
+    provider = django_filters.ModelMultipleChoiceFilter(queryset=ProviderClass.objects)
 
     class Meta:
         model = CurrencyMapping
-        fields = ['provider', 'value', 'currency', ]
+        fields = []
 
 
 class CurrencyMappingViewSet(AbstractModelViewSet):
@@ -127,12 +133,14 @@ class CurrencyMappingViewSet(AbstractModelViewSet):
 
 
 class InstrumentTypeMappingFilterSet(FilterSet):
+    id = NoOpFilter()
     value = CharFilter()
     instrument_type = ModelWithPermissionMultipleChoiceFilter(model=InstrumentType)
+    provider = django_filters.ModelMultipleChoiceFilter(queryset=ProviderClass.objects)
 
     class Meta:
         model = InstrumentTypeMapping
-        fields = ['provider', 'value', 'instrument_type', ]
+        fields = []
 
 
 class InstrumentTypeMappingViewSet(AbstractModelViewSet):
@@ -149,12 +157,14 @@ class InstrumentTypeMappingViewSet(AbstractModelViewSet):
 
 
 class InstrumentAttributeValueMappingFilterSet(FilterSet):
+    id = NoOpFilter()
     value = CharFilter()
     attribute_type = ModelWithPermissionMultipleChoiceFilter(model=InstrumentAttributeType)
+    provider = django_filters.ModelMultipleChoiceFilter(queryset=ProviderClass.objects)
 
     class Meta:
         model = InstrumentAttributeValueMapping
-        fields = ['provider', 'value', 'attribute_type', ]
+        fields = []
 
 
 class InstrumentAttributeValueMappingViewSet(AbstractModelViewSet):
@@ -173,11 +183,14 @@ class InstrumentAttributeValueMappingViewSet(AbstractModelViewSet):
 
 
 class AccrualCalculationModelMappingFilterSet(FilterSet):
+    id = NoOpFilter()
     value = CharFilter()
+    provider = django_filters.ModelMultipleChoiceFilter(queryset=ProviderClass.objects)
+    accrual_calculation_model = django_filters.ModelMultipleChoiceFilter(queryset=AccrualCalculationModel.objects)
 
     class Meta:
         model = AccrualCalculationModelMapping
-        fields = ['provider', 'value', 'accrual_calculation_model', ]
+        fields = []
 
 
 class AccrualCalculationModelMappingViewSet(AbstractModelViewSet):
@@ -193,11 +206,14 @@ class AccrualCalculationModelMappingViewSet(AbstractModelViewSet):
 
 
 class PeriodicityMappingFilterSet(FilterSet):
+    id = NoOpFilter()
     value = CharFilter()
+    provider = django_filters.ModelMultipleChoiceFilter(queryset=ProviderClass.objects)
+    periodicity = django_filters.ModelMultipleChoiceFilter(queryset=Periodicity.objects)
 
     class Meta:
         model = PeriodicityMapping
-        fields = ['provider', 'value', 'periodicity', ]
+        fields = []
 
 
 class PeriodicityMappingViewSet(AbstractModelViewSet):
@@ -213,14 +229,16 @@ class PeriodicityMappingViewSet(AbstractModelViewSet):
 
 
 class TaskFilterSet(FilterSet):
+    id = NoOpFilter()
     member = ModelWithPermissionMultipleChoiceFilter(model=Member, field_name='username')
     action = CharFilter()
+    provider = django_filters.ModelMultipleChoiceFilter(queryset=ProviderClass.objects)
     created = django_filters.DateFromToRangeFilter()
     modified = django_filters.DateFromToRangeFilter()
 
     class Meta:
         model = Task
-        fields = ['member', 'provider', 'action', 'created', 'modified']
+        fields = []
 
 
 class TaskViewSet(AbstractReadOnlyModelViewSet):

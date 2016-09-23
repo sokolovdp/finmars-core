@@ -7,7 +7,7 @@ from poms.accounts.models import Account, AccountType, AccountAttributeType, Acc
 from poms.accounts.serializers import AccountSerializer, AccountTypeSerializer, AccountAttributeTypeSerializer, \
     AccountClassifierNodeSerializer, AccountBulkObjectPermissionSerializer, \
     AccountAttributeTypeBulkObjectPermissionSerializer, AccountTypeBulkObjectPermissionSerializer
-from poms.common.filters import CharFilter, ModelWithPermissionMultipleChoiceFilter
+from poms.common.filters import CharFilter, ModelWithPermissionMultipleChoiceFilter, NoOpFilter
 from poms.obj_attrs.filters import AttributeTypeValueTypeFilter
 from poms.obj_attrs.views import AbstractAttributeTypeViewSet, AbstractClassifierViewSet
 from poms.obj_perms.filters import ObjectPermissionMemberFilter, ObjectPermissionGroupFilter, \
@@ -19,10 +19,11 @@ from poms.users.filters import OwnerByMasterUserFilter
 
 
 class AccountTypeFilterSet(FilterSet):
+    id = NoOpFilter()
+    is_deleted = django_filters.BooleanFilter()
     user_code = CharFilter()
     name = CharFilter()
     short_name = CharFilter()
-    # is_default = IsDefaultFilter(source='account_type')
     tag = TagFilter(model=AccountType)
     member = ObjectPermissionMemberFilter(object_permission_model=AccountType)
     member_group = ObjectPermissionGroupFilter(object_permission_model=AccountType)
@@ -30,10 +31,7 @@ class AccountTypeFilterSet(FilterSet):
 
     class Meta:
         model = AccountType
-        fields = [
-            'is_deleted', 'user_code', 'name', 'short_name', 'tag',
-            'member', 'member_group', 'permission',
-        ]
+        fields = []
 
 
 class AccountTypeViewSet(AbstractWithObjectPermissionViewSet):
@@ -55,6 +53,7 @@ class AccountTypeViewSet(AbstractWithObjectPermissionViewSet):
 
 
 class AccountAttributeTypeFilterSet(FilterSet):
+    id = NoOpFilter()
     user_code = CharFilter()
     name = CharFilter()
     short_name = CharFilter()
@@ -65,9 +64,7 @@ class AccountAttributeTypeFilterSet(FilterSet):
 
     class Meta:
         model = AccountAttributeType
-        fields = [
-            'user_code', 'name', 'short_name', 'value_type', 'member', 'member_group', 'permission'
-        ]
+        fields = []
 
 
 class AccountAttributeTypeViewSet(AbstractAttributeTypeViewSet):
@@ -78,14 +75,14 @@ class AccountAttributeTypeViewSet(AbstractAttributeTypeViewSet):
 
 
 class AccountClassifierFilterSet(FilterSet):
+    id = NoOpFilter()
     name = CharFilter()
+    level = django_filters.NumberFilter()
     attribute_type = ModelWithPermissionMultipleChoiceFilter(model=AccountAttributeType)
 
     class Meta:
         model = AccountClassifier
-        fields = [
-            'name', 'level', 'attribute_type',
-        ]
+        fields = []
 
 
 class AccountClassifierViewSet(AbstractClassifierViewSet):
@@ -95,10 +92,11 @@ class AccountClassifierViewSet(AbstractClassifierViewSet):
 
 
 class AccountFilterSet(FilterSet):
+    id = NoOpFilter()
+    is_deleted = django_filters.BooleanFilter()
     user_code = CharFilter()
     name = CharFilter()
     short_name = CharFilter()
-    # is_default = IsDefaultFilter(source='account')
     portfolio = ModelWithPermissionMultipleChoiceFilter(model=Portfolio, name='portfolios')
     type = ModelWithPermissionMultipleChoiceFilter(model=AccountType)
     tag = TagFilter(model=Account)

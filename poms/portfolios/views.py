@@ -1,9 +1,10 @@
 from __future__ import unicode_literals
 
+import django_filters
 from rest_framework.filters import FilterSet
 
 from poms.accounts.models import Account
-from poms.common.filters import CharFilter, ModelWithPermissionMultipleChoiceFilter, IsDefaultFilter
+from poms.common.filters import CharFilter, ModelWithPermissionMultipleChoiceFilter, NoOpFilter
 from poms.counterparties.models import Responsible, Counterparty
 from poms.obj_attrs.filters import AttributeTypeValueTypeFilter
 from poms.obj_attrs.views import AbstractAttributeTypeViewSet, AbstractClassifierViewSet
@@ -20,6 +21,7 @@ from poms.users.filters import OwnerByMasterUserFilter
 
 
 class PortfolioAttributeTypeFilterSet(FilterSet):
+    id = NoOpFilter()
     user_code = CharFilter()
     name = CharFilter()
     short_name = CharFilter()
@@ -30,9 +32,7 @@ class PortfolioAttributeTypeFilterSet(FilterSet):
 
     class Meta:
         model = PortfolioAttributeType
-        fields = [
-            'user_code', 'name', 'short_name', 'value_type', 'member', 'member_group', 'permission',
-        ]
+        fields = []
 
 
 class PortfolioAttributeTypeViewSet(AbstractAttributeTypeViewSet):
@@ -43,14 +43,14 @@ class PortfolioAttributeTypeViewSet(AbstractAttributeTypeViewSet):
 
 
 class PortfolioClassifierFilterSet(FilterSet):
+    id = NoOpFilter()
     name = CharFilter()
+    level = django_filters.NumberFilter()
     attribute_type = ModelWithPermissionMultipleChoiceFilter(model=PortfolioAttributeType)
 
     class Meta:
         model = PortfolioClassifier
-        fields = [
-            'name', 'level', 'attribute_type',
-        ]
+        fields = []
 
 
 class PortfolioClassifierViewSet(AbstractClassifierViewSet):
@@ -60,10 +60,11 @@ class PortfolioClassifierViewSet(AbstractClassifierViewSet):
 
 
 class PortfolioFilterSet(FilterSet):
+    id = NoOpFilter()
+    is_deleted = django_filters.BooleanFilter()
     user_code = CharFilter()
     name = CharFilter()
     short_name = CharFilter()
-    # is_default = IsDefaultFilter(source='portfolio')
     account = ModelWithPermissionMultipleChoiceFilter(model=Account, name='accounts')
     responsible = ModelWithPermissionMultipleChoiceFilter(model=Responsible, name='responsibles')
     counterparty = ModelWithPermissionMultipleChoiceFilter(model=Counterparty, name='counterparties')
@@ -75,10 +76,7 @@ class PortfolioFilterSet(FilterSet):
 
     class Meta:
         model = Portfolio
-        fields = [
-            'is_deleted', 'user_code', 'name', 'short_name', 'account', 'responsible', 'counterparty',
-            'transaction_type', 'tag', 'member', 'member_group', 'permission',
-        ]
+        fields = []
 
 
 class PortfolioViewSet(AbstractWithObjectPermissionViewSet):

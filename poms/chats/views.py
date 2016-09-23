@@ -26,16 +26,13 @@ from poms.users.permissions import SuperUserOrReadOnly, SuperUserOnly
 
 class ThreadGroupFilterSet(FilterSet):
     id = NoOpFilter()
-    name = CharFilter()
     is_deleted = django_filters.BooleanFilter()
+    name = CharFilter()
     tag = TagFilter(model=ThreadGroup)
 
     class Meta:
         model = ThreadGroup
         fields = []
-    #     fields = [
-    #         'id', 'is_deleted', 'name', 'tag'
-    #     ]
 
 
 class ThreadGroupViewSet(AbstractModelViewSet):
@@ -55,10 +52,11 @@ class ThreadGroupViewSet(AbstractModelViewSet):
 
 
 class ThreadFilterSet(FilterSet):
+    id = NoOpFilter()
+    is_deleted = django_filters.BooleanFilter()
     subject = CharFilter()
     created = django_filters.DateFromToRangeFilter()
     closed = django_filters.DateFromToRangeFilter()
-    # status = ModelMultipleChoiceFilter(model=ThreadStatus)
     is_closed = django_filters.MethodFilter(action='filter_is_closed')
     thread_group = ModelWithPermissionMultipleChoiceFilter(model=ThreadGroup)
     tag = TagFilter(model=Thread)
@@ -68,10 +66,7 @@ class ThreadFilterSet(FilterSet):
 
     class Meta:
         model = Thread
-        fields = [
-            'is_deleted', 'subject', 'created', 'closed', 'is_closed', 'tag', 'thread_group',
-            'member', 'member_group', 'permission',
-        ]
+        fields = []
 
     def filter_is_closed(self, qs, value):
         if value:
@@ -127,13 +122,14 @@ class ThreadViewSet(AbstractWithObjectPermissionViewSet):
 
 
 class MessageFilterSet(FilterSet):
+    id = NoOpFilter()
     thread = ModelWithPermissionMultipleChoiceFilter(model=Thread, field_name='subject')
     created = django_filters.DateRangeFilter()
     sender = ModelMultipleChoiceFilter(model=Member, field_name='username')
 
     class Meta:
         model = Message
-        fields = ['thread', 'created']
+        fields = []
 
 
 class MessageViewSet(AbstractModelViewSet):
@@ -150,13 +146,14 @@ class MessageViewSet(AbstractModelViewSet):
 
 
 class DirectMessageFilterSet(FilterSet):
+    id = NoOpFilter()
     created = django_filters.DateFromToRangeFilter()
     recipient = ModelMultipleChoiceFilter(model=Member, field_name='username')
     sender = ModelMultipleChoiceFilter(model=Member, field_name='username')
 
     class Meta:
         model = DirectMessage
-        fields = ['created', 'recipient', 'sender']
+        fields = []
 
 
 class DirectMessageViewSet(AbstractModelViewSet):
