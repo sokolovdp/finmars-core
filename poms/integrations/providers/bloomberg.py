@@ -154,7 +154,7 @@ class BloombergDataProvider(AbstractProvider):
         @rtype: BloombergDataProvider
         """
         super(BloombergDataProvider, self).__init__()
-        self.price_empty_value = settings.BLOOMBERG_PRICE_EMPTY_VALUE
+        self.empty_value = settings.BLOOMBERG_EMPTY_VALUE
 
         self._wsdl = wsdl or settings.BLOOMBERG_WSDL
         self._cert = cert
