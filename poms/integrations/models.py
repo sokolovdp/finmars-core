@@ -120,15 +120,11 @@ class ImportConfig(models.Model):
 
 @python_2_unicode_compatible
 class InstrumentDownloadScheme(models.Model):
-    BASIC_FIELDS = ['reference_for_pricing', 'user_code', 'name', 'short_name', 'public_name', 'notes',
-                    'instrument_type', 'pricing_currency', 'price_multiplier', 'accrued_currency', 'accrued_multiplier',
-                    'user_text_1', 'user_text_2', 'user_text_3',
-                    # 'daily_pricing_model',
-                    # 'payment_size_detail',
-                    # 'default_price',
-                    # 'default_accrued',
-                    # 'price_download_mode',
-                    ]
+    BASIC_FIELDS = [
+        'reference_for_pricing', 'user_code', 'name', 'short_name', 'public_name', 'notes', 'instrument_type',
+        'pricing_currency', 'price_multiplier', 'accrued_currency', 'accrued_multiplier', 'maturity_date',
+        'user_text_1', 'user_text_2', 'user_text_3',
+    ]
 
     master_user = models.ForeignKey('users.MasterUser')
     scheme_name = models.CharField(max_length=255)
@@ -145,11 +141,10 @@ class InstrumentDownloadScheme(models.Model):
     price_multiplier = models.CharField(max_length=255, blank=True, default='1.0')
     accrued_currency = models.CharField(max_length=255, blank=True, default='')
     accrued_multiplier = models.CharField(max_length=255, blank=True, default='1.0')
+    maturity_date = models.CharField(max_length=255, blank=True, default='')
     user_text_1 = models.CharField(max_length=255, blank=True, default='')
     user_text_2 = models.CharField(max_length=255, blank=True, default='')
     user_text_3 = models.CharField(max_length=255, blank=True, default='')
-
-    maturity_date = models.CharField(max_length=255, blank=True, default='')
 
     payment_size_detail = models.ForeignKey('instruments.PaymentSizeDetail', on_delete=models.PROTECT,
                                             null=True, blank=True, verbose_name=ugettext_lazy('payment size detail'))
