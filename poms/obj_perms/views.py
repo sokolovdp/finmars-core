@@ -12,7 +12,8 @@ _l = getLogger('poms.obj_perms')
 
 
 class AbstractWithObjectPermissionViewSet(AbstractModelViewSet):
-    bulk_objects_permissions_serializer_class = None
+    # TODO: remove bulk_objects_permissions_serializer_class
+    # bulk_objects_permissions_serializer_class = None
     filter_backends = AbstractModelViewSet.filter_backends + [
         ObjectPermissionBackend,
     ]
@@ -27,19 +28,18 @@ class AbstractWithObjectPermissionViewSet(AbstractModelViewSet):
         queryset = obj_perms_prefetch(queryset, lookups_related=self.prefetch_permissions_for)
         return queryset
 
-    def get_serializer_class(self):
-        if self.action == 'objects_permissions':
-            return self.bulk_objects_permissions_serializer_class
-        else:
-            return super(AbstractWithObjectPermissionViewSet, self).get_serializer_class()
+    # def get_serializer_class(self):
+    #     # if self.action == 'objects_permissions':
+    #     #     return self.bulk_objects_permissions_serializer_class
+    #     return super(AbstractWithObjectPermissionViewSet, self).get_serializer_class()
 
     def get_serializer(self, *args, **kwargs):
         return super(AbstractWithObjectPermissionViewSet, self).get_serializer(*args, **kwargs)
 
-    @list_route(methods=['POST'], url_path='objects-permissions')
-    def objects_permissions(self, request):
-        serializer = self.get_serializer(data=request.data)
-        # serializer.Meta.model = self.serializer_class.Meta.model
-        serializer.is_valid(raise_exception=True)
-        serializer.save()
-        return Response(serializer.data)
+    # @list_route(methods=['POST'], url_path='objects-permissions')
+    # def objects_permissions(self, request):
+    #     serializer = self.get_serializer(data=request.data)
+    #     # serializer.Meta.model = self.serializer_class.Meta.model
+    #     serializer.is_valid(raise_exception=True)
+    #     serializer.save()
+    #     return Response(serializer.data)
