@@ -106,7 +106,7 @@ class InstrumentTypeViewSet(AbstractWithObjectPermissionViewSet):
     search_fields = [
         'user_code', 'name', 'short_name',
     ]
-    has_feature_is_deleted = True
+    # has_feature_is_deleted = True
 
 
 class InstrumentAttributeTypeFilterSet(FilterSet):
@@ -187,7 +187,7 @@ class InstrumentViewSet(AbstractWithObjectPermissionViewSet):
     search_fields = [
         'user_code', 'name', 'short_name', 'reference_for_pricing',
     ]
-    has_feature_is_deleted = True
+    # has_feature_is_deleted = True
 
     @list_route(methods=['post'], url_path='rebuild-events', serializer_class=serializers.Serializer)
     def rebuild_all_events(self, request):

@@ -51,7 +51,7 @@ class Strategy1GroupViewSet(AbstractWithObjectPermissionViewSet):
     search_fields = [
         'user_code', 'name', 'short_name',
     ]
-    has_feature_is_deleted = True
+    # has_feature_is_deleted = True
 
 
 class Strategy1SubgroupFilterSet(FilterSet):
@@ -88,7 +88,7 @@ class Strategy1SubgroupViewSet(AbstractWithObjectPermissionViewSet):
     search_fields = [
         'user_code', 'name', 'short_name',
     ]
-    has_feature_is_deleted = True
+    # has_feature_is_deleted = True
 
 
 class Strategy1FilterSet(FilterSet):
@@ -127,7 +127,7 @@ class Strategy1ViewSet(AbstractWithObjectPermissionViewSet):
     search_fields = [
         'user_code', 'name', 'short_name',
     ]
-    has_feature_is_deleted = True
+    # has_feature_is_deleted = True
 
 
 # 2

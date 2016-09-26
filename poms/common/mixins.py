@@ -6,8 +6,7 @@ from django.utils.translation import ugettext_lazy
 from rest_framework import status
 from rest_framework.decorators import list_route
 from rest_framework.exceptions import MethodNotAllowed, ValidationError, PermissionDenied
-from rest_framework.generics import GenericAPIView
-from rest_framework.mixins import UpdateModelMixin, DestroyModelMixin
+from rest_framework.mixins import UpdateModelMixin, DestroyModelMixin, CreateModelMixin
 from rest_framework.response import Response
 from rest_framework.settings import api_settings
 
@@ -45,20 +44,7 @@ class UpdateModelMixinExt(UpdateModelMixin):
         return response
 
 
-class BulkOperationModelMixin(GenericAPIView):
-    @list_route(methods=['post', 'put', 'patch', 'delete'], url_path='bulk')
-    def bulk_dispatch(self, request):
-        method = request.method.lower()
-
-        if method == 'post':
-            return self.bulk_create(request)
-        elif method in ['put', 'patch']:
-            return self.bulk_update(request)
-        elif method in ['delete']:
-            return self.bulk_delete(request)
-
-        raise MethodNotAllowed(request.method)
-
+class BulkCreateModelMixin(CreateModelMixin):
     @list_route(methods=['post'], url_path='bulk-create')
     def bulk_create(self, request):
         data = request.data
@@ -86,6 +72,8 @@ class BulkOperationModelMixin(GenericAPIView):
             ret_serializer = self.get_serializer(instance=instances, many=True)
             return Response(list(ret_serializer.data), status=status.HTTP_201_CREATED)
 
+
+class BulkUpdateModelMixin(UpdateModelMixin):
     @list_route(methods=['put', 'patch'], url_path='bulk-update')
     def bulk_update(self, request):
         data = request.data
@@ -135,6 +123,8 @@ class BulkOperationModelMixin(GenericAPIView):
                 instance=queryset.filter(pk__in=(i.id for i in instances)), many=True)
             return Response(list(ret_serializer.data), status=status.HTTP_200_OK)
 
+
+class BulkSaveModelMixin(BulkCreateModelMixin, BulkUpdateModelMixin):
     @list_route(methods=['post', 'put', 'patch'], url_path='bulk-save')
     def bulk_save(self, request):
         data = request.data
@@ -192,6 +182,8 @@ class BulkOperationModelMixin(GenericAPIView):
                 instance=queryset.filter(pk__in=(i.id for i in instances)), many=True)
             return Response(list(ret_serializer.data), status=status.HTTP_200_OK)
 
+
+class BulkDestroyModelMixin(DestroyModelMixin):
     @list_route(methods=['get', 'delete'], url_path='bulk-delete')
     def bulk_delete(self, request):
         if request.method.lower() == 'get':
@@ -209,3 +201,18 @@ class BulkOperationModelMixin(GenericAPIView):
                 self.perform_destroy(instance)
 
         return Response(status=status.HTTP_204_NO_CONTENT)
+
+
+class BulkModelMixin(BulkCreateModelMixin, BulkUpdateModelMixin, BulkSaveModelMixin, BulkDestroyModelMixin):
+    @list_route(methods=['post', 'put', 'patch', 'delete'], url_path='bulk')
+    def bulk_dispatch(self, request):
+        method = request.method.lower()
+
+        if method == 'post':
+            return self.bulk_create(request)
+        elif method in ['put', 'patch']:
+            return self.bulk_update(request)
+        elif method in ['delete']:
+            return self.bulk_delete(request)
+
+        raise MethodNotAllowed(request.method)

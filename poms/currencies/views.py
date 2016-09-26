@@ -44,7 +44,7 @@ class CurrencyViewSet(AbstractModelViewSet):
     search_fields = [
         'user_code', 'name', 'short_name', 'reference_for_pricing'
     ]
-    has_feature_is_deleted = True
+    # has_feature_is_deleted = True
 
 
 class CurrencyHistoryFilterSet(FilterSet):

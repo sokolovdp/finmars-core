@@ -82,7 +82,7 @@ class TransactionTypeGroupViewSet(AbstractWithObjectPermissionViewSet):
     search_fields = [
         'user_code', 'name', 'short_name'
     ]
-    has_feature_is_deleted = True
+    # has_feature_is_deleted = True
 
 
 class TransactionTypeFilterSet(FilterSet):
@@ -135,7 +135,7 @@ class TransactionTypeViewSet(AbstractWithObjectPermissionViewSet):
     search_fields = [
         'user_code', 'name', 'short_name',
     ]
-    has_feature_is_deleted = True
+    # has_feature_is_deleted = True
 
     def get_queryset(self):
         queryset = super(TransactionTypeViewSet, self).get_queryset()

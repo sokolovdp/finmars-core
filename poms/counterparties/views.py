@@ -95,7 +95,7 @@ class CounterpartyGroupViewSet(AbstractWithObjectPermissionViewSet):
     search_fields = [
         'user_code', 'name', 'short_name'
     ]
-    has_feature_is_deleted = True
+    # has_feature_is_deleted = True
 
 
 class CounterpartyFilterSet(FilterSet):
@@ -136,7 +136,7 @@ class CounterpartyViewSet(AbstractWithObjectPermissionViewSet):
     search_fields = [
         'user_code', 'name', 'short_name',
     ]
-    has_feature_is_deleted = True
+    # has_feature_is_deleted = True
 
 
 # Responsible ----
@@ -212,7 +212,7 @@ class ResponsibleGroupViewSet(AbstractWithObjectPermissionViewSet):
     search_fields = [
         'user_code', 'name', 'short_name'
     ]
-    has_feature_is_deleted = True
+    # has_feature_is_deleted = True
 
 
 class ResponsibleFilterSet(FilterSet):
@@ -253,4 +253,4 @@ class ResponsibleViewSet(AbstractWithObjectPermissionViewSet):
     search_fields = [
         'user_code', 'name', 'short_name'
     ]
-    has_feature_is_deleted = True
+    # has_feature_is_deleted = True

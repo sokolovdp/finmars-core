@@ -11,7 +11,7 @@ from rest_framework.viewsets import ModelViewSet, ReadOnlyModelViewSet, ViewSet
 
 from poms.audit.mixins import HistoricalModelMixin
 from poms.common.filters import ByIdFilterBackend, ByIsDeletedFilterBackend
-from poms.common.mixins import BulkOperationModelMixin, DestroyModelFakeMixin, UpdateModelMixinExt
+from poms.common.mixins import BulkModelMixin, DestroyModelFakeMixin, UpdateModelMixinExt
 from poms.users.utils import get_master_user
 from poms.users.utils import get_member
 
@@ -64,7 +64,7 @@ class AbstractViewSet(AbstractApiView, ViewSet):
 
 
 class AbstractModelViewSet(AbstractApiView, HistoricalModelMixin, UpdateModelMixinExt, DestroyModelFakeMixin,
-                           BulkOperationModelMixin, ModelViewSet):
+                           BulkModelMixin, ModelViewSet):
     permission_classes = [
         IsAuthenticated
     ]
@@ -75,35 +75,6 @@ class AbstractModelViewSet(AbstractApiView, HistoricalModelMixin, UpdateModelMix
         OrderingFilter,
         SearchFilter,
     ]
-
-    # def update(self, request, *args, **kwargs):
-    #     response = super(AbstractModelViewSet, self).update(request, *args, **kwargs)
-    #     # total reload object, due many to many don't correctly returned
-    #     if response.status_code == status.HTTP_200_OK:
-    #         instance = self.get_object()
-    #         serializer = self.get_serializer(instance)
-    #         return Response(serializer.data)
-    #     return response
-
-    # def destroy(self, request, *args, **kwargs):
-    #     instance = self.get_object()
-    #     try:
-    #         self.perform_destroy(instance)
-    #     except ProtectedError:
-    #         return Response({
-    #             api_settings.NON_FIELD_ERRORS_KEY: ugettext_lazy(
-    #                 'Cannot delete instance because they are referenced through a protected foreign key'),
-    #         }, status=status.HTTP_409_CONFLICT)
-    #     return Response(status=status.HTTP_204_NO_CONTENT)
-    #
-    # def perform_destroy(self, instance):
-    #     if getattr(self, 'has_feature_is_deleted', False):
-    #         with history.enable():
-    #             history.set_flag_deletion()
-    #             history.set_actor_content_object(instance)
-    #             instance.fake_delete()
-    #     else:
-    #         super(AbstractModelViewSet, self).perform_destroy(instance)
 
 
 class AbstractReadOnlyModelViewSet(AbstractApiView, ReadOnlyModelViewSet):

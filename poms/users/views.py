@@ -196,7 +196,7 @@ class MemberViewSet(AbstractModelViewSet):
     ordering_fields = ['username', ]
     search_fields = ['username', ]
     pagination_class = BigPagination
-    has_feature_is_deleted = True
+    # has_feature_is_deleted = True
 
     def get_object(self):
         lookup_url_kwarg = self.lookup_url_kwarg or self.lookup_field
