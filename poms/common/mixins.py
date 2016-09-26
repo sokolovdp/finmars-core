@@ -124,7 +124,7 @@ class BulkUpdateModelMixin(UpdateModelMixin):
             return Response(list(ret_serializer.data), status=status.HTTP_200_OK)
 
 
-class BulkSaveModelMixin(BulkCreateModelMixin, BulkUpdateModelMixin):
+class BulkSaveModelMixin(CreateModelMixin, UpdateModelMixin):
     @list_route(methods=['post', 'put', 'patch'], url_path='bulk-save')
     def bulk_save(self, request):
         data = request.data
