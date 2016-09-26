@@ -1,5 +1,7 @@
 from __future__ import unicode_literals
 
+from datetime import timedelta
+
 from django.core.exceptions import ObjectDoesNotExist
 from rest_framework import serializers
 from rest_framework.exceptions import ValidationError
@@ -7,6 +9,7 @@ from rest_framework.exceptions import ValidationError
 from poms.common.fields import ExpressionField, FloatEvalField
 from poms.common.serializers import PomsClassSerializer, AbstractClassifierSerializer, AbstractClassifierNodeSerializer, \
     ModelWithUserCodeSerializer
+from poms.common.utils import date_now
 from poms.currencies.fields import CurrencyDefault
 from poms.currencies.serializers import CurrencyField
 from poms.instruments.fields import InstrumentClassifierField, InstrumentField, InstrumentAttributeTypeField, \
@@ -343,6 +346,18 @@ class InstrumentSerializer(ModelWithAttributesSerializer, ModelWithObjectPermiss
             instrument.rebuild_event_schedules()
         except ValueError as e:
             raise ValidationError({'instrument_type': '%s' % e})
+
+
+class InstrumentCalculatePricesAccruedPriceSerializer(serializers.Serializer):
+    begin_date = serializers.DateField(required=False, allow_null=True)
+    end_date = serializers.DateField(required=False, allow_null=True)
+
+    def validate(self, attrs):
+        begin_date = attrs.get('begin_date', None)
+        end_date = attrs.get('end_date', None)
+        if begin_date is None and end_date is None:
+            attrs['begin_date'] = attrs['end_date'] = date_now() - timedelta(days=1)
+        return attrs
 
 
 class InstrumentBulkObjectPermissionSerializer(AbstractBulkObjectPermissionSerializer):
