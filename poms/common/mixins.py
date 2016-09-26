@@ -11,8 +11,6 @@ from rest_framework.mixins import UpdateModelMixin, DestroyModelMixin
 from rest_framework.response import Response
 from rest_framework.settings import api_settings
 
-from poms.audit import history
-
 
 class DestroyModelMixinExt(DestroyModelMixin):
     def destroy(self, request, *args, **kwargs):
@@ -29,11 +27,9 @@ class DestroyModelMixinExt(DestroyModelMixin):
 
 class DestroyModelFakeMixin(DestroyModelMixinExt):
     def perform_destroy(self, instance):
-        if getattr(self, 'has_feature_is_deleted', False):
-            with history.enable():
-                history.set_flag_deletion()
-                history.set_actor_content_object(instance)
-                instance.fake_delete()
+        # if getattr(self, 'has_feature_is_deleted', False):
+        if hasattr(instance, 'is_deleted') and hasattr(instance, 'fake_delete'):
+            instance.fake_delete()
         else:
             super(DestroyModelFakeMixin, self).perform_destroy(instance)
 

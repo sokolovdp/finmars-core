@@ -143,6 +143,18 @@ class History(ContextDecorator):
     def __exit__(self, exc_type, exc_value, traceback):
         if self.is_owner:
             deactivate()
+        else:
+            # write collected data
+            flag = _state.flag
+            actor_content_object = _state.actor_content_object
+            actor_content_object_id = _state.actor_content_object_id
+
+            deactivate()
+            activate()
+
+            _state.flag = flag
+            _state.actor_content_object = actor_content_object
+            _state.actor_content_object_id = actor_content_object_id
 
 
 def enable(using=None):
@@ -150,7 +162,6 @@ def enable(using=None):
         return History()(using)
     else:
         return History()
-
 
 
 def _is_enabled_for_model(obj):
@@ -192,6 +203,8 @@ def _value_to_str(value):
 
 @receiver(post_init, dispatch_uid='poms_history_post_init')
 def _instance_post_init(sender, instance=None, **kwargs):
+    if not is_active():
+        return
     if not _is_enabled_for_model(instance):
         return
     if instance.pk:

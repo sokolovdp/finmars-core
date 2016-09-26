@@ -1,18 +1,17 @@
 from __future__ import unicode_literals
 
+from rest_framework import permissions
 from rest_framework.views import APIView
 
 from poms.audit import history
 
 
 class HistoricalModelMixin(APIView):
-    # def dispatch(self, request, *args, **kwargs):
-    #     if request.method.upper() in permissions.SAFE_METHODS:
-    #         return super(HistoricalMixin, self).dispatch(request, *args, **kwargs)
-    #     else:
-    #         with history.enable():
-    #             response = super(HistoricalMixin, self).dispatch(request, *args, **kwargs)
-    #             return response
+    def dispatch(self, request, *args, **kwargs):
+        if request.method.upper() in permissions.SAFE_METHODS:
+            return super(HistoricalModelMixin, self).dispatch(request, *args, **kwargs)
+        with history.enable():
+            return super(HistoricalModelMixin, self).dispatch(request, *args, **kwargs)
 
     @history.enable
     def perform_create(self, serializer):
