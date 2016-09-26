@@ -8,7 +8,7 @@ from rest_framework.exceptions import MethodNotAllowed
 from rest_framework.filters import FilterSet
 from rest_framework.response import Response
 
-from poms.common.filters import CharFilter, ModelWithPermissionMultipleChoiceFilter
+from poms.common.filters import CharFilter, ModelWithPermissionMultipleChoiceFilter, NoOpFilter
 from poms.common.views import AbstractClassModelViewSet, AbstractModelViewSet
 from poms.instruments.filters import OwnerByInstrumentFilter, PriceHistoryObjectPermissionFilter
 from poms.instruments.models import Instrument, PriceHistory, InstrumentClass, DailyPricingModel, \
@@ -75,10 +75,12 @@ class PricingPolicyViewSet(AbstractModelViewSet):
 
 
 class InstrumentTypeFilterSet(FilterSet):
+    id = NoOpFilter()
+    is_deleted = django_filters.BooleanFilter()
     user_code = CharFilter()
     name = CharFilter()
     short_name = CharFilter()
-    # is_default = IsDefaultFilter(source='instrument_type')
+    instrument_class = django_filters.ModelMultipleChoiceFilter(queryset=InstrumentClass.objects)
     tag = TagFilter(model=InstrumentType)
     member = ObjectPermissionMemberFilter(object_permission_model=InstrumentType)
     member_group = ObjectPermissionGroupFilter(object_permission_model=InstrumentType)
@@ -86,10 +88,7 @@ class InstrumentTypeFilterSet(FilterSet):
 
     class Meta:
         model = InstrumentType
-        fields = [
-            'is_deleted', 'user_code', 'name', 'short_name', 'instrument_class', 'tag',
-            'member', 'member_group', 'permission',
-        ]
+        fields = []
 
 
 class InstrumentTypeViewSet(AbstractWithObjectPermissionViewSet):
@@ -107,10 +106,11 @@ class InstrumentTypeViewSet(AbstractWithObjectPermissionViewSet):
     search_fields = [
         'user_code', 'name', 'short_name',
     ]
-    has_feature_is_deleted = True
+    # has_feature_is_deleted = True
 
 
 class InstrumentAttributeTypeFilterSet(FilterSet):
+    id = NoOpFilter()
     user_code = CharFilter()
     name = CharFilter()
     short_name = CharFilter()
@@ -121,9 +121,7 @@ class InstrumentAttributeTypeFilterSet(FilterSet):
 
     class Meta:
         model = InstrumentAttributeType
-        fields = [
-            'user_code', 'name', 'short_name', 'value_type', 'member', 'member_group', 'permission',
-        ]
+        fields = []
 
 
 class InstrumentAttributeTypeViewSet(AbstractAttributeTypeViewSet):
@@ -134,12 +132,14 @@ class InstrumentAttributeTypeViewSet(AbstractAttributeTypeViewSet):
 
 
 class InstrumentClassifierFilterSet(FilterSet):
+    id = NoOpFilter()
     name = CharFilter()
+    level = django_filters.NumberFilter()
     attribute_type = ModelWithPermissionMultipleChoiceFilter(model=InstrumentAttributeType)
 
     class Meta:
         model = InstrumentClassifier
-        fields = ['name', 'level', 'attribute_type', ]
+        fields = []
 
 
 class InstrumentClassifierViewSet(AbstractClassifierViewSet):
@@ -149,6 +149,8 @@ class InstrumentClassifierViewSet(AbstractClassifierViewSet):
 
 
 class InstrumentFilterSet(FilterSet):
+    id = NoOpFilter()
+    is_deleted = django_filters.BooleanFilter()
     user_code = CharFilter()
     name = CharFilter()
     short_name = CharFilter()
@@ -164,10 +166,7 @@ class InstrumentFilterSet(FilterSet):
 
     class Meta:
         model = Instrument
-        fields = [
-            'is_deleted', 'user_code', 'name', 'short_name', 'user_text_1', 'user_text_2', 'user_text_3',
-            'reference_for_pricing', 'tag', 'member', 'member_group', 'permission',
-        ]
+        fields = []
 
 
 class InstrumentViewSet(AbstractWithObjectPermissionViewSet):
@@ -188,7 +187,7 @@ class InstrumentViewSet(AbstractWithObjectPermissionViewSet):
     search_fields = [
         'user_code', 'name', 'short_name', 'reference_for_pricing',
     ]
-    has_feature_is_deleted = True
+    # has_feature_is_deleted = True
 
     @list_route(methods=['post'], url_path='rebuild-events', serializer_class=serializers.Serializer)
     def rebuild_all_events(self, request):
@@ -227,12 +226,13 @@ class InstrumentViewSet(AbstractWithObjectPermissionViewSet):
 
 
 class PriceHistoryFilterSet(FilterSet):
-    instrument = ModelWithPermissionMultipleChoiceFilter(model=Instrument)
+    id = NoOpFilter()
     date = django_filters.DateFromToRangeFilter()
+    instrument = ModelWithPermissionMultipleChoiceFilter(model=Instrument)
 
     class Meta:
         model = PriceHistory
-        fields = ['instrument', 'date', ]
+        fields = []
 
 
 class PriceHistoryViewSet(AbstractModelViewSet):

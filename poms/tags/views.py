@@ -2,7 +2,7 @@ from __future__ import unicode_literals
 
 from rest_framework.filters import FilterSet
 
-from poms.common.filters import CharFilter
+from poms.common.filters import CharFilter, NoOpFilter
 from poms.obj_perms.filters import ObjectPermissionMemberFilter, ObjectPermissionGroupFilter, \
     ObjectPermissionPermissionFilter
 from poms.obj_perms.views import AbstractWithObjectPermissionViewSet
@@ -13,6 +13,7 @@ from poms.users.filters import OwnerByMasterUserFilter
 
 
 class TagFilterSet(FilterSet):
+    id = NoOpFilter()
     user_code = CharFilter()
     name = CharFilter()
     short_name = CharFilter()
@@ -23,9 +24,7 @@ class TagFilterSet(FilterSet):
 
     class Meta:
         model = Tag
-        fields = [
-            'user_code', 'name', 'short_name', 'content_type', 'member', 'member_group', 'permission',
-        ]
+        fields = []
 
 
 class TagViewSet(AbstractWithObjectPermissionViewSet):

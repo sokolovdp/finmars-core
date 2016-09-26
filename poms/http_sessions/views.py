@@ -1,5 +1,6 @@
 from __future__ import unicode_literals
 
+import django_filters
 from rest_framework.filters import FilterSet
 from rest_framework.mixins import DestroyModelMixin
 
@@ -11,11 +12,12 @@ from poms.users.filters import OwnerByUserFilter
 
 
 class SessionFilterSet(FilterSet):
+    user_ip = django_filters.CharFilter()
     user_agent = CharFilter()
 
     class Meta:
         model = Session
-        fields = ('user_ip', 'user_agent',)
+        fields = []
 
 
 class SessionViewSet(DestroyModelMixin, AbstractReadOnlyModelViewSet):

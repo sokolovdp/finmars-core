@@ -6,7 +6,7 @@ from rest_framework.filters import FilterSet
 from poms.audit.filters import ObjectHistory4ContentTypeMultipleChoiceFilter
 from poms.audit.models import AuthLogEntry, ObjectHistory4Entry
 from poms.audit.serializers import AuthLogEntrySerializer, ObjectHistory4EntrySerializer
-from poms.common.filters import ModelWithPermissionMultipleChoiceFilter
+from poms.common.filters import ModelWithPermissionMultipleChoiceFilter, NoOpFilter, CharFilter
 from poms.common.views import AbstractReadOnlyModelViewSet
 from poms.users.filters import OwnerByUserFilter, OwnerByMasterUserFilter
 from poms.users.models import Member
@@ -14,11 +14,14 @@ from poms.users.permissions import SuperUserOnly
 
 
 class AuthLogEntryFilterSet(FilterSet):
+    id = NoOpFilter()
     date = django_filters.DateFromToRangeFilter()
+    is_success = django_filters.BooleanFilter()
+    user_ip = django_filters.CharFilter()
 
     class Meta:
         model = AuthLogEntry
-        fields = ('user_ip', 'is_success', 'date',)
+        fields = []
 
 
 class AuthLogViewSet(AbstractReadOnlyModelViewSet):
@@ -35,27 +38,34 @@ class AuthLogViewSet(AbstractReadOnlyModelViewSet):
 class ObjectHistory4EntryFilterSet(FilterSet):
     created = django_filters.DateFromToRangeFilter()
     member = ModelWithPermissionMultipleChoiceFilter(model=Member, field_name='username')
+    group_id = django_filters.NumberFilter()
     actor_content_type = ObjectHistory4ContentTypeMultipleChoiceFilter()
+    actor_object_id = django_filters.NumberFilter()
+    actor_object_repr = CharFilter()
     content_type = ObjectHistory4ContentTypeMultipleChoiceFilter()
+    object_id = django_filters.NumberFilter()
+    object_repr = CharFilter()
+    value = CharFilter()
     value_content_type = ObjectHistory4ContentTypeMultipleChoiceFilter()
+    value_object_id = django_filters.NumberFilter()
+    old_value = CharFilter()
     old_value_content_type = ObjectHistory4ContentTypeMultipleChoiceFilter()
+    old_value_object_id = django_filters.NumberFilter()
 
     class Meta:
         model = ObjectHistory4Entry
-        fields = (
-            'created', 'member', 'group_id',
-            'actor_content_type', 'actor_object_id', 'actor_object_repr',
-            'action_flag',
-            'content_type', 'object_id', 'object_repr',
-            'value', 'value_content_type', 'value_object_id',
-            'old_value', 'old_value_content_type', 'old_value_object_id',
-        )
+        fields = []
 
 
 class ObjectHistory4ViewSet(AbstractReadOnlyModelViewSet):
     queryset = ObjectHistory4Entry.objects.prefetch_related(
         'master_user', 'member', 'actor_content_type', 'content_type', 'value_content_type', 'old_value_content_type',
-        'actor_content_object', 'content_object', 'value_content_object', 'old_value_content_object')
+        # TODO: if enable then actor_content_type and other converted to None!!!
+        # 'actor_content_object',
+        # 'content_object',
+        # 'value_content_object',
+        # 'old_value_content_object'
+    )
     serializer_class = ObjectHistory4EntrySerializer
     filter_backends = AbstractReadOnlyModelViewSet.filter_backends + [
         OwnerByMasterUserFilter,

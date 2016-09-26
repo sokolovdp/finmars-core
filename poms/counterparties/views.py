@@ -1,8 +1,9 @@
 from __future__ import unicode_literals
 
+import django_filters
 from rest_framework.filters import FilterSet
 
-from poms.common.filters import CharFilter, ModelWithPermissionMultipleChoiceFilter
+from poms.common.filters import CharFilter, ModelWithPermissionMultipleChoiceFilter, NoOpFilter
 from poms.common.views import AbstractModelViewSet
 from poms.counterparties.models import Counterparty, Responsible, CounterpartyAttributeType, ResponsibleAttributeType, \
     CounterpartyGroup, ResponsibleGroup, CounterpartyClassifier, ResponsibleClassifier
@@ -24,6 +25,7 @@ from poms.users.filters import OwnerByMasterUserFilter
 
 
 class CounterpartyAttributeTypeFilterSet(FilterSet):
+    id = NoOpFilter()
     user_code = CharFilter()
     name = CharFilter()
     short_name = CharFilter()
@@ -34,9 +36,7 @@ class CounterpartyAttributeTypeFilterSet(FilterSet):
 
     class Meta:
         model = CounterpartyAttributeType
-        fields = [
-            'user_code', 'name', 'short_name', 'value_type', 'member', 'member_group', 'permission',
-        ]
+        fields = []
 
 
 class CounterpartyAttributeTypeViewSet(AbstractAttributeTypeViewSet):
@@ -47,14 +47,14 @@ class CounterpartyAttributeTypeViewSet(AbstractAttributeTypeViewSet):
 
 
 class CounterpartyClassifierFilterSet(FilterSet):
+    id = NoOpFilter()
     name = CharFilter()
+    level = django_filters.NumberFilter()
     attribute_type = ModelWithPermissionMultipleChoiceFilter(model=CounterpartyAttributeType)
 
     class Meta:
         model = CounterpartyClassifier
-        fields = [
-            'name', 'level', 'attribute_type',
-        ]
+        fields = []
 
 
 class CounterpartyClassifierViewSet(AbstractClassifierViewSet):
@@ -64,6 +64,8 @@ class CounterpartyClassifierViewSet(AbstractClassifierViewSet):
 
 
 class CounterpartyGroupFilterSet(FilterSet):
+    id = NoOpFilter()
+    is_deleted = django_filters.BooleanFilter()
     user_code = CharFilter()
     name = CharFilter()
     short_name = CharFilter()
@@ -75,10 +77,7 @@ class CounterpartyGroupFilterSet(FilterSet):
 
     class Meta:
         model = CounterpartyGroup
-        fields = [
-            'is_deleted', 'user_code', 'name', 'short_name', 'tag', 'member', 'member_group',
-            'permission',
-        ]
+        fields = []
 
 
 class CounterpartyGroupViewSet(AbstractWithObjectPermissionViewSet):
@@ -96,14 +95,16 @@ class CounterpartyGroupViewSet(AbstractWithObjectPermissionViewSet):
     search_fields = [
         'user_code', 'name', 'short_name'
     ]
-    has_feature_is_deleted = True
+    # has_feature_is_deleted = True
 
 
 class CounterpartyFilterSet(FilterSet):
+    id = NoOpFilter()
+    is_deleted = django_filters.BooleanFilter()
     user_code = CharFilter()
     name = CharFilter()
     short_name = CharFilter()
-    # is_default = IsDefaultFilter(source='counterparty')
+    is_valid_for_all_portfolios = django_filters.BooleanFilter()
     group = ModelWithPermissionMultipleChoiceFilter(model=CounterpartyGroup)
     portfolio = ModelWithPermissionMultipleChoiceFilter(model=Portfolio, name='portfolios')
     tag = TagFilter(model=Counterparty)
@@ -113,10 +114,7 @@ class CounterpartyFilterSet(FilterSet):
 
     class Meta:
         model = Counterparty
-        fields = [
-            'is_deleted', 'user_code', 'name', 'short_name', 'is_valid_for_all_portfolios', 'group',
-            'tag', 'portfolio', 'member', 'member_group', 'permission',
-        ]
+        fields = []
 
 
 class CounterpartyViewSet(AbstractWithObjectPermissionViewSet):
@@ -138,13 +136,14 @@ class CounterpartyViewSet(AbstractWithObjectPermissionViewSet):
     search_fields = [
         'user_code', 'name', 'short_name',
     ]
-    has_feature_is_deleted = True
+    # has_feature_is_deleted = True
 
 
 # Responsible ----
 
 
 class ResponsibleAttributeTypeFilterSet(FilterSet):
+    id = NoOpFilter()
     user_code = CharFilter()
     name = CharFilter()
     short_name = CharFilter()
@@ -155,9 +154,7 @@ class ResponsibleAttributeTypeFilterSet(FilterSet):
 
     class Meta:
         model = ResponsibleAttributeType
-        fields = [
-            'user_code', 'name', 'short_name', 'value_type', 'member', 'member_group', 'permission',
-        ]
+        fields = []
 
 
 class ResponsibleAttributeTypeViewSet(AbstractAttributeTypeViewSet):
@@ -168,12 +165,14 @@ class ResponsibleAttributeTypeViewSet(AbstractAttributeTypeViewSet):
 
 
 class ResponsibleClassifierFilterSet(FilterSet):
+    id = NoOpFilter()
     name = CharFilter()
+    level = django_filters.NumberFilter()
     attribute_type = ModelWithPermissionMultipleChoiceFilter(model=ResponsibleAttributeType)
 
     class Meta:
         model = ResponsibleClassifier
-        fields = ['name', 'level', 'attribute_type', ]
+        fields = []
 
 
 class ResponsibleClassifierViewSet(AbstractClassifierViewSet):
@@ -183,10 +182,11 @@ class ResponsibleClassifierViewSet(AbstractClassifierViewSet):
 
 
 class ResponsibleGroupFilterSet(FilterSet):
+    id = NoOpFilter()
+    is_deleted = django_filters.BooleanFilter()
     user_code = CharFilter()
     name = CharFilter()
     short_name = CharFilter()
-    # is_default = IsDefaultFilter(source='responsible_group')
     tag = TagFilter(model=ResponsibleGroup)
     member = ObjectPermissionMemberFilter(object_permission_model=ResponsibleGroup)
     member_group = ObjectPermissionGroupFilter(object_permission_model=ResponsibleGroup)
@@ -194,10 +194,7 @@ class ResponsibleGroupFilterSet(FilterSet):
 
     class Meta:
         model = ResponsibleGroup
-        fields = [
-            'is_deleted', 'user_code', 'name', 'short_name', 'tag', 'member', 'member_group',
-            'permission',
-        ]
+        fields = []
 
 
 class ResponsibleGroupViewSet(AbstractWithObjectPermissionViewSet):
@@ -215,14 +212,16 @@ class ResponsibleGroupViewSet(AbstractWithObjectPermissionViewSet):
     search_fields = [
         'user_code', 'name', 'short_name'
     ]
-    has_feature_is_deleted = True
+    # has_feature_is_deleted = True
 
 
 class ResponsibleFilterSet(FilterSet):
+    id = NoOpFilter()
+    is_deleted = django_filters.BooleanFilter()
     user_code = CharFilter()
     name = CharFilter()
     short_name = CharFilter()
-    # is_default = IsDefaultFilter(source='responsible')
+    is_valid_for_all_portfolios = django_filters.BooleanFilter()
     group = ModelWithPermissionMultipleChoiceFilter(model=CounterpartyGroup)
     portfolio = ModelWithPermissionMultipleChoiceFilter(model=Portfolio, name='portfolios')
     tag = TagFilter(model=Responsible)
@@ -232,10 +231,7 @@ class ResponsibleFilterSet(FilterSet):
 
     class Meta:
         model = Responsible
-        fields = [
-            'is_deleted', 'user_code', 'name', 'short_name', 'is_valid_for_all_portfolios', 'group',
-            'portfolio', 'tag', 'member', 'member_group', 'permission',
-        ]
+        fields = []
 
 
 class ResponsibleViewSet(AbstractWithObjectPermissionViewSet):
@@ -257,4 +253,4 @@ class ResponsibleViewSet(AbstractWithObjectPermissionViewSet):
     search_fields = [
         'user_code', 'name', 'short_name'
     ]
-    has_feature_is_deleted = True
+    # has_feature_is_deleted = True

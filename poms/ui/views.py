@@ -2,6 +2,7 @@ import django_filters
 from django_filters.fields import Lookup
 from rest_framework.filters import FilterSet
 
+from poms.common.filters import NoOpFilter, CharFilter
 from poms.common.views import AbstractModelViewSet
 from poms.ui.models import TemplateListLayout, TemplateEditLayout, ListLayout, EditLayout
 from poms.ui.serializers import TemplateListLayoutSerializer, ListLayoutSerializer, TemplateEditLayoutSerializer, \
@@ -34,11 +35,14 @@ class LayoutContentTypeFilter(django_filters.CharFilter):
 
 
 class TemplateListLayoutFilterSet(FilterSet):
+    id = NoOpFilter()
+    name = CharFilter()
+    is_default = django_filters.BooleanFilter()
     content_type = LayoutContentTypeFilter()
 
     class Meta:
         model = TemplateListLayout
-        fields = ['name', 'is_default', 'content_type']
+        fields = []
 
 
 class TemplateListLayoutViewSet(AbstractModelViewSet):
@@ -56,11 +60,12 @@ class TemplateListLayoutViewSet(AbstractModelViewSet):
 
 
 class TemplateEditLayoutFilterSet(FilterSet):
+    id = NoOpFilter()
     content_type = LayoutContentTypeFilter()
 
     class Meta:
         model = TemplateEditLayout
-        fields = ['content_type']
+        fields = []
 
 
 class TemplateEditLayoutViewSet(AbstractModelViewSet):
@@ -78,11 +83,14 @@ class TemplateEditLayoutViewSet(AbstractModelViewSet):
 
 
 class ListLayoutFilterSet(FilterSet):
+    id = NoOpFilter()
+    name = CharFilter()
+    is_default = django_filters.BooleanFilter()
     content_type = LayoutContentTypeFilter()
 
     class Meta:
         model = ListLayout
-        fields = ['name', 'is_default', 'content_type']
+        fields = []
 
 
 class ListLayoutViewSet(AbstractModelViewSet):
@@ -97,11 +105,12 @@ class ListLayoutViewSet(AbstractModelViewSet):
 
 
 class EditLayoutFilterSet(FilterSet):
+    id = NoOpFilter()
     content_type = LayoutContentTypeFilter()
 
     class Meta:
         model = EditLayout
-        fields = ['content_type']
+        fields = []
 
 
 class EditLayoutViewSet(AbstractModelViewSet):

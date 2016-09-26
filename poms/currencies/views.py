@@ -3,7 +3,7 @@ from __future__ import unicode_literals
 import django_filters
 from rest_framework.filters import FilterSet
 
-from poms.common.filters import CharFilter, ModelMultipleChoiceFilter, IsDefaultFilter
+from poms.common.filters import CharFilter, ModelMultipleChoiceFilter, NoOpFilter
 from poms.common.views import AbstractModelViewSet
 from poms.currencies.filters import OwnerByCurrencyFilter
 from poms.currencies.models import Currency, CurrencyHistory
@@ -14,18 +14,17 @@ from poms.users.permissions import SuperUserOrReadOnly
 
 
 class CurrencyFilterSet(FilterSet):
+    id = NoOpFilter()
+    is_deleted = django_filters.BooleanFilter()
     user_code = CharFilter()
     name = CharFilter()
     short_name = CharFilter()
     reference_for_pricing = CharFilter()
-    # is_default = IsDefaultFilter(source='currency')
     tag = TagFilter(model=Currency)
 
     class Meta:
         model = Currency
-        fields = [
-            'is_deleted', 'user_code', 'name', 'short_name', 'reference_for_pricing', 'tag',
-        ]
+        fields = []
 
 
 class CurrencyViewSet(AbstractModelViewSet):
@@ -45,18 +44,17 @@ class CurrencyViewSet(AbstractModelViewSet):
     search_fields = [
         'user_code', 'name', 'short_name', 'reference_for_pricing'
     ]
-    has_feature_is_deleted = True
+    # has_feature_is_deleted = True
 
 
 class CurrencyHistoryFilterSet(FilterSet):
-    currency = ModelMultipleChoiceFilter(model=Currency)
+    id = NoOpFilter()
     date = django_filters.DateFromToRangeFilter()
+    currency = ModelMultipleChoiceFilter(model=Currency)
 
     class Meta:
         model = CurrencyHistory
-        fields = [
-            'currency', 'date'
-        ]
+        fields = []
 
 
 class CurrencyHistoryViewSet(AbstractModelViewSet):

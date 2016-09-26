@@ -2,25 +2,21 @@ from __future__ import unicode_literals
 
 from django.conf import settings
 from django.db import transaction
-from django.db.models import ProtectedError
 from django.utils import timezone
-from django.utils.translation import ugettext_lazy
 from rest_framework import permissions
-from rest_framework import status
 from rest_framework.filters import DjangoFilterBackend, OrderingFilter, SearchFilter
 from rest_framework.permissions import IsAuthenticated
-from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework.viewsets import ModelViewSet, ReadOnlyModelViewSet, ViewSet
 
-from poms.audit.mixins import HistoricalMixin
+from poms.audit.mixins import HistoricalModelMixin
+from poms.common.filters import ByIdFilterBackend, ByIsDeletedFilterBackend
+from poms.common.mixins import BulkModelMixin, DestroyModelFakeMixin, UpdateModelMixinExt
 from poms.users.utils import get_master_user
 from poms.users.utils import get_member
 
 
-class AbstractApiView(HistoricalMixin, APIView):
-    atomic = True
-
+class AbstractApiView(APIView):
     def perform_authentication(self, request):
         super(AbstractApiView, self).perform_authentication(request)
         if request.user.is_authenticated():
@@ -38,14 +34,11 @@ class AbstractApiView(HistoricalMixin, APIView):
                 timezone.activate(settings.TIME_ZONE)
 
     def dispatch(self, request, *args, **kwargs):
-        if self.atomic:
-            if request.method.upper() in permissions.SAFE_METHODS:
-                return super(AbstractApiView, self).dispatch(request, *args, **kwargs)
-            else:
-                with transaction.atomic():
-                    return super(AbstractApiView, self).dispatch(request, *args, **kwargs)
-        else:
+        if request.method.upper() in permissions.SAFE_METHODS:
             return super(AbstractApiView, self).dispatch(request, *args, **kwargs)
+        else:
+            with transaction.atomic():
+                return super(AbstractApiView, self).dispatch(request, *args, **kwargs)
 
 
 class AbstractViewSet(AbstractApiView, ViewSet):
@@ -70,50 +63,18 @@ class AbstractViewSet(AbstractApiView, ViewSet):
         }
 
 
-class AbstractModelViewSet(AbstractApiView, ModelViewSet):
+class AbstractModelViewSet(AbstractApiView, HistoricalModelMixin, UpdateModelMixinExt, DestroyModelFakeMixin,
+                           BulkModelMixin, ModelViewSet):
     permission_classes = [
         IsAuthenticated
     ]
     filter_backends = [
+        ByIdFilterBackend,
+        ByIsDeletedFilterBackend,
         DjangoFilterBackend,
         OrderingFilter,
         SearchFilter,
     ]
-
-    def get_queryset(self):
-        qs = super(AbstractModelViewSet, self).get_queryset()
-        if getattr(self, 'has_feature_is_deleted', False):
-            is_deleted = self.request.query_params.get('is_deleted', None)
-            if is_deleted is None:
-                if getattr(self, 'action', '') == 'list':
-                    qs = qs.filter(is_deleted=False)
-        return qs
-
-    def update(self, request, *args, **kwargs):
-        response = super(AbstractModelViewSet, self).update(request, *args, **kwargs)
-        # total reload object, due many to many don't correctly returned
-        if response.status_code == status.HTTP_200_OK:
-            instance = self.get_object()
-            serializer = self.get_serializer(instance)
-            return Response(serializer.data)
-        return response
-
-    def destroy(self, request, *args, **kwargs):
-        instance = self.get_object()
-        try:
-            self.perform_destroy(instance)
-        except ProtectedError:
-            return Response({
-                'non_fields_error': ugettext_lazy(
-                    'Cannot delete instance because they are referenced through a protected foreign key'),
-            }, status=status.HTTP_409_CONFLICT)
-        return Response(status=status.HTTP_204_NO_CONTENT)
-
-    def perform_destroy(self, instance):
-        if getattr(self, 'has_feature_is_deleted', False):
-            instance.fake_delete()
-        else:
-            super(AbstractModelViewSet, self).perform_destroy(instance)
 
 
 class AbstractReadOnlyModelViewSet(AbstractApiView, ReadOnlyModelViewSet):
@@ -121,6 +82,7 @@ class AbstractReadOnlyModelViewSet(AbstractApiView, ReadOnlyModelViewSet):
         IsAuthenticated
     ]
     filter_backends = [
+        ByIdFilterBackend,
         DjangoFilterBackend,
         OrderingFilter,
         SearchFilter

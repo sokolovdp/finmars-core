@@ -24,20 +24,22 @@ class AuthLogEntrySerializer(serializers.ModelSerializer):
 
 class ObjectHistory4EntrySerializer(serializers.ModelSerializer):
     member = MemberMiniSerializer(read_only=True)
+    created = DateTimeTzAwareField(read_only=True)
     actor_content_type = ObjectHistoryContentTypeField()
     content_type = ObjectHistoryContentTypeField()
     value_content_type = ObjectHistoryContentTypeField()
     old_value_content_type = ObjectHistoryContentTypeField()
-    message = serializers.CharField(read_only=True)
+    message = serializers.ReadOnlyField()
 
     class Meta:
         model = ObjectHistory4Entry
-        fields = ('url', 'id', 'member', 'group_id', 'created',
-                  'actor_content_type', 'actor_content_type_repr', 'actor_object_id', 'actor_object_repr',
-                  'action_flag',
-                  'content_type', 'content_type_repr', 'object_id', 'object_repr',
-                  'field_name', 'field_name_repr',
-                  'value', 'value_repr', 'value_content_type', 'value_content_type_repr', 'value_object_id',
-                  'old_value', 'old_value_repr', 'old_value_content_type', 'old_value_content_type_repr',
-                  'old_value_object_id',
-                  'message')
+        fields = [
+            'url', 'id', 'member', 'group_id', 'created', 'action_flag',
+            'actor_content_type', 'actor_content_type_repr', 'actor_object_id', 'actor_object_repr',
+            'content_type', 'content_type_repr', 'object_id', 'object_repr',
+            'field_name', 'field_name_repr',
+            'value', 'value_content_type', 'value_content_type_repr', 'value_object_id',
+            'old_value', 'old_value_content_type', 'old_value_content_type_repr', 'old_value_object_id',
+            'message'
+        ]
+        read_only_fields = fields

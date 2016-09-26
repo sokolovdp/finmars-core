@@ -119,11 +119,15 @@ class ObjectHistory4Entry(models.Model):
 
     @property
     def actor_content_type_repr(self):
-        return self.actor_content_type.model_class()._meta.verbose_name
+        if self.actor_content_type_id:
+            return self.actor_content_type.model_class()._meta.verbose_name
+        return None
 
     @property
     def content_type_repr(self):
-        return self.content_type.model_class()._meta.verbose_name
+        if self.content_type_id:
+            return self.content_type.model_class()._meta.verbose_name
+        return None
 
     @property
     def field_name_repr(self):

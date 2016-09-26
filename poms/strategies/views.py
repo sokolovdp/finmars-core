@@ -1,8 +1,9 @@
 from __future__ import unicode_literals
 
+import django_filters
 from rest_framework.filters import FilterSet
 
-from poms.common.filters import CharFilter, ModelWithPermissionMultipleChoiceFilter
+from poms.common.filters import CharFilter, ModelWithPermissionMultipleChoiceFilter, NoOpFilter
 from poms.obj_perms.filters import ObjectPermissionMemberFilter, ObjectPermissionGroupFilter, \
     ObjectPermissionPermissionFilter
 from poms.obj_perms.views import AbstractWithObjectPermissionViewSet
@@ -20,6 +21,8 @@ from poms.users.filters import OwnerByMasterUserFilter
 
 
 class Strategy1GroupFilterSet(FilterSet):
+    id = NoOpFilter()
+    is_deleted = django_filters.BooleanFilter()
     user_code = CharFilter()
     name = CharFilter()
     short_name = CharFilter()
@@ -30,9 +33,7 @@ class Strategy1GroupFilterSet(FilterSet):
 
     class Meta:
         model = Strategy1Group
-        fields = [
-            'is_deleted', 'user_code', 'name', 'short_name', 'tag', 'member', 'member_group', 'permission',
-        ]
+        fields = []
 
 
 class Strategy1GroupViewSet(AbstractWithObjectPermissionViewSet):
@@ -50,10 +51,12 @@ class Strategy1GroupViewSet(AbstractWithObjectPermissionViewSet):
     search_fields = [
         'user_code', 'name', 'short_name',
     ]
-    has_feature_is_deleted = True
+    # has_feature_is_deleted = True
 
 
 class Strategy1SubgroupFilterSet(FilterSet):
+    id = NoOpFilter()
+    is_deleted = django_filters.BooleanFilter()
     user_code = CharFilter()
     name = CharFilter()
     short_name = CharFilter()
@@ -65,9 +68,7 @@ class Strategy1SubgroupFilterSet(FilterSet):
 
     class Meta:
         model = Strategy1Subgroup
-        fields = [
-            'is_deleted', 'user_code', 'name', 'short_name', 'group', 'tag', 'member', 'member_group', 'permission',
-        ]
+        fields = []
 
 
 class Strategy1SubgroupViewSet(AbstractWithObjectPermissionViewSet):
@@ -87,10 +88,12 @@ class Strategy1SubgroupViewSet(AbstractWithObjectPermissionViewSet):
     search_fields = [
         'user_code', 'name', 'short_name',
     ]
-    has_feature_is_deleted = True
+    # has_feature_is_deleted = True
 
 
 class Strategy1FilterSet(FilterSet):
+    id = NoOpFilter()
+    is_deleted = django_filters.BooleanFilter()
     user_code = CharFilter()
     name = CharFilter()
     short_name = CharFilter()
@@ -103,10 +106,7 @@ class Strategy1FilterSet(FilterSet):
 
     class Meta:
         model = Strategy1
-        fields = [
-            'is_deleted', 'user_code', 'name', 'short_name', 'subgroup__group', 'subgroup', 'tag',
-            'member', 'member_group', 'permission',
-        ]
+        fields = []
 
 
 class Strategy1ViewSet(AbstractWithObjectPermissionViewSet):
@@ -127,7 +127,7 @@ class Strategy1ViewSet(AbstractWithObjectPermissionViewSet):
     search_fields = [
         'user_code', 'name', 'short_name',
     ]
-    has_feature_is_deleted = True
+    # has_feature_is_deleted = True
 
 
 # 2

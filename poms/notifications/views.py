@@ -1,6 +1,5 @@
 from __future__ import unicode_literals
 
-import django_filters
 from django.utils import timezone
 from django_filters.widgets import BooleanWidget
 from rest_framework.decorators import list_route, detail_route
@@ -8,7 +7,7 @@ from rest_framework.filters import FilterSet
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
-from poms.common.filters import CharFilter
+from poms.common.filters import CharFilter, NoOpFilter
 from poms.common.views import AbstractReadOnlyModelViewSet
 from poms.notifications.filters import NotificationFilter
 from poms.notifications.models import Notification
@@ -16,16 +15,13 @@ from poms.notifications.serializers import NotificationSerializer
 
 
 class NotificationFilterSet(FilterSet):
-    all = django_filters.MethodFilter(action='show_all', widget=BooleanWidget())
+    id = NoOpFilter()
+    all = NoOpFilter(widget=BooleanWidget())
     verb = CharFilter()
 
     class Meta:
         model = Notification
-        fields = ['all', 'verb']
-
-    def show_all(self, qs, value):
-        # used only for show attr in filter, see OwnerByRecipientFilter
-        return qs
+        fields = []
 
 
 class NotificationViewSet(AbstractReadOnlyModelViewSet):

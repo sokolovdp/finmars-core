@@ -6,7 +6,8 @@ from rest_framework.filters import FilterSet
 from rest_framework.response import Response
 
 from poms.accounts.models import Account
-from poms.common.filters import CharFilter, ModelWithPermissionMultipleChoiceFilter, ModelMultipleChoiceFilter
+from poms.common.filters import CharFilter, ModelWithPermissionMultipleChoiceFilter, ModelMultipleChoiceFilter, \
+    NoOpFilter
 from poms.common.views import AbstractClassModelViewSet, AbstractModelViewSet, AbstractReadOnlyModelViewSet
 from poms.currencies.models import Currency
 from poms.instruments.models import Instrument, InstrumentType
@@ -51,6 +52,8 @@ class TransactionClassViewSet(AbstractClassModelViewSet):
 
 
 class TransactionTypeGroupFilterSet(FilterSet):
+    id = NoOpFilter()
+    is_deleted = django_filters.BooleanFilter()
     user_code = CharFilter()
     name = CharFilter()
     short_name = CharFilter()
@@ -61,9 +64,7 @@ class TransactionTypeGroupFilterSet(FilterSet):
 
     class Meta:
         model = TransactionTypeGroup
-        fields = [
-            'is_deleted', 'user_code', 'name', 'short_name', 'tag', 'member', 'member_group', 'permission',
-        ]
+        fields = []
 
 
 class TransactionTypeGroupViewSet(AbstractWithObjectPermissionViewSet):
@@ -81,13 +82,16 @@ class TransactionTypeGroupViewSet(AbstractWithObjectPermissionViewSet):
     search_fields = [
         'user_code', 'name', 'short_name'
     ]
-    has_feature_is_deleted = True
+    # has_feature_is_deleted = True
 
 
 class TransactionTypeFilterSet(FilterSet):
+    id = NoOpFilter()
     user_code = CharFilter()
     name = CharFilter()
     short_name = CharFilter()
+    is_valid_for_all_portfolios = django_filters.BooleanFilter()
+    is_valid_for_all_instruments = django_filters.BooleanFilter()
     group = ModelWithPermissionMultipleChoiceFilter(model=TransactionTypeGroup)
     portfolio = ModelWithPermissionMultipleChoiceFilter(model=Portfolio, name='portfolios')
     instrument_type = ModelWithPermissionMultipleChoiceFilter(model=InstrumentType, name='instrument_types')
@@ -98,11 +102,7 @@ class TransactionTypeFilterSet(FilterSet):
 
     class Meta:
         model = TransactionType
-        fields = [
-            'is_deleted', 'user_code', 'name', 'short_name', 'is_valid_for_all_portfolios',
-            'is_valid_for_all_instruments', 'group', 'portfolio', 'instrument_type', 'tag',
-            'member', 'member_group', 'permission',
-        ]
+        fields = []
 
 
 class TransactionTypeViewSet(AbstractWithObjectPermissionViewSet):
@@ -135,7 +135,7 @@ class TransactionTypeViewSet(AbstractWithObjectPermissionViewSet):
     search_fields = [
         'user_code', 'name', 'short_name',
     ]
-    has_feature_is_deleted = True
+    # has_feature_is_deleted = True
 
     def get_queryset(self):
         queryset = super(TransactionTypeViewSet, self).get_queryset()
@@ -191,6 +191,7 @@ class TransactionTypeViewSet(AbstractWithObjectPermissionViewSet):
 
 
 class TransactionAttributeTypeFilterSet(FilterSet):
+    id = NoOpFilter()
     user_code = CharFilter()
     name = CharFilter()
     short_name = CharFilter()
@@ -201,9 +202,7 @@ class TransactionAttributeTypeFilterSet(FilterSet):
 
     class Meta:
         model = TransactionAttributeType
-        fields = [
-            'user_code', 'name', 'short_name', 'value_type', 'member', 'member_group', 'permission',
-        ]
+        fields = []
 
 
 class TransactionAttributeTypeViewSet(AbstractAttributeTypeViewSet):
@@ -214,12 +213,14 @@ class TransactionAttributeTypeViewSet(AbstractAttributeTypeViewSet):
 
 
 class TransactionClassifierFilterSet(FilterSet):
+    id = NoOpFilter()
     name = CharFilter()
+    level = django_filters.NumberFilter()
     attribute_type = ModelWithPermissionMultipleChoiceFilter(model=TransactionAttributeType)
 
     class Meta:
         model = TransactionClassifier
-        fields = ['name', 'level', 'attribute_type', ]
+        fields = []
 
 
 class TransactionClassifierViewSet(AbstractClassifierViewSet):
@@ -229,6 +230,8 @@ class TransactionClassifierViewSet(AbstractClassifierViewSet):
 
 
 class TransactionFilterSet(FilterSet):
+    id = NoOpFilter()
+    transaction_class = django_filters.ModelMultipleChoiceFilter(queryset=TransactionClass.objects)
     transaction_code = django_filters.RangeFilter()
     transaction_date = django_filters.DateFromToRangeFilter()
     accounting_date = django_filters.DateFromToRangeFilter()
@@ -260,19 +263,7 @@ class TransactionFilterSet(FilterSet):
 
     class Meta:
         model = Transaction
-        fields = [
-            'transaction_class', 'transaction_code',
-            'transaction_date', 'accounting_date', 'cash_date',
-            'complex_transaction', 'complex_transaction__code',
-            'complex_transaction__transaction_type',
-            'portfolio', 'instrument', 'transaction_currency', 'settlement_currency',
-            'account_cash', 'account_position', 'account_interim',
-            'strategy1_position', 'strategy1_cash',
-            'strategy2_position', 'strategy2_cash',
-            'strategy3_position', 'strategy3_cash',
-            'account_member', 'account_member_group', 'account_permission',
-            'portfolio_member', 'portfolio_member_group', 'portfolio_permission',
-        ]
+        fields = []
 
 
 class TransactionViewSet(AbstractModelViewSet):
@@ -324,11 +315,12 @@ class TransactionViewSet(AbstractModelViewSet):
 
 
 class ComplexTransactionFilterSet(FilterSet):
+    id = NoOpFilter()
     code = django_filters.RangeFilter()
 
     class Meta:
         model = ComplexTransaction
-        fields = ['code', ]
+        fields = []
 
 
 class ComplexTransactionViewSet(AbstractReadOnlyModelViewSet):

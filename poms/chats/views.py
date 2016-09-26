@@ -12,7 +12,8 @@ from poms.chats.models import Thread, Message, DirectMessage, ThreadGroup
 from poms.chats.permissions import MessagePermission, DirectMessagePermission
 from poms.chats.serializers import ThreadSerializer, MessageSerializer, DirectMessageSerializer, ThreadGroupSerializer, \
     ThreadBulkObjectPermissionSerializer
-from poms.common.filters import CharFilter, ModelWithPermissionMultipleChoiceFilter, ModelMultipleChoiceFilter
+from poms.common.filters import CharFilter, ModelWithPermissionMultipleChoiceFilter, ModelMultipleChoiceFilter, \
+    NoOpFilter
 from poms.common.views import AbstractModelViewSet
 from poms.obj_perms.filters import ObjectPermissionMemberFilter, ObjectPermissionGroupFilter, \
     ObjectPermissionPermissionFilter
@@ -24,14 +25,14 @@ from poms.users.permissions import SuperUserOrReadOnly, SuperUserOnly
 
 
 class ThreadGroupFilterSet(FilterSet):
+    id = NoOpFilter()
+    is_deleted = django_filters.BooleanFilter()
     name = CharFilter()
     tag = TagFilter(model=ThreadGroup)
 
     class Meta:
         model = ThreadGroup
-        fields = [
-            'is_deleted', 'name', 'tag'
-        ]
+        fields = []
 
 
 class ThreadGroupViewSet(AbstractModelViewSet):
@@ -47,14 +48,15 @@ class ThreadGroupViewSet(AbstractModelViewSet):
     filter_class = ThreadGroupFilterSet
     ordering_fields = ['id', 'name']
     search_fields = ['name']
-    has_feature_is_deleted = True
+    # has_feature_is_deleted = True
 
 
 class ThreadFilterSet(FilterSet):
+    id = NoOpFilter()
+    is_deleted = django_filters.BooleanFilter()
     subject = CharFilter()
     created = django_filters.DateFromToRangeFilter()
     closed = django_filters.DateFromToRangeFilter()
-    # status = ModelMultipleChoiceFilter(model=ThreadStatus)
     is_closed = django_filters.MethodFilter(action='filter_is_closed')
     thread_group = ModelWithPermissionMultipleChoiceFilter(model=ThreadGroup)
     tag = TagFilter(model=Thread)
@@ -64,10 +66,7 @@ class ThreadFilterSet(FilterSet):
 
     class Meta:
         model = Thread
-        fields = [
-            'is_deleted', 'subject', 'created', 'closed', 'is_closed', 'tag', 'thread_group',
-            'member', 'member_group', 'permission',
-        ]
+        fields = []
 
     def filter_is_closed(self, qs, value):
         if value:
@@ -101,7 +100,7 @@ class ThreadViewSet(AbstractWithObjectPermissionViewSet):
         'id', 'created', 'subject', 'thread_group__name',
     ]
     search_fields = ['subject']
-    has_feature_is_deleted = True
+    # has_feature_is_deleted = True
 
     @detail_route(url_path='close',
                   permission_classes=AbstractWithObjectPermissionViewSet.permission_classes + [SuperUserOnly, ])
@@ -123,13 +122,14 @@ class ThreadViewSet(AbstractWithObjectPermissionViewSet):
 
 
 class MessageFilterSet(FilterSet):
+    id = NoOpFilter()
     thread = ModelWithPermissionMultipleChoiceFilter(model=Thread, field_name='subject')
     created = django_filters.DateRangeFilter()
     sender = ModelMultipleChoiceFilter(model=Member, field_name='username')
 
     class Meta:
         model = Message
-        fields = ['thread', 'created']
+        fields = []
 
 
 class MessageViewSet(AbstractModelViewSet):
@@ -146,13 +146,14 @@ class MessageViewSet(AbstractModelViewSet):
 
 
 class DirectMessageFilterSet(FilterSet):
+    id = NoOpFilter()
     created = django_filters.DateFromToRangeFilter()
     recipient = ModelMultipleChoiceFilter(model=Member, field_name='username')
     sender = ModelMultipleChoiceFilter(model=Member, field_name='username')
 
     class Meta:
         model = DirectMessage
-        fields = ['created', 'recipient', 'sender']
+        fields = []
 
 
 class DirectMessageViewSet(AbstractModelViewSet):

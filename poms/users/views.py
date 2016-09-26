@@ -1,11 +1,11 @@
 from __future__ import unicode_literals
 
+import django_filters
 from django.contrib.auth import login, logout
 from django.contrib.auth.models import User
 from django.utils import timezone
 from django.utils.decorators import method_decorator
 from django.views.decorators.csrf import ensure_csrf_cookie
-from django_filters import MethodFilter
 from rest_framework.authtoken.models import Token
 from rest_framework.authtoken.serializers import AuthTokenSerializer
 from rest_framework.decorators import detail_route
@@ -16,7 +16,7 @@ from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework.response import Response
 from rest_framework.viewsets import ViewSet
 
-from poms.common.filters import CharFilter
+from poms.common.filters import CharFilter, NoOpFilter
 from poms.common.pagination import BigPagination
 from poms.common.views import AbstractModelViewSet, AbstractApiView
 from poms.users.filters import OwnerByMasterUserFilter, MasterUserFilter
@@ -174,16 +174,13 @@ class MasterUserViewSet(AbstractModelViewSet):
 
 
 class MemberFilterSet(FilterSet):
-    # is_deleted = MethodFilter(action='filter_is_deleted')
+    id = NoOpFilter()
+    is_deleted = django_filters.BooleanFilter()
     username = CharFilter()
 
     class Meta:
         model = Member
-        fields = ['is_deleted']
-
-    # def filter_is_deleted(self, qs, value):
-        # if value = 1
-        # return qs
+        fields = []
 
 
 class MemberViewSet(AbstractModelViewSet):
@@ -199,7 +196,7 @@ class MemberViewSet(AbstractModelViewSet):
     ordering_fields = ['username', ]
     search_fields = ['username', ]
     pagination_class = BigPagination
-    has_feature_is_deleted = True
+    # has_feature_is_deleted = True
 
     def get_object(self):
         lookup_url_kwarg = self.lookup_url_kwarg or self.lookup_field
@@ -213,11 +210,12 @@ class MemberViewSet(AbstractModelViewSet):
 
 
 class GroupFilterSet(FilterSet):
+    id = NoOpFilter()
     name = CharFilter()
 
     class Meta:
         model = Group
-        fields = ['name', ]
+        fields = []
 
 
 class GroupViewSet(AbstractModelViewSet):
