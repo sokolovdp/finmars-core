@@ -28,7 +28,7 @@ admin.site.register(Currency, CurrencyAdmin)
 
 class CurrencyHistoryAdmin(HistoricalAdmin):
     model = CurrencyHistory
-    list_display = ['id', 'currency', 'master_user', 'date', 'fx_rate']
+    list_display = ['id', 'master_user', 'currency', 'date', 'fx_rate']
     list_select_related = ['currency', 'currency__master_user']
     search_fields = ['currency__id', 'currency__user_code', 'currency__name']
     list_filter = ['date', ]

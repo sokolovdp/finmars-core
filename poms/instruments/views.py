@@ -3,7 +3,7 @@ from __future__ import unicode_literals
 import django_filters
 from django.core.exceptions import ObjectDoesNotExist
 from rest_framework import serializers
-from rest_framework.decorators import list_route
+from rest_framework.decorators import list_route, detail_route
 from rest_framework.exceptions import MethodNotAllowed
 from rest_framework.filters import FilterSet
 from rest_framework.response import Response
@@ -19,7 +19,8 @@ from poms.instruments.serializers import InstrumentSerializer, PriceHistorySeria
     PaymentSizeDetailSerializer, PeriodicitySerializer, CostMethodSerializer, InstrumentTypeSerializer, \
     InstrumentAttributeTypeSerializer, PricingPolicySerializer, InstrumentClassifierNodeSerializer, \
     EventScheduleConfigSerializer, InstrumentTypeBulkObjectPermissionSerializer, \
-    InstrumentAttributeTypeBulkObjectPermissionSerializer, InstrumentBulkObjectPermissionSerializer
+    InstrumentAttributeTypeBulkObjectPermissionSerializer, InstrumentBulkObjectPermissionSerializer, \
+    InstrumentCalculatePricesAccruedPriceSerializer
 from poms.obj_attrs.filters import AttributeTypeValueTypeFilter
 from poms.obj_attrs.views import AbstractAttributeTypeViewSet, AbstractClassifierViewSet
 from poms.obj_perms.filters import ObjectPermissionMemberFilter, ObjectPermissionGroupFilter, \
@@ -188,6 +189,41 @@ class InstrumentViewSet(AbstractWithObjectPermissionViewSet):
     ]
     has_feature_is_deleted = True
 
+    @list_route(methods=['post'], url_path='rebuild-events', serializer_class=serializers.Serializer)
+    def rebuild_all_events(self, request):
+        queryset = self.filter_queryset(self.get_queryset())
+        processed = 0
+        for instance in queryset:
+            try:
+                instance.rebuild_event_schedules()
+            except ValueError as e:
+                pass
+            processed += 1
+        return Response({'processed': processed})
+
+    @detail_route(methods=['put', 'patch'], url_path='rebuild-events', serializer_class=serializers.Serializer)
+    def rebuild_events(self, request, pk):
+        instance = self.get_object()
+        try:
+            instance.rebuild_event_schedules()
+        except ValueError as e:
+            pass
+        return Response({'processed': 1})
+
+    @list_route(methods=['post'], url_path='recalculate-prices-accrued-price',
+                serializer_class=InstrumentCalculatePricesAccruedPriceSerializer)
+    def calculate_prices_accrued_price(self, request):
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        begin_date = serializer.validated_data['begin_date']
+        end_date = serializer.validated_data['end_date']
+
+        instruments = Instrument.objects.filter(master_user=request.user.master_user)
+        # instruments = self.filter_queryset(self.get_queryset())
+        for instrument in instruments:
+            instrument.calculate_prices_accrued_price(begin_date, end_date)
+        return Response(serializer.data)
+
 
 class PriceHistoryFilterSet(FilterSet):
     id = NoOpFilter()
@@ -219,21 +255,21 @@ class PriceHistoryViewSet(AbstractModelViewSet):
         'instrument__user_code', 'instrument__name', 'instrument__short_name',
     ]
 
-    @list_route(methods=['post'], url_path='recalculate-prices-accrued-price', serializer_class=serializers.Serializer)
-    def calculate_prices_accrued_price(self, request):
-        queryset = self.filter_queryset(self.get_queryset())
-        instrument_accruals = {}
-        processed = 0
-        for p in queryset:
-            accruals = instrument_accruals.get(p.instrument_id, None)
-            if accruals is None:
-                accruals = list(p.instrument.accrual_calculation_schedules.order_by('accrual_start_date'))
-                if accruals is None:
-                    accruals = []
-                instrument_accruals.get(p.instrument_id, accruals)
-            p.calculate_accrued_price(accruals=accruals, save=True)
-            processed += 1
-        return Response({'processed': processed})
+    # @list_route(methods=['post'], url_path='recalculate-prices-accrued-price', serializer_class=serializers.Serializer)
+    # def calculate_prices_accrued_price(self, request):
+    #     queryset = self.filter_queryset(self.get_queryset())
+    #     instrument_accruals = {}
+    #     processed = 0
+    #     for p in queryset:
+    #         accruals = instrument_accruals.get(p.instrument_id, None)
+    #         if accruals is None:
+    #             accruals = list(p.instrument.accrual_calculation_schedules.order_by('accrual_start_date'))
+    #             if accruals is None:
+    #                 accruals = []
+    #             instrument_accruals.get(p.instrument_id, accruals)
+    #         p.calculate_accrued_price(accruals=accruals, save=True)
+    #         processed += 1
+    #     return Response({'processed': processed})
 
 
 class EventScheduleConfigViewSet(AbstractModelViewSet):

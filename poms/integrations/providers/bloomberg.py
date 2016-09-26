@@ -358,18 +358,18 @@ class BloombergDataProvider(AbstractProvider):
             _l.debug('< response_id=%s', None)
             return None
 
-        headers_data = {
+        fields_data = self.soap_client.factory.create('Fields')
+        for field in fields:
+            fields_data.field.append(field)
+
+        headers = {
             "secmaster": True,
             "pricing": True,
             "historical": True,
         }
 
-        fields_data = self.soap_client.factory.create('Fields')
-        for field in fields:
-            fields_data.field.append(field)
-
         response = self.soap_client.service.submitGetDataRequest(
-            headers=headers_data,
+            headers=headers,
             fields=fields_data,
             instruments=[{"instrument": self._bbg_instr(instrument)}]
         )
@@ -476,8 +476,14 @@ class BloombergDataProvider(AbstractProvider):
         for code in instruments:
             instruments_data.instrument.append(self._bbg_instr(code))
 
+        headers = {
+            "secmaster": True,
+            "pricing": True,
+            "historical": True,
+        }
+
         response = self.soap_client.service.submitGetDataRequest(
-            headers={"secmaster": True},
+            headers=headers,
             fields=fields_data,
             instruments=instruments_data
         )
@@ -544,6 +550,9 @@ class BloombergDataProvider(AbstractProvider):
         # fields = ['PX_BID', 'PX_ASK', 'PX_LAST']
 
         headers = {
+            "secmaster": True,
+            "pricing": True,
+            "historical": True,
             "daterange": {
                 "period": {
                     "start": start,

@@ -107,8 +107,8 @@ class InstrumentAdmin(HistoricalAdmin):
     rebuild_event_schedules.short_description = "Rebuild event schedules"
 
     def calculate_prices_accrued_price(self, request, queryset):
-        for instr in queryset:
-            instr.calculate_prices_accrued_price(save=True)
+        for instrument in queryset:
+            instrument.calculate_prices_accrued_price()
 
     calculate_prices_accrued_price.short_description = "Calculate accrued price for prices"
 
@@ -187,19 +187,22 @@ admin.site.register(EventSchedule, EventScheduleAdmin)
 
 class PriceHistoryAdmin(HistoricalAdmin):
     model = PriceHistory
-    list_display = ['id', 'date', 'instrument', 'principal_price', 'accrued_price']
-    list_select_related = ['instrument']
+    list_display = ['id', 'master_user','instrument', 'pricing_policy','date', 'principal_price', 'accrued_price']
+    list_select_related = ['instrument', 'pricing_policy']
     search_fields = ['instrument__id', 'instrument__user_code', 'instrument__name']
     list_filter = ['date']
     date_hierarchy = 'date'
     raw_id_fields = ['instrument', 'pricing_policy']
     actions = ['calculate_accrued_price']
 
-    def calculate_accrued_price(self, request, queryset):
-        for p in queryset:
-            p.calculate_accrued_price(save=True)
+    def master_user(self, obj):
+        return obj.instrument.master_user
 
-    calculate_accrued_price.short_description = "Calculate accrued price"
+    # def calculate_accrued_price(self, request, queryset):
+    #     for p in queryset:
+    #         p.calculate_accrued_price(save=True)
+    #
+    # calculate_accrued_price.short_description = "Calculate accrued price"
 
 
 admin.site.register(PriceHistory, PriceHistoryAdmin)

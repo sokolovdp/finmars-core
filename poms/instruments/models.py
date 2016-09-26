@@ -580,30 +580,74 @@ class Instrument(NamedModel, FakeDeletableModel):
             if old_event:
                 processed.append(old_event.id)
 
-    def find_accrual(self, some_date, accruals=None):
+    def find_accrual(self, d, accruals=None):
         if accruals is None:
             # TODO: verify that use queryset cache
             accruals = self.accrual_calculation_schedules.order_by('accrual_start_date').all()
         accrual = None
         for a in accruals:
-            if a.accrual_start_date <= some_date:
+            if a.accrual_start_date <= d:
                 accrual = a
         return accrual
 
-    def find_factor(self, some_date, factors=None):
-        if factors is None:
-            # TODO: verify that use queryset cache
-            factors = self.factor_schedules.order_by('effective_date').all()
-        factor = None
-        for f in factors:
-            if f.effective_date <= some_date:
-                factor = f
-        return factor
+    # def find_factor(self, d, factors=None):
+    #     if factors is None:
+    #         # TODO: verify that use queryset cache
+    #         factors = self.factor_schedules.order_by('effective_date').all()
+    #     factor = None
+    #     for f in factors:
+    #         if f.effective_date <= d:
+    #             factor = f
+    #     return factor
 
-    def calculate_prices_accrued_price(self, save=False):
+    def calculate_prices_accrued_price(self, begin_date=None, end_date=None):
         accruals = [a for a in self.accrual_calculation_schedules.order_by('accrual_start_date')]
-        for p in self.prices.order_by('date'):
-            p.calculate_accrued_price(accruals=accruals, save=save)
+        if not accruals:
+            return
+        existed_prices = PriceHistory.objects.filter(instrument=self, date__range=(begin_date, end_date))
+        if begin_date is None and end_date is None:
+            # used from admin
+            for price in existed_prices:
+                if price.date >= self.maturity_date:
+                    continue
+                accrued_price = self.get_accrued_price(price.date, accruals)
+                if accrued_price is None:
+                    accrued_price = 0.0
+                price.accrued_price = accrued_price
+                price.save(update_fields=['accrued_price'])
+        else:
+            existed_prices = {(p.pricing_policy_id, p.date): p for p in existed_prices}
+            for pp in PricingPolicy.objects.filter(master_user=self.master_user):
+                for dt in rrule.rrule(rrule.DAILY, dtstart=begin_date, until=end_date):
+                    d = dt.date()
+                    if d >= self.maturity_date:
+                        continue
+                    price = existed_prices.get((pp.id, d), None)
+                    accrued_price = self.get_accrued_price(d, accruals)
+                    if price is None:
+                        if accrued_price is not None:
+                            price = PriceHistory()
+                            price.instrument = self
+                            price.pricing_policy = pp
+                            price.date = d
+                            price.accrued_price = accrued_price
+                            price.save()
+                    else:
+                        if accrued_price is None:
+                            accrued_price = 0.0
+                        price.accrued_price = accrued_price
+                        price.save(update_fields=['accrued_price'])
+
+    def get_accrued_price(self, price_date, accruals=None):
+        from poms.common.formula_accruals import coupon_accrual_factor
+        accrual = self.find_accrual(price_date, accruals=accruals)
+        if accrual is None:
+            return None
+        factor = coupon_accrual_factor(accrual_calculation_schedule=accrual,
+                                       dt1=accrual.accrual_start_date,
+                                       dt2=price_date,
+                                       dt3=accrual.first_payment_date)
+        return accrual.accrual_size * factor
 
 
 class InstrumentUserObjectPermission(AbstractUserObjectPermission):
@@ -738,24 +782,24 @@ class PriceHistory(models.Model):
         return '%s:%s:%s:%s:%s' % (
             self.instrument_id, self.pricing_policy_id, self.date, self.principal_price, self.accrued_price)
 
-    def find_accrual(self, accruals=None):
-        return self.instrument.find_accrual(self.date, accruals=accruals)
-
-    def calculate_accrued_price(self, accrual=None, accruals=None, save=False):
-        if accrual is None:
-            accrual = self.find_accrual(accruals=accruals)
-        old_accrued_price = self.accrued_price
-        if accrual is None:
-            self.accrued_price = 0.
-        else:
-            from poms.common.formula_accruals import coupon_accrual_factor
-            factor = coupon_accrual_factor(accrual_calculation_schedule=accrual,
-                                           dt1=accrual.accrual_start_date,
-                                           dt2=self.date,
-                                           dt3=accrual.first_payment_date)
-            self.accrued_price = accrual.accrual_size * factor
-        if save and not isclose(old_accrued_price, self.accrued_price):
-            self.save(update_fields=['accrued_price'])
+        # def find_accrual(self, accruals=None):
+        #     return self.instrument.find_accrual(self.date, accruals=accruals)
+        #
+        # def calculate_accrued_price(self, accrual=None, accruals=None, save=False):
+        #     if accrual is None:
+        #         accrual = self.find_accrual(accruals=accruals)
+        #     old_accrued_price = self.accrued_price
+        #     if accrual is None:
+        #         self.accrued_price = 0.
+        #     else:
+        #         from poms.common.formula_accruals import coupon_accrual_factor
+        #         factor = coupon_accrual_factor(accrual_calculation_schedule=accrual,
+        #                                        dt1=accrual.accrual_start_date,
+        #                                        dt2=self.date,
+        #                                        dt3=accrual.first_payment_date)
+        #         self.accrued_price = accrual.accrual_size * factor
+        #     if save and not isclose(old_accrued_price, self.accrued_price):
+        #         self.save(update_fields=['accrued_price'])
 
 
 @python_2_unicode_compatible
