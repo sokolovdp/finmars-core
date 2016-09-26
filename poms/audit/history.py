@@ -239,7 +239,8 @@ def _instance_post_save(sender, instance=None, created=None, **kwargs):
                 _l.debug('post_save: changed field "%s": %s -> %s', f, old_value, new_value)
 
                 e4 = ObjectHistory4Entry(
-                    action_flag=ObjectHistory4Entry.CHANGE,
+                    # action_flag=ObjectHistory4Entry.CHANGE,
+                    action_flag=_state.flag,
                     content_type=ContentType.objects.get_for_model(instance),
                     object_id=instance.id,
                     object_repr=str(instance),
@@ -289,8 +290,8 @@ def _instance_m2m_changed(sender, instance=None, action=None, reverse=None, mode
     _l.debug('m2m_changed.%s: sender=%s, instance=%s, reverse=%s, model=%s, pk_set=%s, kwargs=%s',
              action, sender, instance, reverse, model, pk_set, kwargs)
 
-    if _state.flag == ObjectHistory4Entry.ADDITION:
-        return
+    # if _state.flag == ObjectHistory4Entry.ADDITION:
+    #     return
 
     if action not in ['pre_remove', 'pre_add']:
         return
