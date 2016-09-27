@@ -156,7 +156,8 @@ class ReadonlyModelWithObjectPermissionListSerializer(serializers.ListSerializer
         ret = super(ReadonlyModelWithObjectPermissionListSerializer, self).to_representation(data)
         return [
             a for a in ret if a.get('granted_permissions', None)
-        ]
+            ]
+
 
 class ReadonlyModelWithObjectPermissionSerializer(ReadonlyModelSerializer):
     class Meta:

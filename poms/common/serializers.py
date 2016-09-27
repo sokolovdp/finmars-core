@@ -274,7 +274,14 @@ class AbstractClassifierNodeSerializer(AbstractPomsSerializer):
         ]
 
 
+class ReadonlyModelListSerializer(serializers.ListSerializer):
+    pass
+
+
 class ReadonlyModelSerializer(serializers.Serializer):
+    class Meta:
+        list_serializer_class = ReadonlyModelListSerializer
+
     def __init__(self, *args, **kwargs):
         fields = kwargs.pop('fields', []) or []
         if not isinstance(fields, list):
