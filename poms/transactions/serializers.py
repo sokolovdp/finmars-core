@@ -7,7 +7,7 @@ from poms.accounts.fields import AccountField, AccountDefault
 from poms.accounts.models import Account
 from poms.common.fields import ExpressionField
 from poms.common.serializers import PomsClassSerializer, ModelWithUserCodeSerializer, AbstractClassifierSerializer, \
-    AbstractClassifierNodeSerializer
+    AbstractClassifierNodeSerializer, ReadonlyNamedModelSerializer, ReadonlyModelWithNameSerializer
 from poms.counterparties.fields import ResponsibleField, CounterpartyField, ResponsibleDefault, CounterpartyDefault
 from poms.counterparties.models import Counterparty, Responsible
 from poms.currencies.fields import CurrencyField, CurrencyDefault
@@ -17,7 +17,8 @@ from poms.instruments.models import Instrument, InstrumentType, DailyPricingMode
 from poms.integrations.fields import PriceDownloadSchemeField
 from poms.obj_attrs.serializers import AbstractAttributeTypeSerializer, AbstractAttributeSerializer, \
     ModelWithAttributesSerializer
-from poms.obj_perms.serializers import ModelWithObjectPermissionSerializer, AbstractBulkObjectPermissionSerializer
+from poms.obj_perms.serializers import ModelWithObjectPermissionSerializer, AbstractBulkObjectPermissionSerializer, \
+    ReadonlyNamedModelWithObjectPermissionSerializer
 from poms.portfolios.fields import PortfolioField, PortfolioDefault
 from poms.portfolios.models import Portfolio
 from poms.strategies.fields import Strategy1Field, Strategy2Field, Strategy3Field, Strategy1Default, Strategy2Default, \
@@ -50,11 +51,13 @@ class TransactionClassSerializer(PomsClassSerializer):
 class TransactionTypeGroupSerializer(ModelWithObjectPermissionSerializer, ModelWithUserCodeSerializer):
     master_user = MasterUserField()
     tags = TagField(many=True, required=False, allow_null=True)
+    tags_object = ReadonlyNamedModelWithObjectPermissionSerializer(source='tags', many=True)
 
     class Meta:
         model = TransactionTypeGroup
         fields = [
-            'url', 'id', 'master_user', 'user_code', 'name', 'short_name', 'public_name', 'notes', 'is_deleted', 'tags'
+            'url', 'id', 'master_user', 'user_code', 'name', 'short_name', 'public_name', 'notes', 'is_deleted',
+            'tags', 'tags_object',
         ]
 
 
@@ -87,24 +90,40 @@ class TransactionTypeInputSerializer(serializers.ModelSerializer):
     content_type = TransactionTypeInputContentTypeField(allow_null=True, allow_empty=True)
 
     account = AccountField(allow_null=True)
+    account_object = ReadonlyNamedModelWithObjectPermissionSerializer(source='account')
     instrument_type = InstrumentTypeField(allow_null=True)
+    instrument_type_object = ReadonlyNamedModelWithObjectPermissionSerializer(source='instrument_type')
     instrument = InstrumentField(allow_null=True)
+    instrument_object = ReadonlyNamedModelWithObjectPermissionSerializer(source='instrument')
     currency = CurrencyField(allow_null=True)
+    currency_object = ReadonlyNamedModelSerializer(source='currency')
     counterparty = CounterpartyField(allow_null=True)
+    counterparty_object = ReadonlyNamedModelWithObjectPermissionSerializer(source='counterparty')
     responsible = ResponsibleField(allow_null=True)
+    responsible_object = ReadonlyNamedModelWithObjectPermissionSerializer(source='responsible')
     portfolio = PortfolioField(allow_null=True)
+    portfolio_object = ReadonlyNamedModelWithObjectPermissionSerializer(source='portfolio')
     strategy1 = Strategy1Field(allow_null=True)
+    strategy1_object = ReadonlyNamedModelWithObjectPermissionSerializer(source='strategy1')
     strategy2 = Strategy2Field(allow_null=True)
+    strategy2_object = ReadonlyNamedModelWithObjectPermissionSerializer(source='strategy2')
     strategy3 = Strategy3Field(allow_null=True)
+    strategy3_object = ReadonlyNamedModelWithObjectPermissionSerializer(source='strategy3')
+    daily_pricing_model_object = ReadonlyModelWithNameSerializer(source='daily_pricing_model')
+    payment_size_detail = ReadonlyModelWithNameSerializer(source='daily_pricing_model')
     price_download_scheme = PriceDownloadSchemeField(allow_null=True)
+    price_download_scheme_object = ReadonlyModelWithNameSerializer(source='price_download_scheme',
+                                                                   fields=['scheme_name'])
 
     class Meta:
         model = TransactionTypeInput
-        fields = ['id', 'name', 'verbose_name', 'value_type', 'content_type', 'order',
-                  'is_fill_from_context', 'value',
-                  'account', 'instrument_type', 'instrument', 'currency', 'counterparty', 'responsible', 'portfolio',
-                  'strategy1', 'strategy2', 'strategy3', 'daily_pricing_model', 'payment_size_detail',
-                  'price_download_scheme', ]
+        fields = [
+            'id', 'name', 'verbose_name', 'value_type', 'content_type', 'order', 'is_fill_from_context', 'value',
+            'account', 'account_object', 'instrument_type', 'instrument_type_object', 'instrument', 'instrument_object',
+            'currency', 'currency_object', 'counterparty', 'counterparty_object', 'responsible', 'responsible_object',
+            'portfolio', 'portfolio_object', 'strategy1', 'strategy1_object', 'strategy2', 'strategy2_object',
+            'strategy3', 'strategy3_object', 'daily_pricing_model', 'daily_pricing_model_object',
+            'payment_size_detail', 'payment_size_detail', 'price_download_scheme', 'price_download_scheme_object', ]
         read_only_fields = ['order']
 
     def validate(self, data):
@@ -122,12 +141,16 @@ class TransactionTypeActionInstrumentSerializer(serializers.ModelSerializer):
     public_name = ExpressionField(allow_blank=True)
     short_name = ExpressionField(allow_blank=True)
     notes = ExpressionField(allow_blank=True)
+
     instrument_type = InstrumentTypeField(allow_null=True)
+    instrument_type_object = ReadonlyNamedModelWithObjectPermissionSerializer(source='instrument_type')
     instrument_type_input = TransactionInputField(allow_null=True)
     pricing_currency = CurrencyField(allow_null=True)
+    pricing_currency_object = ReadonlyNamedModelSerializer(source='pricing_currency')
     pricing_currency_input = TransactionInputField(allow_null=True)
     price_multiplier = ExpressionField(default="1.0")
     accrued_currency = CurrencyField(allow_null=True)
+    accrued_currency_object = ReadonlyNamedModelSerializer(source='accrued_currency')
     accrued_currency_input = TransactionInputField(allow_null=True)
     accrued_multiplier = ExpressionField(default="1.0")
     payment_size_detail_input = TransactionInputField(allow_null=True)
@@ -138,8 +161,13 @@ class TransactionTypeActionInstrumentSerializer(serializers.ModelSerializer):
     user_text_3 = ExpressionField(allow_blank=True)
 
     reference_for_pricing = ExpressionField(allow_blank=True)
+    daily_pricing_model_object = ReadonlyModelWithNameSerializer(source='daily_pricing_model')
     daily_pricing_model_input = TransactionInputField(allow_null=True)
+    payment_size_detail_object = ReadonlyModelWithNameSerializer(source='daily_pricing_model')
     price_download_scheme = PriceDownloadSchemeField(allow_null=True)
+    price_download_scheme_object = ReadonlyModelWithNameSerializer(source='price_download_scheme',
+                                                                   fields=['scheme_name'])
+
     price_download_scheme_input = TransactionInputField(allow_null=True)
     maturity_date = ExpressionField(allow_blank=True)
 
@@ -147,97 +175,109 @@ class TransactionTypeActionInstrumentSerializer(serializers.ModelSerializer):
         model = TransactionTypeActionInstrument
         fields = [
             'user_code', 'name', 'public_name', 'short_name', 'notes',
-            'instrument_type', 'instrument_type_input',
-            'pricing_currency', 'pricing_currency_input',
-            'price_multiplier',
-            'accrued_currency', 'accrued_currency_input',
-            'accrued_multiplier',
-            'payment_size_detail', 'payment_size_detail_input',
-            'default_price', 'default_accrued',
-            'user_text_1', 'user_text_2', 'user_text_3',
-            'reference_for_pricing',
-            'price_download_scheme', 'daily_pricing_model_input',
-            'daily_pricing_model', 'price_download_scheme_input',
+            'instrument_type', 'instrument_type_object', 'instrument_type_input',
+            'pricing_currency', 'pricing_currency_object', 'pricing_currency_input', 'price_multiplier',
+            'accrued_currency', 'accrued_currency_object', 'accrued_currency_input', 'accrued_multiplier',
+            'payment_size_detail', 'payment_size_detail_object', 'payment_size_detail_input',
+            'default_price', 'default_accrued', 'user_text_1', 'user_text_2', 'user_text_3', 'reference_for_pricing',
+            'price_download_scheme', 'price_download_scheme_object', 'price_download_scheme_input',
+            'daily_pricing_model', 'daily_pricing_model_object', 'daily_pricing_model_input',
             'maturity_date',
         ]
 
 
 class TransactionTypeActionTransactionSerializer(serializers.ModelSerializer):
+    transaction_class_object = ReadonlyModelWithNameSerializer(source='transaction_class')
     portfolio = PortfolioField(allow_null=True)
+    portfolio_object = ReadonlyNamedModelWithObjectPermissionSerializer(source='portfolio')
     portfolio_input = TransactionInputField(allow_null=True)
     instrument = InstrumentField(allow_null=True)
+    instrument_object = ReadonlyNamedModelWithObjectPermissionSerializer(source='instrument')
     instrument_input = TransactionInputField(allow_null=True)
     instrument_phantom = TransactionTypeActionInstrumentPhantomField(allow_null=True)
     transaction_currency = CurrencyField(allow_null=True)
+    transaction_currency_object = ReadonlyNamedModelWithObjectPermissionSerializer(source='transaction_currency')
     transaction_currency_input = TransactionInputField(allow_null=True)
     position_size_with_sign = ExpressionField(default="0.0")
     settlement_currency = CurrencyField(allow_null=True)
+    settlement_currency_object = ReadonlyNamedModelWithObjectPermissionSerializer(source='settlement_currency')
     settlement_currency_input = TransactionInputField(allow_null=True)
     cash_consideration = ExpressionField(default="0.0")
     principal_with_sign = ExpressionField(default="0.0")
     carry_with_sign = ExpressionField(default="0.0")
     overheads_with_sign = ExpressionField(default="0.0")
     account_position = AccountField(allow_null=True)
+    account_position_object = ReadonlyNamedModelWithObjectPermissionSerializer(source='account_position')
     account_position_input = TransactionInputField(allow_null=True)
     account_cash = AccountField(allow_null=True)
+    account_cash_object = ReadonlyNamedModelWithObjectPermissionSerializer(source='account_cash')
     account_cash_input = TransactionInputField(allow_null=True)
     account_interim = AccountField(allow_null=True)
+    account_interim_object = ReadonlyNamedModelWithObjectPermissionSerializer(source='account_interim')
     account_interim_input = TransactionInputField(allow_null=True)
     accounting_date = ExpressionField(default="now()")
     cash_date = ExpressionField(default="now()")
     strategy1_position = Strategy1Field(allow_null=True)
+    strategy1_position_object = ReadonlyNamedModelWithObjectPermissionSerializer(source='strategy1_position')
     strategy1_position_input = TransactionInputField(allow_null=True)
     strategy1_cash = Strategy1Field(allow_null=True)
+    strategy1_cash_object = ReadonlyNamedModelWithObjectPermissionSerializer(source='strategy1_cash')
     strategy1_cash_input = TransactionInputField(allow_null=True)
     strategy2_position = Strategy1Field(allow_null=True)
+    strategy2_position_object = ReadonlyNamedModelWithObjectPermissionSerializer(source='strategy2_position')
     strategy2_position_input = TransactionInputField(allow_null=True)
     strategy2_cash = Strategy1Field(allow_null=True)
+    strategy2_cash_object = ReadonlyNamedModelWithObjectPermissionSerializer(source='strategy2_cash')
     strategy2_cash_input = TransactionInputField(allow_null=True)
     strategy3_position = Strategy1Field(allow_null=True)
+    strategy3_position_object = ReadonlyNamedModelWithObjectPermissionSerializer(source='strategy3_position')
     strategy3_position_input = TransactionInputField(allow_null=True)
     strategy3_cash = Strategy1Field(allow_null=True)
+    strategy3_cash_object = ReadonlyNamedModelWithObjectPermissionSerializer(source='strategy3_cash')
     strategy3_cash_input = TransactionInputField(allow_null=True)
     responsible = ResponsibleField(allow_null=True)
+    responsible_object = ReadonlyNamedModelWithObjectPermissionSerializer(source='responsible')
     responsible_input = TransactionInputField(allow_null=True)
+    counterparty = CounterpartyField(allow_null=True)
+    counterparty_object = ReadonlyNamedModelWithObjectPermissionSerializer(source='counterparty')
+    counterparty_input = TransactionInputField(allow_null=True)
     factor = ExpressionField(default="0.0")
     trade_price = ExpressionField(default="0.0")
     principal_amount = ExpressionField(default="0.0")
     carry_amount = ExpressionField(default="0.0")
     overheads = ExpressionField(default="0.0")
-    counterparty = CounterpartyField(allow_null=True)
-    counterparty_input = TransactionInputField(allow_null=True)
 
     class Meta:
         model = TransactionTypeActionTransaction
         fields = [
-            'transaction_class',
-            'portfolio', 'portfolio_input',
-            'instrument', 'instrument_input', 'instrument_phantom',
-            'transaction_currency', 'transaction_currency_input',
+            'transaction_class', 'transaction_class_object',
+            'portfolio', 'portfolio_object', 'portfolio_input',
+            'instrument', 'instrument_object', 'instrument_input', 'instrument_phantom',
+            'transaction_currency', 'transaction_currency_object', 'transaction_currency_input',
             'position_size_with_sign',
-            'settlement_currency', 'settlement_currency_input',
+            'settlement_currency', 'settlement_currency_object', 'settlement_currency_input',
             'cash_consideration',
             'principal_with_sign',
             'carry_with_sign',
             'overheads_with_sign',
-            'account_position', 'account_position_input',
-            'account_cash', 'account_cash_input',
-            'account_interim', 'account_interim_input',
+            'account_position', 'account_position_object', 'account_position_input',
+            'account_cash', 'account_cash_object', 'account_cash_input',
+            'account_interim', 'account_interim_object', 'account_interim_input',
             'accounting_date',
             'cash_date',
-            'strategy1_position', 'strategy1_position_input',
-            'strategy1_cash', 'strategy1_cash_input',
-            'strategy2_position', 'strategy2_position_input',
-            'strategy2_cash', 'strategy2_cash_input',
-            'strategy3_position', 'strategy3_position_input',
-            'strategy3_cash', 'strategy3_cash_input',
+            'strategy1_position', 'strategy1_position_object', 'strategy1_position_input',
+            'strategy1_cash', 'strategy1_cash_object', 'strategy1_cash_input',
+            'strategy2_position', 'strategy2_position_object', 'strategy2_position_input',
+            'strategy2_cash', 'strategy2_cash_object', 'strategy2_cash_input',
+            'strategy3_position', 'strategy3_position_object', 'strategy3_position_input',
+            'strategy3_cash', 'strategy3_cash_object', 'strategy3_cash_input',
             'factor',
             'trade_price',
             'principal_amount',
             'carry_amount',
             'overheads',
-            'responsible', 'responsible_input',
-            'counterparty', 'counterparty_input',
+            'responsible', 'responsible_object', 'responsible_input',
+            'counterparty', 'counterparty_object', 'counterparty_input',
         ]
 
 
@@ -258,19 +298,25 @@ class TransactionTypeActionSerializer(serializers.ModelSerializer):
 class TransactionTypeSerializer(ModelWithObjectPermissionSerializer, ModelWithUserCodeSerializer):
     master_user = MasterUserField()
     group = TransactionTypeGroupField(allow_null=False)
+    group_object = ReadonlyNamedModelWithObjectPermissionSerializer(source='type')
     display_expr = ExpressionField(allow_blank=False, allow_null=False)
     instrument_types = InstrumentTypeField(many=True, required=False, allow_null=True)
+    instrument_types_object = ReadonlyNamedModelWithObjectPermissionSerializer(source='instrument_types', many=True)
     portfolios = PortfolioField(many=True, required=False, allow_null=True)
+    portfolios_object = ReadonlyNamedModelWithObjectPermissionSerializer(source='portfolios', many=True)
     tags = TagField(many=True, required=False, allow_null=True)
+    tags_object = ReadonlyNamedModelWithObjectPermissionSerializer(source='tags', many=True)
     inputs = TransactionTypeInputSerializer(many=True)
     actions = TransactionTypeActionSerializer(many=True, read_only=False)
 
     class Meta:
         model = TransactionType
         fields = [
-            'url', 'id', 'master_user', 'group', 'user_code', 'name', 'short_name', 'public_name', 'notes',
+            'url', 'id', 'master_user', 'group', 'group_object',
+            'user_code', 'name', 'short_name', 'public_name', 'notes',
             'display_expr', 'is_valid_for_all_portfolios', 'is_valid_for_all_instruments', 'is_deleted',
-            'instrument_types', 'portfolios', 'tags', 'inputs', 'actions'
+            'instrument_types', 'instrument_types_object', 'portfolios', 'portfolios_object', 'tags', 'tags_object',
+            'inputs', 'actions'
         ]
 
     def validate(self, attrs):
@@ -453,47 +499,66 @@ class TransactionAttributeSerializer(AbstractAttributeSerializer):
 
 class TransactionSerializer(ModelWithAttributesSerializer):
     master_user = MasterUserField()
+    transaction_class_object = ReadonlyNamedModelSerializer(source='transaction_class')
     complex_transaction = serializers.PrimaryKeyRelatedField(read_only=True)
     complex_transaction_order = serializers.IntegerField(read_only=True)
     portfolio = PortfolioField(default=PortfolioDefault())
+    portfolio_object = ReadonlyNamedModelWithObjectPermissionSerializer(source='portfolio')
     transaction_currency = CurrencyField(default=CurrencyDefault(), required=False, allow_null=True)
+    transaction_currency_object = ReadonlyNamedModelWithObjectPermissionSerializer(source='transaction_currency')
     instrument = InstrumentField(required=False, allow_null=True)
+    instrument_object = ReadonlyNamedModelWithObjectPermissionSerializer(source='instrument')
     settlement_currency = CurrencyField(default=CurrencyDefault())
+    settlement_currency_object = ReadonlyNamedModelWithObjectPermissionSerializer(source='settlement_currency')
     account_cash = AccountField(default=AccountDefault())
+    account_cash_object = ReadonlyNamedModelWithObjectPermissionSerializer(source='account_cash')
     account_position = AccountField(default=AccountDefault())
+    account_position_object = ReadonlyNamedModelWithObjectPermissionSerializer(source='account_position')
     account_interim = AccountField(default=AccountDefault())
+    account_interim_object = ReadonlyNamedModelWithObjectPermissionSerializer(source='account_interim')
     strategy1_position = Strategy1Field(default=Strategy1Default())
+    strategy1_position_object = ReadonlyNamedModelWithObjectPermissionSerializer(source='strategy1_position')
     strategy1_cash = Strategy1Field(default=Strategy1Default())
+    strategy1_cash_object = ReadonlyNamedModelWithObjectPermissionSerializer(source='strategy1_cash')
     strategy2_position = Strategy2Field(default=Strategy2Default())
+    strategy2_position_object = ReadonlyNamedModelWithObjectPermissionSerializer(source='strategy2_position')
     strategy2_cash = Strategy2Field(default=Strategy2Default())
+    strategy2_cash_object = ReadonlyNamedModelWithObjectPermissionSerializer(source='strategy2_cash')
     strategy3_position = Strategy3Field(default=Strategy3Default())
+    strategy3_position_object = ReadonlyNamedModelWithObjectPermissionSerializer(source='strategy3_position')
     strategy3_cash = Strategy3Field(default=Strategy3Default())
+    strategy3_cash_object = ReadonlyNamedModelWithObjectPermissionSerializer(source='strategy3_cash')
     responsible = ResponsibleField(default=ResponsibleDefault())
+    responsible_object = ReadonlyNamedModelWithObjectPermissionSerializer(source='responsible')
     counterparty = CounterpartyField(default=CounterpartyDefault())
+    counterparty_object = ReadonlyNamedModelWithObjectPermissionSerializer(source='counterparty')
     attributes = TransactionAttributeSerializer(many=True, required=False, allow_null=True)
 
     class Meta:
         model = Transaction
-        fields = ['url', 'id', 'master_user',
-                  'transaction_code',
-                  'complex_transaction', 'complex_transaction_order',
-                  'transaction_class',
-                  'portfolio',
-                  'transaction_currency', 'instrument',
-                  'position_size_with_sign',
-                  'settlement_currency', 'cash_consideration',
-                  'principal_with_sign', 'carry_with_sign', 'overheads_with_sign',
-                  'accounting_date', 'cash_date', 'transaction_date',
-                  'account_cash', 'account_position', 'account_interim',
-                  'strategy1_position', 'strategy1_cash',
-                  'strategy2_position', 'strategy2_cash',
-                  'strategy3_position', 'strategy3_cash',
-                  'reference_fx_rate',
-                  'is_locked', 'is_canceled',
-                  'factor', 'trade_price',
-                  'principal_amount', 'carry_amount', 'overheads',
-                  'responsible', 'counterparty',
-                  'attributes']
+        fields = [
+            'url', 'id', 'master_user',
+            'transaction_code',
+            'complex_transaction', 'complex_transaction_order',
+            'transaction_class', 'transaction_class_object',
+            'portfolio', 'portfolio_object',
+            'transaction_currency', 'transaction_currency_object', 'instrument', 'instrument_object',
+            'position_size_with_sign',
+            'settlement_currency', 'settlement_currency_object',
+            'cash_consideration', 'principal_with_sign', 'carry_with_sign', 'overheads_with_sign',
+            'accounting_date', 'cash_date', 'transaction_date',
+            'account_cash', 'account_cash_object', 'account_position', 'account_position_object',
+            'account_interim', 'account_interim_object',
+            'strategy1_position', 'strategy1_position_object', 'strategy1_cash', 'strategy1_cash_object',
+            'strategy2_position', 'strategy2_position_object', 'strategy2_cash', 'strategy2_cash_object',
+            'strategy3_position', 'strategy3_position_object', 'strategy3_cash', 'strategy3_cash_object',
+            'reference_fx_rate',
+            'is_locked', 'is_canceled',
+            'factor', 'trade_price',
+            'principal_amount', 'carry_amount', 'overheads',
+            'responsible', 'responsible_object', 'counterparty', 'counterparty_object',
+            'attributes'
+        ]
 
 
 class ComplexTransactionSerializer(serializers.ModelSerializer):

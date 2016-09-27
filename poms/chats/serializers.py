@@ -5,7 +5,9 @@ from rest_framework import serializers
 from poms.chats.fields import ThreadField, ThreadGroupField, ThreadGroupDefault
 from poms.chats.models import Thread, Message, DirectMessage, ThreadGroup
 from poms.common.fields import DateTimeTzAwareField
-from poms.obj_perms.serializers import ModelWithObjectPermissionSerializer, AbstractBulkObjectPermissionSerializer
+from poms.common.serializers import ReadonlyModelWithNameSerializer
+from poms.obj_perms.serializers import ModelWithObjectPermissionSerializer, AbstractBulkObjectPermissionSerializer, \
+    ReadonlyNamedModelWithObjectPermissionSerializer
 from poms.tags.fields import TagField
 from poms.users.fields import MasterUserField, HiddenMemberField, MemberField
 from poms.users.serializers import MemberMiniSerializer
@@ -15,10 +17,11 @@ class ThreadGroupSerializer(serializers.ModelSerializer):
     url = serializers.HyperlinkedIdentityField(view_name='chatthreadgroup-detail')
     master_user = MasterUserField()
     tags = TagField(many=True, required=False, allow_null=True)
+    tags_object = ReadonlyNamedModelWithObjectPermissionSerializer(source='tags', many=True)
 
     class Meta:
         model = ThreadGroup
-        fields = ['url', 'id', 'master_user', 'name', 'is_deleted', 'tags', ]
+        fields = ['url', 'id', 'master_user', 'name', 'is_deleted', 'tags', 'tags_object']
 
 
 class MessageSerializer(serializers.ModelSerializer):
@@ -39,17 +42,22 @@ class ThreadSerializer(ModelWithObjectPermissionSerializer):
     url = serializers.HyperlinkedIdentityField(view_name='chatthread-detail')
     master_user = MasterUserField()
     thread_group = ThreadGroupField(default=ThreadGroupDefault())
+    thread_group_object = ReadonlyModelWithNameSerializer(source='thread_group')
     created = DateTimeTzAwareField(read_only=True)
     modified = DateTimeTzAwareField(read_only=True)
     closed = DateTimeTzAwareField(read_only=True)
     tags = TagField(many=True, required=False, allow_null=True)
+    tags_object = ReadonlyNamedModelWithObjectPermissionSerializer(source='tags', many=True)
     messages_count = serializers.IntegerField(read_only=True)
     messages_last = MessageSerializer(read_only=True, many=True)
 
     class Meta:
         model = Thread
-        fields = ['url', 'id', 'master_user', 'thread_group', 'created', 'modified', 'closed', 'subject', 'is_deleted',
-                  'tags', 'messages_count', 'messages_last']
+        fields = [
+            'url', 'id', 'master_user', 'thread_group', 'thread_group_object',
+            'created', 'modified', 'closed', 'subject', 'is_deleted',
+            'tags', 'tags_object', 'messages_count', 'messages_last'
+        ]
         read_only_fields = ['created', 'modified', 'closed']
 
 

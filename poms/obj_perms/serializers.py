@@ -153,13 +153,7 @@ class ModelWithObjectPermissionSerializer(serializers.ModelSerializer):
 
 class ReadonlyModelWithObjectPermissionSerializer(ReadonlyModelSerializer):
     def __init__(self, *args, **kwargs):
-        fields = kwargs.get('fields', None)
-        if fields is None:
-            fields = ['id', 'user_code', 'name', 'short_name', 'public_name']
-            kwargs['fields'] = fields
         super(ReadonlyModelWithObjectPermissionSerializer, self).__init__(*args, **kwargs)
-
-        self.fields['display_name'] = serializers.SerializerMethodField()
         self.fields['granted_permissions'] = GrantedPermissionField()
 
     def get_display_name(self, instance):
@@ -177,3 +171,13 @@ class ReadonlyModelWithObjectPermissionSerializer(ReadonlyModelSerializer):
                 if k not in ['id', 'public_name', 'display_name', 'granted_permissions']:
                     ret.pop(k)
         return ret
+
+
+class ReadonlyNamedModelWithObjectPermissionSerializer(ReadonlyModelWithObjectPermissionSerializer):
+    def __init__(self, *args, **kwargs):
+        fields = kwargs.get('fields', None)
+        if fields is None:
+            fields = ['id', 'user_code', 'name', 'short_name', 'public_name']
+            kwargs['fields'] = fields
+        super(ReadonlyNamedModelWithObjectPermissionSerializer, self).__init__(*args, **kwargs)
+        self.fields['display_name'] = serializers.SerializerMethodField()

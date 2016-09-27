@@ -12,10 +12,13 @@ from rest_framework.authtoken.serializers import AuthTokenSerializer
 from poms.accounts.fields import AccountTypeField, AccountField
 from poms.chats.fields import ThreadGroupField
 from poms.common.fields import DateTimeTzAwareField
+from poms.common.serializers import ReadonlyModelWithNameSerializer, ReadonlyModelSerializer, \
+    ReadonlyNamedModelSerializer
 from poms.counterparties.fields import CounterpartyField, ResponsibleField, CounterpartyGroupField, \
     ResponsibleGroupField
 from poms.currencies.fields import CurrencyField
 from poms.instruments.fields import InstrumentTypeField
+from poms.obj_perms.serializers import ReadonlyNamedModelWithObjectPermissionSerializer
 from poms.portfolios.fields import PortfolioField
 from poms.strategies.fields import Strategy1Field, Strategy2Field, Strategy3Field, Strategy1SubgroupField, \
     Strategy1GroupField, Strategy2GroupField, Strategy2SubgroupField, Strategy3GroupField, Strategy3SubgroupField
@@ -169,40 +172,78 @@ class MasterUserSerializer(serializers.ModelSerializer):
     timezone = serializers.ChoiceField(choices=TIMEZONE_CHOICES)
     is_current = serializers.SerializerMethodField()
     currency = CurrencyField()
-
+    currency_object = ReadonlyNamedModelSerializer(source='currency')
     account_type = AccountTypeField()
+    account_type_object = ReadonlyNamedModelWithObjectPermissionSerializer(source='account_type')
     account = AccountField()
+    account_object = ReadonlyNamedModelWithObjectPermissionSerializer(source='account')
     counterparty_group = CounterpartyGroupField()
+    counterparty_group_object = ReadonlyNamedModelWithObjectPermissionSerializer(source='counterparty_group')
     counterparty = CounterpartyField()
+    counterparty_object = ReadonlyNamedModelWithObjectPermissionSerializer(source='counterparty')
     responsible_group = ResponsibleGroupField()
+    responsible_group_object = ReadonlyNamedModelWithObjectPermissionSerializer(source='responsible_group')
     responsible = ResponsibleField()
+    responsible_object = ReadonlyNamedModelWithObjectPermissionSerializer(source='responsible')
     instrument_type = InstrumentTypeField()
+    instrument_type_object = ReadonlyNamedModelWithObjectPermissionSerializer(source='instrument_type')
     portfolio = PortfolioField()
+    portfolio_object = ReadonlyNamedModelWithObjectPermissionSerializer(source='portfolio')
     strategy1_group = Strategy1GroupField()
+    strategy1_group_object = ReadonlyNamedModelWithObjectPermissionSerializer(source='strategy1_group')
     strategy1_subgroup = Strategy1SubgroupField()
+    strategy1_subgroup_object = ReadonlyNamedModelWithObjectPermissionSerializer(source='strategy1_subgroup')
     strategy1 = Strategy1Field()
+    strategy1_object = ReadonlyNamedModelWithObjectPermissionSerializer(source='strategy1')
     strategy2_group = Strategy2GroupField()
+    strategy2_group_object = ReadonlyNamedModelWithObjectPermissionSerializer(source='strategy2_group')
     strategy2_subgroup = Strategy2SubgroupField()
+    strategy2_subgroup_object = ReadonlyNamedModelWithObjectPermissionSerializer(source='strategy2_subgroup')
     strategy2 = Strategy2Field()
+    strategy2_object = ReadonlyNamedModelWithObjectPermissionSerializer(source='strategy2')
     strategy3_group = Strategy3GroupField()
+    strategy3_group_object = ReadonlyNamedModelWithObjectPermissionSerializer(source='strategy3_group')
     strategy3_subgroup = Strategy3SubgroupField()
+    strategy3_subgroup_object = ReadonlyNamedModelWithObjectPermissionSerializer(source='strategy3_subgroup')
     strategy3 = Strategy3Field()
+    strategy3_object = ReadonlyNamedModelWithObjectPermissionSerializer(source='strategy3')
     thread_group = ThreadGroupField()
+    thread_group_object = ReadonlyNamedModelWithObjectPermissionSerializer(source='thread_group')
 
     class Meta:
         model = MasterUser
-        fields = ['url', 'id', 'name', 'is_current', 'language', 'timezone',
-                  'notification_business_days',
-                  'currency', 'account_type', 'account',
-                  'counterparty_group', 'counterparty',
-                  'responsible_group', 'responsible',
-                  'instrument_type',
-                  'portfolio',
-                  'strategy1_group', 'strategy1_subgroup', 'strategy1',
-                  'strategy2_group', 'strategy2_subgroup', 'strategy2',
-                  'strategy3_group', 'strategy3_subgroup', 'strategy3',
-                  'thread_group',
-                  ]
+        fields = [
+            'url', 'id', 'name', 'is_current', 'language', 'timezone',
+            'notification_business_days',
+            'currency', 'currency_object',
+            'account_type', 'account_type_object',
+            'account', 'account_object',
+            'counterparty_group', 'counterparty_group_object',
+            'counterparty', 'counterparty_object',
+            'responsible_group', 'responsible_group_object',
+            'responsible', 'responsible_object',
+            'instrument_type', 'instrument_type_object',
+            'portfolio', 'portfolio_object',
+            'strategy1_group', 'strategy1_group_object',
+            'strategy1_subgroup', 'strategy1_subgroup_object',
+            'strategy1', 'strategy1_object',
+            'strategy2_group', 'strategy2_group_object',
+            'strategy2_subgroup', 'strategy2_subgroup_object',
+            'strategy2', 'strategy2_object',
+            'strategy3_group', 'strategy3_group_object',
+            'strategy3_subgroup', 'strategy3_subgroup_object',
+            'strategy3', 'strategy3_object',
+            'thread_group', 'thread_group_object',
+        ]
+
+    def to_representation(self, instance):
+        ret = super(MasterUserSerializer, self).to_representation(instance)
+        is_current = self.get_is_current(instance)
+        if not is_current:
+            for k in list(ret.keys()):
+                if k not in ['url', 'id', 'name', 'is_current']:
+                    ret.pop(k)
+        return ret
 
     def get_is_current(self, obj):
         request = self.context['request']
@@ -236,13 +277,18 @@ class MemberSerializer(serializers.ModelSerializer):
     is_current = serializers.SerializerMethodField()
     join_date = DateTimeTzAwareField()
     groups = GroupField(many=True)
+    groups_object = ReadonlyModelWithNameSerializer(source='groups', many=True)
 
     class Meta:
         model = Member
-        fields = ['url', 'id', 'master_user', 'join_date', 'is_owner', 'is_admin', 'is_superuser', 'is_current',
-                  'is_deleted', 'username', 'first_name', 'last_name', 'display_name', 'email', 'groups']
-        read_only_fields = ['master_user', 'join_date', 'is_owner', 'is_superuser', 'is_current', 'is_deleted',
-                            'username', 'first_name', 'last_name', 'display_name', 'email', ]
+        fields = [
+            'url', 'id', 'master_user', 'join_date', 'is_owner', 'is_admin', 'is_superuser', 'is_current',
+            'is_deleted', 'username', 'first_name', 'last_name', 'display_name', 'email', 'groups', 'groups_object'
+        ]
+        read_only_fields = [
+            'master_user', 'join_date', 'is_owner', 'is_superuser', 'is_current', 'is_deleted',
+            'username', 'first_name', 'last_name', 'display_name', 'email',
+        ]
 
     def get_is_current(self, obj):
         member = self.context['request'].user.member
@@ -253,7 +299,9 @@ class GroupSerializer(serializers.ModelSerializer):
     url = serializers.HyperlinkedIdentityField(view_name='group-detail')
     master_user = MasterUserField()
     members = MemberField(many=True)
+    members_object = ReadonlyModelSerializer(source='members',
+                                             fields=['username', 'first_name', 'last_name', 'display_name'], many=True)
 
     class Meta:
         model = Group
-        fields = ['url', 'id', 'master_user', 'name', 'members']
+        fields = ['url', 'id', 'master_user', 'name', 'members', 'members_object']
