@@ -32,7 +32,7 @@ class CurrencySerializer(ModelWithUserCodeSerializer):
 class CurrencyHistorySerializer(serializers.ModelSerializer):
     url = serializers.HyperlinkedIdentityField(view_name='currencyhistory-detail')
     currency = CurrencyField()
-    currency_object = ReadonlyNamedModelSerializer(source='pricing_policy')
+    currency_object = ReadonlyNamedModelSerializer(source='currency')
     pricing_policy = PricingPolicyField(allow_null=False)
     pricing_policy_object = ReadonlyNamedModelSerializer(source='pricing_policy')
     fx_rate = FloatEvalField()
