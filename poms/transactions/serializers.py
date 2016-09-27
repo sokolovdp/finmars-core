@@ -298,7 +298,7 @@ class TransactionTypeActionSerializer(serializers.ModelSerializer):
 class TransactionTypeSerializer(ModelWithObjectPermissionSerializer, ModelWithUserCodeSerializer):
     master_user = MasterUserField()
     group = TransactionTypeGroupField(allow_null=False)
-    group_object = ReadonlyNamedModelWithObjectPermissionSerializer(source='type')
+    group_object = ReadonlyNamedModelWithObjectPermissionSerializer(source='group')
     display_expr = ExpressionField(allow_blank=False, allow_null=False)
     instrument_types = InstrumentTypeField(many=True, required=False, allow_null=True)
     instrument_types_object = ReadonlyNamedModelWithObjectPermissionSerializer(source='instrument_types', many=True)
