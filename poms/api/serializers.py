@@ -52,17 +52,28 @@ class TimezoneSerializer(serializers.Serializer):
 
 class ExpressionSerializer(serializers.Serializer):
     expression = ExpressionField(required=True)
-    names = serializers.DictField(required=False, allow_null=True)
+    names1 = serializers.DictField(required=False, allow_null=True, help_text='Raw names')
+    names2 = ExpressionField(required=False, allow_null=True, help_text='Names as expression')
+    names = serializers.ReadOnlyField()
     is_eval = serializers.BooleanField()
     result = serializers.ReadOnlyField()
     help_raw = serializers.SerializerMethodField()
     help = serializers.SerializerMethodField()
 
     def validate(self, attrs):
-        expression = attrs['expression']
-        names = attrs.get('names', None)
         is_eval = attrs.get('is_eval', False)
         if is_eval:
+            expression = attrs['expression']
+            names1 = attrs.get('names1', None)
+            names2 = attrs.get('names2', None)
+            if names2:
+                names2 = formula.safe_eval(names2)
+            names = {}
+            if names1:
+                names.update(names1)
+            if names2:
+                names.update(names2)
+            attrs['names'] = names
             try:
                 attrs['result'] = formula.safe_eval(expression, names)
             except formula.InvalidExpression as e:
