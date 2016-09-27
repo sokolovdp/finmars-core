@@ -1,6 +1,9 @@
 from __future__ import unicode_literals
 
+import json
+
 from django.contrib.contenttypes.models import ContentType
+from django.core.serializers.json import DjangoJSONEncoder
 from django.db import models
 from django.utils.encoding import python_2_unicode_compatible
 from django.utils.translation import ugettext_lazy
@@ -212,6 +215,7 @@ class TransactionType(NamedModel, FakeDeletableModel):
                                               blank=True, verbose_name=ugettext_lazy('instrument types'))
     is_valid_for_all_portfolios = models.BooleanField(default=True)
     is_valid_for_all_instruments = models.BooleanField(default=True)
+    book_transaction_layout_json = models.TextField(null=True, blank=True)
 
     # portfolios = models.ManyToManyField(
     #     'portfolios.Portfolio',
@@ -227,6 +231,17 @@ class TransactionType(NamedModel, FakeDeletableModel):
             ('view_transactiontype', 'Can view transaction type'),
             ('manage_transactiontype', 'Can manage transaction type'),
         ]
+
+    @property
+    def book_transaction_layout(self):
+        try:
+            return json.loads(self.book_transaction_layout_json) if self.book_transaction_layout_json else None
+        except (ValueError, TypeError):
+            return None
+
+    @book_transaction_layout.setter
+    def book_transaction_layout(self, data):
+        self.book_transaction_layout_json = json.dumps(data, cls=DjangoJSONEncoder, sort_keys=True) if data else None
 
 
 class TransactionTypeUserObjectPermission(AbstractUserObjectPermission):

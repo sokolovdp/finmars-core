@@ -308,6 +308,7 @@ class TransactionTypeSerializer(ModelWithObjectPermissionSerializer, ModelWithUs
     tags_object = ReadonlyNamedModelWithObjectPermissionSerializer(source='tags', many=True)
     inputs = TransactionTypeInputSerializer(many=True)
     actions = TransactionTypeActionSerializer(many=True, read_only=False)
+    book_transaction_layout = serializers.JSONField(allow_null=False)
 
     class Meta:
         model = TransactionType
@@ -315,6 +316,7 @@ class TransactionTypeSerializer(ModelWithObjectPermissionSerializer, ModelWithUs
             'url', 'id', 'master_user', 'group', 'group_object',
             'user_code', 'name', 'short_name', 'public_name', 'notes',
             'display_expr', 'is_valid_for_all_portfolios', 'is_valid_for_all_instruments', 'is_deleted',
+            'book_transaction_layout',
             'instrument_types', 'instrument_types_object', 'portfolios', 'portfolios_object', 'tags', 'tags_object',
             'inputs', 'actions'
         ]

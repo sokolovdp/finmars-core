@@ -550,9 +550,9 @@ class BloombergDataProvider(AbstractProvider):
         # fields = ['PX_BID', 'PX_ASK', 'PX_LAST']
 
         headers = {
-            "secmaster": True,
-            "pricing": True,
-            "historical": True,
+            # "secmaster": True,
+            # "pricing": True,
+            # "historical": True,
             "daterange": {
                 "period": {
                     "start": start,

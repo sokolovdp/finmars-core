@@ -479,7 +479,7 @@ CELERY_SEND_TASK_SENT_EVENT = True
 CELERYBEAT_SCHEDULE = {
     'backend.download_pricing_auto_scheduler': {
         'task': 'backend.download_pricing_auto_scheduler',
-        'schedule': 30,
+        'schedule': 600,
     },
 }
 
