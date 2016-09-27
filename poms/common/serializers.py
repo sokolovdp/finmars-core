@@ -272,3 +272,12 @@ class AbstractClassifierNodeSerializer(AbstractPomsSerializer):
             'tree_id',
             # 'children',
         ]
+
+
+class ReadonlyModelSerializer(serializers.Serializer):
+    def __init__(self, *args, **kwargs):
+        fields = kwargs.pop('fields', []) or []
+        kwargs.setdefault('read_only', True)
+        super(ReadonlyModelSerializer, self).__init__(*args, **kwargs)
+        for field in fields:
+            self.fields[field] = serializers.ReadOnlyField()

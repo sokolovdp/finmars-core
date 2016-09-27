@@ -8,7 +8,8 @@ from poms.common.serializers import AbstractClassifierSerializer, AbstractClassi
     ModelWithUserCodeSerializer
 from poms.obj_attrs.serializers import AbstractAttributeTypeSerializer, AbstractAttributeSerializer, \
     ModelWithAttributesSerializer
-from poms.obj_perms.serializers import ModelWithObjectPermissionSerializer, AbstractBulkObjectPermissionSerializer
+from poms.obj_perms.serializers import ModelWithObjectPermissionSerializer, AbstractBulkObjectPermissionSerializer, \
+    ReadonlyModelWithObjectPermissionSerializer
 from poms.portfolios.fields import PortfolioField
 from poms.tags.fields import TagField
 from poms.users.fields import MasterUserField
@@ -73,10 +74,14 @@ class AccountSerializer(ModelWithObjectPermissionSerializer, ModelWithAttributes
     attributes = AccountAttributeSerializer(many=True, required=False, allow_null=True)
     tags = TagField(many=True, required=False, allow_null=True)
 
+    type_object = ReadonlyModelWithObjectPermissionSerializer(source='type')
+    portfolios_object = ReadonlyModelWithObjectPermissionSerializer(source='portfolios', many=True)
+
     class Meta:
         model = Account
         fields = ['url', 'id', 'master_user', 'type', 'user_code', 'name', 'short_name', 'public_name', 'notes',
-                  'is_default', 'is_valid_for_all_portfolios', 'is_deleted', 'portfolios', 'tags', 'attributes', ]
+                  'is_default', 'is_valid_for_all_portfolios', 'is_deleted', 'portfolios', 'tags', 'attributes',
+                  'type_object']
 
 
 class AccountBulkObjectPermissionSerializer(AbstractBulkObjectPermissionSerializer):
