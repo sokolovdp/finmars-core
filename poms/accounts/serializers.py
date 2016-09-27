@@ -76,12 +76,16 @@ class AccountSerializer(ModelWithObjectPermissionSerializer, ModelWithAttributes
 
     type_object = ReadonlyModelWithObjectPermissionSerializer(source='type')
     portfolios_object = ReadonlyModelWithObjectPermissionSerializer(source='portfolios', many=True)
+    tags_object = ReadonlyModelWithObjectPermissionSerializer(source='tags')
 
     class Meta:
         model = Account
         fields = ['url', 'id', 'master_user', 'type', 'user_code', 'name', 'short_name', 'public_name', 'notes',
                   'is_default', 'is_valid_for_all_portfolios', 'is_deleted', 'portfolios', 'tags', 'attributes',
-                  'type_object']
+                  'type_object',
+                  'portfolios_object',
+                  'tags_object'
+                  ]
 
 
 class AccountBulkObjectPermissionSerializer(AbstractBulkObjectPermissionSerializer):
