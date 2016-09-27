@@ -151,7 +151,17 @@ class ModelWithObjectPermissionSerializer(serializers.ModelSerializer):
                 assign_perms2(instance, user_perms=user_object_permissions, group_perms=group_object_permissions)
 
 
+class ReadonlyModelWithObjectPermissionListSerializer(serializers.ListSerializer):
+    def to_representation(self, data):
+        ret = super(ReadonlyModelWithObjectPermissionListSerializer, self).to_representation(data)
+        return [
+            a for a in ret if a.get('granted_permissions', None)
+        ]
+
 class ReadonlyModelWithObjectPermissionSerializer(ReadonlyModelSerializer):
+    class Meta:
+        list_serializer_class = ReadonlyModelWithObjectPermissionListSerializer
+
     def __init__(self, *args, **kwargs):
         super(ReadonlyModelWithObjectPermissionSerializer, self).__init__(*args, **kwargs)
         self.fields['granted_permissions'] = GrantedPermissionField()
@@ -167,7 +177,7 @@ class ReadonlyModelWithObjectPermissionSerializer(ReadonlyModelSerializer):
         ret = super(ReadonlyModelWithObjectPermissionSerializer, self).to_representation(instance)
         member = self.context['request'].user.member
         if not has_view_perms(member, instance):
-            for k in [ret.keys()]:
+            for k in list(ret.keys()):
                 if k not in ['id', 'public_name', 'display_name', 'granted_permissions']:
                     ret.pop(k)
         return ret
