@@ -264,13 +264,14 @@ class TransactionTypeSerializer(ModelWithObjectPermissionSerializer, ModelWithUs
     tags = TagField(many=True, required=False, allow_null=True)
     inputs = TransactionTypeInputSerializer(many=True)
     actions = TransactionTypeActionSerializer(many=True, read_only=False)
+    book_transaction_layout = serializers.JSONField(allow_null=False)
 
     class Meta:
         model = TransactionType
         fields = [
             'url', 'id', 'master_user', 'group', 'user_code', 'name', 'short_name', 'public_name', 'notes',
             'display_expr', 'is_valid_for_all_portfolios', 'is_valid_for_all_instruments', 'is_deleted',
-            'instrument_types', 'portfolios', 'tags', 'inputs', 'actions'
+            'book_transaction_layout', 'instrument_types', 'portfolios', 'tags', 'inputs', 'actions'
         ]
 
     def validate(self, attrs):
