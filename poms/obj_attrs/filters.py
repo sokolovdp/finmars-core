@@ -7,14 +7,21 @@ from poms.common.fields import PrimaryKeyRelatedFilteredField
 from poms.obj_attrs.models import AbstractAttributeType
 from poms.obj_attrs.utils import get_attr_model, get_attr_type_model
 from poms.obj_perms.filters import ObjectPermissionBackend
-from poms.obj_perms.utils import obj_perms_filter_objects_for_view
+from poms.obj_perms.utils import obj_perms_filter_objects_for_view, obj_perms_filter_objects, get_view_perms
 
 
 class OwnerByAttributeTypeFilter(BaseFilterBackend):
     def filter_queryset(self, request, queryset, view):
         master_user = request.user.master_user
-        queryset = queryset.filter(attribute_type__master_user=master_user)
-        return queryset
+        # queryset = queryset.filter(attribute_type__master_user=master_user)
+        # queryset = obj_perms_filter_objects(request.user.member, get_view_perms(queryset.model), queryset)
+
+        attribute_type_model = queryset.model._meta.get_field('attribute_type').rel.to
+        attribute_type_queryset = attribute_type_model.objects.filter(master_user=master_user)
+        attribute_type_queryset = obj_perms_filter_objects(request.user.member, get_view_perms(attribute_type_model),
+                                                           attribute_type_queryset)
+
+        return queryset.filter(attribute_type__in=attribute_type_queryset)
 
 
 class ClassifierPermissionBackend(BaseFilterBackend):
