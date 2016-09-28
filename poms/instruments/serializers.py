@@ -370,7 +370,7 @@ class InstrumentSerializer(ModelWithAttributesSerializer, ModelWithObjectPermiss
                     event_schedule.actions.exclude(id__in=processed).delete()
 
     def calculate_prices_accrued_price(self, instrument, created):
-        instrument.calculate_prices_accrued_price(save=True)
+        instrument.calculate_prices_accrued_price()
 
     def rebuild_event_schedules(self, instrument, created):
         try:
