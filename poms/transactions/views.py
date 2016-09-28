@@ -305,6 +305,8 @@ class TransactionViewSet(AbstractModelViewSet):
         'strategy2_cash__user_code', 'strategy2_cash__name', 'strategy2_cash__short_name',
         'strategy3_position__user_code', 'strategy3_position__name', 'strategy3_position__short_name',
         'strategy3_cash__user_code', 'strategy3_cash__name', 'strategy3_cash__short_name',
+        'responsible__user_code', 'responsible__name', 'responsible__short_name',
+        'counterparty__user_code', 'counterparty__name', 'counterparty__short_name',
     ]
     search_fields = ['transaction_code', 'complex_transaction__code', 'complex_transaction_order']
 
@@ -334,16 +336,26 @@ class ComplexTransactionViewSet(AbstractReadOnlyModelViewSet):
         'transactions__strategy1_position', 'transactions__strategy1_cash',
         'transactions__strategy2_position', 'transactions__strategy2_cash',
         'transactions__strategy3_position', 'transactions__strategy3_cash',
+        'transactions__responsible', 'transactions__counterparty',
         'transactions__attributes', 'transactions__attributes__attribute_type'
     )
     prefetch_permissions_for = [
         'transaction_type',
-        'transaction_type__portfolio', 'transaction_type__instrument',
-        'transaction_type__account_cash', 'transaction_type__account_position', 'transaction_type__account_interim',
-        'transaction_type__strategy1_position', 'transaction_type__strategy1_cash',
-        'transaction_type__strategy2_position', 'transaction_type__strategy2_cash',
-        'transaction_type__strategy3_position', 'transaction_type__strategy3_cash',
-        'transaction_type__attributes__attribute_type',
+        # 'transaction_type__portfolio', 'transaction_type__instrument',
+        # 'transaction_type__account_cash', 'transaction_type__account_position', 'transaction_type__account_interim',
+        # 'transaction_type__strategy1_position', 'transaction_type__strategy1_cash',
+        # 'transaction_type__strategy2_position', 'transaction_type__strategy2_cash',
+        # 'transaction_type__strategy3_position', 'transaction_type__strategy3_cash',
+        # 'transaction_type__responsible', 'transaction_type__counterparty',
+        # 'transaction_type__attributes__attribute_type',
+        'transactions__portfolio', 'transactions__instrument', 'transactions__transaction_currency',
+        'transactions__settlement_currency',
+        'transactions__account_cash', 'transactions__account_position', 'transactions__account_interim',
+        'transactions__strategy1_position', 'transactions__strategy1_cash',
+        'transactions__strategy2_position', 'transactions__strategy2_cash',
+        'transactions__strategy3_position', 'transactions__strategy3_cash',
+        'transactions__responsible', 'transactions__counterparty',
+        'transactions__attributes__attribute_type'
     ]
     serializer_class = ComplexTransactionSerializer
     filter_backends = AbstractReadOnlyModelViewSet.filter_backends + [
