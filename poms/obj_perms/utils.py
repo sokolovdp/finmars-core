@@ -291,8 +291,10 @@ def has_manage_perm(member, obj):
 _perms_lookups = [
     'user_object_permissions',
     'user_object_permissions__permission',
+    'user_object_permissions__permission__content_type',
     'group_object_permissions',
     'group_object_permissions__permission',
+    'group_object_permissions__permission__content_type',
 ]
 
 
