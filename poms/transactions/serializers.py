@@ -87,7 +87,7 @@ class TransactionTypeInputSerializer(serializers.ModelSerializer):
                                      # serializers.RegexValidator(regex='[a-zA-Z0-9_]+'),
                                      serializers.RegexValidator(regex='[a-zA-Z_][a-zA-Z0-9_]*'),
                                  ])
-    content_type = TransactionTypeInputContentTypeField(allow_null=True, allow_empty=True)
+    content_type = TransactionTypeInputContentTypeField(required=False, allow_null=True, allow_empty=True)
 
     account = AccountField(required=False, allow_null=True)
     account_object = ReadonlyNamedModelWithObjectPermissionSerializer(source='account')
@@ -110,7 +110,7 @@ class TransactionTypeInputSerializer(serializers.ModelSerializer):
     strategy3 = Strategy3Field(required=False, allow_null=True)
     strategy3_object = ReadonlyNamedModelWithObjectPermissionSerializer(source='strategy3')
     daily_pricing_model_object = ReadonlyModelWithNameSerializer(source='daily_pricing_model')
-    payment_size_detail = ReadonlyModelWithNameSerializer(source='daily_pricing_model')
+    payment_size_detail_object = ReadonlyModelWithNameSerializer(source='daily_pricing_model')
     price_download_scheme = PriceDownloadSchemeField(required=False, allow_null=True)
     price_download_scheme_object = ReadonlyModelWithNameSerializer(source='price_download_scheme',
                                                                    fields=['scheme_name'])
@@ -123,7 +123,9 @@ class TransactionTypeInputSerializer(serializers.ModelSerializer):
             'currency', 'currency_object', 'counterparty', 'counterparty_object', 'responsible', 'responsible_object',
             'portfolio', 'portfolio_object', 'strategy1', 'strategy1_object', 'strategy2', 'strategy2_object',
             'strategy3', 'strategy3_object', 'daily_pricing_model', 'daily_pricing_model_object',
-            'payment_size_detail', 'payment_size_detail', 'price_download_scheme', 'price_download_scheme_object', ]
+            'payment_size_detail', 'payment_size_detail_object', 'price_download_scheme',
+            'price_download_scheme_object',
+        ]
         read_only_fields = ['order']
 
     def validate(self, data):
