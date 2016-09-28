@@ -36,11 +36,15 @@ class ObjectPermissionBackend(BaseFilterBackend):
     def filter_queryset(self, request, queryset, view):
         if hasattr(view, 'prefetch_permissions_for'):
             queryset = obj_perms_prefetch(queryset, lookups_related=view.prefetch_permissions_for)
+        else:
+            queryset = obj_perms_prefetch(queryset)
         if view and view.action == 'retrieve':
             # any object can'be loaded even if not permission
             # result must be fileterd in serializers
-            return obj_perms_prefetch(queryset)
-        return obj_perms_filter_objects(request.user.member, self.get_codename_set(queryset.model), queryset)
+            # return obj_perms_prefetch(queryset)
+            return queryset
+        return obj_perms_filter_objects(request.user.member, self.get_codename_set(queryset.model), queryset,
+                                        prefetch=False)
 
 
 class ObjectPermissionMemberFilter(ModelMultipleChoiceFilter):

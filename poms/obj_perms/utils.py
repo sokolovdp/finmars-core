@@ -1,6 +1,6 @@
 from django.contrib.auth.models import Permission
 from django.contrib.contenttypes.models import ContentType
-from django.db.models import Model
+from django.db.models import Model, Prefetch
 from django.db.models import Q
 from django.utils.functional import SimpleLazyObject
 
@@ -78,19 +78,20 @@ def obj_perms_filter_objects(member, perms, queryset, model_cls=None, prefetch=T
             queryset = queryset.filter(f)
 
         if prefetch:
-            lookups = []
-            if user_lookup_name:
-                lookups.append(user_lookup_name)
-                lookups.append('%s__member' % user_lookup_name)
-                lookups.append('%s__permission' % user_lookup_name)
-                lookups.append('%s__permission__content_type' % user_lookup_name)
-            if group_lookup_name:
-                lookups.append(group_lookup_name)
-                lookups.append('%s__group' % group_lookup_name)
-                lookups.append('%s__permission' % group_lookup_name)
-                lookups.append('%s__permission__content_type' % group_lookup_name)
-            if lookups:
-                queryset = queryset.prefetch_related(*lookups)
+            # lookups = []
+            # if user_lookup_name:
+            #     lookups.append(user_lookup_name)
+            #     lookups.append('%s__member' % user_lookup_name)
+            #     lookups.append('%s__permission' % user_lookup_name)
+            #     lookups.append('%s__permission__content_type' % user_lookup_name)
+            # if group_lookup_name:
+            #     lookups.append(group_lookup_name)
+            #     lookups.append('%s__group' % group_lookup_name)
+            #     lookups.append('%s__permission' % group_lookup_name)
+            #     lookups.append('%s__permission__content_type' % group_lookup_name)
+            # if lookups:
+            #     queryset = queryset.prefetch_related(*lookups)
+            queryset = obj_perms_prefetch(queryset, my=True)
 
         return queryset
     else:
@@ -290,9 +291,11 @@ def has_manage_perm(member, obj):
 
 _perms_lookups = [
     'user_object_permissions',
+    'user_object_permissions__member',
     'user_object_permissions__permission',
     'user_object_permissions__permission__content_type',
     'group_object_permissions',
+    'group_object_permissions__group',
     'group_object_permissions__permission',
     'group_object_permissions__permission__content_type',
 ]
@@ -302,8 +305,20 @@ def obj_perms_prefetch(queryset, my=True, lookups_related=None):
     lookups = []
     if my:
         lookups += _perms_lookups
+
+        # user_lookup_name, user_obj_perms_model = get_user_obj_perms_model(queryset.model)
+        # group_lookup_name, group_obj_perms_model = get_group_obj_perms_model(queryset.model)
+        # lookups += [
+        #     Prefetch("user_object_permissions",
+        #              queryset=user_obj_perms_model.objects.select_related('member', 'permission',
+        #                                                                   'permission__content_type')),
+        #     Prefetch("group_object_permissions",
+        #              queryset=group_obj_perms_model.objects.select_related('group', 'permission',
+        #                                                                    'permission__content_type')),
+        # ]
     if lookups_related:
         for name in lookups_related:
             for lookup in _perms_lookups:
                 lookups.append('%s__%s' % (name, lookup))
+                # lookups.append(Prefetch('%s__%s' % (name, lookup)))
     return queryset.prefetch_related(*lookups)
