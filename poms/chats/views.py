@@ -10,8 +10,7 @@ from rest_framework.response import Response
 from poms.chats.filters import MessagePermissionFilter, DirectMessagePermissionFilter
 from poms.chats.models import Thread, Message, DirectMessage, ThreadGroup
 from poms.chats.permissions import MessagePermission, DirectMessagePermission
-from poms.chats.serializers import ThreadSerializer, MessageSerializer, DirectMessageSerializer, ThreadGroupSerializer, \
-    ThreadBulkObjectPermissionSerializer
+from poms.chats.serializers import ThreadSerializer, MessageSerializer, DirectMessageSerializer, ThreadGroupSerializer
 from poms.common.filters import CharFilter, ModelWithPermissionMultipleChoiceFilter, ModelMultipleChoiceFilter, \
     NoOpFilter
 from poms.common.views import AbstractModelViewSet
@@ -90,7 +89,7 @@ class ThreadViewSet(AbstractWithObjectPermissionViewSet):
                                   ))
     prefetch_permissions_for = []
     serializer_class = ThreadSerializer
-    bulk_objects_permissions_serializer_class = ThreadBulkObjectPermissionSerializer
+    # bulk_objects_permissions_serializer_class = ThreadBulkObjectPermissionSerializer
     filter_backends = AbstractWithObjectPermissionViewSet.filter_backends + [
         OwnerByMasterUserFilter,
         TagFilterBackend,
@@ -100,6 +99,7 @@ class ThreadViewSet(AbstractWithObjectPermissionViewSet):
         'id', 'created', 'subject', 'thread_group__name',
     ]
     search_fields = ['subject']
+
     # has_feature_is_deleted = True
 
     @detail_route(url_path='close',

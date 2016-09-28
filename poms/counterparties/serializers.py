@@ -4,13 +4,13 @@ from poms.common.serializers import AbstractClassifierSerializer, AbstractClassi
     ModelWithUserCodeSerializer
 from poms.counterparties.fields import ResponsibleClassifierField, \
     CounterpartyAttributeTypeField, ResponsibleAttributeTypeField, CounterpartyClassifierField, CounterpartyGroupField, \
-    ResponsibleGroupField, CounterpartyField, ResponsibleField
+    ResponsibleGroupField
 from poms.counterparties.models import CounterpartyClassifier, Counterparty, Responsible, ResponsibleClassifier, \
     CounterpartyAttributeType, CounterpartyAttribute, ResponsibleAttributeType, ResponsibleAttribute, CounterpartyGroup, \
     ResponsibleGroup
 from poms.obj_attrs.serializers import AbstractAttributeTypeSerializer, AbstractAttributeSerializer, \
     ModelWithAttributesSerializer
-from poms.obj_perms.serializers import ModelWithObjectPermissionSerializer, AbstractBulkObjectPermissionSerializer, \
+from poms.obj_perms.serializers import ModelWithObjectPermissionSerializer, \
     ReadonlyNamedModelWithObjectPermissionSerializer
 from poms.portfolios.fields import PortfolioField
 from poms.tags.fields import TagField
@@ -35,11 +35,11 @@ class CounterpartyAttributeTypeSerializer(AbstractAttributeTypeSerializer):
         fields = AbstractAttributeTypeSerializer.Meta.fields + ['classifiers']
 
 
-class CounterpartyAttributeTypeBulkObjectPermissionSerializer(AbstractBulkObjectPermissionSerializer):
-    content_objects = CounterpartyAttributeTypeField(many=True, allow_null=False, allow_empty=False)
-
-    class Meta:
-        model = CounterpartyAttributeType
+# class CounterpartyAttributeTypeBulkObjectPermissionSerializer(AbstractBulkObjectPermissionSerializer):
+#     content_objects = CounterpartyAttributeTypeField(many=True, allow_null=False, allow_empty=False)
+#
+#     class Meta:
+#         model = CounterpartyAttributeType
 
 
 class CounterpartyAttributeSerializer(AbstractAttributeSerializer):
@@ -62,11 +62,11 @@ class CounterpartyGroupSerializer(ModelWithObjectPermissionSerializer, ModelWith
                   'is_default', 'is_deleted', 'tags', 'tags_object', ]
 
 
-class CounterpartyGroupBulkObjectPermissionSerializer(AbstractBulkObjectPermissionSerializer):
-    content_objects = CounterpartyGroupField(many=True, allow_null=False, allow_empty=False)
-
-    class Meta:
-        model = CounterpartyGroup
+# class CounterpartyGroupBulkObjectPermissionSerializer(AbstractBulkObjectPermissionSerializer):
+#     content_objects = CounterpartyGroupField(many=True, allow_null=False, allow_empty=False)
+#
+#     class Meta:
+#         model = CounterpartyGroup
 
 
 class CounterpartySerializer(ModelWithObjectPermissionSerializer, ModelWithAttributesSerializer,
@@ -89,11 +89,11 @@ class CounterpartySerializer(ModelWithObjectPermissionSerializer, ModelWithAttri
         ]
 
 
-class CounterpartyBulkObjectPermissionSerializer(AbstractBulkObjectPermissionSerializer):
-    content_objects = CounterpartyField(many=True, allow_null=False, allow_empty=False)
-
-    class Meta:
-        model = Counterparty
+# class CounterpartyBulkObjectPermissionSerializer(AbstractBulkObjectPermissionSerializer):
+#     content_objects = CounterpartyField(many=True, allow_null=False, allow_empty=False)
+#
+#     class Meta:
+#         model = Counterparty
 
 
 # ----
@@ -116,11 +116,11 @@ class ResponsibleAttributeTypeSerializer(AbstractAttributeTypeSerializer):
         fields = AbstractAttributeTypeSerializer.Meta.fields + ['classifiers']
 
 
-class ResponsibleAttributeTypeBulkObjectPermissionSerializer(AbstractBulkObjectPermissionSerializer):
-    content_objects = ResponsibleAttributeTypeField(many=True, allow_null=False, allow_empty=False)
-
-    class Meta:
-        model = ResponsibleAttributeType
+# class ResponsibleAttributeTypeBulkObjectPermissionSerializer(AbstractBulkObjectPermissionSerializer):
+#     content_objects = ResponsibleAttributeTypeField(many=True, allow_null=False, allow_empty=False)
+#
+#     class Meta:
+#         model = ResponsibleAttributeType
 
 
 class ResponsibleAttributeSerializer(AbstractAttributeSerializer):
@@ -145,11 +145,11 @@ class ResponsibleGroupSerializer(ModelWithObjectPermissionSerializer, ModelWithU
         ]
 
 
-class ResponsibleGroupBulkObjectPermissionSerializer(AbstractBulkObjectPermissionSerializer):
-    content_objects = ResponsibleGroupField(many=True, allow_null=False, allow_empty=False)
-
-    class Meta:
-        model = ResponsibleGroup
+# class ResponsibleGroupBulkObjectPermissionSerializer(AbstractBulkObjectPermissionSerializer):
+#     content_objects = ResponsibleGroupField(many=True, allow_null=False, allow_empty=False)
+#
+#     class Meta:
+#         model = ResponsibleGroup
 
 
 class ResponsibleSerializer(ModelWithObjectPermissionSerializer, ModelWithAttributesSerializer,
@@ -171,9 +171,8 @@ class ResponsibleSerializer(ModelWithObjectPermissionSerializer, ModelWithAttrib
             'attributes', 'tags', 'tags_object',
         ]
 
-
-class ResponsibleBulkObjectPermissionSerializer(AbstractBulkObjectPermissionSerializer):
-    content_objects = ResponsibleField(many=True, allow_null=False, allow_empty=False)
-
-    class Meta:
-        model = Responsible
+# class ResponsibleBulkObjectPermissionSerializer(AbstractBulkObjectPermissionSerializer):
+#     content_objects = ResponsibleField(many=True, allow_null=False, allow_empty=False)
+#
+#     class Meta:
+#         model = Responsible

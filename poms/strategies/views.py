@@ -11,11 +11,7 @@ from poms.strategies.models import Strategy1Group, Strategy1Subgroup, Strategy1,
     Strategy2, Strategy3Group, Strategy3Subgroup, Strategy3
 from poms.strategies.serializers import Strategy1GroupSerializer, Strategy1Serializer, Strategy2GroupSerializer, \
     Strategy2SubgroupSerializer, Strategy2Serializer, Strategy1SubgroupSerializer, Strategy3GroupSerializer, \
-    Strategy3SubgroupSerializer, Strategy3Serializer, Strategy1GroupBulkObjectPermissionSerializer, \
-    Strategy1SubgroupBulkObjectPermissionSerializer, Strategy1BulkObjectPermissionSerializer, \
-    Strategy2GroupBulkObjectPermissionSerializer, Strategy2SubgroupBulkObjectPermissionSerializer, \
-    Strategy2BulkObjectPermissionSerializer, Strategy3GroupBulkObjectPermissionSerializer, \
-    Strategy3SubgroupBulkObjectPermissionSerializer, Strategy3BulkObjectPermissionSerializer
+    Strategy3SubgroupSerializer, Strategy3Serializer
 from poms.tags.filters import TagFilterBackend, TagFilter
 from poms.users.filters import OwnerByMasterUserFilter
 
@@ -39,7 +35,7 @@ class Strategy1GroupFilterSet(FilterSet):
 class Strategy1GroupViewSet(AbstractWithObjectPermissionViewSet):
     queryset = Strategy1Group.objects.prefetch_related('master_user')
     serializer_class = Strategy1GroupSerializer
-    bulk_objects_permissions_serializer_class = Strategy1GroupBulkObjectPermissionSerializer
+    # bulk_objects_permissions_serializer_class = Strategy1GroupBulkObjectPermissionSerializer
     filter_backends = AbstractWithObjectPermissionViewSet.filter_backends + [
         OwnerByMasterUserFilter,
         TagFilterBackend,
@@ -75,7 +71,7 @@ class Strategy1SubgroupViewSet(AbstractWithObjectPermissionViewSet):
     queryset = Strategy1Subgroup.objects.prefetch_related('master_user', 'group')
     prefetch_permissions_for = ['group']
     serializer_class = Strategy1SubgroupSerializer
-    bulk_objects_permissions_serializer_class = Strategy1SubgroupBulkObjectPermissionSerializer
+    # bulk_objects_permissions_serializer_class = Strategy1SubgroupBulkObjectPermissionSerializer
     filter_backends = AbstractWithObjectPermissionViewSet.filter_backends + [
         OwnerByMasterUserFilter,
         TagFilterBackend,
@@ -113,7 +109,7 @@ class Strategy1ViewSet(AbstractWithObjectPermissionViewSet):
     queryset = Strategy1.objects.prefetch_related('master_user', 'subgroup', 'subgroup__group')
     prefetch_permissions_for = ['subgroup', 'subgroup__group']
     serializer_class = Strategy1Serializer
-    bulk_objects_permissions_serializer_class = Strategy1BulkObjectPermissionSerializer
+    # bulk_objects_permissions_serializer_class = Strategy1BulkObjectPermissionSerializer
     filter_backends = AbstractWithObjectPermissionViewSet.filter_backends + [
         OwnerByMasterUserFilter,
         TagFilterBackend,
@@ -146,7 +142,7 @@ class Strategy2GroupFilterSet(Strategy1GroupFilterSet):
 class Strategy2GroupViewSet(Strategy1GroupViewSet):
     queryset = Strategy2Group.objects.prefetch_related('master_user')
     serializer_class = Strategy2GroupSerializer
-    bulk_objects_permissions_serializer_class = Strategy2GroupBulkObjectPermissionSerializer
+    # bulk_objects_permissions_serializer_class = Strategy2GroupBulkObjectPermissionSerializer
     filter_class = Strategy2GroupFilterSet
 
 
@@ -164,7 +160,7 @@ class Strategy2SubgroupFilterSet(Strategy1SubgroupFilterSet):
 class Strategy2SubgroupViewSet(Strategy1SubgroupViewSet):
     queryset = Strategy2Subgroup.objects.prefetch_related('master_user', 'group')
     serializer_class = Strategy2SubgroupSerializer
-    bulk_objects_permissions_serializer_class = Strategy2SubgroupBulkObjectPermissionSerializer
+    # bulk_objects_permissions_serializer_class = Strategy2SubgroupBulkObjectPermissionSerializer
     filter_class = Strategy2SubgroupFilterSet
 
 
@@ -183,7 +179,7 @@ class Strategy2FilterSet(Strategy1FilterSet):
 class Strategy2ViewSet(Strategy1ViewSet):
     queryset = Strategy2.objects.prefetch_related('master_user', 'subgroup', 'subgroup__group')
     serializer_class = Strategy2Serializer
-    bulk_objects_permissions_serializer_class = Strategy2BulkObjectPermissionSerializer
+    # bulk_objects_permissions_serializer_class = Strategy2BulkObjectPermissionSerializer
     filter_class = Strategy2FilterSet
 
 
@@ -203,7 +199,7 @@ class Strategy3GroupFilterSet(Strategy1GroupFilterSet):
 class Strategy3GroupViewSet(Strategy1GroupViewSet):
     queryset = Strategy3Group.objects.prefetch_related('master_user')
     serializer_class = Strategy3GroupSerializer
-    bulk_objects_permissions_serializer_class = Strategy3GroupBulkObjectPermissionSerializer
+    # bulk_objects_permissions_serializer_class = Strategy3GroupBulkObjectPermissionSerializer
     filter_class = Strategy3GroupFilterSet
 
 
@@ -221,7 +217,7 @@ class Strategy3SubgroupFilterSet(Strategy1SubgroupFilterSet):
 class Strategy3SubgroupViewSet(Strategy1SubgroupViewSet):
     queryset = Strategy3Subgroup.objects.prefetch_related('master_user', 'group')
     serializer_class = Strategy3SubgroupSerializer
-    bulk_objects_permissions_serializer_class = Strategy3SubgroupBulkObjectPermissionSerializer
+    # bulk_objects_permissions_serializer_class = Strategy3SubgroupBulkObjectPermissionSerializer
     filter_class = Strategy3SubgroupFilterSet
 
 
@@ -240,5 +236,5 @@ class Strategy3FilterSet(Strategy1FilterSet):
 class Strategy3ViewSet(Strategy1ViewSet):
     queryset = Strategy3.objects.prefetch_related('master_user', 'subgroup', 'subgroup__group')
     serializer_class = Strategy3Serializer
-    bulk_objects_permissions_serializer_class = Strategy3BulkObjectPermissionSerializer
+    # bulk_objects_permissions_serializer_class = Strategy3BulkObjectPermissionSerializer
     filter_class = Strategy3FilterSet

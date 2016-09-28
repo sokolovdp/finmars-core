@@ -10,10 +10,7 @@ from poms.counterparties.models import Counterparty, Responsible, CounterpartyAt
 from poms.counterparties.serializers import CounterpartySerializer, ResponsibleSerializer, \
     CounterpartyAttributeTypeSerializer, \
     ResponsibleAttributeTypeSerializer, CounterpartyGroupSerializer, ResponsibleGroupSerializer, \
-    CounterpartyClassifierNodeSerializer, ResponsibleClassifierNodeSerializer, \
-    CounterpartyAttributeTypeBulkObjectPermissionSerializer, CounterpartyGroupBulkObjectPermissionSerializer, \
-    CounterpartyBulkObjectPermissionSerializer, ResponsibleAttributeTypeBulkObjectPermissionSerializer, \
-    ResponsibleGroupBulkObjectPermissionSerializer, ResponsibleBulkObjectPermissionSerializer
+    CounterpartyClassifierNodeSerializer, ResponsibleClassifierNodeSerializer
 from poms.obj_attrs.filters import AttributeTypeValueTypeFilter
 from poms.obj_attrs.views import AbstractAttributeTypeViewSet, AbstractClassifierViewSet
 from poms.obj_perms.filters import ObjectPermissionMemberFilter, ObjectPermissionGroupFilter, \
@@ -42,7 +39,7 @@ class CounterpartyAttributeTypeFilterSet(FilterSet):
 class CounterpartyAttributeTypeViewSet(AbstractAttributeTypeViewSet):
     queryset = CounterpartyAttributeType.objects.prefetch_related('classifiers')
     serializer_class = CounterpartyAttributeTypeSerializer
-    bulk_objects_permissions_serializer_class = CounterpartyAttributeTypeBulkObjectPermissionSerializer
+    # bulk_objects_permissions_serializer_class = CounterpartyAttributeTypeBulkObjectPermissionSerializer
     filter_class = CounterpartyAttributeTypeFilterSet
 
 
@@ -83,7 +80,7 @@ class CounterpartyGroupFilterSet(FilterSet):
 class CounterpartyGroupViewSet(AbstractWithObjectPermissionViewSet):
     queryset = CounterpartyGroup.objects.prefetch_related('master_user')
     serializer_class = CounterpartyGroupSerializer
-    bulk_objects_permissions_serializer_class = CounterpartyGroupBulkObjectPermissionSerializer
+    # bulk_objects_permissions_serializer_class = CounterpartyGroupBulkObjectPermissionSerializer
     filter_backends = AbstractModelViewSet.filter_backends + [
         OwnerByMasterUserFilter,
         TagFilterBackend,
@@ -123,7 +120,7 @@ class CounterpartyViewSet(AbstractWithObjectPermissionViewSet):
     )
     prefetch_permissions_for = ('group', 'portfolios', 'attributes__attribute_type')
     serializer_class = CounterpartySerializer
-    bulk_objects_permissions_serializer_class = CounterpartyBulkObjectPermissionSerializer
+    # bulk_objects_permissions_serializer_class = CounterpartyBulkObjectPermissionSerializer
     filter_backends = AbstractWithObjectPermissionViewSet.filter_backends + [
         OwnerByMasterUserFilter,
         TagFilterBackend,
@@ -160,7 +157,7 @@ class ResponsibleAttributeTypeFilterSet(FilterSet):
 class ResponsibleAttributeTypeViewSet(AbstractAttributeTypeViewSet):
     queryset = ResponsibleAttributeType.objects.prefetch_related('classifiers')
     serializer_class = ResponsibleAttributeTypeSerializer
-    bulk_objects_permissions_serializer_class = ResponsibleAttributeTypeBulkObjectPermissionSerializer
+    # bulk_objects_permissions_serializer_class = ResponsibleAttributeTypeBulkObjectPermissionSerializer
     filter_class = ResponsibleAttributeTypeFilterSet
 
 
@@ -200,7 +197,7 @@ class ResponsibleGroupFilterSet(FilterSet):
 class ResponsibleGroupViewSet(AbstractWithObjectPermissionViewSet):
     queryset = ResponsibleGroup.objects.prefetch_related('master_user')
     serializer_class = ResponsibleGroupSerializer
-    bulk_objects_permissions_serializer_class = ResponsibleGroupBulkObjectPermissionSerializer
+    # bulk_objects_permissions_serializer_class = ResponsibleGroupBulkObjectPermissionSerializer
     filter_backends = AbstractModelViewSet.filter_backends + [
         OwnerByMasterUserFilter,
         TagFilterBackend,
@@ -240,7 +237,7 @@ class ResponsibleViewSet(AbstractWithObjectPermissionViewSet):
     )
     prefetch_permissions_for = ('group', 'portfolios', 'attributes__attribute_type')
     serializer_class = ResponsibleSerializer
-    bulk_objects_permissions_serializer_class = ResponsibleBulkObjectPermissionSerializer
+    # bulk_objects_permissions_serializer_class = ResponsibleBulkObjectPermissionSerializer
     filter_backends = AbstractWithObjectPermissionViewSet.filter_backends + [
         OwnerByMasterUserFilter,
         TagFilterBackend,

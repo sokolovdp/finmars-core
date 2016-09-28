@@ -6,9 +6,9 @@ from poms.common.serializers import AbstractClassifierSerializer, AbstractClassi
 from poms.counterparties.fields import ResponsibleField, CounterpartyField
 from poms.obj_attrs.serializers import AbstractAttributeTypeSerializer, AbstractAttributeSerializer, \
     ModelWithAttributesSerializer
-from poms.obj_perms.serializers import ModelWithObjectPermissionSerializer, AbstractBulkObjectPermissionSerializer, \
+from poms.obj_perms.serializers import ModelWithObjectPermissionSerializer, \
     ReadonlyNamedModelWithObjectPermissionSerializer
-from poms.portfolios.fields import PortfolioClassifierField, PortfolioAttributeTypeField, PortfolioField
+from poms.portfolios.fields import PortfolioClassifierField, PortfolioAttributeTypeField
 from poms.portfolios.models import PortfolioClassifier, Portfolio, PortfolioAttributeType, PortfolioAttribute
 from poms.tags.fields import TagField
 from poms.transactions.fields import TransactionTypeField
@@ -33,11 +33,11 @@ class PortfolioAttributeTypeSerializer(AbstractAttributeTypeSerializer):
         fields = AbstractAttributeTypeSerializer.Meta.fields + ['classifiers']
 
 
-class PortfolioAttributeTypeBulkObjectPermissionSerializer(AbstractBulkObjectPermissionSerializer):
-    content_objects = PortfolioAttributeTypeField(many=True, allow_null=False, allow_empty=False)
-
-    class Meta:
-        model = PortfolioAttributeType
+# class PortfolioAttributeTypeBulkObjectPermissionSerializer(AbstractBulkObjectPermissionSerializer):
+#     content_objects = PortfolioAttributeTypeField(many=True, allow_null=False, allow_empty=False)
+#
+#     class Meta:
+#         model = PortfolioAttributeType
 
 
 class PortfolioAttributeSerializer(AbstractAttributeSerializer):
@@ -73,9 +73,8 @@ class PortfolioSerializer(ModelWithObjectPermissionSerializer, ModelWithAttribut
             'tags', 'tags_object',
         ]
 
-
-class PortfolioBulkObjectPermissionSerializer(AbstractBulkObjectPermissionSerializer):
-    content_objects = PortfolioField(many=True, allow_null=False, allow_empty=False)
-
-    class Meta:
-        model = Portfolio
+# class PortfolioBulkObjectPermissionSerializer(AbstractBulkObjectPermissionSerializer):
+#     content_objects = PortfolioField(many=True, allow_null=False, allow_empty=False)
+#
+#     class Meta:
+#         model = Portfolio

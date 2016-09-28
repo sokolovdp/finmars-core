@@ -13,8 +13,7 @@ from poms.obj_perms.filters import ObjectPermissionMemberFilter, ObjectPermissio
 from poms.obj_perms.views import AbstractWithObjectPermissionViewSet
 from poms.portfolios.models import Portfolio, PortfolioAttributeType, PortfolioClassifier
 from poms.portfolios.serializers import PortfolioSerializer, PortfolioAttributeTypeSerializer, \
-    PortfolioClassifierNodeSerializer, PortfolioAttributeTypeBulkObjectPermissionSerializer, \
-    PortfolioBulkObjectPermissionSerializer
+    PortfolioClassifierNodeSerializer
 from poms.tags.filters import TagFilterBackend, TagFilter
 from poms.transactions.models import TransactionType
 from poms.users.filters import OwnerByMasterUserFilter
@@ -38,7 +37,7 @@ class PortfolioAttributeTypeFilterSet(FilterSet):
 class PortfolioAttributeTypeViewSet(AbstractAttributeTypeViewSet):
     queryset = PortfolioAttributeType.objects.prefetch_related('classifiers')
     serializer_class = PortfolioAttributeTypeSerializer
-    bulk_objects_permissions_serializer_class = PortfolioAttributeTypeBulkObjectPermissionSerializer
+    # bulk_objects_permissions_serializer_class = PortfolioAttributeTypeBulkObjectPermissionSerializer
     filter_class = PortfolioAttributeTypeFilterSet
 
 
@@ -87,7 +86,7 @@ class PortfolioViewSet(AbstractWithObjectPermissionViewSet):
     prefetch_permissions_for = ('counterparties', 'transaction_types', 'accounts', 'responsibles',
                                 'attributes__attribute_type',)
     serializer_class = PortfolioSerializer
-    bulk_objects_permissions_serializer_class = PortfolioBulkObjectPermissionSerializer
+    # bulk_objects_permissions_serializer_class = PortfolioBulkObjectPermissionSerializer
     filter_backends = AbstractWithObjectPermissionViewSet.filter_backends + [
         OwnerByMasterUserFilter,
         TagFilterBackend,

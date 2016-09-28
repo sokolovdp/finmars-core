@@ -6,7 +6,7 @@ from poms.chats.fields import ThreadField, ThreadGroupField, ThreadGroupDefault
 from poms.chats.models import Thread, Message, DirectMessage, ThreadGroup
 from poms.common.fields import DateTimeTzAwareField
 from poms.common.serializers import ReadonlyModelWithNameSerializer
-from poms.obj_perms.serializers import ModelWithObjectPermissionSerializer, AbstractBulkObjectPermissionSerializer, \
+from poms.obj_perms.serializers import ModelWithObjectPermissionSerializer, \
     ReadonlyNamedModelWithObjectPermissionSerializer
 from poms.tags.fields import TagField
 from poms.users.fields import MasterUserField, HiddenMemberField, MemberField
@@ -61,11 +61,11 @@ class ThreadSerializer(ModelWithObjectPermissionSerializer):
         read_only_fields = ['created', 'modified', 'closed']
 
 
-class ThreadBulkObjectPermissionSerializer(AbstractBulkObjectPermissionSerializer):
-    content_objects = ThreadField(many=True, allow_null=False, allow_empty=False)
-
-    class Meta:
-        model = Thread
+# class ThreadBulkObjectPermissionSerializer(AbstractBulkObjectPermissionSerializer):
+#     content_objects = ThreadField(many=True, allow_null=False, allow_empty=False)
+#
+#     class Meta:
+#         model = Thread
 
 
 class DirectMessageSerializer(serializers.ModelSerializer):

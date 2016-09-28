@@ -17,7 +17,7 @@ from poms.instruments.models import Instrument, InstrumentType, DailyPricingMode
 from poms.integrations.fields import PriceDownloadSchemeField
 from poms.obj_attrs.serializers import AbstractAttributeTypeSerializer, AbstractAttributeSerializer, \
     ModelWithAttributesSerializer
-from poms.obj_perms.serializers import ModelWithObjectPermissionSerializer, AbstractBulkObjectPermissionSerializer, \
+from poms.obj_perms.serializers import ModelWithObjectPermissionSerializer, \
     ReadonlyNamedModelWithObjectPermissionSerializer
 from poms.portfolios.fields import PortfolioField, PortfolioDefault
 from poms.portfolios.models import Portfolio
@@ -26,7 +26,7 @@ from poms.strategies.fields import Strategy1Field, Strategy2Field, Strategy3Fiel
 from poms.strategies.models import Strategy1, Strategy2, Strategy3
 from poms.tags.fields import TagField
 from poms.transactions.fields import TransactionAttributeTypeField, TransactionTypeInputContentTypeField, \
-    TransactionTypeGroupField, TransactionClassifierField, TransactionTypeField
+    TransactionTypeGroupField, TransactionClassifierField
 from poms.transactions.models import TransactionClass, Transaction, TransactionType, TransactionAttributeType, \
     TransactionAttribute, TransactionTypeAction, TransactionTypeActionTransaction, TransactionTypeActionInstrument, \
     TransactionTypeInput, TransactionTypeGroup, ComplexTransaction, TransactionClassifier, EventClass, NotificationClass
@@ -61,11 +61,11 @@ class TransactionTypeGroupSerializer(ModelWithObjectPermissionSerializer, ModelW
         ]
 
 
-class TransactionTypeGroupBulkObjectPermissionSerializer(AbstractBulkObjectPermissionSerializer):
-    content_objects = TransactionTypeGroupField(many=True, allow_null=False, allow_empty=False)
-
-    class Meta:
-        model = TransactionTypeGroup
+# class TransactionTypeGroupBulkObjectPermissionSerializer(AbstractBulkObjectPermissionSerializer):
+#     content_objects = TransactionTypeGroupField(many=True, allow_null=False, allow_empty=False)
+#
+#     class Meta:
+#         model = TransactionTypeGroup
 
 
 class TransactionInputField(serializers.CharField):
@@ -401,11 +401,11 @@ class TransactionTypeSerializer(ModelWithObjectPermissionSerializer, ModelWithUs
             actions.append(action)
 
 
-class TransactionTypeBulkObjectPermissionSerializer(AbstractBulkObjectPermissionSerializer):
-    content_objects = TransactionTypeField(many=True, allow_null=False, allow_empty=False)
-
-    class Meta:
-        model = TransactionType
+# class TransactionTypeBulkObjectPermissionSerializer(AbstractBulkObjectPermissionSerializer):
+#     content_objects = TransactionTypeField(many=True, allow_null=False, allow_empty=False)
+#
+#     class Meta:
+#         model = TransactionType
 
 
 class TransactionTypeProcessSerializer(serializers.Serializer):
@@ -483,11 +483,11 @@ class TransactionAttributeTypeSerializer(AbstractAttributeTypeSerializer):
         fields = AbstractAttributeTypeSerializer.Meta.fields + ['classifiers']
 
 
-class TransactionAttributeTypeBulkObjectPermissionSerializer(AbstractBulkObjectPermissionSerializer):
-    content_objects = TransactionAttributeTypeField(many=True, allow_null=False, allow_empty=False)
-
-    class Meta:
-        model = TransactionAttributeType
+# class TransactionAttributeTypeBulkObjectPermissionSerializer(AbstractBulkObjectPermissionSerializer):
+#     content_objects = TransactionAttributeTypeField(many=True, allow_null=False, allow_empty=False)
+#
+#     class Meta:
+#         model = TransactionAttributeType
 
 
 class TransactionAttributeSerializer(AbstractAttributeSerializer):

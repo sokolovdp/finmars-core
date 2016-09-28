@@ -30,9 +30,7 @@ from poms.transactions.processor import TransactionTypeProcessor
 from poms.transactions.serializers import TransactionClassSerializer, TransactionSerializer, TransactionTypeSerializer, \
     TransactionAttributeTypeSerializer, TransactionTypeProcessSerializer, TransactionTypeGroupSerializer, \
     ComplexTransactionSerializer, TransactionClassifierNodeSerializer, EventClassSerializer, \
-    NotificationClassSerializer, \
-    TransactionTypeGroupBulkObjectPermissionSerializer, TransactionTypeBulkObjectPermissionSerializer, \
-    TransactionAttributeTypeBulkObjectPermissionSerializer
+    NotificationClassSerializer
 from poms.users.filters import OwnerByMasterUserFilter
 
 
@@ -70,7 +68,7 @@ class TransactionTypeGroupFilterSet(FilterSet):
 class TransactionTypeGroupViewSet(AbstractWithObjectPermissionViewSet):
     queryset = TransactionTypeGroup.objects
     serializer_class = TransactionTypeGroupSerializer
-    bulk_objects_permissions_serializer_class = TransactionTypeGroupBulkObjectPermissionSerializer
+    # bulk_objects_permissions_serializer_class = TransactionTypeGroupBulkObjectPermissionSerializer
     filter_backends = AbstractWithObjectPermissionViewSet.filter_backends + [
         OwnerByMasterUserFilter,
         TagFilterBackend,
@@ -122,7 +120,7 @@ class TransactionTypeViewSet(AbstractWithObjectPermissionViewSet):
         'responsible', 'responsible_input', 'counterparty', 'counterparty_input',
     )
     serializer_class = TransactionTypeSerializer
-    bulk_objects_permissions_serializer_class = TransactionTypeBulkObjectPermissionSerializer
+    # bulk_objects_permissions_serializer_class = TransactionTypeBulkObjectPermissionSerializer
     filter_backends = AbstractWithObjectPermissionViewSet.filter_backends + [
         OwnerByMasterUserFilter,
         TagFilterBackend,
@@ -209,7 +207,7 @@ class TransactionAttributeTypeFilterSet(FilterSet):
 class TransactionAttributeTypeViewSet(AbstractAttributeTypeViewSet):
     queryset = TransactionAttributeType.objects
     serializer_class = TransactionAttributeTypeSerializer
-    bulk_objects_permissions_serializer_class = TransactionAttributeTypeBulkObjectPermissionSerializer
+    # bulk_objects_permissions_serializer_class = TransactionAttributeTypeBulkObjectPermissionSerializer
     filter_class = TransactionAttributeTypeFilterSet
 
 

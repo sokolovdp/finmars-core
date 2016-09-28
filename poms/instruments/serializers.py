@@ -21,7 +21,7 @@ from poms.instruments.models import InstrumentClassifier, Instrument, PriceHisto
 from poms.integrations.fields import PriceDownloadSchemeField
 from poms.obj_attrs.serializers import AbstractAttributeSerializer, AbstractAttributeTypeSerializer, \
     ModelWithAttributesSerializer
-from poms.obj_perms.serializers import ModelWithObjectPermissionSerializer, AbstractBulkObjectPermissionSerializer, \
+from poms.obj_perms.serializers import ModelWithObjectPermissionSerializer, \
     ReadonlyNamedModelWithObjectPermissionSerializer
 from poms.tags.fields import TagField
 from poms.transactions.fields import TransactionTypeField
@@ -121,11 +121,11 @@ class InstrumentTypeSerializer(ModelWithObjectPermissionSerializer, ModelWithUse
         return attrs
 
 
-class InstrumentTypeBulkObjectPermissionSerializer(AbstractBulkObjectPermissionSerializer):
-    content_objects = InstrumentTypeField(many=True, allow_null=False, allow_empty=False)
-
-    class Meta:
-        model = InstrumentType
+# class InstrumentTypeBulkObjectPermissionSerializer(AbstractBulkObjectPermissionSerializer):
+#     content_objects = InstrumentTypeField(many=True, allow_null=False, allow_empty=False)
+#
+#     class Meta:
+#         model = InstrumentType
 
 
 class InstrumentAttributeTypeSerializer(AbstractAttributeTypeSerializer):
@@ -136,11 +136,11 @@ class InstrumentAttributeTypeSerializer(AbstractAttributeTypeSerializer):
         fields = AbstractAttributeTypeSerializer.Meta.fields + ['classifiers']
 
 
-class InstrumentAttributeTypeBulkObjectPermissionSerializer(AbstractBulkObjectPermissionSerializer):
-    content_objects = InstrumentAttributeTypeField(many=True, allow_null=False, allow_empty=False)
-
-    class Meta:
-        model = InstrumentAttributeType
+# class InstrumentAttributeTypeBulkObjectPermissionSerializer(AbstractBulkObjectPermissionSerializer):
+#     content_objects = InstrumentAttributeTypeField(many=True, allow_null=False, allow_empty=False)
+#
+#     class Meta:
+#         model = InstrumentAttributeType
 
 
 class ManualPricingFormulaSerializer(serializers.ModelSerializer):
@@ -391,11 +391,11 @@ class InstrumentCalculatePricesAccruedPriceSerializer(serializers.Serializer):
         return attrs
 
 
-class InstrumentBulkObjectPermissionSerializer(AbstractBulkObjectPermissionSerializer):
-    content_objects = InstrumentField(many=True, allow_null=False, allow_empty=False)
-
-    class Meta:
-        model = Instrument
+# class InstrumentBulkObjectPermissionSerializer(AbstractBulkObjectPermissionSerializer):
+#     content_objects = InstrumentField(many=True, allow_null=False, allow_empty=False)
+#
+#     class Meta:
+#         model = Instrument
 
 
 class PriceHistorySerializer(serializers.ModelSerializer):

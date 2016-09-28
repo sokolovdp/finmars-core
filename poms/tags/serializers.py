@@ -1,8 +1,8 @@
 from __future__ import unicode_literals
 
 from poms.common.serializers import ModelWithUserCodeSerializer
-from poms.obj_perms.serializers import ModelWithObjectPermissionSerializer, AbstractBulkObjectPermissionSerializer
-from poms.tags.fields import TagContentTypeField, TagField
+from poms.obj_perms.serializers import ModelWithObjectPermissionSerializer
+from poms.tags.fields import TagContentTypeField
 from poms.tags.models import Tag
 from poms.users.fields import MasterUserField
 
@@ -34,9 +34,8 @@ class TagSerializer(ModelWithObjectPermissionSerializer, ModelWithUserCodeSerial
             # 'portfolios', 'transaction_types'
         ]
 
-
-class TagBulkObjectPermissionSerializer(AbstractBulkObjectPermissionSerializer):
-    content_objects = TagField(many=True, allow_null=False, allow_empty=False)
-
-    class Meta:
-        model = Tag
+# class TagBulkObjectPermissionSerializer(AbstractBulkObjectPermissionSerializer):
+#     content_objects = TagField(many=True, allow_null=False, allow_empty=False)
+#
+#     class Meta:
+#         model = Tag

@@ -8,7 +8,7 @@ from poms.obj_perms.filters import ObjectPermissionMemberFilter, ObjectPermissio
 from poms.obj_perms.views import AbstractWithObjectPermissionViewSet
 from poms.tags.filters import TagContentTypeFilter
 from poms.tags.models import Tag
-from poms.tags.serializers import TagSerializer, TagBulkObjectPermissionSerializer
+from poms.tags.serializers import TagSerializer
 from poms.users.filters import OwnerByMasterUserFilter
 
 
@@ -44,7 +44,7 @@ class TagViewSet(AbstractWithObjectPermissionViewSet):
     #     'strategy3_groups', 'strategy3_subgroups', 'strategies3',
     # )
     serializer_class = TagSerializer
-    bulk_objects_permissions_serializer_class = TagBulkObjectPermissionSerializer
+    # bulk_objects_permissions_serializer_class = TagBulkObjectPermissionSerializer
     filter_backends = AbstractWithObjectPermissionViewSet.filter_backends + [
         OwnerByMasterUserFilter,
     ]

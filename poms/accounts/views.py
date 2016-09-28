@@ -5,8 +5,7 @@ from rest_framework.filters import FilterSet
 
 from poms.accounts.models import Account, AccountType, AccountAttributeType, AccountClassifier
 from poms.accounts.serializers import AccountSerializer, AccountTypeSerializer, AccountAttributeTypeSerializer, \
-    AccountClassifierNodeSerializer, AccountBulkObjectPermissionSerializer, \
-    AccountAttributeTypeBulkObjectPermissionSerializer, AccountTypeBulkObjectPermissionSerializer
+    AccountClassifierNodeSerializer
 from poms.common.filters import CharFilter, ModelWithPermissionMultipleChoiceFilter, NoOpFilter
 from poms.obj_attrs.filters import AttributeTypeValueTypeFilter
 from poms.obj_attrs.views import AbstractAttributeTypeViewSet, AbstractClassifierViewSet
@@ -37,7 +36,7 @@ class AccountTypeFilterSet(FilterSet):
 class AccountTypeViewSet(AbstractWithObjectPermissionViewSet):
     queryset = AccountType.objects.prefetch_related('master_user')
     serializer_class = AccountTypeSerializer
-    bulk_objects_permissions_serializer_class = AccountTypeBulkObjectPermissionSerializer
+    # bulk_objects_permissions_serializer_class = AccountTypeBulkObjectPermissionSerializer
     filter_backends = AbstractWithObjectPermissionViewSet.filter_backends + [
         OwnerByMasterUserFilter,
         TagFilterBackend,
@@ -70,7 +69,7 @@ class AccountAttributeTypeFilterSet(FilterSet):
 class AccountAttributeTypeViewSet(AbstractAttributeTypeViewSet):
     queryset = AccountAttributeType.objects.prefetch_related('classifiers')
     serializer_class = AccountAttributeTypeSerializer
-    bulk_objects_permissions_serializer_class = AccountAttributeTypeBulkObjectPermissionSerializer
+    # bulk_objects_permissions_serializer_class = AccountAttributeTypeBulkObjectPermissionSerializer
     filter_class = AccountAttributeTypeFilterSet
 
 
@@ -118,7 +117,7 @@ class AccountViewSet(AbstractWithObjectPermissionViewSet):
     )
     prefetch_permissions_for = ('type', 'portfolios', 'attributes__attribute_type')
     serializer_class = AccountSerializer
-    bulk_objects_permissions_serializer_class = AccountBulkObjectPermissionSerializer
+    # bulk_objects_permissions_serializer_class = AccountBulkObjectPermissionSerializer
     filter_backends = AbstractWithObjectPermissionViewSet.filter_backends + [
         OwnerByMasterUserFilter,
         TagFilterBackend,
