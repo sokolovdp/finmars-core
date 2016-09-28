@@ -14,7 +14,7 @@ if 'redisboard' not in INSTALLED_APPS:
 #     INSTALLED_APPS += ['debug_toolbar', ]
 
 LOGGING['formatters']['verbose']['format'] = '[%(levelname)1.1s %(asctime)s %(name)s %(module)s:%(lineno)d] %(message)s'
-# LOGGING['loggers']['django.db'] = {'level': 'DEBUG'}
+LOGGING['loggers']['django.db'] = {'level': 'DEBUG'}
 LOGGING['loggers']['poms']['level'] = 'DEBUG'
 
 SECRET_KEY = 's#)m^ug%_jr0dtko#83_55rd_we&xu#f9p#!1gh@k&$=5&3e67'
@@ -70,3 +70,27 @@ if BLOOMBERG_SANDBOX:
 BLOOMBERG_SANDBOX_SEND_EMPTY = False
 BLOOMBERG_SANDBOX_SEND_FAIL = False
 BLOOMBERG_SANDBOX_WAIT_FAIL = False
+
+
+# if REDIS_HOST:
+#     if 'cacheops' not in INSTALLED_APPS:
+#         INSTALLED_APPS += ['cacheops', ]
+#     CACHEOPS_REDIS = {
+#         'host': REDIS_HOST.split(':')[0],
+#         # 'host': '127.0.0.1',
+#         # 'port': 6379,
+#         'db': 5,
+#         'socket_timeout': 3,
+#     }
+#     # CACHEOPS_DEGRADE_ON_FAILURE = True
+#     CACHEOPS_DEFAULTS = {
+#         'timeout': 60
+#     }
+#     # on 'all' also cached m2m
+#     CACHEOPS = {
+#         # 'auth.user': {'ops': 'get', 'cache_on_save': True},
+#         'auth.permission': {'ops': 'all'},
+#         'contenttypes.contenttype': {'ops': 'all'},
+#
+#         '*.*': {'ops': ()},
+#     }
