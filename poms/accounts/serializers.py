@@ -8,7 +8,8 @@ from poms.common.serializers import AbstractClassifierSerializer, AbstractClassi
     ModelWithUserCodeSerializer
 from poms.obj_attrs.serializers import AbstractAttributeTypeSerializer, AbstractAttributeSerializer, \
     ModelWithAttributesSerializer
-from poms.obj_perms.serializers import ModelWithObjectPermissionSerializer, AbstractBulkObjectPermissionSerializer
+from poms.obj_perms.serializers import ModelWithObjectPermissionSerializer, AbstractBulkObjectPermissionSerializer, \
+    ReadonlyNamedModelWithObjectPermissionSerializer
 from poms.portfolios.fields import PortfolioField
 from poms.tags.fields import TagField
 from poms.users.fields import MasterUserField
@@ -27,11 +28,15 @@ class AccountClassifierNodeSerializer(AbstractClassifierNodeSerializer):
 class AccountTypeSerializer(ModelWithObjectPermissionSerializer, ModelWithUserCodeSerializer):
     master_user = MasterUserField()
     tags = TagField(many=True, required=False, allow_null=True)
+    tags_object = ReadonlyNamedModelWithObjectPermissionSerializer(source='tags', many=True)
 
     class Meta:
         model = AccountType
-        fields = ['url', 'id', 'master_user', 'user_code', 'name', 'short_name', 'public_name', 'notes',
-                  'show_transaction_details', 'transaction_details_expr', 'is_default', 'is_deleted', 'tags']
+        fields = [
+            'url', 'id', 'master_user', 'user_code', 'name', 'short_name', 'public_name', 'notes',
+            'show_transaction_details', 'transaction_details_expr', 'is_default', 'is_deleted',
+            'tags', 'tags_object'
+        ]
 
 
 class AccountTypeBulkObjectPermissionSerializer(AbstractBulkObjectPermissionSerializer):
@@ -69,14 +74,20 @@ class AccountSerializer(ModelWithObjectPermissionSerializer, ModelWithAttributes
                         ModelWithUserCodeSerializer):
     master_user = MasterUserField()
     type = AccountTypeField(default=AccountTypeDefault())
+    type_object = ReadonlyNamedModelWithObjectPermissionSerializer(source='type')
     portfolios = PortfolioField(many=True, required=False, allow_null=True)
+    portfolios_object = ReadonlyNamedModelWithObjectPermissionSerializer(source='portfolios', many=True)
     attributes = AccountAttributeSerializer(many=True, required=False, allow_null=True)
     tags = TagField(many=True, required=False, allow_null=True)
+    tags_object = ReadonlyNamedModelWithObjectPermissionSerializer(source='tags', many=True)
 
     class Meta:
         model = Account
-        fields = ['url', 'id', 'master_user', 'type', 'user_code', 'name', 'short_name', 'public_name', 'notes',
-                  'is_default', 'is_valid_for_all_portfolios', 'is_deleted', 'portfolios', 'tags', 'attributes', ]
+        fields = [
+            'url', 'id', 'master_user', 'type', 'type_object', 'user_code', 'name', 'short_name', 'public_name',
+            'notes', 'is_default', 'is_valid_for_all_portfolios', 'is_deleted', 'portfolios', 'portfolios_object',
+            'tags', 'tags_object', 'attributes',
+        ]
 
 
 class AccountBulkObjectPermissionSerializer(AbstractBulkObjectPermissionSerializer):

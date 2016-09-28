@@ -272,3 +272,45 @@ class AbstractClassifierNodeSerializer(AbstractPomsSerializer):
             'tree_id',
             # 'children',
         ]
+
+
+class ReadonlyModelListSerializer(serializers.ListSerializer):
+    pass
+
+
+class ReadonlyModelSerializer(serializers.Serializer):
+    class Meta:
+        list_serializer_class = ReadonlyModelListSerializer
+
+    def __init__(self, *args, **kwargs):
+        fields = kwargs.pop('fields', []) or []
+        if not isinstance(fields, list):
+            fields = list(fields)
+        if 'id' not in fields:
+            fields = ['id'] + fields
+        kwargs.setdefault('read_only', True)
+        super(ReadonlyModelSerializer, self).__init__(*args, **kwargs)
+        for field in fields:
+            self.fields[field] = serializers.ReadOnlyField()
+
+
+class ReadonlyModelWithNameSerializer(ReadonlyModelSerializer):
+    def __init__(self, *args, **kwargs):
+        fields = kwargs.pop('fields', []) or []
+        if not isinstance(fields, list):
+            fields = list(fields)
+        if 'name' not in fields:
+            fields = ['name'] + fields
+        if 'id' not in fields:
+            fields = ['id'] + fields
+        kwargs['fields'] = fields
+        super(ReadonlyModelWithNameSerializer, self).__init__(*args, **kwargs)
+
+
+class ReadonlyNamedModelSerializer(ReadonlyModelSerializer):
+    def __init__(self, *args, **kwargs):
+        fields = kwargs.get('fields', None)
+        if fields is None:
+            fields = ['id', 'user_code', 'name', 'short_name', 'public_name']
+            kwargs['fields'] = fields
+        super(ReadonlyNamedModelSerializer, self).__init__(*args, **kwargs)

@@ -3,7 +3,8 @@ from __future__ import unicode_literals
 from rest_framework import serializers
 
 from poms.common.serializers import ModelWithUserCodeSerializer
-from poms.obj_perms.serializers import ModelWithObjectPermissionSerializer, AbstractBulkObjectPermissionSerializer
+from poms.obj_perms.serializers import ModelWithObjectPermissionSerializer, AbstractBulkObjectPermissionSerializer, \
+    ReadonlyNamedModelWithObjectPermissionSerializer
 from poms.strategies.fields import Strategy1GroupField, Strategy1SubgroupField, Strategy2GroupField, \
     Strategy2SubgroupField, Strategy3GroupField, Strategy3SubgroupField, Strategy1Field, Strategy2Field, Strategy3Field
 from poms.strategies.models import Strategy1Group, Strategy1Subgroup, Strategy1, Strategy2Group, Strategy2Subgroup, \
@@ -15,11 +16,13 @@ from poms.users.fields import MasterUserField
 class Strategy1GroupSerializer(ModelWithObjectPermissionSerializer, ModelWithUserCodeSerializer):
     master_user = MasterUserField()
     tags = TagField(many=True, required=False, allow_null=True)
+    tags_object = ReadonlyNamedModelWithObjectPermissionSerializer(source='tags', many=True)
 
     class Meta:
         model = Strategy1Group
         fields = [
-            'url', 'id', 'master_user', 'user_code', 'name', 'short_name', 'public_name', 'notes', 'is_deleted', 'tags'
+            'url', 'id', 'master_user', 'user_code', 'name', 'short_name', 'public_name', 'notes', 'is_deleted',
+            'tags', 'tags_object'
         ]
 
 
@@ -33,13 +36,15 @@ class Strategy1GroupBulkObjectPermissionSerializer(AbstractBulkObjectPermissionS
 class Strategy1SubgroupSerializer(ModelWithObjectPermissionSerializer, ModelWithUserCodeSerializer):
     master_user = MasterUserField()
     group = Strategy1GroupField()
+    group_object = ReadonlyNamedModelWithObjectPermissionSerializer(source='group')
     tags = TagField(many=True, required=False, allow_null=True)
+    tags_object = ReadonlyNamedModelWithObjectPermissionSerializer(source='tags', many=True)
 
     class Meta:
         model = Strategy1Subgroup
         fields = [
-            'url', 'id', 'master_user', 'group', 'user_code', 'name', 'short_name', 'public_name', 'is_deleted',
-            'notes', 'tags'
+            'url', 'id', 'master_user', 'group', 'group_object', 'user_code', 'name', 'short_name', 'public_name',
+            'is_deleted', 'notes', 'tags', 'tags_object',
         ]
 
 
@@ -52,21 +57,23 @@ class Strategy1SubgroupBulkObjectPermissionSerializer(AbstractBulkObjectPermissi
 
 class Strategy1Serializer(ModelWithObjectPermissionSerializer, ModelWithUserCodeSerializer):
     master_user = MasterUserField()
-    group = serializers.SerializerMethodField()
+    # group = serializers.SerializerMethodField()
     subgroup = Strategy1SubgroupField()
+    subgroup_object = ReadonlyNamedModelWithObjectPermissionSerializer(source='subgroup')
     tags = TagField(many=True, required=False, allow_null=True)
+    tags_object = ReadonlyNamedModelWithObjectPermissionSerializer(source='tags', many=True)
 
     class Meta:
         model = Strategy1
         fields = [
-            'url', 'id', 'master_user', 'group', 'subgroup', 'user_code', 'name', 'short_name', 'public_name',
-            'notes', 'is_deleted', 'tags'
+            'url', 'id', 'master_user', 'subgroup', 'subgroup_object', 'user_code', 'name', 'short_name',
+            'public_name', 'notes', 'is_deleted', 'tags', 'tags_object'
         ]
 
-    def get_group(self, obj):
-        subgroup = getattr(obj, 'subgroup', None)
-        group = getattr(subgroup, 'group', None)
-        return getattr(group, 'id', None)
+        # def get_group(self, obj):
+        #     subgroup = getattr(obj, 'subgroup', None)
+        #     group = getattr(subgroup, 'group', None)
+        #     return getattr(group, 'id', None)
 
 
 class Strategy1BulkObjectPermissionSerializer(AbstractBulkObjectPermissionSerializer):

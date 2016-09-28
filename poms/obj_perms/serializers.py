@@ -3,6 +3,7 @@ from __future__ import unicode_literals
 from rest_framework import serializers
 from rest_framework.exceptions import PermissionDenied
 
+from poms.common.serializers import ReadonlyModelSerializer
 from poms.obj_perms.fields import PermissionField, GrantedPermissionField
 from poms.obj_perms.utils import has_view_perms, get_all_perms, assign_perms2, has_manage_perm
 from poms.users.fields import MemberField, GroupField
@@ -148,3 +149,46 @@ class ModelWithObjectPermissionSerializer(serializers.ModelSerializer):
         else:
             if has_manage_perm(member, instance):
                 assign_perms2(instance, user_perms=user_object_permissions, group_perms=group_object_permissions)
+
+
+class ReadonlyModelWithObjectPermissionListSerializer(serializers.ListSerializer):
+    def to_representation(self, data):
+        ret = super(ReadonlyModelWithObjectPermissionListSerializer, self).to_representation(data)
+        return [
+            a for a in ret if a.get('granted_permissions', None)
+            ]
+
+
+class ReadonlyModelWithObjectPermissionSerializer(ReadonlyModelSerializer):
+    class Meta:
+        list_serializer_class = ReadonlyModelWithObjectPermissionListSerializer
+
+    def __init__(self, *args, **kwargs):
+        super(ReadonlyModelWithObjectPermissionSerializer, self).__init__(*args, **kwargs)
+        self.fields['granted_permissions'] = GrantedPermissionField()
+
+    def get_display_name(self, instance):
+        member = self.context['request'].user.member
+        if has_view_perms(member, instance):
+            return getattr(instance, 'name', None)
+        else:
+            return getattr(instance, 'public_name', None)
+
+    def to_representation(self, instance):
+        ret = super(ReadonlyModelWithObjectPermissionSerializer, self).to_representation(instance)
+        member = self.context['request'].user.member
+        if not has_view_perms(member, instance):
+            for k in list(ret.keys()):
+                if k not in ['id', 'public_name', 'display_name', 'granted_permissions']:
+                    ret.pop(k)
+        return ret
+
+
+class ReadonlyNamedModelWithObjectPermissionSerializer(ReadonlyModelWithObjectPermissionSerializer):
+    def __init__(self, *args, **kwargs):
+        fields = kwargs.get('fields', None)
+        if fields is None:
+            fields = ['id', 'user_code', 'name', 'short_name', 'public_name']
+            kwargs['fields'] = fields
+        super(ReadonlyNamedModelWithObjectPermissionSerializer, self).__init__(*args, **kwargs)
+        self.fields['display_name'] = serializers.SerializerMethodField()

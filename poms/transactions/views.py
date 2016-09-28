@@ -135,6 +135,7 @@ class TransactionTypeViewSet(AbstractWithObjectPermissionViewSet):
     search_fields = [
         'user_code', 'name', 'short_name',
     ]
+
     # has_feature_is_deleted = True
 
     def get_queryset(self):
@@ -272,13 +273,14 @@ class TransactionViewSet(AbstractModelViewSet):
         'portfolio', 'instrument', 'transaction_currency', 'settlement_currency',
         'account_cash', 'account_position', 'account_interim',
         'strategy1_position', 'strategy1_cash', 'strategy2_position', 'strategy2_cash',
-        'strategy3_position', 'strategy3_cash',
+        'strategy3_position', 'strategy3_cash', 'responsible', 'counterparty',
         'attributes', 'attributes__attribute_type'
     )
     prefetch_permissions_for = (
         'portfolio', 'instrument', 'account_cash', 'account_position', 'account_interim',
         'strategy1_position', 'strategy1_cash', 'strategy2_position', 'strategy2_cash',
-        'strategy3_position', 'strategy3_cash', 'attributes__attribute_type',
+        'strategy3_position', 'strategy3_cash', 'responsible', 'counterparty',
+        'attributes__attribute_type',
     )
     serializer_class = TransactionSerializer
     filter_backends = AbstractModelViewSet.filter_backends + [
