@@ -87,7 +87,7 @@ class ThreadViewSet(AbstractWithObjectPermissionViewSet):
                                           order_by('thread_id', '-created', '-id').
                                           values_list('id', flat=True))
                                   ))
-    prefetch_permissions_for = []
+    # prefetch_permissions_for = []
     serializer_class = ThreadSerializer
     # bulk_objects_permissions_serializer_class = ThreadBulkObjectPermissionSerializer
     filter_backends = AbstractWithObjectPermissionViewSet.filter_backends + [
