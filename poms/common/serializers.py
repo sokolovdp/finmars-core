@@ -275,7 +275,9 @@ class AbstractClassifierNodeSerializer(AbstractPomsSerializer):
 
 
 class ReadonlyModelListSerializer(serializers.ListSerializer):
-    pass
+    def __init__(self, *args, **kwargs):
+        kwargs.setdefault('read_only', True)
+        super(ReadonlyModelListSerializer, self).__init__(*args, **kwargs)
 
 
 class ReadonlyModelSerializer(serializers.Serializer):

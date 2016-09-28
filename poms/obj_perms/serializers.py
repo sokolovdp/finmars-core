@@ -2,7 +2,7 @@ from __future__ import unicode_literals
 
 from rest_framework import serializers
 
-from poms.common.serializers import ReadonlyModelSerializer
+from poms.common.serializers import ReadonlyModelSerializer, ReadonlyModelListSerializer
 from poms.obj_perms.fields import PermissionField, GrantedPermissionField
 from poms.obj_perms.utils import has_view_perms, get_all_perms, assign_perms2, has_manage_perm
 from poms.users.fields import MemberField, GroupField
@@ -150,7 +150,7 @@ class ModelWithObjectPermissionSerializer(serializers.ModelSerializer):
                 assign_perms2(instance, user_perms=user_object_permissions, group_perms=group_object_permissions)
 
 
-class ReadonlyModelWithObjectPermissionListSerializer(serializers.ListSerializer):
+class ReadonlyModelWithObjectPermissionListSerializer(ReadonlyModelListSerializer):
     def to_representation(self, data):
         ret = super(ReadonlyModelWithObjectPermissionListSerializer, self).to_representation(data)
         return [
