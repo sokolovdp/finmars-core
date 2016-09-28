@@ -54,3 +54,27 @@ def get_member(request):
         return member
     except ObjectDoesNotExist:
         raise NotFound()
+
+
+def get_user_from_context(context):
+    context = context or {}
+    request = context.get('request', None)
+    if request:
+        return request.user
+    return context.get('user', None)
+
+
+def get_master_user_from_context(context):
+    context = context or {}
+    request = context.get('request', None)
+    if request:
+        return request.user.master_user
+    return context.get('master_user', None)
+
+
+def get_member_from_context(context):
+    context = context or {}
+    request = context.get('request', None)
+    if request:
+        return request.user.member
+    return context.get('member', None)

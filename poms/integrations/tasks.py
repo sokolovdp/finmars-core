@@ -642,7 +642,9 @@ def download_pricing_wait(self, sub_tasks_id, task_id):
     _l.debug('currencies_prices: %s', currencies_prices)
 
     for p in instruments_prices:
-        p.calculate_accrued_price(save=False)
+        # p.calculate_accrued_price(save=False)
+        accrued_price = p.instrument.get_accrued_price(p.date)
+        p.accrued_price = accrued_price if accrued_price is not None else 0.0
 
     with transaction.atomic():
         _l.debug('instruments_pk: %s', instruments_pk)
@@ -701,7 +703,8 @@ def download_pricing_wait(self, sub_tasks_id, task_id):
                 if op is None:
                     op = PriceHistory(instrument_id=instrument_id, pricing_policy_id=pricing_policy_id, date=date_to)
                 instrument_price_missed_objects.append(op)
-            instrument_price_missed = PriceHistorySerializer(instance=instrument_price_missed_objects, many=True).data
+            instrument_price_missed = PriceHistorySerializer(instance=instrument_price_missed_objects, many=True,
+                                                             context={'member': task.member}).data
             result['instrument_price_missed'] = instrument_price_missed
 
             currency_price_missed = currency_price_expected.difference(currency_price_real)

@@ -12,6 +12,7 @@ from poms.obj_attrs.utils import get_attr_type_model, get_attr_type_view_perms
 from poms.obj_perms.serializers import ModelWithObjectPermissionSerializer
 from poms.obj_perms.utils import obj_perms_filter_objects, has_view_perms
 from poms.users.fields import MasterUserField
+from poms.users.utils import get_member_from_context, get_master_user_from_context
 
 
 class AttributeTypeOptionIsHiddenField(serializers.BooleanField):
@@ -26,7 +27,7 @@ class AttributeTypeOptionIsHiddenField(serializers.BooleanField):
 
     def to_representation(self, value):
         # some "optimization" to use preloaded data through prefetch_related
-        member = self.context['request'].user.member
+        member = get_member_from_context(self.context)
         for o in value.options.all():
             if o.member_id == member.id:
                 return o.is_hidden
@@ -73,7 +74,7 @@ class AbstractAttributeTypeSerializer(ModelWithObjectPermissionSerializer, Model
             self._validate_classifiers(children, id_set, user_code_set)
 
     def create(self, validated_data):
-        member = self.context['request'].user.member
+        member = get_member_from_context(self.context)
         is_hidden = validated_data.pop('is_hidden', False)
         classifiers = validated_data.pop('classifiers', None)
         instance = super(AbstractAttributeTypeSerializer, self).create(validated_data)
@@ -82,7 +83,7 @@ class AbstractAttributeTypeSerializer(ModelWithObjectPermissionSerializer, Model
         return instance
 
     def update(self, instance, validated_data):
-        member = self.context['request'].user.member
+        member = get_member_from_context(self.context)
         is_hidden = validated_data.pop('is_hidden', False)
         classifiers = validated_data.pop('classifiers', None)
         instance = super(AbstractAttributeTypeSerializer, self).update(instance, validated_data)
@@ -133,10 +134,10 @@ class AbstractAttributeTypeSerializer(ModelWithObjectPermissionSerializer, Model
 class AttributeListSerializer(serializers.ListSerializer):
     # Used as list_serializer_class if many=True in AbstractAttributeSerializer
     def get_attribute(self, instance):
-        member = self.context['request'].user.member
+        member = get_member_from_context(self.context)
         if member.is_superuser:
             return instance.attributes
-        master_user = self.context['request'].user.master_user
+        master_user = get_master_user_from_context(self.context)
         attribute_type_model = getattr(self.child.Meta, 'attribute_type_model', None) or get_attr_type_model(instance)
         attribute_types = attribute_type_model.objects.filter(master_user=master_user)
         attribute_types = obj_perms_filter_objects(member, get_attr_type_view_perms(attribute_type_model), attribute_types)
@@ -214,7 +215,7 @@ class ModelWithAttributesSerializer(serializers.ModelSerializer):
         if attributes is None:
             return
 
-        member = self.context['request'].user.member
+        member = get_member_from_context(self.context)
         cur_attrs = {a.attribute_type_id: a
                      for a in instance.attributes.select_related('attribute_type').all()}
         processed = set()

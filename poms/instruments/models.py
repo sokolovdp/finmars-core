@@ -408,8 +408,8 @@ class Instrument(NamedModel, FakeDeletableModel):
             ('manage_instrument', 'Can manage instrument'),
         ]
 
-    def __str__(self):
-        return self.user_code
+    # def __str__(self):
+    #     return self.user_code
 
     def rebuild_event_schedules(self):
         from poms.transactions.models import EventClass

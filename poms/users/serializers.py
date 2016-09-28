@@ -24,6 +24,7 @@ from poms.strategies.fields import Strategy1Field, Strategy2Field, Strategy3Fiel
     Strategy1GroupField, Strategy2GroupField, Strategy2SubgroupField, Strategy3GroupField, Strategy3SubgroupField
 from poms.users.fields import MasterUserField, MemberField, GroupField
 from poms.users.models import MasterUser, UserProfile, Group, Member, TIMEZONE_CHOICES
+from poms.users.utils import get_user_from_context, get_master_user_from_context, get_member_from_context
 
 
 class PingSerializer(serializers.Serializer):
@@ -74,8 +75,7 @@ class PasswordChangeSerializer(serializers.Serializer):
     new_password = serializers.CharField(required=True, max_length=128, style={'input_type': 'password'})
 
     def create(self, validated_data):
-        request = self.context['request']
-        user = request.user
+        user = get_user_from_context(self.context)
         password = validated_data['password']
         if user.check_password(password):
             new_password = validated_data['new_password']
@@ -135,13 +135,13 @@ class UserSetPasswordSerializer(serializers.Serializer):
                                          style={'input_type': 'password'})
 
     def validate(self, attrs):
-        user = self.context['request'].user
+        user = get_user_from_context(self.context)
         if not user.check_password(attrs['password']):
             raise serializers.ValidationError({'password': 'bad password'})
         return attrs
 
     def create(self, validated_data):
-        user = self.context['request'].user
+        user = get_user_from_context(self.context)
         user.set_password(validated_data['new_password'])
         return validated_data
 
@@ -153,7 +153,7 @@ class UserUnsubscribeSerializer(serializers.Serializer):
     email = serializers.EmailField(allow_null=False, allow_blank=False, required=True, write_only=True)
 
     def validate(self, attrs):
-        user = self.context['request'].user
+        user = get_user_from_context(self.context)
         if attrs['email'] != user.email:
             raise serializers.ValidationError({'email': 'Invalid email'})
         return attrs
@@ -246,9 +246,7 @@ class MasterUserSerializer(serializers.ModelSerializer):
         return ret
 
     def get_is_current(self, obj):
-        request = self.context['request']
-        # master_user = get_master_user(request)
-        master_user = request.user.master_user
+        master_user = get_master_user_from_context(self.context)
         return obj.id == master_user.id
 
 
@@ -267,7 +265,7 @@ class MemberMiniSerializer(serializers.ModelSerializer):
         read_only_fields = ['id', 'username', 'first_name', 'last_name', 'display_name', ]
 
     def get_is_current(self, obj):
-        member = self.context['request'].user.member
+        member = get_member_from_context(self.context)
         return obj.id == member.id
 
 
@@ -291,7 +289,7 @@ class MemberSerializer(serializers.ModelSerializer):
         ]
 
     def get_is_current(self, obj):
-        member = self.context['request'].user.member
+        member = get_member_from_context(self.context)
         return obj.id == member.id
 
 

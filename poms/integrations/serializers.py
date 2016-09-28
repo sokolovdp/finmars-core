@@ -396,6 +396,7 @@ class InstrumentMiniSerializer(InstrumentSerializer):
         # self.fields.pop('factor_schedules')
         self.fields.pop('event_schedules')
         self.fields.pop('tags')
+        self.fields.pop('tags_object')
         # self.fields.pop('attributes')
         self.fields.pop('granted_permissions')
         self.fields.pop('user_object_permissions', None)

@@ -6,6 +6,7 @@ from poms.common.serializers import ReadonlyModelSerializer, ReadonlyModelListSe
 from poms.obj_perms.fields import PermissionField, GrantedPermissionField
 from poms.obj_perms.utils import has_view_perms, get_all_perms, assign_perms2, has_manage_perm
 from poms.users.fields import MemberField, GroupField
+from poms.users.utils import get_member_from_context
 
 
 class UserObjectPermissionSerializer(serializers.Serializer):
@@ -76,7 +77,7 @@ class ModelWithObjectPermissionSerializer(serializers.ModelSerializer):
             many=True, required=False, allow_null=True)
 
     def get_display_name(self, instance):
-        member = self.context['request'].user.member
+        member = get_member_from_context(self.context)
         if has_view_perms(member, instance):
             return getattr(instance, 'name', None)
         else:
@@ -102,13 +103,13 @@ class ModelWithObjectPermissionSerializer(serializers.ModelSerializer):
     #     return super(ModelWithObjectPermissionSerializer, self).to_representation(instance)
     def to_representation(self, instance):
         ret = super(ModelWithObjectPermissionSerializer, self).to_representation(instance)
-        member = self.context['request'].user.member
+        member = get_member_from_context(self.context)
         if not has_view_perms(member, instance):
-            for k in [ret.keys()]:
+            for k in list(ret.keys()):
                 if k not in ['url', 'id', 'public_name', 'display_name', 'granted_permissions']:
                     ret.pop(k)
         if not has_manage_perm(member, instance):
-            for k in [ret.keys()]:
+            for k in list(ret.keys()):
                 if k in ['user_object_permissions', 'group_object_permissions']:
                     ret.pop(k)
         return ret
@@ -135,7 +136,7 @@ class ModelWithObjectPermissionSerializer(serializers.ModelSerializer):
 
     def save_object_permission(self, instance, user_object_permissions=None, group_object_permissions=None,
                                created=False):
-        member = self.context['request'].user.member
+        member = get_member_from_context(self.context)
         member_perms = [{'member': member, 'permission': p,} for p in get_all_perms(instance)]
 
         if created:
@@ -167,7 +168,7 @@ class ReadonlyModelWithObjectPermissionSerializer(ReadonlyModelSerializer):
         self.fields['granted_permissions'] = GrantedPermissionField()
 
     def get_display_name(self, instance):
-        member = self.context['request'].user.member
+        member = get_member_from_context(self.context)
         if has_view_perms(member, instance):
             return getattr(instance, 'name', None)
         else:
@@ -175,7 +176,7 @@ class ReadonlyModelWithObjectPermissionSerializer(ReadonlyModelSerializer):
 
     def to_representation(self, instance):
         ret = super(ReadonlyModelWithObjectPermissionSerializer, self).to_representation(instance)
-        member = self.context['request'].user.member
+        member = get_member_from_context(self.context)
         if not has_view_perms(member, instance):
             for k in list(ret.keys()):
                 if k not in ['id', 'public_name', 'display_name', 'granted_permissions']:

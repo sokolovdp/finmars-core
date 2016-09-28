@@ -23,7 +23,7 @@ class NamedModel(models.Model):
         ]
 
     def __str__(self):
-        return self.name
+        return self.user_code or ''
 
     def save(self, *args, **kwargs):
         if not self.user_code:
