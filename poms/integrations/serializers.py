@@ -15,10 +15,12 @@ from poms.common.fields import ExpressionField, DateTimeTzAwareField
 from poms.common.serializers import PomsClassSerializer, ReadonlyModelSerializer, ReadonlyModelWithNameSerializer, \
     ReadonlyNamedModelSerializer
 from poms.currencies.fields import CurrencyField
+from poms.currencies.models import CurrencyHistory
+from poms.currencies.serializers import CurrencyHistorySerializer
 from poms.instruments.fields import InstrumentTypeField, InstrumentAttributeTypeField, InstrumentClassifierField
-from poms.instruments.models import InstrumentAttributeType
+from poms.instruments.models import InstrumentAttributeType, PriceHistory
 from poms.instruments.serializers import InstrumentAttributeSerializer, InstrumentSerializer, \
-    AccrualCalculationScheduleSerializer, InstrumentFactorScheduleSerializer
+    AccrualCalculationScheduleSerializer, InstrumentFactorScheduleSerializer, PriceHistorySerializer
 from poms.integrations.fields import InstrumentDownloadSchemeField, PriceDownloadSchemeField
 from poms.integrations.models import InstrumentDownloadSchemeInput, InstrumentDownloadSchemeAttribute, \
     InstrumentDownloadScheme, ImportConfig, Task, ProviderClass, FactorScheduleDownloadMethod, \
@@ -563,13 +565,48 @@ class ImportPricingEntry(object):
 
     @property
     def instrument_price_missed(self):
+        if not self.is_yesterday:
+            return []
         result = getattr(self.task_object, 'result_object', {})
-        return result.get('instrument_price_missed', None)
+        instrument_price_missed = result.get('instrument_price_missed', None)
+        if instrument_price_missed:
+            instruments_pk = [instr_id for instr_id, _ in instrument_price_missed]
+            existed_instrument_prices = {
+                (p.instrument_id, p.pricing_policy_id): p
+                for p in PriceHistory.objects.filter(instrument__in=instruments_pk, date=self.date_to)
+                }
+
+            instrument_price_missed_objects = []
+            for instrument_id, pricing_policy_id in instrument_price_missed:
+                op = existed_instrument_prices.get((instrument_id, pricing_policy_id), None)
+                if op is None:
+                    op = PriceHistory(instrument_id=instrument_id, pricing_policy_id=pricing_policy_id,
+                                      date=self.date_to)
+                instrument_price_missed_objects.append(op)
+            return instrument_price_missed_objects
+        return []
 
     @property
     def currency_price_missed(self):
+        if not self.is_yesterday:
+            return []
         result = getattr(self.task_object, 'result_object', {})
-        return result.get('currency_price_missed', None)
+        currency_price_missed = result.get('currency_price_missed', None)
+        if currency_price_missed:
+            currencies_pk = [instr_id for instr_id, _ in currency_price_missed]
+            existed_currency_prices = {
+                (p.currency_id, p.pricing_policy_id): p
+                for p in CurrencyHistory.objects.filter(currency__in=currencies_pk, date=self.date_to)
+                }
+            currency_price_missed_objects = []
+            for currency_id, pricing_policy_id in currency_price_missed:
+                op = existed_currency_prices.get((currency_id, pricing_policy_id), None)
+                if op is None:
+                    op = CurrencyHistory(currency_id=currency_id, pricing_policy_id=pricing_policy_id,
+                                         date=self.date_to)
+                currency_price_missed_objects.append(op)
+            return currency_price_missed_objects
+        return []
 
 
 class ImportPricingSerializer(serializers.Serializer):
@@ -587,8 +624,8 @@ class ImportPricingSerializer(serializers.Serializer):
     task_object = TaskSerializer(read_only=True)
 
     errors = serializers.ReadOnlyField()
-    instrument_price_missed = serializers.ReadOnlyField()
-    currency_price_missed = serializers.ReadOnlyField()
+    instrument_price_missed = PriceHistorySerializer(read_only=True, many=True)
+    currency_price_missed = CurrencyHistorySerializer(read_only=True, many=True)
 
     def validate(self, attrs):
         attrs = super(ImportPricingSerializer, self).validate(attrs)

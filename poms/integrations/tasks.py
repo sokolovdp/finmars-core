@@ -697,28 +697,28 @@ def download_pricing_wait(self, sub_tasks_id, task_id):
                     currency_price_expected.add((int(c_id), pp.id))
 
             instrument_price_missed = instrument_price_expected.difference(instrument_price_real)
-            instrument_price_missed_objects = []
-            for instrument_id, pricing_policy_id in instrument_price_missed:
-                op = existed_instrument_prices.get((instrument_id, pricing_policy_id, date_to), None)
-                if op is None:
-                    op = PriceHistory(instrument_id=instrument_id, pricing_policy_id=pricing_policy_id, date=date_to)
-                instrument_price_missed_objects.append(op)
-            instrument_price_missed = PriceHistorySerializer(instance=instrument_price_missed_objects, many=True,
-                                                             context={'member': task.member}).data
-            result['instrument_price_missed'] = instrument_price_missed
+            # instrument_price_missed_objects = []
+            # for instrument_id, pricing_policy_id in instrument_price_missed:
+            #     op = existed_instrument_prices.get((instrument_id, pricing_policy_id, date_to), None)
+            #     if op is None:
+            #         op = PriceHistory(instrument_id=instrument_id, pricing_policy_id=pricing_policy_id, date=date_to)
+            #     instrument_price_missed_objects.append(op)
+            # instrument_price_missed = PriceHistorySerializer(instance=instrument_price_missed_objects, many=True,
+            #                                                  context={'member': task.member}).data
+            result['instrument_price_missed'] = list(instrument_price_missed)
 
             currency_price_missed = currency_price_expected.difference(currency_price_real)
-            currency_price_missed_objects = []
-            for currency_id, pricing_policy_id in currency_price_missed:
-                op = existed_currency_prices.get((currency_id, pricing_policy_id, date_to), None)
-                if op is None:
-                    op = CurrencyHistory(currency_id=currency_id, pricing_policy_id=pricing_policy_id, date=date_to)
-                currency_price_missed_objects.append(op)
-            currency_price_missed = CurrencyHistorySerializer(instance=currency_price_missed_objects, many=True).data
-            result['currency_price_missed'] = currency_price_missed
+            # currency_price_missed_objects = []
+            # for currency_id, pricing_policy_id in currency_price_missed:
+            #     op = existed_currency_prices.get((currency_id, pricing_policy_id, date_to), None)
+            #     if op is None:
+            #         op = CurrencyHistory(currency_id=currency_id, pricing_policy_id=pricing_policy_id, date=date_to)
+            #     currency_price_missed_objects.append(op)
+            # currency_price_missed = CurrencyHistorySerializer(instance=currency_price_missed_objects, many=True).data
+            result['currency_price_missed'] = list(currency_price_missed)
 
-            _l.debug('instrument_price_missed_objects: %s', instrument_price_missed_objects)
-            _l.debug('currency_price_missed_objects: %s', currency_price_missed_objects)
+            _l.debug('instrument_price_missed: %s', instrument_price_missed)
+            _l.debug('currency_price_missed: %s', currency_price_missed)
 
         task.options_object = options
         task.result_object = result
