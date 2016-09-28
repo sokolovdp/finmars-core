@@ -25,11 +25,10 @@ class NotificationFilterSet(FilterSet):
 
 
 class NotificationViewSet(AbstractReadOnlyModelViewSet):
-    queryset = Notification.objects.prefetch_related(
-        'recipient', 'recipient_member',
-        'actor', 'actor_content_type',
-        'action_object', 'action_object_content_type',
-        'target', 'target_content_type'
+    queryset = Notification.objects.select_related(
+        'recipient', 'recipient_member', 'actor_content_type', 'action_object_content_type', 'target_content_type'
+    ).prefetch_related(
+        'actor', 'action_object', 'target',
     )
     serializer_class = NotificationSerializer
     permission_classes = (IsAuthenticated,)

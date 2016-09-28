@@ -28,7 +28,7 @@ class TagFilterSet(FilterSet):
 
 
 class TagViewSet(AbstractWithObjectPermissionViewSet):
-    queryset = Tag.objects
+    queryset = Tag.objects.prefetch_related('content_types')
     # prefetch_related(
     #     'content_types', 'account_types', 'accounts', 'currencies', 'instrument_types', 'instruments', 'counterparties',
     #     'responsibles', 'portfolios', 'transaction_type_groups', 'transaction_types',

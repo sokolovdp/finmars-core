@@ -1,6 +1,7 @@
 from __future__ import unicode_literals
 
 import django_filters
+from django.db.models import Prefetch
 from rest_framework.filters import FilterSet
 
 from poms.accounts.models import Account
@@ -11,7 +12,7 @@ from poms.obj_attrs.views import AbstractAttributeTypeViewSet, AbstractClassifie
 from poms.obj_perms.filters import ObjectPermissionMemberFilter, ObjectPermissionGroupFilter, \
     ObjectPermissionPermissionFilter
 from poms.obj_perms.views import AbstractWithObjectPermissionViewSet
-from poms.portfolios.models import Portfolio, PortfolioAttributeType, PortfolioClassifier
+from poms.portfolios.models import Portfolio, PortfolioAttributeType, PortfolioClassifier, PortfolioAttribute
 from poms.portfolios.serializers import PortfolioSerializer, PortfolioAttributeTypeSerializer, \
     PortfolioClassifierNodeSerializer
 from poms.tags.filters import TagFilterBackend, TagFilter
@@ -79,12 +80,19 @@ class PortfolioFilterSet(FilterSet):
 
 
 class PortfolioViewSet(AbstractWithObjectPermissionViewSet):
-    queryset = Portfolio.objects.prefetch_related(
-        'master_user', 'accounts', 'responsibles', 'counterparties', 'transaction_types',
-        'attributes', 'attributes__attribute_type'
+    queryset = Portfolio.objects.select_related(
+        'master_user',
+    ).prefetch_related(
+        'accounts', 'responsibles', 'counterparties', 'transaction_types',
+        Prefetch('attributes', queryset=PortfolioAttribute.objects.select_related('attribute_type', 'classifier')),
     )
-    prefetch_permissions_for = ('counterparties', 'transaction_types', 'accounts', 'responsibles',
-                                'attributes__attribute_type',)
+    prefetch_permissions_for = (
+        ('counterparties', Counterparty),
+        ('transaction_types', TransactionType),
+        ('accounts', Account),
+        ('responsibles', Responsible),
+        ('attributes__attribute_type', PortfolioAttributeType)
+    )
     serializer_class = PortfolioSerializer
     # bulk_objects_permissions_serializer_class = PortfolioBulkObjectPermissionSerializer
     filter_backends = AbstractWithObjectPermissionViewSet.filter_backends + [

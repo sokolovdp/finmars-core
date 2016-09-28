@@ -184,7 +184,7 @@ class MemberFilterSet(FilterSet):
 
 
 class MemberViewSet(AbstractModelViewSet):
-    queryset = Member.objects.prefetch_related('user', 'groups')
+    queryset = Member.objects.select_related('user').prefetch_related('groups')
     serializer_class = MemberSerializer
     permission_classes = AbstractModelViewSet.permission_classes + [
         SuperUserOrReadOnly,
@@ -219,7 +219,7 @@ class GroupFilterSet(FilterSet):
 
 
 class GroupViewSet(AbstractModelViewSet):
-    queryset = Group.objects.prefetch_related('master_user', 'members')
+    queryset = Group.objects.select_related('master_user').prefetch_related('members')
     serializer_class = GroupSerializer
     permission_classes = AbstractModelViewSet.permission_classes + [
         SuperUserOrReadOnly,

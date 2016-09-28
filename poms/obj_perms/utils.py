@@ -301,10 +301,28 @@ _perms_lookups = [
 ]
 
 
+def obj_perms_prefetch_one(lookup, model):
+    user_lookup_name, user_obj_perms_model = get_user_obj_perms_model(model)
+    group_lookup_name, group_obj_perms_model = get_group_obj_perms_model(model)
+    if lookup:
+        user_object_permissions = '%s__user_object_permissions' % lookup
+        group_object_permissions = '%s__group_object_permissions' % lookup
+    else:
+        user_object_permissions = 'user_object_permissions'
+        group_object_permissions = 'group_object_permissions'
+    return [
+        Prefetch(user_object_permissions, queryset=user_obj_perms_model.objects.select_related(
+            'member', 'permission', 'permission__content_type')),
+        Prefetch(group_object_permissions, queryset=group_obj_perms_model.objects.select_related(
+            'group', 'permission', 'permission__content_type')),
+    ]
+
+
 def obj_perms_prefetch(queryset, my=True, lookups_related=None):
     lookups = []
     if my:
-        lookups += _perms_lookups
+        # lookups += _perms_lookups
+        lookups += obj_perms_prefetch_one(None, queryset.model)
 
         # user_lookup_name, user_obj_perms_model = get_user_obj_perms_model(queryset.model)
         # group_lookup_name, group_obj_perms_model = get_group_obj_perms_model(queryset.model)
@@ -318,7 +336,11 @@ def obj_perms_prefetch(queryset, my=True, lookups_related=None):
         # ]
     if lookups_related:
         for name in lookups_related:
-            for lookup in _perms_lookups:
-                lookups.append('%s__%s' % (name, lookup))
-                # lookups.append(Prefetch('%s__%s' % (name, lookup)))
+            if isinstance(name, (tuple, list)):
+                lookup, model = name
+                lookups += obj_perms_prefetch_one(lookup, model)
+            else:
+                for lookup in _perms_lookups:
+                    lookups.append('%s__%s' % (name, lookup))
+                    # lookups.append(Prefetch('%s__%s' % (name, lookup)))
     return queryset.prefetch_related(*lookups)

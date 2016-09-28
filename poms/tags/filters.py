@@ -13,7 +13,7 @@ from poms.counterparties.models import Responsible
 from poms.currencies.models import Currency
 from poms.instruments.models import Instrument
 from poms.instruments.models import InstrumentType
-from poms.obj_perms.utils import obj_perms_filter_objects_for_view
+from poms.obj_perms.utils import obj_perms_filter_objects_for_view, obj_perms_prefetch
 from poms.portfolios.models import Portfolio
 from poms.strategies.models import Strategy1Group, Strategy1Subgroup, Strategy1, Strategy2Group, Strategy2Subgroup, \
     Strategy2, Strategy3Group, Strategy3Subgroup, Strategy3
@@ -46,11 +46,13 @@ class TagContentTypeFilterBackend(BaseFilterBackend):
 
 class TagFilterBackend(BaseFilterBackend):
     def filter_queryset(self, request, queryset, view):
-        queryset = queryset.prefetch_related(
-            'tags',
-            'tags__user_object_permissions', 'tags__user_object_permissions__permission',
-            'tags__group_object_permissions', 'tags__group_object_permissions__permission',
-        )
+        # queryset = queryset.prefetch_related(
+        #     'tags',
+        #     'tags__user_object_permissions', 'tags__user_object_permissions__permission',
+        #     'tags__group_object_permissions', 'tags__group_object_permissions__permission',
+        # )
+        queryset = queryset.prefetch_related('tags')
+        queryset = obj_perms_prefetch(queryset, my=False, lookups_related=[('tags', Tag)])
         return queryset
 
 

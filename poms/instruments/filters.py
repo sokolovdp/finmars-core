@@ -4,28 +4,23 @@ from rest_framework.filters import BaseFilterBackend
 
 from poms.instruments.models import Instrument, InstrumentType, InstrumentAttributeType
 from poms.obj_perms.utils import obj_perms_filter_objects_for_view
-from poms.users.filters import OwnerByMasterUserFilter
 
 
 class OwnerByInstrumentFilter(BaseFilterBackend):
     def filter_queryset(self, request, queryset, view):
-        instruments = Instrument.objects.all()
-        instruments = OwnerByMasterUserFilter().filter_queryset(request, instruments, view)
+        instruments = Instrument.objects.filter(master_user=request.user.master_user)
         return queryset.filter(instrument__in=instruments)
 
 
 class OwnerByInstrumentTypeFilter(BaseFilterBackend):
     def filter_queryset(self, request, queryset, view):
-        instrument_types = InstrumentType.objects.all()
-        instrument_types = OwnerByMasterUserFilter().filter_queryset(request, instrument_types, view)
+        instrument_types = InstrumentType.objects.filter(master_user=request.user.master_user)
         return queryset.filter(instrument_type__in=instrument_types)
 
 
 class OwnerByInstrumentAttributeTypeFilter(BaseFilterBackend):
     def filter_queryset(self, request, queryset, view):
-        instrument_attribute_types = InstrumentAttributeType.objects.all()
-        instrument_attribute_types = OwnerByMasterUserFilter().filter_queryset(request, instrument_attribute_types,
-                                                                               view)
+        instrument_attribute_types = InstrumentAttributeType.objects.filter(master_user=request.user.master_user)
         return queryset.filter(attribute_type__in=instrument_attribute_types)
 
 

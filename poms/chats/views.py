@@ -35,7 +35,7 @@ class ThreadGroupFilterSet(FilterSet):
 
 
 class ThreadGroupViewSet(AbstractModelViewSet):
-    queryset = ThreadGroup.objects
+    queryset = ThreadGroup.objects.select_related('master_user')
     serializer_class = ThreadGroupSerializer
     permission_classes = AbstractModelViewSet.permission_classes + [
         SuperUserOrReadOnly
@@ -78,15 +78,15 @@ class ThreadFilterSet(FilterSet):
 
 
 class ThreadViewSet(AbstractWithObjectPermissionViewSet):
-    queryset = Thread.objects. \
+    queryset = Thread.objects.select_related('thread_group'). \
         annotate(messages_count=Count('messages')). \
-        prefetch_related('thread_group',
-                         Prefetch("messages", to_attr="messages_last",
+        prefetch_related(Prefetch("messages", to_attr="messages_last",
                                   queryset=Message.objects.prefetch_related('sender').filter(
                                       pk__in=Message.objects.distinct('thread').
                                           order_by('thread_id', '-created', '-id').
                                           values_list('id', flat=True))
-                                  ))
+                                  )
+                         )
     # prefetch_permissions_for = []
     serializer_class = ThreadSerializer
     # bulk_objects_permissions_serializer_class = ThreadBulkObjectPermissionSerializer
@@ -133,7 +133,7 @@ class MessageFilterSet(FilterSet):
 
 
 class MessageViewSet(AbstractModelViewSet):
-    queryset = Message.objects.prefetch_related('thread', 'sender')
+    queryset = Message.objects.select_related('thread', 'sender')
     serializer_class = MessageSerializer
     permission_classes = AbstractModelViewSet.permission_classes + [
         MessagePermission,
@@ -157,7 +157,7 @@ class DirectMessageFilterSet(FilterSet):
 
 
 class DirectMessageViewSet(AbstractModelViewSet):
-    queryset = DirectMessage.objects.prefetch_related('sender', 'recipient')
+    queryset = DirectMessage.objects.select_related('sender', 'recipient')
     serializer_class = DirectMessageSerializer
     permission_classes = AbstractModelViewSet.permission_classes + [
         DirectMessagePermission,

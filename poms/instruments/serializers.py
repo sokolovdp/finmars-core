@@ -423,10 +423,11 @@ class EventScheduleConfigSerializer(serializers.ModelSerializer):
     master_user = MasterUserField()
     name = ExpressionField()
     description = ExpressionField()
+    notification_class_object = ReadonlyModelWithNameSerializer(source='notification_class')
 
     class Meta:
         model = EventScheduleConfig
         fields = [
-            'url', 'id', 'master_user', 'name', 'description', 'notification_class', 'notify_in_n_days', 'action_text',
-            'action_is_sent_to_pending', 'action_is_book_automatic',
+            'url', 'id', 'master_user', 'name', 'description', 'notification_class', 'notification_class_object',
+            'notify_in_n_days', 'action_text', 'action_is_sent_to_pending', 'action_is_book_automatic',
         ]

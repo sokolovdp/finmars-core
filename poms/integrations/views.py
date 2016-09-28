@@ -2,6 +2,7 @@ from __future__ import unicode_literals, print_function
 
 import django_filters
 from django.core.exceptions import ObjectDoesNotExist
+from django.db.models import Prefetch
 from rest_framework.exceptions import MethodNotAllowed
 from rest_framework.filters import FilterSet
 from rest_framework.response import Response
@@ -16,7 +17,7 @@ from poms.integrations.filters import TaskFilter, InstrumentAttributeValueMappin
 from poms.integrations.models import ImportConfig, Task, InstrumentDownloadScheme, ProviderClass, \
     FactorScheduleDownloadMethod, AccrualScheduleDownloadMethod, PriceDownloadScheme, CurrencyMapping, \
     InstrumentTypeMapping, InstrumentAttributeValueMapping, AccrualCalculationModelMapping, PeriodicityMapping, \
-    PricingAutomatedSchedule
+    PricingAutomatedSchedule, InstrumentDownloadSchemeAttribute
 from poms.integrations.serializers import ImportConfigSerializer, TaskSerializer, \
     ImportFileInstrumentSerializer, ImportInstrumentSerializer, ImportPricingSerializer, \
     InstrumentDownloadSchemeSerializer, ProviderClassSerializer, FactorScheduleDownloadMethodSerializer, \
@@ -72,7 +73,14 @@ class InstrumentDownloadSchemeFilterSet(FilterSet):
 
 
 class InstrumentDownloadSchemeViewSet(AbstractModelViewSet):
-    queryset = InstrumentDownloadScheme.objects.prefetch_related('inputs', 'attributes', 'attributes__attribute_type')
+    queryset = InstrumentDownloadScheme.objects.select_related(
+        'provider', 'payment_size_detail', 'daily_pricing_model', 'price_download_scheme', 'factor_schedule_method',
+        'accrual_calculation_schedule_method',
+    ).prefetch_related(
+        'inputs',
+        Prefetch('attributes', queryset=InstrumentDownloadSchemeAttribute.objects.select_related(
+            'attribute_type')),
+    )
     serializer_class = InstrumentDownloadSchemeSerializer
     # permission_classes = AbstractModelViewSet.permission_classes + [
     #     SuperUserOrReadOnly,
@@ -96,7 +104,7 @@ class PriceDownloadSchemeFilterSet(FilterSet):
 
 
 class PriceDownloadSchemeViewSet(AbstractModelViewSet):
-    queryset = PriceDownloadScheme.objects.prefetch_related()
+    queryset = PriceDownloadScheme.objects.select_related('provider')
     serializer_class = PriceDownloadSchemeSerializer
     # permission_classes = AbstractModelViewSet.permission_classes + [
     #     SuperUserOrReadOnly,
@@ -121,7 +129,7 @@ class CurrencyMappingFilterSet(FilterSet):
 
 
 class CurrencyMappingViewSet(AbstractModelViewSet):
-    queryset = CurrencyMapping.objects.prefetch_related('master_user', 'currency')
+    queryset = CurrencyMapping.objects.select_related('master_user', 'provider', 'currency')
     serializer_class = CurrencyMappingSerializer
     permission_classes = AbstractModelViewSet.permission_classes + [
         SuperUserOrReadOnly,
@@ -144,7 +152,7 @@ class InstrumentTypeMappingFilterSet(FilterSet):
 
 
 class InstrumentTypeMappingViewSet(AbstractModelViewSet):
-    queryset = InstrumentTypeMapping.objects.prefetch_related('master_user', 'instrument_type')
+    queryset = InstrumentTypeMapping.objects.select_related('master_user', 'provider', 'instrument_type')
     serializer_class = InstrumentTypeMappingSerializer
     # permission_classes = AbstractModelViewSet.permission_classes + [
     #     SuperUserOrReadOnly,
@@ -168,8 +176,8 @@ class InstrumentAttributeValueMappingFilterSet(FilterSet):
 
 
 class InstrumentAttributeValueMappingViewSet(AbstractModelViewSet):
-    queryset = InstrumentAttributeValueMapping.objects.prefetch_related(
-        'master_user', 'attribute_type', 'classifier'
+    queryset = InstrumentAttributeValueMapping.objects.select_related(
+        'master_user', 'provider', 'attribute_type', 'classifier'
     )
     serializer_class = InstrumentAttributeValueMappingSerializer
     # permission_classes = AbstractModelViewSet.permission_classes + [
@@ -194,7 +202,9 @@ class AccrualCalculationModelMappingFilterSet(FilterSet):
 
 
 class AccrualCalculationModelMappingViewSet(AbstractModelViewSet):
-    queryset = AccrualCalculationModelMapping.objects.prefetch_related('master_user', 'accrual_calculation_model')
+    queryset = AccrualCalculationModelMapping.objects.select_related(
+        'master_user', 'provider', 'accrual_calculation_model'
+    )
     serializer_class = AccrualCalculationModelMappingSerializer
     # permission_classes = AbstractModelViewSet.permission_classes + [
     #     SuperUserOrReadOnly,
@@ -217,7 +227,7 @@ class PeriodicityMappingFilterSet(FilterSet):
 
 
 class PeriodicityMappingViewSet(AbstractModelViewSet):
-    queryset = PeriodicityMapping.objects.prefetch_related('master_user', 'periodicity')
+    queryset = PeriodicityMapping.objects.select_related('master_user', 'provider', 'periodicity')
     serializer_class = PeriodicityMappingSerializer
     # permission_classes = AbstractModelViewSet.permission_classes + [
     #     SuperUserOrReadOnly,
@@ -242,7 +252,7 @@ class TaskFilterSet(FilterSet):
 
 
 class TaskViewSet(AbstractReadOnlyModelViewSet):
-    queryset = Task.objects.prefetch_related('parent', 'children')
+    queryset = Task.objects.select_related('provider').prefetch_related('children')
     serializer_class = TaskSerializer
     filter_backends = AbstractReadOnlyModelViewSet.filter_backends + [
         TaskFilter,

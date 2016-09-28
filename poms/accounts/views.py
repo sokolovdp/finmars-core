@@ -1,9 +1,10 @@
 from __future__ import unicode_literals
 
 import django_filters
+from django.db.models import Prefetch
 from rest_framework.filters import FilterSet
 
-from poms.accounts.models import Account, AccountType, AccountAttributeType, AccountClassifier
+from poms.accounts.models import Account, AccountType, AccountAttributeType, AccountClassifier, AccountAttribute
 from poms.accounts.serializers import AccountSerializer, AccountTypeSerializer, AccountAttributeTypeSerializer, \
     AccountClassifierNodeSerializer
 from poms.common.filters import CharFilter, ModelWithPermissionMultipleChoiceFilter, NoOpFilter
@@ -34,7 +35,7 @@ class AccountTypeFilterSet(FilterSet):
 
 
 class AccountTypeViewSet(AbstractWithObjectPermissionViewSet):
-    queryset = AccountType.objects.prefetch_related('master_user')
+    queryset = AccountType.objects.select_related('master_user')
     serializer_class = AccountTypeSerializer
     # bulk_objects_permissions_serializer_class = AccountTypeBulkObjectPermissionSerializer
     filter_backends = AbstractWithObjectPermissionViewSet.filter_backends + [
@@ -67,7 +68,7 @@ class AccountAttributeTypeFilterSet(FilterSet):
 
 
 class AccountAttributeTypeViewSet(AbstractAttributeTypeViewSet):
-    queryset = AccountAttributeType.objects.prefetch_related('classifiers')
+    queryset = AccountAttributeType.objects.select_related('master_user').prefetch_related('classifiers')
     serializer_class = AccountAttributeTypeSerializer
     # bulk_objects_permissions_serializer_class = AccountAttributeTypeBulkObjectPermissionSerializer
     filter_class = AccountAttributeTypeFilterSet
@@ -112,10 +113,17 @@ class AccountFilterSet(FilterSet):
 
 
 class AccountViewSet(AbstractWithObjectPermissionViewSet):
-    queryset = Account.objects.prefetch_related(
-        'master_user', 'type', 'portfolios', 'attributes', 'attributes__attribute_type'
+    queryset = Account.objects.select_related(
+        'master_user', 'type',
+    ).prefetch_related(
+        'portfolios',
+        Prefetch('attributes', queryset=AccountAttribute.objects.select_related('attribute_type', 'classifier')),
     )
-    prefetch_permissions_for = ('type', 'portfolios', 'attributes__attribute_type')
+    prefetch_permissions_for = (
+        ('type', AccountType),
+        ('portfolios', Portfolio),
+        ('attributes__attribute_type', AccountAttributeType),
+    )
     serializer_class = AccountSerializer
     # bulk_objects_permissions_serializer_class = AccountBulkObjectPermissionSerializer
     filter_backends = AbstractWithObjectPermissionViewSet.filter_backends + [

@@ -2,6 +2,7 @@ from __future__ import unicode_literals
 
 import django_filters
 from django.core.exceptions import ObjectDoesNotExist
+from django.db.models import Prefetch
 from rest_framework import serializers
 from rest_framework.decorators import list_route, detail_route
 from rest_framework.exceptions import MethodNotAllowed
@@ -13,7 +14,7 @@ from poms.common.views import AbstractClassModelViewSet, AbstractModelViewSet
 from poms.instruments.filters import OwnerByInstrumentFilter, PriceHistoryObjectPermissionFilter
 from poms.instruments.models import Instrument, PriceHistory, InstrumentClass, DailyPricingModel, \
     AccrualCalculationModel, PaymentSizeDetail, Periodicity, CostMethod, InstrumentType, InstrumentAttributeType, \
-    PricingPolicy, InstrumentClassifier, EventScheduleConfig
+    PricingPolicy, InstrumentClassifier, EventScheduleConfig, InstrumentAttribute
 from poms.instruments.serializers import InstrumentSerializer, PriceHistorySerializer, \
     InstrumentClassSerializer, DailyPricingModelSerializer, AccrualCalculationModelSerializer, \
     PaymentSizeDetailSerializer, PeriodicitySerializer, CostMethodSerializer, InstrumentTypeSerializer, \
@@ -90,7 +91,7 @@ class InstrumentTypeFilterSet(FilterSet):
 
 
 class InstrumentTypeViewSet(AbstractWithObjectPermissionViewSet):
-    queryset = InstrumentType.objects.prefetch_related('master_user')
+    queryset = InstrumentType.objects.select_related('master_user')
     serializer_class = InstrumentTypeSerializer
     # bulk_objects_permissions_serializer_class = InstrumentTypeBulkObjectPermissionSerializer
     filter_backends = AbstractWithObjectPermissionViewSet.filter_backends + [
@@ -168,10 +169,17 @@ class InstrumentFilterSet(FilterSet):
 
 
 class InstrumentViewSet(AbstractWithObjectPermissionViewSet):
-    queryset = Instrument.objects.prefetch_related(
-        'instrument_type', 'pricing_currency', 'accrued_currency', 'attributes', 'attributes__attribute_type',
+    queryset = Instrument.objects.select_related(
+        'instrument_type', 'pricing_currency', 'accrued_currency',
+    ).prefetch_related(
+        Prefetch('attributes', queryset=InstrumentAttribute.objects.select_related('attribute_type', 'classifier')),
         'manual_pricing_formulas', 'accrual_calculation_schedules', 'factor_schedules',
-        'event_schedules', 'event_schedules__actions')
+        'event_schedules', 'event_schedules__actions'
+    )
+    prefetch_permissions_for = (
+        ('instrument_type', InstrumentType),
+        ('attributes__attribute_type', InstrumentAttributeType),
+    )
     serializer_class = InstrumentSerializer
     # bulk_objects_permissions_serializer_class = InstrumentBulkObjectPermissionSerializer
     filter_backends = AbstractWithObjectPermissionViewSet.filter_backends + [
@@ -235,11 +243,7 @@ class PriceHistoryFilterSet(FilterSet):
 
 
 class PriceHistoryViewSet(AbstractModelViewSet):
-    queryset = PriceHistory.objects.prefetch_related(
-        'instrument',
-        'instrument__user_object_permissions', 'instrument__user_object_permissions__permission',
-        'instrument__group_object_permissions', 'instrument__group_object_permissions__permission',
-    )
+    queryset = PriceHistory.objects.select_related('instrument', 'pricing_policy')
     serializer_class = PriceHistorySerializer
     filter_backends = AbstractModelViewSet.filter_backends + [
         OwnerByInstrumentFilter,
@@ -272,7 +276,7 @@ class PriceHistoryViewSet(AbstractModelViewSet):
 
 
 class EventScheduleConfigViewSet(AbstractModelViewSet):
-    queryset = EventScheduleConfig.objects
+    queryset = EventScheduleConfig.objects.select_related('notification_class')
     serializer_class = EventScheduleConfigSerializer
     permission_classes = AbstractModelViewSet.permission_classes + [
         SuperUserOrReadOnly,
