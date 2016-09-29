@@ -46,7 +46,7 @@ admin.site.register(TransactionTypeGroup, TransactionTypeGroupAdmin)
 
 class TransactionTypeInputAdmin(HistoricalAdmin):
     model = TransactionTypeInput
-    list_display = ['id', 'master_user', 'transaction_type', 'order', 'name', 'value_type']
+    list_display = ['id', 'master_user', 'transaction_type', 'order', 'name', 'value_type', 'content_type']
     search_fields = ['id', 'name']
     list_select_related = ['transaction_type', 'transaction_type__master_user']
     raw_id_fields = ['transaction_type']
@@ -60,7 +60,7 @@ admin.site.register(TransactionTypeInput, TransactionTypeInputAdmin)
 
 class TransactionTypeActionInstrumentAdmin(HistoricalAdmin):
     model = TransactionTypeActionInstrument
-    list_display = ['id', 'master_user', 'transaction_type', 'order']
+    list_display = ['id', 'master_user', 'transaction_type', 'order', 'action_notes']
     search_fields = ['id']
     list_select_related = ['transaction_type', 'transaction_type__master_user']
     raw_id_fields = ['transaction_type']
@@ -74,7 +74,7 @@ admin.site.register(TransactionTypeActionInstrument, TransactionTypeActionInstru
 
 class TransactionTypeActionTransactionAdmin(HistoricalAdmin):
     model = TransactionTypeActionTransaction
-    list_display = ['id', 'master_user', 'transaction_type', 'order']
+    list_display = ['id', 'master_user', 'transaction_type', 'order', 'action_notes']
     search_fields = ['id']
     list_select_related = ['transaction_type', 'transaction_type__master_user']
     raw_id_fields = ['transaction_type']

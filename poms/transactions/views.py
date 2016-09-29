@@ -34,7 +34,7 @@ from poms.transactions.processor import TransactionTypeProcessor
 from poms.transactions.serializers import TransactionClassSerializer, TransactionSerializer, TransactionTypeSerializer, \
     TransactionAttributeTypeSerializer, TransactionTypeProcessSerializer, TransactionTypeGroupSerializer, \
     ComplexTransactionSerializer, TransactionClassifierNodeSerializer, EventClassSerializer, \
-    NotificationClassSerializer
+    NotificationClassSerializer, TransactionTypeProcess
 from poms.users.filters import OwnerByMasterUserFilter
 
 
@@ -190,59 +190,41 @@ class TransactionTypeViewSet(AbstractWithObjectPermissionViewSet):
         'user_code', 'name', 'short_name',
     ]
 
-    # has_feature_is_deleted = True
-
-    # def get_queryset(self):
-    #     queryset = super(TransactionTypeViewSet, self).get_queryset()
-    #     related = [
-    #         'inputs', 'inputs__content_type', 'group', 'portfolios', 'instrument_types',
-    #         'actions', 'actions__transactiontypeactioninstrument', 'actions__transactiontypeactiontransaction',
-    #     ]
-    #     related += ['actions__transactiontypeactioninstrument__%s' % n for n in self.prefetch_action_instruments]
-    #     related += ['actions__transactiontypeactiontransaction__%s' % n for n in self.prefetch_action_trunsactions]
-    #     queryset = queryset.prefetch_related(*related)
-    #     return queryset
-
-    def get_serializer_context(self):
-        context = super(TransactionTypeViewSet, self).get_serializer_context()
-        context['transaction_type'] = getattr(self, '_detail_instance', None)
-        return context
-
     @detail_route(methods=['get', 'put'], url_path='process', serializer_class=TransactionTypeProcessSerializer)
     def process(self, request, pk=None):
-        return self.process_or_check(request, False)
+        return self._process(request, True)
 
     @detail_route(methods=['get', 'put'], url_path='check', serializer_class=TransactionTypeProcessSerializer)
     def check(self, request, pk=None):
-        return self.process_or_check(request, True)
+        return self._process(request, False)
 
-    def process_or_check(self, request, check_mode=True):
+    def _process(self, request, save=False):
         self._detail_instance = self.get_object()
+        instance = TransactionTypeProcess(transaction_type=self.get_object())
         if request.method == 'GET':
-            serializer = TransactionTypeProcessSerializer(transaction_type=self._detail_instance,
-                                                          context=self.get_serializer_context())
+            serializer = self.get_serializer(instance=instance)
             return Response(serializer.data)
         else:
             from poms.instruments.serializers import InstrumentSerializer
 
-            serializer = TransactionTypeProcessSerializer(transaction_type=self._detail_instance,
-                                                          data=request.data,
-                                                          context=self.get_serializer_context())
+            serializer = self.get_serializer(instance=instance, data=request.data)
             serializer.is_valid(raise_exception=True)
-            processor = TransactionTypeProcessor(self._detail_instance, serializer.validated_data)
-            instruments, transactions = processor.run(check_mode)
-            instruments_s = []
-            transactions_s = []
-            for i in instruments:
-                s = InstrumentSerializer(instance=i, context=self.get_serializer_context())
-                instruments_s.append(s.data)
-            for t in transactions:
-                s = TransactionSerializer(instance=t, context=self.get_serializer_context())
-                transactions_s.append(s.data)
-            d = serializer.data.copy()
-            d['instruments'] = instruments_s
-            d['transactions'] = transactions_s
-            return Response(d)
+            serializer.save()
+
+            # processor = TransactionTypeProcessor(self._detail_instance, serializer.validated_data)
+            # instruments, transactions = processor.run(save)
+            # instruments_s = []
+            # transactions_s = []
+            # for i in instruments:
+            #     s = InstrumentSerializer(instance=i, context=self.get_serializer_context())
+            #     instruments_s.append(s.data)
+            # for t in transactions:
+            #     s = TransactionSerializer(instance=t, context=self.get_serializer_context())
+            #     transactions_s.append(s.data)
+            # d = serializer.data.copy()
+            # d['instruments'] = instruments_s
+            # d['transactions'] = transactions_s
+            return Response(serializer.data)
 
 
 class TransactionAttributeTypeFilterSet(FilterSet):
