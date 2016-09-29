@@ -537,43 +537,51 @@ class ComplexTransactionSerializer(serializers.ModelSerializer):
         return str(obj)
 
 
+# TransactionType processing
+
+
+class TransactionTypeProcessValues(object):
+    def __init__(self, parent=None, **kwargs):
+        self._parent = parent
+        # for key, value in kwargs.items():
+        #     # TODO: validate attr_name
+        #     setattr(self, key, value)
+        self._parent.set_default_values(self)
+
+
 class TransactionTypeProcess(object):
-    def __init__(self, transaction_type=None, calculate=True, store=False, instruments=None,
-                 transactions=None, **kwargs):
+    def __init__(self, transaction_type=None, calculate=True, store=False, values=None, instruments=None,
+                 transactions=None):
         self.transaction_type = transaction_type
+        self.transaction_type_inputs = list(self.transaction_type.inputs.order_by('value_type', 'name').all())
+
         self.calculate = calculate or False
         self.store = store or False
-        self.transaction_type_inputs = list(self.transaction_type.inputs.order_by('value_type', 'name').all())
+        self.values = values or TransactionTypeProcessValues(self)
         self.instruments = instruments or []
         self.transactions = transactions or []
-        for key, value in kwargs.items():
-            # TODO: validate attr_name
-            setattr(self, key, value)
 
-        self.set_default_values()
 
-    @staticmethod
-    def get_attr_name(input0):
+    def get_attr_name(self, input0):
         return '%s_%s' % (input0.id, input0.name)
 
-    @staticmethod
-    def get_input_name(attr_name):
+    def get_input_name(self, attr_name):
         try:
             id, name = attr_name.split('_', maxsplit=2)
             return name
         except ValueError:
             return None
 
-    def set_default_values(self):
+    def set_default_values(self, target):
         for i in self.transaction_type_inputs:
-            name = TransactionTypeProcess.get_attr_name(i)
+            name = self.get_attr_name(i)
             if i.value_type in [TransactionTypeInput.STRING, TransactionTypeInput.NUMBER, TransactionTypeInput.DATE]:
                 value = i.value
                 if value:
                     value = formula.safe_eval(value)
                 else:
                     value = None
-                setattr(self, name, value)
+                setattr(target, name, value)
             elif i.value_type == TransactionTypeInput.RELATION:
                 model_class = i.content_type.model_class()
                 if issubclass(model_class, Account):
@@ -604,53 +612,18 @@ class TransactionTypeProcess(object):
                     value = i.price_download_scheme
                 else:
                     value = None
-                setattr(self, name, value)
+                setattr(target, name, value)
 
 
-class PhantomInstrumentSerializer(InstrumentSerializer):
+class TransactionTypeProcessValuesSerializer(serializers.Serializer):
     def __init__(self, **kwargs):
-        super(PhantomInstrumentSerializer, self).__init__(**kwargs)
-        self.fields['id'] = serializers.IntegerField(required=True)
-        self.fields.pop('manual_pricing_formulas')
-        self.fields.pop('accrual_calculation_schedules')
-        self.fields.pop('factor_schedules')
-        self.fields.pop('event_schedules')
-        self.fields.pop('attributes')
-        self.fields.pop('tags')
-        self.fields.pop('user_object_permissions')
-        self.fields.pop('group_object_permissions')
+        super(TransactionTypeProcessValuesSerializer, self).__init__(**kwargs)
 
-
-class PhantomInstrumentField(InstrumentField):
-    def to_internal_value(self, data):
-        pk = data
-        if self.pk_field is not None:
-            pk = self.pk_field.to_internal_value(data)
-        if pk and pk < 0:
-            return Instrument(id=pk)
-        return super(PhantomInstrumentField, self).to_internal_value(data)
-
-
-class PhantomTransactionSerializer(TransactionSerializer):
-    def __init__(self, **kwargs):
-        super(PhantomTransactionSerializer, self).__init__(**kwargs)
-        self.fields['instrument'] = PhantomInstrumentField(required=False)
-        self.fields.pop('attributes')
-
-
-class TransactionTypeProcessSerializer(serializers.Serializer):
-    def __init__(self, **kwargs):
-        kwargs['context'] = context = kwargs.get('context', {}) or {}
-        super(TransactionTypeProcessSerializer, self).__init__(**kwargs)
-        context['instance'] = self.instance
-
-        self.fields['transaction_type'] = serializers.PrimaryKeyRelatedField(read_only=True)
-        self.fields['calculate'] = serializers.BooleanField(default=False, required=False)
-        self.fields['store'] = serializers.BooleanField(default=False, required=False)
-
-        for i in self.instance.transaction_type_inputs:
+        ttp = self.instance._parent
+        transaction_type_inputs = ttp.transaction_type_inputs
+        for i in transaction_type_inputs:
             # name = '%s_%s' % (i.id, i.name)
-            name = TransactionTypeProcess.get_attr_name(i)
+            name = ttp.get_attr_name(i)
             name_object = '%s_object' % name
             field = None
             field_object = None
@@ -710,14 +683,64 @@ class TransactionTypeProcessSerializer(serializers.Serializer):
             else:
                 raise RuntimeError('Unknown value type %s' % i.value_type)
 
+
+class PhantomInstrumentSerializer(InstrumentSerializer):
+    def __init__(self, **kwargs):
+        super(PhantomInstrumentSerializer, self).__init__(**kwargs)
+        self.fields['id'] = serializers.IntegerField(required=True)
+        self.fields.pop('manual_pricing_formulas')
+        self.fields.pop('accrual_calculation_schedules')
+        self.fields.pop('factor_schedules')
+        self.fields.pop('event_schedules')
+        self.fields.pop('attributes')
+        self.fields.pop('tags')
+        self.fields.pop('user_object_permissions')
+        self.fields.pop('group_object_permissions')
+
+
+class PhantomInstrumentField(InstrumentField):
+    def to_internal_value(self, data):
+        pk = data
+        if self.pk_field is not None:
+            pk = self.pk_field.to_internal_value(data)
+        if pk and pk < 0:
+            return Instrument(id=pk)
+        return super(PhantomInstrumentField, self).to_internal_value(data)
+
+
+class PhantomTransactionSerializer(TransactionSerializer):
+    def __init__(self, **kwargs):
+        super(PhantomTransactionSerializer, self).__init__(**kwargs)
+        self.fields['instrument'] = PhantomInstrumentField(required=False)
+        self.fields.pop('attributes')
+
+
+class TransactionTypeProcessSerializer(serializers.Serializer):
+    def __init__(self, **kwargs):
+        kwargs['context'] = context = kwargs.get('context', {}) or {}
+        super(TransactionTypeProcessSerializer, self).__init__(**kwargs)
+        context['instance'] = self.instance
+
+        self.fields['transaction_type'] = serializers.PrimaryKeyRelatedField(read_only=True)
+        self.fields['calculate'] = serializers.BooleanField(default=False, required=False)
+        self.fields['store'] = serializers.BooleanField(default=False, required=False)
+        self.fields['values'] = TransactionTypeProcessValuesSerializer(instance=self.instance.values)
+
         self.fields['instruments'] = PhantomInstrumentSerializer(many=True, read_only=False)
         self.fields['transactions'] = PhantomTransactionSerializer(many=True, read_only=False)
 
     def update(self, instance, validated_data):
-        input_values = {}
+        values_data = validated_data.pop('values')
+
         for key, value in validated_data.items():
             setattr(instance, key, value)
-            name = TransactionTypeProcess.get_input_name(key)
+
+        input_values = {}
+        values = instance.values
+        for key, value in values_data.items():
+            setattr(values, key, value)
+
+            name = instance.get_input_name(key)
             if name:
                 input_values[name] = value
 
