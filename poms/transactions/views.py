@@ -192,20 +192,11 @@ class TransactionTypeViewSet(AbstractWithObjectPermissionViewSet):
 
     @detail_route(methods=['get', 'put'], url_path='process', serializer_class=TransactionTypeProcessSerializer)
     def process(self, request, pk=None):
-        return self._process(request, True)
-
-    @detail_route(methods=['get', 'put'], url_path='check', serializer_class=TransactionTypeProcessSerializer)
-    def check(self, request, pk=None):
-        return self._process(request, False)
-
-    def _process(self, request, save=False):
-        self._detail_instance = self.get_object()
         instance = TransactionTypeProcess(transaction_type=self.get_object())
         if request.method == 'GET':
             serializer = self.get_serializer(instance=instance)
             return Response(serializer.data)
         else:
-
             serializer = self.get_serializer(instance=instance, data=request.data)
             serializer.is_valid(raise_exception=True)
             serializer.save()
