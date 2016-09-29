@@ -337,7 +337,7 @@ class SimpleEval2(object):  # pylint: disable=too-few-public-methods
         if expr:
             try:
                 ast.parse(expr)
-            except (SyntaxError, ValueError):
+            except (SyntaxError, ValueError, TypeError):
                 return False
         return True
 
@@ -346,7 +346,7 @@ class SimpleEval2(object):  # pylint: disable=too-few-public-methods
         if expr:
             try:
                 ast.parse(expr)
-            except (SyntaxError, ValueError) as e:
+            except (SyntaxError, ValueError, TypeError) as e:
                 raise InvalidExpression(e)
         else:
             raise InvalidExpression('Empty value')
