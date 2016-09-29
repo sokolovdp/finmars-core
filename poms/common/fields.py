@@ -77,9 +77,8 @@ class ExpressionField(CharField):
         super(ExpressionField, self).__init__(**kwargs)
 
     def run_validation(self, data=empty):
-        value = str(data).strip()
-        value = super(ExpressionField, self).run_validation(value)
-        if value:
+        value = super(ExpressionField, self).run_validation(data)
+        if value and value != empty:
             formula.validate(value)
         return value
 
