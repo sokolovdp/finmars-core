@@ -482,6 +482,8 @@ class TransactionTypeProcessSerializer(serializers.Serializer):
         context = kwargs.get('context', None) or {}
         super(TransactionTypeProcessSerializer, self).__init__(**kwargs)
 
+        self.fields['transaction_type'] = serializers.PrimaryKeyRelatedField(read_only=True)
+
         for i in self.instance.transaction_type_inputs:
             # name = '%s_%s' % (i.id, i.name)
             name = TransactionTypeProcess.get_attr_name(i)
