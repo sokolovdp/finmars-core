@@ -297,7 +297,6 @@ class TransactionTypeActionSerializer(serializers.ModelSerializer):
     class Meta:
         model = TransactionTypeAction
         fields = ['id', 'order', 'action_notes', 'transaction', 'instrument']
-        read_only_fields = ['order']
 
     def validate(self, attrs):
         # TODO: transaction or instrument present
@@ -369,6 +368,53 @@ class TransactionTypeSerializer(ModelWithObjectPermissionSerializer, ModelWithUs
             new_inputs[input.name] = input
         return new_inputs
 
+    # def save_actions(self, instance, actions_data, created):
+    #     inputs = {i.name: i for i in instance.inputs.all()}
+    #
+    #     actions_qs = instance.actions.select_related(
+    #         'transactiontypeactioninstrument', 'transactiontypeactiontransaction').order_by('order', 'id')
+    #     existed_actions = {a.id: a for a in actions_qs}
+    #
+    #     actions = []
+    #     for order, action_data in enumerate(actions_data):
+    #         pk = action_data.pop('id', None)
+    #         instrument_data = action_data.get('instrument', action_data.get('transactiontypeactioninstrument'))
+    #         transaction_data = action_data.get('transaction', action_data.get('transactiontypeactiontransaction'))
+    #
+    #         data = instrument_data or transaction_data
+    #         # replace input name to input object
+    #         for attr, value in data.items():
+    #             if attr.endswith('_input') and value:
+    #                 # print('name=%s, value=%s' % (name, value,))
+    #                 data[attr] = inputs[value]
+    #             if transaction_data and attr == 'instrument_phantom' and value is not None:
+    #                 data[attr] = actions[value]
+    #
+    #         action = existed_actions.get(pk, None)
+    #         if action:
+    #             try:
+    #                 action = action.transactiontypeactioninstrument
+    #             except ObjectDoesNotExist:
+    #                 try:
+    #                     action = action.transactiontypeactiontransaction
+    #                 except ObjectDoesNotExist:
+    #                     pass
+    #         if not action:
+    #             if instrument_data:
+    #                 action = TransactionTypeActionInstrument(transaction_type=instance)
+    #             elif transaction_data:
+    #                 action = TransactionTypeActionTransaction(transaction_type=instance)
+    #         if action is None:
+    #             raise RuntimeError('unknown action')
+    #
+    #         action.order = order
+    #         for attr, value in data.items():
+    #             setattr(action, attr, value)
+    #
+    #         action.save()
+    #         actions.append(action)
+    #     return actions
+
     def save_actions(self, instance, actions_data, created):
         inputs = {i.name: i for i in instance.inputs.all()}
 
@@ -379,41 +425,58 @@ class TransactionTypeSerializer(ModelWithObjectPermissionSerializer, ModelWithUs
         actions = []
         for order, action_data in enumerate(actions_data):
             pk = action_data.pop('id', None)
-            instrument_data = action_data.get('instrument', action_data.get('transactiontypeactioninstrument'))
-            transaction_data = action_data.get('transaction', action_data.get('transactiontypeactiontransaction'))
-
-            data = instrument_data or transaction_data
-            # replace input name to input object
-            for attr, value in data.items():
-                if attr.endswith('_input') and value:
-                    # print('name=%s, value=%s' % (name, value,))
-                    data[attr] = inputs[value]
-                if transaction_data and attr == 'instrument_phantom' and value is not None:
-                    data[attr] = actions[value]
 
             action = existed_actions.get(pk, None)
-            if action:
-                try:
-                    action = action.transactiontypeactioninstrument
-                except ObjectDoesNotExist:
+
+            action_instrument_data = action_data.get('instrument', action_data.get('transactiontypeactioninstrument'))
+            if action_instrument_data:
+                for attr, value in action_instrument_data.items():
+                    if attr.endswith('_input') and value:
+                        action_instrument_data[attr] = inputs[value]
+
+                action_instrument = None
+                if action:
                     try:
-                        action = action.transactiontypeactiontransaction
+                        action_instrument = action.transactiontypeactioninstrument
                     except ObjectDoesNotExist:
                         pass
-            if not action:
-                if instrument_data:
-                    action = TransactionTypeActionInstrument(transaction_type=instance)
-                elif transaction_data:
-                    action = TransactionTypeActionTransaction(transaction_type=instance)
-            if action is None:
-                raise RuntimeError('unknown action')
+                if action_instrument is None:
+                    action_instrument = TransactionTypeActionInstrument(transaction_type=instance)
 
-            action.order = order
-            for attr, value in data.items():
-                setattr(action, attr, value)
+                action_instrument.order = action_data.get('order', order)
+                action_instrument.action_notes = action_data.get('action_notes', action_instrument.action_notes)
+                for attr, value in action_instrument_data.items():
+                    setattr(action_instrument, attr, value)
 
-            action.save()
-            actions.append(action)
+                action_instrument.save()
+                actions.append(action_instrument)
+
+            action_transaction_data = action_data.get('transaction',
+                                                      action_data.get('transactiontypeactiontransaction'))
+            if action_transaction_data:
+                for attr, value in action_transaction_data.items():
+                    if attr.endswith('_input') and value:
+                        action_transaction_data[attr] = inputs[value]
+                    if attr == 'instrument_phantom' and value is not None:
+                        action_transaction_data[attr] = actions[value]
+
+                action_transaction = None
+                if action:
+                    try:
+                        action_transaction = action.transactiontypeactiontransaction
+                    except ObjectDoesNotExist:
+                        pass
+                if action_transaction is None:
+                    action_transaction = TransactionTypeActionTransaction(transaction_type=instance)
+
+                action_transaction.order = action_data.get('order', order)
+                action_transaction.action_notes = action_data.get('action_notes', action_transaction.action_notes)
+                for attr, value in action_transaction_data.items():
+                    setattr(action_transaction, attr, value)
+
+                action_transaction.save()
+                actions.append(action_transaction)
+
         return actions
 
 
