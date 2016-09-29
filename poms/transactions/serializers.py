@@ -288,7 +288,7 @@ class TransactionTypeActionTransactionSerializer(serializers.ModelSerializer):
 
 
 class TransactionTypeActionSerializer(serializers.ModelSerializer):
-    id = serializers.IntegerField()
+    id = serializers.IntegerField(required=False, allow_null=True)
     transaction = TransactionTypeActionTransactionSerializer(source='transactiontypeactiontransaction', required=False,
                                                              allow_null=True)
     instrument = TransactionTypeActionInstrumentSerializer(source='transactiontypeactioninstrument', required=False,
