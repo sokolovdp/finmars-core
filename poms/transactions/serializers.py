@@ -561,7 +561,6 @@ class TransactionTypeProcess(object):
         self.instruments = instruments or []
         self.transactions = transactions or []
 
-
     def get_attr_name(self, input0):
         return '%s_%s' % (input0.id, input0.name)
 
@@ -748,48 +747,14 @@ class TransactionTypeProcessSerializer(serializers.Serializer):
             processor = TransactionTypeProcessor(instance.transaction_type, input_values)
             instance.instruments, instance.transactions = processor.run(False)
 
-        if instance.store:
-            instruments_map = {}
-            instruments_data = validated_data['instruments']
-            if instruments_data:
-                instruments = []
-                for instrument_data in instruments_data:
-                    fake_id = instrument_data.pop('id', None)
-                    instrument = Instrument(master_user=instance.transaction_type.master_user)
-                    for attr, value in instrument_data.items():
-                        if attr in ['id']:
-                            continue
-                        setattr(instrument, attr, value)
+            if instance.store:
+                instruments_map = {}
+                for instrument in instance.instruments:
+                    fake_id = instrument.id
+                    instrument.id = None
                     instrument.save()
-                    instruments.append(instrument)
                     if fake_id:
                         instruments_map[fake_id] = instrument
-                instance.instruments = instruments
-            else:
-                if instance.instruments:
-                    for instrument in instance.instruments:
-                        fake_id = instrument.id
-                        instrument.id = None
-                        instrument.save()
-                        if fake_id:
-                            instruments_map[fake_id] = instrument
-
-            transactions_data = validated_data['transactions']
-            if transactions_data:
-                complex_transaction = ComplexTransaction.objects.create(transaction_type=instance.transaction_type)
-                for transaction_data in transactions_data:
-                    transaction = Transaction(master_user=instance.transaction_type.master_user)
-                    for attr, value in transaction_data.items():
-                        if attr in ['id']:
-                            continue
-                        if attr == 'instrument':
-                            value = value.id
-                            if value in instruments_map:
-                                value = instruments_map[value]
-                        setattr(transaction, attr, value)
-                    transaction.complex_transaction = complex_transaction
-                    transaction.save()
-            else:
                 if instance.transactions:
                     complex_transaction = ComplexTransaction.objects.create(transaction_type=instance.transaction_type)
                     for transaction in instance.transactions:
@@ -798,5 +763,42 @@ class TransactionTypeProcessSerializer(serializers.Serializer):
                         if transaction.instrument_id in instruments_map:
                             transaction.instrument = instruments_map[transaction.instrument_id]
                         transaction.save()
+        else:
+            if instance.store:
+                instruments_map = {}
+                instruments_data = validated_data['instruments']
+                if instruments_data:
+                    instruments = []
+                    for instrument_data in instruments_data:
+                        fake_id = instrument_data.pop('id', None)
+                        instrument = Instrument(master_user=instance.transaction_type.master_user)
+                        for attr, value in instrument_data.items():
+                            if attr in ['id']:
+                                continue
+                            setattr(instrument, attr, value)
+                        instrument.save()
+                        instruments.append(instrument)
+                        if fake_id:
+                            instruments_map[fake_id] = instrument
+                    instance.instruments = instruments
+
+                transactions_data = validated_data['transactions']
+                if transactions_data:
+                    transactions = []
+                    complex_transaction = ComplexTransaction.objects.create(transaction_type=instance.transaction_type)
+                    for transaction_data in transactions_data:
+                        transaction = Transaction(master_user=instance.transaction_type.master_user)
+                        for attr, value in transaction_data.items():
+                            if attr in ['id']:
+                                continue
+                            if attr == 'instrument':
+                                value = value.id
+                                if value in instruments_map:
+                                    value = instruments_map[value]
+                            setattr(transaction, attr, value)
+                        transaction.complex_transaction = complex_transaction
+                        transaction.save()
+                        transactions.append(transaction)
+                    instance.transactions = transactions
 
         return instance
