@@ -334,18 +334,22 @@ class SimpleEval2(object):  # pylint: disable=too-few-public-methods
 
     @staticmethod
     def is_valid(expr):
-        try:
-            ast.parse(expr)
-        except (SyntaxError, ValueError):
-            return False
+        if expr:
+            try:
+                ast.parse(expr)
+            except (SyntaxError, ValueError):
+                return False
         return True
 
     @staticmethod
     def try_parse(expr):
-        try:
-            ast.parse(expr)
-        except (SyntaxError, ValueError) as e:
-            raise InvalidExpression(e)
+        if expr:
+            try:
+                ast.parse(expr)
+            except (SyntaxError, ValueError) as e:
+                raise InvalidExpression(e)
+        else:
+            raise InvalidExpression('Empty value')
 
     def eval(self, expr):
         ''' evaluate an expresssion, using the operators, functions and
@@ -353,16 +357,19 @@ class SimpleEval2(object):  # pylint: disable=too-few-public-methods
 
         # set a copy of the expression aside, so we can give nice errors...
 
-        self.expr = expr
+        if expr:
+            self.expr = expr
 
-        # and evaluate:
-        try:
-            return self._eval(ast.parse(expr).body[0].value)
-        except Exception as e:
-            if isinstance(e, InvalidExpression):
-                raise e
-            else:
-                raise InvalidExpression(e)
+            # and evaluate:
+            try:
+                return self._eval(ast.parse(expr).body[0].value)
+            except Exception as e:
+                if isinstance(e, InvalidExpression):
+                    raise e
+                else:
+                    raise InvalidExpression(e)
+        else:
+            raise InvalidExpression('Empty value')
 
     def _eval(self, node):
         ''' The internal eval function used on each node in the parsed tree. '''
