@@ -378,7 +378,7 @@ class TransactionTypeSerializer(ModelWithObjectPermissionSerializer, ModelWithUs
 
         actions = []
         for order, action_data in enumerate(actions_data):
-            pk = action_data.pop('id')
+            pk = action_data.pop('id', None)
             instrument_data = action_data.get('instrument', action_data.get('transactiontypeactioninstrument'))
             transaction_data = action_data.get('transaction', action_data.get('transactiontypeactiontransaction'))
 
