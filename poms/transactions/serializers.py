@@ -15,6 +15,7 @@ from poms.currencies.fields import CurrencyField, CurrencyDefault
 from poms.currencies.models import Currency
 from poms.instruments.fields import InstrumentField, InstrumentTypeField
 from poms.instruments.models import Instrument, InstrumentType, DailyPricingModel, PaymentSizeDetail
+from poms.instruments.serializers import InstrumentSerializer
 from poms.integrations.fields import PriceDownloadSchemeField
 from poms.integrations.models import PriceDownloadScheme
 from poms.obj_attrs.serializers import AbstractAttributeTypeSerializer, AbstractAttributeSerializer, \
@@ -141,40 +142,40 @@ class TransactionTypeInputSerializer(serializers.ModelSerializer):
 
 
 class TransactionTypeActionInstrumentSerializer(serializers.ModelSerializer):
-    user_code = ExpressionField(allow_blank=True)
-    name = ExpressionField(allow_blank=False)
-    public_name = ExpressionField(allow_blank=True)
-    short_name = ExpressionField(allow_blank=True)
-    notes = ExpressionField(allow_blank=True)
+    user_code = ExpressionField(required=False, allow_blank=True, default='""')
+    name = ExpressionField(required=False, allow_blank=True, default='""')
+    public_name = ExpressionField(required=False, allow_blank=True, default='""')
+    short_name = ExpressionField(required=False, allow_blank=True, default='""')
+    notes = ExpressionField(required=False, allow_blank=True, default='""')
 
-    instrument_type = InstrumentTypeField(allow_null=True)
+    instrument_type = InstrumentTypeField(required=False, allow_null=True)
     instrument_type_object = ReadonlyNamedModelWithObjectPermissionSerializer(source='instrument_type')
-    instrument_type_input = TransactionInputField(allow_null=True)
-    pricing_currency = CurrencyField(allow_null=True)
+    instrument_type_input = TransactionInputField(required=False, allow_null=True)
+    pricing_currency = CurrencyField(required=False, allow_null=True)
     pricing_currency_object = ReadonlyNamedModelSerializer(source='pricing_currency')
-    pricing_currency_input = TransactionInputField(allow_null=True)
-    price_multiplier = ExpressionField(default="1.0")
-    accrued_currency = CurrencyField(allow_null=True)
+    pricing_currency_input = TransactionInputField(required=False, allow_null=True)
+    price_multiplier = ExpressionField(required=False, default="1.0")
+    accrued_currency = CurrencyField(required=False, allow_null=True)
     accrued_currency_object = ReadonlyNamedModelSerializer(source='accrued_currency')
-    accrued_currency_input = TransactionInputField(allow_null=True)
-    accrued_multiplier = ExpressionField(default="1.0")
-    payment_size_detail_input = TransactionInputField(allow_null=True)
-    default_price = ExpressionField(default="0.0")
-    default_accrued = ExpressionField(default="0.0")
-    user_text_1 = ExpressionField(allow_blank=True)
-    user_text_2 = ExpressionField(allow_blank=True)
-    user_text_3 = ExpressionField(allow_blank=True)
+    accrued_currency_input = TransactionInputField(required=False, allow_null=True)
+    accrued_multiplier = ExpressionField(required=False, default="1.0")
+    payment_size_detail_input = TransactionInputField(required=False, allow_null=True)
+    default_price = ExpressionField(required=False, default="0.0")
+    default_accrued = ExpressionField(required=False, default="0.0")
+    user_text_1 = ExpressionField(required=False, allow_blank=True, default='""')
+    user_text_2 = ExpressionField(required=False, allow_blank=True, default='""')
+    user_text_3 = ExpressionField(required=False, allow_blank=True, default='""')
 
-    reference_for_pricing = ExpressionField(allow_blank=True)
+    reference_for_pricing = ExpressionField(required=False, allow_blank=True, default='""')
     daily_pricing_model_object = ReadonlyModelWithNameSerializer(source='daily_pricing_model')
-    daily_pricing_model_input = TransactionInputField(allow_null=True)
+    daily_pricing_model_input = TransactionInputField(required=False, allow_null=True)
     payment_size_detail_object = ReadonlyModelWithNameSerializer(source='daily_pricing_model')
-    price_download_scheme = PriceDownloadSchemeField(allow_null=True)
+    price_download_scheme = PriceDownloadSchemeField(required=False, allow_null=True)
     price_download_scheme_object = ReadonlyModelWithNameSerializer(source='price_download_scheme',
                                                                    fields=['scheme_name'])
 
-    price_download_scheme_input = TransactionInputField(allow_null=True)
-    maturity_date = ExpressionField(allow_blank=True)
+    price_download_scheme_input = TransactionInputField(required=False, allow_null=True)
+    maturity_date = ExpressionField(required=False, allow_blank=True)
 
     class Meta:
         model = TransactionTypeActionInstrument
@@ -193,64 +194,64 @@ class TransactionTypeActionInstrumentSerializer(serializers.ModelSerializer):
 
 class TransactionTypeActionTransactionSerializer(serializers.ModelSerializer):
     transaction_class_object = ReadonlyModelWithNameSerializer(source='transaction_class')
-    portfolio = PortfolioField(allow_null=True)
+    portfolio = PortfolioField(required=False, allow_null=True)
     portfolio_object = ReadonlyNamedModelWithObjectPermissionSerializer(source='portfolio')
-    portfolio_input = TransactionInputField(allow_null=True)
-    instrument = InstrumentField(allow_null=True)
+    portfolio_input = TransactionInputField(required=False, allow_null=True)
+    instrument = InstrumentField(required=False, allow_null=True)
     instrument_object = ReadonlyNamedModelWithObjectPermissionSerializer(source='instrument')
-    instrument_input = TransactionInputField(allow_null=True)
-    instrument_phantom = TransactionTypeActionInstrumentPhantomField(allow_null=True)
-    transaction_currency = CurrencyField(allow_null=True)
+    instrument_input = TransactionInputField(required=False, allow_null=True)
+    instrument_phantom = TransactionTypeActionInstrumentPhantomField(required=False, allow_null=True)
+    transaction_currency = CurrencyField(required=False, allow_null=True)
     transaction_currency_object = ReadonlyNamedModelSerializer(source='transaction_currency')
-    transaction_currency_input = TransactionInputField(allow_null=True)
-    position_size_with_sign = ExpressionField(default="0.0")
-    settlement_currency = CurrencyField(allow_null=True)
+    transaction_currency_input = TransactionInputField(required=False, allow_null=True)
+    position_size_with_sign = ExpressionField(required=False, default="0.0")
+    settlement_currency = CurrencyField(required=False, allow_null=True)
     settlement_currency_object = ReadonlyNamedModelSerializer(source='settlement_currency')
-    settlement_currency_input = TransactionInputField(allow_null=True)
-    cash_consideration = ExpressionField(default="0.0")
-    principal_with_sign = ExpressionField(default="0.0")
-    carry_with_sign = ExpressionField(default="0.0")
-    overheads_with_sign = ExpressionField(default="0.0")
-    account_position = AccountField(allow_null=True)
+    settlement_currency_input = TransactionInputField(required=False, allow_null=True)
+    cash_consideration = ExpressionField(required=False, default="0.0")
+    principal_with_sign = ExpressionField(required=False, default="0.0")
+    carry_with_sign = ExpressionField(required=False, default="0.0")
+    overheads_with_sign = ExpressionField(required=False, default="0.0")
+    account_position = AccountField(required=False, allow_null=True)
     account_position_object = ReadonlyNamedModelWithObjectPermissionSerializer(source='account_position')
-    account_position_input = TransactionInputField(allow_null=True)
-    account_cash = AccountField(allow_null=True)
+    account_position_input = TransactionInputField(required=False, allow_null=True)
+    account_cash = AccountField(required=False, allow_null=True)
     account_cash_object = ReadonlyNamedModelWithObjectPermissionSerializer(source='account_cash')
-    account_cash_input = TransactionInputField(allow_null=True)
-    account_interim = AccountField(allow_null=True)
+    account_cash_input = TransactionInputField(required=False, allow_null=True)
+    account_interim = AccountField(required=False, allow_null=True)
     account_interim_object = ReadonlyNamedModelWithObjectPermissionSerializer(source='account_interim')
-    account_interim_input = TransactionInputField(allow_null=True)
-    accounting_date = ExpressionField(default="now()")
-    cash_date = ExpressionField(default="now()")
-    strategy1_position = Strategy1Field(allow_null=True)
+    account_interim_input = TransactionInputField(required=False, allow_null=True)
+    accounting_date = ExpressionField(required=False, default="now()")
+    cash_date = ExpressionField(required=False, default="now()")
+    strategy1_position = Strategy1Field(required=False, allow_null=True)
     strategy1_position_object = ReadonlyNamedModelWithObjectPermissionSerializer(source='strategy1_position')
-    strategy1_position_input = TransactionInputField(allow_null=True)
-    strategy1_cash = Strategy1Field(allow_null=True)
+    strategy1_position_input = TransactionInputField(required=False, allow_null=True)
+    strategy1_cash = Strategy1Field(required=False, allow_null=True)
     strategy1_cash_object = ReadonlyNamedModelWithObjectPermissionSerializer(source='strategy1_cash')
-    strategy1_cash_input = TransactionInputField(allow_null=True)
-    strategy2_position = Strategy1Field(allow_null=True)
+    strategy1_cash_input = TransactionInputField(required=False, allow_null=True)
+    strategy2_position = Strategy1Field(required=False, allow_null=True)
     strategy2_position_object = ReadonlyNamedModelWithObjectPermissionSerializer(source='strategy2_position')
-    strategy2_position_input = TransactionInputField(allow_null=True)
-    strategy2_cash = Strategy1Field(allow_null=True)
+    strategy2_position_input = TransactionInputField(required=False, allow_null=True)
+    strategy2_cash = Strategy1Field(required=False, allow_null=True)
     strategy2_cash_object = ReadonlyNamedModelWithObjectPermissionSerializer(source='strategy2_cash')
-    strategy2_cash_input = TransactionInputField(allow_null=True)
-    strategy3_position = Strategy1Field(allow_null=True)
+    strategy2_cash_input = TransactionInputField(required=False, allow_null=True)
+    strategy3_position = Strategy1Field(required=False, allow_null=True)
     strategy3_position_object = ReadonlyNamedModelWithObjectPermissionSerializer(source='strategy3_position')
-    strategy3_position_input = TransactionInputField(allow_null=True)
-    strategy3_cash = Strategy1Field(allow_null=True)
+    strategy3_position_input = TransactionInputField(required=False, allow_null=True)
+    strategy3_cash = Strategy1Field(required=False, allow_null=True)
     strategy3_cash_object = ReadonlyNamedModelWithObjectPermissionSerializer(source='strategy3_cash')
-    strategy3_cash_input = TransactionInputField(allow_null=True)
-    responsible = ResponsibleField(allow_null=True)
+    strategy3_cash_input = TransactionInputField(required=False, allow_null=True)
+    responsible = ResponsibleField(required=False, allow_null=True)
     responsible_object = ReadonlyNamedModelWithObjectPermissionSerializer(source='responsible')
-    responsible_input = TransactionInputField(allow_null=True)
-    counterparty = CounterpartyField(allow_null=True)
+    responsible_input = TransactionInputField(required=False, allow_null=True)
+    counterparty = CounterpartyField(required=False, allow_null=True)
     counterparty_object = ReadonlyNamedModelWithObjectPermissionSerializer(source='counterparty')
-    counterparty_input = TransactionInputField(allow_null=True)
-    factor = ExpressionField(default="0.0")
-    trade_price = ExpressionField(default="0.0")
-    principal_amount = ExpressionField(default="0.0")
-    carry_amount = ExpressionField(default="0.0")
-    overheads = ExpressionField(default="0.0")
+    counterparty_input = TransactionInputField(required=False, allow_null=True)
+    factor = ExpressionField(required=False, default="0.0")
+    trade_price = ExpressionField(required=False, default="0.0")
+    principal_amount = ExpressionField(required=False, default="0.0")
+    carry_amount = ExpressionField(required=False, default="0.0")
+    overheads = ExpressionField(required=False, default="0.0")
 
     class Meta:
         model = TransactionTypeActionTransaction
@@ -287,8 +288,11 @@ class TransactionTypeActionTransactionSerializer(serializers.ModelSerializer):
 
 
 class TransactionTypeActionSerializer(serializers.ModelSerializer):
-    transaction = TransactionTypeActionTransactionSerializer(source='transactiontypeactiontransaction', allow_null=True)
-    instrument = TransactionTypeActionInstrumentSerializer(source='transactiontypeactioninstrument', allow_null=True)
+    id = serializers.IntegerField()
+    transaction = TransactionTypeActionTransactionSerializer(source='transactiontypeactiontransaction', required=False,
+                                                             allow_null=True)
+    instrument = TransactionTypeActionInstrumentSerializer(source='transactiontypeactioninstrument', required=False,
+                                                           allow_null=True)
 
     class Meta:
         model = TransactionTypeAction
@@ -302,18 +306,18 @@ class TransactionTypeActionSerializer(serializers.ModelSerializer):
 
 class TransactionTypeSerializer(ModelWithObjectPermissionSerializer, ModelWithUserCodeSerializer):
     master_user = MasterUserField()
-    group = TransactionTypeGroupField(allow_null=False)
+    group = TransactionTypeGroupField(required=False, allow_null=False)
     group_object = ReadonlyNamedModelWithObjectPermissionSerializer(source='group')
-    display_expr = ExpressionField(allow_blank=False, allow_null=False)
-    instrument_types = InstrumentTypeField(many=True, required=False, allow_null=True)
+    display_expr = ExpressionField(required=False, allow_blank=False, allow_null=False, default='')
+    instrument_types = InstrumentTypeField(required=False, allow_null=True, many=True)
     instrument_types_object = ReadonlyNamedModelWithObjectPermissionSerializer(source='instrument_types', many=True)
-    portfolios = PortfolioField(many=True, required=False, allow_null=True)
+    portfolios = PortfolioField(required=False, allow_null=True, many=True)
     portfolios_object = ReadonlyNamedModelWithObjectPermissionSerializer(source='portfolios', many=True)
-    tags = TagField(many=True, required=False, allow_null=True)
+    tags = TagField(required=False, many=True, allow_null=True)
     tags_object = ReadonlyNamedModelWithObjectPermissionSerializer(source='tags', many=True)
-    inputs = TransactionTypeInputSerializer(many=True)
-    actions = TransactionTypeActionSerializer(many=True, read_only=False)
-    book_transaction_layout = serializers.JSONField(allow_null=False)
+    inputs = TransactionTypeInputSerializer(required=False, many=True)
+    actions = TransactionTypeActionSerializer(required=False, many=True, read_only=False)
+    book_transaction_layout = serializers.JSONField(required=False, allow_null=True)
 
     class Meta:
         model = TransactionType
@@ -343,9 +347,11 @@ class TransactionTypeSerializer(ModelWithObjectPermissionSerializer, ModelWithUs
         actions = validated_data.pop('actions', None)
         instance = super(TransactionTypeSerializer, self).update(instance, validated_data)
         inputs = self.save_inputs(instance, inputs, False)
-        self.save_actions(instance, actions, False)
+        actions = self.save_actions(instance, actions, False)
         if inputs:
             instance.inputs.exclude(id__in=[i.id for i in inputs.values()]).delete()
+        if actions:
+            instance.actions.exclude(id__in=[a.id for a in actions]).delete()
         return instance
 
     def save_inputs(self, instance, inputs_data, created):
@@ -365,14 +371,18 @@ class TransactionTypeSerializer(ModelWithObjectPermissionSerializer, ModelWithUs
 
     def save_actions(self, instance, actions_data, created):
         inputs = {i.name: i for i in instance.inputs.all()}
-        cur_actions = {i.order: i for i in instance.actions.select_related('transactiontypeactioninstrument',
-                                                                           'transactiontypeactiontransaction').all()}
+
+        actions_qs = instance.actions.select_related(
+            'transactiontypeactioninstrument', 'transactiontypeactiontransaction').order_by('order', 'id')
+        existed_actions = {a.id: a for a in actions_qs}
+
         actions = []
         for order, action_data in enumerate(actions_data):
+            pk = action_data.pop('id')
             instrument_data = action_data.get('instrument', action_data.get('transactiontypeactioninstrument'))
             transaction_data = action_data.get('transaction', action_data.get('transactiontypeactiontransaction'))
-            data = instrument_data or transaction_data
 
+            data = instrument_data or transaction_data
             # replace input name to input object
             for attr, value in data.items():
                 if attr.endswith('_input') and value:
@@ -381,15 +391,8 @@ class TransactionTypeSerializer(ModelWithObjectPermissionSerializer, ModelWithUs
                 if transaction_data and attr == 'instrument_phantom' and value is not None:
                     data[attr] = actions[value]
 
-            action = cur_actions.pop(order, None)
-            if created:
-                if instrument_data:
-                    action = TransactionTypeActionInstrument(transaction_type=instance)
-                elif transaction_data:
-                    action = TransactionTypeActionTransaction(transaction_type=instance)
-                else:
-                    raise RuntimeError('some unknown error')
-            else:
+            action = existed_actions.get(pk, None)
+            if action:
                 try:
                     action = action.transactiontypeactioninstrument
                 except ObjectDoesNotExist:
@@ -397,13 +400,21 @@ class TransactionTypeSerializer(ModelWithObjectPermissionSerializer, ModelWithUs
                         action = action.transactiontypeactiontransaction
                     except ObjectDoesNotExist:
                         pass
-                if action is None:
-                    raise RuntimeError('unknown action')
+            if not action:
+                if instrument_data:
+                    action = TransactionTypeActionInstrument(transaction_type=instance)
+                elif transaction_data:
+                    action = TransactionTypeActionTransaction(transaction_type=instance)
+            if action is None:
+                raise RuntimeError('unknown action')
+
             action.order = order
             for attr, value in data.items():
                 setattr(action, attr, value)
+
             action.save()
             actions.append(action)
+        return actions
 
 
 # class TransactionTypeBulkObjectPermissionSerializer(AbstractBulkObjectPermissionSerializer):
@@ -412,157 +423,6 @@ class TransactionTypeSerializer(ModelWithObjectPermissionSerializer, ModelWithUs
 #     class Meta:
 #         model = TransactionType
 
-
-class TransactionTypeProcess(object):
-    def __init__(self, transaction_type=None, instruments=None, transactions=None, **kwargs):
-        self.transaction_type = transaction_type
-        self.transaction_type_inputs = list(self.transaction_type.inputs.order_by('value_type', 'name').all())
-        self.instruments = instruments or []
-        self.transactions = transactions or []
-        for key, value in kwargs.items():
-            # TODO: validate attr_name
-            setattr(self, key, value)
-
-        self.set_default_values()
-
-    @staticmethod
-    def get_attr_name(input0):
-        return '%s_%s' % (input0.id, input0.name)
-
-    @staticmethod
-    def get_input_name(attr_name):
-        id, name = attr_name.split('_', maxsplit=2)
-        return name
-
-    def set_default_values(self):
-        for i in self.transaction_type_inputs:
-            name = TransactionTypeProcess.get_attr_name(i)
-            if i.value_type in [TransactionTypeInput.STRING, TransactionTypeInput.NUMBER, TransactionTypeInput.DATE]:
-                value = i.value
-                if value:
-                    value = formula.safe_eval(value)
-                else:
-                    value = None
-                setattr(self, name, value)
-            elif i.value_type == TransactionTypeInput.RELATION:
-                model_class = i.content_type.model_class()
-                if issubclass(model_class, Account):
-                    value = i.account
-                elif issubclass(model_class, Currency):
-                    value = i.currency
-                elif issubclass(model_class, Instrument):
-                    value = i.instrument
-                elif issubclass(model_class, InstrumentType):
-                    value = i.instrument_type
-                elif issubclass(model_class, Counterparty):
-                    value = i.counterparty
-                elif issubclass(model_class, Responsible):
-                    value = i.responsible
-                elif issubclass(model_class, Strategy1):
-                    value = i.strategy1
-                elif issubclass(model_class, Strategy2):
-                    value = i.strategy2
-                elif issubclass(model_class, Strategy3):
-                    value = i.strategy3
-                elif issubclass(model_class, DailyPricingModel):
-                    value = i.daily_pricing_model
-                elif issubclass(model_class, PaymentSizeDetail):
-                    value = i.payment_size_detail
-                elif issubclass(model_class, Portfolio):
-                    value = i.portfolio
-                elif issubclass(model_class, PriceDownloadScheme):
-                    value = i.price_download_scheme
-                else:
-                    value = None
-                setattr(self, name, value)
-
-
-class TransactionTypeProcessSerializer(serializers.Serializer):
-    def __init__(self, **kwargs):
-        context = kwargs.get('context', None) or {}
-        super(TransactionTypeProcessSerializer, self).__init__(**kwargs)
-
-        self.fields['transaction_type'] = serializers.PrimaryKeyRelatedField(read_only=True)
-
-        for i in self.instance.transaction_type_inputs:
-            # name = '%s_%s' % (i.id, i.name)
-            name = TransactionTypeProcess.get_attr_name(i)
-            name_object = '%s_object' % name
-            field = None
-            field_object = None
-            if i.value_type == TransactionTypeInput.STRING:
-                field = serializers.CharField(required=True, label=i.name, help_text=i.verbose_name)
-            elif i.value_type == TransactionTypeInput.NUMBER:
-                field = serializers.FloatField(required=True, label=i.name, help_text=i.verbose_name)
-            elif i.value_type == TransactionTypeInput.DATE:
-                field = serializers.DateField(required=True, label=i.name, help_text=i.verbose_name)
-            elif i.value_type == TransactionTypeInput.RELATION:
-                model_class = i.content_type.model_class()
-                if issubclass(model_class, Account):
-                    field = AccountField(required=True, label=i.name, help_text=i.verbose_name)
-                    field_object = ReadonlyNamedModelWithObjectPermissionSerializer(source=name)
-                elif issubclass(model_class, Currency):
-                    field = CurrencyField(required=True, label=i.name, help_text=i.verbose_name)
-                    field_object = ReadonlyNamedModelSerializer(source=name)
-                elif issubclass(model_class, Instrument):
-                    field = InstrumentField(required=True, label=i.name, help_text=i.verbose_name)
-                    field_object = ReadonlyNamedModelWithObjectPermissionSerializer(source=name)
-                elif issubclass(model_class, InstrumentType):
-                    field = InstrumentTypeField(required=True, label=i.name, help_text=i.verbose_name)
-                    field_object = ReadonlyNamedModelWithObjectPermissionSerializer(source=name)
-                elif issubclass(model_class, Counterparty):
-                    field = CounterpartyField(required=True, label=i.name, help_text=i.verbose_name)
-                    field_object = ReadonlyNamedModelWithObjectPermissionSerializer(source=name)
-                elif issubclass(model_class, Responsible):
-                    field = ResponsibleField(required=True, label=i.name, help_text=i.verbose_name)
-                    field_object = ReadonlyNamedModelWithObjectPermissionSerializer(source=name)
-                elif issubclass(model_class, Strategy1):
-                    field = Strategy1Field(required=True, label=i.name, help_text=i.verbose_name)
-                    field_object = ReadonlyNamedModelWithObjectPermissionSerializer(source=name)
-                elif issubclass(model_class, Strategy2):
-                    field = Strategy2Field(required=True, label=i.name, help_text=i.verbose_name)
-                    field_object = ReadonlyNamedModelWithObjectPermissionSerializer(source=name)
-                elif issubclass(model_class, Strategy3):
-                    field = Strategy3Field(required=True, label=i.name, help_text=i.verbose_name)
-                    field_object = ReadonlyNamedModelWithObjectPermissionSerializer(source=name)
-                elif issubclass(model_class, DailyPricingModel):
-                    field = serializers.PrimaryKeyRelatedField(queryset=DailyPricingModel.objects, required=True,
-                                                               label=i.name, help_text=i.verbose_name)
-                    field_object = ReadonlyModelWithNameSerializer(source=name)
-                elif issubclass(model_class, PaymentSizeDetail):
-                    field = serializers.PrimaryKeyRelatedField(queryset=PaymentSizeDetail.objects, required=True,
-                                                               label=i.name, help_text=i.verbose_name)
-                    field_object = ReadonlyModelWithNameSerializer(source=name)
-                elif issubclass(model_class, Portfolio):
-                    field = PortfolioField(required=True, label=i.name, help_text=i.verbose_name)
-                    field_object = ReadonlyNamedModelWithObjectPermissionSerializer(source=name)
-                elif issubclass(model_class, PriceDownloadScheme):
-                    field = PriceDownloadSchemeField(required=True, label=i.name, help_text=i.verbose_name)
-                    field_object = ReadonlyNamedModelWithObjectPermissionSerializer(source=name)
-            if field:
-                self.fields[name] = field
-                if field_object:
-                    self.fields[name_object] = field_object
-            else:
-                raise RuntimeError('Unknown value type %s' % i.value_type)
-
-        from poms.instruments.serializers import InstrumentSerializer
-        self.fields['instruments'] = InstrumentSerializer(many=True, read_only=True, context=context)
-        self.fields['transactions'] = TransactionSerializer(many=True, read_only=True, context=context)
-
-    def update(self, instance, validated_data):
-        input_values = {}
-        for key, value in validated_data.items():
-            name = TransactionTypeProcess.get_input_name(key)
-            input_values[name] = value
-        print(validated_data)
-        print(input_values)
-
-        processor = TransactionTypeProcessor(instance.transaction_type, input_values)
-        instance.instruments, instance.transactions = processor.run(False)
-        for key, value in validated_data.items():
-            setattr(instance, key, value)
-        return instance
 
 
 class TransactionClassifierSerializer(AbstractClassifierSerializer):
@@ -675,3 +535,245 @@ class ComplexTransactionSerializer(serializers.ModelSerializer):
 
     def get_text(self, obj):
         return str(obj)
+
+
+class TransactionTypeProcess(object):
+    def __init__(self, transaction_type=None, calculate=True, store=False, instruments=None,
+                 transactions=None, **kwargs):
+        self.transaction_type = transaction_type
+        self.calculate = calculate or False
+        self.store = store or False
+        self.transaction_type_inputs = list(self.transaction_type.inputs.order_by('value_type', 'name').all())
+        self.instruments = instruments or []
+        self.transactions = transactions or []
+        for key, value in kwargs.items():
+            # TODO: validate attr_name
+            setattr(self, key, value)
+
+        self.set_default_values()
+
+    @staticmethod
+    def get_attr_name(input0):
+        return '%s_%s' % (input0.id, input0.name)
+
+    @staticmethod
+    def get_input_name(attr_name):
+        try:
+            id, name = attr_name.split('_', maxsplit=2)
+            return name
+        except ValueError:
+            return None
+
+    def set_default_values(self):
+        for i in self.transaction_type_inputs:
+            name = TransactionTypeProcess.get_attr_name(i)
+            if i.value_type in [TransactionTypeInput.STRING, TransactionTypeInput.NUMBER, TransactionTypeInput.DATE]:
+                value = i.value
+                if value:
+                    value = formula.safe_eval(value)
+                else:
+                    value = None
+                setattr(self, name, value)
+            elif i.value_type == TransactionTypeInput.RELATION:
+                model_class = i.content_type.model_class()
+                if issubclass(model_class, Account):
+                    value = i.account
+                elif issubclass(model_class, Currency):
+                    value = i.currency
+                elif issubclass(model_class, Instrument):
+                    value = i.instrument
+                elif issubclass(model_class, InstrumentType):
+                    value = i.instrument_type
+                elif issubclass(model_class, Counterparty):
+                    value = i.counterparty
+                elif issubclass(model_class, Responsible):
+                    value = i.responsible
+                elif issubclass(model_class, Strategy1):
+                    value = i.strategy1
+                elif issubclass(model_class, Strategy2):
+                    value = i.strategy2
+                elif issubclass(model_class, Strategy3):
+                    value = i.strategy3
+                elif issubclass(model_class, DailyPricingModel):
+                    value = i.daily_pricing_model
+                elif issubclass(model_class, PaymentSizeDetail):
+                    value = i.payment_size_detail
+                elif issubclass(model_class, Portfolio):
+                    value = i.portfolio
+                elif issubclass(model_class, PriceDownloadScheme):
+                    value = i.price_download_scheme
+                else:
+                    value = None
+                setattr(self, name, value)
+
+
+class PhantomInstrumentSerializer(InstrumentSerializer):
+    def __init__(self, **kwargs):
+        super(PhantomInstrumentSerializer, self).__init__(**kwargs)
+        self.fields['id'] = serializers.IntegerField(required=True)
+        self.fields.pop('manual_pricing_formulas')
+        self.fields.pop('accrual_calculation_schedules')
+        self.fields.pop('factor_schedules')
+        self.fields.pop('event_schedules')
+        self.fields.pop('attributes')
+        self.fields.pop('tags')
+        self.fields.pop('user_object_permissions')
+        self.fields.pop('group_object_permissions')
+
+
+class PhantomInstrumentField(InstrumentField):
+    def to_internal_value(self, data):
+        pk = data
+        if self.pk_field is not None:
+            pk = self.pk_field.to_internal_value(data)
+        if pk and pk < 0:
+            return Instrument(id=pk)
+        return super(PhantomInstrumentField, self).to_internal_value(data)
+
+
+class PhantomTransactionSerializer(TransactionSerializer):
+    def __init__(self, **kwargs):
+        super(PhantomTransactionSerializer, self).__init__(**kwargs)
+        self.fields['instrument'] = PhantomInstrumentField(required=False)
+        self.fields.pop('attributes')
+
+
+class TransactionTypeProcessSerializer(serializers.Serializer):
+    def __init__(self, **kwargs):
+        kwargs['context'] = context = kwargs.get('context', {}) or {}
+        super(TransactionTypeProcessSerializer, self).__init__(**kwargs)
+        context['instance'] = self.instance
+
+        self.fields['transaction_type'] = serializers.PrimaryKeyRelatedField(read_only=True)
+        self.fields['calculate'] = serializers.BooleanField(default=False, required=False)
+        self.fields['store'] = serializers.BooleanField(default=False, required=False)
+
+        for i in self.instance.transaction_type_inputs:
+            # name = '%s_%s' % (i.id, i.name)
+            name = TransactionTypeProcess.get_attr_name(i)
+            name_object = '%s_object' % name
+            field = None
+            field_object = None
+            if i.value_type == TransactionTypeInput.STRING:
+                field = serializers.CharField(required=True, label=i.name, help_text=i.verbose_name)
+            elif i.value_type == TransactionTypeInput.NUMBER:
+                field = serializers.FloatField(required=True, label=i.name, help_text=i.verbose_name)
+            elif i.value_type == TransactionTypeInput.DATE:
+                field = serializers.DateField(required=True, label=i.name, help_text=i.verbose_name)
+            elif i.value_type == TransactionTypeInput.RELATION:
+                model_class = i.content_type.model_class()
+                if issubclass(model_class, Account):
+                    field = AccountField(required=True, label=i.name, help_text=i.verbose_name)
+                    field_object = ReadonlyNamedModelWithObjectPermissionSerializer(source=name)
+                elif issubclass(model_class, Currency):
+                    field = CurrencyField(required=True, label=i.name, help_text=i.verbose_name)
+                    field_object = ReadonlyNamedModelSerializer(source=name)
+                elif issubclass(model_class, Instrument):
+                    field = InstrumentField(required=True, label=i.name, help_text=i.verbose_name)
+                    field_object = ReadonlyNamedModelWithObjectPermissionSerializer(source=name)
+                elif issubclass(model_class, InstrumentType):
+                    field = InstrumentTypeField(required=True, label=i.name, help_text=i.verbose_name)
+                    field_object = ReadonlyNamedModelWithObjectPermissionSerializer(source=name)
+                elif issubclass(model_class, Counterparty):
+                    field = CounterpartyField(required=True, label=i.name, help_text=i.verbose_name)
+                    field_object = ReadonlyNamedModelWithObjectPermissionSerializer(source=name)
+                elif issubclass(model_class, Responsible):
+                    field = ResponsibleField(required=True, label=i.name, help_text=i.verbose_name)
+                    field_object = ReadonlyNamedModelWithObjectPermissionSerializer(source=name)
+                elif issubclass(model_class, Strategy1):
+                    field = Strategy1Field(required=True, label=i.name, help_text=i.verbose_name)
+                    field_object = ReadonlyNamedModelWithObjectPermissionSerializer(source=name)
+                elif issubclass(model_class, Strategy2):
+                    field = Strategy2Field(required=True, label=i.name, help_text=i.verbose_name)
+                    field_object = ReadonlyNamedModelWithObjectPermissionSerializer(source=name)
+                elif issubclass(model_class, Strategy3):
+                    field = Strategy3Field(required=True, label=i.name, help_text=i.verbose_name)
+                    field_object = ReadonlyNamedModelWithObjectPermissionSerializer(source=name)
+                elif issubclass(model_class, DailyPricingModel):
+                    field = serializers.PrimaryKeyRelatedField(queryset=DailyPricingModel.objects, required=True,
+                                                               label=i.name, help_text=i.verbose_name)
+                    field_object = ReadonlyModelWithNameSerializer(source=name)
+                elif issubclass(model_class, PaymentSizeDetail):
+                    field = serializers.PrimaryKeyRelatedField(queryset=PaymentSizeDetail.objects, required=True,
+                                                               label=i.name, help_text=i.verbose_name)
+                    field_object = ReadonlyModelWithNameSerializer(source=name)
+                elif issubclass(model_class, Portfolio):
+                    field = PortfolioField(required=True, label=i.name, help_text=i.verbose_name)
+                    field_object = ReadonlyNamedModelWithObjectPermissionSerializer(source=name)
+                elif issubclass(model_class, PriceDownloadScheme):
+                    field = PriceDownloadSchemeField(required=True, label=i.name, help_text=i.verbose_name)
+                    field_object = ReadonlyNamedModelWithObjectPermissionSerializer(source=name)
+            if field:
+                self.fields[name] = field
+                if field_object:
+                    self.fields[name_object] = field_object
+            else:
+                raise RuntimeError('Unknown value type %s' % i.value_type)
+
+        self.fields['instruments'] = PhantomInstrumentSerializer(many=True, read_only=False)
+        self.fields['transactions'] = PhantomTransactionSerializer(many=True, read_only=False)
+
+    def update(self, instance, validated_data):
+        input_values = {}
+        for key, value in validated_data.items():
+            setattr(instance, key, value)
+            name = TransactionTypeProcess.get_input_name(key)
+            if name:
+                input_values[name] = value
+
+        if instance.calculate:
+            processor = TransactionTypeProcessor(instance.transaction_type, input_values)
+            instance.instruments, instance.transactions = processor.run(False)
+
+        if instance.store:
+            instruments_map = {}
+            instruments_data = validated_data['instruments']
+            if instruments_data:
+                instruments = []
+                for instrument_data in instruments_data:
+                    fake_id = instrument_data.pop('id', None)
+                    instrument = Instrument(master_user=instance.transaction_type.master_user)
+                    for attr, value in instrument_data.items():
+                        if attr in ['id']:
+                            continue
+                        setattr(instrument, attr, value)
+                    instrument.save()
+                    instruments.append(instrument)
+                    if fake_id:
+                        instruments_map[fake_id] = instrument
+                instance.instruments = instruments
+            else:
+                if instance.instruments:
+                    for instrument in instance.instruments:
+                        fake_id = instrument.id
+                        instrument.id = None
+                        instrument.save()
+                        if fake_id:
+                            instruments_map[fake_id] = instrument
+
+            transactions_data = validated_data['transactions']
+            if transactions_data:
+                complex_transaction = ComplexTransaction.objects.create(transaction_type=instance.transaction_type)
+                for transaction_data in transactions_data:
+                    transaction = Transaction(master_user=instance.transaction_type.master_user)
+                    for attr, value in transaction_data.items():
+                        if attr in ['id']:
+                            continue
+                        if attr == 'instrument':
+                            value = value.id
+                            if value in instruments_map:
+                                value = instruments_map[value]
+                        setattr(transaction, attr, value)
+                    transaction.complex_transaction = complex_transaction
+                    transaction.save()
+            else:
+                if instance.transactions:
+                    complex_transaction = ComplexTransaction.objects.create(transaction_type=instance.transaction_type)
+                    for transaction in instance.transactions:
+                        transaction.id = None
+                        transaction.complex_transaction = complex_transaction
+                        if transaction.instrument_id in instruments_map:
+                            transaction.instrument = instruments_map[transaction.instrument_id]
+                        transaction.save()
+
+        return instance

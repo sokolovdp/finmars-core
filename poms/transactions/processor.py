@@ -77,7 +77,7 @@ class TransactionTypeProcessor(object):
                 self._set_simple(instr, 'user_text_1', action_instr, 'user_text_1', input_values, '')
                 self._set_simple(instr, 'user_text_2', action_instr, 'user_text_2', input_values, '')
                 self._set_simple(instr, 'user_text_3', action_instr, 'user_text_3', input_values, '')
-                self._set_simple(instr, 'reference_for_pricing', action_instr, 'reference_for_pricing', input_values)
+                self._set_simple(instr, 'reference_for_pricing', action_instr, 'reference_for_pricing', input_values, '')
                 self._set_relation(instr, 'price_download_scheme', action_instr, 'price_download_scheme', input_values)
                 self._set_relation(instr, 'daily_pricing_model', action_instr, 'daily_pricing_model', input_values, daily_pricing_model)
                 self._set_simple(instr, 'maturity_date', action_instr, 'maturity_date', input_values)

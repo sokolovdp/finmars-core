@@ -1,6 +1,7 @@
 from __future__ import unicode_literals
 
 import django_filters
+from django.db import transaction
 from django.db.models import Prefetch
 from rest_framework.decorators import detail_route
 from rest_framework.filters import FilterSet
@@ -30,7 +31,6 @@ from poms.transactions.models import TransactionClass, Transaction, TransactionT
     TransactionAttribute, \
     TransactionTypeInput, TransactionTypeAction
 from poms.transactions.permissions import TransactionObjectPermission
-from poms.transactions.processor import TransactionTypeProcessor
 from poms.transactions.serializers import TransactionClassSerializer, TransactionSerializer, TransactionTypeSerializer, \
     TransactionAttributeTypeSerializer, TransactionTypeProcessSerializer, TransactionTypeGroupSerializer, \
     ComplexTransactionSerializer, TransactionClassifierNodeSerializer, EventClassSerializer, \
@@ -205,7 +205,6 @@ class TransactionTypeViewSet(AbstractWithObjectPermissionViewSet):
             serializer = self.get_serializer(instance=instance)
             return Response(serializer.data)
         else:
-            from poms.instruments.serializers import InstrumentSerializer
 
             serializer = self.get_serializer(instance=instance, data=request.data)
             serializer.is_valid(raise_exception=True)
@@ -224,7 +223,10 @@ class TransactionTypeViewSet(AbstractWithObjectPermissionViewSet):
             # d = serializer.data.copy()
             # d['instruments'] = instruments_s
             # d['transactions'] = transactions_s
-            return Response(serializer.data)
+            try:
+                return Response(serializer.data)
+            finally:
+                transaction.set_rollback(True)
 
 
 class TransactionAttributeTypeFilterSet(FilterSet):
