@@ -421,10 +421,9 @@ class TransactionTypeSerializer(ModelWithObjectPermissionSerializer, ModelWithUs
             'transactiontypeactioninstrument', 'transactiontypeactiontransaction').order_by('order', 'id')
         existed_actions = {a.id: a for a in actions_qs}
 
-        actions = []
+        actions = [None for a in actions_data]
         for order, action_data in enumerate(actions_data):
             pk = action_data.pop('id', None)
-
             action = existed_actions.get(pk, None)
 
             action_instrument_data = action_data.get('instrument', action_data.get('transactiontypeactioninstrument'))
@@ -445,14 +444,17 @@ class TransactionTypeSerializer(ModelWithObjectPermissionSerializer, ModelWithUs
                 if action_instrument is None:
                     action_instrument = TransactionTypeActionInstrument(transaction_type=instance)
 
-                action_instrument.order = action_data.get('order', order)
+                action_instrument.order = order
                 action_instrument.action_notes = action_data.get('action_notes', action_instrument.action_notes)
                 for attr, value in action_instrument_data.items():
                     setattr(action_instrument, attr, value)
 
                 action_instrument.save()
-                actions.append(action_instrument)
+                actions[order] = action_instrument
 
+        for order, action_data in enumerate(actions_data):
+            pk = action_data.pop('id', None)
+            action = existed_actions.get(pk, None)
             action_transaction_data = action_data.get('transaction',
                                                       action_data.get('transactiontypeactiontransaction'))
             if action_transaction_data:
@@ -463,7 +465,10 @@ class TransactionTypeSerializer(ModelWithObjectPermissionSerializer, ModelWithUs
                         except KeyError:
                             raise ValidationError('Invalid input "%s"' % value)
                     if attr == 'instrument_phantom' and value is not None:
-                        action_transaction_data[attr] = actions[value]
+                        try:
+                            action_transaction_data[attr] = actions[value]
+                        except IndexError:
+                            raise ValidationError('Invalid action order "%s"' % value)
 
                 action_transaction = None
                 if action:
@@ -474,13 +479,13 @@ class TransactionTypeSerializer(ModelWithObjectPermissionSerializer, ModelWithUs
                 if action_transaction is None:
                     action_transaction = TransactionTypeActionTransaction(transaction_type=instance)
 
-                action_transaction.order = action_data.get('order', order)
+                action_transaction.order = order
                 action_transaction.action_notes = action_data.get('action_notes', action_transaction.action_notes)
                 for attr, value in action_transaction_data.items():
                     setattr(action_transaction, attr, value)
 
                 action_transaction.save()
-                actions.append(action_transaction)
+                actions[order] = action_transaction
 
         return actions
 
