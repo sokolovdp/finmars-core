@@ -284,7 +284,7 @@ class AbstractProvider(object):
 
     def price_adapt_value(self, value, multiplier):
         if self.is_empty_value(value):
-            return None
+            return 0.0
         return value * multiplier
 
     def get_price_scheme_value(self, price_scheme, values, *args):
@@ -293,7 +293,7 @@ class AbstractProvider(object):
             if field_name and field_name in values:
                 value = values[field_name]
                 if value is None or self.is_empty_value(value):
-                    return None
+                    return 0.0
                 try:
                     return float(value)
                 except ValueError:
@@ -301,7 +301,7 @@ class AbstractProvider(object):
                              price_scheme.id, attr_name, value)
                     # Try next value
                     pass
-        return None
+        return 0.0
 
     def get_instrument_yesterday_values(self, price_scheme, values):
         bid = self.get_price_scheme_value(price_scheme, values, 'bid0', 'bid1', 'bid2')
