@@ -431,7 +431,10 @@ class TransactionTypeSerializer(ModelWithObjectPermissionSerializer, ModelWithUs
             if action_instrument_data:
                 for attr, value in action_instrument_data.items():
                     if attr.endswith('_input') and value:
-                        action_instrument_data[attr] = inputs[value]
+                        try:
+                            action_instrument_data[attr] = inputs[value]
+                        except KeyError:
+                            raise ValidationError('Invalid input "%s"' % value)
 
                 action_instrument = None
                 if action:
