@@ -438,7 +438,7 @@ class SimpleEval2(object):  # pylint: disable=too-few-public-methods
                 # (the compiler rejects it, so you can't even pass that to ast.parse)
                 if node.id == "None":
                     return None
-                if node.id == "context" or node.id == "CONTEXT" and isinstance(self.names, dict):
+                if (node.id == "context" or node.id == "CONTEXT") and isinstance(self.names, dict):
                     return self.names
                 if isinstance(self.names, dict):
                     return self.names[node.id]
@@ -590,7 +590,7 @@ if __name__ == "__main__":
     # print(safe_eval('v0 * 10', names=names))
     # print(safe_eval('context["v0"] * 10', names=names))
 
-    print(safe_eval('format_date(now(), format="%d-%m-%Y")'))
+    print(safe_eval('format_date(NoW(), format="%d-%m-%Y")'))
 
 
     def demo():
