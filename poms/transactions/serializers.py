@@ -338,23 +338,23 @@ class TransactionTypeSerializer(ModelWithObjectPermissionSerializer, ModelWithUs
         inputs = validated_data.pop('inputs', None)
         actions = validated_data.pop('actions', None)
         instance = super(TransactionTypeSerializer, self).create(validated_data)
-        self.save_inputs(instance, inputs, True)
-        self.save_actions(instance, actions, True)
+        inputs = self.save_inputs(instance, inputs)
+        self.save_actions(instance, actions, inputs)
         return instance
 
     def update(self, instance, validated_data):
         inputs = validated_data.pop('inputs', None)
         actions = validated_data.pop('actions', None)
         instance = super(TransactionTypeSerializer, self).update(instance, validated_data)
-        inputs = self.save_inputs(instance, inputs, False)
-        actions = self.save_actions(instance, actions, False)
+        inputs = self.save_inputs(instance, inputs)
+        actions = self.save_actions(instance, actions, inputs)
         if inputs:
             instance.inputs.exclude(id__in=[i.id for i in inputs.values()]).delete()
         if actions:
             instance.actions.exclude(id__in=[a.id for a in actions]).delete()
         return instance
 
-    def save_inputs(self, instance, inputs_data, created):
+    def save_inputs(self, instance, inputs_data):
         cur_inputs = {i.name: i for i in instance.inputs.all()}
         new_inputs = {}
         for order, input_data in enumerate(inputs_data):
@@ -416,9 +416,7 @@ class TransactionTypeSerializer(ModelWithObjectPermissionSerializer, ModelWithUs
     #         actions.append(action)
     #     return actions
 
-    def save_actions(self, instance, actions_data, created):
-        inputs = {i.name: i for i in instance.inputs.all()}
-
+    def save_actions(self, instance, actions_data, inputs):
         actions_qs = instance.actions.select_related(
             'transactiontypeactioninstrument', 'transactiontypeactiontransaction').order_by('order', 'id')
         existed_actions = {a.id: a for a in actions_qs}
@@ -457,7 +455,10 @@ class TransactionTypeSerializer(ModelWithObjectPermissionSerializer, ModelWithUs
             if action_transaction_data:
                 for attr, value in action_transaction_data.items():
                     if attr.endswith('_input') and value:
-                        action_transaction_data[attr] = inputs[value]
+                        try:
+                            action_transaction_data[attr] = inputs[value]
+                        except KeyError:
+                            raise ValidationError('Invalid input "%s"' % value)
                     if attr == 'instrument_phantom' and value is not None:
                         action_transaction_data[attr] = actions[value]
 
