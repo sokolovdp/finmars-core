@@ -8,152 +8,206 @@ from poms.transactions.models import Transaction, ComplexTransaction
 
 class TransactionTypeProcessor(object):
     def __init__(self, transaction_type, input_values):
-        self.transaction_type = transaction_type
-        self.input_values = input_values
+        assert transaction_type is not None, "transaction_type can't be None"
+        self._transaction_type = transaction_type
+        self._input_values = input_values or {}
+        self._instruments = []
+        self._instruments_errors = []
+        self._complex_transaction = None
+        self._transactions = []
+        self._transactions_errors = []
         self._save = False
-        self._seq = 0
+        self._id_seq = 0
+        self._transaction_order_seq = 0
+
+    @property
+    def has_errors(self):
+        for errors in self._instruments_errors:
+            if errors:
+                return True
+        for errors in self._transactions_errors:
+            if errors:
+                return True
+        return False
+
+    @property
+    def instruments(self):
+        return self._instruments
+
+    @property
+    def instruments_errors(self):
+        return self._instruments_errors
+
+    @property
+    def complex_transaction(self):
+        if self._complex_transaction is None:
+            self._complex_transaction = ComplexTransaction(transaction_type=self._transaction_type)
+            if self._save:
+                self._complex_transaction.save()
+            else:
+                self._complex_transaction.id = self._next_id()
+        return self._complex_transaction
+
+    @property
+    def complex_transaction(self):
+        if self._complex_transaction is None:
+            self._complex_transaction = ComplexTransaction(transaction_type=self._transaction_type)
+            if self._save:
+                self._complex_transaction.save()
+            else:
+                self._complex_transaction.id = self._next_id()
+        return self._complex_transaction
+
+    @property
+    def transactions(self):
+        return self._transactions
+
+    @property
+    def transactions_errors(self):
+        return self._transactions_errors
 
     def run(self, save=False):
         self._save = save
         return self._process()
 
     def _process(self):
-        input_values = self.input_values
+        values = self._input_values
 
-        master_user = self.transaction_type.master_user
-        actions = self.transaction_type.actions.order_by('order').all()
-        user_object_permissions = self.transaction_type.user_object_permissions.select_related('permission').all()
-        group_object_permissions = self.transaction_type.group_object_permissions.select_related('permission').all()
-
-        instruments = []
-        transactions = []
+        master_user = self._transaction_type.master_user
+        user_object_permissions = self._transaction_type.user_object_permissions.select_related('permission').all()
+        group_object_permissions = self._transaction_type.group_object_permissions.select_related('permission').all()
         daily_pricing_model = DailyPricingModel.objects.get(pk=DailyPricingModel.SKIP)
 
-        cmplx_trn = ComplexTransaction(transaction_type=self.transaction_type)
-        if self._save:
-            cmplx_trn.save()
-        else:
-            cmplx_trn.id = self._next_id()
-
-        trn_order = 0
-        instr_map = {}
+        instrument_map = {}
+        actions = self._transaction_type.actions.order_by('order').all()
         for order, action in enumerate(actions, start=1):
             try:
-                action_instr = action.transactiontypeactioninstrument
+                action_instrument = action.transactiontypeactioninstrument
             except ObjectDoesNotExist:
-                action_instr = None
+                action_instrument = None
             try:
-                action_trn = action.transactiontypeactiontransaction
+                action_transaction = action.transactiontypeactiontransaction
             except ObjectDoesNotExist:
-                action_trn = None
+                action_transaction = None
 
-            if action_instr:
-                user_code = formula.safe_eval(action_instr.user_code, names=input_values)
+            if action_instrument:
+                user_code = formula.safe_eval(action_instrument.user_code, names=values)
                 if user_code:
                     try:
-                        instr = Instrument.objects.get(master_user=master_user, user_code=user_code)
-                        instruments.append(instr)
-                        # results[action_instr.order] = instr
+                        instrument = Instrument.objects.get(master_user=master_user, user_code=user_code)
+                        self._instruments.append(instrument)
+                        self._instruments_errors.append({})
                         continue
                     except ObjectDoesNotExist:
                         pass
 
-                instr = Instrument(master_user=master_user)
-                instruments.append(instr)
+                errors = {}
+                instrument = Instrument(master_user=master_user)
                 # results[action_instr.order] = instr
-                instr.user_code = user_code
-                self._set_simple(instr, 'name', action_instr, 'name', input_values)
-                self._set_simple(instr, 'short_name', action_instr, 'short_name', input_values, '')
-                self._set_simple(instr, 'public_name', action_instr, 'public_name', input_values, '')
-                self._set_simple(instr, 'notes', action_instr, 'notes', input_values, '')
-                self._set_relation(instr, 'instrument_type', action_instr, 'instrument_type', input_values, master_user.instrument_type)
-                self._set_relation(instr, 'pricing_currency', action_instr, 'pricing_currency', input_values, master_user.currency)
-                self._set_simple(instr, 'price_multiplier', action_instr, 'price_multiplier', input_values, 0.0)
-                self._set_relation(instr, 'accrued_currency', action_instr, 'accrued_currency', input_values, master_user.currency)
-                self._set_simple(instr, 'accrued_multiplier', action_instr, 'accrued_multiplier', input_values, 0.0)
-                self._set_relation(instr, 'payment_size_detail', action_instr, 'payment_size_detail', input_values)
-                self._set_simple(instr, 'default_price', action_instr, 'default_price', input_values)
-                self._set_simple(instr, 'default_accrued', action_instr, 'default_accrued', input_values)
-                self._set_simple(instr, 'user_text_1', action_instr, 'user_text_1', input_values, '')
-                self._set_simple(instr, 'user_text_2', action_instr, 'user_text_2', input_values, '')
-                self._set_simple(instr, 'user_text_3', action_instr, 'user_text_3', input_values, '')
-                self._set_simple(instr, 'reference_for_pricing', action_instr, 'reference_for_pricing', input_values, '')
-                self._set_relation(instr, 'price_download_scheme', action_instr, 'price_download_scheme', input_values)
-                self._set_relation(instr, 'daily_pricing_model', action_instr, 'daily_pricing_model', input_values, daily_pricing_model)
-                self._set_simple(instr, 'maturity_date', action_instr, 'maturity_date', input_values)
+                instrument.user_code = user_code
+                self._set_simple(instrument, 'name', action_instrument, 'name', values, '')
+                self._set_simple(instrument, 'short_name', action_instrument, 'short_name', values, '')
+                self._set_simple(instrument, 'public_name', action_instrument, 'public_name', values, '')
+                self._set_simple(instrument, 'notes', action_instrument, 'notes', values, '')
+                self._set_relation(instrument, 'instrument_type', action_instrument, 'instrument_type', values, master_user.instrument_type)
+                self._set_relation(instrument, 'pricing_currency', action_instrument, 'pricing_currency', values, master_user.currency)
+                self._set_simple(instrument, 'price_multiplier', action_instrument, 'price_multiplier', values, 0.0)
+                self._set_relation(instrument, 'accrued_currency', action_instrument, 'accrued_currency', values, master_user.currency)
+                self._set_simple(instrument, 'accrued_multiplier', action_instrument, 'accrued_multiplier', values, 0.0)
+                self._set_relation(instrument, 'payment_size_detail', action_instrument, 'payment_size_detail', values)
+                self._set_simple(instrument, 'default_price', action_instrument, 'default_price', values)
+                self._set_simple(instrument, 'default_accrued', action_instrument, 'default_accrued', values)
+                self._set_simple(instrument, 'user_text_1', action_instrument, 'user_text_1', values, '')
+                self._set_simple(instrument, 'user_text_2', action_instrument, 'user_text_2', values, '')
+                self._set_simple(instrument, 'user_text_3', action_instrument, 'user_text_3', values, '')
+                self._set_simple(instrument, 'reference_for_pricing', action_instrument, 'reference_for_pricing', values, '')
+                self._set_relation(instrument, 'price_download_scheme', action_instrument, 'price_download_scheme', values)
+                self._set_relation(instrument, 'daily_pricing_model', action_instrument, 'daily_pricing_model', values, daily_pricing_model)
+                self._set_simple(instrument, 'maturity_date', action_instrument, 'maturity_date', values)
 
                 if self._save:
-                    instr.save()
-                    self._instrument_assign_permission(instr, user_object_permissions, group_object_permissions)
+                    instrument.save()
+                    self._instrument_assign_permission(instrument, user_object_permissions, group_object_permissions)
                 else:
-                    instr.id = self._next_id()
-                instr_map[action.id] = instr
-            elif action_trn:
-                trn = Transaction(master_user=master_user)
-                transactions.append(trn)
-                trn.complex_transaction = cmplx_trn
-                trn.complex_transaction_order = trn_order
-                trn.transaction_class = action_trn.transaction_class
+                    instrument.id = self._next_id()
+                instrument_map[action.id] = instrument
+                self._instruments.append(instrument)
+                self._instruments_errors.append(errors)
 
-                self._set_relation(trn, 'portfolio', action_trn, 'portfolio', input_values, master_user.portfolio)
-                self._set_relation(trn, 'instrument', action_trn, 'instrument', input_values)
-                if action_trn.instrument_phantom is not None:
-                    trn.instrument = instr_map[action_trn.instrument_phantom_id]
-                self._set_relation(trn, 'transaction_currency', action_trn, 'transaction_currency', input_values, master_user.currency)
-                self._set_simple(trn, 'position_size_with_sign', action_trn, 'position_size_with_sign', input_values)
-                self._set_relation(trn, 'settlement_currency', action_trn, 'settlement_currency', input_values, master_user.currency)
-                self._set_simple(trn, 'cash_consideration', action_trn, 'cash_consideration', input_values, 0.0)
-                self._set_simple(trn, 'principal_with_sign', action_trn, 'principal_with_sign', input_values, 0.0)
-                self._set_simple(trn, 'carry_with_sign', action_trn, 'carry_with_sign', input_values, 0.0)
-                self._set_simple(trn, 'overheads_with_sign', action_trn, 'overheads_with_sign', input_values, 0.0)
-                self._set_relation(trn, 'account_position', action_trn, 'account_position', input_values, master_user.account)
-                self._set_relation(trn, 'account_cash', action_trn, 'account_cash', input_values, master_user.account)
-                self._set_relation(trn, 'account_interim', action_trn, 'account_interim', input_values, master_user.account)
-                self._set_simple(trn, 'accounting_date', action_trn, 'accounting_date', input_values)
-                self._set_simple(trn, 'cash_date', action_trn, 'cash_date', input_values)
-                trn.transaction_date = min(trn.accounting_date, trn.cash_date)
-                self._set_relation(trn, 'strategy1_position', action_trn, 'strategy1_position', input_values, master_user.strategy1)
-                self._set_relation(trn, 'strategy1_cash', action_trn, 'strategy1_cash', input_values, master_user.strategy1)
-                self._set_relation(trn, 'strategy2_position', action_trn, 'strategy2_position', input_values, master_user.strategy2)
-                self._set_relation(trn, 'strategy2_cash', action_trn, 'strategy2_cash', input_values, master_user.strategy2)
-                self._set_relation(trn, 'strategy3_position', action_trn, 'strategy3_position', input_values, master_user.strategy3)
-                self._set_relation(trn, 'strategy3_cash', action_trn, 'strategy3_cash', input_values, master_user.strategy3)
-                self._set_simple(trn, 'factor', action_trn, 'factor', input_values, 0.0)
-                self._set_simple(trn, 'trade_price', action_trn, 'trade_price', input_values, 0.0)
-                self._set_simple(trn, 'principal_amount', action_trn, 'principal_amount', input_values, 0.0)
-                self._set_simple(trn, 'carry_amount', action_trn, 'carry_amount', input_values, 0.0)
-                self._set_relation(trn, 'responsible', action_trn, 'responsible', input_values, master_user.responsible)
-                self._set_relation(trn, 'counterparty', action_trn, 'counterparty', input_values, master_user.counterparty)
+            elif action_transaction:
+                errors = {}
+                transaction = Transaction(master_user=master_user)
+                transaction.complex_transaction = self.complex_transaction
+                transaction.complex_transaction_order = self._next_transaction_order()
+                transaction.transaction_class = action_transaction.transaction_class
 
+                self._set_relation(transaction, 'portfolio', action_transaction, 'portfolio', values, master_user.portfolio)
+                self._set_relation(transaction, 'instrument', action_transaction, 'instrument', values)
+                if action_transaction.instrument_phantom is not None:
+                    transaction.instrument = instrument_map[action_transaction.instrument_phantom_id]
+                self._set_relation(transaction, 'transaction_currency', action_transaction, 'transaction_currency', values, master_user.currency)
+                self._set_simple(transaction, 'position_size_with_sign', action_transaction, 'position_size_with_sign', values)
+                self._set_relation(transaction, 'settlement_currency', action_transaction, 'settlement_currency', values, master_user.currency)
+                self._set_simple(transaction, 'cash_consideration', action_transaction, 'cash_consideration', values, 0.0)
+                self._set_simple(transaction, 'principal_with_sign', action_transaction, 'principal_with_sign', values, 0.0)
+                self._set_simple(transaction, 'carry_with_sign', action_transaction, 'carry_with_sign', values, 0.0)
+                self._set_simple(transaction, 'overheads_with_sign', action_transaction, 'overheads_with_sign', values, 0.0)
+                self._set_relation(transaction, 'account_position', action_transaction, 'account_position', values, master_user.account)
+                self._set_relation(transaction, 'account_cash', action_transaction, 'account_cash', values, master_user.account)
+                self._set_relation(transaction, 'account_interim', action_transaction, 'account_interim', values, master_user.account)
+                self._set_simple(transaction, 'accounting_date', action_transaction, 'accounting_date', values)
+                self._set_simple(transaction, 'cash_date', action_transaction, 'cash_date', values)
+                self._set_relation(transaction, 'strategy1_position', action_transaction, 'strategy1_position', values, master_user.strategy1)
+                self._set_relation(transaction, 'strategy1_cash', action_transaction, 'strategy1_cash', values, master_user.strategy1)
+                self._set_relation(transaction, 'strategy2_position', action_transaction, 'strategy2_position', values, master_user.strategy2)
+                self._set_relation(transaction, 'strategy2_cash', action_transaction, 'strategy2_cash', values, master_user.strategy2)
+                self._set_relation(transaction, 'strategy3_position', action_transaction, 'strategy3_position', values, master_user.strategy3)
+                self._set_relation(transaction, 'strategy3_cash', action_transaction, 'strategy3_cash', values, master_user.strategy3)
+                self._set_simple(transaction, 'factor', action_transaction, 'factor', values, 0.0)
+                self._set_simple(transaction, 'trade_price', action_transaction, 'trade_price', values, 0.0)
+                self._set_simple(transaction, 'principal_amount', action_transaction, 'principal_amount', values, 0.0)
+                self._set_simple(transaction, 'carry_amount', action_transaction, 'carry_amount', values, 0.0)
+                self._set_relation(transaction, 'responsible', action_transaction, 'responsible', values, master_user.responsible)
+                self._set_relation(transaction, 'counterparty', action_transaction, 'counterparty', values, master_user.counterparty)
+
+                transaction.transaction_date = min(transaction.accounting_date, transaction.cash_date)
                 if self._save:
-                    trn.save()
+                    transaction.save()
                 else:
-                    trn.id = self._next_id()
+                    transaction.id = self._next_id()
 
-                trn_order += 1
-
-        return instruments, transactions
+                self._transactions.append(transaction)
+                self._transactions_errors.append(errors)
+        return self._instruments, self._transactions
 
     def _next_id(self):
-        self._seq -= 1
-        return self._seq
+        self._id_seq -= 1
+        return self._id_seq
 
-    def _set_simple(self, target, target_attr_name, source, source_attr_name, input_values, default_value=None):
+    def _next_transaction_order(self):
+        self._transaction_order_seq += 1
+        return self._transaction_order_seq
+
+    def _set_simple(self, target, target_attr_name, source, source_attr_name, values, default_value=None):
         value = getattr(source, source_attr_name)
         if value:
-            value = formula.safe_eval(value, names=input_values)
+            try:
+                value = formula.safe_eval(value, names=values)
+            except formula.InvalidExpression:
+                return
+                pass
         else:
             value = default_value
         setattr(target, target_attr_name, value)
 
-    def _set_relation(self, target, target_attr_name, source, source_attr_name, input_values, default_value=None):
+    def _set_relation(self, target, target_attr_name, source, source_attr_name, values, default_value=None):
         value = getattr(source, source_attr_name, None)
         if value:
             pass
         else:
             from_input = getattr(source, '%s_input' % source_attr_name)
             if from_input:
-                value = input_values[from_input.name]
+                value = values[from_input.name]
         if not value:
             value = default_value
         setattr(target, target_attr_name, value)

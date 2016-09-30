@@ -519,7 +519,7 @@ def validate(expr):
 def safe_eval(s, names=None, functions=None):
     try:
         return SimpleEval2(names=names, functions=functions).eval(s)
-    except (simpleeval.InvalidExpression, KeyError, AttributeError) as e:
+    except (simpleeval.InvalidExpression, KeyError, AttributeError, TypeError, ValueError) as e:
         raise InvalidExpression(e)
 
 

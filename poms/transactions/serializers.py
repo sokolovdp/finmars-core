@@ -637,14 +637,7 @@ class TransactionTypeProcess(object):
     def set_default_values(self, target):
         for i in self.transaction_type_inputs:
             name = self.get_attr_name(i)
-            if i.value_type in [TransactionTypeInput.STRING, TransactionTypeInput.NUMBER, TransactionTypeInput.DATE]:
-                value = i.value
-                if value:
-                    value = formula.safe_eval(value)
-                else:
-                    value = None
-                setattr(target, name, value)
-            elif i.value_type == TransactionTypeInput.RELATION:
+            if i.value_type == TransactionTypeInput.RELATION:
                 model_class = i.content_type.model_class()
                 if issubclass(model_class, Account):
                     value = i.account
@@ -672,6 +665,16 @@ class TransactionTypeProcess(object):
                     value = i.portfolio
                 elif issubclass(model_class, PriceDownloadScheme):
                     value = i.price_download_scheme
+                else:
+                    value = None
+                setattr(target, name, value)
+            else:
+                value = i.value
+                if value:
+                    try:
+                        value = formula.safe_eval(value)
+                    except formula.InvalidExpression:
+                        value = None
                 else:
                     value = None
                 setattr(target, name, value)
@@ -791,6 +794,9 @@ class TransactionTypeProcessSerializer(serializers.Serializer):
         self.fields['instruments'] = PhantomInstrumentSerializer(many=True, read_only=False)
         self.fields['transactions'] = PhantomTransactionSerializer(many=True, read_only=False)
 
+    def create(self, validated_data):
+        return validated_data
+
     def update(self, instance, validated_data):
         values_data = validated_data.pop('values')
 
@@ -808,7 +814,9 @@ class TransactionTypeProcessSerializer(serializers.Serializer):
 
         if instance.calculate:
             processor = TransactionTypeProcessor(instance.transaction_type, input_values)
-            instance.instruments, instance.transactions = processor.run(False)
+            processor.run(False)
+            instance.instruments = processor.instruments
+            instance.transactions = processor.transactions
 
             if instance.store:
                 instruments_map = {}
@@ -819,10 +827,12 @@ class TransactionTypeProcessSerializer(serializers.Serializer):
                     if fake_id:
                         instruments_map[fake_id] = instrument
                 if instance.transactions:
-                    complex_transaction = ComplexTransaction.objects.create(transaction_type=instance.transaction_type)
+                    instance.complex_transaction.id = None
+                    instance.complex_transaction.save()
+                    # complex_transaction = ComplexTransaction.objects.create(transaction_type=instance.transaction_type)
                     for transaction in instance.transactions:
                         transaction.id = None
-                        transaction.complex_transaction = complex_transaction
+                        # transaction.complex_transaction = complex_transaction
                         if transaction.instrument_id in instruments_map:
                             transaction.instrument = instruments_map[transaction.instrument_id]
                         transaction.save()
