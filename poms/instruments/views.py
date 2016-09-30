@@ -9,7 +9,8 @@ from rest_framework.exceptions import MethodNotAllowed
 from rest_framework.filters import FilterSet
 from rest_framework.response import Response
 
-from poms.common.filters import CharFilter, ModelWithPermissionMultipleChoiceFilter, NoOpFilter
+from poms.common.filters import CharFilter, ModelWithPermissionMultipleChoiceFilter, NoOpFilter, \
+    ModelMultipleChoiceFilter
 from poms.common.views import AbstractClassModelViewSet, AbstractModelViewSet
 from poms.instruments.filters import OwnerByInstrumentFilter, PriceHistoryObjectPermissionFilter
 from poms.instruments.models import Instrument, PriceHistory, InstrumentClass, DailyPricingModel, \
@@ -236,6 +237,7 @@ class PriceHistoryFilterSet(FilterSet):
     id = NoOpFilter()
     date = django_filters.DateFromToRangeFilter()
     instrument = ModelWithPermissionMultipleChoiceFilter(model=Instrument)
+    pricing_policy = ModelMultipleChoiceFilter(model=PricingPolicy)
 
     class Meta:
         model = PriceHistory

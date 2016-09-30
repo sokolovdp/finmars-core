@@ -8,6 +8,7 @@ from poms.common.views import AbstractModelViewSet
 from poms.currencies.filters import OwnerByCurrencyFilter
 from poms.currencies.models import Currency, CurrencyHistory
 from poms.currencies.serializers import CurrencySerializer, CurrencyHistorySerializer
+from poms.instruments.models import PricingPolicy
 from poms.tags.filters import TagFilterBackend, TagFilter
 from poms.users.filters import OwnerByMasterUserFilter
 from poms.users.permissions import SuperUserOrReadOnly
@@ -51,6 +52,7 @@ class CurrencyHistoryFilterSet(FilterSet):
     id = NoOpFilter()
     date = django_filters.DateFromToRangeFilter()
     currency = ModelMultipleChoiceFilter(model=Currency)
+    pricing_policy = ModelMultipleChoiceFilter(model=PricingPolicy)
 
     class Meta:
         model = CurrencyHistory
