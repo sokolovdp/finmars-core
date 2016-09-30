@@ -32,7 +32,7 @@ class AbstractProvider(object):
         return 5
 
     def is_empty_value(self, value):
-        return value is None or value in self.empty_value
+        return value is None or value == '' or value in self.empty_value
 
     def parse_date(self, v):
         if v is not None:
@@ -294,7 +294,13 @@ class AbstractProvider(object):
                 value = values[field_name]
                 if value is None or self.is_empty_value(value):
                     return None
-                return float(value)
+                try:
+                    return float(value)
+                except ValueError:
+                    _l.debug('Invalid float value: price_scheme=%s, attr_name=%s, value=%s',
+                             price_scheme.id, attr_name, value)
+                    # Try next value
+                    pass
         return None
 
     def get_instrument_yesterday_values(self, price_scheme, values):
