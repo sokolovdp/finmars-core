@@ -83,15 +83,12 @@ class TransactionTypeProcessor(object):
 
         instrument_map = {}
         actions = self._transaction_type.actions.order_by('order').all()
-        for order, action in enumerate(actions, start=1):
+
+        for order, action in enumerate(actions):
             try:
                 action_instrument = action.transactiontypeactioninstrument
             except ObjectDoesNotExist:
                 action_instrument = None
-            try:
-                action_transaction = action.transactiontypeactiontransaction
-            except ObjectDoesNotExist:
-                action_transaction = None
 
             if action_instrument:
                 errors = {}
@@ -253,7 +250,13 @@ class TransactionTypeProcessor(object):
                 self._instruments.append(instrument)
                 self._instruments_errors.append(errors)
 
-            elif action_transaction:
+        for order, action in enumerate(actions):
+            try:
+                action_transaction = action.transactiontypeactiontransaction
+            except ObjectDoesNotExist:
+                action_transaction = None
+
+            if action_transaction:
                 errors = {}
                 transaction = Transaction(master_user=master_user)
                 transaction.complex_transaction = self.complex_transaction
