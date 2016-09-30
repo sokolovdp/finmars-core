@@ -98,8 +98,7 @@ class TransactionTypeProcessor(object):
                 try:
                     user_code = formula.safe_eval(action_instrument.user_code, names=values)
                 except formula.InvalidExpression as e:
-                    self._set_eval_error\
-                        (errors, 'user_code', action_instrument.user_code, e)
+                    self._set_eval_error(errors, 'user_code', action_instrument.user_code, e)
                     user_code = None
 
                 if user_code:
@@ -114,36 +113,136 @@ class TransactionTypeProcessor(object):
                 instrument = Instrument(master_user=master_user)
                 # results[action_instr.order] = instr
                 instrument.user_code = user_code
-                self._set_simple(errors, instrument, 'name', action_instrument, 'name', values, '')
-                self._set_simple(errors, instrument, 'short_name', action_instrument, 'short_name', values, '')
-                self._set_simple(errors, instrument, 'public_name', action_instrument, 'public_name', values, '')
-                self._set_simple(errors, instrument, 'notes', action_instrument, 'notes', values, '')
-                self._set_relation(errors, instrument, 'instrument_type', action_instrument, 'instrument_type', values,
-                                   master_user.instrument_type)
-                self._set_relation(errors, instrument, 'pricing_currency', action_instrument, 'pricing_currency',
-                                   values, master_user.currency)
-                self._set_simple(errors, instrument, 'price_multiplier', action_instrument, 'price_multiplier', values,
-                                 0.0)
-                self._set_relation(errors, instrument, 'accrued_currency', action_instrument, 'accrued_currency',
-                                   values, master_user.currency)
-                self._set_simple(errors, instrument, 'accrued_multiplier', action_instrument, 'accrued_multiplier',
-                                 values, 0.0)
-                self._set_relation(errors, instrument, 'payment_size_detail', action_instrument, 'payment_size_detail',
-                                   values, None)
-                self._set_simple(errors, instrument, 'default_price', action_instrument, 'default_price', values, 0.0)
-                self._set_simple(errors, instrument, 'default_accrued', action_instrument, 'default_accrued', values,
-                                 0.0)
-                self._set_simple(errors, instrument, 'user_text_1', action_instrument, 'user_text_1', values, '')
-                self._set_simple(errors, instrument, 'user_text_2', action_instrument, 'user_text_2', values, '')
-                self._set_simple(errors, instrument, 'user_text_3', action_instrument, 'user_text_3', values, '')
-                self._set_simple(errors, instrument, 'reference_for_pricing', action_instrument,
-                                 'reference_for_pricing', values, '')
-                self._set_relation(errors, instrument, 'price_download_scheme', action_instrument,
-                                   'price_download_scheme', values, None)
-                self._set_relation(errors, instrument, 'daily_pricing_model', action_instrument, 'daily_pricing_model',
-                                   values, daily_pricing_model)
-                self._set_simple(errors, instrument, 'maturity_date', action_instrument, 'maturity_date', values,
-                                 date.max)
+                self._set_val(errors=errors,
+                              target=instrument,
+                              target_attr_name='name',
+                              source=action_instrument,
+                              source_attr_name='name',
+                              values=values,
+                              default_value='')
+                self._set_val(errors=errors,
+                              target=instrument,
+                              target_attr_name='short_name',
+                              source=action_instrument,
+                              source_attr_name='short_name',
+                              values=values,
+                              default_value='')
+                self._set_val(errors=errors, target=instrument,
+                              target_attr_name='public_name',
+                              source=action_instrument,
+                              source_attr_name='public_name',
+                              values=values,
+                              default_value='')
+                self._set_val(errors=errors, target=instrument,
+                              target_attr_name='notes',
+                              source=action_instrument,
+                              source_attr_name='notes',
+                              values=values,
+                              default_value='')
+                self._set_rel(errors=errors,
+                              target=instrument,
+                              target_attr_name='instrument_type',
+                              source=action_instrument,
+                              source_attr_name='instrument_type',
+                              values=values,
+                              default_value=master_user.instrument_type)
+                self._set_rel(errors=errors, target=instrument,
+                              target_attr_name='pricing_currency',
+                              source=action_instrument,
+                              source_attr_name='pricing_currency',
+                              values=values,
+                              default_value=master_user.currency)
+                self._set_val(errors=errors,
+                              target=instrument,
+                              target_attr_name='price_multiplier',
+                              source=action_instrument,
+                              source_attr_name='price_multiplier',
+                              values=values,
+                              default_value=0.0)
+                self._set_rel(errors=errors,
+                              target=instrument,
+                              target_attr_name='accrued_currency',
+                              source=action_instrument,
+                              source_attr_name='accrued_currency',
+                              values=values,
+                              default_value=master_user.currency)
+                self._set_val(errors=errors,
+                              target=instrument,
+                              target_attr_name='accrued_multiplier',
+                              source=action_instrument,
+                              source_attr_name='accrued_multiplier',
+                              values=values,
+                              default_value=0.0)
+                self._set_rel(errors=errors,
+                              target=instrument,
+                              target_attr_name='payment_size_detail',
+                              source=action_instrument,
+                              source_attr_name='payment_size_detail',
+                              values=values,
+                              default_value=None)
+                self._set_val(errors=errors,
+                              target=instrument,
+                              target_attr_name='default_price',
+                              source=action_instrument,
+                              source_attr_name='default_price',
+                              values=values,
+                              default_value=0.0)
+                self._set_val(errors=errors,
+                              target=instrument,
+                              target_attr_name='default_accrued',
+                              source=action_instrument,
+                              source_attr_name='default_accrued',
+                              values=values,
+                              default_value=0.0)
+                self._set_val(errors=errors,
+                              target=instrument,
+                              target_attr_name='user_text_1',
+                              source=action_instrument,
+                              source_attr_name='user_text_1',
+                              values=values,
+                              default_value='')
+                self._set_val(errors=errors,
+                              target=instrument,
+                              target_attr_name='user_text_2',
+                              source=action_instrument,
+                              source_attr_name='user_text_2',
+                              values=values,
+                              default_value='')
+                self._set_val(errors=errors,
+                              target=instrument,
+                              target_attr_name='user_text_3',
+                              source=action_instrument,
+                              source_attr_name='user_text_3',
+                              values=values,
+                              default_value='')
+                self._set_val(errors=errors,
+                              target=instrument,
+                              target_attr_name='reference_for_pricing',
+                              source=action_instrument,
+                              source_attr_name='reference_for_pricing',
+                              values=values,
+                              default_value='')
+                self._set_rel(errors=errors,
+                              target=instrument,
+                              target_attr_name='price_download_scheme',
+                              source=action_instrument,
+                              source_attr_name='price_download_scheme',
+                              values=values,
+                              default_value=None)
+                self._set_rel(errors=errors,
+                              target=instrument,
+                              target_attr_name='daily_pricing_model',
+                              source=action_instrument,
+                              source_attr_name='daily_pricing_model',
+                              values=values,
+                              default_value=daily_pricing_model)
+                self._set_val(errors=errors,
+                              target=instrument,
+                              target_attr_name='maturity_date',
+                              source=action_instrument,
+                              source_attr_name='maturity_date',
+                              values=values,
+                              default_value=date.max)
 
                 if self._save:
                     instrument.save()
@@ -161,55 +260,188 @@ class TransactionTypeProcessor(object):
                 transaction.complex_transaction_order = self._next_transaction_order()
                 transaction.transaction_class = action_transaction.transaction_class
 
-                self._set_relation(errors, transaction, 'portfolio', action_transaction, 'portfolio', values,
-                                   master_user.portfolio)
-                self._set_relation(errors, transaction, 'instrument', action_transaction, 'instrument', values, None)
+                self._set_rel(errors=errors, target=transaction,
+                              target_attr_name='portfolio',
+                              source=action_transaction,
+                              source_attr_name='portfolio',
+                              values=values,
+                              default_value=master_user.portfolio)
+                self._set_rel(errors=errors,
+                              target=transaction,
+                              target_attr_name='instrument',
+                              source=action_transaction,
+                              source_attr_name='instrument',
+                              values=values,
+                              default_value=None)
                 if action_transaction.instrument_phantom is not None:
                     transaction.instrument = instrument_map[action_transaction.instrument_phantom_id]
-                self._set_relation(errors, transaction, 'transaction_currency', action_transaction,
-                                   'transaction_currency', values, master_user.currency)
-                self._set_simple(errors, transaction, 'position_size_with_sign', action_transaction,
-                                 'position_size_with_sign', values, 0.0)
-                self._set_relation(errors, transaction, 'settlement_currency', action_transaction,
-                                   'settlement_currency', values, master_user.currency)
-                self._set_simple(errors, transaction, 'cash_consideration', action_transaction, 'cash_consideration',
-                                 values, 0.0)
-                self._set_simple(errors, transaction, 'principal_with_sign', action_transaction, 'principal_with_sign',
-                                 values, 0.0)
-                self._set_simple(errors, transaction, 'carry_with_sign', action_transaction, 'carry_with_sign', values,
-                                 0.0)
-                self._set_simple(errors, transaction, 'overheads_with_sign', action_transaction, 'overheads_with_sign',
-                                 values, 0.0)
-                self._set_relation(errors, transaction, 'account_position', action_transaction, 'account_position',
-                                   values, master_user.account)
-                self._set_relation(errors, transaction, 'account_cash', action_transaction, 'account_cash', values,
-                                   master_user.account)
-                self._set_relation(errors, transaction, 'account_interim', action_transaction, 'account_interim',
-                                   values, master_user.account)
-                self._set_simple(errors, transaction, 'accounting_date', action_transaction, 'accounting_date', values,
-                                 None)
-                self._set_simple(errors, transaction, 'cash_date', action_transaction, 'cash_date', values, None)
-                self._set_relation(errors, transaction, 'strategy1_position', action_transaction, 'strategy1_position',
-                                   values, master_user.strategy1)
-                self._set_relation(errors, transaction, 'strategy1_cash', action_transaction, 'strategy1_cash', values,
-                                   master_user.strategy1)
-                self._set_relation(errors, transaction, 'strategy2_position', action_transaction, 'strategy2_position',
-                                   values, master_user.strategy2)
-                self._set_relation(errors, transaction, 'strategy2_cash', action_transaction, 'strategy2_cash', values,
-                                   master_user.strategy2)
-                self._set_relation(errors, transaction, 'strategy3_position', action_transaction, 'strategy3_position',
-                                   values, master_user.strategy3)
-                self._set_relation(errors, transaction, 'strategy3_cash', action_transaction, 'strategy3_cash', values,
-                                   master_user.strategy3)
-                self._set_simple(errors, transaction, 'factor', action_transaction, 'factor', values, 0.0)
-                self._set_simple(errors, transaction, 'trade_price', action_transaction, 'trade_price', values, 0.0)
-                self._set_simple(errors, transaction, 'principal_amount', action_transaction, 'principal_amount',
-                                 values, 0.0)
-                self._set_simple(errors, transaction, 'carry_amount', action_transaction, 'carry_amount', values, 0.0)
-                self._set_relation(errors, transaction, 'responsible', action_transaction, 'responsible', values,
-                                   master_user.responsible)
-                self._set_relation(errors, transaction, 'counterparty', action_transaction, 'counterparty', values,
-                                   master_user.counterparty)
+                self._set_rel(errors=errors,
+                              target=transaction,
+                              target_attr_name='transaction_currency',
+                              source=action_transaction,
+                              source_attr_name='transaction_currency',
+                              values=values,
+                              default_value=master_user.currency)
+                self._set_val(errors=errors,
+                              target=transaction,
+                              target_attr_name='position_size_with_sign',
+                              source=action_transaction,
+                              source_attr_name='position_size_with_sign',
+                              values=values,
+                              default_value=0.0)
+                self._set_rel(errors=errors,
+                              target=transaction,
+                              target_attr_name='settlement_currency',
+                              source=action_transaction,
+                              source_attr_name='settlement_currency',
+                              values=values,
+                              default_value=master_user.currency)
+                self._set_val(errors=errors,
+                              target=transaction,
+                              target_attr_name='cash_consideration',
+                              source=action_transaction,
+                              source_attr_name='cash_consideration',
+                              values=values,
+                              default_value=0.0)
+                self._set_val(errors=errors,
+                              target=transaction,
+                              target_attr_name='principal_with_sign',
+                              source=action_transaction,
+                              source_attr_name='principal_with_sign',
+                              values=values,
+                              default_value=0.0)
+                self._set_val(errors=errors,
+                              target=transaction,
+                              target_attr_name='carry_with_sign',
+                              source=action_transaction,
+                              source_attr_name='carry_with_sign',
+                              values=values,
+                              default_value=0.0)
+                self._set_val(errors=errors,
+                              target=transaction,
+                              target_attr_name='overheads_with_sign',
+                              source=action_transaction,
+                              source_attr_name='overheads_with_sign',
+                              values=values,
+                              default_value=0.0)
+                self._set_rel(errors=errors,
+                              target=transaction,
+                              target_attr_name='account_position',
+                              source=action_transaction,
+                              source_attr_name='account_position',
+                              values=values,
+                              default_value=master_user.account)
+                self._set_rel(errors=errors,
+                              target=transaction,
+                              target_attr_name='account_cash',
+                              source=action_transaction,
+                              source_attr_name='account_cash',
+                              values=values,
+                              default_value=master_user.account)
+                self._set_rel(errors=errors,
+                              target=transaction,
+                              target_attr_name='account_interim',
+                              source=action_transaction,
+                              source_attr_name='account_interim',
+                              values=values,
+                              default_value=master_user.account)
+                self._set_val(errors=errors,
+                              target=transaction,
+                              target_attr_name='accounting_date',
+                              source=action_transaction,
+                              source_attr_name='accounting_date',
+                              values=values,
+                              default_value=None)
+                self._set_val(errors=errors,
+                              target=transaction,
+                              target_attr_name='cash_date',
+                              source=action_transaction,
+                              source_attr_name='cash_date',
+                              values=values,
+                              default_value=None)
+                self._set_rel(errors=errors,
+                              target=transaction,
+                              target_attr_name='strategy1_position',
+                              source=action_transaction,
+                              source_attr_name='strategy1_position',
+                              values=values,
+                              default_value=master_user.strategy1)
+                self._set_rel(errors=errors,
+                              target=transaction,
+                              target_attr_name='strategy1_cash',
+                              source=action_transaction,
+                              source_attr_name='strategy1_cash',
+                              values=values,
+                              default_value=master_user.strategy1)
+                self._set_rel(errors=errors,
+                              target=transaction,
+                              target_attr_name='strategy2_position',
+                              source=action_transaction,
+                              source_attr_name='strategy2_position',
+                              values=values,
+                              default_value=master_user.strategy2)
+                self._set_rel(errors=errors,
+                              target=transaction,
+                              target_attr_name='strategy2_cash',
+                              source=action_transaction,
+                              source_attr_name='strategy2_cash',
+                              values=values,
+                              default_value=master_user.strategy2)
+                self._set_rel(errors=errors,
+                              target=transaction,
+                              target_attr_name='strategy3_position',
+                              source=action_transaction,
+                              source_attr_name='strategy3_position',
+                              values=values,
+                              default_value=master_user.strategy3)
+                self._set_rel(errors=errors,
+                              target=transaction,
+                              target_attr_name='strategy3_cash',
+                              source=action_transaction,
+                              source_attr_name='strategy3_cash',
+                              values=values,
+                              default_value=master_user.strategy3)
+                self._set_val(errors=errors,
+                              target=transaction,
+                              target_attr_name='factor',
+                              source=action_transaction,
+                              source_attr_name='factor',
+                              values=values,
+                              default_value=0.0)
+                self._set_val(errors=errors,
+                              target=transaction,
+                              target_attr_name='trade_price',
+                              source=action_transaction,
+                              source_attr_name='trade_price',
+                              values=values,
+                              default_value=0.0)
+                self._set_val(errors=errors, target=transaction,
+                              target_attr_name='principal_amount',
+                              source=action_transaction,
+                              source_attr_name='principal_amount',
+                              values=values,
+                              default_value=0.0)
+                self._set_val(errors=errors,
+                              target=transaction,
+                              target_attr_name='carry_amount',
+                              source=action_transaction,
+                              source_attr_name='carry_amount',
+                              values=values,
+                              default_value=0.0)
+                self._set_rel(errors=errors,
+                              target=transaction,
+                              target_attr_name='responsible',
+                              source=action_transaction,
+                              source_attr_name='responsible',
+                              values=values,
+                              default_value=master_user.responsible)
+                self._set_rel(errors=errors,
+                              target=transaction,
+                              target_attr_name='counterparty',
+                              source=action_transaction,
+                              source_attr_name='counterparty',
+                              values=values,
+                              default_value=master_user.counterparty)
 
                 transaction.transaction_date = min(transaction.accounting_date, transaction.cash_date)
                 if self._save:
@@ -229,7 +461,7 @@ class TransactionTypeProcessor(object):
         self._transaction_order_seq += 1
         return self._transaction_order_seq
 
-    def _set_simple(self, errors, target, target_attr_name, source, source_attr_name, values, default_value):
+    def _set_val(self, errors, target, target_attr_name, source, source_attr_name, values, default_value):
         value = getattr(source, source_attr_name)
         if value:
             try:
@@ -241,7 +473,7 @@ class TransactionTypeProcessor(object):
             value = default_value
         setattr(target, target_attr_name, value)
 
-    def _set_relation(self, errors, target, target_attr_name, source, source_attr_name, values, default_value):
+    def _set_rel(self, errors, target, target_attr_name, source, source_attr_name, values, default_value):
         value = getattr(source, source_attr_name, None)
         if value:
             pass
