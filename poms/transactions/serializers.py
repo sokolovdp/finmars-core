@@ -2,6 +2,7 @@ from __future__ import unicode_literals
 
 from django.core.exceptions import ObjectDoesNotExist
 from rest_framework import serializers
+from rest_framework.exceptions import ValidationError
 
 from poms.accounts.fields import AccountField, AccountDefault
 from poms.accounts.models import Account
@@ -613,16 +614,19 @@ class TransactionTypeProcessValues(object):
 
 
 class TransactionTypeProcess(object):
-    def __init__(self, transaction_type=None, calculate=True, store=False, values=None, instruments=None,
-                 transactions=None):
+    def __init__(self, transaction_type=None, calculate=True, store=False, values=None, has_errors=False,
+                 instruments=None, instruments_errors=None, transactions=None, transactions_errors=None):
         self.transaction_type = transaction_type
         self.transaction_type_inputs = list(self.transaction_type.inputs.order_by('value_type', 'name').all())
 
         self.calculate = calculate or False
         self.store = store or False
         self.values = values or TransactionTypeProcessValues(self)
+        self.has_errors = has_errors
         self.instruments = instruments or []
+        self.instruments_errors = instruments_errors or []
         self.transactions = transactions or []
+        self.transactions_errors = transactions_errors or []
 
     def get_attr_name(self, input0):
         return '%s_%s' % (input0.id, input0.name)
@@ -790,7 +794,9 @@ class TransactionTypeProcessSerializer(serializers.Serializer):
         self.fields['calculate'] = serializers.BooleanField(default=False, required=False)
         self.fields['store'] = serializers.BooleanField(default=False, required=False)
         self.fields['values'] = TransactionTypeProcessValuesSerializer(instance=self.instance.values)
-
+        self.fields['has_errors'] = serializers.BooleanField(read_only=True)
+        self.fields['instruments_errors'] = serializers.ReadOnlyField()
+        self.fields['transactions_errors'] = serializers.ReadOnlyField()
         self.fields['instruments'] = PhantomInstrumentSerializer(many=True, read_only=False)
         self.fields['transactions'] = PhantomTransactionSerializer(many=True, read_only=False)
 
@@ -815,10 +821,14 @@ class TransactionTypeProcessSerializer(serializers.Serializer):
         if instance.calculate:
             processor = TransactionTypeProcessor(instance.transaction_type, input_values)
             processor.run(False)
+
+            instance.has_errors = processor.has_errors
+            instance.instruments_errors = processor.instruments_errors
             instance.instruments = processor.instruments
+            instance.transactions_errors = processor.transactions_errors
             instance.transactions = processor.transactions
 
-            if instance.store:
+            if instance.store and not instance.has_errors:
                 instruments_map = {}
                 for instrument in instance.instruments:
                     fake_id = instrument.id

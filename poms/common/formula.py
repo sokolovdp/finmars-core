@@ -8,6 +8,7 @@ import time
 
 import simpleeval
 from django.utils import numberformat
+from django.utils.translation import ugettext_lazy
 
 from poms.common.utils import date_now, isclose
 

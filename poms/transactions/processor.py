@@ -1,4 +1,7 @@
+from datetime import date
+
 from django.core.exceptions import ObjectDoesNotExist
+from django.utils.translation import ugettext_lazy
 
 from poms.common import formula
 from poms.instruments.models import Instrument, DailyPricingModel
@@ -91,7 +94,14 @@ class TransactionTypeProcessor(object):
                 action_transaction = None
 
             if action_instrument:
-                user_code = formula.safe_eval(action_instrument.user_code, names=values)
+                errors = {}
+                try:
+                    user_code = formula.safe_eval(action_instrument.user_code, names=values)
+                except formula.InvalidExpression as e:
+                    self._set_eval_error\
+                        (errors, 'user_code', action_instrument.user_code, e)
+                    user_code = None
+
                 if user_code:
                     try:
                         instrument = Instrument.objects.get(master_user=master_user, user_code=user_code)
@@ -101,29 +111,39 @@ class TransactionTypeProcessor(object):
                     except ObjectDoesNotExist:
                         pass
 
-                errors = {}
                 instrument = Instrument(master_user=master_user)
                 # results[action_instr.order] = instr
                 instrument.user_code = user_code
-                self._set_simple(instrument, 'name', action_instrument, 'name', values, '')
-                self._set_simple(instrument, 'short_name', action_instrument, 'short_name', values, '')
-                self._set_simple(instrument, 'public_name', action_instrument, 'public_name', values, '')
-                self._set_simple(instrument, 'notes', action_instrument, 'notes', values, '')
-                self._set_relation(instrument, 'instrument_type', action_instrument, 'instrument_type', values, master_user.instrument_type)
-                self._set_relation(instrument, 'pricing_currency', action_instrument, 'pricing_currency', values, master_user.currency)
-                self._set_simple(instrument, 'price_multiplier', action_instrument, 'price_multiplier', values, 0.0)
-                self._set_relation(instrument, 'accrued_currency', action_instrument, 'accrued_currency', values, master_user.currency)
-                self._set_simple(instrument, 'accrued_multiplier', action_instrument, 'accrued_multiplier', values, 0.0)
-                self._set_relation(instrument, 'payment_size_detail', action_instrument, 'payment_size_detail', values)
-                self._set_simple(instrument, 'default_price', action_instrument, 'default_price', values)
-                self._set_simple(instrument, 'default_accrued', action_instrument, 'default_accrued', values)
-                self._set_simple(instrument, 'user_text_1', action_instrument, 'user_text_1', values, '')
-                self._set_simple(instrument, 'user_text_2', action_instrument, 'user_text_2', values, '')
-                self._set_simple(instrument, 'user_text_3', action_instrument, 'user_text_3', values, '')
-                self._set_simple(instrument, 'reference_for_pricing', action_instrument, 'reference_for_pricing', values, '')
-                self._set_relation(instrument, 'price_download_scheme', action_instrument, 'price_download_scheme', values)
-                self._set_relation(instrument, 'daily_pricing_model', action_instrument, 'daily_pricing_model', values, daily_pricing_model)
-                self._set_simple(instrument, 'maturity_date', action_instrument, 'maturity_date', values)
+                self._set_simple(errors, instrument, 'name', action_instrument, 'name', values, '')
+                self._set_simple(errors, instrument, 'short_name', action_instrument, 'short_name', values, '')
+                self._set_simple(errors, instrument, 'public_name', action_instrument, 'public_name', values, '')
+                self._set_simple(errors, instrument, 'notes', action_instrument, 'notes', values, '')
+                self._set_relation(errors, instrument, 'instrument_type', action_instrument, 'instrument_type', values,
+                                   master_user.instrument_type)
+                self._set_relation(errors, instrument, 'pricing_currency', action_instrument, 'pricing_currency',
+                                   values, master_user.currency)
+                self._set_simple(errors, instrument, 'price_multiplier', action_instrument, 'price_multiplier', values,
+                                 0.0)
+                self._set_relation(errors, instrument, 'accrued_currency', action_instrument, 'accrued_currency',
+                                   values, master_user.currency)
+                self._set_simple(errors, instrument, 'accrued_multiplier', action_instrument, 'accrued_multiplier',
+                                 values, 0.0)
+                self._set_relation(errors, instrument, 'payment_size_detail', action_instrument, 'payment_size_detail',
+                                   values, None)
+                self._set_simple(errors, instrument, 'default_price', action_instrument, 'default_price', values, 0.0)
+                self._set_simple(errors, instrument, 'default_accrued', action_instrument, 'default_accrued', values,
+                                 0.0)
+                self._set_simple(errors, instrument, 'user_text_1', action_instrument, 'user_text_1', values, '')
+                self._set_simple(errors, instrument, 'user_text_2', action_instrument, 'user_text_2', values, '')
+                self._set_simple(errors, instrument, 'user_text_3', action_instrument, 'user_text_3', values, '')
+                self._set_simple(errors, instrument, 'reference_for_pricing', action_instrument,
+                                 'reference_for_pricing', values, '')
+                self._set_relation(errors, instrument, 'price_download_scheme', action_instrument,
+                                   'price_download_scheme', values, None)
+                self._set_relation(errors, instrument, 'daily_pricing_model', action_instrument, 'daily_pricing_model',
+                                   values, daily_pricing_model)
+                self._set_simple(errors, instrument, 'maturity_date', action_instrument, 'maturity_date', values,
+                                 date.max)
 
                 if self._save:
                     instrument.save()
@@ -141,34 +161,55 @@ class TransactionTypeProcessor(object):
                 transaction.complex_transaction_order = self._next_transaction_order()
                 transaction.transaction_class = action_transaction.transaction_class
 
-                self._set_relation(transaction, 'portfolio', action_transaction, 'portfolio', values, master_user.portfolio)
-                self._set_relation(transaction, 'instrument', action_transaction, 'instrument', values)
+                self._set_relation(errors, transaction, 'portfolio', action_transaction, 'portfolio', values,
+                                   master_user.portfolio)
+                self._set_relation(errors, transaction, 'instrument', action_transaction, 'instrument', values, None)
                 if action_transaction.instrument_phantom is not None:
                     transaction.instrument = instrument_map[action_transaction.instrument_phantom_id]
-                self._set_relation(transaction, 'transaction_currency', action_transaction, 'transaction_currency', values, master_user.currency)
-                self._set_simple(transaction, 'position_size_with_sign', action_transaction, 'position_size_with_sign', values)
-                self._set_relation(transaction, 'settlement_currency', action_transaction, 'settlement_currency', values, master_user.currency)
-                self._set_simple(transaction, 'cash_consideration', action_transaction, 'cash_consideration', values, 0.0)
-                self._set_simple(transaction, 'principal_with_sign', action_transaction, 'principal_with_sign', values, 0.0)
-                self._set_simple(transaction, 'carry_with_sign', action_transaction, 'carry_with_sign', values, 0.0)
-                self._set_simple(transaction, 'overheads_with_sign', action_transaction, 'overheads_with_sign', values, 0.0)
-                self._set_relation(transaction, 'account_position', action_transaction, 'account_position', values, master_user.account)
-                self._set_relation(transaction, 'account_cash', action_transaction, 'account_cash', values, master_user.account)
-                self._set_relation(transaction, 'account_interim', action_transaction, 'account_interim', values, master_user.account)
-                self._set_simple(transaction, 'accounting_date', action_transaction, 'accounting_date', values)
-                self._set_simple(transaction, 'cash_date', action_transaction, 'cash_date', values)
-                self._set_relation(transaction, 'strategy1_position', action_transaction, 'strategy1_position', values, master_user.strategy1)
-                self._set_relation(transaction, 'strategy1_cash', action_transaction, 'strategy1_cash', values, master_user.strategy1)
-                self._set_relation(transaction, 'strategy2_position', action_transaction, 'strategy2_position', values, master_user.strategy2)
-                self._set_relation(transaction, 'strategy2_cash', action_transaction, 'strategy2_cash', values, master_user.strategy2)
-                self._set_relation(transaction, 'strategy3_position', action_transaction, 'strategy3_position', values, master_user.strategy3)
-                self._set_relation(transaction, 'strategy3_cash', action_transaction, 'strategy3_cash', values, master_user.strategy3)
-                self._set_simple(transaction, 'factor', action_transaction, 'factor', values, 0.0)
-                self._set_simple(transaction, 'trade_price', action_transaction, 'trade_price', values, 0.0)
-                self._set_simple(transaction, 'principal_amount', action_transaction, 'principal_amount', values, 0.0)
-                self._set_simple(transaction, 'carry_amount', action_transaction, 'carry_amount', values, 0.0)
-                self._set_relation(transaction, 'responsible', action_transaction, 'responsible', values, master_user.responsible)
-                self._set_relation(transaction, 'counterparty', action_transaction, 'counterparty', values, master_user.counterparty)
+                self._set_relation(errors, transaction, 'transaction_currency', action_transaction,
+                                   'transaction_currency', values, master_user.currency)
+                self._set_simple(errors, transaction, 'position_size_with_sign', action_transaction,
+                                 'position_size_with_sign', values, 0.0)
+                self._set_relation(errors, transaction, 'settlement_currency', action_transaction,
+                                   'settlement_currency', values, master_user.currency)
+                self._set_simple(errors, transaction, 'cash_consideration', action_transaction, 'cash_consideration',
+                                 values, 0.0)
+                self._set_simple(errors, transaction, 'principal_with_sign', action_transaction, 'principal_with_sign',
+                                 values, 0.0)
+                self._set_simple(errors, transaction, 'carry_with_sign', action_transaction, 'carry_with_sign', values,
+                                 0.0)
+                self._set_simple(errors, transaction, 'overheads_with_sign', action_transaction, 'overheads_with_sign',
+                                 values, 0.0)
+                self._set_relation(errors, transaction, 'account_position', action_transaction, 'account_position',
+                                   values, master_user.account)
+                self._set_relation(errors, transaction, 'account_cash', action_transaction, 'account_cash', values,
+                                   master_user.account)
+                self._set_relation(errors, transaction, 'account_interim', action_transaction, 'account_interim',
+                                   values, master_user.account)
+                self._set_simple(errors, transaction, 'accounting_date', action_transaction, 'accounting_date', values,
+                                 None)
+                self._set_simple(errors, transaction, 'cash_date', action_transaction, 'cash_date', values, None)
+                self._set_relation(errors, transaction, 'strategy1_position', action_transaction, 'strategy1_position',
+                                   values, master_user.strategy1)
+                self._set_relation(errors, transaction, 'strategy1_cash', action_transaction, 'strategy1_cash', values,
+                                   master_user.strategy1)
+                self._set_relation(errors, transaction, 'strategy2_position', action_transaction, 'strategy2_position',
+                                   values, master_user.strategy2)
+                self._set_relation(errors, transaction, 'strategy2_cash', action_transaction, 'strategy2_cash', values,
+                                   master_user.strategy2)
+                self._set_relation(errors, transaction, 'strategy3_position', action_transaction, 'strategy3_position',
+                                   values, master_user.strategy3)
+                self._set_relation(errors, transaction, 'strategy3_cash', action_transaction, 'strategy3_cash', values,
+                                   master_user.strategy3)
+                self._set_simple(errors, transaction, 'factor', action_transaction, 'factor', values, 0.0)
+                self._set_simple(errors, transaction, 'trade_price', action_transaction, 'trade_price', values, 0.0)
+                self._set_simple(errors, transaction, 'principal_amount', action_transaction, 'principal_amount',
+                                 values, 0.0)
+                self._set_simple(errors, transaction, 'carry_amount', action_transaction, 'carry_amount', values, 0.0)
+                self._set_relation(errors, transaction, 'responsible', action_transaction, 'responsible', values,
+                                   master_user.responsible)
+                self._set_relation(errors, transaction, 'counterparty', action_transaction, 'counterparty', values,
+                                   master_user.counterparty)
 
                 transaction.transaction_date = min(transaction.accounting_date, transaction.cash_date)
                 if self._save:
@@ -188,19 +229,19 @@ class TransactionTypeProcessor(object):
         self._transaction_order_seq += 1
         return self._transaction_order_seq
 
-    def _set_simple(self, target, target_attr_name, source, source_attr_name, values, default_value=None):
+    def _set_simple(self, errors, target, target_attr_name, source, source_attr_name, values, default_value):
         value = getattr(source, source_attr_name)
         if value:
             try:
                 value = formula.safe_eval(value, names=values)
-            except formula.InvalidExpression:
+            except formula.InvalidExpression as e:
+                self._set_eval_error(errors, source_attr_name, value, e)
                 return
-                pass
         else:
             value = default_value
         setattr(target, target_attr_name, value)
 
-    def _set_relation(self, target, target_attr_name, source, source_attr_name, values, default_value=None):
+    def _set_relation(self, errors, target, target_attr_name, source, source_attr_name, values, default_value):
         value = getattr(source, source_attr_name, None)
         if value:
             pass
@@ -210,7 +251,8 @@ class TransactionTypeProcessor(object):
                 value = values[from_input.name]
         if not value:
             value = default_value
-        setattr(target, target_attr_name, value)
+        if value is not None:
+            setattr(target, target_attr_name, value)
 
     def _instrument_assign_permission(self, instr, user_object_permissions, group_object_permissions):
         perms_map = {
@@ -227,3 +269,11 @@ class TransactionTypeProcessor(object):
             if gop.permission.codename in perms_map:
                 perm = perms_map[gop.permission.codename]
                 assign_perms(instr, members=None, groups=[gop.group], perms=[perm])
+
+    def _set_eval_error(self, errors, attr_name, expression, exc=None):
+        msg = ugettext_lazy('Invalid expression "%(expression)s".') % {
+            'expression': expression,
+        }
+        msgs = errors.get(attr_name, None) or []
+        if msg not in msgs:
+            errors[attr_name] = msgs + [msg]

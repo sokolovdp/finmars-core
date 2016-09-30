@@ -261,13 +261,13 @@ class TransactionTypeAdmin(HistoricalAdmin):
             return super(TransactionTypeAdmin, self).get_inline_instances(request, obj)
         return []
 
-    def get_readonly_fields(self, request, obj=None):
-        fields = super(TransactionTypeAdmin, self).get_readonly_fields(request, obj)
-        if obj:
-            fields += ('master_user',)
-        else:
-            fields += ('instrument_types',)
-        return fields
+    # def get_readonly_fields(self, request, obj=None):
+    #     fields = super(TransactionTypeAdmin, self).get_readonly_fields(request, obj)
+    #     if obj:
+    #         fields += ('master_user',)
+    #     else:
+    #         fields += ('instrument_types',)
+    #     return fields
 
     def get_formset(self, request, obj=None, **kwargs):
         f = super(TransactionTypeAdmin, self).get_formset(request, obj=obj, **kwargs)
