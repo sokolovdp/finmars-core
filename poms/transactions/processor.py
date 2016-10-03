@@ -1,3 +1,4 @@
+import logging
 from datetime import date
 
 from django.core.exceptions import ObjectDoesNotExist
@@ -7,6 +8,8 @@ from poms.common import formula
 from poms.instruments.models import Instrument, DailyPricingModel
 from poms.obj_perms.utils import assign_perms
 from poms.transactions.models import Transaction, ComplexTransaction
+
+_l = logging.getLogger('transactions.processor')
 
 
 class TransactionTypeProcessor(object):

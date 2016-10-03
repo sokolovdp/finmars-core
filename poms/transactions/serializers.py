@@ -598,16 +598,20 @@ class TransactionSerializer(ModelWithAttributesSerializer):
 
 class ComplexTransactionSerializer(serializers.ModelSerializer):
     transaction_type = serializers.PrimaryKeyRelatedField(read_only=True)
+    transaction_type__object = ReadonlyNamedModelWithObjectPermissionSerializer(source='transaction_type')
     transactions = serializers.PrimaryKeyRelatedField(read_only=True, many=True)
     text = serializers.SerializerMethodField()
 
     class Meta:
         model = ComplexTransaction
-        fields = ['url', 'id', 'code', 'text',
-                  'transaction_type', 'transactions']
+        fields = [
+            'url', 'id', 'code', 'transaction_type', 'transaction_type__object', 'transactions', 'text',
+        ]
 
     def get_text(self, obj):
-        return str(obj)
+        from poms.transactions.renderer import ComplexTransactionRenderer
+        renderer = ComplexTransactionRenderer()
+        return renderer.render(complex_transaction=obj, context=self.context)
 
 
 # TransactionType processing

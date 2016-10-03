@@ -392,6 +392,7 @@ class TransactionViewSet(AbstractModelViewSet):
 
 class ComplexTransactionFilterSet(FilterSet):
     id = NoOpFilter()
+    transaction_type = ModelExtWithPermissionMultipleChoiceFilter(model=TransactionType)
     code = django_filters.RangeFilter()
 
     class Meta:
@@ -412,7 +413,7 @@ class ComplexTransactionViewSet(AbstractReadOnlyModelViewSet):
         ).prefetch_related(
             Prefetch('attributes',
                      queryset=TransactionAttribute.objects.select_related('attribute_type', 'classifier')),
-        )),
+        ).order_by('complex_transaction_order', 'transaction_date')),
     )
     prefetch_permissions_for = [
         ('transaction_type', TransactionType),
