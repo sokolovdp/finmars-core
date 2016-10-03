@@ -9,9 +9,10 @@ from rest_framework.exceptions import MethodNotAllowed
 from rest_framework.filters import FilterSet
 from rest_framework.response import Response
 
-from poms.common.filters import CharFilter, ModelWithPermissionMultipleChoiceFilter, NoOpFilter, \
-    ModelMultipleChoiceFilter
+from poms.common.filters import CharFilter, ModelExtWithPermissionMultipleChoiceFilter, NoOpFilter, \
+    ModelExtMultipleChoiceFilter
 from poms.common.views import AbstractClassModelViewSet, AbstractModelViewSet
+from poms.currencies.models import Currency
 from poms.instruments.filters import OwnerByInstrumentFilter, PriceHistoryObjectPermissionFilter
 from poms.instruments.models import Instrument, PriceHistory, InstrumentClass, DailyPricingModel, \
     AccrualCalculationModel, PaymentSizeDetail, Periodicity, CostMethod, InstrumentType, InstrumentAttributeType, \
@@ -21,12 +22,14 @@ from poms.instruments.serializers import InstrumentSerializer, PriceHistorySeria
     PaymentSizeDetailSerializer, PeriodicitySerializer, CostMethodSerializer, InstrumentTypeSerializer, \
     InstrumentAttributeTypeSerializer, PricingPolicySerializer, InstrumentClassifierNodeSerializer, \
     EventScheduleConfigSerializer, InstrumentCalculatePricesAccruedPriceSerializer
+from poms.integrations.models import PriceDownloadScheme
 from poms.obj_attrs.filters import AttributeTypeValueTypeFilter
 from poms.obj_attrs.views import AbstractAttributeTypeViewSet, AbstractClassifierViewSet
 from poms.obj_perms.filters import ObjectPermissionMemberFilter, ObjectPermissionGroupFilter, \
     ObjectPermissionPermissionFilter
 from poms.obj_perms.views import AbstractWithObjectPermissionViewSet
 from poms.tags.filters import TagFilterBackend, TagFilter
+from poms.transactions.models import TransactionType
 from poms.users.filters import OwnerByMasterUserFilter
 from poms.users.permissions import SuperUserOrReadOnly
 
@@ -71,7 +74,7 @@ class PricingPolicyViewSet(AbstractModelViewSet):
         SuperUserOrReadOnly,
     ]
     ordering_fields = ['user_code', 'name', 'short_name']
-    search_fields = ['user_code', 'name', 'short_name']
+    # search_fields = ['user_code', 'name', 'short_name']
 
 
 class InstrumentTypeFilterSet(FilterSet):
@@ -80,7 +83,13 @@ class InstrumentTypeFilterSet(FilterSet):
     user_code = CharFilter()
     name = CharFilter()
     short_name = CharFilter()
+    public_name = CharFilter()
     instrument_class = django_filters.ModelMultipleChoiceFilter(queryset=InstrumentClass.objects)
+    one_off_event = ModelExtWithPermissionMultipleChoiceFilter(model=TransactionType)
+    regular_event = ModelExtWithPermissionMultipleChoiceFilter(model=TransactionType)
+    factor_same = ModelExtWithPermissionMultipleChoiceFilter(model=TransactionType)
+    factor_up = ModelExtWithPermissionMultipleChoiceFilter(model=TransactionType)
+    factor_down = ModelExtWithPermissionMultipleChoiceFilter(model=TransactionType)
     tag = TagFilter(model=InstrumentType)
     member = ObjectPermissionMemberFilter(object_permission_model=InstrumentType)
     member_group = ObjectPermissionGroupFilter(object_permission_model=InstrumentType)
@@ -101,11 +110,11 @@ class InstrumentTypeViewSet(AbstractWithObjectPermissionViewSet):
     ]
     filter_class = InstrumentTypeFilterSet
     ordering_fields = [
-        'user_code', 'name', 'short_name',
+        'user_code', 'name', 'short_name', 'public_name',
     ]
-    search_fields = [
-        'user_code', 'name', 'short_name',
-    ]
+    # search_fields = [
+    #     'user_code', 'name', 'short_name',
+    # ]
     # has_feature_is_deleted = True
 
 
@@ -114,6 +123,7 @@ class InstrumentAttributeTypeFilterSet(FilterSet):
     user_code = CharFilter()
     name = CharFilter()
     short_name = CharFilter()
+    public_name = CharFilter()
     value_type = AttributeTypeValueTypeFilter()
     member = ObjectPermissionMemberFilter(object_permission_model=InstrumentAttributeType)
     member_group = ObjectPermissionGroupFilter(object_permission_model=InstrumentAttributeType)
@@ -135,7 +145,7 @@ class InstrumentClassifierFilterSet(FilterSet):
     id = NoOpFilter()
     name = CharFilter()
     level = django_filters.NumberFilter()
-    attribute_type = ModelWithPermissionMultipleChoiceFilter(model=InstrumentAttributeType)
+    attribute_type = ModelExtWithPermissionMultipleChoiceFilter(model=InstrumentAttributeType)
 
     class Meta:
         model = InstrumentClassifier
@@ -153,12 +163,24 @@ class InstrumentFilterSet(FilterSet):
     is_deleted = django_filters.BooleanFilter()
     user_code = CharFilter()
     name = CharFilter()
+    public_name = CharFilter()
     short_name = CharFilter()
+    instrument_type = ModelExtWithPermissionMultipleChoiceFilter(model=InstrumentType)
+    instrument_type__instrument_class = django_filters.ModelMultipleChoiceFilter(queryset=InstrumentClass.objects)
+    pricing_currency = ModelExtMultipleChoiceFilter(model=Currency)
+    price_multiplier = django_filters.RangeFilter()
+    accrued_currency = ModelExtMultipleChoiceFilter(model=Currency)
+    accrued_multiplier = django_filters.RangeFilter()
+    payment_size_detail = django_filters.ModelMultipleChoiceFilter(queryset=PaymentSizeDetail.objects)
+    default_price = django_filters.RangeFilter()
+    default_accrued = django_filters.RangeFilter()
     user_text_1 = CharFilter()
     user_text_2 = CharFilter()
     user_text_3 = CharFilter()
     reference_for_pricing = CharFilter()
-    instrument_type = ModelWithPermissionMultipleChoiceFilter(model=InstrumentType)
+    daily_pricing_model = django_filters.ModelMultipleChoiceFilter(queryset=DailyPricingModel.objects)
+    price_download_scheme = ModelExtMultipleChoiceFilter(model=PriceDownloadScheme, field_name='scheme_name')
+    maturity_date = django_filters.DateFromToRangeFilter()
     tag = TagFilter(model=Instrument)
     member = ObjectPermissionMemberFilter(object_permission_model=InstrumentAttributeType)
     member_group = ObjectPermissionGroupFilter(object_permission_model=InstrumentAttributeType)
@@ -189,11 +211,21 @@ class InstrumentViewSet(AbstractWithObjectPermissionViewSet):
     ]
     filter_class = InstrumentFilterSet
     ordering_fields = [
-        'user_code', 'name', 'short_name', 'reference_for_pricing',
-        'instrument_type__user_code', 'instrument_type__name', 'instrument_type__short_name']
-    search_fields = [
-        'user_code', 'name', 'short_name', 'reference_for_pricing',
+        'user_code', 'name', 'short_name', 'public_name', 'reference_for_pricing',
+        'instrument_type__user_code', 'instrument_type__name', 'instrument_type__short_name',
+        'instrument_type__public_name',
+        'pricing_currency__user_code', 'pricing_currency__name', 'pricing_currency__short_name',
+        'pricing_currency__public_name', 'price_multiplier',
+        'accrued_currency__user_code', 'accrued_currency__name', 'accrued_currency__short_name',
+        'accrued_currency__public_name', 'accrued_multiplier',
+        'default_price', 'default_accrued', 'user_text_1', 'user_text_2', 'user_text_3',
+        'reference_for_pricing',
+        'maturity_date',
     ]
+
+    # search_fields = [
+    #     'user_code', 'name', 'short_name', 'reference_for_pricing',
+    # ]
 
     # has_feature_is_deleted = True
 
@@ -235,9 +267,11 @@ class InstrumentViewSet(AbstractWithObjectPermissionViewSet):
 
 class PriceHistoryFilterSet(FilterSet):
     id = NoOpFilter()
+    instrument = ModelExtWithPermissionMultipleChoiceFilter(model=Instrument)
+    pricing_policy = ModelExtMultipleChoiceFilter(model=PricingPolicy)
     date = django_filters.DateFromToRangeFilter()
-    instrument = ModelWithPermissionMultipleChoiceFilter(model=Instrument)
-    pricing_policy = ModelMultipleChoiceFilter(model=PricingPolicy)
+    principal_price = django_filters.RangeFilter()
+    accrued_price = django_filters.RangeFilter()
 
     class Meta:
         model = PriceHistory
@@ -253,12 +287,13 @@ class PriceHistoryViewSet(AbstractModelViewSet):
     ]
     filter_class = PriceHistoryFilterSet
     ordering_fields = [
-        'date',
-        'instrument__user_code', 'instrument__name', 'instrument__short_name',
+        'instrument__user_code', 'instrument__name', 'instrument__short_name', 'instrument__public_name',
+        'pricing_policy__user_code', 'pricing_policy__name', 'pricing_policy__short_name', 'pricing_policy__public_name',
+        'date', 'principal_price', 'accrued_price',
     ]
-    search_fields = [
-        'instrument__user_code', 'instrument__name', 'instrument__short_name',
-    ]
+    # search_fields = [
+    #     'instrument__user_code', 'instrument__name', 'instrument__short_name',
+    # ]
 
     # @list_route(methods=['post'], url_path='recalculate-prices-accrued-price', serializer_class=serializers.Serializer)
     # def calculate_prices_accrued_price(self, request):

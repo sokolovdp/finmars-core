@@ -3,7 +3,7 @@ from django import forms
 from django.db.models import Q
 from rest_framework.filters import BaseFilterBackend
 
-from poms.common.filters import ModelMultipleChoiceFilter
+from poms.common.filters import ModelExtMultipleChoiceFilter
 from poms.obj_perms.utils import obj_perms_filter_objects, obj_perms_prefetch, get_all_perms, get_user_obj_perms_model, \
     get_group_obj_perms_model
 from poms.users.models import Member, Group
@@ -47,7 +47,7 @@ class ObjectPermissionBackend(BaseFilterBackend):
                                         prefetch=False)
 
 
-class ObjectPermissionMemberFilter(ModelMultipleChoiceFilter):
+class ObjectPermissionMemberFilter(ModelExtMultipleChoiceFilter):
     model = Member
     field_name = 'username'
     master_user_path = 'master_user'
@@ -79,7 +79,7 @@ class ObjectPermissionMemberFilter(ModelMultipleChoiceFilter):
             'content_object__id', flat=True))
 
 
-class ObjectPermissionGroupFilter(ModelMultipleChoiceFilter):
+class ObjectPermissionGroupFilter(ModelExtMultipleChoiceFilter):
     model = Group
     field_name = 'name'
     master_user_path = 'master_user'

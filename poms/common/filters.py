@@ -33,7 +33,7 @@ def _model_with_perms_choices(model, field_name, master_user_path):
         yield t.id, getattr(t, field_name)
 
 
-class ModelMultipleChoiceFilter(django_filters.MultipleChoiceFilter):
+class ModelExtMultipleChoiceFilter(django_filters.MultipleChoiceFilter):
     model = None
     field_name = 'name'
     master_user_path = 'master_user'
@@ -44,10 +44,10 @@ class ModelMultipleChoiceFilter(django_filters.MultipleChoiceFilter):
         self.master_user_path = kwargs.pop('master_user_path', self.master_user_path)
         kwargs['choices'] = partial(_model_choices, model=self.model, field_name=self.field_name,
                                     master_user_path=self.master_user_path)
-        super(ModelMultipleChoiceFilter, self).__init__(*args, **kwargs)
+        super(ModelExtMultipleChoiceFilter, self).__init__(*args, **kwargs)
 
 
-class ModelWithPermissionMultipleChoiceFilter(django_filters.MultipleChoiceFilter):
+class ModelExtWithPermissionMultipleChoiceFilter(django_filters.MultipleChoiceFilter):
     model = None
     field_name = 'name'
     master_user_path = 'master_user'
@@ -58,7 +58,7 @@ class ModelWithPermissionMultipleChoiceFilter(django_filters.MultipleChoiceFilte
         self.master_user_path = kwargs.pop('master_user_path', self.master_user_path)
         kwargs['choices'] = partial(_model_with_perms_choices, model=self.model, field_name=self.field_name,
                                     master_user_path=self.master_user_path)
-        super(ModelWithPermissionMultipleChoiceFilter, self).__init__(*args, **kwargs)
+        super(ModelExtWithPermissionMultipleChoiceFilter, self).__init__(*args, **kwargs)
 
 
 class AbstractRelatedFilterBackend(BaseFilterBackend):

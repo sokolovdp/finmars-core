@@ -37,7 +37,7 @@ class NotificationViewSet(AbstractReadOnlyModelViewSet):
     ]
     filter_class = NotificationFilterSet
     ordering_fields = ['create_date']
-    search_fields = ['verb']
+    # search_fields = ['verb']
 
     @list_route(methods=['get'], url_path='status')
     def get_status(self, request, pk=None):

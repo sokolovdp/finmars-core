@@ -8,7 +8,7 @@ from rest_framework.filters import FilterSet
 from rest_framework.response import Response
 
 from poms.accounts.models import Account
-from poms.common.filters import CharFilter, ModelWithPermissionMultipleChoiceFilter, ModelMultipleChoiceFilter, \
+from poms.common.filters import CharFilter, ModelExtWithPermissionMultipleChoiceFilter, ModelExtMultipleChoiceFilter, \
     NoOpFilter
 from poms.common.views import AbstractClassModelViewSet, AbstractModelViewSet, AbstractReadOnlyModelViewSet
 from poms.counterparties.models import Responsible, Counterparty
@@ -59,6 +59,7 @@ class TransactionTypeGroupFilterSet(FilterSet):
     user_code = CharFilter()
     name = CharFilter()
     short_name = CharFilter()
+    public_name = CharFilter()
     tag = TagFilter(model=Account)
     member = ObjectPermissionMemberFilter(object_permission_model=TransactionTypeGroup)
     member_group = ObjectPermissionGroupFilter(object_permission_model=TransactionTypeGroup)
@@ -79,11 +80,11 @@ class TransactionTypeGroupViewSet(AbstractWithObjectPermissionViewSet):
     ]
     filter_class = TransactionTypeGroupFilterSet
     ordering_fields = [
-        'user_code', 'name', 'short_name'
+        'user_code', 'name', 'short_name', 'public_name',
     ]
-    search_fields = [
-        'user_code', 'name', 'short_name'
-    ]
+    # search_fields = [
+    #     'user_code', 'name', 'short_name'
+    # ]
     # has_feature_is_deleted = True
 
 
@@ -92,11 +93,12 @@ class TransactionTypeFilterSet(FilterSet):
     user_code = CharFilter()
     name = CharFilter()
     short_name = CharFilter()
+    public_name = CharFilter()
+    group = ModelExtWithPermissionMultipleChoiceFilter(model=TransactionTypeGroup)
+    instrument_type = ModelExtWithPermissionMultipleChoiceFilter(model=InstrumentType, name='instrument_types')
     is_valid_for_all_portfolios = django_filters.BooleanFilter()
     is_valid_for_all_instruments = django_filters.BooleanFilter()
-    group = ModelWithPermissionMultipleChoiceFilter(model=TransactionTypeGroup)
-    portfolio = ModelWithPermissionMultipleChoiceFilter(model=Portfolio, name='portfolios')
-    instrument_type = ModelWithPermissionMultipleChoiceFilter(model=InstrumentType, name='instrument_types')
+    portfolio = ModelExtWithPermissionMultipleChoiceFilter(model=Portfolio, name='portfolios')
     tag = TagFilter(model=TransactionType)
     member = ObjectPermissionMemberFilter(object_permission_model=TransactionType)
     member_group = ObjectPermissionGroupFilter(object_permission_model=TransactionType)
@@ -183,12 +185,13 @@ class TransactionTypeViewSet(AbstractWithObjectPermissionViewSet):
     ]
     filter_class = TransactionTypeFilterSet
     ordering_fields = [
-        'user_code', 'name', 'short_name',
-        'group__user_code', 'group__name', 'group__short_name'
+        'user_code', 'name', 'short_name', 'public_name',
+        'group__user_code', 'group__name', 'group__short_name', 'group__public_name',
     ]
-    search_fields = [
-        'user_code', 'name', 'short_name',
-    ]
+
+    # search_fields = [
+    #     'user_code', 'name', 'short_name',
+    # ]
 
     @detail_route(methods=['get', 'put'], url_path='process', serializer_class=TransactionTypeProcessSerializer)
     def process(self, request, pk=None):
@@ -225,6 +228,7 @@ class TransactionAttributeTypeFilterSet(FilterSet):
     user_code = CharFilter()
     name = CharFilter()
     short_name = CharFilter()
+    public_name = CharFilter()
     value_type = AttributeTypeValueTypeFilter()
     member = ObjectPermissionMemberFilter(object_permission_model=TransactionAttributeType)
     member_group = ObjectPermissionGroupFilter(object_permission_model=TransactionAttributeType)
@@ -246,7 +250,7 @@ class TransactionClassifierFilterSet(FilterSet):
     id = NoOpFilter()
     name = CharFilter()
     level = django_filters.NumberFilter()
-    attribute_type = ModelWithPermissionMultipleChoiceFilter(model=TransactionAttributeType)
+    attribute_type = ModelExtWithPermissionMultipleChoiceFilter(model=TransactionAttributeType)
 
     class Meta:
         model = TransactionClassifier
@@ -261,28 +265,43 @@ class TransactionClassifierViewSet(AbstractClassifierViewSet):
 
 class TransactionFilterSet(FilterSet):
     id = NoOpFilter()
+    complex_transaction = ModelExtMultipleChoiceFilter(model=ComplexTransaction, field_name='id',
+                                                       master_user_path='transaction_type__master_user')
+    complex_transaction__code = django_filters.RangeFilter()
+    complex_transaction__transaction_type = django_filters.Filter(name='complex_transaction__transaction_type')
     transaction_class = django_filters.ModelMultipleChoiceFilter(queryset=TransactionClass.objects)
     transaction_code = django_filters.RangeFilter()
+    portfolio = ModelExtWithPermissionMultipleChoiceFilter(model=Portfolio)
+    instrument = ModelExtWithPermissionMultipleChoiceFilter(model=Instrument)
+    transaction_currency = ModelExtMultipleChoiceFilter(model=Currency)
+    position_size_with_sign = django_filters.RangeFilter()
+    settlement_currency = ModelExtMultipleChoiceFilter(model=Currency)
+    cash_consideration = django_filters.RangeFilter()
+    principal_with_sign = django_filters.RangeFilter()
+    carry_with_sign = django_filters.RangeFilter()
+    overheads_with_sign = django_filters.RangeFilter()
     transaction_date = django_filters.DateFromToRangeFilter()
     accounting_date = django_filters.DateFromToRangeFilter()
     cash_date = django_filters.DateFromToRangeFilter()
-    portfolio = ModelWithPermissionMultipleChoiceFilter(model=Portfolio)
-    instrument = ModelWithPermissionMultipleChoiceFilter(model=Instrument)
-    transaction_currency = ModelMultipleChoiceFilter(model=Currency)
-    settlement_currency = ModelMultipleChoiceFilter(model=Currency)
-    account_cash = ModelWithPermissionMultipleChoiceFilter(model=Account)
-    account_position = ModelWithPermissionMultipleChoiceFilter(model=Account)
-    account_interim = ModelWithPermissionMultipleChoiceFilter(model=Account)
-    strategy1_position = ModelWithPermissionMultipleChoiceFilter(model=Strategy1)
-    strategy1_cash = ModelWithPermissionMultipleChoiceFilter(model=Strategy1)
-    strategy2_position = ModelWithPermissionMultipleChoiceFilter(model=Strategy2)
-    strategy2_cash = ModelWithPermissionMultipleChoiceFilter(model=Strategy2)
-    strategy3_position = ModelWithPermissionMultipleChoiceFilter(model=Strategy3)
-    strategy3_cash = ModelWithPermissionMultipleChoiceFilter(model=Strategy3)
-
-    complex_transaction = django_filters.Filter(name='complex_transaction')
-    complex_transaction__code = django_filters.RangeFilter()
-    complex_transaction__transaction_type = django_filters.Filter(name='complex_transaction__transaction_type')
+    account_position = ModelExtWithPermissionMultipleChoiceFilter(model=Account)
+    account_cash = ModelExtWithPermissionMultipleChoiceFilter(model=Account)
+    account_interim = ModelExtWithPermissionMultipleChoiceFilter(model=Account)
+    strategy1_position = ModelExtWithPermissionMultipleChoiceFilter(model=Strategy1)
+    strategy1_cash = ModelExtWithPermissionMultipleChoiceFilter(model=Strategy1)
+    strategy2_position = ModelExtWithPermissionMultipleChoiceFilter(model=Strategy2)
+    strategy2_cash = ModelExtWithPermissionMultipleChoiceFilter(model=Strategy2)
+    strategy3_position = ModelExtWithPermissionMultipleChoiceFilter(model=Strategy3)
+    strategy3_cash = ModelExtWithPermissionMultipleChoiceFilter(model=Strategy3)
+    reference_fx_rate = django_filters.RangeFilter()
+    is_locked = django_filters.BooleanFilter()
+    is_canceled = django_filters.BooleanFilter()
+    factor = django_filters.RangeFilter()
+    trade_price = django_filters.RangeFilter()
+    principal_amount = django_filters.RangeFilter()
+    carry_amount = django_filters.RangeFilter()
+    overheads = django_filters.RangeFilter()
+    responsible = ModelExtWithPermissionMultipleChoiceFilter(model=Responsible)
+    counterparty = ModelExtWithPermissionMultipleChoiceFilter(model=Counterparty)
 
     account_member = TransactionObjectPermissionMemberFilter(object_permission_model=Account)
     account_member_group = TransactionObjectPermissionGroupFilter(object_permission_model=Account)
@@ -332,25 +351,38 @@ class TransactionViewSet(AbstractModelViewSet):
     ]
     filter_class = TransactionFilterSet
     ordering_fields = [
-        'transaction_code', 'transaction_date', 'accounting_date', 'cash_date',
         'complex_transaction__code', 'complex_transaction_order',
-        'portfolio__user_code', 'portfolio__name', 'portfolio__short_name',
-        'instrument__user_code', 'instrument__name', 'instrument__short_name',
+        'transaction_code',
+        'portfolio__user_code', 'portfolio__name', 'portfolio__short_name', 'portfolio__public_name',
+        'instrument__user_code', 'instrument__name', 'instrument__short_name', 'instrument__public_name',
         'transaction_currency__user_code', 'transaction_currency__name', 'transaction_currency__short_name',
+        'transaction_currency__public_name',
+        'position_size_with_sign',
         'settlement_currency__user_code', 'settlement_currency__name', 'settlement_currency__short_name',
-        'account_cash__user_code', 'account_cash__name', 'account_cash__short_name',
+        'settlement_currency__public_name',
+        'cash_consideration', 'principal_with_sign', 'carry_with_sign', 'overheads_with_sign',
+        'transaction_date', 'accounting_date', 'cash_date',
+        'account_cash__user_code', 'account_cash__name', 'account_cash__short_name', 'account_cash__public_name',
         'account_position__user_code', 'account_position__name', 'account_position__short_name',
+        'account_position__public_name',
         'account_interim__user_code', 'account_interim__name', 'account_interim__short_name',
+        'account_interim__public_name',
         'strategy1_position__user_code', 'strategy1_position__name', 'strategy1_position__short_name',
-        'strategy1_cash__user_code', 'strategy1_cash__name', 'strategy1_cash__short_name',
+        'strategy1__public_name',
+        'strategy1_cash__user_code', 'strategy1_cash__name', 'strategy1_cash__short_name', 'strategy1__public_name',
         'strategy2_position__user_code', 'strategy2_position__name', 'strategy2_position__short_name',
-        'strategy2_cash__user_code', 'strategy2_cash__name', 'strategy2_cash__short_name',
+        'strategy2__public_name',
+        'strategy2_cash__user_code', 'strategy2_cash__name', 'strategy2_cash__short_name', 'strategy2__public_name',
         'strategy3_position__user_code', 'strategy3_position__name', 'strategy3_position__short_name',
-        'strategy3_cash__user_code', 'strategy3_cash__name', 'strategy3_cash__short_name',
-        'responsible__user_code', 'responsible__name', 'responsible__short_name',
-        'counterparty__user_code', 'counterparty__name', 'counterparty__short_name',
+        'strategy3__public_name',
+        'strategy3_cash__user_code', 'strategy3_cash__name', 'strategy3_cash__short_name', 'strategy3__public_name',
+        'reference_fx_rate', 'is_locked', 'is_canceled', 'factor', 'trade_price', 'principal_amount', 'carry_amount',
+        'overheads',
+        'responsible__user_code', 'responsible__name', 'responsible__short_name', 'responsible__public_name',
+        'counterparty__user_code', 'counterparty__name', 'counterparty__short_name', 'counterparty__public_name',
     ]
-    search_fields = ['transaction_code', 'complex_transaction__code', 'complex_transaction_order']
+
+    # search_fields = ['transaction_code', 'complex_transaction__code', 'complex_transaction_order']
 
     def get_queryset(self):
         queryset = super(TransactionViewSet, self).get_queryset()
@@ -406,7 +438,8 @@ class ComplexTransactionViewSet(AbstractReadOnlyModelViewSet):
     ]
     filter_class = ComplexTransactionFilterSet
     ordering_fields = ['code', ]
-    search_fields = ['code', ]
+
+    # search_fields = ['code', ]
 
     def get_queryset(self):
         queryset = super(ComplexTransactionViewSet, self).get_queryset()

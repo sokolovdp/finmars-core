@@ -3,7 +3,7 @@ from __future__ import unicode_literals
 import django_filters
 from rest_framework.filters import FilterSet
 
-from poms.common.filters import CharFilter, ModelWithPermissionMultipleChoiceFilter, NoOpFilter
+from poms.common.filters import CharFilter, ModelExtWithPermissionMultipleChoiceFilter, NoOpFilter
 from poms.obj_perms.filters import ObjectPermissionMemberFilter, ObjectPermissionGroupFilter, \
     ObjectPermissionPermissionFilter
 from poms.obj_perms.views import AbstractWithObjectPermissionViewSet
@@ -22,6 +22,7 @@ class Strategy1GroupFilterSet(FilterSet):
     user_code = CharFilter()
     name = CharFilter()
     short_name = CharFilter()
+    public_name = CharFilter()
     tag = TagFilter(model=Strategy1Group)
     member = ObjectPermissionMemberFilter(object_permission_model=Strategy1Group)
     member_group = ObjectPermissionGroupFilter(object_permission_model=Strategy1Group)
@@ -42,11 +43,11 @@ class Strategy1GroupViewSet(AbstractWithObjectPermissionViewSet):
     ]
     filter_class = Strategy1GroupFilterSet
     ordering_fields = [
-        'user_code', 'name', 'short_name'
+        'user_code', 'name', 'short_name', 'public_name',
     ]
-    search_fields = [
-        'user_code', 'name', 'short_name',
-    ]
+    # search_fields = [
+    #     'user_code', 'name', 'short_name',
+    # ]
     # has_feature_is_deleted = True
 
 
@@ -56,7 +57,8 @@ class Strategy1SubgroupFilterSet(FilterSet):
     user_code = CharFilter()
     name = CharFilter()
     short_name = CharFilter()
-    group = ModelWithPermissionMultipleChoiceFilter(model=Strategy1Group)
+    public_name = CharFilter()
+    group = ModelExtWithPermissionMultipleChoiceFilter(model=Strategy1Group)
     tag = TagFilter(model=Strategy1Subgroup)
     member = ObjectPermissionMemberFilter(object_permission_model=Strategy1Subgroup)
     member_group = ObjectPermissionGroupFilter(object_permission_model=Strategy1Subgroup)
@@ -78,12 +80,12 @@ class Strategy1SubgroupViewSet(AbstractWithObjectPermissionViewSet):
     ]
     filter_class = Strategy1SubgroupFilterSet
     ordering_fields = [
-        'user_code', 'name', 'short_name',
-        'group__user_code', 'group__name', 'group__short_name',
+        'user_code', 'name', 'short_name', 'public_name',
+        'group__user_code', 'group__name', 'group__short_name', 'group__public_name',
     ]
-    search_fields = [
-        'user_code', 'name', 'short_name',
-    ]
+    # search_fields = [
+    #     'user_code', 'name', 'short_name',
+    # ]
     # has_feature_is_deleted = True
 
 
@@ -93,8 +95,9 @@ class Strategy1FilterSet(FilterSet):
     user_code = CharFilter()
     name = CharFilter()
     short_name = CharFilter()
-    subgroup__group = ModelWithPermissionMultipleChoiceFilter(model=Strategy1Group)
-    subgroup = ModelWithPermissionMultipleChoiceFilter(model=Strategy1Subgroup)
+    public_name = CharFilter()
+    subgroup__group = ModelExtWithPermissionMultipleChoiceFilter(model=Strategy1Group)
+    subgroup = ModelExtWithPermissionMultipleChoiceFilter(model=Strategy1Subgroup)
     tag = TagFilter(model=Strategy1)
     member = ObjectPermissionMemberFilter(object_permission_model=Strategy1)
     member_group = ObjectPermissionGroupFilter(object_permission_model=Strategy1)
@@ -116,13 +119,13 @@ class Strategy1ViewSet(AbstractWithObjectPermissionViewSet):
     ]
     filter_class = Strategy1FilterSet
     ordering_fields = [
-        'user_code', 'name', 'short_name',
-        'subgroup__user_code', 'subgroup__name', 'subgroup__short_name',
-        'subgroup__group__user_code', 'subgroup__group__name', 'subgroup__group__short_name',
+        'user_code', 'name', 'short_name', 'public_name',
+        'subgroup__user_code', 'subgroup__name', 'subgroup__short_name', 'subgroup__public_name',
+        'subgroup__group__user_code', 'subgroup__group__name', 'subgroup__group__short_name', 'subgroup__group__public_name',
     ]
-    search_fields = [
-        'user_code', 'name', 'short_name',
-    ]
+    # search_fields = [
+    #     'user_code', 'name', 'short_name',
+    # ]
     # has_feature_is_deleted = True
 
 
@@ -148,7 +151,7 @@ class Strategy2GroupViewSet(Strategy1GroupViewSet):
 
 class Strategy2SubgroupFilterSet(Strategy1SubgroupFilterSet):
     tag = TagFilter(model=Strategy2Subgroup)
-    group = ModelWithPermissionMultipleChoiceFilter(model=Strategy2Group)
+    group = ModelExtWithPermissionMultipleChoiceFilter(model=Strategy2Group)
     member = ObjectPermissionMemberFilter(object_permission_model=Strategy2Subgroup)
     member_group = ObjectPermissionGroupFilter(object_permission_model=Strategy2Subgroup)
     permission = ObjectPermissionPermissionFilter(object_permission_model=Strategy2Subgroup)
@@ -166,8 +169,8 @@ class Strategy2SubgroupViewSet(Strategy1SubgroupViewSet):
 
 class Strategy2FilterSet(Strategy1FilterSet):
     tag = TagFilter(model=Strategy2)
-    subgroup__group = ModelWithPermissionMultipleChoiceFilter(model=Strategy2Group)
-    subgroup = ModelWithPermissionMultipleChoiceFilter(model=Strategy2Subgroup)
+    subgroup__group = ModelExtWithPermissionMultipleChoiceFilter(model=Strategy2Group)
+    subgroup = ModelExtWithPermissionMultipleChoiceFilter(model=Strategy2Subgroup)
     member = ObjectPermissionMemberFilter(object_permission_model=Strategy2)
     member_group = ObjectPermissionGroupFilter(object_permission_model=Strategy2)
     permission = ObjectPermissionPermissionFilter(object_permission_model=Strategy2)
@@ -205,7 +208,7 @@ class Strategy3GroupViewSet(Strategy1GroupViewSet):
 
 class Strategy3SubgroupFilterSet(Strategy1SubgroupFilterSet):
     tag = TagFilter(model=Strategy3Subgroup)
-    group = ModelWithPermissionMultipleChoiceFilter(model=Strategy3Group)
+    group = ModelExtWithPermissionMultipleChoiceFilter(model=Strategy3Group)
     member = ObjectPermissionMemberFilter(object_permission_model=Strategy3Subgroup)
     member_group = ObjectPermissionGroupFilter(object_permission_model=Strategy3Subgroup)
     permission = ObjectPermissionPermissionFilter(object_permission_model=Strategy3Subgroup)
@@ -223,8 +226,8 @@ class Strategy3SubgroupViewSet(Strategy1SubgroupViewSet):
 
 class Strategy3FilterSet(Strategy1FilterSet):
     tag = TagFilter(model=Strategy3)
-    subgroup__group = ModelWithPermissionMultipleChoiceFilter(model=Strategy3Group)
-    subgroup = ModelWithPermissionMultipleChoiceFilter(model=Strategy3Subgroup)
+    subgroup__group = ModelExtWithPermissionMultipleChoiceFilter(model=Strategy3Group)
+    subgroup = ModelExtWithPermissionMultipleChoiceFilter(model=Strategy3Subgroup)
     member = ObjectPermissionMemberFilter(object_permission_model=Strategy3)
     member_group = ObjectPermissionGroupFilter(object_permission_model=Strategy3)
     permission = ObjectPermissionPermissionFilter(object_permission_model=Strategy3)

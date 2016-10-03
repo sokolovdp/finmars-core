@@ -28,5 +28,7 @@ class SessionViewSet(DestroyModelMixin, AbstractReadOnlyModelViewSet):
         OwnerByUserFilter,
     ]
     filter_class = SessionFilterSet
-    ordering_fields = ('user_ip',)
-    search_fields = ('user_ip', 'user_agent',)
+    ordering_fields = [
+        'user_ip', 'user_agent',
+    ]
+    # search_fields = ('user_ip', 'user_agent',)

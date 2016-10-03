@@ -5,7 +5,7 @@ from django.db.models import Prefetch
 from rest_framework.filters import FilterSet
 
 from poms.accounts.models import Account
-from poms.common.filters import CharFilter, ModelWithPermissionMultipleChoiceFilter, NoOpFilter
+from poms.common.filters import CharFilter, ModelExtWithPermissionMultipleChoiceFilter, NoOpFilter
 from poms.counterparties.models import Responsible, Counterparty
 from poms.obj_attrs.filters import AttributeTypeValueTypeFilter
 from poms.obj_attrs.views import AbstractAttributeTypeViewSet, AbstractClassifierViewSet
@@ -25,6 +25,7 @@ class PortfolioAttributeTypeFilterSet(FilterSet):
     user_code = CharFilter()
     name = CharFilter()
     short_name = CharFilter()
+    public_name = CharFilter()
     value_type = AttributeTypeValueTypeFilter()
     member = ObjectPermissionMemberFilter(object_permission_model=PortfolioAttributeType)
     member_group = ObjectPermissionGroupFilter(object_permission_model=PortfolioAttributeType)
@@ -46,7 +47,7 @@ class PortfolioClassifierFilterSet(FilterSet):
     id = NoOpFilter()
     name = CharFilter()
     level = django_filters.NumberFilter()
-    attribute_type = ModelWithPermissionMultipleChoiceFilter(model=PortfolioAttributeType)
+    attribute_type = ModelExtWithPermissionMultipleChoiceFilter(model=PortfolioAttributeType)
 
     class Meta:
         model = PortfolioClassifier
@@ -65,10 +66,11 @@ class PortfolioFilterSet(FilterSet):
     user_code = CharFilter()
     name = CharFilter()
     short_name = CharFilter()
-    account = ModelWithPermissionMultipleChoiceFilter(model=Account, name='accounts')
-    responsible = ModelWithPermissionMultipleChoiceFilter(model=Responsible, name='responsibles')
-    counterparty = ModelWithPermissionMultipleChoiceFilter(model=Counterparty, name='counterparties')
-    transaction_type = ModelWithPermissionMultipleChoiceFilter(model=TransactionType, name='transaction_types')
+    public_name = CharFilter()
+    account = ModelExtWithPermissionMultipleChoiceFilter(model=Account, name='accounts')
+    responsible = ModelExtWithPermissionMultipleChoiceFilter(model=Responsible, name='responsibles')
+    counterparty = ModelExtWithPermissionMultipleChoiceFilter(model=Counterparty, name='counterparties')
+    transaction_type = ModelExtWithPermissionMultipleChoiceFilter(model=TransactionType, name='transaction_types')
     tag = TagFilter(model=Portfolio)
     member = ObjectPermissionMemberFilter(object_permission_model=Portfolio)
     member_group = ObjectPermissionGroupFilter(object_permission_model=Portfolio)
@@ -101,9 +103,9 @@ class PortfolioViewSet(AbstractWithObjectPermissionViewSet):
     ]
     filter_class = PortfolioFilterSet
     ordering_fields = [
-        'user_code', 'name', 'short_name'
+        'user_code', 'name', 'short_name', 'public_name',
     ]
-    search_fields = [
-        'user_code', 'name', 'short_name'
-    ]
+    # search_fields = [
+    #     'user_code', 'name', 'short_name'
+    # ]
     # has_feature_is_deleted = True

@@ -55,7 +55,8 @@ class Thread(TimeStampedModel, FakeDeletableModel):
     master_user = models.ForeignKey(MasterUser, related_name='chat_threads')
     thread_group = models.ForeignKey(ThreadGroup, related_name='groups', null=True, blank=True)
     subject = models.CharField(max_length=255)
-    closed = models.DateTimeField(db_index=True, null=True, blank=True)
+    is_closed = models.BooleanField(default=False, db_index=True)
+    closed = models.DateTimeField(null=True, blank=True, db_index=True)
 
     class Meta(TimeStampedModel.Meta, FakeDeletableModel.Meta):
         verbose_name = ugettext_lazy('thread')
@@ -67,10 +68,6 @@ class Thread(TimeStampedModel, FakeDeletableModel):
 
     def __str__(self):
         return self.subject
-
-    @property
-    def is_closed(self):
-        return self.closed is None
 
 
 class ThreadUserObjectPermission(AbstractUserObjectPermission):

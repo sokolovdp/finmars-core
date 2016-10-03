@@ -36,8 +36,8 @@ class LayoutContentTypeFilter(django_filters.CharFilter):
 
 class TemplateListLayoutFilterSet(FilterSet):
     id = NoOpFilter()
-    name = CharFilter()
     is_default = django_filters.BooleanFilter()
+    name = CharFilter()
     content_type = LayoutContentTypeFilter()
 
     class Meta:
@@ -55,8 +55,10 @@ class TemplateListLayoutViewSet(AbstractModelViewSet):
     permission_classes = AbstractModelViewSet.permission_classes + [
         SuperUserOnly,
     ]
-    ordering_fields = ['name', 'is_default']
-    search_fields = ['name', 'is_default']
+    ordering_fields = [
+        'name', 'is_default'
+    ]
+    # search_fields = ['name', 'is_default']
 
 
 class TemplateEditLayoutFilterSet(FilterSet):
@@ -79,13 +81,13 @@ class TemplateEditLayoutViewSet(AbstractModelViewSet):
     ]
     filter_class = TemplateEditLayoutFilterSet
     ordering_fields = []
-    search_fields = []
+    # search_fields = []
 
 
 class ListLayoutFilterSet(FilterSet):
     id = NoOpFilter()
-    name = CharFilter()
     is_default = django_filters.BooleanFilter()
+    name = CharFilter()
     content_type = LayoutContentTypeFilter()
 
     class Meta:
@@ -100,8 +102,10 @@ class ListLayoutViewSet(AbstractModelViewSet):
         OwnerByMemberFilter,
     ]
     filter_class = ListLayoutFilterSet
-    ordering_fields = ['name', 'is_default']
-    search_fields = ['name', 'is_default']
+    ordering_fields = [
+        'name', 'is_default'
+    ]
+    # search_fields = ['name', 'is_default']
 
 
 class EditLayoutFilterSet(FilterSet):
@@ -121,4 +125,4 @@ class EditLayoutViewSet(AbstractModelViewSet):
     ]
     filter_class = EditLayoutFilterSet
     ordering_fields = []
-    search_fields = []
+    # search_fields = []

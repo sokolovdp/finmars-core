@@ -4,7 +4,7 @@ from django.conf import settings
 from django.db import transaction
 from django.utils import timezone
 from rest_framework import permissions
-from rest_framework.filters import DjangoFilterBackend, OrderingFilter, SearchFilter
+from rest_framework.filters import DjangoFilterBackend, OrderingFilter
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.views import APIView
 from rest_framework.viewsets import ModelViewSet, ReadOnlyModelViewSet, ViewSet
@@ -73,7 +73,6 @@ class AbstractModelViewSet(AbstractApiView, HistoricalModelMixin, UpdateModelMix
         ByIsDeletedFilterBackend,
         DjangoFilterBackend,
         OrderingFilter,
-        SearchFilter,
     ]
 
 
@@ -85,12 +84,11 @@ class AbstractReadOnlyModelViewSet(AbstractApiView, ReadOnlyModelViewSet):
         ByIdFilterBackend,
         DjangoFilterBackend,
         OrderingFilter,
-        SearchFilter
     ]
 
 
 class AbstractClassModelViewSet(AbstractReadOnlyModelViewSet):
     # ordering_fields = ['id', 'system_code', 'name', ]
     ordering_fields = []
-    search_fields = ['system_code', 'name_en', ]
+    # search_fields = ['system_code', 'name_en', ]
     pagination_class = None

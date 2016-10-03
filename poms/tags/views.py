@@ -17,6 +17,7 @@ class TagFilterSet(FilterSet):
     user_code = CharFilter()
     name = CharFilter()
     short_name = CharFilter()
+    public_name = CharFilter()
     content_type = TagContentTypeFilter(name='content_types')
     member = ObjectPermissionMemberFilter(object_permission_model=Tag)
     member_group = ObjectPermissionGroupFilter(object_permission_model=Tag)
@@ -50,8 +51,8 @@ class TagViewSet(AbstractWithObjectPermissionViewSet):
     ]
     filter_class = TagFilterSet
     ordering_fields = [
-        'user_code', 'name', 'short_name'
+        'user_code', 'name', 'short_name', 'public_name',
     ]
-    search_fields = [
-        'user_code', 'name', 'short_name'
-    ]
+    # search_fields = [
+    #     'user_code', 'name', 'short_name'
+    # ]

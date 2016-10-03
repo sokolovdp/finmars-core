@@ -7,7 +7,8 @@ from rest_framework.exceptions import MethodNotAllowed
 from rest_framework.filters import FilterSet
 from rest_framework.response import Response
 
-from poms.common.filters import CharFilter, ModelWithPermissionMultipleChoiceFilter, NoOpFilter
+from poms.common.filters import CharFilter, ModelExtWithPermissionMultipleChoiceFilter, NoOpFilter, \
+    ModelExtMultipleChoiceFilter
 from poms.common.views import AbstractViewSet, AbstractModelViewSet, AbstractReadOnlyModelViewSet, \
     AbstractClassModelViewSet
 from poms.currencies.models import Currency
@@ -45,10 +46,12 @@ class AccrualScheduleDownloadMethodViewSet(AbstractClassModelViewSet):
     serializer_class = AccrualScheduleDownloadMethodSerializer
 
 
-class IImportConfigFilterSet(FilterSet):
+class ImportConfigFilterSet(FilterSet):
+    provider = django_filters.ModelMultipleChoiceFilter(queryset=ProviderClass.objects)
+
     class Meta:
         model = ImportConfig
-        fields = ['provider', ]
+        fields = []
 
 
 class ImportConfigViewSet(AbstractModelViewSet):
@@ -60,12 +63,13 @@ class ImportConfigViewSet(AbstractModelViewSet):
     filter_backends = AbstractModelViewSet.filter_backends + [
         OwnerByMasterUserFilter,
     ]
+    filter_class = ImportConfigFilterSet
 
 
 class InstrumentDownloadSchemeFilterSet(FilterSet):
     id = NoOpFilter()
-    scheme_name = CharFilter()
     provider = django_filters.ModelMultipleChoiceFilter(queryset=ProviderClass.objects)
+    scheme_name = CharFilter()
 
     class Meta:
         model = InstrumentDownloadScheme
@@ -89,14 +93,16 @@ class InstrumentDownloadSchemeViewSet(AbstractModelViewSet):
         OwnerByMasterUserFilter,
     ]
     filter_class = InstrumentDownloadSchemeFilterSet
-    ordering_fields = ['scheme_name']
-    search_fields = ['scheme_name']
+    ordering_fields = [
+        'scheme_name']
+
+    # search_fields = ['scheme_name']
 
 
 class PriceDownloadSchemeFilterSet(FilterSet):
     id = NoOpFilter()
-    scheme_name = CharFilter()
     provider = django_filters.ModelMultipleChoiceFilter(queryset=ProviderClass.objects)
+    scheme_name = CharFilter()
 
     class Meta:
         model = PriceDownloadScheme
@@ -114,14 +120,14 @@ class PriceDownloadSchemeViewSet(AbstractModelViewSet):
     ]
     filter_class = PriceDownloadSchemeFilterSet
     ordering_fields = ['scheme_name']
-    search_fields = ['scheme_name']
+    # search_fields = ['scheme_name']
 
 
 class CurrencyMappingFilterSet(FilterSet):
     id = NoOpFilter()
-    value = CharFilter()
-    currency = ModelWithPermissionMultipleChoiceFilter(model=Currency)
     provider = django_filters.ModelMultipleChoiceFilter(queryset=ProviderClass.objects)
+    value = CharFilter()
+    currency = ModelExtMultipleChoiceFilter(model=Currency)
 
     class Meta:
         model = CurrencyMapping
@@ -138,13 +144,17 @@ class CurrencyMappingViewSet(AbstractModelViewSet):
         OwnerByMasterUserFilter,
     ]
     filter_class = CurrencyMappingFilterSet
+    ordering_fields = [
+        'value',
+        'currency__user_code', 'currency__name', 'currency__short_name', 'currency__public_name',
+    ]
 
 
 class InstrumentTypeMappingFilterSet(FilterSet):
     id = NoOpFilter()
-    value = CharFilter()
-    instrument_type = ModelWithPermissionMultipleChoiceFilter(model=InstrumentType)
     provider = django_filters.ModelMultipleChoiceFilter(queryset=ProviderClass.objects)
+    value = CharFilter()
+    instrument_type = ModelExtWithPermissionMultipleChoiceFilter(model=InstrumentType)
 
     class Meta:
         model = InstrumentTypeMapping
@@ -162,13 +172,18 @@ class InstrumentTypeMappingViewSet(AbstractModelViewSet):
         InstrumentTypeMappingObjectPermissionFilter,
     ]
     filter_class = InstrumentTypeMappingFilterSet
+    ordering_fields = [
+        'value',
+        'instrument_type__user_code', 'instrument_type__name', 'instrument_type__short_name',
+        'instrument_type__public_name',
+    ]
 
 
 class InstrumentAttributeValueMappingFilterSet(FilterSet):
     id = NoOpFilter()
-    value = CharFilter()
-    attribute_type = ModelWithPermissionMultipleChoiceFilter(model=InstrumentAttributeType)
     provider = django_filters.ModelMultipleChoiceFilter(queryset=ProviderClass.objects)
+    value = CharFilter()
+    attribute_type = ModelExtWithPermissionMultipleChoiceFilter(model=InstrumentAttributeType)
 
     class Meta:
         model = InstrumentAttributeValueMapping
@@ -188,12 +203,17 @@ class InstrumentAttributeValueMappingViewSet(AbstractModelViewSet):
         InstrumentAttributeValueMappingObjectPermissionFilter,
     ]
     filter_class = InstrumentAttributeValueMappingFilterSet
+    ordering_fields = [
+        'value',
+        'attribute_type__user_code', 'attribute_type__name', 'attribute_type__short_name',
+        'attribute_type__public_name',
+    ]
 
 
 class AccrualCalculationModelMappingFilterSet(FilterSet):
     id = NoOpFilter()
-    value = CharFilter()
     provider = django_filters.ModelMultipleChoiceFilter(queryset=ProviderClass.objects)
+    value = CharFilter()
     accrual_calculation_model = django_filters.ModelMultipleChoiceFilter(queryset=AccrualCalculationModel.objects)
 
     class Meta:
@@ -213,12 +233,15 @@ class AccrualCalculationModelMappingViewSet(AbstractModelViewSet):
         OwnerByMasterUserFilter,
     ]
     filter_class = AccrualCalculationModelMappingFilterSet
+    ordering_fields = [
+        'value',
+    ]
 
 
 class PeriodicityMappingFilterSet(FilterSet):
     id = NoOpFilter()
-    value = CharFilter()
     provider = django_filters.ModelMultipleChoiceFilter(queryset=ProviderClass.objects)
+    value = CharFilter()
     periodicity = django_filters.ModelMultipleChoiceFilter(queryset=Periodicity.objects)
 
     class Meta:
@@ -236,13 +259,16 @@ class PeriodicityMappingViewSet(AbstractModelViewSet):
         OwnerByMasterUserFilter,
     ]
     filter_class = PeriodicityMappingFilterSet
+    ordering_fields = [
+        'value',
+    ]
 
 
 class TaskFilterSet(FilterSet):
     id = NoOpFilter()
-    member = ModelWithPermissionMultipleChoiceFilter(model=Member, field_name='username')
-    action = CharFilter()
     provider = django_filters.ModelMultipleChoiceFilter(queryset=ProviderClass.objects)
+    member = ModelExtMultipleChoiceFilter(model=Member, field_name='username')
+    action = CharFilter()
     created = django_filters.DateFromToRangeFilter()
     modified = django_filters.DateFromToRangeFilter()
 
@@ -259,7 +285,6 @@ class TaskViewSet(AbstractReadOnlyModelViewSet):
     ]
     filter_class = TaskFilterSet
     ordering_fields = ['action', 'created', 'modified']
-    search_fields = ['action']
 
 
 class PricingAutomatedScheduleViewSet(AbstractModelViewSet):

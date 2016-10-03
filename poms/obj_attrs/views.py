@@ -11,11 +11,12 @@ class AbstractAttributeTypeViewSet(AbstractWithObjectPermissionViewSet):
         OwnerByMasterUserFilter,
     ]
     ordering_fields = [
-        'user_code', 'name', 'short_name', 'order',
+        'user_code', 'name', 'short_name', 'public_name', 'order',
     ]
-    search_fields = [
-        'user_code', 'name', 'short_name'
-    ]
+
+    # search_fields = [
+    #     'user_code', 'name', 'short_name'
+    # ]
 
     def get_queryset(self):
         qs = super(AbstractAttributeTypeViewSet, self).get_queryset()
@@ -24,7 +25,8 @@ class AbstractAttributeTypeViewSet(AbstractWithObjectPermissionViewSet):
     def get_serializer(self, *args, **kwargs):
         # TODO: remove objects_permissions
         if self.action != 'objects_permissions':
-            kwargs['show_classifiers'] = (self.action != 'list') or self.request.query_params.get('show_classifiers', None)
+            kwargs['show_classifiers'] = (self.action != 'list') or self.request.query_params.get('show_classifiers',
+                                                                                                  None)
             kwargs['read_only_value_type'] = (self.action != 'create')
         return super(AbstractAttributeTypeViewSet, self).get_serializer(*args, **kwargs)
 
@@ -34,8 +36,13 @@ class AbstractClassifierViewSet(AbstractModelViewSet):
         OwnerByAttributeTypeFilter,
     ]
 
-    ordering_fields = ['name', 'level', ]
-    search_fields = ['name', ]
+    ordering_fields = [
+        'attribute_type__user_code', 'attribute_type__name', 'attribute_type__short_name',
+        'attribute_type__public_name',
+        'name', 'level',
+    ]
+
+    # search_fields = ['name', ]
 
     # def get_queryset(self):
     #     qs = super(AbstractClassifierViewSet, self).get_queryset()

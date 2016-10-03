@@ -16,7 +16,7 @@ from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework.response import Response
 from rest_framework.viewsets import ViewSet
 
-from poms.common.filters import CharFilter, NoOpFilter
+from poms.common.filters import CharFilter, NoOpFilter, ModelExtMultipleChoiceFilter
 from poms.common.pagination import BigPagination
 from poms.common.views import AbstractModelViewSet, AbstractApiView
 from poms.users.filters import OwnerByMasterUserFilter, MasterUserFilter
@@ -152,7 +152,7 @@ class MasterUserViewSet(AbstractModelViewSet):
         MasterUserFilter,
     ]
     ordering_fields = ['name', ]
-    search_fields = ['name', ]
+    # search_fields = ['name', ]
     pagination_class = BigPagination
 
     def get_object(self):
@@ -177,6 +177,10 @@ class MemberFilterSet(FilterSet):
     id = NoOpFilter()
     is_deleted = django_filters.BooleanFilter()
     username = CharFilter()
+    first_name = CharFilter()
+    last_name = CharFilter()
+    email = CharFilter()
+    group = ModelExtMultipleChoiceFilter(model=Group, name='groups')
 
     class Meta:
         model = Member
@@ -193,8 +197,10 @@ class MemberViewSet(AbstractModelViewSet):
         OwnerByMasterUserFilter,
     ]
     filter_class = MemberFilterSet
-    ordering_fields = ['username', ]
-    search_fields = ['username', ]
+    ordering_fields = [
+        'username', 'first_name', 'last_name', 'email',
+    ]
+    # search_fields = ['username', ]
     pagination_class = BigPagination
     # has_feature_is_deleted = True
 
@@ -212,6 +218,7 @@ class MemberViewSet(AbstractModelViewSet):
 class GroupFilterSet(FilterSet):
     id = NoOpFilter()
     name = CharFilter()
+    member = ModelExtMultipleChoiceFilter(model=Member, field_name='username', name='members')
 
     class Meta:
         model = Group
@@ -227,6 +234,9 @@ class GroupViewSet(AbstractModelViewSet):
     filter_backends = AbstractModelViewSet.filter_backends + [
         OwnerByMasterUserFilter,
     ]
-    ordering_fields = ['name', ]
-    search_fields = ['name', ]
+    filter_class = GroupFilterSet
+    ordering_fields = [
+        'name',
+    ]
+    # search_fields = ['name', ]
     pagination_class = BigPagination

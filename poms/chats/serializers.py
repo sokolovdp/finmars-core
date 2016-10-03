@@ -43,6 +43,7 @@ class ThreadSerializer(ModelWithObjectPermissionSerializer):
     master_user = MasterUserField()
     thread_group = ThreadGroupField(default=ThreadGroupDefault())
     thread_group_object = ReadonlyModelWithNameSerializer(source='thread_group')
+    is_closed = serializers.BooleanField(read_only=True)
     created = DateTimeTzAwareField(read_only=True)
     modified = DateTimeTzAwareField(read_only=True)
     closed = DateTimeTzAwareField(read_only=True)
@@ -55,10 +56,10 @@ class ThreadSerializer(ModelWithObjectPermissionSerializer):
         model = Thread
         fields = [
             'url', 'id', 'master_user', 'thread_group', 'thread_group_object',
-            'created', 'modified', 'closed', 'subject', 'is_deleted',
+            'subject', 'is_closed', 'is_deleted', 'created', 'modified', 'closed',
             'tags', 'tags_object', 'messages_count', 'messages_last'
         ]
-        read_only_fields = ['created', 'modified', 'closed']
+        read_only_fields = ['is_closed', 'created', 'modified', 'closed']
 
 
 # class ThreadBulkObjectPermissionSerializer(AbstractBulkObjectPermissionSerializer):
@@ -80,6 +81,6 @@ class DirectMessageSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = DirectMessage
-        fields = ['url', 'id', 'sender', 'recipient', 'created', 'modified', 'text', 'sender_object',
-                  'recipient_object']
+        fields = ['url', 'id', 'sender', 'sender_object', 'recipient', 'recipient_object', 'created', 'modified',
+                  'text', ]
         read_only_fields = ['created', 'modified']

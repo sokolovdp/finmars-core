@@ -6,7 +6,7 @@ from rest_framework.filters import FilterSet
 from poms.audit.filters import ObjectHistory4ContentTypeMultipleChoiceFilter
 from poms.audit.models import AuthLogEntry, ObjectHistory4Entry
 from poms.audit.serializers import AuthLogEntrySerializer, ObjectHistory4EntrySerializer
-from poms.common.filters import ModelWithPermissionMultipleChoiceFilter, NoOpFilter, CharFilter
+from poms.common.filters import ModelExtMultipleChoiceFilter, NoOpFilter, CharFilter
 from poms.common.views import AbstractReadOnlyModelViewSet
 from poms.users.filters import OwnerByUserFilter, OwnerByMasterUserFilter
 from poms.users.models import Member
@@ -32,12 +32,12 @@ class AuthLogViewSet(AbstractReadOnlyModelViewSet):
     ]
     filter_class = AuthLogEntryFilterSet
     ordering_fields = ('date',)
-    search_fields = ('user_ip', 'user_agent',)
+    # search_fields = ('user_ip', 'user_agent',)
 
 
 class ObjectHistory4EntryFilterSet(FilterSet):
     created = django_filters.DateFromToRangeFilter()
-    member = ModelWithPermissionMultipleChoiceFilter(model=Member, field_name='username')
+    member = ModelExtMultipleChoiceFilter(model=Member, field_name='username')
     group_id = django_filters.NumberFilter()
     actor_content_type = ObjectHistory4ContentTypeMultipleChoiceFilter()
     actor_object_id = django_filters.NumberFilter()
@@ -77,4 +77,4 @@ class ObjectHistory4ViewSet(AbstractReadOnlyModelViewSet):
     ]
     filter_class = ObjectHistory4EntryFilterSet
     ordering_fields = ('created',)
-    search_fields = ('created',)
+    # search_fields = ('created',)

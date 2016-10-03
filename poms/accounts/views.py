@@ -7,7 +7,7 @@ from rest_framework.filters import FilterSet
 from poms.accounts.models import Account, AccountType, AccountAttributeType, AccountClassifier, AccountAttribute
 from poms.accounts.serializers import AccountSerializer, AccountTypeSerializer, AccountAttributeTypeSerializer, \
     AccountClassifierNodeSerializer
-from poms.common.filters import CharFilter, ModelWithPermissionMultipleChoiceFilter, NoOpFilter
+from poms.common.filters import CharFilter, NoOpFilter, ModelExtWithPermissionMultipleChoiceFilter
 from poms.obj_attrs.filters import AttributeTypeValueTypeFilter
 from poms.obj_attrs.views import AbstractAttributeTypeViewSet, AbstractClassifierViewSet
 from poms.obj_perms.filters import ObjectPermissionMemberFilter, ObjectPermissionGroupFilter, \
@@ -24,6 +24,8 @@ class AccountTypeFilterSet(FilterSet):
     user_code = CharFilter()
     name = CharFilter()
     short_name = CharFilter()
+    public_name = CharFilter()
+    show_transaction_details = django_filters.BooleanFilter()
     tag = TagFilter(model=AccountType)
     member = ObjectPermissionMemberFilter(object_permission_model=AccountType)
     member_group = ObjectPermissionGroupFilter(object_permission_model=AccountType)
@@ -44,11 +46,11 @@ class AccountTypeViewSet(AbstractWithObjectPermissionViewSet):
     ]
     filter_class = AccountTypeFilterSet
     ordering_fields = [
-        'user_code', 'name', 'short_name',
+        'user_code', 'name', 'short_name', 'public_name', 'show_transaction_details'
     ]
-    search_fields = [
-        'user_code', 'name', 'short_name',
-    ]
+    # search_fields = [
+    #     'user_code', 'name', 'short_name',
+    # ]
     # has_feature_is_deleted = True
 
 
@@ -57,6 +59,7 @@ class AccountAttributeTypeFilterSet(FilterSet):
     user_code = CharFilter()
     name = CharFilter()
     short_name = CharFilter()
+    public_name = CharFilter()
     value_type = AttributeTypeValueTypeFilter()
     member = ObjectPermissionMemberFilter(object_permission_model=AccountAttributeType)
     member_group = ObjectPermissionGroupFilter(object_permission_model=AccountAttributeType)
@@ -78,7 +81,7 @@ class AccountClassifierFilterSet(FilterSet):
     id = NoOpFilter()
     name = CharFilter()
     level = django_filters.NumberFilter()
-    attribute_type = ModelWithPermissionMultipleChoiceFilter(model=AccountAttributeType)
+    attribute_type = ModelExtWithPermissionMultipleChoiceFilter(model=AccountAttributeType)
 
     class Meta:
         model = AccountClassifier
@@ -97,8 +100,10 @@ class AccountFilterSet(FilterSet):
     user_code = CharFilter()
     name = CharFilter()
     short_name = CharFilter()
-    portfolio = ModelWithPermissionMultipleChoiceFilter(model=Portfolio, name='portfolios')
-    type = ModelWithPermissionMultipleChoiceFilter(model=AccountType)
+    public_name = CharFilter()
+    is_valid_for_all_portfolios = django_filters.BooleanFilter()
+    type = ModelExtWithPermissionMultipleChoiceFilter(model=AccountType)
+    portfolio = ModelExtWithPermissionMultipleChoiceFilter(model=Portfolio, name='portfolios')
     tag = TagFilter(model=Account)
     member = ObjectPermissionMemberFilter(object_permission_model=Account)
     member_group = ObjectPermissionGroupFilter(object_permission_model=Account)
@@ -106,10 +111,7 @@ class AccountFilterSet(FilterSet):
 
     class Meta:
         model = Account
-        fields = [
-            'is_deleted', 'user_code', 'name', 'short_name', 'is_valid_for_all_portfolios', 'type',
-            'portfolio', 'tag', 'member', 'member_group', 'permission',
-        ]
+        fields = []
 
 
 class AccountViewSet(AbstractWithObjectPermissionViewSet):
@@ -132,10 +134,10 @@ class AccountViewSet(AbstractWithObjectPermissionViewSet):
     ]
     filter_class = AccountFilterSet
     ordering_fields = [
-        'user_code', 'name', 'short_name', 'is_valid_for_all_portfolios',
-        'type__user_code', 'type__name', 'type__short_name',
+        'user_code', 'name', 'short_name', 'public_name', 'is_valid_for_all_portfolios',
+        'type__user_code', 'type__name', 'type__short_name', 'type__public_name',
     ]
-    search_fields = [
-        'user_code', 'name', 'short_name',
-    ]
+    # search_fields = [
+    #     'user_code', 'name', 'short_name',
+    # ]
     # has_feature_is_deleted = True

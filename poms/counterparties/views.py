@@ -4,8 +4,7 @@ import django_filters
 from django.db.models import Prefetch
 from rest_framework.filters import FilterSet
 
-from poms.common.filters import CharFilter, ModelWithPermissionMultipleChoiceFilter, NoOpFilter
-from poms.common.views import AbstractModelViewSet
+from poms.common.filters import CharFilter, NoOpFilter, ModelExtWithPermissionMultipleChoiceFilter
 from poms.counterparties.models import Counterparty, Responsible, CounterpartyAttributeType, ResponsibleAttributeType, \
     CounterpartyGroup, ResponsibleGroup, CounterpartyClassifier, ResponsibleClassifier, CounterpartyAttribute, \
     ResponsibleAttribute
@@ -28,6 +27,7 @@ class CounterpartyAttributeTypeFilterSet(FilterSet):
     user_code = CharFilter()
     name = CharFilter()
     short_name = CharFilter()
+    public_name = CharFilter()
     value_type = AttributeTypeValueTypeFilter()
     member = ObjectPermissionMemberFilter(object_permission_model=CounterpartyAttributeType)
     member_group = ObjectPermissionGroupFilter(object_permission_model=CounterpartyAttributeType)
@@ -49,7 +49,7 @@ class CounterpartyClassifierFilterSet(FilterSet):
     id = NoOpFilter()
     name = CharFilter()
     level = django_filters.NumberFilter()
-    attribute_type = ModelWithPermissionMultipleChoiceFilter(model=CounterpartyAttributeType)
+    attribute_type = ModelExtWithPermissionMultipleChoiceFilter(model=CounterpartyAttributeType)
 
     class Meta:
         model = CounterpartyClassifier
@@ -68,7 +68,7 @@ class CounterpartyGroupFilterSet(FilterSet):
     user_code = CharFilter()
     name = CharFilter()
     short_name = CharFilter()
-    # is_default = IsDefaultFilter(source='counterparty_group')
+    public_name = CharFilter()
     tag = TagFilter(model=CounterpartyGroup)
     member = ObjectPermissionMemberFilter(object_permission_model=CounterpartyGroup)
     member_group = ObjectPermissionGroupFilter(object_permission_model=CounterpartyGroup)
@@ -89,11 +89,11 @@ class CounterpartyGroupViewSet(AbstractWithObjectPermissionViewSet):
     ]
     filter_class = CounterpartyGroupFilterSet
     ordering_fields = [
-        'user_code', 'name', 'short_name'
+        'user_code', 'name', 'short_name', 'public_name',
     ]
-    search_fields = [
-        'user_code', 'name', 'short_name'
-    ]
+    # search_fields = [
+    #     'user_code', 'name', 'short_name'
+    # ]
     # has_feature_is_deleted = True
 
 
@@ -104,8 +104,8 @@ class CounterpartyFilterSet(FilterSet):
     name = CharFilter()
     short_name = CharFilter()
     is_valid_for_all_portfolios = django_filters.BooleanFilter()
-    group = ModelWithPermissionMultipleChoiceFilter(model=CounterpartyGroup)
-    portfolio = ModelWithPermissionMultipleChoiceFilter(model=Portfolio, name='portfolios')
+    group = ModelExtWithPermissionMultipleChoiceFilter(model=CounterpartyGroup)
+    portfolio = ModelExtWithPermissionMultipleChoiceFilter(model=Portfolio, name='portfolios')
     tag = TagFilter(model=Counterparty)
     member = ObjectPermissionMemberFilter(object_permission_model=Counterparty)
     member_group = ObjectPermissionGroupFilter(object_permission_model=Counterparty)
@@ -136,12 +136,12 @@ class CounterpartyViewSet(AbstractWithObjectPermissionViewSet):
     ]
     filter_class = CounterpartyFilterSet
     ordering_fields = [
-        'user_code', 'name', 'short_name',
-        'group__user_code', 'group__name', 'group__short_name',
+        'user_code', 'name', 'short_name', 'public_name',
+        'group__user_code', 'group__name', 'group__short_name', 'group__public_name',
     ]
-    search_fields = [
-        'user_code', 'name', 'short_name',
-    ]
+    # search_fields = [
+    #     'user_code', 'name', 'short_name',
+    # ]
     # has_feature_is_deleted = True
 
 
@@ -153,6 +153,7 @@ class ResponsibleAttributeTypeFilterSet(FilterSet):
     user_code = CharFilter()
     name = CharFilter()
     short_name = CharFilter()
+    public_name = CharFilter()
     value_type = AttributeTypeValueTypeFilter()
     member = ObjectPermissionMemberFilter(object_permission_model=ResponsibleAttributeType)
     member_group = ObjectPermissionGroupFilter(object_permission_model=ResponsibleAttributeType)
@@ -174,7 +175,7 @@ class ResponsibleClassifierFilterSet(FilterSet):
     id = NoOpFilter()
     name = CharFilter()
     level = django_filters.NumberFilter()
-    attribute_type = ModelWithPermissionMultipleChoiceFilter(model=ResponsibleAttributeType)
+    attribute_type = ModelExtWithPermissionMultipleChoiceFilter(model=ResponsibleAttributeType)
 
     class Meta:
         model = ResponsibleClassifier
@@ -213,11 +214,11 @@ class ResponsibleGroupViewSet(AbstractWithObjectPermissionViewSet):
     ]
     filter_class = ResponsibleGroupFilterSet
     ordering_fields = [
-        'user_code', 'name', 'short_name'
+        'user_code', 'name', 'short_name', 'public_name',
     ]
-    search_fields = [
-        'user_code', 'name', 'short_name'
-    ]
+    # search_fields = [
+    #     'user_code', 'name', 'short_name'
+    # ]
     # has_feature_is_deleted = True
 
 
@@ -227,9 +228,10 @@ class ResponsibleFilterSet(FilterSet):
     user_code = CharFilter()
     name = CharFilter()
     short_name = CharFilter()
+    public_name = CharFilter()
     is_valid_for_all_portfolios = django_filters.BooleanFilter()
-    group = ModelWithPermissionMultipleChoiceFilter(model=CounterpartyGroup)
-    portfolio = ModelWithPermissionMultipleChoiceFilter(model=Portfolio, name='portfolios')
+    group = ModelExtWithPermissionMultipleChoiceFilter(model=CounterpartyGroup)
+    portfolio = ModelExtWithPermissionMultipleChoiceFilter(model=Portfolio, name='portfolios')
     tag = TagFilter(model=Responsible)
     member = ObjectPermissionMemberFilter(object_permission_model=Responsible)
     member_group = ObjectPermissionGroupFilter(object_permission_model=Responsible)
@@ -260,10 +262,10 @@ class ResponsibleViewSet(AbstractWithObjectPermissionViewSet):
     ]
     filter_class = ResponsibleFilterSet
     ordering_fields = [
-        'user_code', 'name', 'short_name',
-        'group__user_code', 'group__name', 'group__short_name',
+        'user_code', 'name', 'short_name', 'public_name',
+        'group__user_code', 'group__name', 'group__short_name', 'group__public_name',
     ]
-    search_fields = [
-        'user_code', 'name', 'short_name'
-    ]
+    # search_fields = [
+    #     'user_code', 'name', 'short_name'
+    # ]
     # has_feature_is_deleted = True

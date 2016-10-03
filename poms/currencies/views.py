@@ -3,12 +3,13 @@ from __future__ import unicode_literals
 import django_filters
 from rest_framework.filters import FilterSet
 
-from poms.common.filters import CharFilter, ModelMultipleChoiceFilter, NoOpFilter
+from poms.common.filters import CharFilter, ModelExtMultipleChoiceFilter, NoOpFilter
 from poms.common.views import AbstractModelViewSet
 from poms.currencies.filters import OwnerByCurrencyFilter
 from poms.currencies.models import Currency, CurrencyHistory
 from poms.currencies.serializers import CurrencySerializer, CurrencyHistorySerializer
-from poms.instruments.models import PricingPolicy
+from poms.instruments.models import PricingPolicy, DailyPricingModel
+from poms.integrations.models import PriceDownloadScheme
 from poms.tags.filters import TagFilterBackend, TagFilter
 from poms.users.filters import OwnerByMasterUserFilter
 from poms.users.permissions import SuperUserOrReadOnly
@@ -20,7 +21,10 @@ class CurrencyFilterSet(FilterSet):
     user_code = CharFilter()
     name = CharFilter()
     short_name = CharFilter()
+    public_name = CharFilter()
     reference_for_pricing = CharFilter()
+    daily_pricing_model = django_filters.ModelMultipleChoiceFilter(queryset=DailyPricingModel.objects)
+    price_download_scheme = ModelExtMultipleChoiceFilter(model=PriceDownloadScheme, field_name='scheme_name')
     tag = TagFilter(model=Currency)
 
     class Meta:
@@ -40,19 +44,21 @@ class CurrencyViewSet(AbstractModelViewSet):
     ]
     filter_class = CurrencyFilterSet
     ordering_fields = [
-        'user_code', 'name', 'short_name', 'reference_for_pricing',
+        'user_code', 'name', 'short_name', 'public_name', 'reference_for_pricing',
+        'price_download_scheme__scheme_name',
     ]
-    search_fields = [
-        'user_code', 'name', 'short_name', 'reference_for_pricing'
-    ]
+    # search_fields = [
+    #     'user_code', 'name', 'short_name', 'reference_for_pricing'
+    # ]
     # has_feature_is_deleted = True
 
 
 class CurrencyHistoryFilterSet(FilterSet):
     id = NoOpFilter()
     date = django_filters.DateFromToRangeFilter()
-    currency = ModelMultipleChoiceFilter(model=Currency)
-    pricing_policy = ModelMultipleChoiceFilter(model=PricingPolicy)
+    currency = ModelExtMultipleChoiceFilter(model=Currency)
+    pricing_policy = ModelExtMultipleChoiceFilter(model=PricingPolicy)
+    fx_rate = django_filters.RangeFilter()
 
     class Meta:
         model = CurrencyHistory
@@ -70,6 +76,8 @@ class CurrencyHistoryViewSet(AbstractModelViewSet):
     ]
     filter_class = CurrencyHistoryFilterSet
     ordering_fields = [
-        'date', 'currency__user_code', 'currency__name', 'currency__short_name',
+        'date', 'fx_rate',
+        'currency__user_code', 'currency__name', 'currency__short_name', 'currency__public_name',
+        'pricing_policy__user_code', 'pricing_policy__name', 'pricing_policy__short_name', 'pricing_policy__public_name',
     ]
-    search_fields = []
+    # search_fields = []
