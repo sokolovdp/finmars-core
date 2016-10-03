@@ -23,19 +23,19 @@ class ExpressionSyntaxError(InvalidExpression):
 class FunctionNotDefined(InvalidExpression):
     def __init__(self, name):
         self.message = "Function '%s' not defined" % name
-        super(InvalidExpression, self).__init__()
+        super(InvalidExpression, self).__init__(self.message)
 
 
 class NameNotDefined(InvalidExpression):
     def __init__(self, name):
         self.message = "Name '%s' not defined" % name
-        super(InvalidExpression, self).__init__()
+        super(InvalidExpression, self).__init__(self.message)
 
 
 class AttributeDoesNotExist(InvalidExpression):
     def __init__(self, attr):
         self.message = "Attribute '%s' does not exist in expression" % attr
-        super(AttributeDoesNotExist, self).__init__()
+        super(AttributeDoesNotExist, self).__init__(self.message)
 
 
 def _check_string(a):
