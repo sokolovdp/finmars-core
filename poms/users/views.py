@@ -151,7 +151,9 @@ class MasterUserViewSet(AbstractModelViewSet):
     filter_backends = AbstractModelViewSet.filter_backends + [
         MasterUserFilter,
     ]
-    ordering_fields = ['name', ]
+    ordering_fields = [
+        'name',
+    ]
     # search_fields = ['name', ]
     pagination_class = BigPagination
 

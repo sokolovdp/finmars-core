@@ -1,5 +1,6 @@
 from __future__ import unicode_literals
 
+import django_filters
 from django.utils import timezone
 from django_filters.widgets import BooleanWidget
 from rest_framework.decorators import list_route, detail_route
@@ -18,6 +19,8 @@ class NotificationFilterSet(FilterSet):
     id = NoOpFilter()
     all = NoOpFilter(widget=BooleanWidget())
     verb = CharFilter()
+    create_date = django_filters.DateFromToRangeFilter()
+    read_date = django_filters.DateFromToRangeFilter()
 
     class Meta:
         model = Notification
@@ -36,7 +39,10 @@ class NotificationViewSet(AbstractReadOnlyModelViewSet):
         NotificationFilter,
     ]
     filter_class = NotificationFilterSet
-    ordering_fields = ['create_date']
+    ordering_fields = [
+        'create_date', 'read_date',
+    ]
+
     # search_fields = ['verb']
 
     @list_route(methods=['get'], url_path='status')

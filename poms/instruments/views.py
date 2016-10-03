@@ -73,7 +73,9 @@ class PricingPolicyViewSet(AbstractModelViewSet):
     permission_classes = AbstractModelViewSet.permission_classes + [
         SuperUserOrReadOnly,
     ]
-    ordering_fields = ['user_code', 'name', 'short_name']
+    ordering_fields = [
+        'user_code', 'name', 'short_name', 'public_name'
+    ]
     # search_fields = ['user_code', 'name', 'short_name']
 
 
@@ -212,11 +214,11 @@ class InstrumentViewSet(AbstractWithObjectPermissionViewSet):
     filter_class = InstrumentFilterSet
     ordering_fields = [
         'user_code', 'name', 'short_name', 'public_name', 'reference_for_pricing',
-        'instrument_type__user_code', 'instrument_type__name', 'instrument_type__short_name',
+        'instrument_type', 'instrument_type__user_code', 'instrument_type__name', 'instrument_type__short_name',
         'instrument_type__public_name',
-        'pricing_currency__user_code', 'pricing_currency__name', 'pricing_currency__short_name',
+        'pricing_currency', 'pricing_currency__user_code', 'pricing_currency__name', 'pricing_currency__short_name',
         'pricing_currency__public_name', 'price_multiplier',
-        'accrued_currency__user_code', 'accrued_currency__name', 'accrued_currency__short_name',
+        'accrued_currency', 'accrued_currency__user_code', 'accrued_currency__name', 'accrued_currency__short_name',
         'accrued_currency__public_name', 'accrued_multiplier',
         'default_price', 'default_accrued', 'user_text_1', 'user_text_2', 'user_text_3',
         'reference_for_pricing',
@@ -287,8 +289,9 @@ class PriceHistoryViewSet(AbstractModelViewSet):
     ]
     filter_class = PriceHistoryFilterSet
     ordering_fields = [
-        'instrument__user_code', 'instrument__name', 'instrument__short_name', 'instrument__public_name',
-        'pricing_policy__user_code', 'pricing_policy__name', 'pricing_policy__short_name', 'pricing_policy__public_name',
+        'instrument', 'instrument__user_code', 'instrument__name', 'instrument__short_name', 'instrument__public_name',
+        'pricing_policy', 'pricing_policy__user_code', 'pricing_policy__name', 'pricing_policy__short_name',
+        'pricing_policy__public_name',
         'date', 'principal_price', 'accrued_price',
     ]
     # search_fields = [

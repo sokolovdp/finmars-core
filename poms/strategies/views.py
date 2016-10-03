@@ -81,7 +81,7 @@ class Strategy1SubgroupViewSet(AbstractWithObjectPermissionViewSet):
     filter_class = Strategy1SubgroupFilterSet
     ordering_fields = [
         'user_code', 'name', 'short_name', 'public_name',
-        'group__user_code', 'group__name', 'group__short_name', 'group__public_name',
+        'group', 'group__user_code', 'group__name', 'group__short_name', 'group__public_name',
     ]
     # search_fields = [
     #     'user_code', 'name', 'short_name',
@@ -120,8 +120,9 @@ class Strategy1ViewSet(AbstractWithObjectPermissionViewSet):
     filter_class = Strategy1FilterSet
     ordering_fields = [
         'user_code', 'name', 'short_name', 'public_name',
-        'subgroup__user_code', 'subgroup__name', 'subgroup__short_name', 'subgroup__public_name',
-        'subgroup__group__user_code', 'subgroup__group__name', 'subgroup__group__short_name', 'subgroup__group__public_name',
+        'subgroup__group', 'subgroup__group__user_code', 'subgroup__group__name', 'subgroup__group__short_name',
+        'subgroup__group__public_name',
+        'subgroup', 'subgroup__user_code', 'subgroup__name', 'subgroup__short_name', 'subgroup__public_name',
     ]
     # search_fields = [
     #     'user_code', 'name', 'short_name',

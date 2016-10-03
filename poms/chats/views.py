@@ -45,7 +45,9 @@ class ThreadGroupViewSet(AbstractModelViewSet):
         TagFilterBackend,
     ]
     filter_class = ThreadGroupFilterSet
-    ordering_fields = ['name']
+    ordering_fields = [
+        'name'
+    ]
     # search_fields = ['name']
     # has_feature_is_deleted = True
 
@@ -89,8 +91,9 @@ class ThreadViewSet(AbstractWithObjectPermissionViewSet):
     filter_class = ThreadFilterSet
     ordering_fields = [
         'id', 'created', 'modified', 'closed', 'is_closed', 'subject',
-        'thread_group__name',
+        'thread_group', 'thread_group__name',
     ]
+
     # search_fields = ['subject']
 
     # has_feature_is_deleted = True
@@ -137,7 +140,9 @@ class MessageViewSet(AbstractModelViewSet):
         MessagePermissionFilter,
     ]
     filter_class = MessageFilterSet
-    ordering_fields = ['id', 'created', 'thread', 'sender', ]
+    ordering_fields = [
+        'id', 'created', 'thread', 'thread__subject', 'sender', 'sender__username'
+    ]
 
 
 class DirectMessageFilterSet(FilterSet):
@@ -161,4 +166,6 @@ class DirectMessageViewSet(AbstractModelViewSet):
         DirectMessagePermissionFilter,
     ]
     filter_class = DirectMessageFilterSet
-    ordering_fields = ['id', 'created', 'recipient', 'sender']
+    ordering_fields = [
+        'id', 'created', 'recipient', 'recipient__username', 'sender', 'sender__username',
+    ]

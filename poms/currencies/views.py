@@ -45,7 +45,7 @@ class CurrencyViewSet(AbstractModelViewSet):
     filter_class = CurrencyFilterSet
     ordering_fields = [
         'user_code', 'name', 'short_name', 'public_name', 'reference_for_pricing',
-        'price_download_scheme__scheme_name',
+        'price_download_scheme', 'price_download_scheme__scheme_name',
     ]
     # search_fields = [
     #     'user_code', 'name', 'short_name', 'reference_for_pricing'
@@ -77,7 +77,8 @@ class CurrencyHistoryViewSet(AbstractModelViewSet):
     filter_class = CurrencyHistoryFilterSet
     ordering_fields = [
         'date', 'fx_rate',
-        'currency__user_code', 'currency__name', 'currency__short_name', 'currency__public_name',
-        'pricing_policy__user_code', 'pricing_policy__name', 'pricing_policy__short_name', 'pricing_policy__public_name',
+        'currency', 'currency__user_code', 'currency__name', 'currency__short_name', 'currency__public_name',
+        'pricing_policy', 'pricing_policy__user_code', 'pricing_policy__name', 'pricing_policy__short_name',
+        'pricing_policy__public_name',
     ]
     # search_fields = []

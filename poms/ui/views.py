@@ -56,7 +56,7 @@ class TemplateListLayoutViewSet(AbstractModelViewSet):
         SuperUserOnly,
     ]
     ordering_fields = [
-        'name', 'is_default'
+        'content_type', 'name', 'is_default',
     ]
     # search_fields = ['name', 'is_default']
 
@@ -80,7 +80,9 @@ class TemplateEditLayoutViewSet(AbstractModelViewSet):
         SuperUserOnly,
     ]
     filter_class = TemplateEditLayoutFilterSet
-    ordering_fields = []
+    ordering_fields = [
+        'content_type', 'name',
+    ]
     # search_fields = []
 
 
@@ -103,7 +105,7 @@ class ListLayoutViewSet(AbstractModelViewSet):
     ]
     filter_class = ListLayoutFilterSet
     ordering_fields = [
-        'name', 'is_default'
+        'content_type', 'name', 'is_default'
     ]
     # search_fields = ['name', 'is_default']
 
@@ -124,5 +126,7 @@ class EditLayoutViewSet(AbstractModelViewSet):
         OwnerByMemberFilter,
     ]
     filter_class = EditLayoutFilterSet
-    ordering_fields = []
+    ordering_fields = [
+        'content_type',
+    ]
     # search_fields = []

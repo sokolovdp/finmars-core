@@ -37,7 +37,7 @@ class AbstractClassifierViewSet(AbstractModelViewSet):
     ]
 
     ordering_fields = [
-        'attribute_type__user_code', 'attribute_type__name', 'attribute_type__short_name',
+        'attribute_type', 'attribute_type__user_code', 'attribute_type__name', 'attribute_type__short_name',
         'attribute_type__public_name',
         'name', 'level',
     ]

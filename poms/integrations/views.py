@@ -94,7 +94,9 @@ class InstrumentDownloadSchemeViewSet(AbstractModelViewSet):
     ]
     filter_class = InstrumentDownloadSchemeFilterSet
     ordering_fields = [
-        'scheme_name']
+        'scheme_name',
+        'provider', 'provider__name',
+    ]
 
     # search_fields = ['scheme_name']
 
@@ -119,7 +121,10 @@ class PriceDownloadSchemeViewSet(AbstractModelViewSet):
         OwnerByMasterUserFilter,
     ]
     filter_class = PriceDownloadSchemeFilterSet
-    ordering_fields = ['scheme_name']
+    ordering_fields = [
+        'scheme_name',
+        'provider', 'provider__name',
+    ]
     # search_fields = ['scheme_name']
 
 
@@ -145,8 +150,9 @@ class CurrencyMappingViewSet(AbstractModelViewSet):
     ]
     filter_class = CurrencyMappingFilterSet
     ordering_fields = [
+        'provider', 'provider__name',
         'value',
-        'currency__user_code', 'currency__name', 'currency__short_name', 'currency__public_name',
+        'currency', 'currency__user_code', 'currency__name', 'currency__short_name', 'currency__public_name',
     ]
 
 
@@ -174,7 +180,7 @@ class InstrumentTypeMappingViewSet(AbstractModelViewSet):
     filter_class = InstrumentTypeMappingFilterSet
     ordering_fields = [
         'value',
-        'instrument_type__user_code', 'instrument_type__name', 'instrument_type__short_name',
+        'instrument_type', 'instrument_type__user_code', 'instrument_type__name', 'instrument_type__short_name',
         'instrument_type__public_name',
     ]
 
@@ -204,8 +210,9 @@ class InstrumentAttributeValueMappingViewSet(AbstractModelViewSet):
     ]
     filter_class = InstrumentAttributeValueMappingFilterSet
     ordering_fields = [
+        'provider', 'provider__name',
         'value',
-        'attribute_type__user_code', 'attribute_type__name', 'attribute_type__short_name',
+        'attribute_type', 'attribute_type__user_code', 'attribute_type__name', 'attribute_type__short_name',
         'attribute_type__public_name',
     ]
 
@@ -234,7 +241,9 @@ class AccrualCalculationModelMappingViewSet(AbstractModelViewSet):
     ]
     filter_class = AccrualCalculationModelMappingFilterSet
     ordering_fields = [
+        'provider', 'provider__name',
         'value',
+        'accrual_calculation_model', 'accrual_calculation_model__name'
     ]
 
 
@@ -260,7 +269,9 @@ class PeriodicityMappingViewSet(AbstractModelViewSet):
     ]
     filter_class = PeriodicityMappingFilterSet
     ordering_fields = [
+        'provider', 'provider__name',
         'value',
+        'periodicity', 'periodicity__name',
     ]
 
 
@@ -284,7 +295,9 @@ class TaskViewSet(AbstractReadOnlyModelViewSet):
         TaskFilter,
     ]
     filter_class = TaskFilterSet
-    ordering_fields = ['action', 'created', 'modified']
+    ordering_fields = [
+        'action', 'created', 'modified'
+    ]
 
 
 class PricingAutomatedScheduleViewSet(AbstractModelViewSet):

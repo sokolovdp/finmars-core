@@ -137,7 +137,7 @@ class CounterpartyViewSet(AbstractWithObjectPermissionViewSet):
     filter_class = CounterpartyFilterSet
     ordering_fields = [
         'user_code', 'name', 'short_name', 'public_name',
-        'group__user_code', 'group__name', 'group__short_name', 'group__public_name',
+        'group', 'group__user_code', 'group__name', 'group__short_name', 'group__public_name',
     ]
     # search_fields = [
     #     'user_code', 'name', 'short_name',
@@ -263,7 +263,7 @@ class ResponsibleViewSet(AbstractWithObjectPermissionViewSet):
     filter_class = ResponsibleFilterSet
     ordering_fields = [
         'user_code', 'name', 'short_name', 'public_name',
-        'group__user_code', 'group__name', 'group__short_name', 'group__public_name',
+        'group', 'group__user_code', 'group__name', 'group__short_name', 'group__public_name',
     ]
     # search_fields = [
     #     'user_code', 'name', 'short_name'

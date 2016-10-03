@@ -135,7 +135,7 @@ class AccountViewSet(AbstractWithObjectPermissionViewSet):
     filter_class = AccountFilterSet
     ordering_fields = [
         'user_code', 'name', 'short_name', 'public_name', 'is_valid_for_all_portfolios',
-        'type__user_code', 'type__name', 'type__short_name', 'type__public_name',
+        'type', 'type__user_code', 'type__name', 'type__short_name', 'type__public_name',
     ]
     # search_fields = [
     #     'user_code', 'name', 'short_name',
