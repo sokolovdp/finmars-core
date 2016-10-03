@@ -29,9 +29,6 @@ class Currency(NamedModel, FakeDeletableModel):
             ('manage_currency', 'Can manage currency'),
         ]
 
-    def __str__(self):
-        return self.user_code
-
     @property
     def is_system(self):
         return self.user_code == settings.CURRENCY_CODE
@@ -76,7 +73,7 @@ class CurrencyHistory(models.Model):
         unique_together = (
             ('currency', 'pricing_policy', 'date',)
         )
-        ordering = ['-date']
+        ordering = ['currency', 'pricing_policy', 'date']
 
     def __str__(self):
         # return '%s/%s@%s,%s' % (self.currency, self.pricing_policy, self.date, self.fx_rate)

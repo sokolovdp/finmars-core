@@ -22,7 +22,7 @@ class ThreadGroup(FakeDeletableModel, models.Model):
     class Meta(FakeDeletableModel.Meta):
         verbose_name = ugettext_lazy('thread group')
         verbose_name_plural = ugettext_lazy('thread groups')
-        ordering = ('name',)
+        ordering = ['master_user', 'name']
         permissions = [
             ('view_threadgroup', 'Can view thread group'),
             ('manage_threadgroup', 'Can manage thread group'),
@@ -61,6 +61,7 @@ class Thread(TimeStampedModel, FakeDeletableModel):
     class Meta(TimeStampedModel.Meta, FakeDeletableModel.Meta):
         verbose_name = ugettext_lazy('thread')
         verbose_name_plural = ugettext_lazy('threads')
+        ordering = ['master_user', 'thread_group', 'subject']
         permissions = [
             ('view_thread', 'Can view thread'),
             ('manage_thread', 'Can manage thread'),
@@ -100,6 +101,7 @@ class Message(TimeStampedModel):
         index_together = [
             ['thread', 'created']
         ]
+        ordering = ['thread', 'created']
 
     def __str__(self):
         return self.short_text

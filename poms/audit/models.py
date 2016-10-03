@@ -20,6 +20,7 @@ class AuthLogEntry(models.Model):
     class Meta:
         verbose_name = ugettext_lazy('authenticate log')
         verbose_name_plural = ugettext_lazy('authenticate logs')
+        ordering = ['user', 'date']
 
     def __str__(self):
         if self.is_success:
@@ -90,7 +91,7 @@ class ObjectHistory4Entry(models.Model):
     class Meta:
         verbose_name = ugettext_lazy('object history (v4)')
         verbose_name_plural = ugettext_lazy('object histories (v4)')
-        ordering = ['-created']
+        ordering = ['master_user', 'member', 'created']
         index_together = [
             ['master_user', 'created'],
             # ['master_user', 'group_id'],

@@ -14,7 +14,7 @@ from poms.obj_perms.admin import UserObjectPermissionInline, \
 
 class CounterpartyGroupAdmin(HistoricalAdmin):
     model = CounterpartyGroup
-    list_display = ['id', 'master_user', 'name', 'is_deleted', ]
+    list_display = ['id', 'master_user', 'user_code', 'name', 'is_deleted', ]
     list_select_related = ['master_user']
     search_fields = ['id', 'user_code', 'name']
     list_filter = ['is_deleted', ]
@@ -30,7 +30,7 @@ admin.site.register(CounterpartyGroup, CounterpartyGroupAdmin)
 
 class CounterpartyAdmin(HistoricalAdmin):
     model = Counterparty
-    list_display = ['id', 'master_user', 'group', 'name', 'is_deleted', ]
+    list_display = ['id', 'master_user', 'group', 'user_code', 'name', 'is_deleted', ]
     search_fields = ['id', 'user_code', 'name']
     list_filter = ['is_deleted', ]
     list_select_related = ['master_user', 'group']
@@ -65,7 +65,7 @@ admin.site.register(CounterpartyClassifier, ClassifierAdmin)
 
 class ResponsibleGroupAdmin(HistoricalAdmin):
     model = ResponsibleGroup
-    list_display = ['id', 'master_user', 'name', 'is_deleted', ]
+    list_display = ['id', 'master_user', 'user_code', 'name', 'is_deleted', ]
     list_select_related = ['master_user']
     search_fields = ['id', 'user_code', 'name']
     list_filter = ['is_deleted', ]
@@ -81,7 +81,7 @@ admin.site.register(ResponsibleGroup, ResponsibleGroupAdmin)
 
 class ResponsibleAdmin(HistoricalAdmin):
     model = Responsible
-    list_display = ['id', 'master_user', 'group', 'name', 'is_deleted', ]
+    list_display = ['id', 'master_user', 'group', 'user_code', 'name', 'is_deleted', ]
     list_select_related = ['master_user', 'group']
     search_fields = ['id', 'user_code', 'name']
     list_filter = ['is_deleted', ]

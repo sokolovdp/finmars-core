@@ -71,7 +71,6 @@ class MemberAdmin(admin.ModelAdmin):
     list_display = ['id', 'master_user', 'user', 'is_deleted', 'is_owner', 'is_admin']
     list_select_related = ['master_user', 'user']
     list_filter = ['is_deleted', 'is_owner', 'is_admin']
-    ordering = ['user', 'master_user']
     raw_id_fields = ['master_user', 'user', 'groups']
 
     # def formfield_for_manytomany(self, db_field, request=None, **kwargs):
@@ -128,7 +127,7 @@ admin.site.register(Permission, PermissionAdmin)
 
 class GroupAdmin(HistoricalAdmin, admin.ModelAdmin):
     model = Group
-    list_display = ['id', 'name', 'master_user']
+    list_display = ['id',  'master_user', 'name',]
     list_select_related = ['master_user']
     # filter_horizontal = ['permissions']
     raw_id_fields = ['master_user']

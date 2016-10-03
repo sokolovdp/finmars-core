@@ -13,7 +13,7 @@ from poms.obj_perms.admin import UserObjectPermissionInline, \
 
 class AccountTypeAdmin(HistoricalAdmin):
     model = AccountType
-    list_display = ['id', 'master_user', 'name', 'is_deleted', ]
+    list_display = ['id', 'master_user', 'user_code', 'name', 'is_deleted', ]
     list_select_related = ['master_user']
     list_filter = ['is_deleted', ]
     search_fields = ['id', 'user_code', 'name']
@@ -29,7 +29,7 @@ admin.site.register(AccountType, AccountTypeAdmin)
 
 class AccountAdmin(HistoricalAdmin):
     model = Account
-    list_display = ['id', 'master_user', 'name', 'type', 'is_deleted', ]
+    list_display = ['id', 'master_user', 'user_code', 'name', 'type', 'is_deleted', ]
     list_select_related = ['master_user', 'type']
     list_filter = ['is_deleted', ]
     search_fields = ['id', 'user_code', 'name']

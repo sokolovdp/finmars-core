@@ -231,6 +231,7 @@ class TransactionType(NamedModel, FakeDeletableModel):
             ('view_transactiontype', 'Can view transaction type'),
             ('manage_transactiontype', 'Can manage transaction type'),
         ]
+        ordering = ['master_user', 'group', 'user_code']
 
     @property
     def book_transaction_layout(self):
@@ -352,7 +353,7 @@ class TransactionTypeInput(models.Model):
         index_together = [
             ['transaction_type', 'order'],
         ]
-        ordering = ['transaction_type', 'order']
+        ordering = ['transaction_type', 'name']
 
     def __str__(self):
         if self.value_type == self.RELATION:
@@ -569,9 +570,10 @@ class ComplexTransaction(models.Model):
         index_together = [
             ['transaction_type', 'code']
         ]
+        ordering = ['transaction_type', 'code']
 
     def __str__(self):
-        return "ComplexTransaction #%s" % self.code
+        return str(self.code)
 
     def save(self, *args, **kwargs):
         if self.code is None or self.code == 0:
@@ -672,6 +674,7 @@ class Transaction(models.Model):
         index_together = [
             ['master_user', 'transaction_code']
         ]
+        ordering = ['master_user', 'transaction_date', 'transaction_code']
 
     def __str__(self):
         return 'Transaction #%s' % (self.transaction_code)

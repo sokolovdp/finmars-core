@@ -30,7 +30,7 @@ admin.site.register(PeriodicityGroup, ClassModelAdmin)
 
 class TransactionTypeGroupAdmin(HistoricalAdmin):
     model = TransactionTypeGroup
-    list_display = ['id', 'name', 'master_user', 'is_deleted', ]
+    list_display = ['id', 'master_user', 'user_code', 'name', 'is_deleted', ]
     list_select_related = ['master_user']
     search_fields = ['id', 'user_code', 'name']
     list_filter = ['is_deleted', ]
@@ -242,7 +242,7 @@ class EventToHandleInline(admin.StackedInline):
 
 class TransactionTypeAdmin(HistoricalAdmin):
     model = TransactionType
-    list_display = ['id', 'master_user', 'name', 'is_deleted', ]
+    list_display = ['id', 'master_user', 'user_code', 'name', 'is_deleted', ]
     list_select_related = ['master_user']
     search_fields = ['id', 'user_code', 'name']
     list_filter = ['is_deleted', ]
@@ -281,7 +281,7 @@ admin.site.register(TransactionType, TransactionTypeAdmin)
 
 class ComplexTransactionAdmin(HistoricalAdmin):
     model = ComplexTransaction
-    list_display = ['id', 'transaction_type', 'master_user', 'code']
+    list_display = ['id', 'master_user', 'transaction_type', 'code']
     list_select_related = ['transaction_type', 'transaction_type__master_user']
     search_fields = ['id']
     raw_id_fields = ['transaction_type']
@@ -312,15 +312,10 @@ admin.site.register(ComplexTransaction, ComplexTransactionAdmin)
 
 class TransactionAdmin(HistoricalAdmin):
     model = Transaction
-    list_select_related = ['master_user', 'complex_transaction', 'transaction_class',
-                           'instrument', 'transaction_currency', 'settlement_currency',
-                           'portfolio', 'account_cash', 'account_position', 'account_interim',
-                           'strategy1_position', 'strategy1_cash', 'strategy2_position', 'strategy2_cash',
-                           'strategy3_position', 'strategy3_cash']
-    list_display = ['id', 'master_user', 'is_canceled',
-                    'complex_transaction', 'complex_transaction_order',
+    list_display = ['id', 'master_user', 'transaction_date', 'transaction_code',
+                    'complex_transaction_id',
                     'transaction_class',
-                    'transaction_date', 'accounting_date', 'cash_date',
+                    'accounting_date', 'cash_date',
                     'instrument', 'transaction_currency',
                     'position_size_with_sign',
                     'settlement_currency', 'cash_consideration',
@@ -328,9 +323,13 @@ class TransactionAdmin(HistoricalAdmin):
                     'account_cash', 'account_position', 'account_interim',
                     'strategy1_position', 'strategy1_cash', 'strategy2_position', 'strategy2_cash',
                     'strategy3_position', 'strategy3_cash', ]
+    list_select_related = ['master_user', 'complex_transaction', 'transaction_class',
+                           'instrument', 'transaction_currency', 'settlement_currency',
+                           'portfolio', 'account_cash', 'account_position', 'account_interim',
+                           'strategy1_position', 'strategy1_cash', 'strategy2_position', 'strategy2_cash',
+                           'strategy3_position', 'strategy3_cash']
     search_fields = ['id']
     list_filter = ['is_canceled']
-    ordering = ['transaction_date', 'id']
     date_hierarchy = 'transaction_date'
     raw_id_fields = ['master_user', 'complex_transaction', 'portfolio', 'instrument', 'transaction_currency',
                      'settlement_currency',

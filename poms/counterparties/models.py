@@ -26,9 +26,6 @@ class CounterpartyGroup(NamedModel, FakeDeletableModel):
             ('manage_counterpartygroup', 'Can manage counterparty group'),
         ]
 
-    def __str__(self):
-        return self.user_code
-
     @property
     def is_default(self):
         return self.master_user.counterparty_group_id == self.id if self.master_user_id else False
@@ -62,13 +59,11 @@ class Counterparty(NamedModel, FakeDeletableModel):
     class Meta(NamedModel.Meta, FakeDeletableModel.Meta):
         verbose_name = ugettext_lazy('counterparty')
         verbose_name_plural = ugettext_lazy('counterparties')
+        ordering = ['master_user', 'group', 'user_code']
         permissions = [
             ('view_counterparty', 'Can view counterparty'),
             ('manage_counterparty', 'Can manage counterparty'),
         ]
-
-    def __str__(self):
-        return self.user_code
 
     @property
     def is_default(self):
@@ -172,9 +167,6 @@ class ResponsibleGroup(NamedModel, FakeDeletableModel):
             ('manage_responsiblegroup', 'Can manage responsible group'),
         ]
 
-    def __str__(self):
-        return self.user_code
-
     @property
     def is_default(self):
         return self.master_user.counterparty_group_id == self.id if self.master_user_id else False
@@ -207,13 +199,11 @@ class Responsible(NamedModel, FakeDeletableModel):
     class Meta(NamedModel.Meta, FakeDeletableModel.Meta):
         verbose_name = ugettext_lazy('responsible')
         verbose_name_plural = ugettext_lazy('responsibles')
+        ordering = ['master_user', 'group', 'user_code']
         permissions = [
             ('view_responsible', 'Can view responsible'),
             ('manage_responsible', 'Can manage responsible'),
         ]
-
-    def __str__(self):
-        return self.user_code
 
     @property
     def is_default(self):

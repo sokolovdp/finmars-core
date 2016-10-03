@@ -29,11 +29,12 @@ class AbstractAttributeType(NamedModel):
                                                   verbose_name=ugettext_lazy('value type'))
     order = models.IntegerField(default=0, verbose_name=ugettext_lazy('order'))
 
-    class Meta:
+    class Meta(NamedModel.Meta):
         abstract = True
         unique_together = [
             ['master_user', 'name']
         ]
+        ordering = ['master_user', 'name']
 
     def get_value_atr(self):
         if self.value_type == self.STRING:
@@ -51,7 +52,7 @@ class AbstractAttributeType(NamedModel):
         return getattr(obj, attr_name)
 
     def __str__(self):
-        return self.user_code
+        return self.name
 
 
 @python_2_unicode_compatible
@@ -65,6 +66,7 @@ class AbstractClassifier(MPTTModel):
 
     class Meta:
         abstract = True
+        ordering = ['attribute_type', 'tree_id', 'level', 'name']
 
     def __str__(self):
         return self.name
@@ -101,6 +103,7 @@ class AbstractAttribute(models.Model):
         unique_together = [
             ['content_object', 'attribute_type']
         ]
+        ordering = ['content_object', 'attribute_type']
 
     def __str__(self):
         # return '%s' % (self.get_value(), )

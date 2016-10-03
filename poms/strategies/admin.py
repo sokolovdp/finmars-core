@@ -11,7 +11,7 @@ from poms.strategies.models import Strategy1Group, Strategy2Subgroup, Strategy3,
 
 class Strategy1GroupAdmin(HistoricalAdmin):
     model = Strategy1Group
-    list_display = ['id', 'master_user', 'name', 'is_deleted', ]
+    list_display = ['id', 'master_user', 'user_code', 'name', 'is_deleted', ]
     list_select_related = ['master_user']
     search_fields = ['id', 'user_code', 'name']
     list_filter = ['is_deleted', ]
@@ -27,7 +27,7 @@ admin.site.register(Strategy1Group, Strategy1GroupAdmin)
 
 class Strategy1SubgroupAdmin(HistoricalAdmin):
     model = Strategy1Subgroup
-    list_display = ['id', 'master_user', 'group', 'name', 'is_deleted', ]
+    list_display = ['id', 'master_user', 'group', 'user_code', 'name', 'is_deleted', ]
     list_select_related = ['group', 'group__master_user']
     search_fields = ['id', 'user_code', 'name']
     list_filter = ['is_deleted', ]
@@ -43,7 +43,7 @@ admin.site.register(Strategy1Subgroup, Strategy1SubgroupAdmin)
 
 class Strategy1Admin(HistoricalAdmin):
     model = Strategy1Subgroup
-    list_display = ['id', 'master_user', 'group', 'subgroup', 'name', 'is_deleted', ]
+    list_display = ['id', 'master_user', 'group', 'subgroup', 'user_code', 'name', 'is_deleted', ]
     list_select_related = ['subgroup', 'subgroup__group', 'subgroup__group__master_user']
     search_fields = ['id', 'user_code', 'name']
     list_filter = ['is_deleted', ]

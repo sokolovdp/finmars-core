@@ -159,11 +159,12 @@ class InstrumentDownloadScheme(models.Model):
     accrual_calculation_schedule_method = models.ForeignKey(AccrualScheduleDownloadMethod, null=True, blank=True)
 
     class Meta:
-        index_together = (
-            ('master_user', 'scheme_name')
-        )
         verbose_name = ugettext_lazy('instrument download scheme')
         verbose_name_plural = ugettext_lazy('instrument download schemes')
+        # index_together = (
+        #     ('master_user', 'scheme_name')
+        # )
+        ordering = ['master_user', 'provider', 'scheme_name']
         # permissions = [
         #     ('view_instrumentdownloadscheme', 'Can view instrument download scheme'),
         #     ('manage_instrumentdownloadscheme', 'Can manage instrument download scheme'),
@@ -188,7 +189,7 @@ class InstrumentDownloadSchemeInput(models.Model):
         unique_together = (
             ('scheme', 'name')
         )
-        ordering = ('name',)
+        ordering = ['scheme', 'name']
 
     def __str__(self):
         return self.name
@@ -212,7 +213,7 @@ class InstrumentDownloadSchemeAttribute(models.Model):
         unique_together = (
             ('scheme', 'attribute_type')
         )
-        ordering = ('attribute_type__name',)
+        ordering = ['scheme', 'attribute_type']
 
     def __str__(self):
         # return '%s -> %s' % (self.name, self.attribute_type)
@@ -250,11 +251,12 @@ class PriceDownloadScheme(models.Model):
     currency_fxrate_multiplier = models.FloatField(default=1.0)
 
     class Meta:
-        unique_together = [
-            ['master_user', 'scheme_name']
-        ]
         verbose_name = ugettext_lazy('price download scheme')
         verbose_name_plural = ugettext_lazy('price download schemes')
+        # unique_together = [
+        #     ['master_user', 'scheme_name']
+        # ]
+        ordering = ['master_user', 'provider', 'scheme_name']
 
     def __str__(self):
         return self.scheme_name
@@ -295,12 +297,13 @@ class AbstractMapping(models.Model):
 
     class Meta:
         abstract = True
+        ordering = ['master_user', 'provider', 'value']
 
 
 class CurrencyMapping(AbstractMapping):
     currency = models.ForeignKey('currencies.Currency')
 
-    class Meta:
+    class Meta(AbstractMapping.Meta):
         verbose_name = ugettext_lazy('currency mapping')
         verbose_name_plural = ugettext_lazy('currency mappings')
 
@@ -311,7 +314,7 @@ class CurrencyMapping(AbstractMapping):
 class InstrumentTypeMapping(AbstractMapping):
     instrument_type = models.ForeignKey('instruments.InstrumentType')
 
-    class Meta:
+    class Meta(AbstractMapping.Meta):
         verbose_name = ugettext_lazy('instrument type mapping')
         verbose_name_plural = ugettext_lazy('instrument type mappings')
 
@@ -329,7 +332,7 @@ class InstrumentAttributeValueMapping(AbstractMapping):
     classifier = models.ForeignKey('instruments.InstrumentClassifier', on_delete=models.SET_NULL, null=True, blank=True,
                                    verbose_name=ugettext_lazy('classifier'))
 
-    class Meta:
+    class Meta(AbstractMapping.Meta):
         verbose_name = ugettext_lazy('instrument attribute value mapping')
         verbose_name_plural = ugettext_lazy('instrument attribute value mappings')
 
@@ -341,7 +344,7 @@ class InstrumentAttributeValueMapping(AbstractMapping):
 class AccrualCalculationModelMapping(AbstractMapping):
     accrual_calculation_model = models.ForeignKey('instruments.AccrualCalculationModel')
 
-    class Meta:
+    class Meta(AbstractMapping.Meta):
         verbose_name = ugettext_lazy('accrual calculation model mapping')
         verbose_name_plural = ugettext_lazy('accrual calculation model  mappings')
 
@@ -352,7 +355,7 @@ class AccrualCalculationModelMapping(AbstractMapping):
 class PeriodicityMapping(AbstractMapping):
     periodicity = models.ForeignKey('instruments.Periodicity')
 
-    class Meta:
+    class Meta(AbstractMapping.Meta):
         verbose_name = ugettext_lazy('periodicity mapping')
         verbose_name_plural = ugettext_lazy('periodicity  mappings')
 
@@ -517,6 +520,7 @@ class PricingAutomatedSchedule(models.Model):
         index_together = (
             ('is_enabled', 'next_run_at'),
         )
+        ordering = ['master_user']
 
     def __str__(self):
         return ugettext('pricing automated schedule')

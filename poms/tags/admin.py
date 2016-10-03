@@ -10,8 +10,9 @@ from poms.tags.models import Tag
 
 class TagAdmin(HistoricalAdmin):
     model = Tag
-    list_display = ['id', 'master_user', 'name', ]
+    list_display = ['id', 'master_user', 'user_code', 'name', ]
     list_select_related = ['master_user']
+    list_filter = ['content_types']
     search_fields = ['id', 'user_code', 'name']
     filter_horizontal = ['content_types', ]
     raw_id_fields = [

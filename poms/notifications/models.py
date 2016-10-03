@@ -71,7 +71,7 @@ class Notification(models.Model):
     # objects = NotificationQuerySet.as_manager()
 
     class Meta:
-        ordering = ['-create_date']
+        ordering = ['recipient_member', 'create_date']
 
     def __str__(self):
         if self.verb and self.actor_object_id:

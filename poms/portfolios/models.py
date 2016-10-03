@@ -29,9 +29,6 @@ class Portfolio(NamedModel, FakeDeletableModel):
             ('manage_portfolio', 'Can manage portfolio'),
         )
 
-    def __str__(self):
-        return self.user_code
-
     @property
     def is_default(self):
         return self.master_user.portfolio_id == self.id if self.master_user_id else False

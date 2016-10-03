@@ -31,10 +31,11 @@ class TemplateListLayout(BaseLayout):
     name = models.CharField(max_length=255, blank=True, default="", db_index=True)
     is_default = models.BooleanField(default=False)
 
-    class Meta:
+    class Meta(BaseLayout.Meta):
         unique_together = [
             ['master_user', 'content_type', 'name'],
         ]
+        ordering = ['master_user', 'content_type', 'name']
 
     def save(self, *args, **kwargs):
         if self.is_default:
@@ -49,10 +50,11 @@ class TemplateListLayout(BaseLayout):
 class TemplateEditLayout(BaseLayout):
     master_user = models.ForeignKey(MasterUser, related_name='edit_layouts')
 
-    class Meta:
+    class Meta(BaseLayout.Meta):
         unique_together = [
             ['master_user', 'content_type'],
         ]
+        ordering = ['master_user', 'content_type']
 
 
 class ListLayout(BaseLayout):
@@ -60,10 +62,11 @@ class ListLayout(BaseLayout):
     name = models.CharField(max_length=255, blank=True, default="", db_index=True)
     is_default = models.BooleanField(default=False)
 
-    class Meta:
+    class Meta(BaseLayout.Meta):
         unique_together = [
             ['member', 'content_type', 'name'],
         ]
+        ordering = ['member', 'content_type', 'name']
 
     def save(self, *args, **kwargs):
         if self.is_default:
@@ -77,10 +80,11 @@ class ListLayout(BaseLayout):
 class EditLayout(BaseLayout):
     member = models.ForeignKey(Member, related_name='edit_layouts')
 
-    class Meta:
+    class Meta(BaseLayout.Meta):
         unique_together = [
             ['member', 'content_type'],
         ]
+        ordering = ['member', 'content_type']
 
 # history.register(TemplateListLayout)
 # history.register(TemplateEditLayout)

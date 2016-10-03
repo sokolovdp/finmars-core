@@ -31,9 +31,6 @@ class AccountType(NamedModel, FakeDeletableModel):
             ('manage_accounttype', 'Can manage account type'),
         ]
 
-    def __str__(self):
-        return self.user_code
-
     @property
     def is_default(self):
         return self.master_user.account_type_id == self.id if self.master_user_id else False
@@ -72,9 +69,6 @@ class Account(NamedModel, FakeDeletableModel):
             ('view_account', 'Can view account'),
             ('manage_account', 'Can manage account'),
         ]
-
-    def __str__(self):
-        return self.user_code
 
     @property
     def is_default(self):

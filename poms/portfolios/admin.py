@@ -12,7 +12,7 @@ from poms.portfolios.models import Portfolio, PortfolioAttributeType, PortfolioC
 
 class PortfolioAdmin(HistoricalAdmin):
     model = Portfolio
-    list_display = ['id', 'master_user', 'name', 'is_deleted', ]
+    list_display = ['id', 'master_user', 'user_code', 'name', 'is_deleted', ]
     list_select_related = ['master_user']
     search_fields = ['id', 'user_code', 'name']
     list_filter = ['is_deleted', ]

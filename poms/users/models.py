@@ -163,6 +163,7 @@ class MasterUser(models.Model):
     class Meta:
         verbose_name = ugettext_lazy('master user')
         verbose_name_plural = ugettext_lazy('master users')
+        ordering = ['name']
 
     def __str__(self):
         return self.name
@@ -193,6 +194,7 @@ class Member(FakeDeletableModel):
         unique_together = [
             ['master_user', 'user']
         ]
+        ordering = ['master_user', 'user']
 
     def __str__(self):
         return self.username
@@ -247,6 +249,7 @@ class Group(models.Model):
         unique_together = [
             ['master_user', 'name']
         ]
+        ordering = ['master_user', 'name']
         # permissions = [
         #     ('view_group', 'Can view group')
         # ]
@@ -268,6 +271,7 @@ class FakeSequence(models.Model):
         unique_together = [
             ['master_user', 'name']
         ]
+        ordering = ['master_user', 'name']
         # permissions = [
         #     ('view_group', 'Can view group')
         # ]

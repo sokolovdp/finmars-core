@@ -9,7 +9,7 @@ from poms.currencies.models import Currency, CurrencyHistory
 
 class CurrencyAdmin(HistoricalAdmin):
     model = Currency
-    list_display = ['id', 'master_user', 'name', 'is_deleted', ]
+    list_display = ['id', 'master_user', 'user_code', 'name', 'is_deleted', ]
     list_select_related = ['master_user']
     search_fields = ['id', 'user_code', 'name']
     list_filter = ['is_deleted', ]
@@ -28,7 +28,7 @@ admin.site.register(Currency, CurrencyAdmin)
 
 class CurrencyHistoryAdmin(HistoricalAdmin):
     model = CurrencyHistory
-    list_display = ['id', 'master_user', 'currency', 'date', 'fx_rate']
+    list_display = ['id', 'master_user', 'currency', 'pricing_policy', 'date', 'fx_rate']
     list_select_related = ['currency', 'currency__master_user']
     search_fields = ['currency__id', 'currency__user_code', 'currency__name']
     list_filter = ['date', ]

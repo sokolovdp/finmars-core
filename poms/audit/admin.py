@@ -7,11 +7,11 @@ from poms.audit.models import AuthLogEntry, ObjectHistory4Entry
 
 class AuthLogEntryAdmin(admin.ModelAdmin):
     model = AuthLogEntry
-    list_display = ['id', 'date', 'user', 'is_success', 'user_ip', 'human_user_agent']
+    list_display = ['id', 'user', 'date', 'is_success', 'user_ip', 'human_user_agent']
     list_select_related = ['user']
-    search_fields = ['id', 'user__username']
+    list_filter = ['is_success', 'date']
     date_hierarchy = 'date'
-    ordering = ('-date',)
+    search_fields = ['id', 'user__username']
     fields = ['id', 'date', 'user', 'is_success', 'user_ip', 'user_agent']
     readonly_fields = ['id', 'date', 'is_success', 'user', 'user_ip', 'user_agent', ]
 
@@ -30,7 +30,7 @@ class HistoricalAdmin(admin.ModelAdmin):
 
 class ObjectHistory4EntryAdmin(admin.ModelAdmin):
     model = ObjectHistory4Entry
-    list_display = ['id', 'created', 'master_user', 'member', 'group_id',
+    list_display = ['id', 'master_user', 'member', 'created', 'group_id',
                     'actor_content_type', 'actor_object_repr',
                     'action_flag',
                     'content_type', 'object_repr',
@@ -42,7 +42,6 @@ class ObjectHistory4EntryAdmin(admin.ModelAdmin):
                            'old_value_content_type']
     raw_id_fields = ['master_user', 'member']
     search_fields = ['group_id', 'actor_object_repr', 'object_repr', 'field_name', 'value', 'old_value']
-    ordering = ['-created']
 
     readonly_fields = [
         'id', 'master_user', 'member',

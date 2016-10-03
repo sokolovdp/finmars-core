@@ -8,14 +8,14 @@ from poms_app import settings
 
 class SessionAdmin(admin.ModelAdmin):
     model = Session
-    list_display = ['session_key', 'user', 'user_ip', 'user_agent', 'expire_date']
-    list_display_links = ['session_key']
+    list_display = ['id', 'user', 'user_ip', 'human_user_agent', 'expire_date']
+    list_display_links = ['id']
     list_select_related = ['user']
+    list_filter = ['expire_date']
     search_fields = ['user__username']
     date_hierarchy = 'expire_date'
-    ordering = ('-expire_date',)
-    fields = ['id', 'session_key', 'user', 'user_ip', 'user_agent', 'expire_date']
-    readonly_fields = ['id', 'session_key', 'user', 'user_ip', 'user_agent', 'expire_date']
+    fields = ['id', 'user', 'user_ip', 'user_agent', 'expire_date']
+    readonly_fields = ['id', 'user', 'user_ip', 'user_agent', 'expire_date']
     raw_id_fields = ['user']
 
     def has_add_permission(self, request):

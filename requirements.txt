@@ -1,6 +1,6 @@
 Django==1.10.2
 psycopg2==2.6.2
-Babel==2.3.4
+django-modeltranslation==0.12
 django-filter==0.15.0
 django-mptt==0.8.6
 djangorestframework==3.4.7
@@ -8,6 +8,7 @@ django-redis==4.5.0
 django-storages==1.5.1
 celery==3.1.24
 kombu==3.0.36
+Babel==2.3.4
 python-dateutil==2.5.3
 redis==2.10.5
 pytz==2016.6.1

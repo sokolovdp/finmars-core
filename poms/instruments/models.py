@@ -407,6 +407,7 @@ class Instrument(NamedModel, FakeDeletableModel):
             ('view_instrument', 'Can view instrument'),
             ('manage_instrument', 'Can manage instrument'),
         ]
+        ordering = ['master_user', 'instrument_type', 'user_code']
 
     # def __str__(self):
     #     return self.user_code
@@ -755,6 +756,7 @@ class ManualPricingFormula(models.Model):
         unique_together = [
             ['instrument', 'pricing_policy']
         ]
+        ordering = ['instrument', 'pricing_policy']
 
     def __str__(self):
         return self.expr
@@ -775,6 +777,7 @@ class PriceHistory(models.Model):
         unique_together = (
             ('instrument', 'pricing_policy', 'date',)
         )
+        ordering = ['instrument', 'pricing_policy', 'date']
 
     def __str__(self):
         # return '%s/%s@%s,%s,%s' % (
@@ -820,9 +823,10 @@ class AccrualCalculationSchedule(models.Model):
     class Meta:
         verbose_name = ugettext_lazy('accrual calculation schedule')
         verbose_name_plural = ugettext_lazy('accrual calculation schedules')
+        ordering = ['instrument', 'accrual_start_date']
 
     def __str__(self):
-        return '%s,%s' % (self.instrument_id, self.accrual_start_date)
+        return '%s @ %s' % (self.instrument_id, self.accrual_start_date)
 
 
 @python_2_unicode_compatible
@@ -835,9 +839,10 @@ class InstrumentFactorSchedule(models.Model):
     class Meta:
         verbose_name = ugettext_lazy('instrument factor schedule')
         verbose_name_plural = ugettext_lazy('instrument factor schedules')
+        ordering = ['instrument', 'effective_date']
 
     def __str__(self):
-        return '%s,%s' % (self.instrument_id, self.effective_date)
+        return '%s @ %s' % (self.instrument_id, self.effective_date)
 
 
 class EventSchedule(models.Model):
@@ -877,6 +882,7 @@ class EventSchedule(models.Model):
     class Meta:
         verbose_name = ugettext_lazy('event schedule')
         verbose_name_plural = ugettext_lazy('event schedules')
+        ordering = ['instrument', 'effective_date', 'name']
 
     def __str__(self):
         return self.name
@@ -899,6 +905,7 @@ class EventScheduleAction(models.Model):
     class Meta:
         verbose_name = ugettext_lazy('event schedule action')
         verbose_name_plural = ugettext_lazy('event schedule actions')
+        ordering = ['event_schedule', 'is_book_automatic', 'button_position']
 
     def __str__(self):
         return self.text

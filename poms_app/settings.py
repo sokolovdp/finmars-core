@@ -15,6 +15,7 @@ from __future__ import unicode_literals
 import os
 
 # Build paths inside the project like this: os.path.join(BASE_DIR, ...)
+from django.utils.translation import ugettext_lazy
 
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
@@ -34,6 +35,7 @@ ALLOWED_HOSTS = ['*']
 # Application definition
 
 INSTALLED_APPS = [
+    'modeltranslation',
     'django.contrib.auth',
     'django.contrib.contenttypes',
     'django.contrib.sessions',
@@ -185,10 +187,10 @@ if DEBUG:
 
 LANGUAGE_CODE = 'en'
 LANGUAGES = [
-    ('en', 'English'),
-    ('es', 'Spanish'),
-    ('de', 'Deutsch'),
-    ('ru', 'Russian'),
+    ('en', ugettext_lazy('English')),
+    ('es', ugettext_lazy('Spanish')),
+    ('de', ugettext_lazy('Deutsch')),
+    ('ru', ugettext_lazy('Russian')),
 ]
 
 TIME_ZONE = 'UTC'

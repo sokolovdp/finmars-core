@@ -62,6 +62,7 @@ class Strategy1Subgroup(NamedModel, FakeDeletableModel):
             ('view_strategy1subgroup', 'Can view strategy1 subgroup'),
             ('manage_strategy1subgroup', 'Can manage strategy1 subgroup'),
         ]
+        ordering = ['master_user', 'group', 'user_code']
         # unique_together = [
         #     ['group', 'user_code']
         # ]
@@ -101,6 +102,7 @@ class Strategy1(NamedModel, FakeDeletableModel):
             ('view_strategy1', 'Can view strategy1'),
             ('manage_strategy1', 'Can manage strategy1'),
         ]
+        ordering = ['master_user', 'subgroup', 'user_code']
         # unique_together = [
         #     ['subgroup', 'user_code']
         # ]
@@ -181,6 +183,7 @@ class Strategy2Subgroup(NamedModel, FakeDeletableModel):
             ('view_strategy2subgroup', 'Can view strategy2 subgroup'),
             ('manage_strategy2subgroup', 'Can manage strategy2 subgroup'),
         ]
+        ordering = ['master_user', 'group', 'user_code']
         # unique_together = [
         #     ['group', 'user_code']
         # ]
@@ -220,6 +223,7 @@ class Strategy2(NamedModel, FakeDeletableModel):
             ('view_strategy2', 'Can view strategy2'),
             ('manage_strategy2', 'Can manage strategy2'),
         ]
+        ordering = ['master_user', 'subgroup', 'user_code']
         # unique_together = [
         #     ['subgroup', 'user_code']
         # ]
@@ -300,6 +304,7 @@ class Strategy3Subgroup(NamedModel, FakeDeletableModel):
             ('view_strategy3subgroup', 'Can view strategy3 subgroup'),
             ('manage_strategy3subgroup', 'Can manage strategy3 subgroup'),
         ]
+        ordering = ['master_user', 'group', 'user_code']
         # unique_together = [
         #     ['group', 'user_code']
         # ]
@@ -339,6 +344,7 @@ class Strategy3(NamedModel, FakeDeletableModel):
             ('view_strategy3', 'Can view strategy3'),
             ('manage_strategy3', 'Can manage strategy3'),
         ]
+        ordering = ['master_user', 'subgroup', 'user_code']
         # unique_together = [
         #     ['subgroup', 'user_code']
         # ]

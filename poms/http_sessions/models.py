@@ -21,6 +21,7 @@ class Session(AbstractBaseSession):
     class Meta:
         verbose_name = ugettext_lazy('session')
         verbose_name_plural = ugettext_lazy('sessions')
+        ordering = ['user', 'expire_date']
 
     @classmethod
     def get_session_store_class(cls):
@@ -28,3 +29,14 @@ class Session(AbstractBaseSession):
 
     def __str__(self):
         return '%s:%s:%s' % (self.user, self.user_ip, self.user_agent)
+
+    @property
+    def human_user_agent(self):
+        if not self.user_agent:
+            return None
+        try:
+            from user_agents import parse
+            ret = parse(self.user_agent)
+            return str(ret)
+        except ImportError:
+            return None
