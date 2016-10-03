@@ -8,6 +8,7 @@ from django.utils import translation
 from django.utils.translation import ugettext_lazy
 from rest_framework import serializers
 from rest_framework.authtoken.serializers import AuthTokenSerializer
+from rest_framework.fields import empty
 
 from poms.accounts.fields import AccountTypeField, AccountField
 from poms.chats.fields import ThreadGroupField
@@ -112,14 +113,14 @@ class UserSerializer(serializers.ModelSerializer):
         return None
 
     def update(self, instance, validated_data):
-        profile_data = validated_data.pop('profile', None)
+        profile_data = validated_data.pop('profile', empty)
 
         instance.first_name = validated_data.get('first_name', instance.first_name)
         instance.last_name = validated_data.get('last_name', instance.last_name)
         instance.email = validated_data.get('email', instance.email)
         instance.save()
 
-        if profile_data:
+        if profile_data is not empty:
             profile = instance.profile
             profile.language = profile_data.get('language', profile.language)
             profile.timezone = profile_data.get('timezone', profile.timezone)

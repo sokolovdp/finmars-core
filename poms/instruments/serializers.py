@@ -5,6 +5,7 @@ from datetime import timedelta
 from django.core.exceptions import ObjectDoesNotExist
 from rest_framework import serializers
 from rest_framework.exceptions import ValidationError
+from rest_framework.fields import empty
 
 from poms.common.fields import ExpressionField, FloatEvalField
 from poms.common.serializers import PomsClassSerializer, AbstractClassifierSerializer, AbstractClassifierNodeSerializer, \
@@ -270,17 +271,21 @@ class InstrumentSerializer(ModelWithAttributesSerializer, ModelWithObjectPermiss
         return instance
 
     def update(self, instance, validated_data):
-        manual_pricing_formulas = validated_data.pop('manual_pricing_formulas', None)
-        accrual_calculation_schedules = validated_data.pop('accrual_calculation_schedules', None)
-        factor_schedules = validated_data.pop('factor_schedules', None)
-        event_schedules = validated_data.pop('event_schedules', None)
+        manual_pricing_formulas = validated_data.pop('manual_pricing_formulas', empty)
+        accrual_calculation_schedules = validated_data.pop('accrual_calculation_schedules', empty)
+        factor_schedules = validated_data.pop('factor_schedules', empty)
+        event_schedules = validated_data.pop('event_schedules', empty)
 
         instance = super(InstrumentSerializer, self).update(instance, validated_data)
 
-        self.save_manual_pricing_formulas(instance, False, manual_pricing_formulas)
-        self.save_accrual_calculation_schedules(instance, False, accrual_calculation_schedules)
-        self.save_factor_schedules(instance, False, factor_schedules)
-        self.save_event_schedules(instance, False, event_schedules)
+        if manual_pricing_formulas is not empty:
+            self.save_manual_pricing_formulas(instance, False, manual_pricing_formulas)
+        if accrual_calculation_schedules is not empty:
+            self.save_accrual_calculation_schedules(instance, False, accrual_calculation_schedules)
+        if factor_schedules is not empty:
+            self.save_factor_schedules(instance, False, factor_schedules)
+        if event_schedules is not empty:
+            self.save_event_schedules(instance, False, event_schedules)
 
         self.calculate_prices_accrued_price(instance, False)
         self.rebuild_event_schedules(instance, False)
@@ -288,8 +293,9 @@ class InstrumentSerializer(ModelWithAttributesSerializer, ModelWithObjectPermiss
         return instance
 
     def save_instr_related(self, instrument, created, instrument_attr, model, validated_data, accept=None):
-        if validated_data is None:
-            return
+        validated_data = validated_data or []
+        # if validated_data is None:
+        #     return
 
         related_attr = getattr(instrument, instrument_attr)
         processed = {}
@@ -332,42 +338,42 @@ class InstrumentSerializer(ModelWithAttributesSerializer, ModelWithObjectPermiss
         self.save_instr_related(instrument, created, 'factor_schedules', InstrumentFactorSchedule, factor_schedules)
 
     def save_event_schedules(self, instrument, created, event_schedules):
+        event_schedules = event_schedules or []
         events = self.save_instr_related(instrument, created, 'event_schedules', EventSchedule, event_schedules,
                                          accept=lambda attr, obj: not obj.is_auto_generated if obj else True)
 
-        if event_schedules:
-            for es in event_schedules:
-                try:
-                    event_schedule = events[es['id']]
-                except KeyError:
-                    continue
-                if event_schedule.is_auto_generated:
-                    continue
+        for es in event_schedules:
+            try:
+                event_schedule = events[es['id']]
+            except KeyError:
+                continue
+            if event_schedule.is_auto_generated:
+                continue
 
-                actions_data = es.get('actions', None)
-                if actions_data is None:
-                    continue
+            actions_data = es.get('actions', None)
+            if actions_data is None:
+                continue
 
-                processed = set()
-                for action_data in actions_data:
-                    oid = action_data.get('id', None)
-                    if oid:
-                        try:
-                            o = event_schedule.actions.get(id=oid)
-                        except ObjectDoesNotExist:
-                            o = EventScheduleAction(event_schedule=event_schedule)
-                    else:
+            processed = set()
+            for action_data in actions_data:
+                oid = action_data.get('id', None)
+                if oid:
+                    try:
+                        o = event_schedule.actions.get(id=oid)
+                    except ObjectDoesNotExist:
                         o = EventScheduleAction(event_schedule=event_schedule)
+                else:
+                    o = EventScheduleAction(event_schedule=event_schedule)
 
-                    for k, v in action_data.items():
-                        if k not in ['id', 'event_schedule', ]:
-                            setattr(o, k, v)
-                    o.save()
-                    processed.add(o.id)
-                    action_data['id'] = o.id
+                for k, v in action_data.items():
+                    if k not in ['id', 'event_schedule', ]:
+                        setattr(o, k, v)
+                o.save()
+                processed.add(o.id)
+                action_data['id'] = o.id
 
-                if not created:
-                    event_schedule.actions.exclude(id__in=processed).delete()
+            if not created:
+                event_schedule.actions.exclude(id__in=processed).delete()
 
     def calculate_prices_accrued_price(self, instrument, created):
         instrument.calculate_prices_accrued_price()

@@ -5,6 +5,7 @@ from django.db import IntegrityError
 from django.utils.translation import ugettext_lazy
 from rest_framework import serializers
 from rest_framework.exceptions import ValidationError
+from rest_framework.fields import empty
 
 from poms.common.serializers import ModelWithUserCodeSerializer
 from poms.obj_attrs.models import AbstractAttributeType
@@ -84,18 +85,21 @@ class AbstractAttributeTypeSerializer(ModelWithObjectPermissionSerializer, Model
 
     def update(self, instance, validated_data):
         member = get_member_from_context(self.context)
-        is_hidden = validated_data.pop('is_hidden', False)
-        classifiers = validated_data.pop('classifiers', None)
+        is_hidden = validated_data.pop('is_hidden', empty)
+        classifiers = validated_data.pop('classifiers', empty)
         instance = super(AbstractAttributeTypeSerializer, self).update(instance, validated_data)
-        instance.options.update_or_create(member=member, defaults={'is_hidden': is_hidden})
-        self.save_classifiers(instance, classifiers)
+        if is_hidden is not empty:
+            instance.options.update_or_create(member=member, defaults={'is_hidden': is_hidden})
+        if classifiers is not empty:
+            self.save_classifiers(instance, classifiers)
         return instance
 
     def save_classifiers(self, instance, classifier_tree):
         if instance.value_type != AbstractAttributeType.CLASSIFIER:
             return
-        if classifier_tree is None:
-            return
+        classifier_tree = classifier_tree or []
+        # if classifier_tree is None:
+        #     return
         if len(classifier_tree) == 0:
             instance.classifiers.all().delete()
             return
@@ -206,9 +210,10 @@ class ModelWithAttributesSerializer(serializers.ModelSerializer):
         return instance
 
     def update(self, instance, validated_data):
-        attributes = validated_data.pop('attributes', None)
+        attributes = validated_data.pop('attributes', empty)
         instance = super(ModelWithAttributesSerializer, self).update(instance, validated_data)
-        self.save_attributes(instance, attributes, False)
+        if attributes is not empty:
+            self.save_attributes(instance, attributes, False)
         return instance
 
     def save_attributes(self, instance, attributes, created):

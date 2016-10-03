@@ -3,6 +3,7 @@ from __future__ import unicode_literals
 from django.core.exceptions import ObjectDoesNotExist
 from rest_framework import serializers
 from rest_framework.exceptions import ValidationError
+from rest_framework.fields import empty
 
 from poms.accounts.fields import AccountField, AccountDefault
 from poms.accounts.models import Account
@@ -343,14 +344,20 @@ class TransactionTypeSerializer(ModelWithObjectPermissionSerializer, ModelWithUs
         return instance
 
     def update(self, instance, validated_data):
-        inputs = validated_data.pop('inputs', None)
-        actions = validated_data.pop('actions', None)
+        inputs = validated_data.pop('inputs', empty)
+        actions = validated_data.pop('actions', empty)
         instance = super(TransactionTypeSerializer, self).update(instance, validated_data)
-        inputs = self.save_inputs(instance, inputs)
-        actions = self.save_actions(instance, actions, inputs)
-        if inputs:
+        if inputs is not empty:
+            inputs = self.save_inputs(instance, inputs)
+        else:
+            inputs = None
+        if actions is not empty:
+            actions = self.save_actions(instance, actions, inputs)
+        else:
+            actions = None
+        if inputs is not empty:
             instance.inputs.exclude(id__in=[i.id for i in inputs.values()]).delete()
-        if actions:
+        if actions is not empty:
             instance.actions.exclude(id__in=[a.id for a in actions]).delete()
         return instance
 
@@ -369,57 +376,13 @@ class TransactionTypeSerializer(ModelWithObjectPermissionSerializer, ModelWithUs
             new_inputs[input.name] = input
         return new_inputs
 
-    # def save_actions(self, instance, actions_data, created):
-    #     inputs = {i.name: i for i in instance.inputs.all()}
-    #
-    #     actions_qs = instance.actions.select_related(
-    #         'transactiontypeactioninstrument', 'transactiontypeactiontransaction').order_by('order', 'id')
-    #     existed_actions = {a.id: a for a in actions_qs}
-    #
-    #     actions = []
-    #     for order, action_data in enumerate(actions_data):
-    #         pk = action_data.pop('id', None)
-    #         instrument_data = action_data.get('instrument', action_data.get('transactiontypeactioninstrument'))
-    #         transaction_data = action_data.get('transaction', action_data.get('transactiontypeactiontransaction'))
-    #
-    #         data = instrument_data or transaction_data
-    #         # replace input name to input object
-    #         for attr, value in data.items():
-    #             if attr.endswith('_input') and value:
-    #                 # print('name=%s, value=%s' % (name, value,))
-    #                 data[attr] = inputs[value]
-    #             if transaction_data and attr == 'instrument_phantom' and value is not None:
-    #                 data[attr] = actions[value]
-    #
-    #         action = existed_actions.get(pk, None)
-    #         if action:
-    #             try:
-    #                 action = action.transactiontypeactioninstrument
-    #             except ObjectDoesNotExist:
-    #                 try:
-    #                     action = action.transactiontypeactiontransaction
-    #                 except ObjectDoesNotExist:
-    #                     pass
-    #         if not action:
-    #             if instrument_data:
-    #                 action = TransactionTypeActionInstrument(transaction_type=instance)
-    #             elif transaction_data:
-    #                 action = TransactionTypeActionTransaction(transaction_type=instance)
-    #         if action is None:
-    #             raise RuntimeError('unknown action')
-    #
-    #         action.order = order
-    #         for attr, value in data.items():
-    #             setattr(action, attr, value)
-    #
-    #         action.save()
-    #         actions.append(action)
-    #     return actions
-
     def save_actions(self, instance, actions_data, inputs):
         actions_qs = instance.actions.select_related(
             'transactiontypeactioninstrument', 'transactiontypeactiontransaction').order_by('order', 'id')
         existed_actions = {a.id: a for a in actions_qs}
+
+        if inputs is None:
+            inputs = {i.name: i for i in instance.inputs.all()}
 
         actions = [None for a in actions_data]
         for order, action_data in enumerate(actions_data):

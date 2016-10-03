@@ -2,6 +2,7 @@ from django.utils.text import Truncator
 from mptt.utils import get_cached_trees
 from rest_framework import serializers
 from rest_framework.exceptions import ValidationError
+from rest_framework.fields import empty
 from rest_framework.serializers import ListSerializer
 
 from poms.common.fields import PrimaryKeyRelatedFilteredField, UserCodeField
@@ -35,11 +36,11 @@ class ModelWithUserCodeSerializer(serializers.ModelSerializer):
         ret = super(ModelWithUserCodeSerializer, self).to_internal_value(data)
 
         # for correct message on unique error
-        user_code = ret.get('user_code', None)
-        if not user_code:
-            user_code = ret.get('name', '')
-            user_code = Truncator(user_code).chars(25, truncate='')
-            ret['user_code'] = user_code
+        user_code = ret.get('user_code', empty)
+        if user_code is not empty:
+            name = ret.get('name', empty)
+            if name is not empty:
+                ret['user_code'] = Truncator(name).chars(25, truncate='')
 
         return ret
 
@@ -200,29 +201,23 @@ class AbstractClassifierSerializer(serializers.ModelSerializer):
 
     def create(self, validated_data):
         validated_data.pop('id', None)
-        children = validated_data.pop('get_children', None)
+        children = validated_data.pop('get_children', validated_data.get('children', []))
         instance = super(AbstractClassifierSerializer, self).create(validated_data)
         self.save_tree(instance, children)
         return instance
 
     def update(self, instance, validated_data):
         validated_data.pop('id', None)
-        children = validated_data.pop('get_children', [])
+        children = validated_data.pop('get_children', validated_data.get('children', empty))
         instance = super(AbstractClassifierSerializer, self).update(instance, validated_data)
-        # if instance.is_root_node() or not instance.is_leaf_node() or settings.CLASSIFIER_RELAX_UPDATE_MODE:
-        self.save_tree(instance, children)
-        # else:
-        #     if children:
-        #         raise ValidationError("Can't add children to leaf node")
+        if children is not empty:
+            self.save_tree(instance, children)
         return instance
 
     def save_tree(self, node, children):
-        # processed = set()
-        # root = SimpleLazyObject(lambda: node.get_root())
-        # print('root: ', root)
-
-        if not children:
-            return
+        children = children or []
+        # if not children:
+        #     return
 
         context = {}
         context.update(self.context)

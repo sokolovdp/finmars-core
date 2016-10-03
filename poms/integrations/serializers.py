@@ -10,6 +10,7 @@ from django.core.signing import TimestampSigner, BadSignature
 from django.utils import timezone
 from rest_framework import serializers
 from rest_framework.exceptions import ValidationError
+from rest_framework.fields import empty
 
 from poms.common.fields import ExpressionField, DateTimeTzAwareField
 from poms.common.serializers import PomsClassSerializer, ReadonlyModelSerializer, ReadonlyModelWithNameSerializer, \
@@ -160,10 +161,11 @@ class InstrumentDownloadSchemeSerializer(ModelWithAttributesSerializer):
         return instance
 
     def update(self, instance, validated_data):
-        inputs = validated_data.pop('inputs', None) or []
+        inputs = validated_data.pop('inputs', empty)
         # attributes = validated_data.pop('attributes', None) or []
         instance = super(InstrumentDownloadSchemeSerializer, self).update(instance, validated_data)
-        self.save_inputs(instance, inputs)
+        if inputs is not empty:
+            self.save_inputs(instance, inputs)
         # self.save_attributes(instance, attributes)
         return instance
 

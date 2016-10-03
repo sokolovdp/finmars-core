@@ -1,6 +1,7 @@
 from __future__ import unicode_literals
 
 from rest_framework import serializers
+from rest_framework.fields import empty
 
 from poms.common.serializers import ReadonlyModelSerializer, ReadonlyModelListSerializer
 from poms.obj_perms.fields import PermissionField, GrantedPermissionField
@@ -118,24 +119,37 @@ class ModelWithObjectPermissionSerializer(serializers.ModelSerializer):
         user_object_permissions = validated_data.pop('user_object_permissions', None)
         group_object_permissions = validated_data.pop('group_object_permissions', None)
         instance = super(ModelWithObjectPermissionSerializer, self).create(validated_data)
-        self.save_object_permission(instance,
-                                    user_object_permissions=user_object_permissions,
-                                    group_object_permissions=group_object_permissions,
-                                    created=True)
+        self.save_user_object_permissions(instance, user_object_permissions, True)
+        self.save_group_object_permissions(instance, group_object_permissions, True)
         return instance
 
     def update(self, instance, validated_data):
-        user_object_permissions = validated_data.pop('user_object_permissions', None)
-        group_object_permissions = validated_data.pop('group_object_permissions', None)
+        user_object_permissions = validated_data.pop('user_object_permissions', empty)
+        group_object_permissions = validated_data.pop('group_object_permissions', empty)
         instance = super(ModelWithObjectPermissionSerializer, self).update(instance, validated_data)
-        self.save_object_permission(instance,
-                                    user_object_permissions=user_object_permissions,
-                                    group_object_permissions=group_object_permissions,
-                                    created=False)
+        if user_object_permissions is not empty:
+            self.save_user_object_permissions(instance, user_object_permissions, False)
+        if group_object_permissions is not empty:
+            self.save_group_object_permissions(instance, group_object_permissions, False)
         return instance
 
-    def save_object_permission(self, instance, user_object_permissions=None, group_object_permissions=None,
-                               created=False):
+    # def save_object_permission(self, instance, user_object_permissions=None, group_object_permissions=None,
+    #                            created=False):
+    #     member = get_member_from_context(self.context)
+    #     member_perms = [{'member': member, 'permission': p,} for p in get_all_perms(instance)]
+    #
+    #     if created:
+    #         if user_object_permissions:
+    #             user_object_permissions = [uop for uop in user_object_permissions if uop['member'].id != member.id]
+    #         else:
+    #             user_object_permissions = []
+    #         user_object_permissions += member_perms
+    #         assign_perms2(instance, user_perms=user_object_permissions, group_perms=group_object_permissions)
+    #     else:
+    #         if has_manage_perm(member, instance):
+    #             assign_perms2(instance, user_perms=user_object_permissions, group_perms=group_object_permissions)
+
+    def save_user_object_permissions(self, instance, user_object_permissions=None, created=False):
         member = get_member_from_context(self.context)
         member_perms = [{'member': member, 'permission': p,} for p in get_all_perms(instance)]
 
@@ -145,18 +159,24 @@ class ModelWithObjectPermissionSerializer(serializers.ModelSerializer):
             else:
                 user_object_permissions = []
             user_object_permissions += member_perms
-            assign_perms2(instance, user_perms=user_object_permissions, group_perms=group_object_permissions)
+            assign_perms2(instance, user_perms=user_object_permissions)
         else:
             if has_manage_perm(member, instance):
-                assign_perms2(instance, user_perms=user_object_permissions, group_perms=group_object_permissions)
+                assign_perms2(instance, user_perms=user_object_permissions)
+
+    def save_group_object_permissions(self, instance, group_object_permissions=None, created=False):
+        member = get_member_from_context(self.context)
+        if created:
+            assign_perms2(instance, group_perms=group_object_permissions)
+        else:
+            if has_manage_perm(member, instance):
+                assign_perms2(instance, group_perms=group_object_permissions)
 
 
 class ReadonlyModelWithObjectPermissionListSerializer(ReadonlyModelListSerializer):
     def to_representation(self, data):
         ret = super(ReadonlyModelWithObjectPermissionListSerializer, self).to_representation(data)
-        return [
-            a for a in ret if a.get('granted_permissions', None)
-            ]
+        return [a for a in ret if a.get('granted_permissions', None)]
 
 
 class ReadonlyModelWithObjectPermissionSerializer(ReadonlyModelSerializer):
