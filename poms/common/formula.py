@@ -142,6 +142,8 @@ def _add_workdays(date, workdays, only_workdays=True):
 def _format_date(date, format=None):
     if date is None:
         return ''
+    if isinstance(date, str):
+        date = _parse_date(date)
     _check_date(date)
     if format is None:
         format = '%Y-%m-%d'
