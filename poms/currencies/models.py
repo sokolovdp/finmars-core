@@ -73,7 +73,7 @@ class CurrencyHistory(models.Model):
         unique_together = (
             ('currency', 'pricing_policy', 'date',)
         )
-        ordering = ['currency', 'pricing_policy', 'date']
+        ordering = ['date']
 
     def __str__(self):
         # return '%s/%s@%s,%s' % (self.currency, self.pricing_policy, self.date, self.fx_rate)

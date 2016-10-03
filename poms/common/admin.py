@@ -13,6 +13,7 @@ class TreeModelAdmin(MPTTModelAdmin):
 class ClassifierAdmin(HistoricalAdmin, admin.ModelAdmin):
     list_display = ['id', 'master_user', 'attribute_type', 'tree_id', 'level', 'parent', 'name', ]
     list_select_related = ['attribute_type', 'attribute_type__master_user', 'parent']
+    ordering = ['attribute_type', 'tree_id', 'level', ]
     search_fields = ['attribute_type__name', 'parent__name']
     raw_id_fields = ['attribute_type', 'parent']
 

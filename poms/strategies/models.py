@@ -19,6 +19,7 @@ class Strategy1Group(NamedModel, FakeDeletableModel):
     class Meta(NamedModel.Meta, FakeDeletableModel.Meta):
         verbose_name = ugettext_lazy('strategy1 group')
         verbose_name_plural = ugettext_lazy('strategy1 groups')
+        ordering = ['user_code']
         permissions = [
             ('view_strategy1group', 'Can view strategy1 group'),
             ('manage_strategy1group', 'Can manage strategy1 group'),
@@ -58,11 +59,11 @@ class Strategy1Subgroup(NamedModel, FakeDeletableModel):
     class Meta(NamedModel.Meta, FakeDeletableModel.Meta):
         verbose_name = ugettext_lazy('strategy1 subgroup')
         verbose_name_plural = ugettext_lazy('strategy1 subgroups')
+        ordering = ['user_code']
         permissions = [
             ('view_strategy1subgroup', 'Can view strategy1 subgroup'),
             ('manage_strategy1subgroup', 'Can manage strategy1 subgroup'),
         ]
-        ordering = ['master_user', 'group', 'user_code']
         # unique_together = [
         #     ['group', 'user_code']
         # ]
@@ -98,11 +99,11 @@ class Strategy1(NamedModel, FakeDeletableModel):
     class Meta(NamedModel.Meta, FakeDeletableModel.Meta):
         verbose_name = ugettext_lazy('strategy1')
         verbose_name_plural = ugettext_lazy('strategies1')
+        ordering = ['user_code']
         permissions = [
             ('view_strategy1', 'Can view strategy1'),
             ('manage_strategy1', 'Can manage strategy1'),
         ]
-        ordering = ['master_user', 'subgroup', 'user_code']
         # unique_together = [
         #     ['subgroup', 'user_code']
         # ]
@@ -140,6 +141,7 @@ class Strategy2Group(NamedModel, FakeDeletableModel):
     class Meta(NamedModel.Meta, FakeDeletableModel.Meta):
         verbose_name = ugettext_lazy('strategy2 group')
         verbose_name_plural = ugettext_lazy('strategy2 groups')
+        ordering = ['user_code']
         permissions = [
             ('view_strategy2group', 'Can view strategy2 group'),
             ('manage_strategy2group', 'Can manage strategy2 group'),
@@ -179,11 +181,11 @@ class Strategy2Subgroup(NamedModel, FakeDeletableModel):
     class Meta(NamedModel.Meta, FakeDeletableModel.Meta):
         verbose_name = ugettext_lazy('strategy2 subgroup')
         verbose_name_plural = ugettext_lazy('strategy2 subgroups')
+        ordering = ['user_code']
         permissions = [
             ('view_strategy2subgroup', 'Can view strategy2 subgroup'),
             ('manage_strategy2subgroup', 'Can manage strategy2 subgroup'),
         ]
-        ordering = ['master_user', 'group', 'user_code']
         # unique_together = [
         #     ['group', 'user_code']
         # ]
@@ -219,11 +221,11 @@ class Strategy2(NamedModel, FakeDeletableModel):
     class Meta(NamedModel.Meta, FakeDeletableModel.Meta):
         verbose_name = ugettext_lazy('strategy2')
         verbose_name_plural = ugettext_lazy('strategies2')
+        ordering = ['user_code']
         permissions = [
             ('view_strategy2', 'Can view strategy2'),
             ('manage_strategy2', 'Can manage strategy2'),
         ]
-        ordering = ['master_user', 'subgroup', 'user_code']
         # unique_together = [
         #     ['subgroup', 'user_code']
         # ]
@@ -261,6 +263,7 @@ class Strategy3Group(NamedModel, FakeDeletableModel):
     class Meta(NamedModel.Meta, FakeDeletableModel.Meta):
         verbose_name = ugettext_lazy('strategy3 group')
         verbose_name_plural = ugettext_lazy('strategy3 groups')
+        ordering = ['user_code']
         permissions = [
             ('view_strategy3group', 'Can view strategy3 group'),
             ('manage_strategy3group', 'Can manage strategy3 group'),
@@ -300,11 +303,11 @@ class Strategy3Subgroup(NamedModel, FakeDeletableModel):
     class Meta(NamedModel.Meta, FakeDeletableModel.Meta):
         verbose_name = ugettext_lazy('strategy3 subgroup')
         verbose_name_plural = ugettext_lazy('strategy3 subgroups')
+        ordering = ['user_code']
         permissions = [
             ('view_strategy3subgroup', 'Can view strategy3 subgroup'),
             ('manage_strategy3subgroup', 'Can manage strategy3 subgroup'),
         ]
-        ordering = ['master_user', 'group', 'user_code']
         # unique_together = [
         #     ['group', 'user_code']
         # ]
@@ -340,11 +343,11 @@ class Strategy3(NamedModel, FakeDeletableModel):
     class Meta(NamedModel.Meta, FakeDeletableModel.Meta):
         verbose_name = ugettext_lazy('strategy3')
         verbose_name_plural = ugettext_lazy('strategies3')
+        ordering = ['user_code']
         permissions = [
             ('view_strategy3', 'Can view strategy3'),
             ('manage_strategy3', 'Can manage strategy3'),
         ]
-        ordering = ['master_user', 'subgroup', 'user_code']
         # unique_together = [
         #     ['subgroup', 'user_code']
         # ]

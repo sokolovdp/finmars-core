@@ -16,6 +16,7 @@ class TemplateListLayoutAdmin(BaseLayoutAdmin):
     model = TemplateListLayout
     list_display = ['id', 'master_user', 'content_type', 'name']
     list_select_related = ['master_user', 'content_type']
+    ordering = ['master_user', 'content_type', 'name']
     search_fields = ['id', 'name']
     raw_id_fields = ['master_user']
 
@@ -27,6 +28,7 @@ class TemplateEditLayoutAdmin(BaseLayoutAdmin):
     model = TemplateEditLayout
     list_display = ['id', 'master_user', 'content_type']
     list_select_related = ['master_user', 'content_type']
+    ordering = ['master_user', 'content_type', ]
     search_fields = ['id']
     raw_id_fields = ['master_user']
 
@@ -36,10 +38,14 @@ admin.site.register(TemplateEditLayout, TemplateEditLayoutAdmin)
 
 class ListLayoutAdmin(BaseLayoutAdmin):
     model = ListLayout
-    list_display = ['id', 'member', 'content_type', 'name']
-    list_select_related = ['member', 'content_type']
+    list_display = ['id', 'master_user', 'member', 'content_type', 'name']
+    list_select_related = ['member__master_user', 'member', 'content_type']
+    ordering = ['member', 'content_type', 'name']
     search_fields = ['id', 'name']
     raw_id_fields = ['member']
+
+    def master_user(self, obj):
+        return obj.currency.master_user
 
 
 admin.site.register(ListLayout, ListLayoutAdmin)
@@ -47,10 +53,14 @@ admin.site.register(ListLayout, ListLayoutAdmin)
 
 class EditLayoutAdmin(BaseLayoutAdmin):
     model = EditLayout
-    list_display = ['id', 'member', 'content_type']
+    list_display = ['id', 'master_user', 'member', 'content_type']
+    ordering = ['member__master_user', 'member', 'content_type', ]
     list_select_related = ['member', 'content_type']
     search_fields = ['id']
     raw_id_fields = ['member']
+
+    def master_user(self, obj):
+        return obj.currency.master_user
 
 
 admin.site.register(EditLayout, EditLayoutAdmin)

@@ -30,6 +30,7 @@ class CurrencyHistoryAdmin(HistoricalAdmin):
     model = CurrencyHistory
     list_display = ['id', 'master_user', 'currency', 'pricing_policy', 'date', 'fx_rate']
     list_select_related = ['currency', 'currency__master_user']
+    ordering = ['currency', 'pricing_policy', 'date']
     search_fields = ['currency__id', 'currency__user_code', 'currency__name']
     list_filter = ['date', ]
     date_hierarchy = 'date'

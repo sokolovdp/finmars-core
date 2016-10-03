@@ -37,6 +37,7 @@ class MasterUserAdmin(HistoricalAdmin):
         MemberInline,
     ]
     list_display = ['id', 'name']
+    ordering = ['name']
     raw_id_fields = ['currency',
                      'account_type', 'account',
                      'counterparty_group', 'counterparty',
@@ -70,6 +71,7 @@ class MemberAdmin(admin.ModelAdmin):
     model = Member
     list_display = ['id', 'master_user', 'user', 'is_deleted', 'is_owner', 'is_admin']
     list_select_related = ['master_user', 'user']
+    ordering = ['master_user', 'user', ]
     list_filter = ['is_deleted', 'is_owner', 'is_admin']
     raw_id_fields = ['master_user', 'user', 'groups']
 
@@ -116,6 +118,7 @@ class PermissionAdmin(admin.ModelAdmin):
     model = Permission
     list_select_related = ['content_type']
     list_display = ['id', 'content_type', 'codename']
+    ordering = ['content_type', 'codename']
     search_fields = ['codename', 'content_type__app_label', 'content_type__model']
 
     def has_add_permission(self, request):
@@ -127,8 +130,9 @@ admin.site.register(Permission, PermissionAdmin)
 
 class GroupAdmin(HistoricalAdmin, admin.ModelAdmin):
     model = Group
-    list_display = ['id',  'master_user', 'name',]
+    list_display = ['id', 'master_user', 'name', ]
     list_select_related = ['master_user']
+    ordering = ['master_user', 'name']
     # filter_horizontal = ['permissions']
     raw_id_fields = ['master_user']
 
@@ -146,6 +150,7 @@ class FakeSequenceAdmin(admin.ModelAdmin):
     model = Group
     list_display = ['id', 'master_user', 'name', 'value']
     list_select_related = ['master_user']
+    ordering = ['master_user', 'name']
     raw_id_fields = ['master_user']
     readonly_fields = ['master_user', 'name', 'value']
 

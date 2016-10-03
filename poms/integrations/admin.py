@@ -86,6 +86,7 @@ class InstrumentDownloadSchemeAdmin(HistoricalAdmin):
     model = InstrumentDownloadScheme
     list_display = ['id', 'master_user', 'provider', 'scheme_name', 'fields0']
     list_select_related = ['master_user', 'provider', ]
+    ordering = ['master_user', 'provider', 'scheme_name']
     list_filter = ['provider']
     search_fields = ['id', 'scheme_name', ]
     raw_id_fields = ['master_user', 'price_download_scheme']
@@ -113,6 +114,7 @@ class PriceDownloadSchemeAdmin(admin.ModelAdmin):
                     'instrument_history_fields0', 'currency_history_fields0']
     list_select_related = ['master_user', 'provider']
     list_filter = ['provider']
+    ordering = ['master_user', 'provider', 'scheme_name']
     search_fields = ['id', 'scheme_name']
     raw_id_fields = ['master_user']
 
@@ -149,6 +151,7 @@ class CurrencyMappingAdmin(admin.ModelAdmin):
     list_display = ['id', 'master_user', 'provider', 'value', 'currency']
     list_select_related = ['master_user', 'provider', 'currency']
     raw_id_fields = ['master_user', 'currency']
+    ordering = ['master_user', 'provider', 'value']
 
 
 admin.site.register(CurrencyMapping, CurrencyMappingAdmin)
@@ -159,6 +162,7 @@ class InstrumentTypeMappingAdmin(admin.ModelAdmin):
     list_display = ['id', 'master_user', 'provider', 'value', 'instrument_type']
     list_select_related = ['master_user', 'provider', 'instrument_type']
     raw_id_fields = ['master_user', 'instrument_type']
+    ordering = ['master_user', 'provider', 'value']
 
 
 admin.site.register(InstrumentTypeMapping, InstrumentTypeMappingAdmin)
@@ -170,6 +174,7 @@ class AccrualCalculationModelMappingAdmin(admin.ModelAdmin):
     list_select_related = ['master_user', 'accrual_calculation_model', 'provider']
     list_filter = ['accrual_calculation_model']
     raw_id_fields = ['master_user']
+    ordering = ['master_user', 'provider', 'value']
 
 
 admin.site.register(AccrualCalculationModelMapping, AccrualCalculationModelMappingAdmin)
@@ -181,6 +186,7 @@ class PeriodicityMappingAdmin(admin.ModelAdmin):
     list_select_related = ['master_user', 'provider', 'periodicity']
     list_filter = ['periodicity']
     raw_id_fields = ['master_user']
+    ordering = ['master_user', 'provider', 'value']
 
 
 admin.site.register(PeriodicityMapping, PeriodicityMappingAdmin)
@@ -192,6 +198,7 @@ class InstrumentAttributeValueMappingAdmin(admin.ModelAdmin):
                     'value_date', 'classifier']
     list_select_related = ['attribute_type__master_user', 'attribute_type', 'classifier', 'provider']
     raw_id_fields = ['master_user', 'attribute_type', 'classifier']
+    ordering = ['master_user', 'provider', 'value']
 
     def master_user(self, obj):
         return obj.attribute_type.master_user
@@ -207,6 +214,7 @@ class TaskAdmin(admin.ModelAdmin):
     list_display = ['id', 'parent', 'created', 'status', 'master_user', 'member', 'provider', 'action',
                     'response_id']
     list_select_related = ['parent', 'master_user', 'member', 'provider']
+    ordering = ['-created']
     raw_id_fields = ['master_user', 'member', 'parent']
     search_fields = ['response_id', ]
     list_filter = ['provider', 'created', 'action', 'status', ]
@@ -234,6 +242,7 @@ class PricingAutomatedScheduleAdmin(admin.ModelAdmin):
     list_display = ['id', 'master_user', 'is_enabled', 'cron_expr', 'last_run_at', 'next_run_at', 'last_run_task_url']
     list_select_related = ['master_user', ]
     list_filter = ['is_enabled', 'last_run_at', 'next_run_at']
+    ordering = ['master_user']
     date_hierarchy = 'next_run_at'
     raw_id_fields = ['master_user', ]
 

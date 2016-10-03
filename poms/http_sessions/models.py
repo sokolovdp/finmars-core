@@ -21,7 +21,7 @@ class Session(AbstractBaseSession):
     class Meta:
         verbose_name = ugettext_lazy('session')
         verbose_name_plural = ugettext_lazy('sessions')
-        ordering = ['user', 'expire_date']
+        ordering = ['expire_date']
 
     @classmethod
     def get_session_store_class(cls):

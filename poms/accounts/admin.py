@@ -16,6 +16,7 @@ class AccountTypeAdmin(HistoricalAdmin):
     list_display = ['id', 'master_user', 'user_code', 'name', 'is_deleted', ]
     list_select_related = ['master_user']
     list_filter = ['is_deleted', ]
+    ordering = ['master_user', 'user_code']
     search_fields = ['id', 'user_code', 'name']
     raw_id_fields = ['master_user']
     inlines = [
@@ -29,9 +30,10 @@ admin.site.register(AccountType, AccountTypeAdmin)
 
 class AccountAdmin(HistoricalAdmin):
     model = Account
-    list_display = ['id', 'master_user', 'user_code', 'name', 'type', 'is_deleted', ]
+    list_display = ['id', 'master_user', 'type', 'user_code', 'name', 'is_deleted', ]
     list_select_related = ['master_user', 'type']
     list_filter = ['is_deleted', ]
+    ordering = ['master_user', 'type', 'user_code']
     search_fields = ['id', 'user_code', 'name']
     raw_id_fields = ['master_user', 'type']
     inlines = [

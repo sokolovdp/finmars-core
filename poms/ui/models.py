@@ -35,7 +35,7 @@ class TemplateListLayout(BaseLayout):
         unique_together = [
             ['master_user', 'content_type', 'name'],
         ]
-        ordering = ['master_user', 'content_type', 'name']
+        ordering = ['name']
 
     def save(self, *args, **kwargs):
         if self.is_default:
@@ -54,7 +54,7 @@ class TemplateEditLayout(BaseLayout):
         unique_together = [
             ['master_user', 'content_type'],
         ]
-        ordering = ['master_user', 'content_type']
+        ordering = ['content_type']
 
 
 class ListLayout(BaseLayout):
@@ -66,7 +66,7 @@ class ListLayout(BaseLayout):
         unique_together = [
             ['member', 'content_type', 'name'],
         ]
-        ordering = ['member', 'content_type', 'name']
+        ordering = ['name']
 
     def save(self, *args, **kwargs):
         if self.is_default:
@@ -84,7 +84,7 @@ class EditLayout(BaseLayout):
         unique_together = [
             ['member', 'content_type'],
         ]
-        ordering = ['member', 'content_type']
+        ordering = ['content_type']
 
 # history.register(TemplateListLayout)
 # history.register(TemplateEditLayout)

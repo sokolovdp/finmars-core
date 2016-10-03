@@ -231,7 +231,7 @@ class TransactionType(NamedModel, FakeDeletableModel):
             ('view_transactiontype', 'Can view transaction type'),
             ('manage_transactiontype', 'Can manage transaction type'),
         ]
-        ordering = ['master_user', 'group', 'user_code']
+        ordering = ['user_code']
 
     @property
     def book_transaction_layout(self):
@@ -353,7 +353,7 @@ class TransactionTypeInput(models.Model):
         index_together = [
             ['transaction_type', 'order'],
         ]
-        ordering = ['transaction_type', 'name']
+        ordering = ['name']
 
     def __str__(self):
         if self.value_type == self.RELATION:
@@ -383,7 +383,7 @@ class TransactionTypeAction(models.Model):
         index_together = [
             ['transaction_type', 'order'],
         ]
-        ordering = ['transaction_type', 'order']
+        ordering = ['order']
 
     def __str__(self):
         return 'Action #%s' % self.order
@@ -570,7 +570,7 @@ class ComplexTransaction(models.Model):
         index_together = [
             ['transaction_type', 'code']
         ]
-        ordering = ['transaction_type', 'code']
+        ordering = ['code']
 
     def __str__(self):
         return str(self.code)
@@ -674,7 +674,7 @@ class Transaction(models.Model):
         index_together = [
             ['master_user', 'transaction_code']
         ]
-        ordering = ['master_user', 'transaction_date', 'transaction_code']
+        ordering = ['transaction_date', 'transaction_code']
 
     def __str__(self):
         return 'Transaction #%s' % (self.transaction_code)
@@ -767,6 +767,7 @@ class ExternalCashFlow(models.Model):
     class Meta:
         verbose_name = ugettext_lazy('external cash flow')
         verbose_name_plural = ugettext_lazy('external cash flows')
+        ordering = ['date']
 
     def __str__(self):
         return '%s: %s - %s - %s - %s = %s' % (self.date, self.portfolio, self.account, list(self.strategies.all()),
@@ -791,7 +792,7 @@ class ExternalCashFlowStrategy(models.Model):
     class Meta:
         verbose_name = ugettext_lazy('external cash flow strategy')
         verbose_name_plural = ugettext_lazy('external cash flow strtegies')
-        ordering = ['external_cash_flow', 'order']
+        ordering = ['order']
 
     def __str__(self):
         return '%s' % self.strategy

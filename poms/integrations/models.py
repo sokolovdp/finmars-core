@@ -164,7 +164,7 @@ class InstrumentDownloadScheme(models.Model):
         # index_together = (
         #     ('master_user', 'scheme_name')
         # )
-        ordering = ['master_user', 'provider', 'scheme_name']
+        ordering = ['scheme_name', ]
         # permissions = [
         #     ('view_instrumentdownloadscheme', 'Can view instrument download scheme'),
         #     ('manage_instrumentdownloadscheme', 'Can manage instrument download scheme'),
@@ -189,7 +189,7 @@ class InstrumentDownloadSchemeInput(models.Model):
         unique_together = (
             ('scheme', 'name')
         )
-        ordering = ['scheme', 'name']
+        ordering = ['name', ]
 
     def __str__(self):
         return self.name
@@ -213,7 +213,7 @@ class InstrumentDownloadSchemeAttribute(models.Model):
         unique_together = (
             ('scheme', 'attribute_type')
         )
-        ordering = ['scheme', 'attribute_type']
+        ordering = ['attribute_type']
 
     def __str__(self):
         # return '%s -> %s' % (self.name, self.attribute_type)
@@ -256,7 +256,7 @@ class PriceDownloadScheme(models.Model):
         # unique_together = [
         #     ['master_user', 'scheme_name']
         # ]
-        ordering = ['master_user', 'provider', 'scheme_name']
+        ordering = ['scheme_name', ]
 
     def __str__(self):
         return self.scheme_name
@@ -297,7 +297,7 @@ class AbstractMapping(models.Model):
 
     class Meta:
         abstract = True
-        ordering = ['master_user', 'provider', 'value']
+        ordering = ['value']
 
 
 class CurrencyMapping(AbstractMapping):
@@ -520,7 +520,7 @@ class PricingAutomatedSchedule(models.Model):
         index_together = (
             ('is_enabled', 'next_run_at'),
         )
-        ordering = ['master_user']
+        ordering = ['is_enabled']
 
     def __str__(self):
         return ugettext('pricing automated schedule')

@@ -244,6 +244,7 @@ class TransactionTypeAdmin(HistoricalAdmin):
     model = TransactionType
     list_display = ['id', 'master_user', 'user_code', 'name', 'is_deleted', ]
     list_select_related = ['master_user']
+    ordering = ['master_user', 'group', 'user_code']
     search_fields = ['id', 'user_code', 'name']
     list_filter = ['is_deleted', ]
     raw_id_fields = ['master_user', 'group', 'instrument_types']
@@ -283,6 +284,7 @@ class ComplexTransactionAdmin(HistoricalAdmin):
     model = ComplexTransaction
     list_display = ['id', 'master_user', 'transaction_type', 'code']
     list_select_related = ['transaction_type', 'transaction_type__master_user']
+    ordering = ['transaction_type', 'code']
     search_fields = ['id']
     raw_id_fields = ['transaction_type']
 
@@ -393,8 +395,12 @@ class ExternalCashFlowStrategyInline(admin.TabularInline):
 
 class ExternalCashFlowAdmin(HistoricalAdmin):
     model = ExternalCashFlow
+    list_display = ['id', 'master_user', 'portfolio', 'account', 'currency', 'date', 'amount']
+    list_select_related = ['master_user', 'portfolio', 'account', 'currency', ]
+    ordering = ['master_user', 'portfolio', 'account', 'currency', 'date']
+    date_hierarchy = 'date'
     inlines = [ExternalCashFlowStrategyInline]
-    raw_id_fields = ['portfolio', 'account', 'currency']
+    raw_id_fields = ['master_user', 'portfolio', 'account', 'currency']
 
 
 admin.site.register(ExternalCashFlow, ExternalCashFlowAdmin)

@@ -8,8 +8,10 @@ from poms.obj_attrs.models import AbstractAttributeTypeOption, AbstractAttribute
 
 
 class AbstractAttributeTypeAdmin(HistoricalAdmin):
-    list_display = ['id', 'master_user', 'name', 'value_type', ]
+    list_display = ['id', 'master_user', 'user_code', 'name', 'value_type', ]
     list_select_related = ['master_user', ]
+    ordering = ['master_user', 'user_code']
+    list_filter = ['value_type']
     search_fields = ['id', 'name']
     raw_id_fields = ['master_user']
     save_as = True

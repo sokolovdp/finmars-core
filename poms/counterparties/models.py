@@ -59,7 +59,7 @@ class Counterparty(NamedModel, FakeDeletableModel):
     class Meta(NamedModel.Meta, FakeDeletableModel.Meta):
         verbose_name = ugettext_lazy('counterparty')
         verbose_name_plural = ugettext_lazy('counterparties')
-        ordering = ['master_user', 'group', 'user_code']
+        ordering = ['user_code']
         permissions = [
             ('view_counterparty', 'Can view counterparty'),
             ('manage_counterparty', 'Can manage counterparty'),
@@ -199,7 +199,7 @@ class Responsible(NamedModel, FakeDeletableModel):
     class Meta(NamedModel.Meta, FakeDeletableModel.Meta):
         verbose_name = ugettext_lazy('responsible')
         verbose_name_plural = ugettext_lazy('responsibles')
-        ordering = ['master_user', 'group', 'user_code']
+        ordering = ['user_code']
         permissions = [
             ('view_responsible', 'Can view responsible'),
             ('manage_responsible', 'Can manage responsible'),

@@ -1,7 +1,6 @@
 from __future__ import unicode_literals
 
 from django.db import models
-from django.utils import translation
 from django.utils.encoding import python_2_unicode_compatible
 from django.utils.text import Truncator
 from django.utils.translation import ugettext_lazy
@@ -21,7 +20,7 @@ class NamedModel(models.Model):
         unique_together = [
             ['master_user', 'user_code']
         ]
-        ordering = ['master_user', 'user_code']
+        ordering = ['user_code']
 
     def __str__(self):
         return self.user_code or ''
@@ -43,23 +42,25 @@ class TimeStampedModel(models.Model):
     class Meta:
         abstract = True
         get_latest_by = 'modified'
-        ordering = ('-modified', '-created',)
+        ordering = ['created', ]
 
 
 @python_2_unicode_compatible
 class AbstractClassModel(models.Model):
     id = models.PositiveSmallIntegerField(primary_key=True, verbose_name=ugettext_lazy('ID'))
     system_code = models.CharField(max_length=255, unique=True, verbose_name=ugettext_lazy('system code'))
-    name = models.CharField(max_length=255, blank=True, default='', verbose_name=ugettext_lazy('name'))
+
     # name_en = models.CharField(max_length=255, blank=True, default='', verbose_name=ugettext_lazy('name (en)'))
     # name_ru = models.CharField(max_length=255, blank=True, default='', verbose_name=ugettext_lazy('name (ru)'))
     # name_es = models.CharField(max_length=255, blank=True, default='', verbose_name=ugettext_lazy('name (es)'))
     # name_de = models.CharField(max_length=255, blank=True, default='', verbose_name=ugettext_lazy('name (de)'))
-    description = models.TextField(blank=True, default='', verbose_name=ugettext_lazy('description'))
+    name = models.CharField(max_length=255, blank=True, default='', verbose_name=ugettext_lazy('name'))
+
     # description_en = models.TextField(blank=True, default='', verbose_name=ugettext_lazy('description (en)'))
     # description_ru = models.TextField(blank=True, default='', verbose_name=ugettext_lazy('description (ru)'))
     # description_es = models.TextField(blank=True, default='', verbose_name=ugettext_lazy('description (es)'))
     # description_de = models.TextField(blank=True, default='', verbose_name=ugettext_lazy('description (de)'))
+    description = models.TextField(blank=True, default='', verbose_name=ugettext_lazy('description'))
 
     class Meta:
         abstract = True
@@ -68,21 +69,21 @@ class AbstractClassModel(models.Model):
     def __str__(self):
         return self.name
 
-    # @property
-    # def name(self):
-    #     lang = translation.get_language()
-    #     if lang is None:
-    #         return self.name_en
-    #     n = getattr(self, 'name_%s' % lang, None)
-    #     return n or self.name_en
-    #
-    # @property
-    # def description(self):
-    #     lang = translation.get_language()
-    #     if lang is None:
-    #         return self.description_en
-    #     n = getattr(self, 'description_%s' % lang, None)
-    #     return n or self.description_en
+        # @property
+        # def name(self):
+        #     lang = translation.get_language()
+        #     if lang is None:
+        #         return self.name_en
+        #     n = getattr(self, 'name_%s' % lang, None)
+        #     return n or self.name_en
+        #
+        # @property
+        # def description(self):
+        #     lang = translation.get_language()
+        #     if lang is None:
+        #         return self.description_en
+        #     n = getattr(self, 'description_%s' % lang, None)
+        #     return n or self.description_en
 
 
 class FakeDeletableModel(models.Model):

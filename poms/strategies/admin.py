@@ -13,6 +13,7 @@ class Strategy1GroupAdmin(HistoricalAdmin):
     model = Strategy1Group
     list_display = ['id', 'master_user', 'user_code', 'name', 'is_deleted', ]
     list_select_related = ['master_user']
+    ordering = ['master_user', 'user_code']
     search_fields = ['id', 'user_code', 'name']
     list_filter = ['is_deleted', ]
     raw_id_fields = ['master_user']
@@ -29,6 +30,7 @@ class Strategy1SubgroupAdmin(HistoricalAdmin):
     model = Strategy1Subgroup
     list_display = ['id', 'master_user', 'group', 'user_code', 'name', 'is_deleted', ]
     list_select_related = ['group', 'group__master_user']
+    ordering = ['master_user', 'group', 'user_code']
     search_fields = ['id', 'user_code', 'name']
     list_filter = ['is_deleted', ]
     raw_id_fields = ['group']
@@ -45,6 +47,7 @@ class Strategy1Admin(HistoricalAdmin):
     model = Strategy1Subgroup
     list_display = ['id', 'master_user', 'group', 'subgroup', 'user_code', 'name', 'is_deleted', ]
     list_select_related = ['subgroup', 'subgroup__group', 'subgroup__group__master_user']
+    ordering = ['master_user', 'subgroup__group', 'subgroup', 'user_code']
     search_fields = ['id', 'user_code', 'name']
     list_filter = ['is_deleted', ]
     raw_id_fields = ['subgroup']

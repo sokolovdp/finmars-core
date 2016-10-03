@@ -31,6 +31,7 @@ admin.site.register(CounterpartyGroup, CounterpartyGroupAdmin)
 class CounterpartyAdmin(HistoricalAdmin):
     model = Counterparty
     list_display = ['id', 'master_user', 'group', 'user_code', 'name', 'is_deleted', ]
+    ordering = ['master_user', 'group', 'user_code']
     search_fields = ['id', 'user_code', 'name']
     list_filter = ['is_deleted', ]
     list_select_related = ['master_user', 'group']
@@ -83,6 +84,7 @@ class ResponsibleAdmin(HistoricalAdmin):
     model = Responsible
     list_display = ['id', 'master_user', 'group', 'user_code', 'name', 'is_deleted', ]
     list_select_related = ['master_user', 'group']
+    ordering = ['master_user', 'group', 'user_code']
     search_fields = ['id', 'user_code', 'name']
     list_filter = ['is_deleted', ]
     raw_id_fields = ['master_user', 'group']

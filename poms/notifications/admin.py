@@ -9,6 +9,7 @@ class NotificationAdmin(admin.ModelAdmin):
     model = Notification
     list_display = ['id', 'recipient', 'recipient_member', 'create_date', '__str__',
                     'actor', 'verb', 'action_object', 'target']
+    ordering = ['recipient_member', 'create_date']
     list_select_related = ['recipient', 'recipient_member',]
     raw_id_fields = ['recipient', 'recipient_member']
     date_hierarchy = 'create_date'
