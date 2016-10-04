@@ -669,13 +669,13 @@ if __name__ == "__main__":
     def demo():
         from poms.instruments.models import Instrument
         from poms.transactions.models import Transaction
-        from poms.common.formula_serializers import EvalInstrumentSerializer, EvalTransactionSerializer
+        # from poms.common.formula_serializers import EvalInstrumentSerializer, EvalTransactionSerializer
 
         def play(expr, names=None):
             try:
                 res = safe_eval(expr, names=names)
             except InvalidExpression as e:
-                res = "<ERROR1: %s>" % e.message
+                res = "<ERROR1: %s>" % e
                 time.sleep(1)
                 raise e
             except Exception as e:
@@ -687,9 +687,9 @@ if __name__ == "__main__":
             "v1": "str",
             "v2": {"id": 1, "name": "V2", "trn_code": 12354, "num": 1.234},
             "v3": [{"id": 2, "name": "V31"}, {"id": 3, "name": "V32"}, ],
-            "instr": collections.OrderedDict(EvalInstrumentSerializer(instance=Instrument.objects.first()).data),
-            "trns": [collections.OrderedDict(EvalTransactionSerializer(instance=t).data)
-                     for t in Transaction.objects.all()[:2]],
+            # "instr": collections.OrderedDict(EvalInstrumentSerializer(instance=Instrument.objects.first()).data),
+            # "trns": [collections.OrderedDict(EvalTransactionSerializer(instance=t).data)
+            #          for t in Transaction.objects.all()[:2]],
 
         }
         print("test variables:\n", names)
