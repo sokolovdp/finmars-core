@@ -45,7 +45,7 @@ class ListLayoutAdmin(BaseLayoutAdmin):
     raw_id_fields = ['member']
 
     def master_user(self, obj):
-        return obj.currency.master_user
+        return obj.member.master_user
 
 
 admin.site.register(ListLayout, ListLayoutAdmin)
@@ -60,7 +60,7 @@ class EditLayoutAdmin(BaseLayoutAdmin):
     raw_id_fields = ['member']
 
     def master_user(self, obj):
-        return obj.currency.master_user
+        return obj.member.master_user
 
 
 admin.site.register(EditLayout, EditLayoutAdmin)
