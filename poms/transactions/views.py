@@ -5,6 +5,7 @@ from django.db import transaction
 from django.db.models import Prefetch
 from rest_framework.decorators import detail_route
 from rest_framework.filters import FilterSet
+from rest_framework.mixins import DestroyModelMixin
 from rest_framework.response import Response
 
 from poms.accounts.models import Account
@@ -406,7 +407,7 @@ class ComplexTransactionFilterSet(FilterSet):
         fields = []
 
 
-class ComplexTransactionViewSet(AbstractReadOnlyModelViewSet):
+class ComplexTransactionViewSet(DestroyModelMixin, AbstractReadOnlyModelViewSet):
     queryset = ComplexTransaction.objects.select_related(
         'transaction_type',
     ).prefetch_related(

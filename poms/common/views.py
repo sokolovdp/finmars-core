@@ -76,7 +76,7 @@ class AbstractModelViewSet(AbstractApiView, HistoricalModelMixin, UpdateModelMix
     ]
 
 
-class AbstractReadOnlyModelViewSet(AbstractApiView, ReadOnlyModelViewSet):
+class AbstractReadOnlyModelViewSet(AbstractApiView, HistoricalModelMixin, ReadOnlyModelViewSet):
     permission_classes = [
         IsAuthenticated
     ]

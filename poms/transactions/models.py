@@ -584,7 +584,7 @@ class ComplexTransaction(models.Model):
 @python_2_unicode_compatible
 class Transaction(models.Model):
     master_user = models.ForeignKey(MasterUser, related_name='transactions', verbose_name=ugettext_lazy('master user'))
-    complex_transaction = models.ForeignKey(ComplexTransaction, on_delete=models.PROTECT, null=True, blank=True,
+    complex_transaction = models.ForeignKey(ComplexTransaction, on_delete=models.SET_NULL, null=True, blank=True,
                                             related_name='transactions')
     complex_transaction_order = models.PositiveSmallIntegerField(default=0.)
     transaction_code = models.IntegerField(default=0, verbose_name=ugettext_lazy('transaction code'))
