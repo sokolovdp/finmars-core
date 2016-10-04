@@ -115,7 +115,6 @@ class InstrumentAdmin(admin.ModelAdmin):
 admin.site.register(Instrument, InstrumentAdmin)
 
 
-
 class ManualPricingFormulaAdmin(admin.ModelAdmin):
     model = AccrualCalculationSchedule
     list_display = ['id', 'master_user', 'instrument', 'pricing_policy']
@@ -126,6 +125,8 @@ class ManualPricingFormulaAdmin(admin.ModelAdmin):
 
     def master_user(self, obj):
         return obj.instrument.master_user
+
+    master_user.admin_order_field = 'instrument__master_user'
 
 
 admin.site.register(ManualPricingFormula, ManualPricingFormulaAdmin)
@@ -144,6 +145,8 @@ class AccrualCalculationScheduleAdmin(admin.ModelAdmin):
     def master_user(self, obj):
         return obj.instrument.master_user
 
+    master_user.admin_order_field = 'instrument__master_user'
+
 
 admin.site.register(AccrualCalculationSchedule, AccrualCalculationScheduleAdmin)
 
@@ -159,6 +162,8 @@ class InstrumentFactorScheduleAdmin(admin.ModelAdmin):
 
     def master_user(self, obj):
         return obj.instrument.master_user
+
+    master_user.admin_order_field = 'instrument__master_user'
 
 
 admin.site.register(InstrumentFactorSchedule, InstrumentFactorScheduleAdmin)
@@ -193,6 +198,8 @@ class EventScheduleAdmin(admin.ModelAdmin):
     def master_user(self, obj):
         return obj.instrument.master_user
 
+    master_user.admin_order_field = 'instrument__master_user'
+
     def _actions(self, obj):
         n = []
         for a in obj.actions.all():
@@ -214,16 +221,19 @@ class PriceHistoryAdmin(admin.ModelAdmin):
     list_filter = ['date']
     date_hierarchy = 'date'
     raw_id_fields = ['instrument', 'pricing_policy']
-    actions = ['calculate_accrued_price']
+
+    # actions = ['calculate_accrued_price']
 
     def master_user(self, obj):
         return obj.instrument.master_user
 
-        # def calculate_accrued_price(self, request, queryset):
-        #     for p in queryset:
-        #         p.calculate_accrued_price(save=True)
-        #
-        # calculate_accrued_price.short_description = "Calculate accrued price"
+    master_user.admin_order_field = 'instrument__master_user'
+
+    # def calculate_accrued_price(self, request, queryset):
+    #     for p in queryset:
+    #         p.calculate_accrued_price(save=True)
+    #
+    # calculate_accrued_price.short_description = "Calculate accrued price"
 
 
 admin.site.register(PriceHistory, PriceHistoryAdmin)
@@ -252,6 +262,8 @@ class EventScheduleConfigAdmin(admin.ModelAdmin):
 
     def master_user(self, obj):
         return obj.instrument.master_user
+
+    master_user.admin_order_field = 'instrument__master_user'
 
 
 admin.site.register(EventScheduleConfig, EventScheduleConfigAdmin)

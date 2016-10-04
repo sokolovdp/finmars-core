@@ -40,12 +40,14 @@ class ListLayoutAdmin(BaseLayoutAdmin):
     model = ListLayout
     list_display = ['id', 'master_user', 'member', 'content_type', 'name']
     list_select_related = ['member__master_user', 'member', 'content_type']
-    ordering = ['member', 'content_type', 'name']
+    ordering = ['member__master_user', 'member', 'content_type', 'name']
     search_fields = ['id', 'name']
     raw_id_fields = ['member']
 
     def master_user(self, obj):
         return obj.member.master_user
+
+    master_user.admin_order_field = 'member__master_user'
 
 
 admin.site.register(ListLayout, ListLayoutAdmin)
@@ -61,6 +63,8 @@ class EditLayoutAdmin(BaseLayoutAdmin):
 
     def master_user(self, obj):
         return obj.member.master_user
+
+    master_user.admin_order_field = 'member__master_user'
 
 
 admin.site.register(EditLayout, EditLayoutAdmin)

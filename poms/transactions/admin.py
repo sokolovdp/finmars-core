@@ -46,12 +46,15 @@ admin.site.register(TransactionTypeGroup, TransactionTypeGroupAdmin)
 class TransactionTypeInputAdmin(admin.ModelAdmin):
     model = TransactionTypeInput
     list_display = ['id', 'master_user', 'transaction_type', 'order', 'name', 'value_type', 'content_type']
-    search_fields = ['id', 'name']
     list_select_related = ['transaction_type', 'transaction_type__master_user']
+    ordering = ['transaction_type__master_user', 'transaction_type', 'name']
+    search_fields = ['id', 'name']
     raw_id_fields = ['transaction_type']
 
     def master_user(self, obj):
         return obj.transaction_type.master_user
+
+    master_user.admin_order_field = 'transaction_type__master_user'
 
 
 admin.site.register(TransactionTypeInput, TransactionTypeInputAdmin)
@@ -67,6 +70,8 @@ class TransactionTypeActionInstrumentAdmin(admin.ModelAdmin):
     def master_user(self, obj):
         return obj.transaction_type.master_user
 
+    master_user.admin_order_field = 'transaction_type__master_user'
+
 
 admin.site.register(TransactionTypeActionInstrument, TransactionTypeActionInstrumentAdmin)
 
@@ -80,6 +85,8 @@ class TransactionTypeActionTransactionAdmin(admin.ModelAdmin):
 
     def master_user(self, obj):
         return obj.transaction_type.master_user
+
+    master_user.admin_order_field = 'transaction_type__master_user'
 
 
 admin.site.register(TransactionTypeActionTransaction, TransactionTypeActionTransactionAdmin)

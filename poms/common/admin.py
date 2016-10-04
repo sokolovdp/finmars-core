@@ -18,6 +18,8 @@ class ClassifierAdmin(admin.ModelAdmin):
     def master_user(self, obj):
         return obj.attribute_type.master_user
 
+    master_user.admin_order_field = 'attribute_type__master_user'
+
 
 class ClassModelAdmin(TranslationAdmin):
     list_display = ['id', 'system_code', 'name']

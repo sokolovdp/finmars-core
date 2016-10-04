@@ -38,5 +38,7 @@ class CurrencyHistoryAdmin(admin.ModelAdmin):
     def master_user(self, obj):
         return obj.currency.master_user
 
+    master_user.admin_order_field = 'currency__master_user'
+
 
 admin.site.register(CurrencyHistory, CurrencyHistoryAdmin)

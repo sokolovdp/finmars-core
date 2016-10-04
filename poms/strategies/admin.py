@@ -57,6 +57,8 @@ class Strategy1Admin(admin.ModelAdmin):
     def group(self, obj):
         return obj.subgroup.group
 
+    group.admin_order_field = 'subgroup__group'
+
 
 admin.site.register(Strategy1, Strategy1Admin)
 
