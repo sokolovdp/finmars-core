@@ -42,3 +42,34 @@ try:
 except AttributeError:
     def isclose(a, b, rel_tol=1e-09, abs_tol=0.0):
         return abs(a - b) <= max(rel_tol * max(abs(a), abs(b)), abs_tol)
+
+
+def add_view_and_manage_permissions():
+    from django.contrib.contenttypes.models import ContentType
+    from django.contrib.auth.models import Permission
+
+    existed = {(p.content_type_id, p.codename) for p in Permission.objects.all()}
+    for content_type in ContentType.objects.all():
+        codename = "view_%s" % content_type.model
+        if (content_type.id, codename) not in existed:
+            Permission.objects.update_or_create(
+                content_type=content_type, codename=codename,
+                defaults={
+                    'name': 'Can view %s' % content_type.name
+                }
+            )
+            # if not Permission.objects.filter(content_type=content_type, codename=codename).exists():
+            #     Permission.objects.create(content_type=content_type, codename=codename,
+            #                               name="Can view %s" % content_type.name)
+
+        codename = "manage_%s" % content_type.model
+        if (content_type.id, codename) not in existed:
+            Permission.objects.update_or_create(
+                content_type=content_type, codename=codename,
+                defaults={
+                    'name': 'Can manage %s' % content_type.name
+                }
+            )
+            # if not Permission.objects.filter(content_type=content_type, codename=codename).exists():
+            #     Permission.objects.create(content_type=content_type, codename=codename,
+            #                               name="Can manage %s" % content_type.name)
