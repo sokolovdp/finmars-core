@@ -349,12 +349,8 @@ class TransactionTypeSerializer(ModelWithObjectPermissionSerializer, ModelWithUs
         instance = super(TransactionTypeSerializer, self).update(instance, validated_data)
         if inputs is not empty:
             inputs = self.save_inputs(instance, inputs)
-        else:
-            inputs = None
         if actions is not empty:
             actions = self.save_actions(instance, actions, inputs)
-        else:
-            actions = None
         if inputs is not empty:
             instance.inputs.exclude(id__in=[i.id for i in inputs.values()]).delete()
         if actions is not empty:
@@ -381,7 +377,7 @@ class TransactionTypeSerializer(ModelWithObjectPermissionSerializer, ModelWithUs
             'transactiontypeactioninstrument', 'transactiontypeactiontransaction').order_by('order', 'id')
         existed_actions = {a.id: a for a in actions_qs}
 
-        if inputs is None:
+        if inputs is None or inputs is empty:
             inputs = {i.name: i for i in instance.inputs.all()}
 
         actions = [None for a in actions_data]
