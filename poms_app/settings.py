@@ -491,7 +491,7 @@ CELERYBEAT_SCHEDULE = {
 IMPORT_CONFIG_STORAGE = {
     'BACKEND': 'django.core.files.storage.FileSystemStorage',
     'KWARGS': {
-        'location': '/tmp/finmars-import/config',
+        'location': '/opt/finmars-import/config',
         'base_url': '/api/hidden/'
     }
 }
@@ -499,7 +499,7 @@ IMPORT_CONFIG_STORAGE = {
 IMPORT_FILE_STORAGE = {
     'BACKEND': 'django.core.files.storage.FileSystemStorage',
     'KWARGS': {
-        'location': '/tmp/finmars-import/files',
+        'location': '/opt/finmars-import/files',
         'base_url': '/api/import/'
     }
 }
