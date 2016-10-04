@@ -130,24 +130,27 @@ def download_instrument_async(self, task_id=None):
     try:
         provider = get_provider(task.master_user, task.provider_id)
     except:
+        _l.info('provider load error', exc_info=True)
         task.status = Task.STATUS_ERROR
         task.save()
         raise
 
     if provider is None:
+        _l.info('provider not found')
         task.status = Task.STATUS_ERROR
         task.save()
         return
 
     if task.status not in [Task.STATUS_PENDING, Task.STATUS_WAIT_RESPONSE]:
+        _l.debug('invalid task status')
         return
     options = task.options_object
 
     try:
         result, is_ready = provider.download_instrument(options)
     except Exception:
+        _l.error('provider processing error', exc_info=True)
         task.status = Task.STATUS_ERROR
-        _l.error('fatal provider error', exc_info=True)
     else:
         if is_ready:
             task.status = Task.STATUS_DONE
@@ -231,25 +234,28 @@ def download_instrument_pricing_async(self, task_id):
     try:
         provider = get_provider(task.master_user, task.provider_id)
     except:
+        _l.info('provider load error', exc_info=True)
         task.status = Task.STATUS_ERROR
         task.save()
         return
 
     if provider is None:
+        _l.info('provider not found')
         task.status = Task.STATUS_ERROR
         task.save()
         return
 
     if task.status not in [Task.STATUS_PENDING, Task.STATUS_WAIT_RESPONSE]:
+        _l.warn('invalid task status')
         return
 
     options = task.options_object
 
     try:
         result, is_ready = provider.download_instrument_pricing(options)
-    except Exception:
+    except:
+        _l.warn("provider processing error", exc_info=True)
         task.status = Task.STATUS_ERROR
-        _l.error('fatal provider error', exc_info=True)
     else:
         if is_ready:
             task.status = Task.STATUS_DONE
@@ -287,25 +293,28 @@ def download_currency_pricing_async(self, task_id):
     try:
         provider = get_provider(task.master_user, task.provider_id)
     except:
+        _l.info('provider load error', exc_info=True)
         task.status = Task.STATUS_ERROR
         task.save()
         return
 
     if provider is None:
+        _l.info('provider not found')
         task.status = Task.STATUS_ERROR
         task.save()
         return
 
     if task.status not in [Task.STATUS_PENDING, Task.STATUS_WAIT_RESPONSE]:
+        _l.warn('invalid task status')
         return
 
     options = task.options_object
 
     try:
         result, is_ready = provider.download_currency_pricing(options)
-    except Exception:
+    except:
+        _l.warn("provider processing error", exc_info=True)
         task.status = Task.STATUS_ERROR
-        _l.error('fatal provider error', exc_info=True)
     else:
         if is_ready:
             task.status = Task.STATUS_DONE
