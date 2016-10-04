@@ -21,6 +21,10 @@ class ProviderException(Exception):
     pass
 
 
+class ProviderNotConfiguredException(ProviderException):
+    pass
+
+
 class AbstractProvider(object):
     def __init__(self):
         self.empty_value = ()
@@ -365,6 +369,8 @@ def get_provider(master_user=None, provider=None, task=None):
         master_user = task.master_user
     if provider is None:
         provider = task.provider_id
+    if isinstance(provider, ProviderClass):
+        provider = provider.id
 
     if provider == ProviderClass.BLOOMBERG:
         if settings.BLOOMBERG_SANDBOX:
@@ -376,9 +382,8 @@ def get_provider(master_user=None, provider=None, task=None):
                 config = master_user.import_configs.get(provider=ProviderClass.BLOOMBERG)
                 cert, key = config.pair
                 return BloombergDataProvider(cert=cert, key=key)
-            except ObjectDoesNotExist:
-                # fo
-                return BloombergDataProvider()
+            except (ObjectDoesNotExist, FileNotFoundError, ValueError):
+                raise ProviderNotConfiguredException()
     return None
 
 

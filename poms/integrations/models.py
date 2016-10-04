@@ -93,8 +93,11 @@ class ImportConfig(models.Model):
         if self.cert and self.key:
             return self.cert, self.key
         elif self.p12cert:
-            from poms.integrations.providers.bloomberg import get_certs
-            return get_certs(self.p12cert.read(), self.password, is_base64=False)
+            try:
+                from poms.integrations.providers.bloomberg import get_certs
+                return get_certs(self.p12cert.read(), self.password, is_base64=False)
+            except FileNotFoundError:
+                raise ValueError(ugettext("Can't read cert file"))
         return None, None
 
     @property

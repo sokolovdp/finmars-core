@@ -8,6 +8,7 @@ from logging import getLogger
 from django.core.exceptions import ObjectDoesNotExist
 from django.core.signing import TimestampSigner, BadSignature
 from django.utils import timezone
+from django.utils.translation import ugettext
 from rest_framework import serializers
 from rest_framework.exceptions import ValidationError
 from rest_framework.fields import empty
@@ -27,7 +28,7 @@ from poms.integrations.models import InstrumentDownloadSchemeInput, InstrumentDo
     InstrumentDownloadScheme, ImportConfig, Task, ProviderClass, FactorScheduleDownloadMethod, \
     AccrualScheduleDownloadMethod, PriceDownloadScheme, CurrencyMapping, InstrumentTypeMapping, \
     InstrumentAttributeValueMapping, AccrualCalculationModelMapping, PeriodicityMapping, PricingAutomatedSchedule
-from poms.integrations.providers.base import get_provider
+from poms.integrations.providers.base import get_provider, ProviderException
 from poms.integrations.storage import import_file_storage
 from poms.integrations.tasks import download_pricing, download_instrument
 from poms.obj_attrs.serializers import ReadOnlyAttributeTypeSerializer, ReadOnlyClassifierSerializer, \
@@ -471,19 +472,33 @@ class ImportInstrumentSerializer(serializers.Serializer):
         master_user = attrs['master_user']
         instrument_download_scheme = attrs['instrument_download_scheme']
         instrument_code = attrs['instrument_code']
-        provider = get_provider(master_user=master_user, provider=instrument_download_scheme.provider_id)
+
+        try:
+            provider = get_provider(master_user=master_user, provider=instrument_download_scheme.provider_id)
+        except ProviderException:
+            raise ValidationError(
+                {'instrument_download_scheme':
+                     ugettext('Check "%(provider)s" provider configuration.') % {
+                         'provider': instrument_download_scheme.provider}
+                 })
+
         if not provider.is_valid_reference(instrument_code):
             raise ValidationError(
-                {'instrument_code': 'Invalid value for provider %s' % instrument_download_scheme.provider.name})
+                {'instrument_code':
+                     ugettext('Invalid value for "%(provider)s" provider.') % {
+                         'reference': instrument_code,
+                         'provider': instrument_download_scheme.provider}
+                 })
 
         task_result_overrides = attrs.get('task_result_overrides', None) or {}
         if isinstance(task_result_overrides, str):
             try:
                 task_result_overrides = json.loads(task_result_overrides)
             except ValueError:
-                raise ValidationError({'task_result_overrides': 'Invalid JSON string'})
+                raise ValidationError({'task_result_overrides': ugettext('Invalid JSON string.')})
         if not isinstance(task_result_overrides, dict):
-            raise ValidationError({'task_result_overrides': 'Invalid value'})
+            raise ValidationError({'task_result_overrides': ugettext('Invalid value.')})
+
         task_result_overrides = {k: v for k, v in task_result_overrides.items()
                                  if k in instrument_download_scheme.fields}
         attrs['task_result_overrides'] = task_result_overrides

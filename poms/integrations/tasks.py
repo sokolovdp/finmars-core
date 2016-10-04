@@ -14,15 +14,12 @@ from django.core.mail import send_mail as django_send_mail, send_mass_mail as dj
     mail_admins as django_mail_admins, mail_managers as django_mail_managers
 from django.db import transaction
 from django.utils import timezone
-from django.utils.translation import ugettext_lazy
 
 from poms.audit.models import AuthLogEntry
 from poms.common import formula
 from poms.common.utils import date_now
 from poms.currencies.models import Currency, CurrencyHistory
-from poms.currencies.serializers import CurrencyHistorySerializer
 from poms.instruments.models import Instrument, DailyPricingModel, PricingPolicy, PriceHistory
-from poms.instruments.serializers import PriceHistorySerializer
 from poms.integrations.models import Task, PriceDownloadScheme, InstrumentDownloadScheme, PricingAutomatedSchedule
 from poms.integrations.providers.base import get_provider, parse_date_iso, fill_instrument_price, fill_currency_price, \
     AbstractProvider
@@ -185,6 +182,10 @@ def download_instrument(instrument_code=None, instrument_download_scheme=None, m
              getattr(master_user, 'id', None), getattr(task, 'info', None), instrument_code, instrument_download_scheme)
 
     if task is None:
+        provider = get_provider(instrument_download_scheme.master_user, instrument_download_scheme.provider)
+        if not provider.is_valid_reference(instrument_code):
+            raise ValueError('Invalid instrument_code value')
+
         options = {
             'instrument_download_scheme_id': instrument_download_scheme.id,
             'instrument_code': instrument_code,
