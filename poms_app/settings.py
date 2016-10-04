@@ -449,7 +449,7 @@ GEOIP_COUNTRY = "GeoLite2-Country.mmdb"
 GEOIP_CITY = "GeoLite2-City.mmdb"
 
 MEDIA_URL = '/api/media/'
-MEDIA_ROOT = '/tmp/finmars-media'
+MEDIA_ROOT = '/opt/finmars-media'
 MEDIA_SERVE = True
 
 # CELERY ------------------------------------------------
