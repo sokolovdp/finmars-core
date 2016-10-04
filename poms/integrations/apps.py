@@ -2,6 +2,7 @@ from __future__ import unicode_literals, print_function
 
 from django.apps import AppConfig
 from django.db import DEFAULT_DB_ALIAS
+from django.db.models.signals import post_migrate
 from django.utils.translation import ugettext_lazy
 
 
@@ -10,8 +11,7 @@ class IntegrationsConfig(AppConfig):
     verbose_name = ugettext_lazy('Integrations')
 
     def ready(self):
-        from django.db.models.signals import post_migrate
-        post_migrate.connect(self.update_transaction_classes)
+        post_migrate.connect(self.update_transaction_classes, sender=self)
 
         # noinspection PyUnresolvedReferences
         import poms.integrations.handlers
@@ -20,8 +20,8 @@ class IntegrationsConfig(AppConfig):
         from poms.common.utils import db_class_check_data
         from .models import ProviderClass, FactorScheduleDownloadMethod, AccrualScheduleDownloadMethod
 
-        if not isinstance(app_config, IntegrationsConfig):
-            return
+        # if not isinstance(app_config, IntegrationsConfig):
+        #     return
 
         db_class_check_data(ProviderClass, verbosity, using)
         db_class_check_data(FactorScheduleDownloadMethod, verbosity, using)
