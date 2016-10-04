@@ -3,7 +3,6 @@ from __future__ import unicode_literals
 from django.contrib import admin
 
 from poms.accounts.models import Account, AccountType, AccountAttributeType, AccountClassifier
-from poms.audit.admin import HistoricalAdmin
 from poms.common.admin import ClassifierAdmin
 from poms.obj_attrs.admin import AbstractAttributeTypeAdmin, AbstractAttributeInline, \
     AbstractAttributeTypeClassifierInline, AbstractAttributeTypeOptionInline
@@ -11,7 +10,7 @@ from poms.obj_perms.admin import UserObjectPermissionInline, \
     GroupObjectPermissionInline
 
 
-class AccountTypeAdmin(HistoricalAdmin):
+class AccountTypeAdmin(admin.ModelAdmin):
     model = AccountType
     list_display = ['id', 'master_user', 'user_code', 'name', 'is_deleted', ]
     list_select_related = ['master_user']
@@ -28,7 +27,7 @@ class AccountTypeAdmin(HistoricalAdmin):
 admin.site.register(AccountType, AccountTypeAdmin)
 
 
-class AccountAdmin(HistoricalAdmin):
+class AccountAdmin(admin.ModelAdmin):
     model = Account
     list_display = ['id', 'master_user', 'type', 'user_code', 'name', 'is_deleted', ]
     list_select_related = ['master_user', 'type']

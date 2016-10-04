@@ -2,7 +2,6 @@ from __future__ import unicode_literals
 
 from django.contrib import admin
 
-from poms.audit.admin import HistoricalAdmin
 from poms.common.admin import ClassifierAdmin
 from poms.obj_attrs.admin import AbstractAttributeTypeAdmin, AbstractAttributeInline, \
     AbstractAttributeTypeClassifierInline, AbstractAttributeTypeOptionInline
@@ -10,7 +9,7 @@ from poms.obj_perms.admin import UserObjectPermissionInline, GroupObjectPermissi
 from poms.portfolios.models import Portfolio, PortfolioAttributeType, PortfolioClassifier
 
 
-class PortfolioAdmin(HistoricalAdmin):
+class PortfolioAdmin(admin.ModelAdmin):
     model = Portfolio
     list_display = ['id', 'master_user', 'user_code', 'name', 'is_deleted', ]
     list_select_related = ['master_user']

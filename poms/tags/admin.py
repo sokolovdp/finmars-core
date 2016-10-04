@@ -2,13 +2,12 @@ from __future__ import unicode_literals
 
 from django.contrib import admin
 
-from poms.audit.admin import HistoricalAdmin
 from poms.obj_perms.admin import UserObjectPermissionInline, GroupObjectPermissionInline
 from poms.tags.filters import get_tag_content_types
 from poms.tags.models import Tag
 
 
-class TagAdmin(HistoricalAdmin):
+class TagAdmin(admin.ModelAdmin):
     model = Tag
     list_display = ['id', 'master_user', 'user_code', 'name', ]
     list_select_related = ['master_user']

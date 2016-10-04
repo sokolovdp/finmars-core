@@ -2,13 +2,12 @@ from __future__ import unicode_literals
 
 from django.contrib import admin
 
-from poms.audit.admin import HistoricalAdmin
 from poms.chats.models import Thread, Message, DirectMessage, ThreadGroup
 from poms.obj_perms.admin import UserObjectPermissionInline, \
     GroupObjectPermissionInline
 
 
-class ThreadGroupAdmin(HistoricalAdmin):
+class ThreadGroupAdmin(admin.ModelAdmin):
     model = ThreadGroup
     list_display = ['id', 'master_user', 'name', 'is_deleted', ]
     list_select_related = ['master_user', ]
@@ -25,7 +24,7 @@ class ThreadGroupAdmin(HistoricalAdmin):
 admin.site.register(ThreadGroup, ThreadGroupAdmin)
 
 
-class ThreadAdmin(HistoricalAdmin):
+class ThreadAdmin(admin.ModelAdmin):
     model = Thread
     list_display = ['id', 'master_user', 'thread_group', 'subject', 'created', 'closed', 'is_deleted', ]
     list_select_related = ['master_user', 'thread_group', ]
@@ -43,7 +42,7 @@ class ThreadAdmin(HistoricalAdmin):
 admin.site.register(Thread, ThreadAdmin)
 
 
-class MessageAdmin(HistoricalAdmin):
+class MessageAdmin(admin.ModelAdmin):
     model = Message
     list_display = ['id', 'master_user', 'thread', 'created', 'sender', 'short_text']
     list_select_related = ['thread', 'thread__master_user', 'sender']
@@ -61,7 +60,7 @@ class MessageAdmin(HistoricalAdmin):
 admin.site.register(Message, MessageAdmin)
 
 
-class DirectMessageAdmin(HistoricalAdmin):
+class DirectMessageAdmin(admin.ModelAdmin):
     model = DirectMessage
     list_display = ['id', 'created', 'sender', 'recipient', 'short_text']
     list_select_related = ['sender', 'recipient']

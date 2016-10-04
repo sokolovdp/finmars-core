@@ -3,11 +3,10 @@ from __future__ import unicode_literals
 from django.contrib import admin
 from django.utils.translation import ugettext_lazy
 
-from poms.audit.admin import HistoricalAdmin
 from poms.currencies.models import Currency, CurrencyHistory
 
 
-class CurrencyAdmin(HistoricalAdmin):
+class CurrencyAdmin(admin.ModelAdmin):
     model = Currency
     list_display = ['id', 'master_user', 'user_code', 'name', 'is_deleted', ]
     list_select_related = ['master_user']
@@ -26,7 +25,7 @@ class CurrencyAdmin(HistoricalAdmin):
 admin.site.register(Currency, CurrencyAdmin)
 
 
-class CurrencyHistoryAdmin(HistoricalAdmin):
+class CurrencyHistoryAdmin(admin.ModelAdmin):
     model = CurrencyHistory
     list_display = ['id', 'master_user', 'currency', 'pricing_policy', 'date', 'fx_rate']
     list_select_related = ['currency', 'currency__master_user']

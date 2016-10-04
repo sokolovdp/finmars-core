@@ -23,12 +23,6 @@ class AuthLogEntryAdmin(admin.ModelAdmin):
 admin.site.register(AuthLogEntry, AuthLogEntryAdmin)
 
 
-class HistoricalAdmin(admin.ModelAdmin):
-    # history_latest_first = True
-    # ignore_duplicate_revisions = True
-    pass
-
-
 class ObjectHistory4EntryAdmin(admin.ModelAdmin):
     model = ObjectHistory4Entry
     list_display = ['id', 'master_user', 'member', 'created', 'group_id',

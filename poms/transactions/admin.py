@@ -4,7 +4,6 @@ from django.contrib import admin
 from django.contrib.contenttypes.models import ContentType
 
 from poms.accounts.models import Account
-from poms.audit.admin import HistoricalAdmin
 from poms.common.admin import ClassModelAdmin, ClassifierAdmin
 from poms.counterparties.models import Responsible, Counterparty
 from poms.currencies.models import Currency
@@ -28,7 +27,7 @@ admin.site.register(NotificationClass, ClassModelAdmin)
 admin.site.register(PeriodicityGroup, ClassModelAdmin)
 
 
-class TransactionTypeGroupAdmin(HistoricalAdmin):
+class TransactionTypeGroupAdmin(admin.ModelAdmin):
     model = TransactionTypeGroup
     list_display = ['id', 'master_user', 'user_code', 'name', 'is_deleted', ]
     list_select_related = ['master_user']
@@ -44,7 +43,7 @@ class TransactionTypeGroupAdmin(HistoricalAdmin):
 admin.site.register(TransactionTypeGroup, TransactionTypeGroupAdmin)
 
 
-class TransactionTypeInputAdmin(HistoricalAdmin):
+class TransactionTypeInputAdmin(admin.ModelAdmin):
     model = TransactionTypeInput
     list_display = ['id', 'master_user', 'transaction_type', 'order', 'name', 'value_type', 'content_type']
     search_fields = ['id', 'name']
@@ -58,7 +57,7 @@ class TransactionTypeInputAdmin(HistoricalAdmin):
 admin.site.register(TransactionTypeInput, TransactionTypeInputAdmin)
 
 
-class TransactionTypeActionInstrumentAdmin(HistoricalAdmin):
+class TransactionTypeActionInstrumentAdmin(admin.ModelAdmin):
     model = TransactionTypeActionInstrument
     list_display = ['id', 'master_user', 'transaction_type', 'order', 'action_notes']
     search_fields = ['id']
@@ -72,7 +71,7 @@ class TransactionTypeActionInstrumentAdmin(HistoricalAdmin):
 admin.site.register(TransactionTypeActionInstrument, TransactionTypeActionInstrumentAdmin)
 
 
-class TransactionTypeActionTransactionAdmin(HistoricalAdmin):
+class TransactionTypeActionTransactionAdmin(admin.ModelAdmin):
     model = TransactionTypeActionTransaction
     list_display = ['id', 'master_user', 'transaction_type', 'order', 'action_notes']
     search_fields = ['id']
@@ -240,7 +239,7 @@ class EventToHandleInline(admin.StackedInline):
     extra = 0
 
 
-class TransactionTypeAdmin(HistoricalAdmin):
+class TransactionTypeAdmin(admin.ModelAdmin):
     model = TransactionType
     list_display = ['id', 'master_user', 'user_code', 'name', 'is_deleted', ]
     list_select_related = ['master_user']
@@ -280,7 +279,7 @@ class TransactionTypeAdmin(HistoricalAdmin):
 admin.site.register(TransactionType, TransactionTypeAdmin)
 
 
-class ComplexTransactionAdmin(HistoricalAdmin):
+class ComplexTransactionAdmin(admin.ModelAdmin):
     model = ComplexTransaction
     list_display = ['id', 'master_user', 'transaction_type', 'code']
     list_select_related = ['transaction_type', 'transaction_type__master_user']
@@ -312,7 +311,7 @@ admin.site.register(ComplexTransaction, ComplexTransactionAdmin)
 #     raw_id_fields = ['attribute_type']
 
 
-class TransactionAdmin(HistoricalAdmin):
+class TransactionAdmin(admin.ModelAdmin):
     model = Transaction
     list_display = ['id', 'master_user', 'transaction_date', 'transaction_code',
                     'complex_transaction_id',
@@ -393,7 +392,7 @@ class ExternalCashFlowStrategyInline(admin.TabularInline):
     extra = 0
 
 
-class ExternalCashFlowAdmin(HistoricalAdmin):
+class ExternalCashFlowAdmin(admin.ModelAdmin):
     model = ExternalCashFlow
     list_display = ['id', 'master_user', 'portfolio', 'account', 'currency', 'date', 'amount']
     list_select_related = ['master_user', 'portfolio', 'account', 'currency', ]

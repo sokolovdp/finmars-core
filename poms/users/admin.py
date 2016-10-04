@@ -6,7 +6,6 @@ from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin
 from django.contrib.auth.models import User, Permission
 
-from poms.audit.admin import HistoricalAdmin
 from poms.instruments.models import EventScheduleConfig
 from poms.integrations.models import PricingAutomatedSchedule
 from poms.users.models import MasterUser, UserProfile, Member, Group, TIMEZONE_CHOICES, FakeSequence
@@ -29,7 +28,7 @@ class EventScheduleConfigInline(admin.StackedInline):
     can_delete = False
 
 
-class MasterUserAdmin(HistoricalAdmin):
+class MasterUserAdmin(admin.ModelAdmin):
     model = MasterUser
     inlines = [
         PricingAutomatedScheduleInline,
@@ -100,7 +99,7 @@ class UserProfileInline(admin.StackedInline):
     can_delete = False
 
 
-class UserWithProfileAdmin(HistoricalAdmin, UserAdmin):
+class UserWithProfileAdmin(UserAdmin):
     inlines = [UserProfileInline]
 
     def get_inline_instances(self, request, obj=None):
@@ -128,7 +127,7 @@ class PermissionAdmin(admin.ModelAdmin):
 admin.site.register(Permission, PermissionAdmin)
 
 
-class GroupAdmin(HistoricalAdmin, admin.ModelAdmin):
+class GroupAdmin(admin.ModelAdmin):
     model = Group
     list_display = ['id', 'master_user', 'name', ]
     list_select_related = ['master_user']

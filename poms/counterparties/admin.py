@@ -2,7 +2,6 @@ from __future__ import unicode_literals
 
 from django.contrib import admin
 
-from poms.audit.admin import HistoricalAdmin
 from poms.common.admin import ClassifierAdmin
 from poms.counterparties.models import Counterparty, Responsible, CounterpartyAttributeType, ResponsibleAttributeType, \
     CounterpartyGroup, ResponsibleGroup, CounterpartyClassifier, ResponsibleClassifier
@@ -12,7 +11,7 @@ from poms.obj_perms.admin import UserObjectPermissionInline, \
     GroupObjectPermissionInline
 
 
-class CounterpartyGroupAdmin(HistoricalAdmin):
+class CounterpartyGroupAdmin(admin.ModelAdmin):
     model = CounterpartyGroup
     list_display = ['id', 'master_user', 'user_code', 'name', 'is_deleted', ]
     list_select_related = ['master_user']
@@ -28,7 +27,7 @@ class CounterpartyGroupAdmin(HistoricalAdmin):
 admin.site.register(CounterpartyGroup, CounterpartyGroupAdmin)
 
 
-class CounterpartyAdmin(HistoricalAdmin):
+class CounterpartyAdmin(admin.ModelAdmin):
     model = Counterparty
     list_display = ['id', 'master_user', 'group', 'user_code', 'name', 'is_deleted', ]
     ordering = ['master_user', 'group', 'user_code']
@@ -64,7 +63,7 @@ admin.site.register(CounterpartyClassifier, ClassifierAdmin)
 # ------
 
 
-class ResponsibleGroupAdmin(HistoricalAdmin):
+class ResponsibleGroupAdmin(admin.ModelAdmin):
     model = ResponsibleGroup
     list_display = ['id', 'master_user', 'user_code', 'name', 'is_deleted', ]
     list_select_related = ['master_user']
@@ -80,7 +79,7 @@ class ResponsibleGroupAdmin(HistoricalAdmin):
 admin.site.register(ResponsibleGroup, ResponsibleGroupAdmin)
 
 
-class ResponsibleAdmin(HistoricalAdmin):
+class ResponsibleAdmin(admin.ModelAdmin):
     model = Responsible
     list_display = ['id', 'master_user', 'group', 'user_code', 'name', 'is_deleted', ]
     list_select_related = ['master_user', 'group']

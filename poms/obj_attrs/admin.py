@@ -1,13 +1,9 @@
 from django.contrib import admin
-from django.contrib.admin import widgets
-from django.db import models
 
-from poms.audit.admin import HistoricalAdmin
-from poms.common.models import NamedModel
 from poms.obj_attrs.models import AbstractAttributeTypeOption, AbstractAttribute, AbstractClassifier
 
 
-class AbstractAttributeTypeAdmin(HistoricalAdmin):
+class AbstractAttributeTypeAdmin(admin.ModelAdmin):
     list_display = ['id', 'master_user', 'user_code', 'name', 'value_type', ]
     list_select_related = ['master_user', ]
     ordering = ['master_user', 'user_code']
@@ -44,7 +40,7 @@ class AbstractAttributeTypeOptionInline(admin.TabularInline):
         super(AbstractAttributeTypeOptionInline, self).__init__(parent_model, *args, **kwargs)
 
 
-class AbstractAttributeTypeOptionAdmin(HistoricalAdmin):
+class AbstractAttributeTypeOptionAdmin(admin.ModelAdmin):
     extra = 0
     list_display = ['id', 'member', 'attribute_type', 'is_hidden']
     fields = ['member', 'attribute_type', 'is_hidden']

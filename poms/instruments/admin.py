@@ -5,7 +5,6 @@ from django.db import models
 from django.forms import widgets
 from django.utils.translation import ugettext_lazy
 
-from poms.audit.admin import HistoricalAdmin
 from poms.common.admin import ClassModelAdmin, ClassifierAdmin
 from poms.instruments.models import Instrument, PriceHistory, InstrumentClass, InstrumentType, \
     DailyPricingModel, AccrualCalculationModel, Periodicity, CostMethod, \
@@ -25,7 +24,7 @@ admin.site.register(CostMethod, ClassModelAdmin)
 admin.site.register(PaymentSizeDetail, ClassModelAdmin)
 
 
-class PricingPolicyAdmin(HistoricalAdmin):
+class PricingPolicyAdmin(admin.ModelAdmin):
     model = PricingPolicy
     list_display = ['id', 'master_user', 'user_code', 'name', ]
     list_select_related = ['master_user']
@@ -36,7 +35,7 @@ class PricingPolicyAdmin(HistoricalAdmin):
 admin.site.register(PricingPolicy, PricingPolicyAdmin)
 
 
-class InstrumentTypeAdmin(HistoricalAdmin):
+class InstrumentTypeAdmin(admin.ModelAdmin):
     model = InstrumentType
     list_display = ['id', 'master_user', 'user_code', 'name', 'instrument_class', 'is_deleted', ]
     list_select_related = ['master_user', 'instrument_class']
@@ -78,7 +77,7 @@ class InstrumentFactorScheduleInline(admin.TabularInline):
     extra = 0
 
 
-class InstrumentAdmin(HistoricalAdmin):
+class InstrumentAdmin(admin.ModelAdmin):
     model = Instrument
     list_display = ['id', 'master_user', 'instrument_type', 'user_code', 'name', 'is_deleted']
     list_select_related = ['master_user', 'instrument_type', 'pricing_currency', 'accrued_currency']
@@ -206,7 +205,7 @@ class EventScheduleAdmin(admin.ModelAdmin):
 admin.site.register(EventSchedule, EventScheduleAdmin)
 
 
-class PriceHistoryAdmin(HistoricalAdmin):
+class PriceHistoryAdmin(admin.ModelAdmin):
     model = PriceHistory
     list_display = ['id', 'master_user', 'instrument', 'pricing_policy', 'date', 'principal_price', 'accrued_price']
     list_select_related = ['instrument', 'pricing_policy']

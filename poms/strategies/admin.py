@@ -2,14 +2,12 @@ from __future__ import unicode_literals
 
 from django.contrib import admin
 
-from poms.audit.admin import HistoricalAdmin
-from poms.obj_perms.admin import UserObjectPermissionInline, \
-    GroupObjectPermissionInline
+from poms.obj_perms.admin import UserObjectPermissionInline, GroupObjectPermissionInline
 from poms.strategies.models import Strategy1Group, Strategy2Subgroup, Strategy3, Strategy1Subgroup, Strategy1, \
     Strategy2Group, Strategy2, Strategy3Group, Strategy3Subgroup
 
 
-class Strategy1GroupAdmin(HistoricalAdmin):
+class Strategy1GroupAdmin(admin.ModelAdmin):
     model = Strategy1Group
     list_display = ['id', 'master_user', 'user_code', 'name', 'is_deleted', ]
     list_select_related = ['master_user']
@@ -26,7 +24,7 @@ class Strategy1GroupAdmin(HistoricalAdmin):
 admin.site.register(Strategy1Group, Strategy1GroupAdmin)
 
 
-class Strategy1SubgroupAdmin(HistoricalAdmin):
+class Strategy1SubgroupAdmin(admin.ModelAdmin):
     model = Strategy1Subgroup
     list_display = ['id', 'master_user', 'group', 'user_code', 'name', 'is_deleted', ]
     list_select_related = ['group', 'group__master_user']
@@ -43,7 +41,7 @@ class Strategy1SubgroupAdmin(HistoricalAdmin):
 admin.site.register(Strategy1Subgroup, Strategy1SubgroupAdmin)
 
 
-class Strategy1Admin(HistoricalAdmin):
+class Strategy1Admin(admin.ModelAdmin):
     model = Strategy1Subgroup
     list_display = ['id', 'master_user', 'group', 'subgroup', 'user_code', 'name', 'is_deleted', ]
     list_select_related = ['subgroup', 'subgroup__group', 'subgroup__group__master_user']

@@ -7,7 +7,6 @@ from django.core.urlresolvers import reverse_lazy
 from django.utils.html import escape
 from django.utils.translation import ugettext_lazy
 
-from poms.audit.admin import HistoricalAdmin
 from poms.common.admin import ClassModelAdmin
 from poms.integrations.models import Task, ImportConfig, ProviderClass, CurrencyMapping, \
     InstrumentTypeMapping, InstrumentAttributeValueMapping, FactorScheduleDownloadMethod, AccrualScheduleDownloadMethod, \
@@ -60,7 +59,7 @@ class ImportConfigForm(forms.ModelForm):
         fields = ['master_user', 'provider', 'p12cert', 'password', 'cert', 'key']
 
 
-class ImportConfigAdmin(HistoricalAdmin):
+class ImportConfigAdmin(admin.ModelAdmin):
     model = ImportConfig
     form = ImportConfigForm
     list_display = ['id', 'master_user', 'provider', ]
@@ -82,7 +81,7 @@ class InstrumentDownloadSchemeAttributeInline(admin.TabularInline):
     raw_id_fields = ['attribute_type']
 
 
-class InstrumentDownloadSchemeAdmin(HistoricalAdmin):
+class InstrumentDownloadSchemeAdmin(admin.ModelAdmin):
     model = InstrumentDownloadScheme
     list_display = ['id', 'master_user', 'provider', 'scheme_name', 'fields0']
     list_select_related = ['master_user', 'provider', ]
