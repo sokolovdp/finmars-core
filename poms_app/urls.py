@@ -13,10 +13,6 @@ urlpatterns += [
 ]
 
 if 'django.contrib.admin' in settings.INSTALLED_APPS:
-    if 'grappelli' in settings.INSTALLED_APPS:
-        urlpatterns += [
-            url(r'^admin/grappelli/', include('grappelli.urls')),
-        ]
     urlpatterns += [
         url(r'^admin/doc/', include('django.contrib.admindocs.urls')),
         url(r'^admin/', admin.site.urls),
