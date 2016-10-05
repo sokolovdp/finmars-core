@@ -8,11 +8,11 @@ from rest_framework.filters import FilterSet
 from rest_framework.mixins import DestroyModelMixin
 from rest_framework.response import Response
 
-from poms.accounts.models import Account
+from poms.accounts.models import Account, AccountType
 from poms.common.filters import CharFilter, ModelExtWithPermissionMultipleChoiceFilter, ModelExtMultipleChoiceFilter, \
     NoOpFilter
 from poms.common.views import AbstractClassModelViewSet, AbstractModelViewSet, AbstractReadOnlyModelViewSet
-from poms.counterparties.models import Responsible, Counterparty
+from poms.counterparties.models import Responsible, Counterparty, ResponsibleGroup, CounterpartyGroup
 from poms.currencies.models import Currency
 from poms.instruments.models import Instrument, InstrumentType
 from poms.obj_attrs.filters import AttributeTypeValueTypeFilter
@@ -22,7 +22,8 @@ from poms.obj_perms.filters import ObjectPermissionMemberFilter, ObjectPermissio
 from poms.obj_perms.utils import obj_perms_prefetch
 from poms.obj_perms.views import AbstractWithObjectPermissionViewSet
 from poms.portfolios.models import Portfolio
-from poms.strategies.models import Strategy1, Strategy2, Strategy3
+from poms.strategies.models import Strategy1, Strategy2, Strategy3, Strategy1Subgroup, Strategy1Group, Strategy2Subgroup, \
+    Strategy2Group, Strategy3Subgroup, Strategy3Group
 from poms.tags.filters import TagFilterBackend, TagFilter
 from poms.transactions.filters import TransactionObjectPermissionFilter, ComplexTransactionPermissionFilter, \
     TransactionObjectPermissionMemberFilter, TransactionObjectPermissionGroupFilter, \
@@ -319,27 +320,55 @@ class TransactionFilterSet(FilterSet):
 class TransactionViewSet(AbstractModelViewSet):
     queryset = Transaction.objects.select_related(
         'master_user', 'complex_transaction', 'complex_transaction__transaction_type', 'transaction_class',
-        'portfolio', 'instrument', 'transaction_currency', 'settlement_currency',
-        'account_cash', 'account_position', 'account_interim',
-        'strategy1_position', 'strategy1_cash', 'strategy2_position', 'strategy2_cash',
-        'strategy3_position', 'strategy3_cash', 'responsible', 'counterparty',
+        'portfolio',
+        'instrument', 'instrument__instrument_type', 'instrument__instrument_type__instrument_class',
+        'transaction_currency', 'settlement_currency',
+        'account_cash', 'account_cash__type',
+        'account_position', 'account_position__type',
+        'account_interim', 'account_interim__type',
+        'strategy1_position', 'strategy1_position__subgroup', 'strategy1_position__subgroup__group',
+        'strategy1_cash', 'strategy1_cash__subgroup', 'strategy1_cash__subgroup__group',
+        'strategy2_position', 'strategy2_position__subgroup', 'strategy2_position__subgroup__group',
+        'strategy2_cash', 'strategy2_cash__subgroup', 'strategy2_cash__subgroup__group',
+        'strategy3_position', 'strategy3_position__subgroup', 'strategy3_position__subgroup__group',
+        'strategy3_cash', 'strategy3_cash__subgroup', 'strategy3_cash__subgroup__group',
+        'responsible', 'responsible__group',
+        'counterparty', 'counterparty__group',
     ).prefetch_related(
         Prefetch('attributes', queryset=TransactionAttribute.objects.select_related('attribute_type', 'classifier')),
     )
     prefetch_permissions_for = (
         ('portfolio', Portfolio),
         ('instrument', Instrument),
+        ('instrument__instrument_type', InstrumentType),
         ('account_cash', Account),
+        ('account_cash__type', AccountType),
         ('account_position', Account),
+        ('account_position__type', AccountType),
         ('account_interim', Account),
+        ('account_interim__type', AccountType),
         ('strategy1_position', Strategy1),
+        ('strategy1_position__subgroup', Strategy1Subgroup),
+        ('strategy1_position__subgroup__group', Strategy1Group),
         ('strategy1_cash', Strategy1),
+        ('strategy1_cash__subgroup', Strategy1Subgroup),
+        ('strategy1_cash__subgroup__group', Strategy1Group),
         ('strategy2_position', Strategy2),
+        ('strategy2_position__subgroup', Strategy2Subgroup),
+        ('strategy2_position__subgroup__group', Strategy2Group),
         ('strategy2_cash', Strategy2),
+        ('strategy2_cash__subgroup', Strategy2Subgroup),
+        ('strategy2_cash__subgroup__group', Strategy2Group),
         ('strategy3_position', Strategy3),
+        ('strategy3_position__subgroup', Strategy3Subgroup),
+        ('strategy3_position__subgroup__group', Strategy3Group),
         ('strategy3_cash', Strategy3),
+        ('strategy3_cash__subgroup', Strategy3Subgroup),
+        ('strategy3_cash__subgroup__group', Strategy3Group),
         ('responsible', Responsible),
+        ('responsible__group', ResponsibleGroup),
         ('counterparty', Counterparty),
+        ('counterparty__group', CounterpartyGroup),
         ('attributes__attribute_type', TransactionAttributeType),
     )
     serializer_class = TransactionSerializer
@@ -389,8 +418,6 @@ class TransactionViewSet(AbstractModelViewSet):
         'counterparty__public_name',
     ]
 
-    # search_fields = ['transaction_code', 'complex_transaction__code', 'complex_transaction_order']
-
     def get_queryset(self):
         queryset = super(TransactionViewSet, self).get_queryset()
         queryset = obj_perms_prefetch(queryset, my=False, lookups_related=self.prefetch_permissions_for)
@@ -413,10 +440,20 @@ class ComplexTransactionViewSet(DestroyModelMixin, AbstractReadOnlyModelViewSet)
     ).prefetch_related(
         Prefetch('transactions', queryset=Transaction.objects.select_related(
             'master_user', 'complex_transaction', 'complex_transaction__transaction_type', 'transaction_class',
-            'portfolio', 'instrument', 'transaction_currency', 'settlement_currency',
-            'account_cash', 'account_position', 'account_interim',
-            'strategy1_position', 'strategy1_cash', 'strategy2_position', 'strategy2_cash',
-            'strategy3_position', 'strategy3_cash', 'responsible', 'counterparty',
+            'portfolio',
+            'instrument', 'instrument__instrument_type', 'instrument__instrument_type__instrument_class',
+            'transaction_currency', 'settlement_currency',
+            'account_cash', 'account_cash__type',
+            'account_position', 'account_position__type',
+            'account_interim', 'account_interim__type',
+            'strategy1_position', 'strategy1_position__subgroup', 'strategy1_position__subgroup__group',
+            'strategy1_cash', 'strategy1_cash__subgroup', 'strategy1_cash__subgroup__group',
+            'strategy2_position', 'strategy2_position__subgroup', 'strategy2_position__subgroup__group',
+            'strategy2_cash', 'strategy2_cash__subgroup', 'strategy2_cash__subgroup__group',
+            'strategy3_position', 'strategy3_position__subgroup', 'strategy3_position__subgroup__group',
+            'strategy3_cash', 'strategy3_cash__subgroup', 'strategy3_cash__subgroup__group',
+            'responsible', 'responsible__group',
+            'counterparty', 'counterparty__group',
         ).prefetch_related(
             Prefetch('attributes',
                      queryset=TransactionAttribute.objects.select_related('attribute_type', 'classifier')),

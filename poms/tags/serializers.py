@@ -34,8 +34,17 @@ class TagSerializer(ModelWithObjectPermissionSerializer, ModelWithUserCodeSerial
             # 'portfolios', 'transaction_types'
         ]
 
+
 # class TagBulkObjectPermissionSerializer(AbstractBulkObjectPermissionSerializer):
 #     content_objects = TagField(many=True, allow_null=False, allow_empty=False)
 #
 #     class Meta:
 #         model = Tag
+
+
+class TagViewSerializer(ModelWithObjectPermissionSerializer):
+    class Meta:
+        model = Tag
+        fields = [
+            'url', 'id', 'master_user', 'user_code', 'name', 'short_name', 'public_name', 'notes',
+        ]

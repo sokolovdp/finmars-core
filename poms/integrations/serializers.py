@@ -14,15 +14,12 @@ from rest_framework.exceptions import ValidationError
 from rest_framework.fields import empty
 
 from poms.common.fields import ExpressionField, DateTimeTzAwareField
-from poms.common.serializers import PomsClassSerializer, ReadonlyModelSerializer, ReadonlyModelWithNameSerializer, \
-    ReadonlyNamedModelSerializer
-from poms.currencies.fields import CurrencyField
+from poms.common.serializers import PomsClassSerializer, ModelWithUserCodeSerializer
+from poms.currencies.fields import CurrencyField, CurrencyDefault
 from poms.currencies.models import CurrencyHistory
-from poms.currencies.serializers import CurrencyHistorySerializer
-from poms.instruments.fields import InstrumentTypeField, InstrumentAttributeTypeField, InstrumentClassifierField
-from poms.instruments.models import InstrumentAttributeType, PriceHistory
-from poms.instruments.serializers import InstrumentAttributeSerializer, InstrumentSerializer, \
-    AccrualCalculationScheduleSerializer, InstrumentFactorScheduleSerializer, PriceHistorySerializer
+from poms.instruments.fields import InstrumentTypeField, InstrumentAttributeTypeField, InstrumentClassifierField, \
+    InstrumentTypeDefault
+from poms.instruments.models import InstrumentAttributeType, PriceHistory, Instrument
 from poms.integrations.fields import InstrumentDownloadSchemeField, PriceDownloadSchemeField
 from poms.integrations.models import InstrumentDownloadSchemeInput, InstrumentDownloadSchemeAttribute, \
     InstrumentDownloadScheme, ImportConfig, Task, ProviderClass, FactorScheduleDownloadMethod, \
@@ -31,9 +28,10 @@ from poms.integrations.models import InstrumentDownloadSchemeInput, InstrumentDo
 from poms.integrations.providers.base import get_provider, ProviderException
 from poms.integrations.storage import import_file_storage
 from poms.integrations.tasks import download_pricing, download_instrument
-from poms.obj_attrs.serializers import ReadOnlyAttributeTypeSerializer, ReadOnlyClassifierSerializer, \
-    ModelWithAttributesSerializer, AbstractAttributeSerializer
-from poms.obj_perms.serializers import ReadonlyNamedModelWithObjectPermissionSerializer
+from poms.obj_attrs.serializers import ModelWithAttributesSerializer, AbstractAttributeSerializer
+from poms.obj_perms.serializers import ModelWithObjectPermissionSerializer
+from poms.tags.fields import TagField
+from poms.tags.serializers import TagViewSerializer
 from poms.users.fields import MasterUserField, MemberField, HiddenMemberField
 
 _l = getLogger('poms.integrations')
@@ -69,7 +67,7 @@ class AccrualScheduleDownloadMethodSerializer(PomsClassSerializer):
 
 class ImportConfigSerializer(serializers.ModelSerializer):
     master_user = MasterUserField()
-    provider_object = ReadonlyNamedModelSerializer(source='provider')
+    provider_object = ProviderClassSerializer(source='provider', read_only=True)
     p12cert = serializers.FileField(allow_null=True, allow_empty_file=False, write_only=True)
     password = serializers.CharField(allow_null=True, allow_blank=True, write_only=True)
 
@@ -92,7 +90,7 @@ class InstrumentDownloadSchemeInputSerializer(serializers.ModelSerializer):
 class InstrumentDownloadSchemeAttributeSerializer(AbstractAttributeSerializer):
     id = serializers.IntegerField(read_only=False, required=False, allow_null=True)
     attribute_type = InstrumentAttributeTypeField()
-    attribute_type_object = ReadonlyNamedModelWithObjectPermissionSerializer(source='attribute_type')
+    attribute_type_object = serializers.PrimaryKeyRelatedField(source='attribute_type', read_only=True)
     value = ExpressionField(allow_blank=True)
 
     class Meta(AbstractAttributeSerializer.Meta):
@@ -100,10 +98,17 @@ class InstrumentDownloadSchemeAttributeSerializer(AbstractAttributeSerializer):
         attribute_type_model = InstrumentAttributeType
         fields = ['id', 'attribute_type', 'attribute_type_object', 'value']
 
+    def __init__(self, *args, **kwargs):
+        super(InstrumentDownloadSchemeAttributeSerializer, self).__init__(*args, **kwargs)
+
+        from poms.instruments.serializers import InstrumentAttributeTypeViewSerializer
+        self.fields['attribute_type_object'] = InstrumentAttributeTypeViewSerializer(source='attribute_type',
+                                                                                     read_only=True)
+
 
 class InstrumentDownloadSchemeSerializer(ModelWithAttributesSerializer):
     master_user = MasterUserField()
-    provider_object = ReadonlyNamedModelSerializer(source='provider')
+    provider_object = ProviderClassSerializer(source='provider', read_only=True)
 
     inputs = InstrumentDownloadSchemeInputSerializer(many=True, read_only=False)
 
@@ -127,13 +132,13 @@ class InstrumentDownloadSchemeSerializer(ModelWithAttributesSerializer):
     # price_download_mode = ExpressionField(allow_blank=True)
     maturity_date = ExpressionField(allow_blank=True)
 
-    payment_size_detail_object = ReadonlyModelWithNameSerializer(source='payment_size_detail')
-    daily_pricing_model_object = ReadonlyModelWithNameSerializer(source='daily_pricing_model')
+    payment_size_detail_object = serializers.PrimaryKeyRelatedField(source='payment_size_detail', read_only=True)
+    daily_pricing_model_object = serializers.PrimaryKeyRelatedField(source='daily_pricing_model', read_only=True)
     price_download_scheme = PriceDownloadSchemeField()
-    price_download_scheme_object = ReadonlyModelSerializer(source='price_download_scheme', fields=['scheme_name'])
-    factor_schedule_method_object = ReadonlyModelWithNameSerializer(source='factor_schedule_method')
-    accrual_calculation_schedule_method_object = ReadonlyModelWithNameSerializer(
-        source='accrual_calculation_schedule_method')
+    price_download_scheme_object = serializers.PrimaryKeyRelatedField(source='price_download_scheme', read_only=True)
+    factor_schedule_method_object = serializers.PrimaryKeyRelatedField(source='factor_schedule_method', read_only=True)
+    accrual_calculation_schedule_method_object = serializers.PrimaryKeyRelatedField(
+        source='accrual_calculation_schedule_method', read_only=True)
 
     attributes = InstrumentDownloadSchemeAttributeSerializer(many=True, read_only=False)
 
@@ -152,6 +157,21 @@ class InstrumentDownloadSchemeSerializer(ModelWithAttributesSerializer):
             'accrual_calculation_schedule_method', 'accrual_calculation_schedule_method_object',
             'attributes',
         ]
+
+    def __init__(self, *args, **kwargs):
+        super(InstrumentDownloadSchemeSerializer, self).__init__(*args, **kwargs)
+
+        from poms.instruments.serializers import PaymentSizeDetailSerializer, DailyPricingModelSerializer
+        self.fields['payment_size_detail_object'] = PaymentSizeDetailSerializer(source='payment_size_detail',
+                                                                                read_only=True)
+        self.fields['daily_pricing_model_object'] = DailyPricingModelSerializer(source='daily_pricing_model',
+                                                                                read_only=True)
+        self.fields['price_download_scheme_object'] = PriceDownloadSchemeViewSerializer(source='price_download_scheme',
+                                                                                        read_only=True)
+        self.fields['factor_schedule_method_object'] = FactorScheduleDownloadMethodSerializer(
+            source='factor_schedule_method', read_only=True)
+        self.fields['accrual_calculation_schedule_method_object'] = AccrualScheduleDownloadMethodSerializer(
+            source='accrual_calculation_schedule_method', read_only=True)
 
     def create(self, validated_data):
         inputs = validated_data.pop('inputs', None) or []
@@ -207,7 +227,7 @@ class InstrumentDownloadSchemeSerializer(ModelWithAttributesSerializer):
 
 class PriceDownloadSchemeSerializer(serializers.ModelSerializer):
     master_user = MasterUserField()
-    provider_object = ReadonlyNamedModelSerializer(source='provider')
+    provider_object = ProviderClassSerializer(source='provider', read_only=True)
 
     class Meta:
         model = PriceDownloadScheme
@@ -221,11 +241,21 @@ class PriceDownloadSchemeSerializer(serializers.ModelSerializer):
         ]
 
 
+class PriceDownloadSchemeViewSerializer(serializers.ModelSerializer):
+    provider_object = ProviderClassSerializer(source='provider', read_only=True)
+
+    class Meta:
+        model = PriceDownloadScheme
+        fields = [
+            'url', 'id', 'scheme_name', 'provider', 'provider_object',
+        ]
+
+
 class CurrencyMappingSerializer(serializers.ModelSerializer):
     master_user = MasterUserField()
-    provider_object = ReadonlyNamedModelSerializer(source='provider')
+    provider_object = ProviderClassSerializer(source='provider', read_only=True)
     currency = CurrencyField()
-    currency_object = ReadonlyNamedModelSerializer(source='currency')
+    currency_object = serializers.PrimaryKeyRelatedField(source='currency', read_only=True)
 
     class Meta:
         model = CurrencyMapping
@@ -233,12 +263,18 @@ class CurrencyMappingSerializer(serializers.ModelSerializer):
             'url', 'id', 'master_user', 'provider', 'provider_object', 'value', 'currency', 'currency_object',
         ]
 
+    def __init__(self, *args, **kwargs):
+        super(CurrencyMappingSerializer, self).__init__(*args, **kwargs)
+
+        from poms.currencies.serializers import CurrencyViewSerializer
+        self.fields['currency_object'] = CurrencyViewSerializer(source='currency', read_only=True)
+
 
 class InstrumentTypeMappingSerializer(serializers.ModelSerializer):
     master_user = MasterUserField()
-    provider_object = ReadonlyNamedModelSerializer(source='provider')
+    provider_object = ProviderClassSerializer(source='provider', read_only=True)
     instrument_type = InstrumentTypeField()
-    instrument_type_object = ReadonlyNamedModelWithObjectPermissionSerializer(source='instrument_type')
+    instrument_type_object = serializers.PrimaryKeyRelatedField(source='instrument_type', read_only=True)
 
     class Meta:
         model = InstrumentTypeMapping
@@ -247,14 +283,20 @@ class InstrumentTypeMappingSerializer(serializers.ModelSerializer):
             'instrument_type_object',
         ]
 
+    def __init__(self, *args, **kwargs):
+        super(InstrumentTypeMappingSerializer, self).__init__(*args, **kwargs)
+
+        from poms.instruments.serializers import InstrumentTypeViewSerializer
+        self.fields['instrument_type_object'] = InstrumentTypeViewSerializer(source='instrument_type', read_only=True)
+
 
 class InstrumentAttributeValueMappingSerializer(serializers.ModelSerializer):
     master_user = MasterUserField()
-    provider_object = ReadonlyNamedModelSerializer(source='provider')
+    provider_object = ProviderClassSerializer(source='provider', read_only=True)
     attribute_type = InstrumentAttributeTypeField()
-    attribute_type_object = ReadOnlyAttributeTypeSerializer(source='attribute_type', read_only=True)
+    attribute_type_object = serializers.PrimaryKeyRelatedField(source='attribute_type', read_only=True)
     classifier = InstrumentClassifierField(allow_empty=True, allow_null=True)
-    classifier_object = ReadOnlyClassifierSerializer(source='classifier', read_only=True)
+    classifier_object = serializers.PrimaryKeyRelatedField(source='classifier', read_only=True)
 
     class Meta:
         model = InstrumentAttributeValueMapping
@@ -263,6 +305,14 @@ class InstrumentAttributeValueMappingSerializer(serializers.ModelSerializer):
             'attribute_type', 'attribute_type_object', 'value_string', 'value_float', 'value_date',
             'classifier', 'classifier_object',
         ]
+
+    def __init__(self, *args, **kwargs):
+        super(InstrumentAttributeValueMappingSerializer, self).__init__(*args, **kwargs)
+
+        from poms.instruments.serializers import InstrumentAttributeTypeViewSerializer, InstrumentClassifierSerializer
+        self.fields['attribute_type_object'] = InstrumentAttributeTypeViewSerializer(source='attribute_type',
+                                                                                     read_only=True)
+        self.fields['classifier_object'] = InstrumentClassifierSerializer(source='classifier', read_only=True)
 
     def validate(self, attrs):
         attribute_type = attrs.get('attribute_type')
@@ -275,8 +325,9 @@ class InstrumentAttributeValueMappingSerializer(serializers.ModelSerializer):
 
 class AccrualCalculationModelMappingSerializer(serializers.ModelSerializer):
     master_user = MasterUserField()
-    provider_object = ReadonlyNamedModelSerializer(source='provider')
-    accrual_calculation_model_object = ReadonlyNamedModelSerializer(source='accrual_calculation_model')
+    provider_object = ProviderClassSerializer(source='provider', read_only=True)
+    accrual_calculation_model_object = serializers.PrimaryKeyRelatedField(source='accrual_calculation_model',
+                                                                          read_only=True)
 
     class Meta:
         model = AccrualCalculationModelMapping
@@ -285,11 +336,18 @@ class AccrualCalculationModelMappingSerializer(serializers.ModelSerializer):
             'accrual_calculation_model_object',
         ]
 
+    def __init__(self, *args, **kwargs):
+        super(AccrualCalculationModelMappingSerializer, self).__init__(*args, **kwargs)
+
+        from poms.instruments.serializers import AccrualCalculationModelSerializer
+        self.fields['accrual_calculation_model_object'] = AccrualCalculationModelSerializer(
+            source='accrual_calculation_model', read_only=True)
+
 
 class PeriodicityMappingSerializer(serializers.ModelSerializer):
     master_user = MasterUserField()
-    provider_object = ReadonlyNamedModelSerializer(source='provider')
-    periodicity_object = ReadonlyNamedModelSerializer(source='periodicity')
+    provider_object = ProviderClassSerializer(source='provider', read_only=True)
+    periodicity_object = serializers.PrimaryKeyRelatedField(source='periodicity', read_only=True)
 
     class Meta:
         model = PeriodicityMapping
@@ -297,11 +355,17 @@ class PeriodicityMappingSerializer(serializers.ModelSerializer):
             'url', 'id', 'master_user', 'provider', 'provider_object', 'value', 'periodicity', 'periodicity_object',
         ]
 
+    def __init__(self, *args, **kwargs):
+        super(PeriodicityMappingSerializer, self).__init__(*args, **kwargs)
+
+        from poms.instruments.serializers import PeriodicitySerializer
+        self.fields['periodicity_object'] = PeriodicitySerializer(source='periodicity', read_only=True)
+
 
 class TaskSerializer(serializers.ModelSerializer):
     master_user = MasterUserField()
     member = MemberField()
-    provider_object = ReadonlyNamedModelSerializer(source='provider')
+    provider_object = ProviderClassSerializer(source='provider', read_only=True)
     is_yesterday = serializers.SerializerMethodField()
 
     class Meta:
@@ -389,14 +453,64 @@ class ImportFileInstrumentSerializer(serializers.Serializer):
         return '%s/%s/%s' % (owner.pk, token[0:4], token)
 
 
-class InstrumentMiniSerializer(InstrumentSerializer):
+class ImportInstrumentViewSerializer(ModelWithAttributesSerializer, ModelWithObjectPermissionSerializer,
+                                     ModelWithUserCodeSerializer):
+    instrument_type = InstrumentTypeField(default=InstrumentTypeDefault())
+    instrument_type_object = serializers.PrimaryKeyRelatedField(source='instrument_type', read_only=True)
+    pricing_currency = CurrencyField(default=CurrencyDefault())
+    pricing_currency_object = serializers.PrimaryKeyRelatedField(source='pricing_currency', read_only=True)
+    accrued_currency = CurrencyField(default=CurrencyDefault())
+    accrued_currency_object = serializers.PrimaryKeyRelatedField(source='accrued_currency', read_only=True)
+    payment_size_detail_object = serializers.PrimaryKeyRelatedField(source='payment_size_detail', read_only=True)
+    daily_pricing_model_object = serializers.PrimaryKeyRelatedField(source='daily_pricing_model', read_only=True)
+    price_download_scheme = PriceDownloadSchemeField(allow_null=True)
+    price_download_scheme_object = serializers.PrimaryKeyRelatedField(source='price_download_scheme', read_only=True)
+
     accrual_calculation_schedules = serializers.SerializerMethodField()
     factor_schedules = serializers.SerializerMethodField()
+    event_schedules = serializers.PrimaryKeyRelatedField(read_only=True, many=True)
+
     attributes = serializers.SerializerMethodField()
+    tags = TagField(many=True, required=False, allow_null=True)
+    tags_object = TagViewSerializer(source='tags', many=True, read_only=True)
+
+    class Meta:
+        model = Instrument
+        fields = [
+            'url', 'id', 'master_user', 'instrument_type', 'instrument_type_object', 'user_code', 'name', 'short_name',
+            'public_name', 'notes', 'is_active', 'is_deleted',
+            'pricing_currency', 'pricing_currency_object', 'price_multiplier',
+            'accrued_currency', 'accrued_currency_object', 'accrued_multiplier',
+            'payment_size_detail', 'payment_size_detail_object', 'default_price', 'default_accrued',
+            'user_text_1', 'user_text_2', 'user_text_3',
+            'reference_for_pricing', 'daily_pricing_model', 'daily_pricing_model_object',
+            'price_download_scheme', 'price_download_scheme_object',
+            'maturity_date',
+            # 'manual_pricing_formulas',
+            'accrual_calculation_schedules', 'factor_schedules', 'event_schedules',
+            'attributes', 'tags', 'tags_object'
+        ]
 
     def __init__(self, *args, **kwargs):
-        super(InstrumentMiniSerializer, self).__init__(*args, **kwargs)
-        self.fields.pop('manual_pricing_formulas')
+        super(ImportInstrumentViewSerializer, self).__init__(*args, **kwargs)
+
+        from poms.currencies.serializers import CurrencyViewSerializer
+        self.fields['pricing_currency_object'] = CurrencyViewSerializer(source='pricing_currency', read_only=True)
+        self.fields['accrued_currency_object'] = CurrencyViewSerializer(source='accrued_currency', read_only=True)
+
+        from poms.instruments.serializers import InstrumentTypeViewSerializer, PaymentSizeDetailSerializer, \
+            DailyPricingModelSerializer, EventScheduleSerializer
+        self.fields['instrument_type_object'] = InstrumentTypeViewSerializer(source='instrument_type', read_only=True)
+        self.fields['daily_pricing_model_object'] = DailyPricingModelSerializer(source='daily_pricing_model',
+                                                                                read_only=True)
+        self.fields['payment_size_detail_object'] = PaymentSizeDetailSerializer(source='payment_size_detail',
+                                                                                read_only=True)
+        self.fields['event_schedules'] = EventScheduleSerializer(many=True, required=False, allow_null=True)
+
+        self.fields['price_download_scheme_object'] = PriceDownloadSchemeViewSerializer(source='price_download_scheme',
+                                                                                        read_only=True)
+
+        # self.fields.pop('manual_pricing_formulas')
         # self.fields.pop('accrual_calculation_schedules')
         # self.fields.pop('factor_schedules')
         self.fields.pop('event_schedules')
@@ -408,25 +522,28 @@ class InstrumentMiniSerializer(InstrumentSerializer):
         self.fields.pop('group_object_permissions', None)
 
     def get_accrual_calculation_schedules(self, obj):
+        from poms.instruments.serializers import AccrualCalculationScheduleSerializer
         if hasattr(obj, '_accrual_calculation_schedules'):
             l = obj._accrual_calculation_schedules
         else:
             l = obj.accrual_calculation_schedules.all()
-        return AccrualCalculationScheduleSerializer(instance=l, many=True, read_only=True).data
+        return AccrualCalculationScheduleSerializer(instance=l, many=True, read_only=True, context=self.context).data
 
     def get_factor_schedules(self, obj):
+        from poms.instruments.serializers import InstrumentFactorScheduleSerializer
         if hasattr(obj, '_factor_schedules'):
             l = obj._factor_schedules
         else:
             l = obj.factor_schedules.all()
-        return InstrumentFactorScheduleSerializer(instance=l, many=True, read_only=True).data
+        return InstrumentFactorScheduleSerializer(instance=l, many=True, read_only=True, context=self.context).data
 
     def get_attributes(self, obj):
+        from poms.instruments.serializers import InstrumentAttributeSerializer
         if hasattr(obj, '_attributes'):
             l = obj._attributes
         else:
             l = obj.attributes.all()
-        return InstrumentAttributeSerializer(instance=l, many=True, read_only=True).data
+        return InstrumentAttributeSerializer(instance=l, many=True, read_only=True, context=self.context).data
 
 
 class ImportInstrumentEntry(object):
@@ -465,8 +582,12 @@ class ImportInstrumentSerializer(serializers.Serializer):
     task_result = serializers.SerializerMethodField()
     task_result_overrides = serializers.JSONField(default={}, allow_null=True)
 
-    instrument = InstrumentMiniSerializer(read_only=True)
+    instrument = serializers.ReadOnlyField()
     errors = serializers.ReadOnlyField()
+
+    def __init__(self, *args, **kwargs):
+        super(ImportInstrumentSerializer, self).__init__(*args, **kwargs)
+        self.fields['instrument'] = ImportInstrumentViewSerializer(read_only=True)
 
     def validate(self, attrs):
         master_user = attrs['master_user']
@@ -641,8 +762,17 @@ class ImportPricingSerializer(serializers.Serializer):
     task_object = TaskSerializer(read_only=True)
 
     errors = serializers.ReadOnlyField()
-    instrument_price_missed = PriceHistorySerializer(read_only=True, many=True)
-    currency_price_missed = CurrencyHistorySerializer(read_only=True, many=True)
+    instrument_price_missed = serializers.ReadOnlyField()
+    currency_price_missed = serializers.ReadOnlyField()
+
+    def __init__(self, **kwargs):
+        super(ImportPricingSerializer, self).__init__(**kwargs)
+
+        from poms.instruments.serializers import PriceHistorySerializer
+        self.fields['instrument_price_missed'] = PriceHistorySerializer(read_only=True, many=True)
+
+        from poms.currencies.serializers import CurrencyHistorySerializer
+        self.fields['currency_price_missed'] = CurrencyHistorySerializer(read_only=True, many=True)
 
     def validate(self, attrs):
         attrs = super(ImportPricingSerializer, self).validate(attrs)

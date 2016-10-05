@@ -9,7 +9,7 @@ from rest_framework.fields import empty
 
 from poms.common.fields import ExpressionField, FloatEvalField
 from poms.common.serializers import PomsClassSerializer, AbstractClassifierSerializer, AbstractClassifierNodeSerializer, \
-    ModelWithUserCodeSerializer, ReadonlyModelWithNameSerializer, ReadonlyModelSerializer, ReadonlyNamedModelSerializer
+    ModelWithUserCodeSerializer
 from poms.common.utils import date_now
 from poms.currencies.fields import CurrencyDefault
 from poms.currencies.serializers import CurrencyField
@@ -22,9 +22,9 @@ from poms.instruments.models import InstrumentClassifier, Instrument, PriceHisto
 from poms.integrations.fields import PriceDownloadSchemeField
 from poms.obj_attrs.serializers import AbstractAttributeSerializer, AbstractAttributeTypeSerializer, \
     ModelWithAttributesSerializer
-from poms.obj_perms.serializers import ModelWithObjectPermissionSerializer, \
-    ReadonlyNamedModelWithObjectPermissionSerializer
+from poms.obj_perms.serializers import ModelWithObjectPermissionSerializer
 from poms.tags.fields import TagField
+from poms.tags.serializers import TagViewSerializer
 from poms.transactions.fields import TransactionTypeField
 from poms.users.fields import MasterUserField
 
@@ -68,6 +68,12 @@ class PricingPolicySerializer(ModelWithUserCodeSerializer):
         fields = ['url', 'id', 'master_user', 'user_code', 'name', 'short_name', 'notes', 'expr']
 
 
+class PricingPolicyViewSerializer(ModelWithUserCodeSerializer):
+    class Meta:
+        model = PricingPolicy
+        fields = ['url', 'id', 'user_code', 'name', 'short_name', 'notes', 'expr']
+
+
 class InstrumentClassifierSerializer(AbstractClassifierSerializer):
     class Meta(AbstractClassifierSerializer.Meta):
         model = InstrumentClassifier
@@ -80,19 +86,19 @@ class InstrumentClassifierNodeSerializer(AbstractClassifierNodeSerializer):
 
 class InstrumentTypeSerializer(ModelWithObjectPermissionSerializer, ModelWithUserCodeSerializer):
     master_user = MasterUserField()
-    instrument_class_object = ReadonlyModelWithNameSerializer(source='instrument_class')
+    instrument_class_object = InstrumentClassSerializer(source='instrument_class', read_only=True)
     one_off_event = TransactionTypeField(allow_null=True, required=False)
-    one_off_event_object = ReadonlyNamedModelWithObjectPermissionSerializer(source='one_off_event')
+    one_off_event_object = serializers.PrimaryKeyRelatedField(source='one_off_event', read_only=True)
     regular_event = TransactionTypeField(allow_null=True, required=False)
-    regular_event_object = ReadonlyNamedModelWithObjectPermissionSerializer(source='regular_event')
+    regular_event_object = serializers.PrimaryKeyRelatedField(source='regular_event', read_only=True)
     factor_same = TransactionTypeField(allow_null=True, required=False)
-    factor_same_object = ReadonlyNamedModelWithObjectPermissionSerializer(source='factor_same')
+    factor_same_object = serializers.PrimaryKeyRelatedField(source='factor_same', read_only=True)
     factor_up = TransactionTypeField(allow_null=True, required=False)
-    factor_up_object = ReadonlyNamedModelWithObjectPermissionSerializer(source='factor_up')
+    factor_up_object = serializers.PrimaryKeyRelatedField(source='factor_up', read_only=True)
     factor_down = TransactionTypeField(allow_null=True, required=False)
-    factor_down_object = ReadonlyNamedModelWithObjectPermissionSerializer(source='factor_down')
+    factor_down_object = serializers.PrimaryKeyRelatedField(source='factor_down', read_only=True)
     tags = TagField(many=True, required=False, allow_null=True)
-    tags_object = ReadonlyNamedModelWithObjectPermissionSerializer(source='tags', many=True)
+    tags_object = TagViewSerializer(source='tags', many=True, read_only=True)
 
     class Meta:
         model = InstrumentType
@@ -104,6 +110,16 @@ class InstrumentTypeSerializer(ModelWithObjectPermissionSerializer, ModelWithUse
             'factor_up', 'factor_up_object', 'factor_down', 'factor_down_object',
             'tags', 'tags_object',
         ]
+
+    def __init__(self, *args, **kwargs):
+        super(InstrumentTypeSerializer, self).__init__(*args, **kwargs)
+
+        from poms.transactions.serializers import TransactionTypeViewSerializer
+        self.fields['one_off_event_object'] = TransactionTypeViewSerializer(source='one_off_event', read_only=True)
+        self.fields['regular_event_object'] = TransactionTypeViewSerializer(source='regular_event', read_only=True)
+        self.fields['factor_same_object'] = TransactionTypeViewSerializer(source='factor_same', read_only=True)
+        self.fields['factor_up_object'] = TransactionTypeViewSerializer(source='factor_up', read_only=True)
+        self.fields['factor_down_object'] = TransactionTypeViewSerializer(source='factor_down', read_only=True)
 
     def validate(self, attrs):
         instrument_class = attrs['instrument_class']
@@ -122,11 +138,16 @@ class InstrumentTypeSerializer(ModelWithObjectPermissionSerializer, ModelWithUse
         return attrs
 
 
-# class InstrumentTypeBulkObjectPermissionSerializer(AbstractBulkObjectPermissionSerializer):
-#     content_objects = InstrumentTypeField(many=True, allow_null=False, allow_empty=False)
-#
-#     class Meta:
-#         model = InstrumentType
+class InstrumentTypeViewSerializer(ModelWithObjectPermissionSerializer, ModelWithUserCodeSerializer):
+    instrument_class_object = InstrumentClassSerializer(source='instrument_class', read_only=True)
+
+    class Meta:
+        model = InstrumentType
+        fields = [
+            'url', 'id', 'instrument_class', 'instrument_class_object',
+            'user_code', 'name', 'short_name', 'public_name',
+            'notes', 'is_default', 'is_deleted',
+        ]
 
 
 class InstrumentAttributeTypeSerializer(AbstractAttributeTypeSerializer):
@@ -137,72 +158,9 @@ class InstrumentAttributeTypeSerializer(AbstractAttributeTypeSerializer):
         fields = AbstractAttributeTypeSerializer.Meta.fields + ['classifiers']
 
 
-# class InstrumentAttributeTypeBulkObjectPermissionSerializer(AbstractBulkObjectPermissionSerializer):
-#     content_objects = InstrumentAttributeTypeField(many=True, allow_null=False, allow_empty=False)
-#
-#     class Meta:
-#         model = InstrumentAttributeType
-
-
-class ManualPricingFormulaSerializer(serializers.ModelSerializer):
-    id = serializers.IntegerField(read_only=False, required=False, allow_null=True)
-    pricing_policy = PricingPolicyField(allow_null=False)
-
-    # instrument = InstrumentField()
-
-    class Meta:
-        model = ManualPricingFormula
-        fields = ['id', 'pricing_policy', 'expr', 'notes']
-
-
-class AccrualCalculationScheduleSerializer(serializers.ModelSerializer):
-    id = serializers.IntegerField(read_only=False, required=False, allow_null=True)
-    accrual_calculation_model_object = ReadonlyModelWithNameSerializer(source='accrual_calculation_model')
-    periodicity_object = ReadonlyModelWithNameSerializer(source='periodicity')
-
-    class Meta:
-        model = AccrualCalculationSchedule
-        fields = [
-            'id', 'accrual_start_date', 'first_payment_date', 'accrual_size', 'accrual_calculation_model',
-            'accrual_calculation_model_object', 'periodicity', 'periodicity_object', 'periodicity_n', 'notes']
-
-
-class InstrumentFactorScheduleSerializer(serializers.ModelSerializer):
-    id = serializers.IntegerField(read_only=False, required=False, allow_null=True)
-
-    # instrument = InstrumentField()
-
-    class Meta:
-        model = InstrumentFactorSchedule
-        fields = ['id', 'effective_date', 'factor_value']
-
-
-class EventScheduleActionSerializer(serializers.ModelSerializer):
-    id = serializers.IntegerField(read_only=False, required=False, allow_null=True)
-    transaction_type = TransactionTypeField()
-    transaction_type_object = ReadonlyNamedModelWithObjectPermissionSerializer(source='transaction_type')
-
-    class Meta:
-        model = EventScheduleAction
-        fields = ['id', 'transaction_type', 'transaction_type_object', 'text', 'is_sent_to_pending',
-                  'is_book_automatic', 'button_position']
-
-
-class EventScheduleSerializer(serializers.ModelSerializer):
-    id = serializers.IntegerField(read_only=False, required=False, allow_null=True)
-    event_class_object = ReadonlyModelWithNameSerializer(source='event_class')
-    notification_class_object = ReadonlyModelWithNameSerializer(source='notification_class')
-    periodicity_object = ReadonlyModelWithNameSerializer(source='periodicity')
-    actions = EventScheduleActionSerializer(many=True, required=False, allow_null=True)
-
-    class Meta:
-        model = EventSchedule
-        fields = [
-            'id', 'name', 'description', 'event_class', 'event_class_object', 'notification_class',
-            'notification_class_object', 'effective_date', 'notify_in_n_days', 'periodicity', 'periodicity_object',
-            'periodicity_n', 'final_date', 'is_auto_generated', 'actions'
-        ]
-        read_only_fields = ['is_auto_generated']
+class InstrumentAttributeTypeViewSerializer(AbstractAttributeTypeSerializer):
+    class Meta(AbstractAttributeTypeSerializer.Meta):
+        model = InstrumentAttributeType
 
 
 class InstrumentAttributeSerializer(AbstractAttributeSerializer):
@@ -218,24 +176,26 @@ class InstrumentSerializer(ModelWithAttributesSerializer, ModelWithObjectPermiss
                            ModelWithUserCodeSerializer):
     master_user = MasterUserField()
     instrument_type = InstrumentTypeField(default=InstrumentTypeDefault())
-    instrument_type_object = ReadonlyNamedModelWithObjectPermissionSerializer(source='instrument_type')
+    instrument_type_object = InstrumentTypeViewSerializer(source='instrument_type', read_only=True)
     pricing_currency = CurrencyField(default=CurrencyDefault())
-    pricing_currency_object = ReadonlyNamedModelSerializer(source='pricing_currency')
+    pricing_currency_object = serializers.PrimaryKeyRelatedField(source='pricing_currency', read_only=True)
     accrued_currency = CurrencyField(default=CurrencyDefault())
-    accrued_currency_object = ReadonlyNamedModelSerializer(source='accrued_currency')
-    payment_size_detail_object = ReadonlyModelWithNameSerializer(source='payment_size_detail')
-    daily_pricing_model_object = ReadonlyModelWithNameSerializer(source='daily_pricing_model')
+    accrued_currency_object = serializers.PrimaryKeyRelatedField(source='accrued_currency', read_only=True)
+    payment_size_detail_object = PaymentSizeDetailSerializer(source='payment_size_detail', read_only=True)
+    daily_pricing_model_object = DailyPricingModelSerializer(source='daily_pricing_model', read_only=True)
     price_download_scheme = PriceDownloadSchemeField(allow_null=True)
-    price_download_scheme_object = ReadonlyModelSerializer(source='price_download_scheme', fields=['scheme_name'])
+    price_download_scheme_object = serializers.PrimaryKeyRelatedField(source='price_download_scheme', read_only=True)
 
-    manual_pricing_formulas = ManualPricingFormulaSerializer(many=True, required=False, allow_null=True)
-    accrual_calculation_schedules = AccrualCalculationScheduleSerializer(many=True, required=False, allow_null=True)
-    factor_schedules = InstrumentFactorScheduleSerializer(many=True, required=False, allow_null=True)
-    event_schedules = EventScheduleSerializer(many=True, required=False, allow_null=True)
+    manual_pricing_formulas = serializers.PrimaryKeyRelatedField(many=True, required=False, allow_null=True,
+                                                                 read_only=True)
+    accrual_calculation_schedules = serializers.PrimaryKeyRelatedField(many=True, required=False, allow_null=True,
+                                                                       read_only=True)
+    factor_schedules = serializers.PrimaryKeyRelatedField(many=True, required=False, allow_null=True, read_only=True)
+    event_schedules = serializers.PrimaryKeyRelatedField(many=True, required=False, allow_null=True, read_only=True)
 
     attributes = InstrumentAttributeSerializer(many=True, required=False, allow_null=True)
     tags = TagField(many=True, required=False, allow_null=True)
-    tags_object = ReadonlyNamedModelWithObjectPermissionSerializer(source='tags', many=True)
+    tags_object = TagViewSerializer(source='tags', many=True, read_only=True)
 
     class Meta:
         model = Instrument
@@ -252,6 +212,24 @@ class InstrumentSerializer(ModelWithAttributesSerializer, ModelWithObjectPermiss
             'manual_pricing_formulas', 'accrual_calculation_schedules', 'factor_schedules', 'event_schedules',
             'attributes', 'tags', 'tags_object'
         ]
+
+    def __init__(self, *args, **kwargs):
+        super(InstrumentSerializer, self).__init__(*args, **kwargs)
+
+        from poms.currencies.serializers import CurrencyViewSerializer
+        self.fields['pricing_currency_object'] = CurrencyViewSerializer(source='pricing_currency', read_only=True)
+        self.fields['accrued_currency_object'] = CurrencyViewSerializer(source='accrued_currency', read_only=True)
+
+        from poms.integrations.serializers import PriceDownloadSchemeViewSerializer
+        self.fields['price_download_scheme_object'] = PriceDownloadSchemeViewSerializer(source='price_download_scheme',
+                                                                                        read_only=True)
+
+        self.fields['manual_pricing_formulas'] = ManualPricingFormulaSerializer(many=True, required=False,
+                                                                                allow_null=True)
+        self.fields['accrual_calculation_schedules'] = AccrualCalculationScheduleSerializer(many=True, required=False,
+                                                                                            allow_null=True)
+        self.fields['factor_schedules'] = InstrumentFactorScheduleSerializer(many=True, required=False, allow_null=True)
+        self.fields['event_schedules'] = EventScheduleSerializer(many=True, required=False, allow_null=True)
 
     def create(self, validated_data):
         manual_pricing_formulas = validated_data.pop('manual_pricing_formulas', None)
@@ -385,6 +363,106 @@ class InstrumentSerializer(ModelWithAttributesSerializer, ModelWithObjectPermiss
             raise ValidationError({'instrument_type': '%s' % e})
 
 
+class InstrumentViewSerializer(ModelWithObjectPermissionSerializer):
+    instrument_type_object = InstrumentTypeViewSerializer(source='instrument_type', read_only=True)
+
+    # pricing_currency_object = serializers.PrimaryKeyRelatedField(source='pricing_currency', read_only=True)
+    # accrued_currency_object = serializers.PrimaryKeyRelatedField(source='accrued_currency', read_only=True)
+
+    class Meta:
+        model = Instrument
+        fields = [
+            'url', 'id', 'master_user', 'instrument_type', 'instrument_type_object', 'user_code', 'name', 'short_name',
+            'public_name', 'notes', 'is_active', 'is_deleted',
+            # 'pricing_currency', 'pricing_currency_object', 'price_multiplier',
+            # 'accrued_currency', 'accrued_currency_object', 'accrued_multiplier',
+            # 'payment_size_detail', 'payment_size_detail_object', 'default_price', 'default_accrued',
+            'user_text_1', 'user_text_2', 'user_text_3',
+            'maturity_date',
+        ]
+
+    def __init__(self, *args, **kwargs):
+        super(InstrumentViewSerializer, self).__init__(*args, **kwargs)
+
+        # from poms.currencies.serializers import CurrencyViewSerializer
+        # self.fields['pricing_currency_object'] = CurrencyViewSerializer(source='pricing_currency', read_only=True)
+        # self.fields['accrued_currency_object'] = CurrencyViewSerializer(source='accrued_currency', read_only=True)
+
+
+class ManualPricingFormulaSerializer(serializers.ModelSerializer):
+    id = serializers.IntegerField(read_only=False, required=False, allow_null=True)
+    pricing_policy = PricingPolicyField(allow_null=False)
+    pricing_policy_object = PricingPolicyViewSerializer(source='pricing_policy', read_only=True)
+
+    class Meta:
+        model = ManualPricingFormula
+        fields = ['id', 'pricing_policy', 'pricing_policy_object', 'expr', 'notes']
+
+
+class AccrualCalculationScheduleSerializer(serializers.ModelSerializer):
+    id = serializers.IntegerField(read_only=False, required=False, allow_null=True)
+    accrual_calculation_model_object = AccrualCalculationModelSerializer(source='accrual_calculation_model',
+                                                                         read_only=True)
+    periodicity_object = PeriodicitySerializer(source='periodicity', read_only=True)
+
+    class Meta:
+        model = AccrualCalculationSchedule
+        fields = [
+            'id', 'accrual_start_date', 'first_payment_date', 'accrual_size', 'accrual_calculation_model',
+            'accrual_calculation_model_object', 'periodicity', 'periodicity_object', 'periodicity_n', 'notes']
+
+
+class InstrumentFactorScheduleSerializer(serializers.ModelSerializer):
+    id = serializers.IntegerField(read_only=False, required=False, allow_null=True)
+
+    class Meta:
+        model = InstrumentFactorSchedule
+        fields = ['id', 'effective_date', 'factor_value']
+
+
+class EventScheduleActionSerializer(serializers.ModelSerializer):
+    id = serializers.IntegerField(read_only=False, required=False, allow_null=True)
+    transaction_type = TransactionTypeField()
+    transaction_type_object = serializers.PrimaryKeyRelatedField(source='transaction_type', read_only=True)
+
+    class Meta:
+        model = EventScheduleAction
+        fields = ['id', 'transaction_type', 'transaction_type_object', 'text', 'is_sent_to_pending',
+                  'is_book_automatic', 'button_position']
+
+    def __init__(self, *args, **kwargs):
+        super(EventScheduleActionSerializer, self).__init__(*args, **kwargs)
+
+        from poms.transactions.serializers import TransactionTypeViewSerializer
+        self.fields['transaction_type_object'] = TransactionTypeViewSerializer(source='transaction_type',
+                                                                               read_only=True)
+
+
+class EventScheduleSerializer(serializers.ModelSerializer):
+    id = serializers.IntegerField(read_only=False, required=False, allow_null=True)
+    event_class_object = serializers.PrimaryKeyRelatedField(source='event_class', read_only=True)
+    notification_class_object = serializers.PrimaryKeyRelatedField(source='notification_class', read_only=True)
+    periodicity_object = PeriodicitySerializer(source='periodicity', read_only=True)
+    actions = EventScheduleActionSerializer(many=True, required=False, allow_null=True)
+
+    class Meta:
+        model = EventSchedule
+        fields = [
+            'id', 'name', 'description', 'event_class', 'event_class_object', 'notification_class',
+            'notification_class_object', 'effective_date', 'notify_in_n_days', 'periodicity', 'periodicity_object',
+            'periodicity_n', 'final_date', 'is_auto_generated', 'actions'
+        ]
+        read_only_fields = ['is_auto_generated']
+
+    def __init__(self, *args, **kwargs):
+        super(EventScheduleSerializer, self).__init__(*args, **kwargs)
+
+        from poms.transactions.serializers import EventClassSerializer, NotificationClassSerializer
+        self.fields['event_class_object'] = EventClassSerializer(source='event_class', read_only=True)
+        self.fields['notification_class_object'] = NotificationClassSerializer(source='notification_class',
+                                                                               read_only=True)
+
+
 class InstrumentCalculatePricesAccruedPriceSerializer(serializers.Serializer):
     begin_date = serializers.DateField(required=False, allow_null=True)
     end_date = serializers.DateField(required=False, allow_null=True)
@@ -397,18 +475,11 @@ class InstrumentCalculatePricesAccruedPriceSerializer(serializers.Serializer):
         return attrs
 
 
-# class InstrumentBulkObjectPermissionSerializer(AbstractBulkObjectPermissionSerializer):
-#     content_objects = InstrumentField(many=True, allow_null=False, allow_empty=False)
-#
-#     class Meta:
-#         model = Instrument
-
-
 class PriceHistorySerializer(serializers.ModelSerializer):
     instrument = InstrumentField()
-    instrument_object = ReadonlyNamedModelWithObjectPermissionSerializer(source='instrument')
+    instrument_object = InstrumentViewSerializer(source='instrument', read_only=True)
     pricing_policy = PricingPolicyField(allow_null=False)
-    pricing_policy_object = ReadonlyNamedModelSerializer(source='pricing_policy')
+    pricing_policy_object = PricingPolicySerializer(source='pricing_policy', read_only=True)
     principal_price = FloatEvalField()
     accrued_price = FloatEvalField()
 
@@ -429,7 +500,7 @@ class EventScheduleConfigSerializer(serializers.ModelSerializer):
     master_user = MasterUserField()
     name = ExpressionField()
     description = ExpressionField()
-    notification_class_object = ReadonlyModelWithNameSerializer(source='notification_class')
+    notification_class_object = serializers.PrimaryKeyRelatedField(source='notification_class', read_only=True)
 
     class Meta:
         model = EventScheduleConfig
@@ -437,3 +508,10 @@ class EventScheduleConfigSerializer(serializers.ModelSerializer):
             'url', 'id', 'master_user', 'name', 'description', 'notification_class', 'notification_class_object',
             'notify_in_n_days', 'action_text', 'action_is_sent_to_pending', 'action_is_book_automatic',
         ]
+
+    def __init__(self, *args, **kwargs):
+        super(EventScheduleConfigSerializer, self).__init__(*args, **kwargs)
+
+        from poms.transactions.serializers import NotificationClassSerializer
+        self.fields['notification_class_object'] = NotificationClassSerializer(source='notification_class',
+                                                                               read_only=True)

@@ -13,13 +13,10 @@ from rest_framework.fields import empty
 from poms.accounts.fields import AccountTypeField, AccountField
 from poms.chats.fields import ThreadGroupField
 from poms.common.fields import DateTimeTzAwareField
-from poms.common.serializers import ReadonlyModelWithNameSerializer, ReadonlyModelSerializer, \
-    ReadonlyNamedModelSerializer
 from poms.counterparties.fields import CounterpartyField, ResponsibleField, CounterpartyGroupField, \
     ResponsibleGroupField
 from poms.currencies.fields import CurrencyField
 from poms.instruments.fields import InstrumentTypeField
-from poms.obj_perms.serializers import ReadonlyNamedModelWithObjectPermissionSerializer
 from poms.portfolios.fields import PortfolioField
 from poms.strategies.fields import Strategy1Field, Strategy2Field, Strategy3Field, Strategy1SubgroupField, \
     Strategy1GroupField, Strategy2GroupField, Strategy2SubgroupField, Strategy3GroupField, Strategy3SubgroupField
@@ -173,43 +170,43 @@ class MasterUserSerializer(serializers.ModelSerializer):
     timezone = serializers.ChoiceField(choices=TIMEZONE_CHOICES)
     is_current = serializers.SerializerMethodField()
     currency = CurrencyField()
-    currency_object = ReadonlyNamedModelSerializer(source='currency')
+    currency_object = serializers.PrimaryKeyRelatedField(source='currency', read_only=True)
     account_type = AccountTypeField()
-    account_type_object = ReadonlyNamedModelWithObjectPermissionSerializer(source='account_type')
+    account_type_object = serializers.PrimaryKeyRelatedField(source='account_type', read_only=True)
     account = AccountField()
-    account_object = ReadonlyNamedModelWithObjectPermissionSerializer(source='account')
+    account_object = serializers.PrimaryKeyRelatedField(source='account', read_only=True)
     counterparty_group = CounterpartyGroupField()
-    counterparty_group_object = ReadonlyNamedModelWithObjectPermissionSerializer(source='counterparty_group')
+    counterparty_group_object = serializers.PrimaryKeyRelatedField(source='counterparty_group', read_only=True)
     counterparty = CounterpartyField()
-    counterparty_object = ReadonlyNamedModelWithObjectPermissionSerializer(source='counterparty')
+    counterparty_object = serializers.PrimaryKeyRelatedField(source='counterparty', read_only=True)
     responsible_group = ResponsibleGroupField()
-    responsible_group_object = ReadonlyNamedModelWithObjectPermissionSerializer(source='responsible_group')
+    responsible_group_object = serializers.PrimaryKeyRelatedField(source='responsible_group', read_only=True)
     responsible = ResponsibleField()
-    responsible_object = ReadonlyNamedModelWithObjectPermissionSerializer(source='responsible')
+    responsible_object = serializers.PrimaryKeyRelatedField(source='responsible', read_only=True)
     instrument_type = InstrumentTypeField()
-    instrument_type_object = ReadonlyNamedModelWithObjectPermissionSerializer(source='instrument_type')
+    instrument_type_object = serializers.PrimaryKeyRelatedField(source='instrument_type', read_only=True)
     portfolio = PortfolioField()
-    portfolio_object = ReadonlyNamedModelWithObjectPermissionSerializer(source='portfolio')
+    portfolio_object = serializers.PrimaryKeyRelatedField(source='portfolio', read_only=True)
     strategy1_group = Strategy1GroupField()
-    strategy1_group_object = ReadonlyNamedModelWithObjectPermissionSerializer(source='strategy1_group')
+    strategy1_group_object = serializers.PrimaryKeyRelatedField(source='strategy1_group', read_only=True)
     strategy1_subgroup = Strategy1SubgroupField()
-    strategy1_subgroup_object = ReadonlyNamedModelWithObjectPermissionSerializer(source='strategy1_subgroup')
+    strategy1_subgroup_object = serializers.PrimaryKeyRelatedField(source='strategy1_subgroup', read_only=True)
     strategy1 = Strategy1Field()
-    strategy1_object = ReadonlyNamedModelWithObjectPermissionSerializer(source='strategy1')
+    strategy1_object = serializers.PrimaryKeyRelatedField(source='strategy1', read_only=True)
     strategy2_group = Strategy2GroupField()
-    strategy2_group_object = ReadonlyNamedModelWithObjectPermissionSerializer(source='strategy2_group')
+    strategy2_group_object = serializers.PrimaryKeyRelatedField(source='strategy2_group', read_only=True)
     strategy2_subgroup = Strategy2SubgroupField()
-    strategy2_subgroup_object = ReadonlyNamedModelWithObjectPermissionSerializer(source='strategy2_subgroup')
+    strategy2_subgroup_object = serializers.PrimaryKeyRelatedField(source='strategy2_subgroup', read_only=True)
     strategy2 = Strategy2Field()
-    strategy2_object = ReadonlyNamedModelWithObjectPermissionSerializer(source='strategy2')
+    strategy2_object = serializers.PrimaryKeyRelatedField(source='strategy2', read_only=True)
     strategy3_group = Strategy3GroupField()
-    strategy3_group_object = ReadonlyNamedModelWithObjectPermissionSerializer(source='strategy3_group')
+    strategy3_group_object = serializers.PrimaryKeyRelatedField(source='strategy3_group', read_only=True)
     strategy3_subgroup = Strategy3SubgroupField()
-    strategy3_subgroup_object = ReadonlyNamedModelWithObjectPermissionSerializer(source='strategy3_subgroup')
+    strategy3_subgroup_object = serializers.PrimaryKeyRelatedField(source='strategy3_subgroup', read_only=True)
     strategy3 = Strategy3Field()
-    strategy3_object = ReadonlyNamedModelWithObjectPermissionSerializer(source='strategy3')
+    strategy3_object = serializers.PrimaryKeyRelatedField(source='strategy3', read_only=True)
     thread_group = ThreadGroupField()
-    thread_group_object = ReadonlyNamedModelWithObjectPermissionSerializer(source='thread_group')
+    thread_group_object = serializers.PrimaryKeyRelatedField(source='thread_group', read_only=True)
 
     class Meta:
         model = MasterUser
@@ -236,6 +233,45 @@ class MasterUserSerializer(serializers.ModelSerializer):
             'strategy3', 'strategy3_object',
             'thread_group', 'thread_group_object',
         ]
+
+    def __init__(self, *args, **kwargs):
+        super(MasterUserSerializer, self).__init__(*args, **kwargs)
+
+        from poms.currencies.serializers import CurrencyViewSerializer
+        self.fields['currency_object'] = CurrencyViewSerializer(source='currency', read_only=True)
+
+        from poms.accounts.serializers import AccountTypeViewSerializer, AccountViewSerializer
+        self.fields['account_type_object'] = AccountTypeViewSerializer(source='account_type', read_only=True)
+        self.fields['account_object'] = AccountViewSerializer(source='account', read_only=True)
+
+        from poms.counterparties.serializers import CounterpartyGroupViewSerializer, CounterpartyViewSerializer, ResponsibleGroupViewSerializer, ResponsibleViewSerializer
+        self.fields['counterparty_group_object'] = CounterpartyGroupViewSerializer(source='counterparty_group', read_only=True)
+        self.fields['counterparty_object'] = CounterpartyViewSerializer(source='counterparty', read_only=True)
+        self.fields['responsible_group_object'] = ResponsibleGroupViewSerializer(source='responsible_group', read_only=True)
+        self.fields['responsible_object'] = ResponsibleViewSerializer(source='responsible', read_only=True)
+
+        from poms.instruments.serializers import InstrumentTypeViewSerializer
+        self.fields['instrument_type_object'] = InstrumentTypeViewSerializer(source='instrument_type', read_only=True)
+
+        from poms.portfolios.serializers import PortfolioViewSerializer
+        self.fields['portfolio_object'] = PortfolioViewSerializer(source='portfolio', read_only=True)
+
+        from poms.strategies.serializers import Strategy1GroupViewSerializer, Strategy1SubgroupViewSerializer,\
+            Strategy1ViewSerializer,Strategy2GroupViewSerializer, Strategy2SubgroupViewSerializer, \
+            Strategy2ViewSerializer, Strategy3GroupViewSerializer, Strategy3SubgroupViewSerializer, Strategy3ViewSerializer
+        self.fields['strategy1_group_object'] = Strategy1GroupViewSerializer(source='strategy1_group', read_only=True)
+        self.fields['strategy1_subgroup_object'] = Strategy1SubgroupViewSerializer(source='strategy1_subgrou', read_only=True)
+        self.fields['strategy1_object'] = Strategy1ViewSerializer(source='strategy1', read_only=True)
+        self.fields['strategy2_group_object'] = Strategy2GroupViewSerializer(source='strategy2_group', read_only=True)
+        self.fields['strategy2_subgroup_object'] = Strategy2SubgroupViewSerializer(source='strategy2_subgroup', read_only=True)
+        self.fields['strategy2_object'] = Strategy2ViewSerializer(source='strategy2', read_only=True)
+        self.fields['strategy3_group_object'] = Strategy3GroupViewSerializer(source='strategy3_group', read_only=True)
+        self.fields['strategy3_subgroup_object'] = Strategy3SubgroupViewSerializer(source='strategy3_subgroup', read_only=True)
+        self.fields['strategy3_object'] = Strategy3ViewSerializer(source='strategy3', read_only=True)
+
+        from poms.chats.serializers import ThreadGroupViewSerializer
+        self.fields['thread_group_object'] = ThreadGroupViewSerializer(source='thread_group', read_only=True)
+
 
     def to_representation(self, instance):
         ret = super(MasterUserSerializer, self).to_representation(instance)
@@ -276,7 +312,7 @@ class MemberSerializer(serializers.ModelSerializer):
     is_current = serializers.SerializerMethodField()
     join_date = DateTimeTzAwareField()
     groups = GroupField(many=True)
-    groups_object = ReadonlyModelWithNameSerializer(source='groups', many=True)
+    groups_object = serializers.PrimaryKeyRelatedField(source='groups', read_only=True, many=True)
 
     class Meta:
         model = Member
@@ -289,6 +325,22 @@ class MemberSerializer(serializers.ModelSerializer):
             'username', 'first_name', 'last_name', 'display_name', 'email',
         ]
 
+    def __init__(self, *args, **kwargs):
+        super(MemberSerializer, self).__init__(*args, **kwargs)
+
+        self.fields['groups_object'] = GroupViewSerializer(source='groups', many=True, read_only=True)
+
+    def get_is_current(self, obj):
+        member = get_member_from_context(self.context)
+        return obj.id == member.id
+
+
+class MemberViewSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Member
+        fields = ['id', 'username', 'first_name', 'last_name', 'display_name', ]
+        read_only_fields = ['id', 'username', 'first_name', 'last_name', 'display_name', ]
+
     def get_is_current(self, obj):
         member = get_member_from_context(self.context)
         return obj.id == member.id
@@ -298,9 +350,21 @@ class GroupSerializer(serializers.ModelSerializer):
     url = serializers.HyperlinkedIdentityField(view_name='group-detail')
     master_user = MasterUserField()
     members = MemberField(many=True)
-    members_object = ReadonlyModelSerializer(source='members',
-                                             fields=['username', 'first_name', 'last_name', 'display_name'], many=True)
+    members_object = serializers.PrimaryKeyRelatedField(source='members', read_only=True, many=True)
 
     class Meta:
         model = Group
         fields = ['url', 'id', 'master_user', 'name', 'members', 'members_object']
+
+    def __init__(self, *args, **kwargs):
+        super(GroupSerializer, self).__init__(*args, **kwargs)
+
+        self.fields['members_object'] = MemberViewSerializer(source='members', many=True, read_only=True)
+
+
+class GroupViewSerializer(serializers.ModelSerializer):
+    url = serializers.HyperlinkedIdentityField(view_name='group-detail')
+
+    class Meta:
+        model = Group
+        fields = ['url', 'id', 'name']

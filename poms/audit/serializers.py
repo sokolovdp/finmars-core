@@ -6,7 +6,7 @@ from poms.audit.fields import ObjectHistoryContentTypeField
 from poms.audit.models import AuthLogEntry, ObjectHistory4Entry
 from poms.common.fields import DateTimeTzAwareField
 from poms.common.middleware import get_city_by_ip
-from poms.users.serializers import MemberMiniSerializer
+from poms.users.serializers import MemberViewSerializer
 
 
 class AuthLogEntrySerializer(serializers.ModelSerializer):
@@ -23,7 +23,7 @@ class AuthLogEntrySerializer(serializers.ModelSerializer):
 
 
 class ObjectHistory4EntrySerializer(serializers.ModelSerializer):
-    member = MemberMiniSerializer(read_only=True)
+    member = MemberViewSerializer(read_only=True)
     created = DateTimeTzAwareField(read_only=True)
     actor_content_type = ObjectHistoryContentTypeField()
     content_type = ObjectHistoryContentTypeField()

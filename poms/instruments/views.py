@@ -281,7 +281,8 @@ class PriceHistoryFilterSet(FilterSet):
 
 
 class PriceHistoryViewSet(AbstractModelViewSet):
-    queryset = PriceHistory.objects.select_related('instrument', 'pricing_policy')
+    queryset = PriceHistory.objects.select_related(
+        'instrument', 'instrument__instrument_type', 'instrument__instrument_type__instrument_class', 'pricing_policy')
     serializer_class = PriceHistorySerializer
     filter_backends = AbstractModelViewSet.filter_backends + [
         OwnerByInstrumentFilter,

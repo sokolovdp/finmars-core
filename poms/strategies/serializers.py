@@ -1,20 +1,20 @@
 from __future__ import unicode_literals
 
 from poms.common.serializers import ModelWithUserCodeSerializer
-from poms.obj_perms.serializers import ModelWithObjectPermissionSerializer, \
-    ReadonlyNamedModelWithObjectPermissionSerializer
+from poms.obj_perms.serializers import ModelWithObjectPermissionSerializer
 from poms.strategies.fields import Strategy1GroupField, Strategy1SubgroupField, Strategy2GroupField, \
     Strategy2SubgroupField, Strategy3GroupField, Strategy3SubgroupField
 from poms.strategies.models import Strategy1Group, Strategy1Subgroup, Strategy1, Strategy2Group, Strategy2Subgroup, \
     Strategy2, Strategy3Group, Strategy3Subgroup, Strategy3
 from poms.tags.fields import TagField
+from poms.tags.serializers import TagViewSerializer
 from poms.users.fields import MasterUserField
 
 
 class Strategy1GroupSerializer(ModelWithObjectPermissionSerializer, ModelWithUserCodeSerializer):
     master_user = MasterUserField()
     tags = TagField(many=True, required=False, allow_null=True)
-    tags_object = ReadonlyNamedModelWithObjectPermissionSerializer(source='tags', many=True)
+    tags_object = TagViewSerializer(source='tags', many=True, read_only=True)
 
     class Meta:
         model = Strategy1Group
@@ -24,19 +24,20 @@ class Strategy1GroupSerializer(ModelWithObjectPermissionSerializer, ModelWithUse
         ]
 
 
-# class Strategy1GroupBulkObjectPermissionSerializer(AbstractBulkObjectPermissionSerializer):
-#     content_objects = Strategy1GroupField(many=True, allow_null=False, allow_empty=False)
-#
-#     class Meta:
-#         model = Strategy1Group
+class Strategy1GroupViewSerializer(ModelWithObjectPermissionSerializer):
+    class Meta:
+        model = Strategy1Group
+        fields = [
+            'url', 'id', 'user_code', 'name', 'short_name', 'public_name', 'notes', 'is_deleted',
+        ]
 
 
 class Strategy1SubgroupSerializer(ModelWithObjectPermissionSerializer, ModelWithUserCodeSerializer):
     master_user = MasterUserField()
     group = Strategy1GroupField()
-    group_object = ReadonlyNamedModelWithObjectPermissionSerializer(source='group')
+    group_object = Strategy1GroupViewSerializer(source='group', read_only=True)
     tags = TagField(many=True, required=False, allow_null=True)
-    tags_object = ReadonlyNamedModelWithObjectPermissionSerializer(source='tags', many=True)
+    tags_object = TagViewSerializer(source='tags', many=True, read_only=True)
 
     class Meta:
         model = Strategy1Subgroup
@@ -46,20 +47,23 @@ class Strategy1SubgroupSerializer(ModelWithObjectPermissionSerializer, ModelWith
         ]
 
 
-# class Strategy1SubgroupBulkObjectPermissionSerializer(AbstractBulkObjectPermissionSerializer):
-#     content_objects = Strategy1SubgroupField(many=True, allow_null=False, allow_empty=False)
-#
-#     class Meta:
-#         model = Strategy1Subgroup
+class Strategy1SubgroupViewSerializer(ModelWithObjectPermissionSerializer):
+    group_object = Strategy1GroupViewSerializer(source='group', read_only=True)
+
+    class Meta:
+        model = Strategy1Subgroup
+        fields = [
+            'url', 'id', 'group', 'group_object', 'user_code', 'name', 'short_name', 'public_name',
+            'is_deleted', 'notes',
+        ]
 
 
 class Strategy1Serializer(ModelWithObjectPermissionSerializer, ModelWithUserCodeSerializer):
     master_user = MasterUserField()
-    # group = serializers.SerializerMethodField()
     subgroup = Strategy1SubgroupField()
-    subgroup_object = ReadonlyNamedModelWithObjectPermissionSerializer(source='subgroup')
+    subgroup_object = Strategy1SubgroupViewSerializer(source='subgroup', read_only=True)
     tags = TagField(many=True, required=False, allow_null=True)
-    tags_object = ReadonlyNamedModelWithObjectPermissionSerializer(source='tags', many=True)
+    tags_object = TagViewSerializer(source='tags', many=True, read_only=True)
 
     class Meta:
         model = Strategy1
@@ -68,97 +72,100 @@ class Strategy1Serializer(ModelWithObjectPermissionSerializer, ModelWithUserCode
             'public_name', 'notes', 'is_deleted', 'tags', 'tags_object'
         ]
 
-        # def get_group(self, obj):
-        #     subgroup = getattr(obj, 'subgroup', None)
-        #     group = getattr(subgroup, 'group', None)
-        #     return getattr(group, 'id', None)
+
+class Strategy1ViewSerializer(ModelWithObjectPermissionSerializer):
+    subgroup_object = Strategy1SubgroupViewSerializer(source='subgroup', read_only=True)
+
+    class Meta:
+        model = Strategy1
+        fields = [
+            'url', 'id', 'master_user', 'subgroup', 'subgroup_object', 'user_code', 'name', 'short_name',
+            'public_name', 'notes', 'is_deleted',
+        ]
 
 
-# class Strategy1BulkObjectPermissionSerializer(AbstractBulkObjectPermissionSerializer):
-#     content_objects = Strategy1Field(many=True, allow_null=False, allow_empty=False)
-#
-#     class Meta:
-#         model = Strategy1
-
-
-# 2
+# 2 --------------------------------------------------------------------------------------------------------------------
 
 class Strategy2GroupSerializer(Strategy1GroupSerializer):
     class Meta(Strategy1GroupSerializer.Meta):
         model = Strategy2Group
 
 
-# class Strategy2GroupBulkObjectPermissionSerializer(AbstractBulkObjectPermissionSerializer):
-#     content_objects = Strategy2GroupField(many=True, allow_null=False, allow_empty=False)
-#
-#     class Meta:
-#         model = Strategy2Group
+class Strategy2GroupViewSerializer(Strategy1GroupViewSerializer):
+    class Meta(Strategy1GroupViewSerializer.Meta):
+        model = Strategy2Group
 
 
 class Strategy2SubgroupSerializer(Strategy1SubgroupSerializer):
     group = Strategy2GroupField()
+    group_object = Strategy2GroupViewSerializer(source='group', read_only=True)
 
     class Meta(Strategy1SubgroupSerializer.Meta):
         model = Strategy2Subgroup
 
 
-# class Strategy2SubgroupBulkObjectPermissionSerializer(AbstractBulkObjectPermissionSerializer):
-#     content_objects = Strategy2SubgroupField(many=True, allow_null=False, allow_empty=False)
-#
-#     class Meta:
-#         model = Strategy2Group
+class Strategy2SubgroupViewSerializer(Strategy1SubgroupViewSerializer):
+    group = Strategy2GroupField()
+    group_object = Strategy2GroupViewSerializer(source='group', read_only=True)
+
+    class Meta(Strategy1SubgroupViewSerializer.Meta):
+        model = Strategy2Subgroup
 
 
 class Strategy2Serializer(Strategy1Serializer):
     subgroup = Strategy2SubgroupField()
+    subgroup_object = Strategy2SubgroupViewSerializer(source='subgroup', read_only=True)
 
     class Meta(Strategy1Serializer.Meta):
         model = Strategy2
 
 
-# class Strategy2BulkObjectPermissionSerializer(AbstractBulkObjectPermissionSerializer):
-#     content_objects = Strategy2Field(many=True, allow_null=False, allow_empty=False)
-#
-#     class Meta:
-#         model = Strategy2
+class Strategy2ViewSerializer(Strategy1ViewSerializer):
+    subgroup_object = Strategy2SubgroupViewSerializer(source='subgroup', read_only=True)
+
+    class Meta(Strategy1ViewSerializer.Meta):
+        model = Strategy2
 
 
-# 3
+# 3 --------------------------------------------------------------------------------------------------------------------
+
 
 class Strategy3GroupSerializer(Strategy1GroupSerializer):
     class Meta(Strategy1GroupSerializer.Meta):
         model = Strategy3Group
 
 
-# class Strategy3GroupBulkObjectPermissionSerializer(AbstractBulkObjectPermissionSerializer):
-#     content_objects = Strategy3GroupField(many=True, allow_null=False, allow_empty=False)
-#
-#     class Meta:
-#         model = Strategy3Group
+class Strategy3GroupViewSerializer(Strategy1GroupViewSerializer):
+    class Meta(Strategy1GroupViewSerializer.Meta):
+        model = Strategy3Group
 
 
 class Strategy3SubgroupSerializer(Strategy1SubgroupSerializer):
     group = Strategy3GroupField()
+    group_object = Strategy3GroupViewSerializer(source='group', read_only=True)
 
     class Meta(Strategy1SubgroupSerializer.Meta):
         model = Strategy3Subgroup
 
 
-# class Strategy3SubgroupBulkObjectPermissionSerializer(AbstractBulkObjectPermissionSerializer):
-#     content_objects = Strategy3SubgroupField(many=True, allow_null=False, allow_empty=False)
-#
-#     class Meta:
-#         model = Strategy3Subgroup
+class Strategy3SubgroupViewSerializer(Strategy1SubgroupViewSerializer):
+    group = Strategy3GroupField()
+    group_object = Strategy3GroupViewSerializer(source='group', read_only=True)
+
+    class Meta(Strategy1SubgroupViewSerializer.Meta):
+        model = Strategy3Subgroup
 
 
 class Strategy3Serializer(Strategy1Serializer):
     subgroup = Strategy3SubgroupField()
+    subgroup_object = Strategy3SubgroupViewSerializer(source='subgroup', read_only=True)
 
     class Meta(Strategy1Serializer.Meta):
         model = Strategy3
 
-# class Strategy3BulkObjectPermissionSerializer(AbstractBulkObjectPermissionSerializer):
-#     content_objects = Strategy3Field(many=True, allow_null=False, allow_empty=False)
-#
-#     class Meta:
-#         model = Strategy3
+
+class Strategy3ViewSerializer(Strategy1ViewSerializer):
+    subgroup_object = Strategy3SubgroupViewSerializer(source='subgroup', read_only=True)
+
+    class Meta(Strategy1ViewSerializer.Meta):
+        model = Strategy3

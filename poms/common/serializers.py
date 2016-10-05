@@ -37,9 +37,9 @@ class ModelWithUserCodeSerializer(serializers.ModelSerializer):
 
         # for correct message on unique error
         user_code = ret.get('user_code', empty)
-        if user_code is not empty:
+        if user_code is empty or user_code is None:
             name = ret.get('name', empty)
-            if name is not empty:
+            if name is not empty and name is not None:
                 ret['user_code'] = Truncator(name).chars(25, truncate='')
 
         return ret
@@ -269,45 +269,45 @@ class AbstractClassifierNodeSerializer(AbstractPomsSerializer):
         ]
 
 
-class ReadonlyModelListSerializer(serializers.ListSerializer):
-    def __init__(self, *args, **kwargs):
-        kwargs.setdefault('read_only', True)
-        super(ReadonlyModelListSerializer, self).__init__(*args, **kwargs)
-
-
-class ReadonlyModelSerializer(serializers.Serializer):
-    class Meta:
-        list_serializer_class = ReadonlyModelListSerializer
-
-    def __init__(self, *args, **kwargs):
-        fields = kwargs.pop('fields', []) or []
-        if not isinstance(fields, list):
-            fields = list(fields)
-        if 'id' not in fields:
-            fields = ['id'] + fields
-        kwargs.setdefault('read_only', True)
-        super(ReadonlyModelSerializer, self).__init__(*args, **kwargs)
-        for field in fields:
-            self.fields[field] = serializers.ReadOnlyField()
-
-
-class ReadonlyModelWithNameSerializer(ReadonlyModelSerializer):
-    def __init__(self, *args, **kwargs):
-        fields = kwargs.pop('fields', []) or []
-        if not isinstance(fields, list):
-            fields = list(fields)
-        if 'name' not in fields:
-            fields = ['name'] + fields
-        if 'id' not in fields:
-            fields = ['id'] + fields
-        kwargs['fields'] = fields
-        super(ReadonlyModelWithNameSerializer, self).__init__(*args, **kwargs)
-
-
-class ReadonlyNamedModelSerializer(ReadonlyModelSerializer):
-    def __init__(self, *args, **kwargs):
-        fields = kwargs.get('fields', None)
-        if fields is None:
-            fields = ['id', 'user_code', 'name', 'short_name', 'public_name']
-            kwargs['fields'] = fields
-        super(ReadonlyNamedModelSerializer, self).__init__(*args, **kwargs)
+# class ReadonlyModelListSerializer(serializers.ListSerializer):
+#     def __init__(self, *args, **kwargs):
+#         kwargs.setdefault('read_only', True)
+#         super(ReadonlyModelListSerializer, self).__init__(*args, **kwargs)
+#
+#
+# class ReadonlyModelSerializer(serializers.Serializer):
+#     class Meta:
+#         list_serializer_class = ReadonlyModelListSerializer
+#
+#     def __init__(self, *args, **kwargs):
+#         fields = kwargs.pop('fields', []) or []
+#         if not isinstance(fields, list):
+#             fields = list(fields)
+#         if 'id' not in fields:
+#             fields = ['id'] + fields
+#         kwargs.setdefault('read_only', True)
+#         super(ReadonlyModelSerializer, self).__init__(*args, **kwargs)
+#         for field in fields:
+#             self.fields[field] = serializers.ReadOnlyField()
+#
+#
+# class ReadonlyModelWithNameSerializer(ReadonlyModelSerializer):
+#     def __init__(self, *args, **kwargs):
+#         fields = kwargs.pop('fields', []) or []
+#         if not isinstance(fields, list):
+#             fields = list(fields)
+#         if 'name' not in fields:
+#             fields = ['name'] + fields
+#         if 'id' not in fields:
+#             fields = ['id'] + fields
+#         kwargs['fields'] = fields
+#         super(ReadonlyModelWithNameSerializer, self).__init__(*args, **kwargs)
+#
+#
+# class ReadonlyNamedModelSerializer(ReadonlyModelSerializer):
+#     def __init__(self, *args, **kwargs):
+#         fields = kwargs.get('fields', None)
+#         if fields is None:
+#             fields = ['id', 'user_code', 'name', 'short_name', 'public_name']
+#             kwargs['fields'] = fields
+#         super(ReadonlyNamedModelSerializer, self).__init__(*args, **kwargs)

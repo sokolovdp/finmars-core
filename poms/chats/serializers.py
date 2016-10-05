@@ -5,23 +5,30 @@ from rest_framework import serializers
 from poms.chats.fields import ThreadField, ThreadGroupField, ThreadGroupDefault
 from poms.chats.models import Thread, Message, DirectMessage, ThreadGroup
 from poms.common.fields import DateTimeTzAwareField
-from poms.common.serializers import ReadonlyModelWithNameSerializer
-from poms.obj_perms.serializers import ModelWithObjectPermissionSerializer, \
-    ReadonlyNamedModelWithObjectPermissionSerializer
+from poms.obj_perms.serializers import ModelWithObjectPermissionSerializer
 from poms.tags.fields import TagField
+from poms.tags.serializers import TagViewSerializer
 from poms.users.fields import MasterUserField, HiddenMemberField, MemberField
-from poms.users.serializers import MemberMiniSerializer
+from poms.users.serializers import MemberViewSerializer
 
 
 class ThreadGroupSerializer(serializers.ModelSerializer):
     url = serializers.HyperlinkedIdentityField(view_name='chatthreadgroup-detail')
     master_user = MasterUserField()
     tags = TagField(many=True, required=False, allow_null=True)
-    tags_object = ReadonlyNamedModelWithObjectPermissionSerializer(source='tags', many=True)
+    tags_object = TagViewSerializer(source='tags', many=True, read_only=True)
 
     class Meta:
         model = ThreadGroup
         fields = ['url', 'id', 'master_user', 'name', 'is_deleted', 'tags', 'tags_object']
+
+
+class ThreadGroupViewSerializer(serializers.ModelSerializer):
+    url = serializers.HyperlinkedIdentityField(view_name='chatthreadgroup-detail')
+
+    class Meta:
+        model = ThreadGroup
+        fields = ['url', 'id', 'name', 'is_deleted', ]
 
 
 class MessageSerializer(serializers.ModelSerializer):
@@ -30,7 +37,7 @@ class MessageSerializer(serializers.ModelSerializer):
     sender = HiddenMemberField()
     created = DateTimeTzAwareField(read_only=True)
     modified = DateTimeTzAwareField(read_only=True)
-    sender_object = MemberMiniSerializer(read_only=True, source='sender')
+    sender_object = MemberViewSerializer(source='sender', read_only=True)
 
     class Meta:
         model = Message
@@ -42,13 +49,13 @@ class ThreadSerializer(ModelWithObjectPermissionSerializer):
     url = serializers.HyperlinkedIdentityField(view_name='chatthread-detail')
     master_user = MasterUserField()
     thread_group = ThreadGroupField(default=ThreadGroupDefault())
-    thread_group_object = ReadonlyModelWithNameSerializer(source='thread_group')
+    thread_group_object = ThreadGroupViewSerializer(source='thread_group', read_only=True)
     is_closed = serializers.BooleanField(read_only=True)
     created = DateTimeTzAwareField(read_only=True)
     modified = DateTimeTzAwareField(read_only=True)
     closed = DateTimeTzAwareField(read_only=True)
     tags = TagField(many=True, required=False, allow_null=True)
-    tags_object = ReadonlyNamedModelWithObjectPermissionSerializer(source='tags', many=True)
+    tags_object = TagViewSerializer(source='tags', many=True, read_only=True)
     messages_count = serializers.IntegerField(read_only=True)
     messages_last = MessageSerializer(read_only=True, many=True)
 
@@ -76,8 +83,8 @@ class DirectMessageSerializer(serializers.ModelSerializer):
     created = DateTimeTzAwareField(read_only=True)
     modified = DateTimeTzAwareField(read_only=True)
 
-    sender_object = MemberMiniSerializer(read_only=True, source='sender')
-    recipient_object = MemberMiniSerializer(read_only=True, source='sender')
+    sender_object = MemberViewSerializer(source='sender', read_only=True)
+    recipient_object = MemberViewSerializer(source='recipient', read_only=True)
 
     class Meta:
         model = DirectMessage
