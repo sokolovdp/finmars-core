@@ -603,7 +603,7 @@ class BloombergDataProvider(AbstractProvider):
                     result[instrument.instrument.id].append(instrument_fields)
                 else:
                     result[instrument.instrument.id] = [instrument_fields]
-            _l.debug('< result=%s', response_id, result)
+            _l.debug('< result=%s', result)
             return result
         return None
 
