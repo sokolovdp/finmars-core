@@ -11,11 +11,13 @@ from poms.obj_attrs.filters import AttributeTypeValueTypeFilter
 from poms.obj_attrs.views import AbstractAttributeTypeViewSet, AbstractClassifierViewSet
 from poms.obj_perms.filters import ObjectPermissionMemberFilter, ObjectPermissionGroupFilter, \
     ObjectPermissionPermissionFilter
+from poms.obj_perms.utils import get_permissions_prefetch_lookups
 from poms.obj_perms.views import AbstractWithObjectPermissionViewSet
 from poms.portfolios.models import Portfolio, PortfolioAttributeType, PortfolioClassifier, PortfolioAttribute
 from poms.portfolios.serializers import PortfolioSerializer, PortfolioAttributeTypeSerializer, \
     PortfolioClassifierNodeSerializer
-from poms.tags.filters import TagFilterBackend, TagFilter
+from poms.tags.filters import TagFilter
+from poms.tags.models import Tag
 from poms.transactions.models import TransactionType
 from poms.users.filters import OwnerByMasterUserFilter
 
@@ -39,7 +41,6 @@ class PortfolioAttributeTypeFilterSet(FilterSet):
 class PortfolioAttributeTypeViewSet(AbstractAttributeTypeViewSet):
     queryset = PortfolioAttributeType.objects.prefetch_related('classifiers')
     serializer_class = PortfolioAttributeTypeSerializer
-    # bulk_objects_permissions_serializer_class = PortfolioAttributeTypeBulkObjectPermissionSerializer
     filter_class = PortfolioAttributeTypeFilterSet
 
 
@@ -85,27 +86,30 @@ class PortfolioViewSet(AbstractWithObjectPermissionViewSet):
     queryset = Portfolio.objects.select_related(
         'master_user',
     ).prefetch_related(
-        'accounts', 'responsibles', 'counterparties', 'transaction_types',
+        'accounts', 'responsibles', 'counterparties', 'transaction_types', 'tags',
         Prefetch('attributes', queryset=PortfolioAttribute.objects.select_related('attribute_type', 'classifier')),
+        *get_permissions_prefetch_lookups(
+            (None, Portfolio),
+            ('tags', Tag),
+            ('counterparties', Counterparty),
+            ('transaction_types', TransactionType),
+            ('accounts', Account),
+            ('responsibles', Responsible),
+            ('attributes__attribute_type', PortfolioAttributeType)
+        )
     )
-    prefetch_permissions_for = (
-        ('counterparties', Counterparty),
-        ('transaction_types', TransactionType),
-        ('accounts', Account),
-        ('responsibles', Responsible),
-        ('attributes__attribute_type', PortfolioAttributeType)
-    )
+    # prefetch_permissions_for = (
+    #     ('counterparties', Counterparty),
+    #     ('transaction_types', TransactionType),
+    #     ('accounts', Account),
+    #     ('responsibles', Responsible),
+    #     ('attributes__attribute_type', PortfolioAttributeType)
+    # )
     serializer_class = PortfolioSerializer
-    # bulk_objects_permissions_serializer_class = PortfolioBulkObjectPermissionSerializer
     filter_backends = AbstractWithObjectPermissionViewSet.filter_backends + [
         OwnerByMasterUserFilter,
-        TagFilterBackend,
     ]
     filter_class = PortfolioFilterSet
     ordering_fields = [
         'user_code', 'name', 'short_name', 'public_name',
     ]
-    # search_fields = [
-    #     'user_code', 'name', 'short_name'
-    # ]
-    # has_feature_is_deleted = True

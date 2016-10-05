@@ -76,5 +76,4 @@ class ObjectHistory4ViewSet(AbstractReadOnlyModelViewSet):
         SuperUserOnly,
     ]
     filter_class = ObjectHistory4EntryFilterSet
-    ordering_fields = ('created',)
-    # search_fields = ('created',)
+    ordering_fields = ['created', 'member', 'actor_content_type', 'content_type', 'value_content_type', 'old_value_content_type',]

@@ -16,9 +16,11 @@ from poms.obj_attrs.filters import AttributeTypeValueTypeFilter
 from poms.obj_attrs.views import AbstractAttributeTypeViewSet, AbstractClassifierViewSet
 from poms.obj_perms.filters import ObjectPermissionMemberFilter, ObjectPermissionGroupFilter, \
     ObjectPermissionPermissionFilter
+from poms.obj_perms.utils import get_permissions_prefetch_lookups
 from poms.obj_perms.views import AbstractWithObjectPermissionViewSet
 from poms.portfolios.models import Portfolio
-from poms.tags.filters import TagFilterBackend, TagFilter
+from poms.tags.filters import TagFilter
+from poms.tags.models import Tag
 from poms.users.filters import OwnerByMasterUserFilter
 
 
@@ -41,7 +43,6 @@ class CounterpartyAttributeTypeFilterSet(FilterSet):
 class CounterpartyAttributeTypeViewSet(AbstractAttributeTypeViewSet):
     queryset = CounterpartyAttributeType.objects.select_related('master_user').prefetch_related('classifiers')
     serializer_class = CounterpartyAttributeTypeSerializer
-    # bulk_objects_permissions_serializer_class = CounterpartyAttributeTypeBulkObjectPermissionSerializer
     filter_class = CounterpartyAttributeTypeFilterSet
 
 
@@ -80,21 +81,21 @@ class CounterpartyGroupFilterSet(FilterSet):
 
 
 class CounterpartyGroupViewSet(AbstractWithObjectPermissionViewSet):
-    queryset = CounterpartyGroup.objects.select_related('master_user')
+    queryset = CounterpartyGroup.objects.select_related('master_user').prefetch_related(
+        'tags',
+        *get_permissions_prefetch_lookups(
+            (None, CounterpartyGroup),
+            ('tags', Tag)
+        )
+    )
     serializer_class = CounterpartyGroupSerializer
-    # bulk_objects_permissions_serializer_class = CounterpartyGroupBulkObjectPermissionSerializer
     filter_backends = AbstractWithObjectPermissionViewSet.filter_backends + [
         OwnerByMasterUserFilter,
-        TagFilterBackend,
     ]
     filter_class = CounterpartyGroupFilterSet
     ordering_fields = [
         'user_code', 'name', 'short_name', 'public_name',
     ]
-    # search_fields = [
-    #     'user_code', 'name', 'short_name'
-    # ]
-    # has_feature_is_deleted = True
 
 
 class CounterpartyFilterSet(FilterSet):
@@ -120,29 +121,25 @@ class CounterpartyViewSet(AbstractWithObjectPermissionViewSet):
     queryset = Counterparty.objects.select_related(
         'master_user', 'group',
     ).prefetch_related(
-        'portfolios',
+        'portfolios', 'tags',
         Prefetch('attributes', queryset=CounterpartyAttribute.objects.select_related('attribute_type', 'classifier')),
-    )
-    prefetch_permissions_for = (
-        ('group', CounterpartyGroup),
-        ('portfolios', Portfolio),
-        ('attributes__attribute_type', CounterpartyAttributeType)
+        *get_permissions_prefetch_lookups(
+            (None, Counterparty),
+            ('group', CounterpartyGroup),
+            ('portfolios', Portfolio),
+            ('attributes__attribute_type', CounterpartyAttributeType),
+            ('tags', Tag)
+        )
     )
     serializer_class = CounterpartySerializer
-    # bulk_objects_permissions_serializer_class = CounterpartyBulkObjectPermissionSerializer
     filter_backends = AbstractWithObjectPermissionViewSet.filter_backends + [
         OwnerByMasterUserFilter,
-        TagFilterBackend,
     ]
     filter_class = CounterpartyFilterSet
     ordering_fields = [
         'user_code', 'name', 'short_name', 'public_name',
         'group', 'group__user_code', 'group__name', 'group__short_name', 'group__public_name',
     ]
-    # search_fields = [
-    #     'user_code', 'name', 'short_name',
-    # ]
-    # has_feature_is_deleted = True
 
 
 # Responsible ----
@@ -167,7 +164,6 @@ class ResponsibleAttributeTypeFilterSet(FilterSet):
 class ResponsibleAttributeTypeViewSet(AbstractAttributeTypeViewSet):
     queryset = ResponsibleAttributeType.objects.select_related('master_user').prefetch_related('classifiers')
     serializer_class = ResponsibleAttributeTypeSerializer
-    # bulk_objects_permissions_serializer_class = ResponsibleAttributeTypeBulkObjectPermissionSerializer
     filter_class = ResponsibleAttributeTypeFilterSet
 
 
@@ -205,21 +201,21 @@ class ResponsibleGroupFilterSet(FilterSet):
 
 
 class ResponsibleGroupViewSet(AbstractWithObjectPermissionViewSet):
-    queryset = ResponsibleGroup.objects.select_related('master_user')
+    queryset = ResponsibleGroup.objects.select_related('master_user').prefetch_related(
+        'tags',
+        *get_permissions_prefetch_lookups(
+            (None, ResponsibleGroup),
+            ('tags', Tag)
+        )
+    )
     serializer_class = ResponsibleGroupSerializer
-    # bulk_objects_permissions_serializer_class = ResponsibleGroupBulkObjectPermissionSerializer
     filter_backends = AbstractWithObjectPermissionViewSet.filter_backends + [
         OwnerByMasterUserFilter,
-        TagFilterBackend,
     ]
     filter_class = ResponsibleGroupFilterSet
     ordering_fields = [
         'user_code', 'name', 'short_name', 'public_name',
     ]
-    # search_fields = [
-    #     'user_code', 'name', 'short_name'
-    # ]
-    # has_feature_is_deleted = True
 
 
 class ResponsibleFilterSet(FilterSet):
@@ -246,26 +242,27 @@ class ResponsibleViewSet(AbstractWithObjectPermissionViewSet):
     queryset = Responsible.objects.select_related(
         'master_user', 'group',
     ).prefetch_related(
-        'portfolios',
+        'portfolios', 'tags',
         Prefetch('attributes', queryset=ResponsibleAttribute.objects.select_related('attribute_type', 'classifier')),
+        *get_permissions_prefetch_lookups(
+            (None, Responsible),
+            ('group', ResponsibleGroup),
+            ('portfolios', Portfolio),
+            ('attributes__attribute_type', ResponsibleAttributeType),
+            ('tags', Tag)
+        )
     )
-    prefetch_permissions_for = (
-        ('group', ResponsibleGroup),
-        ('portfolios', Portfolio),
-        ('attributes__attribute_type', ResponsibleAttributeType)
-    )
+    # prefetch_permissions_for = (
+    #     ('group', ResponsibleGroup),
+    #     ('portfolios', Portfolio),
+    #     ('attributes__attribute_type', ResponsibleAttributeType)
+    # )
     serializer_class = ResponsibleSerializer
-    # bulk_objects_permissions_serializer_class = ResponsibleBulkObjectPermissionSerializer
     filter_backends = AbstractWithObjectPermissionViewSet.filter_backends + [
         OwnerByMasterUserFilter,
-        TagFilterBackend,
     ]
     filter_class = ResponsibleFilterSet
     ordering_fields = [
         'user_code', 'name', 'short_name', 'public_name',
         'group', 'group__user_code', 'group__name', 'group__short_name', 'group__public_name',
     ]
-    # search_fields = [
-    #     'user_code', 'name', 'short_name'
-    # ]
-    # has_feature_is_deleted = True

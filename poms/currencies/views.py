@@ -10,7 +10,9 @@ from poms.currencies.models import Currency, CurrencyHistory
 from poms.currencies.serializers import CurrencySerializer, CurrencyHistorySerializer
 from poms.instruments.models import PricingPolicy, DailyPricingModel
 from poms.integrations.models import PriceDownloadScheme
-from poms.tags.filters import TagFilterBackend, TagFilter
+from poms.obj_perms.utils import get_permissions_prefetch_lookups
+from poms.tags.filters import TagFilter
+from poms.tags.models import Tag
 from poms.users.filters import OwnerByMasterUserFilter
 from poms.users.permissions import SuperUserOrReadOnly
 
@@ -33,24 +35,26 @@ class CurrencyFilterSet(FilterSet):
 
 
 class CurrencyViewSet(AbstractModelViewSet):
-    queryset = Currency.objects.select_related('master_user')
+    queryset = Currency.objects.select_related(
+        'master_user', 'daily_pricing_model', 'price_download_scheme'
+    ).prefetch_related(
+        'tags',
+        *get_permissions_prefetch_lookups(
+            ('tags', Tag)
+        )
+    )
     serializer_class = CurrencySerializer
     permission_classes = AbstractModelViewSet.permission_classes + [
         SuperUserOrReadOnly,
     ]
     filter_backends = AbstractModelViewSet.filter_backends + [
         OwnerByMasterUserFilter,
-        TagFilterBackend,
     ]
     filter_class = CurrencyFilterSet
     ordering_fields = [
         'user_code', 'name', 'short_name', 'public_name', 'reference_for_pricing',
         'price_download_scheme', 'price_download_scheme__scheme_name',
     ]
-    # search_fields = [
-    #     'user_code', 'name', 'short_name', 'reference_for_pricing'
-    # ]
-    # has_feature_is_deleted = True
 
 
 class CurrencyHistoryFilterSet(FilterSet):
@@ -66,7 +70,9 @@ class CurrencyHistoryFilterSet(FilterSet):
 
 
 class CurrencyHistoryViewSet(AbstractModelViewSet):
-    queryset = CurrencyHistory.objects.select_related('currency', 'pricing_policy')
+    queryset = CurrencyHistory.objects.select_related('currency', 'pricing_policy').prefetch_related(
+
+    )
     serializer_class = CurrencyHistorySerializer
     permission_classes = AbstractModelViewSet.permission_classes + [
         SuperUserOrReadOnly,
@@ -81,4 +87,3 @@ class CurrencyHistoryViewSet(AbstractModelViewSet):
         'pricing_policy', 'pricing_policy__user_code', 'pricing_policy__name', 'pricing_policy__short_name',
         'pricing_policy__public_name',
     ]
-    # search_fields = []

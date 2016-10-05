@@ -16,8 +16,10 @@ from poms.common.filters import CharFilter, NoOpFilter, ModelExtWithPermissionMu
 from poms.common.views import AbstractModelViewSet
 from poms.obj_perms.filters import ObjectPermissionMemberFilter, ObjectPermissionGroupFilter, \
     ObjectPermissionPermissionFilter
+from poms.obj_perms.utils import get_permissions_prefetch_lookups
 from poms.obj_perms.views import AbstractWithObjectPermissionViewSet
-from poms.tags.filters import TagFilterBackend, TagFilter
+from poms.tags.filters import TagFilter
+from poms.tags.models import Tag
 from poms.users.filters import OwnerByMasterUserFilter
 from poms.users.models import Member
 from poms.users.permissions import SuperUserOrReadOnly, SuperUserOnly
@@ -35,21 +37,24 @@ class ThreadGroupFilterSet(FilterSet):
 
 
 class ThreadGroupViewSet(AbstractModelViewSet):
-    queryset = ThreadGroup.objects.select_related('master_user')
+    queryset = ThreadGroup.objects.select_related('master_user').prefetch_related(
+        'tags',
+        *get_permissions_prefetch_lookups(
+            (None, ThreadGroup),
+            ('tags', Tag)
+        )
+    )
     serializer_class = ThreadGroupSerializer
     permission_classes = AbstractModelViewSet.permission_classes + [
         SuperUserOrReadOnly
     ]
     filter_backends = AbstractModelViewSet.filter_backends + [
         OwnerByMasterUserFilter,
-        TagFilterBackend,
     ]
     filter_class = ThreadGroupFilterSet
     ordering_fields = [
         'name'
     ]
-    # search_fields = ['name']
-    # has_feature_is_deleted = True
 
 
 class ThreadFilterSet(FilterSet):
@@ -72,21 +77,26 @@ class ThreadFilterSet(FilterSet):
 
 
 class ThreadViewSet(AbstractWithObjectPermissionViewSet):
-    queryset = Thread.objects.select_related('thread_group'). \
-        annotate(messages_count=Count('messages')). \
-        prefetch_related(Prefetch("messages", to_attr="messages_last",
-                                  queryset=Message.objects.prefetch_related('sender').filter(
-                                      pk__in=Message.objects.distinct('thread').
-                                          order_by('thread_id', '-created', '-id').
-                                          values_list('id', flat=True))
-                                  )
-                         )
-    # prefetch_permissions_for = []
+    queryset = Thread.objects.select_related('thread_group').annotate(
+        messages_count=Count('messages')
+    ).prefetch_related(
+        Prefetch(
+            "messages", to_attr="messages_last",
+            queryset=Message.objects.prefetch_related('sender').filter(
+                pk__in=Message.objects.distinct('thread').
+                    order_by('thread_id', '-created', '-id').
+                    values_list('id', flat=True))
+
+        ),
+        'tags',
+        *get_permissions_prefetch_lookups(
+            (None, Thread),
+            ('tags', Tag)
+        ),
+    )
     serializer_class = ThreadSerializer
-    # bulk_objects_permissions_serializer_class = ThreadBulkObjectPermissionSerializer
     filter_backends = AbstractWithObjectPermissionViewSet.filter_backends + [
         OwnerByMasterUserFilter,
-        TagFilterBackend,
     ]
     filter_class = ThreadFilterSet
     ordering_fields = [

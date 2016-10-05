@@ -5,6 +5,7 @@ from rest_framework.filters import FilterSet
 from poms.common.filters import CharFilter, NoOpFilter
 from poms.obj_perms.filters import ObjectPermissionMemberFilter, ObjectPermissionGroupFilter, \
     ObjectPermissionPermissionFilter
+from poms.obj_perms.utils import get_permissions_prefetch_lookups
 from poms.obj_perms.views import AbstractWithObjectPermissionViewSet
 from poms.tags.filters import TagContentTypeFilter
 from poms.tags.models import Tag
@@ -29,23 +30,10 @@ class TagFilterSet(FilterSet):
 
 
 class TagViewSet(AbstractWithObjectPermissionViewSet):
-    queryset = Tag.objects.prefetch_related('content_types')
-    # prefetch_related(
-    #     'content_types', 'account_types', 'accounts', 'currencies', 'instrument_types', 'instruments', 'counterparties',
-    #     'responsibles', 'portfolios', 'transaction_type_groups', 'transaction_types',
-    #     'strategy1_groups', 'strategy1_subgroups', 'strategies1',
-    #     'strategy2_groups', 'strategy2_subgroups', 'strategies2',
-    #     'strategy3_groups', 'strategy3_subgroups', 'strategies3',
-    # )
-    # prefetch_permissions_for = (
-    #     'account_types', 'accounts', 'currencies', 'instrument_types', 'instruments', 'counterparties', 'responsibles',
-    #     'portfolios', 'transaction_type_groups', 'transaction_types',
-    #     'strategy1_groups', 'strategy1_subgroups', 'strategies1',
-    #     'strategy2_groups', 'strategy2_subgroups', 'strategies2',
-    #     'strategy3_groups', 'strategy3_subgroups', 'strategies3',
-    # )
+    queryset = Tag.objects.prefetch_related('content_types').prefetch_related(
+        *get_permissions_prefetch_lookups((None, Tag))
+    )
     serializer_class = TagSerializer
-    # bulk_objects_permissions_serializer_class = TagBulkObjectPermissionSerializer
     filter_backends = AbstractWithObjectPermissionViewSet.filter_backends + [
         OwnerByMasterUserFilter,
     ]
@@ -53,6 +41,3 @@ class TagViewSet(AbstractWithObjectPermissionViewSet):
     ordering_fields = [
         'user_code', 'name', 'short_name', 'public_name',
     ]
-    # search_fields = [
-    #     'user_code', 'name', 'short_name'
-    # ]

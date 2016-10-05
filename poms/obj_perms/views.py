@@ -20,7 +20,7 @@ class AbstractWithObjectPermissionViewSet(AbstractModelViewSet):
     permission_classes = AbstractModelViewSet.permission_classes + [
         PomsObjectPermission,
     ]
-    prefetch_permissions_for = []
+    # prefetch_permissions_for = []
 
     # def filter_queryset(self, queryset):
     #     queryset = super(AbstractWithObjectPermissionViewSet, self).filter_queryset(queryset)

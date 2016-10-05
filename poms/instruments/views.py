@@ -27,8 +27,10 @@ from poms.obj_attrs.filters import AttributeTypeValueTypeFilter
 from poms.obj_attrs.views import AbstractAttributeTypeViewSet, AbstractClassifierViewSet
 from poms.obj_perms.filters import ObjectPermissionMemberFilter, ObjectPermissionGroupFilter, \
     ObjectPermissionPermissionFilter
+from poms.obj_perms.utils import get_permissions_prefetch_lookups
 from poms.obj_perms.views import AbstractWithObjectPermissionViewSet
-from poms.tags.filters import TagFilterBackend, TagFilter
+from poms.tags.filters import TagFilter
+from poms.tags.models import Tag
 from poms.transactions.models import TransactionType
 from poms.users.filters import OwnerByMasterUserFilter
 from poms.users.permissions import SuperUserOrReadOnly
@@ -103,21 +105,21 @@ class InstrumentTypeFilterSet(FilterSet):
 
 
 class InstrumentTypeViewSet(AbstractWithObjectPermissionViewSet):
-    queryset = InstrumentType.objects.select_related('master_user')
+    queryset = InstrumentType.objects.select_related('master_user', 'instrument_class').prefetch_related(
+        'tags',
+        *get_permissions_prefetch_lookups(
+            (None, InstrumentType),
+            ('tags', Tag)
+        )
+    )
     serializer_class = InstrumentTypeSerializer
-    # bulk_objects_permissions_serializer_class = InstrumentTypeBulkObjectPermissionSerializer
     filter_backends = AbstractWithObjectPermissionViewSet.filter_backends + [
         OwnerByMasterUserFilter,
-        TagFilterBackend,
     ]
     filter_class = InstrumentTypeFilterSet
     ordering_fields = [
         'user_code', 'name', 'short_name', 'public_name',
     ]
-    # search_fields = [
-    #     'user_code', 'name', 'short_name',
-    # ]
-    # has_feature_is_deleted = True
 
 
 class InstrumentAttributeTypeFilterSet(FilterSet):
@@ -139,7 +141,6 @@ class InstrumentAttributeTypeFilterSet(FilterSet):
 class InstrumentAttributeTypeViewSet(AbstractAttributeTypeViewSet):
     queryset = InstrumentAttributeType.objects.prefetch_related('classifiers')
     serializer_class = InstrumentAttributeTypeSerializer
-    # bulk_objects_permissions_serializer_class = InstrumentAttributeTypeBulkObjectPermissionSerializer
     filter_class = InstrumentAttributeTypeFilterSet
 
 
@@ -195,21 +196,25 @@ class InstrumentFilterSet(FilterSet):
 
 class InstrumentViewSet(AbstractWithObjectPermissionViewSet):
     queryset = Instrument.objects.select_related(
-        'instrument_type', 'pricing_currency', 'accrued_currency',
+        'instrument_type', 'instrument_type__instrument_class', 'pricing_currency', 'accrued_currency',
     ).prefetch_related(
         Prefetch('attributes', queryset=InstrumentAttribute.objects.select_related('attribute_type', 'classifier')),
         'manual_pricing_formulas', 'accrual_calculation_schedules', 'factor_schedules',
-        'event_schedules', 'event_schedules__actions'
+        'event_schedules', 'event_schedules__actions', 'tags',
+        *get_permissions_prefetch_lookups(
+            (None, Instrument),
+            ('tags', Tag),
+            ('instrument_type', InstrumentType),
+            ('attributes__attribute_type', InstrumentAttributeType),
+        )
     )
-    prefetch_permissions_for = (
-        ('instrument_type', InstrumentType),
-        ('attributes__attribute_type', InstrumentAttributeType),
-    )
+    # prefetch_permissions_for = (
+    #     ('instrument_type', InstrumentType),
+    #     ('attributes__attribute_type', InstrumentAttributeType),
+    # )
     serializer_class = InstrumentSerializer
-    # bulk_objects_permissions_serializer_class = InstrumentBulkObjectPermissionSerializer
     filter_backends = AbstractWithObjectPermissionViewSet.filter_backends + [
         OwnerByMasterUserFilter,
-        TagFilterBackend,
     ]
     filter_class = InstrumentFilterSet
     ordering_fields = [
@@ -282,7 +287,13 @@ class PriceHistoryFilterSet(FilterSet):
 
 class PriceHistoryViewSet(AbstractModelViewSet):
     queryset = PriceHistory.objects.select_related(
-        'instrument', 'instrument__instrument_type', 'instrument__instrument_type__instrument_class', 'pricing_policy')
+        'instrument', 'instrument__instrument_type', 'instrument__instrument_type__instrument_class', 'pricing_policy'
+    ).prefetch_related(
+        *get_permissions_prefetch_lookups(
+            ('instrument', Instrument),
+            ('instrument__instrument_type', InstrumentType),
+        )
+    )
     serializer_class = PriceHistorySerializer
     filter_backends = AbstractModelViewSet.filter_backends + [
         OwnerByInstrumentFilter,
@@ -295,25 +306,6 @@ class PriceHistoryViewSet(AbstractModelViewSet):
         'pricing_policy__public_name',
         'date', 'principal_price', 'accrued_price',
     ]
-    # search_fields = [
-    #     'instrument__user_code', 'instrument__name', 'instrument__short_name',
-    # ]
-
-    # @list_route(methods=['post'], url_path='recalculate-prices-accrued-price', serializer_class=serializers.Serializer)
-    # def calculate_prices_accrued_price(self, request):
-    #     queryset = self.filter_queryset(self.get_queryset())
-    #     instrument_accruals = {}
-    #     processed = 0
-    #     for p in queryset:
-    #         accruals = instrument_accruals.get(p.instrument_id, None)
-    #         if accruals is None:
-    #             accruals = list(p.instrument.accrual_calculation_schedules.order_by('accrual_start_date'))
-    #             if accruals is None:
-    #                 accruals = []
-    #             instrument_accruals.get(p.instrument_id, accruals)
-    #         p.calculate_accrued_price(accruals=accruals, save=True)
-    #         processed += 1
-    #     return Response({'processed': processed})
 
 
 class EventScheduleConfigViewSet(AbstractModelViewSet):

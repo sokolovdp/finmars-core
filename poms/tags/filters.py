@@ -44,16 +44,16 @@ class TagContentTypeFilterBackend(BaseFilterBackend):
         return queryset.filter(pk__in=get_tag_content_types())
 
 
-class TagFilterBackend(BaseFilterBackend):
-    def filter_queryset(self, request, queryset, view):
-        # queryset = queryset.prefetch_related(
-        #     'tags',
-        #     'tags__user_object_permissions', 'tags__user_object_permissions__permission',
-        #     'tags__group_object_permissions', 'tags__group_object_permissions__permission',
-        # )
-        queryset = queryset.prefetch_related('tags')
-        queryset = obj_perms_prefetch(queryset, my=False, lookups_related=[('tags', Tag)])
-        return queryset
+# class TagFilterBackend(BaseFilterBackend):
+#     def filter_queryset(self, request, queryset, view):
+#         # queryset = queryset.prefetch_related(
+#         #     'tags',
+#         #     'tags__user_object_permissions', 'tags__user_object_permissions__permission',
+#         #     'tags__group_object_permissions', 'tags__group_object_permissions__permission',
+#         # )
+#         queryset = queryset.prefetch_related('tags')
+#         queryset = obj_perms_prefetch(queryset, my=False, lookups_related=[('tags', Tag)])
+#         return queryset
 
 
 def tags_choices(model=None):

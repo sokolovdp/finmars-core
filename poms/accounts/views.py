@@ -12,9 +12,11 @@ from poms.obj_attrs.filters import AttributeTypeValueTypeFilter
 from poms.obj_attrs.views import AbstractAttributeTypeViewSet, AbstractClassifierViewSet
 from poms.obj_perms.filters import ObjectPermissionMemberFilter, ObjectPermissionGroupFilter, \
     ObjectPermissionPermissionFilter
+from poms.obj_perms.utils import get_permissions_prefetch_lookups
 from poms.obj_perms.views import AbstractWithObjectPermissionViewSet
 from poms.portfolios.models import Portfolio
-from poms.tags.filters import TagFilterBackend, TagFilter
+from poms.tags.filters import TagFilter
+from poms.tags.models import Tag
 from poms.users.filters import OwnerByMasterUserFilter
 
 
@@ -37,21 +39,22 @@ class AccountTypeFilterSet(FilterSet):
 
 
 class AccountTypeViewSet(AbstractWithObjectPermissionViewSet):
-    queryset = AccountType.objects.select_related('master_user')
+    queryset = AccountType.objects.select_related('master_user').prefetch_related(
+        'tags',
+        *get_permissions_prefetch_lookups(
+            (None, AccountType),
+            ('tags', Tag)
+        )
+    )
     serializer_class = AccountTypeSerializer
-    # bulk_objects_permissions_serializer_class = AccountTypeBulkObjectPermissionSerializer
     filter_backends = AbstractWithObjectPermissionViewSet.filter_backends + [
         OwnerByMasterUserFilter,
-        TagFilterBackend,
+        # TagFilterBackend,
     ]
     filter_class = AccountTypeFilterSet
     ordering_fields = [
         'user_code', 'name', 'short_name', 'public_name', 'show_transaction_details'
     ]
-    # search_fields = [
-    #     'user_code', 'name', 'short_name',
-    # ]
-    # has_feature_is_deleted = True
 
 
 class AccountAttributeTypeFilterSet(FilterSet):
@@ -71,7 +74,9 @@ class AccountAttributeTypeFilterSet(FilterSet):
 
 
 class AccountAttributeTypeViewSet(AbstractAttributeTypeViewSet):
-    queryset = AccountAttributeType.objects.select_related('master_user').prefetch_related('classifiers')
+    queryset = AccountAttributeType.objects.select_related('master_user').prefetch_related(
+        'classifiers', *get_permissions_prefetch_lookups((None, AccountAttributeType))
+    )
     serializer_class = AccountAttributeTypeSerializer
     # bulk_objects_permissions_serializer_class = AccountAttributeTypeBulkObjectPermissionSerializer
     filter_class = AccountAttributeTypeFilterSet
@@ -116,28 +121,34 @@ class AccountFilterSet(FilterSet):
 
 class AccountViewSet(AbstractWithObjectPermissionViewSet):
     queryset = Account.objects.select_related(
-        'master_user', 'type',
+        'master_user', 'type', 'type',
     ).prefetch_related(
-        'portfolios',
-        Prefetch('attributes', queryset=AccountAttribute.objects.select_related('attribute_type', 'classifier')),
+        'portfolios', 'tags',
+        Prefetch('attributes', queryset=AccountAttribute.objects.select_related(
+            'attribute_type', 'classifier'
+        ).prefetch_related(
+            'attribute_type__options'
+        )),
+        *get_permissions_prefetch_lookups(
+            (None, Account),
+            ('type', AccountType),
+            ('portfolios', Portfolio),
+            ('attributes__attribute_type', AccountAttributeType),
+            ('tags', Tag)
+        )
     )
-    prefetch_permissions_for = (
-        ('type', AccountType),
-        ('portfolios', Portfolio),
-        ('attributes__attribute_type', AccountAttributeType),
-    )
+    # prefetch_permissions_for = (
+    #     ('type', AccountType),
+    #     ('portfolios', Portfolio),
+    #     ('attributes__attribute_type', AccountAttributeType),
+    # )
     serializer_class = AccountSerializer
-    # bulk_objects_permissions_serializer_class = AccountBulkObjectPermissionSerializer
     filter_backends = AbstractWithObjectPermissionViewSet.filter_backends + [
         OwnerByMasterUserFilter,
-        TagFilterBackend,
+        # TagFilterBackend,
     ]
     filter_class = AccountFilterSet
     ordering_fields = [
         'user_code', 'name', 'short_name', 'public_name', 'is_valid_for_all_portfolios',
         'type', 'type__user_code', 'type__name', 'type__short_name', 'type__public_name',
     ]
-    # search_fields = [
-    #     'user_code', 'name', 'short_name',
-    # ]
-    # has_feature_is_deleted = True

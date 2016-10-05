@@ -6,13 +6,15 @@ from rest_framework.filters import FilterSet
 from poms.common.filters import CharFilter, ModelExtWithPermissionMultipleChoiceFilter, NoOpFilter
 from poms.obj_perms.filters import ObjectPermissionMemberFilter, ObjectPermissionGroupFilter, \
     ObjectPermissionPermissionFilter
+from poms.obj_perms.utils import get_permissions_prefetch_lookups
 from poms.obj_perms.views import AbstractWithObjectPermissionViewSet
 from poms.strategies.models import Strategy1Group, Strategy1Subgroup, Strategy1, Strategy2Group, Strategy2Subgroup, \
     Strategy2, Strategy3Group, Strategy3Subgroup, Strategy3
 from poms.strategies.serializers import Strategy1GroupSerializer, Strategy1Serializer, Strategy2GroupSerializer, \
     Strategy2SubgroupSerializer, Strategy2Serializer, Strategy1SubgroupSerializer, Strategy3GroupSerializer, \
     Strategy3SubgroupSerializer, Strategy3Serializer
-from poms.tags.filters import TagFilterBackend, TagFilter
+from poms.tags.filters import TagFilter
+from poms.tags.models import Tag
 from poms.users.filters import OwnerByMasterUserFilter
 
 
@@ -34,21 +36,21 @@ class Strategy1GroupFilterSet(FilterSet):
 
 
 class Strategy1GroupViewSet(AbstractWithObjectPermissionViewSet):
-    queryset = Strategy1Group.objects.select_related('master_user')
+    queryset = Strategy1Group.objects.select_related('master_user').prefetch_related(
+        'tags',
+        *get_permissions_prefetch_lookups(
+            (None, Strategy1Group),
+            ('tags', Tag)
+        )
+    )
     serializer_class = Strategy1GroupSerializer
-    # bulk_objects_permissions_serializer_class = Strategy1GroupBulkObjectPermissionSerializer
     filter_backends = AbstractWithObjectPermissionViewSet.filter_backends + [
         OwnerByMasterUserFilter,
-        TagFilterBackend,
     ]
     filter_class = Strategy1GroupFilterSet
     ordering_fields = [
         'user_code', 'name', 'short_name', 'public_name',
     ]
-    # search_fields = [
-    #     'user_code', 'name', 'short_name',
-    # ]
-    # has_feature_is_deleted = True
 
 
 class Strategy1SubgroupFilterSet(FilterSet):
@@ -70,23 +72,26 @@ class Strategy1SubgroupFilterSet(FilterSet):
 
 
 class Strategy1SubgroupViewSet(AbstractWithObjectPermissionViewSet):
-    queryset = Strategy1Subgroup.objects.select_related('master_user', 'group')
-    prefetch_permissions_for = ['group']
+    queryset = Strategy1Subgroup.objects.select_related('master_user', 'group').prefetch_related(
+        'tags',
+        *get_permissions_prefetch_lookups(
+            (None, Strategy1Subgroup),
+            ('group', Strategy1Group),
+            ('tags', Tag)
+        )
+    )
+    # prefetch_permissions_for = [
+    #     'group'
+    # ]
     serializer_class = Strategy1SubgroupSerializer
-    # bulk_objects_permissions_serializer_class = Strategy1SubgroupBulkObjectPermissionSerializer
     filter_backends = AbstractWithObjectPermissionViewSet.filter_backends + [
         OwnerByMasterUserFilter,
-        TagFilterBackend,
     ]
     filter_class = Strategy1SubgroupFilterSet
     ordering_fields = [
         'user_code', 'name', 'short_name', 'public_name',
         'group', 'group__user_code', 'group__name', 'group__short_name', 'group__public_name',
     ]
-    # search_fields = [
-    #     'user_code', 'name', 'short_name',
-    # ]
-    # has_feature_is_deleted = True
 
 
 class Strategy1FilterSet(FilterSet):
@@ -109,13 +114,21 @@ class Strategy1FilterSet(FilterSet):
 
 
 class Strategy1ViewSet(AbstractWithObjectPermissionViewSet):
-    queryset = Strategy1.objects.select_related('master_user', 'subgroup', 'subgroup__group')
-    prefetch_permissions_for = ['subgroup', 'subgroup__group']
+    queryset = Strategy1.objects.select_related('master_user', 'subgroup', 'subgroup__group').prefetch_related(
+        'tags',
+        *get_permissions_prefetch_lookups(
+            (None, Strategy1),
+            ('subgroup', Strategy1Subgroup),
+            ('subgroup__group', Strategy1Group),
+            ('tags', Tag)
+        )
+    )
+    # prefetch_permissions_for = [
+    #     'subgroup', 'subgroup__group'
+    # ]
     serializer_class = Strategy1Serializer
-    # bulk_objects_permissions_serializer_class = Strategy1BulkObjectPermissionSerializer
     filter_backends = AbstractWithObjectPermissionViewSet.filter_backends + [
         OwnerByMasterUserFilter,
-        TagFilterBackend,
     ]
     filter_class = Strategy1FilterSet
     ordering_fields = [
@@ -124,10 +137,6 @@ class Strategy1ViewSet(AbstractWithObjectPermissionViewSet):
         'subgroup__group__public_name',
         'subgroup', 'subgroup__user_code', 'subgroup__name', 'subgroup__short_name', 'subgroup__public_name',
     ]
-    # search_fields = [
-    #     'user_code', 'name', 'short_name',
-    # ]
-    # has_feature_is_deleted = True
 
 
 # 2
@@ -144,9 +153,14 @@ class Strategy2GroupFilterSet(Strategy1GroupFilterSet):
 
 
 class Strategy2GroupViewSet(Strategy1GroupViewSet):
-    queryset = Strategy2Group.objects.select_related('master_user')
+    queryset = Strategy2Group.objects.select_related('master_user').prefetch_related(
+        'tags',
+        *get_permissions_prefetch_lookups(
+            (None, Strategy2Group),
+            ('tags', Tag)
+        )
+    )
     serializer_class = Strategy2GroupSerializer
-    # bulk_objects_permissions_serializer_class = Strategy2GroupBulkObjectPermissionSerializer
     filter_class = Strategy2GroupFilterSet
 
 
@@ -162,9 +176,15 @@ class Strategy2SubgroupFilterSet(Strategy1SubgroupFilterSet):
 
 
 class Strategy2SubgroupViewSet(Strategy1SubgroupViewSet):
-    queryset = Strategy2Subgroup.objects.select_related('master_user', 'group')
+    queryset = Strategy2Subgroup.objects.select_related('master_user', 'group').prefetch_related(
+        'tags',
+        *get_permissions_prefetch_lookups(
+            (None, Strategy2Subgroup),
+            ('group', Strategy2Group),
+            ('tags', Tag)
+        )
+    )
     serializer_class = Strategy2SubgroupSerializer
-    # bulk_objects_permissions_serializer_class = Strategy2SubgroupBulkObjectPermissionSerializer
     filter_class = Strategy2SubgroupFilterSet
 
 
@@ -181,9 +201,16 @@ class Strategy2FilterSet(Strategy1FilterSet):
 
 
 class Strategy2ViewSet(Strategy1ViewSet):
-    queryset = Strategy2.objects.select_related('master_user', 'subgroup', 'subgroup__group')
+    queryset = Strategy2.objects.select_related('master_user', 'subgroup', 'subgroup__group').prefetch_related(
+        'tags',
+        *get_permissions_prefetch_lookups(
+            (None, Strategy2),
+            ('subgroup', Strategy2Subgroup),
+            ('subgroup__group', Strategy2Group),
+            ('tags', Tag)
+        )
+    )
     serializer_class = Strategy2Serializer
-    # bulk_objects_permissions_serializer_class = Strategy2BulkObjectPermissionSerializer
     filter_class = Strategy2FilterSet
 
 
@@ -201,9 +228,14 @@ class Strategy3GroupFilterSet(Strategy1GroupFilterSet):
 
 
 class Strategy3GroupViewSet(Strategy1GroupViewSet):
-    queryset = Strategy3Group.objects.prefetch_related('master_user')
+    queryset = Strategy3Group.objects.prefetch_related('master_user').prefetch_related(
+        'tags',
+        *get_permissions_prefetch_lookups(
+            (None, Strategy3Group),
+            ('tags', Tag)
+        )
+    )
     serializer_class = Strategy3GroupSerializer
-    # bulk_objects_permissions_serializer_class = Strategy3GroupBulkObjectPermissionSerializer
     filter_class = Strategy3GroupFilterSet
 
 
@@ -219,9 +251,15 @@ class Strategy3SubgroupFilterSet(Strategy1SubgroupFilterSet):
 
 
 class Strategy3SubgroupViewSet(Strategy1SubgroupViewSet):
-    queryset = Strategy3Subgroup.objects.select_related('master_user', 'group')
+    queryset = Strategy3Subgroup.objects.select_related('master_user', 'group').prefetch_related(
+        'tags',
+        *get_permissions_prefetch_lookups(
+            (None, Strategy3Subgroup),
+            ('group', Strategy3Group),
+            ('tags', Tag)
+        )
+    )
     serializer_class = Strategy3SubgroupSerializer
-    # bulk_objects_permissions_serializer_class = Strategy3SubgroupBulkObjectPermissionSerializer
     filter_class = Strategy3SubgroupFilterSet
 
 
@@ -238,7 +276,14 @@ class Strategy3FilterSet(Strategy1FilterSet):
 
 
 class Strategy3ViewSet(Strategy1ViewSet):
-    queryset = Strategy3.objects.select_related('master_user', 'subgroup', 'subgroup__group')
+    queryset = Strategy3.objects.select_related('master_user', 'subgroup', 'subgroup__group').prefetch_related(
+        'tags',
+        *get_permissions_prefetch_lookups(
+            (None, Strategy3),
+            ('subgroup', Strategy3Subgroup),
+            ('subgroup__group', Strategy3Group),
+            ('tags', Tag)
+        )
+    )
     serializer_class = Strategy3Serializer
-    # bulk_objects_permissions_serializer_class = Strategy3BulkObjectPermissionSerializer
     filter_class = Strategy3FilterSet

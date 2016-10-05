@@ -344,3 +344,13 @@ def obj_perms_prefetch(queryset, my=True, lookups_related=None):
                     lookups.append('%s__%s' % (name, lookup))
                     # lookups.append(Prefetch('%s__%s' % (name, lookup)))
     return queryset.prefetch_related(*lookups)
+
+
+def get_permissions_prefetch_lookups(*lookups):
+    if lookups:
+        ret = []
+        for name in lookups:
+            lookup, model = name
+            ret += obj_perms_prefetch_one(lookup, model)
+        return ret
+    return []
