@@ -558,7 +558,7 @@ class TransactionSerializer(ModelWithAttributesSerializer):
 class ComplexTransactionSerializer(serializers.ModelSerializer):
     text = serializers.SerializerMethodField()
     transaction_type = serializers.PrimaryKeyRelatedField(read_only=True)
-    transaction_type__object = ReadonlyNamedModelWithObjectPermissionSerializer(source='transaction_type')
+    transaction_type_object = ReadonlyNamedModelWithObjectPermissionSerializer(source='transaction_type')
     transactions = serializers.PrimaryKeyRelatedField(read_only=True, many=True)
     transactions_object = TransactionSerializer(read_only=True, many=True, source='transactions')
 
@@ -566,7 +566,7 @@ class ComplexTransactionSerializer(serializers.ModelSerializer):
         model = ComplexTransaction
         fields = [
             'url', 'id', 'code', 'text',
-            'transaction_type', 'transaction_type__object',
+            'transaction_type', 'transaction_type_object',
             'transactions', 'transactions_object',
         ]
 
