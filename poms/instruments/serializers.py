@@ -144,9 +144,8 @@ class InstrumentTypeViewSerializer(ModelWithObjectPermissionSerializer, ModelWit
     class Meta:
         model = InstrumentType
         fields = [
-            'url', 'id', 'instrument_class', 'instrument_class_object',
-            'user_code', 'name', 'short_name', 'public_name',
-            'notes', 'is_default', 'is_deleted',
+            'url', 'id', 'instrument_class', 'instrument_class_object', 'user_code', 'name', 'short_name',
+            'public_name',
         ]
 
 

@@ -45,8 +45,7 @@ class AccountTypeViewSerializer(ModelWithObjectPermissionSerializer):
     class Meta:
         model = AccountType
         fields = [
-            'url', 'id', 'user_code', 'name', 'short_name', 'public_name', 'notes',
-            'show_transaction_details', 'transaction_details_expr', 'is_default', 'is_deleted',
+            'url', 'id', 'user_code', 'name', 'short_name', 'public_name',
         ]
 
 
@@ -103,5 +102,4 @@ class AccountViewSerializer(ModelWithObjectPermissionSerializer):
         model = Account
         fields = [
             'url', 'id', 'type', 'type_object', 'user_code', 'name', 'short_name', 'public_name',
-            'notes', 'is_default', 'is_valid_for_all_portfolios', 'is_deleted',
         ]

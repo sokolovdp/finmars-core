@@ -91,5 +91,5 @@ class PortfolioViewSerializer(ModelWithObjectPermissionSerializer):
     class Meta:
         model = Portfolio
         fields = [
-            'url', 'id', 'user_code', 'name', 'short_name', 'public_name', 'notes', 'is_default', 'is_deleted',
+            'url', 'id', 'user_code', 'name', 'short_name', 'public_name',
         ]

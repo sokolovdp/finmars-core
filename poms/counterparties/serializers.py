@@ -60,7 +60,7 @@ class CounterpartyGroupSerializer(ModelWithObjectPermissionSerializer, ModelWith
 class CounterpartyGroupViewSerializer(ModelWithObjectPermissionSerializer):
     class Meta:
         model = CounterpartyGroup
-        fields = ['url', 'id', 'user_code', 'name', 'short_name', 'public_name', 'notes', 'is_default', 'is_deleted', ]
+        fields = ['url', 'id', 'user_code', 'name', 'short_name', 'public_name', ]
 
 
 class CounterpartySerializer(ModelWithObjectPermissionSerializer, ModelWithAttributesSerializer,
@@ -89,17 +89,14 @@ class CounterpartySerializer(ModelWithObjectPermissionSerializer, ModelWithAttri
         self.fields['portfolios_object'] = PortfolioViewSerializer(source='portfolios', many=True, read_only=True)
 
 
-class CounterpartyViewSerializer(ModelWithObjectPermissionSerializer, ModelWithAttributesSerializer,
-                                 ModelWithUserCodeSerializer):
-    master_user = MasterUserField()
+class CounterpartyViewSerializer(ModelWithObjectPermissionSerializer):
     group = CounterpartyGroupField()
     group_object = CounterpartyGroupViewSerializer(source='group', read_only=True)
 
     class Meta:
         model = Counterparty
         fields = [
-            'url', 'id', 'master_user', 'group', 'group_object', 'user_code', 'name', 'short_name', 'public_name',
-            'notes', 'is_default', 'is_valid_for_all_portfolios', 'is_deleted',
+            'url', 'id', 'group', 'group_object', 'user_code', 'name', 'short_name', 'public_name',
         ]
 
 
@@ -156,7 +153,7 @@ class ResponsibleGroupViewSerializer(ModelWithObjectPermissionSerializer):
     class Meta:
         model = ResponsibleGroup
         fields = [
-            'url', 'id', 'user_code', 'name', 'short_name', 'public_name', 'notes', 'is_default', 'is_deleted',
+            'url', 'id', 'user_code', 'name', 'short_name', 'public_name',
         ]
 
 
@@ -194,5 +191,4 @@ class ResponsibleViewSerializer(ModelWithObjectPermissionSerializer):
         model = Responsible
         fields = [
             'url', 'id', 'master_user', 'group', 'group_object', 'user_code', 'name', 'short_name', 'public_name',
-            'notes', 'is_default', 'is_valid_for_all_portfolios', 'is_deleted',
         ]
