@@ -46,5 +46,5 @@ class TagViewSerializer(ModelWithObjectPermissionSerializer):
     class Meta:
         model = Tag
         fields = [
-            'url', 'id', 'master_user', 'user_code', 'name', 'short_name', 'public_name', 'notes',
+            'url', 'id', 'user_code', 'name', 'short_name', 'public_name', 'notes',
         ]
