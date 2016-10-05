@@ -215,7 +215,7 @@ admin.site.register(EventSchedule, EventScheduleAdmin)
 class PriceHistoryAdmin(admin.ModelAdmin):
     model = PriceHistory
     list_display = ['id', 'master_user', 'instrument', 'pricing_policy', 'date', 'principal_price', 'accrued_price']
-    list_select_related = ['instrument', 'pricing_policy']
+    list_select_related = ['instrument', 'instrument__master_user', 'pricing_policy']
     ordering = ['instrument', 'pricing_policy', 'date']
     search_fields = ['instrument__id', 'instrument__user_code', 'instrument__name']
     list_filter = ['date']
