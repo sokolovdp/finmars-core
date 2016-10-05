@@ -288,7 +288,7 @@ class BloombergDataProvider(AbstractProvider):
         if response_id is None:
             price_download_scheme_id = options['price_download_scheme_id']
             price_download_scheme = PriceDownloadScheme.objects.get(pk=price_download_scheme_id)
-            instruments = options['instruments']
+            instruments = list(set(options['instruments']))
             if is_yesterday:
                 fields = price_download_scheme.instrument_yesterday_fields
                 response_id = self.get_pricing_latest_send_request(instruments, fields)
@@ -318,7 +318,7 @@ class BloombergDataProvider(AbstractProvider):
         if response_id is None:
             price_download_scheme_id = options['price_download_scheme_id']
             price_download_scheme = PriceDownloadScheme.objects.get(pk=price_download_scheme_id)
-            currencies = options['currencies']
+            currencies = list(set(options['currencies']))
             if is_yesterday:
                 fields = price_download_scheme.currency_history_fields
                 response_id = self.get_pricing_latest_send_request(currencies, fields)
