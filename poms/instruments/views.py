@@ -16,7 +16,8 @@ from poms.currencies.models import Currency
 from poms.instruments.filters import OwnerByInstrumentFilter, PriceHistoryObjectPermissionFilter
 from poms.instruments.models import Instrument, PriceHistory, InstrumentClass, DailyPricingModel, \
     AccrualCalculationModel, PaymentSizeDetail, Periodicity, CostMethod, InstrumentType, InstrumentAttributeType, \
-    PricingPolicy, InstrumentClassifier, EventScheduleConfig, InstrumentAttribute
+    PricingPolicy, InstrumentClassifier, EventScheduleConfig, InstrumentAttribute, ManualPricingFormula, \
+    AccrualCalculationSchedule, EventSchedule, EventScheduleAction
 from poms.instruments.serializers import InstrumentSerializer, PriceHistorySerializer, \
     InstrumentClassSerializer, DailyPricingModelSerializer, AccrualCalculationModelSerializer, \
     PaymentSizeDetailSerializer, PeriodicitySerializer, CostMethodSerializer, InstrumentTypeSerializer, \
@@ -31,7 +32,7 @@ from poms.obj_perms.utils import get_permissions_prefetch_lookups
 from poms.obj_perms.views import AbstractWithObjectPermissionViewSet
 from poms.tags.filters import TagFilter
 from poms.tags.models import Tag
-from poms.transactions.models import TransactionType
+from poms.transactions.models import TransactionType, TransactionTypeGroup
 from poms.users.filters import OwnerByMasterUserFilter
 from poms.users.permissions import SuperUserOrReadOnly
 
@@ -105,10 +106,27 @@ class InstrumentTypeFilterSet(FilterSet):
 
 
 class InstrumentTypeViewSet(AbstractWithObjectPermissionViewSet):
-    queryset = InstrumentType.objects.select_related('master_user', 'instrument_class').prefetch_related(
+    queryset = InstrumentType.objects.select_related(
+        'master_user', 'instrument_class',
+        'one_off_event', 'one_off_event__group',
+        'regular_event', 'regular_event__group',
+        'factor_same', 'factor_same__group',
+        'factor_up', 'factor_up__group',
+        'factor_down', 'factor_down__group',
+    ).prefetch_related(
         'tags',
         *get_permissions_prefetch_lookups(
             (None, InstrumentType),
+            ('one_off_event', TransactionType),
+            ('one_off_event__group', TransactionTypeGroup),
+            ('regular_event', TransactionType),
+            ('regular_event__group', TransactionTypeGroup),
+            ('factor_same', TransactionType),
+            ('factor_same__group', TransactionTypeGroup),
+            ('factor_up', TransactionType),
+            ('factor_up__group', TransactionTypeGroup),
+            ('factor_down', TransactionType),
+            ('factor_down__group', TransactionTypeGroup),
             ('tags', Tag)
         )
     )
@@ -197,10 +215,40 @@ class InstrumentFilterSet(FilterSet):
 class InstrumentViewSet(AbstractWithObjectPermissionViewSet):
     queryset = Instrument.objects.select_related(
         'instrument_type', 'instrument_type__instrument_class', 'pricing_currency', 'accrued_currency',
+        'daily_pricing_model', 'price_download_scheme',
     ).prefetch_related(
-        Prefetch('attributes', queryset=InstrumentAttribute.objects.select_related('attribute_type', 'classifier')),
-        'manual_pricing_formulas', 'accrual_calculation_schedules', 'factor_schedules',
-        'event_schedules', 'event_schedules__actions', 'tags',
+        Prefetch(
+            'attributes',
+            queryset=InstrumentAttribute.objects.select_related('attribute_type', 'classifier')
+        ),
+        Prefetch(
+            'manual_pricing_formulas',
+            queryset=ManualPricingFormula.objects.select_related('pricing_policy')
+        ),
+        Prefetch(
+            'accrual_calculation_schedules',
+            queryset=AccrualCalculationSchedule.objects.select_related('accrual_calculation_model', 'periodicity')
+        ),
+        'factor_schedules',
+        Prefetch(
+            'event_schedules',
+            queryset=EventSchedule.objects.select_related(
+                'event_class', 'notification_class', 'periodicity'
+            ).prefetch_related(
+                Prefetch(
+                    'actions',
+                    queryset=EventScheduleAction.objects.select_related(
+                        'transaction_type',
+                        'transaction_type__group'
+                    ).prefetch_related(
+                        *get_permissions_prefetch_lookups(
+                            ('transaction_type', TransactionType),
+                            ('transaction_type__group', TransactionTypeGroup)
+                        )
+                    )
+                ),
+            )),
+        'tags',
         *get_permissions_prefetch_lookups(
             (None, Instrument),
             ('tags', Tag),
@@ -208,10 +256,6 @@ class InstrumentViewSet(AbstractWithObjectPermissionViewSet):
             ('attributes__attribute_type', InstrumentAttributeType),
         )
     )
-    # prefetch_permissions_for = (
-    #     ('instrument_type', InstrumentType),
-    #     ('attributes__attribute_type', InstrumentAttributeType),
-    # )
     serializer_class = InstrumentSerializer
     filter_backends = AbstractWithObjectPermissionViewSet.filter_backends + [
         OwnerByMasterUserFilter,

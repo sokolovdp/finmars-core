@@ -30,7 +30,8 @@ class TagFilterSet(FilterSet):
 
 
 class TagViewSet(AbstractWithObjectPermissionViewSet):
-    queryset = Tag.objects.prefetch_related('content_types').prefetch_related(
+    queryset = Tag.objects.prefetch_related(
+        'content_types',
         *get_permissions_prefetch_lookups((None, Tag))
     )
     serializer_class = TagSerializer

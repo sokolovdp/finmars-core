@@ -36,7 +36,9 @@ class Strategy1GroupFilterSet(FilterSet):
 
 
 class Strategy1GroupViewSet(AbstractWithObjectPermissionViewSet):
-    queryset = Strategy1Group.objects.select_related('master_user').prefetch_related(
+    queryset = Strategy1Group.objects.select_related(
+        'master_user'
+    ).prefetch_related(
         'tags',
         *get_permissions_prefetch_lookups(
             (None, Strategy1Group),
@@ -72,7 +74,9 @@ class Strategy1SubgroupFilterSet(FilterSet):
 
 
 class Strategy1SubgroupViewSet(AbstractWithObjectPermissionViewSet):
-    queryset = Strategy1Subgroup.objects.select_related('master_user', 'group').prefetch_related(
+    queryset = Strategy1Subgroup.objects.select_related(
+        'master_user', 'group'
+    ).prefetch_related(
         'tags',
         *get_permissions_prefetch_lookups(
             (None, Strategy1Subgroup),
@@ -114,7 +118,9 @@ class Strategy1FilterSet(FilterSet):
 
 
 class Strategy1ViewSet(AbstractWithObjectPermissionViewSet):
-    queryset = Strategy1.objects.select_related('master_user', 'subgroup', 'subgroup__group').prefetch_related(
+    queryset = Strategy1.objects.select_related(
+        'master_user', 'subgroup', 'subgroup__group'
+    ).prefetch_related(
         'tags',
         *get_permissions_prefetch_lookups(
             (None, Strategy1),
@@ -153,7 +159,9 @@ class Strategy2GroupFilterSet(Strategy1GroupFilterSet):
 
 
 class Strategy2GroupViewSet(Strategy1GroupViewSet):
-    queryset = Strategy2Group.objects.select_related('master_user').prefetch_related(
+    queryset = Strategy2Group.objects.select_related(
+        'master_user'
+    ).prefetch_related(
         'tags',
         *get_permissions_prefetch_lookups(
             (None, Strategy2Group),
@@ -201,7 +209,9 @@ class Strategy2FilterSet(Strategy1FilterSet):
 
 
 class Strategy2ViewSet(Strategy1ViewSet):
-    queryset = Strategy2.objects.select_related('master_user', 'subgroup', 'subgroup__group').prefetch_related(
+    queryset = Strategy2.objects.select_related(
+        'master_user', 'subgroup', 'subgroup__group'
+    ).prefetch_related(
         'tags',
         *get_permissions_prefetch_lookups(
             (None, Strategy2),
@@ -251,7 +261,9 @@ class Strategy3SubgroupFilterSet(Strategy1SubgroupFilterSet):
 
 
 class Strategy3SubgroupViewSet(Strategy1SubgroupViewSet):
-    queryset = Strategy3Subgroup.objects.select_related('master_user', 'group').prefetch_related(
+    queryset = Strategy3Subgroup.objects.select_related(
+        'master_user', 'group'
+    ).prefetch_related(
         'tags',
         *get_permissions_prefetch_lookups(
             (None, Strategy3Subgroup),
@@ -276,7 +288,9 @@ class Strategy3FilterSet(Strategy1FilterSet):
 
 
 class Strategy3ViewSet(Strategy1ViewSet):
-    queryset = Strategy3.objects.select_related('master_user', 'subgroup', 'subgroup__group').prefetch_related(
+    queryset = Strategy3.objects.select_related(
+        'master_user', 'subgroup', 'subgroup__group'
+    ).prefetch_related(
         'tags',
         *get_permissions_prefetch_lookups(
             (None, Strategy3),

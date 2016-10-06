@@ -26,6 +26,7 @@ from poms.integrations.serializers import ImportConfigSerializer, TaskSerializer
     InstrumentTypeMappingSerializer, InstrumentAttributeValueMappingSerializer, \
     AccrualCalculationModelMappingSerializer, \
     PeriodicityMappingSerializer, PricingAutomatedScheduleSerializer
+from poms.obj_perms.utils import get_permissions_prefetch_lookups
 from poms.users.filters import OwnerByMasterUserFilter
 from poms.users.models import Member
 from poms.users.permissions import SuperUserOrReadOnly, SuperUserOnly
@@ -82,8 +83,13 @@ class InstrumentDownloadSchemeViewSet(AbstractModelViewSet):
         'accrual_calculation_schedule_method',
     ).prefetch_related(
         'inputs',
-        Prefetch('attributes', queryset=InstrumentDownloadSchemeAttribute.objects.select_related(
-            'attribute_type')),
+        Prefetch(
+            'attributes',
+            queryset=InstrumentDownloadSchemeAttribute.objects.select_related('attribute_type')
+        ),
+        *get_permissions_prefetch_lookups(
+            ('attributes__attribute_type', InstrumentAttributeType),
+        )
     )
     serializer_class = InstrumentDownloadSchemeSerializer
     # permission_classes = AbstractModelViewSet.permission_classes + [

@@ -4,9 +4,9 @@ import django_filters
 from django.db.models import Prefetch
 from rest_framework.filters import FilterSet
 
-from poms.accounts.models import Account
+from poms.accounts.models import Account, AccountType
 from poms.common.filters import CharFilter, ModelExtWithPermissionMultipleChoiceFilter, NoOpFilter
-from poms.counterparties.models import Responsible, Counterparty
+from poms.counterparties.models import Responsible, Counterparty, CounterpartyGroup, ResponsibleGroup
 from poms.obj_attrs.filters import AttributeTypeValueTypeFilter
 from poms.obj_attrs.views import AbstractAttributeTypeViewSet, AbstractClassifierViewSet
 from poms.obj_perms.filters import ObjectPermissionMemberFilter, ObjectPermissionGroupFilter, \
@@ -18,7 +18,7 @@ from poms.portfolios.serializers import PortfolioSerializer, PortfolioAttributeT
     PortfolioClassifierNodeSerializer
 from poms.tags.filters import TagFilter
 from poms.tags.models import Tag
-from poms.transactions.models import TransactionType
+from poms.transactions.models import TransactionType, TransactionTypeGroup
 from poms.users.filters import OwnerByMasterUserFilter
 
 
@@ -86,16 +86,24 @@ class PortfolioViewSet(AbstractWithObjectPermissionViewSet):
     queryset = Portfolio.objects.select_related(
         'master_user',
     ).prefetch_related(
-        'accounts', 'responsibles', 'counterparties', 'transaction_types', 'tags',
+        Prefetch('accounts', queryset=Account.objects.select_related('type')),
+        Prefetch('responsibles', queryset=Responsible.objects.select_related('group')),
+        Prefetch('counterparties', queryset=Counterparty.objects.select_related('group')),
+        Prefetch('transaction_types', queryset=TransactionType.objects.select_related('group')),
+        'tags',
         Prefetch('attributes', queryset=PortfolioAttribute.objects.select_related('attribute_type', 'classifier')),
         *get_permissions_prefetch_lookups(
             (None, Portfolio),
-            ('tags', Tag),
-            ('counterparties', Counterparty),
-            ('transaction_types', TransactionType),
             ('accounts', Account),
+            ('accounts__type', AccountType),
+            ('counterparties', Counterparty),
+            ('counterparties__group', CounterpartyGroup),
             ('responsibles', Responsible),
-            ('attributes__attribute_type', PortfolioAttributeType)
+            ('responsibles__group', ResponsibleGroup),
+            ('transaction_types', TransactionType),
+            ('transaction_types__group', TransactionTypeGroup),
+            ('attributes__attribute_type', PortfolioAttributeType),
+            ('tags', Tag),
         )
     )
     # prefetch_permissions_for = (

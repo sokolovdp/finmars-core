@@ -37,7 +37,9 @@ class ThreadGroupFilterSet(FilterSet):
 
 
 class ThreadGroupViewSet(AbstractModelViewSet):
-    queryset = ThreadGroup.objects.select_related('master_user').prefetch_related(
+    queryset = ThreadGroup.objects.select_related(
+        'master_user'
+    ).prefetch_related(
         'tags',
         *get_permissions_prefetch_lookups(
             (None, ThreadGroup),
@@ -77,11 +79,14 @@ class ThreadFilterSet(FilterSet):
 
 
 class ThreadViewSet(AbstractWithObjectPermissionViewSet):
-    queryset = Thread.objects.select_related('thread_group').annotate(
+    queryset = Thread.objects.select_related(
+        'thread_group'
+    ).annotate(
         messages_count=Count('messages')
     ).prefetch_related(
         Prefetch(
-            "messages", to_attr="messages_last",
+            "messages",
+            to_attr="messages_last",
             queryset=Message.objects.prefetch_related('sender').filter(
                 pk__in=Message.objects.distinct('thread').
                     order_by('thread_id', '-created', '-id').
@@ -91,6 +96,7 @@ class ThreadViewSet(AbstractWithObjectPermissionViewSet):
         'tags',
         *get_permissions_prefetch_lookups(
             (None, Thread),
+            ('thread_group', ThreadGroup),
             ('tags', Tag)
         )
     )

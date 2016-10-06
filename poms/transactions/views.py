@@ -194,7 +194,7 @@ class TransactionTypeViewSet(AbstractWithObjectPermissionViewSet):
             *get_permissions_prefetch_lookups(
                 ('transactiontypeactioninstrument__instrument_type', InstrumentType),
 
-                ('transactiontypeactiontransaction__portfolio', InstrumentType),
+                ('transactiontypeactiontransaction__portfolio', Portfolio),
                 ('transactiontypeactiontransaction__instrument', Instrument),
                 ('transactiontypeactiontransaction__instrument__instrument_type', InstrumentType),
                 ('transactiontypeactiontransaction__account_position', Account),
