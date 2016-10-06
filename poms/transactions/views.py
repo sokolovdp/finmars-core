@@ -191,7 +191,7 @@ class TransactionTypeViewSet(AbstractWithObjectPermissionViewSet):
             'transactiontypeactiontransaction__counterparty',
             'transactiontypeactiontransaction__counterparty__group',
         ).prefetch_related(
-             *get_permissions_prefetch_lookups(
+            *get_permissions_prefetch_lookups(
                 ('transactiontypeactioninstrument__instrument_type', InstrumentType),
 
                 ('transactiontypeactiontransaction__portfolio', InstrumentType),
@@ -222,7 +222,7 @@ class TransactionTypeViewSet(AbstractWithObjectPermissionViewSet):
                 ('transactiontypeactiontransaction__counterparty__group', CounterpartyGroup),
                 ('transactiontypeactiontransaction__responsible__group', ResponsibleGroup),
                 ('transactiontypeactiontransaction__responsible', Responsible),
-             )
+            )
         )),
         'tags',
         *get_permissions_prefetch_lookups(
@@ -525,77 +525,69 @@ class ComplexTransactionViewSet(DestroyModelMixin, AbstractReadOnlyModelViewSet)
     queryset = ComplexTransaction.objects.select_related(
         'transaction_type',
     ).prefetch_related(
-        Prefetch('transactions', queryset=Transaction.objects.select_related(
-            'master_user', 'complex_transaction', 'complex_transaction__transaction_type', 'transaction_class',
-            'portfolio',
-            'instrument', 'instrument__instrument_type', 'instrument__instrument_type__instrument_class',
-            'transaction_currency', 'settlement_currency',
-            'account_cash', 'account_cash__type',
-            'account_position', 'account_position__type',
-            'account_interim', 'account_interim__type',
-            'strategy1_position', 'strategy1_position__subgroup', 'strategy1_position__subgroup__group',
-            'strategy1_cash', 'strategy1_cash__subgroup', 'strategy1_cash__subgroup__group',
-            'strategy2_position', 'strategy2_position__subgroup', 'strategy2_position__subgroup__group',
-            'strategy2_cash', 'strategy2_cash__subgroup', 'strategy2_cash__subgroup__group',
-            'strategy3_position', 'strategy3_position__subgroup', 'strategy3_position__subgroup__group',
-            'strategy3_cash', 'strategy3_cash__subgroup', 'strategy3_cash__subgroup__group',
-            'responsible', 'responsible__group',
-            'counterparty', 'counterparty__group',
-        ).prefetch_related(
-            Prefetch('attributes',
-                     queryset=TransactionAttribute.objects.select_related('attribute_type', 'classifier')),
-            *get_permissions_prefetch_lookups(
-                ('portfolio', Portfolio),
-                ('instrument', Instrument),
-                ('instrument__instrument_type', InstrumentType),
-                ('account_cash', Account),
-                ('account_cash__type', AccountType),
-                ('account_position', Account),
-                ('account_position__type', AccountType),
-                ('account_interim', Account),
-                ('account_interim__type', AccountType),
-                ('strategy1_position', Strategy1),
-                ('strategy1_position__subgroup', Strategy1Subgroup),
-                ('strategy1_position__subgroup__group', Strategy1Group),
-                ('strategy1_cash', Strategy1),
-                ('strategy1_cash__subgroup', Strategy1Subgroup),
-                ('strategy1_cash__subgroup__group', Strategy1Group),
-                ('strategy2_position', Strategy2),
-                ('strategy2_position__subgroup', Strategy2Subgroup),
-                ('strategy2_position__subgroup__group', Strategy2Group),
-                ('strategy2_cash', Strategy2),
-                ('strategy2_cash__subgroup', Strategy2Subgroup),
-                ('strategy2_cash__subgroup__group', Strategy2Group),
-                ('strategy3_position', Strategy3),
-                ('strategy3_position__subgroup', Strategy3Subgroup),
-                ('strategy3_position__subgroup__group', Strategy3Group),
-                ('strategy3_cash', Strategy3),
-                ('strategy3_cash__subgroup', Strategy3Subgroup),
-                ('strategy3_cash__subgroup__group', Strategy3Group),
-                ('responsible', Responsible),
-                ('responsible__group', ResponsibleGroup),
-                ('counterparty', Counterparty),
-                ('counterparty__group', CounterpartyGroup),
-                # ('attributes__attribute_type', TransactionAttributeType)
+        Prefetch(
+            'transactions',
+            queryset=Transaction.objects.select_related(
+                'master_user', 'transaction_class', 'portfolio',
+                # 'complex_transaction', 'complex_transaction__transaction_type',
+                'instrument', 'instrument__instrument_type', 'instrument__instrument_type__instrument_class',
+                'transaction_currency', 'settlement_currency',
+                'account_cash', 'account_cash__type',
+                'account_position', 'account_position__type',
+                'account_interim', 'account_interim__type',
+                'strategy1_position', 'strategy1_position__subgroup', 'strategy1_position__subgroup__group',
+                'strategy1_cash', 'strategy1_cash__subgroup', 'strategy1_cash__subgroup__group',
+                'strategy2_position', 'strategy2_position__subgroup', 'strategy2_position__subgroup__group',
+                'strategy2_cash', 'strategy2_cash__subgroup', 'strategy2_cash__subgroup__group',
+                'strategy3_position', 'strategy3_position__subgroup', 'strategy3_position__subgroup__group',
+                'strategy3_cash', 'strategy3_cash__subgroup', 'strategy3_cash__subgroup__group',
+                'responsible', 'responsible__group',
+                'counterparty', 'counterparty__group',
+            ).prefetch_related(
+                Prefetch(
+                    'attributes',
+                    queryset=TransactionAttribute.objects.select_related('attribute_type', 'classifier')
+                ),
+                *get_permissions_prefetch_lookups(
+                    ('portfolio', Portfolio),
+                    ('instrument', Instrument),
+                    ('instrument__instrument_type', InstrumentType),
+                    ('account_cash', Account),
+                    ('account_cash__type', AccountType),
+                    ('account_position', Account),
+                    ('account_position__type', AccountType),
+                    ('account_interim', Account),
+                    ('account_interim__type', AccountType),
+                    ('strategy1_position', Strategy1),
+                    ('strategy1_position__subgroup', Strategy1Subgroup),
+                    ('strategy1_position__subgroup__group', Strategy1Group),
+                    ('strategy1_cash', Strategy1),
+                    ('strategy1_cash__subgroup', Strategy1Subgroup),
+                    ('strategy1_cash__subgroup__group', Strategy1Group),
+                    ('strategy2_position', Strategy2),
+                    ('strategy2_position__subgroup', Strategy2Subgroup),
+                    ('strategy2_position__subgroup__group', Strategy2Group),
+                    ('strategy2_cash', Strategy2),
+                    ('strategy2_cash__subgroup', Strategy2Subgroup),
+                    ('strategy2_cash__subgroup__group', Strategy2Group),
+                    ('strategy3_position', Strategy3),
+                    ('strategy3_position__subgroup', Strategy3Subgroup),
+                    ('strategy3_position__subgroup__group', Strategy3Group),
+                    ('strategy3_cash', Strategy3),
+                    ('strategy3_cash__subgroup', Strategy3Subgroup),
+                    ('strategy3_cash__subgroup__group', Strategy3Group),
+                    ('responsible', Responsible),
+                    ('responsible__group', ResponsibleGroup),
+                    ('counterparty', Counterparty),
+                    ('counterparty__group', CounterpartyGroup),
+                    # ('attributes__attribute_type', TransactionAttributeType)
+                )
+            ).order_by(
+                'complex_transaction_order', 'transaction_date'
             )
-        ).order_by('complex_transaction_order', 'transaction_date')),
+        ),
         *get_permissions_prefetch_lookups(
             ('transaction_type', TransactionType),
-            # ('transactions__portfolio', Portfolio),
-            # ('transactions__instrument', Instrument),
-            # ('transactions__account_cash', Account),
-            # ('transactions__account_position', Account),
-            # ('transactions__account_interim', Account),
-            # ('transactions__strategy1_position', Strategy1),
-            # ('transactions__strategy1_cash', Strategy1),
-            # ('transactions__strategy2_position', Strategy2),
-            # ('transactions__strategy2_cash', Strategy2),
-            # ('transactions__strategy3_position', Strategy3),
-            # ('transactions__strategy3_cash', Strategy3),
-            # ('transactions__responsible', Responsible),
-            # ('transactions__counterparty', Counterparty),
-            # # TODO: Cannot find 'attribute_type' on RelatedManager object, 'transactions__attributes__attribute_type__user_object_permissions' is an invalid parameter to prefetch_related()
-            # ('transactions__attributes__attribute_type', TransactionAttributeType),
         )
     )
     # prefetch_permissions_for = [
@@ -622,10 +614,3 @@ class ComplexTransactionViewSet(DestroyModelMixin, AbstractReadOnlyModelViewSet)
     ]
     filter_class = ComplexTransactionFilterSet
     ordering_fields = ['code', ]
-
-    # search_fields = ['code', ]
-
-    # def get_queryset(self):
-    #     queryset = super(ComplexTransactionViewSet, self).get_queryset()
-    #     queryset = obj_perms_prefetch(queryset, my=False, lookups_related=self.prefetch_permissions_for)
-    #     return queryset
