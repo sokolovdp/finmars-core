@@ -3,8 +3,8 @@ from __future__ import unicode_literals
 from django.conf import settings
 from django.conf.urls import url, include
 from django.contrib import admin
-from django.views.generic import RedirectView
 from django.views import static
+from django.views.generic import RedirectView
 
 urlpatterns = []
 
@@ -22,6 +22,13 @@ if settings.DEBUG:
     urlpatterns += [
         url(r'^$', RedirectView.as_view(url='/api/v1/'), name='dev-only-root-redirect'),
     ]
+
+    if 'debug_toolbar' in settings.INSTALLED_APPS:
+        import debug_toolbar
+
+        urlpatterns += [
+            url(r'^__debug__/', debug_toolbar.urls),
+        ]
 
 if getattr(settings, 'MEDIA_SERVE', False):
     urlpatterns += [

@@ -14,7 +14,7 @@ if 'redisboard' not in INSTALLED_APPS:
 #     INSTALLED_APPS += ['debug_toolbar', ]
 
 LOGGING['formatters']['verbose']['format'] = '[%(levelname)1.1s %(asctime)s %(name)s %(module)s:%(lineno)d] %(message)s'
-# LOGGING['loggers']['django.db'] = {'level': 'DEBUG'}
+LOGGING['loggers']['django.db'] = {'level': 'DEBUG'}
 LOGGING['loggers']['poms']['level'] = 'DEBUG'
 
 SECRET_KEY = 's#)m^ug%_jr0dtko#83_55rd_we&xu#f9p#!1gh@k&$=5&3e67'
@@ -32,6 +32,10 @@ MEDIA_URL = '/api/media/'
 MEDIA_ROOT = os.path.join(BASE_DIR, 'tmp', 'media')
 MEDIA_SERVE = True
 
+if 'debug_toolbar' in INSTALLED_APPS:
+    MIDDLEWARE_CLASSES = ['debug_toolbar.middleware.DebugToolbarMiddleware', ] + MIDDLEWARE_CLASSES
+    INTERNAL_IPS = ['127.0.0.1']
+
 # CELERY ------------------------------------------------
 
 
@@ -40,7 +44,6 @@ CELERY_EAGER_PROPAGATES_EXCEPTIONS = True
 CELERYD_LOG_FORMAT = LOGGING['formatters']['verbose']['format']
 CELERY_TASK_RESULT_EXPIRES = 600
 CELERYBEAT_SCHEDULE = {}
-
 
 # INTEGRATIONS ------------------------------------------------
 
