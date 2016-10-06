@@ -143,8 +143,8 @@ class TransactionTypeInputSerializer(serializers.ModelSerializer):
     def __init__(self, *args, **kwargs):
         super(TransactionTypeInputSerializer, self).__init__(*args, **kwargs)
 
-        from poms.accounts.serializers import AccountSerializer
-        self.fields['account_object'] = AccountSerializer(source='account', read_only=True)
+        from poms.accounts.serializers import AccountViewSerializer
+        self.fields['account_object'] = AccountViewSerializer(source='account', read_only=True)
 
         from poms.instruments.serializers import InstrumentTypeViewSerializer, DailyPricingModelSerializer, \
             PaymentSizeDetailSerializer
