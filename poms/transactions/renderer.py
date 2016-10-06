@@ -40,7 +40,7 @@ class ComplexTransactionRenderer(object):
         #             tkey = key[:-7]
         #             transaction_data[tkey] = value
 
-        _l.info(json.dumps(transactions_data, indent=4))
+        # _l.info(json.dumps(transactions_data, indent=2))
 
         transaction_type = complex_transaction.transaction_type
         display_expr = transaction_type.display_expr
