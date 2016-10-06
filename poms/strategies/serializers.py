@@ -79,7 +79,7 @@ class Strategy1ViewSerializer(ModelWithObjectPermissionSerializer):
     class Meta:
         model = Strategy1
         fields = [
-            'url', 'id', 'master_user', 'subgroup', 'subgroup_object', 'user_code', 'name', 'short_name',
+            'url', 'id', 'subgroup', 'subgroup_object', 'user_code', 'name', 'short_name',
             'public_name', 'notes', 'is_deleted',
         ]
 

@@ -190,5 +190,5 @@ class ResponsibleViewSerializer(ModelWithObjectPermissionSerializer):
     class Meta:
         model = Responsible
         fields = [
-            'url', 'id', 'master_user', 'group', 'group_object', 'user_code', 'name', 'short_name', 'public_name',
+            'url', 'id', 'group', 'group_object', 'user_code', 'name', 'short_name', 'public_name',
         ]

@@ -371,7 +371,7 @@ class InstrumentViewSerializer(ModelWithObjectPermissionSerializer):
     class Meta:
         model = Instrument
         fields = [
-            'url', 'id', 'master_user', 'instrument_type', 'instrument_type_object', 'user_code', 'name', 'short_name',
+            'url', 'id', 'instrument_type', 'instrument_type_object', 'user_code', 'name', 'short_name',
             'public_name', 'notes', 'is_active', 'is_deleted',
             # 'pricing_currency', 'pricing_currency_object', 'price_multiplier',
             # 'accrued_currency', 'accrued_currency_object', 'accrued_multiplier',
