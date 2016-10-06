@@ -102,20 +102,18 @@ class TransactionTypeInputInline(admin.StackedInline):
     #     'account', 'instrument_type', 'instrument', 'currency', 'counterparty',
     #     'responsible', 'portfolio', 'strategy1', 'strategy2', 'strategy3', 'price_download_scheme',
     #     'daily_pricing_model', 'payment_size_detail',)
-
-    fieldsets = (
-        (None, {
-            'fields': ('id', 'name', 'value_type', 'content_type', 'verbose_name', 'order',)
-        }),
-        ('Defaults', {
-            'classes': ('collapse',),
-            'fields': ('is_fill_from_context', 'value',
-                       'account', 'instrument_type', 'instrument', 'currency', 'counterparty',
-                       'responsible', 'portfolio', 'strategy1', 'strategy2', 'strategy3', 'price_download_scheme',
-                       'daily_pricing_model', 'payment_size_detail',),
-        }),
-    )
-
+    # fieldsets = (
+    #     (None, {
+    #         'fields': ('id', 'name', 'value_type', 'content_type', 'verbose_name', 'order',)
+    #     }),
+    #     ('Defaults', {
+    #         'classes': ('collapse',),
+    #         'fields': ('is_fill_from_context', 'value',
+    #                    'account', 'instrument_type', 'instrument', 'currency', 'counterparty',
+    #                    'responsible', 'portfolio', 'strategy1', 'strategy2', 'strategy3', 'price_download_scheme',
+    #                    'daily_pricing_model', 'payment_size_detail',),
+    #     }),
+    # )
     raw_id_fields = ('account', 'instrument_type', 'instrument', 'currency', 'counterparty',
                      'responsible', 'portfolio', 'strategy1', 'strategy2', 'strategy3', 'price_download_scheme')
     readonly_fields = ('id',)
