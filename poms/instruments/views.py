@@ -157,7 +157,14 @@ class InstrumentAttributeTypeFilterSet(FilterSet):
 
 
 class InstrumentAttributeTypeViewSet(AbstractAttributeTypeViewSet):
-    queryset = InstrumentAttributeType.objects.prefetch_related('classifiers')
+    queryset = InstrumentAttributeType.objects.select_related(
+        'master_user'
+    ).prefetch_related(
+        'classifiers',
+        *get_permissions_prefetch_lookups(
+            (None, InstrumentAttributeType)
+        )
+    )
     serializer_class = InstrumentAttributeTypeSerializer
     filter_class = InstrumentAttributeTypeFilterSet
 

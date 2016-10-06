@@ -74,8 +74,13 @@ class AccountAttributeTypeFilterSet(FilterSet):
 
 
 class AccountAttributeTypeViewSet(AbstractAttributeTypeViewSet):
-    queryset = AccountAttributeType.objects.select_related('master_user').prefetch_related(
-        'classifiers', *get_permissions_prefetch_lookups((None, AccountAttributeType))
+    queryset = AccountAttributeType.objects.select_related(
+        'master_user'
+    ).prefetch_related(
+        'classifiers',
+        *get_permissions_prefetch_lookups(
+            (None, AccountAttributeType)
+        )
     )
     serializer_class = AccountAttributeTypeSerializer
     # bulk_objects_permissions_serializer_class = AccountAttributeTypeBulkObjectPermissionSerializer

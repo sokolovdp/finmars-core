@@ -41,7 +41,14 @@ class CounterpartyAttributeTypeFilterSet(FilterSet):
 
 
 class CounterpartyAttributeTypeViewSet(AbstractAttributeTypeViewSet):
-    queryset = CounterpartyAttributeType.objects.select_related('master_user').prefetch_related('classifiers')
+    queryset = CounterpartyAttributeType.objects.select_related(
+        'master_user'
+    ).prefetch_related(
+        'classifiers',
+        *get_permissions_prefetch_lookups(
+            (None, CounterpartyAttributeType)
+        )
+    )
     serializer_class = CounterpartyAttributeTypeSerializer
     filter_class = CounterpartyAttributeTypeFilterSet
 
@@ -162,7 +169,14 @@ class ResponsibleAttributeTypeFilterSet(FilterSet):
 
 
 class ResponsibleAttributeTypeViewSet(AbstractAttributeTypeViewSet):
-    queryset = ResponsibleAttributeType.objects.select_related('master_user').prefetch_related('classifiers')
+    queryset = ResponsibleAttributeType.objects.select_related(
+        'master_user'
+    ).prefetch_related(
+        'classifiers',
+        *get_permissions_prefetch_lookups(
+            (None, ResponsibleAttributeType)
+        )
+    )
     serializer_class = ResponsibleAttributeTypeSerializer
     filter_class = ResponsibleAttributeTypeFilterSet
 

@@ -342,7 +342,14 @@ class TransactionAttributeTypeFilterSet(FilterSet):
 
 
 class TransactionAttributeTypeViewSet(AbstractAttributeTypeViewSet):
-    queryset = TransactionAttributeType.objects
+    queryset = TransactionAttributeType.objects.select_related(
+        'master_user'
+    ).prefetch_related(
+        'classifiers',
+        *get_permissions_prefetch_lookups(
+            (None, TransactionAttributeType)
+        )
+    )
     serializer_class = TransactionAttributeTypeSerializer
     # bulk_objects_permissions_serializer_class = TransactionAttributeTypeBulkObjectPermissionSerializer
     filter_class = TransactionAttributeTypeFilterSet

@@ -39,7 +39,14 @@ class PortfolioAttributeTypeFilterSet(FilterSet):
 
 
 class PortfolioAttributeTypeViewSet(AbstractAttributeTypeViewSet):
-    queryset = PortfolioAttributeType.objects.prefetch_related('classifiers')
+    queryset = PortfolioAttributeType.objects.select_related(
+        'master_user'
+    ).prefetch_related(
+        'classifiers',
+        *get_permissions_prefetch_lookups(
+            (None, PortfolioAttributeType)
+        )
+    )
     serializer_class = PortfolioAttributeTypeSerializer
     filter_class = PortfolioAttributeTypeFilterSet
 
