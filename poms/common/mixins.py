@@ -1,6 +1,6 @@
 from __future__ import unicode_literals
 
-from django.core.exceptions import ObjectDoesNotExist
+from django.core.exceptions import ObjectDoesNotExist, FieldDoesNotExist
 from django.db.models import ProtectedError
 from django.utils.translation import ugettext_lazy
 from rest_framework import status
@@ -25,6 +25,19 @@ class DestroyModelMixinExt(DestroyModelMixin):
 
 
 class DestroyModelFakeMixin(DestroyModelMixinExt):
+    def get_queryset(self):
+        qs = super(DestroyModelFakeMixin, self).get_queryset()
+        try:
+            qs.model._meta.get_field('is_deleted')
+        except FieldDoesNotExist:
+            return qs
+        else:
+            is_deleted = self.request.query_params.get('is_deleted', None)
+            if is_deleted is None:
+                if getattr(self, 'action', '') == 'list':
+                    qs = qs.filter(is_deleted=False)
+            return qs
+
     def perform_destroy(self, instance):
         # if getattr(self, 'has_feature_is_deleted', False):
         if hasattr(instance, 'is_deleted') and hasattr(instance, 'fake_delete'):
