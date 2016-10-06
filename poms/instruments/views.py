@@ -215,7 +215,7 @@ class InstrumentFilterSet(FilterSet):
 class InstrumentViewSet(AbstractWithObjectPermissionViewSet):
     queryset = Instrument.objects.select_related(
         'instrument_type', 'instrument_type__instrument_class', 'pricing_currency', 'accrued_currency',
-        'daily_pricing_model', 'price_download_scheme',
+        'payment_size_detail', 'daily_pricing_model', 'price_download_scheme', 'price_download_scheme__provider',
     ).prefetch_related(
         Prefetch(
             'attributes',

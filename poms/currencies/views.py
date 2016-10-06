@@ -36,7 +36,7 @@ class CurrencyFilterSet(FilterSet):
 
 class CurrencyViewSet(AbstractModelViewSet):
     queryset = Currency.objects.select_related(
-        'master_user', 'daily_pricing_model', 'price_download_scheme'
+        'master_user', 'daily_pricing_model', 'price_download_scheme', 'price_download_scheme__provider',
     ).prefetch_related(
         'tags',
         *get_permissions_prefetch_lookups(
