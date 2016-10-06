@@ -16,9 +16,17 @@ from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework.response import Response
 from rest_framework.viewsets import ViewSet
 
+from poms.accounts.models import AccountType, Account
+from poms.chats.models import ThreadGroup
 from poms.common.filters import CharFilter, NoOpFilter, ModelExtMultipleChoiceFilter
 from poms.common.pagination import BigPagination
 from poms.common.views import AbstractModelViewSet, AbstractApiView
+from poms.counterparties.models import CounterpartyGroup, Counterparty, ResponsibleGroup, Responsible
+from poms.instruments.models import InstrumentType
+from poms.obj_perms.utils import get_permissions_prefetch_lookups
+from poms.portfolios.models import Portfolio
+from poms.strategies.models import Strategy1, Strategy1Subgroup, Strategy1Group, Strategy2Subgroup, Strategy2Group, \
+    Strategy2, Strategy3, Strategy3Subgroup, Strategy3Group
 from poms.users.filters import OwnerByMasterUserFilter, MasterUserFilter
 from poms.users.models import MasterUser, Member, Group
 from poms.users.permissions import SuperUserOrReadOnly, IsCurrentMasterUser, IsCurrentUser
@@ -142,7 +150,57 @@ class UserViewSet(AbstractModelViewSet):
 
 
 class MasterUserViewSet(AbstractModelViewSet):
-    queryset = MasterUser.objects
+    queryset = MasterUser.objects.select_related(
+        'currency',
+        'account_type',
+        'account', 'account__type',
+        'counterparty_group',
+        'counterparty', 'counterparty__group',
+        'responsible_group',
+        'responsible', 'responsible__group',
+        'instrument_type', 'instrument_type__instrument_class',
+        'portfolio',
+        'strategy1_group',
+        'strategy1_subgroup', 'strategy1_subgroup__group',
+        'strategy1', 'strategy1__subgroup', 'strategy1__subgroup__group',
+        'strategy2_group',
+        'strategy2_subgroup', 'strategy2_subgroup__group',
+        'strategy2', 'strategy2__subgroup', 'strategy2__subgroup__group',
+        'strategy3_group',
+        'strategy3_subgroup', 'strategy3_subgroup__group',
+        'strategy3', 'strategy3__subgroup', 'strategy3__subgroup__group',
+        'thread_group',
+    ).prefetch_related(
+        *get_permissions_prefetch_lookups(
+            ('account_type', AccountType),
+            ('account', Account), ('account__type', AccountType),
+            ('counterparty_group', CounterpartyGroup),
+            ('counterparty', Counterparty), ('counterparty__group', CounterpartyGroup),
+            ('responsible_group', ResponsibleGroup),
+            ('responsible', Responsible), ('responsible__group', ResponsibleGroup),
+            ('instrument_type', InstrumentType),
+            ('portfolio', Portfolio),
+            ('strategy1_group', Strategy1Group),
+            ('strategy1_subgroup', Strategy1Subgroup),
+            ('strategy1_subgroup__group', Strategy1Group),
+            ('strategy1', Strategy1),
+            ('strategy1__subgroup', Strategy1Subgroup),
+            ('strategy1__subgroup__group', Strategy1Group),
+            ('strategy2_group', Strategy2Group),
+            ('strategy2_subgroup', Strategy2Subgroup),
+            ('strategy2_subgroup__group', Strategy2Group),
+            ('strategy2', Strategy2),
+            ('strategy2__subgroup', Strategy2Subgroup),
+            ('strategy2__subgroup__group', Strategy2Group),
+            ('strategy3_group', Strategy3Group),
+            ('strategy3_subgroup', Strategy3Subgroup),
+            ('strategy3_subgroup__group', Strategy3Group),
+            ('strategy3', Strategy3),
+            ('strategy3__subgroup', Strategy3Subgroup),
+            ('strategy3__subgroup__group', Strategy3Group),
+            ('thread_group', ThreadGroup),
+        )
+    )
     serializer_class = MasterUserSerializer
     permission_classes = AbstractModelViewSet.permission_classes + [
         IsCurrentMasterUser,
@@ -204,6 +262,7 @@ class MemberViewSet(AbstractModelViewSet):
     ]
     # search_fields = ['username', ]
     pagination_class = BigPagination
+
     # has_feature_is_deleted = True
 
     def get_object(self):
