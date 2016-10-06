@@ -104,8 +104,6 @@ class InstrumentDownloadSchemeViewSet(AbstractModelViewSet):
         'provider', 'provider__name',
     ]
 
-    # search_fields = ['scheme_name']
-
 
 class PriceDownloadSchemeFilterSet(FilterSet):
     id = NoOpFilter()
@@ -131,7 +129,6 @@ class PriceDownloadSchemeViewSet(AbstractModelViewSet):
         'scheme_name',
         'provider', 'provider__name',
     ]
-    # search_fields = ['scheme_name']
 
 
 class CurrencyMappingFilterSet(FilterSet):

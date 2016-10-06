@@ -31,4 +31,3 @@ class SessionViewSet(DestroyModelMixin, AbstractReadOnlyModelViewSet):
     ordering_fields = [
         'user_ip', 'user_agent',
     ]
-    # search_fields = ('user_ip', 'user_agent',)

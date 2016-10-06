@@ -212,7 +212,6 @@ class MasterUserViewSet(AbstractModelViewSet):
     ordering_fields = [
         'name',
     ]
-    # search_fields = ['name', ]
     pagination_class = BigPagination
 
     def get_object(self):
@@ -260,10 +259,7 @@ class MemberViewSet(AbstractModelViewSet):
     ordering_fields = [
         'username', 'first_name', 'last_name', 'email',
     ]
-    # search_fields = ['username', ]
     pagination_class = BigPagination
-
-    # has_feature_is_deleted = True
 
     def get_object(self):
         lookup_url_kwarg = self.lookup_url_kwarg or self.lookup_field
@@ -299,5 +295,4 @@ class GroupViewSet(AbstractModelViewSet):
     ordering_fields = [
         'name',
     ]
-    # search_fields = ['name', ]
     pagination_class = BigPagination

@@ -110,10 +110,6 @@ class ThreadViewSet(AbstractWithObjectPermissionViewSet):
         'thread_group', 'thread_group__name',
     ]
 
-    # search_fields = ['subject']
-
-    # has_feature_is_deleted = True
-
     @detail_route(url_path='close',
                   permission_classes=AbstractWithObjectPermissionViewSet.permission_classes + [SuperUserOnly, ])
     def close(self, request, pk=None):

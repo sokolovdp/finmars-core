@@ -79,7 +79,6 @@ class PricingPolicyViewSet(AbstractModelViewSet):
     ordering_fields = [
         'user_code', 'name', 'short_name', 'public_name'
     ]
-    # search_fields = ['user_code', 'name', 'short_name']
 
 
 class InstrumentTypeFilterSet(FilterSet):
@@ -280,12 +279,6 @@ class InstrumentViewSet(AbstractWithObjectPermissionViewSet):
         'reference_for_pricing',
         'maturity_date',
     ]
-
-    # search_fields = [
-    #     'user_code', 'name', 'short_name', 'reference_for_pricing',
-    # ]
-
-    # has_feature_is_deleted = True
 
     @list_route(methods=['post'], url_path='rebuild-events', serializer_class=serializers.Serializer)
     def rebuild_all_events(self, request):

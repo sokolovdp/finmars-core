@@ -43,8 +43,6 @@ class NotificationViewSet(AbstractReadOnlyModelViewSet):
         'create_date', 'read_date',
     ]
 
-    # search_fields = ['verb']
-
     @list_route(methods=['get'], url_path='status')
     def get_status(self, request, pk=None):
         unread_count = request.user.notifications.filter(read_date__isnull=True).count()
@@ -63,12 +61,3 @@ class NotificationViewSet(AbstractReadOnlyModelViewSet):
         instance.mark_as_read()
         serializer = self.get_serializer(instance=instance)
         return Response(serializer.data)
-
-# class MessageViewSet(ViewSet):
-#     def list(self, request, *args, **kwargs):
-#         data = []
-#         info(request._request, 'info1')
-#         success(request._request, 'success1')
-#         for m in get_messages(request):
-#             data.append([m.level, m.message])
-#         return Response(data)

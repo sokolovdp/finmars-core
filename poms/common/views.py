@@ -88,8 +88,6 @@ class AbstractReadOnlyModelViewSet(AbstractApiView, HistoricalModelMixin, ReadOn
 
 
 class AbstractClassModelViewSet(AbstractReadOnlyModelViewSet):
-    # ordering_fields = ['id', 'system_code', 'name', ]
     ordering_fields = ['name']
-    filter_fields = ['name']
-    # search_fields = ['system_code', 'name_en', ]
+    filter_fields = ['system_code', 'name']
     pagination_class = None

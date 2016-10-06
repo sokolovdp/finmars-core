@@ -32,7 +32,6 @@ class AuthLogViewSet(AbstractReadOnlyModelViewSet):
     ]
     filter_class = AuthLogEntryFilterSet
     ordering_fields = ('date',)
-    # search_fields = ('user_ip', 'user_agent',)
 
 
 class ObjectHistory4EntryFilterSet(FilterSet):
