@@ -92,7 +92,7 @@ class ThreadViewSet(AbstractWithObjectPermissionViewSet):
         *get_permissions_prefetch_lookups(
             (None, Thread),
             ('tags', Tag)
-        ),
+        )
     )
     serializer_class = ThreadSerializer
     filter_backends = AbstractWithObjectPermissionViewSet.filter_backends + [
