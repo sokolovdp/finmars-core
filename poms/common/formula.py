@@ -46,24 +46,24 @@ class AttributeDoesNotExist(InvalidExpression):
         super(AttributeDoesNotExist, self).__init__(self.message)
 
 
-def _check_string(a):
-    if not isinstance(a, str):
-        raise InvalidExpression('Value error')
+# def _check_string(a):
+#     if not isinstance(a, str):
+#         raise InvalidExpression('Value error')
 
 
-def _check_number(a):
-    if not isinstance(a, (int, float)):
-        raise InvalidExpression('Value error')
+# def _check_number(a):
+#     if not isinstance(a, (int, float)):
+#         raise InvalidExpression('Value error')
 
 
-def _check_date(a):
-    if not isinstance(a, datetime.date):
-        raise InvalidExpression('Value error')
+# def _check_date(a):
+#     if not isinstance(a, datetime.date):
+#         raise InvalidExpression('Value error')
 
 
-def _check_timedelta(a):
-    if not isinstance(a, datetime.timedelta):
-        raise InvalidExpression('Value error')
+# def _check_timedelta(a):
+#     if not isinstance(a, datetime.timedelta):
+#         raise InvalidExpression('Value error')
 
 
 def _str(a):
@@ -90,24 +90,20 @@ def _float(a):
     return float(a)
 
 
-def _round(number):
-    _check_number(number)
-    return round(number)
+def _round(a):
+    return round(float(a))
 
 
-def _trunc(number):
-    _check_number(number)
-    return int(number)
-
-
-def _iff(expr, a, b):
-    return a if expr else b
+def _trunc(a):
+    return int(a)
 
 
 def _isclose(a, b, rel_tol=1e-09, abs_tol=0.0):
-    _check_number(a)
-    _check_number(b)
-    return isclose(a, b, rel_tol=rel_tol, abs_tol=abs_tol)
+    return isclose(float(a), float(b), rel_tol=float(rel_tol), abs_tol=float(abs_tol))
+
+
+def _iff(test, a, b):
+    return a if test else b
 
 
 def _now():
@@ -115,39 +111,38 @@ def _now():
 
 
 def _date(year, month=1, day=1):
-    _check_number(year)
-    _check_number(month)
-    _check_number(day)
-    return datetime.date(year=year, month=month, day=day)
+    return datetime.date(year=int(year), month=int(month), day=int(day))
 
 
 def _days(days):
     if isinstance(days, datetime.timedelta):
         return days
-    _check_number(days)
-    return datetime.timedelta(days=days)
+    return datetime.timedelta(days=int(days))
 
 
 def _add_days(date, days):
-    _check_date(date)
+    if not isinstance(date, datetime.date):
+        date = _parse_date(str(date))
+    # _check_date(date)
     if not isinstance(days, datetime.timedelta):
-        _check_number(days)
-        days = datetime.timedelta(days=days)
+        days = datetime.timedelta(days=int(days))
     return date + days
 
 
 def _add_weeks(date, weeks):
-    _check_date(date)
+    if not isinstance(date, datetime.date):
+        date = _parse_date(str(date))
+    # _check_date(date)
     if not isinstance(weeks, datetime.timedelta):
-        _check_number(weeks)
-        weeks = datetime.timedelta(weeks=weeks)
+        weeks = datetime.timedelta(weeks=int(weeks))
     return date + weeks
 
 
 def _add_workdays(date, workdays, only_workdays=True):
-    _check_date(date)
-    _check_number(workdays)
-
+    # _check_date(date)
+    if not isinstance(date, datetime.date):
+        date = _parse_date(str(date))
+    workdays = int(workdays)
     weeks = int(workdays / 5)
     days_remainder = workdays % 5
     date = date + datetime.timedelta(weeks=weeks, days=days_remainder)
@@ -160,37 +155,34 @@ def _add_workdays(date, workdays, only_workdays=True):
 
 
 def _format_date(date, format=None):
-    if date is None:
-        return ''
-    if isinstance(date, str):
-        date = _parse_date(date)
-    _check_date(date)
+    if not isinstance(date, datetime.date):
+        date = _parse_date(str(date))
+    # _check_date(date)
     if format is None:
         format = '%Y-%m-%d'
-    _check_string(format)
+    else:
+        format = str(format)
     return date.strftime(format)
 
 
 def _parse_date(date_string, format=None):
     if not date_string:
         return None
-    _check_string(date_string)
+    date_string = str(date_string)
     if format is None:
         format = '%Y-%m-%d'
-    _check_string(format)
+    else:
+        format = str(format)
     return datetime.datetime.strptime(date_string, format).date()
 
 
 def _format_number(number, decimal_sep='.', decimal_pos=None, grouping=3, thousand_sep='', use_grouping=False):
-    _check_number(number)
-    if decimal_sep is not None:
-        _check_string(decimal_sep)
+    number = float(number)
+    decimal_sep = str(decimal_sep)
     if decimal_pos is not None:
-        _check_number(decimal_pos)
-    if grouping is not None:
-        _check_number(grouping)
-    if thousand_sep is not None:
-        _check_string(thousand_sep)
+        decimal_pos = int(decimal_pos)
+    grouping = int(grouping)
+    thousand_sep = str(thousand_sep)
     return numberformat.format(number, decimal_sep, decimal_pos=decimal_pos, grouping=grouping,
                                thousand_sep=thousand_sep, force_grouping=use_grouping)
 
@@ -206,29 +198,38 @@ def _simple_price(date, date1, value1, date2, value2):
         date1 = _parse_date(date1)
     if isinstance(date2, str):
         date2 = _parse_date(date2)
-    _check_date(date)
-    _check_date(date1)
-    _check_date(date2)
+    if not isinstance(date, datetime.date):
+        date = _parse_date(str(date))
+    if not isinstance(date1, datetime.date):
+        date1 = _parse_date(str(date1))
+    if not isinstance(date2, datetime.date):
+        date2 = _parse_date(str(date2))
+    # _check_date(date)
+    # _check_date(date1)
+    # _check_date(date2)
     value1 = float(value1)
     value2 = float(value2)
     # _check_number(value1)
     # _check_number(value2)
-    if isclose(value1, value2):
-        return value1
-    if date1 == date2:
-        if isclose(value1, value2):
-            return value1
-        raise ValueError()
-    if date < date1:
-        return 0.0
-    if date == date1:
-        return value1
-    if date > date2:
-        return 0.0
-    if date == date2:
-        return value2
-    d = 1.0 * (date - date1).days / (date2 - date1).days
-    return value1 + d * (value2 - value1)
+
+    # if isclose(value1, value2):
+    #     return value1
+    # if date1 == date2:
+    #     if isclose(value1, value2):
+    #         return value1
+    #     raise ValueError()
+    # if date < date1:
+    #     return 0.0
+    # if date == date1:
+    #     return value1
+    # if date > date2:
+    #     return 0.0
+    # if date == date2:
+    #     return value2
+    if date1 <= date <= date2:
+        d = 1.0 * (date - date1).days / (date2 - date1).days
+        return value1 + d * (value2 - value1)
+    return 0.0
 
 
 def _random():
@@ -236,7 +237,7 @@ def _random():
 
 
 def _op_safe_power(a, b):
-    ''' a limited exponent/to-the-power-of function, for safety reasons '''
+    """ a limited exponent/to-the-power-of function, for safety reasons """
     if abs(a) > MAX_POWER or abs(b) > MAX_POWER:
         raise InvalidExpression("Sorry! I don't want to evaluate {0} ** {1}"
                                 .format(a, b))
@@ -244,7 +245,7 @@ def _op_safe_power(a, b):
 
 
 def _op_safe_mult(a, b):
-    ''' limit the number of times a string can be repeated... '''
+    """ limit the number of times a string can be repeated... """
     if isinstance(a, str) or isinstance(b, str):
         if isinstance(a, int) and a * len(b) > MAX_STRING_LENGTH:
             raise InvalidExpression("Sorry, a string that long is not allowed")
@@ -255,12 +256,16 @@ def _op_safe_mult(a, b):
 
 
 def _op_safe_add(a, b):
-    ''' string length limit again '''
+    """ string length limit again """
     if isinstance(a, str) and isinstance(b, str):
         if len(a) + len(b) > MAX_STRING_LENGTH:
             raise InvalidExpression("Sorry, adding those two strings would"
                                     " make a too long string.")
     return a + b
+
+
+def _op_in(a, b):
+    return a in b
 
 
 class SimpleEval2(object):
@@ -282,8 +287,7 @@ class SimpleEval2(object):
             ast.LtE: operator.le,
             ast.USub: operator.neg,
             ast.UAdd: operator.pos,
-
-            ast.In: lambda a, b: a in b,
+            ast.In: _op_in,
         }
 
         self.functions = {
@@ -319,10 +323,11 @@ class SimpleEval2(object):
             'locals': lambda: self.local_names,
         }
         self.local_functions = {}
-        self.names = deep_value(names) if names else {}
-        self.names.update({"True": True, "False": False, "None": None})
-        self.local_names = {}
-        self.state = {}
+        # self.names = deep_value(names) if names else {}
+        self.names = names or {}
+        # self.names.update({"True": True, "False": False, "None": None})
+        self.local_names = None
+        self.state = None
         self.result = None
 
     @staticmethod
@@ -350,6 +355,10 @@ class SimpleEval2(object):
 
     def eval(self, expr):
         # set a copy of the expression aside, so we can give nice errors...
+        self.local_names = {}
+        self.state = {}
+        self.result = None
+
         try:
             if expr:
                 self.expr = expr
@@ -498,11 +507,18 @@ class SimpleEval2(object):
                 # This is a safe thing to do because it is impossible
                 # that there is a true expression assigning to none
                 # (the compiler rejects it, so you can't even pass that to ast.parse)
+                if node.id == 'None':
+                    return None
+
+                if node.id == 'True':
+                    return True
+                if node.id == 'False':
+                    return False
 
                 if node.id in self.local_names:
                     return self.local_names[node.id]
 
-                if isinstance(self.names, dict):
+                if isinstance(self.names, (dict, collections.OrderedDict)):
                     return self.names[node.id]
                 elif callable(self.names):
                     return self.names(node.id)
@@ -525,6 +541,10 @@ class SimpleEval2(object):
                     return val.month
                 if node.attr == 'day':
                     return val.day
+
+            if isinstance(val, datetime.timedelta):
+                if node.attr == 'days':
+                    return val.days
 
             if isinstance(val, dict):
                 try:
@@ -576,8 +596,7 @@ class SimpleEval2(object):
                 return d
 
         else:
-            raise InvalidExpression("Sorry, {0} is not available in this evaluator".format(
-                type(node).__name__))
+            raise InvalidExpression("Sorry, %s is not available in this evaluator" % type(node).__name__)
 
 
 def is_valid(expr):
@@ -606,32 +625,32 @@ def safe_eval(s, names=None):
     return ret
 
 
-def deep_dict(data):
-    ret = {}
-    for k, v in data.items():
-        ret[k] = deep_value(v)
-    return ret
-
-
-def deep_list(data):
-    ret = []
-    for v in data:
-        ret.append(deep_value(v))
-    return ret
-
-
-def deep_tuple(data):
-    return tuple(deep_list(data))
-
-
-def deep_value(data):
-    if isinstance(data, (dict, collections.OrderedDict)):
-        return deep_dict(data)
-    if isinstance(data, list):
-        return deep_list(data)
-    if isinstance(data, tuple):
-        return deep_tuple(data)
-    return data
+# def deep_dict(data):
+#     ret = {}
+#     for k, v in data.items():
+#         ret[k] = deep_value(v)
+#     return ret
+#
+#
+# def deep_list(data):
+#     ret = []
+#     for v in data:
+#         ret.append(deep_value(v))
+#     return ret
+#
+#
+# def deep_tuple(data):
+#     return tuple(deep_list(data))
+#
+#
+# def deep_value(data):
+#     if isinstance(data, (dict, collections.OrderedDict)):
+#         return deep_dict(data)
+#     if isinstance(data, list):
+#         return deep_list(data)
+#     if isinstance(data, tuple):
+#         return deep_tuple(data)
+#     return data
 
 
 HELP = """
@@ -759,17 +778,30 @@ if __name__ == "__main__":
                 "name": "V32"
             },
         ],
+        "v4": collections.OrderedDict(
+            [
+                ("id", 3),
+                ("name", "Lol"),
+            ]
+        ),
     }
 
     # _l.info(safe_eval('(1).__class__.__bases__', names=names))
     # _l.info(safe_eval('{"a":1, "b":2}'))
     # _l.info(safe_eval('[1,]'))
     # _l.info(safe_eval('(1,)'))
+    # _l.info(safe_eval('{1,}'))
     # _l.info(safe_eval('parse_date("2000-01-01") + days(100)'))
-    # _l.info(safe_eval('simple_price(parse_date("2000-01-02"), parse_date("2000-01-01"), 0, parse_date("2000-04-10"), 100)'))
+    # _l.info(safe_eval(
+    #     'simple_price(parse_date("2000-01-05"), parse_date("2000-01-01"), 0, parse_date("2000-04-10"), 100)'))
+    # _l.info(safe_eval('simple_price("2000-01-05", "2000-01-01", 0, "2000-04-10", 100)'))
     # _l.info(safe_eval('simple_price("2000-01-02", "2000-01-01", 0, "2000-04-10", 100)'))
     # _l.info(safe_eval('v0 * 10', names=names))
     # _l.info(safe_eval('context["v0"] * 10', names=names))
+
+    _l.info(safe_eval('v2.id', names=names))
+    _l.info(safe_eval('v4.id', names=names))
+
 
     # _l.info(safe_eval('func1()'))
     # _l.info(safe_eval('name1'))
@@ -777,9 +809,7 @@ if __name__ == "__main__":
     # _l.info(safe_eval('name1.id2', names={"name1": {'id':1}}))
     # _l.info(safe_eval('1+'))
     # _l.info(safe_eval('1 if 1 > 2 else 2'))
-    _l.info(safe_eval('"a" in "ab"'))
-    _l.info(safe_eval('{0, 1, 2}'))
-
+    # _l.info(safe_eval('"a" in "ab"'))
 
     # _l.info(safe_eval('a = 2 + 3'))
     #     _l.info(safe_eval('''
@@ -846,6 +876,7 @@ if __name__ == "__main__":
             "v1": "str",
             "v2": {"id": 1, "name": "V2", "trn_code": 12354, "num": 1.234},
             "v3": [{"id": 2, "name": "V31"}, {"id": 3, "name": "V32"}, ],
+            "v4": collections.OrderedDict(("id", 3), ("name", "Lol")),
             # "instr": collections.OrderedDict(
             #     InstrumentSerializer(instance=Instrument.objects.first(),
             #                          context={'request': instrument_request}).data
@@ -859,7 +890,6 @@ if __name__ == "__main__":
 
         }
         _l.info("test variables:\n", names)
-        _l.info("test variables:\n", deep_value(names))
         # for n in sorted(six.iterkeys(names)):
         #     _l.info(n, "\n")
         #     pprint.pprint(names[n])
