@@ -14,6 +14,11 @@ from poms.common.utils import date_now, isclose
 
 _l = logging.getLogger('poms.formula')
 
+MAX_STRING_LENGTH = 100000
+MAX_POWER = 4000000  # highest exponent
+MAX_LEN = 100
+MAX_ITERATIONS = 1000
+
 
 class InvalidExpression(Exception):
     pass
@@ -63,6 +68,18 @@ def _check_timedelta(a):
 
 def _str(a):
     return str(a)
+
+
+def _upper(a):
+    return str(a).upper()
+
+
+def _lower(a):
+    return str(a).lower()
+
+
+def _contains(a, b):
+    return str(b) in str(a)
 
 
 def _int(a):
@@ -192,8 +209,10 @@ def _simple_price(date, date1, value1, date2, value2):
     _check_date(date)
     _check_date(date1)
     _check_date(date2)
-    _check_number(value1)
-    _check_number(value2)
+    value1 = float(value1)
+    value2 = float(value2)
+    # _check_number(value1)
+    # _check_number(value2)
     if isclose(value1, value2):
         return value1
     if date1 == date2:
@@ -214,12 +233,6 @@ def _simple_price(date, date1, value1, date2, value2):
 
 def _random():
     return random.random()
-
-
-MAX_STRING_LENGTH = 100000
-MAX_POWER = 4000000  # highest exponent
-MAX_LEN = 100
-MAX_ITERATIONS = 1000
 
 
 def _op_safe_power(a, b):
@@ -269,16 +282,25 @@ class SimpleEval2(object):
             ast.LtE: operator.le,
             ast.USub: operator.neg,
             ast.UAdd: operator.pos,
+
+            ast.In: lambda a, b: a in b,
         }
 
         self.functions = {
             'str': _str,
+            'upper': _upper,
+            'lower': _lower,
+            'contains': _contains,
+
             'int': _int,
             'float': _float,
             'round': _round,
             'trunc': _trunc,
-            'iff': _iff,
             'isclose': _isclose,
+            'random': _random,
+
+            'iff': _iff,
+
             'now': _now,
             'date': _date,
             'days': _days,
@@ -287,16 +309,20 @@ class SimpleEval2(object):
             'add_workdays': _add_workdays,
             'format_date': _format_date,
             'parse_date': _parse_date,
+
             'format_number': _format_number,
             'parse_number': _parse_number,
-            'simple_price': _simple_price,
-            'random': _random,
-        }
 
+            'simple_price': _simple_price,
+
+            'globals': lambda: self.names,
+            'locals': lambda: self.local_names,
+        }
+        self.local_functions = {}
         self.names = deep_value(names) if names else {}
         self.names.update({"True": True, "False": False, "None": None})
         self.local_names = {}
-        self.local_functions = {}
+        self.state = {}
         self.result = None
 
     @staticmethod
@@ -427,10 +453,10 @@ class SimpleEval2(object):
             return self._eval(node.body) if self._eval(node.test) else self._eval(node.orelse)
 
         elif isinstance(node, ast.Call):  # function...
-            if node.func.id == 'locals':
-                return self.local_names
-            if node.func.id == 'globals':
-                return self.names
+            # if node.func.id == 'locals':
+            #     return self.local_names
+            # if node.func.id == 'globals':
+            #     return self.names
 
             if node.func.id in self.functions:
                 f = self.functions[node.func.id]
@@ -535,7 +561,7 @@ class SimpleEval2(object):
                 d[k] = v
             return d
 
-        elif isinstance(node, (ast.List, ast.Tuple)):
+        elif isinstance(node, (ast.List, ast.Tuple, ast.Set)):
             d = []
             for v in node.elts:
                 v = self._eval(v)
@@ -544,7 +570,10 @@ class SimpleEval2(object):
                     raise InvalidExpression('Max list length.')
             if isinstance(node, ast.Tuple):
                 return tuple(d)
-            return d
+            elif isinstance(node, ast.Set):
+                return set(d)
+            else:
+                return d
 
         else:
             raise InvalidExpression("Sorry, {0} is not available in this evaluator".format(
@@ -732,7 +761,6 @@ if __name__ == "__main__":
         ],
     }
 
-
     # _l.info(safe_eval('(1).__class__.__bases__', names=names))
     # _l.info(safe_eval('{"a":1, "b":2}'))
     # _l.info(safe_eval('[1,]'))
@@ -748,6 +776,11 @@ if __name__ == "__main__":
     # _l.info(safe_eval('name1.id', names={"name1": {'id':1}}))
     # _l.info(safe_eval('name1.id2', names={"name1": {'id':1}}))
     # _l.info(safe_eval('1+'))
+    # _l.info(safe_eval('1 if 1 > 2 else 2'))
+    _l.info(safe_eval('"a" in "ab"'))
+    _l.info(safe_eval('{0, 1, 2}'))
+
+
     # _l.info(safe_eval('a = 2 + 3'))
     #     _l.info(safe_eval('''
     # if 1 > 2:
@@ -885,4 +918,4 @@ if __name__ == "__main__":
         # _l.info(add_workdays(datetime.date(2016, 6, 15), 4))
 
 
-    demo()
+        # demo()
