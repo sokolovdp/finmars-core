@@ -222,7 +222,7 @@ MAX_LEN = 100
 MAX_ITERATIONS = 1000
 
 
-def safe_power(a, b):  # pylint: disable=invalid-name
+def _op_safe_power(a, b):
     ''' a limited exponent/to-the-power-of function, for safety reasons '''
     if abs(a) > MAX_POWER or abs(b) > MAX_POWER:
         raise InvalidExpression("Sorry! I don't want to evaluate {0} ** {1}"
@@ -230,7 +230,7 @@ def safe_power(a, b):  # pylint: disable=invalid-name
     return a ** b
 
 
-def safe_mult(a, b):  # pylint: disable=invalid-name
+def _op_safe_mult(a, b):
     ''' limit the number of times a string can be repeated... '''
     if isinstance(a, str) or isinstance(b, str):
         if isinstance(a, int) and a * len(b) > MAX_STRING_LENGTH:
@@ -241,7 +241,7 @@ def safe_mult(a, b):  # pylint: disable=invalid-name
     return a * b
 
 
-def safe_add(a, b):  # pylint: disable=invalid-name
+def _op_safe_add(a, b):
     ''' string length limit again '''
     if isinstance(a, str) and isinstance(b, str):
         if len(a) + len(b) > MAX_STRING_LENGTH:
@@ -250,63 +250,51 @@ def safe_add(a, b):  # pylint: disable=invalid-name
     return a + b
 
 
-class SimpleEval2(object):  # pylint: disable=too-few-public-methods
-    expr = ''
+class SimpleEval2(object):
+    def __init__(self, names=None):
+        self.expr = None
 
-    operators = {
-        ast.Add: safe_add,
-        ast.Sub: operator.sub,
-        ast.Mult: safe_mult,
-        ast.Div: operator.truediv,
-        ast.Pow: safe_power,
-        ast.Mod: operator.mod,
-        ast.Eq: operator.eq,
-        ast.NotEq: operator.ne,
-        ast.Gt: operator.gt,
-        ast.Lt: operator.lt,
-        ast.GtE: operator.ge,
-        ast.LtE: operator.le,
-        ast.USub: operator.neg,
-        ast.UAdd: operator.pos
-    }
+        self.operators = {
+            ast.Add: _op_safe_add,
+            ast.Sub: operator.sub,
+            ast.Mult: _op_safe_mult,
+            ast.Div: operator.truediv,
+            ast.Pow: _op_safe_power,
+            ast.Mod: operator.mod,
+            ast.Eq: operator.eq,
+            ast.NotEq: operator.ne,
+            ast.Gt: operator.gt,
+            ast.Lt: operator.lt,
+            ast.GtE: operator.ge,
+            ast.LtE: operator.le,
+            ast.USub: operator.neg,
+            ast.UAdd: operator.pos,
+        }
 
-    functions = {
-        'str': _str,
-        'int': _int,
-        'float': _float,
-        'round': _round,
-        'trunc': _trunc,
-        'iff': _iff,
-        'isclose': _isclose,
-        'now': _now,
-        'date': _date,
-        'days': _days,
-        'add_days': _add_days,
-        'add_weeks': _add_weeks,
-        'add_workdays': _add_workdays,
-        'format_date': _format_date,
-        'parse_date': _parse_date,
-        'format_number': _format_number,
-        'parse_number': _parse_number,
-        'simple_price': _simple_price,
-        'random': _random,
-    }
+        self.functions = {
+            'str': _str,
+            'int': _int,
+            'float': _float,
+            'round': _round,
+            'trunc': _trunc,
+            'iff': _iff,
+            'isclose': _isclose,
+            'now': _now,
+            'date': _date,
+            'days': _days,
+            'add_days': _add_days,
+            'add_weeks': _add_weeks,
+            'add_workdays': _add_workdays,
+            'format_date': _format_date,
+            'parse_date': _parse_date,
+            'format_number': _format_number,
+            'parse_number': _parse_number,
+            'simple_price': _simple_price,
+            'random': _random,
+        }
 
-    def __init__(self, operators=None, functions=None, names=None):
-        '''
-            Create the evaluator instance.  Set up valid operators (+,-, etc)
-            functions (add, random, get_val, whatever) and names. '''
-
-        if operators is not None:
-            self.operators = operators
-        if functions is not None:
-            self.functions = functions
-        if names is None:
-            self.names = {}
-        else:
-            self.names = deep_value(names)
-
-        self.names.update({"True": True, "False": False})
+        self.names = deep_value(names) if names else {}
+        self.names.update({"True": True, "False": False, "None": None})
         self.local_names = {}
         self.local_functions = {}
         self.result = None
@@ -316,7 +304,9 @@ class SimpleEval2(object):  # pylint: disable=too-few-public-methods
         if expr:
             try:
                 ast.parse(expr)
-            except (SyntaxError, ValueError, TypeError):
+            except (KeyError, AttributeError, TypeError, ValueError):
+                return False
+            except Exception:
                 return False
         return True
 
@@ -325,32 +315,36 @@ class SimpleEval2(object):  # pylint: disable=too-few-public-methods
         if expr:
             try:
                 ast.parse(expr)
-            except (SyntaxError, ValueError, TypeError) as e:
+            except (KeyError, AttributeError, TypeError, ValueError) as e:
+                raise InvalidExpression(e)
+            except Exception as e:
                 raise InvalidExpression(e)
         else:
             raise InvalidExpression('Empty value')
 
     def eval(self, expr):
-        ''' evaluate an expresssion, using the operators, functions and
-            names previously set up. '''
-
         # set a copy of the expression aside, so we can give nice errors...
+        try:
+            if expr:
+                self.expr = expr
 
-        if expr:
-            self.expr = expr
-
-            # and evaluate:
-            try:
-                self.result = self._eval_stmt(ast.parse(expr).body)
-                return self.result
-            except InvalidExpression:
-                raise
-            except SyntaxError as e:
-                raise ExpressionSyntaxError(e)
-            except Exception as e:
-                raise InvalidExpression(e)
-        else:
-            raise InvalidExpression('Empty value')
+                try:
+                    self.result = self._eval_stmt(ast.parse(expr).body)
+                    return self.result
+                except InvalidExpression:
+                    raise
+                except SyntaxError as e:
+                    raise ExpressionSyntaxError(e)
+                except Exception as e:
+                    raise InvalidExpression(e)
+            else:
+                raise InvalidExpression('Empty value')
+        except InvalidExpression:
+            raise
+        except (KeyError, AttributeError, TypeError, ValueError) as e:
+            raise InvalidExpression(e)
+        except Exception as e:
+            raise InvalidExpression(e)
 
     def _eval_stmt(self, body):
         ret = None
@@ -390,17 +384,13 @@ class SimpleEval2(object):  # pylint: disable=too-few-public-methods
         return ret
 
     def _eval(self, node):
-        ''' The internal eval function used on each node in the parsed tree. '''
-
-        # literals:
-
         if isinstance(node, ast.Num):  # <number>
             return node.n
 
         elif isinstance(node, ast.Str):  # <string>
             if len(node.s) > MAX_STRING_LENGTH:
-                raise InvalidExpression("String Literal in statement is too long! ({0}, when {1} is max)".format(
-                    len(node.s), MAX_STRING_LENGTH))
+                raise InvalidExpression(
+                    "String Literal in statement is too long! (%s, when %s is max)" % (len(node.s), MAX_STRING_LENGTH))
             return node.s
 
         # python 3 compatibility:
@@ -442,6 +432,12 @@ class SimpleEval2(object):  # pylint: disable=too-few-public-methods
             if node.func.id == 'globals':
                 return self.names
 
+            if node.func.id in self.functions:
+                f = self.functions[node.func.id]
+                f_args = [self._eval(a) for a in node.args]
+                f_kwargs = {k.arg: self._eval(k.value) for k in node.keywords}
+                return f(*f_args, **f_kwargs)
+
             if node.func.id in self.local_functions:
                 f = self.local_functions[node.func.id]
                 f_args = [self._eval(a) for a in node.args]
@@ -467,12 +463,6 @@ class SimpleEval2(object):  # pylint: disable=too-few-public-methods
 
                 return ret
 
-            if node.func.id in self.functions:
-                f = self.functions[node.func.id]
-                f_args = [self._eval(a) for a in node.args]
-                f_kwargs = {k.arg: self._eval(k.value) for k in node.keywords}
-                return f(*f_args, **f_kwargs)
-
             raise FunctionNotDefined(node.func.id)
 
         # variables/names:
@@ -480,10 +470,8 @@ class SimpleEval2(object):  # pylint: disable=too-few-public-methods
             try:
                 # This happens at least for slicing
                 # This is a safe thing to do because it is impossible
-                # that there is a true exression assigning to none
+                # that there is a true expression assigning to none
                 # (the compiler rejects it, so you can't even pass that to ast.parse)
-                if node.id == "None":
-                    return None
 
                 if node.id in self.local_names:
                     return self.local_names[node.id]
@@ -503,10 +491,6 @@ class SimpleEval2(object):  # pylint: disable=too-few-public-methods
 
         elif isinstance(node, ast.Attribute):  # a.b.c
             val = self._eval(node.value)
-            try:
-                return val[node.attr]
-            except (KeyError, TypeError):
-                pass
 
             if isinstance(val, datetime.date):
                 if node.attr == 'year':
@@ -515,6 +499,12 @@ class SimpleEval2(object):  # pylint: disable=too-few-public-methods
                     return val.month
                 if node.attr == 'day':
                     return val.day
+
+            if isinstance(val, dict):
+                try:
+                    return val[node.attr]
+                except (KeyError, TypeError):
+                    pass
 
             # # Maybe the base object is an actual object, not just a dict
             # try:
@@ -577,17 +567,14 @@ def validate(expr):
         raise ValidationError('Invalid expression: %s' % e)
 
 
-def safe_eval(s, names=None, functions=None):
-    try:
-        # _l.debug('> safe_eval: s="%s", names=%s, functions=%s',
-        #          s, names, functions)
-        se = SimpleEval2(names=names, functions=functions)
-        ret = se.eval(s)
-        # _l.debug('< safe_eval: s="%s", local_names=%s, local_functions=%s',
-        #          ret, se.local_names, se.local_functions)
-        return ret
-    except (KeyError, AttributeError, TypeError, ValueError) as e:
-        raise InvalidExpression(e)
+def safe_eval(s, names=None):
+    # _l.debug('> safe_eval: s="%s", names=%s, functions=%s',
+    #          s, names, functions)
+    se = SimpleEval2(names=names)
+    ret = se.eval(s)
+    # _l.debug('< safe_eval: s="%s", local_names=%s, local_functions=%s',
+    #          ret, se.local_names, se.local_functions)
+    return ret
 
 
 def deep_dict(data):
@@ -817,10 +804,6 @@ if __name__ == "__main__":
                 res = "<ERROR2: %s>" % e
             _l.info("\t%-60s -> %s" % (expr, res))
 
-        from poms.instruments.models import Instrument
-        from poms.transactions.models import Transaction
-        from poms.instruments.serializers import InstrumentSerializer
-        from poms.transactions.serializers import TransactionSerializer
         from rest_framework.test import APIRequestFactory
         factory = APIRequestFactory()
         instrument_request = factory.get('/api/v1/instruments/instrument/1/', format='json')
@@ -864,8 +847,8 @@ if __name__ == "__main__":
         play("v2.num * 3", names)
         play("v3[1].name", names)
         play("v3[1].name", names)
-        play("globals()",names)
-        play("globals()['v0']",names)
+        play("globals()", names)
+        play("globals()['v0']", names)
         # play("instr.name", names)
         # play("instr.instrument_type.id", names)
         # play("instr.instrument_type.user_code", names)
