@@ -1,12 +1,12 @@
 from __future__ import unicode_literals, print_function, division
 
 import ast
-import collections
 import datetime
 import logging
 import operator
 import random
 import time
+from collections import OrderedDict
 
 from django.utils import numberformat
 
@@ -319,7 +319,7 @@ class SimpleEval2(object):
 
             'simple_price': _simple_price,
 
-            'globals': lambda: self.names,
+            'globals': lambda: self.names if isinstance(self.names, (dict, OrderedDict)) else {},
             'locals': lambda: self.local_names,
         }
         self.local_functions = {}
@@ -518,7 +518,7 @@ class SimpleEval2(object):
                 if node.id in self.local_names:
                     return self.local_names[node.id]
 
-                if isinstance(self.names, (dict, collections.OrderedDict)):
+                if isinstance(self.names, (dict, OrderedDict)):
                     return self.names[node.id]
                 elif callable(self.names):
                     return self.names(node.id)
@@ -778,13 +778,14 @@ if __name__ == "__main__":
                 "name": "V32"
             },
         ],
-        "v4": collections.OrderedDict(
+        "v4": OrderedDict(
             [
                 ("id", 3),
                 ("name", "Lol"),
             ]
         ),
     }
+
 
     # _l.info(safe_eval('(1).__class__.__bases__', names=names))
     # _l.info(safe_eval('{"a":1, "b":2}'))
@@ -797,10 +798,9 @@ if __name__ == "__main__":
     # _l.info(safe_eval('simple_price("2000-01-05", "2000-01-01", 0, "2000-04-10", 100)'))
     # _l.info(safe_eval('simple_price("2000-01-02", "2000-01-01", 0, "2000-04-10", 100)'))
     # _l.info(safe_eval('v0 * 10', names=names))
-    # _l.info(safe_eval('context["v0"] * 10', names=names))
-
-    _l.info(safe_eval('v2.id', names=names))
-    _l.info(safe_eval('v4.id', names=names))
+    # _l.info(safe_eval('globals()["v0"] * 10', names=names))
+    # _l.info(safe_eval('v2.id', names=names))
+    # _l.info(safe_eval('v4.id', names=names))
 
 
     # _l.info(safe_eval('func1()'))
@@ -876,13 +876,13 @@ if __name__ == "__main__":
             "v1": "str",
             "v2": {"id": 1, "name": "V2", "trn_code": 12354, "num": 1.234},
             "v3": [{"id": 2, "name": "V31"}, {"id": 3, "name": "V32"}, ],
-            "v4": collections.OrderedDict(("id", 3), ("name", "Lol")),
-            # "instr": collections.OrderedDict(
+            "v4": OrderedDict(("id", 3), ("name", "Lol")),
+            # "instr": OrderedDict(
             #     InstrumentSerializer(instance=Instrument.objects.first(),
             #                          context={'request': instrument_request}).data
             # ),
             # "trns": [
-            #     collections.OrderedDict(
+            #     OrderedDict(
             #         TransactionSerializer(instance=Transaction.objects.all(), many=True,
             #                               context={'request': transactions_request}).data
             #     )
@@ -917,9 +917,9 @@ if __name__ == "__main__":
         # play("instr.instrument_type.user_code", names)
         # play("instr.price_multiplier", names)
         # play("instr['price_multiplier']", names)
-        # play("context['instr']", names)
-        # play("context['instr'].price_multiplier", names)
-        # play("context['instr']['price_multiplier']", names)
+        # play("globals()['instr']", names)
+        # play("globals()['instr'].price_multiplier", names)
+        # play("globals()['instr']['price_multiplier']", names)
 
         _l.info('')
         _l.info("functions: ")
