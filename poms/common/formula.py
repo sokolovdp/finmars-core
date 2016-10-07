@@ -3,6 +3,7 @@ from __future__ import unicode_literals, print_function, division
 import ast
 import collections
 import datetime
+import logging
 import operator
 import random
 import time
@@ -10,6 +11,8 @@ import time
 from django.utils import numberformat
 
 from poms.common.utils import date_now, isclose
+
+_l = logging.getLogger('poms.formula')
 
 
 class InvalidExpression(Exception):
@@ -215,6 +218,8 @@ def _random():
 
 MAX_STRING_LENGTH = 100000
 MAX_POWER = 4000000  # highest exponent
+MAX_LEN = 100
+MAX_ITERATIONS = 1000
 
 
 def safe_power(a, b):  # pylint: disable=invalid-name
@@ -302,6 +307,9 @@ class SimpleEval2(object):  # pylint: disable=too-few-public-methods
             self.names = deep_value(names)
 
         self.names.update({"True": True, "False": False})
+        self.local_names = {}
+        self.local_functions = {}
+        self.result = None
 
     @staticmethod
     def is_valid(expr):
@@ -333,7 +341,8 @@ class SimpleEval2(object):  # pylint: disable=too-few-public-methods
 
             # and evaluate:
             try:
-                return self._eval(ast.parse(expr).body[0].value)
+                self.result = self._eval_stmt(ast.parse(expr).body)
+                return self.result
             except InvalidExpression:
                 raise
             except SyntaxError as e:
@@ -342,6 +351,43 @@ class SimpleEval2(object):  # pylint: disable=too-few-public-methods
                 raise InvalidExpression(e)
         else:
             raise InvalidExpression('Empty value')
+
+    def _eval_stmt(self, body):
+        ret = None
+
+        for node in body:
+            if isinstance(node, ast.Assign):
+                val = self._eval(node.value)
+                for t in node.targets:
+                    if isinstance(t, ast.Name):
+                        self.local_names[t.id] = val
+                    else:
+                        raise InvalidExpression('Invalid assign')
+                ret = val
+
+            elif isinstance(node, ast.If):
+                ret = self._eval_stmt(node.body) if self._eval(node.test) else self._eval_stmt(node.orelse)
+
+            elif isinstance(node, ast.For):
+                for val in self._eval(node.iter):
+                    self.local_names[node.target.id] = val
+                    ret = self._eval_stmt(node.body)
+
+            elif isinstance(node, ast.While):
+                iter = 0
+                while self._eval(node.test):
+                    ret = self._eval_stmt(node.body)
+                    iter += 1
+                    if iter > MAX_ITERATIONS:
+                        raise InvalidExpression('Max iterations')
+
+            elif isinstance(node, ast.FunctionDef):
+                self.local_functions[node.name] = node
+
+            else:
+                ret = self._eval(node.value)
+
+        return ret
 
     def _eval(self, node):
         ''' The internal eval function used on each node in the parsed tree. '''
@@ -391,13 +437,43 @@ class SimpleEval2(object):  # pylint: disable=too-few-public-methods
             return self._eval(node.body) if self._eval(node.test) else self._eval(node.orelse)
 
         elif isinstance(node, ast.Call):  # function...
-            try:
+            if node.func.id == 'locals':
+                return self.local_names
+            if node.func.id == 'globals':
+                return self.names
+
+            if node.func.id in self.local_functions:
+                f = self.local_functions[node.func.id]
+                f_args = [self._eval(a) for a in node.args]
+                f_kwargs = {k.arg: self._eval(k.value) for k in node.keywords}
+
+                for i, val in enumerate(f_args):
+                    # f_kwargs.setdefault(k, v)
+                    name = f.args.args[i].arg
+                    f_kwargs[name] = val
+
+                defaults_args_correction = len(f.args.args) - len(f.args.defaults)
+                for i, arg in enumerate(f.args.args):
+                    if arg.arg not in f_kwargs:
+                        val = self._eval(f.args.defaults[i - defaults_args_correction])
+                        f_kwargs[arg.arg] = val
+
+                local_names = self.local_names.copy()
+
+                self.local_names.update(f_kwargs)
+                ret = self._eval_stmt(f.body)
+
+                self.local_names = local_names
+
+                return ret
+
+            if node.func.id in self.functions:
                 f = self.functions[node.func.id]
                 f_args = [self._eval(a) for a in node.args]
                 f_kwargs = {k.arg: self._eval(k.value) for k in node.keywords}
                 return f(*f_args, **f_kwargs)
-            except KeyError:
-                raise FunctionNotDefined(node.func.id)
+
+            raise FunctionNotDefined(node.func.id)
 
         # variables/names:
         elif isinstance(node, ast.Name):  # a, b, c...
@@ -408,24 +484,37 @@ class SimpleEval2(object):  # pylint: disable=too-few-public-methods
                 # (the compiler rejects it, so you can't even pass that to ast.parse)
                 if node.id == "None":
                     return None
-                if (node.id == "context" or node.id == "CONTEXT") and isinstance(self.names, dict):
-                    return self.names
+
+                if node.id in self.local_names:
+                    return self.local_names[node.id]
+
                 if isinstance(self.names, dict):
                     return self.names[node.id]
-                if callable(self.names):
+                elif callable(self.names):
                     return self.names(node.id)
+
                 raise NameNotDefined(node.id)
             except KeyError:
                 raise NameNotDefined(node.id)
 
         elif isinstance(node, ast.Subscript):  # b[1]
-            return self._eval(node.value)[self._eval(node.slice)]
+            val = self._eval(node.value)
+            return val[self._eval(node.slice)]
 
         elif isinstance(node, ast.Attribute):  # a.b.c
+            val = self._eval(node.value)
             try:
-                return self._eval(node.value)[node.attr]
+                return val[node.attr]
             except (KeyError, TypeError):
                 pass
+
+            if isinstance(val, datetime.date):
+                if node.attr == 'year':
+                    return val.year
+                if node.attr == 'month':
+                    return val.month
+                if node.attr == 'day':
+                    return val.day
 
             # # Maybe the base object is an actual object, not just a dict
             # try:
@@ -461,6 +550,8 @@ class SimpleEval2(object):  # pylint: disable=too-few-public-methods
             for v in node.elts:
                 v = self._eval(v)
                 d.append(v)
+                if len(d) > MAX_LEN:
+                    raise InvalidExpression('Max list length.')
             if isinstance(node, ast.Tuple):
                 return tuple(d)
             return d
@@ -488,7 +579,13 @@ def validate(expr):
 
 def safe_eval(s, names=None, functions=None):
     try:
-        return SimpleEval2(names=names, functions=functions).eval(s)
+        # _l.debug('> safe_eval: s="%s", names=%s, functions=%s',
+        #          s, names, functions)
+        se = SimpleEval2(names=names, functions=functions)
+        ret = se.eval(s)
+        # _l.debug('< safe_eval: s="%s", local_names=%s, local_functions=%s',
+        #          ret, se.local_names, se.local_functions)
+        return ret
     except (KeyError, AttributeError, TypeError, ValueError) as e:
         raise InvalidExpression(e)
 
@@ -620,7 +717,6 @@ DATE format string:
 # %b 	Month as locale’s abbreviated name - Jan, Feb, ..., Dec (en_US)
 # %B 	Month as locale’s full name  - January, February, ..., December (en_US);
 
-
 if __name__ == "__main__":
     import os
 
@@ -649,26 +745,65 @@ if __name__ == "__main__":
         ],
     }
 
-    # print(safe_eval('(1).__class__.__bases__', names=names))
-    # print(safe_eval('{"a":1, "b":2}'))
-    # print(safe_eval('[1,]'))
-    # print(safe_eval('(1,)'))
-    # print(safe_eval('parse_date("2000-01-01") + days(100)'))
-    # print(safe_eval('simple_price(parse_date("2000-01-02"), parse_date("2000-01-01"), 0, parse_date("2000-04-10"), 100)'))
-    # print(safe_eval('simple_price("2000-01-02", "2000-01-01", 0, "2000-04-10", 100)'))
-    # print(safe_eval('v0 * 10', names=names))
-    # print(safe_eval('context["v0"] * 10', names=names))
 
-    # print(safe_eval('func1()'))
-    # print(safe_eval('name1'))
-    # print(safe_eval('name1.id', names={"name1": {'id':1}}))
-    # print(safe_eval('name1.id2', names={"name1": {'id':1}}))
-    print(safe_eval('1+'))
+    # _l.info(safe_eval('(1).__class__.__bases__', names=names))
+    # _l.info(safe_eval('{"a":1, "b":2}'))
+    # _l.info(safe_eval('[1,]'))
+    # _l.info(safe_eval('(1,)'))
+    # _l.info(safe_eval('parse_date("2000-01-01") + days(100)'))
+    # _l.info(safe_eval('simple_price(parse_date("2000-01-02"), parse_date("2000-01-01"), 0, parse_date("2000-04-10"), 100)'))
+    # _l.info(safe_eval('simple_price("2000-01-02", "2000-01-01", 0, "2000-04-10", 100)'))
+    # _l.info(safe_eval('v0 * 10', names=names))
+    # _l.info(safe_eval('context["v0"] * 10', names=names))
 
+    # _l.info(safe_eval('func1()'))
+    # _l.info(safe_eval('name1'))
+    # _l.info(safe_eval('name1.id', names={"name1": {'id':1}}))
+    # _l.info(safe_eval('name1.id2', names={"name1": {'id':1}}))
+    # _l.info(safe_eval('1+'))
+    # _l.info(safe_eval('a = 2 + 3'))
+    #     _l.info(safe_eval('''
+    # if 1 > 2:
+    #     a = 2
+    #     b = 3
+    # else:
+    #     a = 3
+    #     b = 4
+    # a * b
+    # '''))
+
+
+    #     _l.info(safe_eval('''
+    # r = 0
+    # for a in [1,2,3]:
+    #     r = r + a
+    # r + 0
+    # '''))
+    #     _l.info(safe_eval('''
+    # r = 0
+    # while r < 100:
+    #     r = r + 1
+    # r + 0
+    # '''))
+    #     _l.info(safe_eval('''
+    # r = now()
+    # i = 0
+    # while i < 100:
+    #     r = r + days(1)
+    #     i = i + 1
+    #     pass
+    # r
+    # '''))
+    #     _l.info(safe_eval('''
+    # def f1(a, b = 200, c = 300):
+    #     r = a * b
+    #     return r + c
+    # f1(10, b = 20)
+    # '''))
+
+    # _l.info(safe_eval('y = now().year'))
 
     def demo():
-        from poms.instruments.models import Instrument
-        from poms.transactions.models import Transaction
         # from poms.common.formula_serializers import EvalInstrumentSerializer, EvalTransactionSerializer
 
         def play(expr, names=None):
@@ -680,52 +815,68 @@ if __name__ == "__main__":
                 raise e
             except Exception as e:
                 res = "<ERROR2: %s>" % e
-            print("\t%-60s -> %s" % (expr, res))
+            _l.info("\t%-60s -> %s" % (expr, res))
 
+        from poms.instruments.models import Instrument
+        from poms.transactions.models import Transaction
+        from poms.instruments.serializers import InstrumentSerializer
+        from poms.transactions.serializers import TransactionSerializer
+        from rest_framework.test import APIRequestFactory
+        factory = APIRequestFactory()
+        instrument_request = factory.get('/api/v1/instruments/instrument/1/', format='json')
+        transactions_request = factory.get('/api/v1/transactions/transaction/', format='json')
         names = {
             "v0": 1.00001,
             "v1": "str",
             "v2": {"id": 1, "name": "V2", "trn_code": 12354, "num": 1.234},
             "v3": [{"id": 2, "name": "V31"}, {"id": 3, "name": "V32"}, ],
-            # "instr": collections.OrderedDict(EvalInstrumentSerializer(instance=Instrument.objects.first()).data),
-            # "trns": [collections.OrderedDict(EvalTransactionSerializer(instance=t).data)
-            #          for t in Transaction.objects.all()[:2]],
+            # "instr": collections.OrderedDict(
+            #     InstrumentSerializer(instance=Instrument.objects.first(),
+            #                          context={'request': instrument_request}).data
+            # ),
+            # "trns": [
+            #     collections.OrderedDict(
+            #         TransactionSerializer(instance=Transaction.objects.all(), many=True,
+            #                               context={'request': transactions_request}).data
+            #     )
+            # ],
 
         }
-        print("test variables:\n", names)
-        print("test variables:\n", deep_value(names))
+        _l.info("test variables:\n", names)
+        _l.info("test variables:\n", deep_value(names))
         # for n in sorted(six.iterkeys(names)):
-        #     print(n, "\n")
+        #     _l.info(n, "\n")
         #     pprint.pprint(names[n])
         #     # print("\t%s -> %s" % (n, json.dumps(names[n], sort_keys=True, indent=2)))
 
-        print("simple:")
+        _l.info("simple:")
         play("2 * 2 + 2", names)
         play("2 * (2 + 2)", names)
         play("16 ** 16", names)
         play("5 / 2", names)
         play("5 % 2", names)
 
-        print()
-        print("with variables:")
+        _l.info('')
+        _l.info("with variables:")
         play("v0 + 1", names)
         play("v1 + ' & ' + str(v0)", names)
         play("v2.name", names)
         play("v2.num * 3", names)
         play("v3[1].name", names)
         play("v3[1].name", names)
-        play("instr.name", names)
-        play("instr.instrument_type.id", names)
-        play("instr.instrument_type.user_code", names)
+        play("globals()",names)
+        play("globals()['v0']",names)
+        # play("instr.name", names)
+        # play("instr.instrument_type.id", names)
+        # play("instr.instrument_type.user_code", names)
+        # play("instr.price_multiplier", names)
+        # play("instr['price_multiplier']", names)
+        # play("context['instr']", names)
+        # play("context['instr'].price_multiplier", names)
+        # play("context['instr']['price_multiplier']", names)
 
-        play("instr.price_multiplier", names)
-        play("instr['price_multiplier']", names)
-        play("context['instr']", names)
-        play("context['instr'].price_multiplier", names)
-        play("context['instr']['price_multiplier']", names)
-
-        print()
-        print("functions: ")
+        _l.info('')
+        _l.info("functions: ")
         play("round(1.5)", names)
         play("trunc(1.5)", names)
         play("int(1.5)", names)
@@ -744,11 +895,11 @@ if __name__ == "__main__":
 
         # r = safe_eval3('"%r" % now()', names=names, functions=functions)
         # r = safe_eval('format_date(now(), "EEE, MMM d, yy")')
-        # print(repr(r))
-        # print(add_workdays(datetime.date(2016, 6, 15), 3, only_workdays=False))
-        # print(add_workdays(datetime.date(2016, 6, 15), 4, only_workdays=False))
-        # print(add_workdays(datetime.date(2016, 6, 15), 3))
-        # print(add_workdays(datetime.date(2016, 6, 15), 4))
+        # _l.info(repr(r))
+        # _l.info(add_workdays(datetime.date(2016, 6, 15), 3, only_workdays=False))
+        # _l.info(add_workdays(datetime.date(2016, 6, 15), 4, only_workdays=False))
+        # _l.info(add_workdays(datetime.date(2016, 6, 15), 3))
+        # _l.info(add_workdays(datetime.date(2016, 6, 15), 4))
 
 
-        # demo()
+    demo()
