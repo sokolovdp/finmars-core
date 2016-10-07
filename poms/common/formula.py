@@ -9,6 +9,7 @@ import random
 import time
 from collections import OrderedDict
 
+from dateutil import relativedelta
 from django.utils import numberformat
 
 from poms.common.utils import date_now, isclose
@@ -107,6 +108,10 @@ def _iff(test, a, b):
     return a if test else b
 
 
+def _len(a):
+    return len(a)
+
+
 def _now():
     return date_now()
 
@@ -128,6 +133,28 @@ def _days(days):
 
 def _weeks(weeks):
     return datetime.timedelta(weeks=int(weeks))
+
+
+def _months(months):
+    return relativedelta.relativedelta(months=int(months))
+
+
+def _timedelta(years=0, months=0, days=0, leapdays=0, weeks=0,
+               year=None, month=None, day=None, weekday=None,
+               yearday=None, nlyearday=None):
+    return relativedelta.relativedelta(
+        years=int(years),
+        months=int(months),
+        days=int(days),
+        leapdays=int(leapdays),
+        weeks=int(weeks),
+        year=int(year) if year is not None else None,
+        month=int(month) if month is not None else None,
+        day=int(day) if day is not None else None,
+        weekday=int(weekday) if weekday is not None else None,
+        yearday=int(yearday) if yearday is not None else None,
+        nlyearday=int(nlyearday) if nlyearday is not None else None,
+    )
 
 
 def _add_days(date, days):
@@ -317,12 +344,15 @@ class SimpleEval2(object):
             'random': _random,
 
             'iff': _iff,
+            'len': _len,
 
             'now': _now,
             'date': _date,
             'isleap': _isleap,
             'days': _days,
             'weeks': _weeks,
+            'months': _months,
+            'timedelta': _timedelta,
             'add_days': _add_days,
             'add_weeks': _add_weeks,
             'add_workdays': _add_workdays,
@@ -450,6 +480,27 @@ class SimpleEval2(object):
         elif hasattr(ast, 'NameConstant') and isinstance(node, ast.NameConstant):  # <bool>
             return node.value
 
+        elif isinstance(node, ast.Dict):
+            d = {}
+            for k, v in zip(node.keys, node.values):
+                k = self._eval(k)
+                v = self._eval(v)
+                d[k] = v
+            return d
+
+        elif isinstance(node, (ast.List, ast.Tuple, ast.Set)):
+            d = []
+            for v in node.elts:
+                v = self._eval(v)
+                d.append(v)
+                if len(d) > MAX_LEN:
+                    raise InvalidExpression('Max list length.')
+            if isinstance(node, ast.Tuple):
+                return tuple(d)
+            elif isinstance(node, ast.Set):
+                return set(d)
+            return d
+
         # operators, functions, etc:
 
         elif isinstance(node, ast.UnaryOp):  # - and + etc.
@@ -520,30 +571,29 @@ class SimpleEval2(object):
 
         # variables/names:
         elif isinstance(node, ast.Name):  # a, b, c...
-            try:
-                # This happens at least for slicing
-                # This is a safe thing to do because it is impossible
-                # that there is a true expression assigning to none
-                # (the compiler rejects it, so you can't even pass that to ast.parse)
-                if node.id == 'None':
-                    return None
+            # This happens at least for slicing
+            # This is a safe thing to do because it is impossible
+            # that there is a true expression assigning to none
+            # (the compiler rejects it, so you can't even pass that to ast.parse)
 
-                if node.id == 'True':
-                    return True
-                if node.id == 'False':
-                    return False
+            # for python3 in NameConstant
+            # if node.id == 'None':
+            #     return None
+            # elif node.id == 'True':
+            #     return True
+            # elif node.id == 'False':
+            #     return False
 
-                if node.id in self.local_names:
-                    return self.local_names[node.id]
+            if node.id in self.local_names:
+                return self.local_names[node.id]
 
-                if isinstance(self.names, (dict, OrderedDict)):
+            elif isinstance(self.names, (dict, OrderedDict)):
+                if node.id in self.names:
                     return self.names[node.id]
-                elif callable(self.names):
-                    return self.names(node.id)
+            elif callable(self.names):
+                return self.names(node.id)
 
-                raise NameNotDefined(node.id)
-            except KeyError:
-                raise NameNotDefined(node.id)
+            raise NameNotDefined(node.id)
 
         elif isinstance(node, ast.Subscript):  # b[1]
             val = self._eval(node.value)
@@ -553,65 +603,26 @@ class SimpleEval2(object):
             val = self._eval(node.value)
 
             if isinstance(val, datetime.date):
-                if node.attr == 'year':
-                    return val.year
-                if node.attr == 'month':
-                    return val.month
-                if node.attr == 'day':
-                    return val.day
+                if node.attr in ['year', 'month', 'day']:
+                    return getattr(val, node.attr)
 
-            if isinstance(val, datetime.timedelta):
-                if node.attr == 'days':
-                    return val.days
+            elif isinstance(val, datetime.timedelta):
+                if node.attr in ['days']:
+                    return getattr(val, node.attr)
 
-            if isinstance(val, dict):
+            elif isinstance(val, relativedelta.relativedelta):
+                if node.attr in ['years', 'months', 'days', 'leapdays', 'year', 'month', 'day', 'weekday']:
+                    return getattr(val, node.attr)
+
+            elif isinstance(val, (dict, OrderedDict)):
                 try:
                     return val[node.attr]
                 except (KeyError, TypeError):
                     pass
 
-            # # Maybe the base object is an actual object, not just a dict
-            # try:
-            #     return getattr(self._eval(node.value), node.attr)
-            # except (AttributeError, TypeError):
-            #     pass
-
-            # If it is neither, raise an exception
             raise AttributeDoesNotExist(node.attr)
         elif isinstance(node, ast.Index):
             return self._eval(node.value)
-
-        # elif isinstance(node, ast.Slice):
-        #     lower = upper = step = None
-        #     if node.lower is not None:
-        #         lower = self._eval(node.lower)
-        #     if node.upper is not None:
-        #         upper = self._eval(node.upper)
-        #     if node.step is not None:
-        #         step = self._eval(node.step)
-        #     return slice(lower, upper, step)
-
-        elif isinstance(node, ast.Dict):
-            d = {}
-            for k, v in zip(node.keys, node.values):
-                k = self._eval(k)
-                v = self._eval(v)
-                d[k] = v
-            return d
-
-        elif isinstance(node, (ast.List, ast.Tuple, ast.Set)):
-            d = []
-            for v in node.elts:
-                v = self._eval(v)
-                d.append(v)
-                if len(d) > MAX_LEN:
-                    raise InvalidExpression('Max list length.')
-            if isinstance(node, ast.Tuple):
-                return tuple(d)
-            elif isinstance(node, ast.Set):
-                return set(d)
-            else:
-                return d
 
         else:
             raise InvalidExpression("Sorry, %s is not available in this evaluator" % type(node).__name__)
@@ -804,12 +815,14 @@ if __name__ == "__main__":
         ),
     }
 
-
     # _l.info(safe_eval('(1).__class__.__bases__', names=names))
     # _l.info(safe_eval('{"a":1, "b":2}'))
     # _l.info(safe_eval('[1,]'))
     # _l.info(safe_eval('(1,)'))
-    # _l.info(safe_eval('{1,}'))
+    _l.info(safe_eval('{1,}'))
+    _l.info(safe_eval('[1, 1.0, "str", None, True, False]'))
+
+
     # _l.info(safe_eval('parse_date("2000-01-01") + days(100)'))
     # _l.info(safe_eval(
     #     'simple_price(parse_date("2000-01-05"), parse_date("2000-01-01"), 0, parse_date("2000-04-10"), 100)'))
@@ -959,14 +972,27 @@ while r < 100:
     r = r + 1
 r + 0
         ''')
+
         test_eval('''
-r = now()
-i = 0
-while i < 100:
-    r = r + days(1)
-    i = i + 1
-    pass
-r
+a = date(2000, 1, 1)
+b = date(2001, 1, 1)
+r = a
+k = 0
+while r < b:
+    r = r + weeks(k * 2)
+    k = k + 1
+k, r
+        ''')
+
+        test_eval('''
+a = date(2000, 1, 1)
+b = date(2001, 1, 1)
+r = a
+k = 0
+while r < b:
+    r = r + timedelta(weeks=k * 2)
+    k = k + 1
+k, r
         ''')
 
         test_eval('''
@@ -1004,5 +1030,6 @@ def accrl_NL_365_NO_EOM(dt1, dt2):
 accrl_NL_365_NO_EOM(parse_date('2000-01-01'), parse_date('2000-01-25'))
         ''')
 
-    demo_stmt()
+
+    # demo_stmt()
     pass
