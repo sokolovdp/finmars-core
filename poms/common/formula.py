@@ -1,6 +1,7 @@
 from __future__ import unicode_literals, print_function, division
 
 import ast
+import calendar
 import datetime
 import logging
 import operator
@@ -112,6 +113,13 @@ def _now():
 
 def _date(year, month=1, day=1):
     return datetime.date(year=int(year), month=int(month), day=int(day))
+
+
+def _isleap(date_or_year):
+    if isinstance(date_or_year, datetime.date):
+        return calendar.isleap(date_or_year.year)
+    else:
+        return calendar.isleap(int(date_or_year))
 
 
 def _days(days):
@@ -290,6 +298,9 @@ class SimpleEval2(object):
             ast.USub: operator.neg,
             ast.UAdd: operator.pos,
             ast.In: _op_in,
+            ast.Is: operator.is_,
+            ast.IsNot: operator.is_not,
+            ast.Not: operator.not_,
         }
 
         self.functions = {
@@ -309,6 +320,7 @@ class SimpleEval2(object):
 
             'now': _now,
             'date': _date,
+            'isleap': _isleap,
             'days': _days,
             'weeks': _weeks,
             'add_days': _add_days,
@@ -415,6 +427,9 @@ class SimpleEval2(object):
 
             elif isinstance(node, ast.FunctionDef):
                 self.local_functions[node.name] = node
+
+            elif isinstance(node, ast.Pass):
+                pass
 
             else:
                 ret = self._eval(node.value)
@@ -813,62 +828,23 @@ if __name__ == "__main__":
     # _l.info(safe_eval('1+'))
     # _l.info(safe_eval('1 if 1 > 2 else 2'))
     # _l.info(safe_eval('"a" in "ab"'))
-
-    # _l.info(safe_eval('a = 2 + 3'))
-    #     _l.info(safe_eval('''
-    # if 1 > 2:
-    #     a = 2
-    #     b = 3
-    # else:
-    #     a = 3
-    #     b = 4
-    # a * b
-    # '''))
-
-
-    #     _l.info(safe_eval('''
-    # r = 0
-    # for a in [1,2,3]:
-    #     r = r + a
-    # r + 0
-    # '''))
-    #     _l.info(safe_eval('''
-    # r = 0
-    # while r < 100:
-    #     r = r + 1
-    # r + 0
-    # '''))
-    #     _l.info(safe_eval('''
-    # r = now()
-    # i = 0
-    # while i < 100:
-    #     r = r + days(1)
-    #     i = i + 1
-    #     pass
-    # r
-    # '''))
-    #     _l.info(safe_eval('''
-    # def f1(a, b = 200, c = 300):
-    #     r = a * b
-    #     return r + c
-    # f1(10, b = 20)
-    # '''))
-
     # _l.info(safe_eval('y = now().year'))
+
+    def test_eval(expr, names=None):
+        try:
+            res = safe_eval(expr, names=names)
+        except InvalidExpression as e:
+            res = "<ERROR1: %s>" % e
+            time.sleep(1)
+            raise e
+        except Exception as e:
+            res = "<ERROR2: %s>" % e
+        _l.info("\t%-60s -> %s" % (expr, res))
+
 
     def demo():
         # from poms.common.formula_serializers import EvalInstrumentSerializer, EvalTransactionSerializer
 
-        def play(expr, names=None):
-            try:
-                res = safe_eval(expr, names=names)
-            except InvalidExpression as e:
-                res = "<ERROR1: %s>" % e
-                time.sleep(1)
-                raise e
-            except Exception as e:
-                res = "<ERROR2: %s>" % e
-            _l.info("\t%-60s -> %s" % (expr, res))
 
         from rest_framework.test import APIRequestFactory
         factory = APIRequestFactory()
@@ -899,48 +875,48 @@ if __name__ == "__main__":
         #     # print("\t%s -> %s" % (n, json.dumps(names[n], sort_keys=True, indent=2)))
 
         _l.info("simple:")
-        play("2 * 2 + 2", names)
-        play("2 * (2 + 2)", names)
-        play("16 ** 16", names)
-        play("5 / 2", names)
-        play("5 % 2", names)
+        test_eval("2 * 2 + 2", names)
+        test_eval("2 * (2 + 2)", names)
+        test_eval("16 ** 16", names)
+        test_eval("5 / 2", names)
+        test_eval("5 % 2", names)
 
         _l.info('')
         _l.info("with variables:")
-        play("v0 + 1", names)
-        play("v1 + ' & ' + str(v0)", names)
-        play("v2.name", names)
-        play("v2.num * 3", names)
-        play("v3[1].name", names)
-        play("v3[1].name", names)
-        play("globals()", names)
-        play("globals()['v0']", names)
-        # play("instr.name", names)
-        # play("instr.instrument_type.id", names)
-        # play("instr.instrument_type.user_code", names)
-        # play("instr.price_multiplier", names)
-        # play("instr['price_multiplier']", names)
-        # play("globals()['instr']", names)
-        # play("globals()['instr'].price_multiplier", names)
-        # play("globals()['instr']['price_multiplier']", names)
+        test_eval("v0 + 1", names)
+        test_eval("v1 + ' & ' + str(v0)", names)
+        test_eval("v2.name", names)
+        test_eval("v2.num * 3", names)
+        test_eval("v3[1].name", names)
+        test_eval("v3[1].name", names)
+        test_eval("globals()", names)
+        test_eval("globals()['v0']", names)
+        # test_eval("instr.name", names)
+        # test_eval("instr.instrument_type.id", names)
+        # test_eval("instr.instrument_type.user_code", names)
+        # test_eval("instr.price_multiplier", names)
+        # test_eval("instr['price_multiplier']", names)
+        # test_eval("globals()['instr']", names)
+        # test_eval("globals()['instr'].price_multiplier", names)
+        # test_eval("globals()['instr']['price_multiplier']", names)
 
         _l.info('')
         _l.info("functions: ")
-        play("round(1.5)", names)
-        play("trunc(1.5)", names)
-        play("int(1.5)", names)
-        play("now()", names)
-        play("add_days(now(), 10)", names)
-        play("add_workdays(now(), 10)", names)
-        play("iff(1.001 > 1.002, 'really?', 'ok')", names)
-        play("'really?' if 1.001 > 1.002 else 'ok'", names)
-        play("'N' + format_date(now(), '%Y%m%d') + '/' + str(v2.trn_code)", names)
+        test_eval("round(1.5)", names)
+        test_eval("trunc(1.5)", names)
+        test_eval("int(1.5)", names)
+        test_eval("now()", names)
+        test_eval("add_days(now(), 10)", names)
+        test_eval("add_workdays(now(), 10)", names)
+        test_eval("iff(1.001 > 1.002, 'really?', 'ok')", names)
+        test_eval("'really?' if 1.001 > 1.002 else 'ok'", names)
+        test_eval("'N' + format_date(now(), '%Y%m%d') + '/' + str(v2.trn_code)", names)
 
-        play("format_date(now())", names)
-        play("format_date(now(), '%Y/%m/%d')", names)
-        play("format_date(now(), format='%Y/%m/%d')", names)
-        play("format_number(1234.234)", names)
-        play("format_number(1234.234, '.', 2)", names)
+        test_eval("format_date(now())", names)
+        test_eval("format_date(now(), '%Y/%m/%d')", names)
+        test_eval("format_date(now(), format='%Y/%m/%d')", names)
+        test_eval("format_number(1234.234)", names)
+        test_eval("format_number(1234.234, '.', 2)", names)
 
         # r = safe_eval3('"%r" % now()', names=names, functions=functions)
         # r = safe_eval('format_date(now(), "EEE, MMM d, yy")')
@@ -951,4 +927,82 @@ if __name__ == "__main__":
         # _l.info(add_workdays(datetime.date(2016, 6, 15), 4))
 
 
-        # demo()
+    # demo()
+    pass
+
+
+    def demo_stmt():
+        test_eval('a = 2 + 3')
+
+        test_eval('''
+a = 2
+b = None
+if b is None:
+    b = 2
+if b is not None:
+    b = 3
+if not b:
+    b = 1
+a * b
+        ''')
+
+        test_eval('''
+r = 0
+for a in [1,2,3]:
+    r = r + a
+r + 0
+        ''')
+
+        test_eval('''
+r = 0
+while r < 100:
+    r = r + 1
+r + 0
+        ''')
+        test_eval('''
+r = now()
+i = 0
+while i < 100:
+    r = r + days(1)
+    i = i + 1
+    pass
+r
+        ''')
+
+        test_eval('''
+def f1(a, b = 200, c = 300):
+    r = a * b
+    return r + c
+f1(10, b = 20)
+        ''')
+
+        test_eval('''
+def accrl_C_30E_P_360(dt1, dt2):
+    d1 = dt1.day
+    d2 = dt2.day
+    m1 = dt1.month
+    m2 = dt1.month
+    if d1 == 31:
+        d1 = 30
+    if d2 == 31:
+        m2 += 1
+        d2 = 1
+    return ((dt2.year - dt1.year) * 360 + (m2 - m1) * 30 + (d2 - d1)) / 360
+accrl_C_30E_P_360(parse_date('2001-01-01'), parse_date('2001-01-25'))
+        ''')
+
+        test_eval('''
+def accrl_NL_365_NO_EOM(dt1, dt2):
+    is_leap1 = isleap(dt1.year)
+    is_leap2 = isleap(dt2.year)
+    k = 0
+    if is_leap1 and dt1 < date(dt1.year, 2, 29) and dt2 >= date(dt1.year, 2, 29):
+        k = 1
+    if is_leap2 and dt2 >= date(dt2.year, 2, 29) and dt1 < date(dt2.year, 2, 29):
+        k = 1
+    return (dt2 - dt1 - days(k)).days / 365
+accrl_NL_365_NO_EOM(parse_date('2000-01-01'), parse_date('2000-01-25'))
+        ''')
+
+    demo_stmt()
+    pass
