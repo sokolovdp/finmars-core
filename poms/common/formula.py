@@ -115,9 +115,11 @@ def _date(year, month=1, day=1):
 
 
 def _days(days):
-    if isinstance(days, datetime.timedelta):
-        return days
     return datetime.timedelta(days=int(days))
+
+
+def _weeks(weeks):
+    return datetime.timedelta(weeks=int(weeks))
 
 
 def _add_days(date, days):
@@ -308,6 +310,7 @@ class SimpleEval2(object):
             'now': _now,
             'date': _date,
             'days': _days,
+            'weeks': _weeks,
             'add_days': _add_days,
             'add_weeks': _add_weeks,
             'add_workdays': _add_workdays,
