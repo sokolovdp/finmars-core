@@ -31,6 +31,10 @@ class ExpressionSyntaxError(InvalidExpression):
     pass
 
 
+class ExpressionEvalError(InvalidExpression):
+    pass
+
+
 class FunctionNotDefined(InvalidExpression):
     def __init__(self, name):
         self.message = "Function '%s' not defined" % name
@@ -311,8 +315,12 @@ def _op_in(a, b):
 
 
 class SimpleEval2(object):
-    def __init__(self, names=None):
-        self.expr = None
+    def __init__(self, expr=None, names=None):
+        self.expr = expr
+        if expr:
+            self.expr_ast = SimpleEval2.try_parse(expr)
+        else:
+            self.expr_ast = None
 
         self.operators = {
             ast.Add: _op_safe_add,
@@ -374,57 +382,55 @@ class SimpleEval2(object):
             'eval': lambda s: self.eval(s)
         }
         self.local_functions = {}
-        # self.names = deep_value(names) if names else {}
         self.names = names or {}
+        # not needed in py3
         # self.names.update({"True": True, "False": False, "None": None})
         self.local_names = None
         self.state = None
         self.result = None
 
     @staticmethod
-    def is_valid(expr):
-        if expr:
-            try:
-                ast.parse(expr)
-            except (KeyError, AttributeError, TypeError, ValueError):
-                return False
-            except Exception:
-                return False
-        return True
+    def try_parse(expr):
+        if not expr:
+            raise InvalidExpression('Empty expression')
+        try:
+            return ast.parse(expr)
+        except SyntaxError as e:
+            raise ExpressionSyntaxError(e)
+        except Exception as e:
+            raise InvalidExpression(e)
 
     @staticmethod
-    def try_parse(expr):
-        if expr:
-            try:
-                ast.parse(expr)
-            except (KeyError, AttributeError, TypeError, ValueError) as e:
-                raise InvalidExpression(e)
-            except Exception as e:
-                raise InvalidExpression(e)
-        else:
-            raise InvalidExpression('Empty value')
+    def is_valid(expr):
+        try:
+            SimpleEval2.try_parse(expr)
+            return True
+        except:
+            return False
 
-    def eval(self, expr):
-        # set a copy of the expression aside, so we can give nice errors...
+    def eval(self, expr=None, names=None):
+        if expr is not None:
+            self.expr = expr
+            if expr:
+                self.expr_ast = SimpleEval2.try_parse(expr)
+            else:
+                self.expr_ast = None
+        if names is not None:
+            self.names = names
         self.local_names = {}
         self.state = {}
         self.result = None
 
+        if self.expr_ast is None:
+            raise InvalidExpression('Empty expression')
+
         try:
-            if expr:
-                self.expr = expr
-                self.result = self._eval_stmt(ast.parse(expr).body)
-                return self.result
-            else:
-                raise InvalidExpression('Empty expression')
+            self.result = self._eval_stmt(self.expr_ast.body)
+            return self.result
         except InvalidExpression:
             raise
-        except SyntaxError as e:
-            raise ExpressionSyntaxError(e)
-        except (KeyError, AttributeError, TypeError, ValueError) as e:
-            raise InvalidExpression(e)
         except Exception as e:
-            raise InvalidExpression(e)
+            raise ExpressionEvalError(e)
 
     def _eval_stmt(self, body):
         ret = None
@@ -436,7 +442,7 @@ class SimpleEval2(object):
                     if isinstance(t, ast.Name):
                         self.local_names[t.id] = val
                     else:
-                        raise InvalidExpression('Invalid assign')
+                        raise ExpressionSyntaxError('Invalid assign')
                 ret = val
 
             elif isinstance(node, ast.If):
@@ -459,7 +465,7 @@ class SimpleEval2(object):
                         break
                     iter += 1
                     if iter > MAX_ITERATIONS:
-                        raise InvalidExpression('Max iterations')
+                        raise ExpressionEvalError('Max iterations')
 
             elif isinstance(node, ast.Break):
                 raise BreakExpression()
@@ -481,7 +487,7 @@ class SimpleEval2(object):
 
         elif isinstance(node, ast.Str):  # <string>
             if len(node.s) > MAX_STRING_LENGTH:
-                raise InvalidExpression(
+                raise ExpressionEvalError(
                     "String Literal in statement is too long! (%s, when %s is max)" % (len(node.s), MAX_STRING_LENGTH))
             return node.s
 
@@ -495,6 +501,8 @@ class SimpleEval2(object):
                 k = self._eval(k)
                 v = self._eval(v)
                 d[k] = v
+                if len(d) > MAX_LEN:
+                    raise ExpressionEvalError('Max dict length.')
             return d
 
         elif isinstance(node, (ast.List, ast.Tuple, ast.Set)):
@@ -503,20 +511,17 @@ class SimpleEval2(object):
                 v = self._eval(v)
                 d.append(v)
                 if len(d) > MAX_LEN:
-                    raise InvalidExpression('Max list length.')
+                    raise ExpressionEvalError('Max list/tuple/set length.')
             if isinstance(node, ast.Tuple):
                 return tuple(d)
             elif isinstance(node, ast.Set):
                 return set(d)
             return d
 
-        # operators, functions, etc:
-
         elif isinstance(node, ast.UnaryOp):  # - and + etc.
             return self.operators[type(node.op)](self._eval(node.operand))
 
         elif isinstance(node, ast.BinOp):  # <left> <operator> <right>
-            # return self.operators[type(node.op)](self._eval(node.left), self._eval(node.right))
             l = self._eval(node.left)
             r = self._eval(node.right)
             # if isinstance(node.op, ast.Mult) and isinstance(l, str):
@@ -524,7 +529,7 @@ class SimpleEval2(object):
             # if isinstance(node.op, ast.Mod) and isinstance(l, str):
             #     raise simpleeval.InvalidExpression("Invalid first argument")
             if isinstance(node.op, (ast.Mult, ast.Mod,)) and isinstance(l, str):
-                raise InvalidExpression("Binary operation does't support string")
+                raise ExpressionEvalError("Binary operation does't support string")
             return self.operators[type(node.op)](l, r)
 
         elif isinstance(node, ast.BoolOp):  # and & or...
@@ -642,7 +647,7 @@ def is_valid(expr):
 
 
 def try_parse(expr):
-    return SimpleEval2.try_parse(expr)
+    SimpleEval2.try_parse(expr)
 
 
 def validate(expr):
@@ -656,8 +661,8 @@ def validate(expr):
 def safe_eval(s, names=None):
     # _l.debug('> safe_eval: s="%s", names=%s, functions=%s',
     #          s, names, functions)
-    se = SimpleEval2(names=names)
-    ret = se.eval(s)
+    se = SimpleEval2(expr=s, names=names)
+    ret = se.eval()
     # _l.debug('< safe_eval: s="%s", local_names=%s, local_functions=%s',
     #          ret, se.local_names, se.local_functions)
     return ret
@@ -824,6 +829,7 @@ if __name__ == "__main__":
         ),
     }
 
+
     # _l.info(safe_eval('(1).__class__.__bases__', names=names))
     # _l.info(safe_eval('{"a":1, "b":2}'))
     # _l.info(safe_eval('[1,]'))
@@ -856,12 +862,13 @@ if __name__ == "__main__":
 
 
     def test_eval(expr, names=None):
+        _l.info('-' * 79)
         try:
             res = safe_eval(expr, names=names)
         except InvalidExpression as e:
             res = "<ERROR1: %s>" % e
             time.sleep(1)
-            raise e
+            # raise e
         except Exception as e:
             res = "<ERROR2: %s>" % e
         _l.info("\t%-60s -> %s" % (expr, res))
@@ -975,14 +982,14 @@ a * b
 r = 0
 for a in [1,2,3]:
     r = r + a
-r + 0
+r
         ''')
 
         test_eval('''
 r = 0
 while r < 100:
-    r = r + 1
-r + 0
+    r = r + 2
+r
         ''')
 
         test_eval('''
@@ -1058,10 +1065,10 @@ accrl_NL_365_NO_EOM(parse_date('2000-01-01'), parse_date('2000-01-25'))
                 if is_leap2 and dt2 >= datetime.date(dt2.year, 2, 29) and dt1 < datetime.date(dt2.year, 2, 29):
                     k = 1
                 return (dt2 - dt1 - datetime.timedelta(days=k)).days / 365
+
             return accrl_NL_365_NO_EOM(_parse_date('2000-01-01'), _parse_date('2000-01-25'))
 
-        def f_eval():
-            expr = '''
+        expr = '''
 def accrl_NL_365_NO_EOM(dt1, dt2):
     is_leap1 = isleap(dt1.year)
     is_leap2 = isleap(dt2.year)
@@ -1073,10 +1080,21 @@ def accrl_NL_365_NO_EOM(dt1, dt2):
     return (dt2 - dt1 - days(k)).days / 365
 accrl_NL_365_NO_EOM(parse_date('2000-01-01'), parse_date('2000-01-25'))
         '''
-            safe_eval(expr)
 
-        _l.info(timeit.timeit(f_native, number=1000))
-        _l.info(timeit.timeit(f_eval, number=1000))
+        def f_eval():
+            return safe_eval(expr)
 
-    # perf_tests()
-    pass
+        se = SimpleEval2(expr=expr)
+
+        def f_eval2():
+            return se.eval()
+
+        _l.info('-' * 79)
+        _l.info('native: %s', timeit.timeit(f_native, number=1000))
+        # _l.info('eval: %s', timeit.timeit(lambda: exec(expr), number=1000))
+        _l.info('safe_eval: %s', timeit.timeit(f_eval, number=1000))
+        _l.info('cached safe_eval: %s', timeit.timeit(f_eval2, number=1000))
+
+
+    perf_tests()
+    # pass
