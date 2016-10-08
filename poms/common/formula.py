@@ -7,6 +7,7 @@ import logging
 import operator
 import random
 import time
+import timeit
 from collections import OrderedDict
 
 from dateutil import relativedelta
@@ -46,6 +47,10 @@ class AttributeDoesNotExist(InvalidExpression):
     def __init__(self, attr):
         self.message = "Attribute '%s' does not exist in expression" % attr
         super(AttributeDoesNotExist, self).__init__(self.message)
+
+
+class BreakExpression(Exception):
+    pass
 
 
 # def _check_string(a):
@@ -366,6 +371,7 @@ class SimpleEval2(object):
 
             'globals': lambda: self.names if isinstance(self.names, (dict, OrderedDict)) else {},
             'locals': lambda: self.local_names,
+            'eval': lambda s: self.eval(s)
         }
         self.local_functions = {}
         # self.names = deep_value(names) if names else {}
@@ -407,20 +413,14 @@ class SimpleEval2(object):
         try:
             if expr:
                 self.expr = expr
-
-                try:
-                    self.result = self._eval_stmt(ast.parse(expr).body)
-                    return self.result
-                except InvalidExpression:
-                    raise
-                except SyntaxError as e:
-                    raise ExpressionSyntaxError(e)
-                except Exception as e:
-                    raise InvalidExpression(e)
+                self.result = self._eval_stmt(ast.parse(expr).body)
+                return self.result
             else:
-                raise InvalidExpression('Empty value')
+                raise InvalidExpression('Empty expression')
         except InvalidExpression:
             raise
+        except SyntaxError as e:
+            raise ExpressionSyntaxError(e)
         except (KeyError, AttributeError, TypeError, ValueError) as e:
             raise InvalidExpression(e)
         except Exception as e:
@@ -445,15 +445,24 @@ class SimpleEval2(object):
             elif isinstance(node, ast.For):
                 for val in self._eval(node.iter):
                     self.local_names[node.target.id] = val
-                    ret = self._eval_stmt(node.body)
+                    try:
+                        ret = self._eval_stmt(node.body)
+                    except BreakExpression:
+                        break
 
             elif isinstance(node, ast.While):
                 iter = 0
                 while self._eval(node.test):
-                    ret = self._eval_stmt(node.body)
+                    try:
+                        ret = self._eval_stmt(node.body)
+                    except BreakExpression:
+                        break
                     iter += 1
                     if iter > MAX_ITERATIONS:
                         raise InvalidExpression('Max iterations')
+
+            elif isinstance(node, ast.Break):
+                raise BreakExpression()
 
             elif isinstance(node, ast.FunctionDef):
                 self.local_functions[node.name] = node
@@ -819,8 +828,8 @@ if __name__ == "__main__":
     # _l.info(safe_eval('{"a":1, "b":2}'))
     # _l.info(safe_eval('[1,]'))
     # _l.info(safe_eval('(1,)'))
-    _l.info(safe_eval('{1,}'))
-    _l.info(safe_eval('[1, 1.0, "str", None, True, False]'))
+    # _l.info(safe_eval('{1,}'))
+    # _l.info(safe_eval('[1, 1.0, "str", None, True, False]'))
 
 
     # _l.info(safe_eval('parse_date("2000-01-01") + days(100)'))
@@ -842,6 +851,9 @@ if __name__ == "__main__":
     # _l.info(safe_eval('1 if 1 > 2 else 2'))
     # _l.info(safe_eval('"a" in "ab"'))
     # _l.info(safe_eval('y = now().year'))
+    # _l.info(safe_eval('eval("2+eval(\\\"2+2\\\")")'))
+    # _l.info(ast.literal_eval('2+2'))
+
 
     def test_eval(expr, names=None):
         try:
@@ -1031,5 +1043,40 @@ accrl_NL_365_NO_EOM(parse_date('2000-01-01'), parse_date('2000-01-25'))
         ''')
 
 
-    # demo_stmt()
+    demo_stmt()
+    pass
+
+
+    def perf_tests():
+        def f_native():
+            def accrl_NL_365_NO_EOM(dt1, dt2):
+                is_leap1 = calendar.isleap(dt1.year)
+                is_leap2 = calendar.isleap(dt2.year)
+                k = 0
+                if is_leap1 and dt1 < datetime.date(dt1.year, 2, 29) and dt2 >= datetime.date(dt1.year, 2, 29):
+                    k = 1
+                if is_leap2 and dt2 >= datetime.date(dt2.year, 2, 29) and dt1 < datetime.date(dt2.year, 2, 29):
+                    k = 1
+                return (dt2 - dt1 - datetime.timedelta(days=k)).days / 365
+            return accrl_NL_365_NO_EOM(_parse_date('2000-01-01'), _parse_date('2000-01-25'))
+
+        def f_eval():
+            expr = '''
+def accrl_NL_365_NO_EOM(dt1, dt2):
+    is_leap1 = isleap(dt1.year)
+    is_leap2 = isleap(dt2.year)
+    k = 0
+    if is_leap1 and dt1 < date(dt1.year, 2, 29) and dt2 >= date(dt1.year, 2, 29):
+        k = 1
+    if is_leap2 and dt2 >= date(dt2.year, 2, 29) and dt1 < date(dt2.year, 2, 29):
+        k = 1
+    return (dt2 - dt1 - days(k)).days / 365
+accrl_NL_365_NO_EOM(parse_date('2000-01-01'), parse_date('2000-01-25'))
+        '''
+            safe_eval(expr)
+
+        _l.info(timeit.timeit(f_native, number=1000))
+        _l.info(timeit.timeit(f_eval, number=1000))
+
+    # perf_tests()
     pass
