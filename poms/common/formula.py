@@ -1091,10 +1091,15 @@ accrl_NL_365_NO_EOM(parse_date('2000-01-01'), parse_date('2000-01-25'))
 
         _l.info('-' * 79)
         _l.info('native: %s', timeit.timeit(f_native, number=1000))
-        # _l.info('eval: %s', timeit.timeit(lambda: exec(expr), number=1000))
+        _l.info('eval: %s', timeit.timeit(lambda: exec(expr, {
+            'parse_date':_parse_date,
+            'isleap':calendar.isleap,
+            'date': _date,
+            'days': _days,
+        }), number=1000))
         _l.info('safe_eval: %s', timeit.timeit(f_eval, number=1000))
         _l.info('cached safe_eval: %s', timeit.timeit(f_eval2, number=1000))
 
 
     perf_tests()
-    # pass
+    pass
