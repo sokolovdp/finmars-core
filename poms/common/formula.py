@@ -1058,27 +1058,23 @@ accrl_NL_365_NO_EOM(parse_date('2000-01-01'), parse_date('2000-01-25'))
 
         def f_native():
             def accrl_NL_365_NO_EOM(dt1, dt2):
-                is_leap1 = calendar.isleap(dt1.year)
-                is_leap2 = calendar.isleap(dt2.year)
                 k = 0
-                if is_leap1 and dt1 < datetime.date(dt1.year, 2, 29) and dt2 >= datetime.date(dt1.year, 2, 29):
+                if _isleap(dt1.year) and dt1 < _date(dt1.year, 2, 29) <= dt2:
                     k = 1
-                if is_leap2 and dt2 >= datetime.date(dt2.year, 2, 29) and dt1 < datetime.date(dt2.year, 2, 29):
+                if _isleap(dt2.year) and dt2 >= _date(dt2.year, 2, 29) > dt1:
                     k = 1
-                return (dt2 - dt1 - datetime.timedelta(days=k)).days / 365
+                return ((dt2 - dt1).days - k) / 365
 
             return accrl_NL_365_NO_EOM(_parse_date('2000-01-01'), _parse_date('2000-01-25'))
 
         expr = '''
 def accrl_NL_365_NO_EOM(dt1, dt2):
-    is_leap1 = isleap(dt1.year)
-    is_leap2 = isleap(dt2.year)
     k = 0
-    if is_leap1 and dt1 < date(dt1.year, 2, 29) and dt2 >= date(dt1.year, 2, 29):
+    if isleap(dt1.year) and dt1 < date(dt1.year, 2, 29) <= dt2:
         k = 1
-    if is_leap2 and dt2 >= date(dt2.year, 2, 29) and dt1 < date(dt2.year, 2, 29):
+    if isleap(dt2.year) and dt2 >= date(dt2.year, 2, 29) > dt1:
         k = 1
-    return (dt2 - dt1 - days(k)).days / 365
+    return ((dt2 - dt1).days - k) / 365
 accrl_NL_365_NO_EOM(parse_date('2000-01-01'), parse_date('2000-01-25'))
         '''
 
@@ -1091,15 +1087,15 @@ accrl_NL_365_NO_EOM(parse_date('2000-01-01'), parse_date('2000-01-25'))
             return se.eval()
 
         _l.info('-' * 79)
-        _l.info('native: %s', timeit.timeit(f_native, number=1000))
-        _l.info('eval: %s', timeit.timeit(lambda: exec(expr, {
+        _l.info('native          : %f', timeit.timeit(f_native, number=1000))
+        _l.info('exec            : %f', timeit.timeit(lambda: exec(expr, {
             'parse_date':_parse_date,
             'isleap':calendar.isleap,
             'date': _date,
             'days': _days,
         }), number=1000))
-        _l.info('safe_eval: %s', timeit.timeit(f_eval, number=1000))
-        _l.info('cached safe_eval: %s', timeit.timeit(f_eval2, number=1000))
+        _l.info('safe_eval       : %f', timeit.timeit(f_eval, number=1000))
+        _l.info('cached safe_eval: %f', timeit.timeit(f_eval2, number=1000))
 
 
     perf_tests()
