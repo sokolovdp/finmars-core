@@ -32,8 +32,6 @@ def db_class_check_data(model, verbosity, using):
 
 
 def date_now():
-    # from django.utils import timezone
-    # return timezone.now().date()
     return timezone_today()
 
 
@@ -58,9 +56,6 @@ def add_view_and_manage_permissions():
                     'name': 'Can view %s' % content_type.name
                 }
             )
-            # if not Permission.objects.filter(content_type=content_type, codename=codename).exists():
-            #     Permission.objects.create(content_type=content_type, codename=codename,
-            #                               name="Can view %s" % content_type.name)
 
         codename = "manage_%s" % content_type.model
         if (content_type.id, codename) not in existed:
@@ -70,6 +65,3 @@ def add_view_and_manage_permissions():
                     'name': 'Can manage %s' % content_type.name
                 }
             )
-            # if not Permission.objects.filter(content_type=content_type, codename=codename).exists():
-            #     Permission.objects.create(content_type=content_type, codename=codename,
-            #                               name="Can manage %s" % content_type.name)

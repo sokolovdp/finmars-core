@@ -20,8 +20,6 @@ class AbstractApiView(APIView):
         super(AbstractApiView, self).perform_authentication(request)
         if request.user.is_authenticated():
             request.user.member, request.user.master_user = get_master_user_and_member(request)
-            # request.user.master_user = get_master_user(request)
-            # request.user.member = get_member(request)
 
     def initial(self, request, *args, **kwargs):
         super(AbstractApiView, self).initial(request, *args, **kwargs)
