@@ -14,7 +14,7 @@ from poms.users.fields import MasterUserField
 
 
 class CurrencySerializer(ModelWithUserCodeSerializer):
-    url = serializers.HyperlinkedIdentityField(view_name='currency-detail')
+    # url = serializers.HyperlinkedIdentityField(view_name='currency-detail')
     master_user = MasterUserField()
     daily_pricing_model_object = serializers.PrimaryKeyRelatedField(source='daily_pricing_model', read_only=True)
     price_download_scheme = PriceDownloadSchemeField(allow_null=True)
@@ -43,7 +43,7 @@ class CurrencySerializer(ModelWithUserCodeSerializer):
 
 
 class CurrencyViewSerializer(ModelWithUserCodeSerializer):
-    url = serializers.HyperlinkedIdentityField(view_name='currency-detail')
+    # url = serializers.HyperlinkedIdentityField(view_name='currency-detail')
 
     class Meta:
         model = Currency
@@ -53,7 +53,7 @@ class CurrencyViewSerializer(ModelWithUserCodeSerializer):
 
 
 class CurrencyHistorySerializer(serializers.ModelSerializer):
-    url = serializers.HyperlinkedIdentityField(view_name='currencyhistory-detail')
+    # url = serializers.HyperlinkedIdentityField(view_name='currencyhistory-detail')
     currency = CurrencyField()
     currency_object = CurrencyViewSerializer(source='currency', read_only=True)
     pricing_policy = PricingPolicyField(allow_null=False)

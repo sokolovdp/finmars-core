@@ -13,7 +13,7 @@ from poms.users.serializers import MemberViewSerializer
 
 
 class ThreadGroupSerializer(serializers.ModelSerializer):
-    url = serializers.HyperlinkedIdentityField(view_name='chatthreadgroup-detail')
+    # url = serializers.HyperlinkedIdentityField(view_name='chatthreadgroup-detail')
     master_user = MasterUserField()
     tags = TagField(many=True, required=False, allow_null=True)
     tags_object = TagViewSerializer(source='tags', many=True, read_only=True)
@@ -24,7 +24,7 @@ class ThreadGroupSerializer(serializers.ModelSerializer):
 
 
 class ThreadGroupViewSerializer(serializers.ModelSerializer):
-    url = serializers.HyperlinkedIdentityField(view_name='chatthreadgroup-detail')
+    # url = serializers.HyperlinkedIdentityField(view_name='chatthreadgroup-detail')
 
     class Meta:
         model = ThreadGroup
@@ -32,7 +32,7 @@ class ThreadGroupViewSerializer(serializers.ModelSerializer):
 
 
 class MessageSerializer(serializers.ModelSerializer):
-    url = serializers.HyperlinkedIdentityField(view_name='chatmessage-detail')
+    # url = serializers.HyperlinkedIdentityField(view_name='chatmessage-detail')
     thread = ThreadField()
     sender = HiddenMemberField()
     created = DateTimeTzAwareField(read_only=True)
@@ -46,7 +46,7 @@ class MessageSerializer(serializers.ModelSerializer):
 
 
 class ThreadSerializer(ModelWithObjectPermissionSerializer):
-    url = serializers.HyperlinkedIdentityField(view_name='chatthread-detail')
+    # url = serializers.HyperlinkedIdentityField(view_name='chatthread-detail')
     master_user = MasterUserField()
     thread_group = ThreadGroupField(default=ThreadGroupDefault())
     thread_group_object = ThreadGroupViewSerializer(source='thread_group', read_only=True)
@@ -77,7 +77,7 @@ class ThreadSerializer(ModelWithObjectPermissionSerializer):
 
 
 class DirectMessageSerializer(serializers.ModelSerializer):
-    url = serializers.HyperlinkedIdentityField(view_name='chatdirectmessage-detail')
+    # url = serializers.HyperlinkedIdentityField(view_name='chatdirectmessage-detail')
     sender = HiddenMemberField()
     recipient = MemberField()
     created = DateTimeTzAwareField(read_only=True)
