@@ -78,7 +78,7 @@ def coupon_accrual_factor(
                 dt3 = maturity_date
 
     elif freq >= 12:
-        return 0.
+        return 0.0
     elif freq == 0:
         freq = 1
         dt3 = dt1 + relativedelta.relativedelta(years=1)
@@ -139,9 +139,9 @@ def coupon_accrual_factor(
             is_leap1 = calendar.isleap(dt1.year)
             is_leap2 = calendar.isleap(dt2.year)
             if (is_leap1 or is_leap2) and dt1 <= (date(dt1.year, 2, 28) + timedelta(days=1)) <= dt2:
-                return (dt2 - dt1 + 1) / 366
+                return ((dt2 - dt1).days + 1) / 366
             else:
-                return (dt2 - dt1 + timedelta(days=1)).days / 365
+                return ((dt2 - dt1).days + 1) / 365
         return 0
     elif accrual_calculation_model == AccrualCalculationModel.ACT_1_365:  # 8
         # Case 104  'Act+1/365
@@ -215,11 +215,11 @@ def coupon_accrual_factor(
         is_leap1 = calendar.isleap(dt1.year)
         is_leap2 = calendar.isleap(dt2.year)
         k = 0
-        if is_leap1 and dt1 < date(dt1.year, 2, 29) and dt2 >= date(dt1.year, 2, 29):
+        if is_leap1 and dt1 < date(dt1.year, 2, 29) <= dt2:
             k = 1
-        if is_leap2 and dt2 >= date(dt2.year, 2, 29) and dt1 < date(dt2.year, 2, 29):
+        if is_leap2 and dt2 >= date(dt2.year, 2, 29) > dt1:
             k = 1
-        return (dt2 - dt1 - timedelta(days=k)).days / 365
+        return ((dt2 - dt1).days - k) / 365
     elif accrual_calculation_model == AccrualCalculationModel.NL_365_NO_EOM:  # 15
         # Case 18  'NL/365 (NO-EOM)
         #     Y1_leap = Month(DateSerial(Year(dt1), 2, 29)) = 2
@@ -231,11 +231,11 @@ def coupon_accrual_factor(
         is_leap1 = calendar.isleap(dt1.year)
         is_leap2 = calendar.isleap(dt2.year)
         k = 0
-        if is_leap1 and dt1 < date(dt1.year, 2, 29) and dt2 >= date(dt1.year, 2, 29):
+        if is_leap1 and dt1 < date(dt1.year, 2, 29) <= dt2:
             k = 1
-        if is_leap2 and dt2 >= date(dt2.year, 2, 29) and dt1 < date(dt2.year, 2, 29):
+        if is_leap2 and dt2 >= date(dt2.year, 2, 29) > dt1:
             k = 1
-        return (dt2 - dt1 - timedelta(days=k)).days / 365
+        return ((dt2 - dt1).days - k) / 365
     elif accrual_calculation_model == AccrualCalculationModel.ISMA_30_360:  # 16
         # Case 20  'ISMA-30/360 = 30E/360
         #     If d1 = 31 Then d1 = 30
