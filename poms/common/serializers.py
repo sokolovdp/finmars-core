@@ -10,21 +10,9 @@ from poms.common.filters import ClassifierRootFilter
 from poms.users.filters import OwnerByMasterUserFilter
 
 
-class AbstractPomsSerializer(serializers.ModelSerializer):
+class PomsClassSerializer(serializers.ModelSerializer):
     class Meta:
-        fields = [
-            'url',
-            'id'
-        ]
-
-
-class PomsClassSerializer(AbstractPomsSerializer):
-    class Meta(AbstractPomsSerializer.Meta):
-        fields = AbstractPomsSerializer.Meta.fields + [
-            'system_code',
-            'name',
-            'description'
-        ]
+        fields = ['url', 'id', 'system_code', 'name', 'description', ]
 
 
 class ModelWithUserCodeSerializer(serializers.ModelSerializer):
@@ -183,7 +171,7 @@ class AbstractClassifierSerializer(serializers.ModelSerializer):
     id = serializers.IntegerField(read_only=False, required=False, allow_null=True)
     children = ClassifierRecursiveField(source='get_children', many=True, required=False, allow_null=True)
 
-    class Meta(AbstractPomsSerializer.Meta):
+    class Meta:
         list_serializer_class = ClassifierListSerializer
         fields = [
             'id',
@@ -254,20 +242,12 @@ class AbstractClassifierSerializer(serializers.ModelSerializer):
             node.get_family().exclude(pk__in=processed).delete()
 
 
-class AbstractClassifierNodeSerializer(AbstractPomsSerializer):
+class AbstractClassifierNodeSerializer(serializers.ModelSerializer):
     attribute_type = serializers.PrimaryKeyRelatedField(read_only=True)
     parent = serializers.PrimaryKeyRelatedField(read_only=True)
 
-    class Meta(AbstractPomsSerializer.Meta):
-        fields = AbstractPomsSerializer.Meta.fields + [
-            'attribute_type',
-            'name',
-            'parent',
-            'level',
-            'tree_id',
-            # 'children',
-        ]
-
+    class Meta:
+        fields = ['url', 'id', 'attribute_type', 'name', 'parent', 'level', 'tree_id', ]
 
 # class ReadonlyModelListSerializer(serializers.ListSerializer):
 #     def __init__(self, *args, **kwargs):
