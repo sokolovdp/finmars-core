@@ -1065,7 +1065,10 @@ accrl_NL_365_NO_EOM(parse_date('2000-01-01'), parse_date('2000-01-25'))
                     k = 1
                 return ((dt2 - dt1).days - k) / 365
 
-            return accrl_NL_365_NO_EOM(_parse_date('2000-01-01'), _parse_date('2000-01-25'))
+            # accrl_NL_365_NO_EOM(_parse_date('2000-01-01'), _parse_date('2000-01-25'))
+            # accrl_NL_365_NO_EOM(_date(2000, 1, 1), _date(2000, 1, 25))
+            for i in [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]:
+                accrl_NL_365_NO_EOM(_date(2000, 1, 1), _date(2000, i, 25))
 
         expr = '''
 def accrl_NL_365_NO_EOM(dt1, dt2):
@@ -1075,7 +1078,10 @@ def accrl_NL_365_NO_EOM(dt1, dt2):
     if isleap(dt2.year) and dt2 >= date(dt2.year, 2, 29) > dt1:
         k = 1
     return ((dt2 - dt1).days - k) / 365
-accrl_NL_365_NO_EOM(parse_date('2000-01-01'), parse_date('2000-01-25'))
+# accrl_NL_365_NO_EOM(parse_date('2000-01-01'), parse_date('2000-01-25'))
+# accrl_NL_365_NO_EOM(date(2000, 1, 1), date(2000, 1, 25))
+for i in [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]:
+    accrl_NL_365_NO_EOM(date(2000, 1, 1), date(2000, i, 25))
         '''
 
         def f_eval():
@@ -1086,11 +1092,14 @@ accrl_NL_365_NO_EOM(parse_date('2000-01-01'), parse_date('2000-01-25'))
         def f_eval2():
             return se.eval()
 
+        _l.info('PERF')
+        _l.info('-' * 79)
+        _l.info(expr)
         _l.info('-' * 79)
         _l.info('native          : %f', timeit.timeit(f_native, number=1000))
         _l.info('exec            : %f', timeit.timeit(lambda: exec(expr, {
-            'parse_date':_parse_date,
-            'isleap':calendar.isleap,
+            'parse_date': _parse_date,
+            'isleap': calendar.isleap,
             'date': _date,
             'days': _days,
         }), number=1000))
