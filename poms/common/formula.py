@@ -6,8 +6,6 @@ import datetime
 import logging
 import operator
 import random
-import time
-import timeit
 from collections import OrderedDict
 
 from dateutil import relativedelta
@@ -866,6 +864,7 @@ if __name__ == "__main__":
         try:
             res = safe_eval(expr, names=names)
         except InvalidExpression as e:
+            import time
             res = "<ERROR1: %s>" % e
             time.sleep(1)
             # raise e
@@ -1055,6 +1054,8 @@ accrl_NL_365_NO_EOM(parse_date('2000-01-01'), parse_date('2000-01-25'))
 
 
     def perf_tests():
+        import timeit
+
         def f_native():
             def accrl_NL_365_NO_EOM(dt1, dt2):
                 is_leap1 = calendar.isleap(dt1.year)
