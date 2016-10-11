@@ -439,6 +439,17 @@ class SimpleEval2(object):
                 for t in node.targets:
                     if isinstance(t, ast.Name):
                         self.local_names[t.id] = val
+                    elif isinstance(t, ast.Subscript):
+                        obj = self._eval(t.value)
+                        obj[self._eval(t.slice)] = val
+                    elif isinstance(t, ast.Attribute):
+                        # TODO: check security
+                        # obj = self._eval(t.value)
+                        # if isinstance(val, (dict, OrderedDict)):
+                        #     obj[t.attr] = val
+                        # else:
+                        #     raise ExpressionSyntaxError('Invalid assign')
+                        raise ExpressionSyntaxError('Invalid assign')
                     else:
                         raise ExpressionSyntaxError('Invalid assign')
                 ret = val
@@ -873,6 +884,15 @@ if __name__ == "__main__":
         _l.info("\t%-60s -> %s" % (expr, res))
 
 
+    test_eval('''
+a = {}
+a['2'] = {}
+a['2']['1'] = {}
+a['2']['1'][1]=123
+a
+''')
+
+
     def demo():
         # from poms.common.formula_serializers import EvalInstrumentSerializer, EvalTransactionSerializer
 
@@ -966,6 +986,14 @@ if __name__ == "__main__":
         test_eval('a = 2 + 3')
 
         test_eval('''
+a = {}
+a['2'] = {}
+a['2']['1'] = {}
+a['2']['1'][1]=123
+a
+''')
+
+        test_eval('''
 a = 2
 b = None
 if b is None:
@@ -1049,7 +1077,7 @@ accrl_NL_365_NO_EOM(parse_date('2000-01-01'), parse_date('2000-01-25'))
         ''')
 
 
-    demo_stmt()
+    # demo_stmt()
     pass
 
 
@@ -1107,5 +1135,5 @@ for i in [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]:
         _l.info('cached safe_eval: %f', timeit.timeit(f_eval2, number=1000))
 
 
-    perf_tests()
+    # perf_tests()
     pass
