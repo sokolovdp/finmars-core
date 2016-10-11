@@ -492,7 +492,7 @@ def validate_crontab(value):
     try:
         # to_crontab(value)
         croniter(value, timezone.now())
-    except (ValueError, KeyError):
+    except (ValueError, KeyError, TypeError):
         raise ValidationError(ugettext_lazy('A valid cron string is required.'))
 
 
