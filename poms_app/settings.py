@@ -488,10 +488,10 @@ CELERYBEAT_SCHEDULE = {
         'task': 'integrations.download_pricing_auto_scheduler',
         'schedule': crontab(minute='*/10'),
     },
-    'instruments.process_events_auto': {
-        'task': 'instruments.process_events',
-        'schedule': crontab(minute=15),
-    }
+    # 'instruments.process_events_auto': {
+    #     'task': 'instruments.process_events_auto',
+    #     'schedule': crontab(minute=15),
+    # }
 }
 
 # INTEGRATIONS ------------------------------------------------
