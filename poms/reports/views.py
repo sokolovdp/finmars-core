@@ -27,9 +27,9 @@ class BaseReportViewSet(AbstractViewSet):
         return Response(serializer.data, status=status.HTTP_201_CREATED)
 
 
-class BalanceReportViewSet(BaseReportViewSet):
-    serializer_class = BalanceReportSerializer
-    report_builder_class = BalanceReportBuilder
+# class BalanceReportViewSet(BaseReportViewSet):
+#     serializer_class = BalanceReportSerializer
+#     report_builder_class = BalanceReportBuilder
 
 
 class BalanceReport2ViewSet(BaseReportViewSet):
@@ -37,9 +37,9 @@ class BalanceReport2ViewSet(BaseReportViewSet):
     report_builder_class = BalanceReport2Builder
 
 
-class PLReportViewSet(BaseReportViewSet):
-    serializer_class = PLReportSerializer
-    report_builder_class = PLReportBuilder
+# class PLReportViewSet(BaseReportViewSet):
+#     serializer_class = PLReportSerializer
+#     report_builder_class = PLReportBuilder
 
 
 class PLReport2ViewSet(BaseReportViewSet):
@@ -47,9 +47,9 @@ class PLReport2ViewSet(BaseReportViewSet):
     report_builder_class = PLReport2Builder
 
 
-class CostReportViewSet(BaseReportViewSet):
-    serializer_class = CostReportSerializer
-    report_builder_class = CostReportBuilder
+# class CostReportViewSet(BaseReportViewSet):
+#     serializer_class = CostReportSerializer
+#     report_builder_class = CostReportBuilder
 
 
 class CostReport2ViewSet(BaseReportViewSet):
@@ -57,9 +57,9 @@ class CostReport2ViewSet(BaseReportViewSet):
     report_builder_class = CostReport2Builder
 
 
-class YTMReportViewSet(BaseReportViewSet):
-    serializer_class = YTMReportSerializer
-    report_builder_class = YTMReportBuilder
+# class YTMReportViewSet(BaseReportViewSet):
+#     serializer_class = YTMReportSerializer
+#     report_builder_class = YTMReportBuilder
 
 
 class YTMReport2ViewSet(BaseReportViewSet):
@@ -67,17 +67,17 @@ class YTMReport2ViewSet(BaseReportViewSet):
     report_builder_class = YTMReport2Builder
 
 
-class SimpleMultipliersReportViewSet(AbstractViewSet):
-    serializer_class = SimpleMultipliersReportSerializer
-
-    def create(self, request, *args, **kwargs):
-        serializer = self.get_serializer(data=request.data)
-        serializer.is_valid(raise_exception=True)
-        instance = serializer.save()
-        builder = SimpleMultipliersReportBuilder(instance=instance)
-        instance = builder.build()
-        serializer = self.get_serializer(instance=instance, many=False)
-        return Response(serializer.data, status=status.HTTP_201_CREATED)
+# class SimpleMultipliersReportViewSet(AbstractViewSet):
+#     serializer_class = SimpleMultipliersReportSerializer
+#
+#     def create(self, request, *args, **kwargs):
+#         serializer = self.get_serializer(data=request.data)
+#         serializer.is_valid(raise_exception=True)
+#         instance = serializer.save()
+#         builder = SimpleMultipliersReportBuilder(instance=instance)
+#         instance = builder.build()
+#         serializer = self.get_serializer(instance=instance, many=False)
+#         return Response(serializer.data, status=status.HTTP_201_CREATED)
 
 
 class SimpleMultipliersReport2ViewSet(BaseReportViewSet):
