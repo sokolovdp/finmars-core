@@ -11,6 +11,7 @@ from poms.instruments.models import Instrument, PriceHistory, InstrumentClass, I
     ManualPricingFormula, AccrualCalculationSchedule, InstrumentAttributeType, InstrumentAttribute, \
     InstrumentFactorSchedule, EventSchedule, \
     PricingPolicy, PaymentSizeDetail, InstrumentClassifier, EventScheduleAction, EventScheduleConfig
+from poms.instruments.tasks import process_events
 from poms.obj_attrs.admin import AbstractAttributeTypeAdmin, AbstractAttributeInline, \
     AbstractAttributeTypeClassifierInline, AbstractAttributeTypeOptionInline
 from poms.obj_perms.admin import UserObjectPermissionInline, \
@@ -94,7 +95,7 @@ class InstrumentAdmin(admin.ModelAdmin):
         UserObjectPermissionInline,
         GroupObjectPermissionInline,
     ]
-    actions = ['rebuild_event_schedules', 'calculate_prices_accrued_price']
+    actions = ['calculate_prices_accrued_price', 'rebuild_event_schedules', 'process_events']
 
     def rebuild_event_schedules(self, request, queryset):
         for instr in queryset:
@@ -110,6 +111,11 @@ class InstrumentAdmin(admin.ModelAdmin):
             instrument.calculate_prices_accrued_price()
 
     calculate_prices_accrued_price.short_description = "Calculate accrued price for prices"
+
+    def process_events(self, request, queryset):
+        process_events(instruments=queryset)
+
+    process_events.short_description = "Process events"
 
 
 admin.site.register(Instrument, InstrumentAdmin)
@@ -180,11 +186,12 @@ class EventScheduleAdmin(admin.ModelAdmin):
     list_display = ['id', 'master_user', 'instrument', 'effective_date', 'name', 'event_class', 'notification_class',
                     'periodicity', 'final_date', 'is_auto_generated', 'accrual_calculation_schedule', 'factor_schedule',
                     '_actions']
+    list_select_related = ['instrument', 'instrument__master_user', 'event_class', 'notification_class', 'periodicity',
+                           'accrual_calculation_schedule', 'factor_schedule']
     list_filter = ['effective_date', 'event_class', 'notification_class', 'periodicity']
     ordering = ['instrument', 'effective_date']
     date_hierarchy = 'effective_date'
     search_fields = ['instrument__id', 'instrument__user_code', 'instrument__name']
-    list_select_related = ['instrument', 'instrument__master_user', 'event_class', 'notification_class']
     raw_id_fields = ['instrument', 'accrual_calculation_schedule']
 
     inlines = [

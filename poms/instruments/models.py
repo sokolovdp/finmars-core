@@ -180,101 +180,96 @@ class Periodicity(AbstractClassModel):
         verbose_name = ugettext_lazy('periodicity')
         verbose_name_plural = ugettext_lazy('periodicities')
 
-    @staticmethod
-    def to_timedelta(periodicity, delta=None, same_date=None):
-        if isinstance(periodicity, Periodicity):
-            periodicity = periodicity.id
-
+    def to_timedelta(self, delta, same_date=None):
         if delta is None:
             delta = 1
 
-        if periodicity == Periodicity.N_DAY:
+        if self.id == Periodicity.N_DAY:
             return relativedelta.relativedelta(days=delta)
-        elif periodicity == Periodicity.N_WEEK_EOBW:
+        elif self.id == Periodicity.N_WEEK_EOBW:
             # return relativedelta.relativedelta(days=7 * delta, weekday=relativedelta.FR)
             return relativedelta.relativedelta(weeks=delta, weekday=relativedelta.FR)
-        elif periodicity == Periodicity.N_MONTH_EOM:
+        elif self.id == Periodicity.N_MONTH_EOM:
             return relativedelta.relativedelta(months=delta, day=31)
-        elif periodicity == Periodicity.N_MONTH_SAME_DAY:
+        elif self.id == Periodicity.N_MONTH_SAME_DAY:
             return relativedelta.relativedelta(months=delta, day=same_date.day)
-        elif periodicity == Periodicity.N_YEAR_EOY:
+        elif self.id == Periodicity.N_YEAR_EOY:
             return relativedelta.relativedelta(years=delta, month=12, day=31)
-        elif periodicity == Periodicity.N_YEAR_SAME_DAY:
+        elif self.id == Periodicity.N_YEAR_SAME_DAY:
             return relativedelta.relativedelta(years=delta, month=same_date.month, day=same_date.day)
-        elif periodicity == Periodicity.WEEKLY:
+        elif self.id == Periodicity.WEEKLY:
             return relativedelta.relativedelta(weeks=1 * delta)
-        elif periodicity == Periodicity.MONTHLY:
+        elif self.id == Periodicity.MONTHLY:
             return relativedelta.relativedelta(months=1 * delta)
-        elif periodicity == Periodicity.BIMONTHLY:
+        elif self.id == Periodicity.BIMONTHLY:
             return relativedelta.relativedelta(months=2 * delta)
-        elif periodicity == Periodicity.QUARTERLY:
+        elif self.id == Periodicity.QUARTERLY:
             return relativedelta.relativedelta(months=3 * delta)
-        elif periodicity == Periodicity.SEMI_ANNUALLY:
+        elif self.id == Periodicity.SEMI_ANNUALLY:
             return relativedelta.relativedelta(months=6 * delta)
-        elif periodicity == Periodicity.ANNUALLY:
+        elif self.id == Periodicity.ANNUALLY:
             return relativedelta.relativedelta(years=1 * delta)
         return None
 
-    @staticmethod
-    def to_rrule(periodicity, dtstart=None, count=None, until=None):
-        if isinstance(periodicity, Periodicity):
-            periodicity = periodicity.id
+    # @staticmethod
+    # def to_rrule(periodicity, dtstart=None, count=None, until=None):
+    #     if isinstance(periodicity, Periodicity):
+    #         periodicity = periodicity.id
+    #
+    #     if periodicity == Periodicity.N_DAY:
+    #         return rrule.rrule(dtstart=dtstart, count=count, until=until, freq=rrule.DAILY)
+    #     elif periodicity == Periodicity.N_WEEK_EOBW:
+    #         return rrule.rrule(dtstart=dtstart, count=count, until=until, freq=rrule.WEEKLY,
+    #                            byweekday=[rrule.FR])
+    #     elif periodicity == Periodicity.N_MONTH_EOM:
+    #         return rrule.rrule(dtstart=dtstart, count=count, until=until, freq=rrule.MONTHLY,
+    #                            bymonthday=[31])
+    #     elif periodicity == Periodicity.N_MONTH_SAME_DAY:
+    #         return rrule.rrule(dtstart=dtstart, count=count, until=until, freq=rrule.MONTHLY,
+    #                            bymonthday=[dtstart.day])
+    #     elif periodicity == Periodicity.N_YEAR_EOY:
+    #         return rrule.rrule(dtstart=dtstart, count=count, until=until, freq=rrule.YEARLY,
+    #                            bymonth=[12], bymonthday=[31])
+    #     elif periodicity == Periodicity.N_YEAR_SAME_DAY:
+    #         return rrule.rrule(dtstart=dtstart, count=count, until=until, freq=rrule.WEEKLY)
+    #     elif periodicity == Periodicity.WEEKLY:
+    #         return rrule.rrule(dtstart=dtstart, count=count, until=until, freq=rrule.WEEKLY)
+    #     elif periodicity == Periodicity.MONTHLY:
+    #         return rrule.rrule(dtstart=dtstart, count=count, until=until, freq=rrule.MONTHLY)
+    #     elif periodicity == Periodicity.BIMONTHLY:
+    #         return rrule.rrule(dtstart=dtstart, count=count, interval=2, until=until, freq=rrule.MONTHLY)
+    #     elif periodicity == Periodicity.QUARTERLY:
+    #         return rrule.rrule(dtstart=dtstart, count=count, interval=3, until=until, freq=rrule.MONTHLY)
+    #     elif periodicity == Periodicity.SEMI_ANNUALLY:
+    #         return rrule.rrule(dtstart=dtstart, count=count, interval=6, until=until, freq=rrule.MONTHLY)
+    #     elif periodicity == Periodicity.ANNUALLY:
+    #         return rrule.rrule(dtstart=dtstart, count=count, until=until, freq=rrule.YEARLY)
+    #     return None
 
-        if periodicity == Periodicity.N_DAY:
-            return rrule.rrule(dtstart=dtstart, count=count, until=until, freq=rrule.DAILY)
-        elif periodicity == Periodicity.N_WEEK_EOBW:
-            return rrule.rrule(dtstart=dtstart, count=count, until=until, freq=rrule.WEEKLY,
-                               byweekday=[rrule.FR])
-        elif periodicity == Periodicity.N_MONTH_EOM:
-            raise ValueError()
-        elif periodicity == Periodicity.N_MONTH_SAME_DAY:
-            raise ValueError()
-        elif periodicity == Periodicity.N_YEAR_EOY:
-            raise ValueError()
-        elif periodicity == Periodicity.N_YEAR_SAME_DAY:
-            return rrule.rrule(dtstart=dtstart, count=count, until=until, freq=rrule.WEEKLY)
-        elif periodicity == Periodicity.WEEKLY:
-            return rrule.rrule(dtstart=dtstart, count=count, until=until, freq=rrule.WEEKLY)
-        elif periodicity == Periodicity.MONTHLY:
-            return rrule.rrule(dtstart=dtstart, count=count, until=until, freq=rrule.MONTHLY)
-        elif periodicity == Periodicity.BIMONTHLY:
-            return rrule.rrule(dtstart=dtstart, count=count, interval=2, until=until, freq=rrule.MONTHLY)
-        elif periodicity == Periodicity.QUARTERLY:
-            return rrule.rrule(dtstart=dtstart, count=count, interval=3, until=until, freq=rrule.MONTHLY)
-        elif periodicity == Periodicity.SEMI_ANNUALLY:
-            return rrule.rrule(dtstart=dtstart, count=count, interval=6, until=until, freq=rrule.MONTHLY)
-        elif periodicity == Periodicity.ANNUALLY:
-            return rrule.rrule(dtstart=dtstart, count=count, until=until, freq=rrule.YEARLY)
-        return None
-
-    @staticmethod
-    def to_freq(periodicity):
-        if isinstance(periodicity, Periodicity):
-            periodicity = periodicity.id
-
-        if periodicity == Periodicity.N_DAY:
+    def to_freq(self):
+        if self.id == Periodicity.N_DAY:
             return 0
-        elif periodicity == Periodicity.N_WEEK_EOBW:
+        elif self.id == Periodicity.N_WEEK_EOBW:
             return 0
-        elif periodicity == Periodicity.N_MONTH_EOM:
+        elif self.id == Periodicity.N_MONTH_EOM:
             return 0
-        elif periodicity == Periodicity.N_MONTH_SAME_DAY:
+        elif self.id == Periodicity.N_MONTH_SAME_DAY:
             return 0
-        elif periodicity == Periodicity.N_YEAR_EOY:
+        elif self.id == Periodicity.N_YEAR_EOY:
             return 0
-        elif periodicity == Periodicity.N_YEAR_SAME_DAY:
+        elif self.id == Periodicity.N_YEAR_SAME_DAY:
             return 0
-        elif periodicity == Periodicity.WEEKLY:
+        elif self.id == Periodicity.WEEKLY:
             return 52
-        elif periodicity == Periodicity.MONTHLY:
+        elif self.id == Periodicity.MONTHLY:
             return 12
-        elif periodicity == Periodicity.BIMONTHLY:
+        elif self.id == Periodicity.BIMONTHLY:
             return 6
-        elif periodicity == Periodicity.QUARTERLY:
+        elif self.id == Periodicity.QUARTERLY:
             return 4
-        elif periodicity == Periodicity.SEMI_ANNUALLY:
+        elif self.id == Periodicity.SEMI_ANNUALLY:
             return 2
-        elif periodicity == Periodicity.ANNUALLY:
+        elif self.id == Periodicity.ANNUALLY:
             return 1
         return 0
 
@@ -584,7 +579,9 @@ class Instrument(NamedModel, FakeDeletableModel):
     def find_accrual(self, d, accruals=None):
         if accruals is None:
             # TODO: verify that use queryset cache
-            accruals = self.accrual_calculation_schedules.order_by('accrual_start_date').all()
+            accruals = self.accrual_calculation_schedules.select_related(
+                'periodicity', 'accrual_calculation_model'
+            ).order_by('accrual_start_date').all()
         accrual = None
         for a in accruals:
             if a.accrual_start_date <= d:
@@ -909,6 +906,46 @@ class EventScheduleAction(models.Model):
 
     def __str__(self):
         return self.text
+
+
+class EventScheduleActionShot(models.Model):
+    master_user = models.ForeignKey(MasterUser, related_name='instrument_event_schedule_actions_shots',
+                                    verbose_name=ugettext_lazy('master user'))
+    # instrument = models.ForeignKey(Instrument, null=True, blank=True, on_delete=models.SET_NULL,
+    #                                related_name='event_schedule_actions_state',
+    #                                verbose_name=ugettext_lazy('instrument'))
+    event_schedule = models.ForeignKey(EventSchedule, null=True, blank=True, on_delete=models.SET_NULL,
+                                       related_name='actions_shots',
+                                       verbose_name=ugettext_lazy('event schedule action'))
+    event_schedule_action = models.ForeignKey(EventScheduleAction, null=True, blank=True, on_delete=models.SET_NULL,
+                                              related_name='shots',
+                                              verbose_name=ugettext_lazy('event schedule action'))
+    transaction_type = models.ForeignKey('transactions.TransactionType', null=True, blank=True,
+                                         on_delete=models.SET_NULL)
+
+    inform_date = models.DateField(default=date_now, db_index=True)
+    react_date = models.DateField(default=date_now, db_index=True)
+
+    instrument = models.ForeignKey('instruments.Instrument', null=True, blank=True, on_delete=models.SET_NULL)
+    portfolio = models.ForeignKey('portfolios.Portfolio', null=True, blank=True, on_delete=models.SET_NULL)
+    account = models.ForeignKey('accounts.Account', null=True, blank=True, on_delete=models.SET_NULL)
+    stategy1 = models.ForeignKey('strategies.Strategy1', null=True, blank=True, on_delete=models.SET_NULL)
+    stategy2 = models.ForeignKey('strategies.Strategy2', null=True, blank=True, on_delete=models.SET_NULL)
+    stategy3 = models.ForeignKey('strategies.Strategy3', null=True, blank=True, on_delete=models.SET_NULL)
+
+    coupon_factor = models.FloatField(default=0.0)
+    accrued_factor = models.FloatField(default=0.0)
+    accrual_size = models.FloatField(default=0.0)
+
+    is_processed = models.BooleanField(default=False, db_index=True)
+    member = models.ForeignKey('users.Member', null=True, blank=True)
+    processing_date = models.DateTimeField(null=True, blank=True, db_index=True)
+
+    class Meta:
+        abstract = True
+        verbose_name = ugettext_lazy('event schedule action state')
+        verbose_name_plural = ugettext_lazy('event schedule action states')
+        ordering = ['date']
 
 
 class EventScheduleConfig(models.Model):

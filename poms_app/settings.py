@@ -483,10 +483,14 @@ CELERY_SEND_TASK_SENT_EVENT = True
 # CELERY_STORE_ERRORS_EVEN_IF_IGNORED = True
 
 CELERYBEAT_SCHEDULE = {
-    'backend.download_pricing_auto_scheduler': {
-        'task': 'backend.download_pricing_auto_scheduler',
+    'integrations.download_pricing_auto_scheduler': {
+        'task': 'integrations.download_pricing_auto_scheduler',
         'schedule': 600,
     },
+    'instruments.process_events': {
+        'task': 'instruments.process_events',
+        'schedule': 600,
+    }
 }
 
 # INTEGRATIONS ------------------------------------------------

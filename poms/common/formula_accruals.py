@@ -10,7 +10,7 @@ def coupon_accrual_factor(
         accrual_calculation_schedule=None,
         accrual_calculation_model=None, periodicity=None, periodicity_n=None,
         dt1=None, dt2=None, dt3=None, maturity_date=None):
-    from poms.instruments.models import AccrualCalculationModel, Periodicity
+    from poms.instruments.models import AccrualCalculationModel
 
     # day_convention_code - accrual_calculation_model
     # freq
@@ -20,16 +20,16 @@ def coupon_accrual_factor(
     # maturity_date - instrument.maturity_date
 
     if accrual_calculation_schedule:
-        accrual_calculation_model = accrual_calculation_schedule.accrual_calculation_model_id
-        periodicity = accrual_calculation_schedule.periodicity_id
+        accrual_calculation_model = accrual_calculation_schedule.accrual_calculation_model
+        periodicity = accrual_calculation_schedule.periodicity
         periodicity_n = accrual_calculation_schedule.periodicity_n
         if maturity_date is None:
             maturity_date = accrual_calculation_schedule.instrument.maturity_date
-    else:
-        if isinstance(accrual_calculation_model, AccrualCalculationModel):
-            accrual_calculation_model = accrual_calculation_model.id
-        if isinstance(periodicity, Periodicity):
-            periodicity = periodicity.id
+    # else:
+    #     if isinstance(accrual_calculation_model, AccrualCalculationModel):
+    #         accrual_calculation_model = accrual_calculation_model.id
+    #     if isinstance(periodicity, Periodicity):
+    #         periodicity = periodicity.id
 
     if accrual_calculation_model is None or periodicity is None or dt1 is None or dt2 is None or dt3 is None:
         return 0.0
@@ -54,7 +54,7 @@ def coupon_accrual_factor(
     #     dt3 = MaturityDate
     # End If
 
-    freq = Periodicity.to_freq(periodicity)
+    freq = periodicity.to_freq()
 
     if 0 < freq <= 12:
         # k = 0
@@ -68,11 +68,11 @@ def coupon_accrual_factor(
         #         dt3 = maturity_date
 
         k = 0
-        while (dt3 + Periodicity.to_timedelta(periodicity, delta=k)) <= dt2:
+        while (dt3 + periodicity.to_timedelta(k)) <= dt2:
             k += 1
-        dt3 += Periodicity.to_timedelta(periodicity, delta=k)
+        dt3 += periodicity.to_timedelta(k)
         if k > 0:
-            dt1 = dt3 - Periodicity.to_timedelta(periodicity, delta=1)
+            dt1 = dt3 - periodicity.to_timedelta(1)
         if maturity_date is not None:
             if dt3 >= maturity_date > dt2:
                 dt3 = maturity_date
@@ -377,9 +377,9 @@ def weekday(dt1, dt2, byweekday):
 
 
 if __name__ == "__main__":
-    import os
 
-    os.environ.setdefault("DJANGO_SETTINGS_MODULE", "poms_app.settings")
+    # noinspection PyUnresolvedReferences
+    import env_ai
     import django
 
     django.setup()
@@ -403,12 +403,12 @@ if __name__ == "__main__":
         print(d, d.strftime('%A'))
 
     print('-' * 10)
-    for id, code, name in Periodicity.CLASSES:
+    for periodicity in Periodicity.objects.all():
         d = d0
-        td0 = Periodicity.to_timedelta(id, delta=0, same_date=d)
-        td1 = Periodicity.to_timedelta(id, delta=1, same_date=d)
-        td2 = Periodicity.to_timedelta(id, delta=2, same_date=d)
-        print(0, id, code, td0, td1, td2)
+        td0 = periodicity.to_timedelta(delta=0, same_date=d)
+        td1 = periodicity.to_timedelta(delta=1, same_date=d)
+        td2 = periodicity.to_timedelta(delta=2, same_date=d)
+        print(0, periodicity.id, periodicity.system_code, td0, td1, td2)
         print('\t', d + td0, d + td1, d + td2)
 
     print('-' * 10)
@@ -457,8 +457,8 @@ if __name__ == "__main__":
 
     print('-' * 10)
     print(500, coupon_accrual_factor(
-        accrual_calculation_model=AccrualCalculationModel.ACT_ACT,
-        periodicity=Periodicity.MONTHLY,
+        accrual_calculation_model=AccrualCalculationModel.objects.get(pk=AccrualCalculationModel.ACT_ACT),
+        periodicity=Periodicity.objects.get(pk=Periodicity.MONTHLY),
         dt1=date(2016, 1, 1),
         dt2=date(2016, 3, 31),
         dt3=date(2016, 2, 1),

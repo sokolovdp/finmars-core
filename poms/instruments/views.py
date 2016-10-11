@@ -23,6 +23,7 @@ from poms.instruments.serializers import InstrumentSerializer, PriceHistorySeria
     PaymentSizeDetailSerializer, PeriodicitySerializer, CostMethodSerializer, InstrumentTypeSerializer, \
     InstrumentAttributeTypeSerializer, PricingPolicySerializer, InstrumentClassifierNodeSerializer, \
     EventScheduleConfigSerializer, InstrumentCalculatePricesAccruedPriceSerializer
+from poms.instruments.tasks import calculate_prices_accrued_price
 from poms.integrations.models import PriceDownloadScheme
 from poms.obj_attrs.filters import AttributeTypeValueTypeFilter
 from poms.obj_attrs.views import AbstractAttributeTypeViewSet, AbstractClassifierViewSet
@@ -309,10 +310,11 @@ class InstrumentViewSet(AbstractWithObjectPermissionViewSet):
         begin_date = serializer.validated_data['begin_date']
         end_date = serializer.validated_data['end_date']
 
-        instruments = Instrument.objects.filter(master_user=request.user.master_user)
+        # instruments = Instrument.objects.filter(master_user=request.user.master_user)
         # instruments = self.filter_queryset(self.get_queryset())
-        for instrument in instruments:
-            instrument.calculate_prices_accrued_price(begin_date, end_date)
+        calculate_prices_accrued_price(request.user.master_user, begin_date, end_date)
+        # for instrument in instruments:
+        #     instrument.calculate_prices_accrued_price(begin_date, end_date)
         return Response(serializer.data)
 
 

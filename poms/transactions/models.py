@@ -1,6 +1,7 @@
 from __future__ import unicode_literals
 
 import json
+from datetime import date
 
 from django.contrib.contenttypes.models import ContentType
 from django.core.serializers.json import DjangoJSONEncoder
@@ -135,6 +136,7 @@ class NotificationClass(AbstractClassModel):
     class Meta(AbstractClassModel.Meta):
         verbose_name = ugettext_lazy('notification class')
         verbose_name_plural = ugettext_lazy('notification classes')
+
 
 
 class PeriodicityGroup(AbstractClassModel):
@@ -579,6 +581,47 @@ class ComplexTransaction(models.Model):
         if self.code is None or self.code == 0:
             self.code = FakeSequence.next_value(self.transaction_type.master_user, 'complex_transaction')
         super(ComplexTransaction, self).save(*args, **kwargs)
+
+
+class ComplexTransactionInput(models.Model):
+    complex_transaction = models.ForeignKey(ComplexTransaction)
+    transaction_type_input = models.ForeignKey(TransactionTypeInput)
+
+    value_string = models.CharField(max_length=255, default='', blank=True,
+                                    verbose_name=ugettext_lazy('value (String)'))
+    value_float = models.FloatField(default=0.0, verbose_name=ugettext_lazy('value (Float)'))
+    value_date = models.DateField(default=date.min, verbose_name=ugettext_lazy('value (Date)'))
+
+    account = models.ForeignKey('accounts.Account', null=True, blank=True, on_delete=models.PROTECT, related_name='+')
+    instrument_type = models.ForeignKey('instruments.InstrumentType', null=True, blank=True, on_delete=models.SET_NULL,
+                                        related_name='+')
+    instrument = models.ForeignKey('instruments.Instrument', null=True, blank=True, on_delete=models.SET_NULL,
+                                   related_name='+')
+    currency = models.ForeignKey('currencies.Currency', null=True, blank=True, on_delete=models.SET_NULL,
+                                 related_name='+')
+    counterparty = models.ForeignKey('counterparties.Counterparty', null=True, blank=True, on_delete=models.SET_NULL,
+                                     related_name='+')
+    responsible = models.ForeignKey('counterparties.Responsible', null=True, blank=True, on_delete=models.SET_NULL,
+                                    related_name='+')
+    portfolio = models.ForeignKey('portfolios.Portfolio', null=True, blank=True, on_delete=models.SET_NULL,
+                                  related_name='+')
+    strategy1 = models.ForeignKey('strategies.Strategy1', null=True, blank=True, on_delete=models.SET_NULL,
+                                  related_name='+')
+    strategy2 = models.ForeignKey('strategies.Strategy2', null=True, blank=True, on_delete=models.SET_NULL,
+                                  related_name='+')
+    strategy3 = models.ForeignKey('strategies.Strategy3', null=True, blank=True, on_delete=models.SET_NULL,
+                                  related_name='+')
+    daily_pricing_model = models.ForeignKey('instruments.DailyPricingModel', null=True, blank=True,
+                                            on_delete=models.SET_NULL, related_name='+')
+    payment_size_detail = models.ForeignKey('instruments.PaymentSizeDetail', null=True, blank=True,
+                                            on_delete=models.SET_NULL, related_name='+')
+    price_download_scheme = models.ForeignKey('integrations.PriceDownloadScheme', null=True, blank=True,
+                                              on_delete=models.SET_NULL, related_name='+')
+
+    class Meta:
+        abstract = True
+        verbose_name = ugettext_lazy('complex transaction input')
+        verbose_name_plural = ugettext_lazy('complex transaction inputs')
 
 
 @python_2_unicode_compatible

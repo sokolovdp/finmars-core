@@ -1,9 +1,9 @@
 from __future__ import unicode_literals, print_function
 
+import logging
 import time
 from collections import defaultdict
 from datetime import timedelta, date
-from logging import getLogger
 
 from celery import shared_task, chord
 from celery.exceptions import TimeoutError, MaxRetriesExceededError
@@ -28,10 +28,10 @@ from poms.reports.backends.balance import BalanceReport2PositionBuilder
 from poms.reports.models import BalanceReport
 from poms.users.models import MasterUser
 
-_l = getLogger('poms.integrations')
+_l = logging.getLogger('poms.integrations')
 
 
-@shared_task(name='backend.health_check')
+@shared_task(name='integrations.health_check')
 def health_check_async():
     return True
 
@@ -45,7 +45,7 @@ def health_check():
     return False
 
 
-@shared_task(name='backend.send_mail_async', ignore_result=True)
+@shared_task(name='integrations.send_mail_async', ignore_result=True)
 def send_mail_async(subject, message, from_email, recipient_list, html_message=None):
     django_send_mail(subject, message, from_email, recipient_list, fail_silently=True, html_message=html_message)
 
@@ -60,7 +60,7 @@ def send_mail(subject, message, from_email, recipient_list, html_message=None):
     })
 
 
-@shared_task(name='backend.send_mass_mail', ignore_result=True)
+@shared_task(name='integrations.send_mass_mail', ignore_result=True)
 def send_mass_mail_async(messages):
     django_send_mass_mail(messages, fail_silently=True)
 
@@ -71,7 +71,7 @@ def send_mass_mail(messages):
     })
 
 
-@shared_task(name='backend.mail_admins', ignore_result=True)
+@shared_task(name='integrations.mail_admins', ignore_result=True)
 def mail_admins_async(subject, message):
     django_mail_admins(subject, message, fail_silently=True, )
 
@@ -83,7 +83,7 @@ def mail_admins(subject, message):
     })
 
 
-@shared_task(name='backend.mail_managers', ignore_result=True)
+@shared_task(name='integrations.mail_managers', ignore_result=True)
 def mail_managers_async(subject, message):
     django_mail_managers(subject, message, fail_silently=True, )
 
@@ -95,7 +95,7 @@ def mail_managers(subject, message):
     })
 
 
-@shared_task(name='backend.file_import_delete', ignore_result=True)
+@shared_task(name='integrations.file_import_delete', ignore_result=True)
 def file_import_delete_async(path):
     _l.debug('file_import_delete_async: path=%s', path)
     import_file_storage.delete(path)
@@ -108,7 +108,7 @@ def schedule_file_import_delete(path, countdown=None):
     file_import_delete_async.apply_async(kwargs={'path': path}, countdown=countdown)
 
 
-@shared_task(name='backend.auth_log_statistics', ignore_result=True)
+@shared_task(name='integrations.auth_log_statistics', ignore_result=True)
 def auth_log_statistics():
     logged_in_count = AuthLogEntry.objects.filter(is_success=True).count()
     login_failed_count = AuthLogEntry.objects.filter(is_success=False).count()
@@ -120,7 +120,7 @@ def auth_log_statistics():
     _l.debug('auth (today): logged_in=%s, login_failed=%s', logged_in_count, login_failed_count)
 
 
-@shared_task(name='backend.download_instrument', bind=True, ignore_result=False)
+@shared_task(name='integrations.download_instrument', bind=True, ignore_result=False)
 def download_instrument_async(self, task_id=None):
     task = Task.objects.get(pk=task_id)
     _l.debug('download_instrument_async: master_user_id=%s, task=%s', task.master_user_id, task.info)
@@ -224,7 +224,7 @@ def download_instrument(instrument_code=None, instrument_download_scheme=None, m
         return task, None, None
 
 
-@shared_task(name='backend.download_instrument_pricing_async', bind=True, ignore_result=False)
+@shared_task(name='integrations.download_instrument_pricing_async', bind=True, ignore_result=False)
 def download_instrument_pricing_async(self, task_id):
     task = Task.objects.get(pk=task_id)
     _l.debug('download_instrument_pricing_async: master_user_id=%s, task=%s', task.master_user_id, task.info)
@@ -283,7 +283,7 @@ def download_instrument_pricing_async(self, task_id):
     return task_id
 
 
-@shared_task(name='backend.download_currency_pricing_async', bind=True, ignore_result=False)
+@shared_task(name='integrations.download_currency_pricing_async', bind=True, ignore_result=False)
 def download_currency_pricing_async(self, task_id):
     task = Task.objects.get(pk=task_id)
     _l.debug('download_currency_pricing_async: master_user_id=%s, task=%s', task.master_user_id, task.info)
@@ -343,7 +343,7 @@ def download_currency_pricing_async(self, task_id):
     return task_id
 
 
-@shared_task(name='backend.download_pricing_async', bind=True, ignore_result=False)
+@shared_task(name='integrations.download_pricing_async', bind=True, ignore_result=False)
 def download_pricing_async(self, task_id):
     task = Task.objects.get(pk=task_id)
     _l.debug('download_pricing_async: master_user_id=%s, task=%s', task.master_user_id, task.info)
@@ -540,7 +540,7 @@ def download_pricing_async(self, task_id):
     return task_id
 
 
-@shared_task(name='backend.download_pricing_wait', bind=True, ignore_result=False)
+@shared_task(name='integrations.download_pricing_wait', bind=True, ignore_result=False)
 def download_pricing_wait(self, sub_tasks_id, task_id):
     task = Task.objects.get(pk=task_id)
     _l.debug('download_pricing_wait: master_user_id=%s, task=%s', task.master_user_id, task.info)
@@ -834,7 +834,7 @@ def download_pricing(master_user=None, member=None, date_from=None, date_to=None
         return task, False
 
 
-@shared_task(name='backend.download_pricing_auto', bind=True, ignore_result=True)
+@shared_task(name='integrations.download_pricing_auto', bind=True, ignore_result=True)
 def download_pricing_auto(self, master_user_id):
     _l.info('download_pricing_auto: master_user=%s', master_user_id)
     try:
@@ -868,14 +868,14 @@ def download_pricing_auto(self, master_user_id):
         sched.save(update_fields=['last_run_at', 'last_run_task'])
 
 
-@shared_task(name='backend.download_pricing_auto_scheduler', bind=True, ignore_result=True)
+@shared_task(name='integrations.download_pricing_auto_scheduler', bind=True, ignore_result=True)
 def download_pricing_auto_scheduler(self):
     _l.debug('pricing_auto')
-    schedules = PricingAutomatedSchedule.objects.select_related('master_user').filter(
+    schedule_qs = PricingAutomatedSchedule.objects.select_related('master_user').filter(
         is_enabled=True, next_run_at__lte=timezone.now()
     )
-    processed = 0
-    for s in schedules:
+    _l.debug('count=%s', schedule_qs.count())
+    for s in schedule_qs:
         master_user = s.master_user
         with timezone.override(master_user.timezone or settings.TIME_ZONE):
             next_run_at = timezone.localtime(s.next_run_at)
@@ -883,5 +883,4 @@ def download_pricing_auto_scheduler(self):
             _l.debug('pricing_auto: master_user=%s, next_run_at=%s',
                      master_user.id, s.next_run_at)
         download_pricing_auto.apply_async(kwargs={'master_user_id': master_user.id})
-        processed += 1
-    _l.debug('pricing_auto: processed=%s', processed)
+    _l.debug('finished')
