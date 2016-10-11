@@ -389,17 +389,17 @@ class TaskSerializer(serializers.ModelSerializer):
 
 class PricingAutomatedScheduleSerializer(serializers.ModelSerializer):
     master_user = MasterUserField()
-    last_run_at = DateTimeTzAwareField()
-    next_run_at = DateTimeTzAwareField()
+    last_run_at = DateTimeTzAwareField(read_only=True)
+    next_run_at = DateTimeTzAwareField(read_only=True)
 
     class Meta:
         model = PricingAutomatedSchedule
         fields = [
             'url', 'id', 'master_user',
             'is_enabled', 'cron_expr', 'balance_day', 'load_days', 'fill_days', 'override_existed',
-            'last_run_at', 'next_run_at', 'last_run_task',
+            'last_run_at', 'next_run_at',
         ]
-        read_only_fields = ['last_run_at', 'next_run_at', 'last_run_task']
+        read_only_fields = ['last_run_at', 'next_run_at']
 
 
 class ImportFileInstrumentSerializer(serializers.Serializer):
