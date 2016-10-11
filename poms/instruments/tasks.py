@@ -48,10 +48,10 @@ def process_events(instruments=None):
 
     _l.debug('master_user: count=%s', master_user_qs.count())
     for master_user in master_user_qs:
-        # TODO: need multiplier_class to build report
+        # TODO: need cost_method to build report
         report = BalanceReport(master_user=master_user, begin_date=date.min, end_date=now,
                                use_portfolio=True, use_account=True, use_strategy=True, show_transaction_details=False,
-                               multiplier_class=None)
+                               cost_method=None)
         _l.debug('build position report: %s', report)
         # builder = BalanceReport2PositionBuilder(instance=report)
         # builder.build()
