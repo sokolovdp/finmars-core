@@ -1,9 +1,9 @@
 from __future__ import unicode_literals
 
-from rest_framework import viewsets, status
-from rest_framework.permissions import IsAuthenticated
+from rest_framework import status
 from rest_framework.response import Response
 
+from poms.common.views import AbstractViewSet
 from poms.reports.backends.balance import BalanceReportBuilder, BalanceReport2Builder
 from poms.reports.backends.cost import CostReportBuilder, CostReport2Builder
 from poms.reports.backends.pl import PLReportBuilder, PLReport2Builder
@@ -13,22 +13,8 @@ from poms.reports.serializers import BalanceReportSerializer, SimpleMultipliersR
     CostReportSerializer, YTMReportSerializer, SimpleMultipliersReport2Serializer
 
 
-class BaseReportViewSet(viewsets.ViewSet):
-    permission_classes = [IsAuthenticated]
-    serializer_class = None
+class BaseReportViewSet(AbstractViewSet):
     report_builder_class = None
-
-    def get_serializer(self, *args, **kwargs):
-        assert self.serializer_class is not None
-        kwargs['context'] = self.get_serializer_context()
-        return self.serializer_class(*args, **kwargs)
-
-    def get_serializer_context(self):
-        return {
-            'request': self.request,
-            'format': self.format_kwarg,
-            'view': self
-        }
 
     def create(self, request, *args, **kwargs):
         assert self.report_builder_class is not None
@@ -81,19 +67,8 @@ class YTMReport2ViewSet(BaseReportViewSet):
     report_builder_class = YTMReport2Builder
 
 
-class SimpleMultipliersReportViewSet(viewsets.ViewSet):
-    permission_classes = [IsAuthenticated]
-
-    def get_serializer(self, *args, **kwargs):
-        kwargs['context'] = self.get_serializer_context()
-        return SimpleMultipliersReportSerializer(*args, **kwargs)
-
-    def get_serializer_context(self):
-        return {
-            'request': self.request,
-            'format': self.format_kwarg,
-            'view': self
-        }
+class SimpleMultipliersReportViewSet(AbstractViewSet):
+    serializer_class = SimpleMultipliersReportSerializer
 
     def create(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)

@@ -10,7 +10,7 @@ from poms.instruments.serializers import InstrumentField
 from poms.reports.models import BalanceReport, BalanceReportItem, BalanceReportSummary, PLReportItem, PLReport, \
     PLReportSummary, CostReport, BaseReport
 from poms.transactions.models import Transaction
-from poms.users.fields import CurrentMasterUserDefault
+from poms.users.fields import MasterUserField
 
 
 class BaseTransactionSerializer(serializers.ModelSerializer):
@@ -93,7 +93,7 @@ class BaseReportItemSerializer(serializers.Serializer):
 
 
 class BaseReportSerializer(serializers.Serializer):
-    master_user = serializers.HiddenField(default=CurrentMasterUserDefault())
+    master_user = MasterUserField()
 
     begin_date = serializers.DateField(required=False, allow_null=True, help_text=ugettext_lazy('Begin report date'))
     end_date = serializers.DateField(required=False, allow_null=True, help_text=ugettext_lazy('End report date'))
