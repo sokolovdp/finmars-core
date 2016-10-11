@@ -10,8 +10,7 @@ from django.utils import timezone
 from django.utils.functional import cached_property
 
 from poms.currencies.models import CurrencyHistory, Currency
-from poms.instruments.models import PriceHistory
-from poms.reports.models import MULTIPLIER_AVCO, MULTIPLIER_FIFO
+from poms.instruments.models import PriceHistory, CostMethod
 from poms.transactions.models import Transaction, TransactionClass
 
 
@@ -556,18 +555,18 @@ class BaseReport2Builder(object):
         i.market_value_system_ccy = i.principal_value_system_ccy + i.accrued_value_system_ccy
 
     def set_multiplier(self):
-        if self.instance.multiplier_class == MULTIPLIER_AVCO:
+        if self.instance.cost_method.id == CostMethod.AVCO:
             self.set_avco_multiplier()
-        elif self.instance.multiplier_class == MULTIPLIER_FIFO:
+        elif self.instance.cost_method.id == CostMethod.FIFO:
             self.set_fifo_multiplier()
         else:
             raise ValueError('Bad multiplier class - %s' % self.instance.multiplier_class)
 
     @property
     def multiplier_attr(self):
-        if self.instance.multiplier_class == MULTIPLIER_AVCO:
+        if self.instance.cost_method.id == CostMethod.AVCO:
             return 'avco_multiplier'
-        elif self.instance.multiplier_class == MULTIPLIER_FIFO:
+        elif self.instance.cost_method.id == CostMethod.FIFO:
             return 'fifo_multiplier'
         raise ValueError('Bad multiplier class - %s' % self.instance.multiplier_class)
 

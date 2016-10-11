@@ -1,7 +1,8 @@
 from __future__ import unicode_literals, division, print_function
 
+from poms.instruments.models import CostMethod
 from poms.reports.backends.balance import BalanceReport2Builder
-from poms.reports.models import BalanceReport, BalanceReportItem, BalanceReportSummary, MULTIPLIER_AVCO
+from poms.reports.models import BalanceReport, BalanceReportItem, BalanceReportSummary
 from poms.reports.tests.base import BaseReportTestCase, n
 from poms.transactions.models import Transaction
 
@@ -1009,7 +1010,7 @@ class BalanceTestCase(BaseReportTestCase):
         instance = BalanceReport(master_user=self.m,
                                  begin_date=None, end_date=self.d(6),
                                  use_portfolio=False, use_account=True, use_strategy=True,
-                                 multiplier_class=MULTIPLIER_AVCO,
+                                 cost_method=CostMethod.objects.get(pk=CostMethod.AVCO),
                                  show_transaction_details=False)
         b = BalanceReport2Builder(instance=instance, queryset=queryset)
         b.build()

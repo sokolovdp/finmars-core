@@ -119,14 +119,14 @@ class ReportTypeInput(models.Model):
 # ----------------------------------------------------------------------------------------------------------------------
 
 
-MULTIPLIER_AVCO = 1
-MULTIPLIER_FIFO = 2
-# MULTIPLIER_LIFO = 3
-MULTIPLIERS = (
-    (MULTIPLIER_AVCO, 'avco'),
-    (MULTIPLIER_FIFO, 'fifo'),
-    # (LIFO, 'lifo'),
-)
+# MULTIPLIER_AVCO = 1
+# MULTIPLIER_FIFO = 2
+# # MULTIPLIER_LIFO = 3
+# MULTIPLIERS = (
+#     (MULTIPLIER_AVCO, 'avco'),
+#     (MULTIPLIER_FIFO, 'fifo'),
+#     # (LIFO, 'lifo'),
+# )
 
 
 # ----------------------------------------------------------------------------------------------------------------------
@@ -152,14 +152,15 @@ class BaseReportItem(object):
 @python_2_unicode_compatible
 class BaseReport(object):
     def __init__(self, master_user=None, begin_date=None, end_date=None, use_portfolio=False, use_account=False,
-                 use_strategy=False, multiplier_class=None, items=None, instruments=None, transaction_currencies=None):
+                 use_strategy=False, cost_method=None, items=None, instruments=None, transaction_currencies=None):
         self.master_user = master_user
         self.begin_date = begin_date
         self.end_date = end_date
         self.use_portfolio = use_portfolio
         self.use_account = use_account
         self.use_strategy = use_strategy
-        self.multiplier_class = multiplier_class
+        # multiplier_class
+        self.cost_method = cost_method
         self.items = items or []
         self.transaction_currencies = transaction_currencies or []
         self.instruments = instruments or []

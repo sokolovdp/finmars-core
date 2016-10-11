@@ -5,9 +5,10 @@ from django.utils.translation import ugettext_lazy
 from rest_framework import serializers
 
 from poms.currencies.serializers import CurrencyField
+from poms.instruments.models import CostMethod
 from poms.instruments.serializers import InstrumentField
 from poms.reports.models import BalanceReport, BalanceReportItem, BalanceReportSummary, PLReportItem, PLReport, \
-    PLReportSummary, CostReport, BaseReport, MULTIPLIERS, MULTIPLIER_AVCO
+    PLReportSummary, CostReport, BaseReport
 from poms.transactions.models import Transaction
 from poms.users.fields import CurrentMasterUserDefault
 
@@ -101,7 +102,8 @@ class BaseReportSerializer(serializers.Serializer):
     use_account = serializers.BooleanField(initial=False, help_text=ugettext_lazy('Detalization by account'))
     use_strategy = serializers.BooleanField(initial=False, help_text=ugettext_lazy('Detalization by strategy'))
 
-    multiplier_class = serializers.ChoiceField(default=MULTIPLIER_AVCO, choices=MULTIPLIERS)
+    # multiplier_class = serializers.ChoiceField(default=MULTIPLIER_AVCO, choices=MULTIPLIERS)
+    cost_method = serializers.PrimaryKeyRelatedField(queryset=CostMethod.objects)
 
     transaction_currencies = CurrencyField(many=True, required=False, allow_null=True)
     instruments = InstrumentField(many=True, required=False, allow_null=True)
