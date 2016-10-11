@@ -1,12 +1,16 @@
 import logging
-from datetime import timedelta
+from datetime import timedelta, date
 
 from celery import shared_task
-from django.db.models import F
+from django.conf import settings
+from django.db.models import F, Count
 
 from poms.common.utils import date_now
 from poms.instruments.models import EventSchedule, Instrument
+from poms.reports.backends.balance import BalanceReport2PositionBuilder
+from poms.reports.models import BalanceReport
 from poms.transactions.models import EventClass, NotificationClass
+from poms.users.models import MasterUser
 
 _l = logging.getLogger('poms.instruments')
 
@@ -36,6 +40,27 @@ def process_events(instruments=None):
 
     now = date_now()
 
+    master_user_qs = MasterUser.objects.annotate(
+        transactions__count=Count('transactions', distinct=True)
+    ).filter(transactions__transaction_date__lte=now, transactions__count__gt=0)
+    if instruments:
+        master_user_qs = master_user_qs.filter(instruments__in=instruments)
+
+    _l.debug('master_user: count=%s', master_user_qs.count())
+    for master_user in master_user_qs:
+        # TODO: need multiplier_class to build report
+        report = BalanceReport(master_user=master_user, begin_date=date.min, end_date=now,
+                               use_portfolio=True, use_account=True, use_strategy=True, show_transaction_details=False,
+                               multiplier_class=None)
+        _l.debug('build position report: %s', report)
+        # builder = BalanceReport2PositionBuilder(instance=report)
+        # builder.build()
+
+        for i in report.items:
+            # if i.instrument:
+            #     instruments_opened.add(i.instrument.id)
+            pass
+
     event_schedule_qs = EventSchedule.objects.select_related(
         'instrument', 'instrument__master_user', 'event_class', 'notification_class', 'periodicity'
     ).prefetch_related(
@@ -49,9 +74,9 @@ def process_events(instruments=None):
         'instrument__master_user__id', 'instrument__id'
     )
     if instruments:
-        action_qs = event_schedule_qs.filter(instrument__in=instruments)
+        event_schedule_qs = event_schedule_qs.filter(instrument__in=instruments)
 
-    _l.debug('count=%s', event_schedule_qs.count())
+    _l.debug('event_schedule: count=%s', event_schedule_qs.count())
     for event_schedule in event_schedule_qs:
         instrument = event_schedule.instrument
         master_user = instrument.master_user
@@ -61,48 +86,54 @@ def process_events(instruments=None):
             master_user.id, instrument.id, event_schedule.id, event_schedule.event_class,
             event_schedule.notification_class, event_schedule.periodicity)
 
-        notify_correction = timedelta(days=event_schedule.notify_in_n_days)
+        notification_date_correction = timedelta(days=event_schedule.notify_in_n_days)
 
         is_complies = False
-        book_date = None
-        notify_date = None
+        effective_date = None
+        notification_date = None
 
         if event_schedule.event_class_id == EventClass.ONE_OFF:
-            book_date = event_schedule.effective_date
-            notify_date = book_date - notify_correction
-            _l.info('book_date=%s, notify_date=%s', book_date, notify_date)
+            effective_date = event_schedule.effective_date
+            notification_date = effective_date - notification_date_correction
+            _l.debug('effective_date=%s, notification_date=%s', effective_date, notification_date)
 
-            if notify_date == now or book_date == now:
+            if notification_date == now or effective_date == now:
                 is_complies = True
 
         elif event_schedule.event_class_id == EventClass.REGULAR:
-            for i in range(0, 1000):
-                book_date = event_schedule.effective_date + event_schedule.periodicity.to_timedelta(
+            for i in range(0, settings.INSTRUMENT_EVENTS_REGULAR_MAX_INTERVALS):
+                effective_date = event_schedule.effective_date + event_schedule.periodicity.to_timedelta(
                     i, same_date=event_schedule.effective_date)
-                notify_date = book_date - notify_correction
-                _l.info('i=%s, book_date=%s, notify_date=%s', i, book_date, notify_date)
+                notification_date = effective_date - notification_date_correction
+                _l.debug('i=%s, book_date=%s, notify_date=%s', i, effective_date, notification_date)
 
-                if book_date > event_schedule.final_date:
+                if effective_date > event_schedule.final_date:
                     break
-                if book_date < now:
+                if effective_date < now:
                     continue
-                if notify_date > now and book_date > now:
+                if notification_date > now and effective_date > now:
                     break
 
-                if notify_date == now or book_date == now:
+                if notification_date == now or effective_date == now:
                     is_complies = True
                     break
 
         if is_complies:
-            if notify_date == now:
-                _l.debug('notify !!!')
-            if book_date == now:
-                _l.debug('book !!!')
-            pass
+            notification_class = event_schedule.notification_class
+            need_inform, need_react, apply_def = notification_class.check_date(now, effective_date, notification_date)
+
+            if need_inform:
+                _l.info('need_inform !!!!')
+
+            if need_react:
+                _l.info('need_react !!!!')
+
+            if apply_def:
+                _l.info('apply_def !!!!')
 
     _l.debug('finished')
 
 
-@shared_task(name='instruments.process_events', ignore_result=True)
-def process_events_async():
+@shared_task(name='instruments.process_events_auto', ignore_result=True)
+def process_events_auto():
     process_events()

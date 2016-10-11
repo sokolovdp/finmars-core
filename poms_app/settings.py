@@ -15,6 +15,7 @@ from __future__ import unicode_literals
 import os
 
 # Build paths inside the project like this: os.path.join(BASE_DIR, ...)
+from celery.schedules import crontab
 from django.utils.translation import ugettext_lazy
 
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -485,11 +486,11 @@ CELERY_SEND_TASK_SENT_EVENT = True
 CELERYBEAT_SCHEDULE = {
     'integrations.download_pricing_auto_scheduler': {
         'task': 'integrations.download_pricing_auto_scheduler',
-        'schedule': 600,
+        'schedule': crontab(minute='*/10'),
     },
-    'instruments.process_events': {
+    'instruments.process_events_auto': {
         'task': 'instruments.process_events',
-        'schedule': 600,
+        'schedule': crontab(minute=15),
     }
 }
 
@@ -530,3 +531,8 @@ BLOOMBERG_SANDBOX_WAIT_FAIL = False
 
 # LOGIN_URL = 'two_factor:login'
 # LOGIN_REDIRECT_URL = 'two_factor:profile'
+
+
+# ----
+
+INSTRUMENT_EVENTS_REGULAR_MAX_INTERVALS = 1000

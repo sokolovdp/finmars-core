@@ -151,7 +151,7 @@ class BaseReportItem(object):
 
 @python_2_unicode_compatible
 class BaseReport(object):
-    def __init__(self, master_user=None, begin_date=None, end_date=None, use_portfolio=None, use_account=None,
+    def __init__(self, master_user=None, begin_date=None, end_date=None, use_portfolio=False, use_account=False,
                  use_strategy=False, multiplier_class=None, items=None, instruments=None, transaction_currencies=None):
         self.master_user = master_user
         self.begin_date = begin_date
@@ -160,9 +160,9 @@ class BaseReport(object):
         self.use_account = use_account
         self.use_strategy = use_strategy
         self.multiplier_class = multiplier_class
-        self.items = items
-        self.transaction_currencies = transaction_currencies
-        self.instruments = instruments
+        self.items = items or []
+        self.transaction_currencies = transaction_currencies or []
+        self.instruments = instruments or []
         self.transactions = []
 
     def __str__(self):
