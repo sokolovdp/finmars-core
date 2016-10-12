@@ -420,7 +420,9 @@ class _UserDef(object):
                 val = self.parent._eval(self.node.args.defaults[i - offset])
                 kwargs[arg.arg] = val
 
-        self.parent.push(kwargs)
+        table = self.parent._table
+        self.parent._table = table.copy()
+        self.parent._table.update(kwargs)
         try:
             ret = None
             for n in self.node.body:
@@ -430,7 +432,7 @@ class _UserDef(object):
                     ret = e.value
                     break
         finally:
-            self.parent.pop()
+            self.parent._table = table
 
         return ret
 
@@ -511,8 +513,8 @@ FUNCTIONS = [
 
 class SimpleEval2(object):
     def __init__(self, names=None, max_time=5, add_print=False):
-        self.max_time = max_time
-        # self.max_time = 10000000000
+        # self.max_time = max_time
+        self.max_time = 10000000000
         self.start_time = 0
         self.tik_time = 0
 
@@ -522,14 +524,14 @@ class SimpleEval2(object):
 
         _globals = {f.name: f for f in FUNCTIONS}
         _globals['globals'] = _WrapDef('globals', lambda: _globals)
-        _globals['locals'] = _WrapDef('locals', lambda: self.top())
+        _globals['locals'] = _WrapDef('locals', lambda: self._table)
         if names:
             for k, v in names.items():
                 _globals[k] = v
         if add_print:
             _globals['print'] = _print
 
-        self._stack = [_globals]
+        self._table = _globals
 
     @staticmethod
     def try_parse(expr):
@@ -550,24 +552,13 @@ class SimpleEval2(object):
         except:
             return False
 
-    def push(self, table=None):
-        self._stack.append(table or {})
-
-    def pop(self):
-        if len(self._stack) == 1:
-            raise RuntimeError('Bad pop call')
-        self._stack.pop()
-
-    def top(self):
-        return self._stack[-1]
-
     def find_name(self, name):
-        for table in reversed(self._stack):
-            if name in table:
-                return table[name]
-        raise NameNotDefined(name)
+        try:
+            return self._table[name]
+        except KeyError:
+            raise NameNotDefined(name)
 
-    def eval(self, expr):
+    def eval(self, expr, names=None):
         self.expr = expr
         if expr:
             self.expr_ast = SimpleEval2.try_parse(expr)
@@ -576,8 +567,12 @@ class SimpleEval2(object):
         if self.expr_ast is None:
             raise InvalidExpression('Empty expression')
 
+        table = self._table
+        self._table = table.copy()
+        if names:
+            for k, v in names.items():
+                self._table[k] = v
         try:
-            self.push()
             self.start_time = time.time()
             self.result = self._eval(self.expr_ast.body)
             return self.result
@@ -586,7 +581,7 @@ class SimpleEval2(object):
         except Exception as e:
             raise ExpressionEvalError(e)
         finally:
-            self.pop()
+            self._table = table
 
     def _eval(self, node):
         # _l.info('%s - %s - %s', node, type(node), node.__class__)
@@ -604,7 +599,7 @@ class SimpleEval2(object):
             ret = self._eval(node.value)
             for t in node.targets:
                 if isinstance(t, ast.Name):
-                    self.top()[t.id] = ret
+                    self._table[t.id] = ret
                 elif isinstance(t, ast.Subscript):
                     obj = self._eval(t.value)
                     obj[self._eval(t.slice)] = ret
@@ -626,7 +621,7 @@ class SimpleEval2(object):
         elif isinstance(node, ast.For):
             ret = None
             for val in self._eval(node.iter):
-                self.top()[node.target.id] = val
+                self._table[node.target.id] = val
                 try:
                     ret = self._eval(node.body)
                 except _Break:
@@ -647,7 +642,7 @@ class SimpleEval2(object):
 
         elif isinstance(node, ast.FunctionDef):
             # self.local_functions[node.name] = node
-            self.top()[node.name] = _UserDef(self, node)
+            self._table[node.name] = _UserDef(self, node)
             return None
 
         elif isinstance(node, ast.Pass):
@@ -829,13 +824,7 @@ def validate(expr):
 
 
 def safe_eval(s, names=None):
-    # _l.debug('> safe_eval: s="%s", names=%s, functions=%s',
-    #          s, names, functions)
-    se = SimpleEval2(names=names)
-    ret = se.eval(s)
-    # _l.debug('< safe_eval: s="%s", local_names=%s, local_functions=%s',
-    #          ret, se.local_names, se.local_functions)
-    return ret
+    return SimpleEval2(names=names).eval(s)
 
 
 # def deep_dict(data):
@@ -999,6 +988,7 @@ if __name__ == "__main__":
         ),
     }
 
+
     # _l.info(safe_eval('(1).__class__.__bases__', names=names))
     # _l.info(safe_eval('{"a":1, "b":2}'))
     # _l.info(safe_eval('[1,]'))
@@ -1028,7 +1018,7 @@ if __name__ == "__main__":
     # _l.info(safe_eval('y = now().year'))
     # _l.info(safe_eval('eval("2+eval(\\\"2+2\\\")")'))
     # _l.info(ast.literal_eval('2+2'))
-    _l.info(safe_eval("globals()['now']()"))
+    # _l.info(safe_eval("globals()['now']()"))
 
 
     def test_eval(expr, names=None):
@@ -1366,7 +1356,7 @@ for i in [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]:
         try:
             import asteval
             _l.info('asteval         : %f', timeit.timeit(
-                lambda: asteval.Interpreter(symtable=SimpleEval2().top()).eval(expr), number=number))
+                lambda: asteval.Interpreter(symtable=SimpleEval2()._table).eval(expr), number=number))
         except ImportError:
             pass
 
