@@ -23,7 +23,7 @@ from poms.instruments.serializers import InstrumentSerializer, PriceHistorySeria
     PaymentSizeDetailSerializer, PeriodicitySerializer, CostMethodSerializer, InstrumentTypeSerializer, \
     InstrumentAttributeTypeSerializer, PricingPolicySerializer, InstrumentClassifierNodeSerializer, \
     EventScheduleConfigSerializer, InstrumentCalculatePricesAccruedPriceSerializer
-from poms.instruments.tasks import calculate_prices_accrued_price
+from poms.instruments.tasks import calculate_prices_accrued_price_async, calculate_prices_accrued_price
 from poms.integrations.models import PriceDownloadScheme
 from poms.obj_attrs.filters import AttributeTypeValueTypeFilter
 from poms.obj_attrs.views import AbstractAttributeTypeViewSet, AbstractClassifierViewSet
@@ -312,9 +312,18 @@ class InstrumentViewSet(AbstractWithObjectPermissionViewSet):
 
         # instruments = Instrument.objects.filter(master_user=request.user.master_user)
         # instruments = self.filter_queryset(self.get_queryset())
-        calculate_prices_accrued_price(request.user.master_user, begin_date, end_date)
         # for instrument in instruments:
         #     instrument.calculate_prices_accrued_price(begin_date, end_date)
+
+        calculate_prices_accrued_price(master_user=request.user.master_user, begin_date=begin_date, end_date=end_date)
+        # calculate_prices_accrued_price_async.apply_async(
+        #     kwargs={
+        #         'master_user': request.user.master_user.id,
+        #         'begin_date': begin_date.toordinal(),
+        #         'end_date': end_date.toordinal(),
+        #     }
+        # ).wait()
+
         return Response(serializer.data)
 
 

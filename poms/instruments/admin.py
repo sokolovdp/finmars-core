@@ -11,7 +11,7 @@ from poms.instruments.models import Instrument, PriceHistory, InstrumentClass, I
     ManualPricingFormula, AccrualCalculationSchedule, InstrumentAttributeType, InstrumentAttribute, \
     InstrumentFactorSchedule, EventSchedule, \
     PricingPolicy, PaymentSizeDetail, InstrumentClassifier, EventScheduleAction, EventScheduleConfig
-from poms.instruments.tasks import process_events
+from poms.instruments.tasks import process_events, calculate_prices_accrued_price_async, calculate_prices_accrued_price
 from poms.obj_attrs.admin import AbstractAttributeTypeAdmin, AbstractAttributeInline, \
     AbstractAttributeTypeClassifierInline, AbstractAttributeTypeOptionInline
 from poms.obj_perms.admin import UserObjectPermissionInline, \
@@ -107,8 +107,14 @@ class InstrumentAdmin(admin.ModelAdmin):
     rebuild_event_schedules.short_description = "Rebuild event schedules"
 
     def calculate_prices_accrued_price(self, request, queryset):
-        for instrument in queryset:
-            instrument.calculate_prices_accrued_price()
+        # for instrument in queryset:
+        #     instrument.calculate_prices_accrued_price()
+        calculate_prices_accrued_price(instruments=queryset)
+        # calculate_prices_accrued_price_async.apply_async(
+        #     kwargs={
+        #         'instruments': list(queryset.values_list('id', flat=True))
+        #     }
+        # ).wait()
 
     calculate_prices_accrued_price.short_description = "Calculate accrued price for prices"
 

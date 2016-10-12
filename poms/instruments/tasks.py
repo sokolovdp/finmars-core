@@ -7,7 +7,6 @@ from django.db.models import F, Count
 
 from poms.common.utils import date_now
 from poms.instruments.models import EventSchedule, Instrument
-from poms.reports.backends.balance import BalanceReport2PositionBuilder
 from poms.reports.models import BalanceReport
 from poms.transactions.models import EventClass, NotificationClass
 from poms.users.models import MasterUser
@@ -15,24 +14,28 @@ from poms.users.models import MasterUser
 _l = logging.getLogger('poms.instruments')
 
 
-def calculate_prices_accrued_price(master_user, begin_date, end_date, instruments=None):
-    _l.debug('process_events')
-    instruments_qs = Instrument.objects.filter(master_user=master_user)
+def calculate_prices_accrued_price(master_user=None, begin_date=None, end_date=None, instruments=None):
+    _l.debug('process_events: master_user=%s, begin_date=%s, end_date=%s, instruments=%s',
+             master_user, begin_date, end_date, instruments)
+    instruments_qs = Instrument.objects.all()
+    if master_user:
+        instruments_qs = instruments_qs.filter(master_user=master_user)
     if instruments:
         instruments_qs = instruments_qs.filter(pk__in=instruments)
-    processed = []
+    _l.debug('instruments: count=%s', instruments_qs.count())
     for instrument in instruments_qs:
+        _l.debug('calculate_prices_accrued_price: instrument=%s', instrument.id)
         instrument.calculate_prices_accrued_price(begin_date, end_date)
-        processed.append(instrument)
-    _l.debug('processed: %s', len(processed))
-    return processed
 
 
-@shared_task(name='instruments.calculate_prices_accrued_price', ignore_result=True)
-def calculate_prices_accrued_price_async(master_user, begin_date, end_date):
-    # TODO: type conversion
-    # calculate_prices_accrued_price(master_user, begin_date, end_date)
-    pass
+@shared_task(name='instruments.calculate_prices_accrued_price', ignore_result=False)
+def calculate_prices_accrued_price_async(master_user=None, begin_date=None, end_date=None, instruments=None):
+    if begin_date:
+        begin_date = date.fromordinal(begin_date)
+    if end_date:
+        end_date = date.fromordinal(end_date)
+    calculate_prices_accrued_price(master_user=master_user, begin_date=begin_date, end_date=end_date,
+                                   instruments=instruments)
 
 
 def process_events(instruments=None):
