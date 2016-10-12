@@ -51,8 +51,14 @@ class AttributeDoesNotExist(InvalidExpression):
         super(AttributeDoesNotExist, self).__init__(self.message)
 
 
-class BreakExpression(Exception):
+class _Break(InvalidExpression):
     pass
+
+
+class _Return(InvalidExpression):
+    def __init__(self, value):
+        self.value = value
+        super(_Return, self).__init__()
 
 
 # def _check_string(a):
@@ -377,7 +383,6 @@ class SimpleEval2(object):
 
             'globals': lambda: self.names if isinstance(self.names, (dict, OrderedDict)) else {},
             'locals': lambda: self.local_names,
-            'eval': lambda s: self.eval(s)
         }
         self.local_functions = {}
         self.names = names or {}
@@ -423,75 +428,96 @@ class SimpleEval2(object):
             raise InvalidExpression('Empty expression')
 
         try:
-            self.result = self._eval_stmt(self.expr_ast.body)
+            self.result = self._eval(self.expr_ast.body)
             return self.result
         except InvalidExpression:
             raise
         except Exception as e:
             raise ExpressionEvalError(e)
 
-    def _eval_stmt(self, body):
-        ret = None
-
-        for node in body:
-            if isinstance(node, ast.Assign):
-                val = self._eval(node.value)
-                for t in node.targets:
-                    if isinstance(t, ast.Name):
-                        self.local_names[t.id] = val
-                    elif isinstance(t, ast.Subscript):
-                        obj = self._eval(t.value)
-                        obj[self._eval(t.slice)] = val
-                    elif isinstance(t, ast.Attribute):
-                        # TODO: check security
-                        # obj = self._eval(t.value)
-                        # if isinstance(val, (dict, OrderedDict)):
-                        #     obj[t.attr] = val
-                        # else:
-                        #     raise ExpressionSyntaxError('Invalid assign')
-                        raise ExpressionSyntaxError('Invalid assign')
-                    else:
-                        raise ExpressionSyntaxError('Invalid assign')
-                ret = val
-
-            elif isinstance(node, ast.If):
-                ret = self._eval_stmt(node.body) if self._eval(node.test) else self._eval_stmt(node.orelse)
-
-            elif isinstance(node, ast.For):
-                for val in self._eval(node.iter):
-                    self.local_names[node.target.id] = val
-                    try:
-                        ret = self._eval_stmt(node.body)
-                    except BreakExpression:
-                        break
-
-            elif isinstance(node, ast.While):
-                iter = 0
-                while self._eval(node.test):
-                    try:
-                        ret = self._eval_stmt(node.body)
-                    except BreakExpression:
-                        break
-                    iter += 1
-                    if iter > MAX_ITERATIONS:
-                        raise ExpressionEvalError('Max iterations')
-
-            elif isinstance(node, ast.Break):
-                raise BreakExpression()
-
-            elif isinstance(node, ast.FunctionDef):
-                self.local_functions[node.name] = node
-
-            elif isinstance(node, ast.Pass):
-                pass
-
-            else:
-                ret = self._eval(node.value)
-
-        return ret
-
     def _eval(self, node):
-        if isinstance(node, ast.Num):  # <number>
+        if isinstance(node, (list, tuple)):
+            ret = None
+            for n in node:
+                ret = self._eval(n)
+            return ret
+
+        elif isinstance(node, ast.Assign):
+            ret = self._eval(node.value)
+            for t in node.targets:
+                if isinstance(t, ast.Name):
+                    self.local_names[t.id] = ret
+                elif isinstance(t, ast.Subscript):
+                    obj = self._eval(t.value)
+                    obj[self._eval(t.slice)] = ret
+                elif isinstance(t, ast.Attribute):
+                    # TODO: check security
+                    # obj = self._eval(t.value)
+                    # if isinstance(val, (dict, OrderedDict)):
+                    #     obj[t.attr] = val
+                    # else:
+                    #     raise ExpressionSyntaxError('Invalid assign')
+                    raise ExpressionSyntaxError('Invalid assign')
+                else:
+                    raise ExpressionSyntaxError('Invalid assign')
+            return ret
+
+        elif isinstance(node, ast.If):
+            return self._eval(node.body) if self._eval(node.test) else self._eval(node.orelse)
+
+        elif isinstance(node, ast.For):
+            ret = None
+            for val in self._eval(node.iter):
+                self.local_names[node.target.id] = val
+                try:
+                    ret = self._eval(node.body)
+                except _Break:
+                    break
+            return ret
+
+        elif isinstance(node, ast.While):
+            ret = None
+            iter = 0
+            while self._eval(node.test):
+                try:
+                    ret = self._eval(node.body)
+                except _Break:
+                    break
+                iter += 1
+                if iter > MAX_ITERATIONS:
+                    raise ExpressionEvalError('Max iterations')
+            return ret
+
+        elif isinstance(node, ast.Break):
+            raise _Break()
+
+        elif isinstance(node, ast.FunctionDef):
+            self.local_functions[node.name] = node
+            return None
+
+        elif isinstance(node, ast.Pass):
+            return None
+
+        elif isinstance(node, ast.Try):
+            ret = None
+            try:
+                ret = self._eval(node.body)
+            except:
+                if node.handlers:
+                    for n in node.handlers:
+                        # ast.ExceptHandler
+                        if n.body:
+                            ret = self._eval(n.body)
+            else:
+                if node.orelse:
+                    ret = self._eval(node.orelse)
+            finally:
+                if node.finalbody:
+                    ret = self._eval(node.finalbody)
+
+            return ret
+
+        elif isinstance(node, ast.Num):  # <number>
             return node.n
 
         elif isinstance(node, ast.Str):  # <string>
@@ -581,16 +607,28 @@ class SimpleEval2(object):
                         val = self._eval(f.args.defaults[i - defaults_args_correction])
                         f_kwargs[arg.arg] = val
 
-                local_names = self.local_names.copy()
+                local_names = self.local_names
 
-                self.local_names.update(f_kwargs)
-                ret = self._eval_stmt(f.body)
+                self.local_names = f_kwargs
+                # ret = self._eval(f.body)
+
+                ret = None
+                for n in f.body:
+                    try:
+                        self._eval(n)
+                    except _Return as e:
+                        ret = e.value
+                        break
 
                 self.local_names = local_names
 
                 return ret
 
             raise FunctionNotDefined(node.func.id)
+
+        elif isinstance(node, ast.Return):
+            val = self._eval(node.value)
+            raise _Return(val)
 
         # variables/names:
         elif isinstance(node, ast.Name):  # a, b, c...
@@ -644,11 +682,17 @@ class SimpleEval2(object):
                     pass
 
             raise AttributeDoesNotExist(node.attr)
+
         elif isinstance(node, ast.Index):
             return self._eval(node.value)
 
+        elif isinstance(node, ast.Expr):
+            return self._eval(node.value)
         else:
             raise InvalidExpression("Sorry, %s is not available in this evaluator" % type(node).__name__)
+
+        raise InvalidExpression("Sorry, %s is not available in this evaluator" % type(node).__name__)
+        # pass
 
 
 def is_valid(expr):
@@ -885,11 +929,43 @@ if __name__ == "__main__":
 
 
     test_eval('''
-a = {}
-a['2'] = {}
-a['2']['1'] = {}
-a['2']['1'][1]=123
-a
+pass
+
+for i in [1,2]:
+    pass
+
+i = 0
+while i < 2:
+    pass
+    i = i + 1
+
+a = 0
+try:
+    a = a + 1
+except:
+    a = a + 10
+else:
+    a = a + 100
+finally:
+    a = a + 1000
+
+b = 1
+if b == 0:
+    pass
+elif b == 1:
+    pass
+else:
+    pass
+
+def f1(v):
+    pass
+    for i in [1,2]:
+        if v > 1:
+            pass
+            return True
+        else:
+            return False
+f1(1)
 ''')
 
 
@@ -906,7 +982,7 @@ a
             "v1": "str",
             "v2": {"id": 1, "name": "V2", "trn_code": 12354, "num": 1.234},
             "v3": [{"id": 2, "name": "V31"}, {"id": 3, "name": "V32"}, ],
-            "v4": OrderedDict(("id", 3), ("name", "Lol")),
+            "v4": OrderedDict([["id", 3], ["name", "Lol"]]),
             # "instr": OrderedDict(
             #     InstrumentSerializer(instance=Instrument.objects.first(),
             #                          context={'request': instrument_request}).data
