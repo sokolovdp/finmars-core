@@ -4,8 +4,8 @@ import ast
 import calendar
 import datetime
 import logging
-import operator
 import random
+import time
 from collections import OrderedDict
 
 from dateutil import relativedelta
@@ -15,10 +15,10 @@ from poms.common.utils import date_now, isclose
 
 _l = logging.getLogger('poms.formula')
 
-MAX_STRING_LENGTH = 100000
-MAX_POWER = 4000000  # highest exponent
+MAX_STR_LEN = 100000
+MAX_EXPONENT = 4000000  # highest exponent
+MAX_SHIFT = 000
 MAX_LEN = 100
-MAX_ITERATIONS = 1000
 
 
 class InvalidExpression(Exception):
@@ -123,6 +123,7 @@ def _iff(test, a, b):
 
 def _len(a):
     return len(a)
+
 
 def _range(*args):
     return range(*args)
@@ -289,105 +290,177 @@ def _random():
     return random.random()
 
 
-def _op_safe_power(a, b):
+def _op_power(a, b):
     """ a limited exponent/to-the-power-of function, for safety reasons """
-    if abs(a) > MAX_POWER or abs(b) > MAX_POWER:
-        raise InvalidExpression("Sorry! I don't want to evaluate {0} ** {1}"
-                                .format(a, b))
+    if abs(a) > MAX_EXPONENT or abs(b) > MAX_EXPONENT:
+        raise InvalidExpression("Invalid exponent, max exponent is %s" % MAX_EXPONENT)
     return a ** b
 
 
-def _op_safe_mult(a, b):
-    """ limit the number of times a string can be repeated... """
-    if isinstance(a, str) or isinstance(b, str):
-        if isinstance(a, int) and a * len(b) > MAX_STRING_LENGTH:
-            raise InvalidExpression("Sorry, a string that long is not allowed")
-        elif isinstance(b, int) and b * len(a) > MAX_STRING_LENGTH:
-            raise InvalidExpression("Sorry, a string that long is not allowed")
-
+def _op_mult(a, b):
+    # """ limit the number of times a string can be repeated... """
+    # if isinstance(a, int) and a * len(b) > MAX_STRING_LENGTH:
+    #         raise InvalidExpression("Sorry, a string that long is not allowed")
+    #     elif isinstance(b, int) and b * len(a) > MAX_STRING_LENGTH:
+    #         raise InvalidExpression("Sorry, a string that long is not allowed")
+    if isinstance(a, str):
+        raise TypeError("Can't convert '%s' object to str implicitly" % type(a).__name__)
+    if isinstance(b, str):
+        raise TypeError("Can't convert '%s' object to str implicitly" % type(b).__name__)
     return a * b
 
 
-def _op_safe_add(a, b):
+def _op_add(a, b):
     """ string length limit again """
-    if isinstance(a, str) and isinstance(b, str):
-        if len(a) + len(b) > MAX_STRING_LENGTH:
-            raise InvalidExpression("Sorry, adding those two strings would"
-                                    " make a too long string.")
+    if isinstance(a, str) and isinstance(b, str) and len(a) + len(b) > MAX_STR_LEN:
+        raise InvalidExpression("Sorry, adding those two strings would make a too long string.")
     return a + b
 
 
-def _op_in(a, b):
-    return a in b
+def _op_lshift(a, b):
+    if b > MAX_SHIFT:
+        raise InvalidExpression("Invalid left shift, max left shift is %s" % MAX_SHIFT)
+    return a << b
+
+
+OPERATORS = {
+    ast.Is: lambda a, b: a is b,
+    ast.IsNot: lambda a, b: a is not b,
+    ast.In: lambda a, b: a in b,
+    ast.NotIn: lambda a, b: a not in b,
+    ast.Add: _op_add,
+    ast.BitAnd: lambda a, b: a & b,
+    ast.BitOr: lambda a, b: a | b,
+    ast.BitXor: lambda a, b: a ^ b,
+    ast.Div: lambda a, b: a / b,
+    ast.FloorDiv: lambda a, b: a // b,
+    ast.LShift: _op_lshift,
+    ast.RShift: lambda a, b: a >> b,
+    ast.Mult: _op_mult,
+    ast.Pow: _op_power,
+    ast.Sub: lambda a, b: a - b,
+    ast.Mod: lambda a, b: a % b,
+    ast.And: lambda a, b: a and b,
+    ast.Or: lambda a, b: a or b,
+    ast.Eq: lambda a, b: a == b,
+    ast.Gt: lambda a, b: a > b,
+    ast.GtE: lambda a, b: a >= b,
+    ast.Lt: lambda a, b: a < b,
+    ast.LtE: lambda a, b: a <= b,
+    ast.NotEq: lambda a, b: a != b,
+    ast.Invert: lambda a: ~a,
+    ast.Not: lambda a: not a,
+    ast.UAdd: lambda a: +a,
+    ast.USub: lambda a: -a
+}
+
+FUNCTIONS = {
+    'str': _str,
+    'upper': _upper,
+    'lower': _lower,
+    'contains': _contains,
+
+    'int': _int,
+    'float': _float,
+    'round': _round,
+    'trunc': _trunc,
+    'isclose': _isclose,
+    'random': _random,
+
+    'iff': _iff,
+    'len': _len,
+    'range': _range,
+
+    'now': _now,
+    'date': _date,
+    'isleap': _isleap,
+    'days': _days,
+    'weeks': _weeks,
+    'months': _months,
+    'timedelta': _timedelta,
+    'add_days': _add_days,
+    'add_weeks': _add_weeks,
+    'add_workdays': _add_workdays,
+    'format_date': _format_date,
+    'parse_date': _parse_date,
+
+    'format_number': _format_number,
+    'parse_number': _parse_number,
+
+    'simple_price': _simple_price,
+}
+
+
+# OPERATORS = {
+#     ast.Add: _op_add,
+#     ast.Sub: operator.sub,
+#     ast.Mult: _op_mult,
+#     ast.Div: operator.truediv,
+#     ast.Pow: _op_power,
+#     ast.Mod: operator.mod,
+#     ast.Eq: operator.eq,
+#     ast.NotEq: operator.ne,
+#     ast.Gt: operator.gt,
+#     ast.Lt: operator.lt,
+#     ast.GtE: operator.ge,
+#     ast.LtE: operator.le,
+#     ast.USub: operator.neg,
+#     ast.UAdd: operator.pos,
+#     ast.In: _op_in,
+#     ast.Is: operator.is_,
+#     ast.IsNot: operator.is_not,
+#     ast.Not: operator.not_,
+# }
+
+
+class _Def(object):
+    def __init__(self, parent, node):
+        self.parent = parent
+        self.node = node
+
+    def __call__(self, *args, **kwargs):
+        kwargs = kwargs.copy()
+
+        for i, val in enumerate(args):
+            name = self.node.args.args[i].arg
+            kwargs[name] = val
+
+        offset = len(self.node.args.args) - len(self.node.args.defaults)
+        for i, arg in enumerate(self.node.args.args):
+            if arg.arg not in kwargs:
+                val = self.parent._eval(self.node.args.defaults[i - offset])
+                kwargs[arg.arg] = val
+
+        local_names = self.parent.local_names
+
+        self.parent.local_names = kwargs
+
+        ret = None
+        for n in self.node.body:
+            try:
+                self.parent._eval(n)
+            except _Return as e:
+                ret = e.value
+                break
+
+        self.parent.local_names = local_names
+
+        return ret
 
 
 class SimpleEval2(object):
-    def __init__(self, expr=None, names=None):
-        self.expr = expr
-        if expr:
-            self.expr_ast = SimpleEval2.try_parse(expr)
-        else:
-            self.expr_ast = None
+    def __init__(self, names=None, max_time=5):
+        self.max_time = max_time
+        self.start_time = 0
+        self.tik_time = 0
 
-        self.operators = {
-            ast.Add: _op_safe_add,
-            ast.Sub: operator.sub,
-            ast.Mult: _op_safe_mult,
-            ast.Div: operator.truediv,
-            ast.Pow: _op_safe_power,
-            ast.Mod: operator.mod,
-            ast.Eq: operator.eq,
-            ast.NotEq: operator.ne,
-            ast.Gt: operator.gt,
-            ast.Lt: operator.lt,
-            ast.GtE: operator.ge,
-            ast.LtE: operator.le,
-            ast.USub: operator.neg,
-            ast.UAdd: operator.pos,
-            ast.In: _op_in,
-            ast.Is: operator.is_,
-            ast.IsNot: operator.is_not,
-            ast.Not: operator.not_,
-        }
+        self.expr = None
+        self.expr_ast = None
 
-        self.functions = {
-            'str': _str,
-            'upper': _upper,
-            'lower': _lower,
-            'contains': _contains,
+        self.functions = FUNCTIONS.copy()
+        self.functions['globals'] = lambda: self.names if isinstance(self.names, (dict, OrderedDict)) else {}
+        self.functions['locals'] = lambda: self.local_names
 
-            'int': _int,
-            'float': _float,
-            'round': _round,
-            'trunc': _trunc,
-            'isclose': _isclose,
-            'random': _random,
-
-            'iff': _iff,
-            'len': _len,
-            'range': _range,
-
-            'now': _now,
-            'date': _date,
-            'isleap': _isleap,
-            'days': _days,
-            'weeks': _weeks,
-            'months': _months,
-            'timedelta': _timedelta,
-            'add_days': _add_days,
-            'add_weeks': _add_weeks,
-            'add_workdays': _add_workdays,
-            'format_date': _format_date,
-            'parse_date': _parse_date,
-
-            'format_number': _format_number,
-            'parse_number': _parse_number,
-
-            'simple_price': _simple_price,
-
-            'globals': lambda: self.names if isinstance(self.names, (dict, OrderedDict)) else {},
-            'locals': lambda: self.local_names,
-        }
         self.local_functions = {}
         self.names = names or {}
         # not needed in py3
@@ -415,23 +488,21 @@ class SimpleEval2(object):
         except:
             return False
 
-    def eval(self, expr=None, names=None):
-        if expr is not None:
-            self.expr = expr
-            if expr:
-                self.expr_ast = SimpleEval2.try_parse(expr)
-            else:
-                self.expr_ast = None
-        if names is not None:
-            self.names = names
+    def eval(self, expr):
+        self.expr = expr
+        if expr:
+            self.expr_ast = SimpleEval2.try_parse(expr)
+        else:
+            self.expr_ast = None
+        if self.expr_ast is None:
+            raise InvalidExpression('Empty expression')
+
         self.local_names = {}
         self.state = {}
         self.result = None
 
-        if self.expr_ast is None:
-            raise InvalidExpression('Empty expression')
-
         try:
+            self.start_time = time.time()
             self.result = self._eval(self.expr_ast.body)
             return self.result
         except InvalidExpression:
@@ -440,6 +511,11 @@ class SimpleEval2(object):
             raise ExpressionEvalError(e)
 
     def _eval(self, node):
+        # _l.info('%s - %s - %s', node, type(node), node.__class__)
+        self.tik_time = time.time()
+        if self.tik_time - self.start_time > self.max_time:
+            raise InvalidExpression("Execution exceeded time limit, max runtime is {}s" % self.max_time)
+
         if isinstance(node, (list, tuple)):
             ret = None
             for n in node:
@@ -456,12 +532,12 @@ class SimpleEval2(object):
                     obj[self._eval(t.slice)] = ret
                 elif isinstance(t, ast.Attribute):
                     # TODO: check security
-                    # obj = self._eval(t.value)
-                    # if isinstance(val, (dict, OrderedDict)):
-                    #     obj[t.attr] = val
-                    # else:
-                    #     raise ExpressionSyntaxError('Invalid assign')
-                    raise ExpressionSyntaxError('Invalid assign')
+                    obj = self._eval(t.value)
+                    if isinstance(obj, (dict, OrderedDict)):
+                        obj[t.attr] = ret
+                    else:
+                        raise ExpressionSyntaxError('Invalid assign')
+                        # raise ExpressionSyntaxError('Invalid assign')
                 else:
                     raise ExpressionSyntaxError('Invalid assign')
             return ret
@@ -481,22 +557,19 @@ class SimpleEval2(object):
 
         elif isinstance(node, ast.While):
             ret = None
-            iter = 0
             while self._eval(node.test):
                 try:
                     ret = self._eval(node.body)
                 except _Break:
                     break
-                iter += 1
-                if iter > MAX_ITERATIONS:
-                    raise ExpressionEvalError('Max iterations')
             return ret
 
         elif isinstance(node, ast.Break):
             raise _Break()
 
         elif isinstance(node, ast.FunctionDef):
-            self.local_functions[node.name] = node
+            # self.local_functions[node.name] = node
+            self.local_functions[node.name] = _Def(self, node)
             return None
 
         elif isinstance(node, ast.Pass):
@@ -525,9 +598,9 @@ class SimpleEval2(object):
             return node.n
 
         elif isinstance(node, ast.Str):  # <string>
-            if len(node.s) > MAX_STRING_LENGTH:
+            if len(node.s) > MAX_STR_LEN:
                 raise ExpressionEvalError(
-                    "String Literal in statement is too long! (%s, when %s is max)" % (len(node.s), MAX_STRING_LENGTH))
+                    "String Literal in statement is too long! (%s, when %s is max)" % (len(node.s), MAX_STR_LEN))
             return node.s
 
         # python 3 compatibility:
@@ -558,18 +631,10 @@ class SimpleEval2(object):
             return d
 
         elif isinstance(node, ast.UnaryOp):  # - and + etc.
-            return self.operators[type(node.op)](self._eval(node.operand))
+            return OPERATORS[type(node.op)](self._eval(node.operand))
 
         elif isinstance(node, ast.BinOp):  # <left> <operator> <right>
-            l = self._eval(node.left)
-            r = self._eval(node.right)
-            # if isinstance(node.op, ast.Mult) and isinstance(l, str):
-            #     raise simpleeval.InvalidExpression("Invalid first argument")
-            # if isinstance(node.op, ast.Mod) and isinstance(l, str):
-            #     raise simpleeval.InvalidExpression("Invalid first argument")
-            if isinstance(node.op, (ast.Mult, ast.Mod,)) and isinstance(l, str):
-                raise ExpressionEvalError("Binary operation does't support string")
-            return self.operators[type(node.op)](l, r)
+            return OPERATORS[type(node.op)](self._eval(node.left), self._eval(node.right))
 
         elif isinstance(node, ast.BoolOp):  # and & or...
             if isinstance(node.op, ast.And):
@@ -578,7 +643,7 @@ class SimpleEval2(object):
                 return any((self._eval(v) for v in node.values))
 
         elif isinstance(node, ast.Compare):  # 1 < 2, a == b...
-            return self.operators[type(node.ops[0])](self._eval(node.left), self._eval(node.comparators[0]))
+            return OPERATORS[type(node.ops[0])](self._eval(node.left), self._eval(node.comparators[0]))
 
         elif isinstance(node, ast.IfExp):  # x if y else z
             return self._eval(node.body) if self._eval(node.test) else self._eval(node.orelse)
@@ -589,44 +654,16 @@ class SimpleEval2(object):
             # if node.func.id == 'globals':
             #     return self.names
 
+            f_args = [self._eval(a) for a in node.args]
+            f_kwargs = {k.arg: self._eval(k.value) for k in node.keywords}
+
             if node.func.id in self.functions:
                 f = self.functions[node.func.id]
-                f_args = [self._eval(a) for a in node.args]
-                f_kwargs = {k.arg: self._eval(k.value) for k in node.keywords}
                 return f(*f_args, **f_kwargs)
 
             if node.func.id in self.local_functions:
                 f = self.local_functions[node.func.id]
-                f_args = [self._eval(a) for a in node.args]
-                f_kwargs = {k.arg: self._eval(k.value) for k in node.keywords}
-
-                for i, val in enumerate(f_args):
-                    # f_kwargs.setdefault(k, v)
-                    name = f.args.args[i].arg
-                    f_kwargs[name] = val
-
-                defaults_args_correction = len(f.args.args) - len(f.args.defaults)
-                for i, arg in enumerate(f.args.args):
-                    if arg.arg not in f_kwargs:
-                        val = self._eval(f.args.defaults[i - defaults_args_correction])
-                        f_kwargs[arg.arg] = val
-
-                local_names = self.local_names
-
-                self.local_names = f_kwargs
-                # ret = self._eval(f.body)
-
-                ret = None
-                for n in f.body:
-                    try:
-                        self._eval(n)
-                    except _Return as e:
-                        ret = e.value
-                        break
-
-                self.local_names = local_names
-
-                return ret
+                return f(*f_args, **f_kwargs)
 
             raise FunctionNotDefined(node.func.id)
 
@@ -666,51 +703,55 @@ class SimpleEval2(object):
 
         elif isinstance(node, ast.Attribute):  # a.b.c
             val = self._eval(node.value)
-
-            if isinstance(val, datetime.date):
-                if node.attr in ['year', 'month', 'day']:
-                    return getattr(val, node.attr)
-
-            elif isinstance(val, datetime.timedelta):
-                if node.attr in ['days']:
-                    return getattr(val, node.attr)
-
-            elif isinstance(val, relativedelta.relativedelta):
-                if node.attr in ['years', 'months', 'days', 'leapdays', 'year', 'month', 'day', 'weekday']:
-                    return getattr(val, node.attr)
-
-            elif isinstance(val, (dict, OrderedDict)):
+            if isinstance(val, (dict, OrderedDict)):
                 try:
                     return val[node.attr]
                 except (KeyError, TypeError):
-                    pass
-
-            raise AttributeDoesNotExist(node.attr)
+                    raise AttributeDoesNotExist(node.attr)
+            else:
+                return self._safe_getattr(val, node.attr)
 
         elif isinstance(node, ast.Index):
             return self._eval(node.value)
 
         elif isinstance(node, ast.Expr):
             return self._eval(node.value)
+
         else:
             raise InvalidExpression("Sorry, %s is not available in this evaluator" % type(node).__name__)
 
         raise InvalidExpression("Sorry, %s is not available in this evaluator" % type(node).__name__)
         # pass
 
+    def _safe_getattr(self, obj, name):
+        if isinstance(obj, datetime.date):
+            if name in ['year', 'month', 'day']:
+                return getattr(obj, name)
 
-def is_valid(expr):
-    return SimpleEval2.is_valid(expr)
+        elif isinstance(obj, datetime.timedelta):
+            if name in ['days']:
+                return getattr(obj, name)
+
+        elif isinstance(obj, relativedelta.relativedelta):
+            if name in ['years', 'months', 'days', 'leapdays', 'year', 'month', 'day', 'weekday']:
+                return getattr(obj, name)
+
+        raise AttributeDoesNotExist(name)
 
 
-def try_parse(expr):
-    SimpleEval2.try_parse(expr)
+# def is_valid(expr):
+#     return SimpleEval2.is_valid(expr)
+
+
+# def try_parse(expr):
+#     SimpleEval2.try_parse(expr)
 
 
 def validate(expr):
     from rest_framework.exceptions import ValidationError
     try:
-        try_parse(expr)
+        SimpleEval2.try_parse(expr)
+        # try_parse(expr)
     except InvalidExpression as e:
         raise ValidationError('Invalid expression: %s' % e)
 
@@ -718,8 +759,8 @@ def validate(expr):
 def safe_eval(s, names=None):
     # _l.debug('> safe_eval: s="%s", names=%s, functions=%s',
     #          s, names, functions)
-    se = SimpleEval2(expr=s, names=names)
-    ret = se.eval()
+    se = SimpleEval2(names=names)
+    ret = se.eval(s)
     # _l.debug('< safe_eval: s="%s", local_names=%s, local_functions=%s',
     #          ret, se.local_names, se.local_functions)
     return ret
@@ -932,59 +973,65 @@ if __name__ == "__main__":
         _l.info("\t%-60s -> %s" % (expr, res))
 
 
-    test_eval('''
-pass
-
-for i in [1,2]:
-    pass
-
-i = 0
-while i < 2:
-    pass
-    i = i + 1
-
-a = 0
-try:
-    a = a + 1
-except:
-    a = a + 10
-else:
-    a = a + 100
-finally:
-    a = a + 1000
-
-b = 1
-if b == 0:
-    pass
-elif b == 1:
-    pass
-else:
-    pass
-
-def f1(v):
-    pass
-    for i in [1,2]:
-        if v > 1:
-            pass
-            return True
-        else:
-            return False
-f1(1)
-
-b = 0
-for a in range(1,10):
-    b = b + a
-b
-
-b2 = 0
-for a in range(10):
-    b2 = b2 + a
-b2
-
-range(10)
-date(2016)
-''')
-
+    #     test_eval('''
+    # pass
+    #
+    # a = 1000
+    # # not supported
+    # # if 1 <= a <= 2000:
+    # #     pass
+    # if 1 <= a and a <= 2000:
+    #     pass
+    #
+    # for i in [1,2]:
+    #     pass
+    #
+    # i = 0
+    # while i < 2:
+    #     pass
+    #     i = i + 1
+    #
+    # a = 0
+    # try:
+    #     a = a + 1
+    # except:
+    #     a = a + 10
+    # else:
+    #     a = a + 100
+    # finally:
+    #     a = a + 1000
+    #
+    # b = 1
+    # if b == 0:
+    #     pass
+    # elif b == 1:
+    #     pass
+    # else:
+    #     pass
+    #
+    # def f1(v):
+    #     pass
+    #     for i in [1,2]:
+    #         if v > 1:
+    #             pass
+    #             return True
+    #         else:
+    #             return False
+    # f1(1)
+    #
+    # b = 0
+    # for a in range(1,10):
+    #     b = b + a
+    # b
+    #
+    # b2 = 0
+    # for a in range(10):
+    #     b2 = b2 + a
+    # b2
+    #
+    # range(10)
+    # date(2016)
+    # ''')
 
 
     def demo():
@@ -1171,7 +1218,7 @@ accrl_NL_365_NO_EOM(parse_date('2000-01-01'), parse_date('2000-01-25'))
         ''')
 
 
-    # demo_stmt()
+    demo_stmt()
     pass
 
 
@@ -1206,27 +1253,26 @@ for i in [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]:
     accrl_NL_365_NO_EOM(date(2000, 1, 1), date(2000, i, 25))
         '''
 
-        def f_eval():
-            return safe_eval(expr)
-
-        se = SimpleEval2(expr=expr)
-
-        def f_eval2():
-            return se.eval()
-
         _l.info('PERF')
+        number = 100
         _l.info('-' * 79)
         _l.info(expr)
         _l.info('-' * 79)
-        _l.info('native          : %f', timeit.timeit(f_native, number=1000))
+        _l.info('native          : %f', timeit.timeit(f_native, number=number))
         _l.info('exec            : %f', timeit.timeit(lambda: exec(expr, {
             'parse_date': _parse_date,
             'isleap': calendar.isleap,
             'date': _date,
             'days': _days,
-        }), number=1000))
-        _l.info('safe_eval       : %f', timeit.timeit(f_eval, number=1000))
-        _l.info('cached safe_eval: %f', timeit.timeit(f_eval2, number=1000))
+        }), number=number))
+        _l.info('safe_eval       : %f', timeit.timeit(lambda: safe_eval(expr), number=number))
+
+        try:
+            import asteval
+            _l.info('asteval         : %f', timeit.timeit(
+                lambda: asteval.Interpreter(symtable=SimpleEval2().functions).eval(expr), number=number))
+        except ImportError:
+            pass
 
 
     perf_tests()
