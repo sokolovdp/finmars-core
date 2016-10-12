@@ -381,7 +381,7 @@ OPERATORS = {
 # }
 
 
-class _WrapDef(object):
+class _SysDef(object):
     def __init__(self, name, func):
         self.name = name
         self.func = func
@@ -409,7 +409,6 @@ class _UserDef(object):
 
     def __call__(self, *args, **kwargs):
         kwargs = kwargs.copy()
-
         for i, val in enumerate(args):
             name = self.node.args.args[i].arg
             kwargs[name] = val
@@ -420,57 +419,54 @@ class _UserDef(object):
                 val = self.parent._eval(self.node.args.defaults[i - offset])
                 kwargs[arg.arg] = val
 
-        table = self.parent._table
-        self.parent._table = table.copy()
-        self.parent._table.update(kwargs)
+        save_table = self.parent._table
         try:
-            ret = None
-            for n in self.node.body:
-                try:
-                    self.parent._eval(n)
-                except _Return as e:
-                    ret = e.value
-                    break
+            self.parent._table = save_table.copy()
+            self.parent._table.update(kwargs)
+            try:
+                ret = self.parent._eval(self.node.body)
+            except _Return as e:
+                ret = e.value
         finally:
-            self.parent._table = table
+            self.parent._table = save_table
 
         return ret
 
 
 FUNCTIONS = [
-    _WrapDef('str', _str),
-    _WrapDef('upper', _upper),
-    _WrapDef('lower', _lower),
-    _WrapDef('contains', _contains),
+    _SysDef('str', _str),
+    _SysDef('upper', _upper),
+    _SysDef('lower', _lower),
+    _SysDef('contains', _contains),
 
-    _WrapDef('int', _int),
-    _WrapDef('float', _float),
-    _WrapDef('round', _round),
-    _WrapDef('trunc', _trunc),
-    _WrapDef('isclose', _isclose),
-    _WrapDef('random', _random),
+    _SysDef('int', _int),
+    _SysDef('float', _float),
+    _SysDef('round', _round),
+    _SysDef('trunc', _trunc),
+    _SysDef('isclose', _isclose),
+    _SysDef('random', _random),
 
-    _WrapDef('iff', _iff),
-    _WrapDef('len', _len),
-    _WrapDef('range', _range),
+    _SysDef('iff', _iff),
+    _SysDef('len', _len),
+    _SysDef('range', _range),
 
-    _WrapDef('now', _now),
-    _WrapDef('date', _date),
-    _WrapDef('isleap', _isleap),
-    _WrapDef('days', _days),
-    _WrapDef('weeks', _weeks),
-    _WrapDef('months', _months),
-    _WrapDef('timedelta', _timedelta),
-    _WrapDef('add_days', _add_days),
-    _WrapDef('add_weeks', _add_weeks),
-    _WrapDef('add_workdays', _add_workdays),
-    _WrapDef('format_date', _format_date),
-    _WrapDef('parse_date', _parse_date),
+    _SysDef('now', _now),
+    _SysDef('date', _date),
+    _SysDef('isleap', _isleap),
+    _SysDef('days', _days),
+    _SysDef('weeks', _weeks),
+    _SysDef('months', _months),
+    _SysDef('timedelta', _timedelta),
+    _SysDef('add_days', _add_days),
+    _SysDef('add_weeks', _add_weeks),
+    _SysDef('add_workdays', _add_workdays),
+    _SysDef('format_date', _format_date),
+    _SysDef('parse_date', _parse_date),
 
-    _WrapDef('format_number', _format_number),
-    _WrapDef('parse_number', _parse_number),
+    _SysDef('format_number', _format_number),
+    _SysDef('parse_number', _parse_number),
 
-    _WrapDef('simple_price', _simple_price),
+    _SysDef('simple_price', _simple_price),
 ]
 
 
@@ -523,8 +519,8 @@ class SimpleEval2(object):
         self.result = None
 
         _globals = {f.name: f for f in FUNCTIONS}
-        _globals['globals'] = _WrapDef('globals', lambda: _globals)
-        _globals['locals'] = _WrapDef('locals', lambda: self._table)
+        _globals['globals'] = _SysDef('globals', lambda: _globals)
+        _globals['locals'] = _SysDef('locals', lambda: self._table)
         if names:
             for k, v in names.items():
                 _globals[k] = v
@@ -559,16 +555,14 @@ class SimpleEval2(object):
             raise NameNotDefined(name)
 
     def eval(self, expr, names=None):
-        self.expr = expr
-        if expr:
-            self.expr_ast = SimpleEval2.try_parse(expr)
-        else:
-            self.expr_ast = None
-        if self.expr_ast is None:
+        if not expr:
             raise InvalidExpression('Empty expression')
 
-        table = self._table
-        self._table = table.copy()
+        self.expr = expr
+        self.expr_ast = SimpleEval2.try_parse(expr)
+
+        save_table = self._table
+        self._table = save_table.copy()
         if names:
             for k, v in names.items():
                 self._table[k] = v
@@ -581,7 +575,7 @@ class SimpleEval2(object):
         except Exception as e:
             raise ExpressionEvalError(e)
         finally:
-            self._table = table
+            self._table = save_table
 
     def _eval(self, node):
         # _l.info('%s - %s - %s', node, type(node), node.__class__)
