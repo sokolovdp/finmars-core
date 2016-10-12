@@ -290,6 +290,10 @@ def _random():
     return random.random()
 
 
+def _print(message, *args, **kwargs):
+    _l.debug(message, *args, **kwargs)
+
+
 def _op_power(a, b):
     """ a limited exponent/to-the-power-of function, for safety reasons """
     if abs(a) > MAX_EXPONENT or abs(b) > MAX_EXPONENT:
@@ -354,42 +358,6 @@ OPERATORS = {
     ast.USub: lambda a: -a
 }
 
-FUNCTIONS = {
-    'str': _str,
-    'upper': _upper,
-    'lower': _lower,
-    'contains': _contains,
-
-    'int': _int,
-    'float': _float,
-    'round': _round,
-    'trunc': _trunc,
-    'isclose': _isclose,
-    'random': _random,
-
-    'iff': _iff,
-    'len': _len,
-    'range': _range,
-
-    'now': _now,
-    'date': _date,
-    'isleap': _isleap,
-    'days': _days,
-    'weeks': _weeks,
-    'months': _months,
-    'timedelta': _timedelta,
-    'add_days': _add_days,
-    'add_weeks': _add_weeks,
-    'add_workdays': _add_workdays,
-    'format_date': _format_date,
-    'parse_date': _parse_date,
-
-    'format_number': _format_number,
-    'parse_number': _parse_number,
-
-    'simple_price': _simple_price,
-}
-
 
 # OPERATORS = {
 #     ast.Add: _op_add,
@@ -413,10 +381,31 @@ FUNCTIONS = {
 # }
 
 
-class _Def(object):
+class _WrapDef(object):
+    def __init__(self, name, func):
+        self.name = name
+        self.func = func
+
+    def __str__(self):
+        return '<def %s>' % self.name
+
+    def __repr__(self):
+        return '<def %s>' % self.name
+
+    def __call__(self, *args, **kwargs):
+        return self.func(*args, **kwargs)
+
+
+class _UserDef(object):
     def __init__(self, parent, node):
         self.parent = parent
         self.node = node
+
+    def __str__(self):
+        return '<def %s>' % self.node.name
+
+    def __repr__(self):
+        return '<def %s>' % self.node.name
 
     def __call__(self, *args, **kwargs):
         kwargs = kwargs.copy()
@@ -431,43 +420,116 @@ class _Def(object):
                 val = self.parent._eval(self.node.args.defaults[i - offset])
                 kwargs[arg.arg] = val
 
-        local_names = self.parent.local_names
-
-        self.parent.local_names = kwargs
-
-        ret = None
-        for n in self.node.body:
-            try:
-                self.parent._eval(n)
-            except _Return as e:
-                ret = e.value
-                break
-
-        self.parent.local_names = local_names
+        self.parent.push(kwargs)
+        try:
+            ret = None
+            for n in self.node.body:
+                try:
+                    self.parent._eval(n)
+                except _Return as e:
+                    ret = e.value
+                    break
+        finally:
+            self.parent.pop()
 
         return ret
 
 
+FUNCTIONS = [
+    _WrapDef('str', _str),
+    _WrapDef('upper', _upper),
+    _WrapDef('lower', _lower),
+    _WrapDef('contains', _contains),
+
+    _WrapDef('int', _int),
+    _WrapDef('float', _float),
+    _WrapDef('round', _round),
+    _WrapDef('trunc', _trunc),
+    _WrapDef('isclose', _isclose),
+    _WrapDef('random', _random),
+
+    _WrapDef('iff', _iff),
+    _WrapDef('len', _len),
+    _WrapDef('range', _range),
+
+    _WrapDef('now', _now),
+    _WrapDef('date', _date),
+    _WrapDef('isleap', _isleap),
+    _WrapDef('days', _days),
+    _WrapDef('weeks', _weeks),
+    _WrapDef('months', _months),
+    _WrapDef('timedelta', _timedelta),
+    _WrapDef('add_days', _add_days),
+    _WrapDef('add_weeks', _add_weeks),
+    _WrapDef('add_workdays', _add_workdays),
+    _WrapDef('format_date', _format_date),
+    _WrapDef('parse_date', _parse_date),
+
+    _WrapDef('format_number', _format_number),
+    _WrapDef('parse_number', _parse_number),
+
+    _WrapDef('simple_price', _simple_price),
+]
+
+
+# FUNCTIONS = {
+#     'str': _WrapDef('str', _str),
+#     'upper': _WrapDef('upper', _upper),
+#     'lower': _WrapDef('lower', _lower),
+#     'contains': _WrapDef('contains', _contains),
+#
+#     'int': _WrapDef('int', _int),
+#     'float': _WrapDef('float', _float),
+#     'round': _WrapDef('round', _round),
+#     'trunc': _WrapDef('trunc', _trunc),
+#     'isclose': _WrapDef('isclose', _isclose),
+#     'random': _WrapDef('random', _random),
+#
+#     'iff': _WrapDef('iff', _iff),
+#     'len': _WrapDef('len', _len),
+#     'range': _WrapDef('range', _range),
+#
+#     'now': _WrapDef('now', _now),
+#     'date': _WrapDef('date', _date),
+#     'isleap': _WrapDef('isleap', _isleap),
+#     'days': _WrapDef('days', _days),
+#     'weeks': _WrapDef('weeks', _weeks),
+#     'months': _WrapDef('months', _months),
+#     'timedelta': _WrapDef('timedelta', _timedelta),
+#     'add_days': _WrapDef('add_days', _add_days),
+#     'add_weeks': _WrapDef('add_weeks', _add_weeks),
+#     'add_workdays': _WrapDef('add_workdays', _add_workdays),
+#     'format_date': _WrapDef('format_date', _format_date),
+#     'parse_date': _WrapDef('parse_date', _parse_date),
+#
+#     'format_number': _WrapDef('format_number', _format_number),
+#     'parse_number': _WrapDef('parse_number', _parse_number),
+#
+#     'simple_price': _WrapDef('simple_price', _simple_price),
+# }
+
+
 class SimpleEval2(object):
-    def __init__(self, names=None, max_time=5):
+    def __init__(self, names=None, max_time=5, add_print=False):
         self.max_time = max_time
+        # self.max_time = 10000000000
         self.start_time = 0
         self.tik_time = 0
 
         self.expr = None
         self.expr_ast = None
-
-        self.functions = FUNCTIONS.copy()
-        self.functions['globals'] = lambda: self.names if isinstance(self.names, (dict, OrderedDict)) else {}
-        self.functions['locals'] = lambda: self.local_names
-
-        self.local_functions = {}
-        self.names = names or {}
-        # not needed in py3
-        # self.names.update({"True": True, "False": False, "None": None})
-        self.local_names = None
-        self.state = None
         self.result = None
+
+        _globals = {f.name: f for f in FUNCTIONS}
+        _globals['globals'] = _WrapDef('globals', lambda: _globals)
+        _globals['locals'] = _WrapDef('locals', lambda: self.top())
+        if names:
+            for k, v in names.items():
+                _globals[k] = v
+        if add_print:
+            _globals['print'] = _print
+
+        self._stack = [_globals]
 
     @staticmethod
     def try_parse(expr):
@@ -488,6 +550,23 @@ class SimpleEval2(object):
         except:
             return False
 
+    def push(self, table=None):
+        self._stack.append(table or {})
+
+    def pop(self):
+        if len(self._stack) == 1:
+            raise RuntimeError('Bad pop call')
+        self._stack.pop()
+
+    def top(self):
+        return self._stack[-1]
+
+    def find_name(self, name):
+        for table in reversed(self._stack):
+            if name in table:
+                return table[name]
+        raise NameNotDefined(name)
+
     def eval(self, expr):
         self.expr = expr
         if expr:
@@ -497,11 +576,8 @@ class SimpleEval2(object):
         if self.expr_ast is None:
             raise InvalidExpression('Empty expression')
 
-        self.local_names = {}
-        self.state = {}
-        self.result = None
-
         try:
+            self.push()
             self.start_time = time.time()
             self.result = self._eval(self.expr_ast.body)
             return self.result
@@ -509,12 +585,14 @@ class SimpleEval2(object):
             raise
         except Exception as e:
             raise ExpressionEvalError(e)
+        finally:
+            self.pop()
 
     def _eval(self, node):
         # _l.info('%s - %s - %s', node, type(node), node.__class__)
         self.tik_time = time.time()
         if self.tik_time - self.start_time > self.max_time:
-            raise InvalidExpression("Execution exceeded time limit, max runtime is {}s" % self.max_time)
+            raise InvalidExpression("Execution exceeded time limit, max runtime is %s" % self.max_time)
 
         if isinstance(node, (list, tuple)):
             ret = None
@@ -526,7 +604,7 @@ class SimpleEval2(object):
             ret = self._eval(node.value)
             for t in node.targets:
                 if isinstance(t, ast.Name):
-                    self.local_names[t.id] = ret
+                    self.top()[t.id] = ret
                 elif isinstance(t, ast.Subscript):
                     obj = self._eval(t.value)
                     obj[self._eval(t.slice)] = ret
@@ -548,7 +626,7 @@ class SimpleEval2(object):
         elif isinstance(node, ast.For):
             ret = None
             for val in self._eval(node.iter):
-                self.local_names[node.target.id] = val
+                self.top()[node.target.id] = val
                 try:
                     ret = self._eval(node.body)
                 except _Break:
@@ -569,7 +647,7 @@ class SimpleEval2(object):
 
         elif isinstance(node, ast.FunctionDef):
             # self.local_functions[node.name] = node
-            self.local_functions[node.name] = _Def(self, node)
+            self.top()[node.name] = _UserDef(self, node)
             return None
 
         elif isinstance(node, ast.Pass):
@@ -649,23 +727,13 @@ class SimpleEval2(object):
             return self._eval(node.body) if self._eval(node.test) else self._eval(node.orelse)
 
         elif isinstance(node, ast.Call):  # function...
-            # if node.func.id == 'locals':
-            #     return self.local_names
-            # if node.func.id == 'globals':
-            #     return self.names
+            f = self._eval(node.func)
+            if not callable(f):
+                raise FunctionNotDefined(node.func.id)
 
             f_args = [self._eval(a) for a in node.args]
             f_kwargs = {k.arg: self._eval(k.value) for k in node.keywords}
-
-            if node.func.id in self.functions:
-                f = self.functions[node.func.id]
-                return f(*f_args, **f_kwargs)
-
-            if node.func.id in self.local_functions:
-                f = self.local_functions[node.func.id]
-                return f(*f_args, **f_kwargs)
-
-            raise FunctionNotDefined(node.func.id)
+            return f(*f_args, **f_kwargs)
 
         elif isinstance(node, ast.Return):
             val = self._eval(node.value)
@@ -686,16 +754,20 @@ class SimpleEval2(object):
             # elif node.id == 'False':
             #     return False
 
-            if node.id in self.local_names:
-                return self.local_names[node.id]
-
-            elif isinstance(self.names, (dict, OrderedDict)):
-                if node.id in self.names:
-                    return self.names[node.id]
-            elif callable(self.names):
-                return self.names(node.id)
-
-            raise NameNotDefined(node.id)
+            # if node.id in self.local_names:
+            #     return self.local_names[node.id]
+            #
+            # elif isinstance(self.names, (dict, OrderedDict)):
+            #     if node.id in self.names:
+            #         return self.names[node.id]
+            #
+            # raise NameNotDefined(node.id)
+            ret = self.find_name(node.id)
+            # if isinstance(ret, _Def):
+            #     raise InvalidExpression()
+            # if callable(ret):
+            #     raise InvalidExpression()
+            return ret
 
         elif isinstance(node, ast.Subscript):  # b[1]
             val = self._eval(node.value)
@@ -927,7 +999,6 @@ if __name__ == "__main__":
         ),
     }
 
-
     # _l.info(safe_eval('(1).__class__.__bases__', names=names))
     # _l.info(safe_eval('{"a":1, "b":2}'))
     # _l.info(safe_eval('[1,]'))
@@ -957,20 +1028,23 @@ if __name__ == "__main__":
     # _l.info(safe_eval('y = now().year'))
     # _l.info(safe_eval('eval("2+eval(\\\"2+2\\\")")'))
     # _l.info(ast.literal_eval('2+2'))
+    _l.info(safe_eval("globals()['now']()"))
 
 
     def test_eval(expr, names=None):
         _l.info('-' * 79)
         try:
-            res = safe_eval(expr, names=names)
+            se = SimpleEval2(names=names, add_print=True)
+            ret = se.eval(expr)
+            # res = safe_eval(expr, names=names)
         except InvalidExpression as e:
             import time
-            res = "<ERROR1: %s>" % e
+            ret = "<ERROR1: %s>" % e
             time.sleep(1)
             # raise e
         except Exception as e:
-            res = "<ERROR2: %s>" % e
-        _l.info("\t%-60s -> %s" % (expr, res))
+            ret = "<ERROR2: %s>" % e
+        _l.info("\t%-60s -> %s" % (expr, ret))
 
 
     #     test_eval('''
@@ -1217,6 +1291,28 @@ def accrl_NL_365_NO_EOM(dt1, dt2):
 accrl_NL_365_NO_EOM(parse_date('2000-01-01'), parse_date('2000-01-25'))
         ''')
 
+        test_eval('''
+a = 1
+
+def f1():
+    print('f1: 1 - a=%s', a)
+
+def f2():
+    print('f2: 1 - a=%s', a)
+    a = 2
+    print('f2: 2 - a=%s', a)
+
+def f3():
+    print('f3: 1 - a=%s', a)
+    a = 3
+    print('f3: 2 - a=%s', a)
+
+f1()
+f2()
+f3()
+print('gg: 1 - a=%s', a)
+        ''')
+
 
     demo_stmt()
     pass
@@ -1270,7 +1366,7 @@ for i in [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]:
         try:
             import asteval
             _l.info('asteval         : %f', timeit.timeit(
-                lambda: asteval.Interpreter(symtable=SimpleEval2().functions).eval(expr), number=number))
+                lambda: asteval.Interpreter(symtable=SimpleEval2().top()).eval(expr), number=number))
         except ImportError:
             pass
 
