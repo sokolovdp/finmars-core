@@ -124,6 +124,9 @@ def _iff(test, a, b):
 def _len(a):
     return len(a)
 
+def _range(*args):
+    return range(*args)
+
 
 def _now():
     return date_now()
@@ -362,6 +365,7 @@ class SimpleEval2(object):
 
             'iff': _iff,
             'len': _len,
+            'range': _range,
 
             'now': _now,
             'date': _date,
@@ -966,7 +970,21 @@ def f1(v):
         else:
             return False
 f1(1)
+
+b = 0
+for a in range(1,10):
+    b = b + a
+b
+
+b2 = 0
+for a in range(10):
+    b2 = b2 + a
+b2
+
+range(10)
+date(2016)
 ''')
+
 
 
     def demo():
@@ -1211,5 +1229,5 @@ for i in [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]:
         _l.info('cached safe_eval: %f', timeit.timeit(f_eval2, number=1000))
 
 
-    # perf_tests()
+    perf_tests()
     pass
