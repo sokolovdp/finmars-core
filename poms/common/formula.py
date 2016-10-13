@@ -842,28 +842,25 @@ class SimpleEval2(object):
             except (KeyError, TypeError):
                 raise AttributeDoesNotExist(node.attr)
         else:
-            return self._safe_getattr(val, node.attr)
+            if isinstance(val, datetime.date):
+                if node.attr in ['year', 'month', 'day']:
+                    return getattr(val, node.attr)
+
+            elif isinstance(val, datetime.timedelta):
+                if node.attr in ['days']:
+                    return getattr(val, node.attr)
+
+            elif isinstance(val, relativedelta.relativedelta):
+                if node.attr in ['years', 'months', 'days', 'leapdays', 'year', 'month', 'day', 'weekday']:
+                    return getattr(val, node.attr)
+
+        raise AttributeDoesNotExist(node.attr)
 
     def _on_ast_Index(self, node):
         return self._eval(node.value)
 
     def _on_ast_Expr(self, node):
         return self._eval(node.value)
-
-    def _safe_getattr(self, obj, name):
-        if isinstance(obj, datetime.date):
-            if name in ['year', 'month', 'day']:
-                return getattr(obj, name)
-
-        elif isinstance(obj, datetime.timedelta):
-            if name in ['days']:
-                return getattr(obj, name)
-
-        elif isinstance(obj, relativedelta.relativedelta):
-            if name in ['years', 'months', 'days', 'leapdays', 'year', 'month', 'day', 'weekday']:
-                return getattr(obj, name)
-
-        raise AttributeDoesNotExist(name)
 
 
 # def is_valid(expr):
@@ -1380,13 +1377,13 @@ print('gg: 1 - a=%s', a)
                     k = 1
                 return ((dt2 - dt1).days - k) / 365
 
+            # for i in range(50):
+            #     accrual_NL_365_NO_EOM(_date(2000, 1, 1), _date(2000, 1, 25))
+            # for i in [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]:
+            #     # accrual_NL_365_NO_EOM(_parse_date('2000-01-01'), _parse_date('2000-01-25'))
+            #     accrual_NL_365_NO_EOM(_date(2000, 1, 1), _date(2000, i, 25))
             # accrual_NL_365_NO_EOM(_parse_date('2000-01-01'), _parse_date('2000-01-25'))
-            # accrual_NL_365_NO_EOM(_date(2000, 1, 1), _date(2000, 1, 25))
-            for i in range(10):
-                accrual_NL_365_NO_EOM(_date(2000, 1, 1), _date(2000, 1, 25))
-                # for i in [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]:
-                #     # accrual_NL_365_NO_EOM(_parse_date('2000-01-01'), _parse_date('2000-01-25'))
-                #     accrual_NL_365_NO_EOM(_date(2000, 1, 1), _date(2000, i, 25))
+            accrual_NL_365_NO_EOM(_date(2000, 1, 1), _date(2000, 1, 25))
 
         expr = '''
 def accrual_NL_365_NO_EOM(dt1, dt2):
@@ -1396,13 +1393,13 @@ def accrual_NL_365_NO_EOM(dt1, dt2):
     if isleap(dt2.year) and dt2 >= date(dt2.year, 2, 29) > dt1:
         k = 1
     return ((dt2 - dt1).days - k) / 365
-# accrual_NL_365_NO_EOM(parse_date('2000-01-01'), parse_date('2000-01-25'))
-# accrual_NL_365_NO_EOM(date(2000, 1, 1), date(2000, 1, 25))
-for i in range(10):
-    accrual_NL_365_NO_EOM(date(2000, 1, 1), date(2000, 1, 25))
+# for i in range(50):
+#     accrual_NL_365_NO_EOM(date(2000, 1, 1), date(2000, 1, 25))
 # for i in [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]:
 #     # accrual_NL_365_NO_EOM(parse_date('2000-01-01'), parse_date('2000-01-25'))
 #     accrual_NL_365_NO_EOM(date(2000, 1, 1), date(2000, i, 25))
+# accrual_NL_365_NO_EOM(parse_date('2000-01-01'), parse_date('2000-01-25'))
+accrual_NL_365_NO_EOM(date(2000, 1, 1), date(2000, 1, 25))
         '''
 
         _l.info('PERF')
@@ -1411,6 +1408,7 @@ for i in range(10):
         _l.info(expr)
         _l.info('-' * 79)
         _l.info('native          : %f', timeit.timeit(f_native, number=number))
+        _l.info('parse           : %f', timeit.timeit(lambda: ast.parse(expr), number=number))
         _l.info('exec            : %f', timeit.timeit(lambda: exec(expr, {
             'parse_date': _parse_date,
             'isleap': calendar.isleap,
