@@ -59,7 +59,6 @@ class AbstractAttributeInline(admin.TabularInline):
         super(AbstractAttributeInline, self).__init__(parent_model, *args, **kwargs)
 
 
-
 class GenericAttributeTypeOptionInline(admin.TabularInline):
     model = GenericAttributeTypeOption
     extra = 0
@@ -68,10 +67,10 @@ class GenericAttributeTypeOptionInline(admin.TabularInline):
 
 class GenericAttributeTypeAdmin(admin.ModelAdmin):
     model = GenericAttributeType
-    list_display = ['id', 'master_user', 'content_type', 'value_type']
+    list_display = ['id', 'master_user', 'content_type', 'value_type', 'user_code']
     list_select_related = ['content_type', 'content_type']
-    list_filter = ['value_type']
-    search_fields = ['user_code']
+    list_filter = ['value_type', 'content_type']
+    search_fields = ['id', 'user_code']
     raw_id_fields = ['master_user']
     inlines = [GenericAttributeTypeOptionInline]
     save_as = True
@@ -84,7 +83,7 @@ class GenericClassifierAdmin(admin.ModelAdmin):
     model = GenericClassifier
     list_display = ['id', 'master_user', 'attribute_type', 'tree_id', 'level', 'parent', 'name', ]
     list_select_related = ['attribute_type', 'attribute_type__master_user', 'parent']
-    search_fields = ['name']
+    search_fields = ['attribute_type_id']
     raw_id_fields = ['attribute_type', 'parent']
     ordering = ['attribute_type', 'tree_id', 'level', ]
     save_as = True
@@ -104,7 +103,9 @@ class GenericAttributeAdmin(admin.ModelAdmin):
                     'value_string', 'value_float', 'value_date', 'classifier', ]
     list_select_related = ['content_type', 'attribute_type', 'attribute_type__master_user', 'classifier']
     raw_id_fields = ['attribute_type', 'classifier']
+    list_filter = ['content_type']
     ordering = ['attribute_type__master_user', 'attribute_type', ]
+    search_fields = ['object_id', 'attribute_type_id']
     save_as = True
 
     def get_queryset(self, request):

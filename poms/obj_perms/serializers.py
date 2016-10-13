@@ -3,9 +3,9 @@ from __future__ import unicode_literals
 from rest_framework import serializers
 from rest_framework.fields import empty
 
-from poms.obj_perms.fields import PermissionField, GrantedPermissionField
+from poms.obj_perms.fields import PermissionField, GrantedPermissionField, GrantedPermission2Field
 from poms.obj_perms.models import GenericObjectPermission
-from poms.obj_perms.utils import has_view_perms, get_all_perms, assign_perms2, has_manage_perm
+from poms.obj_perms.utils import has_view_perms, get_all_perms, assign_perms2, has_manage_perm, assign_perms3
 from poms.users.fields import MemberField, GroupField
 from poms.users.utils import get_member_from_context
 
@@ -77,6 +77,7 @@ class ModelWithObjectPermissionSerializer(serializers.ModelSerializer):
         self.fields['group_object_permissions'] = GroupObjectPermissionSerializer(
             many=True, required=False, allow_null=True)
 
+        self.fields['granted_permissions2'] = GrantedPermission2Field()
         self.fields['object_permissions2'] = GenericObjectPermissionSerializer(
             many=True, required=False, allow_null=True)
 
@@ -121,19 +122,24 @@ class ModelWithObjectPermissionSerializer(serializers.ModelSerializer):
     def create(self, validated_data):
         user_object_permissions = validated_data.pop('user_object_permissions', None)
         group_object_permissions = validated_data.pop('group_object_permissions', None)
+        object_permissions2 = validated_data.pop('object_permissions2', None)
         instance = super(ModelWithObjectPermissionSerializer, self).create(validated_data)
         self.save_user_object_permissions(instance, user_object_permissions, True)
         self.save_group_object_permissions(instance, group_object_permissions, True)
+        self.save_object_permissions(instance, object_permissions2, True)
         return instance
 
     def update(self, instance, validated_data):
         user_object_permissions = validated_data.pop('user_object_permissions', empty)
         group_object_permissions = validated_data.pop('group_object_permissions', empty)
+        object_permissions2 = validated_data.pop('object_permissions2', empty)
         instance = super(ModelWithObjectPermissionSerializer, self).update(instance, validated_data)
         if user_object_permissions is not empty:
             self.save_user_object_permissions(instance, user_object_permissions, False)
         if group_object_permissions is not empty:
             self.save_group_object_permissions(instance, group_object_permissions, False)
+        if object_permissions2 is not empty:
+            self.save_object_permissions(instance, object_permissions2, False)
         return instance
 
     # def save_object_permission(self, instance, user_object_permissions=None, group_object_permissions=None,
@@ -174,6 +180,22 @@ class ModelWithObjectPermissionSerializer(serializers.ModelSerializer):
         else:
             if has_manage_perm(member, instance):
                 assign_perms2(instance, group_perms=group_object_permissions)
+
+    def save_object_permissions(self, instance, object_permissions=None, created=False):
+        member = get_member_from_context(self.context)
+        member_perms = [{'group': None, 'member': member, 'permission': p,} for p in get_all_perms(instance)]
+
+        if created:
+            if object_permissions:
+                object_permissions = [uop for uop in object_permissions
+                                      if 'member' in uop and getattr(uop['member'], 'id', None) != member.id]
+            else:
+                object_permissions = []
+            object_permissions += member_perms
+            assign_perms3(instance, perms=object_permissions)
+        else:
+            if has_manage_perm(member, instance):
+                assign_perms3(instance, perms=object_permissions)
 
 
 # class ReadonlyModelWithObjectPermissionListSerializer(ReadonlyModelListSerializer):
@@ -218,8 +240,8 @@ class ModelWithObjectPermissionSerializer(serializers.ModelSerializer):
 
 
 class GenericObjectPermissionSerializer(serializers.Serializer):
-    group = GroupField()
-    member = MemberField()
+    group = GroupField(allow_null=True, allow_empty=True)
+    member = MemberField(allow_null=True, allow_empty=True)
     permission = PermissionField()
 
     class Meta:

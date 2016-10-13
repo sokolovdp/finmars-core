@@ -38,6 +38,7 @@ router.register(r'users/timezone', api.TimezoneViewSet, 'timezone')
 
 router.register(r'accounts/account-type', accounts.AccountTypeViewSet)
 router.register(r'accounts/account-attribute-type', accounts.AccountAttributeTypeViewSet)
+router.register(r'accounts/account-attribute-type2', accounts.AccountAttributeType2ViewSet)
 router.register(r'accounts/account-classifier', accounts.AccountClassifierViewSet)
 router.register(r'accounts/account', accounts.AccountViewSet)
 

@@ -4,6 +4,8 @@ from django.db.models import Model, Prefetch
 from django.db.models import Q
 from django.utils.functional import SimpleLazyObject
 
+from poms.obj_perms.models import GenericObjectPermission
+
 
 def get_rel_model(obj, attr_name, base_cls):
     if isinstance(obj, Model):
@@ -144,6 +146,24 @@ def get_granted_permissions(member, obj):
     return list(obj_perms)
 
 
+def get_granted_permissions2(member, obj):
+    if member.is_superuser:
+        return get_all_perms(obj)
+    if hasattr(obj, 'object_permissions2'):
+        perms_qs = obj.object_permissions2.select_related('permission')
+    else:
+        perms_qs = GenericObjectPermission.objects.select_related('permission').filter(
+            content_type=ContentType.objects.get_for_model(obj), object_id=obj.id)
+    obj_perms = set()
+    groups_id = {g.id for g in member.groups.all()}
+    for op in perms_qs:
+        if op.member_id == member.id:
+            obj_perms.add(op.permission.codename)
+        if op.group_id in groups_id:
+            obj_perms.add(op.permission.codename)
+    return list(obj_perms)
+
+
 def assign_perms(obj, members=None, groups=None, perms=None):
     members = members or []
     groups = groups or []
@@ -212,6 +232,31 @@ def assign_perms2(obj, user_perms=None, group_perms=None):
                 group_obj_perms_model(content_object=obj,
                                       group=group_map[group_id],
                                       permission=perms_map[permission]).save()
+
+
+def assign_perms3(obj, perms=None):
+    # GenericObjectPermission.objects.filter(content_object=obj).delete()
+    # obj.object_permissions2.delete()
+    perms_qs = GenericObjectPermission.objects.filter(
+        content_type=ContentType.objects.get_for_model(obj), object_id=obj.id)
+    existed = {(a.object_id, a.group_id, a.member_id, a.permission_id): a for a in perms_qs}
+    processed = []
+    for p in perms:
+        group = p.get('group', None)
+        member = p.get('member', None)
+        permission = p['permission']
+        op = existed.get((obj.id, getattr(group, 'id', None), getattr(member, 'id', None), permission.id), None)
+        if op:
+            processed.append(op.id)
+        else:
+            op = GenericObjectPermission()
+            op.content_object = obj
+            op.group = group
+            op.member = member
+            op.permission = permission
+            op.save()
+            processed.append(op.id)
+    perms_qs.exclude(pk__in=processed).delete()
 
 
 def get_perms_codename(model, actions):

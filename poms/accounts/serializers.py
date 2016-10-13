@@ -1,5 +1,6 @@
 from __future__ import unicode_literals
 
+from django.contrib.contenttypes.models import ContentType
 from rest_framework import serializers
 
 from poms.accounts.fields import AccountClassifierField, AccountAttributeTypeField, AccountTypeField, \
@@ -8,7 +9,7 @@ from poms.accounts.models import Account, AccountType, AccountClassifier, Accoun
 from poms.common.serializers import AbstractClassifierSerializer, AbstractClassifierNodeSerializer, \
     ModelWithUserCodeSerializer
 from poms.obj_attrs.serializers import AbstractAttributeTypeSerializer, AbstractAttributeSerializer, \
-    ModelWithAttributesSerializer
+    ModelWithAttributesSerializer, GenericAttributeTypeSerializer
 from poms.obj_perms.serializers import ModelWithObjectPermissionSerializer
 from poms.portfolios.fields import PortfolioField
 from poms.tags.fields import TagField
@@ -66,6 +67,13 @@ class AccountAttributeSerializer(AbstractAttributeSerializer):
     class Meta(AbstractAttributeSerializer.Meta):
         model = AccountAttribute
         fields = AbstractAttributeSerializer.Meta.fields + ['attribute_type', 'classifier']
+
+
+class AccountAttributeType2Serializer(GenericAttributeTypeSerializer):
+    content_type = serializers.HiddenField(default=lambda: ContentType.objects.get_for_model(Account))
+
+    class Meta(GenericAttributeTypeSerializer.Meta):
+        target_model = Account
 
 
 class AccountSerializer(ModelWithObjectPermissionSerializer, ModelWithAttributesSerializer,

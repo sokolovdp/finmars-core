@@ -74,6 +74,8 @@ class GenericObjectPermissionAdmin(admin.ModelAdmin):
     list_display = ['id', 'master_user', 'group', 'member', 'content_type', 'object_id', 'content_object', 'permission']
     list_select_related = ['group', 'member', 'content_type', 'permission']
     raw_id_fields = ['group', 'member', ]
+    list_filter = ['content_type']
+    search_fields = ['object_id']
     save_as = True
 
     # readonly_fields = ('content_object',)

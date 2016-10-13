@@ -1,8 +1,10 @@
 from __future__ import unicode_literals
 
+from django.contrib.contenttypes.models import ContentType
 from django.core.exceptions import ObjectDoesNotExist
 from django.db import IntegrityError
 from django.utils.translation import ugettext_lazy
+from mptt.utils import get_cached_trees
 from rest_framework import serializers
 from rest_framework.exceptions import ValidationError
 from rest_framework.fields import empty
@@ -211,15 +213,20 @@ class ModelWithAttributesSerializer(serializers.ModelSerializer):
 
     def create(self, validated_data):
         attributes = validated_data.pop('attributes', None)
+        attributes2 = validated_data.pop('attributes2', None)
         instance = super(ModelWithAttributesSerializer, self).create(validated_data)
         self.save_attributes(instance, attributes, True)
+        self.save_attributes2(instance, attributes2, True)
         return instance
 
     def update(self, instance, validated_data):
         attributes = validated_data.pop('attributes', empty)
+        attributes2 = validated_data.pop('attributes2', empty)
         instance = super(ModelWithAttributesSerializer, self).update(instance, validated_data)
         if attributes is not empty:
             self.save_attributes(instance, attributes, False)
+        if attributes2 is not empty:
+            self.save_attributes2(instance, attributes2, False)
         return instance
 
     def save_attributes(self, instance, attributes, created):
@@ -260,6 +267,55 @@ class ModelWithAttributesSerializer(serializers.ModelSerializer):
 
         instance.attributes.exclude(attribute_type_id__in=processed).delete()
 
+    def save_attributes2(self, instance, attributes, created):
+        member = get_member_from_context(self.context)
+
+        ctype = ContentType.objects.get_for_model(instance)
+        if hasattr(instance, 'attributes2'):
+            attrs_qs = instance.attributes2.select_related('attribute_type')
+        else:
+            attrs_qs = GenericAttribute.objects.select_related('attribute_type').filter(
+                content_type=ctype, object_id=instance.id)
+
+        protected = {a.attribute_type_id for a in attrs_qs if not has_view_perms(member, instance)}
+        existed = {a.attribute_type_id: a for a in attrs_qs if has_view_perms(member, instance)}
+
+        processed = set()
+        for attr in attributes:
+            attribute_type = attr['attribute_type']
+
+            if attribute_type.content_type_id != ctype.id:
+                raise ValidationError(
+                    {'attribute_type': ugettext_lazy('Invalid pk "%(pk)s" - object does not exist.') % {
+                        'pk': attribute_type.id}})
+
+            if has_view_perms(member, attribute_type):
+                if attribute_type.id in processed:
+                    raise ValidationError("Duplicated attribute type %s" % attribute_type.id)
+                processed.add(attribute_type.id)
+
+                try:
+                    oattr = existed[attribute_type.id]
+                except KeyError:
+                    oattr = GenericAttribute(**attr)
+                    oattr.content_object = instance
+                    oattr.attribute_type = attribute_type
+                if 'value_string' in attr:
+                    oattr.value_string = attr['value_string']
+                if 'value_float' in attr:
+                    oattr.value_float = attr['value_float']
+                if 'value_date' in attr:
+                    oattr.value_date = attr['value_date']
+                if 'classifier' in attr:
+                    oattr.classifier = attr['classifier']
+                oattr.save()
+            else:
+                # perms error...
+                pass
+
+        processed.update(protected)
+        attrs_qs.exclude(attribute_type_id__in=processed).delete()
+
 
 class GenericClassifierRecursiveField(serializers.Serializer):
     def to_representation(self, instance):
@@ -279,11 +335,18 @@ class GenericClassifierRecursiveField(serializers.Serializer):
         return s.validated_data
 
 
+class GenericClassifierListSerializer(serializers.ListSerializer):
+    def get_attribute(self, instance):
+        tree = get_cached_trees(instance.classifiers.all())
+        return tree
+
+
 class GenericClassifierSerializer(serializers.ModelSerializer):
     id = serializers.IntegerField(read_only=False, required=False, allow_null=True)
     children = GenericClassifierRecursiveField(source='get_children', many=True, required=False, allow_null=True)
 
     class Meta:
+        list_serializer_class = GenericClassifierListSerializer
         model = GenericClassifier
         fields = ['id', 'name', 'level', 'children', ]
 
@@ -323,8 +386,97 @@ class GenericAttributeTypeSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = GenericAttributeType
-        fields = ['id', 'master_user', 'user_code', 'name', 'short_name', 'public_name', 'notes', 'value_type',
-                  'order', 'is_hidden', 'classifiers']
+        fields = ['id', 'master_user', 'content_type', 'user_code', 'name', 'short_name', 'public_name', 'notes',
+                  'value_type', 'order', 'is_hidden', 'classifiers']
+
+    def __init__(self, *args, **kwargs):
+        show_classifiers = kwargs.pop('show_classifiers', False)
+        read_only_value_type = kwargs.pop('read_only_value_type', False)
+        super(GenericAttributeTypeSerializer, self).__init__(*args, **kwargs)
+        if not show_classifiers:
+            self.fields.pop('classifiers', None)
+        if read_only_value_type:
+            self.fields['value_type'].read_only = True
+
+    def validate(self, attrs):
+        attrs = super(GenericAttributeTypeSerializer, self).validate(attrs)
+        classifiers = attrs.get('classifiers', None)
+        if classifiers:
+            self._validate_classifiers(classifiers, id_set=set(), user_code_set=set())
+        return attrs
+
+    def _validate_classifiers(self, classifiers, id_set, user_code_set):
+        for c in classifiers:
+            c_id = c.get('id', None)
+            c_user_code = c.get('user_code', None)
+            if c_id and c_id in id_set:
+                raise ValidationError("non unique id")
+            if c_user_code and c_user_code in user_code_set:
+                raise ValidationError("non unique user_code")
+            if c_id:
+                id_set.add(c_id)
+            if c_user_code:
+                user_code_set.add(c_user_code)
+            children = c.get('get_children', c.pop('children', []))
+            self._validate_classifiers(children, id_set, user_code_set)
+
+    def create(self, validated_data):
+        member = get_member_from_context(self.context)
+        is_hidden = validated_data.pop('is_hidden', False)
+        classifiers = validated_data.pop('classifiers', None)
+        instance = super(GenericAttributeTypeSerializer, self).create(validated_data)
+        instance.options.create(member=member, is_hidden=is_hidden)
+        self.save_classifiers(instance, classifiers)
+        return instance
+
+    def update(self, instance, validated_data):
+        member = get_member_from_context(self.context)
+        is_hidden = validated_data.pop('is_hidden', empty)
+        classifiers = validated_data.pop('classifiers', empty)
+        instance = super(GenericAttributeTypeSerializer, self).update(instance, validated_data)
+        if is_hidden is not empty:
+            instance.options.update_or_create(member=member, defaults={'is_hidden': is_hidden})
+        if classifiers is not empty:
+            self.save_classifiers(instance, classifiers)
+        return instance
+
+    def save_classifiers(self, instance, classifier_tree):
+        if instance.value_type != AbstractAttributeType.CLASSIFIER:
+            return
+        classifier_tree = classifier_tree or []
+        # if classifier_tree is None:
+        #     return
+        if len(classifier_tree) == 0:
+            instance.classifiers.all().delete()
+            return
+
+        processed = set()
+        for node in classifier_tree:
+            self.save_classifier(instance, node, None, processed)
+
+        instance.classifiers.exclude(pk__in=processed).delete()
+
+    def save_classifier(self, instance, node, parent, processed):
+        if 'id' in node:
+            try:
+                o = instance.classifiers.get(pk=node.pop('id'))
+            except ObjectDoesNotExist:
+                o = GenericClassifier()
+        else:
+            o = GenericClassifier()
+        o.parent = parent
+        o.attribute_type = instance
+        children = node.pop('get_children', node.pop('children', []))
+        for k, v in node.items():
+            setattr(o, k, v)
+        try:
+            o.save()
+        except IntegrityError:
+            raise ValidationError("non unique user_code")
+        processed.add(o.id)
+
+        for c in children:
+            self.save_classifier(instance, c, o, processed)
 
 
 class GenericAttributeSerializer(serializers.ModelSerializer):
@@ -337,3 +489,16 @@ class GenericAttributeSerializer(serializers.ModelSerializer):
         model = GenericAttribute
         fields = ['id', 'attribute_type', 'attribute_type_object', 'value_string', 'value_float', 'value_date',
                   'classifier', 'classifier_object']
+
+    def validate(self, attrs):
+        attrs = super(GenericAttributeSerializer, self).validate(attrs)
+
+        attribute_type = attrs['attribute_type']
+        classifier = attrs.get('classifier', None)
+        if attribute_type.value_type == AbstractAttributeType.CLASSIFIER and classifier:
+            if attribute_type.id != classifier.attribute_type_id:
+                raise ValidationError(
+                    {'classifier': ugettext_lazy('Invalid pk "%(pk)s" - object does not exist.') % {
+                        'pk': classifier.id}})
+
+        return attrs

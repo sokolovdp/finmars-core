@@ -2,6 +2,7 @@ from rest_framework.exceptions import MethodNotAllowed
 
 from poms.common.views import AbstractModelViewSet
 from poms.obj_attrs.filters import OwnerByAttributeTypeFilter
+from poms.obj_attrs.models import GenericAttributeType
 from poms.obj_perms.views import AbstractWithObjectPermissionViewSet
 from poms.users.filters import OwnerByMasterUserFilter
 
@@ -38,3 +39,27 @@ class AbstractClassifierViewSet(AbstractModelViewSet):
 
     def create(self, request, *args, **kwargs):
         raise MethodNotAllowed(request.method)
+
+
+class GenericAttributeTypeViewSet(AbstractWithObjectPermissionViewSet):
+    queryset = GenericAttributeType.objects.select_related(
+        'master_user', 'content_type'
+    ).prefetch_related(
+        'options', 'classifiers',
+    )
+    filter_backends = AbstractWithObjectPermissionViewSet.filter_backends + [
+        OwnerByMasterUserFilter,
+    ]
+    ordering_fields = [
+        'user_code', 'name', 'short_name', 'public_name', 'order',
+    ]
+
+    # def get_queryset(self):
+    #     model = self.get_serializer_class().Meta.target_model
+    #     ctype = ContentType.objects.get_for_model(model)
+    #     return super(GenericAttributeTypeViewSet, self).get_queryset().filter(content_type=ctype)
+
+    def get_serializer(self, *args, **kwargs):
+        kwargs['show_classifiers'] = (self.action != 'list') or self.request.query_params.get('show_classifiers', None)
+        kwargs['read_only_value_type'] = (self.action != 'create')
+        return super(GenericAttributeTypeViewSet, self).get_serializer(*args, **kwargs)
