@@ -49,10 +49,10 @@ CELERYBEAT_SCHEDULE = {
     #     'task': 'integrations.download_pricing_auto_scheduler',
     #     'schedule': 60,
     # },
-    'instruments.process_events_auto': {
-        'task': 'instruments.process_events_auto',
-        'schedule': 60,
-    }
+    # 'instruments.process_events_auto': {
+    #     'task': 'instruments.process_events_auto',
+    #     'schedule': 60,
+    # }
 }
 
 # INTEGRATIONS ------------------------------------------------
