@@ -4,6 +4,7 @@ from rest_framework import serializers
 from rest_framework.fields import empty
 
 from poms.obj_perms.fields import PermissionField, GrantedPermissionField
+from poms.obj_perms.models import GenericObjectPermission
 from poms.obj_perms.utils import has_view_perms, get_all_perms, assign_perms2, has_manage_perm
 from poms.users.fields import MemberField, GroupField
 from poms.users.utils import get_member_from_context
@@ -74,6 +75,9 @@ class ModelWithObjectPermissionSerializer(serializers.ModelSerializer):
         self.fields['user_object_permissions'] = UserObjectPermissionSerializer(
             many=True, required=False, allow_null=True)
         self.fields['group_object_permissions'] = GroupObjectPermissionSerializer(
+            many=True, required=False, allow_null=True)
+
+        self.fields['object_permissions2'] = GenericObjectPermissionSerializer(
             many=True, required=False, allow_null=True)
 
     def get_display_name(self, instance):
@@ -171,6 +175,7 @@ class ModelWithObjectPermissionSerializer(serializers.ModelSerializer):
             if has_manage_perm(member, instance):
                 assign_perms2(instance, group_perms=group_object_permissions)
 
+
 # class ReadonlyModelWithObjectPermissionListSerializer(ReadonlyModelListSerializer):
 #     def to_representation(self, data):
 #         ret = super(ReadonlyModelWithObjectPermissionListSerializer, self).to_representation(data)
@@ -210,3 +215,13 @@ class ModelWithObjectPermissionSerializer(serializers.ModelSerializer):
 #             kwargs['fields'] = fields
 #         super(ReadonlyNamedModelWithObjectPermissionSerializer, self).__init__(*args, **kwargs)
 #         self.fields['display_name'] = serializers.SerializerMethodField()
+
+
+class GenericObjectPermissionSerializer(serializers.Serializer):
+    group = GroupField()
+    member = MemberField()
+    permission = PermissionField()
+
+    class Meta:
+        model = GenericObjectPermission
+        fields = ['id', 'group', 'member', 'permission']

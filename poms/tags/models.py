@@ -1,11 +1,12 @@
 from __future__ import unicode_literals
 
+from django.contrib.contenttypes.fields import GenericRelation, GenericForeignKey
 from django.contrib.contenttypes.models import ContentType
 from django.db import models
 from django.utils.translation import ugettext_lazy
 
 from poms.common.models import NamedModel
-from poms.obj_perms.models import AbstractGroupObjectPermission, AbstractUserObjectPermission
+from poms.obj_perms.models import AbstractGroupObjectPermission, AbstractUserObjectPermission, GenericObjectPermission
 
 
 class Tag(NamedModel):
@@ -92,3 +93,25 @@ class TagGroupObjectPermission(AbstractGroupObjectPermission):
     class Meta(AbstractGroupObjectPermission.Meta):
         verbose_name = ugettext_lazy('tags - group permission')
         verbose_name_plural = ugettext_lazy('tags - group permissions')
+
+
+# class GenericTag(models.Model):
+#     master_user = models.ForeignKey('users.MasterUser', related_name='tags', verbose_name=ugettext_lazy('master user'))
+#     content_types = models.ManyToManyField(ContentType, related_name='tags', blank=True,
+#                                            verbose_name=ugettext_lazy('content types'))
+#
+#     object_permissions = GenericRelation(GenericObjectPermission)
+#
+#     class Meta:
+#         abstract = True
+#
+#
+# class GenericTagLink(models.Model):
+#     tag = models.ForeignKey(Tag, related_name='tag_objects')
+#
+#     content_type = models.ForeignKey(ContentType, null=True, blank=True)
+#     object_id = models.BigIntegerField()
+#     content_object = GenericForeignKey('content_type', 'object_id')
+#
+#     class Meta:
+#         abstract = True

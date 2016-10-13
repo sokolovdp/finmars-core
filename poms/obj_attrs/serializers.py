@@ -6,9 +6,10 @@ from django.utils.translation import ugettext_lazy
 from rest_framework import serializers
 from rest_framework.exceptions import ValidationError
 from rest_framework.fields import empty
+from rest_framework.serializers import ListSerializer
 
 from poms.common.serializers import ModelWithUserCodeSerializer
-from poms.obj_attrs.models import AbstractAttributeType
+from poms.obj_attrs.models import AbstractAttributeType, GenericAttributeType, GenericClassifier, GenericAttribute
 from poms.obj_attrs.utils import get_attr_type_model, get_attr_type_view_perms
 from poms.obj_perms.serializers import ModelWithObjectPermissionSerializer
 from poms.obj_perms.utils import obj_perms_filter_objects, has_view_perms
@@ -144,7 +145,8 @@ class AttributeListSerializer(serializers.ListSerializer):
         master_user = get_master_user_from_context(self.context)
         attribute_type_model = getattr(self.child.Meta, 'attribute_type_model', None) or get_attr_type_model(instance)
         attribute_types = attribute_type_model.objects.filter(master_user=master_user)
-        attribute_types = obj_perms_filter_objects(member, get_attr_type_view_perms(attribute_type_model), attribute_types)
+        attribute_types = obj_perms_filter_objects(member, get_attr_type_view_perms(attribute_type_model),
+                                                   attribute_types)
         return instance.attributes.filter(attribute_type__in=attribute_types)
 
 
@@ -203,6 +205,10 @@ class AbstractAttributeSerializer(serializers.ModelSerializer):
 
 
 class ModelWithAttributesSerializer(serializers.ModelSerializer):
+    def __init__(self, *args, **kwargs):
+        super(ModelWithAttributesSerializer, self).__init__(*args, **kwargs)
+        self.fields['attributes2'] = GenericAttributeSerializer(many=True, required=False, allow_null=True)
+
     def create(self, validated_data):
         attributes = validated_data.pop('attributes', None)
         instance = super(ModelWithAttributesSerializer, self).create(validated_data)
@@ -253,3 +259,81 @@ class ModelWithAttributesSerializer(serializers.ModelSerializer):
                 processed.add(attr_type.id)
 
         instance.attributes.exclude(attribute_type_id__in=processed).delete()
+
+
+class GenericClassifierRecursiveField(serializers.Serializer):
+    def to_representation(self, instance):
+        if isinstance(self.parent, ListSerializer):
+            cls = self.parent.parent.__class__
+        else:
+            cls = self.parent.__class__
+        return cls(instance=instance, context=self.context).data
+
+    def to_internal_value(self, data):
+        if isinstance(self.parent, ListSerializer):
+            cls = self.parent.parent.__class__
+        else:
+            cls = self.parent.__class__
+        s = cls(context=self.context, data=data)
+        s.is_valid(raise_exception=True)
+        return s.validated_data
+
+
+class GenericClassifierSerializer(serializers.ModelSerializer):
+    id = serializers.IntegerField(read_only=False, required=False, allow_null=True)
+    children = GenericClassifierRecursiveField(source='get_children', many=True, required=False, allow_null=True)
+
+    class Meta:
+        model = GenericClassifier
+        fields = ['id', 'name', 'level', 'children', ]
+
+
+class GenericClassifierNodeSerializer(serializers.ModelSerializer):
+    id = serializers.IntegerField(read_only=False, required=False, allow_null=True)
+    parent = serializers.PrimaryKeyRelatedField(read_only=True)
+
+    class Meta:
+        model = GenericClassifier
+        fields = ['id', 'name', 'level', 'parent', ]
+
+
+class GenericAttributeTypeOptionIsHiddenField(serializers.BooleanField):
+    def __init__(self, **kwargs):
+        kwargs['required'] = False
+        kwargs['default'] = False
+        # kwargs['allow_null'] = True
+        super(GenericAttributeTypeOptionIsHiddenField, self).__init__(**kwargs)
+
+    def get_attribute(self, obj):
+        return obj
+
+    def to_representation(self, value):
+        # some "optimization" to use preloaded data through prefetch_related
+        member = get_member_from_context(self.context)
+        for o in value.options.all():
+            if o.member_id == member.id:
+                return o.is_hidden
+        return False
+
+
+class GenericAttributeTypeSerializer(serializers.ModelSerializer):
+    master_user = MasterUserField()
+    is_hidden = GenericAttributeTypeOptionIsHiddenField()
+    classifiers = GenericClassifierSerializer(required=False, allow_null=True, many=True)
+
+    class Meta:
+        model = GenericAttributeType
+        fields = ['id', 'master_user', 'user_code', 'name', 'short_name', 'public_name', 'notes', 'value_type',
+                  'order', 'is_hidden', 'classifiers']
+
+
+class GenericAttributeSerializer(serializers.ModelSerializer):
+    # attribute_type = GenericAttributeTypeField()
+    attribute_type_object = GenericAttributeTypeSerializer(source='attribute_type', read_only=True)
+    # classifier = AccountClassifierField(required=False, allow_null=True)
+    classifier_object = GenericClassifierSerializer(source='classifier', read_only=True)
+
+    class Meta:
+        model = GenericAttribute
+        fields = ['id', 'attribute_type', 'attribute_type_object', 'value_string', 'value_float', 'value_date',
+                  'classifier', 'classifier_object']

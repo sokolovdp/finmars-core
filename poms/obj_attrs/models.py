@@ -1,13 +1,16 @@
 from datetime import date
 
+from django.contrib.contenttypes.fields import GenericForeignKey, GenericRelation
 from django.contrib.contenttypes.models import ContentType
 from django.db import models
 from django.utils.encoding import python_2_unicode_compatible
 from django.utils.translation import ugettext_lazy
+from mptt.fields import TreeForeignKey
 from mptt.models import MPTTModel
 
 from poms.common.models import NamedModel
-from poms.users.models import MasterUser
+from poms.obj_perms.models import GenericObjectPermission
+from poms.users.models import MasterUser, Member
 
 
 @python_2_unicode_compatible
@@ -133,3 +136,60 @@ class AbstractAttribute(models.Model):
             self.classifier = value
 
     value = property(get_value, set_value)
+
+
+class GenericAttributeType(AbstractAttributeType):
+    content_type = models.ForeignKey(ContentType, null=True, blank=True)
+
+    object_permissions = GenericRelation(GenericObjectPermission)
+
+    class Meta:
+        verbose_name = ugettext_lazy('attribute type')
+        verbose_name_plural = ugettext_lazy('attribute types')
+
+
+class GenericAttributeTypeOption(models.Model):
+    attribute_type = models.ForeignKey(GenericAttributeType, related_name='options',
+                                       verbose_name=ugettext_lazy('attribute type'))
+    member = models.ForeignKey(Member,
+                               verbose_name=ugettext_lazy('member'))
+    is_hidden = models.BooleanField(default=False, verbose_name=ugettext_lazy('is hidden'))
+
+    class Meta:
+        unique_together = [
+            ['member', 'attribute_type']
+        ]
+
+    def __str__(self):
+        # return '%s - %s' % (self.member, self.attribute_type)
+        return '%s' % (self.attribute_type,)
+
+
+class GenericClassifier(AbstractClassifier):
+    attribute_type = models.ForeignKey(GenericAttributeType, related_name='classifiers',
+                                       verbose_name=ugettext_lazy('attribute type'))
+
+    parent = TreeForeignKey('self', null=True, blank=True, related_name='children', db_index=True,
+                            verbose_name=ugettext_lazy('parent'))
+
+    class Meta:
+        verbose_name = ugettext_lazy('classifier')
+        verbose_name_plural = ugettext_lazy('classifiers')
+
+
+class GenericAttribute(AbstractAttribute):
+    attribute_type = models.ForeignKey(GenericAttributeType)
+
+    content_type = models.ForeignKey(ContentType, null=True, blank=True)
+    object_id = models.BigIntegerField(db_index=True)
+    content_object = GenericForeignKey('content_type', 'object_id')
+
+    classifier = models.ForeignKey(GenericClassifier, on_delete=models.SET_NULL, null=True, blank=True,
+                                   verbose_name=ugettext_lazy('classifier'))
+
+    class Meta:
+        verbose_name = ugettext_lazy('attribute')
+        verbose_name_plural = ugettext_lazy('attributes')
+        index_together = [
+            ['content_type', 'object_id']
+        ]

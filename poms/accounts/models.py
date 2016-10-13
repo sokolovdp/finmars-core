@@ -1,5 +1,6 @@
 from __future__ import unicode_literals, print_function
 
+from django.contrib.contenttypes.fields import GenericRelation
 from django.db import models
 from django.utils.encoding import python_2_unicode_compatible
 from django.utils.translation import ugettext_lazy
@@ -9,8 +10,8 @@ from mptt.models import MPTTModel
 from poms.common.models import NamedModel, FakeDeletableModel
 from poms.currencies.models import Currency
 from poms.obj_attrs.models import AbstractAttributeType, AbstractAttribute, AbstractAttributeTypeOption, \
-    AbstractClassifier
-from poms.obj_perms.models import AbstractGroupObjectPermission, AbstractUserObjectPermission
+    AbstractClassifier, GenericAttribute
+from poms.obj_perms.models import AbstractGroupObjectPermission, AbstractUserObjectPermission, GenericObjectPermission
 from poms.users.models import MasterUser, Member
 
 
@@ -61,6 +62,9 @@ class Account(NamedModel, FakeDeletableModel):
     type = models.ForeignKey(AccountType, on_delete=models.PROTECT, null=True, blank=True,
                              verbose_name=ugettext_lazy('account type'))
     is_valid_for_all_portfolios = models.BooleanField(default=True)
+
+    attributes2 = GenericRelation(GenericAttribute)
+    object_permissions2 = GenericRelation(GenericObjectPermission)
 
     class Meta(NamedModel.Meta, FakeDeletableModel.Meta):
         verbose_name = ugettext_lazy('account')
