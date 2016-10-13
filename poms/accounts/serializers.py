@@ -59,9 +59,9 @@ class AccountAttributeTypeSerializer(AbstractAttributeTypeSerializer):
 
 class AccountAttributeSerializer(AbstractAttributeSerializer):
     attribute_type = AccountAttributeTypeField()
-    attribute_type_object = AccountAttributeTypeSerializer(source='attribute_type', read_only=True)
+    # attribute_type_object = AccountAttributeTypeSerializer(source='attribute_type', read_only=True)
     classifier = AccountClassifierField(required=False, allow_null=True)
-    classifier_object = AccountClassifierSerializer(source='classifier', read_only=True)
+    # classifier_object = AccountClassifierSerializer(source='classifier', read_only=True)
 
     class Meta(AbstractAttributeSerializer.Meta):
         model = AccountAttribute
