@@ -583,206 +583,272 @@ class SimpleEval2(object):
         if self.tik_time - self.start_time > self.max_time:
             raise InvalidExpression("Execution exceeded time limit, max runtime is %s" % self.max_time)
 
-        if isinstance(node, (list, tuple)):
-            ret = None
-            for n in node:
-                ret = self._eval(n)
-            return ret
+        # if isinstance(node, (list, tuple)):
+        #     return self._on_many(node)
+        #
+        # elif isinstance(node, ast.Assign):
+        #     return self._on_ast_Assign(node)
+        #
+        # elif isinstance(node, ast.If):
+        #     return self._on_ast_If(node)
+        #
+        # elif isinstance(node, ast.For):
+        #     return self._on_ast_For(node)
+        #
+        # elif isinstance(node, ast.While):
+        #     return self._on_ast_While(node)
+        #
+        # elif isinstance(node, ast.Break):
+        #     return self._on_ast_Break(node)
+        #
+        # elif isinstance(node, ast.FunctionDef):
+        #     return self._on_ast_FunctionDef(node)
+        #
+        # elif isinstance(node, ast.Pass):
+        #     return self._on_ast_Pass(node)
+        #
+        # elif isinstance(node, ast.Try):
+        #     return self._on_ast_Try(node)
+        #
+        # elif isinstance(node, ast.Num):  # <number>
+        #     return self._on_ast_Num(node)
+        #
+        # elif isinstance(node, ast.Str):  # <string>
+        #     return self._on_ast_Str(node)
+        #
+        # # python 3 compatibility:
+        # elif hasattr(ast, 'NameConstant') and isinstance(node, ast.NameConstant):  # <bool>
+        #     return self._on_ast_NameConstant(node)
+        #
+        # elif isinstance(node, ast.Dict):
+        #     return self._on_ast_Dict(node)
+        #
+        # elif isinstance(node, ast.List):
+        #     return self._on_ast_List(node)
+        #
+        # elif isinstance(node, ast.Tuple):
+        #     return self._on_ast_Tuple(node)
+        #
+        # elif isinstance(node, ast.Set):
+        #     return self._on_ast_Set(node)
+        #
+        # elif isinstance(node, ast.UnaryOp):  # - and + etc.
+        #     return self._on_ast_UnaryOp(node)
+        #
+        # elif isinstance(node, ast.BinOp):  # <left> <operator> <right>
+        #     return self._on_ast_BinOp(node)
+        #
+        # elif isinstance(node, ast.BoolOp):  # and & or...
+        #     return self._on_ast_BoolOp(node)
+        #
+        # elif isinstance(node, ast.Compare):  # 1 < 2, a == b...
+        #     return self._on_ast_Compare(node)
+        #
+        # elif isinstance(node, ast.IfExp):  # x if y else z
+        #     return self._on_ast_IfExp(node)
+        #
+        # elif isinstance(node, ast.Call):  # function...
+        #     return self._on_ast_Call(node)
+        #
+        # elif isinstance(node, ast.Return):
+        #     return self._on_ast_Return(node)
+        #
+        # elif isinstance(node, ast.Name):  # a, b, c...
+        #     return self._on_ast_Name(node)
+        #
+        # elif isinstance(node, ast.Subscript):  # b[1]
+        #     return self._on_ast_Subscript(node)
+        #
+        # elif isinstance(node, ast.Attribute):  # a.b.c
+        #     return self._on_ast_Attribute(node)
+        #
+        # elif isinstance(node, ast.Index):
+        #     return self._on_ast_Index(node)
+        #
+        # elif isinstance(node, ast.Expr):
+        #     return self._on_ast_Expr(node)
+        #
+        # else:
+        #     raise InvalidExpression("Sorry, %s is not available in this evaluator" % type(node).__name__)
 
-        elif isinstance(node, ast.Assign):
-            ret = self._eval(node.value)
-            for t in node.targets:
-                if isinstance(t, ast.Name):
-                    self._table[t.id] = ret
-                elif isinstance(t, ast.Subscript):
-                    obj = self._eval(t.value)
-                    obj[self._eval(t.slice)] = ret
-                elif isinstance(t, ast.Attribute):
-                    # TODO: check security
-                    obj = self._eval(t.value)
-                    if isinstance(obj, (dict, OrderedDict)):
-                        obj[t.attr] = ret
-                    else:
-                        raise ExpressionSyntaxError('Invalid assign')
-                        # raise ExpressionSyntaxError('Invalid assign')
+        if isinstance(node, (list, tuple)):
+            return self._on_many(node)
+        else:
+            op = '_on_ast_%s' % type(node).__name__
+            if hasattr(self, op):
+                return getattr(self, op)(node)
+            else:
+                raise InvalidExpression("Sorry, %s is not available in this evaluator" % type(node).__name__)
+
+    def _on_many(self, node):
+        ret = None
+        for n in node:
+            ret = self._eval(n)
+        return ret
+
+    def _on_ast_Assign(self, node):
+        ret = self._eval(node.value)
+        for t in node.targets:
+            if isinstance(t, ast.Name):
+                self._table[t.id] = ret
+            elif isinstance(t, ast.Subscript):
+                obj = self._eval(t.value)
+                obj[self._eval(t.slice)] = ret
+            elif isinstance(t, ast.Attribute):
+                # TODO: check security
+                obj = self._eval(t.value)
+                if isinstance(obj, (dict, OrderedDict)):
+                    obj[t.attr] = ret
                 else:
                     raise ExpressionSyntaxError('Invalid assign')
-            return ret
+                    # raise ExpressionSyntaxError('Invalid assign')
+            else:
+                raise ExpressionSyntaxError('Invalid assign')
+        return ret
 
-        elif isinstance(node, ast.If):
-            return self._eval(node.body) if self._eval(node.test) else self._eval(node.orelse)
+    def _on_ast_If(self, node):
+        return self._eval(node.body) if self._eval(node.test) else self._eval(node.orelse)
 
-        elif isinstance(node, ast.For):
-            ret = None
-            for val in self._eval(node.iter):
-                self._table[node.target.id] = val
-                try:
-                    ret = self._eval(node.body)
-                except _Break:
-                    break
-            return ret
-
-        elif isinstance(node, ast.While):
-            ret = None
-            while self._eval(node.test):
-                try:
-                    ret = self._eval(node.body)
-                except _Break:
-                    break
-            return ret
-
-        elif isinstance(node, ast.Break):
-            raise _Break()
-
-        elif isinstance(node, ast.FunctionDef):
-            # self.local_functions[node.name] = node
-            self._table[node.name] = _UserDef(self, node)
-            return None
-
-        elif isinstance(node, ast.Pass):
-            return None
-
-        elif isinstance(node, ast.Try):
-            ret = None
+    def _on_ast_For(self, node):
+        ret = None
+        for val in self._eval(node.iter):
+            self._table[node.target.id] = val
             try:
                 ret = self._eval(node.body)
-            except:
-                if node.handlers:
-                    for n in node.handlers:
-                        # ast.ExceptHandler
-                        if n.body:
-                            ret = self._eval(n.body)
-            else:
-                if node.orelse:
-                    ret = self._eval(node.orelse)
-            finally:
-                if node.finalbody:
-                    ret = self._eval(node.finalbody)
+            except _Break:
+                break
+        return ret
 
-            return ret
+    def _on_ast_While(self, node):
+        ret = None
+        while self._eval(node.test):
+            try:
+                ret = self._eval(node.body)
+            except _Break:
+                break
+        return ret
 
-        elif isinstance(node, ast.Num):  # <number>
-            return node.n
+    def _on_ast_Break(self, node):
+        raise _Break()
 
-        elif isinstance(node, ast.Str):  # <string>
-            if len(node.s) > MAX_STR_LEN:
-                raise ExpressionEvalError(
-                    "String Literal in statement is too long! (%s, when %s is max)" % (len(node.s), MAX_STR_LEN))
-            return node.s
+    def _on_ast_FunctionDef(self, node):
+        # self.local_functions[node.name] = node
+        self._table[node.name] = _UserDef(self, node)
+        return None
 
-        # python 3 compatibility:
-        elif hasattr(ast, 'NameConstant') and isinstance(node, ast.NameConstant):  # <bool>
-            return node.value
+    def _on_ast_Pass(self, node):
+        return None
 
-        elif isinstance(node, ast.Dict):
-            d = {}
-            for k, v in zip(node.keys, node.values):
-                k = self._eval(k)
-                v = self._eval(v)
-                d[k] = v
-                if len(d) > MAX_LEN:
-                    raise ExpressionEvalError('Max dict length.')
-            return d
-
-        elif isinstance(node, (ast.List, ast.Tuple, ast.Set)):
-            d = []
-            for v in node.elts:
-                v = self._eval(v)
-                d.append(v)
-                if len(d) > MAX_LEN:
-                    raise ExpressionEvalError('Max list/tuple/set length.')
-            if isinstance(node, ast.Tuple):
-                return tuple(d)
-            elif isinstance(node, ast.Set):
-                return set(d)
-            return d
-
-        elif isinstance(node, ast.UnaryOp):  # - and + etc.
-            return OPERATORS[type(node.op)](self._eval(node.operand))
-
-        elif isinstance(node, ast.BinOp):  # <left> <operator> <right>
-            return OPERATORS[type(node.op)](self._eval(node.left), self._eval(node.right))
-
-        elif isinstance(node, ast.BoolOp):  # and & or...
-            if isinstance(node.op, ast.And):
-                return all((self._eval(v) for v in node.values))
-            elif isinstance(node.op, ast.Or):
-                return any((self._eval(v) for v in node.values))
-
-        elif isinstance(node, ast.Compare):  # 1 < 2, a == b...
-            return OPERATORS[type(node.ops[0])](self._eval(node.left), self._eval(node.comparators[0]))
-
-        elif isinstance(node, ast.IfExp):  # x if y else z
-            return self._eval(node.body) if self._eval(node.test) else self._eval(node.orelse)
-
-        elif isinstance(node, ast.Call):  # function...
-            f = self._eval(node.func)
-            if not callable(f):
-                raise FunctionNotDefined(node.func.id)
-
-            f_args = [self._eval(a) for a in node.args]
-            f_kwargs = {k.arg: self._eval(k.value) for k in node.keywords}
-            return f(*f_args, **f_kwargs)
-
-        elif isinstance(node, ast.Return):
-            val = self._eval(node.value)
-            raise _Return(val)
-
-        # variables/names:
-        elif isinstance(node, ast.Name):  # a, b, c...
-            # This happens at least for slicing
-            # This is a safe thing to do because it is impossible
-            # that there is a true expression assigning to none
-            # (the compiler rejects it, so you can't even pass that to ast.parse)
-
-            # for python3 in NameConstant
-            # if node.id == 'None':
-            #     return None
-            # elif node.id == 'True':
-            #     return True
-            # elif node.id == 'False':
-            #     return False
-
-            # if node.id in self.local_names:
-            #     return self.local_names[node.id]
-            #
-            # elif isinstance(self.names, (dict, OrderedDict)):
-            #     if node.id in self.names:
-            #         return self.names[node.id]
-            #
-            # raise NameNotDefined(node.id)
-            ret = self.find_name(node.id)
-            # if isinstance(ret, _Def):
-            #     raise InvalidExpression()
-            # if callable(ret):
-            #     raise InvalidExpression()
-            return ret
-
-        elif isinstance(node, ast.Subscript):  # b[1]
-            val = self._eval(node.value)
-            return val[self._eval(node.slice)]
-
-        elif isinstance(node, ast.Attribute):  # a.b.c
-            val = self._eval(node.value)
-            if isinstance(val, (dict, OrderedDict)):
-                try:
-                    return val[node.attr]
-                except (KeyError, TypeError):
-                    raise AttributeDoesNotExist(node.attr)
-            else:
-                return self._safe_getattr(val, node.attr)
-
-        elif isinstance(node, ast.Index):
-            return self._eval(node.value)
-
-        elif isinstance(node, ast.Expr):
-            return self._eval(node.value)
-
+    def _on_ast_Try(self, node):
+        ret = None
+        try:
+            ret = self._eval(node.body)
+        except:
+            if node.handlers:
+                for n in node.handlers:
+                    # ast.ExceptHandler
+                    if n.body:
+                        ret = self._eval(n.body)
         else:
-            raise InvalidExpression("Sorry, %s is not available in this evaluator" % type(node).__name__)
+            if node.orelse:
+                ret = self._eval(node.orelse)
+        finally:
+            if node.finalbody:
+                ret = self._eval(node.finalbody)
 
-        raise InvalidExpression("Sorry, %s is not available in this evaluator" % type(node).__name__)
-        # pass
+        return ret
+
+    def _on_ast_Num(self, node):
+        return node.n
+
+    def _on_ast_Str(self, node):
+        if len(node.s) > MAX_STR_LEN:
+            raise ExpressionEvalError(
+                "String Literal in statement is too long! (%s, when %s is max)" % (len(node.s), MAX_STR_LEN))
+        return node.s
+
+    def _on_ast_NameConstant(self, node):
+        return node.value
+
+    def _on_ast_Dict(self, node):
+        d = {}
+        for k, v in zip(node.keys, node.values):
+            k = self._eval(k)
+            v = self._eval(v)
+            d[k] = v
+            if len(d) > MAX_LEN:
+                raise ExpressionEvalError('Max dict length.')
+        return d
+
+    def _on_ast_List(self, node):
+        d = []
+        for v in node.elts:
+            v = self._eval(v)
+            d.append(v)
+            if len(d) > MAX_LEN:
+                raise ExpressionEvalError('Max list/tuple/set length.')
+        return d
+
+    def _on_ast_Tuple(self, node):
+        return tuple(self._on_ast_List(node))
+
+    def _on_ast_Set(self, node):
+        return set(self._on_ast_List(node))
+
+    def _on_ast_UnaryOp(self, node):
+        return OPERATORS[type(node.op)](self._eval(node.operand))
+
+    def _on_ast_BinOp(self, node):
+        return OPERATORS[type(node.op)](self._eval(node.left), self._eval(node.right))
+
+    def _on_ast_BoolOp(self, node):
+        if isinstance(node.op, ast.And):
+            return all((self._eval(v) for v in node.values))
+        elif isinstance(node.op, ast.Or):
+            return any((self._eval(v) for v in node.values))
+
+    def _on_ast_Compare(self, node):
+        return OPERATORS[type(node.ops[0])](self._eval(node.left), self._eval(node.comparators[0]))
+
+    def _on_ast_IfExp(self, node):
+        return self._eval(node.body) if self._eval(node.test) else self._eval(node.orelse)
+
+    def _on_ast_Call(self, node):
+        f = self._eval(node.func)
+        if not callable(f):
+            raise FunctionNotDefined(node.func.id)
+
+        f_args = [self._eval(a) for a in node.args]
+        f_kwargs = {k.arg: self._eval(k.value) for k in node.keywords}
+        return f(*f_args, **f_kwargs)
+
+    def _on_ast_Return(self, node):
+        val = self._eval(node.value)
+        raise _Return(val)
+
+    def _on_ast_Name(self, node):
+        ret = self.find_name(node.id)
+        return ret
+
+    def _on_ast_Subscript(self, node):
+        val = self._eval(node.value)
+        return val[self._eval(node.slice)]
+
+    def _on_ast_Attribute(self, node):
+        val = self._eval(node.value)
+        if isinstance(val, (dict, OrderedDict)):
+            try:
+                return val[node.attr]
+            except (KeyError, TypeError):
+                raise AttributeDoesNotExist(node.attr)
+        else:
+            return self._safe_getattr(val, node.attr)
+
+    def _on_ast_Index(self, node):
+        return self._eval(node.value)
+
+    def _on_ast_Expr(self, node):
+        return self._eval(node.value)
 
     def _safe_getattr(self, obj, name):
         if isinstance(obj, datetime.date):
@@ -1318,9 +1384,9 @@ print('gg: 1 - a=%s', a)
             # accrual_NL_365_NO_EOM(_date(2000, 1, 1), _date(2000, 1, 25))
             for i in range(10):
                 accrual_NL_365_NO_EOM(_date(2000, 1, 1), _date(2000, 1, 25))
-            # for i in [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]:
-            #     # accrual_NL_365_NO_EOM(_parse_date('2000-01-01'), _parse_date('2000-01-25'))
-            #     accrual_NL_365_NO_EOM(_date(2000, 1, 1), _date(2000, i, 25))
+                # for i in [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]:
+                #     # accrual_NL_365_NO_EOM(_parse_date('2000-01-01'), _parse_date('2000-01-25'))
+                #     accrual_NL_365_NO_EOM(_date(2000, 1, 1), _date(2000, i, 25))
 
         expr = '''
 def accrual_NL_365_NO_EOM(dt1, dt2):
@@ -1370,6 +1436,7 @@ for i in range(10):
                 lambda: asteval.Interpreter().eval(expr), number=number))
         except ImportError:
             pass
+
 
     perf_tests()
     pass
