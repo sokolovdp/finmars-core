@@ -38,8 +38,9 @@ class AccountAdmin(admin.ModelAdmin):
     search_fields = ['id', 'user_code', 'name']
     raw_id_fields = ['master_user', 'type']
     inlines = [
-        GenericTagLinkInline,
         AbstractAttributeInline,
+        GenericAttributeInline,
+        GenericTagLinkInline,
         GenericObjectPermissionInline,
         # UserObjectPermissionInline,
         # GroupObjectPermissionInline,

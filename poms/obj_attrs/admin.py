@@ -1,4 +1,6 @@
 from django.contrib import admin
+from django.contrib.contenttypes.admin import GenericTabularInline
+from django.contrib.contenttypes.models import ContentType
 
 from poms.obj_attrs.models import AbstractAttributeTypeOption, AbstractAttribute, AbstractClassifier, \
     GenericAttributeType, GenericClassifier, GenericAttribute, GenericAttributeTypeOption
@@ -119,3 +121,17 @@ class GenericAttributeAdmin(admin.ModelAdmin):
 
 
 admin.site.register(GenericAttribute, GenericAttributeAdmin)
+
+
+class GenericAttributeInline(GenericTabularInline):
+    model = GenericAttribute
+    raw_id_fields = ['attribute_type', 'classifier']
+    extra = 0
+
+    def formfield_for_foreignkey(self, db_field, request=None, **kwargs):
+        if db_field.name == 'attribute_type':
+            qs = kwargs.get('queryset', db_field.remote_field.model.objects)
+            kwargs['queryset'] = qs.select_related('content_type').filter(
+                content_type=ContentType.objects.get_for_model(self.parent_model)
+            )
+        return super(GenericAttributeInline, self).formfield_for_foreignkey(db_field, request=request, **kwargs)

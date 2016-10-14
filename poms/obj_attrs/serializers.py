@@ -11,6 +11,7 @@ from rest_framework.fields import empty
 from rest_framework.serializers import ListSerializer
 
 from poms.common.serializers import ModelWithUserCodeSerializer
+from poms.obj_attrs.fields import GenericAttributeTypeField, GenericClassifierField
 from poms.obj_attrs.models import AbstractAttributeType, GenericAttributeType, GenericClassifier, GenericAttribute
 from poms.obj_attrs.utils import get_attr_type_model, get_attr_type_view_perms
 from poms.obj_perms.serializers import ModelWithObjectPermissionSerializer
@@ -386,7 +387,7 @@ class GenericAttributeTypeSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = GenericAttributeType
-        fields = ['id', 'master_user', 'content_type', 'user_code', 'name', 'short_name', 'public_name', 'notes',
+        fields = ['id', 'master_user', 'user_code', 'name', 'short_name', 'public_name', 'notes',
                   'value_type', 'order', 'is_hidden', 'classifiers']
 
     def __init__(self, *args, **kwargs):
@@ -480,9 +481,9 @@ class GenericAttributeTypeSerializer(serializers.ModelSerializer):
 
 
 class GenericAttributeSerializer(serializers.ModelSerializer):
-    # attribute_type = GenericAttributeTypeField()
+    attribute_type = GenericAttributeTypeField()
     attribute_type_object = GenericAttributeTypeSerializer(source='attribute_type', read_only=True)
-    # classifier = AccountClassifierField(required=False, allow_null=True)
+    classifier = GenericClassifierField(required=False, allow_null=True)
     classifier_object = GenericClassifierSerializer(source='classifier', read_only=True)
 
     class Meta:
@@ -493,12 +494,21 @@ class GenericAttributeSerializer(serializers.ModelSerializer):
     def validate(self, attrs):
         attrs = super(GenericAttributeSerializer, self).validate(attrs)
 
+        root_model_content_type = ContentType.objects.get_for_model(self.root.Meta.model)
+
         attribute_type = attrs['attribute_type']
+        if attribute_type.content_type_id != root_model_content_type.id:
+            # raise ValidationError({
+            #     'attribute_type':
+            # })
+            self.fields['attribute_type'].fail('does_not_exist', pk_value=attribute_type.id)
+
         classifier = attrs.get('classifier', None)
         if attribute_type.value_type == AbstractAttributeType.CLASSIFIER and classifier:
             if attribute_type.id != classifier.attribute_type_id:
-                raise ValidationError(
-                    {'classifier': ugettext_lazy('Invalid pk "%(pk)s" - object does not exist.') % {
-                        'pk': classifier.id}})
+                # raise ValidationError(
+                #     {'classifier': ugettext_lazy('Invalid pk "%(pk)s" - object does not exist.') % {
+                #         'pk': classifier.id}})
+                self.fields['classifier'].fail('does_not_exist', pk_value=classifier.id)
 
         return attrs

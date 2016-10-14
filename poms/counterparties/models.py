@@ -9,7 +9,7 @@ from mptt.models import MPTTModel
 
 from poms.common.models import NamedModel, FakeDeletableModel
 from poms.obj_attrs.models import AbstractAttributeType, AbstractAttribute, AbstractAttributeTypeOption, \
-    AbstractClassifier
+    AbstractClassifier, GenericAttribute
 from poms.obj_perms.models import AbstractGroupObjectPermission, AbstractUserObjectPermission, GenericObjectPermission
 from poms.tags.models import TagLink
 from poms.users.models import MasterUser, Member
@@ -61,6 +61,7 @@ class Counterparty(NamedModel, FakeDeletableModel):
     group = models.ForeignKey(CounterpartyGroup, related_name='counterparties', null=True, blank=True)
     is_valid_for_all_portfolios = models.BooleanField(default=True)
 
+    attributes2 = GenericRelation(GenericAttribute)
     object_permissions = GenericRelation(GenericObjectPermission)
     tags = GenericRelation(TagLink)
 
@@ -209,6 +210,7 @@ class Responsible(NamedModel, FakeDeletableModel):
     group = models.ForeignKey(ResponsibleGroup, related_name='responsibles', null=True, blank=True)
     is_valid_for_all_portfolios = models.BooleanField(default=True)
 
+    attributes2 = GenericRelation(GenericAttribute)
     object_permissions = GenericRelation(GenericObjectPermission)
     tags = GenericRelation(TagLink)
 

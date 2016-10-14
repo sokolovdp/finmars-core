@@ -13,14 +13,13 @@ from poms.counterparties.serializers import CounterpartySerializer, ResponsibleS
     ResponsibleAttributeTypeSerializer, CounterpartyGroupSerializer, ResponsibleGroupSerializer, \
     CounterpartyClassifierNodeSerializer, ResponsibleClassifierNodeSerializer
 from poms.obj_attrs.filters import AttributeTypeValueTypeFilter
-from poms.obj_attrs.views import AbstractAttributeTypeViewSet, AbstractClassifierViewSet
+from poms.obj_attrs.views import AbstractAttributeTypeViewSet, AbstractClassifierViewSet, GenericAttributeTypeViewSet
 from poms.obj_perms.filters import ObjectPermissionMemberFilter, ObjectPermissionGroupFilter, \
     ObjectPermissionPermissionFilter
 from poms.obj_perms.utils import get_permissions_prefetch_lookups
 from poms.obj_perms.views import AbstractWithObjectPermissionViewSet
 from poms.portfolios.models import Portfolio
 from poms.tags.filters import TagFilter
-from poms.tags.models import Tag, TagLink
 from poms.tags.utils import get_tag_prefetch
 from poms.users.filters import OwnerByMasterUserFilter
 
@@ -52,6 +51,10 @@ class CounterpartyAttributeTypeViewSet(AbstractAttributeTypeViewSet):
     )
     serializer_class = CounterpartyAttributeTypeSerializer
     filter_class = CounterpartyAttributeTypeFilterSet
+
+
+class CounterpartyAttributeType2ViewSet(GenericAttributeTypeViewSet):
+    target_model = Counterparty
 
 
 class CounterpartyClassifierFilterSet(FilterSet):
@@ -179,6 +182,10 @@ class ResponsibleAttributeTypeViewSet(AbstractAttributeTypeViewSet):
     )
     serializer_class = ResponsibleAttributeTypeSerializer
     filter_class = ResponsibleAttributeTypeFilterSet
+
+
+class ResponsibleAttributeType2ViewSet(GenericAttributeTypeViewSet):
+    target_model = Responsible
 
 
 class ResponsibleClassifierFilterSet(FilterSet):

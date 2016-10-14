@@ -139,7 +139,7 @@ class AbstractAttribute(models.Model):
 
 
 class GenericAttributeType(AbstractAttributeType):
-    content_type = models.ForeignKey(ContentType, null=True, blank=True)
+    content_type = models.ForeignKey(ContentType)
 
     object_permissions = GenericRelation(GenericObjectPermission)
 
@@ -180,7 +180,7 @@ class GenericClassifier(AbstractClassifier):
 class GenericAttribute(AbstractAttribute):
     attribute_type = models.ForeignKey(GenericAttributeType)
 
-    content_type = models.ForeignKey(ContentType, null=True, blank=True)
+    content_type = models.ForeignKey(ContentType)
     object_id = models.BigIntegerField(db_index=True)
     content_object = GenericForeignKey('content_type', 'object_id')
 

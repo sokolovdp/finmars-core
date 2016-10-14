@@ -43,11 +43,13 @@ router.register(r'accounts/account-classifier', accounts.AccountClassifierViewSe
 router.register(r'accounts/account', accounts.AccountViewSet)
 
 router.register(r'counterparties/counterparty-attribute-type', counterparties.CounterpartyAttributeTypeViewSet)
+router.register(r'counterparties/counterparty-attribute-type2', counterparties.CounterpartyAttributeType2ViewSet)
 router.register(r'counterparties/counterparty-classifier', counterparties.CounterpartyClassifierViewSet)
 router.register(r'counterparties/counterparty-group', counterparties.CounterpartyGroupViewSet)
 router.register(r'counterparties/counterparty', counterparties.CounterpartyViewSet)
 
 router.register(r'counterparties/responsible-attribute-type', counterparties.ResponsibleAttributeTypeViewSet)
+router.register(r'counterparties/responsible-attribute-type2', counterparties.ResponsibleAttributeType2ViewSet)
 router.register(r'counterparties/responsible-classifier', counterparties.ResponsibleClassifierViewSet)
 router.register(r'counterparties/responsible-group', counterparties.ResponsibleGroupViewSet)
 router.register(r'counterparties/responsible', counterparties.ResponsibleViewSet)

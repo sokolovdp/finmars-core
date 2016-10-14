@@ -6,7 +6,7 @@ from poms.common.admin import ClassifierAdmin
 from poms.counterparties.models import Counterparty, Responsible, CounterpartyAttributeType, ResponsibleAttributeType, \
     CounterpartyGroup, ResponsibleGroup, CounterpartyClassifier, ResponsibleClassifier
 from poms.obj_attrs.admin import AbstractAttributeTypeAdmin, AbstractAttributeInline, \
-    AbstractAttributeTypeClassifierInline, AbstractAttributeTypeOptionInline
+    AbstractAttributeTypeClassifierInline, AbstractAttributeTypeOptionInline, GenericAttributeInline
 from poms.obj_perms.admin import GenericObjectPermissionInline
 from poms.tags.admin import GenericTagLinkInline
 
@@ -39,6 +39,7 @@ class CounterpartyAdmin(admin.ModelAdmin):
     raw_id_fields = ['master_user', 'group']
     inlines = [
         AbstractAttributeInline,
+        GenericAttributeInline,
         GenericTagLinkInline,
         GenericObjectPermissionInline,
         # UserObjectPermissionInline,
@@ -96,6 +97,7 @@ class ResponsibleAdmin(admin.ModelAdmin):
     raw_id_fields = ['master_user', 'group']
     inlines = [
         AbstractAttributeInline,
+        GenericAttributeInline,
         GenericTagLinkInline,
         GenericObjectPermissionInline,
         # UserObjectPermissionInline,

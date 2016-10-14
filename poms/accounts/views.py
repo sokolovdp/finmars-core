@@ -6,10 +6,9 @@ from rest_framework.filters import FilterSet
 
 from poms.accounts.models import Account, AccountType, AccountAttributeType, AccountClassifier, AccountAttribute
 from poms.accounts.serializers import AccountSerializer, AccountTypeSerializer, AccountAttributeTypeSerializer, \
-    AccountClassifierNodeSerializer, AccountAttributeType2Serializer
+    AccountClassifierNodeSerializer
 from poms.common.filters import CharFilter, NoOpFilter, ModelExtWithPermissionMultipleChoiceFilter
 from poms.obj_attrs.filters import AttributeTypeValueTypeFilter
-from poms.obj_attrs.utils import get_attributes_prefetch
 from poms.obj_attrs.views import AbstractAttributeTypeViewSet, AbstractClassifierViewSet, GenericAttributeTypeViewSet
 from poms.obj_perms.filters import ObjectPermissionMemberFilter, ObjectPermissionGroupFilter, \
     ObjectPermissionPermissionFilter
@@ -88,7 +87,7 @@ class AccountAttributeTypeViewSet(AbstractAttributeTypeViewSet):
 
 
 class AccountAttributeType2ViewSet(GenericAttributeTypeViewSet):
-    serializer_class = AccountAttributeType2Serializer
+    target_model = Account
 
 
 class AccountClassifierFilterSet(FilterSet):
