@@ -4,6 +4,7 @@ from django.contrib import admin
 from django.utils.translation import ugettext_lazy
 
 from poms.currencies.models import Currency, CurrencyHistory
+from poms.tags.admin import GenericTagLinkInline
 
 
 class CurrencyAdmin(admin.ModelAdmin):
@@ -14,6 +15,9 @@ class CurrencyAdmin(admin.ModelAdmin):
     list_filter = ['is_deleted', ]
     raw_id_fields = ['master_user', 'price_download_scheme']
     ordering = ['master_user', 'user_code']
+    inlines = [
+        GenericTagLinkInline,
+    ]
 
     def is_system(self, obj):
         return obj.is_system

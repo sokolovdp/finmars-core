@@ -5,6 +5,7 @@ from django.contrib import admin
 from poms.obj_perms.admin import GenericObjectPermissionInline
 from poms.strategies.models import Strategy1Group, Strategy2Subgroup, Strategy3, Strategy1Subgroup, Strategy1, \
     Strategy2Group, Strategy2, Strategy3Group, Strategy3Subgroup
+from poms.tags.admin import GenericTagLinkInline
 
 
 class Strategy1GroupAdmin(admin.ModelAdmin):
@@ -16,6 +17,7 @@ class Strategy1GroupAdmin(admin.ModelAdmin):
     list_filter = ['is_deleted', ]
     raw_id_fields = ['master_user']
     inlines = [
+        GenericTagLinkInline,
         GenericObjectPermissionInline,
         # UserObjectPermissionInline,
         # GroupObjectPermissionInline,
@@ -34,6 +36,7 @@ class Strategy1SubgroupAdmin(admin.ModelAdmin):
     list_filter = ['is_deleted', ]
     raw_id_fields = ['group']
     inlines = [
+        GenericTagLinkInline,
         GenericObjectPermissionInline,
         # UserObjectPermissionInline,
         # GroupObjectPermissionInline,
@@ -52,6 +55,7 @@ class Strategy1Admin(admin.ModelAdmin):
     list_filter = ['is_deleted', ]
     raw_id_fields = ['subgroup']
     inlines = [
+        GenericTagLinkInline,
         GenericObjectPermissionInline,
         # UserObjectPermissionInline,
         # GroupObjectPermissionInline,

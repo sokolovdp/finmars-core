@@ -67,7 +67,7 @@ class Account(NamedModel, FakeDeletableModel):
                              verbose_name=ugettext_lazy('account type'))
     is_valid_for_all_portfolios = models.BooleanField(default=True)
 
-    # attributes2 = GenericRelation(GenericAttribute)
+    attributes2 = GenericRelation(GenericAttribute)
     object_permissions = GenericRelation(GenericObjectPermission)
     tags = GenericRelation(TagLink)
 

@@ -15,6 +15,7 @@ from poms.instruments.tasks import process_events, calculate_prices_accrued_pric
 from poms.obj_attrs.admin import AbstractAttributeTypeAdmin, AbstractAttributeInline, \
     AbstractAttributeTypeClassifierInline, AbstractAttributeTypeOptionInline
 from poms.obj_perms.admin import GenericObjectPermissionInline
+from poms.tags.admin import GenericTagLinkInline
 
 admin.site.register(InstrumentClass, ClassModelAdmin)
 admin.site.register(DailyPricingModel, ClassModelAdmin)
@@ -43,6 +44,7 @@ class InstrumentTypeAdmin(admin.ModelAdmin):
     list_filter = ['instrument_class', 'is_deleted', ]
     raw_id_fields = ['master_user', 'one_off_event', 'regular_event', 'factor_same', 'factor_up', 'factor_down']
     inlines = [
+        GenericTagLinkInline,
         GenericObjectPermissionInline,
         # UserObjectPermissionInline,
         # GroupObjectPermissionInline,
@@ -92,6 +94,7 @@ class InstrumentAdmin(admin.ModelAdmin):
         AccrualCalculationScheduleInline,
         InstrumentFactorScheduleInline,
         # EventScheduleInline,
+        GenericTagLinkInline,
         GenericObjectPermissionInline,
         # UserObjectPermissionInline,
         # GroupObjectPermissionInline,

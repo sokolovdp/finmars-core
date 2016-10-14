@@ -5,7 +5,7 @@ from django.contrib import admin
 from poms.accounts.models import Account, AccountType, AccountAttributeType, AccountClassifier
 from poms.common.admin import ClassifierAdmin
 from poms.obj_attrs.admin import AbstractAttributeTypeAdmin, AbstractAttributeInline, \
-    AbstractAttributeTypeClassifierInline, AbstractAttributeTypeOptionInline
+    AbstractAttributeTypeClassifierInline, AbstractAttributeTypeOptionInline, GenericAttributeInline
 from poms.obj_perms.admin import GenericObjectPermissionInline
 from poms.tags.admin import GenericTagLinkInline
 
@@ -38,6 +38,7 @@ class AccountAdmin(admin.ModelAdmin):
     search_fields = ['id', 'user_code', 'name']
     raw_id_fields = ['master_user', 'type']
     inlines = [
+        GenericTagLinkInline,
         AbstractAttributeInline,
         GenericObjectPermissionInline,
         # UserObjectPermissionInline,

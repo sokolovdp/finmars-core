@@ -9,6 +9,7 @@ from poms.accounts.serializers import AccountSerializer, AccountTypeSerializer, 
     AccountClassifierNodeSerializer, AccountAttributeType2Serializer
 from poms.common.filters import CharFilter, NoOpFilter, ModelExtWithPermissionMultipleChoiceFilter
 from poms.obj_attrs.filters import AttributeTypeValueTypeFilter
+from poms.obj_attrs.utils import get_attributes_prefetch
 from poms.obj_attrs.views import AbstractAttributeTypeViewSet, AbstractClassifierViewSet, GenericAttributeTypeViewSet
 from poms.obj_perms.filters import ObjectPermissionMemberFilter, ObjectPermissionGroupFilter, \
     ObjectPermissionPermissionFilter
@@ -137,6 +138,7 @@ class AccountViewSet(AbstractWithObjectPermissionViewSet):
         ).prefetch_related(
             'attribute_type__options'
         )),
+        get_attributes_prefetch(),
         get_tag_prefetch(),
         *get_permissions_prefetch_lookups(
             (None, Account),
