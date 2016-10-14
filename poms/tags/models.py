@@ -97,13 +97,13 @@ class TagGroupObjectPermission(AbstractGroupObjectPermission):
         verbose_name_plural = ugettext_lazy('tags - group permissions')
 
 
-# class TagLink(models.Model):
-#     tag = models.ForeignKey(Tag, related_name='links')
-#
-#     content_type = models.ForeignKey(ContentType, null=True, blank=True)
-#     object_id = models.BigIntegerField()
-#     content_object = GenericForeignKey('content_type', 'object_id')
-#
-#     class Meta:
-#         verbose_name = ugettext_lazy('tag link')
-#         verbose_name_plural = ugettext_lazy('tag links')
+class TagLink(models.Model):
+    tag = models.ForeignKey(Tag, related_name='links')
+
+    content_type = models.ForeignKey(ContentType, null=True, blank=True)
+    object_id = models.BigIntegerField()
+    content_object = GenericForeignKey('content_type', 'object_id')
+
+    class Meta:
+        verbose_name = ugettext_lazy('tag link')
+        verbose_name_plural = ugettext_lazy('tag links')

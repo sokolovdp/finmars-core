@@ -1,15 +1,40 @@
 from __future__ import unicode_literals
 
 from django.contrib import admin
+from django.contrib.contenttypes.admin import GenericTabularInline
 
 from poms.obj_perms.admin import GenericObjectPermissionInline
 from poms.tags.filters import get_tag_content_types
-from poms.tags.models import Tag
+from poms.tags.models import Tag, TagLink
 
 
-# class TagLinkInline(admin.TabularInline):
-#     model = TagLink
-#     extra = 0
+class TagLinkInline(admin.TabularInline):
+    model = TagLink
+    extra = 0
+
+
+class GenericTagLinkInline(GenericTabularInline):
+    model = TagLink
+    raw_id_fields = ['tag']
+    extra = 0
+
+
+class TagLinkAdmin(admin.ModelAdmin):
+    model = TagLink
+    list_display = ['id', 'master_user', 'content_type', 'object_id', 'content_object', 'tag']
+    list_select_related = ['tag', 'tag__master_user', 'content_type']
+    raw_id_fields = ['tag']
+
+    def get_queryset(self, request):
+        qs = super(TagLinkAdmin, self).get_queryset(request)
+        return qs.prefetch_related('content_object')
+
+    def master_user(self, obj):
+        return obj.tag.master_user
+
+
+admin.site.register(TagLink, TagLinkAdmin)
+
 
 class TagAdmin(admin.ModelAdmin):
     model = Tag
@@ -31,6 +56,7 @@ class TagAdmin(admin.ModelAdmin):
         'thread_groups', 'threads'
     ]
     inlines = [
+        TagLinkInline,
         GenericObjectPermissionInline,
         # UserObjectPermissionInline,
         # GroupObjectPermissionInline,

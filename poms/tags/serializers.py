@@ -1,10 +1,16 @@
 from __future__ import unicode_literals
 
+from django.contrib.contenttypes.models import ContentType
+from rest_framework import serializers
+from rest_framework.fields import empty
+
 from poms.common.serializers import ModelWithUserCodeSerializer
 from poms.obj_perms.serializers import ModelWithObjectPermissionSerializer
+from poms.obj_perms.utils import obj_perms_filter_objects_for_view, has_view_perms, get_permissions_prefetch_lookups
 from poms.tags.fields import TagContentTypeField
-from poms.tags.models import Tag
+from poms.tags.models import Tag, TagLink
 from poms.users.fields import MasterUserField
+from poms.users.utils import get_member_from_context, get_master_user_from_context
 
 
 class TagSerializer(ModelWithObjectPermissionSerializer, ModelWithUserCodeSerializer):
@@ -48,3 +54,102 @@ class TagViewSerializer(ModelWithObjectPermissionSerializer):
         fields = [
             'url', 'id', 'user_code', 'name', 'short_name', 'public_name', 'notes',
         ]
+
+
+class Tag2Field(serializers.RelatedField):
+    def get_queryset(self):
+        queryset = super(Tag2Field, self).get_queryset()
+
+        if not issubclass(self.root.Meta.model, Tag):
+            ctype = ContentType.objects.get_for_model(self.root.Meta.model)
+            queryset = queryset.filter(content_types__in=[ctype])
+
+        master_user = get_master_user_from_context(self.context)
+        queryset = queryset.filter(master_user=master_user)
+
+        member = get_member_from_context(self.context)
+        queryset = obj_perms_filter_objects_for_view(member, queryset)
+        return queryset
+
+    def to_representation(self, value):
+        if isinstance(value, Tag):
+            tag = value
+        else:
+            tag = value.tag
+        member = get_member_from_context(self.context)
+        if has_view_perms(member, tag):
+            return tag.id
+        else:
+            return None
+
+    def to_internal_value(self, data):
+        return self.get_queryset().get(pk=data)
+
+
+class Tag2ViewSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Tag
+        fields = [
+            'id',
+            # 'user_code', 'name', 'short_name', 'public_name', 'notes',
+        ]
+
+    def get_attribute(self, instance):
+        print(repr(instance))
+        return instance.tag
+
+
+class ModelWithTagSerializer(serializers.ModelSerializer):
+    def __init__(self, *args, **kwargs):
+        super(ModelWithTagSerializer, self).__init__(*args, **kwargs)
+
+        tags_qs = Tag.objects.all()
+        self.fields['tags2'] = Tag2Field(many=True, queryset=tags_qs)
+        self.fields['tags2_object'] = Tag2ViewSerializer(source='tags2', many=True, read_only=True)
+
+    def create(self, validated_data):
+        tags = validated_data.pop('tags2', None)
+        instance = super(ModelWithTagSerializer, self).create(validated_data)
+        if tags is not empty:
+            self.save_tags(instance, tags, True)
+        return instance
+
+    def update(self, instance, validated_data):
+        tags = validated_data.pop('tags2', empty)
+        instance = super(ModelWithTagSerializer, self).update(instance, validated_data)
+        if tags is not empty:
+            self.save_tags(instance, tags, False)
+        return instance
+
+    def save_tags(self, instance, tags=None, created=False):
+        tags = tags or []
+
+        tag_link_qs = TagLink.objects.filter(
+            content_type=ContentType.objects.get_for_model(instance),
+            object_id=instance.id
+        )
+        existed = {t.tag_id for t in tag_link_qs}
+        processed = set()
+        for t in tags:
+            if t.id in existed:
+                processed.add(t.id)
+            else:
+                TagLink.objects.create(content_object=instance, tag=t)
+                processed.add(t.id)
+
+        master_user = get_master_user_from_context(self.context)
+        member = get_member_from_context(self.context)
+        tags_qs = Tag.objects.filter(master_user=master_user).prefetch_related(
+            *get_permissions_prefetch_lookups((None, Tag))
+        )
+        hidden = {t.id for t in tags_qs if not has_view_perms(member, t)}
+        processed.update(hidden)
+
+        tag_link_qs.filter(tag_id__in=tags_qs).exclude(tag_id__in=processed).delete()
+
+    def to_representation(self, instance):
+        ret = super(ModelWithTagSerializer, self).to_representation(instance)
+        tags = ret.get('tags2')
+        if tags:
+            ret['tags2'] = [t for t in tags if t is not None]
+        return ret

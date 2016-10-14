@@ -7,6 +7,7 @@ from poms.common.admin import ClassifierAdmin
 from poms.obj_attrs.admin import AbstractAttributeTypeAdmin, AbstractAttributeInline, \
     AbstractAttributeTypeClassifierInline, AbstractAttributeTypeOptionInline
 from poms.obj_perms.admin import GenericObjectPermissionInline
+from poms.tags.admin import GenericTagLinkInline
 
 
 class AccountTypeAdmin(admin.ModelAdmin):
@@ -18,6 +19,7 @@ class AccountTypeAdmin(admin.ModelAdmin):
     search_fields = ['id', 'user_code', 'name']
     raw_id_fields = ['master_user']
     inlines = [
+        GenericTagLinkInline,
         GenericObjectPermissionInline,
         # UserObjectPermissionInline,
         # GroupObjectPermissionInline,

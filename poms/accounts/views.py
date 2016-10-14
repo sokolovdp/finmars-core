@@ -16,7 +16,7 @@ from poms.obj_perms.utils import get_permissions_prefetch_lookups
 from poms.obj_perms.views import AbstractWithObjectPermissionViewSet
 from poms.portfolios.models import Portfolio
 from poms.tags.filters import TagFilter
-from poms.tags.models import Tag
+from poms.tags.models import Tag, TagLink
 from poms.users.filters import OwnerByMasterUserFilter
 
 
@@ -41,9 +41,19 @@ class AccountTypeFilterSet(FilterSet):
 class AccountTypeViewSet(AbstractWithObjectPermissionViewSet):
     queryset = AccountType.objects.select_related('master_user').prefetch_related(
         'tags',
+
+        Prefetch('tags2', queryset=TagLink.objects.select_related(
+            'tag'
+        ).prefetch_related(
+            'content_object',
+            *get_permissions_prefetch_lookups(
+                ('tag', Tag)
+            )
+        )),
+
         *get_permissions_prefetch_lookups(
             (None, AccountType),
-            ('tags', Tag)
+            ('tags', Tag),
         )
     )
     serializer_class = AccountTypeSerializer

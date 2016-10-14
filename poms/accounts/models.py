@@ -12,6 +12,7 @@ from poms.currencies.models import Currency
 from poms.obj_attrs.models import AbstractAttributeType, AbstractAttribute, AbstractAttributeTypeOption, \
     AbstractClassifier, GenericAttribute
 from poms.obj_perms.models import AbstractGroupObjectPermission, AbstractUserObjectPermission, GenericObjectPermission
+from poms.tags.models import TagLink
 from poms.users.models import MasterUser, Member
 
 
@@ -25,6 +26,7 @@ class AccountType(NamedModel, FakeDeletableModel):
                                                 verbose_name=ugettext_lazy('transaction details expr'))
 
     object_permissions = GenericRelation(GenericObjectPermission)
+    tags2 = GenericRelation(TagLink)
 
     class Meta(NamedModel.Meta, FakeDeletableModel.Meta):
         verbose_name = ugettext_lazy('account type')

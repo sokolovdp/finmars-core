@@ -13,7 +13,7 @@ from poms.obj_attrs.serializers import AbstractAttributeTypeSerializer, Abstract
 from poms.obj_perms.serializers import ModelWithObjectPermissionSerializer
 from poms.portfolios.fields import PortfolioField
 from poms.tags.fields import TagField
-from poms.tags.serializers import TagViewSerializer
+from poms.tags.serializers import TagViewSerializer, ModelWithTagSerializer
 from poms.users.fields import MasterUserField
 
 
@@ -27,7 +27,7 @@ class AccountClassifierNodeSerializer(AbstractClassifierNodeSerializer):
         model = AccountClassifier
 
 
-class AccountTypeSerializer(ModelWithObjectPermissionSerializer, ModelWithUserCodeSerializer):
+class AccountTypeSerializer(ModelWithObjectPermissionSerializer, ModelWithUserCodeSerializer, ModelWithTagSerializer):
     master_user = MasterUserField()
     tags = TagField(many=True, required=False, allow_null=True)
     # tags_object = ReadonlyNamedModelWithObjectPermissionSerializer(source='tags', many=True)
