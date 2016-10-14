@@ -5,6 +5,7 @@ from django.conf import settings
 from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin
 from django.contrib.auth.models import User, Permission
+from django.contrib.contenttypes.models import ContentType
 
 from poms.instruments.models import EventScheduleConfig
 from poms.integrations.models import PricingAutomatedSchedule
@@ -115,16 +116,49 @@ admin.site.register(User, UserWithProfileAdmin)
 
 class PermissionAdmin(admin.ModelAdmin):
     model = Permission
+    list_display = ['id', '_app_label', '_model', 'codename']
     list_select_related = ['content_type']
-    list_display = ['id', 'content_type', 'codename']
-    ordering = ['content_type', 'codename']
-    search_fields = ['codename', 'content_type__app_label', 'content_type__model']
+    ordering = ['content_type__app_label', 'content_type__model', 'codename']
+    search_fields = ['content_type__app_label', 'content_type__model', 'codename']
+    readonly_fields = ['content_type', 'codename']
+    list_per_page = 2000
 
     def has_add_permission(self, request):
         return False
 
+    def has_delete_permission(self, request, obj=None):
+        return False
+
+    def _app_label(self, obj):
+        return obj.content_type.app_label
+
+    _app_label.admin_order_field = 'content_type__app_label'
+
+    def _model(self, obj):
+        return obj.content_type.model
+
+    _model.admin_order_field = 'content_type__model'
+
 
 admin.site.register(Permission, PermissionAdmin)
+
+
+class ContentTypeAdmin(admin.ModelAdmin):
+    model = ContentType
+    list_display = ['id', 'app_label', 'model']
+    ordering = ['app_label', 'model']
+    readonly_fields = ['app_label', 'model']
+    search_fields = ['app_label', 'model']
+    list_per_page = 2000
+
+    def has_add_permission(self, request):
+        return False
+
+    def has_delete_permission(self, request, obj=None):
+        return False
+
+
+admin.site.register(ContentType, ContentTypeAdmin)
 
 
 class GroupAdmin(admin.ModelAdmin):
