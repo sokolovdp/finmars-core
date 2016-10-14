@@ -1,14 +1,17 @@
+import django_filters
 from django.contrib.contenttypes.models import ContentType
 from rest_framework.exceptions import MethodNotAllowed
 from rest_framework.filters import FilterSet
 
-from poms.common.filters import NoOpFilter, CharFilter
-from poms.common.views import AbstractModelViewSet
+from poms.common.filters import NoOpFilter, CharFilter, ModelExtWithPermissionMultipleChoiceFilter
+from poms.common.views import AbstractModelViewSet, AbstractReadOnlyModelViewSet
 from poms.obj_attrs.filters import OwnerByAttributeTypeFilter, AttributeTypeValueTypeFilter
-from poms.obj_attrs.models import GenericAttributeType
-from poms.obj_attrs.serializers import GenericAttributeTypeSerializer
+from poms.obj_attrs.models import GenericAttributeType, GenericClassifier
+from poms.obj_attrs.serializers import GenericAttributeTypeSerializer, GenericClassifierSerializer, \
+    GenericClassifierNodeSerializer
 from poms.obj_perms.filters import ObjectPermissionMemberFilter, ObjectPermissionGroupFilter, \
     ObjectPermissionPermissionFilter
+from poms.obj_perms.utils import get_permissions_prefetch_lookups
 from poms.obj_perms.views import AbstractWithObjectPermissionViewSet
 from poms.users.filters import OwnerByMasterUserFilter
 
@@ -47,17 +50,45 @@ class AbstractClassifierViewSet(AbstractModelViewSet):
         raise MethodNotAllowed(request.method)
 
 
-class GenericClassifierViewSet(AbstractModelViewSet):
-    filter_backends = AbstractModelViewSet.filter_backends + [
+class AccountClassifierFilterSet(FilterSet):
+    id = NoOpFilter()
+    name = CharFilter()
+    level = django_filters.NumberFilter()
+    attribute_type = ModelExtWithPermissionMultipleChoiceFilter(model=GenericAttributeType)
+
+    class Meta:
+        model = GenericClassifier
+        fields = []
+
+
+class GenericClassifierViewSet(AbstractReadOnlyModelViewSet):
+    queryset = GenericClassifier.objects.select_related(
+        'attribute_type', 'parent'
+    ).prefetch_related(
+        'children',
+        *get_permissions_prefetch_lookups(
+            ('attribute_type', GenericAttributeType),
+        )
+    )
+    filter_backends = AbstractReadOnlyModelViewSet.filter_backends + [
         OwnerByAttributeTypeFilter,
     ]
-    serializer_class = GenericAttributeTypeSerializer
+    serializer_class = GenericClassifierNodeSerializer
     target_model = None
     ordering_fields = [
         'attribute_type', 'attribute_type__user_code', 'attribute_type__name', 'attribute_type__short_name',
         'attribute_type__public_name',
         'name', 'level',
     ]
+    filter_class = AccountClassifierFilterSet
+
+    def get_queryset(self):
+        return super(GenericClassifierViewSet, self).get_queryset().filter(
+            attribute_type__content_type=self.target_model_content_type)
+
+    @property
+    def target_model_content_type(self):
+        return ContentType.objects.get_for_model(self.target_model)
 
 
 class GenericAttributeTypeFilterSet(FilterSet):
@@ -81,6 +112,9 @@ class GenericAttributeTypeViewSet(AbstractWithObjectPermissionViewSet):
         'master_user', 'content_type'
     ).prefetch_related(
         'options', 'classifiers',
+        *get_permissions_prefetch_lookups(
+            (None, GenericAttributeType),
+        )
     )
     filter_backends = AbstractWithObjectPermissionViewSet.filter_backends + [
         OwnerByMasterUserFilter,

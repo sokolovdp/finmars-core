@@ -9,7 +9,8 @@ from poms.accounts.serializers import AccountSerializer, AccountTypeSerializer, 
     AccountClassifierNodeSerializer
 from poms.common.filters import CharFilter, NoOpFilter, ModelExtWithPermissionMultipleChoiceFilter
 from poms.obj_attrs.filters import AttributeTypeValueTypeFilter
-from poms.obj_attrs.views import AbstractAttributeTypeViewSet, AbstractClassifierViewSet, GenericAttributeTypeViewSet
+from poms.obj_attrs.views import AbstractAttributeTypeViewSet, AbstractClassifierViewSet, GenericAttributeTypeViewSet, \
+    GenericClassifierViewSet
 from poms.obj_perms.filters import ObjectPermissionMemberFilter, ObjectPermissionGroupFilter, \
     ObjectPermissionPermissionFilter
 from poms.obj_perms.utils import get_permissions_prefetch_lookups
@@ -105,6 +106,10 @@ class AccountClassifierViewSet(AbstractClassifierViewSet):
     queryset = AccountClassifier.objects
     serializer_class = AccountClassifierNodeSerializer
     filter_class = AccountClassifierFilterSet
+
+
+class AccountClassifier2ViewSet(GenericClassifierViewSet):
+    target_model = Account
 
 
 class AccountFilterSet(FilterSet):

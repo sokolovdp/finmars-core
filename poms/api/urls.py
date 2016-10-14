@@ -40,17 +40,20 @@ router.register(r'accounts/account-type', accounts.AccountTypeViewSet)
 router.register(r'accounts/account-attribute-type', accounts.AccountAttributeTypeViewSet)
 router.register(r'accounts/account-attribute-type2', accounts.AccountAttributeType2ViewSet, 'accountattributetype2')
 router.register(r'accounts/account-classifier', accounts.AccountClassifierViewSet)
+router.register(r'accounts/account-classifier2', accounts.AccountClassifier2ViewSet, 'accountclassifier2')
 router.register(r'accounts/account', accounts.AccountViewSet)
 
 router.register(r'counterparties/counterparty-attribute-type', counterparties.CounterpartyAttributeTypeViewSet)
 router.register(r'counterparties/counterparty-attribute-type2', counterparties.CounterpartyAttributeType2ViewSet, 'counterpartyattributetype2')
 router.register(r'counterparties/counterparty-classifier', counterparties.CounterpartyClassifierViewSet)
+router.register(r'counterparties/counterparty-classifier2', counterparties.CounterpartyClassifier2ViewSet, 'counterpartyclassifier2')
 router.register(r'counterparties/counterparty-group', counterparties.CounterpartyGroupViewSet)
 router.register(r'counterparties/counterparty', counterparties.CounterpartyViewSet)
 
 router.register(r'counterparties/responsible-attribute-type', counterparties.ResponsibleAttributeTypeViewSet)
 router.register(r'counterparties/responsible-attribute-type2', counterparties.ResponsibleAttributeType2ViewSet, 'responsibleattributetype2')
 router.register(r'counterparties/responsible-classifier', counterparties.ResponsibleClassifierViewSet)
+router.register(r'counterparties/responsible-classifier2', counterparties.ResponsibleClassifier2ViewSet, 'responsibleclassifier2')
 router.register(r'counterparties/responsible-group', counterparties.ResponsibleGroupViewSet)
 router.register(r'counterparties/responsible', counterparties.ResponsibleViewSet)
 
@@ -71,12 +74,14 @@ router.register(r'instruments/instrument-type', instruments.InstrumentTypeViewSe
 router.register(r'instruments/instrument-attribute-type', instruments.InstrumentAttributeTypeViewSet)
 router.register(r'instruments/instrument-attribute-type2', instruments.InstrumentAttributeType2ViewSet, 'instrumentattributetype2')
 router.register(r'instruments/instrument-classifier', instruments.InstrumentClassifierViewSet)
+router.register(r'instruments/instrument-classifier2', instruments.InstrumentClassifier2ViewSet, 'instrumentclassifier2')
 router.register(r'instruments/instrument', instruments.InstrumentViewSet)
 router.register(r'instruments/price-history', instruments.PriceHistoryViewSet)
 
 router.register(r'portfolios/portfolio-attribute-type', portfolios.PortfolioAttributeTypeViewSet)
 router.register(r'portfolios/portfolio-attribute-type2', portfolios.PortfolioAttributeType2ViewSet, 'portfolioattributetype2')
 router.register(r'portfolios/portfolio-classifier', portfolios.PortfolioClassifierViewSet)
+router.register(r'portfolios/portfolio-classifier2', portfolios.PortfolioClassifier2ViewSet, 'portfolioclassifier2')
 router.register(r'portfolios/portfolio', portfolios.PortfolioViewSet)
 
 router.register(r'strategies/1/group', strategies.Strategy1GroupViewSet)
@@ -102,6 +107,7 @@ router.register(r'transactions/transaction-type', transactions.TransactionTypeVi
 router.register(r'transactions/transaction-attribute-type', transactions.TransactionAttributeTypeViewSet)
 router.register(r'transactions/transaction-attribute-type2', transactions.TransactionAttributeType2ViewSet, 'transactionattributetype2')
 router.register(r'transactions/transaction-classifier', transactions.TransactionClassifierViewSet)
+router.register(r'transactions/transaction-classifier2', transactions.TransactionClassifier2ViewSet, 'transactionclassifier2')
 router.register(r'transactions/transaction', transactions.TransactionViewSet)
 router.register(r'transactions/complex-transaction', transactions.ComplexTransactionViewSet)
 

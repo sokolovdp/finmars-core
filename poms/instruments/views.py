@@ -26,7 +26,8 @@ from poms.instruments.serializers import InstrumentSerializer, PriceHistorySeria
 from poms.instruments.tasks import calculate_prices_accrued_price
 from poms.integrations.models import PriceDownloadScheme
 from poms.obj_attrs.filters import AttributeTypeValueTypeFilter
-from poms.obj_attrs.views import AbstractAttributeTypeViewSet, AbstractClassifierViewSet, GenericAttributeTypeViewSet
+from poms.obj_attrs.views import AbstractAttributeTypeViewSet, AbstractClassifierViewSet, GenericAttributeTypeViewSet, \
+    GenericClassifierViewSet
 from poms.obj_perms.filters import ObjectPermissionMemberFilter, ObjectPermissionGroupFilter, \
     ObjectPermissionPermissionFilter
 from poms.obj_perms.utils import get_permissions_prefetch_lookups
@@ -187,6 +188,10 @@ class InstrumentClassifierViewSet(AbstractClassifierViewSet):
     queryset = InstrumentClassifier.objects
     serializer_class = InstrumentClassifierNodeSerializer
     filter_class = InstrumentClassifierFilterSet
+
+
+class InstrumentClassifier2ViewSet(GenericClassifierViewSet):
+    target_model = Instrument
 
 
 class InstrumentFilterSet(FilterSet):

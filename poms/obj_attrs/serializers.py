@@ -354,11 +354,12 @@ class GenericClassifierSerializer(serializers.ModelSerializer):
 
 class GenericClassifierNodeSerializer(serializers.ModelSerializer):
     id = serializers.IntegerField(read_only=False, required=False, allow_null=True)
+    attribute_type = serializers.PrimaryKeyRelatedField(read_only=True)
     parent = serializers.PrimaryKeyRelatedField(read_only=True)
 
     class Meta:
         model = GenericClassifier
-        fields = ['id', 'name', 'level', 'parent', ]
+        fields = ['id', 'attribute_type', 'level', 'parent', 'name', ]
 
 
 class GenericAttributeTypeOptionIsHiddenField(serializers.BooleanField):

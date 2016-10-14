@@ -8,7 +8,8 @@ from poms.accounts.models import Account, AccountType
 from poms.common.filters import CharFilter, ModelExtWithPermissionMultipleChoiceFilter, NoOpFilter
 from poms.counterparties.models import Responsible, Counterparty, CounterpartyGroup, ResponsibleGroup
 from poms.obj_attrs.filters import AttributeTypeValueTypeFilter
-from poms.obj_attrs.views import AbstractAttributeTypeViewSet, AbstractClassifierViewSet, GenericAttributeTypeViewSet
+from poms.obj_attrs.views import AbstractAttributeTypeViewSet, AbstractClassifierViewSet, GenericAttributeTypeViewSet, \
+    GenericClassifierViewSet
 from poms.obj_perms.filters import ObjectPermissionMemberFilter, ObjectPermissionGroupFilter, \
     ObjectPermissionPermissionFilter
 from poms.obj_perms.utils import get_permissions_prefetch_lookups
@@ -70,6 +71,10 @@ class PortfolioClassifierViewSet(AbstractClassifierViewSet):
     queryset = PortfolioClassifier.objects
     serializer_class = PortfolioClassifierNodeSerializer
     filter_class = PortfolioClassifierFilterSet
+
+
+class PortfolioClassifier2ViewSet(GenericClassifierViewSet):
+    target_model = Portfolio
 
 
 class PortfolioFilterSet(FilterSet):

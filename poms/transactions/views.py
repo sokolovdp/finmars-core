@@ -16,7 +16,8 @@ from poms.counterparties.models import Responsible, Counterparty, ResponsibleGro
 from poms.currencies.models import Currency
 from poms.instruments.models import Instrument, InstrumentType
 from poms.obj_attrs.filters import AttributeTypeValueTypeFilter
-from poms.obj_attrs.views import AbstractAttributeTypeViewSet, AbstractClassifierViewSet, GenericAttributeTypeViewSet
+from poms.obj_attrs.views import AbstractAttributeTypeViewSet, AbstractClassifierViewSet, GenericAttributeTypeViewSet, \
+    GenericClassifierViewSet
 from poms.obj_perms.filters import ObjectPermissionMemberFilter, ObjectPermissionGroupFilter, \
     ObjectPermissionPermissionFilter
 from poms.obj_perms.utils import get_permissions_prefetch_lookups
@@ -372,6 +373,10 @@ class TransactionClassifierViewSet(AbstractClassifierViewSet):
     queryset = TransactionClassifier.objects
     serializer_class = TransactionClassifierNodeSerializer
     filter_class = TransactionClassifierFilterSet
+
+
+class TransactionClassifier2ViewSet(GenericClassifierViewSet):
+    target_model = Transaction
 
 
 class TransactionFilterSet(FilterSet):
