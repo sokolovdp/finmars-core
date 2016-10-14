@@ -2,10 +2,14 @@ from __future__ import unicode_literals
 
 from django.contrib import admin
 
-from poms.obj_perms.admin import UserObjectPermissionInline, GroupObjectPermissionInline
+from poms.obj_perms.admin import GenericObjectPermissionInline
 from poms.tags.filters import get_tag_content_types
 from poms.tags.models import Tag
 
+
+# class TagLinkInline(admin.TabularInline):
+#     model = TagLink
+#     extra = 0
 
 class TagAdmin(admin.ModelAdmin):
     model = Tag
@@ -27,8 +31,9 @@ class TagAdmin(admin.ModelAdmin):
         'thread_groups', 'threads'
     ]
     inlines = [
-        UserObjectPermissionInline,
-        GroupObjectPermissionInline,
+        GenericObjectPermissionInline,
+        # UserObjectPermissionInline,
+        # GroupObjectPermissionInline,
     ]
 
     def formfield_for_manytomany(self, db_field, request=None, **kwargs):

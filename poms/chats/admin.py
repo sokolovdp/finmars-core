@@ -3,8 +3,7 @@ from __future__ import unicode_literals
 from django.contrib import admin
 
 from poms.chats.models import Thread, Message, DirectMessage, ThreadGroup
-from poms.obj_perms.admin import UserObjectPermissionInline, \
-    GroupObjectPermissionInline
+from poms.obj_perms.admin import GenericObjectPermissionInline
 
 
 class ThreadGroupAdmin(admin.ModelAdmin):
@@ -16,8 +15,9 @@ class ThreadGroupAdmin(admin.ModelAdmin):
     list_filter = ['is_deleted', ]
     raw_id_fields = ['master_user', ]
     inlines = [
-        UserObjectPermissionInline,
-        GroupObjectPermissionInline
+        GenericObjectPermissionInline,
+        # UserObjectPermissionInline,
+        # GroupObjectPermissionInline
     ]
 
 
@@ -34,8 +34,9 @@ class ThreadAdmin(admin.ModelAdmin):
     date_hierarchy = 'created'
     raw_id_fields = ['master_user', 'thread_group', ]
     inlines = [
-        UserObjectPermissionInline,
-        GroupObjectPermissionInline
+        GenericObjectPermissionInline,
+        # UserObjectPermissionInline,
+        # GroupObjectPermissionInline
     ]
 
 

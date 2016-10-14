@@ -6,8 +6,7 @@ from poms.accounts.models import Account, AccountType, AccountAttributeType, Acc
 from poms.common.admin import ClassifierAdmin
 from poms.obj_attrs.admin import AbstractAttributeTypeAdmin, AbstractAttributeInline, \
     AbstractAttributeTypeClassifierInline, AbstractAttributeTypeOptionInline
-from poms.obj_perms.admin import UserObjectPermissionInline, \
-    GroupObjectPermissionInline
+from poms.obj_perms.admin import GenericObjectPermissionInline
 
 
 class AccountTypeAdmin(admin.ModelAdmin):
@@ -19,8 +18,9 @@ class AccountTypeAdmin(admin.ModelAdmin):
     search_fields = ['id', 'user_code', 'name']
     raw_id_fields = ['master_user']
     inlines = [
-        UserObjectPermissionInline,
-        GroupObjectPermissionInline,
+        GenericObjectPermissionInline,
+        # UserObjectPermissionInline,
+        # GroupObjectPermissionInline,
     ]
 
 
@@ -37,8 +37,9 @@ class AccountAdmin(admin.ModelAdmin):
     raw_id_fields = ['master_user', 'type']
     inlines = [
         AbstractAttributeInline,
-        UserObjectPermissionInline,
-        GroupObjectPermissionInline,
+        GenericObjectPermissionInline,
+        # UserObjectPermissionInline,
+        # GroupObjectPermissionInline,
     ]
 
 
@@ -49,8 +50,9 @@ class AccountAttributeTypeAdmin(AbstractAttributeTypeAdmin):
     inlines = [
         AbstractAttributeTypeClassifierInline,
         AbstractAttributeTypeOptionInline,
-        UserObjectPermissionInline,
-        GroupObjectPermissionInline,
+        GenericObjectPermissionInline,
+        # UserObjectPermissionInline,
+        # GroupObjectPermissionInline,
     ]
 
 

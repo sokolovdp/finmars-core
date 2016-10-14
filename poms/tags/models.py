@@ -68,6 +68,8 @@ class Tag(NamedModel):
     thread_groups = models.ManyToManyField('chats.ThreadGroup', related_name='tags', blank=True)
     threads = models.ManyToManyField('chats.Thread', related_name='tags', blank=True)
 
+    object_permissions = GenericRelation(GenericObjectPermission)
+
     class Meta(NamedModel.Meta):
         verbose_name = ugettext_lazy('tag')
         verbose_name_plural = ugettext_lazy('tags')
@@ -95,23 +97,13 @@ class TagGroupObjectPermission(AbstractGroupObjectPermission):
         verbose_name_plural = ugettext_lazy('tags - group permissions')
 
 
-# class GenericTag(models.Model):
-#     master_user = models.ForeignKey('users.MasterUser', related_name='tags', verbose_name=ugettext_lazy('master user'))
-#     content_types = models.ManyToManyField(ContentType, related_name='tags', blank=True,
-#                                            verbose_name=ugettext_lazy('content types'))
-#
-#     object_permissions = GenericRelation(GenericObjectPermission)
-#
-#     class Meta:
-#         abstract = True
-#
-#
-# class GenericTagLink(models.Model):
-#     tag = models.ForeignKey(Tag, related_name='tag_objects')
+# class TagLink(models.Model):
+#     tag = models.ForeignKey(Tag, related_name='links')
 #
 #     content_type = models.ForeignKey(ContentType, null=True, blank=True)
 #     object_id = models.BigIntegerField()
 #     content_object = GenericForeignKey('content_type', 'object_id')
 #
 #     class Meta:
-#         abstract = True
+#         verbose_name = ugettext_lazy('tag link')
+#         verbose_name_plural = ugettext_lazy('tag links')

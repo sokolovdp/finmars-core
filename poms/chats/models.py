@@ -3,6 +3,7 @@ from __future__ import unicode_literals
 from babel import Locale
 from babel.dates import format_timedelta
 from django.conf import settings
+from django.contrib.contenttypes.fields import GenericRelation
 from django.db import models
 from django.utils import timezone
 from django.utils.encoding import python_2_unicode_compatible
@@ -10,7 +11,7 @@ from django.utils.text import Truncator
 from django.utils.translation import get_language, ugettext_lazy
 
 from poms.common.models import TimeStampedModel, NamedModel, FakeDeletableModel
-from poms.obj_perms.models import AbstractGroupObjectPermission, AbstractUserObjectPermission
+from poms.obj_perms.models import AbstractGroupObjectPermission, AbstractUserObjectPermission, GenericObjectPermission
 from poms.users.models import MasterUser, Member
 
 
@@ -18,6 +19,8 @@ from poms.users.models import MasterUser, Member
 class ThreadGroup(FakeDeletableModel, models.Model):
     master_user = models.ForeignKey(MasterUser, related_name='chat_thread_groups')
     name = models.CharField(max_length=255, verbose_name=ugettext_lazy('name'))
+
+    object_permissions = GenericRelation(GenericObjectPermission)
 
     class Meta(FakeDeletableModel.Meta):
         verbose_name = ugettext_lazy('thread group')
@@ -57,6 +60,8 @@ class Thread(TimeStampedModel, FakeDeletableModel):
     subject = models.CharField(max_length=255)
     is_closed = models.BooleanField(default=False, db_index=True)
     closed = models.DateTimeField(null=True, blank=True, db_index=True)
+
+    object_permissions = GenericRelation(GenericObjectPermission)
 
     class Meta(TimeStampedModel.Meta, FakeDeletableModel.Meta):
         verbose_name = ugettext_lazy('thread')

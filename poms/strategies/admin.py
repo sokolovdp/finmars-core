@@ -2,7 +2,7 @@ from __future__ import unicode_literals
 
 from django.contrib import admin
 
-from poms.obj_perms.admin import UserObjectPermissionInline, GroupObjectPermissionInline
+from poms.obj_perms.admin import GenericObjectPermissionInline
 from poms.strategies.models import Strategy1Group, Strategy2Subgroup, Strategy3, Strategy1Subgroup, Strategy1, \
     Strategy2Group, Strategy2, Strategy3Group, Strategy3Subgroup
 
@@ -16,8 +16,9 @@ class Strategy1GroupAdmin(admin.ModelAdmin):
     list_filter = ['is_deleted', ]
     raw_id_fields = ['master_user']
     inlines = [
-        UserObjectPermissionInline,
-        GroupObjectPermissionInline,
+        GenericObjectPermissionInline,
+        # UserObjectPermissionInline,
+        # GroupObjectPermissionInline,
     ]
 
 
@@ -33,8 +34,9 @@ class Strategy1SubgroupAdmin(admin.ModelAdmin):
     list_filter = ['is_deleted', ]
     raw_id_fields = ['group']
     inlines = [
-        UserObjectPermissionInline,
-        GroupObjectPermissionInline,
+        GenericObjectPermissionInline,
+        # UserObjectPermissionInline,
+        # GroupObjectPermissionInline,
     ]
 
 
@@ -50,8 +52,9 @@ class Strategy1Admin(admin.ModelAdmin):
     list_filter = ['is_deleted', ]
     raw_id_fields = ['subgroup']
     inlines = [
-        UserObjectPermissionInline,
-        GroupObjectPermissionInline,
+        GenericObjectPermissionInline,
+        # UserObjectPermissionInline,
+        # GroupObjectPermissionInline,
     ]
 
     def group(self, obj):

@@ -3,6 +3,7 @@ from __future__ import unicode_literals
 import json
 from datetime import date
 
+from django.contrib.contenttypes.fields import GenericRelation
 from django.contrib.contenttypes.models import ContentType
 from django.core.serializers.json import DjangoJSONEncoder
 from django.db import models
@@ -19,7 +20,7 @@ from poms.currencies.models import Currency
 from poms.instruments.models import Instrument
 from poms.obj_attrs.models import AbstractAttributeType, AbstractAttribute, AbstractAttributeTypeOption, \
     AbstractClassifier
-from poms.obj_perms.models import AbstractGroupObjectPermission, AbstractUserObjectPermission
+from poms.obj_perms.models import AbstractGroupObjectPermission, AbstractUserObjectPermission, GenericObjectPermission
 from poms.portfolios.models import Portfolio
 from poms.strategies.models import Strategy1, Strategy2, Strategy3
 from poms.users.models import MasterUser, Member, FakeSequence
@@ -239,6 +240,8 @@ class TransactionTypeGroup(NamedModel, FakeDeletableModel):
         verbose_name=ugettext_lazy('master user')
     )
 
+    object_permissions = GenericRelation(GenericObjectPermission)
+
     class Meta(NamedModel.Meta, FakeDeletableModel.Meta):
         verbose_name = ugettext_lazy('transaction type group')
         verbose_name_plural = ugettext_lazy('transaction type groups')
@@ -283,6 +286,8 @@ class TransactionType(NamedModel, FakeDeletableModel):
     #     blank=True,
     #     verbose_name=ugettext_lazy('portfolios')
     # )
+
+    object_permissions = GenericRelation(GenericObjectPermission)
 
     class Meta(NamedModel.Meta, FakeDeletableModel.Meta):
         verbose_name = ugettext_lazy('transaction type')
@@ -788,6 +793,8 @@ class Transaction(models.Model):
 
 
 class TransactionAttributeType(AbstractAttributeType):
+    object_permissions = GenericRelation(GenericObjectPermission)
+
     class Meta(AbstractAttributeType.Meta):
         verbose_name = ugettext_lazy('transaction attribute type')
         verbose_name_plural = ugettext_lazy('transaction attribute types')

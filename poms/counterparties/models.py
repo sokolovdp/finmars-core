@@ -1,5 +1,6 @@
 from __future__ import unicode_literals
 
+from django.contrib.contenttypes.fields import GenericRelation
 from django.db import models
 from django.utils.encoding import python_2_unicode_compatible
 from django.utils.translation import ugettext_lazy
@@ -9,7 +10,7 @@ from mptt.models import MPTTModel
 from poms.common.models import NamedModel, FakeDeletableModel
 from poms.obj_attrs.models import AbstractAttributeType, AbstractAttribute, AbstractAttributeTypeOption, \
     AbstractClassifier
-from poms.obj_perms.models import AbstractGroupObjectPermission, AbstractUserObjectPermission
+from poms.obj_perms.models import AbstractGroupObjectPermission, AbstractUserObjectPermission, GenericObjectPermission
 from poms.users.models import MasterUser, Member
 
 
@@ -17,6 +18,8 @@ from poms.users.models import MasterUser, Member
 class CounterpartyGroup(NamedModel, FakeDeletableModel):
     master_user = models.ForeignKey(MasterUser, related_name='counterparty_groups',
                                     verbose_name=ugettext_lazy('master user'))
+
+    object_permissions = GenericRelation(GenericObjectPermission)
 
     class Meta(NamedModel.Meta, FakeDeletableModel.Meta):
         verbose_name = ugettext_lazy('counterparty group')
@@ -56,6 +59,8 @@ class Counterparty(NamedModel, FakeDeletableModel):
     group = models.ForeignKey(CounterpartyGroup, related_name='counterparties', null=True, blank=True)
     is_valid_for_all_portfolios = models.BooleanField(default=True)
 
+    object_permissions = GenericRelation(GenericObjectPermission)
+
     class Meta(NamedModel.Meta, FakeDeletableModel.Meta):
         verbose_name = ugettext_lazy('counterparty')
         verbose_name_plural = ugettext_lazy('counterparties')
@@ -89,6 +94,8 @@ class CounterpartyGroupObjectPermission(AbstractGroupObjectPermission):
 
 
 class CounterpartyAttributeType(AbstractAttributeType):
+    object_permissions = GenericRelation(GenericObjectPermission)
+
     class Meta(AbstractAttributeType.Meta):
         verbose_name = ugettext_lazy('counterparty attribute type')
         verbose_name_plural = ugettext_lazy('counterparty attribute types')
@@ -159,6 +166,8 @@ class ResponsibleGroup(NamedModel, FakeDeletableModel):
     master_user = models.ForeignKey(MasterUser, related_name='responsible_groups',
                                     verbose_name=ugettext_lazy('master user'))
 
+    object_permissions = GenericRelation(GenericObjectPermission)
+
     class Meta(NamedModel.Meta, FakeDeletableModel.Meta):
         verbose_name = ugettext_lazy('responsible group')
         verbose_name_plural = ugettext_lazy('responsible groups')
@@ -196,6 +205,8 @@ class Responsible(NamedModel, FakeDeletableModel):
     group = models.ForeignKey(ResponsibleGroup, related_name='responsibles', null=True, blank=True)
     is_valid_for_all_portfolios = models.BooleanField(default=True)
 
+    object_permissions = GenericRelation(GenericObjectPermission)
+
     class Meta(NamedModel.Meta, FakeDeletableModel.Meta):
         verbose_name = ugettext_lazy('responsible')
         verbose_name_plural = ugettext_lazy('responsibles')
@@ -229,6 +240,8 @@ class ResponsibleGroupObjectPermission(AbstractGroupObjectPermission):
 
 
 class ResponsibleAttributeType(AbstractAttributeType):
+    object_permissions = GenericRelation(GenericObjectPermission)
+
     class Meta(AbstractAttributeType.Meta):
         verbose_name = ugettext_lazy('responsible attribute type')
         verbose_name_plural = ugettext_lazy('responsible attribute types')

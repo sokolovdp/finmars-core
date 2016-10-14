@@ -7,7 +7,7 @@ from rest_framework.relations import MANY_RELATION_KWARGS
 
 from poms.common.fields import PrimaryKeyRelatedFilteredField
 from poms.obj_perms.utils import get_granted_permissions, obj_perms_filter_object_list_for_view, \
-    obj_perms_filter_objects_for_view, obj_perms_prefetch, has_view_perms, get_granted_permissions2
+    obj_perms_filter_objects_for_view, obj_perms_prefetch, has_view_perms
 from poms.users.utils import get_member_from_context
 
 
@@ -36,16 +36,16 @@ class GrantedPermissionField(serializers.ReadOnlyField):
         return []
 
 
-class GrantedPermission2Field(serializers.ReadOnlyField):
-    def get_attribute(self, instance):
-        return instance
-
-    def to_representation(self, value):
-        member = get_member_from_context(self.context)
-        if member:
-            perms = get_granted_permissions2(member, value)
-            return list(perms) if perms else []
-        return []
+# class GrantedPermission2Field(serializers.ReadOnlyField):
+#     def get_attribute(self, instance):
+#         return instance
+#
+#     def to_representation(self, value):
+#         member = get_member_from_context(self.context)
+#         if member:
+#             perms = get_granted_permissions2(member, value)
+#             return list(perms) if perms else []
+#         return []
 
 
 class ManyRelatedWithObjectPermissionField(serializers.ManyRelatedField):

@@ -1,5 +1,6 @@
 from __future__ import unicode_literals
 
+from django.contrib.contenttypes.fields import GenericRelation
 from django.db import models
 from django.utils.encoding import python_2_unicode_compatible
 from django.utils.translation import ugettext_lazy
@@ -9,7 +10,7 @@ from mptt.models import MPTTModel
 from poms.common.models import NamedModel, FakeDeletableModel
 from poms.obj_attrs.models import AbstractAttributeType, AbstractAttribute, AbstractAttributeTypeOption, \
     AbstractClassifier
-from poms.obj_perms.models import AbstractGroupObjectPermission, AbstractUserObjectPermission
+from poms.obj_perms.models import AbstractGroupObjectPermission, AbstractUserObjectPermission, GenericObjectPermission
 from poms.users.models import MasterUser, Member
 
 
@@ -20,6 +21,8 @@ class Portfolio(NamedModel, FakeDeletableModel):
     responsibles = models.ManyToManyField('counterparties.Responsible', related_name='portfolios', blank=True)
     counterparties = models.ManyToManyField('counterparties.Counterparty', related_name='portfolios', blank=True)
     transaction_types = models.ManyToManyField('transactions.TransactionType', related_name='portfolios', blank=True)
+
+    object_permissions = GenericRelation(GenericObjectPermission)
 
     class Meta(NamedModel.Meta, FakeDeletableModel.Meta):
         verbose_name = ugettext_lazy('portfolio')
@@ -51,6 +54,8 @@ class PortfolioGroupObjectPermission(AbstractGroupObjectPermission):
 
 
 class PortfolioAttributeType(AbstractAttributeType):
+    object_permissions = GenericRelation(GenericObjectPermission)
+
     class Meta(AbstractAttributeType.Meta):
         verbose_name = ugettext_lazy('portfolio attribute type')
         verbose_name_plural = ugettext_lazy('portfolio attribute types')

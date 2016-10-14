@@ -3,6 +3,7 @@ from __future__ import unicode_literals
 from datetime import date
 
 from dateutil import relativedelta, rrule
+from django.contrib.contenttypes.fields import GenericRelation
 from django.core import serializers
 from django.core.exceptions import ObjectDoesNotExist
 from django.db import models
@@ -15,7 +16,7 @@ from poms.common.models import NamedModel, AbstractClassModel, FakeDeletableMode
 from poms.common.utils import date_now, isclose
 from poms.obj_attrs.models import AbstractAttributeType, AbstractAttribute, AbstractAttributeTypeOption, \
     AbstractClassifier
-from poms.obj_perms.models import AbstractGroupObjectPermission, AbstractUserObjectPermission
+from poms.obj_perms.models import AbstractGroupObjectPermission, AbstractUserObjectPermission, GenericObjectPermission
 from poms.users.models import MasterUser, Member
 
 
@@ -326,6 +327,8 @@ class InstrumentType(NamedModel, FakeDeletableModel):
     factor_down = models.ForeignKey('transactions.TransactionType', null=True, blank=True, on_delete=models.PROTECT,
                                     related_name='+', verbose_name=ugettext_lazy('factor down'))
 
+    object_permissions = GenericRelation(GenericObjectPermission)
+
     class Meta(NamedModel.Meta, FakeDeletableModel.Meta):
         verbose_name = ugettext_lazy('instrument type')
         verbose_name_plural = ugettext_lazy('instrument types')
@@ -394,6 +397,8 @@ class Instrument(NamedModel, FakeDeletableModel):
     price_download_scheme = models.ForeignKey('integrations.PriceDownloadScheme', on_delete=models.PROTECT, null=True,
                                               blank=True, verbose_name=ugettext_lazy('price download scheme'))
     maturity_date = models.DateField(default=date.max, verbose_name=ugettext_lazy('maturity date'))
+
+    object_permissions = GenericRelation(GenericObjectPermission)
 
     class Meta(NamedModel.Meta, FakeDeletableModel.Meta):
         verbose_name = ugettext_lazy('instrument')
@@ -674,6 +679,7 @@ class InstrumentAttributeType(AbstractAttributeType):
     #     blank=True,
     #     verbose_name=ugettext_lazy('classifier')
     # )
+    object_permissions = GenericRelation(GenericObjectPermission)
 
     class Meta(AbstractAttributeType.Meta):
         verbose_name = ugettext_lazy('instrument attribute type')

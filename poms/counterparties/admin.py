@@ -7,8 +7,7 @@ from poms.counterparties.models import Counterparty, Responsible, CounterpartyAt
     CounterpartyGroup, ResponsibleGroup, CounterpartyClassifier, ResponsibleClassifier
 from poms.obj_attrs.admin import AbstractAttributeTypeAdmin, AbstractAttributeInline, \
     AbstractAttributeTypeClassifierInline, AbstractAttributeTypeOptionInline
-from poms.obj_perms.admin import UserObjectPermissionInline, \
-    GroupObjectPermissionInline
+from poms.obj_perms.admin import GenericObjectPermissionInline
 
 
 class CounterpartyGroupAdmin(admin.ModelAdmin):
@@ -19,8 +18,9 @@ class CounterpartyGroupAdmin(admin.ModelAdmin):
     list_filter = ['is_deleted', ]
     raw_id_fields = ['master_user']
     inlines = [
-        UserObjectPermissionInline,
-        GroupObjectPermissionInline,
+        GenericObjectPermissionInline,
+        # UserObjectPermissionInline,
+        # GroupObjectPermissionInline,
     ]
 
 
@@ -37,8 +37,9 @@ class CounterpartyAdmin(admin.ModelAdmin):
     raw_id_fields = ['master_user', 'group']
     inlines = [
         AbstractAttributeInline,
-        UserObjectPermissionInline,
-        GroupObjectPermissionInline,
+        GenericObjectPermissionInline,
+        # UserObjectPermissionInline,
+        # GroupObjectPermissionInline,
     ]
 
 
@@ -50,8 +51,9 @@ class CounterpartyAttributeTypeAdmin(AbstractAttributeTypeAdmin):
         # CounterpartyAttributeTypeClassifierInline
         AbstractAttributeTypeClassifierInline,
         AbstractAttributeTypeOptionInline,
-        UserObjectPermissionInline,
-        GroupObjectPermissionInline,
+        GenericObjectPermissionInline,
+        # UserObjectPermissionInline,
+        # GroupObjectPermissionInline,
     ]
 
 
@@ -71,8 +73,9 @@ class ResponsibleGroupAdmin(admin.ModelAdmin):
     list_filter = ['is_deleted', ]
     raw_id_fields = ['master_user']
     inlines = [
-        UserObjectPermissionInline,
-        GroupObjectPermissionInline,
+        GenericObjectPermissionInline,
+        # UserObjectPermissionInline,
+        # GroupObjectPermissionInline,
     ]
 
 
@@ -89,8 +92,9 @@ class ResponsibleAdmin(admin.ModelAdmin):
     raw_id_fields = ['master_user', 'group']
     inlines = [
         AbstractAttributeInline,
-        UserObjectPermissionInline,
-        GroupObjectPermissionInline,
+        GenericObjectPermissionInline,
+        # UserObjectPermissionInline,
+        # GroupObjectPermissionInline,
     ]
 
 
@@ -102,8 +106,9 @@ class ResponsibleAttributeTypeAdmin(AbstractAttributeTypeAdmin):
         # CounterpartyAttributeTypeClassifierInline
         AbstractAttributeTypeClassifierInline,
         AbstractAttributeTypeOptionInline,
-        UserObjectPermissionInline,
-        GroupObjectPermissionInline,
+        GenericObjectPermissionInline,
+        # UserObjectPermissionInline,
+        # GroupObjectPermissionInline,
     ]
 
 

@@ -1,4 +1,5 @@
 from django.contrib import admin
+from django.contrib.contenttypes.admin import GenericTabularInline
 from django.contrib.contenttypes.models import ContentType
 
 from poms.obj_perms.models import AbstractGroupObjectPermission, AbstractUserObjectPermission, GenericObjectPermission
@@ -69,6 +70,21 @@ class GroupObjectPermissionInline(AbstractObjectPermissionInline):
         super(GroupObjectPermissionInline, self).__init__(parent_model, *args, **kwargs)
 
 
+class GenericObjectPermissionInline(GenericTabularInline):
+    fields = ['member', 'group', 'permission']
+    raw_id_fields = ['member', 'group']
+    model = GenericObjectPermission
+    extra = 0
+
+    def formfield_for_foreignkey(self, db_field, request=None, **kwargs):
+        if db_field.name == 'permission':
+            qs = kwargs.get('queryset', db_field.remote_field.model.objects)
+            kwargs['queryset'] = qs.select_related('content_type').filter(
+                content_type=ContentType.objects.get_for_model(self.parent_model)
+            )
+        return super(GenericObjectPermissionInline, self).formfield_for_foreignkey(db_field, request=request, **kwargs)
+
+
 class GenericObjectPermissionAdmin(admin.ModelAdmin):
     model = GenericObjectPermission
     list_display = ['id', 'master_user', 'group', 'member', 'content_type', 'object_id', 'content_object', 'permission']
@@ -88,6 +104,11 @@ class GenericObjectPermissionAdmin(admin.ModelAdmin):
         if db_field.name == 'permission':
             qs = kwargs.get('queryset', db_field.remote_field.model.objects)
             kwargs['queryset'] = qs.select_related('content_type')
+
+        if db_field.name == 'content_type':
+            qs = kwargs.get('queryset', db_field.remote_field.model.objects)
+            # kwargs['queryset'] = qs.order_by('app_label', 'model')
+            kwargs['queryset'] = qs.order_by('model')
         return super(GenericObjectPermissionAdmin, self).formfield_for_foreignkey(db_field, request=request, **kwargs)
 
     def master_user(self, obj):
@@ -98,7 +119,7 @@ class GenericObjectPermissionAdmin(admin.ModelAdmin):
         else:
             return None
 
-    # master_user.admin_order_field = 'attribute_type__master_user'
+            # master_user.admin_order_field = 'attribute_type__master_user'
 
 
 admin.site.register(GenericObjectPermission, GenericObjectPermissionAdmin)

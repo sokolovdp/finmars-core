@@ -11,8 +11,7 @@ from poms.instruments.models import Instrument, PaymentSizeDetail, DailyPricingM
 from poms.integrations.models import PriceDownloadScheme
 from poms.obj_attrs.admin import AbstractAttributeTypeAdmin, AbstractAttributeInline, \
     AbstractAttributeTypeOptionInline, AbstractAttributeTypeClassifierInline
-from poms.obj_perms.admin import UserObjectPermissionInline, \
-    GroupObjectPermissionInline
+from poms.obj_perms.admin import GenericObjectPermissionInline
 from poms.portfolios.models import Portfolio
 from poms.strategies.models import Strategy3, Strategy2, Strategy1
 from poms.transactions.models import TransactionClass, Transaction, TransactionType, TransactionTypeInput, \
@@ -35,8 +34,9 @@ class TransactionTypeGroupAdmin(admin.ModelAdmin):
     list_filter = ['is_deleted', ]
     raw_id_fields = ['master_user']
     inlines = [
-        UserObjectPermissionInline,
-        GroupObjectPermissionInline,
+        GenericObjectPermissionInline,
+        # UserObjectPermissionInline,
+        # GroupObjectPermissionInline,
     ]
 
 
@@ -257,8 +257,9 @@ class TransactionTypeAdmin(admin.ModelAdmin):
         TransactionTypeActionInstrumentInline,
         TransactionTypeActionTransactionInline,
         EventToHandleInline,
-        UserObjectPermissionInline,
-        GroupObjectPermissionInline,
+        GenericObjectPermissionInline,
+        # UserObjectPermissionInline,
+        # GroupObjectPermissionInline,
     ]
 
     def get_inline_instances(self, request, obj=None):
@@ -376,8 +377,9 @@ class TransactionAttributeTypeAdmin(AbstractAttributeTypeAdmin):
     inlines = [
         AbstractAttributeTypeClassifierInline,
         AbstractAttributeTypeOptionInline,
-        UserObjectPermissionInline,
-        GroupObjectPermissionInline,
+        GenericObjectPermissionInline,
+        # UserObjectPermissionInline,
+        # GroupObjectPermissionInline,
     ]
 
 
