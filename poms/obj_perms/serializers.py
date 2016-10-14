@@ -117,7 +117,7 @@ class ModelWithObjectPermissionSerializer(serializers.ModelSerializer):
                     ret.pop(k)
         if not has_manage_perm(member, instance):
             for k in list(ret.keys()):
-                if k in ['user_object_permissions', 'group_object_permissions']:
+                if k in ['object_permissions', 'user_object_permissions', 'group_object_permissions']:
                     ret.pop(k)
         return ret
 
