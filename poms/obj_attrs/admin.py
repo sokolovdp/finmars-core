@@ -4,6 +4,7 @@ from django.contrib.contenttypes.models import ContentType
 
 from poms.obj_attrs.models import AbstractAttributeTypeOption, AbstractAttribute, AbstractClassifier, \
     GenericAttributeType, GenericClassifier, GenericAttribute, GenericAttributeTypeOption
+from poms.obj_perms.admin import GenericObjectPermissionInline
 
 
 class AbstractAttributeTypeAdmin(admin.ModelAdmin):
@@ -74,7 +75,10 @@ class GenericAttributeTypeAdmin(admin.ModelAdmin):
     list_filter = ['value_type', 'content_type']
     search_fields = ['id', 'user_code']
     raw_id_fields = ['master_user']
-    inlines = [GenericAttributeTypeOptionInline]
+    inlines = [
+        GenericAttributeTypeOptionInline,
+        GenericObjectPermissionInline,
+    ]
     save_as = True
 
 
