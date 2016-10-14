@@ -86,17 +86,15 @@ class Tag2Field(serializers.RelatedField):
         return self.get_queryset().get(pk=data)
 
 
-class Tag2ViewSerializer(serializers.ModelSerializer):
+class Tag2ViewSerializer(ModelWithObjectPermissionSerializer):
     class Meta:
         model = Tag
         fields = [
-            'id',
-            # 'user_code', 'name', 'short_name', 'public_name', 'notes',
+            'id', 'user_code', 'name', 'short_name', 'public_name', 'notes',
         ]
 
-    def get_attribute(self, instance):
-        print(repr(instance))
-        return instance.tag
+    def to_representation(self, instance):
+        return super(Tag2ViewSerializer, self).to_representation(instance.tag)
 
 
 class ModelWithTagSerializer(serializers.ModelSerializer):
