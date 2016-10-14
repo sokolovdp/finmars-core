@@ -1,6 +1,7 @@
 from __future__ import unicode_literals
 
 from django.contrib.contenttypes.models import ContentType
+from django.db import models
 from rest_framework import serializers
 from rest_framework.fields import empty
 
@@ -86,8 +87,19 @@ class TagField(serializers.RelatedField):
         return self.get_queryset().get(pk=data)
 
 
+class TagViewListSerializer(serializers.ListSerializer):
+    def get_attribute(self, instance):
+        objects = super(TagViewListSerializer, self).get_attribute(instance)
+        objects = objects.all() if isinstance(objects, models.Manager) else objects
+        member = get_member_from_context(self.context)
+        return [
+            o for o in objects if has_view_perms(member, o.tag)
+            ]
+
+
 class TagViewSerializer(ModelWithObjectPermissionSerializer):
     class Meta(ModelWithObjectPermissionSerializer.Meta):
+        list_serializer_class = TagViewListSerializer
         model = Tag
         fields = [
             'id', 'user_code', 'name', 'short_name', 'public_name', 'notes',
@@ -101,8 +113,7 @@ class ModelWithTagSerializer(serializers.ModelSerializer):
     def __init__(self, *args, **kwargs):
         super(ModelWithTagSerializer, self).__init__(*args, **kwargs)
 
-        tags_qs = Tag.objects.all()
-        self.fields['tags'] = TagField(many=True, queryset=tags_qs)
+        self.fields['tags'] = TagField(many=True, queryset=Tag.objects.all())
         self.fields['tags_object'] = TagViewSerializer(source='tags', many=True, read_only=True)
 
     def create(self, validated_data):
