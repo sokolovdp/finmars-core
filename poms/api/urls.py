@@ -69,11 +69,13 @@ router.register(r'instruments/event-schedule-config', instruments.EventScheduleC
 
 router.register(r'instruments/instrument-type', instruments.InstrumentTypeViewSet)
 router.register(r'instruments/instrument-attribute-type', instruments.InstrumentAttributeTypeViewSet)
+router.register(r'instruments/instrument-attribute-type2', instruments.InstrumentAttributeType2ViewSet, 'instrumentattributetype2')
 router.register(r'instruments/instrument-classifier', instruments.InstrumentClassifierViewSet)
 router.register(r'instruments/instrument', instruments.InstrumentViewSet)
 router.register(r'instruments/price-history', instruments.PriceHistoryViewSet)
 
 router.register(r'portfolios/portfolio-attribute-type', portfolios.PortfolioAttributeTypeViewSet)
+router.register(r'portfolios/portfolio-attribute-type2', portfolios.PortfolioAttributeType2ViewSet, 'portfolioattributetype2')
 router.register(r'portfolios/portfolio-classifier', portfolios.PortfolioClassifierViewSet)
 router.register(r'portfolios/portfolio', portfolios.PortfolioViewSet)
 
@@ -98,6 +100,7 @@ router.register(r'transactions/transaction-class', transactions.TransactionClass
 router.register(r'transactions/transaction-type-group', transactions.TransactionTypeGroupViewSet)
 router.register(r'transactions/transaction-type', transactions.TransactionTypeViewSet)
 router.register(r'transactions/transaction-attribute-type', transactions.TransactionAttributeTypeViewSet)
+router.register(r'transactions/transaction-attribute-type2', transactions.TransactionAttributeType2ViewSet, 'transactionattributetype2')
 router.register(r'transactions/transaction-classifier', transactions.TransactionClassifierViewSet)
 router.register(r'transactions/transaction', transactions.TransactionViewSet)
 router.register(r'transactions/complex-transaction', transactions.ComplexTransactionViewSet)

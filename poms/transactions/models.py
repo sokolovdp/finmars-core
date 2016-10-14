@@ -19,7 +19,7 @@ from poms.counterparties.models import Responsible, Counterparty
 from poms.currencies.models import Currency
 from poms.instruments.models import Instrument
 from poms.obj_attrs.models import AbstractAttributeType, AbstractAttribute, AbstractAttributeTypeOption, \
-    AbstractClassifier
+    AbstractClassifier, GenericAttribute
 from poms.obj_perms.models import AbstractGroupObjectPermission, AbstractUserObjectPermission, GenericObjectPermission
 from poms.portfolios.models import Portfolio
 from poms.strategies.models import Strategy1, Strategy2, Strategy3
@@ -776,6 +776,8 @@ class Transaction(models.Model):
                                     help_text=ugettext_lazy("Trader or transaction executer"))
     counterparty = models.ForeignKey(Counterparty, on_delete=models.PROTECT, null=True, blank=True,
                                      verbose_name=ugettext_lazy("counterparty"))
+
+    attributes2 = GenericRelation(GenericAttribute)
 
     class Meta:
         verbose_name = ugettext_lazy('transaction')

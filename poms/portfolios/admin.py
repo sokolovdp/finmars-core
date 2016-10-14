@@ -4,7 +4,7 @@ from django.contrib import admin
 
 from poms.common.admin import ClassifierAdmin
 from poms.obj_attrs.admin import AbstractAttributeTypeAdmin, AbstractAttributeInline, \
-    AbstractAttributeTypeClassifierInline, AbstractAttributeTypeOptionInline
+    AbstractAttributeTypeClassifierInline, AbstractAttributeTypeOptionInline, GenericAttributeInline
 from poms.obj_perms.admin import GenericObjectPermissionInline
 from poms.portfolios.models import Portfolio, PortfolioAttributeType, PortfolioClassifier
 
@@ -18,6 +18,7 @@ class PortfolioAdmin(admin.ModelAdmin):
     raw_id_fields = ['master_user', 'accounts', 'responsibles', 'counterparties', 'transaction_types']
     inlines = [
         AbstractAttributeInline,
+        GenericAttributeInline,
         GenericObjectPermissionInline,
         # UserObjectPermissionInline,
         # GroupObjectPermissionInline,

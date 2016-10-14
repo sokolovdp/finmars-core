@@ -9,7 +9,7 @@ from mptt.models import MPTTModel
 
 from poms.common.models import NamedModel, FakeDeletableModel
 from poms.obj_attrs.models import AbstractAttributeType, AbstractAttribute, AbstractAttributeTypeOption, \
-    AbstractClassifier
+    AbstractClassifier, GenericAttribute
 from poms.obj_perms.models import AbstractGroupObjectPermission, AbstractUserObjectPermission, GenericObjectPermission
 from poms.tags.models import TagLink
 from poms.users.models import MasterUser, Member
@@ -23,6 +23,7 @@ class Portfolio(NamedModel, FakeDeletableModel):
     counterparties = models.ManyToManyField('counterparties.Counterparty', related_name='portfolios', blank=True)
     transaction_types = models.ManyToManyField('transactions.TransactionType', related_name='portfolios', blank=True)
 
+    attributes2 = GenericRelation(GenericAttribute)
     object_permissions = GenericRelation(GenericObjectPermission)
     tags = GenericRelation(TagLink)
 

@@ -380,7 +380,7 @@ class GenericAttributeTypeOptionIsHiddenField(serializers.BooleanField):
         return False
 
 
-class GenericAttributeTypeSerializer(serializers.ModelSerializer):
+class GenericAttributeTypeSerializer(ModelWithObjectPermissionSerializer, ModelWithUserCodeSerializer):
     master_user = MasterUserField()
     is_hidden = GenericAttributeTypeOptionIsHiddenField()
     classifiers = GenericClassifierSerializer(required=False, allow_null=True, many=True)

@@ -16,7 +16,7 @@ from poms.counterparties.models import Responsible, Counterparty, ResponsibleGro
 from poms.currencies.models import Currency
 from poms.instruments.models import Instrument, InstrumentType
 from poms.obj_attrs.filters import AttributeTypeValueTypeFilter
-from poms.obj_attrs.views import AbstractAttributeTypeViewSet, AbstractClassifierViewSet
+from poms.obj_attrs.views import AbstractAttributeTypeViewSet, AbstractClassifierViewSet, GenericAttributeTypeViewSet
 from poms.obj_perms.filters import ObjectPermissionMemberFilter, ObjectPermissionGroupFilter, \
     ObjectPermissionPermissionFilter
 from poms.obj_perms.utils import get_permissions_prefetch_lookups
@@ -26,7 +26,6 @@ from poms.strategies.models import Strategy1, Strategy2, Strategy3, Strategy1Sub
     Strategy2Subgroup, \
     Strategy2Group, Strategy3Subgroup, Strategy3Group
 from poms.tags.filters import TagFilter
-from poms.tags.models import Tag
 from poms.tags.utils import get_tag_prefetch
 from poms.transactions.filters import TransactionObjectPermissionFilter, ComplexTransactionPermissionFilter, \
     TransactionObjectPermissionMemberFilter, TransactionObjectPermissionGroupFilter, \
@@ -352,6 +351,10 @@ class TransactionAttributeTypeViewSet(AbstractAttributeTypeViewSet):
     serializer_class = TransactionAttributeTypeSerializer
     # bulk_objects_permissions_serializer_class = TransactionAttributeTypeBulkObjectPermissionSerializer
     filter_class = TransactionAttributeTypeFilterSet
+
+
+class TransactionAttributeType2ViewSet(GenericAttributeTypeViewSet):
+    target_model = Transaction
 
 
 class TransactionClassifierFilterSet(FilterSet):

@@ -8,7 +8,7 @@ from poms.accounts.models import Account, AccountType
 from poms.common.filters import CharFilter, ModelExtWithPermissionMultipleChoiceFilter, NoOpFilter
 from poms.counterparties.models import Responsible, Counterparty, CounterpartyGroup, ResponsibleGroup
 from poms.obj_attrs.filters import AttributeTypeValueTypeFilter
-from poms.obj_attrs.views import AbstractAttributeTypeViewSet, AbstractClassifierViewSet
+from poms.obj_attrs.views import AbstractAttributeTypeViewSet, AbstractClassifierViewSet, GenericAttributeTypeViewSet
 from poms.obj_perms.filters import ObjectPermissionMemberFilter, ObjectPermissionGroupFilter, \
     ObjectPermissionPermissionFilter
 from poms.obj_perms.utils import get_permissions_prefetch_lookups
@@ -17,7 +17,6 @@ from poms.portfolios.models import Portfolio, PortfolioAttributeType, PortfolioC
 from poms.portfolios.serializers import PortfolioSerializer, PortfolioAttributeTypeSerializer, \
     PortfolioClassifierNodeSerializer
 from poms.tags.filters import TagFilter
-from poms.tags.models import Tag
 from poms.tags.utils import get_tag_prefetch
 from poms.transactions.models import TransactionType, TransactionTypeGroup
 from poms.users.filters import OwnerByMasterUserFilter
@@ -50,6 +49,10 @@ class PortfolioAttributeTypeViewSet(AbstractAttributeTypeViewSet):
     )
     serializer_class = PortfolioAttributeTypeSerializer
     filter_class = PortfolioAttributeTypeFilterSet
+
+
+class PortfolioAttributeType2ViewSet(GenericAttributeTypeViewSet):
+    target_model = Portfolio
 
 
 class PortfolioClassifierFilterSet(FilterSet):

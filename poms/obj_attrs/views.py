@@ -1,10 +1,14 @@
 from django.contrib.contenttypes.models import ContentType
 from rest_framework.exceptions import MethodNotAllowed
+from rest_framework.filters import FilterSet
 
+from poms.common.filters import NoOpFilter, CharFilter
 from poms.common.views import AbstractModelViewSet
-from poms.obj_attrs.filters import OwnerByAttributeTypeFilter
+from poms.obj_attrs.filters import OwnerByAttributeTypeFilter, AttributeTypeValueTypeFilter
 from poms.obj_attrs.models import GenericAttributeType
 from poms.obj_attrs.serializers import GenericAttributeTypeSerializer
+from poms.obj_perms.filters import ObjectPermissionMemberFilter, ObjectPermissionGroupFilter, \
+    ObjectPermissionPermissionFilter
 from poms.obj_perms.views import AbstractWithObjectPermissionViewSet
 from poms.users.filters import OwnerByMasterUserFilter
 
@@ -42,6 +46,7 @@ class AbstractClassifierViewSet(AbstractModelViewSet):
     def create(self, request, *args, **kwargs):
         raise MethodNotAllowed(request.method)
 
+
 class GenericClassifierViewSet(AbstractModelViewSet):
     filter_backends = AbstractModelViewSet.filter_backends + [
         OwnerByAttributeTypeFilter,
@@ -53,6 +58,22 @@ class GenericClassifierViewSet(AbstractModelViewSet):
         'attribute_type__public_name',
         'name', 'level',
     ]
+
+
+class GenericAttributeTypeFilterSet(FilterSet):
+    id = NoOpFilter()
+    user_code = CharFilter()
+    name = CharFilter()
+    short_name = CharFilter()
+    public_name = CharFilter()
+    value_type = AttributeTypeValueTypeFilter()
+    member = ObjectPermissionMemberFilter(object_permission_model=GenericAttributeType)
+    member_group = ObjectPermissionGroupFilter(object_permission_model=GenericAttributeType)
+    permission = ObjectPermissionPermissionFilter(object_permission_model=GenericAttributeType)
+
+    class Meta:
+        model = GenericAttributeType
+        fields = []
 
 
 class GenericAttributeTypeViewSet(AbstractWithObjectPermissionViewSet):
@@ -68,10 +89,12 @@ class GenericAttributeTypeViewSet(AbstractWithObjectPermissionViewSet):
     ordering_fields = [
         'user_code', 'name', 'short_name', 'public_name', 'order',
     ]
+    filter_class = GenericAttributeTypeFilterSet
     target_model = None
 
     def get_queryset(self):
-        return super(GenericAttributeTypeViewSet, self).get_queryset().filter(content_type=self.target_model_content_type)
+        return super(GenericAttributeTypeViewSet, self).get_queryset().filter(
+            content_type=self.target_model_content_type)
 
     def get_serializer(self, *args, **kwargs):
         kwargs['show_classifiers'] = (self.action != 'list') or self.request.query_params.get('show_classifiers', None)

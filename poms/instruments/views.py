@@ -23,16 +23,15 @@ from poms.instruments.serializers import InstrumentSerializer, PriceHistorySeria
     PaymentSizeDetailSerializer, PeriodicitySerializer, CostMethodSerializer, InstrumentTypeSerializer, \
     InstrumentAttributeTypeSerializer, PricingPolicySerializer, InstrumentClassifierNodeSerializer, \
     EventScheduleConfigSerializer, InstrumentCalculatePricesAccruedPriceSerializer
-from poms.instruments.tasks import calculate_prices_accrued_price_async, calculate_prices_accrued_price
+from poms.instruments.tasks import calculate_prices_accrued_price
 from poms.integrations.models import PriceDownloadScheme
 from poms.obj_attrs.filters import AttributeTypeValueTypeFilter
-from poms.obj_attrs.views import AbstractAttributeTypeViewSet, AbstractClassifierViewSet
+from poms.obj_attrs.views import AbstractAttributeTypeViewSet, AbstractClassifierViewSet, GenericAttributeTypeViewSet
 from poms.obj_perms.filters import ObjectPermissionMemberFilter, ObjectPermissionGroupFilter, \
     ObjectPermissionPermissionFilter
 from poms.obj_perms.utils import get_permissions_prefetch_lookups
 from poms.obj_perms.views import AbstractWithObjectPermissionViewSet
 from poms.tags.filters import TagFilter
-from poms.tags.models import Tag
 from poms.tags.utils import get_tag_prefetch
 from poms.transactions.models import TransactionType, TransactionTypeGroup
 from poms.users.filters import OwnerByMasterUserFilter
@@ -167,6 +166,10 @@ class InstrumentAttributeTypeViewSet(AbstractAttributeTypeViewSet):
     )
     serializer_class = InstrumentAttributeTypeSerializer
     filter_class = InstrumentAttributeTypeFilterSet
+
+
+class InstrumentAttributeType2ViewSet(GenericAttributeTypeViewSet):
+    target_model = Instrument
 
 
 class InstrumentClassifierFilterSet(FilterSet):

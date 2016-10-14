@@ -13,7 +13,7 @@ from poms.instruments.models import Instrument, PriceHistory, InstrumentClass, I
     PricingPolicy, PaymentSizeDetail, InstrumentClassifier, EventScheduleAction, EventScheduleConfig
 from poms.instruments.tasks import process_events, calculate_prices_accrued_price
 from poms.obj_attrs.admin import AbstractAttributeTypeAdmin, AbstractAttributeInline, \
-    AbstractAttributeTypeClassifierInline, AbstractAttributeTypeOptionInline
+    AbstractAttributeTypeClassifierInline, AbstractAttributeTypeOptionInline, GenericAttributeInline
 from poms.obj_perms.admin import GenericObjectPermissionInline
 from poms.tags.admin import GenericTagLinkInline
 
@@ -94,6 +94,7 @@ class InstrumentAdmin(admin.ModelAdmin):
         AccrualCalculationScheduleInline,
         InstrumentFactorScheduleInline,
         # EventScheduleInline,
+        GenericAttributeInline,
         GenericTagLinkInline,
         GenericObjectPermissionInline,
         # UserObjectPermissionInline,

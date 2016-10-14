@@ -10,7 +10,7 @@ from poms.currencies.models import Currency
 from poms.instruments.models import Instrument, PaymentSizeDetail, DailyPricingModel, InstrumentType
 from poms.integrations.models import PriceDownloadScheme
 from poms.obj_attrs.admin import AbstractAttributeTypeAdmin, AbstractAttributeInline, \
-    AbstractAttributeTypeOptionInline, AbstractAttributeTypeClassifierInline
+    AbstractAttributeTypeOptionInline, AbstractAttributeTypeClassifierInline, GenericAttributeInline
 from poms.obj_perms.admin import GenericObjectPermissionInline
 from poms.portfolios.models import Portfolio
 from poms.strategies.models import Strategy3, Strategy2, Strategy1
@@ -345,6 +345,7 @@ class TransactionAdmin(admin.ModelAdmin):
                      'strategy3_position', 'strategy3_cash', ]
     inlines = [
         AbstractAttributeInline,
+        GenericAttributeInline,
     ]
     fields = (
         'master_user',

@@ -15,7 +15,7 @@ from mptt.models import MPTTModel
 from poms.common.models import NamedModel, AbstractClassModel, FakeDeletableModel
 from poms.common.utils import date_now, isclose
 from poms.obj_attrs.models import AbstractAttributeType, AbstractAttribute, AbstractAttributeTypeOption, \
-    AbstractClassifier
+    AbstractClassifier, GenericAttribute
 from poms.obj_perms.models import AbstractGroupObjectPermission, AbstractUserObjectPermission, GenericObjectPermission
 from poms.tags.models import TagLink
 from poms.users.models import MasterUser, Member
@@ -400,6 +400,7 @@ class Instrument(NamedModel, FakeDeletableModel):
                                               blank=True, verbose_name=ugettext_lazy('price download scheme'))
     maturity_date = models.DateField(default=date.max, verbose_name=ugettext_lazy('maturity date'))
 
+    attributes2 = GenericRelation(GenericAttribute)
     object_permissions = GenericRelation(GenericObjectPermission)
     tags = GenericRelation(TagLink)
 
