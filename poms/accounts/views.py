@@ -138,7 +138,6 @@ class AccountViewSet(AbstractWithObjectPermissionViewSet):
         ).prefetch_related(
             'attribute_type__options'
         )),
-        get_attributes_prefetch(),
         get_tag_prefetch(),
         *get_permissions_prefetch_lookups(
             (None, Account),
