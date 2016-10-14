@@ -1,5 +1,6 @@
 from __future__ import unicode_literals
 
+from django.db import models
 from rest_framework import serializers
 from rest_framework.fields import empty
 
@@ -56,7 +57,28 @@ class GroupObjectPermissionSerializer(serializers.Serializer):
 #         raise PermissionDenied()
 
 
+class ModelWithObjectPermissionViewListSerializer(serializers.ListSerializer):
+    def get_attribute(self, instance):
+        objects = super(ModelWithObjectPermissionViewListSerializer, self).get_attribute(instance)
+        objects = objects.all() if isinstance(objects, models.Manager) else objects
+        member = get_member_from_context(self.context)
+        return [
+            o for o in objects if has_view_perms(member, o)
+            ]
+        # member = get_member_from_context(self.context)
+        # if member.is_superuser:
+        #     return instance.attributes
+        # master_user = get_master_user_from_context(self.context)
+        # attribute_type_model = getattr(self.child.Meta, 'attribute_type_model', None) or get_attr_type_model(instance)
+        # attribute_types = attribute_type_model.objects.filter(master_user=master_user)
+        # attribute_types = obj_perms_filter_objects(member, get_attr_type_view_perms(attribute_type_model), attribute_types)
+        # return instance.attributes.filter(attribute_type__in=attribute_types)
+
+
 class ModelWithObjectPermissionSerializer(serializers.ModelSerializer):
+    class Meta:
+        list_serializer_class = ModelWithObjectPermissionViewListSerializer
+
     def __init__(self, *args, **kwargs):
         kwargs.pop('show_object_permissions', False)
         super(ModelWithObjectPermissionSerializer, self).__init__(*args, **kwargs)

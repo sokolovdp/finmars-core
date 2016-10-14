@@ -42,7 +42,7 @@ class AccountTypeSerializer(ModelWithObjectPermissionSerializer, ModelWithUserCo
 
 
 class AccountTypeViewSerializer(ModelWithObjectPermissionSerializer):
-    class Meta:
+    class Meta(ModelWithObjectPermissionSerializer.Meta):
         model = AccountType
         fields = [
             'url', 'id', 'user_code', 'name', 'short_name', 'public_name',
@@ -98,7 +98,7 @@ class AccountViewSerializer(ModelWithObjectPermissionSerializer):
     type = AccountTypeField(default=AccountTypeDefault())
     type_object = AccountTypeViewSerializer(source='type', read_only=True)
 
-    class Meta:
+    class Meta(ModelWithObjectPermissionSerializer.Meta):
         model = Account
         fields = [
             'url', 'id', 'type', 'type_object', 'user_code', 'name', 'short_name', 'public_name',

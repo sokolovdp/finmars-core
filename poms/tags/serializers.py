@@ -1,7 +1,7 @@
 from __future__ import unicode_literals
 
 from poms.common.serializers import ModelWithUserCodeSerializer
-from poms.obj_perms.serializers import ModelWithObjectPermissionSerializer
+from poms.obj_perms.serializers import ModelWithObjectPermissionSerializer, ModelWithObjectPermissionViewListSerializer
 from poms.tags.fields import TagContentTypeField
 from poms.tags.models import Tag
 from poms.users.fields import MasterUserField
@@ -43,7 +43,7 @@ class TagSerializer(ModelWithObjectPermissionSerializer, ModelWithUserCodeSerial
 
 
 class TagViewSerializer(ModelWithObjectPermissionSerializer):
-    class Meta:
+    class Meta(ModelWithObjectPermissionSerializer.Meta):
         model = Tag
         fields = [
             'url', 'id', 'user_code', 'name', 'short_name', 'public_name', 'notes',
