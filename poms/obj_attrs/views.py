@@ -42,6 +42,18 @@ class AbstractClassifierViewSet(AbstractModelViewSet):
     def create(self, request, *args, **kwargs):
         raise MethodNotAllowed(request.method)
 
+class GenericClassifierViewSet(AbstractModelViewSet):
+    filter_backends = AbstractModelViewSet.filter_backends + [
+        OwnerByAttributeTypeFilter,
+    ]
+    serializer_class = GenericAttributeTypeSerializer
+    target_model = None
+    ordering_fields = [
+        'attribute_type', 'attribute_type__user_code', 'attribute_type__name', 'attribute_type__short_name',
+        'attribute_type__public_name',
+        'name', 'level',
+    ]
+
 
 class GenericAttributeTypeViewSet(AbstractWithObjectPermissionViewSet):
     queryset = GenericAttributeType.objects.select_related(
