@@ -12,8 +12,7 @@ from poms.obj_attrs.serializers import AbstractAttributeTypeSerializer, Abstract
     ModelWithAttributesSerializer, GenericAttributeTypeSerializer
 from poms.obj_perms.serializers import ModelWithObjectPermissionSerializer
 from poms.portfolios.fields import PortfolioField
-from poms.tags.fields import TagField
-from poms.tags.serializers import TagViewSerializer, ModelWithTagSerializer
+from poms.tags.serializers import ModelWithTagSerializer
 from poms.users.fields import MasterUserField
 
 
@@ -29,16 +28,17 @@ class AccountClassifierNodeSerializer(AbstractClassifierNodeSerializer):
 
 class AccountTypeSerializer(ModelWithObjectPermissionSerializer, ModelWithUserCodeSerializer, ModelWithTagSerializer):
     master_user = MasterUserField()
-    tags = TagField(many=True, required=False, allow_null=True)
-    # tags_object = ReadonlyNamedModelWithObjectPermissionSerializer(source='tags', many=True)
-    tags_object = TagViewSerializer(source='tags', many=True, read_only=True)
+
+    # tags = TagField(many=True, required=False, allow_null=True)
+    # # tags_object = ReadonlyNamedModelWithObjectPermissionSerializer(source='tags', many=True)
+    # tags_object = TagViewSerializer(source='tags', many=True, read_only=True)
 
     class Meta:
         model = AccountType
         fields = [
             'url', 'id', 'master_user', 'user_code', 'name', 'short_name', 'public_name', 'notes',
             'show_transaction_details', 'transaction_details_expr', 'is_default', 'is_deleted',
-            'tags', 'tags_object'
+            # 'tags', 'tags_object'
         ]
 
 
@@ -77,22 +77,24 @@ class AccountAttributeType2Serializer(GenericAttributeTypeSerializer):
 
 
 class AccountSerializer(ModelWithObjectPermissionSerializer, ModelWithAttributesSerializer,
-                        ModelWithUserCodeSerializer):
+                        ModelWithUserCodeSerializer, ModelWithTagSerializer):
     master_user = MasterUserField()
     type = AccountTypeField(default=AccountTypeDefault())
     type_object = AccountTypeViewSerializer(source='type', read_only=True)
     portfolios = PortfolioField(many=True, required=False, allow_null=True)
     portfolios_object = serializers.PrimaryKeyRelatedField(source='portfolios', many=True, read_only=True)
     attributes = AccountAttributeSerializer(many=True, required=False, allow_null=True)
-    tags = TagField(many=True, required=False, allow_null=True)
-    tags_object = TagViewSerializer(source='tags', many=True, read_only=True)
+
+    # tags = TagField(many=True, required=False, allow_null=True)
+    # tags_object = TagViewSerializer(source='tags', many=True, read_only=True)
 
     class Meta:
         model = Account
         fields = [
             'url', 'id', 'master_user', 'type', 'type_object', 'user_code', 'name', 'short_name', 'public_name',
             'notes', 'is_default', 'is_valid_for_all_portfolios', 'is_deleted', 'portfolios', 'portfolios_object',
-            'tags', 'tags_object', 'attributes',
+            'attributes',
+            # 'tags', 'tags_object',
         ]
 
     def __init__(self, *args, **kwargs):

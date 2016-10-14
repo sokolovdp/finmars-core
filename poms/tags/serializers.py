@@ -48,17 +48,17 @@ class TagSerializer(ModelWithObjectPermissionSerializer, ModelWithUserCodeSerial
 #         model = Tag
 
 
-class TagViewSerializer(ModelWithObjectPermissionSerializer):
-    class Meta:
-        model = Tag
-        fields = [
-            'url', 'id', 'user_code', 'name', 'short_name', 'public_name', 'notes',
-        ]
+# class TagViewSerializer(ModelWithObjectPermissionSerializer):
+#     class Meta:
+#         model = Tag
+#         fields = [
+#             'url', 'id', 'user_code', 'name', 'short_name', 'public_name', 'notes',
+#         ]
 
 
-class Tag2Field(serializers.RelatedField):
+class TagField(serializers.RelatedField):
     def get_queryset(self):
-        queryset = super(Tag2Field, self).get_queryset()
+        queryset = super(TagField, self).get_queryset()
 
         if not issubclass(self.root.Meta.model, Tag):
             ctype = ContentType.objects.get_for_model(self.root.Meta.model)
@@ -86,7 +86,7 @@ class Tag2Field(serializers.RelatedField):
         return self.get_queryset().get(pk=data)
 
 
-class Tag2ViewSerializer(ModelWithObjectPermissionSerializer):
+class TagViewSerializer(ModelWithObjectPermissionSerializer):
     class Meta:
         model = Tag
         fields = [
@@ -94,7 +94,7 @@ class Tag2ViewSerializer(ModelWithObjectPermissionSerializer):
         ]
 
     def to_representation(self, instance):
-        return super(Tag2ViewSerializer, self).to_representation(instance.tag)
+        return super(TagViewSerializer, self).to_representation(instance.tag)
 
 
 class ModelWithTagSerializer(serializers.ModelSerializer):
@@ -102,18 +102,18 @@ class ModelWithTagSerializer(serializers.ModelSerializer):
         super(ModelWithTagSerializer, self).__init__(*args, **kwargs)
 
         tags_qs = Tag.objects.all()
-        self.fields['tags2'] = Tag2Field(many=True, queryset=tags_qs)
-        self.fields['tags2_object'] = Tag2ViewSerializer(source='tags2', many=True, read_only=True)
+        self.fields['tags'] = TagField(many=True, queryset=tags_qs)
+        self.fields['tags_object'] = TagViewSerializer(source='tags', many=True, read_only=True)
 
     def create(self, validated_data):
-        tags = validated_data.pop('tags2', None)
+        tags = validated_data.pop('tags', None)
         instance = super(ModelWithTagSerializer, self).create(validated_data)
         if tags is not empty:
             self.save_tags(instance, tags, True)
         return instance
 
     def update(self, instance, validated_data):
-        tags = validated_data.pop('tags2', empty)
+        tags = validated_data.pop('tags', empty)
         instance = super(ModelWithTagSerializer, self).update(instance, validated_data)
         if tags is not empty:
             self.save_tags(instance, tags, False)
@@ -147,7 +147,7 @@ class ModelWithTagSerializer(serializers.ModelSerializer):
 
     def to_representation(self, instance):
         ret = super(ModelWithTagSerializer, self).to_representation(instance)
-        tags = ret.get('tags2')
+        tags = ret.get('tags')
         if tags:
-            ret['tags2'] = [t for t in tags if t is not None]
+            ret['tags'] = [t for t in tags if t is not None]
         return ret

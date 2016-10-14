@@ -45,15 +45,16 @@ class TagAdmin(admin.ModelAdmin):
     search_fields = ['id', 'user_code', 'name']
     filter_horizontal = ['content_types', ]
     raw_id_fields = [
-        'master_user', 'account_types', 'accounts', 'currencies', 'instrument_types', 'instruments',
-        'counterparty_groups', 'counterparties',
-        'responsible_groups', 'responsibles',
-        'portfolios',
-        'transaction_type_groups', 'transaction_types',
-        'strategy1_groups', 'strategy1_subgroups', 'strategies1',
-        'strategy2_groups', 'strategy2_subgroups', 'strategies2',
-        'strategy3_groups', 'strategy3_subgroups', 'strategies3',
-        'thread_groups', 'threads'
+        'master_user',
+        # 'account_types', 'accounts', 'currencies', 'instrument_types', 'instruments',
+        # 'counterparty_groups', 'counterparties',
+        # 'responsible_groups', 'responsibles',
+        # 'portfolios',
+        # 'transaction_type_groups', 'transaction_types',
+        # 'strategy1_groups', 'strategy1_subgroups', 'strategies1',
+        # 'strategy2_groups', 'strategy2_subgroups', 'strategies2',
+        # 'strategy3_groups', 'strategy3_subgroups', 'strategies3',
+        # 'thread_groups', 'threads'
     ]
     inlines = [
         TagLinkInline,

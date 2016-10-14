@@ -30,8 +30,7 @@ from poms.integrations.storage import import_file_storage
 from poms.integrations.tasks import download_pricing, download_instrument
 from poms.obj_attrs.serializers import ModelWithAttributesSerializer, AbstractAttributeSerializer
 from poms.obj_perms.serializers import ModelWithObjectPermissionSerializer
-from poms.tags.fields import TagField
-from poms.tags.serializers import TagViewSerializer
+from poms.tags.serializers import ModelWithTagSerializer
 from poms.users.fields import MasterUserField, MemberField, HiddenMemberField
 
 _l = getLogger('poms.integrations')
@@ -454,7 +453,7 @@ class ImportFileInstrumentSerializer(serializers.Serializer):
 
 
 class ImportInstrumentViewSerializer(ModelWithAttributesSerializer, ModelWithObjectPermissionSerializer,
-                                     ModelWithUserCodeSerializer):
+                                     ModelWithUserCodeSerializer, ModelWithTagSerializer):
     instrument_type = InstrumentTypeField(default=InstrumentTypeDefault())
     instrument_type_object = serializers.PrimaryKeyRelatedField(source='instrument_type', read_only=True)
     pricing_currency = CurrencyField(default=CurrencyDefault())
@@ -471,8 +470,9 @@ class ImportInstrumentViewSerializer(ModelWithAttributesSerializer, ModelWithObj
     event_schedules = serializers.PrimaryKeyRelatedField(read_only=True, many=True)
 
     attributes = serializers.SerializerMethodField()
-    tags = TagField(many=True, required=False, allow_null=True)
-    tags_object = TagViewSerializer(source='tags', many=True, read_only=True)
+
+    # tags = TagField(many=True, required=False, allow_null=True)
+    # tags_object = TagViewSerializer(source='tags', many=True, read_only=True)
 
     class Meta:
         model = Instrument
@@ -488,7 +488,8 @@ class ImportInstrumentViewSerializer(ModelWithAttributesSerializer, ModelWithObj
             'maturity_date',
             # 'manual_pricing_formulas',
             'accrual_calculation_schedules', 'factor_schedules', 'event_schedules',
-            'attributes', 'tags', 'tags_object'
+            'attributes',
+            # 'tags', 'tags_object'
         ]
 
     def __init__(self, *args, **kwargs):

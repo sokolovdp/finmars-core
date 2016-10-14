@@ -27,8 +27,7 @@ from poms.portfolios.models import Portfolio
 from poms.strategies.fields import Strategy1Field, Strategy2Field, Strategy3Field, Strategy1Default, Strategy2Default, \
     Strategy3Default
 from poms.strategies.models import Strategy1, Strategy2, Strategy3
-from poms.tags.fields import TagField
-from poms.tags.serializers import TagViewSerializer
+from poms.tags.serializers import ModelWithTagSerializer
 from poms.transactions.fields import TransactionAttributeTypeField, TransactionTypeInputContentTypeField, \
     TransactionTypeGroupField, TransactionClassifierField
 from poms.transactions.models import TransactionClass, Transaction, TransactionType, TransactionAttributeType, \
@@ -53,16 +52,18 @@ class TransactionClassSerializer(PomsClassSerializer):
         model = TransactionClass
 
 
-class TransactionTypeGroupSerializer(ModelWithObjectPermissionSerializer, ModelWithUserCodeSerializer):
+class TransactionTypeGroupSerializer(ModelWithObjectPermissionSerializer, ModelWithUserCodeSerializer,
+                                     ModelWithTagSerializer):
     master_user = MasterUserField()
-    tags = TagField(many=True, required=False, allow_null=True)
-    tags_object = TagViewSerializer(source='tags', many=True, read_only=True)
+
+    # tags = TagField(many=True, required=False, allow_null=True)
+    # tags_object = TagViewSerializer(source='tags', many=True, read_only=True)
 
     class Meta:
         model = TransactionTypeGroup
         fields = [
             'url', 'id', 'master_user', 'user_code', 'name', 'short_name', 'public_name', 'notes', 'is_deleted',
-            'tags', 'tags_object',
+            # 'tags', 'tags_object',
         ]
 
 
@@ -435,7 +436,8 @@ class TransactionTypeActionSerializer(serializers.ModelSerializer):
         return attrs
 
 
-class TransactionTypeSerializer(ModelWithObjectPermissionSerializer, ModelWithUserCodeSerializer):
+class TransactionTypeSerializer(ModelWithObjectPermissionSerializer, ModelWithUserCodeSerializer,
+                                ModelWithTagSerializer):
     master_user = MasterUserField()
     group = TransactionTypeGroupField(required=False, allow_null=False)
     group_object = TransactionTypeGroupViewSerializer(source='group', read_only=True)
@@ -444,8 +446,8 @@ class TransactionTypeSerializer(ModelWithObjectPermissionSerializer, ModelWithUs
     instrument_types_object = serializers.PrimaryKeyRelatedField(source='instrument_types', many=True, read_only=True)
     portfolios = PortfolioField(required=False, allow_null=True, many=True)
     portfolios_object = serializers.PrimaryKeyRelatedField(source='portfolios', many=True, read_only=True)
-    tags = TagField(required=False, many=True, allow_null=True)
-    tags_object = TagViewSerializer(source='tags', many=True, read_only=True)
+    # tags = TagField(required=False, many=True, allow_null=True)
+    # tags_object = TagViewSerializer(source='tags', many=True, read_only=True)
     inputs = TransactionTypeInputSerializer(required=False, many=True)
     actions = TransactionTypeActionSerializer(required=False, many=True, read_only=False)
     book_transaction_layout = serializers.JSONField(required=False, allow_null=True)
@@ -467,7 +469,8 @@ class TransactionTypeSerializer(ModelWithObjectPermissionSerializer, ModelWithUs
             'user_code', 'name', 'short_name', 'public_name', 'notes',
             'display_expr', 'is_valid_for_all_portfolios', 'is_valid_for_all_instruments', 'is_deleted',
             'book_transaction_layout',
-            'instrument_types', 'instrument_types_object', 'portfolios', 'portfolios_object', 'tags', 'tags_object',
+            'instrument_types', 'instrument_types_object', 'portfolios', 'portfolios_object',
+            # 'tags', 'tags_object',
             'inputs', 'actions'
         ]
 

@@ -12,6 +12,7 @@ from django.utils.translation import get_language, ugettext_lazy
 
 from poms.common.models import TimeStampedModel, NamedModel, FakeDeletableModel
 from poms.obj_perms.models import AbstractGroupObjectPermission, AbstractUserObjectPermission, GenericObjectPermission
+from poms.tags.models import TagLink
 from poms.users.models import MasterUser, Member
 
 
@@ -21,6 +22,7 @@ class ThreadGroup(FakeDeletableModel, models.Model):
     name = models.CharField(max_length=255, verbose_name=ugettext_lazy('name'))
 
     object_permissions = GenericRelation(GenericObjectPermission)
+    tags = GenericRelation(TagLink)
 
     class Meta(FakeDeletableModel.Meta):
         verbose_name = ugettext_lazy('thread group')
@@ -62,6 +64,7 @@ class Thread(TimeStampedModel, FakeDeletableModel):
     closed = models.DateTimeField(null=True, blank=True, db_index=True)
 
     object_permissions = GenericRelation(GenericObjectPermission)
+    tags = GenericRelation(TagLink)
 
     class Meta(TimeStampedModel.Meta, FakeDeletableModel.Meta):
         verbose_name = ugettext_lazy('thread')

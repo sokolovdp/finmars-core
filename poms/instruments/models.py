@@ -17,6 +17,7 @@ from poms.common.utils import date_now, isclose
 from poms.obj_attrs.models import AbstractAttributeType, AbstractAttribute, AbstractAttributeTypeOption, \
     AbstractClassifier
 from poms.obj_perms.models import AbstractGroupObjectPermission, AbstractUserObjectPermission, GenericObjectPermission
+from poms.tags.models import TagLink
 from poms.users.models import MasterUser, Member
 
 
@@ -328,6 +329,7 @@ class InstrumentType(NamedModel, FakeDeletableModel):
                                     related_name='+', verbose_name=ugettext_lazy('factor down'))
 
     object_permissions = GenericRelation(GenericObjectPermission)
+    tags = GenericRelation(TagLink)
 
     class Meta(NamedModel.Meta, FakeDeletableModel.Meta):
         verbose_name = ugettext_lazy('instrument type')
@@ -399,6 +401,7 @@ class Instrument(NamedModel, FakeDeletableModel):
     maturity_date = models.DateField(default=date.max, verbose_name=ugettext_lazy('maturity date'))
 
     object_permissions = GenericRelation(GenericObjectPermission)
+    tags = GenericRelation(TagLink)
 
     class Meta(NamedModel.Meta, FakeDeletableModel.Meta):
         verbose_name = ugettext_lazy('instrument')

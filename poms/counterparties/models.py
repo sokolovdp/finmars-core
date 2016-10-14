@@ -11,6 +11,7 @@ from poms.common.models import NamedModel, FakeDeletableModel
 from poms.obj_attrs.models import AbstractAttributeType, AbstractAttribute, AbstractAttributeTypeOption, \
     AbstractClassifier
 from poms.obj_perms.models import AbstractGroupObjectPermission, AbstractUserObjectPermission, GenericObjectPermission
+from poms.tags.models import TagLink
 from poms.users.models import MasterUser, Member
 
 
@@ -20,6 +21,7 @@ class CounterpartyGroup(NamedModel, FakeDeletableModel):
                                     verbose_name=ugettext_lazy('master user'))
 
     object_permissions = GenericRelation(GenericObjectPermission)
+    tags = GenericRelation(TagLink)
 
     class Meta(NamedModel.Meta, FakeDeletableModel.Meta):
         verbose_name = ugettext_lazy('counterparty group')
@@ -60,6 +62,7 @@ class Counterparty(NamedModel, FakeDeletableModel):
     is_valid_for_all_portfolios = models.BooleanField(default=True)
 
     object_permissions = GenericRelation(GenericObjectPermission)
+    tags = GenericRelation(TagLink)
 
     class Meta(NamedModel.Meta, FakeDeletableModel.Meta):
         verbose_name = ugettext_lazy('counterparty')
@@ -167,6 +170,7 @@ class ResponsibleGroup(NamedModel, FakeDeletableModel):
                                     verbose_name=ugettext_lazy('master user'))
 
     object_permissions = GenericRelation(GenericObjectPermission)
+    tags = GenericRelation(TagLink)
 
     class Meta(NamedModel.Meta, FakeDeletableModel.Meta):
         verbose_name = ugettext_lazy('responsible group')
@@ -206,6 +210,7 @@ class Responsible(NamedModel, FakeDeletableModel):
     is_valid_for_all_portfolios = models.BooleanField(default=True)
 
     object_permissions = GenericRelation(GenericObjectPermission)
+    tags = GenericRelation(TagLink)
 
     class Meta(NamedModel.Meta, FakeDeletableModel.Meta):
         verbose_name = ugettext_lazy('responsible')

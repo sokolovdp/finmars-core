@@ -23,8 +23,7 @@ from poms.integrations.fields import PriceDownloadSchemeField
 from poms.obj_attrs.serializers import AbstractAttributeSerializer, AbstractAttributeTypeSerializer, \
     ModelWithAttributesSerializer
 from poms.obj_perms.serializers import ModelWithObjectPermissionSerializer
-from poms.tags.fields import TagField
-from poms.tags.serializers import TagViewSerializer
+from poms.tags.serializers import ModelWithTagSerializer
 from poms.transactions.fields import TransactionTypeField
 from poms.users.fields import MasterUserField
 
@@ -84,7 +83,8 @@ class InstrumentClassifierNodeSerializer(AbstractClassifierNodeSerializer):
         model = InstrumentClassifier
 
 
-class InstrumentTypeSerializer(ModelWithObjectPermissionSerializer, ModelWithUserCodeSerializer):
+class InstrumentTypeSerializer(ModelWithObjectPermissionSerializer, ModelWithUserCodeSerializer,
+                               ModelWithTagSerializer):
     master_user = MasterUserField()
     instrument_class_object = InstrumentClassSerializer(source='instrument_class', read_only=True)
     one_off_event = TransactionTypeField(allow_null=True, required=False)
@@ -97,8 +97,9 @@ class InstrumentTypeSerializer(ModelWithObjectPermissionSerializer, ModelWithUse
     factor_up_object = serializers.PrimaryKeyRelatedField(source='factor_up', read_only=True)
     factor_down = TransactionTypeField(allow_null=True, required=False)
     factor_down_object = serializers.PrimaryKeyRelatedField(source='factor_down', read_only=True)
-    tags = TagField(many=True, required=False, allow_null=True)
-    tags_object = TagViewSerializer(source='tags', many=True, read_only=True)
+
+    # tags = TagField(many=True, required=False, allow_null=True)
+    # tags_object = TagViewSerializer(source='tags', many=True, read_only=True)
 
     class Meta:
         model = InstrumentType
@@ -108,7 +109,7 @@ class InstrumentTypeSerializer(ModelWithObjectPermissionSerializer, ModelWithUse
             'notes', 'is_default', 'is_deleted', 'one_off_event', 'one_off_event_object',
             'regular_event', 'regular_event_object', 'factor_same', 'factor_same_object',
             'factor_up', 'factor_up_object', 'factor_down', 'factor_down_object',
-            'tags', 'tags_object',
+            # 'tags', 'tags_object',
         ]
 
     def __init__(self, *args, **kwargs):
@@ -172,7 +173,7 @@ class InstrumentAttributeSerializer(AbstractAttributeSerializer):
 
 
 class InstrumentSerializer(ModelWithAttributesSerializer, ModelWithObjectPermissionSerializer,
-                           ModelWithUserCodeSerializer):
+                           ModelWithUserCodeSerializer, ModelWithTagSerializer):
     master_user = MasterUserField()
     instrument_type = InstrumentTypeField(default=InstrumentTypeDefault())
     instrument_type_object = InstrumentTypeViewSerializer(source='instrument_type', read_only=True)
@@ -193,8 +194,9 @@ class InstrumentSerializer(ModelWithAttributesSerializer, ModelWithObjectPermiss
     event_schedules = serializers.PrimaryKeyRelatedField(many=True, required=False, allow_null=True, read_only=True)
 
     attributes = InstrumentAttributeSerializer(many=True, required=False, allow_null=True)
-    tags = TagField(many=True, required=False, allow_null=True)
-    tags_object = TagViewSerializer(source='tags', many=True, read_only=True)
+
+    # tags = TagField(many=True, required=False, allow_null=True)
+    # tags_object = TagViewSerializer(source='tags', many=True, read_only=True)
 
     class Meta:
         model = Instrument
@@ -209,7 +211,8 @@ class InstrumentSerializer(ModelWithAttributesSerializer, ModelWithObjectPermiss
             'price_download_scheme', 'price_download_scheme_object',
             'maturity_date',
             'manual_pricing_formulas', 'accrual_calculation_schedules', 'factor_schedules', 'event_schedules',
-            'attributes', 'tags', 'tags_object'
+            'attributes',
+            # 'tags', 'tags_object'
         ]
 
     def __init__(self, *args, **kwargs):

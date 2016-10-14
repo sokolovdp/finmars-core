@@ -23,6 +23,7 @@ from poms.obj_attrs.models import AbstractAttributeType, AbstractAttribute, Abst
 from poms.obj_perms.models import AbstractGroupObjectPermission, AbstractUserObjectPermission, GenericObjectPermission
 from poms.portfolios.models import Portfolio
 from poms.strategies.models import Strategy1, Strategy2, Strategy3
+from poms.tags.models import TagLink
 from poms.users.models import MasterUser, Member, FakeSequence
 
 
@@ -241,6 +242,7 @@ class TransactionTypeGroup(NamedModel, FakeDeletableModel):
     )
 
     object_permissions = GenericRelation(GenericObjectPermission)
+    tags = GenericRelation(TagLink)
 
     class Meta(NamedModel.Meta, FakeDeletableModel.Meta):
         verbose_name = ugettext_lazy('transaction type group')
@@ -288,6 +290,7 @@ class TransactionType(NamedModel, FakeDeletableModel):
     # )
 
     object_permissions = GenericRelation(GenericObjectPermission)
+    tags = GenericRelation(TagLink)
 
     class Meta(NamedModel.Meta, FakeDeletableModel.Meta):
         verbose_name = ugettext_lazy('transaction type')

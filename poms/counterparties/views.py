@@ -20,7 +20,8 @@ from poms.obj_perms.utils import get_permissions_prefetch_lookups
 from poms.obj_perms.views import AbstractWithObjectPermissionViewSet
 from poms.portfolios.models import Portfolio
 from poms.tags.filters import TagFilter
-from poms.tags.models import Tag
+from poms.tags.models import Tag, TagLink
+from poms.tags.utils import get_tag_prefetch
 from poms.users.filters import OwnerByMasterUserFilter
 
 
@@ -89,10 +90,9 @@ class CounterpartyGroupFilterSet(FilterSet):
 
 class CounterpartyGroupViewSet(AbstractWithObjectPermissionViewSet):
     queryset = CounterpartyGroup.objects.select_related('master_user').prefetch_related(
-        'tags',
+        get_tag_prefetch(),
         *get_permissions_prefetch_lookups(
             (None, CounterpartyGroup),
-            ('tags', Tag)
         )
     )
     serializer_class = CounterpartyGroupSerializer
@@ -128,14 +128,14 @@ class CounterpartyViewSet(AbstractWithObjectPermissionViewSet):
     queryset = Counterparty.objects.select_related(
         'master_user', 'group',
     ).prefetch_related(
-        'portfolios', 'tags',
+        'portfolios',
         Prefetch('attributes', queryset=CounterpartyAttribute.objects.select_related('attribute_type', 'classifier')),
+        get_tag_prefetch(),
         *get_permissions_prefetch_lookups(
             (None, Counterparty),
             ('group', CounterpartyGroup),
             ('portfolios', Portfolio),
             ('attributes__attribute_type', CounterpartyAttributeType),
-            ('tags', Tag)
         )
     )
     serializer_class = CounterpartySerializer
@@ -216,10 +216,9 @@ class ResponsibleGroupFilterSet(FilterSet):
 
 class ResponsibleGroupViewSet(AbstractWithObjectPermissionViewSet):
     queryset = ResponsibleGroup.objects.select_related('master_user').prefetch_related(
-        'tags',
+        get_tag_prefetch(),
         *get_permissions_prefetch_lookups(
             (None, ResponsibleGroup),
-            ('tags', Tag)
         )
     )
     serializer_class = ResponsibleGroupSerializer
@@ -256,14 +255,14 @@ class ResponsibleViewSet(AbstractWithObjectPermissionViewSet):
     queryset = Responsible.objects.select_related(
         'master_user', 'group',
     ).prefetch_related(
-        'portfolios', 'tags',
+        'portfolios',
+        get_tag_prefetch(),
         Prefetch('attributes', queryset=ResponsibleAttribute.objects.select_related('attribute_type', 'classifier')),
         *get_permissions_prefetch_lookups(
             (None, Responsible),
             ('group', ResponsibleGroup),
             ('portfolios', Portfolio),
             ('attributes__attribute_type', ResponsibleAttributeType),
-            ('tags', Tag)
         )
     )
     # prefetch_permissions_for = (

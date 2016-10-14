@@ -1,6 +1,7 @@
 from __future__ import unicode_literals
 
 from django.conf import settings
+from django.contrib.contenttypes.fields import GenericRelation
 from django.db import models
 from django.utils.encoding import python_2_unicode_compatible
 from django.utils.translation import ugettext_lazy
@@ -8,6 +9,7 @@ from django.utils.translation import ugettext_lazy
 from poms.common.models import NamedModel, FakeDeletableModel
 from poms.common.utils import date_now
 from poms.obj_perms.models import AbstractUserObjectPermission, AbstractGroupObjectPermission
+from poms.tags.models import TagLink
 from poms.users.models import MasterUser
 
 
@@ -20,6 +22,8 @@ class Currency(NamedModel, FakeDeletableModel):
                                             verbose_name=ugettext_lazy('daily pricing model'))
     price_download_scheme = models.ForeignKey('integrations.PriceDownloadScheme', on_delete=models.PROTECT, null=True,
                                               blank=True, verbose_name=ugettext_lazy('price download scheme'))
+
+    tags = GenericRelation(TagLink)
 
     class Meta(NamedModel.Meta, FakeDeletableModel.Meta):
         verbose_name = ugettext_lazy('currency')

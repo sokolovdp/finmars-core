@@ -27,6 +27,7 @@ from poms.strategies.models import Strategy1, Strategy2, Strategy3, Strategy1Sub
     Strategy2Group, Strategy3Subgroup, Strategy3Group
 from poms.tags.filters import TagFilter
 from poms.tags.models import Tag
+from poms.tags.utils import get_tag_prefetch
 from poms.transactions.filters import TransactionObjectPermissionFilter, ComplexTransactionPermissionFilter, \
     TransactionObjectPermissionMemberFilter, TransactionObjectPermissionGroupFilter, \
     TransactionObjectPermissionPermissionFilter
@@ -76,10 +77,9 @@ class TransactionTypeGroupFilterSet(FilterSet):
 
 class TransactionTypeGroupViewSet(AbstractWithObjectPermissionViewSet):
     queryset = TransactionTypeGroup.objects.prefetch_related(
-        'tags',
+        get_tag_prefetch(),
         *get_permissions_prefetch_lookups(
             (None, TransactionTypeGroup),
-            ('tags', Tag)
         )
     )
     serializer_class = TransactionTypeGroupSerializer
@@ -118,7 +118,7 @@ class TransactionTypeViewSet(AbstractWithObjectPermissionViewSet):
         'group'
     ).prefetch_related(
         'portfolios',
-        'tags',
+        get_tag_prefetch(),
         Prefetch(
             'instrument_types',
             queryset=InstrumentType.objects.select_related('instrument_class')
@@ -277,7 +277,6 @@ class TransactionTypeViewSet(AbstractWithObjectPermissionViewSet):
             ('group', TransactionTypeGroup),
             ('portfolios', Portfolio),
             ('instrument_types', InstrumentType),
-            ('tags', Tag)
         )
     )
     # prefetch_permissions_for = (

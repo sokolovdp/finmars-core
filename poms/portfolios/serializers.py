@@ -11,8 +11,7 @@ from poms.obj_attrs.serializers import AbstractAttributeTypeSerializer, Abstract
 from poms.obj_perms.serializers import ModelWithObjectPermissionSerializer
 from poms.portfolios.fields import PortfolioClassifierField, PortfolioAttributeTypeField
 from poms.portfolios.models import PortfolioClassifier, Portfolio, PortfolioAttributeType, PortfolioAttribute
-from poms.tags.fields import TagField
-from poms.tags.serializers import TagViewSerializer
+from poms.tags.serializers import ModelWithTagSerializer
 from poms.transactions.fields import TransactionTypeField
 from poms.users.fields import MasterUserField
 
@@ -45,7 +44,7 @@ class PortfolioAttributeSerializer(AbstractAttributeSerializer):
 
 
 class PortfolioSerializer(ModelWithObjectPermissionSerializer, ModelWithAttributesSerializer,
-                          ModelWithUserCodeSerializer):
+                          ModelWithUserCodeSerializer, ModelWithTagSerializer):
     master_user = MasterUserField()
     accounts = AccountField(many=True)
     accounts_object = serializers.PrimaryKeyRelatedField(source='accounts', many=True, read_only=True)
@@ -56,8 +55,9 @@ class PortfolioSerializer(ModelWithObjectPermissionSerializer, ModelWithAttribut
     transaction_types = TransactionTypeField(many=True)
     transaction_types_object = serializers.PrimaryKeyRelatedField(source='transaction_types', many=True, read_only=True)
     attributes = PortfolioAttributeSerializer(many=True, required=False, allow_null=True)
-    tags = TagField(many=True, required=False, allow_null=True)
-    tags_object = TagViewSerializer(source='tags', many=True, read_only=True)
+
+    # tags = TagField(many=True, required=False, allow_null=True)
+    # tags_object = TagViewSerializer(source='tags', many=True, read_only=True)
 
     class Meta:
         model = Portfolio
@@ -65,7 +65,7 @@ class PortfolioSerializer(ModelWithObjectPermissionSerializer, ModelWithAttribut
             'url', 'id', 'master_user', 'user_code', 'name', 'short_name', 'public_name', 'notes', 'is_default',
             'is_deleted', 'accounts', 'accounts_object', 'responsibles', 'responsibles_object', 'counterparties',
             'counterparties_object', 'transaction_types', 'transaction_types_object', 'attributes',
-            'tags', 'tags_object',
+            # 'tags', 'tags_object',
         ]
 
     def __init__(self, *args, **kwargs):

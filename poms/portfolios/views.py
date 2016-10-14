@@ -18,6 +18,7 @@ from poms.portfolios.serializers import PortfolioSerializer, PortfolioAttributeT
     PortfolioClassifierNodeSerializer
 from poms.tags.filters import TagFilter
 from poms.tags.models import Tag
+from poms.tags.utils import get_tag_prefetch
 from poms.transactions.models import TransactionType, TransactionTypeGroup
 from poms.users.filters import OwnerByMasterUserFilter
 
@@ -97,7 +98,7 @@ class PortfolioViewSet(AbstractWithObjectPermissionViewSet):
         Prefetch('responsibles', queryset=Responsible.objects.select_related('group')),
         Prefetch('counterparties', queryset=Counterparty.objects.select_related('group')),
         Prefetch('transaction_types', queryset=TransactionType.objects.select_related('group')),
-        'tags',
+        get_tag_prefetch(),
         Prefetch('attributes', queryset=PortfolioAttribute.objects.select_related('attribute_type', 'classifier')),
         *get_permissions_prefetch_lookups(
             (None, Portfolio),
@@ -110,7 +111,6 @@ class PortfolioViewSet(AbstractWithObjectPermissionViewSet):
             ('transaction_types', TransactionType),
             ('transaction_types__group', TransactionTypeGroup),
             ('attributes__attribute_type', PortfolioAttributeType),
-            ('tags', Tag),
         )
     )
     # prefetch_permissions_for = (

@@ -11,6 +11,7 @@ from poms.common.models import NamedModel, FakeDeletableModel
 from poms.obj_attrs.models import AbstractAttributeType, AbstractAttribute, AbstractAttributeTypeOption, \
     AbstractClassifier
 from poms.obj_perms.models import AbstractGroupObjectPermission, AbstractUserObjectPermission, GenericObjectPermission
+from poms.tags.models import TagLink
 from poms.users.models import MasterUser, Member
 
 
@@ -23,6 +24,7 @@ class Portfolio(NamedModel, FakeDeletableModel):
     transaction_types = models.ManyToManyField('transactions.TransactionType', related_name='portfolios', blank=True)
 
     object_permissions = GenericRelation(GenericObjectPermission)
+    tags = GenericRelation(TagLink)
 
     class Meta(NamedModel.Meta, FakeDeletableModel.Meta):
         verbose_name = ugettext_lazy('portfolio')

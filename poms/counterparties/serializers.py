@@ -14,8 +14,7 @@ from poms.obj_attrs.serializers import AbstractAttributeTypeSerializer, Abstract
     ModelWithAttributesSerializer
 from poms.obj_perms.serializers import ModelWithObjectPermissionSerializer
 from poms.portfolios.fields import PortfolioField
-from poms.tags.fields import TagField
-from poms.tags.serializers import TagViewSerializer
+from poms.tags.serializers import ModelWithTagSerializer
 from poms.users.fields import MasterUserField
 
 
@@ -46,15 +45,20 @@ class CounterpartyAttributeSerializer(AbstractAttributeSerializer):
         fields = AbstractAttributeSerializer.Meta.fields + ['attribute_type', 'classifier']
 
 
-class CounterpartyGroupSerializer(ModelWithObjectPermissionSerializer, ModelWithUserCodeSerializer):
+class CounterpartyGroupSerializer(ModelWithObjectPermissionSerializer, ModelWithUserCodeSerializer,
+                                  ModelWithTagSerializer):
     master_user = MasterUserField()
-    tags = TagField(many=True, required=False, allow_null=True)
-    tags_object = TagViewSerializer(source='tags', many=True, read_only=True)
+
+    # tags = TagField(many=True, required=False, allow_null=True)
+    # tags_object = TagViewSerializer(source='tags', many=True, read_only=True)
 
     class Meta:
         model = CounterpartyGroup
-        fields = ['url', 'id', 'master_user', 'user_code', 'name', 'short_name', 'public_name', 'notes',
-                  'is_default', 'is_deleted', 'tags', 'tags_object', ]
+        fields = [
+            'url', 'id', 'master_user', 'user_code', 'name', 'short_name', 'public_name', 'notes',
+            'is_default', 'is_deleted',
+            # 'tags', 'tags_object',
+        ]
 
 
 class CounterpartyGroupViewSerializer(ModelWithObjectPermissionSerializer):
@@ -64,22 +68,24 @@ class CounterpartyGroupViewSerializer(ModelWithObjectPermissionSerializer):
 
 
 class CounterpartySerializer(ModelWithObjectPermissionSerializer, ModelWithAttributesSerializer,
-                             ModelWithUserCodeSerializer):
+                             ModelWithUserCodeSerializer, ModelWithTagSerializer):
     master_user = MasterUserField()
     group = CounterpartyGroupField()
     group_object = CounterpartyGroupViewSerializer(source='group', read_only=True)
     portfolios = PortfolioField(many=True, required=False, allow_null=True)
     portfolios_object = serializers.PrimaryKeyRelatedField(source='portfolios', many=True, read_only=True)
     attributes = CounterpartyAttributeSerializer(many=True, required=False, allow_null=True)
-    tags = TagField(many=True, required=False, allow_null=True)
-    tags_object = TagViewSerializer(source='tags', many=True, read_only=True)
+
+    # tags = TagField(many=True, required=False, allow_null=True)
+    # tags_object = TagViewSerializer(source='tags', many=True, read_only=True)
 
     class Meta:
         model = Counterparty
         fields = [
             'url', 'id', 'master_user', 'group', 'group_object', 'user_code', 'name', 'short_name', 'public_name',
             'notes', 'is_default', 'is_valid_for_all_portfolios', 'is_deleted', 'portfolios', 'portfolios_object',
-            'attributes', 'tags', 'tags_object'
+            'attributes',
+            # 'tags', 'tags_object'
         ]
 
     def __init__(self, *args, **kwargs):
@@ -136,16 +142,19 @@ class ResponsibleAttributeSerializer(AbstractAttributeSerializer):
         fields = AbstractAttributeSerializer.Meta.fields + ['attribute_type', 'classifier']
 
 
-class ResponsibleGroupSerializer(ModelWithObjectPermissionSerializer, ModelWithUserCodeSerializer):
+class ResponsibleGroupSerializer(ModelWithObjectPermissionSerializer, ModelWithUserCodeSerializer,
+                                 ModelWithTagSerializer):
     master_user = MasterUserField()
-    tags = TagField(many=True, required=False, allow_null=True)
-    tags_object = TagViewSerializer(source='tags', many=True, read_only=True)
+
+    # tags = TagField(many=True, required=False, allow_null=True)
+    # tags_object = TagViewSerializer(source='tags', many=True, read_only=True)
 
     class Meta:
         model = ResponsibleGroup
         fields = [
             'url', 'id', 'master_user', 'user_code', 'name', 'short_name', 'public_name', 'notes', 'is_default',
-            'is_deleted', 'tags', 'tags_object',
+            'is_deleted',
+            # 'tags', 'tags_object',
         ]
 
 
@@ -158,22 +167,24 @@ class ResponsibleGroupViewSerializer(ModelWithObjectPermissionSerializer):
 
 
 class ResponsibleSerializer(ModelWithObjectPermissionSerializer, ModelWithAttributesSerializer,
-                            ModelWithUserCodeSerializer):
+                            ModelWithUserCodeSerializer, ModelWithTagSerializer):
     master_user = MasterUserField()
     group = ResponsibleGroupField()
     group_object = ResponsibleGroupViewSerializer(source='group', read_only=True)
     portfolios = PortfolioField(many=True, required=False, allow_null=True)
     portfolios_object = serializers.PrimaryKeyRelatedField(source='portfolios', many=True, read_only=True)
     attributes = ResponsibleAttributeSerializer(many=True, required=False, allow_null=True)
-    tags = TagField(many=True, required=False, allow_null=True)
-    tags_object = TagViewSerializer(source='tags', many=True, read_only=True)
+
+    # tags = TagField(many=True, required=False, allow_null=True)
+    # tags_object = TagViewSerializer(source='tags', many=True, read_only=True)
 
     class Meta:
         model = Responsible
         fields = [
             'url', 'id', 'master_user', 'group', 'group_object', 'user_code', 'name', 'short_name', 'public_name',
             'notes', 'is_default', 'is_valid_for_all_portfolios', 'is_deleted', 'portfolios', 'portfolios_object',
-            'attributes', 'tags', 'tags_object',
+            'attributes',
+            # 'tags', 'tags_object',
         ]
 
     def __init__(self, *args, **kwargs):

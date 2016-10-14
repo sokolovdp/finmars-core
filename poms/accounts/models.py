@@ -26,7 +26,7 @@ class AccountType(NamedModel, FakeDeletableModel):
                                                 verbose_name=ugettext_lazy('transaction details expr'))
 
     object_permissions = GenericRelation(GenericObjectPermission)
-    tags2 = GenericRelation(TagLink)
+    tags = GenericRelation(TagLink)
 
     class Meta(NamedModel.Meta, FakeDeletableModel.Meta):
         verbose_name = ugettext_lazy('account type')
@@ -69,6 +69,7 @@ class Account(NamedModel, FakeDeletableModel):
 
     # attributes2 = GenericRelation(GenericAttribute)
     object_permissions = GenericRelation(GenericObjectPermission)
+    tags = GenericRelation(TagLink)
 
     class Meta(NamedModel.Meta, FakeDeletableModel.Meta):
         verbose_name = ugettext_lazy('account')

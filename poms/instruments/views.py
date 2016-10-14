@@ -33,6 +33,7 @@ from poms.obj_perms.utils import get_permissions_prefetch_lookups
 from poms.obj_perms.views import AbstractWithObjectPermissionViewSet
 from poms.tags.filters import TagFilter
 from poms.tags.models import Tag
+from poms.tags.utils import get_tag_prefetch
 from poms.transactions.models import TransactionType, TransactionTypeGroup
 from poms.users.filters import OwnerByMasterUserFilter
 from poms.users.permissions import SuperUserOrReadOnly
@@ -114,7 +115,7 @@ class InstrumentTypeViewSet(AbstractWithObjectPermissionViewSet):
         'factor_up', 'factor_up__group',
         'factor_down', 'factor_down__group',
     ).prefetch_related(
-        'tags',
+        get_tag_prefetch(),
         *get_permissions_prefetch_lookups(
             (None, InstrumentType),
             ('one_off_event', TransactionType),
@@ -127,7 +128,6 @@ class InstrumentTypeViewSet(AbstractWithObjectPermissionViewSet):
             ('factor_up__group', TransactionTypeGroup),
             ('factor_down', TransactionType),
             ('factor_down__group', TransactionTypeGroup),
-            ('tags', Tag)
         )
     )
     serializer_class = InstrumentTypeSerializer
@@ -255,10 +255,9 @@ class InstrumentViewSet(AbstractWithObjectPermissionViewSet):
                     )
                 ),
             )),
-        'tags',
+        get_tag_prefetch(),
         *get_permissions_prefetch_lookups(
             (None, Instrument),
-            ('tags', Tag),
             ('instrument_type', InstrumentType),
             ('attributes__attribute_type', InstrumentAttributeType),
         )
