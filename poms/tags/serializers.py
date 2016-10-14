@@ -87,7 +87,7 @@ class TagField(serializers.RelatedField):
 
 
 class TagViewSerializer(ModelWithObjectPermissionSerializer):
-    class Meta:
+    class Meta(ModelWithObjectPermissionSerializer.Meta):
         model = Tag
         fields = [
             'id', 'user_code', 'name', 'short_name', 'public_name', 'notes',

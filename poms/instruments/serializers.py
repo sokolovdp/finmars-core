@@ -371,7 +371,7 @@ class InstrumentViewSerializer(ModelWithObjectPermissionSerializer):
     # pricing_currency_object = serializers.PrimaryKeyRelatedField(source='pricing_currency', read_only=True)
     # accrued_currency_object = serializers.PrimaryKeyRelatedField(source='accrued_currency', read_only=True)
 
-    class Meta:
+    class Meta(ModelWithObjectPermissionSerializer.Meta):
         model = Instrument
         fields = [
             'url', 'id', 'instrument_type', 'instrument_type_object', 'user_code', 'name', 'short_name',

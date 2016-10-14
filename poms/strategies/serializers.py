@@ -26,7 +26,7 @@ class Strategy1GroupSerializer(ModelWithObjectPermissionSerializer, ModelWithUse
 
 
 class Strategy1GroupViewSerializer(ModelWithObjectPermissionSerializer):
-    class Meta:
+    class Meta(ModelWithObjectPermissionSerializer.Meta):
         model = Strategy1Group
         fields = [
             'url', 'id', 'user_code', 'name', 'short_name', 'public_name', 'notes', 'is_deleted',
@@ -54,7 +54,7 @@ class Strategy1SubgroupSerializer(ModelWithObjectPermissionSerializer, ModelWith
 class Strategy1SubgroupViewSerializer(ModelWithObjectPermissionSerializer):
     group_object = Strategy1GroupViewSerializer(source='group', read_only=True)
 
-    class Meta:
+    class Meta(ModelWithObjectPermissionSerializer.Meta):
         model = Strategy1Subgroup
         fields = [
             'url', 'id', 'group', 'group_object', 'user_code', 'name', 'short_name', 'public_name',
@@ -82,7 +82,7 @@ class Strategy1Serializer(ModelWithObjectPermissionSerializer, ModelWithUserCode
 class Strategy1ViewSerializer(ModelWithObjectPermissionSerializer):
     subgroup_object = Strategy1SubgroupViewSerializer(source='subgroup', read_only=True)
 
-    class Meta:
+    class Meta(ModelWithObjectPermissionSerializer.Meta):
         model = Strategy1
         fields = [
             'url', 'id', 'subgroup', 'subgroup_object', 'user_code', 'name', 'short_name',

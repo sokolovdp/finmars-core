@@ -62,7 +62,7 @@ class ThreadSerializer(ModelWithObjectPermissionSerializer, ModelWithTagSerializ
     messages_count = serializers.IntegerField(read_only=True)
     messages_last = MessageSerializer(read_only=True, many=True)
 
-    class Meta:
+    class Meta(ModelWithObjectPermissionSerializer.Meta):
         model = Thread
         fields = [
             'url', 'id', 'master_user', 'thread_group', 'thread_group_object',

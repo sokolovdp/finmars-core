@@ -152,7 +152,7 @@ class AttributeListSerializer(serializers.ListSerializer):
         return instance.attributes.filter(attribute_type__in=attribute_types)
 
 
-class ReadOnlyAttributeTypeSerializer(serializers.Serializer):
+class AttributeTypeViewSerializer(serializers.Serializer):
     id = serializers.IntegerField(read_only=True)
     value_type = serializers.PrimaryKeyRelatedField(read_only=True)
     user_code = serializers.CharField(read_only=True)
@@ -162,15 +162,15 @@ class ReadOnlyAttributeTypeSerializer(serializers.Serializer):
     is_hidden = serializers.BooleanField(read_only=True)
 
 
-class ReadOnlyClassifierSerializer(serializers.Serializer):
+class ClassifierViewSerializer(serializers.Serializer):
     id = serializers.IntegerField(read_only=True)
     name = serializers.CharField(read_only=True)
     level = serializers.IntegerField(read_only=True)
 
 
 class AbstractAttributeSerializer(serializers.ModelSerializer):
-    attribute_type_object = ReadOnlyAttributeTypeSerializer(source='attribute_type', read_only=True)
-    classifier_object = ReadOnlyClassifierSerializer(source='classifier', read_only=True)
+    attribute_type_object = AttributeTypeViewSerializer(source='attribute_type', read_only=True)
+    classifier_object = ClassifierViewSerializer(source='classifier', read_only=True)
 
     class Meta:
         list_serializer_class = AttributeListSerializer

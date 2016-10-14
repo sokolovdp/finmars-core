@@ -62,7 +62,7 @@ class CounterpartyGroupSerializer(ModelWithObjectPermissionSerializer, ModelWith
 
 
 class CounterpartyGroupViewSerializer(ModelWithObjectPermissionSerializer):
-    class Meta:
+    class Meta(ModelWithObjectPermissionSerializer.Meta):
         model = CounterpartyGroup
         fields = ['url', 'id', 'user_code', 'name', 'short_name', 'public_name', ]
 
@@ -99,7 +99,7 @@ class CounterpartyViewSerializer(ModelWithObjectPermissionSerializer):
     group = CounterpartyGroupField()
     group_object = CounterpartyGroupViewSerializer(source='group', read_only=True)
 
-    class Meta:
+    class Meta(ModelWithObjectPermissionSerializer.Meta):
         model = Counterparty
         fields = [
             'url', 'id', 'group', 'group_object', 'user_code', 'name', 'short_name', 'public_name',
@@ -159,7 +159,7 @@ class ResponsibleGroupSerializer(ModelWithObjectPermissionSerializer, ModelWithU
 
 
 class ResponsibleGroupViewSerializer(ModelWithObjectPermissionSerializer):
-    class Meta:
+    class Meta(ModelWithObjectPermissionSerializer.Meta):
         model = ResponsibleGroup
         fields = [
             'url', 'id', 'user_code', 'name', 'short_name', 'public_name',
@@ -198,7 +198,7 @@ class ResponsibleViewSerializer(ModelWithObjectPermissionSerializer):
     group = ResponsibleGroupField()
     group_object = ResponsibleGroupViewSerializer(source='group', read_only=True)
 
-    class Meta:
+    class Meta(ModelWithObjectPermissionSerializer.Meta):
         model = Responsible
         fields = [
             'url', 'id', 'group', 'group_object', 'user_code', 'name', 'short_name', 'public_name',

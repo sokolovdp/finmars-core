@@ -68,7 +68,7 @@ class TransactionTypeGroupSerializer(ModelWithObjectPermissionSerializer, ModelW
 
 
 class TransactionTypeGroupViewSerializer(ModelWithObjectPermissionSerializer):
-    class Meta:
+    class Meta(ModelWithObjectPermissionSerializer.Meta):
         model = TransactionTypeGroup
         fields = [
             'url', 'id', 'user_code', 'name', 'short_name', 'public_name', 'notes', 'is_deleted',
@@ -596,7 +596,7 @@ class TransactionTypeViewSerializer(ModelWithObjectPermissionSerializer):
     group = TransactionTypeGroupField(required=False, allow_null=False)
     group_object = TransactionTypeGroupViewSerializer(source='group', read_only=True)
 
-    class Meta:
+    class Meta(ModelWithObjectPermissionSerializer.Meta):
         model = TransactionType
         fields = [
             'url', 'id', 'group', 'group_object',
