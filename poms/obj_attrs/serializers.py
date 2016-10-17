@@ -14,7 +14,7 @@ from poms.common.serializers import ModelWithUserCodeSerializer
 from poms.obj_attrs.fields import GenericAttributeTypeField, GenericClassifierField
 from poms.obj_attrs.models import GenericAttributeType, GenericClassifier, GenericAttribute
 from poms.obj_perms.serializers import ModelWithObjectPermissionSerializer
-from poms.obj_perms.utils import has_view_perms
+from poms.obj_perms.utils import has_view_perms, get_permissions_prefetch_lookups
 from poms.users.fields import MasterUserField
 from poms.users.utils import get_member_from_context
 
@@ -272,10 +272,14 @@ class ModelWithAttributesSerializer(serializers.ModelSerializer):
 
         ctype = ContentType.objects.get_for_model(instance)
         if hasattr(instance, 'attributes'):
-            attrs_qs = instance.attributes.select_related('attribute_type')
+            attrs_qs = instance.attributes.all()
         else:
-            attrs_qs = GenericAttribute.objects.select_related('attribute_type').filter(
-                content_type=ctype, object_id=instance.id)
+            attrs_qs = GenericAttribute.objects.filter(content_type=ctype, object_id=instance.id)
+        attrs_qs = attrs_qs.select_related('attribute_type').prefetch_related(
+            *get_permissions_prefetch_lookups(
+                ('attribute_type', GenericAttributeType),
+            )
+        )
 
         protected = {a.attribute_type_id for a in attrs_qs if not has_view_perms(member, instance)}
         existed = {a.attribute_type_id: a for a in attrs_qs if has_view_perms(member, instance)}
