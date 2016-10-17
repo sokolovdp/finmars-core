@@ -5,6 +5,7 @@ import uuid
 from datetime import timedelta
 from logging import getLogger
 
+from django.contrib.contenttypes.models import ContentType
 from django.core.exceptions import ObjectDoesNotExist
 from django.core.signing import TimestampSigner, BadSignature
 from django.utils import timezone
@@ -103,6 +104,13 @@ class InstrumentDownloadSchemeAttributeSerializer(serializers.ModelSerializer):
         from poms.obj_attrs.serializers import GenericAttributeTypeViewSerializer
         self.fields['attribute_type_object'] = GenericAttributeTypeViewSerializer(source='attribute_type',
                                                                                   read_only=True)
+
+    def validate(self, attrs):
+        attribute_type = attrs.get('attribute_type', None)
+        if attribute_type:
+            if attribute_type.content_type_id != ContentType.objects.get_for_model(Instrument).id:
+                self.fields['attribute_type'].fail('does_not_exist', pk_value=attribute_type.id)
+        return attrs
 
 
 class InstrumentDownloadSchemeSerializer(serializers.ModelSerializer):
@@ -315,7 +323,11 @@ class InstrumentAttributeValueMappingSerializer(serializers.ModelSerializer):
         self.fields['classifier_object'] = GenericClassifierViewSerializer(source='classifier', read_only=True)
 
     def validate(self, attrs):
-        attribute_type = attrs.get('attribute_type')
+        attribute_type = attrs.get('attribute_type', None)
+        if attribute_type:
+            if attribute_type.content_type_id != ContentType.objects.get_for_model(Instrument).id:
+                self.fields['attribute_type'].fail('does_not_exist', pk_value=attribute_type.id)
+
         classifier = attrs.get('classifier', None)
         if classifier:
             if classifier.attribute_type_id != attribute_type.id:
