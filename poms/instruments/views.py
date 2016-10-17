@@ -210,9 +210,9 @@ class InstrumentFilterSet(FilterSet):
     price_download_scheme = ModelExtMultipleChoiceFilter(model=PriceDownloadScheme, field_name='scheme_name')
     maturity_date = django_filters.DateFromToRangeFilter()
     tag = TagFilter(model=Instrument)
-    member = ObjectPermissionMemberFilter(object_permission_model=InstrumentAttributeType)
-    member_group = ObjectPermissionGroupFilter(object_permission_model=InstrumentAttributeType)
-    permission = ObjectPermissionPermissionFilter(object_permission_model=InstrumentAttributeType)
+    member = ObjectPermissionMemberFilter(object_permission_model=Instrument)
+    member_group = ObjectPermissionGroupFilter(object_permission_model=Instrument)
+    permission = ObjectPermissionPermissionFilter(object_permission_model=Instrument)
 
     class Meta:
         model = Instrument
