@@ -8,20 +8,17 @@ from rest_framework.exceptions import ValidationError
 from rest_framework.fields import empty
 
 from poms.common.fields import ExpressionField, FloatEvalField
-from poms.common.serializers import PomsClassSerializer, AbstractClassifierSerializer, AbstractClassifierNodeSerializer, \
-    ModelWithUserCodeSerializer
+from poms.common.serializers import PomsClassSerializer, ModelWithUserCodeSerializer
 from poms.common.utils import date_now
 from poms.currencies.fields import CurrencyDefault
 from poms.currencies.serializers import CurrencyField
-from poms.instruments.fields import InstrumentClassifierField, InstrumentField, InstrumentAttributeTypeField, \
-    InstrumentTypeField, PricingPolicyField, InstrumentTypeDefault
-from poms.instruments.models import InstrumentClassifier, Instrument, PriceHistory, InstrumentClass, DailyPricingModel, \
-    AccrualCalculationModel, PaymentSizeDetail, Periodicity, CostMethod, InstrumentType, InstrumentAttributeType, \
-    InstrumentAttribute, ManualPricingFormula, AccrualCalculationSchedule, InstrumentFactorSchedule, EventSchedule, \
+from poms.instruments.fields import InstrumentField, InstrumentTypeField, PricingPolicyField, InstrumentTypeDefault
+from poms.instruments.models import Instrument, PriceHistory, InstrumentClass, DailyPricingModel, \
+    AccrualCalculationModel, PaymentSizeDetail, Periodicity, CostMethod, InstrumentType, \
+    ManualPricingFormula, AccrualCalculationSchedule, InstrumentFactorSchedule, EventSchedule, \
     PricingPolicy, EventScheduleAction, EventScheduleConfig
 from poms.integrations.fields import PriceDownloadSchemeField
-from poms.obj_attrs.serializers import AbstractAttributeSerializer, AbstractAttributeTypeSerializer, \
-    ModelWithAttributesSerializer
+from poms.obj_attrs.serializers import ModelWithAttributesSerializer
 from poms.obj_perms.serializers import ModelWithObjectPermissionSerializer
 from poms.tags.serializers import ModelWithTagSerializer
 from poms.transactions.fields import TransactionTypeField
@@ -73,14 +70,14 @@ class PricingPolicyViewSerializer(ModelWithUserCodeSerializer):
         fields = ['url', 'id', 'user_code', 'name', 'short_name', 'notes', 'expr']
 
 
-class InstrumentClassifierSerializer(AbstractClassifierSerializer):
-    class Meta(AbstractClassifierSerializer.Meta):
-        model = InstrumentClassifier
-
-
-class InstrumentClassifierNodeSerializer(AbstractClassifierNodeSerializer):
-    class Meta(AbstractClassifierNodeSerializer.Meta):
-        model = InstrumentClassifier
+# class InstrumentClassifierSerializer(AbstractClassifierSerializer):
+#     class Meta(AbstractClassifierSerializer.Meta):
+#         model = InstrumentClassifier
+#
+#
+# class InstrumentClassifierNodeSerializer(AbstractClassifierNodeSerializer):
+#     class Meta(AbstractClassifierNodeSerializer.Meta):
+#         model = InstrumentClassifier
 
 
 class InstrumentTypeSerializer(ModelWithObjectPermissionSerializer, ModelWithUserCodeSerializer,
@@ -150,26 +147,26 @@ class InstrumentTypeViewSerializer(ModelWithObjectPermissionSerializer, ModelWit
         ]
 
 
-class InstrumentAttributeTypeSerializer(AbstractAttributeTypeSerializer):
-    classifiers = InstrumentClassifierSerializer(required=False, allow_null=True, many=True)
-
-    class Meta(AbstractAttributeTypeSerializer.Meta):
-        model = InstrumentAttributeType
-        fields = AbstractAttributeTypeSerializer.Meta.fields + ['classifiers']
-
-
-class InstrumentAttributeTypeViewSerializer(AbstractAttributeTypeSerializer):
-    class Meta(AbstractAttributeTypeSerializer.Meta):
-        model = InstrumentAttributeType
-
-
-class InstrumentAttributeSerializer(AbstractAttributeSerializer):
-    attribute_type = InstrumentAttributeTypeField()
-    classifier = InstrumentClassifierField(required=False, allow_null=True)
-
-    class Meta(AbstractAttributeSerializer.Meta):
-        model = InstrumentAttribute
-        fields = AbstractAttributeSerializer.Meta.fields + ['attribute_type', 'classifier']
+# class InstrumentAttributeTypeSerializer(AbstractAttributeTypeSerializer):
+#     classifiers = InstrumentClassifierSerializer(required=False, allow_null=True, many=True)
+#
+#     class Meta(AbstractAttributeTypeSerializer.Meta):
+#         model = InstrumentAttributeType
+#         fields = AbstractAttributeTypeSerializer.Meta.fields + ['classifiers']
+#
+#
+# class InstrumentAttributeTypeViewSerializer(AbstractAttributeTypeSerializer):
+#     class Meta(AbstractAttributeTypeSerializer.Meta):
+#         model = InstrumentAttributeType
+#
+#
+# class InstrumentAttributeSerializer(AbstractAttributeSerializer):
+#     attribute_type = InstrumentAttributeTypeField()
+#     classifier = InstrumentClassifierField(required=False, allow_null=True)
+#
+#     class Meta(AbstractAttributeSerializer.Meta):
+#         model = InstrumentAttribute
+#         fields = AbstractAttributeSerializer.Meta.fields + ['attribute_type', 'classifier']
 
 
 class InstrumentSerializer(ModelWithAttributesSerializer, ModelWithObjectPermissionSerializer,
@@ -193,7 +190,7 @@ class InstrumentSerializer(ModelWithAttributesSerializer, ModelWithObjectPermiss
     factor_schedules = serializers.PrimaryKeyRelatedField(many=True, required=False, allow_null=True, read_only=True)
     event_schedules = serializers.PrimaryKeyRelatedField(many=True, required=False, allow_null=True, read_only=True)
 
-    attributes = InstrumentAttributeSerializer(many=True, required=False, allow_null=True)
+    # attributes = InstrumentAttributeSerializer(many=True, required=False, allow_null=True)
 
     # tags = TagField(many=True, required=False, allow_null=True)
     # tags_object = TagViewSerializer(source='tags', many=True, read_only=True)
@@ -211,7 +208,7 @@ class InstrumentSerializer(ModelWithAttributesSerializer, ModelWithObjectPermiss
             'price_download_scheme', 'price_download_scheme_object',
             'maturity_date',
             'manual_pricing_formulas', 'accrual_calculation_schedules', 'factor_schedules', 'event_schedules',
-            'attributes',
+            # 'attributes',
             # 'tags', 'tags_object'
         ]
 

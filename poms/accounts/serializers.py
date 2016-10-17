@@ -2,27 +2,24 @@ from __future__ import unicode_literals
 
 from rest_framework import serializers
 
-from poms.accounts.fields import AccountClassifierField, AccountAttributeTypeField, AccountTypeField, \
-    AccountTypeDefault
-from poms.accounts.models import Account, AccountType, AccountClassifier, AccountAttributeType, AccountAttribute
-from poms.common.serializers import AbstractClassifierSerializer, AbstractClassifierNodeSerializer, \
-    ModelWithUserCodeSerializer
-from poms.obj_attrs.serializers import AbstractAttributeTypeSerializer, AbstractAttributeSerializer, \
-    ModelWithAttributesSerializer
+from poms.accounts.fields import AccountTypeField, AccountTypeDefault
+from poms.accounts.models import Account, AccountType
+from poms.common.serializers import ModelWithUserCodeSerializer
+from poms.obj_attrs.serializers import ModelWithAttributesSerializer
 from poms.obj_perms.serializers import ModelWithObjectPermissionSerializer
 from poms.portfolios.fields import PortfolioField
 from poms.tags.serializers import ModelWithTagSerializer
 from poms.users.fields import MasterUserField
 
 
-class AccountClassifierSerializer(AbstractClassifierSerializer):
-    class Meta(AbstractClassifierSerializer.Meta):
-        model = AccountClassifier
-
-
-class AccountClassifierNodeSerializer(AbstractClassifierNodeSerializer):
-    class Meta(AbstractClassifierNodeSerializer.Meta):
-        model = AccountClassifier
+# class AccountClassifierSerializer(AbstractClassifierSerializer):
+#     class Meta(AbstractClassifierSerializer.Meta):
+#         model = AccountClassifier
+#
+#
+# class AccountClassifierNodeSerializer(AbstractClassifierNodeSerializer):
+#     class Meta(AbstractClassifierNodeSerializer.Meta):
+#         model = AccountClassifier
 
 
 class AccountTypeSerializer(ModelWithObjectPermissionSerializer, ModelWithUserCodeSerializer, ModelWithTagSerializer):
@@ -49,24 +46,24 @@ class AccountTypeViewSerializer(ModelWithObjectPermissionSerializer):
         ]
 
 
-class AccountAttributeTypeSerializer(AbstractAttributeTypeSerializer):
-    classifiers = AccountClassifierSerializer(required=False, allow_null=True, many=True)
-
-    class Meta(AbstractAttributeTypeSerializer.Meta):
-        model = AccountAttributeType
-        fields = AbstractAttributeTypeSerializer.Meta.fields + ['classifiers']
-
-
-class AccountAttributeSerializer(AbstractAttributeSerializer):
-    attribute_type = AccountAttributeTypeField()
-    # attribute_type_object = AccountAttributeTypeSerializer(source='attribute_type', read_only=True)
-    classifier = AccountClassifierField(required=False, allow_null=True)
-
-    # classifier_object = AccountClassifierSerializer(source='classifier', read_only=True)
-
-    class Meta(AbstractAttributeSerializer.Meta):
-        model = AccountAttribute
-        fields = AbstractAttributeSerializer.Meta.fields + ['attribute_type', 'classifier']
+# class AccountAttributeTypeSerializer(AbstractAttributeTypeSerializer):
+#     classifiers = AccountClassifierSerializer(required=False, allow_null=True, many=True)
+#
+#     class Meta(AbstractAttributeTypeSerializer.Meta):
+#         model = AccountAttributeType
+#         fields = AbstractAttributeTypeSerializer.Meta.fields + ['classifiers']
+#
+#
+# class AccountAttributeSerializer(AbstractAttributeSerializer):
+#     attribute_type = AccountAttributeTypeField()
+#     # attribute_type_object = AccountAttributeTypeSerializer(source='attribute_type', read_only=True)
+#     classifier = AccountClassifierField(required=False, allow_null=True)
+#
+#     # classifier_object = AccountClassifierSerializer(source='classifier', read_only=True)
+#
+#     class Meta(AbstractAttributeSerializer.Meta):
+#         model = AccountAttribute
+#         fields = AbstractAttributeSerializer.Meta.fields + ['attribute_type', 'classifier']
 
 
 class AccountSerializer(ModelWithObjectPermissionSerializer, ModelWithAttributesSerializer,
@@ -76,7 +73,8 @@ class AccountSerializer(ModelWithObjectPermissionSerializer, ModelWithAttributes
     type_object = AccountTypeViewSerializer(source='type', read_only=True)
     portfolios = PortfolioField(many=True, required=False, allow_null=True)
     portfolios_object = serializers.PrimaryKeyRelatedField(source='portfolios', many=True, read_only=True)
-    attributes = AccountAttributeSerializer(many=True, required=False, allow_null=True)
+
+    # attributes = AccountAttributeSerializer(many=True, required=False, allow_null=True)
 
     # tags = TagField(many=True, required=False, allow_null=True)
     # tags_object = TagViewSerializer(source='tags', many=True, read_only=True)
@@ -86,7 +84,7 @@ class AccountSerializer(ModelWithObjectPermissionSerializer, ModelWithAttributes
         fields = [
             'url', 'id', 'master_user', 'type', 'type_object', 'user_code', 'name', 'short_name', 'public_name',
             'notes', 'is_default', 'is_valid_for_all_portfolios', 'is_deleted', 'portfolios', 'portfolios_object',
-            'attributes',
+            # 'attributes',
             # 'tags', 'tags_object',
         ]
 

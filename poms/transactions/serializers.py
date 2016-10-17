@@ -9,8 +9,7 @@ from poms.accounts.fields import AccountField, AccountDefault
 from poms.accounts.models import Account
 from poms.common import formula
 from poms.common.fields import ExpressionField
-from poms.common.serializers import PomsClassSerializer, ModelWithUserCodeSerializer, AbstractClassifierSerializer, \
-    AbstractClassifierNodeSerializer
+from poms.common.serializers import PomsClassSerializer, ModelWithUserCodeSerializer
 from poms.counterparties.fields import ResponsibleField, CounterpartyField, ResponsibleDefault, CounterpartyDefault
 from poms.counterparties.models import Counterparty, Responsible
 from poms.currencies.fields import CurrencyField, CurrencyDefault
@@ -19,8 +18,7 @@ from poms.instruments.fields import InstrumentField, InstrumentTypeField
 from poms.instruments.models import Instrument, InstrumentType, DailyPricingModel, PaymentSizeDetail
 from poms.integrations.fields import PriceDownloadSchemeField
 from poms.integrations.models import PriceDownloadScheme
-from poms.obj_attrs.serializers import AbstractAttributeTypeSerializer, AbstractAttributeSerializer, \
-    ModelWithAttributesSerializer
+from poms.obj_attrs.serializers import ModelWithAttributesSerializer
 from poms.obj_perms.serializers import ModelWithObjectPermissionSerializer
 from poms.portfolios.fields import PortfolioField, PortfolioDefault
 from poms.portfolios.models import Portfolio
@@ -28,11 +26,11 @@ from poms.strategies.fields import Strategy1Field, Strategy2Field, Strategy3Fiel
     Strategy3Default
 from poms.strategies.models import Strategy1, Strategy2, Strategy3
 from poms.tags.serializers import ModelWithTagSerializer
-from poms.transactions.fields import TransactionAttributeTypeField, TransactionTypeInputContentTypeField, \
-    TransactionTypeGroupField, TransactionClassifierField
-from poms.transactions.models import TransactionClass, Transaction, TransactionType, TransactionAttributeType, \
-    TransactionAttribute, TransactionTypeAction, TransactionTypeActionTransaction, TransactionTypeActionInstrument, \
-    TransactionTypeInput, TransactionTypeGroup, ComplexTransaction, TransactionClassifier, EventClass, NotificationClass
+from poms.transactions.fields import TransactionTypeInputContentTypeField, \
+    TransactionTypeGroupField
+from poms.transactions.models import TransactionClass, Transaction, TransactionType, TransactionTypeAction, \
+    TransactionTypeActionTransaction, TransactionTypeActionInstrument, TransactionTypeInput, TransactionTypeGroup, \
+    ComplexTransaction, EventClass, NotificationClass
 from poms.transactions.processor import TransactionTypeProcessor
 from poms.users.fields import MasterUserField
 
@@ -613,23 +611,23 @@ class TransactionTypeViewSerializer(ModelWithObjectPermissionSerializer):
 
 
 
-class TransactionClassifierSerializer(AbstractClassifierSerializer):
-    class Meta(AbstractClassifierSerializer.Meta):
-        model = TransactionClassifier
-
-
-class TransactionClassifierNodeSerializer(AbstractClassifierNodeSerializer):
-    class Meta(AbstractClassifierNodeSerializer.Meta):
-        model = TransactionClassifier
-
-
-class TransactionAttributeTypeSerializer(AbstractAttributeTypeSerializer):
-    classifiers = TransactionClassifierSerializer(required=False, allow_null=True, many=True)
-
-    class Meta(AbstractAttributeTypeSerializer.Meta):
-        model = TransactionAttributeType
-        fields = AbstractAttributeTypeSerializer.Meta.fields + ['classifiers']
-
+# class TransactionClassifierSerializer(AbstractClassifierSerializer):
+#     class Meta(AbstractClassifierSerializer.Meta):
+#         model = TransactionClassifier
+#
+#
+# class TransactionClassifierNodeSerializer(AbstractClassifierNodeSerializer):
+#     class Meta(AbstractClassifierNodeSerializer.Meta):
+#         model = TransactionClassifier
+#
+#
+# class TransactionAttributeTypeSerializer(AbstractAttributeTypeSerializer):
+#     classifiers = TransactionClassifierSerializer(required=False, allow_null=True, many=True)
+#
+#     class Meta(AbstractAttributeTypeSerializer.Meta):
+#         model = TransactionAttributeType
+#         fields = AbstractAttributeTypeSerializer.Meta.fields + ['classifiers']
+#
 
 # class TransactionAttributeTypeBulkObjectPermissionSerializer(AbstractBulkObjectPermissionSerializer):
 #     content_objects = TransactionAttributeTypeField(many=True, allow_null=False, allow_empty=False)
@@ -638,13 +636,13 @@ class TransactionAttributeTypeSerializer(AbstractAttributeTypeSerializer):
 #         model = TransactionAttributeType
 
 
-class TransactionAttributeSerializer(AbstractAttributeSerializer):
-    attribute_type = TransactionAttributeTypeField()
-    classifier = TransactionClassifierField(required=False, allow_null=True)
-
-    class Meta(AbstractAttributeSerializer.Meta):
-        model = TransactionAttribute
-        fields = AbstractAttributeSerializer.Meta.fields + ['attribute_type', 'classifier']
+# class TransactionAttributeSerializer(AbstractAttributeSerializer):
+#     attribute_type = TransactionAttributeTypeField()
+#     classifier = TransactionClassifierField(required=False, allow_null=True)
+#
+#     class Meta(AbstractAttributeSerializer.Meta):
+#         model = TransactionAttribute
+#         fields = AbstractAttributeSerializer.Meta.fields + ['attribute_type', 'classifier']
 
 
 class TransactionSerializer(ModelWithAttributesSerializer):
@@ -682,7 +680,8 @@ class TransactionSerializer(ModelWithAttributesSerializer):
     responsible_object = serializers.PrimaryKeyRelatedField(source='responsible', read_only=True)
     counterparty = CounterpartyField(default=CounterpartyDefault())
     counterparty_object = serializers.PrimaryKeyRelatedField(source='counterparty', read_only=True)
-    attributes = TransactionAttributeSerializer(many=True, required=False, allow_null=True)
+
+    # attributes = TransactionAttributeSerializer(many=True, required=False, allow_null=True)
 
     class Meta:
         model = Transaction
@@ -707,7 +706,7 @@ class TransactionSerializer(ModelWithAttributesSerializer):
             'factor', 'trade_price',
             'principal_amount', 'carry_amount', 'overheads',
             'responsible', 'responsible_object', 'counterparty', 'counterparty_object',
-            'attributes'
+            # 'attributes'
         ]
 
     def __init__(self, *args, **kwargs):

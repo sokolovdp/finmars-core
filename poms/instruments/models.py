@@ -14,8 +14,7 @@ from mptt.models import MPTTModel
 
 from poms.common.models import NamedModel, AbstractClassModel, FakeDeletableModel
 from poms.common.utils import date_now, isclose
-from poms.obj_attrs.models import AbstractAttributeType, AbstractAttribute, AbstractAttributeTypeOption, \
-    AbstractClassifier, GenericAttribute
+from poms.obj_attrs.models import GenericAttribute
 from poms.obj_perms.models import GenericObjectPermission
 from poms.tags.models import TagLink
 from poms.users.models import MasterUser, Member
@@ -400,7 +399,7 @@ class Instrument(NamedModel, FakeDeletableModel):
                                               blank=True, verbose_name=ugettext_lazy('price download scheme'))
     maturity_date = models.DateField(default=date.max, verbose_name=ugettext_lazy('maturity date'))
 
-    attributes2 = GenericRelation(GenericAttribute)
+    attributes = GenericRelation(GenericAttribute)
     object_permissions = GenericRelation(GenericObjectPermission)
     tags = GenericRelation(TagLink)
 
@@ -675,23 +674,23 @@ class Instrument(NamedModel, FakeDeletableModel):
 #         verbose_name_plural = ugettext_lazy('instruments - group permissions')
 
 
-class InstrumentAttributeType(AbstractAttributeType):
-    # classifier_root = models.OneToOneField(
-    #     InstrumentClassifier,
-    #     on_delete=models.PROTECT,
-    #     null=True,
-    #     blank=True,
-    #     verbose_name=ugettext_lazy('classifier')
-    # )
-    object_permissions = GenericRelation(GenericObjectPermission)
-
-    class Meta(AbstractAttributeType.Meta):
-        verbose_name = ugettext_lazy('instrument attribute type')
-        verbose_name_plural = ugettext_lazy('instrument attribute types')
-        permissions = [
-            ('view_instrumentattributetype', 'Can view instrument attribute type'),
-            ('manage_instrumentattributetype', 'Can manage instrument attribute type'),
-        ]
+# class InstrumentAttributeType(AbstractAttributeType):
+#     # classifier_root = models.OneToOneField(
+#     #     InstrumentClassifier,
+#     #     on_delete=models.PROTECT,
+#     #     null=True,
+#     #     blank=True,
+#     #     verbose_name=ugettext_lazy('classifier')
+#     # )
+#     object_permissions = GenericRelation(GenericObjectPermission)
+#
+#     class Meta(AbstractAttributeType.Meta):
+#         verbose_name = ugettext_lazy('instrument attribute type')
+#         verbose_name_plural = ugettext_lazy('instrument attribute types')
+#         permissions = [
+#             ('view_instrumentattributetype', 'Can view instrument attribute type'),
+#             ('manage_instrumentattributetype', 'Can manage instrument attribute type'),
+#         ]
 
 
 # class InstrumentAttributeTypeUserObjectPermission(AbstractUserObjectPermission):
@@ -712,40 +711,40 @@ class InstrumentAttributeType(AbstractAttributeType):
 #         verbose_name_plural = ugettext_lazy('instrument attribute types - group permissions')
 
 
-@python_2_unicode_compatible
-class InstrumentClassifier(AbstractClassifier):
-    attribute_type = models.ForeignKey(InstrumentAttributeType, related_name='classifiers',
-                                       verbose_name=ugettext_lazy('attribute type'))
-    parent = TreeForeignKey('self', null=True, blank=True, related_name='children', db_index=True,
-                            verbose_name=ugettext_lazy('parent'))
-
-    class Meta(AbstractClassifier.Meta):
-        verbose_name = ugettext_lazy('instrument classifier')
-        verbose_name_plural = ugettext_lazy('instrument classifiers')
-
-
-class InstrumentAttributeTypeOption(AbstractAttributeTypeOption):
-    member = models.ForeignKey(Member, related_name='instrument_attribute_type_options',
-                               verbose_name=ugettext_lazy('member'))
-    attribute_type = models.ForeignKey(InstrumentAttributeType, related_name='options',
-                                       verbose_name=ugettext_lazy('attribute type'))
-
-    class Meta(AbstractAttributeTypeOption.Meta):
-        verbose_name = ugettext_lazy('instrument attribute types - option')
-        verbose_name_plural = ugettext_lazy('instrument attribute types - options')
-
-
-class InstrumentAttribute(AbstractAttribute):
-    attribute_type = models.ForeignKey(InstrumentAttributeType, related_name='attributes',
-                                       verbose_name=ugettext_lazy('attribute type'))
-    content_object = models.ForeignKey(Instrument, related_name='attributes',
-                                       verbose_name=ugettext_lazy('content object'))
-    classifier = models.ForeignKey(InstrumentClassifier, on_delete=models.SET_NULL, null=True, blank=True,
-                                   verbose_name=ugettext_lazy('classifier'))
-
-    class Meta(AbstractAttribute.Meta):
-        verbose_name = ugettext_lazy('instrument attribute')
-        verbose_name_plural = ugettext_lazy('instrument attributes')
+# @python_2_unicode_compatible
+# class InstrumentClassifier(AbstractClassifier):
+#     attribute_type = models.ForeignKey(InstrumentAttributeType, related_name='classifiers',
+#                                        verbose_name=ugettext_lazy('attribute type'))
+#     parent = TreeForeignKey('self', null=True, blank=True, related_name='children', db_index=True,
+#                             verbose_name=ugettext_lazy('parent'))
+#
+#     class Meta(AbstractClassifier.Meta):
+#         verbose_name = ugettext_lazy('instrument classifier')
+#         verbose_name_plural = ugettext_lazy('instrument classifiers')
+#
+#
+# class InstrumentAttributeTypeOption(AbstractAttributeTypeOption):
+#     member = models.ForeignKey(Member, related_name='instrument_attribute_type_options',
+#                                verbose_name=ugettext_lazy('member'))
+#     attribute_type = models.ForeignKey(InstrumentAttributeType, related_name='options',
+#                                        verbose_name=ugettext_lazy('attribute type'))
+#
+#     class Meta(AbstractAttributeTypeOption.Meta):
+#         verbose_name = ugettext_lazy('instrument attribute types - option')
+#         verbose_name_plural = ugettext_lazy('instrument attribute types - options')
+#
+#
+# class InstrumentAttribute(AbstractAttribute):
+#     attribute_type = models.ForeignKey(InstrumentAttributeType, related_name='attributes',
+#                                        verbose_name=ugettext_lazy('attribute type'))
+#     content_object = models.ForeignKey(Instrument, related_name='attributes',
+#                                        verbose_name=ugettext_lazy('content object'))
+#     classifier = models.ForeignKey(InstrumentClassifier, on_delete=models.SET_NULL, null=True, blank=True,
+#                                    verbose_name=ugettext_lazy('classifier'))
+#
+#     class Meta(AbstractAttribute.Meta):
+#         verbose_name = ugettext_lazy('instrument attribute')
+#         verbose_name_plural = ugettext_lazy('instrument attributes')
 
 
 @python_2_unicode_compatible

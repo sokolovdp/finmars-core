@@ -17,9 +17,8 @@ from poms.common.fields import ExpressionField, DateTimeTzAwareField
 from poms.common.serializers import PomsClassSerializer, ModelWithUserCodeSerializer
 from poms.currencies.fields import CurrencyField, CurrencyDefault
 from poms.currencies.models import CurrencyHistory
-from poms.instruments.fields import InstrumentTypeField, InstrumentAttributeTypeField, InstrumentClassifierField, \
-    InstrumentTypeDefault
-from poms.instruments.models import InstrumentAttributeType, PriceHistory, Instrument
+from poms.instruments.fields import InstrumentTypeField, InstrumentTypeDefault
+from poms.instruments.models import PriceHistory, Instrument
 from poms.integrations.fields import InstrumentDownloadSchemeField, PriceDownloadSchemeField
 from poms.integrations.models import InstrumentDownloadSchemeInput, InstrumentDownloadSchemeAttribute, \
     InstrumentDownloadScheme, ImportConfig, Task, ProviderClass, FactorScheduleDownloadMethod, \
@@ -28,7 +27,8 @@ from poms.integrations.models import InstrumentDownloadSchemeInput, InstrumentDo
 from poms.integrations.providers.base import get_provider, ProviderException
 from poms.integrations.storage import import_file_storage
 from poms.integrations.tasks import download_pricing, download_instrument
-from poms.obj_attrs.serializers import ModelWithAttributesSerializer, AbstractAttributeSerializer
+from poms.obj_attrs.fields import GenericAttributeTypeField, GenericClassifierField
+from poms.obj_attrs.serializers import ModelWithAttributesSerializer
 from poms.obj_perms.serializers import ModelWithObjectPermissionSerializer
 from poms.tags.serializers import ModelWithTagSerializer
 from poms.users.fields import MasterUserField, MemberField, HiddenMemberField
@@ -86,23 +86,23 @@ class InstrumentDownloadSchemeInputSerializer(serializers.ModelSerializer):
         fields = ['id', 'name', 'field']
 
 
-class InstrumentDownloadSchemeAttributeSerializer(AbstractAttributeSerializer):
+class InstrumentDownloadSchemeAttributeSerializer(serializers.ModelSerializer):
     id = serializers.IntegerField(read_only=False, required=False, allow_null=True)
-    attribute_type = InstrumentAttributeTypeField()
+    attribute_type = GenericAttributeTypeField()
     attribute_type_object = serializers.PrimaryKeyRelatedField(source='attribute_type', read_only=True)
     value = ExpressionField(allow_blank=True)
 
-    class Meta(AbstractAttributeSerializer.Meta):
+    class Meta:
         model = InstrumentDownloadSchemeAttribute
-        attribute_type_model = InstrumentAttributeType
+        # attribute_type_model = InstrumentAttributeType
         fields = ['id', 'attribute_type', 'attribute_type_object', 'value']
 
     def __init__(self, *args, **kwargs):
         super(InstrumentDownloadSchemeAttributeSerializer, self).__init__(*args, **kwargs)
 
-        from poms.instruments.serializers import InstrumentAttributeTypeViewSerializer
-        self.fields['attribute_type_object'] = InstrumentAttributeTypeViewSerializer(source='attribute_type',
-                                                                                     read_only=True)
+        from poms.obj_attrs.serializers import GenericAttributeTypeViewSerializer
+        self.fields['attribute_type_object'] = GenericAttributeTypeViewSerializer(source='attribute_type',
+                                                                                  read_only=True)
 
 
 class InstrumentDownloadSchemeSerializer(ModelWithAttributesSerializer):
@@ -292,9 +292,9 @@ class InstrumentTypeMappingSerializer(serializers.ModelSerializer):
 class InstrumentAttributeValueMappingSerializer(serializers.ModelSerializer):
     master_user = MasterUserField()
     provider_object = ProviderClassSerializer(source='provider', read_only=True)
-    attribute_type = InstrumentAttributeTypeField()
+    attribute_type = GenericAttributeTypeField()
     attribute_type_object = serializers.PrimaryKeyRelatedField(source='attribute_type', read_only=True)
-    classifier = InstrumentClassifierField(allow_empty=True, allow_null=True)
+    classifier = GenericClassifierField(allow_empty=True, allow_null=True)
     classifier_object = serializers.PrimaryKeyRelatedField(source='classifier', read_only=True)
 
     class Meta:
@@ -308,10 +308,10 @@ class InstrumentAttributeValueMappingSerializer(serializers.ModelSerializer):
     def __init__(self, *args, **kwargs):
         super(InstrumentAttributeValueMappingSerializer, self).__init__(*args, **kwargs)
 
-        from poms.instruments.serializers import InstrumentAttributeTypeViewSerializer, InstrumentClassifierSerializer
-        self.fields['attribute_type_object'] = InstrumentAttributeTypeViewSerializer(source='attribute_type',
-                                                                                     read_only=True)
-        self.fields['classifier_object'] = InstrumentClassifierSerializer(source='classifier', read_only=True)
+        from poms.obj_attrs.serializers import GenericAttributeTypeViewSerializer, GenericClassifierSerializer
+        self.fields['attribute_type_object'] = GenericAttributeTypeViewSerializer(source='attribute_type',
+                                                                                  read_only=True)
+        self.fields['classifier_object'] = GenericClassifierSerializer(source='classifier', read_only=True)
 
     def validate(self, attrs):
         attribute_type = attrs.get('attribute_type')
@@ -539,12 +539,12 @@ class ImportInstrumentViewSerializer(ModelWithAttributesSerializer, ModelWithObj
         return InstrumentFactorScheduleSerializer(instance=l, many=True, read_only=True, context=self.context).data
 
     def get_attributes(self, obj):
-        from poms.instruments.serializers import InstrumentAttributeSerializer
+        from poms.obj_attrs.serializers import GenericAttributeSerializer
         if hasattr(obj, '_attributes'):
             l = obj._attributes
         else:
             l = obj.attributes.all()
-        return InstrumentAttributeSerializer(instance=l, many=True, read_only=True, context=self.context).data
+        return GenericAttributeSerializer(instance=l, many=True, read_only=True, context=self.context).data
 
 
 class ImportInstrumentEntry(object):

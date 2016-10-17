@@ -70,73 +70,73 @@ class ClassifierListSerializer(serializers.ListSerializer):
         return tree
 
 
-class AbstractClassifierSerializer(serializers.ModelSerializer):
-    id = serializers.IntegerField(read_only=False, required=False, allow_null=True)
-    children = ClassifierRecursiveField(source='get_children', many=True, required=False, allow_null=True)
-
-    class Meta:
-        list_serializer_class = ClassifierListSerializer
-        fields = ['id', 'name', 'level', 'children', ]
-
-    def __init__(self, *args, **kwargs):
-        show_children = kwargs.pop('show_children', True)
-        super(AbstractClassifierSerializer, self).__init__(*args, **kwargs)
-        if not show_children:
-            self.fields.pop('children')
-
-    def create(self, validated_data):
-        validated_data.pop('id', None)
-        children = validated_data.pop('get_children', validated_data.get('children', []))
-        instance = super(AbstractClassifierSerializer, self).create(validated_data)
-        self.save_tree(instance, children)
-        return instance
-
-    def update(self, instance, validated_data):
-        validated_data.pop('id', None)
-        children = validated_data.pop('get_children', validated_data.get('children', empty))
-        instance = super(AbstractClassifierSerializer, self).update(instance, validated_data)
-        if children is not empty:
-            self.save_tree(instance, children)
-        return instance
-
-    def save_tree(self, node, children):
-        children = children or []
-
-        context = {}
-        context.update(self.context)
-        if node.is_root_node():
-            processed = context['processed'] = set()
-            processed.add(node.pk)
-            root = context['root_node'] = node
-        else:
-            processed = self.context['processed']
-            root = self.context['root_node']
-
-        for child_data in children:
-            child_pk = child_data.pop('id', None)
-
-            if child_pk in processed:
-                raise ValidationError('Tree node with id %s already processed' % child_pk)
-
-            if child_pk:
-                child_obj = root.get_family().get(pk=child_pk)
-                if child_obj.parent_id != node.id:
-                    child_obj.parent = node
-            else:
-                child_obj = None
-
-            node_s = self.__class__(instance=child_obj, data=child_data, context=context)
-            node_s.is_valid(raise_exception=True)
-            child_obj = node_s.save(parent=node)
-            processed.add(child_obj.pk)
-
-        if node.is_root_node():
-            node.get_family().exclude(pk__in=processed).delete()
-
-
-class AbstractClassifierNodeSerializer(serializers.ModelSerializer):
-    attribute_type = serializers.PrimaryKeyRelatedField(read_only=True)
-    parent = serializers.PrimaryKeyRelatedField(read_only=True)
-
-    class Meta:
-        fields = ['url', 'id', 'attribute_type', 'name', 'parent', 'level', 'tree_id', ]
+# class AbstractClassifierSerializer(serializers.ModelSerializer):
+#     id = serializers.IntegerField(read_only=False, required=False, allow_null=True)
+#     children = ClassifierRecursiveField(source='get_children', many=True, required=False, allow_null=True)
+#
+#     class Meta:
+#         list_serializer_class = ClassifierListSerializer
+#         fields = ['id', 'name', 'level', 'children', ]
+#
+#     def __init__(self, *args, **kwargs):
+#         show_children = kwargs.pop('show_children', True)
+#         super(AbstractClassifierSerializer, self).__init__(*args, **kwargs)
+#         if not show_children:
+#             self.fields.pop('children')
+#
+#     def create(self, validated_data):
+#         validated_data.pop('id', None)
+#         children = validated_data.pop('get_children', validated_data.get('children', []))
+#         instance = super(AbstractClassifierSerializer, self).create(validated_data)
+#         self.save_tree(instance, children)
+#         return instance
+#
+#     def update(self, instance, validated_data):
+#         validated_data.pop('id', None)
+#         children = validated_data.pop('get_children', validated_data.get('children', empty))
+#         instance = super(AbstractClassifierSerializer, self).update(instance, validated_data)
+#         if children is not empty:
+#             self.save_tree(instance, children)
+#         return instance
+#
+#     def save_tree(self, node, children):
+#         children = children or []
+#
+#         context = {}
+#         context.update(self.context)
+#         if node.is_root_node():
+#             processed = context['processed'] = set()
+#             processed.add(node.pk)
+#             root = context['root_node'] = node
+#         else:
+#             processed = self.context['processed']
+#             root = self.context['root_node']
+#
+#         for child_data in children:
+#             child_pk = child_data.pop('id', None)
+#
+#             if child_pk in processed:
+#                 raise ValidationError('Tree node with id %s already processed' % child_pk)
+#
+#             if child_pk:
+#                 child_obj = root.get_family().get(pk=child_pk)
+#                 if child_obj.parent_id != node.id:
+#                     child_obj.parent = node
+#             else:
+#                 child_obj = None
+#
+#             node_s = self.__class__(instance=child_obj, data=child_data, context=context)
+#             node_s.is_valid(raise_exception=True)
+#             child_obj = node_s.save(parent=node)
+#             processed.add(child_obj.pk)
+#
+#         if node.is_root_node():
+#             node.get_family().exclude(pk__in=processed).delete()
+#
+#
+# class AbstractClassifierNodeSerializer(serializers.ModelSerializer):
+#     attribute_type = serializers.PrimaryKeyRelatedField(read_only=True)
+#     parent = serializers.PrimaryKeyRelatedField(read_only=True)
+#
+#     class Meta:
+#         fields = ['url', 'id', 'attribute_type', 'name', 'parent', 'level', 'tree_id', ]

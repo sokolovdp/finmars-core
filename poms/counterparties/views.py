@@ -5,14 +5,11 @@ from django.db.models import Prefetch
 from rest_framework.filters import FilterSet
 
 from poms.common.filters import CharFilter, NoOpFilter, ModelExtWithPermissionMultipleChoiceFilter
-from poms.counterparties.models import Counterparty, Responsible, CounterpartyAttributeType, ResponsibleAttributeType, \
-    CounterpartyGroup, ResponsibleGroup, CounterpartyClassifier, ResponsibleClassifier, CounterpartyAttribute, \
-    ResponsibleAttribute
-from poms.counterparties.serializers import CounterpartySerializer, ResponsibleSerializer, \
-    CounterpartyAttributeTypeSerializer, \
-    ResponsibleAttributeTypeSerializer, CounterpartyGroupSerializer, ResponsibleGroupSerializer, \
-    CounterpartyClassifierNodeSerializer, ResponsibleClassifierNodeSerializer
+from poms.counterparties.models import Counterparty, Responsible, CounterpartyGroup, ResponsibleGroup
+from poms.counterparties.serializers import CounterpartySerializer, ResponsibleSerializer, CounterpartyGroupSerializer, \
+    ResponsibleGroupSerializer
 from poms.obj_attrs.filters import AttributeTypeValueTypeFilter
+from poms.obj_attrs.utils import get_attributes_prefetch
 from poms.obj_attrs.views import AbstractAttributeTypeViewSet, AbstractClassifierViewSet, GenericAttributeTypeViewSet, \
     GenericClassifierViewSet
 from poms.obj_perms.filters import ObjectPermissionMemberFilter, ObjectPermissionGroupFilter, \
@@ -25,57 +22,57 @@ from poms.tags.utils import get_tag_prefetch
 from poms.users.filters import OwnerByMasterUserFilter
 
 
-class CounterpartyAttributeTypeFilterSet(FilterSet):
-    id = NoOpFilter()
-    user_code = CharFilter()
-    name = CharFilter()
-    short_name = CharFilter()
-    public_name = CharFilter()
-    value_type = AttributeTypeValueTypeFilter()
-    member = ObjectPermissionMemberFilter(object_permission_model=CounterpartyAttributeType)
-    member_group = ObjectPermissionGroupFilter(object_permission_model=CounterpartyAttributeType)
-    permission = ObjectPermissionPermissionFilter(object_permission_model=CounterpartyAttributeType)
+# class CounterpartyAttributeTypeFilterSet(FilterSet):
+#     id = NoOpFilter()
+#     user_code = CharFilter()
+#     name = CharFilter()
+#     short_name = CharFilter()
+#     public_name = CharFilter()
+#     value_type = AttributeTypeValueTypeFilter()
+#     member = ObjectPermissionMemberFilter(object_permission_model=CounterpartyAttributeType)
+#     member_group = ObjectPermissionGroupFilter(object_permission_model=CounterpartyAttributeType)
+#     permission = ObjectPermissionPermissionFilter(object_permission_model=CounterpartyAttributeType)
+#
+#     class Meta:
+#         model = CounterpartyAttributeType
+#         fields = []
+#
+#
+# class CounterpartyAttributeTypeViewSet(AbstractAttributeTypeViewSet):
+#     queryset = CounterpartyAttributeType.objects.select_related(
+#         'master_user'
+#     ).prefetch_related(
+#         'classifiers',
+#         *get_permissions_prefetch_lookups(
+#             (None, CounterpartyAttributeType)
+#         )
+#     )
+#     serializer_class = CounterpartyAttributeTypeSerializer
+#     filter_class = CounterpartyAttributeTypeFilterSet
 
-    class Meta:
-        model = CounterpartyAttributeType
-        fields = []
 
-
-class CounterpartyAttributeTypeViewSet(AbstractAttributeTypeViewSet):
-    queryset = CounterpartyAttributeType.objects.select_related(
-        'master_user'
-    ).prefetch_related(
-        'classifiers',
-        *get_permissions_prefetch_lookups(
-            (None, CounterpartyAttributeType)
-        )
-    )
-    serializer_class = CounterpartyAttributeTypeSerializer
-    filter_class = CounterpartyAttributeTypeFilterSet
-
-
-class CounterpartyAttributeType2ViewSet(GenericAttributeTypeViewSet):
+class CounterpartyAttributeTypeViewSet(GenericAttributeTypeViewSet):
     target_model = Counterparty
 
 
-class CounterpartyClassifierFilterSet(FilterSet):
-    id = NoOpFilter()
-    name = CharFilter()
-    level = django_filters.NumberFilter()
-    attribute_type = ModelExtWithPermissionMultipleChoiceFilter(model=CounterpartyAttributeType)
+# class CounterpartyClassifierFilterSet(FilterSet):
+#     id = NoOpFilter()
+#     name = CharFilter()
+#     level = django_filters.NumberFilter()
+#     attribute_type = ModelExtWithPermissionMultipleChoiceFilter(model=CounterpartyAttributeType)
+#
+#     class Meta:
+#         model = CounterpartyClassifier
+#         fields = []
+#
+#
+# class CounterpartyClassifierViewSet(AbstractClassifierViewSet):
+#     queryset = CounterpartyClassifier.objects.select_related('attribute_type')
+#     serializer_class = CounterpartyClassifierNodeSerializer
+#     filter_class = CounterpartyClassifierFilterSet
 
-    class Meta:
-        model = CounterpartyClassifier
-        fields = []
 
-
-class CounterpartyClassifierViewSet(AbstractClassifierViewSet):
-    queryset = CounterpartyClassifier.objects.select_related('attribute_type')
-    serializer_class = CounterpartyClassifierNodeSerializer
-    filter_class = CounterpartyClassifierFilterSet
-
-
-class CounterpartyClassifier2ViewSet(GenericClassifierViewSet):
+class CounterpartyClassifierViewSet(GenericClassifierViewSet):
     target_model = Counterparty
 
 
@@ -137,13 +134,14 @@ class CounterpartyViewSet(AbstractWithObjectPermissionViewSet):
         'master_user', 'group',
     ).prefetch_related(
         'portfolios',
-        Prefetch('attributes', queryset=CounterpartyAttribute.objects.select_related('attribute_type', 'classifier')),
+        # Prefetch('attributes', queryset=CounterpartyAttribute.objects.select_related('attribute_type', 'classifier')),
+        get_attributes_prefetch(),
         get_tag_prefetch(),
         *get_permissions_prefetch_lookups(
             (None, Counterparty),
             ('group', CounterpartyGroup),
             ('portfolios', Portfolio),
-            ('attributes__attribute_type', CounterpartyAttributeType),
+            # ('attributes__attribute_type', CounterpartyAttributeType),
         )
     )
     serializer_class = CounterpartySerializer
@@ -160,57 +158,57 @@ class CounterpartyViewSet(AbstractWithObjectPermissionViewSet):
 # Responsible ----
 
 
-class ResponsibleAttributeTypeFilterSet(FilterSet):
-    id = NoOpFilter()
-    user_code = CharFilter()
-    name = CharFilter()
-    short_name = CharFilter()
-    public_name = CharFilter()
-    value_type = AttributeTypeValueTypeFilter()
-    member = ObjectPermissionMemberFilter(object_permission_model=ResponsibleAttributeType)
-    member_group = ObjectPermissionGroupFilter(object_permission_model=ResponsibleAttributeType)
-    permission = ObjectPermissionPermissionFilter(object_permission_model=ResponsibleAttributeType)
+# class ResponsibleAttributeTypeFilterSet(FilterSet):
+#     id = NoOpFilter()
+#     user_code = CharFilter()
+#     name = CharFilter()
+#     short_name = CharFilter()
+#     public_name = CharFilter()
+#     value_type = AttributeTypeValueTypeFilter()
+#     member = ObjectPermissionMemberFilter(object_permission_model=ResponsibleAttributeType)
+#     member_group = ObjectPermissionGroupFilter(object_permission_model=ResponsibleAttributeType)
+#     permission = ObjectPermissionPermissionFilter(object_permission_model=ResponsibleAttributeType)
+#
+#     class Meta:
+#         model = ResponsibleAttributeType
+#         fields = []
+#
+#
+# class ResponsibleAttributeTypeViewSet(AbstractAttributeTypeViewSet):
+#     queryset = ResponsibleAttributeType.objects.select_related(
+#         'master_user'
+#     ).prefetch_related(
+#         'classifiers',
+#         *get_permissions_prefetch_lookups(
+#             (None, ResponsibleAttributeType)
+#         )
+#     )
+#     serializer_class = ResponsibleAttributeTypeSerializer
+#     filter_class = ResponsibleAttributeTypeFilterSet
 
-    class Meta:
-        model = ResponsibleAttributeType
-        fields = []
 
-
-class ResponsibleAttributeTypeViewSet(AbstractAttributeTypeViewSet):
-    queryset = ResponsibleAttributeType.objects.select_related(
-        'master_user'
-    ).prefetch_related(
-        'classifiers',
-        *get_permissions_prefetch_lookups(
-            (None, ResponsibleAttributeType)
-        )
-    )
-    serializer_class = ResponsibleAttributeTypeSerializer
-    filter_class = ResponsibleAttributeTypeFilterSet
-
-
-class ResponsibleAttributeType2ViewSet(GenericAttributeTypeViewSet):
+class ResponsibleAttributeTypeViewSet(GenericAttributeTypeViewSet):
     target_model = Responsible
 
 
-class ResponsibleClassifierFilterSet(FilterSet):
-    id = NoOpFilter()
-    name = CharFilter()
-    level = django_filters.NumberFilter()
-    attribute_type = ModelExtWithPermissionMultipleChoiceFilter(model=ResponsibleAttributeType)
+# class ResponsibleClassifierFilterSet(FilterSet):
+#     id = NoOpFilter()
+#     name = CharFilter()
+#     level = django_filters.NumberFilter()
+#     attribute_type = ModelExtWithPermissionMultipleChoiceFilter(model=ResponsibleAttributeType)
+#
+#     class Meta:
+#         model = ResponsibleClassifier
+#         fields = []
+#
+#
+# class ResponsibleClassifierViewSet(AbstractClassifierViewSet):
+#     queryset = ResponsibleClassifier.objects
+#     serializer_class = ResponsibleClassifierNodeSerializer
+#     filter_class = ResponsibleClassifierFilterSet
 
-    class Meta:
-        model = ResponsibleClassifier
-        fields = []
 
-
-class ResponsibleClassifierViewSet(AbstractClassifierViewSet):
-    queryset = ResponsibleClassifier.objects
-    serializer_class = ResponsibleClassifierNodeSerializer
-    filter_class = ResponsibleClassifierFilterSet
-
-
-class ResponsibleClassifier2ViewSet(GenericClassifierViewSet):
+class ResponsibleClassifierViewSet(GenericClassifierViewSet):
     target_model = Responsible
 
 
@@ -272,13 +270,14 @@ class ResponsibleViewSet(AbstractWithObjectPermissionViewSet):
         'master_user', 'group',
     ).prefetch_related(
         'portfolios',
+        get_attributes_prefetch(),
         get_tag_prefetch(),
-        Prefetch('attributes', queryset=ResponsibleAttribute.objects.select_related('attribute_type', 'classifier')),
+        # Prefetch('attributes', queryset=ResponsibleAttribute.objects.select_related('attribute_type', 'classifier')),
         *get_permissions_prefetch_lookups(
             (None, Responsible),
             ('group', ResponsibleGroup),
             ('portfolios', Portfolio),
-            ('attributes__attribute_type', ResponsibleAttributeType),
+            # ('attributes__attribute_type', ResponsibleAttributeType),
         )
     )
     # prefetch_permissions_for = (

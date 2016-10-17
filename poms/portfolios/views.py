@@ -7,73 +7,72 @@ from rest_framework.filters import FilterSet
 from poms.accounts.models import Account, AccountType
 from poms.common.filters import CharFilter, ModelExtWithPermissionMultipleChoiceFilter, NoOpFilter
 from poms.counterparties.models import Responsible, Counterparty, CounterpartyGroup, ResponsibleGroup
-from poms.obj_attrs.filters import AttributeTypeValueTypeFilter
-from poms.obj_attrs.views import AbstractAttributeTypeViewSet, AbstractClassifierViewSet, GenericAttributeTypeViewSet, \
+from poms.obj_attrs.utils import get_attributes_prefetch
+from poms.obj_attrs.views import GenericAttributeTypeViewSet, \
     GenericClassifierViewSet
 from poms.obj_perms.filters import ObjectPermissionMemberFilter, ObjectPermissionGroupFilter, \
     ObjectPermissionPermissionFilter
 from poms.obj_perms.utils import get_permissions_prefetch_lookups
 from poms.obj_perms.views import AbstractWithObjectPermissionViewSet
-from poms.portfolios.models import Portfolio, PortfolioAttributeType, PortfolioClassifier, PortfolioAttribute
-from poms.portfolios.serializers import PortfolioSerializer, PortfolioAttributeTypeSerializer, \
-    PortfolioClassifierNodeSerializer
+from poms.portfolios.models import Portfolio
+from poms.portfolios.serializers import PortfolioSerializer
 from poms.tags.filters import TagFilter
 from poms.tags.utils import get_tag_prefetch
 from poms.transactions.models import TransactionType, TransactionTypeGroup
 from poms.users.filters import OwnerByMasterUserFilter
 
 
-class PortfolioAttributeTypeFilterSet(FilterSet):
-    id = NoOpFilter()
-    user_code = CharFilter()
-    name = CharFilter()
-    short_name = CharFilter()
-    public_name = CharFilter()
-    value_type = AttributeTypeValueTypeFilter()
-    member = ObjectPermissionMemberFilter(object_permission_model=PortfolioAttributeType)
-    member_group = ObjectPermissionGroupFilter(object_permission_model=PortfolioAttributeType)
-    permission = ObjectPermissionPermissionFilter(object_permission_model=PortfolioAttributeType)
-
-    class Meta:
-        model = PortfolioAttributeType
-        fields = []
-
-
-class PortfolioAttributeTypeViewSet(AbstractAttributeTypeViewSet):
-    queryset = PortfolioAttributeType.objects.select_related(
-        'master_user'
-    ).prefetch_related(
-        'classifiers',
-        *get_permissions_prefetch_lookups(
-            (None, PortfolioAttributeType)
-        )
-    )
-    serializer_class = PortfolioAttributeTypeSerializer
-    filter_class = PortfolioAttributeTypeFilterSet
+# class PortfolioAttributeTypeFilterSet(FilterSet):
+#     id = NoOpFilter()
+#     user_code = CharFilter()
+#     name = CharFilter()
+#     short_name = CharFilter()
+#     public_name = CharFilter()
+#     value_type = AttributeTypeValueTypeFilter()
+#     member = ObjectPermissionMemberFilter(object_permission_model=PortfolioAttributeType)
+#     member_group = ObjectPermissionGroupFilter(object_permission_model=PortfolioAttributeType)
+#     permission = ObjectPermissionPermissionFilter(object_permission_model=PortfolioAttributeType)
+#
+#     class Meta:
+#         model = PortfolioAttributeType
+#         fields = []
 
 
-class PortfolioAttributeType2ViewSet(GenericAttributeTypeViewSet):
+# class PortfolioAttributeTypeViewSet(AbstractAttributeTypeViewSet):
+#     queryset = PortfolioAttributeType.objects.select_related(
+#         'master_user'
+#     ).prefetch_related(
+#         'classifiers',
+#         *get_permissions_prefetch_lookups(
+#             (None, PortfolioAttributeType)
+#         )
+#     )
+#     serializer_class = PortfolioAttributeTypeSerializer
+#     filter_class = PortfolioAttributeTypeFilterSet
+
+
+class PortfolioAttributeTypeViewSet(GenericAttributeTypeViewSet):
     target_model = Portfolio
 
 
-class PortfolioClassifierFilterSet(FilterSet):
-    id = NoOpFilter()
-    name = CharFilter()
-    level = django_filters.NumberFilter()
-    attribute_type = ModelExtWithPermissionMultipleChoiceFilter(model=PortfolioAttributeType)
+# class PortfolioClassifierFilterSet(FilterSet):
+#     id = NoOpFilter()
+#     name = CharFilter()
+#     level = django_filters.NumberFilter()
+#     attribute_type = ModelExtWithPermissionMultipleChoiceFilter(model=PortfolioAttributeType)
+#
+#     class Meta:
+#         model = PortfolioClassifier
+#         fields = []
+#
+#
+# class PortfolioClassifierViewSet(AbstractClassifierViewSet):
+#     queryset = PortfolioClassifier.objects
+#     serializer_class = PortfolioClassifierNodeSerializer
+#     filter_class = PortfolioClassifierFilterSet
 
-    class Meta:
-        model = PortfolioClassifier
-        fields = []
 
-
-class PortfolioClassifierViewSet(AbstractClassifierViewSet):
-    queryset = PortfolioClassifier.objects
-    serializer_class = PortfolioClassifierNodeSerializer
-    filter_class = PortfolioClassifierFilterSet
-
-
-class PortfolioClassifier2ViewSet(GenericClassifierViewSet):
+class PortfolioClassifierViewSet(GenericClassifierViewSet):
     target_model = Portfolio
 
 
@@ -106,8 +105,8 @@ class PortfolioViewSet(AbstractWithObjectPermissionViewSet):
         Prefetch('responsibles', queryset=Responsible.objects.select_related('group')),
         Prefetch('counterparties', queryset=Counterparty.objects.select_related('group')),
         Prefetch('transaction_types', queryset=TransactionType.objects.select_related('group')),
+        get_attributes_prefetch(),
         get_tag_prefetch(),
-        Prefetch('attributes', queryset=PortfolioAttribute.objects.select_related('attribute_type', 'classifier')),
         *get_permissions_prefetch_lookups(
             (None, Portfolio),
             ('accounts', Account),
@@ -118,7 +117,6 @@ class PortfolioViewSet(AbstractWithObjectPermissionViewSet):
             ('responsibles__group', ResponsibleGroup),
             ('transaction_types', TransactionType),
             ('transaction_types__group', TransactionTypeGroup),
-            ('attributes__attribute_type', PortfolioAttributeType),
         )
     )
     # prefetch_permissions_for = (

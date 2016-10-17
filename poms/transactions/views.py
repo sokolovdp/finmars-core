@@ -15,8 +15,8 @@ from poms.common.views import AbstractClassModelViewSet, AbstractModelViewSet, A
 from poms.counterparties.models import Responsible, Counterparty, ResponsibleGroup, CounterpartyGroup
 from poms.currencies.models import Currency
 from poms.instruments.models import Instrument, InstrumentType
-from poms.obj_attrs.filters import AttributeTypeValueTypeFilter
-from poms.obj_attrs.views import AbstractAttributeTypeViewSet, AbstractClassifierViewSet, GenericAttributeTypeViewSet, \
+from poms.obj_attrs.utils import get_attributes_prefetch
+from poms.obj_attrs.views import GenericAttributeTypeViewSet, \
     GenericClassifierViewSet
 from poms.obj_perms.filters import ObjectPermissionMemberFilter, ObjectPermissionGroupFilter, \
     ObjectPermissionPermissionFilter
@@ -24,21 +24,18 @@ from poms.obj_perms.utils import get_permissions_prefetch_lookups
 from poms.obj_perms.views import AbstractWithObjectPermissionViewSet
 from poms.portfolios.models import Portfolio
 from poms.strategies.models import Strategy1, Strategy2, Strategy3, Strategy1Subgroup, Strategy1Group, \
-    Strategy2Subgroup, \
-    Strategy2Group, Strategy3Subgroup, Strategy3Group
+    Strategy2Subgroup, Strategy2Group, Strategy3Subgroup, Strategy3Group
 from poms.tags.filters import TagFilter
 from poms.tags.utils import get_tag_prefetch
 from poms.transactions.filters import TransactionObjectPermissionFilter, ComplexTransactionPermissionFilter, \
     TransactionObjectPermissionMemberFilter, TransactionObjectPermissionGroupFilter, \
     TransactionObjectPermissionPermissionFilter
-from poms.transactions.models import TransactionClass, Transaction, TransactionType, TransactionAttributeType, \
-    TransactionTypeGroup, ComplexTransaction, TransactionClassifier, EventClass, NotificationClass, \
-    TransactionAttribute, \
-    TransactionTypeInput, TransactionTypeAction
+from poms.transactions.models import TransactionClass, Transaction, TransactionType, TransactionTypeGroup, \
+    ComplexTransaction, EventClass, NotificationClass, TransactionTypeInput, TransactionTypeAction
 from poms.transactions.permissions import TransactionObjectPermission
 from poms.transactions.serializers import TransactionClassSerializer, TransactionSerializer, TransactionTypeSerializer, \
-    TransactionAttributeTypeSerializer, TransactionTypeProcessSerializer, TransactionTypeGroupSerializer, \
-    ComplexTransactionSerializer, TransactionClassifierNodeSerializer, EventClassSerializer, \
+    TransactionTypeProcessSerializer, TransactionTypeGroupSerializer, ComplexTransactionSerializer, \
+    EventClassSerializer, \
     NotificationClassSerializer, TransactionTypeProcess
 from poms.users.filters import OwnerByMasterUserFilter
 
@@ -324,58 +321,58 @@ class TransactionTypeViewSet(AbstractWithObjectPermissionViewSet):
                 transaction.set_rollback(True)
 
 
-class TransactionAttributeTypeFilterSet(FilterSet):
-    id = NoOpFilter()
-    user_code = CharFilter()
-    name = CharFilter()
-    short_name = CharFilter()
-    public_name = CharFilter()
-    value_type = AttributeTypeValueTypeFilter()
-    member = ObjectPermissionMemberFilter(object_permission_model=TransactionAttributeType)
-    member_group = ObjectPermissionGroupFilter(object_permission_model=TransactionAttributeType)
-    permission = ObjectPermissionPermissionFilter(object_permission_model=TransactionAttributeType)
+# class TransactionAttributeTypeFilterSet(FilterSet):
+#     id = NoOpFilter()
+#     user_code = CharFilter()
+#     name = CharFilter()
+#     short_name = CharFilter()
+#     public_name = CharFilter()
+#     value_type = AttributeTypeValueTypeFilter()
+#     member = ObjectPermissionMemberFilter(object_permission_model=TransactionAttributeType)
+#     member_group = ObjectPermissionGroupFilter(object_permission_model=TransactionAttributeType)
+#     permission = ObjectPermissionPermissionFilter(object_permission_model=TransactionAttributeType)
+#
+#     class Meta:
+#         model = TransactionAttributeType
+#         fields = []
+#
+#
+# class TransactionAttributeTypeViewSet(AbstractAttributeTypeViewSet):
+#     queryset = TransactionAttributeType.objects.select_related(
+#         'master_user'
+#     ).prefetch_related(
+#         'classifiers',
+#         *get_permissions_prefetch_lookups(
+#             (None, TransactionAttributeType)
+#         )
+#     )
+#     serializer_class = TransactionAttributeTypeSerializer
+#     # bulk_objects_permissions_serializer_class = TransactionAttributeTypeBulkObjectPermissionSerializer
+#     filter_class = TransactionAttributeTypeFilterSet
 
-    class Meta:
-        model = TransactionAttributeType
-        fields = []
 
-
-class TransactionAttributeTypeViewSet(AbstractAttributeTypeViewSet):
-    queryset = TransactionAttributeType.objects.select_related(
-        'master_user'
-    ).prefetch_related(
-        'classifiers',
-        *get_permissions_prefetch_lookups(
-            (None, TransactionAttributeType)
-        )
-    )
-    serializer_class = TransactionAttributeTypeSerializer
-    # bulk_objects_permissions_serializer_class = TransactionAttributeTypeBulkObjectPermissionSerializer
-    filter_class = TransactionAttributeTypeFilterSet
-
-
-class TransactionAttributeType2ViewSet(GenericAttributeTypeViewSet):
+class TransactionAttributeTypeViewSet(GenericAttributeTypeViewSet):
     target_model = Transaction
 
 
-class TransactionClassifierFilterSet(FilterSet):
-    id = NoOpFilter()
-    name = CharFilter()
-    level = django_filters.NumberFilter()
-    attribute_type = ModelExtWithPermissionMultipleChoiceFilter(model=TransactionAttributeType)
+# class TransactionClassifierFilterSet(FilterSet):
+#     id = NoOpFilter()
+#     name = CharFilter()
+#     level = django_filters.NumberFilter()
+#     attribute_type = ModelExtWithPermissionMultipleChoiceFilter(model=TransactionAttributeType)
+#
+#     class Meta:
+#         model = TransactionClassifier
+#         fields = []
+#
+#
+# class TransactionClassifierViewSet(AbstractClassifierViewSet):
+#     queryset = TransactionClassifier.objects
+#     serializer_class = TransactionClassifierNodeSerializer
+#     filter_class = TransactionClassifierFilterSet
 
-    class Meta:
-        model = TransactionClassifier
-        fields = []
 
-
-class TransactionClassifierViewSet(AbstractClassifierViewSet):
-    queryset = TransactionClassifier.objects
-    serializer_class = TransactionClassifierNodeSerializer
-    filter_class = TransactionClassifierFilterSet
-
-
-class TransactionClassifier2ViewSet(GenericClassifierViewSet):
+class TransactionClassifierViewSet(GenericClassifierViewSet):
     target_model = Transaction
 
 
@@ -449,7 +446,7 @@ class TransactionViewSet(AbstractModelViewSet):
         'responsible', 'responsible__group',
         'counterparty', 'counterparty__group',
     ).prefetch_related(
-        Prefetch('attributes', queryset=TransactionAttribute.objects.select_related('attribute_type', 'classifier')),
+        get_attributes_prefetch(),
         *get_permissions_prefetch_lookups(
             ('portfolio', Portfolio),
             ('instrument', Instrument),
@@ -482,7 +479,7 @@ class TransactionViewSet(AbstractModelViewSet):
             ('responsible__group', ResponsibleGroup),
             ('counterparty', Counterparty),
             ('counterparty__group', CounterpartyGroup),
-            ('attributes__attribute_type', TransactionAttributeType)
+            # ('attributes__attribute_type', TransactionAttributeType)
         )
     )
     # prefetch_permissions_for = (
@@ -605,10 +602,7 @@ class ComplexTransactionViewSet(DestroyModelMixin, AbstractReadOnlyModelViewSet)
                 'responsible', 'responsible__group',
                 'counterparty', 'counterparty__group',
             ).prefetch_related(
-                Prefetch(
-                    'attributes',
-                    queryset=TransactionAttribute.objects.select_related('attribute_type', 'classifier')
-                ),
+                get_attributes_prefetch(),
                 *get_permissions_prefetch_lookups(
                     ('portfolio', Portfolio),
                     ('instrument', Instrument),

@@ -82,12 +82,14 @@ def get_attr_type_view_perms(model_cls):
 
 
 def get_attributes_prefetch():
-    return Prefetch('attributes2',
-                    queryset=GenericAttribute.objects.select_related(
-                        'attribute_type', 'classifier'
-                    ).prefetch_related(
-                        'attribute_type__options',
-                        *get_permissions_prefetch_lookups(
-                            ('attribute_type', GenericAttributeType)
-                        )
-                    ))
+    return Prefetch(
+        'attributes',
+        queryset=GenericAttribute.objects.select_related(
+            'attribute_type', 'classifier'
+        ).prefetch_related(
+            'attribute_type__options',
+            *get_permissions_prefetch_lookups(
+                ('attribute_type', GenericAttributeType)
+            )
+        )
+    )

@@ -9,15 +9,14 @@ from poms.counterparties.models import Responsible, Counterparty
 from poms.currencies.models import Currency
 from poms.instruments.models import Instrument, PaymentSizeDetail, DailyPricingModel, InstrumentType
 from poms.integrations.models import PriceDownloadScheme
-from poms.obj_attrs.admin import AbstractAttributeTypeAdmin, AbstractAttributeInline, \
-    AbstractAttributeTypeOptionInline, AbstractAttributeTypeClassifierInline, GenericAttributeInline
+from poms.obj_attrs.admin import GenericAttributeInline
 from poms.obj_perms.admin import GenericObjectPermissionInline
 from poms.portfolios.models import Portfolio
 from poms.strategies.models import Strategy3, Strategy2, Strategy1
 from poms.transactions.models import TransactionClass, Transaction, TransactionType, TransactionTypeInput, \
-    TransactionAttributeType, ActionClass, EventToHandle, ExternalCashFlow, ExternalCashFlowStrategy, NotificationClass, \
+    ActionClass, EventToHandle, ExternalCashFlow, ExternalCashFlowStrategy, NotificationClass, \
     EventClass, PeriodicityGroup, TransactionTypeActionInstrument, TransactionTypeActionTransaction, ComplexTransaction, \
-    TransactionTypeGroup, TransactionClassifier
+    TransactionTypeGroup
 
 admin.site.register(TransactionClass, ClassModelAdmin)
 admin.site.register(ActionClass, ClassModelAdmin)
@@ -344,7 +343,7 @@ class TransactionAdmin(admin.ModelAdmin):
                      'strategy1_position', 'strategy1_cash', 'strategy2_position', 'strategy2_cash',
                      'strategy3_position', 'strategy3_cash', ]
     inlines = [
-        AbstractAttributeInline,
+        # AbstractAttributeInline,
         GenericAttributeInline,
     ]
     fields = (
@@ -374,19 +373,19 @@ class TransactionAdmin(admin.ModelAdmin):
 admin.site.register(Transaction, TransactionAdmin)
 
 
-class TransactionAttributeTypeAdmin(AbstractAttributeTypeAdmin):
-    inlines = [
-        AbstractAttributeTypeClassifierInline,
-        AbstractAttributeTypeOptionInline,
-        GenericObjectPermissionInline,
-        # UserObjectPermissionInline,
-        # GroupObjectPermissionInline,
-    ]
-
-
-admin.site.register(TransactionAttributeType, TransactionAttributeTypeAdmin)
-
-admin.site.register(TransactionClassifier, ClassifierAdmin)
+# class TransactionAttributeTypeAdmin(AbstractAttributeTypeAdmin):
+#     inlines = [
+#         AbstractAttributeTypeClassifierInline,
+#         AbstractAttributeTypeOptionInline,
+#         GenericObjectPermissionInline,
+#         # UserObjectPermissionInline,
+#         # GroupObjectPermissionInline,
+#     ]
+#
+#
+# admin.site.register(TransactionAttributeType, TransactionAttributeTypeAdmin)
+#
+# admin.site.register(TransactionClassifier, ClassifierAdmin)
 
 
 # admin.site.register(TransactionAttributeTypeOption, AbstractAttributeTypeOptionAdmin)

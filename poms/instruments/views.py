@@ -15,18 +15,17 @@ from poms.common.views import AbstractClassModelViewSet, AbstractModelViewSet
 from poms.currencies.models import Currency
 from poms.instruments.filters import OwnerByInstrumentFilter, PriceHistoryObjectPermissionFilter
 from poms.instruments.models import Instrument, PriceHistory, InstrumentClass, DailyPricingModel, \
-    AccrualCalculationModel, PaymentSizeDetail, Periodicity, CostMethod, InstrumentType, InstrumentAttributeType, \
-    PricingPolicy, InstrumentClassifier, EventScheduleConfig, InstrumentAttribute, ManualPricingFormula, \
+    AccrualCalculationModel, PaymentSizeDetail, Periodicity, CostMethod, InstrumentType, PricingPolicy, \
+    EventScheduleConfig, ManualPricingFormula, \
     AccrualCalculationSchedule, EventSchedule, EventScheduleAction
 from poms.instruments.serializers import InstrumentSerializer, PriceHistorySerializer, \
     InstrumentClassSerializer, DailyPricingModelSerializer, AccrualCalculationModelSerializer, \
     PaymentSizeDetailSerializer, PeriodicitySerializer, CostMethodSerializer, InstrumentTypeSerializer, \
-    InstrumentAttributeTypeSerializer, PricingPolicySerializer, InstrumentClassifierNodeSerializer, \
-    EventScheduleConfigSerializer, InstrumentCalculatePricesAccruedPriceSerializer
+    PricingPolicySerializer, EventScheduleConfigSerializer, InstrumentCalculatePricesAccruedPriceSerializer
 from poms.instruments.tasks import calculate_prices_accrued_price
 from poms.integrations.models import PriceDownloadScheme
-from poms.obj_attrs.filters import AttributeTypeValueTypeFilter
-from poms.obj_attrs.views import AbstractAttributeTypeViewSet, AbstractClassifierViewSet, GenericAttributeTypeViewSet, \
+from poms.obj_attrs.utils import get_attributes_prefetch
+from poms.obj_attrs.views import GenericAttributeTypeViewSet, \
     GenericClassifierViewSet
 from poms.obj_perms.filters import ObjectPermissionMemberFilter, ObjectPermissionGroupFilter, \
     ObjectPermissionPermissionFilter
@@ -140,57 +139,57 @@ class InstrumentTypeViewSet(AbstractWithObjectPermissionViewSet):
     ]
 
 
-class InstrumentAttributeTypeFilterSet(FilterSet):
-    id = NoOpFilter()
-    user_code = CharFilter()
-    name = CharFilter()
-    short_name = CharFilter()
-    public_name = CharFilter()
-    value_type = AttributeTypeValueTypeFilter()
-    member = ObjectPermissionMemberFilter(object_permission_model=InstrumentAttributeType)
-    member_group = ObjectPermissionGroupFilter(object_permission_model=InstrumentAttributeType)
-    permission = ObjectPermissionPermissionFilter(object_permission_model=InstrumentAttributeType)
+# class InstrumentAttributeTypeFilterSet(FilterSet):
+#     id = NoOpFilter()
+#     user_code = CharFilter()
+#     name = CharFilter()
+#     short_name = CharFilter()
+#     public_name = CharFilter()
+#     value_type = AttributeTypeValueTypeFilter()
+#     member = ObjectPermissionMemberFilter(object_permission_model=InstrumentAttributeType)
+#     member_group = ObjectPermissionGroupFilter(object_permission_model=InstrumentAttributeType)
+#     permission = ObjectPermissionPermissionFilter(object_permission_model=InstrumentAttributeType)
+#
+#     class Meta:
+#         model = InstrumentAttributeType
+#         fields = []
+#
+#
+# class InstrumentAttributeTypeViewSet(AbstractAttributeTypeViewSet):
+#     queryset = InstrumentAttributeType.objects.select_related(
+#         'master_user'
+#     ).prefetch_related(
+#         'classifiers',
+#         *get_permissions_prefetch_lookups(
+#             (None, InstrumentAttributeType)
+#         )
+#     )
+#     serializer_class = InstrumentAttributeTypeSerializer
+#     filter_class = InstrumentAttributeTypeFilterSet
 
-    class Meta:
-        model = InstrumentAttributeType
-        fields = []
 
-
-class InstrumentAttributeTypeViewSet(AbstractAttributeTypeViewSet):
-    queryset = InstrumentAttributeType.objects.select_related(
-        'master_user'
-    ).prefetch_related(
-        'classifiers',
-        *get_permissions_prefetch_lookups(
-            (None, InstrumentAttributeType)
-        )
-    )
-    serializer_class = InstrumentAttributeTypeSerializer
-    filter_class = InstrumentAttributeTypeFilterSet
-
-
-class InstrumentAttributeType2ViewSet(GenericAttributeTypeViewSet):
+class InstrumentAttributeTypeViewSet(GenericAttributeTypeViewSet):
     target_model = Instrument
 
 
-class InstrumentClassifierFilterSet(FilterSet):
-    id = NoOpFilter()
-    name = CharFilter()
-    level = django_filters.NumberFilter()
-    attribute_type = ModelExtWithPermissionMultipleChoiceFilter(model=InstrumentAttributeType)
+# class InstrumentClassifierFilterSet(FilterSet):
+#     id = NoOpFilter()
+#     name = CharFilter()
+#     level = django_filters.NumberFilter()
+#     attribute_type = ModelExtWithPermissionMultipleChoiceFilter(model=InstrumentAttributeType)
+#
+#     class Meta:
+#         model = InstrumentClassifier
+#         fields = []
+#
+#
+# class InstrumentClassifierViewSet(AbstractClassifierViewSet):
+#     queryset = InstrumentClassifier.objects
+#     serializer_class = InstrumentClassifierNodeSerializer
+#     filter_class = InstrumentClassifierFilterSet
 
-    class Meta:
-        model = InstrumentClassifier
-        fields = []
 
-
-class InstrumentClassifierViewSet(AbstractClassifierViewSet):
-    queryset = InstrumentClassifier.objects
-    serializer_class = InstrumentClassifierNodeSerializer
-    filter_class = InstrumentClassifierFilterSet
-
-
-class InstrumentClassifier2ViewSet(GenericClassifierViewSet):
+class InstrumentClassifierViewSet(GenericClassifierViewSet):
     target_model = Instrument
 
 
@@ -218,9 +217,9 @@ class InstrumentFilterSet(FilterSet):
     price_download_scheme = ModelExtMultipleChoiceFilter(model=PriceDownloadScheme, field_name='scheme_name')
     maturity_date = django_filters.DateFromToRangeFilter()
     tag = TagFilter(model=Instrument)
-    member = ObjectPermissionMemberFilter(object_permission_model=InstrumentAttributeType)
-    member_group = ObjectPermissionGroupFilter(object_permission_model=InstrumentAttributeType)
-    permission = ObjectPermissionPermissionFilter(object_permission_model=InstrumentAttributeType)
+    member = ObjectPermissionMemberFilter(object_permission_model=Instrument)
+    member_group = ObjectPermissionGroupFilter(object_permission_model=Instrument)
+    permission = ObjectPermissionPermissionFilter(object_permission_model=Instrument)
 
     class Meta:
         model = Instrument
@@ -232,10 +231,10 @@ class InstrumentViewSet(AbstractWithObjectPermissionViewSet):
         'instrument_type', 'instrument_type__instrument_class', 'pricing_currency', 'accrued_currency',
         'payment_size_detail', 'daily_pricing_model', 'price_download_scheme', 'price_download_scheme__provider',
     ).prefetch_related(
-        Prefetch(
-            'attributes',
-            queryset=InstrumentAttribute.objects.select_related('attribute_type', 'classifier')
-        ),
+        # Prefetch(
+        #     'attributes',
+        #     queryset=InstrumentAttribute.objects.select_related('attribute_type', 'classifier')
+        # ),
         Prefetch(
             'manual_pricing_formulas',
             queryset=ManualPricingFormula.objects.select_related('pricing_policy')
@@ -263,11 +262,12 @@ class InstrumentViewSet(AbstractWithObjectPermissionViewSet):
                     )
                 ),
             )),
+        get_attributes_prefetch(),
         get_tag_prefetch(),
         *get_permissions_prefetch_lookups(
             (None, Instrument),
             ('instrument_type', InstrumentType),
-            ('attributes__attribute_type', InstrumentAttributeType),
+            # ('attributes__attribute_type', InstrumentAttributeType),
         )
     )
     serializer_class = InstrumentSerializer
