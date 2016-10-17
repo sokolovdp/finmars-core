@@ -220,6 +220,9 @@ class GenericClassifier(MPTTModel):
         verbose_name_plural = ugettext_lazy('classifiers')
         ordering = ['tree_id', 'level', 'name']
 
+    def __str__(self):
+        return self.name
+
 
 class GenericAttribute(models.Model):
     attribute_type = models.ForeignKey(GenericAttributeType)

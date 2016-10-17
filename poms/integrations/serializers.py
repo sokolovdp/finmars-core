@@ -105,7 +105,7 @@ class InstrumentDownloadSchemeAttributeSerializer(serializers.ModelSerializer):
                                                                                   read_only=True)
 
 
-class InstrumentDownloadSchemeSerializer(ModelWithAttributesSerializer):
+class InstrumentDownloadSchemeSerializer(serializers.ModelSerializer):
     master_user = MasterUserField()
     provider_object = ProviderClassSerializer(source='provider', read_only=True)
 
@@ -174,19 +174,20 @@ class InstrumentDownloadSchemeSerializer(ModelWithAttributesSerializer):
 
     def create(self, validated_data):
         inputs = validated_data.pop('inputs', None) or []
-        # attributes = validated_data.pop('attributes', None) or []
+        attributes = validated_data.pop('attributes', None) or []
         instance = super(InstrumentDownloadSchemeSerializer, self).create(validated_data)
         self.save_inputs(instance, inputs)
-        # self.save_attributes(instance, attributes)
+        self.save_attributes(instance, attributes)
         return instance
 
     def update(self, instance, validated_data):
         inputs = validated_data.pop('inputs', empty)
-        # attributes = validated_data.pop('attributes', None) or []
+        attributes = validated_data.pop('attributes', None) or []
         instance = super(InstrumentDownloadSchemeSerializer, self).update(instance, validated_data)
         if inputs is not empty:
             self.save_inputs(instance, inputs)
-        # self.save_attributes(instance, attributes)
+        if attributes is not empty:
+            self.save_attributes(instance, attributes)
         return instance
 
     def save_inputs(self, instance, inputs):
@@ -207,21 +208,21 @@ class InstrumentDownloadSchemeSerializer(ModelWithAttributesSerializer):
             pk_set.add(input0.id)
         instance.inputs.exclude(pk__in=pk_set).delete()
 
-        # def save_attributes(self, instance, attributes):
-        #     pk_set = set()
-        #     for attr_values in attributes:
-        #         attribute_type = attr_values['attribute_type']
-        #         try:
-        #             attr = instance.attributes.get(attribute_type=attribute_type)
-        #         except ObjectDoesNotExist:
-        #             attr = None
-        #         if attr is None:
-        #             attr = InstrumentDownloadSchemeAttribute(scheme=instance)
-        #         for name, value in attr_values.items():
-        #             setattr(attr, name, value)
-        #         attr.save()
-        #         pk_set.add(attr.id)
-        #     instance.attributes.exclude(pk__in=pk_set).delete()
+    def save_attributes(self, instance, attributes):
+        pk_set = set()
+        for attr_values in attributes:
+            attribute_type = attr_values['attribute_type']
+            try:
+                attr = instance.attributes.get(attribute_type=attribute_type)
+            except ObjectDoesNotExist:
+                attr = None
+            if attr is None:
+                attr = InstrumentDownloadSchemeAttribute(scheme=instance)
+            for name, value in attr_values.items():
+                setattr(attr, name, value)
+            attr.save()
+            pk_set.add(attr.id)
+        instance.attributes.exclude(pk__in=pk_set).delete()
 
 
 class PriceDownloadSchemeSerializer(serializers.ModelSerializer):
@@ -308,10 +309,10 @@ class InstrumentAttributeValueMappingSerializer(serializers.ModelSerializer):
     def __init__(self, *args, **kwargs):
         super(InstrumentAttributeValueMappingSerializer, self).__init__(*args, **kwargs)
 
-        from poms.obj_attrs.serializers import GenericAttributeTypeViewSerializer, GenericClassifierSerializer
+        from poms.obj_attrs.serializers import GenericAttributeTypeViewSerializer, GenericClassifierViewSerializer
         self.fields['attribute_type_object'] = GenericAttributeTypeViewSerializer(source='attribute_type',
                                                                                   read_only=True)
-        self.fields['classifier_object'] = GenericClassifierSerializer(source='classifier', read_only=True)
+        self.fields['classifier_object'] = GenericClassifierViewSerializer(source='classifier', read_only=True)
 
     def validate(self, attrs):
         attribute_type = attrs.get('attribute_type')
