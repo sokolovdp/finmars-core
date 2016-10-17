@@ -6,7 +6,7 @@ from django.db import models
 from django.utils.translation import ugettext_lazy
 
 from poms.common.models import NamedModel
-from poms.obj_perms.models import AbstractGroupObjectPermission, AbstractUserObjectPermission, GenericObjectPermission
+from poms.obj_perms.models import GenericObjectPermission
 
 
 class Tag(NamedModel):
@@ -79,22 +79,22 @@ class Tag(NamedModel):
         ]
 
 
-class TagUserObjectPermission(AbstractUserObjectPermission):
-    content_object = models.ForeignKey(Tag, related_name='user_object_permissions',
-                                       verbose_name=ugettext_lazy('content object'))
-
-    class Meta(AbstractUserObjectPermission.Meta):
-        verbose_name = ugettext_lazy('tags - user permission')
-        verbose_name_plural = ugettext_lazy('tags - user permissions')
-
-
-class TagGroupObjectPermission(AbstractGroupObjectPermission):
-    content_object = models.ForeignKey(Tag, related_name='group_object_permissions',
-                                       verbose_name=ugettext_lazy('content object'))
-
-    class Meta(AbstractGroupObjectPermission.Meta):
-        verbose_name = ugettext_lazy('tags - group permission')
-        verbose_name_plural = ugettext_lazy('tags - group permissions')
+# class TagUserObjectPermission(AbstractUserObjectPermission):
+#     content_object = models.ForeignKey(Tag, related_name='user_object_permissions',
+#                                        verbose_name=ugettext_lazy('content object'))
+#
+#     class Meta(AbstractUserObjectPermission.Meta):
+#         verbose_name = ugettext_lazy('tags - user permission')
+#         verbose_name_plural = ugettext_lazy('tags - user permissions')
+#
+#
+# class TagGroupObjectPermission(AbstractGroupObjectPermission):
+#     content_object = models.ForeignKey(Tag, related_name='group_object_permissions',
+#                                        verbose_name=ugettext_lazy('content object'))
+#
+#     class Meta(AbstractGroupObjectPermission.Meta):
+#         verbose_name = ugettext_lazy('tags - group permission')
+#         verbose_name_plural = ugettext_lazy('tags - group permissions')
 
 
 class TagLink(models.Model):

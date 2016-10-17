@@ -10,7 +10,7 @@ from mptt.models import MPTTModel
 from poms.common.models import NamedModel, FakeDeletableModel
 from poms.obj_attrs.models import AbstractAttributeType, AbstractAttribute, AbstractAttributeTypeOption, \
     AbstractClassifier, GenericAttribute
-from poms.obj_perms.models import AbstractGroupObjectPermission, AbstractUserObjectPermission, GenericObjectPermission
+from poms.obj_perms.models import GenericObjectPermission
 from poms.tags.models import TagLink
 from poms.users.models import MasterUser, Member
 
@@ -40,20 +40,20 @@ class Portfolio(NamedModel, FakeDeletableModel):
         return self.master_user.portfolio_id == self.id if self.master_user_id else False
 
 
-class PortfolioUserObjectPermission(AbstractUserObjectPermission):
-    content_object = models.ForeignKey(Portfolio, related_name='user_object_permissions')
-
-    class Meta(AbstractUserObjectPermission.Meta):
-        verbose_name = ugettext_lazy('portfolios - user permission')
-        verbose_name_plural = ugettext_lazy('portfolios - user permissions')
-
-
-class PortfolioGroupObjectPermission(AbstractGroupObjectPermission):
-    content_object = models.ForeignKey(Portfolio, related_name='group_object_permissions')
-
-    class Meta(AbstractGroupObjectPermission.Meta):
-        verbose_name = ugettext_lazy('portfolios - group permission')
-        verbose_name_plural = ugettext_lazy('portfolios - group permissions')
+# class PortfolioUserObjectPermission(AbstractUserObjectPermission):
+#     content_object = models.ForeignKey(Portfolio, related_name='user_object_permissions')
+#
+#     class Meta(AbstractUserObjectPermission.Meta):
+#         verbose_name = ugettext_lazy('portfolios - user permission')
+#         verbose_name_plural = ugettext_lazy('portfolios - user permissions')
+#
+#
+# class PortfolioGroupObjectPermission(AbstractGroupObjectPermission):
+#     content_object = models.ForeignKey(Portfolio, related_name='group_object_permissions')
+#
+#     class Meta(AbstractGroupObjectPermission.Meta):
+#         verbose_name = ugettext_lazy('portfolios - group permission')
+#         verbose_name_plural = ugettext_lazy('portfolios - group permissions')
 
 
 class PortfolioAttributeType(AbstractAttributeType):
@@ -68,20 +68,20 @@ class PortfolioAttributeType(AbstractAttributeType):
         ]
 
 
-class PortfolioAttributeTypeUserObjectPermission(AbstractUserObjectPermission):
-    content_object = models.ForeignKey(PortfolioAttributeType, related_name='user_object_permissions')
-
-    class Meta(AbstractUserObjectPermission.Meta):
-        verbose_name = ugettext_lazy('portfolio attribute types - user permission')
-        verbose_name_plural = ugettext_lazy('portfolio attribute types - user permissions')
-
-
-class PortfolioAttributeTypeGroupObjectPermission(AbstractGroupObjectPermission):
-    content_object = models.ForeignKey(PortfolioAttributeType, related_name='group_object_permissions')
-
-    class Meta(AbstractGroupObjectPermission.Meta):
-        verbose_name = ugettext_lazy('portfolio attribute types - group permission')
-        verbose_name_plural = ugettext_lazy('portfolio attribute types - group permissions')
+# class PortfolioAttributeTypeUserObjectPermission(AbstractUserObjectPermission):
+#     content_object = models.ForeignKey(PortfolioAttributeType, related_name='user_object_permissions')
+#
+#     class Meta(AbstractUserObjectPermission.Meta):
+#         verbose_name = ugettext_lazy('portfolio attribute types - user permission')
+#         verbose_name_plural = ugettext_lazy('portfolio attribute types - user permissions')
+#
+#
+# class PortfolioAttributeTypeGroupObjectPermission(AbstractGroupObjectPermission):
+#     content_object = models.ForeignKey(PortfolioAttributeType, related_name='group_object_permissions')
+#
+#     class Meta(AbstractGroupObjectPermission.Meta):
+#         verbose_name = ugettext_lazy('portfolio attribute types - group permission')
+#         verbose_name_plural = ugettext_lazy('portfolio attribute types - group permissions')
 
 
 class PortfolioClassifier(AbstractClassifier):

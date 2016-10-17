@@ -1,43 +1,43 @@
 from django.contrib.auth.models import Permission
 from django.contrib.contenttypes.models import ContentType
-from django.db.models import Model, Prefetch
+from django.db.models import Prefetch
 from django.utils.functional import SimpleLazyObject
 
 from poms.obj_perms.models import GenericObjectPermission
 
 
-def get_rel_model(obj, attr_name, base_cls):
-    if isinstance(obj, Model):
-        # obj = obj.__class__
-        model = obj.__class__
-    else:
-        model = obj
-    # ctype = ContentType.objects.get_for_model(obj)
-
-    fields = (f for f in obj._meta.get_fields() if (f.one_to_many or f.one_to_one) and f.auto_created)
-    for attr in fields:
-        related_model = getattr(attr, 'related_model', None)
-        if related_model and issubclass(related_model, base_cls):
-            fk = related_model._meta.get_field(attr_name)
-            # if ctype == ContentType.objects.get_for_model(fk.rel.to):
-            # if model == fk.rel.to:
-            if issubclass(fk.rel.to, model):
-                return attr.name, related_model
-    return None, None
-
-
-def get_obj_perms_model(obj, base_cls):
-    return get_rel_model(obj, 'content_object', base_cls)
-
-
-def get_user_obj_perms_model(obj):
-    from poms.obj_perms.models import AbstractUserObjectPermission
-    return get_obj_perms_model(obj, AbstractUserObjectPermission)
-
-
-def get_group_obj_perms_model(obj):
-    from poms.obj_perms.models import AbstractGroupObjectPermission
-    return get_obj_perms_model(obj, AbstractGroupObjectPermission)
+# def get_rel_model(obj, attr_name, base_cls):
+#     if isinstance(obj, Model):
+#         # obj = obj.__class__
+#         model = obj.__class__
+#     else:
+#         model = obj
+#     # ctype = ContentType.objects.get_for_model(obj)
+#
+#     fields = (f for f in obj._meta.get_fields() if (f.one_to_many or f.one_to_one) and f.auto_created)
+#     for attr in fields:
+#         related_model = getattr(attr, 'related_model', None)
+#         if related_model and issubclass(related_model, base_cls):
+#             fk = related_model._meta.get_field(attr_name)
+#             # if ctype == ContentType.objects.get_for_model(fk.rel.to):
+#             # if model == fk.rel.to:
+#             if issubclass(fk.rel.to, model):
+#                 return attr.name, related_model
+#     return None, None
+#
+#
+# def get_obj_perms_model(obj, base_cls):
+#     return get_rel_model(obj, 'content_object', base_cls)
+#
+#
+# def get_user_obj_perms_model(obj):
+#     from poms.obj_perms.models import AbstractUserObjectPermission
+#     return get_obj_perms_model(obj, AbstractUserObjectPermission)
+#
+#
+# def get_group_obj_perms_model(obj):
+#     from poms.obj_perms.models import AbstractGroupObjectPermission
+#     return get_obj_perms_model(obj, AbstractGroupObjectPermission)
 
 
 def obj_perms_filter_objects(member, perms, queryset, model_cls=None, prefetch=True):

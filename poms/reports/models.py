@@ -9,7 +9,6 @@ from django.utils.translation import ugettext_lazy
 
 from poms.common.models import NamedModel, AbstractClassModel
 from poms.common.utils import date_now
-from poms.obj_perms.models import AbstractGroupObjectPermission, AbstractUserObjectPermission
 from poms.users.models import MasterUser
 
 
@@ -60,24 +59,24 @@ class ReportType(NamedModel):
         ]
 
 
-class ReportTypeUserObjectPermission(AbstractUserObjectPermission):
-    content_object = models.ForeignKey(ReportType, related_name='user_object_permissions',
-                                       verbose_name=ugettext_lazy('content object'))
-
-    class Meta(AbstractUserObjectPermission.Meta):
-        abstract = True
-        verbose_name = ugettext_lazy('report types - user permission')
-        verbose_name_plural = ugettext_lazy('report types - user permissions')
-
-
-class ReportTypeGroupObjectPermission(AbstractGroupObjectPermission):
-    content_object = models.ForeignKey(ReportType, related_name='group_object_permissions',
-                                       verbose_name=ugettext_lazy('content object'))
-
-    class Meta(AbstractGroupObjectPermission.Meta):
-        abstract = True
-        verbose_name = ugettext_lazy('report types - group permission')
-        verbose_name_plural = ugettext_lazy('report types - group permissions')
+# class ReportTypeUserObjectPermission(AbstractUserObjectPermission):
+#     content_object = models.ForeignKey(ReportType, related_name='user_object_permissions',
+#                                        verbose_name=ugettext_lazy('content object'))
+#
+#     class Meta(AbstractUserObjectPermission.Meta):
+#         abstract = True
+#         verbose_name = ugettext_lazy('report types - user permission')
+#         verbose_name_plural = ugettext_lazy('report types - user permissions')
+#
+#
+# class ReportTypeGroupObjectPermission(AbstractGroupObjectPermission):
+#     content_object = models.ForeignKey(ReportType, related_name='group_object_permissions',
+#                                        verbose_name=ugettext_lazy('content object'))
+#
+#     class Meta(AbstractGroupObjectPermission.Meta):
+#         abstract = True
+#         verbose_name = ugettext_lazy('report types - group permission')
+#         verbose_name_plural = ugettext_lazy('report types - group permissions')
 
 
 @python_2_unicode_compatible

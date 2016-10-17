@@ -31,7 +31,7 @@ class MasterUserManager(models.Manager):
         from poms.strategies.models import Strategy1Group, Strategy1Subgroup, Strategy1, Strategy2Group, \
             Strategy2Subgroup, Strategy2, Strategy3Group, Strategy3Subgroup, Strategy3
         from poms.chats.models import ThreadGroup
-        from poms.obj_perms.utils import assign_perms2, get_change_perms
+        from poms.obj_perms.utils import assign_perms3, get_change_perms
 
         obj = MasterUser(**kwargs)
         obj.save()
@@ -100,7 +100,7 @@ class MasterUserManager(models.Manager):
                   instrument_type, strategy1_group, strategy1_subgroup, strategy1, strategy2_group, strategy2_subgroup,
                   strategy2, strategy3_group, strategy3_subgroup, strategy3, thread_group]:
             for p in get_change_perms(c):
-                assign_perms2(c, group_perms=[{'group': group, 'permission': p}])
+                assign_perms3(c, perms=[{'group': group, 'permission': p}])
 
         return obj
 

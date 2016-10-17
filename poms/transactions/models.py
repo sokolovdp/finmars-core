@@ -20,7 +20,7 @@ from poms.currencies.models import Currency
 from poms.instruments.models import Instrument
 from poms.obj_attrs.models import AbstractAttributeType, AbstractAttribute, AbstractAttributeTypeOption, \
     AbstractClassifier, GenericAttribute
-from poms.obj_perms.models import AbstractGroupObjectPermission, AbstractUserObjectPermission, GenericObjectPermission
+from poms.obj_perms.models import GenericObjectPermission
 from poms.portfolios.models import Portfolio
 from poms.strategies.models import Strategy1, Strategy2, Strategy3
 from poms.tags.models import TagLink
@@ -253,22 +253,22 @@ class TransactionTypeGroup(NamedModel, FakeDeletableModel):
         ]
 
 
-class TransactionTypeGroupUserObjectPermission(AbstractUserObjectPermission):
-    content_object = models.ForeignKey(TransactionTypeGroup, related_name='user_object_permissions',
-                                       verbose_name=ugettext_lazy('content object'))
-
-    class Meta(AbstractUserObjectPermission.Meta):
-        verbose_name = ugettext_lazy('transaction type groups - user permission')
-        verbose_name_plural = ugettext_lazy('transaction type groups - user permissions')
-
-
-class TransactionTypeGroupGroupObjectPermission(AbstractGroupObjectPermission):
-    content_object = models.ForeignKey(TransactionTypeGroup, related_name='group_object_permissions',
-                                       verbose_name=ugettext_lazy('content object'))
-
-    class Meta(AbstractGroupObjectPermission.Meta):
-        verbose_name = ugettext_lazy('transaction type groups - group permission')
-        verbose_name_plural = ugettext_lazy('transaction type groups - group permissions')
+# class TransactionTypeGroupUserObjectPermission(AbstractUserObjectPermission):
+#     content_object = models.ForeignKey(TransactionTypeGroup, related_name='user_object_permissions',
+#                                        verbose_name=ugettext_lazy('content object'))
+#
+#     class Meta(AbstractUserObjectPermission.Meta):
+#         verbose_name = ugettext_lazy('transaction type groups - user permission')
+#         verbose_name_plural = ugettext_lazy('transaction type groups - user permissions')
+#
+#
+# class TransactionTypeGroupGroupObjectPermission(AbstractGroupObjectPermission):
+#     content_object = models.ForeignKey(TransactionTypeGroup, related_name='group_object_permissions',
+#                                        verbose_name=ugettext_lazy('content object'))
+#
+#     class Meta(AbstractGroupObjectPermission.Meta):
+#         verbose_name = ugettext_lazy('transaction type groups - group permission')
+#         verbose_name_plural = ugettext_lazy('transaction type groups - group permissions')
 
 
 class TransactionType(NamedModel, FakeDeletableModel):
@@ -313,22 +313,22 @@ class TransactionType(NamedModel, FakeDeletableModel):
         self.book_transaction_layout_json = json.dumps(data, cls=DjangoJSONEncoder, sort_keys=True) if data else None
 
 
-class TransactionTypeUserObjectPermission(AbstractUserObjectPermission):
-    content_object = models.ForeignKey(TransactionType, related_name='user_object_permissions',
-                                       verbose_name=ugettext_lazy('content object'))
-
-    class Meta(AbstractUserObjectPermission.Meta):
-        verbose_name = ugettext_lazy('transaction types - user permission')
-        verbose_name_plural = ugettext_lazy('transaction types - user permissions')
-
-
-class TransactionTypeGroupObjectPermission(AbstractGroupObjectPermission):
-    content_object = models.ForeignKey(TransactionType, related_name='group_object_permissions',
-                                       verbose_name=ugettext_lazy('content object'))
-
-    class Meta(AbstractGroupObjectPermission.Meta):
-        verbose_name = ugettext_lazy('transaction types - group permission')
-        verbose_name_plural = ugettext_lazy('transaction types - group permissions')
+# class TransactionTypeUserObjectPermission(AbstractUserObjectPermission):
+#     content_object = models.ForeignKey(TransactionType, related_name='user_object_permissions',
+#                                        verbose_name=ugettext_lazy('content object'))
+#
+#     class Meta(AbstractUserObjectPermission.Meta):
+#         verbose_name = ugettext_lazy('transaction types - user permission')
+#         verbose_name_plural = ugettext_lazy('transaction types - user permissions')
+#
+#
+# class TransactionTypeGroupObjectPermission(AbstractGroupObjectPermission):
+#     content_object = models.ForeignKey(TransactionType, related_name='group_object_permissions',
+#                                        verbose_name=ugettext_lazy('content object'))
+#
+#     class Meta(AbstractGroupObjectPermission.Meta):
+#         verbose_name = ugettext_lazy('transaction types - group permission')
+#         verbose_name_plural = ugettext_lazy('transaction types - group permissions')
 
 
 # name - expr
@@ -809,22 +809,22 @@ class TransactionAttributeType(AbstractAttributeType):
         ]
 
 
-class TransactionAttributeTypeUserObjectPermission(AbstractUserObjectPermission):
-    content_object = models.ForeignKey(TransactionAttributeType, related_name='user_object_permissions',
-                                       verbose_name=ugettext_lazy("content object"))
-
-    class Meta(AbstractUserObjectPermission.Meta):
-        verbose_name = ugettext_lazy('transaction attribute types - user permission')
-        verbose_name_plural = ugettext_lazy('transaction attribute types - user permissions')
-
-
-class TransactionAttributeTypeGroupObjectPermission(AbstractGroupObjectPermission):
-    content_object = models.ForeignKey(TransactionAttributeType, related_name='group_object_permissions',
-                                       verbose_name=ugettext_lazy("content object"))
-
-    class Meta(AbstractGroupObjectPermission.Meta):
-        verbose_name = ugettext_lazy('transaction attribute types - group permission')
-        verbose_name_plural = ugettext_lazy('transaction attribute types - group permissions')
+# class TransactionAttributeTypeUserObjectPermission(AbstractUserObjectPermission):
+#     content_object = models.ForeignKey(TransactionAttributeType, related_name='user_object_permissions',
+#                                        verbose_name=ugettext_lazy("content object"))
+#
+#     class Meta(AbstractUserObjectPermission.Meta):
+#         verbose_name = ugettext_lazy('transaction attribute types - user permission')
+#         verbose_name_plural = ugettext_lazy('transaction attribute types - user permissions')
+#
+#
+# class TransactionAttributeTypeGroupObjectPermission(AbstractGroupObjectPermission):
+#     content_object = models.ForeignKey(TransactionAttributeType, related_name='group_object_permissions',
+#                                        verbose_name=ugettext_lazy("content object"))
+#
+#     class Meta(AbstractGroupObjectPermission.Meta):
+#         verbose_name = ugettext_lazy('transaction attribute types - group permission')
+#         verbose_name_plural = ugettext_lazy('transaction attribute types - group permissions')
 
 
 class TransactionClassifier(AbstractClassifier):

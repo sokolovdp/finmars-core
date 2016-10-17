@@ -11,7 +11,7 @@ from poms.common.models import NamedModel, FakeDeletableModel
 from poms.currencies.models import Currency
 from poms.obj_attrs.models import AbstractAttributeType, AbstractAttribute, AbstractAttributeTypeOption, \
     AbstractClassifier, GenericAttribute
-from poms.obj_perms.models import AbstractGroupObjectPermission, AbstractUserObjectPermission, GenericObjectPermission
+from poms.obj_perms.models import GenericObjectPermission
 from poms.tags.models import TagLink
 from poms.users.models import MasterUser, Member
 
@@ -41,22 +41,22 @@ class AccountType(NamedModel, FakeDeletableModel):
         return self.master_user.account_type_id == self.id if self.master_user_id else False
 
 
-class AccountTypeUserObjectPermission(AbstractUserObjectPermission):
-    content_object = models.ForeignKey(AccountType, related_name='user_object_permissions',
-                                       verbose_name=ugettext_lazy('content object'))
-
-    class Meta(AbstractUserObjectPermission.Meta):
-        verbose_name = ugettext_lazy('account types - user permission')
-        verbose_name_plural = ugettext_lazy('account types - user permissions')
-
-
-class AccountTypeGroupObjectPermission(AbstractGroupObjectPermission):
-    content_object = models.ForeignKey(AccountType, related_name='group_object_permissions',
-                                       verbose_name=ugettext_lazy('content object'))
-
-    class Meta(AbstractGroupObjectPermission.Meta):
-        verbose_name = ugettext_lazy('account types - group permission')
-        verbose_name_plural = ugettext_lazy('account types - group permissions')
+# class AccountTypeUserObjectPermission(AbstractUserObjectPermission):
+#     content_object = models.ForeignKey(AccountType, related_name='user_object_permissions',
+#                                        verbose_name=ugettext_lazy('content object'))
+#
+#     class Meta(AbstractUserObjectPermission.Meta):
+#         verbose_name = ugettext_lazy('account types - user permission')
+#         verbose_name_plural = ugettext_lazy('account types - user permissions')
+#
+#
+# class AccountTypeGroupObjectPermission(AbstractGroupObjectPermission):
+#     content_object = models.ForeignKey(AccountType, related_name='group_object_permissions',
+#                                        verbose_name=ugettext_lazy('content object'))
+#
+#     class Meta(AbstractGroupObjectPermission.Meta):
+#         verbose_name = ugettext_lazy('account types - group permission')
+#         verbose_name_plural = ugettext_lazy('account types - group permissions')
 
 
 @python_2_unicode_compatible
@@ -84,22 +84,22 @@ class Account(NamedModel, FakeDeletableModel):
         return self.master_user.account_id == self.id if self.master_user_id else False
 
 
-class AccountUserObjectPermission(AbstractUserObjectPermission):
-    content_object = models.ForeignKey(Account, related_name='user_object_permissions',
-                                       verbose_name=ugettext_lazy('content object'))
-
-    class Meta(AbstractUserObjectPermission.Meta):
-        verbose_name = ugettext_lazy('accounts - user permission')
-        verbose_name_plural = ugettext_lazy('accounts - user permissions')
-
-
-class AccountGroupObjectPermission(AbstractGroupObjectPermission):
-    content_object = models.ForeignKey(Account, related_name='group_object_permissions',
-                                       verbose_name=ugettext_lazy('content object'))
-
-    class Meta(AbstractGroupObjectPermission.Meta):
-        verbose_name = ugettext_lazy('accounts - group permission')
-        verbose_name_plural = ugettext_lazy('accounts - group permissions')
+# class AccountUserObjectPermission(AbstractUserObjectPermission):
+#     content_object = models.ForeignKey(Account, related_name='user_object_permissions',
+#                                        verbose_name=ugettext_lazy('content object'))
+#
+#     class Meta(AbstractUserObjectPermission.Meta):
+#         verbose_name = ugettext_lazy('accounts - user permission')
+#         verbose_name_plural = ugettext_lazy('accounts - user permissions')
+#
+#
+# class AccountGroupObjectPermission(AbstractGroupObjectPermission):
+#     content_object = models.ForeignKey(Account, related_name='group_object_permissions',
+#                                        verbose_name=ugettext_lazy('content object'))
+#
+#     class Meta(AbstractGroupObjectPermission.Meta):
+#         verbose_name = ugettext_lazy('accounts - group permission')
+#         verbose_name_plural = ugettext_lazy('accounts - group permissions')
 
 
 class AccountAttributeType(AbstractAttributeType):
@@ -122,22 +122,22 @@ class AccountAttributeType(AbstractAttributeType):
         ]
 
 
-class AccountAttributeTypeUserObjectPermission(AbstractUserObjectPermission):
-    content_object = models.ForeignKey(AccountAttributeType, related_name='user_object_permissions',
-                                       verbose_name=ugettext_lazy('content object'))
-
-    class Meta(AbstractUserObjectPermission.Meta):
-        verbose_name = ugettext_lazy('account attribute types - user permission')
-        verbose_name_plural = ugettext_lazy('account attribute types - user permissions')
-
-
-class AccountAttributeTypeGroupObjectPermission(AbstractGroupObjectPermission):
-    content_object = models.ForeignKey(AccountAttributeType, related_name='group_object_permissions',
-                                       verbose_name=ugettext_lazy('content object'))
-
-    class Meta(AbstractGroupObjectPermission.Meta):
-        verbose_name = ugettext_lazy('account attribute types - group permission')
-        verbose_name_plural = ugettext_lazy('account attribute types - group permissions')
+# class AccountAttributeTypeUserObjectPermission(AbstractUserObjectPermission):
+#     content_object = models.ForeignKey(AccountAttributeType, related_name='user_object_permissions',
+#                                        verbose_name=ugettext_lazy('content object'))
+#
+#     class Meta(AbstractUserObjectPermission.Meta):
+#         verbose_name = ugettext_lazy('account attribute types - user permission')
+#         verbose_name_plural = ugettext_lazy('account attribute types - user permissions')
+#
+#
+# class AccountAttributeTypeGroupObjectPermission(AbstractGroupObjectPermission):
+#     content_object = models.ForeignKey(AccountAttributeType, related_name='group_object_permissions',
+#                                        verbose_name=ugettext_lazy('content object'))
+#
+#     class Meta(AbstractGroupObjectPermission.Meta):
+#         verbose_name = ugettext_lazy('account attribute types - group permission')
+#         verbose_name_plural = ugettext_lazy('account attribute types - group permissions')
 
 
 class AccountClassifier(AbstractClassifier):
