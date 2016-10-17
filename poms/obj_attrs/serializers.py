@@ -361,6 +361,13 @@ class GenericClassifierNodeSerializer(serializers.ModelSerializer):
         fields = ['id', 'attribute_type', 'level', 'parent', 'name', ]
 
 
+class GenericClassifierViewSerializer(serializers.ModelSerializer):
+    class Meta:
+        list_serializer_class = GenericClassifierListSerializer
+        model = GenericClassifier
+        fields = ['id', 'name', 'level', ]
+
+
 class GenericAttributeTypeOptionIsHiddenField(serializers.BooleanField):
     def __init__(self, **kwargs):
         kwargs['required'] = False
@@ -480,21 +487,20 @@ class GenericAttributeTypeSerializer(ModelWithObjectPermissionSerializer, ModelW
             self.save_classifier(instance, c, o, processed)
 
 
-class GenericAttributeTypeViewSerializer(serializers.Serializer):
-    id = serializers.IntegerField(read_only=True)
-    value_type = serializers.PrimaryKeyRelatedField(read_only=True)
-    user_code = serializers.CharField(read_only=True)
-    name = serializers.CharField(read_only=True)
-    short_name = serializers.CharField(read_only=True)
-    order = serializers.CharField(read_only=True)
-    is_hidden = serializers.BooleanField(read_only=True)
+class GenericAttributeTypeViewSerializer(ModelWithObjectPermissionSerializer):
+    is_hidden = GenericAttributeTypeOptionIsHiddenField()
+
+    class Meta:
+        model = GenericAttributeType
+        fields = ['id', 'user_code', 'name', 'short_name', 'public_name', 'notes',
+                  'value_type', 'order', 'is_hidden']
 
 
 class GenericAttributeSerializer(serializers.ModelSerializer):
     attribute_type = GenericAttributeTypeField()
-    attribute_type_object = GenericAttributeTypeSerializer(source='attribute_type', read_only=True)
+    attribute_type_object = GenericAttributeTypeViewSerializer(source='attribute_type', read_only=True)
     classifier = GenericClassifierField(required=False, allow_null=True)
-    classifier_object = GenericClassifierSerializer(source='classifier', read_only=True)
+    classifier_object = GenericClassifierViewSerializer(source='classifier', read_only=True)
 
     class Meta:
         model = GenericAttribute

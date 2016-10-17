@@ -73,7 +73,7 @@ class GenericAttributeTypeAdmin(admin.ModelAdmin):
     list_select_related = ['content_type', 'content_type']
     list_filter = ['value_type', 'content_type']
     search_fields = ['id', 'user_code']
-    raw_id_fields = ['master_user']
+    raw_id_fields = ['master_user', 'content_type']
     inlines = [
         GenericAttributeTypeOptionInline,
         GenericObjectPermissionInline,
@@ -107,7 +107,7 @@ class GenericAttributeAdmin(admin.ModelAdmin):
     list_display = ['id', 'master_user', 'content_type', 'object_id', 'content_object', 'attribute_type',
                     'value_string', 'value_float', 'value_date', 'classifier', ]
     list_select_related = ['content_type', 'attribute_type', 'attribute_type__master_user', 'classifier']
-    raw_id_fields = ['attribute_type', 'classifier']
+    raw_id_fields = ['attribute_type', 'content_type', 'classifier']
     list_filter = ['content_type']
     ordering = ['attribute_type__master_user', 'attribute_type', ]
     search_fields = ['object_id', 'attribute_type_id']

@@ -71,7 +71,7 @@ from poms.obj_perms.models import GenericObjectPermission
 
 class GenericObjectPermissionInline(GenericTabularInline):
     fields = ['member', 'group', 'permission']
-    raw_id_fields = ['member', 'group']
+    raw_id_fields = ['member', 'group', 'permission']
     model = GenericObjectPermission
     extra = 0
 
@@ -88,7 +88,7 @@ class GenericObjectPermissionAdmin(admin.ModelAdmin):
     model = GenericObjectPermission
     list_display = ['id', 'master_user', 'group', 'member', 'content_type', 'object_id', 'content_object', 'permission']
     list_select_related = ['group', 'member', 'content_type', 'permission']
-    raw_id_fields = ['group', 'member', ]
+    raw_id_fields = ['group', 'member', 'content_type', 'permission']
     list_filter = ['content_type']
     search_fields = ['object_id']
     save_as = True

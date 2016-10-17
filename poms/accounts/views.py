@@ -1,16 +1,13 @@
 from __future__ import unicode_literals
 
 import django_filters
-from django.db.models import Prefetch
 from rest_framework.filters import FilterSet
 
 from poms.accounts.models import Account, AccountType
 from poms.accounts.serializers import AccountSerializer, AccountTypeSerializer
 from poms.common.filters import CharFilter, NoOpFilter, ModelExtWithPermissionMultipleChoiceFilter
-from poms.obj_attrs.filters import AttributeTypeValueTypeFilter
 from poms.obj_attrs.utils import get_attributes_prefetch
-from poms.obj_attrs.views import AbstractAttributeTypeViewSet, AbstractClassifierViewSet, GenericAttributeTypeViewSet, \
-    GenericClassifierViewSet
+from poms.obj_attrs.views import GenericAttributeTypeViewSet, GenericClassifierViewSet
 from poms.obj_perms.filters import ObjectPermissionMemberFilter, ObjectPermissionGroupFilter, \
     ObjectPermissionPermissionFilter
 from poms.obj_perms.utils import get_permissions_prefetch_lookups
