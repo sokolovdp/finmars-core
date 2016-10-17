@@ -5,6 +5,7 @@ from django.conf import settings
 from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin
 from django.contrib.auth.models import User, Permission
+from django.utils.translation import ugettext_lazy
 
 from poms.instruments.models import EventScheduleConfig
 from poms.integrations.models import PricingAutomatedSchedule
@@ -61,6 +62,16 @@ class MasterUserAdmin(admin.ModelAdmin):
                        'thread_group',),
         }),
     )
+
+    actions = ['clone_data']
+
+    def clone_data(self, request, queryset):
+        from poms.users.cloner import FullDataCloner
+        for mu in queryset:
+            cloner = FullDataCloner(mu)
+            cloner.clone()
+
+    clone_data.short_description = ugettext_lazy("Clone selected master users")
 
 
 admin.site.register(MasterUser, MasterUserAdmin)
