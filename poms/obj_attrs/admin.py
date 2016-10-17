@@ -86,8 +86,9 @@ admin.site.register(GenericAttributeType, GenericAttributeTypeAdmin)
 
 class GenericClassifierAdmin(admin.ModelAdmin):
     model = GenericClassifier
-    list_display = ['id', 'master_user', 'attribute_type', 'tree_id', 'level', 'parent', 'name', ]
-    list_select_related = ['attribute_type', 'attribute_type__master_user', 'parent']
+    list_display = ['id', 'master_user', 'attribute_type', 'content_type', 'tree_id', 'level', 'parent',
+                    'name', ]
+    list_select_related = ['attribute_type', 'attribute_type__master_user', 'attribute_type__content_type', 'parent']
     search_fields = ['attribute_type_id']
     raw_id_fields = ['attribute_type', 'parent']
     ordering = ['attribute_type', 'tree_id', 'level', ]
@@ -98,15 +99,21 @@ class GenericClassifierAdmin(admin.ModelAdmin):
 
     master_user.admin_order_field = 'attribute_type__master_user'
 
+    def content_type(self, obj):
+        return obj.attribute_type.content_type
+
+    content_type.admin_order_field = 'attribute_type__content_type'
+
 
 admin.site.register(GenericClassifier, GenericClassifierAdmin)
 
 
 class GenericAttributeAdmin(admin.ModelAdmin):
     model = GenericAttribute
-    list_display = ['id', 'master_user', 'content_type', 'object_id', 'content_object', 'attribute_type',
-                    'value_string', 'value_float', 'value_date', 'classifier', ]
-    list_select_related = ['content_type', 'attribute_type', 'attribute_type__master_user', 'classifier']
+    list_display = ['id', 'master_user', 'attribute_type', 'content_type', 'object_id',
+                    'content_object', 'value_string', 'value_float', 'value_date', 'classifier', ]
+    list_select_related = ['content_type', 'attribute_type', 'attribute_type__master_user',
+                           'attribute_type__content_type', 'classifier']
     raw_id_fields = ['attribute_type', 'content_type', 'classifier']
     list_filter = ['content_type']
     ordering = ['attribute_type__master_user', 'attribute_type', ]
@@ -121,6 +128,9 @@ class GenericAttributeAdmin(admin.ModelAdmin):
         return obj.attribute_type.master_user
 
     master_user.admin_order_field = 'attribute_type__master_user'
+
+    def attribute_type__content_type(self, obj):
+        return obj.attribute_type.content_type
 
 
 admin.site.register(GenericAttribute, GenericAttributeAdmin)
