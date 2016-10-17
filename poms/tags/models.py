@@ -107,3 +107,6 @@ class TagLink(models.Model):
     class Meta:
         verbose_name = ugettext_lazy('tag link')
         verbose_name_plural = ugettext_lazy('tag links')
+
+    def __str__(self):
+        return '%s @ %s' % (self.content_object, self.tag)
