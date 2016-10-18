@@ -47,7 +47,7 @@ admin.site.register(Strategy1Subgroup, Strategy1SubgroupAdmin)
 
 
 class Strategy1Admin(admin.ModelAdmin):
-    model = Strategy1Subgroup
+    model = Strategy1
     list_display = ['id', 'master_user', 'group', 'subgroup', 'user_code', 'name', 'is_deleted', ]
     list_select_related = ['subgroup', 'subgroup__group', 'subgroup__group__master_user']
     ordering = ['master_user', 'subgroup__group', 'subgroup', 'user_code']
