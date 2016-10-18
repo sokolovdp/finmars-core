@@ -1,6 +1,8 @@
 import logging
+from collections import defaultdict
 
 from django.conf import settings
+from django.contrib.auth.models import Permission
 from django.contrib.contenttypes.models import ContentType
 from django.db import transaction
 
@@ -10,28 +12,40 @@ from poms.counterparties.models import CounterpartyGroup, Counterparty, Responsi
 from poms.currencies.models import Currency, CurrencyHistory
 from poms.instruments.models import PricingPolicy, DailyPricingModel, InstrumentClass, AccrualCalculationModel, \
     PaymentSizeDetail, Periodicity, CostMethod, InstrumentType, Instrument, ManualPricingFormula, PriceHistory, \
-    AccrualCalculationSchedule, InstrumentFactorSchedule, EventScheduleConfig
-from poms.integrations.models import PriceDownloadScheme, ProviderClass
-from poms.transactions.models import TransactionClass, ActionClass, EventClass, NotificationClass
-from poms.users.models import Group, Member
+    AccrualCalculationSchedule, InstrumentFactorSchedule, EventScheduleConfig, EventSchedule, EventScheduleAction
+from poms.integrations.models import PriceDownloadScheme, ProviderClass, AccrualScheduleDownloadMethod, \
+    FactorScheduleDownloadMethod, InstrumentDownloadScheme, InstrumentDownloadSchemeInput, \
+    CurrencyMapping, InstrumentTypeMapping, InstrumentAttributeValueMapping, AccrualCalculationModelMapping, \
+    PeriodicityMapping, InstrumentDownloadSchemeAttribute
+from poms.portfolios.models import Portfolio
+from poms.strategies.models import Strategy1Group, Strategy1Subgroup, Strategy1, Strategy2Group, Strategy2Subgroup, \
+    Strategy2, Strategy3Group, Strategy3Subgroup, Strategy3
+from poms.tags.models import Tag
+from poms.transactions.models import TransactionClass, ActionClass, EventClass, NotificationClass, TransactionTypeGroup, \
+    TransactionType, TransactionTypeInput, TransactionTypeActionInstrument, TransactionTypeActionTransaction
+from poms.ui.models import TemplateListLayout, TemplateEditLayout
+from poms.users.models import Group
 
 _l = logging.getLogger('poms.users.cloner')
 
 
 class FullDataCloner(object):
     def __init__(self, source_master_user):
-        self.source_master_user = source_master_user
+        self._source_master_user = source_master_user
+        self._target_master_user = None
 
-        self.pk_map = {}
+        self._pk_map = defaultdict(dict)
+        self._source_objects = defaultdict(dict)
+        self._target_objects = defaultdict(dict)
 
     @transaction.atomic()
     def clone(self):
-        _l.debug('clone: master_user=%s', self.source_master_user.pk)
-        self.target_master_user = self._simple_clone(None, self.source_master_user, 'name', 'language', 'timezone')
+        _l.debug('clone: master_user=%s', self._source_master_user.pk)
+        self._target_master_user = self._simple_clone(None, self._source_master_user, 'name', 'language', 'timezone')
 
         self._load_consts()
 
-        self._users()
+        self._users_1()
         self._accounts()
         self._chats()
         self._counterparties()
@@ -43,9 +57,50 @@ class FullDataCloner(object):
 
         self._instruments_2()
 
+        self._portfolios_1()
+        self._strategies_1()
+
+        self._transactions_1()
+
+        # the end
+        self._instruments_3()
+        self._integrations_2()
+
+        self._simple_clone(self._target_master_user, self._source_master_user,
+                           'currency',
+                           'account_type',
+                           'account',
+                           'counterparty_group',
+                           'counterparty',
+                           'responsible_group',
+                           'responsible',
+                           'instrument_type',
+                           'portfolio',
+                           'strategy1_group',
+                           'strategy1_subgroup',
+                           'strategy1',
+                           'strategy2_group',
+                           'strategy2_subgroup',
+                           'strategy2',
+                           'strategy3_group',
+                           'strategy3_subgroup',
+                           'strategy3',
+                           'thread_group',
+                           'notification_business_days'
+                           )
+
+        self._tags()
+        self._ui()
+
         transaction.set_rollback(True)
 
     def _load_consts(self):
+        for source in ContentType.objects.all():
+            self._add_pk_map(source, source)
+
+        for source in Permission.objects.all():
+            self._add_pk_map(source, source)
+
         for source in InstrumentClass.objects.all():
             self._add_pk_map(source, source)
 
@@ -67,6 +122,12 @@ class FullDataCloner(object):
         for source in ProviderClass.objects.all():
             self._add_pk_map(source, source)
 
+        for source in FactorScheduleDownloadMethod.objects.all():
+            self._add_pk_map(source, source)
+
+        for source in AccrualScheduleDownloadMethod.objects.all():
+            self._add_pk_map(source, source)
+
         for source in TransactionClass.objects.all():
             self._add_pk_map(source, source)
 
@@ -79,67 +140,80 @@ class FullDataCloner(object):
         for source in NotificationClass.objects.all():
             self._add_pk_map(source, source)
 
-    def _users(self):
-        for source in Group.objects.filter(master_user=self.source_master_user):
+    def _users_1(self):
+        for source in Group.objects.filter(master_user=self._source_master_user):
             self._simple_clone(None, source, 'master_user', 'name')
 
-        for source in Member.objects.select_related('user').filter(master_user=self.source_master_user):
-            self._add_pk_map(source.user, source.user)
-            self._simple_clone(None, source, 'master_user', 'user', 'username', 'first_name', 'last_name', 'email',
-                               'join_date', 'is_owner', 'is_admin', 'is_deleted', 'groups')
+        # for source in Member.objects.select_related('user').filter(master_user=self._source_master_user):
+        #     self._add_pk_map(source.user, source.user)
+        #     self._simple_clone(None, source, 'master_user', 'user', 'username', 'first_name', 'last_name', 'email',
+        #                        'join_date', 'is_owner', 'is_admin', 'is_deleted', 'groups')
+        pass
 
     def _accounts(self):
-        for source in AccountType.objects.filter(master_user=self.source_master_user):
+        _l.debug('clone %s', AccountType)
+        for source in AccountType.objects.filter(master_user=self._source_master_user):
             self._simple_clone(None, source, 'master_user', 'user_code', 'name', 'short_name',
                                'public_name', 'notes', 'is_deleted', 'show_transaction_details',
                                'transaction_details_expr')
 
-        for source in Account.objects.filter(master_user=self.source_master_user):
+        _l.debug('clone Account')
+        for source in Account.objects.filter(master_user=self._source_master_user):
             self._simple_clone(None, source, 'master_user', 'user_code', 'name', 'short_name',
                                'public_name', 'notes', 'is_deleted', 'type', 'is_valid_for_all_portfolios')
 
     def _chats(self):
-        for source in ThreadGroup.objects.filter(master_user=self.source_master_user):
+        _l.debug('clone ThreadGroup')
+        for source in ThreadGroup.objects.filter(master_user=self._source_master_user):
             self._simple_clone(None, source, 'master_user', 'name', 'is_deleted')
 
     def _counterparties(self):
-        for source in CounterpartyGroup.objects.filter(master_user=self.source_master_user):
+        _l.debug('clone CounterpartyGroup')
+        for source in CounterpartyGroup.objects.filter(master_user=self._source_master_user):
             self._simple_clone(None, source, 'master_user', 'user_code', 'name', 'short_name',
                                'public_name', 'notes', 'is_deleted')
 
-        for source in Counterparty.objects.filter(master_user=self.source_master_user):
+        _l.debug('clone Counterparty')
+        for source in Counterparty.objects.filter(master_user=self._source_master_user):
             self._simple_clone(None, source, 'master_user', 'user_code', 'name', 'short_name',
                                'public_name', 'notes', 'is_deleted', 'group', 'is_valid_for_all_portfolios')
 
-        for source in ResponsibleGroup.objects.filter(master_user=self.source_master_user):
+        _l.debug('clone ResponsibleGroup')
+        for source in ResponsibleGroup.objects.filter(master_user=self._source_master_user):
             self._simple_clone(None, source, 'master_user', 'user_code', 'name', 'short_name',
                                'public_name', 'notes', 'is_deleted')
 
-        for source in Responsible.objects.filter(master_user=self.source_master_user):
+        _l.debug('clone Responsible')
+        for source in Responsible.objects.filter(master_user=self._source_master_user):
             self._simple_clone(None, source, 'master_user', 'user_code', 'name', 'short_name',
                                'public_name', 'notes', 'is_deleted', 'group', 'is_valid_for_all_portfolios')
 
     def _currencies(self):
-        for source in Currency.objects.filter(master_user=self.source_master_user):
+        _l.debug('clone Currency')
+        for source in Currency.objects.filter(master_user=self._source_master_user):
             self._simple_clone(None, source, 'master_user', 'user_code', 'name', 'short_name',
                                'public_name', 'notes', 'is_deleted', 'reference_for_pricing', 'daily_pricing_model',
                                'price_download_scheme')
 
-        for source in CurrencyHistory.objects.filter(currency__master_user=self.source_master_user):
+        _l.debug('clone CurrencyHistory')
+        for source in CurrencyHistory.objects.filter(currency__master_user=self._source_master_user):
             self._simple_clone(None, source, 'currency', 'pricing_policy', 'date', 'fx_rate',
                                pk_map=False)
 
     def _instruments_1(self):
-        for source in PricingPolicy.objects.filter(master_user=self.source_master_user):
+        _l.debug('clone PricingPolicy')
+        for source in PricingPolicy.objects.filter(master_user=self._source_master_user):
             self._simple_clone(None, source, 'master_user', 'user_code', 'name', 'short_name',
                                'public_name', 'notes', 'expr')
 
     def _instruments_2(self):
-        for source in InstrumentType.objects.filter(master_user=self.source_master_user):
+        _l.debug('clone InstrumentType')
+        for source in InstrumentType.objects.filter(master_user=self._source_master_user):
             self._simple_clone(None, source, 'master_user', 'user_code', 'name', 'short_name',
-                               'public_name', 'notes', 'is_deleted', 'instrument_class')
+                               'public_name', 'notes', 'is_deleted', 'instrument_class', store=True)
 
-        for source in Instrument.objects.filter(master_user=self.source_master_user):
+        _l.debug('clone Instrument')
+        for source in Instrument.objects.filter(master_user=self._source_master_user):
             self._simple_clone(None, source, 'master_user', 'user_code', 'name', 'short_name',
                                'public_name', 'notes', 'is_deleted', 'instrument_type', 'is_active',
                                'pricing_currency', 'price_multiplier',
@@ -150,36 +224,54 @@ class FullDataCloner(object):
                                'reference_for_pricing', 'daily_pricing_model', 'price_download_scheme',
                                'maturity_date')
 
-        for source in ManualPricingFormula.objects.filter(instrument__master_user=self.source_master_user):
+        _l.debug('clone ManualPricingFormula')
+        for source in ManualPricingFormula.objects.filter(instrument__master_user=self._source_master_user):
             self._simple_clone(None, source, 'instrument', 'pricing_policy', 'expr', 'notes')
 
-        for source in AccrualCalculationSchedule.objects.filter(instrument__master_user=self.source_master_user):
+        _l.debug('clone AccrualCalculationSchedule')
+        for source in AccrualCalculationSchedule.objects.filter(instrument__master_user=self._source_master_user):
             self._simple_clone(None, source, 'instrument', 'accrual_start_date', 'first_payment_date', 'accrual_size',
                                'accrual_calculation_model', 'periodicity', 'periodicity_n', 'notes')
 
-        for source in InstrumentFactorSchedule.objects.filter(instrument__master_user=self.source_master_user):
+        _l.debug('clone InstrumentFactorSchedule')
+        for source in InstrumentFactorSchedule.objects.filter(instrument__master_user=self._source_master_user):
             self._simple_clone(None, source, 'instrument', 'effective_date', 'factor_value')
 
-        for source in PriceHistory.objects.filter(instrument__master_user=self.source_master_user):
+        _l.debug('clone PriceHistory')
+        for source in PriceHistory.objects.filter(instrument__master_user=self._source_master_user):
             self._simple_clone(None, source, 'instrument', 'pricing_policy', 'date', 'principal_price', 'accrued_price',
                                pk_map=False)
 
-        for source in EventScheduleConfig.objects.filter(master_user=self.source_master_user):
+        _l.debug('clone EventScheduleConfig')
+        for source in EventScheduleConfig.objects.filter(master_user=self._source_master_user):
             self._simple_clone(None, source, 'master_user', 'name', 'description', 'notification_class',
                                'notify_in_n_days', 'action_text', 'action_is_sent_to_pending',
                                'action_is_book_automatic')
 
     def _instruments_3(self):
-        # TODO: InstrumentType - 'one_off_event', 'regular_event', 'factor_same', 'factor_up', 'factor_down',
+        _l.debug('clone InstrumentType 2')
+        for source in self._source_get_objects(InstrumentType).values():
+            target_pk = self._get_related_from_pk_map(source, source.pk)
+            target = self._target_get_object(source, target_pk)
+            self._simple_clone(target, source, 'one_off_event', 'regular_event', 'factor_same', 'factor_up',
+                               'factor_down', pk_map=False)
 
-        # TODO: EventSchedule
+        _l.debug('clone EventSchedule')
+        for source in EventSchedule.objects.filter(instrument__master_user=self._source_master_user):
+            self._simple_clone(None, source, 'instrument', 'name', 'description', 'event_class',
+                               'notification_class', 'effective_date', 'notify_in_n_days',
+                               'periodicity', 'periodicity_n', 'final_date', 'is_auto_generated',
+                               'accrual_calculation_schedule', 'factor_schedule')
 
-        # TODO: EventScheduleAction
-
-        pass
+        _l.debug('clone EventScheduleAction')
+        for source in EventScheduleAction.objects.filter(
+                event_schedule__instrument__master_user=self._source_master_user):
+            self._simple_clone(None, source, 'event_schedule', 'transaction_type', 'text', 'is_sent_to_pending',
+                               'is_book_automatic', 'button_position')
 
     def _integrations_1(self):
-        for source in PriceDownloadScheme.objects.filter(master_user=self.source_master_user):
+        _l.debug('clone PriceDownloadScheme')
+        for source in PriceDownloadScheme.objects.filter(master_user=self._source_master_user):
             self._simple_clone(None, source, 'master_user', 'scheme_name', 'provider',
                                'bid0', 'bid1', 'bid2', 'bid_multiplier',
                                'ask0', 'ask1', 'ask2', 'ask_multiplier', 'last',
@@ -190,21 +282,210 @@ class FullDataCloner(object):
                                'last_history', 'last_history_multiplier',
                                'currency_fxrate', 'currency_fxrate_multiplier')
 
-    def _add_pk_map(self, target, source):
-        content_type = ContentType.objects.get_for_model(target)
-        key = (content_type.pk, source.pk)
-        self.pk_map[key] = target.pk
+    def _integrations_2(self):
+        _l.debug('clone InstrumentDownloadScheme')
+        for source in InstrumentDownloadScheme.objects.filter(master_user=self._source_master_user):
+            self._simple_clone(None, source, 'master_user', 'scheme_name', 'provider', 'reference_for_pricing',
+                               'user_code', 'name', 'short_name', 'public_name', 'notes', 'instrument_type',
+                               'pricing_currency', 'price_multiplier', 'accrued_currency', 'accrued_multiplier',
+                               'maturity_date', 'user_text_1', 'user_text_2', 'user_text_3', 'payment_size_detail',
+                               'daily_pricing_model', 'price_download_scheme', 'default_price', 'default_accrued',
+                               'factor_schedule_method', 'accrual_calculation_schedule_method')
 
-    def _get_related_from_pk_map(self, model, pk):
-        if pk is None:
-            return None
-        content_type = ContentType.objects.get_for_model(model)
-        key = (content_type.pk, pk)
-        return self.pk_map[key]
+        _l.debug('clone InstrumentDownloadSchemeInput')
+        for source in InstrumentDownloadSchemeInput.objects.filter(scheme__master_user=self._source_master_user):
+            self._simple_clone(None, source, 'scheme', 'name', 'field')
 
-    def _simple_clone(self, target, source, *fields, pk_map=True):
+        _l.debug('clone InstrumentDownloadSchemeAttribute')
+        for source in InstrumentDownloadSchemeAttribute.objects.filter(scheme__master_user=self._source_master_user):
+            # TODO: uncomment after attributes
+            # self._simple_clone(None, source, 'scheme', 'attribute_type', 'value')
+            pass
+
+        _l.debug('clone CurrencyMapping')
+        for source in CurrencyMapping.objects.filter(master_user=self._source_master_user):
+            self._simple_clone(None, source, 'master_user', 'provider', 'value', 'currency')
+
+        _l.debug('clone InstrumentTypeMapping')
+        for source in InstrumentTypeMapping.objects.filter(master_user=self._source_master_user):
+            self._simple_clone(None, source, 'master_user', 'provider', 'value', 'instrument_type')
+
+        _l.debug('clone InstrumentAttributeValueMapping')
+        for source in InstrumentAttributeValueMapping.objects.filter(master_user=self._source_master_user):
+            # TODO: uncomment after attributes
+            # self._simple_clone(None, source, 'master_user', 'provider', 'value', 'attribute_type', 'value_string',
+            #                    'value_float', 'value_date', 'classifier')
+            pass
+
+        _l.debug('clone AccrualCalculationModelMapping')
+        for source in AccrualCalculationModelMapping.objects.filter(master_user=self._source_master_user):
+            self._simple_clone(None, source, 'master_user', 'provider', 'value', 'accrual_calculation_model')
+
+        _l.debug('clone PeriodicityMapping')
+        for source in PeriodicityMapping.objects.filter(master_user=self._source_master_user):
+            self._simple_clone(None, source, 'master_user', 'provider', 'value', 'periodicity')
+
+    def _portfolios_1(self):
+        _l.debug('clone Portfolio')
+        for source in Portfolio.objects.filter(master_user=self._source_master_user):
+            self._simple_clone(None, source, 'master_user', 'user_code', 'name', 'short_name',
+                               'public_name', 'notes', 'is_deleted', store=True)
+
+    def _portfolios_2(self):
+        _l.debug('clone Portfolio 2')
+        for source in self._source_get_objects(Portfolio).values():
+            target_pk = self._get_related_from_pk_map(source, source.pk)
+            target = self._target_get_object(source, target_pk)
+            self._simple_clone(target, source, 'accounts', 'responsibles', 'counterparties', 'transaction_types',
+                               pk_map=False)
+
+    def _strategies_1(self):
+        _l.debug('clone Strategy1Group')
+        for source in Strategy1Group.objects.filter(master_user=self._source_master_user):
+            self._simple_clone(None, source, 'master_user', 'user_code', 'name', 'short_name',
+                               'public_name', 'notes', 'is_deleted')
+
+        _l.debug('clone Strategy1Subgroup')
+        for source in Strategy1Subgroup.objects.filter(group__master_user=self._source_master_user):
+            self._simple_clone(None, source, 'master_user', 'group', 'user_code', 'name', 'short_name',
+                               'public_name', 'notes', 'is_deleted')
+
+        _l.debug('clone Strategy1')
+        for source in Strategy1.objects.filter(subgroup__group__master_user=self._source_master_user):
+            self._simple_clone(None, source, 'master_user', 'subgroup', 'user_code', 'name', 'short_name',
+                               'public_name', 'notes', 'is_deleted')
+
+        _l.debug('clone Strategy2Group')
+        for source in Strategy2Group.objects.filter(master_user=self._source_master_user):
+            self._simple_clone(None, source, 'master_user', 'user_code', 'name', 'short_name',
+                               'public_name', 'notes', 'is_deleted')
+
+        _l.debug('clone Strategy2Subgroup')
+        for source in Strategy2Subgroup.objects.filter(group__master_user=self._source_master_user):
+            self._simple_clone(None, source, 'master_user', 'group', 'user_code', 'name', 'short_name',
+                               'public_name', 'notes', 'is_deleted')
+
+        _l.debug('clone Strategy2')
+        for source in Strategy2.objects.filter(subgroup__group__master_user=self._source_master_user):
+            self._simple_clone(None, source, 'master_user', 'subgroup', 'user_code', 'name', 'short_name',
+                               'public_name', 'notes', 'is_deleted')
+
+        _l.debug('clone Strategy3Group')
+        for source in Strategy3Group.objects.filter(master_user=self._source_master_user):
+            self._simple_clone(None, source, 'master_user', 'user_code', 'name', 'short_name',
+                               'public_name', 'notes', 'is_deleted')
+
+        _l.debug('clone Strategy3Subgroup')
+        for source in Strategy3Subgroup.objects.filter(group__master_user=self._source_master_user):
+            self._simple_clone(None, source, 'master_user', 'group', 'user_code', 'name', 'short_name',
+                               'public_name', 'notes', 'is_deleted')
+
+        _l.debug('clone Strategy3')
+        for source in Strategy3.objects.filter(subgroup__group__master_user=self._source_master_user):
+            self._simple_clone(None, source, 'master_user', 'subgroup', 'user_code', 'name', 'short_name',
+                               'public_name', 'notes', 'is_deleted')
+
+    def _transactions_1(self):
+        _l.debug('clone TransactionTypeGroup')
+        for source in TransactionTypeGroup.objects.filter(master_user=self._source_master_user):
+            self._simple_clone(None, source, 'master_user', 'user_code', 'name', 'short_name',
+                               'public_name', 'notes', 'is_deleted')
+
+        _l.debug('clone TransactionType')
+        for source in TransactionType.objects.filter(master_user=self._source_master_user):
+            self._simple_clone(None, source, 'master_user', 'user_code', 'name', 'short_name',
+                               'public_name', 'notes', 'is_deleted', 'group', 'display_expr', 'instrument_types',
+                               'is_valid_for_all_portfolios', 'is_valid_for_all_instruments',
+                               'book_transaction_layout_json')
+
+        _l.debug('clone TransactionTypeInput')
+        for source in TransactionTypeInput.objects.filter(transaction_type__master_user=self._source_master_user):
+            self._simple_clone(None, source, 'transaction_type', 'name', 'verbose_name', 'value_type', 'content_type',
+                               'order', 'is_fill_from_context', 'value', 'account', 'instrument_type', 'instrument',
+                               'currency', 'counterparty', 'responsible', 'portfolio', 'strategy1', 'strategy2',
+                               'strategy3', 'daily_pricing_model', 'payment_size_detail', 'price_download_scheme')
+
+        _l.debug('clone TransactionTypeActionInstrument')
+        for source in TransactionTypeActionInstrument.objects.filter(
+                transaction_type__master_user=self._source_master_user):
+            self._simple_clone(None, source, 'transaction_type', 'order', 'action_notes',
+                               'user_code', 'name', 'public_name', 'short_name', 'notes', 'instrument_type',
+                               'instrument_type_input', 'pricing_currency', 'pricing_currency_input',
+                               'price_multiplier', 'accrued_currency', 'accrued_currency_input', 'accrued_multiplier',
+                               'payment_size_detail', 'payment_size_detail_input', 'default_price', 'default_accrued',
+                               'user_text_1', 'user_text_2', 'user_text_3', 'reference_for_pricing',
+                               'daily_pricing_model', 'daily_pricing_model_input', 'price_download_scheme',
+                               'price_download_scheme_input', 'maturity_date')
+
+        _l.debug('clone TransactionTypeActionTransaction')
+        for source in TransactionTypeActionTransaction.objects.filter(
+                transaction_type__master_user=self._source_master_user):
+            self._simple_clone(None, source, 'transaction_type', 'order', 'action_notes',
+                               'transaction_class', 'portfolio', 'portfolio_input', 'instrument', 'instrument_input',
+                               'instrument_phantom', 'transaction_currency', 'transaction_currency_input',
+                               'position_size_with_sign', 'settlement_currency', 'settlement_currency_input',
+                               'cash_consideration', 'principal_with_sign', 'carry_with_sign', 'overheads_with_sign',
+                               'account_position', 'account_position_input', 'account_cash', 'account_cash_input',
+                               'account_interim', 'account_interim_input', 'accounting_date', 'cash_date',
+                               'strategy1_position', 'strategy1_position_input', 'strategy1_cash',
+                               'strategy1_cash_input', 'strategy2_position', 'strategy2_position_input',
+                               'strategy2_cash', 'strategy2_cash_input', 'strategy3_position',
+                               'strategy3_position_input', 'strategy3_cash', 'strategy3_cash_input',
+                               'reference_fx_rate', 'factor', 'trade_price', 'principal_amount', 'carry_amount',
+                               'overheads', 'responsible', 'responsible_input', 'counterparty', 'counterparty_input', )
+
+    def _tags(self):
+        _l.debug('clone Tag')
+        for source in Tag.objects.filter(master_user=self._source_master_user):
+            self._simple_clone(None, source, 'master_user', 'user_code', 'name', 'short_name', 'public_name', 'notes',
+                               'content_types', 'account_types', 'accounts', 'currencies', 'instrument_types',
+                               'instruments', 'counterparty_groups', 'counterparties', 'responsible_groups',
+                               'responsibles', 'portfolios', 'transaction_type_groups', 'transaction_types',
+                               'strategy1_groups', 'strategy1_subgroups', 'strategies1', 'strategy2_groups',
+                               'strategy2_subgroups', 'strategies2', 'strategy3_groups', 'strategy3_subgroups',
+                               'strategies3', 'thread_groups', )
+
+    def _ui(self):
+        _l.debug('clone TemplateListLayout')
+        for source in TemplateListLayout.objects.filter(master_user=self._source_master_user):
+            self._simple_clone(None, source, 'content_type', 'json_data', 'name', 'is_default', pk_map=False)
+
+        _l.debug('clone TemplateEditLayout')
+        for source in TemplateEditLayout.objects.filter(master_user=self._source_master_user):
+            self._simple_clone(None, source, 'content_type', 'json_data', pk_map=False)
+
+    def _attribute_types(self, type_model, classifier_model, value_model):
+        _l.debug('clone %s', type_model)
+        for source in type_model.objects.filter(master_user=self._source_master_user):
+            self._simple_clone(None, source, 'master_user', 'user_code', 'name', 'short_name',
+                               'public_name', 'notes', 'value_type', 'order')
+
+        _l.debug('clone %s', classifier_model)
+        for source in classifier_model.objects.filter(attribute_type__master_user=self._source_master_user):
+            # TODO: classifier is tree!
+            # self._simple_clone(None, source, 'attribute_type', 'name')
+            pass
+
+        _l.debug('clone %s', value_model)
+        for source in value_model.objects.filter(attribute_type__master_user=self._source_master_user):
+            # TODO: uncomment when classifier is ready
+            # self._simple_clone(None, source, 'attribute_type', 'content_object', 'classifier')
+            pass
+
+    def _object_permissions(self, object_permission_model):
+        _l.debug('clone %s', object_permission_model)
+        for source in object_permission_model.filter(content_object__master_user=self._source_master_user):
+            self._simple_clone(None, source, 'content_object', 'group', 'permission', 'value_string', 'value_float',
+                               'value_date')
+
+    def _simple_list_clone(self, model, *fields, pk_map=True, store=False):
+        _l.debug('clone %s', model)
+        for source in model.objects.filter(master_user=self._source_master_user):
+            self._simple_clone(None, source, *fields, pk_map=pk_map, store=store)
+
+    def _simple_clone(self, target, source, *fields, pk_map=True, store=False):
         content_type = ContentType.objects.get_for_model(source)
-        if target is None:
+        if not target:
             target = content_type.model_class()()
 
         for item in fields:
@@ -243,8 +524,50 @@ class FullDataCloner(object):
         if pk_map:
             self._add_pk_map(target, source)
 
-    def _attribute_type_clone(self, target_model):
-        pass
+        if store:
+            self._source_add_object(source)
+            self._target_add_object(target)
 
-    def _object_permission_clone(self, target_model):
-        pass
+        return target
+
+    def _source_add_object(self, source):
+        content_type = ContentType.objects.get_for_model(source)
+        objects = self._source_objects[content_type.id]
+        objects[source.id] = source
+
+    def _source_get_objects(self, source):
+        content_type = ContentType.objects.get_for_model(source)
+        objects = self._source_objects[content_type.id]
+        return objects
+
+    def _source_get_object(self, source, pk):
+        content_type = ContentType.objects.get_for_model(source)
+        objects = self._source_objects[content_type.id]
+        return objects[pk]
+
+    def _target_add_object(self, target):
+        content_type = ContentType.objects.get_for_model(target)
+        objects = self._target_objects[content_type.id]
+        objects[target.id] = target
+
+    def _target_get_objects(self, target):
+        content_type = ContentType.objects.get_for_model(target)
+        objects = self._target_objects[content_type.id]
+        return objects
+
+    def _target_get_object(self, target, pk):
+        content_type = ContentType.objects.get_for_model(target)
+        objects = self._target_objects[content_type.id]
+        return objects[pk]
+
+    def _add_pk_map(self, target, source):
+        content_type = ContentType.objects.get_for_model(target)
+        cobjects = self._pk_map[content_type.pk]
+        cobjects[source.pk] = target.pk
+
+    def _get_related_from_pk_map(self, model, pk):
+        if pk is None:
+            return None
+        content_type = ContentType.objects.get_for_model(model)
+        objects = self._pk_map[content_type.pk]
+        return objects[pk]
