@@ -14,9 +14,9 @@ from poms.common.serializers import ModelWithUserCodeSerializer
 from poms.obj_attrs.fields import GenericAttributeTypeField, GenericClassifierField
 from poms.obj_attrs.models import GenericAttributeType, GenericClassifier, GenericAttribute
 from poms.obj_perms.serializers import ModelWithObjectPermissionSerializer
-from poms.obj_perms.utils import has_view_perms, get_permissions_prefetch_lookups
+from poms.obj_perms.utils import has_view_perms, get_permissions_prefetch_lookups, obj_perms_filter_objects_for_view
 from poms.users.fields import MasterUserField
-from poms.users.utils import get_member_from_context
+from poms.users.utils import get_member_from_context, get_master_user_from_context
 
 
 # class AttributeTypeOptionIsHiddenField(serializers.BooleanField):
@@ -500,6 +500,23 @@ class GenericAttributeTypeViewSerializer(ModelWithObjectPermissionSerializer):
                   'value_type', 'order', 'is_hidden']
 
 
+class GenericAttributeListSerializer(serializers.ListSerializer):
+    # Used as list_serializer_class if many=True in AbstractAttributeSerializer
+    def get_attribute(self, instance):
+        member = get_member_from_context(self.context)
+        if member.is_superuser:
+            return instance.attributes
+        master_user = get_master_user_from_context(self.context)
+        attribute_type_qs = GenericAttributeType.objects.filter(master_user=master_user)
+        attribute_type_qs = obj_perms_filter_objects_for_view(member, attribute_type_qs)
+        # return instance.attributes.filter(attribute_type__in=attribute_type_qs)
+        return GenericAttribute.objects.filter(
+            content_type=ContentType.objects.get_for_model(instance),
+            object_id=instance.id,
+            attribute_type__in=attribute_type_qs
+        )
+
+
 class GenericAttributeSerializer(serializers.ModelSerializer):
     attribute_type = GenericAttributeTypeField()
     attribute_type_object = GenericAttributeTypeViewSerializer(source='attribute_type', read_only=True)
@@ -508,6 +525,7 @@ class GenericAttributeSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = GenericAttribute
+        list_serializer_class = GenericAttributeListSerializer
         fields = ['id', 'attribute_type', 'attribute_type_object', 'value_string', 'value_float', 'value_date',
                   'classifier', 'classifier_object']
 
