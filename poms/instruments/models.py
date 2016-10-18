@@ -180,7 +180,7 @@ class Periodicity(AbstractClassModel):
         verbose_name = ugettext_lazy('periodicity')
         verbose_name_plural = ugettext_lazy('periodicities')
 
-    def to_timedelta(self, delta, same_date=None):
+    def to_timedelta(self, delta=1, same_date=None):
         if delta is None:
             delta = 1
 
