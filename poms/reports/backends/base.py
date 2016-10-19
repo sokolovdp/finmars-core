@@ -324,12 +324,24 @@ class BaseReport2Builder(object):
             queryset = self._queryset
 
         queryset = queryset.select_related(
+            'master_user',
+            'complex_transaction', 'complex_transaction__transaction_type',
             'transaction_class',
             'portfolio',
-            'instrument', 'instrument__pricing_currency', 'instrument__accrued_currency',
-            'transaction_currency',
-            'settlement_currency',
-            'account_position', 'account_cash', 'account_interim', )
+            'instrument', 'instrument__instrument_type', 'instrument__instrument_type__instrument_class',
+            'transaction_currency', 'settlement_currency',
+            'account_cash', 'account_cash__type',
+            'account_position', 'account_position__type',
+            'account_interim', 'account_interim__type',
+            'strategy1_position', 'strategy1_position__subgroup', 'strategy1_position__subgroup__group',
+            'strategy1_cash', 'strategy1_cash__subgroup', 'strategy1_cash__subgroup__group',
+            'strategy2_position', 'strategy2_position__subgroup', 'strategy2_position__subgroup__group',
+            'strategy2_cash', 'strategy2_cash__subgroup', 'strategy2_cash__subgroup__group',
+            'strategy3_position', 'strategy3_position__subgroup', 'strategy3_position__subgroup__group',
+            'strategy3_cash', 'strategy3_cash__subgroup', 'strategy3_cash__subgroup__group',
+            'responsible', 'responsible__group',
+            'counterparty', 'counterparty__group',
+        )
         queryset = queryset.filter(master_user=self.instance.master_user, is_canceled=False)
 
         if self._begin_date:
@@ -337,12 +349,33 @@ class BaseReport2Builder(object):
         if self._end_date:
             queryset = queryset.filter(**{'%s__lte' % self._filter_date_attr: self._end_date})
 
-        f = Q()
-        if self.instance.transaction_currencies:
-            f = f | Q(transaction_currency__in=self.instance.transaction_currencies)
-        if self.instance.instruments:
-            f = f | Q(instrument__in=self.instance.instruments)
-        queryset = queryset.filter(f)
+        # f = Q()
+        # if self.instance.transaction_currencies:
+        #     f = f | Q(transaction_currency__in=self.instance.transaction_currencies)
+        # if self.instance.instruments:
+        #     f = f | Q(instrument__in=self.instance.instruments)
+        # queryset = queryset.filter(f)
+
+        if self.instance.portfolios:
+            queryset = queryset.filter(portfolio__in=self.instance.portfolios)
+
+        if self.instance.accounts:
+            queryset = queryset.filter(account_position__in=self.instance.accounts)
+            queryset = queryset.filter(account_cash__in=self.instance.accounts)
+            queryset = queryset.filter(account_interim__in=self.instance.accounts)
+
+        if self.instance.strategies1:
+            queryset = queryset.filter(strategy1_position__in=self.instance.strategies1)
+            queryset = queryset.filter(strategy1_cash__in=self.instance.strategies1)
+
+        if self.instance.strategies2:
+            queryset = queryset.filter(strategy2_position__in=self.instance.strategies1)
+            queryset = queryset.filter(strategy2_cash__in=self.instance.strategies1)
+
+        if self.instance.strategies3:
+            queryset = queryset.filter(strategy3_position__in=self.instance.strategies1)
+            queryset = queryset.filter(strategy3_cash__in=self.instance.strategies1)
+
 
         queryset = queryset.order_by(self._filter_date_attr, 'id')
         return queryset
@@ -483,7 +516,7 @@ class BaseReport2Builder(object):
         if h is None:
             h = PriceHistory.objects.filter(instrument=instr, date__lte=d).order_by('date').last()
             if h is None:
-                h = PriceHistory(instrument=instr, date=d, principal_price=0., accrued_price=0., factor=0.)
+                h = PriceHistory(instrument=instr, date=d, principal_price=0., accrued_price=0.)
             self._price_history_cache[key] = h
         return h
 

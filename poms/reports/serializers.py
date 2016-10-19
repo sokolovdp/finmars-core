@@ -4,11 +4,14 @@ from django.conf import settings
 from django.utils.translation import ugettext_lazy
 from rest_framework import serializers
 
-from poms.currencies.serializers import CurrencyField
+from poms.accounts.fields import AccountField
+from poms.common.utils import date_now
+from poms.currencies.fields import CurrencyField, CurrencyDefault
 from poms.instruments.models import CostMethod
-from poms.instruments.serializers import InstrumentField
+from poms.portfolios.fields import PortfolioField
 from poms.reports.models import BalanceReport, BalanceReportItem, BalanceReportSummary, PLReportItem, PLReport, \
     PLReportSummary, CostReport, BaseReport
+from poms.strategies.fields import Strategy1Field, Strategy2Field, Strategy3Field
 from poms.transactions.models import Transaction
 from poms.users.fields import MasterUserField
 
@@ -69,44 +72,40 @@ class BaseTransactionSerializer(serializers.ModelSerializer):
 
 
 class BaseReportItemSerializer(serializers.Serializer):
-    id = serializers.UUIDField(read_only=True, source='pk', help_text=ugettext_lazy('report item id'))
+    id = serializers.UUIDField(read_only=True, source='pk')
 
-    portfolio = serializers.PrimaryKeyRelatedField(read_only=True, help_text=ugettext_lazy('Portfolio'))
-    portfolio_name = serializers.SerializerMethodField()
+    portfolio = serializers.PrimaryKeyRelatedField(read_only=True)
+    account = serializers.PrimaryKeyRelatedField(read_only=True)
+    strategy1 = serializers.PrimaryKeyRelatedField(read_only=True)
+    strategy2 = serializers.PrimaryKeyRelatedField(read_only=True)
+    strategy3 = serializers.PrimaryKeyRelatedField(read_only=True)
 
-    account = serializers.PrimaryKeyRelatedField(read_only=True, help_text=ugettext_lazy('Account'))
-    account_name = serializers.SerializerMethodField()
-
-    instrument = serializers.PrimaryKeyRelatedField(read_only=True, help_text=ugettext_lazy('Instrument'))
-    instrument_name = serializers.SerializerMethodField()
+    instrument = serializers.PrimaryKeyRelatedField(read_only=True)
 
     name = serializers.CharField(read_only=True)
-
-    def get_portfolio_name(self, instance):
-        return getattr(instance.portfolio, 'name', None)
-
-    def get_account_name(self, instance):
-        return getattr(instance.account, 'name', None)
-
-    def get_instrument_name(self, instance):
-        return getattr(instance.instrument, 'name', None)
 
 
 class BaseReportSerializer(serializers.Serializer):
     master_user = MasterUserField()
 
-    begin_date = serializers.DateField(required=False, allow_null=True, help_text=ugettext_lazy('Begin report date'))
-    end_date = serializers.DateField(required=False, allow_null=True, help_text=ugettext_lazy('End report date'))
+    begin_date = serializers.DateField(required=False, allow_null=True)
+    end_date = serializers.DateField(required=False, allow_null=True, default=date_now)
 
-    use_portfolio = serializers.BooleanField(initial=False, help_text=ugettext_lazy('Detalization by portfolio'))
-    use_account = serializers.BooleanField(initial=False, help_text=ugettext_lazy('Detalization by account'))
-    use_strategy = serializers.BooleanField(initial=False, help_text=ugettext_lazy('Detalization by strategy'))
-
-    # multiplier_class = serializers.ChoiceField(default=MULTIPLIER_AVCO, choices=MULTIPLIERS)
     cost_method = serializers.PrimaryKeyRelatedField(queryset=CostMethod.objects)
+    value_currency = CurrencyField(default=CurrencyDefault())
 
-    transaction_currencies = CurrencyField(many=True, required=False, allow_null=True)
-    instruments = InstrumentField(many=True, required=False, allow_null=True)
+    use_portfolio = serializers.BooleanField(initial=False)
+    use_account = serializers.BooleanField(initial=False)
+    use_strategy = serializers.BooleanField(initial=False)
+
+    portfolios = PortfolioField(many=True, required=False, allow_null=True, allow_empty=True)
+    accounts = AccountField(many=True, required=False, allow_null=True, allow_empty=True)
+    strategies1 = Strategy1Field(many=True, required=False, allow_null=True, allow_empty=True)
+    strategies2 = Strategy2Field(many=True, required=False, allow_null=True, allow_empty=True)
+    strategies3 = Strategy3Field(many=True, required=False, allow_null=True, allow_empty=True)
+
+    # transaction_currencies = CurrencyField(many=True, required=False, allow_null=True)
+    # instruments = InstrumentField(many=True, required=False, allow_null=True)
 
 
 # ----------------------------------------------------------------------------------------------------------------------
@@ -116,7 +115,7 @@ class BalanceReportItemSerializer(BaseReportItemSerializer):
     balance_position = serializers.FloatField(read_only=True, help_text=ugettext_lazy('Position'))
 
     currency = serializers.PrimaryKeyRelatedField(read_only=True, help_text=ugettext_lazy('Currency'))
-    currency_name = serializers.SerializerMethodField()
+    # currency_name = serializers.SerializerMethodField()
     currency_history = serializers.PrimaryKeyRelatedField(read_only=True, help_text=ugettext_lazy('Currency history'))
     currency_fx_rate = serializers.FloatField(read_only=True)
 
@@ -178,8 +177,8 @@ class BalanceReportSummarySerializer(serializers.Serializer):
 
 
 class BalanceReportSerializer(BaseReportSerializer):
-    show_transaction_details = serializers.BooleanField(initial=True)
-    items = BalanceReportItemSerializer(many=True, read_only=True, help_text=ugettext_lazy('items'))
+    show_transaction_details = serializers.BooleanField(initial=False)
+    items = BalanceReportItemSerializer(many=True, read_only=True)
 
     if settings.DEV:
         summary = BalanceReportSummarySerializer(read_only=True)
