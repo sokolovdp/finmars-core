@@ -6,6 +6,7 @@ from dateutil import relativedelta, rrule
 from django.core import serializers
 from django.core.exceptions import ObjectDoesNotExist
 from django.db import models
+from django.utils import timezone
 from django.utils.encoding import python_2_unicode_compatible
 from django.utils.translation import ugettext, ugettext_lazy
 from mptt.fields import TreeForeignKey
@@ -908,43 +909,45 @@ class EventScheduleAction(models.Model):
         return self.text
 
 
-class EventScheduleActionShot(models.Model):
-    master_user = models.ForeignKey(MasterUser, related_name='instrument_event_schedule_actions_shots',
-                                    verbose_name=ugettext_lazy('master user'))
-    # instrument = models.ForeignKey(Instrument, null=True, blank=True, on_delete=models.SET_NULL,
-    #                                related_name='event_schedule_actions_state',
-    #                                verbose_name=ugettext_lazy('instrument'))
-    event_schedule = models.ForeignKey(EventSchedule, null=True, blank=True, on_delete=models.SET_NULL,
-                                       related_name='actions_shots',
-                                       verbose_name=ugettext_lazy('event schedule action'))
-    event_schedule_action = models.ForeignKey(EventScheduleAction, null=True, blank=True, on_delete=models.SET_NULL,
-                                              related_name='shots',
-                                              verbose_name=ugettext_lazy('event schedule action'))
-    transaction_type = models.ForeignKey('transactions.TransactionType', null=True, blank=True,
-                                         on_delete=models.SET_NULL)
+class GeneratedEvent(models.Model):
+    NEW = 1
+    IGNORED = 2
+    BOOK_PENDING = 3
+    BOOKED = 4
+    STATUS_CHOICES = (
+        (NEW, ugettext_lazy('New')),
+        (IGNORED, ugettext_lazy('Ignored')),
+        (BOOK_PENDING, ugettext_lazy('Book pending')),
+        (BOOKED, ugettext_lazy('Booked')),
+    )
 
-    inform_date = models.DateField(default=date_now, db_index=True)
-    react_date = models.DateField(default=date_now, db_index=True)
+    master_user = models.ForeignKey(MasterUser, related_name='+')
+
+    event_date = models.DateField(default=date_now, db_index=True)
+    status = models.PositiveSmallIntegerField(default=NEW, choices=STATUS_CHOICES, db_index=True)
+    event_schedule = models.ForeignKey(EventSchedule, null=True, blank=True, on_delete=models.SET_NULL,
+                                       related_name='+')
+    action = models.ForeignKey(EventScheduleAction, null=True, blank=True, on_delete=models.SET_NULL,
+                               related_name='+')
+    action_text = models.TextField(default='', blank=True)
+    transaction_type = models.ForeignKey('transactions.TransactionType', null=True, blank=True,
+                                         on_delete=models.SET_NULL, related_name='+')
 
     instrument = models.ForeignKey('instruments.Instrument', null=True, blank=True, on_delete=models.SET_NULL)
     portfolio = models.ForeignKey('portfolios.Portfolio', null=True, blank=True, on_delete=models.SET_NULL)
     account = models.ForeignKey('accounts.Account', null=True, blank=True, on_delete=models.SET_NULL)
-    stategy1 = models.ForeignKey('strategies.Strategy1', null=True, blank=True, on_delete=models.SET_NULL)
-    stategy2 = models.ForeignKey('strategies.Strategy2', null=True, blank=True, on_delete=models.SET_NULL)
-    stategy3 = models.ForeignKey('strategies.Strategy3', null=True, blank=True, on_delete=models.SET_NULL)
+    strategy1 = models.ForeignKey('strategies.Strategy1', null=True, blank=True, on_delete=models.SET_NULL)
+    strategy2 = models.ForeignKey('strategies.Strategy2', null=True, blank=True, on_delete=models.SET_NULL)
+    strategy3 = models.ForeignKey('strategies.Strategy3', null=True, blank=True, on_delete=models.SET_NULL)
+    position = models.FloatField(default=0.0)
 
-    coupon_factor = models.FloatField(default=0.0)
-    accrued_factor = models.FloatField(default=0.0)
-    accrual_size = models.FloatField(default=0.0)
-
-    is_processed = models.BooleanField(default=False, db_index=True)
     member = models.ForeignKey('users.Member', null=True, blank=True)
-    processing_date = models.DateTimeField(null=True, blank=True, db_index=True)
+    status_modified = models.DateTimeField(default=timezone.now, db_index=True)
 
     class Meta:
         abstract = True
-        verbose_name = ugettext_lazy('event schedule action state')
-        verbose_name_plural = ugettext_lazy('event schedule action states')
+        verbose_name = ugettext_lazy('generated event')
+        verbose_name_plural = ugettext_lazy('generated events')
         ordering = ['date']
 
 
