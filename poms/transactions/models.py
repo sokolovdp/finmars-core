@@ -621,8 +621,18 @@ class EventToHandle(NamedModel):
 
 @python_2_unicode_compatible
 class ComplexTransaction(models.Model):
+    # PRODUCTION = 1
+    # PENDING = 2
+    # STATUS_CHOICES = (
+    #     (PRODUCTION, ugettext_lazy('Production')),
+    #     (PENDING, ugettext_lazy('Pending')),
+    # )
+
     transaction_type = models.ForeignKey(TransactionType, on_delete=models.PROTECT)
     code = models.IntegerField(default=0)
+
+    # status = models.PositiveSmallIntegerField(default=PRODUCTION, choices=STATUS_CHOICES, db_index=True)
+    # generated_event = models.ForeignKey('instruments.GeneratedEvent', null=True, blank=True, on_delete=models.SET_NULL)
 
     class Meta:
         verbose_name = ugettext_lazy('complex transaction')
