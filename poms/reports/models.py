@@ -1,7 +1,5 @@
 from __future__ import unicode_literals
 
-from datetime import date
-
 from django.contrib.contenttypes.models import ContentType
 from django.db import models
 from django.utils.encoding import python_2_unicode_compatible
@@ -17,7 +15,7 @@ class ReportClass(AbstractClassModel):
     BALANCE = 1
     P_L = 2
     COST = 3
-    YTM = 3
+    YTM = 4
     CLASSES = (
         (BALANCE, 'BALANCE', ugettext_lazy('BALANCE')),
         (P_L, 'P_L', ugettext_lazy('P&L')),
@@ -26,39 +24,55 @@ class ReportClass(AbstractClassModel):
     )
 
     class Meta(AbstractClassModel.Meta):
-        abstract = True
         verbose_name = ugettext_lazy('report class')
         verbose_name_plural = ugettext_lazy('report classes')
 
 
-class ReportType(NamedModel):
-    master_user = models.ForeignKey(MasterUser, related_name='report_types',
-                                    verbose_name=ugettext_lazy('master user'))
-
+class CustomField(models.Model):
+    master_user = models.ForeignKey(MasterUser, related_name='custom_fields')
     report_class = models.ForeignKey(ReportClass)
-    begin_date = models.DateField(default=date.min)
-    end_date = models.DateField(default=date_now)
+    name = models.CharField(max_length=255)
+    expr = models.CharField(max_length=255)
 
-    show_transaction_details = models.BooleanField(default=False)
-    group_by_portfolio = models.BooleanField(default=False)
-    group_by_account = models.BooleanField(default=False)
-    group_by_strategy = models.BooleanField(default=False)
-
-    cost_method = models.ForeignKey('instruments.CostMethod')
-    portfolios = models.ManyToManyField('portfolios.Portfolio')
-    accounts = models.ManyToManyField('accounts.Account')
-    instruments = models.ManyToManyField('instruments.Instrument')
-    currencies = models.ManyToManyField('currencies.Currency')
-
-    class Meta(NamedModel.Meta):
-        abstract = True
-        verbose_name = ugettext_lazy('report type')
-        verbose_name_plural = ugettext_lazy('report types')
-        permissions = [
-            ('view_reporttype', 'Can view report type')
+    class Meta:
+        verbose_name = ugettext_lazy('custom field')
+        verbose_name_plural = ugettext_lazy('custom fiels')
+        unique_together = [
+            ['master_user', 'report_class', 'name']
         ]
 
+    def __str__(self):
+        return self.name
 
+
+# class ReportType(NamedModel):
+#     master_user = models.ForeignKey(MasterUser, related_name='report_types',
+#                                     verbose_name=ugettext_lazy('master user'))
+#
+#     report_class = models.ForeignKey(ReportClass)
+#     begin_date = models.DateField(default=date.min)
+#     end_date = models.DateField(default=date_now)
+#
+#     show_transaction_details = models.BooleanField(default=False)
+#     group_by_portfolio = models.BooleanField(default=False)
+#     group_by_account = models.BooleanField(default=False)
+#     group_by_strategy = models.BooleanField(default=False)
+#
+#     cost_method = models.ForeignKey('instruments.CostMethod')
+#     portfolios = models.ManyToManyField('portfolios.Portfolio')
+#     accounts = models.ManyToManyField('accounts.Account')
+#     instruments = models.ManyToManyField('instruments.Instrument')
+#     currencies = models.ManyToManyField('currencies.Currency')
+#
+#     class Meta(NamedModel.Meta):
+#         abstract = True
+#         verbose_name = ugettext_lazy('report type')
+#         verbose_name_plural = ugettext_lazy('report types')
+#         permissions = [
+#             ('view_reporttype', 'Can view report type')
+#         ]
+#
+#
 # class ReportTypeUserObjectPermission(AbstractUserObjectPermission):
 #     content_object = models.ForeignKey(ReportType, related_name='user_object_permissions',
 #                                        verbose_name=ugettext_lazy('content object'))
@@ -77,42 +91,42 @@ class ReportType(NamedModel):
 #         abstract = True
 #         verbose_name = ugettext_lazy('report types - group permission')
 #         verbose_name_plural = ugettext_lazy('report types - group permissions')
-
-
-@python_2_unicode_compatible
-class ReportTypeInput(models.Model):
-    STRING = 10
-    NUMBER = 20
-    EXPRESSION = 30
-    DATE = 40
-    RELATION = 100
-
-    TYPES = (
-        (NUMBER, ugettext_lazy('Number')),
-        (STRING, ugettext_lazy('String')),
-        (DATE, ugettext_lazy('Date')),
-        (EXPRESSION, ugettext_lazy('Expression')),
-        (RELATION, ugettext_lazy('Relation')),
-    )
-
-    report_type = models.ForeignKey(ReportType, related_name='inputs',
-                                    verbose_name=ugettext_lazy('transaction type'))
-    value_type = models.PositiveSmallIntegerField(default=NUMBER, choices=TYPES,
-                                                  verbose_name=ugettext_lazy('value type'))
-    name = models.CharField(max_length=255, null=True, blank=True,
-                            verbose_name=ugettext_lazy('name'))
-    content_type = models.ForeignKey(ContentType, null=True, blank=True,
-                                     verbose_name=ugettext_lazy('content type'))
-    order = models.IntegerField(default=0,
-                                verbose_name=ugettext_lazy('order'))
-
-    class Meta:
-        abstract = True
-        verbose_name = ugettext_lazy('report type input')
-        verbose_name_plural = ugettext_lazy('report type inputs')
-
-    def __str__(self):
-        return self.name
+#
+#
+# @python_2_unicode_compatible
+# class ReportTypeInput(models.Model):
+#     STRING = 10
+#     NUMBER = 20
+#     EXPRESSION = 30
+#     DATE = 40
+#     RELATION = 100
+#
+#     TYPES = (
+#         (NUMBER, ugettext_lazy('Number')),
+#         (STRING, ugettext_lazy('String')),
+#         (DATE, ugettext_lazy('Date')),
+#         (EXPRESSION, ugettext_lazy('Expression')),
+#         (RELATION, ugettext_lazy('Relation')),
+#     )
+#
+#     report_type = models.ForeignKey(ReportType, related_name='inputs',
+#                                     verbose_name=ugettext_lazy('transaction type'))
+#     value_type = models.PositiveSmallIntegerField(default=NUMBER, choices=TYPES,
+#                                                   verbose_name=ugettext_lazy('value type'))
+#     name = models.CharField(max_length=255, null=True, blank=True,
+#                             verbose_name=ugettext_lazy('name'))
+#     content_type = models.ForeignKey(ContentType, null=True, blank=True,
+#                                      verbose_name=ugettext_lazy('content type'))
+#     order = models.IntegerField(default=0,
+#                                 verbose_name=ugettext_lazy('order'))
+#
+#     class Meta:
+#         abstract = True
+#         verbose_name = ugettext_lazy('report type input')
+#         verbose_name_plural = ugettext_lazy('report type inputs')
+#
+#     def __str__(self):
+#         return self.name
 
 
 # ----------------------------------------------------------------------------------------------------------------------
@@ -150,23 +164,39 @@ class BaseReportItem(object):
 
 @python_2_unicode_compatible
 class BaseReport(object):
-    def __init__(self, master_user=None, begin_date=None, end_date=None, use_portfolio=False, use_account=False,
-                 use_strategy=False, cost_method=None, items=None, instruments=None, transaction_currencies=None):
+    def __init__(self, master_user=None, cost_method=None, begin_date=None, end_date=None,
+                 portfolios=None, accounts=None, strategies1=None,
+                 strategies2=None, strategies3=None,
+                 use_portfolio=False, use_account=False, use_strategy=False,
+                 value_currency=None, custom_fields=None,
+                 items=None,
+                 task_id=None, task_status=None):
         self.master_user = master_user
+        self.cost_method = cost_method
         self.begin_date = begin_date
         self.end_date = end_date
+
+        self.portfolios = portfolios or []
+        self.accounts = accounts or []
+        self.strategies1 = strategies1 or []
+        self.strategies2 = strategies2 or []
+        self.strategies3 = strategies3 or []
+
         self.use_portfolio = use_portfolio
         self.use_account = use_account
         self.use_strategy = use_strategy
-        # multiplier_class
-        self.cost_method = cost_method
+
+        self.value_currency = value_currency
+        self.custom_fields = custom_fields or []
+
         self.items = items or []
-        self.transaction_currencies = transaction_currencies or []
-        self.instruments = instruments or []
         self.transactions = []
 
+        self.task_id = task_id
+        self.task_status = task_status
+
     def __str__(self):
-        return "%s for %s (%s, %s)" % (self.__class__.__name__, self.master_user, self.begin_date, self.end_date)
+        return "%s for %s (%s-%s)" % (self.__class__.__name__, self.master_user, self.begin_date, self.end_date)
 
 
 # ----------------------------------------------------------------------------------------------------------------------

@@ -98,7 +98,7 @@ class InstrumentAdmin(admin.ModelAdmin):
         # UserObjectPermissionInline,
         # GroupObjectPermissionInline,
     ]
-    actions = ['calculate_prices_accrued_price', 'rebuild_event_schedules', 'process_events']
+    actions = ['calculate_prices_accrued_price', 'rebuild_event_schedules']
 
     def rebuild_event_schedules(self, request, queryset):
         for instr in queryset:
@@ -120,11 +120,6 @@ class InstrumentAdmin(admin.ModelAdmin):
         # ).wait()
 
     calculate_prices_accrued_price.short_description = "Calculate accrued price for prices"
-
-    def process_events(self, request, queryset):
-        process_events(instruments=queryset)
-
-    process_events.short_description = "Process events"
 
 
 admin.site.register(Instrument, InstrumentAdmin)

@@ -64,7 +64,7 @@ class MasterUserAdmin(admin.ModelAdmin):
         }),
     )
 
-    actions = ['clone_data']
+    actions = ['process_events', 'clone_data']
 
     def clone_data(self, request, queryset):
         from poms.users.cloner import FullDataCloner
@@ -73,6 +73,14 @@ class MasterUserAdmin(admin.ModelAdmin):
             cloner.clone()
 
     clone_data.short_description = ugettext_lazy("Clone selected master users")
+
+    def process_events(self, request, queryset):
+        from poms.instruments.tasks import process_events
+
+        for master_user in queryset:
+            process_events(master_user=master_user.pk)
+
+    process_events.short_description = "Process events"
 
 
 admin.site.register(MasterUser, MasterUserAdmin)

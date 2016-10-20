@@ -116,6 +116,9 @@ router.register(r'ui/edit-layout', ui.EditLayoutViewSet)
 router.register(r'ui/template-list-layout', ui.TemplateListLayoutViewSet)
 router.register(r'ui/template-edit-layout', ui.TemplateEditLayoutViewSet)
 
+router.register(r'reports/report-class', reports.ReportClassViewSet)
+router.register(r'reports/custom-field', reports.CustomFieldViewSet)
+
 router.register(r'reports/balance', reports.BalanceReport2ViewSet, "balancereport2")
 router.register(r'reports/pl', reports.PLReport2ViewSet, "plreport2")
 router.register(r'reports/cost', reports.CostReport2ViewSet, "costreport2")
