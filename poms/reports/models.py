@@ -41,6 +41,9 @@ class CustomField(models.Model):
             ['master_user', 'report_class', 'name']
         ]
 
+    def __str__(self):
+        return self.name
+
 
 # class ReportType(NamedModel):
 #     master_user = models.ForeignKey(MasterUser, related_name='report_types',

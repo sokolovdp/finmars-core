@@ -11,6 +11,7 @@ from poms.common.utils import date_now
 from poms.currencies.fields import CurrencyField, CurrencyDefault
 from poms.instruments.models import CostMethod
 from poms.portfolios.fields import PortfolioField
+from poms.reports.fields import ReportClassField, BalanceReportCustomFieldField
 from poms.reports.models import BalanceReport, BalanceReportItem, BalanceReportSummary, PLReportItem, PLReport, \
     PLReportSummary, CostReport, BaseReport, ReportClass, CustomField
 from poms.strategies.fields import Strategy1Field, Strategy2Field, Strategy3Field
@@ -25,6 +26,7 @@ class ReportClassSerializer(PomsClassSerializer):
 
 class CustomFieldSerializer(serializers.ModelSerializer):
     master_user = MasterUserField()
+    report_class = ReportClassField()
     expr = ExpressionField(required=False, allow_blank=True, default='""')
 
     class Meta:
@@ -202,6 +204,8 @@ class BalanceReportSummarySerializer(serializers.Serializer):
 
 
 class BalanceReportSerializer(BaseReportSerializer):
+    custom_fields = BalanceReportCustomFieldField(many=True, allow_empty=True, allow_null=True, required=False)
+
     show_transaction_details = serializers.BooleanField(default=False)
     items = BalanceReportItemSerializer(many=True, read_only=True)
 
