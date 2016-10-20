@@ -1,18 +1,57 @@
 from __future__ import unicode_literals
 
+import django_filters
 from celery.result import AsyncResult
 from rest_framework import status
 from rest_framework.exceptions import PermissionDenied
+from rest_framework.filters import FilterSet
 from rest_framework.response import Response
 
-from poms.common.views import AbstractViewSet
+from poms.common.filters import NoOpFilter, CharFilter
+from poms.common.views import AbstractViewSet, AbstractClassModelViewSet, AbstractModelViewSet
 from poms.reports.backends.cost import CostReport2Builder
 from poms.reports.backends.simple_multipliers import SimpleMultipliersReport2Builder
 from poms.reports.backends.ytm import YTMReport2Builder
+from poms.reports.models import ReportClass, CustomField
 from poms.reports.serializers import BalanceReportSerializer, PLReportSerializer, \
-    CostReportSerializer, YTMReportSerializer, SimpleMultipliersReport2Serializer
+    CostReportSerializer, YTMReportSerializer, SimpleMultipliersReport2Serializer, ReportClassSerializer, \
+    CustomFieldSerializer
 from poms.reports.tasks import balance_report, pl_report
+from poms.users.filters import OwnerByMasterUserFilter
 
+
+class ReportClassViewSet(AbstractClassModelViewSet):
+    queryset = ReportClass.objects
+    serializer_class = ReportClassSerializer
+
+
+class CustomFieldFilterSet(FilterSet):
+    id = NoOpFilter()
+    report_class = django_filters.ModelMultipleChoiceFilter(queryset=ReportClass.objects)
+    name = CharFilter()
+
+    class Meta:
+        model = CustomField
+        fields = []
+
+
+class CustomFieldViewSet(AbstractModelViewSet):
+    queryset = CustomField.objects.select_related('master_user', 'report_class')
+    serializer_class = CustomFieldSerializer
+    # permission_classes = AbstractModelViewSet.permission_classes + [
+    #     SuperUserOrReadOnly,
+    # ]
+    filter_backends = AbstractModelViewSet.filter_backends + [
+        OwnerByMasterUserFilter,
+    ]
+    filter_class = CustomFieldFilterSet
+    ordering_fields = [
+        'report_class', 'report_class__name',
+        'name',
+    ]
+
+
+# ---
 
 class BaseReportViewSet(AbstractViewSet):
     report_builder_class = None

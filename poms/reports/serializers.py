@@ -5,16 +5,36 @@ from django.utils.translation import ugettext_lazy
 from rest_framework import serializers
 
 from poms.accounts.fields import AccountField
+from poms.common.fields import ExpressionField
+from poms.common.serializers import PomsClassSerializer
 from poms.common.utils import date_now
 from poms.currencies.fields import CurrencyField, CurrencyDefault
 from poms.instruments.models import CostMethod
 from poms.portfolios.fields import PortfolioField
 from poms.reports.models import BalanceReport, BalanceReportItem, BalanceReportSummary, PLReportItem, PLReport, \
-    PLReportSummary, CostReport, BaseReport
+    PLReportSummary, CostReport, BaseReport, ReportClass, CustomField
 from poms.strategies.fields import Strategy1Field, Strategy2Field, Strategy3Field
 from poms.transactions.models import Transaction
 from poms.users.fields import MasterUserField
 
+
+class ReportClassSerializer(PomsClassSerializer):
+    class Meta(PomsClassSerializer.Meta):
+        model = ReportClass
+
+
+class CustomFieldSerializer(serializers.ModelSerializer):
+    master_user = MasterUserField()
+    expr = ExpressionField(required=False, allow_blank=True, default='""')
+
+    class Meta:
+        model = CustomField
+        fields = [
+            'url', 'id', 'master_user', 'report_class', 'name', 'expr'
+        ]
+
+
+# reports
 
 class BaseTransactionSerializer(serializers.ModelSerializer):
     transaction_class_code = serializers.SerializerMethodField()

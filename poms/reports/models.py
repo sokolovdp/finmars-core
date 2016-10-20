@@ -15,7 +15,7 @@ class ReportClass(AbstractClassModel):
     BALANCE = 1
     P_L = 2
     COST = 3
-    YTM = 3
+    YTM = 4
     CLASSES = (
         (BALANCE, 'BALANCE', ugettext_lazy('BALANCE')),
         (P_L, 'P_L', ugettext_lazy('P&L')),
@@ -24,20 +24,17 @@ class ReportClass(AbstractClassModel):
     )
 
     class Meta(AbstractClassModel.Meta):
-        abstract = True
         verbose_name = ugettext_lazy('report class')
         verbose_name_plural = ugettext_lazy('report classes')
 
 
 class CustomField(models.Model):
-    master_user = models.ForeignKey(MasterUser, related_name='+')
+    master_user = models.ForeignKey(MasterUser, related_name='custom_fields')
     report_class = models.ForeignKey(ReportClass)
     name = models.CharField(max_length=255)
     expr = models.CharField(max_length=255)
 
     class Meta:
-        abstract = True
-
         verbose_name = ugettext_lazy('custom field')
         verbose_name_plural = ugettext_lazy('custom fiels')
         unique_together = [
