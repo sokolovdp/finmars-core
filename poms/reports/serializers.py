@@ -86,7 +86,7 @@ class BaseReportItemSerializer(serializers.Serializer):
 
 
 class BaseReportSerializer(serializers.Serializer):
-    task_id = serializers.CharField(allow_null=True, allow_blank=True)
+    task_id = serializers.CharField(allow_null=True, allow_blank=True, required=False)
     task_status = serializers.ReadOnlyField()
 
     master_user = MasterUserField()
@@ -94,12 +94,14 @@ class BaseReportSerializer(serializers.Serializer):
     begin_date = serializers.DateField(required=False, allow_null=True)
     end_date = serializers.DateField(required=False, allow_null=True, default=date_now)
 
-    cost_method = serializers.PrimaryKeyRelatedField(queryset=CostMethod.objects)
+    cost_method = serializers.PrimaryKeyRelatedField(queryset=CostMethod.objects, allow_null=True, allow_empty=True,
+                                                     initial=CostMethod.AVCO,
+                                                     default=lambda: CostMethod.objects.get(pk=CostMethod.AVCO))
     value_currency = CurrencyField(default=CurrencyDefault())
 
-    use_portfolio = serializers.BooleanField(initial=False)
-    use_account = serializers.BooleanField(initial=False)
-    use_strategy = serializers.BooleanField(initial=False)
+    use_portfolio = serializers.BooleanField(default=False)
+    use_account = serializers.BooleanField(default=False)
+    use_strategy = serializers.BooleanField(default=False)
 
     portfolios = PortfolioField(many=True, required=False, allow_null=True, allow_empty=True)
     accounts = AccountField(many=True, required=False, allow_null=True, allow_empty=True)
@@ -180,7 +182,7 @@ class BalanceReportSummarySerializer(serializers.Serializer):
 
 
 class BalanceReportSerializer(BaseReportSerializer):
-    show_transaction_details = serializers.BooleanField(initial=False)
+    show_transaction_details = serializers.BooleanField(default=False)
     items = BalanceReportItemSerializer(many=True, read_only=True)
 
     if settings.DEV:
