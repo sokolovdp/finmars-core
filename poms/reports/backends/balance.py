@@ -5,6 +5,8 @@ import logging
 from datetime import date
 from functools import reduce
 
+from django.conf import settings
+
 from poms.reports.backends.base import BaseReport2Builder
 from poms.reports.models import BalanceReportItem
 from poms.transactions.models import TransactionClass
@@ -461,7 +463,8 @@ class BalanceReport2Builder(BaseReport2Builder):
         summary.current_value_system_ccy = reduce(lambda x, y: x + y.market_value_system_ccy, items, 0.)
         summary.p_l_system_ccy = summary.current_value_system_ccy - summary.invested_value_system_ccy
 
-        self.instance.transactions = self.transactions
+        if settings.DEV:
+            self.instance.transactions = self.transactions
 
         return self.instance
 

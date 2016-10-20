@@ -1,6 +1,8 @@
 # -*- coding: utf-8 -*-
 from __future__ import unicode_literals, division
 
+from django.conf import settings
+
 from poms.reports.backends.base import BaseReport2Builder
 from poms.reports.models import PLReportItem, BalanceReportItem
 from poms.transactions.models import TransactionClass
@@ -257,6 +259,8 @@ class PLReport2Builder(BaseReport2Builder):
         items = sorted(items, key=lambda x: '%s' % (x.pk,))
 
         self.instance.items = items
-        self.instance.transactions = self.transactions
+
+        if settings.DEV:
+            self.instance.transactions = self.transactions
 
         return self.instance
