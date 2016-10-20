@@ -8,26 +8,23 @@ def send(recipients, message=None, actor=None, verb=None, action_object=None, ta
     from poms.notifications.models import Notification
     from poms.notifications.throttling import allow_notification
 
-    if throttle and not allow_notification():
-        return
-
     ret = []
-    for recipient in recipients:
-        recipient_member = None
-        if isinstance(recipient, Member):
-            if recipient.is_deleted:
+
+    if not recipients:
+        return ret
+
+    if throttle and not allow_notification():
+        return ret
+
+    for member_or_user in recipients:
+        if isinstance(member_or_user, Member):
+            if member_or_user.is_deleted:
                 continue
-            recipient_member = recipient
-            recipient = recipient.user
-        # n = Notification.objects.create(
-        #     recipient=recipient,
-        #     message=message,
-        #     actor=actor,
-        #     verb=force_text(verb),
-        #     action_object=action_object,
-        #     target=target,
-        #     data=json.dumps(data, sort_keys=True) if data else None,
-        # )
+            recipient = member_or_user.user
+            recipient_member = member_or_user
+        else:
+            recipient = member_or_user
+            recipient_member = None
         n = Notification()
         n.recipient = recipient
         n.recipient_member = recipient_member
@@ -38,30 +35,6 @@ def send(recipients, message=None, actor=None, verb=None, action_object=None, ta
         n.target = target
         n.data = json.dumps(data, sort_keys=True) if data else None
         n.save()
-
         ret.append(n)
-    return ret
 
-# def debug(*args, **kwargs):
-#     kwargs['level'] = constants.DEBUG
-#     send(*args, **kwargs)
-#
-#
-# def info(*args, **kwargs):
-#     kwargs['level'] = constants.INFO
-#     send(*args, **kwargs)
-#
-#
-# def success(*args, **kwargs):
-#     kwargs['level'] = constants.SUCCESS
-#     send(*args, **kwargs)
-#
-#
-# def warning(*args, **kwargs):
-#     kwargs['level'] = constants.WARNING
-#     send(*args, **kwargs)
-#
-#
-# def error(*args, **kwargs):
-#     kwargs['level'] = constants.ERROR
-#     send(*args, **kwargs)
+    return ret

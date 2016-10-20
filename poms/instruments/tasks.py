@@ -42,7 +42,7 @@ def calculate_prices_accrued_price_async(master_user=None, begin_date=None, end_
 
 
 @shared_task(name='instruments.process_events', ignore_result=True)
-def process_events(master_user=None):
+def process_events(master_user=None, send_notification=True, notification_recipients=None):
     _l.debug('process_events: master_user=%s', master_user)
 
     now = date_now()
@@ -186,11 +186,15 @@ def process_events(master_user=None):
                 if need_inform:
                     _l.info('need_inform !!!!')
                     # action_object -> ge
-                    notifications.send(recipients=members,
-                                       actor=master_user,
-                                       verb='event occurred',
-                                       action_object=event_schedule,
-                                       target=instrument)
+                    if send_notification:
+                        recipients = members
+                        if notification_recipients is not None:
+                            recipients = [m for m in members if m.id in notification_recipients]
+                        notifications.send(recipients=recipients,
+                                           actor=master_user,
+                                           verb='event occurred',
+                                           action_object=event_schedule,
+                                           target=instrument)
                 if need_react:
                     _l.info('need_react !!!!')
 
