@@ -3,7 +3,6 @@ from __future__ import unicode_literals
 # noinspection PyUnresolvedReferences
 import env_ai
 import os
-os.environ['RDS_DB_NAME'] = 'poms_generics'
 
 # noinspection PyUnresolvedReferences
 from .settings import *
