@@ -5,6 +5,7 @@ import uuid
 from datetime import timedelta
 from logging import getLogger
 
+from django.contrib.contenttypes.models import ContentType
 from django.core.exceptions import ObjectDoesNotExist
 from django.core.signing import TimestampSigner, BadSignature
 from django.utils import timezone
@@ -17,9 +18,8 @@ from poms.common.fields import ExpressionField, DateTimeTzAwareField
 from poms.common.serializers import PomsClassSerializer, ModelWithUserCodeSerializer
 from poms.currencies.fields import CurrencyField, CurrencyDefault
 from poms.currencies.models import CurrencyHistory
-from poms.instruments.fields import InstrumentTypeField, InstrumentAttributeTypeField, InstrumentClassifierField, \
-    InstrumentTypeDefault
-from poms.instruments.models import InstrumentAttributeType, PriceHistory, Instrument
+from poms.instruments.fields import InstrumentTypeField, InstrumentTypeDefault
+from poms.instruments.models import PriceHistory, Instrument
 from poms.integrations.fields import InstrumentDownloadSchemeField, PriceDownloadSchemeField
 from poms.integrations.models import InstrumentDownloadSchemeInput, InstrumentDownloadSchemeAttribute, \
     InstrumentDownloadScheme, ImportConfig, Task, ProviderClass, FactorScheduleDownloadMethod, \
@@ -28,10 +28,10 @@ from poms.integrations.models import InstrumentDownloadSchemeInput, InstrumentDo
 from poms.integrations.providers.base import get_provider, ProviderException
 from poms.integrations.storage import import_file_storage
 from poms.integrations.tasks import download_pricing, download_instrument
-from poms.obj_attrs.serializers import ModelWithAttributesSerializer, AbstractAttributeSerializer
+from poms.obj_attrs.fields import GenericAttributeTypeField, GenericClassifierField
+from poms.obj_attrs.serializers import ModelWithAttributesSerializer
 from poms.obj_perms.serializers import ModelWithObjectPermissionSerializer
-from poms.tags.fields import TagField
-from poms.tags.serializers import TagViewSerializer
+from poms.tags.serializers import ModelWithTagSerializer
 from poms.users.fields import MasterUserField, MemberField, HiddenMemberField
 
 _l = getLogger('poms.integrations')
@@ -87,26 +87,33 @@ class InstrumentDownloadSchemeInputSerializer(serializers.ModelSerializer):
         fields = ['id', 'name', 'field']
 
 
-class InstrumentDownloadSchemeAttributeSerializer(AbstractAttributeSerializer):
+class InstrumentDownloadSchemeAttributeSerializer(serializers.ModelSerializer):
     id = serializers.IntegerField(read_only=False, required=False, allow_null=True)
-    attribute_type = InstrumentAttributeTypeField()
+    attribute_type = GenericAttributeTypeField()
     attribute_type_object = serializers.PrimaryKeyRelatedField(source='attribute_type', read_only=True)
     value = ExpressionField(allow_blank=True)
 
-    class Meta(AbstractAttributeSerializer.Meta):
+    class Meta:
         model = InstrumentDownloadSchemeAttribute
-        attribute_type_model = InstrumentAttributeType
+        # attribute_type_model = InstrumentAttributeType
         fields = ['id', 'attribute_type', 'attribute_type_object', 'value']
 
     def __init__(self, *args, **kwargs):
         super(InstrumentDownloadSchemeAttributeSerializer, self).__init__(*args, **kwargs)
 
-        from poms.instruments.serializers import InstrumentAttributeTypeViewSerializer
-        self.fields['attribute_type_object'] = InstrumentAttributeTypeViewSerializer(source='attribute_type',
-                                                                                     read_only=True)
+        from poms.obj_attrs.serializers import GenericAttributeTypeViewSerializer
+        self.fields['attribute_type_object'] = GenericAttributeTypeViewSerializer(source='attribute_type',
+                                                                                  read_only=True)
+
+    def validate(self, attrs):
+        attribute_type = attrs.get('attribute_type', None)
+        if attribute_type:
+            if attribute_type.content_type_id != ContentType.objects.get_for_model(Instrument).id:
+                self.fields['attribute_type'].fail('does_not_exist', pk_value=attribute_type.id)
+        return attrs
 
 
-class InstrumentDownloadSchemeSerializer(ModelWithAttributesSerializer):
+class InstrumentDownloadSchemeSerializer(serializers.ModelSerializer):
     master_user = MasterUserField()
     provider_object = ProviderClassSerializer(source='provider', read_only=True)
 
@@ -175,19 +182,20 @@ class InstrumentDownloadSchemeSerializer(ModelWithAttributesSerializer):
 
     def create(self, validated_data):
         inputs = validated_data.pop('inputs', None) or []
-        # attributes = validated_data.pop('attributes', None) or []
+        attributes = validated_data.pop('attributes', None) or []
         instance = super(InstrumentDownloadSchemeSerializer, self).create(validated_data)
         self.save_inputs(instance, inputs)
-        # self.save_attributes(instance, attributes)
+        self.save_attributes(instance, attributes)
         return instance
 
     def update(self, instance, validated_data):
         inputs = validated_data.pop('inputs', empty)
-        # attributes = validated_data.pop('attributes', None) or []
+        attributes = validated_data.pop('attributes', None) or []
         instance = super(InstrumentDownloadSchemeSerializer, self).update(instance, validated_data)
         if inputs is not empty:
             self.save_inputs(instance, inputs)
-        # self.save_attributes(instance, attributes)
+        if attributes is not empty:
+            self.save_attributes(instance, attributes)
         return instance
 
     def save_inputs(self, instance, inputs):
@@ -208,21 +216,21 @@ class InstrumentDownloadSchemeSerializer(ModelWithAttributesSerializer):
             pk_set.add(input0.id)
         instance.inputs.exclude(pk__in=pk_set).delete()
 
-        # def save_attributes(self, instance, attributes):
-        #     pk_set = set()
-        #     for attr_values in attributes:
-        #         attribute_type = attr_values['attribute_type']
-        #         try:
-        #             attr = instance.attributes.get(attribute_type=attribute_type)
-        #         except ObjectDoesNotExist:
-        #             attr = None
-        #         if attr is None:
-        #             attr = InstrumentDownloadSchemeAttribute(scheme=instance)
-        #         for name, value in attr_values.items():
-        #             setattr(attr, name, value)
-        #         attr.save()
-        #         pk_set.add(attr.id)
-        #     instance.attributes.exclude(pk__in=pk_set).delete()
+    def save_attributes(self, instance, attributes):
+        pk_set = set()
+        for attr_values in attributes:
+            attribute_type = attr_values['attribute_type']
+            try:
+                attr = instance.attributes.get(attribute_type=attribute_type)
+            except ObjectDoesNotExist:
+                attr = None
+            if attr is None:
+                attr = InstrumentDownloadSchemeAttribute(scheme=instance)
+            for name, value in attr_values.items():
+                setattr(attr, name, value)
+            attr.save()
+            pk_set.add(attr.id)
+        instance.attributes.exclude(pk__in=pk_set).delete()
 
 
 class PriceDownloadSchemeSerializer(serializers.ModelSerializer):
@@ -293,9 +301,9 @@ class InstrumentTypeMappingSerializer(serializers.ModelSerializer):
 class InstrumentAttributeValueMappingSerializer(serializers.ModelSerializer):
     master_user = MasterUserField()
     provider_object = ProviderClassSerializer(source='provider', read_only=True)
-    attribute_type = InstrumentAttributeTypeField()
+    attribute_type = GenericAttributeTypeField()
     attribute_type_object = serializers.PrimaryKeyRelatedField(source='attribute_type', read_only=True)
-    classifier = InstrumentClassifierField(allow_empty=True, allow_null=True)
+    classifier = GenericClassifierField(allow_empty=True, allow_null=True)
     classifier_object = serializers.PrimaryKeyRelatedField(source='classifier', read_only=True)
 
     class Meta:
@@ -309,13 +317,17 @@ class InstrumentAttributeValueMappingSerializer(serializers.ModelSerializer):
     def __init__(self, *args, **kwargs):
         super(InstrumentAttributeValueMappingSerializer, self).__init__(*args, **kwargs)
 
-        from poms.instruments.serializers import InstrumentAttributeTypeViewSerializer, InstrumentClassifierSerializer
-        self.fields['attribute_type_object'] = InstrumentAttributeTypeViewSerializer(source='attribute_type',
-                                                                                     read_only=True)
-        self.fields['classifier_object'] = InstrumentClassifierSerializer(source='classifier', read_only=True)
+        from poms.obj_attrs.serializers import GenericAttributeTypeViewSerializer, GenericClassifierViewSerializer
+        self.fields['attribute_type_object'] = GenericAttributeTypeViewSerializer(source='attribute_type',
+                                                                                  read_only=True)
+        self.fields['classifier_object'] = GenericClassifierViewSerializer(source='classifier', read_only=True)
 
     def validate(self, attrs):
-        attribute_type = attrs.get('attribute_type')
+        attribute_type = attrs.get('attribute_type', None)
+        if attribute_type:
+            if attribute_type.content_type_id != ContentType.objects.get_for_model(Instrument).id:
+                self.fields['attribute_type'].fail('does_not_exist', pk_value=attribute_type.id)
+
         classifier = attrs.get('classifier', None)
         if classifier:
             if classifier.attribute_type_id != attribute_type.id:
@@ -454,7 +466,7 @@ class ImportFileInstrumentSerializer(serializers.Serializer):
 
 
 class ImportInstrumentViewSerializer(ModelWithAttributesSerializer, ModelWithObjectPermissionSerializer,
-                                     ModelWithUserCodeSerializer):
+                                     ModelWithUserCodeSerializer, ModelWithTagSerializer):
     instrument_type = InstrumentTypeField(default=InstrumentTypeDefault())
     instrument_type_object = serializers.PrimaryKeyRelatedField(source='instrument_type', read_only=True)
     pricing_currency = CurrencyField(default=CurrencyDefault())
@@ -471,8 +483,9 @@ class ImportInstrumentViewSerializer(ModelWithAttributesSerializer, ModelWithObj
     event_schedules = serializers.PrimaryKeyRelatedField(read_only=True, many=True)
 
     attributes = serializers.SerializerMethodField()
-    tags = TagField(many=True, required=False, allow_null=True)
-    tags_object = TagViewSerializer(source='tags', many=True, read_only=True)
+
+    # tags = TagField(many=True, required=False, allow_null=True)
+    # tags_object = TagViewSerializer(source='tags', many=True, read_only=True)
 
     class Meta:
         model = Instrument
@@ -488,7 +501,8 @@ class ImportInstrumentViewSerializer(ModelWithAttributesSerializer, ModelWithObj
             'maturity_date',
             # 'manual_pricing_formulas',
             'accrual_calculation_schedules', 'factor_schedules', 'event_schedules',
-            'attributes', 'tags', 'tags_object'
+            'attributes',
+            # 'tags', 'tags_object'
         ]
 
     def __init__(self, *args, **kwargs):
@@ -538,12 +552,12 @@ class ImportInstrumentViewSerializer(ModelWithAttributesSerializer, ModelWithObj
         return InstrumentFactorScheduleSerializer(instance=l, many=True, read_only=True, context=self.context).data
 
     def get_attributes(self, obj):
-        from poms.instruments.serializers import InstrumentAttributeSerializer
+        from poms.obj_attrs.serializers import GenericAttributeSerializer
         if hasattr(obj, '_attributes'):
             l = obj._attributes
         else:
             l = obj.attributes.all()
-        return InstrumentAttributeSerializer(instance=l, many=True, read_only=True, context=self.context).data
+        return GenericAttributeSerializer(instance=l, many=True, read_only=True, context=self.context).data
 
 
 class ImportInstrumentEntry(object):

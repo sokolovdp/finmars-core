@@ -3,6 +3,7 @@ from __future__ import unicode_literals
 from datetime import date
 
 from dateutil import relativedelta, rrule
+from django.contrib.contenttypes.fields import GenericRelation
 from django.core import serializers
 from django.core.exceptions import ObjectDoesNotExist
 from django.db import models
@@ -14,9 +15,9 @@ from mptt.models import MPTTModel
 
 from poms.common.models import NamedModel, AbstractClassModel, FakeDeletableModel
 from poms.common.utils import date_now, isclose
-from poms.obj_attrs.models import AbstractAttributeType, AbstractAttribute, AbstractAttributeTypeOption, \
-    AbstractClassifier
-from poms.obj_perms.models import AbstractGroupObjectPermission, AbstractUserObjectPermission
+from poms.obj_attrs.models import GenericAttribute
+from poms.obj_perms.models import GenericObjectPermission
+from poms.tags.models import TagLink
 from poms.users.models import MasterUser, Member
 
 
@@ -327,6 +328,9 @@ class InstrumentType(NamedModel, FakeDeletableModel):
     factor_down = models.ForeignKey('transactions.TransactionType', null=True, blank=True, on_delete=models.PROTECT,
                                     related_name='+', verbose_name=ugettext_lazy('factor down'))
 
+    object_permissions = GenericRelation(GenericObjectPermission)
+    tags = GenericRelation(TagLink)
+
     class Meta(NamedModel.Meta, FakeDeletableModel.Meta):
         verbose_name = ugettext_lazy('instrument type')
         verbose_name_plural = ugettext_lazy('instrument types')
@@ -343,22 +347,22 @@ class InstrumentType(NamedModel, FakeDeletableModel):
         return self.master_user.instrument_type_id == self.id if self.master_user_id else False
 
 
-class InstrumentTypeUserObjectPermission(AbstractUserObjectPermission):
-    content_object = models.ForeignKey(InstrumentType, related_name='user_object_permissions',
-                                       verbose_name=ugettext_lazy('content object'))
-
-    class Meta(AbstractUserObjectPermission.Meta):
-        verbose_name = ugettext_lazy('instrument types - user permission')
-        verbose_name_plural = ugettext_lazy('instrument types - user permissions')
-
-
-class InstrumentTypeGroupObjectPermission(AbstractGroupObjectPermission):
-    content_object = models.ForeignKey(InstrumentType, related_name='group_object_permissions',
-                                       verbose_name=ugettext_lazy('content object'))
-
-    class Meta(AbstractGroupObjectPermission.Meta):
-        verbose_name = ugettext_lazy('instrument types - group permission')
-        verbose_name_plural = ugettext_lazy('instrument types - group permissions')
+# class InstrumentTypeUserObjectPermission(AbstractUserObjectPermission):
+#     content_object = models.ForeignKey(InstrumentType, related_name='user_object_permissions',
+#                                        verbose_name=ugettext_lazy('content object'))
+#
+#     class Meta(AbstractUserObjectPermission.Meta):
+#         verbose_name = ugettext_lazy('instrument types - user permission')
+#         verbose_name_plural = ugettext_lazy('instrument types - user permissions')
+#
+#
+# class InstrumentTypeGroupObjectPermission(AbstractGroupObjectPermission):
+#     content_object = models.ForeignKey(InstrumentType, related_name='group_object_permissions',
+#                                        verbose_name=ugettext_lazy('content object'))
+#
+#     class Meta(AbstractGroupObjectPermission.Meta):
+#         verbose_name = ugettext_lazy('instrument types - group permission')
+#         verbose_name_plural = ugettext_lazy('instrument types - group permissions')
 
 
 @python_2_unicode_compatible
@@ -395,6 +399,10 @@ class Instrument(NamedModel, FakeDeletableModel):
     price_download_scheme = models.ForeignKey('integrations.PriceDownloadScheme', on_delete=models.PROTECT, null=True,
                                               blank=True, verbose_name=ugettext_lazy('price download scheme'))
     maturity_date = models.DateField(default=date.max, verbose_name=ugettext_lazy('maturity date'))
+
+    attributes = GenericRelation(GenericAttribute)
+    object_permissions = GenericRelation(GenericObjectPermission)
+    tags = GenericRelation(TagLink)
 
     class Meta(NamedModel.Meta, FakeDeletableModel.Meta):
         verbose_name = ugettext_lazy('instrument')
@@ -649,94 +657,95 @@ class Instrument(NamedModel, FakeDeletableModel):
         return accrual.accrual_size * factor
 
 
-class InstrumentUserObjectPermission(AbstractUserObjectPermission):
-    content_object = models.ForeignKey(Instrument, related_name='user_object_permissions',
-                                       verbose_name=ugettext_lazy('content object'))
-
-    class Meta(AbstractUserObjectPermission.Meta):
-        verbose_name = ugettext_lazy('instruments - user permission')
-        verbose_name_plural = ugettext_lazy('instruments - user permissions')
-
-
-class InstrumentGroupObjectPermission(AbstractGroupObjectPermission):
-    content_object = models.ForeignKey(Instrument, related_name='group_object_permissions',
-                                       verbose_name=ugettext_lazy('content object'))
-
-    class Meta(AbstractGroupObjectPermission.Meta):
-        verbose_name = ugettext_lazy('instruments - group permission')
-        verbose_name_plural = ugettext_lazy('instruments - group permissions')
-
-
-class InstrumentAttributeType(AbstractAttributeType):
-    # classifier_root = models.OneToOneField(
-    #     InstrumentClassifier,
-    #     on_delete=models.PROTECT,
-    #     null=True,
-    #     blank=True,
-    #     verbose_name=ugettext_lazy('classifier')
-    # )
-
-    class Meta(AbstractAttributeType.Meta):
-        verbose_name = ugettext_lazy('instrument attribute type')
-        verbose_name_plural = ugettext_lazy('instrument attribute types')
-        permissions = [
-            ('view_instrumentattributetype', 'Can view instrument attribute type'),
-            ('manage_instrumentattributetype', 'Can manage instrument attribute type'),
-        ]
+# class InstrumentUserObjectPermission(AbstractUserObjectPermission):
+#     content_object = models.ForeignKey(Instrument, related_name='user_object_permissions',
+#                                        verbose_name=ugettext_lazy('content object'))
+#
+#     class Meta(AbstractUserObjectPermission.Meta):
+#         verbose_name = ugettext_lazy('instruments - user permission')
+#         verbose_name_plural = ugettext_lazy('instruments - user permissions')
+#
+#
+# class InstrumentGroupObjectPermission(AbstractGroupObjectPermission):
+#     content_object = models.ForeignKey(Instrument, related_name='group_object_permissions',
+#                                        verbose_name=ugettext_lazy('content object'))
+#
+#     class Meta(AbstractGroupObjectPermission.Meta):
+#         verbose_name = ugettext_lazy('instruments - group permission')
+#         verbose_name_plural = ugettext_lazy('instruments - group permissions')
 
 
-class InstrumentAttributeTypeUserObjectPermission(AbstractUserObjectPermission):
-    content_object = models.ForeignKey(InstrumentAttributeType, related_name='user_object_permissions',
-                                       verbose_name=ugettext_lazy('content object'))
-
-    class Meta(AbstractUserObjectPermission.Meta):
-        verbose_name = ugettext_lazy('instrument attribute types - user permission')
-        verbose_name_plural = ugettext_lazy('instrument attribute types - user permissions')
-
-
-class InstrumentAttributeTypeGroupObjectPermission(AbstractGroupObjectPermission):
-    content_object = models.ForeignKey(InstrumentAttributeType, related_name='group_object_permissions',
-                                       verbose_name=ugettext_lazy('content object'))
-
-    class Meta(AbstractGroupObjectPermission.Meta):
-        verbose_name = ugettext_lazy('instrument attribute types - group permission')
-        verbose_name_plural = ugettext_lazy('instrument attribute types - group permissions')
-
-
-@python_2_unicode_compatible
-class InstrumentClassifier(AbstractClassifier):
-    attribute_type = models.ForeignKey(InstrumentAttributeType, related_name='classifiers',
-                                       verbose_name=ugettext_lazy('attribute type'))
-    parent = TreeForeignKey('self', null=True, blank=True, related_name='children', db_index=True,
-                            verbose_name=ugettext_lazy('parent'))
-
-    class Meta(AbstractClassifier.Meta):
-        verbose_name = ugettext_lazy('instrument classifier')
-        verbose_name_plural = ugettext_lazy('instrument classifiers')
+# class InstrumentAttributeType(AbstractAttributeType):
+#     # classifier_root = models.OneToOneField(
+#     #     InstrumentClassifier,
+#     #     on_delete=models.PROTECT,
+#     #     null=True,
+#     #     blank=True,
+#     #     verbose_name=ugettext_lazy('classifier')
+#     # )
+#     object_permissions = GenericRelation(GenericObjectPermission)
+#
+#     class Meta(AbstractAttributeType.Meta):
+#         verbose_name = ugettext_lazy('instrument attribute type')
+#         verbose_name_plural = ugettext_lazy('instrument attribute types')
+#         permissions = [
+#             ('view_instrumentattributetype', 'Can view instrument attribute type'),
+#             ('manage_instrumentattributetype', 'Can manage instrument attribute type'),
+#         ]
 
 
-class InstrumentAttributeTypeOption(AbstractAttributeTypeOption):
-    member = models.ForeignKey(Member, related_name='instrument_attribute_type_options',
-                               verbose_name=ugettext_lazy('member'))
-    attribute_type = models.ForeignKey(InstrumentAttributeType, related_name='options',
-                                       verbose_name=ugettext_lazy('attribute type'))
+# class InstrumentAttributeTypeUserObjectPermission(AbstractUserObjectPermission):
+#     content_object = models.ForeignKey(InstrumentAttributeType, related_name='user_object_permissions',
+#                                        verbose_name=ugettext_lazy('content object'))
+#
+#     class Meta(AbstractUserObjectPermission.Meta):
+#         verbose_name = ugettext_lazy('instrument attribute types - user permission')
+#         verbose_name_plural = ugettext_lazy('instrument attribute types - user permissions')
+#
+#
+# class InstrumentAttributeTypeGroupObjectPermission(AbstractGroupObjectPermission):
+#     content_object = models.ForeignKey(InstrumentAttributeType, related_name='group_object_permissions',
+#                                        verbose_name=ugettext_lazy('content object'))
+#
+#     class Meta(AbstractGroupObjectPermission.Meta):
+#         verbose_name = ugettext_lazy('instrument attribute types - group permission')
+#         verbose_name_plural = ugettext_lazy('instrument attribute types - group permissions')
 
-    class Meta(AbstractAttributeTypeOption.Meta):
-        verbose_name = ugettext_lazy('instrument attribute types - option')
-        verbose_name_plural = ugettext_lazy('instrument attribute types - options')
 
-
-class InstrumentAttribute(AbstractAttribute):
-    attribute_type = models.ForeignKey(InstrumentAttributeType, related_name='attributes',
-                                       verbose_name=ugettext_lazy('attribute type'))
-    content_object = models.ForeignKey(Instrument, related_name='attributes',
-                                       verbose_name=ugettext_lazy('content object'))
-    classifier = models.ForeignKey(InstrumentClassifier, on_delete=models.SET_NULL, null=True, blank=True,
-                                   verbose_name=ugettext_lazy('classifier'))
-
-    class Meta(AbstractAttribute.Meta):
-        verbose_name = ugettext_lazy('instrument attribute')
-        verbose_name_plural = ugettext_lazy('instrument attributes')
+# @python_2_unicode_compatible
+# class InstrumentClassifier(AbstractClassifier):
+#     attribute_type = models.ForeignKey(InstrumentAttributeType, related_name='classifiers',
+#                                        verbose_name=ugettext_lazy('attribute type'))
+#     parent = TreeForeignKey('self', null=True, blank=True, related_name='children', db_index=True,
+#                             verbose_name=ugettext_lazy('parent'))
+#
+#     class Meta(AbstractClassifier.Meta):
+#         verbose_name = ugettext_lazy('instrument classifier')
+#         verbose_name_plural = ugettext_lazy('instrument classifiers')
+#
+#
+# class InstrumentAttributeTypeOption(AbstractAttributeTypeOption):
+#     member = models.ForeignKey(Member, related_name='instrument_attribute_type_options',
+#                                verbose_name=ugettext_lazy('member'))
+#     attribute_type = models.ForeignKey(InstrumentAttributeType, related_name='options',
+#                                        verbose_name=ugettext_lazy('attribute type'))
+#
+#     class Meta(AbstractAttributeTypeOption.Meta):
+#         verbose_name = ugettext_lazy('instrument attribute types - option')
+#         verbose_name_plural = ugettext_lazy('instrument attribute types - options')
+#
+#
+# class InstrumentAttribute(AbstractAttribute):
+#     attribute_type = models.ForeignKey(InstrumentAttributeType, related_name='attributes',
+#                                        verbose_name=ugettext_lazy('attribute type'))
+#     content_object = models.ForeignKey(Instrument, related_name='attributes',
+#                                        verbose_name=ugettext_lazy('content object'))
+#     classifier = models.ForeignKey(InstrumentClassifier, on_delete=models.SET_NULL, null=True, blank=True,
+#                                    verbose_name=ugettext_lazy('classifier'))
+#
+#     class Meta(AbstractAttribute.Meta):
+#         verbose_name = ugettext_lazy('instrument attribute')
+#         verbose_name_plural = ugettext_lazy('instrument attributes')
 
 
 @python_2_unicode_compatible

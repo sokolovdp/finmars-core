@@ -2,7 +2,8 @@ from __future__ import unicode_literals
 
 from rest_framework.filters import BaseFilterBackend
 
-from poms.instruments.models import Instrument, InstrumentType, InstrumentAttributeType
+from poms.instruments.models import Instrument, InstrumentType
+from poms.obj_attrs.models import GenericAttributeType
 from poms.obj_perms.utils import obj_perms_filter_objects_for_view
 
 
@@ -20,7 +21,7 @@ class OwnerByInstrumentTypeFilter(BaseFilterBackend):
 
 class OwnerByInstrumentAttributeTypeFilter(BaseFilterBackend):
     def filter_queryset(self, request, queryset, view):
-        instrument_attribute_types = InstrumentAttributeType.objects.filter(master_user=request.user.master_user)
+        instrument_attribute_types = GenericAttributeType.objects.filter(master_user=request.user.master_user)
         return queryset.filter(attribute_type__in=instrument_attribute_types)
 
 

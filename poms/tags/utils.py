@@ -1,5 +1,8 @@
-from django.db.models import Q
+from django.db.models import Q, Prefetch
 from django.utils.encoding import force_text
+
+from poms.obj_perms.utils import get_permissions_prefetch_lookups
+from poms.tags.models import TagLink, Tag
 
 
 def filter_by_tag_name(queryset, value):
@@ -19,4 +22,18 @@ def tags_prefetch(queryset):
         # 'tags__user_object_permissions__permission',
         'tags__group_object_permissions',
         'tags__group_object_permissions__permission',
+    )
+
+
+def get_tag_prefetch():
+    return Prefetch(
+        'tags',
+        queryset=TagLink.objects.select_related(
+            'tag'
+        ).prefetch_related(
+            'content_object',
+            *get_permissions_prefetch_lookups(
+                ('tag', Tag)
+            )
+        )
     )

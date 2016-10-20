@@ -2,12 +2,10 @@ from __future__ import unicode_literals
 
 from django.contrib import admin
 
-from poms.accounts.models import Account, AccountType, AccountAttributeType, AccountClassifier
-from poms.common.admin import ClassifierAdmin
-from poms.obj_attrs.admin import AbstractAttributeTypeAdmin, AbstractAttributeInline, \
-    AbstractAttributeTypeClassifierInline, AbstractAttributeTypeOptionInline
-from poms.obj_perms.admin import UserObjectPermissionInline, \
-    GroupObjectPermissionInline
+from poms.accounts.models import Account, AccountType
+from poms.obj_attrs.admin import GenericAttributeInline
+from poms.obj_perms.admin import GenericObjectPermissionInline
+from poms.tags.admin import GenericTagLinkInline
 
 
 class AccountTypeAdmin(admin.ModelAdmin):
@@ -19,8 +17,10 @@ class AccountTypeAdmin(admin.ModelAdmin):
     search_fields = ['id', 'user_code', 'name']
     raw_id_fields = ['master_user']
     inlines = [
-        UserObjectPermissionInline,
-        GroupObjectPermissionInline,
+        GenericTagLinkInline,
+        GenericObjectPermissionInline,
+        # UserObjectPermissionInline,
+        # GroupObjectPermissionInline,
     ]
 
 
@@ -36,24 +36,28 @@ class AccountAdmin(admin.ModelAdmin):
     search_fields = ['id', 'user_code', 'name']
     raw_id_fields = ['master_user', 'type']
     inlines = [
-        AbstractAttributeInline,
-        UserObjectPermissionInline,
-        GroupObjectPermissionInline,
+        # AbstractAttributeInline,
+        GenericAttributeInline,
+        GenericTagLinkInline,
+        GenericObjectPermissionInline,
+        # UserObjectPermissionInline,
+        # GroupObjectPermissionInline,
     ]
 
 
 admin.site.register(Account, AccountAdmin)
 
 
-class AccountAttributeTypeAdmin(AbstractAttributeTypeAdmin):
-    inlines = [
-        AbstractAttributeTypeClassifierInline,
-        AbstractAttributeTypeOptionInline,
-        UserObjectPermissionInline,
-        GroupObjectPermissionInline,
-    ]
+# class AccountAttributeTypeAdmin(AbstractAttributeTypeAdmin):
+#     inlines = [
+#         AbstractAttributeTypeClassifierInline,
+#         AbstractAttributeTypeOptionInline,
+#         GenericObjectPermissionInline,
+#         # UserObjectPermissionInline,
+#         # GroupObjectPermissionInline,
+#     ]
 
 
-admin.site.register(AccountAttributeType, AccountAttributeTypeAdmin)
-
-admin.site.register(AccountClassifier, ClassifierAdmin)
+# admin.site.register(AccountAttributeType, AccountAttributeTypeAdmin)
+#
+# admin.site.register(AccountClassifier, ClassifierAdmin)

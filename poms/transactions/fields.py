@@ -4,13 +4,10 @@ from django.contrib.contenttypes.models import ContentType
 from django.core.exceptions import ObjectDoesNotExist
 from django.utils.encoding import smart_text
 
-from poms.common.fields import PrimaryKeyRelatedFilteredField, SlugRelatedFilteredField
-from poms.obj_attrs.filters import AttributeClassifierBaseField
+from poms.common.fields import SlugRelatedFilteredField
 from poms.obj_perms.fields import PrimaryKeyRelatedFilteredWithObjectPermissionField
-from poms.obj_perms.filters import ObjectPermissionBackend
 from poms.transactions.filters import TransactionTypeInputContentTypeFilter
-from poms.transactions.models import TransactionType, TransactionAttributeType, TransactionTypeGroup, \
-    TransactionClassifier
+from poms.transactions.models import TransactionType, TransactionTypeGroup
 from poms.users.filters import OwnerByMasterUserFilter
 
 
@@ -28,16 +25,16 @@ class TransactionTypeField(PrimaryKeyRelatedFilteredWithObjectPermissionField):
     ]
 
 
-class TransactionClassifierField(AttributeClassifierBaseField):
-    queryset = TransactionClassifier.objects
-
-
-class TransactionAttributeTypeField(PrimaryKeyRelatedFilteredField):
-    queryset = TransactionAttributeType.objects
-    filter_backends = [
-        OwnerByMasterUserFilter,
-        ObjectPermissionBackend,
-    ]
+# class TransactionClassifierField(AttributeClassifierBaseField):
+#     queryset = TransactionClassifier.objects
+#
+#
+# class TransactionAttributeTypeField(PrimaryKeyRelatedFilteredField):
+#     queryset = TransactionAttributeType.objects
+#     filter_backends = [
+#         OwnerByMasterUserFilter,
+#         ObjectPermissionBackend,
+#     ]
 
 
 class TransactionTypeInputContentTypeField(SlugRelatedFilteredField):

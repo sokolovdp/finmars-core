@@ -15,6 +15,7 @@ from poms.strategies.serializers import Strategy1GroupSerializer, Strategy1Seria
     Strategy3SubgroupSerializer, Strategy3Serializer
 from poms.tags.filters import TagFilter
 from poms.tags.models import Tag
+from poms.tags.utils import get_tag_prefetch
 from poms.users.filters import OwnerByMasterUserFilter
 
 
@@ -39,10 +40,9 @@ class Strategy1GroupViewSet(AbstractWithObjectPermissionViewSet):
     queryset = Strategy1Group.objects.select_related(
         'master_user'
     ).prefetch_related(
-        'tags',
+        get_tag_prefetch(),
         *get_permissions_prefetch_lookups(
             (None, Strategy1Group),
-            ('tags', Tag)
         )
     )
     serializer_class = Strategy1GroupSerializer
@@ -77,11 +77,10 @@ class Strategy1SubgroupViewSet(AbstractWithObjectPermissionViewSet):
     queryset = Strategy1Subgroup.objects.select_related(
         'master_user', 'group'
     ).prefetch_related(
-        'tags',
+        get_tag_prefetch(),
         *get_permissions_prefetch_lookups(
             (None, Strategy1Subgroup),
             ('group', Strategy1Group),
-            ('tags', Tag)
         )
     )
     # prefetch_permissions_for = [
@@ -121,12 +120,11 @@ class Strategy1ViewSet(AbstractWithObjectPermissionViewSet):
     queryset = Strategy1.objects.select_related(
         'master_user', 'subgroup', 'subgroup__group'
     ).prefetch_related(
-        'tags',
+        get_tag_prefetch(),
         *get_permissions_prefetch_lookups(
             (None, Strategy1),
             ('subgroup', Strategy1Subgroup),
             ('subgroup__group', Strategy1Group),
-            ('tags', Tag)
         )
     )
     # prefetch_permissions_for = [
@@ -162,10 +160,9 @@ class Strategy2GroupViewSet(Strategy1GroupViewSet):
     queryset = Strategy2Group.objects.select_related(
         'master_user'
     ).prefetch_related(
-        'tags',
+        get_tag_prefetch(),
         *get_permissions_prefetch_lookups(
             (None, Strategy2Group),
-            ('tags', Tag)
         )
     )
     serializer_class = Strategy2GroupSerializer
@@ -185,11 +182,10 @@ class Strategy2SubgroupFilterSet(Strategy1SubgroupFilterSet):
 
 class Strategy2SubgroupViewSet(Strategy1SubgroupViewSet):
     queryset = Strategy2Subgroup.objects.select_related('master_user', 'group').prefetch_related(
-        'tags',
+        get_tag_prefetch(),
         *get_permissions_prefetch_lookups(
             (None, Strategy2Subgroup),
             ('group', Strategy2Group),
-            ('tags', Tag)
         )
     )
     serializer_class = Strategy2SubgroupSerializer
@@ -212,12 +208,11 @@ class Strategy2ViewSet(Strategy1ViewSet):
     queryset = Strategy2.objects.select_related(
         'master_user', 'subgroup', 'subgroup__group'
     ).prefetch_related(
-        'tags',
+        get_tag_prefetch(),
         *get_permissions_prefetch_lookups(
             (None, Strategy2),
             ('subgroup', Strategy2Subgroup),
             ('subgroup__group', Strategy2Group),
-            ('tags', Tag)
         )
     )
     serializer_class = Strategy2Serializer
@@ -239,10 +234,9 @@ class Strategy3GroupFilterSet(Strategy1GroupFilterSet):
 
 class Strategy3GroupViewSet(Strategy1GroupViewSet):
     queryset = Strategy3Group.objects.prefetch_related('master_user').prefetch_related(
-        'tags',
+        get_tag_prefetch(),
         *get_permissions_prefetch_lookups(
             (None, Strategy3Group),
-            ('tags', Tag)
         )
     )
     serializer_class = Strategy3GroupSerializer
@@ -264,11 +258,10 @@ class Strategy3SubgroupViewSet(Strategy1SubgroupViewSet):
     queryset = Strategy3Subgroup.objects.select_related(
         'master_user', 'group'
     ).prefetch_related(
-        'tags',
+        get_tag_prefetch(),
         *get_permissions_prefetch_lookups(
             (None, Strategy3Subgroup),
             ('group', Strategy3Group),
-            ('tags', Tag)
         )
     )
     serializer_class = Strategy3SubgroupSerializer
@@ -291,12 +284,11 @@ class Strategy3ViewSet(Strategy1ViewSet):
     queryset = Strategy3.objects.select_related(
         'master_user', 'subgroup', 'subgroup__group'
     ).prefetch_related(
-        'tags',
+        get_tag_prefetch(),
         *get_permissions_prefetch_lookups(
             (None, Strategy3),
             ('subgroup', Strategy3Subgroup),
             ('subgroup__group', Strategy3Group),
-            ('tags', Tag)
         )
     )
     serializer_class = Strategy3Serializer

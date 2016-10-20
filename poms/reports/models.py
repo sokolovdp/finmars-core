@@ -6,7 +6,7 @@ from django.utils.encoding import python_2_unicode_compatible
 from django.utils.translation import ugettext_lazy
 
 from poms.common.models import NamedModel, AbstractClassModel
-from poms.obj_perms.models import AbstractGroupObjectPermission, AbstractUserObjectPermission
+from poms.common.utils import date_now
 from poms.users.models import MasterUser
 
 

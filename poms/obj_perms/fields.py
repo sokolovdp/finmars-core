@@ -36,6 +36,18 @@ class GrantedPermissionField(serializers.ReadOnlyField):
         return []
 
 
+# class GrantedPermission2Field(serializers.ReadOnlyField):
+#     def get_attribute(self, instance):
+#         return instance
+#
+#     def to_representation(self, value):
+#         member = get_member_from_context(self.context)
+#         if member:
+#             perms = get_granted_permissions2(member, value)
+#             return list(perms) if perms else []
+#         return []
+
+
 class ManyRelatedWithObjectPermissionField(serializers.ManyRelatedField):
     def to_representation(self, iterable):
         member = get_member_from_context(self.context)

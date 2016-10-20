@@ -8,14 +8,12 @@ from django.utils.translation import ugettext_lazy
 from poms.common.admin import ClassModelAdmin, ClassifierAdmin
 from poms.instruments.models import Instrument, PriceHistory, InstrumentClass, InstrumentType, \
     DailyPricingModel, AccrualCalculationModel, Periodicity, CostMethod, \
-    ManualPricingFormula, AccrualCalculationSchedule, InstrumentAttributeType, InstrumentAttribute, \
-    InstrumentFactorSchedule, EventSchedule, \
-    PricingPolicy, PaymentSizeDetail, InstrumentClassifier, EventScheduleAction, EventScheduleConfig
-from poms.instruments.tasks import calculate_prices_accrued_price
-from poms.obj_attrs.admin import AbstractAttributeTypeAdmin, AbstractAttributeInline, \
-    AbstractAttributeTypeClassifierInline, AbstractAttributeTypeOptionInline
-from poms.obj_perms.admin import UserObjectPermissionInline, \
-    GroupObjectPermissionInline
+    ManualPricingFormula, AccrualCalculationSchedule, InstrumentFactorSchedule, EventSchedule, \
+    PricingPolicy, PaymentSizeDetail, EventScheduleAction, EventScheduleConfig
+from poms.instruments.tasks import process_events, calculate_prices_accrued_price
+from poms.obj_attrs.admin import GenericAttributeInline
+from poms.obj_perms.admin import GenericObjectPermissionInline
+from poms.tags.admin import GenericTagLinkInline
 
 admin.site.register(InstrumentClass, ClassModelAdmin)
 admin.site.register(DailyPricingModel, ClassModelAdmin)
@@ -44,16 +42,18 @@ class InstrumentTypeAdmin(admin.ModelAdmin):
     list_filter = ['instrument_class', 'is_deleted', ]
     raw_id_fields = ['master_user', 'one_off_event', 'regular_event', 'factor_same', 'factor_up', 'factor_down']
     inlines = [
-        UserObjectPermissionInline,
-        GroupObjectPermissionInline,
+        GenericTagLinkInline,
+        GenericObjectPermissionInline,
+        # UserObjectPermissionInline,
+        # GroupObjectPermissionInline,
     ]
 
 
 admin.site.register(InstrumentType, InstrumentTypeAdmin)
 
 
-class InstrumentAttributeInline(AbstractAttributeInline):
-    model = InstrumentAttribute
+# class InstrumentAttributeInline(AbstractAttributeInline):
+#     model = InstrumentAttribute
 
 
 class ManualPricingFormulaInline(admin.TabularInline):
@@ -87,13 +87,16 @@ class InstrumentAdmin(admin.ModelAdmin):
     list_filter = ['instrument_type__instrument_class', 'is_deleted', ]
     raw_id_fields = ['master_user', 'instrument_type', 'pricing_currency', 'accrued_currency', 'price_download_scheme']
     inlines = [
-        InstrumentAttributeInline,
+        # InstrumentAttributeInline,
         ManualPricingFormulaInline,
         AccrualCalculationScheduleInline,
         InstrumentFactorScheduleInline,
         # EventScheduleInline,
-        UserObjectPermissionInline,
-        GroupObjectPermissionInline,
+        GenericAttributeInline,
+        GenericTagLinkInline,
+        GenericObjectPermissionInline,
+        # UserObjectPermissionInline,
+        # GroupObjectPermissionInline,
     ]
     actions = ['calculate_prices_accrued_price', 'rebuild_event_schedules']
 
@@ -247,18 +250,19 @@ class PriceHistoryAdmin(admin.ModelAdmin):
 admin.site.register(PriceHistory, PriceHistoryAdmin)
 
 
-class InstrumentAttributeTypeAdmin(AbstractAttributeTypeAdmin):
-    inlines = [
-        AbstractAttributeTypeClassifierInline,
-        AbstractAttributeTypeOptionInline,
-        UserObjectPermissionInline,
-        GroupObjectPermissionInline,
-    ]
-
-
-admin.site.register(InstrumentAttributeType, InstrumentAttributeTypeAdmin)
-
-admin.site.register(InstrumentClassifier, ClassifierAdmin)
+# class InstrumentAttributeTypeAdmin(AbstractAttributeTypeAdmin):
+#     inlines = [
+#         AbstractAttributeTypeClassifierInline,
+#         AbstractAttributeTypeOptionInline,
+#         GenericObjectPermissionInline,
+#         # UserObjectPermissionInline,
+#         # GroupObjectPermissionInline,
+#     ]
+#
+#
+# admin.site.register(InstrumentAttributeType, InstrumentAttributeTypeAdmin)
+#
+# admin.site.register(InstrumentClassifier, ClassifierAdmin)
 
 
 class EventScheduleConfigAdmin(admin.ModelAdmin):

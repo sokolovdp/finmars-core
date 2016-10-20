@@ -12,7 +12,7 @@ from poms.common.filters import CharFilter, ModelExtWithPermissionMultipleChoice
 from poms.common.views import AbstractViewSet, AbstractModelViewSet, AbstractReadOnlyModelViewSet, \
     AbstractClassModelViewSet
 from poms.currencies.models import Currency
-from poms.instruments.models import InstrumentType, InstrumentAttributeType, AccrualCalculationModel, Periodicity
+from poms.instruments.models import InstrumentType, AccrualCalculationModel, Periodicity
 from poms.integrations.filters import TaskFilter, InstrumentAttributeValueMappingObjectPermissionFilter, \
     InstrumentTypeMappingObjectPermissionFilter
 from poms.integrations.models import ImportConfig, Task, InstrumentDownloadScheme, ProviderClass, \
@@ -26,6 +26,7 @@ from poms.integrations.serializers import ImportConfigSerializer, TaskSerializer
     InstrumentTypeMappingSerializer, InstrumentAttributeValueMappingSerializer, \
     AccrualCalculationModelMappingSerializer, \
     PeriodicityMappingSerializer, PricingAutomatedScheduleSerializer
+from poms.obj_attrs.models import GenericAttributeType
 from poms.obj_perms.utils import get_permissions_prefetch_lookups
 from poms.users.filters import OwnerByMasterUserFilter
 from poms.users.models import Member
@@ -88,7 +89,7 @@ class InstrumentDownloadSchemeViewSet(AbstractModelViewSet):
             queryset=InstrumentDownloadSchemeAttribute.objects.select_related('attribute_type')
         ),
         *get_permissions_prefetch_lookups(
-            ('attributes__attribute_type', InstrumentAttributeType),
+            ('attributes__attribute_type', GenericAttributeType),
         )
     )
     serializer_class = InstrumentDownloadSchemeSerializer
@@ -192,7 +193,7 @@ class InstrumentAttributeValueMappingFilterSet(FilterSet):
     id = NoOpFilter()
     provider = django_filters.ModelMultipleChoiceFilter(queryset=ProviderClass.objects)
     value = CharFilter()
-    attribute_type = ModelExtWithPermissionMultipleChoiceFilter(model=InstrumentAttributeType)
+    attribute_type = ModelExtWithPermissionMultipleChoiceFilter(model=GenericAttributeType)
 
     class Meta:
         model = InstrumentAttributeValueMapping
