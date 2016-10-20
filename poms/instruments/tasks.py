@@ -6,12 +6,13 @@ from celery import shared_task
 from django.conf import settings
 from django.db.models import F
 
+from poms import notifications
 from poms.common.utils import date_now
 from poms.instruments.models import EventSchedule, Instrument, CostMethod
 from poms.reports.backends.balance import BalanceReport2PositionBuilder
 from poms.reports.models import BalanceReport
-from poms.transactions.models import EventClass, NotificationClass
-from poms.users.models import MasterUser
+from poms.transactions.models import EventClass
+from poms.users.models import MasterUser, Member
 
 _l = logging.getLogger('poms.instruments')
 
@@ -48,7 +49,8 @@ def process_events(master_user=None):
 
     # TODO: need cost_method to build report
     cost_method = CostMethod.objects.get(pk=CostMethod.AVCO)
-    master_user = MasterUser.objects.filter(pk=master_user)
+    master_user = MasterUser.objects.get(pk=master_user)
+    members = Member.objects.filter(master_user=master_user, is_deleted=False)
 
     opened_instrument_items = []
     instruments_pk = set()
@@ -74,8 +76,8 @@ def process_events(master_user=None):
     ).filter(
         effective_date__lte=(now + F("notify_in_n_days")),
         final_date__gte=now
-    ).exclude(
-        notification_class__in=[NotificationClass.DONT_REACT]
+        # ).exclude(
+        #     notification_class__in=[NotificationClass.DONT_REACT]
     ).order_by(
         'instrument__master_user__id', 'instrument__id'
     )
@@ -92,6 +94,7 @@ def process_events(master_user=None):
         strategy2 = item.strategy2
         strategy3 = item.strategy3
         instrument = item.instrument
+        position = item.balance_position
 
         event_schedules = event_schedule_cache.get(instrument.id) or []
 
@@ -142,22 +145,57 @@ def process_events(master_user=None):
 
             if is_complies:
                 notification_class = event_schedule.notification_class
-                need_inform, need_react, apply_def = notification_class.check_date(now, effective_date,
-                                                                                   notification_date)
-
+                need_inform, need_react, book_automatic = notification_class.check_date(
+                    now, effective_date, notification_date)
                 _l.debug('founded: event_class=%s, effective_date=%s, notification_date=%s, '
-                         'need_inform=%s, need_react=%s, apply_def=%s',
+                         'need_inform=%s, need_react=%s, book_automatic=%s',
                          event_schedule.event_class, effective_date, notification_date,
-                         need_inform, need_react, apply_def)
+                         need_inform, need_react, book_automatic)
+
+                # ge_dup_qs = GeneratedEvent.objects.filter(
+                #     master_user=master_user,
+                #     effective_date=effective_date,
+                #     notification_date=notification_date,
+                #     instrument=instrument,
+                #     portfolio=portfolio,
+                #     account=account,
+                #     strategy1=strategy1,
+                #     strategy2=strategy2,
+                #     strategy3=strategy3,
+                #     position=position
+                # )
+                # if ge_dup_qs.exists():
+                #     _l.debug('generated event already exist')
+                #     continue
+
+                # ge = GeneratedEvent()
+                # ge.master_user = master_user
+                # ge.status = GeneratedEvent.NEW
+                # ge.status_modified = timezone.now()
+                # ge.effective_date = effective_date
+                # ge.notification_date = notification_date
+                # ge.instrument = instrument
+                # ge.portfolio = portfolio
+                # ge.account = account
+                # ge.strategy1 = strategy1
+                # ge.strategy2 = strategy2
+                # ge.strategy3 = strategy3
+                # ge.position = position
+                # ge.save()
 
                 if need_inform:
                     _l.info('need_inform !!!!')
-
+                    # action_object -> ge
+                    notifications.send(recipients=members,
+                                       actor=master_user,
+                                       verb='event occurred',
+                                       action_object=event_schedule,
+                                       target=instrument)
                 if need_react:
                     _l.info('need_react !!!!')
 
-                if apply_def:
-                    _l.info('apply_def !!!!')
+                if book_automatic:
+                    _l.info('book_automatic !!!!')
 
     # _l.debug('event_schedule: count=%s', event_schedule_qs.count())
     # for event_schedule in event_schedule_qs:
@@ -215,6 +253,28 @@ def process_events(master_user=None):
     #             _l.info('apply_def !!!!')
 
     _l.debug('finished')
+
+
+# @receiver(post_save, dispatch_uid='chat_message_created', sender=GeneratedEvent)
+# def chat_message_created(sender, instance=None, created=None, **kwargs):
+#     if created:
+#
+#         instance.instrument = instrument
+#         instance.portfolio = portfolio
+#         instance.account = account
+#         instance.strategy1 = strategy1
+#         instance.strategy2 = strategy2
+#         instance.strategy3 = strategy3
+#
+#         master_user = instance.thread.master_user
+#         thread = instance.thread
+#         qs = Member.objects.filter(master_user=master_user).exclude(id=instance.sender_id)
+#         recipients = [m.user for m in qs if has_view_perms(m, thread)]
+#         notifications.send(recipients,
+#                            actor=instance.sender,
+#                            verb='sent',
+#                            action_object=instance,
+#                            target=instance.thread)
 
 
 @shared_task(name='instruments.process_events_auto', ignore_result=True)

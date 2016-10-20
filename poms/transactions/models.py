@@ -140,7 +140,7 @@ class NotificationClass(AbstractClassModel):
     def check_date(self, now, effective_date, notification_date):
         need_inform = False
         need_react = False
-        apply_def = False
+        book_automatic = False
 
         # NDATE -> notification_date
         # EDATE -> effective_date
@@ -148,10 +148,10 @@ class NotificationClass(AbstractClassModel):
             pass
 
         elif self.id == NotificationClass.APPLY_DEF_ON_EDATE:
-            apply_def = now == effective_date
+            book_automatic = now == effective_date
 
         elif self.id == NotificationClass.APPLY_DEF_ON_NDATE:
-            apply_def = now == notification_date
+            book_automatic = now == notification_date
 
         elif self.id == NotificationClass.INFORM_ON_NDATE_WITH_REACT:
             need_inform = now == notification_date
@@ -159,7 +159,7 @@ class NotificationClass(AbstractClassModel):
 
         elif self.id == NotificationClass.INFORM_ON_NDATE_APPLY_DEF:
             need_inform = now == notification_date
-            apply_def = now == notification_date
+            book_automatic = now == notification_date
 
         elif self.id == NotificationClass.INFORM_ON_NDATE_DONT_REACT:
             need_inform = now == notification_date
@@ -170,7 +170,7 @@ class NotificationClass(AbstractClassModel):
 
         elif self.id == NotificationClass.INFORM_ON_EDATE_APPLY_DEF:
             need_inform = now == effective_date
-            apply_def = now == effective_date
+            book_automatic = now == effective_date
 
         elif self.id == NotificationClass.INFORM_ON_EDATE_DONT_REACT:
             need_inform = now == effective_date
@@ -185,16 +185,16 @@ class NotificationClass(AbstractClassModel):
 
         elif self.id == NotificationClass.INFORM_ON_NDATE_AND_EDATE_APPLY_DEF_ON_EDATE:
             need_inform = now == notification_date or now == effective_date
-            apply_def = now == effective_date
+            book_automatic = now == effective_date
 
         elif self.id == NotificationClass.INFORM_ON_NDATE_AND_EDATE_APPLY_DEF_ON_NDATE:
             need_inform = now == notification_date or now == effective_date
-            apply_def = now == notification_date
+            book_automatic = now == notification_date
 
         elif self.id == NotificationClass.INFORM_ON_NDATE_AND_EDATE_DONT_REACT:
             need_inform = now == notification_date or now == effective_date
 
-        return need_inform, need_react, apply_def
+        return need_inform, need_react, book_automatic
 
 
 class PeriodicityGroup(AbstractClassModel):
