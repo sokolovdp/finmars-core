@@ -10,6 +10,7 @@ class Migration(migrations.Migration):
 
     dependencies = [
         ('integrations', '0019_auto_20161003_1409'),
+        ('obj_attrs', '0001_initial'),
     ]
 
     operations = [
