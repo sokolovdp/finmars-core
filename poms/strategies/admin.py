@@ -2,9 +2,10 @@ from __future__ import unicode_literals
 
 from django.contrib import admin
 
-from poms.obj_perms.admin import UserObjectPermissionInline, GroupObjectPermissionInline
+from poms.obj_perms.admin import GenericObjectPermissionInline
 from poms.strategies.models import Strategy1Group, Strategy2Subgroup, Strategy3, Strategy1Subgroup, Strategy1, \
     Strategy2Group, Strategy2, Strategy3Group, Strategy3Subgroup
+from poms.tags.admin import GenericTagLinkInline
 
 
 class Strategy1GroupAdmin(admin.ModelAdmin):
@@ -16,8 +17,10 @@ class Strategy1GroupAdmin(admin.ModelAdmin):
     list_filter = ['is_deleted', ]
     raw_id_fields = ['master_user']
     inlines = [
-        UserObjectPermissionInline,
-        GroupObjectPermissionInline,
+        GenericTagLinkInline,
+        GenericObjectPermissionInline,
+        # UserObjectPermissionInline,
+        # GroupObjectPermissionInline,
     ]
 
 
@@ -33,8 +36,10 @@ class Strategy1SubgroupAdmin(admin.ModelAdmin):
     list_filter = ['is_deleted', ]
     raw_id_fields = ['group']
     inlines = [
-        UserObjectPermissionInline,
-        GroupObjectPermissionInline,
+        GenericTagLinkInline,
+        GenericObjectPermissionInline,
+        # UserObjectPermissionInline,
+        # GroupObjectPermissionInline,
     ]
 
 
@@ -42,7 +47,7 @@ admin.site.register(Strategy1Subgroup, Strategy1SubgroupAdmin)
 
 
 class Strategy1Admin(admin.ModelAdmin):
-    model = Strategy1Subgroup
+    model = Strategy1
     list_display = ['id', 'master_user', 'group', 'subgroup', 'user_code', 'name', 'is_deleted', ]
     list_select_related = ['subgroup', 'subgroup__group', 'subgroup__group__master_user']
     ordering = ['master_user', 'subgroup__group', 'subgroup', 'user_code']
@@ -50,8 +55,10 @@ class Strategy1Admin(admin.ModelAdmin):
     list_filter = ['is_deleted', ]
     raw_id_fields = ['subgroup']
     inlines = [
-        UserObjectPermissionInline,
-        GroupObjectPermissionInline,
+        GenericTagLinkInline,
+        GenericObjectPermissionInline,
+        # UserObjectPermissionInline,
+        # GroupObjectPermissionInline,
     ]
 
     def group(self, obj):

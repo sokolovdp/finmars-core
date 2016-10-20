@@ -10,7 +10,7 @@ from poms.notifications.models import Notification
 
 
 class NotificationSerializer(serializers.ModelSerializer):
-    url = serializers.HyperlinkedIdentityField(view_name='notification-detail')
+    # url = serializers.HyperlinkedIdentityField(view_name='notification-detail')
     create_date = DateTimeTzAwareField()
     read_date = DateTimeTzAwareField()
     message = serializers.SerializerMethodField()

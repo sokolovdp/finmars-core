@@ -8,19 +8,19 @@ from poms.currencies.fields import CurrencyField
 from poms.currencies.models import Currency, CurrencyHistory
 from poms.instruments.fields import PricingPolicyField
 from poms.integrations.fields import PriceDownloadSchemeField
-from poms.tags.fields import TagField
-from poms.tags.serializers import TagViewSerializer
+from poms.tags.serializers import ModelWithTagSerializer
 from poms.users.fields import MasterUserField
 
 
-class CurrencySerializer(ModelWithUserCodeSerializer):
-    url = serializers.HyperlinkedIdentityField(view_name='currency-detail')
+class CurrencySerializer(ModelWithUserCodeSerializer, ModelWithTagSerializer):
+    # url = serializers.HyperlinkedIdentityField(view_name='currency-detail')
     master_user = MasterUserField()
     daily_pricing_model_object = serializers.PrimaryKeyRelatedField(source='daily_pricing_model', read_only=True)
     price_download_scheme = PriceDownloadSchemeField(allow_null=True)
     price_download_scheme_object = serializers.PrimaryKeyRelatedField(source='price_download_scheme', read_only=True)
-    tags = TagField(many=True, required=False, allow_null=True)
-    tags_object = TagViewSerializer(source='tags', many=True, read_only=True)
+
+    # tags = TagField(many=True, required=False, allow_null=True)
+    # tags_object = TagViewSerializer(source='tags', many=True, read_only=True)
 
     class Meta:
         model = Currency
@@ -28,7 +28,8 @@ class CurrencySerializer(ModelWithUserCodeSerializer):
             'url', 'id', 'master_user', 'user_code', 'name', 'short_name', 'notes',
             'reference_for_pricing', 'daily_pricing_model', 'daily_pricing_model_object',
             'price_download_scheme', 'price_download_scheme_object',
-            'is_default', 'is_deleted', 'tags', 'tags_object',
+            'is_default', 'is_deleted',
+            # 'tags', 'tags_object',
         ]
 
     def __init__(self, *args, **kwargs):
@@ -43,7 +44,7 @@ class CurrencySerializer(ModelWithUserCodeSerializer):
 
 
 class CurrencyViewSerializer(ModelWithUserCodeSerializer):
-    url = serializers.HyperlinkedIdentityField(view_name='currency-detail')
+    # url = serializers.HyperlinkedIdentityField(view_name='currency-detail')
 
     class Meta:
         model = Currency
@@ -53,7 +54,7 @@ class CurrencyViewSerializer(ModelWithUserCodeSerializer):
 
 
 class CurrencyHistorySerializer(serializers.ModelSerializer):
-    url = serializers.HyperlinkedIdentityField(view_name='currencyhistory-detail')
+    # url = serializers.HyperlinkedIdentityField(view_name='currencyhistory-detail')
     currency = CurrencyField()
     currency_object = CurrencyViewSerializer(source='currency', read_only=True)
     pricing_policy = PricingPolicyField(allow_null=False)

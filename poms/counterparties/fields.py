@@ -1,24 +1,20 @@
 from __future__ import unicode_literals
 
-from poms.common.fields import PrimaryKeyRelatedFilteredField
-from poms.counterparties.models import CounterpartyClassifier, Counterparty, Responsible, ResponsibleClassifier, \
-    CounterpartyAttributeType, ResponsibleAttributeType, CounterpartyGroup, ResponsibleGroup
-from poms.obj_attrs.filters import AttributeClassifierBaseField
+from poms.counterparties.models import Counterparty, Responsible, CounterpartyGroup, ResponsibleGroup
 from poms.obj_perms.fields import PrimaryKeyRelatedFilteredWithObjectPermissionField
-from poms.obj_perms.filters import ObjectPermissionBackend
 from poms.users.filters import OwnerByMasterUserFilter
 
 
-class CounterpartyAttributeTypeField(PrimaryKeyRelatedFilteredField):
-    queryset = CounterpartyAttributeType.objects
-    filter_backends = [
-        OwnerByMasterUserFilter,
-        ObjectPermissionBackend,
-    ]
-
-
-class CounterpartyClassifierField(AttributeClassifierBaseField):
-    queryset = CounterpartyClassifier.objects
+# class CounterpartyAttributeTypeField(PrimaryKeyRelatedFilteredField):
+#     queryset = CounterpartyAttributeType.objects
+#     filter_backends = [
+#         OwnerByMasterUserFilter,
+#         ObjectPermissionBackend,
+#     ]
+#
+#
+# class CounterpartyClassifierField(AttributeClassifierBaseField):
+#     queryset = CounterpartyClassifier.objects
 
 
 class CounterpartyGroupDefault(object):
@@ -53,16 +49,16 @@ class CounterpartyField(PrimaryKeyRelatedFilteredWithObjectPermissionField):
     ]
 
 
-class ResponsibleAttributeTypeField(PrimaryKeyRelatedFilteredField):
-    queryset = ResponsibleAttributeType.objects
-    filter_backends = [
-        OwnerByMasterUserFilter,
-        ObjectPermissionBackend,
-    ]
-
-
-class ResponsibleClassifierField(AttributeClassifierBaseField):
-    queryset = ResponsibleClassifier.objects
+# class ResponsibleAttributeTypeField(PrimaryKeyRelatedFilteredField):
+#     queryset = ResponsibleAttributeType.objects
+#     filter_backends = [
+#         OwnerByMasterUserFilter,
+#         ObjectPermissionBackend,
+#     ]
+#
+#
+# class ResponsibleClassifierField(AttributeClassifierBaseField):
+#     queryset = ResponsibleClassifier.objects
 
 
 class ResponsibleGroupDefault(object):

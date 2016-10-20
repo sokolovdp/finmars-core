@@ -1,6 +1,7 @@
 from __future__ import unicode_literals
 
 import django_filters
+from django.db.models import Prefetch
 from rest_framework.filters import FilterSet
 
 from poms.common.filters import CharFilter, ModelExtMultipleChoiceFilter, NoOpFilter
@@ -12,7 +13,8 @@ from poms.instruments.models import PricingPolicy, DailyPricingModel
 from poms.integrations.models import PriceDownloadScheme
 from poms.obj_perms.utils import get_permissions_prefetch_lookups
 from poms.tags.filters import TagFilter
-from poms.tags.models import Tag
+from poms.tags.models import Tag, TagLink
+from poms.tags.utils import get_tag_prefetch
 from poms.users.filters import OwnerByMasterUserFilter
 from poms.users.permissions import SuperUserOrReadOnly
 
@@ -38,10 +40,7 @@ class CurrencyViewSet(AbstractModelViewSet):
     queryset = Currency.objects.select_related(
         'master_user', 'daily_pricing_model', 'price_download_scheme', 'price_download_scheme__provider',
     ).prefetch_related(
-        'tags',
-        *get_permissions_prefetch_lookups(
-            ('tags', Tag)
-        )
+        get_tag_prefetch()
     )
     serializer_class = CurrencySerializer
     permission_classes = AbstractModelViewSet.permission_classes + [

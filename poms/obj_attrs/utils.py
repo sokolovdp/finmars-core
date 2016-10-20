@@ -1,3 +1,9 @@
+from django.db.models import Prefetch
+
+from poms.obj_attrs.models import GenericAttribute, GenericAttributeType
+from poms.obj_perms.utils import get_permissions_prefetch_lookups
+
+
 def get_attr_type_model(obj):
     from django.db.models import Model
     # from django.contrib.contenttypes.models import ContentType
@@ -73,3 +79,17 @@ def get_attr_type_view_perms(model_cls):
         'model_name': model_cls._meta.model_name
     }
     return {perm % kwargs for perm in codename_set}
+
+
+def get_attributes_prefetch():
+    return Prefetch(
+        'attributes',
+        queryset=GenericAttribute.objects.select_related(
+            'attribute_type', 'classifier'
+        ).prefetch_related(
+            'attribute_type__options',
+            *get_permissions_prefetch_lookups(
+                ('attribute_type', GenericAttributeType)
+            )
+        )
+    )

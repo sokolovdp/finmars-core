@@ -92,7 +92,7 @@ class UserProfileSerializer(serializers.ModelSerializer):
 
 
 class UserSerializer(serializers.ModelSerializer):
-    url = serializers.HyperlinkedIdentityField(view_name='user-detail')
+    # url = serializers.HyperlinkedIdentityField(view_name='user-detail')
     profile = UserProfileSerializer()
 
     class Meta:
@@ -165,7 +165,7 @@ class UserUnsubscribeSerializer(serializers.Serializer):
 
 
 class MasterUserSerializer(serializers.ModelSerializer):
-    url = serializers.HyperlinkedIdentityField(view_name='masteruser-detail')
+    # url = serializers.HyperlinkedIdentityField(view_name='masteruser-detail')
     language = serializers.ChoiceField(choices=settings.LANGUAGES, default=settings.LANGUAGE_CODE)
     timezone = serializers.ChoiceField(choices=TIMEZONE_CHOICES)
     is_current = serializers.SerializerMethodField()
@@ -295,19 +295,19 @@ class MasterUserSetCurrentSerializer(serializers.Serializer):
         return self.create(validated_data)
 
 
-class MemberMiniSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = Member
-        fields = ['id', 'username', 'first_name', 'last_name', 'display_name', ]
-        read_only_fields = ['id', 'username', 'first_name', 'last_name', 'display_name', ]
-
-    def get_is_current(self, obj):
-        member = get_member_from_context(self.context)
-        return obj.id == member.id
+# class MemberMiniSerializer(serializers.ModelSerializer):
+#     class Meta:
+#         model = Member
+#         fields = ['id', 'username', 'first_name', 'last_name', 'display_name', ]
+#         read_only_fields = ['id', 'username', 'first_name', 'last_name', 'display_name', ]
+#
+#     def get_is_current(self, obj):
+#         member = get_member_from_context(self.context)
+#         return obj.id == member.id
 
 
 class MemberSerializer(serializers.ModelSerializer):
-    url = serializers.HyperlinkedIdentityField(view_name='member-detail')
+    # url = serializers.HyperlinkedIdentityField(view_name='member-detail')
     master_user = MasterUserField()
     is_current = serializers.SerializerMethodField()
     join_date = DateTimeTzAwareField()
@@ -338,7 +338,7 @@ class MemberSerializer(serializers.ModelSerializer):
 class MemberViewSerializer(serializers.ModelSerializer):
     class Meta:
         model = Member
-        fields = ['id', 'username', 'first_name', 'last_name', 'display_name', ]
+        fields = ['url', 'id', 'username', 'first_name', 'last_name', 'display_name', ]
         read_only_fields = ['id', 'username', 'first_name', 'last_name', 'display_name', ]
 
     def get_is_current(self, obj):
@@ -347,7 +347,7 @@ class MemberViewSerializer(serializers.ModelSerializer):
 
 
 class GroupSerializer(serializers.ModelSerializer):
-    url = serializers.HyperlinkedIdentityField(view_name='group-detail')
+    # url = serializers.HyperlinkedIdentityField(view_name='group-detail')
     master_user = MasterUserField()
     members = MemberField(many=True)
     members_object = serializers.PrimaryKeyRelatedField(source='members', read_only=True, many=True)
@@ -363,7 +363,7 @@ class GroupSerializer(serializers.ModelSerializer):
 
 
 class GroupViewSerializer(serializers.ModelSerializer):
-    url = serializers.HyperlinkedIdentityField(view_name='group-detail')
+    # url = serializers.HyperlinkedIdentityField(view_name='group-detail')
 
     class Meta:
         model = Group

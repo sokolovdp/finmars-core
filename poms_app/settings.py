@@ -15,6 +15,7 @@ from __future__ import unicode_literals
 import os
 
 # Build paths inside the project like this: os.path.join(BASE_DIR, ...)
+from celery.schedules import crontab
 from django.utils.translation import ugettext_lazy
 
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -464,9 +465,9 @@ CELERY_RESULT_BACKEND = 'redis://%s/1?new_join=1' % REDIS_HOST
 
 CELERY_ENABLE_UTC = True
 CELERY_TIMEZONE = 'UTC'
-CELERY_ACCEPT_CONTENT = ['json']
-CELERY_TASK_SERIALIZER = 'json'
-CELERY_RESULT_SERIALIZER = 'json'
+CELERY_ACCEPT_CONTENT = ['json', 'pickle']
+CELERY_TASK_SERIALIZER = 'pickle'
+CELERY_RESULT_SERIALIZER = 'pickle'
 CELERYD_CONCURRENCY = 1
 CELERY_TASK_RESULT_EXPIRES = 3600
 CELERY_REDIRECT_STDOUTS = False
@@ -483,10 +484,14 @@ CELERY_SEND_TASK_SENT_EVENT = True
 # CELERY_STORE_ERRORS_EVEN_IF_IGNORED = True
 
 CELERYBEAT_SCHEDULE = {
-    'backend.download_pricing_auto_scheduler': {
-        'task': 'backend.download_pricing_auto_scheduler',
-        'schedule': 600,
+    'integrations.download_pricing_auto_scheduler': {
+        'task': 'integrations.download_pricing_auto_scheduler',
+        'schedule': crontab(minute='*/10'),
     },
+    # 'instruments.process_events_auto': {
+    #     'task': 'instruments.process_events_auto',
+    #     'schedule': crontab(minute=15),
+    # }
 }
 
 # INTEGRATIONS ------------------------------------------------
@@ -526,3 +531,8 @@ BLOOMBERG_SANDBOX_WAIT_FAIL = False
 
 # LOGIN_URL = 'two_factor:login'
 # LOGIN_REDIRECT_URL = 'two_factor:profile'
+
+
+# ----
+
+INSTRUMENT_EVENTS_REGULAR_MAX_INTERVALS = 1000

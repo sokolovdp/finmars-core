@@ -8,13 +8,12 @@ from django.utils.translation import ugettext_lazy
 from poms.common.admin import ClassModelAdmin, ClassifierAdmin
 from poms.instruments.models import Instrument, PriceHistory, InstrumentClass, InstrumentType, \
     DailyPricingModel, AccrualCalculationModel, Periodicity, CostMethod, \
-    ManualPricingFormula, AccrualCalculationSchedule, InstrumentAttributeType, InstrumentAttribute, \
-    InstrumentFactorSchedule, EventSchedule, \
-    PricingPolicy, PaymentSizeDetail, InstrumentClassifier, EventScheduleAction, EventScheduleConfig
-from poms.obj_attrs.admin import AbstractAttributeTypeAdmin, AbstractAttributeInline, \
-    AbstractAttributeTypeClassifierInline, AbstractAttributeTypeOptionInline
-from poms.obj_perms.admin import UserObjectPermissionInline, \
-    GroupObjectPermissionInline
+    ManualPricingFormula, AccrualCalculationSchedule, InstrumentFactorSchedule, EventSchedule, \
+    PricingPolicy, PaymentSizeDetail, EventScheduleAction, EventScheduleConfig
+from poms.instruments.tasks import process_events, calculate_prices_accrued_price
+from poms.obj_attrs.admin import GenericAttributeInline
+from poms.obj_perms.admin import GenericObjectPermissionInline
+from poms.tags.admin import GenericTagLinkInline
 
 admin.site.register(InstrumentClass, ClassModelAdmin)
 admin.site.register(DailyPricingModel, ClassModelAdmin)
@@ -43,16 +42,18 @@ class InstrumentTypeAdmin(admin.ModelAdmin):
     list_filter = ['instrument_class', 'is_deleted', ]
     raw_id_fields = ['master_user', 'one_off_event', 'regular_event', 'factor_same', 'factor_up', 'factor_down']
     inlines = [
-        UserObjectPermissionInline,
-        GroupObjectPermissionInline,
+        GenericTagLinkInline,
+        GenericObjectPermissionInline,
+        # UserObjectPermissionInline,
+        # GroupObjectPermissionInline,
     ]
 
 
 admin.site.register(InstrumentType, InstrumentTypeAdmin)
 
 
-class InstrumentAttributeInline(AbstractAttributeInline):
-    model = InstrumentAttribute
+# class InstrumentAttributeInline(AbstractAttributeInline):
+#     model = InstrumentAttribute
 
 
 class ManualPricingFormulaInline(admin.TabularInline):
@@ -86,15 +87,18 @@ class InstrumentAdmin(admin.ModelAdmin):
     list_filter = ['instrument_type__instrument_class', 'is_deleted', ]
     raw_id_fields = ['master_user', 'instrument_type', 'pricing_currency', 'accrued_currency', 'price_download_scheme']
     inlines = [
-        InstrumentAttributeInline,
+        # InstrumentAttributeInline,
         ManualPricingFormulaInline,
         AccrualCalculationScheduleInline,
         InstrumentFactorScheduleInline,
         # EventScheduleInline,
-        UserObjectPermissionInline,
-        GroupObjectPermissionInline,
+        GenericAttributeInline,
+        GenericTagLinkInline,
+        GenericObjectPermissionInline,
+        # UserObjectPermissionInline,
+        # GroupObjectPermissionInline,
     ]
-    actions = ['rebuild_event_schedules', 'calculate_prices_accrued_price']
+    actions = ['calculate_prices_accrued_price', 'rebuild_event_schedules']
 
     def rebuild_event_schedules(self, request, queryset):
         for instr in queryset:
@@ -106,8 +110,14 @@ class InstrumentAdmin(admin.ModelAdmin):
     rebuild_event_schedules.short_description = "Rebuild event schedules"
 
     def calculate_prices_accrued_price(self, request, queryset):
-        for instrument in queryset:
-            instrument.calculate_prices_accrued_price()
+        # for instrument in queryset:
+        #     instrument.calculate_prices_accrued_price()
+        calculate_prices_accrued_price(instruments=queryset)
+        # calculate_prices_accrued_price_async.apply_async(
+        #     kwargs={
+        #         'instruments': list(queryset.values_list('id', flat=True))
+        #     }
+        # ).wait()
 
     calculate_prices_accrued_price.short_description = "Calculate accrued price for prices"
 
@@ -180,11 +190,12 @@ class EventScheduleAdmin(admin.ModelAdmin):
     list_display = ['id', 'master_user', 'instrument', 'effective_date', 'name', 'event_class', 'notification_class',
                     'periodicity', 'final_date', 'is_auto_generated', 'accrual_calculation_schedule', 'factor_schedule',
                     '_actions']
+    list_select_related = ['instrument', 'instrument__master_user', 'event_class', 'notification_class', 'periodicity',
+                           'accrual_calculation_schedule', 'factor_schedule']
     list_filter = ['effective_date', 'event_class', 'notification_class', 'periodicity']
     ordering = ['instrument', 'effective_date']
     date_hierarchy = 'effective_date'
     search_fields = ['instrument__id', 'instrument__user_code', 'instrument__name']
-    list_select_related = ['instrument', 'instrument__master_user', 'event_class', 'notification_class']
     raw_id_fields = ['instrument', 'accrual_calculation_schedule']
 
     inlines = [
@@ -239,18 +250,19 @@ class PriceHistoryAdmin(admin.ModelAdmin):
 admin.site.register(PriceHistory, PriceHistoryAdmin)
 
 
-class InstrumentAttributeTypeAdmin(AbstractAttributeTypeAdmin):
-    inlines = [
-        AbstractAttributeTypeClassifierInline,
-        AbstractAttributeTypeOptionInline,
-        UserObjectPermissionInline,
-        GroupObjectPermissionInline,
-    ]
-
-
-admin.site.register(InstrumentAttributeType, InstrumentAttributeTypeAdmin)
-
-admin.site.register(InstrumentClassifier, ClassifierAdmin)
+# class InstrumentAttributeTypeAdmin(AbstractAttributeTypeAdmin):
+#     inlines = [
+#         AbstractAttributeTypeClassifierInline,
+#         AbstractAttributeTypeOptionInline,
+#         GenericObjectPermissionInline,
+#         # UserObjectPermissionInline,
+#         # GroupObjectPermissionInline,
+#     ]
+#
+#
+# admin.site.register(InstrumentAttributeType, InstrumentAttributeTypeAdmin)
+#
+# admin.site.register(InstrumentClassifier, ClassifierAdmin)
 
 
 class EventScheduleConfigAdmin(admin.ModelAdmin):

@@ -2,6 +2,7 @@ from __future__ import unicode_literals
 
 # noinspection PyUnresolvedReferences
 import env_ai
+import os
 
 # noinspection PyUnresolvedReferences
 from .settings import *
@@ -36,7 +37,6 @@ if 'debug_toolbar' in INSTALLED_APPS:
     MIDDLEWARE_CLASSES = MIDDLEWARE_CLASSES + ['debug_toolbar.middleware.DebugToolbarMiddleware', ]
     INTERNAL_IPS = ['127.0.0.1']
 
-
 # CELERY ------------------------------------------------
 
 
@@ -44,7 +44,17 @@ CELERY_ALWAYS_EAGER = True
 CELERY_EAGER_PROPAGATES_EXCEPTIONS = True
 CELERYD_LOG_FORMAT = LOGGING['formatters']['verbose']['format']
 CELERY_TASK_RESULT_EXPIRES = 600
-CELERYBEAT_SCHEDULE = {}
+# CELERYBEAT_SCHEDULE = {}
+CELERYBEAT_SCHEDULE = {
+    # 'integrations.download_pricing_auto_scheduler': {
+    #     'task': 'integrations.download_pricing_auto_scheduler',
+    #     'schedule': 60,
+    # },
+    # 'instruments.process_events_auto': {
+    #     'task': 'instruments.process_events_auto',
+    #     'schedule': 60,
+    # }
+}
 
 # INTEGRATIONS ------------------------------------------------
 

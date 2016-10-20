@@ -1,24 +1,21 @@
 from __future__ import unicode_literals
 
 from poms.common.fields import PrimaryKeyRelatedFilteredField
-from poms.instruments.models import InstrumentClassifier, Instrument, InstrumentAttributeType, InstrumentType, \
-    PricingPolicy
-from poms.obj_attrs.filters import AttributeClassifierBaseField
+from poms.instruments.models import Instrument, InstrumentType, PricingPolicy
 from poms.obj_perms.fields import PrimaryKeyRelatedFilteredWithObjectPermissionField
-from poms.obj_perms.filters import ObjectPermissionBackend
 from poms.users.filters import OwnerByMasterUserFilter
 
 
-class InstrumentClassifierField(AttributeClassifierBaseField):
-    queryset = InstrumentClassifier.objects
-
-
-class InstrumentAttributeTypeField(PrimaryKeyRelatedFilteredField):
-    queryset = InstrumentAttributeType.objects
-    filter_backends = [
-        OwnerByMasterUserFilter,
-        ObjectPermissionBackend,
-    ]
+# class InstrumentClassifierField(AttributeClassifierBaseField):
+#     queryset = InstrumentClassifier.objects
+#
+#
+# class InstrumentAttributeTypeField(PrimaryKeyRelatedFilteredField):
+#     queryset = InstrumentAttributeType.objects
+#     filter_backends = [
+#         OwnerByMasterUserFilter,
+#         ObjectPermissionBackend,
+#     ]
 
 
 class InstrumentTypeDefault(object):

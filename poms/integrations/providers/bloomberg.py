@@ -681,7 +681,7 @@ class BloombergDataProvider(AbstractProvider):
                 accrual_calculation_schedules.append(s)
                 # next row
                 accrual_start_date = self.parse_date(row[0])
-                first_payment_date = accrual_start_date + Periodicity.to_timedelta(periodicity)
+                first_payment_date = accrual_start_date + periodicity.to_timedelta()
         else:
             s = AccrualCalculationSchedule()
             s.instrument = instrument

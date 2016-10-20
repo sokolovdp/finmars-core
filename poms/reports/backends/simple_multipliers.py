@@ -4,21 +4,21 @@ from __future__ import unicode_literals, division
 
 import logging
 
-from poms.reports.backends.base import BaseReportBuilder, BaseReport2Builder
+from poms.reports.backends.base import BaseReport2Builder
 
 _l = logging.getLogger('poms.reports')
 
 
-class SimpleMultipliersReportBuilder(BaseReportBuilder):
-    def __init__(self, *args, **kwargs):
-        super(SimpleMultipliersReportBuilder, self).__init__(*args, **kwargs)
-        self._filter_date_attr = 'accounting_date'
-
-    def build(self):
-        self.annotate_avco_multiplier()
-        self.annotate_fifo_multiplier()
-        self.instance.results = self.transactions
-        return self.instance
+# class SimpleMultipliersReportBuilder(BaseReportBuilder):
+#     def __init__(self, *args, **kwargs):
+#         super(SimpleMultipliersReportBuilder, self).__init__(*args, **kwargs)
+#         self._filter_date_attr = 'accounting_date'
+#
+#     def build(self):
+#         self.annotate_avco_multiplier()
+#         self.annotate_fifo_multiplier()
+#         self.instance.results = self.transactions
+#         return self.instance
 
 
 class SimpleMultipliersReport2Builder(BaseReport2Builder):

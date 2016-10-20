@@ -3,12 +3,10 @@ from __future__ import unicode_literals
 from django.contrib import admin
 
 from poms.common.admin import ClassifierAdmin
-from poms.counterparties.models import Counterparty, Responsible, CounterpartyAttributeType, ResponsibleAttributeType, \
-    CounterpartyGroup, ResponsibleGroup, CounterpartyClassifier, ResponsibleClassifier
-from poms.obj_attrs.admin import AbstractAttributeTypeAdmin, AbstractAttributeInline, \
-    AbstractAttributeTypeClassifierInline, AbstractAttributeTypeOptionInline
-from poms.obj_perms.admin import UserObjectPermissionInline, \
-    GroupObjectPermissionInline
+from poms.counterparties.models import Counterparty, Responsible,  CounterpartyGroup, ResponsibleGroup
+from poms.obj_attrs.admin import GenericAttributeInline
+from poms.obj_perms.admin import GenericObjectPermissionInline
+from poms.tags.admin import GenericTagLinkInline
 
 
 class CounterpartyGroupAdmin(admin.ModelAdmin):
@@ -19,8 +17,10 @@ class CounterpartyGroupAdmin(admin.ModelAdmin):
     list_filter = ['is_deleted', ]
     raw_id_fields = ['master_user']
     inlines = [
-        UserObjectPermissionInline,
-        GroupObjectPermissionInline,
+        GenericTagLinkInline,
+        GenericObjectPermissionInline,
+        # UserObjectPermissionInline,
+        # GroupObjectPermissionInline,
     ]
 
 
@@ -36,28 +36,32 @@ class CounterpartyAdmin(admin.ModelAdmin):
     list_select_related = ['master_user', 'group']
     raw_id_fields = ['master_user', 'group']
     inlines = [
-        AbstractAttributeInline,
-        UserObjectPermissionInline,
-        GroupObjectPermissionInline,
+        # AbstractAttributeInline,
+        GenericAttributeInline,
+        GenericTagLinkInline,
+        GenericObjectPermissionInline,
+        # UserObjectPermissionInline,
+        # GroupObjectPermissionInline,
     ]
 
 
 admin.site.register(Counterparty, CounterpartyAdmin)
 
 
-class CounterpartyAttributeTypeAdmin(AbstractAttributeTypeAdmin):
-    inlines = [
-        # CounterpartyAttributeTypeClassifierInline
-        AbstractAttributeTypeClassifierInline,
-        AbstractAttributeTypeOptionInline,
-        UserObjectPermissionInline,
-        GroupObjectPermissionInline,
-    ]
-
-
-admin.site.register(CounterpartyAttributeType, CounterpartyAttributeTypeAdmin)
-
-admin.site.register(CounterpartyClassifier, ClassifierAdmin)
+# class CounterpartyAttributeTypeAdmin(AbstractAttributeTypeAdmin):
+#     inlines = [
+#         # CounterpartyAttributeTypeClassifierInline
+#         AbstractAttributeTypeClassifierInline,
+#         AbstractAttributeTypeOptionInline,
+#         GenericObjectPermissionInline,
+#         # UserObjectPermissionInline,
+#         # GroupObjectPermissionInline,
+#     ]
+#
+#
+# admin.site.register(CounterpartyAttributeType, CounterpartyAttributeTypeAdmin)
+#
+# admin.site.register(CounterpartyClassifier, ClassifierAdmin)
 
 
 # ------
@@ -71,8 +75,10 @@ class ResponsibleGroupAdmin(admin.ModelAdmin):
     list_filter = ['is_deleted', ]
     raw_id_fields = ['master_user']
     inlines = [
-        UserObjectPermissionInline,
-        GroupObjectPermissionInline,
+        GenericTagLinkInline,
+        GenericObjectPermissionInline,
+        # UserObjectPermissionInline,
+        # GroupObjectPermissionInline,
     ]
 
 
@@ -88,25 +94,29 @@ class ResponsibleAdmin(admin.ModelAdmin):
     list_filter = ['is_deleted', ]
     raw_id_fields = ['master_user', 'group']
     inlines = [
-        AbstractAttributeInline,
-        UserObjectPermissionInline,
-        GroupObjectPermissionInline,
+        # AbstractAttributeInline,
+        GenericAttributeInline,
+        GenericTagLinkInline,
+        GenericObjectPermissionInline,
+        # UserObjectPermissionInline,
+        # GroupObjectPermissionInline,
     ]
 
 
 admin.site.register(Responsible, ResponsibleAdmin)
 
 
-class ResponsibleAttributeTypeAdmin(AbstractAttributeTypeAdmin):
-    inlines = [
-        # CounterpartyAttributeTypeClassifierInline
-        AbstractAttributeTypeClassifierInline,
-        AbstractAttributeTypeOptionInline,
-        UserObjectPermissionInline,
-        GroupObjectPermissionInline,
-    ]
-
-
-admin.site.register(ResponsibleAttributeType, ResponsibleAttributeTypeAdmin)
-
-admin.site.register(ResponsibleClassifier, ClassifierAdmin)
+# class ResponsibleAttributeTypeAdmin(AbstractAttributeTypeAdmin):
+#     inlines = [
+#         # CounterpartyAttributeTypeClassifierInline
+#         AbstractAttributeTypeClassifierInline,
+#         AbstractAttributeTypeOptionInline,
+#         GenericObjectPermissionInline,
+#         # UserObjectPermissionInline,
+#         # GroupObjectPermissionInline,
+#     ]
+#
+#
+# admin.site.register(ResponsibleAttributeType, ResponsibleAttributeTypeAdmin)
+#
+# admin.site.register(ResponsibleClassifier, ClassifierAdmin)

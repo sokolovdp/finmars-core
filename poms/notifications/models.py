@@ -74,7 +74,9 @@ class Notification(models.Model):
         ordering = ['create_date']
 
     def __str__(self):
-        if self.verb and self.actor_object_id:
+        if self.message:
+            return self.message
+        elif self.verb and self.actor_object_id:
             ctx = {
                 'actor': self.actor,
                 'verb': self.verb,
@@ -90,7 +92,7 @@ class Notification(models.Model):
                 return ugettext_lazy('%(actor)s %(verb)s %(action_object)s %(timesince)s') % ctx
             return ugettext_lazy('%(actor)s %(verb)s %(timesince)s') % ctx
         else:
-            return self.message
+            return ugettext_lazy("Invalid notification message")
 
     @property
     def subject(self):

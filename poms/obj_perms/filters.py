@@ -1,11 +1,12 @@
 import django_filters
 from django import forms
+from django.contrib.contenttypes.models import ContentType
 from django.db.models import Q
 from rest_framework.filters import BaseFilterBackend
 
 from poms.common.filters import ModelExtMultipleChoiceFilter
-from poms.obj_perms.utils import obj_perms_filter_objects, obj_perms_prefetch, get_all_perms, get_user_obj_perms_model, \
-    get_group_obj_perms_model
+from poms.obj_perms.models import GenericObjectPermission
+from poms.obj_perms.utils import obj_perms_filter_objects, get_all_perms
 from poms.users.models import Member, Group
 
 
@@ -63,20 +64,33 @@ class ObjectPermissionMemberFilter(ModelExtMultipleChoiceFilter):
         if not value:
             return qs
         value = set(value)
-        qs = qs.filter(self.get_user_filter_q(value) | self.get_group_filter_q(value))
+
+        # qs = qs.filter(self.get_user_filter_q(value) | self.get_group_filter_q(value))
+        qs = qs.filter(self.get_permission_filter(value))
+
         if self.distinct:
             return qs.distinct()
         return qs
 
-    def get_user_filter_q(self, value):
-        user_lookup_name, user_obj_perms_model = get_user_obj_perms_model(self.object_permission_model)
-        return Q(pk__in=user_obj_perms_model.objects.filter(member__in=value).values_list(
-            'content_object__id', flat=True))
+    # def get_user_filter_q(self, value):
+    #     user_lookup_name, user_obj_perms_model = get_user_obj_perms_model(self.object_permission_model)
+    #     return Q(pk__in=user_obj_perms_model.objects.filter(member__in=value).values_list(
+    #         'content_object__id', flat=True))
+    #
+    # def get_group_filter_q(self, value):
+    #     group_lookup_name, group_obj_perms_model = get_group_obj_perms_model(self.object_permission_model)
+    #     return Q(pk__in=group_obj_perms_model.objects.filter(group__members__in=value).values_list(
+    #         'content_object__id', flat=True))
 
-    def get_group_filter_q(self, value):
-        group_lookup_name, group_obj_perms_model = get_group_obj_perms_model(self.object_permission_model)
-        return Q(pk__in=group_obj_perms_model.objects.filter(group__members__in=value).values_list(
-            'content_object__id', flat=True))
+    def get_permission_filter(self, value):
+        ctype = ContentType.objects.get_for_model(self.object_permission_model)
+        return Q(
+            pk__in=GenericObjectPermission.objects.filter(
+                content_type=ctype, permission__content_type=ctype,
+            ).filter(
+                Q(member__in=value) | Q(group__members__in=value)
+            ).values_list('object_id', flat=True)
+        )
 
 
 class ObjectPermissionGroupFilter(ModelExtMultipleChoiceFilter):
@@ -95,20 +109,33 @@ class ObjectPermissionGroupFilter(ModelExtMultipleChoiceFilter):
         if not value:
             return qs
         value = set(value)
-        qs = qs.filter(self.get_user_filter_q(value) | self.get_group_filter_q(value))
+
+        # qs = qs.filter(self.get_user_filter_q(value) | self.get_group_filter_q(value))
+        qs = qs.filter(self.get_permission_filter(value))
+
         if self.distinct:
             return qs.distinct()
         return qs
 
-    def get_user_filter_q(self, value):
-        user_lookup_name, user_obj_perms_model = get_user_obj_perms_model(self.object_permission_model)
-        return Q(pk__in=user_obj_perms_model.objects.filter(member__groups__in=value).values_list(
-            'content_object__id', flat=True))
+    # def get_user_filter_q(self, value):
+    #     user_lookup_name, user_obj_perms_model = get_user_obj_perms_model(self.object_permission_model)
+    #     return Q(pk__in=user_obj_perms_model.objects.filter(member__groups__in=value).values_list(
+    #         'content_object__id', flat=True))
+    #
+    # def get_group_filter_q(self, value):
+    #     group_lookup_name, group_obj_perms_model = get_group_obj_perms_model(self.object_permission_model)
+    #     return Q(pk__in=group_obj_perms_model.objects.filter(group__in=value).values_list(
+    #         'content_object__id', flat=True))
 
-    def get_group_filter_q(self, value):
-        group_lookup_name, group_obj_perms_model = get_group_obj_perms_model(self.object_permission_model)
-        return Q(pk__in=group_obj_perms_model.objects.filter(group__in=value).values_list(
-            'content_object__id', flat=True))
+    def get_permission_filter(self, value):
+        ctype = ContentType.objects.get_for_model(self.object_permission_model)
+        return Q(
+            pk__in=GenericObjectPermission.objects.filter(
+                content_type=ctype, permission__content_type=ctype,
+            ).filter(
+                Q(member__groups__in=value) | Q(group__in=value)
+            ).values_list('object_id', flat=True)
+        )
 
 
 class ObjectPermissionPermissionFilter(django_filters.MultipleChoiceFilter):
@@ -124,17 +151,36 @@ class ObjectPermissionPermissionFilter(django_filters.MultipleChoiceFilter):
         if not value:
             return qs
         value = set(value)
-        qs = qs.filter(self.get_user_filter_q(value) | self.get_group_filter_q(value))
+
+        # qs = qs.filter(self.get_user_filter_q(value) | self.get_group_filter_q(value))
+        qs = qs.filter(self.get_permission_filter(value))
+
+        ctype = ContentType.objects.get_for_model(self.object_permission_model)
+        qs = qs.filter(
+            pk__in=GenericObjectPermission.objects.filter(
+                content_type=ctype, permission__content_type=ctype,
+                permission__codename__in=value
+            ).values_list('object_id', flat=True)
+        )
         if self.distinct:
             return qs.distinct()
         return qs
 
-    def get_user_filter_q(self, value):
-        user_lookup_name, user_obj_perms_model = get_user_obj_perms_model(self.object_permission_model)
-        return Q(pk__in=user_obj_perms_model.objects.filter(permission__codename__in=value).values_list(
-            'content_object__id', flat=True))
+    # def get_user_filter_q(self, value):
+    #     user_lookup_name, user_obj_perms_model = get_user_obj_perms_model(self.object_permission_model)
+    #     return Q(pk__in=user_obj_perms_model.objects.filter(permission__codename__in=value).values_list(
+    #         'content_object__id', flat=True))
+    #
+    # def get_group_filter_q(self, value):
+    #     group_lookup_name, group_obj_perms_model = get_group_obj_perms_model(self.object_permission_model)
+    #     return Q(pk__in=group_obj_perms_model.objects.filter(permission__codename__in=value).values_list(
+    #         'content_object__id', flat=True))
 
-    def get_group_filter_q(self, value):
-        group_lookup_name, group_obj_perms_model = get_group_obj_perms_model(self.object_permission_model)
-        return Q(pk__in=group_obj_perms_model.objects.filter(permission__codename__in=value).values_list(
-            'content_object__id', flat=True))
+    def get_permission_filter(self, value):
+        ctype = ContentType.objects.get_for_model(self.object_permission_model)
+        return Q(
+            pk__in=GenericObjectPermission.objects.filter(
+                content_type=ctype, permission__content_type=ctype,
+                permission__codename__in=value
+            ).values_list('object_id', flat=True)
+        )

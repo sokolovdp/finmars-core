@@ -12,16 +12,14 @@ from rest_framework.viewsets import ModelViewSet, ReadOnlyModelViewSet, ViewSet
 from poms.audit.mixins import HistoricalModelMixin
 from poms.common.filters import ByIdFilterBackend, ByIsDeletedFilterBackend
 from poms.common.mixins import BulkModelMixin, DestroyModelFakeMixin, UpdateModelMixinExt
-from poms.users.utils import get_master_user
-from poms.users.utils import get_member
+from poms.users.utils import get_master_user_and_member
 
 
 class AbstractApiView(APIView):
     def perform_authentication(self, request):
         super(AbstractApiView, self).perform_authentication(request)
         if request.user.is_authenticated():
-            request.user.master_user = get_master_user(request)
-            request.user.member = get_member(request)
+            request.user.member, request.user.master_user = get_master_user_and_member(request)
 
     def initial(self, request, *args, **kwargs):
         super(AbstractApiView, self).initial(request, *args, **kwargs)

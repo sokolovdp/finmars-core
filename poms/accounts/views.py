@@ -1,22 +1,20 @@
 from __future__ import unicode_literals
 
 import django_filters
-from django.db.models import Prefetch
 from rest_framework.filters import FilterSet
 
-from poms.accounts.models import Account, AccountType, AccountAttributeType, AccountClassifier, AccountAttribute
-from poms.accounts.serializers import AccountSerializer, AccountTypeSerializer, AccountAttributeTypeSerializer, \
-    AccountClassifierNodeSerializer
+from poms.accounts.models import Account, AccountType
+from poms.accounts.serializers import AccountSerializer, AccountTypeSerializer
 from poms.common.filters import CharFilter, NoOpFilter, ModelExtWithPermissionMultipleChoiceFilter
-from poms.obj_attrs.filters import AttributeTypeValueTypeFilter
-from poms.obj_attrs.views import AbstractAttributeTypeViewSet, AbstractClassifierViewSet
+from poms.obj_attrs.utils import get_attributes_prefetch
+from poms.obj_attrs.views import GenericAttributeTypeViewSet, GenericClassifierViewSet
 from poms.obj_perms.filters import ObjectPermissionMemberFilter, ObjectPermissionGroupFilter, \
     ObjectPermissionPermissionFilter
 from poms.obj_perms.utils import get_permissions_prefetch_lookups
 from poms.obj_perms.views import AbstractWithObjectPermissionViewSet
 from poms.portfolios.models import Portfolio
 from poms.tags.filters import TagFilter
-from poms.tags.models import Tag
+from poms.tags.utils import get_tag_prefetch
 from poms.users.filters import OwnerByMasterUserFilter
 
 
@@ -40,10 +38,9 @@ class AccountTypeFilterSet(FilterSet):
 
 class AccountTypeViewSet(AbstractWithObjectPermissionViewSet):
     queryset = AccountType.objects.select_related('master_user').prefetch_related(
-        'tags',
+        get_tag_prefetch(),
         *get_permissions_prefetch_lookups(
             (None, AccountType),
-            ('tags', Tag)
         )
     )
     serializer_class = AccountTypeSerializer
@@ -57,51 +54,59 @@ class AccountTypeViewSet(AbstractWithObjectPermissionViewSet):
     ]
 
 
-class AccountAttributeTypeFilterSet(FilterSet):
-    id = NoOpFilter()
-    user_code = CharFilter()
-    name = CharFilter()
-    short_name = CharFilter()
-    public_name = CharFilter()
-    value_type = AttributeTypeValueTypeFilter()
-    member = ObjectPermissionMemberFilter(object_permission_model=AccountAttributeType)
-    member_group = ObjectPermissionGroupFilter(object_permission_model=AccountAttributeType)
-    permission = ObjectPermissionPermissionFilter(object_permission_model=AccountAttributeType)
-
-    class Meta:
-        model = AccountAttributeType
-        fields = []
-
-
-class AccountAttributeTypeViewSet(AbstractAttributeTypeViewSet):
-    queryset = AccountAttributeType.objects.select_related(
-        'master_user'
-    ).prefetch_related(
-        'classifiers',
-        *get_permissions_prefetch_lookups(
-            (None, AccountAttributeType)
-        )
-    )
-    serializer_class = AccountAttributeTypeSerializer
-    # bulk_objects_permissions_serializer_class = AccountAttributeTypeBulkObjectPermissionSerializer
-    filter_class = AccountAttributeTypeFilterSet
-
-
-class AccountClassifierFilterSet(FilterSet):
-    id = NoOpFilter()
-    name = CharFilter()
-    level = django_filters.NumberFilter()
-    attribute_type = ModelExtWithPermissionMultipleChoiceFilter(model=AccountAttributeType)
-
-    class Meta:
-        model = AccountClassifier
-        fields = []
+# class AccountAttributeTypeFilterSet(FilterSet):
+#     id = NoOpFilter()
+#     user_code = CharFilter()
+#     name = CharFilter()
+#     short_name = CharFilter()
+#     public_name = CharFilter()
+#     value_type = AttributeTypeValueTypeFilter()
+#     member = ObjectPermissionMemberFilter(object_permission_model=AccountAttributeType)
+#     member_group = ObjectPermissionGroupFilter(object_permission_model=AccountAttributeType)
+#     permission = ObjectPermissionPermissionFilter(object_permission_model=AccountAttributeType)
+#
+#     class Meta:
+#         model = AccountAttributeType
+#         fields = []
+#
+#
+# class AccountAttributeTypeViewSet(AbstractAttributeTypeViewSet):
+#     queryset = AccountAttributeType.objects.select_related(
+#         'master_user'
+#     ).prefetch_related(
+#         'classifiers',
+#         *get_permissions_prefetch_lookups(
+#             (None, AccountAttributeType)
+#         )
+#     )
+#     serializer_class = AccountAttributeTypeSerializer
+#     # bulk_objects_permissions_serializer_class = AccountAttributeTypeBulkObjectPermissionSerializer
+#     filter_class = AccountAttributeTypeFilterSet
 
 
-class AccountClassifierViewSet(AbstractClassifierViewSet):
-    queryset = AccountClassifier.objects
-    serializer_class = AccountClassifierNodeSerializer
-    filter_class = AccountClassifierFilterSet
+class AccountAttributeTypeViewSet(GenericAttributeTypeViewSet):
+    target_model = Account
+
+
+# class AccountClassifierFilterSet(FilterSet):
+#     id = NoOpFilter()
+#     name = CharFilter()
+#     level = django_filters.NumberFilter()
+#     attribute_type = ModelExtWithPermissionMultipleChoiceFilter(model=AccountAttributeType)
+#
+#     class Meta:
+#         model = AccountClassifier
+#         fields = []
+#
+#
+# class AccountClassifierViewSet(AbstractClassifierViewSet):
+#     queryset = AccountClassifier.objects
+#     serializer_class = AccountClassifierNodeSerializer
+#     filter_class = AccountClassifierFilterSet
+
+
+class AccountClassifierViewSet(GenericClassifierViewSet):
+    target_model = Account
 
 
 class AccountFilterSet(FilterSet):
@@ -128,18 +133,19 @@ class AccountViewSet(AbstractWithObjectPermissionViewSet):
     queryset = Account.objects.select_related(
         'master_user', 'type', 'type',
     ).prefetch_related(
-        'portfolios', 'tags',
-        Prefetch('attributes', queryset=AccountAttribute.objects.select_related(
-            'attribute_type', 'classifier'
-        ).prefetch_related(
-            'attribute_type__options'
-        )),
+        'portfolios',
+        # Prefetch('attributes', queryset=AccountAttribute.objects.select_related(
+        #     'attribute_type', 'classifier'
+        # ).prefetch_related(
+        #     'attribute_type__options'
+        # )),
+        get_attributes_prefetch(),
+        get_tag_prefetch(),
         *get_permissions_prefetch_lookups(
             (None, Account),
             ('type', AccountType),
             ('portfolios', Portfolio),
-            ('attributes__attribute_type', AccountAttributeType),
-            ('tags', Tag)
+            # ('attributes__attribute_type', AccountAttributeType),
         )
     )
     # prefetch_permissions_for = (

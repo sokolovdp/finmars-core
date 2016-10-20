@@ -28,26 +28,32 @@ router.register(r'users/logout', users.LogoutViewSet, 'logout')
 router.register(r'users/ping', users.PingViewSet, "ping")
 router.register(r'users/protected-ping', users.ProtectedPingViewSet, "protectedping")
 
-router.register(r'users/user-register', users.UserRegisterViewSet, 'UserRegisterViewSet')
+router.register(r'users/user-register', users.UserRegisterViewSet, 'userregister')
 router.register(r'users/user', users.UserViewSet)
 router.register(r'users/master-user', users.MasterUserViewSet)
 router.register(r'users/member', users.MemberViewSet)
 router.register(r'users/group', users.GroupViewSet)
-router.register(r'users/language', api.LanguageViewSet, 'LanguageViewSet')
-router.register(r'users/timezone', api.TimezoneViewSet, 'TimezoneViewSet')
+router.register(r'users/language', api.LanguageViewSet, 'language')
+router.register(r'users/timezone', api.TimezoneViewSet, 'timezone')
 
 router.register(r'accounts/account-type', accounts.AccountTypeViewSet)
-router.register(r'accounts/account-attribute-type', accounts.AccountAttributeTypeViewSet)
-router.register(r'accounts/account-classifier', accounts.AccountClassifierViewSet)
+# router.register(r'accounts/account-attribute-type', accounts.AccountAttributeTypeViewSet)
+router.register(r'accounts/account-attribute-type', accounts.AccountAttributeTypeViewSet, 'accountattributetype')
+# router.register(r'accounts/account-classifier', accounts.AccountClassifierViewSet)
+router.register(r'accounts/account-classifier', accounts.AccountClassifierViewSet, 'accountclassifier')
 router.register(r'accounts/account', accounts.AccountViewSet)
 
-router.register(r'counterparties/counterparty-attribute-type', counterparties.CounterpartyAttributeTypeViewSet)
-router.register(r'counterparties/counterparty-classifier', counterparties.CounterpartyClassifierViewSet)
+# router.register(r'counterparties/counterparty-attribute-type', counterparties.CounterpartyAttributeTypeViewSet)
+router.register(r'counterparties/counterparty-attribute-type', counterparties.CounterpartyAttributeTypeViewSet, 'counterpartyattributetype')
+# router.register(r'counterparties/counterparty-classifier', counterparties.CounterpartyClassifierViewSet)
+router.register(r'counterparties/counterparty-classifier', counterparties.CounterpartyClassifierViewSet, 'counterpartyclassifier')
 router.register(r'counterparties/counterparty-group', counterparties.CounterpartyGroupViewSet)
 router.register(r'counterparties/counterparty', counterparties.CounterpartyViewSet)
 
-router.register(r'counterparties/responsible-attribute-type', counterparties.ResponsibleAttributeTypeViewSet)
-router.register(r'counterparties/responsible-classifier', counterparties.ResponsibleClassifierViewSet)
+# router.register(r'counterparties/responsible-attribute-type', counterparties.ResponsibleAttributeTypeViewSet)
+router.register(r'counterparties/responsible-attribute-type', counterparties.ResponsibleAttributeTypeViewSet, 'responsibleattributetype')
+# router.register(r'counterparties/responsible-classifier', counterparties.ResponsibleClassifierViewSet)
+router.register(r'counterparties/responsible-classifier', counterparties.ResponsibleClassifierViewSet, 'responsibleclassifier')
 router.register(r'counterparties/responsible-group', counterparties.ResponsibleGroupViewSet)
 router.register(r'counterparties/responsible', counterparties.ResponsibleViewSet)
 
@@ -65,13 +71,17 @@ router.register(r'instruments/pricing-policy', instruments.PricingPolicyViewSet)
 router.register(r'instruments/event-schedule-config', instruments.EventScheduleConfigViewSet)
 
 router.register(r'instruments/instrument-type', instruments.InstrumentTypeViewSet)
-router.register(r'instruments/instrument-attribute-type', instruments.InstrumentAttributeTypeViewSet)
-router.register(r'instruments/instrument-classifier', instruments.InstrumentClassifierViewSet)
+# router.register(r'instruments/instrument-attribute-type', instruments.InstrumentAttributeTypeViewSet)
+router.register(r'instruments/instrument-attribute-type', instruments.InstrumentAttributeTypeViewSet, 'instrumentattributetype')
+# router.register(r'instruments/instrument-classifier', instruments.InstrumentClassifierViewSet)
+router.register(r'instruments/instrument-classifier', instruments.InstrumentClassifierViewSet, 'instrumentclassifier')
 router.register(r'instruments/instrument', instruments.InstrumentViewSet)
 router.register(r'instruments/price-history', instruments.PriceHistoryViewSet)
 
-router.register(r'portfolios/portfolio-attribute-type', portfolios.PortfolioAttributeTypeViewSet)
-router.register(r'portfolios/portfolio-classifier', portfolios.PortfolioClassifierViewSet)
+# router.register(r'portfolios/portfolio-attribute-type', portfolios.PortfolioAttributeTypeViewSet)
+router.register(r'portfolios/portfolio-attribute-type', portfolios.PortfolioAttributeTypeViewSet, 'portfolioattributetype')
+# router.register(r'portfolios/portfolio-classifier', portfolios.PortfolioClassifierViewSet)
+router.register(r'portfolios/portfolio-classifier', portfolios.PortfolioClassifierViewSet, 'portfolioclassifier')
 router.register(r'portfolios/portfolio', portfolios.PortfolioViewSet)
 
 router.register(r'strategies/1/group', strategies.Strategy1GroupViewSet)
@@ -94,8 +104,10 @@ router.register(r'transactions/transaction-class', transactions.TransactionClass
 
 router.register(r'transactions/transaction-type-group', transactions.TransactionTypeGroupViewSet)
 router.register(r'transactions/transaction-type', transactions.TransactionTypeViewSet)
-router.register(r'transactions/transaction-attribute-type', transactions.TransactionAttributeTypeViewSet)
-router.register(r'transactions/transaction-classifier', transactions.TransactionClassifierViewSet)
+# router.register(r'transactions/transaction-attribute-type', transactions.TransactionAttributeTypeViewSet)
+router.register(r'transactions/transaction-attribute-type', transactions.TransactionAttributeTypeViewSet, 'transactionattributetype')
+# router.register(r'transactions/transaction-classifier', transactions.TransactionClassifierViewSet)
+router.register(r'transactions/transaction-classifier', transactions.TransactionClassifierViewSet, 'transactionclassifier')
 router.register(r'transactions/transaction', transactions.TransactionViewSet)
 router.register(r'transactions/complex-transaction', transactions.ComplexTransactionViewSet)
 
@@ -103,6 +115,9 @@ router.register(r'ui/list-layout', ui.ListLayoutViewSet)
 router.register(r'ui/edit-layout', ui.EditLayoutViewSet)
 router.register(r'ui/template-list-layout', ui.TemplateListLayoutViewSet)
 router.register(r'ui/template-edit-layout', ui.TemplateEditLayoutViewSet)
+
+router.register(r'reports/report-class', reports.ReportClassViewSet)
+router.register(r'reports/custom-field', reports.CustomFieldViewSet)
 
 router.register(r'reports/balance', reports.BalanceReport2ViewSet, "balancereport2")
 router.register(r'reports/pl', reports.PLReport2ViewSet, "plreport2")
@@ -114,10 +129,10 @@ router.register(r'notifications/notification', notifications.NotificationViewSet
 # router.register(r'notifications/message', notifications.MessageViewSet, 'django-message')
 
 # router.register(r'chats/thread-status', chats.ThreadStatusViewSet, 'chatthreadstatus')
-router.register(r'chats/thread-group', chats.ThreadGroupViewSet, 'chatthreadgroup')
-router.register(r'chats/thread', chats.ThreadViewSet, 'chatthread')
-router.register(r'chats/message', chats.MessageViewSet, 'chatmessage')
-router.register(r'chats/direct-message', chats.DirectMessageViewSet, 'chatdirectmessage')
+router.register(r'chats/thread-group', chats.ThreadGroupViewSet)
+router.register(r'chats/thread', chats.ThreadViewSet)
+router.register(r'chats/message', chats.MessageViewSet)
+router.register(r'chats/direct-message', chats.DirectMessageViewSet)
 
 router.register(r'security/http-session', sessions.SessionViewSet)
 router.register(r'audit/auth-log', audit.AuthLogViewSet)
@@ -138,15 +153,15 @@ router.register(r'import/instrument-attribute-value-mapping', integrations.Instr
 router.register(r'import/accrual-calculation-model-mapping', integrations.AccrualCalculationModelMappingViewSet)
 router.register(r'import/periodicity-mapping', integrations.PeriodicityMappingViewSet)
 
-router.register(r'import/file/instrument', integrations.ImportFileInstrumentViewSet, 'ImportFileInstrumentViewSet')
+router.register(r'import/file/instrument', integrations.ImportFileInstrumentViewSet, 'importfileinstrument')
 
-router.register(r'import/instrument', integrations.ImportInstrumentViewSet, 'ImportInstrumentViewSet')
-router.register(r'import/pricing', integrations.ImportPricingViewSet, 'ImportPricingViewSet')
+router.register(r'import/instrument', integrations.ImportInstrumentViewSet, 'importinstrument')
+router.register(r'import/pricing', integrations.ImportPricingViewSet, 'importpricing')
 router.register(r'import/pricing-automated-schedule', integrations.PricingAutomatedScheduleViewSet)
 
 router.register(r'import/task', integrations.TaskViewSet)
 
-router.register(r'utils/expression', api.ExpressionViewSet, 'ExpressionViewSet')
+router.register(r'utils/expression', api.ExpressionViewSet, 'expression')
 
 urlpatterns = [
     url(r'^v1/', include(router.urls, namespace='v1')),

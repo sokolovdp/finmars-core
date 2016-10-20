@@ -1,7 +1,9 @@
 from __future__ import unicode_literals
 
 import json
+from datetime import date
 
+from django.contrib.contenttypes.fields import GenericRelation
 from django.contrib.contenttypes.models import ContentType
 from django.core.serializers.json import DjangoJSONEncoder
 from django.db import models
@@ -16,11 +18,11 @@ from poms.common.utils import date_now
 from poms.counterparties.models import Responsible, Counterparty
 from poms.currencies.models import Currency
 from poms.instruments.models import Instrument
-from poms.obj_attrs.models import AbstractAttributeType, AbstractAttribute, AbstractAttributeTypeOption, \
-    AbstractClassifier
-from poms.obj_perms.models import AbstractGroupObjectPermission, AbstractUserObjectPermission
+from poms.obj_attrs.models import  GenericAttribute
+from poms.obj_perms.models import GenericObjectPermission
 from poms.portfolios.models import Portfolio
 from poms.strategies.models import Strategy1, Strategy2, Strategy3
+from poms.tags.models import TagLink
 from poms.users.models import MasterUser, Member, FakeSequence
 
 
@@ -136,6 +138,65 @@ class NotificationClass(AbstractClassModel):
         verbose_name = ugettext_lazy('notification class')
         verbose_name_plural = ugettext_lazy('notification classes')
 
+    def check_date(self, now, effective_date, notification_date):
+        need_inform = False
+        need_react = False
+        book_automatic = False
+
+        # NDATE -> notification_date
+        # EDATE -> effective_date
+        if self.id == NotificationClass.DONT_REACT:
+            pass
+
+        elif self.id == NotificationClass.APPLY_DEF_ON_EDATE:
+            book_automatic = now == effective_date
+
+        elif self.id == NotificationClass.APPLY_DEF_ON_NDATE:
+            book_automatic = now == notification_date
+
+        elif self.id == NotificationClass.INFORM_ON_NDATE_WITH_REACT:
+            need_inform = now == notification_date
+            need_react = now == notification_date
+
+        elif self.id == NotificationClass.INFORM_ON_NDATE_APPLY_DEF:
+            need_inform = now == notification_date
+            book_automatic = now == notification_date
+
+        elif self.id == NotificationClass.INFORM_ON_NDATE_DONT_REACT:
+            need_inform = now == notification_date
+
+        elif self.id == NotificationClass.INFORM_ON_EDATE_WITH_REACT:
+            need_inform = now == effective_date
+            need_react = now == effective_date
+
+        elif self.id == NotificationClass.INFORM_ON_EDATE_APPLY_DEF:
+            need_inform = now == effective_date
+            book_automatic = now == effective_date
+
+        elif self.id == NotificationClass.INFORM_ON_EDATE_DONT_REACT:
+            need_inform = now == effective_date
+
+        elif self.id == NotificationClass.INFORM_ON_NDATE_AND_EDATE_WITH_REACT_ON_EDATE:
+            need_inform = now == notification_date or now == effective_date
+            need_react = now == effective_date
+
+        elif self.id == NotificationClass.INFORM_ON_NDATE_AND_EDATE_WITH_REACT_ON_NDATE:
+            need_inform = now == notification_date or now == effective_date
+            need_react = now == notification_date
+
+        elif self.id == NotificationClass.INFORM_ON_NDATE_AND_EDATE_APPLY_DEF_ON_EDATE:
+            need_inform = now == notification_date or now == effective_date
+            book_automatic = now == effective_date
+
+        elif self.id == NotificationClass.INFORM_ON_NDATE_AND_EDATE_APPLY_DEF_ON_NDATE:
+            need_inform = now == notification_date or now == effective_date
+            book_automatic = now == notification_date
+
+        elif self.id == NotificationClass.INFORM_ON_NDATE_AND_EDATE_DONT_REACT:
+            need_inform = now == notification_date or now == effective_date
+
+        return need_inform, need_react, book_automatic
+
 
 class PeriodicityGroup(AbstractClassModel):
     DAILY = 1
@@ -179,6 +240,9 @@ class TransactionTypeGroup(NamedModel, FakeDeletableModel):
         verbose_name=ugettext_lazy('master user')
     )
 
+    object_permissions = GenericRelation(GenericObjectPermission)
+    tags = GenericRelation(TagLink)
+
     class Meta(NamedModel.Meta, FakeDeletableModel.Meta):
         verbose_name = ugettext_lazy('transaction type group')
         verbose_name_plural = ugettext_lazy('transaction type groups')
@@ -188,22 +252,22 @@ class TransactionTypeGroup(NamedModel, FakeDeletableModel):
         ]
 
 
-class TransactionTypeGroupUserObjectPermission(AbstractUserObjectPermission):
-    content_object = models.ForeignKey(TransactionTypeGroup, related_name='user_object_permissions',
-                                       verbose_name=ugettext_lazy('content object'))
-
-    class Meta(AbstractUserObjectPermission.Meta):
-        verbose_name = ugettext_lazy('transaction type groups - user permission')
-        verbose_name_plural = ugettext_lazy('transaction type groups - user permissions')
-
-
-class TransactionTypeGroupGroupObjectPermission(AbstractGroupObjectPermission):
-    content_object = models.ForeignKey(TransactionTypeGroup, related_name='group_object_permissions',
-                                       verbose_name=ugettext_lazy('content object'))
-
-    class Meta(AbstractGroupObjectPermission.Meta):
-        verbose_name = ugettext_lazy('transaction type groups - group permission')
-        verbose_name_plural = ugettext_lazy('transaction type groups - group permissions')
+# class TransactionTypeGroupUserObjectPermission(AbstractUserObjectPermission):
+#     content_object = models.ForeignKey(TransactionTypeGroup, related_name='user_object_permissions',
+#                                        verbose_name=ugettext_lazy('content object'))
+#
+#     class Meta(AbstractUserObjectPermission.Meta):
+#         verbose_name = ugettext_lazy('transaction type groups - user permission')
+#         verbose_name_plural = ugettext_lazy('transaction type groups - user permissions')
+#
+#
+# class TransactionTypeGroupGroupObjectPermission(AbstractGroupObjectPermission):
+#     content_object = models.ForeignKey(TransactionTypeGroup, related_name='group_object_permissions',
+#                                        verbose_name=ugettext_lazy('content object'))
+#
+#     class Meta(AbstractGroupObjectPermission.Meta):
+#         verbose_name = ugettext_lazy('transaction type groups - group permission')
+#         verbose_name_plural = ugettext_lazy('transaction type groups - group permissions')
 
 
 class TransactionType(NamedModel, FakeDeletableModel):
@@ -223,6 +287,9 @@ class TransactionType(NamedModel, FakeDeletableModel):
     #     blank=True,
     #     verbose_name=ugettext_lazy('portfolios')
     # )
+
+    object_permissions = GenericRelation(GenericObjectPermission)
+    tags = GenericRelation(TagLink)
 
     class Meta(NamedModel.Meta, FakeDeletableModel.Meta):
         verbose_name = ugettext_lazy('transaction type')
@@ -245,22 +312,22 @@ class TransactionType(NamedModel, FakeDeletableModel):
         self.book_transaction_layout_json = json.dumps(data, cls=DjangoJSONEncoder, sort_keys=True) if data else None
 
 
-class TransactionTypeUserObjectPermission(AbstractUserObjectPermission):
-    content_object = models.ForeignKey(TransactionType, related_name='user_object_permissions',
-                                       verbose_name=ugettext_lazy('content object'))
-
-    class Meta(AbstractUserObjectPermission.Meta):
-        verbose_name = ugettext_lazy('transaction types - user permission')
-        verbose_name_plural = ugettext_lazy('transaction types - user permissions')
-
-
-class TransactionTypeGroupObjectPermission(AbstractGroupObjectPermission):
-    content_object = models.ForeignKey(TransactionType, related_name='group_object_permissions',
-                                       verbose_name=ugettext_lazy('content object'))
-
-    class Meta(AbstractGroupObjectPermission.Meta):
-        verbose_name = ugettext_lazy('transaction types - group permission')
-        verbose_name_plural = ugettext_lazy('transaction types - group permissions')
+# class TransactionTypeUserObjectPermission(AbstractUserObjectPermission):
+#     content_object = models.ForeignKey(TransactionType, related_name='user_object_permissions',
+#                                        verbose_name=ugettext_lazy('content object'))
+#
+#     class Meta(AbstractUserObjectPermission.Meta):
+#         verbose_name = ugettext_lazy('transaction types - user permission')
+#         verbose_name_plural = ugettext_lazy('transaction types - user permissions')
+#
+#
+# class TransactionTypeGroupObjectPermission(AbstractGroupObjectPermission):
+#     content_object = models.ForeignKey(TransactionType, related_name='group_object_permissions',
+#                                        verbose_name=ugettext_lazy('content object'))
+#
+#     class Meta(AbstractGroupObjectPermission.Meta):
+#         verbose_name = ugettext_lazy('transaction types - group permission')
+#         verbose_name_plural = ugettext_lazy('transaction types - group permissions')
 
 
 # name - expr
@@ -561,8 +628,18 @@ class EventToHandle(NamedModel):
 
 @python_2_unicode_compatible
 class ComplexTransaction(models.Model):
+    # PRODUCTION = 1
+    # PENDING = 2
+    # STATUS_CHOICES = (
+    #     (PRODUCTION, ugettext_lazy('Production')),
+    #     (PENDING, ugettext_lazy('Pending')),
+    # )
+
     transaction_type = models.ForeignKey(TransactionType, on_delete=models.PROTECT)
     code = models.IntegerField(default=0)
+
+    # status = models.PositiveSmallIntegerField(default=PRODUCTION, choices=STATUS_CHOICES, db_index=True)
+    # generated_event = models.ForeignKey('instruments.GeneratedEvent', null=True, blank=True, on_delete=models.SET_NULL)
 
     class Meta:
         verbose_name = ugettext_lazy('complex transaction')
@@ -579,6 +656,47 @@ class ComplexTransaction(models.Model):
         if self.code is None or self.code == 0:
             self.code = FakeSequence.next_value(self.transaction_type.master_user, 'complex_transaction')
         super(ComplexTransaction, self).save(*args, **kwargs)
+
+
+class ComplexTransactionInput(models.Model):
+    complex_transaction = models.ForeignKey(ComplexTransaction)
+    transaction_type_input = models.ForeignKey(TransactionTypeInput)
+
+    value_string = models.CharField(max_length=255, default='', blank=True,
+                                    verbose_name=ugettext_lazy('value (String)'))
+    value_float = models.FloatField(default=0.0, verbose_name=ugettext_lazy('value (Float)'))
+    value_date = models.DateField(default=date.min, verbose_name=ugettext_lazy('value (Date)'))
+
+    account = models.ForeignKey('accounts.Account', null=True, blank=True, on_delete=models.PROTECT, related_name='+')
+    instrument_type = models.ForeignKey('instruments.InstrumentType', null=True, blank=True, on_delete=models.SET_NULL,
+                                        related_name='+')
+    instrument = models.ForeignKey('instruments.Instrument', null=True, blank=True, on_delete=models.SET_NULL,
+                                   related_name='+')
+    currency = models.ForeignKey('currencies.Currency', null=True, blank=True, on_delete=models.SET_NULL,
+                                 related_name='+')
+    counterparty = models.ForeignKey('counterparties.Counterparty', null=True, blank=True, on_delete=models.SET_NULL,
+                                     related_name='+')
+    responsible = models.ForeignKey('counterparties.Responsible', null=True, blank=True, on_delete=models.SET_NULL,
+                                    related_name='+')
+    portfolio = models.ForeignKey('portfolios.Portfolio', null=True, blank=True, on_delete=models.SET_NULL,
+                                  related_name='+')
+    strategy1 = models.ForeignKey('strategies.Strategy1', null=True, blank=True, on_delete=models.SET_NULL,
+                                  related_name='+')
+    strategy2 = models.ForeignKey('strategies.Strategy2', null=True, blank=True, on_delete=models.SET_NULL,
+                                  related_name='+')
+    strategy3 = models.ForeignKey('strategies.Strategy3', null=True, blank=True, on_delete=models.SET_NULL,
+                                  related_name='+')
+    daily_pricing_model = models.ForeignKey('instruments.DailyPricingModel', null=True, blank=True,
+                                            on_delete=models.SET_NULL, related_name='+')
+    payment_size_detail = models.ForeignKey('instruments.PaymentSizeDetail', null=True, blank=True,
+                                            on_delete=models.SET_NULL, related_name='+')
+    price_download_scheme = models.ForeignKey('integrations.PriceDownloadScheme', null=True, blank=True,
+                                              on_delete=models.SET_NULL, related_name='+')
+
+    class Meta:
+        abstract = True
+        verbose_name = ugettext_lazy('complex transaction input')
+        verbose_name_plural = ugettext_lazy('complex transaction inputs')
 
 
 @python_2_unicode_compatible
@@ -668,6 +786,8 @@ class Transaction(models.Model):
     counterparty = models.ForeignKey(Counterparty, on_delete=models.PROTECT, null=True, blank=True,
                                      verbose_name=ugettext_lazy("counterparty"))
 
+    attributes = GenericRelation(GenericAttribute)
+
     class Meta:
         verbose_name = ugettext_lazy('transaction')
         verbose_name_plural = ugettext_lazy('transactions')
@@ -686,67 +806,69 @@ class Transaction(models.Model):
         super(Transaction, self).save(*args, **kwargs)
 
 
-class TransactionAttributeType(AbstractAttributeType):
-    class Meta(AbstractAttributeType.Meta):
-        verbose_name = ugettext_lazy('transaction attribute type')
-        verbose_name_plural = ugettext_lazy('transaction attribute types')
-        permissions = [
-            ('view_transactionattributetype', 'Can view transaction attribute type'),
-            ('manage_transactionattributetype', 'Can manage transaction attribute type'),
-        ]
+# class TransactionAttributeType(AbstractAttributeType):
+#     object_permissions = GenericRelation(GenericObjectPermission)
+#
+#     class Meta(AbstractAttributeType.Meta):
+#         verbose_name = ugettext_lazy('transaction attribute type')
+#         verbose_name_plural = ugettext_lazy('transaction attribute types')
+#         permissions = [
+#             ('view_transactionattributetype', 'Can view transaction attribute type'),
+#             ('manage_transactionattributetype', 'Can manage transaction attribute type'),
+#         ]
 
 
-class TransactionAttributeTypeUserObjectPermission(AbstractUserObjectPermission):
-    content_object = models.ForeignKey(TransactionAttributeType, related_name='user_object_permissions',
-                                       verbose_name=ugettext_lazy("content object"))
-
-    class Meta(AbstractUserObjectPermission.Meta):
-        verbose_name = ugettext_lazy('transaction attribute types - user permission')
-        verbose_name_plural = ugettext_lazy('transaction attribute types - user permissions')
-
-
-class TransactionAttributeTypeGroupObjectPermission(AbstractGroupObjectPermission):
-    content_object = models.ForeignKey(TransactionAttributeType, related_name='group_object_permissions',
-                                       verbose_name=ugettext_lazy("content object"))
-
-    class Meta(AbstractGroupObjectPermission.Meta):
-        verbose_name = ugettext_lazy('transaction attribute types - group permission')
-        verbose_name_plural = ugettext_lazy('transaction attribute types - group permissions')
-
-
-class TransactionClassifier(AbstractClassifier):
-    attribute_type = models.ForeignKey(TransactionAttributeType, related_name='classifiers',
-                                       verbose_name=ugettext_lazy('attribute type'))
-    parent = TreeForeignKey('self', null=True, blank=True, related_name='children', db_index=True,
-                            verbose_name=ugettext_lazy('parent'))
-
-    class Meta(AbstractClassifier.Meta):
-        verbose_name = ugettext_lazy('transaction classifier')
-        verbose_name_plural = ugettext_lazy('transaction classifiers')
+# class TransactionAttributeTypeUserObjectPermission(AbstractUserObjectPermission):
+#     content_object = models.ForeignKey(TransactionAttributeType, related_name='user_object_permissions',
+#                                        verbose_name=ugettext_lazy("content object"))
+#
+#     class Meta(AbstractUserObjectPermission.Meta):
+#         verbose_name = ugettext_lazy('transaction attribute types - user permission')
+#         verbose_name_plural = ugettext_lazy('transaction attribute types - user permissions')
+#
+#
+# class TransactionAttributeTypeGroupObjectPermission(AbstractGroupObjectPermission):
+#     content_object = models.ForeignKey(TransactionAttributeType, related_name='group_object_permissions',
+#                                        verbose_name=ugettext_lazy("content object"))
+#
+#     class Meta(AbstractGroupObjectPermission.Meta):
+#         verbose_name = ugettext_lazy('transaction attribute types - group permission')
+#         verbose_name_plural = ugettext_lazy('transaction attribute types - group permissions')
 
 
-class TransactionAttributeTypeOption(AbstractAttributeTypeOption):
-    member = models.ForeignKey(Member, related_name='transaction_attribute_type_options',
-                               verbose_name=ugettext_lazy("member"))
-    attribute_type = models.ForeignKey(TransactionAttributeType, related_name='options',
-                                       verbose_name=ugettext_lazy("attribute type"))
-
-    class Meta(AbstractAttributeTypeOption.Meta):
-        verbose_name = ugettext_lazy('transaction attribute types - option')
-        verbose_name_plural = ugettext_lazy('transaction attribute types - options')
-
-
-class TransactionAttribute(AbstractAttribute):
-    attribute_type = models.ForeignKey(TransactionAttributeType, related_name='attributes',
-                                       verbose_name=ugettext_lazy("attribute type"))
-    content_object = models.ForeignKey(Transaction, related_name='attributes',
-                                       verbose_name=ugettext_lazy("content object"))
-    classifier = models.ForeignKey(TransactionClassifier, on_delete=models.SET_NULL, null=True, blank=True,
-                                   verbose_name=ugettext_lazy('classifier'))
-
-    class Meta(AbstractAttribute.Meta):
-        verbose_name = ugettext_lazy('transaction attribute')
-        verbose_name_plural = ugettext_lazy('transaction attributes')
+# class TransactionClassifier(AbstractClassifier):
+#     attribute_type = models.ForeignKey(TransactionAttributeType, related_name='classifiers',
+#                                        verbose_name=ugettext_lazy('attribute type'))
+#     parent = TreeForeignKey('self', null=True, blank=True, related_name='children', db_index=True,
+#                             verbose_name=ugettext_lazy('parent'))
+#
+#     class Meta(AbstractClassifier.Meta):
+#         verbose_name = ugettext_lazy('transaction classifier')
+#         verbose_name_plural = ugettext_lazy('transaction classifiers')
+#
+#
+# class TransactionAttributeTypeOption(AbstractAttributeTypeOption):
+#     member = models.ForeignKey(Member, related_name='transaction_attribute_type_options',
+#                                verbose_name=ugettext_lazy("member"))
+#     attribute_type = models.ForeignKey(TransactionAttributeType, related_name='options',
+#                                        verbose_name=ugettext_lazy("attribute type"))
+#
+#     class Meta(AbstractAttributeTypeOption.Meta):
+#         verbose_name = ugettext_lazy('transaction attribute types - option')
+#         verbose_name_plural = ugettext_lazy('transaction attribute types - options')
+#
+#
+# class TransactionAttribute(AbstractAttribute):
+#     attribute_type = models.ForeignKey(TransactionAttributeType, related_name='attributes',
+#                                        verbose_name=ugettext_lazy("attribute type"))
+#     content_object = models.ForeignKey(Transaction, related_name='attributes',
+#                                        verbose_name=ugettext_lazy("content object"))
+#     classifier = models.ForeignKey(TransactionClassifier, on_delete=models.SET_NULL, null=True, blank=True,
+#                                    verbose_name=ugettext_lazy('classifier'))
+#
+#     class Meta(AbstractAttribute.Meta):
+#         verbose_name = ugettext_lazy('transaction attribute')
+#         verbose_name_plural = ugettext_lazy('transaction attributes')
 
 
 @python_2_unicode_compatible

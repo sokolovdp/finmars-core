@@ -3,6 +3,7 @@ from __future__ import unicode_literals
 from babel import Locale
 from babel.dates import format_timedelta
 from django.conf import settings
+from django.contrib.contenttypes.fields import GenericRelation
 from django.db import models
 from django.utils import timezone
 from django.utils.encoding import python_2_unicode_compatible
@@ -10,7 +11,8 @@ from django.utils.text import Truncator
 from django.utils.translation import get_language, ugettext_lazy
 
 from poms.common.models import TimeStampedModel, NamedModel, FakeDeletableModel
-from poms.obj_perms.models import AbstractGroupObjectPermission, AbstractUserObjectPermission
+from poms.obj_perms.models import GenericObjectPermission
+from poms.tags.models import TagLink
 from poms.users.models import MasterUser, Member
 
 
@@ -18,6 +20,9 @@ from poms.users.models import MasterUser, Member
 class ThreadGroup(FakeDeletableModel, models.Model):
     master_user = models.ForeignKey(MasterUser, related_name='chat_thread_groups')
     name = models.CharField(max_length=255, verbose_name=ugettext_lazy('name'))
+
+    object_permissions = GenericRelation(GenericObjectPermission)
+    tags = GenericRelation(TagLink)
 
     class Meta(FakeDeletableModel.Meta):
         verbose_name = ugettext_lazy('thread group')
@@ -32,22 +37,22 @@ class ThreadGroup(FakeDeletableModel, models.Model):
         return self.name
 
 
-class ThreadGroupUserObjectPermission(AbstractUserObjectPermission):
-    content_object = models.ForeignKey(ThreadGroup, related_name='user_object_permissions',
-                                       verbose_name=ugettext_lazy('content object'))
-
-    class Meta(AbstractUserObjectPermission.Meta):
-        verbose_name = ugettext_lazy('thread groups - user permission')
-        verbose_name_plural = ugettext_lazy('thread groups - user permissions')
-
-
-class ThreadGroupGroupObjectPermission(AbstractGroupObjectPermission):
-    content_object = models.ForeignKey(ThreadGroup, related_name='group_object_permissions',
-                                       verbose_name=ugettext_lazy('content object'))
-
-    class Meta(AbstractGroupObjectPermission.Meta):
-        verbose_name = ugettext_lazy('thread groups - group permission')
-        verbose_name_plural = ugettext_lazy('thread groups - group permissions')
+# class ThreadGroupUserObjectPermission(AbstractUserObjectPermission):
+#     content_object = models.ForeignKey(ThreadGroup, related_name='user_object_permissions',
+#                                        verbose_name=ugettext_lazy('content object'))
+#
+#     class Meta(AbstractUserObjectPermission.Meta):
+#         verbose_name = ugettext_lazy('thread groups - user permission')
+#         verbose_name_plural = ugettext_lazy('thread groups - user permissions')
+#
+#
+# class ThreadGroupGroupObjectPermission(AbstractGroupObjectPermission):
+#     content_object = models.ForeignKey(ThreadGroup, related_name='group_object_permissions',
+#                                        verbose_name=ugettext_lazy('content object'))
+#
+#     class Meta(AbstractGroupObjectPermission.Meta):
+#         verbose_name = ugettext_lazy('thread groups - group permission')
+#         verbose_name_plural = ugettext_lazy('thread groups - group permissions')
 
 
 @python_2_unicode_compatible
@@ -57,6 +62,9 @@ class Thread(TimeStampedModel, FakeDeletableModel):
     subject = models.CharField(max_length=255)
     is_closed = models.BooleanField(default=False, db_index=True)
     closed = models.DateTimeField(null=True, blank=True, db_index=True)
+
+    object_permissions = GenericRelation(GenericObjectPermission)
+    tags = GenericRelation(TagLink)
 
     class Meta(TimeStampedModel.Meta, FakeDeletableModel.Meta):
         verbose_name = ugettext_lazy('thread')
@@ -71,22 +79,22 @@ class Thread(TimeStampedModel, FakeDeletableModel):
         return self.subject
 
 
-class ThreadUserObjectPermission(AbstractUserObjectPermission):
-    content_object = models.ForeignKey(Thread, related_name='user_object_permissions',
-                                       verbose_name=ugettext_lazy('content object'))
-
-    class Meta(AbstractUserObjectPermission.Meta):
-        verbose_name = ugettext_lazy('threads - user permission')
-        verbose_name_plural = ugettext_lazy('threads - user permissions')
-
-
-class ThreadGroupObjectPermission(AbstractGroupObjectPermission):
-    content_object = models.ForeignKey(Thread, related_name='group_object_permissions',
-                                       verbose_name=ugettext_lazy('content object'))
-
-    class Meta(AbstractGroupObjectPermission.Meta):
-        verbose_name = ugettext_lazy('threads - group permission')
-        verbose_name_plural = ugettext_lazy('threads - group permissions')
+# class ThreadUserObjectPermission(AbstractUserObjectPermission):
+#     content_object = models.ForeignKey(Thread, related_name='user_object_permissions',
+#                                        verbose_name=ugettext_lazy('content object'))
+#
+#     class Meta(AbstractUserObjectPermission.Meta):
+#         verbose_name = ugettext_lazy('threads - user permission')
+#         verbose_name_plural = ugettext_lazy('threads - user permissions')
+#
+#
+# class ThreadGroupObjectPermission(AbstractGroupObjectPermission):
+#     content_object = models.ForeignKey(Thread, related_name='group_object_permissions',
+#                                        verbose_name=ugettext_lazy('content object'))
+#
+#     class Meta(AbstractGroupObjectPermission.Meta):
+#         verbose_name = ugettext_lazy('threads - group permission')
+#         verbose_name_plural = ugettext_lazy('threads - group permissions')
 
 
 @python_2_unicode_compatible

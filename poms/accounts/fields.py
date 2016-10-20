@@ -1,4 +1,4 @@
-from poms.accounts.models import AccountClassifier, Account, AccountAttributeType, AccountType
+from poms.accounts.models import Account, AccountType
 from poms.common.fields import PrimaryKeyRelatedFilteredField
 from poms.obj_attrs.filters import AttributeClassifierBaseField
 from poms.obj_perms.fields import PrimaryKeyRelatedFilteredWithObjectPermissionField
@@ -6,16 +6,16 @@ from poms.obj_perms.filters import ObjectPermissionBackend
 from poms.users.filters import OwnerByMasterUserFilter
 
 
-class AccountClassifierField(AttributeClassifierBaseField):
-    queryset = AccountClassifier.objects
-
-
-class AccountAttributeTypeField(PrimaryKeyRelatedFilteredField):
-    queryset = AccountAttributeType.objects
-    filter_backends = [
-        OwnerByMasterUserFilter,
-        ObjectPermissionBackend,
-    ]
+# class AccountClassifierField(AttributeClassifierBaseField):
+#     queryset = AccountClassifier.objects
+#
+#
+# class AccountAttributeTypeField(PrimaryKeyRelatedFilteredField):
+#     queryset = AccountAttributeType.objects
+#     filter_backends = [
+#         OwnerByMasterUserFilter,
+#         ObjectPermissionBackend,
+#     ]
 
 
 class AccountTypeDefault(object):

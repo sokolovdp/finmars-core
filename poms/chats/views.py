@@ -19,7 +19,8 @@ from poms.obj_perms.filters import ObjectPermissionMemberFilter, ObjectPermissio
 from poms.obj_perms.utils import get_permissions_prefetch_lookups
 from poms.obj_perms.views import AbstractWithObjectPermissionViewSet
 from poms.tags.filters import TagFilter
-from poms.tags.models import Tag
+from poms.tags.models import Tag, TagLink
+from poms.tags.utils import get_tag_prefetch
 from poms.users.filters import OwnerByMasterUserFilter
 from poms.users.models import Member
 from poms.users.permissions import SuperUserOrReadOnly, SuperUserOnly
@@ -40,10 +41,9 @@ class ThreadGroupViewSet(AbstractModelViewSet):
     queryset = ThreadGroup.objects.select_related(
         'master_user'
     ).prefetch_related(
-        'tags',
+        get_tag_prefetch(),
         *get_permissions_prefetch_lookups(
             (None, ThreadGroup),
-            ('tags', Tag)
         )
     )
     serializer_class = ThreadGroupSerializer
@@ -93,11 +93,10 @@ class ThreadViewSet(AbstractWithObjectPermissionViewSet):
                     values_list('id', flat=True))
 
         ),
-        'tags',
+        get_tag_prefetch(),
         *get_permissions_prefetch_lookups(
             (None, Thread),
             ('thread_group', ThreadGroup),
-            ('tags', Tag)
         )
     )
     serializer_class = ThreadSerializer

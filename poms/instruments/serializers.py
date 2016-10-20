@@ -8,23 +8,19 @@ from rest_framework.exceptions import ValidationError
 from rest_framework.fields import empty
 
 from poms.common.fields import ExpressionField, FloatEvalField
-from poms.common.serializers import PomsClassSerializer, AbstractClassifierSerializer, AbstractClassifierNodeSerializer, \
-    ModelWithUserCodeSerializer
+from poms.common.serializers import PomsClassSerializer, ModelWithUserCodeSerializer
 from poms.common.utils import date_now
 from poms.currencies.fields import CurrencyDefault
 from poms.currencies.serializers import CurrencyField
-from poms.instruments.fields import InstrumentClassifierField, InstrumentField, InstrumentAttributeTypeField, \
-    InstrumentTypeField, PricingPolicyField, InstrumentTypeDefault
-from poms.instruments.models import InstrumentClassifier, Instrument, PriceHistory, InstrumentClass, DailyPricingModel, \
-    AccrualCalculationModel, PaymentSizeDetail, Periodicity, CostMethod, InstrumentType, InstrumentAttributeType, \
-    InstrumentAttribute, ManualPricingFormula, AccrualCalculationSchedule, InstrumentFactorSchedule, EventSchedule, \
+from poms.instruments.fields import InstrumentField, InstrumentTypeField, PricingPolicyField, InstrumentTypeDefault
+from poms.instruments.models import Instrument, PriceHistory, InstrumentClass, DailyPricingModel, \
+    AccrualCalculationModel, PaymentSizeDetail, Periodicity, CostMethod, InstrumentType, \
+    ManualPricingFormula, AccrualCalculationSchedule, InstrumentFactorSchedule, EventSchedule, \
     PricingPolicy, EventScheduleAction, EventScheduleConfig
 from poms.integrations.fields import PriceDownloadSchemeField
-from poms.obj_attrs.serializers import AbstractAttributeSerializer, AbstractAttributeTypeSerializer, \
-    ModelWithAttributesSerializer
+from poms.obj_attrs.serializers import ModelWithAttributesSerializer
 from poms.obj_perms.serializers import ModelWithObjectPermissionSerializer
-from poms.tags.fields import TagField
-from poms.tags.serializers import TagViewSerializer
+from poms.tags.serializers import ModelWithTagSerializer
 from poms.transactions.fields import TransactionTypeField
 from poms.users.fields import MasterUserField
 
@@ -74,17 +70,18 @@ class PricingPolicyViewSerializer(ModelWithUserCodeSerializer):
         fields = ['url', 'id', 'user_code', 'name', 'short_name', 'notes', 'expr']
 
 
-class InstrumentClassifierSerializer(AbstractClassifierSerializer):
-    class Meta(AbstractClassifierSerializer.Meta):
-        model = InstrumentClassifier
+# class InstrumentClassifierSerializer(AbstractClassifierSerializer):
+#     class Meta(AbstractClassifierSerializer.Meta):
+#         model = InstrumentClassifier
+#
+#
+# class InstrumentClassifierNodeSerializer(AbstractClassifierNodeSerializer):
+#     class Meta(AbstractClassifierNodeSerializer.Meta):
+#         model = InstrumentClassifier
 
 
-class InstrumentClassifierNodeSerializer(AbstractClassifierNodeSerializer):
-    class Meta(AbstractClassifierNodeSerializer.Meta):
-        model = InstrumentClassifier
-
-
-class InstrumentTypeSerializer(ModelWithObjectPermissionSerializer, ModelWithUserCodeSerializer):
+class InstrumentTypeSerializer(ModelWithObjectPermissionSerializer, ModelWithUserCodeSerializer,
+                               ModelWithTagSerializer):
     master_user = MasterUserField()
     instrument_class_object = InstrumentClassSerializer(source='instrument_class', read_only=True)
     one_off_event = TransactionTypeField(allow_null=True, required=False)
@@ -97,8 +94,9 @@ class InstrumentTypeSerializer(ModelWithObjectPermissionSerializer, ModelWithUse
     factor_up_object = serializers.PrimaryKeyRelatedField(source='factor_up', read_only=True)
     factor_down = TransactionTypeField(allow_null=True, required=False)
     factor_down_object = serializers.PrimaryKeyRelatedField(source='factor_down', read_only=True)
-    tags = TagField(many=True, required=False, allow_null=True)
-    tags_object = TagViewSerializer(source='tags', many=True, read_only=True)
+
+    # tags = TagField(many=True, required=False, allow_null=True)
+    # tags_object = TagViewSerializer(source='tags', many=True, read_only=True)
 
     class Meta:
         model = InstrumentType
@@ -108,7 +106,7 @@ class InstrumentTypeSerializer(ModelWithObjectPermissionSerializer, ModelWithUse
             'notes', 'is_default', 'is_deleted', 'one_off_event', 'one_off_event_object',
             'regular_event', 'regular_event_object', 'factor_same', 'factor_same_object',
             'factor_up', 'factor_up_object', 'factor_down', 'factor_down_object',
-            'tags', 'tags_object',
+            # 'tags', 'tags_object',
         ]
 
     def __init__(self, *args, **kwargs):
@@ -149,30 +147,30 @@ class InstrumentTypeViewSerializer(ModelWithObjectPermissionSerializer, ModelWit
         ]
 
 
-class InstrumentAttributeTypeSerializer(AbstractAttributeTypeSerializer):
-    classifiers = InstrumentClassifierSerializer(required=False, allow_null=True, many=True)
-
-    class Meta(AbstractAttributeTypeSerializer.Meta):
-        model = InstrumentAttributeType
-        fields = AbstractAttributeTypeSerializer.Meta.fields + ['classifiers']
-
-
-class InstrumentAttributeTypeViewSerializer(AbstractAttributeTypeSerializer):
-    class Meta(AbstractAttributeTypeSerializer.Meta):
-        model = InstrumentAttributeType
-
-
-class InstrumentAttributeSerializer(AbstractAttributeSerializer):
-    attribute_type = InstrumentAttributeTypeField()
-    classifier = InstrumentClassifierField(required=False, allow_null=True)
-
-    class Meta(AbstractAttributeSerializer.Meta):
-        model = InstrumentAttribute
-        fields = AbstractAttributeSerializer.Meta.fields + ['attribute_type', 'classifier']
+# class InstrumentAttributeTypeSerializer(AbstractAttributeTypeSerializer):
+#     classifiers = InstrumentClassifierSerializer(required=False, allow_null=True, many=True)
+#
+#     class Meta(AbstractAttributeTypeSerializer.Meta):
+#         model = InstrumentAttributeType
+#         fields = AbstractAttributeTypeSerializer.Meta.fields + ['classifiers']
+#
+#
+# class InstrumentAttributeTypeViewSerializer(AbstractAttributeTypeSerializer):
+#     class Meta(AbstractAttributeTypeSerializer.Meta):
+#         model = InstrumentAttributeType
+#
+#
+# class InstrumentAttributeSerializer(AbstractAttributeSerializer):
+#     attribute_type = InstrumentAttributeTypeField()
+#     classifier = InstrumentClassifierField(required=False, allow_null=True)
+#
+#     class Meta(AbstractAttributeSerializer.Meta):
+#         model = InstrumentAttribute
+#         fields = AbstractAttributeSerializer.Meta.fields + ['attribute_type', 'classifier']
 
 
 class InstrumentSerializer(ModelWithAttributesSerializer, ModelWithObjectPermissionSerializer,
-                           ModelWithUserCodeSerializer):
+                           ModelWithUserCodeSerializer, ModelWithTagSerializer):
     master_user = MasterUserField()
     instrument_type = InstrumentTypeField(default=InstrumentTypeDefault())
     instrument_type_object = InstrumentTypeViewSerializer(source='instrument_type', read_only=True)
@@ -192,9 +190,10 @@ class InstrumentSerializer(ModelWithAttributesSerializer, ModelWithObjectPermiss
     factor_schedules = serializers.PrimaryKeyRelatedField(many=True, required=False, allow_null=True, read_only=True)
     event_schedules = serializers.PrimaryKeyRelatedField(many=True, required=False, allow_null=True, read_only=True)
 
-    attributes = InstrumentAttributeSerializer(many=True, required=False, allow_null=True)
-    tags = TagField(many=True, required=False, allow_null=True)
-    tags_object = TagViewSerializer(source='tags', many=True, read_only=True)
+    # attributes = InstrumentAttributeSerializer(many=True, required=False, allow_null=True)
+
+    # tags = TagField(many=True, required=False, allow_null=True)
+    # tags_object = TagViewSerializer(source='tags', many=True, read_only=True)
 
     class Meta:
         model = Instrument
@@ -209,7 +208,8 @@ class InstrumentSerializer(ModelWithAttributesSerializer, ModelWithObjectPermiss
             'price_download_scheme', 'price_download_scheme_object',
             'maturity_date',
             'manual_pricing_formulas', 'accrual_calculation_schedules', 'factor_schedules', 'event_schedules',
-            'attributes', 'tags', 'tags_object'
+            # 'attributes',
+            # 'tags', 'tags_object'
         ]
 
     def __init__(self, *args, **kwargs):
@@ -368,7 +368,7 @@ class InstrumentViewSerializer(ModelWithObjectPermissionSerializer):
     # pricing_currency_object = serializers.PrimaryKeyRelatedField(source='pricing_currency', read_only=True)
     # accrued_currency_object = serializers.PrimaryKeyRelatedField(source='accrued_currency', read_only=True)
 
-    class Meta:
+    class Meta(ModelWithObjectPermissionSerializer.Meta):
         model = Instrument
         fields = [
             'url', 'id', 'instrument_type', 'instrument_type_object', 'user_code', 'name', 'short_name',

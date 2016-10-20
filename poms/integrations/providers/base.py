@@ -9,10 +9,10 @@ from django.utils.translation import ugettext_lazy
 
 from poms.common import formula
 from poms.currencies.models import CurrencyHistory
-from poms.instruments.models import Instrument, InstrumentAttribute, PriceHistory
+from poms.instruments.models import Instrument, PriceHistory
 from poms.integrations.models import InstrumentDownloadScheme, ProviderClass, CurrencyMapping, InstrumentTypeMapping, \
     InstrumentAttributeValueMapping, AccrualCalculationModelMapping, PeriodicityMapping
-from poms.obj_attrs.models import AbstractAttributeType
+from poms.obj_attrs.models import GenericAttribute, GenericAttributeType
 
 _l = getLogger('poms.integrations')
 
@@ -217,7 +217,7 @@ class AbstractProvider(object):
         for attr in instrument_download_scheme.attributes.select_related('attribute_type').all():
             tattr = attr.attribute_type
 
-            iattr = InstrumentAttribute(content_object=instrument, attribute_type=tattr)
+            iattr = GenericAttribute(content_object=instrument, attribute_type=tattr)
             iattrs.append(iattr)
 
             err_name = 'attribute_type_%s' % attr.attribute_type.id
@@ -237,12 +237,12 @@ class AbstractProvider(object):
                 if attr_mapped_values is not None:
                     iattr.value_string, iattr.value_float, iattr.value_date, iattr.classifier = attr_mapped_values
                 else:
-                    if tattr.value_type == AbstractAttributeType.STRING:
+                    if tattr.value_type == GenericAttributeType.STRING:
                         if self.is_empty_value(v):
                             pass
                         else:
                             iattr.value_string = str(v)
-                    elif tattr.value_type == AbstractAttributeType.NUMBER:
+                    elif tattr.value_type == GenericAttributeType.NUMBER:
                         if self.is_empty_value(v):
                             pass
                         else:
@@ -250,7 +250,7 @@ class AbstractProvider(object):
                                 iattr.value_float = float(v)
                             except (ValueError, TypeError):
                                 errors[err_name] = [ugettext_lazy('A valid number is required.')]
-                    elif tattr.value_type == AbstractAttributeType.DATE:
+                    elif tattr.value_type == GenericAttributeType.DATE:
                         if self.is_empty_value(v):
                             pass
                         else:
@@ -260,7 +260,7 @@ class AbstractProvider(object):
                                 iattr.value_date = v
                             else:
                                 errors[err_name] = [ugettext_lazy('A valid date is required.')]
-                    elif tattr.value_type == AbstractAttributeType.CLASSIFIER:
+                    elif tattr.value_type == GenericAttributeType.CLASSIFIER:
                         if self.is_empty_value(v):
                             pass
                         else:

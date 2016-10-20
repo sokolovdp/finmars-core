@@ -34,15 +34,15 @@ class TagContentTypeField(SlugRelatedFilteredField):
         return '%s.%s' % (obj.app_label, obj.model)
 
 
-class TagField(PrimaryKeyRelatedFilteredWithObjectPermissionField):
-    queryset = Tag.objects
-    filter_backends = [
-        OwnerByMasterUserFilter,
-    ]
-
-    def get_queryset(self):
-        queryset = super(TagField, self).get_queryset()
-        if not issubclass(self.root.Meta.model, Tag):
-            ctype = ContentType.objects.get_for_model(self.root.Meta.model)
-            queryset = queryset.filter(content_types__in=[ctype])
-        return queryset
+# class TagField(PrimaryKeyRelatedFilteredWithObjectPermissionField):
+#     queryset = Tag.objects
+#     filter_backends = [
+#         OwnerByMasterUserFilter,
+#     ]
+#
+#     def get_queryset(self):
+#         queryset = super(TagField, self).get_queryset()
+#         if not issubclass(self.root.Meta.model, Tag):
+#             ctype = ContentType.objects.get_for_model(self.root.Meta.model)
+#             queryset = queryset.filter(content_types__in=[ctype])
+#         return queryset

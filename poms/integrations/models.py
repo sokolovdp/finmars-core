@@ -15,9 +15,8 @@ from django.utils.encoding import python_2_unicode_compatible
 from django.utils.translation import ugettext, ugettext_lazy
 
 from poms.common.models import TimeStampedModel, AbstractClassModel
-from poms.instruments.models import Instrument, InstrumentAttribute
+from poms.instruments.models import Instrument
 from poms.integrations.storage import import_config_storage
-from poms.obj_attrs.models import AbstractAttributeType
 
 _l = getLogger('poms.integrations')
 
@@ -207,7 +206,7 @@ class InstrumentDownloadSchemeInput(models.Model):
 @python_2_unicode_compatible
 class InstrumentDownloadSchemeAttribute(models.Model):
     scheme = models.ForeignKey(InstrumentDownloadScheme, related_name='attributes')
-    attribute_type = models.ForeignKey('instruments.InstrumentAttributeType', null=True, blank=True)
+    attribute_type = models.ForeignKey('obj_attrs.GenericAttributeType', null=True, blank=True)
     value = models.CharField(max_length=255, blank=True, default='')
 
     class Meta:
@@ -326,13 +325,13 @@ class InstrumentTypeMapping(AbstractMapping):
 
 
 class InstrumentAttributeValueMapping(AbstractMapping):
-    attribute_type = models.ForeignKey('instruments.InstrumentAttributeType', on_delete=models.PROTECT,
+    attribute_type = models.ForeignKey('obj_attrs.GenericAttributeType', on_delete=models.PROTECT,
                                        verbose_name=ugettext_lazy('attribute type'))
     value_string = models.CharField(max_length=255, default='', blank=True,
                                     verbose_name=ugettext_lazy('value (String)'))
     value_float = models.FloatField(default=0.0, verbose_name=ugettext_lazy('value (Float)'))
     value_date = models.DateField(default=date.min, verbose_name=ugettext_lazy('value (Date)'))
-    classifier = models.ForeignKey('instruments.InstrumentClassifier', on_delete=models.SET_NULL, null=True, blank=True,
+    classifier = models.ForeignKey('obj_attrs.GenericClassifier', on_delete=models.SET_NULL, null=True, blank=True,
                                    verbose_name=ugettext_lazy('classifier'))
 
     class Meta(AbstractMapping.Meta):
@@ -492,7 +491,7 @@ def validate_crontab(value):
     try:
         # to_crontab(value)
         croniter(value, timezone.now())
-    except (ValueError, KeyError):
+    except (ValueError, KeyError, TypeError):
         raise ValidationError(ugettext_lazy('A valid cron string is required.'))
 
 
