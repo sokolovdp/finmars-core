@@ -86,6 +86,9 @@ class BaseReportItemSerializer(serializers.Serializer):
 
 
 class BaseReportSerializer(serializers.Serializer):
+    task_id = serializers.CharField(allow_null=True, allow_blank=True)
+    task_status = serializers.ReadOnlyField()
+
     master_user = MasterUserField()
 
     begin_date = serializers.DateField(required=False, allow_null=True)

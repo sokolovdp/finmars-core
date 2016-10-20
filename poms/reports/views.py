@@ -1,6 +1,8 @@
 from __future__ import unicode_literals
 
+from celery.result import AsyncResult
 from rest_framework import status
+from rest_framework.exceptions import PermissionDenied
 from rest_framework.response import Response
 
 from poms.common.views import AbstractViewSet
@@ -11,6 +13,7 @@ from poms.reports.backends.simple_multipliers import SimpleMultipliersReport2Bui
 from poms.reports.backends.ytm import YTMReport2Builder
 from poms.reports.serializers import BalanceReportSerializer, PLReportSerializer, \
     CostReportSerializer, YTMReportSerializer, SimpleMultipliersReport2Serializer
+from poms.reports.tasks import balance_report
 
 
 class BaseReportViewSet(AbstractViewSet):
@@ -30,17 +33,30 @@ class BaseReportViewSet(AbstractViewSet):
 class BalanceReport2ViewSet(BaseReportViewSet):
     serializer_class = BalanceReportSerializer
     report_builder_class = BalanceReport2Builder
+    async_task = balance_report
 
     def create(self, request, *args, **kwargs):
-        assert self.report_builder_class is not None
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         instance = serializer.save()
-        builder = self.report_builder_class(instance=instance)
-        instance = builder.build()
-        serializer = self.get_serializer(instance=instance, many=False)
-        return Response(serializer.data, status=status.HTTP_201_CREATED)
 
+        task_id = instance.task_id
+        if task_id:
+            res = AsyncResult(task_id)
+            if res.ready():
+                instance = res.result
+            if instance.master_user.id != self.request.user.master_user.id:
+                raise PermissionDenied()
+            instance.task_id = task_id
+            instance.task_status = res.status
+            serializer = self.get_serializer(instance=instance, many=False)
+            return Response(serializer.data, status=status.HTTP_200_OK)
+        else:
+            res = self.async_task.apply_async(kwargs={'instance': instance})
+            instance.task_id = res.id
+            instance.task_status = res.status
+            serializer = self.get_serializer(instance=instance, many=False)
+            return Response(serializer.data, status=status.HTTP_200_OK)
 
 
 class PLReport2ViewSet(BaseReportViewSet):

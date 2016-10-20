@@ -168,33 +168,35 @@ class BaseReport(object):
                  portfolios=None, accounts=None, strategies1=None,
                  strategies2=None, strategies3=None,
                  use_portfolio=False, use_account=False, use_strategy=False,
-                 value_currency=None,
-                 items=None, ):
+                 value_currency=None, custom_fields=None,
+                 items=None,
+                 task_id=None, task_status=None):
         self.master_user = master_user
         self.cost_method = cost_method
         self.begin_date = begin_date
         self.end_date = end_date
 
-        self.portfolios = portfolios
-        self.accounts = accounts
-        self.strategies1 = strategies1
-        self.strategies2 = strategies2
-        self.strategies3 = strategies3
+        self.portfolios = portfolios or []
+        self.accounts = accounts or []
+        self.strategies1 = strategies1 or []
+        self.strategies2 = strategies2 or []
+        self.strategies3 = strategies3 or []
 
         self.use_portfolio = use_portfolio
         self.use_account = use_account
         self.use_strategy = use_strategy
 
         self.value_currency = value_currency
+        self.custom_fields = custom_fields or []
 
         self.items = items or []
         self.transactions = []
 
-        # self.transaction_currencies = transaction_currencies or []
-        # self.instruments = instruments or []
+        self.task_id = task_id
+        self.task_status = task_status
 
     def __str__(self):
-        return "%s for %s (%s, %s)" % (self.__class__.__name__, self.master_user, self.begin_date, self.end_date)
+        return "%s for %s (%s-%s)" % (self.__class__.__name__, self.master_user, self.begin_date, self.end_date)
 
 
 # ----------------------------------------------------------------------------------------------------------------------

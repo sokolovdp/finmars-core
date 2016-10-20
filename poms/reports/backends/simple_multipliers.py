@@ -4,7 +4,7 @@ from __future__ import unicode_literals, division
 
 import logging
 
-from poms.reports.backends.base import BaseReportBuilder, BaseReport2Builder
+from poms.reports.backends.base import BaseReport2Builder
 
 _l = logging.getLogger('poms.reports')
 
