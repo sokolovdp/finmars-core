@@ -9,6 +9,8 @@ from rest_framework.exceptions import MethodNotAllowed
 from rest_framework.filters import FilterSet
 from rest_framework.response import Response
 
+from poms.accounts.models import Account
+from poms.accounts.models import AccountType
 from poms.common.filters import CharFilter, ModelExtWithPermissionMultipleChoiceFilter, NoOpFilter, \
     ModelExtMultipleChoiceFilter
 from poms.common.views import AbstractClassModelViewSet, AbstractModelViewSet
@@ -17,11 +19,12 @@ from poms.instruments.filters import OwnerByInstrumentFilter, PriceHistoryObject
 from poms.instruments.models import Instrument, PriceHistory, InstrumentClass, DailyPricingModel, \
     AccrualCalculationModel, PaymentSizeDetail, Periodicity, CostMethod, InstrumentType, PricingPolicy, \
     EventScheduleConfig, ManualPricingFormula, \
-    AccrualCalculationSchedule, EventSchedule, EventScheduleAction
+    AccrualCalculationSchedule, EventSchedule, EventScheduleAction, GeneratedEvent
 from poms.instruments.serializers import InstrumentSerializer, PriceHistorySerializer, \
     InstrumentClassSerializer, DailyPricingModelSerializer, AccrualCalculationModelSerializer, \
     PaymentSizeDetailSerializer, PeriodicitySerializer, CostMethodSerializer, InstrumentTypeSerializer, \
-    PricingPolicySerializer, EventScheduleConfigSerializer, InstrumentCalculatePricesAccruedPriceSerializer
+    PricingPolicySerializer, EventScheduleConfigSerializer, InstrumentCalculatePricesAccruedPriceSerializer, \
+    GeneratedEventSerializer
 from poms.instruments.tasks import calculate_prices_accrued_price
 from poms.integrations.models import PriceDownloadScheme
 from poms.obj_attrs.utils import get_attributes_prefetch
@@ -31,6 +34,9 @@ from poms.obj_perms.filters import ObjectPermissionMemberFilter, ObjectPermissio
     ObjectPermissionPermissionFilter
 from poms.obj_perms.utils import get_permissions_prefetch_lookups
 from poms.obj_perms.views import AbstractWithObjectPermissionViewSet
+from poms.portfolios.models import Portfolio
+from poms.strategies.models import Strategy1, Strategy1Subgroup, Strategy1Group, Strategy2, Strategy2Subgroup, \
+    Strategy2Group, Strategy3, Strategy3Subgroup, Strategy3Group
 from poms.tags.filters import TagFilter
 from poms.tags.utils import get_tag_prefetch
 from poms.transactions.models import TransactionType, TransactionTypeGroup
@@ -367,6 +373,89 @@ class PriceHistoryViewSet(AbstractModelViewSet):
         'pricing_policy', 'pricing_policy__user_code', 'pricing_policy__name', 'pricing_policy__short_name',
         'pricing_policy__public_name',
         'date', 'principal_price', 'accrued_price',
+    ]
+
+
+class GeneratedEventFilterSet(FilterSet):
+    id = NoOpFilter()
+    status = django_filters.MultipleChoiceFilter(choices=GeneratedEvent.STATUS_CHOICES)
+    status_date = django_filters.DateFromToRangeFilter()
+    instrument = ModelExtWithPermissionMultipleChoiceFilter(model=Instrument)
+    portfolio = ModelExtWithPermissionMultipleChoiceFilter(model=Portfolio)
+    account = ModelExtWithPermissionMultipleChoiceFilter(model=Account)
+    strategy1 = ModelExtWithPermissionMultipleChoiceFilter(model=Strategy1)
+    strategy2 = ModelExtWithPermissionMultipleChoiceFilter(model=Strategy2)
+    strategy3 = ModelExtWithPermissionMultipleChoiceFilter(model=Strategy3)
+    member = ModelExtMultipleChoiceFilter(model=Strategy3)
+
+    effective_date = django_filters.DateFromToRangeFilter()
+    notification_date = django_filters.DateFromToRangeFilter()
+
+    class Meta:
+        model = GeneratedEvent
+        fields = []
+
+
+class GeneratedEventViewSet(AbstractModelViewSet):
+    queryset = GeneratedEvent.objects.select_related(
+        'master_user',
+        'event_schedule',
+        'event_schedule__event_class',
+        'event_schedule__notification_class',
+        'event_schedule__periodicity',
+        'instrument',
+        'instrument__instrument_type',
+        'instrument__instrument_type__instrument_class',
+        'portfolio',
+        'account',
+        'strategy1',
+        'strategy1__subgroup',
+        'strategy1__subgroup__group',
+        'strategy2',
+        'strategy2__subgroup',
+        'strategy2__subgroup__group',
+        'strategy3',
+        'strategy3__subgroup',
+        'strategy3__subgroup__group',
+        'action',
+        'transaction_type',
+        'transaction_type__group',
+        'member'
+    ).prefetch_related(
+        *get_permissions_prefetch_lookups(
+            ('instrument', Instrument),
+            ('instrument__instrument_type', InstrumentType),
+            ('portfolio', Portfolio),
+            ('account', Account),
+            ('account__type', AccountType),
+            ('strategy1', Strategy1),
+            ('strategy1__subgroup', Strategy1Subgroup),
+            ('strategy1__subgroup__group', Strategy1Group),
+            ('strategy2', Strategy2),
+            ('strategy2__subgroup', Strategy2Subgroup),
+            ('strategy2__subgroup__group', Strategy2Group),
+            ('strategy3', Strategy3),
+            ('strategy3__subgroup', Strategy3Subgroup),
+            ('strategy3__subgroup__group', Strategy3Group),
+            ('transaction_type', TransactionType),
+        )
+    )
+    serializer_class = GeneratedEventSerializer
+    filter_backends = AbstractModelViewSet.filter_backends + [
+        OwnerByInstrumentFilter,
+    ]
+    filter_class = GeneratedEventFilterSet
+    ordering_fields = [
+        'status', 'status_date',
+        'effective_date', 'notification_date',
+        'instrument', 'instrument__user_code', 'instrument__name', 'instrument__short_name', 'instrument__public_name',
+        'portfolio', 'portfolio__user_code', 'portfolio__name', 'portfolio__short_name', 'portfolio__public_name',
+        'account', 'account__user_code', 'account__name', 'account__short_name', 'account__public_name',
+        'date', 'principal_price', 'accrued_price',
+        'strategy1', 'strategy1__user_code', 'strategy1__name', 'strategy1__short_name', 'strategy1__public_name',
+        'strategy2', 'strategy2__user_code', 'strategy2__name', 'strategy2__short_name', 'strategy2__public_name',
+        'strategy3', 'strategy3__user_code', 'strategy3__name', 'strategy3__short_name', 'strategy3__public_name',
+        'member',
     ]
 
 

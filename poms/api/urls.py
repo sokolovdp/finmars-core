@@ -77,6 +77,7 @@ router.register(r'instruments/instrument-attribute-type', instruments.Instrument
 router.register(r'instruments/instrument-classifier', instruments.InstrumentClassifierViewSet, 'instrumentclassifier')
 router.register(r'instruments/instrument', instruments.InstrumentViewSet)
 router.register(r'instruments/price-history', instruments.PriceHistoryViewSet)
+router.register(r'instruments/generated-event', instruments.GeneratedEventViewSet)
 
 # router.register(r'portfolios/portfolio-attribute-type', portfolios.PortfolioAttributeTypeViewSet)
 router.register(r'portfolios/portfolio-attribute-type', portfolios.PortfolioAttributeTypeViewSet, 'portfolioattributetype')

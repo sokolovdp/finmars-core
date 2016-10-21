@@ -5,10 +5,11 @@ from datetime import timedelta, date
 from celery import shared_task
 from django.conf import settings
 from django.db.models import F
+from django.utils import timezone
 
 from poms import notifications
 from poms.common.utils import date_now
-from poms.instruments.models import EventSchedule, Instrument, CostMethod
+from poms.instruments.models import EventSchedule, Instrument, CostMethod, GeneratedEvent
 from poms.reports.backends.balance import BalanceReport2PositionBuilder
 from poms.reports.models import BalanceReport
 from poms.transactions.models import EventClass
@@ -145,45 +146,47 @@ def process_events(master_user=None, send_notification=True, notification_recipi
 
             if is_complies:
                 notification_class = event_schedule.notification_class
-                need_inform, need_react, book_automatic = notification_class.check_date(
+                show_notification, apply_default, book_automatic = notification_class.check_date(
                     now, effective_date, notification_date)
                 _l.debug('founded: event_class=%s, effective_date=%s, notification_date=%s, '
-                         'need_inform=%s, need_react=%s, book_automatic=%s',
+                         'show_notification=%s, applay_default=%s, book_automatic=%s',
                          event_schedule.event_class, effective_date, notification_date,
-                         need_inform, need_react, book_automatic)
+                         show_notification, apply_default, book_automatic)
 
-                # ge_dup_qs = GeneratedEvent.objects.filter(
-                #     master_user=master_user,
-                #     effective_date=effective_date,
-                #     notification_date=notification_date,
-                #     instrument=instrument,
-                #     portfolio=portfolio,
-                #     account=account,
-                #     strategy1=strategy1,
-                #     strategy2=strategy2,
-                #     strategy3=strategy3,
-                #     position=position
-                # )
-                # if ge_dup_qs.exists():
-                #     _l.debug('generated event already exist')
-                #     continue
+                ge_dup_qs = GeneratedEvent.objects.filter(
+                    master_user=master_user,
+                    event_schedule=event_schedule,
+                    effective_date=effective_date,
+                    notification_date=notification_date,
+                    instrument=instrument,
+                    portfolio=portfolio,
+                    account=account,
+                    strategy1=strategy1,
+                    strategy2=strategy2,
+                    strategy3=strategy3,
+                    position=position
+                )
+                if ge_dup_qs.exists():
+                    _l.debug('generated event already exist')
+                    continue
 
-                # ge = GeneratedEvent()
-                # ge.master_user = master_user
-                # ge.status = GeneratedEvent.NEW
-                # ge.status_modified = timezone.now()
-                # ge.effective_date = effective_date
-                # ge.notification_date = notification_date
-                # ge.instrument = instrument
-                # ge.portfolio = portfolio
-                # ge.account = account
-                # ge.strategy1 = strategy1
-                # ge.strategy2 = strategy2
-                # ge.strategy3 = strategy3
-                # ge.position = position
-                # ge.save()
+                ge = GeneratedEvent()
+                ge.master_user = master_user
+                ge.event_schedule = event_schedule
+                ge.status = GeneratedEvent.NEW
+                ge.status_modified = timezone.now()
+                ge.effective_date = effective_date
+                ge.notification_date = notification_date
+                ge.instrument = instrument
+                ge.portfolio = portfolio
+                ge.account = account
+                ge.strategy1 = strategy1
+                ge.strategy2 = strategy2
+                ge.strategy3 = strategy3
+                ge.position = position
+                ge.save()
 
-                if need_inform:
+                if show_notification:
                     _l.info('need_inform !!!!')
                     # action_object -> ge
                     if send_notification:
@@ -195,11 +198,11 @@ def process_events(master_user=None, send_notification=True, notification_recipi
                                            verb='event occurred',
                                            action_object=event_schedule,
                                            target=instrument)
-                if need_react:
-                    _l.info('need_react !!!!')
-
                 if book_automatic:
                     _l.info('book_automatic !!!!')
+
+                if apply_default:
+                    _l.info('apply_default !!!!')
 
     # _l.debug('event_schedule: count=%s', event_schedule_qs.count())
     # for event_schedule in event_schedule_qs:

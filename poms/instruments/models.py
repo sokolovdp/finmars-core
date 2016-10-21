@@ -892,7 +892,7 @@ class EventSchedule(models.Model):
         ordering = ['effective_date']
 
     def __str__(self):
-        return self.name
+        return '#%s/#%s' % (self.id, self.instrument_id)
 
 
 class EventScheduleAction(models.Model):
@@ -930,39 +930,44 @@ class GeneratedEvent(models.Model):
         (BOOKED, ugettext_lazy('Booked')),
     )
 
-    master_user = models.ForeignKey(MasterUser, related_name='+')
+    master_user = models.ForeignKey(MasterUser, related_name='generated_events')
 
     effective_date = models.DateField(default=date_now, db_index=True)
     notification_date = models.DateField(default=date_now, db_index=True)
 
     status = models.PositiveSmallIntegerField(default=NEW, choices=STATUS_CHOICES, db_index=True)
-    event_schedule = models.ForeignKey(EventSchedule, null=True, blank=True, on_delete=models.SET_NULL,
-                                       related_name='+')
+    status_date = models.DateTimeField(default=timezone.now, db_index=True)
 
-    instrument = models.ForeignKey('instruments.Instrument', null=True, blank=True, on_delete=models.SET_NULL)
-    portfolio = models.ForeignKey('portfolios.Portfolio', null=True, blank=True, on_delete=models.SET_NULL)
-    account = models.ForeignKey('accounts.Account', null=True, blank=True, on_delete=models.SET_NULL)
-    strategy1 = models.ForeignKey('strategies.Strategy1', null=True, blank=True, on_delete=models.SET_NULL)
-    strategy2 = models.ForeignKey('strategies.Strategy2', null=True, blank=True, on_delete=models.SET_NULL)
-    strategy3 = models.ForeignKey('strategies.Strategy3', null=True, blank=True, on_delete=models.SET_NULL)
+    event_schedule = models.ForeignKey(EventSchedule, null=True, blank=True, on_delete=models.SET_NULL,
+                                       related_name='generated_events')
+
+    instrument = models.ForeignKey('instruments.Instrument', null=True, blank=True, on_delete=models.PROTECT,
+                                   related_name='generated_events')
+    portfolio = models.ForeignKey('portfolios.Portfolio', null=True, blank=True, on_delete=models.PROTECT,
+                                  related_name='generated_events')
+    account = models.ForeignKey('accounts.Account', null=True, blank=True, on_delete=models.PROTECT,
+                                related_name='generated_events')
+    strategy1 = models.ForeignKey('strategies.Strategy1', null=True, blank=True, on_delete=models.PROTECT,
+                                  related_name='generated_events')
+    strategy2 = models.ForeignKey('strategies.Strategy2', null=True, blank=True, on_delete=models.PROTECT,
+                                  related_name='generated_events')
+    strategy3 = models.ForeignKey('strategies.Strategy3', null=True, blank=True, on_delete=models.PROTECT,
+                                  related_name='generated_events')
     position = models.FloatField(default=0.0)
 
-    action_text = models.TextField(default='', blank=True)
     action = models.ForeignKey(EventScheduleAction, null=True, blank=True, on_delete=models.SET_NULL,
-                               related_name='+')
+                               related_name='generated_events')
     transaction_type = models.ForeignKey('transactions.TransactionType', null=True, blank=True,
-                                         on_delete=models.SET_NULL, related_name='+')
-    member = models.ForeignKey('users.Member', null=True, blank=True)
-    status_modified = models.DateTimeField(default=timezone.now, db_index=True)
+                                         on_delete=models.PROTECT, related_name='generated_events')
+    member = models.ForeignKey('users.Member', null=True, blank=True, on_delete=models.SET_NULL)
 
     class Meta:
-        abstract = True
         verbose_name = ugettext_lazy('generated event')
         verbose_name_plural = ugettext_lazy('generated events')
-        ordering = ['date']
+        ordering = ['effective_date']
 
     def __str__(self):
-        return self.action_text
+        return 'Event #%s' % self.id
 
 
 class EventScheduleConfig(models.Model):

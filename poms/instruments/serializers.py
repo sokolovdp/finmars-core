@@ -7,7 +7,7 @@ from rest_framework import serializers
 from rest_framework.exceptions import ValidationError
 from rest_framework.fields import empty
 
-from poms.common.fields import ExpressionField, FloatEvalField
+from poms.common.fields import ExpressionField, FloatEvalField, DateTimeTzAwareField
 from poms.common.serializers import PomsClassSerializer, ModelWithUserCodeSerializer
 from poms.common.utils import date_now
 from poms.currencies.fields import CurrencyDefault
@@ -16,7 +16,7 @@ from poms.instruments.fields import InstrumentField, InstrumentTypeField, Pricin
 from poms.instruments.models import Instrument, PriceHistory, InstrumentClass, DailyPricingModel, \
     AccrualCalculationModel, PaymentSizeDetail, Periodicity, CostMethod, InstrumentType, \
     ManualPricingFormula, AccrualCalculationSchedule, InstrumentFactorSchedule, EventSchedule, \
-    PricingPolicy, EventScheduleAction, EventScheduleConfig
+    PricingPolicy, EventScheduleAction, EventScheduleConfig, GeneratedEvent
 from poms.integrations.fields import PriceDownloadSchemeField
 from poms.obj_attrs.serializers import ModelWithAttributesSerializer
 from poms.obj_perms.serializers import ModelWithObjectPermissionSerializer
@@ -493,6 +493,44 @@ class PriceHistorySerializer(serializers.ModelSerializer):
         super(PriceHistorySerializer, self).__init__(*args, **kwargs)
         if 'request' not in self.context:
             self.fields.pop('url')
+
+
+class GeneratedEventSerializer(serializers.ModelSerializer):
+    status_date = DateTimeTzAwareField(read_only=True)
+
+    class Meta:
+        model = GeneratedEvent
+        fields = [
+            'url', 'id', 'effective_date', 'notification_date', 'status', 'status_date', 'event_schedule',
+            'instrument', 'portfolio', 'account', 'strategy1', 'strategy2', 'strategy3', 'position', 'action',
+            'transaction_type', 'member',
+        ]
+        read_only_fields = fields
+
+    def __init__(self, *args, **kwargs):
+        super(GeneratedEventSerializer, self).__init__(*args, **kwargs)
+
+        self.fields['event_schedule_object'] = EventScheduleSerializer(source='event_schedule', read_only=True)
+        self.fields['instrument_object'] = InstrumentViewSerializer(source='instrument', read_only=True)
+
+        from poms.portfolios.serializers import PortfolioViewSerializer
+        self.fields['portfolio_object'] = PortfolioViewSerializer(source='portfolio', read_only=True)
+
+        from poms.accounts.serializers import AccountViewSerializer
+        self.fields['account_object'] = AccountViewSerializer(source='account', read_only=True)
+
+        from poms.strategies.serializers import Strategy1ViewSerializer, Strategy2ViewSerializer, Strategy3ViewSerializer
+        self.fields['strategy1_object'] = Strategy1ViewSerializer(source='strategy1', read_only=True)
+        self.fields['strategy2_object'] = Strategy2ViewSerializer(source='strategy2', read_only=True)
+        self.fields['strategy3_object'] = Strategy3ViewSerializer(source='strategy3', read_only=True)
+
+        self.fields['action_object'] = EventScheduleActionSerializer(source='action', read_only=True)
+
+        from poms.transactions.serializers import TransactionTypeViewSerializer
+        self.fields['transaction_type_object'] = TransactionTypeViewSerializer(source='transaction_type', read_only=True)
+
+        from poms.users.serializers import MemberViewSerializer
+        self.fields['member_object'] = MemberViewSerializer(source='member', read_only=True)
 
 
 class EventScheduleConfigSerializer(serializers.ModelSerializer):

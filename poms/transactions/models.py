@@ -139,8 +139,8 @@ class NotificationClass(AbstractClassModel):
         verbose_name_plural = ugettext_lazy('notification classes')
 
     def check_date(self, now, effective_date, notification_date):
-        need_inform = False
-        need_react = False
+        show_notification = False
+        apply_default = False
         book_automatic = False
 
         # NDATE -> notification_date
@@ -155,47 +155,47 @@ class NotificationClass(AbstractClassModel):
             book_automatic = now == notification_date
 
         elif self.id == NotificationClass.INFORM_ON_NDATE_WITH_REACT:
-            need_inform = now == notification_date
-            need_react = now == notification_date
+            show_notification = now == notification_date
+            apply_default = now == notification_date
 
         elif self.id == NotificationClass.INFORM_ON_NDATE_APPLY_DEF:
-            need_inform = now == notification_date
+            show_notification = now == notification_date
             book_automatic = now == notification_date
 
         elif self.id == NotificationClass.INFORM_ON_NDATE_DONT_REACT:
-            need_inform = now == notification_date
+            show_notification = now == notification_date
 
         elif self.id == NotificationClass.INFORM_ON_EDATE_WITH_REACT:
-            need_inform = now == effective_date
-            need_react = now == effective_date
+            show_notification = now == effective_date
+            apply_default = now == effective_date
 
         elif self.id == NotificationClass.INFORM_ON_EDATE_APPLY_DEF:
-            need_inform = now == effective_date
+            show_notification = now == effective_date
             book_automatic = now == effective_date
 
         elif self.id == NotificationClass.INFORM_ON_EDATE_DONT_REACT:
-            need_inform = now == effective_date
+            show_notification = now == effective_date
 
         elif self.id == NotificationClass.INFORM_ON_NDATE_AND_EDATE_WITH_REACT_ON_EDATE:
-            need_inform = now == notification_date or now == effective_date
-            need_react = now == effective_date
+            show_notification = now == notification_date or now == effective_date
+            apply_default = now == effective_date
 
         elif self.id == NotificationClass.INFORM_ON_NDATE_AND_EDATE_WITH_REACT_ON_NDATE:
-            need_inform = now == notification_date or now == effective_date
-            need_react = now == notification_date
+            show_notification = now == notification_date or now == effective_date
+            apply_default = now == notification_date
 
         elif self.id == NotificationClass.INFORM_ON_NDATE_AND_EDATE_APPLY_DEF_ON_EDATE:
-            need_inform = now == notification_date or now == effective_date
+            show_notification = now == notification_date or now == effective_date
             book_automatic = now == effective_date
 
         elif self.id == NotificationClass.INFORM_ON_NDATE_AND_EDATE_APPLY_DEF_ON_NDATE:
-            need_inform = now == notification_date or now == effective_date
+            show_notification = now == notification_date or now == effective_date
             book_automatic = now == notification_date
 
         elif self.id == NotificationClass.INFORM_ON_NDATE_AND_EDATE_DONT_REACT:
-            need_inform = now == notification_date or now == effective_date
+            show_notification = now == notification_date or now == effective_date
 
-        return need_inform, need_react, book_automatic
+        return show_notification, apply_default, book_automatic
 
 
 class PeriodicityGroup(AbstractClassModel):

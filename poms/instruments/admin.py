@@ -5,12 +5,12 @@ from django.db import models
 from django.forms import widgets
 from django.utils.translation import ugettext_lazy
 
-from poms.common.admin import ClassModelAdmin, ClassifierAdmin
+from poms.common.admin import ClassModelAdmin
 from poms.instruments.models import Instrument, PriceHistory, InstrumentClass, InstrumentType, \
     DailyPricingModel, AccrualCalculationModel, Periodicity, CostMethod, \
     ManualPricingFormula, AccrualCalculationSchedule, InstrumentFactorSchedule, EventSchedule, \
-    PricingPolicy, PaymentSizeDetail, EventScheduleAction, EventScheduleConfig
-from poms.instruments.tasks import process_events, calculate_prices_accrued_price
+    PricingPolicy, PaymentSizeDetail, EventScheduleAction, EventScheduleConfig, GeneratedEvent
+from poms.instruments.tasks import calculate_prices_accrued_price
 from poms.obj_attrs.admin import GenericAttributeInline
 from poms.obj_perms.admin import GenericObjectPermissionInline
 from poms.tags.admin import GenericTagLinkInline
@@ -223,6 +223,31 @@ class EventScheduleAdmin(admin.ModelAdmin):
 admin.site.register(EventSchedule, EventScheduleAdmin)
 
 
+class EventScheduleActionAdmin(admin.ModelAdmin):
+    model = EventScheduleAction
+    list_display = ['id', 'master_user', 'instrument', 'event_schedule', 'transaction_type', 'text',
+                    'is_sent_to_pending', 'is_book_automatic', 'button_position']
+    list_select_related = ['event_schedule', 'event_schedule__instrument', 'event_schedule__instrument__master_user',
+                           'transaction_type']
+    ordering = ['event_schedule__instrument__master_user', 'event_schedule__instrument', 'event_schedule']
+    search_fields = ['event_schedule__instrument__id', 'event_schedule__instrument__user_code',
+                     'event_schedule__instrument__name']
+    raw_id_fields = ['event_schedule', 'transaction_type']
+
+    def master_user(self, obj):
+        return obj.event_schedule.instrument.master_user
+
+    master_user.admin_order_field = 'event_schedule__instrument__master_user'
+
+    def instrument(self, obj):
+        return obj.event_schedule.instrument
+
+    instrument.admin_order_field = 'event_schedule__instrument'
+
+
+admin.site.register(EventScheduleAction, EventScheduleActionAdmin)
+
+
 class PriceHistoryAdmin(admin.ModelAdmin):
     model = PriceHistory
     list_display = ['id', 'master_user', 'instrument', 'pricing_policy', 'date', 'principal_price', 'accrued_price']
@@ -263,6 +288,23 @@ admin.site.register(PriceHistory, PriceHistoryAdmin)
 # admin.site.register(InstrumentAttributeType, InstrumentAttributeTypeAdmin)
 #
 # admin.site.register(InstrumentClassifier, ClassifierAdmin)
+
+
+class GeneratedEventAdmin(admin.ModelAdmin):
+    model = GeneratedEvent
+    list_display = ('id', 'master_user', 'effective_date', 'notification_date', 'status', 'event_schedule',
+                    'instrument', 'portfolio', 'account', 'strategy1', 'strategy2', 'strategy3', 'position', 'action',
+                    'transaction_type', 'member',)
+    list_select_related = ('master_user', 'event_schedule', 'instrument', 'portfolio', 'account', 'strategy1',
+                           'strategy2', 'strategy3', 'action', 'transaction_type', 'member',)
+    list_filter = ['status', 'effective_date']
+    date_hierarchy = 'effective_date'
+    ordering = ['master_user', 'effective_date']
+    raw_id_fields = ('master_user', 'event_schedule', 'instrument', 'portfolio', 'account', 'strategy1',
+                     'strategy2', 'strategy3', 'action', 'transaction_type', 'member',)
+
+
+admin.site.register(GeneratedEvent, GeneratedEventAdmin)
 
 
 class EventScheduleConfigAdmin(admin.ModelAdmin):
