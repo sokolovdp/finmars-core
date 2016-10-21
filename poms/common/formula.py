@@ -1,15 +1,24 @@
 from __future__ import unicode_literals, print_function, division
 
 import ast
-import collections
+import calendar
 import datetime
-import operator
+import logging
 import random
 import time
+from collections import OrderedDict
 
+from dateutil import relativedelta
 from django.utils import numberformat
 
 from poms.common.utils import date_now, isclose
+
+_l = logging.getLogger('poms.formula')
+
+MAX_STR_LEN = 100000
+MAX_EXPONENT = 4000000  # highest exponent
+MAX_SHIFT = 000
+MAX_LEN = 100
 
 
 class InvalidExpression(Exception):
@@ -17,6 +26,10 @@ class InvalidExpression(Exception):
 
 
 class ExpressionSyntaxError(InvalidExpression):
+    pass
+
+
+class ExpressionEvalError(InvalidExpression):
     pass
 
 
@@ -38,28 +51,50 @@ class AttributeDoesNotExist(InvalidExpression):
         super(AttributeDoesNotExist, self).__init__(self.message)
 
 
-def _check_string(a):
-    if not isinstance(a, str):
-        raise InvalidExpression('Value error')
+class _Break(InvalidExpression):
+    pass
 
 
-def _check_number(a):
-    if not isinstance(a, (int, float)):
-        raise InvalidExpression('Value error')
+class _Return(InvalidExpression):
+    def __init__(self, value):
+        self.value = value
+        super(_Return, self).__init__()
 
 
-def _check_date(a):
-    if not isinstance(a, datetime.date):
-        raise InvalidExpression('Value error')
+# def _check_string(a):
+#     if not isinstance(a, str):
+#         raise InvalidExpression('Value error')
 
 
-def _check_timedelta(a):
-    if not isinstance(a, datetime.timedelta):
-        raise InvalidExpression('Value error')
+# def _check_number(a):
+#     if not isinstance(a, (int, float)):
+#         raise InvalidExpression('Value error')
+
+
+# def _check_date(a):
+#     if not isinstance(a, datetime.date):
+#         raise InvalidExpression('Value error')
+
+
+# def _check_timedelta(a):
+#     if not isinstance(a, datetime.timedelta):
+#         raise InvalidExpression('Value error')
 
 
 def _str(a):
     return str(a)
+
+
+def _upper(a):
+    return str(a).upper()
+
+
+def _lower(a):
+    return str(a).lower()
+
+
+def _contains(a, b):
+    return str(b) in str(a)
 
 
 def _int(a):
@@ -70,24 +105,28 @@ def _float(a):
     return float(a)
 
 
-def _round(number):
-    _check_number(number)
-    return round(number)
+def _round(a):
+    return round(float(a))
 
 
-def _trunc(number):
-    _check_number(number)
-    return int(number)
-
-
-def _iff(expr, a, b):
-    return a if expr else b
+def _trunc(a):
+    return int(a)
 
 
 def _isclose(a, b, rel_tol=1e-09, abs_tol=0.0):
-    _check_number(a)
-    _check_number(b)
-    return isclose(a, b, rel_tol=rel_tol, abs_tol=abs_tol)
+    return isclose(float(a), float(b), rel_tol=float(rel_tol), abs_tol=float(abs_tol))
+
+
+def _iff(test, a, b):
+    return a if test else b
+
+
+def _len(a):
+    return len(a)
+
+
+def _range(*args):
+    return range(*args)
 
 
 def _now():
@@ -95,39 +134,69 @@ def _now():
 
 
 def _date(year, month=1, day=1):
-    _check_number(year)
-    _check_number(month)
-    _check_number(day)
-    return datetime.date(year=year, month=month, day=day)
+    return datetime.date(year=int(year), month=int(month), day=int(day))
+
+
+def _isleap(date_or_year):
+    if isinstance(date_or_year, datetime.date):
+        return calendar.isleap(date_or_year.year)
+    else:
+        return calendar.isleap(int(date_or_year))
 
 
 def _days(days):
-    if isinstance(days, datetime.timedelta):
-        return days
-    _check_number(days)
-    return datetime.timedelta(days=days)
+    return datetime.timedelta(days=int(days))
+
+
+def _weeks(weeks):
+    return datetime.timedelta(weeks=int(weeks))
+
+
+def _months(months):
+    return relativedelta.relativedelta(months=int(months))
+
+
+def _timedelta(years=0, months=0, days=0, leapdays=0, weeks=0,
+               year=None, month=None, day=None, weekday=None,
+               yearday=None, nlyearday=None):
+    return relativedelta.relativedelta(
+        years=int(years),
+        months=int(months),
+        days=int(days),
+        leapdays=int(leapdays),
+        weeks=int(weeks),
+        year=int(year) if year is not None else None,
+        month=int(month) if month is not None else None,
+        day=int(day) if day is not None else None,
+        weekday=int(weekday) if weekday is not None else None,
+        yearday=int(yearday) if yearday is not None else None,
+        nlyearday=int(nlyearday) if nlyearday is not None else None,
+    )
 
 
 def _add_days(date, days):
-    _check_date(date)
+    if not isinstance(date, datetime.date):
+        date = _parse_date(str(date))
+    # _check_date(date)
     if not isinstance(days, datetime.timedelta):
-        _check_number(days)
-        days = datetime.timedelta(days=days)
+        days = datetime.timedelta(days=int(days))
     return date + days
 
 
 def _add_weeks(date, weeks):
-    _check_date(date)
+    if not isinstance(date, datetime.date):
+        date = _parse_date(str(date))
+    # _check_date(date)
     if not isinstance(weeks, datetime.timedelta):
-        _check_number(weeks)
-        weeks = datetime.timedelta(weeks=weeks)
+        weeks = datetime.timedelta(weeks=int(weeks))
     return date + weeks
 
 
 def _add_workdays(date, workdays, only_workdays=True):
-    _check_date(date)
-    _check_number(workdays)
-
+    # _check_date(date)
+    if not isinstance(date, datetime.date):
+        date = _parse_date(str(date))
+    workdays = int(workdays)
     weeks = int(workdays / 5)
     days_remainder = workdays % 5
     date = date + datetime.timedelta(weeks=weeks, days=days_remainder)
@@ -140,37 +209,34 @@ def _add_workdays(date, workdays, only_workdays=True):
 
 
 def _format_date(date, format=None):
-    if date is None:
-        return ''
-    if isinstance(date, str):
-        date = _parse_date(date)
-    _check_date(date)
+    if not isinstance(date, datetime.date):
+        date = _parse_date(str(date))
+    # _check_date(date)
     if format is None:
         format = '%Y-%m-%d'
-    _check_string(format)
+    else:
+        format = str(format)
     return date.strftime(format)
 
 
 def _parse_date(date_string, format=None):
     if not date_string:
         return None
-    _check_string(date_string)
+    date_string = str(date_string)
     if format is None:
         format = '%Y-%m-%d'
-    _check_string(format)
+    else:
+        format = str(format)
     return datetime.datetime.strptime(date_string, format).date()
 
 
 def _format_number(number, decimal_sep='.', decimal_pos=None, grouping=3, thousand_sep='', use_grouping=False):
-    _check_number(number)
-    if decimal_sep is not None:
-        _check_string(decimal_sep)
+    number = float(number)
+    decimal_sep = str(decimal_sep)
     if decimal_pos is not None:
-        _check_number(decimal_pos)
-    if grouping is not None:
-        _check_number(grouping)
-    if thousand_sep is not None:
-        _check_string(thousand_sep)
+        decimal_pos = int(decimal_pos)
+    grouping = int(grouping)
+    thousand_sep = str(thousand_sep)
     return numberformat.format(number, decimal_sep, decimal_pos=decimal_pos, grouping=grouping,
                                thousand_sep=thousand_sep, force_grouping=use_grouping)
 
@@ -186,339 +252,664 @@ def _simple_price(date, date1, value1, date2, value2):
         date1 = _parse_date(date1)
     if isinstance(date2, str):
         date2 = _parse_date(date2)
-    _check_date(date)
-    _check_date(date1)
-    _check_date(date2)
-    _check_number(value1)
-    _check_number(value2)
-    if isclose(value1, value2):
-        return value1
-    if date1 == date2:
-        if isclose(value1, value2):
-            return value1
-        raise ValueError()
-    if date < date1:
-        return 0.0
-    if date == date1:
-        return value1
-    if date > date2:
-        return 0.0
-    if date == date2:
-        return value2
-    d = 1.0 * (date - date1).days / (date2 - date1).days
-    return value1 + d * (value2 - value1)
+    if not isinstance(date, datetime.date):
+        date = _parse_date(str(date))
+    if not isinstance(date1, datetime.date):
+        date1 = _parse_date(str(date1))
+    if not isinstance(date2, datetime.date):
+        date2 = _parse_date(str(date2))
+    # _check_date(date)
+    # _check_date(date1)
+    # _check_date(date2)
+    value1 = float(value1)
+    value2 = float(value2)
+    # _check_number(value1)
+    # _check_number(value2)
+
+    # if isclose(value1, value2):
+    #     return value1
+    # if date1 == date2:
+    #     if isclose(value1, value2):
+    #         return value1
+    #     raise ValueError()
+    # if date < date1:
+    #     return 0.0
+    # if date == date1:
+    #     return value1
+    # if date > date2:
+    #     return 0.0
+    # if date == date2:
+    #     return value2
+    if date1 <= date <= date2:
+        d = 1.0 * (date - date1).days / (date2 - date1).days
+        return value1 + d * (value2 - value1)
+    return 0.0
 
 
 def _random():
     return random.random()
 
 
-MAX_STRING_LENGTH = 100000
-MAX_POWER = 4000000  # highest exponent
+def _print(message, *args, **kwargs):
+    _l.debug(message, *args, **kwargs)
 
 
-def safe_power(a, b):  # pylint: disable=invalid-name
-    ''' a limited exponent/to-the-power-of function, for safety reasons '''
-    if abs(a) > MAX_POWER or abs(b) > MAX_POWER:
-        raise InvalidExpression("Sorry! I don't want to evaluate {0} ** {1}"
-                                .format(a, b))
+def _op_power(a, b):
+    """ a limited exponent/to-the-power-of function, for safety reasons """
+    if abs(a) > MAX_EXPONENT or abs(b) > MAX_EXPONENT:
+        raise InvalidExpression("Invalid exponent, max exponent is %s" % MAX_EXPONENT)
     return a ** b
 
 
-def safe_mult(a, b):  # pylint: disable=invalid-name
-    ''' limit the number of times a string can be repeated... '''
-    if isinstance(a, str) or isinstance(b, str):
-        if isinstance(a, int) and a * len(b) > MAX_STRING_LENGTH:
-            raise InvalidExpression("Sorry, a string that long is not allowed")
-        elif isinstance(b, int) and b * len(a) > MAX_STRING_LENGTH:
-            raise InvalidExpression("Sorry, a string that long is not allowed")
-
+def _op_mult(a, b):
+    # """ limit the number of times a string can be repeated... """
+    # if isinstance(a, int) and a * len(b) > MAX_STRING_LENGTH:
+    #         raise InvalidExpression("Sorry, a string that long is not allowed")
+    #     elif isinstance(b, int) and b * len(a) > MAX_STRING_LENGTH:
+    #         raise InvalidExpression("Sorry, a string that long is not allowed")
+    if isinstance(a, str):
+        raise TypeError("Can't convert '%s' object to str implicitly" % type(a).__name__)
+    if isinstance(b, str):
+        raise TypeError("Can't convert '%s' object to str implicitly" % type(b).__name__)
     return a * b
 
 
-def safe_add(a, b):  # pylint: disable=invalid-name
-    ''' string length limit again '''
-    if isinstance(a, str) and isinstance(b, str):
-        if len(a) + len(b) > MAX_STRING_LENGTH:
-            raise InvalidExpression("Sorry, adding those two strings would"
-                                    " make a too long string.")
+def _op_add(a, b):
+    """ string length limit again """
+    if isinstance(a, str) and isinstance(b, str) and len(a) + len(b) > MAX_STR_LEN:
+        raise InvalidExpression("Sorry, adding those two strings would make a too long string.")
     return a + b
 
 
-class SimpleEval2(object):  # pylint: disable=too-few-public-methods
-    expr = ''
+def _op_lshift(a, b):
+    if b > MAX_SHIFT:
+        raise InvalidExpression("Invalid left shift, max left shift is %s" % MAX_SHIFT)
+    return a << b
 
-    operators = {
-        ast.Add: safe_add,
-        ast.Sub: operator.sub,
-        ast.Mult: safe_mult,
-        ast.Div: operator.truediv,
-        ast.Pow: safe_power,
-        ast.Mod: operator.mod,
-        ast.Eq: operator.eq,
-        ast.NotEq: operator.ne,
-        ast.Gt: operator.gt,
-        ast.Lt: operator.lt,
-        ast.GtE: operator.ge,
-        ast.LtE: operator.le,
-        ast.USub: operator.neg,
-        ast.UAdd: operator.pos
-    }
 
-    functions = {
-        'str': _str,
-        'int': _int,
-        'float': _float,
-        'round': _round,
-        'trunc': _trunc,
-        'iff': _iff,
-        'isclose': _isclose,
-        'now': _now,
-        'date': _date,
-        'days': _days,
-        'add_days': _add_days,
-        'add_weeks': _add_weeks,
-        'add_workdays': _add_workdays,
-        'format_date': _format_date,
-        'parse_date': _parse_date,
-        'format_number': _format_number,
-        'parse_number': _parse_number,
-        'simple_price': _simple_price,
-        'random': _random,
-    }
+OPERATORS = {
+    ast.Is: lambda a, b: a is b,
+    ast.IsNot: lambda a, b: a is not b,
+    ast.In: lambda a, b: a in b,
+    ast.NotIn: lambda a, b: a not in b,
+    ast.Add: _op_add,
+    ast.BitAnd: lambda a, b: a & b,
+    ast.BitOr: lambda a, b: a | b,
+    ast.BitXor: lambda a, b: a ^ b,
+    ast.Div: lambda a, b: a / b,
+    ast.FloorDiv: lambda a, b: a // b,
+    ast.LShift: _op_lshift,
+    ast.RShift: lambda a, b: a >> b,
+    ast.Mult: _op_mult,
+    ast.Pow: _op_power,
+    ast.Sub: lambda a, b: a - b,
+    ast.Mod: lambda a, b: a % b,
+    ast.And: lambda a, b: a and b,
+    ast.Or: lambda a, b: a or b,
+    ast.Eq: lambda a, b: a == b,
+    ast.Gt: lambda a, b: a > b,
+    ast.GtE: lambda a, b: a >= b,
+    ast.Lt: lambda a, b: a < b,
+    ast.LtE: lambda a, b: a <= b,
+    ast.NotEq: lambda a, b: a != b,
+    ast.Invert: lambda a: ~a,
+    ast.Not: lambda a: not a,
+    ast.UAdd: lambda a: +a,
+    ast.USub: lambda a: -a
+}
 
-    def __init__(self, operators=None, functions=None, names=None):
-        '''
-            Create the evaluator instance.  Set up valid operators (+,-, etc)
-            functions (add, random, get_val, whatever) and names. '''
 
-        if operators is not None:
-            self.operators = operators
-        if functions is not None:
-            self.functions = functions
-        if names is None:
-            self.names = {}
-        else:
-            self.names = deep_value(names)
+# OPERATORS = {
+#     ast.Add: _op_add,
+#     ast.Sub: operator.sub,
+#     ast.Mult: _op_mult,
+#     ast.Div: operator.truediv,
+#     ast.Pow: _op_power,
+#     ast.Mod: operator.mod,
+#     ast.Eq: operator.eq,
+#     ast.NotEq: operator.ne,
+#     ast.Gt: operator.gt,
+#     ast.Lt: operator.lt,
+#     ast.GtE: operator.ge,
+#     ast.LtE: operator.le,
+#     ast.USub: operator.neg,
+#     ast.UAdd: operator.pos,
+#     ast.In: _op_in,
+#     ast.Is: operator.is_,
+#     ast.IsNot: operator.is_not,
+#     ast.Not: operator.not_,
+# }
 
-        self.names.update({"True": True, "False": False})
 
-    @staticmethod
-    def is_valid(expr):
-        if expr:
+class _SysDef(object):
+    def __init__(self, name, func):
+        self.name = name
+        self.func = func
+
+    def __str__(self):
+        return '<def %s>' % self.name
+
+    def __repr__(self):
+        return '<def %s>' % self.name
+
+    def __call__(self, *args, **kwargs):
+        return self.func(*args, **kwargs)
+
+
+class _UserDef(object):
+    def __init__(self, parent, node):
+        self.parent = parent
+        self.node = node
+
+    def __str__(self):
+        return '<def %s>' % self.node.name
+
+    def __repr__(self):
+        return '<def %s>' % self.node.name
+
+    def __call__(self, *args, **kwargs):
+        kwargs = kwargs.copy()
+        for i, val in enumerate(args):
+            name = self.node.args.args[i].arg
+            kwargs[name] = val
+
+        offset = len(self.node.args.args) - len(self.node.args.defaults)
+        for i, arg in enumerate(self.node.args.args):
+            if arg.arg not in kwargs:
+                val = self.parent._eval(self.node.args.defaults[i - offset])
+                kwargs[arg.arg] = val
+
+        save_table = self.parent._table
+        try:
+            self.parent._table = save_table.copy()
+            self.parent._table.update(kwargs)
             try:
-                ast.parse(expr)
-            except (SyntaxError, ValueError, TypeError):
-                return False
-        return True
+                ret = self.parent._eval(self.node.body)
+            except _Return as e:
+                ret = e.value
+        finally:
+            self.parent._table = save_table
+
+        return ret
+
+
+FUNCTIONS = [
+    _SysDef('str', _str),
+    _SysDef('upper', _upper),
+    _SysDef('lower', _lower),
+    _SysDef('contains', _contains),
+
+    _SysDef('int', _int),
+    _SysDef('float', _float),
+    _SysDef('round', _round),
+    _SysDef('trunc', _trunc),
+    _SysDef('isclose', _isclose),
+    _SysDef('random', _random),
+
+    _SysDef('iff', _iff),
+    _SysDef('len', _len),
+    _SysDef('range', _range),
+
+    _SysDef('now', _now),
+    _SysDef('date', _date),
+    _SysDef('isleap', _isleap),
+    _SysDef('days', _days),
+    _SysDef('weeks', _weeks),
+    _SysDef('months', _months),
+    _SysDef('timedelta', _timedelta),
+    _SysDef('add_days', _add_days),
+    _SysDef('add_weeks', _add_weeks),
+    _SysDef('add_workdays', _add_workdays),
+    _SysDef('format_date', _format_date),
+    _SysDef('parse_date', _parse_date),
+
+    _SysDef('format_number', _format_number),
+    _SysDef('parse_number', _parse_number),
+
+    _SysDef('simple_price', _simple_price),
+]
+
+
+# FUNCTIONS = {
+#     'str': _WrapDef('str', _str),
+#     'upper': _WrapDef('upper', _upper),
+#     'lower': _WrapDef('lower', _lower),
+#     'contains': _WrapDef('contains', _contains),
+#
+#     'int': _WrapDef('int', _int),
+#     'float': _WrapDef('float', _float),
+#     'round': _WrapDef('round', _round),
+#     'trunc': _WrapDef('trunc', _trunc),
+#     'isclose': _WrapDef('isclose', _isclose),
+#     'random': _WrapDef('random', _random),
+#
+#     'iff': _WrapDef('iff', _iff),
+#     'len': _WrapDef('len', _len),
+#     'range': _WrapDef('range', _range),
+#
+#     'now': _WrapDef('now', _now),
+#     'date': _WrapDef('date', _date),
+#     'isleap': _WrapDef('isleap', _isleap),
+#     'days': _WrapDef('days', _days),
+#     'weeks': _WrapDef('weeks', _weeks),
+#     'months': _WrapDef('months', _months),
+#     'timedelta': _WrapDef('timedelta', _timedelta),
+#     'add_days': _WrapDef('add_days', _add_days),
+#     'add_weeks': _WrapDef('add_weeks', _add_weeks),
+#     'add_workdays': _WrapDef('add_workdays', _add_workdays),
+#     'format_date': _WrapDef('format_date', _format_date),
+#     'parse_date': _WrapDef('parse_date', _parse_date),
+#
+#     'format_number': _WrapDef('format_number', _format_number),
+#     'parse_number': _WrapDef('parse_number', _parse_number),
+#
+#     'simple_price': _WrapDef('simple_price', _simple_price),
+# }
+
+
+class SimpleEval2(object):
+    def __init__(self, names=None, max_time=5, add_print=False):
+        # self.max_time = max_time
+        self.max_time = 10000000000
+        self.start_time = 0
+        self.tik_time = 0
+
+        self.expr = None
+        self.expr_ast = None
+        self.result = None
+
+        _globals = {f.name: f for f in FUNCTIONS}
+        _globals['globals'] = _SysDef('globals', lambda: _globals)
+        _globals['locals'] = _SysDef('locals', lambda: self._table)
+        if names:
+            for k, v in names.items():
+                _globals[k] = v
+        if add_print:
+            _globals['print'] = _print
+
+        self._table = _globals
 
     @staticmethod
     def try_parse(expr):
-        if expr:
-            try:
-                ast.parse(expr)
-            except (SyntaxError, ValueError, TypeError) as e:
-                raise InvalidExpression(e)
-        else:
-            raise InvalidExpression('Empty value')
+        if not expr:
+            raise InvalidExpression('Empty expression')
+        try:
+            return ast.parse(expr)
+        except SyntaxError as e:
+            raise ExpressionSyntaxError(e)
+        except Exception as e:
+            raise InvalidExpression(e)
 
-    def eval(self, expr):
-        ''' evaluate an expresssion, using the operators, functions and
-            names previously set up. '''
+    @staticmethod
+    def is_valid(expr):
+        try:
+            SimpleEval2.try_parse(expr)
+            return True
+        except:
+            return False
 
-        # set a copy of the expression aside, so we can give nice errors...
+    def find_name(self, name):
+        try:
+            return self._table[name]
+        except KeyError:
+            raise NameNotDefined(name)
 
-        if expr:
-            self.expr = expr
+    def eval(self, expr, names=None):
+        if not expr:
+            raise InvalidExpression('Empty expression')
 
-            # and evaluate:
-            try:
-                return self._eval(ast.parse(expr).body[0].value)
-            except InvalidExpression:
-                raise
-            except SyntaxError as e:
-                raise ExpressionSyntaxError(e)
-            except Exception as e:
-                raise InvalidExpression(e)
-        else:
-            raise InvalidExpression('Empty value')
+        self.expr = expr
+        self.expr_ast = SimpleEval2.try_parse(expr)
+
+        save_table = self._table
+        self._table = save_table.copy()
+        if names:
+            for k, v in names.items():
+                self._table[k] = v
+        try:
+            self.start_time = time.time()
+            self.result = self._eval(self.expr_ast.body)
+            return self.result
+        except InvalidExpression:
+            raise
+        except Exception as e:
+            raise ExpressionEvalError(e)
+        finally:
+            self._table = save_table
 
     def _eval(self, node):
-        ''' The internal eval function used on each node in the parsed tree. '''
+        # _l.info('%s - %s - %s', node, type(node), node.__class__)
+        self.tik_time = time.time()
+        if self.tik_time - self.start_time > self.max_time:
+            raise InvalidExpression("Execution exceeded time limit, max runtime is %s" % self.max_time)
 
-        # literals:
+        # if isinstance(node, (list, tuple)):
+        #     return self._on_many(node)
+        #
+        # elif isinstance(node, ast.Assign):
+        #     return self._on_ast_Assign(node)
+        #
+        # elif isinstance(node, ast.If):
+        #     return self._on_ast_If(node)
+        #
+        # elif isinstance(node, ast.For):
+        #     return self._on_ast_For(node)
+        #
+        # elif isinstance(node, ast.While):
+        #     return self._on_ast_While(node)
+        #
+        # elif isinstance(node, ast.Break):
+        #     return self._on_ast_Break(node)
+        #
+        # elif isinstance(node, ast.FunctionDef):
+        #     return self._on_ast_FunctionDef(node)
+        #
+        # elif isinstance(node, ast.Pass):
+        #     return self._on_ast_Pass(node)
+        #
+        # elif isinstance(node, ast.Try):
+        #     return self._on_ast_Try(node)
+        #
+        # elif isinstance(node, ast.Num):  # <number>
+        #     return self._on_ast_Num(node)
+        #
+        # elif isinstance(node, ast.Str):  # <string>
+        #     return self._on_ast_Str(node)
+        #
+        # # python 3 compatibility:
+        # elif hasattr(ast, 'NameConstant') and isinstance(node, ast.NameConstant):  # <bool>
+        #     return self._on_ast_NameConstant(node)
+        #
+        # elif isinstance(node, ast.Dict):
+        #     return self._on_ast_Dict(node)
+        #
+        # elif isinstance(node, ast.List):
+        #     return self._on_ast_List(node)
+        #
+        # elif isinstance(node, ast.Tuple):
+        #     return self._on_ast_Tuple(node)
+        #
+        # elif isinstance(node, ast.Set):
+        #     return self._on_ast_Set(node)
+        #
+        # elif isinstance(node, ast.UnaryOp):  # - and + etc.
+        #     return self._on_ast_UnaryOp(node)
+        #
+        # elif isinstance(node, ast.BinOp):  # <left> <operator> <right>
+        #     return self._on_ast_BinOp(node)
+        #
+        # elif isinstance(node, ast.BoolOp):  # and & or...
+        #     return self._on_ast_BoolOp(node)
+        #
+        # elif isinstance(node, ast.Compare):  # 1 < 2, a == b...
+        #     return self._on_ast_Compare(node)
+        #
+        # elif isinstance(node, ast.IfExp):  # x if y else z
+        #     return self._on_ast_IfExp(node)
+        #
+        # elif isinstance(node, ast.Call):  # function...
+        #     return self._on_ast_Call(node)
+        #
+        # elif isinstance(node, ast.Return):
+        #     return self._on_ast_Return(node)
+        #
+        # elif isinstance(node, ast.Name):  # a, b, c...
+        #     return self._on_ast_Name(node)
+        #
+        # elif isinstance(node, ast.Subscript):  # b[1]
+        #     return self._on_ast_Subscript(node)
+        #
+        # elif isinstance(node, ast.Attribute):  # a.b.c
+        #     return self._on_ast_Attribute(node)
+        #
+        # elif isinstance(node, ast.Index):
+        #     return self._on_ast_Index(node)
+        #
+        # elif isinstance(node, ast.Expr):
+        #     return self._on_ast_Expr(node)
+        #
+        # else:
+        #     raise InvalidExpression("Sorry, %s is not available in this evaluator" % type(node).__name__)
 
-        if isinstance(node, ast.Num):  # <number>
-            return node.n
-
-        elif isinstance(node, ast.Str):  # <string>
-            if len(node.s) > MAX_STRING_LENGTH:
-                raise InvalidExpression("String Literal in statement is too long! ({0}, when {1} is max)".format(
-                    len(node.s), MAX_STRING_LENGTH))
-            return node.s
-
-        # python 3 compatibility:
-        elif hasattr(ast, 'NameConstant') and isinstance(node, ast.NameConstant):  # <bool>
-            return node.value
-
-        # operators, functions, etc:
-
-        elif isinstance(node, ast.UnaryOp):  # - and + etc.
-            return self.operators[type(node.op)](self._eval(node.operand))
-
-        elif isinstance(node, ast.BinOp):  # <left> <operator> <right>
-            # return self.operators[type(node.op)](self._eval(node.left), self._eval(node.right))
-            l = self._eval(node.left)
-            r = self._eval(node.right)
-            # if isinstance(node.op, ast.Mult) and isinstance(l, str):
-            #     raise simpleeval.InvalidExpression("Invalid first argument")
-            # if isinstance(node.op, ast.Mod) and isinstance(l, str):
-            #     raise simpleeval.InvalidExpression("Invalid first argument")
-            if isinstance(node.op, (ast.Mult, ast.Mod,)) and isinstance(l, str):
-                raise InvalidExpression("Binary operation does't support string")
-            return self.operators[type(node.op)](l, r)
-
-        elif isinstance(node, ast.BoolOp):  # and & or...
-            if isinstance(node.op, ast.And):
-                return all((self._eval(v) for v in node.values))
-            elif isinstance(node.op, ast.Or):
-                return any((self._eval(v) for v in node.values))
-
-        elif isinstance(node, ast.Compare):  # 1 < 2, a == b...
-            return self.operators[type(node.ops[0])](self._eval(node.left), self._eval(node.comparators[0]))
-
-        elif isinstance(node, ast.IfExp):  # x if y else z
-            return self._eval(node.body) if self._eval(node.test) else self._eval(node.orelse)
-
-        elif isinstance(node, ast.Call):  # function...
-            try:
-                f = self.functions[node.func.id]
-                f_args = [self._eval(a) for a in node.args]
-                f_kwargs = {k.arg: self._eval(k.value) for k in node.keywords}
-                return f(*f_args, **f_kwargs)
-            except KeyError:
-                raise FunctionNotDefined(node.func.id)
-
-        # variables/names:
-        elif isinstance(node, ast.Name):  # a, b, c...
-            try:
-                # This happens at least for slicing
-                # This is a safe thing to do because it is impossible
-                # that there is a true exression assigning to none
-                # (the compiler rejects it, so you can't even pass that to ast.parse)
-                if node.id == "None":
-                    return None
-                if (node.id == "context" or node.id == "CONTEXT") and isinstance(self.names, dict):
-                    return self.names
-                if isinstance(self.names, dict):
-                    return self.names[node.id]
-                if callable(self.names):
-                    return self.names(node.id)
-                raise NameNotDefined(node.id)
-            except KeyError:
-                raise NameNotDefined(node.id)
-
-        elif isinstance(node, ast.Subscript):  # b[1]
-            return self._eval(node.value)[self._eval(node.slice)]
-
-        elif isinstance(node, ast.Attribute):  # a.b.c
-            try:
-                return self._eval(node.value)[node.attr]
-            except (KeyError, TypeError):
-                pass
-
-            # # Maybe the base object is an actual object, not just a dict
-            # try:
-            #     return getattr(self._eval(node.value), node.attr)
-            # except (AttributeError, TypeError):
-            #     pass
-
-            # If it is neither, raise an exception
-            raise AttributeDoesNotExist(node.attr)
-        elif isinstance(node, ast.Index):
-            return self._eval(node.value)
-
-        # elif isinstance(node, ast.Slice):
-        #     lower = upper = step = None
-        #     if node.lower is not None:
-        #         lower = self._eval(node.lower)
-        #     if node.upper is not None:
-        #         upper = self._eval(node.upper)
-        #     if node.step is not None:
-        #         step = self._eval(node.step)
-        #     return slice(lower, upper, step)
-
-        elif isinstance(node, ast.Dict):
-            d = {}
-            for k, v in zip(node.keys, node.values):
-                k = self._eval(k)
-                v = self._eval(v)
-                d[k] = v
-            return d
-
-        elif isinstance(node, (ast.List, ast.Tuple)):
-            d = []
-            for v in node.elts:
-                v = self._eval(v)
-                d.append(v)
-            if isinstance(node, ast.Tuple):
-                return tuple(d)
-            return d
-
+        if isinstance(node, (list, tuple)):
+            return self._on_many(node)
         else:
-            raise InvalidExpression("Sorry, {0} is not available in this evaluator".format(
-                type(node).__name__))
+            op = '_on_ast_%s' % type(node).__name__
+            if hasattr(self, op):
+                return getattr(self, op)(node)
+            else:
+                raise InvalidExpression("Sorry, %s is not available in this evaluator" % type(node).__name__)
+
+    def _on_many(self, node):
+        ret = None
+        for n in node:
+            ret = self._eval(n)
+        return ret
+
+    def _on_ast_Assign(self, node):
+        ret = self._eval(node.value)
+        for t in node.targets:
+            if isinstance(t, ast.Name):
+                self._table[t.id] = ret
+            elif isinstance(t, ast.Subscript):
+                obj = self._eval(t.value)
+                obj[self._eval(t.slice)] = ret
+            elif isinstance(t, ast.Attribute):
+                # TODO: check security
+                obj = self._eval(t.value)
+                if isinstance(obj, (dict, OrderedDict)):
+                    obj[t.attr] = ret
+                else:
+                    raise ExpressionSyntaxError('Invalid assign')
+                    # raise ExpressionSyntaxError('Invalid assign')
+            else:
+                raise ExpressionSyntaxError('Invalid assign')
+        return ret
+
+    def _on_ast_If(self, node):
+        return self._eval(node.body) if self._eval(node.test) else self._eval(node.orelse)
+
+    def _on_ast_For(self, node):
+        ret = None
+        for val in self._eval(node.iter):
+            self._table[node.target.id] = val
+            try:
+                ret = self._eval(node.body)
+            except _Break:
+                break
+        return ret
+
+    def _on_ast_While(self, node):
+        ret = None
+        while self._eval(node.test):
+            try:
+                ret = self._eval(node.body)
+            except _Break:
+                break
+        return ret
+
+    def _on_ast_Break(self, node):
+        raise _Break()
+
+    def _on_ast_FunctionDef(self, node):
+        # self.local_functions[node.name] = node
+        self._table[node.name] = _UserDef(self, node)
+        return None
+
+    def _on_ast_Pass(self, node):
+        return None
+
+    def _on_ast_Try(self, node):
+        ret = None
+        try:
+            ret = self._eval(node.body)
+        except:
+            if node.handlers:
+                for n in node.handlers:
+                    # ast.ExceptHandler
+                    if n.body:
+                        ret = self._eval(n.body)
+        else:
+            if node.orelse:
+                ret = self._eval(node.orelse)
+        finally:
+            if node.finalbody:
+                ret = self._eval(node.finalbody)
+
+        return ret
+
+    def _on_ast_Num(self, node):
+        return node.n
+
+    def _on_ast_Str(self, node):
+        if len(node.s) > MAX_STR_LEN:
+            raise ExpressionEvalError(
+                "String Literal in statement is too long! (%s, when %s is max)" % (len(node.s), MAX_STR_LEN))
+        return node.s
+
+    def _on_ast_NameConstant(self, node):
+        return node.value
+
+    def _on_ast_Dict(self, node):
+        d = {}
+        for k, v in zip(node.keys, node.values):
+            k = self._eval(k)
+            v = self._eval(v)
+            d[k] = v
+            if len(d) > MAX_LEN:
+                raise ExpressionEvalError('Max dict length.')
+        return d
+
+    def _on_ast_List(self, node):
+        d = []
+        for v in node.elts:
+            v = self._eval(v)
+            d.append(v)
+            if len(d) > MAX_LEN:
+                raise ExpressionEvalError('Max list/tuple/set length.')
+        return d
+
+    def _on_ast_Tuple(self, node):
+        return tuple(self._on_ast_List(node))
+
+    def _on_ast_Set(self, node):
+        return set(self._on_ast_List(node))
+
+    def _on_ast_UnaryOp(self, node):
+        return OPERATORS[type(node.op)](self._eval(node.operand))
+
+    def _on_ast_BinOp(self, node):
+        return OPERATORS[type(node.op)](self._eval(node.left), self._eval(node.right))
+
+    def _on_ast_BoolOp(self, node):
+        if isinstance(node.op, ast.And):
+            return all((self._eval(v) for v in node.values))
+        elif isinstance(node.op, ast.Or):
+            return any((self._eval(v) for v in node.values))
+
+    def _on_ast_Compare(self, node):
+        return OPERATORS[type(node.ops[0])](self._eval(node.left), self._eval(node.comparators[0]))
+
+    def _on_ast_IfExp(self, node):
+        return self._eval(node.body) if self._eval(node.test) else self._eval(node.orelse)
+
+    def _on_ast_Call(self, node):
+        f = self._eval(node.func)
+        if not callable(f):
+            raise FunctionNotDefined(node.func.id)
+
+        f_args = [self._eval(a) for a in node.args]
+        f_kwargs = {k.arg: self._eval(k.value) for k in node.keywords}
+        return f(*f_args, **f_kwargs)
+
+    def _on_ast_Return(self, node):
+        val = self._eval(node.value)
+        raise _Return(val)
+
+    def _on_ast_Name(self, node):
+        ret = self.find_name(node.id)
+        return ret
+
+    def _on_ast_Subscript(self, node):
+        val = self._eval(node.value)
+        return val[self._eval(node.slice)]
+
+    def _on_ast_Attribute(self, node):
+        val = self._eval(node.value)
+        if isinstance(val, (dict, OrderedDict)):
+            try:
+                return val[node.attr]
+            except (KeyError, TypeError):
+                raise AttributeDoesNotExist(node.attr)
+        else:
+            if isinstance(val, datetime.date):
+                if node.attr in ['year', 'month', 'day']:
+                    return getattr(val, node.attr)
+
+            elif isinstance(val, datetime.timedelta):
+                if node.attr in ['days']:
+                    return getattr(val, node.attr)
+
+            elif isinstance(val, relativedelta.relativedelta):
+                if node.attr in ['years', 'months', 'days', 'leapdays', 'year', 'month', 'day', 'weekday']:
+                    return getattr(val, node.attr)
+
+        raise AttributeDoesNotExist(node.attr)
+
+    def _on_ast_Index(self, node):
+        return self._eval(node.value)
+
+    def _on_ast_Expr(self, node):
+        return self._eval(node.value)
 
 
-def is_valid(expr):
-    return SimpleEval2.is_valid(expr)
+# def is_valid(expr):
+#     return SimpleEval2.is_valid(expr)
 
 
-def try_parse(expr):
-    return SimpleEval2.try_parse(expr)
+# def try_parse(expr):
+#     SimpleEval2.try_parse(expr)
 
 
 def validate(expr):
     from rest_framework.exceptions import ValidationError
     try:
-        try_parse(expr)
+        SimpleEval2.try_parse(expr)
+        # try_parse(expr)
     except InvalidExpression as e:
         raise ValidationError('Invalid expression: %s' % e)
 
 
-def safe_eval(s, names=None, functions=None):
-    try:
-        return SimpleEval2(names=names, functions=functions).eval(s)
-    except (KeyError, AttributeError, TypeError, ValueError) as e:
-        raise InvalidExpression(e)
+def safe_eval(s, names=None):
+    return SimpleEval2(names=names).eval(s)
 
 
-def deep_dict(data):
-    ret = {}
-    for k, v in data.items():
-        ret[k] = deep_value(v)
-    return ret
-
-
-def deep_list(data):
-    ret = []
-    for v in data:
-        ret.append(deep_value(v))
-    return ret
-
-
-def deep_tuple(data):
-    return tuple(deep_list(data))
-
-
-def deep_value(data):
-    if isinstance(data, (dict, collections.OrderedDict)):
-        return deep_dict(data)
-    if isinstance(data, list):
-        return deep_list(data)
-    if isinstance(data, tuple):
-        return deep_tuple(data)
-    return data
+# def deep_dict(data):
+#     ret = {}
+#     for k, v in data.items():
+#         ret[k] = deep_value(v)
+#     return ret
+#
+#
+# def deep_list(data):
+#     ret = []
+#     for v in data:
+#         ret.append(deep_value(v))
+#     return ret
+#
+#
+# def deep_tuple(data):
+#     return tuple(deep_list(data))
+#
+#
+# def deep_value(data):
+#     if isinstance(data, (dict, collections.OrderedDict)):
+#         return deep_dict(data)
+#     if isinstance(data, list):
+#         return deep_list(data)
+#     if isinstance(data, tuple):
+#         return deep_tuple(data)
+#     return data
 
 
 HELP = """
@@ -620,7 +1011,6 @@ DATE format string:
 # %b 	Month as locale’s abbreviated name - Jan, Feb, ..., Dec (en_US)
 # %B 	Month as locale’s full name  - January, February, ..., December (en_US);
 
-
 if __name__ == "__main__":
     import os
 
@@ -647,108 +1037,404 @@ if __name__ == "__main__":
                 "name": "V32"
             },
         ],
+        "v4": OrderedDict(
+            [
+                ("id", 3),
+                ("name", "Lol"),
+            ]
+        ),
     }
 
-    # print(safe_eval('(1).__class__.__bases__', names=names))
-    # print(safe_eval('{"a":1, "b":2}'))
-    # print(safe_eval('[1,]'))
-    # print(safe_eval('(1,)'))
-    # print(safe_eval('parse_date("2000-01-01") + days(100)'))
-    # print(safe_eval('simple_price(parse_date("2000-01-02"), parse_date("2000-01-01"), 0, parse_date("2000-04-10"), 100)'))
-    # print(safe_eval('simple_price("2000-01-02", "2000-01-01", 0, "2000-04-10", 100)'))
-    # print(safe_eval('v0 * 10', names=names))
-    # print(safe_eval('context["v0"] * 10', names=names))
 
-    # print(safe_eval('func1()'))
-    # print(safe_eval('name1'))
-    # print(safe_eval('name1.id', names={"name1": {'id':1}}))
-    # print(safe_eval('name1.id2', names={"name1": {'id':1}}))
-    print(safe_eval('1+'))
+    # _l.info(safe_eval('(1).__class__.__bases__', names=names))
+    # _l.info(safe_eval('{"a":1, "b":2}'))
+    # _l.info(safe_eval('[1,]'))
+    # _l.info(safe_eval('(1,)'))
+    # _l.info(safe_eval('{1,}'))
+    # _l.info(safe_eval('[1, 1.0, "str", None, True, False]'))
+
+
+    # _l.info(safe_eval('parse_date("2000-01-01") + days(100)'))
+    # _l.info(safe_eval(
+    #     'simple_price(parse_date("2000-01-05"), parse_date("2000-01-01"), 0, parse_date("2000-04-10"), 100)'))
+    # _l.info(safe_eval('simple_price("2000-01-05", "2000-01-01", 0, "2000-04-10", 100)'))
+    # _l.info(safe_eval('simple_price("2000-01-02", "2000-01-01", 0, "2000-04-10", 100)'))
+    # _l.info(safe_eval('v0 * 10', names=names))
+    # _l.info(safe_eval('globals()["v0"] * 10', names=names))
+    # _l.info(safe_eval('v2.id', names=names))
+    # _l.info(safe_eval('v4.id', names=names))
+
+
+    # _l.info(safe_eval('func1()'))
+    # _l.info(safe_eval('name1'))
+    # _l.info(safe_eval('name1.id', names={"name1": {'id':1}}))
+    # _l.info(safe_eval('name1.id2', names={"name1": {'id':1}}))
+    # _l.info(safe_eval('1+'))
+    # _l.info(safe_eval('1 if 1 > 2 else 2'))
+    # _l.info(safe_eval('"a" in "ab"'))
+    # _l.info(safe_eval('y = now().year'))
+    # _l.info(safe_eval('eval("2+eval(\\\"2+2\\\")")'))
+    # _l.info(ast.literal_eval('2+2'))
+    # _l.info(safe_eval("globals()['now']()"))
+
+
+    def test_eval(expr, names=None):
+        _l.info('-' * 79)
+        try:
+            se = SimpleEval2(names=names, add_print=True)
+            ret = se.eval(expr)
+            # res = safe_eval(expr, names=names)
+        except InvalidExpression as e:
+            import time
+            ret = "<ERROR1: %s>" % e
+            time.sleep(1)
+            # raise e
+        except Exception as e:
+            ret = "<ERROR2: %s>" % e
+        _l.info("\t%-60s -> %s" % (expr, ret))
+
+
+    #     test_eval('''
+    # pass
+    #
+    # a = 1000
+    # # not supported
+    # # if 1 <= a <= 2000:
+    # #     pass
+    # if 1 <= a and a <= 2000:
+    #     pass
+    #
+    # for i in [1,2]:
+    #     pass
+    #
+    # i = 0
+    # while i < 2:
+    #     pass
+    #     i = i + 1
+    #
+    # a = 0
+    # try:
+    #     a = a + 1
+    # except:
+    #     a = a + 10
+    # else:
+    #     a = a + 100
+    # finally:
+    #     a = a + 1000
+    #
+    # b = 1
+    # if b == 0:
+    #     pass
+    # elif b == 1:
+    #     pass
+    # else:
+    #     pass
+    #
+    # def f1(v):
+    #     pass
+    #     for i in [1,2]:
+    #         if v > 1:
+    #             pass
+    #             return True
+    #         else:
+    #             return False
+    # f1(1)
+    #
+    # b = 0
+    # for a in range(1,10):
+    #     b = b + a
+    # b
+    #
+    # b2 = 0
+    # for a in range(10):
+    #     b2 = b2 + a
+    # b2
+    #
+    # range(10)
+    # date(2016)
+    # ''')
 
 
     def demo():
-        from poms.instruments.models import Instrument
-        from poms.transactions.models import Transaction
         # from poms.common.formula_serializers import EvalInstrumentSerializer, EvalTransactionSerializer
 
-        def play(expr, names=None):
-            try:
-                res = safe_eval(expr, names=names)
-            except InvalidExpression as e:
-                res = "<ERROR1: %s>" % e
-                time.sleep(1)
-                raise e
-            except Exception as e:
-                res = "<ERROR2: %s>" % e
-            print("\t%-60s -> %s" % (expr, res))
 
+        from rest_framework.test import APIRequestFactory
+        factory = APIRequestFactory()
+        instrument_request = factory.get('/api/v1/instruments/instrument/1/', format='json')
+        transactions_request = factory.get('/api/v1/transactions/transaction/', format='json')
         names = {
             "v0": 1.00001,
             "v1": "str",
             "v2": {"id": 1, "name": "V2", "trn_code": 12354, "num": 1.234},
             "v3": [{"id": 2, "name": "V31"}, {"id": 3, "name": "V32"}, ],
-            # "instr": collections.OrderedDict(EvalInstrumentSerializer(instance=Instrument.objects.first()).data),
-            # "trns": [collections.OrderedDict(EvalTransactionSerializer(instance=t).data)
-            #          for t in Transaction.objects.all()[:2]],
+            "v4": OrderedDict([["id", 3], ["name", "Lol"]]),
+            # "instr": OrderedDict(
+            #     InstrumentSerializer(instance=Instrument.objects.first(),
+            #                          context={'request': instrument_request}).data
+            # ),
+            # "trns": [
+            #     OrderedDict(
+            #         TransactionSerializer(instance=Transaction.objects.all(), many=True,
+            #                               context={'request': transactions_request}).data
+            #     )
+            # ],
 
         }
-        print("test variables:\n", names)
-        print("test variables:\n", deep_value(names))
+        _l.info("test variables:\n", names)
         # for n in sorted(six.iterkeys(names)):
-        #     print(n, "\n")
+        #     _l.info(n, "\n")
         #     pprint.pprint(names[n])
         #     # print("\t%s -> %s" % (n, json.dumps(names[n], sort_keys=True, indent=2)))
 
-        print("simple:")
-        play("2 * 2 + 2", names)
-        play("2 * (2 + 2)", names)
-        play("16 ** 16", names)
-        play("5 / 2", names)
-        play("5 % 2", names)
+        _l.info("simple:")
+        test_eval("2 * 2 + 2", names)
+        test_eval("2 * (2 + 2)", names)
+        test_eval("16 ** 16", names)
+        test_eval("5 / 2", names)
+        test_eval("5 % 2", names)
 
-        print()
-        print("with variables:")
-        play("v0 + 1", names)
-        play("v1 + ' & ' + str(v0)", names)
-        play("v2.name", names)
-        play("v2.num * 3", names)
-        play("v3[1].name", names)
-        play("v3[1].name", names)
-        play("instr.name", names)
-        play("instr.instrument_type.id", names)
-        play("instr.instrument_type.user_code", names)
+        _l.info('')
+        _l.info("with variables:")
+        test_eval("v0 + 1", names)
+        test_eval("v1 + ' & ' + str(v0)", names)
+        test_eval("v2.name", names)
+        test_eval("v2.num * 3", names)
+        test_eval("v3[1].name", names)
+        test_eval("v3[1].name", names)
+        test_eval("globals()", names)
+        test_eval("globals()['v0']", names)
+        # test_eval("instr.name", names)
+        # test_eval("instr.instrument_type.id", names)
+        # test_eval("instr.instrument_type.user_code", names)
+        # test_eval("instr.price_multiplier", names)
+        # test_eval("instr['price_multiplier']", names)
+        # test_eval("globals()['instr']", names)
+        # test_eval("globals()['instr'].price_multiplier", names)
+        # test_eval("globals()['instr']['price_multiplier']", names)
 
-        play("instr.price_multiplier", names)
-        play("instr['price_multiplier']", names)
-        play("context['instr']", names)
-        play("context['instr'].price_multiplier", names)
-        play("context['instr']['price_multiplier']", names)
+        _l.info('')
+        _l.info("functions: ")
+        test_eval("round(1.5)", names)
+        test_eval("trunc(1.5)", names)
+        test_eval("int(1.5)", names)
+        test_eval("now()", names)
+        test_eval("add_days(now(), 10)", names)
+        test_eval("add_workdays(now(), 10)", names)
+        test_eval("iff(1.001 > 1.002, 'really?', 'ok')", names)
+        test_eval("'really?' if 1.001 > 1.002 else 'ok'", names)
+        test_eval("'N' + format_date(now(), '%Y%m%d') + '/' + str(v2.trn_code)", names)
 
-        print()
-        print("functions: ")
-        play("round(1.5)", names)
-        play("trunc(1.5)", names)
-        play("int(1.5)", names)
-        play("now()", names)
-        play("add_days(now(), 10)", names)
-        play("add_workdays(now(), 10)", names)
-        play("iff(1.001 > 1.002, 'really?', 'ok')", names)
-        play("'really?' if 1.001 > 1.002 else 'ok'", names)
-        play("'N' + format_date(now(), '%Y%m%d') + '/' + str(v2.trn_code)", names)
-
-        play("format_date(now())", names)
-        play("format_date(now(), '%Y/%m/%d')", names)
-        play("format_date(now(), format='%Y/%m/%d')", names)
-        play("format_number(1234.234)", names)
-        play("format_number(1234.234, '.', 2)", names)
+        test_eval("format_date(now())", names)
+        test_eval("format_date(now(), '%Y/%m/%d')", names)
+        test_eval("format_date(now(), format='%Y/%m/%d')", names)
+        test_eval("format_number(1234.234)", names)
+        test_eval("format_number(1234.234, '.', 2)", names)
 
         # r = safe_eval3('"%r" % now()', names=names, functions=functions)
         # r = safe_eval('format_date(now(), "EEE, MMM d, yy")')
-        # print(repr(r))
-        # print(add_workdays(datetime.date(2016, 6, 15), 3, only_workdays=False))
-        # print(add_workdays(datetime.date(2016, 6, 15), 4, only_workdays=False))
-        # print(add_workdays(datetime.date(2016, 6, 15), 3))
-        # print(add_workdays(datetime.date(2016, 6, 15), 4))
+        # _l.info(repr(r))
+        # _l.info(add_workdays(datetime.date(2016, 6, 15), 3, only_workdays=False))
+        # _l.info(add_workdays(datetime.date(2016, 6, 15), 4, only_workdays=False))
+        # _l.info(add_workdays(datetime.date(2016, 6, 15), 3))
+        # _l.info(add_workdays(datetime.date(2016, 6, 15), 4))
 
 
-        # demo()
+    # demo()
+    pass
+
+
+    def demo_stmt():
+        test_eval('a = 2 + 3')
+
+        test_eval('''
+a = {}
+a['2'] = {}
+a['2']['1'] = {}
+a['2']['1'][1]=123
+a
+''')
+
+        test_eval('''
+a = 2
+b = None
+if b is None:
+    b = 2
+if b is not None:
+    b = 3
+if not b:
+    b = 1
+a * b
+        ''')
+
+        test_eval('''
+r = 0
+for a in [1,2,3]:
+    r = r + a
+r
+        ''')
+
+        test_eval('''
+r = 0
+while r < 100:
+    r = r + 2
+r
+        ''')
+
+        test_eval('''
+a = date(2000, 1, 1)
+b = date(2001, 1, 1)
+r = a
+k = 0
+while r < b:
+    r = r + weeks(k * 2)
+    k = k + 1
+k, r
+        ''')
+
+        test_eval('''
+a = date(2000, 1, 1)
+b = date(2001, 1, 1)
+r = a
+k = 0
+while r < b:
+    r = r + timedelta(weeks=k * 2)
+    k = k + 1
+k, r
+        ''')
+
+        test_eval('''
+def f1(a, b = 200, c = 300):
+    r = a * b
+    return r + c
+f1(10, b = 20)
+        ''')
+
+        test_eval('''
+def accrl_C_30E_P_360(dt1, dt2):
+    d1 = dt1.day
+    d2 = dt2.day
+    m1 = dt1.month
+    m2 = dt1.month
+    if d1 == 31:
+        d1 = 30
+    if d2 == 31:
+        m2 += 1
+        d2 = 1
+    return ((dt2.year - dt1.year) * 360 + (m2 - m1) * 30 + (d2 - d1)) / 360
+accrl_C_30E_P_360(parse_date('2001-01-01'), parse_date('2001-01-25'))
+        ''')
+
+        test_eval('''
+def accrl_NL_365_NO_EOM(dt1, dt2):
+    is_leap1 = isleap(dt1.year)
+    is_leap2 = isleap(dt2.year)
+    k = 0
+    if is_leap1 and dt1 < date(dt1.year, 2, 29) and dt2 >= date(dt1.year, 2, 29):
+        k = 1
+    if is_leap2 and dt2 >= date(dt2.year, 2, 29) and dt1 < date(dt2.year, 2, 29):
+        k = 1
+    return (dt2 - dt1 - days(k)).days / 365
+accrl_NL_365_NO_EOM(parse_date('2000-01-01'), parse_date('2000-01-25'))
+        ''')
+
+        test_eval('''
+a = 1
+
+def f1():
+    print('f1: 1 - a=%s', a)
+
+def f2():
+    print('f2: 1 - a=%s', a)
+    a = 2
+    print('f2: 2 - a=%s', a)
+
+def f3():
+    print('f3: 1 - a=%s', a)
+    a = 3
+    print('f3: 2 - a=%s', a)
+
+f1()
+f2()
+f3()
+print('gg: 1 - a=%s', a)
+        ''')
+
+
+    demo_stmt()
+    pass
+
+
+    def perf_tests():
+        import timeit
+
+        def f_native():
+            def accrual_NL_365_NO_EOM(dt1, dt2):
+                k = 0
+                if _isleap(dt1.year) and dt1 < _date(dt1.year, 2, 29) <= dt2:
+                    k = 1
+                if _isleap(dt2.year) and dt2 >= _date(dt2.year, 2, 29) > dt1:
+                    k = 1
+                return ((dt2 - dt1).days - k) / 365
+
+            # for i in range(50):
+            #     accrual_NL_365_NO_EOM(_date(2000, 1, 1), _date(2000, 1, 25))
+            # for i in [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]:
+            #     # accrual_NL_365_NO_EOM(_parse_date('2000-01-01'), _parse_date('2000-01-25'))
+            #     accrual_NL_365_NO_EOM(_date(2000, 1, 1), _date(2000, i, 25))
+            # accrual_NL_365_NO_EOM(_parse_date('2000-01-01'), _parse_date('2000-01-25'))
+            accrual_NL_365_NO_EOM(_date(2000, 1, 1), _date(2000, 1, 25))
+
+        expr = '''
+def accrual_NL_365_NO_EOM(dt1, dt2):
+    k = 0
+    if isleap(dt1.year) and dt1 < date(dt1.year, 2, 29) <= dt2:
+        k = 1
+    if isleap(dt2.year) and dt2 >= date(dt2.year, 2, 29) > dt1:
+        k = 1
+    return ((dt2 - dt1).days - k) / 365
+# for i in range(50):
+#     accrual_NL_365_NO_EOM(date(2000, 1, 1), date(2000, 1, 25))
+# for i in [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]:
+#     # accrual_NL_365_NO_EOM(parse_date('2000-01-01'), parse_date('2000-01-25'))
+#     accrual_NL_365_NO_EOM(date(2000, 1, 1), date(2000, i, 25))
+# accrual_NL_365_NO_EOM(parse_date('2000-01-01'), parse_date('2000-01-25'))
+accrual_NL_365_NO_EOM(date(2000, 1, 1), date(2000, 1, 25))
+        '''
+
+        _l.info('PERF')
+        number = 100
+        _l.info('-' * 79)
+        _l.info(expr)
+        _l.info('-' * 79)
+        _l.info('native          : %f', timeit.timeit(f_native, number=number))
+        _l.info('parse           : %f', timeit.timeit(lambda: ast.parse(expr), number=number))
+        _l.info('exec            : %f', timeit.timeit(lambda: exec(expr, {
+            'parse_date': _parse_date,
+            'isleap': calendar.isleap,
+            'date': _date,
+            'days': _days,
+        }), number=number))
+        _l.info('safe_eval       : %f', timeit.timeit(lambda: safe_eval(expr), number=number))
+
+        try:
+            import asteval
+            _l.info('asteval         : %f', timeit.timeit(
+                lambda: asteval.Interpreter(symtable=SimpleEval2()._table).eval(expr), number=number))
+        except ImportError:
+            pass
+
+        _l.info('-' * 79)
+        expr = '-(4-1)*5+(2+4.67)+5.89/(.2+7)'
+        _l.info('eval            : %f', timeit.timeit(lambda: eval(expr), number=number))
+        _l.info('safe_eval       : %f', timeit.timeit(lambda: safe_eval(expr), number=number))
+        try:
+            import asteval
+            _l.info('asteval         : %f', timeit.timeit(
+                lambda: asteval.Interpreter().eval(expr), number=number))
+        except ImportError:
+            pass
+
+
+    perf_tests()
+    pass

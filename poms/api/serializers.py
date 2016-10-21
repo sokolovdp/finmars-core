@@ -52,14 +52,22 @@ class TimezoneSerializer(serializers.Serializer):
 
 
 class ExpressionSerializer(serializers.Serializer):
-    expression = ExpressionField(required=True)
-    names1 = serializers.DictField(required=False, allow_null=True, help_text='Raw names')
-    names2 = ExpressionField(required=False, allow_null=True, help_text='Names as expression')
+    expression = ExpressionField(required=True, style={'base_template': 'textarea.html'})
+    names1 = serializers.DictField(required=False, allow_null=True, help_text='Raw names as JSON object')
+    names2 = ExpressionField(required=False, allow_null=True, help_text='Names as expression',
+                             style={'base_template': 'textarea.html'})
     names = serializers.ReadOnlyField()
     is_eval = serializers.BooleanField()
     result = serializers.ReadOnlyField()
     help_raw = serializers.SerializerMethodField()
     help = serializers.SerializerMethodField()
+
+    def __init__(self, *args, **kwargs):
+        super(ExpressionSerializer, self).__init__(*args, **kwargs)
+        request = self.context.get('request', None)
+        if request and request.query_params.get('help', '1') == '0':
+            self.fields.pop('help_raw')
+            self.fields.pop('help')
 
     def validate(self, attrs):
         is_eval = attrs.get('is_eval', False)
