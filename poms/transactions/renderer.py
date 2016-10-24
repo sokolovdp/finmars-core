@@ -1,4 +1,3 @@
-import json
 import logging
 from collections import OrderedDict
 
@@ -68,7 +67,8 @@ class ComplexTransactionRenderer(object):
             ret = OrderedDict()
             skip = set()
             for key, value in data.items():
-                if key in ['url', 'granted_permissions', 'user_object_permissions', 'group_object_permissions']:
+                if key in ['granted_permissions', 'object_permissions', 'user_object_permissions',
+                           'group_object_permissions']:
                     pass
                 elif key.endswith('_object'):
                     tkey = key[:-7]
