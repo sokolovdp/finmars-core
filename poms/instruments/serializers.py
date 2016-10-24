@@ -6,8 +6,10 @@ from django.core.exceptions import ObjectDoesNotExist
 from rest_framework import serializers
 from rest_framework.exceptions import ValidationError
 from rest_framework.fields import empty
+from rest_framework.serializers import ListSerializer
 
 from poms.common.fields import ExpressionField, FloatEvalField, DateTimeTzAwareField
+from poms.common.formula import ModelSimpleEval, InvalidExpression
 from poms.common.serializers import PomsClassSerializer, ModelWithUserCodeSerializer
 from poms.common.utils import date_now
 from poms.currencies.fields import CurrencyDefault
@@ -23,6 +25,7 @@ from poms.obj_perms.serializers import ModelWithObjectPermissionSerializer
 from poms.tags.serializers import ModelWithTagSerializer
 from poms.transactions.fields import TransactionTypeField
 from poms.users.fields import MasterUserField
+from poms.users.utils import get_member_from_context
 
 
 class InstrumentClassSerializer(PomsClassSerializer):
@@ -423,11 +426,12 @@ class EventScheduleActionSerializer(serializers.ModelSerializer):
     id = serializers.IntegerField(read_only=False, required=False, allow_null=True)
     transaction_type = TransactionTypeField()
     transaction_type_object = serializers.PrimaryKeyRelatedField(source='transaction_type', read_only=True)
+    display_text = serializers.SerializerMethodField()
 
     class Meta:
         model = EventScheduleAction
         fields = ['id', 'transaction_type', 'transaction_type_object', 'text', 'is_sent_to_pending',
-                  'is_book_automatic', 'button_position']
+                  'is_book_automatic', 'button_position', 'display_text']
 
     def __init__(self, *args, **kwargs):
         super(EventScheduleActionSerializer, self).__init__(*args, **kwargs)
@@ -435,6 +439,17 @@ class EventScheduleActionSerializer(serializers.ModelSerializer):
         from poms.transactions.serializers import TransactionTypeViewSerializer
         self.fields['transaction_type_object'] = TransactionTypeViewSerializer(source='transaction_type',
                                                                                read_only=True)
+
+    def get_display_text(self, obj):
+        r = self.root
+        if isinstance(r, ListSerializer):
+            r = r.child
+        if isinstance(r, GeneratedEventSerializer):
+            return r.generate_text(obj.text, None, {
+                'action': obj,
+                'transaction_type': obj.transaction_type,
+            })
+        return None
 
 
 class EventScheduleSerializer(serializers.ModelSerializer):
@@ -444,12 +459,17 @@ class EventScheduleSerializer(serializers.ModelSerializer):
     periodicity_object = PeriodicitySerializer(source='periodicity', read_only=True)
     actions = EventScheduleActionSerializer(many=True, required=False, allow_null=True)
 
+    display_name = serializers.SerializerMethodField()
+    display_description = serializers.SerializerMethodField()
+
     class Meta:
         model = EventSchedule
         fields = [
             'id', 'name', 'description', 'event_class', 'event_class_object', 'notification_class',
             'notification_class_object', 'effective_date', 'notify_in_n_days', 'periodicity', 'periodicity_object',
-            'periodicity_n', 'final_date', 'is_auto_generated', 'actions'
+            'periodicity_n', 'final_date', 'is_auto_generated',
+            'display_name', 'display_description',
+            'actions',
         ]
         read_only_fields = ['is_auto_generated']
 
@@ -460,6 +480,26 @@ class EventScheduleSerializer(serializers.ModelSerializer):
         self.fields['event_class_object'] = EventClassSerializer(source='event_class', read_only=True)
         self.fields['notification_class_object'] = NotificationClassSerializer(source='notification_class',
                                                                                read_only=True)
+
+    def get_display_name(self, obj):
+        r = self.root
+        if isinstance(r, ListSerializer):
+            r = r.child
+        if isinstance(r, GeneratedEventSerializer):
+            return r.generate_text(obj.name, None, {
+                'schedule': obj
+            })
+        return None
+
+    def get_display_description(self, obj):
+        r = self.root
+        if isinstance(r, ListSerializer):
+            r = r.child
+        if isinstance(r, GeneratedEventSerializer):
+            return r.generate_text(obj.description, None, {
+                'schedule': obj
+            })
+        return None
 
 
 class InstrumentCalculatePricesAccruedPriceSerializer(serializers.Serializer):
@@ -509,6 +549,7 @@ class GeneratedEventSerializer(serializers.ModelSerializer):
 
     def __init__(self, *args, **kwargs):
         super(GeneratedEventSerializer, self).__init__(*args, **kwargs)
+        self._current_instance = None
 
         self.fields['event_schedule_object'] = EventScheduleSerializer(source='event_schedule', read_only=True)
         self.fields['instrument_object'] = InstrumentViewSerializer(source='instrument', read_only=True)
@@ -519,7 +560,8 @@ class GeneratedEventSerializer(serializers.ModelSerializer):
         from poms.accounts.serializers import AccountViewSerializer
         self.fields['account_object'] = AccountViewSerializer(source='account', read_only=True)
 
-        from poms.strategies.serializers import Strategy1ViewSerializer, Strategy2ViewSerializer, Strategy3ViewSerializer
+        from poms.strategies.serializers import Strategy1ViewSerializer, Strategy2ViewSerializer, \
+            Strategy3ViewSerializer
         self.fields['strategy1_object'] = Strategy1ViewSerializer(source='strategy1', read_only=True)
         self.fields['strategy2_object'] = Strategy2ViewSerializer(source='strategy2', read_only=True)
         self.fields['strategy3_object'] = Strategy3ViewSerializer(source='strategy3', read_only=True)
@@ -527,10 +569,42 @@ class GeneratedEventSerializer(serializers.ModelSerializer):
         self.fields['action_object'] = EventScheduleActionSerializer(source='action', read_only=True)
 
         from poms.transactions.serializers import TransactionTypeViewSerializer
-        self.fields['transaction_type_object'] = TransactionTypeViewSerializer(source='transaction_type', read_only=True)
+        self.fields['transaction_type_object'] = TransactionTypeViewSerializer(source='transaction_type',
+                                                                               read_only=True)
 
         from poms.users.serializers import MemberViewSerializer
         self.fields['member_object'] = MemberViewSerializer(source='member', read_only=True)
+
+    def to_representation(self, instance):
+        self._current_instance = instance
+        try:
+            return super(GeneratedEventSerializer, self).to_representation(instance)
+        finally:
+            self._current_instance = None
+
+    def generate_text(self, exr, obj, names=None):
+        member = get_member_from_context(self.context)
+        names = names or {}
+        if obj is None:
+            obj = self._current_instance
+        names.update({
+            'event': obj,
+            'effective_date': obj.effective_date,
+            'notification_date': obj.notification_date,
+            'event_schedule': obj.event_schedule,
+            'instrument': obj.instrument,
+            'portfolio': obj.portfolio,
+            'account': obj.account,
+            'strategy1': obj.strategy1,
+            'strategy2': obj.strategy2,
+            'strategy3': obj.strategy3,
+            'position': obj.position,
+        })
+        meval = ModelSimpleEval(names=names, member=member)
+        try:
+            return meval.eval(exr)
+        except InvalidExpression as e:
+            return '<InvalidExpression>'
 
 
 class EventScheduleConfigSerializer(serializers.ModelSerializer):

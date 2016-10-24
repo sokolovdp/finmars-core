@@ -13,9 +13,11 @@ from poms.accounts.models import Account
 from poms.accounts.models import AccountType
 from poms.common.filters import CharFilter, ModelExtWithPermissionMultipleChoiceFilter, NoOpFilter, \
     ModelExtMultipleChoiceFilter
-from poms.common.views import AbstractClassModelViewSet, AbstractModelViewSet
+from poms.common.mixins import UpdateModelMixinExt
+from poms.common.views import AbstractClassModelViewSet, AbstractModelViewSet, AbstractReadOnlyModelViewSet
 from poms.currencies.models import Currency
-from poms.instruments.filters import OwnerByInstrumentFilter, PriceHistoryObjectPermissionFilter
+from poms.instruments.filters import OwnerByInstrumentFilter, PriceHistoryObjectPermissionFilter, \
+    GeneratedEventPermissionFilter
 from poms.instruments.models import Instrument, PriceHistory, InstrumentClass, DailyPricingModel, \
     AccrualCalculationModel, PaymentSizeDetail, Periodicity, CostMethod, InstrumentType, PricingPolicy, \
     EventScheduleConfig, ManualPricingFormula, \
@@ -396,7 +398,7 @@ class GeneratedEventFilterSet(FilterSet):
         fields = []
 
 
-class GeneratedEventViewSet(AbstractModelViewSet):
+class GeneratedEventViewSet(UpdateModelMixinExt, AbstractReadOnlyModelViewSet):
     queryset = GeneratedEvent.objects.select_related(
         'master_user',
         'event_schedule',
@@ -443,6 +445,7 @@ class GeneratedEventViewSet(AbstractModelViewSet):
     serializer_class = GeneratedEventSerializer
     filter_backends = AbstractModelViewSet.filter_backends + [
         OwnerByInstrumentFilter,
+        GeneratedEventPermissionFilter,
     ]
     filter_class = GeneratedEventFilterSet
     ordering_fields = [
