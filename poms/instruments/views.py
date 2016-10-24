@@ -494,10 +494,6 @@ class GeneratedEventViewSet(UpdateModelMixinExt, AbstractReadOnlyModelViewSet):
             serializer = self.get_serializer(instance=instance)
             return Response(serializer.data)
         else:
-            serializer = self.get_serializer(instance=instance, data=request.data)
-            serializer.is_valid(raise_exception=True)
-            serializer.save()
-
             try:
                 generated_event.status = GeneratedEvent.BOOKED
                 generated_event.status_date = timezone.now()
@@ -506,9 +502,13 @@ class GeneratedEventViewSet(UpdateModelMixinExt, AbstractReadOnlyModelViewSet):
                 generated_event.transaction_type = action.transaction_type
                 generated_event.save()
 
+                serializer = self.get_serializer(instance=instance, data=request.data)
+                serializer.is_valid(raise_exception=True)
+                serializer.save()
                 return Response(serializer.data)
             finally:
-                transaction.set_rollback(True)
+                if not instance.store:
+                    transaction.set_rollback(True)
 
     @detail_route(methods=['put'], url_path='ignore')
     def ignore(self, request, pk=None):

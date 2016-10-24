@@ -298,27 +298,14 @@ class TransactionTypeViewSet(AbstractWithObjectPermissionViewSet):
             serializer = self.get_serializer(instance=instance)
             return Response(serializer.data)
         else:
-            serializer = self.get_serializer(instance=instance, data=request.data)
-            serializer.is_valid(raise_exception=True)
-            serializer.save()
-
-            # processor = TransactionTypeProcessor(self._detail_instance, serializer.validated_data)
-            # instruments, transactions = processor.run(save)
-            # instruments_s = []
-            # transactions_s = []
-            # for i in instruments:
-            #     s = InstrumentSerializer(instance=i, context=self.get_serializer_context())
-            #     instruments_s.append(s.data)
-            # for t in transactions:
-            #     s = TransactionSerializer(instance=t, context=self.get_serializer_context())
-            #     transactions_s.append(s.data)
-            # d = serializer.data.copy()
-            # d['instruments'] = instruments_s
-            # d['transactions'] = transactions_s
             try:
+                serializer = self.get_serializer(instance=instance, data=request.data)
+                serializer.is_valid(raise_exception=True)
+                serializer.save()
                 return Response(serializer.data)
             finally:
-                transaction.set_rollback(True)
+                if not instance.store:
+                    transaction.set_rollback(True)
 
 
 # class TransactionAttributeTypeFilterSet(FilterSet):
