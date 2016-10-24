@@ -933,7 +933,7 @@ class TransactionTypeProcess(object):
             # attr_name = self.get_attr_name(i)
             self.values[i.name] = value
 
-    def process(self, store=False):
+    def process(self):
         master_user = self.transaction_type.master_user
         object_permissions = self.transaction_type.object_permissions.select_related('permission').all()
         daily_pricing_model = DailyPricingModel.objects.get(pk=DailyPricingModel.SKIP)
@@ -1026,7 +1026,7 @@ class TransactionTypeProcess(object):
                               target=instrument, target_attr_name='maturity_date',
                               source=action_instrument, source_attr_name='maturity_date')
 
-                if store:
+                if self.store:
                     instrument.save()
                     self._instrument_assign_permission(instrument, object_permissions)
                 else:
@@ -1038,10 +1038,11 @@ class TransactionTypeProcess(object):
         if self.complex_transaction is None:
             self.complex_transaction = ComplexTransaction(transaction_type=self.transaction_type,
                                                           status=self.complex_transaction_status)
-        if store:
-            self.complex_transaction.save()
-        else:
-            self.complex_transaction.id = self._next_fake_id()
+        if self.complex_transaction.id is None:
+            if self.store:
+                self.complex_transaction.save()
+            else:
+                self.complex_transaction.id = self._next_fake_id()
 
         for order, action in enumerate(actions):
             try:
@@ -1138,7 +1139,7 @@ class TransactionTypeProcess(object):
                               source=action_transaction, source_attr_name='counterparty')
 
                 transaction.transaction_date = min(transaction.accounting_date, transaction.cash_date)
-                if store:
+                if self.store:
                     transaction.save()
                 else:
                     transaction.id = self._next_fake_id()
@@ -1357,7 +1358,7 @@ class TransactionTypeProcessSerializer(serializers.Serializer):
             #                                      complex_transaction_status=instance.complex_transaction_status)
             # processor.run(False)
 
-            instance.process(False)
+            instance.process()
             instance.complex_transaction._fake_transactions = instance.transactions
 
             # instance.complex_transaction = processor.complex_transaction

@@ -223,13 +223,7 @@ def process_events_apply_def(generated_event):
                                      action=action,
                                      calculate=True,
                                      store=True)
-
-        input_values = {}
-        for i in action.transaction_type.inputs.all():
-            attr_name = ttp.get_attr_name(i)
-            input_values[i.name] = getattr(ttp.values, attr_name)
-
-        ttp.process(True)
+        ttp.process()
 
         generated_event.processed(None, action, ttp.complex_transaction)
 
