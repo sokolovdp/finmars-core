@@ -1,6 +1,9 @@
 from __future__ import unicode_literals
 
+from datetime import date
+
 from django.core.exceptions import ObjectDoesNotExist
+from django.utils.translation import ugettext_lazy
 from rest_framework import serializers
 from rest_framework.exceptions import ValidationError
 from rest_framework.fields import empty
@@ -11,6 +14,7 @@ from poms.common import formula
 from poms.common.fields import ExpressionField
 from poms.common.formula import ModelSimpleEval, InvalidExpression
 from poms.common.serializers import PomsClassSerializer, ModelWithUserCodeSerializer
+from poms.common.utils import date_now
 from poms.counterparties.fields import ResponsibleField, CounterpartyField, ResponsibleDefault, CounterpartyDefault
 from poms.counterparties.models import Counterparty, Responsible
 from poms.currencies.fields import CurrencyField, CurrencyDefault
@@ -21,6 +25,7 @@ from poms.integrations.fields import PriceDownloadSchemeField
 from poms.integrations.models import PriceDownloadScheme
 from poms.obj_attrs.serializers import ModelWithAttributesSerializer
 from poms.obj_perms.serializers import ModelWithObjectPermissionSerializer
+from poms.obj_perms.utils import assign_perms3
 from poms.portfolios.fields import PortfolioField, PortfolioDefault
 from poms.portfolios.models import Portfolio
 from poms.strategies.fields import Strategy1Field, Strategy2Field, Strategy3Field, Strategy1Default, Strategy2Default, \
@@ -32,7 +37,6 @@ from poms.transactions.fields import TransactionTypeInputContentTypeField, \
 from poms.transactions.models import TransactionClass, Transaction, TransactionType, TransactionTypeAction, \
     TransactionTypeActionTransaction, TransactionTypeActionInstrument, TransactionTypeInput, TransactionTypeGroup, \
     ComplexTransaction, EventClass, NotificationClass
-from poms.transactions.processor import TransactionTypeProcessor
 from poms.users.fields import MasterUserField
 from poms.users.utils import get_member_from_context
 
@@ -810,16 +814,7 @@ class ComplexTransactionViewSerializer(serializers.ModelSerializer):
             return '<InvalidExpression>'
 
 
-# TransactionType processing
-
-
-class TransactionTypeProcessValues(object):
-    def __init__(self, parent=None, **kwargs):
-        self._parent = parent
-        # for key, value in kwargs.items():
-        #     # TODO: validate attr_name
-        #     setattr(self, key, value)
-        self._parent.set_default_values(self)
+# TransactionType processing -------------------------------------------------------------------------------------------
 
 
 class TransactionTypeProcess(object):
@@ -855,7 +850,12 @@ class TransactionTypeProcess(object):
         self.store = store or False
 
         self.inputs = list(self.transaction_type.inputs.all())
-        self.values = values or TransactionTypeProcessValues(self)
+
+        if values is None:
+            self.values = {}
+            self.set_default_values()
+        else:
+            self.values = values
 
         self.has_errors = has_errors
 
@@ -870,17 +870,20 @@ class TransactionTypeProcess(object):
         self.transactions = transactions or []
         self.transactions_errors = transactions_errors or []
 
-    def get_attr_name(self, input0):
-        return '%s_%s' % (input0.id, input0.name)
+        self._id_seq = 0
+        self._transaction_order_seq = 0
 
-    def get_input_name(self, attr_name):
-        try:
-            id, name = attr_name.split('_', maxsplit=2)
-            return name
-        except ValueError:
-            return None
+    # def get_attr_name(self, input0):
+    #     return '%s_%s' % (input0.id, input0.name)
+    #
+    # def get_input_name(self, attr_name):
+    #     try:
+    #         id, name = attr_name.split('_', maxsplit=2)
+    #         return name
+    #     except ValueError:
+    #         return None
 
-    def set_default_values(self, target):
+    def set_default_values(self):
         for i in self.inputs:
             value = None
             if i.value_type == TransactionTypeInput.RELATION:
@@ -926,96 +929,365 @@ class TransactionTypeProcess(object):
                             value = formula.safe_eval(i.value)
                         except formula.InvalidExpression:
                             value = None
-            attr_name = self.get_attr_name(i)
-            setattr(target, attr_name, value)
+
+            # attr_name = self.get_attr_name(i)
+            self.values[i.name] = value
+
+    def process(self, store=False):
+        master_user = self.transaction_type.master_user
+        object_permissions = self.transaction_type.object_permissions.select_related('permission').all()
+        daily_pricing_model = DailyPricingModel.objects.get(pk=DailyPricingModel.SKIP)
+
+        instrument_map = {}
+        actions = self.transaction_type.actions.order_by('order').all()
+
+        for order, action in enumerate(actions):
+            try:
+                action_instrument = action.transactiontypeactioninstrument
+            except ObjectDoesNotExist:
+                action_instrument = None
+
+            if action_instrument:
+                errors = {}
+                try:
+                    user_code = formula.safe_eval(action_instrument.user_code, names=self.values)
+                except formula.InvalidExpression as e:
+                    self._set_eval_error(errors, 'user_code', action_instrument.user_code, e)
+                    user_code = None
+
+                if user_code:
+                    try:
+                        instrument = Instrument.objects.get(master_user=master_user, user_code=user_code)
+                        self.instruments.append(instrument)
+                        self.instruments_errors.append({})
+                        continue
+                    except ObjectDoesNotExist:
+                        pass
+
+                instrument = Instrument(master_user=master_user)
+                # results[action_instr.order] = instr
+                instrument.user_code = user_code
+                self._set_val(errors=errors, values=self.values, default_value='',
+                              target=instrument, target_attr_name='name',
+                              source=action_instrument, source_attr_name='name')
+                self._set_val(errors=errors, values=self.values, default_value='',
+                              target=instrument, target_attr_name='short_name',
+                              source=action_instrument, source_attr_name='short_name')
+                self._set_val(errors=errors, values=self.values, default_value='',
+                              target=instrument, target_attr_name='public_name',
+                              source=action_instrument, source_attr_name='public_name')
+                self._set_val(errors=errors, values=self.values, default_value='',
+                              target=instrument, target_attr_name='notes',
+                              source=action_instrument, source_attr_name='notes')
+                self._set_rel(errors=errors,
+                              target=instrument, target_attr_name='instrument_type',
+                              source=action_instrument, source_attr_name='instrument_type',
+                              values=self.values, default_value=master_user.instrument_type)
+                self._set_rel(errors=errors, values=self.values, default_value=master_user.currency,
+                              target=instrument, target_attr_name='pricing_currency',
+                              source=action_instrument, source_attr_name='pricing_currency')
+                self._set_val(errors=errors, values=self.values, default_value=0.0,
+                              target=instrument, target_attr_name='price_multiplier',
+                              source=action_instrument, source_attr_name='price_multiplier')
+                self._set_rel(errors=errors, values=self.values, default_value=master_user.currency,
+                              target=instrument, target_attr_name='accrued_currency',
+                              source=action_instrument, source_attr_name='accrued_currency')
+                self._set_val(errors=errors, values=self.values, default_value=0.0,
+                              target=instrument, target_attr_name='accrued_multiplier',
+                              source=action_instrument, source_attr_name='accrued_multiplier')
+                self._set_rel(errors=errors, values=self.values, default_value=None,
+                              target=instrument, target_attr_name='payment_size_detail',
+                              source=action_instrument, source_attr_name='payment_size_detail')
+                self._set_val(errors=errors, values=self.values, default_value=0.0,
+                              target=instrument, target_attr_name='default_price',
+                              source=action_instrument, source_attr_name='default_price')
+                self._set_val(errors=errors, values=self.values, default_value=0.0,
+                              target=instrument, target_attr_name='default_accrued',
+                              source=action_instrument, source_attr_name='default_accrued')
+                self._set_val(errors=errors, values=self.values, default_value='',
+                              target=instrument, target_attr_name='user_text_1',
+                              source=action_instrument, source_attr_name='user_text_1')
+                self._set_val(errors=errors, values=self.values, default_value='',
+                              target=instrument, target_attr_name='user_text_2',
+                              source=action_instrument, source_attr_name='user_text_2')
+                self._set_val(errors=errors, values=self.values, default_value='',
+                              target=instrument, target_attr_name='user_text_3',
+                              source=action_instrument, source_attr_name='user_text_3')
+                self._set_val(errors=errors, values=self.values, default_value='',
+                              target=instrument, target_attr_name='reference_for_pricing',
+                              source=action_instrument, source_attr_name='reference_for_pricing')
+                self._set_rel(errors=errors, values=self.values, default_value=None,
+                              target=instrument, target_attr_name='price_download_scheme',
+                              source=action_instrument, source_attr_name='price_download_scheme')
+                self._set_rel(errors=errors, values=self.values, default_value=daily_pricing_model,
+                              target=instrument, target_attr_name='daily_pricing_model',
+                              source=action_instrument, source_attr_name='daily_pricing_model')
+                self._set_val(errors=errors, values=self.values, default_value=date.max,
+                              target=instrument, target_attr_name='maturity_date',
+                              source=action_instrument, source_attr_name='maturity_date')
+
+                if store:
+                    instrument.save()
+                    self._instrument_assign_permission(instrument, object_permissions)
+                else:
+                    instrument.id = self._next_fake_id()
+                instrument_map[action.id] = instrument
+                self.instruments.append(instrument)
+                self.instruments_errors.append(errors)
+
+        if self.complex_transaction is None:
+            self.complex_transaction = ComplexTransaction(transaction_type=self.transaction_type,
+                                                          status=self.complex_transaction_status)
+        if store:
+            self.complex_transaction.save()
+        else:
+            self.complex_transaction.id = self._next_fake_id()
+
+        for order, action in enumerate(actions):
+            try:
+                action_transaction = action.transactiontypeactiontransaction
+            except ObjectDoesNotExist:
+                action_transaction = None
+
+            if action_transaction:
+                errors = {}
+                transaction = Transaction(master_user=master_user)
+                transaction.complex_transaction = self.complex_transaction
+                transaction.complex_transaction_order = self._next_transaction_order()
+                transaction.transaction_class = action_transaction.transaction_class
+
+                self._set_rel(errors=errors, values=self.values, default_value=master_user.portfolio,
+                              target=transaction, target_attr_name='portfolio',
+                              source=action_transaction, source_attr_name='portfolio')
+                self._set_rel(errors=errors, values=self.values, default_value=None,
+                              target=transaction, target_attr_name='instrument',
+                              source=action_transaction, source_attr_name='instrument')
+                if action_transaction.instrument_phantom is not None:
+                    transaction.instrument = instrument_map[action_transaction.instrument_phantom_id]
+                self._set_rel(errors=errors, values=self.values, default_value=master_user.currency,
+                              target=transaction, target_attr_name='transaction_currency',
+                              source=action_transaction, source_attr_name='transaction_currency')
+                self._set_val(errors=errors, values=self.values, default_value=0.0,
+                              target=transaction, target_attr_name='position_size_with_sign',
+                              source=action_transaction, source_attr_name='position_size_with_sign')
+                self._set_rel(errors=errors, values=self.values, default_value=master_user.currency,
+                              target=transaction, target_attr_name='settlement_currency',
+                              source=action_transaction, source_attr_name='settlement_currency')
+                self._set_val(errors=errors, values=self.values, default_value=0.0,
+                              target=transaction, target_attr_name='cash_consideration',
+                              source=action_transaction, source_attr_name='cash_consideration')
+                self._set_val(errors=errors, values=self.values, default_value=0.0,
+                              target=transaction, target_attr_name='principal_with_sign',
+                              source=action_transaction, source_attr_name='principal_with_sign')
+                self._set_val(errors=errors, values=self.values, default_value=0.0,
+                              target=transaction, target_attr_name='carry_with_sign',
+                              source=action_transaction, source_attr_name='carry_with_sign')
+                self._set_val(errors=errors, values=self.values, default_value=0.0,
+                              target=transaction, target_attr_name='overheads_with_sign',
+                              source=action_transaction, source_attr_name='overheads_with_sign')
+                self._set_rel(errors=errors, values=self.values, default_value=master_user.account,
+                              target=transaction, target_attr_name='account_position',
+                              source=action_transaction, source_attr_name='account_position')
+                self._set_rel(errors=errors, values=self.values, default_value=master_user.account,
+                              target=transaction, target_attr_name='account_cash',
+                              source=action_transaction, source_attr_name='account_cash')
+                self._set_rel(errors=errors, values=self.values, default_value=master_user.account,
+                              target=transaction, target_attr_name='account_interim',
+                              source=action_transaction, source_attr_name='account_interim')
+                self._set_val(errors=errors, values=self.values, default_value=date_now(),
+                              target=transaction, target_attr_name='accounting_date',
+                              source=action_transaction, source_attr_name='accounting_date')
+                self._set_val(errors=errors, values=self.values, default_value=date_now(),
+                              target=transaction, target_attr_name='cash_date',
+                              source=action_transaction, source_attr_name='cash_date')
+                self._set_rel(errors=errors, values=self.values, default_value=master_user.strategy1,
+                              target=transaction, target_attr_name='strategy1_position',
+                              source=action_transaction, source_attr_name='strategy1_position')
+                self._set_rel(errors=errors, values=self.values, default_value=master_user.strategy1,
+                              target=transaction, target_attr_name='strategy1_cash',
+                              source=action_transaction, source_attr_name='strategy1_cash')
+                self._set_rel(errors=errors, values=self.values, default_value=master_user.strategy2,
+                              target=transaction, target_attr_name='strategy2_position',
+                              source=action_transaction, source_attr_name='strategy2_position')
+                self._set_rel(errors=errors, values=self.values, default_value=master_user.strategy2,
+                              target=transaction, target_attr_name='strategy2_cash',
+                              source=action_transaction, source_attr_name='strategy2_cash')
+                self._set_rel(errors=errors, values=self.values, default_value=master_user.strategy3,
+                              target=transaction, target_attr_name='strategy3_position',
+                              source=action_transaction, source_attr_name='strategy3_position')
+                self._set_rel(errors=errors, values=self.values, default_value=master_user.strategy3,
+                              target=transaction, target_attr_name='strategy3_cash',
+                              source=action_transaction, source_attr_name='strategy3_cash')
+                self._set_val(errors=errors, values=self.values, default_value=0.0,
+                              target=transaction, target_attr_name='factor',
+                              source=action_transaction, source_attr_name='factor')
+                self._set_val(errors=errors, values=self.values, default_value=0.0,
+                              target=transaction, target_attr_name='trade_price',
+                              source=action_transaction, source_attr_name='trade_price')
+                self._set_val(errors=errors, values=self.values, default_value=0.0,
+                              target=transaction, target_attr_name='principal_amount',
+                              source=action_transaction, source_attr_name='principal_amount')
+                self._set_val(errors=errors, values=self.values, default_value=0.0,
+                              target=transaction, target_attr_name='carry_amount',
+                              source=action_transaction, source_attr_name='carry_amount')
+                self._set_rel(errors=errors, values=self.values, default_value=master_user.responsible,
+                              target=transaction, target_attr_name='responsible',
+                              source=action_transaction, source_attr_name='responsible')
+                self._set_rel(errors=errors, values=self.values, default_value=master_user.counterparty,
+                              target=transaction, target_attr_name='counterparty',
+                              source=action_transaction, source_attr_name='counterparty')
+
+                transaction.transaction_date = min(transaction.accounting_date, transaction.cash_date)
+                if store:
+                    transaction.save()
+                else:
+                    transaction.id = self._next_fake_id()
+
+                self.transactions.append(transaction)
+                self.transactions_errors.append(errors)
+
+    def _next_fake_id(self):
+        self._id_seq -= 1
+        return self._id_seq
+
+    def _next_transaction_order(self):
+        self._transaction_order_seq += 1
+        return self._transaction_order_seq
+
+    def _set_val(self, errors, values, default_value, target, target_attr_name, source, source_attr_name):
+        value = getattr(source, source_attr_name)
+        if value:
+            try:
+                value = formula.safe_eval(value, names=values)
+            except formula.InvalidExpression as e:
+                self._set_eval_error(errors, source_attr_name, value, e)
+                return
+        else:
+            value = default_value
+        setattr(target, target_attr_name, value)
+
+    def _set_rel(self, errors, values, default_value, target, target_attr_name, source, source_attr_name):
+        value = getattr(source, source_attr_name, None)
+        if value:
+            pass
+        else:
+            from_input = getattr(source, '%s_input' % source_attr_name)
+            if from_input:
+                value = values[from_input.name]
+        if not value:
+            value = default_value
+        if value is not None:
+            setattr(target, target_attr_name, value)
+
+    def _instrument_assign_permission(self, instr, object_permissions):
+        perms = []
+        for op in object_permissions:
+            perms.append({
+                'group': op.group,
+                'member': op.member,
+                'permission': op.permission.codename.replace('_transactiontype', '_instrument')
+            })
+        assign_perms3(instr, perms)
+
+    def _set_eval_error(self, errors, attr_name, expression, exc=None):
+        msg = ugettext_lazy('Invalid expression "%(expression)s".') % {
+            'expression': expression,
+        }
+        msgs = errors.get(attr_name, None) or []
+        if msg not in msgs:
+            errors[attr_name] = msgs + [msg]
 
 
 class TransactionTypeProcessValuesSerializer(serializers.Serializer):
     def __init__(self, **kwargs):
         super(TransactionTypeProcessValuesSerializer, self).__init__(**kwargs)
 
-        ttp = self.instance._parent
-        for i in ttp.inputs:
-            # name = '%s_%s' % (i.id, i.name)
-            name = ttp.get_attr_name(i)
+        from poms.accounts.serializers import AccountViewSerializer
+        from poms.currencies.serializers import CurrencyViewSerializer
+        from poms.instruments.serializers import InstrumentViewSerializer
+        from poms.instruments.serializers import InstrumentTypeViewSerializer
+        from poms.counterparties.serializers import CounterpartyViewSerializer
+        from poms.counterparties.serializers import ResponsibleViewSerializer
+        from poms.strategies.serializers import Strategy1ViewSerializer
+        from poms.strategies.serializers import Strategy2ViewSerializer
+        from poms.strategies.serializers import Strategy3ViewSerializer
+        from poms.instruments.serializers import DailyPricingModelSerializer
+        from poms.instruments.serializers import PaymentSizeDetailSerializer
+        from poms.portfolios.serializers import PortfolioViewSerializer
+        from poms.integrations.serializers import PriceDownloadSchemeViewSerializer
+
+        for i in self.instance.inputs:
+            name = i.name
             name_object = '%s_object' % name
             field = None
             field_object = None
+
             if i.value_type == TransactionTypeInput.STRING:
                 field = serializers.CharField(required=True, label=i.name, help_text=i.verbose_name)
+
             elif i.value_type == TransactionTypeInput.NUMBER:
                 field = serializers.FloatField(required=True, label=i.name, help_text=i.verbose_name)
+
             elif i.value_type == TransactionTypeInput.DATE:
-                field = serializers.DateField(required=True, label=i.name, help_text=i.verbose_name)
+                field = serializers.DateField(required=True, label=i.name, help_text=i.verbose_namee)
+
             elif i.value_type == TransactionTypeInput.RELATION:
                 model_class = i.content_type.model_class()
-                if issubclass(model_class, Account):
-                    from poms.accounts.serializers import AccountViewSerializer
 
+                if issubclass(model_class, Account):
                     field = AccountField(required=True, label=i.name, help_text=i.verbose_name)
                     field_object = AccountViewSerializer(source=name, read_only=True)
-                elif issubclass(model_class, Currency):
-                    from poms.currencies.serializers import CurrencyViewSerializer
 
+                elif issubclass(model_class, Currency):
                     field = CurrencyField(required=True, label=i.name, help_text=i.verbose_name)
                     field_object = CurrencyViewSerializer(source=name, read_only=True)
-                elif issubclass(model_class, Instrument):
-                    from poms.instruments.serializers import InstrumentViewSerializer
 
+                elif issubclass(model_class, Instrument):
                     field = InstrumentField(required=True, label=i.name, help_text=i.verbose_name)
                     field_object = InstrumentViewSerializer(source=name, read_only=True)
-                elif issubclass(model_class, InstrumentType):
-                    from poms.instruments.serializers import InstrumentTypeViewSerializer
 
+                elif issubclass(model_class, InstrumentType):
                     field = InstrumentTypeField(required=True, label=i.name, help_text=i.verbose_name)
                     field_object = InstrumentTypeViewSerializer(source=name, read_only=True)
-                elif issubclass(model_class, Counterparty):
-                    from poms.counterparties.serializers import CounterpartyViewSerializer
 
+                elif issubclass(model_class, Counterparty):
                     field = CounterpartyField(required=True, label=i.name, help_text=i.verbose_name)
                     field_object = CounterpartyViewSerializer(source=name, read_only=True)
-                elif issubclass(model_class, Responsible):
-                    from poms.counterparties.serializers import ResponsibleViewSerializer
 
+                elif issubclass(model_class, Responsible):
                     field = ResponsibleField(required=True, label=i.name, help_text=i.verbose_name)
                     field_object = ResponsibleViewSerializer(source=name, read_only=True)
-                elif issubclass(model_class, Strategy1):
-                    from poms.strategies.serializers import Strategy1ViewSerializer
 
+                elif issubclass(model_class, Strategy1):
                     field = Strategy1Field(required=True, label=i.name, help_text=i.verbose_name)
                     field_object = Strategy1ViewSerializer(source=name, read_only=True)
-                elif issubclass(model_class, Strategy2):
-                    from poms.strategies.serializers import Strategy2ViewSerializer
 
+                elif issubclass(model_class, Strategy2):
                     field = Strategy2Field(required=True, label=i.name, help_text=i.verbose_name)
                     field_object = Strategy2ViewSerializer(source=name, read_only=True)
-                elif issubclass(model_class, Strategy3):
-                    from poms.strategies.serializers import Strategy3ViewSerializer
 
+                elif issubclass(model_class, Strategy3):
                     field = Strategy3Field(required=True, label=i.name, help_text=i.verbose_name)
                     field_object = Strategy3ViewSerializer(source=name, read_only=True)
-                elif issubclass(model_class, DailyPricingModel):
-                    from poms.instruments.serializers import DailyPricingModelSerializer
 
+                elif issubclass(model_class, DailyPricingModel):
                     field = serializers.PrimaryKeyRelatedField(queryset=DailyPricingModel.objects, required=True,
                                                                label=i.name, help_text=i.verbose_name)
                     field_object = DailyPricingModelSerializer(source=name, read_only=True)
-                elif issubclass(model_class, PaymentSizeDetail):
-                    from poms.instruments.serializers import PaymentSizeDetailSerializer
 
+                elif issubclass(model_class, PaymentSizeDetail):
                     field = serializers.PrimaryKeyRelatedField(queryset=PaymentSizeDetail.objects, required=True,
                                                                label=i.name, help_text=i.verbose_name)
                     field_object = PaymentSizeDetailSerializer(source=name, read_only=True)
-                elif issubclass(model_class, Portfolio):
-                    from poms.portfolios.serializers import PortfolioViewSerializer
 
+                elif issubclass(model_class, Portfolio):
                     field = PortfolioField(required=True, label=i.name, help_text=i.verbose_name)
                     field_object = PortfolioViewSerializer(source=name, read_only=True)
-                elif issubclass(model_class, PriceDownloadScheme):
-                    from poms.integrations.serializers import PriceDownloadSchemeViewSerializer
 
+                elif issubclass(model_class, PriceDownloadScheme):
                     field = PriceDownloadSchemeField(required=True, label=i.name, help_text=i.verbose_name)
                     field_object = PriceDownloadSchemeViewSerializer(source=name, read_only=True)
+
             if field:
                 self.fields[name] = field
                 if field_object:
@@ -1053,44 +1325,48 @@ class TransactionTypeProcessSerializer(serializers.Serializer):
         self.fields['calculate'] = serializers.BooleanField(default=False, required=False)
         self.fields['store'] = serializers.BooleanField(default=False, required=False)
         if self.instance:
-            self.fields['values'] = TransactionTypeProcessValuesSerializer(instance=self.instance.values)
+            self.fields['values'] = TransactionTypeProcessValuesSerializer(instance=self.instance)
         self.fields['has_errors'] = serializers.BooleanField(read_only=True)
         self.fields['instruments_errors'] = serializers.ReadOnlyField()
         self.fields['transactions_errors'] = serializers.ReadOnlyField()
-        self.fields['instruments'] = InstrumentViewSerializer(many=True, read_only=False, required=False, allow_null=True)
-        self.fields['complex_transaction'] = ComplexTransactionViewSerializer(read_only=False, required=False, allow_null=True)
+        self.fields['instruments'] = InstrumentViewSerializer(many=True, read_only=False, required=False,
+                                                              allow_null=True)
+        self.fields['complex_transaction'] = ComplexTransactionViewSerializer(read_only=False, required=False,
+                                                                              allow_null=True)
         self.fields['transactions'] = PhantomTransactionSerializer(many=True, required=False, allow_null=True)
 
     def create(self, validated_data):
         return validated_data
 
     def update(self, instance, validated_data):
-        values_data = validated_data.pop('values')
-
         for key, value in validated_data.items():
-            setattr(instance, key, value)
+            if key == 'complex_transaction':
+                instance.complex_transaction = ComplexTransaction(transaction_type=instance.transaction_type)
+                instance.complex_transaction.code = value.get('code', 0)
+                instance.complex_transaction.status = value.get('status', ComplexTransaction.PENDING)
+            else:
+                setattr(instance, key, value)
 
-        input_values = {}
-        values = instance.values
-        for key, value in values_data.items():
-            setattr(values, key, value)
-
-            name = instance.get_input_name(key)
-            if name:
-                input_values[name] = value
+        # for key, value in list(instance.values.items()):
+        #     name = instance.get_input_name(key)
+        #     instance.values[name] = value
 
         if instance.calculate:
-            processor = TransactionTypeProcessor(transaction_type=instance.transaction_type,
-                                                 input_values=input_values,
-                                                 complex_transaction_status=instance.complex_transaction_status)
-            processor.run(False)
-            instance.complex_transaction = processor.complex_transaction
-            instance.complex_transaction._fake_transactions = processor.transactions
-            instance.has_errors = processor.has_errors
-            instance.instruments_errors = processor.instruments_errors
-            instance.instruments = processor.instruments
-            instance.transactions_errors = processor.transactions_errors
-            instance.transactions = processor.transactions
+            # processor = TransactionTypeProcessor(transaction_type=instance.transaction_type,
+            #                                      input_values=input_values,
+            #                                      complex_transaction_status=instance.complex_transaction_status)
+            # processor.run(False)
+
+            instance.process(False)
+            instance.complex_transaction._fake_transactions = instance.transactions
+
+            # instance.complex_transaction = processor.complex_transaction
+            # instance.complex_transaction._fake_transactions = processor.transactions
+            # instance.has_errors = processor.has_errors
+            # instance.instruments_errors = processor.instruments_errors
+            # instance.instruments = processor.instruments
+            # instance.transactions_errors = processor.transactions_errors
+            # instance.transactions = processor.transactions
 
             if instance.store and not instance.has_errors:
                 instruments_map = {}
