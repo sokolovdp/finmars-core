@@ -15,7 +15,7 @@ class AuthLogEntrySerializer(serializers.ModelSerializer):
 
     class Meta:
         model = AuthLogEntry
-        fields = ('url', 'id', 'date', 'user_ip', 'user_agent', 'human_user_agent', 'is_success', 'user_location',)
+        fields = ('id', 'date', 'user_ip', 'user_agent', 'human_user_agent', 'is_success', 'user_location',)
 
     def get_user_location(self, instance):
         loc = get_city_by_ip(instance.user_ip)
@@ -34,7 +34,7 @@ class ObjectHistory4EntrySerializer(serializers.ModelSerializer):
     class Meta:
         model = ObjectHistory4Entry
         fields = [
-            'url', 'id', 'member', 'group_id', 'created', 'action_flag',
+            'id', 'member', 'group_id', 'created', 'action_flag',
             'actor_content_type', 'actor_content_type_repr', 'actor_object_id', 'actor_object_repr',
             'content_type', 'content_type_repr', 'object_id', 'object_repr',
             'field_name', 'field_name_repr',

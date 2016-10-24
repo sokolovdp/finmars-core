@@ -21,7 +21,7 @@ class ThreadGroupSerializer(ModelWithTagSerializer):
     class Meta:
         model = ThreadGroup
         fields = [
-            'url', 'id', 'master_user', 'name', 'is_deleted',
+            'id', 'master_user', 'name', 'is_deleted',
             # 'tags', 'tags_object'
         ]
 
@@ -31,7 +31,7 @@ class ThreadGroupViewSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = ThreadGroup
-        fields = ['url', 'id', 'name', 'is_deleted', ]
+        fields = ['id', 'name', 'is_deleted', ]
 
 
 class MessageSerializer(serializers.ModelSerializer):
@@ -44,7 +44,7 @@ class MessageSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Message
-        fields = ['url', 'id', 'thread', 'sender', 'created', 'modified', 'text', 'sender_object']
+        fields = ['id', 'thread', 'sender', 'created', 'modified', 'text', 'sender_object']
         read_only_fields = ['created', 'modified']
 
 
@@ -65,7 +65,7 @@ class ThreadSerializer(ModelWithObjectPermissionSerializer, ModelWithTagSerializ
     class Meta(ModelWithObjectPermissionSerializer.Meta):
         model = Thread
         fields = [
-            'url', 'id', 'master_user', 'thread_group', 'thread_group_object',
+            'id', 'master_user', 'thread_group', 'thread_group_object',
             'subject', 'is_closed', 'is_deleted', 'created', 'modified', 'closed',
             'messages_count', 'messages_last'
             # 'tags', 'tags_object',
@@ -92,6 +92,6 @@ class DirectMessageSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = DirectMessage
-        fields = ['url', 'id', 'sender', 'sender_object', 'recipient', 'recipient_object', 'created', 'modified',
+        fields = ['id', 'sender', 'sender_object', 'recipient', 'recipient_object', 'created', 'modified',
                   'text', ]
         read_only_fields = ['created', 'modified']

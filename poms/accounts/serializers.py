@@ -32,7 +32,7 @@ class AccountTypeSerializer(ModelWithObjectPermissionSerializer, ModelWithUserCo
     class Meta:
         model = AccountType
         fields = [
-            'url', 'id', 'master_user', 'user_code', 'name', 'short_name', 'public_name', 'notes',
+            'id', 'master_user', 'user_code', 'name', 'short_name', 'public_name', 'notes',
             'show_transaction_details', 'transaction_details_expr', 'is_default', 'is_deleted',
             # 'tags', 'tags_object'
         ]
@@ -42,7 +42,7 @@ class AccountTypeViewSerializer(ModelWithObjectPermissionSerializer):
     class Meta(ModelWithObjectPermissionSerializer.Meta):
         model = AccountType
         fields = [
-            'url', 'id', 'user_code', 'name', 'short_name', 'public_name',
+            'id', 'user_code', 'name', 'short_name', 'public_name',
         ]
 
 
@@ -82,7 +82,7 @@ class AccountSerializer(ModelWithObjectPermissionSerializer, ModelWithAttributes
     class Meta:
         model = Account
         fields = [
-            'url', 'id', 'master_user', 'type', 'type_object', 'user_code', 'name', 'short_name', 'public_name',
+            'id', 'master_user', 'type', 'type_object', 'user_code', 'name', 'short_name', 'public_name',
             'notes', 'is_default', 'is_valid_for_all_portfolios', 'is_deleted', 'portfolios', 'portfolios_object',
             # 'attributes',
             # 'tags', 'tags_object',
@@ -102,5 +102,5 @@ class AccountViewSerializer(ModelWithObjectPermissionSerializer):
     class Meta(ModelWithObjectPermissionSerializer.Meta):
         model = Account
         fields = [
-            'url', 'id', 'type', 'type_object', 'user_code', 'name', 'short_name', 'public_name',
+            'id', 'type', 'type_object', 'user_code', 'name', 'short_name', 'public_name',
         ]

@@ -64,13 +64,13 @@ class PricingPolicySerializer(ModelWithUserCodeSerializer):
 
     class Meta:
         model = PricingPolicy
-        fields = ['url', 'id', 'master_user', 'user_code', 'name', 'short_name', 'notes', 'expr']
+        fields = ['id', 'master_user', 'user_code', 'name', 'short_name', 'notes', 'expr']
 
 
 class PricingPolicyViewSerializer(ModelWithUserCodeSerializer):
     class Meta:
         model = PricingPolicy
-        fields = ['url', 'id', 'user_code', 'name', 'short_name', 'notes', 'expr']
+        fields = ['id', 'user_code', 'name', 'short_name', 'notes', 'expr']
 
 
 # class InstrumentClassifierSerializer(AbstractClassifierSerializer):
@@ -104,7 +104,7 @@ class InstrumentTypeSerializer(ModelWithObjectPermissionSerializer, ModelWithUse
     class Meta:
         model = InstrumentType
         fields = [
-            'url', 'id', 'master_user', 'instrument_class', 'instrument_class_object',
+            'id', 'master_user', 'instrument_class', 'instrument_class_object',
             'user_code', 'name', 'short_name', 'public_name',
             'notes', 'is_default', 'is_deleted', 'one_off_event', 'one_off_event_object',
             'regular_event', 'regular_event_object', 'factor_same', 'factor_same_object',
@@ -145,7 +145,7 @@ class InstrumentTypeViewSerializer(ModelWithObjectPermissionSerializer, ModelWit
     class Meta:
         model = InstrumentType
         fields = [
-            'url', 'id', 'instrument_class', 'instrument_class_object', 'user_code', 'name', 'short_name',
+            'id', 'instrument_class', 'instrument_class_object', 'user_code', 'name', 'short_name',
             'public_name',
         ]
 
@@ -201,7 +201,7 @@ class InstrumentSerializer(ModelWithAttributesSerializer, ModelWithObjectPermiss
     class Meta:
         model = Instrument
         fields = [
-            'url', 'id', 'master_user', 'instrument_type', 'instrument_type_object', 'user_code', 'name', 'short_name',
+            'id', 'master_user', 'instrument_type', 'instrument_type_object', 'user_code', 'name', 'short_name',
             'public_name', 'notes', 'is_active', 'is_deleted',
             'pricing_currency', 'pricing_currency_object', 'price_multiplier',
             'accrued_currency', 'accrued_currency_object', 'accrued_multiplier',
@@ -374,7 +374,7 @@ class InstrumentViewSerializer(ModelWithObjectPermissionSerializer):
     class Meta(ModelWithObjectPermissionSerializer.Meta):
         model = Instrument
         fields = [
-            'url', 'id', 'instrument_type', 'instrument_type_object', 'user_code', 'name', 'short_name',
+            'id', 'instrument_type', 'instrument_type_object', 'user_code', 'name', 'short_name',
             'public_name', 'notes', 'is_active', 'is_deleted',
             # 'pricing_currency', 'pricing_currency_object', 'price_multiplier',
             # 'accrued_currency', 'accrued_currency_object', 'accrued_multiplier',
@@ -525,14 +525,14 @@ class PriceHistorySerializer(serializers.ModelSerializer):
     class Meta:
         model = PriceHistory
         fields = [
-            'url', 'id', 'instrument', 'instrument_object', 'pricing_policy', 'pricing_policy_object',
+            'id', 'instrument', 'instrument_object', 'pricing_policy', 'pricing_policy_object',
             'date', 'principal_price', 'accrued_price'
         ]
 
     def __init__(self, *args, **kwargs):
         super(PriceHistorySerializer, self).__init__(*args, **kwargs)
-        if 'request' not in self.context:
-            self.fields.pop('url')
+        # if 'request' not in self.context:
+        #     self.fields.pop('url')
 
 
 class GeneratedEventSerializer(serializers.ModelSerializer):
@@ -541,7 +541,7 @@ class GeneratedEventSerializer(serializers.ModelSerializer):
     class Meta:
         model = GeneratedEvent
         fields = [
-            'url', 'id', 'effective_date', 'notification_date', 'status', 'status_date', 'event_schedule',
+            'id', 'effective_date', 'notification_date', 'status', 'status_date', 'event_schedule',
             'instrument', 'portfolio', 'account', 'strategy1', 'strategy2', 'strategy3', 'position', 'action',
             'transaction_type', 'member',
         ]
@@ -616,7 +616,7 @@ class EventScheduleConfigSerializer(serializers.ModelSerializer):
     class Meta:
         model = EventScheduleConfig
         fields = [
-            'url', 'id', 'master_user', 'name', 'description', 'notification_class', 'notification_class_object',
+            'id', 'master_user', 'name', 'description', 'notification_class', 'notification_class_object',
             'notify_in_n_days', 'action_text', 'action_is_sent_to_pending', 'action_is_book_automatic',
         ]
 

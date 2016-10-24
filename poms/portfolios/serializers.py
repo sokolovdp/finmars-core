@@ -60,7 +60,7 @@ class PortfolioSerializer(ModelWithObjectPermissionSerializer, ModelWithAttribut
     class Meta:
         model = Portfolio
         fields = [
-            'url', 'id', 'master_user', 'user_code', 'name', 'short_name', 'public_name', 'notes', 'is_default',
+            'id', 'master_user', 'user_code', 'name', 'short_name', 'public_name', 'notes', 'is_default',
             'is_deleted', 'accounts', 'accounts_object', 'responsibles', 'responsibles_object', 'counterparties',
             'counterparties_object', 'transaction_types', 'transaction_types_object',
             # 'attributes',
@@ -90,5 +90,5 @@ class PortfolioViewSerializer(ModelWithObjectPermissionSerializer):
     class Meta(ModelWithObjectPermissionSerializer.Meta):
         model = Portfolio
         fields = [
-            'url', 'id', 'user_code', 'name', 'short_name', 'public_name',
+            'id', 'user_code', 'name', 'short_name', 'public_name',
         ]

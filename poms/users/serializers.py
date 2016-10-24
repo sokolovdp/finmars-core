@@ -97,7 +97,7 @@ class UserSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = User
-        fields = ['url', 'id', 'username', 'first_name', 'last_name', 'email', 'profile']
+        fields = ['id', 'username', 'first_name', 'last_name', 'email', 'profile']
         read_only_fields = ['username']
 
     def create(self, validated_data):
@@ -211,7 +211,7 @@ class MasterUserSerializer(serializers.ModelSerializer):
     class Meta:
         model = MasterUser
         fields = [
-            'url', 'id', 'name', 'is_current', 'language', 'timezone',
+            'id', 'name', 'is_current', 'language', 'timezone',
             'notification_business_days',
             'currency', 'currency_object',
             'account_type', 'account_type_object',
@@ -278,7 +278,7 @@ class MasterUserSerializer(serializers.ModelSerializer):
         is_current = self.get_is_current(instance)
         if not is_current:
             for k in list(ret.keys()):
-                if k not in ['url', 'id', 'name', 'is_current']:
+                if k not in ['id', 'name', 'is_current']:
                     ret.pop(k)
         return ret
 
@@ -317,7 +317,7 @@ class MemberSerializer(serializers.ModelSerializer):
     class Meta:
         model = Member
         fields = [
-            'url', 'id', 'master_user', 'join_date', 'is_owner', 'is_admin', 'is_superuser', 'is_current',
+            'id', 'master_user', 'join_date', 'is_owner', 'is_admin', 'is_superuser', 'is_current',
             'is_deleted', 'username', 'first_name', 'last_name', 'display_name', 'email', 'groups', 'groups_object'
         ]
         read_only_fields = [
@@ -338,7 +338,7 @@ class MemberSerializer(serializers.ModelSerializer):
 class MemberViewSerializer(serializers.ModelSerializer):
     class Meta:
         model = Member
-        fields = ['url', 'id', 'username', 'first_name', 'last_name', 'display_name', ]
+        fields = ['id', 'username', 'first_name', 'last_name', 'display_name', ]
         read_only_fields = ['id', 'username', 'first_name', 'last_name', 'display_name', ]
 
     def get_is_current(self, obj):
@@ -354,7 +354,7 @@ class GroupSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Group
-        fields = ['url', 'id', 'master_user', 'name', 'members', 'members_object']
+        fields = ['id', 'master_user', 'name', 'members', 'members_object']
 
     def __init__(self, *args, **kwargs):
         super(GroupSerializer, self).__init__(*args, **kwargs)
@@ -367,4 +367,4 @@ class GroupViewSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Group
-        fields = ['url', 'id', 'name']
+        fields = ['id', 'name']

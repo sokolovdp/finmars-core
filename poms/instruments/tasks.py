@@ -216,7 +216,8 @@ def process_events_apply_def(generated_event):
     action = next((a for a in generated_event.event_schedule.actions.all() if a.is_book_automatic), None)
     _l.debug('process_events_apply_def: generated_event=%s, action=%s', generated_event.id, getattr(action, 'id', None))
     if action:
-        from poms.transactions.serializers import TransactionTypeProcess, TransactionTypeProcessSerializer
+        from poms.transactions.serializers import TransactionTypeProcess
+        from poms.transactions.processor import TransactionTypeProcessor
 
         ttp = TransactionTypeProcess(transaction_type=action.transaction_type,
                                      generated_event=generated_event,
@@ -224,12 +225,12 @@ def process_events_apply_def(generated_event):
                                      calculate=True,
                                      store=True)
 
-        ttps = TransactionTypeProcessSerializer(instance=ttp)
-        values = ttps.data['values']
-
-        ttps = TransactionTypeProcessSerializer(instance=ttp, data={'values': values})
-        ttps.is_valid(raise_exception=True)
-        ttps.save()
+        input_values = {}
+        for i in action.transaction_type.inputs.all():
+            attr_name = ttp.get_attr_name(i)
+            input_values[i.name] = getattr(ttp.values, attr_name)
+        ttpp = TransactionTypeProcessor(action.transaction_type, input_values, ttp.complex_transaction_status)
+        ttpp.run(True)
 
         generated_event.processed(None, action, ttp.complex_transaction)
 

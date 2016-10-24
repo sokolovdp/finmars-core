@@ -49,7 +49,7 @@ class CounterpartyGroupSerializer(ModelWithObjectPermissionSerializer, ModelWith
     class Meta:
         model = CounterpartyGroup
         fields = [
-            'url', 'id', 'master_user', 'user_code', 'name', 'short_name', 'public_name', 'notes',
+            'id', 'master_user', 'user_code', 'name', 'short_name', 'public_name', 'notes',
             'is_default', 'is_deleted',
             # 'tags', 'tags_object',
         ]
@@ -58,7 +58,7 @@ class CounterpartyGroupSerializer(ModelWithObjectPermissionSerializer, ModelWith
 class CounterpartyGroupViewSerializer(ModelWithObjectPermissionSerializer):
     class Meta(ModelWithObjectPermissionSerializer.Meta):
         model = CounterpartyGroup
-        fields = ['url', 'id', 'user_code', 'name', 'short_name', 'public_name', ]
+        fields = ['id', 'user_code', 'name', 'short_name', 'public_name', ]
 
 
 class CounterpartySerializer(ModelWithObjectPermissionSerializer, ModelWithAttributesSerializer,
@@ -77,7 +77,7 @@ class CounterpartySerializer(ModelWithObjectPermissionSerializer, ModelWithAttri
     class Meta:
         model = Counterparty
         fields = [
-            'url', 'id', 'master_user', 'group', 'group_object', 'user_code', 'name', 'short_name', 'public_name',
+            'id', 'master_user', 'group', 'group_object', 'user_code', 'name', 'short_name', 'public_name',
             'notes', 'is_default', 'is_valid_for_all_portfolios', 'is_deleted', 'portfolios', 'portfolios_object',
             # 'attributes',
             # 'tags', 'tags_object'
@@ -97,7 +97,7 @@ class CounterpartyViewSerializer(ModelWithObjectPermissionSerializer):
     class Meta(ModelWithObjectPermissionSerializer.Meta):
         model = Counterparty
         fields = [
-            'url', 'id', 'group', 'group_object', 'user_code', 'name', 'short_name', 'public_name',
+            'id', 'group', 'group_object', 'user_code', 'name', 'short_name', 'public_name',
         ]
 
 
@@ -147,7 +147,7 @@ class ResponsibleGroupSerializer(ModelWithObjectPermissionSerializer, ModelWithU
     class Meta:
         model = ResponsibleGroup
         fields = [
-            'url', 'id', 'master_user', 'user_code', 'name', 'short_name', 'public_name', 'notes', 'is_default',
+            'id', 'master_user', 'user_code', 'name', 'short_name', 'public_name', 'notes', 'is_default',
             'is_deleted',
             # 'tags', 'tags_object',
         ]
@@ -157,7 +157,7 @@ class ResponsibleGroupViewSerializer(ModelWithObjectPermissionSerializer):
     class Meta(ModelWithObjectPermissionSerializer.Meta):
         model = ResponsibleGroup
         fields = [
-            'url', 'id', 'user_code', 'name', 'short_name', 'public_name',
+            'id', 'user_code', 'name', 'short_name', 'public_name',
         ]
 
 
@@ -177,7 +177,7 @@ class ResponsibleSerializer(ModelWithObjectPermissionSerializer, ModelWithAttrib
     class Meta:
         model = Responsible
         fields = [
-            'url', 'id', 'master_user', 'group', 'group_object', 'user_code', 'name', 'short_name', 'public_name',
+            'id', 'master_user', 'group', 'group_object', 'user_code', 'name', 'short_name', 'public_name',
             'notes', 'is_default', 'is_valid_for_all_portfolios', 'is_deleted', 'portfolios', 'portfolios_object',
             # 'attributes',
             # 'tags', 'tags_object',
@@ -197,5 +197,5 @@ class ResponsibleViewSerializer(ModelWithObjectPermissionSerializer):
     class Meta(ModelWithObjectPermissionSerializer.Meta):
         model = Responsible
         fields = [
-            'url', 'id', 'group', 'group_object', 'user_code', 'name', 'short_name', 'public_name',
+            'id', 'group', 'group_object', 'user_code', 'name', 'short_name', 'public_name',
         ]

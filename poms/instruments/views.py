@@ -150,54 +150,8 @@ class InstrumentTypeViewSet(AbstractWithObjectPermissionViewSet):
     ]
 
 
-# class InstrumentAttributeTypeFilterSet(FilterSet):
-#     id = NoOpFilter()
-#     user_code = CharFilter()
-#     name = CharFilter()
-#     short_name = CharFilter()
-#     public_name = CharFilter()
-#     value_type = AttributeTypeValueTypeFilter()
-#     member = ObjectPermissionMemberFilter(object_permission_model=InstrumentAttributeType)
-#     member_group = ObjectPermissionGroupFilter(object_permission_model=InstrumentAttributeType)
-#     permission = ObjectPermissionPermissionFilter(object_permission_model=InstrumentAttributeType)
-#
-#     class Meta:
-#         model = InstrumentAttributeType
-#         fields = []
-#
-#
-# class InstrumentAttributeTypeViewSet(AbstractAttributeTypeViewSet):
-#     queryset = InstrumentAttributeType.objects.select_related(
-#         'master_user'
-#     ).prefetch_related(
-#         'classifiers',
-#         *get_permissions_prefetch_lookups(
-#             (None, InstrumentAttributeType)
-#         )
-#     )
-#     serializer_class = InstrumentAttributeTypeSerializer
-#     filter_class = InstrumentAttributeTypeFilterSet
-
-
 class InstrumentAttributeTypeViewSet(GenericAttributeTypeViewSet):
     target_model = Instrument
-
-
-# class InstrumentClassifierFilterSet(FilterSet):
-#     id = NoOpFilter()
-#     name = CharFilter()
-#     level = django_filters.NumberFilter()
-#     attribute_type = ModelExtWithPermissionMultipleChoiceFilter(model=InstrumentAttributeType)
-#
-#     class Meta:
-#         model = InstrumentClassifier
-#         fields = []
-#
-#
-# class InstrumentClassifierViewSet(AbstractClassifierViewSet):
-#     queryset = InstrumentClassifier.objects
-#     serializer_class = InstrumentClassifierNodeSerializer
-#     filter_class = InstrumentClassifierFilterSet
 
 
 class InstrumentClassifierViewSet(GenericClassifierViewSet):
@@ -332,11 +286,6 @@ class InstrumentViewSet(AbstractWithObjectPermissionViewSet):
         serializer.is_valid(raise_exception=True)
         begin_date = serializer.validated_data['begin_date']
         end_date = serializer.validated_data['end_date']
-
-        # instruments = Instrument.objects.filter(master_user=request.user.master_user)
-        # instruments = self.filter_queryset(self.get_queryset())
-        # for instrument in instruments:
-        #     instrument.calculate_prices_accrued_price(begin_date, end_date)
 
         calculate_prices_accrued_price(master_user=request.user.master_user, begin_date=begin_date, end_date=end_date)
         # calculate_prices_accrued_price_async.apply_async(

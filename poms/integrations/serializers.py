@@ -74,7 +74,7 @@ class ImportConfigSerializer(serializers.ModelSerializer):
     class Meta:
         model = ImportConfig
         fields = [
-            'url', 'id', 'master_user', 'provider', 'provider_object', 'p12cert', 'password', 'has_p12cert',
+            'id', 'master_user', 'provider', 'provider_object', 'p12cert', 'password', 'has_p12cert',
             'has_password',
         ]
 
@@ -152,7 +152,7 @@ class InstrumentDownloadSchemeSerializer(serializers.ModelSerializer):
     class Meta:
         model = InstrumentDownloadScheme
         fields = [
-            'url', 'id', 'master_user', 'scheme_name', 'provider', 'provider_object', 'inputs',
+            'id', 'master_user', 'scheme_name', 'provider', 'provider_object', 'inputs',
             'reference_for_pricing', 'user_code', 'name', 'short_name', 'public_name', 'notes',
             'instrument_type', 'pricing_currency', 'price_multiplier', 'accrued_currency', 'accrued_multiplier',
             'user_text_1', 'user_text_2', 'user_text_3', 'maturity_date',
@@ -240,7 +240,7 @@ class PriceDownloadSchemeSerializer(serializers.ModelSerializer):
     class Meta:
         model = PriceDownloadScheme
         fields = [
-            'url', 'id', 'master_user', 'scheme_name', 'provider', 'provider_object',
+            'id', 'master_user', 'scheme_name', 'provider', 'provider_object',
             'bid0', 'bid1', 'bid2', 'bid_multiplier', 'ask0', 'ask1', 'ask2', 'ask_multiplier', 'last',
             'last_multiplier', 'mid', 'mid_multiplier',
             'bid_history', 'bid_history_multiplier', 'ask_history', 'ask_history_multiplier', 'mid_history',
@@ -255,7 +255,7 @@ class PriceDownloadSchemeViewSerializer(serializers.ModelSerializer):
     class Meta:
         model = PriceDownloadScheme
         fields = [
-            'url', 'id', 'scheme_name', 'provider', 'provider_object',
+            'id', 'scheme_name', 'provider', 'provider_object',
         ]
 
 
@@ -268,7 +268,7 @@ class CurrencyMappingSerializer(serializers.ModelSerializer):
     class Meta:
         model = CurrencyMapping
         fields = [
-            'url', 'id', 'master_user', 'provider', 'provider_object', 'value', 'currency', 'currency_object',
+            'id', 'master_user', 'provider', 'provider_object', 'value', 'currency', 'currency_object',
         ]
 
     def __init__(self, *args, **kwargs):
@@ -287,7 +287,7 @@ class InstrumentTypeMappingSerializer(serializers.ModelSerializer):
     class Meta:
         model = InstrumentTypeMapping
         fields = [
-            'url', 'id', 'master_user', 'provider', 'provider_object', 'value', 'instrument_type',
+            'id', 'master_user', 'provider', 'provider_object', 'value', 'instrument_type',
             'instrument_type_object',
         ]
 
@@ -309,7 +309,7 @@ class InstrumentAttributeValueMappingSerializer(serializers.ModelSerializer):
     class Meta:
         model = InstrumentAttributeValueMapping
         fields = [
-            'url', 'id', 'master_user', 'provider', 'provider_object', 'value',
+            'id', 'master_user', 'provider', 'provider_object', 'value',
             'attribute_type', 'attribute_type_object', 'value_string', 'value_float', 'value_date',
             'classifier', 'classifier_object',
         ]
@@ -344,7 +344,7 @@ class AccrualCalculationModelMappingSerializer(serializers.ModelSerializer):
     class Meta:
         model = AccrualCalculationModelMapping
         fields = [
-            'url', 'id', 'master_user', 'provider', 'provider_object', 'value', 'accrual_calculation_model',
+            'id', 'master_user', 'provider', 'provider_object', 'value', 'accrual_calculation_model',
             'accrual_calculation_model_object',
         ]
 
@@ -364,7 +364,7 @@ class PeriodicityMappingSerializer(serializers.ModelSerializer):
     class Meta:
         model = PeriodicityMapping
         fields = [
-            'url', 'id', 'master_user', 'provider', 'provider_object', 'value', 'periodicity', 'periodicity_object',
+            'id', 'master_user', 'provider', 'provider_object', 'value', 'periodicity', 'periodicity_object',
         ]
 
     def __init__(self, *args, **kwargs):
@@ -383,7 +383,7 @@ class TaskSerializer(serializers.ModelSerializer):
     class Meta:
         model = Task
         fields = [
-            'url', 'id', 'master_user', 'member', 'provider', 'provider_object',
+            'id', 'master_user', 'member', 'provider', 'provider_object',
             'created', 'modified', 'status',
             'action',
             'is_yesterday',
@@ -407,7 +407,7 @@ class PricingAutomatedScheduleSerializer(serializers.ModelSerializer):
     class Meta:
         model = PricingAutomatedSchedule
         fields = [
-            'url', 'id', 'master_user',
+            'id', 'master_user',
             'is_enabled', 'cron_expr', 'balance_day', 'load_days', 'fill_days', 'override_existed',
             'last_run_at', 'next_run_at',
         ]
@@ -490,7 +490,7 @@ class ImportInstrumentViewSerializer(ModelWithAttributesSerializer, ModelWithObj
     class Meta:
         model = Instrument
         fields = [
-            'url', 'id', 'master_user', 'instrument_type', 'instrument_type_object', 'user_code', 'name', 'short_name',
+            'id', 'master_user', 'instrument_type', 'instrument_type_object', 'user_code', 'name', 'short_name',
             'public_name', 'notes', 'is_active', 'is_deleted',
             'pricing_currency', 'pricing_currency_object', 'price_multiplier',
             'accrued_currency', 'accrued_currency_object', 'accrued_multiplier',

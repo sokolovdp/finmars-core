@@ -12,7 +12,7 @@ from poms.users.filters import OwnerByMasterUserFilter
 
 class PomsClassSerializer(serializers.ModelSerializer):
     class Meta:
-        fields = ['url', 'id', 'system_code', 'name', 'description', ]
+        fields = ['id', 'system_code', 'name', 'description', ]
 
 
 class ModelWithUserCodeSerializer(serializers.ModelSerializer):
@@ -139,4 +139,4 @@ class ClassifierListSerializer(serializers.ListSerializer):
 #     parent = serializers.PrimaryKeyRelatedField(read_only=True)
 #
 #     class Meta:
-#         fields = ['url', 'id', 'attribute_type', 'name', 'parent', 'level', 'tree_id', ]
+#         fields = ['id', 'attribute_type', 'name', 'parent', 'level', 'tree_id', ]

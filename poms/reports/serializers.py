@@ -32,7 +32,7 @@ class CustomFieldSerializer(serializers.ModelSerializer):
     class Meta:
         model = CustomField
         fields = [
-            'url', 'id', 'master_user', 'report_class', 'name', 'expr'
+            'id', 'master_user', 'report_class', 'name', 'expr'
         ]
 
 

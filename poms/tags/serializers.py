@@ -34,7 +34,7 @@ class TagSerializer(ModelWithObjectPermissionSerializer, ModelWithUserCodeSerial
     class Meta:
         model = Tag
         fields = [
-            'url', 'id', 'master_user', 'user_code', 'name', 'short_name', 'public_name', 'notes', 'content_types',
+            'id', 'master_user', 'user_code', 'name', 'short_name', 'public_name', 'notes', 'content_types',
             # 'account_types', 'accounts', 'currencies', 'instrument_types', 'instruments',
             # 'counterparties', 'responsibles',
             # 'strategy_groups', 'strategy_subgroups', 'strategies',
@@ -53,7 +53,7 @@ class TagSerializer(ModelWithObjectPermissionSerializer, ModelWithUserCodeSerial
 #     class Meta:
 #         model = Tag
 #         fields = [
-#             'url', 'id', 'user_code', 'name', 'short_name', 'public_name', 'notes',
+#             'id', 'user_code', 'name', 'short_name', 'public_name', 'notes',
 #         ]
 
 

@@ -25,7 +25,7 @@ class CurrencySerializer(ModelWithUserCodeSerializer, ModelWithTagSerializer):
     class Meta:
         model = Currency
         fields = [
-            'url', 'id', 'master_user', 'user_code', 'name', 'short_name', 'notes',
+            'id', 'master_user', 'user_code', 'name', 'short_name', 'notes',
             'reference_for_pricing', 'daily_pricing_model', 'daily_pricing_model_object',
             'price_download_scheme', 'price_download_scheme_object',
             'is_default', 'is_deleted',
@@ -49,7 +49,7 @@ class CurrencyViewSerializer(ModelWithUserCodeSerializer):
     class Meta:
         model = Currency
         fields = [
-            'url', 'id', 'user_code', 'name', 'short_name', 'notes',
+            'id', 'user_code', 'name', 'short_name', 'notes',
         ]
 
 
@@ -64,13 +64,13 @@ class CurrencyHistorySerializer(serializers.ModelSerializer):
     class Meta:
         model = CurrencyHistory
         fields = [
-            'url', 'id', 'currency', 'currency_object', 'pricing_policy', 'pricing_policy_object', 'date', 'fx_rate'
+            'id', 'currency', 'currency_object', 'pricing_policy', 'pricing_policy_object', 'date', 'fx_rate'
         ]
 
     def __init__(self, *args, **kwargs):
         super(CurrencyHistorySerializer, self).__init__(*args, **kwargs)
-        if 'request' not in self.context:
-            self.fields.pop('url')
+        # if 'request' not in self.context:
+        #     self.fields.pop('url')
 
         from poms.instruments.serializers import PricingPolicyViewSerializer
         self.fields['pricing_policy_object'] = PricingPolicyViewSerializer(source='pricing_policy', read_only=True)
