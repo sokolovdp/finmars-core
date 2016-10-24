@@ -286,6 +286,13 @@ def _simple_price(date, date1, value1, date2, value2):
     return 0.0
 
 
+def _find_name(*args):
+    for s in args:
+        if s is not None:
+            return str(s)
+    return ''
+
+
 def _random():
     return random.random()
 
@@ -467,8 +474,9 @@ FUNCTIONS = [
     _SysDef('parse_number', _parse_number),
 
     _SysDef('simple_price', _simple_price),
-]
 
+    _SysDef('find_name', _find_name),
+]
 
 # FUNCTIONS = {
 #     'str': _WrapDef('str', _str),
@@ -507,12 +515,16 @@ FUNCTIONS = [
 # }
 
 
+empty = object()
+
+
 class SimpleEval2(object):
-    def __init__(self, names=None, max_time=5, add_print=False):
-        # self.max_time = max_time
-        self.max_time = 10000000000
+    def __init__(self, names=None, max_time=None, add_print=False, allow_assign=False):
+        self.max_time = max_time or 1
+        # self.max_time = 10000000000
         self.start_time = 0
         self.tik_time = 0
+        self.allow_assign = allow_assign
 
         self.expr = None
         self.expr_ast = None
@@ -687,6 +699,9 @@ class SimpleEval2(object):
         return ret
 
     def _on_ast_Assign(self, node):
+        if not self.allow_assign:
+            raise InvalidExpression("Sorry, %s is not available in this evaluator" % type(node).__name__)
+
         ret = self._eval(node.value)
         for t in node.targets:
             if isinstance(t, ast.Name):
@@ -803,9 +818,21 @@ class SimpleEval2(object):
 
     def _on_ast_BoolOp(self, node):
         if isinstance(node.op, ast.And):
-            return all((self._eval(v) for v in node.values))
+            # return all((self._eval(v) for v in node.values))
+            res = False
+            for v in node.values:
+                res = self._eval(v)
+                if not res:
+                    return False
+            return res
         elif isinstance(node.op, ast.Or):
-            return any((self._eval(v) for v in node.values))
+            # return any((self._eval(v) for v in node.values))
+            res = True
+            for v in node.values:
+                res = self._eval(v)
+                if res:
+                    return res
+            return res
 
     def _on_ast_Compare(self, node):
         return OPERATORS[type(node.ops[0])](self._eval(node.left), self._eval(node.comparators[0]))
@@ -832,10 +859,17 @@ class SimpleEval2(object):
 
     def _on_ast_Subscript(self, node):
         val = self._eval(node.value)
-        return val[self._eval(node.slice)]
+        index_or_key = self._eval(node.slice)
+        try:
+            return val[index_or_key]
+        except KeyError:
+            return None
 
-    def _on_ast_Attribute(self, node):
-        val = self._eval(node.value)
+    def _on_ast_Attribute(self, node, val=empty):
+        if val is empty:
+            val = self._eval(node.value)
+        if val is None:
+            return None
         if isinstance(val, (dict, OrderedDict)):
             try:
                 return val[node.attr]
@@ -863,6 +897,122 @@ class SimpleEval2(object):
         return self._eval(node.value)
 
 
+class ModelSimpleEval(SimpleEval2):
+    def __init__(self, *args, **kwargs):
+        self.member = kwargs.pop('member')
+        super(ModelSimpleEval, self).__init__(*args, **kwargs)
+
+    def _on_ast_Subscript(self, node):
+        val = self._eval(node.value)
+
+        # from django.db import models
+        # if isinstance(val, (models.Manager, models.QuerySet)):
+        #     if isinstance(val, models.Manager):
+        #         val = val.all()
+        #     pass
+        val = self._filter_value(val, wrap=False)
+
+        try:
+            return val[self._eval(node.slice)]
+        except KeyError:
+            return None
+
+    def _on_ast_Attribute(self, node, val=empty):
+        from django.db import models
+        from poms.obj_perms.utils import has_view_perms
+
+        val = self._eval(node.value)
+        if isinstance(val, (models.Manager, models.QuerySet)):
+            if isinstance(val, models.Manager):
+                val = val.all()
+            val = self._filter_value(val, wrap=True)
+            return val
+
+        elif isinstance(val, models.Model):
+            rejected = False
+            if self._has_object_permission(val):
+                if has_view_perms(self.member, val):
+                    pass
+                else:
+                    if node.attr in ['id', 'public_name', 'display_name']:
+                        pass
+                    else:
+                        rejected = True
+
+            self._check_field(val, node.attr)
+
+            if node.attr == 'display_name':
+                if rejected:
+                    res = getattr(val, 'public_name', None)
+                else:
+                    res = getattr(val, 'name', None)
+            else:
+                res = getattr(val, node.attr)
+                if rejected:
+                    return None
+
+                res = self._filter_value(res, wrap=True)
+                if node.attr == 'attributes':
+                    if rejected:
+                        res = None
+                    else:
+                        res = {a.attribute_type.name: a for a in res if has_view_perms(self.member, a.attribute_type)}
+
+            if callable(res):
+                raise AttributeDoesNotExist(node.attr)
+
+            return None if rejected else res
+
+        return super(ModelSimpleEval, self)._on_ast_Attribute(node, val=val)
+
+    def _filter_value(self, val, wrap=False):
+        from django.db import models
+
+        if isinstance(val, (models.Manager, models.QuerySet)):
+            if isinstance(val, models.Manager):
+                val = val.all()
+            if self._has_object_permission(val.model):
+                # use prefetched permissions!
+                from poms.obj_perms.utils import has_view_perms
+                return [
+                    o for o in val if has_view_perms(self.member, o)
+                    ]
+            if wrap:
+                return list(val)
+
+        return val
+
+    def _has_object_permission(self, model_or_instance):
+        from django.db import models
+
+        if isinstance(model_or_instance, models.Model):
+            model = model_or_instance.__class__
+        else:
+            model = model_or_instance
+        try:
+            model._meta.get_field('object_permissions')
+            return True
+        except models.FieldDoesNotExist:
+            return False
+
+    def _check_field(self, obj, name):
+        from django.db import models
+        from poms.obj_attrs.models import GenericAttribute
+
+        try:
+            field = obj._meta.get_field(name)
+            if field.many_to_many or field.one_to_many or field.one_to_one:
+                if field.name != 'attributes':
+                    raise AttributeDoesNotExist(name)
+        except models.FieldDoesNotExist:
+            if isinstance(obj, GenericAttribute):
+                if name == 'value':
+                    return
+            if name == 'display_name':
+                return
+            raise
+
+
 # def is_valid(expr):
 #     return SimpleEval2.is_valid(expr)
 
@@ -880,8 +1030,8 @@ def validate(expr):
         raise ValidationError('Invalid expression: %s' % e)
 
 
-def safe_eval(s, names=None):
-    return SimpleEval2(names=names).eval(s)
+def safe_eval(s, names=None, max_time=None, add_print=False, allow_assign=False):
+    return SimpleEval2(names=names, max_time=max_time, add_print=add_print, allow_assign=allow_assign).eval(s)
 
 
 # def deep_dict(data):
@@ -1361,7 +1511,7 @@ print('gg: 1 - a=%s', a)
         ''')
 
 
-    demo_stmt()
+    # demo_stmt()
     pass
 
 
@@ -1436,5 +1586,76 @@ accrual_NL_365_NO_EOM(date(2000, 1, 1), date(2000, 1, 25))
             pass
 
 
-    perf_tests()
+    # perf_tests()
+    pass
+
+
+    def model_access_test():
+        from poms.users.models import Member
+        from poms.transactions.models import Transaction
+
+        member = Member.objects.get(pk=1)  # a
+        # member = Member.objects.get(pk=4)  # b
+
+        # ts_qs = Transaction.objects
+        from poms.obj_attrs.utils import get_attributes_prefetch
+        from poms.obj_perms.utils import get_permissions_prefetch_lookups
+        from poms.accounts.models import Account, AccountType
+        from poms.instruments.models import Instrument
+
+        ts_qs = Transaction.objects.select_related(
+            'account_cash', 'account_cash__type',
+            'account_position', 'account_position__type',
+            'account_interim', 'account_interim__type',
+        ).prefetch_related(
+            get_attributes_prefetch(),
+            *get_permissions_prefetch_lookups(
+                ('account_cash', Account),
+                ('account_cash__type', AccountType),
+                ('account_position', Account),
+                ('account_position__type', AccountType),
+                ('account_interim', Account),
+                ('account_interim__type', AccountType),
+            )
+        )
+
+        names = {
+            # 'transactions': ts_qs,
+            'transactions': list(ts_qs),
+            'transaction': ts_qs.first(),
+            'account': Account.objects.get(pk=1),
+            'instrument': Instrument.objects.get(pk=1),
+        }
+
+        _l.info('---------')
+
+        seval = ModelSimpleEval(names=names, add_print=True, allow_assign=False, member=member)
+        # _l.info(seval.eval('transactions1'))
+        # _l.info(seval.eval('transactions1[0]'))
+        # _l.info(seval.eval('transactions2'))
+        # _l.info(seval.eval('transactions2[0]'))
+        # _l.info(seval.eval('transaction.transaction_class'))
+        # _l.info(seval.eval('transactions[0].attributes'))
+        # _l.info(seval.eval('transactions[0].attributes["SomeNumber"]'))
+        # _l.info(seval.eval('transactions[0].attributes.SomeNumber'))
+        # _l.info(seval.eval('transactions[0].attributes["SomeNumber"].value'))
+        _l.info(seval.eval('transaction.account_position.user_code or transaction.account_position.public_name'))
+        # _l.info(seval.eval('find_name(transaction.account_position.user_code, transaction.account_position.public_name)'))
+        # _l.info(seval.eval('find_name(transaction.account_cash.user_code, transaction.account_cash.public_name)'))
+        # _l.info(seval.eval('find_name(transaction.account_interim.user_code, transaction.account_interim.public_name)'))
+        # _l.info(seval.eval('account.tags'))
+        # _l.info(seval.eval('account.object_permissions'))
+        # _l.info(seval.eval('account.attributes'))
+        # _l.info(seval.eval('account.attributes["SomeString"].value'))
+        # _l.info(seval.eval('instrument.attributes'))
+        # _l.info(seval.eval('instrument.prices'))
+        # _l.info(seval.eval('instrument.maturity_date'))
+        # _l.info(seval.eval('instrument.maturity_date.year'))
+        # _l.info(seval.eval('a = 3'))
+        _l.info(seval.eval('None or "a"'))
+        _l.info(seval.eval('"b" or "a"'))
+        pass
+
+
+    model_access_test()
     pass
