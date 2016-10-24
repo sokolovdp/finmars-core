@@ -12,10 +12,9 @@ from poms.users.models import Member
 @receiver(post_save, dispatch_uid='chat_message_created', sender=Message)
 def chat_message_created(sender, instance=None, created=None, **kwargs):
     if created:
-        # me = get_request().user.member
         master_user = instance.thread.master_user
         thread = instance.thread
-        qs = Member.objects.filter(master_user=master_user).exclude(id=instance.sender_id)
+        qs = Member.objects.filter(master_user=master_user, is_deleted=False).exclude(id=instance.sender_id)
         recipients = [m.user for m in qs if has_view_perms(m, thread)]
         notifications.send(recipients,
                            actor=instance.sender,
