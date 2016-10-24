@@ -308,55 +308,8 @@ class TransactionTypeViewSet(AbstractWithObjectPermissionViewSet):
                     transaction.set_rollback(True)
 
 
-# class TransactionAttributeTypeFilterSet(FilterSet):
-#     id = NoOpFilter()
-#     user_code = CharFilter()
-#     name = CharFilter()
-#     short_name = CharFilter()
-#     public_name = CharFilter()
-#     value_type = AttributeTypeValueTypeFilter()
-#     member = ObjectPermissionMemberFilter(object_permission_model=TransactionAttributeType)
-#     member_group = ObjectPermissionGroupFilter(object_permission_model=TransactionAttributeType)
-#     permission = ObjectPermissionPermissionFilter(object_permission_model=TransactionAttributeType)
-#
-#     class Meta:
-#         model = TransactionAttributeType
-#         fields = []
-#
-#
-# class TransactionAttributeTypeViewSet(AbstractAttributeTypeViewSet):
-#     queryset = TransactionAttributeType.objects.select_related(
-#         'master_user'
-#     ).prefetch_related(
-#         'classifiers',
-#         *get_permissions_prefetch_lookups(
-#             (None, TransactionAttributeType)
-#         )
-#     )
-#     serializer_class = TransactionAttributeTypeSerializer
-#     # bulk_objects_permissions_serializer_class = TransactionAttributeTypeBulkObjectPermissionSerializer
-#     filter_class = TransactionAttributeTypeFilterSet
-
-
 class TransactionAttributeTypeViewSet(GenericAttributeTypeViewSet):
     target_model = Transaction
-
-
-# class TransactionClassifierFilterSet(FilterSet):
-#     id = NoOpFilter()
-#     name = CharFilter()
-#     level = django_filters.NumberFilter()
-#     attribute_type = ModelExtWithPermissionMultipleChoiceFilter(model=TransactionAttributeType)
-#
-#     class Meta:
-#         model = TransactionClassifier
-#         fields = []
-#
-#
-# class TransactionClassifierViewSet(AbstractClassifierViewSet):
-#     queryset = TransactionClassifier.objects
-#     serializer_class = TransactionClassifierNodeSerializer
-#     filter_class = TransactionClassifierFilterSet
 
 
 class TransactionClassifierViewSet(GenericClassifierViewSet):
@@ -466,43 +419,8 @@ class TransactionViewSet(AbstractModelViewSet):
             ('responsible__group', ResponsibleGroup),
             ('counterparty', Counterparty),
             ('counterparty__group', CounterpartyGroup),
-            # ('attributes__attribute_type', TransactionAttributeType)
         )
     )
-    # prefetch_permissions_for = (
-    #     ('portfolio', Portfolio),
-    #     ('instrument', Instrument),
-    #     ('instrument__instrument_type', InstrumentType),
-    #     ('account_cash', Account),
-    #     ('account_cash__type', AccountType),
-    #     ('account_position', Account),
-    #     ('account_position__type', AccountType),
-    #     ('account_interim', Account),
-    #     ('account_interim__type', AccountType),
-    #     ('strategy1_position', Strategy1),
-    #     ('strategy1_position__subgroup', Strategy1Subgroup),
-    #     ('strategy1_position__subgroup__group', Strategy1Group),
-    #     ('strategy1_cash', Strategy1),
-    #     ('strategy1_cash__subgroup', Strategy1Subgroup),
-    #     ('strategy1_cash__subgroup__group', Strategy1Group),
-    #     ('strategy2_position', Strategy2),
-    #     ('strategy2_position__subgroup', Strategy2Subgroup),
-    #     ('strategy2_position__subgroup__group', Strategy2Group),
-    #     ('strategy2_cash', Strategy2),
-    #     ('strategy2_cash__subgroup', Strategy2Subgroup),
-    #     ('strategy2_cash__subgroup__group', Strategy2Group),
-    #     ('strategy3_position', Strategy3),
-    #     ('strategy3_position__subgroup', Strategy3Subgroup),
-    #     ('strategy3_position__subgroup__group', Strategy3Group),
-    #     ('strategy3_cash', Strategy3),
-    #     ('strategy3_cash__subgroup', Strategy3Subgroup),
-    #     ('strategy3_cash__subgroup__group', Strategy3Group),
-    #     ('responsible', Responsible),
-    #     ('responsible__group', ResponsibleGroup),
-    #     ('counterparty', Counterparty),
-    #     ('counterparty__group', CounterpartyGroup),
-    #     ('attributes__attribute_type', TransactionAttributeType),
-    # )
     serializer_class = TransactionSerializer
     filter_backends = AbstractModelViewSet.filter_backends + [
         OwnerByMasterUserFilter,
@@ -549,11 +467,6 @@ class TransactionViewSet(AbstractModelViewSet):
         'counterparty', 'counterparty__user_code', 'counterparty__name', 'counterparty__short_name',
         'counterparty__public_name',
     ]
-
-    # def get_queryset(self):
-    #     queryset = super(TransactionViewSet, self).get_queryset()
-    #     queryset = obj_perms_prefetch(queryset, my=False, lookups_related=self.prefetch_permissions_for)
-    #     return queryset
 
 
 class ComplexTransactionFilterSet(FilterSet):
@@ -632,24 +545,6 @@ class ComplexTransactionViewSet(DestroyModelMixin, AbstractReadOnlyModelViewSet)
             ('transaction_type', TransactionType),
         )
     )
-    # prefetch_permissions_for = [
-    #     ('transaction_type', TransactionType),
-    #     ('transactions__portfolio', Portfolio),
-    #     ('transactions__instrument', Instrument),
-    #     ('transactions__account_cash', Account),
-    #     ('transactions__account_position', Account),
-    #     ('transactions__account_interim', Account),
-    #     ('transactions__strategy1_position', Strategy1),
-    #     ('transactions__strategy1_cash', Strategy1),
-    #     ('transactions__strategy2_position', Strategy2),
-    #     ('transactions__strategy2_cash', Strategy2),
-    #     ('transactions__strategy3_position', Strategy3),
-    #     ('transactions__strategy3_cash', Strategy3),
-    #     ('transactions__responsible', Responsible),
-    #     ('transactions__counterparty', Counterparty),
-    #     # TODO: Cannot find 'attribute_type' on RelatedManager object, 'transactions__attributes__attribute_type__user_object_permissions' is an invalid parameter to prefetch_related()
-    #     # ('transactions__attributes__attribute_type', TransactionAttributeType),
-    # ]
     serializer_class = ComplexTransactionSerializer
     filter_backends = AbstractReadOnlyModelViewSet.filter_backends + [
         ComplexTransactionPermissionFilter,
