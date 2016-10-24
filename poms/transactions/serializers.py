@@ -823,22 +823,50 @@ class TransactionTypeProcessValues(object):
 
 
 class TransactionTypeProcess(object):
-    def __init__(self, transaction_type=None, context=None, calculate=True, store=False, values=None, has_errors=False,
+    def __init__(self, transaction_type=None, generated_event=None, action=None, context=None,
+                 calculate=True, store=False, values=None, has_errors=False,
                  instruments=None, instruments_errors=None,
-                 complex_transaction=None, complex_transaction_status=ComplexTransaction.PRODUCTION,
+                 complex_transaction=None, complex_transaction_status=None,
                  transactions=None, transactions_errors=None):
+
         self.transaction_type = transaction_type
-        self.transaction_type_inputs = list(self.transaction_type.inputs.order_by('value_type', 'name').all())
+        self.generated_event = generated_event
+
+        if self.transaction_type is None and self.action is not None:
+            self.transaction_type = self.action.transaction_type
+
+        self.action = action
+        if self.action is None and self.generated_event is not None:
+            self.action = self.generated_event.action
+
+        self.context = context or {}
+        if self.generated_event:
+            self.context.update({
+                'instrument': generated_event.instrument,
+                'portfolio': generated_event.portfolio,
+                'account': generated_event.account,
+                'strategy1': generated_event.strategy1,
+                'strategy2': generated_event.strategy2,
+                'strategy3': generated_event.strategy3,
+                'position': generated_event.position,
+            })
 
         self.calculate = calculate or False
         self.store = store or False
-        self.context = context or {}
+
+        self.inputs = list(self.transaction_type.inputs.all())
         self.values = values or TransactionTypeProcessValues(self)
+
         self.has_errors = has_errors
+
         self.instruments = instruments or []
         self.instruments_errors = instruments_errors or []
+
         self.complex_transaction = complex_transaction
         self.complex_transaction_status = complex_transaction_status
+        if self.complex_transaction is None and self.action is not None:
+            self.complex_transaction_status = ComplexTransaction.PENDING if self.action.is_sent_to_pending else ComplexTransaction.PRODUCTION
+
         self.transactions = transactions or []
         self.transactions_errors = transactions_errors or []
 
@@ -853,7 +881,7 @@ class TransactionTypeProcess(object):
             return None
 
     def set_default_values(self, target):
-        for i in self.transaction_type_inputs:
+        for i in self.inputs:
             value = None
             if i.value_type == TransactionTypeInput.RELATION:
                 model_class = i.content_type.model_class()
@@ -889,21 +917,15 @@ class TransactionTypeProcess(object):
                         value = i.portfolio
                     elif issubclass(model_class, PriceDownloadScheme):
                         value = i.price_download_scheme
-                    else:
-                        value = None
             else:
-                value = None
                 if i.is_fill_from_context and i.name in self.context:
                     value = self.context[i.name]
                 if value is None:
-                    value = i.value
-                    if value:
+                    if i.value:
                         try:
-                            value = formula.safe_eval(value)
+                            value = formula.safe_eval(i.value)
                         except formula.InvalidExpression:
                             value = None
-                    else:
-                        value = None
             attr_name = self.get_attr_name(i)
             setattr(target, attr_name, value)
 
@@ -913,8 +935,7 @@ class TransactionTypeProcessValuesSerializer(serializers.Serializer):
         super(TransactionTypeProcessValuesSerializer, self).__init__(**kwargs)
 
         ttp = self.instance._parent
-        transaction_type_inputs = ttp.transaction_type_inputs
-        for i in transaction_type_inputs:
+        for i in ttp.inputs:
             # name = '%s_%s' % (i.id, i.name)
             name = ttp.get_attr_name(i)
             name_object = '%s_object' % name
@@ -1022,6 +1043,8 @@ class PhantomTransactionSerializer(TransactionSerializer):
 
 class TransactionTypeProcessSerializer(serializers.Serializer):
     def __init__(self, **kwargs):
+        from poms.instruments.serializers import InstrumentViewSerializer
+
         kwargs['context'] = context = kwargs.get('context', {}) or {}
         super(TransactionTypeProcessSerializer, self).__init__(**kwargs)
         context['instance'] = self.instance
@@ -1034,10 +1057,9 @@ class TransactionTypeProcessSerializer(serializers.Serializer):
         self.fields['has_errors'] = serializers.BooleanField(read_only=True)
         self.fields['instruments_errors'] = serializers.ReadOnlyField()
         self.fields['transactions_errors'] = serializers.ReadOnlyField()
-        from poms.instruments.serializers import InstrumentViewSerializer
-        self.fields['instruments'] = InstrumentViewSerializer(many=True, read_only=False)
-        self.fields['complex_transaction'] = ComplexTransactionViewSerializer(read_only=False)
-        self.fields['transactions'] = PhantomTransactionSerializer(many=True, read_only=False)
+        self.fields['instruments'] = InstrumentViewSerializer(many=True, read_only=False, required=False, allow_null=True)
+        self.fields['complex_transaction'] = ComplexTransactionViewSerializer(read_only=False, required=False, allow_null=True)
+        self.fields['transactions'] = PhantomTransactionSerializer(many=True, required=False, allow_null=True)
 
     def create(self, validated_data):
         return validated_data

@@ -43,7 +43,7 @@ from poms.strategies.models import Strategy1, Strategy1Subgroup, Strategy1Group,
     Strategy2Group, Strategy3, Strategy3Subgroup, Strategy3Group
 from poms.tags.filters import TagFilter
 from poms.tags.utils import get_tag_prefetch
-from poms.transactions.models import TransactionType, TransactionTypeGroup, ComplexTransaction
+from poms.transactions.models import TransactionType, TransactionTypeGroup
 from poms.transactions.serializers import TransactionTypeProcessSerializer, TransactionTypeProcess
 from poms.users.filters import OwnerByMasterUserFilter
 from poms.users.permissions import SuperUserOrReadOnly
@@ -478,34 +478,22 @@ class GeneratedEventViewSet(UpdateModelMixinExt, AbstractReadOnlyModelViewSet):
 
         action_pk = request.query_params.get('action', None)
         action = generated_event.event_schedule.actions.get(pk=action_pk)
-
-        process_context = {
-            'instrument': generated_event.instrument,
-            'portfolio': generated_event.portfolio,
-            'account': generated_event.account,
-            'strategy1': generated_event.strategy1,
-            'strategy2': generated_event.strategy2,
-            'strategy3': generated_event.strategy3,
-            'position': generated_event.position,
-        }
-        if action.is_sent_to_pending:
-            complex_transaction_status = ComplexTransaction.PENDING
-        else:
-            complex_transaction_status = ComplexTransaction.PRODUCTION
-
-        instance = TransactionTypeProcess(transaction_type=action.transaction_type, context=process_context,
-                                          complex_transaction_status=complex_transaction_status)
+        instance = TransactionTypeProcess(transaction_type=action.transaction_type, generated_event=generated_event,
+                                          action=action)
         if request.method == 'GET':
             serializer = self.get_serializer(instance=instance)
             return Response(serializer.data)
         else:
             try:
-                generated_event.status = GeneratedEvent.BOOKED
-                generated_event.status_date = timezone.now()
-                generated_event.member = self.request.user.member
-                generated_event.action = action
-                generated_event.transaction_type = action.transaction_type
-                generated_event.save()
+                if instance.store:
+                    # generated_event.status = GeneratedEvent.BOOK_PENDING if action.is_sent_to_pending else GeneratedEvent.BOOKED
+                    # generated_event.status_date = timezone.now()
+                    # generated_event.member = self.request.user.member
+                    # generated_event.action = action
+                    # generated_event.transaction_type = action.transaction_type
+                    # generated_event.complex_transaction = instance.complex_transaction
+                    # generated_event.save()
+                    generated_event.processed(self.request.user.member, action, instance.complex_transaction)
 
                 serializer = self.get_serializer(instance=instance, data=request.data)
                 serializer.is_valid(raise_exception=True)

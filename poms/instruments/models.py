@@ -970,6 +970,15 @@ class GeneratedEvent(models.Model):
     def __str__(self):
         return 'Event #%s' % self.id
 
+    def processed(self, member, action, complex_transaction):
+        self.member = member
+        self.action = action
+        self.status = GeneratedEvent.BOOK_PENDING if action.is_sent_to_pending else GeneratedEvent.BOOKED
+        self.status_date = timezone.now()
+        self.transaction_type = action.transaction_type
+        self.complex_transaction = complex_transaction
+        self.save()
+
 
 class EventScheduleConfig(models.Model):
     master_user = models.OneToOneField('users.MasterUser', related_name='instrument_event_schedule_config',
