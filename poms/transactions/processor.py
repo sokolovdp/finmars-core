@@ -6,18 +6,20 @@ from django.utils.translation import ugettext_lazy
 
 from poms.common import formula
 from poms.instruments.models import Instrument, DailyPricingModel
+from poms.obj_perms.utils import assign_perms3
 from poms.transactions.models import Transaction, ComplexTransaction
 
 _l = logging.getLogger('transactions.processor')
 
 
 class TransactionTypeProcessor(object):
-    def __init__(self, transaction_type, input_values):
+    def __init__(self, transaction_type, input_values, complex_transaction_status):
         assert transaction_type is not None, "transaction_type can't be None"
         self._transaction_type = transaction_type
         self._input_values = input_values or {}
         self._instruments = []
         self._instruments_errors = []
+        self._complex_transaction_status = complex_transaction_status if complex_transaction_status is not None else ComplexTransaction.PRODUCTION
         self._complex_transaction = None
         self._transactions = []
         self._transactions_errors = []
@@ -46,22 +48,23 @@ class TransactionTypeProcessor(object):
     @property
     def complex_transaction(self):
         if self._complex_transaction is None:
-            self._complex_transaction = ComplexTransaction(transaction_type=self._transaction_type)
+            self._complex_transaction = ComplexTransaction(transaction_type=self._transaction_type,
+                                                           status=self._complex_transaction_status)
             if self._save:
                 self._complex_transaction.save()
             else:
-                self._complex_transaction.id = self._next_id()
+                self._complex_transaction.id = self._next_fake_id()
         return self._complex_transaction
 
-    @property
-    def complex_transaction(self):
-        if self._complex_transaction is None:
-            self._complex_transaction = ComplexTransaction(transaction_type=self._transaction_type)
-            if self._save:
-                self._complex_transaction.save()
-            else:
-                self._complex_transaction.id = self._next_id()
-        return self._complex_transaction
+    # @property
+    # def complex_transaction(self):
+    #     if self._complex_transaction is None:
+    #         self._complex_transaction = ComplexTransaction(transaction_type=self._transaction_type)
+    #         if self._save:
+    #             self._complex_transaction.save()
+    #         else:
+    #             self._complex_transaction.id = self._next_fake_id()
+    #     return self._complex_transaction
 
     @property
     def transactions(self):
@@ -79,8 +82,7 @@ class TransactionTypeProcessor(object):
         values = self._input_values
 
         master_user = self._transaction_type.master_user
-        user_object_permissions = self._transaction_type.user_object_permissions.select_related('permission').all()
-        group_object_permissions = self._transaction_type.group_object_permissions.select_related('permission').all()
+        object_permissions = self._transaction_type.object_permissions.select_related('permission').all()
         daily_pricing_model = DailyPricingModel.objects.get(pk=DailyPricingModel.SKIP)
 
         instrument_map = {}
@@ -245,9 +247,9 @@ class TransactionTypeProcessor(object):
 
                 if self._save:
                     instrument.save()
-                    self._instrument_assign_permission(instrument, user_object_permissions, group_object_permissions)
+                    self._instrument_assign_permission(instrument, object_permissions)
                 else:
-                    instrument.id = self._next_id()
+                    instrument.id = self._next_fake_id()
                 instrument_map[action.id] = instrument
                 self._instruments.append(instrument)
                 self._instruments_errors.append(errors)
@@ -452,13 +454,13 @@ class TransactionTypeProcessor(object):
                 if self._save:
                     transaction.save()
                 else:
-                    transaction.id = self._next_id()
+                    transaction.id = self._next_fake_id()
 
                 self._transactions.append(transaction)
                 self._transactions_errors.append(errors)
         return self._instruments, self._transactions
 
-    def _next_id(self):
+    def _next_fake_id(self):
         self._id_seq -= 1
         return self._id_seq
 
@@ -491,21 +493,15 @@ class TransactionTypeProcessor(object):
         if value is not None:
             setattr(target, target_attr_name, value)
 
-    def _instrument_assign_permission(self, instr, user_object_permissions, group_object_permissions):
-        perms_map = {
-            'add_transactiontype': 'add_instrument',
-            'view_transactiontype': 'view_instrument',
-            'change_transactiontype': 'change_instrument',
-            'delete_transactiontype': 'delete_instrument',
-        }
-        for uop in user_object_permissions:
-            if uop.permission.codename in perms_map:
-                perm = perms_map[uop.permission.codename]
-                assign_perms(instr, members=[uop.member], groups=None, perms=[perm])
-        for gop in group_object_permissions:
-            if gop.permission.codename in perms_map:
-                perm = perms_map[gop.permission.codename]
-                assign_perms(instr, members=None, groups=[gop.group], perms=[perm])
+    def _instrument_assign_permission(self, instr, object_permissions):
+        perms = []
+        for op in object_permissions:
+            perms.append({
+                'group': op.group,
+                'member': op.member,
+                'permission': op.permission.codename.replace('_transactiontype', '_instrument')
+            })
+        assign_perms3(instr, perms)
 
     def _set_eval_error(self, errors, attr_name, expression, exc=None):
         msg = ugettext_lazy('Invalid expression "%(expression)s".') % {

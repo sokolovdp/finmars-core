@@ -2,10 +2,12 @@ from __future__ import unicode_literals
 
 import django_filters
 from django.core.exceptions import ObjectDoesNotExist
+from django.db import transaction
 from django.db.models import Prefetch
+from django.utils import timezone
 from rest_framework import serializers
 from rest_framework.decorators import list_route, detail_route
-from rest_framework.exceptions import MethodNotAllowed
+from rest_framework.exceptions import MethodNotAllowed, PermissionDenied
 from rest_framework.filters import FilterSet
 from rest_framework.response import Response
 
@@ -41,7 +43,8 @@ from poms.strategies.models import Strategy1, Strategy1Subgroup, Strategy1Group,
     Strategy2Group, Strategy3, Strategy3Subgroup, Strategy3Group
 from poms.tags.filters import TagFilter
 from poms.tags.utils import get_tag_prefetch
-from poms.transactions.models import TransactionType, TransactionTypeGroup
+from poms.transactions.models import TransactionType, TransactionTypeGroup, ComplexTransaction
+from poms.transactions.serializers import TransactionTypeProcessSerializer, TransactionTypeProcess
 from poms.users.filters import OwnerByMasterUserFilter
 from poms.users.permissions import SuperUserOrReadOnly
 
@@ -460,6 +463,67 @@ class GeneratedEventViewSet(UpdateModelMixinExt, AbstractReadOnlyModelViewSet):
         'strategy3', 'strategy3__user_code', 'strategy3__name', 'strategy3__short_name', 'strategy3__public_name',
         'member',
     ]
+
+    @detail_route(methods=['get', 'put'], url_path='process', serializer_class=TransactionTypeProcessSerializer)
+    def process(self, request, pk=None):
+        generated_event = self.get_object()
+
+        if generated_event.status != GeneratedEvent.NEW:
+            raise PermissionDenied()
+
+        action_pk = request.query_params.get('action', None)
+        action = generated_event.event_schedule.actions.get(pk=action_pk)
+
+        process_context = {
+            'instrument': generated_event.instrument,
+            'portfolio': generated_event.portfolio,
+            'account': generated_event.account,
+            'strategy1': generated_event.strategy1,
+            'strategy2': generated_event.strategy2,
+            'strategy3': generated_event.strategy3,
+            'position': generated_event.position,
+        }
+        if action.is_sent_to_pending:
+            complex_transaction_status = ComplexTransaction.PENDING
+        else:
+            complex_transaction_status = ComplexTransaction.PRODUCTION
+
+        instance = TransactionTypeProcess(transaction_type=action.transaction_type, context=process_context,
+                                          complex_transaction_status=complex_transaction_status)
+        if request.method == 'GET':
+            serializer = self.get_serializer(instance=instance)
+            return Response(serializer.data)
+        else:
+            serializer = self.get_serializer(instance=instance, data=request.data)
+            serializer.is_valid(raise_exception=True)
+            serializer.save()
+
+            try:
+                generated_event.status = GeneratedEvent.BOOKED
+                generated_event.status_date = timezone.now()
+                generated_event.member = self.request.user.member
+                generated_event.action = action
+                generated_event.transaction_type = action.transaction_type
+                generated_event.save()
+
+                return Response(serializer.data)
+            finally:
+                transaction.set_rollback(True)
+
+    @detail_route(methods=['put'], url_path='ignore')
+    def ignore(self, request, pk=None):
+        generated_event = self.get_object()
+
+        if generated_event.status != GeneratedEvent.NEW:
+            raise PermissionDenied()
+
+        generated_event.status = GeneratedEvent.IGNORED
+        generated_event.status_date = timezone.now()
+        generated_event.member = self.request.user.member
+        generated_event.save()
+
+        serializer = self.get_serializer(instance=generated_event)
+        return Response(serializer.data)
 
 
 class EventScheduleConfigViewSet(AbstractModelViewSet):

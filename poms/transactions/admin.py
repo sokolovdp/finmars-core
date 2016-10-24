@@ -91,7 +91,7 @@ class TransactionTypeActionTransactionAdmin(admin.ModelAdmin):
 admin.site.register(TransactionTypeActionTransaction, TransactionTypeActionTransactionAdmin)
 
 
-class TransactionTypeInputInline(admin.StackedInline):
+class TransactionTypeInputInline(admin.TabularInline):
     model = TransactionTypeInput
     extra = 0
     # fields = (

@@ -10,7 +10,6 @@ from django.db import models
 from django.utils import timezone
 from django.utils.encoding import python_2_unicode_compatible
 from django.utils.translation import ugettext, ugettext_lazy
-from mptt.fields import TreeForeignKey
 from mptt.models import MPTTModel
 
 from poms.common.models import NamedModel, AbstractClassModel, FakeDeletableModel
@@ -959,6 +958,8 @@ class GeneratedEvent(models.Model):
                                related_name='generated_events')
     transaction_type = models.ForeignKey('transactions.TransactionType', null=True, blank=True,
                                          on_delete=models.PROTECT, related_name='generated_events')
+    complex_transaction = models.ForeignKey('transactions.ComplexTransaction', null=True, blank=True,
+                                            on_delete=models.PROTECT, related_name='generated_events')
     member = models.ForeignKey('users.Member', null=True, blank=True, on_delete=models.SET_NULL)
 
     class Meta:
