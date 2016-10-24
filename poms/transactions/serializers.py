@@ -9,6 +9,7 @@ from poms.accounts.fields import AccountField, AccountDefault
 from poms.accounts.models import Account
 from poms.common import formula
 from poms.common.fields import ExpressionField
+from poms.common.formula import ModelSimpleEval, InvalidExpression
 from poms.common.serializers import PomsClassSerializer, ModelWithUserCodeSerializer
 from poms.counterparties.fields import ResponsibleField, CounterpartyField, ResponsibleDefault, CounterpartyDefault
 from poms.counterparties.models import Counterparty, Responsible
@@ -33,6 +34,7 @@ from poms.transactions.models import TransactionClass, Transaction, TransactionT
     ComplexTransaction, EventClass, NotificationClass
 from poms.transactions.processor import TransactionTypeProcessor
 from poms.users.fields import MasterUserField
+from poms.users.utils import get_member_from_context
 
 
 class EventClassSerializer(PomsClassSerializer):
@@ -761,9 +763,19 @@ class ComplexTransactionSerializer(serializers.ModelSerializer):
         ]
 
     def get_text(self, obj):
-        from poms.transactions.renderer import ComplexTransactionRenderer
-        renderer = ComplexTransactionRenderer()
-        return renderer.render(complex_transaction=obj, context=self.context)
+        # from poms.transactions.renderer import ComplexTransactionRenderer
+        # renderer = ComplexTransactionRenderer()
+        # return renderer.render(complex_transaction=obj, context=self.context)
+
+        member = get_member_from_context(self.context)
+        meval = ModelSimpleEval(names={
+            'code': obj.code,
+            'transactions': obj.transactions.all(),
+        }, member=member)
+        try:
+            return meval.eval(obj.transaction_type.display_expr)
+        except InvalidExpression:
+            return '<InvalidExpression>'
 
 
 # TransactionType processing
