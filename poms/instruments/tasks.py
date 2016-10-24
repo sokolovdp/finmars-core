@@ -203,88 +203,10 @@ def process_events(master_user=None, send_notification=True, notification_recipi
 
                 if apply_default:
                     _l.info('apply_default !!!!')
-
-    # _l.debug('event_schedule: count=%s', event_schedule_qs.count())
-    # for event_schedule in event_schedule_qs:
-    #     instrument = event_schedule.instrument
-    #     master_user = instrument.master_user
-    #
-    #     _l.debug(
-    #         'master_user=%s, instrument=%s, event_schedule=%s, event_class=%s, notification_class=%s, periodicity=%s',
-    #         master_user.id, instrument.id, event_schedule.id, event_schedule.event_class,
-    #         event_schedule.notification_class, event_schedule.periodicity)
-    #
-    #     notification_date_correction = timedelta(days=event_schedule.notify_in_n_days)
-    #
-    #     is_complies = False
-    #     effective_date = None
-    #     notification_date = None
-    #
-    #     if event_schedule.event_class_id == EventClass.ONE_OFF:
-    #         effective_date = event_schedule.effective_date
-    #         notification_date = effective_date - notification_date_correction
-    #         _l.debug('effective_date=%s, notification_date=%s', effective_date, notification_date)
-    #
-    #         if notification_date == now or effective_date == now:
-    #             is_complies = True
-    #
-    #     elif event_schedule.event_class_id == EventClass.REGULAR:
-    #         for i in range(0, settings.INSTRUMENT_EVENTS_REGULAR_MAX_INTERVALS):
-    #             effective_date = event_schedule.effective_date + event_schedule.periodicity.to_timedelta(
-    #                 i, same_date=event_schedule.effective_date)
-    #             notification_date = effective_date - notification_date_correction
-    #             _l.debug('i=%s, book_date=%s, notify_date=%s', i, effective_date, notification_date)
-    #
-    #             if effective_date > event_schedule.final_date:
-    #                 break
-    #             if effective_date < now:
-    #                 continue
-    #             if notification_date > now and effective_date > now:
-    #                 break
-    #
-    #             if notification_date == now or effective_date == now:
-    #                 is_complies = True
-    #                 break
-    #
-    #     if is_complies:
-    #         notification_class = event_schedule.notification_class
-    #         need_inform, need_react, apply_def = notification_class.check_date(now, effective_date, notification_date)
-    #
-    #         if need_inform:
-    #             _l.info('need_inform !!!!')
-    #
-    #         if need_react:
-    #             _l.info('need_react !!!!')
-    #
-    #         if apply_def:
-    #             _l.info('apply_def !!!!')
-
     _l.debug('finished')
-
-
-# @receiver(post_save, dispatch_uid='chat_message_created', sender=GeneratedEvent)
-# def chat_message_created(sender, instance=None, created=None, **kwargs):
-#     if created:
-#
-#         instance.instrument = instrument
-#         instance.portfolio = portfolio
-#         instance.account = account
-#         instance.strategy1 = strategy1
-#         instance.strategy2 = strategy2
-#         instance.strategy3 = strategy3
-#
-#         master_user = instance.thread.master_user
-#         thread = instance.thread
-#         qs = Member.objects.filter(master_user=master_user).exclude(id=instance.sender_id)
-#         recipients = [m.user for m in qs if has_view_perms(m, thread)]
-#         notifications.send(recipients,
-#                            actor=instance.sender,
-#                            verb='sent',
-#                            action_object=instance,
-#                            target=instance.thread)
 
 
 @shared_task(name='instruments.process_events_auto', ignore_result=True)
 def process_events_auto():
     for master_user in MasterUser.objects.all():
-        process_events.delay(master_user=master_user.pk)
+        process_events.delay(master_user=master_user.pk, notification_recipients=[])
