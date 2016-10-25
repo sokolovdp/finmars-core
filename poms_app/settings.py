@@ -43,9 +43,6 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'django.contrib.humanize',
-    'django.contrib.admin',
-    'django.contrib.admindocs',
-    'rest_framework',
     'mptt',
 
     'poms.http_sessions',
@@ -76,6 +73,11 @@ INSTALLED_APPS = [
     # 'two_factor',
 
     'crispy_forms',
+    'rest_framework',
+
+    'django.contrib.admin',
+    'django.contrib.admindocs',
+
     'redisboard',
 ]
 

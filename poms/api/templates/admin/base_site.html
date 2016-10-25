@@ -1,0 +1,31 @@
+{% extends "admin/base.html" %}
+
+{% block title %}{{ title }} | {{ site_title|default:_('Django site admin') }}{% endblock %}
+
+{% block branding %}
+    <h1 id="site-name"><a href="{% url 'admin:index' %}">{{ site_header|default:_('Django administration') }}</a></h1>
+{% endblock %}
+
+{% block nav-global %}{% endblock %}
+
+{% block extrahead %}
+    <link href="https://fonts.googleapis.com/css?family=Ubuntu+Condensed|Ubuntu+Mono:400,400i,700,700i|Ubuntu:300,300i,400,400i,500,500i,700,700i"
+          rel="stylesheet">
+    <style>
+        body {
+            font-family: "Ubuntu", "Lucida Grande", "DejaVu Sans", "Bitstream Vera Sans", Verdana, Arial, sans-serif;
+        }
+
+        td, th {
+            font-family: "Ubuntu", "Roboto", "Lucida Grande", Verdana, Arial, sans-serif;
+        }
+
+        input, textarea, select, .form-row p, form .button {
+            font-family: "Ubuntu", "Roboto", "Lucida Grande", Verdana, Arial, sans-serif;
+        }
+
+        fieldset.monospace textarea {
+            font-family: "Ubuntu Mono", "Bitstream Vera Sans Mono", Monaco, "Courier New", Courier, monospace;
+        }
+    </style>
+{% endblock %}

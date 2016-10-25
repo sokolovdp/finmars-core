@@ -1,0 +1,19 @@
+{% extends "rest_framework/base.html" %}
+
+{# Override this template in your own templates directory to customize #}
+{% block style %}
+    {{ block.super }}
+
+    <link href="https://fonts.googleapis.com/css?family=Ubuntu+Condensed|Ubuntu+Mono:400,400i,700,700i|Ubuntu:300,300i,400,400i,500,500i,700,700i"
+          rel="stylesheet">
+    <style>
+        body {
+            font-family: "Ubuntu", "Helvetica Neue", Helvetica, Arial, sans-serif;
+        }
+
+        code, kbd, pre, samp {
+            font-family: "Ubuntu Mono", Menlo, Monaco, Consolas, "Courier New", monospace;
+            font-size: 10pt;
+        }
+    </style>
+{% endblock %}
