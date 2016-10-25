@@ -9,7 +9,6 @@ from django.core.serializers.json import DjangoJSONEncoder
 from django.db import models
 from django.utils.encoding import python_2_unicode_compatible
 from django.utils.translation import ugettext_lazy
-from mptt.fields import TreeForeignKey
 from mptt.models import MPTTModel
 
 from poms.accounts.models import Account
@@ -18,7 +17,7 @@ from poms.common.utils import date_now
 from poms.counterparties.models import Responsible, Counterparty
 from poms.currencies.models import Currency
 from poms.instruments.models import Instrument
-from poms.obj_attrs.models import  GenericAttribute
+from poms.obj_attrs.models import GenericAttribute
 from poms.obj_perms.models import GenericObjectPermission
 from poms.portfolios.models import Portfolio
 from poms.strategies.models import Strategy1, Strategy2, Strategy3
@@ -138,9 +137,22 @@ class NotificationClass(AbstractClassModel):
         verbose_name = ugettext_lazy('notification class')
         verbose_name_plural = ugettext_lazy('notification classes')
 
+    @property
+    def needed_reaction(self):
+        return self.id in [
+            NotificationClass.INFORM_ON_NDATE_WITH_REACT,
+            NotificationClass.INFORM_ON_EDATE_WITH_REACT,
+            NotificationClass.INFORM_ON_NDATE_AND_EDATE_WITH_REACT_ON_EDATE,
+            NotificationClass.INFORM_ON_NDATE_AND_EDATE_WITH_REACT_ON_NDATE,
+        ]
+
     def check_date(self, now, effective_date, notification_date):
+        if now is None:
+            now = date_now()
+
         show_notification = False
         apply_default = False
+        needed_reaction = False
 
         # NDATE -> notification_date
         # EDATE -> effective_date
@@ -155,7 +167,7 @@ class NotificationClass(AbstractClassModel):
 
         elif self.id == NotificationClass.INFORM_ON_NDATE_WITH_REACT:
             show_notification = now == notification_date
-            # apply_default = now == notification_date
+            needed_reaction = now == notification_date
 
         elif self.id == NotificationClass.INFORM_ON_NDATE_APPLY_DEF:
             show_notification = now == notification_date
@@ -166,7 +178,7 @@ class NotificationClass(AbstractClassModel):
 
         elif self.id == NotificationClass.INFORM_ON_EDATE_WITH_REACT:
             show_notification = now == effective_date
-            apply_default = now == effective_date
+            needed_reaction = now == effective_date
 
         elif self.id == NotificationClass.INFORM_ON_EDATE_APPLY_DEF:
             show_notification = now == effective_date
@@ -177,11 +189,11 @@ class NotificationClass(AbstractClassModel):
 
         elif self.id == NotificationClass.INFORM_ON_NDATE_AND_EDATE_WITH_REACT_ON_EDATE:
             show_notification = now == notification_date or now == effective_date
-            # apply_default = now == effective_date
+            needed_reaction = now == effective_date
 
         elif self.id == NotificationClass.INFORM_ON_NDATE_AND_EDATE_WITH_REACT_ON_NDATE:
             show_notification = now == notification_date or now == effective_date
-            # apply_default = now == notification_date
+            needed_reaction = now == notification_date
 
         elif self.id == NotificationClass.INFORM_ON_NDATE_AND_EDATE_APPLY_DEF_ON_EDATE:
             show_notification = now == notification_date or now == effective_date
@@ -194,7 +206,7 @@ class NotificationClass(AbstractClassModel):
         elif self.id == NotificationClass.INFORM_ON_NDATE_AND_EDATE_DONT_REACT:
             show_notification = now == notification_date or now == effective_date
 
-        return show_notification, apply_default
+        return show_notification, apply_default, needed_reaction
 
 
 class PeriodicityGroup(AbstractClassModel):

@@ -18,13 +18,14 @@ from poms.common.filters import CharFilter, ModelExtWithPermissionMultipleChoice
 from poms.common.mixins import UpdateModelMixinExt
 from poms.common.views import AbstractClassModelViewSet, AbstractModelViewSet, AbstractReadOnlyModelViewSet
 from poms.currencies.models import Currency
-from poms.instruments.handlers import GeneratedEventProcess
 from poms.instruments.filters import OwnerByInstrumentFilter, PriceHistoryObjectPermissionFilter, \
     GeneratedEventPermissionFilter
+from poms.instruments.handlers import GeneratedEventProcess
 from poms.instruments.models import Instrument, PriceHistory, InstrumentClass, DailyPricingModel, \
     AccrualCalculationModel, PaymentSizeDetail, Periodicity, CostMethod, InstrumentType, PricingPolicy, \
     EventScheduleConfig, ManualPricingFormula, \
     AccrualCalculationSchedule, EventSchedule, EventScheduleAction, GeneratedEvent
+from poms.instruments.permissions import GeneratedEventPermission
 from poms.instruments.serializers import InstrumentSerializer, PriceHistorySerializer, \
     InstrumentClassSerializer, DailyPricingModelSerializer, AccrualCalculationModelSerializer, \
     PaymentSizeDetailSerializer, PeriodicitySerializer, CostMethodSerializer, InstrumentTypeSerializer, \
@@ -359,27 +360,15 @@ class GeneratedEventFilterSet(FilterSet):
 class GeneratedEventViewSet(UpdateModelMixinExt, AbstractReadOnlyModelViewSet):
     queryset = GeneratedEvent.objects.select_related(
         'master_user',
-        'event_schedule',
-        'event_schedule__event_class',
-        'event_schedule__notification_class',
+        'event_schedule', 'event_schedule__event_class', 'event_schedule__notification_class',
         'event_schedule__periodicity',
-        'instrument',
-        'instrument__instrument_type',
-        'instrument__instrument_type__instrument_class',
-        'portfolio',
-        'account',
-        'strategy1',
-        'strategy1__subgroup',
-        'strategy1__subgroup__group',
-        'strategy2',
-        'strategy2__subgroup',
-        'strategy2__subgroup__group',
-        'strategy3',
-        'strategy3__subgroup',
-        'strategy3__subgroup__group',
+        'instrument', 'instrument__instrument_type', 'instrument__instrument_type__instrument_class',
+        'portfolio', 'account',
+        'strategy1', 'strategy1__subgroup', 'strategy1__subgroup__group',
+        'strategy2', 'strategy2__subgroup', 'strategy2__subgroup__group',
+        'strategy3', 'strategy3__subgroup', 'strategy3__subgroup__group',
         'action',
-        'transaction_type',
-        'transaction_type__group',
+        'transaction_type', 'transaction_type__group',
         'member'
     ).prefetch_related(
         *get_permissions_prefetch_lookups(
@@ -419,18 +408,27 @@ class GeneratedEventViewSet(UpdateModelMixinExt, AbstractReadOnlyModelViewSet):
         'member',
     ]
 
-    @detail_route(methods=['get', 'put'], url_path='book', serializer_class=TransactionTypeProcessSerializer)
+    @detail_route(methods=['get', 'put'], url_path='book', serializer_class=TransactionTypeProcessSerializer,
+                  permission_classes=AbstractReadOnlyModelViewSet.permission_classes + [GeneratedEventPermission])
     def process(self, request, pk=None):
         generated_event = self.get_object()
 
-        if generated_event.status != GeneratedEvent.NEW:
-            raise PermissionDenied()
+        # if generated_event.status != GeneratedEvent.NEW:
+        #     raise PermissionDenied()
 
         action_pk = request.query_params.get('action', None)
-        if not action_pk:
+        # if not action_pk:
+        #     raise ValidationError('Require "action" query parameter')
+
+        action = None
+        if action_pk:
+            try:
+                action = generated_event.event_schedule.actions.get(pk=action_pk)
+            except ObjectDoesNotExist:
+                pass
+        if action is None:
             raise ValidationError('Require "action" query parameter')
 
-        action = generated_event.event_schedule.actions.get(pk=action_pk)
         instance = GeneratedEventProcess(generated_event=generated_event, action=action)
         if request.method == 'GET':
             serializer = self.get_serializer(instance=instance)

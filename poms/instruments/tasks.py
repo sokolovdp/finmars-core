@@ -151,12 +151,12 @@ def process_events(master_user=None, send_notification=True, notification_recipi
             _l.debug('is_complies=%s', is_complies)
             if is_complies:
                 notification_class = event_schedule.notification_class
-                show_notification, apply_default = notification_class.check_date(
+                show_notification, apply_default, needed_reaction = notification_class.check_date(
                     now, effective_date, notification_date)
                 _l.debug('founded: event_class=%s, effective_date=%s, notification_date=%s, '
-                         'show_notification=%s, applay_default=%s',
+                         'show_notification=%s, apply_default=%s, needed_reaction=%s',
                          event_schedule.event_class, effective_date, notification_date,
-                         show_notification, apply_default)
+                         show_notification, apply_default, needed_reaction)
 
                 ge_dup_qs = GeneratedEvent.objects.filter(
                     master_user=master_user,
