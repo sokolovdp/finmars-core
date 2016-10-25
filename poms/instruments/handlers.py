@@ -1,0 +1,29 @@
+from poms.transactions.handlers import TransactionTypeProcess
+from poms.transactions.models import ComplexTransaction
+
+
+class GeneratedEventProcess(TransactionTypeProcess):
+    def __init__(self, generated_event=None, action=None, **kwargs):
+        kwargs['transaction_type'] = generated_event.transaction_type
+        self.generated_event = generated_event
+        self.action = action
+
+        default_values = kwargs.get('default_values', None) or {}
+        default_values.update({
+            'instrument': generated_event.instrument,
+            'portfolio': generated_event.portfolio,
+            'account': generated_event.account,
+            'strategy1': generated_event.strategy1,
+            'strategy2': generated_event.strategy2,
+            'strategy3': generated_event.strategy3,
+            'position': generated_event.position,
+            'effective_date': generated_event.effective_date,
+            'notification_date': generated_event.notification_date,
+        })
+        kwargs['default_values'] = default_values
+        if action.is_sent_to_pending:
+            kwargs['complex_transaction_status'] = ComplexTransaction.PENDING
+        else:
+            kwargs['complex_transaction_status'] = ComplexTransaction.PRODUCTION
+
+        super(GeneratedEventProcess, self).__init__(**kwargs)

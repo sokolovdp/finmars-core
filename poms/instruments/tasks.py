@@ -216,13 +216,9 @@ def process_events_apply_def(generated_event):
     action = next((a for a in generated_event.event_schedule.actions.all() if a.is_book_automatic), None)
     _l.debug('process_events_apply_def: generated_event=%s, action=%s', generated_event.id, getattr(action, 'id', None))
     if action:
-        from poms.transactions.serializers import TransactionTypeProcess
+        from poms.instruments.handlers import GeneratedEventProcess
 
-        ttp = TransactionTypeProcess(transaction_type=action.transaction_type,
-                                     generated_event=generated_event,
-                                     action=action,
-                                     calculate=True,
-                                     store=True)
+        ttp = GeneratedEventProcess(generated_event=generated_event, action=action, calculate=True, store=True)
         ttp.process()
 
         generated_event.processed(None, action, ttp.complex_transaction)

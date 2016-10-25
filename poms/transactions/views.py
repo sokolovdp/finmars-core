@@ -27,6 +27,7 @@ from poms.strategies.models import Strategy1, Strategy2, Strategy3, Strategy1Sub
     Strategy2Subgroup, Strategy2Group, Strategy3Subgroup, Strategy3Group
 from poms.tags.filters import TagFilter
 from poms.tags.utils import get_tag_prefetch
+from poms.transactions.handlers import TransactionTypeProcess
 from poms.transactions.filters import TransactionObjectPermissionFilter, ComplexTransactionPermissionFilter, \
     TransactionObjectPermissionMemberFilter, TransactionObjectPermissionGroupFilter, \
     TransactionObjectPermissionPermissionFilter
@@ -35,8 +36,7 @@ from poms.transactions.models import TransactionClass, Transaction, TransactionT
 from poms.transactions.permissions import TransactionObjectPermission
 from poms.transactions.serializers import TransactionClassSerializer, TransactionSerializer, TransactionTypeSerializer, \
     TransactionTypeProcessSerializer, TransactionTypeGroupSerializer, ComplexTransactionSerializer, \
-    EventClassSerializer, \
-    NotificationClassSerializer, TransactionTypeProcess
+    EventClassSerializer, NotificationClassSerializer
 from poms.users.filters import OwnerByMasterUserFilter
 
 
@@ -291,7 +291,7 @@ class TransactionTypeViewSet(AbstractWithObjectPermissionViewSet):
         'group', 'group__user_code', 'group__name', 'group__short_name', 'group__public_name',
     ]
 
-    @detail_route(methods=['get', 'put'], url_path='process', serializer_class=TransactionTypeProcessSerializer)
+    @detail_route(methods=['get', 'put'], url_path='book', serializer_class=TransactionTypeProcessSerializer)
     def process(self, request, pk=None):
         instance = TransactionTypeProcess(transaction_type=self.get_object())
         if request.method == 'GET':

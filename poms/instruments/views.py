@@ -18,6 +18,7 @@ from poms.common.filters import CharFilter, ModelExtWithPermissionMultipleChoice
 from poms.common.mixins import UpdateModelMixinExt
 from poms.common.views import AbstractClassModelViewSet, AbstractModelViewSet, AbstractReadOnlyModelViewSet
 from poms.currencies.models import Currency
+from poms.instruments.handlers import GeneratedEventProcess
 from poms.instruments.filters import OwnerByInstrumentFilter, PriceHistoryObjectPermissionFilter, \
     GeneratedEventPermissionFilter
 from poms.instruments.models import Instrument, PriceHistory, InstrumentClass, DailyPricingModel, \
@@ -44,7 +45,7 @@ from poms.strategies.models import Strategy1, Strategy1Subgroup, Strategy1Group,
 from poms.tags.filters import TagFilter
 from poms.tags.utils import get_tag_prefetch
 from poms.transactions.models import TransactionType, TransactionTypeGroup
-from poms.transactions.serializers import TransactionTypeProcessSerializer, TransactionTypeProcess
+from poms.transactions.serializers import TransactionTypeProcessSerializer
 from poms.users.filters import OwnerByMasterUserFilter
 from poms.users.permissions import SuperUserOrReadOnly
 
@@ -418,7 +419,7 @@ class GeneratedEventViewSet(UpdateModelMixinExt, AbstractReadOnlyModelViewSet):
         'member',
     ]
 
-    @detail_route(methods=['get', 'put'], url_path='process', serializer_class=TransactionTypeProcessSerializer)
+    @detail_route(methods=['get', 'put'], url_path='book', serializer_class=TransactionTypeProcessSerializer)
     def process(self, request, pk=None):
         generated_event = self.get_object()
 
@@ -427,21 +428,13 @@ class GeneratedEventViewSet(UpdateModelMixinExt, AbstractReadOnlyModelViewSet):
 
         action_pk = request.query_params.get('action', None)
         action = generated_event.event_schedule.actions.get(pk=action_pk)
-        instance = TransactionTypeProcess(transaction_type=action.transaction_type, generated_event=generated_event,
-                                          action=action)
+        instance = GeneratedEventProcess(generated_event=generated_event, action=action)
         if request.method == 'GET':
             serializer = self.get_serializer(instance=instance)
             return Response(serializer.data)
         else:
             try:
                 if instance.store:
-                    # generated_event.status = GeneratedEvent.BOOK_PENDING if action.is_sent_to_pending else GeneratedEvent.BOOKED
-                    # generated_event.status_date = timezone.now()
-                    # generated_event.member = self.request.user.member
-                    # generated_event.action = action
-                    # generated_event.transaction_type = action.transaction_type
-                    # generated_event.complex_transaction = instance.complex_transaction
-                    # generated_event.save()
                     generated_event.processed(self.request.user.member, action, instance.complex_transaction)
 
                 serializer = self.get_serializer(instance=instance, data=request.data)
