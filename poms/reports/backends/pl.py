@@ -8,109 +8,6 @@ from poms.reports.models import PLReportItem, BalanceReportItem
 from poms.transactions.models import TransactionClass
 
 
-# class PLReportBuilder(BalanceReportBuilder):
-#     def __init__(self, *args, **kwargs):
-#         super(PLReportBuilder, self).__init__(*args, **kwargs)
-#         self._filter_date_attr = 'accounting_date'
-#
-#     def build(self):
-#         balance_items, balance_invested_items = super(PLReportBuilder, self).get_items()
-#
-#         items = {}
-#         for bi in balance_items:
-#             if bi.instrument:
-#                 pli = PLReportItem(bi.instrument)
-#                 pli.pk = '%s' % bi.instrument.id
-#                 items['%s' % bi.instrument.id] = pli
-#
-#                 # summary.principal_with_sign_system_ccy += bi.principal_value_system_ccy
-#                 # summary.carry_with_sign_system_ccy += bi.accrued_value_system_ccy
-#
-#                 pli.principal_with_sign_system_ccy += bi.principal_value_system_ccy
-#                 pli.carry_with_sign_system_ccy += bi.accrued_value_system_ccy
-#
-#         self.annotate_fx_rates()
-#
-#         summary = self.instance.summary
-#         for t in self.transactions:
-#             t_class = t.transaction_class_id
-#             if t_class in [TransactionClass.CASH_INFLOW, TransactionClass.CASH_OUTFLOW]:
-#                 t.principal_with_sign_system_ccy = t.principal_with_sign * t.transaction_currency_fx_rate
-#                 t.carry_with_sign_system_ccy = t.carry_with_sign * t.transaction_currency_fx_rate
-#                 t.overheads_with_sign_system_ccy = t.overheads_with_sign * t.transaction_currency_fx_rate
-#
-#             elif t_class in [TransactionClass.BUY, TransactionClass.SELL, TransactionClass.FX_TRADE]:
-#                 t.principal_with_sign_system_ccy = t.principal_with_sign * t.settlement_currency_fx_rate
-#                 t.carry_with_sign_system_ccy = t.carry_with_sign * t.settlement_currency_fx_rate
-#                 t.overheads_with_sign_system_ccy = t.overheads_with_sign * t.settlement_currency_fx_rate
-#
-#                 pli = items['%s' % t.instrument.id]
-#                 pli.principal_with_sign_system_ccy += t.principal_with_sign_system_ccy
-#                 pli.carry_with_sign_system_ccy += t.carry_with_sign_system_ccy
-#                 pli.overheads_with_sign_system_ccy += t.overheads_with_sign_system_ccy
-#
-#             elif t_class in [TransactionClass.INSTRUMENT_PL]:
-#                 t.principal_with_sign_system_ccy = t.principal_with_sign * t.settlement_currency_fx_rate
-#                 t.carry_with_sign_system_ccy = t.carry_with_sign * t.settlement_currency_fx_rate
-#                 t.overheads_with_sign_system_ccy = t.overheads_with_sign * t.settlement_currency_fx_rate
-#
-#                 pli = items['%s' % t.instrument.id]
-#                 pli.principal_with_sign_system_ccy += t.principal_with_sign_system_ccy
-#                 pli.carry_with_sign_system_ccy += t.carry_with_sign_system_ccy
-#                 pli.overheads_with_sign_system_ccy += t.overheads_with_sign_system_ccy
-#
-#             elif t_class in [TransactionClass.TRANSACTION_PL]:
-#                 t.principal_with_sign_system_ccy = t.principal_with_sign * t.settlement_currency_fx_rate
-#                 t.carry_with_sign_system_ccy = t.carry_with_sign * t.settlement_currency_fx_rate
-#                 t.overheads_with_sign_system_ccy = t.overheads_with_sign * t.settlement_currency_fx_rate
-#
-#                 try:
-#                     pli = items[t_class]
-#                 except KeyError:
-#                     pli = items[t_class] = PLReportItem()
-#                     pli.pk = t_class
-#                 pli.principal_with_sign_system_ccy += t.principal_with_sign_system_ccy
-#                 pli.carry_with_sign_system_ccy += t.carry_with_sign_system_ccy
-#                 pli.overheads_with_sign_system_ccy += t.overheads_with_sign_system_ccy
-#
-#             # summary.principal_with_sign_system_ccy += getattr(t, 'principal_with_sign_system_ccy', 0.)
-#             # summary.carry_with_sign_system_ccy += getattr(t, 'carry_with_sign_system_ccy', 0.)
-#             # summary.overheads_with_sign_system_ccy += getattr(t, 'overheads_with_sign_system_ccy', 0.)
-#             pass
-#
-#         # summary.principal_with_sign_system_ccy = \
-#         #     reduce(lambda x, y: x + y.principal_with_sign_system_ccy, items, 0.) + \
-#         #     reduce(lambda x, y: x + getattr(y, 'principal_with_sign_system_ccy', 0.), self.transactions, 0.)
-#         #
-#         # summary.carry_with_sign_system_ccy = \
-#         #     reduce(lambda x, y: x + y.carry_with_sign_system_ccy, items, 0.) + \
-#         #     reduce(lambda x, y: x + getattr(y, 'carry_with_sign_system_ccy', 0.), self.transactions, 0.)
-#         #
-#         # summary.overheads_with_sign_system_ccy = \
-#         #     reduce(lambda x, y: x + getattr(y, 'overheads_with_sign_system_ccy', 0.), self.transactions, 0.)
-#
-#         # summary.total_system_ccy = summary.principal_with_sign_system_ccy + \
-#         #                            summary.carry_with_sign_system_ccy + \
-#         #                            summary.overheads_with_sign_system_ccy
-#
-#         items = [i for i in items.values()]
-#         items = sorted(items, key=lambda x: x.pk)
-#         for i in items:
-#             i.total_system_ccy = i.principal_with_sign_system_ccy + \
-#                                  i.carry_with_sign_system_ccy + \
-#                                  i.overheads_with_sign_system_ccy
-#
-#             summary.principal_with_sign_system_ccy += i.principal_with_sign_system_ccy
-#             summary.carry_with_sign_system_ccy += i.carry_with_sign_system_ccy
-#             summary.overheads_with_sign_system_ccy += i.overheads_with_sign_system_ccy
-#             summary.total_system_ccy += i.total_system_ccy
-#
-#         self.instance.items = items
-#         self.instance.transactions = self.transactions
-#
-#         return self.instance
-
-
 class PLReport2Builder(BaseReport2Builder):
     def __init__(self, *args, **kwargs):
         super(PLReport2Builder, self).__init__(*args, **kwargs)
@@ -123,10 +20,6 @@ class PLReport2Builder(BaseReport2Builder):
         try:
             return self._items[t_key]
         except KeyError:
-            # portfolio = trn.portfolio if self._use_portfolio else None
-            # account = acc if self._use_account else None
-            # instrument = trn.instrument
-            # item = PLReportItem(pk=t_key, portfolio=portfolio, account=account, instrument=instrument)
             item = self.make_item(PLReportItem, key=t_key, portfolio=trn.portfolio, account=acc,
                                   instrument=trn.instrument)
             self._items[t_key] = item
@@ -137,10 +30,6 @@ class PLReport2Builder(BaseReport2Builder):
         try:
             return self._balance_items[t_key]
         except KeyError:
-            # portfolio = trn.portfolio if self._use_portfolio else None
-            # account = acc if self._use_account else None
-            # instrument = trn.instrument
-            # item = BalanceReportItem(pk=t_key, portfolio=portfolio, account=account, instrument=instrument)
             item = self.make_item(BalanceReportItem, key=t_key, portfolio=trn.portfolio, account=acc,
                                   instrument=trn.instrument)
             self._balance_items[t_key] = item
@@ -149,24 +38,27 @@ class PLReport2Builder(BaseReport2Builder):
     def _process_instrument(self, t, item, sign=1.):
         # default case
         # self.set_currency_fx_rate(t, 'transaction_currency')
-        self.set_currency_fx_rate(t, 'settlement_currency')
+        # self.set_currency_fx_rate(t, 'settlement_currency')
+        settlement_currency_history = self.find_currency_history(t.settlement_currency)
 
-        t.principal_with_sign_system_ccy = t.principal_with_sign * t.settlement_currency_fx_rate
-        t.carry_with_sign_system_ccy = t.carry_with_sign * t.settlement_currency_fx_rate
-        t.overheads_with_sign_system_ccy = t.overheads_with_sign * t.settlement_currency_fx_rate
+        t.principal_with_sign_system_ccy = t.principal_with_sign * settlement_currency_history.fx_rate
+        t.carry_with_sign_system_ccy = t.carry_with_sign * settlement_currency_history.fx_rate
+        t.overheads_with_sign_system_ccy = t.overheads_with_sign * settlement_currency_history.fx_rate
 
         item.principal_with_sign_system_ccy += sign * t.principal_with_sign_system_ccy
         item.carry_with_sign_system_ccy += sign * t.carry_with_sign_system_ccy
         item.overheads_with_sign_system_ccy += sign * t.overheads_with_sign_system_ccy
 
     def _process_fx_trade(self, t, item, sign=1.):
-        self.set_currency_fx_rate(t, 'transaction_currency')
-        self.set_currency_fx_rate(t, 'settlement_currency')
+        # self.set_currency_fx_rate(t, 'transaction_currency')
+        # self.set_currency_fx_rate(t, 'settlement_currency')
+        transaction_currency_history = self.find_currency_history(t.transaction_currency)
+        settlement_currency_history = self.find_currency_history(t.settlement_currency)
 
-        t.principal_with_sign_system_ccy = t.principal_with_sign * t.settlement_currency_fx_rate + \
-                                           t.position_size_with_sign * t.transaction_currency_fx_rate
-        t.carry_with_sign_system_ccy = t.carry_with_sign * t.settlement_currency_fx_rate
-        t.overheads_with_sign_system_ccy = t.overheads_with_sign * t.settlement_currency_fx_rate
+        t.principal_with_sign_system_ccy = t.principal_with_sign * settlement_currency_history.fx_rate + \
+                                           t.position_size_with_sign * transaction_currency_history.fx_rate
+        t.carry_with_sign_system_ccy = t.carry_with_sign * settlement_currency_history.fx_rate
+        t.overheads_with_sign_system_ccy = t.overheads_with_sign * settlement_currency_history.fx_rate
 
         item.principal_with_sign_system_ccy += sign * t.principal_with_sign_system_ccy
         item.carry_with_sign_system_ccy += sign * t.carry_with_sign_system_ccy
@@ -183,7 +75,7 @@ class PLReport2Builder(BaseReport2Builder):
                 self._process_instrument(t, item)
 
                 bitem = self._get_balance_items(t, acc=t.account_position)
-                bitem.balance_position += t.position_size_with_sign
+                bitem.position += t.position_size_with_sign
 
             elif t_class == TransactionClass.INSTRUMENT_PL:
                 item = self._get_item(t, acc=t.account_position)
@@ -199,61 +91,46 @@ class PLReport2Builder(BaseReport2Builder):
                 spec.name = TransactionClass.FX_TRADE
                 self._process_fx_trade(t, spec)
 
-                # self.set_currency_fx_rate(t, 'transaction_currency')
-                # self.set_currency_fx_rate(t, 'settlement_currency')
-                #
-                # t.principal_with_sign_system_ccy = t.principal_with_sign * t.settlement_currency_fx_rate + \
-                #                                    t.position_size_with_sign * t.transaction_currency_fx_rate
-                # t.carry_with_sign_system_ccy = t.carry_with_sign * t.settlement_currency_fx_rate
-                # t.overheads_with_sign_system_ccy = t.overheads_with_sign * t.settlement_currency_fx_rate
-                #
-                # spec.principal_with_sign_system_ccy += t.principal_with_sign_system_ccy
-                # spec.carry_with_sign_system_ccy += t.carry_with_sign_system_ccy
-                # spec.overheads_with_sign_system_ccy += t.overheads_with_sign_system_ccy
-
             elif t_class == TransactionClass.TRANSFER:
-                # item = self._get_item(t, acc=t.account_cash)
-                # self._process_instrument(t, item)
-                # bitem = self._get_balance_items(t, acc=t.account_cash)
-                # bitem.balance_position += t.position_size_with_sign
-                #
-                # item = self._get_item(t, acc=t.account_position)
-                # self._process_instrument(t, item, sign=-1.)
-                # bitem = self._get_balance_items(t, acc=t.account_position)
-                # bitem.balance_position += -t.position_size_with_sign
-
                 # make 2 transactions for buy/sell
-                pass
+                raise RuntimeError('TRANSFER: two transaction buy/sell must be created')
 
             elif t_class == TransactionClass.FX_TRANSFER:
-                # spec = self._get_item(t, acc=t.account_cash, ext=TransactionClass.FX_TRADE)
-                # spec.name = TransactionClass.FX_TRADE
-                # self._process_fx_trade(t, spec)
-                #
-                # spec = self._get_item(t, acc=t.account_position, ext=TransactionClass.FX_TRADE)
-                # spec.name = TransactionClass.FX_TRADE
-                # self._process_fx_trade(t, spec, sign=-1.)
-
                 # make 2 transactions for buy/sell
-                pass
+                raise RuntimeError('FX_TRANSFER: two transaction buy/sell must be created')
 
         for i in self._balance_items.values():
             self.calc_balance_instrument(i)
 
             pli = self._items[i.pk]
+
             pli.principal_with_sign_system_ccy += i.principal_value_system_ccy
             pli.carry_with_sign_system_ccy += i.accrued_value_system_ccy
+            pli.overheads_with_sign_system_ccy += 0.0
+
+            pli.total_system_ccy = pli.principal_with_sign_system_ccy + \
+                                   pli.carry_with_sign_system_ccy + \
+                                   pli.overheads_with_sign_system_ccy
+
+            pli.principal_with_sign_value_ccy = self.system_ccy_to_value_ccy(pli.principal_with_sign_system_ccy)
+            pli.carry_with_sign_value_ccy = self.system_ccy_to_value_ccy(pli.carry_with_sign_system_ccy)
+            pli.overheads_with_sign_value_ccy = self.system_ccy_to_value_ccy(pli.overheads_with_sign_system_ccy)
+
+            pli.total_value_ccy = pli.principal_with_sign_value_ccy + \
+                        pli.carry_with_sign_value_ccy + \
+                        pli.overheads_with_sign_value_ccy
 
         summary = self.instance.summary
         for i in self._items.values():
-            i.total_system_ccy = i.principal_with_sign_system_ccy + \
-                                 i.carry_with_sign_system_ccy + \
-                                 i.overheads_with_sign_system_ccy
-
             summary.principal_with_sign_system_ccy += i.principal_with_sign_system_ccy
             summary.carry_with_sign_system_ccy += i.carry_with_sign_system_ccy
             summary.overheads_with_sign_system_ccy += i.overheads_with_sign_system_ccy
             summary.total_system_ccy += i.total_system_ccy
+
+        summary.principal_with_sign_value_ccy = self.system_ccy_to_value_ccy(summary.principal_with_sign_system_ccy)
+        summary.carry_with_sign_value_ccy = self.system_ccy_to_value_ccy(summary.carry_with_sign_system_ccy)
+        summary.overheads_with_sign_value_ccy = self.system_ccy_to_value_ccy(summary.overheads_with_sign_system_ccy)
+        summary.total_value_ccy = self.system_ccy_to_value_ccy(summary.total_system_ccy)
 
         items = [i for i in self._items.values()]
         items = sorted(items, key=lambda x: '%s' % (x.pk,))

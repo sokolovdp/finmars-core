@@ -101,10 +101,32 @@ class BaseReportItemSerializer(serializers.Serializer):
     strategy1 = serializers.PrimaryKeyRelatedField(read_only=True)
     strategy2 = serializers.PrimaryKeyRelatedField(read_only=True)
     strategy3 = serializers.PrimaryKeyRelatedField(read_only=True)
-
     instrument = serializers.PrimaryKeyRelatedField(read_only=True)
+    currency = serializers.PrimaryKeyRelatedField(read_only=True)
 
-    name = serializers.CharField(read_only=True)
+    def __init__(self, *args, **kwargs):
+        super(BaseReportItemSerializer, self).__init__(*args, **kwargs)
+
+        # from poms.portfolios.serializers import PortfolioSerializer
+        # self.fields['portfolio_object'] = PortfolioSerializer(source='portfolio', read_only=True)
+        #
+        # from poms.accounts.serializers import AccountSerializer
+        # self.fields['account_position_object'] = AccountSerializer(source='account_position', read_only=True)
+        #
+        # from poms.strategies.serializers import Strategy1Serializer
+        # self.fields['strategy1_object'] = Strategy1Serializer(source='strategy1_position', read_only=True)
+        #
+        # from poms.strategies.serializers import Strategy2Serializer
+        # self.fields['strategy2_object'] = Strategy2Serializer(source='strategy2_position', read_only=True)
+        #
+        # from poms.strategies.serializers import Strategy3Serializer
+        # self.fields['strategy3_object'] = Strategy3Serializer(source='strategy3_position', read_only=True)
+        #
+        # from poms.instruments.serializers import InstrumentSerializer
+        # self.fields['instrument_object'] = InstrumentSerializer(source='instrument', read_only=True)
+        #
+        # from poms.currencies.serializers import CurrencySerializer
+        # self.fields['currency_object'] = CurrencySerializer(source='currency', read_only=True)
 
 
 class BaseReportSerializer(serializers.Serializer):
@@ -116,14 +138,16 @@ class BaseReportSerializer(serializers.Serializer):
     begin_date = serializers.DateField(required=False, allow_null=True)
     end_date = serializers.DateField(required=False, allow_null=True, default=date_now)
 
-    cost_method = serializers.PrimaryKeyRelatedField(queryset=CostMethod.objects, allow_null=True, allow_empty=True,
-                                                     initial=CostMethod.AVCO,
-                                                     default=lambda: CostMethod.objects.get(pk=CostMethod.AVCO))
+    cost_method = serializers.PrimaryKeyRelatedField(
+        queryset=CostMethod.objects, allow_null=True, allow_empty=True,
+        initial=CostMethod.AVCO, default=lambda: CostMethod.objects.get(pk=CostMethod.AVCO))
     value_currency = CurrencyField(default=CurrencyDefault())
 
     use_portfolio = serializers.BooleanField(default=False)
     use_account = serializers.BooleanField(default=False)
-    use_strategy = serializers.BooleanField(default=False)
+    use_strategy1 = serializers.BooleanField(default=False)
+    use_strategy2 = serializers.BooleanField(default=False)
+    use_strategy3 = serializers.BooleanField(default=False)
 
     portfolios = PortfolioField(many=True, required=False, allow_null=True, allow_empty=True)
     accounts = AccountField(many=True, required=False, allow_null=True, allow_empty=True)
@@ -134,40 +158,51 @@ class BaseReportSerializer(serializers.Serializer):
     # transaction_currencies = CurrencyField(many=True, required=False, allow_null=True)
     # instruments = InstrumentField(many=True, required=False, allow_null=True)
 
+    def __init__(self, *args, **kwargs):
+        super(BaseReportSerializer, self).__init__(*args, **kwargs)
+
 
 # ----------------------------------------------------------------------------------------------------------------------
 
 
 class BalanceReportItemSerializer(BaseReportItemSerializer):
-    balance_position = serializers.FloatField(read_only=True, help_text=ugettext_lazy('Position'))
-
-    currency = serializers.PrimaryKeyRelatedField(read_only=True, help_text=ugettext_lazy('Currency'))
     # currency_name = serializers.SerializerMethodField()
-    currency_history = serializers.PrimaryKeyRelatedField(read_only=True, help_text=ugettext_lazy('Currency history'))
-    currency_fx_rate = serializers.FloatField(read_only=True)
 
-    instrument_principal_pricing_ccy = serializers.SerializerMethodField()
-    instrument_price_multiplier = serializers.FloatField(read_only=True)
-    instrument_accrued_pricing_ccy = serializers.SerializerMethodField()
-    instrument_accrued_multiplier = serializers.FloatField(read_only=True)
-    price_history = serializers.PrimaryKeyRelatedField(read_only=True, help_text=ugettext_lazy('price history'))
-    instrument_principal_price = serializers.FloatField(read_only=True)
-    instrument_accrued_price = serializers.FloatField(read_only=True)
-    principal_value_instrument_principal_ccy = serializers.FloatField(read_only=True)
-    accrued_value_instrument_accrued_ccy = serializers.FloatField(read_only=True)
-    instrument_principal_currency_history = serializers.PrimaryKeyRelatedField(read_only=True,
-                                                                               help_text=ugettext_lazy(''))
-    instrument_principal_fx_rate = serializers.FloatField(read_only=True, help_text=ugettext_lazy(''))
-    instrument_accrued_currency_history = serializers.PrimaryKeyRelatedField(read_only=True,
-                                                                             help_text=ugettext_lazy(''))
-    instrument_accrued_fx_rate = serializers.FloatField(read_only=True, help_text=ugettext_lazy(''))
+    position = serializers.FloatField(read_only=True, help_text=ugettext_lazy('Position'))
 
     principal_value_system_ccy = serializers.FloatField(read_only=True)
     accrued_value_system_ccy = serializers.FloatField(read_only=True)
     market_value_system_ccy = serializers.FloatField(read_only=True)
 
-    transaction = serializers.PrimaryKeyRelatedField(read_only=True,
-                                                     help_text=ugettext_lazy('Transaction for case 1&2'))
+    principal_value_value_ccy = serializers.FloatField(read_only=True)
+    accrued_value_value_ccy = serializers.FloatField(read_only=True)
+    market_value_value_ccy = serializers.FloatField(read_only=True)
+
+    transaction = serializers.PrimaryKeyRelatedField(read_only=True, help_text=ugettext_lazy('Transaction for case 1&2'))
+
+    if settings.DEV:
+        # currency_history = serializers.PrimaryKeyRelatedField(read_only=True, help_text=ugettext_lazy('Currency history'))
+        # currency_fx_rate = serializers.FloatField(read_only=True)
+        # instrument_principal_pricing_ccy = serializers.SerializerMethodField()
+        # instrument_price_multiplier = serializers.FloatField(read_only=True)
+        # instrument_accrued_pricing_ccy = serializers.SerializerMethodField()
+        # instrument_accrued_multiplier = serializers.FloatField(read_only=True)
+        # price_history = serializers.PrimaryKeyRelatedField(read_only=True)
+        # instrument_principal_price = serializers.FloatField(read_only=True)
+        # instrument_accrued_price = serializers.FloatField(read_only=True)
+        # principal_value_instrument_principal_ccy = serializers.FloatField(read_only=True)
+        # accrued_value_instrument_accrued_ccy = serializers.FloatField(read_only=True)
+        # instrument_principal_currency_history = serializers.PrimaryKeyRelatedField(read_only=True)
+        # instrument_principal_fx_rate = serializers.FloatField(read_only=True)
+        # instrument_accrued_currency_history = serializers.PrimaryKeyRelatedField(read_only=True)
+        # instrument_accrued_fx_rate = serializers.FloatField(read_only=True)
+        pass
+
+    def __init__(self, *args, **kwargs):
+        super(BalanceReportItemSerializer, self).__init__(*args, **kwargs)
+
+        # from poms.currencies.serializers import CurrencyHistorySerializer
+        # self.fields['currency_history_object'] = CurrencyHistorySerializer(source='currency_history', read_only=True)
 
     def create(self, validated_data):
         return BalanceReportItem(**validated_data)
@@ -175,26 +210,28 @@ class BalanceReportItemSerializer(BaseReportItemSerializer):
     def update(self, instance, validated_data):
         return instance
 
-    def get_currency_name(self, instance):
-        return getattr(instance.currency, 'name', None)
+    # def get_currency_name(self, instance):
+    #     return getattr(instance.currency, 'name', None)
 
-    def get_instrument_principal_pricing_ccy(self, instance):
-        instrument = getattr(instance, 'instrument', None)
-        pricing_currency = getattr(instrument, 'pricing_currency', None)
-        return getattr(pricing_currency, 'name', None)
+    # def get_instrument_principal_pricing_ccy(self, instance):
+    #     instrument = getattr(instance, 'instrument', None)
+    #     pricing_currency = getattr(instrument, 'pricing_currency', None)
+    #     return getattr(pricing_currency, 'name', None)
 
-    def get_instrument_accrued_pricing_ccy(self, instance):
-        instrument = getattr(instance, 'instrument', None)
-        accrued_currency = getattr(instrument, 'accrued_currency', None)
-        return getattr(accrued_currency, 'name', None)
+    # def get_instrument_accrued_pricing_ccy(self, instance):
+    #     instrument = getattr(instance, 'instrument', None)
+    #     accrued_currency = getattr(instrument, 'accrued_currency', None)
+    #     return getattr(accrued_currency, 'name', None)
 
 
 class BalanceReportSummarySerializer(serializers.Serializer):
-    invested_value_system_ccy = serializers.FloatField(read_only=True,
-                                                       help_text=ugettext_lazy('invested value in system currency'))
-    current_value_system_ccy = serializers.FloatField(read_only=True,
-                                                      help_text=ugettext_lazy('current value in system currency'))
-    p_l_system_ccy = serializers.FloatField(read_only=True, help_text=ugettext_lazy('position size with sign'))
+    invested_value_system_ccy = serializers.FloatField(read_only=True)
+    current_value_system_ccy = serializers.FloatField(read_only=True)
+    p_l_system_ccy = serializers.FloatField(read_only=True)
+
+    invested_value_value_ccy = serializers.FloatField(read_only=True)
+    current_value_value_ccy = serializers.FloatField(read_only=True)
+    p_l_value_ccy = serializers.FloatField(read_only=True)
 
     def create(self, validated_data):
         return BalanceReportSummary(**validated_data)
@@ -242,6 +279,11 @@ class PLReportItemSerializer(BaseReportItemSerializer):
     overheads_with_sign_system_ccy = serializers.FloatField(read_only=True)
     total_system_ccy = serializers.FloatField(read_only=True)
 
+    principal_with_sign_value_ccy = serializers.FloatField(read_only=True)
+    carry_with_sign_value_ccy = serializers.FloatField(read_only=True)
+    overheads_with_sign_value_ccy = serializers.FloatField(read_only=True)
+    total_value_ccy = serializers.FloatField(read_only=True)
+
     def create(self, validated_data):
         return PLReportItem(**validated_data)
 
@@ -250,14 +292,15 @@ class PLReportItemSerializer(BaseReportItemSerializer):
 
 
 class PLReportSummarySerializer(serializers.Serializer):
-    principal_with_sign_system_ccy = serializers.FloatField(read_only=True,
-                                                            help_text=ugettext_lazy(''))
-    carry_with_sign_system_ccy = serializers.FloatField(read_only=True,
-                                                        help_text=ugettext_lazy(''))
-    overheads_with_sign_system_ccy = serializers.FloatField(read_only=True,
-                                                            help_text=ugettext_lazy(''))
-    total_system_ccy = serializers.FloatField(read_only=True,
-                                              help_text=ugettext_lazy(''))
+    principal_with_sign_system_ccy = serializers.FloatField(read_only=True)
+    carry_with_sign_system_ccy = serializers.FloatField(read_only=True)
+    overheads_with_sign_system_ccy = serializers.FloatField(read_only=True)
+    total_system_ccy = serializers.FloatField(read_only=True)
+
+    principal_with_sign_value_ccy = serializers.FloatField(read_only=True)
+    carry_with_sign_value_ccy = serializers.FloatField(read_only=True)
+    overheads_with_sign_value_ccy = serializers.FloatField(read_only=True)
+    total_value_ccy = serializers.FloatField(read_only=True)
 
     def create(self, validated_data):
         return PLReportSummary(**validated_data)

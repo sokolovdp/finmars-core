@@ -6,7 +6,6 @@ from django.utils.encoding import python_2_unicode_compatible
 from django.utils.translation import ugettext_lazy
 
 from poms.common.models import NamedModel, AbstractClassModel
-from poms.common.utils import date_now
 from poms.users.models import MasterUser
 
 
@@ -45,110 +44,13 @@ class CustomField(models.Model):
         return self.name
 
 
-# class ReportType(NamedModel):
-#     master_user = models.ForeignKey(MasterUser, related_name='report_types',
-#                                     verbose_name=ugettext_lazy('master user'))
-#
-#     report_class = models.ForeignKey(ReportClass)
-#     begin_date = models.DateField(default=date.min)
-#     end_date = models.DateField(default=date_now)
-#
-#     show_transaction_details = models.BooleanField(default=False)
-#     group_by_portfolio = models.BooleanField(default=False)
-#     group_by_account = models.BooleanField(default=False)
-#     group_by_strategy = models.BooleanField(default=False)
-#
-#     cost_method = models.ForeignKey('instruments.CostMethod')
-#     portfolios = models.ManyToManyField('portfolios.Portfolio')
-#     accounts = models.ManyToManyField('accounts.Account')
-#     instruments = models.ManyToManyField('instruments.Instrument')
-#     currencies = models.ManyToManyField('currencies.Currency')
-#
-#     class Meta(NamedModel.Meta):
-#         abstract = True
-#         verbose_name = ugettext_lazy('report type')
-#         verbose_name_plural = ugettext_lazy('report types')
-#         permissions = [
-#             ('view_reporttype', 'Can view report type')
-#         ]
-#
-#
-# class ReportTypeUserObjectPermission(AbstractUserObjectPermission):
-#     content_object = models.ForeignKey(ReportType, related_name='user_object_permissions',
-#                                        verbose_name=ugettext_lazy('content object'))
-#
-#     class Meta(AbstractUserObjectPermission.Meta):
-#         abstract = True
-#         verbose_name = ugettext_lazy('report types - user permission')
-#         verbose_name_plural = ugettext_lazy('report types - user permissions')
-#
-#
-# class ReportTypeGroupObjectPermission(AbstractGroupObjectPermission):
-#     content_object = models.ForeignKey(ReportType, related_name='group_object_permissions',
-#                                        verbose_name=ugettext_lazy('content object'))
-#
-#     class Meta(AbstractGroupObjectPermission.Meta):
-#         abstract = True
-#         verbose_name = ugettext_lazy('report types - group permission')
-#         verbose_name_plural = ugettext_lazy('report types - group permissions')
-#
-#
-# @python_2_unicode_compatible
-# class ReportTypeInput(models.Model):
-#     STRING = 10
-#     NUMBER = 20
-#     EXPRESSION = 30
-#     DATE = 40
-#     RELATION = 100
-#
-#     TYPES = (
-#         (NUMBER, ugettext_lazy('Number')),
-#         (STRING, ugettext_lazy('String')),
-#         (DATE, ugettext_lazy('Date')),
-#         (EXPRESSION, ugettext_lazy('Expression')),
-#         (RELATION, ugettext_lazy('Relation')),
-#     )
-#
-#     report_type = models.ForeignKey(ReportType, related_name='inputs',
-#                                     verbose_name=ugettext_lazy('transaction type'))
-#     value_type = models.PositiveSmallIntegerField(default=NUMBER, choices=TYPES,
-#                                                   verbose_name=ugettext_lazy('value type'))
-#     name = models.CharField(max_length=255, null=True, blank=True,
-#                             verbose_name=ugettext_lazy('name'))
-#     content_type = models.ForeignKey(ContentType, null=True, blank=True,
-#                                      verbose_name=ugettext_lazy('content type'))
-#     order = models.IntegerField(default=0,
-#                                 verbose_name=ugettext_lazy('order'))
-#
-#     class Meta:
-#         abstract = True
-#         verbose_name = ugettext_lazy('report type input')
-#         verbose_name_plural = ugettext_lazy('report type inputs')
-#
-#     def __str__(self):
-#         return self.name
-
-
-# ----------------------------------------------------------------------------------------------------------------------
-
-
-# MULTIPLIER_AVCO = 1
-# MULTIPLIER_FIFO = 2
-# # MULTIPLIER_LIFO = 3
-# MULTIPLIERS = (
-#     (MULTIPLIER_AVCO, 'avco'),
-#     (MULTIPLIER_FIFO, 'fifo'),
-#     # (LIFO, 'lifo'),
-# )
-
-
 # ----------------------------------------------------------------------------------------------------------------------
 
 
 @python_2_unicode_compatible
 class BaseReportItem(object):
     def __init__(self, pk=None, portfolio=None, account=None, strategy1=None, strategy2=None, strategy3=None,
-                 instrument=None, name=None):
+                 instrument=None, currency=None, custom_fields=None):
         self.pk = pk
         self.portfolio = portfolio  # -> Portfolio
         self.account = account  # -> Account
@@ -156,7 +58,10 @@ class BaseReportItem(object):
         self.strategy2 = strategy2  # -> Strategy2
         self.strategy3 = strategy3  # -> Strategy3
         self.instrument = instrument  # -> Instrument
-        self.name = name
+        self.currency = currency  # -> Currency
+
+        self.custom_fields = custom_fields or {}
+        # self.debug_data = OrderedDict()
 
     def __str__(self):
         return "%s #%s" % (self.__class__.__name__, self.pk,)
@@ -165,9 +70,8 @@ class BaseReportItem(object):
 @python_2_unicode_compatible
 class BaseReport(object):
     def __init__(self, master_user=None, cost_method=None, begin_date=None, end_date=None,
-                 portfolios=None, accounts=None, strategies1=None,
-                 strategies2=None, strategies3=None,
-                 use_portfolio=False, use_account=False, use_strategy=False,
+                 portfolios=None, accounts=None, strategies1=None, strategies2=None, strategies3=None,
+                 use_portfolio=False, use_account=False, use_strategy1=False, use_strategy2=False, use_strategy3=False,
                  value_currency=None, custom_fields=None,
                  items=None,
                  task_id=None, task_status=None):
@@ -184,7 +88,9 @@ class BaseReport(object):
 
         self.use_portfolio = use_portfolio
         self.use_account = use_account
-        self.use_strategy = use_strategy
+        self.use_strategy1 = use_strategy1
+        self.use_strategy2 = use_strategy2
+        self.use_strategy3 = use_strategy3
 
         self.value_currency = value_currency
         self.custom_fields = custom_fields or []
@@ -204,50 +110,60 @@ class BaseReport(object):
 
 @python_2_unicode_compatible
 class BalanceReportItem(BaseReportItem):
-    def __init__(self, currency=None, balance_position=0., market_value_system_ccy=0., transaction=None, *args,
-                 **kwargs):
+    def __init__(self, position=0.0, market_value_system_ccy=0.0, market_value_value_ccy=0.0, transaction=None, *args, **kwargs):
         super(BalanceReportItem, self).__init__(*args, **kwargs)
-        self.balance_position = balance_position
 
-        self.currency = currency
-        self.currency_history = None  # -> CurrencyHistory
-        self.currency_name = None
-        self.currency_fx_rate = 0.
+        self.position = position
 
-        self.price_history = None  # -> PriceHistory
-        self.instrument_principal_currency_history = None  # -> CurrencyHistory
-        self.instrument_accrued_currency_history = None  # -> CurrencyHistory
+        # self.currency_history = None  # -> CurrencyHistory
+        # self.currency_name = None
+        # self.currency_fx_rate = 0.
+
+        # self.price_history = None  # -> PriceHistory
+        # self.instrument_principal_currency_history = None  # -> CurrencyHistory
+        # self.instrument_accrued_currency_history = None  # -> CurrencyHistory
+
         # self.instrument_name = None
-        self.instrument_principal_pricing_ccy = 0.
-        self.instrument_price_multiplier = 0.
-        self.instrument_accrued_pricing_ccy = 0.
-        self.instrument_accrued_multiplier = 0.
-        self.instrument_principal_price = 0.
-        self.instrument_accrued_price = 0.
-        self.principal_value_instrument_principal_ccy = None
-        self.accrued_value_instrument_accrued_ccy = None
-        self.instrument_principal_fx_rate = 0.
-        self.instrument_accrued_fx_rate = 0.
+        # self.instrument_principal_pricing_ccy = 0.
+        # self.instrument_price_multiplier = 0.
+        # self.instrument_accrued_pricing_ccy = 0.
+        # self.instrument_accrued_multiplier = 0.
+        # self.instrument_principal_price = 0.
+        # self.instrument_accrued_price = 0.
+        # self.principal_value_instrument_principal_ccy = None
+        # self.accrued_value_instrument_accrued_ccy = None
+        # self.instrument_principal_fx_rate = 0.
+        # self.instrument_accrued_fx_rate = 0.
 
         self.principal_value_system_ccy = 0.
         self.accrued_value_system_ccy = 0.
         self.market_value_system_ccy = market_value_system_ccy
 
+        self.principal_value_value_ccy = 0.
+        self.accrued_value_value_ccy = 0.
+        self.market_value_value_ccy = market_value_value_ccy
+
         self.transaction = transaction  # -> Transaction for case 1 and case 2
 
     def __str__(self):
         if self.instrument:
-            return "%s - %s" % (self.instrument, self.balance_position)
+            return "%s - %s" % (self.instrument, self.position)
         else:
-            return "%s - %s" % (self.currency, self.balance_position)
+            return "%s - %s" % (self.currency, self.position)
 
 
 @python_2_unicode_compatible
 class BalanceReportSummary(object):
-    def __init__(self, invested_value_system_ccy=0., current_value_system_ccy=0., p_l_system_ccy=0.):
+    def __init__(self,
+                 invested_value_system_ccy=0.0, current_value_system_ccy=0.0, p_l_system_ccy=0.0,
+                 invested_value_value_ccy=0.0, current_value_value_ccy=0.0, p_l_value_ccy=0.0):
         self.invested_value_system_ccy = invested_value_system_ccy
         self.current_value_system_ccy = current_value_system_ccy
         self.p_l_system_ccy = p_l_system_ccy
+
+        self.invested_value_value_ccy = invested_value_value_ccy
+        self.current_value_value_ccy = current_value_value_ccy
+        self.p_l_value_ccy = p_l_value_ccy
 
     def __str__(self):
         return "invested_value_system_ccy=%s, current_value_system_ccy=%s, p_l_system_ccy=%s" % \
@@ -256,8 +172,8 @@ class BalanceReportSummary(object):
 
 # @python_2_unicode_compatible
 class BalanceReport(BaseReport):
-    def __init__(self, show_transaction_details=True, items=None, summary=None, *args, **kwargs):
-        super(BalanceReport, self).__init__(items=items, *args, **kwargs)
+    def __init__(self, show_transaction_details=True, summary=None, *args, **kwargs):
+        super(BalanceReport, self).__init__(*args, **kwargs)
         self.show_transaction_details = show_transaction_details
         self.invested_items = []
         self.summary = summary or BalanceReportSummary()
@@ -268,25 +184,41 @@ class BalanceReport(BaseReport):
 
 @python_2_unicode_compatible
 class PLReportItem(BaseReportItem):
-    def __init__(self, principal_with_sign_system_ccy=0, carry_with_sign_system_ccy=0.,
-                 overheads_with_sign_system_ccy=0., total_system_ccy=0., *args, **kwargs):
+    def __init__(self, principal_with_sign_system_ccy=0.0, carry_with_sign_system_ccy=0.0,
+                 overheads_with_sign_system_ccy=0.0, total_system_ccy=0.0,
+                 principal_with_sign_value_ccy=0.0, carry_with_sign_value_ccy=0.0,
+                 overheads_with_sign_value_ccy=0.0, total_value_ccy=0.0,
+                 *args, **kwargs):
         super(PLReportItem, self).__init__(*args, **kwargs)
+
         self.principal_with_sign_system_ccy = principal_with_sign_system_ccy
         self.carry_with_sign_system_ccy = carry_with_sign_system_ccy
         self.overheads_with_sign_system_ccy = overheads_with_sign_system_ccy
         self.total_system_ccy = total_system_ccy
+
+        self.principal_with_sign_value_ccy = principal_with_sign_value_ccy
+        self.carry_with_sign_value_ccy = carry_with_sign_value_ccy
+        self.overheads_with_sign_value_ccy = overheads_with_sign_value_ccy
+        self.total_value_ccy = total_value_ccy
 
     def __str__(self):
         return 'PLReportItem'
 
 
 class PLReportSummary(object):
-    def __init__(self, principal_with_sign_system_ccy=0., carry_with_sign_system_ccy=0.,
-                 overheads_with_sign_system_ccy=0., total_system_ccy=0.):
+    def __init__(self, principal_with_sign_system_ccy=0.0, carry_with_sign_system_ccy=0.0,
+                 overheads_with_sign_system_ccy=0.0, total_system_ccy=0.0,
+                 principal_with_sign_value_ccy=0.0, carry_with_sign_value_ccy=0.0,
+                 overheads_with_sign_value_ccy=0.0, total_value_ccy=0.0):
         self.principal_with_sign_system_ccy = principal_with_sign_system_ccy
         self.carry_with_sign_system_ccy = carry_with_sign_system_ccy
         self.overheads_with_sign_system_ccy = overheads_with_sign_system_ccy
         self.total_system_ccy = total_system_ccy
+
+        self.principal_with_sign_value_ccy = principal_with_sign_value_ccy
+        self.carry_with_sign_value_ccy = carry_with_sign_value_ccy
+        self.overheads_with_sign_value_ccy = overheads_with_sign_value_ccy
+        self.total_value_ccy = total_value_ccy
 
 
 # @python_2_unicode_compatible
