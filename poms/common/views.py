@@ -1,5 +1,7 @@
 from __future__ import unicode_literals
 
+from collections import OrderedDict
+
 from django.conf import settings
 from django.db import transaction
 from django.utils import timezone
@@ -33,10 +35,29 @@ class AbstractApiView(APIView):
 
     def dispatch(self, request, *args, **kwargs):
         if request.method.upper() in permissions.SAFE_METHODS:
-            return super(AbstractApiView, self).dispatch(request, *args, **kwargs)
+            response = super(AbstractApiView, self).dispatch(request, *args, **kwargs)
+            return self._mini_if_need(request, response)
         else:
             with transaction.atomic():
-                return super(AbstractApiView, self).dispatch(request, *args, **kwargs)
+                response = super(AbstractApiView, self).dispatch(request, *args, **kwargs)
+                return self._mini_if_need(request, response)
+
+    def _mini_if_need(self, request, response):
+        if request.GET.get('_mini', None):
+            self._remove_object(response.data)
+        return response
+
+    def _remove_object(self, data):
+        if isinstance(data, (list, tuple)):
+            for i, v in enumerate(data):
+                data[i] = self._remove_object(v)
+        elif isinstance(data, (dict, OrderedDict)):
+            for k, v in list(data.items()):
+                if k.endswith('_object') or k in ['user_object_permissions', 'group_object_permissions']:
+                    del data[k]
+                else:
+                    data[k] = self._remove_object(v)
+        return data
 
 
 class AbstractViewSet(AbstractApiView, ViewSet):
