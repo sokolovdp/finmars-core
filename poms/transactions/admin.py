@@ -286,7 +286,7 @@ admin.site.register(TransactionType, TransactionTypeAdmin)
 
 class ComplexTransactionAdmin(admin.ModelAdmin):
     model = ComplexTransaction
-    list_display = ['id', 'master_user', 'transaction_type', 'code']
+    list_display = ['id', 'master_user', 'transaction_type', 'code', 'status']
     list_select_related = ['transaction_type', 'transaction_type__master_user']
     ordering = ['transaction_type', 'code']
     search_fields = ['id']

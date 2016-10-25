@@ -971,18 +971,15 @@ class TransactionTypeProcessSerializer(serializers.Serializer):
                 instruments_map = {}
                 for instrument in instance.instruments:
                     fake_id = instrument.id
-                    instrument.id = None
-                    instrument.save()
+                    self._save_if_need(instrument)
                     if fake_id:
                         instruments_map[fake_id] = instrument
                 if instance.transactions:
-                    instance.complex_transaction.id = None
-                    instance.complex_transaction.save()
+                    self._save_if_need(instance.complex_transaction)
                     for transaction in instance.transactions:
-                        transaction.id = None
                         if transaction.instrument_id in instruments_map:
                             transaction.instrument = instruments_map[transaction.instrument_id]
-                        transaction.save()
+                        self._save_if_need(transaction)
         else:
             if instance.store:
                 instruments_map = {}
@@ -1000,8 +997,7 @@ class TransactionTypeProcessSerializer(serializers.Serializer):
 
                 transactions_data = validated_data['transactions']
                 if transactions_data:
-                    instance.complex_transaction.save()
-
+                    self._save_if_need(instance.complex_transaction)
                     for transaction_data in transactions_data:
                         transaction = Transaction(master_user=instance.transaction_type.master_user)
                         transaction_data.pop('id', None)
@@ -1020,3 +1016,8 @@ class TransactionTypeProcessSerializer(serializers.Serializer):
         instance.complex_transaction._fake_transactions = instance.transactions
 
         return instance
+
+    def _save_if_need(self, obj):
+        if obj.id is None or obj.id < 0:
+            obj.id = None
+            obj.save()

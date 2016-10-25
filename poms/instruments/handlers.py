@@ -4,7 +4,7 @@ from poms.transactions.models import ComplexTransaction
 
 class GeneratedEventProcess(TransactionTypeProcess):
     def __init__(self, generated_event=None, action=None, **kwargs):
-        kwargs['transaction_type'] = generated_event.transaction_type
+        kwargs['transaction_type'] = action.transaction_type
         self.generated_event = generated_event
         self.action = action
 

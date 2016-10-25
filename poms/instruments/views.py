@@ -7,7 +7,7 @@ from django.db.models import Prefetch
 from django.utils import timezone
 from rest_framework import serializers
 from rest_framework.decorators import list_route, detail_route
-from rest_framework.exceptions import MethodNotAllowed, PermissionDenied
+from rest_framework.exceptions import MethodNotAllowed, PermissionDenied, ValidationError
 from rest_framework.filters import FilterSet
 from rest_framework.response import Response
 
@@ -427,6 +427,9 @@ class GeneratedEventViewSet(UpdateModelMixinExt, AbstractReadOnlyModelViewSet):
             raise PermissionDenied()
 
         action_pk = request.query_params.get('action', None)
+        if not action_pk:
+            raise ValidationError('Require "action" query parameter')
+
         action = generated_event.event_schedule.actions.get(pk=action_pk)
         instance = GeneratedEventProcess(generated_event=generated_event, action=action)
         if request.method == 'GET':
@@ -434,12 +437,13 @@ class GeneratedEventViewSet(UpdateModelMixinExt, AbstractReadOnlyModelViewSet):
             return Response(serializer.data)
         else:
             try:
-                if instance.store:
-                    generated_event.processed(self.request.user.member, action, instance.complex_transaction)
-
                 serializer = self.get_serializer(instance=instance, data=request.data)
                 serializer.is_valid(raise_exception=True)
                 serializer.save()
+
+                if instance.store:
+                    generated_event.processed(self.request.user.member, action, instance.complex_transaction)
+
                 return Response(serializer.data)
             finally:
                 if not instance.store:
