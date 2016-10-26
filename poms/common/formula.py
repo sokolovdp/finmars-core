@@ -15,10 +15,11 @@ from poms.common.utils import date_now, isclose
 
 _l = logging.getLogger('poms.formula')
 
-MAX_STR_LEN = 100000
-MAX_EXPONENT = 4000000  # highest exponent
-MAX_SHIFT = 000
-MAX_LEN = 100
+MAX_STR_LEN = 2000
+# MAX_EXPONENT = 4000000  # highest exponent
+MAX_EXPONENT = 10000  # highest exponent
+MAX_SHIFT = 1000
+MAX_LEN = 1000
 
 
 class InvalidExpression(Exception):
@@ -1553,7 +1554,7 @@ accrual_NL_365_NO_EOM(date(2000, 1, 1), date(2000, 1, 25))
         '''
 
         _l.info('PERF')
-        number = 100
+        number = 1000
         _l.info('-' * 79)
         _l.info(expr)
         _l.info('-' * 79)
@@ -1565,28 +1566,15 @@ accrual_NL_365_NO_EOM(date(2000, 1, 1), date(2000, 1, 25))
             'date': _date,
             'days': _days,
         }), number=number))
-        _l.info('safe_eval       : %f', timeit.timeit(lambda: safe_eval(expr), number=number))
-
-        try:
-            import asteval
-            _l.info('asteval         : %f', timeit.timeit(
-                lambda: asteval.Interpreter(symtable=SimpleEval2()._table).eval(expr), number=number))
-        except ImportError:
-            pass
+        _l.info('safe_eval       : %f', timeit.timeit(lambda: safe_eval(expr, allow_assign=True), number=number))
 
         _l.info('-' * 79)
         expr = '-(4-1)*5+(2+4.67)+5.89/(.2+7)'
-        _l.info('eval            : %f', timeit.timeit(lambda: eval(expr), number=number))
+        _l.info('eval            : %f', timeit.timeit(lambda: exec(expr), number=number))
         _l.info('safe_eval       : %f', timeit.timeit(lambda: safe_eval(expr), number=number))
-        try:
-            import asteval
-            _l.info('asteval         : %f', timeit.timeit(
-                lambda: asteval.Interpreter().eval(expr), number=number))
-        except ImportError:
-            pass
 
 
-    # perf_tests()
+    perf_tests()
     pass
 
 
@@ -1657,5 +1645,5 @@ accrual_NL_365_NO_EOM(date(2000, 1, 1), date(2000, 1, 25))
         pass
 
 
-    model_access_test()
+    # model_access_test()
     pass
