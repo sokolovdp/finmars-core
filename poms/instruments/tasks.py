@@ -266,9 +266,8 @@ def process_events(master_users=None):
                     if action:
                         ttp = GeneratedEventProcess(generated_event=generated_event, action=action, calculate=True,
                                                     store=True)
-                        # ttp.process()
-                        # generated_event.processed(None, action, ttp.complex_transaction)
-                        generated_event.processed(None, action, None)
+                        ttp.process()
+                        generated_event.processed(None, action, ttp.complex_transaction)
                     else:
                         generated_event.status = GeneratedEvent.BOOKED
                         generated_event.status_date = timezone.now()
