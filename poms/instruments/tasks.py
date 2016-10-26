@@ -254,11 +254,15 @@ def process_events(master_users=None):
                         generated_event.effective_date_notified = True
 
                     recipients = generated_event.master_user.members.all()
+                    # notifications.send(recipients=recipients,
+                    #                    actor=generated_event.master_user,
+                    #                    verb='event occurred',
+                    #                    action_object=generated_event.event_schedule,
+                    #                    target=generated_event.instrument)
                     notifications.send(recipients=recipients,
-                                       actor=generated_event.master_user,
+                                       actor=generated_event.event_schedule,
                                        verb='event occurred',
-                                       action_object=generated_event.event_schedule,
-                                       target=generated_event.instrument)
+                                       action_object=generated_event.instrument)
 
                 if is_apply_default_on_notification_date or is_apply_default_on_effective_date:
                     action = next((a for a in generated_event.event_schedule.actions.all() if a.is_book_automatic),
