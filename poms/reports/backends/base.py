@@ -319,6 +319,8 @@ class BaseReport2Builder(object):
         return value * fx_rate
 
     def system_ccy_to_value_ccy(self, value):
+        if self.instance.value_currency is None:
+            return value
         history = self.find_currency_history(self.instance.value_currency)
         fx_rate = history.fx_rate
         if isclose(fx_rate, 0.0):

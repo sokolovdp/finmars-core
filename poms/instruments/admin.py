@@ -292,12 +292,13 @@ admin.site.register(PriceHistory, PriceHistoryAdmin)
 
 class GeneratedEventAdmin(admin.ModelAdmin):
     model = GeneratedEvent
-    list_display = ('id', 'master_user', 'effective_date', 'notification_date', 'status', 'event_schedule',
+    list_display = ('id', 'master_user', 'status', 'effective_date', 'effective_date_notified',
+                    'notification_date', 'notification_date_notified', 'event_schedule',
                     'instrument', 'portfolio', 'account', 'strategy1', 'strategy2', 'strategy3', 'position', 'action',
                     'transaction_type', 'complex_transaction', 'member',)
     list_select_related = ('master_user', 'event_schedule', 'instrument', 'portfolio', 'account', 'strategy1',
                            'strategy2', 'strategy3', 'action', 'transaction_type', 'member',)
-    list_filter = ['status', 'effective_date']
+    list_filter = ['status', 'notification_date', 'effective_date']
     date_hierarchy = 'effective_date'
     ordering = ['master_user', 'effective_date']
     raw_id_fields = ('master_user', 'event_schedule', 'instrument', 'portfolio', 'account', 'strategy1',

@@ -932,7 +932,9 @@ class GeneratedEvent(models.Model):
     master_user = models.ForeignKey(MasterUser, related_name='generated_events')
 
     effective_date = models.DateField(default=date_now, db_index=True)
+    effective_date_notified = models.BooleanField(default=False, db_index=True)
     notification_date = models.DateField(default=date_now, db_index=True)
+    notification_date_notified = models.BooleanField(default=False, db_index=True)
 
     status = models.PositiveSmallIntegerField(default=NEW, choices=STATUS_CHOICES, db_index=True)
     status_date = models.DateTimeField(default=timezone.now, db_index=True)
@@ -977,8 +979,54 @@ class GeneratedEvent(models.Model):
         self.status_date = timezone.now()
         self.transaction_type = action.transaction_type
         self.complex_transaction = complex_transaction
-        self.save()
 
+    def is_notify_on_effective_date(self, now=None):
+        from poms.transactions.models import NotificationClass
+        if not self.effective_date_notified:
+            now = now or date_now()
+            notification_class = self.event_schedule.notification_class
+            return self.effective_date == now and notification_class.is_notify_on_effective_date
+        return False
+
+    def is_notify_on_notification_date(self, now=None):
+        from poms.transactions.models import NotificationClass
+        if not self.effective_date_notified:
+            now = now or date_now()
+            notification_class = self.event_schedule.notification_class
+            return self.notification_date == now and notification_class.is_notify_on_notification_date
+        return False
+
+    def is_apply_default_on_effective_date(self, now=None):
+        from poms.transactions.models import NotificationClass
+        if self.status == GeneratedEvent.NEW:
+            now = now or date_now()
+            notification_class = self.event_schedule.notification_class
+            return self.effective_date == now and notification_class.is_apply_default_on_effective_date
+        return False
+
+    def is_apply_default_on_notification_date(self, now=None):
+        from poms.transactions.models import NotificationClass
+        if self.status == GeneratedEvent.NEW:
+            now = now or date_now()
+            notification_class = self.event_schedule.notification_class
+            return self.notification_date == now and notification_class.is_apply_default_on_notification_date
+        return False
+
+    def is_need_reaction_on_effective_date(self, now=None):
+        from poms.transactions.models import NotificationClass
+        if self.status == GeneratedEvent.NEW:
+            now = now or date_now()
+            notification_class = self.event_schedule.notification_class
+            return self.effective_date == now and notification_class.is_need_reaction_on_effective_date
+        return False
+
+    def is_need_reaction_on_notification_date(self, now=None):
+        from poms.transactions.models import NotificationClass
+        if self.status == GeneratedEvent.NEW:
+            now = now or date_now()
+            notification_class = self.event_schedule.notification_class
+            return self.notification_date == now and notification_class.is_need_reaction_on_notification_date
+        return False
 
 class EventScheduleConfig(models.Model):
     master_user = models.OneToOneField('users.MasterUser', related_name='instrument_event_schedule_config',

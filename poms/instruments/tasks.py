@@ -5,16 +5,16 @@ from datetime import timedelta, date
 from celery import shared_task
 from django.conf import settings
 from django.db import transaction
-from django.db.models import F
+from django.db.models import F, Q
 from django.utils import timezone
 
 from poms import notifications
 from poms.common.utils import date_now
 from poms.instruments.models import EventSchedule, Instrument, CostMethod, GeneratedEvent
-from poms.reports.backends.balance import BalanceReport2PositionBuilder
+from poms.reports.backends.balance import BalanceReport2Builder
 from poms.reports.models import BalanceReport
 from poms.transactions.models import EventClass
-from poms.users.models import MasterUser, Member
+from poms.users.models import MasterUser
 
 _l = logging.getLogger('poms.instruments')
 
@@ -45,189 +45,234 @@ def calculate_prices_accrued_price_async(master_user=None, begin_date=None, end_
                                    instruments=instruments)
 
 
-@shared_task(name='instruments.process_events', ignore_result=True)
-@transaction.atomic()
-def process_events(master_user=None, send_notification=True, notification_recipients=None):
-    _l.debug('process_events: master_user=%s', master_user)
+@shared_task(name='instruments.generate_events', ignore_result=True)
+def generate_events(master_users=None):
+    _l.debug('generate_events: master_users=%s', master_users)
 
     now = date_now()
 
     # TODO: need cost_method to build report
     cost_method = CostMethod.objects.get(pk=CostMethod.AVCO)
-    master_user = MasterUser.objects.get(pk=master_user)
-    members = Member.objects.filter(master_user=master_user, is_deleted=False)
 
-    opened_instrument_items = []
-    instruments_pk = set()
+    master_user_qs = MasterUser.objects.all()
+    if master_users:
+        master_user_qs = master_user_qs.filter(pk__in=master_users)
 
-    report = BalanceReport(master_user=master_user, begin_date=date.min, end_date=now, cost_method=cost_method,
-                           use_portfolio=True, use_account=True, use_strategy=True, show_transaction_details=False)
-    builder = BalanceReport2PositionBuilder(instance=report)
-    builder.build()
+    for master_user in master_user_qs:
+        _l.debug('generate_events: master_user=%s', master_user.id)
 
-    for item in report.items:
-        if item.instrument:
-            opened_instrument_items.append(item)
-            instruments_pk.add(item.instrument.id)
+        opened_instrument_items = []
+        instruments_pk = set()
+        report = BalanceReport(master_user=master_user, end_date=now, cost_method=cost_method, use_portfolio=True,
+                               use_account=True, use_strategy1=True, use_strategy2=True, use_strategy3=True,
+                               show_transaction_details=False)
+        builder = BalanceReport2Builder(instance=report)
+        builder.build()
 
-    _l.debug('opened_instrument_items: count=%s', len(opened_instrument_items))
-    if not opened_instrument_items:
-        return
+        for item in report.items:
+            if item.instrument:
+                opened_instrument_items.append(item)
+                instruments_pk.add(item.instrument.id)
 
-    event_schedule_qs = EventSchedule.objects.select_related(
-        'instrument', 'instrument__master_user', 'event_class', 'notification_class', 'periodicity'
-    ).prefetch_related(
-        'actions', 'actions__transaction_type'
-    ).filter(
-        effective_date__lte=(now + F("notify_in_n_days")),
-        final_date__gte=now
-        # ).exclude(
-        #     notification_class__in=[NotificationClass.DONT_REACT]
-    ).order_by(
-        'instrument__master_user__id', 'instrument__id'
-    )
-    event_schedule_qs = event_schedule_qs.filter(instrument__in=instruments_pk)
+        _l.debug('opened_instrument_items: count=%s', len(opened_instrument_items))
+        if not opened_instrument_items:
+            return
 
-    event_schedule_cache = defaultdict(list)
-    for event_schedule in event_schedule_qs:
-        event_schedule_cache[event_schedule.instrument_id].append(event_schedule)
+        event_schedule_qs = EventSchedule.objects.select_related(
+            'instrument', 'instrument__master_user', 'event_class', 'notification_class', 'periodicity'
+        ).prefetch_related(
+            'actions', 'actions__transaction_type'
+        ).filter(
+            effective_date__lte=(now + F("notify_in_n_days")),
+            final_date__gte=now
+            # ).exclude(
+            #     notification_class__in=[NotificationClass.DONT_REACT]
+        ).order_by(
+            'instrument__master_user__id', 'instrument__id'
+        )
+        event_schedule_qs = event_schedule_qs.filter(instrument__in=instruments_pk)
 
-    for item in opened_instrument_items:
-        portfolio = item.portfolio
-        account = item.account
-        strategy1 = item.strategy1
-        strategy2 = item.strategy2
-        strategy3 = item.strategy3
-        instrument = item.instrument
-        position = item.balance_position
+        event_schedule_cache = defaultdict(list)
+        for event_schedule in event_schedule_qs:
+            event_schedule_cache[event_schedule.instrument_id].append(event_schedule)
 
-        event_schedules = event_schedule_cache.get(instrument.id) or []
+        for item in opened_instrument_items:
+            portfolio = item.portfolio
+            account = item.account
+            strategy1 = item.strategy1
+            strategy2 = item.strategy2
+            strategy3 = item.strategy3
+            instrument = item.instrument
+            position = item.position
 
-        _l.debug('opened instrument: portfolio=%s, account=%s, strategy1=%s, strategy2=%s, strategy3=%s, '
-                 'instrument=%s, event_schedules=%s',
-                 portfolio.id, account.id, strategy1.id, strategy2.id, strategy3.id,
-                 instrument.id, [e.id for e in event_schedules])
+            event_schedules = event_schedule_cache.get(instrument.id) or []
 
-        if not event_schedules:
-            continue
+            _l.debug('opened instrument: portfolio=%s, account=%s, strategy1=%s, strategy2=%s, strategy3=%s, '
+                     'instrument=%s, position=%s, event_schedules=%s',
+                     portfolio.id, account.id, strategy1.id, strategy2.id, strategy3.id,
+                     instrument.id, position,[e.id for e in event_schedules])
 
-        for event_schedule in event_schedules:
-            _l.debug('event_schedule=%s, event_class=%s, notification_class=%s, periodicity=%s',
-                     event_schedule.id, event_schedule.event_class,
-                     event_schedule.notification_class, event_schedule.periodicity)
+            if not event_schedules:
+                continue
 
-            notification_date_correction = timedelta(days=event_schedule.notify_in_n_days)
+            for event_schedule in event_schedules:
+                _l.debug('event_schedule=%s, event_class=%s, notification_class=%s, periodicity=%s, n=%s',
+                         event_schedule.id, event_schedule.event_class, event_schedule.notification_class,
+                         event_schedule.periodicity, event_schedule.periodicity_n)
 
-            is_complies = False
-            effective_date = None
-            notification_date = None
+                notification_date_correction = timedelta(days=event_schedule.notify_in_n_days)
 
-            if event_schedule.event_class_id == EventClass.ONE_OFF:
-                effective_date = event_schedule.effective_date
-                notification_date = effective_date - notification_date_correction
-                # _l.debug('effective_date=%s, notification_date=%s', effective_date, notification_date)
+                is_complies = False
+                effective_date = None
+                notification_date = None
 
-                if notification_date == now or effective_date == now:
-                    is_complies = True
-
-            elif event_schedule.event_class_id == EventClass.REGULAR:
-                for i in range(0, settings.INSTRUMENT_EVENTS_REGULAR_MAX_INTERVALS):
-                    effective_date = event_schedule.effective_date + event_schedule.periodicity.to_timedelta(
-                        i, same_date=event_schedule.effective_date)
+                if event_schedule.event_class_id == EventClass.ONE_OFF:
+                    effective_date = event_schedule.effective_date
                     notification_date = effective_date - notification_date_correction
-                    # _l.debug('i=%s, book_date=%s, notify_date=%s', i, effective_date, notification_date)
-
-                    if effective_date > event_schedule.final_date:
-                        break
-                    if effective_date < now:
-                        continue
-                    if notification_date > now and effective_date > now:
-                        break
+                    # _l.debug('effective_date=%s, notification_date=%s', effective_date, notification_date)
 
                     if notification_date == now or effective_date == now:
                         is_complies = True
-                        break
 
-            _l.debug('is_complies=%s', is_complies)
-            if is_complies:
-                notification_class = event_schedule.notification_class
-                show_notification, apply_default, needed_reaction = notification_class.check_date(
-                    now, effective_date, notification_date)
-                _l.debug('founded: event_class=%s, effective_date=%s, notification_date=%s, '
-                         'show_notification=%s, apply_default=%s, needed_reaction=%s',
-                         event_schedule.event_class, effective_date, notification_date,
-                         show_notification, apply_default, needed_reaction)
+                elif event_schedule.event_class_id == EventClass.REGULAR:
+                    for i in range(0, settings.INSTRUMENT_EVENTS_REGULAR_MAX_INTERVALS):
+                        effective_date = event_schedule.effective_date + event_schedule.periodicity.to_timedelta(
+                            i, same_date=event_schedule.effective_date)
+                        notification_date = effective_date - notification_date_correction
+                        # _l.debug('i=%s, book_date=%s, notify_date=%s', i, effective_date, notification_date)
 
-                ge_dup_qs = GeneratedEvent.objects.filter(
-                    master_user=master_user,
-                    event_schedule=event_schedule,
-                    effective_date=effective_date,
-                    notification_date=notification_date,
-                    instrument=instrument,
-                    portfolio=portfolio,
-                    account=account,
-                    strategy1=strategy1,
-                    strategy2=strategy2,
-                    strategy3=strategy3,
-                    position=position
-                )
-                if ge_dup_qs.exists():
-                    _l.debug('generated event already exist')
-                    continue
+                        if effective_date > event_schedule.final_date:
+                            break
+                        if effective_date < now:
+                            continue
+                        if notification_date > now and effective_date > now:
+                            break
 
-                generated_event = GeneratedEvent()
-                generated_event.master_user = master_user
-                generated_event.event_schedule = event_schedule
-                generated_event.status = GeneratedEvent.NEW
-                generated_event.status_modified = timezone.now()
-                generated_event.effective_date = effective_date
-                generated_event.notification_date = notification_date
-                generated_event.instrument = instrument
-                generated_event.portfolio = portfolio
-                generated_event.account = account
-                generated_event.strategy1 = strategy1
-                generated_event.strategy2 = strategy2
-                generated_event.strategy3 = strategy3
-                generated_event.position = position
-                generated_event.save()
+                        if notification_date == now or effective_date == now:
+                            is_complies = True
+                            break
 
-                if show_notification and send_notification:
-                    recipients = members
-                    if notification_recipients is not None:
-                        recipients = [m for m in members if m.id in notification_recipients]
-                    notifications.send(recipients=recipients,
-                                       actor=master_user,
-                                       verb='event occurred',
-                                       action_object=event_schedule,
-                                       target=instrument)
+                _l.debug('is_complies=%s', is_complies)
+                if is_complies:
+                    ge_dup_qs = GeneratedEvent.objects.filter(
+                        master_user=master_user,
+                        event_schedule=event_schedule,
+                        effective_date=effective_date,
+                        notification_date=notification_date,
+                        instrument=instrument,
+                        portfolio=portfolio,
+                        account=account,
+                        strategy1=strategy1,
+                        strategy2=strategy2,
+                        strategy3=strategy3,
+                        position=position
+                    )
+                    if ge_dup_qs.exists():
+                        _l.debug('generated event already exist')
+                        continue
 
-                if apply_default:
-                    transaction.on_commit(
-                        lambda: process_events_apply_def.apply_async(kwargs={'generated_event': generated_event.id}))
+                    generated_event = GeneratedEvent()
+                    generated_event.master_user = master_user
+                    generated_event.event_schedule = event_schedule
+                    generated_event.status = GeneratedEvent.NEW
+                    generated_event.status_modified = timezone.now()
+                    generated_event.effective_date = effective_date
+                    generated_event.notification_date = notification_date
+                    generated_event.instrument = instrument
+                    generated_event.portfolio = portfolio
+                    generated_event.account = account
+                    generated_event.strategy1 = strategy1
+                    generated_event.strategy2 = strategy2
+                    generated_event.strategy3 = strategy3
+                    generated_event.position = position
+                    generated_event.save()
+
+    process_events.apply_async(kwargs={'master_users': master_users})
 
     _l.debug('finished')
 
 
-@shared_task(name='instruments.process_events_apply_def', ignore_result=True)
-@transaction.atomic()
-def process_events_apply_def(generated_event):
-    if not isinstance(generated_event, GeneratedEvent):
-        generated_event = GeneratedEvent.objects.get(pk=generated_event)
-    action = next((a for a in generated_event.event_schedule.actions.all() if a.is_book_automatic), None)
-    _l.debug('process_events_apply_def: generated_event=%s, action=%s', generated_event.id, getattr(action, 'id', None))
-    if action:
-        from poms.instruments.handlers import GeneratedEventProcess
+@shared_task(name='instruments.process_events', ignore_result=True)
+def process_events(master_users=None):
+    from poms.instruments.handlers import GeneratedEventProcess
 
-        ttp = GeneratedEventProcess(generated_event=generated_event, action=action, calculate=True, store=True)
-        ttp.process()
+    _l.debug('process_events: master_users=%s', master_users)
 
-        generated_event.processed(None, action, ttp.complex_transaction)
+    now = date_now()
 
+    master_user_qs = MasterUser.objects.all()
+    if master_users:
+        master_user_qs = master_user_qs.filter(pk__in=master_users)
 
-@shared_task(name='instruments.process_events_auto', ignore_result=True)
-def process_events_auto():
-    for master_user in MasterUser.objects.all():
-        process_events.apply_async(kwargs={
-            'master_user': master_user.pk,
-            'notification_recipients': []
-        })
+    for master_user in master_user_qs:
+        _l.debug('process_events: master_user=%s', master_user.id)
+        with transaction.atomic():
+            generated_event_qs = GeneratedEvent.objects.filter(
+                master_user=master_user,
+                status=GeneratedEvent.NEW,
+            ).filter(
+                Q(effective_date=now) | Q(notification_date=now),
+            )
+
+            for generated_event in generated_event_qs:
+                is_notify_on_notification_date = generated_event.is_notify_on_notification_date(now)
+                is_notify_on_effective_date = generated_event.is_notify_on_effective_date(now)
+                is_apply_default_on_notification_date = generated_event.is_apply_default_on_notification_date(now)
+                is_apply_default_on_effective_date = generated_event.is_apply_default_on_effective_date(now)
+                is_need_reaction_on_notification_date = generated_event.is_need_reaction_on_notification_date(now)
+                is_need_reaction_on_effective_date = generated_event.is_need_reaction_on_effective_date(now)
+
+                _l.debug(
+                    'process:'
+                    ' notification_class=%s,'
+                    ' notification_date=%s,'
+                    ' notification_date_notified=%s'
+                    ' effective_date=%s,'
+                    ' effective_date_notified=%s,'
+                    ' is_notify_on_notification_date=%s,'
+                    ' is_notify_on_effective_date=%s,'
+                    ' is_apply_default_on_notification_date=%s,'
+                    ' is_apply_default_on_effective_date=%s,'
+                    ' is_need_reaction_on_notification_date=%s,'
+                    ' is_need_reaction_on_effective_date=%s',
+                    generated_event.event_schedule.notification_class,
+                    generated_event.notification_date,
+                    generated_event.notification_date_notified,
+                    generated_event.effective_date,
+                    generated_event.effective_date_notified,
+                    is_notify_on_notification_date,
+                    is_notify_on_effective_date,
+                    is_apply_default_on_notification_date,
+                    is_apply_default_on_effective_date,
+                    is_need_reaction_on_notification_date,
+                    is_need_reaction_on_effective_date)
+
+                if is_notify_on_notification_date or is_notify_on_effective_date:
+                    if is_notify_on_notification_date:
+                        generated_event.notification_date_notified = True
+                    if is_notify_on_effective_date:
+                        generated_event.effective_date_notified = True
+
+                    recipients = generated_event.master_user.members.all()
+                    notifications.send(recipients=recipients,
+                                       actor=generated_event.master_user,
+                                       verb='event occurred',
+                                       action_object=generated_event.event_schedule,
+                                       target=generated_event.instrument)
+
+                if is_apply_default_on_notification_date or is_apply_default_on_effective_date:
+                    action = next((a for a in generated_event.event_schedule.actions.all() if a.is_book_automatic),
+                                  None)
+                    if action:
+                        ttp = GeneratedEventProcess(generated_event=generated_event, action=action, calculate=True,
+                                                    store=True)
+                        # ttp.process()
+                        # generated_event.processed(None, action, ttp.complex_transaction)
+                        generated_event.processed(None, action, None)
+                    else:
+                        generated_event.status = GeneratedEvent.BOOKED
+                        generated_event.status_date = timezone.now()
+
+                if is_notify_on_notification_date or is_notify_on_effective_date or \
+                        is_apply_default_on_notification_date or is_apply_default_on_effective_date:
+                    generated_event.save()

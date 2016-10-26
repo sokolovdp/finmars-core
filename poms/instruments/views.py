@@ -441,6 +441,7 @@ class GeneratedEventViewSet(UpdateModelMixinExt, AbstractReadOnlyModelViewSet):
 
                 if instance.store:
                     generated_event.processed(self.request.user.member, action, instance.complex_transaction)
+                    generated_event.save()
 
                 return Response(serializer.data)
             finally:

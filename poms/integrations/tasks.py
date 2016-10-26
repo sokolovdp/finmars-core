@@ -24,7 +24,7 @@ from poms.integrations.models import Task, PriceDownloadScheme, InstrumentDownlo
 from poms.integrations.providers.base import get_provider, parse_date_iso, fill_instrument_price, fill_currency_price, \
     AbstractProvider
 from poms.integrations.storage import import_file_storage
-from poms.reports.backends.balance import BalanceReport2PositionBuilder
+from poms.reports.backends.balance import BalanceReport2Builder
 from poms.reports.models import BalanceReport
 from poms.users.models import MasterUser
 
@@ -400,7 +400,7 @@ def download_pricing_async(self, task_id):
         report = BalanceReport(master_user=task.master_user, begin_date=date.min, end_date=balance_date,
                                use_portfolio=True, show_transaction_details=False)
         _l.debug('calculate position report: %s', report)
-        builder = BalanceReport2PositionBuilder(instance=report)
+        builder = BalanceReport2Builder(instance=report)
         builder.build()
         for i in report.items:
             if i.instrument:

@@ -137,76 +137,208 @@ class NotificationClass(AbstractClassModel):
         verbose_name = ugettext_lazy('notification class')
         verbose_name_plural = ugettext_lazy('notification classes')
 
+    # @property
+    # def needed_reaction(self):
+    #     return self.id in [
+    #         NotificationClass.INFORM_ON_NDATE_WITH_REACT,
+    #         NotificationClass.INFORM_ON_EDATE_WITH_REACT,
+    #         NotificationClass.INFORM_ON_NDATE_AND_EDATE_WITH_REACT_ON_EDATE,
+    #         NotificationClass.INFORM_ON_NDATE_AND_EDATE_WITH_REACT_ON_NDATE,
+    #     ]
+
+    # def check_date(self, now, effective_date, notification_date):
+    #     if now is None:
+    #         now = date_now()
+    #
+    #     effective_date_notify = False
+    #     notification_date_notify = False
+    #     apply_default = False
+    #     needed_reaction = False
+    #
+    #     # NDATE -> notification_date
+    #     # EDATE -> effective_date
+    #     if self.id == NotificationClass.DONT_REACT:
+    #         pass
+    #
+    #     elif self.id == NotificationClass.APPLY_DEF_ON_EDATE:
+    #         apply_default = now == effective_date
+    #
+    #     elif self.id == NotificationClass.APPLY_DEF_ON_NDATE:
+    #         apply_default = now == notification_date
+    #
+    #     elif self.id == NotificationClass.INFORM_ON_NDATE_WITH_REACT:
+    #         notification_date_notify = now == notification_date
+    #         needed_reaction = now == notification_date
+    #
+    #     elif self.id == NotificationClass.INFORM_ON_NDATE_APPLY_DEF:
+    #         notification_date_notify = now == notification_date
+    #         apply_default = now == notification_date
+    #
+    #     elif self.id == NotificationClass.INFORM_ON_NDATE_DONT_REACT:
+    #         notification_date_notify = now == notification_date
+    #
+    #     elif self.id == NotificationClass.INFORM_ON_EDATE_WITH_REACT:
+    #         effective_date_notify = now == effective_date
+    #         needed_reaction = now == effective_date
+    #
+    #     elif self.id == NotificationClass.INFORM_ON_EDATE_APPLY_DEF:
+    #         effective_date_notify = now == effective_date
+    #         apply_default = now == effective_date
+    #
+    #     elif self.id == NotificationClass.INFORM_ON_EDATE_DONT_REACT:
+    #         effective_date_notify = now == effective_date
+    #
+    #     elif self.id == NotificationClass.INFORM_ON_NDATE_AND_EDATE_WITH_REACT_ON_EDATE:
+    #         effective_date_notify = now == effective_date
+    #         notification_date_notify = now == notification_date
+    #         needed_reaction = now == effective_date
+    #
+    #     elif self.id == NotificationClass.INFORM_ON_NDATE_AND_EDATE_WITH_REACT_ON_NDATE:
+    #         effective_date_notify = now == effective_date
+    #         notification_date_notify = now == notification_date
+    #         needed_reaction = now == notification_date
+    #
+    #     elif self.id == NotificationClass.INFORM_ON_NDATE_AND_EDATE_APPLY_DEF_ON_EDATE:
+    #         effective_date_notify = now == effective_date
+    #         notification_date_notify = now == notification_date
+    #         apply_default = now == effective_date
+    #
+    #     elif self.id == NotificationClass.INFORM_ON_NDATE_AND_EDATE_APPLY_DEF_ON_NDATE:
+    #         effective_date_notify = now == effective_date
+    #         notification_date_notify = now == notification_date
+    #         apply_default = now == notification_date
+    #
+    #     elif self.id == NotificationClass.INFORM_ON_NDATE_AND_EDATE_DONT_REACT:
+    #         effective_date_notify = now == effective_date
+    #         notification_date_notify = now == notification_date
+    #
+    #     return effective_date_notify, notification_date_notify, apply_default, needed_reaction
+
     @property
-    def needed_reaction(self):
+    def is_notify_on_effective_date(self):
         return self.id in [
-            NotificationClass.INFORM_ON_NDATE_WITH_REACT,
+            # NotificationClass.DONT_REACT,
+            # NotificationClass.APPLY_DEF_ON_EDATE,
+            # NotificationClass.APPLY_DEF_ON_NDATE,
+
+            # NotificationClass.INFORM_ON_NDATE_WITH_REACT,
+            # NotificationClass.INFORM_ON_NDATE_APPLY_DEF,
+            # NotificationClass.INFORM_ON_NDATE_DONT_REACT,
             NotificationClass.INFORM_ON_EDATE_WITH_REACT,
+            NotificationClass.INFORM_ON_EDATE_APPLY_DEF,
+            NotificationClass.INFORM_ON_EDATE_DONT_REACT,
+
             NotificationClass.INFORM_ON_NDATE_AND_EDATE_WITH_REACT_ON_EDATE,
             NotificationClass.INFORM_ON_NDATE_AND_EDATE_WITH_REACT_ON_NDATE,
+            NotificationClass.INFORM_ON_NDATE_AND_EDATE_APPLY_DEF_ON_EDATE,
+            NotificationClass.INFORM_ON_NDATE_AND_EDATE_APPLY_DEF_ON_NDATE,
+            NotificationClass.INFORM_ON_NDATE_AND_EDATE_DONT_REACT,
         ]
 
-    def check_date(self, now, effective_date, notification_date):
-        if now is None:
-            now = date_now()
+    @property
+    def is_notify_on_notification_date(self):
+        return self.id in [
+            # NotificationClass.DONT_REACT,
+            # NotificationClass.APPLY_DEF_ON_EDATE,
+            # NotificationClass.APPLY_DEF_ON_NDATE,
 
-        show_notification = False
-        apply_default = False
-        needed_reaction = False
+            NotificationClass.INFORM_ON_NDATE_WITH_REACT,
+            NotificationClass.INFORM_ON_NDATE_APPLY_DEF,
+            NotificationClass.INFORM_ON_NDATE_DONT_REACT,
+            # NotificationClass.INFORM_ON_EDATE_WITH_REACT,
+            # NotificationClass.INFORM_ON_EDATE_APPLY_DEF,
+            # NotificationClass.INFORM_ON_EDATE_DONT_REACT,
 
-        # NDATE -> notification_date
-        # EDATE -> effective_date
-        if self.id == NotificationClass.DONT_REACT:
-            pass
+            NotificationClass.INFORM_ON_NDATE_AND_EDATE_WITH_REACT_ON_EDATE,
+            NotificationClass.INFORM_ON_NDATE_AND_EDATE_WITH_REACT_ON_NDATE,
+            NotificationClass.INFORM_ON_NDATE_AND_EDATE_APPLY_DEF_ON_EDATE,
+            NotificationClass.INFORM_ON_NDATE_AND_EDATE_APPLY_DEF_ON_NDATE,
+            NotificationClass.INFORM_ON_NDATE_AND_EDATE_DONT_REACT,
+        ]
 
-        elif self.id == NotificationClass.APPLY_DEF_ON_EDATE:
-            apply_default = now == effective_date
+    @property
+    def is_apply_default_on_effective_date(self):
+        return self.id in [
+            # NotificationClass.DONT_REACT,
+            NotificationClass.APPLY_DEF_ON_EDATE,
+            # NotificationClass.APPLY_DEF_ON_NDATE,
 
-        elif self.id == NotificationClass.APPLY_DEF_ON_NDATE:
-            apply_default = now == notification_date
+            # NotificationClass.INFORM_ON_NDATE_WITH_REACT,
+            # NotificationClass.INFORM_ON_NDATE_APPLY_DEF,
+            # NotificationClass.INFORM_ON_NDATE_DONT_REACT,
+            # NotificationClass.INFORM_ON_EDATE_WITH_REACT,
+            NotificationClass.INFORM_ON_EDATE_APPLY_DEF,
+            # NotificationClass.INFORM_ON_EDATE_DONT_REACT,
 
-        elif self.id == NotificationClass.INFORM_ON_NDATE_WITH_REACT:
-            show_notification = now == notification_date
-            needed_reaction = now == notification_date
+            # NotificationClass.INFORM_ON_NDATE_AND_EDATE_WITH_REACT_ON_EDATE,
+            # NotificationClass.INFORM_ON_NDATE_AND_EDATE_WITH_REACT_ON_NDATE,
+            NotificationClass.INFORM_ON_NDATE_AND_EDATE_APPLY_DEF_ON_EDATE,
+            # NotificationClass.INFORM_ON_NDATE_AND_EDATE_APPLY_DEF_ON_NDATE,
+            # NotificationClass.INFORM_ON_NDATE_AND_EDATE_DONT_REACT,
+        ]
 
-        elif self.id == NotificationClass.INFORM_ON_NDATE_APPLY_DEF:
-            show_notification = now == notification_date
-            apply_default = now == notification_date
+    @property
+    def is_apply_default_on_notification_date(self):
+        return self.id in [
+            # NotificationClass.DONT_REACT,
+            # NotificationClass.APPLY_DEF_ON_EDATE,
+            NotificationClass.APPLY_DEF_ON_NDATE,
 
-        elif self.id == NotificationClass.INFORM_ON_NDATE_DONT_REACT:
-            show_notification = now == notification_date
+            # NotificationClass.INFORM_ON_NDATE_WITH_REACT,
+            NotificationClass.INFORM_ON_NDATE_APPLY_DEF,
+            # NotificationClass.INFORM_ON_NDATE_DONT_REACT,
+            # NotificationClass.INFORM_ON_EDATE_WITH_REACT,
+            # NotificationClass.INFORM_ON_EDATE_APPLY_DEF,
+            # NotificationClass.INFORM_ON_EDATE_DONT_REACT,
 
-        elif self.id == NotificationClass.INFORM_ON_EDATE_WITH_REACT:
-            show_notification = now == effective_date
-            needed_reaction = now == effective_date
+            # NotificationClass.INFORM_ON_NDATE_AND_EDATE_WITH_REACT_ON_EDATE,
+            # NotificationClass.INFORM_ON_NDATE_AND_EDATE_WITH_REACT_ON_NDATE,
+            # NotificationClass.INFORM_ON_NDATE_AND_EDATE_APPLY_DEF_ON_EDATE,
+            NotificationClass.INFORM_ON_NDATE_AND_EDATE_APPLY_DEF_ON_NDATE,
+            # NotificationClass.INFORM_ON_NDATE_AND_EDATE_DONT_REACT,
+        ]
 
-        elif self.id == NotificationClass.INFORM_ON_EDATE_APPLY_DEF:
-            show_notification = now == effective_date
-            apply_default = now == effective_date
+    @property
+    def is_need_reaction_on_effective_date(self):
+        return self.id in [
+            # NotificationClass.DONT_REACT,
+            # NotificationClass.APPLY_DEF_ON_EDATE,
+            # NotificationClass.APPLY_DEF_ON_NDATE,
 
-        elif self.id == NotificationClass.INFORM_ON_EDATE_DONT_REACT:
-            show_notification = now == effective_date
+            # NotificationClass.INFORM_ON_NDATE_WITH_REACT,
+            # NotificationClass.INFORM_ON_NDATE_APPLY_DEF,
+            # NotificationClass.INFORM_ON_NDATE_DONT_REACT,
+            NotificationClass.INFORM_ON_EDATE_WITH_REACT,
+            # NotificationClass.INFORM_ON_EDATE_APPLY_DEF,
+            # NotificationClass.INFORM_ON_EDATE_DONT_REACT,
 
-        elif self.id == NotificationClass.INFORM_ON_NDATE_AND_EDATE_WITH_REACT_ON_EDATE:
-            show_notification = now == notification_date or now == effective_date
-            needed_reaction = now == effective_date
+            NotificationClass.INFORM_ON_NDATE_AND_EDATE_WITH_REACT_ON_EDATE,
+            # NotificationClass.INFORM_ON_NDATE_AND_EDATE_WITH_REACT_ON_NDATE,
+            # NotificationClass.INFORM_ON_NDATE_AND_EDATE_APPLY_DEF_ON_EDATE,
+            # NotificationClass.INFORM_ON_NDATE_AND_EDATE_APPLY_DEF_ON_NDATE,
+            # NotificationClass.INFORM_ON_NDATE_AND_EDATE_DONT_REACT,
+        ]
 
-        elif self.id == NotificationClass.INFORM_ON_NDATE_AND_EDATE_WITH_REACT_ON_NDATE:
-            show_notification = now == notification_date or now == effective_date
-            needed_reaction = now == notification_date
+    @property
+    def is_need_reaction_on_notification_date(self):
+        return self.id in [
+            # NotificationClass.DONT_REACT,
+            # NotificationClass.APPLY_DEF_ON_EDATE,
+            # NotificationClass.APPLY_DEF_ON_NDATE,
 
-        elif self.id == NotificationClass.INFORM_ON_NDATE_AND_EDATE_APPLY_DEF_ON_EDATE:
-            show_notification = now == notification_date or now == effective_date
-            apply_default = now == effective_date
+            NotificationClass.INFORM_ON_NDATE_WITH_REACT,
+            # NotificationClass.INFORM_ON_NDATE_APPLY_DEF,
+            # NotificationClass.INFORM_ON_NDATE_DONT_REACT,
+            # NotificationClass.INFORM_ON_EDATE_WITH_REACT,
+            # NotificationClass.INFORM_ON_EDATE_APPLY_DEF,
+            # NotificationClass.INFORM_ON_EDATE_DONT_REACT,
 
-        elif self.id == NotificationClass.INFORM_ON_NDATE_AND_EDATE_APPLY_DEF_ON_NDATE:
-            show_notification = now == notification_date or now == effective_date
-            apply_default = now == notification_date
-
-        elif self.id == NotificationClass.INFORM_ON_NDATE_AND_EDATE_DONT_REACT:
-            show_notification = now == notification_date or now == effective_date
-
-        return show_notification, apply_default, needed_reaction
+            # NotificationClass.INFORM_ON_NDATE_AND_EDATE_WITH_REACT_ON_EDATE,
+            NotificationClass.INFORM_ON_NDATE_AND_EDATE_WITH_REACT_ON_NDATE,
+            # NotificationClass.INFORM_ON_NDATE_AND_EDATE_APPLY_DEF_ON_EDATE,
+            # NotificationClass.INFORM_ON_NDATE_AND_EDATE_APPLY_DEF_ON_NDATE,
+            # NotificationClass.INFORM_ON_NDATE_AND_EDATE_DONT_REACT,
+        ]
 
 
 class PeriodicityGroup(AbstractClassModel):
