@@ -1028,6 +1028,7 @@ class GeneratedEvent(models.Model):
             return self.notification_date == now and notification_class.is_need_reaction_on_notification_date
         return False
 
+
 class EventScheduleConfig(models.Model):
     master_user = models.OneToOneField('users.MasterUser', related_name='instrument_event_schedule_config',
                                        verbose_name=ugettext_lazy('master user'))
