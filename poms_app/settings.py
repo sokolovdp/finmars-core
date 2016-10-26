@@ -486,17 +486,17 @@ CELERY_SEND_TASK_SENT_EVENT = True
 # CELERY_STORE_ERRORS_EVEN_IF_IGNORED = True
 
 CELERYBEAT_SCHEDULE = {
-    # 'integrations.download_pricing_auto_scheduler': {
-    #     'task': 'integrations.download_pricing_auto_scheduler',
-    #     'schedule': crontab(minute='*/10'),
-    # },
+    'integrations.download_pricing_auto_scheduler': {
+        'task': 'integrations.download_pricing_auto_scheduler',
+        'schedule': crontab(minute='*/10'),
+    },
     'instruments.generate_events': {
         'task': 'instruments.generate_events',
         'schedule': crontab(minute=15),
     },
-    'instruments.process_events_apply_def': {
+    'instruments.process_events': {
         'task': 'instruments.process_events',
-        'schedule': crontab(minute=15),
+        'schedule': crontab(minute=30),
     },
 
 }
