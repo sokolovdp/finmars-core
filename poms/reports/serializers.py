@@ -8,7 +8,7 @@ from poms.accounts.fields import AccountField
 from poms.common.fields import ExpressionField
 from poms.common.serializers import PomsClassSerializer
 from poms.common.utils import date_now
-from poms.currencies.fields import CurrencyField, CurrencyDefault
+from poms.currencies.fields import CurrencyField, CurrencyDefault, SystemCurrencyDefault
 from poms.instruments.models import CostMethod
 from poms.portfolios.fields import PortfolioField
 from poms.reports.fields import ReportClassField, BalanceReportCustomFieldField, PLReportCustomFieldField
@@ -141,7 +141,7 @@ class BaseReportSerializer(serializers.Serializer):
     cost_method = serializers.PrimaryKeyRelatedField(
         queryset=CostMethod.objects, allow_null=True, allow_empty=True,
         initial=CostMethod.AVCO, default=lambda: CostMethod.objects.get(pk=CostMethod.AVCO))
-    value_currency = CurrencyField(default=CurrencyDefault())
+    report_currency = CurrencyField(default=SystemCurrencyDefault())
 
     use_portfolio = serializers.BooleanField(default=False)
     use_account = serializers.BooleanField(default=False)
@@ -174,9 +174,9 @@ class BalanceReportItemSerializer(BaseReportItemSerializer):
     accrued_value_system_ccy = serializers.FloatField(read_only=True)
     market_value_system_ccy = serializers.FloatField(read_only=True)
 
-    principal_value_value_ccy = serializers.FloatField(read_only=True)
-    accrued_value_value_ccy = serializers.FloatField(read_only=True)
-    market_value_value_ccy = serializers.FloatField(read_only=True)
+    principal_value_report_ccy = serializers.FloatField(read_only=True)
+    accrued_value_report_ccy = serializers.FloatField(read_only=True)
+    market_value_report_ccy = serializers.FloatField(read_only=True)
 
     transaction = serializers.PrimaryKeyRelatedField(read_only=True, help_text=ugettext_lazy('Transaction for case 1&2'))
 
@@ -229,9 +229,9 @@ class BalanceReportSummarySerializer(serializers.Serializer):
     current_value_system_ccy = serializers.FloatField(read_only=True)
     p_l_system_ccy = serializers.FloatField(read_only=True)
 
-    invested_value_value_ccy = serializers.FloatField(read_only=True)
-    current_value_value_ccy = serializers.FloatField(read_only=True)
-    p_l_value_ccy = serializers.FloatField(read_only=True)
+    invested_value_report_ccy = serializers.FloatField(read_only=True)
+    current_value_report_ccy = serializers.FloatField(read_only=True)
+    p_l_report_ccy = serializers.FloatField(read_only=True)
 
     def create(self, validated_data):
         return BalanceReportSummary(**validated_data)
@@ -279,10 +279,10 @@ class PLReportItemSerializer(BaseReportItemSerializer):
     overheads_with_sign_system_ccy = serializers.FloatField(read_only=True)
     total_system_ccy = serializers.FloatField(read_only=True)
 
-    principal_with_sign_value_ccy = serializers.FloatField(read_only=True)
-    carry_with_sign_value_ccy = serializers.FloatField(read_only=True)
-    overheads_with_sign_value_ccy = serializers.FloatField(read_only=True)
-    total_value_ccy = serializers.FloatField(read_only=True)
+    principal_with_sign_report_ccy = serializers.FloatField(read_only=True)
+    carry_with_sign_report_ccy = serializers.FloatField(read_only=True)
+    overheads_with_sign_report_ccy = serializers.FloatField(read_only=True)
+    total_report_ccy = serializers.FloatField(read_only=True)
 
     def create(self, validated_data):
         return PLReportItem(**validated_data)
@@ -297,10 +297,10 @@ class PLReportSummarySerializer(serializers.Serializer):
     overheads_with_sign_system_ccy = serializers.FloatField(read_only=True)
     total_system_ccy = serializers.FloatField(read_only=True)
 
-    principal_with_sign_value_ccy = serializers.FloatField(read_only=True)
-    carry_with_sign_value_ccy = serializers.FloatField(read_only=True)
-    overheads_with_sign_value_ccy = serializers.FloatField(read_only=True)
-    total_value_ccy = serializers.FloatField(read_only=True)
+    principal_with_sign_report_ccy = serializers.FloatField(read_only=True)
+    carry_with_sign_report_ccy = serializers.FloatField(read_only=True)
+    overheads_with_sign_report_ccy = serializers.FloatField(read_only=True)
+    total_report_ccy = serializers.FloatField(read_only=True)
 
     def create(self, validated_data):
         return PLReportSummary(**validated_data)

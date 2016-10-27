@@ -204,9 +204,9 @@ class BalanceReport2Builder(BaseReport2Builder):
         summary.current_value_system_ccy = reduce(lambda x, y: x + y.market_value_system_ccy, items, 0.)
         summary.p_l_system_ccy = summary.current_value_system_ccy - summary.invested_value_system_ccy
 
-        summary.invested_value_value_ccy = self.system_ccy_to_value_ccy(summary.invested_value_system_ccy)
-        summary.current_value_value_ccy = self.system_ccy_to_value_ccy(summary.current_value_system_ccy)
-        summary.p_l_value_ccy = self.system_ccy_to_value_ccy(summary.p_l_system_ccy)
+        summary.invested_value_report_ccy = self.system_ccy_to_report_ccy(summary.invested_value_system_ccy)
+        summary.current_value_report_ccy = self.system_ccy_to_report_ccy(summary.current_value_system_ccy)
+        summary.p_l_report_ccy = self.system_ccy_to_report_ccy(summary.p_l_system_ccy)
 
         if settings.DEV:
             self.instance.transactions = self.transactions

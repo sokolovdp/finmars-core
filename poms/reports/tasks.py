@@ -20,7 +20,7 @@ def _cache_key(master_user, *args, **kwargs):
 
 
 def _balance_cache_key(master_user, cost_method, report_date, portfolios=None, accounts=None, strategies1=None,
-                       strategies2=None, strategies3=None, value_currency=None, use_portfolio=False,
+                       strategies2=None, strategies3=None, report_currency=None, use_portfolio=False,
                        use_account=False, use_strategy=False, custom_fields=None):
     portfolios = sorted(portfolios) if portfolios else []
     accounts = sorted(accounts) if accounts else []
@@ -30,7 +30,7 @@ def _balance_cache_key(master_user, cost_method, report_date, portfolios=None, a
     return _cache_key(
         master_user, cost_method, report_date.toordinal(),
         portfolios, accounts, strategies1, strategies2, strategies3,
-        value_currency, use_portfolio, use_account, use_strategy, custom_fields
+        report_currency, use_portfolio, use_account, use_strategy, custom_fields
     )
 
 

@@ -318,10 +318,10 @@ class BaseReport2Builder(object):
         fx_rate = history.fx_rate
         return value * fx_rate
 
-    def system_ccy_to_value_ccy(self, value):
-        if self.instance.value_currency is None:
+    def system_ccy_to_report_ccy(self, value):
+        if self.instance.report_currency is None:
             return value
-        history = self.find_currency_history(self.instance.value_currency)
+        history = self.find_currency_history(self.instance.report_currency)
         fx_rate = history.fx_rate
         if isclose(fx_rate, 0.0):
             return 0.0
@@ -356,9 +356,9 @@ class BaseReport2Builder(object):
         i.accrued_value_system_ccy = accrued_value_instrument_accrued_ccy * instrument_accrued_fx_rate
         i.market_value_system_ccy = i.principal_value_system_ccy + i.accrued_value_system_ccy
 
-        i.principal_value_value_ccy = self.system_ccy_to_value_ccy(i.principal_value_system_ccy)
-        i.accrued_value_value_ccy = self.system_ccy_to_value_ccy(i.accrued_value_system_ccy)
-        i.market_value_value_ccy = self.system_ccy_to_value_ccy(i.market_value_system_ccy)
+        i.principal_value_report_ccy = self.system_ccy_to_report_ccy(i.principal_value_system_ccy)
+        i.accrued_value_report_ccy = self.system_ccy_to_report_ccy(i.accrued_value_system_ccy)
+        i.market_value_report_ccy = self.system_ccy_to_report_ccy(i.market_value_system_ccy)
 
     def calc_balance_currency(self, i):
         currency_history = self.find_currency_history(i.currency)
@@ -367,8 +367,8 @@ class BaseReport2Builder(object):
         i.principal_value_system_ccy = i.position * currency_history.fx_rate
         i.market_value_system_ccy = i.principal_value_system_ccy
 
-        i.principal_value_value_ccy = self.system_ccy_to_value_ccy(i.principal_value_system_ccy)
-        i.market_value_value_ccy = self.system_ccy_to_value_ccy(i.market_value_system_ccy)
+        i.principal_value_report_ccy = self.system_ccy_to_report_ccy(i.principal_value_system_ccy)
+        i.market_value_report_ccy = self.system_ccy_to_report_ccy(i.market_value_system_ccy)
 
     def set_multiplier(self):
         if self.instance.cost_method.id == CostMethod.AVCO:

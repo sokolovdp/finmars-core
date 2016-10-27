@@ -112,13 +112,13 @@ class PLReport2Builder(BaseReport2Builder):
                                    pli.carry_with_sign_system_ccy + \
                                    pli.overheads_with_sign_system_ccy
 
-            pli.principal_with_sign_value_ccy = self.system_ccy_to_value_ccy(pli.principal_with_sign_system_ccy)
-            pli.carry_with_sign_value_ccy = self.system_ccy_to_value_ccy(pli.carry_with_sign_system_ccy)
-            pli.overheads_with_sign_value_ccy = self.system_ccy_to_value_ccy(pli.overheads_with_sign_system_ccy)
+            pli.principal_with_sign_report_ccy = self.system_ccy_to_report_ccy(pli.principal_with_sign_system_ccy)
+            pli.carry_with_sign_report_ccy = self.system_ccy_to_report_ccy(pli.carry_with_sign_system_ccy)
+            pli.overheads_with_sign_report_ccy = self.system_ccy_to_report_ccy(pli.overheads_with_sign_system_ccy)
 
-            pli.total_value_ccy = pli.principal_with_sign_value_ccy + \
-                        pli.carry_with_sign_value_ccy + \
-                        pli.overheads_with_sign_value_ccy
+            pli.total_report_ccy = pli.principal_with_sign_report_ccy + \
+                        pli.carry_with_sign_report_ccy + \
+                        pli.overheads_with_sign_report_ccy
 
         summary = self.instance.summary
         for i in self._items.values():
@@ -127,10 +127,10 @@ class PLReport2Builder(BaseReport2Builder):
             summary.overheads_with_sign_system_ccy += i.overheads_with_sign_system_ccy
             summary.total_system_ccy += i.total_system_ccy
 
-        summary.principal_with_sign_value_ccy = self.system_ccy_to_value_ccy(summary.principal_with_sign_system_ccy)
-        summary.carry_with_sign_value_ccy = self.system_ccy_to_value_ccy(summary.carry_with_sign_system_ccy)
-        summary.overheads_with_sign_value_ccy = self.system_ccy_to_value_ccy(summary.overheads_with_sign_system_ccy)
-        summary.total_value_ccy = self.system_ccy_to_value_ccy(summary.total_system_ccy)
+        summary.principal_with_sign_report_ccy = self.system_ccy_to_report_ccy(summary.principal_with_sign_system_ccy)
+        summary.carry_with_sign_report_ccy = self.system_ccy_to_report_ccy(summary.carry_with_sign_system_ccy)
+        summary.overheads_with_sign_report_ccy = self.system_ccy_to_report_ccy(summary.overheads_with_sign_system_ccy)
+        summary.total_report_ccy = self.system_ccy_to_report_ccy(summary.total_system_ccy)
 
         items = [i for i in self._items.values()]
         items = sorted(items, key=lambda x: '%s' % (x.pk,))

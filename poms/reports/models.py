@@ -72,7 +72,7 @@ class BaseReport(object):
     def __init__(self, master_user=None, cost_method=None, begin_date=None, end_date=None,
                  portfolios=None, accounts=None, strategies1=None, strategies2=None, strategies3=None,
                  use_portfolio=False, use_account=False, use_strategy1=False, use_strategy2=False, use_strategy3=False,
-                 value_currency=None, custom_fields=None,
+                 report_currency=None, custom_fields=None,
                  items=None,
                  task_id=None, task_status=None):
         self.master_user = master_user
@@ -92,7 +92,7 @@ class BaseReport(object):
         self.use_strategy2 = use_strategy2
         self.use_strategy3 = use_strategy3
 
-        self.value_currency = value_currency
+        self.report_currency = report_currency
         self.custom_fields = custom_fields or []
 
         self.items = items or []
@@ -110,7 +110,7 @@ class BaseReport(object):
 
 @python_2_unicode_compatible
 class BalanceReportItem(BaseReportItem):
-    def __init__(self, position=0.0, market_value_system_ccy=0.0, market_value_value_ccy=0.0, transaction=None, *args, **kwargs):
+    def __init__(self, position=0.0, market_value_system_ccy=0.0, market_value_report_ccy=0.0, transaction=None, *args, **kwargs):
         super(BalanceReportItem, self).__init__(*args, **kwargs)
 
         self.position = position
@@ -139,9 +139,9 @@ class BalanceReportItem(BaseReportItem):
         self.accrued_value_system_ccy = 0.
         self.market_value_system_ccy = market_value_system_ccy
 
-        self.principal_value_value_ccy = 0.
-        self.accrued_value_value_ccy = 0.
-        self.market_value_value_ccy = market_value_value_ccy
+        self.principal_value_report_ccy = 0.
+        self.accrued_value_report_ccy = 0.
+        self.market_value_report_ccy = market_value_report_ccy
 
         self.transaction = transaction  # -> Transaction for case 1 and case 2
 
@@ -156,14 +156,14 @@ class BalanceReportItem(BaseReportItem):
 class BalanceReportSummary(object):
     def __init__(self,
                  invested_value_system_ccy=0.0, current_value_system_ccy=0.0, p_l_system_ccy=0.0,
-                 invested_value_value_ccy=0.0, current_value_value_ccy=0.0, p_l_value_ccy=0.0):
+                 invested_value_report_ccy=0.0, current_value_report_ccy=0.0, p_l_report_ccy=0.0):
         self.invested_value_system_ccy = invested_value_system_ccy
         self.current_value_system_ccy = current_value_system_ccy
         self.p_l_system_ccy = p_l_system_ccy
 
-        self.invested_value_value_ccy = invested_value_value_ccy
-        self.current_value_value_ccy = current_value_value_ccy
-        self.p_l_value_ccy = p_l_value_ccy
+        self.invested_value_report_ccy = invested_value_report_ccy
+        self.current_value_report_ccy = current_value_report_ccy
+        self.p_l_report_ccy = p_l_report_ccy
 
     def __str__(self):
         return "invested_value_system_ccy=%s, current_value_system_ccy=%s, p_l_system_ccy=%s" % \
@@ -186,8 +186,8 @@ class BalanceReport(BaseReport):
 class PLReportItem(BaseReportItem):
     def __init__(self, principal_with_sign_system_ccy=0.0, carry_with_sign_system_ccy=0.0,
                  overheads_with_sign_system_ccy=0.0, total_system_ccy=0.0,
-                 principal_with_sign_value_ccy=0.0, carry_with_sign_value_ccy=0.0,
-                 overheads_with_sign_value_ccy=0.0, total_value_ccy=0.0,
+                 principal_with_sign_report_ccy=0.0, carry_with_sign_report_ccy=0.0,
+                 overheads_with_sign_report_ccy=0.0, total_report_ccy=0.0,
                  *args, **kwargs):
         super(PLReportItem, self).__init__(*args, **kwargs)
 
@@ -196,10 +196,10 @@ class PLReportItem(BaseReportItem):
         self.overheads_with_sign_system_ccy = overheads_with_sign_system_ccy
         self.total_system_ccy = total_system_ccy
 
-        self.principal_with_sign_value_ccy = principal_with_sign_value_ccy
-        self.carry_with_sign_value_ccy = carry_with_sign_value_ccy
-        self.overheads_with_sign_value_ccy = overheads_with_sign_value_ccy
-        self.total_value_ccy = total_value_ccy
+        self.principal_with_sign_report_ccy = principal_with_sign_report_ccy
+        self.carry_with_sign_report_ccy = carry_with_sign_report_ccy
+        self.overheads_with_sign_report_ccy = overheads_with_sign_report_ccy
+        self.total_report_ccy = total_report_ccy
 
     def __str__(self):
         return 'PLReportItem'
@@ -208,17 +208,17 @@ class PLReportItem(BaseReportItem):
 class PLReportSummary(object):
     def __init__(self, principal_with_sign_system_ccy=0.0, carry_with_sign_system_ccy=0.0,
                  overheads_with_sign_system_ccy=0.0, total_system_ccy=0.0,
-                 principal_with_sign_value_ccy=0.0, carry_with_sign_value_ccy=0.0,
-                 overheads_with_sign_value_ccy=0.0, total_value_ccy=0.0):
+                 principal_with_sign_report_ccy=0.0, carry_with_sign_report_ccy=0.0,
+                 overheads_with_sign_report_ccy=0.0, total_report_ccy=0.0):
         self.principal_with_sign_system_ccy = principal_with_sign_system_ccy
         self.carry_with_sign_system_ccy = carry_with_sign_system_ccy
         self.overheads_with_sign_system_ccy = overheads_with_sign_system_ccy
         self.total_system_ccy = total_system_ccy
 
-        self.principal_with_sign_value_ccy = principal_with_sign_value_ccy
-        self.carry_with_sign_value_ccy = carry_with_sign_value_ccy
-        self.overheads_with_sign_value_ccy = overheads_with_sign_value_ccy
-        self.total_value_ccy = total_value_ccy
+        self.principal_with_sign_report_ccy = principal_with_sign_report_ccy
+        self.carry_with_sign_report_ccy = carry_with_sign_report_ccy
+        self.overheads_with_sign_report_ccy = overheads_with_sign_report_ccy
+        self.total_report_ccy = total_report_ccy
 
 
 # @python_2_unicode_compatible
