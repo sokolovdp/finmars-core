@@ -14,6 +14,15 @@ class CurrencyDefault(object):
         return self._master_user.currency
 
 
+class SystemCurrencyDefault(object):
+    def set_context(self, serializer_field):
+        request = serializer_field.context['request']
+        self._master_user = request.user.master_user
+
+    def __call__(self):
+        return self._master_user.system_currency
+
+
 class CurrencyField(PrimaryKeyRelatedFilteredField):
     queryset = Currency.objects
     filter_backends = (

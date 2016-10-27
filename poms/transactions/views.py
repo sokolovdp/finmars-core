@@ -27,10 +27,10 @@ from poms.strategies.models import Strategy1, Strategy2, Strategy3, Strategy1Sub
     Strategy2Subgroup, Strategy2Group, Strategy3Subgroup, Strategy3Group
 from poms.tags.filters import TagFilter
 from poms.tags.utils import get_tag_prefetch
-from poms.transactions.handlers import TransactionTypeProcess
 from poms.transactions.filters import TransactionObjectPermissionFilter, ComplexTransactionPermissionFilter, \
     TransactionObjectPermissionMemberFilter, TransactionObjectPermissionGroupFilter, \
     TransactionObjectPermissionPermissionFilter
+from poms.transactions.handlers import TransactionTypeProcess
 from poms.transactions.models import TransactionClass, Transaction, TransactionType, TransactionTypeGroup, \
     ComplexTransaction, EventClass, NotificationClass, TransactionTypeInput, TransactionTypeAction
 from poms.transactions.permissions import TransactionObjectPermission

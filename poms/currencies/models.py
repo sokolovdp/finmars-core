@@ -34,7 +34,7 @@ class Currency(NamedModel, FakeDeletableModel):
 
     @property
     def is_system(self):
-        return self.user_code == settings.CURRENCY_CODE
+        return self.master_user.system_currency_id == self.id if self.master_user_id else False
 
     @property
     def is_default(self):

@@ -420,7 +420,7 @@ SWAGGER_SETTINGS = {
     'JSON_EDITOR': True,
 }
 
-CURRENCY_CODE = 'USD'
+# CURRENCY_CODE = 'USD'
 
 AUTHENTICATION_BACKENDS = (
     'django.contrib.auth.backends.ModelBackend',

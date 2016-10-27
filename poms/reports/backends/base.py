@@ -236,9 +236,9 @@ class BaseReport2Builder(object):
     def build(self):
         raise NotImplementedError('subclasses of BaseReportBuilder must provide an build() method')
 
-    @cached_property
+    @property
     def system_currency(self):
-        return Currency.objects.get(master_user__isnull=True, user_code=settings.CURRENCY_CODE)
+        return self.instance.master_user.system_currency
 
     def find_currency_history(self, ccy, date=None):
         assert ccy is not None, 'ccy is None!'

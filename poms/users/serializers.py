@@ -169,75 +169,59 @@ class MasterUserSerializer(serializers.ModelSerializer):
     language = serializers.ChoiceField(choices=settings.LANGUAGES, default=settings.LANGUAGE_CODE)
     timezone = serializers.ChoiceField(choices=TIMEZONE_CHOICES)
     is_current = serializers.SerializerMethodField()
+    system_currency = CurrencyField()
     currency = CurrencyField()
-    currency_object = serializers.PrimaryKeyRelatedField(source='currency', read_only=True)
     account_type = AccountTypeField()
-    account_type_object = serializers.PrimaryKeyRelatedField(source='account_type', read_only=True)
     account = AccountField()
-    account_object = serializers.PrimaryKeyRelatedField(source='account', read_only=True)
     counterparty_group = CounterpartyGroupField()
-    counterparty_group_object = serializers.PrimaryKeyRelatedField(source='counterparty_group', read_only=True)
     counterparty = CounterpartyField()
-    counterparty_object = serializers.PrimaryKeyRelatedField(source='counterparty', read_only=True)
     responsible_group = ResponsibleGroupField()
-    responsible_group_object = serializers.PrimaryKeyRelatedField(source='responsible_group', read_only=True)
     responsible = ResponsibleField()
-    responsible_object = serializers.PrimaryKeyRelatedField(source='responsible', read_only=True)
     instrument_type = InstrumentTypeField()
-    instrument_type_object = serializers.PrimaryKeyRelatedField(source='instrument_type', read_only=True)
     portfolio = PortfolioField()
-    portfolio_object = serializers.PrimaryKeyRelatedField(source='portfolio', read_only=True)
     strategy1_group = Strategy1GroupField()
-    strategy1_group_object = serializers.PrimaryKeyRelatedField(source='strategy1_group', read_only=True)
     strategy1_subgroup = Strategy1SubgroupField()
-    strategy1_subgroup_object = serializers.PrimaryKeyRelatedField(source='strategy1_subgroup', read_only=True)
     strategy1 = Strategy1Field()
-    strategy1_object = serializers.PrimaryKeyRelatedField(source='strategy1', read_only=True)
     strategy2_group = Strategy2GroupField()
-    strategy2_group_object = serializers.PrimaryKeyRelatedField(source='strategy2_group', read_only=True)
     strategy2_subgroup = Strategy2SubgroupField()
-    strategy2_subgroup_object = serializers.PrimaryKeyRelatedField(source='strategy2_subgroup', read_only=True)
     strategy2 = Strategy2Field()
-    strategy2_object = serializers.PrimaryKeyRelatedField(source='strategy2', read_only=True)
     strategy3_group = Strategy3GroupField()
-    strategy3_group_object = serializers.PrimaryKeyRelatedField(source='strategy3_group', read_only=True)
     strategy3_subgroup = Strategy3SubgroupField()
-    strategy3_subgroup_object = serializers.PrimaryKeyRelatedField(source='strategy3_subgroup', read_only=True)
     strategy3 = Strategy3Field()
-    strategy3_object = serializers.PrimaryKeyRelatedField(source='strategy3', read_only=True)
     thread_group = ThreadGroupField()
-    thread_group_object = serializers.PrimaryKeyRelatedField(source='thread_group', read_only=True)
 
     class Meta:
         model = MasterUser
         fields = [
             'id', 'name', 'is_current', 'language', 'timezone',
             'notification_business_days',
-            'currency', 'currency_object',
-            'account_type', 'account_type_object',
-            'account', 'account_object',
-            'counterparty_group', 'counterparty_group_object',
-            'counterparty', 'counterparty_object',
-            'responsible_group', 'responsible_group_object',
-            'responsible', 'responsible_object',
-            'instrument_type', 'instrument_type_object',
-            'portfolio', 'portfolio_object',
-            'strategy1_group', 'strategy1_group_object',
-            'strategy1_subgroup', 'strategy1_subgroup_object',
-            'strategy1', 'strategy1_object',
-            'strategy2_group', 'strategy2_group_object',
-            'strategy2_subgroup', 'strategy2_subgroup_object',
-            'strategy2', 'strategy2_object',
-            'strategy3_group', 'strategy3_group_object',
-            'strategy3_subgroup', 'strategy3_subgroup_object',
-            'strategy3', 'strategy3_object',
-            'thread_group', 'thread_group_object',
+            'system_currency',
+            'currency',
+            'account_type',
+            'account',
+            'counterparty_group',
+            'counterparty',
+            'responsible_group',
+            'responsible',
+            'instrument_type',
+            'portfolio',
+            'strategy1_group',
+            'strategy1_subgroup',
+            'strategy1',
+            'strategy2_group',
+            'strategy2_subgroup',
+            'strategy2',
+            'strategy3_group',
+            'strategy3_subgroup',
+            'strategy3',
+            'thread_group',
         ]
 
     def __init__(self, *args, **kwargs):
         super(MasterUserSerializer, self).__init__(*args, **kwargs)
 
         from poms.currencies.serializers import CurrencyViewSerializer
+        self.fields['system_currency_object'] = CurrencyViewSerializer(source='system_currency', read_only=True)
         self.fields['currency_object'] = CurrencyViewSerializer(source='currency', read_only=True)
 
         from poms.accounts.serializers import AccountTypeViewSerializer, AccountViewSerializer

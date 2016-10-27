@@ -39,7 +39,8 @@ class MasterUserManager(models.Manager):
         EventScheduleConfig.objects.create(master_user=obj)
         PricingAutomatedSchedule.objects.create(master_user=obj, is_enabled=False)
 
-        ccy = Currency.objects.create(master_user=obj, name=settings.CURRENCY_CODE)
+        ccy = Currency.objects.create(master_user=obj, name='-')
+        ccy_usd = Currency.objects.create(master_user=obj, name='USD')
 
         account_type = AccountType.objects.create(master_user=obj, name='-')
         account = Account.objects.create(master_user=obj, type=account_type, name='-')
@@ -74,6 +75,7 @@ class MasterUserManager(models.Manager):
         Member.objects.create(user=user, master_user=obj, is_owner=True, is_admin=True)
         group = Group.objects.create(master_user=obj, name='%s' % ugettext_lazy('Default'))
 
+        obj.system_currency = ccy_usd
         obj.currency = ccy
         obj.account_type = account_type
         obj.account = account
@@ -109,16 +111,19 @@ class MasterUserManager(models.Manager):
 class MasterUser(models.Model):
     name = models.CharField(max_length=255, null=True, blank=True,
                             verbose_name=ugettext_lazy('name'))
-    currency = models.ForeignKey('currencies.Currency', null=True, blank=True, on_delete=models.PROTECT,
-                                 verbose_name=ugettext_lazy('currency'))
     language = models.CharField(max_length=LANGUAGE_MAX_LENGTH, default=settings.LANGUAGE_CODE,
                                 verbose_name=ugettext_lazy('language'))
     timezone = models.CharField(max_length=TIMEZONE_MAX_LENGTH, default=settings.TIME_ZONE,
                                 verbose_name=ugettext_lazy('timezone'))
+    system_currency = models.ForeignKey('currencies.Currency', null=True, blank=True, on_delete=models.PROTECT,
+                                        related_name='+',
+                                        verbose_name=ugettext_lazy('system currency'))
 
     account_type = models.ForeignKey('accounts.AccountType', null=True, blank=True, on_delete=models.PROTECT)
     account = models.ForeignKey('accounts.Account', null=True, blank=True, on_delete=models.PROTECT)
 
+    currency = models.ForeignKey('currencies.Currency', null=True, blank=True, on_delete=models.PROTECT,
+                                 verbose_name=ugettext_lazy('currency'))
     counterparty_group = models.ForeignKey('counterparties.CounterpartyGroup', null=True, blank=True,
                                            on_delete=models.PROTECT)
     counterparty = models.ForeignKey('counterparties.Counterparty', null=True, blank=True, on_delete=models.PROTECT)

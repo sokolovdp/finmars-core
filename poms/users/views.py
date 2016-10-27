@@ -152,6 +152,7 @@ class UserViewSet(AbstractModelViewSet):
 class MasterUserViewSet(AbstractModelViewSet):
     queryset = MasterUser.objects.select_related(
         'currency',
+        'system_currency',
         'account_type',
         'account', 'account__type',
         'counterparty_group',

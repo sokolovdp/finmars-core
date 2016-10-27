@@ -39,7 +39,7 @@ class MasterUserAdmin(admin.ModelAdmin):
     ]
     list_display = ['id', 'name']
     ordering = ['name']
-    raw_id_fields = ['currency',
+    raw_id_fields = ['system_currency', 'currency',
                      'account_type', 'account',
                      'counterparty_group', 'counterparty',
                      'responsible_group', 'responsible',
@@ -52,10 +52,10 @@ class MasterUserAdmin(admin.ModelAdmin):
                      ]
     fieldsets = (
         (None, {
-            'fields': ('name', 'currency', 'language', 'timezone', 'notification_business_days',)
+            'fields': ('name', 'system_currency', 'language', 'timezone',)
         }),
         ('Defaults', {
-            'fields': ('account_type', 'account',
+            'fields': ('account_type', 'account', 'currency',
                        'counterparty_group', 'counterparty', 'responsible_group', 'responsible', 'instrument_type',
                        'portfolio', 'strategy1_group', 'strategy1_subgroup', 'strategy1',
                        'strategy2_group', 'strategy2_subgroup', 'strategy2',

@@ -94,7 +94,7 @@ class BaseApiTestCase(APITestCase):
 
     def create_master_user(self, name):
         master_user = MasterUser.objects.create(name=name)
-        master_user.currency = Currency.objects.create(master_user=master_user, name=settings.CURRENCY_CODE)
+        master_user.currency = Currency.objects.create(master_user=master_user, name='USD')
         master_user.save()
         # print('create master user: id=%s, name=%s' %
         #       (master_user.id, name))

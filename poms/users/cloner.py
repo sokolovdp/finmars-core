@@ -68,6 +68,7 @@ class FullDataCloner(object):
 
         self._simple_clone(self._target_master_user, self._source_master_user,
                            'currency',
+                           'system_currency',
                            'account_type',
                            'account',
                            'counterparty_group',

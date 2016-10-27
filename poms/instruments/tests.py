@@ -74,8 +74,8 @@ class InstrumentApiTestCase(BaseNamedModelTestCase, BaseApiWithPermissionTestCas
 
     def _create_obj(self, name='instrument', instrument_type=None, pricing_currency=None, accrued_currency=None):
         instrument_type = instrument_type or self.type_def
-        pricing_currency = pricing_currency or self.get_currency(settings.CURRENCY_CODE, 'a')
-        accrued_currency = accrued_currency or self.get_currency(settings.CURRENCY_CODE, 'a')
+        pricing_currency = pricing_currency or self.get_currency('USD', 'a')
+        accrued_currency = accrued_currency or self.get_currency('USD', 'a')
         return self.create_instrument(name, 'a', instrument_type=instrument_type, pricing_currency=pricing_currency,
                                       accrued_currency=accrued_currency)
 
@@ -85,9 +85,9 @@ class InstrumentApiTestCase(BaseNamedModelTestCase, BaseApiWithPermissionTestCas
     def _make_new_data(self, **kwargs):
         instrument_type = self.get_instrument_type(kwargs.get('instrument_type', '-'), 'a')
         kwargs['instrument_type'] = instrument_type.id
-        pricing_currency = self.get_currency(kwargs.get('pricing_currency', settings.CURRENCY_CODE), 'a')
+        pricing_currency = self.get_currency(kwargs.get('pricing_currency', 'USD'), 'a')
         kwargs['pricing_currency'] = pricing_currency.id
-        accrued_currency = self.get_currency(kwargs.get('accrued_currency', settings.CURRENCY_CODE), 'a')
+        accrued_currency = self.get_currency(kwargs.get('accrued_currency', 'USD'), 'a')
         kwargs['accrued_currency'] = accrued_currency.id
         data = super(InstrumentApiTestCase, self)._make_new_data(**kwargs)
         return data
