@@ -224,9 +224,12 @@ class TransactionTypeProcess(object):
                 transaction.complex_transaction_order = self._next_transaction_order()
                 transaction.transaction_class = action_transaction.transaction_class
 
-                self._set_rel(errors=errors, values=self.values, default_value=master_user.portfolio,
-                              target=transaction, target_attr_name='portfolio',
-                              source=action_transaction, source_attr_name='portfolio')
+                self._set_rel(errors=errors, values=self.values, default_value=None,
+                              target=transaction, target_attr_name='linked_instrument',
+                              source=action_transaction, source_attr_name='linked_instrument')
+                if action_transaction.linked_instrument_phantom is not None:
+                    transaction.linked_instrument = instrument_map[action_transaction.instrument_phantom_id]
+
                 self._set_rel(errors=errors, values=self.values, default_value=None,
                               target=transaction, target_attr_name='instrument',
                               source=action_transaction, source_attr_name='instrument')
@@ -253,6 +256,10 @@ class TransactionTypeProcess(object):
                 self._set_val(errors=errors, values=self.values, default_value=0.0,
                               target=transaction, target_attr_name='overheads_with_sign',
                               source=action_transaction, source_attr_name='overheads_with_sign')
+
+                self._set_rel(errors=errors, values=self.values, default_value=master_user.portfolio,
+                              target=transaction, target_attr_name='portfolio',
+                              source=action_transaction, source_attr_name='portfolio')
                 self._set_rel(errors=errors, values=self.values, default_value=master_user.account,
                               target=transaction, target_attr_name='account_position',
                               source=action_transaction, source_attr_name='account_position')

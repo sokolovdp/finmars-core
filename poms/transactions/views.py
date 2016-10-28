@@ -371,9 +371,11 @@ class TransactionFilterSet(FilterSet):
 class TransactionViewSet(AbstractModelViewSet):
     queryset = Transaction.objects.select_related(
         'master_user', 'complex_transaction', 'complex_transaction__transaction_type', 'transaction_class',
-        'portfolio',
+        'linked_instrument', 'linked_instrument__instrument_type', 'linked_instrument__instrument_type__instrument_class',
         'instrument', 'instrument__instrument_type', 'instrument__instrument_type__instrument_class',
-        'transaction_currency', 'settlement_currency',
+        'transaction_currency',
+        'settlement_currency',
+        'portfolio',
         'account_cash', 'account_cash__type',
         'account_position', 'account_position__type',
         'account_interim', 'account_interim__type',
@@ -389,6 +391,8 @@ class TransactionViewSet(AbstractModelViewSet):
         get_attributes_prefetch(),
         *get_permissions_prefetch_lookups(
             ('portfolio', Portfolio),
+            ('linked_instrument', Instrument),
+            ('linked_instrument__instrument_type', InstrumentType),
             ('instrument', Instrument),
             ('instrument__instrument_type', InstrumentType),
             ('account_cash', Account),
@@ -486,10 +490,12 @@ class ComplexTransactionViewSet(DestroyModelMixin, AbstractReadOnlyModelViewSet)
         Prefetch(
             'transactions',
             queryset=Transaction.objects.select_related(
-                'master_user', 'transaction_class', 'portfolio',
-                # 'complex_transaction', 'complex_transaction__transaction_type',
+                'master_user', 'transaction_class',
+                'linked_instrument', 'linked_instrument__instrument_type', 'linked_instrument__instrument_type__instrument_class',
                 'instrument', 'instrument__instrument_type', 'instrument__instrument_type__instrument_class',
-                'transaction_currency', 'settlement_currency',
+                'transaction_currency',
+                'settlement_currency',
+                'portfolio',
                 'account_cash', 'account_cash__type',
                 'account_position', 'account_position__type',
                 'account_interim', 'account_interim__type',
@@ -504,9 +510,11 @@ class ComplexTransactionViewSet(DestroyModelMixin, AbstractReadOnlyModelViewSet)
             ).prefetch_related(
                 get_attributes_prefetch(),
                 *get_permissions_prefetch_lookups(
-                    ('portfolio', Portfolio),
+                    ('linked_instrument', Instrument),
+                    ('linked_instrument__instrument_type', InstrumentType),
                     ('instrument', Instrument),
                     ('instrument__instrument_type', InstrumentType),
+                    ('portfolio', Portfolio),
                     ('account_cash', Account),
                     ('account_cash__type', AccountType),
                     ('account_position', Account),
