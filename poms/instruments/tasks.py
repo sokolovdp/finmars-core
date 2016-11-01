@@ -63,8 +63,10 @@ def generate_events(master_users=None):
 
         opened_instrument_items = []
         instruments_pk = set()
-        report = BalanceReport(master_user=master_user, end_date=now, cost_method=cost_method, use_portfolio=True,
-                               use_account=True, use_strategy1=True, use_strategy2=True, use_strategy3=True,
+        report = BalanceReport(master_user=master_user, report_date=now, cost_method=cost_method,
+                               report_currency=master_user.system_currency,
+                               detail_by_portfolio=True, detail_by_account=True, detail_by_strategy1=True,
+                               detail_by_strategy2=True, detail_by_strategy3=True,
                                show_transaction_details=False)
         builder = BalanceReport2Builder(instance=report)
         builder.build()
@@ -110,7 +112,7 @@ def generate_events(master_users=None):
             _l.debug('opened instrument: portfolio=%s, account=%s, strategy1=%s, strategy2=%s, strategy3=%s, '
                      'instrument=%s, position=%s, event_schedules=%s',
                      portfolio.id, account.id, strategy1.id, strategy2.id, strategy3.id,
-                     instrument.id, position,[e.id for e in event_schedules])
+                     instrument.id, position, [e.id for e in event_schedules])
 
             if not event_schedules:
                 continue

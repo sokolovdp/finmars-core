@@ -31,7 +31,7 @@ from poms.instruments.serializers import InstrumentSerializer, PriceHistorySeria
     PaymentSizeDetailSerializer, PeriodicitySerializer, CostMethodSerializer, InstrumentTypeSerializer, \
     PricingPolicySerializer, EventScheduleConfigSerializer, InstrumentCalculatePricesAccruedPriceSerializer, \
     GeneratedEventSerializer
-from poms.instruments.tasks import calculate_prices_accrued_price, process_events
+from poms.instruments.tasks import calculate_prices_accrued_price, process_events, generate_events
 from poms.integrations.models import PriceDownloadScheme
 from poms.obj_attrs.utils import get_attributes_prefetch
 from poms.obj_attrs.views import GenericAttributeTypeViewSet, \
@@ -276,10 +276,13 @@ class InstrumentViewSet(AbstractWithObjectPermissionViewSet):
             pass
         return Response({'processed': 1})
 
-    @list_route(methods=['post'], url_path='process-events', serializer_class=serializers.Serializer)
-    def process_events(self, request):
-        ret = process_events.apply_async(kwargs={'master_user': request.user.master_user.pk})
-        return Response({'processed': 1})
+    @list_route(methods=['post'], url_path='generate-events', serializer_class=serializers.Serializer)
+    def generate_events(self, request):
+        ret = generate_events.apply_async(kwargs={'master_users': [request.user.master_user.pk]})
+        return Response({
+            'success': True,
+            'task_id': ret.id,
+        })
 
     @list_route(methods=['post'], url_path='recalculate-prices-accrued-price',
                 serializer_class=InstrumentCalculatePricesAccruedPriceSerializer)

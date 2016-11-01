@@ -586,7 +586,9 @@ class GeneratedEventSerializer(serializers.ModelSerializer):
 
     def get_is_need_reaction(self, obj):
         now = date_now()
-        return obj.is_need_reaction_on_notification_date(now) or obj.is_need_reaction_on_effective_date(now)
+        return obj.action is None and (
+            obj.is_need_reaction_on_notification_date(now) or obj.is_need_reaction_on_effective_date(now)
+        )
 
     def generate_text(self, exr, obj, names=None):
         member = get_member_from_context(self.context)

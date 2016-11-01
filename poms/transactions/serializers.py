@@ -1075,6 +1075,11 @@ class TransactionTypeProcessSerializer(serializers.Serializer):
                                                                               allow_null=True)
         self.fields['transactions'] = PhantomTransactionSerializer(many=True, required=False, allow_null=True)
 
+        self.fields['book_transaction_layout'] = serializers.SerializerMethodField()
+
+    def get_book_transaction_layout(self, obj):
+        return obj.transaction_type.book_transaction_layout
+
     def create(self, validated_data):
         return validated_data
 
