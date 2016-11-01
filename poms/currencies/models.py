@@ -8,6 +8,7 @@ from django.utils.translation import ugettext_lazy
 
 from poms.common.models import NamedModel, FakeDeletableModel
 from poms.common.utils import date_now
+from poms.obj_attrs.models import GenericAttribute
 from poms.tags.models import TagLink
 from poms.users.models import MasterUser
 
@@ -22,6 +23,7 @@ class Currency(NamedModel, FakeDeletableModel):
     price_download_scheme = models.ForeignKey('integrations.PriceDownloadScheme', on_delete=models.PROTECT, null=True,
                                               blank=True, verbose_name=ugettext_lazy('price download scheme'))
 
+    attributes = GenericRelation(GenericAttribute)
     tags = GenericRelation(TagLink)
 
     class Meta(NamedModel.Meta, FakeDeletableModel.Meta):

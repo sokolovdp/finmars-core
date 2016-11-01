@@ -58,6 +58,7 @@ router.register(r'counterparties/responsible-group', counterparties.ResponsibleG
 router.register(r'counterparties/responsible', counterparties.ResponsibleViewSet)
 
 router.register(r'currencies/currency', currencies.CurrencyViewSet)
+router.register(r'currencies/currency-attribute-type', currencies.CurrencyAttributeTypeViewSet, 'currencyattributetype')
 router.register(r'currencies/currency-history', currencies.CurrencyHistoryViewSet)
 
 router.register(r'instruments/instrument-class', instruments.InstrumentClassViewSet)

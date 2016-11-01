@@ -8,16 +8,18 @@ from poms.currencies.fields import CurrencyField
 from poms.currencies.models import Currency, CurrencyHistory
 from poms.instruments.fields import PricingPolicyField
 from poms.integrations.fields import PriceDownloadSchemeField
+from poms.obj_attrs.serializers import ModelWithAttributesSerializer
 from poms.tags.serializers import ModelWithTagSerializer
 from poms.users.fields import MasterUserField
 
 
-class CurrencySerializer(ModelWithUserCodeSerializer, ModelWithTagSerializer):
+class CurrencySerializer(ModelWithUserCodeSerializer, ModelWithAttributesSerializer, ModelWithTagSerializer):
     # url = serializers.HyperlinkedIdentityField(view_name='currency-detail')
     master_user = MasterUserField()
-    daily_pricing_model_object = serializers.PrimaryKeyRelatedField(source='daily_pricing_model', read_only=True)
     price_download_scheme = PriceDownloadSchemeField(allow_null=True)
-    price_download_scheme_object = serializers.PrimaryKeyRelatedField(source='price_download_scheme', read_only=True)
+
+    # daily_pricing_model_object = serializers.PrimaryKeyRelatedField(source='daily_pricing_model', read_only=True)
+    # price_download_scheme_object = serializers.PrimaryKeyRelatedField(source='price_download_scheme', read_only=True)
 
     # tags = TagField(many=True, required=False, allow_null=True)
     # tags_object = TagViewSerializer(source='tags', many=True, read_only=True)
@@ -26,19 +28,21 @@ class CurrencySerializer(ModelWithUserCodeSerializer, ModelWithTagSerializer):
         model = Currency
         fields = [
             'id', 'master_user', 'user_code', 'name', 'short_name', 'notes',
-            'reference_for_pricing', 'daily_pricing_model', 'daily_pricing_model_object',
-            'price_download_scheme', 'price_download_scheme_object',
+            'reference_for_pricing', 'daily_pricing_model',
+            'price_download_scheme',
             'is_default', 'is_deleted',
             # 'tags', 'tags_object',
+            # 'daily_pricing_model_object', 'price_download_scheme_object',
         ]
 
     def __init__(self, *args, **kwargs):
         super(CurrencySerializer, self).__init__(*args, **kwargs)
 
         from poms.instruments.serializers import DailyPricingModelSerializer
+        from poms.integrations.serializers import PriceDownloadSchemeViewSerializer
+
         self.fields['daily_pricing_model_object'] = DailyPricingModelSerializer(source='daily_pricing_model',
                                                                                 read_only=True)
-        from poms.integrations.serializers import PriceDownloadSchemeViewSerializer
         self.fields['price_download_scheme_object'] = PriceDownloadSchemeViewSerializer(source='price_download_scheme',
                                                                                         read_only=True)
 

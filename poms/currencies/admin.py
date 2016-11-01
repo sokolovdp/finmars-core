@@ -4,6 +4,7 @@ from django.contrib import admin
 from django.utils.translation import ugettext_lazy
 
 from poms.currencies.models import Currency, CurrencyHistory
+from poms.obj_attrs.admin import GenericAttributeInline
 from poms.tags.admin import GenericTagLinkInline
 
 
@@ -16,6 +17,7 @@ class CurrencyAdmin(admin.ModelAdmin):
     raw_id_fields = ['master_user', 'price_download_scheme']
     ordering = ['master_user', 'user_code']
     inlines = [
+        GenericAttributeInline,
         GenericTagLinkInline,
     ]
 
