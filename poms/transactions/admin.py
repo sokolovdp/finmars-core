@@ -182,7 +182,6 @@ class TransactionTypeActionTransactionInline(admin.StackedInline):
     fields = (
         'order',
         'transaction_class',
-        ('linked_instrument', 'linked_instrument_input', 'linked_instrument_phantom'),
         ('instrument', 'instrument_input', 'instrument_phantom'),
         ('transaction_currency', 'transaction_currency_input'),
         'position_size_with_sign',
@@ -193,25 +192,27 @@ class TransactionTypeActionTransactionInline(admin.StackedInline):
         ('account_position', 'account_position_input'),
         ('account_cash', 'account_cash_input'),
         ('account_interim', 'account_interim_input'),
-        'accounting_date',
-        'cash_date',
+        ('accounting_date', 'cash_date'),
         ('strategy1_position', 'strategy1_position_input'),
         ('strategy1_cash', 'strategy1_cash_input'),
         ('strategy2_position', 'strategy2_position_input'),
         ('strategy2_cash', 'strategy2_cash_input'),
         ('strategy3_position', 'strategy3_position_input'),
         ('strategy3_cash', 'strategy3_cash_input'),
+        ('responsible', 'responsible_input'),
+        ('counterparty', 'counterparty_input'),
+        ('linked_instrument', 'linked_instrument_input', 'linked_instrument_phantom'),
+        ('allocation_balance', 'allocation_balance_input', 'allocation_balance_phantom'),
+        ('allocation_pl', 'allocation_pl_input', 'allocation_pl_phantom'),
+
         'factor',
         'trade_price',
         'principal_amount',
         'carry_amount',
         'overheads',
-        ('responsible', 'responsible_input'),
-        ('counterparty', 'counterparty_input'),
     )
     raw_id_fields = (
         'portfolio', 'portfolio_input',
-        'linked_instrument', 'linked_instrument_input', 'linked_instrument_phantom',
         'instrument', 'instrument_input', 'instrument_phantom',
         'transaction_currency', 'transaction_currency_input',
         'settlement_currency', 'settlement_currency_input',
@@ -226,6 +227,10 @@ class TransactionTypeActionTransactionInline(admin.StackedInline):
         'strategy3_cash', 'strategy3_cash_input',
         'responsible', 'responsible_input',
         'counterparty', 'counterparty_input',
+
+        'linked_instrument', 'linked_instrument_input', 'linked_instrument_phantom',
+        'allocation_balance', 'allocation_balance_input', 'allocation_balance_phantom',
+        'allocation_pl', 'allocation_pl_input', 'allocation_pl_phantom',
     )
 
     def formfield_for_foreignkey(self, db_field, request=None, **kwargs):
@@ -322,27 +327,38 @@ class TransactionAdmin(admin.ModelAdmin):
                     'complex_transaction_id',
                     'transaction_class',
                     'accounting_date', 'cash_date',
-                    'linked_instrument', 'instrument', 'transaction_currency',
+                    'instrument', 'transaction_currency',
                     'position_size_with_sign',
                     'settlement_currency', 'cash_consideration',
                     'principal_with_sign', 'carry_with_sign', 'overheads_with_sign',
                     'account_cash', 'account_position', 'account_interim',
                     'strategy1_position', 'strategy1_cash', 'strategy2_position', 'strategy2_cash',
-                    'strategy3_position', 'strategy3_cash', ]
-    list_select_related = ['master_user', 'complex_transaction', 'transaction_class',
-                           'instrument', 'transaction_currency', 'settlement_currency',
-                           'portfolio', 'account_cash', 'account_position', 'account_interim',
-                           'strategy1_position', 'strategy1_cash', 'strategy2_position', 'strategy2_cash',
-                           'strategy3_position', 'strategy3_cash']
+                    'strategy3_position', 'strategy3_cash',
+                    'linked_instrument',
+                    'allocation_balance', 'allocation_pl',
+                    ]
+    list_select_related = [
+        'master_user', 'complex_transaction', 'transaction_class',
+        'instrument', 'transaction_currency', 'settlement_currency',
+        'portfolio', 'account_cash', 'account_position', 'account_interim',
+        'strategy1_position', 'strategy1_cash', 'strategy2_position', 'strategy2_cash',
+        'strategy3_position', 'strategy3_cash',
+        'linked_instrument',
+        'allocation_balance', 'allocation_pl',
+    ]
     search_fields = ['id']
     list_filter = ['is_canceled']
     date_hierarchy = 'transaction_date'
     raw_id_fields = ['master_user', 'complex_transaction',
-                     'linked_instrument', 'instrument', 'transaction_currency',
+                     'instrument', 'transaction_currency',
                      'settlement_currency',
-                     'portfolio', 'account_position', 'account_cash', 'account_interim', 'responsible', 'counterparty',
+                     'portfolio', 'account_position', 'account_cash', 'account_interim',
                      'strategy1_position', 'strategy1_cash', 'strategy2_position', 'strategy2_cash',
-                     'strategy3_position', 'strategy3_cash', ]
+                     'strategy3_position', 'strategy3_cash',
+                     'responsible', 'counterparty',
+                     'linked_instrument',
+                     'allocation_balance', 'allocation_pl',
+                     ]
     inlines = [
         # AbstractAttributeInline,
         GenericAttributeInline,
@@ -352,7 +368,6 @@ class TransactionAdmin(admin.ModelAdmin):
         'transaction_code',
         ('complex_transaction', 'complex_transaction_order'),
         'transaction_class',
-        'linked_instrument',
         ('instrument', 'transaction_currency', 'position_size_with_sign'),
         ('settlement_currency', 'cash_consideration'),
         ('principal_with_sign', 'carry_with_sign', 'overheads_with_sign'),
@@ -363,6 +378,8 @@ class TransactionAdmin(admin.ModelAdmin):
         ('strategy2_position', 'strategy2_cash'),
         ('strategy3_position', 'strategy3_cash'),
         ('responsible', 'counterparty'),
+        'linked_instrument',
+        ('allocation_balance', 'allocation_pl'),
         'reference_fx_rate',
         'is_locked',
         'is_canceled',

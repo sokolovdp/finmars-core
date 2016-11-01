@@ -1,3 +1,5 @@
+from datetime import date
+
 from django.core.exceptions import ObjectDoesNotExist
 from django.utils.translation import ugettext_lazy
 
@@ -225,12 +227,6 @@ class TransactionTypeProcess(object):
                 transaction.transaction_class = action_transaction.transaction_class
 
                 self._set_rel(errors=errors, values=self.values, default_value=None,
-                              target=transaction, target_attr_name='linked_instrument',
-                              source=action_transaction, source_attr_name='linked_instrument')
-                if action_transaction.linked_instrument_phantom is not None:
-                    transaction.linked_instrument = instrument_map[action_transaction.instrument_phantom_id]
-
-                self._set_rel(errors=errors, values=self.values, default_value=None,
                               target=transaction, target_attr_name='instrument',
                               source=action_transaction, source_attr_name='instrument')
                 if action_transaction.instrument_phantom is not None:
@@ -241,6 +237,7 @@ class TransactionTypeProcess(object):
                 self._set_val(errors=errors, values=self.values, default_value=0.0,
                               target=transaction, target_attr_name='position_size_with_sign',
                               source=action_transaction, source_attr_name='position_size_with_sign')
+
                 self._set_rel(errors=errors, values=self.values, default_value=master_user.currency,
                               target=transaction, target_attr_name='settlement_currency',
                               source=action_transaction, source_attr_name='settlement_currency')
@@ -260,6 +257,7 @@ class TransactionTypeProcess(object):
                 self._set_rel(errors=errors, values=self.values, default_value=master_user.portfolio,
                               target=transaction, target_attr_name='portfolio',
                               source=action_transaction, source_attr_name='portfolio')
+
                 self._set_rel(errors=errors, values=self.values, default_value=master_user.account,
                               target=transaction, target_attr_name='account_position',
                               source=action_transaction, source_attr_name='account_position')
@@ -275,6 +273,7 @@ class TransactionTypeProcess(object):
                 self._set_val(errors=errors, values=self.values, default_value=date_now(),
                               target=transaction, target_attr_name='cash_date',
                               source=action_transaction, source_attr_name='cash_date')
+
                 self._set_rel(errors=errors, values=self.values, default_value=master_user.strategy1,
                               target=transaction, target_attr_name='strategy1_position',
                               source=action_transaction, source_attr_name='strategy1_position')
@@ -293,6 +292,32 @@ class TransactionTypeProcess(object):
                 self._set_rel(errors=errors, values=self.values, default_value=master_user.strategy3,
                               target=transaction, target_attr_name='strategy3_cash',
                               source=action_transaction, source_attr_name='strategy3_cash')
+
+                self._set_rel(errors=errors, values=self.values, default_value=master_user.responsible,
+                              target=transaction, target_attr_name='responsible',
+                              source=action_transaction, source_attr_name='responsible')
+                self._set_rel(errors=errors, values=self.values, default_value=master_user.counterparty,
+                              target=transaction, target_attr_name='counterparty',
+                              source=action_transaction, source_attr_name='counterparty')
+
+                self._set_rel(errors=errors, values=self.values, default_value=None,
+                              target=transaction, target_attr_name='linked_instrument',
+                              source=action_transaction, source_attr_name='linked_instrument')
+                if action_transaction.linked_instrument_phantom is not None:
+                    transaction.linked_instrument = instrument_map[action_transaction.instrument_phantom_id]
+
+                self._set_rel(errors=errors, values=self.values, default_value=None,
+                              target=transaction, target_attr_name='allocation_balance',
+                              source=action_transaction, source_attr_name='allocation_balance')
+                if action_transaction.allocation_balance_phantom is not None:
+                    transaction.allocation_balance = instrument_map[action_transaction.allocation_balance_id]
+
+                self._set_rel(errors=errors, values=self.values, default_value=None,
+                              target=transaction, target_attr_name='allocation_pl',
+                              source=action_transaction, source_attr_name='allocation_pl')
+                if action_transaction.allocation_pl is not None:
+                    transaction.allocation_pl = instrument_map[action_transaction.allocation_pl_id]
+
                 self._set_val(errors=errors, values=self.values, default_value=0.0,
                               target=transaction, target_attr_name='factor',
                               source=action_transaction, source_attr_name='factor')
@@ -305,12 +330,6 @@ class TransactionTypeProcess(object):
                 self._set_val(errors=errors, values=self.values, default_value=0.0,
                               target=transaction, target_attr_name='carry_amount',
                               source=action_transaction, source_attr_name='carry_amount')
-                self._set_rel(errors=errors, values=self.values, default_value=master_user.responsible,
-                              target=transaction, target_attr_name='responsible',
-                              source=action_transaction, source_attr_name='responsible')
-                self._set_rel(errors=errors, values=self.values, default_value=master_user.counterparty,
-                              target=transaction, target_attr_name='counterparty',
-                              source=action_transaction, source_attr_name='counterparty')
 
                 transaction.transaction_date = min(transaction.accounting_date, transaction.cash_date)
                 if self.store:

@@ -231,6 +231,21 @@ class TransactionTypeViewSet(AbstractWithObjectPermissionViewSet):
                 'transactiontypeactiontransaction__counterparty',
                 'transactiontypeactiontransaction__counterparty_input',
                 'transactiontypeactiontransaction__counterparty__group',
+                'transactiontypeactiontransaction__linked_instrument',
+                'transactiontypeactiontransaction__linked_instrument_input',
+                'transactiontypeactiontransaction__linked_instrument_phantom',
+                'transactiontypeactiontransaction__linked_instrument__instrument_type',
+                'transactiontypeactiontransaction__linked_instrument__instrument_type__instrument_class',
+                'transactiontypeactiontransaction__allocation_balance',
+                'transactiontypeactiontransaction__allocation_balance_input',
+                'transactiontypeactiontransaction__allocation_balance_phantom',
+                'transactiontypeactiontransaction__allocation_balance__instrument_type',
+                'transactiontypeactiontransaction__allocation_balance__instrument_type__instrument_class',
+                'transactiontypeactiontransaction__allocation_pl',
+                'transactiontypeactiontransaction__allocation_pl_input',
+                'transactiontypeactiontransaction__allocation_pl_phantom',
+                'transactiontypeactiontransaction__allocation_pl__instrument_type',
+                'transactiontypeactiontransaction__allocation_pl__instrument_type__instrument_class',
             ).prefetch_related(
                 *get_permissions_prefetch_lookups(
                     ('transactiontypeactioninstrument__instrument_type', InstrumentType),
@@ -266,6 +281,12 @@ class TransactionTypeViewSet(AbstractWithObjectPermissionViewSet):
                     ('transactiontypeactiontransaction__counterparty__group', CounterpartyGroup),
                     ('transactiontypeactiontransaction__responsible__group', ResponsibleGroup),
                     ('transactiontypeactiontransaction__responsible', Responsible),
+                    ('transactiontypeactiontransaction__linked_instrument', Instrument),
+                    ('transactiontypeactiontransaction__linked_instrument__instrument_type', InstrumentType),
+                    ('transactiontypeactiontransaction__allocation_balance', Instrument),
+                    ('transactiontypeactiontransaction__allocation_balance__instrument_type', InstrumentType),
+                    ('transactiontypeactiontransaction__allocation_pl', Instrument),
+                    ('transactiontypeactiontransaction__allocation_pl__instrument_type', InstrumentType),
                 )
             )
         ),
@@ -355,6 +376,9 @@ class TransactionFilterSet(FilterSet):
     overheads = django_filters.RangeFilter()
     responsible = ModelExtWithPermissionMultipleChoiceFilter(model=Responsible)
     counterparty = ModelExtWithPermissionMultipleChoiceFilter(model=Counterparty)
+    linked_instrument = ModelExtWithPermissionMultipleChoiceFilter(model=Instrument)
+    allocation_balance = ModelExtWithPermissionMultipleChoiceFilter(model=Instrument)
+    allocation_pl = ModelExtWithPermissionMultipleChoiceFilter(model=Instrument)
 
     account_member = TransactionObjectPermissionMemberFilter(object_permission_model=Account)
     account_member_group = TransactionObjectPermissionGroupFilter(object_permission_model=Account)
@@ -371,7 +395,6 @@ class TransactionFilterSet(FilterSet):
 class TransactionViewSet(AbstractModelViewSet):
     queryset = Transaction.objects.select_related(
         'master_user', 'complex_transaction', 'complex_transaction__transaction_type', 'transaction_class',
-        'linked_instrument', 'linked_instrument__instrument_type', 'linked_instrument__instrument_type__instrument_class',
         'instrument', 'instrument__instrument_type', 'instrument__instrument_type__instrument_class',
         'transaction_currency',
         'settlement_currency',
@@ -387,12 +410,15 @@ class TransactionViewSet(AbstractModelViewSet):
         'strategy3_cash', 'strategy3_cash__subgroup', 'strategy3_cash__subgroup__group',
         'responsible', 'responsible__group',
         'counterparty', 'counterparty__group',
+        'linked_instrument', 'linked_instrument__instrument_type',
+        'linked_instrument__instrument_type__instrument_class',
+        'allocation_balance', 'allocation_balance__instrument_type',
+        'allocation_balance__instrument_type__instrument_class',
+        'allocation_pl', 'allocation_pl__instrument_type', 'allocation_pl__instrument_type__instrument_class',
     ).prefetch_related(
         get_attributes_prefetch(),
         *get_permissions_prefetch_lookups(
             ('portfolio', Portfolio),
-            ('linked_instrument', Instrument),
-            ('linked_instrument__instrument_type', InstrumentType),
             ('instrument', Instrument),
             ('instrument__instrument_type', InstrumentType),
             ('account_cash', Account),
@@ -423,6 +449,12 @@ class TransactionViewSet(AbstractModelViewSet):
             ('responsible__group', ResponsibleGroup),
             ('counterparty', Counterparty),
             ('counterparty__group', CounterpartyGroup),
+            ('linked_instrument', Instrument),
+            ('linked_instrument__instrument_type', InstrumentType),
+            ('allocation_balance', Instrument),
+            ('allocation_balance__instrument_type', InstrumentType),
+            ('allocation_pl', Instrument),
+            ('allocation_pl__instrument_type', InstrumentType),
         )
     )
     serializer_class = TransactionSerializer
@@ -470,6 +502,12 @@ class TransactionViewSet(AbstractModelViewSet):
         'responsible__public_name',
         'counterparty', 'counterparty__user_code', 'counterparty__name', 'counterparty__short_name',
         'counterparty__public_name',
+        'linked_instrument', 'linked_instrument__user_code', 'linked_instrument__name', 'linked_instrument__short_name',
+        'linked_instrument__public_name',
+        'allocation_balance', 'allocation_balance__user_code', 'allocation_balance__name',
+        'allocation_balance__short_name', 'allocation_balance__public_name',
+        'allocation_pl', 'allocation_pl__user_code', 'allocation_pl__name', 'allocation_pl__short_name',
+        'allocation_pl__public_name',
     ]
 
 
@@ -491,7 +529,6 @@ class ComplexTransactionViewSet(DestroyModelMixin, AbstractReadOnlyModelViewSet)
             'transactions',
             queryset=Transaction.objects.select_related(
                 'master_user', 'transaction_class',
-                'linked_instrument', 'linked_instrument__instrument_type', 'linked_instrument__instrument_type__instrument_class',
                 'instrument', 'instrument__instrument_type', 'instrument__instrument_type__instrument_class',
                 'transaction_currency',
                 'settlement_currency',
@@ -507,11 +544,14 @@ class ComplexTransactionViewSet(DestroyModelMixin, AbstractReadOnlyModelViewSet)
                 'strategy3_cash', 'strategy3_cash__subgroup', 'strategy3_cash__subgroup__group',
                 'responsible', 'responsible__group',
                 'counterparty', 'counterparty__group',
+                'linked_instrument', 'linked_instrument__instrument_type',
+                'linked_instrument__instrument_type__instrument_class',
+                'allocation_balance', 'allocation_balance__instrument_type',
+                'allocation_balance__instrument_type__instrument_class',
+                'allocation_pl', 'allocation_pl__instrument_type', 'allocation_pl__instrument_type__instrument_class',
             ).prefetch_related(
                 get_attributes_prefetch(),
                 *get_permissions_prefetch_lookups(
-                    ('linked_instrument', Instrument),
-                    ('linked_instrument__instrument_type', InstrumentType),
                     ('instrument', Instrument),
                     ('instrument__instrument_type', InstrumentType),
                     ('portfolio', Portfolio),
@@ -543,7 +583,12 @@ class ComplexTransactionViewSet(DestroyModelMixin, AbstractReadOnlyModelViewSet)
                     ('responsible__group', ResponsibleGroup),
                     ('counterparty', Counterparty),
                     ('counterparty__group', CounterpartyGroup),
-                    # ('attributes__attribute_type', TransactionAttributeType)
+                    ('linked_instrument', Instrument),
+                    ('linked_instrument__instrument_type', InstrumentType),
+                    ('allocation_balance', Instrument),
+                    ('allocation_balance__instrument_type', InstrumentType),
+                    ('allocation_pl', Instrument),
+                    ('allocation_pl__instrument_type', InstrumentType),
                 )
             ).order_by(
                 'complex_transaction_order', 'transaction_date'

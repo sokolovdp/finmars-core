@@ -15,7 +15,7 @@ if 'debug_toolbar' not in INSTALLED_APPS:
     INSTALLED_APPS += ['debug_toolbar', ]
 
 LOGGING['formatters']['verbose']['format'] = '[%(levelname)1.1s %(asctime)s %(name)s %(module)s:%(lineno)d] %(message)s'
-LOGGING['loggers']['django.db'] = {'level': 'DEBUG'}
+# LOGGING['loggers']['django.db'] = {'level': 'DEBUG'}
 LOGGING['loggers']['poms']['level'] = 'DEBUG'
 
 SECRET_KEY = 's#)m^ug%_jr0dtko#83_55rd_we&xu#f9p#!1gh@k&$=5&3e67'

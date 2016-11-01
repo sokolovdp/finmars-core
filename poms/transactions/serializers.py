@@ -323,9 +323,6 @@ class TransactionTypeActionInstrumentSerializer(serializers.ModelSerializer):
 
 
 class TransactionTypeActionTransactionSerializer(serializers.ModelSerializer):
-    linked_instrument = InstrumentField(required=False, allow_null=True)
-    linked_instrument_input = TransactionInputField(required=False, allow_null=True)
-    linked_instrument_phantom = TransactionTypeActionInstrumentPhantomField(required=False, allow_null=True)
     instrument = InstrumentField(required=False, allow_null=True)
     instrument_input = TransactionInputField(required=False, allow_null=True)
     instrument_phantom = TransactionTypeActionInstrumentPhantomField(required=False, allow_null=True)
@@ -364,6 +361,16 @@ class TransactionTypeActionTransactionSerializer(serializers.ModelSerializer):
     responsible_input = TransactionInputField(required=False, allow_null=True)
     counterparty = CounterpartyField(required=False, allow_null=True)
     counterparty_input = TransactionInputField(required=False, allow_null=True)
+    linked_instrument = InstrumentField(required=False, allow_null=True)
+    linked_instrument_input = TransactionInputField(required=False, allow_null=True)
+    linked_instrument_phantom = TransactionTypeActionInstrumentPhantomField(required=False, allow_null=True)
+    allocation_balance = InstrumentField(required=False, allow_null=True)
+    allocation_balance_input = TransactionInputField(required=False, allow_null=True)
+    allocation_balance_phantom = TransactionTypeActionInstrumentPhantomField(required=False, allow_null=True)
+    allocation_pl = InstrumentField(required=False, allow_null=True)
+    allocation_pl_input = TransactionInputField(required=False, allow_null=True)
+    allocation_pl_phantom = TransactionTypeActionInstrumentPhantomField(required=False, allow_null=True)
+
     factor = ExpressionField(required=False, default="0.0")
     trade_price = ExpressionField(required=False, default="0.0")
     principal_amount = ExpressionField(required=False, default="0.0")
@@ -391,9 +398,6 @@ class TransactionTypeActionTransactionSerializer(serializers.ModelSerializer):
         model = TransactionTypeActionTransaction
         fields = [
             'transaction_class',
-            'linked_instrument',
-            'linked_instrument_input',
-            'linked_instrument_phantom',
             'instrument',
             'instrument_input',
             'instrument_phantom',
@@ -437,6 +441,15 @@ class TransactionTypeActionTransactionSerializer(serializers.ModelSerializer):
             'responsible_input',
             'counterparty',
             'counterparty_input',
+            'linked_instrument',
+            'linked_instrument_input',
+            'linked_instrument_phantom',
+            'allocation_balance',
+            'allocation_balance_input',
+            'allocation_balance_phantom',
+            'allocation_pl',
+            'allocation_pl_input',
+            'allocation_pl_phantom',
 
             # 'transaction_class_object',
             # 'portfolio_object',
@@ -467,28 +480,30 @@ class TransactionTypeActionTransactionSerializer(serializers.ModelSerializer):
             Strategy3ViewSerializer
         from poms.counterparties.serializers import ResponsibleViewSerializer, CounterpartyViewSerializer
 
-        self.fields['linked_instrument_object'] = InstrumentViewSerializer(source='linked_instrument', read_only=True)
         self.fields['instrument_object'] = InstrumentViewSerializer(source='instrument', read_only=True)
         self.fields['transaction_currency_object'] = CurrencyViewSerializer(source='transaction_currency',
                                                                             read_only=True)
         self.fields['settlement_currency_object'] = CurrencyViewSerializer(source='settlement_currency', read_only=True)
 
         self.fields['portfolio_object'] = PortfolioViewSerializer(source='portfolio', read_only=True)
+
         self.fields['account_position_object'] = AccountViewSerializer(source='account_position', read_only=True)
         self.fields['account_cash_object'] = AccountViewSerializer(source='account_cash', read_only=True)
         self.fields['account_interim_object'] = AccountViewSerializer(source='account_interim', read_only=True)
 
         self.fields['strategy1_position_object'] = Strategy1ViewSerializer(source='strategy1_position', read_only=True)
         self.fields['strategy1_cash_object'] = Strategy1ViewSerializer(source='strategy1_cash', read_only=True)
-
         self.fields['strategy2_position_object'] = Strategy2ViewSerializer(source='strategy2_position', read_only=True)
         self.fields['strategy2_cash_object'] = Strategy2ViewSerializer(source='strategy2_cash', read_only=True)
-
         self.fields['strategy3_position_object'] = Strategy3ViewSerializer(source='strategy3_position', read_only=True)
         self.fields['strategy3_cash_object'] = Strategy3ViewSerializer(source='strategy3_cash', read_only=True)
 
         self.fields['responsible_object'] = ResponsibleViewSerializer(source='responsible', read_only=True)
         self.fields['counterparty_object'] = CounterpartyViewSerializer(source='counterparty', read_only=True)
+
+        self.fields['linked_instrument_object'] = InstrumentViewSerializer(source='linked_instrument', read_only=True)
+        self.fields['allocation_balance_object'] = InstrumentViewSerializer(source='allocation_balance', read_only=True)
+        self.fields['allocation_pl_object'] = InstrumentViewSerializer(source='allocation_pl', read_only=True)
 
 
 class TransactionTypeActionSerializer(serializers.ModelSerializer):
@@ -724,7 +739,6 @@ class TransactionSerializer(ModelWithAttributesSerializer):
     master_user = MasterUserField()
     complex_transaction = serializers.PrimaryKeyRelatedField(read_only=True)
     complex_transaction_order = serializers.IntegerField(read_only=True)
-    linked_instrument = InstrumentField(required=False, allow_null=True)
     instrument = InstrumentField(required=False, allow_null=True)
     transaction_currency = CurrencyField(default=CurrencyDefault(), required=False, allow_null=True)
     settlement_currency = CurrencyField(default=CurrencyDefault())
@@ -740,6 +754,9 @@ class TransactionSerializer(ModelWithAttributesSerializer):
     strategy3_cash = Strategy3Field(default=Strategy3Default())
     responsible = ResponsibleField(default=ResponsibleDefault())
     counterparty = CounterpartyField(default=CounterpartyDefault())
+    linked_instrument = InstrumentField(required=False, allow_null=True)
+    allocation_balance = InstrumentField(required=False, allow_null=True)
+    allocation_pl = InstrumentField(required=False, allow_null=True)
 
     # transaction_class_object = TransactionClassSerializer(source='transaction_class', read_only=True)
     # transaction_currency_object = serializers.PrimaryKeyRelatedField(source='transaction_currency', read_only=True)
@@ -768,7 +785,6 @@ class TransactionSerializer(ModelWithAttributesSerializer):
             'transaction_code',
             'complex_transaction', 'complex_transaction_order',
             'transaction_class',
-            'linked_instrument',
             'instrument',
             'transaction_currency',
             'position_size_with_sign',
@@ -796,6 +812,9 @@ class TransactionSerializer(ModelWithAttributesSerializer):
             'principal_amount', 'carry_amount', 'overheads',
             'responsible',
             'counterparty',
+            'linked_instrument',
+            'allocation_balance',
+            'allocation_pl',
 
             # 'transaction_class_object',
             # 'transaction_currency_object',
@@ -827,7 +846,6 @@ class TransactionSerializer(ModelWithAttributesSerializer):
             Strategy3ViewSerializer
         from poms.counterparties.serializers import ResponsibleViewSerializer, CounterpartyViewSerializer
 
-        self.fields['linked_instrument_object'] = InstrumentViewSerializer(source='instrument', read_only=True)
         self.fields['instrument_object'] = InstrumentViewSerializer(source='instrument', read_only=True)
         self.fields['transaction_currency_object'] = CurrencyViewSerializer(source='transaction_currency',
                                                                             read_only=True)
@@ -841,15 +859,17 @@ class TransactionSerializer(ModelWithAttributesSerializer):
 
         self.fields['strategy1_position_object'] = Strategy1ViewSerializer(source='strategy1_position', read_only=True)
         self.fields['strategy1_cash_object'] = Strategy1ViewSerializer(source='strategy1_cash', read_only=True)
-
         self.fields['strategy2_position_object'] = Strategy2ViewSerializer(source='strategy2_position', read_only=True)
         self.fields['strategy2_cash_object'] = Strategy2ViewSerializer(source='strategy2_cash', read_only=True)
-
         self.fields['strategy3_position_object'] = Strategy3ViewSerializer(source='strategy3_position', read_only=True)
         self.fields['strategy3_cash_object'] = Strategy3ViewSerializer(source='strategy3_cash', read_only=True)
 
         self.fields['responsible_object'] = ResponsibleViewSerializer(source='responsible', read_only=True)
         self.fields['counterparty_object'] = CounterpartyViewSerializer(source='counterparty', read_only=True)
+
+        self.fields['linked_instrument_object'] = InstrumentViewSerializer(source='linked_instrument', read_only=True)
+        self.fields['allocation_balance_object'] = InstrumentViewSerializer(source='allocation_balance', read_only=True)
+        self.fields['allocation_pl_object'] = InstrumentViewSerializer(source='allocation_pl', read_only=True)
 
 
 class ComplexTransactionSerializer(serializers.ModelSerializer):

@@ -660,12 +660,6 @@ class TransactionTypeActionInstrument(TransactionTypeAction):
 class TransactionTypeActionTransaction(TransactionTypeAction):
     transaction_class = models.ForeignKey(TransactionClass, on_delete=models.PROTECT, related_name='+')
 
-    linked_instrument = models.ForeignKey(Instrument, null=True, blank=True, on_delete=models.PROTECT, related_name='+')
-    linked_instrument_input = models.ForeignKey(TransactionTypeInput, null=True, blank=True, on_delete=models.PROTECT,
-                                                related_name='+')
-    linked_instrument_phantom = models.ForeignKey(TransactionTypeActionInstrument, null=True, blank=True,
-                                                  on_delete=models.PROTECT, related_name='+')
-
     instrument = models.ForeignKey(Instrument, null=True, blank=True, on_delete=models.PROTECT, related_name='+')
     instrument_input = models.ForeignKey(TransactionTypeInput, null=True, blank=True, on_delete=models.PROTECT,
                                          related_name='+')
@@ -736,13 +730,24 @@ class TransactionTypeActionTransaction(TransactionTypeAction):
     strategy3_cash_input = models.ForeignKey(TransactionTypeInput, null=True, blank=True, on_delete=models.PROTECT,
                                              related_name='+')
 
-    reference_fx_rate = models.CharField(max_length=255, default='0.')
+    linked_instrument = models.ForeignKey(Instrument, null=True, blank=True, on_delete=models.PROTECT, related_name='+')
+    linked_instrument_input = models.ForeignKey(TransactionTypeInput, null=True, blank=True, on_delete=models.PROTECT,
+                                                related_name='+')
+    linked_instrument_phantom = models.ForeignKey(TransactionTypeActionInstrument, null=True, blank=True,
+                                                  on_delete=models.PROTECT, related_name='+')
 
-    factor = models.CharField(max_length=255, default='0.')
-    trade_price = models.CharField(max_length=255, default='0.')
-    principal_amount = models.CharField(max_length=255, default='0.')
-    carry_amount = models.CharField(max_length=255, default='0.')
-    overheads = models.CharField(max_length=255, default='0.')
+    allocation_balance = models.ForeignKey(Instrument, null=True, blank=True, on_delete=models.PROTECT,
+                                           related_name='+')
+    allocation_balance_input = models.ForeignKey(TransactionTypeInput, null=True, blank=True, on_delete=models.PROTECT,
+                                                 related_name='+')
+    allocation_balance_phantom = models.ForeignKey(TransactionTypeActionInstrument, null=True, blank=True,
+                                                   on_delete=models.PROTECT, related_name='+')
+
+    allocation_pl = models.ForeignKey(Instrument, null=True, blank=True, on_delete=models.PROTECT, related_name='+')
+    allocation_pl_input = models.ForeignKey(TransactionTypeInput, null=True, blank=True, on_delete=models.PROTECT,
+                                            related_name='+')
+    allocation_pl_phantom = models.ForeignKey(TransactionTypeActionInstrument, null=True, blank=True,
+                                              on_delete=models.PROTECT, related_name='+')
 
     responsible = models.ForeignKey(Responsible, null=True, blank=True, on_delete=models.PROTECT, related_name='+')
     responsible_input = models.ForeignKey(TransactionTypeInput, null=True, blank=True, on_delete=models.PROTECT,
@@ -751,6 +756,14 @@ class TransactionTypeActionTransaction(TransactionTypeAction):
     counterparty = models.ForeignKey(Counterparty, null=True, blank=True, on_delete=models.PROTECT, related_name='+')
     counterparty_input = models.ForeignKey(TransactionTypeInput, null=True, blank=True, on_delete=models.PROTECT,
                                            related_name='+')
+
+    reference_fx_rate = models.CharField(max_length=255, default='0.0')
+
+    factor = models.CharField(max_length=255, default='0.0')
+    trade_price = models.CharField(max_length=255, default='0.0')
+    principal_amount = models.CharField(max_length=255, default='0.0')
+    carry_amount = models.CharField(max_length=255, default='0.0')
+    overheads = models.CharField(max_length=255, default='0.0')
 
     class Meta:
         verbose_name = ugettext_lazy('transaction type action transaction')
@@ -856,10 +869,6 @@ class Transaction(models.Model):
     transaction_class = models.ForeignKey(TransactionClass, on_delete=models.PROTECT,
                                           verbose_name=ugettext_lazy("transaction class"))
 
-    linked_instrument = models.ForeignKey(Instrument, related_name='transactions_linked',
-                                          on_delete=models.PROTECT, null=True, blank=True,
-                                          verbose_name=ugettext_lazy("linked instrument"))
-
     # Position related
     instrument = models.ForeignKey(Instrument, related_name='transactions', on_delete=models.PROTECT, null=True,
                                    blank=True, verbose_name=ugettext_lazy("instrument"))
@@ -916,6 +925,8 @@ class Transaction(models.Model):
                                        null=True, blank=True, on_delete=models.PROTECT,
                                        verbose_name=ugettext_lazy("strategy - 3 - position"))
 
+    # responsible & counterparty
+
     responsible = models.ForeignKey(Responsible, related_name='transactions',
                                     on_delete=models.PROTECT, null=True, blank=True,
                                     verbose_name=ugettext_lazy("responsible"),
@@ -923,6 +934,22 @@ class Transaction(models.Model):
     counterparty = models.ForeignKey(Counterparty, related_name='transactions',
                                      on_delete=models.PROTECT, null=True, blank=True,
                                      verbose_name=ugettext_lazy("counterparty"))
+
+    # linked instrument
+
+    linked_instrument = models.ForeignKey(Instrument, related_name='transactions_linked',
+                                          on_delete=models.PROTECT, null=True, blank=True,
+                                          verbose_name=ugettext_lazy("linked instrument"))
+
+    # allocations
+
+    allocation_balance = models.ForeignKey(Instrument, related_name='transactions_allocation_balance',
+                                           on_delete=models.PROTECT, null=True, blank=True,
+                                           verbose_name=ugettext_lazy("allocation balance"))
+
+    allocation_pl = models.ForeignKey(Instrument, related_name='transactions_allocation_pl',
+                                      on_delete=models.PROTECT, null=True, blank=True,
+                                      verbose_name=ugettext_lazy("allocation P&L"))
 
     reference_fx_rate = models.FloatField(default=0.0, verbose_name=ugettext_lazy("reference fx-rate"),
                                           help_text=ugettext_lazy(
