@@ -45,7 +45,7 @@ class YTMReport2Builder(BaseReport2Builder):
                 multiplier = getattr(t, multiplier_attr, 0.)
 
                 t.ytm = 0.
-                t.time_invested = (self._end_date - t.transaction_date).days
+                t.time_invested = (self._report_date - t.transaction_date).days
                 t.remaining_position = abs(t.position_size_with_sign * (1 - multiplier))
                 t.remaining_position_percent = t.remaining_position / item.position
                 t.weighted_ytm = t.ytm * t.remaining_position_percent

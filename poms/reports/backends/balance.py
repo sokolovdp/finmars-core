@@ -27,21 +27,21 @@ class BalanceReport2Builder(BaseReport2Builder):
 
     def _get_item0(self, items, trn, instr=None, ccy=None, acc=None, ext=None):
         strategy1 = None
-        if self._use_strategy1:
+        if self._detail_by_strategy1:
             if instr:
                 strategy1 = trn.strategy1_position
             elif ccy:
                 strategy1 = trn.strategy1_cash
 
         strategy2 = None
-        if self._use_strategy2:
+        if self._detail_by_strategy2:
             if instr:
                 strategy2 = trn.strategy2_position
             elif ccy:
                 strategy2 = trn.strategy2_cash
 
         strategy3 = None
-        if self._use_strategy3:
+        if self._detail_by_strategy3:
             if instr:
                 strategy3 = trn.strategy3_position
             elif ccy:
@@ -77,16 +77,19 @@ class BalanceReport2Builder(BaseReport2Builder):
         if cash_date is None:
             cash_date = date.max
 
-        if accounting_date <= self._end_date < cash_date:  # default
+        if accounting_date <= self._report_date < cash_date:  # default
             return 1
-        elif cash_date <= self._end_date < accounting_date:
+        elif cash_date <= self._report_date < accounting_date:
             return 2
         else:
             return 0
 
+    def _add_instr(self, item, value):
+        item.position += value
+
     def _add_cash(self, item, value, fx_rate=None, fx_rate_date=None):
         if fx_rate is None:
-            fx_rate_date = fx_rate_date or self._end_date
+            fx_rate_date = fx_rate_date or self._report_date
             h = self.find_currency_history(item.currency, date=fx_rate_date)
             fx_rate = getattr(h, 'fx_rate', 0.)
         item.position += value
@@ -122,7 +125,7 @@ class BalanceReport2Builder(BaseReport2Builder):
             self._add_cash(cash_item, -ccy_val, fx_rate=fx_rate, fx_rate_date=fx_rate_date)
 
     def get_items(self):
-        if self._use_portfolio or self._use_account or self._use_strategy1 or self._use_strategy2 or self._use_strategy3:
+        if self._detail_by_portfolio or self._detail_by_account or self._detail_by_strategy1 or self._detail_by_strategy2 or self._detail_by_strategy3:
             self.set_multiplier()
 
         for t in self.transactions:
@@ -139,7 +142,7 @@ class BalanceReport2Builder(BaseReport2Builder):
                 self._add_cash(invested_item, t.position_size_with_sign, fx_rate=t.reference_fx_rate)
 
             elif t_class == TransactionClass.BUY or t_class == TransactionClass.SELL:
-                if self._use_strategy1 or self._use_strategy2 or self._use_strategy3:
+                if self._detail_by_strategy1 or self._detail_by_strategy2 or self._detail_by_strategy3:
                     multiplier_attr = self.multiplier_attr
                     multiplier = getattr(t, multiplier_attr)
                     self._process_instrument(t, val=t.position_size_with_sign * (1. - multiplier),

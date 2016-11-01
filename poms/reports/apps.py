@@ -15,7 +15,8 @@ class ReportsConfig(AppConfig):
         post_migrate.connect(self.update_transaction_classes, sender=self)
 
     def update_transaction_classes(self, app_config, verbosity=2, using=DEFAULT_DB_ALIAS, **kwargs):
-        from poms.common.utils import db_class_check_data
-        from poms.reports.models import ReportClass
-
-        db_class_check_data(ReportClass, verbosity, using)
+        # from poms.common.utils import db_class_check_data
+        # from poms.reports.models import ReportClass
+        #
+        # db_class_check_data(ReportClass, verbosity, using)
+        pass
