@@ -45,6 +45,10 @@ class CustomFieldSerializer(serializers.ModelSerializer):
 class ReportItemSerializer(serializers.Serializer):
     id = serializers.CharField(read_only=True)
 
+    type = serializers.ReadOnlyField()
+    user_code = serializers.ReadOnlyField()
+    name = serializers.ReadOnlyField()
+
     instrument = serializers.PrimaryKeyRelatedField(read_only=True)
     currency = serializers.PrimaryKeyRelatedField(read_only=True)
 
@@ -54,20 +58,20 @@ class ReportItemSerializer(serializers.Serializer):
     strategy2 = serializers.PrimaryKeyRelatedField(read_only=True)
     strategy3 = serializers.PrimaryKeyRelatedField(read_only=True)
 
-    position = serializers.FloatField(read_only=True)
+    position = serializers.ReadOnlyField()
 
-    market_value_system_ccy = serializers.FloatField(read_only=True)
-    market_value_report_ccy = serializers.FloatField(read_only=True)
+    market_value_system_ccy = serializers.ReadOnlyField()
+    market_value_report_ccy = serializers.ReadOnlyField()
 
-    principal_with_sign_system_ccy = serializers.FloatField(read_only=True)
-    carry_with_sign_system_ccy = serializers.FloatField(read_only=True)
-    overheads_with_sign_system_ccy = serializers.FloatField(read_only=True)
-    total_with_sign_system_ccy = serializers.FloatField(read_only=True)
+    principal_with_sign_system_ccy = serializers.ReadOnlyField()
+    carry_with_sign_system_ccy = serializers.ReadOnlyField()
+    overheads_with_sign_system_ccy = serializers.ReadOnlyField()
+    total_with_sign_system_ccy = serializers.ReadOnlyField()
 
-    principal_with_sign_report_ccy = serializers.FloatField(read_only=True)
-    carry_with_sign_report_ccy = serializers.FloatField(read_only=True)
-    overheads_with_sign_report_ccy = serializers.FloatField(read_only=True)
-    total_with_sign_report_ccy = serializers.FloatField(read_only=True)
+    principal_with_sign_report_ccy = serializers.ReadOnlyField()
+    carry_with_sign_report_ccy = serializers.ReadOnlyField()
+    overheads_with_sign_report_ccy = serializers.ReadOnlyField()
+    total_with_sign_report_ccy = serializers.ReadOnlyField()
 
     def __init__(self, *args, **kwargs):
         super(ReportItemSerializer, self).__init__(*args, **kwargs)

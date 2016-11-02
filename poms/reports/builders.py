@@ -32,6 +32,19 @@ class VirtualTransaction(object):
 
 
 class ReportItem(object):
+    TYPE_UNKNOWN = 0
+    TYPE_INSTRUMENT = 1
+    TYPE_CURRENCY = 2
+    TYPE_TRANSACTION_PL = 3
+    TYPE_FX_TRADE = 4
+    TYPE_CHOICES = (
+        (TYPE_UNKNOWN, 'Unknown'),
+        (TYPE_INSTRUMENT, 'Instrument'),
+        (TYPE_CURRENCY, 'Currency'),
+        (TYPE_TRANSACTION_PL, 'Transaction PL'),
+        (TYPE_FX_TRADE, 'FX-Trade'),
+    )
+
     def __init__(self, pk=None, instrument=None, currency=None,
                  portfolio=None, account=None, strategy1=None, strategy2=None, strategy3=None,
                  detail_transaction=None, transaction_class=None, custom_fields=None,
@@ -69,6 +82,7 @@ class ReportItem(object):
     def __str__(self):
         return "%s #%s" % (self.__class__.__name__, self.pk,)
 
+    @property
     def is_zero(self):
         return isclose(self.position, 0.0) \
                and isclose(self.market_value_system_ccy, 0.0) \
@@ -76,6 +90,41 @@ class ReportItem(object):
                and isclose(self.carry_with_sign_system_ccy, 0.0) \
                and isclose(self.overheads_with_sign_system_ccy, 0.0) \
                and isclose(self.total_with_sign_system_ccy, 0.0)
+
+    @property
+    def type(self):
+        if self.instrument:
+            return ReportItem.TYPE_INSTRUMENT
+        elif self.currency:
+            return ReportItem.TYPE_CURRENCY
+        elif self.transaction_class:
+            if self.transaction_class.id == TransactionClass.TRANSACTION_PL:
+                return ReportItem.TYPE_TRANSACTION_PL
+            elif self.transaction_class.id == TransactionClass.FX_TRADE:
+                return ReportItem.TYPE_FX_TRADE
+        return ReportItem.TYPE_UNKNOWN
+
+    @property
+    def user_code(self):
+        if self.instrument:
+            return self.instrument.user_code
+        elif self.currency:
+            return self.currency.user_code
+        elif self.transaction_class:
+            if self.transaction_class.id in [TransactionClass.TRANSACTION_PL, TransactionClass.FX_TRADE]:
+                return self.transaction_class.system_code
+        return ''
+
+    @property
+    def name(self):
+        if self.instrument:
+            return self.instrument.name
+        elif self.currency:
+            return self.currency.name
+        elif self.transaction_class:
+            if self.transaction_class.id in [TransactionClass.TRANSACTION_PL, TransactionClass.FX_TRADE]:
+                return self.transaction_class.name
+        return ''
 
 
 class ReportSummary(object):
@@ -178,10 +227,23 @@ class ReportBuilder(object):
         self._any_details = self._detail_by_portfolio or self._detail_by_account or self._detail_by_strategy1 or self._detail_by_strategy2 or self._detail_by_strategy3
 
         self._items = {}
+        self._invested_items = {}
 
     @property
-    def system_currency(self):
+    def _system_currency(self):
         return self.instance.master_user.system_currency
+
+    @cached_property
+    def _transaction_class_sell(self):
+        return TransactionClass.objects.get(pk=TransactionClass.SELL)
+
+    @cached_property
+    def _transaction_class_buy(self):
+        return TransactionClass.objects.get(pk=TransactionClass.BUY)
+
+    @cached_property
+    def _transaction_class_fx_trade(self):
+        return TransactionClass.objects.get(pk=TransactionClass.FX_TRADE)
 
     def _get_transaction_qs(self):
         if self._queryset is None:
@@ -285,21 +347,7 @@ class ReportBuilder(object):
             return h
 
     @cached_property
-    def _transaction_class_sell(self):
-        return TransactionClass.objects.get(pk=TransactionClass.SELL)
-
-    @cached_property
-    def _transaction_class_buy(self):
-        return TransactionClass.objects.get(pk=TransactionClass.BUY)
-
-    @cached_property
-    def _transaction_class_fx_trade(self):
-        return TransactionClass.objects.get(pk=TransactionClass.FX_TRADE)
-
-    @cached_property
     def transactions(self):
-        from poms.reports.models import VirtualTransaction
-
         if self._transactions:
             return self._transactions
 
@@ -416,36 +464,6 @@ class ReportBuilder(object):
                 transactions1.append(t)
         return transactions1
 
-    # def _annotate_transaction_history(self, transaction):
-    #     if transaction.instrument:
-    #         transaction.instrument_price_history = self._get_instrument_price_history(
-    #             transaction.instrument)
-    #         # transaction.instrument_price_history_on_accounting_date = self._get_instrument_price_history(
-    #         #     transaction.instrument, transaction.accounting_date)
-    #
-    #         if transaction.instrument.pricing_currency:
-    #             transaction.instrument_pricing_currency_history = self._get_currency_history(
-    #                 transaction.instrument.pricing_currency)
-    #             # transaction.instrument_pricing_currency_history_on_accounting_date = self._get_currency_history(
-    #             #     transaction.instrument.pricing_currency, transaction.accounting_date)
-    #         if transaction.instrument.accrued_currency:
-    #             transaction.instrument_accrued_currency_history = self._get_currency_history(
-    #                 transaction.instrument.accrued_currency)
-    #             # transaction.instrument_accrued_currency_history_on_accounting_date = self._get_currency_history(
-    #             #     transaction.instrument.accrued_currency, transaction.accounting_date)
-    #
-    #     if transaction.transaction_currency:
-    #         transaction.transaction_currency_history = self._get_currency_history(
-    #             transaction.transaction_currency)
-    #         # transaction.transaction_currency_history_on_accounting_date = self._get_currency_history(
-    #         #     transaction.transaction_currency, transaction.accounting_date)
-    #
-    #     if transaction.settlement_currency:
-    #         transaction.settlement_currency_history = self._get_currency_history(
-    #             transaction.settlement_currency)
-    #         # transaction.settlement_currency_history_on_cash_date = self._get_currency_history(
-    #         #     transaction.settlement_currency, transaction.cash_date)
-
     def _annotate_multiplier(self, transactions):
         if self._any_details:
             if self.instance.cost_method.id == CostMethod.AVCO:
@@ -462,9 +480,7 @@ class ReportBuilder(object):
         rolling_positions = Counter()
 
         for t in transactions:
-            t_class = t.transaction_class_id
-
-            if t_class not in [TransactionClass.BUY, TransactionClass.SELL]:
+            if t.transaction_class_id not in [TransactionClass.BUY, TransactionClass.SELL]:
                 continue
 
             # do not use strategy!!!
@@ -475,7 +491,7 @@ class ReportBuilder(object):
             rolling_position = rolling_positions[t_key]
 
             # if position_size_with_sign > 0.:  # покупка
-            if t_class == TransactionClass.BUY:
+            if t.transaction_class_id == TransactionClass.BUY:
                 i_not_closed = not_closed.get(t_key, [])
                 if i_not_closed:  # есть прошлые продажи, которые надо закрыть
                     if position_size_with_sign + rolling_position >= 0.0:  # все есть
@@ -494,7 +510,7 @@ class ReportBuilder(object):
                     in_stock[t_key] = in_stock.get(t_key, []) + [t]
 
             # else:  # продажа
-            elif t_class == TransactionClass.SELL:
+            elif t.transaction_class_id == TransactionClass.SELL:
                 i_in_stock = in_stock.get(t_key, [])
                 if i_in_stock:  # есть что продавать
                     if position_size_with_sign + rolling_position >= 0.0:  # все есть
@@ -517,7 +533,8 @@ class ReportBuilder(object):
             t.rolling_position = rolling_position
 
         for t in self.transactions:
-            t.multiplier = t.avco_multiplier
+            if t.transaction_class_id in [TransactionClass.BUY, TransactionClass.SELL]:
+                t.multiplier = t.avco_multiplier
 
     def _annotate_fifo_multiplier(self, transactions):
         in_stock = {}
@@ -525,8 +542,7 @@ class ReportBuilder(object):
         rolling_positions = Counter()
 
         for t in transactions:
-            t_class = t.transaction_class_id
-            if t_class not in [TransactionClass.BUY, TransactionClass.SELL]:
+            if t.transaction_class_id not in [TransactionClass.BUY, TransactionClass.SELL]:
                 continue
 
             # do not use strategy!!!
@@ -537,7 +553,7 @@ class ReportBuilder(object):
             rolling_position = rolling_positions[t_key]
 
             # if position_size_with_sign > 0.:  # покупка
-            if t_class == TransactionClass.BUY:
+            if t.transaction_class_id == TransactionClass.BUY:
                 i_not_closed = not_closed.get(t_key, [])
                 balance = position_size_with_sign
                 if i_not_closed:
@@ -560,7 +576,7 @@ class ReportBuilder(object):
                     in_stock[t_key] = in_stock.get(t_key, []) + [t]
 
             # else:  # продажа
-            elif t_class == TransactionClass.SELL:
+            elif t.transaction_class_id == TransactionClass.SELL:
                 i_in_stock = in_stock.get(t_key, [])
                 sale = position_size_with_sign
                 if i_in_stock:
@@ -588,7 +604,8 @@ class ReportBuilder(object):
             t.rolling_position = rolling_position
 
         for t in self.transactions:
-            t.multiplier = t.fifo_multiplier
+            if t.transaction_class_id in [TransactionClass.BUY, TransactionClass.SELL]:
+                t.multiplier = t.fifo_multiplier
 
     def _annotate_transaction_case(self, t):
         if t.accounting_date <= self._report_date < t.cash_date:  # default
@@ -638,37 +655,44 @@ class ReportBuilder(object):
 
     def _process_transaction_buy(self, t):
         if self._any_details:
-            self._process_instrument(t, value=t.position_size_with_sign * (1.0 - t.multiplier))
+            position_size_with_sign = t.position_size_with_sign * (1.0 - t.multiplier)
         else:
-            self._process_instrument(t, value=t.position_size_with_sign)
-        self._process_cash(t, currency=t.settlement_currency, value=t.cash_consideration)
+            position_size_with_sign = t.position_size_with_sign
+
+        self._add_instrument(t, value=position_size_with_sign)
+        self._add_cash(t, ccy=t.settlement_currency, value=t.cash_consideration)
 
     def _process_transaction_sell(self, t):
-        self._process_transaction_sell(t)
+        self._process_transaction_buy(t)
 
     def _process_transaction_fx_trade(self, t):
-        self._process_cash(t, currency=t.transaction_currency, value=t.position_size_with_sign,
-                           account=t.account_position, account_interim=t.account_interim)
+        self._add_cash(t, ccy=t.transaction_currency, value=t.position_size_with_sign,
+                       acc=t.account_position, acc_interim=t.account_interim)
 
-        self._process_cash(t, currency=t.settlement_currency, value=t.cash_consideration,
-                           account=t.account_cash, account_interim=t.account_interim)
+        self._add_cash(t, ccy=t.settlement_currency, value=t.cash_consideration,
+                       acc=t.account_cash, acc_interim=t.account_interim)
 
         # P&L
-        item = self._get_item(t)
+        item = self._get_item(t, portfolio=t.portfolio, account=t.account_position,
+                              strategy1=t.strategy1_position, strategy2=t.strategy2_position,
+                              strategy3=t.strategy3_position, transaction_class=t.transaction_class)
         item.principal_with_sign_system_ccy += self._to_system_ccy(t.position_size_with_sign, t.transaction_currency) + \
                                                self._to_system_ccy(t.principal_with_sign, t.settlement_currency)
         item.carry_with_sign_system_ccy += self._to_system_ccy(t.carry_with_sign, t.settlement_currency)
         item.overheads_with_sign_system_ccy += self._to_system_ccy(t.overheads_with_sign, t.settlement_currency)
 
     def _process_transaction_instrument_pl(self, t):
-        self._process_cash(t, currency=t.settlement_currency, value=t.cash_consideration,
-                           account=t.account_cash, account_interim=t.account_interim)
+        self._add_cash(t, ccy=t.settlement_currency, value=t.cash_consideration,
+                       acc=t.account_cash, acc_interim=t.account_interim)
 
     def _process_transaction_transaction_pl(self, t):
-        self._process_instrument(t, value=0.0)
+        item = self._get_item(t, portfolio=t.portfolio, account=t.account_position,
+                              strategy1=t.strategy1_position, strategy2=t.strategy2_position,
+                              strategy3=t.strategy3_position, transaction_class=t.transaction_class)
+        self._add_trn_pl(item, t)
 
-        self._process_cash(t, currency=t.settlement_currency, value=t.cash_consideration,
-                           account=t.account_cash, account_interim=t.account_interim)
+        self._add_cash(t, ccy=t.settlement_currency, value=t.cash_consideration,
+                       acc=t.account_cash, acc_interim=t.account_interim)
 
     def _process_transaction_transfer(self, t):
         raise RuntimeError('Virtual transaction must be created')
@@ -677,17 +701,25 @@ class ReportBuilder(object):
         raise RuntimeError('Virtual transaction must be created')
 
     def _process_transaction_cash_inflow(self, t):
-        self._process_cash(t, currency=t.transaction_currency, value=t.position_size_with_sign,
-                           account=t.account_position, account_interim=t.account_interim)
+        self._add_cash(t, ccy=t.transaction_currency, value=t.position_size_with_sign,
+                       acc=t.account_position, acc_interim=t.account_interim)
+
+        self._add_cash(t, ccy=t.transaction_currency, value=t.position_size_with_sign,
+                       acc=t.account_position, acc_interim=t.account_interim,
+                       items=self._invested_items)
 
     def _process_transaction_cash_outflow(self, t):
-        self._process_transaction_cash_outflow(t)
+        self._process_transaction_cash_inflow(t)
 
     def _to_system_ccy(self, value, ccy):
+        if isclose(value, 0.0):
+            return 0.0
         h = self._get_currency_history(ccy)
         return value * h.fx_rate
 
     def _to_report_ccy(self, value):
+        if isclose(value, 0.0):
+            return 0.0
         h = self._get_currency_history(self.instance.report_currency)
         if isclose(h.fx_rate, 0.0):
             return 0.0
@@ -719,166 +751,140 @@ class ReportBuilder(object):
             transaction_class,
         )
 
-    def _get_item(self, t, instrument=None, currency=None, account=None, transaction_class=None):
-        i_instrument = instrument
-        i_currency = currency
+    def _get_item(self, trn, instrument=None, currency=None,
+                  portfolio=None, account=None, strategy1=None, strategy2=None, strategy3=None,
+                  transaction_class=None,
+                  items=None):
 
-        i_portfolio = None
-        if self._detail_by_portfolio:
-            i_portfolio = t.portfolio
+        if not self._detail_by_portfolio:
+            portfolio = None
 
-        i_account = None
-        if self._detail_by_account:
-            i_account = account
-            if i_account is None:
-                if instrument:
-                    i_account = t.account_position
-                elif currency:
-                    i_account = t.account_cash
+        if not self._detail_by_account:
+            account = None
 
-        i_strategy1 = None
-        if self._detail_by_strategy1:
-            if instrument:
-                i_strategy1 = t.strategy1_position
-            elif currency:
-                i_strategy1 = t.strategy1_cash
+        if not self._detail_by_strategy1:
+            strategy1 = None
 
-        i_strategy2 = None
-        if self._detail_by_strategy2:
-            if instrument:
-                i_strategy2 = t.strategy2_position
-            elif currency:
-                i_strategy2 = t.strategy2_cash
+        if not self._detail_by_strategy2:
+            strategy2 = None
 
-        i_strategy3 = None
-        if self._detail_by_strategy3:
-            if instrument:
-                i_strategy3 = t.strategy3_position
-            elif currency:
-                i_strategy3 = t.strategy3_cash
+        if not self._detail_by_strategy3:
+            strategy3 = None
 
-        i_detail_transaction = t if i_account and self._show_transaction_details(t.case, i_account) else None
-        if isinstance(i_detail_transaction, VirtualTransaction):
-            i_detail_transaction = i_detail_transaction.transaction
+        detail_transaction = None
+        if account and self._show_transaction_details(trn.case, account()):
+            if isinstance(trn, VirtualTransaction):
+                detail_transaction = trn.transaction
+            else:
+                detail_transaction = trn
 
-        i_transaction_class = None
-        if t.transaction_class.id in [TransactionClass.TRANSACTION_PL, TransactionClass.FX_TRADE]:
-            i_instrument = None
-            i_transaction_class = t.transaction_class
+        if transaction_class:
+            instrument = None
+            currency = None
+            detail_transaction = None
 
-        pk = self._make_key(
-            instrument=i_instrument,
-            currency=i_currency,
-            portfolio=i_portfolio,
-            account=i_account,
-            strategy1=i_strategy1,
-            strategy2=i_strategy2,
-            strategy3=i_strategy3,
-            case=t.case,
-            detail_transaction=i_detail_transaction,
-            transaction_class=i_transaction_class
-        )
+        pk = self._make_key(instrument=instrument, currency=currency, portfolio=portfolio, account=account,
+                            strategy1=strategy1, strategy2=strategy2, strategy3=strategy3,
+                            case=trn.case, detail_transaction=detail_transaction, transaction_class=transaction_class)
 
+        if items is None:
+            items = self._items
         try:
-            return self._items[pk]
+            return items[pk]
         except KeyError:
-            item = ReportItem(
-                pk=pk,
-                instrument=instrument,
-                currency=currency,
-                portfolio=i_portfolio,
-                account=i_account,
-                strategy1=i_strategy1,
-                strategy2=i_strategy2,
-                strategy3=i_strategy3,
-                detail_transaction=i_detail_transaction
-            )
-            self._items[pk] = item
+            item = ReportItem(pk=pk, instrument=instrument, currency=currency, portfolio=portfolio, account=account,
+                              strategy1=strategy1, strategy2=strategy2, strategy3=strategy3,
+                              detail_transaction=detail_transaction, transaction_class=transaction_class)
+            items[pk] = item
             return item
 
-    def _process_instrument(self, t, value):
-        if t.case == 0:
-            item = self._get_item(t, instrument=t.instrument)
-            item.position += value
-            self._process_instrument_p_l(t, item)
+    def _add_position(self, item, position):
+        item.position += position
 
-        elif t.case == 1:
-            item = self._get_item(t, instrument=t.instrument)
-            item.position += value
-            self._process_instrument_p_l(t, item)
+    def _add_p_l(self, item, ccy, principal_with_sign=0.0, carry_with_sign=0.0, overheads_with_sign=0.0):
+        item.principal_with_sign_system_ccy += self._to_system_ccy(principal_with_sign, ccy)
+        item.carry_with_sign_system_ccy += self._to_system_ccy(carry_with_sign, ccy)
+        item.overheads_with_sign_system_ccy += self._to_system_ccy(overheads_with_sign, ccy)
 
-        elif t.case == 2:
-            pass
+    def _add_trn_pl(self, item, trn, ccy=None):
+        if ccy is None:
+            ccy = trn.settlement_currency
+        self._add_p_l(item, ccy, principal_with_sign=trn.principal_with_sign,
+                      carry_with_sign=trn.carry_with_sign, overheads_with_sign=trn.overheads_with_sign)
 
-    def _process_instrument_p_l(self, t, item):
-        if item is None:
-            item = self._get_item(t, instrument=t.instrument)
+    def _add_instrument(self, trn, value, item=None, items=None):
+        if trn.case == 0:
+            item = self._get_item(trn, instrument=trn.instrument, portfolio=trn.portfolio, account=trn.account_position,
+                                  strategy1=trn.strategy1_position, strategy2=trn.strategy2_position,
+                                  strategy3=trn.strategy3_position, items=items)
+        elif trn.case == 1:
+            item = self._get_item(trn, instrument=trn.instrument, portfolio=trn.portfolio, account=trn.account_position,
+                                  strategy1=trn.strategy1_position, strategy2=trn.strategy2_position,
+                                  strategy3=trn.strategy3_position, items=items)
 
-        ccy = t.settlement_currency
-        item.principal_with_sign_system_ccy += self._to_system_ccy(t.principal_with_sign, ccy)
-        item.carry_with_sign_system_ccy += self._to_system_ccy(t.carry_with_sign, ccy)
-        item.overheads_with_sign_system_ccy += self._to_system_ccy(t.overheads_with_sign, ccy)
+        elif trn.case == 2:
+            return
 
-    def _process_cash(self, t, currency, value, account=None, account_interim=None):
-        if account is None:
-            account = t.account_cash
-        if account_interim is None:
-            account_interim = t.account_interim
-
-        if t.case == 0:
-            item = self._get_item(t, currency=currency, account=account)
+        if item:
+            # balance
             item.position += value
 
-        elif t.case == 1:
-            item = self._get_item(t, currency=currency, account=account_interim)
+            #  P&L
+            item.principal_with_sign_system_ccy += self._to_system_ccy(trn.principal_with_sign, trn.settlement_currency)
+            item.carry_with_sign_system_ccy += self._to_system_ccy(trn.carry_with_sign, trn.settlement_currency)
+            item.overheads_with_sign_system_ccy += self._to_system_ccy(trn.overheads_with_sign, trn.settlement_currency)
+
+    def _add_cash(self, trn, ccy, value, acc=None, acc_interim=None, items=None):
+        if acc is None:
+            acc = trn.account_cash
+        if acc_interim is None:
+            acc_interim = trn.account_interim
+
+        if trn.case == 0:
+            item = self._get_item(trn, currency=ccy, portfolio=trn.portfolio, account=acc,
+                                  strategy1=trn.strategy1_cash, strategy2=trn.strategy2_cash,
+                                  strategy3=trn.strategy3_cash, items=items)
             item.position += value
 
-        elif t.case == 2:
-            item = self._get_item(t, currency=currency, account=account)
+        elif trn.case == 1:
+            item = self._get_item(trn, currency=ccy, portfolio=trn.portfolio, account=acc_interim,
+                                  strategy1=trn.strategy1_cash, strategy2=trn.strategy2_cash,
+                                  strategy3=trn.strategy3_cash, items=items)
             item.position += value
 
-            item = self._get_item(t, currency=currency, account=account_interim)
+        elif trn.case == 2:
+            item = self._get_item(trn, currency=ccy, portfolio=trn.portfolio, account=acc,
+                                  strategy1=trn.strategy1_cash, strategy2=trn.strategy2_cash,
+                                  strategy3=trn.strategy3_cash, items=items)
+            item.position += value
+
+            item = self._get_item(trn, currency=ccy, portfolio=trn.portfolio, account=acc_interim,
+                                  strategy1=trn.strategy1_cash, strategy2=trn.strategy2_cash,
+                                  strategy3=trn.strategy3_cash, items=items)
             item.position -= value
 
     def _process_final(self, item):
         if item.instrument:
             price = self._get_instrument_price_history(item.instrument)
 
-            principal_value = item.instrument.price_multiplier * item.position * price.principal_price
-            accrued_value = item.instrument.accrued_multiplier * item.position * price.accrued_price
+            principal = item.position * item.instrument.price_multiplier * price.principal_price
+            accrued = item.position * item.instrument.accrued_multiplier * price.accrued_price
 
-            principal_value_system_ccy = self._to_system_ccy(principal_value, item.instrument.pricing_currency)
-            accrued_value_system_ccy = self._to_system_ccy(accrued_value, item.instrument.accrued_currency)
+            principal_system_ccy = self._to_system_ccy(principal, item.instrument.pricing_currency)
+            accrued_system_ccy = self._to_system_ccy(accrued, item.instrument.accrued_currency)
 
             # balance
-            item.market_value_system_ccy = principal_value_system_ccy + accrued_value_system_ccy
-            # item.market_value_report_ccy = self._to_report_ccy(item.market_value_system_ccy)
+            item.market_value_system_ccy = principal_system_ccy + accrued_system_ccy
 
             # P&L
-            # item.total_with_sign_system_ccy = item.principal_with_sign_system_ccy + \
-            #                                   item.carry_with_sign_system_ccy + \
-            #                                   item.overheads_with_sign_system_ccy
-            #
-            # item.principal_with_sign_report_ccy = self._to_report_ccy(item.principal_with_sign_system_ccy)
-            # item.carry_with_sign_system_ccy = self._to_report_ccy(item.carry_with_sign_system_ccy)
-            # item.overheads_with_sign_system_ccy = self._to_report_ccy(item.overheads_with_sign_system_ccy)
-            # item.total_with_sign_system_ccy = self._to_report_ccy(item.total_with_sign_system_ccy)
-            pass
+            item.principal_with_sign_system_ccy += principal_system_ccy
+            item.carry_with_sign_system_ccy += accrued_system_ccy
 
         elif item.currency:
             # balance
             item.market_value_system_ccy = self._to_system_ccy(item.position, item.currency)
-            # item.market_value_report_ccy = self._to_report_ccy(item.market_value_system_ccy)
 
             # P&L
-            # item.total_with_sign_system_ccy = item.principal_with_sign_system_ccy + \
-            #                                   item.carry_with_sign_system_ccy + \
-            #                                   item.overheads_with_sign_system_ccy
-            #
-            # item.principal_with_sign_report_ccy = self._to_report_ccy(item.principal_with_sign_system_ccy)
-            # item.carry_with_sign_system_ccy = self._to_report_ccy(item.carry_with_sign_system_ccy)
-            # item.overheads_with_sign_system_ccy = self._to_report_ccy(item.overheads_with_sign_system_ccy)
-            # item.total_with_sign_system_ccy = self._to_report_ccy(item.total_with_sign_system_ccy)
             pass
 
         # balance
