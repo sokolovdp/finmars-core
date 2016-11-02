@@ -13,6 +13,7 @@ from poms.currencies.fields import CurrencyField, SystemCurrencyDefault
 from poms.instruments.fields import PricingPolicyField
 from poms.instruments.models import CostMethod
 from poms.portfolios.fields import PortfolioField
+from poms.reports.builders import Report
 from poms.reports.fields import CustomFieldField
 from poms.reports.models import BalanceReport, BalanceReportItem, BalanceReportSummary, PLReportItem, PLReport, \
     PLReportSummary, CostReport, BaseReport, CustomField
@@ -36,6 +37,123 @@ class CustomFieldSerializer(serializers.ModelSerializer):
         fields = [
             'id', 'master_user', 'name', 'expr'
         ]
+
+
+# new reports...
+
+
+class ReportItemSerializer(serializers.Serializer):
+    id = serializers.CharField(read_only=True)
+
+    instrument = serializers.PrimaryKeyRelatedField(read_only=True)
+    currency = serializers.PrimaryKeyRelatedField(read_only=True)
+
+    portfolio = serializers.PrimaryKeyRelatedField(read_only=True)
+    account = serializers.PrimaryKeyRelatedField(read_only=True)
+    strategy1 = serializers.PrimaryKeyRelatedField(read_only=True)
+    strategy2 = serializers.PrimaryKeyRelatedField(read_only=True)
+    strategy3 = serializers.PrimaryKeyRelatedField(read_only=True)
+
+    position = serializers.FloatField(read_only=True)
+
+    market_value_system_ccy = serializers.FloatField(read_only=True)
+    market_value_report_ccy = serializers.FloatField(read_only=True)
+
+    principal_with_sign_system_ccy = serializers.FloatField(read_only=True)
+    carry_with_sign_system_ccy = serializers.FloatField(read_only=True)
+    overheads_with_sign_system_ccy = serializers.FloatField(read_only=True)
+    total_with_sign_system_ccy = serializers.FloatField(read_only=True)
+
+    principal_with_sign_report_ccy = serializers.FloatField(read_only=True)
+    carry_with_sign_report_ccy = serializers.FloatField(read_only=True)
+    overheads_with_sign_report_ccy = serializers.FloatField(read_only=True)
+    total_with_sign_report_ccy = serializers.FloatField(read_only=True)
+
+    def __init__(self, *args, **kwargs):
+        super(ReportItemSerializer, self).__init__(*args, **kwargs)
+
+        from poms.currencies.serializers import CurrencyViewSerializer
+        from poms.instruments.serializers import InstrumentViewSerializer
+        from poms.portfolios.serializers import PortfolioViewSerializer
+        from poms.accounts.serializers import AccountViewSerializer
+        from poms.strategies.serializers import Strategy1ViewSerializer, Strategy2ViewSerializer, \
+            Strategy3ViewSerializer
+
+        self.fields['instrument_object'] = InstrumentViewSerializer(source='instrument', read_only=True)
+        self.fields['currency_object'] = CurrencyViewSerializer(source='currency', read_only=True)
+        self.fields['portfolio_object'] = PortfolioViewSerializer(source='portfolio', read_only=True)
+        self.fields['account_object'] = AccountViewSerializer(source='account', read_only=True)
+        self.fields['strategy1_object'] = Strategy1ViewSerializer(source='strategy1', read_only=True)
+        self.fields['strategy2_object'] = Strategy2ViewSerializer(source='strategy2', read_only=True)
+        self.fields['strategy3_object'] = Strategy3ViewSerializer(source='strategy3', read_only=True)
+
+
+class ReportSummarySerializer(serializers.Serializer):
+    market_value_system_ccy = serializers.FloatField(read_only=True)
+    market_value_report_ccy = serializers.FloatField(read_only=True)
+
+    principal_with_sign_system_ccy = serializers.FloatField(read_only=True)
+    carry_with_sign_system_ccy = serializers.FloatField(read_only=True)
+    overheads_with_sign_system_ccy = serializers.FloatField(read_only=True)
+    total_with_sign_system_ccy = serializers.FloatField(read_only=True)
+
+    principal_with_sign_report_ccy = serializers.FloatField(read_only=True)
+    carry_with_sign_report_ccy = serializers.FloatField(read_only=True)
+    overheads_with_sign_report_ccy = serializers.FloatField(read_only=True)
+    total_with_sign_report_ccy = serializers.FloatField(read_only=True)
+
+    def __init__(self, *args, **kwargs):
+        super(ReportSummarySerializer, self).__init__(*args, **kwargs)
+
+
+class ReportSerializer(serializers.Serializer):
+    task_id = serializers.CharField(allow_null=True, allow_blank=True, required=False)
+    task_status = serializers.ReadOnlyField()
+
+    master_user = MasterUserField()
+
+    pricing_policy = PricingPolicyField()
+    report_date = serializers.DateField(required=False, allow_null=True, default=date_now)
+    report_currency = CurrencyField(required=False, allow_null=True, default=SystemCurrencyDefault())
+    cost_method = serializers.PrimaryKeyRelatedField(queryset=CostMethod.objects, allow_null=True, allow_empty=True)
+
+    detail_by_portfolio = serializers.BooleanField(default=False)
+    detail_by_account = serializers.BooleanField(default=False)
+    detail_by_strategy1 = serializers.BooleanField(default=False)
+    detail_by_strategy2 = serializers.BooleanField(default=False)
+    detail_by_strategy3 = serializers.BooleanField(default=False)
+    show_transaction_details = serializers.BooleanField(default=False)
+
+    custom_fields = CustomFieldField(many=True, allow_empty=True, allow_null=True, required=False)
+
+    portfolios = PortfolioField(many=True, required=False, allow_null=True, allow_empty=True)
+    accounts = AccountField(many=True, required=False, allow_null=True, allow_empty=True)
+    strategies1 = Strategy1Field(many=True, required=False, allow_null=True, allow_empty=True)
+    strategies2 = Strategy2Field(many=True, required=False, allow_null=True, allow_empty=True)
+    strategies3 = Strategy3Field(many=True, required=False, allow_null=True, allow_empty=True)
+
+    items = ReportItemSerializer(many=True, read_only=True)
+    summary = ReportSummarySerializer(read_only=True)
+
+    # transactions = ReportTransactionSerializer(many=True, read_only=True)
+
+    def __init__(self, *args, **kwargs):
+        super(ReportSerializer, self).__init__(*args, **kwargs)
+
+    def validate(self, attrs):
+        if not attrs.get('report_date', None):
+            attrs['report_date'] = date_now() - timedelta(days=1)
+
+        if not attrs.get('report_currency', None):
+            attrs['report_currency'] = attrs['master_user'].system_currency
+
+        if not attrs.get('cost_method', None):
+            attrs['cost_method'] = CostMethod.objects.get(pk=CostMethod.AVCO)
+
+        return attrs
+
+    def create(self, validated_data):
+        return Report(**validated_data)
 
 
 # reports

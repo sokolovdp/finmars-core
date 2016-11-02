@@ -1,6 +1,7 @@
 from __future__ import unicode_literals
 
 from celery.result import AsyncResult
+from django.core.signing import Signer
 from rest_framework import status
 from rest_framework.exceptions import PermissionDenied
 from rest_framework.filters import FilterSet
@@ -13,8 +14,8 @@ from poms.reports.backends.simple_multipliers import SimpleMultipliersReport2Bui
 from poms.reports.backends.ytm import YTMReport2Builder
 from poms.reports.models import CustomField
 from poms.reports.serializers import BalanceReportSerializer, PLReportSerializer, CostReportSerializer, \
-    YTMReportSerializer, SimpleMultipliersReport2Serializer, CustomFieldSerializer
-from poms.reports.tasks import balance_report, pl_report
+    YTMReportSerializer, SimpleMultipliersReport2Serializer, CustomFieldSerializer, ReportSerializer
+from poms.reports.tasks import balance_report, pl_report, build_report
 from poms.users.filters import OwnerByMasterUserFilter
 
 
@@ -47,6 +48,38 @@ class CustomFieldViewSet(AbstractModelViewSet):
         # 'report_class', 'report_class__name',
         'name',
     ]
+
+
+# New report api
+
+
+class ReportViewSet(AbstractViewSet):
+    serializer_class = ReportSerializer
+
+    def create(self, request, *args, **kwargs):
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        instance = serializer.save()
+        task_id = instance.task_id
+
+        signer = Signer()
+
+        if task_id:
+            res = AsyncResult(signer.unsign(task_id))
+            if res.ready():
+                instance = res.result
+            if instance.master_user.id != self.request.user.master_user.id:
+                raise PermissionDenied()
+            instance.task_id = task_id
+            instance.task_status = res.status
+            serializer = self.get_serializer(instance=instance, many=False)
+            return Response(serializer.data, status=status.HTTP_200_OK)
+        else:
+            res = build_report.apply_async(kwargs={'instance': instance})
+            instance.task_id = signer.sign('%s' % res.id)
+            instance.task_status = res.status
+            serializer = self.get_serializer(instance=instance, many=False)
+            return Response(serializer.data, status=status.HTTP_200_OK)
 
 
 # ---

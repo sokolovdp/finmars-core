@@ -6,6 +6,7 @@ from celery import shared_task
 
 from poms.reports.backends.balance import BalanceReport2Builder
 from poms.reports.backends.pl import PLReport2Builder
+from poms.reports.builders import ReportBuilder
 
 _l = logging.getLogger('poms.instruments')
 
@@ -57,6 +58,17 @@ def pl_report(instance):
     _l.debug('pl_report: %s', instance)
 
     builder = PLReport2Builder(instance=instance)
+    instance = builder.build()
+
+    _l.debug('finished')
+    return instance
+
+
+@shared_task(name='reports.build_report')
+def build_report(instance):
+    _l.debug('report: %s', instance)
+
+    builder = ReportBuilder(instance=instance)
     instance = builder.build()
 
     _l.debug('finished')
