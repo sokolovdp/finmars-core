@@ -13,7 +13,7 @@ from poms.currencies.fields import CurrencyField, SystemCurrencyDefault
 from poms.instruments.fields import PricingPolicyField
 from poms.instruments.models import CostMethod
 from poms.portfolios.fields import PortfolioField
-from poms.reports.builders import Report
+from poms.reports.builders import Report, ReportItem
 from poms.reports.fields import CustomFieldField
 from poms.reports.models import BalanceReport, BalanceReportItem, BalanceReportSummary, PLReportItem, PLReport, \
     PLReportSummary, CostReport, BaseReport, CustomField
@@ -39,13 +39,35 @@ class CustomFieldSerializer(serializers.ModelSerializer):
         ]
 
 
+class CustomFieldViewSerializer(serializers.ModelSerializer):
+    master_user = MasterUserField()
+
+    class Meta:
+        model = CustomField
+        fields = [
+            'id', 'master_user', 'name'
+        ]
+
+
 # new reports...
+
+
+class ReportItemCustomFieldSerializer(serializers.Serializer):
+    custom_field = serializers.PrimaryKeyRelatedField(read_only=True)
+    value = serializers.ReadOnlyField()
+
+    def __init__(self, *args, **kwargs):
+        super(ReportItemCustomFieldSerializer, self).__init__(*args, **kwargs)
+
+        self.fields['custom_field_object'] = CustomFieldViewSerializer(source='custom_field', read_only=True)
 
 
 class ReportItemSerializer(serializers.Serializer):
     id = serializers.CharField(read_only=True)
 
-    type = serializers.ReadOnlyField()
+    type = serializers.ChoiceField(
+        choices=ReportItem.TYPE_CHOICES
+    )
     user_code = serializers.ReadOnlyField()
     name = serializers.ReadOnlyField()
 
@@ -72,6 +94,8 @@ class ReportItemSerializer(serializers.Serializer):
     carry_with_sign_report_ccy = serializers.ReadOnlyField()
     overheads_with_sign_report_ccy = serializers.ReadOnlyField()
     total_with_sign_report_ccy = serializers.ReadOnlyField()
+
+    custom_fields = ReportItemCustomFieldSerializer(many=True, read_only=True)
 
     def __init__(self, *args, **kwargs):
         super(ReportItemSerializer, self).__init__(*args, **kwargs)
