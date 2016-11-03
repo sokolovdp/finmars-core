@@ -107,6 +107,30 @@ class ReportItem(object):
         return ReportItem.TYPE_UNKNOWN
 
     @property
+    def type_name(self):
+        t = self.type
+        for i, n in ReportItem.TYPE_CHOICES:
+            if i == t:
+                return n
+        return 'ERR'
+
+    @property
+    def type_code(self):
+        t = self.type
+        if t == ReportItem.TYPE_UNKNOWN:
+            return 'UNKN'
+        elif t == ReportItem.TYPE_INSTRUMENT:
+            return 'INSTR'
+        elif t == ReportItem.TYPE_CURRENCY:
+            return 'CCY'
+        elif t == ReportItem.TYPE_TRANSACTION_PL:
+            return 'TRN PL'
+        elif t == ReportItem.TYPE_FX_TRADE:
+            return 'FX TRADE'
+        else:
+            return 'ERR'
+
+    @property
     def user_code(self):
         if self.instrument:
             return self.instrument.user_code
@@ -203,6 +227,7 @@ class Report(object):
         self.custom_fields = custom_fields or []
 
         self.items = items or []
+        self.invested_items = items or []
         self.summary = ReportSummary()
         if items:
             self.summary.add_items(items)
@@ -664,8 +689,10 @@ class ReportBuilder(object):
             else:
                 raise RuntimeError('Invalid transaction class: %s' % trn.transaction_class_id)
 
-        self._process_final(self._items.values())
+        self._process_final(self._invested_items.values())
+        self.instance.invested_items = sorted([i for i in self._invested_items.values()], key=lambda x: x.pk)
 
+        self._process_final(self._items.values())
         self.instance.items = sorted([i for i in self._items.values()], key=lambda x: x.pk)
         self.instance.summary.add_items(self.instance.items)
 
@@ -703,6 +730,7 @@ class ReportBuilder(object):
         item.overheads_with_sign_system_ccy += self._to_system_ccy(trn.overheads_with_sign, trn.settlement_currency)
 
     def _process_transaction_instrument_pl(self, trn):
+        self._add_instr(self._items, trn, value=trn.position_size_with_sign)
         self._add_cash(self._items, trn, value=trn.cash_consideration, currency=trn.settlement_currency)
 
     def _process_transaction_transaction_pl(self, trn):
@@ -842,9 +870,9 @@ class ReportBuilder(object):
                                               item.overheads_with_sign_system_ccy
 
             item.principal_with_sign_report_ccy = self._to_report_ccy(item.principal_with_sign_system_ccy)
-            item.carry_with_sign_system_ccy = self._to_report_ccy(item.carry_with_sign_system_ccy)
-            item.overheads_with_sign_system_ccy = self._to_report_ccy(item.overheads_with_sign_system_ccy)
-            item.total_with_sign_system_ccy = self._to_report_ccy(item.total_with_sign_system_ccy)
+            item.carry_with_sign_report_ccy = self._to_report_ccy(item.carry_with_sign_system_ccy)
+            item.overheads_with_sign_report_ccy = self._to_report_ccy(item.overheads_with_sign_system_ccy)
+            item.total_with_sign_report_ccy = self._to_report_ccy(item.total_with_sign_system_ccy)
 
     def _process_custom_fields(self, items):
         if self.instance.custom_fields:
@@ -862,7 +890,6 @@ class ReportBuilder(object):
                         'custom_field': cf,
                         'value': value
                     })
-
 
     def _to_system_ccy(self, value, ccy):
         if isclose(value, 0.0):
