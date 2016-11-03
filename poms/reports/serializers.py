@@ -18,7 +18,7 @@ from poms.reports.fields import CustomFieldField
 from poms.reports.models import BalanceReport, BalanceReportItem, BalanceReportSummary, PLReportItem, PLReport, \
     PLReportSummary, CostReport, BaseReport, CustomField
 from poms.strategies.fields import Strategy1Field, Strategy2Field, Strategy3Field
-from poms.transactions.models import Transaction
+from poms.transactions.models import Transaction, TransactionClass
 from poms.users.fields import MasterUserField
 
 
@@ -58,7 +58,7 @@ class ReportItemSerializer(serializers.Serializer):
     strategy2 = serializers.PrimaryKeyRelatedField(read_only=True)
     strategy3 = serializers.PrimaryKeyRelatedField(read_only=True)
 
-    position = serializers.ReadOnlyField()
+    position_size_with_sign = serializers.ReadOnlyField()
 
     market_value_system_ccy = serializers.ReadOnlyField()
     market_value_report_ccy = serializers.ReadOnlyField()
@@ -76,15 +76,15 @@ class ReportItemSerializer(serializers.Serializer):
     def __init__(self, *args, **kwargs):
         super(ReportItemSerializer, self).__init__(*args, **kwargs)
 
-        from poms.currencies.serializers import CurrencyViewSerializer
-        from poms.instruments.serializers import InstrumentViewSerializer
+        from poms.currencies.serializers import CurrencySerializer
+        from poms.instruments.serializers import InstrumentSerializer
         from poms.portfolios.serializers import PortfolioViewSerializer
         from poms.accounts.serializers import AccountViewSerializer
         from poms.strategies.serializers import Strategy1ViewSerializer, Strategy2ViewSerializer, \
             Strategy3ViewSerializer
 
-        self.fields['instrument_object'] = InstrumentViewSerializer(source='instrument', read_only=True)
-        self.fields['currency_object'] = CurrencyViewSerializer(source='currency', read_only=True)
+        self.fields['instrument_object'] = InstrumentSerializer(source='instrument', read_only=True)
+        self.fields['currency_object'] = CurrencySerializer(source='currency', read_only=True)
         self.fields['portfolio_object'] = PortfolioViewSerializer(source='portfolio', read_only=True)
         self.fields['account_object'] = AccountViewSerializer(source='account', read_only=True)
         self.fields['strategy1_object'] = Strategy1ViewSerializer(source='strategy1', read_only=True)
@@ -135,6 +135,15 @@ class ReportSerializer(serializers.Serializer):
     strategies1 = Strategy1Field(many=True, required=False, allow_null=True, allow_empty=True)
     strategies2 = Strategy2Field(many=True, required=False, allow_null=True, allow_empty=True)
     strategies3 = Strategy3Field(many=True, required=False, allow_null=True, allow_empty=True)
+    transaction_classes = serializers.PrimaryKeyRelatedField(queryset=TransactionClass.objects.all(),
+                                                             many=True, required=False, allow_null=True,
+                                                             allow_empty=True)
+    date_field = serializers.ChoiceField(required=False, allow_null=True,
+                                         initial='transaction_date', default='transaction_date',
+                                         choices=(
+                                             ('transaction_date', 'transaction_date'),
+                                             ('accounting_date', 'accounting_date'),
+                                         ))
 
     items = ReportItemSerializer(many=True, read_only=True)
     summary = ReportSummarySerializer(read_only=True)
