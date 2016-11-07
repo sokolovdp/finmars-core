@@ -13,9 +13,19 @@ from poms.strategies.models import Strategy1Group, Strategy1Subgroup, Strategy1
 from poms.transactions.models import Transaction, TransactionClass
 from poms.users.models import MasterUser
 
+try:
+    import pandas
+except ImportError:
+    pandas = None
+
 
 class ReportTestCase(TestCase):
     def setUp(self):
+        if pandas:
+            pandas.set_option('display.width', 2000)
+            pandas.set_option('display.max_rows', 2000)
+            pandas.set_option('precision', 4)
+
         self.report_date = date(2016, 3, 1)
 
         user = User.objects.create_user('a1')
@@ -191,85 +201,158 @@ class ReportTestCase(TestCase):
     def _fx_transfer(self):
         return TransactionClass.objects.get(id=TransactionClass.FX_TRANSFER)
 
-    def _dump(self, report, name):
-        # print('report: %s @ %s' % (name, report.report_date))
+    def _print_table(self, data, columns):
+        if pandas:
+            print(pandas.DataFrame(data=data, columns=columns))
+        else:
+            print(columns)
+            for r in data:
+                print(r)
 
+    def _print_transactions(self, builder):
         fields = [
-            ('position', 'position_size_with_sign'),
-            ('market_sys','market_value_system_ccy'),
-            ('principal_sys','principal_with_sign_system_ccy'),
-            ('carry_sys', 'carry_with_sign_system_ccy'),
-            ('overheads_sys','overheads_with_sign_system_ccy'),
-            ('total_sys','total_with_sign_system_ccy'),
+            'pk', 'transaction_class', 'accounting_date', 'cash_date',
+            'instrument', 'transaction_currency', 'position_size_with_sign',
+            'settlement_currency', 'cash_consideration', 'principal_with_sign', 'carry_with_sign',
+            'overheads_with_sign', 'multiplier',
         ]
+        columns = [
+            'pk', 'class', 'acc_date', 'cash_date',
+            'instr', 'transaction_ccy', 'position',
+            'settlement_ccy', 'cash_consideration', 'principal', 'carry',
+            'overheads', 'multiplier',
+        ]
+        if builder.instance.detail_by_portfolio:
+            fields += [
+                'portfolio',
+            ]
+            columns += [
+                'portfolio',
+            ]
+        if builder.instance.detail_by_account:
+            fields += [
+                'account_position', 'account_cash', 'account_interim',
+            ]
+            columns += [
+                'acc_pos', 'acc_cash', 'acc_interim',
+            ]
+        if builder.instance.detail_by_strategy1:
+            fields += [
+                'strategy1_position', 'strategy1_cash',
+            ]
+            columns += [
+                'strategy1_position', 'strategy1_cash',
+            ]
+        if builder.instance.detail_by_strategy2:
+            fields += [
+                'strategy2_position', 'strategy2_cash',
+            ]
+            columns += [
+                'strategy2_position', 'strategy2_cash',
+            ]
+        if builder.instance.detail_by_strategy3:
+            fields += [
+                'strategy3_position', 'strategy3_cash',
+            ]
+            columns += [
+                'strategy3_position', 'strategy3_cash',
+            ]
+        data = []
+        for t in builder.transactions:
+            row = []
+            for f in fields:
+                row.append(getattr(t, f, None))
+            data.append(row)
 
-        delim = '+-{:->10}-+-{:->20}-+-{:->15}-+-{:->15}-+-{:->15}-+-{:->15}-+-{:->15}-+-{:->15}-+'.format(
-            '', '', '', '', '', '', '', ''
-        )
-        header = '| {:>10} | {:>20} | {:>15} | {:>15} | {:>15} | {:>15} | {:>15} | {:>15} |'
-        row = '| {:>10} | {:>20} | {:>15.3f} | {:>15.3f} | {:>15.3f} | {:>15.3f} | {:>15.3f} | {:>15.3f} |'
+        print('-' * 100)
+        print('Transactions: ')
+        self._print_table(data, columns)
 
-        print()
-        print('-' * 145)
-        print('{} @ {}'.format(name, report.report_date))
-        print(delim)
-        print(header.format(
-            'type', 'user_code',
-            'position', 'market_sys',
-            'principal_sys', 'carry_sys', 'overheads_sys', 'total_sys'
-        ))
-        print(delim)
-        for item in report.items:
-            # print('\t: type=%s, user_code=%20s, position=%10.3f, market_value_system_ccy=%10.3f' % (
-            #     item.type, item.user_code, item.position_size_with_sign, item.market_value_system_ccy
-            # ))
-            print(row.format(
-                item.type_code,
-                item.user_code,
+    def _print_items(self, builder):
+        fields = [
+            'type_code', 'user_code', 'instrument', 'currency', 'position_size_with_sign',
+            'market_value_system_ccy', 'principal_with_sign_system_ccy', 'carry_with_sign_system_ccy',
+            'overheads_with_sign_system_ccy', 'total_with_sign_system_ccy',
+        ]
+        columns = [
+            'type', 'user_code', 'instr', 'ccy', 'position', 'market_value', 'principal', 'carry',
+            'overheads', 'total',
+        ]
+        if builder.instance.detail_by_portfolio:
+            fields += [
+                'portfolio',
+            ]
+            columns += [
+                'portfolio',
+            ]
+        if builder.instance.detail_by_account:
+            fields += [
+                'account',
+            ]
+            columns += [
+                'account',
+            ]
+        if builder.instance.detail_by_strategy1:
+            fields += [
+                'strategy1',
+            ]
+            columns += [
+                'strategy1',
+            ]
+        if builder.instance.detail_by_strategy2:
+            fields += [
+                'strategy2',
+            ]
+            columns += [
+                'strategy2',
+            ]
+        if builder.instance.detail_by_strategy3:
+            fields += [
+                'strategy3',
+            ]
+            columns += [
+                'strategy3',
+            ]
+        if builder.instance.show_transaction_details:
+            fields += [
+                'detail_transaction',
+            ]
+            columns += [
+                'detail_transaction',
+            ]
 
-                item.position_size_with_sign,
-                item.market_value_system_ccy,
+        data = []
+        for i in builder.instance.items:
+            row = []
+            for f in fields:
+                row.append(getattr(i, f, None))
+            data.append(row)
 
-                item.principal_with_sign_system_ccy,
-                item.carry_with_sign_system_ccy,
-                item.overheads_with_sign_system_ccy,
-                item.total_with_sign_system_ccy,
-            ))
-        print(delim)
+        print('-' * 100)
+        print('Positions:')
+        # print(pd.DataFrame(data=data, columns=columns))
+        self._print_table(data=data, columns=columns)
 
-        summary = report.summary
-        print(row.format(
-            'SUMMARY',
-            '',
+    def _print_summary(self, builder):
+        fields = [
+            'market_value_system_ccy'
+        ]
+        columns = [
+            'market_value'
+        ]
+        print('-' * 100)
+        print('Summary:')
+        row = []
+        for f in fields:
+            row.append(getattr(builder.instance.summary, f, None))
+        self._print_table(data=[row], columns=columns)
 
-            0.0,
-            summary.market_value_system_ccy,
-
-            summary.principal_with_sign_system_ccy,
-            summary.carry_with_sign_system_ccy,
-            summary.overheads_with_sign_system_ccy,
-            summary.total_with_sign_system_ccy,
-        ))
-        print(delim)
-
-        for item in report.invested_items:
-            # print('\t: type=%s, user_code=%20s, position=%10.3f, market_value_system_ccy=%10.3f' % (
-            #     item.type, item.user_code, item.position_size_with_sign, item.market_value_system_ccy
-            # ))
-            print(row.format(
-                item.type_code,
-                item.user_code,
-
-                item.position_size_with_sign,
-                item.market_value_system_ccy,
-
-                item.principal_with_sign_system_ccy,
-                item.carry_with_sign_system_ccy,
-                item.overheads_with_sign_system_ccy,
-                item.total_with_sign_system_ccy,
-            ))
-        print(delim)
-
+    def _dump(self, builder, name):
+        print('*' * 100)
+        print('Report: %s' % name)
+        self._print_transactions(builder)
+        self._print_items(builder)
+        self._print_summary(builder)
         pass
 
     def _test_balance_0(self):
@@ -280,9 +363,9 @@ class ReportTestCase(TestCase):
         r = Report(master_user=self.m, pricing_policy=self.pp, report_date=self._d(14))
         b = ReportBuilder(instance=r)
         b.build()
-        self._dump(r, 'balance_0')
+        self._dump(b, 'balance_0')
 
-    def _test_balance_1(self):
+    def test_balance_1(self):
         self._t(t_class=self._cash_inflow, trn_ccy=self.usd, position=1000, fx_rate=1.3)
         self._t(t_class=self._buy,
                 instr=self.bond0, position=100,
@@ -292,7 +375,7 @@ class ReportTestCase(TestCase):
         r = Report(master_user=self.m, pricing_policy=self.pp, report_date=self._d(14))
         b = ReportBuilder(instance=r)
         b.build()
-        self._dump(r, 'balance_1')
+        self._dump(b, 'balance_1')
 
     def _test_balance_2(self):
         self._t(t_class=self._cash_inflow, trn_ccy=self.eur, position=1000, fx_rate=1.3)
@@ -313,9 +396,9 @@ class ReportTestCase(TestCase):
         r = Report(master_user=self.m, pricing_policy=self.pp, report_date=self._d(14))
         b = ReportBuilder(instance=r)
         b.build()
-        self._dump(r, 'balance_2')
+        self._dump(b, 'balance_2')
 
-    def test_pl_1(self):
+    def _test_pl_1(self):
         self._t(t_class=self._cash_inflow, trn_ccy=self.eur, position=1000, fx_rate=1.3)
 
         self._t(t_class=self._buy, instr=self.bond1, position=100,
@@ -355,4 +438,4 @@ class ReportTestCase(TestCase):
         r = Report(master_user=self.m, pricing_policy=self.pp, report_date=self._d(14))
         b = ReportBuilder(instance=r)
         b.build()
-        self._dump(r, 'test_pl_1')
+        self._dump(b, 'test_pl_1')
