@@ -34,12 +34,12 @@ class ReportTestCase(TestCase):
         self.pp = PricingPolicy.objects.create(master_user=self.m)
 
         self.usd = self.m.system_currency
-        self.eur = Currency.objects.create(user_code='EUR', name='EUR', master_user=self.m)
-        self.chf = Currency.objects.create(user_code='CHF', name='CHF', master_user=self.m)
-        self.cad = Currency.objects.create(user_code='CAD', name='CAD', master_user=self.m)
-        self.mex = Currency.objects.create(user_code='MEX', name='MEX', master_user=self.m)
-        self.rub = Currency.objects.create(user_code='RUB', name='RUB', master_user=self.m)
-        self.gbp = Currency.objects.create(user_code='GBP', name='GBP', master_user=self.m)
+        self.eur, _ = Currency.objects.get_or_create(user_code='EUR', master_user=self.m, defaults={'name': 'EUR'})
+        self.chf, _ = Currency.objects.get_or_create(user_code='CHF', master_user=self.m, defaults={'name': 'CHF'})
+        self.cad, _ = Currency.objects.get_or_create(user_code='CAD', master_user=self.m, defaults={'name': 'CAD'})
+        self.mex, _ = Currency.objects.get_or_create(user_code='MEX', master_user=self.m, defaults={'name': 'MEX'})
+        self.rub, _ = Currency.objects.get_or_create(user_code='RUB', master_user=self.m, defaults={'name': 'RUB'})
+        self.gbp, _ = Currency.objects.get_or_create(user_code='GBP', master_user=self.m, defaults={'name': 'GBP'})
 
         for days in range(0, 29):
             d = self._d(days)
@@ -268,7 +268,7 @@ class ReportTestCase(TestCase):
         print('Transactions: ')
         self._print_table(data, columns)
 
-    def _print_items(self, builder):
+    def _print_items(self, builder, items_attr, name):
         fields = [
             'type_code', 'user_code', 'instrument', 'currency', 'position_size_with_sign',
             'market_value_system_ccy', 'principal_with_sign_system_ccy', 'carry_with_sign_system_ccy',
@@ -322,24 +322,33 @@ class ReportTestCase(TestCase):
             ]
 
         data = []
-        for i in builder.instance.items:
+        for i in getattr(builder.instance, items_attr):
             row = []
             for f in fields:
                 row.append(getattr(i, f, None))
             data.append(row)
 
         print('-' * 100)
-        print('Positions:')
+        print('%s:' % name)
         # print(pd.DataFrame(data=data, columns=columns))
         self._print_table(data=data, columns=columns)
 
     def _print_summary(self, builder):
         fields = [
-            'market_value_system_ccy'
+            'market_value_system_ccy',
+            'principal_with_sign_system_ccy',
+            'carry_with_sign_system_ccy',
+            'overheads_with_sign_system_ccy',
+            'total_with_sign_system_ccy',
         ]
         columns = [
-            'market_value'
+            'market_value',
+            'principal',
+            'carry',
+            'overheads',
+            'total',
         ]
+
         print('-' * 100)
         print('Summary:')
         row = []
@@ -351,7 +360,8 @@ class ReportTestCase(TestCase):
         print('*' * 100)
         print('Report: %s' % name)
         self._print_transactions(builder)
-        self._print_items(builder)
+        self._print_items(builder, 'items', 'Items')
+        self._print_items(builder, 'invested_items', 'Invested')
         self._print_summary(builder)
         pass
 
@@ -365,7 +375,7 @@ class ReportTestCase(TestCase):
         b.build()
         self._dump(b, 'balance_0')
 
-    def test_balance_1(self):
+    def _test_balance_1(self):
         self._t(t_class=self._cash_inflow, trn_ccy=self.usd, position=1000, fx_rate=1.3)
         self._t(t_class=self._buy,
                 instr=self.bond0, position=100,
@@ -398,7 +408,19 @@ class ReportTestCase(TestCase):
         b.build()
         self._dump(b, 'balance_2')
 
-    def _test_pl_1(self):
+    def test_pl_0(self):
+        self._t(t_class=self._cash_inflow, trn_ccy=self.usd, position=1000, fx_rate=1.3)
+
+        self._t(t_class=self._buy, instr=self.bond0, position=100,
+                settlement_ccy=self.usd, principal=-180., carry=-5., overheads=-15.,
+                acc_date_days=3, cash_date_days=5)
+
+        r = Report(master_user=self.m, pricing_policy=self.pp, report_date=self._d(14))
+        b = ReportBuilder(instance=r)
+        b.build()
+        self._dump(b, 'test_pl_0')
+
+    def test_pl_1(self):
         self._t(t_class=self._cash_inflow, trn_ccy=self.eur, position=1000, fx_rate=1.3)
 
         self._t(t_class=self._buy, instr=self.bond1, position=100,
@@ -424,16 +446,6 @@ class ReportTestCase(TestCase):
         self._t(t_class=self._transaction_pl, position=0.,
                 settlement_ccy=self.rub, principal=0., carry=-900., overheads=-100.,
                 acc_date_days=8, cash_date_days=8)
-
-        # simple_w_trnpl = [
-        #     self.t_in.pk,
-        #     self.t_buy_bond.pk,
-        #     self.t_sell_stock.pk,
-        #     self.t_out.pk,
-        #     self.t_instrpl_stock.pk,
-        #     self.t_instrpl_bond.pk,
-        #     self.t_trnpl.pk
-        # ]
 
         r = Report(master_user=self.m, pricing_policy=self.pp, report_date=self._d(14))
         b = ReportBuilder(instance=r)
