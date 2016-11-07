@@ -523,7 +523,7 @@ class ReportBuilder(object):
                 account=t.account_position if self._detail_by_account else  None
             )
 
-            t.avco_multiplier = 0.0
+            t.multiplier = 0.0
             position_size_with_sign = t.position_size_with_sign
             rolling_position = rolling_positions[t_key]
 
@@ -532,18 +532,17 @@ class ReportBuilder(object):
                 i_not_closed = not_closed.get(t_key, [])
                 if i_not_closed:  # есть прошлые продажи, которые надо закрыть
                     if position_size_with_sign + rolling_position >= 0.0:  # все есть
-                        t.avco_multiplier = abs(rolling_position / position_size_with_sign)
+                        t.multiplier = abs(rolling_position / position_size_with_sign)
                         for t0 in i_not_closed:
-                            t0.avco_multiplier = 1.0
+                            t0.multiplier = 1.0
                         in_stock[t_key] = in_stock.get(t_key, []) + [t]
                     else:  # только частично
-                        t.avco_multiplier = 1.0
+                        t.multiplier = 1.0
                         for t0 in i_not_closed:
-                            t0.avco_multiplier += abs(
-                                (1.0 - t0.avco_multiplier) * position_size_with_sign / rolling_position)
-                    not_closed[t_key] = [t0 for t0 in i_not_closed if t0.avco_multiplier < 1.0]
+                            t0.multiplier += abs((1.0 - t0.multiplier) * position_size_with_sign / rolling_position)
+                    not_closed[t_key] = [t0 for t0 in i_not_closed if t0.multiplier < 1.0]
                 else:  # новая "чистая" покупка
-                    t.avco_multiplier = 0.0
+                    t.multiplier = 0.0
                     in_stock[t_key] = in_stock.get(t_key, []) + [t]
 
             # else:  # продажа
@@ -551,27 +550,22 @@ class ReportBuilder(object):
                 i_in_stock = in_stock.get(t_key, [])
                 if i_in_stock:  # есть что продавать
                     if position_size_with_sign + rolling_position >= 0.0:  # все есть
-                        t.avco_multiplier = 1.0
+                        t.multiplier = 1.0
                         for t0 in i_in_stock:
-                            t0.avco_multiplier += abs(
-                                (1.0 - t0.avco_multiplier) * position_size_with_sign / rolling_position)
+                            t0.multiplier += abs((1.0 - t0.multiplier) * position_size_with_sign / rolling_position)
                     else:  # только частично
-                        t.avco_multiplier = abs(rolling_position / position_size_with_sign)
+                        t.multiplier = abs(rolling_position / position_size_with_sign)
                         for t0 in i_in_stock:
-                            t0.avco_multiplier = 1.0
+                            t0.multiplier = 1.0
                         not_closed[t_key] = not_closed.get(t_key, []) + [t]
-                    in_stock[t_key] = [t0 for t0 in i_in_stock if t0.avco_multiplier < 1.0]
+                    in_stock[t_key] = [t0 for t0 in i_in_stock if t0.multiplier < 1.0]
                 else:  # нечего продавать
-                    t.avco_multiplier = 0.0
+                    t.multiplier = 0.0
                     not_closed[t_key] = not_closed.get(t_key, []) + [t]
 
             rolling_position += position_size_with_sign
             rolling_positions[t_key] = rolling_position
             t.rolling_position = rolling_position
-
-        for t in self.transactions:
-            if t.transaction_class_id in [TransactionClass.BUY, TransactionClass.SELL]:
-                t.multiplier = t.avco_multiplier
 
     def _annotate_fifo_multiplier(self, transactions):
         in_stock = {}
@@ -590,7 +584,7 @@ class ReportBuilder(object):
                 account=t.account_position if self._detail_by_account else  None
             )
 
-            t.fifo_multiplier = 0.0
+            t.multiplier = 0.0
             position_size_with_sign = t.position_size_with_sign
             rolling_position = rolling_positions[t_key]
 
@@ -603,18 +597,18 @@ class ReportBuilder(object):
                         sale = t0.not_closed
                         if balance + sale > 0.0:  # есть все
                             balance -= abs(sale)
-                            t0.fifo_multiplier = 1.0
+                            t0.multiplier = 1.0
                             t0.not_closed = t0.not_closed - abs(t0.position_size_with_sign)
                         else:
                             t0.not_closed = t0.not_closed + balance
-                            t0.fifo_multiplier = 1.0 - abs(t0.not_closed / t0.position_size_with_sign)
+                            t0.multiplier = 1.0 - abs(t0.not_closed / t0.position_size_with_sign)
                             balance = 0.0
                         if balance <= 0.0:
                             break
-                    not_closed[t_key] = [t0 for t0 in i_not_closed if t0.fifo_multiplier < 1.0]
+                    not_closed[t_key] = [t0 for t0 in i_not_closed if t0.multiplier < 1.0]
                 t.balance = balance
-                t.fifo_multiplier = abs((position_size_with_sign - balance) / position_size_with_sign)
-                if t.fifo_multiplier < 1.0:
+                t.multiplier = abs((position_size_with_sign - balance) / position_size_with_sign)
+                if t.multiplier < 1.0:
                     in_stock[t_key] = in_stock.get(t_key, []) + [t]
 
             # else:  # продажа
@@ -626,28 +620,27 @@ class ReportBuilder(object):
                         balance = t0.balance
                         if sale + balance > 0.0:  # есть все
                             t0.balance = balance - abs(sale)
-                            t0.fifo_multiplier = abs(
-                                (t0.position_size_with_sign - t0.balance) / t0.position_size_with_sign)
+                            t0.multiplier = abs((t0.position_size_with_sign - t0.balance) / t0.position_size_with_sign)
                             sale = 0.0
                         else:
                             t0.balance = 0.0
-                            t0.fifo_multiplier = 1.0
+                            t0.multiplier = 1.0
                             sale += abs(balance)
                         if sale >= 0.0:
                             break
-                    in_stock[t_key] = [t0 for t0 in i_in_stock if t0.fifo_multiplier < 1.0]
+                    in_stock[t_key] = [t0 for t0 in i_in_stock if t0.multiplier < 1.0]
                 t.not_closed = sale
-                t.fifo_multiplier = abs((position_size_with_sign - sale) / position_size_with_sign)
-                if t.fifo_multiplier < 1.0:
+                t.multiplier = abs((position_size_with_sign - sale) / position_size_with_sign)
+                if t.multiplier < 1.0:
                     not_closed[t_key] = not_closed.get(t_key, []) + [t]
 
             rolling_position += position_size_with_sign
             rolling_positions[t_key] = rolling_position
             t.rolling_position = rolling_position
 
-        for t in self.transactions:
+        for t in transactions:
             if t.transaction_class_id in [TransactionClass.BUY, TransactionClass.SELL]:
-                t.multiplier = t.fifo_multiplier
+                t.multiplier = t.multiplier
 
     def _annotate_transaction_case(self, t):
         if t.accounting_date <= self._report_date < t.cash_date:  # default
@@ -715,7 +708,8 @@ class ReportBuilder(object):
     def _process_transaction_fx_trade(self, trn):
         # TODO: Что используем для strategy?
         self._add_cash(self._items, trn, value=trn.position_size_with_sign, currency=trn.transaction_currency,
-                       account=trn.account_position)
+                       account=trn.account_position, strategy1=trn.strategy1_position,
+                       strategy2=trn.strategy2_position, strategy3=trn.strategy3_position, )
 
         self._add_cash(self._items, trn, value=trn.cash_consideration, currency=trn.settlement_currency)
 
@@ -726,7 +720,7 @@ class ReportBuilder(object):
         item.principal_with_sign_system_ccy += \
             self._to_system_ccy(trn.position_size_with_sign, trn.transaction_currency) + \
             self._to_system_ccy(trn.principal_with_sign, trn.settlement_currency)
-        item.carry_with_sign_system_ccy += self._to_system_ccy(trn.carry_with_sign, trn.settlement_currency)
+        # item.carry_with_sign_system_ccy += self._to_system_ccy(trn.carry_with_sign, trn.settlement_currency)
         item.overheads_with_sign_system_ccy += self._to_system_ccy(trn.overheads_with_sign, trn.settlement_currency)
 
     def _process_transaction_instrument_pl(self, trn):

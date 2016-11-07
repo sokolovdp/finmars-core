@@ -108,15 +108,15 @@ class ReportTestCase(TestCase):
         self.p1 = Portfolio.objects.create(master_user=self.m, name='p1')
         self.p2 = Portfolio.objects.create(master_user=self.m, name='p2')
 
-        for g_i in range(1, 2):
+        for g_i in range(0, 10):
             g = Strategy1Group.objects.create(master_user=self.m, name='%s' % (g_i,))
-            setattr(self, 'strategy1_%s' % (g_i,), g)
-            for sg_i in range(1, 2):
+            setattr(self, 's1_%s' % (g_i,), g)
+            for sg_i in range(0, 10):
                 sg = Strategy1Subgroup.objects.create(master_user=self.m, group=g, name='%s-%s' % (g_i, sg_i))
-                setattr(self, 'strategy1_%s_%s' % (g_i, sg_i), sg)
-                for s_i in range(1, 2):
+                setattr(self, 's1_%s_%s' % (g_i, sg_i), sg)
+                for s_i in range(0, 10):
                     s = Strategy1.objects.create(master_user=self.m, subgroup=sg, name='%s-%s-%s' % (g_i, sg_i, s_i))
-                    setattr(self, 'strategy1_%s_%s_%s' % (g_i, sg_i, s_i), s)
+                    setattr(self, 's1_%s_%s_%s' % (g_i, sg_i, s_i), s)
 
     def _d(self, days=None):
         if days is None or days == 0:
@@ -241,21 +241,21 @@ class ReportTestCase(TestCase):
                 'strategy1_position', 'strategy1_cash',
             ]
             columns += [
-                'strategy1_position', 'strategy1_cash',
+                's1_pos', 's1_cash',
             ]
         if builder.instance.detail_by_strategy2:
             fields += [
                 'strategy2_position', 'strategy2_cash',
             ]
             columns += [
-                'strategy2_position', 'strategy2_cash',
+                's2_pos', 's2_cash',
             ]
         if builder.instance.detail_by_strategy3:
             fields += [
                 'strategy3_position', 'strategy3_cash',
             ]
             columns += [
-                'strategy3_position', 'strategy3_cash',
+                's3_pos', 's3_cash',
             ]
         data = []
         for t in builder.transactions:
@@ -269,6 +269,9 @@ class ReportTestCase(TestCase):
         self._print_table(data, columns)
 
     def _print_items(self, builder, items_attr, name):
+        items = getattr(builder.instance, items_attr)
+        if not items:
+            return
         fields = [
             'type_code', 'user_code', 'instrument', 'currency', 'position_size_with_sign',
             'market_value_system_ccy', 'principal_with_sign_system_ccy', 'carry_with_sign_system_ccy',
@@ -283,46 +286,46 @@ class ReportTestCase(TestCase):
                 'portfolio',
             ]
             columns += [
-                'portfolio',
+                'prtfl',
             ]
         if builder.instance.detail_by_account:
             fields += [
                 'account',
             ]
             columns += [
-                'account',
+                'acc',
             ]
         if builder.instance.detail_by_strategy1:
             fields += [
                 'strategy1',
             ]
             columns += [
-                'strategy1',
+                's1',
             ]
         if builder.instance.detail_by_strategy2:
             fields += [
                 'strategy2',
             ]
             columns += [
-                'strategy2',
+                's2',
             ]
         if builder.instance.detail_by_strategy3:
             fields += [
                 'strategy3',
             ]
             columns += [
-                'strategy3',
+                's3',
             ]
         if builder.instance.show_transaction_details:
             fields += [
                 'detail_transaction',
             ]
             columns += [
-                'detail_transaction',
+                'detail_trn',
             ]
 
         data = []
-        for i in getattr(builder.instance, items_attr):
+        for i in items:
             row = []
             for f in fields:
                 row.append(getattr(i, f, None))
@@ -408,7 +411,7 @@ class ReportTestCase(TestCase):
         b.build()
         self._dump(b, 'balance_2')
 
-    def test_pl_0(self):
+    def _test_pl_0(self):
         self._t(t_class=self._cash_inflow, trn_ccy=self.usd, position=1000, fx_rate=1.3)
 
         self._t(t_class=self._buy, instr=self.bond0, position=100,
@@ -420,7 +423,7 @@ class ReportTestCase(TestCase):
         b.build()
         self._dump(b, 'test_pl_0')
 
-    def test_pl_1(self):
+    def _test_pl_1(self):
         self._t(t_class=self._cash_inflow, trn_ccy=self.eur, position=1000, fx_rate=1.3)
 
         self._t(t_class=self._buy, instr=self.bond1, position=100,
@@ -451,3 +454,124 @@ class ReportTestCase(TestCase):
         b = ReportBuilder(instance=r)
         b.build()
         self._dump(b, 'test_pl_1')
+
+    def _test_pl_real_unreal_0(self):
+        # TODO: bad
+        s1 = self.s1_1_1_1
+        s2 = self.s1_1_1_2
+        s3 = self.s1_1_1_3
+        s4 = self.s1_1_1_4
+
+        instr = Instrument.objects.create(master_user=self.m, name="I1, USD/USD",
+                                          instrument_type=self.m.instrument_type,
+                                          pricing_currency=self.usd, price_multiplier=1.0,
+                                          accrued_currency=self.usd, accrued_multiplier=1.0)
+
+        PriceHistory.objects.create(instrument=instr, pricing_policy=self.pp,
+                                    date=self._d(1), principal_price=10.0, accrued_price=1.0)
+        PriceHistory.objects.create(instrument=instr, pricing_policy=self.pp,
+                                    date=self._d(2), principal_price=10.5, accrued_price=1.0)
+        PriceHistory.objects.create(instrument=instr, pricing_policy=self.pp,
+                                    date=self._d(3), principal_price=11.0, accrued_price=1.0)
+        PriceHistory.objects.create(instrument=instr, pricing_policy=self.pp,
+                                    date=self._d(4), principal_price=11.5, accrued_price=1.0)
+        PriceHistory.objects.create(instrument=instr, pricing_policy=self.pp,
+                                    date=self._d(5), principal_price=12.0, accrued_price=1.0)
+        PriceHistory.objects.create(instrument=instr, pricing_policy=self.pp,
+                                    date=self._d(6), principal_price=12.5, accrued_price=1.0)
+
+        self._t(t_class=self._buy, instr=instr, position=10,
+                settlement_ccy=self.usd, principal=-100., carry=0.0, overheads=0.0,
+                acc_date_days=1, cash_date_days=1, s1_pos=s1)
+
+        self._t(t_class=self._buy, instr=instr, position=10,
+                settlement_ccy=self.usd, principal=-105., carry=0.0, overheads=0.0,
+                acc_date_days=2, cash_date_days=2, s1_pos=s1)
+
+        self._t(t_class=self._buy, instr=instr, position=10,
+                settlement_ccy=self.usd, principal=-110., carry=0.0, overheads=0.0,
+                acc_date_days=3, cash_date_days=3, s1_pos=s1)
+
+        self._t(t_class=self._sell, instr=instr, position=-20,
+                settlement_ccy=self.usd, principal=230., carry=0.0, overheads=0.0,
+                acc_date_days=4, cash_date_days=4, s1_pos=s2)
+
+        self._t(t_class=self._buy, instr=instr, position=10,
+                settlement_ccy=self.usd, principal=-120., carry=0.0, overheads=0.0,
+                acc_date_days=5, cash_date_days=5, s1_pos=s3)
+
+        self._t(t_class=self._sell, instr=instr, position=-20,
+                settlement_ccy=self.usd, principal=250., carry=0.0, overheads=0.0,
+                acc_date_days=6, cash_date_days=6, s1_pos=s2)
+
+        r = Report(master_user=self.m, pricing_policy=self.pp, report_date=self._d(14),
+                   detail_by_strategy1=True)
+        b = ReportBuilder(instance=r)
+        b.build()
+        self._dump(b, 'test_pl_real_unreal_0')
+
+    def test_pl_real_unreal_1(self):
+        s1 = self.s1_1_1_1
+        s2 = self.s1_1_1_2
+        s3 = self.s1_1_1_3
+        s4 = self.s1_1_1_4
+
+        instr = Instrument.objects.create(master_user=self.m, name="I1, USD/USD",
+                                          instrument_type=self.m.instrument_type,
+                                          pricing_currency=self.usd, price_multiplier=1.0,
+                                          accrued_currency=self.usd, accrued_multiplier=1.0)
+
+        PriceHistory.objects.create(instrument=instr, pricing_policy=self.pp,
+                                    date=self._d(1), principal_price=8.0, accrued_price=1.0)
+        PriceHistory.objects.create(instrument=instr, pricing_policy=self.pp,
+                                    date=self._d(2), principal_price=10.0, accrued_price=1.0)
+        PriceHistory.objects.create(instrument=instr, pricing_policy=self.pp,
+                                    date=self._d(3), principal_price=10.5, accrued_price=1.0)
+        PriceHistory.objects.create(instrument=instr, pricing_policy=self.pp,
+                                    date=self._d(4), principal_price=11.0, accrued_price=1.0)
+        PriceHistory.objects.create(instrument=instr, pricing_policy=self.pp,
+                                    date=self._d(5), principal_price=11.5, accrued_price=1.0)
+        PriceHistory.objects.create(instrument=instr, pricing_policy=self.pp,
+                                    date=self._d(6), principal_price=12.0, accrued_price=1.0)
+        PriceHistory.objects.create(instrument=instr, pricing_policy=self.pp,
+                                    date=self._d(7), principal_price=12.5, accrued_price=1.0)
+        PriceHistory.objects.create(instrument=instr, pricing_policy=self.pp,
+                                    date=self._d(8), principal_price=13.0, accrued_price=1.0)
+
+        self._t(t_class=self._sell, instr=instr, position=-5,
+                settlement_ccy=self.usd, principal=40.0, carry=0.0, overheads=0.0,
+                acc_date_days=1, cash_date_days=1, s1_pos=s1)
+
+        self._t(t_class=self._buy, instr=instr, position=10,
+                settlement_ccy=self.usd, principal=-100.0, carry=0.0, overheads=0.0,
+                acc_date_days=2, cash_date_days=2, s1_pos=s1)
+
+        self._t(t_class=self._buy, instr=instr, position=10,
+                settlement_ccy=self.usd, principal=-105.0, carry=0.0, overheads=0.0,
+                acc_date_days=3, cash_date_days=3, s1_pos=s1)
+
+        self._t(t_class=self._buy, instr=instr, position=10,
+                settlement_ccy=self.usd, principal=-110.0, carry=0.0, overheads=0.0,
+                acc_date_days=4, cash_date_days=4, s1_pos=s1)
+
+        self._t(t_class=self._sell, instr=instr, position=-20,
+                settlement_ccy=self.usd, principal=230.0, carry=0.0, overheads=0.0,
+                acc_date_days=5, cash_date_days=5, s1_pos=s2)
+
+        self._t(t_class=self._buy, instr=instr, position=10,
+                settlement_ccy=self.usd, principal=-120.0, carry=0.0, overheads=0.0,
+                acc_date_days=6, cash_date_days=6, s1_pos=s3)
+
+        self._t(t_class=self._sell, instr=instr, position=-20,
+                settlement_ccy=self.usd, principal=250.0, carry=0.0, overheads=0.0,
+                acc_date_days=7, cash_date_days=7, s1_pos=s2)
+
+        self._t(t_class=self._sell, instr=instr, position=-10,
+                settlement_ccy=self.usd, principal=130.0, carry=0.0, overheads=0.0,
+                acc_date_days=8, cash_date_days=8, s1_pos=s4)
+
+        r = Report(master_user=self.m, pricing_policy=self.pp, report_date=self._d(14),
+                   detail_by_strategy1=True)
+        b = ReportBuilder(instance=r)
+        b.build()
+        self._dump(b, 'test_pl_real_unreal_1')
