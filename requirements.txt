@@ -2,10 +2,10 @@ amqp==1.4.9
 anyjson==0.3.3
 Babel==2.3.4
 billiard==3.3.0.23
-celery==3.1.24
+celery==3.1.25
 cffi==1.8.3
 croniter==0.3.13
-cryptography==1.5.2
+cryptography==1.5.3
 Cython==0.25.1
 Django==1.10.3
 django-crispy-forms==1.6.1
@@ -23,10 +23,10 @@ django-two-factor-auth==1.4.0
 djangorestframework==3.4.7
 geoip2==2.4.0
 idna==2.1
-kombu==3.0.36
+kombu==3.0.37
 maxminddb==1.2.1
 numpy==1.11.2
-pandas==0.19.0
+pandas==0.19.1
 phonenumbers==7.7.3
 phonenumberslite==7.7.3
 psycopg2==2.6.2
@@ -44,3 +44,4 @@ sqlparse==0.2.2
 suds-jurko==0.6
 ua-parser==0.7.2
 user-agents==1.0.1
+vine==1.1.3
