@@ -1,6 +1,7 @@
 from __future__ import unicode_literals
 
 import pytz
+import pycountry
 from django.conf import settings
 from django.contrib.auth.models import User, Permission
 from django.db import models
@@ -8,7 +9,6 @@ from django.db.models.signals import post_save
 from django.dispatch import receiver
 from django.utils.encoding import python_2_unicode_compatible
 from django.utils.translation import ugettext_lazy
-
 from poms.common.models import NamedModel, FakeDeletableModel
 
 AVAILABLE_APPS = ['accounts', 'counterparties', 'currencies', 'instruments', 'portfolios', 'strategies', 'transactions',
@@ -41,6 +41,10 @@ class MasterUserManager(models.Manager):
 
         ccy = Currency.objects.create(master_user=obj, name='-')
         ccy_usd = Currency.objects.create(master_user=obj, name='USD')
+
+        for c in pycountry.currencies:
+            if c.letter != 'USD':
+                Currency.objects.create(master_user=obj, user_code=c.letter, name=c.name)
 
         account_type = AccountType.objects.create(master_user=obj, name='-')
         account = Account.objects.create(master_user=obj, type=account_type, name='-')
