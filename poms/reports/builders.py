@@ -2,7 +2,7 @@
 from __future__ import unicode_literals, division
 
 import logging
-from collections import Counter, OrderedDict, defaultdict
+from collections import Counter, defaultdict
 from datetime import timedelta
 
 from django.db.models import Q
@@ -69,6 +69,9 @@ class ReportItem(object):
         self.market_value_system_ccy = 0.0
         self.market_value_report_ccy = 0.0
 
+        self.cost_with_sign_system_ccy = 0.0
+        self.cost_with_sign_report_ccy = 0.0
+
         # P&L
 
         self.principal_with_sign_system_ccy = 0.0
@@ -76,10 +79,30 @@ class ReportItem(object):
         self.overheads_with_sign_system_ccy = 0.0
         self.total_with_sign_system_ccy = 0.0
 
+        self.real_pl_principal_with_sign_system_ccy = 0.0
+        self.real_pl_carry_with_sign_system_ccy = 0.0
+        self.real_pl_overheads_with_sign_system_ccy = 0.0
+        self.real_pl_total_with_sign_system_ccy = 0.0
+
+        # self.unreal_pl_principal_with_sign_system_ccy = 0.0
+        # self.unreal_pl_carry_with_sign_system_ccy = 0.0
+        # self.unreal_pl_overheads_with_sign_system_ccy = 0.0
+        self.unreal_pl_total_with_sign_system_ccy = 0.0
+
         self.principal_with_sign_report_ccy = 0.0
         self.carry_with_sign_report_ccy = 0.0
         self.overheads_with_sign_report_ccy = 0.0
         self.total_with_sign_report_ccy = 0.0
+
+        self.real_pl_principal_with_sign_report_ccy = 0.0
+        self.real_pl_carry_with_sign_report_ccy = 0.0
+        self.real_pl_overheads_with_sign_report_ccy = 0.0
+        self.real_pl_total_with_sign_report_ccy = 0.0
+
+        # self.unreal_pl_principal_with_sign_report_ccy = 0.0
+        # self.unreal_pl_carry_with_sign_report_ccy = 0.0
+        # self.unreal_pl_overheads_with_sign_report_ccy = 0.0
+        self.unreal_pl_total_with_sign_report_ccy = 0.0
 
     def __str__(self):
         return "%s #%s" % (self.__class__.__name__, self.pk,)
@@ -159,35 +182,42 @@ class ReportSummary(object):
         self.market_value_system_ccy = 0.0
         self.market_value_report_ccy = 0.0
 
+        self.cost_with_sign_system_ccy = 0.0
+        self.cost_with_sign_report_ccy = 0.0
+
         # P&L
         self.principal_with_sign_system_ccy = 0.0
         self.carry_with_sign_system_ccy = 0.0
         self.overheads_with_sign_system_ccy = 0.0
         self.total_with_sign_system_ccy = 0.0
 
+        self.real_pl_principal_with_sign_system_ccy = 0.0
+        self.real_pl_carry_with_sign_system_ccy = 0.0
+        self.real_pl_overheads_with_sign_system_ccy = 0.0
+        self.real_pl_total_with_sign_system_ccy = 0.0
+
+        # self.unreal_pl_principal_with_sign_system_ccy = 0.0
+        # self.unreal_pl_carry_with_sign_system_ccy = 0.0
+        # self.unreal_pl_overheads_with_sign_system_ccy = 0.0
+        self.unreal_pl_total_with_sign_system_ccy = 0.0
+
         self.principal_with_sign_report_ccy = 0.0
         self.carry_with_sign_report_ccy = 0.0
         self.overheads_with_sign_report_ccy = 0.0
         self.total_with_sign_report_ccy = 0.0
 
+        self.real_pl_principal_with_sign_report_ccy = 0.0
+        self.real_pl_carry_with_sign_report_ccy = 0.0
+        self.real_pl_overheads_with_sign_report_ccy = 0.0
+        self.real_pl_total_with_sign_report_ccy = 0.0
+
+        # self.unreal_pl_principal_with_sign_report_ccy = 0.0
+        # self.unreal_pl_carry_with_sign_report_ccy = 0.0
+        # self.unreal_pl_overheads_with_sign_report_ccy = 0.0
+        self.unreal_pl_total_with_sign_report_ccy = 0.0
+
     def __str__(self):
         return "summary"
-
-    def add_items(self, items):
-        for item in items:
-            self.market_value_system_ccy += item.market_value_system_ccy
-            self.market_value_report_ccy += item.market_value_report_ccy
-
-            # P&L
-            self.principal_with_sign_system_ccy += item.principal_with_sign_system_ccy
-            self.carry_with_sign_system_ccy += item.carry_with_sign_system_ccy
-            self.overheads_with_sign_system_ccy += item.overheads_with_sign_system_ccy
-            self.total_with_sign_system_ccy += item.total_with_sign_system_ccy
-
-            self.principal_with_sign_report_ccy += item.principal_with_sign_report_ccy
-            self.carry_with_sign_report_ccy += item.carry_with_sign_report_ccy
-            self.overheads_with_sign_report_ccy += item.overheads_with_sign_report_ccy
-            self.total_with_sign_report_ccy += item.total_with_sign_report_ccy
 
 
 class Report(object):
@@ -208,6 +238,7 @@ class Report(object):
         self.report_date = report_date or (date_now() - timedelta(days=1))
         self.report_currency = report_currency or master_user.system_currency
         self.cost_method = cost_method or CostMethod.objects.get(pk=CostMethod.AVCO)
+        self.pl_real_unreal_end_multiplier = 0.5
 
         self.detail_by_portfolio = detail_by_portfolio
         self.detail_by_account = detail_by_account
@@ -497,40 +528,24 @@ class ReportBuilder(object):
                 transactions1.append(t)
         return transactions1
 
-    def _annotate_multiplier(self, transactions):
-        if self._any_details:
-            # if self.instance.cost_method.id == CostMethod.AVCO:
-            #     self._annotate_avco_multiplier(transactions)
-            # elif self.instance.cost_method.id == CostMethod.FIFO:
-            #     self._annotate_fifo_multiplier(transactions)
-            self._annotate_multiplier1(transactions)
-            pass
-        else:
-            for t in transactions:
-                t.multiplier = 1.0
+    # def _annotate_multiplier(self, transactions):
+    #     if self._any_details:
+    #         self._annotate_multiplier1(transactions)
+    #         pass
+    #     else:
+    #         for t in transactions:
+    #             t.multiplier = 0.0
 
-    def _annotate_multiplier1(self, transactions):
+    def _annotate_multiplier(self, transactions):
         rolling_positions = Counter()
         items = defaultdict(list)
-
-        def _set_multiplier(t, multiplier):
-            old_multiplier = t.multiplier
-            if not isclose(old_multiplier, multiplier):
-                # print('\t', t.id, str(t.transaction_class)[0], t.instrument, old_multiplier, multiplier)
-                pass
-            t.multiplier = multiplier
-
-        # print('1' * 10)
-        # for t in transactions:
-        #     if t.transaction_class_id not in [TransactionClass.BUY, TransactionClass.SELL]:
-        #         continue
-        #     print(t.id, str(t.transaction_class)[0], t.instrument)
 
         for i, t in enumerate(transactions):
             if t.transaction_class_id not in [TransactionClass.BUY, TransactionClass.SELL]:
                 continue
 
-            # print(i)
+            # print('-----')
+            # print(i, t.id)
 
             # do not use strategy!!!
             t_key = self._make_key(
@@ -539,7 +554,22 @@ class ReportBuilder(object):
                 account=t.account_position if self._detail_by_account else  None
             )
 
+            real_pl_changes = []
+
             t.multiplier = 0.0
+            t.cost_with_sign = 0.0
+            t.balance_position_size_with_sign = 0.0
+
+            t.real_pl_principal_with_sign = 0.0
+            t.real_pl_carry_with_sign = 0.0
+            t.real_pl_overheads_with_sign = 0.0
+            t.real_pl_total_with_sign = 0.0
+
+            # t.unreal_pl_principal_with_sign = 0.0
+            # t.unreal_pl_carry_with_sign = 0.0
+            # t.unreal_pl_overheads_with_sign = 0.0
+            t.unreal_pl_total_with_sign = 0.0
+
             rolling_position = rolling_positions[t_key]
 
             if isclose(rolling_position, 0.0):
@@ -548,47 +578,54 @@ class ReportBuilder(object):
                 k = - t.position_size_with_sign / rolling_position
 
             if self.instance.cost_method.id == CostMethod.AVCO:
+
                 if k > 1.0:
                     if t_key in items:
                         for t0 in items[t_key]:
-                            _set_multiplier(t0, 1.0)
+                            self._set_multiplier(real_pl_changes, t0, 1.0)
                         del items[t_key]
                     items[t_key].append(t)
-                    _set_multiplier(t, 1.0 / k)
+                    self._set_multiplier(real_pl_changes, t, 1.0 / k)
                     rolling_position = t.position_size_with_sign * (1.0 - t.multiplier)
+
                 elif isclose(k, 1.0):
                     if t_key in items:
                         for t0 in items[t_key]:
-                            _set_multiplier(t0, 1.0)
+                            self._set_multiplier(real_pl_changes, t0, 1.0)
                         del items[t_key]
-                    _set_multiplier(t, 1.0)
+                    self._set_multiplier(real_pl_changes, t, 1.0)
                     rolling_position = 0.0
+
                 elif k > 0.0:
                     if t_key in items:
                         for t0 in items[t_key]:
-                            _set_multiplier(t0, t0.multiplier + k * (1.0 - t0.multiplier))
-                    _set_multiplier(t, 1.0)
+                            self._set_multiplier(real_pl_changes, t0, t0.multiplier + k * (1.0 - t0.multiplier))
+                    self._set_multiplier(real_pl_changes, t, 1.0)
                     rolling_position += t.position_size_with_sign
+
                 else:
                     items[t_key].append(t)
                     rolling_position += t.position_size_with_sign
 
             elif self.instance.cost_method.id == CostMethod.FIFO:
+
                 if k > 1.0:
                     if t_key in items:
                         for t0 in items[t_key]:
-                            _set_multiplier(t0, 1.0)
+                            self._set_multiplier(real_pl_changes, t0, 1.0)
                         items[t_key].clear()
                     items[t_key].append(t)
-                    _set_multiplier(t, 1.0 / k)
+                    self._set_multiplier(real_pl_changes, t, 1.0 / k)
                     rolling_position = t.position_size_with_sign * (1.0 - t.multiplier)
+
                 elif isclose(k, 1.0):
                     if t_key in items:
                         for t0 in items[t_key]:
-                            _set_multiplier(t0, 1.0)
+                            self._set_multiplier(real_pl_changes, t0, 1.0)
                         del items[t_key]
-                    _set_multiplier(t, 1.0)
+                    self._set_multiplier(real_pl_changes, t, 1.0)
                     rolling_position = 0.0
+
                 elif k > 0.0:
                     position = t.position_size_with_sign
                     if t_key in items:
@@ -597,14 +634,14 @@ class ReportBuilder(object):
                             remaining = t0.position_size_with_sign * (1.0 - t0.multiplier)
                             k0 = - position / remaining
                             if k0 > 1.0:
-                                _set_multiplier(t0, 1.0)
+                                self._set_multiplier(real_pl_changes, t0, 1.0)
                                 position += remaining
                             elif isclose(k0, 1.0):
-                                _set_multiplier(t0, 1.0)
+                                self._set_multiplier(real_pl_changes, t0, 1.0)
                                 position += remaining
                             elif k0 > 0.0:
                                 position += remaining * k0
-                                _set_multiplier(t0, t0.multiplier + k0 * (1.0 - t0.multiplier))
+                                self._set_multiplier(real_pl_changes, t0, t0.multiplier + k0 * (1.0 - t0.multiplier))
                             # else:
                             #     break
                             if isclose(position, 0.0):
@@ -615,8 +652,10 @@ class ReportBuilder(object):
                         else:
                             del items[t_key]
 
-                    _set_multiplier(t, abs((t.position_size_with_sign - position) / t.position_size_with_sign))
+                    self._set_multiplier(real_pl_changes, t,
+                                         abs((t.position_size_with_sign - position) / t.position_size_with_sign))
                     rolling_position += t.position_size_with_sign * t.multiplier
+
                 else:
                     items[t_key].append(t)
                     rolling_position += t.position_size_with_sign
@@ -624,166 +663,232 @@ class ReportBuilder(object):
             rolling_positions[t_key] = rolling_position
             # print('i =', i, ', rolling_positions =', rolling_position)
 
-    def _annotate_avco_multiplier(self, transactions):
-        in_stock = OrderedDict()
-        not_closed = OrderedDict()
-        rolling_positions = Counter()
-
-        def _set_multiplier(t, multiplier):
-            old_multiplier = t.multiplier
-            if not isclose(old_multiplier, multiplier):
-                print('\t', t.id, str(t.transaction_class)[0], t.instrument, old_multiplier, multiplier)
-            t.multiplier = multiplier
-
-        print('1' * 10)
-        for t in transactions:
-            if t.transaction_class_id not in [TransactionClass.BUY, TransactionClass.SELL]:
-                continue
-            print(t.id, str(t.transaction_class)[0], t.instrument)
-
-        print('2' * 10)
-        for t in transactions:
-            if t.transaction_class_id not in [TransactionClass.BUY, TransactionClass.SELL]:
-                continue
-
-            print('-' * 10)
-            print(t.id, str(t.transaction_class)[0], t.instrument)
-
-            # do not use strategy!!!
-            t_key = self._make_key(
-                instrument=t.instrument,
-                portfolio=t.portfolio if self._detail_by_portfolio else None,
-                account=t.account_position if self._detail_by_account else  None
-            )
-
-            t.multiplier = 0.0
-            position_size_with_sign = t.position_size_with_sign
-            rolling_position = rolling_positions[t_key]
-
-            # if position_size_with_sign > 0.:  # покупка
-            if t.transaction_class_id == TransactionClass.BUY:
-                i_not_closed = not_closed.get(t_key, [])
-                if i_not_closed:  # есть прошлые продажи, которые надо закрыть
-                    if position_size_with_sign + rolling_position >= 0.0:  # все есть
-                        # t.multiplier = abs(rolling_position / position_size_with_sign)
-                        _set_multiplier(t, abs(rolling_position / position_size_with_sign))
-                        for t0 in i_not_closed:
-                            # t0.multiplier = 1.0
-                            _set_multiplier(t0, 1.0)
-                        in_stock[t_key] = in_stock.get(t_key, []) + [t]
-                    else:  # только частично
-                        # t.multiplier = 1.0
-                        _set_multiplier(t, 1.0)
-                        for t0 in i_not_closed:
-                            # t0.multiplier += abs((1.0 - t0.multiplier) * position_size_with_sign / rolling_position)
-                            _set_multiplier(t0, abs((1.0 - t0.multiplier) * position_size_with_sign / rolling_position))
-                    not_closed[t_key] = [t0 for t0 in i_not_closed if t0.multiplier < 1.0]
-                else:  # новая "чистая" покупка
-                    # t.multiplier = 0.0
-                    _set_multiplier(t, 0.0)
-                    in_stock[t_key] = in_stock.get(t_key, []) + [t]
-
-            # else:  # продажа
-            elif t.transaction_class_id == TransactionClass.SELL:
-                i_in_stock = in_stock.get(t_key, [])
-                if i_in_stock:  # есть что продавать
-                    if position_size_with_sign + rolling_position >= 0.0:  # все есть
-                        # t.multiplier = 1.0
-                        _set_multiplier(t, 1.0)
-                        for t0 in i_in_stock:
-                            # t0.multiplier += abs((1.0 - t0.multiplier) * position_size_with_sign / rolling_position)
-                            _set_multiplier(t0, abs((1.0 - t0.multiplier) * position_size_with_sign / rolling_position))
-                    else:  # только частично
-                        # t.multiplier = abs(rolling_position / position_size_with_sign)
-                        _set_multiplier(t, abs(rolling_position / position_size_with_sign))
-                        for t0 in i_in_stock:
-                            # t0.multiplier = 1.0
-                            _set_multiplier(t0, 1.0)
-                        not_closed[t_key] = not_closed.get(t_key, []) + [t]
-                    in_stock[t_key] = [t0 for t0 in i_in_stock if t0.multiplier < 1.0]
-                else:  # нечего продавать
-                    # t.multiplier = 0.0
-                    _set_multiplier(t, 0.0)
-                    not_closed[t_key] = not_closed.get(t_key, []) + [t]
-
-            rolling_position += position_size_with_sign
-            rolling_positions[t_key] = rolling_position
-            t.rolling_position = rolling_position
-
-    def _annotate_fifo_multiplier(self, transactions):
-        in_stock = {}
-        not_closed = {}
-        rolling_positions = Counter()
+            self._pl_real(real_pl_changes)
 
         for t in transactions:
             if t.transaction_class_id not in [TransactionClass.BUY, TransactionClass.SELL]:
                 continue
+            t.balance_position_size_with_sign = t.position_size_with_sign * (1.0 - t.multiplier)
+            t.cost_with_sign = t.principal_with_sign * (1.0 - t.multiplier)
 
-            # do not use strategy!!!
-            # t_key = self._make_key(portfolio=t.portfolio, account=t.account_position, instrument=t.instrument)
-            t_key = self._make_key(
-                instrument=t.instrument,
-                portfolio=t.portfolio if self._detail_by_portfolio else None,
-                account=t.account_position if self._detail_by_account else  None
-            )
+        self._pl_unreal(transactions)
 
-            t.multiplier = 0.0
-            position_size_with_sign = t.position_size_with_sign
-            rolling_position = rolling_positions[t_key]
+    def _set_multiplier(self, real_pl_changes, t, multiplier):
+        old_multiplier = t.multiplier
+        if not isclose(old_multiplier, multiplier):
+            # print('\t', t.id, str(t.transaction_class)[0], t.instrument, old_multiplier, multiplier)
+            pass
+        t.multiplier = multiplier
+        inc_multiplier = t.multiplier - old_multiplier
 
-            # if position_size_with_sign > 0.:  # покупка
-            if t.transaction_class_id == TransactionClass.BUY:
-                i_not_closed = not_closed.get(t_key, [])
-                balance = position_size_with_sign
-                if i_not_closed:
-                    for t0 in i_not_closed:
-                        sale = t0.not_closed
-                        if balance + sale > 0.0:  # есть все
-                            balance -= abs(sale)
-                            t0.multiplier = 1.0
-                            t0.not_closed = t0.not_closed - abs(t0.position_size_with_sign)
-                        else:
-                            t0.not_closed = t0.not_closed + balance
-                            t0.multiplier = 1.0 - abs(t0.not_closed / t0.position_size_with_sign)
-                            balance = 0.0
-                        if balance <= 0.0:
-                            break
-                    not_closed[t_key] = [t0 for t0 in i_not_closed if t0.multiplier < 1.0]
-                t.balance = balance
-                t.multiplier = abs((position_size_with_sign - balance) / position_size_with_sign)
-                if t.multiplier < 1.0:
-                    in_stock[t_key] = in_stock.get(t_key, []) + [t]
+        real_pl_changes.append((t, inc_multiplier))
 
-            # else:  # продажа
-            elif t.transaction_class_id == TransactionClass.SELL:
-                i_in_stock = in_stock.get(t_key, [])
-                sale = position_size_with_sign
-                if i_in_stock:
-                    for t0 in i_in_stock:
-                        balance = t0.balance
-                        if sale + balance > 0.0:  # есть все
-                            t0.balance = balance - abs(sale)
-                            t0.multiplier = abs((t0.position_size_with_sign - t0.balance) / t0.position_size_with_sign)
-                            sale = 0.0
-                        else:
-                            t0.balance = 0.0
-                            t0.multiplier = 1.0
-                            sale += abs(balance)
-                        if sale >= 0.0:
-                            break
-                    in_stock[t_key] = [t0 for t0 in i_in_stock if t0.multiplier < 1.0]
-                t.not_closed = sale
-                t.multiplier = abs((position_size_with_sign - sale) / position_size_with_sign)
-                if t.multiplier < 1.0:
-                    not_closed[t_key] = not_closed.get(t_key, []) + [t]
+    def _pl_real(self, real_pl_changes):
+        if real_pl_changes:
+            init_mult = 1 - self.instance.pl_real_unreal_end_multiplier
+            end_mult = self.instance.pl_real_unreal_end_multiplier
 
-            rolling_position += position_size_with_sign
-            rolling_positions[t_key] = rolling_position
-            t.rolling_position = rolling_position
+            t, inc_multiplier = real_pl_changes[-1]
 
-        for t in transactions:
-            if t.transaction_class_id in [TransactionClass.BUY, TransactionClass.SELL]:
-                t.multiplier = t.multiplier
+            sum_principal_with_sign = 0.0
+            sum_carry_with_sign = 0.0
+            sum_overheads_with_sign = 0.0
+            for t0, inc_multiplier0 in real_pl_changes:
+                sum_principal_with_sign += t0.principal_with_sign * inc_multiplier0
+                sum_carry_with_sign += t0.carry_with_sign * inc_multiplier0
+                sum_overheads_with_sign += t0.overheads_with_sign * inc_multiplier0
+
+            for t0, inc_multiplier0 in real_pl_changes:
+                mult = end_mult if t0.id == t.id else init_mult
+
+                matched = abs((t0.position_size_with_sign * inc_multiplier0) / (
+                    t.position_size_with_sign * inc_multiplier))
+                adj = matched * mult
+
+                t0.real_pl_principal_with_sign += sum_principal_with_sign * matched * mult
+                t0.real_pl_carry_with_sign += sum_carry_with_sign * matched * mult
+                t0.real_pl_overheads_with_sign += sum_overheads_with_sign * matched * mult
+                t0.real_pl_total_with_sign = t0.real_pl_principal_with_sign + \
+                                             t0.real_pl_carry_with_sign + \
+                                             t0.real_pl_overheads_with_sign
+
+                # for t0 in changes:
+                #     print('\t id=%s, multiplier=%f, _inc_multiplier=%f, _matched=%f, _adj=%f, '
+                #           'pl_principal=%f, pl_carry=%f, pl_overheads=%s' % (
+                #               t0.id, t0.multiplier, t0._inc_multiplier, t0._matched, t0._adj,
+                #               t0.pl_principal_with_sign, t0.pl_carry_with_sign, t0.pl_overheads_with_sign,
+                #           ))
+
+    def _pl_unreal(self, transactions):
+        # for t in transactions:
+        #     if t.transaction_class_id not in [TransactionClass.BUY, TransactionClass.SELL]:
+        #         continue
+        #     t.unreal_pl_principal_with_sign = t.principal_with_sign * (1.0 - t.multiplier)
+        #     t.unreal_pl_carry_with_sign = t.carry_with_sign * (1.0 - t.multiplier)
+        #     t.unreal_pl_overheads_with_sign = t.overheads_with_sign * (1.0 - t.multiplier)
+        #     t.unreal_pl_total_with_sign = t.unreal_pl_principal_with_sign + t.unreal_pl_carry_with_sign + t.unreal_pl_overheads_with_sign
+        pass
+
+    # def _annotate_avco_multiplier(self, transactions):
+    #     in_stock = OrderedDict()
+    #     not_closed = OrderedDict()
+    #     rolling_positions = Counter()
+    #
+    #     def _set_multiplier(t, multiplier):
+    #         old_multiplier = t.multiplier
+    #         if not isclose(old_multiplier, multiplier):
+    #             print('\t', t.id, str(t.transaction_class)[0], t.instrument, old_multiplier, multiplier)
+    #         t.multiplier = multiplier
+    #
+    #     print('1' * 10)
+    #     for t in transactions:
+    #         if t.transaction_class_id not in [TransactionClass.BUY, TransactionClass.SELL]:
+    #             continue
+    #         print(t.id, str(t.transaction_class)[0], t.instrument)
+    #
+    #     print('2' * 10)
+    #     for t in transactions:
+    #         if t.transaction_class_id not in [TransactionClass.BUY, TransactionClass.SELL]:
+    #             continue
+    #
+    #         print('-' * 10)
+    #         print(t.id, str(t.transaction_class)[0], t.instrument)
+    #
+    #         # do not use strategy!!!
+    #         t_key = self._make_key(
+    #             instrument=t.instrument,
+    #             portfolio=t.portfolio if self._detail_by_portfolio else None,
+    #             account=t.account_position if self._detail_by_account else  None
+    #         )
+    #
+    #         t.multiplier = 0.0
+    #         position_size_with_sign = t.position_size_with_sign
+    #         rolling_position = rolling_positions[t_key]
+    #
+    #         # if position_size_with_sign > 0.:  # покупка
+    #         if t.transaction_class_id == TransactionClass.BUY:
+    #             i_not_closed = not_closed.get(t_key, [])
+    #             if i_not_closed:  # есть прошлые продажи, которые надо закрыть
+    #                 if position_size_with_sign + rolling_position >= 0.0:  # все есть
+    #                     # t.multiplier = abs(rolling_position / position_size_with_sign)
+    #                     _set_multiplier(t, abs(rolling_position / position_size_with_sign))
+    #                     for t0 in i_not_closed:
+    #                         # t0.multiplier = 1.0
+    #                         _set_multiplier(t0, 1.0)
+    #                     in_stock[t_key] = in_stock.get(t_key, []) + [t]
+    #                 else:  # только частично
+    #                     # t.multiplier = 1.0
+    #                     _set_multiplier(t, 1.0)
+    #                     for t0 in i_not_closed:
+    #                         # t0.multiplier += abs((1.0 - t0.multiplier) * position_size_with_sign / rolling_position)
+    #                         _set_multiplier(t0, abs((1.0 - t0.multiplier) * position_size_with_sign / rolling_position))
+    #                 not_closed[t_key] = [t0 for t0 in i_not_closed if t0.multiplier < 1.0]
+    #             else:  # новая "чистая" покупка
+    #                 # t.multiplier = 0.0
+    #                 _set_multiplier(t, 0.0)
+    #                 in_stock[t_key] = in_stock.get(t_key, []) + [t]
+    #
+    #         # else:  # продажа
+    #         elif t.transaction_class_id == TransactionClass.SELL:
+    #             i_in_stock = in_stock.get(t_key, [])
+    #             if i_in_stock:  # есть что продавать
+    #                 if position_size_with_sign + rolling_position >= 0.0:  # все есть
+    #                     # t.multiplier = 1.0
+    #                     _set_multiplier(t, 1.0)
+    #                     for t0 in i_in_stock:
+    #                         # t0.multiplier += abs((1.0 - t0.multiplier) * position_size_with_sign / rolling_position)
+    #                         _set_multiplier(t0, abs((1.0 - t0.multiplier) * position_size_with_sign / rolling_position))
+    #                 else:  # только частично
+    #                     # t.multiplier = abs(rolling_position / position_size_with_sign)
+    #                     _set_multiplier(t, abs(rolling_position / position_size_with_sign))
+    #                     for t0 in i_in_stock:
+    #                         # t0.multiplier = 1.0
+    #                         _set_multiplier(t0, 1.0)
+    #                     not_closed[t_key] = not_closed.get(t_key, []) + [t]
+    #                 in_stock[t_key] = [t0 for t0 in i_in_stock if t0.multiplier < 1.0]
+    #             else:  # нечего продавать
+    #                 # t.multiplier = 0.0
+    #                 _set_multiplier(t, 0.0)
+    #                 not_closed[t_key] = not_closed.get(t_key, []) + [t]
+    #
+    #         rolling_position += position_size_with_sign
+    #         rolling_positions[t_key] = rolling_position
+    #         t.rolling_position = rolling_position
+
+    # def _annotate_fifo_multiplier(self, transactions):
+    #     in_stock = {}
+    #     not_closed = {}
+    #     rolling_positions = Counter()
+    #
+    #     for t in transactions:
+    #         if t.transaction_class_id not in [TransactionClass.BUY, TransactionClass.SELL]:
+    #             continue
+    #
+    #         # do not use strategy!!!
+    #         # t_key = self._make_key(portfolio=t.portfolio, account=t.account_position, instrument=t.instrument)
+    #         t_key = self._make_key(
+    #             instrument=t.instrument,
+    #             portfolio=t.portfolio if self._detail_by_portfolio else None,
+    #             account=t.account_position if self._detail_by_account else  None
+    #         )
+    #
+    #         t.multiplier = 0.0
+    #         position_size_with_sign = t.position_size_with_sign
+    #         rolling_position = rolling_positions[t_key]
+    #
+    #         # if position_size_with_sign > 0.:  # покупка
+    #         if t.transaction_class_id == TransactionClass.BUY:
+    #             i_not_closed = not_closed.get(t_key, [])
+    #             balance = position_size_with_sign
+    #             if i_not_closed:
+    #                 for t0 in i_not_closed:
+    #                     sale = t0.not_closed
+    #                     if balance + sale > 0.0:  # есть все
+    #                         balance -= abs(sale)
+    #                         t0.multiplier = 1.0
+    #                         t0.not_closed = t0.not_closed - abs(t0.position_size_with_sign)
+    #                     else:
+    #                         t0.not_closed = t0.not_closed + balance
+    #                         t0.multiplier = 1.0 - abs(t0.not_closed / t0.position_size_with_sign)
+    #                         balance = 0.0
+    #                     if balance <= 0.0:
+    #                         break
+    #                 not_closed[t_key] = [t0 for t0 in i_not_closed if t0.multiplier < 1.0]
+    #             t.balance = balance
+    #             t.multiplier = abs((position_size_with_sign - balance) / position_size_with_sign)
+    #             if t.multiplier < 1.0:
+    #                 in_stock[t_key] = in_stock.get(t_key, []) + [t]
+    #
+    #         # else:  # продажа
+    #         elif t.transaction_class_id == TransactionClass.SELL:
+    #             i_in_stock = in_stock.get(t_key, [])
+    #             sale = position_size_with_sign
+    #             if i_in_stock:
+    #                 for t0 in i_in_stock:
+    #                     balance = t0.balance
+    #                     if sale + balance > 0.0:  # есть все
+    #                         t0.balance = balance - abs(sale)
+    #                         t0.multiplier = abs((t0.position_size_with_sign - t0.balance) / t0.position_size_with_sign)
+    #                         sale = 0.0
+    #                     else:
+    #                         t0.balance = 0.0
+    #                         t0.multiplier = 1.0
+    #                         sale += abs(balance)
+    #                     if sale >= 0.0:
+    #                         break
+    #                 in_stock[t_key] = [t0 for t0 in i_in_stock if t0.multiplier < 1.0]
+    #             t.not_closed = sale
+    #             t.multiplier = abs((position_size_with_sign - sale) / position_size_with_sign)
+    #             if t.multiplier < 1.0:
+    #                 not_closed[t_key] = not_closed.get(t_key, []) + [t]
+    #
+    #         rolling_position += position_size_with_sign
+    #         rolling_positions[t_key] = rolling_position
+    #         t.rolling_position = rolling_position
+    #
+    #     for t in transactions:
+    #         if t.transaction_class_id in [TransactionClass.BUY, TransactionClass.SELL]:
+    #             t.multiplier = t.multiplier
 
     def _annotate_transaction_case(self, t):
         if t.accounting_date <= self._report_date < t.cash_date:  # default
@@ -830,19 +935,19 @@ class ReportBuilder(object):
 
         self._process_final(self._items.values())
         self.instance.items = sorted([i for i in self._items.values()], key=lambda x: x.pk)
-        self.instance.summary.add_items(self.instance.items)
+        self._process_summary(self.instance.summary, self.instance.items)
 
         self._process_custom_fields(self.instance.items)
 
         return self.instance
 
     def _process_transaction_buy(self, trn):
-        if self._any_details:
-            position_size_with_sign = trn.position_size_with_sign * (1.0 - trn.multiplier)
-        else:
-            position_size_with_sign = trn.position_size_with_sign
+        # if self._any_details:
+        #     position_size_with_sign = trn.position_size_with_sign * (1.0 - trn.multiplier)
+        # else:
+        #     position_size_with_sign = trn.position_size_with_sign
 
-        self._add_instr(self._items, trn, value=position_size_with_sign)
+        self._add_instr(self._items, trn, value=trn.balance_position_size_with_sign)
         self._add_cash(self._items, trn, value=trn.cash_consideration, currency=trn.settlement_currency)
 
     def _process_transaction_sell(self, trn):
@@ -927,13 +1032,24 @@ class ReportBuilder(object):
             raise RuntimeError('Invalid transaction case: %s' % trn.case)
 
         if item:
+            ccy = trn.settlement_currency
             # balance
             item.position_size_with_sign += value
+            item.cost_with_sign_system_ccy += self._to_system_ccy(trn.cost_with_sign, ccy)
 
             #  P&L
-            item.principal_with_sign_system_ccy += self._to_system_ccy(trn.principal_with_sign, trn.settlement_currency)
-            item.carry_with_sign_system_ccy += self._to_system_ccy(trn.carry_with_sign, trn.settlement_currency)
-            item.overheads_with_sign_system_ccy += self._to_system_ccy(trn.overheads_with_sign, trn.settlement_currency)
+            item.principal_with_sign_system_ccy += self._to_system_ccy(trn.principal_with_sign, ccy)
+            item.carry_with_sign_system_ccy += self._to_system_ccy(trn.carry_with_sign, ccy)
+            item.overheads_with_sign_system_ccy += self._to_system_ccy(trn.overheads_with_sign, ccy)
+
+            item.real_pl_principal_with_sign_system_ccy += self._to_system_ccy(trn.real_pl_principal_with_sign, ccy)
+            item.real_pl_carry_with_sign_system_ccy += self._to_system_ccy(trn.real_pl_carry_with_sign, ccy)
+            item.real_pl_overheads_with_sign_system_ccy += self._to_system_ccy(trn.real_pl_overheads_with_sign, ccy)
+
+            # item.unreal_pl_principal_with_sign_system_ccy += self._to_system_ccy(trn.unreal_pl_principal_with_sign,ccy)
+            # item.unreal_pl_carry_with_sign_system_ccy += self._to_system_ccy(trn.unreal_pl_carry_with_sign,ccy)
+            # item.unreal_pl_overheads_with_sign_system_ccy += self._to_system_ccy(trn.unreal_pl_overheads_with_sign,ccy)
+            pass
 
     def _add_cash(self, items, trn, value, currency,
                   portfolio=None, account=None, account_interim=None, strategy1=None, strategy2=None, strategy3=None):
@@ -1000,6 +1116,7 @@ class ReportBuilder(object):
 
             # balance
             item.market_value_report_ccy = self._to_report_ccy(item.market_value_system_ccy)
+            item.cost_with_sign_report_ccy = self._to_report_ccy(item.cost_with_sign_system_ccy)
 
             # P&L
             item.total_with_sign_system_ccy = item.principal_with_sign_system_ccy + \
@@ -1010,6 +1127,62 @@ class ReportBuilder(object):
             item.carry_with_sign_report_ccy = self._to_report_ccy(item.carry_with_sign_system_ccy)
             item.overheads_with_sign_report_ccy = self._to_report_ccy(item.overheads_with_sign_system_ccy)
             item.total_with_sign_report_ccy = self._to_report_ccy(item.total_with_sign_system_ccy)
+
+            item.real_pl_principal_with_sign_report_ccy = self._to_report_ccy(
+                item.real_pl_principal_with_sign_system_ccy)
+            item.real_pl_carry_with_sign_report_ccy = self._to_report_ccy(item.real_pl_carry_with_sign_system_ccy)
+            item.real_pl_overheads_with_sign_report_ccy = self._to_report_ccy(
+                item.real_pl_overheads_with_sign_system_ccy)
+            item.real_pl_total_with_sign_system_ccy = item.real_pl_principal_with_sign_system_ccy + \
+                                                      item.real_pl_carry_with_sign_system_ccy + \
+                                                      item.real_pl_overheads_with_sign_system_ccy
+
+            # item.unreal_pl_principal_with_sign_report_ccy = self._to_report_ccy(
+            #     item.unreal_pl_principal_with_sign_system_ccy)
+            # item.unreal_pl_carry_with_sign_report_ccy = self._to_report_ccy(
+            #     item.unreal_pl_carry_with_sign_system_ccy)
+            # item.unreal_pl_overheads_with_sign_report_ccy = self._to_report_ccy(
+            #     item.unreal_pl_overheads_with_sign_system_ccy)
+            item.unreal_pl_total_with_sign_system_ccy = item.market_value_report_ccy + item.cost_with_sign_system_ccy
+
+    def _process_summary(self, summary, items):
+        for item in items:
+            summary.market_value_system_ccy += item.market_value_system_ccy
+            summary.market_value_report_ccy += item.market_value_report_ccy
+
+            summary.cost_with_sign_system_ccy += item.cost_with_sign_system_ccy
+            summary.cost_with_sign_report_ccy += item.cost_with_sign_report_ccy
+
+            # P&L
+            summary.principal_with_sign_system_ccy += item.principal_with_sign_system_ccy
+            summary.carry_with_sign_system_ccy += item.carry_with_sign_system_ccy
+            summary.overheads_with_sign_system_ccy += item.overheads_with_sign_system_ccy
+            summary.total_with_sign_system_ccy += item.total_with_sign_system_ccy
+
+            summary.real_pl_principal_with_sign_system_ccy += item.real_pl_principal_with_sign_system_ccy
+            summary.real_pl_carry_with_sign_system_ccy += item.real_pl_carry_with_sign_system_ccy
+            summary.real_pl_overheads_with_sign_system_ccy += item.real_pl_overheads_with_sign_system_ccy
+            summary.real_pl_total_with_sign_system_ccy += item.real_pl_total_with_sign_system_ccy
+
+            # summary.unreal_pl_principal_with_sign_system_ccy += item.unreal_pl_principal_with_sign_system_ccy
+            # summary.unreal_pl_carry_with_sign_system_ccy += item.unreal_pl_carry_with_sign_system_ccy
+            # summary.unreal_pl_overheads_with_sign_system_ccy += item.unreal_pl_overheads_with_sign_system_ccy
+            summary.unreal_pl_total_with_sign_system_ccy += item.unreal_pl_total_with_sign_system_ccy
+
+            summary.principal_with_sign_report_ccy += item.principal_with_sign_report_ccy
+            summary.carry_with_sign_report_ccy += item.carry_with_sign_report_ccy
+            summary.overheads_with_sign_report_ccy += item.overheads_with_sign_report_ccy
+            summary.total_with_sign_report_ccy += item.total_with_sign_report_ccy
+
+            summary.real_pl_principal_with_sign_report_ccy += item.real_pl_principal_with_sign_report_ccy
+            summary.real_pl_carry_with_sign_report_ccy += item.real_pl_carry_with_sign_report_ccy
+            summary.real_pl_overheads_with_sign_report_ccy += item.real_pl_overheads_with_sign_report_ccy
+            summary.real_pl_total_with_sign_report_ccy += item.real_pl_total_with_sign_report_ccy
+
+            # summary.unreal_pl_principal_with_sign_report_ccy += item.unreal_pl_principal_with_sign_report_ccy
+            # summary.unreal_pl_carry_with_sign_report_ccy += item.unreal_pl_carry_with_sign_report_ccy
+            # summary.unreal_pl_overheads_with_sign_report_ccy += item.unreal_pl_overheads_with_sign_report_ccy
+            summary.unreal_pl_total_with_sign_report_ccy += item.unreal_pl_total_with_sign_report_ccy
 
     def _process_custom_fields(self, items):
         if self.instance.custom_fields:

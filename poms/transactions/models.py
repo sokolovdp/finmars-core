@@ -977,6 +977,20 @@ class Transaction(models.Model):
 
     attributes = GenericRelation(GenericAttribute)
 
+    multiplier = float('nan')
+    balance_position_size_with_sign = float('nan')
+    cost_with_sign = float('nan')
+
+    real_pl_principal_with_sign = float('nan')
+    real_pl_carry_with_sign = float('nan')
+    real_pl_overheads_with_sign = float('nan')
+    real_pl_total_with_sign = float('nan')
+
+    # unreal_pl_principal_with_sign = float('nan')
+    # unreal_pl_carry_with_sign = float('nan')
+    # unreal_pl_overheads_with_sign = float('nan')
+    # unreal_pl_total_with_sign = float('nan')
+
     class Meta:
         verbose_name = ugettext_lazy('transaction')
         verbose_name_plural = ugettext_lazy('transactions')
