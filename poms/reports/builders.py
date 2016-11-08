@@ -361,6 +361,7 @@ class ReportBuilder(object):
 
     def _get_currency_history_qs(self):
         transaction_qs = self._get_transaction_qs()
+        report_currency = self.instance.report_currency or self._system_currency
         return CurrencyHistory.objects.filter(
             pricing_policy=self.instance.pricing_policy
         ).filter(
@@ -368,6 +369,7 @@ class ReportBuilder(object):
             Q(date__in=transaction_qs.values_list('cash_date', flat=True)) |
             Q(date__in=transaction_qs.values_list('accounting_date', flat=True))
         ).filter(
+            Q(currency=report_currency) |
             Q(currency__in=transaction_qs.values_list('transaction_currency', flat=True)) |
             Q(currency__in=transaction_qs.values_list('settlement_currency', flat=True)) |
             Q(currency__in=transaction_qs.values_list('instrument__pricing_currency', flat=True)) |
