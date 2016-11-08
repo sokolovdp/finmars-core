@@ -1138,7 +1138,7 @@ class ReportBuilder(object):
                 #     item.unreal_pl_carry_with_sign_sys_ccy)
                 # item.unreal_pl_overheads_with_sign_res_ccy = self._to_res_ccy(
                 #     item.unreal_pl_overheads_with_sign_sys_ccy)
-                item.unreal_pl_total_with_sign_sys_ccy = item.market_value_res_ccy + item.cost_with_sign_sys_ccy
+                item.unreal_pl_total_with_sign_res_ccy = item.market_value_res_ccy + item.cost_with_sign_sys_ccy
 
     def _process_summary(self, summary, items):
         for item in items:
