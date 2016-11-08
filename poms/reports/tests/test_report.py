@@ -6,7 +6,7 @@ from django.utils.functional import cached_property
 
 from poms.accounts.models import AccountType, Account
 from poms.currencies.models import Currency, CurrencyHistory
-from poms.instruments.models import Instrument, PriceHistory, PricingPolicy
+from poms.instruments.models import Instrument, PriceHistory, PricingPolicy, CostMethod
 from poms.portfolios.models import Portfolio
 from poms.reports.builders import Report, ReportBuilder
 from poms.strategies.models import Strategy1Group, Strategy1Subgroup, Strategy1
@@ -201,6 +201,14 @@ class ReportTestCase(TestCase):
     def _fx_transfer(self):
         return TransactionClass.objects.get(id=TransactionClass.FX_TRANSFER)
 
+    @cached_property
+    def _avco(self):
+        return CostMethod.objects.get(pk=CostMethod.AVCO)
+
+    @cached_property
+    def _fifo(self):
+        return CostMethod.objects.get(pk=CostMethod.FIFO)
+
     def _print_table(self, data, columns):
         if pandas:
             print(pandas.DataFrame(data=data, columns=columns))
@@ -368,6 +376,61 @@ class ReportTestCase(TestCase):
         self._print_summary(builder)
         pass
 
+    def test_multiplier_0(self):
+        instr = Instrument.objects.create(master_user=self.m, name="I1, USD/USD",
+                                          instrument_type=self.m.instrument_type,
+                                          pricing_currency=self.usd, price_multiplier=1.0,
+                                          accrued_currency=self.usd, accrued_multiplier=1.0)
+
+        self._t(t_class=self._sell, instr=instr, position=-5,
+                settlement_ccy=self.usd, principal=40.0, carry=0.0, overheads=0.0,
+                acc_date_days=1, cash_date_days=1)
+
+        self._t(t_class=self._buy, instr=instr, position=10,
+                settlement_ccy=self.usd, principal=-100.0, carry=0.0, overheads=0.0,
+                acc_date_days=2, cash_date_days=2)
+
+        self._t(t_class=self._buy, instr=instr, position=10,
+                settlement_ccy=self.usd, principal=-105.0, carry=0.0, overheads=0.0,
+                acc_date_days=3, cash_date_days=3)
+
+        self._t(t_class=self._buy, instr=instr, position=10,
+                settlement_ccy=self.usd, principal=-110.0, carry=0.0, overheads=0.0,
+                acc_date_days=4, cash_date_days=4)
+
+        self._t(t_class=self._sell, instr=instr, position=-20,
+                settlement_ccy=self.usd, principal=230.0, carry=0.0, overheads=0.0,
+                acc_date_days=5, cash_date_days=5)
+
+        self._t(t_class=self._buy, instr=instr, position=10,
+                settlement_ccy=self.usd, principal=-120.0, carry=0.0, overheads=0.0,
+                acc_date_days=6, cash_date_days=6)
+
+        self._t(t_class=self._sell, instr=instr, position=-20,
+                settlement_ccy=self.usd, principal=250.0, carry=0.0, overheads=0.0,
+                acc_date_days=7, cash_date_days=7)
+
+        self._t(t_class=self._sell, instr=instr, position=-10,
+                settlement_ccy=self.usd, principal=130.0, carry=0.0, overheads=0.0,
+                acc_date_days=8, cash_date_days=8)
+
+        self._t(t_class=self._buy, instr=instr, position=20,
+                settlement_ccy=self.usd, principal=-250.0, carry=0.0, overheads=0.0,
+                acc_date_days=9, cash_date_days=9)
+
+        r = Report(master_user=self.m, pricing_policy=self.pp, report_date=self._d(14),
+                   cost_method=self._avco, detail_by_account=True)
+        b = ReportBuilder(instance=r)
+        b.build()
+        self._dump(b, 'test_multiplier_0: avco')
+
+        r = Report(master_user=self.m, pricing_policy=self.pp, report_date=self._d(14),
+                   cost_method=self._fifo, detail_by_account=True)
+        b = ReportBuilder(instance=r)
+        b.build()
+        self._dump(b, 'test_multiplier_0: fifo')
+
+
     def _test_balance_0(self):
         self._t(t_class=self._cash_inflow, trn_ccy=self.eur, position=1000, fx_rate=1.3)
         self._t(t_class=self._cash_outflow, trn_ccy=self.usd, position=-1000, acc_date_days=6, cash_date_days=6,
@@ -510,7 +573,7 @@ class ReportTestCase(TestCase):
         b.build()
         self._dump(b, 'test_pl_real_unreal_0')
 
-    def test_pl_real_unreal_1(self):
+    def _test_pl_real_unreal_1(self):
         s1 = self.s1_1_1_1
         s2 = self.s1_1_1_2
         s3 = self.s1_1_1_3
@@ -542,36 +605,37 @@ class ReportTestCase(TestCase):
                 settlement_ccy=self.usd, principal=40.0, carry=0.0, overheads=0.0,
                 acc_date_days=1, cash_date_days=1, s1_pos=s1)
 
-        self._t(t_class=self._buy, instr=instr, position=10,
-                settlement_ccy=self.usd, principal=-100.0, carry=0.0, overheads=0.0,
-                acc_date_days=2, cash_date_days=2, s1_pos=s1)
+        # self._t(t_class=self._buy, instr=instr, position=10,
+        #         settlement_ccy=self.usd, principal=-100.0, carry=0.0, overheads=0.0,
+        #         acc_date_days=2, cash_date_days=2, s1_pos=s1)
 
-        self._t(t_class=self._buy, instr=instr, position=10,
-                settlement_ccy=self.usd, principal=-105.0, carry=0.0, overheads=0.0,
-                acc_date_days=3, cash_date_days=3, s1_pos=s1)
+        # self._t(t_class=self._buy, instr=instr, position=10,
+        #         settlement_ccy=self.usd, principal=-105.0, carry=0.0, overheads=0.0,
+        #         acc_date_days=3, cash_date_days=3, s1_pos=s1)
 
         self._t(t_class=self._buy, instr=instr, position=10,
                 settlement_ccy=self.usd, principal=-110.0, carry=0.0, overheads=0.0,
                 acc_date_days=4, cash_date_days=4, s1_pos=s1)
 
-        self._t(t_class=self._sell, instr=instr, position=-20,
-                settlement_ccy=self.usd, principal=230.0, carry=0.0, overheads=0.0,
-                acc_date_days=5, cash_date_days=5, s1_pos=s2)
+        # self._t(t_class=self._sell, instr=instr, position=-20,
+        #         settlement_ccy=self.usd, principal=230.0, carry=0.0, overheads=0.0,
+        #         acc_date_days=5, cash_date_days=5, s1_pos=s2)
 
         self._t(t_class=self._buy, instr=instr, position=10,
                 settlement_ccy=self.usd, principal=-120.0, carry=0.0, overheads=0.0,
                 acc_date_days=6, cash_date_days=6, s1_pos=s3)
 
-        self._t(t_class=self._sell, instr=instr, position=-20,
-                settlement_ccy=self.usd, principal=250.0, carry=0.0, overheads=0.0,
-                acc_date_days=7, cash_date_days=7, s1_pos=s2)
+        # self._t(t_class=self._sell, instr=instr, position=-20,
+        #         settlement_ccy=self.usd, principal=250.0, carry=0.0, overheads=0.0,
+        #         acc_date_days=7, cash_date_days=7, s1_pos=s2)
 
         self._t(t_class=self._sell, instr=instr, position=-10,
                 settlement_ccy=self.usd, principal=130.0, carry=0.0, overheads=0.0,
                 acc_date_days=8, cash_date_days=8, s1_pos=s4)
 
+
         r = Report(master_user=self.m, pricing_policy=self.pp, report_date=self._d(14),
-                   detail_by_strategy1=True)
+                   cost_method=self._fifo, detail_by_strategy1=True)
         b = ReportBuilder(instance=r)
         b.build()
         self._dump(b, 'test_pl_real_unreal_1')

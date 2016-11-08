@@ -2,7 +2,7 @@
 from __future__ import unicode_literals, division
 
 import logging
-from collections import Counter
+from collections import Counter, OrderedDict, defaultdict
 from datetime import timedelta
 
 from django.db.models import Q
@@ -499,22 +499,155 @@ class ReportBuilder(object):
 
     def _annotate_multiplier(self, transactions):
         if self._any_details:
-            if self.instance.cost_method.id == CostMethod.AVCO:
-                self._annotate_avco_multiplier(transactions)
-            elif self.instance.cost_method.id == CostMethod.FIFO:
-                self._annotate_fifo_multiplier(transactions)
+            # if self.instance.cost_method.id == CostMethod.AVCO:
+            #     self._annotate_avco_multiplier(transactions)
+            # elif self.instance.cost_method.id == CostMethod.FIFO:
+            #     self._annotate_fifo_multiplier(transactions)
+            self._annotate_multiplier1(transactions)
+            pass
         else:
             for t in transactions:
                 t.multiplier = 1.0
 
+    def _annotate_multiplier1(self, transactions):
+        rolling_positions = Counter()
+        items = defaultdict(list)
+
+        def _set_multiplier(t, multiplier):
+            old_multiplier = t.multiplier
+            if not isclose(old_multiplier, multiplier):
+                # print('\t', t.id, str(t.transaction_class)[0], t.instrument, old_multiplier, multiplier)
+                pass
+            t.multiplier = multiplier
+
+        # print('1' * 10)
+        # for t in transactions:
+        #     if t.transaction_class_id not in [TransactionClass.BUY, TransactionClass.SELL]:
+        #         continue
+        #     print(t.id, str(t.transaction_class)[0], t.instrument)
+
+        for i, t in enumerate(transactions):
+            if t.transaction_class_id not in [TransactionClass.BUY, TransactionClass.SELL]:
+                continue
+
+            # print(i)
+
+            # do not use strategy!!!
+            t_key = self._make_key(
+                instrument=t.instrument,
+                portfolio=t.portfolio if self._detail_by_portfolio else None,
+                account=t.account_position if self._detail_by_account else  None
+            )
+
+            t.multiplier = 0.0
+            rolling_position = rolling_positions[t_key]
+
+            if isclose(rolling_position, 0.0):
+                k = -1
+            else:
+                k = - t.position_size_with_sign / rolling_position
+
+            if self.instance.cost_method.id == CostMethod.AVCO:
+                if k > 1.0:
+                    if t_key in items:
+                        for t0 in items[t_key]:
+                            _set_multiplier(t0, 1.0)
+                        del items[t_key]
+                    items[t_key].append(t)
+                    _set_multiplier(t, 1.0 / k)
+                    rolling_position = t.position_size_with_sign * (1.0 - t.multiplier)
+                elif isclose(k, 1.0):
+                    if t_key in items:
+                        for t0 in items[t_key]:
+                            _set_multiplier(t0, 1.0)
+                        del items[t_key]
+                    _set_multiplier(t, 1.0)
+                    rolling_position = 0.0
+                elif k > 0.0:
+                    if t_key in items:
+                        for t0 in items[t_key]:
+                            _set_multiplier(t0, t0.multiplier + k * (1.0 - t0.multiplier))
+                    _set_multiplier(t, 1.0)
+                    rolling_position += t.position_size_with_sign
+                else:
+                    items[t_key].append(t)
+                    rolling_position += t.position_size_with_sign
+
+            elif self.instance.cost_method.id == CostMethod.FIFO:
+                if k > 1.0:
+                    if t_key in items:
+                        for t0 in items[t_key]:
+                            _set_multiplier(t0, 1.0)
+                        items[t_key].clear()
+                    items[t_key].append(t)
+                    _set_multiplier(t, 1.0 / k)
+                    rolling_position = t.position_size_with_sign * (1.0 - t.multiplier)
+                elif isclose(k, 1.0):
+                    if t_key in items:
+                        for t0 in items[t_key]:
+                            _set_multiplier(t0, 1.0)
+                        del items[t_key]
+                    _set_multiplier(t, 1.0)
+                    rolling_position = 0.0
+                elif k > 0.0:
+                    position = t.position_size_with_sign
+                    if t_key in items:
+                        t_items = items[t_key]
+                        for t0 in t_items:
+                            remaining = t0.position_size_with_sign * (1.0 - t0.multiplier)
+                            k0 = - position / remaining
+                            if k0 > 1.0:
+                                _set_multiplier(t0, 1.0)
+                                position += remaining
+                            elif isclose(k0, 1.0):
+                                _set_multiplier(t0, 1.0)
+                                position += remaining
+                            elif k0 > 0.0:
+                                position += remaining * k0
+                                _set_multiplier(t0, t0.multiplier + k0 * (1.0 - t0.multiplier))
+                            # else:
+                            #     break
+                            if isclose(position, 0.0):
+                                break
+                        t_items = [t0 for t0 in t_items if not isclose(t0.multiplier, 1.0)]
+                        if t_items:
+                            items[t_key] = t_items
+                        else:
+                            del items[t_key]
+
+                    _set_multiplier(t, abs((t.position_size_with_sign - position) / t.position_size_with_sign))
+                    rolling_position += t.position_size_with_sign * t.multiplier
+                else:
+                    items[t_key].append(t)
+                    rolling_position += t.position_size_with_sign
+
+            rolling_positions[t_key] = rolling_position
+            # print('i =', i, ', rolling_positions =', rolling_position)
+
     def _annotate_avco_multiplier(self, transactions):
-        in_stock = {}
-        not_closed = {}
+        in_stock = OrderedDict()
+        not_closed = OrderedDict()
         rolling_positions = Counter()
 
+        def _set_multiplier(t, multiplier):
+            old_multiplier = t.multiplier
+            if not isclose(old_multiplier, multiplier):
+                print('\t', t.id, str(t.transaction_class)[0], t.instrument, old_multiplier, multiplier)
+            t.multiplier = multiplier
+
+        print('1' * 10)
         for t in transactions:
             if t.transaction_class_id not in [TransactionClass.BUY, TransactionClass.SELL]:
                 continue
+            print(t.id, str(t.transaction_class)[0], t.instrument)
+
+        print('2' * 10)
+        for t in transactions:
+            if t.transaction_class_id not in [TransactionClass.BUY, TransactionClass.SELL]:
+                continue
+
+            print('-' * 10)
+            print(t.id, str(t.transaction_class)[0], t.instrument)
 
             # do not use strategy!!!
             t_key = self._make_key(
@@ -532,17 +665,22 @@ class ReportBuilder(object):
                 i_not_closed = not_closed.get(t_key, [])
                 if i_not_closed:  # есть прошлые продажи, которые надо закрыть
                     if position_size_with_sign + rolling_position >= 0.0:  # все есть
-                        t.multiplier = abs(rolling_position / position_size_with_sign)
+                        # t.multiplier = abs(rolling_position / position_size_with_sign)
+                        _set_multiplier(t, abs(rolling_position / position_size_with_sign))
                         for t0 in i_not_closed:
-                            t0.multiplier = 1.0
+                            # t0.multiplier = 1.0
+                            _set_multiplier(t0, 1.0)
                         in_stock[t_key] = in_stock.get(t_key, []) + [t]
                     else:  # только частично
-                        t.multiplier = 1.0
+                        # t.multiplier = 1.0
+                        _set_multiplier(t, 1.0)
                         for t0 in i_not_closed:
-                            t0.multiplier += abs((1.0 - t0.multiplier) * position_size_with_sign / rolling_position)
+                            # t0.multiplier += abs((1.0 - t0.multiplier) * position_size_with_sign / rolling_position)
+                            _set_multiplier(t0, abs((1.0 - t0.multiplier) * position_size_with_sign / rolling_position))
                     not_closed[t_key] = [t0 for t0 in i_not_closed if t0.multiplier < 1.0]
                 else:  # новая "чистая" покупка
-                    t.multiplier = 0.0
+                    # t.multiplier = 0.0
+                    _set_multiplier(t, 0.0)
                     in_stock[t_key] = in_stock.get(t_key, []) + [t]
 
             # else:  # продажа
@@ -550,17 +688,22 @@ class ReportBuilder(object):
                 i_in_stock = in_stock.get(t_key, [])
                 if i_in_stock:  # есть что продавать
                     if position_size_with_sign + rolling_position >= 0.0:  # все есть
-                        t.multiplier = 1.0
+                        # t.multiplier = 1.0
+                        _set_multiplier(t, 1.0)
                         for t0 in i_in_stock:
-                            t0.multiplier += abs((1.0 - t0.multiplier) * position_size_with_sign / rolling_position)
+                            # t0.multiplier += abs((1.0 - t0.multiplier) * position_size_with_sign / rolling_position)
+                            _set_multiplier(t0, abs((1.0 - t0.multiplier) * position_size_with_sign / rolling_position))
                     else:  # только частично
-                        t.multiplier = abs(rolling_position / position_size_with_sign)
+                        # t.multiplier = abs(rolling_position / position_size_with_sign)
+                        _set_multiplier(t, abs(rolling_position / position_size_with_sign))
                         for t0 in i_in_stock:
-                            t0.multiplier = 1.0
+                            # t0.multiplier = 1.0
+                            _set_multiplier(t0, 1.0)
                         not_closed[t_key] = not_closed.get(t_key, []) + [t]
                     in_stock[t_key] = [t0 for t0 in i_in_stock if t0.multiplier < 1.0]
                 else:  # нечего продавать
-                    t.multiplier = 0.0
+                    # t.multiplier = 0.0
+                    _set_multiplier(t, 0.0)
                     not_closed[t_key] = not_closed.get(t_key, []) + [t]
 
             rolling_position += position_size_with_sign
