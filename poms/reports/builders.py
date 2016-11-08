@@ -63,46 +63,47 @@ class ReportItem(object):
         self.transaction_class = transaction_class  # -> TransactionClass for TRANSACTION_PL and FX_TRADE
         self.custom_fields = custom_fields or []
 
+        # balance
+
         self.position_size_with_sign = position_size_with_sign
 
-        # balance
-        self.market_value_system_ccy = 0.0
-        self.market_value_report_ccy = 0.0
+        self.market_value_sys_ccy = 0.0
+        self.market_value_res_ccy = 0.0
 
-        self.cost_with_sign_system_ccy = 0.0
-        self.cost_with_sign_report_ccy = 0.0
+        self.cost_with_sign_sys_ccy = 0.0
+        self.cost_with_sign_res_ccy = 0.0
 
         # P&L
 
-        self.principal_with_sign_system_ccy = 0.0
-        self.carry_with_sign_system_ccy = 0.0
-        self.overheads_with_sign_system_ccy = 0.0
-        self.total_with_sign_system_ccy = 0.0
+        self.principal_with_sign_sys_ccy = 0.0
+        self.carry_with_sign_sys_ccy = 0.0
+        self.overheads_with_sign_sys_ccy = 0.0
+        self.total_with_sign_sys_ccy = 0.0
 
-        self.real_pl_principal_with_sign_system_ccy = 0.0
-        self.real_pl_carry_with_sign_system_ccy = 0.0
-        self.real_pl_overheads_with_sign_system_ccy = 0.0
-        self.real_pl_total_with_sign_system_ccy = 0.0
+        self.real_pl_principal_with_sign_sys_ccy = 0.0
+        self.real_pl_carry_with_sign_sys_ccy = 0.0
+        self.real_pl_overheads_with_sign_sys_ccy = 0.0
+        self.real_pl_total_with_sign_sys_ccy = 0.0
 
-        # self.unreal_pl_principal_with_sign_system_ccy = 0.0
-        # self.unreal_pl_carry_with_sign_system_ccy = 0.0
-        # self.unreal_pl_overheads_with_sign_system_ccy = 0.0
-        self.unreal_pl_total_with_sign_system_ccy = 0.0
+        self.unreal_pl_principal_with_sign_sys_ccy = 0.0
+        self.unreal_pl_carry_with_sign_sys_ccy = 0.0
+        self.unreal_pl_overheads_with_sign_sys_ccy = 0.0
+        self.unreal_pl_total_with_sign_sys_ccy = 0.0
 
-        self.principal_with_sign_report_ccy = 0.0
-        self.carry_with_sign_report_ccy = 0.0
-        self.overheads_with_sign_report_ccy = 0.0
-        self.total_with_sign_report_ccy = 0.0
+        self.principal_with_sign_res_ccy = 0.0
+        self.carry_with_sign_res_ccy = 0.0
+        self.overheads_with_sign_res_ccy = 0.0
+        self.total_with_sign_res_ccy = 0.0
 
-        self.real_pl_principal_with_sign_report_ccy = 0.0
-        self.real_pl_carry_with_sign_report_ccy = 0.0
-        self.real_pl_overheads_with_sign_report_ccy = 0.0
-        self.real_pl_total_with_sign_report_ccy = 0.0
+        self.real_pl_principal_with_sign_res_ccy = 0.0
+        self.real_pl_carry_with_sign_res_ccy = 0.0
+        self.real_pl_overheads_with_sign_res_ccy = 0.0
+        self.real_pl_total_with_sign_res_ccy = 0.0
 
-        # self.unreal_pl_principal_with_sign_report_ccy = 0.0
-        # self.unreal_pl_carry_with_sign_report_ccy = 0.0
-        # self.unreal_pl_overheads_with_sign_report_ccy = 0.0
-        self.unreal_pl_total_with_sign_report_ccy = 0.0
+        self.unreal_pl_principal_with_sign_res_ccy = 0.0
+        self.unreal_pl_carry_with_sign_res_ccy = 0.0
+        self.unreal_pl_overheads_with_sign_res_ccy = 0.0
+        self.unreal_pl_total_with_sign_res_ccy = 0.0
 
     def __str__(self):
         return "%s #%s" % (self.__class__.__name__, self.pk,)
@@ -110,11 +111,11 @@ class ReportItem(object):
     @property
     def is_zero(self):
         return isclose(self.position_size_with_sign, 0.0) \
-               and isclose(self.market_value_system_ccy, 0.0) \
-               and isclose(self.principal_with_sign_system_ccy, 0.0) \
-               and isclose(self.carry_with_sign_system_ccy, 0.0) \
-               and isclose(self.overheads_with_sign_system_ccy, 0.0) \
-               and isclose(self.total_with_sign_system_ccy, 0.0)
+               and isclose(self.market_value_sys_ccy, 0.0) \
+               and isclose(self.principal_with_sign_sys_ccy, 0.0) \
+               and isclose(self.carry_with_sign_sys_ccy, 0.0) \
+               and isclose(self.overheads_with_sign_sys_ccy, 0.0) \
+               and isclose(self.total_with_sign_sys_ccy, 0.0)
 
     @property
     def type(self):
@@ -179,42 +180,42 @@ class ReportItem(object):
 class ReportSummary(object):
     def __init__(self):
         # balance
-        self.market_value_system_ccy = 0.0
-        self.market_value_report_ccy = 0.0
+        self.market_value_sys_ccy = 0.0
+        self.market_value_res_ccy = 0.0
 
-        self.cost_with_sign_system_ccy = 0.0
-        self.cost_with_sign_report_ccy = 0.0
+        self.cost_with_sign_sys_ccy = 0.0
+        self.cost_with_sign_res_ccy = 0.0
 
         # P&L
-        self.principal_with_sign_system_ccy = 0.0
-        self.carry_with_sign_system_ccy = 0.0
-        self.overheads_with_sign_system_ccy = 0.0
-        self.total_with_sign_system_ccy = 0.0
+        self.principal_with_sign_sys_ccy = 0.0
+        self.carry_with_sign_sys_ccy = 0.0
+        self.overheads_with_sign_sys_ccy = 0.0
+        self.total_with_sign_sys_ccy = 0.0
 
-        self.real_pl_principal_with_sign_system_ccy = 0.0
-        self.real_pl_carry_with_sign_system_ccy = 0.0
-        self.real_pl_overheads_with_sign_system_ccy = 0.0
-        self.real_pl_total_with_sign_system_ccy = 0.0
+        self.real_pl_principal_with_sign_sys_ccy = 0.0
+        self.real_pl_carry_with_sign_sys_ccy = 0.0
+        self.real_pl_overheads_with_sign_sys_ccy = 0.0
+        self.real_pl_total_with_sign_sys_ccy = 0.0
 
-        # self.unreal_pl_principal_with_sign_system_ccy = 0.0
-        # self.unreal_pl_carry_with_sign_system_ccy = 0.0
-        # self.unreal_pl_overheads_with_sign_system_ccy = 0.0
-        self.unreal_pl_total_with_sign_system_ccy = 0.0
+        # self.unreal_pl_principal_with_sign_sys_ccy = 0.0
+        # self.unreal_pl_carry_with_sign_sys_ccy = 0.0
+        # self.unreal_pl_overheads_with_sign_sys_ccy = 0.0
+        self.unreal_pl_total_with_sign_sys_ccy = 0.0
 
-        self.principal_with_sign_report_ccy = 0.0
-        self.carry_with_sign_report_ccy = 0.0
-        self.overheads_with_sign_report_ccy = 0.0
-        self.total_with_sign_report_ccy = 0.0
+        self.principal_with_sign_res_ccy = 0.0
+        self.carry_with_sign_res_ccy = 0.0
+        self.overheads_with_sign_res_ccy = 0.0
+        self.total_with_sign_res_ccy = 0.0
 
-        self.real_pl_principal_with_sign_report_ccy = 0.0
-        self.real_pl_carry_with_sign_report_ccy = 0.0
-        self.real_pl_overheads_with_sign_report_ccy = 0.0
-        self.real_pl_total_with_sign_report_ccy = 0.0
+        self.real_pl_principal_with_sign_res_ccy = 0.0
+        self.real_pl_carry_with_sign_res_ccy = 0.0
+        self.real_pl_overheads_with_sign_res_ccy = 0.0
+        self.real_pl_total_with_sign_res_ccy = 0.0
 
-        # self.unreal_pl_principal_with_sign_report_ccy = 0.0
-        # self.unreal_pl_carry_with_sign_report_ccy = 0.0
-        # self.unreal_pl_overheads_with_sign_report_ccy = 0.0
-        self.unreal_pl_total_with_sign_report_ccy = 0.0
+        # self.unreal_pl_principal_with_sign_res_ccy = 0.0
+        # self.unreal_pl_carry_with_sign_res_ccy = 0.0
+        # self.unreal_pl_overheads_with_sign_res_ccy = 0.0
+        self.unreal_pl_total_with_sign_res_ccy = 0.0
 
     def __str__(self):
         return "summary"
@@ -565,9 +566,9 @@ class ReportBuilder(object):
             t.real_pl_overheads_with_sign = 0.0
             t.real_pl_total_with_sign = 0.0
 
-            # t.unreal_pl_principal_with_sign = 0.0
-            # t.unreal_pl_carry_with_sign = 0.0
-            # t.unreal_pl_overheads_with_sign = 0.0
+            t.unreal_pl_principal_with_sign = 0.0
+            t.unreal_pl_carry_with_sign = 0.0
+            t.unreal_pl_overheads_with_sign = 0.0
             t.unreal_pl_total_with_sign = 0.0
 
             rolling_position = rolling_positions[t_key]
@@ -690,34 +691,27 @@ class ReportBuilder(object):
 
             t, inc_multiplier = real_pl_changes[-1]
 
-            sum_principal_with_sign = 0.0
-            sum_carry_with_sign = 0.0
-            sum_overheads_with_sign = 0.0
+            # sum_principal = 0.0
+            # sum_carry = 0.0
+            # sum_overheads = 0.0
+            sum_total = 0.0
             for t0, inc_multiplier0 in real_pl_changes:
-                sum_principal_with_sign += t0.principal_with_sign * inc_multiplier0
-                sum_carry_with_sign += t0.carry_with_sign * inc_multiplier0
-                sum_overheads_with_sign += t0.overheads_with_sign * inc_multiplier0
+                # sum_principal += t0.principal_with_sign * inc_multiplier0
+                # sum_carry += t0.carry_with_sign * inc_multiplier0
+                # sum_overheads += t0.overheads_with_sign * inc_multiplier0
+                sum_total += (t0.principal_with_sign + t0.carry_with_sign + t0.overheads_with_sign) * inc_multiplier0
 
             for t0, inc_multiplier0 in real_pl_changes:
                 mult = end_mult if t0.id == t.id else init_mult
 
                 matched = abs((t0.position_size_with_sign * inc_multiplier0) / (
                     t.position_size_with_sign * inc_multiplier))
-                adj = matched * mult
+                # adj = matched * mult
 
-                t0.real_pl_principal_with_sign += sum_principal_with_sign * matched * mult
-                t0.real_pl_carry_with_sign += sum_carry_with_sign * matched * mult
-                t0.real_pl_overheads_with_sign += sum_overheads_with_sign * matched * mult
-                t0.real_pl_total_with_sign = t0.real_pl_principal_with_sign + \
-                                             t0.real_pl_carry_with_sign + \
-                                             t0.real_pl_overheads_with_sign
-
-                # for t0 in changes:
-                #     print('\t id=%s, multiplier=%f, _inc_multiplier=%f, _matched=%f, _adj=%f, '
-                #           'pl_principal=%f, pl_carry=%f, pl_overheads=%s' % (
-                #               t0.id, t0.multiplier, t0._inc_multiplier, t0._matched, t0._adj,
-                #               t0.pl_principal_with_sign, t0.pl_carry_with_sign, t0.pl_overheads_with_sign,
-                #           ))
+                # t0.real_pl_principal_with_sign += sum_principal * matched * mult
+                # t0.real_pl_carry_with_sign += sum_carry * matched * mult
+                # t0.real_pl_overheads_with_sign += sum_overheads * matched * mult
+                t0.real_pl_total_with_sign += sum_total * matched * mult
 
     def _pl_unreal(self, transactions):
         # for t in transactions:
@@ -965,11 +959,11 @@ class ReportBuilder(object):
         item = self._get_item(self._items, trn, portfolio=trn.portfolio, account=trn.account_position,
                               strategy1=trn.strategy1_position, strategy2=trn.strategy2_position,
                               strategy3=trn.strategy3_position, transaction_class=trn.transaction_class)
-        item.principal_with_sign_system_ccy += \
-            self._to_system_ccy(trn.position_size_with_sign, trn.transaction_currency) + \
-            self._to_system_ccy(trn.principal_with_sign, trn.settlement_currency)
-        # item.carry_with_sign_system_ccy += self._to_system_ccy(trn.carry_with_sign, trn.settlement_currency)
-        item.overheads_with_sign_system_ccy += self._to_system_ccy(trn.overheads_with_sign, trn.settlement_currency)
+        item.principal_with_sign_sys_ccy += \
+            self._to_sys_ccy(trn.position_size_with_sign, trn.transaction_currency) + \
+            self._to_sys_ccy(trn.principal_with_sign, trn.settlement_currency)
+        # item.carry_with_sign_sys_ccy += self._to_sys_ccy(trn.carry_with_sign, trn.settlement_currency)
+        item.overheads_with_sign_sys_ccy += self._to_sys_ccy(trn.overheads_with_sign, trn.settlement_currency)
 
     def _process_transaction_instrument_pl(self, trn):
         self._add_instr(self._items, trn, value=trn.position_size_with_sign)
@@ -982,9 +976,9 @@ class ReportBuilder(object):
 
         self._add_cash(self._items, trn, value=trn.cash_consideration, currency=trn.settlement_currency)
 
-        item.principal_with_sign_system_ccy += self._to_system_ccy(trn.principal_with_sign, trn.settlement_currency)
-        item.carry_with_sign_system_ccy += self._to_system_ccy(trn.carry_with_sign, trn.settlement_currency)
-        item.overheads_with_sign_system_ccy += self._to_system_ccy(trn.overheads_with_sign, trn.settlement_currency)
+        item.principal_with_sign_sys_ccy += self._to_sys_ccy(trn.principal_with_sign, trn.settlement_currency)
+        item.carry_with_sign_sys_ccy += self._to_sys_ccy(trn.carry_with_sign, trn.settlement_currency)
+        item.overheads_with_sign_sys_ccy += self._to_sys_ccy(trn.overheads_with_sign, trn.settlement_currency)
 
     def _process_transaction_transfer(self, trn):
         raise RuntimeError('Virtual transaction must be created')
@@ -1035,20 +1029,22 @@ class ReportBuilder(object):
             ccy = trn.settlement_currency
             # balance
             item.position_size_with_sign += value
-            item.cost_with_sign_system_ccy += self._to_system_ccy(trn.cost_with_sign, ccy)
+            item.cost_with_sign_sys_ccy += self._to_sys_ccy(trn.cost_with_sign, ccy)
 
             #  P&L
-            item.principal_with_sign_system_ccy += self._to_system_ccy(trn.principal_with_sign, ccy)
-            item.carry_with_sign_system_ccy += self._to_system_ccy(trn.carry_with_sign, ccy)
-            item.overheads_with_sign_system_ccy += self._to_system_ccy(trn.overheads_with_sign, ccy)
+            item.principal_with_sign_sys_ccy += self._to_sys_ccy(trn.principal_with_sign, ccy)
+            item.carry_with_sign_sys_ccy += self._to_sys_ccy(trn.carry_with_sign, ccy)
+            item.overheads_with_sign_sys_ccy += self._to_sys_ccy(trn.overheads_with_sign, ccy)
 
-            item.real_pl_principal_with_sign_system_ccy += self._to_system_ccy(trn.real_pl_principal_with_sign, ccy)
-            item.real_pl_carry_with_sign_system_ccy += self._to_system_ccy(trn.real_pl_carry_with_sign, ccy)
-            item.real_pl_overheads_with_sign_system_ccy += self._to_system_ccy(trn.real_pl_overheads_with_sign, ccy)
+            # item.real_pl_principal_with_sign_sys_ccy += self._to_sys_ccy(trn.real_pl_principal_with_sign, ccy)
+            # item.real_pl_carry_with_sign_sys_ccy += self._to_sys_ccy(trn.real_pl_carry_with_sign, ccy)
+            # item.real_pl_overheads_with_sign_sys_ccy += self._to_sys_ccy(trn.real_pl_overheads_with_sign, ccy)
+            item.real_pl_total_with_sign_sys_ccy += self._to_sys_ccy(trn.real_pl_total_with_sign, ccy)
 
-            # item.unreal_pl_principal_with_sign_system_ccy += self._to_system_ccy(trn.unreal_pl_principal_with_sign,ccy)
-            # item.unreal_pl_carry_with_sign_system_ccy += self._to_system_ccy(trn.unreal_pl_carry_with_sign,ccy)
-            # item.unreal_pl_overheads_with_sign_system_ccy += self._to_system_ccy(trn.unreal_pl_overheads_with_sign,ccy)
+            # item.unreal_pl_principal_with_sign_sys_ccy += self._to_sys_ccy(trn.unreal_pl_principal_with_sign,ccy)
+            # item.unreal_pl_carry_with_sign_sys_ccy += self._to_sys_ccy(trn.unreal_pl_carry_with_sign,ccy)
+            # item.unreal_pl_overheads_with_sign_sys_ccy += self._to_sys_ccy(trn.unreal_pl_overheads_with_sign,ccy)
+            # item.unreal_pl_total_with_sign_sys_ccy += self._to_sys_ccy(trn.unreal_pl_total_with_sign,ccy)
             pass
 
     def _add_cash(self, items, trn, value, currency,
@@ -1097,92 +1093,89 @@ class ReportBuilder(object):
                 principal = item.position_size_with_sign * item.instrument.price_multiplier * price.principal_price
                 accrued = item.position_size_with_sign * item.instrument.accrued_multiplier * price.accrued_price
 
-                principal_system_ccy = self._to_system_ccy(principal, item.instrument.pricing_currency)
-                accrued_system_ccy = self._to_system_ccy(accrued, item.instrument.accrued_currency)
+                principal_sys_ccy = self._to_sys_ccy(principal, item.instrument.pricing_currency)
+                accrued_sys_ccy = self._to_sys_ccy(accrued, item.instrument.accrued_currency)
 
                 # balance
-                item.market_value_system_ccy = principal_system_ccy + accrued_system_ccy
+                item.market_value_sys_ccy = principal_sys_ccy + accrued_sys_ccy
 
                 # P&L
-                item.principal_with_sign_system_ccy += principal_system_ccy
-                item.carry_with_sign_system_ccy += accrued_system_ccy
+                item.principal_with_sign_sys_ccy += principal_sys_ccy
+                item.carry_with_sign_sys_ccy += accrued_sys_ccy
 
             elif item.currency:
                 # balance
-                item.market_value_system_ccy = self._to_system_ccy(item.position_size_with_sign, item.currency)
+                item.market_value_sys_ccy = self._to_sys_ccy(item.position_size_with_sign, item.currency)
 
                 # P&L
                 pass
 
             # balance
-            item.market_value_report_ccy = self._to_report_ccy(item.market_value_system_ccy)
-            item.cost_with_sign_report_ccy = self._to_report_ccy(item.cost_with_sign_system_ccy)
+            item.market_value_res_ccy = self._to_res_ccy(item.market_value_sys_ccy)
+            item.cost_with_sign_res_ccy = self._to_res_ccy(item.cost_with_sign_sys_ccy)
 
             # P&L
-            item.total_with_sign_system_ccy = item.principal_with_sign_system_ccy + \
-                                              item.carry_with_sign_system_ccy + \
-                                              item.overheads_with_sign_system_ccy
+            item.total_with_sign_sys_ccy = item.principal_with_sign_sys_ccy + \
+                                           item.carry_with_sign_sys_ccy + \
+                                           item.overheads_with_sign_sys_ccy
 
-            item.principal_with_sign_report_ccy = self._to_report_ccy(item.principal_with_sign_system_ccy)
-            item.carry_with_sign_report_ccy = self._to_report_ccy(item.carry_with_sign_system_ccy)
-            item.overheads_with_sign_report_ccy = self._to_report_ccy(item.overheads_with_sign_system_ccy)
-            item.total_with_sign_report_ccy = self._to_report_ccy(item.total_with_sign_system_ccy)
+            item.principal_with_sign_res_ccy = self._to_res_ccy(item.principal_with_sign_sys_ccy)
+            item.carry_with_sign_res_ccy = self._to_res_ccy(item.carry_with_sign_sys_ccy)
+            item.overheads_with_sign_res_ccy = self._to_res_ccy(item.overheads_with_sign_sys_ccy)
+            item.total_with_sign_res_ccy = self._to_res_ccy(item.total_with_sign_sys_ccy)
 
-            item.real_pl_principal_with_sign_report_ccy = self._to_report_ccy(
-                item.real_pl_principal_with_sign_system_ccy)
-            item.real_pl_carry_with_sign_report_ccy = self._to_report_ccy(item.real_pl_carry_with_sign_system_ccy)
-            item.real_pl_overheads_with_sign_report_ccy = self._to_report_ccy(
-                item.real_pl_overheads_with_sign_system_ccy)
-            item.real_pl_total_with_sign_system_ccy = item.real_pl_principal_with_sign_system_ccy + \
-                                                      item.real_pl_carry_with_sign_system_ccy + \
-                                                      item.real_pl_overheads_with_sign_system_ccy
+            if item.instrument:
+                # item.real_pl_principal_with_sign_res_ccy = self._to_res_ccy(item.real_pl_principal_with_sign_sys_ccy)
+                # item.real_pl_carry_with_sign_res_ccy = self._to_res_ccy(item.real_pl_carry_with_sign_sys_ccy)
+                # item.real_pl_overheads_with_sign_res_ccy = self._to_res_ccy(item.real_pl_overheads_with_sign_sys_ccy)
+                item.real_pl_total_with_sign_res_ccy = self._to_res_ccy(item.real_pl_total_with_sign_sys_ccy)
 
-            # item.unreal_pl_principal_with_sign_report_ccy = self._to_report_ccy(
-            #     item.unreal_pl_principal_with_sign_system_ccy)
-            # item.unreal_pl_carry_with_sign_report_ccy = self._to_report_ccy(
-            #     item.unreal_pl_carry_with_sign_system_ccy)
-            # item.unreal_pl_overheads_with_sign_report_ccy = self._to_report_ccy(
-            #     item.unreal_pl_overheads_with_sign_system_ccy)
-            item.unreal_pl_total_with_sign_system_ccy = item.market_value_report_ccy + item.cost_with_sign_system_ccy
+                # item.unreal_pl_principal_with_sign_res_ccy = self._to_res_ccy(
+                #     item.unreal_pl_principal_with_sign_sys_ccy)
+                # item.unreal_pl_carry_with_sign_res_ccy = self._to_res_ccy(
+                #     item.unreal_pl_carry_with_sign_sys_ccy)
+                # item.unreal_pl_overheads_with_sign_res_ccy = self._to_res_ccy(
+                #     item.unreal_pl_overheads_with_sign_sys_ccy)
+                item.unreal_pl_total_with_sign_sys_ccy = item.market_value_res_ccy + item.cost_with_sign_sys_ccy
 
     def _process_summary(self, summary, items):
         for item in items:
-            summary.market_value_system_ccy += item.market_value_system_ccy
-            summary.market_value_report_ccy += item.market_value_report_ccy
+            summary.market_value_sys_ccy += item.market_value_sys_ccy
+            summary.market_value_res_ccy += item.market_value_res_ccy
 
-            summary.cost_with_sign_system_ccy += item.cost_with_sign_system_ccy
-            summary.cost_with_sign_report_ccy += item.cost_with_sign_report_ccy
+            summary.cost_with_sign_sys_ccy += item.cost_with_sign_sys_ccy
+            summary.cost_with_sign_res_ccy += item.cost_with_sign_res_ccy
 
             # P&L
-            summary.principal_with_sign_system_ccy += item.principal_with_sign_system_ccy
-            summary.carry_with_sign_system_ccy += item.carry_with_sign_system_ccy
-            summary.overheads_with_sign_system_ccy += item.overheads_with_sign_system_ccy
-            summary.total_with_sign_system_ccy += item.total_with_sign_system_ccy
+            summary.principal_with_sign_sys_ccy += item.principal_with_sign_sys_ccy
+            summary.carry_with_sign_sys_ccy += item.carry_with_sign_sys_ccy
+            summary.overheads_with_sign_sys_ccy += item.overheads_with_sign_sys_ccy
+            summary.total_with_sign_sys_ccy += item.total_with_sign_sys_ccy
 
-            summary.real_pl_principal_with_sign_system_ccy += item.real_pl_principal_with_sign_system_ccy
-            summary.real_pl_carry_with_sign_system_ccy += item.real_pl_carry_with_sign_system_ccy
-            summary.real_pl_overheads_with_sign_system_ccy += item.real_pl_overheads_with_sign_system_ccy
-            summary.real_pl_total_with_sign_system_ccy += item.real_pl_total_with_sign_system_ccy
+            # summary.real_pl_principal_with_sign_sys_ccy += item.real_pl_principal_with_sign_sys_ccy
+            # summary.real_pl_carry_with_sign_sys_ccy += item.real_pl_carry_with_sign_sys_ccy
+            # summary.real_pl_overheads_with_sign_sys_ccy += item.real_pl_overheads_with_sign_sys_ccy
+            summary.real_pl_total_with_sign_sys_ccy += item.real_pl_total_with_sign_sys_ccy
 
-            # summary.unreal_pl_principal_with_sign_system_ccy += item.unreal_pl_principal_with_sign_system_ccy
-            # summary.unreal_pl_carry_with_sign_system_ccy += item.unreal_pl_carry_with_sign_system_ccy
-            # summary.unreal_pl_overheads_with_sign_system_ccy += item.unreal_pl_overheads_with_sign_system_ccy
-            summary.unreal_pl_total_with_sign_system_ccy += item.unreal_pl_total_with_sign_system_ccy
+            # summary.unreal_pl_principal_with_sign_sys_ccy += item.unreal_pl_principal_with_sign_sys_ccy
+            # summary.unreal_pl_carry_with_sign_sys_ccy += item.unreal_pl_carry_with_sign_sys_ccy
+            # summary.unreal_pl_overheads_with_sign_sys_ccy += item.unreal_pl_overheads_with_sign_sys_ccy
+            summary.unreal_pl_total_with_sign_sys_ccy += item.unreal_pl_total_with_sign_sys_ccy
 
-            summary.principal_with_sign_report_ccy += item.principal_with_sign_report_ccy
-            summary.carry_with_sign_report_ccy += item.carry_with_sign_report_ccy
-            summary.overheads_with_sign_report_ccy += item.overheads_with_sign_report_ccy
-            summary.total_with_sign_report_ccy += item.total_with_sign_report_ccy
+            summary.principal_with_sign_res_ccy += item.principal_with_sign_res_ccy
+            summary.carry_with_sign_res_ccy += item.carry_with_sign_res_ccy
+            summary.overheads_with_sign_res_ccy += item.overheads_with_sign_res_ccy
+            summary.total_with_sign_res_ccy += item.total_with_sign_res_ccy
 
-            summary.real_pl_principal_with_sign_report_ccy += item.real_pl_principal_with_sign_report_ccy
-            summary.real_pl_carry_with_sign_report_ccy += item.real_pl_carry_with_sign_report_ccy
-            summary.real_pl_overheads_with_sign_report_ccy += item.real_pl_overheads_with_sign_report_ccy
-            summary.real_pl_total_with_sign_report_ccy += item.real_pl_total_with_sign_report_ccy
+            # summary.real_pl_principal_with_sign_res_ccy += item.real_pl_principal_with_sign_res_ccy
+            # summary.real_pl_carry_with_sign_res_ccy += item.real_pl_carry_with_sign_res_ccy
+            # summary.real_pl_overheads_with_sign_res_ccy += item.real_pl_overheads_with_sign_res_ccy
+            summary.real_pl_total_with_sign_res_ccy += item.real_pl_total_with_sign_res_ccy
 
-            # summary.unreal_pl_principal_with_sign_report_ccy += item.unreal_pl_principal_with_sign_report_ccy
-            # summary.unreal_pl_carry_with_sign_report_ccy += item.unreal_pl_carry_with_sign_report_ccy
-            # summary.unreal_pl_overheads_with_sign_report_ccy += item.unreal_pl_overheads_with_sign_report_ccy
-            summary.unreal_pl_total_with_sign_report_ccy += item.unreal_pl_total_with_sign_report_ccy
+            # summary.unreal_pl_principal_with_sign_res_ccy += item.unreal_pl_principal_with_sign_res_ccy
+            # summary.unreal_pl_carry_with_sign_res_ccy += item.unreal_pl_carry_with_sign_res_ccy
+            # summary.unreal_pl_overheads_with_sign_res_ccy += item.unreal_pl_overheads_with_sign_res_ccy
+            summary.unreal_pl_total_with_sign_res_ccy += item.unreal_pl_total_with_sign_res_ccy
 
     def _process_custom_fields(self, items):
         if self.instance.custom_fields:
@@ -1201,13 +1194,13 @@ class ReportBuilder(object):
                         'value': value
                     })
 
-    def _to_system_ccy(self, value, ccy):
+    def _to_sys_ccy(self, value, ccy):
         if isclose(value, 0.0):
             return 0.0
         h = self._get_currency_history(ccy)
         return value * h.fx_rate
 
-    def _to_report_ccy(self, value):
+    def _to_res_ccy(self, value):
         if isclose(value, 0.0):
             return 0.0
         h = self._get_currency_history(self.instance.report_currency)

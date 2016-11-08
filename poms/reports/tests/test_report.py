@@ -234,13 +234,13 @@ class ReportTestCase(TestCase):
             'overheads_with_sign',
             'multiplier',
             'balance_position_size_with_sign',
-            'real_pl_principal_with_sign',
-            'real_pl_carry_with_sign',
-            'real_pl_overheads_with_sign',
+            # 'real_pl_principal_with_sign',
+            # 'real_pl_carry_with_sign',
+            # 'real_pl_overheads_with_sign',
             'real_pl_total_with_sign',
-            'unreal_pl_principal_with_sign',
-            'unreal_pl_carry_with_sign',
-            'unreal_pl_overheads_with_sign',
+            # 'unreal_pl_principal_with_sign',
+            # 'unreal_pl_carry_with_sign',
+            # 'unreal_pl_overheads_with_sign',
             'unreal_pl_total_with_sign',
         ]
         columns = [
@@ -249,22 +249,22 @@ class ReportTestCase(TestCase):
             'acc_date',
             'cash_date',
             'instr',
-            'transaction_ccy',
+            'trn_ccy',
             'position',
-            'settlement_ccy',
-            'cash_consideration',
+            'stl_ccy',
+            'cash_consid',
             'principal',
             'carry',
             'overheads',
             'multiplier',
-            'balance_position',
-            'real_pl_principal',
-            'real_pl_carry',
-            'real_pl_overheads',
+            'balance',
+            # 'real_pl_principal',
+            # 'real_pl_carry',
+            # 'real_pl_overheads',
             'real_pl_total',
-            'unreal_pl_principal',
-            'unreal_pl_carry',
-            'unreal_pl_overheads',
+            # 'unreal_pl_principal',
+            # 'unreal_pl_carry',
+            # 'unreal_pl_overheads',
             'unreal_pl_total',
         ]
         if builder.instance.detail_by_portfolio:
@@ -333,20 +333,20 @@ class ReportTestCase(TestCase):
             'instrument',
             'currency',
             'position_size_with_sign',
-            'market_value_system_ccy',
-            'cost_with_sign_system_ccy',
-            'principal_with_sign_system_ccy',
-            'carry_with_sign_system_ccy',
-            'overheads_with_sign_system_ccy',
-            'total_with_sign_system_ccy',
-            'real_pl_principal_with_sign_system_ccy',
-            'real_pl_carry_with_sign_system_ccy',
-            'real_pl_overheads_with_sign_system_ccy',
-            'real_pl_total_with_sign_system_ccy',
-            'unreal_pl_principal_with_sign_system_ccy',
-            'unreal_pl_carry_with_sign_system_ccy',
-            'unreal_pl_overheads_with_sign_system_ccy',
-            'unreal_pl_total_with_sign_system_ccy',
+            'market_value_sys_ccy',
+            'cost_with_sign_sys_ccy',
+            'principal_with_sign_sys_ccy',
+            'carry_with_sign_sys_ccy',
+            'overheads_with_sign_sys_ccy',
+            'total_with_sign_sys_ccy',
+            # 'real_pl_principal_with_sign_sys_ccy',
+            # 'real_pl_carry_with_sign_sys_ccy',
+            # 'real_pl_overheads_with_sign_sys_ccy',
+            'real_pl_total_with_sign_sys_ccy',
+            # 'unreal_pl_principal_with_sign_sys_ccy',
+            # 'unreal_pl_carry_with_sign_sys_ccy',
+            # 'unreal_pl_overheads_with_sign_sys_ccy',
+            'unreal_pl_total_with_sign_sys_ccy',
         ]
         columns = [
             'type',
@@ -360,13 +360,13 @@ class ReportTestCase(TestCase):
             'carry',
             'overheads',
             'total',
-            'real_pl_principal',
-            'real_pl_carry',
-            'real_pl_overheads',
+            # 'real_pl_principal',
+            # 'real_pl_carry',
+            # 'real_pl_overheads',
             'real_pl_total',
-            'unreal_pl_principal',
-            'unreal_pl_carry',
-            'unreal_pl_overheads',
+            # 'unreal_pl_principal',
+            # 'unreal_pl_carry',
+            # 'unreal_pl_overheads',
             'unreal_pl_total',
         ]
 
@@ -427,19 +427,19 @@ class ReportTestCase(TestCase):
 
     def _print_summary(self, builder):
         fields = [
-            'market_value_system_ccy',
-            'principal_with_sign_system_ccy',
-            'carry_with_sign_system_ccy',
-            'overheads_with_sign_system_ccy',
-            'total_with_sign_system_ccy',
-            'real_pl_principal_with_sign_system_ccy',
-            'real_pl_carry_with_sign_system_ccy',
-            'real_pl_overheads_with_sign_system_ccy',
-            'real_pl_total_with_sign_system_ccy',
-            'unreal_pl_principal_with_sign_system_ccy',
-            'unreal_pl_carry_with_sign_system_ccy',
-            'unreal_pl_overheads_with_sign_system_ccy',
-            'unreal_pl_total_with_sign_system_ccy',
+            'market_value_sys_ccy',
+            'principal_with_sign_sys_ccy',
+            'carry_with_sign_sys_ccy',
+            'overheads_with_sign_sys_ccy',
+            'total_with_sign_sys_ccy',
+            # 'real_pl_principal_with_sign_sys_ccy',
+            # 'real_pl_carry_with_sign_sys_ccy',
+            # 'real_pl_overheads_with_sign_sys_ccy',
+            'real_pl_total_with_sign_sys_ccy',
+            # 'unreal_pl_principal_with_sign_sys_ccy',
+            # 'unreal_pl_carry_with_sign_sys_ccy',
+            # 'unreal_pl_overheads_with_sign_sys_ccy',
+            'unreal_pl_total_with_sign_sys_ccy',
         ]
         columns = [
             'market_value',
@@ -447,13 +447,13 @@ class ReportTestCase(TestCase):
             'carry',
             'overheads',
             'total',
-            'real_pl_principal',
-            'real_pl_carry',
-            'real_pl_overheads',
+            # 'real_pl_principal',
+            # 'real_pl_carry',
+            # 'real_pl_overheads',
             'real_pl_total',
-            'unreal_pl_principal',
-            'unreal_pl_carry',
-            'unreal_pl_overheads',
+            # 'unreal_pl_principal',
+            # 'unreal_pl_carry',
+            # 'unreal_pl_overheads',
             'unreal_pl_total',
         ]
 
@@ -702,35 +702,35 @@ class ReportTestCase(TestCase):
 
         self._t(t_class=self._sell, instr=instr, position=-5,
                 settlement_ccy=self.usd, principal=40.0, carry=0.0, overheads=0.0,
-                acc_date_days=1, cash_date_days=1, s1_pos=s1)
+                acc_date_days=1, cash_date_days=1, s1_pos=s1, s1_cash=s1)
 
         self._t(t_class=self._buy, instr=instr, position=10,
                 settlement_ccy=self.usd, principal=-100.0, carry=0.0, overheads=0.0,
-                acc_date_days=2, cash_date_days=2, s1_pos=s1)
+                acc_date_days=2, cash_date_days=2, s1_pos=s1, s1_cash=s1)
 
         self._t(t_class=self._buy, instr=instr, position=10,
                 settlement_ccy=self.usd, principal=-105.0, carry=0.0, overheads=0.0,
-                acc_date_days=3, cash_date_days=3, s1_pos=s1)
+                acc_date_days=3, cash_date_days=3, s1_pos=s1, s1_cash=s1)
 
         self._t(t_class=self._buy, instr=instr, position=10,
                 settlement_ccy=self.usd, principal=-110.0, carry=0.0, overheads=0.0,
-                acc_date_days=4, cash_date_days=4, s1_pos=s1)
+                acc_date_days=4, cash_date_days=4, s1_pos=s1, s1_cash=s1)
 
         self._t(t_class=self._sell, instr=instr, position=-20,
                 settlement_ccy=self.usd, principal=230.0, carry=0.0, overheads=0.0,
-                acc_date_days=5, cash_date_days=5, s1_pos=s2)
+                acc_date_days=5, cash_date_days=5, s1_pos=s2, s1_cash=s2)
 
         self._t(t_class=self._buy, instr=instr, position=10,
                 settlement_ccy=self.usd, principal=-120.0, carry=0.0, overheads=0.0,
-                acc_date_days=6, cash_date_days=6, s1_pos=s3)
+                acc_date_days=6, cash_date_days=6, s1_pos=s3, s1_cash=s3)
 
         self._t(t_class=self._sell, instr=instr, position=-20,
                 settlement_ccy=self.usd, principal=250.0, carry=0.0, overheads=0.0,
-                acc_date_days=7, cash_date_days=7, s1_pos=s2)
+                acc_date_days=7, cash_date_days=7, s1_pos=s2, s1_cash=s2)
 
         self._t(t_class=self._sell, instr=instr, position=-10,
                 settlement_ccy=self.usd, principal=130.0, carry=0.0, overheads=0.0,
-                acc_date_days=8, cash_date_days=8, s1_pos=s4)
+                acc_date_days=8, cash_date_days=8, s1_pos=s4, s1_cash=s4)
 
         r = Report(master_user=self.m, pricing_policy=self.pp, report_date=self._d(14),
                    cost_method=self._avco, detail_by_strategy1=True)

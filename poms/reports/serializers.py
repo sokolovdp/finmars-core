@@ -80,20 +80,33 @@ class ReportItemSerializer(serializers.Serializer):
     strategy2 = serializers.PrimaryKeyRelatedField(read_only=True)
     strategy3 = serializers.PrimaryKeyRelatedField(read_only=True)
 
-    position_size_with_sign = serializers.ReadOnlyField()
+    # balance
 
-    market_value_system_ccy = serializers.ReadOnlyField()
-    market_value_report_ccy = serializers.ReadOnlyField()
+    position_size = serializers.ReadOnlyField(source='position_size_with_sign')
 
-    principal_with_sign_system_ccy = serializers.ReadOnlyField()
-    carry_with_sign_system_ccy = serializers.ReadOnlyField()
-    overheads_with_sign_system_ccy = serializers.ReadOnlyField()
-    total_with_sign_system_ccy = serializers.ReadOnlyField()
+    market_value_sys_ccy = serializers.ReadOnlyField()
+    cost_with_sign_sys_ccy = serializers.ReadOnlyField()
 
-    principal_with_sign_report_ccy = serializers.ReadOnlyField()
-    carry_with_sign_report_ccy = serializers.ReadOnlyField()
-    overheads_with_sign_report_ccy = serializers.ReadOnlyField()
-    total_with_sign_report_ccy = serializers.ReadOnlyField()
+    market_value = serializers.ReadOnlyField(source='market_value_res_ccy')
+    cost_with_sign = serializers.ReadOnlyField(source='cost_with_sign_res_ccy')
+
+    # P&L
+
+    principal_with_sign_sys_ccy = serializers.ReadOnlyField()
+    carry_with_sign_sys_ccy = serializers.ReadOnlyField()
+    overheads_with_sign_sys_ccy = serializers.ReadOnlyField()
+    total_with_sign_sys_ccy = serializers.ReadOnlyField()
+
+    real_pl_total_with_sign_sys_ccy = serializers.ReadOnlyField()
+    unreal_pl_total_with_sign_sys_ccy = serializers.ReadOnlyField()
+
+    principal_with_sign = serializers.ReadOnlyField(source='principal_with_sign_res_ccy')
+    carry_with_sign = serializers.ReadOnlyField(source='carry_with_sign_res_ccy')
+    overheads_with_sign = serializers.ReadOnlyField(source='overheads_with_sign_res_ccy')
+    total_with_sign = serializers.ReadOnlyField(source='total_with_sign_res_ccy')
+
+    real_pl_total_with_sign = serializers.ReadOnlyField(source='real_pl_total_with_sign_res_ccy')
+    unreal_pl_total_with_sign = serializers.ReadOnlyField(source='unreal_pl_total_with_sign_res_ccy')
 
     custom_fields = ReportItemCustomFieldSerializer(many=True, read_only=True)
 
