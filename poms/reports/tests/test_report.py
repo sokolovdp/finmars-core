@@ -42,6 +42,7 @@ class ReportTestCase(TestCase):
         self.rub, _ = Currency.objects.get_or_create(user_code='RUB', master_user=self.m, defaults={'name': 'RUB'})
         self.gbp, _ = Currency.objects.get_or_create(user_code='GBP', master_user=self.m, defaults={'name': 'GBP'})
 
+        CurrencyHistory.objects.all().delete()
         for days in range(0, 29):
             d = self._d(days)
             CurrencyHistory.objects.create(currency=self.eur, pricing_policy=self.pp, date=d, fx_rate=1.3)
@@ -85,6 +86,7 @@ class ReportTestCase(TestCase):
                                                 pricing_currency=self.usd, price_multiplier=1.0,
                                                 accrued_currency=self.usd, accrued_multiplier=1.0)
 
+        PriceHistory.objects.all().delete()
         for days in range(0, 29):
             d = self._d(days)
             PriceHistory.objects.create(instrument=self.bond0, pricing_policy=self.pp, date=d, principal_price=1.0,
@@ -166,6 +168,13 @@ class ReportTestCase(TestCase):
         t.save()
         return t
 
+    def _instr_hist(self, instr, d, principal_price, accrued_price):
+        return PriceHistory.objects.create(instrument=instr, pricing_policy=self.pp, date=d,
+                                           principal_price=principal_price, accrued_price=accrued_price)
+
+    def _ccy_hist(self, ccy, d, fx):
+        return CurrencyHistory.objects.create(currency=ccy, pricing_policy=self.pp, date=d, fx_rate=fx)
+
     @cached_property
     def _cash_inflow(self):
         return TransactionClass.objects.get(id=TransactionClass.CASH_INFLOW)
@@ -232,6 +241,7 @@ class ReportTestCase(TestCase):
             'principal_with_sign',
             'carry_with_sign',
             'overheads_with_sign',
+            'reference_fx_rate',
             'multiplier',
             'balance_position_size_with_sign',
             # 'real_pl_principal_with_sign',
@@ -242,6 +252,19 @@ class ReportTestCase(TestCase):
             # 'unreal_pl_carry_with_sign',
             # 'unreal_pl_overheads_with_sign',
             'unreal_pl_total_with_sign',
+
+            'instrument__pricing_currency',
+            'instrument__accrued_currency',
+            'instrument_price_cur__principal_price',
+            'instrument_price_cur__accrued_price',
+            'instrument_pricing_currency_curr__fx_rate',
+            'instrument_accrued_currency_curr__fx_rate',
+
+            'transaction_currency_hist__fx_rate',
+            'transaction_currency_curr__fx_rate',
+
+            'settlement_currency_hist__fx_rate',
+            'settlement_currency_curr__fx_rate',
         ]
         columns = [
             'pk',
@@ -256,6 +279,7 @@ class ReportTestCase(TestCase):
             'principal',
             'carry',
             'overheads',
+            'ref_fx',
             'multiplier',
             'balance',
             # 'real_pl_principal',
@@ -266,6 +290,19 @@ class ReportTestCase(TestCase):
             # 'unreal_pl_carry',
             # 'unreal_pl_overheads',
             'unreal_pl_total',
+
+            'instrument__pricing_currency',
+            'instrument__accrued_currency',
+            'instrument_price_cur__principal_price',
+            'instrument_price_cur__accrued_price',
+            'instrument_pricing_currency_curr__fx_rate',
+            'instrument_accrued_currency_curr__fx_rate',
+
+            'transaction_currency_hist__fx_rate',
+            'transaction_currency_curr__fx_rate',
+
+            'settlement_currency_hist__fx_rate',
+            'settlement_currency_curr__fx_rate',
         ]
         if builder.instance.detail_by_portfolio:
             fields += [
@@ -316,7 +353,14 @@ class ReportTestCase(TestCase):
         for t in builder.transactions:
             row = []
             for f in fields:
-                row.append(getattr(t, f, None))
+                if '__' not in f:
+                    row.append(getattr(t, f, None))
+                else:
+                    v = t
+                    ps = f.split('__')
+                    for i, p in enumerate(ps):
+                        v = getattr(v, p, None)
+                    row.append(v)
             data.append(row)
 
         print('-' * 100)
@@ -333,20 +377,20 @@ class ReportTestCase(TestCase):
             'instrument',
             'currency',
             'position_size_with_sign',
-            'market_value_sys_ccy',
-            'cost_with_sign_sys_ccy',
-            'principal_with_sign_sys_ccy',
-            'carry_with_sign_sys_ccy',
-            'overheads_with_sign_sys_ccy',
-            'total_with_sign_sys_ccy',
-            # 'real_pl_principal_with_sign_sys_ccy',
-            # 'real_pl_carry_with_sign_sys_ccy',
-            # 'real_pl_overheads_with_sign_sys_ccy',
-            'real_pl_total_with_sign_sys_ccy',
-            # 'unreal_pl_principal_with_sign_sys_ccy',
-            # 'unreal_pl_carry_with_sign_sys_ccy',
-            # 'unreal_pl_overheads_with_sign_sys_ccy',
-            'unreal_pl_total_with_sign_sys_ccy',
+            'market_value_res_ccy',
+            'cost_with_sign_res_ccy',
+            'principal_with_sign_res_ccy',
+            'carry_with_sign_res_ccy',
+            'overheads_with_sign_res_ccy',
+            'total_with_sign_res_ccy',
+            # 'real_pl_principal_with_sign_res_ccy',
+            # 'real_pl_carry_with_sign_res_ccy',
+            # 'real_pl_overheads_with_sign_res_ccy',
+            'real_pl_total_with_sign_res_ccy',
+            # 'unreal_pl_principal_with_sign_res_ccy',
+            # 'unreal_pl_carry_with_sign_res_ccy',
+            # 'unreal_pl_overheads_with_sign_res_ccy',
+            'unreal_pl_total_with_sign_res_ccy',
         ]
         columns = [
             'type',
@@ -427,19 +471,19 @@ class ReportTestCase(TestCase):
 
     def _print_summary(self, builder):
         fields = [
-            'market_value_sys_ccy',
-            'principal_with_sign_sys_ccy',
-            'carry_with_sign_sys_ccy',
-            'overheads_with_sign_sys_ccy',
-            'total_with_sign_sys_ccy',
-            # 'real_pl_principal_with_sign_sys_ccy',
-            # 'real_pl_carry_with_sign_sys_ccy',
-            # 'real_pl_overheads_with_sign_sys_ccy',
-            'real_pl_total_with_sign_sys_ccy',
-            # 'unreal_pl_principal_with_sign_sys_ccy',
-            # 'unreal_pl_carry_with_sign_sys_ccy',
-            # 'unreal_pl_overheads_with_sign_sys_ccy',
-            'unreal_pl_total_with_sign_sys_ccy',
+            'market_value_res_ccy',
+            'principal_with_sign_res_ccy',
+            'carry_with_sign_res_ccy',
+            'overheads_with_sign_res_ccy',
+            'total_with_sign_res_ccy',
+            # 'real_pl_principal_with_sign_res_ccy',
+            # 'real_pl_carry_with_sign_res_ccy',
+            # 'real_pl_overheads_with_sign_res_ccy',
+            'real_pl_total_with_sign_res_ccy',
+            # 'unreal_pl_principal_with_sign_res_ccy',
+            # 'unreal_pl_carry_with_sign_res_ccy',
+            # 'unreal_pl_overheads_with_sign_res_ccy',
+            'unreal_pl_total_with_sign_res_ccy',
         ]
         columns = [
             'market_value',
@@ -464,13 +508,23 @@ class ReportTestCase(TestCase):
             row.append(getattr(builder.instance.summary, f, None))
         self._print_table(data=[row], columns=columns)
 
-    def _dump(self, builder, name):
+    def _dump(self, builder, name, print_transactions=None, print_items=None, print_summary=None):
         print('*' * 100)
         print('Report: %s' % name)
-        self._print_transactions(builder)
-        self._print_items(builder, 'items', 'Items')
-        self._print_items(builder, 'invested_items', 'Invested')
-        self._print_summary(builder)
+
+        if print_transactions is None:
+            print_transactions = self._print_transactions
+        print_transactions(builder)
+
+        if print_items is None:
+            print_items = self._print_items
+        print_items(builder, 'items', 'Items')
+        print_items(builder, 'invested_items', 'Invested')
+
+        if print_summary is None:
+            print_summary = self._print_summary
+        print_summary(builder)
+
         pass
 
     def _test_multiplier_0(self):
@@ -614,62 +668,7 @@ class ReportTestCase(TestCase):
         b.build()
         self._dump(b, 'test_pl_1')
 
-    def _test_pl_real_unreal_0(self):
-        # TODO: bad
-        s1 = self.s1_1_1_1
-        s2 = self.s1_1_1_2
-        s3 = self.s1_1_1_3
-        s4 = self.s1_1_1_4
-
-        instr = Instrument.objects.create(master_user=self.m, name="I1, USD/USD",
-                                          instrument_type=self.m.instrument_type,
-                                          pricing_currency=self.usd, price_multiplier=1.0,
-                                          accrued_currency=self.usd, accrued_multiplier=1.0)
-
-        PriceHistory.objects.create(instrument=instr, pricing_policy=self.pp,
-                                    date=self._d(1), principal_price=10.0, accrued_price=1.0)
-        PriceHistory.objects.create(instrument=instr, pricing_policy=self.pp,
-                                    date=self._d(2), principal_price=10.5, accrued_price=1.0)
-        PriceHistory.objects.create(instrument=instr, pricing_policy=self.pp,
-                                    date=self._d(3), principal_price=11.0, accrued_price=1.0)
-        PriceHistory.objects.create(instrument=instr, pricing_policy=self.pp,
-                                    date=self._d(4), principal_price=11.5, accrued_price=1.0)
-        PriceHistory.objects.create(instrument=instr, pricing_policy=self.pp,
-                                    date=self._d(5), principal_price=12.0, accrued_price=1.0)
-        PriceHistory.objects.create(instrument=instr, pricing_policy=self.pp,
-                                    date=self._d(6), principal_price=12.5, accrued_price=1.0)
-
-        self._t(t_class=self._buy, instr=instr, position=10,
-                settlement_ccy=self.usd, principal=-100., carry=0.0, overheads=0.0,
-                acc_date_days=1, cash_date_days=1, s1_pos=s1)
-
-        self._t(t_class=self._buy, instr=instr, position=10,
-                settlement_ccy=self.usd, principal=-105., carry=0.0, overheads=0.0,
-                acc_date_days=2, cash_date_days=2, s1_pos=s1)
-
-        self._t(t_class=self._buy, instr=instr, position=10,
-                settlement_ccy=self.usd, principal=-110., carry=0.0, overheads=0.0,
-                acc_date_days=3, cash_date_days=3, s1_pos=s1)
-
-        self._t(t_class=self._sell, instr=instr, position=-20,
-                settlement_ccy=self.usd, principal=230., carry=0.0, overheads=0.0,
-                acc_date_days=4, cash_date_days=4, s1_pos=s2)
-
-        self._t(t_class=self._buy, instr=instr, position=10,
-                settlement_ccy=self.usd, principal=-120., carry=0.0, overheads=0.0,
-                acc_date_days=5, cash_date_days=5, s1_pos=s3)
-
-        self._t(t_class=self._sell, instr=instr, position=-20,
-                settlement_ccy=self.usd, principal=250., carry=0.0, overheads=0.0,
-                acc_date_days=6, cash_date_days=6, s1_pos=s2)
-
-        r = Report(master_user=self.m, pricing_policy=self.pp, report_date=self._d(14),
-                   detail_by_strategy1=True)
-        b = ReportBuilder(instance=r)
-        b.build()
-        self._dump(b, 'test_pl_real_unreal_0')
-
-    def test_pl_real_unreal_1(self):
+    def _test_pl_real_unreal_1(self):
         s1 = self.s1_1_1_1
         s2 = self.s1_1_1_2
         s3 = self.s1_1_1_3
@@ -737,3 +736,50 @@ class ReportTestCase(TestCase):
         b = ReportBuilder(instance=r)
         b.build()
         self._dump(b, 'test_pl_real_unreal_1')
+
+    def test_pl_fx_fix_full_0(self):
+        instr = Instrument.objects.create(master_user=self.m, name="I1, RUB/RUB",
+                                          instrument_type=self.m.instrument_type,
+                                          pricing_currency=self.rub, price_multiplier=1.0,
+                                          accrued_currency=self.rub, accrued_multiplier=1.0)
+
+        self.m.system_currency = self.cad
+        self.m.save()
+
+        self._instr_hist(instr, self._d(101), 1.0, 1.0)
+        self._instr_hist(instr, self._d(102), 1.0, 1.0)
+        self._instr_hist(instr, self._d(103), 1.0, 1.0)
+        self._instr_hist(instr, self._d(104), 1.0, 1.0)
+
+        self._ccy_hist(self.gbp, self._d(101), 1.1)
+        self._ccy_hist(self.eur, self._d(102), 1.15)
+        self._ccy_hist(self.chf, self._d(103), 0.9)
+
+        self._ccy_hist(self.gbp, self._d(104), 1.2)
+        self._ccy_hist(self.eur, self._d(104), 1.1)
+        self._ccy_hist(self.chf, self._d(104), 1.0)
+        # self._ccy_hist(self.cad, self._d(104), 0.9)
+        self._ccy_hist(self.rub, self._d(104), 1.0 / 65.0*0.9)
+        # for ch in CurrencyHistory.objects.order_by('currency__user_code', '-date').filter(date__gte=self._d(100)):
+        #     print(ch.currency.user_code, ch.date, ch.fx_rate)
+
+        self._t(t_class=self._buy, instr=instr, position=5,
+                settlement_ccy=self.gbp, principal=-20.0,
+                trn_ccy=self.usd, fx_rate=1.5,
+                acc_date_days=101, cash_date_days=101)
+
+        self._t(t_class=self._buy, instr=instr, position=5,
+                settlement_ccy=self.eur, principal=-22.0,
+                trn_ccy=self.usd, fx_rate=1.3,
+                acc_date_days=102, cash_date_days=102)
+
+        self._t(t_class=self._sell, instr=instr, position=-5,
+                settlement_ccy=self.chf, principal=35.0,
+                trn_ccy=self.usd, fx_rate=1.1,
+                acc_date_days=103, cash_date_days=103)
+
+        r = Report(master_user=self.m, pricing_policy=self.pp, report_date=self._d(104), report_currency=self.cad,
+                   cost_method=self._avco)
+        b = ReportBuilder(instance=r)
+        b.build()
+        self._dump(b, 'test_pl_fx_fix_full_0')

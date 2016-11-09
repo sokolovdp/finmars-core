@@ -977,6 +977,19 @@ class Transaction(models.Model):
 
     attributes = GenericRelation(GenericAttribute)
 
+    # used in report (for)
+
+    # instrument
+    instrument_price_cur = None  # -> PriceHistory
+    instrument_pricing_currency_curr = None
+    instrument_accrued_currency_curr = None
+
+    transaction_currency_hist = None
+    transaction_currency_curr = None
+
+    settlement_currency_hist = None
+    settlement_currency_curr = None
+
     multiplier = float('nan')
     balance_position_size_with_sign = float('nan')
     cost_with_sign = float('nan')
