@@ -52,15 +52,30 @@ class ReportItem(object):
                  detail_transaction=None, transaction_class=None, custom_fields=None,
                  position_size_with_sign=0.0):
         self.pk = pk
+
+        self.type = ReportItem.TYPE_UNKNOWN
+        if instrument:
+            self.type = ReportItem.TYPE_INSTRUMENT
+        elif currency:
+            self.type = ReportItem.TYPE_CURRENCY
+        elif transaction_class:
+            if transaction_class.id == TransactionClass.TRANSACTION_PL:
+                self.type = ReportItem.TYPE_TRANSACTION_PL
+            elif transaction_class.id == TransactionClass.FX_TRADE:
+                self.type = ReportItem.TYPE_FX_TRADE
+
         self.instrument = instrument  # -> Instrument
         self.currency = currency  # -> Currency
+        self.transaction_class = transaction_class  # -> TransactionClass for TRANSACTION_PL and FX_TRADE
+
         self.portfolio = portfolio  # -> Portfolio if use_portfolio
         self.account = account  # -> Account if use_account
         self.strategy1 = strategy1  # -> Strategy1 if use_strategy1
         self.strategy2 = strategy2  # -> Strategy2 if use_strategy2
         self.strategy3 = strategy3  # -> Strategy3 if use_strategy3
+
         self.detail_transaction = detail_transaction  # -> Transaction if show_transaction_details
-        self.transaction_class = transaction_class  # -> TransactionClass for TRANSACTION_PL and FX_TRADE
+
         self.custom_fields = custom_fields or []
 
         # balance
@@ -118,63 +133,49 @@ class ReportItem(object):
                and isclose(self.total_with_sign_sys_ccy, 0.0)
 
     @property
-    def type(self):
-        if self.instrument:
-            return ReportItem.TYPE_INSTRUMENT
-        elif self.currency:
-            return ReportItem.TYPE_CURRENCY
-        elif self.transaction_class:
-            if self.transaction_class.id == TransactionClass.TRANSACTION_PL:
-                return ReportItem.TYPE_TRANSACTION_PL
-            elif self.transaction_class.id == TransactionClass.FX_TRADE:
-                return ReportItem.TYPE_FX_TRADE
-        return ReportItem.TYPE_UNKNOWN
-
-    @property
     def type_name(self):
-        t = self.type
         for i, n in ReportItem.TYPE_CHOICES:
-            if i == t:
+            if i == self.type:
                 return n
         return 'ERR'
 
     @property
     def type_code(self):
-        t = self.type
-        if t == ReportItem.TYPE_UNKNOWN:
+        if self.type == ReportItem.TYPE_UNKNOWN:
             return 'UNKN'
-        elif t == ReportItem.TYPE_INSTRUMENT:
+        elif self.type == ReportItem.TYPE_INSTRUMENT:
             return 'INSTR'
-        elif t == ReportItem.TYPE_CURRENCY:
+        elif self.type == ReportItem.TYPE_CURRENCY:
             return 'CCY'
-        elif t == ReportItem.TYPE_TRANSACTION_PL:
-            return 'TRN PL'
-        elif t == ReportItem.TYPE_FX_TRADE:
-            return 'FX TRADE'
-        else:
-            return 'ERR'
+        elif self.type == ReportItem.TYPE_TRANSACTION_PL:
+            return 'TRN_PL'
+        elif self.type == ReportItem.TYPE_FX_TRADE:
+            return 'FX_TRADE'
+        return 'ERR'
 
     @property
     def user_code(self):
-        if self.instrument:
+        if self.type == ReportItem.TYPE_UNKNOWN:
+            return '<UNKNOWN>'
+        elif self.type == ReportItem.TYPE_INSTRUMENT:
             return self.instrument.user_code
-        elif self.currency:
+        elif self.type == ReportItem.TYPE_CURRENCY:
             return self.currency.user_code
-        elif self.transaction_class:
-            if self.transaction_class.id in [TransactionClass.TRANSACTION_PL, TransactionClass.FX_TRADE]:
-                return self.transaction_class.system_code
-        return ''
+        elif self.type in [ReportItem.TYPE_TRANSACTION_PL, ReportItem.TYPE_FX_TRADE]:
+            return self.transaction_class.system_code
+        return '<ERROR>'
 
     @property
     def name(self):
-        if self.instrument:
+        if self.type == ReportItem.TYPE_UNKNOWN:
+            return '<UNKNOWN>'
+        elif self.type == ReportItem.TYPE_INSTRUMENT:
             return self.instrument.name
-        elif self.currency:
+        elif self.type == ReportItem.TYPE_CURRENCY:
             return self.currency.name
-        elif self.transaction_class:
-            if self.transaction_class.id in [TransactionClass.TRANSACTION_PL, TransactionClass.FX_TRADE]:
-                return self.transaction_class.name
-        return ''
+        elif self.type in [ReportItem.TYPE_TRANSACTION_PL, ReportItem.TYPE_FX_TRADE]:
+            return self.transaction_class.name
+        return '<ERROR>'
 
 
 class ReportSummary(object):
@@ -307,7 +308,7 @@ class ReportBuilder(object):
     def _transaction_class_fx_trade(self):
         return TransactionClass.objects.get(pk=TransactionClass.FX_TRADE)
 
-    def _get_transaction_qs(self):
+    def _trn_qs(self):
         if self._queryset is None:
             queryset = Transaction.objects
         else:
@@ -348,8 +349,8 @@ class ReportBuilder(object):
 
         return queryset
 
-    def _get_instrument_price_history_qs(self):
-        transaction_qs = self._get_transaction_qs()
+    def _instr_pricing_qs(self):
+        transaction_qs = self._trn_qs()
         return PriceHistory.objects.filter(
             pricing_policy=self.instance.pricing_policy
         ).filter(
@@ -359,8 +360,8 @@ class ReportBuilder(object):
             instrument__in=transaction_qs.values_list('instrument', flat=True)
         )
 
-    def _get_currency_history_qs(self):
-        transaction_qs = self._get_transaction_qs()
+    def _ccy_hist_qs(self):
+        transaction_qs = self._trn_qs()
         report_currency = self.instance.report_currency or self._system_currency
         return CurrencyHistory.objects.filter(
             pricing_policy=self.instance.pricing_policy
@@ -377,40 +378,40 @@ class ReportBuilder(object):
         )
 
     @cached_property
-    def _price_history_cache(self):
+    def _instr_pricing_cache(self):
         cache = {}
-        for h in self._get_instrument_price_history_qs():
+        for h in self._instr_pricing_qs():
             cache[(h.instrument_id, h.date)] = h
         return cache
 
-    def _get_instrument_price_history(self, instrument, date=None):
+    def _get_instr_pricing(self, instrument, date=None):
         date = date or self._report_date
         key = (instrument.id, date)
         try:
-            return self._price_history_cache[key]
+            return self._instr_pricing_cache[key]
         except KeyError:
             h = PriceHistory(pricing_policy=self.instance.pricing_policy, instrument=instrument, date=date)
-            self._price_history_cache[key] = h
+            self._instr_pricing_cache[key] = h
             return h
 
     @cached_property
-    def _currency_history_cache(self):
+    def _ccy_hist_cache(self):
         cache = {}
-        for h in self._get_currency_history_qs():
+        for h in self._ccy_hist_qs():
             cache[(h.currency_id, h.date)] = h
         return cache
 
-    def _get_currency_history(self, currency, date=None):
+    def _get_ccy_hist(self, currency, date=None):
         date = date or self._report_date
         key = (currency.id, date)
         try:
-            return self._currency_history_cache[key]
+            return self._ccy_hist_cache[key]
         except KeyError:
             h = CurrencyHistory(pricing_policy=self.instance.pricing_policy, currency=currency, date=date)
             # if currency.is_system:
             if self.instance.master_user.system_currency_id == currency.id:
                 h.fx_rate = 1.0
-            self._currency_history_cache[key] = h
+            self._ccy_hist_cache[key] = h
             return h
 
     @cached_property
@@ -418,14 +419,14 @@ class ReportBuilder(object):
         if self._transactions:
             return self._transactions
 
-        transactions = [t for t in self._get_transaction_qs()]
+        transactions = [t for t in self._trn_qs()]
 
         self._annotate_multiplier(transactions)
 
         transactions1 = []
         for t in transactions:
-            # self._annotate_transaction_history(t)
             self._annotate_transaction_case(t)
+            self._annotate_transaction_hist(t)
 
             t_class = t.transaction_class_id
             if t_class == TransactionClass.TRANSFER:
@@ -538,6 +539,29 @@ class ReportBuilder(object):
     #     else:
     #         for t in transactions:
     #             t.multiplier = 0.0
+
+    def _annotate_transaction_case(self, t):
+        if t.accounting_date <= self._report_date < t.cash_date:  # default
+            t.case = 1
+        elif t.cash_date <= self._report_date < t.accounting_date:
+            t.case = 2
+        else:
+            t.case = 0
+
+    def _annotate_transaction_hist(self, t):
+        if t.instrument:
+            t.instrument_price_cur = self._get_instr_pricing(t.instrument)
+
+            t.instrument_pricing_currency_curr = self._get_ccy_hist(t.instrument.pricing_currency)
+            t.instrument_accrued_currency_curr = self._get_ccy_hist(t.instrument.accrued_currency)
+
+        if t.transaction_currency:
+            t.transaction_currency_hist = self._get_ccy_hist(t.transaction_currency, t.accounting_date)
+            t.transaction_currency_curr = self._get_ccy_hist(t.transaction_currency)
+
+        if t.settlement_currency:
+            t.settlement_currency_hist = self._get_ccy_hist(t.settlement_currency, t.cash_date)
+            t.settlement_currency_curr = self._get_ccy_hist(t.settlement_currency)
 
     def _annotate_multiplier(self, transactions):
         rolling_positions = Counter()
@@ -688,7 +712,7 @@ class ReportBuilder(object):
 
     def _pl_real(self, real_pl_changes):
         if real_pl_changes:
-            init_mult = 1 - self.instance.pl_real_unreal_end_multiplier
+            init_mult = 1.0 - self.instance.pl_real_unreal_end_multiplier
             end_mult = self.instance.pl_real_unreal_end_multiplier
 
             t, inc_multiplier = real_pl_changes[-1]
@@ -724,175 +748,6 @@ class ReportBuilder(object):
         #     t.unreal_pl_overheads_with_sign = t.overheads_with_sign * (1.0 - t.multiplier)
         #     t.unreal_pl_total_with_sign = t.unreal_pl_principal_with_sign + t.unreal_pl_carry_with_sign + t.unreal_pl_overheads_with_sign
         pass
-
-    # def _annotate_avco_multiplier(self, transactions):
-    #     in_stock = OrderedDict()
-    #     not_closed = OrderedDict()
-    #     rolling_positions = Counter()
-    #
-    #     def _set_multiplier(t, multiplier):
-    #         old_multiplier = t.multiplier
-    #         if not isclose(old_multiplier, multiplier):
-    #             print('\t', t.id, str(t.transaction_class)[0], t.instrument, old_multiplier, multiplier)
-    #         t.multiplier = multiplier
-    #
-    #     print('1' * 10)
-    #     for t in transactions:
-    #         if t.transaction_class_id not in [TransactionClass.BUY, TransactionClass.SELL]:
-    #             continue
-    #         print(t.id, str(t.transaction_class)[0], t.instrument)
-    #
-    #     print('2' * 10)
-    #     for t in transactions:
-    #         if t.transaction_class_id not in [TransactionClass.BUY, TransactionClass.SELL]:
-    #             continue
-    #
-    #         print('-' * 10)
-    #         print(t.id, str(t.transaction_class)[0], t.instrument)
-    #
-    #         # do not use strategy!!!
-    #         t_key = self._make_key(
-    #             instrument=t.instrument,
-    #             portfolio=t.portfolio if self._detail_by_portfolio else None,
-    #             account=t.account_position if self._detail_by_account else  None
-    #         )
-    #
-    #         t.multiplier = 0.0
-    #         position_size_with_sign = t.position_size_with_sign
-    #         rolling_position = rolling_positions[t_key]
-    #
-    #         # if position_size_with_sign > 0.:  # покупка
-    #         if t.transaction_class_id == TransactionClass.BUY:
-    #             i_not_closed = not_closed.get(t_key, [])
-    #             if i_not_closed:  # есть прошлые продажи, которые надо закрыть
-    #                 if position_size_with_sign + rolling_position >= 0.0:  # все есть
-    #                     # t.multiplier = abs(rolling_position / position_size_with_sign)
-    #                     _set_multiplier(t, abs(rolling_position / position_size_with_sign))
-    #                     for t0 in i_not_closed:
-    #                         # t0.multiplier = 1.0
-    #                         _set_multiplier(t0, 1.0)
-    #                     in_stock[t_key] = in_stock.get(t_key, []) + [t]
-    #                 else:  # только частично
-    #                     # t.multiplier = 1.0
-    #                     _set_multiplier(t, 1.0)
-    #                     for t0 in i_not_closed:
-    #                         # t0.multiplier += abs((1.0 - t0.multiplier) * position_size_with_sign / rolling_position)
-    #                         _set_multiplier(t0, abs((1.0 - t0.multiplier) * position_size_with_sign / rolling_position))
-    #                 not_closed[t_key] = [t0 for t0 in i_not_closed if t0.multiplier < 1.0]
-    #             else:  # новая "чистая" покупка
-    #                 # t.multiplier = 0.0
-    #                 _set_multiplier(t, 0.0)
-    #                 in_stock[t_key] = in_stock.get(t_key, []) + [t]
-    #
-    #         # else:  # продажа
-    #         elif t.transaction_class_id == TransactionClass.SELL:
-    #             i_in_stock = in_stock.get(t_key, [])
-    #             if i_in_stock:  # есть что продавать
-    #                 if position_size_with_sign + rolling_position >= 0.0:  # все есть
-    #                     # t.multiplier = 1.0
-    #                     _set_multiplier(t, 1.0)
-    #                     for t0 in i_in_stock:
-    #                         # t0.multiplier += abs((1.0 - t0.multiplier) * position_size_with_sign / rolling_position)
-    #                         _set_multiplier(t0, abs((1.0 - t0.multiplier) * position_size_with_sign / rolling_position))
-    #                 else:  # только частично
-    #                     # t.multiplier = abs(rolling_position / position_size_with_sign)
-    #                     _set_multiplier(t, abs(rolling_position / position_size_with_sign))
-    #                     for t0 in i_in_stock:
-    #                         # t0.multiplier = 1.0
-    #                         _set_multiplier(t0, 1.0)
-    #                     not_closed[t_key] = not_closed.get(t_key, []) + [t]
-    #                 in_stock[t_key] = [t0 for t0 in i_in_stock if t0.multiplier < 1.0]
-    #             else:  # нечего продавать
-    #                 # t.multiplier = 0.0
-    #                 _set_multiplier(t, 0.0)
-    #                 not_closed[t_key] = not_closed.get(t_key, []) + [t]
-    #
-    #         rolling_position += position_size_with_sign
-    #         rolling_positions[t_key] = rolling_position
-    #         t.rolling_position = rolling_position
-
-    # def _annotate_fifo_multiplier(self, transactions):
-    #     in_stock = {}
-    #     not_closed = {}
-    #     rolling_positions = Counter()
-    #
-    #     for t in transactions:
-    #         if t.transaction_class_id not in [TransactionClass.BUY, TransactionClass.SELL]:
-    #             continue
-    #
-    #         # do not use strategy!!!
-    #         # t_key = self._make_key(portfolio=t.portfolio, account=t.account_position, instrument=t.instrument)
-    #         t_key = self._make_key(
-    #             instrument=t.instrument,
-    #             portfolio=t.portfolio if self._detail_by_portfolio else None,
-    #             account=t.account_position if self._detail_by_account else  None
-    #         )
-    #
-    #         t.multiplier = 0.0
-    #         position_size_with_sign = t.position_size_with_sign
-    #         rolling_position = rolling_positions[t_key]
-    #
-    #         # if position_size_with_sign > 0.:  # покупка
-    #         if t.transaction_class_id == TransactionClass.BUY:
-    #             i_not_closed = not_closed.get(t_key, [])
-    #             balance = position_size_with_sign
-    #             if i_not_closed:
-    #                 for t0 in i_not_closed:
-    #                     sale = t0.not_closed
-    #                     if balance + sale > 0.0:  # есть все
-    #                         balance -= abs(sale)
-    #                         t0.multiplier = 1.0
-    #                         t0.not_closed = t0.not_closed - abs(t0.position_size_with_sign)
-    #                     else:
-    #                         t0.not_closed = t0.not_closed + balance
-    #                         t0.multiplier = 1.0 - abs(t0.not_closed / t0.position_size_with_sign)
-    #                         balance = 0.0
-    #                     if balance <= 0.0:
-    #                         break
-    #                 not_closed[t_key] = [t0 for t0 in i_not_closed if t0.multiplier < 1.0]
-    #             t.balance = balance
-    #             t.multiplier = abs((position_size_with_sign - balance) / position_size_with_sign)
-    #             if t.multiplier < 1.0:
-    #                 in_stock[t_key] = in_stock.get(t_key, []) + [t]
-    #
-    #         # else:  # продажа
-    #         elif t.transaction_class_id == TransactionClass.SELL:
-    #             i_in_stock = in_stock.get(t_key, [])
-    #             sale = position_size_with_sign
-    #             if i_in_stock:
-    #                 for t0 in i_in_stock:
-    #                     balance = t0.balance
-    #                     if sale + balance > 0.0:  # есть все
-    #                         t0.balance = balance - abs(sale)
-    #                         t0.multiplier = abs((t0.position_size_with_sign - t0.balance) / t0.position_size_with_sign)
-    #                         sale = 0.0
-    #                     else:
-    #                         t0.balance = 0.0
-    #                         t0.multiplier = 1.0
-    #                         sale += abs(balance)
-    #                     if sale >= 0.0:
-    #                         break
-    #                 in_stock[t_key] = [t0 for t0 in i_in_stock if t0.multiplier < 1.0]
-    #             t.not_closed = sale
-    #             t.multiplier = abs((position_size_with_sign - sale) / position_size_with_sign)
-    #             if t.multiplier < 1.0:
-    #                 not_closed[t_key] = not_closed.get(t_key, []) + [t]
-    #
-    #         rolling_position += position_size_with_sign
-    #         rolling_positions[t_key] = rolling_position
-    #         t.rolling_position = rolling_position
-    #
-    #     for t in transactions:
-    #         if t.transaction_class_id in [TransactionClass.BUY, TransactionClass.SELL]:
-    #             t.multiplier = t.multiplier
-
-    def _annotate_transaction_case(self, t):
-        if t.accounting_date <= self._report_date < t.cash_date:  # default
-            t.case = 1
-        elif t.cash_date <= self._report_date < t.accounting_date:
-            t.case = 2
-        else:
-            t.case = 0
 
     def build(self):
         for trn in self.transactions:
@@ -1090,7 +945,7 @@ class ReportBuilder(object):
     def _process_final(self, items):
         for item in items:
             if item.instrument:
-                price = self._get_instrument_price_history(item.instrument)
+                price = self._get_instr_pricing(item.instrument)
 
                 principal = item.position_size_with_sign * item.instrument.price_multiplier * price.principal_price
                 accrued = item.position_size_with_sign * item.instrument.accrued_multiplier * price.accrued_price
@@ -1199,13 +1054,13 @@ class ReportBuilder(object):
     def _to_sys_ccy(self, value, ccy):
         if isclose(value, 0.0):
             return 0.0
-        h = self._get_currency_history(ccy)
+        h = self._get_ccy_hist(ccy)
         return value * h.fx_rate
 
     def _to_res_ccy(self, value):
         if isclose(value, 0.0):
             return 0.0
-        h = self._get_currency_history(self.instance.report_currency)
+        h = self._get_ccy_hist(self.instance.report_currency)
         if isclose(h.fx_rate, 0.0):
             return 0.0
         else:
