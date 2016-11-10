@@ -977,32 +977,109 @@ class Transaction(models.Model):
 
     attributes = GenericRelation(GenericAttribute)
 
-    # used in report (for)
+    # reporting fields
 
-    # instrument
-    instrument_price_cur = None  # -> PriceHistory
-    instrument_pricing_currency_curr = None
-    instrument_accrued_currency_curr = None
+    # # instrument
+    # instrument_price_cur = None  # -> PriceHistory
+    # instrument_pricing_currency_curr = None
+    # instrument_accrued_currency_curr = None
+    #
+    # transaction_currency_hist = None
+    # transaction_currency_curr = None
+    #
+    # settlement_currency_hist = None
+    # settlement_currency_curr = None
+    #
+    # multiplier = float('nan')
+    # balance_position_size_with_sign = float('nan')
+    # cost_with_sign = float('nan')
+    #
+    # real_pl_principal_with_sign = float('nan')
+    # real_pl_carry_with_sign = float('nan')
+    # real_pl_overheads_with_sign = float('nan')
+    # real_pl_total_with_sign = float('nan')
+    #
+    # unreal_pl_principal_with_sign = float('nan')
+    # unreal_pl_carry_with_sign = float('nan')
+    # unreal_pl_overheads_with_sign = float('nan')
+    # unreal_pl_total_with_sign = float('nan')
 
-    transaction_currency_hist = None
-    transaction_currency_curr = None
+    # some refs
 
-    settlement_currency_hist = None
-    settlement_currency_curr = None
+    r_instr_price_rep = None  # -> PriceHistory (on report date)
+    r_instr_pricing_ccy_rep = None  # -> CurrencyHistory (on report date)
+    r_instr_accrued_ccy_rep = None  # -> CurrencyHistory (on report date)
 
-    multiplier = float('nan')
-    balance_position_size_with_sign = float('nan')
-    cost_with_sign = float('nan')
+    r_trn_ccy_hist = None  # -> CurrencyHistory (on acc/cash date)
+    r_trn_ccy_rep = None  # -> CurrencyHistory (on report date)
 
-    real_pl_principal_with_sign = float('nan')
-    real_pl_carry_with_sign = float('nan')
-    real_pl_overheads_with_sign = float('nan')
-    real_pl_total_with_sign = float('nan')
+    r_stlmnt_ccy_hist = None  # -> CurrencyHistory (on cash date)
+    r_stlmnt_ccy_rep = None  # -> CurrencyHistory (on report date)
 
-    unreal_pl_principal_with_sign = float('nan')
-    unreal_pl_carry_with_sign = float('nan')
-    unreal_pl_overheads_with_sign = float('nan')
-    unreal_pl_total_with_sign = float('nan')
+    # report fields
+
+    r_case = 0
+
+    r_multiplier = 0.0
+    r_position_size = 0.0
+    r_cost = 0.0
+
+    r_instr_principal = 0.0
+    r_instr_accrued = 0.0
+    r_principal = 0.0
+    r_carry = 0.0
+    r_overheads = 0.0
+    r_total = 0.0
+
+    r_principal_real = 0.0
+    r_carry_real = 0.0
+    r_overheads_real = 0.0
+    r_total_real = 0.0
+
+    r_principal_unreal = 0.0
+    r_carry_unreal = 0.0
+    r_overheads_unreal = 0.0
+    r_total_unreal = 0.0
+
+    r_principal_fixed = 0.0
+    r_carry_fixed = 0.0
+    r_overheads_fixed = 0.0
+    r_total_fixed = 0.0
+
+    r_principal_fx = 0.0
+    r_carry_fx = 0.0
+    r_overheads_fx = 0.0
+    r_total_fx = 0.0
+
+    r_principal_closed = 0.0
+    r_carry_closed = 0.0
+    r_overheads_closed = 0.0
+    r_total_closed = 0.0
+
+    r_principal_closed_fixed = 0.0
+    r_carry_closed_fixed = 0.0
+    r_overheads_closed_fixed = 0.0
+    r_total_closed_fixed = 0.0
+
+    r_principal_closed_fx = 0.0
+    r_carry_closed_fx = 0.0
+    r_overheads_closed_fx = 0.0
+    r_total_closed_fx = 0.0
+
+    r_principal_opened = 0.0
+    r_carry_opened = 0.0
+    r_overheads_opened = 0.0
+    r_total_opened = 0.0
+
+    r_principal_opened_fixed = 0.0
+    r_carry_opened_fixed = 0.0
+    r_overheads_opened_fixed = 0.0
+    r_total_opened_fixed = 0.0
+
+    r_principal_opened_fx = 0.0
+    r_carry_opened_fx = 0.0
+    r_overheads_opened_fx = 0.0
+    r_total_opened_fx = 0.0
 
     class Meta:
         verbose_name = ugettext_lazy('transaction')

@@ -20,16 +20,16 @@ _l = logging.getLogger('poms.reports')
 
 
 class VirtualTransaction(object):
-    def __init__(self, transaction, pk, override_values):
+    def __init__(self, transaction, pk, overrides):
         self.transaction = transaction
         self.pk = pk
-        self.override_values = override_values or {}
+        self.overrides = overrides or {}
 
     def __getattr__(self, item):
         if item == 'pk' or item == 'id':
             return self.pk
-        if item in self.override_values:
-            return self.override_values[item]
+        if item in self.overrides:
+            return self.overrides[item]
         return getattr(self.transaction, item)
 
 
@@ -47,10 +47,56 @@ class ReportItem(object):
         (TYPE_FX_TRADE, 'FX-Trade'),
     )
 
+    # balance
+
+    position_size = 0.0
+
+    market_value_sys = 0.0
+    market_value = 0.0
+
+    cost_sys = 0.0
+    cost = 0.0
+
+    # P&L
+
+    instr_principal_sys = 0.0
+    instr_accrued_sys = 0.0
+    principal_sys = 0.0
+    carry_sys = 0.0
+    overheads_sys = 0.0
+    total_sys = 0.0
+
+    instr_principal = 0.0
+    instr_accrued = 0.0
+    principal = 0.0
+    carry = 0.0
+    overheads = 0.0
+    total = 0.0
+
+    # principal_real_sys = 0.0
+    # carry_real_sys = 0.0
+    # overheads_real_sys = 0.0
+    total_real_sys = 0.0
+
+    # principal_real = 0.0
+    # carry_real = 0.0
+    # overheads_real = 0.0
+    total_real = 0.0
+
+    # principal_unreal_sys = 0.0
+    # carry_unreal_sys = 0.0
+    # overheads_unreal_sys = 0.0
+    total_unreal_sys = 0.0
+
+    # principal_unreal = 0.0
+    # carry_unreal = 0.0
+    # overheads_unreal = 0.0
+    total_unreal = 0.0
+
+
     def __init__(self, pk=None, instrument=None, currency=None,
                  portfolio=None, account=None, strategy1=None, strategy2=None, strategy3=None,
-                 detail_transaction=None, transaction_class=None, custom_fields=None,
-                 position_size_with_sign=0.0):
+                 detail_transaction=None, transaction_class=None, custom_fields=None):
         self.pk = pk
 
         self.type = ReportItem.TYPE_UNKNOWN
@@ -78,59 +124,50 @@ class ReportItem(object):
 
         self.custom_fields = custom_fields or []
 
-        # balance
-
-        self.position_size_with_sign = position_size_with_sign
-
-        self.market_value_sys_ccy = 0.0
-        self.market_value_res_ccy = 0.0
-
-        self.cost_with_sign_sys_ccy = 0.0
-        self.cost_with_sign_res_ccy = 0.0
-
-        # P&L
-
-        self.principal_with_sign_sys_ccy = 0.0
-        self.carry_with_sign_sys_ccy = 0.0
-        self.overheads_with_sign_sys_ccy = 0.0
-        self.total_with_sign_sys_ccy = 0.0
-
-        self.real_pl_principal_with_sign_sys_ccy = 0.0
-        self.real_pl_carry_with_sign_sys_ccy = 0.0
-        self.real_pl_overheads_with_sign_sys_ccy = 0.0
-        self.real_pl_total_with_sign_sys_ccy = 0.0
-
-        self.unreal_pl_principal_with_sign_sys_ccy = 0.0
-        self.unreal_pl_carry_with_sign_sys_ccy = 0.0
-        self.unreal_pl_overheads_with_sign_sys_ccy = 0.0
-        self.unreal_pl_total_with_sign_sys_ccy = 0.0
-
-        self.principal_with_sign_res_ccy = 0.0
-        self.carry_with_sign_res_ccy = 0.0
-        self.overheads_with_sign_res_ccy = 0.0
-        self.total_with_sign_res_ccy = 0.0
-
-        self.real_pl_principal_with_sign_res_ccy = 0.0
-        self.real_pl_carry_with_sign_res_ccy = 0.0
-        self.real_pl_overheads_with_sign_res_ccy = 0.0
-        self.real_pl_total_with_sign_res_ccy = 0.0
-
-        self.unreal_pl_principal_with_sign_res_ccy = 0.0
-        self.unreal_pl_carry_with_sign_res_ccy = 0.0
-        self.unreal_pl_overheads_with_sign_res_ccy = 0.0
-        self.unreal_pl_total_with_sign_res_ccy = 0.0
+        # # balance
+        #
+        # self.position_size = 0.0
+        #
+        # self.market_value_sys = 0.0
+        # self.market_value = 0.0
+        #
+        # self.cost_sys = 0.0
+        # self.cost = 0.0
+        #
+        # # P&L
+        #
+        # self.principal_with_sign_sys_ccy = 0.0
+        # self.carry_with_sign_sys_ccy = 0.0
+        # self.overheads_with_sign_sys_ccy = 0.0
+        # self.total_with_sign_sys_ccy = 0.0
+        #
+        # self.real_pl_principal_with_sign_sys_ccy = 0.0
+        # self.real_pl_carry_with_sign_sys_ccy = 0.0
+        # self.real_pl_overheads_with_sign_sys_ccy = 0.0
+        # self.real_pl_total_with_sign_sys_ccy = 0.0
+        #
+        # self.unreal_pl_principal_with_sign_sys_ccy = 0.0
+        # self.unreal_pl_carry_with_sign_sys_ccy = 0.0
+        # self.unreal_pl_overheads_with_sign_sys_ccy = 0.0
+        # self.unreal_pl_total_with_sign_sys_ccy = 0.0
+        #
+        # self.principal_with_sign_res_ccy = 0.0
+        # self.carry_with_sign_res_ccy = 0.0
+        # self.overheads_with_sign_res_ccy = 0.0
+        # self.total_with_sign_res_ccy = 0.0
+        #
+        # self.real_pl_principal_with_sign_res_ccy = 0.0
+        # self.real_pl_carry_with_sign_res_ccy = 0.0
+        # self.real_pl_overheads_with_sign_res_ccy = 0.0
+        # self.real_pl_total_with_sign_res_ccy = 0.0
+        #
+        # self.unreal_pl_principal_with_sign_res_ccy = 0.0
+        # self.unreal_pl_carry_with_sign_res_ccy = 0.0
+        # self.unreal_pl_overheads_with_sign_res_ccy = 0.0
+        # self.unreal_pl_total_with_sign_res_ccy = 0.0
 
     def __str__(self):
         return "%s #%s" % (self.__class__.__name__, self.pk,)
-
-    @property
-    def is_zero(self):
-        return isclose(self.position_size_with_sign, 0.0) \
-               and isclose(self.market_value_sys_ccy, 0.0) \
-               and isclose(self.principal_with_sign_sys_ccy, 0.0) \
-               and isclose(self.carry_with_sign_sys_ccy, 0.0) \
-               and isclose(self.overheads_with_sign_sys_ccy, 0.0) \
-               and isclose(self.total_with_sign_sys_ccy, 0.0)
 
     @property
     def type_name(self):
@@ -179,44 +216,65 @@ class ReportItem(object):
 
 
 class ReportSummary(object):
+
+    # balance
+    market_value_sys = 0.0
+    market_value = 0.0
+
+    cost_sys = 0.0
+    cost = 0.0
+
+    # P&L
+
+    principal_sys = 0.0
+    carry_sys = 0.0
+    overheads_sys = 0.0
+    total_sys = 0.0
+
+    principal = 0.0
+    carry = 0.0
+    overheads = 0.0
+    total = 0.0
+
     def __init__(self):
         # balance
-        self.market_value_sys_ccy = 0.0
-        self.market_value_res_ccy = 0.0
+        # self.market_value_sys_ccy = 0.0
+        # self.market_value_res_ccy = 0.0
 
-        self.cost_with_sign_sys_ccy = 0.0
-        self.cost_with_sign_res_ccy = 0.0
+        # self.cost_with_sign_sys_ccy = 0.0
+        # self.cost_with_sign_res_ccy = 0.0
 
         # P&L
-        self.principal_with_sign_sys_ccy = 0.0
-        self.carry_with_sign_sys_ccy = 0.0
-        self.overheads_with_sign_sys_ccy = 0.0
-        self.total_with_sign_sys_ccy = 0.0
-
-        self.real_pl_principal_with_sign_sys_ccy = 0.0
-        self.real_pl_carry_with_sign_sys_ccy = 0.0
-        self.real_pl_overheads_with_sign_sys_ccy = 0.0
-        self.real_pl_total_with_sign_sys_ccy = 0.0
-
-        # self.unreal_pl_principal_with_sign_sys_ccy = 0.0
-        # self.unreal_pl_carry_with_sign_sys_ccy = 0.0
-        # self.unreal_pl_overheads_with_sign_sys_ccy = 0.0
-        self.unreal_pl_total_with_sign_sys_ccy = 0.0
-
-        self.principal_with_sign_res_ccy = 0.0
-        self.carry_with_sign_res_ccy = 0.0
-        self.overheads_with_sign_res_ccy = 0.0
-        self.total_with_sign_res_ccy = 0.0
-
-        self.real_pl_principal_with_sign_res_ccy = 0.0
-        self.real_pl_carry_with_sign_res_ccy = 0.0
-        self.real_pl_overheads_with_sign_res_ccy = 0.0
-        self.real_pl_total_with_sign_res_ccy = 0.0
-
-        # self.unreal_pl_principal_with_sign_res_ccy = 0.0
-        # self.unreal_pl_carry_with_sign_res_ccy = 0.0
-        # self.unreal_pl_overheads_with_sign_res_ccy = 0.0
-        self.unreal_pl_total_with_sign_res_ccy = 0.0
+        # self.principal_with_sign_sys_ccy = 0.0
+        # self.carry_with_sign_sys_ccy = 0.0
+        # self.overheads_with_sign_sys_ccy = 0.0
+        # self.total_with_sign_sys_ccy = 0.0
+        #
+        # self.real_pl_principal_with_sign_sys_ccy = 0.0
+        # self.real_pl_carry_with_sign_sys_ccy = 0.0
+        # self.real_pl_overheads_with_sign_sys_ccy = 0.0
+        # self.real_pl_total_with_sign_sys_ccy = 0.0
+        #
+        # # self.unreal_pl_principal_with_sign_sys_ccy = 0.0
+        # # self.unreal_pl_carry_with_sign_sys_ccy = 0.0
+        # # self.unreal_pl_overheads_with_sign_sys_ccy = 0.0
+        # self.unreal_pl_total_with_sign_sys_ccy = 0.0
+        #
+        # self.principal_with_sign_res_ccy = 0.0
+        # self.carry_with_sign_res_ccy = 0.0
+        # self.overheads_with_sign_res_ccy = 0.0
+        # self.total_with_sign_res_ccy = 0.0
+        #
+        # self.real_pl_principal_with_sign_res_ccy = 0.0
+        # self.real_pl_carry_with_sign_res_ccy = 0.0
+        # self.real_pl_overheads_with_sign_res_ccy = 0.0
+        # self.real_pl_total_with_sign_res_ccy = 0.0
+        #
+        # # self.unreal_pl_principal_with_sign_res_ccy = 0.0
+        # # self.unreal_pl_carry_with_sign_res_ccy = 0.0
+        # # self.unreal_pl_overheads_with_sign_res_ccy = 0.0
+        # self.unreal_pl_total_with_sign_res_ccy = 0.0
+        pass
 
     def __str__(self):
         return "summary"
@@ -414,6 +472,98 @@ class ReportBuilder(object):
             self._ccy_hist_cache[key] = h
             return h
 
+    def _to_sys_ccy(self, value, ccy):
+        if isclose(value, 0.0):
+            return 0.0
+        h = self._get_ccy_hist(ccy)
+        return value * h.fx_rate
+
+    def _to_res_ccy(self, value):
+        if isclose(value, 0.0):
+            return 0.0
+        h = self._get_ccy_hist(self.instance.report_currency)
+        if isclose(h.fx_rate, 0.0):
+            return 0.0
+        else:
+            return value / h.fx_rate
+
+    def _show_transaction_details(self, case, acc):
+        if case in [1, 2] and self.instance.show_transaction_details:
+            return acc and acc.type and acc.type.show_transaction_details
+        return False
+
+    def _make_key(self, instr=None, ccy=None, prtfl=None, acc=None, strg1=None, strg2=None, strg3=None, detail_trn=None,
+                  trn_cls=None):
+        return ','.join((
+            'i=%s' % getattr(instr, 'pk', -1),
+            'c=%s' % getattr(ccy, 'pk', -1),
+            'p=%s' % getattr(prtfl, 'pk', -1),
+            'a=%s' % getattr(acc, 'pk', -1),
+            's1=%s' % getattr(strg1, 'pk', -1),
+            's2=%s' % getattr(strg2, 'pk', -1),
+            's3=%s' % getattr(strg3, 'pk', -1),
+            'dt=%s' % getattr(detail_trn, 'pk', -1),
+            'tc=%s' % getattr(trn_cls, 'pk', -1),
+        ))
+
+    def _get_item(self, items, trn, instr=None, ccy=None, prtfl=None, acc=None, strg1=None, strg2=None, strg3=None,
+                  trn_cls=None):
+        t_instr = instr
+        t_ccy = ccy
+
+        if self._detail_by_portfolio:
+            t_prtfl = prtfl
+        else:
+            t_prtfl = None
+
+        if self._detail_by_account:
+            t_acc = acc
+        else:
+            t_acc = None
+
+        if self._detail_by_strategy1:
+            t_strg1 = strg1
+        else:
+            t_strg1 = None
+
+        if self._detail_by_strategy2:
+            t_strg2 = strg2
+        else:
+            t_strg2 = None
+
+        if self._detail_by_strategy3:
+            t_strg3 = strg3
+        else:
+            t_strg3 = None
+
+        if acc and self._show_transaction_details(trn.r_case, acc):
+            if isinstance(trn, VirtualTransaction):
+                t_detail_trn = trn.transaction
+            else:
+                t_detail_trn = trn
+        else:
+            t_detail_trn = None
+
+        if trn_cls:
+            t_trn_cls = trn_cls
+            t_instr = None
+            t_ccy = None
+            t_detail_trn = None
+        else:
+            t_trn_cls = None
+
+        pk = self._make_key(instr=t_instr, ccy=t_ccy, prtfl=t_prtfl, acc=t_acc, strg1=t_strg1, strg2=t_strg2,
+                            strg3=t_strg3, detail_trn=t_detail_trn, trn_cls=t_trn_cls)
+
+        try:
+            return items[pk]
+        except KeyError:
+            item = ReportItem(pk=pk, instrument=t_instr, currency=t_ccy, portfolio=t_prtfl, account=t_acc,
+                              strategy1=t_strg1, strategy2=t_strg2, strategy3=t_strg3, detail_transaction=t_detail_trn,
+                              transaction_class=t_trn_cls)
+            items[pk] = item
+            return item
+
     @cached_property
     def transactions(self):
         if self._transactions:
@@ -434,7 +584,7 @@ class ReportBuilder(object):
                     t1 = VirtualTransaction(
                         transaction=t,
                         pk='%s:sell' % t.pk,
-                        override_values={
+                        overrides={
                             'transaction_class_id': self._transaction_class_sell.id,
                             'transaction_class': self._transaction_class_sell,
                             'account_position': t.account_cash,
@@ -449,7 +599,7 @@ class ReportBuilder(object):
                     t2 = VirtualTransaction(
                         transaction=t,
                         pk='%s:buy' % t.pk,
-                        override_values={
+                        overrides={
                             'transaction_class_id': self._transaction_class_buy.id,
                             'transaction_class': self._transaction_class_buy,
                             'account_position': t.account_position,
@@ -465,7 +615,7 @@ class ReportBuilder(object):
                     t1 = VirtualTransaction(
                         transaction=t,
                         pk='%s:buy' % t.pk,
-                        override_values={
+                        overrides={
                             'transaction_class_id': self._transaction_class_buy.id,
                             'transaction_class': self._transaction_class_buy,
                             'account_position': t.account_cash,
@@ -480,7 +630,7 @@ class ReportBuilder(object):
                     t2 = VirtualTransaction(
                         transaction=t,
                         pk='%s:sell' % t.pk,
-                        override_values={
+                        overrides={
                             'transaction_class_id': self._transaction_class_sell.id,
                             'transaction_class': self._transaction_class_sell,
                             'account_position': t.account_position,
@@ -498,7 +648,7 @@ class ReportBuilder(object):
                 t1 = VirtualTransaction(
                     transaction=t,
                     pk='%s:sell' % t.pk,
-                    override_values={
+                    overrides={
                         'transaction_class_id': self._transaction_class_fx_trade.id,
                         'transaction_class': self._transaction_class_fx_trade,
                         'account_position': t.account_cash,
@@ -514,7 +664,7 @@ class ReportBuilder(object):
                 t2 = VirtualTransaction(
                     transaction=t,
                     pk='%s:buy' % t.pk,
-                    override_values={
+                    overrides={
                         'transaction_class_id': self._transaction_class_fx_trade.id,
                         'transaction_class': self._transaction_class_fx_trade,
                         'account_position': t.account_position,
@@ -542,61 +692,51 @@ class ReportBuilder(object):
 
     def _annotate_transaction_case(self, t):
         if t.accounting_date <= self._report_date < t.cash_date:  # default
-            t.case = 1
+            t.r_case = 1
         elif t.cash_date <= self._report_date < t.accounting_date:
-            t.case = 2
+            t.r_case = 2
         else:
-            t.case = 0
+            t.r_case = 0
 
     def _annotate_transaction_hist(self, t):
         if t.instrument:
-            t.instrument_price_cur = self._get_instr_pricing(t.instrument)
+            t.r_instr_price_rep = self._get_instr_pricing(t.instrument)
 
-            t.instrument_pricing_currency_curr = self._get_ccy_hist(t.instrument.pricing_currency)
-            t.instrument_accrued_currency_curr = self._get_ccy_hist(t.instrument.accrued_currency)
+            t.r_instr_pricing_ccy_rep = self._get_ccy_hist(t.instrument.pricing_currency)
+            t.r_instr_accrued_ccy_rep = self._get_ccy_hist(t.instrument.accrued_currency)
 
         if t.transaction_currency:
-            t.transaction_currency_hist = self._get_ccy_hist(t.transaction_currency, t.accounting_date)
-            t.transaction_currency_curr = self._get_ccy_hist(t.transaction_currency)
+            t.r_trn_ccy_hist = self._get_ccy_hist(t.transaction_currency, t.accounting_date)
+            t.r_trn_ccy_rep = self._get_ccy_hist(t.transaction_currency)
 
         if t.settlement_currency:
-            t.settlement_currency_hist = self._get_ccy_hist(t.settlement_currency, t.cash_date)
-            t.settlement_currency_curr = self._get_ccy_hist(t.settlement_currency)
+            t.r_stlmnt_ccy_hist = self._get_ccy_hist(t.settlement_currency, t.cash_date)
+            t.r_stlmnt_ccy_rep = self._get_ccy_hist(t.settlement_currency)
 
     def _annotate_multiplier(self, transactions):
         rolling_positions = Counter()
         items = defaultdict(list)
 
+        multipliers_delta = []
+
+        def _set_multiplier(t0, multiplier):
+            # if isclose(t.r_multiplier, multiplier):
+            #     return
+            multipliers_delta.append((t0, multiplier - t0.r_multiplier))
+            t0.r_multiplier = multiplier
+
         for i, t in enumerate(transactions):
             if t.transaction_class_id not in [TransactionClass.BUY, TransactionClass.SELL]:
                 continue
 
-            # print('-----')
-            # print(i, t.id)
-
             # do not use strategy!!!
             t_key = self._make_key(
-                instrument=t.instrument,
-                portfolio=t.portfolio if self._detail_by_portfolio else None,
-                account=t.account_position if self._detail_by_account else  None
+                instr=t.instrument,
+                prtfl=t.portfolio if self._detail_by_portfolio else None,
+                acc=t.account_position if self._detail_by_account else  None
             )
 
-            real_pl_changes = []
-
-            t.multiplier = 0.0
-            t.cost_with_sign = 0.0
-            t.balance_position_size_with_sign = 0.0
-
-            t.real_pl_principal_with_sign = 0.0
-            t.real_pl_carry_with_sign = 0.0
-            t.real_pl_overheads_with_sign = 0.0
-            t.real_pl_total_with_sign = 0.0
-
-            t.unreal_pl_principal_with_sign = 0.0
-            t.unreal_pl_carry_with_sign = 0.0
-            t.unreal_pl_overheads_with_sign = 0.0
-            t.unreal_pl_total_with_sign = 0.0
-
+            multipliers_delta.clear()
             rolling_position = rolling_positions[t_key]
 
             if isclose(rolling_position, 0.0):
@@ -609,25 +749,25 @@ class ReportBuilder(object):
                 if k > 1.0:
                     if t_key in items:
                         for t0 in items[t_key]:
-                            self._set_multiplier(real_pl_changes, t0, 1.0)
+                            _set_multiplier(t0, 1.0)
                         del items[t_key]
                     items[t_key].append(t)
-                    self._set_multiplier(real_pl_changes, t, 1.0 / k)
-                    rolling_position = t.position_size_with_sign * (1.0 - t.multiplier)
+                    _set_multiplier(t, 1.0 / k)
+                    rolling_position = t.position_size_with_sign * (1.0 - t.r_multiplier)
 
                 elif isclose(k, 1.0):
                     if t_key in items:
                         for t0 in items[t_key]:
-                            self._set_multiplier(real_pl_changes, t0, 1.0)
+                            _set_multiplier(t0, 1.0)
                         del items[t_key]
-                    self._set_multiplier(real_pl_changes, t, 1.0)
+                    _set_multiplier(t, 1.0)
                     rolling_position = 0.0
 
                 elif k > 0.0:
                     if t_key in items:
                         for t0 in items[t_key]:
-                            self._set_multiplier(real_pl_changes, t0, t0.multiplier + k * (1.0 - t0.multiplier))
-                    self._set_multiplier(real_pl_changes, t, 1.0)
+                            _set_multiplier(t0, t0.r_multiplier + k * (1.0 - t0.r_multiplier))
+                    _set_multiplier(t, 1.0)
                     rolling_position += t.position_size_with_sign
 
                 else:
@@ -639,18 +779,18 @@ class ReportBuilder(object):
                 if k > 1.0:
                     if t_key in items:
                         for t0 in items[t_key]:
-                            self._set_multiplier(real_pl_changes, t0, 1.0)
+                            _set_multiplier(t0, 1.0)
                         items[t_key].clear()
                     items[t_key].append(t)
-                    self._set_multiplier(real_pl_changes, t, 1.0 / k)
-                    rolling_position = t.position_size_with_sign * (1.0 - t.multiplier)
+                    _set_multiplier(t, 1.0 / k)
+                    rolling_position = t.position_size_with_sign * (1.0 - t.r_multiplier)
 
                 elif isclose(k, 1.0):
                     if t_key in items:
                         for t0 in items[t_key]:
-                            self._set_multiplier(real_pl_changes, t0, 1.0)
+                            _set_multiplier(t0, 1.0)
                         del items[t_key]
-                    self._set_multiplier(real_pl_changes, t, 1.0)
+                    _set_multiplier(t, 1.0)
                     rolling_position = 0.0
 
                 elif k > 0.0:
@@ -658,30 +798,29 @@ class ReportBuilder(object):
                     if t_key in items:
                         t_items = items[t_key]
                         for t0 in t_items:
-                            remaining = t0.position_size_with_sign * (1.0 - t0.multiplier)
+                            remaining = t0.position_size_with_sign * (1.0 - t0.r_multiplier)
                             k0 = - position / remaining
                             if k0 > 1.0:
-                                self._set_multiplier(real_pl_changes, t0, 1.0)
+                                _set_multiplier(t0, 1.0)
                                 position += remaining
                             elif isclose(k0, 1.0):
-                                self._set_multiplier(real_pl_changes, t0, 1.0)
+                                _set_multiplier(t0, 1.0)
                                 position += remaining
                             elif k0 > 0.0:
                                 position += remaining * k0
-                                self._set_multiplier(real_pl_changes, t0, t0.multiplier + k0 * (1.0 - t0.multiplier))
+                                _set_multiplier(t0, t0.multiplier + k0 * (1.0 - t0.r_multiplier))
                             # else:
                             #     break
                             if isclose(position, 0.0):
                                 break
-                        t_items = [t0 for t0 in t_items if not isclose(t0.multiplier, 1.0)]
+                        t_items = [t0 for t0 in t_items if not isclose(t0.r_multiplier, 1.0)]
                         if t_items:
                             items[t_key] = t_items
                         else:
                             del items[t_key]
 
-                    self._set_multiplier(real_pl_changes, t,
-                                         abs((t.position_size_with_sign - position) / t.position_size_with_sign))
-                    rolling_position += t.position_size_with_sign * t.multiplier
+                    _set_multiplier(t, abs((t.position_size_with_sign - position) / t.position_size_with_sign))
+                    rolling_position += t.position_size_with_sign * t.r_multiplier
 
                 else:
                     items[t_key].append(t)
@@ -690,64 +829,40 @@ class ReportBuilder(object):
             rolling_positions[t_key] = rolling_position
             # print('i =', i, ', rolling_positions =', rolling_position)
 
-            self._pl_real(real_pl_changes)
+            if multipliers_delta:
+                init_mult = 1.0 - self.instance.pl_real_unreal_end_multiplier
+                end_mult = self.instance.pl_real_unreal_end_multiplier
+
+                t, inc_multiplier = multipliers_delta[-1]
+
+                # sum_principal = 0.0
+                # sum_carry = 0.0
+                # sum_overheads = 0.0
+                sum_total = 0.0
+                for t0, inc_multiplier0 in multipliers_delta:
+                    # sum_principal += t0.principal_with_sign * inc_multiplier0
+                    # sum_carry += t0.carry_with_sign * inc_multiplier0
+                    # sum_overheads += t0.overheads_with_sign * inc_multiplier0
+                    sum_total += inc_multiplier0 * (
+                        t0.principal_with_sign + t0.carry_with_sign + t0.overheads_with_sign)
+
+                for t0, inc_multiplier0 in multipliers_delta:
+                    mult = end_mult if t0.id == t.id else init_mult
+
+                    matched = abs((t0.position_size_with_sign * inc_multiplier0) / (
+                        t.position_size_with_sign * inc_multiplier))
+                    # adj = matched * mult
+
+                    # t0.real_pl_principal_with_sign += sum_principal * matched * mult
+                    # t0.real_pl_carry_with_sign += sum_carry * matched * mult
+                    # t0.real_pl_overheads_with_sign += sum_overheads * matched * mult
+                    t0.r_total_real += sum_total * matched * mult
 
         for t in transactions:
             if t.transaction_class_id not in [TransactionClass.BUY, TransactionClass.SELL]:
                 continue
-            t.balance_position_size_with_sign = t.position_size_with_sign * (1.0 - t.multiplier)
-            t.cost_with_sign = t.principal_with_sign * (1.0 - t.multiplier)
-
-        self._pl_unreal(transactions)
-
-    def _set_multiplier(self, real_pl_changes, t, multiplier):
-        old_multiplier = t.multiplier
-        if not isclose(old_multiplier, multiplier):
-            # print('\t', t.id, str(t.transaction_class)[0], t.instrument, old_multiplier, multiplier)
-            pass
-        t.multiplier = multiplier
-        inc_multiplier = t.multiplier - old_multiplier
-
-        real_pl_changes.append((t, inc_multiplier))
-
-    def _pl_real(self, real_pl_changes):
-        if real_pl_changes:
-            init_mult = 1.0 - self.instance.pl_real_unreal_end_multiplier
-            end_mult = self.instance.pl_real_unreal_end_multiplier
-
-            t, inc_multiplier = real_pl_changes[-1]
-
-            # sum_principal = 0.0
-            # sum_carry = 0.0
-            # sum_overheads = 0.0
-            sum_total = 0.0
-            for t0, inc_multiplier0 in real_pl_changes:
-                # sum_principal += t0.principal_with_sign * inc_multiplier0
-                # sum_carry += t0.carry_with_sign * inc_multiplier0
-                # sum_overheads += t0.overheads_with_sign * inc_multiplier0
-                sum_total += (t0.principal_with_sign + t0.carry_with_sign + t0.overheads_with_sign) * inc_multiplier0
-
-            for t0, inc_multiplier0 in real_pl_changes:
-                mult = end_mult if t0.id == t.id else init_mult
-
-                matched = abs((t0.position_size_with_sign * inc_multiplier0) / (
-                    t.position_size_with_sign * inc_multiplier))
-                # adj = matched * mult
-
-                # t0.real_pl_principal_with_sign += sum_principal * matched * mult
-                # t0.real_pl_carry_with_sign += sum_carry * matched * mult
-                # t0.real_pl_overheads_with_sign += sum_overheads * matched * mult
-                t0.real_pl_total_with_sign += sum_total * matched * mult
-
-    def _pl_unreal(self, transactions):
-        # for t in transactions:
-        #     if t.transaction_class_id not in [TransactionClass.BUY, TransactionClass.SELL]:
-        #         continue
-        #     t.unreal_pl_principal_with_sign = t.principal_with_sign * (1.0 - t.multiplier)
-        #     t.unreal_pl_carry_with_sign = t.carry_with_sign * (1.0 - t.multiplier)
-        #     t.unreal_pl_overheads_with_sign = t.overheads_with_sign * (1.0 - t.multiplier)
-        #     t.unreal_pl_total_with_sign = t.unreal_pl_principal_with_sign + t.unreal_pl_carry_with_sign + t.unreal_pl_overheads_with_sign
-        pass
+            t.r_position_size = t.position_size_with_sign * (1.0 - t.r_multiplier)
+            t.r_cost = t.principal_with_sign * (1.0 - t.r_multiplier)
 
     def build(self):
         for trn in self.transactions:
@@ -793,29 +908,24 @@ class ReportBuilder(object):
         return self.instance
 
     def _process_transaction_buy(self, trn):
-        # if self._any_details:
-        #     position_size_with_sign = trn.position_size_with_sign * (1.0 - trn.multiplier)
-        # else:
-        #     position_size_with_sign = trn.position_size_with_sign
-
-        self._add_instr(self._items, trn, value=trn.balance_position_size_with_sign)
-        self._add_cash(self._items, trn, value=trn.cash_consideration, currency=trn.settlement_currency)
+        self._add_instr(self._items, trn, value=trn.r_position_size)
+        self._add_cash(self._items, trn, value=trn.cash_consideration, ccy=trn.settlement_currency)
 
     def _process_transaction_sell(self, trn):
         self._process_transaction_buy(trn)
 
     def _process_transaction_fx_trade(self, trn):
         # TODO: Что используем для strategy?
-        self._add_cash(self._items, trn, value=trn.position_size_with_sign, currency=trn.transaction_currency,
-                       account=trn.account_position, strategy1=trn.strategy1_position,
-                       strategy2=trn.strategy2_position, strategy3=trn.strategy3_position, )
+        self._add_cash(self._items, trn, value=trn.position_size_with_sign, ccy=trn.transaction_currency,
+                       acc=trn.account_position, strg1=trn.strategy1_position,
+                       strg2=trn.strategy2_position, strg3=trn.strategy3_position, )
 
-        self._add_cash(self._items, trn, value=trn.cash_consideration, currency=trn.settlement_currency)
+        self._add_cash(self._items, trn, value=trn.cash_consideration, ccy=trn.settlement_currency)
 
         # P&L
-        item = self._get_item(self._items, trn, portfolio=trn.portfolio, account=trn.account_position,
-                              strategy1=trn.strategy1_position, strategy2=trn.strategy2_position,
-                              strategy3=trn.strategy3_position, transaction_class=trn.transaction_class)
+        item = self._get_item(self._items, trn, prtfl=trn.portfolio, acc=trn.account_position,
+                              strg1=trn.strategy1_position, strg2=trn.strategy2_position,
+                              strg3=trn.strategy3_position, trn_cls=trn.transaction_class)
         item.principal_with_sign_sys_ccy += \
             self._to_sys_ccy(trn.position_size_with_sign, trn.transaction_currency) + \
             self._to_sys_ccy(trn.principal_with_sign, trn.settlement_currency)
@@ -824,14 +934,14 @@ class ReportBuilder(object):
 
     def _process_transaction_instrument_pl(self, trn):
         self._add_instr(self._items, trn, value=trn.position_size_with_sign)
-        self._add_cash(self._items, trn, value=trn.cash_consideration, currency=trn.settlement_currency)
+        self._add_cash(self._items, trn, value=trn.cash_consideration, ccy=trn.settlement_currency)
 
     def _process_transaction_transaction_pl(self, trn):
-        item = self._get_item(self._items, trn, portfolio=trn.portfolio, account=trn.account_position,
-                              strategy1=trn.strategy1_position, strategy2=trn.strategy2_position,
-                              strategy3=trn.strategy3_position, transaction_class=trn.transaction_class)
+        item = self._get_item(self._items, trn, prtfl=trn.portfolio, acc=trn.account_position,
+                              strg1=trn.strategy1_position, strg2=trn.strategy2_position,
+                              strg3=trn.strategy3_position, trn_cls=trn.transaction_class)
 
-        self._add_cash(self._items, trn, value=trn.cash_consideration, currency=trn.settlement_currency)
+        self._add_cash(self._items, trn, value=trn.cash_consideration, ccy=trn.settlement_currency)
 
         item.principal_with_sign_sys_ccy += self._to_sys_ccy(trn.principal_with_sign, trn.settlement_currency)
         item.carry_with_sign_sys_ccy += self._to_sys_ccy(trn.carry_with_sign, trn.settlement_currency)
@@ -844,39 +954,38 @@ class ReportBuilder(object):
         raise RuntimeError('Virtual transaction must be created')
 
     def _process_transaction_cash_inflow(self, trn):
-        self._add_cash(self._items, trn, value=trn.position_size_with_sign, currency=trn.transaction_currency,
-                       account=trn.account_position, strategy1=trn.strategy1_position, strategy2=trn.strategy2_position,
-                       strategy3=trn.strategy3_position)
+        self._add_cash(self._items, trn, value=trn.position_size_with_sign, ccy=trn.transaction_currency,
+                       acc=trn.account_position, strg1=trn.strategy1_position, strg2=trn.strategy2_position,
+                       strg3=trn.strategy3_position)
 
         # invested cash
-        self._add_cash(self._invested_items, trn, value=trn.position_size_with_sign, currency=trn.transaction_currency,
-                       account=trn.account_position, strategy1=trn.strategy1_position, strategy2=trn.strategy2_position,
-                       strategy3=trn.strategy3_position)
+        self._add_cash(self._invested_items, trn, value=trn.position_size_with_sign, ccy=trn.transaction_currency,
+                       acc=trn.account_position, strg1=trn.strategy1_position, strg2=trn.strategy2_position,
+                       strg3=trn.strategy3_position)
 
     def _process_transaction_cash_outflow(self, t):
         self._process_transaction_cash_inflow(t)
 
-    def _add_instr(self, items, trn, value,
-                   portfolio=None, account=None, strategy1=None, strategy2=None, strategy3=None):
-        if portfolio is None:
-            portfolio = trn.portfolio
-        if account is None:
-            account = trn.account_position
-        if strategy1 is None:
-            strategy1 = trn.strategy1_position
-        if strategy2 is None:
-            strategy2 = trn.strategy2_position
-        if strategy3 is None:
-            strategy3 = trn.strategy3_position
+    def _add_instr(self, items, trn, value, prtfl=None, acc=None, strg1=None, strg2=None, strg3=None):
+        if prtfl is None:
+            prtfl = trn.portfolio
+        if acc is None:
+            acc = trn.account_position
+        if strg1 is None:
+            strg1 = trn.strategy1_position
+        if strg2 is None:
+            strg2 = trn.strategy2_position
+        if strg3 is None:
+            strg3 = trn.strategy3_position
 
-        if trn.case == 0:
-            item = self._get_item(items, trn, instrument=trn.instrument, portfolio=portfolio, account=account,
-                                  strategy1=strategy1, strategy2=strategy2, strategy3=strategy3)
-        elif trn.case == 1:
-            item = self._get_item(items, trn, instrument=trn.instrument, portfolio=portfolio, account=account,
-                                  strategy1=strategy1, strategy2=strategy2, strategy3=strategy3)
+        if trn.r_case == 0:
+            item = self._get_item(items, trn, instr=trn.instrument, prtfl=prtfl, acc=acc,
+                                  strg1=strg1, strg2=strg2, strg3=strg3)
+        elif trn.r_case == 1:
+            item = self._get_item(items, trn, instr=trn.instrument, prtfl=prtfl, acc=acc,
+                                  strg1=strg1, strg2=strg2, strg3=strg3)
 
-        elif trn.case == 2:
+        elif trn.r_case == 2:
             return
 
         else:
@@ -885,18 +994,18 @@ class ReportBuilder(object):
         if item:
             ccy = trn.settlement_currency
             # balance
-            item.position_size_with_sign += value
-            item.cost_with_sign_sys_ccy += self._to_sys_ccy(trn.cost_with_sign, ccy)
+            item.position_size += value
+            item.cost_sys += self._to_sys_ccy(trn.r_cost, ccy)
 
             #  P&L
-            item.principal_with_sign_sys_ccy += self._to_sys_ccy(trn.principal_with_sign, ccy)
-            item.carry_with_sign_sys_ccy += self._to_sys_ccy(trn.carry_with_sign, ccy)
-            item.overheads_with_sign_sys_ccy += self._to_sys_ccy(trn.overheads_with_sign, ccy)
+            item.principal_sys += self._to_sys_ccy(trn.principal_with_sign, ccy)
+            item.carry_sys += self._to_sys_ccy(trn.carry_with_sign, ccy)
+            item.overheads_sys += self._to_sys_ccy(trn.overheads_with_sign, ccy)
 
             # item.real_pl_principal_with_sign_sys_ccy += self._to_sys_ccy(trn.real_pl_principal_with_sign, ccy)
             # item.real_pl_carry_with_sign_sys_ccy += self._to_sys_ccy(trn.real_pl_carry_with_sign, ccy)
             # item.real_pl_overheads_with_sign_sys_ccy += self._to_sys_ccy(trn.real_pl_overheads_with_sign, ccy)
-            item.real_pl_total_with_sign_sys_ccy += self._to_sys_ccy(trn.real_pl_total_with_sign, ccy)
+            item.total_real_sys += self._to_sys_ccy(trn.r_total_real, ccy)
 
             # item.unreal_pl_principal_with_sign_sys_ccy += self._to_sys_ccy(trn.unreal_pl_principal_with_sign,ccy)
             # item.unreal_pl_carry_with_sign_sys_ccy += self._to_sys_ccy(trn.unreal_pl_carry_with_sign,ccy)
@@ -904,40 +1013,40 @@ class ReportBuilder(object):
             # item.unreal_pl_total_with_sign_sys_ccy += self._to_sys_ccy(trn.unreal_pl_total_with_sign,ccy)
             pass
 
-    def _add_cash(self, items, trn, value, currency,
-                  portfolio=None, account=None, account_interim=None, strategy1=None, strategy2=None, strategy3=None):
+    def _add_cash(self, items, trn, value, ccy, prtfl=None, acc=None, acc_interim=None, strg1=None, strg2=None,
+                  strg3=None):
 
-        if portfolio is None:
-            portfolio = trn.portfolio
-        if account is None:
-            account = trn.account_cash
-        if account_interim is None:
-            account_interim = trn.account_interim
-        if strategy1 is None:
-            strategy1 = trn.strategy1_cash
-        if strategy2 is None:
-            strategy2 = trn.strategy2_cash
-        if strategy3 is None:
-            strategy3 = trn.strategy3_cash
+        if prtfl is None:
+            prtfl = trn.portfolio
+        if acc is None:
+            acc = trn.account_cash
+        if acc_interim is None:
+            acc_interim = trn.account_interim
+        if strg1 is None:
+            strg1 = trn.strategy1_cash
+        if strg2 is None:
+            strg2 = trn.strategy2_cash
+        if strg3 is None:
+            strg3 = trn.strategy3_cash
 
-        if trn.case == 0:
-            item = self._get_item(items, trn, currency=currency, portfolio=portfolio, account=account,
-                                  strategy1=strategy1, strategy2=strategy2, strategy3=strategy3)
-            item.position_size_with_sign += value
+        if trn.r_case == 0:
+            item = self._get_item(items, trn, ccy=ccy, prtfl=prtfl, acc=acc,
+                                  strg1=strg1, strg2=strg2, strg3=strg3)
+            item.position_size += value
 
-        elif trn.case == 1:
-            item = self._get_item(items, trn, currency=currency, portfolio=portfolio, account=account_interim,
-                                  strategy1=strategy1, strategy2=strategy2, strategy3=strategy3)
-            item.position_size_with_sign += value
+        elif trn.r_case == 1:
+            item = self._get_item(items, trn, ccy=ccy, prtfl=prtfl, acc=acc_interim,
+                                  strg1=strg1, strg2=strg2, strg3=strg3)
+            item.position_size += value
 
-        elif trn.case == 2:
-            item = self._get_item(items, trn, currency=currency, portfolio=portfolio, account=account,
-                                  strategy1=strategy1, strategy2=strategy2, strategy3=strategy3)
-            item.position_size_with_sign += value
+        elif trn.r_case == 2:
+            item = self._get_item(items, trn, ccy=ccy, prtfl=prtfl, acc=acc,
+                                  strg1=strg1, strg2=strg2, strg3=strg3)
+            item.position_size += value
 
-            item = self._get_item(items, trn, currency=currency, portfolio=trn.portfolio, account=account_interim,
-                                  strategy1=strategy1, strategy2=strategy2, strategy3=strategy3)
-            item.position_size_with_sign += value
+            item = self._get_item(items, trn, ccy=ccy, prtfl=prtfl, acc=acc_interim,
+                                  strg1=strg1, strg2=strg2, strg3=strg3)
+            item.position_size += value
 
         else:
             raise RuntimeError('Invalid transaction case: %s' % trn.case)
@@ -947,45 +1056,45 @@ class ReportBuilder(object):
             if item.instrument:
                 price = self._get_instr_pricing(item.instrument)
 
-                principal = item.position_size_with_sign * item.instrument.price_multiplier * price.principal_price
-                accrued = item.position_size_with_sign * item.instrument.accrued_multiplier * price.accrued_price
+                principal = item.position_size * item.instrument.price_multiplier * price.principal_price
+                accrued = item.position_size * item.instrument.accrued_multiplier * price.accrued_price
 
-                principal_sys_ccy = self._to_sys_ccy(principal, item.instrument.pricing_currency)
-                accrued_sys_ccy = self._to_sys_ccy(accrued, item.instrument.accrued_currency)
+                item.instr_principal_sys = self._to_sys_ccy(principal, item.instrument.pricing_currency)
+                item.instr_accrued_sys = self._to_sys_ccy(accrued, item.instrument.accrued_currency)
 
                 # balance
-                item.market_value_sys_ccy = principal_sys_ccy + accrued_sys_ccy
+                item.market_value_sys = item.instr_principal_sys + item.instr_accrued_sys
 
                 # P&L
-                item.principal_with_sign_sys_ccy += principal_sys_ccy
-                item.carry_with_sign_sys_ccy += accrued_sys_ccy
+                item.principal_sys += item.instr_principal_sys
+                item.carry_sys += item.instr_accrued_sys
 
             elif item.currency:
                 # balance
-                item.market_value_sys_ccy = self._to_sys_ccy(item.position_size_with_sign, item.currency)
+                item.market_value_sys = self._to_sys_ccy(item.position_size, item.currency)
 
                 # P&L
                 pass
 
             # balance
-            item.market_value_res_ccy = self._to_res_ccy(item.market_value_sys_ccy)
-            item.cost_with_sign_res_ccy = self._to_res_ccy(item.cost_with_sign_sys_ccy)
+            item.market_value = self._to_res_ccy(item.market_value_sys)
+            item.cost = self._to_res_ccy(item.cost_sys)
 
             # P&L
-            item.total_with_sign_sys_ccy = item.principal_with_sign_sys_ccy + \
-                                           item.carry_with_sign_sys_ccy + \
-                                           item.overheads_with_sign_sys_ccy
+            item.total_sys = item.principal_sys + item.carry_sys + item.carry_sys
 
-            item.principal_with_sign_res_ccy = self._to_res_ccy(item.principal_with_sign_sys_ccy)
-            item.carry_with_sign_res_ccy = self._to_res_ccy(item.carry_with_sign_sys_ccy)
-            item.overheads_with_sign_res_ccy = self._to_res_ccy(item.overheads_with_sign_sys_ccy)
-            item.total_with_sign_res_ccy = self._to_res_ccy(item.total_with_sign_sys_ccy)
+            item.instr_principal = self._to_res_ccy(item.instr_principal_sys)
+            item.instr_accrued = self._to_res_ccy(item.instr_accrued_sys)
+            item.principal = self._to_res_ccy(item.principal)
+            item.carry = self._to_res_ccy(item.carry_sys)
+            item.overheads = self._to_res_ccy(item.overheads_sys)
+            item.total = self._to_res_ccy(item.total)
 
             if item.instrument:
-                # item.real_pl_principal_with_sign_res_ccy = self._to_res_ccy(item.real_pl_principal_with_sign_sys_ccy)
-                # item.real_pl_carry_with_sign_res_ccy = self._to_res_ccy(item.real_pl_carry_with_sign_sys_ccy)
-                # item.real_pl_overheads_with_sign_res_ccy = self._to_res_ccy(item.real_pl_overheads_with_sign_sys_ccy)
-                item.real_pl_total_with_sign_res_ccy = self._to_res_ccy(item.real_pl_total_with_sign_sys_ccy)
+                # # item.real_pl_principal_with_sign_res_ccy = self._to_res_ccy(item.real_pl_principal_with_sign_sys_ccy)
+                # # item.real_pl_carry_with_sign_res_ccy = self._to_res_ccy(item.real_pl_carry_with_sign_sys_ccy)
+                # # item.real_pl_overheads_with_sign_res_ccy = self._to_res_ccy(item.real_pl_overheads_with_sign_sys_ccy)
+                item.total_real = self._to_res_ccy(item.total_real_sys)
 
                 # item.unreal_pl_principal_with_sign_res_ccy = self._to_res_ccy(
                 #     item.unreal_pl_principal_with_sign_sys_ccy)
@@ -993,46 +1102,48 @@ class ReportBuilder(object):
                 #     item.unreal_pl_carry_with_sign_sys_ccy)
                 # item.unreal_pl_overheads_with_sign_res_ccy = self._to_res_ccy(
                 #     item.unreal_pl_overheads_with_sign_sys_ccy)
-                item.unreal_pl_total_with_sign_res_ccy = item.market_value_res_ccy + item.cost_with_sign_sys_ccy
+                item.total_unreal_sys = item.market_value_sys + item.cost_sys
+                item.total_unreal = self._to_res_ccy(item.total_unreal_sys)
 
     def _process_summary(self, summary, items):
         for item in items:
-            summary.market_value_sys_ccy += item.market_value_sys_ccy
-            summary.market_value_res_ccy += item.market_value_res_ccy
+            summary.market_value_sys += item.market_value_sys
+            summary.market_value += item.market_value
 
-            summary.cost_with_sign_sys_ccy += item.cost_with_sign_sys_ccy
-            summary.cost_with_sign_res_ccy += item.cost_with_sign_res_ccy
+            summary.cost_sys += item.cost_sys
+            summary.cost += item.cost
 
             # P&L
-            summary.principal_with_sign_sys_ccy += item.principal_with_sign_sys_ccy
-            summary.carry_with_sign_sys_ccy += item.carry_with_sign_sys_ccy
-            summary.overheads_with_sign_sys_ccy += item.overheads_with_sign_sys_ccy
-            summary.total_with_sign_sys_ccy += item.total_with_sign_sys_ccy
+            summary.principal_sys += item.principal_sys
+            summary.carry_sys += item.carry_sys
+            summary.overheads_sys += item.overheads_sys
+            summary.total_sys += item.total_sys
 
-            # summary.real_pl_principal_with_sign_sys_ccy += item.real_pl_principal_with_sign_sys_ccy
-            # summary.real_pl_carry_with_sign_sys_ccy += item.real_pl_carry_with_sign_sys_ccy
-            # summary.real_pl_overheads_with_sign_sys_ccy += item.real_pl_overheads_with_sign_sys_ccy
-            summary.real_pl_total_with_sign_sys_ccy += item.real_pl_total_with_sign_sys_ccy
+            summary.principal += item.principal
+            summary.carry += item.carry
+            summary.overheads += item.overheads
+            summary.total += item.total
 
-            # summary.unreal_pl_principal_with_sign_sys_ccy += item.unreal_pl_principal_with_sign_sys_ccy
-            # summary.unreal_pl_carry_with_sign_sys_ccy += item.unreal_pl_carry_with_sign_sys_ccy
-            # summary.unreal_pl_overheads_with_sign_sys_ccy += item.unreal_pl_overheads_with_sign_sys_ccy
-            summary.unreal_pl_total_with_sign_sys_ccy += item.unreal_pl_total_with_sign_sys_ccy
-
-            summary.principal_with_sign_res_ccy += item.principal_with_sign_res_ccy
-            summary.carry_with_sign_res_ccy += item.carry_with_sign_res_ccy
-            summary.overheads_with_sign_res_ccy += item.overheads_with_sign_res_ccy
-            summary.total_with_sign_res_ccy += item.total_with_sign_res_ccy
-
-            # summary.real_pl_principal_with_sign_res_ccy += item.real_pl_principal_with_sign_res_ccy
-            # summary.real_pl_carry_with_sign_res_ccy += item.real_pl_carry_with_sign_res_ccy
-            # summary.real_pl_overheads_with_sign_res_ccy += item.real_pl_overheads_with_sign_res_ccy
-            summary.real_pl_total_with_sign_res_ccy += item.real_pl_total_with_sign_res_ccy
-
-            # summary.unreal_pl_principal_with_sign_res_ccy += item.unreal_pl_principal_with_sign_res_ccy
-            # summary.unreal_pl_carry_with_sign_res_ccy += item.unreal_pl_carry_with_sign_res_ccy
-            # summary.unreal_pl_overheads_with_sign_res_ccy += item.unreal_pl_overheads_with_sign_res_ccy
-            summary.unreal_pl_total_with_sign_res_ccy += item.unreal_pl_total_with_sign_res_ccy
+            # # summary.real_pl_principal_with_sign_sys_ccy += item.real_pl_principal_with_sign_sys_ccy
+            # # summary.real_pl_carry_with_sign_sys_ccy += item.real_pl_carry_with_sign_sys_ccy
+            # # summary.real_pl_overheads_with_sign_sys_ccy += item.real_pl_overheads_with_sign_sys_ccy
+            # summary.real_pl_total_with_sign_sys_ccy += item.real_pl_total_with_sign_sys_ccy
+            #
+            # # summary.unreal_pl_principal_with_sign_sys_ccy += item.unreal_pl_principal_with_sign_sys_ccy
+            # # summary.unreal_pl_carry_with_sign_sys_ccy += item.unreal_pl_carry_with_sign_sys_ccy
+            # # summary.unreal_pl_overheads_with_sign_sys_ccy += item.unreal_pl_overheads_with_sign_sys_ccy
+            # summary.unreal_pl_total_with_sign_sys_ccy += item.unreal_pl_total_with_sign_sys_ccy
+            #
+            # # summary.real_pl_principal_with_sign_res_ccy += item.real_pl_principal_with_sign_res_ccy
+            # # summary.real_pl_carry_with_sign_res_ccy += item.real_pl_carry_with_sign_res_ccy
+            # # summary.real_pl_overheads_with_sign_res_ccy += item.real_pl_overheads_with_sign_res_ccy
+            # summary.real_pl_total_with_sign_res_ccy += item.real_pl_total_with_sign_res_ccy
+            #
+            # # summary.unreal_pl_principal_with_sign_res_ccy += item.unreal_pl_principal_with_sign_res_ccy
+            # # summary.unreal_pl_carry_with_sign_res_ccy += item.unreal_pl_carry_with_sign_res_ccy
+            # # summary.unreal_pl_overheads_with_sign_res_ccy += item.unreal_pl_overheads_with_sign_res_ccy
+            # summary.unreal_pl_total_with_sign_res_ccy += item.unreal_pl_total_with_sign_res_ccy
+            pass
 
     def _process_custom_fields(self, items):
         if self.instance.custom_fields:
@@ -1050,113 +1161,3 @@ class ReportBuilder(object):
                         'custom_field': cf,
                         'value': value
                     })
-
-    def _to_sys_ccy(self, value, ccy):
-        if isclose(value, 0.0):
-            return 0.0
-        h = self._get_ccy_hist(ccy)
-        return value * h.fx_rate
-
-    def _to_res_ccy(self, value):
-        if isclose(value, 0.0):
-            return 0.0
-        h = self._get_ccy_hist(self.instance.report_currency)
-        if isclose(h.fx_rate, 0.0):
-            return 0.0
-        else:
-            return value / h.fx_rate
-
-    def _show_transaction_details(self, case, acc):
-        if case in [1, 2] and self.instance.show_transaction_details:
-            return acc and acc.type and acc.type.show_transaction_details
-        return False
-
-    def _make_key(self, instrument=None, currency=None, portfolio=None, account=None, strategy1=None, strategy2=None,
-                  strategy3=None, detail_transaction=None, transaction_class=None):
-        return ','.join((
-            'i=%s' % getattr(instrument, 'pk', -1),
-            'c=%s' % getattr(currency, 'pk', -1),
-            'p=%s' % getattr(portfolio, 'pk', -1),
-            'a=%s' % getattr(account, 'pk', -1),
-            's1=%s' % getattr(strategy1, 'pk', -1),
-            's2=%s' % getattr(strategy2, 'pk', -1),
-            's3=%s' % getattr(strategy3, 'pk', -1),
-            'dt=%s' % getattr(detail_transaction, 'pk', -1),
-            'tc=%s' % getattr(transaction_class, 'pk', -1),
-        ))
-
-    def _get_item(self, items, trn, instrument=None, currency=None, portfolio=None, account=None, strategy1=None,
-                  strategy2=None, strategy3=None, transaction_class=None):
-        t_instrument = instrument
-        t_currency = currency
-
-        if self._detail_by_portfolio:
-            t_portfolio = portfolio
-        else:
-            t_portfolio = None
-
-        if self._detail_by_account:
-            t_account = account
-        else:
-            t_account = None
-
-        if self._detail_by_strategy1:
-            t_strategy1 = strategy1
-        else:
-            t_strategy1 = None
-
-        if self._detail_by_strategy2:
-            t_strategy2 = strategy2
-        else:
-            t_strategy2 = None
-
-        if self._detail_by_strategy3:
-            t_strategy3 = strategy3
-        else:
-            t_strategy3 = None
-
-        if account and self._show_transaction_details(trn.case, account):
-            if isinstance(trn, VirtualTransaction):
-                t_detail_transaction = trn.transaction
-            else:
-                t_detail_transaction = trn
-        else:
-            t_detail_transaction = None
-
-        if transaction_class:
-            t_transaction_class = transaction_class
-            t_instrument = None
-            t_currency = None
-            t_detail_transaction = None
-        else:
-            t_transaction_class = None
-
-        pk = self._make_key(
-            instrument=t_instrument,
-            currency=t_currency,
-            portfolio=t_portfolio,
-            account=t_account,
-            strategy1=t_strategy1,
-            strategy2=t_strategy2,
-            strategy3=t_strategy3,
-            detail_transaction=t_detail_transaction,
-            transaction_class=t_transaction_class
-        )
-
-        try:
-            return items[pk]
-        except KeyError:
-            item = ReportItem(
-                pk=pk,
-                instrument=t_instrument,
-                currency=t_currency,
-                portfolio=t_portfolio,
-                account=t_account,
-                strategy1=t_strategy1,
-                strategy2=t_strategy2,
-                strategy3=t_strategy3,
-                detail_transaction=t_detail_transaction,
-                transaction_class=t_transaction_class
-            )
-            items[pk] = item
-            return item

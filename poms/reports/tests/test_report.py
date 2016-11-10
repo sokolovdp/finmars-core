@@ -231,6 +231,7 @@ class ReportTestCase(TestCase):
         fields = [
             'pk',
             'transaction_class',
+            'r_case',
             'accounting_date',
             'cash_date',
             'instrument',
@@ -242,33 +243,34 @@ class ReportTestCase(TestCase):
             'carry_with_sign',
             'overheads_with_sign',
             'reference_fx_rate',
-            'multiplier',
-            'balance_position_size_with_sign',
+            'r_multiplier',
+            # 'balance_position_size_with_sign',
             # 'real_pl_principal_with_sign',
             # 'real_pl_carry_with_sign',
             # 'real_pl_overheads_with_sign',
-            'real_pl_total_with_sign',
+            # 'real_pl_total_with_sign',
             # 'unreal_pl_principal_with_sign',
             # 'unreal_pl_carry_with_sign',
             # 'unreal_pl_overheads_with_sign',
-            'unreal_pl_total_with_sign',
+            # 'unreal_pl_total_with_sign',
 
-            'instrument__pricing_currency',
-            'instrument__accrued_currency',
-            'instrument_price_cur__principal_price',
-            'instrument_price_cur__accrued_price',
-            'instrument_pricing_currency_curr__fx_rate',
-            'instrument_accrued_currency_curr__fx_rate',
+            # 'instrument__pricing_currency',
+            # 'instrument__accrued_currency',
+            # 'instrument_price_cur__principal_price',
+            # 'instrument_price_cur__accrued_price',
+            # 'instrument_pricing_currency_curr__fx_rate',
+            # 'instrument_accrued_currency_curr__fx_rate',
 
-            'transaction_currency_hist__fx_rate',
-            'transaction_currency_curr__fx_rate',
+            # 'transaction_currency_hist__fx_rate',
+            # 'transaction_currency_curr__fx_rate',
 
-            'settlement_currency_hist__fx_rate',
-            'settlement_currency_curr__fx_rate',
+            # 'settlement_currency_hist__fx_rate',
+            # 'settlement_currency_curr__fx_rate',
         ]
         columns = [
             'pk',
-            'class',
+            'cls',
+            'case',
             'acc_date',
             'cash_date',
             'instr',
@@ -281,28 +283,28 @@ class ReportTestCase(TestCase):
             'overheads',
             'ref_fx',
             'multiplier',
-            'balance',
+            # 'balance',
             # 'real_pl_principal',
             # 'real_pl_carry',
             # 'real_pl_overheads',
-            'real_pl_total',
+            # 'real_pl_total',
             # 'unreal_pl_principal',
             # 'unreal_pl_carry',
             # 'unreal_pl_overheads',
-            'unreal_pl_total',
+            # 'unreal_pl_total',
 
-            'instrument__pricing_currency',
-            'instrument__accrued_currency',
-            'instrument_price_cur__principal_price',
-            'instrument_price_cur__accrued_price',
-            'instrument_pricing_currency_curr__fx_rate',
-            'instrument_accrued_currency_curr__fx_rate',
+            # 'instrument__pricing_currency',
+            # 'instrument__accrued_currency',
+            # 'instrument_price_cur__principal_price',
+            # 'instrument_price_cur__accrued_price',
+            # 'instrument_pricing_currency_curr__fx_rate',
+            # 'instrument_accrued_currency_curr__fx_rate',
 
-            'transaction_currency_hist__fx_rate',
-            'transaction_currency_curr__fx_rate',
+            # 'transaction_currency_hist__fx_rate',
+            # 'transaction_currency_curr__fx_rate',
 
-            'settlement_currency_hist__fx_rate',
-            'settlement_currency_curr__fx_rate',
+            # 'settlement_currency_hist__fx_rate',
+            # 'settlement_currency_curr__fx_rate',
         ]
         if builder.instance.detail_by_portfolio:
             fields += [
@@ -374,29 +376,23 @@ class ReportTestCase(TestCase):
         fields = [
             'type_code',
             'user_code',
-            'instrument',
-            'currency',
-            'position_size_with_sign',
-            'market_value_res_ccy',
-            'cost_with_sign_res_ccy',
-            'principal_with_sign_res_ccy',
-            'carry_with_sign_res_ccy',
-            'overheads_with_sign_res_ccy',
-            'total_with_sign_res_ccy',
-            # 'real_pl_principal_with_sign_res_ccy',
-            # 'real_pl_carry_with_sign_res_ccy',
-            # 'real_pl_overheads_with_sign_res_ccy',
-            'real_pl_total_with_sign_res_ccy',
-            # 'unreal_pl_principal_with_sign_res_ccy',
-            # 'unreal_pl_carry_with_sign_res_ccy',
-            # 'unreal_pl_overheads_with_sign_res_ccy',
-            'unreal_pl_total_with_sign_res_ccy',
+            # 'instrument',
+            # 'currency',
+            'position_size',
+            'market_value',
+            'cost',
+            'principal',
+            'carry',
+            'overheads',
+            'total',
+            'total_real',
+            'total_unreal',
         ]
         columns = [
             'type',
             'user_code',
-            'instr',
-            'ccy',
+            # 'instr',
+            # 'ccy',
             'position',
             'market_value',
             'cost',
@@ -404,14 +400,8 @@ class ReportTestCase(TestCase):
             'carry',
             'overheads',
             'total',
-            # 'real_pl_principal',
-            # 'real_pl_carry',
-            # 'real_pl_overheads',
-            'real_pl_total',
-            # 'unreal_pl_principal',
-            # 'unreal_pl_carry',
-            # 'unreal_pl_overheads',
-            'unreal_pl_total',
+            'total_real',
+            'total_unreal',
         ]
 
         if builder.instance.detail_by_portfolio:
@@ -471,19 +461,19 @@ class ReportTestCase(TestCase):
 
     def _print_summary(self, builder):
         fields = [
-            'market_value_res_ccy',
-            'principal_with_sign_res_ccy',
-            'carry_with_sign_res_ccy',
-            'overheads_with_sign_res_ccy',
-            'total_with_sign_res_ccy',
+            'market_value',
+            'principal',
+            'carry',
+            'overheads',
+            'total',
             # 'real_pl_principal_with_sign_res_ccy',
             # 'real_pl_carry_with_sign_res_ccy',
             # 'real_pl_overheads_with_sign_res_ccy',
-            'real_pl_total_with_sign_res_ccy',
+            # 'real_pl_total_with_sign_res_ccy',
             # 'unreal_pl_principal_with_sign_res_ccy',
             # 'unreal_pl_carry_with_sign_res_ccy',
             # 'unreal_pl_overheads_with_sign_res_ccy',
-            'unreal_pl_total_with_sign_res_ccy',
+            # 'unreal_pl_total_with_sign_res_ccy',
         ]
         columns = [
             'market_value',
@@ -494,11 +484,11 @@ class ReportTestCase(TestCase):
             # 'real_pl_principal',
             # 'real_pl_carry',
             # 'real_pl_overheads',
-            'real_pl_total',
+            # 'real_pl_total',
             # 'unreal_pl_principal',
             # 'unreal_pl_carry',
             # 'unreal_pl_overheads',
-            'unreal_pl_total',
+            # 'unreal_pl_total',
         ]
 
         print('-' * 100)
@@ -583,8 +573,8 @@ class ReportTestCase(TestCase):
 
     def _test_balance_0(self):
         self._t(t_class=self._cash_inflow, trn_ccy=self.eur, position=1000, fx_rate=1.3)
-        self._t(t_class=self._cash_outflow, trn_ccy=self.usd, position=-1000, acc_date_days=6, cash_date_days=6,
-                fx_rate=1 / 75.)
+        self._t(t_class=self._cash_outflow, trn_ccy=self.usd, position=-1000, acc_date_days=1, cash_date_days=1,
+                fx_rate=1.0)
 
         r = Report(master_user=self.m, pricing_policy=self.pp, report_date=self._d(14))
         b = ReportBuilder(instance=r)
@@ -624,7 +614,7 @@ class ReportTestCase(TestCase):
         b.build()
         self._dump(b, 'balance_2')
 
-    def _test_pl_0(self):
+    def test_pl_0(self):
         self._t(t_class=self._cash_inflow, trn_ccy=self.usd, position=1000, fx_rate=1.3)
 
         self._t(t_class=self._buy, instr=self.bond0, position=100,
@@ -668,7 +658,7 @@ class ReportTestCase(TestCase):
         b.build()
         self._dump(b, 'test_pl_1')
 
-    def _test_pl_real_unreal_1(self):
+    def test_pl_real_unreal_1(self):
         s1 = self.s1_1_1_1
         s2 = self.s1_1_1_2
         s3 = self.s1_1_1_3
@@ -737,7 +727,7 @@ class ReportTestCase(TestCase):
         b.build()
         self._dump(b, 'test_pl_real_unreal_1')
 
-    def test_pl_fx_fix_full_0(self):
+    def _test_pl_fx_fix_full_0(self):
         instr = Instrument.objects.create(master_user=self.m, name="I1, RUB/RUB",
                                           instrument_type=self.m.instrument_type,
                                           pricing_currency=self.rub, price_multiplier=1.0,
