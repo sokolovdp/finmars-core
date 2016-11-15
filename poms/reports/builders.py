@@ -578,6 +578,8 @@ class ReportItem(object):
     TYPE_TRANSACTION_PL = 3
     TYPE_FX_TRADE = 4
     TYPE_SUMMARY = 100
+    TYPE_INVESTED_CURRENCY = 200
+    TYPE_INVESTED_SUMMARY = 201
     TYPE_CHOICES = (
         (TYPE_UNKNOWN, 'Unknown'),
         (TYPE_INSTRUMENT, 'Instrument'),
@@ -585,6 +587,8 @@ class ReportItem(object):
         (TYPE_TRANSACTION_PL, 'Transaction PL'),
         (TYPE_FX_TRADE, 'FX-Trade'),
         (TYPE_SUMMARY, 'Summary'),
+        (TYPE_INVESTED_CURRENCY, 'Invested'),
+        (TYPE_INVESTED_SUMMARY, 'Invested summary'),
     )
 
     report = None
@@ -799,8 +803,11 @@ class ReportItem(object):
     @classmethod
     def from_item(cls, src):
         item = cls(src.report, src.pricing_provider, src.fx_rate_provider, src.type)
-        if item.type in [ReportItem.TYPE_TRANSACTION_PL, ReportItem.TYPE_FX_TRADE]:
+
+        if src.detail_trn:
             item.trn = src.trn
+        # if item.type in [ReportItem.TYPE_TRANSACTION_PL, ReportItem.TYPE_FX_TRADE]:
+        #     item.trn = src.trn
 
         item.instr = src.instr  # -> Instrument
         item.ccy = src.ccy  # -> Currency
@@ -945,7 +952,11 @@ class ReportItem(object):
         elif self.type == ReportItem.TYPE_FX_TRADE:
             return 'FX_TRADE'
         elif self.type == ReportItem.TYPE_SUMMARY:
-            return 'SUMMARY'
+            return 'SUM'
+        elif self.type == ReportItem.TYPE_INVESTED_CURRENCY:
+            return 'INV_CCY'
+        elif self.type == ReportItem.TYPE_INVESTED_SUMMARY:
+            return 'INV_SUM'
         return 'ERR'
 
     @property
@@ -962,6 +973,10 @@ class ReportItem(object):
             return 'FX_TRADE'
         elif self.type == ReportItem.TYPE_SUMMARY:
             return 'SUMMARY'
+        elif self.type == ReportItem.TYPE_INVESTED_CURRENCY:
+            return self.ccy.user_code
+        elif self.type == ReportItem.TYPE_INVESTED_SUMMARY:
+            return 'INVESTED_SUMMARY'
         return '<ERROR>'
 
     @property
@@ -978,11 +993,15 @@ class ReportItem(object):
             return ugettext('FX-Trade')
         elif self.type == ReportItem.TYPE_SUMMARY:
             return ugettext('Summary')
+        elif self.type == ReportItem.TYPE_INVESTED_CURRENCY:
+            return self.ccy.name
+        elif self.type == ReportItem.TYPE_INVESTED_SUMMARY:
+            return ugettext('Invested summary')
         return '<ERROR>'
 
     @property
     def detail(self):
-        if self.report.show_transaction_details and self.acc and self.acc.type.show_transaction_details and self.detail_trn:
+        if self.detail_trn:
             expr = self.acc.type.transaction_details_expr
             if expr:
                 try:
@@ -1210,7 +1229,7 @@ class ReportItem(object):
         self.carry_fixed_opened_sys += o.carry_fixed_opened_sys
         self.overheads_fixed_opened_sys += o.overheads_fixed_opened_sys
 
-        if self.type == ReportItem.TYPE_CURRENCY:
+        if self.type == ReportItem.TYPE_CURRENCY or self.type == ReportItem.TYPE_INVESTED_CURRENCY:
             self.pos_size += o.pos_size
 
             # self.market_value_sys += o.pos_size * o.ccy_rep_fx
@@ -1228,14 +1247,13 @@ class ReportItem(object):
             # self.total_unreal_sys += o.market_value_sys + o.cost_sys
             # self.total_unreal_sys += (o.instr_principal_sys + o.instr_accrued_sys) + o.cost_sys
 
-
-        elif self.type == ReportItem.TYPE_SUMMARY:
+        elif self.type == ReportItem.TYPE_SUMMARY or self.type == ReportItem.TYPE_INVESTED_SUMMARY:
             self.market_value_sys += o.market_value_sys
             self.total_real_sys += o.total_real_sys
             self.total_unreal_sys += o.total_unreal_sys
 
     def close(self):
-        if self.type == ReportItem.TYPE_CURRENCY:
+        if self.type == ReportItem.TYPE_CURRENCY or self.type == ReportItem.TYPE_INVESTED_CURRENCY:
             self.market_value_sys = self.pos_size * self.ccy_rep_fx
 
         elif self.type == ReportItem.TYPE_INSTRUMENT:
@@ -1856,10 +1874,10 @@ class ReportBuilder(object):
             else:
                 raise RuntimeError('Invalid transaction class: %s' % trn.transaction_class_id)
 
-        # print('0' * 100)
-        # VirtualTransaction.dumps(self.transactions)
-        # print('1' * 100)
-        # ReportItem.dumps(self._items)
+        print('0' * 100)
+        VirtualTransaction.dumps(self.transactions)
+        print('1' * 100)
+        ReportItem.dumps(self._items)
 
         _items = sorted(self._items, key=partial(ReportItem.sort_key, self.instance))
 
@@ -1867,35 +1885,46 @@ class ReportBuilder(object):
         # summary = ReportItem(self.instance, self._pricing_provider, self._fx_rate_provider, ReportItem.TYPE_SUMMARY)
         for k, g in groupby(_items, key=partial(ReportItem.group_key, self.instance)):
             ritem = None
+            invested = None
+
             for item in g:
                 if ritem is None:
                     ritem = ReportItem.from_item(item)
                 ritem.add(item)
-                # summary.add(item)
-            ritem.close()
+
+                if item.trn and item.trn.trn_cls.id in [TransactionClass.CASH_INFLOW, TransactionClass.CASH_OUTFLOW]:
+                    if invested is None:
+                        invested = ReportItem.from_item(item)
+                        invested.type = ReportItem.TYPE_INVESTED_CURRENCY
+                    invested.add(item)
+
             if ritem:
+                ritem.close()
                 gitems.append(ritem)
 
-        # print('2' * 100)
-        # ReportItem.dumps(gitems)
+            if invested:
+                invested.close()
+                gitems.append(invested)
 
         summary = ReportItem(self.instance, self._pricing_provider, self._fx_rate_provider, ReportItem.TYPE_SUMMARY)
+        invested_summary = ReportItem(self.instance, self._pricing_provider, self._fx_rate_provider,
+                                      ReportItem.TYPE_INVESTED_SUMMARY)
         for item in gitems:
-            summary.add(item)
+            if item.type in [ReportItem.TYPE_INSTRUMENT, ReportItem.TYPE_CURRENCY, ReportItem.TYPE_TRANSACTION_PL,
+                             ReportItem.TYPE_FX_TRADE]:
+                summary.add(item)
+            if item.type in [ReportItem.TYPE_INVESTED_CURRENCY]:
+                invested_summary.add(item)
 
-        # print('3' * 100)
-        # ReportItem.dumps([summary])
-
-        # print('4' * 100)
         gitems.append(summary)
+        gitems.append(invested_summary)
+
+        print('2' * 100)
+        ReportItem.dumps(gitems)
+
+        print('4' * 100)
 
         self.instance.items = gitems
-
-        # print('*'* 100)
-        # VirtualTransaction.dumps(self.transactions)
-        # ReportItem.dumps(gitems)
-        # ReportItem.dumps([summary])
-        # print('*'* 100)
 
         # self._process_final(self._invested_items.values())
         # self.instance.invested_items = sorted([i for i in self._invested_items.values()], key=lambda x: x.pk)

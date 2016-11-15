@@ -306,7 +306,7 @@ class ReportTestCase(TestCase):
         b.build()
         self._dump(b, 'balance_0')
 
-    def _test_balance_1(self):
+    def test_balance_1(self):
         self._t(t_class=self._cash_inflow, trn_ccy=self.usd, position=1000, fx_rate=1.3)
         self._t(t_class=self._buy,
                 instr=self.bond0, position=100,
