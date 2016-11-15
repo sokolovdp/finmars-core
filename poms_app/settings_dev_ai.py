@@ -59,6 +59,28 @@ CELERYBEAT_SCHEDULE = {
     # }
 }
 
+# REDIS ------------------------------------------------
+
+
+def _redis(url):
+    from urllib.parse import urlsplit, urlunsplit
+    components = urlsplit(url)
+    components = list(components)
+    components[2] = '/3'
+    loc = urlunsplit(components)
+    return loc
+
+
+for k, v in CACHES.items():
+    if 'RedisCache' in v['BACKEND']:
+        v['LOCATION'] = _redis(v['LOCATION'])
+
+if 'redis' in BROKER_URL:
+    BROKER_URL = _redis(BROKER_URL)
+if 'redis' in CELERY_RESULT_BACKEND:
+    CELERY_RESULT_BACKEND = _redis(CELERY_RESULT_BACKEND)
+
+
 # INTEGRATIONS ------------------------------------------------
 
 
