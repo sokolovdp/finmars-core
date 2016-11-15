@@ -14,7 +14,8 @@ from django.utils.translation import ugettext
 from poms.common import formula
 from poms.common.utils import isclose, date_now
 from poms.instruments.models import CostMethod
-from poms.reports.pricing import CurrencyFxRateProvider, InstrumentPricingProvider
+from poms.reports.pricing import CurrencyFxRateProvider, InstrumentPricingProvider, FakeInstrumentPricingProvider, \
+    FakeCurrencyFxRateProvider
 from poms.transactions.models import Transaction, TransactionClass
 
 _l = logging.getLogger('poms.reports')
@@ -1416,16 +1417,23 @@ class ReportBuilder(object):
 
     @cached_property
     def _pricing_provider(self):
-        p = InstrumentPricingProvider(self.instance.master_user, self.instance.pricing_policy,
-                                      self.instance.report_date)
-        p.fill_using_transactions(self._trn_qs())
-        return p
+        if self.instance.pricing_policy is None:
+            return FakeInstrumentPricingProvider(None, None, self.instance.report_date)
+        else:
+            p = InstrumentPricingProvider(self.instance.master_user, self.instance.pricing_policy,
+                                          self.instance.report_date)
+            p.fill_using_transactions(self._trn_qs())
+            return p
 
     @cached_property
     def _fx_rate_provider(self):
-        p = CurrencyFxRateProvider(self.instance.master_user, self.instance.pricing_policy, self.instance.report_date)
-        p.fill_using_transactions(self._trn_qs(), currencies=[self.instance.report_currency])
-        return p
+        if self.instance.pricing_policy is None:
+            return FakeCurrencyFxRateProvider(None, None, self.instance.report_date)
+        else:
+            p = CurrencyFxRateProvider(self.instance.master_user, self.instance.pricing_policy,
+                                       self.instance.report_date)
+            p.fill_using_transactions(self._trn_qs(), currencies=[self.instance.report_currency])
+            return p
 
     def _show_transaction_details(self, case, acc):
         if case in [1, 2] and self.instance.show_transaction_details:

@@ -9,10 +9,9 @@ from django.db.models import F, Q
 from django.utils import timezone
 
 from poms import notifications
-from poms.common.utils import date_now
+from poms.common.utils import date_now, isclose
 from poms.instruments.models import EventSchedule, Instrument, CostMethod, GeneratedEvent
-from poms.reports.backends.balance import BalanceReport2Builder
-from poms.reports.models import BalanceReport
+from poms.reports.builders import Report, ReportBuilder, ReportItem
 from poms.transactions.models import EventClass
 from poms.users.models import MasterUser
 
@@ -51,9 +50,6 @@ def generate_events(master_users=None):
 
     now = date_now()
 
-    # TODO: need cost_method to build report
-    cost_method = CostMethod.objects.get(pk=CostMethod.AVCO)
-
     master_user_qs = MasterUser.objects.all()
     if master_users:
         master_user_qs = master_user_qs.filter(pk__in=master_users)
@@ -63,18 +59,17 @@ def generate_events(master_users=None):
 
         opened_instrument_items = []
         instruments_pk = set()
-        report = BalanceReport(master_user=master_user, report_date=now, cost_method=cost_method,
-                               report_currency=master_user.system_currency,
-                               detail_by_portfolio=True, detail_by_account=True, detail_by_strategy1=True,
-                               detail_by_strategy2=True, detail_by_strategy3=True,
-                               show_transaction_details=False)
-        builder = BalanceReport2Builder(instance=report)
+
+        report = Report(master_user=master_user, report_date=now,
+                        detail_by_portfolio=True, detail_by_account=True, detail_by_strategy1=True,
+                        detail_by_strategy2=True, detail_by_strategy3=True)
+        builder = ReportBuilder(instance=report)
         builder.build()
 
-        for item in report.items:
-            if item.instrument:
-                opened_instrument_items.append(item)
-                instruments_pk.add(item.instrument.id)
+        for i in report.items:
+            if i.type == ReportItem.TYPE_INSTRUMENT and not isclose(i.position_size, 0.0):
+                opened_instrument_items.append(i)
+                instruments_pk.add(i.instrument.id)
 
         _l.debug('opened_instrument_items: count=%s', len(opened_instrument_items))
         if not opened_instrument_items:
@@ -99,13 +94,13 @@ def generate_events(master_users=None):
             event_schedule_cache[event_schedule.instrument_id].append(event_schedule)
 
         for item in opened_instrument_items:
-            portfolio = item.portfolio
-            account = item.account
-            strategy1 = item.strategy1
-            strategy2 = item.strategy2
-            strategy3 = item.strategy3
-            instrument = item.instrument
-            position = item.position
+            portfolio = item.prtfl
+            account = item.acc
+            strategy1 = item.str1
+            strategy2 = item.str2
+            strategy3 = item.str3
+            instrument = item.instr
+            position = item.pos_size
 
             event_schedules = event_schedule_cache.get(instrument.id) or []
 

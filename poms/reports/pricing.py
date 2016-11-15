@@ -32,6 +32,21 @@ class AbstractProvider:
         raise NotImplementedError('`_on_missed()` must be implemented.')
 
 
+# Instrument
+
+
+class FakeInstrumentPricingProvider(AbstractProvider):
+    def __init__(self, master_user, pricing_policy, report_date):
+        super(FakeInstrumentPricingProvider, self).__init__(master_user, pricing_policy, report_date)
+
+    def fill_using_transactions(self, transaction_queryset, lazy=True):
+        pass
+
+    def _on_missed(self, item, d):
+        h = PriceHistory(pricing_policy=self._pricing_policy, instrument=item, date=d)
+        return h
+
+
 class InstrumentPricingProvider(AbstractProvider):
     def __init__(self, master_user, pricing_policy, report_date):
         super(InstrumentPricingProvider, self).__init__(master_user, pricing_policy, report_date)
@@ -58,6 +73,20 @@ class InstrumentPricingProvider(AbstractProvider):
             except PriceHistory.DoesNotExist:
                 pass
         h = PriceHistory(pricing_policy=self._pricing_policy, instrument=item, date=d)
+        return h
+
+
+# Currency
+
+
+class FakeCurrencyFxRateProvider(AbstractProvider):
+    def fill_using_transactions(self, transaction_queryset, lazy=True, currencies=None):
+        pass
+
+    def _on_missed(self, item, d):
+        h = CurrencyHistory(pricing_policy=self._pricing_policy, currency=item, date=d)
+        if self._master_user.system_currency_id == item.id:
+            h.fx_rate = 1.0
         return h
 
 

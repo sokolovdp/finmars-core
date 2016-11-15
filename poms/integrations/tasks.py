@@ -3,7 +3,7 @@ from __future__ import unicode_literals, print_function
 import logging
 import time
 from collections import defaultdict
-from datetime import timedelta, date
+from datetime import timedelta
 
 from celery import shared_task, chord
 from celery.exceptions import TimeoutError, MaxRetriesExceededError
@@ -17,15 +17,14 @@ from django.utils import timezone
 
 from poms.audit.models import AuthLogEntry
 from poms.common import formula
-from poms.common.utils import date_now
+from poms.common.utils import date_now, isclose
 from poms.currencies.models import Currency, CurrencyHistory
 from poms.instruments.models import Instrument, DailyPricingModel, PricingPolicy, PriceHistory
 from poms.integrations.models import Task, PriceDownloadScheme, InstrumentDownloadScheme, PricingAutomatedSchedule
 from poms.integrations.providers.base import get_provider, parse_date_iso, fill_instrument_price, fill_currency_price, \
     AbstractProvider
 from poms.integrations.storage import import_file_storage
-from poms.reports.backends.balance import BalanceReport2Builder
-from poms.reports.models import BalanceReport
+from poms.reports.builders import Report, ReportItem, ReportBuilder
 from poms.users.models import MasterUser
 
 _l = logging.getLogger('poms.integrations')
@@ -397,15 +396,14 @@ def download_pricing_async(self, task_id):
              balance_date, sorted(instruments_if_open), sorted(currencies_if_open))
 
     if balance_date and (instruments_if_open or currencies_if_open):
-        report = BalanceReport(master_user=task.master_user, begin_date=date.min, end_date=balance_date,
-                               use_portfolio=True, show_transaction_details=False)
+        report = Report(master_user=task.master_user, report_date=balance_date, detail_by_portfolio=True)
         _l.debug('calculate position report: %s', report)
-        builder = BalanceReport2Builder(instance=report)
+        builder = ReportBuilder(instance=report)
         builder.build()
         for i in report.items:
-            if i.instrument:
+            if i.type == ReportItem.TYPE_INSTRUMENT and not isclose(i.position_size, 0.0):
                 instruments_opened.add(i.instrument.id)
-            elif i.currency:
+            elif i.type == ReportItem.TYPE_CURRENCY and not isclose(i.position_size, 0.0):
                 currencies_opened.add(i.currency.id)
         _l.debug('opened: instruments=%s, currencies=%s', sorted(instruments_opened), sorted(currencies_opened))
 
