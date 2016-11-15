@@ -7,17 +7,22 @@ from django.utils.translation import ugettext_lazy
 from rest_framework import serializers
 
 from poms.accounts.fields import AccountField
+from poms.accounts.serializers import AccountSerializer
 from poms.common.fields import ExpressionField
 from poms.common.utils import date_now
 from poms.currencies.fields import CurrencyField, SystemCurrencyDefault
+from poms.currencies.serializers import CurrencySerializer
 from poms.instruments.fields import PricingPolicyField
 from poms.instruments.models import CostMethod
+from poms.instruments.serializers import InstrumentSerializer
 from poms.portfolios.fields import PortfolioField
+from poms.portfolios.serializers import PortfolioSerializer
 from poms.reports.builders import Report, ReportItem
 from poms.reports.fields import CustomFieldField
 from poms.reports.models import BalanceReport, BalanceReportItem, BalanceReportSummary, PLReportItem, PLReport, \
     PLReportSummary, CostReport, BaseReport, CustomField
 from poms.strategies.fields import Strategy1Field, Strategy2Field, Strategy3Field
+from poms.strategies.serializers import Strategy1Serializer, Strategy2Serializer, Strategy3Serializer
 from poms.transactions.models import Transaction, TransactionClass
 from poms.users.fields import MasterUserField
 
@@ -51,6 +56,79 @@ class CustomFieldViewSerializer(serializers.ModelSerializer):
 
 # new reports...
 
+class ReportInstrumentSerializer(InstrumentSerializer):
+    def __init__(self, *args, **kwargs):
+        super(ReportInstrumentSerializer, self).__init__(*args, **kwargs)
+
+        self.fields.pop('manual_pricing_formulas')
+        self.fields.pop('accrual_calculation_schedules')
+        self.fields.pop('factor_schedules')
+        self.fields.pop('event_schedules')
+
+        self.fields.pop('user_object_permissions')
+        self.fields.pop('group_object_permissions')
+        self.fields.pop('object_permissions')
+
+
+class ReportCurrencySerializer(CurrencySerializer):
+    def __init__(self, *args, **kwargs):
+        super(CurrencySerializer, self).__init__(*args, **kwargs)
+
+
+class ReportPortfolioSerializer(PortfolioSerializer):
+    def __init__(self, *args, **kwargs):
+        super(PortfolioSerializer, self).__init__(*args, **kwargs)
+        self.fields.pop('accounts')
+        self.fields.pop('accounts_object')
+        self.fields.pop('responsibles')
+        self.fields.pop('responsibles_object')
+        self.fields.pop('counterparties')
+        self.fields.pop('counterparties_object')
+        self.fields.pop('transaction_types')
+        self.fields.pop('transaction_types_object')
+
+        self.fields.pop('user_object_permissions')
+        self.fields.pop('group_object_permissions')
+        self.fields.pop('object_permissions')
+
+
+class ReportAccountSerializer(AccountSerializer):
+    def __init__(self, *args, **kwargs):
+        super(AccountSerializer, self).__init__(*args, **kwargs)
+        self.fields.pop('portfolios')
+        self.fields.pop('portfolios_object')
+
+        self.fields.pop('user_object_permissions')
+        self.fields.pop('group_object_permissions')
+        self.fields.pop('object_permissions')
+
+
+class ReportStrategy1Serializer(Strategy1Serializer):
+    def __init__(self, *args, **kwargs):
+        super(Strategy1Serializer, self).__init__(*args, **kwargs)
+
+        self.fields.pop('user_object_permissions')
+        self.fields.pop('group_object_permissions')
+        self.fields.pop('object_permissions')
+
+
+class ReportStrategy2Serializer(Strategy2Serializer):
+    def __init__(self, *args, **kwargs):
+        super(Strategy2Serializer, self).__init__(*args, **kwargs)
+
+        self.fields.pop('user_object_permissions')
+        self.fields.pop('group_object_permissions')
+        self.fields.pop('object_permissions')
+
+
+class ReportStrategy3Serializer(Strategy3Serializer):
+    def __init__(self, *args, **kwargs):
+        super(Strategy3Serializer, self).__init__(*args, **kwargs)
+
+        self.fields.pop('user_object_permissions')
+        self.fields.pop('group_object_permissions')
+        self.fields.pop('object_permissions')
+
 
 class ReportItemCustomFieldSerializer(serializers.Serializer):
     custom_field = serializers.PrimaryKeyRelatedField(read_only=True)
@@ -70,81 +148,101 @@ class ReportItemSerializer(serializers.Serializer):
     )
     user_code = serializers.ReadOnlyField()
     name = serializers.ReadOnlyField()
+    detail = serializers.CharField(read_only=True)
 
-    instrument = serializers.PrimaryKeyRelatedField(read_only=True)
-    currency = serializers.PrimaryKeyRelatedField(read_only=True)
+    instrument = serializers.PrimaryKeyRelatedField(source='instr', read_only=True)
+    currency = serializers.PrimaryKeyRelatedField(source='ccy', read_only=True)
+    portfolio = serializers.PrimaryKeyRelatedField(source='prtfl', read_only=True)
+    account = serializers.PrimaryKeyRelatedField(source='acc', read_only=True)
+    strategy1 = serializers.PrimaryKeyRelatedField(source='str1', read_only=True)
+    strategy2 = serializers.PrimaryKeyRelatedField(source='str2', read_only=True)
+    strategy3 = serializers.PrimaryKeyRelatedField(source='str3', read_only=True)
 
-    portfolio = serializers.PrimaryKeyRelatedField(read_only=True)
-    account = serializers.PrimaryKeyRelatedField(read_only=True)
-    strategy1 = serializers.PrimaryKeyRelatedField(read_only=True)
-    strategy2 = serializers.PrimaryKeyRelatedField(read_only=True)
-    strategy3 = serializers.PrimaryKeyRelatedField(read_only=True)
+    custom_fields = ReportItemCustomFieldSerializer(many=True, read_only=True)
 
     # balance
 
-    position_size = serializers.ReadOnlyField(source='position_size_with_sign')
+    position_size = serializers.FloatField(source='pos_size', read_only=True)
 
-    market_value_sys_ccy = serializers.ReadOnlyField()
-    cost_with_sign_sys_ccy = serializers.ReadOnlyField()
-
-    market_value = serializers.ReadOnlyField(source='market_value_res_ccy')
-    cost_with_sign = serializers.ReadOnlyField(source='cost_with_sign_res_ccy')
+    market_value = serializers.FloatField(source='market_value_rep', read_only=True)
+    cost = serializers.FloatField(source='cost_rep', read_only=True)
 
     # P&L
 
-    principal_with_sign_sys_ccy = serializers.ReadOnlyField()
-    carry_with_sign_sys_ccy = serializers.ReadOnlyField()
-    overheads_with_sign_sys_ccy = serializers.ReadOnlyField()
-    total_with_sign_sys_ccy = serializers.ReadOnlyField()
+    total_real = serializers.FloatField(source='total_real_rep', read_only=True)
+    total_unreal = serializers.FloatField(source='total_unreal_rep', read_only=True)
 
-    real_pl_total_with_sign_sys_ccy = serializers.ReadOnlyField()
-    unreal_pl_total_with_sign_sys_ccy = serializers.ReadOnlyField()
+    # full ----------------------------------------------------
+    principal = serializers.FloatField(source='principal_rep', read_only=True)
+    carry = serializers.FloatField(source='carry_rep', read_only=True)
+    overheads = serializers.FloatField(source='overheads_rep', read_only=True)
+    total = serializers.FloatField(source='total_rep', read_only=True)
 
-    principal_with_sign = serializers.ReadOnlyField(source='principal_with_sign_res_ccy')
-    carry_with_sign = serializers.ReadOnlyField(source='carry_with_sign_res_ccy')
-    overheads_with_sign = serializers.ReadOnlyField(source='overheads_with_sign_res_ccy')
-    total_with_sign = serializers.ReadOnlyField(source='total_with_sign_res_ccy')
+    # full / closed ----------------------------------------------------
+    principal_closed = serializers.FloatField(source='principal_closed_rep', read_only=True)
+    carry_closed = serializers.FloatField(source='carry_closed_rep', read_only=True)
+    overheads_closed = serializers.FloatField(source='overheads_closed_rep', read_only=True)
+    total_closed = serializers.FloatField(source='total_closed_rep', read_only=True)
 
-    real_pl_total_with_sign = serializers.ReadOnlyField(source='real_pl_total_with_sign_res_ccy')
-    unreal_pl_total_with_sign = serializers.ReadOnlyField(source='unreal_pl_total_with_sign_res_ccy')
+    # full / opened ----------------------------------------------------
+    principal_opened = serializers.FloatField(source='principal_opened_rep', read_only=True)
+    carry_opened = serializers.FloatField(source='carry_opened_rep', read_only=True)
+    overheads_opened = serializers.FloatField(source='overheads_opened_rep', read_only=True)
+    total_opened = serializers.FloatField(source='total_opened_rep', read_only=True)
 
-    custom_fields = ReportItemCustomFieldSerializer(many=True, read_only=True)
+    # fx ----------------------------------------------------
+    principal_fx = serializers.FloatField(source='principal_fx_rep', read_only=True)
+    carry_fx = serializers.FloatField(source='carry_fx_rep', read_only=True)
+    overheads_fx = serializers.FloatField(source='overheads_fx_rep', read_only=True)
+    total_fx = serializers.FloatField(source='total_fx_rep', read_only=True)
+
+    # fx / closed ----------------------------------------------------
+    principal_fx_closed = serializers.FloatField(source='principal_fx_closed_rep', read_only=True)
+    carry_fx_closed = serializers.FloatField(source='carry_fx_closed_rep', read_only=True)
+    overheads_fx_closed = serializers.FloatField(source='overheads_fx_closed_rep', read_only=True)
+    total_fx_closed = serializers.FloatField(source='total_fx_closed_rep', read_only=True)
+
+    # fx / opened ----------------------------------------------------
+    principal_fx_opened = serializers.FloatField(source='principal_fx_opened_rep', read_only=True)
+    carry_fx_opened = serializers.FloatField(source='carry_fx_opened_rep', read_only=True)
+    overheads_fx_opened = serializers.FloatField(source='overheads_fx_opened_rep', read_only=True)
+    total_fx_opened = serializers.FloatField(source='total_fx_opened_rep', read_only=True)
+
+    # fixed ----------------------------------------------------
+    principal_fixed = serializers.FloatField(source='principal_fixed_rep', read_only=True)
+    carry_fixed = serializers.FloatField(source='carry_fixed_rep', read_only=True)
+    overheads_fixed = serializers.FloatField(source='overheads_fixed_rep', read_only=True)
+    total_fixed = serializers.FloatField(source='total_fixed_rep', read_only=True)
+
+    # fixed / closed ----------------------------------------------------
+    principal_fixed_closed = serializers.FloatField(source='principal_fixed_closed_rep', read_only=True)
+    carry_fixed_closed = serializers.FloatField(source='carry_fixed_closed_rep', read_only=True)
+    overheads_fixed_closed = serializers.FloatField(source='overheads_fixed_closed_rep', read_only=True)
+    total_fixed_closed = serializers.FloatField(source='total_fixed_closed_rep', read_only=True)
+
+    # fixed / opened ----------------------------------------------------
+    principal_fixed_opened = serializers.FloatField(source='principal_fixed_opened_rep', read_only=True)
+    carry_fixed_opened = serializers.FloatField(source='carry_fixed_opened_rep', read_only=True)
+    overheads_fixed_opened = serializers.FloatField(source='overheads_fixed_opened_rep', read_only=True)
+    total_fixed_opened = serializers.FloatField(source='total_fixed_opened_rep', read_only=True)
 
     def __init__(self, *args, **kwargs):
         super(ReportItemSerializer, self).__init__(*args, **kwargs)
 
-        from poms.currencies.serializers import CurrencySerializer
-        from poms.instruments.serializers import InstrumentSerializer
-        from poms.portfolios.serializers import PortfolioViewSerializer
-        from poms.accounts.serializers import AccountViewSerializer
-        from poms.strategies.serializers import Strategy1ViewSerializer, Strategy2ViewSerializer, \
-            Strategy3ViewSerializer
+        # from poms.currencies.serializers import CurrencySerializer
+        # from poms.instruments.serializers import InstrumentSerializer
+        # from poms.portfolios.serializers import PortfolioViewSerializer
+        # from poms.accounts.serializers import AccountViewSerializer
+        # from poms.strategies.serializers import Strategy1ViewSerializer, Strategy2ViewSerializer, \
+        #     Strategy3ViewSerializer
 
-        self.fields['instrument_object'] = InstrumentSerializer(source='instrument', read_only=True)
-        self.fields['currency_object'] = CurrencySerializer(source='currency', read_only=True)
-        self.fields['portfolio_object'] = PortfolioViewSerializer(source='portfolio', read_only=True)
-        self.fields['account_object'] = AccountViewSerializer(source='account', read_only=True)
-        self.fields['strategy1_object'] = Strategy1ViewSerializer(source='strategy1', read_only=True)
-        self.fields['strategy2_object'] = Strategy2ViewSerializer(source='strategy2', read_only=True)
-        self.fields['strategy3_object'] = Strategy3ViewSerializer(source='strategy3', read_only=True)
-
-
-class ReportSummarySerializer(serializers.Serializer):
-    market_value_system_ccy = serializers.FloatField(read_only=True)
-    market_value_report_ccy = serializers.FloatField(read_only=True)
-
-    principal_with_sign_system_ccy = serializers.FloatField(read_only=True)
-    carry_with_sign_system_ccy = serializers.FloatField(read_only=True)
-    overheads_with_sign_system_ccy = serializers.FloatField(read_only=True)
-    total_with_sign_system_ccy = serializers.FloatField(read_only=True)
-
-    principal_with_sign_report_ccy = serializers.FloatField(read_only=True)
-    carry_with_sign_report_ccy = serializers.FloatField(read_only=True)
-    overheads_with_sign_report_ccy = serializers.FloatField(read_only=True)
-    total_with_sign_report_ccy = serializers.FloatField(read_only=True)
-
-    def __init__(self, *args, **kwargs):
-        super(ReportSummarySerializer, self).__init__(*args, **kwargs)
+        self.fields['instrument_object'] = ReportInstrumentSerializer(source='instr', read_only=True)
+        self.fields['currency_object'] = ReportCurrencySerializer(source='ccy', read_only=True)
+        self.fields['portfolio_object'] = ReportPortfolioSerializer(source='prtfl', read_only=True)
+        self.fields['account_object'] = ReportAccountSerializer(source='acc', read_only=True)
+        self.fields['strategy1_object'] = ReportStrategy1Serializer(source='str1', read_only=True)
+        self.fields['strategy2_object'] = ReportStrategy2Serializer(source='str2', read_only=True)
+        self.fields['strategy3_object'] = ReportStrategy3Serializer(source='str3', read_only=True)
 
 
 class ReportSerializer(serializers.Serializer):
@@ -178,12 +276,12 @@ class ReportSerializer(serializers.Serializer):
     date_field = serializers.ChoiceField(required=False, allow_null=True,
                                          initial='transaction_date', default='transaction_date',
                                          choices=(
-                                             ('transaction_date', 'transaction_date'),
-                                             ('accounting_date', 'accounting_date'),
+                                             ('transaction_date', ugettext_lazy('Transaction date')),
+                                             ('accounting_date', ugettext_lazy('Accounting date')),
+                                             ('cash_date', ugettext_lazy('Cash date')),
                                          ))
 
     items = ReportItemSerializer(many=True, read_only=True)
-    summary = ReportSummarySerializer(read_only=True)
 
     # transactions = ReportTransactionSerializer(many=True, read_only=True)
 

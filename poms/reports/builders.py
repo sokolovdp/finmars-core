@@ -4,33 +4,571 @@ from __future__ import unicode_literals, division
 import logging
 from collections import Counter, defaultdict
 from datetime import timedelta
+from functools import partial
+from itertools import groupby
 
-from django.db.models import Q
 from django.utils import timezone
 from django.utils.functional import cached_property
 from django.utils.translation import ugettext
 
 from poms.common import formula
 from poms.common.utils import isclose, date_now
-from poms.currencies.models import CurrencyHistory
-from poms.instruments.models import PriceHistory, CostMethod
+from poms.instruments.models import CostMethod
+from poms.reports.pricing import CurrencyFxRateProvider, InstrumentPricingProvider
 from poms.transactions.models import Transaction, TransactionClass
 
 _l = logging.getLogger('poms.reports')
 
 
 class VirtualTransaction(object):
-    def __init__(self, transaction, pk, overrides):
-        self.transaction = transaction
-        self.pk = pk
-        self.overrides = overrides or {}
+    report = None
+    pricing_provider = None
+    fx_rate_provider = None
+    trn = None
+    pk = None
+    trn_code = None
+    trn_cls = None
+    # case = 0
+    multiplier = 0.0
 
+    # Position related
+    instr = None
+    trn_ccy = None
+    pos_size = None
+
+    # Cash related
+    stl_ccy = None
+    cash = None
+
+    # P&L related
+    principal = None
+    carry = None
+    overheads = None
+
+    ref_fx = None
+
+    # accounting dates
+    trn_date = None
+    acc_date = None
+    cash_date = None
+
+    # portfolio
+    prtfl = None
+
+    # accounts
+    acc_pos = None
+    acc_cash = None
+    acc_interim = None
+
+    # strategies
+    str1_pos = None
+    str1_cash = None
+    str2_pos = None
+    str2_cash = None
+    str3_pos = None
+    str3_cash = None
+
+    # linked instrument
+    linked_instr = None
+
+    # allocations
+    alloc_balance = None
+    alloc_pl = None
+
+    total_real_sys = 0.0
+    total_unreal_sys = 0.0
+
+    def __init__(self, report, pricing_provider, fx_rate_provider, trn, overrides=None):
+        overrides = overrides or {}
+        self.report = report
+        self.pricing_provider = pricing_provider
+        self.fx_rate_provider = fx_rate_provider
+        self.trn = trn
+        self.pk = overrides.get('pk', trn.pk)
+        self.trn_code = overrides.get('transaction_code', trn.transaction_code)
+        self.trn_cls = overrides.get('transaction_class', trn.transaction_class)
+
+        self.instr = overrides.get('instrument', trn.instrument)
+        self.trn_ccy = overrides.get('transaction_currency', trn.transaction_currency)
+        self.pos_size = overrides.get('position_size_with_sign', trn.position_size_with_sign)
+
+        self.stl_ccy = overrides.get('settlement_currency', trn.settlement_currency)
+        self.cash = overrides.get('cash_consideration', trn.cash_consideration)
+
+        self.principal = overrides.get('principal_with_sign', trn.principal_with_sign)
+        self.carry = overrides.get('carry_with_sign', trn.carry_with_sign)
+        self.overheads = overrides.get('overheads_with_sign', trn.overheads_with_sign)
+
+        self.ref_fx = overrides.get('reference_fx_rate', trn.reference_fx_rate)
+
+        self.trn_date = overrides.get('transaction_date', trn.transaction_date)
+        self.acc_date = overrides.get('accounting_date', trn.accounting_date)
+        self.cash_date = overrides.get('cash_date', trn.cash_date)
+
+        self.prtfl = overrides.get('portfolio', trn.portfolio)
+
+        self.acc_pos = overrides.get('account_position', trn.account_position)
+        self.acc_cash = overrides.get('account_cash', trn.account_cash)
+        self.acc_interim = overrides.get('account_interim', trn.account_interim)
+
+        self.str1_pos = overrides.get('strategy1_position', trn.strategy1_position)
+        self.str1_cash = overrides.get('strategy1_cash', trn.strategy1_cash)
+        self.str2_pos = overrides.get('strategy2_position', trn.strategy2_position)
+        self.str2_cash = overrides.get('strategy2_cash', trn.strategy2_cash)
+        self.str3_pos = overrides.get('strategy3_position', trn.strategy3_position)
+        self.str3_cash = overrides.get('strategy3_cash', trn.strategy3_cash)
+
+        self.linked_instr = overrides.get('linked_instrument', trn.linked_instrument)
+
+        self.alloc_balance = overrides.get('allocation_balance', trn.allocation_balance)
+        self.alloc_pl = overrides.get('allocation_pl', trn.allocation_pl)
+
+    @staticmethod
+    def columns():
+        return [
+            'pk',
+            'trn_cls',
+            # 'case',
+            'multiplier',
+            # 'acc_date',
+            # 'cash_date',
+            # 'instr',
+            # 'trn_ccy',
+            'pos_size',
+            'stl_ccy',
+            # 'cash',
+            'principal',
+            'carry',
+            'overheads',
+            'ref_fx',
+            # 'prtfl',
+            # 'acc_pos',
+            # 'acc_cash',
+            # 'acc_interim',
+            # 'str1_pos',
+            # 'str1_cash',
+            # 'str2_pos',
+            # 'str2_cash',
+            # 'str3_pos',
+            # 'str3_cash',
+            # 'total_real_sys',
+            # 'total_unreal_sys',
+            'instr_principal_sys',
+            'instr_accrued_sys',
+
+            # full ----------------------------------------------------
+            'principal_sys',
+            'carry_sys',
+            'overheads_sys',
+            'total_sys',
+
+            # full / closed ----------------------------------------------------
+            'principal_closed_sys',
+            'carry_closed_sys',
+            'overheads_closed_sys',
+            'total_closed_sys',
+
+            # full / opened ----------------------------------------------------
+            'principal_opened_sys',
+            'carry_opened_sys',
+            'overheads_opened_sys',
+            'total_opened_sys',
+
+            # fx ----------------------------------------------------
+
+            'principal_fx_sys',
+            'carry_fx_sys',
+            'overheads_fx_sys',
+            'total_fx_sys',
+
+            # fx / closed ----------------------------------------------------
+            'principal_fx_closed_sys',
+            'carry_fx_closed_sys',
+            'overheads_fx_closed_sys',
+            'total_fx_closed_sys',
+
+            # fx / opened ----------------------------------------------------
+            'principal_fx_opened_sys',
+            'carry_fx_opened_sys',
+            'overheads_fx_opened_sys',
+            'total_fx_opened_sys',
+
+            # fixed ----------------------------------------------------
+            'principal_fixed_sys',
+            'carry_fixed_sys',
+            'overheads_fixed_sys',
+            'total_fixed_sys',
+
+            # fixed / closed ----------------------------------------------------
+            'principal_fixed_closed_sys',
+            'carry_fixed_closed_sys',
+            'overheads_fixed_closed_sys',
+            'total_fixed_closed_sys',
+
+            # fixed / opened ----------------------------------------------------
+            'principal_fixed_opened_sys',
+            'carry_fixed_opened_sys',
+            'overheads_fixed_opened_sys',
+            'total_fixed_opened_sys',
+        ]
+
+    def values(self):
+        row = []
+        for f in VirtualTransaction.columns():
+            row.append(getattr(self, f))
+        return row
+
+    @staticmethod
+    def dumps(items):
+        import pandas
+
+        data = []
+        for item in items:
+            data.append(item.values())
+        print(pandas.DataFrame(data=data, columns=VirtualTransaction.columns()))
+
+    #  report ccy val --------
     def __getattr__(self, item):
-        if item == 'pk' or item == 'id':
-            return self.pk
-        if item in self.overrides:
-            return self.overrides[item]
-        return getattr(self.transaction, item)
+        if item.endswith('_rep'):
+            item_sys = '%s_sys' % item[:-4]
+            if hasattr(self, item_sys):
+                val = getattr(self, item_sys)
+                if self.report_ccy_is_sys:
+                    return val
+                else:
+                    fx = self.report_ccy_rep_fx
+                    if isclose(fx, 0.0):
+                        return 0.0
+                    return val / fx
+        raise AttributeError(item)
+
+    # globals
+
+    @property
+    def case(self):
+        if self.acc_date <= self.report.report_date < self.cash_date:
+            return 1
+        elif self.cash_date <= self.report.report_date < self.acc_date:
+            return 2
+        else:
+            return 0
+
+    def is_show_details(self, acc):
+        if self.case in [1, 2] and self.report.show_transaction_details:
+            return acc and acc.type and acc.type.show_transaction_details
+        return False
+
+    # report ccy
+
+    @property
+    def report_ccy_is_sys(self):
+        return self.report.report_currency.is_system
+
+    @property
+    def report_ccy_rep(self):
+        return self.fx_rate_provider[self.report.report_currency]
+
+    @property
+    def report_ccy_rep_fx(self):
+        return getattr(self.report_ccy_rep, 'fx_rate', float('nan'))
+
+    # instr
+
+    @property
+    def instr_price_rep(self):
+        if self.instr:
+            return self.pricing_provider[self.instr]
+        return None
+
+    @property
+    def instr_pricing_ccy_rep(self):
+        if self.instr:
+            return self.fx_rate_provider[self.instr.pricing_currency]
+        return None
+
+    @property
+    def instr_pricing_ccy_rep_fx(self):
+        return getattr(self.instr_pricing_ccy_rep, 'fx_rate', float('nan'))
+
+    @property
+    def instr_pricing_ccy_hist(self):
+        if self.instr:
+            return self.fx_rate_provider[self.instr.pricing_currency]
+        return None
+
+    @property
+    def instr_pricing_ccy_hist_fx(self):
+        return getattr(self.instr_pricing_ccy_hist, 'fx_rate', float('nan'))
+
+    @property
+    def instr_accrued_ccy_rep(self):
+        if self.instr:
+            return self.fx_rate_provider[self.instr.accrued_currency]
+        return None
+
+    @property
+    def instr_accrued_ccy_rep_fx(self):
+        return getattr(self.instr_accrued_ccy_rep, 'fx_rate', float('nan'))
+
+    @property
+    def instr_accrued_ccy_hist(self):
+        if self.instr:
+            return self.fx_rate_provider[self.instr.accrued_currency]
+        return None
+
+    @property
+    def instr_accrued_ccy_hist_fx(self):
+        return getattr(self.instr_accrued_ccy_hist, 'fx_rate', float('nan'))
+
+    @property
+    def instr_principal(self):
+        if self.instr:
+            price = self.instr_price_rep
+            return self.pos_size * self.instr.price_multiplier * price.principal_price
+        return float('nan')
+
+    @property
+    def instr_principal_sys(self):
+        if self.instr:
+            return self.instr_principal * self.instr_pricing_ccy_rep_fx
+        return float('nan')
+
+    @property
+    def instr_accrued(self):
+        if self.instr:
+            price = self.instr_price_rep
+            return self.pos_size * self.instr.accrued_multiplier * price.accrued_price
+        return float('nan')
+
+    @property
+    def instr_accrued_sys(self):
+        if self.instr:
+            return self.instr_accrued * self.instr_pricing_ccy_rep_fx
+        return float('nan')
+
+    # trn ccy
+
+    @property
+    def trn_ccy_hist(self):
+        if self.trn_ccy:
+            return self.fx_rate_provider[self.trn_ccy, self.acc_date]
+        return None
+
+    @property
+    def trn_ccy_hist_fx(self):
+        return getattr(self.trn_ccy_hist, 'fx_rate', float('nan'))
+
+    @property
+    def trn_ccy_rep(self):
+        if self.trn_ccy:
+            return self.fx_rate_provider[self.trn_ccy]
+        return None
+
+    @property
+    def trn_ccy_rep_fx(self):
+        return getattr(self.trn_ccy_rep, 'fx_rate', float('nan'))
+
+    # @ stl ccy
+
+    @property
+    def stl_ccy_hist(self):
+        if self.stl_ccy:
+            return self.fx_rate_provider[self.stl_ccy, self.cash_date]
+        return None
+
+    @property
+    def stl_ccy_hist_fx(self):
+        return getattr(self.stl_ccy_hist, 'fx_rate', float('nan'))
+
+    @property
+    def stl_ccy_rep(self):
+        if self.stl_ccy:
+            return self.fx_rate_provider[self.stl_ccy]
+        return None
+
+    @property
+    def stl_ccy_rep_fx(self):
+        return getattr(self.stl_ccy_rep, 'fx_rate', float('nan'))
+
+    # props
+
+    @property
+    def pos_size_sys(self):
+        if self.trn_ccy:
+            return self.pos_size * self.trn_ccy_rep_fx
+        return float('nan')
+
+    # Cash related
+
+    @property
+    def cash_sys(self):
+        return self.cash * self.stl_ccy_rep_fx
+
+    # full P&L related ----------------------------------------------------
+
+    @property
+    def principal_sys(self):
+        return self.principal * self.stl_ccy_rep_fx
+
+    @property
+    def carry_sys(self):
+        return self.carry * self.stl_ccy_rep_fx
+
+    @property
+    def overheads_sys(self):
+        return self.overheads * self.stl_ccy_rep_fx
+
+    @property
+    def total(self):
+        return self.principal + self.carry + self.overheads
+
+    @property
+    def total_sys(self):
+        return self.total * self.stl_ccy_rep_fx
+
+    # full / closed ----------------------------------------------------
+
+    @property
+    def principal_closed_sys(self):
+        return self.principal_sys * self.multiplier
+
+    @property
+    def carry_closed_sys(self):
+        return self.carry_sys * self.multiplier
+
+    @property
+    def overheads_closed_sys(self):
+        return self.overheads_sys * self.multiplier
+
+    @property
+    def total_closed_sys(self):
+        return self.total_sys * self.multiplier
+
+    # full / opened ----------------------------------------------------
+
+    @property
+    def principal_opened_sys(self):
+        return self.principal_sys * (1.0 - self.multiplier)
+
+    @property
+    def carry_opened_sys(self):
+        return self.carry_sys * (1.0 - self.multiplier)
+
+    @property
+    def overheads_opened_sys(self):
+        return self.overheads_sys * (1.0 - self.multiplier)
+
+    @property
+    def total_opened_sys(self):
+        return self.total_sys * (1.0 - self.multiplier)
+
+    # fx ----------------------------------------------------
+
+    @property
+    def principal_fx_sys(self):
+        return self.principal * (self.stl_ccy_rep_fx - self.ref_fx * self.stl_ccy_hist_fx)
+
+    @property
+    def carry_fx_sys(self):
+        return self.carry * (self.stl_ccy_rep_fx - self.ref_fx * self.stl_ccy_hist_fx)
+
+    @property
+    def overheads_fx_sys(self):
+        return self.overheads * (self.stl_ccy_rep_fx - self.ref_fx * self.stl_ccy_hist_fx)
+
+    @property
+    def total_fx_sys(self):
+        return self.total * (self.stl_ccy_rep_fx - self.ref_fx * self.stl_ccy_hist_fx)
+
+    # fx / closed ----------------------------------------------------
+
+    @property
+    def principal_fx_closed_sys(self):
+        return self.principal_fx_sys * self.multiplier
+
+    @property
+    def carry_fx_closed_sys(self):
+        return self.carry_fx_sys * self.multiplier
+
+    @property
+    def overheads_fx_closed_sys(self):
+        return self.overheads_fx_sys * self.multiplier
+
+    @property
+    def total_fx_closed_sys(self):
+        return self.total_fx_sys * self.multiplier
+
+    # fx / opened ----------------------------------------------------
+
+    @property
+    def principal_fx_opened_sys(self):
+        return self.principal_fx_sys * (1.0 - self.multiplier)
+
+    @property
+    def carry_fx_opened_sys(self):
+        return self.carry_fx_sys * (1.0 - self.multiplier)
+
+    @property
+    def overheads_fx_opened_sys(self):
+        return self.overheads_fx_sys * (1.0 - self.multiplier)
+
+    @property
+    def total_fx_opened_sys(self):
+        return self.total_fx_sys * (1.0 - self.multiplier)
+
+    # fixed ----------------------------------------------------
+
+    @property
+    def principal_fixed_sys(self):
+        return self.principal * self.ref_fx * self.stl_ccy_hist_fx
+
+    @property
+    def carry_fixed_sys(self):
+        return self.carry * self.ref_fx * self.stl_ccy_hist_fx
+
+    @property
+    def overheads_fixed_sys(self):
+        return self.overheads * self.ref_fx * self.stl_ccy_hist_fx
+
+    @property
+    def total_fixed_sys(self):
+        return self.total * self.ref_fx * self.stl_ccy_hist_fx
+
+    # fixed / closed ----------------------------------------------------
+
+    @property
+    def principal_fixed_closed_sys(self):
+        return self.principal_fixed_sys * self.multiplier
+
+    @property
+    def carry_fixed_closed_sys(self):
+        return self.carry_fixed_sys * self.multiplier
+
+    @property
+    def overheads_fixed_closed_sys(self):
+        return self.overheads_fixed_sys * self.multiplier
+
+    @property
+    def total_fixed_closed_sys(self):
+        return self.total_fixed_sys * self.multiplier
+
+    # fixed / opened ----------------------------------------------------
+
+    @property
+    def principal_fixed_opened_sys(self):
+        return self.principal_fixed_sys * (1.0 - self.multiplier)
+
+    @property
+    def carry_fixed_opened_sys(self):
+        return self.carry_fixed_sys * (1.0 - self.multiplier)
+
+    @property
+    def overheads_fixed_opened_sys(self):
+        return self.overheads_fixed_sys * (1.0 - self.multiplier)
+
+    @property
+    def total_fixed_opened_sys(self):
+        return self.total_fixed_sys * (1.0 - self.multiplier)
 
 
 class ReportItem(object):
@@ -39,135 +577,353 @@ class ReportItem(object):
     TYPE_CURRENCY = 2
     TYPE_TRANSACTION_PL = 3
     TYPE_FX_TRADE = 4
+    TYPE_SUMMARY = 100
     TYPE_CHOICES = (
         (TYPE_UNKNOWN, 'Unknown'),
         (TYPE_INSTRUMENT, 'Instrument'),
         (TYPE_CURRENCY, 'Currency'),
         (TYPE_TRANSACTION_PL, 'Transaction PL'),
         (TYPE_FX_TRADE, 'FX-Trade'),
+        (TYPE_SUMMARY, 'Summary'),
     )
 
-    # balance
+    report = None
+    pricing_provider = None
+    fx_rate_provider = None
+    type = None
+    trn = None
 
-    position_size = 0.0
+    instr = None
+    ccy = None
+    prtfl = None
+    acc = None
+    str1 = None
+    str2 = None
+    str3 = None
+    # detail_trn = None
+    # custom_fields = []
+
+    # balance
+    pos_size = 0.0
 
     market_value_sys = 0.0
-    market_value = 0.0
 
     cost_sys = 0.0
-    cost = 0.0
 
     # P&L
 
-    instr_principal_sys = 0.0
-    instr_accrued_sys = 0.0
+    total_real_sys = 0.0
+    total_unreal_sys = 0.0
+
+    # full ----------------------------------------------------
     principal_sys = 0.0
     carry_sys = 0.0
     overheads_sys = 0.0
-    total_sys = 0.0
+    # total_sys = 0.0
 
-    instr_principal = 0.0
-    instr_accrued = 0.0
-    principal = 0.0
-    carry = 0.0
-    overheads = 0.0
-    total = 0.0
+    # full / closed ----------------------------------------------------
+    principal_closed_sys = 0.0
+    carry_closed_sys = 0.0
+    overheads_closed_sys = 0.0
+    # total_closed_sys = 0.0
 
-    # principal_real_sys = 0.0
-    # carry_real_sys = 0.0
-    # overheads_real_sys = 0.0
-    total_real_sys = 0.0
+    # full / opened ----------------------------------------------------
+    principal_opened_sys = 0.0
+    carry_opened_sys = 0.0
+    overheads_opened_sys = 0.0
+    # total_opened_sys = 0.0
 
-    # principal_real = 0.0
-    # carry_real = 0.0
-    # overheads_real = 0.0
-    total_real = 0.0
+    # fx ----------------------------------------------------
+    principal_fx_sys = 0.0
+    carry_fx_sys = 0.0
+    overheads_fx_sys = 0.0
+    # total_fx_sys = 0.0
 
-    # principal_unreal_sys = 0.0
-    # carry_unreal_sys = 0.0
-    # overheads_unreal_sys = 0.0
-    total_unreal_sys = 0.0
+    # fx / closed ----------------------------------------------------
+    principal_fx_closed_sys = 0.0
+    carry_fx_closed_sys = 0.0
+    overheads_fx_closed_sys = 0.0
+    # total_fx_closed_sys = 0.0
 
-    # principal_unreal = 0.0
-    # carry_unreal = 0.0
-    # overheads_unreal = 0.0
-    total_unreal = 0.0
+    # fx / opened ----------------------------------------------------
+    principal_fx_opened_sys = 0.0
+    carry_fx_opened_sys = 0.0
+    overheads_fx_opened_sys = 0.0
+    # total_fx_opened_sys = 0.0
 
+    # fixed ----------------------------------------------------
+    principal_fixed_sys = 0.0
+    carry_fixed_sys = 0.0
+    overheads_fixed_sys = 0.0
+    # total_fixed_sys = 0.0
 
-    def __init__(self, pk=None, instrument=None, currency=None,
-                 portfolio=None, account=None, strategy1=None, strategy2=None, strategy3=None,
-                 detail_transaction=None, transaction_class=None, custom_fields=None):
-        self.pk = pk
+    # fixed / closed ----------------------------------------------------
+    principal_fixed_closed_sys = 0.0
+    carry_fixed_closed_sys = 0.0
+    overheads_fixed_closed_sys = 0.0
+    # total_fixed_closed_sys = 0.0
 
-        self.type = ReportItem.TYPE_UNKNOWN
-        if instrument:
-            self.type = ReportItem.TYPE_INSTRUMENT
-        elif currency:
-            self.type = ReportItem.TYPE_CURRENCY
-        elif transaction_class:
-            if transaction_class.id == TransactionClass.TRANSACTION_PL:
-                self.type = ReportItem.TYPE_TRANSACTION_PL
-            elif transaction_class.id == TransactionClass.FX_TRADE:
-                self.type = ReportItem.TYPE_FX_TRADE
+    # fixed / opened ----------------------------------------------------
+    principal_fixed_opened_sys = 0.0
+    carry_fixed_opened_sys = 0.0
+    overheads_fixed_opened_sys = 0.0
 
-        self.instrument = instrument  # -> Instrument
-        self.currency = currency  # -> Currency
-        self.transaction_class = transaction_class  # -> TransactionClass for TRANSACTION_PL and FX_TRADE
+    # total_fixed_opened_sys = 0.0
 
-        self.portfolio = portfolio  # -> Portfolio if use_portfolio
-        self.account = account  # -> Account if use_account
-        self.strategy1 = strategy1  # -> Strategy1 if use_strategy1
-        self.strategy2 = strategy2  # -> Strategy2 if use_strategy2
-        self.strategy3 = strategy3  # -> Strategy3 if use_strategy3
+    # def __init__(self, report, pricing_provider, fx_rate_provider, type, trn, instr=None, ccy=None,
+    #              prtfl=None, acc=None, str1=None, str2=None, str3=None,
+    #              trn_cls=None):
+    #     self.report = report
+    #     self.pricing_provider = pricing_provider
+    #     self.fx_rate_provider = fx_rate_provider
+    #     self.type = type
+    #     self.trn = trn
+    #
+    #     self.instr = instr  # -> Instrument
+    #     self.ccy = ccy  # -> Currency
+    #     self.prtfl = prtfl  # -> Portfolio if use_portfolio
+    #     if self.type == ReportItem.TYPE_INSTRUMENT:
+    #         self.instr = instr or trn.instr
+    #         self.acc = acc or trn.acc_pos  # -> Account if use_account
+    #         self.str1 = str1 or trn.str1_pos  # -> Strategy1 if use_strategy1
+    #         self.str2 = str2 or trn.str1_pos  # -> Strategy2 if use_strategy2
+    #         self.str3 = str3 or trn.str1_pos  # -> Strategy3 if use_strategy3
+    #     elif self.type == ReportItem.TYPE_CURRENCY:
+    #         self.ccy = instr or trn.trn_ccy
+    #         self.acc = acc or trn.acc_cash  # -> Account if use_account
+    #         self.str1 = str1 or trn.str1_cash  # -> Strategy1 if use_strategy1
+    #         self.str2 = str2 or trn.str1_cash  # -> Strategy2 if use_strategy2
+    #         self.str3 = str3 or trn.str1_cash  # -> Strategy3 if use_strategy3
+    #
+    #     self.trn_cls = trn_cls  # -> TransactionClass for TRANSACTION_PL and FX_TRADE
+    #     if trn.is_show_details(acc):
+    #         self.detail_trn = trn  # -> Transaction if show_transaction_details
 
-        self.detail_transaction = detail_transaction  # -> Transaction if show_transaction_details
+    def __init__(self, report, pricing_provider, fx_rate_provider, type):
+        self.report = report
+        self.pricing_provider = pricing_provider
+        self.fx_rate_provider = fx_rate_provider
+        self.type = type
 
-        self.custom_fields = custom_fields or []
+    @classmethod
+    def from_trn(cls, report, pricing_provider, fx_rate_provider, type, trn, instr=None, ccy=None,
+                 prtfl=None, acc=None, str1=None, str2=None, str3=None, val=None):
+        item = cls(report, pricing_provider, fx_rate_provider, type)
+        item.trn = trn
 
-        # # balance
-        #
-        # self.position_size = 0.0
-        #
-        # self.market_value_sys = 0.0
-        # self.market_value = 0.0
-        #
-        # self.cost_sys = 0.0
-        # self.cost = 0.0
-        #
-        # # P&L
-        #
-        # self.principal_with_sign_sys_ccy = 0.0
-        # self.carry_with_sign_sys_ccy = 0.0
-        # self.overheads_with_sign_sys_ccy = 0.0
-        # self.total_with_sign_sys_ccy = 0.0
-        #
-        # self.real_pl_principal_with_sign_sys_ccy = 0.0
-        # self.real_pl_carry_with_sign_sys_ccy = 0.0
-        # self.real_pl_overheads_with_sign_sys_ccy = 0.0
-        # self.real_pl_total_with_sign_sys_ccy = 0.0
-        #
-        # self.unreal_pl_principal_with_sign_sys_ccy = 0.0
-        # self.unreal_pl_carry_with_sign_sys_ccy = 0.0
-        # self.unreal_pl_overheads_with_sign_sys_ccy = 0.0
-        # self.unreal_pl_total_with_sign_sys_ccy = 0.0
-        #
-        # self.principal_with_sign_res_ccy = 0.0
-        # self.carry_with_sign_res_ccy = 0.0
-        # self.overheads_with_sign_res_ccy = 0.0
-        # self.total_with_sign_res_ccy = 0.0
-        #
-        # self.real_pl_principal_with_sign_res_ccy = 0.0
-        # self.real_pl_carry_with_sign_res_ccy = 0.0
-        # self.real_pl_overheads_with_sign_res_ccy = 0.0
-        # self.real_pl_total_with_sign_res_ccy = 0.0
-        #
-        # self.unreal_pl_principal_with_sign_res_ccy = 0.0
-        # self.unreal_pl_carry_with_sign_res_ccy = 0.0
-        # self.unreal_pl_overheads_with_sign_res_ccy = 0.0
-        # self.unreal_pl_total_with_sign_res_ccy = 0.0
+        # item.instr = instr  # -> Instrument
+        # item.ccy = ccy  # -> Currency
+        item.prtfl = prtfl or trn.prtfl  # -> Portfolio
+
+        if item.type == ReportItem.TYPE_INSTRUMENT:
+            item.acc = acc or trn.acc_pos
+            item.str1 = str1 or trn.str1_pos
+            item.str2 = str2 or trn.str1_pos
+            item.str3 = str3 or trn.str1_pos
+            item.instr = instr or trn.instr
+
+            item.pos_size = trn.pos_size * (1.0 - trn.multiplier)
+            item.cost_sys = trn.principal_sys * (1.0 - trn.multiplier)
+
+            item.total_real_sys = trn.total_real_sys
+
+            # full ----------------------------------------------------
+            item.principal_sys = trn.principal_sys
+            item.carry_sys = trn.carry_sys
+            item.overheads_sys = trn.overheads_sys
+
+            # full / closed ----------------------------------------------------
+            item.principal_closed_sys = trn.principal_closed_sys
+            item.carry_closed_sys = trn.carry_closed_sys
+            item.overheads_closed_sys = trn.overheads_closed_sys
+
+            # full / opened ----------------------------------------------------
+            item.principal_opened_sys = trn.principal_opened_sys
+            item.carry_opened_sys = trn.carry_opened_sys
+            item.overheads_opened_sys = trn.overheads_opened_sys
+
+            # fx ----------------------------------------------------
+            item.principal_fx_sys = trn.principal_fx_sys
+            item.carry_fx_sys = trn.carry_fx_sys
+            item.overheads_fx_sys = trn.overheads_fx_sys
+
+            # fx / closed ----------------------------------------------------
+            item.principal_fx_closed_sys = trn.principal_fx_closed_sys
+            item.carry_fx_closed_sys = trn.carry_fx_closed_sys
+            item.overheads_fx_closed_sys = trn.overheads_fx_closed_sys
+
+            # fx / opened ----------------------------------------------------
+            item.principal_fx_opened_sys = trn.principal_fx_opened_sys
+            item.carry_fx_opened_sys = trn.carry_fx_opened_sys
+            item.overheads_fx_opened_sys = trn.overheads_fx_opened_sys
+
+            # fixed ----------------------------------------------------
+            item.principal_fixed_sys = trn.principal_fixed_sys
+            item.carry_fixed_sys = trn.carry_fixed_sys
+            item.overheads_fixed_sys = trn.overheads_fixed_sys
+
+            # fixed / closed ----------------------------------------------------
+            item.principal_fixed_closed_sys = trn.principal_fixed_closed_sys
+            item.carry_fixed_closed_sys = trn.carry_fixed_closed_sys
+            item.overheads_fixed_closed_sys = trn.overheads_fixed_closed_sys
+
+            # fixed / opened ----------------------------------------------------
+            item.principal_fixed_opened_sys = trn.principal_fixed_opened_sys
+            item.carry_fixed_opened_sys = trn.carry_fixed_opened_sys
+            item.overheads_fixed_opened_sys = trn.overheads_fixed_opened_sys
+
+        elif item.type == ReportItem.TYPE_CURRENCY:
+            item.acc = acc or trn.acc_cash
+            item.str1 = str1 or trn.str1_cash
+            item.str2 = str2 or trn.str1_cash
+            item.str3 = str3 or trn.str1_cash
+            item.ccy = ccy or trn.trn_ccy
+
+            item.pos_size = val
+
+        elif item.type == ReportItem.TYPE_FX_TRADE:
+            # item.principal_sys = trn.pos_size_sys + trn.principal_sys
+            item.carry_sys = trn.carry_sys
+            item.overheads_sys = trn.overheads_sys
+
+        elif item.type == ReportItem.TYPE_TRANSACTION_PL:
+            item.principal_sys = trn.principal_sys
+            item.carry_sys = trn.carry_sys
+            item.overheads_sys = trn.overheads_sys
+
+        # if trn.is_show_details(acc):
+        #     item.detail_trn = trn
+
+        return item
+
+    @classmethod
+    def from_item(cls, src):
+        item = cls(src.report, src.pricing_provider, src.fx_rate_provider, src.type)
+        if item.type in [ReportItem.TYPE_TRANSACTION_PL, ReportItem.TYPE_FX_TRADE]:
+            item.trn = src.trn
+
+        item.instr = src.instr  # -> Instrument
+        item.ccy = src.ccy  # -> Currency
+        item.prtfl = src.prtfl  # -> Portfolio if use_portfolio
+        item.instr = src.instr
+        item.acc = src.acc  # -> Account if use_account
+        item.str1 = src.str1  # -> Strategy1 if use_strategy1
+        item.str2 = src.str2  # -> Strategy2 if use_strategy2
+        item.str3 = src.str3  # -> Strategy3 if use_strategy3
+        # item.trn_cls = src.trn_cls  # -> TransactionClass for TRANSACTION_PL and FX_TRADE
+        # item.detail_trn = src.detail_trn  # -> Transaction if show_transaction_details
+        return item
+
+    @staticmethod
+    def columns():
+        return [
+            'type_code',
+            'user_code',
+            # 'prtfl',
+            # 'acc',
+            # 'str1',
+            # 'str2',
+            # 'str3',
+            # 'detail_trn',
+            # 'instr',
+            # 'ccy',
+            'pos_size',
+            'market_value_sys',
+            # 'cost_sys',
+            # 'total_real_sys',
+            # 'total_unreal_sys',
+            'instr_principal_sys',
+            'instr_accrued_sys',
+
+            # full ----------------------------------------------------
+            'principal_sys',
+            'carry_sys',
+            'overheads_sys',
+            'total_sys',
+
+            # full / closed ----------------------------------------------------
+            'principal_closed_sys',
+            'carry_closed_sys',
+            'overheads_closed_sys',
+            'total_closed_sys',
+
+            # full / opened ----------------------------------------------------
+            'principal_opened_sys',
+            'carry_opened_sys',
+            'overheads_opened_sys',
+            'total_opened_sys',
+
+            # fx ----------------------------------------------------
+
+            'principal_fx_sys',
+            'carry_fx_sys',
+            'overheads_fx_sys',
+            'total_fx_sys',
+
+            # fx / closed ----------------------------------------------------
+            'principal_fx_closed_sys',
+            'carry_fx_closed_sys',
+            'overheads_fx_closed_sys',
+            'total_fx_closed_sys',
+
+            # fx / opened ----------------------------------------------------
+            'principal_fx_opened_sys',
+            'carry_fx_opened_sys',
+            'overheads_fx_opened_sys',
+            'total_fx_opened_sys',
+
+            # fixed ----------------------------------------------------
+            'principal_fixed_sys',
+            'carry_fixed_sys',
+            'overheads_fixed_sys',
+            'total_fixed_sys',
+
+            # fixed / closed ----------------------------------------------------
+            'principal_fixed_closed_sys',
+            'carry_fixed_closed_sys',
+            'overheads_fixed_closed_sys',
+            'total_fixed_closed_sys',
+
+            # fixed / opened ----------------------------------------------------
+            'principal_fixed_opened_sys',
+            'carry_fixed_opened_sys',
+            'overheads_fixed_opened_sys',
+            'total_fixed_opened_sys', ]
+
+    def values(self):
+        row = []
+        for f in ReportItem.columns():
+            row.append(getattr(self, f))
+        return row
+
+    @staticmethod
+    def dumps(items):
+        import pandas
+
+        data = []
+        for item in items:
+            data.append(item.values())
+        print(pandas.DataFrame(data=data, columns=ReportItem.columns()))
 
     def __str__(self):
-        return "%s #%s" % (self.__class__.__name__, self.pk,)
+        return "%s:%s:%s" % (self.type_code, self.user_code, self.pos_size)
+
+    #  report ccy val --------
+    def __getattr__(self, item):
+        if item.endswith('_rep'):
+            item_sys = '%s_sys' % item[:-4]
+            if hasattr(self, item_sys):
+                val = getattr(self, item_sys)
+                if self.report_ccy_is_sys:
+                    return val
+                else:
+                    fx = self.report_ccy_rep_fx
+                    if isclose(fx, 0.0):
+                        return 0.0
+                    return val / fx
+        raise AttributeError(item)
+
+    # "static" fields
 
     @property
     def type_name(self):
@@ -188,6 +944,8 @@ class ReportItem(object):
             return 'TRN_PL'
         elif self.type == ReportItem.TYPE_FX_TRADE:
             return 'FX_TRADE'
+        elif self.type == ReportItem.TYPE_SUMMARY:
+            return 'SUMMARY'
         return 'ERR'
 
     @property
@@ -195,11 +953,15 @@ class ReportItem(object):
         if self.type == ReportItem.TYPE_UNKNOWN:
             return '<UNKNOWN>'
         elif self.type == ReportItem.TYPE_INSTRUMENT:
-            return self.instrument.user_code
+            return self.instr.user_code
         elif self.type == ReportItem.TYPE_CURRENCY:
-            return self.currency.user_code
-        elif self.type in [ReportItem.TYPE_TRANSACTION_PL, ReportItem.TYPE_FX_TRADE]:
-            return self.transaction_class.system_code
+            return self.ccy.user_code
+        elif self.type == ReportItem.TYPE_TRANSACTION_PL:
+            return 'TRANSACTION_PL'
+        elif self.type == ReportItem.TYPE_FX_TRADE:
+            return 'FX_TRADE'
+        elif self.type == ReportItem.TYPE_SUMMARY:
+            return 'SUMMARY'
         return '<ERROR>'
 
     @property
@@ -207,77 +969,310 @@ class ReportItem(object):
         if self.type == ReportItem.TYPE_UNKNOWN:
             return '<UNKNOWN>'
         elif self.type == ReportItem.TYPE_INSTRUMENT:
-            return self.instrument.name
+            return self.instr.name
         elif self.type == ReportItem.TYPE_CURRENCY:
-            return self.currency.name
-        elif self.type in [ReportItem.TYPE_TRANSACTION_PL, ReportItem.TYPE_FX_TRADE]:
-            return self.transaction_class.name
+            return self.ccy.name
+        elif self.type == ReportItem.TYPE_TRANSACTION_PL:
+            return ugettext('Transaction PL')
+        elif self.type == ReportItem.TYPE_FX_TRADE:
+            return ugettext('FX-Trade')
+        elif self.type == ReportItem.TYPE_SUMMARY:
+            return ugettext('Summary')
         return '<ERROR>'
 
+    @property
+    def detail(self):
+        if self.report.show_transaction_details and self.acc and self.acc.type.show_transaction_details and self.detail_trn:
+            expr = self.acc.type.transaction_details_expr
+            if expr:
+                try:
+                    value = formula.safe_eval(expr, names={'item': self})
+                except formula.InvalidExpression:
+                    value = ugettext('Invalid expression')
+                return value
+        return None
 
-class ReportSummary(object):
+    @staticmethod
+    def sort_key(report, item):
+        return (
+            item.type,
+            getattr(item.prtfl, 'id', None),
+            getattr(item.acc, 'id', None),
+            getattr(item.str1, 'id', None),
+            getattr(item.str2, 'id', None),
+            getattr(item.str3, 'id', None),
+            getattr(item.detail_trn, 'id', None),
+            getattr(item.instr, 'id', None),
+            getattr(item.ccy, 'id', None),
+        )
 
-    # balance
-    market_value_sys = 0.0
-    market_value = 0.0
+    @staticmethod
+    def group_key(report, item):
+        return (
+            item.type,
+            getattr(item.prtfl, 'id', None) if report.detail_by_portfolio else None,
+            getattr(item.acc, 'id', None) if report.detail_by_account else None,
+            getattr(item.str1, 'id', None) if report.detail_by_strategy1 else None,
+            getattr(item.str2, 'id', None) if report.detail_by_strategy2 else None,
+            getattr(item.str3, 'id', None) if report.detail_by_strategy3 else None,
+            getattr(item.detail_trn, 'id', None) if report.show_transaction_details else None,
+            getattr(item.instr, 'id', None),
+            getattr(item.ccy, 'id', None),
+        )
 
-    cost_sys = 0.0
-    cost = 0.0
+    @property
+    def trn_cls(self):
+        return getattr(self.trn, 'trn_cls', None)
 
-    # P&L
+    @property
+    def detail_trn(self):
+        if self.trn and self.acc and self.trn.is_show_details(self.acc):
+            return self.trn
+        return None
 
-    principal_sys = 0.0
-    carry_sys = 0.0
-    overheads_sys = 0.0
-    total_sys = 0.0
+    @property
+    def custom_fields(self):
+        res = []
+        for cf in self.report.custom_fields:
+            if cf.expr:
+                try:
+                    value = formula.safe_eval(cf.expr, names={'item': self})
+                except formula.InvalidExpression:
+                    value = ugettext('Invalid expression')
+            else:
+                value = None
+            res.append({
+                'custom_field': cf,
+                'value': value
+            })
+        return res
 
-    principal = 0.0
-    carry = 0.0
-    overheads = 0.0
-    total = 0.0
+    # instr
 
-    def __init__(self):
-        # balance
-        # self.market_value_sys_ccy = 0.0
-        # self.market_value_res_ccy = 0.0
+    @property
+    def instr_price_rep(self):
+        if self.instr:
+            return self.pricing_provider[self.instr]
+        return None
 
-        # self.cost_with_sign_sys_ccy = 0.0
-        # self.cost_with_sign_res_ccy = 0.0
+    @property
+    def instr_pricing_ccy_rep(self):
+        if self.instr:
+            return self.fx_rate_provider[self.instr.pricing_currency]
+        return None
 
-        # P&L
-        # self.principal_with_sign_sys_ccy = 0.0
-        # self.carry_with_sign_sys_ccy = 0.0
-        # self.overheads_with_sign_sys_ccy = 0.0
-        # self.total_with_sign_sys_ccy = 0.0
-        #
-        # self.real_pl_principal_with_sign_sys_ccy = 0.0
-        # self.real_pl_carry_with_sign_sys_ccy = 0.0
-        # self.real_pl_overheads_with_sign_sys_ccy = 0.0
-        # self.real_pl_total_with_sign_sys_ccy = 0.0
-        #
-        # # self.unreal_pl_principal_with_sign_sys_ccy = 0.0
-        # # self.unreal_pl_carry_with_sign_sys_ccy = 0.0
-        # # self.unreal_pl_overheads_with_sign_sys_ccy = 0.0
-        # self.unreal_pl_total_with_sign_sys_ccy = 0.0
-        #
-        # self.principal_with_sign_res_ccy = 0.0
-        # self.carry_with_sign_res_ccy = 0.0
-        # self.overheads_with_sign_res_ccy = 0.0
-        # self.total_with_sign_res_ccy = 0.0
-        #
-        # self.real_pl_principal_with_sign_res_ccy = 0.0
-        # self.real_pl_carry_with_sign_res_ccy = 0.0
-        # self.real_pl_overheads_with_sign_res_ccy = 0.0
-        # self.real_pl_total_with_sign_res_ccy = 0.0
-        #
-        # # self.unreal_pl_principal_with_sign_res_ccy = 0.0
-        # # self.unreal_pl_carry_with_sign_res_ccy = 0.0
-        # # self.unreal_pl_overheads_with_sign_res_ccy = 0.0
-        # self.unreal_pl_total_with_sign_res_ccy = 0.0
-        pass
+    @property
+    def instr_pricing_ccy_rep_fx(self):
+        return getattr(self.instr_pricing_ccy_rep, 'fx_rate', float('nan'))
 
-    def __str__(self):
-        return "summary"
+    @property
+    def instr_accrued_ccy_rep(self):
+        if self.instr:
+            return self.fx_rate_provider[self.instr.accrued_currency]
+        return None
+
+    @property
+    def instr_accrued_ccy_rep_fx(self):
+        return getattr(self.instr_accrued_ccy_rep, 'fx_rate', float('nan'))
+
+    @property
+    def instr_principal_sys(self):
+        if self.instr:
+            price = self.instr_price_rep
+            return (self.pos_size * self.instr.price_multiplier * price.principal_price) * self.instr_pricing_ccy_rep_fx
+        return 0.0
+
+    @property
+    def instr_accrued_sys(self):
+        if self.instr:
+            price = self.instr_price_rep
+            return (self.pos_size * self.instr.accrued_multiplier * price.accrued_price) * self.instr_pricing_ccy_rep_fx
+        return 0.0
+
+    # report ccy
+
+    @property
+    def report_ccy_is_sys(self):
+        return self.report.report_currency.is_system
+
+    @property
+    def report_ccy_rep(self):
+        return self.fx_rate_provider[self.report.report_currency]
+
+    @property
+    def report_ccy_rep_fx(self):
+        return getattr(self.report_ccy_rep, 'fx_rate', float('nan'))
+
+    # ccy
+
+    @property
+    def ccy_rep(self):
+        if self.ccy:
+            return self.fx_rate_provider[self.ccy]
+        return None
+
+    @property
+    def ccy_rep_fx(self):
+        return getattr(self.ccy_rep, 'fx_rate', float('nan'))
+
+    # full ----------------------------------------------------
+
+    @property
+    def total_sys(self):
+        return self.principal_sys + self.carry_sys + self.overheads_sys
+
+    # full / closed ----------------------------------------------------
+    @property
+    def total_closed_sys(self):
+        return self.principal_closed_sys + self.carry_closed_sys + self.overheads_closed_sys
+
+    # full / opened ----------------------------------------------------
+    @property
+    def total_opened_sys(self):
+        return self.principal_opened_sys + self.carry_opened_sys + self.overheads_opened_sys
+
+    # fx ----------------------------------------------------
+    @property
+    def total_fx_sys(self):
+        return self.principal_fx_sys + self.carry_fx_sys + self.overheads_fx_sys
+
+    # fx / closed ----------------------------------------------------
+    @property
+    def total_fx_closed_sys(self):
+        return self.principal_fx_closed_sys + self.carry_fx_closed_sys + self.overheads_fx_closed_sys
+
+    # fx / opened ----------------------------------------------------
+    @property
+    def total_fx_opened_sys(self):
+        return self.principal_fx_opened_sys + self.carry_fx_opened_sys + self.overheads_fx_opened_sys
+
+    # fixed ----------------------------------------------------
+    @property
+    def total_fixed_sys(self):
+        return self.principal_fixed_sys + self.carry_fixed_sys + self.overheads_fixed_sys
+
+    # fixed / closed ----------------------------------------------------
+    @property
+    def total_fixed_closed_sys(self):
+        return self.principal_fixed_closed_sys + self.carry_fixed_closed_sys + self.overheads_fixed_closed_sys
+
+    # fixed / opened ----------------------------------------------------
+    @property
+    def total_fixed_opened_sys(self):
+        return self.principal_fixed_opened_sys + self.carry_fixed_opened_sys + self.overheads_fixed_opened_sys
+
+    # functions
+
+    def add(self, o):
+        # TODO: in TYPE_INSTRUMENT or global
+        # full ----------------------------------------------------
+        self.principal_sys += o.principal_sys
+        self.carry_sys += o.carry_sys
+        self.overheads_sys += o.overheads_sys
+
+        # full / closed ----------------------------------------------------
+        self.principal_closed_sys += o.principal_closed_sys
+        self.carry_closed_sys += o.carry_closed_sys
+        self.overheads_closed_sys += o.overheads_closed_sys
+
+        # full / opened ----------------------------------------------------
+        self.principal_opened_sys += o.principal_opened_sys
+        self.carry_opened_sys += o.carry_opened_sys
+        self.overheads_opened_sys += o.overheads_opened_sys
+
+        # fx ----------------------------------------------------
+        self.principal_fx_sys += o.principal_fx_sys
+        self.carry_fx_sys += o.carry_fx_sys
+        self.overheads_fx_sys += o.overheads_fx_sys
+
+        # fx / closed ----------------------------------------------------
+        self.principal_fx_closed_sys += o.principal_fx_closed_sys
+        self.carry_fx_closed_sys += o.carry_fx_closed_sys
+        self.overheads_fx_closed_sys += o.overheads_fx_closed_sys
+
+        # fx / opened ----------------------------------------------------
+        self.principal_fx_opened_sys += o.principal_fx_opened_sys
+        self.carry_fx_opened_sys += o.carry_fx_opened_sys
+        self.overheads_fx_opened_sys += o.overheads_fx_opened_sys
+
+        # fixed ----------------------------------------------------
+        self.principal_fixed_sys += o.principal_fixed_sys
+        self.carry_fixed_sys += o.carry_fixed_sys
+        self.overheads_fixed_sys += o.overheads_fixed_sys
+
+        # fixed / closed ----------------------------------------------------
+        self.principal_fixed_closed_sys += o.principal_fixed_closed_sys
+        self.carry_fixed_closed_sys += o.carry_fixed_closed_sys
+        self.overheads_fixed_closed_sys += o.overheads_fixed_closed_sys
+
+        # fixed / opened ----------------------------------------------------
+        self.principal_fixed_opened_sys += o.principal_fixed_opened_sys
+        self.carry_fixed_opened_sys += o.carry_fixed_opened_sys
+        self.overheads_fixed_opened_sys += o.overheads_fixed_opened_sys
+
+        if self.type == ReportItem.TYPE_CURRENCY:
+            self.pos_size += o.pos_size
+
+            # self.market_value_sys += o.pos_size * o.ccy_rep_fx
+
+        elif self.type == ReportItem.TYPE_INSTRUMENT:
+            self.pos_size += o.pos_size
+
+            # self.principal_sys += o.instr_principal_sys
+            # self.carry_sys += o.instr_accrued_sys
+
+            # self.market_value_sys += o.instr_principal_sys + o.instr_accrued_sys
+            self.cost_sys += o.cost_sys
+
+            self.total_real_sys += o.total_real_sys
+            # self.total_unreal_sys += o.market_value_sys + o.cost_sys
+            # self.total_unreal_sys += (o.instr_principal_sys + o.instr_accrued_sys) + o.cost_sys
+
+
+        elif self.type == ReportItem.TYPE_SUMMARY:
+            self.market_value_sys += o.market_value_sys
+            self.total_real_sys += o.total_real_sys
+            self.total_unreal_sys += o.total_unreal_sys
+
+    def close(self):
+        if self.type == ReportItem.TYPE_CURRENCY:
+            self.market_value_sys = self.pos_size * self.ccy_rep_fx
+
+        elif self.type == ReportItem.TYPE_INSTRUMENT:
+            self.market_value_sys = self.instr_principal_sys + self.instr_accrued_sys
+
+            self.total_unreal_sys = self.market_value_sys + self.cost_sys
+
+            # full ----------------------------------------------------
+            self.principal_sys += self.instr_principal_sys
+            self.carry_sys += self.instr_accrued_sys
+
+            # full / closed ----------------------------------------------------
+            pass
+
+            # full / opened ----------------------------------------------------
+            self.principal_opened_sys += self.instr_principal_sys
+            self.carry_opened_sys += self.instr_accrued_sys
+
+            # fx ----------------------------------------------------
+            pass
+
+            # fx / closed ----------------------------------------------------
+            pass
+
+            # fx / opened ----------------------------------------------------
+            pass
+
+            # fixed ----------------------------------------------------
+            self.principal_fixed_sys += self.instr_principal_sys
+            self.carry_fixed_sys += self.instr_accrued_sys
+
+            # fixed / closed ----------------------------------------------------
+            pass
+
+            # fixed / opened ----------------------------------------------------
+            self.principal_fixed_opened_sys += self.instr_principal_sys
+            self.carry_fixed_opened_sys += self.instr_accrued_sys
 
 
 class Report(object):
@@ -288,7 +1283,7 @@ class Report(object):
                  show_transaction_details=False,
                  portfolios=None, accounts=None, strategies1=None, strategies2=None, strategies3=None,
                  transaction_classes=None, date_field=None,
-                 custom_fields=None, items=None, summary=None):
+                 custom_fields=None, items=None):
         self.id = id
         self.task_id = task_id
         self.task_status = task_status
@@ -318,11 +1313,6 @@ class Report(object):
         self.custom_fields = custom_fields or []
 
         self.items = items or []
-        self.invested_items = items or []
-        self.summary = ReportSummary()
-        if items:
-            self.summary.add_items(items)
-        self.summary = summary or ReportSummary()
         self.transactions = []
 
     def __str__(self):
@@ -347,8 +1337,7 @@ class ReportBuilder(object):
         self._detail_by_strategy3 = self.instance.detail_by_strategy3
         self._any_details = self._detail_by_portfolio or self._detail_by_account or self._detail_by_strategy1 or self._detail_by_strategy2 or self._detail_by_strategy3
 
-        self._items = {}
-        self._invested_items = {}
+        self._items = []
 
     @property
     def _system_currency(self):
@@ -407,85 +1396,18 @@ class ReportBuilder(object):
 
         return queryset
 
-    def _instr_pricing_qs(self):
-        transaction_qs = self._trn_qs()
-        return PriceHistory.objects.filter(
-            pricing_policy=self.instance.pricing_policy
-        ).filter(
-            Q(date=self._report_date) |
-            Q(date__in=transaction_qs.values_list('accounting_date', flat=True))
-        ).filter(
-            instrument__in=transaction_qs.values_list('instrument', flat=True)
-        )
-
-    def _ccy_hist_qs(self):
-        transaction_qs = self._trn_qs()
-        report_currency = self.instance.report_currency or self._system_currency
-        return CurrencyHistory.objects.filter(
-            pricing_policy=self.instance.pricing_policy
-        ).filter(
-            Q(date=self._report_date) |
-            Q(date__in=transaction_qs.values_list('cash_date', flat=True)) |
-            Q(date__in=transaction_qs.values_list('accounting_date', flat=True))
-        ).filter(
-            Q(currency=report_currency) |
-            Q(currency__in=transaction_qs.values_list('transaction_currency', flat=True)) |
-            Q(currency__in=transaction_qs.values_list('settlement_currency', flat=True)) |
-            Q(currency__in=transaction_qs.values_list('instrument__pricing_currency', flat=True)) |
-            Q(currency__in=transaction_qs.values_list('instrument__accrued_currency', flat=True))
-        )
+    @cached_property
+    def _pricing_provider(self):
+        p = InstrumentPricingProvider(self.instance.master_user, self.instance.pricing_policy,
+                                      self.instance.report_date)
+        p.fill_using_transactions(self._trn_qs())
+        return p
 
     @cached_property
-    def _instr_pricing_cache(self):
-        cache = {}
-        for h in self._instr_pricing_qs():
-            cache[(h.instrument_id, h.date)] = h
-        return cache
-
-    def _get_instr_pricing(self, instrument, date=None):
-        date = date or self._report_date
-        key = (instrument.id, date)
-        try:
-            return self._instr_pricing_cache[key]
-        except KeyError:
-            h = PriceHistory(pricing_policy=self.instance.pricing_policy, instrument=instrument, date=date)
-            self._instr_pricing_cache[key] = h
-            return h
-
-    @cached_property
-    def _ccy_hist_cache(self):
-        cache = {}
-        for h in self._ccy_hist_qs():
-            cache[(h.currency_id, h.date)] = h
-        return cache
-
-    def _get_ccy_hist(self, currency, date=None):
-        date = date or self._report_date
-        key = (currency.id, date)
-        try:
-            return self._ccy_hist_cache[key]
-        except KeyError:
-            h = CurrencyHistory(pricing_policy=self.instance.pricing_policy, currency=currency, date=date)
-            # if currency.is_system:
-            if self.instance.master_user.system_currency_id == currency.id:
-                h.fx_rate = 1.0
-            self._ccy_hist_cache[key] = h
-            return h
-
-    def _to_sys_ccy(self, value, ccy):
-        if isclose(value, 0.0):
-            return 0.0
-        h = self._get_ccy_hist(ccy)
-        return value * h.fx_rate
-
-    def _to_res_ccy(self, value):
-        if isclose(value, 0.0):
-            return 0.0
-        h = self._get_ccy_hist(self.instance.report_currency)
-        if isclose(h.fx_rate, 0.0):
-            return 0.0
-        else:
-            return value / h.fx_rate
+    def _fx_rate_provider(self):
+        p = CurrencyFxRateProvider(self.instance.master_user, self.instance.pricing_policy, self.instance.report_date)
+        p.fill_using_transactions(self._trn_qs(), currencies=[self.instance.report_currency])
+        return p
 
     def _show_transaction_details(self, case, acc):
         if case in [1, 2] and self.instance.show_transaction_details:
@@ -506,63 +1428,60 @@ class ReportBuilder(object):
             'tc=%s' % getattr(trn_cls, 'pk', -1),
         ))
 
-    def _get_item(self, items, trn, instr=None, ccy=None, prtfl=None, acc=None, strg1=None, strg2=None, strg3=None,
-                  trn_cls=None):
-        t_instr = instr
-        t_ccy = ccy
-
-        if self._detail_by_portfolio:
-            t_prtfl = prtfl
-        else:
-            t_prtfl = None
-
-        if self._detail_by_account:
-            t_acc = acc
-        else:
-            t_acc = None
-
-        if self._detail_by_strategy1:
-            t_strg1 = strg1
-        else:
-            t_strg1 = None
-
-        if self._detail_by_strategy2:
-            t_strg2 = strg2
-        else:
-            t_strg2 = None
-
-        if self._detail_by_strategy3:
-            t_strg3 = strg3
-        else:
-            t_strg3 = None
-
-        if acc and self._show_transaction_details(trn.r_case, acc):
-            if isinstance(trn, VirtualTransaction):
-                t_detail_trn = trn.transaction
-            else:
-                t_detail_trn = trn
-        else:
-            t_detail_trn = None
-
-        if trn_cls:
-            t_trn_cls = trn_cls
-            t_instr = None
-            t_ccy = None
-            t_detail_trn = None
-        else:
-            t_trn_cls = None
-
-        pk = self._make_key(instr=t_instr, ccy=t_ccy, prtfl=t_prtfl, acc=t_acc, strg1=t_strg1, strg2=t_strg2,
-                            strg3=t_strg3, detail_trn=t_detail_trn, trn_cls=t_trn_cls)
-
-        try:
-            return items[pk]
-        except KeyError:
-            item = ReportItem(pk=pk, instrument=t_instr, currency=t_ccy, portfolio=t_prtfl, account=t_acc,
-                              strategy1=t_strg1, strategy2=t_strg2, strategy3=t_strg3, detail_transaction=t_detail_trn,
-                              transaction_class=t_trn_cls)
-            items[pk] = item
-            return item
+    # def _get_item(self, items, trn, instr=None, ccy=None, prtfl=None, acc=None, strg1=None, strg2=None, strg3=None,
+    #               trn_cls=None):
+    #     t_instr = instr
+    #     t_ccy = ccy
+    #
+    #     if self._detail_by_portfolio:
+    #         t_prtfl = prtfl
+    #     else:
+    #         t_prtfl = None
+    #
+    #     if self._detail_by_account:
+    #         t_acc = acc
+    #     else:
+    #         t_acc = None
+    #
+    #     if self._detail_by_strategy1:
+    #         t_strg1 = strg1
+    #     else:
+    #         t_strg1 = None
+    #
+    #     if self._detail_by_strategy2:
+    #         t_strg2 = strg2
+    #     else:
+    #         t_strg2 = None
+    #
+    #     if self._detail_by_strategy3:
+    #         t_strg3 = strg3
+    #     else:
+    #         t_strg3 = None
+    #
+    #     if trn.is_show_details(acc):
+    #         t_detail_trn = trn
+    #     else:
+    #         t_detail_trn = None
+    #
+    #     if trn_cls:
+    #         t_trn_cls = trn_cls
+    #         t_instr = None
+    #         t_ccy = None
+    #         t_detail_trn = None
+    #     else:
+    #         t_trn_cls = None
+    #
+    #     pk = self._make_key(instr=t_instr, ccy=t_ccy, prtfl=t_prtfl, acc=t_acc, strg1=t_strg1, strg2=t_strg2,
+    #                         strg3=t_strg3, detail_trn=t_detail_trn, trn_cls=t_trn_cls)
+    #
+    #     try:
+    #         return items[pk]
+    #     except KeyError:
+    #         item = ReportItem(pk=pk, instrument=t_instr, currency=t_ccy, portfolio=t_prtfl, account=t_acc,
+    #                           strategy1=t_strg1, strategy2=t_strg2, strategy3=t_strg3, detail_transaction=t_detail_trn,
+    #                           transaction_class=t_trn_cls)
+    #         items[pk] = item
+    #         return item
 
     @cached_property
     def transactions(self):
@@ -571,21 +1490,31 @@ class ReportBuilder(object):
 
         transactions = [t for t in self._trn_qs()]
 
-        self._annotate_multiplier(transactions)
-
         transactions1 = []
         for t in transactions:
-            self._annotate_transaction_case(t)
-            self._annotate_transaction_hist(t)
+            t = VirtualTransaction(
+                report=self.instance,
+                pricing_provider=self._pricing_provider,
+                fx_rate_provider=self._fx_rate_provider,
+                trn=t
+            )
+            transactions1.append(t)
 
-            t_class = t.transaction_class_id
-            if t_class == TransactionClass.TRANSFER:
+        self._annotate_multiplier(transactions1)
+
+        transactions2 = []
+        for t in transactions1:
+            # self._annotate_transaction_case(t)
+            # self._annotate_transaction_hist(t)
+
+            if t.trn_cls.id == TransactionClass.TRANSFER:
                 if t.position_size_with_sign >= 0:
                     t1 = VirtualTransaction(
-                        transaction=t,
-                        pk='%s:sell' % t.pk,
+                        report=self.instance,
+                        pricing_provider=self._pricing_provider,
+                        fx_rate_provider=self._fx_rate_provider,
+                        trn=t.trn,
                         overrides={
-                            'transaction_class_id': self._transaction_class_sell.id,
                             'transaction_class': self._transaction_class_sell,
                             'account_position': t.account_cash,
                             'account_cash': t.account_cash,
@@ -597,10 +1526,11 @@ class ReportBuilder(object):
                             'overheads_with_sign': t.overheads_with_sign,
                         })
                     t2 = VirtualTransaction(
-                        transaction=t,
-                        pk='%s:buy' % t.pk,
+                        report=self.instance,
+                        pricing_provider=self._pricing_provider,
+                        fx_rate_provider=self._fx_rate_provider,
+                        trn=t.trn,
                         overrides={
-                            'transaction_class_id': self._transaction_class_buy.id,
                             'transaction_class': self._transaction_class_buy,
                             'account_position': t.account_position,
                             'account_cash': t.account_position,
@@ -613,10 +1543,11 @@ class ReportBuilder(object):
                         })
                 else:
                     t1 = VirtualTransaction(
-                        transaction=t,
-                        pk='%s:buy' % t.pk,
+                        report=self.instance,
+                        pricing_provider=self._pricing_provider,
+                        fx_rate_provider=self._fx_rate_provider,
+                        trn=t.trn,
                         overrides={
-                            'transaction_class_id': self._transaction_class_buy.id,
                             'transaction_class': self._transaction_class_buy,
                             'account_position': t.account_cash,
                             'account_cash': t.account_cash,
@@ -628,10 +1559,11 @@ class ReportBuilder(object):
                             'overheads_with_sign': t.overheads_with_sign,
                         })
                     t2 = VirtualTransaction(
-                        transaction=t,
-                        pk='%s:sell' % t.pk,
+                        report=self.instance,
+                        pricing_provider=self._pricing_provider,
+                        fx_rate_provider=self._fx_rate_provider,
+                        trn=t.trn,
                         overrides={
-                            'transaction_class_id': self._transaction_class_sell.id,
                             'transaction_class': self._transaction_class_sell,
                             'account_position': t.account_position,
                             'account_cash': t.account_position,
@@ -642,12 +1574,14 @@ class ReportBuilder(object):
                             'carry_with_sign': -t.carry_with_sign,
                             'overheads_with_sign': -t.overheads_with_sign,
                         })
-                transactions1.append(t1)
-                transactions1.append(t2)
-            elif t_class == TransactionClass.FX_TRANSFER:
+                transactions2.append(t1)
+                transactions2.append(t2)
+            elif t.trn_cls.id == TransactionClass.FX_TRANSFER:
                 t1 = VirtualTransaction(
-                    transaction=t,
-                    pk='%s:sell' % t.pk,
+                    report=self.instance,
+                    pricing_provider=self._pricing_provider,
+                    fx_rate_provider=self._fx_rate_provider,
+                    trn=t.trn,
                     overrides={
                         'transaction_class_id': self._transaction_class_fx_trade.id,
                         'transaction_class': self._transaction_class_fx_trade,
@@ -662,8 +1596,10 @@ class ReportBuilder(object):
                     })
 
                 t2 = VirtualTransaction(
-                    transaction=t,
-                    pk='%s:buy' % t.pk,
+                    report=self.instance,
+                    pricing_provider=self._pricing_provider,
+                    fx_rate_provider=self._fx_rate_provider,
+                    trn=t.trn,
                     overrides={
                         'transaction_class_id': self._transaction_class_fx_trade.id,
                         'transaction_class': self._transaction_class_fx_trade,
@@ -676,10 +1612,16 @@ class ReportBuilder(object):
                         'carry_with_sign': -t.carry_with_sign,
                         'overheads_with_sign': -t.overheads_with_sign,
                     })
-                transactions1.append(t1)
-                transactions1.append(t2)
+                transactions2.append(t1)
+                transactions2.append(t2)
             else:
-                transactions1.append(t)
+                # t0 = VirtualTransaction(
+                #     report=self.instance,
+                #     pricing_provider=self._pricing_provider,
+                #     fx_rate_provider=self._fx_rate_provider,
+                #     trn=t
+                # )
+                transactions2.append(t)
         return transactions1
 
     # def _annotate_multiplier(self, transactions):
@@ -690,28 +1632,28 @@ class ReportBuilder(object):
     #         for t in transactions:
     #             t.multiplier = 0.0
 
-    def _annotate_transaction_case(self, t):
-        if t.accounting_date <= self._report_date < t.cash_date:  # default
-            t.r_case = 1
-        elif t.cash_date <= self._report_date < t.accounting_date:
-            t.r_case = 2
-        else:
-            t.r_case = 0
+    # def _annotate_transaction_case(self, t):
+    #     if t.accounting_date <= self._report_date < t.cash_date:  # default
+    #         t.r_case = 1
+    #     elif t.cash_date <= self._report_date < t.accounting_date:
+    #         t.r_case = 2
+    #     else:
+    #         t.r_case = 0
 
-    def _annotate_transaction_hist(self, t):
-        if t.instrument:
-            t.r_instr_price_rep = self._get_instr_pricing(t.instrument)
-
-            t.r_instr_pricing_ccy_rep = self._get_ccy_hist(t.instrument.pricing_currency)
-            t.r_instr_accrued_ccy_rep = self._get_ccy_hist(t.instrument.accrued_currency)
-
-        if t.transaction_currency:
-            t.r_trn_ccy_hist = self._get_ccy_hist(t.transaction_currency, t.accounting_date)
-            t.r_trn_ccy_rep = self._get_ccy_hist(t.transaction_currency)
-
-        if t.settlement_currency:
-            t.r_stlmnt_ccy_hist = self._get_ccy_hist(t.settlement_currency, t.cash_date)
-            t.r_stlmnt_ccy_rep = self._get_ccy_hist(t.settlement_currency)
+    # def _annotate_transaction_hist(self, t):
+    #     if t.instrument:
+    #         t.r_instr_price_rep = self._get_instr_pricing(t.instrument)
+    #
+    #         t.r_instr_pricing_ccy_rep = self._get_ccy_hist(t.instrument.pricing_currency)
+    #         t.r_instr_accrued_ccy_rep = self._get_ccy_hist(t.instrument.accrued_currency)
+    #
+    #     if t.transaction_currency:
+    #         t.r_trn_ccy_hist = self._get_ccy_hist(t.transaction_currency, t.accounting_date)
+    #         t.r_trn_ccy_rep = self._get_ccy_hist(t.transaction_currency)
+    #
+    #     if t.settlement_currency:
+    #         t.r_stlmnt_ccy_hist = self._get_ccy_hist(t.settlement_currency, t.cash_date)
+    #         t.r_stlmnt_ccy_rep = self._get_ccy_hist(t.settlement_currency)
 
     def _annotate_multiplier(self, transactions):
         rolling_positions = Counter()
@@ -722,27 +1664,28 @@ class ReportBuilder(object):
         def _set_multiplier(t0, multiplier):
             # if isclose(t.r_multiplier, multiplier):
             #     return
-            multipliers_delta.append((t0, multiplier - t0.r_multiplier))
-            t0.r_multiplier = multiplier
+            multipliers_delta.append((t0, multiplier - t0.multiplier))
+            t0.multiplier = multiplier
 
         for i, t in enumerate(transactions):
-            if t.transaction_class_id not in [TransactionClass.BUY, TransactionClass.SELL]:
+            if t.trn_cls.id not in [TransactionClass.BUY, TransactionClass.SELL]:
                 continue
 
             # do not use strategy!!!
             t_key = self._make_key(
-                instr=t.instrument,
-                prtfl=t.portfolio if self._detail_by_portfolio else None,
-                acc=t.account_position if self._detail_by_account else  None
+                instr=t.instr,
+                prtfl=t.prtfl if self._detail_by_portfolio else None,
+                acc=t.acc_pos if self._detail_by_account else  None
             )
 
             multipliers_delta.clear()
+            t.multiplier = 0.0
             rolling_position = rolling_positions[t_key]
 
             if isclose(rolling_position, 0.0):
                 k = -1
             else:
-                k = - t.position_size_with_sign / rolling_position
+                k = - t.pos_size / rolling_position
 
             if self.instance.cost_method.id == CostMethod.AVCO:
 
@@ -753,7 +1696,7 @@ class ReportBuilder(object):
                         del items[t_key]
                     items[t_key].append(t)
                     _set_multiplier(t, 1.0 / k)
-                    rolling_position = t.position_size_with_sign * (1.0 - t.r_multiplier)
+                    rolling_position = t.pos_size * (1.0 - t.multiplier)
 
                 elif isclose(k, 1.0):
                     if t_key in items:
@@ -766,13 +1709,13 @@ class ReportBuilder(object):
                 elif k > 0.0:
                     if t_key in items:
                         for t0 in items[t_key]:
-                            _set_multiplier(t0, t0.r_multiplier + k * (1.0 - t0.r_multiplier))
+                            _set_multiplier(t0, t0.multiplier + k * (1.0 - t0.multiplier))
                     _set_multiplier(t, 1.0)
-                    rolling_position += t.position_size_with_sign
+                    rolling_position += t.pos_size
 
                 else:
                     items[t_key].append(t)
-                    rolling_position += t.position_size_with_sign
+                    rolling_position += t.pos_size
 
             elif self.instance.cost_method.id == CostMethod.FIFO:
 
@@ -783,7 +1726,7 @@ class ReportBuilder(object):
                         items[t_key].clear()
                     items[t_key].append(t)
                     _set_multiplier(t, 1.0 / k)
-                    rolling_position = t.position_size_with_sign * (1.0 - t.r_multiplier)
+                    rolling_position = t.pos_size * (1.0 - t.multiplier)
 
                 elif isclose(k, 1.0):
                     if t_key in items:
@@ -794,11 +1737,11 @@ class ReportBuilder(object):
                     rolling_position = 0.0
 
                 elif k > 0.0:
-                    position = t.position_size_with_sign
+                    position = t.pos_size
                     if t_key in items:
                         t_items = items[t_key]
                         for t0 in t_items:
-                            remaining = t0.position_size_with_sign * (1.0 - t0.r_multiplier)
+                            remaining = t0.pos_size * (1.0 - t0.multiplier)
                             k0 = - position / remaining
                             if k0 > 1.0:
                                 _set_multiplier(t0, 1.0)
@@ -808,23 +1751,23 @@ class ReportBuilder(object):
                                 position += remaining
                             elif k0 > 0.0:
                                 position += remaining * k0
-                                _set_multiplier(t0, t0.multiplier + k0 * (1.0 - t0.r_multiplier))
+                                _set_multiplier(t0, t0.multiplier + k0 * (1.0 - t0.multiplier))
                             # else:
                             #     break
                             if isclose(position, 0.0):
                                 break
-                        t_items = [t0 for t0 in t_items if not isclose(t0.r_multiplier, 1.0)]
+                        t_items = [t0 for t0 in t_items if not isclose(t0.multiplier, 1.0)]
                         if t_items:
                             items[t_key] = t_items
                         else:
                             del items[t_key]
 
-                    _set_multiplier(t, abs((t.position_size_with_sign - position) / t.position_size_with_sign))
-                    rolling_position += t.position_size_with_sign * t.r_multiplier
+                    _set_multiplier(t, abs((t.pos_size - position) / t.pos_size))
+                    rolling_position += t.pos_size * t.multiplier
 
                 else:
                     items[t_key].append(t)
-                    rolling_position += t.position_size_with_sign
+                    rolling_position += t.pos_size
 
             rolling_positions[t_key] = rolling_position
             # print('i =', i, ', rolling_positions =', rolling_position)
@@ -843,321 +1786,314 @@ class ReportBuilder(object):
                     # sum_principal += t0.principal_with_sign * inc_multiplier0
                     # sum_carry += t0.carry_with_sign * inc_multiplier0
                     # sum_overheads += t0.overheads_with_sign * inc_multiplier0
-                    sum_total += inc_multiplier0 * (
-                        t0.principal_with_sign + t0.carry_with_sign + t0.overheads_with_sign)
+                    sum_total += inc_multiplier0 * t0.total_sys
 
                 for t0, inc_multiplier0 in multipliers_delta:
-                    mult = end_mult if t0.id == t.id else init_mult
+                    mult = end_mult if t0.pk == t.pk else init_mult
 
-                    matched = abs((t0.position_size_with_sign * inc_multiplier0) / (
-                        t.position_size_with_sign * inc_multiplier))
+                    matched = abs((t0.pos_size * inc_multiplier0) / (
+                        t.pos_size * inc_multiplier))
                     # adj = matched * mult
 
                     # t0.real_pl_principal_with_sign += sum_principal * matched * mult
                     # t0.real_pl_carry_with_sign += sum_carry * matched * mult
                     # t0.real_pl_overheads_with_sign += sum_overheads * matched * mult
-                    t0.r_total_real += sum_total * matched * mult
+                    t0.total_real_sys += sum_total * matched * mult
 
         for t in transactions:
-            if t.transaction_class_id not in [TransactionClass.BUY, TransactionClass.SELL]:
+            if t.trn_cls.id not in [TransactionClass.BUY, TransactionClass.SELL]:
                 continue
-            t.r_position_size = t.position_size_with_sign * (1.0 - t.r_multiplier)
-            t.r_cost = t.principal_with_sign * (1.0 - t.r_multiplier)
+            # t.r_position_size = t.pos_size * (1.0 - t.multiplier)
+            # t.r_cost = t.principal_ * (1.0 - t.multiplier)
+            pass
 
     def build(self):
         for trn in self.transactions:
-            if trn.transaction_class_id == TransactionClass.BUY:
-                self._process_transaction_buy(trn)
+            if trn.trn_cls.id in [TransactionClass.BUY, TransactionClass.SELL]:
+                self._add_instr(trn)
+                self._add_cash(trn, val=trn.cash, ccy=trn.stl_ccy)
 
-            elif trn.transaction_class_id == TransactionClass.SELL:
-                self._process_transaction_sell(trn)
+            elif trn.trn_cls.id == TransactionClass.FX_TRADE:
+                # TODO: Что используем для strategy?
+                self._add_cash(trn, val=trn.pos_size, ccy=trn.trn_ccy, acc=trn.acc_pos, str1=trn.str1_pos,
+                               str2=trn.str2_pos, str3=trn.str3_pos)
 
-            elif trn.transaction_class_id == TransactionClass.FX_TRADE:
-                self._process_transaction_fx_trade(trn)
+                self._add_cash(trn, val=trn.cash, ccy=trn.stl_ccy)
 
-            elif trn.transaction_class_id == TransactionClass.INSTRUMENT_PL:
-                self._process_transaction_instrument_pl(trn)
+                # P&L
+                item = ReportItem.from_trn(self.instance, self._pricing_provider, self._fx_rate_provider,
+                                           ReportItem.TYPE_FX_TRADE, trn, acc=trn.acc_pos,
+                                           str1=trn.str1_pos, str2=trn.str2_pos, str3=trn.str3_pos)
+                self._items.append(item)
 
-            elif trn.transaction_class_id == TransactionClass.TRANSACTION_PL:
-                self._process_transaction_transaction_pl(trn)
+            elif trn.trn_cls.id == TransactionClass.INSTRUMENT_PL:
+                self._add_instr(trn)
+                self._add_cash(trn, val=trn.cash, ccy=trn.stl_ccy)
 
-            elif trn.transaction_class_id == TransactionClass.TRANSFER:
-                self._process_transaction_transfer(trn)
+            elif trn.trn_cls.id == TransactionClass.TRANSACTION_PL:
+                self._add_cash(trn, val=trn.cash, ccy=trn.stl_ccy)
 
-            elif trn.transaction_class_id == TransactionClass.FX_TRANSFER:
-                self._process_transaction_fx_transfer(trn)
+                item = ReportItem.from_trn(self.instance, self._pricing_provider, self._fx_rate_provider,
+                                           ReportItem.TYPE_TRANSACTION_PL, trn, acc=trn.acc_pos,
+                                           str1=trn.str1_pos, str2=trn.str2_pos, str3=trn.str3_pos)
+                self._items.append(item)
 
-            elif trn.transaction_class_id == TransactionClass.CASH_INFLOW:
-                self._process_transaction_cash_inflow(trn)
+                # item.principal_sys = trn.principal_sys
+                # item.carry_sys = trn.carry_sys
+                # item.overheads_sys = trn.overheads_sys
 
-            elif trn.transaction_class_id == TransactionClass.CASH_OUTFLOW:
-                self._process_transaction_cash_outflow(trn)
+            elif trn.trn_cls.id == TransactionClass.TRANSFER:
+                raise RuntimeError('Virtual transaction must be created')
+
+            elif trn.trn_cls.id == TransactionClass.FX_TRANSFER:
+                raise RuntimeError('Virtual transaction must be created')
+
+            elif trn.trn_cls.id in [TransactionClass.CASH_INFLOW, TransactionClass.CASH_OUTFLOW]:
+                self._add_cash(trn, val=trn.pos_size, ccy=trn.trn_ccy,
+                               acc=trn.acc_pos, str1=trn.str1_pos, str2=trn.str2_pos,
+                               str3=trn.str3_pos)
 
             else:
                 raise RuntimeError('Invalid transaction class: %s' % trn.transaction_class_id)
 
-        self._process_final(self._invested_items.values())
-        self.instance.invested_items = sorted([i for i in self._invested_items.values()], key=lambda x: x.pk)
+        # print('0' * 100)
+        # VirtualTransaction.dumps(self.transactions)
+        # print('1' * 100)
+        # ReportItem.dumps(self._items)
 
-        self._process_final(self._items.values())
-        self.instance.items = sorted([i for i in self._items.values()], key=lambda x: x.pk)
-        self._process_summary(self.instance.summary, self.instance.items)
+        _items = sorted(self._items, key=partial(ReportItem.sort_key, self.instance))
 
-        self._process_custom_fields(self.instance.items)
+        gitems = []
+        # summary = ReportItem(self.instance, self._pricing_provider, self._fx_rate_provider, ReportItem.TYPE_SUMMARY)
+        for k, g in groupby(_items, key=partial(ReportItem.group_key, self.instance)):
+            ritem = None
+            for item in g:
+                if ritem is None:
+                    ritem = ReportItem.from_item(item)
+                ritem.add(item)
+                # summary.add(item)
+            ritem.close()
+            if ritem:
+                gitems.append(ritem)
+
+        # print('2' * 100)
+        # ReportItem.dumps(gitems)
+
+        summary = ReportItem(self.instance, self._pricing_provider, self._fx_rate_provider, ReportItem.TYPE_SUMMARY)
+        for item in gitems:
+            summary.add(item)
+
+        # print('3' * 100)
+        # ReportItem.dumps([summary])
+
+        # print('4' * 100)
+        gitems.append(summary)
+
+        self.instance.items = gitems
+
+        # print('*'* 100)
+        # VirtualTransaction.dumps(self.transactions)
+        # ReportItem.dumps(gitems)
+        # ReportItem.dumps([summary])
+        # print('*'* 100)
+
+        # self._process_final(self._invested_items.values())
+        # self.instance.invested_items = sorted([i for i in self._invested_items.values()], key=lambda x: x.pk)
+
+        # self._process_final(self._items.values())
+        # self.instance.items = sorted([i for i in self._items.values()], key=lambda x: x.pk)
+        # self._process_summary(self.instance.summary, self.instance.items)
+
+        # self._process_custom_fields(self.instance.items)
 
         return self.instance
 
-    def _process_transaction_buy(self, trn):
-        self._add_instr(self._items, trn, value=trn.r_position_size)
-        self._add_cash(self._items, trn, value=trn.cash_consideration, ccy=trn.settlement_currency)
+    def _add_instr(self, trn):
+        if trn.case == 0:
+            item = ReportItem.from_trn(self.instance, self._pricing_provider, self._fx_rate_provider,
+                                       ReportItem.TYPE_INSTRUMENT, trn)
 
-    def _process_transaction_sell(self, trn):
-        self._process_transaction_buy(trn)
+        elif trn.case == 1:
+            item = ReportItem.from_trn(self.instance, self._pricing_provider, self._fx_rate_provider,
+                                       ReportItem.TYPE_INSTRUMENT, trn)
 
-    def _process_transaction_fx_trade(self, trn):
-        # TODO: Что используем для strategy?
-        self._add_cash(self._items, trn, value=trn.position_size_with_sign, ccy=trn.transaction_currency,
-                       acc=trn.account_position, strg1=trn.strategy1_position,
-                       strg2=trn.strategy2_position, strg3=trn.strategy3_position, )
-
-        self._add_cash(self._items, trn, value=trn.cash_consideration, ccy=trn.settlement_currency)
-
-        # P&L
-        item = self._get_item(self._items, trn, prtfl=trn.portfolio, acc=trn.account_position,
-                              strg1=trn.strategy1_position, strg2=trn.strategy2_position,
-                              strg3=trn.strategy3_position, trn_cls=trn.transaction_class)
-        item.principal_with_sign_sys_ccy += \
-            self._to_sys_ccy(trn.position_size_with_sign, trn.transaction_currency) + \
-            self._to_sys_ccy(trn.principal_with_sign, trn.settlement_currency)
-        # item.carry_with_sign_sys_ccy += self._to_sys_ccy(trn.carry_with_sign, trn.settlement_currency)
-        item.overheads_with_sign_sys_ccy += self._to_sys_ccy(trn.overheads_with_sign, trn.settlement_currency)
-
-    def _process_transaction_instrument_pl(self, trn):
-        self._add_instr(self._items, trn, value=trn.position_size_with_sign)
-        self._add_cash(self._items, trn, value=trn.cash_consideration, ccy=trn.settlement_currency)
-
-    def _process_transaction_transaction_pl(self, trn):
-        item = self._get_item(self._items, trn, prtfl=trn.portfolio, acc=trn.account_position,
-                              strg1=trn.strategy1_position, strg2=trn.strategy2_position,
-                              strg3=trn.strategy3_position, trn_cls=trn.transaction_class)
-
-        self._add_cash(self._items, trn, value=trn.cash_consideration, ccy=trn.settlement_currency)
-
-        item.principal_with_sign_sys_ccy += self._to_sys_ccy(trn.principal_with_sign, trn.settlement_currency)
-        item.carry_with_sign_sys_ccy += self._to_sys_ccy(trn.carry_with_sign, trn.settlement_currency)
-        item.overheads_with_sign_sys_ccy += self._to_sys_ccy(trn.overheads_with_sign, trn.settlement_currency)
-
-    def _process_transaction_transfer(self, trn):
-        raise RuntimeError('Virtual transaction must be created')
-
-    def _process_transaction_fx_transfer(self, trn):
-        raise RuntimeError('Virtual transaction must be created')
-
-    def _process_transaction_cash_inflow(self, trn):
-        self._add_cash(self._items, trn, value=trn.position_size_with_sign, ccy=trn.transaction_currency,
-                       acc=trn.account_position, strg1=trn.strategy1_position, strg2=trn.strategy2_position,
-                       strg3=trn.strategy3_position)
-
-        # invested cash
-        self._add_cash(self._invested_items, trn, value=trn.position_size_with_sign, ccy=trn.transaction_currency,
-                       acc=trn.account_position, strg1=trn.strategy1_position, strg2=trn.strategy2_position,
-                       strg3=trn.strategy3_position)
-
-    def _process_transaction_cash_outflow(self, t):
-        self._process_transaction_cash_inflow(t)
-
-    def _add_instr(self, items, trn, value, prtfl=None, acc=None, strg1=None, strg2=None, strg3=None):
-        if prtfl is None:
-            prtfl = trn.portfolio
-        if acc is None:
-            acc = trn.account_position
-        if strg1 is None:
-            strg1 = trn.strategy1_position
-        if strg2 is None:
-            strg2 = trn.strategy2_position
-        if strg3 is None:
-            strg3 = trn.strategy3_position
-
-        if trn.r_case == 0:
-            item = self._get_item(items, trn, instr=trn.instrument, prtfl=prtfl, acc=acc,
-                                  strg1=strg1, strg2=strg2, strg3=strg3)
-        elif trn.r_case == 1:
-            item = self._get_item(items, trn, instr=trn.instrument, prtfl=prtfl, acc=acc,
-                                  strg1=strg1, strg2=strg2, strg3=strg3)
-
-        elif trn.r_case == 2:
+        elif trn.case == 2:
             return
 
         else:
             raise RuntimeError('Invalid transaction case: %s' % trn.case)
 
-        if item:
-            ccy = trn.settlement_currency
-            # balance
-            item.position_size += value
-            item.cost_sys += self._to_sys_ccy(trn.r_cost, ccy)
+        self._items.append(item)
 
-            #  P&L
-            item.principal_sys += self._to_sys_ccy(trn.principal_with_sign, ccy)
-            item.carry_sys += self._to_sys_ccy(trn.carry_with_sign, ccy)
-            item.overheads_sys += self._to_sys_ccy(trn.overheads_with_sign, ccy)
+        # item.pos_size = trn.pos_size * (1.0 - trn.multiplier)
+        #
+        # # balance
+        # item.cost_sys = trn.principal_sys * (1.0 - trn.multiplier)
+        #
+        # # #  P&L
+        # item.principal_sys = trn.principal_sys
+        # item.carry_sys = trn.carry_sys
+        # item.overheads_sys = trn.overheads_sys
+        #
+        # # item.real_pl_principal_with_sign_sys_ccy += self._to_sys_ccy(trn.real_pl_principal_with_sign, ccy)
+        # # item.real_pl_carry_with_sign_sys_ccy += self._to_sys_ccy(trn.real_pl_carry_with_sign, ccy)
+        # # item.real_pl_overheads_with_sign_sys_ccy += self._to_sys_ccy(trn.real_pl_overheads_with_sign, ccy)
+        # item.total_real_sys += trn.total_real_sys
+        #
+        # # item.unreal_pl_principal_with_sign_sys_ccy += self._to_sys_ccy(trn.unreal_pl_principal_with_sign,ccy)
+        # # item.unreal_pl_carry_with_sign_sys_ccy += self._to_sys_ccy(trn.unreal_pl_carry_with_sign,ccy)
+        # # item.unreal_pl_overheads_with_sign_sys_ccy += self._to_sys_ccy(trn.unreal_pl_overheads_with_sign,ccy)
+        # # item.unreal_pl_total_with_sign_sys_ccy += self._to_sys_ccy(trn.unreal_pl_total_with_sign,ccy)
+        # # item.total_unreal_sys += trn.total_unreal_sys
+        pass
 
-            # item.real_pl_principal_with_sign_sys_ccy += self._to_sys_ccy(trn.real_pl_principal_with_sign, ccy)
-            # item.real_pl_carry_with_sign_sys_ccy += self._to_sys_ccy(trn.real_pl_carry_with_sign, ccy)
-            # item.real_pl_overheads_with_sign_sys_ccy += self._to_sys_ccy(trn.real_pl_overheads_with_sign, ccy)
-            item.total_real_sys += self._to_sys_ccy(trn.r_total_real, ccy)
+    def _add_cash(self, trn, val, ccy, acc=None, acc_interim=None, str1=None, str2=None, str3=None):
+        if trn.case == 0:
+            item = ReportItem.from_trn(self.instance, self._pricing_provider, self._fx_rate_provider,
+                                       ReportItem.TYPE_CURRENCY, trn, ccy=ccy, acc=acc,
+                                       str1=str1, str2=str2, str3=str3,
+                                       val=val)
+            self._items.append(item)
+            # item.pos_size = val
 
-            # item.unreal_pl_principal_with_sign_sys_ccy += self._to_sys_ccy(trn.unreal_pl_principal_with_sign,ccy)
-            # item.unreal_pl_carry_with_sign_sys_ccy += self._to_sys_ccy(trn.unreal_pl_carry_with_sign,ccy)
-            # item.unreal_pl_overheads_with_sign_sys_ccy += self._to_sys_ccy(trn.unreal_pl_overheads_with_sign,ccy)
-            # item.unreal_pl_total_with_sign_sys_ccy += self._to_sys_ccy(trn.unreal_pl_total_with_sign,ccy)
-            pass
+        elif trn.case == 1:
+            item = ReportItem.from_trn(self.instance, self._pricing_provider, self._fx_rate_provider,
+                                       ReportItem.TYPE_CURRENCY, trn, ccy=ccy, acc=acc_interim or trn.acc_interim,
+                                       str1=str1, str2=str2, str3=str3,
+                                       val=val)
+            self._items.append(item)
+            # item.pos_size = val
 
-    def _add_cash(self, items, trn, value, ccy, prtfl=None, acc=None, acc_interim=None, strg1=None, strg2=None,
-                  strg3=None):
+        elif trn.case == 2:
+            # item = self._get_item(items, trn, ccy=ccy, prtfl=prtfl, acc=acc,
+            #                       strg1=strg1, strg2=strg2, strg3=strg3)
+            item = ReportItem.from_trn(self.instance, self._pricing_provider, self._fx_rate_provider,
+                                       ReportItem.TYPE_CURRENCY, trn, ccy=ccy, acc=acc,
+                                       str1=str1, str2=str2, str3=str3,
+                                       val=val)
+            self._items.append(item)
+            # item.pos_size = val
 
-        if prtfl is None:
-            prtfl = trn.portfolio
-        if acc is None:
-            acc = trn.account_cash
-        if acc_interim is None:
-            acc_interim = trn.account_interim
-        if strg1 is None:
-            strg1 = trn.strategy1_cash
-        if strg2 is None:
-            strg2 = trn.strategy2_cash
-        if strg3 is None:
-            strg3 = trn.strategy3_cash
-
-        if trn.r_case == 0:
-            item = self._get_item(items, trn, ccy=ccy, prtfl=prtfl, acc=acc,
-                                  strg1=strg1, strg2=strg2, strg3=strg3)
-            item.position_size += value
-
-        elif trn.r_case == 1:
-            item = self._get_item(items, trn, ccy=ccy, prtfl=prtfl, acc=acc_interim,
-                                  strg1=strg1, strg2=strg2, strg3=strg3)
-            item.position_size += value
-
-        elif trn.r_case == 2:
-            item = self._get_item(items, trn, ccy=ccy, prtfl=prtfl, acc=acc,
-                                  strg1=strg1, strg2=strg2, strg3=strg3)
-            item.position_size += value
-
-            item = self._get_item(items, trn, ccy=ccy, prtfl=prtfl, acc=acc_interim,
-                                  strg1=strg1, strg2=strg2, strg3=strg3)
-            item.position_size += value
+            # item = self._get_item(items, trn, ccy=ccy, prtfl=prtfl, acc=acc_interim,
+            #                       strg1=strg1, strg2=strg2, strg3=strg3)
+            item = ReportItem.from_trn(self.instance, self._pricing_provider, self._fx_rate_provider,
+                                       ReportItem.TYPE_CURRENCY, trn, ccy=ccy, acc=acc_interim or trn.acc_interim,
+                                       str1=str1, str2=str2, str3=str3,
+                                       val=-val)
+            self._items.append(item)
+            # item.pos_size = -val
 
         else:
             raise RuntimeError('Invalid transaction case: %s' % trn.case)
 
-    def _process_final(self, items):
-        for item in items:
-            if item.instrument:
-                price = self._get_instr_pricing(item.instrument)
+    # def _process_final(self, items):
+    #     for item in items:
+    #         if item.instrument:
+    #             price = self._get_instr_pricing(item.instrument)
+    #
+    #             principal = item.position_size * item.instrument.price_multiplier * price.principal_price
+    #             accrued = item.position_size * item.instrument.accrued_multiplier * price.accrued_price
+    #
+    #             item.instr_principal_sys = self._to_sys_ccy(principal, item.instrument.pricing_currency)
+    #             item.instr_accrued_sys = self._to_sys_ccy(accrued, item.instrument.accrued_currency)
+    #
+    #             # balance
+    #             item.market_value_sys = item.instr_principal_sys + item.instr_accrued_sys
+    #
+    #             # P&L
+    #             item.principal_sys += item.instr_principal_sys
+    #             item.carry_sys += item.instr_accrued_sys
+    #
+    #         elif item.currency:
+    #             # balance
+    #             item.market_value_sys = self._to_sys_ccy(item.position_size, item.currency)
+    #
+    #             # P&L
+    #             pass
+    #
+    #         # balance
+    #         item.market_value = self._to_res_ccy(item.market_value_sys)
+    #         item.cost = self._to_res_ccy(item.cost_sys)
+    #
+    #         # P&L
+    #         item.total_sys = item.principal_sys + item.carry_sys + item.carry_sys
+    #
+    #         item.instr_principal = self._to_res_ccy(item.instr_principal_sys)
+    #         item.instr_accrued = self._to_res_ccy(item.instr_accrued_sys)
+    #         item.principal = self._to_res_ccy(item.principal)
+    #         item.carry = self._to_res_ccy(item.carry_sys)
+    #         item.overheads = self._to_res_ccy(item.overheads_sys)
+    #         item.total = self._to_res_ccy(item.total)
+    #
+    #         if item.instrument:
+    #             # # item.real_pl_principal_with_sign_res_ccy = self._to_res_ccy(item.real_pl_principal_with_sign_sys_ccy)
+    #             # # item.real_pl_carry_with_sign_res_ccy = self._to_res_ccy(item.real_pl_carry_with_sign_sys_ccy)
+    #             # # item.real_pl_overheads_with_sign_res_ccy = self._to_res_ccy(item.real_pl_overheads_with_sign_sys_ccy)
+    #             item.total_real = self._to_res_ccy(item.total_real_sys)
+    #
+    #             # item.unreal_pl_principal_with_sign_res_ccy = self._to_res_ccy(
+    #             #     item.unreal_pl_principal_with_sign_sys_ccy)
+    #             # item.unreal_pl_carry_with_sign_res_ccy = self._to_res_ccy(
+    #             #     item.unreal_pl_carry_with_sign_sys_ccy)
+    #             # item.unreal_pl_overheads_with_sign_res_ccy = self._to_res_ccy(
+    #             #     item.unreal_pl_overheads_with_sign_sys_ccy)
+    #             item.total_unreal_sys = item.market_value_sys + item.cost_sys
+    #             item.total_unreal = self._to_res_ccy(item.total_unreal_sys)
 
-                principal = item.position_size * item.instrument.price_multiplier * price.principal_price
-                accrued = item.position_size * item.instrument.accrued_multiplier * price.accrued_price
-
-                item.instr_principal_sys = self._to_sys_ccy(principal, item.instrument.pricing_currency)
-                item.instr_accrued_sys = self._to_sys_ccy(accrued, item.instrument.accrued_currency)
-
-                # balance
-                item.market_value_sys = item.instr_principal_sys + item.instr_accrued_sys
-
-                # P&L
-                item.principal_sys += item.instr_principal_sys
-                item.carry_sys += item.instr_accrued_sys
-
-            elif item.currency:
-                # balance
-                item.market_value_sys = self._to_sys_ccy(item.position_size, item.currency)
-
-                # P&L
-                pass
-
-            # balance
-            item.market_value = self._to_res_ccy(item.market_value_sys)
-            item.cost = self._to_res_ccy(item.cost_sys)
-
-            # P&L
-            item.total_sys = item.principal_sys + item.carry_sys + item.carry_sys
-
-            item.instr_principal = self._to_res_ccy(item.instr_principal_sys)
-            item.instr_accrued = self._to_res_ccy(item.instr_accrued_sys)
-            item.principal = self._to_res_ccy(item.principal)
-            item.carry = self._to_res_ccy(item.carry_sys)
-            item.overheads = self._to_res_ccy(item.overheads_sys)
-            item.total = self._to_res_ccy(item.total)
-
-            if item.instrument:
-                # # item.real_pl_principal_with_sign_res_ccy = self._to_res_ccy(item.real_pl_principal_with_sign_sys_ccy)
-                # # item.real_pl_carry_with_sign_res_ccy = self._to_res_ccy(item.real_pl_carry_with_sign_sys_ccy)
-                # # item.real_pl_overheads_with_sign_res_ccy = self._to_res_ccy(item.real_pl_overheads_with_sign_sys_ccy)
-                item.total_real = self._to_res_ccy(item.total_real_sys)
-
-                # item.unreal_pl_principal_with_sign_res_ccy = self._to_res_ccy(
-                #     item.unreal_pl_principal_with_sign_sys_ccy)
-                # item.unreal_pl_carry_with_sign_res_ccy = self._to_res_ccy(
-                #     item.unreal_pl_carry_with_sign_sys_ccy)
-                # item.unreal_pl_overheads_with_sign_res_ccy = self._to_res_ccy(
-                #     item.unreal_pl_overheads_with_sign_sys_ccy)
-                item.total_unreal_sys = item.market_value_sys + item.cost_sys
-                item.total_unreal = self._to_res_ccy(item.total_unreal_sys)
-
-    def _process_summary(self, summary, items):
-        for item in items:
-            summary.market_value_sys += item.market_value_sys
-            summary.market_value += item.market_value
-
-            summary.cost_sys += item.cost_sys
-            summary.cost += item.cost
-
-            # P&L
-            summary.principal_sys += item.principal_sys
-            summary.carry_sys += item.carry_sys
-            summary.overheads_sys += item.overheads_sys
-            summary.total_sys += item.total_sys
-
-            summary.principal += item.principal
-            summary.carry += item.carry
-            summary.overheads += item.overheads
-            summary.total += item.total
-
-            # # summary.real_pl_principal_with_sign_sys_ccy += item.real_pl_principal_with_sign_sys_ccy
-            # # summary.real_pl_carry_with_sign_sys_ccy += item.real_pl_carry_with_sign_sys_ccy
-            # # summary.real_pl_overheads_with_sign_sys_ccy += item.real_pl_overheads_with_sign_sys_ccy
-            # summary.real_pl_total_with_sign_sys_ccy += item.real_pl_total_with_sign_sys_ccy
-            #
-            # # summary.unreal_pl_principal_with_sign_sys_ccy += item.unreal_pl_principal_with_sign_sys_ccy
-            # # summary.unreal_pl_carry_with_sign_sys_ccy += item.unreal_pl_carry_with_sign_sys_ccy
-            # # summary.unreal_pl_overheads_with_sign_sys_ccy += item.unreal_pl_overheads_with_sign_sys_ccy
-            # summary.unreal_pl_total_with_sign_sys_ccy += item.unreal_pl_total_with_sign_sys_ccy
-            #
-            # # summary.real_pl_principal_with_sign_res_ccy += item.real_pl_principal_with_sign_res_ccy
-            # # summary.real_pl_carry_with_sign_res_ccy += item.real_pl_carry_with_sign_res_ccy
-            # # summary.real_pl_overheads_with_sign_res_ccy += item.real_pl_overheads_with_sign_res_ccy
-            # summary.real_pl_total_with_sign_res_ccy += item.real_pl_total_with_sign_res_ccy
-            #
-            # # summary.unreal_pl_principal_with_sign_res_ccy += item.unreal_pl_principal_with_sign_res_ccy
-            # # summary.unreal_pl_carry_with_sign_res_ccy += item.unreal_pl_carry_with_sign_res_ccy
-            # # summary.unreal_pl_overheads_with_sign_res_ccy += item.unreal_pl_overheads_with_sign_res_ccy
-            # summary.unreal_pl_total_with_sign_res_ccy += item.unreal_pl_total_with_sign_res_ccy
-            pass
-
-    def _process_custom_fields(self, items):
-        if self.instance.custom_fields:
-            for item in items:
-                item.custom_fields = []
-                for cf in self.instance.custom_fields:
-                    if cf.expr:
-                        try:
-                            value = formula.safe_eval(cf.expr, names={'item': item})
-                        except formula.InvalidExpression:
-                            value = ugettext('Invalid expression')
-                    else:
-                        value = None
-                    item.custom_fields.append({
-                        'custom_field': cf,
-                        'value': value
-                    })
+    # def _process_summary(self, summary, items):
+    #     for item in items:
+    #         summary.market_value_sys += item.market_value_sys
+    #         summary.market_value += item.market_value
+    #
+    #         summary.cost_sys += item.cost_sys
+    #         summary.cost += item.cost
+    #
+    #         # P&L
+    #         summary.principal_sys += item.principal_sys
+    #         summary.carry_sys += item.carry_sys
+    #         summary.overheads_sys += item.overheads_sys
+    #         summary.total_sys += item.total_sys
+    #
+    #         summary.principal += item.principal
+    #         summary.carry += item.carry
+    #         summary.overheads += item.overheads
+    #         summary.total += item.total
+    #
+    #         # # summary.real_pl_principal_with_sign_sys_ccy += item.real_pl_principal_with_sign_sys_ccy
+    #         # # summary.real_pl_carry_with_sign_sys_ccy += item.real_pl_carry_with_sign_sys_ccy
+    #         # # summary.real_pl_overheads_with_sign_sys_ccy += item.real_pl_overheads_with_sign_sys_ccy
+    #         # summary.real_pl_total_with_sign_sys_ccy += item.real_pl_total_with_sign_sys_ccy
+    #         #
+    #         # # summary.unreal_pl_principal_with_sign_sys_ccy += item.unreal_pl_principal_with_sign_sys_ccy
+    #         # # summary.unreal_pl_carry_with_sign_sys_ccy += item.unreal_pl_carry_with_sign_sys_ccy
+    #         # # summary.unreal_pl_overheads_with_sign_sys_ccy += item.unreal_pl_overheads_with_sign_sys_ccy
+    #         # summary.unreal_pl_total_with_sign_sys_ccy += item.unreal_pl_total_with_sign_sys_ccy
+    #         #
+    #         # # summary.real_pl_principal_with_sign_res_ccy += item.real_pl_principal_with_sign_res_ccy
+    #         # # summary.real_pl_carry_with_sign_res_ccy += item.real_pl_carry_with_sign_res_ccy
+    #         # # summary.real_pl_overheads_with_sign_res_ccy += item.real_pl_overheads_with_sign_res_ccy
+    #         # summary.real_pl_total_with_sign_res_ccy += item.real_pl_total_with_sign_res_ccy
+    #         #
+    #         # # summary.unreal_pl_principal_with_sign_res_ccy += item.unreal_pl_principal_with_sign_res_ccy
+    #         # # summary.unreal_pl_carry_with_sign_res_ccy += item.unreal_pl_carry_with_sign_res_ccy
+    #         # # summary.unreal_pl_overheads_with_sign_res_ccy += item.unreal_pl_overheads_with_sign_res_ccy
+    #         # summary.unreal_pl_total_with_sign_res_ccy += item.unreal_pl_total_with_sign_res_ccy
+    #         pass
+    #
+    #         # def _process_custom_fields(self, items):
+    #         #     if self.instance.custom_fields:
+    #         #         for item in items:
+    #         #             item.custom_fields = []
+    #         #             for cf in self.instance.custom_fields:
+    #         #                 if cf.expr:
+    #         #                     try:
+    #         #                         value = formula.safe_eval(cf.expr, names={'item': item})
+    #         #                     except formula.InvalidExpression:
+    #         #                         value = ugettext('Invalid expression')
+    #         #                 else:
+    #         #                     value = None
+    #         #                 item.custom_fields.append({
+    #         #                     'custom_field': cf,
+    #         #                     'value': value
+    #         #                 })
+    pass
