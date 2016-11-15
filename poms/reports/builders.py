@@ -70,7 +70,7 @@ class VirtualTransaction(object):
     str3_cash = None
 
     # linked instrument
-    linked_instr = None
+    link_instr = None
 
     # allocations
     alloc_balance = None
@@ -119,7 +119,7 @@ class VirtualTransaction(object):
         self.str3_pos = overrides.get('strategy3_position', trn.strategy3_position)
         self.str3_cash = overrides.get('strategy3_cash', trn.strategy3_cash)
 
-        self.linked_instr = overrides.get('linked_instrument', trn.linked_instrument)
+        self.link_instr = overrides.get('linked_instrument', trn.linked_instrument)
 
         self.alloc_balance = overrides.get('allocation_balance', trn.allocation_balance)
         self.alloc_pl = overrides.get('allocation_pl', trn.allocation_pl)
@@ -133,17 +133,19 @@ class VirtualTransaction(object):
             'multiplier',
             # 'acc_date',
             # 'cash_date',
-            # 'instr',
+            'instr',
             # 'trn_ccy',
             'pos_size',
             'stl_ccy',
-            # 'cash',
+            'cash',
             'principal',
             'carry',
             'overheads',
+            'total',
+            'mismatch',
             'ref_fx',
-            # 'prtfl',
-            # 'acc_pos',
+            'prtfl',
+            'acc_pos',
             # 'acc_cash',
             # 'acc_interim',
             # 'str1_pos',
@@ -152,8 +154,9 @@ class VirtualTransaction(object):
             # 'str2_cash',
             # 'str3_pos',
             # 'str3_cash',
-            # 'total_real_sys',
-            # 'total_unreal_sys',
+            'link_instr',
+            'total_real_sys',
+            'total_unreal_sys',
             'instr_principal_sys',
             'instr_accrued_sys',
 
@@ -394,6 +397,10 @@ class VirtualTransaction(object):
     # props
 
     @property
+    def mismatch(self):
+        return self.cash - self.total
+
+    @property
     def pos_size_sys(self):
         if self.trn_ccy:
             return self.pos_size * self.trn_ccy_rep_fx
@@ -578,6 +585,7 @@ class ReportItem(object):
     TYPE_CURRENCY = 2
     TYPE_TRANSACTION_PL = 3
     TYPE_FX_TRADE = 4
+    TYPE_MISMATCH = 5  # Linked instrument
     TYPE_SUMMARY = 100
     TYPE_INVESTED_CURRENCY = 200
     TYPE_INVESTED_SUMMARY = 201
@@ -587,6 +595,7 @@ class ReportItem(object):
         (TYPE_CURRENCY, 'Currency'),
         (TYPE_TRANSACTION_PL, 'Transaction PL'),
         (TYPE_FX_TRADE, 'FX-Trade'),
+        (TYPE_MISMATCH, 'Mismatch'),
         (TYPE_SUMMARY, 'Summary'),
         (TYPE_INVESTED_CURRENCY, 'Invested'),
         (TYPE_INVESTED_SUMMARY, 'Invested summary'),
@@ -607,6 +616,11 @@ class ReportItem(object):
     str3 = None
     # detail_trn = None
     # custom_fields = []
+
+    mismatch = 0.0
+    mismatch_ccy = None
+    mismatch_prtfl = None
+    mismatch_acc = None
 
     # balance
     pos_size = 0.0
@@ -796,6 +810,12 @@ class ReportItem(object):
             item.carry_sys = trn.carry_sys
             item.overheads_sys = trn.overheads_sys
 
+        elif item.type == ReportItem.TYPE_MISMATCH:
+            item.acc = trn.acc_pos
+            item.instr = trn.link_instr
+            item.mismatch_ccy = trn.stl_ccy
+            item.mismatch = trn.mismatch
+
         # if trn.is_show_details(acc):
         #     item.detail_trn = trn
 
@@ -805,11 +825,6 @@ class ReportItem(object):
     def from_item(cls, src):
         item = cls(src.report, src.pricing_provider, src.fx_rate_provider, src.type)
 
-        if src.detail_trn:
-            item.trn = src.trn
-        # if item.type in [ReportItem.TYPE_TRANSACTION_PL, ReportItem.TYPE_FX_TRADE]:
-        #     item.trn = src.trn
-
         item.instr = src.instr  # -> Instrument
         item.ccy = src.ccy  # -> Currency
         item.prtfl = src.prtfl  # -> Portfolio if use_portfolio
@@ -818,8 +833,14 @@ class ReportItem(object):
         item.str1 = src.str1  # -> Strategy1 if use_strategy1
         item.str2 = src.str2  # -> Strategy2 if use_strategy2
         item.str3 = src.str3  # -> Strategy3 if use_strategy3
-        # item.trn_cls = src.trn_cls  # -> TransactionClass for TRANSACTION_PL and FX_TRADE
-        # item.detail_trn = src.detail_trn  # -> Transaction if show_transaction_details
+
+        # if item.type in [ReportItem.TYPE_TRANSACTION_PL, ReportItem.TYPE_FX_TRADE]:
+        #     item.trn = src.trn
+        if src.detail_trn:
+            item.trn = src.trn
+
+        item.mismatch_ccy = src.mismatch_ccy
+
         return item
 
     @staticmethod
@@ -827,8 +848,8 @@ class ReportItem(object):
         return [
             'type_code',
             'user_code',
-            # 'prtfl',
-            # 'acc',
+            'prtfl',
+            'acc',
             # 'str1',
             # 'str2',
             # 'str3',
@@ -837,6 +858,8 @@ class ReportItem(object):
             # 'ccy',
             'pos_size',
             'market_value_sys',
+            'mismatch_ccy',
+            'mismatch',
             # 'cost_sys',
             # 'total_real_sys',
             # 'total_unreal_sys',
@@ -944,60 +967,93 @@ class ReportItem(object):
     def type_code(self):
         if self.type == ReportItem.TYPE_UNKNOWN:
             return 'UNKN'
+
         elif self.type == ReportItem.TYPE_INSTRUMENT:
             return 'INSTR'
+
         elif self.type == ReportItem.TYPE_CURRENCY:
             return 'CCY'
+
         elif self.type == ReportItem.TYPE_TRANSACTION_PL:
             return 'TRN_PL'
+
         elif self.type == ReportItem.TYPE_FX_TRADE:
             return 'FX_TRADE'
+
+        elif self.type == ReportItem.TYPE_MISMATCH:
+            return 'MISMATCH'
+
         elif self.type == ReportItem.TYPE_SUMMARY:
             return 'SUM'
+
         elif self.type == ReportItem.TYPE_INVESTED_CURRENCY:
             return 'INV_CCY'
+
         elif self.type == ReportItem.TYPE_INVESTED_SUMMARY:
             return 'INV_SUM'
+
         return 'ERR'
 
     @property
     def user_code(self):
         if self.type == ReportItem.TYPE_UNKNOWN:
             return '<UNKNOWN>'
+
         elif self.type == ReportItem.TYPE_INSTRUMENT:
             return self.instr.user_code
+
         elif self.type == ReportItem.TYPE_CURRENCY:
             return self.ccy.user_code
+
         elif self.type == ReportItem.TYPE_TRANSACTION_PL:
             return 'TRANSACTION_PL'
+
         elif self.type == ReportItem.TYPE_FX_TRADE:
             return 'FX_TRADE'
+
+        elif self.type == ReportItem.TYPE_MISMATCH:
+            return self.instr.user_code
+
         elif self.type == ReportItem.TYPE_SUMMARY:
             return 'SUMMARY'
+
         elif self.type == ReportItem.TYPE_INVESTED_CURRENCY:
             return self.ccy.user_code
+
         elif self.type == ReportItem.TYPE_INVESTED_SUMMARY:
             return 'INVESTED_SUMMARY'
+
         return '<ERROR>'
 
     @property
     def name(self):
         if self.type == ReportItem.TYPE_UNKNOWN:
             return '<UNKNOWN>'
+
         elif self.type == ReportItem.TYPE_INSTRUMENT:
             return self.instr.name
+
         elif self.type == ReportItem.TYPE_CURRENCY:
             return self.ccy.name
+
         elif self.type == ReportItem.TYPE_TRANSACTION_PL:
             return ugettext('Transaction PL')
+
         elif self.type == ReportItem.TYPE_FX_TRADE:
             return ugettext('FX-Trade')
+
+        elif self.type == ReportItem.TYPE_MISMATCH:
+            return self.link_instr.name
+
         elif self.type == ReportItem.TYPE_SUMMARY:
             return ugettext('Summary')
+
         elif self.type == ReportItem.TYPE_INVESTED_CURRENCY:
             return self.ccy.name
+
         elif self.type == ReportItem.TYPE_INVESTED_SUMMARY:
             return ugettext('Invested summary')
+
         return '<ERROR>'
 
     @property
@@ -1038,6 +1094,26 @@ class ReportItem(object):
             getattr(item.detail_trn, 'id', None) if report.show_transaction_details else None,
             getattr(item.instr, 'id', None),
             getattr(item.ccy, 'id', None),
+        )
+
+    @staticmethod
+    def mismatch_sort_key(report, item):
+        return (
+            item.type,
+            getattr(item.prtfl, 'id', None),
+            getattr(item.acc, 'id', None),
+            getattr(item.instr, 'id', None),
+            getattr(item.mismatch_ccy, 'id', None),
+        )
+
+    @staticmethod
+    def mismatch_group_key(report, item):
+        return (
+            item.type,
+            getattr(item.prtfl, 'id', None) if report.detail_by_portfolio else None,
+            getattr(item.acc, 'id', None) if report.detail_by_account else None,
+            getattr(item.instr, 'id', None),
+            getattr(item.mismatch_ccy, 'id', None),
         )
 
     @property
@@ -1252,6 +1328,9 @@ class ReportItem(object):
             self.market_value_sys += o.market_value_sys
             self.total_real_sys += o.total_real_sys
             self.total_unreal_sys += o.total_unreal_sys
+
+        elif self.type == ReportItem.TYPE_MISMATCH:
+            self.mismatch += o.mismatch
 
     def close(self):
         if self.type == ReportItem.TYPE_CURRENCY or self.type == ReportItem.TYPE_INVESTED_CURRENCY:
@@ -1834,7 +1913,13 @@ class ReportBuilder(object):
             pass
 
     def build(self):
+        mismatch_items = []
         for trn in self.transactions:
+            if trn.link_instr and not isclose(trn.mismatch, 0.0):
+                item = ReportItem.from_trn(self.instance, self._pricing_provider, self._fx_rate_provider,
+                                           ReportItem.TYPE_MISMATCH, trn)
+                mismatch_items.append(item)
+
             if trn.trn_cls.id in [TransactionClass.BUY, TransactionClass.SELL]:
                 self._add_instr(trn)
                 self._add_cash(trn, val=trn.cash, ccy=trn.stl_ccy)
@@ -1889,50 +1974,64 @@ class ReportBuilder(object):
 
         _items = sorted(self._items, key=partial(ReportItem.sort_key, self.instance))
 
-        gitems = []
-        # summary = ReportItem(self.instance, self._pricing_provider, self._fx_rate_provider, ReportItem.TYPE_SUMMARY)
+        res_items = []
+        invested_items = []
+
         for k, g in groupby(_items, key=partial(ReportItem.group_key, self.instance)):
-            ritem = None
-            invested = None
+            res_item = None
+            invested_item = None
 
             for item in g:
-                if ritem is None:
-                    ritem = ReportItem.from_item(item)
-                ritem.add(item)
+                if item.type in [ReportItem.TYPE_INSTRUMENT, ReportItem.TYPE_CURRENCY, ReportItem.TYPE_TRANSACTION_PL,
+                                 ReportItem.TYPE_FX_TRADE]:
+                    if res_item is None:
+                        res_item = ReportItem.from_item(item)
+                    res_item.add(item)
 
                 if item.trn and item.trn.trn_cls.id in [TransactionClass.CASH_INFLOW, TransactionClass.CASH_OUTFLOW]:
-                    if invested is None:
-                        invested = ReportItem.from_item(item)
-                        invested.type = ReportItem.TYPE_INVESTED_CURRENCY
-                    invested.add(item)
+                    if invested_item is None:
+                        invested_item = ReportItem.from_item(item)
+                        invested_item.type = ReportItem.TYPE_INVESTED_CURRENCY
+                    invested_item.add(item)
 
-            if ritem:
-                ritem.close()
-                gitems.append(ritem)
+            if res_item:
+                res_item.close()
+                res_items.append(res_item)
 
-            if invested:
-                invested.close()
-                gitems.append(invested)
+            if invested_item:
+                invested_item.close()
+                invested_items.append(invested_item)
+
+        mismatch_items0 = sorted(mismatch_items, key=partial(ReportItem.mismatch_sort_key, self.instance))
+        mismatch_items = []
+        for k, g in groupby(mismatch_items0, key=partial(ReportItem.mismatch_group_key, self.instance)):
+            mismatch_item = None
+            for item in g:
+                if mismatch_item is None:
+                    mismatch_item = ReportItem.from_item(item)
+                mismatch_item.add(item)
+            if mismatch_item:
+                mismatch_item.close()
+                mismatch_items.append(mismatch_item)
 
         summary = ReportItem(self.instance, self._pricing_provider, self._fx_rate_provider, ReportItem.TYPE_SUMMARY)
-        invested_summary = ReportItem(self.instance, self._pricing_provider, self._fx_rate_provider,
-                                      ReportItem.TYPE_INVESTED_SUMMARY)
-        for item in gitems:
+        for item in res_items:
             if item.type in [ReportItem.TYPE_INSTRUMENT, ReportItem.TYPE_CURRENCY, ReportItem.TYPE_TRANSACTION_PL,
                              ReportItem.TYPE_FX_TRADE]:
                 summary.add(item)
+
+        invested_summary = ReportItem(self.instance, self._pricing_provider, self._fx_rate_provider,
+                                      ReportItem.TYPE_INVESTED_SUMMARY)
+        for item in invested_items:
             if item.type in [ReportItem.TYPE_INVESTED_CURRENCY]:
                 invested_summary.add(item)
 
-        gitems.append(summary)
-        gitems.append(invested_summary)
+        self.instance.items = res_items + mismatch_items + invested_items + [summary, invested_summary]
 
         print('2' * 100)
-        ReportItem.dumps(gitems)
+        ReportItem.dumps(self.instance.items)
 
-        print('4' * 100)
-
-        self.instance.items = gitems
+        print('3' * 100)
 
         # self._process_final(self._invested_items.values())
         # self.instance.invested_items = sorted([i for i in self._invested_items.values()], key=lambda x: x.pk)

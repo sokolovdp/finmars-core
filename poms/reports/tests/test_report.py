@@ -127,11 +127,12 @@ class ReportTestCase(TestCase):
         else:
             return self.report_date + timedelta(days=days)
 
-    def _t(self, master=None, t_class=None, p=None, instr=None, trn_ccy=None, position=None,
-           settlement_ccy=None, cash_consideration=None, principal=0.0, carry=0.0, overheads=0.0,
+    def _t(self, master=None, t_class=None, p=None, instr=None, trn_ccy=None, position=0.0,
+           stl_ccy=None, cash=None, principal=0.0, carry=0.0, overheads=0.0,
            acc_date=None, acc_date_days=None, cash_date=None, cash_date_days=None,
            acc_pos=None, acc_cash=None, acc_interim=None, fx_rate=0.0,
-           s1_pos=None, s1_cash=None, s2_pos=None, s2_cash=None, s3_pos=None, s3_cash=None):
+           s1_pos=None, s1_cash=None, s2_pos=None, s2_cash=None, s3_pos=None, s3_cash=None,
+           link_instr=None):
         t = Transaction()
 
         t.master_user = master if master else self.m
@@ -141,8 +142,8 @@ class ReportTestCase(TestCase):
         t.transaction_currency = trn_ccy
         t.position_size_with_sign = position
 
-        t.settlement_currency = settlement_ccy or self.m.currency
-        t.cash_consideration = cash_consideration if cash_consideration is not None else (principal + carry + overheads)
+        t.settlement_currency = stl_ccy or self.m.currency
+        t.cash_consideration = cash if cash is not None else (principal + carry + overheads)
         t.principal_with_sign = principal
         t.carry_with_sign = carry
         t.overheads_with_sign = overheads
@@ -164,6 +165,8 @@ class ReportTestCase(TestCase):
         t.strategy3_cash = s3_cash or self.m.strategy3
 
         t.reference_fx_rate = fx_rate
+
+        t.linked_instrument = link_instr
 
         t.save()
         return t
@@ -249,39 +252,39 @@ class ReportTestCase(TestCase):
                                           accrued_currency=self.usd, accrued_multiplier=1.0)
 
         self._t(t_class=self._sell, instr=instr, position=-5,
-                settlement_ccy=self.usd, principal=40.0, carry=0.0, overheads=0.0,
+                stl_ccy=self.usd, principal=40.0, carry=0.0, overheads=0.0,
                 acc_date_days=1, cash_date_days=1)
 
         self._t(t_class=self._buy, instr=instr, position=10,
-                settlement_ccy=self.usd, principal=-100.0, carry=0.0, overheads=0.0,
+                stl_ccy=self.usd, principal=-100.0, carry=0.0, overheads=0.0,
                 acc_date_days=2, cash_date_days=2)
 
         self._t(t_class=self._buy, instr=instr, position=10,
-                settlement_ccy=self.usd, principal=-105.0, carry=0.0, overheads=0.0,
+                stl_ccy=self.usd, principal=-105.0, carry=0.0, overheads=0.0,
                 acc_date_days=3, cash_date_days=3)
 
         self._t(t_class=self._buy, instr=instr, position=10,
-                settlement_ccy=self.usd, principal=-110.0, carry=0.0, overheads=0.0,
+                stl_ccy=self.usd, principal=-110.0, carry=0.0, overheads=0.0,
                 acc_date_days=4, cash_date_days=4)
 
         self._t(t_class=self._sell, instr=instr, position=-20,
-                settlement_ccy=self.usd, principal=230.0, carry=0.0, overheads=0.0,
+                stl_ccy=self.usd, principal=230.0, carry=0.0, overheads=0.0,
                 acc_date_days=5, cash_date_days=5)
 
         self._t(t_class=self._buy, instr=instr, position=10,
-                settlement_ccy=self.usd, principal=-120.0, carry=0.0, overheads=0.0,
+                stl_ccy=self.usd, principal=-120.0, carry=0.0, overheads=0.0,
                 acc_date_days=6, cash_date_days=6)
 
         self._t(t_class=self._sell, instr=instr, position=-20,
-                settlement_ccy=self.usd, principal=250.0, carry=0.0, overheads=0.0,
+                stl_ccy=self.usd, principal=250.0, carry=0.0, overheads=0.0,
                 acc_date_days=7, cash_date_days=7)
 
         self._t(t_class=self._sell, instr=instr, position=-10,
-                settlement_ccy=self.usd, principal=130.0, carry=0.0, overheads=0.0,
+                stl_ccy=self.usd, principal=130.0, carry=0.0, overheads=0.0,
                 acc_date_days=8, cash_date_days=8)
 
         self._t(t_class=self._buy, instr=instr, position=20,
-                settlement_ccy=self.usd, principal=-250.0, carry=0.0, overheads=0.0,
+                stl_ccy=self.usd, principal=-250.0, carry=0.0, overheads=0.0,
                 acc_date_days=9, cash_date_days=9)
 
         r = Report(master_user=self.m, pricing_policy=self.pp, report_date=self._d(14),
@@ -306,11 +309,11 @@ class ReportTestCase(TestCase):
         b.build()
         self._dump(b, 'balance_0')
 
-    def test_balance_1(self):
+    def _test_balance_1(self):
         self._t(t_class=self._cash_inflow, trn_ccy=self.usd, position=1000, fx_rate=1.3)
         self._t(t_class=self._buy,
                 instr=self.bond0, position=100,
-                settlement_ccy=self.usd, principal=-180., carry=-5., overheads=-15.,
+                stl_ccy=self.usd, principal=-180., carry=-5., overheads=-15.,
                 acc_date_days=3, cash_date_days=5)
 
         r = Report(master_user=self.m, pricing_policy=self.pp, report_date=self._d(14))
@@ -322,11 +325,11 @@ class ReportTestCase(TestCase):
         self._t(t_class=self._cash_inflow, trn_ccy=self.eur, position=1000, fx_rate=1.3)
         self._t(t_class=self._buy,
                 instr=self.bond1, position=100,
-                settlement_ccy=self.usd, principal=-180., carry=-5., overheads=-15.,
+                stl_ccy=self.usd, principal=-180., carry=-5., overheads=-15.,
                 acc_date_days=3, cash_date_days=5)
         self._t(t_class=self._buy,
                 instr=self.stock1, position=-200,
-                settlement_ccy=self.rub, principal=1100., carry=0., overheads=-100.,
+                stl_ccy=self.rub, principal=1100., carry=0., overheads=-100.,
                 acc_date_days=5, cash_date_days=3)
         self._t(t_class=self._cash_outflow,
                 trn_ccy=self.rub, position=-1000,
@@ -343,7 +346,7 @@ class ReportTestCase(TestCase):
         self._t(t_class=self._cash_inflow, trn_ccy=self.usd, position=1000, fx_rate=1.3)
 
         self._t(t_class=self._buy, instr=self.bond0, position=100,
-                settlement_ccy=self.usd, principal=-180., carry=-5., overheads=-15.,
+                stl_ccy=self.usd, principal=-180., carry=-5., overheads=-15.,
                 acc_date_days=3, cash_date_days=5)
 
         r = Report(master_user=self.m, pricing_policy=self.pp, report_date=self._d(14))
@@ -355,11 +358,11 @@ class ReportTestCase(TestCase):
         self._t(t_class=self._cash_inflow, trn_ccy=self.eur, position=1000, fx_rate=1.3)
 
         self._t(t_class=self._buy, instr=self.bond1, position=100,
-                settlement_ccy=self.usd, principal=-180., carry=-5., overheads=-15.,
+                stl_ccy=self.usd, principal=-180., carry=-5., overheads=-15.,
                 acc_date_days=3, cash_date_days=5)
 
         self._t(t_class=self._buy, instr=self.stock1, position=-200,
-                settlement_ccy=self.rub, principal=1100., carry=0., overheads=-100.,
+                stl_ccy=self.rub, principal=1100., carry=0., overheads=-100.,
                 acc_date_days=5, cash_date_days=3)
 
         self._t(t_class=self._cash_outflow, trn_ccy=self.rub, position=-1000,
@@ -367,15 +370,15 @@ class ReportTestCase(TestCase):
                 acc_date_days=6, cash_date_days=6, fx_rate=1 / 75.)
 
         self._t(t_class=self._instrument_pl, instr=self.stock1, position=0.,
-                settlement_ccy=self.chf, principal=0., carry=11., overheads=-1.,
+                stl_ccy=self.chf, principal=0., carry=11., overheads=-1.,
                 acc_date_days=7, cash_date_days=7)
 
         self._t(t_class=self._instrument_pl, instr=self.bond1, position=0.,
-                settlement_ccy=self.chf, principal=0., carry=20., overheads=0.,
+                stl_ccy=self.chf, principal=0., carry=20., overheads=0.,
                 acc_date_days=8, cash_date_days=8)
 
         self._t(t_class=self._transaction_pl, position=0.,
-                settlement_ccy=self.rub, principal=0., carry=-900., overheads=-100.,
+                stl_ccy=self.rub, principal=0., carry=-900., overheads=-100.,
                 acc_date_days=8, cash_date_days=8)
 
         r = Report(master_user=self.m, pricing_policy=self.pp, report_date=self._d(14))
@@ -415,35 +418,35 @@ class ReportTestCase(TestCase):
                                     date=self._d(14), principal_price=15.0, accrued_price=0.0)
 
         self._t(t_class=self._sell, instr=instr, position=-5,
-                settlement_ccy=self.usd, principal=40.0, carry=0.0, overheads=0.0,
+                stl_ccy=self.usd, principal=40.0, carry=0.0, overheads=0.0,
                 acc_date_days=1, cash_date_days=1, s1_pos=s1, s1_cash=s1)
 
         self._t(t_class=self._buy, instr=instr, position=10,
-                settlement_ccy=self.usd, principal=-100.0, carry=0.0, overheads=0.0,
+                stl_ccy=self.usd, principal=-100.0, carry=0.0, overheads=0.0,
                 acc_date_days=2, cash_date_days=2, s1_pos=s1, s1_cash=s1)
 
         self._t(t_class=self._buy, instr=instr, position=10,
-                settlement_ccy=self.usd, principal=-105.0, carry=0.0, overheads=0.0,
+                stl_ccy=self.usd, principal=-105.0, carry=0.0, overheads=0.0,
                 acc_date_days=3, cash_date_days=3, s1_pos=s1, s1_cash=s1)
 
         self._t(t_class=self._buy, instr=instr, position=10,
-                settlement_ccy=self.usd, principal=-110.0, carry=0.0, overheads=0.0,
+                stl_ccy=self.usd, principal=-110.0, carry=0.0, overheads=0.0,
                 acc_date_days=4, cash_date_days=4, s1_pos=s1, s1_cash=s1)
 
         self._t(t_class=self._sell, instr=instr, position=-20,
-                settlement_ccy=self.usd, principal=230.0, carry=0.0, overheads=0.0,
+                stl_ccy=self.usd, principal=230.0, carry=0.0, overheads=0.0,
                 acc_date_days=5, cash_date_days=5, s1_pos=s2, s1_cash=s2)
 
         self._t(t_class=self._buy, instr=instr, position=10,
-                settlement_ccy=self.usd, principal=-120.0, carry=0.0, overheads=0.0,
+                stl_ccy=self.usd, principal=-120.0, carry=0.0, overheads=0.0,
                 acc_date_days=6, cash_date_days=6, s1_pos=s3, s1_cash=s3)
 
         self._t(t_class=self._sell, instr=instr, position=-20,
-                settlement_ccy=self.usd, principal=250.0, carry=0.0, overheads=0.0,
+                stl_ccy=self.usd, principal=250.0, carry=0.0, overheads=0.0,
                 acc_date_days=7, cash_date_days=7, s1_pos=s2, s1_cash=s2)
 
         self._t(t_class=self._sell, instr=instr, position=-10,
-                settlement_ccy=self.usd, principal=130.0, carry=0.0, overheads=0.0,
+                stl_ccy=self.usd, principal=130.0, carry=0.0, overheads=0.0,
                 acc_date_days=8, cash_date_days=8, s1_pos=s4, s1_cash=s4)
 
         r = Report(master_user=self.m, pricing_policy=self.pp, report_date=self._d(14),
@@ -452,7 +455,7 @@ class ReportTestCase(TestCase):
         b.build()
         self._dump(b, 'test_pl_real_unreal_1')
 
-    def test_pl_fx_fix_full_0(self):
+    def _test_pl_fx_fix_full_0(self):
         instr = Instrument.objects.create(master_user=self.m, name="I1, RUB/RUB",
                                           instrument_type=self.m.instrument_type,
                                           pricing_currency=self.rub, price_multiplier=1.0,
@@ -479,17 +482,17 @@ class ReportTestCase(TestCase):
         #     print(ch.currency.user_code, ch.date, ch.fx_rate)
 
         self._t(t_class=self._buy, instr=instr, position=5,
-                settlement_ccy=self.gbp, principal=-20.0, carry=-5.0,
+                stl_ccy=self.gbp, principal=-20.0, carry=-5.0,
                 trn_ccy=self.usd, fx_rate=1.5,
                 acc_date_days=101, cash_date_days=101)
 
         self._t(t_class=self._buy, instr=instr, position=5,
-                settlement_ccy=self.eur, principal=-22.0, carry=-8.0,
+                stl_ccy=self.eur, principal=-22.0, carry=-8.0,
                 trn_ccy=self.usd, fx_rate=1.3,
                 acc_date_days=102, cash_date_days=102)
 
         self._t(t_class=self._sell, instr=instr, position=-5,
-                settlement_ccy=self.chf, principal=25.0, carry=9.0,
+                stl_ccy=self.chf, principal=25.0, carry=9.0,
                 trn_ccy=self.usd, fx_rate=1.1,
                 acc_date_days=103, cash_date_days=103)
 
@@ -498,3 +501,27 @@ class ReportTestCase(TestCase):
         b = ReportBuilder(instance=r)
         b.build()
         self._dump(b, 'test_pl_fx_fix_full_0')
+
+    def test_mismatch_0(self):
+        self._t(t_class=self._buy,
+                instr=self.bond0, position=100,
+                stl_ccy=self.chf, cash=-10, principal=-10, carry=0, overheads=0,
+                p=self.p1, acc_pos=self.a1_1,
+                link_instr=self.bond1)
+
+        self._t(t_class=self._buy,
+                instr=self.bond0, position=100,
+                stl_ccy=self.chf, cash=0, principal=-10, carry=0, overheads=0,
+                p=self.p1, acc_pos=self.a1_1,
+                link_instr=self.bond1)
+
+        self._t(t_class=self._buy,
+                instr=self.stock0, position=100,
+                stl_ccy=self.usd, cash=0, principal=-10, carry=0, overheads=0,
+                p=self.p2, acc_pos=self.a1_2,
+                link_instr=self.bond1)
+
+        r = Report(master_user=self.m, pricing_policy=self.pp, report_date=self._d(14))
+        b = ReportBuilder(instance=r)
+        b.build()
+        self._dump(b, 'test_mismatch_0')
