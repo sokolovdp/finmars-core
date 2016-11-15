@@ -43,8 +43,8 @@ class MasterUserManager(models.Manager):
         ccy_usd = Currency.objects.create(master_user=obj, name='USD')
 
         for c in pycountry.currencies:
-            if c.letter != 'USD':
-                Currency.objects.create(master_user=obj, user_code=c.letter, name=c.name)
+            if c.alpha_3 != 'USD':
+                Currency.objects.create(master_user=obj, user_code=c.alpha_3, name=c.name)
 
         account_type = AccountType.objects.create(master_user=obj, name='-')
         account = Account.objects.create(master_user=obj, type=account_type, name='-')
