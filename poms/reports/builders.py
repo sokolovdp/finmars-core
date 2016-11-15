@@ -231,7 +231,8 @@ class VirtualTransaction(object):
             data.append(item.values())
         print(pandas.DataFrame(data=data, columns=VirtualTransaction.columns()))
 
-    #  report ccy val --------
+    #  report ccy val ----------------------------------------------------
+
     def __getattr__(self, item):
         if item.endswith('_rep'):
             item_sys = '%s_sys' % item[:-4]
@@ -246,7 +247,7 @@ class VirtualTransaction(object):
                     return val / fx
         raise AttributeError(item)
 
-    # globals
+    # globals ----------------------------------------------------
 
     @property
     def case(self):
@@ -262,7 +263,7 @@ class VirtualTransaction(object):
             return acc and acc.type and acc.type.show_transaction_details
         return False
 
-    # report ccy
+    # report ccy ----------------------------------------------------
 
     @property
     def report_ccy_is_sys(self):
@@ -276,7 +277,7 @@ class VirtualTransaction(object):
     def report_ccy_rep_fx(self):
         return getattr(self.report_ccy_rep, 'fx_rate', float('nan'))
 
-    # instr
+    # instr ----------------------------------------------------
 
     @property
     def instr_price_rep(self):
@@ -350,7 +351,7 @@ class VirtualTransaction(object):
             return self.instr_accrued * self.instr_pricing_ccy_rep_fx
         return float('nan')
 
-    # trn ccy
+    # trn ccy ----------------------------------------------------
 
     @property
     def trn_ccy_hist(self):
@@ -372,7 +373,7 @@ class VirtualTransaction(object):
     def trn_ccy_rep_fx(self):
         return getattr(self.trn_ccy_rep, 'fx_rate', float('nan'))
 
-    # @ stl ccy
+    # stl ccy ----------------------------------------------------
 
     @property
     def stl_ccy_hist(self):
@@ -394,7 +395,7 @@ class VirtualTransaction(object):
     def stl_ccy_rep_fx(self):
         return getattr(self.stl_ccy_rep, 'fx_rate', float('nan'))
 
-    # props
+    # props ----------------------------------------------------
 
     @property
     def mismatch(self):
@@ -406,7 +407,7 @@ class VirtualTransaction(object):
             return self.pos_size * self.trn_ccy_rep_fx
         return float('nan')
 
-    # Cash related
+    # Cash related ----------------------------------------------------
 
     @property
     def cash_sys(self):
@@ -433,6 +434,24 @@ class VirtualTransaction(object):
     @property
     def total_sys(self):
         return self.total * self.stl_ccy_rep_fx
+
+    # cash flow ----------------------------------------------------
+
+    @property
+    def cash_flow_real(self):
+        return self.total * self.multiplier
+
+    @property
+    def cash_flow_unreal(self):
+        return self.total * (1.0 - self.multiplier)
+
+    @property
+    def cash_flow_real_sys(self):
+        return self.total_sys * self.multiplier
+
+    @property
+    def cash_flow_unreal_sys(self):
+        return self.total_sys * (1.0 - self.multiplier)
 
     # full / closed ----------------------------------------------------
 
@@ -631,6 +650,9 @@ class ReportItem(object):
 
     # P&L
 
+    cash_flow_real_sys = 0.0
+    cash_flow_unreal_sys = 0.0
+
     total_real_sys = 0.0
     total_unreal_sys = 0.0
 
@@ -715,7 +737,11 @@ class ReportItem(object):
             item.pos_size = trn.pos_size * (1.0 - trn.multiplier)
             item.cost_sys = trn.principal_sys * (1.0 - trn.multiplier)
 
+            item.cash_flow_real_sys = trn.cash_flow_real_sys
+            item.cash_flow_unreal_sys = trn.cash_flow_unreal_sys
+
             item.total_real_sys = trn.total_real_sys
+            item.total_unreal_sys = trn.total_unreal_sys
 
             # full ----------------------------------------------------
             item.principal_sys = trn.principal_sys
@@ -1363,6 +1389,7 @@ class Report(object):
         self.report_currency = report_currency or master_user.system_currency
         self.cost_method = cost_method or CostMethod.objects.get(pk=CostMethod.AVCO)
         self.pl_real_unreal_end_multiplier = 0.5
+        self.allocation_end_multiplier = 0.5
 
         self.detail_by_portfolio = detail_by_portfolio
         self.detail_by_account = detail_by_account

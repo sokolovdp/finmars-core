@@ -143,9 +143,7 @@ class ReportItemCustomFieldSerializer(serializers.Serializer):
 class ReportItemSerializer(serializers.Serializer):
     id = serializers.CharField(read_only=True)
 
-    type = serializers.ChoiceField(
-        choices=ReportItem.TYPE_CHOICES
-    )
+    type = serializers.ChoiceField(choices=ReportItem.TYPE_CHOICES)
     user_code = serializers.ReadOnlyField()
     name = serializers.ReadOnlyField()
     detail = serializers.CharField(read_only=True)
@@ -255,6 +253,8 @@ class ReportSerializer(serializers.Serializer):
     report_date = serializers.DateField(required=False, allow_null=True, default=date_now)
     report_currency = CurrencyField(required=False, allow_null=True, default=SystemCurrencyDefault())
     cost_method = serializers.PrimaryKeyRelatedField(queryset=CostMethod.objects, allow_null=True, allow_empty=True)
+    pl_real_unreal_end_multiplier = serializers.FloatField(initial=0.5, default=0.5)
+    allocation_end_multiplier = serializers.FloatField(initial=0.5, default=0.5)
 
     detail_by_portfolio = serializers.BooleanField(default=False)
     detail_by_account = serializers.BooleanField(default=False)
@@ -289,13 +289,13 @@ class ReportSerializer(serializers.Serializer):
         super(ReportSerializer, self).__init__(*args, **kwargs)
 
     def validate(self, attrs):
-        if not attrs.get('report_date', None):
+        if attrs.get('report_date', None) is None:
             attrs['report_date'] = date_now() - timedelta(days=1)
 
-        if not attrs.get('report_currency', None):
+        if attrs.get('report_currency', None) is None:
             attrs['report_currency'] = attrs['master_user'].system_currency
 
-        if not attrs.get('cost_method', None):
+        if attrs.get('cost_method', None) is None:
             attrs['cost_method'] = CostMethod.objects.get(pk=CostMethod.AVCO)
 
         return attrs
