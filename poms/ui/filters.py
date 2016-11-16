@@ -1,6 +1,8 @@
 from django.contrib.contenttypes.models import ContentType
 from rest_framework.filters import BaseFilterBackend
 
+from poms.reports.models import BalanceReport, PLReport, PerformanceReport, CashFlowReport, TransactionReport
+
 
 class LayoutContentTypeFilter(BaseFilterBackend):
     def filter_queryset(self, request, queryset, view):
@@ -19,7 +21,8 @@ class LayoutContentTypeFilter(BaseFilterBackend):
                   TransactionTypeGroup, TransactionType, Transaction, Tag,
                   Strategy1Group, Strategy1Subgroup, Strategy1,
                   Strategy2Group, Strategy2Subgroup, Strategy2,
-                  Strategy3Group, Strategy3Subgroup, Strategy3, ]
+                  Strategy3Group, Strategy3Subgroup, Strategy3,
+                  BalanceReport, PLReport, PerformanceReport, CashFlowReport, TransactionReport,]
         ctypes = [ContentType.objects.get_for_model(model).pk for model in models]
         return queryset.filter(pk__in=ctypes).order_by('model')
 
