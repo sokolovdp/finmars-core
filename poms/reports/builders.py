@@ -1380,6 +1380,7 @@ class ReportItem(object):
 class Report(object):
     def __init__(self, id=None, master_user=None, task_id=None, task_status=None,
                  report_date=None, report_currency=None, pricing_policy=None, cost_method=None,
+                 allocation_end_multiplier=0.5, pl_real_unreal_end_multiplier=0.5,
                  detail_by_portfolio=False, detail_by_account=False, detail_by_strategy1=False,
                  detail_by_strategy2=False, detail_by_strategy3=False,
                  show_transaction_details=False,
@@ -1395,8 +1396,8 @@ class Report(object):
         self.report_date = report_date or (date_now() - timedelta(days=1))
         self.report_currency = report_currency or master_user.system_currency
         self.cost_method = cost_method or CostMethod.objects.get(pk=CostMethod.AVCO)
-        self.pl_real_unreal_end_multiplier = 0.5
-        self.allocation_end_multiplier = 0.5
+        self.pl_real_unreal_end_multiplier = pl_real_unreal_end_multiplier if pl_real_unreal_end_multiplier is not None else 0.5
+        self.allocation_end_multiplier = allocation_end_multiplier if allocation_end_multiplier is not None else 0.5
 
         self.detail_by_portfolio = detail_by_portfolio
         self.detail_by_account = detail_by_account
