@@ -1060,14 +1060,25 @@ class ReportItem(_Base):
 
     @staticmethod
     def group_key(report, item):
+        # return (
+        #     item.type,
+        #     getattr(item.prtfl, 'id', None) if report.detail_by_portfolio else None,
+        #     getattr(item.acc, 'id', None) if report.detail_by_account else None,
+        #     getattr(item.str1, 'id', None) if report.detail_by_strategy1 else None,
+        #     getattr(item.str2, 'id', None) if report.detail_by_strategy2 else None,
+        #     getattr(item.str3, 'id', None) if report.detail_by_strategy3 else None,
+        #     getattr(item.detail_trn, 'id', None) if report.show_transaction_details else None,
+        #     getattr(item.instr, 'id', None),
+        #     getattr(item.ccy, 'id', None),
+        # )
         return (
             item.type,
-            getattr(item.prtfl, 'id', None) if report.detail_by_portfolio else None,
-            getattr(item.acc, 'id', None) if report.detail_by_account else None,
-            getattr(item.str1, 'id', None) if report.detail_by_strategy1 else None,
-            getattr(item.str2, 'id', None) if report.detail_by_strategy2 else None,
-            getattr(item.str3, 'id', None) if report.detail_by_strategy3 else None,
-            getattr(item.detail_trn, 'id', None) if report.show_transaction_details else None,
+            getattr(item.prtfl, 'id', None),
+            getattr(item.acc, 'id', None),
+            getattr(item.str1, 'id', None),
+            getattr(item.str2, 'id', None),
+            getattr(item.str3, 'id', None),
+            getattr(item.detail_trn, 'id', None),
             getattr(item.instr, 'id', None),
             getattr(item.ccy, 'id', None),
         )
@@ -1084,10 +1095,17 @@ class ReportItem(_Base):
 
     @staticmethod
     def mismatch_group_key(report, item):
+        # return (
+        #     item.type,
+        #     getattr(item.prtfl, 'id', None) if report.detail_by_portfolio else None,
+        #     getattr(item.acc, 'id', None) if report.detail_by_account else None,
+        #     getattr(item.instr, 'id', None),
+        #     getattr(item.mismatch_ccy, 'id', None),
+        # )
         return (
             item.type,
-            getattr(item.prtfl, 'id', None) if report.detail_by_portfolio else None,
-            getattr(item.acc, 'id', None) if report.detail_by_account else None,
+            getattr(item.prtfl, 'id', None),
+            getattr(item.acc, 'id', None),
             getattr(item.instr, 'id', None),
             getattr(item.mismatch_ccy, 'id', None),
         )
@@ -1491,19 +1509,19 @@ class ReportBuilder(object):
             p.fill_using_transactions(self._trn_qs(), currencies=[self.instance.report_currency])
             return p
 
-    def _make_key(self, instr=None, ccy=None, prtfl=None, acc=None, strg1=None, strg2=None, strg3=None, detail_trn=None,
-                  trn_cls=None):
-        return ','.join((
-            'i=%s' % getattr(instr, 'pk', -1),
-            'c=%s' % getattr(ccy, 'pk', -1),
-            'p=%s' % getattr(prtfl, 'pk', -1),
-            'a=%s' % getattr(acc, 'pk', -1),
-            's1=%s' % getattr(strg1, 'pk', -1),
-            's2=%s' % getattr(strg2, 'pk', -1),
-            's3=%s' % getattr(strg3, 'pk', -1),
-            'dt=%s' % getattr(detail_trn, 'pk', -1),
-            'tc=%s' % getattr(trn_cls, 'pk', -1),
-        ))
+    # def _make_key(self, instr=None, ccy=None, prtfl=None, acc=None, strg1=None, strg2=None, strg3=None, detail_trn=None,
+    #               trn_cls=None):
+    #     return ','.join((
+    #         'i=%s' % getattr(instr, 'pk', -1),
+    #         'c=%s' % getattr(ccy, 'pk', -1),
+    #         'p=%s' % getattr(prtfl, 'pk', -1),
+    #         'a=%s' % getattr(acc, 'pk', -1),
+    #         's1=%s' % getattr(strg1, 'pk', -1),
+    #         's2=%s' % getattr(strg2, 'pk', -1),
+    #         's3=%s' % getattr(strg3, 'pk', -1),
+    #         'dt=%s' % getattr(detail_trn, 'pk', -1),
+    #         'tc=%s' % getattr(trn_cls, 'pk', -1),
+    #     ))
 
     @cached_property
     def transactions(self):
@@ -1513,11 +1531,7 @@ class ReportBuilder(object):
         res = []
         for t in self._trn_qs():
             overrides = {}
-            # self._detail_by_portfolio = self.instance.detail_by_portfolio
-            # self._detail_by_account = self.instance.detail_by_account
-            # self._detail_by_strategy1 = self.instance.detail_by_strategy1
-            # self._detail_by_strategy2 = self.instance.detail_by_strategy2
-            # self._detail_by_strategy3 = self.instance.detail_by_strategy3
+
             if not self.instance.detail_by_portfolio:
                 overrides['portfolio'] = self.instance.master_user.portfolio
 
@@ -1576,11 +1590,12 @@ class ReportBuilder(object):
                 continue
 
             # do not use strategy!!!
-            t_key = self._make_key(
-                instr=t.instr,
-                prtfl=t.prtfl,
-                acc=t.acc_pos
-            )
+            # t_key = self._make_key(
+            #     instr=t.instr,
+            #     prtfl=t.prtfl,
+            #     acc=t.acc_pos
+            # )
+            t_key = (t.instr.id, t.prtfl.id, t.acc_pos.id)
 
             multipliers_delta.clear()
             t.multiplier = 0.0

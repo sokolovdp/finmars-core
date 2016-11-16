@@ -224,10 +224,10 @@ class ReportTestCase(TestCase):
     def _fifo(self):
         return CostMethod.objects.get(pk=CostMethod.FIFO)
 
-    def _print_transactions(self, builder):
+    def _print_transactions(self, transactions):
         print('-' * 100)
         print('Transactions: ')
-        VirtualTransaction.dumps(builder.transactions)
+        VirtualTransaction.dumps(transactions)
 
     def _print_items(self, name, builder, items):
         print('%s:' % name)
@@ -239,7 +239,7 @@ class ReportTestCase(TestCase):
 
         if print_transactions is None:
             print_transactions = self._print_transactions
-        print_transactions(builder)
+        print_transactions(builder.transactions)
 
         if print_items is None:
             print_items = self._print_items
@@ -523,7 +523,7 @@ class ReportTestCase(TestCase):
                 p=self.p2, acc_pos=self.a1_2,
                 link_instr=self.bond1)
 
-        r = Report(master_user=self.m, pricing_policy=self.pp, report_date=self._d(14))
+        r = Report(master_user=self.m, pricing_policy=self.pp, report_date=self._d(14), detail_by_portfolio=True, detail_by_account=True)
         b = ReportBuilder(instance=r)
         b.build()
         self._dump(b, 'test_mismatch_0')
@@ -532,12 +532,12 @@ class ReportTestCase(TestCase):
         self._t(t_class=self._buy,
                 instr=self.bond0, position=100,
                 stl_ccy=self.usd, cash=-10, principal=-10, carry=0, overheads=0,
-                alloc_bl=self.bond1, alloc_pl=self.bond1)
+                alloc_bl=self.bond1, alloc_pl=self.bond2)
 
         self._t(t_class=self._buy,
                 instr=self.bond0, position=100,
                 stl_ccy=self.usd, cash=0, principal=-10, carry=0, overheads=0,
-                alloc_bl=self.bond2, alloc_pl=self.bond2)
+                alloc_bl=self.bond1, alloc_pl=self.bond2)
 
         r = Report(master_user=self.m, pricing_policy=self.pp, report_date=self._d(14))
         b = ReportBuilder(instance=r)
