@@ -8,7 +8,6 @@ from datetime import timedelta
 from functools import partial
 from itertools import groupby
 
-from django.utils import timezone
 from django.utils.functional import cached_property
 from django.utils.translation import ugettext
 
@@ -1415,20 +1414,20 @@ class ReportBuilder(object):
 
         self._items = []
 
-    @property
-    def _system_currency(self):
-        return self.instance.master_user.system_currency
+    # @property
+    # def _system_currency(self):
+    #     return self.instance.master_user.system_currency
 
     @cached_property
-    def _transaction_class_sell(self):
+    def _trn_cls_sell(self):
         return TransactionClass.objects.get(pk=TransactionClass.SELL)
 
     @cached_property
-    def _transaction_class_buy(self):
+    def _trn_cls_buy(self):
         return TransactionClass.objects.get(pk=TransactionClass.BUY)
 
     @cached_property
-    def _transaction_class_fx_trade(self):
+    def _trn_cls_fx_trade(self):
         return TransactionClass.objects.get(pk=TransactionClass.FX_TRADE)
 
     def _trn_qs(self):
@@ -1715,9 +1714,11 @@ class ReportBuilder(object):
 
     def _transfers(self, src):
         res = []
+
         for t in src:
 
             if t.trn_cls.id == TransactionClass.TRANSFER:
+                # split TRANSFER to sell/buy or buy/sell
 
                 if t.position_size_with_sign >= 0:
                     t1 = VirtualTransaction(
@@ -1726,7 +1727,7 @@ class ReportBuilder(object):
                         fx_rate_provider=self._fx_rate_provider,
                         trn=t.trn,
                         overrides={
-                            'transaction_class': self._transaction_class_sell,
+                            'transaction_class': self._trn_cls_sell,
                             'account_position': t.account_cash,
                             'account_cash': t.account_cash,
 
@@ -1742,7 +1743,7 @@ class ReportBuilder(object):
                         fx_rate_provider=self._fx_rate_provider,
                         trn=t.trn,
                         overrides={
-                            'transaction_class': self._transaction_class_buy,
+                            'transaction_class': self._trn_cls_buy,
                             'account_position': t.account_position,
                             'account_cash': t.account_position,
 
@@ -1760,7 +1761,7 @@ class ReportBuilder(object):
                         fx_rate_provider=self._fx_rate_provider,
                         trn=t.trn,
                         overrides={
-                            'transaction_class': self._transaction_class_buy,
+                            'transaction_class': self._trn_cls_buy,
                             'account_position': t.account_cash,
                             'account_cash': t.account_cash,
 
@@ -1776,7 +1777,7 @@ class ReportBuilder(object):
                         fx_rate_provider=self._fx_rate_provider,
                         trn=t.trn,
                         overrides={
-                            'transaction_class': self._transaction_class_sell,
+                            'transaction_class': self._trn_cls_sell,
                             'account_position': t.account_position,
                             'account_cash': t.account_position,
 
@@ -1790,14 +1791,15 @@ class ReportBuilder(object):
                 res.append(t2)
 
             elif t.trn_cls.id == TransactionClass.FX_TRANSFER:
+                # split FX_TRANSFER to fx-trade/fx-trade
+
                 t1 = VirtualTransaction(
                     report=self.instance,
                     pricing_provider=self._pricing_provider,
                     fx_rate_provider=self._fx_rate_provider,
                     trn=t.trn,
                     overrides={
-                        'transaction_class_id': self._transaction_class_fx_trade.id,
-                        'transaction_class': self._transaction_class_fx_trade,
+                        'transaction_class': self._trn_cls_fx_trade,
                         'account_position': t.account_cash,
                         'account_cash': t.account_cash,
 
@@ -1814,8 +1816,7 @@ class ReportBuilder(object):
                     fx_rate_provider=self._fx_rate_provider,
                     trn=t.trn,
                     overrides={
-                        'transaction_class_id': self._transaction_class_fx_trade.id,
-                        'transaction_class': self._transaction_class_fx_trade,
+                        'transaction_class': self._trn_cls_fx_trade,
                         'account_position': t.account_position,
                         'account_cash': t.account_position,
 
@@ -1834,6 +1835,9 @@ class ReportBuilder(object):
 
     def build(self):
         mismatch_items = []
+
+        # split transactions to atomic items using transaction class, case and something else
+
         for trn in self.transactions:
             if trn.link_instr and not isclose(trn.mismatch, 0.0):
                 item = ReportItem.from_trn(self.instance, self._pricing_provider, self._fx_rate_provider,
@@ -1889,9 +1893,10 @@ class ReportBuilder(object):
 
         _items = sorted(self._items, key=partial(ReportItem.sort_key, self.instance))
 
-        res_items = []
-        invested_items = []
+        # aggregate items
 
+        invested_items = []
+        res_items = []
         for k, g in groupby(_items, key=partial(ReportItem.group_key, self.instance)):
             res_item = None
             invested_item = None
@@ -1917,6 +1922,8 @@ class ReportBuilder(object):
                 invested_item.close()
                 invested_items.append(invested_item)
 
+        # aggregate mismatches
+
         mismatch_items0 = sorted(mismatch_items, key=partial(ReportItem.mismatch_sort_key, self.instance))
         mismatch_items = []
         for k, g in groupby(mismatch_items0, key=partial(ReportItem.mismatch_group_key, self.instance)):
@@ -1929,11 +1936,15 @@ class ReportBuilder(object):
                 mismatch_item.close()
                 mismatch_items.append(mismatch_item)
 
+        # aggregate summary
+
         summary = ReportItem(self.instance, self._pricing_provider, self._fx_rate_provider, ReportItem.TYPE_SUMMARY)
         for item in res_items:
             if item.type in [ReportItem.TYPE_INSTRUMENT, ReportItem.TYPE_CURRENCY, ReportItem.TYPE_TRANSACTION_PL,
                              ReportItem.TYPE_FX_TRADE]:
                 summary.add(item)
+
+        # aggregate invested summary (primary for validation only)
 
         invested_summary = ReportItem(self.instance, self._pricing_provider, self._fx_rate_provider,
                                       ReportItem.TYPE_INVESTED_SUMMARY)
