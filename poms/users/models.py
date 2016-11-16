@@ -1,7 +1,7 @@
 from __future__ import unicode_literals
 
-import pytz
 import pycountry
+import pytz
 from django.conf import settings
 from django.contrib.auth.models import User, Permission
 from django.db import models
@@ -9,6 +9,7 @@ from django.db.models.signals import post_save
 from django.dispatch import receiver
 from django.utils.encoding import python_2_unicode_compatible
 from django.utils.translation import ugettext_lazy
+
 from poms.common.models import NamedModel, FakeDeletableModel
 
 AVAILABLE_APPS = ['accounts', 'counterparties', 'currencies', 'instruments', 'portfolios', 'strategies', 'transactions',
@@ -26,7 +27,7 @@ class MasterUserManager(models.Manager):
         from poms.accounts.models import AccountType, Account
         from poms.counterparties.models import Counterparty, CounterpartyGroup, Responsible, ResponsibleGroup
         from poms.portfolios.models import Portfolio
-        from poms.instruments.models import InstrumentClass, InstrumentType, EventScheduleConfig
+        from poms.instruments.models import InstrumentClass, InstrumentType, EventScheduleConfig, Instrument
         from poms.integrations.models import PricingAutomatedSchedule
         from poms.strategies.models import Strategy1Group, Strategy1Subgroup, Strategy1, Strategy2Group, \
             Strategy2Subgroup, Strategy2, Strategy3Group, Strategy3Subgroup, Strategy3
@@ -59,8 +60,8 @@ class MasterUserManager(models.Manager):
         instrument_general_class = InstrumentClass.objects.get(pk=InstrumentClass.GENERAL)
         instrument_type = InstrumentType.objects.create(master_user=obj, instrument_class=instrument_general_class,
                                                         name='-')
-        # instrument = Instrument.objects.create(master_user=obj, instrument_type=instrument_type, pricing_currency=ccy,
-        #                                        accrued_currency=ccy, name='-')
+        instrument = Instrument.objects.create(master_user=obj, instrument_type=instrument_type, pricing_currency=ccy,
+                                               accrued_currency=ccy, name='-')
 
         strategy1_group = Strategy1Group.objects.create(master_user=obj, name='-')
         strategy1_subgroup = Strategy1Subgroup.objects.create(master_user=obj, group=strategy1_group, name='-')
@@ -89,7 +90,7 @@ class MasterUserManager(models.Manager):
         obj.responsible = responsible
         obj.portfolio = portfolio
         obj.instrument_type = instrument_type
-        # obj.instrument = instrument
+        obj.instrument = instrument
         obj.strategy1_group = strategy1_group
         obj.strategy1_subgroup = strategy1_subgroup
         obj.strategy1 = strategy1
@@ -103,8 +104,8 @@ class MasterUserManager(models.Manager):
         obj.save()
 
         for c in [account_type, account, counterparty_group, counterparty, responsible_group, responsible, portfolio,
-                  instrument_type, strategy1_group, strategy1_subgroup, strategy1, strategy2_group, strategy2_subgroup,
-                  strategy2, strategy3_group, strategy3_subgroup, strategy3, thread_group]:
+                  instrument_type, instrument, strategy1_group, strategy1_subgroup, strategy1, strategy2_group,
+                  strategy2_subgroup, strategy2, strategy3_group, strategy3_subgroup, strategy3, thread_group]:
             for p in get_change_perms(c):
                 assign_perms3(c, perms=[{'group': group, 'permission': p}])
 
@@ -136,7 +137,7 @@ class MasterUser(models.Model):
     responsible = models.ForeignKey('counterparties.Responsible', null=True, blank=True, on_delete=models.PROTECT)
 
     instrument_type = models.ForeignKey('instruments.InstrumentType', null=True, blank=True, on_delete=models.PROTECT)
-    # instrument = models.ForeignKey('instruments.Instrument', null=True, blank=True, on_delete=models.PROTECT)
+    instrument = models.ForeignKey('instruments.Instrument', null=True, blank=True, on_delete=models.PROTECT)
 
     portfolio = models.ForeignKey('portfolios.Portfolio', null=True, blank=True, on_delete=models.PROTECT)
 

@@ -16,7 +16,7 @@ from poms.common.fields import DateTimeTzAwareField
 from poms.counterparties.fields import CounterpartyField, ResponsibleField, CounterpartyGroupField, \
     ResponsibleGroupField
 from poms.currencies.fields import CurrencyField
-from poms.instruments.fields import InstrumentTypeField
+from poms.instruments.fields import InstrumentTypeField, InstrumentField
 from poms.portfolios.fields import PortfolioField
 from poms.strategies.fields import Strategy1Field, Strategy2Field, Strategy3Field, Strategy1SubgroupField, \
     Strategy1GroupField, Strategy2GroupField, Strategy2SubgroupField, Strategy3GroupField, Strategy3SubgroupField
@@ -178,6 +178,7 @@ class MasterUserSerializer(serializers.ModelSerializer):
     responsible_group = ResponsibleGroupField()
     responsible = ResponsibleField()
     instrument_type = InstrumentTypeField()
+    instrument = InstrumentField()
     portfolio = PortfolioField()
     strategy1_group = Strategy1GroupField()
     strategy1_subgroup = Strategy1SubgroupField()
@@ -204,6 +205,7 @@ class MasterUserSerializer(serializers.ModelSerializer):
             'responsible_group',
             'responsible',
             'instrument_type',
+            'instrument',
             'portfolio',
             'strategy1_group',
             'strategy1_subgroup',
@@ -234,7 +236,8 @@ class MasterUserSerializer(serializers.ModelSerializer):
         self.fields['responsible_group_object'] = ResponsibleGroupViewSerializer(source='responsible_group', read_only=True)
         self.fields['responsible_object'] = ResponsibleViewSerializer(source='responsible', read_only=True)
 
-        from poms.instruments.serializers import InstrumentTypeViewSerializer
+        from poms.instruments.serializers import InstrumentViewSerializer, InstrumentTypeViewSerializer
+        self.fields['instrument_object'] = InstrumentViewSerializer(source='instrument', read_only=True)
         self.fields['instrument_type_object'] = InstrumentTypeViewSerializer(source='instrument_type', read_only=True)
 
         from poms.portfolios.serializers import PortfolioViewSerializer

@@ -22,7 +22,7 @@ from poms.common.filters import CharFilter, NoOpFilter, ModelExtMultipleChoiceFi
 from poms.common.pagination import BigPagination
 from poms.common.views import AbstractModelViewSet, AbstractApiView
 from poms.counterparties.models import CounterpartyGroup, Counterparty, ResponsibleGroup, Responsible
-from poms.instruments.models import InstrumentType
+from poms.instruments.models import InstrumentType, Instrument
 from poms.obj_perms.utils import get_permissions_prefetch_lookups
 from poms.portfolios.models import Portfolio
 from poms.strategies.models import Strategy1, Strategy1Subgroup, Strategy1Group, Strategy2Subgroup, Strategy2Group, \
@@ -160,6 +160,7 @@ class MasterUserViewSet(AbstractModelViewSet):
         'responsible_group',
         'responsible', 'responsible__group',
         'instrument_type', 'instrument_type__instrument_class',
+        'instrument', 'instrument__instrument_type', 'instrument__instrument_type__instrument_class',
         'portfolio',
         'strategy1_group',
         'strategy1_subgroup', 'strategy1_subgroup__group',
@@ -180,6 +181,8 @@ class MasterUserViewSet(AbstractModelViewSet):
             ('responsible_group', ResponsibleGroup),
             ('responsible', Responsible), ('responsible__group', ResponsibleGroup),
             ('instrument_type', InstrumentType),
+            ('instrument', Instrument),
+            ('instrument__instrument_type', InstrumentType),
             ('portfolio', Portfolio),
             ('strategy1_group', Strategy1Group),
             ('strategy1_subgroup', Strategy1Subgroup),
