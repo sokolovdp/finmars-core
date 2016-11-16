@@ -132,7 +132,7 @@ class ReportTestCase(TestCase):
            acc_date=None, acc_date_days=None, cash_date=None, cash_date_days=None,
            acc_pos=None, acc_cash=None, acc_interim=None, fx_rate=0.0,
            s1_pos=None, s1_cash=None, s2_pos=None, s2_cash=None, s3_pos=None, s3_cash=None,
-           link_instr=None):
+           link_instr=None, alloc_bl=None, alloc_pl=None):
         t = Transaction()
 
         t.master_user = master if master else self.m
@@ -167,6 +167,8 @@ class ReportTestCase(TestCase):
         t.reference_fx_rate = fx_rate
 
         t.linked_instrument = link_instr
+        t.allocation_balance = alloc_bl
+        t.allocation_pl = alloc_pl
 
         t.save()
         return t
@@ -502,7 +504,7 @@ class ReportTestCase(TestCase):
         b.build()
         self._dump(b, 'test_pl_fx_fix_full_0')
 
-    def test_mismatch_0(self):
+    def _test_mismatch_0(self):
         self._t(t_class=self._buy,
                 instr=self.bond0, position=100,
                 stl_ccy=self.chf, cash=-10, principal=-10, carry=0, overheads=0,
@@ -525,3 +527,19 @@ class ReportTestCase(TestCase):
         b = ReportBuilder(instance=r)
         b.build()
         self._dump(b, 'test_mismatch_0')
+
+    def test_allocation_0(self):
+        self._t(t_class=self._buy,
+                instr=self.bond0, position=100,
+                stl_ccy=self.usd, cash=-10, principal=-10, carry=0, overheads=0,
+                alloc_bl=self.bond1, alloc_pl=self.bond1)
+
+        self._t(t_class=self._buy,
+                instr=self.bond0, position=100,
+                stl_ccy=self.usd, cash=0, principal=-10, carry=0, overheads=0,
+                alloc_bl=self.bond2, alloc_pl=self.bond2)
+
+        r = Report(master_user=self.m, pricing_policy=self.pp, report_date=self._d(14))
+        b = ReportBuilder(instance=r)
+        b.build()
+        self._dump(b, 'test_allocation_0')
