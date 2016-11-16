@@ -513,13 +513,13 @@ class ReportTestCase(TestCase):
 
         self._t(t_class=self._buy,
                 instr=self.bond0, position=100,
-                stl_ccy=self.chf, cash=0, principal=-10, carry=0, overheads=0,
+                stl_ccy=self.chf, cash=0, principal=0, carry=-10, overheads=0,
                 p=self.p1, acc_pos=self.a1_1,
                 link_instr=self.bond1)
 
         self._t(t_class=self._buy,
                 instr=self.stock0, position=100,
-                stl_ccy=self.usd, cash=0, principal=-10, carry=0, overheads=0,
+                stl_ccy=self.usd, cash=0, principal=0, carry=0, overheads=-10,
                 p=self.p2, acc_pos=self.a1_2,
                 link_instr=self.bond1)
 
@@ -531,12 +531,12 @@ class ReportTestCase(TestCase):
     def test_allocation_0(self):
         self._t(t_class=self._buy,
                 instr=self.bond0, position=100,
-                stl_ccy=self.usd, cash=-10, principal=-10, carry=0, overheads=0,
+                stl_ccy=self.usd, principal=-10, carry=0, overheads=0,
                 alloc_bl=self.bond1, alloc_pl=self.bond2)
 
         self._t(t_class=self._buy,
                 instr=self.bond0, position=100,
-                stl_ccy=self.usd, cash=0, principal=-10, carry=0, overheads=0,
+                stl_ccy=self.usd, principal=-10, carry=0, overheads=0,
                 alloc_bl=self.bond1, alloc_pl=self.bond2)
 
         r = Report(master_user=self.m, pricing_policy=self.pp, report_date=self._d(14))
