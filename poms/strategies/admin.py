@@ -34,7 +34,7 @@ class Strategy1SubgroupAdmin(admin.ModelAdmin):
     ordering = ['master_user', 'group', 'user_code']
     search_fields = ['id', 'user_code', 'name']
     list_filter = ['is_deleted', ]
-    raw_id_fields = ['group']
+    raw_id_fields = ['master_user', 'group']
     inlines = [
         GenericTagLinkInline,
         GenericObjectPermissionInline,
@@ -53,7 +53,7 @@ class Strategy1Admin(admin.ModelAdmin):
     ordering = ['master_user', 'subgroup__group', 'subgroup', 'user_code']
     search_fields = ['id', 'user_code', 'name']
     list_filter = ['is_deleted', ]
-    raw_id_fields = ['subgroup']
+    raw_id_fields = ['master_user', 'subgroup']
     inlines = [
         GenericTagLinkInline,
         GenericObjectPermissionInline,
