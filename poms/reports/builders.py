@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 from __future__ import unicode_literals, division
 
+import copy
 import logging
 from collections import Counter, defaultdict
 from datetime import timedelta
@@ -21,10 +22,54 @@ from poms.transactions.models import Transaction, TransactionClass
 _l = logging.getLogger('poms.reports')
 
 
-class VirtualTransaction(object):
+class _Base:
     report = None
     pricing_provider = None
     fx_rate_provider = None
+
+    dump_columns = []
+
+    def __init__(self, report, pricing_provider, fx_rate_provider):
+        self.report = report
+        self.pricing_provider = pricing_provider
+        self.fx_rate_provider = fx_rate_provider
+
+    def clone(self):
+        return copy.copy(self)
+
+    def __getattr__(self, item):
+        if item.endswith('_rep'):
+            # automatic make value in report ccy
+            item_sys = '%s_sys' % item[:-4]
+            if hasattr(self, item_sys):
+                val = getattr(self, item_sys)
+                if self.report_ccy_is_sys:
+                    return val
+                else:
+                    fx = self.report_ccy_rep_fx
+                    if isclose(fx, 0.0):
+                        return 0.0
+                    return val / fx
+        raise AttributeError(item)
+
+    def dump_values(self):
+        row = []
+        for f in self.dump_columns:
+            row.append(getattr(self, f))
+        return row
+
+    @classmethod
+    def dumps(cls, items):
+        import pandas
+
+        data = []
+        for item in items:
+            data.append(item.dump_values())
+
+        print(pandas.DataFrame(data=data, columns=cls.dump_columns))
+
+
+class VirtualTransaction(_Base):
     trn = None
     pk = None
     trn_code = None
@@ -79,11 +124,105 @@ class VirtualTransaction(object):
     total_real_sys = 0.0
     total_unreal_sys = 0.0
 
+    dump_columns = [
+        'pk',
+        'trn_cls',
+        # 'case',
+        'multiplier',
+        # 'acc_date',
+        # 'cash_date',
+        'instr',
+        # 'trn_ccy',
+        'pos_size',
+        'stl_ccy',
+        'cash',
+        'principal',
+        'carry',
+        'overheads',
+        'total',
+        # 'mismatch',
+        # 'ref_fx',
+        'prtfl',
+        'acc_pos',
+        'acc_cash',
+        'acc_interim',
+        'str1_pos',
+        'str1_cash',
+        'str2_pos',
+        'str2_cash',
+        'str3_pos',
+        'str3_cash',
+        # 'link_instr',
+        'alloc_bl',
+        'alloc_pl',
+
+        # 'instr_principal_sys',
+        # 'instr_accrued_sys',
+        #
+        # # real / unreal
+        #
+        # 'total_real_sys',
+        # 'total_unreal_sys',
+
+        # full ----------------------------------------------------
+        'principal_sys',
+        'carry_sys',
+        'overheads_sys',
+        'total_sys',
+
+        # # full / closed ----------------------------------------------------
+        # 'principal_closed_sys',
+        # 'carry_closed_sys',
+        # 'overheads_closed_sys',
+        # 'total_closed_sys',
+        #
+        # # full / opened ----------------------------------------------------
+        # 'principal_opened_sys',
+        # 'carry_opened_sys',
+        # 'overheads_opened_sys',
+        # 'total_opened_sys',
+        #
+        # # fx ----------------------------------------------------
+        #
+        # 'principal_fx_sys',
+        # 'carry_fx_sys',
+        # 'overheads_fx_sys',
+        # 'total_fx_sys',
+        #
+        # # fx / closed ----------------------------------------------------
+        # 'principal_fx_closed_sys',
+        # 'carry_fx_closed_sys',
+        # 'overheads_fx_closed_sys',
+        # 'total_fx_closed_sys',
+        #
+        # # fx / opened ----------------------------------------------------
+        # 'principal_fx_opened_sys',
+        # 'carry_fx_opened_sys',
+        # 'overheads_fx_opened_sys',
+        # 'total_fx_opened_sys',
+        #
+        # # fixed ----------------------------------------------------
+        # 'principal_fixed_sys',
+        # 'carry_fixed_sys',
+        # 'overheads_fixed_sys',
+        # 'total_fixed_sys',
+        #
+        # # fixed / closed ----------------------------------------------------
+        # 'principal_fixed_closed_sys',
+        # 'carry_fixed_closed_sys',
+        # 'overheads_fixed_closed_sys',
+        # 'total_fixed_closed_sys',
+        #
+        # # fixed / opened ----------------------------------------------------
+        # 'principal_fixed_opened_sys',
+        # 'carry_fixed_opened_sys',
+        # 'overheads_fixed_opened_sys',
+        # 'total_fixed_opened_sys',
+    ]
+
     def __init__(self, report, pricing_provider, fx_rate_provider, trn, overrides=None):
+        super(VirtualTransaction, self).__init__(report, pricing_provider, fx_rate_provider)
         overrides = overrides or {}
-        self.report = report
-        self.pricing_provider = pricing_provider
-        self.fx_rate_provider = fx_rate_provider
         self.trn = trn
         self.pk = overrides.get('pk', trn.pk)
         self.trn_code = overrides.get('transaction_code', trn.transaction_code)
@@ -123,135 +262,6 @@ class VirtualTransaction(object):
 
         self.alloc_bl = overrides.get('allocation_balance', trn.allocation_balance)
         self.alloc_pl = overrides.get('allocation_pl', trn.allocation_pl)
-
-    @staticmethod
-    def columns():
-        return [
-            'pk',
-            'trn_cls',
-            # 'case',
-            'multiplier',
-            # 'acc_date',
-            # 'cash_date',
-            'instr',
-            # 'trn_ccy',
-            'pos_size',
-            'stl_ccy',
-            'cash',
-            'principal',
-            'carry',
-            'overheads',
-            'total',
-            # 'mismatch',
-            # 'ref_fx',
-            # 'prtfl',
-            # 'acc_pos',
-            # 'acc_cash',
-            # 'acc_interim',
-            # 'str1_pos',
-            # 'str1_cash',
-            # 'str2_pos',
-            # 'str2_cash',
-            # 'str3_pos',
-            # 'str3_cash',
-            # 'link_instr',
-            'alloc_bl',
-            'alloc_pl',
-
-            # 'instr_principal_sys',
-            # 'instr_accrued_sys',
-            #
-            # # real / unreal
-            #
-            # 'total_real_sys',
-            # 'total_unreal_sys',
-
-            # full ----------------------------------------------------
-            'principal_sys',
-            'carry_sys',
-            'overheads_sys',
-            'total_sys',
-
-            # # full / closed ----------------------------------------------------
-            # 'principal_closed_sys',
-            # 'carry_closed_sys',
-            # 'overheads_closed_sys',
-            # 'total_closed_sys',
-            #
-            # # full / opened ----------------------------------------------------
-            # 'principal_opened_sys',
-            # 'carry_opened_sys',
-            # 'overheads_opened_sys',
-            # 'total_opened_sys',
-            #
-            # # fx ----------------------------------------------------
-            #
-            # 'principal_fx_sys',
-            # 'carry_fx_sys',
-            # 'overheads_fx_sys',
-            # 'total_fx_sys',
-            #
-            # # fx / closed ----------------------------------------------------
-            # 'principal_fx_closed_sys',
-            # 'carry_fx_closed_sys',
-            # 'overheads_fx_closed_sys',
-            # 'total_fx_closed_sys',
-            #
-            # # fx / opened ----------------------------------------------------
-            # 'principal_fx_opened_sys',
-            # 'carry_fx_opened_sys',
-            # 'overheads_fx_opened_sys',
-            # 'total_fx_opened_sys',
-            #
-            # # fixed ----------------------------------------------------
-            # 'principal_fixed_sys',
-            # 'carry_fixed_sys',
-            # 'overheads_fixed_sys',
-            # 'total_fixed_sys',
-            #
-            # # fixed / closed ----------------------------------------------------
-            # 'principal_fixed_closed_sys',
-            # 'carry_fixed_closed_sys',
-            # 'overheads_fixed_closed_sys',
-            # 'total_fixed_closed_sys',
-            #
-            # # fixed / opened ----------------------------------------------------
-            # 'principal_fixed_opened_sys',
-            # 'carry_fixed_opened_sys',
-            # 'overheads_fixed_opened_sys',
-            # 'total_fixed_opened_sys',
-        ]
-
-    def values(self):
-        row = []
-        for f in VirtualTransaction.columns():
-            row.append(getattr(self, f))
-        return row
-
-    @staticmethod
-    def dumps(items):
-        import pandas
-
-        data = []
-        for item in items:
-            data.append(item.values())
-        print(pandas.DataFrame(data=data, columns=VirtualTransaction.columns()))
-
-    #  report ccy val ----------------------------------------------------
-
-    def __getattr__(self, item):
-        if item.endswith('_rep'):
-            item_sys = '%s_sys' % item[:-4]
-            if hasattr(self, item_sys):
-                val = getattr(self, item_sys)
-                if self.report_ccy_is_sys:
-                    return val
-                else:
-                    fx = self.report_ccy_rep_fx
-                    if isclose(fx, 0.0):
-                        return 0.0
-                    return val / fx
-        raise AttributeError(item)
 
     # globals ----------------------------------------------------
 
@@ -604,7 +614,7 @@ class VirtualTransaction(object):
         return self.total_fixed_sys * (1.0 - self.multiplier)
 
 
-class ReportItem(object):
+class ReportItem(_Base):
     TYPE_UNKNOWN = 0
     TYPE_INSTRUMENT = 1
     TYPE_CURRENCY = 2
@@ -626,9 +636,6 @@ class ReportItem(object):
         (TYPE_INVESTED_SUMMARY, 'Invested summary'),
     )
 
-    report = None
-    pricing_provider = None
-    fx_rate_provider = None
     type = None
     trn = None
 
@@ -717,10 +724,85 @@ class ReportItem(object):
 
     # total_fixed_opened_sys = 0.0
 
+    dump_columns = [
+        'type_code',
+        'user_code',
+        'prtfl',
+        'acc',
+        'str1',
+        'str2',
+        'str3',
+        # 'detail_trn',
+        # 'instr',
+        # 'ccy',
+        'pos_size',
+        'market_value_sys',
+        # 'mismatch_ccy',
+        # 'mismatch',
+        # 'cost_sys',
+        # 'total_real_sys',
+        # 'total_unreal_sys',
+        # 'instr_principal_sys',
+        # 'instr_accrued_sys',
+
+        # full ----------------------------------------------------
+        'principal_sys',
+        'carry_sys',
+        'overheads_sys',
+        'total_sys',
+
+        # # full / closed ----------------------------------------------------
+        # 'principal_closed_sys',
+        # 'carry_closed_sys',
+        # 'overheads_closed_sys',
+        # 'total_closed_sys',
+        #
+        # # full / opened ----------------------------------------------------
+        # 'principal_opened_sys',
+        # 'carry_opened_sys',
+        # 'overheads_opened_sys',
+        # 'total_opened_sys',
+        #
+        # # fx ----------------------------------------------------
+        #
+        # 'principal_fx_sys',
+        # 'carry_fx_sys',
+        # 'overheads_fx_sys',
+        # 'total_fx_sys',
+        #
+        # # fx / closed ----------------------------------------------------
+        # 'principal_fx_closed_sys',
+        # 'carry_fx_closed_sys',
+        # 'overheads_fx_closed_sys',
+        # 'total_fx_closed_sys',
+        #
+        # # fx / opened ----------------------------------------------------
+        # 'principal_fx_opened_sys',
+        # 'carry_fx_opened_sys',
+        # 'overheads_fx_opened_sys',
+        # 'total_fx_opened_sys',
+        #
+        # # fixed ----------------------------------------------------
+        # 'principal_fixed_sys',
+        # 'carry_fixed_sys',
+        # 'overheads_fixed_sys',
+        # 'total_fixed_sys',
+        #
+        # # fixed / closed ----------------------------------------------------
+        # 'principal_fixed_closed_sys',
+        # 'carry_fixed_closed_sys',
+        # 'overheads_fixed_closed_sys',
+        # 'total_fixed_closed_sys',
+        #
+        # # fixed / opened ----------------------------------------------------
+        # 'principal_fixed_opened_sys',
+        # 'carry_fixed_opened_sys',
+        # 'overheads_fixed_opened_sys',
+        # 'total_fixed_opened_sys',
+    ]
+
     def __init__(self, report, pricing_provider, fx_rate_provider, type):
-        self.report = report
-        self.pricing_provider = pricing_provider
-        self.fx_rate_provider = fx_rate_provider
+        super(ReportItem, self).__init__(report, pricing_provider, fx_rate_provider)
         self.type = type
 
     @classmethod
@@ -816,6 +898,9 @@ class ReportItem(object):
         elif item.type == ReportItem.TYPE_MISMATCH:
             item.acc = trn.acc_pos
             item.instr = trn.link_instr
+            item.str1 = str1
+            item.str2 = str2
+            item.str3 = str3
             item.mismatch_ccy = trn.stl_ccy
             item.mismatch = trn.mismatch
 
@@ -846,119 +931,7 @@ class ReportItem(object):
 
         return item
 
-    @staticmethod
-    def columns():
-        return [
-            'type_code',
-            'user_code',
-            # 'prtfl',
-            # 'acc',
-            # 'str1',
-            # 'str2',
-            # 'str3',
-            # 'detail_trn',
-            # 'instr',
-            # 'ccy',
-            'pos_size',
-            'market_value_sys',
-            # 'mismatch_ccy',
-            # 'mismatch',
-            # 'cost_sys',
-            # 'total_real_sys',
-            # 'total_unreal_sys',
-            # 'instr_principal_sys',
-            # 'instr_accrued_sys',
-
-            # full ----------------------------------------------------
-            'principal_sys',
-            'carry_sys',
-            'overheads_sys',
-            'total_sys',
-
-            # # full / closed ----------------------------------------------------
-            # 'principal_closed_sys',
-            # 'carry_closed_sys',
-            # 'overheads_closed_sys',
-            # 'total_closed_sys',
-            #
-            # # full / opened ----------------------------------------------------
-            # 'principal_opened_sys',
-            # 'carry_opened_sys',
-            # 'overheads_opened_sys',
-            # 'total_opened_sys',
-            #
-            # # fx ----------------------------------------------------
-            #
-            # 'principal_fx_sys',
-            # 'carry_fx_sys',
-            # 'overheads_fx_sys',
-            # 'total_fx_sys',
-            #
-            # # fx / closed ----------------------------------------------------
-            # 'principal_fx_closed_sys',
-            # 'carry_fx_closed_sys',
-            # 'overheads_fx_closed_sys',
-            # 'total_fx_closed_sys',
-            #
-            # # fx / opened ----------------------------------------------------
-            # 'principal_fx_opened_sys',
-            # 'carry_fx_opened_sys',
-            # 'overheads_fx_opened_sys',
-            # 'total_fx_opened_sys',
-            #
-            # # fixed ----------------------------------------------------
-            # 'principal_fixed_sys',
-            # 'carry_fixed_sys',
-            # 'overheads_fixed_sys',
-            # 'total_fixed_sys',
-            #
-            # # fixed / closed ----------------------------------------------------
-            # 'principal_fixed_closed_sys',
-            # 'carry_fixed_closed_sys',
-            # 'overheads_fixed_closed_sys',
-            # 'total_fixed_closed_sys',
-            #
-            # # fixed / opened ----------------------------------------------------
-            # 'principal_fixed_opened_sys',
-            # 'carry_fixed_opened_sys',
-            # 'overheads_fixed_opened_sys',
-            # 'total_fixed_opened_sys',
-        ]
-
-    def values(self):
-        row = []
-        for f in ReportItem.columns():
-            row.append(getattr(self, f))
-        return row
-
-    @staticmethod
-    def dumps(items):
-        import pandas
-
-        data = []
-        for item in items:
-            data.append(item.values())
-        print(pandas.DataFrame(data=data, columns=ReportItem.columns()))
-
-    def __str__(self):
-        return "%s:%s:%s" % (self.type_code, self.user_code, self.pos_size)
-
-    #  report ccy val --------
-    def __getattr__(self, item):
-        if item.endswith('_rep'):
-            item_sys = '%s_sys' % item[:-4]
-            if hasattr(self, item_sys):
-                val = getattr(self, item_sys)
-                if self.report_ccy_is_sys:
-                    return val
-                else:
-                    fx = self.report_ccy_rep_fx
-                    if isclose(fx, 0.0):
-                        return 0.0
-                    return val / fx
-        raise AttributeError(item)
-
-    # "static" fields
+    #  ----------------------------------------------------
 
     @property
     def type_name(self):
@@ -1427,19 +1400,18 @@ class ReportBuilder(object):
     def __init__(self, instance=None, queryset=None, transactions=None):
         self.instance = instance
         self._queryset = queryset
-        self._filter_date_attr = self.instance.date_field
-
         self._transactions = transactions
 
-        self._now = timezone.now().date()
-        self._report_date = self.instance.report_date or self._now
+        # self._filter_date_attr = self.instance.date_field
+        # self._now = timezone.now().date()
+        # self._report_date = self.instance.report_date or self._now
 
-        self._detail_by_portfolio = self.instance.detail_by_portfolio
-        self._detail_by_account = self.instance.detail_by_account
-        self._detail_by_strategy1 = self.instance.detail_by_strategy1
-        self._detail_by_strategy2 = self.instance.detail_by_strategy2
-        self._detail_by_strategy3 = self.instance.detail_by_strategy3
-        self._any_details = self._detail_by_portfolio or self._detail_by_account or self._detail_by_strategy1 or self._detail_by_strategy2 or self._detail_by_strategy3
+        # self._detail_by_portfolio = self.instance.detail_by_portfolio
+        # self._detail_by_account = self.instance.detail_by_account
+        # self._detail_by_strategy1 = self.instance.detail_by_strategy1
+        # self._detail_by_strategy2 = self.instance.detail_by_strategy2
+        # self._detail_by_strategy3 = self.instance.detail_by_strategy3
+        # self._any_details = self._detail_by_portfolio or self._detail_by_account or self._detail_by_strategy1 or self._detail_by_strategy2 or self._detail_by_strategy3
 
         self._items = []
 
@@ -1471,7 +1443,7 @@ class ReportBuilder(object):
             # TODO: add fields!!!
         )
 
-        queryset = queryset.filter(**{'%s__lte' % self._filter_date_attr: self._report_date})
+        queryset = queryset.filter(**{'%s__lte' % self.instance.date_field: self.instance.report_date})
 
         if self.instance.portfolios:
             queryset = queryset.filter(portfolio__in=self.instance.portfolios)
@@ -1496,7 +1468,7 @@ class ReportBuilder(object):
         if self.instance.transaction_classes:
             queryset = queryset.filter(transaction_class__in=self.instance.transaction_classes)
 
-        queryset = queryset.order_by(self._filter_date_attr, 'transaction_code', 'id')
+        queryset = queryset.order_by(self.instance.date_field, 'transaction_code', 'id')
 
         return queryset
 
@@ -1541,133 +1513,47 @@ class ReportBuilder(object):
 
         res = []
         for t in self._trn_qs():
+            overrides = {}
+            # self._detail_by_portfolio = self.instance.detail_by_portfolio
+            # self._detail_by_account = self.instance.detail_by_account
+            # self._detail_by_strategy1 = self.instance.detail_by_strategy1
+            # self._detail_by_strategy2 = self.instance.detail_by_strategy2
+            # self._detail_by_strategy3 = self.instance.detail_by_strategy3
+            if not self.instance.detail_by_portfolio:
+                overrides['portfolio'] = self.instance.master_user.portfolio
+
+            if not self.instance.detail_by_account:
+                overrides['account_position'] = self.instance.master_user.account
+                overrides['account_cash'] = self.instance.master_user.account
+                overrides['account_interim'] = self.instance.master_user.account
+
+            if not self.instance.detail_by_strategy1:
+                overrides['strategy1_position'] = self.instance.master_user.strategy1
+                overrides['strategy1_cash'] = self.instance.master_user.strategy1
+
+            if not self.instance.detail_by_strategy1:
+                overrides['strategy1_position'] = self.instance.master_user.strategy1
+                overrides['strategy1_cash'] = self.instance.master_user.strategy1
+
+            if not self.instance.detail_by_strategy2:
+                overrides['strategy2_position'] = self.instance.master_user.strategy2
+                overrides['strategy2_cash'] = self.instance.master_user.strategy2
+
+            if not self.instance.detail_by_strategy3:
+                overrides['strategy3_position'] = self.instance.master_user.strategy3
+                overrides['strategy3_cash'] = self.instance.master_user.strategy3
+
             t = VirtualTransaction(
                 report=self.instance,
                 pricing_provider=self._pricing_provider,
                 fx_rate_provider=self._fx_rate_provider,
-                trn=t
+                trn=t,
+                overrides=overrides
             )
             res.append(t)
 
         res = self._multipliers(res)
         res = self._transfers(res)
-
-        # transactions2 = []
-        # for t in transactions1:
-        #
-        #     if t.trn_cls.id == TransactionClass.TRANSFER:
-        #
-        #         if t.position_size_with_sign >= 0:
-        #             t1 = VirtualTransaction(
-        #                 report=self.instance,
-        #                 pricing_provider=self._pricing_provider,
-        #                 fx_rate_provider=self._fx_rate_provider,
-        #                 trn=t.trn,
-        #                 overrides={
-        #                     'transaction_class': self._transaction_class_sell,
-        #                     'account_position': t.account_cash,
-        #                     'account_cash': t.account_cash,
-        #
-        #                     'position_size_with_sign': -t.position_size_with_sign,
-        #                     'cash_consideration': t.cash_consideration,
-        #                     'principal_with_sign': t.principal_with_sign,
-        #                     'carry_with_sign': t.carry_with_sign,
-        #                     'overheads_with_sign': t.overheads_with_sign,
-        #                 })
-        #             t2 = VirtualTransaction(
-        #                 report=self.instance,
-        #                 pricing_provider=self._pricing_provider,
-        #                 fx_rate_provider=self._fx_rate_provider,
-        #                 trn=t.trn,
-        #                 overrides={
-        #                     'transaction_class': self._transaction_class_buy,
-        #                     'account_position': t.account_position,
-        #                     'account_cash': t.account_position,
-        #
-        #                     'position_size_with_sign': t.position_size_with_sign,
-        #                     'cash_consideration': -t.cash_consideration,
-        #                     'principal_with_sign': -t.principal_with_sign,
-        #                     'carry_with_sign': -t.carry_with_sign,
-        #                     'overheads_with_sign': -t.overheads_with_sign,
-        #                 })
-        #
-        #         else:
-        #             t1 = VirtualTransaction(
-        #                 report=self.instance,
-        #                 pricing_provider=self._pricing_provider,
-        #                 fx_rate_provider=self._fx_rate_provider,
-        #                 trn=t.trn,
-        #                 overrides={
-        #                     'transaction_class': self._transaction_class_buy,
-        #                     'account_position': t.account_cash,
-        #                     'account_cash': t.account_cash,
-        #
-        #                     'position_size_with_sign': -t.position_size_with_sign,
-        #                     'cash_consideration': t.cash_consideration,
-        #                     'principal_with_sign': t.principal_with_sign,
-        #                     'carry_with_sign': t.carry_with_sign,
-        #                     'overheads_with_sign': t.overheads_with_sign,
-        #                 })
-        #             t2 = VirtualTransaction(
-        #                 report=self.instance,
-        #                 pricing_provider=self._pricing_provider,
-        #                 fx_rate_provider=self._fx_rate_provider,
-        #                 trn=t.trn,
-        #                 overrides={
-        #                     'transaction_class': self._transaction_class_sell,
-        #                     'account_position': t.account_position,
-        #                     'account_cash': t.account_position,
-        #
-        #                     'position_size_with_sign': t.position_size_with_sign,
-        #                     'cash_consideration': -t.cash_consideration,
-        #                     'principal_with_sign': -t.principal_with_sign,
-        #                     'carry_with_sign': -t.carry_with_sign,
-        #                     'overheads_with_sign': -t.overheads_with_sign,
-        #                 })
-        #         transactions2.append(t1)
-        #         transactions2.append(t2)
-        #
-        #     elif t.trn_cls.id == TransactionClass.FX_TRANSFER:
-        #         t1 = VirtualTransaction(
-        #             report=self.instance,
-        #             pricing_provider=self._pricing_provider,
-        #             fx_rate_provider=self._fx_rate_provider,
-        #             trn=t.trn,
-        #             overrides={
-        #                 'transaction_class_id': self._transaction_class_fx_trade.id,
-        #                 'transaction_class': self._transaction_class_fx_trade,
-        #                 'account_position': t.account_cash,
-        #                 'account_cash': t.account_cash,
-        #
-        #                 'position_size_with_sign': -t.position_size_with_sign,
-        #                 'cash_consideration': t.cash_consideration,
-        #                 'principal_with_sign': t.principal_with_sign,
-        #                 'carry_with_sign': t.carry_with_sign,
-        #                 'overheads_with_sign': t.overheads_with_sign,
-        #             })
-        #
-        #         t2 = VirtualTransaction(
-        #             report=self.instance,
-        #             pricing_provider=self._pricing_provider,
-        #             fx_rate_provider=self._fx_rate_provider,
-        #             trn=t.trn,
-        #             overrides={
-        #                 'transaction_class_id': self._transaction_class_fx_trade.id,
-        #                 'transaction_class': self._transaction_class_fx_trade,
-        #                 'account_position': t.account_position,
-        #                 'account_cash': t.account_position,
-        #
-        #                 'position_size_with_sign': t.position_size_with_sign,
-        #                 'cash_consideration': -t.cash_consideration,
-        #                 'principal_with_sign': -t.principal_with_sign,
-        #                 'carry_with_sign': -t.carry_with_sign,
-        #                 'overheads_with_sign': -t.overheads_with_sign,
-        #             })
-        #         transactions2.append(t1)
-        #         transactions2.append(t2)
-        #
-        #     else:
-        #         transactions2.append(t)
 
         return res
 
@@ -1693,8 +1579,8 @@ class ReportBuilder(object):
             # do not use strategy!!!
             t_key = self._make_key(
                 instr=t.instr,
-                prtfl=t.prtfl if self._detail_by_portfolio else None,
-                acc=t.acc_pos if self._detail_by_account else  None
+                prtfl=t.prtfl,
+                acc=t.acc_pos
             )
 
             multipliers_delta.clear()
@@ -1951,7 +1837,11 @@ class ReportBuilder(object):
         for trn in self.transactions:
             if trn.link_instr and not isclose(trn.mismatch, 0.0):
                 item = ReportItem.from_trn(self.instance, self._pricing_provider, self._fx_rate_provider,
-                                           ReportItem.TYPE_MISMATCH, trn)
+                                           ReportItem.TYPE_MISMATCH, trn,
+                                           str1=self.instance.master_user.strategy1,
+                                           str2=self.instance.master_user.strategy2,
+                                           str3=self.instance.master_user.strategy3,
+                                           )
                 mismatch_items.append(item)
 
             if trn.trn_cls.id in [TransactionClass.BUY, TransactionClass.SELL]:
