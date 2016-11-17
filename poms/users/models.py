@@ -77,7 +77,8 @@ class MasterUserManager(models.Manager):
 
         thread_group = ThreadGroup.objects.create(master_user=obj, name='-')
 
-        Member.objects.create(user=user, master_user=obj, is_owner=True, is_admin=True)
+        if user:
+            Member.objects.create(user=user, master_user=obj, is_owner=True, is_admin=True)
         group = Group.objects.create(master_user=obj, name='%s' % ugettext_lazy('Default'))
 
         obj.system_currency = ccy_usd
