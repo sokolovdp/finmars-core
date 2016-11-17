@@ -309,7 +309,7 @@ class ReportTestCase(TestCase):
         r = Report(master_user=self.m, pricing_policy=self.pp, report_date=self._d(14))
         b = ReportBuilder(instance=r)
         b.build()
-        self._dump(b, 'balance_0')
+        self._dump(b, 'test_balance_0')
 
     def _test_balance_1(self):
         self._t(t_class=self._cash_inflow, trn_ccy=self.usd, position=1000, fx_rate=1.3)
@@ -321,7 +321,7 @@ class ReportTestCase(TestCase):
         r = Report(master_user=self.m, pricing_policy=self.pp, report_date=self._d(14))
         b = ReportBuilder(instance=r)
         b.build()
-        self._dump(b, 'balance_1')
+        self._dump(b, 'test_balance_1')
 
     def _test_balance_2(self):
         self._t(t_class=self._cash_inflow, trn_ccy=self.eur, position=1000, fx_rate=1.3)
@@ -342,7 +342,7 @@ class ReportTestCase(TestCase):
         r = Report(master_user=self.m, pricing_policy=self.pp, report_date=self._d(14))
         b = ReportBuilder(instance=r)
         b.build()
-        self._dump(b, 'balance_2')
+        self._dump(b, 'test_balance_2')
 
     def _test_pl_0(self):
         self._t(t_class=self._cash_inflow, trn_ccy=self.usd, position=1000, fx_rate=1.3)
@@ -529,17 +529,29 @@ class ReportTestCase(TestCase):
         self._dump(b, 'test_mismatch_0')
 
     def test_allocation_0(self):
+        self.bond0.user_code = 'instr1'
+        self.bond0.save()
+        self.bond1.user_code = 'A'
+        self.bond1.save()
+        self.bond2.user_code = 'S'
+        self.bond2.save()
         self._t(t_class=self._buy,
-                instr=self.bond0, position=100,
+                instr=self.bond0, position=5,
                 stl_ccy=self.usd, principal=-10, carry=0, overheads=0,
-                alloc_bl=self.bond1, alloc_pl=self.bond2)
+                alloc_bl=self.bond1, alloc_pl=self.bond1)
 
         self._t(t_class=self._buy,
-                instr=self.bond0, position=100,
-                stl_ccy=self.usd, principal=-10, carry=0, overheads=0,
-                alloc_bl=self.bond1, alloc_pl=self.bond2)
+                instr=self.bond0, position=5,
+                stl_ccy=self.usd, principal=-15, carry=0, overheads=0,
+                alloc_bl=self.bond2, alloc_pl=self.bond2)
 
-        r = Report(master_user=self.m, pricing_policy=self.pp, report_date=self._d(14))
+        self._t(t_class=self._sell,
+                instr=self.bond0, position=-5,
+                stl_ccy=self.usd, principal=20, carry=0, overheads=0,
+                alloc_bl=self.bond2, alloc_pl=self.bond2)
+
+        r = Report(master_user=self.m, pricing_policy=self.pp, report_date=self._d(0),
+                   allocation_end_multiplier=0.5)
         b = ReportBuilder(instance=r)
         b.build()
         self._dump(b, 'test_allocation_0')

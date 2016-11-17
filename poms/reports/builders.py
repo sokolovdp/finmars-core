@@ -141,16 +141,16 @@ class VirtualTransaction(_Base):
         'total',
         # 'mismatch',
         # 'ref_fx',
-        'prtfl',
-        'acc_pos',
-        'acc_cash',
-        'acc_interim',
-        'str1_pos',
-        'str1_cash',
-        'str2_pos',
-        'str2_cash',
-        'str3_pos',
-        'str3_cash',
+        # 'prtfl',
+        # 'acc_pos',
+        # 'acc_cash',
+        # 'acc_interim',
+        # 'str1_pos',
+        # 'str1_cash',
+        # 'str2_pos',
+        # 'str2_cash',
+        # 'str3_pos',
+        # 'str3_cash',
         # 'link_instr',
         'alloc_bl',
         'alloc_pl',
@@ -163,55 +163,54 @@ class VirtualTransaction(_Base):
         # 'total_real_sys',
         # 'total_unreal_sys',
 
-        # full ----------------------------------------------------
-        'principal_sys',
-        'carry_sys',
-        'overheads_sys',
-        'total_sys',
+        # # full ----------------------------------------------------
+        # 'principal_sys',
+        # 'carry_sys',
+        # 'overheads_sys',
+        # 'total_sys',
 
         # # full / closed ----------------------------------------------------
         # 'principal_closed_sys',
         # 'carry_closed_sys',
         # 'overheads_closed_sys',
         # 'total_closed_sys',
-        #
+
         # # full / opened ----------------------------------------------------
         # 'principal_opened_sys',
         # 'carry_opened_sys',
         # 'overheads_opened_sys',
         # 'total_opened_sys',
-        #
+
         # # fx ----------------------------------------------------
-        #
         # 'principal_fx_sys',
         # 'carry_fx_sys',
         # 'overheads_fx_sys',
         # 'total_fx_sys',
-        #
+
         # # fx / closed ----------------------------------------------------
         # 'principal_fx_closed_sys',
         # 'carry_fx_closed_sys',
         # 'overheads_fx_closed_sys',
         # 'total_fx_closed_sys',
-        #
+
         # # fx / opened ----------------------------------------------------
         # 'principal_fx_opened_sys',
         # 'carry_fx_opened_sys',
         # 'overheads_fx_opened_sys',
         # 'total_fx_opened_sys',
-        #
+
         # # fixed ----------------------------------------------------
         # 'principal_fixed_sys',
         # 'carry_fixed_sys',
         # 'overheads_fixed_sys',
         # 'total_fixed_sys',
-        #
+
         # # fixed / closed ----------------------------------------------------
         # 'principal_fixed_closed_sys',
         # 'carry_fixed_closed_sys',
         # 'overheads_fixed_closed_sys',
         # 'total_fixed_closed_sys',
-        #
+
         # # fixed / opened ----------------------------------------------------
         # 'principal_fixed_opened_sys',
         # 'carry_fixed_opened_sys',
@@ -648,10 +647,15 @@ class ReportItem(_Base):
     # detail_trn = None
     # custom_fields = []
 
+    # link
     mismatch = 0.0
     mismatch_ccy = None
     mismatch_prtfl = None
     mismatch_acc = None
+
+    # allocations
+    alloc_bl = None
+    alloc_pl = None
 
     # balance
     pos_size = 0.0
@@ -726,16 +730,18 @@ class ReportItem(_Base):
     dump_columns = [
         'type_code',
         'user_code',
-        'prtfl',
-        'acc',
-        'str1',
-        'str2',
-        'str3',
+        # 'prtfl',
+        # 'acc',
+        # 'str1',
+        # 'str2',
+        # 'str3',
         # 'detail_trn',
         # 'instr',
         # 'ccy',
+        'alloc_bl',
+        'alloc_pl',
         'pos_size',
-        'market_value_sys',
+        # 'market_value_sys',
         # 'mismatch_ccy',
         # 'mismatch',
         # 'cost_sys',
@@ -813,6 +819,9 @@ class ReportItem(_Base):
         # item.instr = instr  # -> Instrument
         # item.ccy = ccy  # -> Currency
         item.prtfl = prtfl or trn.prtfl  # -> Portfolio
+
+        item.alloc_bl = trn.alloc_bl
+        item.alloc_pl = trn.alloc_pl
 
         if item.type == ReportItem.TYPE_INSTRUMENT:
             item.acc = acc or trn.acc_pos
@@ -1574,15 +1583,79 @@ class ReportBuilder(object):
         rolling_positions = Counter()
         items = defaultdict(list)
 
+        res = []
         multipliers_delta = []
 
-        def _set_multiplier(t0, multiplier):
+        def _set_mul(t0, multiplier):
             # if isclose(t.r_multiplier, multiplier):
             #     return
-            multipliers_delta.append((t0, multiplier - t0.multiplier))
+            delta = multiplier - t0.multiplier
+            multipliers_delta.append((t0, delta))
             t0.multiplier = multiplier
+            return delta
 
-        res = []
+        def _alloc_clone(t1, trn_cls, alloc_mul, delta, alloc_bl=None, alloc_pl=None):
+            if isclose(alloc_mul, 0.0):
+                return None
+
+            n = t1.clone()
+            n.trn_cls = trn_cls
+
+            n.multiplier = 1.0
+
+            n.pos_size = n.pos_size * alloc_mul * delta
+            n.principal = n.principal * alloc_mul * delta
+            n.carry = n.carry * alloc_mul * delta
+            n.overheads = n.overheads * alloc_mul * delta
+
+            n.total_real_sys = n.total_real_sys * alloc_mul * delta
+            n.total_unreal_sys = n.total_unreal_sys * alloc_mul * delta
+
+            if alloc_bl:
+                n.alloc_bl = alloc_bl
+            if alloc_pl:
+                n.alloc_pl = alloc_pl
+            return n
+
+        def _alloc(cur, closed, delta):
+            begin_alloc_mul = (1.0 - self.instance.allocation_end_multiplier)
+            end_alloc_mul = self.instance.allocation_end_multiplier
+
+            if not isclose(begin_alloc_mul, 0.0):
+                b1 = _alloc_clone(closed, cur.trn_cls, -begin_alloc_mul, delta,
+                                  alloc_bl=closed.alloc_bl, alloc_pl=closed.alloc_pl)
+                b1.pk = 'b,%s,%s,%s' % (cur.pk, closed.pk, b1.trn_cls)
+
+                b2 = _alloc_clone(closed, closed.trn_cls, begin_alloc_mul, delta,
+                                  alloc_bl=cur.alloc_bl, alloc_pl=cur.alloc_pl)
+                b2.pk = 'b,%s,%s,%s' % (cur.pk, closed.pk, b2.trn_cls)
+
+            else:
+                b1 = None
+                b2 = None
+
+            if not isclose(end_alloc_mul, 0.0):
+                e1 = _alloc_clone(closed, cur.trn_cls, -end_alloc_mul, delta,
+                                  alloc_bl=closed.alloc_bl, alloc_pl=closed.alloc_pl)
+                e1.pk = 'e,%s,%s,%s' % (cur.pk, closed.pk, e1.trn_cls)
+
+                e2 = _alloc_clone(closed, closed.trn_cls, end_alloc_mul, delta,
+                                  alloc_bl=cur.alloc_bl, alloc_pl=cur.alloc_pl)
+                e2.pk = 'e,%s,%s,%s' % (cur.pk, closed.pk, e2.trn_cls)
+            else:
+                e1 = None
+                e2 = None
+
+            if b1:
+                res.append(b1)
+            if b2:
+                res.append(b2)
+            if e1:
+                res.append(e1)
+            if e2:
+                res.append(e2)
+            pass
+
         for t in src:
             res.append(t)
 
@@ -1611,25 +1684,28 @@ class ReportBuilder(object):
                 if k > 1.0:
                     if t_key in items:
                         for t0 in items[t_key]:
-                            _set_multiplier(t0, 1.0)
+                            delta = _set_mul(t0, 1.0)
+                            _alloc(t, t0, delta)
                         del items[t_key]
                     items[t_key].append(t)
-                    _set_multiplier(t, 1.0 / k)
+                    _set_mul(t, 1.0 / k)
                     rolling_position = t.pos_size * (1.0 - t.multiplier)
 
                 elif isclose(k, 1.0):
                     if t_key in items:
                         for t0 in items[t_key]:
-                            _set_multiplier(t0, 1.0)
+                            delta = _set_mul(t0, 1.0)
+                            _alloc(t, t0, delta)
                         del items[t_key]
-                    _set_multiplier(t, 1.0)
+                    _set_mul(t, 1.0)
                     rolling_position = 0.0
 
                 elif k > 0.0:
                     if t_key in items:
                         for t0 in items[t_key]:
-                            _set_multiplier(t0, t0.multiplier + k * (1.0 - t0.multiplier))
-                    _set_multiplier(t, 1.0)
+                            delta = _set_mul(t0, t0.multiplier + k * (1.0 - t0.multiplier))
+                            _alloc(t, t0, delta)
+                    _set_mul(t, 1.0)
                     rolling_position += t.pos_size
 
                 else:
@@ -1641,18 +1717,20 @@ class ReportBuilder(object):
                 if k > 1.0:
                     if t_key in items:
                         for t0 in items[t_key]:
-                            _set_multiplier(t0, 1.0)
+                            delta = _set_mul(t0, 1.0)
+                            _alloc(t, t0, delta)
                         items[t_key].clear()
                     items[t_key].append(t)
-                    _set_multiplier(t, 1.0 / k)
+                    _set_mul(t, 1.0 / k)
                     rolling_position = t.pos_size * (1.0 - t.multiplier)
 
                 elif isclose(k, 1.0):
                     if t_key in items:
                         for t0 in items[t_key]:
-                            _set_multiplier(t0, 1.0)
+                            delta = _set_mul(t0, 1.0)
+                            _alloc(t, t0, delta)
                         del items[t_key]
-                    _set_multiplier(t, 1.0)
+                    _set_mul(t, 1.0)
                     rolling_position = 0.0
 
                 elif k > 0.0:
@@ -1663,14 +1741,17 @@ class ReportBuilder(object):
                             remaining = t0.pos_size * (1.0 - t0.multiplier)
                             k0 = - position / remaining
                             if k0 > 1.0:
-                                _set_multiplier(t0, 1.0)
+                                delta = _set_mul(t0, 1.0)
+                                _alloc(t, t0, delta)
                                 position += remaining
                             elif isclose(k0, 1.0):
-                                _set_multiplier(t0, 1.0)
+                                delta = _set_mul(t0, 1.0)
+                                _alloc(t, t0, delta)
                                 position += remaining
                             elif k0 > 0.0:
                                 position += remaining * k0
-                                _set_multiplier(t0, t0.multiplier + k0 * (1.0 - t0.multiplier))
+                                delta = _set_mul(t0, t0.multiplier + k0 * (1.0 - t0.multiplier))
+                                _alloc(t, t0, delta)
                             # else:
                             #     break
                             if isclose(position, 0.0):
@@ -1681,7 +1762,7 @@ class ReportBuilder(object):
                         else:
                             del items[t_key]
 
-                    _set_multiplier(t, abs((t.pos_size - position) / t.pos_size))
+                    _set_mul(t, abs((t.pos_size - position) / t.pos_size))
                     rolling_position += t.pos_size * t.multiplier
 
                 else:
