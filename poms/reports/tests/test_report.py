@@ -114,6 +114,8 @@ class ReportTestCase(TestCase):
 
         self.p1 = Portfolio.objects.create(master_user=self.m, name='p1')
         self.p2 = Portfolio.objects.create(master_user=self.m, name='p2')
+        self.p3 = Portfolio.objects.create(master_user=self.m, name='p3')
+        self.p4 = Portfolio.objects.create(master_user=self.m, name='p4')
 
         for g_i in range(0, 10):
             g = Strategy1Group.objects.create(master_user=self.m, name='%s' % (g_i,))
@@ -171,8 +173,8 @@ class ReportTestCase(TestCase):
         t.reference_fx_rate = fx_rate
 
         t.linked_instrument = link_instr
-        t.allocation_balance = alloc_bl
-        t.allocation_pl = alloc_pl
+        t.allocation_balance = alloc_bl or self.m.instrument
+        t.allocation_pl = alloc_pl or self.m.instrument
 
         t.save()
         return t
@@ -251,59 +253,113 @@ class ReportTestCase(TestCase):
 
         pass
 
-    def _test_multiplier_0(self):
-        instr = Instrument.objects.create(master_user=self.m, name="I1, USD/USD",
-                                          instrument_type=self.m.instrument_type,
-                                          pricing_currency=self.usd, price_multiplier=1.0,
-                                          accrued_currency=self.usd, accrued_multiplier=1.0)
+    def _test_avco_prtfl_0(self):
+        self._t(t_class=self._buy, instr=self.bond0, position=5,
+                stl_ccy=self.usd, principal=-10.0,
+                acc_date_days=1, cash_date_days=1,
+                p=self.p1,
+                acc_pos=self.a1_1, acc_cash=self.a1_1,
+                s1_pos=self.s1_1_1_1, s1_cash=self.s1_1_1_1)
 
-        self._t(t_class=self._sell, instr=instr, position=-5,
-                stl_ccy=self.usd, principal=40.0, carry=0.0, overheads=0.0,
-                acc_date_days=1, cash_date_days=1)
+        self._t(t_class=self._buy, instr=self.bond0, position=5,
+                stl_ccy=self.usd, principal=-15.0,
+                acc_date_days=2, cash_date_days=2,
+                p=self.p1,
+                acc_pos=self.a1_1, acc_cash=self.a1_1,
+                s1_pos=self.s1_1_1_1, s1_cash=self.s1_1_1_1)
 
-        self._t(t_class=self._buy, instr=instr, position=10,
-                stl_ccy=self.usd, principal=-100.0, carry=0.0, overheads=0.0,
-                acc_date_days=2, cash_date_days=2)
-
-        self._t(t_class=self._buy, instr=instr, position=10,
-                stl_ccy=self.usd, principal=-105.0, carry=0.0, overheads=0.0,
-                acc_date_days=3, cash_date_days=3)
-
-        self._t(t_class=self._buy, instr=instr, position=10,
-                stl_ccy=self.usd, principal=-110.0, carry=0.0, overheads=0.0,
-                acc_date_days=4, cash_date_days=4)
-
-        self._t(t_class=self._sell, instr=instr, position=-20,
-                stl_ccy=self.usd, principal=230.0, carry=0.0, overheads=0.0,
-                acc_date_days=5, cash_date_days=5)
-
-        self._t(t_class=self._buy, instr=instr, position=10,
-                stl_ccy=self.usd, principal=-120.0, carry=0.0, overheads=0.0,
-                acc_date_days=6, cash_date_days=6)
-
-        self._t(t_class=self._sell, instr=instr, position=-20,
-                stl_ccy=self.usd, principal=250.0, carry=0.0, overheads=0.0,
-                acc_date_days=7, cash_date_days=7)
-
-        self._t(t_class=self._sell, instr=instr, position=-10,
-                stl_ccy=self.usd, principal=130.0, carry=0.0, overheads=0.0,
-                acc_date_days=8, cash_date_days=8)
-
-        self._t(t_class=self._buy, instr=instr, position=20,
-                stl_ccy=self.usd, principal=-250.0, carry=0.0, overheads=0.0,
-                acc_date_days=9, cash_date_days=9)
+        self._t(t_class=self._sell, instr=self.bond0, position=-5,
+                stl_ccy=self.usd, principal=20.0,
+                acc_date_days=3, cash_date_days=3,
+                p=self.p2,
+                acc_pos=self.a1_1, acc_cash=self.a1_1,
+                s1_pos=self.s1_1_1_1, s1_cash=self.s1_1_1_1)
 
         r = Report(master_user=self.m, pricing_policy=self.pp, report_date=self._d(14),
-                   cost_method=self._avco, detail_by_account=True)
+                   cost_method=self._avco,
+                   portfolio_mode=Report.PORTFOLIO_IGNORE)
         b = ReportBuilder(instance=r)
         b.build()
-        self._dump(b, 'test_multiplier_0: avco')
+        self._dump(b, 'test_avco_prtfl_0: IGNORE')
 
         r = Report(master_user=self.m, pricing_policy=self.pp, report_date=self._d(14),
-                   cost_method=self._fifo, detail_by_account=True)
+                   cost_method=self._avco,
+                   portfolio_mode=Report.PORTFOLIO_INDEPENDENT)
         b = ReportBuilder(instance=r)
         b.build()
-        self._dump(b, 'test_multiplier_0: fifo')
+        self._dump(b, 'test_avco_prtfl_0: INDEPENDENT')
+
+    def _test_avco_acc_0(self):
+        self._t(t_class=self._buy, instr=self.bond0, position=5,
+                stl_ccy=self.usd, principal=-10.0,
+                acc_date_days=1, cash_date_days=1,
+                p=self.p1,
+                acc_pos=self.a1_1, acc_cash=self.a1_1,
+                s1_pos=self.s1_1_1_1, s1_cash=self.s1_1_1_1)
+
+        self._t(t_class=self._buy, instr=self.bond0, position=5,
+                stl_ccy=self.usd, principal=-15.0,
+                acc_date_days=2, cash_date_days=2,
+                p=self.p1,
+                acc_pos=self.a1_1, acc_cash=self.a1_1,
+                s1_pos=self.s1_1_1_1, s1_cash=self.s1_1_1_1)
+
+        self._t(t_class=self._sell, instr=self.bond0, position=-5,
+                stl_ccy=self.usd, principal=20.0,
+                acc_date_days=3, cash_date_days=3,
+                p=self.p1,
+                acc_pos=self.a1_2, acc_cash=self.a1_2,
+                s1_pos=self.s1_1_1_1, s1_cash=self.s1_1_1_1)
+
+        r = Report(master_user=self.m, pricing_policy=self.pp, report_date=self._d(14),
+                   cost_method=self._avco,
+                   account_mode=Report.ACCOUNT_IGNORE)
+        b = ReportBuilder(instance=r)
+        b.build()
+        self._dump(b, 'test_avco_acc_0: IGNORE')
+
+        r = Report(master_user=self.m, pricing_policy=self.pp, report_date=self._d(14),
+                   cost_method=self._avco,
+                   account_mode=Report.ACCOUNT_INDEPENDENT)
+        b = ReportBuilder(instance=r)
+        b.build()
+        self._dump(b, 'test_avco_acc_0: INDEPENDENT')
+
+    def _test_avco_str1_0(self):
+        self._t(t_class=self._buy, instr=self.bond0, position=5,
+                stl_ccy=self.usd, principal=-10.0,
+                acc_date_days=1, cash_date_days=1,
+                p=self.p1,
+                acc_pos=self.a1_1, acc_cash=self.a1_1,
+                s1_pos=self.s1_1_1_1, s1_cash=self.s1_1_1_1)
+
+        self._t(t_class=self._buy, instr=self.bond0, position=5,
+                stl_ccy=self.usd, principal=-15.0,
+                acc_date_days=2, cash_date_days=2,
+                p=self.p1,
+                acc_pos=self.a1_1, acc_cash=self.a1_1,
+                s1_pos=self.s1_1_1_1, s1_cash=self.s1_1_1_1)
+
+        self._t(t_class=self._sell, instr=self.bond0, position=-5,
+                stl_ccy=self.usd, principal=20.0,
+                acc_date_days=3, cash_date_days=3,
+                p=self.p1,
+                acc_pos=self.a1_1, acc_cash=self.a1_1,
+                s1_pos=self.s1_1_1_2, s1_cash=self.s1_1_1_2)
+
+        r = Report(master_user=self.m, pricing_policy=self.pp, report_date=self._d(14),
+                   cost_method=self._avco,
+                   strategy1_mode=Report.STRATEGY_INDEPENDENT)
+        b = ReportBuilder(instance=r)
+        b.build()
+        self._dump(b, 'test_avco_str1_0: NON_OFFSETTING')
+
+        r = Report(master_user=self.m, pricing_policy=self.pp, report_date=self._d(14),
+                   cost_method=self._avco,
+                   strategy1_mode=Report.STRATEGY_INTERDEPENDENT)
+        b = ReportBuilder(instance=r)
+        b.build()
+        self._dump(b, 'test_avco_str1_0: OFFSETTING')
 
     def _test_balance_0(self):
         self._t(t_class=self._cash_inflow, trn_ccy=self.eur, position=1000, fx_rate=1.3)
@@ -347,6 +403,26 @@ class ReportTestCase(TestCase):
         b = ReportBuilder(instance=r)
         b.build()
         self._dump(b, 'test_balance_2')
+
+    def test_balance_3(self):
+        # self._t(t_class=self._cash_inflow, trn_ccy=self.usd, position=1000, fx_rate=1.3)
+        self._t(t_class=self._buy,
+                instr=self.bond0, position=5,
+                stl_ccy=self.usd, principal=-10., carry=-0., overheads=-0.,
+                acc_date_days=1, cash_date_days=1)
+        self._t(t_class=self._buy,
+                instr=self.bond0, position=5,
+                stl_ccy=self.usd, principal=-15., carry=-0., overheads=-0.,
+                acc_date_days=2, cash_date_days=2)
+        self._t(t_class=self._sell,
+                instr=self.bond0, position=-5,
+                stl_ccy=self.usd, principal=20., carry=0., overheads=0.,
+                acc_date_days=3, cash_date_days=3)
+
+        r = Report(master_user=self.m, pricing_policy=self.pp, report_date=self._d(14))
+        b = ReportBuilder(instance=r)
+        b.build()
+        self._dump(b, 'test_balance_3')
 
     def _test_pl_0(self):
         self._t(t_class=self._cash_inflow, trn_ccy=self.usd, position=1000, fx_rate=1.3)
@@ -561,7 +637,7 @@ class ReportTestCase(TestCase):
         b.build()
         self._dump(b, 'test_allocation_0')
 
-    def test_allocation_1(self):
+    def _test_allocation_1(self):
         self.bond0.user_code = 'instr1'
         self.bond0.save()
         self.bond1.user_code = 'A1'

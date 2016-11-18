@@ -120,8 +120,8 @@ class VirtualTransaction(_Base):
     alloc_bl = None
     alloc_pl = None
 
-    total_real_sys = 0.0
-    total_unreal_sys = 0.0
+    # total_real_sys = 0.0
+    # total_unreal_sys = 0.0
 
     dump_columns = [
         'pk',
@@ -133,12 +133,12 @@ class VirtualTransaction(_Base):
         'instr',
         # 'trn_ccy',
         'stl_ccy',
-        # 'prtfl',
-        # 'acc_pos',
-        # 'acc_cash',
+        'prtfl',
+        'acc_pos',
+        'acc_cash',
         # 'acc_interim',
-        # 'str1_pos',
-        # 'str1_cash',
+        'str1_pos',
+        'str1_cash',
         # 'str2_pos',
         # 'str2_cash',
         # 'str3_pos',
@@ -669,8 +669,8 @@ class ReportItem(_Base):
     cash_flow_real_sys = 0.0
     cash_flow_unreal_sys = 0.0
 
-    total_real_sys = 0.0
-    total_unreal_sys = 0.0
+    # total_real_sys = 0.0
+    # total_unreal_sys = 0.0
 
     # full ----------------------------------------------------
     principal_sys = 0.0
@@ -730,9 +730,9 @@ class ReportItem(_Base):
     dump_columns = [
         'type_code',
         'user_code',
-        # 'prtfl',
-        # 'acc',
-        # 'str1',
+        'prtfl',
+        'acc',
+        'str1',
         # 'str2',
         # 'str3',
         # 'detail_trn',
@@ -826,8 +826,8 @@ class ReportItem(_Base):
         if item.type == ReportItem.TYPE_INSTRUMENT:
             item.acc = acc or trn.acc_pos
             item.str1 = str1 or trn.str1_pos
-            item.str2 = str2 or trn.str1_pos
-            item.str3 = str3 or trn.str1_pos
+            item.str2 = str2 or trn.str2_pos
+            item.str3 = str3 or trn.str3_pos
             item.instr = instr or trn.instr
 
             item.pos_size = trn.pos_size * (1.0 - trn.multiplier)
@@ -836,8 +836,8 @@ class ReportItem(_Base):
             item.cash_flow_real_sys = trn.cash_flow_real_sys
             item.cash_flow_unreal_sys = trn.cash_flow_unreal_sys
 
-            item.total_real_sys = trn.total_real_sys
-            item.total_unreal_sys = trn.total_unreal_sys
+            # item.total_real_sys = trn.total_real_sys
+            # item.total_unreal_sys = trn.total_unreal_sys
 
             # full ----------------------------------------------------
             item.principal_sys = trn.principal_sys
@@ -887,8 +887,8 @@ class ReportItem(_Base):
         elif item.type == ReportItem.TYPE_CURRENCY:
             item.acc = acc or trn.acc_cash
             item.str1 = str1 or trn.str1_cash
-            item.str2 = str2 or trn.str1_cash
-            item.str3 = str3 or trn.str1_cash
+            item.str2 = str2 or trn.str2_cash
+            item.str3 = str3 or trn.str3_cash
             item.ccy = ccy or trn.trn_ccy
 
             item.pos_size = val
@@ -904,11 +904,17 @@ class ReportItem(_Base):
             item.overheads_sys = trn.overheads_sys
 
         elif item.type == ReportItem.TYPE_MISMATCH:
-            item.acc = trn.acc_pos
             item.instr = trn.link_instr
-            item.str1 = str1
-            item.str2 = str2
-            item.str3 = str3
+
+            item.prtfl = item.report.master_user.mismatch_portfolio
+            item.acc = item.report.master_user.mismatch_account
+
+            item.str1 = item.report.master_user.strategy1
+            item.str2 = item.report.master_user.strategy2
+            item.str3 = item.report.master_user.strategy3
+
+            item.mismatch_prtfl = trn.prtfl
+            item.mismatch_acc = trn.acc_pos
             item.mismatch_ccy = trn.stl_ccy
             item.mismatch = trn.mismatch
 
@@ -972,10 +978,10 @@ class ReportItem(_Base):
             return 'SUMMARY'
 
         elif self.type == ReportItem.TYPE_INVESTED_CURRENCY:
-            return '$_CCY'
+            return 'INV_CCY'
 
         elif self.type == ReportItem.TYPE_INVESTED_SUMMARY:
-            return '$_SUMMARY'
+            return 'INV_SUMMARY'
 
         return 'ERR'
 
@@ -1323,14 +1329,14 @@ class ReportItem(_Base):
             # self.market_value_sys += o.instr_principal_sys + o.instr_accrued_sys
             self.cost_sys += o.cost_sys
 
-            self.total_real_sys += o.total_real_sys
+            # self.total_real_sys += o.total_real_sys
             # self.total_unreal_sys += o.market_value_sys + o.cost_sys
             # self.total_unreal_sys += (o.instr_principal_sys + o.instr_accrued_sys) + o.cost_sys
 
         elif self.type == ReportItem.TYPE_SUMMARY or self.type == ReportItem.TYPE_INVESTED_SUMMARY:
             self.market_value_sys += o.market_value_sys
-            self.total_real_sys += o.total_real_sys
-            self.total_unreal_sys += o.total_unreal_sys
+            # self.total_real_sys += o.total_real_sys
+            # self.total_unreal_sys += o.total_unreal_sys
 
         elif self.type == ReportItem.TYPE_MISMATCH:
             self.mismatch += o.mismatch
@@ -1377,33 +1383,70 @@ class ReportItem(_Base):
 
 
 class Report(object):
-    def __init__(self, id=None, master_user=None, task_id=None, task_status=None,
-                 report_date=None, report_currency=None, pricing_policy=None, cost_method=None,
-                 allocation_end_multiplier=0.5, pl_real_unreal_end_multiplier=0.5,
-                 detail_by_portfolio=False, detail_by_account=False, detail_by_strategy1=False,
-                 detail_by_strategy2=False, detail_by_strategy3=False,
+    PORTFOLIO_IGNORE = 0
+    PORTFOLIO_INDEPENDENT = 1
+    PORTFOLIO_CHOICES = (
+        (PORTFOLIO_IGNORE, 'Ignore'),
+        (PORTFOLIO_INDEPENDENT, 'Independent'),
+    )
+    ACCOUNT_IGNORE = 0
+    ACCOUNT_INDEPENDENT = 1
+    ACCOUNT_CHOICES = (
+        (ACCOUNT_IGNORE, 'Ignore'),
+        (ACCOUNT_INDEPENDENT, 'Independent'),
+    )
+    # STRATEGY_IGNORE = 0 # NOT USED
+    STRATEGY_INDEPENDENT = 1
+    STRATEGY_INTERDEPENDENT = 2
+    STRATEGY_CHOICES = (
+        (STRATEGY_INDEPENDENT, 'Non-offsetting (Independent)'),
+        (STRATEGY_INTERDEPENDENT, 'Offsetting (Interdependent - 0/100, 100/0, 50/50)'),
+    )
+
+    def __init__(self,
+                 id=None,
+                 master_user=None,
+                 member=None,
+                 task_id=None,
+                 task_status=None,
+                 report_date=None,
+                 report_currency=None,
+                 pricing_policy=None,
+                 cost_method=None,
+                 portfolio_mode=PORTFOLIO_INDEPENDENT,
+                 account_mode=ACCOUNT_INDEPENDENT,
+                 strategy1_mode=STRATEGY_INDEPENDENT,
+                 strategy2_mode=STRATEGY_INDEPENDENT,
+                 strategy3_mode=STRATEGY_INDEPENDENT,
                  show_transaction_details=False,
-                 portfolios=None, accounts=None, strategies1=None, strategies2=None, strategies3=None,
-                 transaction_classes=None, date_field=None,
-                 custom_fields=None, items=None):
+                 approach_multiplier=0.5,
+                 portfolios=None,
+                 accounts=None,
+                 strategies1=None,
+                 strategies2=None,
+                 strategies3=None,
+                 transaction_classes=None,
+                 date_field=None,
+                 custom_fields=None,
+                 items=None):
         self.id = id
         self.task_id = task_id
         self.task_status = task_status
 
         self.master_user = master_user
+        self.member = member
         self.pricing_policy = pricing_policy
         self.report_date = report_date or (date_now() - timedelta(days=1))
         self.report_currency = report_currency or master_user.system_currency
         self.cost_method = cost_method or CostMethod.objects.get(pk=CostMethod.AVCO)
-        self.pl_real_unreal_end_multiplier = pl_real_unreal_end_multiplier if pl_real_unreal_end_multiplier is not None else 0.5
-        self.allocation_end_multiplier = allocation_end_multiplier if allocation_end_multiplier is not None else 0.5
 
-        self.detail_by_portfolio = detail_by_portfolio
-        self.detail_by_account = detail_by_account
-        self.detail_by_strategy1 = detail_by_strategy1
-        self.detail_by_strategy2 = detail_by_strategy2
-        self.detail_by_strategy3 = detail_by_strategy3
+        self.portfolio_mode = portfolio_mode
+        self.account_mode = account_mode
+        self.strategy1_mode = strategy1_mode
+        self.strategy2_mode = strategy2_mode
+        self.strategy3_mode = strategy3_mode
         self.show_transaction_details = show_transaction_details
+        self.approach_multiplier = approach_multiplier
 
         self.portfolios = portfolios or []
         self.accounts = accounts or []
@@ -1421,23 +1464,26 @@ class Report(object):
     def __str__(self):
         return "%s for %s @ %s" % (self.__class__.__name__, self.master_user, self.report_date)
 
+    @property
+    def approach_begin_multiplier(self):
+        return self.approach_multiplier
+
+    @property
+    def approach_end_multiplier(self):
+        return 1.0 - self.approach_multiplier
+
+    @property
+    def system_ccy(self):
+        return self.master_user.system_currency
+
+    def is_system_ccy(self, ccy):
+        return self.master_user.system_currency_id == ccy.id
 
 class ReportBuilder(object):
     def __init__(self, instance=None, queryset=None, transactions=None):
         self.instance = instance
         self._queryset = queryset
         self._transactions = transactions
-
-        # self._filter_date_attr = self.instance.date_field
-        # self._now = timezone.now().date()
-        # self._report_date = self.instance.report_date or self._now
-
-        # self._detail_by_portfolio = self.instance.detail_by_portfolio
-        # self._detail_by_account = self.instance.detail_by_account
-        # self._detail_by_strategy1 = self.instance.detail_by_strategy1
-        # self._detail_by_strategy2 = self.instance.detail_by_strategy2
-        # self._detail_by_strategy3 = self.instance.detail_by_strategy3
-        # self._any_details = self._detail_by_portfolio or self._detail_by_account or self._detail_by_strategy1 or self._detail_by_strategy2 or self._detail_by_strategy3
 
         self._items = []
 
@@ -1518,20 +1564,6 @@ class ReportBuilder(object):
             p.fill_using_transactions(self._trn_qs(), currencies=[self.instance.report_currency])
             return p
 
-    # def _make_key(self, instr=None, ccy=None, prtfl=None, acc=None, strg1=None, strg2=None, strg3=None, detail_trn=None,
-    #               trn_cls=None):
-    #     return ','.join((
-    #         'i=%s' % getattr(instr, 'pk', -1),
-    #         'c=%s' % getattr(ccy, 'pk', -1),
-    #         'p=%s' % getattr(prtfl, 'pk', -1),
-    #         'a=%s' % getattr(acc, 'pk', -1),
-    #         's1=%s' % getattr(strg1, 'pk', -1),
-    #         's2=%s' % getattr(strg2, 'pk', -1),
-    #         's3=%s' % getattr(strg3, 'pk', -1),
-    #         'dt=%s' % getattr(detail_trn, 'pk', -1),
-    #         'tc=%s' % getattr(trn_cls, 'pk', -1),
-    #     ))
-
     @cached_property
     def transactions(self):
         if self._transactions:
@@ -1541,29 +1573,29 @@ class ReportBuilder(object):
         for t in self._trn_qs():
             overrides = {}
 
-            if not self.instance.detail_by_portfolio:
-                overrides['portfolio'] = self.instance.master_user.portfolio
-
-            if not self.instance.detail_by_account:
-                overrides['account_position'] = self.instance.master_user.account
-                overrides['account_cash'] = self.instance.master_user.account
-                overrides['account_interim'] = self.instance.master_user.account
-
-            if not self.instance.detail_by_strategy1:
-                overrides['strategy1_position'] = self.instance.master_user.strategy1
-                overrides['strategy1_cash'] = self.instance.master_user.strategy1
-
-            if not self.instance.detail_by_strategy1:
-                overrides['strategy1_position'] = self.instance.master_user.strategy1
-                overrides['strategy1_cash'] = self.instance.master_user.strategy1
-
-            if not self.instance.detail_by_strategy2:
-                overrides['strategy2_position'] = self.instance.master_user.strategy2
-                overrides['strategy2_cash'] = self.instance.master_user.strategy2
-
-            if not self.instance.detail_by_strategy3:
-                overrides['strategy3_position'] = self.instance.master_user.strategy3
-                overrides['strategy3_cash'] = self.instance.master_user.strategy3
+            # if self.instance.portfolio_mode == Report.PORTFOLIO_USE:
+            #     overrides['portfolio'] = self.instance.master_user.portfolio
+            #
+            # if self.instance.account_mode == Report.ACCOUNT_USE:
+            #     overrides['account_position'] = self.instance.master_user.account
+            #     overrides['account_cash'] = self.instance.master_user.account
+            #     overrides['account_interim'] = self.instance.master_user.account
+            #
+            # if not self.instance.detail_by_strategy1:
+            #     overrides['strategy1_position'] = self.instance.master_user.strategy1
+            #     overrides['strategy1_cash'] = self.instance.master_user.strategy1
+            #
+            # if not self.instance.detail_by_strategy1:
+            #     overrides['strategy1_position'] = self.instance.master_user.strategy1
+            #     overrides['strategy1_cash'] = self.instance.master_user.strategy1
+            #
+            # if not self.instance.detail_by_strategy2:
+            #     overrides['strategy2_position'] = self.instance.master_user.strategy2
+            #     overrides['strategy2_cash'] = self.instance.master_user.strategy2
+            #
+            # if not self.instance.detail_by_strategy3:
+            #     overrides['strategy3_position'] = self.instance.master_user.strategy3
+            #     overrides['strategy3_cash'] = self.instance.master_user.strategy3
 
             t = VirtualTransaction(
                 report=self.instance,
@@ -1584,13 +1616,13 @@ class ReportBuilder(object):
         items = defaultdict(list)
 
         res = []
-        multipliers_delta = []
+        # multipliers_delta = []
 
         def _set_mul(t0, multiplier):
             # if isclose(t.r_multiplier, multiplier):
             #     return
             delta = multiplier - t0.multiplier
-            multipliers_delta.append((t0, delta))
+            # multipliers_delta.append((t0, delta))
             t0.multiplier = multiplier
             return delta
 
@@ -1608,8 +1640,8 @@ class ReportBuilder(object):
 
             # n.total_real_sys = n.total_real_sys * alloc_mul * delta
             # n.total_unreal_sys = n.total_unreal_sys * alloc_mul * delta
-            n.total_real_sys = 0.0
-            n.total_unreal_sys = 0.0
+            # n.total_real_sys = 0.0
+            # n.total_unreal_sys = 0.0
 
             if alloc_bl:
                 n.alloc_bl = alloc_bl
@@ -1619,127 +1651,128 @@ class ReportBuilder(object):
             return n
 
         def _alloc(cur, closed, delta):
-            begin_alloc_mul = (1.0 - self.instance.allocation_end_multiplier)
-            end_alloc_mul = self.instance.allocation_end_multiplier
-
-            if not isclose(begin_alloc_mul, 0.0):
-                # b1 = _alloc_clone(closed, cur.trn_cls, -begin_alloc_mul, delta,
-                #                   alloc_bl=closed.alloc_bl, alloc_pl=closed.alloc_pl)
-                # b1.pk = 'b,%s,%s,%s' % (cur.pk, closed.pk, b1.trn_cls)
-                b1 = closed.clone()
-                b1.trn_cls = cur.trn_cls
-                b1.pk = 'b,%s,%s,%s' % (cur.pk, closed.pk, b1.trn_cls)
-                b1.multiplier = 1.0
-                b1.pos_size = closed.pos_size * -begin_alloc_mul * delta
-                b1.cash = closed.cash * -begin_alloc_mul * delta
-                b1.principal = closed.principal * -begin_alloc_mul * delta
-                b1.carry = closed.carry * -begin_alloc_mul * delta
-                b1.overheads = closed.overheads * -begin_alloc_mul * delta
-                b1.total_real_sys = 0.0
-                b1.total_unreal_sys = 0.0
-                res.append(b1)
-
-                # b2 = _alloc_clone(closed, closed.trn_cls, begin_alloc_mul, delta,
-                #                   alloc_bl=cur.alloc_bl, alloc_pl=cur.alloc_pl)
-                # b2.pk = 'b,%s,%s,%s' % (cur.pk, closed.pk, b2.trn_cls)
-                # b2 = _alloc_clone(cur, closed.trn_cls, -begin_alloc_mul, delta2,
-                #                   alloc_bl=cur.alloc_bl, alloc_pl=cur.alloc_pl)
-                # b2.pk = 'b,%s,%s,%s' % (cur.pk, closed.pk, b2.trn_cls)
-
-                b2 = cur.clone()
-                b2.trn_cls = closed.trn_cls
-                b2.pk = 'b,%s,%s,%s' % (cur.pk, closed.pk, b1.trn_cls)
-                b2.multiplier = 1.0
-                # if isclose(cur.pos_size, 0.0):
-                #     b2.pos_size = 0.0
-                # else:
-                #     b2.pos_size = -1.0 * cur.pos_size * begin_alloc_mul * (b1.pos_size / cur.pos_size)
-                # if isclose(cur.cash, 0.0):
-                #     b1.cash = b2.cash = 0.0
-                # else:
-                #     b2.cash = cur.cash * begin_alloc_mul * (b2.pos_size / cur.pos_size)
-                # if isclose(cur.principal, 0.0):
-                #     b1.cash = b2.principal = 0.0
-                # else:
-                #     b2.principal = cur.principal * begin_alloc_mul * (b2.pos_size / cur.pos_size)
-                # if isclose(cur.carry, 0.0):
-                #     b2.carry = 0.0
-                # else:
-                #     b2.carry = cur.carry * begin_alloc_mul * (b2.pos_size / cur.pos_size)
-                # if isclose(cur.overheads, 0.0):
-                #     b2.overheads = 0.0
-                # else:
-                #     b2.overheads = cur.overheads * begin_alloc_mul * (b2.pos_size / cur.pos_size)
-                b2.pos_size = -b1.pos_size
-                b2.cash = -b1.cash
-                b2.principal = -b1.principal
-                b2.carry = -b1.carry
-                b2.overheads = -b1.overheads
-                b2.total_real_sys = 0.0
-                b2.total_unreal_sys = 0.0
-                # b2.alloc_bl = cur.alloc_bl
-                # b2.alloc_pl = cur.alloc_pl
-                res.append(b2)
-
-            if not isclose(end_alloc_mul, 0.0):
-                # e1 = _alloc_clone(closed, cur.trn_cls, -end_alloc_mul, delta,
-                #                   alloc_bl=closed.alloc_bl, alloc_pl=closed.alloc_pl)
-                # e1.pk = 'e,%s,%s,%s' % (cur.pk, closed.pk, e1.trn_cls)
-                e1 = closed.clone()
-                e1.trn_cls = cur.trn_cls
-                e1.pk = 'e,%s,%s,%s' % (cur.pk, closed.pk, e1.trn_cls)
-                e1.multiplier = 1.0
-                e1.pos_size = closed.pos_size * -end_alloc_mul * delta
-                # e1.cash = closed.cash * -end_alloc_mul * delta
-                # e1.principal = closed.principal * -end_alloc_mul * delta
-                # e1.carry = closed.carry * -end_alloc_mul * delta
-                # e1.overheads = closed.overheads * -end_alloc_mul * delta
-                e1.total_real_sys = 0.0
-                e1.total_unreal_sys = 0.0
-                # e1.alloc_bl = closed.alloc_bl
-                # e1.alloc_pl = closed.alloc_pl
-                res.append(e1)
-
-                # e2 = _alloc_clone(closed, closed.trn_cls, end_alloc_mul, delta,
-                #                   alloc_bl=cur.alloc_bl, alloc_pl=cur.alloc_pl)
-                # e2.pk = 'e,%s,%s,%s' % (cur.pk, closed.pk, e2.trn_cls)
-                # delta2 = e1.pos_size / cur.pos_size
-                e2 = cur.clone()
-                e2.trn_cls = closed.trn_cls
-                e2.pk = 'e,%s,%s,%s' % (cur.pk, closed.pk, e1.trn_cls)
-                e2.multiplier = 1.0
-                e2.pos_size = -e1.pos_size
-                # if isclose(cur.pos_size, 0.0):
-                #     e2.pos_size = 0.0
-                # else:
-                #     e2.pos_size = -1.0 * cur.pos_size * end_alloc_mul * (e1.pos_size / cur.pos_size)
-                if isclose(cur.cash, 0.0):
-                    e2.cash = 0.0
-                else:
-                    e2.cash = cur.cash * end_alloc_mul * (e2.pos_size / cur.pos_size)
-                if isclose(cur.principal, 0.0):
-                    e2.principal = 0.0
-                else:
-                    e2.principal = cur.principal * end_alloc_mul * (e2.pos_size / cur.pos_size)
-                if isclose(cur.carry, 0.0):
-                    e2.carry = 0.0
-                else:
-                    e2.carry = cur.carry * end_alloc_mul * (e2.pos_size / cur.pos_size)
-                if isclose(cur.overheads, 0.0):
-                    e2.overheads = 0.0
-                else:
-                    e2.overheads = cur.overheads * end_alloc_mul * (e2.pos_size / cur.pos_size)
-
-                e1.cash = -e2.cash
-                e1.principal = -e2.principal
-                e1.carry = -e2.carry
-                e1.overheads = -e2.overheads
-
-                e2.total_real_sys = 0.0
-                e2.total_unreal_sys = 0.0
-                # e2.alloc_bl = cur.alloc_bl
-                # e2.alloc_pl = cur.alloc_pl
-                res.append(e2)
+            # begin_alloc_mul = (1.0 - self.instance.allocation_end_multiplier)
+            # end_alloc_mul = self.instance.allocation_end_multiplier
+            #
+            # if not isclose(begin_alloc_mul, 0.0):
+            #     # b1 = _alloc_clone(closed, cur.trn_cls, -begin_alloc_mul, delta,
+            #     #                   alloc_bl=closed.alloc_bl, alloc_pl=closed.alloc_pl)
+            #     # b1.pk = 'b,%s,%s,%s' % (cur.pk, closed.pk, b1.trn_cls)
+            #     b1 = closed.clone()
+            #     b1.trn_cls = cur.trn_cls
+            #     b1.pk = 'b,%s,%s,%s' % (cur.pk, closed.pk, b1.trn_cls)
+            #     b1.multiplier = 1.0
+            #     b1.pos_size = closed.pos_size * -begin_alloc_mul * delta
+            #     b1.cash = closed.cash * -begin_alloc_mul * delta
+            #     b1.principal = closed.principal * -begin_alloc_mul * delta
+            #     b1.carry = closed.carry * -begin_alloc_mul * delta
+            #     b1.overheads = closed.overheads * -begin_alloc_mul * delta
+            #     b1.total_real_sys = 0.0
+            #     b1.total_unreal_sys = 0.0
+            #     res.append(b1)
+            #
+            #     # b2 = _alloc_clone(closed, closed.trn_cls, begin_alloc_mul, delta,
+            #     #                   alloc_bl=cur.alloc_bl, alloc_pl=cur.alloc_pl)
+            #     # b2.pk = 'b,%s,%s,%s' % (cur.pk, closed.pk, b2.trn_cls)
+            #     # b2 = _alloc_clone(cur, closed.trn_cls, -begin_alloc_mul, delta2,
+            #     #                   alloc_bl=cur.alloc_bl, alloc_pl=cur.alloc_pl)
+            #     # b2.pk = 'b,%s,%s,%s' % (cur.pk, closed.pk, b2.trn_cls)
+            #
+            #     b2 = cur.clone()
+            #     b2.trn_cls = closed.trn_cls
+            #     b2.pk = 'b,%s,%s,%s' % (cur.pk, closed.pk, b1.trn_cls)
+            #     b2.multiplier = 1.0
+            #     # if isclose(cur.pos_size, 0.0):
+            #     #     b2.pos_size = 0.0
+            #     # else:
+            #     #     b2.pos_size = -1.0 * cur.pos_size * begin_alloc_mul * (b1.pos_size / cur.pos_size)
+            #     # if isclose(cur.cash, 0.0):
+            #     #     b1.cash = b2.cash = 0.0
+            #     # else:
+            #     #     b2.cash = cur.cash * begin_alloc_mul * (b2.pos_size / cur.pos_size)
+            #     # if isclose(cur.principal, 0.0):
+            #     #     b1.cash = b2.principal = 0.0
+            #     # else:
+            #     #     b2.principal = cur.principal * begin_alloc_mul * (b2.pos_size / cur.pos_size)
+            #     # if isclose(cur.carry, 0.0):
+            #     #     b2.carry = 0.0
+            #     # else:
+            #     #     b2.carry = cur.carry * begin_alloc_mul * (b2.pos_size / cur.pos_size)
+            #     # if isclose(cur.overheads, 0.0):
+            #     #     b2.overheads = 0.0
+            #     # else:
+            #     #     b2.overheads = cur.overheads * begin_alloc_mul * (b2.pos_size / cur.pos_size)
+            #     b2.pos_size = -b1.pos_size
+            #     b2.cash = -b1.cash
+            #     b2.principal = -b1.principal
+            #     b2.carry = -b1.carry
+            #     b2.overheads = -b1.overheads
+            #     b2.total_real_sys = 0.0
+            #     b2.total_unreal_sys = 0.0
+            #     # b2.alloc_bl = cur.alloc_bl
+            #     # b2.alloc_pl = cur.alloc_pl
+            #     res.append(b2)
+            #
+            # if not isclose(end_alloc_mul, 0.0):
+            #     # e1 = _alloc_clone(closed, cur.trn_cls, -end_alloc_mul, delta,
+            #     #                   alloc_bl=closed.alloc_bl, alloc_pl=closed.alloc_pl)
+            #     # e1.pk = 'e,%s,%s,%s' % (cur.pk, closed.pk, e1.trn_cls)
+            #     e1 = closed.clone()
+            #     e1.trn_cls = cur.trn_cls
+            #     e1.pk = 'e,%s,%s,%s' % (cur.pk, closed.pk, e1.trn_cls)
+            #     e1.multiplier = 1.0
+            #     e1.pos_size = closed.pos_size * -end_alloc_mul * delta
+            #     # e1.cash = closed.cash * -end_alloc_mul * delta
+            #     # e1.principal = closed.principal * -end_alloc_mul * delta
+            #     # e1.carry = closed.carry * -end_alloc_mul * delta
+            #     # e1.overheads = closed.overheads * -end_alloc_mul * delta
+            #     e1.total_real_sys = 0.0
+            #     e1.total_unreal_sys = 0.0
+            #     # e1.alloc_bl = closed.alloc_bl
+            #     # e1.alloc_pl = closed.alloc_pl
+            #     res.append(e1)
+            #
+            #     # e2 = _alloc_clone(closed, closed.trn_cls, end_alloc_mul, delta,
+            #     #                   alloc_bl=cur.alloc_bl, alloc_pl=cur.alloc_pl)
+            #     # e2.pk = 'e,%s,%s,%s' % (cur.pk, closed.pk, e2.trn_cls)
+            #     # delta2 = e1.pos_size / cur.pos_size
+            #     e2 = cur.clone()
+            #     e2.trn_cls = closed.trn_cls
+            #     e2.pk = 'e,%s,%s,%s' % (cur.pk, closed.pk, e1.trn_cls)
+            #     e2.multiplier = 1.0
+            #     e2.pos_size = -e1.pos_size
+            #     # if isclose(cur.pos_size, 0.0):
+            #     #     e2.pos_size = 0.0
+            #     # else:
+            #     #     e2.pos_size = -1.0 * cur.pos_size * end_alloc_mul * (e1.pos_size / cur.pos_size)
+            #     if isclose(cur.cash, 0.0):
+            #         e2.cash = 0.0
+            #     else:
+            #         e2.cash = cur.cash * end_alloc_mul * (e2.pos_size / cur.pos_size)
+            #     if isclose(cur.principal, 0.0):
+            #         e2.principal = 0.0
+            #     else:
+            #         e2.principal = cur.principal * end_alloc_mul * (e2.pos_size / cur.pos_size)
+            #     if isclose(cur.carry, 0.0):
+            #         e2.carry = 0.0
+            #     else:
+            #         e2.carry = cur.carry * end_alloc_mul * (e2.pos_size / cur.pos_size)
+            #     if isclose(cur.overheads, 0.0):
+            #         e2.overheads = 0.0
+            #     else:
+            #         e2.overheads = cur.overheads * end_alloc_mul * (e2.pos_size / cur.pos_size)
+            #
+            #     e1.cash = -e2.cash
+            #     e1.principal = -e2.principal
+            #     e1.carry = -e2.carry
+            #     e1.overheads = -e2.overheads
+            #
+            #     e2.total_real_sys = 0.0
+            #     e2.total_unreal_sys = 0.0
+            #     # e2.alloc_bl = cur.alloc_bl
+            #     # e2.alloc_pl = cur.alloc_pl
+            #     res.append(e2)
+            pass
 
         for t in src:
             res.append(t)
@@ -1747,15 +1780,16 @@ class ReportBuilder(object):
             if t.trn_cls.id not in [TransactionClass.BUY, TransactionClass.SELL]:
                 continue
 
-            # TODO: add strategies
-            # t_key = self._make_key(
-            #     instr=t.instr,
-            #     prtfl=t.prtfl,
-            #     acc=t.acc_pos
-            # )
-            t_key = (t.instr.id, t.prtfl.id, t.acc_pos.id)
+            t_key = (
+                t.prtfl.id if self.instance.portfolio_mode == Report.PORTFOLIO_INDEPENDENT else None,
+                t.acc_pos.id if self.instance.account_mode == Report.ACCOUNT_INDEPENDENT else None,
+                t.str1_pos.id if self.instance.strategy1_mode == Report.STRATEGY_INDEPENDENT else None,
+                t.str2_pos.id if self.instance.strategy2_mode == Report.STRATEGY_INDEPENDENT else None,
+                t.str3_pos.id if self.instance.strategy3_mode == Report.STRATEGY_INDEPENDENT else None,
+                t.instr.id,
+            )
 
-            multipliers_delta.clear()
+            # multipliers_delta.clear()
             t.multiplier = 0.0
             rolling_position = rolling_positions[t_key]
 
@@ -1857,33 +1891,34 @@ class ReportBuilder(object):
             rolling_positions[t_key] = rolling_position
             # print('i =', i, ', rolling_positions =', rolling_position)
 
-            if multipliers_delta:
-                init_mult = 1.0 - self.instance.pl_real_unreal_end_multiplier
-                end_mult = self.instance.pl_real_unreal_end_multiplier
-
-                t, inc_multiplier = multipliers_delta[-1]
-
-                # sum_principal = 0.0
-                # sum_carry = 0.0
-                # sum_overheads = 0.0
-                sum_total = 0.0
-                for t0, inc_multiplier0 in multipliers_delta:
-                    # sum_principal += t0.principal_with_sign * inc_multiplier0
-                    # sum_carry += t0.carry_with_sign * inc_multiplier0
-                    # sum_overheads += t0.overheads_with_sign * inc_multiplier0
-                    sum_total += inc_multiplier0 * t0.total_sys
-
-                for t0, inc_multiplier0 in multipliers_delta:
-                    mult = end_mult if t0.pk == t.pk else init_mult
-
-                    matched = abs((t0.pos_size * inc_multiplier0) / (
-                        t.pos_size * inc_multiplier))
-                    # adj = matched * mult
-
-                    # t0.real_pl_principal_with_sign += sum_principal * matched * mult
-                    # t0.real_pl_carry_with_sign += sum_carry * matched * mult
-                    # t0.real_pl_overheads_with_sign += sum_overheads * matched * mult
-                    t0.total_real_sys += sum_total * matched * mult
+            # if multipliers_delta:
+            #     init_mult = 1.0 - self.instance.pl_real_unreal_end_multiplier
+            #     end_mult = self.instance.pl_real_unreal_end_multiplier
+            #
+            #     t, inc_multiplier = multipliers_delta[-1]
+            #
+            #     # sum_principal = 0.0
+            #     # sum_carry = 0.0
+            #     # sum_overheads = 0.0
+            #     sum_total = 0.0
+            #     for t0, inc_multiplier0 in multipliers_delta:
+            #         # sum_principal += t0.principal_with_sign * inc_multiplier0
+            #         # sum_carry += t0.carry_with_sign * inc_multiplier0
+            #         # sum_overheads += t0.overheads_with_sign * inc_multiplier0
+            #         sum_total += inc_multiplier0 * t0.total_sys
+            #
+            #     for t0, inc_multiplier0 in multipliers_delta:
+            #         mult = end_mult if t0.pk == t.pk else init_mult
+            #
+            #         matched = abs((t0.pos_size * inc_multiplier0) / (
+            #             t.pos_size * inc_multiplier))
+            #         # adj = matched * mult
+            #
+            #         # t0.real_pl_principal_with_sign += sum_principal * matched * mult
+            #         # t0.real_pl_carry_with_sign += sum_carry * matched * mult
+            #         # t0.real_pl_overheads_with_sign += sum_overheads * matched * mult
+            #         t0.total_real_sys += sum_total * matched * mult
+            pass
 
         # for t in transactions:
         #     if t.trn_cls.id not in [TransactionClass.BUY, TransactionClass.SELL]:
@@ -2135,13 +2170,13 @@ class ReportBuilder(object):
 
         self.instance.items = res_items + mismatch_items + invested_items + [summary, invested_summary]
 
-        print('0' * 100)
-        VirtualTransaction.dumps(self.transactions)
-        print('1' * 100)
-        ReportItem.dumps(self._items)
-        print('2' * 100)
-        ReportItem.dumps(self.instance.items)
-        print('3' * 100)
+        # print('0' * 100)
+        # VirtualTransaction.dumps(self.transactions)
+        # print('1' * 100)
+        # ReportItem.dumps(self._items)
+        # print('2' * 100)
+        # ReportItem.dumps(self.instance.items)
+        # print('3' * 100)
 
         return self.instance
 
