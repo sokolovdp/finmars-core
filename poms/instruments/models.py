@@ -412,8 +412,9 @@ class Instrument(NamedModel, FakeDeletableModel):
         ]
         ordering = ['user_code']
 
-    # def __str__(self):
-    #     return self.user_code
+    @property
+    def is_default(self):
+        return self.master_user.instrument_id == self.id if self.master_user_id else False
 
     def rebuild_event_schedules(self):
         from poms.transactions.models import EventClass

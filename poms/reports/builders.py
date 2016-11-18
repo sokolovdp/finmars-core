@@ -70,6 +70,7 @@ class _Base:
 
 class VirtualTransaction(_Base):
     trn = None
+    is_fake = False  # True for transfers and approach
     pk = None
     trn_code = None
     trn_cls = None
@@ -173,13 +174,13 @@ class VirtualTransaction(_Base):
         # 'principal_closed_sys',
         # 'carry_closed_sys',
         # 'overheads_closed_sys',
-        # 'total_closed_sys',
+        'total_closed_sys',
 
         # # full / opened ----------------------------------------------------
         # 'principal_opened_sys',
         # 'carry_opened_sys',
         # 'overheads_opened_sys',
-        # 'total_opened_sys',
+        'total_opened_sys',
 
         # # fx ----------------------------------------------------
         # 'principal_fx_sys',
@@ -218,10 +219,11 @@ class VirtualTransaction(_Base):
         # 'total_fixed_opened_sys',
     ]
 
-    def __init__(self, report, pricing_provider, fx_rate_provider, trn, overrides=None):
+    def __init__(self, report, pricing_provider, fx_rate_provider, trn, is_fake=False, overrides=None):
         super(VirtualTransaction, self).__init__(report, pricing_provider, fx_rate_provider)
         overrides = overrides or {}
         self.trn = trn
+        self.is_fake = is_fake
         self.pk = overrides.get('pk', trn.pk)
         self.trn_code = overrides.get('transaction_code', trn.transaction_code)
         self.trn_cls = overrides.get('transaction_class', trn.transaction_class)
@@ -741,7 +743,7 @@ class ReportItem(_Base):
         'alloc_bl',
         'alloc_pl',
         'pos_size',
-        # 'market_value_sys',
+        'market_value_sys',
         # 'mismatch_ccy',
         # 'mismatch',
         # 'cost_sys',
@@ -756,49 +758,49 @@ class ReportItem(_Base):
         'overheads_sys',
         'total_sys',
 
-        # # full / closed ----------------------------------------------------
+        # full / closed ----------------------------------------------------
         # 'principal_closed_sys',
         # 'carry_closed_sys',
         # 'overheads_closed_sys',
-        # 'total_closed_sys',
-        #
-        # # full / opened ----------------------------------------------------
+        'total_closed_sys',
+
+        # full / opened ----------------------------------------------------
         # 'principal_opened_sys',
         # 'carry_opened_sys',
         # 'overheads_opened_sys',
-        # 'total_opened_sys',
-        #
+        'total_opened_sys',
+
         # # fx ----------------------------------------------------
         #
         # 'principal_fx_sys',
         # 'carry_fx_sys',
         # 'overheads_fx_sys',
         # 'total_fx_sys',
-        #
+
         # # fx / closed ----------------------------------------------------
         # 'principal_fx_closed_sys',
         # 'carry_fx_closed_sys',
         # 'overheads_fx_closed_sys',
         # 'total_fx_closed_sys',
-        #
+
         # # fx / opened ----------------------------------------------------
         # 'principal_fx_opened_sys',
         # 'carry_fx_opened_sys',
         # 'overheads_fx_opened_sys',
         # 'total_fx_opened_sys',
-        #
+
         # # fixed ----------------------------------------------------
         # 'principal_fixed_sys',
         # 'carry_fixed_sys',
         # 'overheads_fixed_sys',
         # 'total_fixed_sys',
-        #
+
         # # fixed / closed ----------------------------------------------------
         # 'principal_fixed_closed_sys',
         # 'carry_fixed_closed_sys',
         # 'overheads_fixed_closed_sys',
         # 'total_fixed_closed_sys',
-        #
+
         # # fixed / opened ----------------------------------------------------
         # 'principal_fixed_opened_sys',
         # 'carry_fixed_opened_sys',
@@ -941,9 +943,83 @@ class ReportItem(_Base):
         if src.detail_trn:
             item.trn = src.trn
 
+        item.alloc_bl = src.alloc_bl
+        item.alloc_pl = src.alloc_pl
+
         item.mismatch_ccy = src.mismatch_ccy
+        item.mismatch_prtfl = src.mismatch_prtfl
+        item.mismatch_acc = src.mismatch_acc
 
         return item
+
+    #  ----------------------------------------------------
+
+    @staticmethod
+    def sort_key(report, item):
+        return (
+            item.type,
+            getattr(item.prtfl, 'id', None),
+            getattr(item.acc, 'id', None),
+            getattr(item.str1, 'id', None),
+            getattr(item.str2, 'id', None),
+            getattr(item.str3, 'id', None),
+            getattr(item.alloc_bl, 'id', None),
+            getattr(item.alloc_pl, 'id', None),
+            getattr(item.instr, 'id', None),
+            getattr(item.ccy, 'id', None),
+            getattr(item.detail_trn, 'id', None),
+        )
+
+    @staticmethod
+    def group_key(report, item):
+        # return (
+        #     item.type,
+        #     getattr(item.prtfl, 'id', None) if report.detail_by_portfolio else None,
+        #     getattr(item.acc, 'id', None) if report.detail_by_account else None,
+        #     getattr(item.str1, 'id', None) if report.detail_by_strategy1 else None,
+        #     getattr(item.str2, 'id', None) if report.detail_by_strategy2 else None,
+        #     getattr(item.str3, 'id', None) if report.detail_by_strategy3 else None,
+        #     getattr(item.detail_trn, 'id', None) if report.show_transaction_details else None,
+        #     getattr(item.instr, 'id', None),
+        #     getattr(item.ccy, 'id', None),
+        # )
+        return (
+            item.type,
+            getattr(item.prtfl, 'id', None),
+            getattr(item.acc, 'id', None),
+            getattr(item.str1, 'id', None),
+            getattr(item.str2, 'id', None),
+            getattr(item.str3, 'id', None),
+            getattr(item.alloc_bl, 'id', None),
+            getattr(item.alloc_pl, 'id', None),
+            getattr(item.instr, 'id', None),
+            getattr(item.ccy, 'id', None),
+            getattr(item.detail_trn, 'id', None),
+        )
+
+    @staticmethod
+    def mismatch_sort_key(report, item):
+        return (
+            item.type,
+            getattr(item.prtfl, 'id', None),
+            getattr(item.acc, 'id', None),
+            getattr(item.instr, 'id', None),
+            getattr(item.mismatch_ccy, 'id', None),
+            getattr(item.mismatch_prtfl, 'id', None),
+            getattr(item.mismatch_acc, 'id', None),
+        )
+
+    @staticmethod
+    def mismatch_group_key(report, item):
+        return (
+            item.type,
+            getattr(item.prtfl, 'id', None),
+            getattr(item.acc, 'id', None),
+            getattr(item.instr, 'id', None),
+            getattr(item.mismatch_pr, 'id', None),
+            getattr(item.mismatch_prtfl, 'id', None),
+            getattr(item.mismatch_acc, 'id', None),
+        )
 
     #  ----------------------------------------------------
 
@@ -1058,72 +1134,6 @@ class ReportItem(_Base):
                     value = ugettext('Invalid expression')
                 return value
         return None
-
-    @staticmethod
-    def sort_key(report, item):
-        return (
-            item.type,
-            getattr(item.prtfl, 'id', None),
-            getattr(item.acc, 'id', None),
-            getattr(item.str1, 'id', None),
-            getattr(item.str2, 'id', None),
-            getattr(item.str3, 'id', None),
-            getattr(item.detail_trn, 'id', None),
-            getattr(item.instr, 'id', None),
-            getattr(item.ccy, 'id', None),
-        )
-
-    @staticmethod
-    def group_key(report, item):
-        # return (
-        #     item.type,
-        #     getattr(item.prtfl, 'id', None) if report.detail_by_portfolio else None,
-        #     getattr(item.acc, 'id', None) if report.detail_by_account else None,
-        #     getattr(item.str1, 'id', None) if report.detail_by_strategy1 else None,
-        #     getattr(item.str2, 'id', None) if report.detail_by_strategy2 else None,
-        #     getattr(item.str3, 'id', None) if report.detail_by_strategy3 else None,
-        #     getattr(item.detail_trn, 'id', None) if report.show_transaction_details else None,
-        #     getattr(item.instr, 'id', None),
-        #     getattr(item.ccy, 'id', None),
-        # )
-        return (
-            item.type,
-            getattr(item.prtfl, 'id', None),
-            getattr(item.acc, 'id', None),
-            getattr(item.str1, 'id', None),
-            getattr(item.str2, 'id', None),
-            getattr(item.str3, 'id', None),
-            getattr(item.detail_trn, 'id', None),
-            getattr(item.instr, 'id', None),
-            getattr(item.ccy, 'id', None),
-        )
-
-    @staticmethod
-    def mismatch_sort_key(report, item):
-        return (
-            item.type,
-            getattr(item.prtfl, 'id', None),
-            getattr(item.acc, 'id', None),
-            getattr(item.instr, 'id', None),
-            getattr(item.mismatch_ccy, 'id', None),
-        )
-
-    @staticmethod
-    def mismatch_group_key(report, item):
-        # return (
-        #     item.type,
-        #     getattr(item.prtfl, 'id', None) if report.detail_by_portfolio else None,
-        #     getattr(item.acc, 'id', None) if report.detail_by_account else None,
-        #     getattr(item.instr, 'id', None),
-        #     getattr(item.mismatch_ccy, 'id', None),
-        # )
-        return (
-            item.type,
-            getattr(item.prtfl, 'id', None),
-            getattr(item.acc, 'id', None),
-            getattr(item.instr, 'id', None),
-            getattr(item.mismatch_ccy, 'id', None),
-        )
 
     @property
     def trn_cls(self):
@@ -1479,6 +1489,7 @@ class Report(object):
     def is_system_ccy(self, ccy):
         return self.master_user.system_currency_id == ccy.id
 
+
 class ReportBuilder(object):
     def __init__(self, instance=None, queryset=None, transactions=None):
         self.instance = instance
@@ -1616,6 +1627,7 @@ class ReportBuilder(object):
         items = defaultdict(list)
 
         res = []
+
         # multipliers_delta = []
 
         def _set_mul(t0, multiplier):
@@ -1626,31 +1638,38 @@ class ReportBuilder(object):
             t0.multiplier = multiplier
             return delta
 
-        def _alloc_clone(t1, trn_cls, alloc_mul, delta, alloc_bl=None, alloc_pl=None):
-            n = t1.clone()
-            n.trn_cls = trn_cls
-
-            n.multiplier = 1.0
-
-            n.pos_size = n.pos_size * alloc_mul * delta
-            n.cash = n.cash * alloc_mul * delta
-            n.principal = n.principal * alloc_mul * delta
-            n.carry = n.carry * alloc_mul * delta
-            n.overheads = n.overheads * alloc_mul * delta
-
-            # n.total_real_sys = n.total_real_sys * alloc_mul * delta
-            # n.total_unreal_sys = n.total_unreal_sys * alloc_mul * delta
-            # n.total_real_sys = 0.0
-            # n.total_unreal_sys = 0.0
-
-            if alloc_bl:
-                n.alloc_bl = alloc_bl
-            if alloc_pl:
-                n.alloc_pl = alloc_pl
-
-            return n
-
         def _alloc(cur, closed, delta):
+            pos_size = closed.pos_size * delta
+
+            abm = self.instance.approach_begin_multiplier * (pos_size / closed.pos_size)
+            aem = self.instance.approach_end_multiplier * (pos_size / cur.pos_size)
+
+            closed1 = closed.clone()
+            closed1.is_fake = True
+            closed1.trn_cls = cur.trn_cls
+            closed1.multiplier = 1.0
+            closed1.pos_size = -pos_size
+            # closed1.cash = -(closed.cash * abm + cur.cash * aem)
+            closed1.cash = -0.0
+            closed1.principal = -(closed.principal * abm + cur.principal * aem)
+            closed1.carry = -(closed.carry * abm + cur.carry * aem)
+            closed1.overheads = -(closed.overheads * abm + cur.overheads * aem)
+            closed1.pk = 'a1,%s,%s,%s' % (cur.pk, closed.pk, closed1.trn_cls)
+
+            cur1 = cur.clone()
+            cur1.is_fake = True
+            cur1.trn_cls = closed.trn_cls
+            cur1.multiplier = 1.0
+            cur1.pos_size = -closed1.pos_size
+            cur1.cash = -closed1.cash
+            cur1.principal = -closed1.principal
+            cur1.carry = -closed1.carry
+            cur1.overheads = -closed1.overheads
+            closed1.pk = 'a2,%s,%s,%s' % (cur.pk, closed.pk, cur1.trn_cls)
+
+            res.append(closed1)
+            res.append(cur1)
+
             # begin_alloc_mul = (1.0 - self.instance.allocation_end_multiplier)
             # end_alloc_mul = self.instance.allocation_end_multiplier
             #
@@ -1936,117 +1955,230 @@ class ReportBuilder(object):
             if t.trn_cls.id == TransactionClass.TRANSFER:
                 # split TRANSFER to sell/buy or buy/sell
 
-                if t.position_size_with_sign >= 0:
-                    t1 = VirtualTransaction(
-                        report=self.instance,
-                        pricing_provider=self._pricing_provider,
-                        fx_rate_provider=self._fx_rate_provider,
-                        trn=t.trn,
-                        overrides={
-                            'transaction_class': self._trn_cls_sell,
-                            'account_position': t.account_cash,
-                            'account_cash': t.account_cash,
+                res.append(t)
 
-                            'position_size_with_sign': -t.position_size_with_sign,
-                            'cash_consideration': t.cash_consideration,
-                            'principal_with_sign': t.principal_with_sign,
-                            'carry_with_sign': t.carry_with_sign,
-                            'overheads_with_sign': t.overheads_with_sign,
-                        })
-                    t2 = VirtualTransaction(
-                        report=self.instance,
-                        pricing_provider=self._pricing_provider,
-                        fx_rate_provider=self._fx_rate_provider,
-                        trn=t.trn,
-                        overrides={
-                            'transaction_class': self._trn_cls_buy,
-                            'account_position': t.account_position,
-                            'account_cash': t.account_position,
+                if t.pos_size >= 0:
+                    # t1 = VirtualTransaction(
+                    #     report=self.instance,
+                    #     pricing_provider=self._pricing_provider,
+                    #     fx_rate_provider=self._fx_rate_provider,
+                    #     trn=t.trn,
+                    #     is_fake=True,
+                    #     overrides={
+                    #         'transaction_class': self._trn_cls_sell,
+                    #         'account_position': t.account_cash,
+                    #         'account_cash': t.account_cash,
+                    #
+                    #         'position_size_with_sign': -t.position_size_with_sign,
+                    #         'cash_consideration': t.cash_consideration,
+                    #         'principal_with_sign': t.principal_with_sign,
+                    #         'carry_with_sign': t.carry_with_sign,
+                    #         'overheads_with_sign': t.overheads_with_sign,
+                    #     })
+                    t1 = t.clone()
+                    t1.is_fake = True
+                    t1.trn_cls = self._trn_cls_sell
+                    t1.acc_pos = t.acc_cash
+                    t1.acc_cash = t.acc_cash
+                    t1.str1_pos = t.str1_cash
+                    t1.str1_cash = t.str1_cash
+                    t1.str2_pos = t.str2_cash
+                    t1.str2_cash = t.str2_cash
+                    t1.str3_pos = t.str2_cash
+                    t1.str3_cash = t.str3_cash
+                    t1.pos_size = -t.pos_size
+                    t1.cash = t.cash
+                    t1.principal = t.principal
+                    t1.carry = t.carry
+                    t1.overheads = t.overheads
+                    res.append(t1)
 
-                            'position_size_with_sign': t.position_size_with_sign,
-                            'cash_consideration': -t.cash_consideration,
-                            'principal_with_sign': -t.principal_with_sign,
-                            'carry_with_sign': -t.carry_with_sign,
-                            'overheads_with_sign': -t.overheads_with_sign,
-                        })
+                    # t2 = VirtualTransaction(
+                    #     report=self.instance,
+                    #     pricing_provider=self._pricing_provider,
+                    #     fx_rate_provider=self._fx_rate_provider,
+                    #     trn=t.trn,
+                    #     is_fake=True,
+                    #     overrides={
+                    #         'transaction_class': self._trn_cls_buy,
+                    #         'account_position': t.account_position,
+                    #         'account_cash': t.account_position,
+                    #
+                    #         'position_size_with_sign': t.position_size_with_sign,
+                    #         'cash_consideration': -t.cash_consideration,
+                    #         'principal_with_sign': -t.principal_with_sign,
+                    #         'carry_with_sign': -t.carry_with_sign,
+                    #         'overheads_with_sign': -t.overheads_with_sign,
+                    #     })
+                    t2 = t.clone()
+                    t2.is_fake = True
+                    t2.trn_cls = self._trn_cls_buy
+                    t2.acc_pos = t.acc_pos
+                    t2.acc_cash = t.acc_pos
+                    t2.str1_pos = t.str1_pos
+                    t2.str1_cash = t.str1_pos
+                    t2.str2_pos = t.str2_pos
+                    t2.str2_cash = t.str2_pos
+                    t2.str3_pos = t.str2_pos
+                    t2.str3_cash = t.str3_pos
+                    t2.pos_size = t.pos_size
+                    t2.cash = -t.cash
+                    t2.principal = -t.principal
+                    t2.carry = -t.carry
+                    t2.overheads = -t.overheads
+                    res.append(t2)
 
                 else:
-                    t1 = VirtualTransaction(
-                        report=self.instance,
-                        pricing_provider=self._pricing_provider,
-                        fx_rate_provider=self._fx_rate_provider,
-                        trn=t.trn,
-                        overrides={
-                            'transaction_class': self._trn_cls_buy,
-                            'account_position': t.account_cash,
-                            'account_cash': t.account_cash,
+                    # t1 = VirtualTransaction(
+                    #     report=self.instance,
+                    #     pricing_provider=self._pricing_provider,
+                    #     fx_rate_provider=self._fx_rate_provider,
+                    #     trn=t.trn,
+                    #     is_fake=True,
+                    #     overrides={
+                    #         'transaction_class': self._trn_cls_buy,
+                    #         'account_position': t.account_cash,
+                    #         'account_cash': t.account_cash,
+                    #
+                    #         'position_size_with_sign': -t.position_size_with_sign,
+                    #         'cash_consideration': t.cash_consideration,
+                    #         'principal_with_sign': t.principal_with_sign,
+                    #         'carry_with_sign': t.carry_with_sign,
+                    #         'overheads_with_sign': t.overheads_with_sign,
+                    #     })
+                    t1 = t.clone()
+                    t1.is_fake = True
+                    t1.trn_cls = self._trn_cls_buy
+                    t1.acc_pos = t.acc_cash
+                    t1.acc_cash = t.acc_cash
+                    t1.str1_pos = t.str1_cash
+                    t1.str1_cash = t.str1_cash
+                    t1.str2_pos = t.str2_cash
+                    t1.str2_cash = t.str2_cash
+                    t1.str3_pos = t.str2_cash
+                    t1.str3_cash = t.str3_cash
+                    t1.pos_size = -t.pos_size
+                    t1.cash = t.cash
+                    t1.principal = t.principal
+                    t1.carry = t.carry
+                    t1.overheads = t.overheads
+                    res.append(t1)
 
-                            'position_size_with_sign': -t.position_size_with_sign,
-                            'cash_consideration': t.cash_consideration,
-                            'principal_with_sign': t.principal_with_sign,
-                            'carry_with_sign': t.carry_with_sign,
-                            'overheads_with_sign': t.overheads_with_sign,
-                        })
-                    t2 = VirtualTransaction(
-                        report=self.instance,
-                        pricing_provider=self._pricing_provider,
-                        fx_rate_provider=self._fx_rate_provider,
-                        trn=t.trn,
-                        overrides={
-                            'transaction_class': self._trn_cls_sell,
-                            'account_position': t.account_position,
-                            'account_cash': t.account_position,
-
-                            'position_size_with_sign': t.position_size_with_sign,
-                            'cash_consideration': -t.cash_consideration,
-                            'principal_with_sign': -t.principal_with_sign,
-                            'carry_with_sign': -t.carry_with_sign,
-                            'overheads_with_sign': -t.overheads_with_sign,
-                        })
-                res.append(t1)
-                res.append(t2)
+                    # t2 = VirtualTransaction(
+                    #     report=self.instance,
+                    #     pricing_provider=self._pricing_provider,
+                    #     fx_rate_provider=self._fx_rate_provider,
+                    #     trn=t.trn,
+                    #     is_fake=True,
+                    #     overrides={
+                    #         'transaction_class': self._trn_cls_sell,
+                    #         'account_position': t.account_position,
+                    #         'account_cash': t.account_position,
+                    #
+                    #         'position_size_with_sign': t.position_size_with_sign,
+                    #         'cash_consideration': -t.cash_consideration,
+                    #         'principal_with_sign': -t.principal_with_sign,
+                    #         'carry_with_sign': -t.carry_with_sign,
+                    #         'overheads_with_sign': -t.overheads_with_sign,
+                    #     })
+                    t2 = t.clone()
+                    t2.is_fake = True
+                    t2.trn_cls = self._trn_cls_sell
+                    t2.acc_pos = t.acc_pos
+                    t2.acc_cash = t.acc_pos
+                    t2.str1_pos = t.str1_pos
+                    t2.str1_cash = t.str1_pos
+                    t2.str2_pos = t.str2_pos
+                    t2.str2_cash = t.str2_pos
+                    t2.str3_pos = t.str2_pos
+                    t2.str3_cash = t.str3_pos
+                    t2.pos_size = t.pos_size
+                    t2.cash = -t.cash
+                    t2.principal = -t.principal
+                    t2.carry = -t.carry
+                    t2.overheads = -t.overheads
+                    res.append(t2)
 
             elif t.trn_cls.id == TransactionClass.FX_TRANSFER:
                 # split FX_TRANSFER to fx-trade/fx-trade
 
-                t1 = VirtualTransaction(
-                    report=self.instance,
-                    pricing_provider=self._pricing_provider,
-                    fx_rate_provider=self._fx_rate_provider,
-                    trn=t.trn,
-                    overrides={
-                        'transaction_class': self._trn_cls_fx_trade,
-                        'account_position': t.account_cash,
-                        'account_cash': t.account_cash,
-
-                        'position_size_with_sign': -t.position_size_with_sign,
-                        'cash_consideration': t.cash_consideration,
-                        'principal_with_sign': t.principal_with_sign,
-                        'carry_with_sign': t.carry_with_sign,
-                        'overheads_with_sign': t.overheads_with_sign,
-                    })
-
-                t2 = VirtualTransaction(
-                    report=self.instance,
-                    pricing_provider=self._pricing_provider,
-                    fx_rate_provider=self._fx_rate_provider,
-                    trn=t.trn,
-                    overrides={
-                        'transaction_class': self._trn_cls_fx_trade,
-                        'account_position': t.account_position,
-                        'account_cash': t.account_position,
-
-                        'position_size_with_sign': t.position_size_with_sign,
-                        'cash_consideration': -t.cash_consideration,
-                        'principal_with_sign': -t.principal_with_sign,
-                        'carry_with_sign': -t.carry_with_sign,
-                        'overheads_with_sign': -t.overheads_with_sign,
-                    })
+                res.append(t)
+                # t1 = VirtualTransaction(
+                #     report=self.instance,
+                #     pricing_provider=self._pricing_provider,
+                #     fx_rate_provider=self._fx_rate_provider,
+                #     trn=t.trn,
+                #     is_fake=True,
+                #     overrides={
+                #         'transaction_class': self._trn_cls_fx_trade,
+                #         'account_position': t.account_cash,
+                #         'account_cash': t.account_cash,
+                #
+                #         'position_size_with_sign': -t.position_size_with_sign,
+                #         'cash_consideration': t.cash_consideration,
+                #         'principal_with_sign': t.principal_with_sign,
+                #         'carry_with_sign': t.carry_with_sign,
+                #         'overheads_with_sign': t.overheads_with_sign,
+                #     })
+                t1 = t.clone()
+                t1.is_fake = True
+                t1.trn_cls = self._trn_cls_fx_trade
+                t1.acc_pos = t.acc_cash
+                t1.acc_cash = t.acc_cash
+                t1.str1_pos = t.str1_cash
+                t1.str1_cash = t.str1_cash
+                t1.str2_pos = t.str2_cash
+                t1.str2_cash = t.str2_cash
+                t1.str3_pos = t.str2_cash
+                t1.str3_cash = t.str3_cash
+                t1.pos_size = -t.pos_size
+                t1.cash = t.cash
+                t1.principal = t.principal
+                t1.carry = t.carry
+                t1.overheads = t.overheads
                 res.append(t1)
+
+                # t2 = VirtualTransaction(
+                #     report=self.instance,
+                #     pricing_provider=self._pricing_provider,
+                #     fx_rate_provider=self._fx_rate_provider,
+                #     trn=t.trn,
+                #     is_fake=True,
+                #     overrides={
+                #         'transaction_class': self._trn_cls_fx_trade,
+                #         'account_position': t.account_position,
+                #         'account_cash': t.account_position,
+                #
+                #         'position_size_with_sign': t.position_size_with_sign,
+                #         'cash_consideration': -t.cash_consideration,
+                #         'principal_with_sign': -t.principal_with_sign,
+                #         'carry_with_sign': -t.carry_with_sign,
+                #         'overheads_with_sign': -t.overheads_with_sign,
+                #     })
+                t2 = t.clone()
+                t2.is_fake = True
+                t2.trn_cls = self._trn_cls_fx_trade
+                t2.acc_pos = t.acc_pos
+                t2.acc_cash = t.acc_pos
+                t2.str1_pos = t.str1_pos
+                t2.str1_cash = t.str1_pos
+                t2.str2_pos = t.str2_pos
+                t2.str2_cash = t.str2_pos
+                t2.str3_pos = t.str2_pos
+                t2.str3_cash = t.str3_pos
+                t2.pos_size = t.pos_size
+                t2.cash = -t.cash
+                t2.principal = -t.principal
+                t2.carry = -t.carry
+                t2.overheads = -t.overheads
                 res.append(t2)
+
+                # res.append(t1)
+                # res.append(t2)
 
             else:
                 res.append(t)
+
         return res
 
     def build(self):
@@ -2055,13 +2187,9 @@ class ReportBuilder(object):
         # split transactions to atomic items using transaction class, case and something else
 
         for trn in self.transactions:
-            if trn.link_instr and not isclose(trn.mismatch, 0.0):
+            if not trn.is_fake and trn.link_instr and not isclose(trn.mismatch, 0.0):
                 item = ReportItem.from_trn(self.instance, self._pricing_provider, self._fx_rate_provider,
-                                           ReportItem.TYPE_MISMATCH, trn,
-                                           str1=self.instance.master_user.strategy1,
-                                           str2=self.instance.master_user.strategy2,
-                                           str3=self.instance.master_user.strategy3,
-                                           )
+                                           ReportItem.TYPE_MISMATCH, trn)
                 mismatch_items.append(item)
 
             if trn.trn_cls.id in [TransactionClass.BUY, TransactionClass.SELL]:
@@ -2094,10 +2222,12 @@ class ReportBuilder(object):
                 self._items.append(item)
 
             elif trn.trn_cls.id == TransactionClass.TRANSFER:
-                raise RuntimeError('Virtual transaction must be created')
+                # raise RuntimeError('Virtual transaction must be created')
+                pass
 
             elif trn.trn_cls.id == TransactionClass.FX_TRANSFER:
-                raise RuntimeError('Virtual transaction must be created')
+                # raise RuntimeError('Virtual transaction must be created')
+                pass
 
             elif trn.trn_cls.id in [TransactionClass.CASH_INFLOW, TransactionClass.CASH_OUTFLOW]:
                 self._add_cash(trn, val=trn.pos_size, ccy=trn.trn_ccy,
