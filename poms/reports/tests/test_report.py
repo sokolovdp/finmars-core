@@ -610,7 +610,7 @@ class ReportTestCase(TestCase):
         b.build()
         self._dump(b, 'test_mismatch_0')
 
-    def test_allocation_0(self):
+    def _test_approach_alloc_0(self):
         self.bond0.user_code = 'I1'
         self.bond0.price_multiplier = 5.0
         self.bond0.accrued_multiplier = 0.0
@@ -626,34 +626,29 @@ class ReportTestCase(TestCase):
                 stl_ccy=self.usd, principal=-10, carry=0, overheads=0,
                 link_instr=self.bond2,
                 alloc_bl=self.bond1, alloc_pl=self.bond1,
-                p=self.p1, acc_pos=self.a1_1, s1_pos=self.s1_1_1_1,
-                )
+                p=self.p1, acc_pos=self.a1_1)
 
         self._t(t_class=self._buy,
                 instr=self.bond0, position=5,
                 stl_ccy=self.usd, principal=-15, carry=0, overheads=0,
                 link_instr=self.bond2,
                 alloc_bl=self.bond2, alloc_pl=self.bond2,
-                p=self.p1, acc_pos=self.a1_1, s1_pos=self.s1_1_1_1,
-                )
+                p=self.p1, acc_pos=self.a1_1)
 
         self._t(t_class=self._sell,
                 instr=self.bond0, position=-5,
                 stl_ccy=self.usd, principal=20, carry=0, overheads=0,
                 link_instr=self.bond2,
                 alloc_bl=self.bond3, alloc_pl=self.bond3,
-                p=self.p1, acc_pos=self.a1_1, s1_pos=self.s1_1_1_1,
-                )
+                p=self.p1, acc_pos=self.a1_1)
 
         r = Report(master_user=self.m, pricing_policy=self.pp, report_date=self._d(0),
-                   approach_multiplier=0.5,
-                   strategy1_mode=Report.STRATEGY_INDEPENDENT,
-                   )
+                   approach_multiplier=0.5)
         b = ReportBuilder(instance=r)
         b.build()
-        self._dump(b, 'test_allocation_0')
+        self._dump(b, 'test_approach_alloc_0')
 
-    def _test_allocation_1(self):
+    def _test_approach_alloc_1(self):
         self.bond0.user_code = 'instr1'
         self.bond0.save()
         self.bond1.user_code = 'A1'
@@ -682,4 +677,48 @@ class ReportTestCase(TestCase):
                    approach_multiplier=1.0)
         b = ReportBuilder(instance=r)
         b.build()
-        self._dump(b, 'test_allocation_1')
+        self._dump(b, 'test_approach_alloc_1')
+
+    def test_approach_str1_0(self):
+        self.bond0.user_code = 'I1'
+        self.bond0.price_multiplier = 5.0
+        self.bond0.accrued_multiplier = 0.0
+        self.bond0.save()
+        self.bond1.user_code = 'A1'
+        self.bond1.save()
+        self.bond2.user_code = 'A2'
+        self.bond2.save()
+        self.bond3.user_code = 'A3'
+        self.bond3.save()
+        approach_multiplier = 1.0
+        self._t(t_class=self._buy,
+                instr=self.bond0, position=5,
+                stl_ccy=self.usd, principal=-10, carry=0, overheads=0,
+                alloc_bl=self.bond1, alloc_pl=self.bond1,
+                s1_pos=self.s1_1_1_1)
+
+        self._t(t_class=self._buy,
+                instr=self.bond0, position=5,
+                stl_ccy=self.usd, principal=-15, carry=0, overheads=0,
+                alloc_bl=self.bond2, alloc_pl=self.bond2,
+                s1_pos=self.s1_1_1_2)
+
+        self._t(t_class=self._sell,
+                instr=self.bond0, position=-5,
+                stl_ccy=self.usd, principal=20, carry=0, overheads=0,
+                alloc_bl=self.bond3, alloc_pl=self.bond3,
+                s1_pos=self.s1_1_1_3)
+
+        r = Report(master_user=self.m, pricing_policy=self.pp, report_date=self._d(0),
+                   approach_multiplier=approach_multiplier,
+                   strategy1_mode=Report.STRATEGY_INDEPENDENT)
+        b = ReportBuilder(instance=r)
+        b.build()
+        self._dump(b, 'test_approach_str1_0: STRATEGY_INDEPENDENT')
+
+        r = Report(master_user=self.m, pricing_policy=self.pp, report_date=self._d(0),
+                   approach_multiplier=approach_multiplier,
+                   strategy1_mode=Report.STRATEGY_INTERDEPENDENT)
+        b = ReportBuilder(instance=r)
+        b.build()
+        self._dump(b, 'test_approach_str1_0: STRATEGY_INTERDEPENDENT')
