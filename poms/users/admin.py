@@ -49,6 +49,7 @@ class MasterUserAdmin(admin.ModelAdmin):
                      'strategy2_group', 'strategy2_subgroup', 'strategy2',
                      'strategy3_group', 'strategy3_subgroup', 'strategy3',
                      'thread_group',
+                     'mismatch_portfolio', 'mismatch_account',
                      ]
     # fieldsets = (
     #     (None, {

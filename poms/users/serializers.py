@@ -190,6 +190,8 @@ class MasterUserSerializer(serializers.ModelSerializer):
     strategy3_subgroup = Strategy3SubgroupField()
     strategy3 = Strategy3Field()
     thread_group = ThreadGroupField()
+    mismatch_portfolio = PortfolioField()
+    mismatch_account = AccountField()
 
     class Meta:
         model = MasterUser
@@ -198,67 +200,68 @@ class MasterUserSerializer(serializers.ModelSerializer):
             'notification_business_days',
             'system_currency',
             'currency',
-            'account_type',
-            'account',
-            'counterparty_group',
-            'counterparty',
-            'responsible_group',
-            'responsible',
-            'instrument_type',
-            'instrument',
+            'account_type', 'account',
+            'counterparty_group', 'counterparty',
+            'responsible_group', 'responsible',
+            'instrument_type', 'instrument',
             'portfolio',
-            'strategy1_group',
-            'strategy1_subgroup',
-            'strategy1',
-            'strategy2_group',
-            'strategy2_subgroup',
-            'strategy2',
-            'strategy3_group',
-            'strategy3_subgroup',
-            'strategy3',
+            'strategy1_group', 'strategy1_subgroup', 'strategy1',
+            'strategy2_group', 'strategy2_subgroup', 'strategy2',
+            'strategy3_group', 'strategy3_subgroup', 'strategy3',
             'thread_group',
+            'mismatch_portfolio', 'mismatch_account',
         ]
 
     def __init__(self, *args, **kwargs):
         super(MasterUserSerializer, self).__init__(*args, **kwargs)
 
         from poms.currencies.serializers import CurrencyViewSerializer
+        from poms.accounts.serializers import AccountTypeViewSerializer, AccountViewSerializer
+        from poms.counterparties.serializers import CounterpartyGroupViewSerializer, CounterpartyViewSerializer, \
+            ResponsibleGroupViewSerializer, ResponsibleViewSerializer
+        from poms.instruments.serializers import InstrumentViewSerializer, InstrumentTypeViewSerializer
+        from poms.portfolios.serializers import PortfolioViewSerializer
+        from poms.strategies.serializers import Strategy1GroupViewSerializer, Strategy1SubgroupViewSerializer, \
+            Strategy1ViewSerializer, Strategy2GroupViewSerializer, Strategy2SubgroupViewSerializer, \
+            Strategy2ViewSerializer, Strategy3GroupViewSerializer, Strategy3SubgroupViewSerializer, \
+            Strategy3ViewSerializer
+        from poms.chats.serializers import ThreadGroupViewSerializer
+
         self.fields['system_currency_object'] = CurrencyViewSerializer(source='system_currency', read_only=True)
         self.fields['currency_object'] = CurrencyViewSerializer(source='currency', read_only=True)
 
-        from poms.accounts.serializers import AccountTypeViewSerializer, AccountViewSerializer
         self.fields['account_type_object'] = AccountTypeViewSerializer(source='account_type', read_only=True)
         self.fields['account_object'] = AccountViewSerializer(source='account', read_only=True)
 
-        from poms.counterparties.serializers import CounterpartyGroupViewSerializer, CounterpartyViewSerializer, ResponsibleGroupViewSerializer, ResponsibleViewSerializer
-        self.fields['counterparty_group_object'] = CounterpartyGroupViewSerializer(source='counterparty_group', read_only=True)
+        self.fields['counterparty_group_object'] = CounterpartyGroupViewSerializer(source='counterparty_group',
+                                                                                   read_only=True)
         self.fields['counterparty_object'] = CounterpartyViewSerializer(source='counterparty', read_only=True)
-        self.fields['responsible_group_object'] = ResponsibleGroupViewSerializer(source='responsible_group', read_only=True)
+        self.fields['responsible_group_object'] = ResponsibleGroupViewSerializer(source='responsible_group',
+                                                                                 read_only=True)
         self.fields['responsible_object'] = ResponsibleViewSerializer(source='responsible', read_only=True)
 
-        from poms.instruments.serializers import InstrumentViewSerializer, InstrumentTypeViewSerializer
         self.fields['instrument_object'] = InstrumentViewSerializer(source='instrument', read_only=True)
         self.fields['instrument_type_object'] = InstrumentTypeViewSerializer(source='instrument_type', read_only=True)
 
-        from poms.portfolios.serializers import PortfolioViewSerializer
         self.fields['portfolio_object'] = PortfolioViewSerializer(source='portfolio', read_only=True)
 
-        from poms.strategies.serializers import Strategy1GroupViewSerializer, Strategy1SubgroupViewSerializer,\
-            Strategy1ViewSerializer,Strategy2GroupViewSerializer, Strategy2SubgroupViewSerializer, \
-            Strategy2ViewSerializer, Strategy3GroupViewSerializer, Strategy3SubgroupViewSerializer, Strategy3ViewSerializer
         self.fields['strategy1_group_object'] = Strategy1GroupViewSerializer(source='strategy1_group', read_only=True)
-        self.fields['strategy1_subgroup_object'] = Strategy1SubgroupViewSerializer(source='strategy1_subgrou', read_only=True)
+        self.fields['strategy1_subgroup_object'] = Strategy1SubgroupViewSerializer(source='strategy1_subgrou',
+                                                                                   read_only=True)
         self.fields['strategy1_object'] = Strategy1ViewSerializer(source='strategy1', read_only=True)
         self.fields['strategy2_group_object'] = Strategy2GroupViewSerializer(source='strategy2_group', read_only=True)
-        self.fields['strategy2_subgroup_object'] = Strategy2SubgroupViewSerializer(source='strategy2_subgroup', read_only=True)
+        self.fields['strategy2_subgroup_object'] = Strategy2SubgroupViewSerializer(source='strategy2_subgroup',
+                                                                                   read_only=True)
         self.fields['strategy2_object'] = Strategy2ViewSerializer(source='strategy2', read_only=True)
         self.fields['strategy3_group_object'] = Strategy3GroupViewSerializer(source='strategy3_group', read_only=True)
-        self.fields['strategy3_subgroup_object'] = Strategy3SubgroupViewSerializer(source='strategy3_subgroup', read_only=True)
+        self.fields['strategy3_subgroup_object'] = Strategy3SubgroupViewSerializer(source='strategy3_subgroup',
+                                                                                   read_only=True)
         self.fields['strategy3_object'] = Strategy3ViewSerializer(source='strategy3', read_only=True)
 
-        from poms.chats.serializers import ThreadGroupViewSerializer
         self.fields['thread_group_object'] = ThreadGroupViewSerializer(source='thread_group', read_only=True)
 
+        self.fields['mismatch_portfolio_object'] = PortfolioViewSerializer(source='mismatch_portfolio', read_only=True)
+        self.fields['mismatch_account_object'] = AccountViewSerializer(source='mismatch_account', read_only=True)
 
     def to_representation(self, instance):
         ret = super(MasterUserSerializer, self).to_representation(instance)

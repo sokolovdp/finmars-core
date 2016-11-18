@@ -102,6 +102,8 @@ class MasterUserManager(models.Manager):
         obj.strategy3_subgroup = strategy3_subgroup
         obj.strategy3 = strategy3
         obj.thread_group = thread_group
+        obj.mismatch_portfolio = portfolio
+        obj.mismatch_account = account
         obj.save()
 
         for c in [account_type, account, counterparty_group, counterparty, responsible_group, responsible, portfolio,
@@ -165,6 +167,11 @@ class MasterUser(models.Model):
 
     thread_group = models.ForeignKey('chats.ThreadGroup', null=True, blank=True, on_delete=models.PROTECT,
                                      related_name='master_user_thread_group')
+
+    mismatch_portfolio = models.ForeignKey('portfolios.Portfolio', null=True, blank=True, on_delete=models.PROTECT,
+                                           related_name='master_user_mismatch_portfolio')
+    mismatch_account = models.ForeignKey('accounts.Account', null=True, blank=True, on_delete=models.PROTECT,
+                                         related_name='master_user_mismatch_account')
 
     # TODO: what is notification_business_days
     notification_business_days = models.IntegerField(default=0)

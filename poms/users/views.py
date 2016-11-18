@@ -172,14 +172,18 @@ class MasterUserViewSet(AbstractModelViewSet):
         'strategy3_subgroup', 'strategy3_subgroup__group',
         'strategy3', 'strategy3__subgroup', 'strategy3__subgroup__group',
         'thread_group',
+        'mismatch_portfolio', 'mismatch_account',
     ).prefetch_related(
         *get_permissions_prefetch_lookups(
             ('account_type', AccountType),
-            ('account', Account), ('account__type', AccountType),
+            ('account', Account),
+            ('account__type', AccountType),
             ('counterparty_group', CounterpartyGroup),
-            ('counterparty', Counterparty), ('counterparty__group', CounterpartyGroup),
+            ('counterparty', Counterparty),
+            ('counterparty__group', CounterpartyGroup),
             ('responsible_group', ResponsibleGroup),
-            ('responsible', Responsible), ('responsible__group', ResponsibleGroup),
+            ('responsible', Responsible),
+            ('responsible__group', ResponsibleGroup),
             ('instrument_type', InstrumentType),
             ('instrument', Instrument),
             ('instrument__instrument_type', InstrumentType),
@@ -203,6 +207,9 @@ class MasterUserViewSet(AbstractModelViewSet):
             ('strategy3__subgroup', Strategy3Subgroup),
             ('strategy3__subgroup__group', Strategy3Group),
             ('thread_group', ThreadGroup),
+            ('mismatch_portfolio', Portfolio),
+            ('mismatch_account', Account),
+            ('mismatch_account__type', AccountType),
         )
     )
     serializer_class = MasterUserSerializer
