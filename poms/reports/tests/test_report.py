@@ -72,6 +72,10 @@ class ReportTestCase(TestCase):
                                                instrument_type=self.m.instrument_type,
                                                pricing_currency=self.usd, price_multiplier=0.01,
                                                accrued_currency=self.usd, accrued_multiplier=0.01)
+        self.bond3 = Instrument.objects.create(master_user=self.m, name="bond3, USD/USD",
+                                               instrument_type=self.m.instrument_type,
+                                               pricing_currency=self.usd, price_multiplier=0.01,
+                                               accrued_currency=self.usd, accrued_multiplier=0.01)
 
         self.stock0 = Instrument.objects.create(master_user=self.m, name="stock1, USD/RUB",
                                                 instrument_type=self.m.instrument_type,
@@ -523,12 +527,13 @@ class ReportTestCase(TestCase):
                 p=self.p2, acc_pos=self.a1_2,
                 link_instr=self.bond1)
 
-        r = Report(master_user=self.m, pricing_policy=self.pp, report_date=self._d(14), detail_by_portfolio=True, detail_by_account=True)
+        r = Report(master_user=self.m, pricing_policy=self.pp, report_date=self._d(14), detail_by_portfolio=True,
+                   detail_by_account=True)
         b = ReportBuilder(instance=r)
         b.build()
         self._dump(b, 'test_mismatch_0')
 
-    def test_allocation_0(self):
+    def _test_allocation_0(self):
         self.bond0.user_code = 'instr1'
         self.bond0.save()
         self.bond1.user_code = 'A'
@@ -551,7 +556,37 @@ class ReportTestCase(TestCase):
                 alloc_bl=self.bond2, alloc_pl=self.bond2)
 
         r = Report(master_user=self.m, pricing_policy=self.pp, report_date=self._d(0),
-                   allocation_end_multiplier=0.5)
+                   allocation_end_multiplier=1.0)
         b = ReportBuilder(instance=r)
         b.build()
         self._dump(b, 'test_allocation_0')
+
+    def test_allocation_1(self):
+        self.bond0.user_code = 'instr1'
+        self.bond0.save()
+        self.bond1.user_code = 'A1'
+        self.bond1.save()
+        self.bond2.user_code = 'A2'
+        self.bond2.save()
+        self.bond3.user_code = 'A3'
+        self.bond3.save()
+        self._t(t_class=self._buy,
+                instr=self.bond0, position=5,
+                stl_ccy=self.usd, principal=-100, carry=0, overheads=0,
+                alloc_bl=self.bond1, alloc_pl=self.bond1)
+
+        self._t(t_class=self._buy,
+                instr=self.bond0, position=5,
+                stl_ccy=self.usd, principal=-150, carry=0, overheads=0,
+                alloc_bl=self.bond2, alloc_pl=self.bond2)
+
+        self._t(t_class=self._sell,
+                instr=self.bond0, position=-10,
+                stl_ccy=self.usd, principal=450, carry=0, overheads=0,
+                alloc_bl=self.bond3, alloc_pl=self.bond3)
+
+        r = Report(master_user=self.m, pricing_policy=self.pp, report_date=self._d(0),
+                   allocation_end_multiplier=0.5)
+        b = ReportBuilder(instance=r)
+        b.build()
+        self._dump(b, 'test_allocation_1')
