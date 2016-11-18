@@ -132,15 +132,7 @@ class VirtualTransaction(_Base):
         # 'cash_date',
         'instr',
         # 'trn_ccy',
-        'pos_size',
         'stl_ccy',
-        'cash',
-        'principal',
-        'carry',
-        'overheads',
-        'total',
-        # 'mismatch',
-        # 'ref_fx',
         # 'prtfl',
         # 'acc_pos',
         # 'acc_cash',
@@ -154,6 +146,14 @@ class VirtualTransaction(_Base):
         # 'link_instr',
         'alloc_bl',
         'alloc_pl',
+        'pos_size',
+        'cash',
+        'principal',
+        'carry',
+        'overheads',
+        'total',
+        # 'mismatch',
+        # 'ref_fx',
 
         # 'instr_principal_sys',
         # 'instr_accrued_sys',
@@ -1595,26 +1595,27 @@ class ReportBuilder(object):
             return delta
 
         def _alloc_clone(t1, trn_cls, alloc_mul, delta, alloc_bl=None, alloc_pl=None):
-            if isclose(alloc_mul, 0.0):
-                return None
-
             n = t1.clone()
             n.trn_cls = trn_cls
 
             n.multiplier = 1.0
 
             n.pos_size = n.pos_size * alloc_mul * delta
+            n.cash = n.cash * alloc_mul * delta
             n.principal = n.principal * alloc_mul * delta
             n.carry = n.carry * alloc_mul * delta
             n.overheads = n.overheads * alloc_mul * delta
 
-            n.total_real_sys = n.total_real_sys * alloc_mul * delta
-            n.total_unreal_sys = n.total_unreal_sys * alloc_mul * delta
+            # n.total_real_sys = n.total_real_sys * alloc_mul * delta
+            # n.total_unreal_sys = n.total_unreal_sys * alloc_mul * delta
+            n.total_real_sys = 0.0
+            n.total_unreal_sys = 0.0
 
             if alloc_bl:
                 n.alloc_bl = alloc_bl
             if alloc_pl:
                 n.alloc_pl = alloc_pl
+
             return n
 
         def _alloc(cur, closed, delta):
@@ -1622,39 +1623,123 @@ class ReportBuilder(object):
             end_alloc_mul = self.instance.allocation_end_multiplier
 
             if not isclose(begin_alloc_mul, 0.0):
-                b1 = _alloc_clone(closed, cur.trn_cls, -begin_alloc_mul, delta,
-                                  alloc_bl=closed.alloc_bl, alloc_pl=closed.alloc_pl)
+                # b1 = _alloc_clone(closed, cur.trn_cls, -begin_alloc_mul, delta,
+                #                   alloc_bl=closed.alloc_bl, alloc_pl=closed.alloc_pl)
+                # b1.pk = 'b,%s,%s,%s' % (cur.pk, closed.pk, b1.trn_cls)
+                b1 = closed.clone()
+                b1.trn_cls = cur.trn_cls
                 b1.pk = 'b,%s,%s,%s' % (cur.pk, closed.pk, b1.trn_cls)
+                b1.multiplier = 1.0
+                b1.pos_size = closed.pos_size * -begin_alloc_mul * delta
+                b1.cash = closed.cash * -begin_alloc_mul * delta
+                b1.principal = closed.principal * -begin_alloc_mul * delta
+                b1.carry = closed.carry * -begin_alloc_mul * delta
+                b1.overheads = closed.overheads * -begin_alloc_mul * delta
+                b1.total_real_sys = 0.0
+                b1.total_unreal_sys = 0.0
+                res.append(b1)
 
-                b2 = _alloc_clone(closed, closed.trn_cls, begin_alloc_mul, delta,
-                                  alloc_bl=cur.alloc_bl, alloc_pl=cur.alloc_pl)
-                b2.pk = 'b,%s,%s,%s' % (cur.pk, closed.pk, b2.trn_cls)
+                # b2 = _alloc_clone(closed, closed.trn_cls, begin_alloc_mul, delta,
+                #                   alloc_bl=cur.alloc_bl, alloc_pl=cur.alloc_pl)
+                # b2.pk = 'b,%s,%s,%s' % (cur.pk, closed.pk, b2.trn_cls)
+                # b2 = _alloc_clone(cur, closed.trn_cls, -begin_alloc_mul, delta2,
+                #                   alloc_bl=cur.alloc_bl, alloc_pl=cur.alloc_pl)
+                # b2.pk = 'b,%s,%s,%s' % (cur.pk, closed.pk, b2.trn_cls)
 
-            else:
-                b1 = None
-                b2 = None
+                b2 = cur.clone()
+                b2.trn_cls = closed.trn_cls
+                b2.pk = 'b,%s,%s,%s' % (cur.pk, closed.pk, b1.trn_cls)
+                b2.multiplier = 1.0
+                # if isclose(cur.pos_size, 0.0):
+                #     b2.pos_size = 0.0
+                # else:
+                #     b2.pos_size = -1.0 * cur.pos_size * begin_alloc_mul * (b1.pos_size / cur.pos_size)
+                # if isclose(cur.cash, 0.0):
+                #     b1.cash = b2.cash = 0.0
+                # else:
+                #     b2.cash = cur.cash * begin_alloc_mul * (b2.pos_size / cur.pos_size)
+                # if isclose(cur.principal, 0.0):
+                #     b1.cash = b2.principal = 0.0
+                # else:
+                #     b2.principal = cur.principal * begin_alloc_mul * (b2.pos_size / cur.pos_size)
+                # if isclose(cur.carry, 0.0):
+                #     b2.carry = 0.0
+                # else:
+                #     b2.carry = cur.carry * begin_alloc_mul * (b2.pos_size / cur.pos_size)
+                # if isclose(cur.overheads, 0.0):
+                #     b2.overheads = 0.0
+                # else:
+                #     b2.overheads = cur.overheads * begin_alloc_mul * (b2.pos_size / cur.pos_size)
+                b2.pos_size = -b1.pos_size
+                b2.cash = -b1.cash
+                b2.principal = -b1.principal
+                b2.carry = -b1.carry
+                b2.overheads = -b1.overheads
+                b2.total_real_sys = 0.0
+                b2.total_unreal_sys = 0.0
+                # b2.alloc_bl = cur.alloc_bl
+                # b2.alloc_pl = cur.alloc_pl
+                res.append(b2)
 
             if not isclose(end_alloc_mul, 0.0):
-                e1 = _alloc_clone(closed, cur.trn_cls, -end_alloc_mul, delta,
-                                  alloc_bl=closed.alloc_bl, alloc_pl=closed.alloc_pl)
+                # e1 = _alloc_clone(closed, cur.trn_cls, -end_alloc_mul, delta,
+                #                   alloc_bl=closed.alloc_bl, alloc_pl=closed.alloc_pl)
+                # e1.pk = 'e,%s,%s,%s' % (cur.pk, closed.pk, e1.trn_cls)
+                e1 = closed.clone()
+                e1.trn_cls = cur.trn_cls
                 e1.pk = 'e,%s,%s,%s' % (cur.pk, closed.pk, e1.trn_cls)
-
-                e2 = _alloc_clone(closed, closed.trn_cls, end_alloc_mul, delta,
-                                  alloc_bl=cur.alloc_bl, alloc_pl=cur.alloc_pl)
-                e2.pk = 'e,%s,%s,%s' % (cur.pk, closed.pk, e2.trn_cls)
-            else:
-                e1 = None
-                e2 = None
-
-            if b1:
-                res.append(b1)
-            if b2:
-                res.append(b2)
-            if e1:
+                e1.multiplier = 1.0
+                e1.pos_size = closed.pos_size * -end_alloc_mul * delta
+                # e1.cash = closed.cash * -end_alloc_mul * delta
+                # e1.principal = closed.principal * -end_alloc_mul * delta
+                # e1.carry = closed.carry * -end_alloc_mul * delta
+                # e1.overheads = closed.overheads * -end_alloc_mul * delta
+                e1.total_real_sys = 0.0
+                e1.total_unreal_sys = 0.0
+                # e1.alloc_bl = closed.alloc_bl
+                # e1.alloc_pl = closed.alloc_pl
                 res.append(e1)
-            if e2:
+
+                # e2 = _alloc_clone(closed, closed.trn_cls, end_alloc_mul, delta,
+                #                   alloc_bl=cur.alloc_bl, alloc_pl=cur.alloc_pl)
+                # e2.pk = 'e,%s,%s,%s' % (cur.pk, closed.pk, e2.trn_cls)
+                # delta2 = e1.pos_size / cur.pos_size
+                e2 = cur.clone()
+                e2.trn_cls = closed.trn_cls
+                e2.pk = 'e,%s,%s,%s' % (cur.pk, closed.pk, e1.trn_cls)
+                e2.multiplier = 1.0
+                e2.pos_size = -e1.pos_size
+                # if isclose(cur.pos_size, 0.0):
+                #     e2.pos_size = 0.0
+                # else:
+                #     e2.pos_size = -1.0 * cur.pos_size * end_alloc_mul * (e1.pos_size / cur.pos_size)
+                if isclose(cur.cash, 0.0):
+                    e2.cash = 0.0
+                else:
+                    e2.cash = cur.cash * end_alloc_mul * (e2.pos_size / cur.pos_size)
+                if isclose(cur.principal, 0.0):
+                    e2.principal = 0.0
+                else:
+                    e2.principal = cur.principal * end_alloc_mul * (e2.pos_size / cur.pos_size)
+                if isclose(cur.carry, 0.0):
+                    e2.carry = 0.0
+                else:
+                    e2.carry = cur.carry * end_alloc_mul * (e2.pos_size / cur.pos_size)
+                if isclose(cur.overheads, 0.0):
+                    e2.overheads = 0.0
+                else:
+                    e2.overheads = cur.overheads * end_alloc_mul * (e2.pos_size / cur.pos_size)
+
+                e1.cash = -e2.cash
+                e1.principal = -e2.principal
+                e1.carry = -e2.carry
+                e1.overheads = -e2.overheads
+
+                e2.total_real_sys = 0.0
+                e2.total_unreal_sys = 0.0
+                # e2.alloc_bl = cur.alloc_bl
+                # e2.alloc_pl = cur.alloc_pl
                 res.append(e2)
-            pass
 
         for t in src:
             res.append(t)
@@ -1662,7 +1747,7 @@ class ReportBuilder(object):
             if t.trn_cls.id not in [TransactionClass.BUY, TransactionClass.SELL]:
                 continue
 
-            # do not use strategy!!!
+            # TODO: add strategies
             # t_key = self._make_key(
             #     instr=t.instr,
             #     prtfl=t.prtfl,
