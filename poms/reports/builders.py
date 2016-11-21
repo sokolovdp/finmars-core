@@ -46,15 +46,16 @@ class _Base:
         if item.endswith('_rep'):
             # automatic make value in report ccy
             item_sys = '%s_sys' % item[:-4]
-            if hasattr(self, item_sys):
-                val = getattr(self, item_sys)
-                if self.report_ccy_is_sys:
-                    return val
-                else:
-                    fx = self.report_ccy_rep_fx
-                    if isclose(fx, 0.0):
-                        return 0.0
-                    return val / fx
+            # if hasattr(self, item_sys):
+            #     val = getattr(self, item_sys)
+            #     if self.report_ccy_is_sys:
+            #         return val
+            #     else:
+            #         fx = self.report_ccy_rep_fx
+            #         if isclose(fx, 0.0):
+            #             return 0.0
+            #         return val / fx
+            return getattr(self, item_sys)
         raise AttributeError(item)
 
     def dump_values(self):
@@ -165,6 +166,8 @@ class VirtualTransaction(_Base):
         'trn_ccy_rep_fx',
         'stl_ccy_hist_fx',
         'stl_ccy_rep_fx',
+        'report_ccy_hist_fx',
+        'report_ccy_rep_fx',
 
         'instr_principal_sys',
         'instr_accrued_sys',
@@ -177,8 +180,8 @@ class VirtualTransaction(_Base):
         # full ----------------------------------------------------
         'principal_sys',
         'carry_sys',
-        'overheads_sys',
-        'total_sys',
+        # 'overheads_sys',
+        # 'total_sys',
 
         # # full / closed ----------------------------------------------------
         # 'principal_closed_sys',
@@ -195,8 +198,8 @@ class VirtualTransaction(_Base):
         # fx ----------------------------------------------------
         'principal_fx_sys',
         'carry_fx_sys',
-        'overheads_fx_sys',
-        'total_fx_sys',
+        # 'overheads_fx_sys',
+        # 'total_fx_sys',
 
         # # fx / closed ----------------------------------------------------
         # 'principal_fx_closed_sys',
@@ -213,8 +216,8 @@ class VirtualTransaction(_Base):
         # fixed ----------------------------------------------------
         'principal_fixed_sys',
         'carry_fixed_sys',
-        'overheads_fixed_sys',
-        'total_fixed_sys',
+        # 'overheads_fixed_sys',
+        # 'total_fixed_sys',
 
         # # fixed / closed ----------------------------------------------------
         # 'principal_fixed_closed_sys',
@@ -291,65 +294,135 @@ class VirtualTransaction(_Base):
 
     # report ccy ----------------------------------------------------
 
-    @property
+    @cached_property
     def report_ccy_is_sys(self):
         return self.report.report_currency.is_system
 
-    @property
+    @cached_property
     def report_ccy_rep(self):
         return self.fx_rate_provider[self.report.report_currency]
 
-    @property
+    @cached_property
     def report_ccy_rep_fx(self):
         return getattr(self.report_ccy_rep, 'fx_rate', float('nan'))
 
+    @cached_property
+    def report_ccy_hist(self):
+        return self.fx_rate_provider[self.report.report_currency, self.cash_date]
+
+    @cached_property
+    def report_ccy_hist_fx(self):
+        return getattr(self.report_ccy_hist, 'fx_rate', float('nan'))
+
     # instr ----------------------------------------------------
 
-    @property
+    @cached_property
     def instr_price_rep(self):
         if self.instr:
             return self.pricing_provider[self.instr]
         return None
 
-    @property
+    @cached_property
+    def instr_price_hist(self):
+        if self.instr:
+            return self.pricing_provider[self.instr, self.acc_date]
+        return None
+
+    @cached_property
     def instr_pricing_ccy_rep(self):
         if self.instr:
             return self.fx_rate_provider[self.instr.pricing_currency]
         return None
 
-    @property
+    @cached_property
     def instr_pricing_ccy_rep_fx(self):
-        return getattr(self.instr_pricing_ccy_rep, 'fx_rate', float('nan'))
+        return getattr(self.instr_pricing_ccy_rep, 'fx_rate', float('nan')) / self.report_ccy_rep_fx
 
-    @property
+    @cached_property
     def instr_pricing_ccy_hist(self):
         if self.instr:
-            return self.fx_rate_provider[self.instr.pricing_currency]
+            return self.fx_rate_provider[self.instr.pricing_currency, self.acc_date]
         return None
 
-    @property
+    @cached_property
     def instr_pricing_ccy_hist_fx(self):
-        return getattr(self.instr_pricing_ccy_hist, 'fx_rate', float('nan'))
+        return getattr(self.instr_pricing_ccy_hist, 'fx_rate', float('nan')) / self.report_ccy_hist_fx
 
-    @property
+    @cached_property
     def instr_accrued_ccy_rep(self):
         if self.instr:
             return self.fx_rate_provider[self.instr.accrued_currency]
         return None
 
-    @property
+    @cached_property
     def instr_accrued_ccy_rep_fx(self):
-        return getattr(self.instr_accrued_ccy_rep, 'fx_rate', float('nan'))
+        return getattr(self.instr_accrued_ccy_rep, 'fx_rate', float('nan')) / self.report_ccy_rep_fx
 
-    @property
+    @cached_property
     def instr_accrued_ccy_hist(self):
         if self.instr:
-            return self.fx_rate_provider[self.instr.accrued_currency]
+            return self.fx_rate_provider[self.instr.accrued_currency, self.acc_date]
         return None
 
-    @property
+    @cached_property
     def instr_accrued_ccy_hist_fx(self):
-        return getattr(self.instr_accrued_ccy_hist, 'fx_rate', float('nan'))
+        return getattr(self.instr_accrued_ccy_hist, 'fx_rate', float('nan')) / self.report_ccy_hist_fx
+
+    # trn ccy ----------------------------------------------------
+
+    @cached_property
+    def trn_ccy_hist(self):
+        if self.trn_ccy:
+            return self.fx_rate_provider[self.trn_ccy, self.acc_date]
+        return None
+
+    @cached_property
+    def trn_ccy_hist_fx(self):
+        return getattr(self.trn_ccy_hist, 'fx_rate', float('nan')) / self.report_ccy_hist_fx
+
+    @cached_property
+    def trn_ccy_rep(self):
+        if self.trn_ccy:
+            return self.fx_rate_provider[self.trn_ccy]
+        return None
+
+    @cached_property
+    def trn_ccy_rep_fx(self):
+        return getattr(self.trn_ccy_rep, 'fx_rate', float('nan')) / self.report_ccy_rep_fx
+
+    # stl ccy ----------------------------------------------------
+
+    @cached_property
+    def stl_ccy_hist(self):
+        if self.stl_ccy:
+            return self.fx_rate_provider[self.stl_ccy, self.cash_date]
+        return None
+
+    @cached_property
+    def stl_ccy_hist_fx(self):
+        return getattr(self.stl_ccy_hist, 'fx_rate', float('nan')) / self.report_ccy_hist_fx
+
+    @cached_property
+    def stl_ccy_rep(self):
+        if self.stl_ccy:
+            return self.fx_rate_provider[self.stl_ccy]
+        return None
+
+    @cached_property
+    def stl_ccy_rep_fx(self):
+        return getattr(self.stl_ccy_rep, 'fx_rate', float('nan')) / self.report_ccy_rep_fx
+
+    # general ----------------------------------------------------
+
+    @property
+    def mismatch(self):
+        return self.cash - self.total
+
+    # @property
+    # def pos_size_sys(self):
+    #     if self.trn_ccy:
+    #         return self.pos_size * self.trn_ccy_rep_fx
+    #     return float('nan')
 
     @property
     def instr_principal(self):
@@ -376,62 +449,6 @@ class VirtualTransaction(_Base):
         if self.instr:
             return self.instr_accrued * self.instr_pricing_ccy_rep_fx
         return float('nan')
-
-    # trn ccy ----------------------------------------------------
-
-    @property
-    def trn_ccy_hist(self):
-        if self.trn_ccy:
-            return self.fx_rate_provider[self.trn_ccy, self.acc_date]
-        return None
-
-    @property
-    def trn_ccy_hist_fx(self):
-        return getattr(self.trn_ccy_hist, 'fx_rate', float('nan'))
-
-    @property
-    def trn_ccy_rep(self):
-        if self.trn_ccy:
-            return self.fx_rate_provider[self.trn_ccy]
-        return None
-
-    @property
-    def trn_ccy_rep_fx(self):
-        return getattr(self.trn_ccy_rep, 'fx_rate', float('nan'))
-
-    # stl ccy ----------------------------------------------------
-
-    @property
-    def stl_ccy_hist(self):
-        if self.stl_ccy:
-            return self.fx_rate_provider[self.stl_ccy, self.cash_date]
-        return None
-
-    @property
-    def stl_ccy_hist_fx(self):
-        return getattr(self.stl_ccy_hist, 'fx_rate', float('nan'))
-
-    @property
-    def stl_ccy_rep(self):
-        if self.stl_ccy:
-            return self.fx_rate_provider[self.stl_ccy]
-        return None
-
-    @property
-    def stl_ccy_rep_fx(self):
-        return getattr(self.stl_ccy_rep, 'fx_rate', float('nan'))
-
-    # props ----------------------------------------------------
-
-    @property
-    def mismatch(self):
-        return self.cash - self.total
-
-    # @property
-    # def pos_size_sys(self):
-    #     if self.trn_ccy:
-    #         return self.pos_size * self.trn_ccy_rep_fx
-    #     return float('nan')
 
     # Cash related ----------------------------------------------------
 

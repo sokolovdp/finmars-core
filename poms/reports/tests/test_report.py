@@ -600,13 +600,13 @@ class ReportTestCase(TestCase):
         self._instr_hist(instr, self._d(104), 240.0, 160.0)
 
         self._ccy_hist(self.gbp, self._d(101), 1.1)
-        self._ccy_hist(self.gbp, self._d(104), 1.2)
+        self._ccy_hist(self.gbp, self._d(104), 1.3)
 
         self._ccy_hist(self.eur, self._d(102), 1.15)
         self._ccy_hist(self.eur, self._d(104), 1.1)
 
         self._ccy_hist(self.rub, self._d(101), 1 / 60)
-        self._ccy_hist(self.rub, self._d(104), 1.0 / 65.0)
+        self._ccy_hist(self.rub, self._d(104), 1 / 65)
 
         self._ccy_hist(self.chf, self._d(103), 0.9)
         self._ccy_hist(self.chf, self._d(104), 1.0)
@@ -618,7 +618,7 @@ class ReportTestCase(TestCase):
 
         self._t(t_class=self._buy, instr=instr, position=5,
                 stl_ccy=self.gbp, principal=-20.0, carry=-5.0,
-                trn_ccy=self.rub, fx_rate=1/80,
+                trn_ccy=self.rub, fx_rate=1 / 80,
                 acc_date_days=101, cash_date_days=101)
 
         self._t(t_class=self._buy, instr=instr, position=5,
