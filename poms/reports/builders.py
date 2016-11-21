@@ -1393,24 +1393,13 @@ class ReportItem(_Base):
 
 
 class Report(object):
-    PORTFOLIO_IGNORE = 0
-    PORTFOLIO_INDEPENDENT = 1
-    PORTFOLIO_CHOICES = (
-        (PORTFOLIO_IGNORE, 'Ignore'),
-        (PORTFOLIO_INDEPENDENT, 'Independent'),
-    )
-    ACCOUNT_IGNORE = 0
-    ACCOUNT_INDEPENDENT = 1
-    ACCOUNT_CHOICES = (
-        (ACCOUNT_IGNORE, 'Ignore'),
-        (ACCOUNT_INDEPENDENT, 'Independent'),
-    )
-    # STRATEGY_IGNORE = 0 # NOT USED
-    STRATEGY_INDEPENDENT = 1
-    STRATEGY_INTERDEPENDENT = 2
-    STRATEGY_CHOICES = (
-        (STRATEGY_INDEPENDENT, 'Non-offsetting (Independent)'),
-        (STRATEGY_INTERDEPENDENT, 'Offsetting (Interdependent - 0/100, 100/0, 50/50)'),
+    MODE_IGNORE = 0
+    MODE_INDEPENDENT = 1
+    MODE_INTERDEPENDENT = 2
+    MODE_CHOICES = (
+        (MODE_IGNORE, 'Ignore'),
+        (MODE_INDEPENDENT, 'Independent'),
+        (MODE_INTERDEPENDENT, 'Offsetting (Interdependent - 0/100, 100/0, 50/50)'),
     )
 
     def __init__(self,
@@ -1423,11 +1412,11 @@ class Report(object):
                  report_currency=None,
                  pricing_policy=None,
                  cost_method=None,
-                 portfolio_mode=PORTFOLIO_INDEPENDENT,
-                 account_mode=ACCOUNT_INDEPENDENT,
-                 strategy1_mode=STRATEGY_INDEPENDENT,
-                 strategy2_mode=STRATEGY_INDEPENDENT,
-                 strategy3_mode=STRATEGY_INDEPENDENT,
+                 portfolio_mode=MODE_INDEPENDENT,
+                 account_mode=MODE_INDEPENDENT,
+                 strategy1_mode=MODE_INDEPENDENT,
+                 strategy2_mode=MODE_INDEPENDENT,
+                 strategy3_mode=MODE_INDEPENDENT,
                  show_transaction_details=False,
                  approach_multiplier=0.5,
                  portfolios=None,
@@ -1584,29 +1573,25 @@ class ReportBuilder(object):
         for t in self._trn_qs():
             overrides = {}
 
-            # if self.instance.portfolio_mode == Report.PORTFOLIO_USE:
-            #     overrides['portfolio'] = self.instance.master_user.portfolio
-            #
-            # if self.instance.account_mode == Report.ACCOUNT_USE:
-            #     overrides['account_position'] = self.instance.master_user.account
-            #     overrides['account_cash'] = self.instance.master_user.account
-            #     overrides['account_interim'] = self.instance.master_user.account
-            #
-            # if not self.instance.detail_by_strategy1:
-            #     overrides['strategy1_position'] = self.instance.master_user.strategy1
-            #     overrides['strategy1_cash'] = self.instance.master_user.strategy1
-            #
-            # if not self.instance.detail_by_strategy1:
-            #     overrides['strategy1_position'] = self.instance.master_user.strategy1
-            #     overrides['strategy1_cash'] = self.instance.master_user.strategy1
-            #
-            # if not self.instance.detail_by_strategy2:
-            #     overrides['strategy2_position'] = self.instance.master_user.strategy2
-            #     overrides['strategy2_cash'] = self.instance.master_user.strategy2
-            #
-            # if not self.instance.detail_by_strategy3:
-            #     overrides['strategy3_position'] = self.instance.master_user.strategy3
-            #     overrides['strategy3_cash'] = self.instance.master_user.strategy3
+            if self.instance.portfolio_mode == Report.MODE_IGNORE:
+                overrides['portfolio'] = self.instance.master_user.portfolio
+
+            if self.instance.account_mode == Report.MODE_IGNORE:
+                overrides['account_position'] = self.instance.master_user.account
+                overrides['account_cash'] = self.instance.master_user.account
+                overrides['account_interim'] = self.instance.master_user.account
+
+            if self.instance.strategy1_mode == Report.MODE_IGNORE:
+                overrides['strategy1_position'] = self.instance.master_user.strategy1
+                overrides['strategy1_cash'] = self.instance.master_user.strategy1
+
+            if self.instance.strategy2_mode == Report.MODE_IGNORE:
+                overrides['strategy2_position'] = self.instance.master_user.strategy2
+                overrides['strategy2_cash'] = self.instance.master_user.strategy2
+
+            if self.instance.strategy3_mode == Report.MODE_IGNORE:
+                overrides['strategy3_position'] = self.instance.master_user.strategy3
+                overrides['strategy3_cash'] = self.instance.master_user.strategy3
 
             t = VirtualTransaction(
                 report=self.instance,
@@ -1800,11 +1785,11 @@ class ReportBuilder(object):
                 continue
 
             t_key = (
-                t.prtfl.id if self.instance.portfolio_mode == Report.PORTFOLIO_INDEPENDENT else None,
-                t.acc_pos.id if self.instance.account_mode == Report.ACCOUNT_INDEPENDENT else None,
-                t.str1_pos.id if self.instance.strategy1_mode == Report.STRATEGY_INDEPENDENT else None,
-                t.str2_pos.id if self.instance.strategy2_mode == Report.STRATEGY_INDEPENDENT else None,
-                t.str3_pos.id if self.instance.strategy3_mode == Report.STRATEGY_INDEPENDENT else None,
+                t.prtfl.id if self.instance.portfolio_mode == Report.MODE_INDEPENDENT else None,
+                t.acc_pos.id if self.instance.account_mode == Report.MODE_INDEPENDENT else None,
+                t.str1_pos.id if self.instance.strategy1_mode == Report.MODE_INDEPENDENT else None,
+                t.str2_pos.id if self.instance.strategy2_mode == Report.MODE_INDEPENDENT else None,
+                t.str3_pos.id if self.instance.strategy3_mode == Report.MODE_INDEPENDENT else None,
                 t.instr.id,
             )
 

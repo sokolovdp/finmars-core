@@ -691,6 +691,7 @@ class ReportTestCase(TestCase):
         self.bond3.user_code = 'A3'
         self.bond3.save()
         approach_multiplier = 1.0
+
         self._t(t_class=self._buy,
                 instr=self.bond0, position=5,
                 stl_ccy=self.usd, principal=-10, carry=0, overheads=0,
@@ -711,14 +712,14 @@ class ReportTestCase(TestCase):
 
         r = Report(master_user=self.m, pricing_policy=self.pp, report_date=self._d(0),
                    approach_multiplier=approach_multiplier,
-                   strategy1_mode=Report.STRATEGY_INDEPENDENT)
+                   strategy1_mode=Report.MODE_INDEPENDENT)
         b = ReportBuilder(instance=r)
         b.build()
         self._dump(b, 'test_approach_str1_0: STRATEGY_INDEPENDENT')
 
         r = Report(master_user=self.m, pricing_policy=self.pp, report_date=self._d(0),
                    approach_multiplier=approach_multiplier,
-                   strategy1_mode=Report.STRATEGY_INTERDEPENDENT)
+                   strategy1_mode=Report.MODE_INTERDEPENDENT)
         b = ReportBuilder(instance=r)
         b.build()
         self._dump(b, 'test_approach_str1_0: STRATEGY_INTERDEPENDENT')
