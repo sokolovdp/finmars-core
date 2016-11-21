@@ -22,7 +22,7 @@ from poms.reports.models import CustomField
 from poms.strategies.fields import Strategy1Field, Strategy2Field, Strategy3Field
 from poms.strategies.serializers import Strategy1Serializer, Strategy2Serializer, Strategy3Serializer
 from poms.transactions.models import TransactionClass
-from poms.users.fields import MasterUserField
+from poms.users.fields import MasterUserField, HiddenMemberField
 
 
 # class ReportClassSerializer(PomsClassSerializer):
@@ -246,20 +246,24 @@ class ReportSerializer(serializers.Serializer):
     task_status = serializers.ReadOnlyField()
 
     master_user = MasterUserField()
-
+    member = HiddenMemberField()
     pricing_policy = PricingPolicyField()
     report_date = serializers.DateField(required=False, allow_null=True, default=date_now)
     report_currency = CurrencyField(required=False, allow_null=True, default=SystemCurrencyDefault())
     cost_method = serializers.PrimaryKeyRelatedField(queryset=CostMethod.objects, allow_null=True, allow_empty=True)
-    pl_real_unreal_end_multiplier = serializers.FloatField(initial=0.5, default=0.5)
-    allocation_end_multiplier = serializers.FloatField(initial=0.5, default=0.5)
 
-    detail_by_portfolio = serializers.BooleanField(default=False)
-    detail_by_account = serializers.BooleanField(default=False)
-    detail_by_strategy1 = serializers.BooleanField(default=False)
-    detail_by_strategy2 = serializers.BooleanField(default=False)
-    detail_by_strategy3 = serializers.BooleanField(default=False)
+    portfolio_mode = serializers.ChoiceField(default=Report.MODE_INDEPENDENT, initial=Report.MODE_INDEPENDENT,
+                                             choices=Report.MODE_CHOICES)
+    account_mode = serializers.ChoiceField(default=Report.MODE_INDEPENDENT, initial=Report.MODE_INDEPENDENT,
+                                           choices=Report.MODE_CHOICES)
+    strategy1_mode = serializers.ChoiceField(default=Report.MODE_INDEPENDENT, initial=Report.MODE_INDEPENDENT,
+                                             choices=Report.MODE_CHOICES)
+    strategy2_mode = serializers.ChoiceField(default=Report.MODE_INDEPENDENT, initial=Report.MODE_INDEPENDENT,
+                                             choices=Report.MODE_CHOICES)
+    strategy3_mode = serializers.ChoiceField(default=Report.MODE_INDEPENDENT, initial=Report.MODE_INDEPENDENT,
+                                             choices=Report.MODE_CHOICES)
     show_transaction_details = serializers.BooleanField(default=False)
+    approach_multiplier = serializers.FloatField(default=0.5, initial=0.5, min_value=0.0, max_value=1.0)
 
     custom_fields = CustomFieldField(many=True, allow_empty=True, allow_null=True, required=False)
 
@@ -287,13 +291,13 @@ class ReportSerializer(serializers.Serializer):
         super(ReportSerializer, self).__init__(*args, **kwargs)
 
     def validate(self, attrs):
-        if attrs.get('report_date', None) is None:
+        if not attrs.get('report_date', None):
             attrs['report_date'] = date_now() - timedelta(days=1)
 
-        if attrs.get('report_currency', None) is None:
+        if not attrs.get('report_currency', None):
             attrs['report_currency'] = attrs['master_user'].system_currency
 
-        if attrs.get('cost_method', None) is None:
+        if not attrs.get('cost_method', None):
             attrs['cost_method'] = CostMethod.objects.get(pk=CostMethod.AVCO)
 
         return attrs

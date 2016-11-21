@@ -278,14 +278,14 @@ class ReportTestCase(TestCase):
 
         r = Report(master_user=self.m, pricing_policy=self.pp, report_date=self._d(14),
                    cost_method=self._avco,
-                   portfolio_mode=Report.PORTFOLIO_IGNORE)
+                   portfolio_mode=Report.MODE_IGNORE)
         b = ReportBuilder(instance=r)
         b.build()
         self._dump(b, 'test_avco_prtfl_0: IGNORE')
 
         r = Report(master_user=self.m, pricing_policy=self.pp, report_date=self._d(14),
                    cost_method=self._avco,
-                   portfolio_mode=Report.PORTFOLIO_INDEPENDENT)
+                   portfolio_mode=Report.MODE_INDEPENDENT)
         b = ReportBuilder(instance=r)
         b.build()
         self._dump(b, 'test_avco_prtfl_0: INDEPENDENT')
@@ -314,14 +314,14 @@ class ReportTestCase(TestCase):
 
         r = Report(master_user=self.m, pricing_policy=self.pp, report_date=self._d(14),
                    cost_method=self._avco,
-                   account_mode=Report.ACCOUNT_IGNORE)
+                   account_mode=Report.MODE_IGNORE)
         b = ReportBuilder(instance=r)
         b.build()
         self._dump(b, 'test_avco_acc_0: IGNORE')
 
         r = Report(master_user=self.m, pricing_policy=self.pp, report_date=self._d(14),
                    cost_method=self._avco,
-                   account_mode=Report.ACCOUNT_INDEPENDENT)
+                   account_mode=Report.MODE_INDEPENDENT)
         b = ReportBuilder(instance=r)
         b.build()
         self._dump(b, 'test_avco_acc_0: INDEPENDENT')
@@ -350,14 +350,14 @@ class ReportTestCase(TestCase):
 
         r = Report(master_user=self.m, pricing_policy=self.pp, report_date=self._d(14),
                    cost_method=self._avco,
-                   strategy1_mode=Report.STRATEGY_INDEPENDENT)
+                   strategy1_mode=Report.MODE_INDEPENDENT)
         b = ReportBuilder(instance=r)
         b.build()
         self._dump(b, 'test_avco_str1_0: NON_OFFSETTING')
 
         r = Report(master_user=self.m, pricing_policy=self.pp, report_date=self._d(14),
                    cost_method=self._avco,
-                   strategy1_mode=Report.STRATEGY_INTERDEPENDENT)
+                   strategy1_mode=Report.MODE_INTERDEPENDENT)
         b = ReportBuilder(instance=r)
         b.build()
         self._dump(b, 'test_avco_str1_0: OFFSETTING')
@@ -533,7 +533,7 @@ class ReportTestCase(TestCase):
                 acc_date_days=8, cash_date_days=8, s1_pos=s4, s1_cash=s4)
 
         r = Report(master_user=self.m, pricing_policy=self.pp, report_date=self._d(14),
-                   cost_method=self._avco, detail_by_strategy1=True)
+                   cost_method=self._avco)
         b = ReportBuilder(instance=r)
         b.build()
         self._dump(b, 'test_pl_real_unreal_1')
@@ -585,6 +585,58 @@ class ReportTestCase(TestCase):
         b.build()
         self._dump(b, 'test_pl_fx_fix_full_0')
 
+    def test_pl_fx_fix_full_1(self):
+        instr = Instrument.objects.create(master_user=self.m, name="I1, RUB/RUB",
+                                          instrument_type=self.m.instrument_type,
+                                          pricing_currency=self.rub, price_multiplier=1.0,
+                                          accrued_currency=self.rub, accrued_multiplier=1.0)
+
+        # self.m.system_currency = self.cad
+        # self.m.save()
+
+        self._instr_hist(instr, self._d(101), 1.0, 1.0)
+        self._instr_hist(instr, self._d(102), 1.0, 1.0)
+        self._instr_hist(instr, self._d(103), 1.0, 1.0)
+        self._instr_hist(instr, self._d(104), 240.0, 160.0)
+
+        self._ccy_hist(self.gbp, self._d(101), 1.1)
+        self._ccy_hist(self.gbp, self._d(104), 1.2)
+
+        self._ccy_hist(self.eur, self._d(102), 1.15)
+        self._ccy_hist(self.eur, self._d(104), 1.1)
+
+        self._ccy_hist(self.rub, self._d(101), 1 / 60)
+        self._ccy_hist(self.rub, self._d(104), 1.0 / 65.0)
+
+        self._ccy_hist(self.chf, self._d(103), 0.9)
+        self._ccy_hist(self.chf, self._d(104), 1.0)
+
+        self._ccy_hist(self.cad, self._d(101), 1.1)
+        self._ccy_hist(self.cad, self._d(102), 1.1)
+        self._ccy_hist(self.cad, self._d(103), 1.1)
+        self._ccy_hist(self.cad, self._d(104), 1.2)
+
+        self._t(t_class=self._buy, instr=instr, position=5,
+                stl_ccy=self.gbp, principal=-20.0, carry=-5.0,
+                trn_ccy=self.rub, fx_rate=1/80,
+                acc_date_days=101, cash_date_days=101)
+
+        self._t(t_class=self._buy, instr=instr, position=5,
+                stl_ccy=self.eur, principal=-22.0, carry=-8.0,
+                trn_ccy=self.usd, fx_rate=1.3,
+                acc_date_days=102, cash_date_days=102)
+
+        self._t(t_class=self._sell, instr=instr, position=-5,
+                stl_ccy=self.chf, principal=25.0, carry=9.0,
+                trn_ccy=self.usd, fx_rate=1.1,
+                acc_date_days=103, cash_date_days=103)
+
+        r = Report(master_user=self.m, pricing_policy=self.pp, report_date=self._d(104), report_currency=self.cad,
+                   cost_method=self._avco)
+        b = ReportBuilder(instance=r)
+        b.build()
+        self._dump(b, 'test_pl_fx_fix_full_1')
+
     def _test_mismatch_0(self):
         self._t(t_class=self._buy,
                 instr=self.bond0, position=100,
@@ -604,8 +656,7 @@ class ReportTestCase(TestCase):
                 p=self.p2, acc_pos=self.a1_2,
                 link_instr=self.bond1)
 
-        r = Report(master_user=self.m, pricing_policy=self.pp, report_date=self._d(14), detail_by_portfolio=True,
-                   detail_by_account=True)
+        r = Report(master_user=self.m, pricing_policy=self.pp, report_date=self._d(14))
         b = ReportBuilder(instance=r)
         b.build()
         self._dump(b, 'test_mismatch_0')
@@ -679,7 +730,7 @@ class ReportTestCase(TestCase):
         b.build()
         self._dump(b, 'test_approach_alloc_1')
 
-    def test_approach_str1_0(self):
+    def _test_approach_str1_0(self):
         self.bond0.user_code = 'I1'
         self.bond0.price_multiplier = 5.0
         self.bond0.accrued_multiplier = 0.0

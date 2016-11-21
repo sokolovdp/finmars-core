@@ -21,6 +21,12 @@ from poms.transactions.models import Transaction, TransactionClass
 _l = logging.getLogger('poms.reports')
 
 
+def _get_fx_rate(val):
+    if val is None or isclose(val, 0.0):
+        return float('nan')
+    return val
+
+
 class _Base:
     report = None
     pricing_provider = None
@@ -132,21 +138,21 @@ class VirtualTransaction(_Base):
         # 'acc_date',
         # 'cash_date',
         'instr',
-        # 'trn_ccy',
+        'trn_ccy',
         'stl_ccy',
         # 'prtfl',
         # 'acc_pos',
         # 'acc_cash',
         # 'acc_interim',
-        'str1_pos',
+        # 'str1_pos',
         # 'str1_cash',
-        'str2_pos',
+        # 'str2_pos',
         # 'str2_cash',
-        'str3_pos',
+        # 'str3_pos',
         # 'str3_cash',
         # 'link_instr',
-        'alloc_bl',
-        'alloc_pl',
+        # 'alloc_bl',
+        # 'alloc_pl',
         'pos_size',
         'cash',
         'principal',
@@ -154,39 +160,43 @@ class VirtualTransaction(_Base):
         'overheads',
         'total',
         # 'mismatch',
-        # 'ref_fx',
+        'ref_fx',
+        'trn_ccy_hist_fx',
+        'trn_ccy_rep_fx',
+        'stl_ccy_hist_fx',
+        'stl_ccy_rep_fx',
 
-        # 'instr_principal_sys',
-        # 'instr_accrued_sys',
-        #
+        'instr_principal_sys',
+        'instr_accrued_sys',
+
         # # real / unreal
         #
         # 'total_real_sys',
         # 'total_unreal_sys',
 
-        # # full ----------------------------------------------------
-        # 'principal_sys',
-        # 'carry_sys',
-        # 'overheads_sys',
-        # 'total_sys',
+        # full ----------------------------------------------------
+        'principal_sys',
+        'carry_sys',
+        'overheads_sys',
+        'total_sys',
 
         # # full / closed ----------------------------------------------------
         # 'principal_closed_sys',
         # 'carry_closed_sys',
         # 'overheads_closed_sys',
-        'total_closed_sys',
+        # 'total_closed_sys',
 
         # # full / opened ----------------------------------------------------
         # 'principal_opened_sys',
         # 'carry_opened_sys',
         # 'overheads_opened_sys',
-        'total_opened_sys',
+        # 'total_opened_sys',
 
-        # # fx ----------------------------------------------------
-        # 'principal_fx_sys',
-        # 'carry_fx_sys',
-        # 'overheads_fx_sys',
-        # 'total_fx_sys',
+        # fx ----------------------------------------------------
+        'principal_fx_sys',
+        'carry_fx_sys',
+        'overheads_fx_sys',
+        'total_fx_sys',
 
         # # fx / closed ----------------------------------------------------
         # 'principal_fx_closed_sys',
@@ -200,11 +210,11 @@ class VirtualTransaction(_Base):
         # 'overheads_fx_opened_sys',
         # 'total_fx_opened_sys',
 
-        # # fixed ----------------------------------------------------
-        # 'principal_fixed_sys',
-        # 'carry_fixed_sys',
-        # 'overheads_fixed_sys',
-        # 'total_fixed_sys',
+        # fixed ----------------------------------------------------
+        'principal_fixed_sys',
+        'carry_fixed_sys',
+        'overheads_fixed_sys',
+        'total_fixed_sys',
 
         # # fixed / closed ----------------------------------------------------
         # 'principal_fixed_closed_sys',
@@ -417,11 +427,11 @@ class VirtualTransaction(_Base):
     def mismatch(self):
         return self.cash - self.total
 
-    @property
-    def pos_size_sys(self):
-        if self.trn_ccy:
-            return self.pos_size * self.trn_ccy_rep_fx
-        return float('nan')
+    # @property
+    # def pos_size_sys(self):
+    #     if self.trn_ccy:
+    #         return self.pos_size * self.trn_ccy_rep_fx
+    #     return float('nan')
 
     # Cash related ----------------------------------------------------
 
@@ -430,6 +440,9 @@ class VirtualTransaction(_Base):
         return self.cash * self.stl_ccy_rep_fx
 
     # full P&L related ----------------------------------------------------
+    @property
+    def total(self):
+        return self.principal + self.carry + self.overheads
 
     @property
     def principal_sys(self):
@@ -444,30 +457,26 @@ class VirtualTransaction(_Base):
         return self.overheads * self.stl_ccy_rep_fx
 
     @property
-    def total(self):
-        return self.principal + self.carry + self.overheads
-
-    @property
     def total_sys(self):
         return self.total * self.stl_ccy_rep_fx
 
-    # cash flow ----------------------------------------------------
-
-    @property
-    def cash_flow_real(self):
-        return self.total * self.multiplier
-
-    @property
-    def cash_flow_unreal(self):
-        return self.total * (1.0 - self.multiplier)
-
-    @property
-    def cash_flow_real_sys(self):
-        return self.total_sys * self.multiplier
-
-    @property
-    def cash_flow_unreal_sys(self):
-        return self.total_sys * (1.0 - self.multiplier)
+    # # cash flow ----------------------------------------------------
+    #
+    # @property
+    # def cash_flow_real(self):
+    #     return self.total * self.multiplier
+    #
+    # @property
+    # def cash_flow_unreal(self):
+    #     return self.total * (1.0 - self.multiplier)
+    #
+    # @property
+    # def cash_flow_real_sys(self):
+    #     return self.total_sys * self.multiplier
+    #
+    # @property
+    # def cash_flow_unreal_sys(self):
+    #     return self.total_sys * (1.0 - self.multiplier)
 
     # full / closed ----------------------------------------------------
 
@@ -508,20 +517,24 @@ class VirtualTransaction(_Base):
     # fx ----------------------------------------------------
 
     @property
+    def pl_fx_mul(self):
+        return self.stl_ccy_rep_fx - self.ref_fx / self.trn_ccy_hist_fx
+
+    @property
     def principal_fx_sys(self):
-        return self.principal * (self.stl_ccy_rep_fx - self.ref_fx * self.stl_ccy_hist_fx)
+        return self.principal * self.pl_fx_mul
 
     @property
     def carry_fx_sys(self):
-        return self.carry * (self.stl_ccy_rep_fx - self.ref_fx * self.stl_ccy_hist_fx)
+        return self.carry * self.pl_fx_mul
 
     @property
     def overheads_fx_sys(self):
-        return self.overheads * (self.stl_ccy_rep_fx - self.ref_fx * self.stl_ccy_hist_fx)
+        return self.overheads * self.pl_fx_mul
 
     @property
     def total_fx_sys(self):
-        return self.total * (self.stl_ccy_rep_fx - self.ref_fx * self.stl_ccy_hist_fx)
+        return self.total * self.pl_fx_mul
 
     # fx / closed ----------------------------------------------------
 
@@ -562,20 +575,24 @@ class VirtualTransaction(_Base):
     # fixed ----------------------------------------------------
 
     @property
+    def pl_fixed_mul(self):
+        return self.ref_fx / self.trn_ccy_hist_fx
+
+    @property
     def principal_fixed_sys(self):
-        return self.principal * self.ref_fx * self.stl_ccy_hist_fx
+        return self.principal * self.pl_fixed_mul
 
     @property
     def carry_fixed_sys(self):
-        return self.carry * self.ref_fx * self.stl_ccy_hist_fx
+        return self.carry * self.pl_fixed_mul
 
     @property
     def overheads_fixed_sys(self):
-        return self.overheads * self.ref_fx * self.stl_ccy_hist_fx
+        return self.overheads * self.pl_fixed_mul
 
     @property
     def total_fixed_sys(self):
-        return self.total * self.ref_fx * self.stl_ccy_hist_fx
+        return self.total * self.pl_fixed_mul
 
     # fixed / closed ----------------------------------------------------
 
@@ -668,8 +685,8 @@ class ReportItem(_Base):
 
     # P&L
 
-    cash_flow_real_sys = 0.0
-    cash_flow_unreal_sys = 0.0
+    # cash_flow_real_sys = 0.0
+    # cash_flow_unreal_sys = 0.0
 
     # total_real_sys = 0.0
     # total_unreal_sys = 0.0
@@ -732,16 +749,16 @@ class ReportItem(_Base):
     dump_columns = [
         'type_code',
         'user_code',
-        'prtfl',
-        'acc',
-        'str1',
+        # 'prtfl',
+        # 'acc',
+        # 'str1',
         # 'str2',
         # 'str3',
         # 'detail_trn',
         # 'instr',
         # 'ccy',
-        'alloc_bl',
-        'alloc_pl',
+        # 'alloc_bl',
+        # 'alloc_pl',
         'pos_size',
         'market_value_sys',
         # 'mismatch_ccy',
@@ -758,24 +775,23 @@ class ReportItem(_Base):
         'overheads_sys',
         'total_sys',
 
-        # full / closed ----------------------------------------------------
+        # # full / closed ----------------------------------------------------
         # 'principal_closed_sys',
         # 'carry_closed_sys',
         # 'overheads_closed_sys',
-        'total_closed_sys',
+        # 'total_closed_sys',
 
-        # full / opened ----------------------------------------------------
+        # # full / opened ----------------------------------------------------
         # 'principal_opened_sys',
         # 'carry_opened_sys',
         # 'overheads_opened_sys',
-        'total_opened_sys',
+        # 'total_opened_sys',
 
-        # # fx ----------------------------------------------------
-        #
-        # 'principal_fx_sys',
-        # 'carry_fx_sys',
-        # 'overheads_fx_sys',
-        # 'total_fx_sys',
+        # fx ----------------------------------------------------
+        'principal_fx_sys',
+        'carry_fx_sys',
+        'overheads_fx_sys',
+        'total_fx_sys',
 
         # # fx / closed ----------------------------------------------------
         # 'principal_fx_closed_sys',
@@ -789,11 +805,11 @@ class ReportItem(_Base):
         # 'overheads_fx_opened_sys',
         # 'total_fx_opened_sys',
 
-        # # fixed ----------------------------------------------------
-        # 'principal_fixed_sys',
-        # 'carry_fixed_sys',
-        # 'overheads_fixed_sys',
-        # 'total_fixed_sys',
+        # fixed ----------------------------------------------------
+        'principal_fixed_sys',
+        'carry_fixed_sys',
+        'overheads_fixed_sys',
+        'total_fixed_sys',
 
         # # fixed / closed ----------------------------------------------------
         # 'principal_fixed_closed_sys',
@@ -835,8 +851,8 @@ class ReportItem(_Base):
             item.pos_size = trn.pos_size * (1.0 - trn.multiplier)
             item.cost_sys = trn.principal_sys * (1.0 - trn.multiplier)
 
-            item.cash_flow_real_sys = trn.cash_flow_real_sys
-            item.cash_flow_unreal_sys = trn.cash_flow_unreal_sys
+            # item.cash_flow_real_sys = trn.cash_flow_real_sys
+            # item.cash_flow_unreal_sys = trn.cash_flow_unreal_sys
 
             # item.total_real_sys = trn.total_real_sys
             # item.total_unreal_sys = trn.total_unreal_sys
@@ -897,6 +913,7 @@ class ReportItem(_Base):
 
         elif item.type == ReportItem.TYPE_FX_TRADE:
             # item.principal_sys = trn.pos_size_sys + trn.principal_sys
+            item.principal_sys = trn.principal_sys
             item.carry_sys = trn.carry_sys
             item.overheads_sys = trn.overheads_sys
 
@@ -1358,7 +1375,7 @@ class ReportItem(_Base):
         elif self.type == ReportItem.TYPE_INSTRUMENT:
             self.market_value_sys = self.instr_principal_sys + self.instr_accrued_sys
 
-            self.total_unreal_sys = self.market_value_sys + self.cost_sys
+            # self.total_unreal_sys = self.market_value_sys + self.cost_sys
 
             # full ----------------------------------------------------
             self.principal_sys += self.instr_principal_sys
