@@ -21,7 +21,7 @@ except ImportError:
 
 class ReportTestCase(TestCase):
     def setUp(self):
-        print('*' * 150)
+        print('*' * 100)
 
         if pandas:
             pandas.set_option('display.width', 10000)
@@ -243,7 +243,6 @@ class ReportTestCase(TestCase):
         ReportItem.dumps(items)
 
     def _dump(self, builder, name, print_transactions=None, print_items=None):
-        print('*' * 100)
         print('Report: %s' % name)
 
         if print_transactions is None:
@@ -630,7 +629,7 @@ class ReportTestCase(TestCase):
                 acc_date_days=101, cash_date_days=101)
 
         r = Report(master_user=self.m, pricing_policy=self.pp, report_date=self._d(104), report_currency=self.cad,
-                   cost_method=self._avco)
+                   cost_method=self._avco, approach_multiplier=1.0)
         b = ReportBuilder(instance=r)
         b.build()
         self._dump(b, 'test_pl_full_fx_fixed_buy_sell_1')

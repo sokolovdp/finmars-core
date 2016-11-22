@@ -606,67 +606,78 @@ class VirtualTransaction(_Base):
 
         pos_size = closed.pos_size * mul_delta
 
-        abm = closed.report.approach_begin_multiplier * (pos_size / closed.pos_size)
-        aem = closed.report.approach_end_multiplier * (pos_size / cur.pos_size)
+        closed1 = closed.clone()
+        closed1.multiplier = pos_size / closed1.pos_size
+        closed1.calc()
+
+        cur1 = cur.clone()
+        cur1.multiplier = pos_size / cur1.pos_size
+        cur1.calc()
+
+        # abm = closed1.report.approach_begin_multiplier * (pos_size / closed.pos_size)
+        # aem = closed1.report.approach_end_multiplier * (pos_size / cur.pos_size)
+
+        abm = closed.report.approach_begin_multiplier * closed1.multiplier
+        aem = closed.report.approach_end_multiplier * cur1.multiplier
 
         # t1 ----
-        t1 = closed.clone()
-        t1.trn_cls = cur.trn_cls
-        t1.pk = 'a1,%s,%s,%s' % (closed.pk, cur.pk, t1.trn_cls)
+        t1 = closed1.clone()
+        t1.trn_cls = cur1.trn_cls
+        t1.pk = 'a1,%s,%s,%s' % (closed1.pk, cur1.pk, t1.trn_cls)
 
         _clean(t1)
 
         t1.pos_size = -pos_size
 
-        t1.principal_res = -(closed.principal_res * abm + cur.principal_res * aem)
-        t1.carry_res = -(closed.carry_res * abm + cur.carry_res * aem)
-        t1.overheads_res = -(closed.overheads_res * abm + cur.overheads_res * aem)
+        t1.principal_res = -(closed1.principal_res * abm + cur1.principal_res * aem)
+        t1.carry_res = -(closed1.carry_res * abm + cur1.carry_res * aem)
+        t1.overheads_res = -(closed1.overheads_res * abm + cur1.overheads_res * aem)
         t1.total_res = t1.principal_res + t1.carry_res + t1.overheads_res
 
-        t1.principal_closed_res = -(closed.principal_closed_res * abm + cur.principal_closed_res * aem)
-        t1.carry_closed_res = -(closed.carry_closed_res * abm + cur.carry_closed_res * aem)
-        t1.overheads_closed_res = -(closed.overheads_closed_res * abm + cur.overheads_closed_res * aem)
+        t1.principal_closed_res = -(closed1.principal_closed_res * abm + cur1.principal_closed_res * aem)
+        t1.carry_closed_res = -(closed1.carry_closed_res * abm + cur1.carry_closed_res * aem)
+        t1.overheads_closed_res = -(closed1.overheads_closed_res * abm + cur1.overheads_closed_res * aem)
         t1.total_closed_res = t1.principal_closed_res + t1.carry_closed_res + t1.overheads_closed_res
 
-        t1.principal_opened_res = -(closed.principal_opened_res * abm + cur.principal_opened_res * aem)
-        t1.carry_opened_res = -(closed.carry_opened_res * abm + cur.carry_opened_res * aem)
-        t1.overheads_opened_res = -(closed.overheads_opened_res * abm + cur.overheads_opened_res * aem)
+        t1.principal_opened_res = -(closed1.principal_opened_res * abm + cur1.principal_opened_res * aem)
+        t1.carry_opened_res = -(closed1.carry_opened_res * abm + cur1.carry_opened_res * aem)
+        t1.overheads_opened_res = -(closed1.overheads_opened_res * abm + cur1.overheads_opened_res * aem)
         t1.total_opened_res = t1.principal_opened_res + t1.carry_opened_res + t1.overheads_opened_res
 
-        t1.principal_fx_res = -(closed.principal_fx_res * abm + cur.principal_fx_res * aem)
-        t1.carry_fx_res = -(closed.carry_fx_res * abm + cur.carry_fx_res * aem)
-        t1.overheads_fx_res = -(closed.overheads_fx_res * abm + cur.overheads_fx_res * aem)
+        t1.principal_fx_res = -(closed1.principal_fx_res * abm + cur1.principal_fx_res * aem)
+        t1.carry_fx_res = -(closed1.carry_fx_res * abm + cur1.carry_fx_res * aem)
+        t1.overheads_fx_res = -(closed1.overheads_fx_res * abm + cur1.overheads_fx_res * aem)
         t1.total_fx_res = t1.principal_fx_res + t1.carry_fx_res + t1.overheads_fx_res
 
-        t1.principal_fx_closed_res = -(closed.principal_fx_closed_res * abm + cur.principal_fx_closed_res * aem)
-        t1.carry_fx_closed_res = -(closed.carry_fx_closed_res * abm + cur.carry_fx_closed_res * aem)
-        t1.overheads_fx_closed_res = -(closed.overheads_fx_closed_res * abm + cur.overheads_fx_closed_res * aem)
+        t1.principal_fx_closed_res = -(closed1.principal_fx_closed_res * abm + cur1.principal_fx_closed_res * aem)
+        t1.carry_fx_closed_res = -(closed1.carry_fx_closed_res * abm + cur1.carry_fx_closed_res * aem)
+        t1.overheads_fx_closed_res = -(closed1.overheads_fx_closed_res * abm + cur1.overheads_fx_closed_res * aem)
         t1.total_fx_closed_res = t1.principal_fx_closed_res + t1.carry_fx_closed_res + t1.overheads_fx_closed_res
 
-        t1.principal_fx_opened_res = -(closed.principal_fx_opened_res * abm + cur.principal_fx_opened_res * aem)
-        t1.carry_fx_opened_res = -(closed.carry_fx_opened_res * abm + cur.carry_fx_opened_res * aem)
-        t1.overheads_fx_opened_res = -(closed.overheads_fx_opened_res * abm + cur.overheads_fx_opened_res * aem)
+        t1.principal_fx_opened_res = -(closed1.principal_fx_opened_res * abm + cur1.principal_fx_opened_res * aem)
+        t1.carry_fx_opened_res = -(closed1.carry_fx_opened_res * abm + cur1.carry_fx_opened_res * aem)
+        t1.overheads_fx_opened_res = -(closed1.overheads_fx_opened_res * abm + cur1.overheads_fx_opened_res * aem)
         t1.total_fx_opened_res = t1.principal_fx_opened_res + t1.carry_fx_opened_res + t1.overheads_fx_opened_res
 
-        t1.principal_fixed_res = -(closed.principal_fixed_res * abm + cur.principal_fixed_res * aem)
-        t1.carry_fixed_res = -(closed.carry_fixed_res * abm + cur.carry_fixed_res * aem)
-        t1.overheads_fixed_res = -(closed.overheads_fixed_res * abm + cur.overheads_fixed_res * aem)
+        t1.principal_fixed_res = -(closed1.principal_fixed_res * abm + cur1.principal_fixed_res * aem)
+        t1.carry_fixed_res = -(closed1.carry_fixed_res * abm + cur1.carry_fixed_res * aem)
+        t1.overheads_fixed_res = -(closed1.overheads_fixed_res * abm + cur1.overheads_fixed_res * aem)
         t1.total_fixed_res = t1.principal_fixed_res + t1.carry_fixed_res + t1.overheads_fixed_res
 
-        t1.principal_fixed_closed_res = -(closed.principal_fixed_closed_res * abm + cur.principal_fixed_closed_res * aem)
-        t1.carry_fixed_closed_res = -(closed.carry_fixed_closed_res * abm + cur.carry_fixed_closed_res * aem)
-        t1.overheads_fixed_closed_res = -(closed.overheads_fixed_closed_res * abm + cur.overheads_fixed_closed_res * aem)
+        t1.principal_fixed_closed_res = -(closed1.principal_fixed_closed_res * abm + cur1.principal_fixed_closed_res * aem)
+        t1.carry_fixed_closed_res = -(closed1.carry_fixed_closed_res * abm + cur1.carry_fixed_closed_res * aem)
+        t1.overheads_fixed_closed_res = -(closed1.overheads_fixed_closed_res * abm + cur1.overheads_fixed_closed_res * aem)
         t1.total_fixed_closed_res = t1.principal_fixed_closed_res + t1.carry_fixed_closed_res + t1.overheads_fixed_closed_res
 
-        t1.principal_fixed_opened_res = -(closed.principal_fixed_opened_res * abm + cur.principal_fixed_opened_res * aem)
-        t1.carry_fixed_opened_res = -(closed.carry_fixed_opened_res * abm + cur.carry_fixed_opened_res * aem)
-        t1.overheads_fixed_opened_res = -(closed.overheads_fixed_opened_res * abm + cur.overheads_fixed_opened_res * aem)
+        t1.principal_fixed_opened_res = -(closed1.principal_fixed_opened_res * abm + cur1.principal_fixed_opened_res * aem)
+        t1.carry_fixed_opened_res = -(closed1.carry_fixed_opened_res * abm + cur1.carry_fixed_opened_res * aem)
+        t1.overheads_fixed_opened_res = -(closed1.overheads_fixed_opened_res * abm + cur1.overheads_fixed_opened_res * aem)
         t1.total_fixed_opened_res = t1.principal_fixed_opened_res + t1.carry_fixed_opened_res + t1.overheads_fixed_opened_res
 
         # t2 ----
-        t2 = cur.clone()
-        t2.trn_cls = closed.trn_cls
-        t2.pk = 'a2,%s,%s,%s' % (closed.pk, cur.pk, t2.trn_cls)
+        t2 = cur1.clone()
+        t2.trn_cls = closed1.trn_cls
+        t2.pk = 'a2,%s,%s,%s' % (closed1.pk, cur1.pk, t2.trn_cls)
 
         _clean(t2)
 
@@ -1007,59 +1018,60 @@ class ReportItem(_Base):
         item.alloc_bl = trn.alloc_bl
         item.alloc_pl = trn.alloc_pl
 
-        # full ----------------------------------------------------
-        item.principal_res = trn.principal_res
-        item.carry_res = trn.carry_res
-        item.overheads_res = trn.overheads_res
-        item.total_res = trn.total_res
+        if type in [ReportItem.TYPE_INSTRUMENT, ReportItem.TYPE_TRANSACTION_PL, ReportItem.TYPE_FX_TRADE]:
+            # full ----------------------------------------------------
+            item.principal_res = trn.principal_res
+            item.carry_res = trn.carry_res
+            item.overheads_res = trn.overheads_res
+            item.total_res = trn.total_res
 
-        # full / closed ----------------------------------------------------
-        item.principal_closed_res = trn.principal_closed_res
-        item.carry_closed_res = trn.carry_closed_res
-        item.overheads_closed_res = trn.overheads_closed_res
-        item.total_closed_res = trn.total_closed_res
+            # full / closed ----------------------------------------------------
+            item.principal_closed_res = trn.principal_closed_res
+            item.carry_closed_res = trn.carry_closed_res
+            item.overheads_closed_res = trn.overheads_closed_res
+            item.total_closed_res = trn.total_closed_res
 
-        # full / opened ----------------------------------------------------
-        item.principal_opened_res = trn.principal_opened_res
-        item.carry_opened_res = trn.carry_opened_res
-        item.overheads_opened_res = trn.overheads_opened_res
-        item.total_opened_res = trn.total_opened_res
+            # full / opened ----------------------------------------------------
+            item.principal_opened_res = trn.principal_opened_res
+            item.carry_opened_res = trn.carry_opened_res
+            item.overheads_opened_res = trn.overheads_opened_res
+            item.total_opened_res = trn.total_opened_res
 
-        # fx ----------------------------------------------------
-        item.principal_fx_res = trn.principal_fx_res
-        item.carry_fx_res = trn.carry_fx_res
-        item.overheads_fx_res = trn.overheads_fx_res
-        item.total_fx_res = trn.total_fx_res
+            # fx ----------------------------------------------------
+            item.principal_fx_res = trn.principal_fx_res
+            item.carry_fx_res = trn.carry_fx_res
+            item.overheads_fx_res = trn.overheads_fx_res
+            item.total_fx_res = trn.total_fx_res
 
-        # fx / closed ----------------------------------------------------
-        item.principal_fx_closed_res = trn.principal_fx_closed_res
-        item.carry_fx_closed_res = trn.carry_fx_closed_res
-        item.overheads_fx_closed_res = trn.overheads_fx_closed_res
-        item.total_fx_closed_res = trn.total_fx_closed_res
+            # fx / closed ----------------------------------------------------
+            item.principal_fx_closed_res = trn.principal_fx_closed_res
+            item.carry_fx_closed_res = trn.carry_fx_closed_res
+            item.overheads_fx_closed_res = trn.overheads_fx_closed_res
+            item.total_fx_closed_res = trn.total_fx_closed_res
 
-        # fx / opened ----------------------------------------------------
-        item.principal_fx_opened_res = trn.principal_fx_opened_res
-        item.carry_fx_opened_res = trn.carry_fx_opened_res
-        item.overheads_fx_opened_res = trn.overheads_fx_opened_res
-        item.total_fx_opened_res = trn.total_fx_opened_res
+            # fx / opened ----------------------------------------------------
+            item.principal_fx_opened_res = trn.principal_fx_opened_res
+            item.carry_fx_opened_res = trn.carry_fx_opened_res
+            item.overheads_fx_opened_res = trn.overheads_fx_opened_res
+            item.total_fx_opened_res = trn.total_fx_opened_res
 
-        # fixed ----------------------------------------------------
-        item.principal_fixed_res = trn.principal_fixed_res
-        item.carry_fixed_res = trn.carry_fixed_res
-        item.overheads_fixed_res = trn.overheads_fixed_res
-        item.total_fixed_res = trn.total_fixed_res
+            # fixed ----------------------------------------------------
+            item.principal_fixed_res = trn.principal_fixed_res
+            item.carry_fixed_res = trn.carry_fixed_res
+            item.overheads_fixed_res = trn.overheads_fixed_res
+            item.total_fixed_res = trn.total_fixed_res
 
-        # fixed / closed ----------------------------------------------------
-        item.principal_fixed_closed_res = trn.principal_fixed_closed_res
-        item.carry_fixed_closed_res = trn.carry_fixed_closed_res
-        item.overheads_fixed_closed_res = trn.overheads_fixed_closed_res
-        item.total_fixed_closed_res = trn.total_fixed_closed_res
+            # fixed / closed ----------------------------------------------------
+            item.principal_fixed_closed_res = trn.principal_fixed_closed_res
+            item.carry_fixed_closed_res = trn.carry_fixed_closed_res
+            item.overheads_fixed_closed_res = trn.overheads_fixed_closed_res
+            item.total_fixed_closed_res = trn.total_fixed_closed_res
 
-        # fixed / opened ----------------------------------------------------
-        item.principal_fixed_opened_res = trn.principal_fixed_opened_res
-        item.carry_fixed_opened_res = trn.carry_fixed_opened_res
-        item.overheads_fixed_opened_res = trn.overheads_fixed_opened_res
-        item.total_fixed_opened_res = trn.total_fixed_opened_res
+            # fixed / opened ----------------------------------------------------
+            item.principal_fixed_opened_res = trn.principal_fixed_opened_res
+            item.carry_fixed_opened_res = trn.carry_fixed_opened_res
+            item.overheads_fixed_opened_res = trn.overheads_fixed_opened_res
+            item.total_fixed_opened_res = trn.total_fixed_opened_res
 
         if item.type == ReportItem.TYPE_INSTRUMENT:
             item.acc = acc or trn.acc_pos
@@ -1752,14 +1764,14 @@ class ReportBuilder(object):
             trn.pricing()
             res.append(trn)
 
-        res = self._multipliers(res)
+        res1 = self._multipliers(res)
 
         for trn in res:
             trn.calc()
 
-        res = self._transfers(res)
+        res2 = self._transfers(res1)
 
-        return res
+        return res2
 
     def _multipliers(self, src):
         rolling_positions = Counter()
@@ -1777,10 +1789,10 @@ class ReportBuilder(object):
             t0.multiplier = multiplier
             return delta
 
-        def _alloc(cur, closed, delta):
-            cur2, t2 = VirtualTransaction.approach_clone(cur, closed, delta)
+        def _approach(cur, closed, delta):
+            cur2, closed2 = VirtualTransaction.approach_clone(cur, closed, delta)
             res.append(cur2)
-            res.append(t2)
+            res.append(closed2)
 
         for t in src:
             res.append(t)
@@ -1812,7 +1824,7 @@ class ReportBuilder(object):
                     if t_key in items:
                         for t0 in items[t_key]:
                             delta = _set_mul(t0, 1.0)
-                            _alloc(t, t0, delta)
+                            _approach(t, t0, delta)
                         del items[t_key]
                     items[t_key].append(t)
                     _set_mul(t, 1.0 / k)
@@ -1822,7 +1834,7 @@ class ReportBuilder(object):
                     if t_key in items:
                         for t0 in items[t_key]:
                             delta = _set_mul(t0, 1.0)
-                            _alloc(t, t0, delta)
+                            _approach(t, t0, delta)
                         del items[t_key]
                     _set_mul(t, 1.0)
                     rolling_position = 0.0
@@ -1831,7 +1843,7 @@ class ReportBuilder(object):
                     if t_key in items:
                         for t0 in items[t_key]:
                             delta = _set_mul(t0, t0.multiplier + k * (1.0 - t0.multiplier))
-                            _alloc(t, t0, delta)
+                            _approach(t, t0, delta)
                     _set_mul(t, 1.0)
                     rolling_position += t.pos_size
 
@@ -1845,7 +1857,7 @@ class ReportBuilder(object):
                     if t_key in items:
                         for t0 in items[t_key]:
                             delta = _set_mul(t0, 1.0)
-                            _alloc(t, t0, delta)
+                            _approach(t, t0, delta)
                         items[t_key].clear()
                     items[t_key].append(t)
                     _set_mul(t, 1.0 / k)
@@ -1855,7 +1867,7 @@ class ReportBuilder(object):
                     if t_key in items:
                         for t0 in items[t_key]:
                             delta = _set_mul(t0, 1.0)
-                            _alloc(t, t0, delta)
+                            _approach(t, t0, delta)
                         del items[t_key]
                     _set_mul(t, 1.0)
                     rolling_position = 0.0
@@ -1869,16 +1881,16 @@ class ReportBuilder(object):
                             k0 = - position / remaining
                             if k0 > 1.0:
                                 delta = _set_mul(t0, 1.0)
-                                _alloc(t, t0, delta)
+                                _approach(t, t0, delta)
                                 position += remaining
                             elif isclose(k0, 1.0):
                                 delta = _set_mul(t0, 1.0)
-                                _alloc(t, t0, delta)
+                                _approach(t, t0, delta)
                                 position += remaining
                             elif k0 > 0.0:
                                 position += remaining * k0
                                 delta = _set_mul(t0, t0.multiplier + k0 * (1.0 - t0.multiplier))
-                                _alloc(t, t0, delta)
+                                _approach(t, t0, delta)
                             # else:
                             #     break
                             if isclose(position, 0.0):
