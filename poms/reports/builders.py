@@ -77,12 +77,12 @@ class _Base:
 
 class VirtualTransaction(_Base):
     trn = None
-    is_fake = False  # True for transfers and approach
     pk = None
+    is_hidden = False  # if True it is not involved in the calculations
     trn_code = None
     trn_cls = None
     # case = 0
-    multiplier = 0.0
+    multiplier = 1.0
 
     # Position related
     instr = None
@@ -144,6 +144,8 @@ class VirtualTransaction(_Base):
 
     # instr
     instr_price_cur = None
+    instr_price_cur_principal_price = 0.0
+    instr_price_cur_accrued_price = 0.0
     instr_pricing_ccy_cur = None
     instr_pricing_ccy_cur_fx = 0.0
     instr_accrued_ccy_cur = None
@@ -158,8 +160,10 @@ class VirtualTransaction(_Base):
     trn_ccy_cur_fx = 0.0
 
     # stl ccy ----------------------------------------------------
-    stl_ccy_hist = None
-    stl_ccy_hist_fx = 0.0
+    stl_ccy_cash_hist = None
+    stl_ccy_cash_hist_fx = 0.0
+    stl_ccy_acc_hist = None
+    stl_ccy_acc_hist_fx = 0.0
     stl_ccy_cur = None
     stl_ccy_cur_fx = 0.0
 
@@ -236,6 +240,7 @@ class VirtualTransaction(_Base):
 
     dump_columns = [
         'pk',
+        'is_hidden',
         'trn_cls',
         # 'case',
         'multiplier',
@@ -263,12 +268,12 @@ class VirtualTransaction(_Base):
         'carry',
         'overheads',
         'total',
-        # 'mismatch',
+        'mismatch',
         'ref_fx',
         'trn_ccy_acc_hist_fx',
         'trn_ccy_cash_hist_fx',
         'trn_ccy_cur_fx',
-        'stl_ccy_hist_fx',
+        'stl_ccy_acc_hist_fx',
         'stl_ccy_cur_fx',
         'report_ccy_cash_hist_fx',
         'report_ccy_acc_hist_fx',
@@ -285,63 +290,62 @@ class VirtualTransaction(_Base):
         # full ----------------------------------------------------
         'principal_res',
         'carry_res',
-        # 'overheads_res',
+        'overheads_res',
         'total_res',
 
-        # # full / closed ----------------------------------------------------
-        # 'principal_closed_res',
-        # 'carry_closed_res',
-        # 'overheads_closed_res',
-        # 'total_closed_res',
+        # full / closed ----------------------------------------------------
+        'principal_closed_res',
+        'carry_closed_res',
+        'overheads_closed_res',
+        'total_closed_res',
 
-        # # full / opened ----------------------------------------------------
-        # 'principal_opened_res',
-        # 'carry_opened_res',
-        # 'overheads_opened_res',
-        # 'total_opened_res',
+        # full / opened ----------------------------------------------------
+        'principal_opened_res',
+        'carry_opened_res',
+        'overheads_opened_res',
+        'total_opened_res',
 
         # fx ----------------------------------------------------
         'principal_fx_res',
         'carry_fx_res',
-        # 'overheads_fx_res',
+        'overheads_fx_res',
         'total_fx_res',
 
-        # # fx / closed ----------------------------------------------------
-        # 'principal_fx_closed_res',
-        # 'carry_fx_closed_res',
-        # 'overheads_fx_closed_res',
-        # 'total_fx_closed_res',
+        # fx / closed ----------------------------------------------------
+        'principal_fx_closed_res',
+        'carry_fx_closed_res',
+        'overheads_fx_closed_res',
+        'total_fx_closed_res',
 
-        # # fx / opened ----------------------------------------------------
-        # 'principal_fx_opened_res',
-        # 'carry_fx_opened_res',
-        # 'overheads_fx_opened_res',
-        # 'total_fx_opened_res',
+        # fx / opened ----------------------------------------------------
+        'principal_fx_opened_res',
+        'carry_fx_opened_res',
+        'overheads_fx_opened_res',
+        'total_fx_opened_res',
 
         # fixed ----------------------------------------------------
         'principal_fixed_res',
         'carry_fixed_res',
-        # 'overheads_fixed_res',
+        'overheads_fixed_res',
         'total_fixed_res',
 
-        # # fixed / closed ----------------------------------------------------
-        # 'principal_fixed_closed_res',
-        # 'carry_fixed_closed_res',
-        # 'overheads_fixed_closed_res',
-        # 'total_fixed_closed_res',
+        # fixed / closed ----------------------------------------------------
+        'principal_fixed_closed_res',
+        'carry_fixed_closed_res',
+        'overheads_fixed_closed_res',
+        'total_fixed_closed_res',
 
-        # # fixed / opened ----------------------------------------------------
-        # 'principal_fixed_opened_res',
-        # 'carry_fixed_opened_res',
-        # 'overheads_fixed_opened_res',
-        # 'total_fixed_opened_res',
+        # fixed / opened ----------------------------------------------------
+        'principal_fixed_opened_res',
+        'carry_fixed_opened_res',
+        'overheads_fixed_opened_res',
+        'total_fixed_opened_res',
     ]
 
-    def __init__(self, report, pricing_provider, fx_rate_provider, trn, is_fake=False, overrides=None):
+    def __init__(self, report, pricing_provider, fx_rate_provider, trn, overrides=None):
         super(VirtualTransaction, self).__init__(report, pricing_provider, fx_rate_provider)
         overrides = overrides or {}
         self.trn = trn
-        self.is_fake = is_fake
         self.pk = overrides.get('pk', trn.pk)
         self.trn_code = overrides.get('transaction_code', trn.transaction_code)
         self.trn_cls = overrides.get('transaction_class', trn.transaction_class)
@@ -417,6 +421,8 @@ class VirtualTransaction(_Base):
         # instr ----------------------------------------------------
         if self.instr:
             self.instr_price_cur = self.pricing_provider[self.instr]
+            self.instr_price_cur_principal_price = self.instr_price_cur.principal_price
+            self.instr_price_cur_accrued_price = self.instr_price_cur.accrued_price
             self.instr_pricing_ccy_cur = self.fx_rate_provider[self.instr.pricing_currency]
             self.instr_pricing_ccy_cur_fx = self.instr_pricing_ccy_cur.fx_rate * report_ccy_cur_fx
             self.instr_accrued_ccy_cur = self.fx_rate_provider[self.instr.accrued_currency]
@@ -433,109 +439,122 @@ class VirtualTransaction(_Base):
 
         # stl ccy ----------------------------------------------------
         if self.stl_ccy:
-            self.stl_ccy_hist = self.fx_rate_provider[self.stl_ccy, self.cash_date]
-            self.stl_ccy_hist_fx = self.stl_ccy_hist.fx_rate * report_ccy_cash_hist_fx
+            self.stl_ccy_cash_hist = self.fx_rate_provider[self.stl_ccy, self.cash_date]
+            self.stl_ccy_cash_hist_fx = self.stl_ccy_cash_hist.fx_rate * report_ccy_cash_hist_fx
+            self.stl_ccy_acc_hist = self.fx_rate_provider[self.stl_ccy, self.acc_date]
+            self.stl_ccy_acc_hist_fx = self.stl_ccy_acc_hist.fx_rate * report_ccy_cash_hist_fx
             self.stl_ccy_cur = self.fx_rate_provider[self.stl_ccy]
             self.stl_ccy_cur_fx = self.stl_ccy_cur.fx_rate * report_ccy_cur_fx
 
     def calc(self):
+        # if not self.is_hidden:
+        #     print(1)
+        if self.trn_cls.id in [TransactionClass.BUY, TransactionClass.SELL, TransactionClass.TRANSACTION_PL,
+                               TransactionClass.INSTRUMENT_PL, TransactionClass.FX_TRADE]:
+            if self.instr:
+                self.instr_principal = self.pos_size * self.instr.price_multiplier * self.instr_price_cur_principal_price
+                self.instr_principal_res = self.instr_principal * self.instr_pricing_ccy_cur_fx
 
-        if self.instr:
-            self.instr_principal = self.pos_size * self.instr.price_multiplier * self.instr_price_cur.principal_price
-            self.instr_principal_res = self.instr_principal * self.instr_pricing_ccy_cur_fx
+                self.instr_accrued = self.pos_size * self.instr.accrued_multiplier * self.instr_price_cur_accrued_price
+                self.instr_accrued_res = self.instr_accrued * self.instr_pricing_ccy_cur_fx
 
-            self.instr_accrued = self.pos_size * self.instr.accrued_multiplier * self.instr_price_cur.accrued_price
-            self.instr_accrued_res = self.instr_accrued * self.instr_pricing_ccy_cur_fx
+            # Cash related ----------------------------------------------------
 
-        # Cash related ----------------------------------------------------
+            self.cash_res = self.cash * self.stl_ccy_cur_fx
 
-        self.cash_res = self.cash * self.stl_ccy_cur_fx
+            # full P&L related ----------------------------------------------------
+            self.total = self.principal + self.carry + self.overheads
 
-        # full P&L related ----------------------------------------------------
-        self.total = self.principal + self.carry + self.overheads
-        self.mismatch = self.cash - self.total
+            self.principal_res = self.principal * self.stl_ccy_cur_fx
+            self.carry_res = self.carry * self.stl_ccy_cur_fx
+            self.overheads_res = self.overheads * self.stl_ccy_cur_fx
+            self.total_res = self.total * self.stl_ccy_cur_fx
 
-        self.principal_res = self.principal * self.stl_ccy_cur_fx
-        self.carry_res = self.carry * self.stl_ccy_cur_fx
-        self.overheads_res = self.overheads * self.stl_ccy_cur_fx
-        self.total_res = self.total * self.stl_ccy_cur_fx
+            self.pl_fx_mul = self.stl_ccy_cur_fx - self.ref_fx * self.trn_ccy_cash_hist_fx
+            self.pl_fixed_mul = self.ref_fx * self.trn_ccy_cash_hist_fx
 
-        # full / closed ----------------------------------------------------
-        self.principal_closed_res = self.principal_res * self.multiplier
-        self.carry_closed_res = self.carry_res * self.multiplier
-        self.overheads_closed_res = self.overheads_res * self.multiplier
-        self.total_closed_res = self.total_res * self.multiplier
+            # full / closed ----------------------------------------------------
+            self.principal_closed_res = self.principal_res * self.multiplier
+            self.carry_closed_res = self.carry_res * self.multiplier
+            self.overheads_closed_res = self.overheads_res * self.multiplier
+            self.total_closed_res = self.total_res * self.multiplier
 
-        # full / opened ----------------------------------------------------
-        self.principal_opened_res = self.principal_res * (1.0 - self.multiplier)
-        self.carry_opened_res = self.carry_res * (1.0 - self.multiplier)
-        self.overheads_opened_res = self.overheads_res * (1.0 - self.multiplier)
-        self.total_opened_res = self.total_res * (1.0 - self.multiplier)
+            # full / opened ----------------------------------------------------
+            self.principal_opened_res = self.principal_res * (1.0 - self.multiplier)
+            self.carry_opened_res = self.carry_res * (1.0 - self.multiplier)
+            self.overheads_opened_res = self.overheads_res * (1.0 - self.multiplier)
+            self.total_opened_res = self.total_res * (1.0 - self.multiplier)
 
-        # fx ----------------------------------------------------
-        self.pl_fx_mul = self.stl_ccy_cur_fx - self.ref_fx * self.trn_ccy_acc_hist_fx
-        self.principal_fx_res = self.principal * self.pl_fx_mul
-        self.carry_fx_res = self.carry * self.pl_fx_mul
-        self.overheads_fx_res = self.overheads * self.pl_fx_mul
-        self.total_fx_res = self.total * self.pl_fx_mul
+            # fx ----------------------------------------------------
+            self.principal_fx_res = self.principal * self.pl_fx_mul
+            self.carry_fx_res = self.carry * self.pl_fx_mul
+            self.overheads_fx_res = self.overheads * self.pl_fx_mul
+            self.total_fx_res = self.total * self.pl_fx_mul
 
-        # fx / closed ----------------------------------------------------
-        self.principal_fx_closed_res = self.principal_fx_res * self.multiplier
-        self.carry_fx_closed_res = self.carry_fx_res * self.multiplier
-        self.overheads_fx_closed_res = self.overheads_fx_res * self.multiplier
-        self.total_fx_closed_res = self.total_fx_res * self.multiplier
+            # fx / closed ----------------------------------------------------
+            self.principal_fx_closed_res = self.principal_fx_res * self.multiplier
+            self.carry_fx_closed_res = self.carry_fx_res * self.multiplier
+            self.overheads_fx_closed_res = self.overheads_fx_res * self.multiplier
+            self.total_fx_closed_res = self.total_fx_res * self.multiplier
 
-        # fx / opened ----------------------------------------------------
-        self.principal_fx_opened_res = self.principal_fx_res * (1.0 - self.multiplier)
-        self.carry_fx_opened_res = self.carry_fx_res * (1.0 - self.multiplier)
-        self.overheads_fx_opened_res = self.overheads_fx_res * (1.0 - self.multiplier)
-        self.total_fx_opened_res = self.total_fx_res * (1.0 - self.multiplier)
+            # fx / opened ----------------------------------------------------
+            self.principal_fx_opened_res = self.principal_fx_res * (1.0 - self.multiplier)
+            self.carry_fx_opened_res = self.carry_fx_res * (1.0 - self.multiplier)
+            self.overheads_fx_opened_res = self.overheads_fx_res * (1.0 - self.multiplier)
+            self.total_fx_opened_res = self.total_fx_res * (1.0 - self.multiplier)
 
-        # fixed ----------------------------------------------------
-        self.pl_fixed_mul = self.ref_fx * self.trn_ccy_acc_hist_fx
+            # fixed ----------------------------------------------------
+            self.principal_fixed_res = self.principal * self.pl_fixed_mul
+            self.carry_fixed_res = self.carry * self.pl_fixed_mul
+            self.overheads_fixed_res = self.overheads * self.pl_fixed_mul
+            self.total_fixed_res = self.total * self.pl_fixed_mul
 
-        self.principal_fixed_res = self.principal * self.pl_fixed_mul
-        self.carry_fixed_res = self.carry * self.pl_fixed_mul
-        self.overheads_fixed_res = self.overheads * self.pl_fixed_mul
-        self.total_fixed_res = self.total * self.pl_fixed_mul
+            # fixed / closed ----------------------------------------------------
+            self.principal_fixed_closed_res = self.principal_fixed_res * self.multiplier
+            self.carry_fixed_closed_res = self.carry_fixed_res * self.multiplier
+            self.overheads_fixed_closed_res = self.overheads_fixed_res * self.multiplier
+            self.total_fixed_closed_res = self.total_fixed_res * self.multiplier
 
-        # fixed / closed ----------------------------------------------------
-        self.principal_fixed_closed_res = self.principal_fixed_res * self.multiplier
-        self.carry_fixed_closed_res = self.carry_fixed_res * self.multiplier
-        self.overheads_fixed_closed_res = self.overheads_fixed_res * self.multiplier
-        self.total_fixed_closed_res = self.total_fixed_res * self.multiplier
+            # fixed / opened ----------------------------------------------------
+            self.principal_fixed_opened_res = self.principal_fixed_res * (1.0 - self.multiplier)
+            self.carry_fixed_opened_res = self.carry_fixed_res * (1.0 - self.multiplier)
+            self.overheads_fixed_opened_res = self.overheads_fixed_res * (1.0 - self.multiplier)
+            self.total_fixed_opened_res = self.total_fixed_res * (1.0 - self.multiplier)
 
-        # fixed / opened ----------------------------------------------------
-        self.principal_fixed_opened_res = self.principal_fixed_res * (1.0 - self.multiplier)
-        self.carry_fixed_opened_res = self.carry_fixed_res * (1.0 - self.multiplier)
-        self.overheads_fixed_opened_res = self.overheads_fixed_res * (1.0 - self.multiplier)
-        self.total_fixed_opened_res = self.total_fixed_res * (1.0 - self.multiplier)
+        elif self.trn_cls.id in [TransactionClass.CASH_INFLOW, TransactionClass.CASH_OUTFLOW]:
+            self.pl_fx_mul = self.stl_ccy_cur_fx - self.ref_fx * self.trn_ccy_acc_hist_fx
+            self.pl_fixed_mul = self.ref_fx * self.trn_ccy_acc_hist_fx
+
+            self.principal_res = self.cash * self.pl_fx_mul
+            self.principal_fx_res = self.principal_res
+            self.principal_fx_closed_res = self.principal_res
+
+        if self.trn_cls.id in [TransactionClass.CASH_INFLOW, TransactionClass.CASH_OUTFLOW]:
+            self.mismatch = 0.0
+        else:
+            self.mismatch = self.cash - self.total
 
     @staticmethod
     def approach_clone(cur, closed, mul_delta):
-        pos_size = closed.pos_size * mul_delta
 
-        abm = closed.report.approach_begin_multiplier * (pos_size / closed.pos_size)
-        aem = closed.report.approach_end_multiplier * (pos_size / cur.pos_size)
-
-        def _t1_a(attr):
-            setattr(t1, attr, -(getattr(closed, attr) * abm + getattr(cur, attr) * aem))
-
-        def _t1_pl(principal_attr, carry_attr, overheads_attr, total_attr):
-            _t1_a(principal_attr)
-            _t1_a(carry_attr)
-            _t1_a(overheads_attr)
-            setattr(t1, total_attr,
-                    getattr(t1, principal_attr) + getattr(t1, carry_attr) + getattr(t1, overheads_attr))
-
-        def _t2_a(attr):
-            setattr(t2, attr, - getattr(t1, attr))
-
-        def _t2_pl(principal_attr, carry_attr, overheads_attr, total_attr):
-            _t2_a(principal_attr)
-            _t2_a(carry_attr)
-            _t2_a(overheads_attr)
-            _t2_a(total_attr)
+        # def _t1_a(attr):
+        #     setattr(t1, attr, -(getattr(closed, attr) * abm + getattr(cur, attr) * aem))
+        #
+        # def _t1_pl(principal_attr, carry_attr, overheads_attr, total_attr):
+        #     _t1_a(principal_attr)
+        #     _t1_a(carry_attr)
+        #     _t1_a(overheads_attr)
+        #     setattr(t1, total_attr,
+        #             getattr(t1, principal_attr) + getattr(t1, carry_attr) + getattr(t1, overheads_attr))
+        #
+        # def _t2_a(attr):
+        #     setattr(t2, attr, - getattr(t1, attr))
+        #
+        # def _t2_pl(principal_attr, carry_attr, overheads_attr, total_attr):
+        #     _t2_a(principal_attr)
+        #     _t2_a(carry_attr)
+        #     _t2_a(overheads_attr)
+        #     _t2_a(total_attr)
 
         def _clean(t):
             t.report_ccy_cur = None
@@ -546,215 +565,163 @@ class VirtualTransaction(_Base):
             t.report_ccy_acc_hist_fx = float('nan')
 
             t.instr_price_cur = None
-            t.instr_pricing_ccy_cu = None
+            t.instr_price_cur_principal_price = float('nan')
+            t.instr_price_cur_accrued_price = float('nan')
+            t.instr_pricing_ccy_cur= None
             t.instr_pricing_ccy_cur_fx = float('nan')
             t.instr_accrued_ccy_cur = None
             t.instr_accrued_ccy_cur_fx = float('nan')
 
-            t.trn_ccy_cash_hist = float('nan')
+            t.trn_ccy_cash_hist = None
             t.trn_ccy_cash_hist_fx = float('nan')
-            t.trn_ccy_acc_hist = float('nan')
+            t.trn_ccy_acc_hist = None
             t.trn_ccy_acc_hist_fx = float('nan')
-            t.trn_ccy_cur = float('nan')
+            t.trn_ccy_cur = None
             t.trn_ccy_cur_fx = float('nan')
 
-            t.stl_ccy_hist = float('nan')
-            t.stl_ccy_hist_fx =float('nan')
-            t.stl_ccy_cur = float('nan')
-            t.stl_ccy_cur_fx =float('nan')
+            t.stl_ccy_cash_hist = None
+            t.stl_ccy_cash_hist_fx = float('nan')
+            t.stl_ccy_acc_hist = None
+            t.stl_ccy_acc_hist_fx = float('nan')
+            t.stl_ccy_cur = None
+            t.stl_ccy_cur_fx = float('nan')
 
             t.mismatch = 0.0
             t.multiplier = 1.0
-            t.cash = float('nan')
+            t.cash = 0.0
+            t.cash_res = 0.0
 
             t.instr_principal = float('nan')
+            t.instr_principal_res = 0.0
             t.instr_accrued = float('nan')
+            t.instr_accrued_res = 0.0
 
             t.principal = float('nan')
             t.carry = float('nan')
             t.overheads = float('nan')
             t.total = float('nan')
 
+            t.pl_fx_mul = float('nan')
+            t.pl_fixed_mul = float('nan')
+
+        pos_size = closed.pos_size * mul_delta
+
+        abm = closed.report.approach_begin_multiplier * (pos_size / closed.pos_size)
+        aem = closed.report.approach_end_multiplier * (pos_size / cur.pos_size)
+
         # t1 ----
         t1 = closed.clone()
-        t1.is_fake = True
         t1.trn_cls = cur.trn_cls
         t1.pk = 'a1,%s,%s,%s' % (closed.pk, cur.pk, t1.trn_cls)
 
         _clean(t1)
 
         t1.pos_size = -pos_size
-        # t1.mismatch = 0.0
-        # t1.multiplier = 1.0
-        # t1.cash = -0.0
 
-        # t1.ref_fx = float('nan')
+        t1.principal_res = -(closed.principal_res * abm + cur.principal_res * aem)
+        t1.carry_res = -(closed.carry_res * abm + cur.carry_res * aem)
+        t1.overheads_res = -(closed.overheads_res * abm + cur.overheads_res * aem)
+        t1.total_res = t1.principal_res + t1.carry_res + t1.overheads_res
 
-        # t1.instr_principal = float('nan')
-        _t1_a('instr_principal_res')
-        # t1.instr_accrued = float('nan')
-        _t1_a('instr_accrued_res')
+        t1.principal_closed_res = -(closed.principal_closed_res * abm + cur.principal_closed_res * aem)
+        t1.carry_closed_res = -(closed.carry_closed_res * abm + cur.carry_closed_res * aem)
+        t1.overheads_closed_res = -(closed.overheads_closed_res * abm + cur.overheads_closed_res * aem)
+        t1.total_closed_res = t1.principal_closed_res + t1.carry_closed_res + t1.overheads_closed_res
 
-        # t1.principal = -(t1.principal * abm + t2.principal * aem)
-        # t1.carry = -(t1.carry * abm + t2.carry * aem)
-        # t1.overheads = -(t1.overheads * abm + t2.overheads * aem)
-        # t1.total = t1.principal + t1.carry + t1.overheads
-        # t1.principal = float('nan')
-        # t1.carry = float('nan')
-        # t1.overheads = float('nan')
-        # t1.total = float('nan')
-        # _t1_pl('principal', 'carry', 'overheads', 'total')
+        t1.principal_opened_res = -(closed.principal_opened_res * abm + cur.principal_opened_res * aem)
+        t1.carry_opened_res = -(closed.carry_opened_res * abm + cur.carry_opened_res * aem)
+        t1.overheads_opened_res = -(closed.overheads_opened_res * abm + cur.overheads_opened_res * aem)
+        t1.total_opened_res = t1.principal_opened_res + t1.carry_opened_res + t1.overheads_opened_res
 
-        # t1.principal_res = -(t1.principal_res * abm + t2.principal_res * aem)
-        # t1.carry_res = -(t1.carry_res * abm + t2.carry_res * aem)
-        # t1.overheads_res = -(t1.overheads_res * abm + t2.overheads_res * aem)
-        # t1.total_res = t1.principal_res + t1.carry_res + t1.overheads_res
-        _t1_pl('principal_res', 'carry_res', 'overheads_res', 'total_res')
+        t1.principal_fx_res = -(closed.principal_fx_res * abm + cur.principal_fx_res * aem)
+        t1.carry_fx_res = -(closed.carry_fx_res * abm + cur.carry_fx_res * aem)
+        t1.overheads_fx_res = -(closed.overheads_fx_res * abm + cur.overheads_fx_res * aem)
+        t1.total_fx_res = t1.principal_fx_res + t1.carry_fx_res + t1.overheads_fx_res
 
-        # t1.principal_closed_res = -(t1.principal_closed_res * abm + t2.principal_closed_res * aem)
-        # t1.carry_closed_res = -(t1.carry_closed_res * abm + t2.carry_closed_res * aem)
-        # t1.overheads_closed_res = -(t1.overheads_closed_res * abm + t2.overheads_closed_res * aem)
-        # t1.total_closed_res = t1.principal_closed_res + t1.carry_closed_res + t1.overheads_closed_res
-        _t1_pl('principal_closed_res', 'carry_closed_res', 'overheads_closed_res', 'total_closed_res')
+        t1.principal_fx_closed_res = -(closed.principal_fx_closed_res * abm + cur.principal_fx_closed_res * aem)
+        t1.carry_fx_closed_res = -(closed.carry_fx_closed_res * abm + cur.carry_fx_closed_res * aem)
+        t1.overheads_fx_closed_res = -(closed.overheads_fx_closed_res * abm + cur.overheads_fx_closed_res * aem)
+        t1.total_fx_closed_res = t1.principal_fx_closed_res + t1.carry_fx_closed_res + t1.overheads_fx_closed_res
 
-        # t1.principal_opened_res = -(t1.principal_opened_res * abm + t2.principal_opened_res * aem)
-        # t1.carry_opened_res = -(t1.carry_opened_res * abm + t2.carry_opened_res * aem)
-        # t1.overheads_opened_res = -(t1.overheads_opened_res * abm + t2.overheads_opened_res * aem)
-        # t1.total_opened_res = t1.principal_opened_res + t1.carry_opened_res + t1.overheads_opened_res
-        _t1_pl('principal_opened_res', 'carry_opened_res', 'overheads_opened_res', 'total_opened_res')
+        t1.principal_fx_opened_res = -(closed.principal_fx_opened_res * abm + cur.principal_fx_opened_res * aem)
+        t1.carry_fx_opened_res = -(closed.carry_fx_opened_res * abm + cur.carry_fx_opened_res * aem)
+        t1.overheads_fx_opened_res = -(closed.overheads_fx_opened_res * abm + cur.overheads_fx_opened_res * aem)
+        t1.total_fx_opened_res = t1.principal_fx_opened_res + t1.carry_fx_opened_res + t1.overheads_fx_opened_res
 
-        t1.pl_fx_mul = float('nan')
-        # t1.principal_fx_res = -(t1.principal_fx_res * abm + t2.principal_fx_res * aem)
-        # t1.carry_fx_res = -(t1.carry_fx_res * abm + t2.carry_fx_res * aem)
-        # t1.overheads_fx_res = -(t1.overheads_fx_res * abm + t2.overheads_fx_res * aem)
-        # t1.total_fx_res = t1.principal_fx_res + t1.carry_fx_res + t1.overheads_fx_res
-        _t1_pl('principal_fx_res', 'carry_fx_res', 'overheads_fx_res', 'total_fx_res')
+        t1.principal_fixed_res = -(closed.principal_fixed_res * abm + cur.principal_fixed_res * aem)
+        t1.carry_fixed_res = -(closed.carry_fixed_res * abm + cur.carry_fixed_res * aem)
+        t1.overheads_fixed_res = -(closed.overheads_fixed_res * abm + cur.overheads_fixed_res * aem)
+        t1.total_fixed_res = t1.principal_fixed_res + t1.carry_fixed_res + t1.overheads_fixed_res
 
-        # t1.principal_fx_closed_res = -(t1.principal_fx_closed_res * abm + t2.principal_fx_closed_res * aem)
-        # t1.carry_fx_closed_res = -(t1.carry_fx_closed_res * abm + t2.carry_fx_closed_res * aem)
-        # t1.overheads_fx_closed_res = -(t1.overheads_fx_closed_res * abm + t2.overheads_fx_closed_res * aem)
-        # t1.total_fx_closed_res = t1.principal_fx_closed_res + t1.carry_fx_closed_res + t1.overheads_fx_closed_res
-        _t1_pl('principal_fx_closed_res', 'carry_fx_closed_res', 'overheads_fx_closed_res', 'total_fx_closed_res')
+        t1.principal_fixed_closed_res = -(closed.principal_fixed_closed_res * abm + cur.principal_fixed_closed_res * aem)
+        t1.carry_fixed_closed_res = -(closed.carry_fixed_closed_res * abm + cur.carry_fixed_closed_res * aem)
+        t1.overheads_fixed_closed_res = -(closed.overheads_fixed_closed_res * abm + cur.overheads_fixed_closed_res * aem)
+        t1.total_fixed_closed_res = t1.principal_fixed_closed_res + t1.carry_fixed_closed_res + t1.overheads_fixed_closed_res
 
-        # t1.principal_fx_opened_res = -(t1.principal_fx_opened_res * abm + t2.principal_fx_opened_res * aem)
-        # t1.carry_fx_opened_res = -(t1.carry_fx_opened_res * abm + t2.carry_fx_opened_res * aem)
-        # t1.overheads_fx_opened_res = -(t1.overheads_fx_opened_res * abm + t2.overheads_fx_opened_res * aem)
-        # t1.total_fx_opened_res = t1.principal_fx_opened_res + t1.carry_fx_opened_res + t1.overheads_fx_opened_res
-        _t1_pl('principal_fx_opened_res', 'carry_fx_opened_res', 'overheads_fx_opened_res', 'total_fx_opened_res')
-
-        t1.pl_fixed_mul = float('nan')
-        # t1.principal_fixed_res = -(t1.principal_fixed_res * abm + t2.principal_fixed_res * aem)
-        # t1.carry_fixed_res = -(t1.carry_fixed_res * abm + t2.carry_fixed_res * aem)
-        # t1.overheads_fixed_res = -(t1.overheads_fixed_res * abm + t2.overheads_fixed_res * aem)
-        # t1.total_fixed_res = t1.principal_fixed_res + t1.carry_fixed_res + t1.overheads_fixed_res
-        _t1_pl('principal_fixed_res', 'carry_fixed_res', 'overheads_fixed_res', 'total_fixed_res')
-
-        # t1.principal_fixed_closed_res = -(t1.principal_fixed_closed_res * abm + t2.principal_fixed_closed_res * aem)
-        # t1.carry_fixed_closed_res = -(t1.carry_fixed_closed_res * abm + t2.carry_fixed_closed_res * aem)
-        # t1.overheads_fixed_closed_res = -(t1.overheads_fixed_closed_res * abm + t2.overheads_fixed_closed_res * aem)
-        # t1.total_fixed_closed_res = t1.principal_fixed_closed_res + t1.carry_fixed_closed_res + t1.overheads_fixed_closed_res
-        _t1_pl('principal_fixed_closed_res', 'carry_fixed_closed_res', 'overheads_fixed_closed_res',
-               'total_fixed_closed_res')
-
-        # t1.principal_fixed_opened_res = -(t1.principal_fixed_opened_res * abm + t2.principal_fixed_opened_res * aem)
-        # t1.carry_fixed_opened_res = -(t1.carry_fixed_opened_res * abm + t2.carry_fixed_opened_res * aem)
-        # t1.overheads_fixed_opened_res = -(t1.overheads_fixed_opened_res * abm + t2.overheads_fixed_opened_res * aem)
-        # t1.total_fixed_opened_res = t1.principal_fixed_opened_res + t1.carry_fixed_opened_res + t1.overheads_fixed_opened_res
-        _t1_pl('principal_fixed_opened_res', 'carry_fixed_opened_res', 'overheads_fixed_opened_res',
-               'total_fixed_opened_res')
+        t1.principal_fixed_opened_res = -(closed.principal_fixed_opened_res * abm + cur.principal_fixed_opened_res * aem)
+        t1.carry_fixed_opened_res = -(closed.carry_fixed_opened_res * abm + cur.carry_fixed_opened_res * aem)
+        t1.overheads_fixed_opened_res = -(closed.overheads_fixed_opened_res * abm + cur.overheads_fixed_opened_res * aem)
+        t1.total_fixed_opened_res = t1.principal_fixed_opened_res + t1.carry_fixed_opened_res + t1.overheads_fixed_opened_res
 
         # t2 ----
         t2 = cur.clone()
-        t2.is_fake = True
         t2.trn_cls = closed.trn_cls
         t2.pk = 'a2,%s,%s,%s' % (closed.pk, cur.pk, t2.trn_cls)
 
         _clean(t2)
 
-        # t2.mismatch = 0.0
-        # t2.multiplier = 1.0
-        # t2.pos_size = -t1.pos_size
-        # t2.cash = -t1.cash
-        _t2_a('pos_size')
-        # _t2_a('cash')
+        t2.pos_size = -t1.pos_size
 
-        # _t2_a('instr_principal')
-        _t2_a('instr_principal_res')
-        # _t2_a('instr_accrued')
-        _t2_a('instr_accrued_res')
+        t2.principal_res = -t1.principal_res
+        t2.carry_res = -t1.carry_res
+        t2.overheads_res = -t1.overheads_res
+        t2.total_res = -t1.total_res
 
-        # t2.principal = -t1.principal
-        # t2.carry = -t1.carry
-        # t2.overheads = -t1.overheads
-        # t2.total = -t1.total
-        # _t2_pl('principal', 'carry', 'overheads', 'total')
+        t2.principal_closed_res = -t1.principal_closed_res
+        t2.carry_closed_res = -t1.carry_closed_res
+        t2.overheads_closed_res = -t1.overheads_closed_res
+        t2.total_closed_res = -t1.total_closed_res
 
-        # t2.principal_res = -t1.principal_res
-        # t2.carry_res = -t1.carry_res
-        # t2.overheads_res = -t1.overheads_res
-        # t2.total_res = -t1.total_res
-        _t2_pl('principal_res', 'carry_res', 'overheads_res', 'total_res')
+        t2.principal_opened_res = -t1.principal_opened_res
+        t2.carry_opened_res = -t1.carry_opened_res
+        t2.overheads_opened_res = -t1.overheads_opened_res
+        t2.total_opened_res = -t1.total_opened_res
 
-        # t2.principal_closed_res = -t1.principal_closed_res
-        # t2.carry_closed_res = -t1.carry_closed_res
-        # t2.overheads_closed_res = -t1.overheads_closed_res
-        # t2.total_closed_res = -t1.total_closed_res
-        _t2_pl('principal_closed_res', 'carry_closed_res', 'overheads_closed_res', 'total_closed_res')
+        t2.principal_fx_res = -t1.principal_fx_res
+        t2.carry_fx_res = -t1.carry_fx_res
+        t2.overheads_fx_res = -t1.overheads_fx_res
+        t2.total_fx_res = -t1.total_fx_res
 
-        # t2.principal_opened_res = -t1.principal_opened_res
-        # t2.carry_opened_res = -t1.carry_opened_res
-        # t2.overheads_opened_res = -t1.overheads_opened_res
-        # t2.total_opened_res = -t1.total_opened_res
-        _t2_pl('principal_opened_res', 'carry_opened_res', 'overheads_opened_res', 'total_opened_res')
+        t2.principal_fx_closed_res = -t1.principal_fx_closed_res
+        t2.carry_fx_closed_res = -t1.carry_fx_closed_res
+        t2.overheads_fx_closed_res = -t1.overheads_fx_closed_res
+        t2.total_fx_closed_res = -t1.total_fx_closed_res
 
-        # t2.pl_fx_mul = -t1.pl_fx_mul
-        _t2_a('pl_fx_mul')
-        # t2.principal_fx_res = -t1.principal_fx_res
-        # t2.carry_fx_res = -t1.carry_fx_res
-        # t2.overheads_fx_res = -t1.overheads_fx_res
-        # t2.total_fx_res = -t1.total_fx_res
-        _t2_pl('principal_fx_res', 'carry_fx_res', 'overheads_fx_res', 'total_fx_res')
+        t2.principal_fx_opened_res = -t1.principal_fx_opened_res
+        t2.carry_fx_opened_res = -t1.carry_fx_opened_res
+        t2.overheads_fx_opened_res = -t1.overheads_fx_opened_res
+        t2.total_fx_opened_res = -t1.total_fx_opened_res
 
-        # t2.principal_fx_closed_res = -t1.principal_fx_closed_res
-        # t2.carry_fx_closed_res = -t1.carry_fx_closed_res
-        # t2.overheads_fx_closed_res = -t1.overheads_fx_closed_res
-        # t2.total_fx_closed_res = -t1.total_fx_closed_res
-        _t2_pl('principal_fx_closed_res', 'carry_fx_closed_res', 'overheads_fx_closed_res', 'total_fx_closed_res')
+        t2.principal_fixed_res = -t1.principal_fixed_res
+        t2.carry_fixed_res = -t1.carry_fixed_res
+        t2.overheads_fixed_res = -t1.overheads_fixed_res
+        t2.total_fixed_res = -t1.total_fixed_res
 
-        # t2.principal_fx_opened_res = -t1.principal_fx_opened_res
-        # t2.carry_fx_opened_res = -t1.carry_fx_opened_res
-        # t2.overheads_fx_opened_res = -t1.overheads_fx_opened_res
-        # t2.total_fx_opened_res = -t1.total_fx_opened_res
-        _t2_pl('principal_fx_opened_res', 'carry_fx_opened_res', 'overheads_fx_opened_res', 'total_fx_opened_res')
+        t2.principal_fixed_closed_res = -t1.principal_fixed_closed_res
+        t2.carry_fixed_closed_res = -t1.carry_fixed_closed_res
+        t2.overheads_fixed_closed_res = -t1.overheads_fixed_closed_res
+        t2.total_fixed_closed_res = -t1.total_fixed_closed_res
 
-        # t2.pl_fixed_mul = -t1.pl_fixed_mul
-        _t2_a('pl_fixed_mul')
-        # t2.principal_fixed_res = -t1.principal_fixed_res
-        # t2.carry_fixed_res = -t1.carry_fixed_res
-        # t2.overheads_fixed_res = -t1.overheads_fixed_res
-        # t2.total_fixed_res = -t1.total_fixed_res
-        _t2_pl('principal_fixed_res', 'carry_fixed_res', 'overheads_fixed_res', 'total_fixed_res')
-
-        # t2.principal_fixed_closed_res = -t1.principal_fixed_closed_res
-        # t2.carry_fixed_closed_res = -t1.carry_fixed_closed_res
-        # t2.overheads_fixed_closed_res = -t1.overheads_fixed_closed_res
-        # t2.total_fixed_closed_res = -t1.total_fixed_closed_res
-        _t2_pl('principal_fixed_closed_res', 'carry_fixed_closed_res', 'overheads_fixed_closed_res',
-               'total_fixed_closed_res')
-
-        # t2.principal_fixed_opened_res = -t1.principal_fixed_opened_res
-        # t2.carry_fixed_opened_res = -t1.carry_fixed_opened_res
-        # t2.overheads_fixed_opened_res = -t1.overheads_fixed_opened_res
-        # t2.total_fixed_opened_res = -t1.total_fixed_opened_res
-        _t2_pl('principal_fixed_opened_res', 'carry_fixed_opened_res', 'overheads_fixed_opened_res',
-               'total_fixed_opened_res')
+        t2.principal_fixed_opened_res = -t1.principal_fixed_opened_res
+        t2.carry_fixed_opened_res = -t1.carry_fixed_opened_res
+        t2.overheads_fixed_opened_res = -t1.overheads_fixed_opened_res
+        t2.total_fixed_opened_res = -t1.total_fixed_opened_res
 
         return t1, t2
 
     def transfer_clone(self, t1_cls, t2_cls, t1_pos_sign=-1.0, t1_cash_sign=1.0):
         # t1
         t1 = self.clone()
-        t1.is_fake = True
         t1.trn_cls = t1_cls
         t1.acc_pos = self.acc_cash
         t1.acc_cash = self.acc_cash
@@ -774,7 +741,6 @@ class VirtualTransaction(_Base):
 
         # t2
         t2 = self.clone()
-        t2.is_fake = True
         t2.trn_cls = t2_cls
         t2.acc_pos = self.acc_cash
         t2.acc_cash = self.acc_cash
@@ -790,6 +756,31 @@ class VirtualTransaction(_Base):
         t2.principal = -t1.pos_size
         t2.carry = -t1.pos_size
         t2.overheads = -t1.pos_size
+        t2.calc()
+        return t1, t2
+
+    def fx_trade_clone(self):
+        # t1
+        t1 = self.clone()
+        t1.is_hidden = False
+        t1.trn_ccy = self.trn_ccy
+        t1.stl_ccy = self.trn_ccy
+        t1.principal = self.pos_size
+        t1.cash = self.pos_size
+        t1.ref_fx = 1.0
+        t1.pricing()
+        t1.calc()
+
+        # t2
+        t2 = self.clone()
+        t2.is_hidden = False
+        t2.trn_ccy = self.trn_ccy
+        t2.stl_ccy = self.stl_ccy
+        t2.pos_size = self.principal
+        t2.cash = self.principal
+        t2.principal = self.principal
+        t2.ref_fx = abs(self.pos_size / self.principal)
+        t2.pricing()
         t2.calc()
         return t1, t2
 
@@ -850,6 +841,8 @@ class ReportItem(_Base):
     report_ccy_cur = None
     report_ccy_cur_fx = 0.0
     instr_price_cur = None
+    instr_price_cur_principal_price = 0.0
+    instr_price_cur_accrued_price = 0.0
     instr_pricing_ccy_cur = None
     instr_pricing_ccy_cur_fx = 0.0
     instr_accrued_ccy_cur = None
@@ -924,20 +917,21 @@ class ReportItem(_Base):
     dump_columns = [
         'type_code',
         'user_code',
-        # 'prtfl',
-        # 'acc',
-        # 'str1',
-        # 'str2',
-        # 'str3',
-        # 'detail_trn',
-        # 'instr',
-        # 'ccy',
-        # 'alloc_bl',
-        # 'alloc_pl',
+        'prtfl',
+        'acc',
+        'str1',
+        'str2',
+        'str3',
+        'detail_trn',
+        'instr',
+        'ccy',
+        'alloc_bl',
+        'alloc_pl',
         'pos_size',
         'market_value_res',
-        # 'mismatch_ccy',
-        # 'mismatch',
+        'mismatch_ccy',
+        'mismatch',
+
         # 'cost_res',
         'instr_principal_res',
         'instr_accrued_res',
@@ -945,56 +939,56 @@ class ReportItem(_Base):
         # full ----------------------------------------------------
         'principal_res',
         'carry_res',
-        # 'overheads_res',
+        'overheads_res',
         'total_res',
 
-        # # full / closed ----------------------------------------------------
-        # 'principal_closed_res',
-        # 'carry_closed_res',
-        # 'overheads_closed_res',
-        # 'total_closed_res',
+        # full / closed ----------------------------------------------------
+        'principal_closed_res',
+        'carry_closed_res',
+        'overheads_closed_res',
+        'total_closed_res',
 
-        # # full / opened ----------------------------------------------------
-        # 'principal_opened_res',
-        # 'carry_opened_res',
-        # 'overheads_opened_res',
-        # 'total_opened_res',
+        # full / opened ----------------------------------------------------
+        'principal_opened_res',
+        'carry_opened_res',
+        'overheads_opened_res',
+        'total_opened_res',
 
         # fx ----------------------------------------------------
         'principal_fx_res',
         'carry_fx_res',
-        # 'overheads_fx_res',
+        'overheads_fx_res',
         'total_fx_res',
 
-        # # fx / closed ----------------------------------------------------
-        # 'principal_fx_closed_res',
-        # 'carry_fx_closed_res',
-        # 'overheads_fx_closed_res',
-        # 'total_fx_closed_res',
+        # fx / closed ----------------------------------------------------
+        'principal_fx_closed_res',
+        'carry_fx_closed_res',
+        'overheads_fx_closed_res',
+        'total_fx_closed_res',
 
-        # # fx / opened ----------------------------------------------------
-        # 'principal_fx_opened_res',
-        # 'carry_fx_opened_res',
-        # 'overheads_fx_opened_res',
-        # 'total_fx_opened_res',
+        # fx / opened ----------------------------------------------------
+        'principal_fx_opened_res',
+        'carry_fx_opened_res',
+        'overheads_fx_opened_res',
+        'total_fx_opened_res',
 
         # fixed ----------------------------------------------------
         'principal_fixed_res',
         'carry_fixed_res',
-        # 'overheads_fixed_res',
+        'overheads_fixed_res',
         'total_fixed_res',
 
-        # # fixed / closed ----------------------------------------------------
-        # 'principal_fixed_closed_res',
-        # 'carry_fixed_closed_res',
-        # 'overheads_fixed_closed_res',
-        # 'total_fixed_closed_res',
+        # fixed / closed ----------------------------------------------------
+        'principal_fixed_closed_res',
+        'carry_fixed_closed_res',
+        'overheads_fixed_closed_res',
+        'total_fixed_closed_res',
 
-        # # fixed / opened ----------------------------------------------------
-        # 'principal_fixed_opened_res',
-        # 'carry_fixed_opened_res',
-        # 'overheads_fixed_opened_res',
-        # 'total_fixed_opened_res',
+        # fixed / opened ----------------------------------------------------
+        'principal_fixed_opened_res',
+        'carry_fixed_opened_res',
+        'overheads_fixed_opened_res',
+        'total_fixed_opened_res',
     ]
 
     def __init__(self, report, pricing_provider, fx_rate_provider, type):
@@ -1010,9 +1004,62 @@ class ReportItem(_Base):
         # item.instr = instr  # -> Instrument
         # item.ccy = ccy  # -> Currency
         item.prtfl = prtfl or trn.prtfl  # -> Portfolio
-
         item.alloc_bl = trn.alloc_bl
         item.alloc_pl = trn.alloc_pl
+
+        # full ----------------------------------------------------
+        item.principal_res = trn.principal_res
+        item.carry_res = trn.carry_res
+        item.overheads_res = trn.overheads_res
+        item.total_res = trn.total_res
+
+        # full / closed ----------------------------------------------------
+        item.principal_closed_res = trn.principal_closed_res
+        item.carry_closed_res = trn.carry_closed_res
+        item.overheads_closed_res = trn.overheads_closed_res
+        item.total_closed_res = trn.total_closed_res
+
+        # full / opened ----------------------------------------------------
+        item.principal_opened_res = trn.principal_opened_res
+        item.carry_opened_res = trn.carry_opened_res
+        item.overheads_opened_res = trn.overheads_opened_res
+        item.total_opened_res = trn.total_opened_res
+
+        # fx ----------------------------------------------------
+        item.principal_fx_res = trn.principal_fx_res
+        item.carry_fx_res = trn.carry_fx_res
+        item.overheads_fx_res = trn.overheads_fx_res
+        item.total_fx_res = trn.total_fx_res
+
+        # fx / closed ----------------------------------------------------
+        item.principal_fx_closed_res = trn.principal_fx_closed_res
+        item.carry_fx_closed_res = trn.carry_fx_closed_res
+        item.overheads_fx_closed_res = trn.overheads_fx_closed_res
+        item.total_fx_closed_res = trn.total_fx_closed_res
+
+        # fx / opened ----------------------------------------------------
+        item.principal_fx_opened_res = trn.principal_fx_opened_res
+        item.carry_fx_opened_res = trn.carry_fx_opened_res
+        item.overheads_fx_opened_res = trn.overheads_fx_opened_res
+        item.total_fx_opened_res = trn.total_fx_opened_res
+
+        # fixed ----------------------------------------------------
+        item.principal_fixed_res = trn.principal_fixed_res
+        item.carry_fixed_res = trn.carry_fixed_res
+        item.overheads_fixed_res = trn.overheads_fixed_res
+        item.total_fixed_res = trn.total_fixed_res
+
+        # fixed / closed ----------------------------------------------------
+        item.principal_fixed_closed_res = trn.principal_fixed_closed_res
+        item.carry_fixed_closed_res = trn.carry_fixed_closed_res
+        item.overheads_fixed_closed_res = trn.overheads_fixed_closed_res
+        item.total_fixed_closed_res = trn.total_fixed_closed_res
+
+        # fixed / opened ----------------------------------------------------
+        item.principal_fixed_opened_res = trn.principal_fixed_opened_res
+        item.carry_fixed_opened_res = trn.carry_fixed_opened_res
+        item.overheads_fixed_opened_res = trn.overheads_fixed_opened_res
+        item.total_fixed_opened_res = trn.total_fixed_opened_res
 
         if item.type == ReportItem.TYPE_INSTRUMENT:
             item.acc = acc or trn.acc_pos
@@ -1024,51 +1071,6 @@ class ReportItem(_Base):
             item.pos_size = trn.pos_size * (1.0 - trn.multiplier)
             item.cost_res = trn.principal_res * (1.0 - trn.multiplier)
 
-            # full ----------------------------------------------------
-            item.principal_res = trn.principal_res
-            item.carry_res = trn.carry_res
-            item.overheads_res = trn.overheads_res
-
-            # full / closed ----------------------------------------------------
-            item.principal_closed_res = trn.principal_closed_res
-            item.carry_closed_res = trn.carry_closed_res
-            item.overheads_closed_res = trn.overheads_closed_res
-
-            # full / opened ----------------------------------------------------
-            item.principal_opened_res = trn.principal_opened_res
-            item.carry_opened_res = trn.carry_opened_res
-            item.overheads_opened_res = trn.overheads_opened_res
-
-            # fx ----------------------------------------------------
-            item.principal_fx_res = trn.principal_fx_res
-            item.carry_fx_res = trn.carry_fx_res
-            item.overheads_fx_res = trn.overheads_fx_res
-
-            # fx / closed ----------------------------------------------------
-            item.principal_fx_closed_res = trn.principal_fx_closed_res
-            item.carry_fx_closed_res = trn.carry_fx_closed_res
-            item.overheads_fx_closed_res = trn.overheads_fx_closed_res
-
-            # fx / opened ----------------------------------------------------
-            item.principal_fx_opened_res = trn.principal_fx_opened_res
-            item.carry_fx_opened_res = trn.carry_fx_opened_res
-            item.overheads_fx_opened_res = trn.overheads_fx_opened_res
-
-            # fixed ----------------------------------------------------
-            item.principal_fixed_res = trn.principal_fixed_res
-            item.carry_fixed_res = trn.carry_fixed_res
-            item.overheads_fixed_res = trn.overheads_fixed_res
-
-            # fixed / closed ----------------------------------------------------
-            item.principal_fixed_closed_res = trn.principal_fixed_closed_res
-            item.carry_fixed_closed_res = trn.carry_fixed_closed_res
-            item.overheads_fixed_closed_res = trn.overheads_fixed_closed_res
-
-            # fixed / opened ----------------------------------------------------
-            item.principal_fixed_opened_res = trn.principal_fixed_opened_res
-            item.carry_fixed_opened_res = trn.carry_fixed_opened_res
-            item.overheads_fixed_opened_res = trn.overheads_fixed_opened_res
-
         elif item.type == ReportItem.TYPE_CURRENCY:
             item.acc = acc or trn.acc_cash
             item.str1 = str1 or trn.str1_cash
@@ -1079,24 +1081,28 @@ class ReportItem(_Base):
             item.pos_size = val
 
         elif item.type == ReportItem.TYPE_FX_TRADE:
-            item.principal_res = trn.principal_res
-            item.carry_res = trn.carry_res
-            item.overheads_res = trn.overheads_res
+            item.acc = acc or trn.acc_cash
+            item.str1 = str1 or trn.str1_cash
+            item.str2 = str2 or trn.str2_cash
+            item.str3 = str3 or trn.str3_cash
+
+            # item.principal_res = trn.principal_res
+            # item.carry_res = trn.carry_res
+            # item.overheads_res = trn.overheads_res
 
         elif item.type == ReportItem.TYPE_TRANSACTION_PL:
-            item.principal_res = trn.principal_res
-            item.carry_res = trn.carry_res
-            item.overheads_res = trn.overheads_res
+            # item.principal_res = trn.principal_res
+            # item.carry_res = trn.carry_res
+            # item.overheads_res = trn.overheads_res
+            pass
 
         elif item.type == ReportItem.TYPE_MISMATCH:
-            item.instr = trn.link_instr
-
             item.prtfl = item.report.master_user.mismatch_portfolio
             item.acc = item.report.master_user.mismatch_account
-
             item.str1 = item.report.master_user.strategy1
             item.str2 = item.report.master_user.strategy2
             item.str3 = item.report.master_user.strategy3
+            item.instr = trn.link_instr
 
             item.mismatch_prtfl = trn.prtfl
             item.mismatch_acc = trn.acc_pos
@@ -1159,7 +1165,6 @@ class ReportItem(_Base):
             getattr(item.prtfl, 'id', None),
             getattr(item.acc, 'id', None),
             getattr(item.instr, 'id', None),
-            getattr(item.mismatch_pr, 'id', None),
             getattr(item.mismatch_prtfl, 'id', None),
             getattr(item.mismatch_acc, 'id', None),
         )
@@ -1318,6 +1323,8 @@ class ReportItem(_Base):
 
         if self.instr:
             self.instr_price_cur = self.pricing_provider[self.instr]
+            self.instr_price_cur_principal_price = self.instr_price_cur.principal_price
+            self.instr_price_cur_accrued_price = self.instr_price_cur.accrued_price
             self.instr_pricing_ccy_cur = self.fx_rate_provider[self.instr.pricing_currency]
             self.instr_pricing_ccy_cur_fx = self.instr_pricing_ccy_cur.fx_rate * report_ccy_cur_fx
             self.instr_accrued_ccy_cur = self.fx_rate_provider[self.instr.accrued_currency]
@@ -1405,8 +1412,8 @@ class ReportItem(_Base):
             self.market_value_res = self.pos_size * self.ccy_cur_fx
 
         elif self.type == ReportItem.TYPE_INSTRUMENT:
-            self.instr_principal_res = self.pos_size * self.instr.price_multiplier * self.instr_price_cur.principal_price * self.instr_pricing_ccy_cur_fx
-            self.instr_accrued_res = self.pos_size * self.instr.accrued_multiplier * self.instr_price_cur.accrued_price * self.instr_pricing_ccy_cur_fx
+            self.instr_principal_res = self.pos_size * self.instr.price_multiplier * self.instr_price_cur_principal_price * self.instr_pricing_ccy_cur_fx
+            self.instr_accrued_res = self.pos_size * self.instr.accrued_multiplier * self.instr_price_cur_accrued_price * self.instr_pricing_ccy_cur_fx
 
             self.market_value_res = self.instr_principal_res + self.instr_accrued_res
 
@@ -1743,10 +1750,13 @@ class ReportBuilder(object):
                 overrides=overrides
             )
             trn.pricing()
-            trn.calc()
             res.append(trn)
 
         res = self._multipliers(res)
+
+        for trn in res:
+            trn.calc()
+
         res = self._transfers(res)
 
         return res
@@ -1768,8 +1778,8 @@ class ReportBuilder(object):
             return delta
 
         def _alloc(cur, closed, delta):
-            t1, t2 = VirtualTransaction.approach_clone(cur, closed, delta)
-            res.append(t1)
+            cur2, t2 = VirtualTransaction.approach_clone(cur, closed, delta)
+            res.append(cur2)
             res.append(t2)
 
         for t in src:
@@ -1930,244 +1940,35 @@ class ReportBuilder(object):
         res = []
 
         for t in src:
-            if t.trn_cls.id == TransactionClass.TRANSFER:
+            res.append(t)
+
+            if t.trn_cls.id == TransactionClass.FX_TRADE:
+                t.is_hidden = True
+
+                t1, t2 = t.fx_trade_clone()
+                res.append(t1)
+                res.append(t2)
+
+            elif t.trn_cls.id == TransactionClass.TRANSFER:
+                t.is_hidden = True
                 # split TRANSFER to sell/buy or buy/sell
 
-                res.append(t)
-
                 if t.pos_size >= 0:
-                    # # t1 = VirtualTransaction(
-                    # #     report=self.instance,
-                    # #     pricing_provider=self._pricing_provider,
-                    # #     fx_rate_provider=self._fx_rate_provider,
-                    # #     trn=t.trn,
-                    # #     is_fake=True,
-                    # #     overrides={
-                    # #         'transaction_class': self._trn_cls_sell,
-                    # #         'account_position': t.account_cash,
-                    # #         'account_cash': t.account_cash,
-                    # #
-                    # #         'position_size_with_sign': -t.position_size_with_sign,
-                    # #         'cash_consideration': t.cash_consideration,
-                    # #         'principal_with_sign': t.principal_with_sign,
-                    # #         'carry_with_sign': t.carry_with_sign,
-                    # #         'overheads_with_sign': t.overheads_with_sign,
-                    # #     })
-                    # t1 = t.clone()
-                    # t1.is_fake = True
-                    # t1.trn_cls = self._trn_cls_sell
-                    # t1.acc_pos = t.acc_cash
-                    # t1.acc_cash = t.acc_cash
-                    # t1.str1_pos = t.str1_cash
-                    # t1.str1_cash = t.str1_cash
-                    # t1.str2_pos = t.str2_cash
-                    # t1.str2_cash = t.str2_cash
-                    # t1.str3_pos = t.str2_cash
-                    # t1.str3_cash = t.str3_cash
-                    # t1.pos_size = -t.pos_size
-                    # t1.cash = t.cash
-                    # t1.principal = t.principal
-                    # t1.carry = t.carry
-                    # t1.overheads = t.overheads
-                    # res.append(t1)
-                    #
-                    # # t2 = VirtualTransaction(
-                    # #     report=self.instance,
-                    # #     pricing_provider=self._pricing_provider,
-                    # #     fx_rate_provider=self._fx_rate_provider,
-                    # #     trn=t.trn,
-                    # #     is_fake=True,
-                    # #     overrides={
-                    # #         'transaction_class': self._trn_cls_buy,
-                    # #         'account_position': t.account_position,
-                    # #         'account_cash': t.account_position,
-                    # #
-                    # #         'position_size_with_sign': t.position_size_with_sign,
-                    # #         'cash_consideration': -t.cash_consideration,
-                    # #         'principal_with_sign': -t.principal_with_sign,
-                    # #         'carry_with_sign': -t.carry_with_sign,
-                    # #         'overheads_with_sign': -t.overheads_with_sign,
-                    # #     })
-                    # t2 = t.clone()
-                    # t2.is_fake = True
-                    # t2.trn_cls = self._trn_cls_buy
-                    # t2.acc_pos = t.acc_pos
-                    # t2.acc_cash = t.acc_pos
-                    # t2.str1_pos = t.str1_pos
-                    # t2.str1_cash = t.str1_pos
-                    # t2.str2_pos = t.str2_pos
-                    # t2.str2_cash = t.str2_pos
-                    # t2.str3_pos = t.str2_pos
-                    # t2.str3_cash = t.str3_pos
-                    # t2.pos_size = t.pos_size
-                    # t2.cash = -t.cash
-                    # t2.principal = -t.principal
-                    # t2.carry = -t.carry
-                    # t2.overheads = -t.overheads
-                    # res.append(t2)
-
                     t1, t2 = t.transfer_clone(self._trn_cls_sell, self._trn_cls_buy)
                     res.append(t1)
                     res.append(t2)
 
                 else:
-                    # # t1 = VirtualTransaction(
-                    # #     report=self.instance,
-                    # #     pricing_provider=self._pricing_provider,
-                    # #     fx_rate_provider=self._fx_rate_provider,
-                    # #     trn=t.trn,
-                    # #     is_fake=True,
-                    # #     overrides={
-                    # #         'transaction_class': self._trn_cls_buy,
-                    # #         'account_position': t.account_cash,
-                    # #         'account_cash': t.account_cash,
-                    # #
-                    # #         'position_size_with_sign': -t.position_size_with_sign,
-                    # #         'cash_consideration': t.cash_consideration,
-                    # #         'principal_with_sign': t.principal_with_sign,
-                    # #         'carry_with_sign': t.carry_with_sign,
-                    # #         'overheads_with_sign': t.overheads_with_sign,
-                    # #     })
-                    # t1 = t.clone()
-                    # t1.is_fake = True
-                    # t1.trn_cls = self._trn_cls_buy
-                    # t1.acc_pos = t.acc_cash
-                    # t1.acc_cash = t.acc_cash
-                    # t1.str1_pos = t.str1_cash
-                    # t1.str1_cash = t.str1_cash
-                    # t1.str2_pos = t.str2_cash
-                    # t1.str2_cash = t.str2_cash
-                    # t1.str3_pos = t.str2_cash
-                    # t1.str3_cash = t.str3_cash
-                    # t1.pos_size = -t.pos_size
-                    # t1.cash = t.cash
-                    # t1.principal = t.principal
-                    # t1.carry = t.carry
-                    # t1.overheads = t.overheads
-                    # res.append(t1)
-                    #
-                    # # t2 = VirtualTransaction(
-                    # #     report=self.instance,
-                    # #     pricing_provider=self._pricing_provider,
-                    # #     fx_rate_provider=self._fx_rate_provider,
-                    # #     trn=t.trn,
-                    # #     is_fake=True,
-                    # #     overrides={
-                    # #         'transaction_class': self._trn_cls_sell,
-                    # #         'account_position': t.account_position,
-                    # #         'account_cash': t.account_position,
-                    # #
-                    # #         'position_size_with_sign': t.position_size_with_sign,
-                    # #         'cash_consideration': -t.cash_consideration,
-                    # #         'principal_with_sign': -t.principal_with_sign,
-                    # #         'carry_with_sign': -t.carry_with_sign,
-                    # #         'overheads_with_sign': -t.overheads_with_sign,
-                    # #     })
-                    # t2 = t.clone()
-                    # t2.is_fake = True
-                    # t2.trn_cls = self._trn_cls_sell
-                    # t2.acc_pos = t.acc_pos
-                    # t2.acc_cash = t.acc_pos
-                    # t2.str1_pos = t.str1_pos
-                    # t2.str1_cash = t.str1_pos
-                    # t2.str2_pos = t.str2_pos
-                    # t2.str2_cash = t.str2_pos
-                    # t2.str3_pos = t.str2_pos
-                    # t2.str3_cash = t.str3_pos
-                    # t2.pos_size = t.pos_size
-                    # t2.cash = -t.cash
-                    # t2.principal = -t.principal
-                    # t2.carry = -t.carry
-                    # t2.overheads = -t.overheads
-                    # res.append(t2)
-
                     t1, t2 = t.transfer_clone(self._trn_cls_buy, self._trn_cls_sell)
                     res.append(t1)
                     res.append(t2)
 
             elif t.trn_cls.id == TransactionClass.FX_TRANSFER:
-                # # split FX_TRANSFER to fx-trade/fx-trade
-                #
-                # res.append(t)
-                # # t1 = VirtualTransaction(
-                # #     report=self.instance,
-                # #     pricing_provider=self._pricing_provider,
-                # #     fx_rate_provider=self._fx_rate_provider,
-                # #     trn=t.trn,
-                # #     is_fake=True,
-                # #     overrides={
-                # #         'transaction_class': self._trn_cls_fx_trade,
-                # #         'account_position': t.account_cash,
-                # #         'account_cash': t.account_cash,
-                # #
-                # #         'position_size_with_sign': -t.position_size_with_sign,
-                # #         'cash_consideration': t.cash_consideration,
-                # #         'principal_with_sign': t.principal_with_sign,
-                # #         'carry_with_sign': t.carry_with_sign,
-                # #         'overheads_with_sign': t.overheads_with_sign,
-                # #     })
-                # t1 = t.clone()
-                # t1.is_fake = True
-                # t1.trn_cls = self._trn_cls_fx_trade
-                # t1.acc_pos = t.acc_cash
-                # t1.acc_cash = t.acc_cash
-                # t1.str1_pos = t.str1_cash
-                # t1.str1_cash = t.str1_cash
-                # t1.str2_pos = t.str2_cash
-                # t1.str2_cash = t.str2_cash
-                # t1.str3_pos = t.str2_cash
-                # t1.str3_cash = t.str3_cash
-                # t1.pos_size = -t.pos_size
-                # t1.cash = t.cash
-                # t1.principal = t.principal
-                # t1.carry = t.carry
-                # t1.overheads = t.overheads
-                # res.append(t1)
-                #
-                # # t2 = VirtualTransaction(
-                # #     report=self.instance,
-                # #     pricing_provider=self._pricing_provider,
-                # #     fx_rate_provider=self._fx_rate_provider,
-                # #     trn=t.trn,
-                # #     is_fake=True,
-                # #     overrides={
-                # #         'transaction_class': self._trn_cls_fx_trade,
-                # #         'account_position': t.account_position,
-                # #         'account_cash': t.account_position,
-                # #
-                # #         'position_size_with_sign': t.position_size_with_sign,
-                # #         'cash_consideration': -t.cash_consideration,
-                # #         'principal_with_sign': -t.principal_with_sign,
-                # #         'carry_with_sign': -t.carry_with_sign,
-                # #         'overheads_with_sign': -t.overheads_with_sign,
-                # #     })
-                # t2 = t.clone()
-                # t2.is_fake = True
-                # t2.trn_cls = self._trn_cls_fx_trade
-                # t2.acc_pos = t.acc_pos
-                # t2.acc_cash = t.acc_pos
-                # t2.str1_pos = t.str1_pos
-                # t2.str1_cash = t.str1_pos
-                # t2.str2_pos = t.str2_pos
-                # t2.str2_cash = t.str2_pos
-                # t2.str3_pos = t.str2_pos
-                # t2.str3_cash = t.str3_pos
-                # t2.pos_size = t.pos_size
-                # t2.cash = -t.cash
-                # t2.principal = -t.principal
-                # t2.carry = -t.carry
-                # t2.overheads = -t.overheads
-                # res.append(t2)
-
-                # res.append(t1)
-                # res.append(t2)
+                t.is_hidden = True
 
                 t1, t2 = t.transfer_clone(self._trn_cls_fx_trade, self._trn_cls_fx_trade)
                 res.append(t1)
                 res.append(t2)
-
-            else:
-                res.append(t)
 
         return res
 
@@ -2177,8 +1978,10 @@ class ReportBuilder(object):
         # split transactions to atomic items using transaction class, case and something else
 
         for trn in self.transactions:
+            if trn.is_hidden:
+                continue
 
-            if not trn.is_fake and trn.link_instr and not isclose(trn.mismatch, 0.0):
+            if trn.link_instr and not isclose(trn.mismatch, 0.0):
                 item = ReportItem.from_trn(self.instance, self._pricing_provider, self._fx_rate_provider,
                                            ReportItem.TYPE_MISMATCH, trn)
                 mismatch_items.append(item)
@@ -2187,18 +1990,10 @@ class ReportBuilder(object):
                 self._add_instr(trn)
                 self._add_cash(trn, val=trn.cash, ccy=trn.stl_ccy)
 
-            elif trn.trn_cls.id == TransactionClass.FX_TRADE:
-                # TODO: Что используем для strategy?
-                self._add_cash(trn, val=trn.pos_size, ccy=trn.trn_ccy, acc=trn.acc_pos, str1=trn.str1_pos,
-                               str2=trn.str2_pos, str3=trn.str3_pos)
-
-                self._add_cash(trn, val=trn.cash, ccy=trn.stl_ccy)
-
-                # P&L
-                item = ReportItem.from_trn(self.instance, self._pricing_provider, self._fx_rate_provider,
-                                           ReportItem.TYPE_FX_TRADE, trn, acc=trn.acc_pos,
-                                           str1=trn.str1_pos, str2=trn.str2_pos, str3=trn.str3_pos)
-                self._items.append(item)
+            elif trn.trn_cls.id in [TransactionClass.CASH_INFLOW, TransactionClass.CASH_OUTFLOW]:
+                self._add_cash(trn, val=trn.cash, ccy=trn.stl_ccy,
+                               acc=trn.acc_pos, str1=trn.str1_pos, str2=trn.str2_pos,
+                               str3=trn.str3_pos)
 
             elif trn.trn_cls.id == TransactionClass.INSTRUMENT_PL:
                 self._add_instr(trn)
@@ -2212,6 +2007,18 @@ class ReportBuilder(object):
                                            str1=trn.str1_pos, str2=trn.str2_pos, str3=trn.str3_pos)
                 self._items.append(item)
 
+            elif trn.trn_cls.id == TransactionClass.FX_TRADE:
+                # TODO: Что используем для strategy?
+                self._add_cash(trn, val=trn.principal, ccy=trn.stl_ccy)
+
+                # self._add_cash(trn, val=trn.cash, ccy=trn.stl_ccy)
+
+                # P&L
+                item = ReportItem.from_trn(self.instance, self._pricing_provider, self._fx_rate_provider,
+                                           ReportItem.TYPE_FX_TRADE, trn, acc=trn.acc_pos,
+                                           str1=trn.str1_cash, str2=trn.str2_cash, str3=trn.str3_cash)
+                self._items.append(item)
+
             elif trn.trn_cls.id == TransactionClass.TRANSFER:
                 # raise RuntimeError('Virtual transaction must be created')
                 pass
@@ -2220,16 +2027,8 @@ class ReportBuilder(object):
                 # raise RuntimeError('Virtual transaction must be created')
                 pass
 
-            elif trn.trn_cls.id in [TransactionClass.CASH_INFLOW, TransactionClass.CASH_OUTFLOW]:
-                self._add_cash(trn, val=trn.pos_size, ccy=trn.trn_ccy,
-                               acc=trn.acc_pos, str1=trn.str1_pos, str2=trn.str2_pos,
-                               str3=trn.str3_pos)
-
             else:
-                raise RuntimeError('Invalid transaction class: %s' % trn.transaction_class_id)
-
-        print('Items')
-        ReportItem.dumps(self._items)
+                raise RuntimeError('Invalid transaction class: %s' % trn.trn_cls.id)
 
         _items = sorted(self._items, key=partial(ReportItem.group_key, self.instance))
 

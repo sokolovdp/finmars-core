@@ -21,6 +21,8 @@ except ImportError:
 
 class ReportTestCase(TestCase):
     def setUp(self):
+        print('*' * 150)
+
         if pandas:
             pandas.set_option('display.width', 10000)
             pandas.set_option('display.max_rows', 100)
@@ -373,7 +375,7 @@ class ReportTestCase(TestCase):
         self._dump(b, 'test_balance_0')
 
     def _test_balance_1(self):
-        self._t(t_class=self._cash_inflow, trn_ccy=self.usd, position=1000, fx_rate=1.3)
+        self._t(t_class=self._cash_inflow, stl_ccy=self.usd, trn_ccy=self.usd, position=1000, fx_rate=1.0)
         self._t(t_class=self._buy,
                 instr=self.bond0, position=100,
                 stl_ccy=self.usd, principal=-180., carry=-5., overheads=-15.,
@@ -585,7 +587,7 @@ class ReportTestCase(TestCase):
     #     b.build()
     #     self._dump(b, 'test_pl_fx_fix_full_0')
 
-    def test_pl_full_fx_fixed_bys_sell_1(self):
+    def test_pl_full_fx_fixed_buy_sell_1(self):
         instr = Instrument.objects.create(master_user=self.m, name="I1, RUB/RUB",
                                           instrument_type=self.m.instrument_type,
                                           pricing_currency=self.rub, price_multiplier=1.0,
@@ -603,8 +605,8 @@ class ReportTestCase(TestCase):
         self._ccy_hist(self.eur, self._d(101), 1.25)
         self._ccy_hist(self.eur, self._d(104), 1.1)
 
-        self._ccy_hist(self.rub, self._d(101), 1/60)
-        self._ccy_hist(self.rub, self._d(104), 1/65)
+        self._ccy_hist(self.rub, self._d(101), 1 / 60)
+        self._ccy_hist(self.rub, self._d(104), 1 / 65)
 
         self._ccy_hist(self.chf, self._d(101), 1.15)
         self._ccy_hist(self.chf, self._d(104), 1.05)
@@ -631,7 +633,72 @@ class ReportTestCase(TestCase):
                    cost_method=self._avco)
         b = ReportBuilder(instance=r)
         b.build()
-        self._dump(b, 'test_pl_full_fx_fixed_bys_sell_1')
+        self._dump(b, 'test_pl_full_fx_fixed_buy_sell_1')
+
+    def _test_pl_full_fx_fixed_cash_in_out_1(self):
+        self._ccy_hist(self.gbp, self._d(101), 1.45)
+        self._ccy_hist(self.gbp, self._d(104), 1.2)
+
+        self._ccy_hist(self.chf, self._d(101), 1.15)
+        self._ccy_hist(self.chf, self._d(104), 1.1)
+
+        self._ccy_hist(self.cad, self._d(101), 0.85)
+        self._ccy_hist(self.cad, self._d(104), 0.9)
+
+        self._t(t_class=self._cash_inflow,
+                trn_ccy=self.gbp, position=0,
+                stl_ccy=self.chf, cash=100, fx_rate=0.75,
+                acc_date_days=101, cash_date_days=101)
+
+        r = Report(master_user=self.m, pricing_policy=self.pp, report_date=self._d(104), report_currency=self.cad,
+                   cost_method=self._avco)
+        b = ReportBuilder(instance=r)
+        b.build()
+        self._dump(b, 'test_pl_full_fx_fixed_cash_in_out_1')
+
+    def _test_pl_full_fx_fixed_trn_pl_instr_pl_1(self):
+        self._ccy_hist(self.gbp, self._d(101), 1.45)
+        self._ccy_hist(self.gbp, self._d(104), 1.2)
+
+        self._ccy_hist(self.chf, self._d(101), 1.15)
+        self._ccy_hist(self.chf, self._d(104), 1.1)
+
+        self._ccy_hist(self.cad, self._d(101), 0.85)
+        self._ccy_hist(self.cad, self._d(104), 0.9)
+
+        self._t(t_class=self._instrument_pl,
+                instr=self.bond0,
+                trn_ccy=self.gbp, position=0,
+                stl_ccy=self.chf, carry=1000, overheads=-20, fx_rate=0.75,
+                acc_date_days=101, cash_date_days=101)
+
+        r = Report(master_user=self.m, pricing_policy=self.pp, report_date=self._d(104), report_currency=self.cad,
+                   cost_method=self._avco)
+        b = ReportBuilder(instance=r)
+        b.build()
+        self._dump(b, 'test_pl_full_fx_fixed_trn_pl_instr_pl_1')
+
+    def _test_pl_full_fx_fixed_fx_trade_1(self):
+        self._ccy_hist(self.gbp, self._d(101), 1.45)
+        self._ccy_hist(self.gbp, self._d(104), 1.2)
+
+        self._ccy_hist(self.chf, self._d(101), 1.15)
+        self._ccy_hist(self.chf, self._d(104), 1.1)
+
+        self._ccy_hist(self.cad, self._d(101), 0.85)
+        self._ccy_hist(self.cad, self._d(104), 0.9)
+
+        self._t(t_class=self._fx_tade,
+                trn_ccy=self.gbp, position=100,
+                stl_ccy=self.chf, principal=-140,
+                alloc_bl=self.bond0, alloc_pl=self.bond1,
+                acc_date_days=101, cash_date_days=101)
+
+        r = Report(master_user=self.m, pricing_policy=self.pp, report_date=self._d(104), report_currency=self.cad,
+                   cost_method=self._avco)
+        b = ReportBuilder(instance=r)
+        b.build()
+        self._dump(b, 'test_pl_full_fx_fixed_fx_trade_1')
 
     def _test_mismatch_0(self):
         self._t(t_class=self._buy,
