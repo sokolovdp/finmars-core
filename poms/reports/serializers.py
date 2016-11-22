@@ -156,6 +156,11 @@ class ReportItemSerializer(serializers.Serializer):
 
     custom_fields = ReportItemCustomFieldSerializer(many=True, read_only=True)
 
+    mismatch = serializers.FloatField(read_only=True)
+    mismatch_currency = serializers.PrimaryKeyRelatedField(source='mismatch_ccy', read_only=True)
+    mismatch_portfolio = serializers.PrimaryKeyRelatedField(source='mismatch_prtfl', read_only=True)
+    mismatch_account = serializers.PrimaryKeyRelatedField(source='mismatch_acc', read_only=True)
+
     # balance
 
     position_size = serializers.FloatField(source='pos_size', read_only=True)
@@ -239,6 +244,10 @@ class ReportItemSerializer(serializers.Serializer):
         self.fields['strategy1_object'] = ReportStrategy1Serializer(source='str1', read_only=True)
         self.fields['strategy2_object'] = ReportStrategy2Serializer(source='str2', read_only=True)
         self.fields['strategy3_object'] = ReportStrategy3Serializer(source='str3', read_only=True)
+
+        self.fields['mismatch_currency_object'] = ReportCurrencySerializer(source='mismatch_ccy', read_only=True)
+        self.fields['mismatch_portfolio_object'] = ReportPortfolioSerializer(source='mismatch_prtfl', read_only=True)
+        self.fields['mismatch_account_object'] = ReportAccountSerializer(source='mismatch_acc', read_only=True)
 
 
 class ReportSerializer(serializers.Serializer):

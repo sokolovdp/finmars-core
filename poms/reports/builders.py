@@ -938,10 +938,14 @@ class ReportItem(_Base):
         'ccy',
         'alloc_bl',
         'alloc_pl',
-        'pos_size',
-        'market_value_res',
+
+        'mismatch_prtfl',
+        'mismatch_acc',
         'mismatch_ccy',
         'mismatch',
+
+        'pos_size',
+        'market_value_res',
 
         # 'cost_res',
         'instr_principal_res',
@@ -1117,7 +1121,7 @@ class ReportItem(_Base):
             item.instr = trn.link_instr
 
             item.mismatch_prtfl = trn.prtfl
-            item.mismatch_acc = trn.acc_pos
+            item.mismatch_acc = trn.acc_cash
             item.mismatch_ccy = trn.stl_ccy
             item.mismatch = trn.mismatch
 
@@ -1179,6 +1183,7 @@ class ReportItem(_Base):
             getattr(item.instr, 'id', None),
             getattr(item.mismatch_prtfl, 'id', None),
             getattr(item.mismatch_acc, 'id', None),
+            getattr(item.mismatch_ccy, 'id', None),
         )
 
     # ----------------------------------------------------

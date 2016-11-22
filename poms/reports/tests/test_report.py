@@ -699,24 +699,31 @@ class ReportTestCase(TestCase):
         b.build()
         self._dump(b, 'test_pl_full_fx_fixed_fx_trade_1')
 
-    def _test_mismatch_0(self):
-        self._t(t_class=self._buy,
-                instr=self.bond0, position=100,
-                stl_ccy=self.chf, cash=-10, principal=-10, carry=0, overheads=0,
-                p=self.p1, acc_pos=self.a1_1,
-                link_instr=self.bond1)
+    def test_mismatch_0(self):
+        for i in range(0, 2):
+            self._t(t_class=self._buy,
+                    instr=self.bond0, position=100,
+                    stl_ccy=self.cad, cash=-10, principal=0, carry=0, overheads=0,
+                    p=self.p1, acc_pos=self.a1_1,
+                    link_instr=self.bond1)
 
-        self._t(t_class=self._buy,
-                instr=self.bond0, position=100,
-                stl_ccy=self.chf, cash=0, principal=0, carry=-10, overheads=0,
-                p=self.p1, acc_pos=self.a1_1,
-                link_instr=self.bond1)
+            self._t(t_class=self._buy,
+                    instr=self.bond0, position=100,
+                    stl_ccy=self.chf, cash=0, principal=-10, carry=0, overheads=0,
+                    p=self.p1, acc_pos=self.a1_1,
+                    link_instr=self.bond1)
 
-        self._t(t_class=self._buy,
-                instr=self.stock0, position=100,
-                stl_ccy=self.usd, cash=0, principal=0, carry=0, overheads=-10,
-                p=self.p2, acc_pos=self.a1_2,
-                link_instr=self.bond1)
+            self._t(t_class=self._buy,
+                    instr=self.bond0, position=100,
+                    stl_ccy=self.usd, cash=0, principal=0, carry=10, overheads=0,
+                    p=self.p2, acc_pos=self.a1_2,
+                    link_instr=self.bond1)
+
+            self._t(t_class=self._buy,
+                    instr=self.bond0, position=100,
+                    stl_ccy=self.rub, cash=0, principal=0, carry=0, overheads=10,
+                    p=self.p2, acc_pos=self.a1_2,
+                    link_instr=self.bond1)
 
         r = Report(master_user=self.m, pricing_policy=self.pp, report_date=self._d(14))
         b = ReportBuilder(instance=r)
