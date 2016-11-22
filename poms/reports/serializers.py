@@ -160,67 +160,67 @@ class ReportItemSerializer(serializers.Serializer):
 
     position_size = serializers.FloatField(source='pos_size', read_only=True)
 
-    market_value = serializers.FloatField(source='market_value_rep', read_only=True)
-    cost = serializers.FloatField(source='cost_rep', read_only=True)
+    market_value = serializers.FloatField(source='market_value_res', read_only=True)
+    cost = serializers.FloatField(source='cost_res', read_only=True)
 
     # P&L
 
-    total_real = serializers.FloatField(source='total_real_rep', read_only=True)
-    total_unreal = serializers.FloatField(source='total_unreal_rep', read_only=True)
+    total_real = serializers.FloatField(source='total_real_res', read_only=True)
+    total_unreal = serializers.FloatField(source='total_unreal_res', read_only=True)
 
     # full ----------------------------------------------------
-    principal = serializers.FloatField(source='principal_rep', read_only=True)
-    carry = serializers.FloatField(source='carry_rep', read_only=True)
-    overheads = serializers.FloatField(source='overheads_rep', read_only=True)
-    total = serializers.FloatField(source='total_rep', read_only=True)
+    principal = serializers.FloatField(source='principal_res', read_only=True)
+    carry = serializers.FloatField(source='carry_res', read_only=True)
+    overheads = serializers.FloatField(source='overheads_res', read_only=True)
+    total = serializers.FloatField(source='total_res', read_only=True)
 
     # full / closed ----------------------------------------------------
-    principal_closed = serializers.FloatField(source='principal_closed_rep', read_only=True)
-    carry_closed = serializers.FloatField(source='carry_closed_rep', read_only=True)
-    overheads_closed = serializers.FloatField(source='overheads_closed_rep', read_only=True)
-    total_closed = serializers.FloatField(source='total_closed_rep', read_only=True)
+    principal_closed = serializers.FloatField(source='principal_closed_res', read_only=True)
+    carry_closed = serializers.FloatField(source='carry_closed_res', read_only=True)
+    overheads_closed = serializers.FloatField(source='overheads_closed_res', read_only=True)
+    total_closed = serializers.FloatField(source='total_closed_res', read_only=True)
 
     # full / opened ----------------------------------------------------
-    principal_opened = serializers.FloatField(source='principal_opened_rep', read_only=True)
-    carry_opened = serializers.FloatField(source='carry_opened_rep', read_only=True)
-    overheads_opened = serializers.FloatField(source='overheads_opened_rep', read_only=True)
-    total_opened = serializers.FloatField(source='total_opened_rep', read_only=True)
+    principal_opened = serializers.FloatField(source='principal_opened_res', read_only=True)
+    carry_opened = serializers.FloatField(source='carry_opened_res', read_only=True)
+    overheads_opened = serializers.FloatField(source='overheads_opened_res', read_only=True)
+    total_opened = serializers.FloatField(source='total_opened_res', read_only=True)
 
     # fx ----------------------------------------------------
-    principal_fx = serializers.FloatField(source='principal_fx_rep', read_only=True)
-    carry_fx = serializers.FloatField(source='carry_fx_rep', read_only=True)
-    overheads_fx = serializers.FloatField(source='overheads_fx_rep', read_only=True)
-    total_fx = serializers.FloatField(source='total_fx_rep', read_only=True)
+    principal_fx = serializers.FloatField(source='principal_fx_res', read_only=True)
+    carry_fx = serializers.FloatField(source='carry_fx_res', read_only=True)
+    overheads_fx = serializers.FloatField(source='overheads_fx_res', read_only=True)
+    total_fx = serializers.FloatField(source='total_fx_res', read_only=True)
 
     # fx / closed ----------------------------------------------------
-    principal_fx_closed = serializers.FloatField(source='principal_fx_closed_rep', read_only=True)
-    carry_fx_closed = serializers.FloatField(source='carry_fx_closed_rep', read_only=True)
-    overheads_fx_closed = serializers.FloatField(source='overheads_fx_closed_rep', read_only=True)
-    total_fx_closed = serializers.FloatField(source='total_fx_closed_rep', read_only=True)
+    principal_fx_closed = serializers.FloatField(source='principal_fx_closed_res', read_only=True)
+    carry_fx_closed = serializers.FloatField(source='carry_fx_closed_res', read_only=True)
+    overheads_fx_closed = serializers.FloatField(source='overheads_fx_closed_res', read_only=True)
+    total_fx_closed = serializers.FloatField(source='total_fx_closed_res', read_only=True)
 
     # fx / opened ----------------------------------------------------
-    principal_fx_opened = serializers.FloatField(source='principal_fx_opened_rep', read_only=True)
-    carry_fx_opened = serializers.FloatField(source='carry_fx_opened_rep', read_only=True)
-    overheads_fx_opened = serializers.FloatField(source='overheads_fx_opened_rep', read_only=True)
-    total_fx_opened = serializers.FloatField(source='total_fx_opened_rep', read_only=True)
+    principal_fx_opened = serializers.FloatField(source='principal_fx_opened_res', read_only=True)
+    carry_fx_opened = serializers.FloatField(source='carry_fx_opened_res', read_only=True)
+    overheads_fx_opened = serializers.FloatField(source='overheads_fx_opened_res', read_only=True)
+    total_fx_opened = serializers.FloatField(source='total_fx_opened_res', read_only=True)
 
     # fixed ----------------------------------------------------
-    principal_fixed = serializers.FloatField(source='principal_fixed_rep', read_only=True)
-    carry_fixed = serializers.FloatField(source='carry_fixed_rep', read_only=True)
-    overheads_fixed = serializers.FloatField(source='overheads_fixed_rep', read_only=True)
-    total_fixed = serializers.FloatField(source='total_fixed_rep', read_only=True)
+    principal_fixed = serializers.FloatField(source='principal_fixed_res', read_only=True)
+    carry_fixed = serializers.FloatField(source='carry_fixed_res', read_only=True)
+    overheads_fixed = serializers.FloatField(source='overheads_fixed_res', read_only=True)
+    total_fixed = serializers.FloatField(source='total_fixed_res', read_only=True)
 
     # fixed / closed ----------------------------------------------------
-    principal_fixed_closed = serializers.FloatField(source='principal_fixed_closed_rep', read_only=True)
-    carry_fixed_closed = serializers.FloatField(source='carry_fixed_closed_rep', read_only=True)
-    overheads_fixed_closed = serializers.FloatField(source='overheads_fixed_closed_rep', read_only=True)
-    total_fixed_closed = serializers.FloatField(source='total_fixed_closed_rep', read_only=True)
+    principal_fixed_closed = serializers.FloatField(source='principal_fixed_closed_res', read_only=True)
+    carry_fixed_closed = serializers.FloatField(source='carry_fixed_closed_res', read_only=True)
+    overheads_fixed_closed = serializers.FloatField(source='overheads_fixed_closed_res', read_only=True)
+    total_fixed_closed = serializers.FloatField(source='total_fixed_closed_res', read_only=True)
 
     # fixed / opened ----------------------------------------------------
-    principal_fixed_opened = serializers.FloatField(source='principal_fixed_opened_rep', read_only=True)
-    carry_fixed_opened = serializers.FloatField(source='carry_fixed_opened_rep', read_only=True)
-    overheads_fixed_opened = serializers.FloatField(source='overheads_fixed_opened_rep', read_only=True)
-    total_fixed_opened = serializers.FloatField(source='total_fixed_opened_rep', read_only=True)
+    principal_fixed_opened = serializers.FloatField(source='principal_fixed_opened_res', read_only=True)
+    carry_fixed_opened = serializers.FloatField(source='carry_fixed_opened_res', read_only=True)
+    overheads_fixed_opened = serializers.FloatField(source='overheads_fixed_opened_res', read_only=True)
+    total_fixed_opened = serializers.FloatField(source='total_fixed_opened_res', read_only=True)
 
     def __init__(self, *args, **kwargs):
         super(ReportItemSerializer, self).__init__(*args, **kwargs)

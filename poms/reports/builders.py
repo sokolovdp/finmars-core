@@ -11,20 +11,20 @@ from itertools import groupby
 from django.utils.functional import cached_property
 from django.utils.translation import ugettext
 
+from poms.accounts.models import Account, AccountType
 from poms.common import formula
-from poms.common.utils import isclose, date_now
-from poms.instruments.models import CostMethod
-from poms.reports.pricing import CurrencyFxRateProvider, InstrumentPricingProvider, FakeInstrumentPricingProvider, \
-    FakeCurrencyFxRateProvider
-from poms.transactions.models import Transaction, TransactionClass
+from poms.common.utils import date_now, isclose
+from poms.counterparties.models import Responsible, Counterparty, ResponsibleGroup, CounterpartyGroup
+from poms.instruments.models import Instrument, InstrumentType, CostMethod
+from poms.obj_perms.utils import get_permissions_prefetch_lookups
+from poms.portfolios.models import Portfolio
+from poms.reports.pricing import FakeInstrumentPricingProvider, FakeCurrencyFxRateProvider, CurrencyFxRateProvider
+from poms.reports.pricing import InstrumentPricingProvider
+from poms.strategies.models import Strategy1, Strategy2, Strategy3, Strategy1Subgroup, Strategy1Group, \
+    Strategy2Subgroup, Strategy2Group, Strategy3Subgroup, Strategy3Group
+from poms.transactions.models import TransactionClass, Transaction
 
 _l = logging.getLogger('poms.reports')
-
-
-def _get_fx_rate(val):
-    if val is None or isclose(val, 0.0):
-        return float('nan')
-    return val
 
 
 class _Base:
@@ -42,21 +42,21 @@ class _Base:
     def clone(self):
         return copy.copy(self)
 
-    def __getattr__(self, item):
-        if item.endswith('_rep'):
-            # automatic make value in report ccy
-            item_sys = '%s_sys' % item[:-4]
-            # if hasattr(self, item_sys):
-            #     val = getattr(self, item_sys)
-            #     if self.report_ccy_is_sys:
-            #         return val
-            #     else:
-            #         fx = self.report_ccy_rep_fx
-            #         if isclose(fx, 0.0):
-            #             return 0.0
-            #         return val / fx
-            return getattr(self, item_sys)
-        raise AttributeError(item)
+    # def __getattr__(self, item):
+    #     if item.endswith('_rep'):
+    #         # automatic make value in report ccy
+    #         item_sys = '%s_sys' % item[:-4]
+    #         # if hasattr(self, item_sys):
+    #         #     val = getattr(self, item_sys)
+    #         #     if self.report_ccy_is_sys:
+    #         #         return val
+    #         #     else:
+    #         #         fx = self.report_ccy_rep_fx
+    #         #         if isclose(fx, 0.0):
+    #         #             return 0.0
+    #         #         return val / fx
+    #         return getattr(self, item_sys)
+    #     raise AttributeError(item)
 
     def dump_values(self):
         row = []
@@ -128,8 +128,8 @@ class VirtualTransaction(_Base):
     alloc_bl = None
     alloc_pl = None
 
-    # total_real_sys = 0.0
-    # total_unreal_sys = 0.0
+    # total_real_res = 0.0
+    # total_unreal_res = 0.0
 
     dump_columns = [
         'pk',
@@ -162,74 +162,76 @@ class VirtualTransaction(_Base):
         'total',
         # 'mismatch',
         'ref_fx',
-        'trn_ccy_hist_fx',
-        'trn_ccy_rep_fx',
+        'trn_ccy_acc_hist_fx',
+        'trn_ccy_cash_hist_fx',
+        'trn_ccy_cur_fx',
         'stl_ccy_hist_fx',
-        'stl_ccy_rep_fx',
-        'report_ccy_hist_fx',
-        'report_ccy_rep_fx',
+        'stl_ccy_cur_fx',
+        'report_ccy_cash_hist_fx',
+        'report_ccy_acc_hist_fx',
+        'report_ccy_cur_fx',
 
-        'instr_principal_sys',
-        'instr_accrued_sys',
+        # 'instr_principal_res',
+        # 'instr_accrued_res',
 
         # # real / unreal
         #
-        # 'total_real_sys',
-        # 'total_unreal_sys',
+        # 'total_real_res',
+        # 'total_unreal_res',
 
         # full ----------------------------------------------------
-        'principal_sys',
-        'carry_sys',
-        # 'overheads_sys',
-        # 'total_sys',
+        'principal_res',
+        'carry_res',
+        # 'overheads_res',
+        # 'total_res',
 
         # # full / closed ----------------------------------------------------
-        # 'principal_closed_sys',
-        # 'carry_closed_sys',
-        # 'overheads_closed_sys',
-        # 'total_closed_sys',
+        # 'principal_closed_res',
+        # 'carry_closed_res',
+        # 'overheads_closed_res',
+        # 'total_closed_res',
 
         # # full / opened ----------------------------------------------------
-        # 'principal_opened_sys',
-        # 'carry_opened_sys',
-        # 'overheads_opened_sys',
-        # 'total_opened_sys',
+        # 'principal_opened_res',
+        # 'carry_opened_res',
+        # 'overheads_opened_res',
+        # 'total_opened_res',
 
         # fx ----------------------------------------------------
-        'principal_fx_sys',
-        'carry_fx_sys',
-        # 'overheads_fx_sys',
-        # 'total_fx_sys',
+        'principal_fx_res',
+        'carry_fx_res',
+        # 'overheads_fx_res',
+        # 'total_fx_res',
 
         # # fx / closed ----------------------------------------------------
-        # 'principal_fx_closed_sys',
-        # 'carry_fx_closed_sys',
-        # 'overheads_fx_closed_sys',
-        # 'total_fx_closed_sys',
+        # 'principal_fx_closed_res',
+        # 'carry_fx_closed_res',
+        # 'overheads_fx_closed_res',
+        # 'total_fx_closed_res',
 
         # # fx / opened ----------------------------------------------------
-        # 'principal_fx_opened_sys',
-        # 'carry_fx_opened_sys',
-        # 'overheads_fx_opened_sys',
-        # 'total_fx_opened_sys',
+        # 'principal_fx_opened_res',
+        # 'carry_fx_opened_res',
+        # 'overheads_fx_opened_res',
+        # 'total_fx_opened_res',
 
         # fixed ----------------------------------------------------
-        'principal_fixed_sys',
-        'carry_fixed_sys',
-        # 'overheads_fixed_sys',
-        # 'total_fixed_sys',
+        'principal_fixed_res',
+        'carry_fixed_res',
+        # 'overheads_fixed_res',
+        # 'total_fixed_res',
 
         # # fixed / closed ----------------------------------------------------
-        # 'principal_fixed_closed_sys',
-        # 'carry_fixed_closed_sys',
-        # 'overheads_fixed_closed_sys',
-        # 'total_fixed_closed_sys',
+        # 'principal_fixed_closed_res',
+        # 'carry_fixed_closed_res',
+        # 'overheads_fixed_closed_res',
+        # 'total_fixed_closed_res',
 
         # # fixed / opened ----------------------------------------------------
-        # 'principal_fixed_opened_sys',
-        # 'carry_fixed_opened_sys',
-        # 'overheads_fixed_opened_sys',
-        # 'total_fixed_opened_sys',
+        # 'principal_fixed_opened_res',
+        # 'carry_fixed_opened_res',
+        # 'overheads_fixed_opened_res',
+        # 'total_fixed_opened_res',
     ]
 
     def __init__(self, report, pricing_provider, fx_rate_provider, trn, is_fake=False, overrides=None):
@@ -295,29 +297,37 @@ class VirtualTransaction(_Base):
     # report ccy ----------------------------------------------------
 
     @cached_property
-    def report_ccy_is_sys(self):
-        return self.report.report_currency.is_system
+    def report_ccy_is_res(self):
+        return self.report.report_currency.is_restem
 
     @cached_property
-    def report_ccy_rep(self):
+    def report_ccy_cur(self):
         return self.fx_rate_provider[self.report.report_currency]
 
     @cached_property
-    def report_ccy_rep_fx(self):
-        return getattr(self.report_ccy_rep, 'fx_rate', float('nan'))
+    def report_ccy_cur_fx(self):
+        return getattr(self.report_ccy_cur, 'fx_rate', 0.0)
 
     @cached_property
-    def report_ccy_hist(self):
+    def report_ccy_cash_hist(self):
+        return self.fx_rate_provider[self.report.report_currency, self.acc_date]
+
+    @cached_property
+    def report_ccy_cash_hist_fx(self):
+        return getattr(self.report_ccy_cash_hist, 'fx_rate', 0.0)
+
+    @cached_property
+    def report_ccy_acc_hist(self):
         return self.fx_rate_provider[self.report.report_currency, self.cash_date]
 
     @cached_property
-    def report_ccy_hist_fx(self):
-        return getattr(self.report_ccy_hist, 'fx_rate', float('nan'))
+    def report_ccy_acc_hist_fx(self):
+        return getattr(self.report_ccy_acc_hist, 'fx_rate', 0.0)
 
     # instr ----------------------------------------------------
 
     @cached_property
-    def instr_price_rep(self):
+    def instr_price_cur(self):
         if self.instr:
             return self.pricing_provider[self.instr]
         return None
@@ -329,66 +339,97 @@ class VirtualTransaction(_Base):
         return None
 
     @cached_property
-    def instr_pricing_ccy_rep(self):
+    def instr_pricing_ccy_cur(self):
         if self.instr:
             return self.fx_rate_provider[self.instr.pricing_currency]
         return None
 
     @cached_property
-    def instr_pricing_ccy_rep_fx(self):
-        return getattr(self.instr_pricing_ccy_rep, 'fx_rate', float('nan')) / self.report_ccy_rep_fx
+    def instr_pricing_ccy_cur_fx(self):
+        try:
+            return getattr(self.instr_pricing_ccy_cur, 'fx_rate', 0.0) / self.report_ccy_cur_fx
+        except ZeroDivisionError:
+            return 0.0
+
+    # @cached_property
+    # def instr_pricing_ccy_hist(self):
+    #     if self.instr:
+    #         return self.fx_rate_provider[self.instr.pricing_currency, self.acc_date]
+    #     return None
+
+    # @cached_property
+    # def instr_pricing_ccy_hist_fx(self):
+    #     try:
+    #         return getattr(self.instr_pricing_ccy_hist, 'fx_rate', 0.0) / self.report_ccy_hist_fx
+    #     except ZeroDivisionError:
+    #         return 0.0
 
     @cached_property
-    def instr_pricing_ccy_hist(self):
-        if self.instr:
-            return self.fx_rate_provider[self.instr.pricing_currency, self.acc_date]
-        return None
-
-    @cached_property
-    def instr_pricing_ccy_hist_fx(self):
-        return getattr(self.instr_pricing_ccy_hist, 'fx_rate', float('nan')) / self.report_ccy_hist_fx
-
-    @cached_property
-    def instr_accrued_ccy_rep(self):
+    def instr_accrued_ccy_cur(self):
         if self.instr:
             return self.fx_rate_provider[self.instr.accrued_currency]
         return None
 
     @cached_property
-    def instr_accrued_ccy_rep_fx(self):
-        return getattr(self.instr_accrued_ccy_rep, 'fx_rate', float('nan')) / self.report_ccy_rep_fx
+    def instr_accrued_ccy_cur_fx(self):
+        try:
+            return getattr(self.instr_accrued_ccy_cur, 'fx_rate', 0.0) / self.report_ccy_cur_fx
+        except ZeroDivisionError:
+            return 0.0
 
-    @cached_property
-    def instr_accrued_ccy_hist(self):
-        if self.instr:
-            return self.fx_rate_provider[self.instr.accrued_currency, self.acc_date]
-        return None
+    # @cached_property
+    # def instr_accrued_ccy_hist(self):
+    #     if self.instr:
+    #         return self.fx_rate_provider[self.instr.accrued_currency, self.acc_date]
+    #     return None
 
-    @cached_property
-    def instr_accrued_ccy_hist_fx(self):
-        return getattr(self.instr_accrued_ccy_hist, 'fx_rate', float('nan')) / self.report_ccy_hist_fx
+    # @cached_property
+    # def instr_accrued_ccy_hist_fx(self):
+    #     try:
+    #         return getattr(self.instr_accrued_ccy_hist, 'fx_rate', 0.0) / self.report_ccy_hist_fx
+    #     except ZeroDivisionError:
+    #         return 0.0
 
     # trn ccy ----------------------------------------------------
 
     @cached_property
-    def trn_ccy_hist(self):
+    def trn_ccy_cash_hist(self):
         if self.trn_ccy:
             return self.fx_rate_provider[self.trn_ccy, self.acc_date]
         return None
 
     @cached_property
-    def trn_ccy_hist_fx(self):
-        return getattr(self.trn_ccy_hist, 'fx_rate', float('nan')) / self.report_ccy_hist_fx
+    def trn_ccy_cash_hist_fx(self):
+        try:
+            return getattr(self.trn_ccy_cash_hist, 'fx_rate', 0.0) / self.report_ccy_cash_hist_fx
+        except ZeroDivisionError:
+            return 0.0
 
     @cached_property
-    def trn_ccy_rep(self):
+    def trn_ccy_acc_hist(self):
+        if self.trn_ccy:
+            return self.fx_rate_provider[self.trn_ccy, self.acc_date]
+        return None
+
+    @cached_property
+    def trn_ccy_acc_hist_fx(self):
+        try:
+            return getattr(self.trn_ccy_acc_hist, 'fx_rate', 0.0) / self.report_ccy_acc_hist_fx
+        except ZeroDivisionError:
+            return 0.0
+
+    @cached_property
+    def trn_ccy_cur(self):
         if self.trn_ccy:
             return self.fx_rate_provider[self.trn_ccy]
         return None
 
     @cached_property
-    def trn_ccy_rep_fx(self):
-        return getattr(self.trn_ccy_rep, 'fx_rate', float('nan')) / self.report_ccy_rep_fx
+    def trn_ccy_cur_fx(self):
+        try:
+            return getattr(self.trn_ccy_cur, 'fx_rate', 0.0) / self.report_ccy_cur_fx
+        except ZeroDivisionError:
+            return 0.0
 
     # stl ccy ----------------------------------------------------
 
@@ -400,17 +441,23 @@ class VirtualTransaction(_Base):
 
     @cached_property
     def stl_ccy_hist_fx(self):
-        return getattr(self.stl_ccy_hist, 'fx_rate', float('nan')) / self.report_ccy_hist_fx
+        try:
+            return getattr(self.stl_ccy_hist, 'fx_rate', 0.0) / self.report_ccy_cash_hist_fx
+        except ZeroDivisionError:
+            return 0.0
 
     @cached_property
-    def stl_ccy_rep(self):
+    def stl_ccy_cur(self):
         if self.stl_ccy:
             return self.fx_rate_provider[self.stl_ccy]
         return None
 
     @cached_property
-    def stl_ccy_rep_fx(self):
-        return getattr(self.stl_ccy_rep, 'fx_rate', float('nan')) / self.report_ccy_rep_fx
+    def stl_ccy_cur_fx(self):
+        try:
+            return getattr(self.stl_ccy_cur, 'fx_rate', 0.0) / self.report_ccy_cur_fx
+        except ZeroDivisionError:
+            return 0.0
 
     # general ----------------------------------------------------
 
@@ -419,42 +466,42 @@ class VirtualTransaction(_Base):
         return self.cash - self.total
 
     # @property
-    # def pos_size_sys(self):
+    # def pos_size_res(self):
     #     if self.trn_ccy:
-    #         return self.pos_size * self.trn_ccy_rep_fx
-    #     return float('nan')
+    #         return self.pos_size * self.trn_ccy_cur_fx
+    #     return 0.0
 
     @property
     def instr_principal(self):
         if self.instr:
-            price = self.instr_price_rep
+            price = self.instr_price_cur
             return self.pos_size * self.instr.price_multiplier * price.principal_price
-        return float('nan')
+        return 0.0
 
     @property
-    def instr_principal_sys(self):
+    def instr_principal_res(self):
         if self.instr:
-            return self.instr_principal * self.instr_pricing_ccy_rep_fx
-        return float('nan')
+            return self.instr_principal * self.instr_pricing_ccy_cur_fx
+        return 0.0
 
     @property
     def instr_accrued(self):
         if self.instr:
-            price = self.instr_price_rep
+            price = self.instr_price_cur
             return self.pos_size * self.instr.accrued_multiplier * price.accrued_price
-        return float('nan')
+        return 0.0
 
     @property
-    def instr_accrued_sys(self):
+    def instr_accrued_res(self):
         if self.instr:
-            return self.instr_accrued * self.instr_pricing_ccy_rep_fx
-        return float('nan')
+            return self.instr_accrued * self.instr_pricing_ccy_cur_fx
+        return 0.0
 
     # Cash related ----------------------------------------------------
 
     @property
-    def cash_sys(self):
-        return self.cash * self.stl_ccy_rep_fx
+    def cash_res(self):
+        return self.cash * self.stl_ccy_cur_fx
 
     # full P&L related ----------------------------------------------------
     @property
@@ -462,20 +509,20 @@ class VirtualTransaction(_Base):
         return self.principal + self.carry + self.overheads
 
     @property
-    def principal_sys(self):
-        return self.principal * self.stl_ccy_rep_fx
+    def principal_res(self):
+        return self.principal * self.stl_ccy_cur_fx
 
     @property
-    def carry_sys(self):
-        return self.carry * self.stl_ccy_rep_fx
+    def carry_res(self):
+        return self.carry * self.stl_ccy_cur_fx
 
     @property
-    def overheads_sys(self):
-        return self.overheads * self.stl_ccy_rep_fx
+    def overheads_res(self):
+        return self.overheads * self.stl_ccy_cur_fx
 
     @property
-    def total_sys(self):
-        return self.total * self.stl_ccy_rep_fx
+    def total_res(self):
+        return self.total * self.stl_ccy_cur_fx
 
     # # cash flow ----------------------------------------------------
     #
@@ -488,164 +535,170 @@ class VirtualTransaction(_Base):
     #     return self.total * (1.0 - self.multiplier)
     #
     # @property
-    # def cash_flow_real_sys(self):
-    #     return self.total_sys * self.multiplier
+    # def cash_flow_real_res(self):
+    #     return self.total_res * self.multiplier
     #
     # @property
-    # def cash_flow_unreal_sys(self):
-    #     return self.total_sys * (1.0 - self.multiplier)
+    # def cash_flow_unreal_res(self):
+    #     return self.total_res * (1.0 - self.multiplier)
 
     # full / closed ----------------------------------------------------
 
     @property
-    def principal_closed_sys(self):
-        return self.principal_sys * self.multiplier
+    def principal_closed_res(self):
+        return self.principal_res * self.multiplier
 
     @property
-    def carry_closed_sys(self):
-        return self.carry_sys * self.multiplier
+    def carry_closed_res(self):
+        return self.carry_res * self.multiplier
 
     @property
-    def overheads_closed_sys(self):
-        return self.overheads_sys * self.multiplier
+    def overheads_closed_res(self):
+        return self.overheads_res * self.multiplier
 
     @property
-    def total_closed_sys(self):
-        return self.total_sys * self.multiplier
+    def total_closed_res(self):
+        return self.total_res * self.multiplier
 
     # full / opened ----------------------------------------------------
 
     @property
-    def principal_opened_sys(self):
-        return self.principal_sys * (1.0 - self.multiplier)
+    def principal_opened_res(self):
+        return self.principal_res * (1.0 - self.multiplier)
 
     @property
-    def carry_opened_sys(self):
-        return self.carry_sys * (1.0 - self.multiplier)
+    def carry_opened_res(self):
+        return self.carry_res * (1.0 - self.multiplier)
 
     @property
-    def overheads_opened_sys(self):
-        return self.overheads_sys * (1.0 - self.multiplier)
+    def overheads_opened_res(self):
+        return self.overheads_res * (1.0 - self.multiplier)
 
     @property
-    def total_opened_sys(self):
-        return self.total_sys * (1.0 - self.multiplier)
+    def total_opened_res(self):
+        return self.total_res * (1.0 - self.multiplier)
 
     # fx ----------------------------------------------------
 
     @property
     def pl_fx_mul(self):
-        return self.stl_ccy_rep_fx - self.ref_fx / self.trn_ccy_hist_fx
+        try:
+            return self.stl_ccy_cur_fx - self.ref_fx * self.trn_ccy_acc_hist_fx
+        except ZeroDivisionError:
+            return 0.0
 
     @property
-    def principal_fx_sys(self):
+    def principal_fx_res(self):
         return self.principal * self.pl_fx_mul
 
     @property
-    def carry_fx_sys(self):
+    def carry_fx_res(self):
         return self.carry * self.pl_fx_mul
 
     @property
-    def overheads_fx_sys(self):
+    def overheads_fx_res(self):
         return self.overheads * self.pl_fx_mul
 
     @property
-    def total_fx_sys(self):
+    def total_fx_res(self):
         return self.total * self.pl_fx_mul
 
     # fx / closed ----------------------------------------------------
 
     @property
-    def principal_fx_closed_sys(self):
-        return self.principal_fx_sys * self.multiplier
+    def principal_fx_closed_res(self):
+        return self.principal_fx_res * self.multiplier
 
     @property
-    def carry_fx_closed_sys(self):
-        return self.carry_fx_sys * self.multiplier
+    def carry_fx_closed_res(self):
+        return self.carry_fx_res * self.multiplier
 
     @property
-    def overheads_fx_closed_sys(self):
-        return self.overheads_fx_sys * self.multiplier
+    def overheads_fx_closed_res(self):
+        return self.overheads_fx_res * self.multiplier
 
     @property
-    def total_fx_closed_sys(self):
-        return self.total_fx_sys * self.multiplier
+    def total_fx_closed_res(self):
+        return self.total_fx_res * self.multiplier
 
     # fx / opened ----------------------------------------------------
 
     @property
-    def principal_fx_opened_sys(self):
-        return self.principal_fx_sys * (1.0 - self.multiplier)
+    def principal_fx_opened_res(self):
+        return self.principal_fx_res * (1.0 - self.multiplier)
 
     @property
-    def carry_fx_opened_sys(self):
-        return self.carry_fx_sys * (1.0 - self.multiplier)
+    def carry_fx_opened_res(self):
+        return self.carry_fx_res * (1.0 - self.multiplier)
 
     @property
-    def overheads_fx_opened_sys(self):
-        return self.overheads_fx_sys * (1.0 - self.multiplier)
+    def overheads_fx_opened_res(self):
+        return self.overheads_fx_res * (1.0 - self.multiplier)
 
     @property
-    def total_fx_opened_sys(self):
-        return self.total_fx_sys * (1.0 - self.multiplier)
+    def total_fx_opened_res(self):
+        return self.total_fx_res * (1.0 - self.multiplier)
 
     # fixed ----------------------------------------------------
 
     @property
     def pl_fixed_mul(self):
-        return self.ref_fx / self.trn_ccy_hist_fx
+        try:
+            return self.ref_fx * self.trn_ccy_acc_hist_fx
+        except ZeroDivisionError:
+            return 0.0
 
     @property
-    def principal_fixed_sys(self):
+    def principal_fixed_res(self):
         return self.principal * self.pl_fixed_mul
 
     @property
-    def carry_fixed_sys(self):
+    def carry_fixed_res(self):
         return self.carry * self.pl_fixed_mul
 
     @property
-    def overheads_fixed_sys(self):
+    def overheads_fixed_res(self):
         return self.overheads * self.pl_fixed_mul
 
     @property
-    def total_fixed_sys(self):
+    def total_fixed_res(self):
         return self.total * self.pl_fixed_mul
 
     # fixed / closed ----------------------------------------------------
 
     @property
-    def principal_fixed_closed_sys(self):
-        return self.principal_fixed_sys * self.multiplier
+    def principal_fixed_closed_res(self):
+        return self.principal_fixed_res * self.multiplier
 
     @property
-    def carry_fixed_closed_sys(self):
-        return self.carry_fixed_sys * self.multiplier
+    def carry_fixed_closed_res(self):
+        return self.carry_fixed_res * self.multiplier
 
     @property
-    def overheads_fixed_closed_sys(self):
-        return self.overheads_fixed_sys * self.multiplier
+    def overheads_fixed_closed_res(self):
+        return self.overheads_fixed_res * self.multiplier
 
     @property
-    def total_fixed_closed_sys(self):
-        return self.total_fixed_sys * self.multiplier
+    def total_fixed_closed_res(self):
+        return self.total_fixed_res * self.multiplier
 
     # fixed / opened ----------------------------------------------------
 
     @property
-    def principal_fixed_opened_sys(self):
-        return self.principal_fixed_sys * (1.0 - self.multiplier)
+    def principal_fixed_opened_res(self):
+        return self.principal_fixed_res * (1.0 - self.multiplier)
 
     @property
-    def carry_fixed_opened_sys(self):
-        return self.carry_fixed_sys * (1.0 - self.multiplier)
+    def carry_fixed_opened_res(self):
+        return self.carry_fixed_res * (1.0 - self.multiplier)
 
     @property
-    def overheads_fixed_opened_sys(self):
-        return self.overheads_fixed_sys * (1.0 - self.multiplier)
+    def overheads_fixed_opened_res(self):
+        return self.overheads_fixed_res * (1.0 - self.multiplier)
 
     @property
-    def total_fixed_opened_sys(self):
-        return self.total_fixed_sys * (1.0 - self.multiplier)
+    def total_fixed_opened_res(self):
+        return self.total_fixed_res * (1.0 - self.multiplier)
 
 
 class ReportItem(_Base):
@@ -696,72 +749,72 @@ class ReportItem(_Base):
     # balance
     pos_size = 0.0
 
-    market_value_sys = 0.0
+    market_value_res = 0.0
 
-    cost_sys = 0.0
+    cost_res = 0.0
 
     # P&L
 
-    # cash_flow_real_sys = 0.0
-    # cash_flow_unreal_sys = 0.0
+    # cash_flow_real_res = 0.0
+    # cash_flow_unreal_res = 0.0
 
-    # total_real_sys = 0.0
-    # total_unreal_sys = 0.0
+    # total_real_res = 0.0
+    # total_unreal_res = 0.0
 
     # full ----------------------------------------------------
-    principal_sys = 0.0
-    carry_sys = 0.0
-    overheads_sys = 0.0
-    # total_sys = 0.0
+    principal_res = 0.0
+    carry_res = 0.0
+    overheads_res = 0.0
+    # total_res = 0.0
 
     # full / closed ----------------------------------------------------
-    principal_closed_sys = 0.0
-    carry_closed_sys = 0.0
-    overheads_closed_sys = 0.0
-    # total_closed_sys = 0.0
+    principal_closed_res = 0.0
+    carry_closed_res = 0.0
+    overheads_closed_res = 0.0
+    # total_closed_res = 0.0
 
     # full / opened ----------------------------------------------------
-    principal_opened_sys = 0.0
-    carry_opened_sys = 0.0
-    overheads_opened_sys = 0.0
-    # total_opened_sys = 0.0
+    principal_opened_res = 0.0
+    carry_opened_res = 0.0
+    overheads_opened_res = 0.0
+    # total_opened_res = 0.0
 
     # fx ----------------------------------------------------
-    principal_fx_sys = 0.0
-    carry_fx_sys = 0.0
-    overheads_fx_sys = 0.0
-    # total_fx_sys = 0.0
+    principal_fx_res = 0.0
+    carry_fx_res = 0.0
+    overheads_fx_res = 0.0
+    # total_fx_res = 0.0
 
     # fx / closed ----------------------------------------------------
-    principal_fx_closed_sys = 0.0
-    carry_fx_closed_sys = 0.0
-    overheads_fx_closed_sys = 0.0
-    # total_fx_closed_sys = 0.0
+    principal_fx_closed_res = 0.0
+    carry_fx_closed_res = 0.0
+    overheads_fx_closed_res = 0.0
+    # total_fx_closed_res = 0.0
 
     # fx / opened ----------------------------------------------------
-    principal_fx_opened_sys = 0.0
-    carry_fx_opened_sys = 0.0
-    overheads_fx_opened_sys = 0.0
-    # total_fx_opened_sys = 0.0
+    principal_fx_opened_res = 0.0
+    carry_fx_opened_res = 0.0
+    overheads_fx_opened_res = 0.0
+    # total_fx_opened_res = 0.0
 
     # fixed ----------------------------------------------------
-    principal_fixed_sys = 0.0
-    carry_fixed_sys = 0.0
-    overheads_fixed_sys = 0.0
-    # total_fixed_sys = 0.0
+    principal_fixed_res = 0.0
+    carry_fixed_res = 0.0
+    overheads_fixed_res = 0.0
+    # total_fixed_res = 0.0
 
     # fixed / closed ----------------------------------------------------
-    principal_fixed_closed_sys = 0.0
-    carry_fixed_closed_sys = 0.0
-    overheads_fixed_closed_sys = 0.0
-    # total_fixed_closed_sys = 0.0
+    principal_fixed_closed_res = 0.0
+    carry_fixed_closed_res = 0.0
+    overheads_fixed_closed_res = 0.0
+    # total_fixed_closed_res = 0.0
 
     # fixed / opened ----------------------------------------------------
-    principal_fixed_opened_sys = 0.0
-    carry_fixed_opened_sys = 0.0
-    overheads_fixed_opened_sys = 0.0
+    principal_fixed_opened_res = 0.0
+    carry_fixed_opened_res = 0.0
+    overheads_fixed_opened_res = 0.0
 
-    # total_fixed_opened_sys = 0.0
+    # total_fixed_opened_res = 0.0
 
     dump_columns = [
         'type_code',
@@ -777,68 +830,68 @@ class ReportItem(_Base):
         # 'alloc_bl',
         # 'alloc_pl',
         'pos_size',
-        'market_value_sys',
+        'market_value_res',
         # 'mismatch_ccy',
         # 'mismatch',
-        # 'cost_sys',
-        # 'total_real_sys',
-        # 'total_unreal_sys',
-        # 'instr_principal_sys',
-        # 'instr_accrued_sys',
+        # 'cost_res',
+        # 'total_real_res',
+        # 'total_unreal_res',
+        # 'instr_principal_res',
+        # 'instr_accrued_res',
 
         # full ----------------------------------------------------
-        'principal_sys',
-        'carry_sys',
-        'overheads_sys',
-        'total_sys',
+        'principal_res',
+        'carry_res',
+        'overheads_res',
+        'total_res',
 
         # # full / closed ----------------------------------------------------
-        # 'principal_closed_sys',
-        # 'carry_closed_sys',
-        # 'overheads_closed_sys',
-        # 'total_closed_sys',
+        # 'principal_closed_res',
+        # 'carry_closed_res',
+        # 'overheads_closed_res',
+        # 'total_closed_res',
 
         # # full / opened ----------------------------------------------------
-        # 'principal_opened_sys',
-        # 'carry_opened_sys',
-        # 'overheads_opened_sys',
-        # 'total_opened_sys',
+        # 'principal_opened_res',
+        # 'carry_opened_res',
+        # 'overheads_opened_res',
+        # 'total_opened_res',
 
         # fx ----------------------------------------------------
-        'principal_fx_sys',
-        'carry_fx_sys',
-        'overheads_fx_sys',
-        'total_fx_sys',
+        'principal_fx_res',
+        'carry_fx_res',
+        'overheads_fx_res',
+        'total_fx_res',
 
         # # fx / closed ----------------------------------------------------
-        # 'principal_fx_closed_sys',
-        # 'carry_fx_closed_sys',
-        # 'overheads_fx_closed_sys',
-        # 'total_fx_closed_sys',
+        # 'principal_fx_closed_res',
+        # 'carry_fx_closed_res',
+        # 'overheads_fx_closed_res',
+        # 'total_fx_closed_res',
 
         # # fx / opened ----------------------------------------------------
-        # 'principal_fx_opened_sys',
-        # 'carry_fx_opened_sys',
-        # 'overheads_fx_opened_sys',
-        # 'total_fx_opened_sys',
+        # 'principal_fx_opened_res',
+        # 'carry_fx_opened_res',
+        # 'overheads_fx_opened_res',
+        # 'total_fx_opened_res',
 
         # fixed ----------------------------------------------------
-        'principal_fixed_sys',
-        'carry_fixed_sys',
-        'overheads_fixed_sys',
-        'total_fixed_sys',
+        'principal_fixed_res',
+        'carry_fixed_res',
+        'overheads_fixed_res',
+        'total_fixed_res',
 
         # # fixed / closed ----------------------------------------------------
-        # 'principal_fixed_closed_sys',
-        # 'carry_fixed_closed_sys',
-        # 'overheads_fixed_closed_sys',
-        # 'total_fixed_closed_sys',
+        # 'principal_fixed_closed_res',
+        # 'carry_fixed_closed_res',
+        # 'overheads_fixed_closed_res',
+        # 'total_fixed_closed_res',
 
         # # fixed / opened ----------------------------------------------------
-        # 'principal_fixed_opened_sys',
-        # 'carry_fixed_opened_sys',
-        # 'overheads_fixed_opened_sys',
-        # 'total_fixed_opened_sys',
+        # 'principal_fixed_opened_res',
+        # 'carry_fixed_opened_res',
+        # 'overheads_fixed_opened_res',
+        # 'total_fixed_opened_res',
     ]
 
     def __init__(self, report, pricing_provider, fx_rate_provider, type):
@@ -866,58 +919,58 @@ class ReportItem(_Base):
             item.instr = instr or trn.instr
 
             item.pos_size = trn.pos_size * (1.0 - trn.multiplier)
-            item.cost_sys = trn.principal_sys * (1.0 - trn.multiplier)
+            item.cost_res = trn.principal_res * (1.0 - trn.multiplier)
 
-            # item.cash_flow_real_sys = trn.cash_flow_real_sys
-            # item.cash_flow_unreal_sys = trn.cash_flow_unreal_sys
+            # item.cash_flow_real_res = trn.cash_flow_real_res
+            # item.cash_flow_unreal_res = trn.cash_flow_unreal_res
 
-            # item.total_real_sys = trn.total_real_sys
-            # item.total_unreal_sys = trn.total_unreal_sys
+            # item.total_real_res = trn.total_real_res
+            # item.total_unreal_res = trn.total_unreal_res
 
             # full ----------------------------------------------------
-            item.principal_sys = trn.principal_sys
-            item.carry_sys = trn.carry_sys
-            item.overheads_sys = trn.overheads_sys
+            item.principal_res = trn.principal_res
+            item.carry_res = trn.carry_res
+            item.overheads_res = trn.overheads_res
 
             # full / closed ----------------------------------------------------
-            item.principal_closed_sys = trn.principal_closed_sys
-            item.carry_closed_sys = trn.carry_closed_sys
-            item.overheads_closed_sys = trn.overheads_closed_sys
+            item.principal_closed_res = trn.principal_closed_res
+            item.carry_closed_res = trn.carry_closed_res
+            item.overheads_closed_res = trn.overheads_closed_res
 
             # full / opened ----------------------------------------------------
-            item.principal_opened_sys = trn.principal_opened_sys
-            item.carry_opened_sys = trn.carry_opened_sys
-            item.overheads_opened_sys = trn.overheads_opened_sys
+            item.principal_opened_res = trn.principal_opened_res
+            item.carry_opened_res = trn.carry_opened_res
+            item.overheads_opened_res = trn.overheads_opened_res
 
             # fx ----------------------------------------------------
-            item.principal_fx_sys = trn.principal_fx_sys
-            item.carry_fx_sys = trn.carry_fx_sys
-            item.overheads_fx_sys = trn.overheads_fx_sys
+            item.principal_fx_res = trn.principal_fx_res
+            item.carry_fx_res = trn.carry_fx_res
+            item.overheads_fx_res = trn.overheads_fx_res
 
             # fx / closed ----------------------------------------------------
-            item.principal_fx_closed_sys = trn.principal_fx_closed_sys
-            item.carry_fx_closed_sys = trn.carry_fx_closed_sys
-            item.overheads_fx_closed_sys = trn.overheads_fx_closed_sys
+            item.principal_fx_closed_res = trn.principal_fx_closed_res
+            item.carry_fx_closed_res = trn.carry_fx_closed_res
+            item.overheads_fx_closed_res = trn.overheads_fx_closed_res
 
             # fx / opened ----------------------------------------------------
-            item.principal_fx_opened_sys = trn.principal_fx_opened_sys
-            item.carry_fx_opened_sys = trn.carry_fx_opened_sys
-            item.overheads_fx_opened_sys = trn.overheads_fx_opened_sys
+            item.principal_fx_opened_res = trn.principal_fx_opened_res
+            item.carry_fx_opened_res = trn.carry_fx_opened_res
+            item.overheads_fx_opened_res = trn.overheads_fx_opened_res
 
             # fixed ----------------------------------------------------
-            item.principal_fixed_sys = trn.principal_fixed_sys
-            item.carry_fixed_sys = trn.carry_fixed_sys
-            item.overheads_fixed_sys = trn.overheads_fixed_sys
+            item.principal_fixed_res = trn.principal_fixed_res
+            item.carry_fixed_res = trn.carry_fixed_res
+            item.overheads_fixed_res = trn.overheads_fixed_res
 
             # fixed / closed ----------------------------------------------------
-            item.principal_fixed_closed_sys = trn.principal_fixed_closed_sys
-            item.carry_fixed_closed_sys = trn.carry_fixed_closed_sys
-            item.overheads_fixed_closed_sys = trn.overheads_fixed_closed_sys
+            item.principal_fixed_closed_res = trn.principal_fixed_closed_res
+            item.carry_fixed_closed_res = trn.carry_fixed_closed_res
+            item.overheads_fixed_closed_res = trn.overheads_fixed_closed_res
 
             # fixed / opened ----------------------------------------------------
-            item.principal_fixed_opened_sys = trn.principal_fixed_opened_sys
-            item.carry_fixed_opened_sys = trn.carry_fixed_opened_sys
-            item.overheads_fixed_opened_sys = trn.overheads_fixed_opened_sys
+            item.principal_fixed_opened_res = trn.principal_fixed_opened_res
+            item.carry_fixed_opened_res = trn.carry_fixed_opened_res
+            item.overheads_fixed_opened_res = trn.overheads_fixed_opened_res
 
         elif item.type == ReportItem.TYPE_CURRENCY:
             item.acc = acc or trn.acc_cash
@@ -929,15 +982,15 @@ class ReportItem(_Base):
             item.pos_size = val
 
         elif item.type == ReportItem.TYPE_FX_TRADE:
-            # item.principal_sys = trn.pos_size_sys + trn.principal_sys
-            item.principal_sys = trn.principal_sys
-            item.carry_sys = trn.carry_sys
-            item.overheads_sys = trn.overheads_sys
+            # item.principal_res = trn.pos_size_res + trn.principal_res
+            item.principal_res = trn.principal_res
+            item.carry_res = trn.carry_res
+            item.overheads_res = trn.overheads_res
 
         elif item.type == ReportItem.TYPE_TRANSACTION_PL:
-            item.principal_sys = trn.principal_sys
-            item.carry_sys = trn.carry_sys
-            item.overheads_sys = trn.overheads_sys
+            item.principal_res = trn.principal_res
+            item.carry_res = trn.carry_res
+            item.overheads_res = trn.overheads_res
 
         elif item.type == ReportItem.TYPE_MISMATCH:
             item.instr = trn.link_instr
@@ -1144,7 +1197,7 @@ class ReportItem(_Base):
             return ugettext('FX-Trade')
 
         elif self.type == ReportItem.TYPE_MISMATCH:
-            return self.link_instr.name
+            return self.instr.name
 
         elif self.type == ReportItem.TYPE_SUMMARY:
             return ugettext('Summary')
@@ -1199,211 +1252,211 @@ class ReportItem(_Base):
     # instr
 
     @property
-    def instr_price_rep(self):
+    def instr_price_cur(self):
         if self.instr:
             return self.pricing_provider[self.instr]
         return None
 
     @property
-    def instr_pricing_ccy_rep(self):
+    def instr_pricing_ccy_cur(self):
         if self.instr:
             return self.fx_rate_provider[self.instr.pricing_currency]
         return None
 
     @property
-    def instr_pricing_ccy_rep_fx(self):
-        return getattr(self.instr_pricing_ccy_rep, 'fx_rate', float('nan'))
+    def instr_pricing_ccy_cur_fx(self):
+        return getattr(self.instr_pricing_ccy_cur, 'fx_rate', 0.0)
 
     @property
-    def instr_accrued_ccy_rep(self):
+    def instr_accrued_ccy_cur(self):
         if self.instr:
             return self.fx_rate_provider[self.instr.accrued_currency]
         return None
 
     @property
-    def instr_accrued_ccy_rep_fx(self):
-        return getattr(self.instr_accrued_ccy_rep, 'fx_rate', float('nan'))
+    def instr_accrued_ccy_cur_fx(self):
+        return getattr(self.instr_accrued_ccy_cur, 'fx_rate', 0.0)
 
     @property
-    def instr_principal_sys(self):
+    def instr_principal_res(self):
         if self.instr:
-            price = self.instr_price_rep
-            return (self.pos_size * self.instr.price_multiplier * price.principal_price) * self.instr_pricing_ccy_rep_fx
+            price = self.instr_price_cur
+            return (self.pos_size * self.instr.price_multiplier * price.principal_price) * self.instr_pricing_ccy_cur_fx
         return 0.0
 
     @property
-    def instr_accrued_sys(self):
+    def instr_accrued_res(self):
         if self.instr:
-            price = self.instr_price_rep
-            return (self.pos_size * self.instr.accrued_multiplier * price.accrued_price) * self.instr_pricing_ccy_rep_fx
+            price = self.instr_price_cur
+            return (self.pos_size * self.instr.accrued_multiplier * price.accrued_price) * self.instr_pricing_ccy_cur_fx
         return 0.0
 
     # report ccy
 
     @property
-    def report_ccy_is_sys(self):
-        return self.report.report_currency.is_system
+    def report_ccy_is_res(self):
+        return self.report.report_currency.is_restem
 
     @property
-    def report_ccy_rep(self):
+    def report_ccy_cur(self):
         return self.fx_rate_provider[self.report.report_currency]
 
     @property
-    def report_ccy_rep_fx(self):
-        return getattr(self.report_ccy_rep, 'fx_rate', float('nan'))
+    def report_ccy_cur_fx(self):
+        return getattr(self.report_ccy_cur, 'fx_rate', 0.0)
 
     # ccy
 
     @property
-    def ccy_rep(self):
+    def ccy_cur(self):
         if self.ccy:
             return self.fx_rate_provider[self.ccy]
         return None
 
     @property
-    def ccy_rep_fx(self):
-        return getattr(self.ccy_rep, 'fx_rate', float('nan'))
+    def ccy_cur_fx(self):
+        return getattr(self.ccy_cur, 'fx_rate', 0.0)
 
     # full ----------------------------------------------------
 
     @property
-    def total_sys(self):
-        return self.principal_sys + self.carry_sys + self.overheads_sys
+    def total_res(self):
+        return self.principal_res + self.carry_res + self.overheads_res
 
     # full / closed ----------------------------------------------------
     @property
-    def total_closed_sys(self):
-        return self.principal_closed_sys + self.carry_closed_sys + self.overheads_closed_sys
+    def total_closed_res(self):
+        return self.principal_closed_res + self.carry_closed_res + self.overheads_closed_res
 
     # full / opened ----------------------------------------------------
     @property
-    def total_opened_sys(self):
-        return self.principal_opened_sys + self.carry_opened_sys + self.overheads_opened_sys
+    def total_opened_res(self):
+        return self.principal_opened_res + self.carry_opened_res + self.overheads_opened_res
 
     # fx ----------------------------------------------------
     @property
-    def total_fx_sys(self):
-        return self.principal_fx_sys + self.carry_fx_sys + self.overheads_fx_sys
+    def total_fx_res(self):
+        return self.principal_fx_res + self.carry_fx_res + self.overheads_fx_res
 
     # fx / closed ----------------------------------------------------
     @property
-    def total_fx_closed_sys(self):
-        return self.principal_fx_closed_sys + self.carry_fx_closed_sys + self.overheads_fx_closed_sys
+    def total_fx_closed_res(self):
+        return self.principal_fx_closed_res + self.carry_fx_closed_res + self.overheads_fx_closed_res
 
     # fx / opened ----------------------------------------------------
     @property
-    def total_fx_opened_sys(self):
-        return self.principal_fx_opened_sys + self.carry_fx_opened_sys + self.overheads_fx_opened_sys
+    def total_fx_opened_res(self):
+        return self.principal_fx_opened_res + self.carry_fx_opened_res + self.overheads_fx_opened_res
 
     # fixed ----------------------------------------------------
     @property
-    def total_fixed_sys(self):
-        return self.principal_fixed_sys + self.carry_fixed_sys + self.overheads_fixed_sys
+    def total_fixed_res(self):
+        return self.principal_fixed_res + self.carry_fixed_res + self.overheads_fixed_res
 
     # fixed / closed ----------------------------------------------------
     @property
-    def total_fixed_closed_sys(self):
-        return self.principal_fixed_closed_sys + self.carry_fixed_closed_sys + self.overheads_fixed_closed_sys
+    def total_fixed_closed_res(self):
+        return self.principal_fixed_closed_res + self.carry_fixed_closed_res + self.overheads_fixed_closed_res
 
     # fixed / opened ----------------------------------------------------
     @property
-    def total_fixed_opened_sys(self):
-        return self.principal_fixed_opened_sys + self.carry_fixed_opened_sys + self.overheads_fixed_opened_sys
+    def total_fixed_opened_res(self):
+        return self.principal_fixed_opened_res + self.carry_fixed_opened_res + self.overheads_fixed_opened_res
 
     # functions
 
     def add(self, o):
         # TODO: in TYPE_INSTRUMENT or global
         # full ----------------------------------------------------
-        self.principal_sys += o.principal_sys
-        self.carry_sys += o.carry_sys
-        self.overheads_sys += o.overheads_sys
+        self.principal_res += o.principal_res
+        self.carry_res += o.carry_res
+        self.overheads_res += o.overheads_res
 
         # full / closed ----------------------------------------------------
-        self.principal_closed_sys += o.principal_closed_sys
-        self.carry_closed_sys += o.carry_closed_sys
-        self.overheads_closed_sys += o.overheads_closed_sys
+        self.principal_closed_res += o.principal_closed_res
+        self.carry_closed_res += o.carry_closed_res
+        self.overheads_closed_res += o.overheads_closed_res
 
         # full / opened ----------------------------------------------------
-        self.principal_opened_sys += o.principal_opened_sys
-        self.carry_opened_sys += o.carry_opened_sys
-        self.overheads_opened_sys += o.overheads_opened_sys
+        self.principal_opened_res += o.principal_opened_res
+        self.carry_opened_res += o.carry_opened_res
+        self.overheads_opened_res += o.overheads_opened_res
 
         # fx ----------------------------------------------------
-        self.principal_fx_sys += o.principal_fx_sys
-        self.carry_fx_sys += o.carry_fx_sys
-        self.overheads_fx_sys += o.overheads_fx_sys
+        self.principal_fx_res += o.principal_fx_res
+        self.carry_fx_res += o.carry_fx_res
+        self.overheads_fx_res += o.overheads_fx_res
 
         # fx / closed ----------------------------------------------------
-        self.principal_fx_closed_sys += o.principal_fx_closed_sys
-        self.carry_fx_closed_sys += o.carry_fx_closed_sys
-        self.overheads_fx_closed_sys += o.overheads_fx_closed_sys
+        self.principal_fx_closed_res += o.principal_fx_closed_res
+        self.carry_fx_closed_res += o.carry_fx_closed_res
+        self.overheads_fx_closed_res += o.overheads_fx_closed_res
 
         # fx / opened ----------------------------------------------------
-        self.principal_fx_opened_sys += o.principal_fx_opened_sys
-        self.carry_fx_opened_sys += o.carry_fx_opened_sys
-        self.overheads_fx_opened_sys += o.overheads_fx_opened_sys
+        self.principal_fx_opened_res += o.principal_fx_opened_res
+        self.carry_fx_opened_res += o.carry_fx_opened_res
+        self.overheads_fx_opened_res += o.overheads_fx_opened_res
 
         # fixed ----------------------------------------------------
-        self.principal_fixed_sys += o.principal_fixed_sys
-        self.carry_fixed_sys += o.carry_fixed_sys
-        self.overheads_fixed_sys += o.overheads_fixed_sys
+        self.principal_fixed_res += o.principal_fixed_res
+        self.carry_fixed_res += o.carry_fixed_res
+        self.overheads_fixed_res += o.overheads_fixed_res
 
         # fixed / closed ----------------------------------------------------
-        self.principal_fixed_closed_sys += o.principal_fixed_closed_sys
-        self.carry_fixed_closed_sys += o.carry_fixed_closed_sys
-        self.overheads_fixed_closed_sys += o.overheads_fixed_closed_sys
+        self.principal_fixed_closed_res += o.principal_fixed_closed_res
+        self.carry_fixed_closed_res += o.carry_fixed_closed_res
+        self.overheads_fixed_closed_res += o.overheads_fixed_closed_res
 
         # fixed / opened ----------------------------------------------------
-        self.principal_fixed_opened_sys += o.principal_fixed_opened_sys
-        self.carry_fixed_opened_sys += o.carry_fixed_opened_sys
-        self.overheads_fixed_opened_sys += o.overheads_fixed_opened_sys
+        self.principal_fixed_opened_res += o.principal_fixed_opened_res
+        self.carry_fixed_opened_res += o.carry_fixed_opened_res
+        self.overheads_fixed_opened_res += o.overheads_fixed_opened_res
 
         if self.type == ReportItem.TYPE_CURRENCY or self.type == ReportItem.TYPE_INVESTED_CURRENCY:
             self.pos_size += o.pos_size
 
-            # self.market_value_sys += o.pos_size * o.ccy_rep_fx
+            # self.market_value_res += o.pos_size * o.ccy_cur_fx
 
         elif self.type == ReportItem.TYPE_INSTRUMENT:
             self.pos_size += o.pos_size
 
-            # self.principal_sys += o.instr_principal_sys
-            # self.carry_sys += o.instr_accrued_sys
+            # self.principal_res += o.instr_principal_res
+            # self.carry_res += o.instr_accrued_res
 
-            # self.market_value_sys += o.instr_principal_sys + o.instr_accrued_sys
-            self.cost_sys += o.cost_sys
+            # self.market_value_res += o.instr_principal_res + o.instr_accrued_res
+            self.cost_res += o.cost_res
 
-            # self.total_real_sys += o.total_real_sys
-            # self.total_unreal_sys += o.market_value_sys + o.cost_sys
-            # self.total_unreal_sys += (o.instr_principal_sys + o.instr_accrued_sys) + o.cost_sys
+            # self.total_real_res += o.total_real_res
+            # self.total_unreal_res += o.market_value_res + o.cost_res
+            # self.total_unreal_res += (o.instr_principal_res + o.instr_accrued_res) + o.cost_res
 
         elif self.type == ReportItem.TYPE_SUMMARY or self.type == ReportItem.TYPE_INVESTED_SUMMARY:
-            self.market_value_sys += o.market_value_sys
-            # self.total_real_sys += o.total_real_sys
-            # self.total_unreal_sys += o.total_unreal_sys
+            self.market_value_res += o.market_value_res
+            # self.total_real_res += o.total_real_res
+            # self.total_unreal_res += o.total_unreal_res
 
         elif self.type == ReportItem.TYPE_MISMATCH:
             self.mismatch += o.mismatch
 
     def close(self):
         if self.type == ReportItem.TYPE_CURRENCY or self.type == ReportItem.TYPE_INVESTED_CURRENCY:
-            self.market_value_sys = self.pos_size * self.ccy_rep_fx
+            self.market_value_res = self.pos_size * self.ccy_cur_fx
 
         elif self.type == ReportItem.TYPE_INSTRUMENT:
-            self.market_value_sys = self.instr_principal_sys + self.instr_accrued_sys
+            self.market_value_res = self.instr_principal_res + self.instr_accrued_res
 
-            # self.total_unreal_sys = self.market_value_sys + self.cost_sys
+            # self.total_unreal_res = self.market_value_res + self.cost_res
 
             # full ----------------------------------------------------
-            self.principal_sys += self.instr_principal_sys
-            self.carry_sys += self.instr_accrued_sys
+            self.principal_res += self.instr_principal_res
+            self.carry_res += self.instr_accrued_res
 
             # full / closed ----------------------------------------------------
             pass
 
             # full / opened ----------------------------------------------------
-            self.principal_opened_sys += self.instr_principal_sys
-            self.carry_opened_sys += self.instr_accrued_sys
+            self.principal_opened_res += self.instr_principal_res
+            self.carry_opened_res += self.instr_accrued_res
 
             # fx ----------------------------------------------------
             pass
@@ -1415,15 +1468,15 @@ class ReportItem(_Base):
             pass
 
             # fixed ----------------------------------------------------
-            self.principal_fixed_sys += self.instr_principal_sys
-            self.carry_fixed_sys += self.instr_accrued_sys
+            self.principal_fixed_res += self.instr_principal_res
+            self.carry_fixed_res += self.instr_accrued_res
 
             # fixed / closed ----------------------------------------------------
             pass
 
             # fixed / opened ----------------------------------------------------
-            self.principal_fixed_opened_sys += self.instr_principal_sys
-            self.carry_fixed_opened_sys += self.instr_accrued_sys
+            self.principal_fixed_opened_res += self.instr_principal_res
+            self.carry_fixed_opened_res += self.instr_accrued_res
 
 
 class Report(object):
@@ -1539,7 +1592,70 @@ class ReportBuilder(object):
 
     def _trn_qs(self):
         if self._queryset is None:
-            queryset = Transaction.objects
+            # queryset = Transaction.objects
+            queryset = Transaction.objects.select_related(
+                'master_user', 'complex_transaction', 'complex_transaction__transaction_type', 'transaction_class',
+                'instrument', 'instrument__instrument_type', 'instrument__instrument_type__instrument_class',
+                'transaction_currency',
+                'settlement_currency',
+                'portfolio',
+                'account_cash', 'account_cash__type',
+                'account_position', 'account_position__type',
+                'account_interim', 'account_interim__type',
+                'strategy1_position', 'strategy1_position__subgroup', 'strategy1_position__subgroup__group',
+                'strategy1_cash', 'strategy1_cash__subgroup', 'strategy1_cash__subgroup__group',
+                'strategy2_position', 'strategy2_position__subgroup', 'strategy2_position__subgroup__group',
+                'strategy2_cash', 'strategy2_cash__subgroup', 'strategy2_cash__subgroup__group',
+                'strategy3_position', 'strategy3_position__subgroup', 'strategy3_position__subgroup__group',
+                'strategy3_cash', 'strategy3_cash__subgroup', 'strategy3_cash__subgroup__group',
+                'responsible', 'responsible__group',
+                'counterparty', 'counterparty__group',
+                'linked_instrument', 'linked_instrument__instrument_type',
+                'linked_instrument__instrument_type__instrument_class',
+                'allocation_balance', 'allocation_balance__instrument_type',
+                'allocation_balance__instrument_type__instrument_class',
+                'allocation_pl', 'allocation_pl__instrument_type', 'allocation_pl__instrument_type__instrument_class',
+            ).prefetch_related(
+                *get_permissions_prefetch_lookups(
+                    ('portfolio', Portfolio),
+                    ('instrument', Instrument),
+                    ('instrument__instrument_type', InstrumentType),
+                    ('account_cash', Account),
+                    ('account_cash__type', AccountType),
+                    ('account_position', Account),
+                    ('account_position__type', AccountType),
+                    ('account_interim', Account),
+                    ('account_interim__type', AccountType),
+                    ('strategy1_position', Strategy1),
+                    ('strategy1_position__subgroup', Strategy1Subgroup),
+                    ('strategy1_position__subgroup__group', Strategy1Group),
+                    ('strategy1_cash', Strategy1),
+                    ('strategy1_cash__subgroup', Strategy1Subgroup),
+                    ('strategy1_cash__subgroup__group', Strategy1Group),
+                    ('strategy2_position', Strategy2),
+                    ('strategy2_position__subgroup', Strategy2Subgroup),
+                    ('strategy2_position__subgroup__group', Strategy2Group),
+                    ('strategy2_cash', Strategy2),
+                    ('strategy2_cash__subgroup', Strategy2Subgroup),
+                    ('strategy2_cash__subgroup__group', Strategy2Group),
+                    ('strategy3_position', Strategy3),
+                    ('strategy3_position__subgroup', Strategy3Subgroup),
+                    ('strategy3_position__subgroup__group', Strategy3Group),
+                    ('strategy3_cash', Strategy3),
+                    ('strategy3_cash__subgroup', Strategy3Subgroup),
+                    ('strategy3_cash__subgroup__group', Strategy3Group),
+                    ('responsible', Responsible),
+                    ('responsible__group', ResponsibleGroup),
+                    ('counterparty', Counterparty),
+                    ('counterparty__group', CounterpartyGroup),
+                    ('linked_instrument', Instrument),
+                    ('linked_instrument__instrument_type', InstrumentType),
+                    ('allocation_balance', Instrument),
+                    ('allocation_balance__instrument_type', InstrumentType),
+                    ('allocation_pl', Instrument),
+                    ('allocation_pl__instrument_type', InstrumentType),
+                )
+            )
         else:
             queryset = self._queryset
 

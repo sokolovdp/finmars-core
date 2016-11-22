@@ -26,7 +26,7 @@ class ReportTestCase(TestCase):
             pandas.set_option('display.max_rows', 100)
             pandas.set_option('display.max_columns', 1000)
             pandas.set_option('precision', 4)
-            pandas.set_option('display.float_format', '{:.3f}'.format)
+            pandas.set_option('display.float_format', '{:.4f}'.format)
 
         self.report_date = date(2016, 3, 1)
 
@@ -469,76 +469,123 @@ class ReportTestCase(TestCase):
         b.build()
         self._dump(b, 'test_pl_1')
 
-    def _test_pl_real_unreal_1(self):
-        s1 = self.s1_1_1_1
-        s2 = self.s1_1_1_2
-        s3 = self.s1_1_1_3
-        s4 = self.s1_1_1_4
+    # def _test_pl_real_unreal_1(self):
+    #     s1 = self.s1_1_1_1
+    #     s2 = self.s1_1_1_2
+    #     s3 = self.s1_1_1_3
+    #     s4 = self.s1_1_1_4
+    #
+    #     instr = Instrument.objects.create(master_user=self.m, name="I1, USD/USD",
+    #                                       instrument_type=self.m.instrument_type,
+    #                                       pricing_currency=self.usd, price_multiplier=1.0,
+    #                                       accrued_currency=self.usd, accrued_multiplier=1.0)
+    #
+    #     PriceHistory.objects.create(instrument=instr, pricing_policy=self.pp,
+    #                                 date=self._d(1), principal_price=8.0, accrued_price=0.0)
+    #     PriceHistory.objects.create(instrument=instr, pricing_policy=self.pp,
+    #                                 date=self._d(2), principal_price=10.0, accrued_price=0.0)
+    #     PriceHistory.objects.create(instrument=instr, pricing_policy=self.pp,
+    #                                 date=self._d(3), principal_price=10.5, accrued_price=0.0)
+    #     PriceHistory.objects.create(instrument=instr, pricing_policy=self.pp,
+    #                                 date=self._d(4), principal_price=11.0, accrued_price=0.0)
+    #     PriceHistory.objects.create(instrument=instr, pricing_policy=self.pp,
+    #                                 date=self._d(5), principal_price=11.5, accrued_price=0.0)
+    #     PriceHistory.objects.create(instrument=instr, pricing_policy=self.pp,
+    #                                 date=self._d(6), principal_price=12.0, accrued_price=0.0)
+    #     PriceHistory.objects.create(instrument=instr, pricing_policy=self.pp,
+    #                                 date=self._d(7), principal_price=12.5, accrued_price=0.0)
+    #     PriceHistory.objects.create(instrument=instr, pricing_policy=self.pp,
+    #                                 date=self._d(8), principal_price=13.0, accrued_price=0.0)
+    #
+    #     PriceHistory.objects.create(instrument=instr, pricing_policy=self.pp,
+    #                                 date=self._d(14), principal_price=15.0, accrued_price=0.0)
+    #
+    #     self._t(t_class=self._sell, instr=instr, position=-5,
+    #             stl_ccy=self.usd, principal=40.0, carry=0.0, overheads=0.0,
+    #             acc_date_days=1, cash_date_days=1, s1_pos=s1, s1_cash=s1)
+    #
+    #     self._t(t_class=self._buy, instr=instr, position=10,
+    #             stl_ccy=self.usd, principal=-100.0, carry=0.0, overheads=0.0,
+    #             acc_date_days=2, cash_date_days=2, s1_pos=s1, s1_cash=s1)
+    #
+    #     self._t(t_class=self._buy, instr=instr, position=10,
+    #             stl_ccy=self.usd, principal=-105.0, carry=0.0, overheads=0.0,
+    #             acc_date_days=3, cash_date_days=3, s1_pos=s1, s1_cash=s1)
+    #
+    #     self._t(t_class=self._buy, instr=instr, position=10,
+    #             stl_ccy=self.usd, principal=-110.0, carry=0.0, overheads=0.0,
+    #             acc_date_days=4, cash_date_days=4, s1_pos=s1, s1_cash=s1)
+    #
+    #     self._t(t_class=self._sell, instr=instr, position=-20,
+    #             stl_ccy=self.usd, principal=230.0, carry=0.0, overheads=0.0,
+    #             acc_date_days=5, cash_date_days=5, s1_pos=s2, s1_cash=s2)
+    #
+    #     self._t(t_class=self._buy, instr=instr, position=10,
+    #             stl_ccy=self.usd, principal=-120.0, carry=0.0, overheads=0.0,
+    #             acc_date_days=6, cash_date_days=6, s1_pos=s3, s1_cash=s3)
+    #
+    #     self._t(t_class=self._sell, instr=instr, position=-20,
+    #             stl_ccy=self.usd, principal=250.0, carry=0.0, overheads=0.0,
+    #             acc_date_days=7, cash_date_days=7, s1_pos=s2, s1_cash=s2)
+    #
+    #     self._t(t_class=self._sell, instr=instr, position=-10,
+    #             stl_ccy=self.usd, principal=130.0, carry=0.0, overheads=0.0,
+    #             acc_date_days=8, cash_date_days=8, s1_pos=s4, s1_cash=s4)
+    #
+    #     r = Report(master_user=self.m, pricing_policy=self.pp, report_date=self._d(14),
+    #                cost_method=self._avco)
+    #     b = ReportBuilder(instance=r)
+    #     b.build()
+    #     self._dump(b, 'test_pl_real_unreal_1')
 
-        instr = Instrument.objects.create(master_user=self.m, name="I1, USD/USD",
-                                          instrument_type=self.m.instrument_type,
-                                          pricing_currency=self.usd, price_multiplier=1.0,
-                                          accrued_currency=self.usd, accrued_multiplier=1.0)
+    # def _test_pl_fx_fix_full_0(self):
+    #     instr = Instrument.objects.create(master_user=self.m, name="I1, RUB/RUB",
+    #                                       instrument_type=self.m.instrument_type,
+    #                                       pricing_currency=self.rub, price_multiplier=1.0,
+    #                                       accrued_currency=self.rub, accrued_multiplier=1.0)
+    #
+    #     # self.m.system_currency = self.cad
+    #     # self.m.save()
+    #
+    #     self._instr_hist(instr, self._d(101), 1.0, 1.0)
+    #     self._instr_hist(instr, self._d(102), 1.0, 1.0)
+    #     self._instr_hist(instr, self._d(103), 1.0, 1.0)
+    #     self._instr_hist(instr, self._d(104), 240.0, 160.0)
+    #
+    #     self._ccy_hist(self.gbp, self._d(101), 1.1)
+    #     self._ccy_hist(self.eur, self._d(102), 1.15)
+    #     self._ccy_hist(self.chf, self._d(103), 0.9)
+    #
+    #     self._ccy_hist(self.gbp, self._d(104), 1.2)
+    #     self._ccy_hist(self.eur, self._d(104), 1.1)
+    #     self._ccy_hist(self.chf, self._d(104), 1.0)
+    #     self._ccy_hist(self.cad, self._d(104), 0.9)
+    #     self._ccy_hist(self.rub, self._d(104), 1.0 / 65.0)
+    #     # for ch in CurrencyHistory.objects.order_by('currency__user_code', '-date').filter(date__gte=self._d(100)):
+    #     #     print(ch.currency.user_code, ch.date, ch.fx_rate)
+    #
+    #     self._t(t_class=self._buy, instr=instr, position=5,
+    #             stl_ccy=self.gbp, principal=-20.0, carry=-5.0,
+    #             trn_ccy=self.usd, fx_rate=1.5,
+    #             acc_date_days=101, cash_date_days=101)
+    #
+    #     self._t(t_class=self._buy, instr=instr, position=5,
+    #             stl_ccy=self.eur, principal=-22.0, carry=-8.0,
+    #             trn_ccy=self.usd, fx_rate=1.3,
+    #             acc_date_days=102, cash_date_days=102)
+    #
+    #     self._t(t_class=self._sell, instr=instr, position=-5,
+    #             stl_ccy=self.chf, principal=25.0, carry=9.0,
+    #             trn_ccy=self.usd, fx_rate=1.1,
+    #             acc_date_days=103, cash_date_days=103)
+    #
+    #     r = Report(master_user=self.m, pricing_policy=self.pp, report_date=self._d(104), report_currency=self.cad,
+    #                cost_method=self._avco)
+    #     b = ReportBuilder(instance=r)
+    #     b.build()
+    #     self._dump(b, 'test_pl_fx_fix_full_0')
 
-        PriceHistory.objects.create(instrument=instr, pricing_policy=self.pp,
-                                    date=self._d(1), principal_price=8.0, accrued_price=0.0)
-        PriceHistory.objects.create(instrument=instr, pricing_policy=self.pp,
-                                    date=self._d(2), principal_price=10.0, accrued_price=0.0)
-        PriceHistory.objects.create(instrument=instr, pricing_policy=self.pp,
-                                    date=self._d(3), principal_price=10.5, accrued_price=0.0)
-        PriceHistory.objects.create(instrument=instr, pricing_policy=self.pp,
-                                    date=self._d(4), principal_price=11.0, accrued_price=0.0)
-        PriceHistory.objects.create(instrument=instr, pricing_policy=self.pp,
-                                    date=self._d(5), principal_price=11.5, accrued_price=0.0)
-        PriceHistory.objects.create(instrument=instr, pricing_policy=self.pp,
-                                    date=self._d(6), principal_price=12.0, accrued_price=0.0)
-        PriceHistory.objects.create(instrument=instr, pricing_policy=self.pp,
-                                    date=self._d(7), principal_price=12.5, accrued_price=0.0)
-        PriceHistory.objects.create(instrument=instr, pricing_policy=self.pp,
-                                    date=self._d(8), principal_price=13.0, accrued_price=0.0)
-
-        PriceHistory.objects.create(instrument=instr, pricing_policy=self.pp,
-                                    date=self._d(14), principal_price=15.0, accrued_price=0.0)
-
-        self._t(t_class=self._sell, instr=instr, position=-5,
-                stl_ccy=self.usd, principal=40.0, carry=0.0, overheads=0.0,
-                acc_date_days=1, cash_date_days=1, s1_pos=s1, s1_cash=s1)
-
-        self._t(t_class=self._buy, instr=instr, position=10,
-                stl_ccy=self.usd, principal=-100.0, carry=0.0, overheads=0.0,
-                acc_date_days=2, cash_date_days=2, s1_pos=s1, s1_cash=s1)
-
-        self._t(t_class=self._buy, instr=instr, position=10,
-                stl_ccy=self.usd, principal=-105.0, carry=0.0, overheads=0.0,
-                acc_date_days=3, cash_date_days=3, s1_pos=s1, s1_cash=s1)
-
-        self._t(t_class=self._buy, instr=instr, position=10,
-                stl_ccy=self.usd, principal=-110.0, carry=0.0, overheads=0.0,
-                acc_date_days=4, cash_date_days=4, s1_pos=s1, s1_cash=s1)
-
-        self._t(t_class=self._sell, instr=instr, position=-20,
-                stl_ccy=self.usd, principal=230.0, carry=0.0, overheads=0.0,
-                acc_date_days=5, cash_date_days=5, s1_pos=s2, s1_cash=s2)
-
-        self._t(t_class=self._buy, instr=instr, position=10,
-                stl_ccy=self.usd, principal=-120.0, carry=0.0, overheads=0.0,
-                acc_date_days=6, cash_date_days=6, s1_pos=s3, s1_cash=s3)
-
-        self._t(t_class=self._sell, instr=instr, position=-20,
-                stl_ccy=self.usd, principal=250.0, carry=0.0, overheads=0.0,
-                acc_date_days=7, cash_date_days=7, s1_pos=s2, s1_cash=s2)
-
-        self._t(t_class=self._sell, instr=instr, position=-10,
-                stl_ccy=self.usd, principal=130.0, carry=0.0, overheads=0.0,
-                acc_date_days=8, cash_date_days=8, s1_pos=s4, s1_cash=s4)
-
-        r = Report(master_user=self.m, pricing_policy=self.pp, report_date=self._d(14),
-                   cost_method=self._avco)
-        b = ReportBuilder(instance=r)
-        b.build()
-        self._dump(b, 'test_pl_real_unreal_1')
-
-    def _test_pl_fx_fix_full_0(self):
+    def test_pl_full_fx_fixed_bys_sell_1(self):
         instr = Instrument.objects.create(master_user=self.m, name="I1, RUB/RUB",
                                           instrument_type=self.m.instrument_type,
                                           pricing_currency=self.rub, price_multiplier=1.0,
@@ -548,94 +595,43 @@ class ReportTestCase(TestCase):
         # self.m.save()
 
         self._instr_hist(instr, self._d(101), 1.0, 1.0)
-        self._instr_hist(instr, self._d(102), 1.0, 1.0)
-        self._instr_hist(instr, self._d(103), 1.0, 1.0)
-        self._instr_hist(instr, self._d(104), 240.0, 160.0)
+        self._instr_hist(instr, self._d(104), 1.0, 1.0)
 
-        self._ccy_hist(self.gbp, self._d(101), 1.1)
-        self._ccy_hist(self.eur, self._d(102), 1.15)
-        self._ccy_hist(self.chf, self._d(103), 0.9)
-
-        self._ccy_hist(self.gbp, self._d(104), 1.2)
-        self._ccy_hist(self.eur, self._d(104), 1.1)
-        self._ccy_hist(self.chf, self._d(104), 1.0)
-        self._ccy_hist(self.cad, self._d(104), 0.9)
-        self._ccy_hist(self.rub, self._d(104), 1.0 / 65.0)
-        # for ch in CurrencyHistory.objects.order_by('currency__user_code', '-date').filter(date__gte=self._d(100)):
-        #     print(ch.currency.user_code, ch.date, ch.fx_rate)
-
-        self._t(t_class=self._buy, instr=instr, position=5,
-                stl_ccy=self.gbp, principal=-20.0, carry=-5.0,
-                trn_ccy=self.usd, fx_rate=1.5,
-                acc_date_days=101, cash_date_days=101)
-
-        self._t(t_class=self._buy, instr=instr, position=5,
-                stl_ccy=self.eur, principal=-22.0, carry=-8.0,
-                trn_ccy=self.usd, fx_rate=1.3,
-                acc_date_days=102, cash_date_days=102)
-
-        self._t(t_class=self._sell, instr=instr, position=-5,
-                stl_ccy=self.chf, principal=25.0, carry=9.0,
-                trn_ccy=self.usd, fx_rate=1.1,
-                acc_date_days=103, cash_date_days=103)
-
-        r = Report(master_user=self.m, pricing_policy=self.pp, report_date=self._d(104), report_currency=self.cad,
-                   cost_method=self._avco)
-        b = ReportBuilder(instance=r)
-        b.build()
-        self._dump(b, 'test_pl_fx_fix_full_0')
-
-    def test_pl_fx_fix_full_1(self):
-        instr = Instrument.objects.create(master_user=self.m, name="I1, RUB/RUB",
-                                          instrument_type=self.m.instrument_type,
-                                          pricing_currency=self.rub, price_multiplier=1.0,
-                                          accrued_currency=self.rub, accrued_multiplier=1.0)
-
-        # self.m.system_currency = self.cad
-        # self.m.save()
-
-        self._instr_hist(instr, self._d(101), 1.0, 1.0)
-        self._instr_hist(instr, self._d(102), 1.0, 1.0)
-        self._instr_hist(instr, self._d(103), 1.0, 1.0)
-        self._instr_hist(instr, self._d(104), 240.0, 160.0)
-
-        self._ccy_hist(self.gbp, self._d(101), 1.1)
+        self._ccy_hist(self.gbp, self._d(101), 1.45)
         self._ccy_hist(self.gbp, self._d(104), 1.3)
 
-        self._ccy_hist(self.eur, self._d(102), 1.15)
+        self._ccy_hist(self.eur, self._d(101), 1.25)
         self._ccy_hist(self.eur, self._d(104), 1.1)
 
-        self._ccy_hist(self.rub, self._d(101), 1 / 60)
-        self._ccy_hist(self.rub, self._d(104), 1 / 65)
+        self._ccy_hist(self.rub, self._d(101), 1/60)
+        self._ccy_hist(self.rub, self._d(104), 1/65)
 
-        self._ccy_hist(self.chf, self._d(103), 0.9)
-        self._ccy_hist(self.chf, self._d(104), 1.0)
+        self._ccy_hist(self.chf, self._d(101), 1.15)
+        self._ccy_hist(self.chf, self._d(104), 1.05)
 
         self._ccy_hist(self.cad, self._d(101), 1.1)
-        self._ccy_hist(self.cad, self._d(102), 1.1)
-        self._ccy_hist(self.cad, self._d(103), 1.1)
         self._ccy_hist(self.cad, self._d(104), 1.2)
 
         self._t(t_class=self._buy, instr=instr, position=5,
                 stl_ccy=self.gbp, principal=-20.0, carry=-5.0,
-                trn_ccy=self.rub, fx_rate=1 / 80,
+                trn_ccy=self.rub, fx_rate=80,
                 acc_date_days=101, cash_date_days=101)
 
         self._t(t_class=self._buy, instr=instr, position=5,
                 stl_ccy=self.eur, principal=-22.0, carry=-8.0,
                 trn_ccy=self.usd, fx_rate=1.3,
-                acc_date_days=102, cash_date_days=102)
+                acc_date_days=101, cash_date_days=101)
 
         self._t(t_class=self._sell, instr=instr, position=-5,
                 stl_ccy=self.chf, principal=25.0, carry=9.0,
                 trn_ccy=self.usd, fx_rate=1.1,
-                acc_date_days=103, cash_date_days=103)
+                acc_date_days=101, cash_date_days=101)
 
         r = Report(master_user=self.m, pricing_policy=self.pp, report_date=self._d(104), report_currency=self.cad,
                    cost_method=self._avco)
         b = ReportBuilder(instance=r)
         b.build()
-        self._dump(b, 'test_pl_fx_fix_full_1')
+        self._dump(b, 'test_pl_full_fx_fixed_bys_sell_1')
 
     def _test_mismatch_0(self):
         self._t(t_class=self._buy,
