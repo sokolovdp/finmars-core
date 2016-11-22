@@ -595,7 +595,7 @@ class ReportTestCase(TestCase):
         # self.m.save()
 
         self._instr_hist(instr, self._d(101), 1.0, 1.0)
-        self._instr_hist(instr, self._d(104), 1.0, 1.0)
+        self._instr_hist(instr, self._d(104), 240.0, 160.0)
 
         self._ccy_hist(self.gbp, self._d(101), 1.45)
         self._ccy_hist(self.gbp, self._d(104), 1.3)
