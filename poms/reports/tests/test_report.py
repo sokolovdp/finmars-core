@@ -586,7 +586,7 @@ class ReportTestCase(TestCase):
     #     b.build()
     #     self._dump(b, 'test_pl_fx_fix_full_0')
 
-    def test_pl_full_fx_fixed_buy_sell_1(self):
+    def _test_pl_full_fx_fixed_buy_sell_1(self):
         instr = Instrument.objects.create(master_user=self.m, name="I1, RUB/RUB",
                                           instrument_type=self.m.instrument_type,
                                           pricing_currency=self.rub, price_multiplier=1.0,
@@ -699,7 +699,7 @@ class ReportTestCase(TestCase):
         b.build()
         self._dump(b, 'test_pl_full_fx_fixed_fx_trade_1')
 
-    def test_mismatch_0(self):
+    def _test_mismatch_0(self):
         for i in range(0, 2):
             self._t(t_class=self._buy,
                     instr=self.bond0, position=100,
@@ -730,7 +730,7 @@ class ReportTestCase(TestCase):
         b.build()
         self._dump(b, 'test_mismatch_0')
 
-    def _test_approach_alloc_0(self):
+    def test_approach_alloc_0(self):
         self.bond0.user_code = 'I1'
         self.bond0.price_multiplier = 5.0
         self.bond0.accrued_multiplier = 0.0
@@ -744,26 +744,20 @@ class ReportTestCase(TestCase):
         self._t(t_class=self._buy,
                 instr=self.bond0, position=5,
                 stl_ccy=self.usd, principal=-10, carry=0, overheads=0,
-                link_instr=self.bond2,
-                alloc_bl=self.bond1, alloc_pl=self.bond1,
-                p=self.p1, acc_pos=self.a1_1)
+                alloc_bl=self.bond1, alloc_pl=self.bond1)
 
         self._t(t_class=self._buy,
                 instr=self.bond0, position=5,
                 stl_ccy=self.usd, principal=-15, carry=0, overheads=0,
-                link_instr=self.bond2,
-                alloc_bl=self.bond2, alloc_pl=self.bond2,
-                p=self.p1, acc_pos=self.a1_1)
+                alloc_bl=self.bond2, alloc_pl=self.bond2)
 
         self._t(t_class=self._sell,
                 instr=self.bond0, position=-5,
                 stl_ccy=self.usd, principal=20, carry=0, overheads=0,
-                link_instr=self.bond2,
-                alloc_bl=self.bond3, alloc_pl=self.bond3,
-                p=self.p1, acc_pos=self.a1_1)
+                alloc_bl=self.bond3, alloc_pl=self.bond3)
 
         r = Report(master_user=self.m, pricing_policy=self.pp, report_date=self._d(0),
-                   approach_multiplier=0.5)
+                   approach_multiplier=1.0)
         b = ReportBuilder(instance=r)
         b.build()
         self._dump(b, 'test_approach_alloc_0')
