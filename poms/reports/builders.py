@@ -1852,7 +1852,7 @@ class ReportBuilder(object):
             t0.multiplier = multiplier
             return delta
 
-        def _approach(closed, cur, delta):
+        def _close_by(closed, cur, delta):
             # changes.append((closed, cur, delta))
             closed.closed_by.append((cur, delta))
             # cur2, closed2 = VirtualTransaction.approach_clone(cur, closed, delta)
@@ -1890,7 +1890,7 @@ class ReportBuilder(object):
                     if t_key in items:
                         for t0 in items[t_key]:
                             delta = _set_mul(t0, 1.0)
-                            _approach(t0, t, delta)
+                            _close_by(t0, t, delta)
                         del items[t_key]
                     items[t_key].append(t)
                     _set_mul(t, 1.0 / k)
@@ -1900,7 +1900,7 @@ class ReportBuilder(object):
                     if t_key in items:
                         for t0 in items[t_key]:
                             delta = _set_mul(t0, 1.0)
-                            _approach(t0, t, delta)
+                            _close_by(t0, t, delta)
                         del items[t_key]
                     _set_mul(t, 1.0)
                     rolling_position = 0.0
@@ -1909,7 +1909,7 @@ class ReportBuilder(object):
                     if t_key in items:
                         for t0 in items[t_key]:
                             delta = _set_mul(t0, t0.multiplier + k * (1.0 - t0.multiplier))
-                            _approach(t0, t, delta)
+                            _close_by(t0, t, delta)
                     _set_mul(t, 1.0)
                     rolling_position += t.pos_size
 
@@ -1923,7 +1923,7 @@ class ReportBuilder(object):
                     if t_key in items:
                         for t0 in items[t_key]:
                             delta = _set_mul(t0, 1.0)
-                            _approach(t0, t, delta)
+                            _close_by(t0, t, delta)
                         items[t_key].clear()
                     items[t_key].append(t)
                     _set_mul(t, 1.0 / k)
@@ -1933,7 +1933,7 @@ class ReportBuilder(object):
                     if t_key in items:
                         for t0 in items[t_key]:
                             delta = _set_mul(t0, 1.0)
-                            _approach(t0, t, delta)
+                            _close_by(t0, t, delta)
                         del items[t_key]
                     _set_mul(t, 1.0)
                     rolling_position = 0.0
@@ -1947,16 +1947,16 @@ class ReportBuilder(object):
                             k0 = - position / remaining
                             if k0 > 1.0:
                                 delta = _set_mul(t0, 1.0)
-                                _approach(t0, t, delta)
+                                _close_by(t0, t, delta)
                                 position += remaining
                             elif isclose(k0, 1.0):
                                 delta = _set_mul(t0, 1.0)
-                                _approach(t0, t, delta)
+                                _close_by(t0, t, delta)
                                 position += remaining
                             elif k0 > 0.0:
                                 position += remaining * k0
                                 delta = _set_mul(t0, t0.multiplier + k0 * (1.0 - t0.multiplier))
-                                _approach(t0, t, delta)
+                                _close_by(t0, t, delta)
                             # else:
                             #     break
                             if isclose(position, 0.0):
