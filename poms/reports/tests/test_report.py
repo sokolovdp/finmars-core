@@ -647,7 +647,8 @@ class ReportTestCase(TestCase):
         self._t(t_class=self._cash_inflow,
                 trn_ccy=self.gbp, position=0,
                 stl_ccy=self.chf, cash=100, fx_rate=0.75,
-                acc_date_days=101, cash_date_days=101)
+                acc_date_days=101, cash_date_days=101,
+                alloc_bl=self.bond1, alloc_pl=self.bond2)
 
         r = Report(master_user=self.m, pricing_policy=self.pp, report_date=self._d(104), report_currency=self.cad,
                    cost_method=self._avco)
@@ -655,7 +656,7 @@ class ReportTestCase(TestCase):
         b.build()
         self._dump(b, 'test_pl_full_fx_fixed_cash_in_out_1')
 
-    def _test_pl_full_fx_fixed_trn_pl_instr_pl_1(self):
+    def _test_pl_full_fx_fixed_instr_pl_1(self):
         self._ccy_hist(self.gbp, self._d(101), 1.45)
         self._ccy_hist(self.gbp, self._d(104), 1.2)
 
@@ -669,15 +670,38 @@ class ReportTestCase(TestCase):
                 instr=self.bond0,
                 trn_ccy=self.gbp, position=0,
                 stl_ccy=self.chf, carry=1000, overheads=-20, fx_rate=0.75,
-                acc_date_days=101, cash_date_days=101)
+                acc_date_days=101, cash_date_days=101,
+                alloc_bl=self.bond1, alloc_pl=self.bond2)
 
         r = Report(master_user=self.m, pricing_policy=self.pp, report_date=self._d(104), report_currency=self.cad,
                    cost_method=self._avco)
         b = ReportBuilder(instance=r)
         b.build()
-        self._dump(b, 'test_pl_full_fx_fixed_trn_pl_instr_pl_1')
+        self._dump(b, 'test_pl_full_fx_fixed_instr_pl_1')
 
-    def _test_pl_full_fx_fixed_fx_trade_1(self):
+    def _test_pl_full_fx_fixed_trn_pl_1(self):
+        self._ccy_hist(self.gbp, self._d(101), 1.45)
+        self._ccy_hist(self.gbp, self._d(104), 1.2)
+
+        self._ccy_hist(self.chf, self._d(101), 1.15)
+        self._ccy_hist(self.chf, self._d(104), 1.1)
+
+        self._ccy_hist(self.cad, self._d(101), 0.85)
+        self._ccy_hist(self.cad, self._d(104), 0.9)
+
+        self._t(t_class=self._transaction_pl,
+                trn_ccy=self.gbp, position=0,
+                stl_ccy=self.chf, carry=1000, overheads=-20, fx_rate=0.75,
+                acc_date_days=101, cash_date_days=101,
+                alloc_bl=self.bond1, alloc_pl=self.bond2)
+
+        r = Report(master_user=self.m, pricing_policy=self.pp, report_date=self._d(104), report_currency=self.cad,
+                   cost_method=self._avco)
+        b = ReportBuilder(instance=r)
+        b.build()
+        self._dump(b, 'test_pl_full_fx_fixed_trn_pl_1')
+
+    def test_pl_full_fx_fixed_fx_trade_1(self):
         self._ccy_hist(self.gbp, self._d(101), 1.45)
         self._ccy_hist(self.gbp, self._d(104), 1.2)
 
@@ -690,8 +714,8 @@ class ReportTestCase(TestCase):
         self._t(t_class=self._fx_tade,
                 trn_ccy=self.gbp, position=100,
                 stl_ccy=self.chf, principal=-140,
-                alloc_bl=self.bond0, alloc_pl=self.bond1,
-                acc_date_days=101, cash_date_days=101)
+                acc_date_days=101, cash_date_days=101,
+                alloc_bl=self.bond1, alloc_pl=self.bond2)
 
         r = Report(master_user=self.m, pricing_policy=self.pp, report_date=self._d(104), report_currency=self.cad,
                    cost_method=self._avco)
@@ -730,7 +754,7 @@ class ReportTestCase(TestCase):
         b.build()
         self._dump(b, 'test_mismatch_0')
 
-    def test_approach_alloc_0(self):
+    def _test_approach_alloc_0(self):
         self.bond0.user_code = 'I1'
         self.bond0.price_multiplier = 5.0
         self.bond0.accrued_multiplier = 0.0

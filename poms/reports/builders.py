@@ -5,7 +5,6 @@ import copy
 import logging
 from collections import Counter, defaultdict
 from datetime import timedelta
-from functools import partial
 from itertools import groupby
 
 from django.utils.functional import cached_property
@@ -90,6 +89,7 @@ class VirtualTransaction(_Base):
     trn = None
     pk = None
     is_hidden = False  # if True it is not involved in the calculations
+    is_mismatch = True
     trn_code = None
     trn_cls = None
     # case = 0
@@ -252,7 +252,8 @@ class VirtualTransaction(_Base):
 
     dump_columns = [
         'pk',
-        # 'is_hidden',
+        'is_hidden',
+        'is_mismatch',
         'trn_cls',
         # 'case',
         'multiplier',
@@ -312,41 +313,41 @@ class VirtualTransaction(_Base):
         # 'overheads_opened_res',
         'total_opened_res',
 
-        # # fx ----------------------------------------------------
+        # fx ----------------------------------------------------
         # 'principal_fx_res',
         # 'carry_fx_res',
         # 'overheads_fx_res',
-        # 'total_fx_res',
-        #
-        # # fx / closed ----------------------------------------------------
+        'total_fx_res',
+
+        # fx / closed ----------------------------------------------------
         # 'principal_fx_closed_res',
         # 'carry_fx_closed_res',
         # 'overheads_fx_closed_res',
-        # 'total_fx_closed_res',
-        #
-        # # fx / opened ----------------------------------------------------
+        'total_fx_closed_res',
+
+        # fx / opened ----------------------------------------------------
         # 'principal_fx_opened_res',
         # 'carry_fx_opened_res',
         # 'overheads_fx_opened_res',
-        # 'total_fx_opened_res',
-        #
-        # # fixed ----------------------------------------------------
+        'total_fx_opened_res',
+
+        # fixed ----------------------------------------------------
         # 'principal_fixed_res',
         # 'carry_fixed_res',
         # 'overheads_fixed_res',
-        # 'total_fixed_res',
-        #
-        # # fixed / closed ----------------------------------------------------
+        'total_fixed_res',
+
+        # fixed / closed ----------------------------------------------------
         # 'principal_fixed_closed_res',
         # 'carry_fixed_closed_res',
         # 'overheads_fixed_closed_res',
-        # 'total_fixed_closed_res',
-        #
-        # # fixed / opened ----------------------------------------------------
+        'total_fixed_closed_res',
+
+        # fixed / opened ----------------------------------------------------
         # 'principal_fixed_opened_res',
         # 'carry_fixed_opened_res',
         # 'overheads_fixed_opened_res',
-        # 'total_fixed_opened_res',
+        'total_fixed_opened_res',
     ]
 
     def __init__(self, report, pricing_provider, fx_rate_provider, trn, overrides=None):
@@ -536,6 +537,7 @@ class VirtualTransaction(_Base):
             self.pl_fixed_mul = self.ref_fx * self.trn_ccy_acc_hist_fx
 
             self.principal_res = self.cash * self.pl_fx_mul
+            self.principal_closed_res = self.principal_res
             self.principal_fx_res = self.principal_res
             self.principal_fx_closed_res = self.principal_res
 
@@ -567,6 +569,8 @@ class VirtualTransaction(_Base):
         #     _t2_a(total_attr)
 
         def _clean(t):
+            t.is_mismatch = False
+
             t.report_ccy_cur = None
             t.report_ccy_cur_fx = float('nan')
             t.report_ccy_cash_hist = None
@@ -782,6 +786,7 @@ class VirtualTransaction(_Base):
     def transfer_clone(self, t1_cls, t2_cls, t1_pos_sign=-1.0, t1_cash_sign=1.0):
         # t1
         t1 = self.clone()
+        t1.is_mismatch = False
         t1.trn_cls = t1_cls
         t1.acc_pos = self.acc_cash
         t1.acc_cash = self.acc_cash
@@ -801,6 +806,7 @@ class VirtualTransaction(_Base):
 
         # t2
         t2 = self.clone()
+        t2.is_mismatch = False
         t2.trn_cls = t2_cls
         t2.acc_pos = self.acc_cash
         t2.acc_cash = self.acc_cash
@@ -823,6 +829,7 @@ class VirtualTransaction(_Base):
         # t1
         t1 = self.clone()
         t1.is_hidden = False
+        t1.is_mismatch = False
         t1.trn_ccy = self.trn_ccy
         t1.stl_ccy = self.trn_ccy
         t1.principal = self.pos_size
@@ -834,6 +841,7 @@ class VirtualTransaction(_Base):
         # t2
         t2 = self.clone()
         t2.is_hidden = False
+        t2.is_mismatch = False
         t2.trn_ccy = self.trn_ccy
         t2.stl_ccy = self.stl_ccy
         t2.pos_size = self.principal
@@ -858,20 +866,22 @@ class ReportItem(_Base):
     TYPE_CURRENCY = 2
     TYPE_TRANSACTION_PL = 3
     TYPE_FX_TRADE = 4
-    TYPE_MISMATCH = 5  # Linked instrument
-    TYPE_SUMMARY = 100
-    TYPE_INVESTED_CURRENCY = 200
-    TYPE_INVESTED_SUMMARY = 201
+    TYPE_CASH_IN_OUT = 5
+    TYPE_MISMATCH = 100  # Linked instrument
+    TYPE_SUMMARY = 200
+    # TYPE_INVESTED_CURRENCY = 300
+    # TYPE_INVESTED_SUMMARY = 301
     TYPE_CHOICES = (
         (TYPE_UNKNOWN, 'Unknown'),
         (TYPE_INSTRUMENT, 'Instrument'),
         (TYPE_CURRENCY, 'Currency'),
         (TYPE_TRANSACTION_PL, 'Transaction PL'),
         (TYPE_FX_TRADE, 'FX-Trade'),
+        (TYPE_CASH_IN_OUT, 'Cash In/Out'),
         (TYPE_MISMATCH, 'Mismatch'),
         (TYPE_SUMMARY, 'Summary'),
-        (TYPE_INVESTED_CURRENCY, 'Invested'),
-        (TYPE_INVESTED_SUMMARY, 'Invested summary'),
+        # (TYPE_INVESTED_CURRENCY, 'Invested'),
+        # (TYPE_INVESTED_SUMMARY, 'Invested summary'),
     )
 
     type = None
@@ -886,10 +896,11 @@ class ReportItem(_Base):
     str3 = None
     # detail_trn = None
     # custom_fields = []
+    is_empty = False
 
     # link
     mismatch = 0.0
-    mismatch_ccy = None
+    # mismatch_ccy = None
     mismatch_prtfl = None
     mismatch_acc = None
 
@@ -976,23 +987,23 @@ class ReportItem(_Base):
 
     dump_columns = [
         'type_code',
-        'user_code',
-        'trn',
+        # 'user_code',
+        # 'trn',
         # 'prtfl',
         # 'acc',
         # 'str1',
         # 'str2',
         # 'str3',
         # 'detail_trn',
-        # 'instr',
-        # 'ccy',
-        'alloc_bl',
-        'alloc_pl',
+        'instr',
+        'ccy',
+        # 'alloc_bl',
+        # 'alloc_pl',
 
         # 'mismatch_prtfl',
         # 'mismatch_acc',
         # 'mismatch_ccy',
-        # 'mismatch',
+        'mismatch',
 
         'pos_size',
         'market_value_res',
@@ -1019,41 +1030,41 @@ class ReportItem(_Base):
         # 'overheads_opened_res',
         'total_opened_res',
 
-        # # fx ----------------------------------------------------
+        # fx ----------------------------------------------------
         # 'principal_fx_res',
         # 'carry_fx_res',
         # 'overheads_fx_res',
-        # 'total_fx_res',
-        #
-        # # fx / closed ----------------------------------------------------
+        'total_fx_res',
+
+        # fx / closed ----------------------------------------------------
         # 'principal_fx_closed_res',
         # 'carry_fx_closed_res',
         # 'overheads_fx_closed_res',
-        # 'total_fx_closed_res',
-        #
-        # # fx / opened ----------------------------------------------------
+        'total_fx_closed_res',
+
+        # fx / opened ----------------------------------------------------
         # 'principal_fx_opened_res',
         # 'carry_fx_opened_res',
         # 'overheads_fx_opened_res',
-        # 'total_fx_opened_res',
-        #
-        # # fixed ----------------------------------------------------
+        'total_fx_opened_res',
+
+        # fixed ----------------------------------------------------
         # 'principal_fixed_res',
         # 'carry_fixed_res',
         # 'overheads_fixed_res',
-        # 'total_fixed_res',
-        #
-        # # fixed / closed ----------------------------------------------------
+        'total_fixed_res',
+
+        # fixed / closed ----------------------------------------------------
         # 'principal_fixed_closed_res',
         # 'carry_fixed_closed_res',
         # 'overheads_fixed_closed_res',
-        # 'total_fixed_closed_res',
-        #
-        # # fixed / opened ----------------------------------------------------
+        'total_fixed_closed_res',
+
+        # fixed / opened ----------------------------------------------------
         # 'principal_fixed_opened_res',
         # 'carry_fixed_opened_res',
         # 'overheads_fixed_opened_res',
-        # 'total_fixed_opened_res',
+        'total_fixed_opened_res',
     ]
 
     def __init__(self, report, pricing_provider, fx_rate_provider, type):
@@ -1072,7 +1083,8 @@ class ReportItem(_Base):
         item.alloc_bl = trn.alloc_bl
         item.alloc_pl = trn.alloc_pl
 
-        if type in [ReportItem.TYPE_INSTRUMENT, ReportItem.TYPE_TRANSACTION_PL, ReportItem.TYPE_FX_TRADE]:
+        if type in [ReportItem.TYPE_INSTRUMENT, ReportItem.TYPE_TRANSACTION_PL, ReportItem.TYPE_FX_TRADE,
+                    ReportItem.TYPE_CASH_IN_OUT]:
             # full ----------------------------------------------------
             item.principal_res = trn.principal_res
             item.carry_res = trn.carry_res
@@ -1146,7 +1158,7 @@ class ReportItem(_Base):
 
             item.pos_size = val
 
-        elif item.type == ReportItem.TYPE_FX_TRADE:
+        elif item.type in [ReportItem.TYPE_FX_TRADE, ReportItem.TYPE_CASH_IN_OUT]:
             item.acc = acc or trn.acc_cash
             item.str1 = str1 or trn.str1_cash
             item.str2 = str2 or trn.str2_cash
@@ -1169,11 +1181,14 @@ class ReportItem(_Base):
             item.str2 = item.report.master_user.strategy2
             item.str3 = item.report.master_user.strategy3
             item.instr = trn.link_instr
-
+            item.ccy = trn.stl_ccy
             item.mismatch_prtfl = trn.prtfl
             item.mismatch_acc = trn.acc_cash
-            item.mismatch_ccy = trn.stl_ccy
             item.mismatch = trn.mismatch
+
+        # elif item.type in [ReportItem.TYPE_SUMMARY, ReportItem.TYPE_INVESTED_SUMMARY]:
+        elif item.type in [ReportItem.TYPE_SUMMARY, ]:
+            item.pos_size = float('nan')
 
         # if trn.is_show_details(acc):
         #     item.detail_trn = trn
@@ -1201,9 +1216,13 @@ class ReportItem(_Base):
         item.alloc_bl = src.alloc_bl
         item.alloc_pl = src.alloc_pl
 
-        item.mismatch_ccy = src.mismatch_ccy
+        # item.mismatch_ccy = src.mismatch_ccy
         item.mismatch_prtfl = src.mismatch_prtfl
         item.mismatch_acc = src.mismatch_acc
+
+        # if item.type in [ReportItem.TYPE_SUMMARY, ReportItem.TYPE_INVESTED_SUMMARY]:
+        if item.type in [ReportItem.TYPE_SUMMARY]:
+            item.pos_size = float('nan')
 
         return item
 
@@ -1276,7 +1295,8 @@ class ReportItem(_Base):
         self.carry_fixed_opened_res += o.carry_fixed_opened_res
         self.overheads_fixed_opened_res += o.overheads_fixed_opened_res
 
-        if self.type == ReportItem.TYPE_CURRENCY or self.type == ReportItem.TYPE_INVESTED_CURRENCY:
+        # if self.type == ReportItem.TYPE_CURRENCY or self.type == ReportItem.TYPE_INVESTED_CURRENCY:
+        if self.type == ReportItem.TYPE_CURRENCY:
             self.pos_size += o.pos_size
 
             # self.market_value_res += o.pos_size * o.ccy_cur_fx
@@ -1294,7 +1314,8 @@ class ReportItem(_Base):
             # self.total_unreal_res += o.market_value_res + o.cost_res
             # self.total_unreal_res += (o.instr_principal_res + o.instr_accrued_res) + o.cost_res
 
-        elif self.type == ReportItem.TYPE_SUMMARY or self.type == ReportItem.TYPE_INVESTED_SUMMARY:
+        # elif self.type == ReportItem.TYPE_SUMMARY or self.type == ReportItem.TYPE_INVESTED_SUMMARY:
+        elif self.type == ReportItem.TYPE_SUMMARY:
             self.market_value_res += o.market_value_res
             # self.total_real_res += o.total_real_res
             # self.total_unreal_res += o.total_unreal_res
@@ -1303,7 +1324,8 @@ class ReportItem(_Base):
             self.mismatch += o.mismatch
 
     def close(self):
-        if self.type == ReportItem.TYPE_CURRENCY or self.type == ReportItem.TYPE_INVESTED_CURRENCY:
+        # if self.type == ReportItem.TYPE_CURRENCY or self.type == ReportItem.TYPE_INVESTED_CURRENCY:
+        if self.type == ReportItem.TYPE_CURRENCY:
             self.market_value_res = self.pos_size * self.ccy_cur_fx
 
         elif self.type == ReportItem.TYPE_INSTRUMENT:
@@ -1345,61 +1367,61 @@ class ReportItem(_Base):
             self.principal_fixed_opened_res += self.instr_principal_res
             self.carry_fixed_opened_res += self.instr_accrued_res
 
-        # full ----------------------------------------------------
+        elif self.type == ReportItem.TYPE_MISMATCH:
+            # self.market_value_res = self.pos_size * self.ccy_cur_fx
+            #
+            # self.is_empty = isclose(self.pos_size, 0.0)
+            pass
+
         self.total_res = self.principal_res + self.carry_res + self.overheads_res
-
-        # full / closed ----------------------------------------------------
         self.total_closed_res = self.principal_closed_res + self.carry_closed_res + self.overheads_closed_res
-
-        # full / opened ----------------------------------------------------
         self.total_opened_res = self.principal_opened_res + self.carry_opened_res + self.overheads_opened_res
-
-        # fx ----------------------------------------------------
         self.total_fx_res = self.principal_fx_res + self.carry_fx_res + self.overheads_fx_res
-
-        # fx / closed ----------------------------------------------------
         self.total_fx_closed_res = self.principal_fx_closed_res + self.carry_fx_closed_res + self.overheads_fx_closed_res
-
-        # fx / opened ----------------------------------------------------
         self.total_fx_opened_res = self.principal_fx_opened_res + self.carry_fx_opened_res + self.overheads_fx_opened_res
-
-        # fixed ----------------------------------------------------
         self.total_fixed_res = self.principal_fixed_res + self.carry_fixed_res + self.overheads_fixed_res
-
-        # fixed / closed ----------------------------------------------------
         self.total_fixed_closed_res = self.principal_fixed_closed_res + self.carry_fixed_closed_res + self.overheads_fixed_closed_res
-
-        # fixed / opened ----------------------------------------------------
         self.total_fixed_opened_res = self.principal_fixed_opened_res + self.carry_fixed_opened_res + self.overheads_fixed_opened_res
 
-    #  ----------------------------------------------------
-    @staticmethod
-    def group_key(report, item):
-        return (
-            item.type,
-            getattr(item.prtfl, 'id', None),
-            getattr(item.acc, 'id', None),
-            getattr(item.str1, 'id', None),
-            getattr(item.str2, 'id', None),
-            getattr(item.str3, 'id', None),
-            getattr(item.alloc_bl, 'id', None),
-            getattr(item.alloc_pl, 'id', None),
-            getattr(item.instr, 'id', None),
-            getattr(item.ccy, 'id', None),
-            getattr(item.detail_trn, 'id', None),
-        )
+        # is_empty
 
-    @staticmethod
-    def mismatch_group_key(report, item):
-        return (
-            item.type,
-            getattr(item.prtfl, 'id', None),
-            getattr(item.acc, 'id', None),
-            getattr(item.instr, 'id', None),
-            getattr(item.mismatch_prtfl, 'id', None),
-            getattr(item.mismatch_acc, 'id', None),
-            getattr(item.mismatch_ccy, 'id', None),
-        )
+        if self.type == ReportItem.TYPE_CURRENCY:
+            self.is_empty = isclose(self.pos_size, 0.0)
+
+        elif self.type == ReportItem.TYPE_INSTRUMENT:
+            self.is_empty = isclose(self.pos_size, 0.0) and \
+                            isclose(self.total_res, 0.0) and \
+                            isclose(self.total_closed_res, 0.0) and \
+                            isclose(self.total_opened_res, 0.0)
+
+    #  ----------------------------------------------------
+    # @staticmethod
+    # def group_key(report, item):
+    #     return (
+    #         item.type,
+    #         getattr(item.prtfl, 'id', None),
+    #         getattr(item.acc, 'id', None),
+    #         getattr(item.str1, 'id', None),
+    #         getattr(item.str2, 'id', None),
+    #         getattr(item.str3, 'id', None),
+    #         getattr(item.alloc_bl, 'id', None),
+    #         getattr(item.alloc_pl, 'id', None),
+    #         getattr(item.instr, 'id', None),
+    #         getattr(item.ccy, 'id', None),
+    #         getattr(item.detail_trn, 'id', None),
+    #     )
+    #
+    # @staticmethod
+    # def mismatch_group_key(report, item):
+    #     return (
+    #         item.type,
+    #         getattr(item.prtfl, 'id', None),
+    #         getattr(item.acc, 'id', None),
+    #         getattr(item.instr, 'id', None),
+    #         getattr(item.mismatch_prtfl, 'id', None),
+    #         getattr(item.mismatch_acc, 'id', None),
+    #         getattr(item.mismatch_ccy, 'id', None),
+    #     )
 
     # ----------------------------------------------------
 
@@ -1427,17 +1449,20 @@ class ReportItem(_Base):
         elif self.type == ReportItem.TYPE_FX_TRADE:
             return 'FX_TRADE'
 
+        elif self.type == ReportItem.TYPE_CASH_IN_OUT:
+            return 'CASH_IN_OUT'
+
         elif self.type == ReportItem.TYPE_MISMATCH:
             return 'MISMATCH'
 
         elif self.type == ReportItem.TYPE_SUMMARY:
             return 'SUMMARY'
 
-        elif self.type == ReportItem.TYPE_INVESTED_CURRENCY:
-            return 'INV_CCY'
-
-        elif self.type == ReportItem.TYPE_INVESTED_SUMMARY:
-            return 'INV_SUMMARY'
+        # elif self.type == ReportItem.TYPE_INVESTED_CURRENCY:
+        #     return 'INV_CCY'
+        #
+        # elif self.type == ReportItem.TYPE_INVESTED_SUMMARY:
+        #     return 'INV_SUMMARY'
 
         return 'ERR'
 
@@ -1447,10 +1472,10 @@ class ReportItem(_Base):
             return '<UNKNOWN>'
 
         elif self.type == ReportItem.TYPE_INSTRUMENT:
-            return self.instr.user_code
+            return getattr(self.instr, 'user_code', None)
 
         elif self.type == ReportItem.TYPE_CURRENCY:
-            return self.ccy.user_code
+            return getattr(self.ccy, 'user_code', None)
 
         elif self.type == ReportItem.TYPE_TRANSACTION_PL:
             return 'TRANSACTION_PL'
@@ -1458,17 +1483,20 @@ class ReportItem(_Base):
         elif self.type == ReportItem.TYPE_FX_TRADE:
             return 'FX_TRADE'
 
+        elif self.type == ReportItem.TYPE_CASH_IN_OUT:
+            return 'CASH_IN_OUT'
+
         elif self.type == ReportItem.TYPE_MISMATCH:
-            return self.instr.user_code
+            return getattr(self.ccy, 'user_code', None)
 
         elif self.type == ReportItem.TYPE_SUMMARY:
             return 'SUMMARY'
 
-        elif self.type == ReportItem.TYPE_INVESTED_CURRENCY:
-            return self.ccy.user_code
-
-        elif self.type == ReportItem.TYPE_INVESTED_SUMMARY:
-            return 'INVESTED_SUMMARY'
+        # elif self.type == ReportItem.TYPE_INVESTED_CURRENCY:
+        #     return getattr(self.ccy, 'user_code', None)
+        #
+        # elif self.type == ReportItem.TYPE_INVESTED_SUMMARY:
+        #     return 'INVESTED_SUMMARY'
 
         return '<ERROR>'
 
@@ -1478,10 +1506,10 @@ class ReportItem(_Base):
             return '<UNKNOWN>'
 
         elif self.type == ReportItem.TYPE_INSTRUMENT:
-            return self.instr.name
+            return getattr(self.instr, 'name', None)
 
         elif self.type == ReportItem.TYPE_CURRENCY:
-            return self.ccy.name
+            return getattr(self.ccy, 'name', None)
 
         elif self.type == ReportItem.TYPE_TRANSACTION_PL:
             return ugettext('Transaction PL')
@@ -1489,17 +1517,20 @@ class ReportItem(_Base):
         elif self.type == ReportItem.TYPE_FX_TRADE:
             return ugettext('FX-Trade')
 
+        elif self.type == ReportItem.TYPE_CASH_IN_OUT:
+            return ugettext('Cash In/Out')
+
         elif self.type == ReportItem.TYPE_MISMATCH:
-            return self.instr.name
+            return getattr(self.instr, 'name', None)
 
         elif self.type == ReportItem.TYPE_SUMMARY:
             return ugettext('Summary')
 
-        elif self.type == ReportItem.TYPE_INVESTED_CURRENCY:
-            return self.ccy.name
-
-        elif self.type == ReportItem.TYPE_INVESTED_SUMMARY:
-            return ugettext('Invested summary')
+        # elif self.type == ReportItem.TYPE_INVESTED_CURRENCY:
+        #     return getattr(self.ccy, 'name', None)
+        #
+        # elif self.type == ReportItem.TYPE_INVESTED_SUMMARY:
+        #     return ugettext('Invested summary')
 
         return '<ERROR>'
 
@@ -2056,13 +2087,13 @@ class ReportBuilder(object):
         # split transactions to atomic items using transaction class, case and something else
 
         for trn in self.transactions:
-            if trn.is_hidden:
-                continue
-
-            if trn.link_instr and not isclose(trn.mismatch, 0.0):
+            if trn.is_mismatch and trn.link_instr and not isclose(trn.mismatch, 0.0):
                 item = ReportItem.from_trn(self.instance, self._pricing_provider, self._fx_rate_provider,
                                            ReportItem.TYPE_MISMATCH, trn)
                 mismatch_items.append(item)
+
+            if trn.is_hidden:
+                continue
 
             if trn.trn_cls.id in [TransactionClass.BUY, TransactionClass.SELL]:
                 self._add_instr(trn)
@@ -2072,6 +2103,12 @@ class ReportBuilder(object):
                 self._add_cash(trn, val=trn.cash, ccy=trn.stl_ccy,
                                acc=trn.acc_pos, str1=trn.str1_pos, str2=trn.str2_pos,
                                str3=trn.str3_pos)
+
+                # P&L
+                item = ReportItem.from_trn(self.instance, self._pricing_provider, self._fx_rate_provider,
+                                           ReportItem.TYPE_CASH_IN_OUT, trn, acc=trn.acc_cash,
+                                           str1=trn.str1_cash, str2=trn.str2_cash, str3=trn.str3_cash)
+                self._items.append(item)
 
             elif trn.trn_cls.id == TransactionClass.INSTRUMENT_PL:
                 self._add_instr(trn)
@@ -2093,7 +2130,7 @@ class ReportBuilder(object):
 
                 # P&L
                 item = ReportItem.from_trn(self.instance, self._pricing_provider, self._fx_rate_provider,
-                                           ReportItem.TYPE_FX_TRADE, trn, acc=trn.acc_pos,
+                                           ReportItem.TYPE_FX_TRADE, trn, acc=trn.acc_cash,
                                            str1=trn.str1_cash, str2=trn.str2_cash, str3=trn.str3_cash)
                 self._items.append(item)
 
@@ -2108,71 +2145,105 @@ class ReportBuilder(object):
             else:
                 raise RuntimeError('Invalid transaction class: %s' % trn.trn_cls.id)
 
-        # ReportItem.dumps(self._items)
+        def group_key(item):
+            return (
+                item.type,
+                getattr(item.prtfl, 'id', None),
+                getattr(item.acc, 'id', None),
+                getattr(item.str1, 'id', None),
+                getattr(item.str2, 'id', None),
+                getattr(item.str3, 'id', None),
+                getattr(item.alloc_bl, 'id', None),
+                getattr(item.alloc_pl, 'id', None),
+                getattr(item.instr, 'id', None),
+                getattr(item.ccy, 'id', None),
+                getattr(item.detail_trn, 'id', None),
+            )
 
-        _items = sorted(self._items, key=partial(ReportItem.group_key, self.instance))
+        _items = sorted(self._items, key=group_key)
 
         # aggregate items
 
-        invested_items = []
+        # invested_items = []
         res_items = []
-        for k, g in groupby(_items, key=partial(ReportItem.group_key, self.instance)):
+        for k, g in groupby(_items, key=group_key):
             res_item = None
-            invested_item = None
+            # invested_item = None
 
             for item in g:
                 if item.type in [ReportItem.TYPE_INSTRUMENT, ReportItem.TYPE_CURRENCY, ReportItem.TYPE_TRANSACTION_PL,
-                                 ReportItem.TYPE_FX_TRADE]:
+                                 ReportItem.TYPE_FX_TRADE, ReportItem.TYPE_CASH_IN_OUT, ]:
                     if res_item is None:
                         res_item = ReportItem.from_item(item)
                     res_item.add(item)
 
-                if item.trn and item.trn.trn_cls.id in [TransactionClass.CASH_INFLOW, TransactionClass.CASH_OUTFLOW]:
-                    if invested_item is None:
-                        invested_item = ReportItem.from_item(item)
-                        invested_item.type = ReportItem.TYPE_INVESTED_CURRENCY
-                    invested_item.add(item)
+                    # if item.trn and item.type in [ReportItem.TYPE_CURRENCY] and \
+                    #                 item.trn.trn_cls.id in [TransactionClass.CASH_INFLOW, TransactionClass.CASH_OUTFLOW]:
+                    #     if invested_item is None:
+                    #         invested_item = ReportItem.from_item(item)
+                    #         invested_item.type = ReportItem.TYPE_CURRENCY
+                    #     invested_item.add(item)
 
             if res_item:
                 res_item.pricing()
                 res_item.close()
                 res_items.append(res_item)
 
-            if invested_item:
-                invested_item.close()
-                invested_items.append(invested_item)
+            # if invested_item:
+            #     invested_item.pricing()
+            #     invested_item.close()
+            #     invested_items.append(invested_item)
+            pass
 
-        # aggregate mismatches
+        ReportItem.dumps(_items)
 
-        mismatch_items0 = sorted(mismatch_items, key=partial(ReportItem.mismatch_group_key, self.instance))
+        # res_items = [item for item in res_items if not item.is_empty]
+
+        # aggregate summary
+        summary = ReportItem(self.instance, self._pricing_provider, self._fx_rate_provider, ReportItem.TYPE_SUMMARY)
+        for item in res_items:
+            if item.type in [ReportItem.TYPE_INSTRUMENT, ReportItem.TYPE_CURRENCY, ReportItem.TYPE_TRANSACTION_PL,
+                             ReportItem.TYPE_FX_TRADE, ReportItem.TYPE_CASH_IN_OUT]:
+                summary.add(item)
+        summary.close()
+
+        # mismatches
+
+        def mismatch_group_key(item):
+            return (
+                item.type,
+                getattr(item.prtfl, 'id', None),
+                getattr(item.acc, 'id', None),
+                getattr(item.instr, 'id', None),
+                getattr(item.ccy, 'id', None),
+                getattr(item.mismatch_prtfl, 'id', None),
+                getattr(item.mismatch_acc, 'id', None),
+            )
+
+        mismatch_items0 = sorted(mismatch_items, key=mismatch_group_key)
         mismatch_items = []
-        for k, g in groupby(mismatch_items0, key=partial(ReportItem.mismatch_group_key, self.instance)):
+        for k, g in groupby(mismatch_items0, key=mismatch_group_key):
             mismatch_item = None
             for item in g:
                 if mismatch_item is None:
                     mismatch_item = ReportItem.from_item(item)
                 mismatch_item.add(item)
+
             if mismatch_item:
+                mismatch_item.pricing()
                 mismatch_item.close()
                 mismatch_items.append(mismatch_item)
 
-        # aggregate summary
-
-        summary = ReportItem(self.instance, self._pricing_provider, self._fx_rate_provider, ReportItem.TYPE_SUMMARY)
-        for item in res_items:
-            if item.type in [ReportItem.TYPE_INSTRUMENT, ReportItem.TYPE_CURRENCY, ReportItem.TYPE_TRANSACTION_PL,
-                             ReportItem.TYPE_FX_TRADE]:
-                summary.add(item)
-
         # aggregate invested summary (primary for validation only)
+        # invested_summary = ReportItem(self.instance, self._pricing_provider, self._fx_rate_provider,
+        #                               ReportItem.TYPE_INVESTED_SUMMARY)
+        # for item in invested_items:
+        #     if item.type in [ReportItem.TYPE_INVESTED_CURRENCY]:
+        #         invested_summary.add(item)
+        # invested_summary.close()
 
-        invested_summary = ReportItem(self.instance, self._pricing_provider, self._fx_rate_provider,
-                                      ReportItem.TYPE_INVESTED_SUMMARY)
-        for item in invested_items:
-            if item.type in [ReportItem.TYPE_INVESTED_CURRENCY]:
-                invested_summary.add(item)
-
-        self.instance.items = res_items + mismatch_items + invested_items + [summary, invested_summary]
+        # self.instance.items = res_items + mismatch_items + [summary, ] + invested_items + [invested_summary, ]
+        self.instance.items = res_items + mismatch_items + [summary, ]
 
         # print('0' * 100)
         # VirtualTransaction.dumps(self.transactions)
