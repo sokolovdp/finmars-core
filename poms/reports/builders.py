@@ -2108,7 +2108,7 @@ class ReportBuilder(object):
             else:
                 raise RuntimeError('Invalid transaction class: %s' % trn.trn_cls.id)
 
-        ReportItem.dumps(self._items)
+        # ReportItem.dumps(self._items)
 
         _items = sorted(self._items, key=partial(ReportItem.group_key, self.instance))
 
