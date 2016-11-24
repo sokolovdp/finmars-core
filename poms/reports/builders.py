@@ -1869,36 +1869,36 @@ class ReportBuilder(object):
 
             trn.calc()
 
-            if t.trn_cls.id in [TransactionClass.BUY, TransactionClass.SELL]:
+            if trn.trn_cls.id in [TransactionClass.BUY, TransactionClass.SELL]:
                 if trn.closed_by:
                     for closed_by, delta in trn.closed_by:
                         closed_by2, trn2 = VirtualTransaction.approach_clone(closed_by, trn, delta)
                         res2.append(trn2)
                         res2.append(closed_by2)
 
-            elif t.trn_cls.id == TransactionClass.FX_TRADE:
-                t.is_hidden = True
+            elif trn.trn_cls.id == TransactionClass.FX_TRADE:
+                trn.is_hidden = True
 
-                t1, t2 = t.fx_trade_clone()
-                res2.append(t1)
-                res2.append(t2)
+                trn1, trn2 = trn.fx_trade_clone()
+                res2.append(trn1)
+                res2.append(trn2)
 
-            elif t.trn_cls.id == TransactionClass.TRANSFER:
-                t.is_hidden = True
+            elif trn.trn_cls.id == TransactionClass.TRANSFER:
+                trn.is_hidden = True
                 # split TRANSFER to sell/buy or buy/sell
-                if t.pos_size >= 0:
-                    t1, t2 = t.transfer_clone(self._trn_cls_sell, self._trn_cls_buy)
+                if trn.pos_size >= 0:
+                    trn1, trn2 = trn.transfer_clone(self._trn_cls_sell, self._trn_cls_buy)
                 else:
-                    t1, t2 = t.transfer_clone(self._trn_cls_buy, self._trn_cls_sell)
-                res2.append(t1)
-                res2.append(t2)
+                    trn1, trn2 = trn.transfer_clone(self._trn_cls_buy, self._trn_cls_sell)
+                res2.append(trn1)
+                res2.append(trn2)
 
-            elif t.trn_cls.id == TransactionClass.FX_TRANSFER:
-                t.is_hidden = True
+            elif trn.trn_cls.id == TransactionClass.FX_TRANSFER:
+                trn.is_hidden = True
 
-                t1, t2 = t.transfer_clone(self._trn_cls_fx_trade, self._trn_cls_fx_trade)
-                res2.append(t1)
-                res2.append(t2)
+                trn1, trn2 = trn.transfer_clone(self._trn_cls_fx_trade, self._trn_cls_fx_trade)
+                res2.append(trn1)
+                res2.append(trn2)
 
         return res2
 
