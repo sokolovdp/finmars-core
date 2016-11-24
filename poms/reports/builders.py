@@ -925,6 +925,7 @@ class ReportItem(_Base):
 
     instr_principal_res = 0.0
     instr_accrued_res = 0.0
+    exposure_res = 0.0
 
     # balance
     pos_size = 0.0
@@ -1331,6 +1332,7 @@ class ReportItem(_Base):
         elif self.type == ReportItem.TYPE_INSTRUMENT:
             self.instr_principal_res = self.pos_size * self.instr.price_multiplier * self.instr_price_cur_principal_price * self.instr_pricing_ccy_cur_fx
             self.instr_accrued_res = self.pos_size * self.instr.accrued_multiplier * self.instr_price_cur_accrued_price * self.instr_pricing_ccy_cur_fx
+            self.exposure_res = self.instr_principal_res + self.instr_accrued_res
 
             self.market_value_res = self.instr_principal_res + self.instr_accrued_res
 
@@ -1850,19 +1852,55 @@ class ReportBuilder(object):
 
         res1 = self._multipliers(res)
 
-        res21 = []
+        # res21 = []
+        # for trn in res1:
+        #     trn.calc()
+        #     if trn.closed_by:
+        #         for closed_by, delta in trn.closed_by:
+        #             closed_by2, trn2 = VirtualTransaction.approach_clone(closed_by, trn, delta)
+        #             res21.append(trn2)
+        #             res21.append(closed_by2)
+        # res2 = res1 + res21
+        # res3 = self._transfers(res2)
+
+        res2 = []
         for trn in res1:
+            res2.append(trn)
+
             trn.calc()
-            if trn.closed_by:
-                for closed_by, delta in trn.closed_by:
-                    closed_by2, trn2 = VirtualTransaction.approach_clone(closed_by, trn, delta)
-                    res21.append(trn2)
-                    res21.append(closed_by2)
-        res2 = res1 + res21
 
-        res3 = self._transfers(res2)
+            if t.trn_cls.id in [TransactionClass.BUY, TransactionClass.SELL]:
+                if trn.closed_by:
+                    for closed_by, delta in trn.closed_by:
+                        closed_by2, trn2 = VirtualTransaction.approach_clone(closed_by, trn, delta)
+                        res2.append(trn2)
+                        res2.append(closed_by2)
 
-        return res3
+            elif t.trn_cls.id == TransactionClass.FX_TRADE:
+                t.is_hidden = True
+
+                t1, t2 = t.fx_trade_clone()
+                res2.append(t1)
+                res2.append(t2)
+
+            elif t.trn_cls.id == TransactionClass.TRANSFER:
+                t.is_hidden = True
+                # split TRANSFER to sell/buy or buy/sell
+                if t.pos_size >= 0:
+                    t1, t2 = t.transfer_clone(self._trn_cls_sell, self._trn_cls_buy)
+                else:
+                    t1, t2 = t.transfer_clone(self._trn_cls_buy, self._trn_cls_sell)
+                res2.append(t1)
+                res2.append(t2)
+
+            elif t.trn_cls.id == TransactionClass.FX_TRANSFER:
+                t.is_hidden = True
+
+                t1, t2 = t.transfer_clone(self._trn_cls_fx_trade, self._trn_cls_fx_trade)
+                res2.append(t1)
+                res2.append(t2)
+
+        return res2
 
     def _multipliers(self, src):
         rolling_positions = Counter()
@@ -2045,41 +2083,41 @@ class ReportBuilder(object):
         #     pass
         return res
 
-    def _transfers(self, src):
-        res = []
-
-        for t in src:
-            res.append(t)
-
-            if t.trn_cls.id == TransactionClass.FX_TRADE:
-                t.is_hidden = True
-
-                t1, t2 = t.fx_trade_clone()
-                res.append(t1)
-                res.append(t2)
-
-            elif t.trn_cls.id == TransactionClass.TRANSFER:
-                t.is_hidden = True
-                # split TRANSFER to sell/buy or buy/sell
-
-                if t.pos_size >= 0:
-                    t1, t2 = t.transfer_clone(self._trn_cls_sell, self._trn_cls_buy)
-                    res.append(t1)
-                    res.append(t2)
-
-                else:
-                    t1, t2 = t.transfer_clone(self._trn_cls_buy, self._trn_cls_sell)
-                    res.append(t1)
-                    res.append(t2)
-
-            elif t.trn_cls.id == TransactionClass.FX_TRANSFER:
-                t.is_hidden = True
-
-                t1, t2 = t.transfer_clone(self._trn_cls_fx_trade, self._trn_cls_fx_trade)
-                res.append(t1)
-                res.append(t2)
-
-        return res
+    # def _transfers(self, src):
+    #     res = []
+    #
+    #     for t in src:
+    #         res.append(t)
+    #
+    #         if t.trn_cls.id == TransactionClass.FX_TRADE:
+    #             t.is_hidden = True
+    #
+    #             t1, t2 = t.fx_trade_clone()
+    #             res.append(t1)
+    #             res.append(t2)
+    #
+    #         elif t.trn_cls.id == TransactionClass.TRANSFER:
+    #             t.is_hidden = True
+    #             # split TRANSFER to sell/buy or buy/sell
+    #
+    #             if t.pos_size >= 0:
+    #                 t1, t2 = t.transfer_clone(self._trn_cls_sell, self._trn_cls_buy)
+    #                 res.append(t1)
+    #                 res.append(t2)
+    #
+    #             else:
+    #                 t1, t2 = t.transfer_clone(self._trn_cls_buy, self._trn_cls_sell)
+    #                 res.append(t1)
+    #                 res.append(t2)
+    #
+    #         elif t.trn_cls.id == TransactionClass.FX_TRANSFER:
+    #             t.is_hidden = True
+    #
+    #             t1, t2 = t.transfer_clone(self._trn_cls_fx_trade, self._trn_cls_fx_trade)
+    #             res.append(t1)
+    #             res.append(t2)
+    #
+    #     return res
 
     def build(self):
         mismatch_items = []
@@ -2195,7 +2233,7 @@ class ReportBuilder(object):
             #     invested_items.append(invested_item)
             pass
 
-        ReportItem.dumps(_items)
+        # ReportItem.dumps(_items)
 
         # res_items = [item for item in res_items if not item.is_empty]
 

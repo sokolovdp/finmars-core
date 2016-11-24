@@ -141,7 +141,7 @@ class ReportItemCustomFieldSerializer(serializers.Serializer):
 class ReportItemSerializer(serializers.Serializer):
     id = serializers.CharField(read_only=True)
 
-    type = serializers.ChoiceField(choices=ReportItem.TYPE_CHOICES)
+    type = serializers.ChoiceField(choices=ReportItem.TYPE_CHOICES, read_only=True)
     user_code = serializers.ReadOnlyField()
     name = serializers.ReadOnlyField()
     detail = serializers.CharField(read_only=True)
@@ -153,25 +153,24 @@ class ReportItemSerializer(serializers.Serializer):
     strategy1 = serializers.PrimaryKeyRelatedField(source='str1', read_only=True)
     strategy2 = serializers.PrimaryKeyRelatedField(source='str2', read_only=True)
     strategy3 = serializers.PrimaryKeyRelatedField(source='str3', read_only=True)
-
     custom_fields = ReportItemCustomFieldSerializer(many=True, read_only=True)
 
+    # mismatches
+
     mismatch = serializers.FloatField(read_only=True)
-    mismatch_currency = serializers.PrimaryKeyRelatedField(source='mismatch_ccy', read_only=True)
+    # mismatch_currency = serializers.PrimaryKeyRelatedField(source='mismatch_ccy', read_only=True)
     mismatch_portfolio = serializers.PrimaryKeyRelatedField(source='mismatch_prtfl', read_only=True)
     mismatch_account = serializers.PrimaryKeyRelatedField(source='mismatch_acc', read_only=True)
 
     # balance
 
     position_size = serializers.FloatField(source='pos_size', read_only=True)
-
     market_value = serializers.FloatField(source='market_value_res', read_only=True)
     cost = serializers.FloatField(source='cost_res', read_only=True)
 
-    # P&L
-
-    total_real = serializers.FloatField(source='total_real_res', read_only=True)
-    total_unreal = serializers.FloatField(source='total_unreal_res', read_only=True)
+    instr_principal = serializers.FloatField(source='instr_principal_res', read_only=True)
+    instr_accrued = serializers.FloatField(source='instr_accrued_res', read_only=True)
+    exposure = serializers.FloatField(source='exposure_res', read_only=True)
 
     # full ----------------------------------------------------
     principal = serializers.FloatField(source='principal_res', read_only=True)
