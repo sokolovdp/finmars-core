@@ -634,7 +634,7 @@ class ReportTestCase(TestCase):
         b.build()
         self._dump(b, 'test_pl_full_fx_fixed_buy_sell_1')
 
-    def _test_pl_full_fx_fixed_cash_in_out_1(self):
+    def test_pl_full_fx_fixed_cash_in_out_1(self):
         self._ccy_hist(self.gbp, self._d(101), 1.45)
         self._ccy_hist(self.gbp, self._d(104), 1.2)
 
@@ -647,6 +647,12 @@ class ReportTestCase(TestCase):
         self._t(t_class=self._cash_inflow,
                 trn_ccy=self.gbp, position=0,
                 stl_ccy=self.chf, cash=100, fx_rate=0.75,
+                acc_date_days=101, cash_date_days=101,
+                alloc_bl=self.bond1, alloc_pl=self.bond2)
+
+        self._t(t_class=self._cash_inflow,
+                trn_ccy=self.gbp, position=0,
+                stl_ccy=self.rub, cash=100, fx_rate=0.75,
                 acc_date_days=101, cash_date_days=101,
                 alloc_bl=self.bond1, alloc_pl=self.bond2)
 
@@ -711,11 +717,21 @@ class ReportTestCase(TestCase):
         self._ccy_hist(self.cad, self._d(101), 0.85)
         self._ccy_hist(self.cad, self._d(104), 0.9)
 
+        self._ccy_hist(self.rub, self._d(101), 1 / 60)
+        self._ccy_hist(self.rub, self._d(104), 1 / 65)
+
         self._t(t_class=self._fx_tade,
                 trn_ccy=self.gbp, position=100,
                 stl_ccy=self.chf, principal=-140,
                 acc_date_days=101, cash_date_days=101,
                 alloc_bl=self.bond1, alloc_pl=self.bond2)
+
+        self._t(t_class=self._fx_tade,
+                trn_ccy=self.gbp, position=100,
+                stl_ccy=self.rub, principal=-140,
+                acc_date_days=101, cash_date_days=101,
+                alloc_bl=self.bond1, alloc_pl=self.bond2)
+
 
         r = Report(master_user=self.m, pricing_policy=self.pp, report_date=self._d(104), report_currency=self.cad,
                    cost_method=self._avco)

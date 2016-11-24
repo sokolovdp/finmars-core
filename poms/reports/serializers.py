@@ -144,10 +144,12 @@ class ReportItemSerializer(serializers.Serializer):
     type = serializers.ChoiceField(choices=ReportItem.TYPE_CHOICES, read_only=True)
     user_code = serializers.ReadOnlyField()
     name = serializers.ReadOnlyField()
+    short_name = serializers.ReadOnlyField()
     detail = serializers.CharField(read_only=True)
 
     instrument = serializers.PrimaryKeyRelatedField(source='instr', read_only=True)
     currency = serializers.PrimaryKeyRelatedField(source='ccy', read_only=True)
+    transaction_currency = serializers.PrimaryKeyRelatedField(source='trn_ccy', read_only=True)
     portfolio = serializers.PrimaryKeyRelatedField(source='prtfl', read_only=True)
     account = serializers.PrimaryKeyRelatedField(source='acc', read_only=True)
     strategy1 = serializers.PrimaryKeyRelatedField(source='str1', read_only=True)
@@ -236,13 +238,14 @@ class ReportItemSerializer(serializers.Serializer):
         # from poms.strategies.serializers import Strategy1ViewSerializer, Strategy2ViewSerializer, \
         #     Strategy3ViewSerializer
 
-        self.fields['instrument_object'] = ReportInstrumentSerializer(source='instr', read_only=True)
-        self.fields['currency_object'] = ReportCurrencySerializer(source='ccy', read_only=True)
         self.fields['portfolio_object'] = ReportPortfolioSerializer(source='prtfl', read_only=True)
         self.fields['account_object'] = ReportAccountSerializer(source='acc', read_only=True)
         self.fields['strategy1_object'] = ReportStrategy1Serializer(source='str1', read_only=True)
         self.fields['strategy2_object'] = ReportStrategy2Serializer(source='str2', read_only=True)
         self.fields['strategy3_object'] = ReportStrategy3Serializer(source='str3', read_only=True)
+        self.fields['instrument_object'] = ReportInstrumentSerializer(source='instr', read_only=True)
+        self.fields['currency_object'] = ReportCurrencySerializer(source='ccy', read_only=True)
+        self.fields['transaction_currency_object'] = ReportCurrencySerializer(source='trn_ccy', read_only=True)
 
         self.fields['mismatch_currency_object'] = ReportCurrencySerializer(source='mismatch_ccy', read_only=True)
         self.fields['mismatch_portfolio_object'] = ReportPortfolioSerializer(source='mismatch_prtfl', read_only=True)

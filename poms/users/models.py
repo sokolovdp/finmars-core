@@ -41,11 +41,12 @@ class MasterUserManager(models.Manager):
         PricingAutomatedSchedule.objects.create(master_user=obj, is_enabled=False)
 
         ccy = Currency.objects.create(master_user=obj, name='-')
-        ccy_usd = Currency.objects.create(master_user=obj, name='USD')
+        ccy_usd = None
 
         for c in pycountry.currencies:
-            if c.alpha_3 != 'USD':
-                Currency.objects.create(master_user=obj, user_code=c.alpha_3, name=c.name)
+            c1 = Currency.objects.create(master_user=obj, user_code=c.alpha_3, short_name=c.alpha_3, name=c.name)
+            if c.alpha_3 == 'USD':
+                ccy_usd = c1
 
         account_type = AccountType.objects.create(master_user=obj, name='-')
         account = Account.objects.create(master_user=obj, type=account_type, name='-')

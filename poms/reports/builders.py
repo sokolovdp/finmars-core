@@ -260,7 +260,7 @@ class VirtualTransaction(_Base):
         # 'acc_date',
         # 'cash_date',
         'instr',
-        # 'trn_ccy',
+        'trn_ccy',
         'stl_ccy',
         # 'prtfl',
         # 'acc_pos',
@@ -889,6 +889,7 @@ class ReportItem(_Base):
 
     instr = None
     ccy = None
+    trn_ccy = None  # for FX_TRADE
     prtfl = None
     acc = None
     str1 = None
@@ -988,7 +989,9 @@ class ReportItem(_Base):
 
     dump_columns = [
         'type_code',
-        # 'user_code',
+        'user_code',
+        'short_name',
+        'name',
         # 'trn',
         # 'prtfl',
         # 'acc',
@@ -998,6 +1001,7 @@ class ReportItem(_Base):
         # 'detail_trn',
         'instr',
         'ccy',
+        'trn_ccy',
         # 'alloc_bl',
         # 'alloc_pl',
 
@@ -1073,7 +1077,7 @@ class ReportItem(_Base):
         self.type = type
 
     @classmethod
-    def from_trn(cls, report, pricing_provider, fx_rate_provider, type, trn, instr=None, ccy=None,
+    def from_trn(cls, report, pricing_provider, fx_rate_provider, type, trn, instr=None, ccy=None, trn_ccy=None,
                  prtfl=None, acc=None, str1=None, str2=None, str3=None, val=None):
         item = cls(report, pricing_provider, fx_rate_provider, type)
         item.trn = trn
@@ -1159,15 +1163,20 @@ class ReportItem(_Base):
 
             item.pos_size = val
 
-        elif item.type in [ReportItem.TYPE_FX_TRADE, ReportItem.TYPE_CASH_IN_OUT]:
+        elif item.type == ReportItem.TYPE_FX_TRADE:
             item.acc = acc or trn.acc_cash
             item.str1 = str1 or trn.str1_cash
             item.str2 = str2 or trn.str2_cash
             item.str3 = str3 or trn.str3_cash
+            item.ccy = ccy
+            item.trn_ccy = trn_ccy
 
-            # item.principal_res = trn.principal_res
-            # item.carry_res = trn.carry_res
-            # item.overheads_res = trn.overheads_res
+        elif item.type == ReportItem.TYPE_CASH_IN_OUT:
+            item.acc = acc or trn.acc_cash
+            item.str1 = str1 or trn.str1_cash
+            item.str2 = str2 or trn.str2_cash
+            item.str3 = str3 or trn.str3_cash
+            item.ccy = ccy
 
         elif item.type == ReportItem.TYPE_TRANSACTION_PL:
             # item.principal_res = trn.principal_res
@@ -1202,6 +1211,7 @@ class ReportItem(_Base):
 
         item.instr = src.instr  # -> Instrument
         item.ccy = src.ccy  # -> Currency
+        item.trn_ccy = src.trn_ccy  # -> Currency
         item.prtfl = src.prtfl  # -> Portfolio if use_portfolio
         item.instr = src.instr
         item.acc = src.acc  # -> Account if use_account
@@ -1396,7 +1406,7 @@ class ReportItem(_Base):
                             isclose(self.total_closed_res, 0.0) and \
                             isclose(self.total_opened_res, 0.0)
 
-    #  ----------------------------------------------------
+    # ----------------------------------------------------
     # @staticmethod
     # def group_key(report, item):
     #     return (
@@ -1483,10 +1493,12 @@ class ReportItem(_Base):
             return 'TRANSACTION_PL'
 
         elif self.type == ReportItem.TYPE_FX_TRADE:
-            return 'FX_TRADE'
+            # return 'FX_TRADE'
+            return '%s/%s' % (getattr(self.trn_ccy, 'user_code', None), getattr(self.ccy, 'user_code', None),)
 
         elif self.type == ReportItem.TYPE_CASH_IN_OUT:
-            return 'CASH_IN_OUT'
+            # return 'CASH_IN_OUT'
+            return getattr(self.ccy, 'user_code', None)
 
         elif self.type == ReportItem.TYPE_MISMATCH:
             return getattr(self.ccy, 'user_code', None)
@@ -1499,6 +1511,43 @@ class ReportItem(_Base):
         #
         # elif self.type == ReportItem.TYPE_INVESTED_SUMMARY:
         #     return 'INVESTED_SUMMARY'
+
+        return '<ERROR>'
+
+    @property
+    def short_name(self):
+        if self.type == ReportItem.TYPE_UNKNOWN:
+            return '<UNKNOWN>'
+
+        elif self.type == ReportItem.TYPE_INSTRUMENT:
+            return getattr(self.instr, 'short_name', None)
+
+        elif self.type == ReportItem.TYPE_CURRENCY:
+            return getattr(self.ccy, 'short_name', None)
+
+        elif self.type == ReportItem.TYPE_TRANSACTION_PL:
+            return ugettext('Transaction PL')
+
+        elif self.type == ReportItem.TYPE_FX_TRADE:
+            # return ugettext('FX-Trade')
+            return ugettext('FX-Trades: %s/%s') % (getattr(self.trn_ccy, 'short_name', None),
+                                                   getattr(self.ccy, 'short_name', None),)
+
+        elif self.type == ReportItem.TYPE_CASH_IN_OUT:
+            # return ugettext('Cash In/Out: %s/%s')
+            return ugettext('Cash In/Out: %s') % getattr(self.ccy, 'short_name', None)
+
+        elif self.type == ReportItem.TYPE_MISMATCH:
+            return getattr(self.instr, 'short_name', None)
+
+        elif self.type == ReportItem.TYPE_SUMMARY:
+            return ugettext('Summary')
+
+        # elif self.type == ReportItem.TYPE_INVESTED_CURRENCY:
+        #     return getattr(self.ccy, 'name', None)
+        #
+        # elif self.type == ReportItem.TYPE_INVESTED_SUMMARY:
+        #     return ugettext('Invested summary')
 
         return '<ERROR>'
 
@@ -1517,10 +1566,13 @@ class ReportItem(_Base):
             return ugettext('Transaction PL')
 
         elif self.type == ReportItem.TYPE_FX_TRADE:
-            return ugettext('FX-Trade')
+            # return ugettext('FX-Trade')
+            return ugettext('FX-Trades: %s/%s') % (
+                getattr(self.trn_ccy, 'name', None), getattr(self.ccy, 'name', None),)
 
         elif self.type == ReportItem.TYPE_CASH_IN_OUT:
-            return ugettext('Cash In/Out')
+            # return ugettext('Cash In/Out: %s/%s')
+            return ugettext('Cash In/Out: %s') % getattr(self.ccy, 'name', None)
 
         elif self.type == ReportItem.TYPE_MISMATCH:
             return getattr(self.instr, 'name', None)
@@ -1935,12 +1987,12 @@ class ReportBuilder(object):
                 continue
 
             t_key = (
-                t.prtfl.id if self.instance.portfolio_mode == Report.MODE_INDEPENDENT else None,
-                t.acc_pos.id if self.instance.account_mode == Report.MODE_INDEPENDENT else None,
-                t.str1_pos.id if self.instance.strategy1_mode == Report.MODE_INDEPENDENT else None,
-                t.str2_pos.id if self.instance.strategy2_mode == Report.MODE_INDEPENDENT else None,
-                t.str3_pos.id if self.instance.strategy3_mode == Report.MODE_INDEPENDENT else None,
-                t.instr.id,
+                getattr(t.prtfl, 'id', None) if self.instance.portfolio_mode == Report.MODE_INDEPENDENT else None,
+                getattr(t.acc_pos, 'id', None) if self.instance.account_mode == Report.MODE_INDEPENDENT else None,
+                getattr(t.str1_pos, 'id', None) if self.instance.strategy1_mode == Report.MODE_INDEPENDENT else None,
+                getattr(t.str2_pos, 'id', None) if self.instance.strategy2_mode == Report.MODE_INDEPENDENT else None,
+                getattr(t.str3_pos, 'id', None) if self.instance.strategy3_mode == Report.MODE_INDEPENDENT else None,
+                getattr(t.instr, 'id', None),
             )
 
             # multipliers_delta.clear()
@@ -2145,7 +2197,8 @@ class ReportBuilder(object):
                 # P&L
                 item = ReportItem.from_trn(self.instance, self._pricing_provider, self._fx_rate_provider,
                                            ReportItem.TYPE_CASH_IN_OUT, trn, acc=trn.acc_cash,
-                                           str1=trn.str1_cash, str2=trn.str2_cash, str3=trn.str3_cash)
+                                           str1=trn.str1_cash, str2=trn.str2_cash, str3=trn.str3_cash,
+                                           ccy=trn.stl_ccy)
                 self._items.append(item)
 
             elif trn.trn_cls.id == TransactionClass.INSTRUMENT_PL:
@@ -2169,7 +2222,8 @@ class ReportBuilder(object):
                 # P&L
                 item = ReportItem.from_trn(self.instance, self._pricing_provider, self._fx_rate_provider,
                                            ReportItem.TYPE_FX_TRADE, trn, acc=trn.acc_cash,
-                                           str1=trn.str1_cash, str2=trn.str2_cash, str3=trn.str3_cash)
+                                           str1=trn.str1_cash, str2=trn.str2_cash, str3=trn.str3_cash,
+                                           ccy=trn.trn.settlement_currency, trn_ccy=trn.trn_ccy)
                 self._items.append(item)
 
             elif trn.trn_cls.id == TransactionClass.TRANSFER:
@@ -2183,7 +2237,7 @@ class ReportBuilder(object):
             else:
                 raise RuntimeError('Invalid transaction class: %s' % trn.trn_cls.id)
 
-        def group_key(item):
+        def _group_key(item):
             return (
                 item.type,
                 getattr(item.prtfl, 'id', None),
@@ -2195,16 +2249,17 @@ class ReportBuilder(object):
                 getattr(item.alloc_pl, 'id', None),
                 getattr(item.instr, 'id', None),
                 getattr(item.ccy, 'id', None),
+                getattr(item.trn_ccy, 'id', None),
                 getattr(item.detail_trn, 'id', None),
             )
 
-        _items = sorted(self._items, key=group_key)
+        _items = sorted(self._items, key=_group_key)
 
         # aggregate items
 
         # invested_items = []
         res_items = []
-        for k, g in groupby(_items, key=group_key):
+        for k, g in groupby(_items, key=_group_key):
             res_item = None
             # invested_item = None
 
@@ -2247,7 +2302,7 @@ class ReportBuilder(object):
 
         # mismatches
 
-        def mismatch_group_key(item):
+        def _mismatch_group_key(item):
             return (
                 item.type,
                 getattr(item.prtfl, 'id', None),
@@ -2258,9 +2313,9 @@ class ReportBuilder(object):
                 getattr(item.mismatch_acc, 'id', None),
             )
 
-        mismatch_items0 = sorted(mismatch_items, key=mismatch_group_key)
+        mismatch_items0 = sorted(mismatch_items, key=_mismatch_group_key)
         mismatch_items = []
-        for k, g in groupby(mismatch_items0, key=mismatch_group_key):
+        for k, g in groupby(mismatch_items0, key=_mismatch_group_key):
             mismatch_item = None
             for item in g:
                 if mismatch_item is None:
