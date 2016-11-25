@@ -2186,14 +2186,6 @@ class ReportBuilder(object):
 
         # split transactions to atomic items using transaction class, case and something else
 
-        import pandas
-        pandas.set_option('display.width', 10000)
-        pandas.set_option('display.max_rows', 100)
-        pandas.set_option('display.max_columns', 1000)
-        pandas.set_option('precision', 4)
-        pandas.set_option('display.float_format', '{:.4f}'.format)
-        VirtualTransaction.dumps(self.transactions)
-
         for trn in self.transactions:
             if trn.is_mismatch and trn.link_instr and not isclose(trn.mismatch, 0.0):
                 item = ReportItem.from_trn(self.instance, self._pricing_provider, self._fx_rate_provider,
