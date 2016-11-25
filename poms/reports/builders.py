@@ -7,6 +7,7 @@ from collections import Counter, defaultdict
 from datetime import timedelta
 from itertools import groupby
 
+from django.conf import settings
 from django.utils.functional import cached_property
 from django.utils.translation import ugettext, ugettext_lazy
 
@@ -2303,12 +2304,15 @@ class ReportBuilder(object):
         # res_items = [item for item in res_items if not item.is_empty]
 
         # aggregate summary
-        summary = ReportItem(self.instance, self._pricing_provider, self._fx_rate_provider, ReportItem.TYPE_SUMMARY)
-        for item in res_items:
-            if item.type in [ReportItem.TYPE_INSTRUMENT, ReportItem.TYPE_CURRENCY, ReportItem.TYPE_TRANSACTION_PL,
-                             ReportItem.TYPE_FX_TRADE, ReportItem.TYPE_CASH_IN_OUT]:
-                summary.add(item)
-        summary.close()
+        summaries = []
+        if settings.DEBUG:
+            summary = ReportItem(self.instance, self._pricing_provider, self._fx_rate_provider, ReportItem.TYPE_SUMMARY)
+            for item in res_items:
+                if item.type in [ReportItem.TYPE_INSTRUMENT, ReportItem.TYPE_CURRENCY, ReportItem.TYPE_TRANSACTION_PL,
+                                 ReportItem.TYPE_FX_TRADE, ReportItem.TYPE_CASH_IN_OUT]:
+                    summary.add(item)
+            summary.close()
+            summaries.append(summary)
 
         # mismatches
 
@@ -2346,7 +2350,7 @@ class ReportBuilder(object):
         # invested_summary.close()
 
         # self.instance.items = res_items + mismatch_items + [summary, ] + invested_items + [invested_summary, ]
-        self.instance.items = res_items + mismatch_items + [summary, ]
+        self.instance.items = res_items + mismatch_items + summaries
 
         # print('0' * 100)
         # VirtualTransaction.dumps(self.transactions)
