@@ -141,7 +141,10 @@ class ReportItemCustomFieldSerializer(serializers.Serializer):
 class ReportItemSerializer(serializers.Serializer):
     id = serializers.CharField(read_only=True)
 
-    type = serializers.ChoiceField(choices=ReportItem.TYPE_CHOICES, read_only=True)
+    item_type = serializers.ChoiceField(source='type', choices=ReportItem.TYPE_CHOICES, read_only=True)
+    item_type_code = serializers.ReadOnlyField(source='type_code')
+    item_type_name = serializers.ReadOnlyField(source='type_name')
+
     user_code = serializers.ReadOnlyField()
     name = serializers.ReadOnlyField()
     short_name = serializers.ReadOnlyField()

@@ -8,7 +8,7 @@ from datetime import timedelta
 from itertools import groupby
 
 from django.utils.functional import cached_property
-from django.utils.translation import ugettext
+from django.utils.translation import ugettext, ugettext_lazy
 
 from poms.accounts.models import Account, AccountType
 from poms.common import formula
@@ -872,14 +872,14 @@ class ReportItem(_Base):
     # TYPE_INVESTED_CURRENCY = 300
     # TYPE_INVESTED_SUMMARY = 301
     TYPE_CHOICES = (
-        (TYPE_UNKNOWN, 'Unknown'),
-        (TYPE_INSTRUMENT, 'Instrument'),
-        (TYPE_CURRENCY, 'Currency'),
-        (TYPE_TRANSACTION_PL, 'Transaction PL'),
-        (TYPE_FX_TRADE, 'FX-Trade'),
-        (TYPE_CASH_IN_OUT, 'Cash In/Out'),
-        (TYPE_MISMATCH, 'Mismatch'),
-        (TYPE_SUMMARY, 'Summary'),
+        (TYPE_UNKNOWN, ugettext_lazy('Unknown')),
+        (TYPE_INSTRUMENT, ugettext_lazy('Instrument')),
+        (TYPE_CURRENCY, ugettext_lazy('Currency')),
+        (TYPE_TRANSACTION_PL, ugettext_lazy('Transaction PL')),
+        (TYPE_FX_TRADE, ugettext_lazy('FX-Trade')),
+        (TYPE_CASH_IN_OUT, ugettext_lazy('Cash In/Out')),
+        (TYPE_MISMATCH, ugettext_lazy('Mismatch')),
+        (TYPE_SUMMARY, ugettext_lazy('Summary')),
         # (TYPE_INVESTED_CURRENCY, 'Invested'),
         # (TYPE_INVESTED_SUMMARY, 'Invested summary'),
     )
