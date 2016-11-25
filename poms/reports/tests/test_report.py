@@ -634,7 +634,7 @@ class ReportTestCase(TestCase):
         b.build()
         self._dump(b, 'test_pl_full_fx_fixed_buy_sell_1')
 
-    def test_pl_full_fx_fixed_cash_in_out_1(self):
+    def _test_pl_full_fx_fixed_cash_in_out_1(self):
         self._ccy_hist(self.gbp, self._d(101), 1.45)
         self._ccy_hist(self.gbp, self._d(104), 1.2)
 
@@ -707,7 +707,7 @@ class ReportTestCase(TestCase):
         b.build()
         self._dump(b, 'test_pl_full_fx_fixed_trn_pl_1')
 
-    def test_pl_full_fx_fixed_fx_trade_1(self):
+    def _test_pl_full_fx_fixed_fx_trade_1(self):
         self._ccy_hist(self.gbp, self._d(101), 1.45)
         self._ccy_hist(self.gbp, self._d(104), 1.2)
 

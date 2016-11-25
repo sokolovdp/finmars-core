@@ -620,8 +620,15 @@ class VirtualTransaction(_Base):
 
         pos_size = abs(closed.pos_size * mul_delta)
 
-        abm = closed.report.approach_begin_multiplier * abs(pos_size / closed.pos_size)
-        aem = closed.report.approach_end_multiplier * abs(pos_size / cur.pos_size)
+        try:
+            abm = closed.report.approach_begin_multiplier * abs(pos_size / closed.pos_size)
+        except ZeroDivisionError:
+            abm = 0.0
+        try:
+            aem = closed.report.approach_end_multiplier * abs(pos_size / cur.pos_size)
+        except ZeroDivisionError:
+            aem = 0.0
+
         # abm = closed.report.approach_begin_multiplier * closed1.multiplier
         # aem = closed.report.approach_end_multiplier * cur1.multiplier
         # abm = closed.report.approach_begin_multiplier
@@ -847,7 +854,10 @@ class VirtualTransaction(_Base):
         t2.pos_size = self.principal
         t2.cash = self.principal
         t2.principal = self.principal
-        t2.ref_fx = abs(self.pos_size / self.principal)
+        try:
+            t2.ref_fx = abs(self.pos_size / self.principal)
+        except ZeroDivisionError:
+            t2.ref_fx = 0.0
         t2.pricing()
         t2.calc()
         return t1, t2
@@ -2175,6 +2185,14 @@ class ReportBuilder(object):
         mismatch_items = []
 
         # split transactions to atomic items using transaction class, case and something else
+
+        import pandas
+        pandas.set_option('display.width', 10000)
+        pandas.set_option('display.max_rows', 100)
+        pandas.set_option('display.max_columns', 1000)
+        pandas.set_option('precision', 4)
+        pandas.set_option('display.float_format', '{:.4f}'.format)
+        VirtualTransaction.dumps(self.transactions)
 
         for trn in self.transactions:
             if trn.is_mismatch and trn.link_instr and not isclose(trn.mismatch, 0.0):
