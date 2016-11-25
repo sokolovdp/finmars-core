@@ -113,11 +113,11 @@ class ModelWithTagSerializer(serializers.ModelSerializer):
     def __init__(self, *args, **kwargs):
         super(ModelWithTagSerializer, self).__init__(*args, **kwargs)
 
-        self.fields['tags'] = TagField(many=True, queryset=Tag.objects.all())
+        self.fields['tags'] = TagField(many=True, queryset=Tag.objects.all(), required=False, allow_null=True, allow_empty=True)
         self.fields['tags_object'] = TagViewSerializer(source='tags', many=True, read_only=True)
 
     def create(self, validated_data):
-        tags = validated_data.pop('tags', None)
+        tags = validated_data.pop('tags', empty)
         instance = super(ModelWithTagSerializer, self).create(validated_data)
         if tags is not empty:
             self.save_tags(instance, tags, True)
