@@ -213,31 +213,36 @@ class ModelWithObjectPermissionSerializer(serializers.ModelSerializer):
     def _merge_permissions(self, instance, object_permissions, user_object_permissions, group_object_permissions):
         if user_object_permissions is not empty or group_object_permissions is not empty:
             object_permissions = []
+
             if user_object_permissions is empty:
                 object_permissions += [
                     {'group': None, 'member': op.member, 'permission': op.p}
                     for op in instance.object_permissions.all()
                     if op.member_id
                     ]
-            else:
+
+            elif user_object_permissions is not None:
                 object_permissions += [
                     {'group': None, 'member': op['member'], 'permission': op['permission']}
                     for op in user_object_permissions
                     ]
+
             if group_object_permissions is empty:
                 object_permissions += [
                     {'group': op.group, 'member': op.member, 'permission': op.p}
                     for op in instance.object_permissions.all()
                     if op.group_id
                     ]
-            else:
+            elif group_object_permissions is not None:
                 object_permissions += [
                     {'group': op['group'], 'member': None, 'permission': op['permission']}
                     for op in group_object_permissions
                     ]
             return object_permissions
+
         if object_permissions is not empty:
             return object_permissions
+
         return empty
 
     def save_object_permissions(self, instance, object_permissions=None, created=False):
