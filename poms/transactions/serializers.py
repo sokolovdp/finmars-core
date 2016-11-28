@@ -1060,9 +1060,21 @@ class PhantomTransactionSerializer(TransactionSerializer):
         self.fields.pop('attributes')
 
 
+class TransactionTypeComplexTransactionSerializer(serializers.ModelSerializer):
+    code = serializers.IntegerField(default=0, initial=0, min_value=0, required=False)
+    status = serializers.ChoiceField(default=ComplexTransaction.PRODUCTION, initial=ComplexTransaction.PRODUCTION,
+                                     required=False, choices=ComplexTransaction.STATUS_CHOICES)
+
+    class Meta:
+        model = ComplexTransaction
+        fields = [
+            'status', 'code',
+        ]
+
+
 class TransactionTypeProcessSerializer(serializers.Serializer):
     def __init__(self, **kwargs):
-        from poms.instruments.serializers import InstrumentViewSerializer, InstrumentSerializer
+        from poms.instruments.serializers import InstrumentSerializer
 
         kwargs['context'] = context = kwargs.get('context', {}) or {}
         super(TransactionTypeProcessSerializer, self).__init__(**kwargs)
@@ -1076,10 +1088,10 @@ class TransactionTypeProcessSerializer(serializers.Serializer):
         self.fields['has_errors'] = serializers.BooleanField(read_only=True)
         self.fields['instruments_errors'] = serializers.ReadOnlyField()
         self.fields['transactions_errors'] = serializers.ReadOnlyField()
-        self.fields['instruments'] = InstrumentSerializer(many=True, read_only=False, required=False,
-                                                              allow_null=True)
-        self.fields['complex_transaction'] = ComplexTransactionViewSerializer(read_only=False, required=False,
-                                                                              allow_null=True)
+        self.fields['instruments'] = InstrumentSerializer(many=True, read_only=False, required=False, allow_null=True)
+        self.fields['complex_transaction'] = TransactionTypeComplexTransactionSerializer(read_only=False,
+                                                                                         required=False,
+                                                                                         allow_null=True)
         self.fields['transactions'] = PhantomTransactionSerializer(many=True, required=False, allow_null=True)
 
         self.fields['book_transaction_layout'] = serializers.SerializerMethodField()
@@ -1093,9 +1105,14 @@ class TransactionTypeProcessSerializer(serializers.Serializer):
     def update(self, instance, validated_data):
         for key, value in validated_data.items():
             if key == 'complex_transaction':
-                instance.complex_transaction = ComplexTransaction(transaction_type=instance.transaction_type)
-                instance.complex_transaction.code = value.get('code', 0)
-                instance.complex_transaction.status = value.get('status', ComplexTransaction.PENDING)
+                ctrn = ComplexTransaction(transaction_type=instance.transaction_type)
+                ctrn.code = value.get('code', None)
+                if ctrn.code is None:
+                    ctrn.code = 0
+                ctrn.status = value.get('status', None)
+                if ctrn.status is None:
+                    ctrn.status = ComplexTransaction.PRODUCTION
+                instance.complex_transaction = ctrn
             else:
                 setattr(instance, key, value)
 
