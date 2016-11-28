@@ -1062,7 +1062,7 @@ class PhantomTransactionSerializer(TransactionSerializer):
 
 class TransactionTypeProcessSerializer(serializers.Serializer):
     def __init__(self, **kwargs):
-        from poms.instruments.serializers import InstrumentViewSerializer
+        from poms.instruments.serializers import InstrumentViewSerializer, InstrumentSerializer
 
         kwargs['context'] = context = kwargs.get('context', {}) or {}
         super(TransactionTypeProcessSerializer, self).__init__(**kwargs)
@@ -1076,7 +1076,7 @@ class TransactionTypeProcessSerializer(serializers.Serializer):
         self.fields['has_errors'] = serializers.BooleanField(read_only=True)
         self.fields['instruments_errors'] = serializers.ReadOnlyField()
         self.fields['transactions_errors'] = serializers.ReadOnlyField()
-        self.fields['instruments'] = InstrumentViewSerializer(many=True, read_only=False, required=False,
+        self.fields['instruments'] = InstrumentSerializer(many=True, read_only=False, required=False,
                                                               allow_null=True)
         self.fields['complex_transaction'] = ComplexTransactionViewSerializer(read_only=False, required=False,
                                                                               allow_null=True)
@@ -1122,7 +1122,7 @@ class TransactionTypeProcessSerializer(serializers.Serializer):
         else:
             if instance.store:
                 instruments_map = {}
-                instruments_data = validated_data['instruments']
+                instruments_data = validated_data.get('instruments', None)
                 if instruments_data:
                     for instrument_data in instruments_data:
                         fake_id = instrument_data.pop('id', None)
@@ -1134,7 +1134,7 @@ class TransactionTypeProcessSerializer(serializers.Serializer):
                         if fake_id:
                             instruments_map[fake_id] = instrument
 
-                transactions_data = validated_data['transactions']
+                transactions_data = validated_data.get('transactions', None)
                 if transactions_data:
                     self._save_if_need(instance.complex_transaction)
                     for transaction_data in transactions_data:
