@@ -976,7 +976,7 @@ class TransactionTypeProcessValuesSerializer(serializers.Serializer):
                 field = serializers.FloatField(required=True, label=i.name, help_text=i.verbose_name)
 
             elif i.value_type == TransactionTypeInput.DATE:
-                field = serializers.DateField(required=True, label=i.name, help_text=i.verbose_namee)
+                field = serializers.DateField(required=True, label=i.name, help_text=i.verbose_name)
 
             elif i.value_type == TransactionTypeInput.RELATION:
                 model_class = i.content_type.model_class()
