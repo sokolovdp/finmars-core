@@ -100,6 +100,7 @@ class TransactionTypeInputSerializer(serializers.ModelSerializer):
                                      serializers.RegexValidator(regex='[a-zA-Z_][a-zA-Z0-9_]*'),
                                  ])
     content_type = TransactionTypeInputContentTypeField(required=False, allow_null=True, allow_empty=True)
+    is_fill_from_context = serializers.BooleanField(default=False, initial=False, required=False)
 
     account = AccountField(required=False, allow_null=True)
     instrument_type = InstrumentTypeField(required=False, allow_null=True)
