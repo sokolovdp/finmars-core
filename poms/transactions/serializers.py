@@ -60,7 +60,7 @@ class TransactionTypeGroupSerializer(ModelWithObjectPermissionSerializer, ModelW
     class Meta:
         model = TransactionTypeGroup
         fields = [
-            'url', 'id', 'master_user', 'user_code', 'name', 'short_name', 'public_name', 'notes', 'is_deleted',
+            'id', 'master_user', 'user_code', 'name', 'short_name', 'public_name', 'notes', 'is_deleted',
             # 'tags', 'tags_object',
         ]
 
@@ -69,7 +69,7 @@ class TransactionTypeGroupViewSerializer(ModelWithObjectPermissionSerializer):
     class Meta(ModelWithObjectPermissionSerializer.Meta):
         model = TransactionTypeGroup
         fields = [
-            'url', 'id', 'user_code', 'name', 'short_name', 'public_name', 'notes', 'is_deleted',
+            'id', 'user_code', 'name', 'short_name', 'public_name', 'notes', 'is_deleted',
         ]
 
 
@@ -557,7 +557,7 @@ class TransactionTypeSerializer(ModelWithObjectPermissionSerializer, ModelWithUs
     class Meta:
         model = TransactionType
         fields = [
-            'url', 'id', 'master_user', 'group',
+            'id', 'master_user', 'group',
             'user_code', 'name', 'short_name', 'public_name', 'notes',
             'display_expr', 'is_valid_for_all_portfolios', 'is_valid_for_all_instruments', 'is_deleted',
             'book_transaction_layout',
@@ -691,7 +691,7 @@ class TransactionTypeViewSerializer(ModelWithObjectPermissionSerializer):
     class Meta(ModelWithObjectPermissionSerializer.Meta):
         model = TransactionType
         fields = [
-            'url', 'id', 'group', 'user_code', 'name', 'short_name', 'public_name', 'notes',
+            'id', 'group', 'user_code', 'name', 'short_name', 'public_name', 'notes',
             'is_valid_for_all_portfolios', 'is_valid_for_all_instruments', 'is_deleted',
             'group_object',
         ]
@@ -785,7 +785,7 @@ class TransactionSerializer(ModelWithAttributesSerializer):
     class Meta:
         model = Transaction
         fields = [
-            'url', 'id', 'master_user',
+            'id', 'master_user',
             'transaction_code',
             'complex_transaction',
             'complex_transaction_order',
@@ -890,7 +890,7 @@ class ComplexTransactionSerializer(serializers.ModelSerializer):
     class Meta:
         model = ComplexTransaction
         fields = [
-            'url', 'id', 'status', 'code', 'text', 'transaction_type', 'transactions',
+            'id', 'status', 'code', 'text', 'transaction_type', 'transactions',
             'transaction_type_object', 'transactions_object',
         ]
 
@@ -920,7 +920,7 @@ class ComplexTransactionViewSerializer(serializers.ModelSerializer):
     class Meta:
         model = ComplexTransaction
         fields = [
-            'url', 'id', 'status', 'code', 'text'
+            'id', 'status', 'code', 'text'
         ]
 
     def get_text(self, obj):
