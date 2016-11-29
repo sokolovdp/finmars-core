@@ -1,6 +1,6 @@
 from django.contrib.auth.models import Permission
 from django.contrib.contenttypes.models import ContentType
-from django.db.models import Prefetch
+from django.db.models import Prefetch, Q
 from django.utils.functional import SimpleLazyObject
 
 from poms.obj_perms.models import GenericObjectPermission
@@ -81,6 +81,8 @@ def obj_perms_filter_objects(member, perms, queryset, model_cls=None, prefetch=T
         queryset = queryset.filter(
             pk__in=GenericObjectPermission.objects.filter(
                 content_type=ctype, permission__content_type=ctype, permission__codename__in=codenames
+            ).filter(
+                Q(member=member) | Q(group__in=member.groups.all())
             ).values_list('object_id', flat=True)
         )
         # queryset = queryset.filter(object_permissions__permission__content_type=ctype,
