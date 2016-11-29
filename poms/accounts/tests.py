@@ -2,7 +2,7 @@ from __future__ import unicode_literals
 
 from rest_framework import status
 
-from poms.accounts.models import AccountAttributeType, Account, AccountType, AccountClassifier
+from poms.accounts.models import Account, AccountType
 from poms.common.tests import BaseApiWithPermissionTestCase, BaseApiWithAttributesTestCase, \
     BaseAttributeTypeApiTestCase, BaseApiWithTagsTestCase, BaseNamedModelTestCase
 from poms.obj_perms.utils import get_perms_codename
@@ -31,9 +31,6 @@ class AccountTypeApiTestCase(BaseNamedModelTestCase, BaseApiWithPermissionTestCa
 
 
 class AccountAttributeTypeApiTestCase(BaseAttributeTypeApiTestCase):
-    model = AccountAttributeType
-    classifier_model = AccountClassifier
-
     def setUp(self):
         super(AccountAttributeTypeApiTestCase, self).setUp()
 
@@ -45,8 +42,6 @@ class AccountAttributeTypeApiTestCase(BaseAttributeTypeApiTestCase):
 class AccountApiTestCase(BaseNamedModelTestCase, BaseApiWithPermissionTestCase, BaseApiWithTagsTestCase,
                          BaseApiWithAttributesTestCase):
     model = Account
-    attribute_type_model = AccountAttributeType
-    classifier_model = AccountClassifier
 
     def setUp(self):
         super(AccountApiTestCase, self).setUp()

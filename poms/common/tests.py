@@ -3,7 +3,6 @@ from __future__ import unicode_literals, division, print_function
 import json
 import uuid
 
-from django.conf import settings
 from django.contrib.auth import user_logged_in, user_logged_out
 from django.contrib.auth.models import User
 from django.contrib.contenttypes.models import ContentType
@@ -12,13 +11,13 @@ from django.utils.text import Truncator
 from rest_framework import status
 from rest_framework.test import APITestCase
 
-from poms.accounts.models import AccountType, Account, AccountAttributeType, AccountClassifier
+from poms.accounts.models import AccountType, Account
 from poms.chats.models import Thread, Message, DirectMessage
 from poms.counterparties.models import Counterparty, Responsible
 from poms.currencies.models import Currency
 from poms.instruments.models import InstrumentClass, InstrumentType, Instrument
-from poms.obj_attrs.models import AbstractAttributeType
-from poms.obj_perms.utils import assign_perms, get_all_perms, get_perms_codename
+from poms.obj_attrs.models import GenericAttributeType, GenericClassifier
+from poms.obj_perms.utils import assign_perms3, get_all_perms, get_perms_codename
 from poms.portfolios.models import Portfolio
 from poms.tags.models import Tag
 from poms.transactions.models import TransactionTypeGroup, TransactionType
@@ -132,11 +131,11 @@ class BaseApiTestCase(APITestCase):
     def get_group(self, name, master_user):
         return Group.objects.get(name=name, master_user__name=master_user)
 
-    def create_attribute_type(self, model, name, master_user, value_type=AbstractAttributeType.STRING,
+    def create_attribute_type(self, model, name, master_user, value_type=GenericAttributeType.STRING,
                               classifier_model=None, classifier_tree=None):
         master_user = self.get_master_user(master_user)
         attribute_type = model.objects.create(master_user=master_user, name=name, value_type=value_type)
-        if classifier_model and classifier_tree and value_type == AbstractAttributeType.CLASSIFIER:
+        if classifier_model and classifier_tree and value_type == GenericAttributeType.CLASSIFIER:
             for root in classifier_tree:
                 self.create_classifier(attribute_type, classifier_model, root, None)
         return attribute_type
@@ -177,13 +176,13 @@ class BaseApiTestCase(APITestCase):
     def get_account_type(self, name, master_user):
         return AccountType.objects.get(name=name, master_user__name=master_user)
 
-    def create_account_attribute_type(self, name, master_user, value_type=AbstractAttributeType.STRING,
+    def create_account_attribute_type(self, name, master_user, value_type=GenericAttributeType.STRING,
                                       classifiers=None):
-        return self.create_attribute_type(AccountAttributeType, name, master_user, value_type=value_type,
-                                          classifier_model=AccountClassifier, classifier_tree=classifiers)
+        return self.create_attribute_type(GenericAttributeType, name, master_user, value_type=value_type,
+                                          classifier_model=GenericClassifier, classifier_tree=classifiers)
 
     def get_account_attribute_type(self, name, master_user):
-        return self.get_attribute_type(AccountAttributeType, name, master_user)
+        return self.get_attribute_type(GenericAttributeType, name, master_user)
 
     def create_account(self, name, master_user, account_type='-'):
         account_type = self.get_account_type(account_type, master_user)
@@ -295,19 +294,18 @@ class BaseApiTestCase(APITestCase):
     def get_transaction_type(self, name, master_user):
         return TransactionType.objects.get(name=name, master_user__name=master_user)
 
-    def create_thread_status(self, name, master_user, is_closed=False):
-        master_user = self.get_master_user(master_user)
-        thread_status = ThreadStatus.objects.create(master_user=master_user, name=name, is_closed=is_closed)
-        return thread_status
-
-    def get_thread_status(self, name, master_user):
-        return ThreadStatus.objects.get(name=name, master_user__name=master_user)
+    # def create_thread_status(self, name, master_user, is_closed=False):
+    #     master_user = self.get_master_user(master_user)
+    #     thread_status = ThreadStatus.objects.create(master_user=master_user, name=name, is_closed=is_closed)
+    #     return thread_status
+    #
+    # def get_thread_status(self, name, master_user):
+    #     return ThreadStatus.objects.get(name=name, master_user__name=master_user)
 
     def create_thread(self, subject, master_user, status=None):
         master_user = self.get_master_user(master_user)
-        status = self.get_thread_status(status, master_user)
-        thread_status = Thread.objects.create(master_user=master_user, subject=subject, status=status)
-        return thread_status
+        thread = Thread.objects.create(master_user=master_user, subject=subject, status=status)
+        return thread
 
     def get_thread(self, subject, master_user):
         return Thread.objects.get(subject=subject, master_user__name=master_user)
@@ -348,7 +346,7 @@ class BaseApiTestCase(APITestCase):
             # }
             # perms = {perm % kwargs for perm in codename_set}
             perms = self.default_owner_permissions
-        assign_perms(obj, members=members, groups=groups, perms=perms)
+        assign_perms3(obj, members=members, groups=groups, perms=perms)
 
     def _dump(self, data):
         # pprint.pprint(data, width=40)
@@ -644,12 +642,12 @@ class BaseApiWithPermissionTestCase(BaseApiTestCase):
 
         response = self._get('a1', obj.id)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(set(six.iterkeys(response.data)),
+        self.assertEqual(set(response.data.keys()),
                          {'url', 'id', 'public_name', 'display_name', 'granted_permissions'})
 
         response = self._get('a2', obj.id)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(set(six.iterkeys(response.data)),
+        self.assertEqual(set(response.data.keys()),
                          {'url', 'id', 'public_name', 'display_name', 'granted_permissions'})
 
     def test_permissions_add(self):
@@ -862,18 +860,19 @@ class BaseApiWithTagsTestCase(BaseApiTestCase):
 
 
 class BaseAttributeTypeApiTestCase(BaseNamedModelTestCase, BaseApiWithPermissionTestCase):
-    classifier_model = None
+    model = GenericAttributeType
+    classifier_model = GenericClassifier
 
     def create_default_attrs(self):
         self.attr_str = self.create_attribute_type(self.model, 'str', 'a',
-                                                   value_type=AbstractAttributeType.STRING)
+                                                   value_type=GenericAttributeType.STRING)
         self.attr_num = self.create_attribute_type(self.model, 'num', 'a',
-                                                   value_type=AbstractAttributeType.NUMBER)
+                                                   value_type=GenericAttributeType.NUMBER)
         self.attr_date = self.create_attribute_type(self.model, 'date', 'a',
-                                                    value_type=AbstractAttributeType.DATE)
+                                                    value_type=GenericAttributeType.DATE)
         if self.classifier_model:
             self.attr_clsfr1 = self.create_attribute_type(self.model, 'clsfr1', 'a',
-                                                          value_type=AbstractAttributeType.CLASSIFIER,
+                                                          value_type=GenericAttributeType.CLASSIFIER,
                                                           classifier_model=self.classifier_model,
                                                           classifier_tree=[{
                                                               'name': 'clsfr1_n1',
@@ -889,7 +888,7 @@ class BaseAttributeTypeApiTestCase(BaseNamedModelTestCase, BaseApiWithPermission
                                                               ]
                                                           }, ])
             self.attr_clsfr2 = self.create_attribute_type(self.model, 'clsfr2', 'a',
-                                                          value_type=AbstractAttributeType.CLASSIFIER,
+                                                          value_type=GenericAttributeType.CLASSIFIER,
                                                           classifier_model=self.classifier_model,
                                                           classifier_tree=[{
                                                               'name': 'clsfr2_n1',
@@ -945,7 +944,7 @@ class BaseAttributeTypeApiTestCase(BaseNamedModelTestCase, BaseApiWithPermission
         else:
             return None
 
-    def _make_new_data_with_classifiers(self, value_type=AbstractAttributeType.CLASSIFIER, **kwargs):
+    def _make_new_data_with_classifiers(self, value_type=GenericAttributeType.CLASSIFIER, **kwargs):
         if self.classifier_model:
             data = self._make_new_data(value_type=value_type, **kwargs)
             data['classifiers'] = self._gen_classifiers()
@@ -975,14 +974,14 @@ class BaseAttributeTypeApiTestCase(BaseNamedModelTestCase, BaseApiWithPermission
             self.assertEqual(len(response.data['classifiers']), 2)
 
             # try create with classifier with other value type
-            data = self._make_new_data_with_classifiers(value_type=AbstractAttributeType.STRING)
+            data = self._make_new_data_with_classifiers(value_type=GenericAttributeType.STRING)
             response = self._add('a', data)
             self.assertEqual(response.status_code, status.HTTP_201_CREATED)
             self.assertEqual(response.data['classifiers'], [])
 
     def test_classifiers_update(self):
         if self.classifier_model:
-            data = self._make_new_data(value_type=AbstractAttributeType.CLASSIFIER)
+            data = self._make_new_data(value_type=GenericAttributeType.CLASSIFIER)
             response = self._add('a', data)
             self.assertEqual(response.status_code, status.HTTP_201_CREATED)
             self.assertEqual(len(response.data['classifiers']), 0)
@@ -994,7 +993,7 @@ class BaseAttributeTypeApiTestCase(BaseNamedModelTestCase, BaseApiWithPermission
             self.assertEqual(len(response.data['classifiers']), 2)
 
             # try add classifier to other value type
-            data = self._make_new_data(value_type=AbstractAttributeType.STRING)
+            data = self._make_new_data(value_type=GenericAttributeType.STRING)
             response = self._add('a', data)
             self.assertEqual(response.status_code, status.HTTP_201_CREATED)
 
@@ -1006,21 +1005,20 @@ class BaseAttributeTypeApiTestCase(BaseNamedModelTestCase, BaseApiWithPermission
 
 
 class BaseApiWithAttributesTestCase(BaseApiTestCase):
-    attribute_type_model = None
-    classifier_model = None
-    skip_classifier = False
+    attribute_type_model = GenericAttributeType
+    classifier_model = GenericClassifier
 
     def setUp(self):
         super(BaseApiWithAttributesTestCase, self).setUp()
 
         self.attr_str = self.create_attribute_type(self.attribute_type_model, 'str', 'a',
-                                                   value_type=AbstractAttributeType.STRING)
+                                                   value_type=GenericAttributeType.STRING)
         self.attr_num = self.create_attribute_type(self.attribute_type_model, 'num', 'a',
-                                                   value_type=AbstractAttributeType.NUMBER)
+                                                   value_type=GenericAttributeType.NUMBER)
         self.attr_date = self.create_attribute_type(self.attribute_type_model, 'date', 'a',
-                                                    value_type=AbstractAttributeType.DATE)
+                                                    value_type=GenericAttributeType.DATE)
         self.attr_clsfr1 = self.create_attribute_type(self.attribute_type_model, 'clsfr1', 'a',
-                                                      value_type=AbstractAttributeType.CLASSIFIER,
+                                                      value_type=GenericAttributeType.CLASSIFIER,
                                                       classifier_model=self.classifier_model,
                                                       classifier_tree=[{
                                                           'name': 'clsfr1_n1',
@@ -1036,7 +1034,7 @@ class BaseApiWithAttributesTestCase(BaseApiTestCase):
                                                           ]
                                                       }, ])
         self.attr_clsfr2 = self.create_attribute_type(self.attribute_type_model, 'clsfr2', 'a',
-                                                      value_type=AbstractAttributeType.CLASSIFIER,
+                                                      value_type=GenericAttributeType.CLASSIFIER,
                                                       classifier_model=self.classifier_model,
                                                       classifier_tree=[{
                                                           'name': 'clsfr2_n1',
@@ -1057,13 +1055,13 @@ class BaseApiWithAttributesTestCase(BaseApiTestCase):
                                    classifier_name=classifier_name)
 
     def attr_value_key(self, value_type):
-        if value_type == AbstractAttributeType.STRING:
+        if value_type == GenericAttributeType.STRING:
             return 'value_string'
-        elif value_type == AbstractAttributeType.NUMBER:
+        elif value_type == GenericAttributeType.NUMBER:
             return 'value_float'
-        elif value_type == AbstractAttributeType.DATE:
+        elif value_type == GenericAttributeType.DATE:
             return 'value_date'
-        elif value_type == AbstractAttributeType.CLASSIFIER:
+        elif value_type == GenericAttributeType.CLASSIFIER:
             return 'classifier'
         else:
             self.fail('invalid value_type %s' % (value_type))
@@ -1125,8 +1123,6 @@ class BaseApiWithAttributesTestCase(BaseApiTestCase):
         self._simple_attrs('date', '2014-01-01', '2015-01-01')
 
     def test_attrs_clsfr(self):
-        if self.skip_classifier:
-            return
         classifier1 = self.get_model_classifier('clsfr1', 'clsfr1_n11')
         classifier2 = self.get_model_classifier('clsfr1', 'clsfr1_n21')
         self._simple_attrs('clsfr1', classifier1.id, classifier2.id)
@@ -1201,7 +1197,7 @@ class BaseApiWithAttributesTestCase(BaseApiTestCase):
         data3 = data.copy()
         data3 = self.add_attr_value(data3, 'num', 123)
         response = self._update('a1', data3['id'], data3)
-        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST, msg=six.text_type(response.data))
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST, msg=str(response.data))
 
 
 ABSTRACT_TESTS.append(BaseApiTestCase)
