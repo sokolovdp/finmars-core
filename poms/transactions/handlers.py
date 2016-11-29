@@ -41,8 +41,7 @@ class TransactionTypeProcess(object):
 
         self.complex_transaction = complex_transaction
         if self.complex_transaction is None:
-            self.complex_transaction = ComplexTransaction(transaction_type=self.transaction_type,
-                                                          status=complex_transaction_status)
+            self.complex_transaction = ComplexTransaction(transaction_type=self.transaction_type)
         if complex_transaction_status is not None:
             self.complex_transaction.status = complex_transaction_status
 
