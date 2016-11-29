@@ -8,6 +8,7 @@ from datetime import timedelta
 from itertools import groupby
 
 from django.conf import settings
+from django.db.models import Q
 from django.utils.functional import cached_property
 from django.utils.translation import ugettext, ugettext_lazy
 
@@ -22,7 +23,7 @@ from poms.reports.pricing import FakeInstrumentPricingProvider, FakeCurrencyFxRa
 from poms.reports.pricing import InstrumentPricingProvider
 from poms.strategies.models import Strategy1, Strategy2, Strategy3, Strategy1Subgroup, Strategy1Group, \
     Strategy2Subgroup, Strategy2Group, Strategy3Subgroup, Strategy3Group
-from poms.transactions.models import TransactionClass, Transaction
+from poms.transactions.models import TransactionClass, Transaction, ComplexTransaction
 
 _l = logging.getLogger('poms.reports')
 
@@ -1820,6 +1821,7 @@ class ReportBuilder(object):
             queryset = self._queryset
 
         queryset = queryset.filter(master_user=self.instance.master_user, is_canceled=False)
+        queryset = queryset.filter(Q(complex_transaction__isnull=True) | Q(complex_transaction__status=ComplexTransaction.PRODUCTION))
 
         queryset = queryset.select_related(
             # TODO: add fields!!!
