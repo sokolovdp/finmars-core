@@ -269,20 +269,21 @@ class ModelWithAttributesSerializer(serializers.ModelSerializer):
 
     def save_attributes(self, instance, attributes, created):
         member = get_member_from_context(self.context)
+        attributes = attributes or []
 
         ctype = ContentType.objects.get_for_model(instance)
-        if hasattr(instance, 'attributes'):
-            attrs_qs = instance.attributes.all()
-        else:
-            attrs_qs = GenericAttribute.objects.filter(content_type=ctype, object_id=instance.id)
-        attrs_qs = attrs_qs.select_related('attribute_type').prefetch_related(
+        # if hasattr(instance, 'attributes'):
+        #     attrs_qs = instance.attributes.all()
+        # else:
+        attrs_qs = GenericAttribute.objects.filter(content_type=ctype, object_id=instance.id)
+
+        read_attrs_qs = attrs_qs.select_related('attribute_type').prefetch_related(
             *get_permissions_prefetch_lookups(
                 ('attribute_type', GenericAttributeType),
             )
         )
-
-        protected = {a.attribute_type_id for a in attrs_qs if not has_view_perms(member, instance)}
-        existed = {a.attribute_type_id: a for a in attrs_qs if has_view_perms(member, instance)}
+        protected = {a.attribute_type_id for a in read_attrs_qs if not has_view_perms(member, instance)}
+        existed = {a.attribute_type_id: a for a in read_attrs_qs if has_view_perms(member, instance)}
 
         processed = set()
         for attr in attributes:
