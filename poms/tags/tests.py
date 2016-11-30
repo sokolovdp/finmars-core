@@ -20,10 +20,10 @@ class TagApiTestCase(BaseNamedModelTestCase, BaseApiWithPermissionTestCase):
         self._change_permission = 'change_tag'
 
     def _create_obj(self, name='tag'):
-        return self.create_tag(name, 'a')
+        return self.create_tag(name, self._a)
 
     def _get_obj(self, name='tag'):
-        return self.get_tag(name, 'a')
+        return self.get_tag(name, self._a)
 
     def _make_new_data(self, **kwargs):
         content_types = kwargs.get('content_types', [])
