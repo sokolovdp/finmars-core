@@ -1,12 +1,10 @@
 from __future__ import unicode_literals
 
-from django.conf import settings
 from rest_framework import status
 
 from poms.common.tests import BaseApiWithPermissionTestCase, BaseApiWithAttributesTestCase, \
     BaseAttributeTypeApiTestCase, BaseApiWithTagsTestCase, BaseNamedModelTestCase
-from poms.instruments.models import InstrumentType, InstrumentAttributeType, InstrumentClassifier, Instrument, \
-    InstrumentClass
+from poms.instruments.models import InstrumentType, Instrument, InstrumentClass
 from poms.obj_perms.utils import get_perms_codename
 
 
@@ -26,10 +24,10 @@ class InstrumentTypeApiTestCase(BaseNamedModelTestCase, BaseApiWithPermissionTes
         self._change_permission = 'change_instrumenttype'
 
     def _create_obj(self, name='instrument_type'):
-        return self.create_instrument_type(name, 'a')
+        return self.create_instrument_type(name, self._a)
 
     def _get_obj(self, name='instrument_type'):
-        return self.get_instrument_type(name, 'a')
+        return self.get_instrument_type(name, self._a)
 
     def _make_new_data(self, **kwargs):
         kwargs['instrument_class'] = kwargs.get('instrument_class', InstrumentClass.GENERAL)
@@ -38,22 +36,22 @@ class InstrumentTypeApiTestCase(BaseNamedModelTestCase, BaseApiWithPermissionTes
 
 
 class InstrumentAttributeTypeApiTestCase(BaseAttributeTypeApiTestCase):
-    model = InstrumentAttributeType
-    classifier_model = InstrumentClassifier
+    base_model = Instrument
 
     def setUp(self):
         super(InstrumentAttributeTypeApiTestCase, self).setUp()
 
         self._url_list = '/api/v1/instruments/instrument-attribute-type/'
         self._url_object = '/api/v1/instruments/instrument-attribute-type/%s/'
-        self._change_permission = 'change_instrumentattributetype'
+        # self._change_permission = 'change_instrumentattributetype'
 
 
 class InstrumentApiTestCase(BaseNamedModelTestCase, BaseApiWithPermissionTestCase, BaseApiWithTagsTestCase,
                             BaseApiWithAttributesTestCase):
     model = Instrument
-    attribute_type_model = InstrumentAttributeType
-    classifier_model = InstrumentClassifier
+
+    # attribute_type_model = InstrumentAttributeType
+    # classifier_model = InstrumentClassifier
 
     def setUp(self):
         super(InstrumentApiTestCase, self).setUp()
@@ -62,42 +60,42 @@ class InstrumentApiTestCase(BaseNamedModelTestCase, BaseApiWithPermissionTestCas
         self._url_object = '/api/v1/instruments/instrument/%s/'
         self._change_permission = 'change_instrument'
 
-        self.type_def = self.create_instrument_type('-', 'a')
-        self.assign_perms(self.type_def, 'a', users=['a0', 'a1', 'a2'], groups=['g1', 'g2'],
+        self.type_def = self.get_instrument_type('-', self._a)
+        self.assign_perms(self.type_def, self._a, users=[self._a0, self._a1, self._a2], groups=['g1', 'g2'],
                           perms=get_perms_codename(self.type_def, ['change', 'view']))
 
-        self.type1 = self.create_instrument_type('type1', 'a')
-        self.type2_a1 = self.create_instrument_type('type2_a1', 'a')
-        self.assign_perms(self.type2_a1, 'a', users=['a1'], groups=[])
-        self.type3_g2 = self.create_instrument_type('type3_g2', 'a')
-        self.assign_perms(self.type3_g2, 'a', groups=['g2'])
+        self.type1 = self.create_instrument_type('type1', self._a)
+        self.type2_a1 = self.create_instrument_type('type2_a1', self._a)
+        self.assign_perms(self.type2_a1, self._a, users=[self._a1], groups=[])
+        self.type3_g2 = self.create_instrument_type('type3_g2', self._a)
+        self.assign_perms(self.type3_g2, self._a, groups=['g2'])
 
     def _create_obj(self, name='instrument', instrument_type=None, pricing_currency=None, accrued_currency=None):
         instrument_type = instrument_type or self.type_def
-        pricing_currency = pricing_currency or self.get_currency('USD', 'a')
-        accrued_currency = accrued_currency or self.get_currency('USD', 'a')
-        return self.create_instrument(name, 'a', instrument_type=instrument_type, pricing_currency=pricing_currency,
+        pricing_currency = pricing_currency or self.get_currency('USD', self._a)
+        accrued_currency = accrued_currency or self.get_currency('USD', self._a)
+        return self.create_instrument(name, self._a, instrument_type=instrument_type, pricing_currency=pricing_currency,
                                       accrued_currency=accrued_currency)
 
     def _get_obj(self, name='instrument'):
-        return self.get_instrument(name, 'a')
+        return self.get_instrument(name, self._a)
 
     def _make_new_data(self, **kwargs):
-        instrument_type = self.get_instrument_type(kwargs.get('instrument_type', '-'), 'a')
+        instrument_type = self.get_instrument_type(kwargs.get('instrument_type', '-'), self._a)
         kwargs['instrument_type'] = instrument_type.id
-        pricing_currency = self.get_currency(kwargs.get('pricing_currency', 'USD'), 'a')
+        pricing_currency = self.get_currency(kwargs.get('pricing_currency', 'USD'), self._a)
         kwargs['pricing_currency'] = pricing_currency.id
-        accrued_currency = self.get_currency(kwargs.get('accrued_currency', 'USD'), 'a')
+        accrued_currency = self.get_currency(kwargs.get('accrued_currency', 'USD'), self._a)
         kwargs['accrued_currency'] = accrued_currency.id
         data = super(InstrumentApiTestCase, self)._make_new_data(**kwargs)
         return data
 
     def test_add_by_user_with_type_without_perms(self):
         data = self._make_new_data(instrument_type='type1')
-        response = self._add('a1', data)
+        response = self._add(self._a1, data)
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
 
     def test_add_by_group_with_type_without_perms(self):
         data = self._make_new_data(instrument_type='type1')
-        response = self._add('a2', data)
+        response = self._add(self._a2, data)
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)

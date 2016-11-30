@@ -47,7 +47,6 @@ class ThreadGroupApiTestCase(BaseApiTestCase):
 
 class ThreadApiTestCase(BaseApiWithPermissionTestCase):
     model = Thread
-    has_dash_obj = False
 
     def setUp(self):
         super(ThreadApiTestCase, self).setUp()
@@ -85,7 +84,6 @@ class ThreadApiTestCase(BaseApiWithPermissionTestCase):
 
 class MessageApiTest(BaseApiTestCase):
     model = Message
-    has_dash_obj = False
 
     def setUp(self):
         super(MessageApiTest, self).setUp()
@@ -120,7 +118,6 @@ class MessageApiTest(BaseApiTestCase):
 
 class DirectMessageApiTest(BaseApiTestCase):
     model = DirectMessage
-    has_dash_obj = False
 
     def setUp(self):
         super(DirectMessageApiTest, self).setUp()

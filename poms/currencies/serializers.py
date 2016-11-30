@@ -16,7 +16,7 @@ from poms.users.fields import MasterUserField
 class CurrencySerializer(ModelWithUserCodeSerializer, ModelWithAttributesSerializer, ModelWithTagSerializer):
     # url = serializers.HyperlinkedIdentityField(view_name='currency-detail')
     master_user = MasterUserField()
-    price_download_scheme = PriceDownloadSchemeField(allow_null=True)
+    price_download_scheme = PriceDownloadSchemeField(allow_null=True, required=False)
 
     # daily_pricing_model_object = serializers.PrimaryKeyRelatedField(source='daily_pricing_model', read_only=True)
     # price_download_scheme_object = serializers.PrimaryKeyRelatedField(source='price_download_scheme', read_only=True)

@@ -48,7 +48,7 @@ class CurrencyViewSet(AbstractModelViewSet):
     )
     serializer_class = CurrencySerializer
     permission_classes = AbstractModelViewSet.permission_classes + [
-        SuperUserOrReadOnly,
+        # SuperUserOrReadOnly,
     ]
     filter_backends = AbstractModelViewSet.filter_backends + [
         OwnerByMasterUserFilter,
@@ -80,7 +80,7 @@ class CurrencyHistoryViewSet(AbstractModelViewSet):
     )
     serializer_class = CurrencyHistorySerializer
     permission_classes = AbstractModelViewSet.permission_classes + [
-        SuperUserOrReadOnly,
+        # SuperUserOrReadOnly,
     ]
     filter_backends = AbstractModelViewSet.filter_backends + [
         OwnerByCurrencyFilter,

@@ -78,29 +78,29 @@ class ReportCurrencySerializer(CurrencySerializer):
 class ReportPortfolioSerializer(PortfolioSerializer):
     def __init__(self, *args, **kwargs):
         super(PortfolioSerializer, self).__init__(*args, **kwargs)
-        self.fields.pop('accounts')
-        self.fields.pop('accounts_object')
-        self.fields.pop('responsibles')
-        self.fields.pop('responsibles_object')
-        self.fields.pop('counterparties')
-        self.fields.pop('counterparties_object')
-        self.fields.pop('transaction_types')
-        self.fields.pop('transaction_types_object')
+        self.fields.pop('accounts', None)
+        self.fields.pop('accounts_object', None)
+        self.fields.pop('responsibles', None)
+        self.fields.pop('responsibles_object', None)
+        self.fields.pop('counterparties', None)
+        self.fields.pop('counterparties_object', None)
+        self.fields.pop('transaction_types', None)
+        self.fields.pop('transaction_types_object', None)
 
-        self.fields.pop('user_object_permissions')
-        self.fields.pop('group_object_permissions')
-        self.fields.pop('object_permissions')
+        self.fields.pop('user_object_permissions', None)
+        self.fields.pop('group_object_permissions', None)
+        self.fields.pop('object_permissions', None)
 
 
 class ReportAccountSerializer(AccountSerializer):
     def __init__(self, *args, **kwargs):
         super(AccountSerializer, self).__init__(*args, **kwargs)
-        self.fields.pop('portfolios')
-        self.fields.pop('portfolios_object')
+        self.fields.pop('portfolios', None)
+        self.fields.pop('portfolios_object', None)
 
-        self.fields.pop('user_object_permissions')
-        self.fields.pop('group_object_permissions')
-        self.fields.pop('object_permissions')
+        self.fields.pop('user_object_permissions', None)
+        self.fields.pop('group_object_permissions', None)
+        self.fields.pop('object_permissions', None)
 
 
 class ReportStrategy1Serializer(Strategy1Serializer):

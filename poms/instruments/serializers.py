@@ -183,7 +183,7 @@ class InstrumentSerializer(ModelWithAttributesSerializer, ModelWithObjectPermiss
     accrued_currency_object = serializers.PrimaryKeyRelatedField(source='accrued_currency', read_only=True)
     payment_size_detail_object = PaymentSizeDetailSerializer(source='payment_size_detail', read_only=True)
     daily_pricing_model_object = DailyPricingModelSerializer(source='daily_pricing_model', read_only=True)
-    price_download_scheme = PriceDownloadSchemeField(allow_null=True)
+    price_download_scheme = PriceDownloadSchemeField(allow_null=True, required=False)
     price_download_scheme_object = serializers.PrimaryKeyRelatedField(source='price_download_scheme', read_only=True)
 
     manual_pricing_formulas = serializers.PrimaryKeyRelatedField(many=True, required=False, allow_null=True,

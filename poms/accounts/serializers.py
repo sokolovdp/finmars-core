@@ -70,9 +70,9 @@ class AccountSerializer(ModelWithObjectPermissionSerializer, ModelWithAttributes
                         ModelWithUserCodeSerializer, ModelWithTagSerializer):
     master_user = MasterUserField()
     type = AccountTypeField(default=AccountTypeDefault())
-    type_object = AccountTypeViewSerializer(source='type', read_only=True)
     portfolios = PortfolioField(many=True, required=False, allow_null=True)
-    portfolios_object = serializers.PrimaryKeyRelatedField(source='portfolios', many=True, read_only=True)
+    # portfolios_object = serializers.PrimaryKeyRelatedField(source='portfolios', many=True, read_only=True)
+    # type_object = AccountTypeViewSerializer(source='type', read_only=True)
 
     # attributes = AccountAttributeSerializer(many=True, required=False, allow_null=True)
 
@@ -82,8 +82,9 @@ class AccountSerializer(ModelWithObjectPermissionSerializer, ModelWithAttributes
     class Meta:
         model = Account
         fields = [
-            'id', 'master_user', 'type', 'type_object', 'user_code', 'name', 'short_name', 'public_name',
-            'notes', 'is_default', 'is_valid_for_all_portfolios', 'is_deleted', 'portfolios', 'portfolios_object',
+            'id', 'master_user', 'type','user_code', 'name', 'short_name', 'public_name',
+            'notes', 'is_default', 'is_valid_for_all_portfolios', 'is_deleted', 'portfolios',
+            # 'type_object',  'portfolios_object',
             # 'attributes',
             # 'tags', 'tags_object',
         ]
@@ -92,6 +93,7 @@ class AccountSerializer(ModelWithObjectPermissionSerializer, ModelWithAttributes
         super(AccountSerializer, self).__init__(*args, **kwargs)
 
         from poms.portfolios.serializers import PortfolioViewSerializer
+        self.fields['type_object'] = AccountTypeViewSerializer(source='type', read_only=True)
         self.fields['portfolios_object'] = PortfolioViewSerializer(source='portfolios', many=True, read_only=True)
 
 
