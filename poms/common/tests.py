@@ -12,8 +12,8 @@ from rest_framework import status
 from rest_framework.test import APITestCase
 
 from poms.accounts.models import AccountType, Account
-from poms.chats.models import Thread, Message, DirectMessage
-from poms.counterparties.models import Counterparty, Responsible
+from poms.chats.models import Thread, Message, DirectMessage, ThreadGroup
+from poms.counterparties.models import Counterparty, Responsible, CounterpartyGroup, ResponsibleGroup
 from poms.currencies.models import Currency
 from poms.instruments.models import InstrumentClass, InstrumentType, Instrument
 from poms.obj_attrs.models import GenericAttributeType, GenericClassifier
@@ -83,8 +83,8 @@ class BaseApiTestCase(APITestCase):
         self.create_user(self._a2)
         self.create_member(user=self._a, master_user=self._a, is_owner=True, is_admin=True)
         self.create_member(user=self._a0, master_user=self._a, is_owner=False, is_admin=True)
-        self.create_member(user=self._a1, master_user=self._a, groups=['g1'])
-        self.create_member(user=self._a2, master_user=self._a, groups=['g2'])
+        self.create_member(user=self._a1, master_user=self._a, groups=['Default', 'g1'])
+        self.create_member(user=self._a2, master_user=self._a, groups=['Default', 'g2'])
 
         self.create_master_user(self._b)
         self.create_group('g1', self._b)
@@ -204,17 +204,35 @@ class BaseApiTestCase(APITestCase):
     def get_account(self, name, master_user):
         return Account.objects.get(name=name, master_user__name=master_user)
 
-    def create_counterparty(self, name, master_user):
+    def create_counterparty_group(self, name, master_user):
         master_user = self.get_master_user(master_user)
-        counterparty = Counterparty.objects.create(master_user=master_user, name=name)
+        counterparty_group = CounterpartyGroup.objects.create(master_user=master_user, name=name)
+        return counterparty_group
+
+    def get_counterparty_group(self, name, master_user):
+        return CounterpartyGroup.objects.get(name=name, master_user__name=master_user)
+
+    def create_counterparty(self, name, master_user, group='-'):
+        master_user = self.get_master_user(master_user)
+        group = self.get_counterparty_group(group, master_user)
+        counterparty = Counterparty.objects.create(master_user=master_user, group=group, name=name)
         return counterparty
 
     def get_counterparty(self, name, master_user):
         return Counterparty.objects.get(name=name, master_user__name=master_user)
 
-    def create_responsible(self, name, master_user):
+    def create_responsible_group(self, name, master_user):
         master_user = self.get_master_user(master_user)
-        responsible = Responsible.objects.create(master_user=master_user, name=name)
+        responsible = ResponsibleGroup.objects.create(master_user=master_user, name=name)
+        return responsible
+
+    def get_responsible_group(self, name, master_user):
+        return ResponsibleGroup.objects.get(name=name, master_user__name=master_user)
+
+    def create_responsible(self, name, master_user, group='-'):
+        master_user = self.get_master_user(master_user)
+        group = self.get_responsible_group(group, master_user)
+        responsible = Responsible.objects.create(master_user=master_user, group=group, name=name)
         return responsible
 
     def get_responsible(self, name, master_user):
@@ -305,17 +323,19 @@ class BaseApiTestCase(APITestCase):
     def get_transaction_type(self, name, master_user):
         return TransactionType.objects.get(name=name, master_user__name=master_user)
 
-    # def create_thread_status(self, name, master_user, is_closed=False):
-    #     master_user = self.get_master_user(master_user)
-    #     thread_status = ThreadStatus.objects.create(master_user=master_user, name=name, is_closed=is_closed)
-    #     return thread_status
-    #
-    # def get_thread_status(self, name, master_user):
-    #     return ThreadStatus.objects.get(name=name, master_user__name=master_user)
-
-    def create_thread(self, subject, master_user, status=None):
+    def create_thread_group(self, name, master_user):
         master_user = self.get_master_user(master_user)
-        thread = Thread.objects.create(master_user=master_user, subject=subject, status=status)
+        thread = ThreadGroup.objects.create(master_user=master_user, name=name)
+        return thread
+
+    def get_thread_group(self, name, master_user):
+        return ThreadGroup.objects.get(name=name, master_user__name=master_user)
+
+    def create_thread(self, subject, master_user, thread_group='-', is_closed=False):
+        thread_group = self.get_thread_group(thread_group, master_user)
+        master_user = self.get_master_user(master_user)
+        thread = Thread.objects.create(master_user=master_user, thread_group=thread_group, subject=subject,
+                                       is_closed=is_closed)
         return thread
 
     def get_thread(self, subject, master_user):
@@ -546,9 +566,17 @@ class BaseApiWithPermissionTestCase(BaseApiTestCase):
                                                 for e in group_object_permissions]
         return data
 
+    def _is_dash(self, obj):
+            return '-' in [obj.get('name', None), obj.get('user_code', None)]
+
     def _check_granted_permissions(self, obj, expected=None):
         self.assertTrue('granted_permissions' in obj)
         if expected is not None:
+            print(obj.get('name', None), obj.get('user_code', None))
+            if self._is_dash(obj):
+                # TODO: perms for "default"
+                # expected = [self._change_permission]
+                return
             self.assertEqual(set(expected), set(obj['granted_permissions']))
 
     def _check_user_object_permissions(self, obj, expected=None):
@@ -601,6 +629,8 @@ class BaseApiWithPermissionTestCase(BaseApiTestCase):
 
     def check_obj_perm(self, obj, granted_permissions, object_permissions):
         self._check_granted_permissions(obj, expected=granted_permissions)
+        if self._is_dash(obj):
+            return
         if object_permissions:
             self.assertTrue('user_object_permissions' in obj)
             self.assertTrue('group_object_permissions' in obj)
@@ -629,12 +659,12 @@ class BaseApiWithPermissionTestCase(BaseApiTestCase):
 
         response = self._list(self._a1)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(response.data['count'], 1)
+        self.assertEqual(response.data['count'], 2 if self.has_dash_obj else 1)
         self.check_obj_list_perm(response.data['results'], self.default_owner_permissions, True)
 
         response = self._list(self._a2)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(response.data['count'], 1)
+        self.assertEqual(response.data['count'], 2 if self.has_dash_obj else 1)
         self.check_obj_list_perm(response.data['results'], self.default_owner_permissions, True)
 
     def test_permissions_get(self):
@@ -816,13 +846,13 @@ class BaseApiWithTagsTestCase(BaseApiTestCase):
 
         response = self._list(self._a1)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(response.data['count'], 1)
-        self.assertEqual(set(response.data['results'][0]['tags']), {self.tag2_a1.id})
+        self.assertEqual(response.data['count'], 2 if self.has_dash_obj else 1)
+        self.assertEqual(set(response.data['results'][1 if self.has_dash_obj else 0]['tags']), {self.tag2_a1.id})
 
         response = self._list(self._a2)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(response.data['count'], 1)
-        self.assertEqual(set(response.data['results'][0]['tags']), {self.tag3_g2.id, })
+        self.assertEqual(response.data['count'], 2 if self.has_dash_obj else 1)
+        self.assertEqual(set(response.data['results'][1 if self.has_dash_obj else 0]['tags']), {self.tag3_g2.id, })
 
     def test_tags_get(self):
         obj = self._create_obj()

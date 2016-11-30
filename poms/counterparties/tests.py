@@ -2,8 +2,7 @@ from __future__ import unicode_literals
 
 from poms.common.tests import BaseApiWithPermissionTestCase, BaseApiWithAttributesTestCase, \
     BaseAttributeTypeApiTestCase, BaseApiWithTagsTestCase, BaseNamedModelTestCase
-from poms.counterparties.models import CounterpartyAttributeType, CounterpartyClassifier, Counterparty, \
-    ResponsibleAttributeType, ResponsibleClassifier, Responsible
+from poms.counterparties.models import Counterparty, Responsible, CounterpartyGroup, ResponsibleGroup
 
 
 def load_tests(loader, standard_tests, pattern):
@@ -11,23 +10,38 @@ def load_tests(loader, standard_tests, pattern):
     return t(loader, standard_tests, pattern)
 
 
+# Counterparty
+
 class CounterpartyAttributeTypeApiTestCase(BaseAttributeTypeApiTestCase):
-    model = CounterpartyAttributeType
-    classifier_model = CounterpartyClassifier
+    base_model = Counterparty
 
     def setUp(self):
         super(CounterpartyAttributeTypeApiTestCase, self).setUp()
 
         self._url_list = '/api/v1/counterparties/counterparty-attribute-type/'
         self._url_object = '/api/v1/counterparties/counterparty-attribute-type/%s/'
-        self._change_permission = 'change_counterpartyattributetype'
+
+
+class CounterpartyGroupApiTestCase(BaseNamedModelTestCase, BaseApiWithPermissionTestCase, BaseApiWithTagsTestCase):
+    model = CounterpartyGroup
+
+    def setUp(self):
+        super(CounterpartyGroupApiTestCase, self).setUp()
+
+        self._url_list = '/api/v1/counterparties/counterparty-group/'
+        self._url_object = '/api/v1/counterparties/counterparty-group/%s/'
+        self._change_permission = 'change_counterpartygroup'
+
+    def _create_obj(self, name='counterparty-group'):
+        return self.create_counterparty_group(name, self._a)
+
+    def _get_obj(self, name='counterparty-group'):
+        return self.get_counterparty_group(name, self._a)
 
 
 class CounterpartyApiTestCase(BaseNamedModelTestCase, BaseApiWithPermissionTestCase, BaseApiWithTagsTestCase,
                               BaseApiWithAttributesTestCase):
     model = Counterparty
-    attribute_type_model = CounterpartyAttributeType
-    classifier_model = CounterpartyClassifier
 
     def setUp(self):
         super(CounterpartyApiTestCase, self).setUp()
@@ -36,30 +50,55 @@ class CounterpartyApiTestCase(BaseNamedModelTestCase, BaseApiWithPermissionTestC
         self._url_object = '/api/v1/counterparties/counterparty/%s/'
         self._change_permission = 'change_counterparty'
 
+        # self.assign_perms(self.get_counterparty_group('-'), self._a,
+        #                   users=[self._a0, self._a1, self._a2], groups=['g1', 'g2'],
+        #                   perms=get_perms_codename(self.type_def, ['change', 'view']))
+
+
     def _create_obj(self, name='counterparty'):
-        return self.create_counterparty(name, 'a')
+        return self.create_counterparty(name, self._a)
 
     def _get_obj(self, name='counterparty'):
-        return self.get_counterparty(name, 'a')
+        return self.get_counterparty(name, self._a)
 
+    def _make_new_data(self, **kwargs):
+        group = self.get_counterparty_group(kwargs.get('group', '-'), self._a)
+        data = super(CounterpartyApiTestCase, self)._make_new_data(group=group.id, **kwargs)
+        return data
+
+
+# Responsible
 
 class ResponsibleAttributeTypeApiTestCase(BaseAttributeTypeApiTestCase):
-    model = ResponsibleAttributeType
-    classifier_model = ResponsibleClassifier
+    base_model = Counterparty
 
     def setUp(self):
         super(ResponsibleAttributeTypeApiTestCase, self).setUp()
 
         self._url_list = '/api/v1/counterparties/responsible-attribute-type/'
         self._url_object = '/api/v1/counterparties/responsible-attribute-type/%s/'
-        self._change_permission = 'change_responsibleattributetype'
+
+
+class ResponsibleGroupApiTestCase(BaseNamedModelTestCase, BaseApiWithPermissionTestCase, BaseApiWithTagsTestCase):
+    model = ResponsibleGroup
+
+    def setUp(self):
+        super(ResponsibleGroupApiTestCase, self).setUp()
+
+        self._url_list = '/api/v1/counterparties/responsible-group/'
+        self._url_object = '/api/v1/counterparties/responsible-group/%s/'
+        self._change_permission = 'change_responsiblegroup'
+
+    def _create_obj(self, name='responsible-group'):
+        return self.create_responsible_group(name, self._a)
+
+    def _get_obj(self, name='responsible-group'):
+        return self.get_responsible_group(name, self._a)
 
 
 class ResponsibleApiTestCase(BaseNamedModelTestCase, BaseApiWithPermissionTestCase, BaseApiWithTagsTestCase,
                              BaseApiWithAttributesTestCase):
     model = Responsible
-    attribute_type_model = ResponsibleAttributeType
-    classifier_model = ResponsibleClassifier
 
     def setUp(self):
         super(ResponsibleApiTestCase, self).setUp()
@@ -69,7 +108,12 @@ class ResponsibleApiTestCase(BaseNamedModelTestCase, BaseApiWithPermissionTestCa
         self._change_permission = 'change_responsible'
 
     def _create_obj(self, name='responsible'):
-        return self.create_responsible(name, 'a')
+        return self.create_responsible(name, self._a)
 
     def _get_obj(self, name='responsible'):
-        return self.get_responsible(name, 'a')
+        return self.get_responsible(name, self._a)
+
+    def _make_new_data(self, **kwargs):
+        group = self.get_responsible_group(kwargs.get('group', '-'), self._a)
+        data = super(ResponsibleApiTestCase, self)._make_new_data(group=group.id, **kwargs)
+        return data
