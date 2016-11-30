@@ -108,9 +108,9 @@ class ModelWithObjectPermissionSerializer(serializers.ModelSerializer):
     def get_display_name(self, instance):
         member = get_member_from_context(self.context)
         if has_view_perms(member, instance):
-            return getattr(instance, 'name', None)
+            return getattr(instance, 'name', '') or ''
         else:
-            return getattr(instance, 'public_name', None)
+            return getattr(instance, 'public_name', '') or ''
 
     # def to_representation(self, instance):
     #     member = self.context['request'].user.member
