@@ -162,12 +162,17 @@ class ReportItemSerializer(serializers.Serializer):
     strategy3 = serializers.PrimaryKeyRelatedField(source='str3', read_only=True)
     custom_fields = ReportItemCustomFieldSerializer(many=True, read_only=True)
 
+    # allocations
+
+    allocation_balance = serializers.PrimaryKeyRelatedField(source='alloc_bl', read_only=True)
+    allocation_pl = serializers.PrimaryKeyRelatedField(source='alloc_pl', read_only=True)
+
     # mismatches
 
     mismatch = serializers.FloatField(read_only=True)
-    # mismatch_currency = serializers.PrimaryKeyRelatedField(source='mismatch_ccy', read_only=True)
     mismatch_portfolio = serializers.PrimaryKeyRelatedField(source='mismatch_prtfl', read_only=True)
     mismatch_account = serializers.PrimaryKeyRelatedField(source='mismatch_acc', read_only=True)
+    # mismatch_currency = serializers.PrimaryKeyRelatedField(source='mismatch_ccy', read_only=True)
 
     # balance
 
@@ -252,9 +257,12 @@ class ReportItemSerializer(serializers.Serializer):
         self.fields['currency_object'] = ReportCurrencySerializer(source='ccy', read_only=True)
         self.fields['transaction_currency_object'] = ReportCurrencySerializer(source='trn_ccy', read_only=True)
 
-        self.fields['mismatch_currency_object'] = ReportCurrencySerializer(source='mismatch_ccy', read_only=True)
+        self.fields['allocation_balance_object'] = ReportInstrumentSerializer(source='alloc_bl', read_only=True)
+        self.fields['allocation_pl_object'] = ReportInstrumentSerializer(source='alloc_pl', read_only=True)
+
         self.fields['mismatch_portfolio_object'] = ReportPortfolioSerializer(source='mismatch_prtfl', read_only=True)
         self.fields['mismatch_account_object'] = ReportAccountSerializer(source='mismatch_acc', read_only=True)
+        # self.fields['mismatch_currency_object'] = ReportCurrencySerializer(source='mismatch_ccy', read_only=True)
 
 
 class ReportSerializer(serializers.Serializer):

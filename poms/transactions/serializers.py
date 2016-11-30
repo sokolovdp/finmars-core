@@ -12,9 +12,9 @@ from poms.common.formula import ModelSimpleEval, InvalidExpression
 from poms.common.serializers import PomsClassSerializer, ModelWithUserCodeSerializer
 from poms.counterparties.fields import ResponsibleField, CounterpartyField, ResponsibleDefault, CounterpartyDefault
 from poms.counterparties.models import Counterparty, Responsible
-from poms.currencies.fields import CurrencyField, CurrencyDefault
+from poms.currencies.fields import CurrencyField, CurrencyDefault, SystemCurrencyDefault
 from poms.currencies.models import Currency
-from poms.instruments.fields import InstrumentField, InstrumentTypeField
+from poms.instruments.fields import InstrumentField, InstrumentTypeField, InstrumentDefault
 from poms.instruments.models import Instrument, InstrumentType, DailyPricingModel, PaymentSizeDetail
 from poms.integrations.fields import PriceDownloadSchemeField
 from poms.integrations.models import PriceDownloadScheme
@@ -746,7 +746,7 @@ class TransactionSerializer(ModelWithAttributesSerializer):
     complex_transaction_order = serializers.IntegerField(read_only=True)
     instrument = InstrumentField(required=False, allow_null=True)
     transaction_currency = CurrencyField(default=CurrencyDefault(), required=False, allow_null=True)
-    settlement_currency = CurrencyField(default=CurrencyDefault())
+    settlement_currency = CurrencyField(default=SystemCurrencyDefault())
     portfolio = PortfolioField(default=PortfolioDefault())
     account_cash = AccountField(default=AccountDefault())
     account_position = AccountField(default=AccountDefault())
@@ -759,9 +759,9 @@ class TransactionSerializer(ModelWithAttributesSerializer):
     strategy3_cash = Strategy3Field(default=Strategy3Default())
     responsible = ResponsibleField(default=ResponsibleDefault())
     counterparty = CounterpartyField(default=CounterpartyDefault())
-    linked_instrument = InstrumentField(required=False, allow_null=True)
-    allocation_balance = InstrumentField(required=False, allow_null=True)
-    allocation_pl = InstrumentField(required=False, allow_null=True)
+    linked_instrument = InstrumentField(default=InstrumentDefault())
+    allocation_balance = InstrumentField(default=InstrumentDefault())
+    allocation_pl = InstrumentField(default=InstrumentDefault())
 
     # transaction_class_object = TransactionClassSerializer(source='transaction_class', read_only=True)
     # transaction_currency_object = serializers.PrimaryKeyRelatedField(source='transaction_currency', read_only=True)
@@ -786,7 +786,8 @@ class TransactionSerializer(ModelWithAttributesSerializer):
     class Meta:
         model = Transaction
         fields = [
-            'id', 'master_user',
+            'id',
+            'master_user',
             'transaction_code',
             'complex_transaction',
             'complex_transaction_order',
@@ -813,9 +814,13 @@ class TransactionSerializer(ModelWithAttributesSerializer):
             'strategy3_position',
             'strategy3_cash',
             'reference_fx_rate',
-            'is_locked', 'is_canceled',
-            'factor', 'trade_price',
-            'principal_amount', 'carry_amount', 'overheads',
+            'is_locked',
+            'is_canceled',
+            'factor',
+            'trade_price',
+            'principal_amount',
+            'carry_amount',
+            'overheads',
             'responsible',
             'counterparty',
             'linked_instrument',
