@@ -56,7 +56,7 @@ class MessagePermission(BasePermission):
             return True
         # allow change message
         if view:
-            if view.action == 'update' or view.action == 'partial_update':
+            if view.action in ['update', 'partial_update']:
                 member = request.user.member
                 return obj.sender_id == member.id
             if view.action == 'create':
@@ -69,7 +69,7 @@ class DirectMessagePermission(BasePermission):
     def has_object_permission(self, request, view, obj):
         if request.method in SAFE_METHODS:
             return True
-        # user = request.user
-        # return obj.sender_id == user.id
         member = request.user.member
-        return obj.sender_id == member.id
+        if view:
+            return obj.sender_id == member.id and view.action in ['update', 'partial_update']
+        return False
