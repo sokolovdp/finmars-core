@@ -396,7 +396,7 @@ def download_pricing_async(self, task_id):
              balance_date, sorted(instruments_if_open), sorted(currencies_if_open))
 
     if balance_date and (instruments_if_open or currencies_if_open):
-        report = Report(master_user=task.master_user, report_date=balance_date, detail_by_portfolio=True)
+        report = Report(master_user=task.master_user, report_date=balance_date)
         _l.debug('calculate position report: %s', report)
         builder = ReportBuilder(instance=report)
         builder.build()

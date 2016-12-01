@@ -60,9 +60,7 @@ def generate_events(master_users=None):
         opened_instrument_items = []
         instruments_pk = set()
 
-        report = Report(master_user=master_user, report_date=now,
-                        detail_by_portfolio=True, detail_by_account=True, detail_by_strategy1=True,
-                        detail_by_strategy2=True, detail_by_strategy3=True)
+        report = Report(master_user=master_user, report_date=now)
         builder = ReportBuilder(instance=report)
         builder.build()
 
