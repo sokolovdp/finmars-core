@@ -301,7 +301,7 @@ class MemberSerializer(serializers.ModelSerializer):
     master_user = MasterUserField()
     is_current = serializers.SerializerMethodField()
     join_date = DateTimeTzAwareField()
-    groups = GroupField(many=True)
+    groups = GroupField(many=True, required=False)
     groups_object = serializers.PrimaryKeyRelatedField(source='groups', read_only=True, many=True)
 
     class Meta:
@@ -339,7 +339,7 @@ class MemberViewSerializer(serializers.ModelSerializer):
 class GroupSerializer(serializers.ModelSerializer):
     # url = serializers.HyperlinkedIdentityField(view_name='group-detail')
     master_user = MasterUserField()
-    members = MemberField(many=True)
+    members = MemberField(many=True, required=False)
     members_object = serializers.PrimaryKeyRelatedField(source='members', read_only=True, many=True)
 
     class Meta:
