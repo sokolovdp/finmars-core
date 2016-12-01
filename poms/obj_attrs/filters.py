@@ -5,7 +5,6 @@ from rest_framework.filters import BaseFilterBackend, OrderingFilter
 
 from poms.common.fields import PrimaryKeyRelatedFilteredField
 from poms.obj_attrs.models import GenericAttributeType
-from poms.obj_attrs.utils import get_attr_model, get_attr_type_model
 from poms.obj_perms.filters import ObjectPermissionBackend
 from poms.obj_perms.utils import obj_perms_filter_objects_for_view, obj_perms_filter_objects, get_view_perms
 

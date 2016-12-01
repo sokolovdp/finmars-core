@@ -367,10 +367,18 @@ class GenericClassifierNodeSerializer(serializers.ModelSerializer):
 
 
 class GenericClassifierViewSerializer(serializers.ModelSerializer):
+    parent = serializers.PrimaryKeyRelatedField(read_only=True)
+    parent_object = GenericClassifierRecursiveField(source='parent', read_only=True)
+
     class Meta:
         list_serializer_class = GenericClassifierListSerializer
         model = GenericClassifier
-        fields = ['id', 'name', 'level', ]
+        fields = ['id', 'name', 'level', 'parent',
+                  'parent_object',
+                  ]
+
+    def to_representation(self, instance):
+        return super(GenericClassifierViewSerializer, self).to_representation(instance)
 
 
 class GenericAttributeTypeOptionIsHiddenField(serializers.BooleanField):
@@ -520,15 +528,21 @@ class GenericAttributeListSerializer(serializers.ListSerializer):
 
 class GenericAttributeSerializer(serializers.ModelSerializer):
     attribute_type = GenericAttributeTypeField()
-    attribute_type_object = GenericAttributeTypeViewSerializer(source='attribute_type', read_only=True)
     classifier = GenericClassifierField(required=False, allow_null=True)
+    attribute_type_object = GenericAttributeTypeViewSerializer(source='attribute_type', read_only=True)
     classifier_object = GenericClassifierViewSerializer(source='classifier', read_only=True)
 
     class Meta:
         model = GenericAttribute
         list_serializer_class = GenericAttributeListSerializer
-        fields = ['id', 'attribute_type', 'attribute_type_object', 'value_string', 'value_float', 'value_date',
-                  'classifier', 'classifier_object']
+        fields = [
+            'id', 'attribute_type', 'value_string', 'value_float', 'value_date', 'classifier',
+            'attribute_type_object', 'classifier_object'
+        ]
+
+    def __init__(self, *args, **kwargs):
+        super(GenericAttributeSerializer, self).__init__(*args, **kwargs)
+        self._attribute_type_classifiers = {}
 
     def validate(self, attrs):
         attrs = super(GenericAttributeSerializer, self).validate(attrs)
@@ -551,3 +565,16 @@ class GenericAttributeSerializer(serializers.ModelSerializer):
                 self.fields['classifier'].fail('does_not_exist', pk_value=classifier.id)
 
         return attrs
+
+    def to_representation(self, instance):
+
+        if instance.classifier_id:
+            # classifiers must be already loaded through prefetch_related()
+            if instance.attribute_type_id not in self._attribute_type_classifiers:
+                l = list(instance.attribute_type.classifiers.all())
+                for c in l:
+                    self._attribute_type_classifiers[c.id] = c
+                get_cached_trees(l)
+            instance.classifier = self._attribute_type_classifiers[instance.classifier_id]
+
+        return super(GenericAttributeSerializer, self).to_representation(instance)
