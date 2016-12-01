@@ -529,9 +529,9 @@ class BaseApiTestCase(APITestCase):
         return data
 
     def test_list(self):
-        self._create_obj('obj1')
-        self._create_obj('obj2')
-        self._create_obj('obj3')
+        self._create_obj(self.create_name())
+        self._create_obj(self.create_name())
+        self._create_obj(self.create_name())
 
         # owner
         response = self._list(self._a)
@@ -539,7 +539,7 @@ class BaseApiTestCase(APITestCase):
         # self.assertEqual(response.data['count'], 4 if self.has_dash_obj else 3)
 
     def test_get(self):
-        obj = self._create_obj('obj1')
+        obj = self._create_obj(self.create_name())
 
         # owner
         response = self._get(self._a, obj.id)
@@ -551,7 +551,7 @@ class BaseApiTestCase(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
 
     def test_update(self):
-        obj = self._create_obj('obj1')
+        obj = self._create_obj(self.create_name())
 
         response = self._get(self._a, obj.id)
         udata = response.data.copy()
@@ -562,28 +562,28 @@ class BaseApiTestCase(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
     def test_delete(self):
-        obj = self._create_obj('obj1')
+        obj = self._create_obj(self.create_name())
         response = self._delete(self._a, obj.id)
         self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
 
 
 class BaseNamedModelTestCase(BaseApiTestCase):
     def test_list_ordering(self):
-        self._create_obj('obj1')
-        self._create_obj('obj2')
-        self._create_obj('obj3')
+        self._create_obj(self.create_name())
+        self._create_obj(self.create_name())
+        self._create_obj(self.create_name())
 
         self._list_order(self._a, 'user_code', None)
         self._list_order(self._a, 'name', None)
         self._list_order(self._a, 'short_name', None)
 
     def test_list_filtering(self):
-        self._create_obj('obj1')
-        self._create_obj('obj2')
+        obj1 = self._create_obj(self.create_name())
+        self._create_obj(self.create_name())
 
-        self._list_filter(self._a, 'user_code', 'obj1', 1)
-        self._list_filter(self._a, 'name', 'obj1', 1)
-        self._list_filter(self._a, 'short_name', 'obj1', 1)
+        self._list_filter(self._a, 'user_code', obj1.user_code, 1)
+        self._list_filter(self._a, 'name', obj1.name, 1)
+        self._list_filter(self._a, 'short_name', obj1.short_name, 1)
 
 
 class BaseApiWithPermissionTestCase(BaseApiTestCase):
@@ -591,10 +591,10 @@ class BaseApiWithPermissionTestCase(BaseApiTestCase):
         super(BaseApiWithPermissionTestCase, self).setUp()
 
     def _create_list_data(self):
-        self._create_obj('obj_root')
-        obj = self._create_obj('obj_with_user')
+        self._create_obj(self.create_name())
+        obj = self._create_obj(self.create_name())
         self.assign_perms(obj, self._a, users=[self._a1, self._a2])
-        obj = self._create_obj('obj_with_group')
+        obj = self._create_obj(self.create_name())
         self.assign_perms(obj, self._a, groups=['g1'])
 
     def _make_new_data(self, user_object_permissions=None, group_object_permissions=None, **kwargs):
@@ -689,10 +689,10 @@ class BaseApiWithPermissionTestCase(BaseApiTestCase):
             self.assertFalse('group_object_permissions' in obj)
 
     def test_permissions_list(self):
-        obj = self._create_obj('obj')
-        obj_a1 = self._create_obj('obj_a1')
+        obj = self._create_obj(self.create_name())
+        obj_a1 = self._create_obj(self.create_name())
         self.assign_perms(obj_a1, self._a, users=[self._a1], perms=self.default_owner_permissions)
-        obj_g2 = self._create_obj('obj_g2')
+        obj_g2 = self._create_obj(self.create_name())
         self.assign_perms(obj_g2, self._a, groups=['g2'], perms=self.default_owner_permissions)
 
         # owner
@@ -718,8 +718,8 @@ class BaseApiWithPermissionTestCase(BaseApiTestCase):
         self.check_obj_list_perm(response.data['results'], self.default_owner_permissions, True)
 
     def test_permissions_get(self):
-        obj = self._create_obj('obj')
-        obj12 = self._create_obj('obj_a1')
+        obj = self._create_obj(self.create_name())
+        obj12 = self._create_obj(self.create_name())
         self.assign_perms(obj12, self._a, users=[self._a1], groups=['g2'], perms=self.default_owner_permissions)
 
         # owner
@@ -745,8 +745,8 @@ class BaseApiWithPermissionTestCase(BaseApiTestCase):
         self.check_obj_perm(response.data, self.default_owner_permissions, True)
 
     def test_permissions_get_not_visible(self):
-        obj = self._create_obj('obj')
-        obj12 = self._create_obj('obj_a1')
+        obj = self._create_obj(self.create_name())
+        obj12 = self._create_obj(self.create_name())
         self.assign_perms(obj12, self._a, users=[self._a1], groups=['g2'], perms=self.default_owner_permissions)
 
         response = self._get(self._a1, obj.id)
@@ -821,26 +821,26 @@ class BaseApiWithPermissionTestCase(BaseApiTestCase):
     def test_permissions_delete(self):
         only_change_perms = get_perms_codename(self.model, ['change'])
 
-        obj = self._create_obj('obj_a')
+        obj = self._create_obj(self.create_name())
         response = self._delete(self._a, obj.id)
         self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
 
-        obj = self._create_obj('obj_a1')
+        obj = self._create_obj(self.create_name())
         response = self._delete(self._a1, obj.id)
         self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
 
-        obj = self._create_obj('obj_a2')
+        obj = self._create_obj(self.create_name())
         response = self._delete(self._a2, obj.id)
         self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
 
         # delete by user
-        obj = self._create_obj('obj_a1_1')
+        obj = self._create_obj(self.create_name())
         self.assign_perms(obj, self._a, users=[self._a1], groups=['g2'], perms=self.default_owner_permissions)
         response = self._delete(self._a1, obj.id)
         self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
 
         # delete by group
-        obj = self._create_obj('obj_a2_1')
+        obj = self._create_obj(self.create_name())
         self.assign_perms(obj, self._a, users=[self._a1], groups=['g2'], perms=self.default_owner_permissions)
         response = self._delete(self._a2, obj.id)
         self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
@@ -868,83 +868,83 @@ class BaseApiWithTagsTestCase(BaseApiTestCase):
         else:
             self.model2 = Account
 
-        self.tag1 = self.create_tag('tag1', self._a, [self.model])
+        self._tag1 = self.create_tag(self.create_name(), self._a, [self.model])
 
-        self.tag2_a1 = self.create_tag('tag2', self._a, [self.model])
-        self.assign_perms(self.tag2_a1, self._a, users=[self._a1], perms=get_all_perms(self.tag1))
+        self._tag2_a1 = self.create_tag(self.create_name(), self._a, [self.model])
+        self.assign_perms(self._tag2_a1, self._a, users=[self._a1], perms=get_all_perms(self._tag2_a1))
 
-        self.tag3_g2 = self.create_tag('tag3', self._a, [self.model])
-        self.assign_perms(self.tag3_g2, self._a, groups=['g2'], perms=get_all_perms(self.tag1))
+        self._tag3_g2 = self.create_tag(self.create_name(), self._a, [self.model])
+        self.assign_perms(self._tag3_g2, self._a, groups=['g2'], perms=get_all_perms(self._tag3_g2))
 
-        self.tag4_ctype2 = self.create_tag('tag5', self._a, [self.model2])
-        self.assign_perms(self.tag4_ctype2, self._a, users=[self._a1], groups=['g2'], perms=get_all_perms(self.tag1))
+        self._tag4_ctype2 = self.create_tag(self.create_name(), self._a, [self.model2])
+        self.assign_perms(self._tag4_ctype2, self._a, users=[self._a1], groups=['g2'], perms=get_all_perms(self._tag4_ctype2))
 
     def test_tags_list(self):
         obj = self._create_obj()
         self.assign_perms(obj, self._a, users=[self._a1], groups=['g2'])
-        self.assign_tags(obj, [self.tag1, self.tag2_a1, self.tag3_g2], self._a)
+        self.assign_tags(obj, [self._tag1, self._tag2_a1, self._tag3_g2], self._a)
 
         response = self._list(self._a)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         # self.assertEqual(response.data['count'], 2 if self.has_dash_obj else 1)
         for obj_j in response.data['results']:
             if obj_j['id'] == obj.id:
-                self.assertEqual(set(obj_j['tags']), {self.tag1.id, self.tag2_a1.id, self.tag3_g2.id, })
+                self.assertEqual(set(obj_j['tags']), {self._tag1.id, self._tag2_a1.id, self._tag3_g2.id, })
 
         response = self._list(self._a0)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         # self.assertEqual(response.data['count'], 2 if self.has_dash_obj else 1)
         for obj_j in response.data['results']:
             if obj_j['id'] == obj.id:
-                self.assertEqual(set(obj_j['tags']), {self.tag1.id, self.tag2_a1.id, self.tag3_g2.id, })
+                self.assertEqual(set(obj_j['tags']), {self._tag1.id, self._tag2_a1.id, self._tag3_g2.id, })
 
         response = self._list(self._a1)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         # self.assertEqual(response.data['count'], 2 if self.has_dash_obj else 1)
         for obj_j in response.data['results']:
             if obj_j['id'] == obj.id:
-                self.assertEqual(set(obj_j['tags']), {self.tag2_a1.id})
+                self.assertEqual(set(obj_j['tags']), {self._tag2_a1.id})
 
         response = self._list(self._a2)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         # self.assertEqual(response.data['count'], 2 if self.has_dash_obj else 1)
         for obj_j in response.data['results']:
             if obj_j['id'] == obj.id:
-                self.assertEqual(set(obj_j['tags']), {self.tag3_g2.id, })
+                self.assertEqual(set(obj_j['tags']), {self._tag3_g2.id, })
 
     def test_tags_get(self):
         obj = self._create_obj()
         self.assign_perms(obj, self._a, users=[self._a1], groups=['g2'])
-        self.assign_tags(obj, [self.tag1, self.tag2_a1, self.tag3_g2], self._a)
+        self.assign_tags(obj, [self._tag1, self._tag2_a1, self._tag3_g2], self._a)
 
         response = self._get(self._a, obj.id)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(set(response.data['tags']), {self.tag1.id, self.tag2_a1.id, self.tag3_g2.id, })
+        self.assertEqual(set(response.data['tags']), {self._tag1.id, self._tag2_a1.id, self._tag3_g2.id, })
 
         response = self._get(self._a0, obj.id)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(set(response.data['tags']), {self.tag1.id, self.tag2_a1.id, self.tag3_g2.id, })
+        self.assertEqual(set(response.data['tags']), {self._tag1.id, self._tag2_a1.id, self._tag3_g2.id, })
 
         response = self._get(self._a1, obj.id)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(set(response.data['tags']), {self.tag2_a1.id, })
+        self.assertEqual(set(response.data['tags']), {self._tag2_a1.id, })
 
         response = self._get(self._a2, obj.id)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(set(response.data['tags']), {self.tag3_g2.id, })
+        self.assertEqual(set(response.data['tags']), {self._tag3_g2.id, })
 
     def test_tags_update(self):
-        data = self._make_new_data(tags=[self.tag1.id])
+        data = self._make_new_data(tags=[self._tag1.id])
         response = self._add(self._a, data)
         data = response.data.copy()
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
-        self.assertEqual(set(response.data['tags']), {self.tag1.id})
+        self.assertEqual(set(response.data['tags']), {self._tag1.id})
 
         udata = data.copy()
-        udata['tags'] = {self.tag1.id, self.tag2_a1.id, self.tag3_g2.id, }
+        udata['tags'] = {self._tag1.id, self._tag2_a1.id, self._tag3_g2.id, }
         response = self._update(self._a, data['id'], udata)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(set(response.data['tags']), {self.tag1.id, self.tag2_a1.id, self.tag3_g2.id, })
+        self.assertEqual(set(response.data['tags']), {self._tag1.id, self._tag2_a1.id, self._tag3_g2.id, })
 
         self.assign_perms(self.model.objects.get(id=data['id']), self._a, users=[self._a1], groups=['g2'],
                           perms=self.all_permissions)
@@ -957,19 +957,19 @@ class BaseApiWithTagsTestCase(BaseApiTestCase):
 
         response = self._get(self._a0, data['id'])
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(set(response.data['tags']), {self.tag1.id, self.tag3_g2.id, })
+        self.assertEqual(set(response.data['tags']), {self._tag1.id, self._tag3_g2.id, })
 
     def test_tags_with_incorrect_ctype(self):
-        data_tags = {self.tag4_ctype2.id}
+        data_tags = {self._tag4_ctype2.id}
         data = self._make_new_data(tags=data_tags)
         response = self._add(self._a, data)
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
 
-        data = self._make_new_data(tags={self.tag1.id})
+        data = self._make_new_data(tags={self._tag1.id})
         response = self._add(self._a, data)
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
         data = response.data.copy()
-        data['tags'] = {self.tag4_ctype2.id}
+        data['tags'] = {self._tag4_ctype2.id}
         response = self._update(self._a, data['id'], data)
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
 
@@ -986,43 +986,65 @@ class BaseAttributeTypeApiTestCase(BaseNamedModelTestCase, BaseApiWithPermission
 
         self._change_permission = get_change_perms(GenericAttributeType)[0]
 
-    def create_default_attrs(self):
-        self.attr_str = self.create_attribute_type('str', self._a, base_model=self.base_model,
-                                                   value_type=GenericAttributeType.STRING)
-        self.attr_num = self.create_attribute_type('num', self._a, base_model=self.base_model,
-                                                   value_type=GenericAttributeType.NUMBER)
-        self.attr_date = self.create_attribute_type('date', self._a, base_model=self.base_model,
-                                                    value_type=GenericAttributeType.DATE)
-        self.attr_clsfr1 = self.create_attribute_type('clsfr1', self._a, base_model=self.base_model,
-                                                      value_type=GenericAttributeType.CLASSIFIER,
-                                                      classifier_tree=[{
-                                                          'name': 'clsfr1_n1',
-                                                          'children': [
-                                                              {'name': 'clsfr1_n11',},
-                                                              {'name': 'clsfr1_n12',},
-                                                          ]
-                                                      }, {
-                                                          'name': 'clsfr1_n2',
-                                                          'children': [
-                                                              {'name': 'clsfr1_n21',},
-                                                              {'name': 'clsfr1_n22',},
-                                                          ]
-                                                      }, ])
-        self.attr_clsfr2 = self.create_attribute_type('clsfr2', self._a, base_model=self.base_model,
-                                                      value_type=GenericAttributeType.CLASSIFIER,
-                                                      classifier_tree=[{
-                                                          'name': 'clsfr2_n1',
-                                                          'children': [
-                                                              {'name': 'clsfr2_n11',},
-                                                              {'name': 'clsfr2_n12',},
-                                                          ]
-                                                      }, {
-                                                          'name': 'clsfr2_n2',
-                                                          'children': [
-                                                              {'name': 'clsfr2_n21',},
-                                                              {'name': 'clsfr2_n22',},
-                                                          ]
-                                                      }, ])
+    def _create_default_attrs(self):
+        self._attr_str = self.create_attribute_type(
+            'str',
+            self._a,
+            base_model=self.base_model,
+            value_type=GenericAttributeType.STRING
+        )
+        self._attr_num = self.create_attribute_type(
+            'num',
+            self._a,
+            base_model=self.base_model,
+            value_type=GenericAttributeType.NUMBER
+        )
+        self._attr_date = self.create_attribute_type(
+            'date',
+            self._a,
+            base_model=self.base_model,
+            value_type=GenericAttributeType.DATE
+        )
+        self._attr_clsfr1 = self.create_attribute_type(
+            'clsfr1', self._a, base_model=self.base_model,
+            value_type=GenericAttributeType.CLASSIFIER,
+            classifier_tree=[
+                {
+                    'name': 'clsfr1_n1',
+                    'children': [
+                        {'name': 'clsfr1_n11',},
+                        {'name': 'clsfr1_n12',},
+                    ]
+                }, {
+                    'name': 'clsfr1_n2',
+                    'children': [
+                        {'name': 'clsfr1_n21',},
+                        {'name': 'clsfr1_n22',},
+                    ]
+                },
+            ]
+        )
+        self._attr_clsfr2 = self.create_attribute_type(
+            'clsfr2',
+            self._a,
+            base_model=self.base_model,
+            value_type=GenericAttributeType.CLASSIFIER,
+            classifier_tree=[
+                {
+                    'name': 'clsfr2_n1',
+                    'children': [
+                        {'name': 'clsfr2_n11',},
+                        {'name': 'clsfr2_n12',},
+                    ]
+                }, {
+                    'name': 'clsfr2_n2',
+                    'children': [
+                        {'name': 'clsfr2_n21',},
+                        {'name': 'clsfr2_n22',},
+                    ]
+                },
+            ]
+        )
 
     def _gen_classifiers(self):
         n = self.create_name()
@@ -1073,8 +1095,8 @@ class BaseAttributeTypeApiTestCase(BaseNamedModelTestCase, BaseApiWithPermission
         return self.get_attribute_type(name, self._a, base_model=self.base_model)
 
     def test_classifiers_get(self):
-        self.create_default_attrs()
-        response = self._get(self._a, self.attr_clsfr1.id)
+        self._create_default_attrs()
+        response = self._get(self._a, self._attr_clsfr1.id)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(len(response.data['classifiers']), 2)
 
@@ -1118,10 +1140,10 @@ class BaseApiWithAttributesTestCase(BaseApiTestCase):
     def setUp(self):
         super(BaseApiWithAttributesTestCase, self).setUp()
 
-        self.attr_str = self.create_attribute_type('str', self._a, value_type=GenericAttributeType.STRING)
-        self.attr_num = self.create_attribute_type('num', self._a, value_type=GenericAttributeType.NUMBER)
-        self.attr_date = self.create_attribute_type('date', self._a, value_type=GenericAttributeType.DATE)
-        self.attr_clsfr1 = self.create_attribute_type('clsfr1', self._a,
+        self._attr_str = self.create_attribute_type('str', self._a, value_type=GenericAttributeType.STRING)
+        self._attr_num = self.create_attribute_type('num', self._a, value_type=GenericAttributeType.NUMBER)
+        self._attr_date = self.create_attribute_type('date', self._a, value_type=GenericAttributeType.DATE)
+        self._attr_clsfr1 = self.create_attribute_type('clsfr1', self._a,
                                                       value_type=GenericAttributeType.CLASSIFIER,
                                                       classifier_tree=[{
                                                           'name': 'clsfr1_n1',
@@ -1136,7 +1158,7 @@ class BaseApiWithAttributesTestCase(BaseApiTestCase):
                                                               {'name': 'clsfr1_n22',},
                                                           ]
                                                       }, ])
-        self.attr_clsfr2 = self.create_attribute_type('clsfr2', self._a,
+        self._attr_clsfr2 = self.create_attribute_type('clsfr2', self._a,
                                                       value_type=GenericAttributeType.CLASSIFIER,
                                                       classifier_tree=[{
                                                           'name': 'clsfr2_n1',
@@ -1152,10 +1174,10 @@ class BaseApiWithAttributesTestCase(BaseApiTestCase):
                                                           ]
                                                       }, ])
 
-    def get_model_classifier(self, name, classifier_name=None):
+    def _get_model_classifier(self, name, classifier_name=None):
         return self.get_classifier(name, self._a, classifier_name=classifier_name)
 
-    def attr_value_key(self, value_type):
+    def _attr_value_key(self, value_type):
         if value_type == GenericAttributeType.STRING:
             return 'value_string'
         elif value_type == GenericAttributeType.NUMBER:
@@ -1172,7 +1194,7 @@ class BaseApiWithAttributesTestCase(BaseApiTestCase):
         attributes = data.get('attributes', [])
         attributes = [x for x in attributes if x['attribute_type'] != attribute_type.id]
         # if value is not None:
-        value_key = self.attr_value_key(attribute_type.value_type)
+        value_key = self._attr_value_key(attribute_type.value_type)
         attributes.append({'attribute_type': attribute_type.id, value_key: value})
         data['attributes'] = attributes
         return data
@@ -1182,7 +1204,7 @@ class BaseApiWithAttributesTestCase(BaseApiTestCase):
         attributes = [x for x in attributes if x['attribute_type'] == attribute_type.id]
         if not attributes:
             self.fail('attribute %s not founded' % attr)
-        value_key = self.attr_value_key(attribute_type.value_type)
+        value_key = self._attr_value_key(attribute_type.value_type)
         self.assertEqual(expected, attributes[0][value_key])
 
     def _simple_attrs(self, attr, value1, value2):
@@ -1224,8 +1246,8 @@ class BaseApiWithAttributesTestCase(BaseApiTestCase):
         self._simple_attrs('date', '2014-01-01', '2015-01-01')
 
     def test_attrs_clsfr(self):
-        classifier1 = self.get_model_classifier('clsfr1', 'clsfr1_n11')
-        classifier2 = self.get_model_classifier('clsfr1', 'clsfr1_n21')
+        classifier1 = self._get_model_classifier('clsfr1', 'clsfr1_n11')
+        classifier2 = self._get_model_classifier('clsfr1', 'clsfr1_n21')
         self._simple_attrs('clsfr1', classifier1.id, classifier2.id)
 
     def test_attrs_2_attrs(self):
@@ -1253,7 +1275,7 @@ class BaseApiWithAttributesTestCase(BaseApiTestCase):
         self.assertAttrEqual('num', 0.0, response.data['attributes'])
 
     def test_attrs_with_perms(self):
-        self.assign_perms(self.attr_num, self._a, users=[self._a1], perms=get_all_perms(GenericAttributeType))
+        self.assign_perms(self._attr_num, self._a, users=[self._a1], perms=get_all_perms(GenericAttributeType))
 
         data = self._make_new_data()
         data = self.add_attr_value(data, 'str', 'value1')
