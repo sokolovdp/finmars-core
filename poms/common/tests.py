@@ -60,7 +60,6 @@ class BaseApiTestCase(APITestCase):
     def setUp(self):
         super(BaseApiTestCase, self).setUp()
 
-
         self._url_list = None
         self._url_object = None
         self._change_permission = get_change_perms(self.model)[0]
