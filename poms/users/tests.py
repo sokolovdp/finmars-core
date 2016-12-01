@@ -1,9 +1,10 @@
 from __future__ import unicode_literals
 
+from django.contrib.auth.models import User
 from rest_framework import status
 
 from poms.common.tests import BaseApiTestCase
-from poms.users.models import Group
+from poms.users.models import Group, Member, MasterUser
 
 
 def load_tests(loader, standard_tests, pattern):
@@ -125,33 +126,62 @@ class GroupApiTestCase(BaseApiTestCase):
     def _get_obj(self, name='name'):
         return self.get_group(name, self._a)
 
-# TODO: make when join algorithm was ready
-# class MemberApiTestCase(BaseApiTestCase):
-#     model = Member
-#
-#     def setUp(self):
-#         super(MemberApiTestCase, self).setUp()
-#
-#         self._url_list = '/api/v1/users/member/'
-#         self._url_object = '/api/v1/users/member/%s/'
-#
-#         self._u1 = self.create_user(uuid.uuid4())
-#
-#     def _create_obj(self, name=None):
-#         if name is None:
-#             user = self._u1.username
-#         else:
-#             user = self.get_user(name)
-#         return self.create_member(user.username, self._a)
-#
-#     def _get_obj(self, name=None):
-#         if name is None:
-#             user = self._u1.username
-#         else:
-#             user = self.get_user(name)
-#         return self.get_member(user.username, self._a)
-#
-#     def _make_new_data(self, **kwargs):
-#         kwargs.setdefault('content_type', '%s.%s' % (content_type.app_label, content_type.model,))
-#         kwargs.setdefault('data', {'pos': 1, 'uuid': str(uuid.uuid4())})
-#         return super(ListLayoutApiTestCase, self)._make_new_data(**kwargs)
+
+class MemberApiTestCase(BaseApiTestCase):
+    model = Member
+
+    def setUp(self):
+        super(MemberApiTestCase, self).setUp()
+
+        self._url_list = '/api/v1/users/member/'
+        self._url_object = '/api/v1/users/member/%s/'
+
+    def _create_obj(self, name=None):
+        User.objects.get_or_create(username=name, defaults={})
+        return self.create_member(name, self._a)
+
+    def _get_obj(self, name=None):
+        return self.get_member(name, self._a)
+
+    # def _make_new_data(self, **kwargs):
+    #     kwargs.setdefault('content_type', '%s.%s' % (content_type.app_label, content_type.model,))
+    #     kwargs.setdefault('data', {'pos': 1, 'uuid': str(uuid.uuid4())})
+    #     return super(MemberApiTestCase, self)._make_new_data(**kwargs)
+
+    def test_add(self):
+        pass
+
+
+class MasterUserApiTestCase(BaseApiTestCase):
+    model = MasterUser
+
+    def setUp(self):
+        super(MasterUserApiTestCase, self).setUp()
+
+        self._url_list = '/api/v1/users/master-user/'
+        self._url_object = '/api/v1/users/master-user/%s/'
+
+    def _create_obj(self, name='name'):
+        m = self.create_master_user(name)
+        self.create_member(self._a, m.name, is_admin=True)
+        return m
+
+    def _get_obj(self, name='name'):
+        return self.get_master_user(name)
+
+    def test_add(self):
+        pass
+
+    def test_delete(self):
+        pass
+
+    def test_update(self):
+        obj = self.get_master_user(self._a)
+
+        response = self._get(self._a, obj.id)
+        udata = response.data.copy()
+
+        # create by owner
+        udata['name'] = self.create_name()
+        response = self._update(self._a, obj.id, udata)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)

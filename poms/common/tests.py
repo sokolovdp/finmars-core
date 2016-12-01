@@ -562,7 +562,7 @@ class BaseApiTestCase(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
     def test_delete(self):
-        obj = self._create_obj('obj_a')
+        obj = self._create_obj('obj1')
         response = self._delete(self._a, obj.id)
         self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
 
