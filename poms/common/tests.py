@@ -62,11 +62,10 @@ class BaseApiTestCase(APITestCase):
 
         self._url_list = None
         self._url_object = None
-        self._change_permission = get_change_perms(self.model)[0]
-        # self._change_permission = None
-
-        self.all_permissions = set(get_all_perms(self.model))
-        self.default_owner_permissions = set(get_all_perms(self.model))
+        if self.model:
+            self._change_permission = get_change_perms(self.model)[0]
+            self.all_permissions = set(get_all_perms(self.model))
+            self.default_owner_permissions = set(get_all_perms(self.model))
 
         self._a = str(uuid.uuid4())
         self._a0 = str(uuid.uuid4())
