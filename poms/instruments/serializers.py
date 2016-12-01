@@ -8,8 +8,8 @@ from rest_framework.exceptions import ValidationError
 from rest_framework.fields import empty
 from rest_framework.serializers import ListSerializer
 
+from poms.common import formula
 from poms.common.fields import ExpressionField, FloatEvalField, DateTimeTzAwareField
-from poms.common.formula import ModelSimpleEval, InvalidExpression
 from poms.common.serializers import PomsClassSerializer, ModelWithUserCodeSerializer
 from poms.common.utils import date_now
 from poms.currencies.fields import CurrencyDefault
@@ -446,8 +446,8 @@ class EventScheduleActionSerializer(serializers.ModelSerializer):
             r = r.child
         if isinstance(r, GeneratedEventSerializer):
             return r.generate_text(obj.text, None, {
-                'action': obj,
-                'transaction_type': obj.transaction_type,
+                # 'action': obj,
+                # 'transaction_type': obj.transaction_type,
             })
         return None
 
@@ -487,7 +487,7 @@ class EventScheduleSerializer(serializers.ModelSerializer):
             r = r.child
         if isinstance(r, GeneratedEventSerializer):
             return r.generate_text(obj.name, None, {
-                'schedule': obj
+                # 'schedule': obj
             })
         return None
 
@@ -497,7 +497,7 @@ class EventScheduleSerializer(serializers.ModelSerializer):
             r = r.child
         if isinstance(r, GeneratedEventSerializer):
             return r.generate_text(obj.description, None, {
-                'schedule': obj
+                # 'schedule': obj
             })
         return None
 
@@ -591,27 +591,31 @@ class GeneratedEventSerializer(serializers.ModelSerializer):
         )
 
     def generate_text(self, exr, obj, names=None):
-        member = get_member_from_context(self.context)
+        # member = get_member_from_context(self.context)
+        from poms.portfolios.serializers import PortfolioViewSerializer
+        from poms.accounts.serializers import AccountViewSerializer
+        from poms.strategies.serializers import Strategy1ViewSerializer, Strategy2ViewSerializer, Strategy3ViewSerializer
         names = names or {}
         if obj is None:
             obj = self._current_instance
         names.update({
-            'event': obj,
-            'effective_date': obj.effective_date,
-            'notification_date': obj.notification_date,
-            'event_schedule': obj.event_schedule,
-            'instrument': obj.instrument,
-            'portfolio': obj.portfolio,
-            'account': obj.account,
-            'strategy1': obj.strategy1,
-            'strategy2': obj.strategy2,
-            'strategy3': obj.strategy3,
+            # 'event': obj,
+            'effective_date': serializers.DateField().to_representation(obj.effective_date),
+            'notification_date': serializers.DateField().to_representation(obj.notification_date),
+            # 'event_schedule': obj.event_schedule,
+            'instrument':  formula.get_model_data(obj.instrument, InstrumentViewSerializer, context=self.context),
+            'portfolio': formula.get_model_data(obj.portfolio, PortfolioViewSerializer, context=self.context),
+            'account': formula.get_model_data(obj.account, AccountViewSerializer, context=self.context),
+            'strategy1': formula.get_model_data(obj.strategy1, Strategy1ViewSerializer, context=self.context),
+            'strategy2': formula.get_model_data(obj.strategy2, Strategy2ViewSerializer, context=self.context),
+            'strategy3': formula.get_model_data(obj.strategy3, Strategy3ViewSerializer, context=self.context),
             'position': obj.position,
         })
-        meval = ModelSimpleEval(names=names, member=member)
+        # import json
+        # print(json.dumps(names, indent=2))
         try:
-            return meval.eval(exr)
-        except InvalidExpression as e:
+            return formula.safe_eval(exr, names=names)
+        except formula.InvalidExpression as e:
             return '<InvalidExpression>'
 
 

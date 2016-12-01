@@ -7,8 +7,8 @@ from rest_framework.fields import empty
 
 from poms.accounts.fields import AccountField, AccountDefault
 from poms.accounts.models import Account
+from poms.common import formula
 from poms.common.fields import ExpressionField
-from poms.common.formula import ModelSimpleEval, InvalidExpression
 from poms.common.serializers import PomsClassSerializer, ModelWithUserCodeSerializer
 from poms.counterparties.fields import ResponsibleField, CounterpartyField, ResponsibleDefault, CounterpartyDefault
 from poms.counterparties.models import Counterparty, Responsible
@@ -909,14 +909,18 @@ class ComplexTransactionSerializer(serializers.ModelSerializer):
             transactions = getattr(obj, '_fake_transactions', [])
         else:
             transactions = obj.transactions.all()
-        member = get_member_from_context(self.context)
-        meval = ModelSimpleEval(names={
+        names = {
             'code': obj.code,
-            'transactions': transactions,
-        }, member=member)
+            'transactions': formula.get_model_data(transactions, TransactionSerializer, many=True, context=self.context),
+        }
+        # member = get_member_from_context(self.context)
+        # meval = ModelSimpleEval(names={
+        #     'code': obj.code,
+        #     'transactions': transactions,
+        # }, member=member)
         try:
-            return meval.eval(obj.transaction_type.display_expr)
-        except InvalidExpression:
+            return formula.safe_eval(obj.transaction_type.display_expr, names=names)
+        except formula.InvalidExpression:
             return '<InvalidExpression>'
 
 
@@ -933,18 +937,23 @@ class ComplexTransactionViewSerializer(serializers.ModelSerializer):
         # from poms.transactions.renderer import ComplexTransactionRenderer
         # renderer = ComplexTransactionRenderer()
         # return renderer.render(complex_transaction=obj, context=self.context)
+
         if obj.id is None or obj.id < 0:
             transactions = getattr(obj, '_fake_transactions', [])
         else:
             transactions = obj.transactions.all()
-        member = get_member_from_context(self.context)
-        meval = ModelSimpleEval(names={
+        names = {
             'code': obj.code,
-            'transactions': transactions,
-        }, member=member)
+            'transactions': formula.get_model_data(transactions, TransactionSerializer, many=True, context=self.context),
+        }
+        # member = get_member_from_context(self.context)
+        # meval = ModelSimpleEval(names={
+        #     'code': obj.code,
+        #     'transactions': transactions,
+        # }, member=member)
         try:
-            return meval.eval(obj.transaction_type.display_expr)
-        except InvalidExpression:
+            return formula.safe_eval(obj.transaction_type.display_expr, names=names)
+        except formula.InvalidExpression:
             return '<InvalidExpression>'
 
 

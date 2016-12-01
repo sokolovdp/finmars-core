@@ -908,7 +908,7 @@ class ReportItem(_Base):
     str2 = None
     str3 = None
     # detail_trn = None
-    # custom_fields = []
+    custom_fields = []
     is_empty = False
 
     # link
@@ -1622,13 +1622,14 @@ class ReportItem(_Base):
             return self.trn
         return None
 
-    @property
-    def custom_fields(self):
+    def eval_custom_fields(self):
+        from poms.reports.serializers import ReportItemSerializer
         res = []
         for cf in self.report.custom_fields:
-            if cf.expr:
+            if cf.expr and self.report.member:
                 try:
-                    value = formula.safe_eval(cf.expr, names={'item': self})
+                    names = formula.get_model_data(self, ReportItemSerializer, context={'member': self.report.member,})
+                    value = formula.safe_eval(cf.expr, names=names)
                 except formula.InvalidExpression:
                     value = ugettext('Invalid expression')
             else:
@@ -1637,7 +1638,7 @@ class ReportItem(_Base):
                 'custom_field': cf,
                 'value': value
             })
-        return res
+        self.custom_fields = res
 
 
 class Report(object):
@@ -1710,6 +1711,10 @@ class Report(object):
 
     def __str__(self):
         return "%s for %s @ %s" % (self.__class__.__name__, self.master_user, self.report_date)
+
+    def close(self):
+        for item in self.items:
+            item.eval_custom_fields()
 
     @property
     def approach_begin_multiplier(self):
@@ -1821,7 +1826,8 @@ class ReportBuilder(object):
             queryset = self._queryset
 
         queryset = queryset.filter(master_user=self.instance.master_user, is_canceled=False)
-        queryset = queryset.filter(Q(complex_transaction__isnull=True) | Q(complex_transaction__status=ComplexTransaction.PRODUCTION))
+        queryset = queryset.filter(
+            Q(complex_transaction__isnull=True) | Q(complex_transaction__status=ComplexTransaction.PRODUCTION))
 
         queryset = queryset.select_related(
             # TODO: add fields!!!
@@ -2353,6 +2359,8 @@ class ReportBuilder(object):
 
         # self.instance.items = res_items + mismatch_items + [summary, ] + invested_items + [invested_summary, ]
         self.instance.items = res_items + mismatch_items + summaries
+
+        self.instance.close()
 
         # print('0' * 100)
         # VirtualTransaction.dumps(self.transactions)

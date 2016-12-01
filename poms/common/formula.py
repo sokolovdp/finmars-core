@@ -10,6 +10,7 @@ from collections import OrderedDict
 
 from dateutil import relativedelta
 from django.utils import numberformat
+from django.utils.functional import Promise
 
 from poms.common.utils import date_now, isclose
 
@@ -898,128 +899,120 @@ class SimpleEval2(object):
         return self._eval(node.value)
 
 
-class ModelSimpleEval(SimpleEval2):
-    def __init__(self, *args, **kwargs):
-        self.member = kwargs.pop('member')
-        super(ModelSimpleEval, self).__init__(*args, **kwargs)
-
-    def _on_ast_Subscript(self, node):
-        val = self._eval(node.value)
-
-        # from django.db import models
-        # if isinstance(val, (models.Manager, models.QuerySet)):
-        #     if isinstance(val, models.Manager):
-        #         val = val.all()
-        #     pass
-        val = self._filter_value(val, wrap=False)
-
-        try:
-            return val[self._eval(node.slice)]
-        except KeyError:
-            return None
-
-    def _on_ast_Attribute(self, node, val=empty):
-        from django.db import models
-        from poms.obj_perms.utils import has_view_perms
-
-        val = self._eval(node.value)
-        if isinstance(val, (models.Manager, models.QuerySet)):
-            if isinstance(val, models.Manager):
-                val = val.all()
-            val = self._filter_value(val, wrap=True)
-            return val
-
-        elif isinstance(val, models.Model):
-            rejected = False
-            if self._has_object_permission(val):
-                if has_view_perms(self.member, val):
-                    pass
-                else:
-                    if node.attr in ['id', 'public_name', 'display_name']:
-                        pass
-                    else:
-                        rejected = True
-
-            self._check_field(val, node.attr)
-
-            if node.attr == 'display_name':
-                if rejected:
-                    res = getattr(val, 'public_name', None)
-                else:
-                    res = getattr(val, 'name', None)
-            else:
-                res = getattr(val, node.attr)
-                if rejected:
-                    return None
-
-                res = self._filter_value(res, wrap=True)
-                if node.attr == 'attributes':
-                    if rejected:
-                        res = None
-                    else:
-                        res = {a.attribute_type.name: a for a in res if has_view_perms(self.member, a.attribute_type)}
-
-            if callable(res):
-                raise AttributeDoesNotExist(node.attr)
-
-            return None if rejected else res
-
-        return super(ModelSimpleEval, self)._on_ast_Attribute(node, val=val)
-
-    def _filter_value(self, val, wrap=False):
-        from django.db import models
-
-        if isinstance(val, (models.Manager, models.QuerySet)):
-            if isinstance(val, models.Manager):
-                val = val.all()
-            if self._has_object_permission(val.model):
-                # use prefetched permissions!
-                from poms.obj_perms.utils import has_view_perms
-                return [
-                    o for o in val if has_view_perms(self.member, o)
-                    ]
-            if wrap:
-                return list(val)
-
-        return val
-
-    def _has_object_permission(self, model_or_instance):
-        from django.db import models
-
-        if isinstance(model_or_instance, models.Model):
-            model = model_or_instance.__class__
-        else:
-            model = model_or_instance
-        try:
-            model._meta.get_field('object_permissions')
-            return True
-        except models.FieldDoesNotExist:
-            return False
-
-    def _check_field(self, obj, name):
-        from django.db import models
-        from poms.obj_attrs.models import GenericAttribute
-
-        try:
-            field = obj._meta.get_field(name)
-            if field.many_to_many or field.one_to_many or field.one_to_one:
-                if field.name != 'attributes':
-                    raise AttributeDoesNotExist(name)
-        except models.FieldDoesNotExist:
-            if isinstance(obj, GenericAttribute):
-                if name == 'value':
-                    return
-            if name == 'display_name':
-                return
-            raise
-
-
-# def is_valid(expr):
-#     return SimpleEval2.is_valid(expr)
-
-
-# def try_parse(expr):
-#     SimpleEval2.try_parse(expr)
+# class ModelSimpleEval(SimpleEval2):
+#     def __init__(self, *args, **kwargs):
+#         self.member = kwargs.pop('member')
+#         super(ModelSimpleEval, self).__init__(*args, **kwargs)
+#
+#     def _on_ast_Subscript(self, node):
+#         val = self._eval(node.value)
+#
+#         # from django.db import models
+#         # if isinstance(val, (models.Manager, models.QuerySet)):
+#         #     if isinstance(val, models.Manager):
+#         #         val = val.all()
+#         #     pass
+#         val = self._filter_value(val, wrap=False)
+#
+#         try:
+#             return val[self._eval(node.slice)]
+#         except KeyError:
+#             return None
+#
+#     def _on_ast_Attribute(self, node, val=empty):
+#         from django.db import models
+#         from poms.obj_perms.utils import has_view_perms
+#
+#         val = self._eval(node.value)
+#         if isinstance(val, (models.Manager, models.QuerySet)):
+#             if isinstance(val, models.Manager):
+#                 val = val.all()
+#             val = self._filter_value(val, wrap=True)
+#             return val
+#
+#         elif isinstance(val, models.Model):
+#             rejected = False
+#             if self._has_object_permission(val):
+#                 if has_view_perms(self.member, val):
+#                     pass
+#                 else:
+#                     if node.attr in ['id', 'public_name', 'display_name']:
+#                         pass
+#                     else:
+#                         rejected = True
+#
+#             self._check_field(val, node.attr)
+#
+#             if node.attr == 'display_name':
+#                 if rejected:
+#                     res = getattr(val, 'public_name', None)
+#                 else:
+#                     res = getattr(val, 'name', None)
+#             else:
+#                 res = getattr(val, node.attr)
+#                 if rejected:
+#                     return None
+#
+#                 res = self._filter_value(res, wrap=True)
+#                 if node.attr == 'attributes':
+#                     if rejected:
+#                         res = None
+#                     else:
+#                         res = {a.attribute_type.name: a for a in res if has_view_perms(self.member, a.attribute_type)}
+#
+#             if callable(res):
+#                 raise AttributeDoesNotExist(node.attr)
+#
+#             return None if rejected else res
+#
+#         return super(ModelSimpleEval, self)._on_ast_Attribute(node, val=val)
+#
+#     def _filter_value(self, val, wrap=False):
+#         from django.db import models
+#
+#         if isinstance(val, (models.Manager, models.QuerySet)):
+#             if isinstance(val, models.Manager):
+#                 val = val.all()
+#             if self._has_object_permission(val.model):
+#                 # use prefetched permissions!
+#                 from poms.obj_perms.utils import has_view_perms
+#                 return [
+#                     o for o in val if has_view_perms(self.member, o)
+#                     ]
+#             if wrap:
+#                 return list(val)
+#
+#         return val
+#
+#     def _has_object_permission(self, model_or_instance):
+#         from django.db import models
+#
+#         if isinstance(model_or_instance, models.Model):
+#             model = model_or_instance.__class__
+#         else:
+#             model = model_or_instance
+#         try:
+#             model._meta.get_field('object_permissions')
+#             return True
+#         except models.FieldDoesNotExist:
+#             return False
+#
+#     def _check_field(self, obj, name):
+#         from django.db import models
+#         from poms.obj_attrs.models import GenericAttribute
+#
+#         try:
+#             field = obj._meta.get_field(name)
+#             if field.many_to_many or field.one_to_many or field.one_to_one:
+#                 if field.name != 'attributes':
+#                     raise AttributeDoesNotExist(name)
+#         except models.FieldDoesNotExist:
+#             if isinstance(obj, GenericAttribute):
+#                 if name == 'value':
+#                     return
+#             if name == 'display_name':
+#                 return
+#             raise
 
 
 def validate(expr):
@@ -1035,32 +1028,55 @@ def safe_eval(s, names=None, max_time=None, add_print=False, allow_assign=False)
     return SimpleEval2(names=names, max_time=max_time, add_print=add_print, allow_assign=allow_assign).eval(s)
 
 
-# def deep_dict(data):
-#     ret = {}
-#     for k, v in data.items():
-#         ret[k] = deep_value(v)
-#     return ret
-#
-#
-# def deep_list(data):
-#     ret = []
-#     for v in data:
-#         ret.append(deep_value(v))
-#     return ret
-#
-#
-# def deep_tuple(data):
-#     return tuple(deep_list(data))
-#
-#
-# def deep_value(data):
-#     if isinstance(data, (dict, collections.OrderedDict)):
-#         return deep_dict(data)
-#     if isinstance(data, list):
-#         return deep_list(data)
-#     if isinstance(data, tuple):
-#         return deep_tuple(data)
-#     return data
+def value_prepare(orig):
+    def _dict(data):
+        ret = OrderedDict()
+        for k, v in data.items():
+            if k in ['user_object_permissions', 'group_object_permissions', 'object_permissions', 'granted_permissions']:
+                continue
+            if k.endswith('_object'):
+                k = k[:-7]
+                ret[k] = _value(v)
+            else:
+                if k not in ret:
+                    ret[k] = _value(v)
+        return ret
+
+    def _list(data):
+        ret = []
+        for v in data:
+            ret.append(_value(v))
+        return ret
+
+    def _tuple(data):
+        return tuple(_list(data))
+
+    def _value(data):
+        if data is None:
+            return None
+        elif isinstance(data, Promise):
+            return str(data)
+        elif isinstance(data, (dict, OrderedDict)):
+            return _dict(data)
+        elif isinstance(data, list):
+            return _list(data)
+        elif isinstance(data, tuple):
+            return _tuple(data)
+        return data
+
+    return _value(orig)
+
+
+def get_model_data(val, serializer_class, many=False, context=None, hide_fields=None):
+    serializer = serializer_class(instance=val, many=many, context=context)
+    if hide_fields:
+        for f in hide_fields:
+            serializer.fields.pop(f)
+    data = serializer.data
+    data = value_prepare(data)
+    # import json
+    # print(json.dumps(data, indent=2))
+    return data
 
 
 HELP = """
@@ -1617,7 +1633,7 @@ accrual_NL_365_NO_EOM(date(2000, 1, 1), date(2000, 1, 25))
 
         _l.info('---------')
 
-        seval = ModelSimpleEval(names=names, add_print=True, allow_assign=False, member=member)
+        # seval = ModelSimpleEval(names=names, add_print=True, allow_assign=False, member=member)
         # _l.info(seval.eval('transactions1'))
         # _l.info(seval.eval('transactions1[0]'))
         # _l.info(seval.eval('transactions2'))
@@ -1627,7 +1643,7 @@ accrual_NL_365_NO_EOM(date(2000, 1, 1), date(2000, 1, 25))
         # _l.info(seval.eval('transactions[0].attributes["SomeNumber"]'))
         # _l.info(seval.eval('transactions[0].attributes.SomeNumber'))
         # _l.info(seval.eval('transactions[0].attributes["SomeNumber"].value'))
-        _l.info(seval.eval('transaction.account_position.user_code or transaction.account_position.public_name'))
+        # _l.info(seval.eval('transaction.account_position.user_code or transaction.account_position.public_name'))
         # _l.info(seval.eval('find_name(transaction.account_position.user_code, transaction.account_position.public_name)'))
         # _l.info(seval.eval('find_name(transaction.account_cash.user_code, transaction.account_cash.public_name)'))
         # _l.info(seval.eval('find_name(transaction.account_interim.user_code, transaction.account_interim.public_name)'))
@@ -1640,8 +1656,8 @@ accrual_NL_365_NO_EOM(date(2000, 1, 1), date(2000, 1, 25))
         # _l.info(seval.eval('instrument.maturity_date'))
         # _l.info(seval.eval('instrument.maturity_date.year'))
         # _l.info(seval.eval('a = 3'))
-        _l.info(seval.eval('None or "a"'))
-        _l.info(seval.eval('"b" or "a"'))
+        # _l.info(seval.eval('None or "a"'))
+        # _l.info(seval.eval('"b" or "a"'))
         pass
 
 
