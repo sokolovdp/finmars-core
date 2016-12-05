@@ -131,7 +131,7 @@ class AccountFilterSet(FilterSet):
 
 class AccountViewSet(AbstractWithObjectPermissionViewSet):
     queryset = Account.objects.select_related(
-        'master_user', 'type', 'type',
+        'master_user', 'type',
     ).prefetch_related(
         'portfolios',
         # Prefetch('attributes', queryset=AccountAttribute.objects.select_related(
