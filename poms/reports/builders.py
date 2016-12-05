@@ -15,14 +15,16 @@ from django.utils.translation import ugettext, ugettext_lazy
 from poms.accounts.models import Account, AccountType
 from poms.common import formula
 from poms.common.utils import date_now, isclose
-from poms.counterparties.models import Responsible, Counterparty, ResponsibleGroup, CounterpartyGroup
+from poms.currencies.models import Currency
 from poms.instruments.models import Instrument, InstrumentType, CostMethod
+from poms.obj_attrs.utils import get_attributes_prefetch
 from poms.obj_perms.utils import get_permissions_prefetch_lookups
 from poms.portfolios.models import Portfolio
 from poms.reports.pricing import FakeInstrumentPricingProvider, FakeCurrencyFxRateProvider, CurrencyFxRateProvider
 from poms.reports.pricing import InstrumentPricingProvider
 from poms.strategies.models import Strategy1, Strategy2, Strategy3, Strategy1Subgroup, Strategy1Group, \
     Strategy2Subgroup, Strategy2Group, Strategy3Subgroup, Strategy3Group
+from poms.tags.utils import get_tag_prefetch
 from poms.transactions.models import TransactionClass, Transaction, ComplexTransaction
 
 _l = logging.getLogger('poms.reports')
@@ -1758,69 +1760,102 @@ class ReportBuilder(object):
 
     def _trn_qs(self):
         if self._queryset is None:
-            # queryset = Transaction.objects
-            queryset = Transaction.objects.select_related(
-                'master_user', 'complex_transaction', 'complex_transaction__transaction_type', 'transaction_class',
-                'instrument', 'instrument__instrument_type', 'instrument__instrument_type__instrument_class',
+            # permissions and attributes refreshed after build report
+            queryset = Transaction.objects.prefetch_related(
+                'master_user',
+                # 'complex_transaction',
+                # 'complex_transaction__transaction_type',
+                'transaction_class',
+                'instrument',
+                # 'instrument__instrument_type',
+                # 'instrument__instrument_type__instrument_class',
                 'transaction_currency',
                 'settlement_currency',
                 'portfolio',
-                'account_cash', 'account_cash__type',
-                'account_position', 'account_position__type',
-                'account_interim', 'account_interim__type',
-                'strategy1_position', 'strategy1_position__subgroup', 'strategy1_position__subgroup__group',
-                'strategy1_cash', 'strategy1_cash__subgroup', 'strategy1_cash__subgroup__group',
-                'strategy2_position', 'strategy2_position__subgroup', 'strategy2_position__subgroup__group',
-                'strategy2_cash', 'strategy2_cash__subgroup', 'strategy2_cash__subgroup__group',
-                'strategy3_position', 'strategy3_position__subgroup', 'strategy3_position__subgroup__group',
-                'strategy3_cash', 'strategy3_cash__subgroup', 'strategy3_cash__subgroup__group',
-                'responsible', 'responsible__group',
-                'counterparty', 'counterparty__group',
-                'linked_instrument', 'linked_instrument__instrument_type',
-                'linked_instrument__instrument_type__instrument_class',
-                'allocation_balance', 'allocation_balance__instrument_type',
-                'allocation_balance__instrument_type__instrument_class',
-                'allocation_pl', 'allocation_pl__instrument_type', 'allocation_pl__instrument_type__instrument_class',
+                'account_cash',
+                # 'account_cash__type',
+                'account_position',
+                # 'account_position__type',
+                'account_interim',
+                # 'account_interim__type',
+                'strategy1_position',
+                # 'strategy1_position__subgroup',
+                # 'strategy1_position__subgroup__group',
+                'strategy1_cash',
+                # 'strategy1_cash__subgroup',
+                # 'strategy1_cash__subgroup__group',
+                'strategy2_position',
+                # 'strategy2_position__subgroup',
+                # 'strategy2_position__subgroup__group',
+                'strategy2_cash',
+                # 'strategy2_cash__subgroup',
+                # 'strategy2_cash__subgroup__group',
+                'strategy3_position',
+                # 'strategy3_position__subgroup',
+                # 'strategy3_position__subgroup__group',
+                'strategy3_cash',
+                # 'strategy3_cash__subgroup',
+                # 'strategy3_cash__subgroup__group',
+                # 'responsible',
+                # 'responsible__group',
+                # 'counterparty',
+                # 'counterparty__group',
+                'linked_instrument',
+                # 'linked_instrument__instrument_type',
+                # 'linked_instrument__instrument_type__instrument_class',
+                'allocation_balance',
+                # 'allocation_balance__instrument_type',
+                # 'allocation_balance__instrument_type__instrument_class',
+                'allocation_pl',
+                # 'allocation_pl__instrument_type',
+                # 'allocation_pl__instrument_type__instrument_class',
             ).prefetch_related(
-                *get_permissions_prefetch_lookups(
-                    ('portfolio', Portfolio),
-                    ('instrument', Instrument),
-                    ('instrument__instrument_type', InstrumentType),
-                    ('account_cash', Account),
-                    ('account_cash__type', AccountType),
-                    ('account_position', Account),
-                    ('account_position__type', AccountType),
-                    ('account_interim', Account),
-                    ('account_interim__type', AccountType),
-                    ('strategy1_position', Strategy1),
-                    ('strategy1_position__subgroup', Strategy1Subgroup),
-                    ('strategy1_position__subgroup__group', Strategy1Group),
-                    ('strategy1_cash', Strategy1),
-                    ('strategy1_cash__subgroup', Strategy1Subgroup),
-                    ('strategy1_cash__subgroup__group', Strategy1Group),
-                    ('strategy2_position', Strategy2),
-                    ('strategy2_position__subgroup', Strategy2Subgroup),
-                    ('strategy2_position__subgroup__group', Strategy2Group),
-                    ('strategy2_cash', Strategy2),
-                    ('strategy2_cash__subgroup', Strategy2Subgroup),
-                    ('strategy2_cash__subgroup__group', Strategy2Group),
-                    ('strategy3_position', Strategy3),
-                    ('strategy3_position__subgroup', Strategy3Subgroup),
-                    ('strategy3_position__subgroup__group', Strategy3Group),
-                    ('strategy3_cash', Strategy3),
-                    ('strategy3_cash__subgroup', Strategy3Subgroup),
-                    ('strategy3_cash__subgroup__group', Strategy3Group),
-                    ('responsible', Responsible),
-                    ('responsible__group', ResponsibleGroup),
-                    ('counterparty', Counterparty),
-                    ('counterparty__group', CounterpartyGroup),
-                    ('linked_instrument', Instrument),
-                    ('linked_instrument__instrument_type', InstrumentType),
-                    ('allocation_balance', Instrument),
-                    ('allocation_balance__instrument_type', InstrumentType),
-                    ('allocation_pl', Instrument),
-                    ('allocation_pl__instrument_type', InstrumentType),
-                )
+                #     get_attributes_prefetch_by_path('portfolio__attributes'),
+                #     get_attributes_prefetch_by_path('instrument__attributes'),
+                #     get_attributes_prefetch_by_path('account_cash__attributes'),
+                #     get_attributes_prefetch_by_path('account_position__attributes'),
+                #     get_attributes_prefetch_by_path('account_interim__attributes'),
+                #     get_attributes_prefetch_by_path('transaction_currency__attributes'),
+                #     get_attributes_prefetch_by_path('settlement_currency__attributes'),
+                #     *get_permissions_prefetch_lookups(
+                #         ('portfolio', Portfolio),
+                #         ('instrument', Instrument),
+                #         ('instrument__instrument_type', InstrumentType),
+                #         ('account_cash', Account),
+                #         ('account_cash__type', AccountType),
+                #         ('account_position', Account),
+                #         ('account_position__type', AccountType),
+                #         ('account_interim', Account),
+                #         ('account_interim__type', AccountType),
+                #         ('strategy1_position', Strategy1),
+                #         ('strategy1_position__subgroup', Strategy1Subgroup),
+                #         ('strategy1_position__subgroup__group', Strategy1Group),
+                #         ('strategy1_cash', Strategy1),
+                #         ('strategy1_cash__subgroup', Strategy1Subgroup),
+                #         ('strategy1_cash__subgroup__group', Strategy1Group),
+                #         ('strategy2_position', Strategy2),
+                #         ('strategy2_position__subgroup', Strategy2Subgroup),
+                #         ('strategy2_position__subgroup__group', Strategy2Group),
+                #         ('strategy2_cash', Strategy2),
+                #         ('strategy2_cash__subgroup', Strategy2Subgroup),
+                #         ('strategy2_cash__subgroup__group', Strategy2Group),
+                #         ('strategy3_position', Strategy3),
+                #         ('strategy3_position__subgroup', Strategy3Subgroup),
+                #         ('strategy3_position__subgroup__group', Strategy3Group),
+                #         ('strategy3_cash', Strategy3),
+                #         ('strategy3_cash__subgroup', Strategy3Subgroup),
+                #         ('strategy3_cash__subgroup__group', Strategy3Group),
+                #         ('responsible', Responsible),
+                #         ('responsible__group', ResponsibleGroup),
+                #         ('counterparty', Counterparty),
+                #         ('counterparty__group', CounterpartyGroup),
+                #         ('linked_instrument', Instrument),
+                #         ('linked_instrument__instrument_type', InstrumentType),
+                #         ('allocation_balance', Instrument),
+                #         ('allocation_balance__instrument_type', InstrumentType),
+                #         ('allocation_pl', Instrument),
+                #         ('allocation_pl__instrument_type', InstrumentType),
+                #     )
             )
         else:
             queryset = self._queryset
@@ -1869,7 +1904,7 @@ class ReportBuilder(object):
         else:
             p = InstrumentPricingProvider(self.instance.master_user, self.instance.pricing_policy,
                                           self.instance.report_date)
-            p.fill_using_transactions(self._trn_qs())
+            p.fill_using_transactions(self._trn_qs(), lazy=False)
             return p
 
     @cached_property
@@ -1879,7 +1914,7 @@ class ReportBuilder(object):
         else:
             p = CurrencyFxRateProvider(self.instance.master_user, self.instance.pricing_policy,
                                        self.instance.report_date)
-            p.fill_using_transactions(self._trn_qs(), currencies=[self.instance.report_currency])
+            p.fill_using_transactions(self._trn_qs(), currencies=[self.instance.report_currency], lazy=False)
             return p
 
     @cached_property
@@ -2190,7 +2225,7 @@ class ReportBuilder(object):
     #
     #     return res
 
-    def build(self):
+    def build(self, full=True):
         mismatch_items = []
 
         # split transactions to atomic items using transaction class, case and something else
@@ -2360,6 +2395,9 @@ class ReportBuilder(object):
         # self.instance.items = res_items + mismatch_items + [summary, ] + invested_items + [invested_summary, ]
         self.instance.items = res_items + mismatch_items + summaries
 
+        if full:
+            self._refresh_with_perms()
+
         self.instance.close()
 
         # print('0' * 100)
@@ -2419,3 +2457,129 @@ class ReportBuilder(object):
 
         else:
             raise RuntimeError('Invalid transaction case: %s' % trn.case)
+
+    def _refresh_with_perms(self):
+        instrs = set()
+        ccys = set()
+        prtfls = set()
+        accs = set()
+        strs1 = set()
+        strs2 = set()
+        strs3 = set()
+
+        for i in self.instance.items:
+            if i.instr:
+                instrs.add(i.instr.id)
+            if i.ccy:
+                ccys.add(i.ccy.id)
+            if i.trn_ccy:
+                ccys.add(i.trn_ccy.id)
+            if i.prtfl:
+                prtfls.add(i.prtfl.id)
+            if i.acc:
+                accs.add(i.acc.id)
+            if i.str1:
+                strs1.add(i.str1.id)
+            if i.str2:
+                strs2.add(i.str2.id)
+            if i.str3:
+                strs3.add(i.str3.id)
+
+            if i.mismatch_prtfl:
+                prtfls.add(i.mismatch_prtfl.id)
+            if i.mismatch_acc:
+                accs.add(i.mismatch_acc.id)
+
+            if i.alloc_bl:
+                instrs.add(i.alloc_bl.id)
+            if i.alloc_pl:
+                instrs.add(i.alloc_pl.id)
+
+        instrs = Instrument.objects.filter(master_user=self.instance.master_user).prefetch_related(
+            'master_user', 'instrument_type', 'instrument_type__instrument_class',
+            'pricing_currency', 'accrued_currency', 'payment_size_detail', 'daily_pricing_model',
+            'price_download_scheme', 'price_download_scheme__provider',
+            get_attributes_prefetch(),
+            get_tag_prefetch(),
+            *get_permissions_prefetch_lookups(
+                (None, Instrument),
+                ('instrument_type', InstrumentType),
+            )
+        ).in_bulk(instrs)
+        ccys = Currency.objects.filter(master_user=self.instance.master_user).prefetch_related(
+            'master_user', 'daily_pricing_model', 'price_download_scheme', 'price_download_scheme__provider',
+            get_attributes_prefetch(),
+            get_tag_prefetch()
+        ).in_bulk(ccys)
+        prtfls = Portfolio.objects.filter(master_user=self.instance.master_user).prefetch_related(
+            'master_user',
+            get_attributes_prefetch(),
+            get_tag_prefetch(),
+            *get_permissions_prefetch_lookups(
+                (None, Portfolio),
+            )
+        ).in_bulk(prtfls)
+        accs = Account.objects.filter(master_user=self.instance.master_user).prefetch_related(
+            'master_user', 'type',
+            get_attributes_prefetch(),
+            get_tag_prefetch(),
+            *get_permissions_prefetch_lookups(
+                (None, Account),
+                ('type', AccountType),
+            )
+        ).in_bulk(accs)
+        strs1 = Strategy1.objects.filter(master_user=self.instance.master_user).prefetch_related(
+            'master_user', 'subgroup', 'subgroup__group',
+            get_tag_prefetch(),
+            *get_permissions_prefetch_lookups(
+                (None, Strategy1),
+                ('subgroup', Strategy1Subgroup),
+                ('subgroup__group', Strategy1Group),
+            )
+        ).in_bulk(strs1)
+        strs2 = Strategy2.objects.filter(master_user=self.instance.master_user).prefetch_related(
+            'master_user', 'subgroup', 'subgroup__group',
+            get_tag_prefetch(),
+            *get_permissions_prefetch_lookups(
+                (None, Strategy2),
+                ('subgroup', Strategy2Subgroup),
+                ('subgroup__group', Strategy2Group),
+            )
+        ).in_bulk(strs2)
+        strs3 = Strategy3.objects.filter(master_user=self.instance.master_user).prefetch_related(
+            'master_user', 'subgroup', 'subgroup__group',
+            get_tag_prefetch(),
+            *get_permissions_prefetch_lookups(
+                (None, Strategy3),
+                ('subgroup', Strategy3Subgroup),
+                ('subgroup__group', Strategy3Group),
+            )
+        ).in_bulk(strs3)
+
+        for i in self.instance.items:
+            if i.instr:
+                i.instr = instrs[i.instr.id]
+            if i.ccy:
+                i.ccy = ccys[i.ccy.id]
+            if i.trn_ccy:
+                i.trn_ccy = ccys[i.trn_ccy.id]
+            if i.prtfl:
+                i.prtfl = prtfls[i.prtfl.id]
+            if i.acc:
+                i.acc = accs[i.acc.id]
+            if i.str1:
+                i.str1 = strs1[i.str1.id]
+            if i.str2:
+                i.str2 = strs2[i.str2.id]
+            if i.str3:
+                i.str3 = strs3[i.str3.id]
+
+            if i.mismatch_prtfl:
+                i.mismatch_prtfl = prtfls[i.mismatch_prtfl.id]
+            if i.mismatch_acc:
+                i.mismatch_acc = accs[i.mismatch_acc.id]
+
+            if i.alloc_bl:
+                i.alloc_bl = instrs[i.alloc_bl.id]
+            if i.alloc_pl:
+                i.alloc_pl = instrs[i.alloc_pl.id]
