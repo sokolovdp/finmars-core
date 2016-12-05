@@ -63,7 +63,8 @@ class AccountClassifierFilterSet(FilterSet):
 
 class GenericClassifierViewSet(AbstractReadOnlyModelViewSet):
     queryset = GenericClassifier.objects.select_related(
-        'attribute_type', 'parent'
+        'attribute_type',
+        'parent'
     ).prefetch_related(
         'children',
         *get_permissions_prefetch_lookups(
@@ -109,7 +110,8 @@ class GenericAttributeTypeFilterSet(FilterSet):
 
 class GenericAttributeTypeViewSet(AbstractWithObjectPermissionViewSet):
     queryset = GenericAttributeType.objects.select_related(
-        'master_user', 'content_type'
+        'master_user',
+        'content_type'
     ).prefetch_related(
         'options', 'classifiers',
         *get_permissions_prefetch_lookups(

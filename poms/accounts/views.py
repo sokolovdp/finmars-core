@@ -37,7 +37,9 @@ class AccountTypeFilterSet(FilterSet):
 
 
 class AccountTypeViewSet(AbstractWithObjectPermissionViewSet):
-    queryset = AccountType.objects.select_related('master_user').prefetch_related(
+    queryset = AccountType.objects.select_related(
+        'master_user'
+    ).prefetch_related(
         get_tag_prefetch(),
         *get_permissions_prefetch_lookups(
             (None, AccountType),
@@ -131,7 +133,8 @@ class AccountFilterSet(FilterSet):
 
 class AccountViewSet(AbstractWithObjectPermissionViewSet):
     queryset = Account.objects.select_related(
-        'master_user', 'type',
+        'master_user',
+        'type',
     ).prefetch_related(
         'portfolios',
         # Prefetch('attributes', queryset=AccountAttribute.objects.select_related(

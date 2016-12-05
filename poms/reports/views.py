@@ -31,7 +31,9 @@ class CustomFieldFilterSet(FilterSet):
 
 
 class CustomFieldViewSet(AbstractModelViewSet):
-    queryset = CustomField.objects.select_related('master_user')
+    queryset = CustomField.objects.select_related(
+        'master_user'
+    )
     serializer_class = CustomFieldSerializer
     # permission_classes = AbstractModelViewSet.permission_classes + [
     #     SuperUserOrReadOnly,

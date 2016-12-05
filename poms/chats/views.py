@@ -142,7 +142,10 @@ class MessageFilterSet(FilterSet):
 
 
 class MessageViewSet(AbstractModelViewSet):
-    queryset = Message.objects.select_related('thread', 'sender')
+    queryset = Message.objects.select_related(
+        'thread',
+        'sender'
+    )
     serializer_class = MessageSerializer
     permission_classes = AbstractModelViewSet.permission_classes + [
         MessagePermission,
@@ -168,7 +171,10 @@ class DirectMessageFilterSet(FilterSet):
 
 
 class DirectMessageViewSet(AbstractModelViewSet):
-    queryset = DirectMessage.objects.select_related('sender', 'recipient')
+    queryset = DirectMessage.objects.select_related(
+        'sender',
+        'recipient'
+    )
     serializer_class = DirectMessageSerializer
     permission_classes = AbstractModelViewSet.permission_classes + [
         DirectMessagePermission,

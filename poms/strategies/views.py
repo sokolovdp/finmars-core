@@ -75,7 +75,8 @@ class Strategy1SubgroupFilterSet(FilterSet):
 
 class Strategy1SubgroupViewSet(AbstractWithObjectPermissionViewSet):
     queryset = Strategy1Subgroup.objects.select_related(
-        'master_user', 'group'
+        'master_user',
+        'group'
     ).prefetch_related(
         get_tag_prefetch(),
         *get_permissions_prefetch_lookups(
@@ -118,7 +119,9 @@ class Strategy1FilterSet(FilterSet):
 
 class Strategy1ViewSet(AbstractWithObjectPermissionViewSet):
     queryset = Strategy1.objects.select_related(
-        'master_user', 'subgroup', 'subgroup__group'
+        'master_user',
+        'subgroup',
+        'subgroup__group'
     ).prefetch_related(
         get_tag_prefetch(),
         *get_permissions_prefetch_lookups(
@@ -181,7 +184,10 @@ class Strategy2SubgroupFilterSet(Strategy1SubgroupFilterSet):
 
 
 class Strategy2SubgroupViewSet(Strategy1SubgroupViewSet):
-    queryset = Strategy2Subgroup.objects.select_related('master_user', 'group').prefetch_related(
+    queryset = Strategy2Subgroup.objects.select_related(
+        'master_user',
+        'group'
+    ).prefetch_related(
         get_tag_prefetch(),
         *get_permissions_prefetch_lookups(
             (None, Strategy2Subgroup),
@@ -206,7 +212,9 @@ class Strategy2FilterSet(Strategy1FilterSet):
 
 class Strategy2ViewSet(Strategy1ViewSet):
     queryset = Strategy2.objects.select_related(
-        'master_user', 'subgroup', 'subgroup__group'
+        'master_user',
+        'subgroup',
+        'subgroup__group'
     ).prefetch_related(
         get_tag_prefetch(),
         *get_permissions_prefetch_lookups(
@@ -256,7 +264,8 @@ class Strategy3SubgroupFilterSet(Strategy1SubgroupFilterSet):
 
 class Strategy3SubgroupViewSet(Strategy1SubgroupViewSet):
     queryset = Strategy3Subgroup.objects.select_related(
-        'master_user', 'group'
+        'master_user',
+        'group'
     ).prefetch_related(
         get_tag_prefetch(),
         *get_permissions_prefetch_lookups(
@@ -282,7 +291,9 @@ class Strategy3FilterSet(Strategy1FilterSet):
 
 class Strategy3ViewSet(Strategy1ViewSet):
     queryset = Strategy3.objects.select_related(
-        'master_user', 'subgroup', 'subgroup__group'
+        'master_user',
+        'subgroup',
+        'subgroup__group'
     ).prefetch_related(
         get_tag_prefetch(),
         *get_permissions_prefetch_lookups(

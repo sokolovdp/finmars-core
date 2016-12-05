@@ -94,7 +94,9 @@ class CounterpartyGroupFilterSet(FilterSet):
 
 
 class CounterpartyGroupViewSet(AbstractWithObjectPermissionViewSet):
-    queryset = CounterpartyGroup.objects.select_related('master_user').prefetch_related(
+    queryset = CounterpartyGroup.objects.select_related(
+        'master_user'
+    ).prefetch_related(
         get_tag_prefetch(),
         *get_permissions_prefetch_lookups(
             (None, CounterpartyGroup),
@@ -131,7 +133,8 @@ class CounterpartyFilterSet(FilterSet):
 
 class CounterpartyViewSet(AbstractWithObjectPermissionViewSet):
     queryset = Counterparty.objects.select_related(
-        'master_user', 'group',
+        'master_user',
+        'group',
     ).prefetch_related(
         'portfolios',
         # Prefetch('attributes', queryset=CounterpartyAttribute.objects.select_related('attribute_type', 'classifier')),
@@ -229,7 +232,9 @@ class ResponsibleGroupFilterSet(FilterSet):
 
 
 class ResponsibleGroupViewSet(AbstractWithObjectPermissionViewSet):
-    queryset = ResponsibleGroup.objects.select_related('master_user').prefetch_related(
+    queryset = ResponsibleGroup.objects.select_related(
+        'master_user'
+    ).prefetch_related(
         get_tag_prefetch(),
         *get_permissions_prefetch_lookups(
             (None, ResponsibleGroup),
@@ -267,7 +272,8 @@ class ResponsibleFilterSet(FilterSet):
 
 class ResponsibleViewSet(AbstractWithObjectPermissionViewSet):
     queryset = Responsible.objects.select_related(
-        'master_user', 'group',
+        'master_user',
+        'group',
     ).prefetch_related(
         'portfolios',
         get_attributes_prefetch(),

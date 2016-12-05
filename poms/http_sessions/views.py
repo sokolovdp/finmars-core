@@ -21,7 +21,9 @@ class SessionFilterSet(FilterSet):
 
 
 class SessionViewSet(DestroyModelMixin, AbstractReadOnlyModelViewSet):
-    queryset = Session.objects.select_related('user')
+    queryset = Session.objects.select_related(
+        'user'
+    )
     lookup_field = 'id'
     serializer_class = SessionSerializer
     filter_backends = AbstractReadOnlyModelViewSet.filter_backends + [

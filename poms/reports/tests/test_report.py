@@ -363,7 +363,7 @@ class ReportTestCase(TestCase):
         b.build()
         self._dump(b, 'test_avco_str1_0: OFFSETTING')
 
-    def _test_balance_0(self):
+    def test_balance_0(self):
         self._t(t_class=self._cash_inflow, trn_ccy=self.eur, position=1000, fx_rate=1.3)
         self._t(t_class=self._cash_outflow, trn_ccy=self.usd, position=-1000, acc_date_days=1, cash_date_days=1,
                 fx_rate=1.0)

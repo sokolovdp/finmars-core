@@ -117,7 +117,9 @@ class PriceDownloadSchemeFilterSet(FilterSet):
 
 
 class PriceDownloadSchemeViewSet(AbstractModelViewSet):
-    queryset = PriceDownloadScheme.objects.select_related('provider')
+    queryset = PriceDownloadScheme.objects.select_related(
+        'provider'
+    )
     serializer_class = PriceDownloadSchemeSerializer
     # permission_classes = AbstractModelViewSet.permission_classes + [
     #     SuperUserOrReadOnly,
@@ -144,7 +146,11 @@ class CurrencyMappingFilterSet(FilterSet):
 
 
 class CurrencyMappingViewSet(AbstractModelViewSet):
-    queryset = CurrencyMapping.objects.select_related('master_user', 'provider', 'currency')
+    queryset = CurrencyMapping.objects.select_related(
+        'master_user',
+        'provider',
+        'currency'
+    )
     serializer_class = CurrencyMappingSerializer
     permission_classes = AbstractModelViewSet.permission_classes + [
         SuperUserOrReadOnly,
@@ -172,7 +178,11 @@ class InstrumentTypeMappingFilterSet(FilterSet):
 
 
 class InstrumentTypeMappingViewSet(AbstractModelViewSet):
-    queryset = InstrumentTypeMapping.objects.select_related('master_user', 'provider', 'instrument_type')
+    queryset = InstrumentTypeMapping.objects.select_related(
+        'master_user',
+        'provider',
+        'instrument_type'
+    )
     serializer_class = InstrumentTypeMappingSerializer
     # permission_classes = AbstractModelViewSet.permission_classes + [
     #     SuperUserOrReadOnly,
@@ -202,7 +212,10 @@ class InstrumentAttributeValueMappingFilterSet(FilterSet):
 
 class InstrumentAttributeValueMappingViewSet(AbstractModelViewSet):
     queryset = InstrumentAttributeValueMapping.objects.select_related(
-        'master_user', 'provider', 'attribute_type', 'classifier'
+        'master_user',
+        'provider',
+        'attribute_type',
+        'classifier'
     )
     serializer_class = InstrumentAttributeValueMappingSerializer
     # permission_classes = AbstractModelViewSet.permission_classes + [
@@ -234,7 +247,9 @@ class AccrualCalculationModelMappingFilterSet(FilterSet):
 
 class AccrualCalculationModelMappingViewSet(AbstractModelViewSet):
     queryset = AccrualCalculationModelMapping.objects.select_related(
-        'master_user', 'provider', 'accrual_calculation_model'
+        'master_user',
+        'provider',
+        'accrual_calculation_model'
     )
     serializer_class = AccrualCalculationModelMappingSerializer
     # permission_classes = AbstractModelViewSet.permission_classes + [
@@ -263,7 +278,11 @@ class PeriodicityMappingFilterSet(FilterSet):
 
 
 class PeriodicityMappingViewSet(AbstractModelViewSet):
-    queryset = PeriodicityMapping.objects.select_related('master_user', 'provider', 'periodicity')
+    queryset = PeriodicityMapping.objects.select_related(
+        'master_user',
+        'provider',
+        'periodicity'
+    )
     serializer_class = PeriodicityMappingSerializer
     # permission_classes = AbstractModelViewSet.permission_classes + [
     #     SuperUserOrReadOnly,
@@ -293,7 +312,11 @@ class TaskFilterSet(FilterSet):
 
 
 class TaskViewSet(AbstractReadOnlyModelViewSet):
-    queryset = Task.objects.select_related('provider').prefetch_related('children')
+    queryset = Task.objects.select_related(
+        'provider'
+    ).prefetch_related(
+        'children'
+    )
     serializer_class = TaskSerializer
     filter_backends = AbstractReadOnlyModelViewSet.filter_backends + [
         TaskFilter,

@@ -154,25 +154,41 @@ class MasterUserViewSet(AbstractModelViewSet):
         'currency',
         'system_currency',
         'account_type',
-        'account', 'account__type',
+        'account',
+        'account__type',
         'counterparty_group',
-        'counterparty', 'counterparty__group',
+        'counterparty',
+        'counterparty__group',
         'responsible_group',
-        'responsible', 'responsible__group',
-        'instrument_type', 'instrument_type__instrument_class',
-        'instrument', 'instrument__instrument_type', 'instrument__instrument_type__instrument_class',
+        'responsible',
+        'responsible__group',
+        'instrument_type',
+        'instrument_type__instrument_class',
+        'instrument',
+        'instrument__instrument_type',
+        'instrument__instrument_type__instrument_class',
         'portfolio',
         'strategy1_group',
-        'strategy1_subgroup', 'strategy1_subgroup__group',
-        'strategy1', 'strategy1__subgroup', 'strategy1__subgroup__group',
+        'strategy1_subgroup',
+        'strategy1_subgroup__group',
+        'strategy1',
+        'strategy1__subgroup',
+        'strategy1__subgroup__group',
         'strategy2_group',
-        'strategy2_subgroup', 'strategy2_subgroup__group',
-        'strategy2', 'strategy2__subgroup', 'strategy2__subgroup__group',
+        'strategy2_subgroup',
+        'strategy2_subgroup__group',
+        'strategy2',
+        'strategy2__subgroup',
+        'strategy2__subgroup__group',
         'strategy3_group',
-        'strategy3_subgroup', 'strategy3_subgroup__group',
-        'strategy3', 'strategy3__subgroup', 'strategy3__subgroup__group',
+        'strategy3_subgroup',
+        'strategy3_subgroup__group',
+        'strategy3',
+        'strategy3__subgroup',
+        'strategy3__subgroup__group',
         'thread_group',
-        'mismatch_portfolio', 'mismatch_account',
+        'mismatch_portfolio',
+        'mismatch_account',
     ).prefetch_related(
         *get_permissions_prefetch_lookups(
             ('account_type', AccountType),
@@ -258,7 +274,11 @@ class MemberFilterSet(FilterSet):
 
 
 class MemberViewSet(AbstractModelViewSet):
-    queryset = Member.objects.select_related('user').prefetch_related('groups')
+    queryset = Member.objects.select_related(
+        'user'
+    ).prefetch_related(
+        'groups'
+    )
     serializer_class = MemberSerializer
     permission_classes = AbstractModelViewSet.permission_classes + [
         SuperUserOrReadOnly,
@@ -294,7 +314,11 @@ class GroupFilterSet(FilterSet):
 
 
 class GroupViewSet(AbstractModelViewSet):
-    queryset = Group.objects.select_related('master_user').prefetch_related('members')
+    queryset = Group.objects.select_related(
+        'master_user'
+    ).prefetch_related(
+        'members'
+    )
     serializer_class = GroupSerializer
     permission_classes = AbstractModelViewSet.permission_classes + [
         SuperUserOrReadOnly,

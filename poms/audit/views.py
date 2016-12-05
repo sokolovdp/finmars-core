@@ -25,7 +25,9 @@ class AuthLogEntryFilterSet(FilterSet):
 
 
 class AuthLogViewSet(AbstractReadOnlyModelViewSet):
-    queryset = AuthLogEntry.objects.select_related('user')
+    queryset = AuthLogEntry.objects.select_related(
+        'user'
+    )
     serializer_class = AuthLogEntrySerializer
     filter_backends = AbstractReadOnlyModelViewSet.filter_backends + [
         OwnerByUserFilter,
@@ -58,7 +60,12 @@ class ObjectHistory4EntryFilterSet(FilterSet):
 
 class ObjectHistory4ViewSet(AbstractReadOnlyModelViewSet):
     queryset = ObjectHistory4Entry.objects.select_related(
-        'master_user', 'member', 'actor_content_type', 'content_type', 'value_content_type', 'old_value_content_type',
+        'master_user',
+        'member',
+        'actor_content_type',
+        'content_type',
+        'value_content_type',
+        'old_value_content_type',
     ).prefetch_related(
         # 'master_user', 'member', 'actor_content_type', 'content_type', 'value_content_type', 'old_value_content_type',
         # TODO: if enable then actor_content_type and other converted to None!!!

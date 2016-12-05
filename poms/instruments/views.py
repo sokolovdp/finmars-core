@@ -120,12 +120,18 @@ class InstrumentTypeFilterSet(FilterSet):
 
 class InstrumentTypeViewSet(AbstractWithObjectPermissionViewSet):
     queryset = InstrumentType.objects.select_related(
-        'master_user', 'instrument_class',
-        'one_off_event', 'one_off_event__group',
-        'regular_event', 'regular_event__group',
-        'factor_same', 'factor_same__group',
-        'factor_up', 'factor_up__group',
-        'factor_down', 'factor_down__group',
+        'master_user',
+        'instrument_class',
+        'one_off_event',
+        'one_off_event__group',
+        'regular_event',
+        'regular_event__group',
+        'factor_same',
+        'factor_same__group',
+        'factor_up',
+        'factor_up__group',
+        'factor_down',
+        'factor_down__group',
     ).prefetch_related(
         get_tag_prefetch(),
         *get_permissions_prefetch_lookups(
@@ -195,8 +201,14 @@ class InstrumentFilterSet(FilterSet):
 
 class InstrumentViewSet(AbstractWithObjectPermissionViewSet):
     queryset = Instrument.objects.select_related(
-        'instrument_type', 'instrument_type__instrument_class', 'pricing_currency', 'accrued_currency',
-        'payment_size_detail', 'daily_pricing_model', 'price_download_scheme', 'price_download_scheme__provider',
+        'instrument_type',
+        'instrument_type__instrument_class',
+        'pricing_currency',
+        'accrued_currency',
+        'payment_size_detail',
+        'daily_pricing_model',
+        'price_download_scheme',
+        'price_download_scheme__provider',
     ).prefetch_related(
         # Prefetch(
         #     'attributes',
@@ -319,7 +331,10 @@ class PriceHistoryFilterSet(FilterSet):
 
 class PriceHistoryViewSet(AbstractModelViewSet):
     queryset = PriceHistory.objects.select_related(
-        'instrument', 'instrument__instrument_type', 'instrument__instrument_type__instrument_class', 'pricing_policy'
+        'instrument',
+        'instrument__instrument_type',
+        'instrument__instrument_type__instrument_class',
+        'pricing_policy'
     ).prefetch_related(
         *get_permissions_prefetch_lookups(
             ('instrument', Instrument),
@@ -363,15 +378,27 @@ class GeneratedEventFilterSet(FilterSet):
 class GeneratedEventViewSet(UpdateModelMixinExt, AbstractReadOnlyModelViewSet):
     queryset = GeneratedEvent.objects.select_related(
         'master_user',
-        'event_schedule', 'event_schedule__event_class', 'event_schedule__notification_class',
+        'event_schedule',
+        'event_schedule__event_class',
+        'event_schedule__notification_class',
         'event_schedule__periodicity',
-        'instrument', 'instrument__instrument_type', 'instrument__instrument_type__instrument_class',
-        'portfolio', 'account',
-        'strategy1', 'strategy1__subgroup', 'strategy1__subgroup__group',
-        'strategy2', 'strategy2__subgroup', 'strategy2__subgroup__group',
-        'strategy3', 'strategy3__subgroup', 'strategy3__subgroup__group',
+        'instrument',
+        'instrument__instrument_type',
+        'instrument__instrument_type__instrument_class',
+        'portfolio',
+        'account',
+        'strategy1',
+        'strategy1__subgroup',
+        'strategy1__subgroup__group',
+        'strategy2',
+        'strategy2__subgroup',
+        'strategy2__subgroup__group',
+        'strategy3',
+        'strategy3__subgroup',
+        'strategy3__subgroup__group',
         'action',
-        'transaction_type', 'transaction_type__group',
+        'transaction_type',
+        'transaction_type__group',
         'member'
     ).prefetch_related(
         *get_permissions_prefetch_lookups(
@@ -468,7 +495,9 @@ class GeneratedEventViewSet(UpdateModelMixinExt, AbstractReadOnlyModelViewSet):
 
 
 class EventScheduleConfigViewSet(AbstractModelViewSet):
-    queryset = EventScheduleConfig.objects.select_related('notification_class')
+    queryset = EventScheduleConfig.objects.select_related(
+        'notification_class'
+    )
     serializer_class = EventScheduleConfigSerializer
     permission_classes = AbstractModelViewSet.permission_classes + [
         SuperUserOrReadOnly,
