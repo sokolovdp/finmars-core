@@ -81,12 +81,11 @@ def get_attr_type_view_perms(model_cls):
     return {perm % kwargs for perm in codename_set}
 
 
-def get_attributes_prefetch():
+def get_attributes_prefetch(path='attributes'):
     return Prefetch(
-        'attributes',
+        path,
         queryset=GenericAttribute.objects.select_related(
             'attribute_type',
-            # 'classifier'
         ).prefetch_related(
             'attribute_type__options',
             'attribute_type__classifiers',

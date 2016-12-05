@@ -25,9 +25,9 @@ def tags_prefetch(queryset):
     )
 
 
-def get_tag_prefetch():
+def get_tag_prefetch(path='tags'):
     return Prefetch(
-        'tags',
+        path,
         queryset=TagLink.objects.select_related(
             'tag'
         ).prefetch_related(
