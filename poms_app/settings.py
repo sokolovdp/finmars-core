@@ -27,8 +27,8 @@ BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 SECRET_KEY = 'jrixf-%65l5&#@hbmq()sa-pzy@e)=zpdr6g0cg8a!i_&w-c!)'
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = str(os.environ.get('DJANGO_DEBUG', 'True')).lower() == 'true'
-DEV = DEBUG or str(os.environ.get('POMS_DEV', 'True')).lower() == 'true'
+DEBUG = False
+DEV = DEBUG or bool(os.environ.get('POMS_DEV', None))
 ADMIN = True
 
 ALLOWED_HOSTS = ['*']
@@ -431,8 +431,8 @@ AUTHENTICATION_BACKENDS = (
 
 DEFAULT_FROM_EMAIL = '"Finmars Notifications" <no-reply@finmars.com>'
 SERVER_EMAIL = '"ADMIN: FinMars" <no-reply@finmars.com>'
-EMAIL_HOST = os.environ.get('EMAIL_HOST', None)
-EMAIL_PORT = int(os.environ.get('EMAIL_HOST', "587"))
+EMAIL_HOST = os.environ.get('EMAIL_HOST', 'email-smtp.eu-west-1.amazonaws.com')
+EMAIL_PORT = int(os.environ.get('EMAIL_PORT', "587"))
 EMAIL_HOST_USER = os.environ.get('EMAIL_HOST_USER', None)
 EMAIL_HOST_PASSWORD = os.environ.get('EMAIL_HOST_PASSWORD', None)
 EMAIL_USE_TLS = True
@@ -455,9 +455,15 @@ GEOIP_PATH = os.path.join(BASE_DIR, 'data')
 GEOIP_COUNTRY = "GeoLite2-Country.mmdb"
 GEOIP_CITY = "GeoLite2-City.mmdb"
 
-MEDIA_URL = '/api/media/'
-MEDIA_ROOT = '/opt/finmars-media'
-MEDIA_SERVE = True
+# MEDIA_URL = '/api/media/'
+# MEDIA_ROOT = '/opt/finmars-media'
+# MEDIA_SERVE = True
+
+DEFAULT_FILE_STORAGE = 'storages.backends.s3boto.S3BotoStorage'
+AWS_ACCESS_KEY_ID = 'AKIAJQRPGTYC5MJN2SGA'
+AWS_SECRET_ACCESS_KEY = os.environ.get('S3_AWS_SECRET_ACCESS_KEY', None)
+AWS_STORAGE_BUCKET_NAME = os.environ.get('S3_DEFAULT_BUCKET_NAME', None)
+
 
 # CELERY ------------------------------------------------
 
@@ -505,22 +511,41 @@ CELERYBEAT_SCHEDULE = {
 
 
 IMPORT_CONFIG_STORAGE = {
-    'BACKEND': 'django.core.files.storage.FileSystemStorage',
+    'BACKEND': 'storages.backends.s3boto.S3BotoStorage',
     'KWARGS': {
-        'location': '/opt/finmars-import/config',
-        'base_url': '/api/hidden/'
+        'acl': 'private',
+        'bucket': os.environ.get('S3_CONFIG_BUCKET_NAME', None),
+        'querystring_expire': 10,
+        'custom_domain': None
     }
 }
+# IMPORT_CONFIG_STORAGE = {
+#     'BACKEND': 'django.core.files.storage.FileSystemStorage',
+#     'KWARGS': {
+#         'location': '/opt/finmars-import/config',
+#         'base_url': '/api/hidden/'
+#     }
+# }
+
 
 IMPORT_FILE_STORAGE = {
-    'BACKEND': 'django.core.files.storage.FileSystemStorage',
+    'BACKEND': 'storages.backends.s3boto.S3BotoStorage',
     'KWARGS': {
-        'location': '/opt/finmars-import/files',
-        'base_url': '/api/import/'
+        'acl': 'private',
+        'bucket': os.environ.get('S3_IMPORT_FILE_BUCKET_NAME', None),
+        'querystring_expire': 10,
+        'custom_domain': None
     }
 }
+# IMPORT_FILE_STORAGE = {
+#     'BACKEND': 'django.core.files.storage.FileSystemStorage',
+#     'KWARGS': {
+#         'location': '/opt/finmars-import/files',
+#         'base_url': '/api/import/'
+#     }
+# }
 
-PRICING_AUTO_DOWNLOAD_ENABLED = False
+PRICING_AUTO_DOWNLOAD_DISABLED = bool(os.environ.get('POMS_PRICING_AUTO_DOWNLOAD_DISABLED', 'True'))
 PRICING_AUTO_DOWNLOAD_MIN_TIMEDELTA = 6 * 60  # min delta is 12 hour
 
 BLOOMBERG_WSDL = 'https://service.bloomberg.com/assets/dl/dlws.wsdl'
@@ -529,7 +554,7 @@ BLOOMBERG_MAX_RETRIES = 60
 BLOOMBERG_DATE_INPUT_FORMAT = '%m/%d/%Y'
 BLOOMBERG_EMPTY_VALUE = [None, '', 'N.S.']
 
-BLOOMBERG_SANDBOX = True
+BLOOMBERG_SANDBOX = bool(os.environ.get('POMS_BLOOMBERG_SANDBOX', 'True'))
 if BLOOMBERG_SANDBOX:
     BLOOMBERG_RETRY_DELAY = 0.1
 BLOOMBERG_SANDBOX_SEND_EMPTY = False

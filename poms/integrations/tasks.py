@@ -844,7 +844,9 @@ def download_pricing_auto(self, master_user_id):
         return
 
     with timezone.override(master_user.timezone or settings.TIME_ZONE):
-        if getattr(settings, 'PRICING_AUTO_DOWNLOAD_ENABLED', True):
+        if settings.PRICING_AUTO_DOWNLOAD_DISABLED:
+            task = None
+        else:
             now = date_now() - timedelta(days=1)
             date_from = now - timedelta(days=(sched.load_days if sched.load_days > 1 else 0))
             date_to = now
@@ -858,8 +860,6 @@ def download_pricing_auto(self, master_user_id):
                 fill_days=sched.fill_days,
                 override_existed=sched.override_existed
             )
-        else:
-            task = None
 
         sched.last_run_at = timezone.now()
         sched.last_run_task = task

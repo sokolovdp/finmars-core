@@ -7,6 +7,8 @@ import os
 # noinspection PyUnresolvedReferences
 from .settings import *
 
+DEBUG = True
+
 # DATABASES['default']['NAME'] = 'test_poms_dev2'
 
 if 'crispy_forms' not in INSTALLED_APPS:
