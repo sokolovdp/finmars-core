@@ -220,3 +220,19 @@ class ObjectHistory4Entry(models.Model):
                 return ugettext_lazy(
                     '"Deleted %(value_object_name)s" "%(value)s" from "%(field_name)s" in "%(object_name)s" "%(object_repr)s" inside "%(actor_object_name)s" "%(actor_object_repr)s".') % data
         return None
+
+
+class InstrumentAudit(models.Model):
+    master_user = models.ForeignKey('users.MasterUser', related_name='+')
+
+    class Meta:
+        verbose_name = ugettext_lazy('instrument audit')
+        verbose_name_plural = ugettext_lazy('instrument audit')
+
+
+class TransactionAudit(models.Model):
+    master_user = models.ForeignKey('users.MasterUser', related_name='+')
+
+    class Meta:
+        verbose_name = ugettext_lazy('transaction audit')
+        verbose_name_plural = ugettext_lazy('transaction audit')
