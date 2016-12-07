@@ -459,7 +459,7 @@ GEOIP_CITY = "GeoLite2-City.mmdb"
 # MEDIA_ROOT = '/opt/finmars-media'
 # MEDIA_SERVE = True
 
-DEFAULT_FILE_STORAGE = 'storages.backends.s3boto.S3BotoStorage'
+DEFAULT_FILE_STORAGE = 'storages.backends.s3boto3.S3Boto3Storage'
 AWS_S3_ACCESS_KEY_ID = 'AKIAJPY5UUTLP7TT7JQA'
 AWS_S3_SECRET_ACCESS_KEY = os.environ.get('AWS_S3_SECRET_ACCESS_KEY', None)
 AWS_S3_REGION_NAME = 'eu-central-1'
@@ -513,7 +513,7 @@ CELERYBEAT_SCHEDULE = {
 
 
 IMPORT_CONFIG_STORAGE = {
-    'BACKEND': 'storages.backends.s3boto.S3BotoStorage',
+    'BACKEND': 'storages.backends.s3boto3.S3Boto3Storage',
     'KWARGS': {
         'acl': 'private',
         'bucket': os.environ.get('AWS_STORAGE_CONFIG_BUCKET_NAME', None),
@@ -531,7 +531,7 @@ IMPORT_CONFIG_STORAGE = {
 
 
 IMPORT_FILE_STORAGE = {
-    'BACKEND': 'storages.backends.s3boto.S3BotoStorage',
+    'BACKEND': 'storages.backends.s3boto3.S3Boto3Storage',
     'KWARGS': {
         'acl': 'private',
         'bucket': os.environ.get('AWS_STORAGE_IMPORT_FILE_BUCKET_NAME', None),
