@@ -4,11 +4,13 @@ from django.conf import settings
 from django.conf.urls import url, include
 from django.contrib import admin
 from django.views import static
-from django.views.generic import RedirectView
+
+from poms.api.views import index
 
 urlpatterns = []
 
 urlpatterns += [
+    url(r'^$', index, name='index'),
     url(r'^api/', include('poms.api.urls')),
 ]
 
@@ -19,9 +21,9 @@ if 'django.contrib.admin' in settings.INSTALLED_APPS:
     ]
 
 if settings.DEBUG:
-    urlpatterns += [
-        url(r'^$', RedirectView.as_view(url='/api/v1/'), name='dev-only-root-redirect'),
-    ]
+    # urlpatterns += [
+    #     url(r'^$', RedirectView.as_view(url='/api/v1/'), name='dev-only-root-redirect'),
+    # ]
 
     if 'debug_toolbar' in settings.INSTALLED_APPS:
         import debug_toolbar

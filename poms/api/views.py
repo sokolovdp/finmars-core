@@ -6,6 +6,7 @@ import pytz
 from babel import Locale
 from babel.dates import get_timezone, get_timezone_gmt, get_timezone_name
 from django.conf import settings
+from django.http import HttpResponse
 from django.utils import translation, timezone
 from rest_framework import response, schemas
 from rest_framework import status
@@ -15,6 +16,10 @@ from poms.api.serializers import LanguageSerializer, Language, TimezoneSerialize
 from poms.common.views import AbstractViewSet, AbstractApiView
 
 _languages = [Language(code, name) for code, name in settings.LANGUAGES]
+
+
+def index(request):
+    return HttpResponse('ok', content_type='text/plain; charset=utf-8')
 
 
 @lru_cache()
