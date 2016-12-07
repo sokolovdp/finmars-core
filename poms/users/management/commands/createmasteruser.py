@@ -1,5 +1,6 @@
+import uuid
+
 from django.core.management import BaseCommand
-from django.utils import timezone
 
 __author__ = 'ailyukhin'
 
@@ -9,6 +10,6 @@ class Command(BaseCommand):
 
     def handle(self, *args, **options):
         from poms.users.models import MasterUser
-        MasterUser.objects.create_master_user(
-            name='%s' % timezone.now()
-        )
+        name = str(uuid.uuid4())
+        MasterUser.objects.create_master_user(name=name)
+        self.stdout.write("Master user '%s' created." % name)
