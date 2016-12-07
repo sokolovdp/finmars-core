@@ -1,0 +1,16 @@
+from django.utils import timezone, translation
+
+
+def is_api_request(request):
+    if request.path.startswith('/api/v1/'):
+        if request.path.startswith('/api/v1/users/logout/'):
+            return False
+        if request.path.startswith('/api/v1/users/login/'):
+            return False
+        if request.path.startswith('/api/v1/users/ping/'):
+            return False
+        if request.path.startswith('/api/v1/users/user-register/'):
+            return False
+        return True
+    return False
+

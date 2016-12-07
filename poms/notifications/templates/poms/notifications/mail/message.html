@@ -1,0 +1,44 @@
+{% load l10n %}
+{% load i18n %}
+<html>
+<head>
+    <title>
+        Finmars notification: {{ notification }}
+    </title>
+</head>
+<body>
+<h1>Finmars notification: {{ notification }}</h1>
+<table>
+    <tr>
+        <td>Date:</td>
+        <td>{{ notification.create_date|date:"DATETIME_FORMAT" }}</td>
+    </tr>
+    <tr>
+        <td>Level:</td>
+        <td>{{ notification.get_level_display }}</td>
+    </tr>
+    <tr>
+        <td>Actor:</td>
+        <td>{{ notification.actor }}</td>
+    </tr>
+    <tr>
+        <td>Verb:</td>
+        <td>{{ notification.verb }}</td>
+    </tr>
+    <tr>
+        <td>Target:</td>
+        <td>{{ notification.target }}</td>
+    </tr>
+    <tr>
+        <td>Action object:</td>
+        <td>{{ notification.action_object }}</td>
+    </tr>
+</table>
+<div>
+    If you want to unsubscribe from FinMars notifications, click on
+    <a href="https://dev.finmars.com/portal/unsubscribe/?email={{ notification.recipient.email }}">
+        this link
+    </a>
+</div>
+</body>
+</html>

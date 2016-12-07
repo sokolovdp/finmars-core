@@ -1,0 +1,148 @@
+from functools import partial
+
+import django_filters
+from django.db.models import F
+from rest_framework.filters import BaseFilterBackend, FilterSet
+
+from poms.common.middleware import get_request
+from poms.obj_perms.utils import obj_perms_filter_objects_for_view
+
+
+# class ClassifierFilter(BaseFilterBackend):
+#     def filter_queryset(self, request, queryset, view):
+#         parent_id = request.query_params.get('parent', None)
+#         if parent_id:
+#             parent = queryset.get(id=parent_id)
+#             return parent.get_family()
+#         else:
+#             return queryset.filter(parent__isnull=True)
+
+
+def _model_choices(model, field_name, master_user_path):
+    master_user = get_request().user.master_user
+    qs = model.objects.filter(**{master_user_path: master_user}).order_by(field_name)
+    for t in qs:
+        yield t.id, getattr(t, field_name)
+
+
+def _model_with_perms_choices(model, field_name, master_user_path):
+    master_user = get_request().user.master_user
+    member = get_request().user.member
+    qs = model.objects.filter(**{master_user_path: master_user}).order_by(field_name)
+    for t in obj_perms_filter_objects_for_view(member, qs, prefetch=False):
+        yield t.id, getattr(t, field_name)
+
+
+class ModelExtMultipleChoiceFilter(django_filters.MultipleChoiceFilter):
+    model = None
+    field_name = 'name'
+    master_user_path = 'master_user'
+
+    def __init__(self, *args, **kwargs):
+        self.model = kwargs.pop('model', self.model)
+        self.field_name = kwargs.pop('field_name', self.field_name)
+        self.master_user_path = kwargs.pop('master_user_path', self.master_user_path)
+        kwargs['choices'] = partial(_model_choices, model=self.model, field_name=self.field_name,
+                                    master_user_path=self.master_user_path)
+        super(ModelExtMultipleChoiceFilter, self).__init__(*args, **kwargs)
+
+
+class ModelExtWithPermissionMultipleChoiceFilter(django_filters.MultipleChoiceFilter):
+    model = None
+    field_name = 'name'
+    master_user_path = 'master_user'
+
+    def __init__(self, *args, **kwargs):
+        self.model = kwargs.pop('model', self.model)
+        self.field_name = kwargs.pop('field_name', self.field_name)
+        self.master_user_path = kwargs.pop('master_user_path', self.master_user_path)
+        kwargs['choices'] = partial(_model_with_perms_choices, model=self.model, field_name=self.field_name,
+                                    master_user_path=self.master_user_path)
+        super(ModelExtWithPermissionMultipleChoiceFilter, self).__init__(*args, **kwargs)
+
+
+class AbstractRelatedFilterBackend(BaseFilterBackend):
+    source = None
+    query_key = None
+
+    def filter_queryset(self, request, queryset, view):
+        pk_set = [int(pk) for pk in request.query_params.getlist(self.query_key) if pk]
+        if pk_set:
+            return queryset.filter(**{'%s__in' % self.query_key: pk_set})
+        return queryset
+
+
+class ByIdFilterBackend(AbstractRelatedFilterBackend):
+    source = 'pk'
+    query_key = 'id'
+
+
+class ByIsDeletedFilterBackend(BaseFilterBackend):
+    def filter_queryset(self, request, queryset, view):
+        if getattr(view, 'has_feature_is_deleted', False):
+            if getattr(view, 'action', '') == 'list':
+                value = request.query_params.get('is_deleted', None)
+                if value is None:
+                    is_deleted = value in (True, 'True', 'true', '1')
+                    queryset = queryset.filter(is_deleted=is_deleted)
+        return queryset
+
+
+class NoOpFilter(django_filters.MethodFilter):
+    # For UI only, real filtering in some AbstractRelatedFilterBackend
+    def filter(self, qs, value):
+        return qs
+
+
+class CharFilter(django_filters.CharFilter):
+    def __init__(self, *args, **kwargs):
+        kwargs['lookup_expr'] = 'icontains'
+        super(CharFilter, self).__init__(*args, **kwargs)
+
+
+class ClassifierFilter(BaseFilterBackend):
+    def filter_queryset(self, request, queryset, view):
+        # queryset = queryset.prefetch_related('parent', 'children')
+        if view and view.action == 'list':
+            return queryset.filter(parent__isnull=True)
+        return queryset.prefetch_related('parent', 'children')
+
+
+class ClassifierRootFilter(BaseFilterBackend):
+    def filter_queryset(self, request, queryset, view):
+        return queryset.filter(parent__isnull=True)
+
+
+class ClassifierPrefetchFilter(BaseFilterBackend):
+    def filter_queryset(self, request, queryset, view):
+        return queryset.prefetch_related('parent', 'children')
+
+
+class AbstractClassifierFilterSet(FilterSet):
+    user_code = CharFilter()
+    name = CharFilter()
+    short_name = CharFilter()
+
+    class Meta:
+        fields = ['user_code', 'name', 'short_name']
+
+    def parent_filter(self, qs, value):
+        return qs
+
+
+class IsDefaultFilter(django_filters.BooleanFilter):
+    def __init__(self, *args, **kwargs):
+        self.source = kwargs.pop('source')
+        super(IsDefaultFilter, self).__init__(*args, **kwargs)
+
+    def filter(self, qs, value):
+        if value in ([], (), {}, None, ''):
+            return qs
+        if self.distinct:
+            qs = qs.distinct()
+        if value is None:
+            return qs
+        elif value:
+            return qs.filter(**{'pk': F('master_user__%s__id' % self.source)})
+        else:
+            return qs.exclude(**{'pk': F('master_user__%s__id' % self.source)})
