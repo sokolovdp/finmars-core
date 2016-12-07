@@ -22,7 +22,6 @@ if 'django.contrib.admin' in settings.INSTALLED_APPS:
         ]
     else:
         urlpatterns += [
-            url(r'^/411C74D6C4E24D2B98D6B085A580FF61/admin/doc/', include('django.contrib.admindocs.urls')),
             url(r'^/411C74D6C4E24D2B98D6B085A580FF61/admin/', admin.site.urls),
         ]
 
