@@ -43,6 +43,9 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'django.contrib.humanize',
+    'django.contrib.admin',
+    'django.contrib.admindocs',
+
     'mptt',
 
     'poms.http_sessions',
@@ -75,17 +78,15 @@ INSTALLED_APPS = [
     'crispy_forms',
     'rest_framework',
 
-    'django.contrib.admin',
-    'django.contrib.admindocs',
-
-    'redisboard',
+    'corsheaders',
 ]
 
 MIDDLEWARE_CLASSES = [
     'poms.common.middleware.CommonMiddleware',
     # 'django.middleware.cache.UpdateCacheMiddleware',
-    'django.middleware.security.SecurityMiddleware',
+    'corsheaders.middleware.CorsMiddleware',
     'django.middleware.http.ConditionalGetMiddleware',
+    'django.middleware.security.SecurityMiddleware',
     # 'poms.common.middleware.NoCacheMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'poms.http_sessions.middleware.SessionMiddleware',
@@ -186,9 +187,6 @@ AUTH_PASSWORD_VALIDATORS = [
     },
 ]
 
-if DEBUG:
-    AUTH_PASSWORD_VALIDATORS = []
-
 # Internationalization
 # https://docs.djangoproject.com/en/1.9/topics/i18n/
 
@@ -208,9 +206,17 @@ USE_TZ = True
 USE_ETAGS = True
 
 SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
-SECURE_SSL_REDIRECT = not DEBUG
-SESSION_COOKIE_SECURE = not DEBUG
-CSRF_COOKIE_SECURE = not DEBUG
+SECURE_SSL_REDIRECT = True
+SESSION_COOKIE_SECURE = True
+CSRF_COOKIE_SECURE = True
+
+CORS_ORIGIN_WHITELIST = (
+    'dev.finmars.com',
+    'finmars.com',
+    'localhost:8000',
+    '127.0.0.1:8000'
+)
+CORS_URLS_REGEX = r'^/api/.*$'
 
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/1.9/howto/static-files/
