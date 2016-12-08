@@ -32,6 +32,8 @@ SECURE_SSL_REDIRECT = False
 SESSION_COOKIE_SECURE = False
 CSRF_COOKIE_SECURE = False
 
+CORS_ORIGIN_WHITELIST += ('localhost:8000', '127.0.0.1:8000', )
+
 DEFAULT_FROM_EMAIL = '"AI: Finmars Notifications" <no-reply@finmars.com>'
 SERVER_EMAIL = '"AI-ADMIN: FinMars" <no-reply@finmars.com>'
 ADMINS = MANAGERS = [
