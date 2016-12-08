@@ -219,6 +219,7 @@ CORS_ORIGIN_WHITELIST = (
 )
 CORS_URLS_REGEX = r'^/api/.*$'
 CORS_REPLACE_HTTPS_REFERER = True
+CORS_ALLOW_CREDENTIALS = True
 
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/1.9/howto/static-files/
