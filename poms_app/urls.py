@@ -15,21 +15,21 @@ urlpatterns += [
 ]
 
 if 'django.contrib.admin' in settings.INSTALLED_APPS:
-    if settings.DEV or settings.DEBUG:
+    if settings.DEBUG:
         urlpatterns += [
             url(r'^admin/doc/', include('django.contrib.admindocs.urls')),
             url(r'^admin/', admin.site.urls),
         ]
     else:
+        if settings.DEV:
+            urlpatterns += [
+                url(r'^411C74D6C4E24D2B98D6B085A580FF61/admin/doc/', include('django.contrib.admindocs.urls')),
+            ]
         urlpatterns += [
             url(r'^411C74D6C4E24D2B98D6B085A580FF61/admin/', admin.site.urls),
         ]
 
 if settings.DEBUG:
-    # urlpatterns += [
-    #     url(r'^$', RedirectView.as_view(url='/api/v1/'), name='dev-only-root-redirect'),
-    # ]
-
     if 'debug_toolbar' in settings.INSTALLED_APPS:
         import debug_toolbar
 
