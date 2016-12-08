@@ -16,7 +16,7 @@ from poms.strategies.models import Strategy3, Strategy2, Strategy1
 from poms.transactions.models import TransactionClass, Transaction, TransactionType, TransactionTypeInput, \
     ActionClass, EventToHandle, ExternalCashFlow, ExternalCashFlowStrategy, NotificationClass, \
     EventClass, PeriodicityGroup, TransactionTypeActionInstrument, TransactionTypeActionTransaction, ComplexTransaction, \
-    TransactionTypeGroup
+    TransactionTypeGroup, ComplexTransactionInput
 
 admin.site.register(TransactionClass, ClassModelAdmin)
 admin.site.register(ActionClass, ClassModelAdmin)
@@ -289,6 +289,14 @@ class TransactionTypeAdmin(admin.ModelAdmin):
 admin.site.register(TransactionType, TransactionTypeAdmin)
 
 
+class ComplexTransactionInputInline(admin.TabularInline):
+    model = ComplexTransactionInput
+    extra = 0
+    raw_id_fields = ('transaction_type_input','account', 'instrument_type', 'instrument', 'currency', 'counterparty',
+                     'responsible', 'portfolio', 'strategy1', 'strategy2', 'strategy3', 'price_download_scheme')
+    readonly_fields = ('id',)
+
+
 class ComplexTransactionAdmin(admin.ModelAdmin):
     model = ComplexTransaction
     list_display = ['id', 'master_user', 'transaction_type', 'code', 'status']
@@ -296,6 +304,7 @@ class ComplexTransactionAdmin(admin.ModelAdmin):
     ordering = ['transaction_type', 'code']
     search_fields = ['id']
     raw_id_fields = ['transaction_type']
+    inlines = [ComplexTransactionInputInline]
 
     def master_user(self, obj):
         return obj.transaction_type.master_user
