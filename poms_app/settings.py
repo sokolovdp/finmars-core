@@ -210,6 +210,8 @@ SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
 SECURE_SSL_REDIRECT = True
 SESSION_COOKIE_SECURE = True
 CSRF_COOKIE_SECURE = True
+CSRF_COOKIE_DOMAIN = 'finmars.com'
+CSRF_TRUSTED_ORIGINS = ['finmars.com', 'dev.finmars.com']
 
 CORS_ORIGIN_WHITELIST = ('dev.finmars.com', 'finmars.com', )
 CORS_URLS_REGEX = r'^/api/.*$'
