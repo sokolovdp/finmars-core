@@ -17,6 +17,8 @@ if 'redisboard' not in INSTALLED_APPS:
     INSTALLED_APPS += ['redisboard', ]
 if 'debug_toolbar' not in INSTALLED_APPS:
     INSTALLED_APPS += ['debug_toolbar', ]
+    MIDDLEWARE_CLASSES = MIDDLEWARE_CLASSES + ['debug_toolbar.middleware.DebugToolbarMiddleware', ]
+    INTERNAL_IPS = ['127.0.0.1']
 
 LOGGING['formatters']['verbose']['format'] = '[%(levelname)1.1s %(asctime)s %(name)s %(module)s:%(lineno)d] %(message)s'
 # LOGGING['loggers']['django.db'] = {'level': 'DEBUG'}
@@ -25,6 +27,10 @@ LOGGING['loggers']['poms']['level'] = 'DEBUG'
 SECRET_KEY = 's#)m^ug%_jr0dtko#83_55rd_we&xu#f9p#!1gh@k&$=5&3e67'
 
 AUTH_PASSWORD_VALIDATORS = []
+# SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+SECURE_SSL_REDIRECT = False
+SESSION_COOKIE_SECURE = False
+CSRF_COOKIE_SECURE = False
 
 DEFAULT_FROM_EMAIL = '"AI: Finmars Notifications" <no-reply@finmars.com>'
 SERVER_EMAIL = '"AI-ADMIN: FinMars" <no-reply@finmars.com>'
@@ -36,15 +42,6 @@ EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
 MEDIA_URL = '/api/media/'
 MEDIA_ROOT = os.path.join(BASE_DIR, 'tmp', 'media')
 MEDIA_SERVE = True
-
-# SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
-SECURE_SSL_REDIRECT = False
-SESSION_COOKIE_SECURE = False
-CSRF_COOKIE_SECURE = False
-
-if 'debug_toolbar' in INSTALLED_APPS:
-    MIDDLEWARE_CLASSES = MIDDLEWARE_CLASSES + ['debug_toolbar.middleware.DebugToolbarMiddleware', ]
-    INTERNAL_IPS = ['127.0.0.1']
 
 # CELERY ------------------------------------------------
 
