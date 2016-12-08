@@ -93,6 +93,7 @@ MIDDLEWARE_CLASSES = [
     'django.middleware.locale.LocaleMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
+    'corsheaders.middleware.CorsPostCsrfMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.auth.middleware.SessionAuthenticationMiddleware',
     # 'django_otp.middleware.OTPMiddleware',
@@ -217,6 +218,8 @@ CORS_ORIGIN_WHITELIST = (
     '127.0.0.1:8000'
 )
 CORS_URLS_REGEX = r'^/api/.*$'
+CORS_REPLACE_HTTPS_REFERER = True
+CORS_ALLOW_CREDENTIALS = True
 
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/1.9/howto/static-files/
