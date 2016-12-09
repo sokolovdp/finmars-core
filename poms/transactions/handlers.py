@@ -99,7 +99,8 @@ class TransactionTypeProcess(object):
                     value = ci.value_date
                 elif i.value_type == TransactionTypeInput.RELATION:
                     value = _get_val_by_model_cls(ci, i.content_type.model_class())
-                self.values[i.name] = value
+                if value is not None:
+                    self.values[i.name] = value
 
         for i in self.inputs:
             if i.name in self.values:
