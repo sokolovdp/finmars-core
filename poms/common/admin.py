@@ -8,17 +8,17 @@ class TreeModelAdmin(MPTTModelAdmin):
     mptt_indent_field = 'name'
 
 
-class ClassifierAdmin(admin.ModelAdmin):
-    list_display = ['id', 'master_user', 'attribute_type', 'tree_id', 'level', 'parent', 'name', ]
-    list_select_related = ['attribute_type', 'attribute_type__master_user', 'parent']
-    ordering = ['attribute_type', 'tree_id', 'level', ]
-    search_fields = ['attribute_type__name', 'parent__name']
-    raw_id_fields = ['attribute_type', 'parent']
-
-    def master_user(self, obj):
-        return obj.attribute_type.master_user
-
-    master_user.admin_order_field = 'attribute_type__master_user'
+# class ClassifierAdmin(admin.ModelAdmin):
+#     list_display = ['id', 'master_user', 'attribute_type', 'tree_id', 'level', 'parent', 'name', ]
+#     list_select_related = ['attribute_type', 'attribute_type__master_user', 'parent']
+#     ordering = ['attribute_type', 'tree_id', 'level', ]
+#     search_fields = ['attribute_type__name', 'parent__name']
+#     raw_id_fields = ['attribute_type', 'parent']
+#
+#     def master_user(self, obj):
+#         return obj.attribute_type.master_user
+#
+#     master_user.admin_order_field = 'attribute_type__master_user'
 
 
 class ClassModelAdmin(TranslationAdmin):

@@ -2,7 +2,6 @@ from __future__ import unicode_literals
 
 from django.contrib import admin
 
-from poms.common.admin import ClassifierAdmin
 from poms.counterparties.models import Counterparty, Responsible,  CounterpartyGroup, ResponsibleGroup
 from poms.obj_attrs.admin import GenericAttributeInline
 from poms.obj_perms.admin import GenericObjectPermissionInline
