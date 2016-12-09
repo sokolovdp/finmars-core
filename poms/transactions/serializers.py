@@ -595,16 +595,16 @@ class TransactionTypeSerializer(ModelWithObjectPermissionSerializer, ModelWithUs
     def save_inputs(self, instance, inputs_data):
         cur_inputs = {i.name: i for i in instance.inputs.all()}
         new_inputs = {}
-        for order, input_data in enumerate(inputs_data):
-            name = input_data['name']
-            input = cur_inputs.pop(name, None)
-            if input is None:
-                input = TransactionTypeInput(transaction_type=instance)
-            input.order = order
-            for attr, value in input_data.items():
-                setattr(input, attr, value)
-            input.save()
-            new_inputs[input.name] = input
+        for order, inp_data in enumerate(inputs_data):
+            name = inp_data['name']
+            inp = cur_inputs.pop(name, None)
+            if inp is None:
+                inp = TransactionTypeInput(transaction_type=instance)
+            inp.order = order
+            for attr, value in inp_data.items():
+                setattr(inp, attr, value)
+            inp.save()
+            new_inputs[inp.name] = inp
         return new_inputs
 
     def save_actions(self, instance, actions_data, inputs):
