@@ -30,9 +30,8 @@ from poms.transactions.fields import TransactionTypeInputContentTypeField, \
     TransactionTypeGroupField
 from poms.transactions.models import TransactionClass, Transaction, TransactionType, TransactionTypeAction, \
     TransactionTypeActionTransaction, TransactionTypeActionInstrument, TransactionTypeInput, TransactionTypeGroup, \
-    ComplexTransaction, EventClass, NotificationClass
+    ComplexTransaction, EventClass, NotificationClass, ComplexTransactionInput
 from poms.users.fields import MasterUserField
-from poms.users.utils import get_member_from_context
 
 
 class EventClassSerializer(PomsClassSerializer):
@@ -596,16 +595,16 @@ class TransactionTypeSerializer(ModelWithObjectPermissionSerializer, ModelWithUs
     def save_inputs(self, instance, inputs_data):
         cur_inputs = {i.name: i for i in instance.inputs.all()}
         new_inputs = {}
-        for order, input_data in enumerate(inputs_data):
-            name = input_data['name']
-            input = cur_inputs.pop(name, None)
-            if input is None:
-                input = TransactionTypeInput(transaction_type=instance)
-            input.order = order
-            for attr, value in input_data.items():
-                setattr(input, attr, value)
-            input.save()
-            new_inputs[input.name] = input
+        for order, inp_data in enumerate(inputs_data):
+            name = inp_data['name']
+            inp = cur_inputs.pop(name, None)
+            if inp is None:
+                inp = TransactionTypeInput(transaction_type=instance)
+            inp.order = order
+            for attr, value in inp_data.items():
+                setattr(inp, attr, value)
+            inp.save()
+            new_inputs[inp.name] = inp
         return new_inputs
 
     def save_actions(self, instance, actions_data, inputs):
@@ -911,7 +910,8 @@ class ComplexTransactionSerializer(serializers.ModelSerializer):
             transactions = obj.transactions.all()
         names = {
             'code': obj.code,
-            'transactions': formula.get_model_data(transactions, TransactionSerializer, many=True, context=self.context),
+            'transactions': formula.get_model_data(transactions, TransactionSerializer, many=True,
+                                                   context=self.context),
         }
         # member = get_member_from_context(self.context)
         # meval = ModelSimpleEval(names={
@@ -944,7 +944,8 @@ class ComplexTransactionViewSerializer(serializers.ModelSerializer):
             transactions = obj.transactions.all()
         names = {
             'code': obj.code,
-            'transactions': formula.get_model_data(transactions, TransactionSerializer, many=True, context=self.context),
+            'transactions': formula.get_model_data(transactions, TransactionSerializer, many=True,
+                                                   context=self.context),
         }
         # member = get_member_from_context(self.context)
         # meval = ModelSimpleEval(names={
@@ -1083,7 +1084,7 @@ class TransactionTypeComplexTransactionSerializer(serializers.ModelSerializer):
     class Meta:
         model = ComplexTransaction
         fields = [
-            'status', 'code',
+            'id', 'status', 'code',
         ]
 
 
@@ -1120,7 +1121,10 @@ class TransactionTypeProcessSerializer(serializers.Serializer):
     def update(self, instance, validated_data):
         for key, value in validated_data.items():
             if key == 'complex_transaction':
-                ctrn = ComplexTransaction(transaction_type=instance.transaction_type)
+                if self.instance.complex_transaction:
+                    ctrn = self.instance.complex_transaction
+                else:
+                    ctrn = ComplexTransaction(transaction_type=instance.transaction_type)
                 ctrn.code = value.get('code', None)
                 if ctrn.code is None:
                     ctrn.code = 0
@@ -1147,6 +1151,7 @@ class TransactionTypeProcessSerializer(serializers.Serializer):
                         instruments_map[fake_id] = instrument
                 if instance.transactions:
                     self._save_if_need(instance.complex_transaction)
+                    self._save_inputs(instance)
                     for transaction in instance.transactions:
                         if transaction.instrument_id in instruments_map:
                             transaction.instrument = instruments_map[transaction.instrument_id]
@@ -1169,6 +1174,7 @@ class TransactionTypeProcessSerializer(serializers.Serializer):
                 transactions_data = validated_data.get('transactions', None)
                 if transactions_data:
                     self._save_if_need(instance.complex_transaction)
+                    self._save_inputs(instance)
                     for transaction_data in transactions_data:
                         transaction = Transaction(master_user=instance.transaction_type.master_user)
                         transaction_data.pop('id', None)
@@ -1192,3 +1198,51 @@ class TransactionTypeProcessSerializer(serializers.Serializer):
         if obj.id is None or obj.id < 0:
             obj.id = None
             obj.save()
+
+    def _save_inputs(self, instance):
+        instance.complex_transaction.inputs.all().delete()
+
+        for ti in instance.transaction_type.inputs.all():
+            val = instance.values[ti.name]
+
+            ci = ComplexTransactionInput()
+            ci.complex_transaction = instance.complex_transaction
+            ci.transaction_type_input = ti
+
+            if ti.value_type == TransactionTypeInput.STRING:
+                ci.value_string = val
+            elif ti.value_type == TransactionTypeInput.NUMBER:
+                ci.value_float = val
+            elif ti.value_type == TransactionTypeInput.DATE:
+                ci.value_date = val
+            elif ti.value_type == TransactionTypeInput.RELATION:
+                model_class = ti.content_type.model_class()
+
+                if issubclass(model_class, Account):
+                    ci.account = val
+                elif issubclass(model_class, Currency):
+                    ci.currency = val
+                elif issubclass(model_class, Instrument):
+                    ci.instrument = val
+                elif issubclass(model_class, InstrumentType):
+                    ci.instrument_type = val
+                elif issubclass(model_class, Counterparty):
+                    ci.counterparty = val
+                elif issubclass(model_class, Responsible):
+                    ci.responsible = val
+                elif issubclass(model_class, Strategy1):
+                    ci.strategy1 = val
+                elif issubclass(model_class, Strategy2):
+                    ci.strategy2 = val
+                elif issubclass(model_class, Strategy3):
+                    ci.strategy3 = val
+                elif issubclass(model_class, DailyPricingModel):
+                    ci.daily_pricing_model = val
+                elif issubclass(model_class, PaymentSizeDetail):
+                    ci.payment_size_detail = val
+                elif issubclass(model_class, Portfolio):
+                    ci.portfolio = val
+                elif issubclass(model_class, PriceDownloadScheme):
+                    ci.price_download_scheme = val
+
+            ci.save()

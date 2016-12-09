@@ -819,15 +819,14 @@ class ComplexTransaction(models.Model):
 
 
 class ComplexTransactionInput(models.Model):
-    complex_transaction = models.ForeignKey(ComplexTransaction)
-    transaction_type_input = models.ForeignKey(TransactionTypeInput)
+    complex_transaction = models.ForeignKey(ComplexTransaction, on_delete=models.CASCADE, related_name='inputs')
+    transaction_type_input = models.ForeignKey(TransactionTypeInput, on_delete=models.CASCADE, related_name='+')
 
-    value_string = models.CharField(max_length=255, default='', blank=True,
-                                    verbose_name=ugettext_lazy('value (String)'))
-    value_float = models.FloatField(default=0.0, verbose_name=ugettext_lazy('value (Float)'))
-    value_date = models.DateField(default=date.min, verbose_name=ugettext_lazy('value (Date)'))
+    value_string = models.CharField(max_length=255, default='', blank=True)
+    value_float = models.FloatField(default=0.0)
+    value_date = models.DateField(default=date.min)
 
-    account = models.ForeignKey('accounts.Account', null=True, blank=True, on_delete=models.PROTECT, related_name='+')
+    account = models.ForeignKey('accounts.Account', null=True, blank=True, on_delete=models.SET_NULL, related_name='+')
     instrument_type = models.ForeignKey('instruments.InstrumentType', null=True, blank=True, on_delete=models.SET_NULL,
                                         related_name='+')
     instrument = models.ForeignKey('instruments.Instrument', null=True, blank=True, on_delete=models.SET_NULL,
@@ -854,7 +853,6 @@ class ComplexTransactionInput(models.Model):
                                               on_delete=models.SET_NULL, related_name='+')
 
     class Meta:
-        abstract = True
         verbose_name = ugettext_lazy('complex transaction input')
         verbose_name_plural = ugettext_lazy('complex transaction inputs')
 
