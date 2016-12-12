@@ -3,6 +3,7 @@ from __future__ import unicode_literals
 from django.contrib import admin
 
 from poms.audit.models import AuthLogEntry, ObjectHistory4Entry
+from poms.common.admin import AbstractModelAdmin
 
 
 class AuthLogEntryAdmin(admin.ModelAdmin):
@@ -23,8 +24,9 @@ class AuthLogEntryAdmin(admin.ModelAdmin):
 admin.site.register(AuthLogEntry, AuthLogEntryAdmin)
 
 
-class ObjectHistory4EntryAdmin(admin.ModelAdmin):
+class ObjectHistory4EntryAdmin(AbstractModelAdmin):
     model = ObjectHistory4Entry
+    master_user_path = 'master_user'
     list_display = ['id', 'master_user', 'member', 'created', 'group_id',
                     'actor_content_type', 'actor_object_repr',
                     'action_flag',

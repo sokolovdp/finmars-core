@@ -4,6 +4,7 @@ import django_filters
 from django.db import transaction
 from django.db.models import Prefetch
 from rest_framework.decorators import detail_route
+from rest_framework.exceptions import PermissionDenied
 from rest_framework.filters import FilterSet
 from rest_framework.mixins import DestroyModelMixin
 from rest_framework.response import Response
@@ -325,7 +326,7 @@ class TransactionTypeViewSet(AbstractWithObjectPermissionViewSet):
     ]
 
     @detail_route(methods=['get', 'put'], url_path='book', serializer_class=TransactionTypeProcessSerializer)
-    def process(self, request, pk=None):
+    def book(self, request, pk=None):
         instance = TransactionTypeProcess(transaction_type=self.get_object())
         if request.method == 'GET':
             serializer = self.get_serializer(instance=instance)
@@ -666,3 +667,21 @@ class ComplexTransactionViewSet(DestroyModelMixin, AbstractReadOnlyModelViewSet)
     ]
     filter_class = ComplexTransactionFilterSet
     ordering_fields = ['code', ]
+
+    @detail_route(methods=['get', 'put'], url_path='book', serializer_class=TransactionTypeProcessSerializer)
+    def book(self, request, pk=None):
+        complex_transaction = self.get_object()
+        instance = TransactionTypeProcess(transaction_type=complex_transaction.transaction_type,
+                                          complex_transaction=complex_transaction)
+        if request.method == 'GET':
+            serializer = self.get_serializer(instance=instance)
+            return Response(serializer.data)
+        else:
+            try:
+                serializer = self.get_serializer(instance=instance, data=request.data)
+                serializer.is_valid(raise_exception=True)
+                serializer.save()
+                return Response(serializer.data)
+            finally:
+                if not instance.store:
+                    transaction.set_rollback(True)

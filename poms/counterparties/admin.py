@@ -2,15 +2,16 @@ from __future__ import unicode_literals
 
 from django.contrib import admin
 
-from poms.common.admin import ClassifierAdmin
+from poms.common.admin import AbstractModelAdmin
 from poms.counterparties.models import Counterparty, Responsible,  CounterpartyGroup, ResponsibleGroup
 from poms.obj_attrs.admin import GenericAttributeInline
 from poms.obj_perms.admin import GenericObjectPermissionInline
 from poms.tags.admin import GenericTagLinkInline
 
 
-class CounterpartyGroupAdmin(admin.ModelAdmin):
+class CounterpartyGroupAdmin(AbstractModelAdmin):
     model = CounterpartyGroup
+    master_user_path = 'master_user'
     list_display = ['id', 'master_user', 'user_code', 'name', 'is_deleted', ]
     list_select_related = ['master_user']
     search_fields = ['id', 'user_code', 'name']
@@ -27,8 +28,9 @@ class CounterpartyGroupAdmin(admin.ModelAdmin):
 admin.site.register(CounterpartyGroup, CounterpartyGroupAdmin)
 
 
-class CounterpartyAdmin(admin.ModelAdmin):
+class CounterpartyAdmin(AbstractModelAdmin):
     model = Counterparty
+    master_user_path = 'master_user'
     list_display = ['id', 'master_user', 'group', 'user_code', 'name', 'is_deleted', ]
     ordering = ['master_user', 'group', 'user_code']
     search_fields = ['id', 'user_code', 'name']
@@ -67,8 +69,9 @@ admin.site.register(Counterparty, CounterpartyAdmin)
 # ------
 
 
-class ResponsibleGroupAdmin(admin.ModelAdmin):
+class ResponsibleGroupAdmin(AbstractModelAdmin):
     model = ResponsibleGroup
+    master_user_path = 'master_user'
     list_display = ['id', 'master_user', 'user_code', 'name', 'is_deleted', ]
     list_select_related = ['master_user']
     search_fields = ['id', 'user_code', 'name']
@@ -85,8 +88,9 @@ class ResponsibleGroupAdmin(admin.ModelAdmin):
 admin.site.register(ResponsibleGroup, ResponsibleGroupAdmin)
 
 
-class ResponsibleAdmin(admin.ModelAdmin):
+class ResponsibleAdmin(AbstractModelAdmin):
     model = Responsible
+    master_user_path = 'master_user'
     list_display = ['id', 'master_user', 'group', 'user_code', 'name', 'is_deleted', ]
     list_select_related = ['master_user', 'group']
     ordering = ['master_user', 'group', 'user_code']

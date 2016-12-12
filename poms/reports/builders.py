@@ -2294,17 +2294,17 @@ class ReportBuilder(object):
         def _group_key(item):
             return (
                 item.type,
-                getattr(item.prtfl, 'id', None),
-                getattr(item.acc, 'id', None),
-                getattr(item.str1, 'id', None),
-                getattr(item.str2, 'id', None),
-                getattr(item.str3, 'id', None),
-                getattr(item.alloc_bl, 'id', None),
-                getattr(item.alloc_pl, 'id', None),
-                getattr(item.instr, 'id', None),
-                getattr(item.ccy, 'id', None),
-                getattr(item.trn_ccy, 'id', None),
-                getattr(item.detail_trn, 'id', None),
+                getattr(item.prtfl, 'id', -1),
+                getattr(item.acc, 'id', -1),
+                getattr(item.str1, 'id', -1),
+                getattr(item.str2, 'id', -1),
+                getattr(item.str3, 'id', -1),
+                getattr(item.alloc_bl, 'id', -1),
+                getattr(item.alloc_pl, 'id', -1),
+                getattr(item.instr, 'id', -1),
+                getattr(item.ccy, 'id', -1),
+                getattr(item.trn_ccy, 'id', -1),
+                getattr(item.detail_trn, 'id', -1),
             )
 
         _items = sorted(self._items, key=_group_key)
@@ -2362,12 +2362,12 @@ class ReportBuilder(object):
         def _mismatch_group_key(item):
             return (
                 item.type,
-                getattr(item.prtfl, 'id', None),
-                getattr(item.acc, 'id', None),
-                getattr(item.instr, 'id', None),
-                getattr(item.ccy, 'id', None),
-                getattr(item.mismatch_prtfl, 'id', None),
-                getattr(item.mismatch_acc, 'id', None),
+                getattr(item.prtfl, 'id', -1),
+                getattr(item.acc, 'id', -1),
+                getattr(item.instr, 'id', -1),
+                getattr(item.ccy, 'id', -1),
+                getattr(item.mismatch_prtfl, 'id', -1),
+                getattr(item.mismatch_acc, 'id', -1),
             )
 
         mismatch_items0 = sorted(mismatch_items, key=_mismatch_group_key)

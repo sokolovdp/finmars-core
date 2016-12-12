@@ -1,10 +1,11 @@
 from django.contrib import admin
 
+from poms.common.admin import AbstractModelAdmin
 from poms.ui.filters import LayoutContentTypeFilter
 from poms.ui.models import TemplateListLayout, TemplateEditLayout, ListLayout, EditLayout
 
 
-class BaseLayoutAdmin(admin.ModelAdmin):
+class BaseLayoutAdmin(AbstractModelAdmin):
     def formfield_for_foreignkey(self, db_field, request=None, **kwargs):
         if db_field.name == 'content_type':
             qs = kwargs.get('queryset', db_field.remote_field.model.objects)
@@ -14,6 +15,7 @@ class BaseLayoutAdmin(admin.ModelAdmin):
 
 class TemplateListLayoutAdmin(BaseLayoutAdmin):
     model = TemplateListLayout
+    master_user_path = 'master_user'
     list_display = ['id', 'master_user', 'content_type', 'name']
     list_select_related = ['master_user', 'content_type']
     ordering = ['master_user', 'content_type', 'name']
@@ -26,6 +28,7 @@ admin.site.register(TemplateListLayout, TemplateListLayoutAdmin)
 
 class TemplateEditLayoutAdmin(BaseLayoutAdmin):
     model = TemplateEditLayout
+    master_user_path = 'master_user'
     list_display = ['id', 'master_user', 'content_type']
     list_select_related = ['master_user', 'content_type']
     ordering = ['master_user', 'content_type', ]
@@ -38,6 +41,7 @@ admin.site.register(TemplateEditLayout, TemplateEditLayoutAdmin)
 
 class ListLayoutAdmin(BaseLayoutAdmin):
     model = ListLayout
+    master_user_path = 'member__master_user'
     list_display = ['id', 'master_user', 'member', 'content_type', 'name']
     list_select_related = ['member__master_user', 'member', 'content_type']
     ordering = ['member__master_user', 'member', 'content_type', 'name']
@@ -55,6 +59,7 @@ admin.site.register(ListLayout, ListLayoutAdmin)
 
 class EditLayoutAdmin(BaseLayoutAdmin):
     model = EditLayout
+    master_user_path = 'member__master_user'
     list_display = ['id', 'master_user', 'member', 'content_type']
     ordering = ['member__master_user', 'member', 'content_type', ]
     list_select_related = ['member', 'content_type']

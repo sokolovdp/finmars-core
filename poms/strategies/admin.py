@@ -2,14 +2,16 @@ from __future__ import unicode_literals
 
 from django.contrib import admin
 
+from poms.common.admin import AbstractModelAdmin
 from poms.obj_perms.admin import GenericObjectPermissionInline
 from poms.strategies.models import Strategy1Group, Strategy2Subgroup, Strategy3, Strategy1Subgroup, Strategy1, \
     Strategy2Group, Strategy2, Strategy3Group, Strategy3Subgroup
 from poms.tags.admin import GenericTagLinkInline
 
 
-class Strategy1GroupAdmin(admin.ModelAdmin):
+class Strategy1GroupAdmin(AbstractModelAdmin):
     model = Strategy1Group
+    master_user_path = 'master_user'
     list_display = ['id', 'master_user', 'user_code', 'name', 'is_deleted', ]
     list_select_related = ['master_user']
     ordering = ['master_user', 'user_code']
@@ -27,8 +29,9 @@ class Strategy1GroupAdmin(admin.ModelAdmin):
 admin.site.register(Strategy1Group, Strategy1GroupAdmin)
 
 
-class Strategy1SubgroupAdmin(admin.ModelAdmin):
+class Strategy1SubgroupAdmin(AbstractModelAdmin):
     model = Strategy1Subgroup
+    master_user_path = 'master_user'
     list_display = ['id', 'master_user', 'group', 'user_code', 'name', 'is_deleted', ]
     list_select_related = ['group', 'group__master_user']
     ordering = ['master_user', 'group', 'user_code']
@@ -46,8 +49,9 @@ class Strategy1SubgroupAdmin(admin.ModelAdmin):
 admin.site.register(Strategy1Subgroup, Strategy1SubgroupAdmin)
 
 
-class Strategy1Admin(admin.ModelAdmin):
+class Strategy1Admin(AbstractModelAdmin):
     model = Strategy1
+    master_user_path = 'master_user'
     list_display = ['id', 'master_user', 'group', 'subgroup', 'user_code', 'name', 'is_deleted', ]
     list_select_related = ['subgroup', 'subgroup__group', 'subgroup__group__master_user']
     ordering = ['master_user', 'subgroup__group', 'subgroup', 'user_code']

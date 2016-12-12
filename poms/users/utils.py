@@ -1,7 +1,7 @@
 from django.core.exceptions import ObjectDoesNotExist
 from rest_framework.exceptions import NotFound, PermissionDenied
 
-from poms.users.models import Member, MasterUser
+from poms.users.models import Member
 
 
 def set_master_user(request, master_user):
@@ -23,7 +23,8 @@ def get_master_user_and_member(request):
     if master_user_id is None:
         master_user_id = request.session.get('master_user_id', None)
 
-    member_qs = Member.objects.select_related('master_user').prefetch_related('groups').filter(user=user)
+    member_qs = Member.objects.select_related('master_user').prefetch_related('groups').filter(user=user,
+                                                                                               is_deleted=False)
     if master_user_id is not None:
         try:
             member = member_qs.get(master_user=master_user_id)

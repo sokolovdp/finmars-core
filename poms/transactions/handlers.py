@@ -33,18 +33,16 @@ class TransactionTypeProcess(object):
 
         self.inputs = list(self.transaction_type.inputs.all())
 
-        if values is None:
-            self.values = {}
-            self._set_values()
-        else:
-            self.values = values
-
         self.complex_transaction = complex_transaction
         if self.complex_transaction is None:
             self.complex_transaction = ComplexTransaction(transaction_type=self.transaction_type)
         if complex_transaction_status is not None:
             self.complex_transaction.status = complex_transaction_status
 
+        if values is None:
+            self._set_values()
+        else:
+            self.values = values
         self.has_errors = has_errors
         self.transactions = transactions or []
         self.instruments = instruments or []
@@ -55,7 +53,58 @@ class TransactionTypeProcess(object):
         self._transaction_order_seq = 0
 
     def _set_values(self):
+        def _get_val_by_model_cls(obj, model_class):
+            if issubclass(model_class, Account):
+                return obj.account
+            elif issubclass(model_class, Currency):
+                return obj.currency
+            elif issubclass(model_class, Instrument):
+                return obj.instrument
+            elif issubclass(model_class, InstrumentType):
+                return obj.instrument_type
+            elif issubclass(model_class, Counterparty):
+                return obj.counterparty
+            elif issubclass(model_class, Responsible):
+                return obj.responsible
+            elif issubclass(model_class, Strategy1):
+                return obj.strategy1
+            elif issubclass(model_class, Strategy2):
+                return obj.strategy2
+            elif issubclass(model_class, Strategy3):
+                return obj.strategy3
+            elif issubclass(model_class, DailyPricingModel):
+                return obj.daily_pricing_model
+            elif issubclass(model_class, PaymentSizeDetail):
+                return obj.payment_size_detail
+            elif issubclass(model_class, Portfolio):
+                return obj.portfolio
+            elif issubclass(model_class, PriceDownloadScheme):
+                return obj.price_download_scheme
+            return None
+
+        self.values = {}
+
+        if self.complex_transaction and self.complex_transaction.id is not None and self.complex_transaction.id > 0:
+            ci_qs = self.complex_transaction.inputs.all().select_related(
+                'transaction_type_input', 'transaction_type_input__content_type'
+            )
+            for ci in ci_qs:
+                i = ci.transaction_type_input
+                value = None
+                if i.value_type == TransactionTypeInput.STRING:
+                    value = ci.value_string
+                elif i.value_type == TransactionTypeInput.NUMBER:
+                    value = ci.value_float
+                elif i.value_type == TransactionTypeInput.DATE:
+                    value = ci.value_date
+                elif i.value_type == TransactionTypeInput.RELATION:
+                    value = _get_val_by_model_cls(ci, i.content_type.model_class())
+                if value is not None:
+                    self.values[i.name] = value
+
         for i in self.inputs:
+            if i.name in self.values:
+                continue
             value = None
             if i.value_type == TransactionTypeInput.RELATION:
                 model_class = i.content_type.model_class()
@@ -65,32 +114,7 @@ class TransactionTypeProcess(object):
                             value = v
                             break
                 if value is None:
-                    if issubclass(model_class, Account):
-                        value = i.account
-                    elif issubclass(model_class, Currency):
-                        value = i.currency
-                    elif issubclass(model_class, Instrument):
-                        value = i.instrument
-                    elif issubclass(model_class, InstrumentType):
-                        value = i.instrument_type
-                    elif issubclass(model_class, Counterparty):
-                        value = i.counterparty
-                    elif issubclass(model_class, Responsible):
-                        value = i.responsible
-                    elif issubclass(model_class, Strategy1):
-                        value = i.strategy1
-                    elif issubclass(model_class, Strategy2):
-                        value = i.strategy2
-                    elif issubclass(model_class, Strategy3):
-                        value = i.strategy3
-                    elif issubclass(model_class, DailyPricingModel):
-                        value = i.daily_pricing_model
-                    elif issubclass(model_class, PaymentSizeDetail):
-                        value = i.payment_size_detail
-                    elif issubclass(model_class, Portfolio):
-                        value = i.portfolio
-                    elif issubclass(model_class, PriceDownloadScheme):
-                        value = i.price_download_scheme
+                    value = _get_val_by_model_cls(i, model_class)
             else:
                 if i.is_fill_from_context and i.name in self.default_values:
                     value = self.default_values[i.name]
@@ -100,8 +124,6 @@ class TransactionTypeProcess(object):
                             value = formula.safe_eval(i.value)
                         except formula.InvalidExpression:
                             value = None
-
-            # attr_name = self.get_attr_name(i)
             self.values[i.name] = value
 
     def process(self):

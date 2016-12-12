@@ -43,8 +43,6 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'django.contrib.humanize',
-    'django.contrib.admin',
-    'django.contrib.admindocs',
 
     'mptt',
 
@@ -67,6 +65,9 @@ INSTALLED_APPS = [
     'poms.integrations',
     'poms.reports',
     'poms.api',
+
+    'django.contrib.admin',
+    'django.contrib.admindocs',
 
     # 'django_otp',
     # 'django_otp.plugins.otp_hotp',
@@ -553,7 +554,7 @@ IMPORT_FILE_STORAGE = {
 #     }
 # }
 
-PRICING_AUTO_DOWNLOAD_DISABLED = bool(os.environ.get('POMS_PRICING_AUTO_DOWNLOAD_DISABLED', 'True'))
+PRICING_AUTO_DOWNLOAD_DISABLED = bool(os.environ.get('POMS_PRICING_AUTO_DOWNLOAD_DISABLED', None))
 PRICING_AUTO_DOWNLOAD_MIN_TIMEDELTA = 6 * 60  # min delta is 12 hour
 
 BLOOMBERG_WSDL = 'https://service.bloomberg.com/assets/dl/dlws.wsdl'
@@ -562,7 +563,7 @@ BLOOMBERG_MAX_RETRIES = 60
 BLOOMBERG_DATE_INPUT_FORMAT = '%m/%d/%Y'
 BLOOMBERG_EMPTY_VALUE = [None, '', 'N.S.']
 
-BLOOMBERG_SANDBOX = bool(os.environ.get('POMS_BLOOMBERG_SANDBOX', 'True'))
+BLOOMBERG_SANDBOX = bool(os.environ.get('POMS_BLOOMBERG_SANDBOX', None))
 if BLOOMBERG_SANDBOX:
     BLOOMBERG_RETRY_DELAY = 0.1
 BLOOMBERG_SANDBOX_SEND_EMPTY = False

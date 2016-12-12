@@ -3,6 +3,7 @@ from __future__ import unicode_literals
 from django.contrib import admin
 from django.contrib.contenttypes.admin import GenericTabularInline
 
+from poms.common.admin import AbstractModelAdmin
 from poms.obj_perms.admin import GenericObjectPermissionInline
 from poms.tags.filters import get_tag_content_types
 from poms.tags.models import Tag, TagLink
@@ -19,8 +20,9 @@ class GenericTagLinkInline(GenericTabularInline):
     extra = 0
 
 
-class TagLinkAdmin(admin.ModelAdmin):
+class TagLinkAdmin(AbstractModelAdmin):
     model = TagLink
+    master_user_path = 'tag__master_user'
     list_display = ['id', 'master_user', 'content_type', 'object_id', 'content_object', 'tag']
     list_select_related = ['tag', 'tag__master_user', 'content_type']
     raw_id_fields = ['tag']
@@ -32,12 +34,15 @@ class TagLinkAdmin(admin.ModelAdmin):
     def master_user(self, obj):
         return obj.tag.master_user
 
+    master_user.admin_order_field = 'tag__master_user'
+
 
 admin.site.register(TagLink, TagLinkAdmin)
 
 
-class TagAdmin(admin.ModelAdmin):
+class TagAdmin(AbstractModelAdmin):
     model = Tag
+    master_user_path = 'master_user'
     list_display = ['id', 'master_user', 'user_code', 'name', ]
     list_select_related = ['master_user']
     ordering = ['master_user', 'user_code']

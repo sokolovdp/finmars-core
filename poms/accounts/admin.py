@@ -3,13 +3,15 @@ from __future__ import unicode_literals
 from django.contrib import admin
 
 from poms.accounts.models import Account, AccountType
+from poms.common.admin import AbstractModelAdmin
 from poms.obj_attrs.admin import GenericAttributeInline
 from poms.obj_perms.admin import GenericObjectPermissionInline
 from poms.tags.admin import GenericTagLinkInline
 
 
-class AccountTypeAdmin(admin.ModelAdmin):
+class AccountTypeAdmin(AbstractModelAdmin):
     model = AccountType
+    master_user_path = 'master_user'
     list_display = ['id', 'master_user', 'user_code', 'name', 'is_deleted', ]
     list_select_related = ['master_user']
     list_filter = ['is_deleted', ]
@@ -27,8 +29,9 @@ class AccountTypeAdmin(admin.ModelAdmin):
 admin.site.register(AccountType, AccountTypeAdmin)
 
 
-class AccountAdmin(admin.ModelAdmin):
+class AccountAdmin(AbstractModelAdmin):
     model = Account
+    master_user_path = 'master_user'
     list_display = ['id', 'master_user', 'type', 'user_code', 'name', 'is_deleted', ]
     list_select_related = ['master_user', 'type']
     list_filter = ['is_deleted', ]
