@@ -855,6 +855,9 @@ class ComplexTransactionInput(models.Model):
     class Meta:
         verbose_name = ugettext_lazy('complex transaction input')
         verbose_name_plural = ugettext_lazy('complex transaction inputs')
+        unique_together = [
+            ['complex_transaction', 'transaction_type_input',]
+        ]
 
 
 @python_2_unicode_compatible
