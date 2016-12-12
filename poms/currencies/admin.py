@@ -3,13 +3,15 @@ from __future__ import unicode_literals
 from django.contrib import admin
 from django.utils.translation import ugettext_lazy
 
+from poms.common.admin import AbstractModelAdmin
 from poms.currencies.models import Currency, CurrencyHistory
 from poms.obj_attrs.admin import GenericAttributeInline
 from poms.tags.admin import GenericTagLinkInline
 
 
-class CurrencyAdmin(admin.ModelAdmin):
+class CurrencyAdmin(AbstractModelAdmin):
     model = Currency
+    master_user_path = 'master_user'
     list_display = ['id', 'master_user', 'user_code', 'name', 'is_deleted', ]
     list_select_related = ['master_user']
     search_fields = ['id', 'user_code', 'name']
@@ -31,8 +33,9 @@ class CurrencyAdmin(admin.ModelAdmin):
 admin.site.register(Currency, CurrencyAdmin)
 
 
-class CurrencyHistoryAdmin(admin.ModelAdmin):
+class CurrencyHistoryAdmin(AbstractModelAdmin):
     model = CurrencyHistory
+    master_user_path = 'currency__master_user'
     list_display = ['id', 'master_user', 'currency', 'pricing_policy', 'date', 'fx_rate']
     list_select_related = ['currency', 'currency__master_user']
     ordering = ['currency', 'pricing_policy', 'date']

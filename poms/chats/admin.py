@@ -3,12 +3,14 @@ from __future__ import unicode_literals
 from django.contrib import admin
 
 from poms.chats.models import Thread, Message, DirectMessage, ThreadGroup
+from poms.common.admin import AbstractModelAdmin
 from poms.obj_perms.admin import GenericObjectPermissionInline
 from poms.tags.admin import GenericTagLinkInline
 
 
-class ThreadGroupAdmin(admin.ModelAdmin):
+class ThreadGroupAdmin(AbstractModelAdmin):
     model = ThreadGroup
+    master_user_path = 'master_user'
     list_display = ['id', 'master_user', 'name', 'is_deleted', ]
     list_select_related = ['master_user', ]
     ordering = ['master_user', 'name']
@@ -26,8 +28,9 @@ class ThreadGroupAdmin(admin.ModelAdmin):
 admin.site.register(ThreadGroup, ThreadGroupAdmin)
 
 
-class ThreadAdmin(admin.ModelAdmin):
+class ThreadAdmin(AbstractModelAdmin):
     model = Thread
+    master_user_path = 'master_user'
     list_display = ['id', 'master_user', 'thread_group', 'subject', 'created', 'closed', 'is_deleted', ]
     list_select_related = ['master_user', 'thread_group', ]
     ordering = ['master_user', 'thread_group', 'subject']
@@ -46,8 +49,9 @@ class ThreadAdmin(admin.ModelAdmin):
 admin.site.register(Thread, ThreadAdmin)
 
 
-class MessageAdmin(admin.ModelAdmin):
+class MessageAdmin(AbstractModelAdmin):
     model = Message
+    master_user_path = 'thread__master_user'
     list_display = ['id', 'master_user', 'thread', 'created', 'sender', 'short_text']
     list_select_related = ['thread', 'thread__master_user', 'sender']
     ordering = ['-created']

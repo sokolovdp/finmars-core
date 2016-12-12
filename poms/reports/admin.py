@@ -1,13 +1,12 @@
 from django.contrib import admin
 
-from poms.common.admin import ClassModelAdmin
+from poms.common.admin import AbstractModelAdmin
 from poms.reports.models import CustomField
 
-# admin.site.register(ReportClass, ClassModelAdmin)
 
-
-class CustomFieldAdmin(admin.ModelAdmin):
+class CustomFieldAdmin(AbstractModelAdmin):
     model = CustomField
+    master_user_path = 'master_user'
     list_display = ['id', 'master_user', 'name', ]
     list_select_related = ['master_user']
     search_fields = ['id', 'name']

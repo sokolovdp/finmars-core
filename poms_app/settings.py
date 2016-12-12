@@ -43,8 +43,6 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'django.contrib.humanize',
-    'django.contrib.admin',
-    'django.contrib.admindocs',
 
     'mptt',
 
@@ -67,6 +65,9 @@ INSTALLED_APPS = [
     'poms.integrations',
     'poms.reports',
     'poms.api',
+
+    'django.contrib.admin',
+    'django.contrib.admindocs',
 
     # 'django_otp',
     # 'django_otp.plugins.otp_hotp',

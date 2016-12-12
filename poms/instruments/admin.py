@@ -5,7 +5,7 @@ from django.db import models
 from django.forms import widgets
 from django.utils.translation import ugettext_lazy
 
-from poms.common.admin import ClassModelAdmin
+from poms.common.admin import ClassModelAdmin, AbstractModelAdmin
 from poms.instruments.models import Instrument, PriceHistory, InstrumentClass, InstrumentType, \
     DailyPricingModel, AccrualCalculationModel, Periodicity, CostMethod, \
     ManualPricingFormula, AccrualCalculationSchedule, InstrumentFactorSchedule, EventSchedule, \
@@ -23,8 +23,9 @@ admin.site.register(CostMethod, ClassModelAdmin)
 admin.site.register(PaymentSizeDetail, ClassModelAdmin)
 
 
-class PricingPolicyAdmin(admin.ModelAdmin):
+class PricingPolicyAdmin(AbstractModelAdmin):
     model = PricingPolicy
+    master_user_path = 'master_user'
     list_display = ['id', 'master_user', 'user_code', 'name', ]
     list_select_related = ['master_user']
     search_fields = ['id', 'user_code', 'name']
@@ -34,8 +35,9 @@ class PricingPolicyAdmin(admin.ModelAdmin):
 admin.site.register(PricingPolicy, PricingPolicyAdmin)
 
 
-class InstrumentTypeAdmin(admin.ModelAdmin):
+class InstrumentTypeAdmin(AbstractModelAdmin):
     model = InstrumentType
+    master_user_path = 'master_user'
     list_display = ['id', 'master_user', 'user_code', 'name', 'instrument_class', 'is_deleted', ]
     list_select_related = ['master_user', 'instrument_class']
     search_fields = ['id', 'user_code', 'name']
@@ -78,8 +80,9 @@ class InstrumentFactorScheduleInline(admin.TabularInline):
     extra = 0
 
 
-class InstrumentAdmin(admin.ModelAdmin):
+class InstrumentAdmin(AbstractModelAdmin):
     model = Instrument
+    master_user_path = 'master_user'
     list_display = ['id', 'master_user', 'instrument_type', 'user_code', 'name', 'is_deleted']
     list_select_related = ['master_user', 'instrument_type', 'pricing_currency', 'accrued_currency']
     ordering = ['master_user', 'instrument_type', 'user_code']
@@ -125,8 +128,9 @@ class InstrumentAdmin(admin.ModelAdmin):
 admin.site.register(Instrument, InstrumentAdmin)
 
 
-class ManualPricingFormulaAdmin(admin.ModelAdmin):
+class ManualPricingFormulaAdmin(AbstractModelAdmin):
     model = AccrualCalculationSchedule
+    master_user_path = 'instrument__master_user'
     list_display = ['id', 'master_user', 'instrument', 'pricing_policy']
     ordering = ['instrument', 'pricing_policy']
     search_fields = ['instrument__id', 'instrument__user_code', 'instrument__name']
@@ -142,8 +146,9 @@ class ManualPricingFormulaAdmin(admin.ModelAdmin):
 admin.site.register(ManualPricingFormula, ManualPricingFormulaAdmin)
 
 
-class AccrualCalculationScheduleAdmin(admin.ModelAdmin):
+class AccrualCalculationScheduleAdmin(AbstractModelAdmin):
     model = AccrualCalculationSchedule
+    master_user_path = 'instrument__master_user'
     list_display = ['id', 'master_user', 'instrument', 'accrual_start_date', 'first_payment_date',
                     'accrual_calculation_model', 'periodicity']
     ordering = ['instrument', 'accrual_start_date']
@@ -161,8 +166,9 @@ class AccrualCalculationScheduleAdmin(admin.ModelAdmin):
 admin.site.register(AccrualCalculationSchedule, AccrualCalculationScheduleAdmin)
 
 
-class InstrumentFactorScheduleAdmin(admin.ModelAdmin):
+class InstrumentFactorScheduleAdmin(AbstractModelAdmin):
     model = InstrumentFactorSchedule
+    master_user_path = 'instrument__master_user'
     list_display = ['id', 'master_user', 'instrument', 'effective_date', 'factor_value']
     list_select_related = ['instrument', 'instrument__master_user']
     ordering = ['instrument', 'effective_date']
@@ -185,8 +191,9 @@ class EventScheduleActionInline(admin.TabularInline):
     extra = 0
 
 
-class EventScheduleAdmin(admin.ModelAdmin):
+class EventScheduleAdmin(AbstractModelAdmin):
     model = EventSchedule
+    master_user_path = 'instrument__master_user'
     list_display = ['id', 'master_user', 'instrument', 'effective_date', 'name', 'event_class', 'notification_class',
                     'periodicity', 'final_date', 'is_auto_generated', 'accrual_calculation_schedule', 'factor_schedule',
                     '_actions']
@@ -223,8 +230,9 @@ class EventScheduleAdmin(admin.ModelAdmin):
 admin.site.register(EventSchedule, EventScheduleAdmin)
 
 
-class EventScheduleActionAdmin(admin.ModelAdmin):
+class EventScheduleActionAdmin(AbstractModelAdmin):
     model = EventScheduleAction
+    master_user_path = 'event_schedule__instrument__master_user'
     list_display = ['id', 'master_user', 'instrument', 'event_schedule', 'transaction_type', 'text',
                     'is_sent_to_pending', 'is_book_automatic', 'button_position']
     list_select_related = ['event_schedule', 'event_schedule__instrument', 'event_schedule__instrument__master_user',
@@ -248,8 +256,9 @@ class EventScheduleActionAdmin(admin.ModelAdmin):
 admin.site.register(EventScheduleAction, EventScheduleActionAdmin)
 
 
-class PriceHistoryAdmin(admin.ModelAdmin):
+class PriceHistoryAdmin(AbstractModelAdmin):
     model = PriceHistory
+    master_user_path = 'instrument__master_user'
     list_display = ['id', 'master_user', 'instrument', 'pricing_policy', 'date', 'principal_price', 'accrued_price']
     list_select_related = ['instrument', 'instrument__master_user', 'pricing_policy']
     ordering = ['instrument', 'pricing_policy', 'date']
@@ -290,8 +299,9 @@ admin.site.register(PriceHistory, PriceHistoryAdmin)
 # admin.site.register(InstrumentClassifier, ClassifierAdmin)
 
 
-class GeneratedEventAdmin(admin.ModelAdmin):
+class GeneratedEventAdmin(AbstractModelAdmin):
     model = GeneratedEvent
+    master_user_path = 'master_user'
     list_display = ('id', 'master_user', 'status', 'effective_date', 'effective_date_notified',
                     'notification_date', 'notification_date_notified', 'event_schedule',
                     'instrument', 'portfolio', 'account', 'strategy1', 'strategy2', 'strategy3', 'position', 'action',
@@ -308,8 +318,9 @@ class GeneratedEventAdmin(admin.ModelAdmin):
 admin.site.register(GeneratedEvent, GeneratedEventAdmin)
 
 
-class EventScheduleConfigAdmin(admin.ModelAdmin):
+class EventScheduleConfigAdmin(AbstractModelAdmin):
     model = EventScheduleConfig
+    master_user_path = 'instrument__master_user'
     list_display = ('id', 'master_user')
     list_select_related = ('master_user', 'notification_class',)
     ordering = ['master_user']

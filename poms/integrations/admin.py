@@ -1,50 +1,16 @@
 from __future__ import unicode_literals, print_function
 
 from django import forms
-from django.conf import settings
 from django.contrib import admin
 from django.core.urlresolvers import reverse_lazy
 from django.utils.html import escape
 from django.utils.translation import ugettext_lazy
 
-from poms.common.admin import ClassModelAdmin
+from poms.common.admin import ClassModelAdmin, AbstractModelAdmin
 from poms.integrations.models import Task, ImportConfig, ProviderClass, CurrencyMapping, \
     InstrumentTypeMapping, InstrumentAttributeValueMapping, FactorScheduleDownloadMethod, AccrualScheduleDownloadMethod, \
     InstrumentDownloadScheme, InstrumentDownloadSchemeInput, InstrumentDownloadSchemeAttribute, PriceDownloadScheme, \
     AccrualCalculationModelMapping, PeriodicityMapping, PricingAutomatedSchedule
-
-if settings.DEBUG and 'kombu.transport.django' in settings.INSTALLED_APPS:
-    from kombu.transport.django.models import Queue, Message
-
-
-    class QueueAdmin(admin.ModelAdmin):
-        model = Queue
-        list_display = ('id', 'name')
-        list_display_links = ('id',)
-        search_fields = ('name',)
-
-
-    admin.site.register(Queue, QueueAdmin)
-
-
-    class MessageAdmin(admin.ModelAdmin):
-        model = Message
-        list_display = ('id', '_queue', 'visible', 'sent_at',)
-        list_display_links = ('id',)
-        # list_filter = ('queue',)
-        search_fields = ('queue__name',)
-        date_hierarchy = 'sent_at'
-        raw_id_fields = ('queue',)
-        list_select_related = ('queue',)
-
-        def _queue(self, instanse):
-            return instanse.queue.name
-
-        _queue.short_description = 'Queue'
-        _queue.admin_order_field = 'queue__name'
-
-
-    admin.site.register(Message, MessageAdmin)
 
 admin.site.register(ProviderClass, ClassModelAdmin)
 admin.site.register(FactorScheduleDownloadMethod, ClassModelAdmin)
@@ -59,8 +25,9 @@ class ImportConfigForm(forms.ModelForm):
         fields = ['master_user', 'provider', 'p12cert', 'password', 'cert', 'key']
 
 
-class ImportConfigAdmin(admin.ModelAdmin):
+class ImportConfigAdmin(AbstractModelAdmin):
     model = ImportConfig
+    master_user_path = 'master_user'
     form = ImportConfigForm
     list_display = ['id', 'master_user', 'provider', ]
     list_select_related = ['master_user', 'provider', ]
@@ -81,8 +48,9 @@ class InstrumentDownloadSchemeAttributeInline(admin.TabularInline):
     raw_id_fields = ['attribute_type']
 
 
-class InstrumentDownloadSchemeAdmin(admin.ModelAdmin):
+class InstrumentDownloadSchemeAdmin(AbstractModelAdmin):
     model = InstrumentDownloadScheme
+    master_user_path = 'master_user'
     list_display = ['id', 'master_user', 'provider', 'scheme_name', 'fields0']
     list_select_related = ['master_user', 'provider', ]
     ordering = ['master_user', 'provider', 'scheme_name']
@@ -107,8 +75,9 @@ class InstrumentDownloadSchemeAdmin(admin.ModelAdmin):
 admin.site.register(InstrumentDownloadScheme, InstrumentDownloadSchemeAdmin)
 
 
-class PriceDownloadSchemeAdmin(admin.ModelAdmin):
+class PriceDownloadSchemeAdmin(AbstractModelAdmin):
     model = PriceDownloadScheme
+    master_user_path = 'master_user'
     list_display = ['id', 'master_user', 'provider', 'scheme_name', 'instrument_yesterday_fields0',
                     'instrument_history_fields0', 'currency_history_fields0']
     list_select_related = ['master_user', 'provider']
@@ -145,8 +114,9 @@ class PriceDownloadSchemeAdmin(admin.ModelAdmin):
 admin.site.register(PriceDownloadScheme, PriceDownloadSchemeAdmin)
 
 
-class CurrencyMappingAdmin(admin.ModelAdmin):
+class CurrencyMappingAdmin(AbstractModelAdmin):
     model = CurrencyMapping
+    master_user_path = 'master_user'
     list_display = ['id', 'master_user', 'provider', 'value', 'currency']
     list_select_related = ['master_user', 'provider', 'currency']
     raw_id_fields = ['master_user', 'currency']
@@ -156,8 +126,9 @@ class CurrencyMappingAdmin(admin.ModelAdmin):
 admin.site.register(CurrencyMapping, CurrencyMappingAdmin)
 
 
-class InstrumentTypeMappingAdmin(admin.ModelAdmin):
+class InstrumentTypeMappingAdmin(AbstractModelAdmin):
     model = InstrumentTypeMapping
+    master_user_path = 'master_user'
     list_display = ['id', 'master_user', 'provider', 'value', 'instrument_type']
     list_select_related = ['master_user', 'provider', 'instrument_type']
     raw_id_fields = ['master_user', 'instrument_type']
@@ -167,8 +138,9 @@ class InstrumentTypeMappingAdmin(admin.ModelAdmin):
 admin.site.register(InstrumentTypeMapping, InstrumentTypeMappingAdmin)
 
 
-class AccrualCalculationModelMappingAdmin(admin.ModelAdmin):
+class AccrualCalculationModelMappingAdmin(AbstractModelAdmin):
     model = AccrualCalculationModelMapping
+    master_user_path = 'master_user'
     list_display = ['id', 'master_user', 'provider', 'value', 'accrual_calculation_model']
     list_select_related = ['master_user', 'accrual_calculation_model', 'provider']
     list_filter = ['accrual_calculation_model']
@@ -179,8 +151,9 @@ class AccrualCalculationModelMappingAdmin(admin.ModelAdmin):
 admin.site.register(AccrualCalculationModelMapping, AccrualCalculationModelMappingAdmin)
 
 
-class PeriodicityMappingAdmin(admin.ModelAdmin):
+class PeriodicityMappingAdmin(AbstractModelAdmin):
     model = PeriodicityMapping
+    master_user_path = 'master_user'
     list_display = ['id', 'master_user', 'provider', 'value', 'periodicity']
     list_select_related = ['master_user', 'provider', 'periodicity']
     list_filter = ['periodicity']
@@ -191,8 +164,9 @@ class PeriodicityMappingAdmin(admin.ModelAdmin):
 admin.site.register(PeriodicityMapping, PeriodicityMappingAdmin)
 
 
-class InstrumentAttributeValueMappingAdmin(admin.ModelAdmin):
+class InstrumentAttributeValueMappingAdmin(AbstractModelAdmin):
     model = InstrumentAttributeValueMapping
+    master_user_path = 'master_user'
     list_display = ['id', 'master_user', 'provider', 'value', 'attribute_type', 'value_string', 'value_float',
                     'value_date', 'classifier']
     list_select_related = ['attribute_type__master_user', 'attribute_type', 'classifier', 'provider']
@@ -208,8 +182,9 @@ class InstrumentAttributeValueMappingAdmin(admin.ModelAdmin):
 admin.site.register(InstrumentAttributeValueMapping, InstrumentAttributeValueMappingAdmin)
 
 
-class TaskAdmin(admin.ModelAdmin):
+class TaskAdmin(AbstractModelAdmin):
     model = Task
+    master_user_path = 'master_user'
     list_display = ['id', 'parent', 'created', 'status', 'master_user', 'member', 'provider', 'action',
                     'response_id']
     list_select_related = ['parent', 'master_user', 'member', 'provider']
@@ -236,8 +211,9 @@ class TaskAdmin(admin.ModelAdmin):
 admin.site.register(Task, TaskAdmin)
 
 
-class PricingAutomatedScheduleAdmin(admin.ModelAdmin):
+class PricingAutomatedScheduleAdmin(AbstractModelAdmin):
     model = PricingAutomatedSchedule
+    master_user_path = 'master_user'
     list_display = ['id', 'master_user', 'is_enabled', 'cron_expr', 'last_run_at', 'next_run_at', 'last_run_task_url']
     list_select_related = ['master_user', ]
     list_filter = ['is_enabled', 'last_run_at', 'next_run_at']

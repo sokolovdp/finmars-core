@@ -2,13 +2,15 @@ from __future__ import unicode_literals
 
 from django.contrib import admin
 
+from poms.common.admin import AbstractModelAdmin
 from poms.obj_attrs.admin import GenericAttributeInline
 from poms.obj_perms.admin import GenericObjectPermissionInline
 from poms.portfolios.models import Portfolio
 
 
-class PortfolioAdmin(admin.ModelAdmin):
+class PortfolioAdmin(AbstractModelAdmin):
     model = Portfolio
+    master_user_path = 'master_user'
     list_display = ['id', 'master_user', 'user_code', 'name', 'is_deleted', ]
     list_select_related = ['master_user']
     search_fields = ['id', 'user_code', 'name']

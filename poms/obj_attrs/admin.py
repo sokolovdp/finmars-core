@@ -2,6 +2,7 @@ from django.contrib import admin
 from django.contrib.contenttypes.admin import GenericTabularInline
 from django.contrib.contenttypes.models import ContentType
 
+from poms.common.admin import AbstractModelAdmin
 from poms.obj_attrs.models import GenericAttributeType, GenericClassifier, GenericAttribute, GenericAttributeTypeOption
 from poms.obj_perms.admin import GenericObjectPermissionInline
 
@@ -67,8 +68,9 @@ class GenericAttributeTypeOptionInline(admin.TabularInline):
     raw_id_fields = ['member']
 
 
-class GenericAttributeTypeAdmin(admin.ModelAdmin):
+class GenericAttributeTypeAdmin(AbstractModelAdmin):
     model = GenericAttributeType
+    master_user_path = 'master_user'
     list_display = ['id', 'master_user', 'content_type', 'value_type', 'user_code']
     list_select_related = ['content_type', 'content_type']
     list_filter = ['value_type', 'content_type']
@@ -84,8 +86,9 @@ class GenericAttributeTypeAdmin(admin.ModelAdmin):
 admin.site.register(GenericAttributeType, GenericAttributeTypeAdmin)
 
 
-class GenericClassifierAdmin(admin.ModelAdmin):
+class GenericClassifierAdmin(AbstractModelAdmin):
     model = GenericClassifier
+    master_user_path = 'attribute_type__master_user'
     list_display = ['id', 'master_user', 'attribute_type', 'content_type', 'tree_id', 'level', 'parent',
                     'name', ]
     list_select_related = ['attribute_type', 'attribute_type__master_user', 'attribute_type__content_type', 'parent']
@@ -108,8 +111,9 @@ class GenericClassifierAdmin(admin.ModelAdmin):
 admin.site.register(GenericClassifier, GenericClassifierAdmin)
 
 
-class GenericAttributeAdmin(admin.ModelAdmin):
+class GenericAttributeAdmin(AbstractModelAdmin):
     model = GenericAttribute
+    master_user_path = 'attribute_type__master_user'
     list_display = ['id', 'master_user', 'attribute_type', 'content_type', 'object_id',
                     'content_object', 'value_string', 'value_float', 'value_date', 'classifier', ]
     list_select_related = ['content_type', 'attribute_type', 'attribute_type__master_user',

@@ -2,6 +2,7 @@ from django.contrib import admin
 from django.contrib.contenttypes.admin import GenericTabularInline
 from django.contrib.contenttypes.models import ContentType
 
+from poms.common.admin import AbstractModelAdmin
 from poms.obj_perms.models import GenericObjectPermission
 
 
@@ -84,8 +85,9 @@ class GenericObjectPermissionInline(GenericTabularInline):
         return super(GenericObjectPermissionInline, self).formfield_for_foreignkey(db_field, request=request, **kwargs)
 
 
-class GenericObjectPermissionAdmin(admin.ModelAdmin):
+class GenericObjectPermissionAdmin(AbstractModelAdmin):
     model = GenericObjectPermission
+    master_user_path = ('group__master_user', 'member__master_user')
     list_display = ['id', 'master_user', 'group', 'member', 'content_type', 'object_id', 'content_object', 'permission']
     list_select_related = ['group', 'member', 'content_type', 'permission']
     raw_id_fields = ['group', 'member', 'content_type', 'permission']
