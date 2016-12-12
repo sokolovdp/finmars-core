@@ -1,12 +1,17 @@
 from __future__ import unicode_literals
 
+from functools import update_wrapper
+
 from django import forms
 from django.conf import settings
+from django.conf.urls import url
 from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin
 from django.contrib.auth.models import User, Permission
 from django.contrib.contenttypes.models import ContentType
 from django.db.models import F
+from django.http import HttpResponseRedirect
+from django.urls import reverse
 from django.utils.translation import ugettext_lazy
 
 from poms.common.admin import AbstractModelAdmin
@@ -33,7 +38,7 @@ class EventScheduleConfigInline(admin.StackedInline):
 
 
 class MasterUserIsActiveFilter(admin.SimpleListFilter):
-    title = 'admin is active'
+    title = 'Is active'
     parameter_name = 'admin_is_active'
 
     def lookups(self, request, model_admin):
@@ -61,7 +66,7 @@ class MasterUserAdmin(AbstractModelAdmin):
         EventScheduleConfigInline,
         MemberInline,
     ]
-    list_display = ['id', 'name', 'admin_is_active', ]
+    list_display = ['id', 'name', 'set_activate_link']
     list_filter = (MasterUserIsActiveFilter,)
     ordering = ['name']
     search_fields = ['id', 'name']
@@ -74,7 +79,7 @@ class MasterUserAdmin(AbstractModelAdmin):
         'thread_group', 'mismatch_portfolio', 'mismatch_account',
     ]
 
-    actions = ['generate_events', 'clone_data', 'set_active', 'del_active']
+    actions = ['generate_events', 'clone_data', ]
 
     def get_queryset(self, request):
         from django.contrib.admin.options import IS_POPUP_VAR
@@ -100,37 +105,52 @@ class MasterUserAdmin(AbstractModelAdmin):
 
     generate_events.short_description = ugettext_lazy("Generate and check events")
 
-    def admin_is_active(self, obj):
-        # return obj.id == getattr(self, '_master_user_id', None)
-        return getattr(obj, 'id_check', 1) == 0
+    def set_activate_link(self, obj):
+        if getattr(obj, 'id_check', 1) == 0:
+            return '<a href="%s">Unset</a>' % (
+                reverse("admin:users_masteruser_clearactive", args=(obj.id,))
+            )
+        else:
+            return '<a href="%s">Set</a>' % (
+                reverse("admin:users_masteruser_setactive", args=(obj.id,))
+            )
 
-    admin_is_active.boolean = True
+    set_activate_link.allow_tags = True
+    set_activate_link.short_description = 'Is Active'
 
-    def set_active(self, request, queryset):
-        mu = queryset.last()
-        self.set_active_master_user(request, mu)
-        self.message_user(request, ugettext_lazy("Master user '%s' is active") % mu.name)
+    def get_urls(self):
+        urls = super(MasterUserAdmin, self).get_urls()
 
-    set_active.short_description = ugettext_lazy("Set active master user (worked only on some views!)")
+        def wrap(view):
+            def wrapper(*args, **kwargs):
+                return self.admin_site.admin_view(view)(*args, **kwargs)
 
-    def del_active(self, request, queryset):
+            wrapper.model_admin = self
+            return update_wrapper(wrapper, view)
+
+        info = self.model._meta.app_label, self.model._meta.model_name
+
+        urls = [
+                   url(r'^(.+)/set_active/$', wrap(self.set_active_view), name='%s_%s_setactive' % info),
+                   url(r'^(.+)/clear_active/$', wrap(self.clear_active_view), name='%s_%s_clearactive' % info),
+               ] + urls
+        return urls
+
+    def set_active_view(self, request, object_id, form_url='', extra_context=None):
+        self.set_active_master_user(request, object_id)
+        self.message_user(request, ugettext_lazy("Active master user successful set."))
+        if 'HTTP_REFERER' in request.META:
+            return HttpResponseRedirect(request.META.get('HTTP_REFERER'))
+        else:
+            return HttpResponseRedirect(redirect_to=reverse("admin:users_masteruser_changelist"))
+
+    def clear_active_view(self, request, object_id, form_url='', extra_context=None):
         self.set_active_master_user(request, None)
-        self.message_user(request, ugettext_lazy("Master user cleared"))
-
-    del_active.short_description = ugettext_lazy("Clear active master user")
-
-    # # custom
-    # def activate_link(self, obj):
-    #     if hasattr(obj, 'schedule'):
-    #         if obj.schedule:
-    #             return '<a href="%s">%s</a>' % (
-    #                 reverse_lazy("admin:lagoon_ruleschedule_change", args=(obj.schedule.id,)),
-    #                 escape(obj)
-    #             )
-    #     return ''
-    #
-    # activate_link.allow_tags = True
-
+        self.message_user(request, ugettext_lazy("Active master user successful unset."))
+        if 'HTTP_REFERER' in request.META:
+            return HttpResponseRedirect(request.META.get('HTTP_REFERER'))
+        else:
+            return HttpResponseRedirect(redirect_to=reverse("admin:users_masteruser_changelist"))
 
 
 admin.site.register(MasterUser, MasterUserAdmin)

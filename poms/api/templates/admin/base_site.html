@@ -1,5 +1,5 @@
 {% extends "admin/base.html" %}
-{% load poms_admin %}
+{% load poms_admin i18n l10n%}
 
 {% block title %}{{ title }} | {{ site_title|default:_('Django site admin') }}{% endblock %}
 
@@ -14,6 +14,6 @@
 
     {% get_admin_master_user as master_user %}
     {% if master_user %}
-        <span style="color: #FFFFFF; background-color: #f44336; ">Active master user is "{{ master_user }}".</span>
+        <span style="color: #FFFFFF; background-color: #f44336; ">Active master user is "{{ master_user }}"(<a href="{% url 'admin:users_masteruser_clearactive' master_user.id %}">{% trans 'Unset' %}</a>).</span>
     {% endif %}
 {% endblock %}
