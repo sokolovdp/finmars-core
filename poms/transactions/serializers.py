@@ -1139,6 +1139,9 @@ class TransactionTypeProcessSerializer(serializers.Serializer):
         #     name = instance.get_input_name(key)
         #     instance.values[name] = value
 
+        if instance.store and instance.complex_transaction.id is not None and instance.complex_transaction.id > 0:
+            instance.complex_transaction.transactions.all().delete()
+
         if instance.calculate:
             instance.process()
 

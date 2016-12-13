@@ -47,13 +47,13 @@ MEDIA_SERVE = True
 
 # CELERY ------------------------------------------------
 
-
-CELERY_ALWAYS_EAGER = True
-CELERY_EAGER_PROPAGATES_EXCEPTIONS = True
-CELERYD_LOG_FORMAT = LOGGING['formatters']['verbose']['format']
-CELERY_TASK_RESULT_EXPIRES = 600
-# CELERYBEAT_SCHEDULE = {}
-CELERYBEAT_SCHEDULE = {
+CELERY_WORKER_CONCURRENCY = 1
+CELERY_TASK_ALWAYS_EAGER = True
+CELERY_TASK_EAGER_PROPAGATES = True
+CELERY_WORKER_LOG_FORMAT = LOGGING['formatters']['verbose']['format']
+CELERY_RESULT_EXPIRES = 600
+# CELERY_BEAT_SCHEDULE = {}
+CELERY_BEAT_SCHEDULE = {
     # 'integrations.download_pricing_auto_scheduler': {
     #     'task': 'integrations.download_pricing_auto_scheduler',
     #     'schedule': 60,
@@ -80,8 +80,8 @@ for k, v in CACHES.items():
     if 'RedisCache' in v['BACKEND']:
         v['LOCATION'] = _redis(v['LOCATION'])
 
-if 'redis' in BROKER_URL:
-    BROKER_URL = _redis(BROKER_URL)
+if 'redis' in CELERY_BROKER_URL:
+    CELERY_BROKER_URL = _redis(CELERY_BROKER_URL)
 if 'redis' in CELERY_RESULT_BACKEND:
     CELERY_RESULT_BACKEND = _redis(CELERY_RESULT_BACKEND)
 

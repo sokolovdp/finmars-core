@@ -294,7 +294,7 @@ class TransactionTypeAdmin(AbstractModelAdmin):
 admin.site.register(TransactionType, TransactionTypeAdmin)
 
 
-class ComplexTransactionInputInline(admin.TabularInline):
+class ComplexTransactionInputInline(admin.StackedInline):
     model = ComplexTransactionInput
     extra = 0
     raw_id_fields = ('transaction_type_input','account', 'instrument_type', 'instrument', 'currency', 'counterparty',
