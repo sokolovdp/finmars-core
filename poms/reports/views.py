@@ -1,7 +1,7 @@
 from __future__ import unicode_literals
 
 from celery.result import AsyncResult
-from django.core.signing import Signer
+from django.core.signing import TimestampSigner
 from rest_framework import status
 from rest_framework.exceptions import PermissionDenied
 from rest_framework.filters import FilterSet
@@ -60,7 +60,7 @@ class ReportViewSet(AbstractViewSet):
         instance = serializer.save()
         task_id = instance.task_id
 
-        signer = Signer()
+        signer = TimestampSigner()
 
         if task_id:
             res = AsyncResult(signer.unsign(task_id))
