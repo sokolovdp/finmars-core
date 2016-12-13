@@ -15,5 +15,5 @@ if 'pickle-signed' in settings.CELERY_ACCEPT_CONTENT or 'pickle-signed' in setti
 
 app = Celery('poms.backend')
 
-app.config_from_object('django.conf:settings')
+app.config_from_object('django.conf:settings', namespace='CELERY')
 app.autodiscover_tasks(lambda: settings.INSTALLED_APPS)

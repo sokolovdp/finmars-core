@@ -1,20 +1,23 @@
-import pickle
-
 import base64
+import io
+import pickle
+import zlib
+
 from django.core.signing import TimestampSigner
-from kombu.five import BytesIO
 from kombu.serialization import register
 from kombu.utils.encoding import str_to_bytes, bytes_to_str
 
 __author__ = 'ailyukhin'
 
 
-def register_pickle_signed(key=None, salt=None):
+def register_pickle_signed(key=None, salt=None, compress=True):
     def signer():
         return TimestampSigner(key=key, salt=salt)
 
     def encoder(obj):
         d = pickle.dumps(obj)
+        if compress:
+            d = zlib.compress(d)
         d = base64.b64encode(d)
         d = signer().sign(d)
         d = str_to_bytes(d)
@@ -24,7 +27,10 @@ def register_pickle_signed(key=None, salt=None):
         d = bytes_to_str(s)
         d = signer().unsign(d)
         d = base64.b64decode(d)
-        return pickle.load(BytesIO(d))
+        if compress:
+            d = zlib.decompress(d)
+        d = io.BytesIO(d)
+        return pickle.load(d)
 
     register('pickle-signed', encoder, decoder,
              content_type='application/x-python-serialize-signed',
