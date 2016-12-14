@@ -3,7 +3,7 @@ from __future__ import unicode_literals
 import django_filters
 from django.core.exceptions import ObjectDoesNotExist
 from django.db import transaction
-from django.db.models import Prefetch, Q
+from django.db.models import Prefetch, Q, Case, When, Value, BooleanField
 from django.utils import timezone
 from django.utils.encoding import force_text
 from rest_framework import serializers
@@ -359,6 +359,8 @@ class PriceHistoryViewSet(AbstractModelViewSet):
 
 class GeneratedEventFilterSet(FilterSet):
     id = NoOpFilter()
+    # is_need_reaction = django_filters.MethodFilter(action='filter_is_need_reaction')
+    is_need_reaction = django_filters.BooleanFilter()
     status = django_filters.MultipleChoiceFilter(choices=GeneratedEvent.STATUS_CHOICES)
     status_date = django_filters.DateFromToRangeFilter()
     instrument = ModelExtWithPermissionMultipleChoiceFilter(model=Instrument)
@@ -372,27 +374,26 @@ class GeneratedEventFilterSet(FilterSet):
     effective_date = django_filters.DateFromToRangeFilter()
     notification_date = django_filters.DateFromToRangeFilter()
 
-    is_need_reaction = django_filters.MethodFilter(action='filter_is_need_reaction')
 
     class Meta:
         model = GeneratedEvent
         fields = []
 
-    def filter_is_need_reaction(self, qs, value):
-        value = force_text(value).lower()
-        now = date_now()
-        expr = Q(status=GeneratedEvent.NEW, action__isnull=True) & (
-            Q(notification_date=now,
-              event_schedule__notification_class__in=NotificationClass.get_need_reaction_on_notification_date_classes())
-            | Q(effective_date=now,
-                event_schedule__notification_class__in=NotificationClass.get_need_reaction_on_effective_date_classes())
-        )
-        if value in ['true', '1', 'yes']:
-            qs = qs.filter(expr)
-        elif value in ['false', '0', 'no']:
-            qs = qs.exclude(expr)
-
-        return qs
+    # def filter_is_need_reaction(self, qs, value):
+    #     value = force_text(value).lower()
+    #     now = date_now()
+    #     expr = Q(status=GeneratedEvent.NEW, action__isnull=True) & (
+    #         Q(notification_date=now,
+    #           event_schedule__notification_class__in=NotificationClass.get_need_reaction_on_notification_date_classes())
+    #         | Q(effective_date=now,
+    #             event_schedule__notification_class__in=NotificationClass.get_need_reaction_on_effective_date_classes())
+    #     )
+    #     if value in ['true', '1', 'yes']:
+    #         qs = qs.filter(expr)
+    #     elif value in ['false', '0', 'no']:
+    #         qs = qs.exclude(expr)
+    #
+    #     return qs
 
 
 class GeneratedEventViewSet(UpdateModelMixinExt, AbstractReadOnlyModelViewSet):
@@ -460,15 +461,22 @@ class GeneratedEventViewSet(UpdateModelMixinExt, AbstractReadOnlyModelViewSet):
 
     def get_queryset(self):
         qs = super(GeneratedEventViewSet, self).get_queryset()
-        # now = date_now()
-        # # qs = qs.annotate(
-        # #     is_need_reaction2=Q(status=GeneratedEvent.NEW, action__isnull=True) & (
-        # #         Q(notification_date=now,
-        # #           event_schedule__notification_class__in=NotificationClass.get_need_reaction_on_notification_date_classes())
-        # #         | Q(effective_date=now,
-        # #             event_schedule__notification_class__in=NotificationClass.get_need_reaction_on_effective_date_classes())
-        # #     )
-        # # )
+        now = date_now()
+        qs = qs.annotate(
+            is_need_reaction=Case(
+                When(
+                    Q(status=GeneratedEvent.NEW, action__isnull=True) & (
+                        Q(notification_date=now,
+                          event_schedule__notification_class__in=NotificationClass.get_need_reaction_on_notification_date_classes())
+                        | Q(effective_date=now,
+                            event_schedule__notification_class__in=NotificationClass.get_need_reaction_on_effective_date_classes())
+                    ),
+                    then=Value(True)
+                ),
+                default=Value(False),
+                output_field=BooleanField(),
+            )
+        )
         return qs
 
     @detail_route(methods=['get', 'put'], url_path='book', serializer_class=TransactionTypeProcessSerializer,
