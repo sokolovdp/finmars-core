@@ -895,15 +895,11 @@ class ComplexTransactionSerializer(serializers.ModelSerializer):
     class Meta:
         model = ComplexTransaction
         fields = [
-            'id', 'status', 'code', 'text', 'transaction_type', 'transactions',
+            'id', 'date', 'status', 'code', 'text', 'transaction_type', 'transactions',
             'transaction_type_object', 'transactions_object',
         ]
 
     def get_text(self, obj):
-        # from poms.transactions.renderer import ComplexTransactionRenderer
-        # renderer = ComplexTransactionRenderer()
-        # return renderer.render(complex_transaction=obj, context=self.context)
-
         if obj.id is None or obj.id < 0:
             transactions = getattr(obj, '_fake_transactions', [])
         else:
@@ -913,11 +909,6 @@ class ComplexTransactionSerializer(serializers.ModelSerializer):
             'transactions': formula.get_model_data(transactions, TransactionSerializer, many=True,
                                                    context=self.context),
         }
-        # member = get_member_from_context(self.context)
-        # meval = ModelSimpleEval(names={
-        #     'code': obj.code,
-        #     'transactions': transactions,
-        # }, member=member)
         try:
             return formula.safe_eval(obj.transaction_type.display_expr, names=names)
         except formula.InvalidExpression:
@@ -930,7 +921,7 @@ class ComplexTransactionViewSerializer(serializers.ModelSerializer):
     class Meta:
         model = ComplexTransaction
         fields = [
-            'id', 'status', 'code', 'text'
+            'id', 'date', 'status', 'code', 'text'
         ]
 
     def get_text(self, obj):

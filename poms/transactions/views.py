@@ -6,7 +6,7 @@ from django.db.models import Prefetch
 from rest_framework.decorators import detail_route
 from rest_framework.exceptions import PermissionDenied
 from rest_framework.filters import FilterSet
-from rest_framework.mixins import DestroyModelMixin
+from rest_framework.mixins import DestroyModelMixin, UpdateModelMixin
 from rest_framework.response import Response
 
 from poms.accounts.models import Account, AccountType
@@ -560,7 +560,7 @@ class ComplexTransactionFilterSet(FilterSet):
         fields = []
 
 
-class ComplexTransactionViewSet(DestroyModelMixin, AbstractReadOnlyModelViewSet):
+class ComplexTransactionViewSet(AbstractModelViewSet):
     queryset = ComplexTransaction.objects.select_related(
         'transaction_type',
     ).prefetch_related(
@@ -667,6 +667,9 @@ class ComplexTransactionViewSet(DestroyModelMixin, AbstractReadOnlyModelViewSet)
     ]
     filter_class = ComplexTransactionFilterSet
     ordering_fields = ['code', ]
+
+    def check_object_permissions(self):
+        pass
 
     @detail_route(methods=['get', 'put'], url_path='book', serializer_class=TransactionTypeProcessSerializer)
     def book(self, request, pk=None):

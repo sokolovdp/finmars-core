@@ -745,6 +745,7 @@ class ComplexTransaction(models.Model):
     )
 
     transaction_type = models.ForeignKey(TransactionType, on_delete=models.PROTECT)
+    date = models.DateField(default=date_now, verbose_name=ugettext_lazy("date"), db_index=True)
     status = models.PositiveSmallIntegerField(default=PRODUCTION, choices=STATUS_CHOICES, db_index=True)
     code = models.IntegerField(default=0)
 
@@ -803,7 +804,7 @@ class ComplexTransactionInput(models.Model):
         verbose_name = ugettext_lazy('complex transaction input')
         verbose_name_plural = ugettext_lazy('complex transaction inputs')
         unique_together = [
-            ['complex_transaction', 'transaction_type_input',]
+            ['complex_transaction', 'transaction_type_input', ]
         ]
 
 
@@ -836,10 +837,10 @@ class Transaction(models.Model):
     overheads_with_sign = models.FloatField(default=0.0, verbose_name=ugettext_lazy("overheads with sign"))
 
     # accounting dates
-    transaction_date = models.DateField(editable=False, default=date_now,
+    transaction_date = models.DateField(editable=False, default=date_now, db_index=True,
                                         verbose_name=ugettext_lazy("transaction date"))
-    accounting_date = models.DateField(default=date_now, verbose_name=ugettext_lazy("accounting date"))
-    cash_date = models.DateField(default=date_now, verbose_name=ugettext_lazy("cash date"))
+    accounting_date = models.DateField(default=date_now, db_index=True, verbose_name=ugettext_lazy("accounting date"))
+    cash_date = models.DateField(default=date_now, db_index=True, verbose_name=ugettext_lazy("cash date"))
 
     # portfolio
     portfolio = models.ForeignKey(Portfolio, on_delete=models.PROTECT, verbose_name=ugettext_lazy("portfolio"))
