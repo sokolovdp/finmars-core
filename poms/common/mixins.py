@@ -11,6 +11,8 @@ from rest_framework.response import Response
 from rest_framework.settings import api_settings
 
 
+# TODO: Permissions for method and per-object must be verified!!!!
+
 class DestroyModelMixinExt(DestroyModelMixin):
     def destroy(self, request, *args, **kwargs):
         instance = self.get_object()

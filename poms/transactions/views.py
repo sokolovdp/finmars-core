@@ -4,15 +4,13 @@ import django_filters
 from django.db import transaction
 from django.db.models import Prefetch
 from rest_framework.decorators import detail_route
-from rest_framework.exceptions import PermissionDenied
 from rest_framework.filters import FilterSet
-from rest_framework.mixins import DestroyModelMixin
 from rest_framework.response import Response
 
 from poms.accounts.models import Account, AccountType
 from poms.common.filters import CharFilter, ModelExtWithPermissionMultipleChoiceFilter, ModelExtMultipleChoiceFilter, \
     NoOpFilter
-from poms.common.views import AbstractClassModelViewSet, AbstractModelViewSet, AbstractReadOnlyModelViewSet
+from poms.common.views import AbstractClassModelViewSet, AbstractModelViewSet
 from poms.counterparties.models import Responsible, Counterparty, ResponsibleGroup, CounterpartyGroup
 from poms.currencies.models import Currency
 from poms.instruments.models import Instrument, InstrumentType
@@ -34,7 +32,7 @@ from poms.transactions.filters import TransactionObjectPermissionFilter, Complex
 from poms.transactions.handlers import TransactionTypeProcess
 from poms.transactions.models import TransactionClass, Transaction, TransactionType, TransactionTypeGroup, \
     ComplexTransaction, EventClass, NotificationClass, TransactionTypeInput, TransactionTypeAction
-from poms.transactions.permissions import TransactionObjectPermission
+from poms.transactions.permissions import TransactionObjectPermission, ComplexTransactionPermission
 from poms.transactions.serializers import TransactionClassSerializer, TransactionSerializer, TransactionTypeSerializer, \
     TransactionTypeProcessSerializer, TransactionTypeGroupSerializer, ComplexTransactionSerializer, \
     EventClassSerializer, NotificationClassSerializer
@@ -560,7 +558,7 @@ class ComplexTransactionFilterSet(FilterSet):
         fields = []
 
 
-class ComplexTransactionViewSet(DestroyModelMixin, AbstractReadOnlyModelViewSet):
+class ComplexTransactionViewSet(AbstractModelViewSet):
     queryset = ComplexTransaction.objects.select_related(
         'transaction_type',
     ).prefetch_related(
@@ -662,7 +660,10 @@ class ComplexTransactionViewSet(DestroyModelMixin, AbstractReadOnlyModelViewSet)
         )
     )
     serializer_class = ComplexTransactionSerializer
-    filter_backends = AbstractReadOnlyModelViewSet.filter_backends + [
+    permission_classes = AbstractModelViewSet.permission_classes + [
+        ComplexTransactionPermission
+    ]
+    filter_backends = AbstractModelViewSet.filter_backends + [
         ComplexTransactionPermissionFilter,
     ]
     filter_class = ComplexTransactionFilterSet
