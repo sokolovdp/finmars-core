@@ -466,9 +466,9 @@ class GeneratedEventViewSet(UpdateModelMixinExt, AbstractReadOnlyModelViewSet):
             is_need_reaction=Case(
                 When(
                     Q(status=GeneratedEvent.NEW, action__isnull=True) & (
-                        Q(notification_date=now,
+                        Q(notification_date__lte=now,
                           event_schedule__notification_class__in=NotificationClass.get_need_reaction_on_notification_date_classes())
-                        | Q(effective_date=now,
+                        | Q(effective_date__lte=now,
                             event_schedule__notification_class__in=NotificationClass.get_need_reaction_on_effective_date_classes())
                     ),
                     then=Value(True)
