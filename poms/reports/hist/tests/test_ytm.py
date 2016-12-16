@@ -1,9 +1,9 @@
 from __future__ import unicode_literals, division, print_function
 
 from poms.instruments.models import CostMethod
-from poms.reports.backends.ytm import YTMReport2Builder
+from poms.reports.hist.backends.ytm import YTMReport2Builder
+from poms.reports.hist.tests.base import BaseReportTestCase, n
 from poms.reports.models import YTMReport, YTMReportItem
-from poms.reports.tests.base import BaseReportTestCase, n
 from poms.transactions.models import Transaction
 
 

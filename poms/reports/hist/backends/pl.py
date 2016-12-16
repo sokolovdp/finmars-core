@@ -3,7 +3,7 @@ from __future__ import unicode_literals, division
 
 from django.conf import settings
 
-from poms.reports.backends.base import BaseReport2Builder
+from poms.reports.hist.backends.base import BaseReport2Builder
 from poms.reports.models import PLReportItem, BalanceReportItem
 from poms.transactions.models import TransactionClass
 
