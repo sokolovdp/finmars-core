@@ -10,8 +10,9 @@ from rest_framework.response import Response
 from poms.common.filters import NoOpFilter, CharFilter
 from poms.common.views import AbstractViewSet, AbstractModelViewSet
 from poms.reports.models import CustomField
-from poms.reports.serializers import CustomFieldSerializer, ReportSerializer, TransactionReportSerializer
-from poms.reports.tasks import build_report, transaction_report
+from poms.reports.serializers import CustomFieldSerializer, ReportSerializer, TransactionReportSerializer, \
+    CashFlowProjectionReportSerializer
+from poms.reports.tasks import build_report, transaction_report, cash_flow_projection_report
 from poms.users.filters import OwnerByMasterUserFilter
 
 
@@ -79,3 +80,8 @@ class ReportViewSet(AbstractAsyncViewSet):
 class TransactionReportViewSet(AbstractAsyncViewSet):
     serializer_class = TransactionReportSerializer
     celery_task = transaction_report
+
+
+class CashFlowProjectionReportViewSet(AbstractAsyncViewSet):
+    serializer_class = CashFlowProjectionReportSerializer
+    celery_task = cash_flow_projection_report

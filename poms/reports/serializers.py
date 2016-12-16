@@ -17,6 +17,7 @@ from poms.instruments.serializers import InstrumentSerializer, PricingPolicyView
 from poms.portfolios.fields import PortfolioField
 from poms.portfolios.serializers import PortfolioSerializer, PortfolioViewSerializer
 from poms.reports.builders import Report, ReportItem
+from poms.reports.cash_flow_projection import CashFlowProjectionReport
 from poms.reports.fields import CustomFieldField
 from poms.reports.models import CustomField
 from poms.strategies.fields import Strategy1Field, Strategy2Field, Strategy3Field
@@ -382,3 +383,18 @@ class TransactionReportSerializer(serializers.Serializer):
 
     def create(self, validated_data):
         return TransactionReport(**validated_data)
+
+
+# Cash flow projection Report --------
+
+
+class CashFlowProjectionReportSerializer(serializers.Serializer):
+    task_id = serializers.CharField(allow_null=True, allow_blank=True, required=False)
+    task_status = serializers.ReadOnlyField()
+
+    master_user = MasterUserField()
+    member = HiddenMemberField()
+
+    def create(self, validated_data):
+        return CashFlowProjectionReport(**validated_data)
+

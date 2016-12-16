@@ -15,13 +15,13 @@ if 'crispy_forms' not in INSTALLED_APPS:
     INSTALLED_APPS += ['crispy_forms', ]
 if 'redisboard' not in INSTALLED_APPS:
     INSTALLED_APPS += ['redisboard', ]
-if 'debug_toolbar' not in INSTALLED_APPS:
-    INSTALLED_APPS += ['debug_toolbar', ]
-    MIDDLEWARE_CLASSES = MIDDLEWARE_CLASSES + ['debug_toolbar.middleware.DebugToolbarMiddleware', ]
-    INTERNAL_IPS = ['127.0.0.1']
+# if 'debug_toolbar' not in INSTALLED_APPS:
+#     INSTALLED_APPS += ['debug_toolbar', ]
+#     MIDDLEWARE_CLASSES = MIDDLEWARE_CLASSES + ['debug_toolbar.middleware.DebugToolbarMiddleware', ]
+#     INTERNAL_IPS = ['127.0.0.1']
 
 LOGGING['formatters']['verbose']['format'] = '[%(levelname)1.1s %(asctime)s %(name)s %(module)s:%(lineno)d] %(message)s'
-# LOGGING['loggers']['django.db'] = {'level': 'DEBUG'}
+LOGGING['loggers']['django.db'] = {'level': 'DEBUG'}
 LOGGING['loggers']['poms']['level'] = 'DEBUG'
 
 SECRET_KEY = 's#)m^ug%_jr0dtko#83_55rd_we&xu#f9p#!1gh@k&$=5&3e67'

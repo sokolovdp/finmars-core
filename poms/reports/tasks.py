@@ -96,3 +96,12 @@ def transaction_report(instance):
 
     _l.debug('finished')
     return instance
+
+
+@shared_task(name='reports.cash_flow_projection_report')
+def cash_flow_projection_report(instance):
+    _l.debug('cash_flow_projection_report')
+
+    _l.debug('finished')
+    return instance
+
