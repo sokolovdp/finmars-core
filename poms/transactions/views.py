@@ -319,8 +319,15 @@ class TransactionTypeViewSet(AbstractWithObjectPermissionViewSet):
     ]
     filter_class = TransactionTypeFilterSet
     ordering_fields = [
-        'user_code', 'name', 'short_name', 'public_name',
-        'group', 'group__user_code', 'group__name', 'group__short_name', 'group__public_name',
+        'user_code',
+        'name',
+        'short_name',
+        'public_name',
+        'group',
+        'group__user_code',
+        'group__name',
+        'group__short_name',
+        'group__public_name',
     ]
 
     @detail_route(methods=['get', 'put'], url_path='book', serializer_class=TransactionTypeProcessSerializer)
@@ -350,10 +357,14 @@ class TransactionClassifierViewSet(GenericClassifierViewSet):
 
 class TransactionFilterSet(FilterSet):
     id = NoOpFilter()
+
+    complex_transaction__code = django_filters.RangeFilter()
+    complex_transaction__date = django_filters.DateFromToRangeFilter()
+    complex_transaction__transaction_type = django_filters.Filter(name='complex_transaction__transaction_type')
+
     complex_transaction = ModelExtMultipleChoiceFilter(model=ComplexTransaction, field_name='id',
                                                        master_user_path='transaction_type__master_user')
-    complex_transaction__code = django_filters.RangeFilter()
-    complex_transaction__transaction_type = django_filters.Filter(name='complex_transaction__transaction_type')
+
     transaction_class = django_filters.ModelMultipleChoiceFilter(queryset=TransactionClass.objects)
     transaction_code = django_filters.RangeFilter()
     portfolio = ModelExtWithPermissionMultipleChoiceFilter(model=Portfolio)
@@ -403,11 +414,12 @@ class TransactionFilterSet(FilterSet):
         fields = []
 
 
-class TransactionViewSet(AbstractModelViewSet):
-    queryset = Transaction.objects.select_related(
+def get_transaction_queryset(prefetch_complex_transaction_transactions=False):
+    qs = Transaction.objects.select_related(
         'master_user',
         'complex_transaction',
         'complex_transaction__transaction_type',
+        'complex_transaction__transaction_type__group',
         'transaction_class',
         'instrument',
         'instrument__instrument_type',
@@ -494,6 +506,133 @@ class TransactionViewSet(AbstractModelViewSet):
             ('allocation_pl__instrument_type', InstrumentType),
         )
     )
+    if prefetch_complex_transaction_transactions:
+        qs = qs.prefetch_related(
+            Prefetch(
+                'complex_transaction__transactions',
+                queryset=get_transaction_queryset().order_by(
+                    'complex_transaction_order', 'transaction_date'
+                )
+            )
+        )
+    return qs
+
+
+def get_complex_transaction_queryset(prefetch_transactions=False):
+    qs = ComplexTransaction.objects.select_related(
+        'transaction_type',
+        'transaction_type__group',
+    ).prefetch_related(
+        *get_permissions_prefetch_lookups(
+            ('transaction_type', TransactionType),
+            ('transaction_type__group', TransactionTypeGroup),
+        )
+    )
+    if prefetch_transactions:
+        qs = qs.prefetch_related(
+            Prefetch(
+                'transactions',
+                queryset=get_transaction_queryset().order_by(
+                    'transaction_date', 'complex_transaction_order',
+                )
+            )
+        )
+    return qs
+
+
+class TransactionViewSet(AbstractModelViewSet):
+    queryset = get_transaction_queryset(True)
+    # queryset = Transaction.objects.select_related(
+    #     'master_user',
+    #     'complex_transaction',
+    #     'complex_transaction__transaction_type',
+    #     'complex_transaction__transaction_type__group',
+    #     'transaction_class',
+    #     'instrument',
+    #     'instrument__instrument_type',
+    #     'instrument__instrument_type__instrument_class',
+    #     'transaction_currency',
+    #     'settlement_currency',
+    #     'portfolio',
+    #     'account_cash',
+    #     'account_cash__type',
+    #     'account_position',
+    #     'account_position__type',
+    #     'account_interim',
+    #     'account_interim__type',
+    #     'strategy1_position',
+    #     'strategy1_position__subgroup',
+    #     'strategy1_position__subgroup__group',
+    #     'strategy1_cash',
+    #     'strategy1_cash__subgroup',
+    #     'strategy1_cash__subgroup__group',
+    #     'strategy2_position',
+    #     'strategy2_position__subgroup',
+    #     'strategy2_position__subgroup__group',
+    #     'strategy2_cash',
+    #     'strategy2_cash__subgroup',
+    #     'strategy2_cash__subgroup__group',
+    #     'strategy3_position',
+    #     'strategy3_position__subgroup',
+    #     'strategy3_position__subgroup__group',
+    #     'strategy3_cash',
+    #     'strategy3_cash__subgroup',
+    #     'strategy3_cash__subgroup__group',
+    #     'responsible',
+    #     'responsible__group',
+    #     'counterparty',
+    #     'counterparty__group',
+    #     'linked_instrument',
+    #     'linked_instrument__instrument_type',
+    #     'linked_instrument__instrument_type__instrument_class',
+    #     'allocation_balance',
+    #     'allocation_balance__instrument_type',
+    #     'allocation_balance__instrument_type__instrument_class',
+    #     'allocation_pl',
+    #     'allocation_pl__instrument_type',
+    #     'allocation_pl__instrument_type__instrument_class',
+    # ).prefetch_related(
+    #     get_attributes_prefetch(),
+    #     *get_permissions_prefetch_lookups(
+    #         ('portfolio', Portfolio),
+    #         ('instrument', Instrument),
+    #         ('instrument__instrument_type', InstrumentType),
+    #         ('account_cash', Account),
+    #         ('account_cash__type', AccountType),
+    #         ('account_position', Account),
+    #         ('account_position__type', AccountType),
+    #         ('account_interim', Account),
+    #         ('account_interim__type', AccountType),
+    #         ('strategy1_position', Strategy1),
+    #         ('strategy1_position__subgroup', Strategy1Subgroup),
+    #         ('strategy1_position__subgroup__group', Strategy1Group),
+    #         ('strategy1_cash', Strategy1),
+    #         ('strategy1_cash__subgroup', Strategy1Subgroup),
+    #         ('strategy1_cash__subgroup__group', Strategy1Group),
+    #         ('strategy2_position', Strategy2),
+    #         ('strategy2_position__subgroup', Strategy2Subgroup),
+    #         ('strategy2_position__subgroup__group', Strategy2Group),
+    #         ('strategy2_cash', Strategy2),
+    #         ('strategy2_cash__subgroup', Strategy2Subgroup),
+    #         ('strategy2_cash__subgroup__group', Strategy2Group),
+    #         ('strategy3_position', Strategy3),
+    #         ('strategy3_position__subgroup', Strategy3Subgroup),
+    #         ('strategy3_position__subgroup__group', Strategy3Group),
+    #         ('strategy3_cash', Strategy3),
+    #         ('strategy3_cash__subgroup', Strategy3Subgroup),
+    #         ('strategy3_cash__subgroup__group', Strategy3Group),
+    #         ('responsible', Responsible),
+    #         ('responsible__group', ResponsibleGroup),
+    #         ('counterparty', Counterparty),
+    #         ('counterparty__group', CounterpartyGroup),
+    #         ('linked_instrument', Instrument),
+    #         ('linked_instrument__instrument_type', InstrumentType),
+    #         ('allocation_balance', Instrument),
+    #         ('allocation_balance__instrument_type', InstrumentType),
+    #         ('allocation_pl', Instrument),
+    #         ('allocation_pl__instrument_type', InstrumentType),
+    #     )
+    # )
     serializer_class = TransactionSerializer
     filter_backends = AbstractModelViewSet.filter_backends + [
         OwnerByMasterUserFilter,
@@ -504,54 +643,125 @@ class TransactionViewSet(AbstractModelViewSet):
     ]
     filter_class = TransactionFilterSet
     ordering_fields = [
-        'complex_transaction', 'complex_transaction__code', 'complex_transaction_order',
+        'complex_transaction',
+        'complex_transaction__code',
+        'complex_transaction__date',
+        'complex_transaction_order',
         'transaction_code',
-        'portfolio', 'portfolio__user_code', 'portfolio__name', 'portfolio__short_name', 'portfolio__public_name',
-        'instrument', 'instrument__user_code', 'instrument__name', 'instrument__short_name', 'instrument__public_name',
-        'transaction_currency', 'transaction_currency__user_code', 'transaction_currency__name',
-        'transaction_currency__short_name', 'transaction_currency__public_name',
+        'portfolio',
+        'portfolio__user_code',
+        'portfolio__name',
+        'portfolio__short_name',
+        'portfolio__public_name',
+        'instrument',
+        'instrument__user_code',
+        'instrument__name',
+        'instrument__short_name',
+        'instrument__public_name',
+        'transaction_currency',
+        'transaction_currency__user_code',
+        'transaction_currency__name',
+        'transaction_currency__short_name',
+        'transaction_currency__public_name',
         'position_size_with_sign',
-        'settlement_currency', 'settlement_currency__user_code', 'settlement_currency__name',
-        'settlement_currency__short_name', 'settlement_currency__public_name',
-        'cash_consideration', 'principal_with_sign', 'carry_with_sign', 'overheads_with_sign',
-        'transaction_date', 'accounting_date', 'cash_date',
-        'account_cash', 'account_cash__user_code', 'account_cash__name', 'account_cash__short_name',
+        'settlement_currency',
+        'settlement_currency__user_code',
+        'settlement_currency__name',
+        'settlement_currency__short_name',
+        'settlement_currency__public_name',
+        'cash_consideration',
+        'principal_with_sign',
+        'carry_with_sign',
+        'overheads_with_sign',
+        'transaction_date',
+        'accounting_date',
+        'cash_date',
+        'account_cash',
+        'account_cash__user_code',
+        'account_cash__name',
+        'account_cash__short_name',
         'account_cash__public_name',
-        'account_cash', 'account_cash__user_code', 'account_position__name', 'account_position__short_name',
+        'account_cash',
+        'account_cash__user_code',
+        'account_position__name',
+        'account_position__short_name',
         'account_position__public_name',
-        'account_interim', 'account_interim__user_code', 'account_interim__name', 'account_interim__short_name',
+        'account_interim',
+        'account_interim__user_code',
+        'account_interim__name',
+        'account_interim__short_name',
         'account_interim__public_name',
-        'strategy1_position', 'strategy1_position__user_code', 'strategy1_position__name',
-        'strategy1_position__short_name', 'strategy1_position__public_name',
-        'strategy1_cash', 'strategy1_cash__user_code', 'strategy1_cash__name', 'strategy1_cash__short_name',
+        'strategy1_position',
+        'strategy1_position__user_code',
+        'strategy1_position__name',
+        'strategy1_position__short_name',
+        'strategy1_position__public_name',
+        'strategy1_cash',
+        'strategy1_cash__user_code',
+        'strategy1_cash__name',
+        'strategy1_cash__short_name',
         'strategy1_cash__public_name',
-        'strategy2_position', 'strategy2_position__user_code', 'strategy2_position__name',
-        'strategy2_position__short_name', 'strategy2_position__public_name',
-        'strategy2_cash', 'strategy2_cash__user_code', 'strategy2_cash__name', 'strategy2_cash__short_name',
+        'strategy2_position',
+        'strategy2_position__user_code',
+        'strategy2_position__name',
+        'strategy2_position__short_name',
+        'strategy2_position__public_name',
+        'strategy2_cash',
+        'strategy2_cash__user_code',
+        'strategy2_cash__name',
+        'strategy2_cash__short_name',
         'strategy2_cash__public_name',
-        'strategy3_position', 'strategy3_position__user_code', 'strategy3_position__name',
-        'strategy3_position__short_name', 'strategy3_position__public_name',
-        'strategy3_cash', 'strategy3_cash__user_code', 'strategy3_cash__name', 'strategy3_cash__short_name',
+        'strategy3_position',
+        'strategy3_position__user_code',
+        'strategy3_position__name',
+        'strategy3_position__short_name',
+        'strategy3_position__public_name',
+        'strategy3_cash',
+        'strategy3_cash__user_code',
+        'strategy3_cash__name',
+        'strategy3_cash__short_name',
         'strategy3_cash__public_name',
-        'reference_fx_rate', 'is_locked', 'is_canceled', 'factor', 'trade_price', 'principal_amount', 'carry_amount',
+        'reference_fx_rate',
+        'is_locked',
+        'is_canceled',
+        'factor',
+        'trade_price',
+        'principal_amount',
+        'carry_amount',
         'overheads',
-        'responsible', 'responsible__user_code', 'responsible__name', 'responsible__short_name',
+        'responsible',
+        'responsible__user_code',
+        'responsible__name',
+        'responsible__short_name',
         'responsible__public_name',
-        'counterparty', 'counterparty__user_code', 'counterparty__name', 'counterparty__short_name',
+        'counterparty',
+        'counterparty__user_code',
+        'counterparty__name',
+        'counterparty__short_name',
         'counterparty__public_name',
-        'linked_instrument', 'linked_instrument__user_code', 'linked_instrument__name', 'linked_instrument__short_name',
+        'linked_instrument',
+        'linked_instrument__user_code',
+        'linked_instrument__name',
+        'linked_instrument__short_name',
         'linked_instrument__public_name',
-        'allocation_balance', 'allocation_balance__user_code', 'allocation_balance__name',
-        'allocation_balance__short_name', 'allocation_balance__public_name',
-        'allocation_pl', 'allocation_pl__user_code', 'allocation_pl__name', 'allocation_pl__short_name',
+        'allocation_balance',
+        'allocation_balance__user_code',
+        'allocation_balance__name',
+        'allocation_balance__short_name',
+        'allocation_balance__public_name',
+        'allocation_pl',
+        'allocation_pl__user_code',
+        'allocation_pl__name',
+        'allocation_pl__short_name',
         'allocation_pl__public_name',
     ]
 
 
 class ComplexTransactionFilterSet(FilterSet):
     id = NoOpFilter()
-    transaction_type = ModelExtWithPermissionMultipleChoiceFilter(model=TransactionType)
     code = django_filters.RangeFilter()
+    date = django_filters.DateFromToRangeFilter()
+    transaction_type = ModelExtWithPermissionMultipleChoiceFilter(model=TransactionType)
 
     class Meta:
         model = ComplexTransaction
@@ -559,106 +769,109 @@ class ComplexTransactionFilterSet(FilterSet):
 
 
 class ComplexTransactionViewSet(AbstractModelViewSet):
-    queryset = ComplexTransaction.objects.select_related(
-        'transaction_type',
-    ).prefetch_related(
-        Prefetch(
-            'transactions',
-            queryset=Transaction.objects.select_related(
-                'master_user',
-                'transaction_class',
-                'instrument',
-                'instrument__instrument_type',
-                'instrument__instrument_type__instrument_class',
-                'transaction_currency',
-                'settlement_currency',
-                'portfolio',
-                'account_cash',
-                'account_cash__type',
-                'account_position',
-                'account_position__type',
-                'account_interim',
-                'account_interim__type',
-                'strategy1_position',
-                'strategy1_position__subgroup',
-                'strategy1_position__subgroup__group',
-                'strategy1_cash',
-                'strategy1_cash__subgroup',
-                'strategy1_cash__subgroup__group',
-                'strategy2_position',
-                'strategy2_position__subgroup',
-                'strategy2_position__subgroup__group',
-                'strategy2_cash',
-                'strategy2_cash__subgroup',
-                'strategy2_cash__subgroup__group',
-                'strategy3_position',
-                'strategy3_position__subgroup',
-                'strategy3_position__subgroup__group',
-                'strategy3_cash',
-                'strategy3_cash__subgroup',
-                'strategy3_cash__subgroup__group',
-                'responsible',
-                'responsible__group',
-                'counterparty',
-                'counterparty__group',
-                'linked_instrument',
-                'linked_instrument__instrument_type',
-                'linked_instrument__instrument_type__instrument_class',
-                'allocation_balance',
-                'allocation_balance__instrument_type',
-                'allocation_balance__instrument_type__instrument_class',
-                'allocation_pl',
-                'allocation_pl__instrument_type',
-                'allocation_pl__instrument_type__instrument_class',
-            ).prefetch_related(
-                get_attributes_prefetch(),
-                *get_permissions_prefetch_lookups(
-                    ('instrument', Instrument),
-                    ('instrument__instrument_type', InstrumentType),
-                    ('portfolio', Portfolio),
-                    ('account_cash', Account),
-                    ('account_cash__type', AccountType),
-                    ('account_position', Account),
-                    ('account_position__type', AccountType),
-                    ('account_interim', Account),
-                    ('account_interim__type', AccountType),
-                    ('strategy1_position', Strategy1),
-                    ('strategy1_position__subgroup', Strategy1Subgroup),
-                    ('strategy1_position__subgroup__group', Strategy1Group),
-                    ('strategy1_cash', Strategy1),
-                    ('strategy1_cash__subgroup', Strategy1Subgroup),
-                    ('strategy1_cash__subgroup__group', Strategy1Group),
-                    ('strategy2_position', Strategy2),
-                    ('strategy2_position__subgroup', Strategy2Subgroup),
-                    ('strategy2_position__subgroup__group', Strategy2Group),
-                    ('strategy2_cash', Strategy2),
-                    ('strategy2_cash__subgroup', Strategy2Subgroup),
-                    ('strategy2_cash__subgroup__group', Strategy2Group),
-                    ('strategy3_position', Strategy3),
-                    ('strategy3_position__subgroup', Strategy3Subgroup),
-                    ('strategy3_position__subgroup__group', Strategy3Group),
-                    ('strategy3_cash', Strategy3),
-                    ('strategy3_cash__subgroup', Strategy3Subgroup),
-                    ('strategy3_cash__subgroup__group', Strategy3Group),
-                    ('responsible', Responsible),
-                    ('responsible__group', ResponsibleGroup),
-                    ('counterparty', Counterparty),
-                    ('counterparty__group', CounterpartyGroup),
-                    ('linked_instrument', Instrument),
-                    ('linked_instrument__instrument_type', InstrumentType),
-                    ('allocation_balance', Instrument),
-                    ('allocation_balance__instrument_type', InstrumentType),
-                    ('allocation_pl', Instrument),
-                    ('allocation_pl__instrument_type', InstrumentType),
-                )
-            ).order_by(
-                'complex_transaction_order', 'transaction_date'
-            )
-        ),
-        *get_permissions_prefetch_lookups(
-            ('transaction_type', TransactionType),
-        )
-    )
+    queryset = get_complex_transaction_queryset(True)
+    # queryset = ComplexTransaction.objects.select_related(
+    #     'transaction_type',
+    #     'transaction_type__group',
+    # ).prefetch_related(
+    #     Prefetch(
+    #         'transactions',
+    #         queryset=Transaction.objects.select_related(
+    #             'master_user',
+    #             'transaction_class',
+    #             'instrument',
+    #             'instrument__instrument_type',
+    #             'instrument__instrument_type__instrument_class',
+    #             'transaction_currency',
+    #             'settlement_currency',
+    #             'portfolio',
+    #             'account_cash',
+    #             'account_cash__type',
+    #             'account_position',
+    #             'account_position__type',
+    #             'account_interim',
+    #             'account_interim__type',
+    #             'strategy1_position',
+    #             'strategy1_position__subgroup',
+    #             'strategy1_position__subgroup__group',
+    #             'strategy1_cash',
+    #             'strategy1_cash__subgroup',
+    #             'strategy1_cash__subgroup__group',
+    #             'strategy2_position',
+    #             'strategy2_position__subgroup',
+    #             'strategy2_position__subgroup__group',
+    #             'strategy2_cash',
+    #             'strategy2_cash__subgroup',
+    #             'strategy2_cash__subgroup__group',
+    #             'strategy3_position',
+    #             'strategy3_position__subgroup',
+    #             'strategy3_position__subgroup__group',
+    #             'strategy3_cash',
+    #             'strategy3_cash__subgroup',
+    #             'strategy3_cash__subgroup__group',
+    #             'responsible',
+    #             'responsible__group',
+    #             'counterparty',
+    #             'counterparty__group',
+    #             'linked_instrument',
+    #             'linked_instrument__instrument_type',
+    #             'linked_instrument__instrument_type__instrument_class',
+    #             'allocation_balance',
+    #             'allocation_balance__instrument_type',
+    #             'allocation_balance__instrument_type__instrument_class',
+    #             'allocation_pl',
+    #             'allocation_pl__instrument_type',
+    #             'allocation_pl__instrument_type__instrument_class',
+    #         ).prefetch_related(
+    #             get_attributes_prefetch(),
+    #             *get_permissions_prefetch_lookups(
+    #                 ('instrument', Instrument),
+    #                 ('instrument__instrument_type', InstrumentType),
+    #                 ('portfolio', Portfolio),
+    #                 ('account_cash', Account),
+    #                 ('account_cash__type', AccountType),
+    #                 ('account_position', Account),
+    #                 ('account_position__type', AccountType),
+    #                 ('account_interim', Account),
+    #                 ('account_interim__type', AccountType),
+    #                 ('strategy1_position', Strategy1),
+    #                 ('strategy1_position__subgroup', Strategy1Subgroup),
+    #                 ('strategy1_position__subgroup__group', Strategy1Group),
+    #                 ('strategy1_cash', Strategy1),
+    #                 ('strategy1_cash__subgroup', Strategy1Subgroup),
+    #                 ('strategy1_cash__subgroup__group', Strategy1Group),
+    #                 ('strategy2_position', Strategy2),
+    #                 ('strategy2_position__subgroup', Strategy2Subgroup),
+    #                 ('strategy2_position__subgroup__group', Strategy2Group),
+    #                 ('strategy2_cash', Strategy2),
+    #                 ('strategy2_cash__subgroup', Strategy2Subgroup),
+    #                 ('strategy2_cash__subgroup__group', Strategy2Group),
+    #                 ('strategy3_position', Strategy3),
+    #                 ('strategy3_position__subgroup', Strategy3Subgroup),
+    #                 ('strategy3_position__subgroup__group', Strategy3Group),
+    #                 ('strategy3_cash', Strategy3),
+    #                 ('strategy3_cash__subgroup', Strategy3Subgroup),
+    #                 ('strategy3_cash__subgroup__group', Strategy3Group),
+    #                 ('responsible', Responsible),
+    #                 ('responsible__group', ResponsibleGroup),
+    #                 ('counterparty', Counterparty),
+    #                 ('counterparty__group', CounterpartyGroup),
+    #                 ('linked_instrument', Instrument),
+    #                 ('linked_instrument__instrument_type', InstrumentType),
+    #                 ('allocation_balance', Instrument),
+    #                 ('allocation_balance__instrument_type', InstrumentType),
+    #                 ('allocation_pl', Instrument),
+    #                 ('allocation_pl__instrument_type', InstrumentType),
+    #             )
+    #         ).order_by(
+    #             'complex_transaction_order', 'transaction_date'
+    #         )
+    #     ),
+    #     *get_permissions_prefetch_lookups(
+    #         ('transaction_type', TransactionType),
+    #         ('transaction_type__group', TransactionTypeGroup),
+    #     )
+    # )
     serializer_class = ComplexTransactionSerializer
     permission_classes = AbstractModelViewSet.permission_classes + [
         ComplexTransactionPermission
@@ -667,7 +880,10 @@ class ComplexTransactionViewSet(AbstractModelViewSet):
         ComplexTransactionPermissionFilter,
     ]
     filter_class = ComplexTransactionFilterSet
-    ordering_fields = ['code', ]
+    ordering_fields = [
+        'date'
+        'code',
+    ]
 
     @detail_route(methods=['get', 'put'], url_path='book', serializer_class=TransactionTypeProcessSerializer)
     def book(self, request, pk=None):
