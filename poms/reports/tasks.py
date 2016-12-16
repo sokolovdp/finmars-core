@@ -1,5 +1,3 @@
-import base64
-import hashlib
 import logging
 
 from celery import shared_task
@@ -64,10 +62,37 @@ _l = logging.getLogger('poms.instruments')
 
 @shared_task(name='reports.build_report')
 def build_report(instance):
-    _l.debug('report: %s', instance)
+    _l.debug('build_report: %s', instance)
 
     builder = ReportBuilder(instance=instance)
     instance = builder.build()
+
+    _l.debug('finished')
+    return instance
+
+
+@shared_task(name='reports.transaction_report')
+def transaction_report(instance):
+    _l.debug('transaction_report')
+
+    from poms.transactions.views import ComplexTransactionViewSet
+    complex_transactions = ComplexTransactionViewSet.queryset.order_by(
+        'date', 'code'
+    )
+
+    transactions = []
+    for ct in complex_transactions:
+        for t in ct.transactions.all():
+            transactions.append(t)
+
+    def _transaction_key(item):
+        return (
+            item.complex_transaction.date,
+            item.complex_transaction.code,
+            item.transaction_code,
+        )
+
+    instance.transactions = sorted(transactions, key=_transaction_key)
 
     _l.debug('finished')
     return instance
