@@ -414,8 +414,10 @@ class TransactionFilterSet(FilterSet):
         fields = []
 
 
-def get_transaction_queryset(prefetch_complex_transaction_transactions=False):
-    qs = Transaction.objects.select_related(
+def get_transaction_queryset(select_related=True, complex_transaction_transactions=False):
+    qs = Transaction.objects
+
+    fields1 = (
         'master_user',
         'complex_transaction',
         'complex_transaction__transaction_type',
@@ -464,9 +466,17 @@ def get_transaction_queryset(prefetch_complex_transaction_transactions=False):
         'allocation_pl',
         'allocation_pl__instrument_type',
         'allocation_pl__instrument_type__instrument_class',
-    ).prefetch_related(
+    )
+    if select_related:
+        qs = qs.select_related(*fields1)
+    else:
+        qs = qs.prefetch_related(*fields1)
+
+    qs = qs.prefetch_related(
         get_attributes_prefetch(),
         *get_permissions_prefetch_lookups(
+            ('complex_transaction__transaction_type', TransactionType),
+            ('complex_transaction__transaction_type__group', TransactionTypeGroup),
             ('portfolio', Portfolio),
             ('instrument', Instrument),
             ('instrument__instrument_type', InstrumentType),
@@ -506,33 +516,42 @@ def get_transaction_queryset(prefetch_complex_transaction_transactions=False):
             ('allocation_pl__instrument_type', InstrumentType),
         )
     )
-    if prefetch_complex_transaction_transactions:
+
+    if complex_transaction_transactions:
         qs = qs.prefetch_related(
             Prefetch(
                 'complex_transaction__transactions',
-                queryset=get_transaction_queryset().order_by(
+                queryset=get_transaction_queryset(select_related=select_related).order_by(
                     'complex_transaction_order', 'transaction_date'
                 )
             )
         )
+
     return qs
 
 
-def get_complex_transaction_queryset(prefetch_transactions=False):
-    qs = ComplexTransaction.objects.select_related(
+def get_complex_transaction_queryset(select_related=True, transactions=False):
+    fields1 = (
         'transaction_type',
         'transaction_type__group',
-    ).prefetch_related(
+    )
+    qs = ComplexTransaction.objects
+    if select_related:
+        qs = qs.select_related(*fields1)
+    else:
+        qs = qs.prefetch_related(*fields1)
+
+    qs = qs.prefetch_related(
         *get_permissions_prefetch_lookups(
             ('transaction_type', TransactionType),
             ('transaction_type__group', TransactionTypeGroup),
         )
     )
-    if prefetch_transactions:
+    if transactions:
         qs = qs.prefetch_related(
             Prefetch(
                 'transactions',
-                queryset=get_transaction_queryset().order_by(
+                queryset=get_transaction_queryset(select_related=select_related).order_by(
                     'transaction_date', 'complex_transaction_order',
                 )
             )
@@ -541,7 +560,7 @@ def get_complex_transaction_queryset(prefetch_transactions=False):
 
 
 class TransactionViewSet(AbstractModelViewSet):
-    queryset = get_transaction_queryset(True)
+    queryset = get_transaction_queryset(complex_transaction_transactions=True)
     # queryset = Transaction.objects.select_related(
     #     'master_user',
     #     'complex_transaction',
@@ -769,7 +788,7 @@ class ComplexTransactionFilterSet(FilterSet):
 
 
 class ComplexTransactionViewSet(AbstractModelViewSet):
-    queryset = get_complex_transaction_queryset(True)
+    queryset = get_complex_transaction_queryset(transactions=True)
     # queryset = ComplexTransaction.objects.select_related(
     #     'transaction_type',
     #     'transaction_type__group',

@@ -895,19 +895,25 @@ class TransactionTextRenderSerializer(TransactionSerializer):
 
 class ComplexTransactionMixin:
     def get_text(self, obj):
+        # return ''
         if obj.id is None or obj.id < 0:
             transactions = getattr(obj, '_fake_transactions', [])
         else:
             transactions = obj.transactions.all()
-        names = {
-            'code': obj.code,
-            'transactions': formula.get_model_data(transactions, TransactionTextRenderSerializer, many=True,
-                                                   context=self.context),
-        }
+
         try:
-            return formula.safe_eval(obj.transaction_type.display_expr, names=names)
-        except formula.InvalidExpression:
-            return '<InvalidExpression>'
+            return obj._cached_text
+        except AttributeError:
+            names = {
+                'code': obj.code,
+                'transactions': formula.get_model_data(transactions, TransactionTextRenderSerializer, many=True,
+                                                       context=self.context),
+            }
+            try:
+                obj._cached_text = formula.safe_eval(obj.transaction_type.display_expr, names=names)
+            except formula.InvalidExpression:
+                obj._cached_text = '<InvalidExpression>'
+            return obj._cached_text
 
 
 class ComplexTransactionSerializer(ComplexTransactionMixin, serializers.ModelSerializer):
