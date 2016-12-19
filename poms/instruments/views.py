@@ -484,7 +484,7 @@ class GeneratedEventViewSet(UpdateModelMixinExt, AbstractReadOnlyModelViewSet):
         generated_event = self.get_object()
 
         if not generated_event.is_need_reaction:
-            raise PermissionDenied()
+            raise ValidationError('event already processed or future event')
 
         # if generated_event.status != GeneratedEvent.NEW:
         #     raise PermissionDenied()
