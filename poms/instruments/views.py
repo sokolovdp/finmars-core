@@ -479,10 +479,12 @@ class GeneratedEventViewSet(UpdateModelMixinExt, AbstractReadOnlyModelViewSet):
         )
         return qs
 
-    @detail_route(methods=['get', 'put'], url_path='book', serializer_class=TransactionTypeProcessSerializer,
-                  permission_classes=AbstractReadOnlyModelViewSet.permission_classes + [GeneratedEventPermission])
+    @detail_route(methods=['get', 'put'], url_path='book', serializer_class=TransactionTypeProcessSerializer)
     def process(self, request, pk=None):
         generated_event = self.get_object()
+
+        if not generated_event.is_need_reaction:
+            raise PermissionDenied()
 
         # if generated_event.status != GeneratedEvent.NEW:
         #     raise PermissionDenied()
