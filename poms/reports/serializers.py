@@ -68,83 +68,148 @@ class ReportInstrumentSerializer(InstrumentSerializer):
         self.fields.pop('group_object_permissions')
         self.fields.pop('object_permissions')
 
+        self.fields.pop('tags')
+        self.fields.pop('tags_object')
+
+        self.fields.pop('payment_size_detail')
+        self.fields.pop('payment_size_detail_object')
+        self.fields.pop('price_download_scheme')
+        self.fields.pop('price_download_scheme_object')
+        self.fields.pop('daily_pricing_model')
+        self.fields.pop('daily_pricing_model_object')
+
+        # self.fields.pop('is_default')
+
 
 class ReportCurrencySerializer(CurrencySerializer):
     def __init__(self, *args, **kwargs):
-        super(CurrencySerializer, self).__init__(*args, **kwargs)
+        super(ReportCurrencySerializer, self).__init__(*args, **kwargs)
+
+        self.fields.pop('tags')
+        self.fields.pop('tags_object')
+
+        self.fields.pop('price_download_scheme')
+        self.fields.pop('price_download_scheme_object')
+        self.fields.pop('daily_pricing_model')
+        self.fields.pop('daily_pricing_model_object')
+
+        self.fields.pop('is_default')
 
 
 class ReportPortfolioSerializer(PortfolioSerializer):
     def __init__(self, *args, **kwargs):
-        super(PortfolioSerializer, self).__init__(*args, **kwargs)
-        self.fields.pop('accounts', None)
-        self.fields.pop('accounts_object', None)
-        self.fields.pop('responsibles', None)
-        self.fields.pop('responsibles_object', None)
-        self.fields.pop('counterparties', None)
-        self.fields.pop('counterparties_object', None)
-        self.fields.pop('transaction_types', None)
-        self.fields.pop('transaction_types_object', None)
+        super(ReportPortfolioSerializer, self).__init__(*args, **kwargs)
 
-        self.fields.pop('user_object_permissions', None)
-        self.fields.pop('group_object_permissions', None)
-        self.fields.pop('object_permissions', None)
+        self.fields.pop('accounts')
+        self.fields.pop('accounts_object')
+        self.fields.pop('responsibles')
+        self.fields.pop('responsibles_object')
+        self.fields.pop('counterparties')
+        self.fields.pop('counterparties_object')
+        self.fields.pop('transaction_types')
+        self.fields.pop('transaction_types_object')
+
+        self.fields.pop('user_object_permissions')
+        self.fields.pop('group_object_permissions')
+        self.fields.pop('object_permissions')
+
+        self.fields.pop('tags')
+        self.fields.pop('tags_object')
+
+        self.fields.pop('is_default')
 
 
 class ReportAccountSerializer(AccountSerializer):
     def __init__(self, *args, **kwargs):
-        super(AccountSerializer, self).__init__(*args, **kwargs)
-        self.fields.pop('portfolios', None)
-        self.fields.pop('portfolios_object', None)
+        super(ReportAccountSerializer, self).__init__(*args, **kwargs)
 
-        self.fields.pop('user_object_permissions', None)
-        self.fields.pop('group_object_permissions', None)
-        self.fields.pop('object_permissions', None)
+        self.fields.pop('portfolios')
+        self.fields.pop('portfolios_object')
+
+        self.fields.pop('user_object_permissions')
+        self.fields.pop('group_object_permissions')
+        self.fields.pop('object_permissions')
+
+        self.fields.pop('tags')
+        self.fields.pop('tags_object')
+
+        self.fields.pop('is_default')
 
 
 class ReportStrategy1Serializer(Strategy1Serializer):
     def __init__(self, *args, **kwargs):
-        super(Strategy1Serializer, self).__init__(*args, **kwargs)
+        super(ReportStrategy1Serializer, self).__init__(*args, **kwargs)
 
         self.fields.pop('user_object_permissions')
         self.fields.pop('group_object_permissions')
         self.fields.pop('object_permissions')
+
+        self.fields.pop('tags')
+        self.fields.pop('tags_object')
+
+        # self.fields.pop('is_default')
 
 
 class ReportStrategy2Serializer(Strategy2Serializer):
     def __init__(self, *args, **kwargs):
-        super(Strategy2Serializer, self).__init__(*args, **kwargs)
+        super(ReportStrategy2Serializer, self).__init__(*args, **kwargs)
 
         self.fields.pop('user_object_permissions')
         self.fields.pop('group_object_permissions')
         self.fields.pop('object_permissions')
+
+        self.fields.pop('tags')
+        self.fields.pop('tags_object')
+
+        # self.fields.pop('is_default')
 
 
 class ReportStrategy3Serializer(Strategy3Serializer):
     def __init__(self, *args, **kwargs):
-        super(Strategy3Serializer, self).__init__(*args, **kwargs)
+        super(ReportStrategy3Serializer, self).__init__(*args, **kwargs)
 
         self.fields.pop('user_object_permissions')
         self.fields.pop('group_object_permissions')
         self.fields.pop('object_permissions')
+
+        self.fields.pop('tags')
+        self.fields.pop('tags_object')
+
+        # self.fields.pop('is_default')
 
 
 class ReportResponsibleSerializer(ResponsibleSerializer):
     def __init__(self, *args, **kwargs):
         super(ReportResponsibleSerializer, self).__init__(*args, **kwargs)
 
+        self.fields.pop('portfolios')
+        self.fields.pop('portfolios_object')
+
         self.fields.pop('user_object_permissions')
         self.fields.pop('group_object_permissions')
         self.fields.pop('object_permissions')
+
+        self.fields.pop('tags')
+        self.fields.pop('tags_object')
+
+        self.fields.pop('is_default')
 
 
 class ReportCounterpartySerializer(CounterpartySerializer):
     def __init__(self, *args, **kwargs):
         super(ReportCounterpartySerializer, self).__init__(*args, **kwargs)
 
+        self.fields.pop('portfolios')
+        self.fields.pop('portfolios_object')
+
         self.fields.pop('user_object_permissions')
         self.fields.pop('group_object_permissions')
         self.fields.pop('object_permissions')
+
+        self.fields.pop('tags')
+        self.fields.pop('tags_object')
+
+        self.fields.pop('is_default')
 
 
 class ReportItemCustomFieldSerializer(serializers.Serializer):
@@ -367,7 +432,8 @@ class ReportComplexTransactionSerializer(ComplexTransactionSerializer):
     def __init__(self, *args, **kwargs):
         super(ReportComplexTransactionSerializer, self).__init__(*args, **kwargs)
 
-        # self.fields.pop('transactions')
+        # self.fields.pop('text')
+        self.fields.pop('transactions')
         self.fields.pop('transactions_object')
         # self.fields.pop('transaction_type_object')
         # self.fields['transaction_type_object'] = TransactionTypeViewSerializer(source='transaction_type', read_only=True)
@@ -425,6 +491,10 @@ class TransactionReportSerializer(serializers.Serializer):
 
     master_user = MasterUserField()
     member = HiddenMemberField()
+
+    begin_date = serializers.DateField(required=False, allow_null=True)
+    end_date = serializers.DateField(required=False, allow_null=True)
+    report_date = serializers.DateField(required=False, allow_null=True)
 
     transactions = TransactionReportTransactionSerializer(many=True, read_only=True)
 

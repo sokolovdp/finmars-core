@@ -896,8 +896,8 @@ class TransactionTextRenderSerializer(TransactionSerializer):
 class ComplexTransactionMixin:
     def get_text(self, obj):
         # return ''
-        if obj.id is None or obj.id < 0:
-            transactions = getattr(obj, '_fake_transactions', [])
+        if hasattr(obj, '_fake_transactions'):
+            transactions = obj._fake_transactions
         else:
             transactions = obj.transactions.all()
 
