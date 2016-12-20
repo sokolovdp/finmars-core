@@ -118,7 +118,7 @@ class TransactionReportBuilder:
         from poms.obj_attrs.utils import get_attributes_prefetch
         from poms.obj_perms.utils import get_permissions_prefetch_lookups
 
-        _l.info('> _load')
+        _l.debug('> _load')
 
         transactions = []
         complex_transactions = {}
@@ -142,6 +142,7 @@ class TransactionReportBuilder:
 
         qs = Transaction.objects.prefetch_related(
             'complex_transaction',
+            'instrument',
             get_attributes_prefetch(),
         )
         if self.instance.begin_date:
@@ -149,16 +150,18 @@ class TransactionReportBuilder:
         if self.instance.end_date:
             qs = qs.filter(complex_transaction__date__lte=self.instance.end_date)
 
-        _l.info('> transactions')
+        _l.debug('> transactions')
         for t in qs.all():
             transactions.append(t)
 
+            _c(complex_transactions, t, 'complex_transaction')
             if t.complex_transaction:
-                _c(complex_transactions, t, 'complex_transaction')
                 _c(transaction_types, t.complex_transaction, 'transaction_type')
-
             _c(transaction_classes, t, 'transaction_class')
             _c(instruments, t, 'instrument')
+            if t.instrument:
+                _c(currencies, t.instrument, 'pricing_currency')
+                _c(currencies, t.instrument, 'accrued_currency')
             _c(currencies, t, 'transaction_currency')
             _c(currencies, t, 'settlement_currency')
             _c(portfolios, t, 'portfolio')
@@ -176,18 +179,18 @@ class TransactionReportBuilder:
             _c(instruments, t, 'linked_instrument')
             _c(instruments, t, 'allocation_balance')
             _c(instruments, t, 'allocation_pl')
-        _l.info('< transactions: %s', len(transactions))
+        _l.debug('< transactions: %s', len(transactions))
 
-        _l.info('> transaction_classes')
+        _l.debug('> transaction_classes')
         if transaction_classes:
             qs = TransactionClass.objects.filter(
                 pk__in=transaction_classes.keys()
             )
             for o in qs:
                 transaction_classes[o.id] = o
-        _l.info('< transaction_classes: %s', len(transaction_classes))
+        _l.debug('< transaction_classes: %s', len(transaction_classes))
 
-        _l.info('> complex_transactions')
+        _l.debug('> complex_transactions')
         if complex_transactions:
             qs = ComplexTransaction.objects.filter(
                 transaction_type__master_user=self.instance.master_user,
@@ -195,10 +198,11 @@ class TransactionReportBuilder:
             ).prefetch_related(
             )
             for o in qs:
+                o._fake_transactions = []
                 complex_transactions[o.id] = o
-        _l.info('< complex_transactions: %s', len(complex_transactions))
+        _l.debug('< complex_transactions: %s', len(complex_transactions))
 
-        _l.info('> transaction_types')
+        _l.debug('> transaction_types')
         if transaction_types:
             qs = TransactionType.objects.filter(
                 master_user=self.instance.master_user,
@@ -212,9 +216,9 @@ class TransactionReportBuilder:
             )
             for o in qs:
                 transaction_types[o.id] = o
-        _l.info('< transaction_types: %s', len(transactions))
+        _l.debug('< transaction_types: %s', len(transactions))
 
-        _l.info('> instruments')
+        _l.debug('> instruments')
         if instruments:
             qs = Instrument.objects.filter(
                 master_user=self.instance.master_user,
@@ -222,8 +226,6 @@ class TransactionReportBuilder:
             ).prefetch_related(
                 'instrument_type',
                 'instrument_type__instrument_class',
-                'pricing_currency',
-                'accrued_currency',
                 get_attributes_prefetch(),
                 *get_permissions_prefetch_lookups(
                     (None, Instrument),
@@ -232,9 +234,9 @@ class TransactionReportBuilder:
             )
             for o in qs:
                 instruments[o.id] = o
-        _l.info('< instruments: %s', len(instruments))
+        _l.debug('< instruments: %s', len(instruments))
 
-        _l.info('> currencies')
+        _l.debug('> currencies')
         if currencies:
             qs = Currency.objects.filter(
                 master_user=self.instance.master_user,
@@ -244,9 +246,9 @@ class TransactionReportBuilder:
             )
             for o in qs:
                 currencies[o.id] = o
-        _l.info('< currencies: %s', len(currencies))
+        _l.debug('< currencies: %s', len(currencies))
 
-        _l.info('> portfolios')
+        _l.debug('> portfolios')
         if portfolios:
             qs = Portfolio.objects.filter(
                 master_user=self.instance.master_user,
@@ -259,9 +261,9 @@ class TransactionReportBuilder:
             )
             for o in qs:
                 portfolios[o.id] = o
-        _l.info('< portfolios: %s', len(portfolios))
+        _l.debug('< portfolios: %s', len(portfolios))
 
-        _l.info('> accounts')
+        _l.debug('> accounts')
         if accounts:
             qs = Account.objects.filter(
                 master_user=self.instance.master_user,
@@ -276,9 +278,9 @@ class TransactionReportBuilder:
             )
             for o in qs:
                 accounts[o.id] = o
-        _l.info('< accounts: %s', len(accounts))
+        _l.debug('< accounts: %s', len(accounts))
 
-        _l.info('> strategies1')
+        _l.debug('> strategies1')
         if strategies1:
             qs = Strategy1.objects.filter(
                 master_user=self.instance.master_user,
@@ -294,9 +296,9 @@ class TransactionReportBuilder:
             )
             for o in qs:
                 strategies1[o.id] = o
-        _l.info('< strategies1: %s', len(strategies1))
+        _l.debug('< strategies1: %s', len(strategies1))
 
-        _l.info('> strategies2')
+        _l.debug('> strategies2')
         if strategies2:
             qs = Strategy2.objects.filter(
                 master_user=self.instance.master_user,
@@ -312,9 +314,9 @@ class TransactionReportBuilder:
             )
             for o in qs:
                 strategies2[o.id] = o
-        _l.info('< strategies2: %s', len(strategies2))
+        _l.debug('< strategies2: %s', len(strategies2))
 
-        _l.info('> strategies3')
+        _l.debug('> strategies3')
         if strategies3:
             qs = Strategy3.objects.filter(
                 master_user=self.instance.master_user,
@@ -330,9 +332,9 @@ class TransactionReportBuilder:
             )
             for o in qs:
                 strategies3[o.id] = o
-        _l.info('< strategies3: %s', len(strategies3))
+        _l.debug('< strategies3: %s', len(strategies3))
 
-        _l.info('> responsibles')
+        _l.debug('> responsibles')
         if responsibles:
             qs = Responsible.objects.filter(
                 master_user=self.instance.master_user,
@@ -347,9 +349,9 @@ class TransactionReportBuilder:
             )
             for o in qs:
                 responsibles[o.id] = o
-        _l.info('< responsibles: %s', len(responsibles))
+        _l.debug('< responsibles: %s', len(responsibles))
 
-        _l.info('> counterparties')
+        _l.debug('> counterparties')
         if counterparties:
             qs = Counterparty.objects.filter(
                 master_user=self.instance.master_user,
@@ -364,7 +366,7 @@ class TransactionReportBuilder:
             )
             for o in qs:
                 counterparties[o.id] = o
-        _l.info('< counterparties: %s', len(counterparties))
+        _l.debug('< counterparties: %s', len(counterparties))
 
         def _p(cache, obj, attr):
             attr_pk_name = '%s_id' % attr
@@ -379,19 +381,17 @@ class TransactionReportBuilder:
                 #     else:
                 #         cache[pk] = obj
 
-        _l.info('> transactions')
+        _l.debug('> transactions')
         for t in transactions:
+            _p(complex_transactions, t, 'complex_transaction')
             if t.complex_transaction:
-                _p(complex_transactions, t, 'complex_transaction')
                 _p(transaction_types, t.complex_transaction, 'transaction_type')
-
-                try:
-                    t.complex_transaction._fake_transactions.append(t)
-                except AttributeError:
-                    t.complex_transaction._fake_transactions = [t]
-
+                t.complex_transaction._fake_transactions.append(t)
             _p(transaction_classes, t, 'transaction_class')
             _p(instruments, t, 'instrument')
+            if t.instrument:
+                _p(currencies, t.instrument, 'pricing_currency')
+                _p(currencies, t.instrument, 'accrued_currency')
             _p(currencies, t, 'transaction_currency')
             _p(currencies, t, 'settlement_currency')
             _p(portfolios, t, 'portfolio')
@@ -409,7 +409,7 @@ class TransactionReportBuilder:
             _p(instruments, t, 'linked_instrument')
             _p(instruments, t, 'allocation_balance')
             _p(instruments, t, 'allocation_pl')
-        _l.info('< transactions: %s', len(transactions))
+        _l.debug('< transactions: %s', len(transactions))
 
         self.instance.transactions = transactions
         self.instance.complex_transactions = list(complex_transactions.values())
@@ -425,43 +425,43 @@ class TransactionReportBuilder:
         self.instance.responsibles = list(responsibles.values())
         self.instance.counterparties = list(counterparties.values())
 
-        _l.info('< _load')
+        _l.debug('< _load')
 
     def build(self):
         with transaction.atomic():
-            _l.info('> _make_transactions')
+            _l.debug('> _make_transactions')
             # self._make_transactions(10000)
-            _l.info('< _make_transactions')
+            _l.debug('< _make_transactions')
 
             self._load()
 
-            _l.info('> _process')
+            _l.debug('> _process')
             self._process()
-            _l.info('< _process')
+            _l.debug('< _process')
 
-            _l.info('> pickle')
+            _l.debug('> pickle')
             import pickle
             data = pickle.dumps(self.instance, protocol=pickle.HIGHEST_PROTOCOL)
-            _l.info('< pickle: %s', len(data))
+            _l.debug('< pickle: %s', len(data))
 
-            _l.info('> zlib')
+            _l.debug('> zlib')
             import zlib
             data1 = zlib.compress(data)
-            _l.info('< zlib: %s', len(data1))
+            _l.debug('< zlib: %s', len(data1))
 
-            # _l.info('> TransactionReportSerializer.data')
+            # _l.debug('> TransactionReportSerializer.data')
             # from poms.reports.serializers import TransactionReportSerializer
             # s = TransactionReportSerializer(instance=self.instance, context={
             #     'master_user': self.instance.master_user,
             #     'member': self.instance.member,
             # })
             # data_dict = s.data
-            # _l.info('< TransactionReportSerializer.data')
+            # _l.debug('< TransactionReportSerializer.data')
             #
-            # _l.info('> JSONRenderer.render')
+            # _l.debug('> JSONRenderer.render')
             # r = JSONRenderer()
             # data = r.render(data_dict)
-            # _l.info('< JSONRenderer.render: %s', len(data))
+            # _l.debug('< JSONRenderer.render: %s', len(data))
 
             transaction.set_rollback(True)
 
