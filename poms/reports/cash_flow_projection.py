@@ -2,10 +2,12 @@ import copy
 import datetime
 import logging
 import random
+import sys
 from collections import defaultdict
 
+from django.conf import settings
 from django.db import transaction
-from mptt.utils import get_cached_trees
+from django.db.models import Q
 
 from poms.accounts.models import Account, AccountType
 from poms.common.utils import isclose
@@ -17,8 +19,7 @@ from poms.instruments.models import Instrument, InstrumentType, GeneratedEvent
 from poms.obj_attrs.models import GenericAttributeType
 from poms.portfolios.models import Portfolio
 from poms.strategies.models import Strategy1, Strategy2, Strategy3, Strategy1Subgroup, Strategy1Group, \
-    Strategy2Subgroup, \
-    Strategy2Group, Strategy3Subgroup, Strategy3Group
+    Strategy2Subgroup, Strategy2Group, Strategy3Subgroup, Strategy3Group
 from poms.transactions.models import Transaction, ComplexTransaction, TransactionType, TransactionClass, \
     TransactionTypeGroup
 
@@ -36,8 +37,10 @@ class TransactionReportItem:
                  linked_instrument=None, allocation_balance=None, allocation_pl=None, reference_fx_rate=None,
                  attributes=None):
         self.id = id if id is not None else getattr(trn, 'id', None)
+
         self.complex_transaction = complex_transaction if complex_transaction is not None else \
             getattr(trn, 'complex_transaction', None)
+
         self.complex_transaction_order = complex_transaction_order if complex_transaction_order is not None else \
             getattr(trn, 'complex_transaction_order', None)
         self.transaction_code = transaction_code if transaction_code is not None else \
@@ -146,6 +149,7 @@ class TransactionReportBuilder:
     def __init__(self, instance=None):
         self.instance = instance
         self._transactions = []
+        self._items = []
         self._complex_transactions = {}
         self._transaction_types = {}
         self._transaction_classes = {}
@@ -165,7 +169,13 @@ class TransactionReportBuilder:
 
         _l.debug('> _load')
 
-        qs = Transaction.objects.prefetch_related(
+        qs = Transaction.objects.filter(
+            master_user=self.instance.master_user,
+            is_canceled=False,
+            id__gt=10000
+        ).filter(
+            Q(complex_transaction__status=ComplexTransaction.PRODUCTION) | Q(complex_transaction__isnull=True)
+        ).prefetch_related(
             'complex_transaction',
             'instrument',
             get_attributes_prefetch(),
@@ -498,7 +508,9 @@ class TransactionReportBuilder:
 
         _l.debug('< _prefetch')
 
-    def _set_prefetched(self):
+    def _update_instance(self):
+        self.instance.items = self._items
+
         self.instance.complex_transactions = list(self._complex_transactions.values())
         self.instance.transaction_types = list(self._transaction_types.values())
         self.instance.transaction_classes = list(self._transaction_classes.values())
@@ -536,30 +548,16 @@ class TransactionReportBuilder:
             elif issubclass(model_class, Counterparty):
                 self.instance.counterparty_attribute_types.append(at)
 
-
     def build(self):
         with transaction.atomic():
-            _l.debug('> _make_transactions')
+            # _l.debug('> _make_transactions')
             # self._make_transactions(10000)
-            _l.debug('< _make_transactions')
+            # _l.debug('< _make_transactions')
 
             self._load()
             self._prefetch()
-
-            self.instance.items = [TransactionReportItem(trn=t) for t in self._transactions]
-            self._set_prefetched()
-            # self.instance.complex_transactions = list(self._complex_transactions.values())
-            # self.instance.transaction_types = list(self._transaction_types.values())
-            # self.instance.transaction_classes = list(self._transaction_classes.values())
-            # self.instance.instruments = list(self._instruments.values())
-            # self.instance.currencies = list(self._currencies.values())
-            # self.instance.portfolios = list(self._portfolios.values())
-            # self.instance.accounts = list(self._accounts.values())
-            # self.instance.strategies1 = list(self._strategies1.values())
-            # self.instance.strategies2 = list(self._strategies2.values())
-            # self.instance.strategies3 = list(self._strategies3.values())
-            # self.instance.responsibles = list(self._responsibles.values())
-            # self.instance.counterparties = list(self._counterparties.values())
+            self._items = [TransactionReportItem(trn=t) for t in self._transactions]
+            self._update_instance()
 
             # _l.debug('> pickle')
             # import pickle
@@ -657,7 +655,8 @@ class TransactionReportBuilder:
 
 class CashFlowProjectionReportItem(TransactionReportItem):
     DEFAULT = 1
-    BALANCE = 2
+    BALANCE = 100
+    ROLLING = 101
     TYPE_CHOICE = (
         (DEFAULT, 'Default'),
         (BALANCE, 'Balance'),
@@ -673,9 +672,12 @@ class CashFlowProjectionReportItem(TransactionReportItem):
         self.cash_consideration_before = cash_consideration_before
         self.cash_consideration_after = cash_consideration_after
 
-    def add_balance(self, trn):
-        self.position_size_with_sign += trn.position_size_with_sign
-        self.cash_consideration += trn.cash_consideration
+    def add_balance(self, trn_or_item):
+        self.position_size_with_sign += trn_or_item.position_size_with_sign
+        self.cash_consideration += trn_or_item.cash_consideration
+        self.principal_with_sign += trn_or_item.principal_with_sign
+        self.carry_with_sign += trn_or_item.carry_with_sign
+        self.overheads_with_sign += trn_or_item.overheads_with_sign
 
     def __str__(self):
         return 'CashFlowProjectionReportItem:%s' % self.id
@@ -695,85 +697,16 @@ class CashFlowProjectionReportBuilder(TransactionReportBuilder):
     def __init__(self, instance=None):
         super(CashFlowProjectionReportBuilder, self).__init__(instance)
 
-        self._rolling_items = {}
-        self._balance_items = {}
-        self._remaining_transactions = {}
-        self._generated_transactions = []
+        self._transactions_by_date = None
 
-        self._instrument_event_cache = {}
+        self._balance_items = {}
+        self._rolling_items = {}
+        # self._generated_transactions = []
+
+        # self._instrument_event_cache = {}
 
         self._id_seq = 0
         self._transaction_order_seq = 0
-
-    def build(self):
-        with transaction.atomic():
-            self._load()
-
-            self._balance()
-            self._rolling_items = {k: copy.copy(v) for k, v in self._balance_items.items()}
-
-            now = self.instance.balance_date
-            t1 = datetime.timedelta(days=1)
-            while now < self.instance.report_date:
-                now += t1
-                _l.debug('\tnow=%s', now.isoformat())
-
-                for ri_key, ri in self._rolling_items.items():
-                    _l.debug('\t\tinstr=%s', ri.instrument.id)
-                    events = self._get_events(ri.instrument)
-                    _l.debug('\t\tevents=%s', [e.id for e in events])
-
-                    # todo: generate events manualy, don't use already existed
-                    event = None
-                    event_action = None
-                    for e in events:
-                        if e.is_apply_default_on_effective_date(now) or e.is_apply_default_on_notification_date(now):
-                            for a in e.event_schedule.actions.all():
-                                if a.is_book_automatic:
-                                    event = e
-                                    event_action = a
-                                    break
-                        if event and event_action:
-                            break
-                    if event and event_action:
-                        _l.debug('\t\t\tevent=%s, action=%s, confirmed', event.id, event_action.id)
-                        gep = GeneratedEventProcess(
-                            generated_event=event,
-                            action=event_action,
-                            calculate=True,
-                            store=False,
-                            complex_transaction_date=now,
-                            fake_id_gen=self._fake_id_gen,
-                            transaction_order_gen=self._trn_order_gen,
-                        )
-                        gep.process()
-                        if gep.has_errors:
-                            self.instance.has_errors = True
-                        else:
-                            for i2 in gep.instruments:
-                                if i2.id not in self._instruments:
-                                    self._instruments[i2.id] = i2
-                            for t2 in gep.transactions:
-                                d = getattr(t2.complex_transaction, 'date', datetime.date.max)
-                                self._remaining_transactions[d].append(t2)
-
-                if now in self._remaining_transactions:
-                    for t in self._remaining_transactions[now]:
-                        key = self._trn_key(t)
-                        item = self._get_or_create(self._rolling_items, key, t)
-                        item.add_balance(t)
-                        self._generated_transactions.append(t)
-                        if isclose(item.position_size_with_sign, 0.0):
-                            del self._rolling_items[key]
-                    del self._remaining_transactions[now]
-
-            self.instance.items = list(self._balance_items.values()) + [
-                CashFlowProjectionReportItem(type=CashFlowProjectionReportItem.DEFAULT, trn=t)
-                for t in self._generated_transactions]
-
-            transaction.set_rollback(True)
-        return self.instance
-
 
     def _fake_id_gen(self):
         self._id_seq -= 1
@@ -785,64 +718,191 @@ class CashFlowProjectionReportBuilder(TransactionReportBuilder):
 
     def _trn_key(self, trn):
         return (
-            getattr(trn.complex_transaction, 'date', datetime.date.min),
-            getattr(trn.complex_transaction, 'code', float('-inf')),
-            getattr(trn, 'transaction_code', float('-inf')),
+            # getattr(trn.complex_transaction, 'date', datetime.date.min),
+            # getattr(trn.complex_transaction, 'code', float('-inf')),
+            # getattr(trn, 'transaction_code', float('-inf')),
             getattr(trn.instrument, 'id', -1),
             getattr(trn.settlement_currency, 'id', -1),
             getattr(trn.portfolio, 'id', -1),
             getattr(trn.account_position, 'id', -1),
         )
 
-    def _get_or_create(self, cache, key, trn):
+    def _get_or_create(self, cache, key, trn, itype=CashFlowProjectionReportItem.DEFAULT):
         item = cache.get(key, None)
         if item is None:
             # override by '-'
-            item = CashFlowProjectionReportItem(
-                type=CashFlowProjectionReportItem.BALANCE,
-                trn=trn,
-                transaction_currency=trn.settlement_currency,
-                account_cash=self.instance.master_user.account,
-                account_interim=self.instance.master_user.account,
-                strategy1_position=self.instance.master_user.strategy1,
-                strategy1_cash=self.instance.master_user.strategy1,
-                strategy2_position=self.instance.master_user.strategy2,
-                strategy2_cash=self.instance.master_user.strategy2,
-                strategy3_position=self.instance.master_user.strategy3,
-                strategy3_cash=self.instance.master_user.strategy3,
-                responsible=self.instance.master_user.responsible,
-                counterparty=self.instance.master_user.counterparty,
-                linked_instrument=self.instance.master_user.instrument,
-                allocation_balance=self.instance.master_user.instrument,
-                allocation_pl=self.instance.master_user.instrument,
-            )
+            if itype == CashFlowProjectionReportItem.BALANCE:
+                complex_transaction = ComplexTransaction(
+                    date=self.instance.balance_date,
+                    status=ComplexTransaction.PRODUCTION,
+                    code=0,
+                )
+                item = CashFlowProjectionReportItem(
+                    type=itype,
+                    complex_transaction=complex_transaction,
+                    complex_transaction_order=0,
+                    transaction_code=0,
+                    trn=trn,
+                    transaction_currency=trn.settlement_currency,
+                    account_cash=self.instance.master_user.account,
+                    account_interim=self.instance.master_user.account,
+                    strategy1_position=self.instance.master_user.strategy1,
+                    strategy1_cash=self.instance.master_user.strategy1,
+                    strategy2_position=self.instance.master_user.strategy2,
+                    strategy2_cash=self.instance.master_user.strategy2,
+                    strategy3_position=self.instance.master_user.strategy3,
+                    strategy3_cash=self.instance.master_user.strategy3,
+                    responsible=self.instance.master_user.responsible,
+                    counterparty=self.instance.master_user.counterparty,
+                    linked_instrument=self.instance.master_user.instrument,
+                    allocation_balance=self.instance.master_user.instrument,
+                    allocation_pl=self.instance.master_user.instrument,
+                    attributes=None,
+                    transaction_class=None,
+                    position_size_with_sign=0.0,
+                    cash_consideration=0.0,
+                    principal_with_sign=0.0,
+                    carry_with_sign=0.0,
+                    overheads_with_sign=0.0,
+                    transaction_date=self.instance.balance_date,
+                    accounting_date=self.instance.balance_date,
+                    cash_date=self.instance.balance_date,
+                    reference_fx_rate=0.0,
+                )
+            else:
+                item = CashFlowProjectionReportItem(type=itype, trn=trn)
             cache[key] = item
         return item
 
-    def _balance(self):
-        self._remaining_transactions = defaultdict(list)
+    def build(self):
+        with transaction.atomic():
+            self._load()
+
+            self._step1()
+            self._step2()
+            self._update_instance()
+
+            # self.instance.items = list(self._balance_items.values())
+            # self.instance.items = list(self._balance_items.values()) + [
+            #     CashFlowProjectionReportItem(type=CashFlowProjectionReportItem.DEFAULT, trn=t)
+            #     for t in self._generated_transactions]
+
+            transaction.set_rollback(True)
+        return self.instance
+
+    def _update_instance(self):
+        self.instance.items = self._items
+
+    def _step1(self):
+        self._transactions_by_date = defaultdict(list)
+        self._items = []
         self._balance_items = {}
+        self._rolling_items = {}
 
         for t in self._transactions:
             self._transaction_order_seq = max(self._transaction_order_seq, int(t.transaction_code))
 
             d = getattr(t.complex_transaction, 'date', datetime.date.min)
-            if t.transaction_class_id in [TransactionClass.BUY, TransactionClass.SELL, TransactionClass.TRANSFER]:
-                if d <= self.instance.balance_date:
-                    key = self._trn_key(t)
-                    item = self._get_or_create(self._balance_items, key, t)
-                    item.add_balance(t)
-                else:
-                    self._remaining_transactions[d].append(t)
+            self._transactions_by_date[d].append(t)
 
-    def _get_events(self, instr):
-        try:
-            return self._instrument_event_cache[instr.id]
-        except KeyError:
-            l = GeneratedEvent.objects.filter(
-                master_user=self.instance.master_user,
-                instrument=instr.id
-            ).prefetch_related(
-            )
-            self._instrument_event_cache[instr.id] = list(l)
-            return l
+            if d <= self.instance.balance_date:
+                if t.transaction_class_id in [TransactionClass.BUY, TransactionClass.SELL]:
+                    key = self._trn_key(t)
+                    bitem = self._get_or_create(self._balance_items, key, t, itype=CashFlowProjectionReportItem.BALANCE)
+                    bitem.add_balance(t)
+                elif t.transaction_class_id in [TransactionClass.TRANSFER]:
+                    pass
+
+        for k, bitem in self._balance_items.items():
+            self._items.append(bitem)
+
+            ritem = copy.copy(bitem)
+            ritem.complex_transaction = copy.copy(ritem.complex_transaction)
+            ritem.complex_transaction.date = datetime.date.max
+            ritem.complex_transaction.code = sys.maxsize
+            ritem.transaction_code = sys.maxsize
+            ritem.transaction_date = self.instance.balance_date
+            ritem.accounting_date = self.instance.balance_date
+            ritem.cash_date = self.instance.balance_date
+
+            self._rolling_items[k] = ritem
+
+            if settings.DEBUG:
+                ritem.type = CashFlowProjectionReportItem.ROLLING
+                self._items.append(ritem)
+
+    def _step2(self):
+        now = self.instance.balance_date
+        t1 = datetime.timedelta(days=1)
+
+        while now < self.instance.report_date:
+            now += t1
+            _l.debug('\tnow=%s', now.isoformat())
+
+            for key, ritem in self._rolling_items.items():
+                instr = ritem.instrument
+                if instr is None:
+                    raise RuntimeError('code bug (instrument is None)')
+
+                for es in instr.event_schedules.all():
+                    is_complies, edate, ndate = es.check_date(now)
+                    if is_complies:
+                        e = GeneratedEvent()
+                        e.master_user = self.instance.master_user
+                        e.event_schedule = es
+                        e.status = GeneratedEvent.NEW
+                        e.effective_date = edate
+                        e.notification_date = ndate
+                        e.instrument = ritem.instrument
+                        e.portfolio = ritem.portfolio
+                        e.account = ritem.account_position
+                        e.strategy1 = ritem.strategy1_position
+                        e.strategy2 = ritem.strategy2_position
+                        e.strategy3 = ritem.strategy3_position
+                        e.position = ritem.position_size_with_sign
+
+                        if e.is_apply_default_on_effective_date(now) or e.is_apply_default_on_notification_date(now):
+                            a = None
+                            for a0 in e.event_schedule.actions.all():
+                                if a0.is_book_automatic:
+                                    a = a0
+                            if a:
+                                _l.debug('\t\t\tevent_schedule=%s, action=%s, confirmed', es.id, a.id)
+                                gep = GeneratedEventProcess(
+                                    generated_event=e,
+                                    action=a,
+                                    calculate=True,
+                                    store=False,
+                                    complex_transaction_date=now,
+                                    fake_id_gen=self._fake_id_gen,
+                                    transaction_order_gen=self._trn_order_gen,
+                                )
+                                gep.process()
+                                if gep.has_errors:
+                                    self.instance.has_errors = True
+                                else:
+                                    for i2 in gep.instruments:
+                                        if i2.id not in self._instruments:
+                                            self._instruments[i2.id] = i2
+                                    for t2 in gep.transactions:
+                                        _l.debug('\t\t\t+trn=%s', t2.id)
+                                        d = getattr(t2.complex_transaction, 'date', datetime.date.max)
+                                        self._transactions_by_date[d].append(t2)
+
+            if now in self._transactions_by_date:
+                for t in self._transactions_by_date[now]:
+                    _l.debug('\t\t\ttrn=%s', t.id)
+                    key = self._trn_key(t)
+                    item = CashFlowProjectionReportItem(trn=t)
+                    self._items.append(item)
+
+                    ritem = None
+                    if t.transaction_class_id in [TransactionClass.BUY, TransactionClass.SELL]:
+                        ritem = self._get_or_create(self._rolling_items, key, t,
+                                                    itype=CashFlowProjectionReportItem.BALANCE)
+                        ritem.add_balance(t)
+                    elif t.transaction_class_id in [TransactionClass.TRANSFER]:
+                        raise RuntimeError('implement me please')
+
+                    if ritem and isclose(ritem.position_size_with_sign, 0.0):
+                        del self._rolling_items[key]

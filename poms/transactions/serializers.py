@@ -904,15 +904,18 @@ class ComplexTransactionMixin:
         try:
             return obj._cached_text
         except AttributeError:
-            names = {
-                'code': obj.code,
-                'transactions': formula.get_model_data(transactions, TransactionTextRenderSerializer, many=True,
-                                                       context=self.context),
-            }
-            try:
-                obj._cached_text = formula.safe_eval(obj.transaction_type.display_expr, names=names)
-            except formula.InvalidExpression:
-                obj._cached_text = '<InvalidExpression>'
+            if obj.transaction_type_id is None:
+                obj._cached_text = ''
+            else:
+                names = {
+                    'code': obj.code,
+                    'transactions': formula.get_model_data(transactions, TransactionTextRenderSerializer, many=True,
+                                                           context=self.context),
+                }
+                try:
+                    obj._cached_text = formula.safe_eval(obj.transaction_type.display_expr, names=names)
+                except formula.InvalidExpression:
+                    obj._cached_text = '<InvalidExpression>'
             return obj._cached_text
 
 

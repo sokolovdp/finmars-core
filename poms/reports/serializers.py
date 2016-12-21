@@ -29,7 +29,7 @@ from poms.strategies.serializers import Strategy1Serializer, Strategy2Serializer
     Strategy1ViewSerializer, Strategy2ViewSerializer, Strategy3ViewSerializer
 from poms.transactions.models import TransactionClass
 from poms.transactions.serializers import TransactionClassSerializer, ComplexTransactionSerializer, \
-    TransactionTypeViewSerializer, TransactionTypeGroupViewSerializer
+    TransactionTypeViewSerializer
 from poms.users.fields import MasterUserField, HiddenMemberField
 
 
@@ -477,9 +477,15 @@ class ReportSerializer(serializers.Serializer):
 
 class TransactionReportItemSerializer(serializers.Serializer):
     id = serializers.ReadOnlyField()
+
+    complex_transaction = ReportComplexTransactionSerializer(read_only=True)
+
+    # complex_transaction_date = serializers.ReadOnlyField()
+    # complex_transaction_code = serializers.ReadOnlyField()
+    # complex_transaction_order = serializers.ReadOnlyField()
+    # complex_transaction_transaction_type = serializers.ReadOnlyField()
+
     transaction_code = serializers.ReadOnlyField()
-    complex_transaction = serializers.PrimaryKeyRelatedField(read_only=True)
-    complex_transaction_order = serializers.ReadOnlyField()
     transaction_class = serializers.PrimaryKeyRelatedField(read_only=True)
     instrument = serializers.PrimaryKeyRelatedField(read_only=True)
     transaction_currency = serializers.PrimaryKeyRelatedField(read_only=True)
@@ -521,7 +527,6 @@ class TransactionReportSerializer(serializers.Serializer):
     end_date = serializers.DateField(required=False, allow_null=True)
 
     items = TransactionReportItemSerializer(many=True, read_only=True)
-    complex_transactions = ReportComplexTransactionSerializer(many=True, read_only=True)
     transaction_types = TransactionTypeViewSerializer(many=True, read_only=True)
     instruments = ReportInstrumentSerializer(many=True, read_only=True)
     currencies = ReportCurrencySerializer(many=True, read_only=True)
@@ -539,7 +544,8 @@ class TransactionReportSerializer(serializers.Serializer):
     portfolio_attribute_types = ReportGenericAttributeTypeSerializer(many=True, read_only=True, show_classifiers=True)
     account_attribute_types = ReportGenericAttributeTypeSerializer(many=True, read_only=True, show_classifiers=True)
     responsible_attribute_types = ReportGenericAttributeTypeSerializer(many=True, read_only=True, show_classifiers=True)
-    counterparty_attribute_types = ReportGenericAttributeTypeSerializer(many=True, read_only=True, show_classifiers=True)
+    counterparty_attribute_types = ReportGenericAttributeTypeSerializer(many=True, read_only=True,
+                                                                        show_classifiers=True)
 
     def create(self, validated_data):
         return TransactionReport(**validated_data)
@@ -549,7 +555,7 @@ class TransactionReportSerializer(serializers.Serializer):
 
 
 class CashFlowProjectionReportItemSerializer(TransactionReportItemSerializer):
-    type = serializers.ChoiceField(read_only=True, choices=CashFlowProjectionReportItem.TYPE_CHOICE)
+    item_type = serializers.ChoiceField(source='type', read_only=True, choices=CashFlowProjectionReportItem.TYPE_CHOICE)
 
     # date = serializers.DateField(read_only=True)
     # portfolio = serializers.PrimaryKeyRelatedField(read_only=True)
@@ -563,6 +569,10 @@ class CashFlowProjectionReportItemSerializer(TransactionReportItemSerializer):
     # cash_consideration = serializers.ReadOnlyField()
     cash_consideration_before = serializers.ReadOnlyField()
     cash_consideration_after = serializers.ReadOnlyField()
+
+    def __init__(self, *args, **kwargs):
+        super(CashFlowProjectionReportItemSerializer, self).__init__(*args, **kwargs)
+        self.fields.fields.move_to_end('item_type', last=False)
 
 
 def _dummy_report_date():
