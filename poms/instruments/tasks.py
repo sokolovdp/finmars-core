@@ -115,37 +115,39 @@ def generate_events(master_users=None):
                          event_schedule.id, event_schedule.event_class, event_schedule.notification_class,
                          event_schedule.periodicity, event_schedule.periodicity_n)
 
-                notification_date_correction = timedelta(days=event_schedule.notify_in_n_days)
+                # notification_date_correction = timedelta(days=event_schedule.notify_in_n_days)
+                #
+                # is_complies = False
+                # effective_date = None
+                # notification_date = None
+                #
+                # if event_schedule.event_class_id == EventClass.ONE_OFF:
+                #     effective_date = event_schedule.effective_date
+                #     notification_date = effective_date - notification_date_correction
+                #     # _l.debug('effective_date=%s, notification_date=%s', effective_date, notification_date)
+                #
+                #     if notification_date == now or effective_date == now:
+                #         is_complies = True
+                #
+                # elif event_schedule.event_class_id == EventClass.REGULAR:
+                #     for i in range(0, settings.INSTRUMENT_EVENTS_REGULAR_MAX_INTERVALS):
+                #         effective_date = event_schedule.effective_date + event_schedule.periodicity.to_timedelta(
+                #             i, same_date=event_schedule.effective_date)
+                #         notification_date = effective_date - notification_date_correction
+                #         # _l.debug('i=%s, book_date=%s, notify_date=%s', i, effective_date, notification_date)
+                #
+                #         if effective_date > event_schedule.final_date:
+                #             break
+                #         if effective_date < now:
+                #             continue
+                #         if notification_date > now and effective_date > now:
+                #             break
+                #
+                #         if notification_date == now or effective_date == now:
+                #             is_complies = True
+                #             break
 
-                is_complies = False
-                effective_date = None
-                notification_date = None
-
-                if event_schedule.event_class_id == EventClass.ONE_OFF:
-                    effective_date = event_schedule.effective_date
-                    notification_date = effective_date - notification_date_correction
-                    # _l.debug('effective_date=%s, notification_date=%s', effective_date, notification_date)
-
-                    if notification_date == now or effective_date == now:
-                        is_complies = True
-
-                elif event_schedule.event_class_id == EventClass.REGULAR:
-                    for i in range(0, settings.INSTRUMENT_EVENTS_REGULAR_MAX_INTERVALS):
-                        effective_date = event_schedule.effective_date + event_schedule.periodicity.to_timedelta(
-                            i, same_date=event_schedule.effective_date)
-                        notification_date = effective_date - notification_date_correction
-                        # _l.debug('i=%s, book_date=%s, notify_date=%s', i, effective_date, notification_date)
-
-                        if effective_date > event_schedule.final_date:
-                            break
-                        if effective_date < now:
-                            continue
-                        if notification_date > now and effective_date > now:
-                            break
-
-                        if notification_date == now or effective_date == now:
-                            is_complies = True
-                            break
+                is_complies, effective_date, notification_date = event_schedule.check_date(now)
 
                 _l.debug('is_complies=%s', is_complies)
                 if is_complies:

@@ -1,8 +1,9 @@
 from __future__ import unicode_literals
 
-from datetime import date
+from datetime import date, timedelta
 
 from dateutil import relativedelta, rrule
+from django.conf import settings
 from django.contrib.contenttypes.fields import GenericRelation
 from django.core import serializers
 from django.core.exceptions import ObjectDoesNotExist
@@ -718,6 +719,37 @@ class EventSchedule(models.Model):
 
     def __str__(self):
         return '#%s/#%s' % (self.id, self.instrument_id)
+
+    def check_date(self, now):
+        from poms.transactions.models import EventClass
+
+        notification_date_correction = timedelta(days=self.notify_in_n_days)
+
+        if self.event_class_id == EventClass.ONE_OFF:
+            effective_date = self.effective_date
+            notification_date = effective_date - notification_date_correction
+            # _l.debug('effective_date=%s, notification_date=%s', effective_date, notification_date)
+
+            if notification_date == now or effective_date == now:
+                return True, effective_date, notification_date
+
+        elif self.event_class_id == EventClass.REGULAR:
+            for i in range(0, settings.INSTRUMENT_EVENTS_REGULAR_MAX_INTERVALS):
+                effective_date = self.effective_date + self.periodicity.to_timedelta(
+                    i, same_date=self.effective_date)
+                notification_date = effective_date - notification_date_correction
+                # _l.debug('i=%s, book_date=%s, notify_date=%s', i, effective_date, notification_date)
+
+                if effective_date > self.final_date:
+                    break
+                if effective_date < now:
+                    continue
+                if notification_date > now and effective_date > now:
+                    break
+
+                if notification_date == now or effective_date == now:
+                    return True, effective_date, notification_date
+        return False, None, None
 
 
 class EventScheduleAction(models.Model):
