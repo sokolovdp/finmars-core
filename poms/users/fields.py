@@ -41,14 +41,16 @@ class CurrentMemberDefault(object):
 class HiddenMemberField(serializers.PrimaryKeyRelatedField):
     def __init__(self, **kwargs):
         kwargs['default'] = CurrentMemberDefault()
-        kwargs['read_only'] = True
+        # kwargs['read_only'] = True
+        kwargs.setdefault('read_only', True)
         super(HiddenMemberField, self).__init__(**kwargs)
 
 
 class HiddenUserField(serializers.PrimaryKeyRelatedField):
     def __init__(self, **kwargs):
         kwargs['default'] = CurrentUserDefault()
-        kwargs['read_only'] = True
+        # kwargs['read_only'] = True
+        kwargs.setdefault('read_only', True)
         super(HiddenUserField, self).__init__(**kwargs)
 
 
