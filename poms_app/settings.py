@@ -85,6 +85,7 @@ INSTALLED_APPS = [
 MIDDLEWARE_CLASSES = [
     'poms.common.middleware.CommonMiddleware',
     # 'django.middleware.cache.UpdateCacheMiddleware',
+    'django.middleware.gzip.GZipMiddleware',
     'corsheaders.middleware.CorsMiddleware',
     'django.middleware.http.ConditionalGetMiddleware',
     'django.middleware.security.SecurityMiddleware',
