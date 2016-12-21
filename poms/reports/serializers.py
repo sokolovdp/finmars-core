@@ -1,8 +1,9 @@
 from __future__ import unicode_literals
 
-from datetime import timedelta
+from datetime import timedelta, date
 
 from dateutil.relativedelta import relativedelta
+from django.conf import settings
 from django.utils.translation import ugettext_lazy
 from rest_framework import serializers
 
@@ -575,10 +576,6 @@ class CashFlowProjectionReportItemSerializer(TransactionReportItemSerializer):
         self.fields.fields.move_to_end('item_type', last=False)
 
 
-def _dummy_report_date():
-    return date_now() + relativedelta(days=5)
-
-
 class CashFlowProjectionReportSerializer(TransactionReportSerializer):
     # task_id = serializers.CharField(allow_null=True, allow_blank=True, required=False)
     # task_status = serializers.ReadOnlyField()
@@ -599,10 +596,17 @@ class CashFlowProjectionReportSerializer(TransactionReportSerializer):
 
     def validate(self, attrs):
         if not attrs.get('balance_date', None):
-            attrs['balance_date'] = date_now()
+            if settings.DEBUG:
+                attrs['balance_date'] = date(2016, 12, 21)
+            else:
+                attrs['balance_date'] = date_now()
 
         if not attrs.get('report_date', None):
-            attrs['report_date'] = _dummy_report_date()
+            if settings.DEBUG:
+                attrs['report_date'] = date(2016, 12, 26)
+            else:
+                attrs['report_date'] = attrs['balance_date'] + relativedelta(months=1)
+
 
         return attrs
 
