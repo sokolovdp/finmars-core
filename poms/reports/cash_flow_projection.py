@@ -150,18 +150,19 @@ class TransactionReportBuilder:
         self.instance = instance
         self._transactions = []
         self._items = []
+
         self._complex_transactions = {}
         self._transaction_types = {}
         self._transaction_classes = {}
-        self._instruments = {}
-        self._currencies = {}
-        self._portfolios = {}
-        self._accounts = {}
-        self._strategies1 = {}
-        self._strategies2 = {}
-        self._strategies3 = {}
-        self._responsibles = {}
-        self._counterparties = {}
+        self._instruments = {self.instance.master_user.instrument_id: None}
+        self._currencies = {self.instance.master_user.currency_id: None}
+        self._portfolios = {self.instance.master_user.portfolio_id: None}
+        self._accounts = {self.instance.master_user.account_id: None}
+        self._strategies1 = {self.instance.master_user.strategy1_id: None}
+        self._strategies2 = {self.instance.master_user.strategy2_id: None}
+        self._strategies3 = {self.instance.master_user.strategy3_id: None}
+        self._responsibles = {self.instance.master_user.responsible_id: None}
+        self._counterparties = {self.instance.master_user.counterparty_id: None}
         self._attribute_types = {}
 
     def _load(self):
@@ -192,26 +193,11 @@ class TransactionReportBuilder:
 
         _l.debug('< _load %s', len(self._transactions))
 
-    def _prefetch(self):
+    def _prefetch(self, transactions):
         from poms.obj_attrs.utils import get_attributes_prefetch
         from poms.obj_perms.utils import get_permissions_prefetch_lookups
 
         _l.debug('> _prefetch')
-
-        self._complex_transactions = {}
-        self._transaction_types = {}
-        self._transaction_classes = {}
-        # force full prefetch for "-"
-        self._instruments = {self.instance.master_user.instrument_id: None}
-        self._currencies = {self.instance.master_user.currency_id: None}
-        self._portfolios = {self.instance.master_user.portfolio_id: None}
-        self._accounts = {self.instance.master_user.account_id: None}
-        self._strategies1 = {self.instance.master_user.strategy1_id: None}
-        self._strategies2 = {self.instance.master_user.strategy2_id: None}
-        self._strategies3 = {self.instance.master_user.strategy3_id: None}
-        self._responsibles = {self.instance.master_user.responsible_id: None}
-        self._counterparties = {self.instance.master_user.counterparty_id: None}
-        self._attribute_types = {}
 
         def _c(cache, obj, attr):
             attr_pk_name = '%s_id' % attr
@@ -220,7 +206,7 @@ class TransactionReportBuilder:
                 cache[attr_pk] = None
 
         _l.debug('> transactions.1')
-        for t in self._transactions:
+        for t in transactions:
             _c(self._complex_transactions, t, 'complex_transaction')
             if t.complex_transaction:
                 _c(self._transaction_types, t.complex_transaction, 'transaction_type')
@@ -248,12 +234,17 @@ class TransactionReportBuilder:
             _c(self._instruments, t, 'allocation_pl')
             for a in t.attributes.all():
                 self._attribute_types[a.attribute_type_id] = None
-        _l.debug('< transactions.1: %s', len(self._transactions))
+        _l.debug('< transactions.1: %s', len(transactions))
+
+        def _k(cache):
+            for k, v in cache.items():
+                if v is None:
+                    yield k
 
         _l.debug('> transaction_classes')
         if self._transaction_classes:
             qs = TransactionClass.objects.filter(
-                pk__in=self._transaction_classes.keys()
+                pk__in=_k(self._transaction_classes)
             )
             for o in qs:
                 self._transaction_classes[o.id] = o
@@ -263,7 +254,7 @@ class TransactionReportBuilder:
         if self._complex_transactions:
             qs = ComplexTransaction.objects.filter(
                 transaction_type__master_user=self.instance.master_user,
-                pk__in=self._complex_transactions.keys()
+                pk__in=_k(self._complex_transactions)
             ).prefetch_related(
             )
             for o in qs:
@@ -275,7 +266,7 @@ class TransactionReportBuilder:
         if self._transaction_types:
             qs = TransactionType.objects.filter(
                 master_user=self.instance.master_user,
-                pk__in=self._transaction_types.keys()
+                pk__in=_k(self._transaction_types)
             ).prefetch_related(
                 'group',
                 *get_permissions_prefetch_lookups(
@@ -287,11 +278,25 @@ class TransactionReportBuilder:
                 self._transaction_types[o.id] = o
         _l.debug('< transaction_types: %s', len(self._transaction_types))
 
+        _l.debug('> currencies')
+        if self._currencies:
+            qs = Currency.objects.filter(
+                master_user=self.instance.master_user,
+                pk__in=_k(self._currencies)
+            ).prefetch_related(
+                get_attributes_prefetch(),
+            )
+            for o in qs:
+                self._currencies[o.id] = o
+                for a in o.attributes.all():
+                    self._attribute_types[a.attribute_type_id] = None
+        _l.debug('< currencies: %s', len(self._currencies))
+
         _l.debug('> instruments')
         if self._instruments:
             qs = Instrument.objects.filter(
                 master_user=self.instance.master_user,
-                pk__in=self._instruments.keys()
+                pk__in=_k(self._instruments)
             ).prefetch_related(
                 'instrument_type',
                 'instrument_type__instrument_class',
@@ -303,29 +308,18 @@ class TransactionReportBuilder:
             )
             for o in qs:
                 self._instruments[o.id] = o
+                o.pricing_currency = self._currencies.get(o.pricing_currency_id, None)
+                o.accrued_currency = self._currencies.get(o.accrued_currency_id, None)
+
                 for a in o.attributes.all():
                     self._attribute_types[a.attribute_type_id] = None
         _l.debug('< instruments: %s', len(self._instruments))
-
-        _l.debug('> currencies')
-        if self._currencies:
-            qs = Currency.objects.filter(
-                master_user=self.instance.master_user,
-                pk__in=self._currencies.keys()
-            ).prefetch_related(
-                get_attributes_prefetch(),
-            )
-            for o in qs:
-                self._currencies[o.id] = o
-                for a in o.attributes.all():
-                    self._attribute_types[a.attribute_type_id] = None
-        _l.debug('< currencies: %s', len(self._currencies))
 
         _l.debug('> portfolios')
         if self._portfolios:
             qs = Portfolio.objects.filter(
                 master_user=self.instance.master_user,
-                pk__in=self._portfolios.keys()
+                pk__in=_k(self._portfolios)
             ).prefetch_related(
                 get_attributes_prefetch(),
                 *get_permissions_prefetch_lookups(
@@ -342,7 +336,7 @@ class TransactionReportBuilder:
         if self._accounts:
             qs = Account.objects.filter(
                 master_user=self.instance.master_user,
-                pk__in=self._accounts.keys()
+                pk__in=_k(self._accounts)
             ).prefetch_related(
                 'type',
                 get_attributes_prefetch(),
@@ -361,7 +355,7 @@ class TransactionReportBuilder:
         if self._strategies1:
             qs = Strategy1.objects.filter(
                 master_user=self.instance.master_user,
-                pk__in=self._strategies1.keys()
+                pk__in=_k(self._strategies1)
             ).prefetch_related(
                 'subgroup',
                 'subgroup__group',
@@ -379,7 +373,7 @@ class TransactionReportBuilder:
         if self._strategies2:
             qs = Strategy2.objects.filter(
                 master_user=self.instance.master_user,
-                pk__in=self._strategies2.keys()
+                pk__in=_k(self._strategies2)
             ).prefetch_related(
                 'subgroup',
                 'subgroup__group',
@@ -397,7 +391,7 @@ class TransactionReportBuilder:
         if self._strategies3:
             qs = Strategy3.objects.filter(
                 master_user=self.instance.master_user,
-                pk__in=self._strategies3.keys()
+                pk__in=_k(self._strategies3)
             ).prefetch_related(
                 'subgroup',
                 'subgroup__group',
@@ -415,7 +409,7 @@ class TransactionReportBuilder:
         if self._responsibles:
             qs = Responsible.objects.filter(
                 master_user=self.instance.master_user,
-                pk__in=self._responsibles.keys()
+                pk__in=_k(self._responsibles)
             ).prefetch_related(
                 'group',
                 get_attributes_prefetch(),
@@ -434,7 +428,7 @@ class TransactionReportBuilder:
         if self._counterparties:
             qs = Counterparty.objects.filter(
                 master_user=self.instance.master_user,
-                pk__in=self._counterparties.keys()
+                pk__in=_k(self._counterparties)
             ).prefetch_related(
                 'group',
                 get_attributes_prefetch(),
@@ -463,7 +457,7 @@ class TransactionReportBuilder:
                 #         cache[pk] = obj
 
         _l.debug('> transactions.2')
-        for t in self._transactions:
+        for t in transactions:
             _p(self._complex_transactions, t, 'complex_transaction')
             if t.complex_transaction:
                 _p(self._transaction_types, t.complex_transaction, 'transaction_type')
@@ -490,7 +484,7 @@ class TransactionReportBuilder:
             _p(self._instruments, t, 'linked_instrument')
             _p(self._instruments, t, 'allocation_balance')
             _p(self._instruments, t, 'allocation_pl')
-        _l.debug('< transactions.2: %s', len(self._transactions))
+        _l.debug('< transactions.2: %s', len(transactions))
 
         if self._attribute_types:
             qs = GenericAttributeType.objects.filter(
@@ -555,7 +549,7 @@ class TransactionReportBuilder:
             # _l.debug('< _make_transactions')
 
             self._load()
-            self._prefetch()
+            self._prefetch(self._transactions)
             self._items = [TransactionReportItem(trn=t) for t in self._transactions]
             self._update_instance()
 
@@ -732,14 +726,15 @@ class CashFlowProjectionReportBuilder(TransactionReportBuilder):
         if item is None:
             # override by '-'
             if itype == CashFlowProjectionReportItem.BALANCE:
-                complex_transaction = ComplexTransaction(
+                ctrn = ComplexTransaction(
                     date=self.instance.balance_date,
                     status=ComplexTransaction.PRODUCTION,
                     code=0,
                 )
+                ctrn._fake_transactions = []
                 item = CashFlowProjectionReportItem(
                     type=itype,
-                    complex_transaction=complex_transaction,
+                    complex_transaction=ctrn,
                     complex_transaction_order=0,
                     transaction_code=0,
                     trn=trn,
@@ -778,8 +773,13 @@ class CashFlowProjectionReportBuilder(TransactionReportBuilder):
         with transaction.atomic():
             self._load()
 
+            _l.info('1'*100)
             self._step1()
+            _l.info('2'*100)
+            self._prefetch(self._transactions)
+            _l.info('3'*100)
             self._step2()
+            _l.info('4'*100)
             self._update_instance()
 
             # self.instance.items = list(self._balance_items.values())
@@ -867,6 +867,11 @@ class CashFlowProjectionReportBuilder(TransactionReportBuilder):
                                 if a0.is_book_automatic:
                                     a = a0
                             if a:
+                                if a.transaction_type_id in self._transaction_types:
+                                    a.transaction_type = self._transaction_types[a.transaction_type_id]
+                                else:
+                                    self._transaction_types[a.transaction_type_id] = a.transaction_type
+
                                 _l.debug('\t\t\tevent_schedule=%s, action=%s, confirmed', es.id, a.id)
                                 gep = GeneratedEventProcess(
                                     generated_event=e,
@@ -882,8 +887,10 @@ class CashFlowProjectionReportBuilder(TransactionReportBuilder):
                                     self.instance.has_errors = True
                                 else:
                                     for i2 in gep.instruments:
-                                        if i2.id not in self._instruments:
+                                        if i2.id < 0 and i2.id not in self._instruments:
                                             self._instruments[i2.id] = i2
+                                    gep.complex_transaction._fake_transactions = gep.transactions
+                                    self._prefetch(gep.transactions)
                                     for t2 in gep.transactions:
                                         _l.debug('\t\t\t+trn=%s', t2.id)
                                         d = getattr(t2.complex_transaction, 'date', datetime.date.max)
