@@ -2,6 +2,7 @@ from __future__ import unicode_literals
 
 from datetime import timedelta
 
+from dateutil.relativedelta import relativedelta
 from django.utils.translation import ugettext_lazy
 from rest_framework import serializers
 
@@ -16,6 +17,7 @@ from poms.currencies.serializers import CurrencySerializer, CurrencyViewSerializ
 from poms.instruments.fields import PricingPolicyField
 from poms.instruments.models import CostMethod
 from poms.instruments.serializers import InstrumentSerializer, PricingPolicyViewSerializer, CostMethodSerializer
+from poms.obj_attrs.serializers import GenericAttributeTypeSerializer, GenericAttributeSerializer
 from poms.portfolios.fields import PortfolioField
 from poms.portfolios.serializers import PortfolioSerializer, PortfolioViewSerializer
 from poms.reports.builders import Report, ReportItem
@@ -27,7 +29,7 @@ from poms.strategies.serializers import Strategy1Serializer, Strategy2Serializer
     Strategy1ViewSerializer, Strategy2ViewSerializer, Strategy3ViewSerializer
 from poms.transactions.models import TransactionClass
 from poms.transactions.serializers import TransactionClassSerializer, ComplexTransactionSerializer, \
-    TransactionTypeViewSerializer
+    TransactionTypeViewSerializer, TransactionTypeGroupViewSerializer
 from poms.users.fields import MasterUserField, HiddenMemberField
 
 
@@ -55,18 +57,38 @@ class CustomFieldViewSerializer(serializers.ModelSerializer):
 # Report --------
 
 
+
+class ReportGenericAttributeTypeSerializer(GenericAttributeTypeSerializer):
+    def __init__(self, *args, **kwargs):
+        super(ReportGenericAttributeTypeSerializer, self).__init__(*args, **kwargs)
+        # self.fields.pop('user_object_permissions')
+        # self.fields.pop('group_object_permissions')
+        # self.fields.pop('object_permissions')
+
+
+class ReportGenericAttributeSerializer(GenericAttributeSerializer):
+    attribute_type_object = ReportGenericAttributeTypeSerializer(source='attribute_type', read_only=True)
+
+    def __init__(self, *args, **kwargs):
+        super(ReportGenericAttributeSerializer, self).__init__(*args, **kwargs)
+        # self.fields.pop('attribute_type_object')
+        # self.fields.pop('classifier_object')
+
+
 class ReportInstrumentSerializer(InstrumentSerializer):
     def __init__(self, *args, **kwargs):
         super(ReportInstrumentSerializer, self).__init__(*args, **kwargs)
+
+        self.fields['attributes'] = ReportGenericAttributeSerializer(many=True, required=False, allow_null=True)
 
         self.fields.pop('manual_pricing_formulas')
         self.fields.pop('accrual_calculation_schedules')
         self.fields.pop('factor_schedules')
         self.fields.pop('event_schedules')
 
-        self.fields.pop('user_object_permissions')
-        self.fields.pop('group_object_permissions')
-        self.fields.pop('object_permissions')
+        # self.fields.pop('user_object_permissions')
+        # self.fields.pop('group_object_permissions')
+        # self.fields.pop('object_permissions')
 
         self.fields.pop('tags')
         self.fields.pop('tags_object')
@@ -85,6 +107,8 @@ class ReportCurrencySerializer(CurrencySerializer):
     def __init__(self, *args, **kwargs):
         super(ReportCurrencySerializer, self).__init__(*args, **kwargs)
 
+        self.fields['attributes'] = ReportGenericAttributeSerializer(many=True, required=False, allow_null=True)
+
         self.fields.pop('tags')
         self.fields.pop('tags_object')
 
@@ -100,6 +124,8 @@ class ReportPortfolioSerializer(PortfolioSerializer):
     def __init__(self, *args, **kwargs):
         super(ReportPortfolioSerializer, self).__init__(*args, **kwargs)
 
+        self.fields['attributes'] = ReportGenericAttributeSerializer(many=True, required=False, allow_null=True)
+
         self.fields.pop('accounts')
         self.fields.pop('accounts_object')
         self.fields.pop('responsibles')
@@ -109,9 +135,9 @@ class ReportPortfolioSerializer(PortfolioSerializer):
         self.fields.pop('transaction_types')
         self.fields.pop('transaction_types_object')
 
-        self.fields.pop('user_object_permissions')
-        self.fields.pop('group_object_permissions')
-        self.fields.pop('object_permissions')
+        # self.fields.pop('user_object_permissions')
+        # self.fields.pop('group_object_permissions')
+        # self.fields.pop('object_permissions')
 
         self.fields.pop('tags')
         self.fields.pop('tags_object')
@@ -123,12 +149,14 @@ class ReportAccountSerializer(AccountSerializer):
     def __init__(self, *args, **kwargs):
         super(ReportAccountSerializer, self).__init__(*args, **kwargs)
 
+        self.fields['attributes'] = ReportGenericAttributeSerializer(many=True, required=False, allow_null=True)
+
         self.fields.pop('portfolios')
         self.fields.pop('portfolios_object')
 
-        self.fields.pop('user_object_permissions')
-        self.fields.pop('group_object_permissions')
-        self.fields.pop('object_permissions')
+        # self.fields.pop('user_object_permissions')
+        # self.fields.pop('group_object_permissions')
+        # self.fields.pop('object_permissions')
 
         self.fields.pop('tags')
         self.fields.pop('tags_object')
@@ -140,9 +168,9 @@ class ReportStrategy1Serializer(Strategy1Serializer):
     def __init__(self, *args, **kwargs):
         super(ReportStrategy1Serializer, self).__init__(*args, **kwargs)
 
-        self.fields.pop('user_object_permissions')
-        self.fields.pop('group_object_permissions')
-        self.fields.pop('object_permissions')
+        # self.fields.pop('user_object_permissions')
+        # self.fields.pop('group_object_permissions')
+        # self.fields.pop('object_permissions')
 
         self.fields.pop('tags')
         self.fields.pop('tags_object')
@@ -154,9 +182,9 @@ class ReportStrategy2Serializer(Strategy2Serializer):
     def __init__(self, *args, **kwargs):
         super(ReportStrategy2Serializer, self).__init__(*args, **kwargs)
 
-        self.fields.pop('user_object_permissions')
-        self.fields.pop('group_object_permissions')
-        self.fields.pop('object_permissions')
+        # self.fields.pop('user_object_permissions')
+        # self.fields.pop('group_object_permissions')
+        # self.fields.pop('object_permissions')
 
         self.fields.pop('tags')
         self.fields.pop('tags_object')
@@ -168,9 +196,9 @@ class ReportStrategy3Serializer(Strategy3Serializer):
     def __init__(self, *args, **kwargs):
         super(ReportStrategy3Serializer, self).__init__(*args, **kwargs)
 
-        self.fields.pop('user_object_permissions')
-        self.fields.pop('group_object_permissions')
-        self.fields.pop('object_permissions')
+        # self.fields.pop('user_object_permissions')
+        # self.fields.pop('group_object_permissions')
+        # self.fields.pop('object_permissions')
 
         self.fields.pop('tags')
         self.fields.pop('tags_object')
@@ -182,12 +210,14 @@ class ReportResponsibleSerializer(ResponsibleSerializer):
     def __init__(self, *args, **kwargs):
         super(ReportResponsibleSerializer, self).__init__(*args, **kwargs)
 
+        self.fields['attributes'] = ReportGenericAttributeSerializer(many=True, required=False, allow_null=True)
+
         self.fields.pop('portfolios')
         self.fields.pop('portfolios_object')
 
-        self.fields.pop('user_object_permissions')
-        self.fields.pop('group_object_permissions')
-        self.fields.pop('object_permissions')
+        # self.fields.pop('user_object_permissions')
+        # self.fields.pop('group_object_permissions')
+        # self.fields.pop('object_permissions')
 
         self.fields.pop('tags')
         self.fields.pop('tags_object')
@@ -199,12 +229,14 @@ class ReportCounterpartySerializer(CounterpartySerializer):
     def __init__(self, *args, **kwargs):
         super(ReportCounterpartySerializer, self).__init__(*args, **kwargs)
 
+        self.fields['attributes'] = ReportGenericAttributeSerializer(many=True, required=False, allow_null=True)
+
         self.fields.pop('portfolios')
         self.fields.pop('portfolios_object')
 
-        self.fields.pop('user_object_permissions')
-        self.fields.pop('group_object_permissions')
-        self.fields.pop('object_permissions')
+        # self.fields.pop('user_object_permissions')
+        # self.fields.pop('group_object_permissions')
+        # self.fields.pop('object_permissions')
 
         self.fields.pop('tags')
         self.fields.pop('tags_object')
@@ -501,6 +533,14 @@ class TransactionReportSerializer(serializers.Serializer):
     responsibles = ReportResponsibleSerializer(many=True, read_only=True)
     counterparties = ReportCounterpartySerializer(many=True, read_only=True)
 
+    transaction_attribute_types = ReportGenericAttributeTypeSerializer(many=True, read_only=True, show_classifiers=True)
+    instrument_attribute_types = ReportGenericAttributeTypeSerializer(many=True, read_only=True, show_classifiers=True)
+    currency_attribute_types = ReportGenericAttributeTypeSerializer(many=True, read_only=True, show_classifiers=True)
+    portfolio_attribute_types = ReportGenericAttributeTypeSerializer(many=True, read_only=True, show_classifiers=True)
+    account_attribute_types = ReportGenericAttributeTypeSerializer(many=True, read_only=True, show_classifiers=True)
+    responsible_attribute_types = ReportGenericAttributeTypeSerializer(many=True, read_only=True, show_classifiers=True)
+    counterparty_attribute_types = ReportGenericAttributeTypeSerializer(many=True, read_only=True, show_classifiers=True)
+
     def create(self, validated_data):
         return TransactionReport(**validated_data)
 
@@ -508,38 +548,53 @@ class TransactionReportSerializer(serializers.Serializer):
 # CashFlowProjectionReport --------
 
 
-class CashFlowProjectionReportItemSerializer(serializers.Serializer):
+class CashFlowProjectionReportItemSerializer(TransactionReportItemSerializer):
     type = serializers.ChoiceField(read_only=True, choices=CashFlowProjectionReportItem.TYPE_CHOICE)
 
-    date = serializers.DateField(read_only=True)
-    portfolio = serializers.PrimaryKeyRelatedField(read_only=True)
-    account = serializers.PrimaryKeyRelatedField(read_only=True)
-    instrument = serializers.PrimaryKeyRelatedField(read_only=True)
-    currency = serializers.PrimaryKeyRelatedField(read_only=True)
+    # date = serializers.DateField(read_only=True)
+    # portfolio = serializers.PrimaryKeyRelatedField(read_only=True)
+    # account = serializers.PrimaryKeyRelatedField(read_only=True)
+    # instrument = serializers.PrimaryKeyRelatedField(read_only=True)
+    # currency = serializers.PrimaryKeyRelatedField(read_only=True)
 
-    position_size_with_sign = serializers.ReadOnlyField()
+    # position_size_with_sign = serializers.ReadOnlyField()
     position_size_with_sign_before = serializers.ReadOnlyField()
     position_size_with_sign_after = serializers.ReadOnlyField()
-    cash_consideration = serializers.ReadOnlyField()
+    # cash_consideration = serializers.ReadOnlyField()
     cash_consideration_before = serializers.ReadOnlyField()
     cash_consideration_after = serializers.ReadOnlyField()
 
 
-class CashFlowProjectionReportSerializer(serializers.Serializer):
-    task_id = serializers.CharField(allow_null=True, allow_blank=True, required=False)
-    task_status = serializers.ReadOnlyField()
+def _dummy_report_date():
+    return date_now() + relativedelta(days=5)
 
-    master_user = MasterUserField()
-    member = HiddenMemberField()
 
-    balance_date = serializers.DateField(default=date_now, required=False, allow_null=True)
+class CashFlowProjectionReportSerializer(TransactionReportSerializer):
+    # task_id = serializers.CharField(allow_null=True, allow_blank=True, required=False)
+    # task_status = serializers.ReadOnlyField()
+
+    # master_user = MasterUserField()
+    # member = HiddenMemberField()
+
+    balance_date = serializers.DateField(required=False, allow_null=True)
     report_date = serializers.DateField(required=False, allow_null=True)
+    has_errors = serializers.ReadOnlyField()
 
     items = CashFlowProjectionReportItemSerializer(many=True, read_only=True)
-    instruments = ReportInstrumentSerializer(many=True, read_only=True)
-    currencies = ReportCurrencySerializer(many=True, read_only=True)
-    portfolios = ReportPortfolioSerializer(many=True, read_only=True)
-    accounts = ReportAccountSerializer(many=True, read_only=True)
+
+    # instruments = ReportInstrumentSerializer(many=True, read_only=True)
+    # currencies = ReportCurrencySerializer(many=True, read_only=True)
+    # portfolios = ReportPortfolioSerializer(many=True, read_only=True)
+    # accounts = ReportAccountSerializer(many=True, read_only=True)
+
+    def validate(self, attrs):
+        if not attrs.get('balance_date', None):
+            attrs['balance_date'] = date_now()
+
+        if not attrs.get('report_date', None):
+            attrs['report_date'] = _dummy_report_date()
+
+        return attrs
 
     def create(self, validated_data):
         return CashFlowProjectionReport(**validated_data)

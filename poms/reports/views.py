@@ -47,6 +47,11 @@ class AbstractAsyncViewSet(AbstractViewSet):
     serializer_class = None
     celery_task = None
 
+    def get_serializer_context(self):
+        context = super(AbstractAsyncViewSet, self).get_serializer_context()
+        context['show_object_permissions'] = False
+        return context
+
     def create(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
@@ -73,42 +78,42 @@ class AbstractAsyncViewSet(AbstractViewSet):
             return Response(serializer.data, status=status.HTTP_200_OK)
 
 
-class AbstractAsyncJsonViewSet(AbstractViewSet):
-    serializer_class = None
-    celery_task = None
-
-    def create(self, request, *args, **kwargs):
-        serializer = self.get_serializer(data=request.data)
-        serializer.is_valid(raise_exception=True)
-        instance = serializer.save()
-        task_id = instance.task_id
-
-        signer = TimestampSigner()
-
-        if task_id:
-            res = AsyncResult(signer.unsign(task_id))
-            if res.ready():
-                data = res.result
-            else:
-                data = {}
-            # if instance.master_user.id != self.request.user.master_user.id:
-            #     raise PermissionDenied()
-            data['task_id'] = signer.sign('%s' % res.id)
-            data['task_status'] = res.status
-            return Response(data, status=status.HTTP_200_OK)
-        else:
-            res = self.celery_task.apply_async(kwargs={
-                'data': serializer.data,
-                'master_user': instance.master_user.id,
-                'member': instance.member.id,
-            })
-            if res.ready():
-                data = res.result
-            else:
-                data = {}
-            data['task_id'] = signer.sign('%s' % res.id)
-            data['task_status'] = res.status
-            return Response(data, status=status.HTTP_200_OK)
+# class AbstractAsyncJsonViewSet(AbstractViewSet):
+#     serializer_class = None
+#     celery_task = None
+#
+#     def create(self, request, *args, **kwargs):
+#         serializer = self.get_serializer(data=request.data)
+#         serializer.is_valid(raise_exception=True)
+#         instance = serializer.save()
+#         task_id = instance.task_id
+#
+#         signer = TimestampSigner()
+#
+#         if task_id:
+#             res = AsyncResult(signer.unsign(task_id))
+#             if res.ready():
+#                 data = res.result
+#             else:
+#                 data = {}
+#             # if instance.master_user.id != self.request.user.master_user.id:
+#             #     raise PermissionDenied()
+#             data['task_id'] = signer.sign('%s' % res.id)
+#             data['task_status'] = res.status
+#             return Response(data, status=status.HTTP_200_OK)
+#         else:
+#             res = self.celery_task.apply_async(kwargs={
+#                 'data': serializer.data,
+#                 'master_user': instance.master_user.id,
+#                 'member': instance.member.id,
+#             })
+#             if res.ready():
+#                 data = res.result
+#             else:
+#                 data = {}
+#             data['task_id'] = signer.sign('%s' % res.id)
+#             data['task_status'] = res.status
+#             return Response(data, status=status.HTTP_200_OK)
 
 
 class ReportViewSet(AbstractAsyncViewSet):

@@ -209,6 +209,7 @@ class TransactionTypeActionTransactionInline(admin.StackedInline):
         ('allocation_balance', 'allocation_balance_input', 'allocation_balance_phantom'),
         ('allocation_pl', 'allocation_pl_input', 'allocation_pl_phantom'),
 
+        'reference_fx_rate',
         'factor',
         'trade_price',
         'principal_amount',
