@@ -22,6 +22,7 @@ from poms.obj_perms.utils import get_permissions_prefetch_lookups
 from poms.portfolios.models import Portfolio
 from poms.reports.pricing import FakeInstrumentPricingProvider, FakeCurrencyFxRateProvider, CurrencyFxRateProvider
 from poms.reports.pricing import InstrumentPricingProvider
+from poms.reports.utils import sprint_table
 from poms.strategies.models import Strategy1, Strategy2, Strategy3, Strategy1Subgroup, Strategy1Group, \
     Strategy2Subgroup, Strategy2Group, Strategy3Subgroup, Strategy3Group
 from poms.tags.utils import get_tag_prefetch
@@ -71,17 +72,13 @@ class _Base:
 
     @classmethod
     def dumps(cls, items, columns=None):
-        import pandas
-
         if columns is None:
             columns = cls.dump_columns
 
         data = []
         for item in items:
             data.append(item.dump_values(columns=columns))
-        df = pandas.DataFrame(data=data, columns=columns)
-        print(df)
-
+        print(sprint_table(data, columns))
         # from io import StringIO
         # r = StringIO()
         # df.to_csv(r, sep=';')
