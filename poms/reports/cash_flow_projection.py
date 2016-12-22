@@ -1,4 +1,3 @@
-import copy
 import datetime
 import logging
 import random
@@ -15,94 +14,103 @@ from poms.counterparties.models import Counterparty, ResponsibleGroup, Counterpa
 from poms.counterparties.models import Responsible
 from poms.currencies.models import Currency
 from poms.instruments.handlers import GeneratedEventProcess
-from poms.instruments.models import Instrument, InstrumentType, GeneratedEvent
+from poms.instruments.models import Instrument, GeneratedEvent, InstrumentType
 from poms.obj_attrs.models import GenericAttributeType
+from poms.obj_attrs.utils import get_attributes_prefetch
+from poms.obj_perms.utils import get_permissions_prefetch_lookups
 from poms.portfolios.models import Portfolio
 from poms.strategies.models import Strategy1, Strategy2, Strategy3, Strategy1Subgroup, Strategy1Group, \
-    Strategy2Subgroup, Strategy2Group, Strategy3Subgroup, Strategy3Group
+    Strategy2Subgroup, \
+    Strategy2Group, Strategy3Subgroup, Strategy3Group
 from poms.transactions.models import Transaction, ComplexTransaction, TransactionType, TransactionClass, \
     TransactionTypeGroup
 
 _l = logging.getLogger('poms.reports')
 
+empty = object()
+
 
 class TransactionReportItem:
-    def __init__(self, trn=None, id=None, complex_transaction=None, complex_transaction_order=None,
-                 transaction_code=None, transaction_class=None, instrument=None, transaction_currency=None,
-                 position_size_with_sign=None, settlement_currency=None, cash_consideration=None,
-                 principal_with_sign=None, carry_with_sign=None, overheads_with_sign=None, transaction_date=None,
-                 accounting_date=None, cash_date=None, portfolio=None, account_position=None, account_cash=None,
-                 account_interim=None, strategy1_position=None, strategy1_cash=None, strategy2_position=None,
-                 strategy2_cash=None, strategy3_position=None, strategy3_cash=None, responsible=None, counterparty=None,
-                 linked_instrument=None, allocation_balance=None, allocation_pl=None, reference_fx_rate=None,
-                 attributes=None):
-        self.id = id if id is not None else getattr(trn, 'id', None)
+    def __init__(self, trn=None, id=empty, complex_transaction=empty, complex_transaction_order=empty,
+                 transaction_code=empty, transaction_class=empty, instrument=empty, transaction_currency=empty,
+                 position_size_with_sign=empty, settlement_currency=empty, cash_consideration=empty,
+                 principal_with_sign=empty, carry_with_sign=empty, overheads_with_sign=empty, transaction_date=empty,
+                 accounting_date=empty, cash_date=empty, portfolio=empty, account_position=empty, account_cash=empty,
+                 account_interim=empty, strategy1_position=empty, strategy1_cash=empty, strategy2_position=empty,
+                 strategy2_cash=empty, strategy3_position=empty, strategy3_cash=empty, responsible=empty,
+                 counterparty=empty, linked_instrument=empty, allocation_balance=empty, allocation_pl=empty,
+                 reference_fx_rate=empty, attributes=empty):
+        self.id = id if id is not empty else \
+            getattr(trn, 'id', None)
 
-        self.complex_transaction = complex_transaction if complex_transaction is not None else \
+        self.complex_transaction = complex_transaction if complex_transaction is not empty else \
             getattr(trn, 'complex_transaction', None)
 
-        self.complex_transaction_order = complex_transaction_order if complex_transaction_order is not None else \
+        self.complex_transaction_order = complex_transaction_order if complex_transaction_order is not empty else \
             getattr(trn, 'complex_transaction_order', None)
-        self.transaction_code = transaction_code if transaction_code is not None else \
+        self.transaction_code = transaction_code if transaction_code is not empty else \
             getattr(trn, 'transaction_code', None)
-        self.transaction_class = transaction_class if transaction_class is not None else \
+        self.transaction_class = transaction_class if transaction_class is not empty else \
             getattr(trn, 'transaction_class', None)
-        self.instrument = instrument if instrument is not None else \
+        self.instrument = instrument if instrument is not empty else \
             getattr(trn, 'instrument', None)
-        self.transaction_currency = transaction_currency if transaction_currency is not None else \
+        self.transaction_currency = transaction_currency if transaction_currency is not empty else \
             getattr(trn, 'transaction_currency', None)
-        self.position_size_with_sign = position_size_with_sign if position_size_with_sign is not None else \
+        self.position_size_with_sign = position_size_with_sign if position_size_with_sign is not empty else \
             getattr(trn, 'position_size_with_sign', 0.0)
-        self.settlement_currency = settlement_currency if settlement_currency is not None else \
+        self.settlement_currency = settlement_currency if settlement_currency is not empty else \
             getattr(trn, 'settlement_currency', None)
-        self.cash_consideration = cash_consideration if cash_consideration is not None else \
+        self.cash_consideration = cash_consideration if cash_consideration is not empty else \
             getattr(trn, 'cash_consideration', 0.0)
-        self.principal_with_sign = principal_with_sign if principal_with_sign is not None else \
+        self.principal_with_sign = principal_with_sign if principal_with_sign is not empty else \
             getattr(trn, 'principal_with_sign', 0.0)
-        self.carry_with_sign = carry_with_sign if carry_with_sign is not None else \
+        self.carry_with_sign = carry_with_sign if carry_with_sign is not empty else \
             getattr(trn, 'carry_with_sign', 0.0)
-        self.overheads_with_sign = overheads_with_sign if overheads_with_sign is not None else \
+        self.overheads_with_sign = overheads_with_sign if overheads_with_sign is not empty else \
             getattr(trn, 'overheads_with_sign', 0.0)
-        self.transaction_date = transaction_date if transaction_date is not None else \
+        self.transaction_date = transaction_date if transaction_date is not empty else \
             getattr(trn, 'transaction_date', datetime.date.min)
-        self.accounting_date = accounting_date if accounting_date is not None else \
+        self.accounting_date = accounting_date if accounting_date is not empty else \
             getattr(trn, 'accounting_date', datetime.date.min)
-        self.cash_date = cash_date if cash_date is not None else \
+        self.cash_date = cash_date if cash_date is not empty else \
             getattr(trn, 'cash_date', datetime.date.min)
-        self.portfolio = portfolio if portfolio is not None else \
+        self.portfolio = portfolio if portfolio is not empty else \
             getattr(trn, 'portfolio', None)
-        self.account_position = account_position if account_position is not None else \
+        self.account_position = account_position if account_position is not empty else \
             getattr(trn, 'account_position', None)
-        self.account_cash = account_cash if account_cash is not None else \
+        self.account_cash = account_cash if account_cash is not empty else \
             getattr(trn, 'account_cash', None)
-        self.account_interim = account_interim if account_interim is not None else \
+        self.account_interim = account_interim if account_interim is not empty else \
             getattr(trn, 'account_interim', None)
-        self.strategy1_position = strategy1_position if strategy1_position is not None else \
+        self.strategy1_position = strategy1_position if strategy1_position is not empty else \
             getattr(trn, 'strategy1_position', None)
-        self.strategy1_cash = strategy1_cash if strategy1_cash is not None else \
+        self.strategy1_cash = strategy1_cash if strategy1_cash is not empty else \
             getattr(trn, 'strategy1_cash', None)
-        self.strategy2_position = strategy2_position if strategy2_position is not None else \
+        self.strategy2_position = strategy2_position if strategy2_position is not empty else \
             getattr(trn, 'strategy2_position', None)
-        self.strategy2_cash = strategy2_cash if strategy2_cash is not None else \
+        self.strategy2_cash = strategy2_cash if strategy2_cash is not empty else \
             getattr(trn, 'strategy2_cash', None)
-        self.strategy3_position = strategy3_position if strategy3_position is not None else \
+        self.strategy3_position = strategy3_position if strategy3_position is not empty else \
             getattr(trn, 'strategy3_position', None)
-        self.strategy3_cash = strategy3_cash if strategy3_cash is not None else \
+        self.strategy3_cash = strategy3_cash if strategy3_cash is not empty else \
             getattr(trn, 'strategy3_cash', None)
-        self.responsible = responsible if responsible is not None else \
+        self.responsible = responsible if responsible is not empty else \
             getattr(trn, 'responsible', None)
-        self.counterparty = counterparty if counterparty is not None else \
+        self.counterparty = counterparty if counterparty is not empty else \
             getattr(trn, 'counterparty', None)
-        self.linked_instrument = linked_instrument if linked_instrument is not None else \
+        self.linked_instrument = linked_instrument if linked_instrument is not empty else \
             getattr(trn, 'linked_instrument', None)
-        self.allocation_balance = allocation_balance if allocation_balance is not None else \
+        self.allocation_balance = allocation_balance if allocation_balance is not empty else \
             getattr(trn, 'allocation_balance', None)
-        self.allocation_pl = allocation_pl if allocation_pl is not None else \
+        self.allocation_pl = allocation_pl if allocation_pl is not empty else \
             getattr(trn, 'allocation_pl', None)
-        self.reference_fx_rate = reference_fx_rate if reference_fx_rate is not None else \
+        self.reference_fx_rate = reference_fx_rate if reference_fx_rate is not empty else \
             getattr(trn, 'reference_fx_rate', None)
-        self.attributes = attributes if attributes is not None else \
-            getattr(trn, 'attributes', None).all()
+        if self.id < 0:
+            self.attributes = []
+        else:
+            self.attributes = attributes if attributes is not empty else \
+                list(getattr(trn, 'attributes', None).all())
 
     def __str__(self):
         return 'TransactionReportItem:%s' % self.id
@@ -120,6 +128,7 @@ class TransactionReport:
         self.begin_date = begin_date
         self.end_date = end_date
         self.items = items
+
         self.complex_transactions = []
         self.transaction_types = []
         self.transaction_classes = []
@@ -146,24 +155,56 @@ class TransactionReport:
 
 
 class TransactionReportBuilder:
-    def __init__(self, instance=None):
+    def __init__(self, instance):
         self.instance = instance
         self._transactions = []
         self._items = []
 
-        self._complex_transactions = {}
-        self._transaction_types = {}
-        self._transaction_classes = {}
-        self._instruments = {self.instance.master_user.instrument_id: None}
-        self._currencies = {self.instance.master_user.currency_id: None}
-        self._portfolios = {self.instance.master_user.portfolio_id: None}
-        self._accounts = {self.instance.master_user.account_id: None}
-        self._strategies1 = {self.instance.master_user.strategy1_id: None}
-        self._strategies2 = {self.instance.master_user.strategy2_id: None}
-        self._strategies3 = {self.instance.master_user.strategy3_id: None}
-        self._responsibles = {self.instance.master_user.responsible_id: None}
-        self._counterparties = {self.instance.master_user.counterparty_id: None}
-        self._attribute_types = {}
+        self._similar_cache = defaultdict(dict)
+
+        # self._complex_transactions = {}
+        # self._transaction_types = {}
+        # self._transaction_classes = {}
+        # self._instruments = {}
+        # self._currencies = {}
+        # self._portfolios ={}
+        # self._accounts = {}
+        # self._strategies1 = {}
+        # self._strategies2 = {}
+        # self._strategies3 = {}
+        # self._responsibles = {}
+        # self._counterparties = {}
+        # self._attribute_types = {}
+
+    def _get_ref(self, clazz, pk, obj=None):
+        tc = self._similar_cache[clazz]
+        try:
+            return tc[pk]
+        except KeyError:
+            if obj is not None:
+                tc[pk] = obj
+                return obj
+        return None
+
+    def _set_ref(self, obj, attr, attr_id=None, clazz=None):
+        if attr_id is None:
+            attr_id = '%s_id' % attr
+        pk = getattr(obj, attr_id, None)
+        if pk is None:
+            return
+        if clazz is None:
+            obj = getattr(obj, attr, None)
+            if obj is None:
+                return
+            clazz = type(obj)
+        tc = self._similar_cache[clazz]
+        if pk in tc:
+            val = tc[pk]
+            setattr(obj, attr, val)
+        else:
+            val = getattr(obj, attr)
+            tc[pk] = val
+        return val
 
     def _load(self):
         from poms.obj_attrs.utils import get_attributes_prefetch
@@ -178,7 +219,7 @@ class TransactionReportBuilder:
             Q(complex_transaction__status=ComplexTransaction.PRODUCTION) | Q(complex_transaction__isnull=True)
         ).prefetch_related(
             'complex_transaction',
-            'instrument',
+            # 'instrument',
             get_attributes_prefetch(),
         ).order_by(
             'complex_transaction__date', 'complex_transaction__code', 'transaction_code'
@@ -193,80 +234,86 @@ class TransactionReportBuilder:
 
         _l.debug('< _load %s', len(self._transactions))
 
-    def _prefetch(self, transactions):
-        from poms.obj_attrs.utils import get_attributes_prefetch
-        from poms.obj_perms.utils import get_permissions_prefetch_lookups
-
-        _l.debug('> _prefetch')
-
-        def _c(cache, obj, attr):
-            attr_pk_name = '%s_id' % attr
-            attr_pk = getattr(obj, attr_pk_name, None)
-            if attr_pk is not None:
-                cache[attr_pk] = None
-
-        _l.debug('> transactions.1')
+    def _set_trns_refs(self, transactions):
+        # make all refs to single object
+        # _l.debug('> _set_trns_refs')
         for t in transactions:
-            _c(self._complex_transactions, t, 'complex_transaction')
+            self._set_ref(t, 'complex_transaction', clazz=ComplexTransaction)
             if t.complex_transaction:
-                _c(self._transaction_types, t.complex_transaction, 'transaction_type')
-            _c(self._transaction_classes, t, 'transaction_class')
-            _c(self._instruments, t, 'instrument')
+                self._set_ref(t.complex_transaction, 'transaction_type', clazz=TransactionType)
+                if not hasattr(t.complex_transaction, '_fake_transactions'):
+                    t.complex_transaction._fake_transactions = []
+                t.complex_transaction._fake_transactions.append(t)
+            self._set_ref(t, 'transaction_class', clazz=TransactionClass)
+            self._set_ref(t, 'instrument', clazz=Instrument)
+            # if t.instrument:
+            #     self._set_ref(t.instrument, 'pricing_currency', clazz=Currency)
+            #     self._set_ref(t.instrument, 'accrued_currency', clazz=Currency)
+            self._set_ref(t, 'transaction_currency', clazz=Currency)
+            self._set_ref(t, 'settlement_currency', clazz=Currency)
+            self._set_ref(t, 'portfolio', clazz=Portfolio)
+            self._set_ref(t, 'account_position', clazz=Account)
+            self._set_ref(t, 'account_cash', clazz=Account)
+            self._set_ref(t, 'account_interim', clazz=Account)
+            self._set_ref(t, 'strategy1_position', clazz=Strategy1)
+            self._set_ref(t, 'strategy1_cash', clazz=Strategy1)
+            self._set_ref(t, 'strategy2_position', clazz=Strategy2)
+            self._set_ref(t, 'strategy2_cash', clazz=Strategy2)
+            self._set_ref(t, 'strategy3_position', clazz=Strategy3)
+            self._set_ref(t, 'strategy3_cash', clazz=Strategy3)
+            self._set_ref(t, 'responsible', clazz=Responsible)
+            self._set_ref(t, 'counterparty', clazz=Counterparty)
+            self._set_ref(t, 'linked_instrument', clazz=Instrument)
+            self._set_ref(t, 'allocation_balance', clazz=Instrument)
+            self._set_ref(t, 'allocation_pl', clazz=Instrument)
+            if t.id > 0:
+                for a in t.attributes.all():
+                    self._set_ref(a, 'attribute_type', clazz=GenericAttributeType)
+                    # _l.debug('< _set_trns_refs')
+
+    def _set_items_refs(self, items):
+        for t in items:
+            if t.complex_transaction:
+                self._set_ref(t.complex_transaction, 'transaction_type', clazz=TransactionType)
+            self._set_ref(t, 'transaction_class', clazz=TransactionClass)
+            self._set_ref(t, 'instrument', clazz=Instrument)
             if t.instrument:
-                _c(self._currencies, t.instrument, 'pricing_currency')
-                _c(self._currencies, t.instrument, 'accrued_currency')
-            _c(self._currencies, t, 'transaction_currency')
-            _c(self._currencies, t, 'settlement_currency')
-            _c(self._portfolios, t, 'portfolio')
-            _c(self._accounts, t, 'account_position')
-            _c(self._accounts, t, 'account_cash')
-            _c(self._accounts, t, 'account_interim')
-            _c(self._strategies1, t, 'strategy1_position')
-            _c(self._strategies1, t, 'strategy1_cash')
-            _c(self._strategies2, t, 'strategy2_position')
-            _c(self._strategies2, t, 'strategy2_cash')
-            _c(self._strategies3, t, 'strategy3_position')
-            _c(self._strategies3, t, 'strategy3_cash')
-            _c(self._responsibles, t, 'responsible')
-            _c(self._counterparties, t, 'counterparty')
-            _c(self._instruments, t, 'linked_instrument')
-            _c(self._instruments, t, 'allocation_balance')
-            _c(self._instruments, t, 'allocation_pl')
-            for a in t.attributes.all():
-                self._attribute_types[a.attribute_type_id] = None
-        _l.debug('< transactions.1: %s', len(transactions))
+                self._set_ref(t.instrument, 'pricing_currency', clazz=Currency)
+                self._set_ref(t.instrument, 'accrued_currency', clazz=Currency)
+            self._set_ref(t, 'transaction_currency', clazz=Currency)
+            self._set_ref(t, 'settlement_currency', clazz=Currency)
+            self._set_ref(t, 'portfolio', clazz=Portfolio)
+            self._set_ref(t, 'account_position', clazz=Account)
+            self._set_ref(t, 'account_cash', clazz=Account)
+            self._set_ref(t, 'account_interim', clazz=Account)
+            self._set_ref(t, 'strategy1_position', clazz=Strategy1)
+            self._set_ref(t, 'strategy1_cash', clazz=Strategy1)
+            self._set_ref(t, 'strategy2_position', clazz=Strategy2)
+            self._set_ref(t, 'strategy2_cash', clazz=Strategy2)
+            self._set_ref(t, 'strategy3_position', clazz=Strategy3)
+            self._set_ref(t, 'strategy3_cash', clazz=Strategy3)
+            self._set_ref(t, 'responsible', clazz=Responsible)
+            self._set_ref(t, 'counterparty', clazz=Counterparty)
+            self._set_ref(t, 'linked_instrument', clazz=Instrument)
+            if t.linked_instrument:
+                self._set_ref(t.linked_instrument, 'pricing_currency', clazz=Currency)
+                self._set_ref(t.linked_instrument, 'accrued_currency', clazz=Currency)
+            self._set_ref(t, 'allocation_balance', clazz=Instrument)
+            if t.allocation_balance:
+                self._set_ref(t.allocation_balance, 'pricing_currency', clazz=Currency)
+                self._set_ref(t.allocation_balance, 'accrued_currency', clazz=Currency)
+            self._set_ref(t, 'allocation_pl', clazz=Instrument)
+            if t.allocation_pl:
+                self._set_ref(t.allocation_pl, 'pricing_currency', clazz=Currency)
+                self._set_ref(t.allocation_pl, 'accrued_currency', clazz=Currency)
 
-        def _k(cache):
-            for k, v in cache.items():
-                if v is None:
-                    yield k
+    def _refresh_from_db(self):
+        _l.info('> _refresh_from_db')
 
-        _l.debug('> transaction_classes')
-        if self._transaction_classes:
-            qs = TransactionClass.objects.filter(
-                pk__in=_k(self._transaction_classes)
-            )
-            for o in qs:
-                self._transaction_classes[o.id] = o
-        _l.debug('< transaction_classes: %s', len(self._transaction_classes))
-
-        _l.debug('> complex_transactions')
-        if self._complex_transactions:
-            qs = ComplexTransaction.objects.filter(
-                transaction_type__master_user=self.instance.master_user,
-                pk__in=_k(self._complex_transactions)
-            ).prefetch_related(
-            )
-            for o in qs:
-                o._fake_transactions = []
-                self._complex_transactions[o.id] = o
-        _l.debug('< complex_transactions: %s', len(self._complex_transactions))
-
-        _l.debug('> transaction_types')
-        if self._transaction_types:
+        transaction_types = self._similar_cache[TransactionType]
+        if transaction_types:
             qs = TransactionType.objects.filter(
                 master_user=self.instance.master_user,
-                pk__in=_k(self._transaction_types)
             ).prefetch_related(
                 'group',
                 *get_permissions_prefetch_lookups(
@@ -274,69 +321,58 @@ class TransactionReportBuilder:
                     ('group', TransactionTypeGroup),
                 )
             )
-            for o in qs:
-                self._transaction_types[o.id] = o
-        _l.debug('< transaction_types: %s', len(self._transaction_types))
+            transaction_types.update(qs.in_bulk(id_list=transaction_types.keys()))
 
-        _l.debug('> currencies')
-        if self._currencies:
-            qs = Currency.objects.filter(
-                master_user=self.instance.master_user,
-                pk__in=_k(self._currencies)
-            ).prefetch_related(
-                get_attributes_prefetch(),
-            )
-            for o in qs:
-                self._currencies[o.id] = o
-                for a in o.attributes.all():
-                    self._attribute_types[a.attribute_type_id] = None
-        _l.debug('< currencies: %s', len(self._currencies))
-
-        _l.debug('> instruments')
-        if self._instruments:
+        instruments = self._similar_cache[Instrument]
+        if instruments:
             qs = Instrument.objects.filter(
                 master_user=self.instance.master_user,
-                pk__in=_k(self._instruments)
             ).prefetch_related(
                 'instrument_type',
                 'instrument_type__instrument_class',
+                'pricing_currency',
+                'accrued_currency',
                 get_attributes_prefetch(),
                 *get_permissions_prefetch_lookups(
                     (None, Instrument),
                     ('instrument_type', InstrumentType),
                 )
             )
-            for o in qs:
-                self._instruments[o.id] = o
-                o.pricing_currency = self._currencies.get(o.pricing_currency_id, None)
-                o.accrued_currency = self._currencies.get(o.accrued_currency_id, None)
+            instruments.update(qs.in_bulk(id_list=[pk for pk in instruments.keys() if pk > 0]))
 
-                for a in o.attributes.all():
-                    self._attribute_types[a.attribute_type_id] = None
-        _l.debug('< instruments: %s', len(self._instruments))
+            for i in instruments.values():
+                self._set_ref(i, 'pricing_currency', clazz=Currency)
+                self._set_ref(i, 'accrued_currency', clazz=Currency)
 
-        _l.debug('> portfolios')
-        if self._portfolios:
+        currencies = self._similar_cache[Currency]
+        if currencies:
+            qs = Currency.objects.filter(
+                master_user=self.instance.master_user,
+            ).prefetch_related(
+                get_attributes_prefetch(),
+            )
+            currencies.update(qs.in_bulk(id_list=currencies.keys()))
+
+            for i in instruments.values():
+                self._set_ref(i, 'pricing_currency', clazz=Currency)
+                self._set_ref(i, 'accrued_currency', clazz=Currency)
+
+        portfolios = self._similar_cache[Portfolio]
+        if portfolios:
             qs = Portfolio.objects.filter(
                 master_user=self.instance.master_user,
-                pk__in=_k(self._portfolios)
             ).prefetch_related(
                 get_attributes_prefetch(),
                 *get_permissions_prefetch_lookups(
                     (None, Portfolio),
                 )
             )
-            for o in qs:
-                self._portfolios[o.id] = o
-                for a in o.attributes.all():
-                    self._attribute_types[a.attribute_type_id] = None
-        _l.debug('< portfolios: %s', len(self._portfolios))
+            portfolios.update(qs.in_bulk(id_list=portfolios.keys()))
 
-        _l.debug('> accounts')
-        if self._accounts:
+        accounts = self._similar_cache[Account]
+        if accounts:
             qs = Account.objects.filter(
                 master_user=self.instance.master_user,
-                pk__in=_k(self._accounts)
             ).prefetch_related(
                 'type',
                 get_attributes_prefetch(),
@@ -345,17 +381,12 @@ class TransactionReportBuilder:
                     ('type', AccountType),
                 )
             )
-            for o in qs:
-                self._accounts[o.id] = o
-                for a in o.attributes.all():
-                    self._attribute_types[a.attribute_type_id] = None
-        _l.debug('< accounts: %s', len(self._accounts))
+            accounts.update(qs.in_bulk(id_list=accounts.keys()))
 
-        _l.debug('> strategies1')
-        if self._strategies1:
+        strategies1 = self._similar_cache[Strategy1]
+        if strategies1:
             qs = Strategy1.objects.filter(
                 master_user=self.instance.master_user,
-                pk__in=_k(self._strategies1)
             ).prefetch_related(
                 'subgroup',
                 'subgroup__group',
@@ -365,51 +396,42 @@ class TransactionReportBuilder:
                     ('subgroup__group', Strategy1Group),
                 )
             )
-            for o in qs:
-                self._strategies1[o.id] = o
-        _l.debug('< strategies1: %s', len(self._strategies1))
+            strategies1.update(qs.in_bulk(id_list=strategies1.keys()))
 
-        _l.debug('> strategies2')
-        if self._strategies2:
+        strategies2 = self._similar_cache[Strategy2]
+        if strategies2:
             qs = Strategy2.objects.filter(
                 master_user=self.instance.master_user,
-                pk__in=_k(self._strategies2)
             ).prefetch_related(
                 'subgroup',
                 'subgroup__group',
                 *get_permissions_prefetch_lookups(
-                    (None, Strategy1),
+                    (None, Strategy2),
                     ('subgroup', Strategy2Subgroup),
                     ('subgroup__group', Strategy2Group),
                 )
             )
-            for o in qs:
-                self._strategies2[o.id] = o
-        _l.debug('< strategies2: %s', len(self._strategies2))
+            strategies2.update(qs.in_bulk(id_list=strategies2.keys()))
 
-        _l.debug('> strategies3')
-        if self._strategies3:
+        strategies3 = self._similar_cache[Strategy3]
+        if strategies3:
             qs = Strategy3.objects.filter(
                 master_user=self.instance.master_user,
-                pk__in=_k(self._strategies3)
             ).prefetch_related(
                 'subgroup',
                 'subgroup__group',
                 *get_permissions_prefetch_lookups(
-                    (None, Strategy1),
+                    (None, Strategy3),
                     ('subgroup', Strategy3Subgroup),
                     ('subgroup__group', Strategy3Group),
                 )
             )
-            for o in qs:
-                self._strategies3[o.id] = o
-        _l.debug('< strategies3: %s', len(self._strategies3))
+            strategies3.update(qs.in_bulk(id_list=strategies3.keys()))
 
-        _l.debug('> responsibles')
-        if self._responsibles:
+        responsibles = self._similar_cache[Responsible]
+        if responsibles:
             qs = Responsible.objects.filter(
                 master_user=self.instance.master_user,
-                pk__in=_k(self._responsibles)
             ).prefetch_related(
                 'group',
                 get_attributes_prefetch(),
@@ -418,17 +440,12 @@ class TransactionReportBuilder:
                     ('group', ResponsibleGroup),
                 )
             )
-            for o in qs:
-                self._responsibles[o.id] = o
-                for a in o.attributes.all():
-                    self._attribute_types[a.attribute_type_id] = None
-        _l.debug('< responsibles: %s', len(self._responsibles))
+            responsibles.update(qs.in_bulk(id_list=responsibles.keys()))
 
-        _l.debug('> counterparties')
-        if self._counterparties:
+        counterparties = self._similar_cache[Counterparty]
+        if counterparties:
             qs = Counterparty.objects.filter(
                 master_user=self.instance.master_user,
-                pk__in=_k(self._counterparties)
             ).prefetch_related(
                 'group',
                 get_attributes_prefetch(),
@@ -437,56 +454,10 @@ class TransactionReportBuilder:
                     ('group', CounterpartyGroup),
                 )
             )
-            for o in qs:
-                self._counterparties[o.id] = o
-                for a in o.attributes.all():
-                    self._attribute_types[a.attribute_type_id] = None
-        _l.debug('< counterparties: %s', len(self._counterparties))
+            counterparties.update(qs.in_bulk(id_list=counterparties.keys()))
 
-        def _p(cache, obj, attr):
-            attr_pk_name = '%s_id' % attr
-            attr_pk = getattr(obj, attr_pk_name, None)
-            if attr_pk is not None:
-                setattr(obj, attr, cache[attr_pk])
-                # obj = getattr(obj, attr, None)
-                # if obj:
-                #     pk = obj.id
-                #     if pk in cache:
-                #         setattr(obj, attr, cache[pk])
-                #     else:
-                #         cache[pk] = obj
-
-        _l.debug('> transactions.2')
-        for t in transactions:
-            _p(self._complex_transactions, t, 'complex_transaction')
-            if t.complex_transaction:
-                _p(self._transaction_types, t.complex_transaction, 'transaction_type')
-                t.complex_transaction._fake_transactions.append(t)
-            _p(self._transaction_classes, t, 'transaction_class')
-            _p(self._instruments, t, 'instrument')
-            if t.instrument:
-                _p(self._currencies, t.instrument, 'pricing_currency')
-                _p(self._currencies, t.instrument, 'accrued_currency')
-            _p(self._currencies, t, 'transaction_currency')
-            _p(self._currencies, t, 'settlement_currency')
-            _p(self._portfolios, t, 'portfolio')
-            _p(self._accounts, t, 'account_position')
-            _p(self._accounts, t, 'account_cash')
-            _p(self._accounts, t, 'account_interim')
-            _p(self._strategies1, t, 'strategy1_position')
-            _p(self._strategies1, t, 'strategy1_cash')
-            _p(self._strategies2, t, 'strategy2_position')
-            _p(self._strategies2, t, 'strategy2_cash')
-            _p(self._strategies3, t, 'strategy3_position')
-            _p(self._strategies3, t, 'strategy3_cash')
-            _p(self._responsibles, t, 'responsible')
-            _p(self._counterparties, t, 'counterparty')
-            _p(self._instruments, t, 'linked_instrument')
-            _p(self._instruments, t, 'allocation_balance')
-            _p(self._instruments, t, 'allocation_pl')
-        _l.debug('< transactions.2: %s', len(transactions))
-
-        if self._attribute_types:
+        attribute_types = self._similar_cache[GenericAttributeType]
+        if attribute_types:
             qs = GenericAttributeType.objects.filter(
                 master_user=self.instance.master_user,
             ).prefetch_related(
@@ -497,88 +468,602 @@ class TransactionReportBuilder:
                     (None, GenericAttributeType),
                 )
             )
-            for at in qs:
-                self._attribute_types[at.id] = at
+            attribute_types.update(qs.in_bulk(id_list=attribute_types.keys()))
 
-        _l.debug('< _prefetch')
+        # for clazz, objects in self._similar_cache.items():
+        #     if not objects:
+        #         continue
+        #     if clazz is ComplexTransaction:
+        #         pass
+        #     elif clazz is TransactionType:
+        #         qs = TransactionType.objects.filter(
+        #             master_user=self.instance.master_user,
+        #         ).prefetch_related(
+        #             'group',
+        #             *get_permissions_prefetch_lookups(
+        #                 (None, TransactionType),
+        #                 ('group', TransactionTypeGroup),
+        #             )
+        #         )
+        #         objects.update(qs.in_bulk(id_list=objects.keys()))
+        #     elif clazz is TransactionClass:
+        #         pass
+        #     elif clazz is Instrument:
+        #         qs = Instrument.objects.filter(
+        #             master_user=self.instance.master_user,
+        #         ).prefetch_related(
+        #             'instrument_type',
+        #             'instrument_type__instrument_class',
+        #             get_attributes_prefetch(),
+        #             *get_permissions_prefetch_lookups(
+        #                 (None, Instrument),
+        #                 ('instrument_type', InstrumentType),
+        #             )
+        #         )
+        #         objects.update(qs.in_bulk(id_list=[pk for pk in objects.keys() if pk > 0]))
+        #     elif clazz is Currency:
+        #         qs = Currency.objects.filter(
+        #             master_user=self.instance.master_user,
+        #         ).prefetch_related(
+        #             get_attributes_prefetch(),
+        #         )
+        #         objects.update(qs.in_bulk(id_list=objects.keys()))
+        #         # for o in qs:
+        #         #     self._currencies[o.id] = o
+        #         #     for a in o.attributes.all():
+        #         #         if a.attribute_type_id not in self._attribute_types:
+        #         #             self._attribute_types[a.attribute_type_id] = None
+        #     elif clazz is Portfolio:
+        #         qs = Portfolio.objects.filter(
+        #             master_user=self.instance.master_user,
+        #         ).prefetch_related(
+        #             get_attributes_prefetch(),
+        #             *get_permissions_prefetch_lookups(
+        #                 (None, Portfolio),
+        #             )
+        #         )
+        #         objects.update(qs.in_bulk(id_list=objects.keys()))
+        #     elif clazz is Account:
+        #         qs = Account.objects.filter(
+        #             master_user=self.instance.master_user,
+        #         ).prefetch_related(
+        #             'type',
+        #             get_attributes_prefetch(),
+        #             *get_permissions_prefetch_lookups(
+        #                 (None, Account),
+        #                 ('type', AccountType),
+        #             )
+        #         )
+        #         objects.update(qs.in_bulk(id_list=objects.keys()))
+        #     elif clazz is Strategy1:
+        #         qs = Strategy1.objects.filter(
+        #             master_user=self.instance.master_user,
+        #         ).prefetch_related(
+        #             'subgroup',
+        #             'subgroup__group',
+        #             *get_permissions_prefetch_lookups(
+        #                 (None, Strategy1),
+        #                 ('subgroup', Strategy1Subgroup),
+        #                 ('subgroup__group', Strategy1Group),
+        #             )
+        #         )
+        #         objects.update(qs.in_bulk(id_list=objects.keys()))
+        #     elif clazz is Strategy2:
+        #         qs = Strategy2.objects.filter(
+        #             master_user=self.instance.master_user,
+        #         ).prefetch_related(
+        #             'subgroup',
+        #             'subgroup__group',
+        #             *get_permissions_prefetch_lookups(
+        #                 (None, Strategy2),
+        #                 ('subgroup', Strategy2Subgroup),
+        #                 ('subgroup__group', Strategy2Group),
+        #             )
+        #         )
+        #         objects.update(qs.in_bulk(id_list=objects.keys()))
+        #     elif clazz is Strategy3:
+        #         qs = Strategy3.objects.filter(
+        #             master_user=self.instance.master_user,
+        #         ).prefetch_related(
+        #             'subgroup',
+        #             'subgroup__group',
+        #             *get_permissions_prefetch_lookups(
+        #                 (None, Strategy3),
+        #                 ('subgroup', Strategy3Subgroup),
+        #                 ('subgroup__group', Strategy3Group),
+        #             )
+        #         )
+        #         objects.update(qs.in_bulk(id_list=objects.keys()))
+        #     elif clazz is Responsible:
+        #         qs = Responsible.objects.filter(
+        #             master_user=self.instance.master_user,
+        #         ).prefetch_related(
+        #             'group',
+        #             get_attributes_prefetch(),
+        #             *get_permissions_prefetch_lookups(
+        #                 (None, Responsible),
+        #                 ('group', ResponsibleGroup),
+        #             )
+        #         )
+        #         objects.update(qs.in_bulk(id_list=objects.keys()))
+        #     elif clazz is Counterparty:
+        #         qs = Counterparty.objects.filter(
+        #             master_user=self.instance.master_user,
+        #         ).prefetch_related(
+        #             'group',
+        #             get_attributes_prefetch(),
+        #             *get_permissions_prefetch_lookups(
+        #                 (None, Counterparty),
+        #                 ('group', CounterpartyGroup),
+        #             )
+        #         )
+        #         objects.update(qs.in_bulk(id_list=objects.keys()))
+        #     elif clazz is GenericAttributeType:
+        #         qs = GenericAttributeType.objects.filter(
+        #             master_user=self.instance.master_user,
+        #         ).prefetch_related(
+        #             'content_type',
+        #             'options',
+        #             'classifiers',
+        #             *get_permissions_prefetch_lookups(
+        #                 (None, GenericAttributeType),
+        #             )
+        #         )
+        #         objects.update(qs.in_bulk(id_list=objects.keys()))
+
+        _l.info('< _refresh_from_db')
+
+    # def _prefetch(self, transactions):
+    #     from poms.obj_attrs.utils import get_attributes_prefetch
+    #     from poms.obj_perms.utils import get_permissions_prefetch_lookups
+    #
+    #     _l.debug('> _prefetch')
+    #
+    #     def _c(cache, obj, attr):
+    #         attr_pk_name = '%s_id' % attr
+    #         attr_pk = getattr(obj, attr_pk_name, None)
+    #         if attr_pk is not None and attr_pk > 0:
+    #             cache[attr_pk] = None
+    #
+    #     _l.debug('> transactions.1')
+    #     for t in transactions:
+    #         _c(self._complex_transactions, t, 'complex_transaction')
+    #         if t.complex_transaction:
+    #             _c(self._transaction_types, t.complex_transaction, 'transaction_type')
+    #         _c(self._transaction_classes, t, 'transaction_class')
+    #         _c(self._instruments, t, 'instrument')
+    #         if t.instrument:
+    #             _c(self._currencies, t.instrument, 'pricing_currency')
+    #             _c(self._currencies, t.instrument, 'accrued_currency')
+    #         _c(self._currencies, t, 'transaction_currency')
+    #         _c(self._currencies, t, 'settlement_currency')
+    #         _c(self._portfolios, t, 'portfolio')
+    #         _c(self._accounts, t, 'account_position')
+    #         _c(self._accounts, t, 'account_cash')
+    #         _c(self._accounts, t, 'account_interim')
+    #         _c(self._strategies1, t, 'strategy1_position')
+    #         _c(self._strategies1, t, 'strategy1_cash')
+    #         _c(self._strategies2, t, 'strategy2_position')
+    #         _c(self._strategies2, t, 'strategy2_cash')
+    #         _c(self._strategies3, t, 'strategy3_position')
+    #         _c(self._strategies3, t, 'strategy3_cash')
+    #         _c(self._responsibles, t, 'responsible')
+    #         _c(self._counterparties, t, 'counterparty')
+    #         _c(self._instruments, t, 'linked_instrument')
+    #         _c(self._instruments, t, 'allocation_balance')
+    #         _c(self._instruments, t, 'allocation_pl')
+    #         if t.id > 0:
+    #             for a in t.attributes.all():
+    #                 if a.attribute_type_id not in self._attribute_types:
+    #                     self._attribute_types[a.attribute_type_id] = None
+    #     _l.debug('< transactions.1: %s', len(transactions))
+    #
+    #     def _k(cache):
+    #         for k, v in cache.items():
+    #             if v is None:
+    #                 yield k
+    #
+    #     _l.debug('> transaction_classes')
+    #     if self._transaction_classes:
+    #         qs = TransactionClass.objects.filter(
+    #             pk__in=_k(self._transaction_classes)
+    #         )
+    #         for o in qs:
+    #             self._transaction_classes[o.id] = o
+    #     _l.debug('< transaction_classes: %s', len(self._transaction_classes))
+    #
+    #     _l.debug('> complex_transactions')
+    #     if self._complex_transactions:
+    #         qs = ComplexTransaction.objects.filter(
+    #             transaction_type__master_user=self.instance.master_user,
+    #             pk__in=_k(self._complex_transactions)
+    #         ).prefetch_related(
+    #         )
+    #         for o in qs:
+    #             o._fake_transactions = []
+    #             self._complex_transactions[o.id] = o
+    #     _l.debug('< complex_transactions: %s', len(self._complex_transactions))
+    #
+    #     _l.debug('> transaction_types')
+    #     if self._transaction_types:
+    #         qs = TransactionType.objects.filter(
+    #             master_user=self.instance.master_user,
+    #             pk__in=_k(self._transaction_types)
+    #         ).prefetch_related(
+    #             'group',
+    #             *get_permissions_prefetch_lookups(
+    #                 (None, TransactionType),
+    #                 ('group', TransactionTypeGroup),
+    #             )
+    #         )
+    #         for o in qs:
+    #             self._transaction_types[o.id] = o
+    #     _l.debug('< transaction_types: %s', len(self._transaction_types))
+    #
+    #     _l.debug('> currencies')
+    #     if self._currencies:
+    #         qs = Currency.objects.filter(
+    #             master_user=self.instance.master_user,
+    #             pk__in=_k(self._currencies)
+    #         ).prefetch_related(
+    #             get_attributes_prefetch(),
+    #         )
+    #         for o in qs:
+    #             self._currencies[o.id] = o
+    #             for a in o.attributes.all():
+    #                 if a.attribute_type_id not in self._attribute_types:
+    #                     self._attribute_types[a.attribute_type_id] = None
+    #     _l.debug('< currencies: %s', len(self._currencies))
+    #
+    #     _l.debug('> instruments')
+    #     if self._instruments:
+    #         qs = Instrument.objects.filter(
+    #             master_user=self.instance.master_user,
+    #             pk__in=_k(self._instruments)
+    #         ).prefetch_related(
+    #             'instrument_type',
+    #             'instrument_type__instrument_class',
+    #             get_attributes_prefetch(),
+    #             *get_permissions_prefetch_lookups(
+    #                 (None, Instrument),
+    #                 ('instrument_type', InstrumentType),
+    #             )
+    #         )
+    #         for o in qs:
+    #             self._instruments[o.id] = o
+    #             o.pricing_currency = self._currencies.get(o.pricing_currency_id, None)
+    #             o.accrued_currency = self._currencies.get(o.accrued_currency_id, None)
+    #
+    #             if o.id > 0:
+    #                 for a in o.attributes.all():
+    #                     if a.attribute_type_id not in self._attribute_types:
+    #                         self._attribute_types[a.attribute_type_id] = None
+    #     _l.debug('< instruments: %s', len(self._instruments))
+    #
+    #     _l.debug('> portfolios')
+    #     if self._portfolios:
+    #         qs = Portfolio.objects.filter(
+    #             master_user=self.instance.master_user,
+    #             pk__in=_k(self._portfolios)
+    #         ).prefetch_related(
+    #             get_attributes_prefetch(),
+    #             *get_permissions_prefetch_lookups(
+    #                 (None, Portfolio),
+    #             )
+    #         )
+    #         for o in qs:
+    #             self._portfolios[o.id] = o
+    #             for a in o.attributes.all():
+    #                 if a.attribute_type_id not in self._attribute_types:
+    #                     self._attribute_types[a.attribute_type_id] = None
+    #     _l.debug('< portfolios: %s', len(self._portfolios))
+    #
+    #     _l.debug('> accounts')
+    #     if self._accounts:
+    #         qs = Account.objects.filter(
+    #             master_user=self.instance.master_user,
+    #             pk__in=_k(self._accounts)
+    #         ).prefetch_related(
+    #             'type',
+    #             get_attributes_prefetch(),
+    #             *get_permissions_prefetch_lookups(
+    #                 (None, Account),
+    #                 ('type', AccountType),
+    #             )
+    #         )
+    #         for o in qs:
+    #             self._accounts[o.id] = o
+    #             for a in o.attributes.all():
+    #                 if a.attribute_type_id not in self._attribute_types:
+    #                     self._attribute_types[a.attribute_type_id] = None
+    #     _l.debug('< accounts: %s', len(self._accounts))
+    #
+    #     _l.debug('> strategies1')
+    #     if self._strategies1:
+    #         qs = Strategy1.objects.filter(
+    #             master_user=self.instance.master_user,
+    #             pk__in=_k(self._strategies1)
+    #         ).prefetch_related(
+    #             'subgroup',
+    #             'subgroup__group',
+    #             *get_permissions_prefetch_lookups(
+    #                 (None, Strategy1),
+    #                 ('subgroup', Strategy1Subgroup),
+    #                 ('subgroup__group', Strategy1Group),
+    #             )
+    #         )
+    #         for o in qs:
+    #             self._strategies1[o.id] = o
+    #     _l.debug('< strategies1: %s', len(self._strategies1))
+    #
+    #     _l.debug('> strategies2')
+    #     if self._strategies2:
+    #         qs = Strategy2.objects.filter(
+    #             master_user=self.instance.master_user,
+    #             pk__in=_k(self._strategies2)
+    #         ).prefetch_related(
+    #             'subgroup',
+    #             'subgroup__group',
+    #             *get_permissions_prefetch_lookups(
+    #                 (None, Strategy1),
+    #                 ('subgroup', Strategy2Subgroup),
+    #                 ('subgroup__group', Strategy2Group),
+    #             )
+    #         )
+    #         for o in qs:
+    #             self._strategies2[o.id] = o
+    #     _l.debug('< strategies2: %s', len(self._strategies2))
+    #
+    #     _l.debug('> strategies3')
+    #     if self._strategies3:
+    #         qs = Strategy3.objects.filter(
+    #             master_user=self.instance.master_user,
+    #             pk__in=_k(self._strategies3)
+    #         ).prefetch_related(
+    #             'subgroup',
+    #             'subgroup__group',
+    #             *get_permissions_prefetch_lookups(
+    #                 (None, Strategy1),
+    #                 ('subgroup', Strategy3Subgroup),
+    #                 ('subgroup__group', Strategy3Group),
+    #             )
+    #         )
+    #         for o in qs:
+    #             self._strategies3[o.id] = o
+    #     _l.debug('< strategies3: %s', len(self._strategies3))
+    #
+    #     _l.debug('> responsibles')
+    #     if self._responsibles:
+    #         qs = Responsible.objects.filter(
+    #             master_user=self.instance.master_user,
+    #             pk__in=_k(self._responsibles)
+    #         ).prefetch_related(
+    #             'group',
+    #             get_attributes_prefetch(),
+    #             *get_permissions_prefetch_lookups(
+    #                 (None, Responsible),
+    #                 ('group', ResponsibleGroup),
+    #             )
+    #         )
+    #         for o in qs:
+    #             self._responsibles[o.id] = o
+    #             for a in o.attributes.all():
+    #                 if a.attribute_type_id not in self._attribute_types:
+    #                     self._attribute_types[a.attribute_type_id] = None
+    #     _l.debug('< responsibles: %s', len(self._responsibles))
+    #
+    #     _l.debug('> counterparties')
+    #     if self._counterparties:
+    #         qs = Counterparty.objects.filter(
+    #             master_user=self.instance.master_user,
+    #             pk__in=_k(self._counterparties)
+    #         ).prefetch_related(
+    #             'group',
+    #             get_attributes_prefetch(),
+    #             *get_permissions_prefetch_lookups(
+    #                 (None, Counterparty),
+    #                 ('group', CounterpartyGroup),
+    #             )
+    #         )
+    #         for o in qs:
+    #             self._counterparties[o.id] = o
+    #             for a in o.attributes.all():
+    #                 if a.attribute_type_id not in self._attribute_types:
+    #                     self._attribute_types[a.attribute_type_id] = None
+    #     _l.debug('< counterparties: %s', len(self._counterparties))
+    #
+    #     def _p(cache, obj, attr):
+    #         attr_pk_name = '%s_id' % attr
+    #         attr_pk = getattr(obj, attr_pk_name, None)
+    #         if attr_pk is not None and attr_pk > 0:
+    #             setattr(obj, attr, cache[attr_pk])
+    #             # obj = getattr(obj, attr, None)
+    #             # if obj:
+    #             #     pk = obj.id
+    #             #     if pk in cache:
+    #             #         setattr(obj, attr, cache[pk])
+    #             #     else:
+    #             #         cache[pk] = obj
+    #
+    #     _l.debug('> transactions.2')
+    #     for t in transactions:
+    #         _p(self._complex_transactions, t, 'complex_transaction')
+    #         if t.complex_transaction:
+    #             _p(self._transaction_types, t.complex_transaction, 'transaction_type')
+    #             t.complex_transaction._fake_transactions.append(t)
+    #         _p(self._transaction_classes, t, 'transaction_class')
+    #         _p(self._instruments, t, 'instrument')
+    #         if t.instrument:
+    #             _p(self._currencies, t.instrument, 'pricing_currency')
+    #             _p(self._currencies, t.instrument, 'accrued_currency')
+    #         _p(self._currencies, t, 'transaction_currency')
+    #         _p(self._currencies, t, 'settlement_currency')
+    #         _p(self._portfolios, t, 'portfolio')
+    #         _p(self._accounts, t, 'account_position')
+    #         _p(self._accounts, t, 'account_cash')
+    #         _p(self._accounts, t, 'account_interim')
+    #         _p(self._strategies1, t, 'strategy1_position')
+    #         _p(self._strategies1, t, 'strategy1_cash')
+    #         _p(self._strategies2, t, 'strategy2_position')
+    #         _p(self._strategies2, t, 'strategy2_cash')
+    #         _p(self._strategies3, t, 'strategy3_position')
+    #         _p(self._strategies3, t, 'strategy3_cash')
+    #         _p(self._responsibles, t, 'responsible')
+    #         _p(self._counterparties, t, 'counterparty')
+    #         _p(self._instruments, t, 'linked_instrument')
+    #         _p(self._instruments, t, 'allocation_balance')
+    #         _p(self._instruments, t, 'allocation_pl')
+    #     _l.debug('< transactions.2: %s', len(transactions))
+    #
+    #     if self._attribute_types:
+    #         qs = GenericAttributeType.objects.filter(
+    #             master_user=self.instance.master_user,
+    #         ).prefetch_related(
+    #             'content_type',
+    #             'options',
+    #             'classifiers',
+    #             *get_permissions_prefetch_lookups(
+    #                 (None, GenericAttributeType),
+    #             )
+    #         )
+    #         for at in qs:
+    #             self._attribute_types[at.id] = at
+    #
+    #     _l.debug('< _prefetch')
 
     def _update_instance(self):
         self.instance.items = self._items
 
-        self.instance.complex_transactions = list(self._complex_transactions.values())
-        self.instance.transaction_types = list(self._transaction_types.values())
-        self.instance.transaction_classes = list(self._transaction_classes.values())
-        self.instance.instruments = list(self._instruments.values())
-        self.instance.currencies = list(self._currencies.values())
-        self.instance.portfolios = list(self._portfolios.values())
-        self.instance.accounts = list(self._accounts.values())
-        self.instance.strategies1 = list(self._strategies1.values())
-        self.instance.strategies2 = list(self._strategies2.values())
-        self.instance.strategies3 = list(self._strategies3.values())
-        self.instance.responsibles = list(self._responsibles.values())
-        self.instance.counterparties = list(self._counterparties.values())
+        for clazz, objects in self._similar_cache.items():
+            if clazz is ComplexTransaction:
+                self.instance.complex_transactions = list(objects.values())
+            elif clazz is TransactionType:
+                self.instance.transaction_types = list(objects.values())
+            elif clazz is TransactionClass:
+                self.instance.transaction_classes = list(objects.values())
+            elif clazz is Instrument:
+                self.instance.instruments = list(objects.values())
+            elif clazz is Currency:
+                self.instance.currencies = list(objects.values())
+            elif clazz is Portfolio:
+                self.instance.portfolios = list(objects.values())
+            elif clazz is Account:
+                self.instance.accounts = list(objects.values())
+            elif clazz is Strategy1:
+                self.instance.strategies1 = list(objects.values())
+            elif clazz is Strategy2:
+                self.instance.strategies2 = list(objects.values())
+            elif clazz is Strategy3:
+                self.instance.strategies3 = list(objects.values())
+            elif clazz is Responsible:
+                self.instance.responsibles = list(objects.values())
+            elif clazz is Counterparty:
+                self.instance.counterparties = list(objects.values())
+            elif clazz is GenericAttributeType:
+                self.instance.transaction_attribute_types = []
+                self.instance.instrument_attribute_types = []
+                self.instance.currency_attribute_types = []
+                self.instance.portfolio_attribute_types = []
+                self.instance.account_attribute_types = []
+                self.instance.responsible_attribute_types = []
+                self.instance.counterparty_attribute_types = []
+                for at in objects.values():
+                    model_class = at.content_type.model_class()
+                    if issubclass(model_class, Transaction):
+                        self.instance.transaction_attribute_types.append(at)
+                    elif issubclass(model_class, Instrument):
+                        self.instance.instrument_attribute_types.append(at)
+                    elif issubclass(model_class, Currency):
+                        self.instance.currency_attribute_types.append(at)
+                    elif issubclass(model_class, Portfolio):
+                        self.instance.portfolio_attribute_types.append(at)
+                    elif issubclass(model_class, Account):
+                        self.instance.account_attribute_types.append(at)
+                    elif issubclass(model_class, Responsible):
+                        self.instance.responsible_attribute_types.append(at)
+                    elif issubclass(model_class, Counterparty):
+                        self.instance.counterparty_attribute_types.append(at)
 
-        self.instance.transaction_attribute_types = []
-        self.instance.instrument_attribute_types = []
-        self.instance.currency_attribute_types = []
-        self.instance.portfolio_attribute_types = []
-        self.instance.account_attribute_types = []
-        self.instance.responsible_attribute_types = []
-        self.instance.counterparty_attribute_types = []
-        for at in self._attribute_types.values():
-            model_class = at.content_type.model_class()
-            if issubclass(model_class, Transaction):
-                self.instance.transaction_attribute_types.append(at)
-            elif issubclass(model_class, Instrument):
-                self.instance.instrument_attribute_types.append(at)
-            elif issubclass(model_class, Currency):
-                self.instance.currency_attribute_types.append(at)
-            elif issubclass(model_class, Portfolio):
-                self.instance.portfolio_attribute_types.append(at)
-            elif issubclass(model_class, Account):
-                self.instance.account_attribute_types.append(at)
-            elif issubclass(model_class, Responsible):
-                self.instance.responsible_attribute_types.append(at)
-            elif issubclass(model_class, Counterparty):
-                self.instance.counterparty_attribute_types.append(at)
+                        # # self.instance.complex_transactions = list(self._complex_transactions.values())
+                        # self.instance.transaction_types = list(self._transaction_types.values())
+                        # self.instance.transaction_classes = list(self._transaction_classes.values())
+                        # self.instance.instruments = list(self._instruments.values())
+                        # self.instance.currencies = list(self._currencies.values())
+                        # self.instance.portfolios = list(self._portfolios.values())
+                        # self.instance.accounts = list(self._accounts.values())
+                        # self.instance.strategies1 = list(self._strategies1.values())
+                        # self.instance.strategies2 = list(self._strategies2.values())
+                        # self.instance.strategies3 = list(self._strategies3.values())
+                        # self.instance.responsibles = list(self._responsibles.values())
+                        # self.instance.counterparties = list(self._counterparties.values())
+                        #
+                        # self.instance.transaction_attribute_types = []
+                        # self.instance.instrument_attribute_types = []
+                        # self.instance.currency_attribute_types = []
+                        # self.instance.portfolio_attribute_types = []
+                        # self.instance.account_attribute_types = []
+                        # self.instance.responsible_attribute_types = []
+                        # self.instance.counterparty_attribute_types = []
+                        # for at in self._attribute_types.values():
+                        #     model_class = at.content_type.model_class()
+                        #     if issubclass(model_class, Transaction):
+                        #         self.instance.transaction_attribute_types.append(at)
+                        #     elif issubclass(model_class, Instrument):
+                        #         self.instance.instrument_attribute_types.append(at)
+                        #     elif issubclass(model_class, Currency):
+                        #         self.instance.currency_attribute_types.append(at)
+                        #     elif issubclass(model_class, Portfolio):
+                        #         self.instance.portfolio_attribute_types.append(at)
+                        #     elif issubclass(model_class, Account):
+                        #         self.instance.account_attribute_types.append(at)
+                        #     elif issubclass(model_class, Responsible):
+                        #         self.instance.responsible_attribute_types.append(at)
+                        #     elif issubclass(model_class, Counterparty):
+                        #         self.instance.counterparty_attribute_types.append(at)
 
     def build(self):
+        _l.debug('> build')
         with transaction.atomic():
-            # _l.debug('> _make_transactions')
-            # self._make_transactions(10000)
-            # _l.debug('< _make_transactions')
+            # if settings.DEBUG:
+            #     _l.debug('> _make_transactions')
+            #     self._make_transactions(10000)
+            #     _l.debug('< _make_transactions')
 
             self._load()
-            self._prefetch(self._transactions)
+            self._set_trns_refs(self._transactions)
             self._items = [TransactionReportItem(trn=t) for t in self._transactions]
+            self._refresh_from_db()
+            self._set_items_refs(self._items)
             self._update_instance()
 
-            # _l.debug('> pickle')
-            # import pickle
-            # data = pickle.dumps(self.instance, protocol=pickle.HIGHEST_PROTOCOL)
-            # _l.debug('< pickle: %s', len(data))
+            # if settings.DEBUG:
+            #     _l.debug('> pickle')
+            #     import pickle
+            #     data = pickle.dumps(self.instance, protocol=pickle.HIGHEST_PROTOCOL)
+            #     _l.debug('< pickle: %s', len(data))
+            #     _l.debug('> pickle.zlib')
+            #     import zlib
+            #     data1 = zlib.compress(data)
+            #     _l.debug('< pickle.zlib: %s', len(data1))
             #
-            # _l.debug('> zlib')
-            # import zlib
-            # data1 = zlib.compress(data)
-            # _l.debug('< zlib: %s', len(data1))
-
-            # _l.debug('> TransactionReportSerializer.data')
-            # from poms.reports.serializers import TransactionReportSerializer
-            # s = TransactionReportSerializer(instance=self.instance, context={
-            #     'master_user': self.instance.master_user,
-            #     'member': self.instance.member,
-            # })
-            # data_dict = s.data
-            # _l.debug('< TransactionReportSerializer.data')
-            #
-            # _l.debug('> JSONRenderer.render')
-            # r = JSONRenderer()
-            # data = r.render(data_dict)
-            # _l.debug('< JSONRenderer.render: %s', len(data))
+            #     _l.debug('> json')
+            #     from poms.reports.serializers import TransactionReportSerializer
+            #     from rest_framework.renderers import JSONRenderer
+            #     s = TransactionReportSerializer(instance=self.instance, context={
+            #         'master_user': self.instance.master_user,
+            #         'member': self.instance.member,
+            #     })
+            #     data_dict = s.data
+            #     r = JSONRenderer()
+            #     data = r.render(data_dict)
+            #     _l.debug('< json: %s', len(data))
+            #     _l.debug('> json.zlib')
+            #     import zlib
+            #     data1 = zlib.compress(data)
+            #     _l.debug('< json.zlib: %s', len(data1))
 
             transaction.set_rollback(True)
-
+        _l.debug('< build')
         return self.instance
 
     def _make_transactions(self, count=100):
@@ -649,8 +1134,8 @@ class TransactionReportBuilder:
 
 class CashFlowProjectionReportItem(TransactionReportItem):
     DEFAULT = 1
-    BALANCE = 100
-    ROLLING = 101
+    BALANCE = 2
+    ROLLING = 3
     TYPE_CHOICE = (
         (DEFAULT, 'Default'),
         (BALANCE, 'Balance'),
@@ -688,7 +1173,7 @@ class CashFlowProjectionReport(TransactionReport):
 
 
 class CashFlowProjectionReportBuilder(TransactionReportBuilder):
-    def __init__(self, instance=None):
+    def __init__(self, instance):
         super(CashFlowProjectionReportBuilder, self).__init__(instance)
 
         self._transactions_by_date = None
@@ -710,23 +1195,25 @@ class CashFlowProjectionReportBuilder(TransactionReportBuilder):
         self._transaction_order_seq += 1
         return self._transaction_order_seq
 
-    def _trn_key(self, trn):
+    def _trn_key(self, trn, acc=empty):
+        if acc is empty:
+            acc = trn.account_cash
         return (
-            # getattr(trn.complex_transaction, 'date', datetime.date.min),
-            # getattr(trn.complex_transaction, 'code', float('-inf')),
-            # getattr(trn, 'transaction_code', float('-inf')),
-            getattr(trn.instrument, 'id', -1),
             getattr(trn.settlement_currency, 'id', -1),
             getattr(trn.portfolio, 'id', -1),
-            getattr(trn.account_position, 'id', -1),
+            getattr(acc, 'id', -1),
+            # getattr(trn.instrument, 'id', -1),
         )
 
-    def _get_or_create(self, cache, key, trn, itype=CashFlowProjectionReportItem.DEFAULT):
+    def _item(self, cache, trn, key, itype=CashFlowProjectionReportItem.DEFAULT):
+        if key is None:
+            key = self._trn_key(trn)
         item = cache.get(key, None)
         if item is None:
             # override by '-'
-            if itype == CashFlowProjectionReportItem.BALANCE:
+            if itype in [CashFlowProjectionReportItem.BALANCE, CashFlowProjectionReportItem.ROLLING]:
                 ctrn = ComplexTransaction(
+                    id=self._fake_id_gen(),
                     date=self.instance.balance_date,
                     status=ComplexTransaction.PRODUCTION,
                     code=0,
@@ -734,6 +1221,7 @@ class CashFlowProjectionReportBuilder(TransactionReportBuilder):
                 ctrn._fake_transactions = []
                 item = CashFlowProjectionReportItem(
                     type=itype,
+                    id=self._fake_id_gen(),
                     complex_transaction=ctrn,
                     complex_transaction_order=0,
                     transaction_code=0,
@@ -752,7 +1240,7 @@ class CashFlowProjectionReportBuilder(TransactionReportBuilder):
                     linked_instrument=self.instance.master_user.instrument,
                     allocation_balance=self.instance.master_user.instrument,
                     allocation_pl=self.instance.master_user.instrument,
-                    attributes=None,
+                    attributes=[],
                     transaction_class=None,
                     position_size_with_sign=0.0,
                     cash_consideration=0.0,
@@ -762,36 +1250,41 @@ class CashFlowProjectionReportBuilder(TransactionReportBuilder):
                     transaction_date=self.instance.balance_date,
                     accounting_date=self.instance.balance_date,
                     cash_date=self.instance.balance_date,
-                    reference_fx_rate=0.0,
+                    reference_fx_rate=1.0,
                 )
+                if itype == CashFlowProjectionReportItem.BALANCE:
+                    item.instrument = None
+                elif itype == CashFlowProjectionReportItem.ROLLING:
+                    item.complex_transaction.date = datetime.date.max
+                    item.complex_transaction.code = sys.maxsize
+                    item.transaction_code = sys.maxsize
+                    item.transaction_date = datetime.date.max
+                    item.accounting_date = datetime.date.max
+                    item.cash_date = datetime.date.max
             else:
                 item = CashFlowProjectionReportItem(type=itype, trn=trn)
             cache[key] = item
         return item
 
+    def _balance(self, trn, key=None):
+        return self._item(self._balance_items, trn, key, itype=CashFlowProjectionReportItem.BALANCE)
+
+    def _rolling(self, trn, key=None):
+        return self._item(self._rolling_items, trn, key, itype=CashFlowProjectionReportItem.ROLLING)
+
     def build(self):
+        _l.debug('> build')
         with transaction.atomic():
             self._load()
-
-            _l.info('1'*100)
+            self._set_trns_refs(self._transactions)
             self._step1()
-            _l.info('2'*100)
-            self._prefetch(self._transactions)
-            _l.info('3'*100)
             self._step2()
-            _l.info('4'*100)
+            self._refresh_from_db()
+            self._set_items_refs(self._items)
             self._update_instance()
-
-            # self.instance.items = list(self._balance_items.values())
-            # self.instance.items = list(self._balance_items.values()) + [
-            #     CashFlowProjectionReportItem(type=CashFlowProjectionReportItem.DEFAULT, trn=t)
-            #     for t in self._generated_transactions]
-
             transaction.set_rollback(True)
+        _l.debug('< build')
         return self.instance
-
-    def _update_instance(self):
-        self.instance.items = self._items
 
     def _step1(self):
         self._transactions_by_date = defaultdict(list)
@@ -806,39 +1299,32 @@ class CashFlowProjectionReportBuilder(TransactionReportBuilder):
             self._transactions_by_date[d].append(t)
 
             if d <= self.instance.balance_date:
+                key = self._trn_key(t)
+                bitem = self._balance(t, key)
+                bitem.add_balance(t)
+
                 if t.transaction_class_id in [TransactionClass.BUY, TransactionClass.SELL]:
                     key = self._trn_key(t)
-                    bitem = self._get_or_create(self._balance_items, key, t, itype=CashFlowProjectionReportItem.BALANCE)
-                    bitem.add_balance(t)
+                    ritem = self._rolling(t, key)
+                    ritem.add_balance(t)
                 elif t.transaction_class_id in [TransactionClass.TRANSFER]:
-                    pass
+                    raise RuntimeError('implement me please')
 
         for k, bitem in self._balance_items.items():
             self._items.append(bitem)
 
-            ritem = copy.copy(bitem)
-            ritem.complex_transaction = copy.copy(ritem.complex_transaction)
-            ritem.complex_transaction.date = datetime.date.max
-            ritem.complex_transaction.code = sys.maxsize
-            ritem.transaction_code = sys.maxsize
-            ritem.transaction_date = self.instance.balance_date
-            ritem.accounting_date = self.instance.balance_date
-            ritem.cash_date = self.instance.balance_date
-
-            self._rolling_items[k] = ritem
-
-            if settings.DEBUG:
-                ritem.type = CashFlowProjectionReportItem.ROLLING
+        if settings.DEBUG:
+            for k, ritem in self._rolling_items.items():
                 self._items.append(ritem)
 
     def _step2(self):
         now = self.instance.balance_date
-        t1 = datetime.timedelta(days=1)
-
+        td1 = datetime.timedelta(days=1)
         while now < self.instance.report_date:
-            now += t1
+            now += td1
             _l.debug('\tnow=%s', now.isoformat())
 
+            # check events
             for key, ritem in self._rolling_items.items():
                 instr = ritem.instrument
                 if instr is None:
@@ -861,16 +1347,10 @@ class CashFlowProjectionReportBuilder(TransactionReportBuilder):
                         e.strategy3 = ritem.strategy3_position
                         e.position = ritem.position_size_with_sign
 
-                        if e.is_apply_default_on_effective_date(now) or e.is_apply_default_on_notification_date(now):
-                            a = None
-                            for a0 in e.event_schedule.actions.all():
-                                if a0.is_book_automatic:
-                                    a = a0
+                        if e.is_apply_default_on_date(now):
+                            a = e.get_default_action()
                             if a:
-                                if a.transaction_type_id in self._transaction_types:
-                                    a.transaction_type = self._transaction_types[a.transaction_type_id]
-                                else:
-                                    self._transaction_types[a.transaction_type_id] = a.transaction_type
+                                self._set_ref(a, 'transaction_type', clazz=TransactionType)
 
                                 _l.debug('\t\t\tevent_schedule=%s, action=%s, confirmed', es.id, a.id)
                                 gep = GeneratedEventProcess(
@@ -886,16 +1366,18 @@ class CashFlowProjectionReportBuilder(TransactionReportBuilder):
                                 if gep.has_errors:
                                     self.instance.has_errors = True
                                 else:
-                                    for i2 in gep.instruments:
-                                        if i2.id < 0 and i2.id not in self._instruments:
-                                            self._instruments[i2.id] = i2
-                                    gep.complex_transaction._fake_transactions = gep.transactions
-                                    self._prefetch(gep.transactions)
+                                    # for i2 in gep.instruments:
+                                    #     if i2.id < 0 and i2.id not in self._instruments:
+                                    #         self._instruments[i2.id] = i2
+                                    # gep.complex_transaction._fake_transactions = list(gep.transactions)
+                                    # self._prefetch(gep.transactions)
+                                    self._set_trns_refs(gep.transactions)
                                     for t2 in gep.transactions:
                                         _l.debug('\t\t\t+trn=%s', t2.id)
                                         d = getattr(t2.complex_transaction, 'date', datetime.date.max)
                                         self._transactions_by_date[d].append(t2)
 
+            # process transactions
             if now in self._transactions_by_date:
                 for t in self._transactions_by_date[now]:
                     _l.debug('\t\t\ttrn=%s', t.id)
@@ -905,8 +1387,7 @@ class CashFlowProjectionReportBuilder(TransactionReportBuilder):
 
                     ritem = None
                     if t.transaction_class_id in [TransactionClass.BUY, TransactionClass.SELL]:
-                        ritem = self._get_or_create(self._rolling_items, key, t,
-                                                    itype=CashFlowProjectionReportItem.BALANCE)
+                        ritem = self._rolling(t, key)
                         ritem.add_balance(t)
                     elif t.transaction_class_id in [TransactionClass.TRANSFER]:
                         raise RuntimeError('implement me please')

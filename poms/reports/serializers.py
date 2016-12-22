@@ -101,8 +101,6 @@ class ReportInstrumentSerializer(InstrumentSerializer):
         self.fields.pop('daily_pricing_model')
         self.fields.pop('daily_pricing_model_object')
 
-        # self.fields.pop('is_default')
-
 
 class ReportCurrencySerializer(CurrencySerializer):
     def __init__(self, *args, **kwargs):
@@ -249,7 +247,7 @@ class ReportComplexTransactionSerializer(ComplexTransactionSerializer):
     def __init__(self, *args, **kwargs):
         super(ReportComplexTransactionSerializer, self).__init__(*args, **kwargs)
 
-        # self.fields.pop('text')
+        self.fields.pop('text')
         self.fields.pop('transactions')
         self.fields.pop('transactions_object')
         # self.fields.pop('transaction_type_object')
@@ -515,6 +513,7 @@ class TransactionReportItemSerializer(serializers.Serializer):
     linked_instrument = serializers.PrimaryKeyRelatedField(read_only=True)
     allocation_balance = serializers.PrimaryKeyRelatedField(read_only=True)
     allocation_pl = serializers.PrimaryKeyRelatedField(read_only=True)
+    attributes = ReportGenericAttributeSerializer(many=True, read_only=True)
 
 
 class TransactionReportSerializer(serializers.Serializer):

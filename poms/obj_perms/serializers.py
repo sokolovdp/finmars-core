@@ -13,7 +13,9 @@ from poms.users.utils import get_member_from_context
 
 class UserObjectPermissionListSerializer(serializers.ListSerializer):
     def get_attribute(self, instance):
-        return [op for op in instance.object_permissions.all() if op.member_id]
+        if hasattr(instance, 'object_permissions'):
+            return [op for op in instance.object_permissions.all() if op.member_id]
+        return []
 
 
 class UserObjectPermissionSerializer(serializers.Serializer):
@@ -27,7 +29,9 @@ class UserObjectPermissionSerializer(serializers.Serializer):
 
 class GroupObjectPermissionListSerializer(serializers.ListSerializer):
     def get_attribute(self, instance):
-        return [op for op in instance.object_permissions.all() if op.group_id]
+        if hasattr(instance, 'object_permissions'):
+            return [op for op in instance.object_permissions.all() if op.group_id]
+        return []
 
 
 class GroupObjectPermissionSerializer(serializers.Serializer):
@@ -75,9 +79,7 @@ class ModelWithObjectPermissionViewListSerializer(serializers.ListSerializer):
         objects = super(ModelWithObjectPermissionViewListSerializer, self).get_attribute(instance)
         objects = objects.all() if isinstance(objects, models.Manager) else objects
         member = get_member_from_context(self.context)
-        return [
-            o for o in objects if has_view_perms(member, o)
-            ]
+        return [o for o in objects if has_view_perms(member, o)]
         # member = get_member_from_context(self.context)
         # if member.is_superuser:
         #     return instance.attributes
