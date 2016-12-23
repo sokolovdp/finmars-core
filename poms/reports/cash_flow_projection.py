@@ -1306,7 +1306,7 @@ class CashFlowProjectionReportBuilder(TransactionReportBuilder):
                     id=self._fake_id_gen(),
                     date=self.instance.balance_date,
                     status=ComplexTransaction.PRODUCTION,
-                    code=0,
+                    code=-sys.maxsize,
                 )
                 ctrn._fake_transactions = []
                 item = CashFlowProjectionReportItem(
@@ -1314,7 +1314,7 @@ class CashFlowProjectionReportBuilder(TransactionReportBuilder):
                     id=self._fake_id_gen(),
                     complex_transaction=ctrn,
                     complex_transaction_order=0,
-                    transaction_code=0,
+                    transaction_code=-sys.maxsize,
                     trn=trn,
                     transaction_currency=trn.settlement_currency,
                     account_cash=self.instance.master_user.account,
@@ -1346,8 +1346,8 @@ class CashFlowProjectionReportBuilder(TransactionReportBuilder):
                     item.instrument = None
                 elif itype == CashFlowProjectionReportItem.ROLLING:
                     item.complex_transaction.date = datetime.date.max
-                    item.complex_transaction.code = sys.maxsize
-                    item.transaction_code = sys.maxsize
+                    # item.complex_transaction.code = sys.maxsize
+                    # item.transaction_code = sys.maxsize
                     item.transaction_date = datetime.date.max
                     item.accounting_date = datetime.date.max
                     item.cash_date = datetime.date.max
@@ -1530,4 +1530,18 @@ class CashFlowProjectionReportBuilder(TransactionReportBuilder):
                     i.cash_consideration_after = i.cash_consideration_before + i.cash_consideration
                     rolling_cash_consideration = i.cash_consideration_after
 
-        self._items = items
+        def _resp_sort_key(i):
+            # if i.type == CashFlowProjectionReportItem.BALANCE:
+            #     type_sort_val = 0
+            # elif i.type == CashFlowProjectionReportItem.DEFAULT:
+            #     type_sort_val = 1
+            # else:
+            #     type_sort_val = 2
+            return (
+                _check_date_min(getattr(i.complex_transaction, 'date', None)),
+                # type_sort_val,
+                _check_int_min(getattr(i.complex_transaction, 'code', None)),
+                _check_int_min(i.complex_transaction_order),
+                _check_int_min(i.transaction_code),
+            )
+        self._items = sorted(self._items, key=_resp_sort_key)
