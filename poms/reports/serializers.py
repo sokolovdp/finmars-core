@@ -564,8 +564,8 @@ class CashFlowProjectionReportItemSerializer(TransactionReportItemSerializer):
     # currency = serializers.PrimaryKeyRelatedField(read_only=True)
 
     # position_size_with_sign = serializers.ReadOnlyField()
-    position_size_with_sign_before = serializers.ReadOnlyField()
-    position_size_with_sign_after = serializers.ReadOnlyField()
+    # position_size_with_sign_before = serializers.ReadOnlyField()
+    # position_size_with_sign_after = serializers.ReadOnlyField()
     # cash_consideration = serializers.ReadOnlyField()
     cash_consideration_before = serializers.ReadOnlyField()
     cash_consideration_after = serializers.ReadOnlyField()
