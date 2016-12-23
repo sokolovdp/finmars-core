@@ -213,8 +213,7 @@ class TransactionReportBuilder:
 
         qs = Transaction.objects.filter(
             master_user=self.instance.master_user,
-            is_canceled=False,
-            id__gt=10000
+            is_canceled=False
         ).filter(
             Q(complex_transaction__status=ComplexTransaction.PRODUCTION) | Q(complex_transaction__isnull=True)
         ).prefetch_related(
