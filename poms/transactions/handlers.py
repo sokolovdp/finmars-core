@@ -24,7 +24,8 @@ class TransactionTypeProcess(object):
                  complex_transaction=None, complex_transaction_status=None,
                  complex_transaction_date=None,
                  transactions=None, transactions_errors=None,
-                 fake_id_gen=None, transaction_order_gen=None):
+                 fake_id_gen=None, transaction_order_gen=None,
+                 now=None):
 
         self.transaction_type = transaction_type
 
@@ -58,6 +59,8 @@ class TransactionTypeProcess(object):
 
         self._next_fake_id = fake_id_gen or self._next_fake_id_default
         self._next_transaction_order = transaction_order_gen or self._next_transaction_order_default
+
+        self._now = now
 
     def _next_fake_id_default(self):
         self._id_seq -= 1
@@ -136,7 +139,7 @@ class TransactionTypeProcess(object):
                 if value is None:
                     if i.value:
                         try:
-                            value = formula.safe_eval(i.value)
+                            value = formula.safe_eval(i.value, now=self._now)
                         except formula.InvalidExpression:
                             value = None
             self.values[i.name] = value
@@ -158,7 +161,7 @@ class TransactionTypeProcess(object):
             if action_instrument:
                 errors = {}
                 try:
-                    user_code = formula.safe_eval(action_instrument.user_code, names=self.values)
+                    user_code = formula.safe_eval(action_instrument.user_code, names=self.values, now=self._now)
                 except formula.InvalidExpression as e:
                     self._set_eval_error(errors, 'user_code', action_instrument.user_code, e)
                     user_code = None
@@ -384,7 +387,7 @@ class TransactionTypeProcess(object):
         value = getattr(source, source_attr_name)
         if value:
             try:
-                value = formula.safe_eval(value, names=values)
+                value = formula.safe_eval(value, names=values, now=self._now)
             except formula.InvalidExpression as e:
                 self._set_eval_error(errors, source_attr_name, value, e)
                 return

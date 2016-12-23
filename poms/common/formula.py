@@ -521,8 +521,8 @@ empty = object()
 
 
 class SimpleEval2(object):
-    def __init__(self, names=None, max_time=None, add_print=False, allow_assign=False):
-        self.max_time = max_time or 1
+    def __init__(self, names=None, max_time=None, add_print=False, allow_assign=False, now=None):
+        self.max_time = max_time or 1  # one second
         # self.max_time = 10000000000
         self.start_time = 0
         self.tik_time = 0
@@ -533,6 +533,8 @@ class SimpleEval2(object):
         self.result = None
 
         _globals = {f.name: f for f in FUNCTIONS}
+        if now is not None and callable(now):
+            _globals['now'] = _SysDef('now', now)
         _globals['globals'] = _SysDef('globals', lambda: _globals)
         _globals['locals'] = _SysDef('locals', lambda: self._table)
         if names:
@@ -1024,15 +1026,16 @@ def validate(expr):
         raise ValidationError('Invalid expression: %s' % e)
 
 
-def safe_eval(s, names=None, max_time=None, add_print=False, allow_assign=False):
-    return SimpleEval2(names=names, max_time=max_time, add_print=add_print, allow_assign=allow_assign).eval(s)
+def safe_eval(s, names=None, max_time=None, add_print=False, allow_assign=False, now=None):
+    return SimpleEval2(names=names, max_time=max_time, add_print=add_print, allow_assign=allow_assign, now=now).eval(s)
 
 
 def value_prepare(orig):
     def _dict(data):
         ret = OrderedDict()
         for k, v in data.items():
-            if k in ['user_object_permissions', 'group_object_permissions', 'object_permissions', 'granted_permissions']:
+            if k in ['user_object_permissions', 'group_object_permissions', 'object_permissions',
+                     'granted_permissions']:
                 continue
             if k.endswith('_object'):
                 k = k[:-7]
@@ -1590,7 +1593,7 @@ accrual_NL_365_NO_EOM(date(2000, 1, 1), date(2000, 1, 25))
         _l.info('safe_eval       : %f', timeit.timeit(lambda: safe_eval(expr), number=number))
 
 
-    perf_tests()
+    # perf_tests()
     pass
 
 
@@ -1662,4 +1665,12 @@ accrual_NL_365_NO_EOM(date(2000, 1, 1), date(2000, 1, 25))
 
 
     # model_access_test()
+    pass
+
+
+    def now_test():
+        now = datetime.date(2000, 1, 1)
+        _l.info(safe_eval('now()'))
+        _l.info(safe_eval('now()', now=lambda: now))
+    now_test()
     pass

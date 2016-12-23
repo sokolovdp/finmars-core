@@ -1409,6 +1409,7 @@ class CashFlowProjectionReportBuilder(TransactionReportBuilder):
         #         self._items.append(ritem)
 
     def _step2(self):
+        # eval future events
         now = self.instance.balance_date
         td1 = datetime.timedelta(days=1)
         while now < self.instance.report_date:
@@ -1452,6 +1453,7 @@ class CashFlowProjectionReportBuilder(TransactionReportBuilder):
                                     complex_transaction_date=now,
                                     fake_id_gen=self._fake_id_gen,
                                     transaction_order_gen=self._trn_order_gen,
+                                    now=lambda: now
                                 )
                                 gep.process()
                                 if gep.has_errors:
@@ -1487,6 +1489,9 @@ class CashFlowProjectionReportBuilder(TransactionReportBuilder):
                         del self._rolling_items[key]
 
     def _step3(self):
+        # aggregate some rolling values
+        # sort result
+
         def _sort_key(i):
             if i.type == CashFlowProjectionReportItem.BALANCE:
                 type_sort_val = 0
