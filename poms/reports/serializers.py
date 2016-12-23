@@ -574,6 +574,44 @@ class CashFlowProjectionReportItemSerializer(TransactionReportItemSerializer):
         super(CashFlowProjectionReportItemSerializer, self).__init__(*args, **kwargs)
         self.fields.fields.move_to_end('item_type', last=False)
 
+        # if settings.DEBUG:
+        #     for k in [
+        #         "transaction_code",
+        #         "transaction_class",
+        #         "instrument",
+        #         "transaction_currency",
+        #         "position_size_with_sign",
+        #         # "settlement_currency",
+        #         # "cash_consideration",
+        #         "principal_with_sign",
+        #         "carry_with_sign",
+        #         "overheads_with_sign",
+        #         "accounting_date",
+        #         "cash_date",
+        #         "transaction_date",
+        #         # "portfolio",
+        #         "account_cash",
+        #         # "account_position",
+        #         # "account_interim",
+        #         "strategy1_position",
+        #         "strategy1_cash",
+        #         "strategy2_position",
+        #         "strategy2_cash",
+        #         "strategy3_position",
+        #         "strategy3_cash",
+        #         "reference_fx_rate",
+        #         "responsible",
+        #         "counterparty",
+        #         "linked_instrument",
+        #         "allocation_balance",
+        #         "allocation_pl",
+        #         "attributes",
+        #         # "cash_consideration_before",
+        #         # "cash_consideration_after",
+        #     ]:
+        #         self.fields.pop(k)
+        pass
+
 
 class CashFlowProjectionReportSerializer(TransactionReportSerializer):
     # task_id = serializers.CharField(allow_null=True, allow_blank=True, required=False)
@@ -605,7 +643,6 @@ class CashFlowProjectionReportSerializer(TransactionReportSerializer):
                 attrs['report_date'] = date(2016, 12, 26)
             else:
                 attrs['report_date'] = attrs['balance_date'] + relativedelta(months=1)
-
 
         return attrs
 
