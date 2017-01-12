@@ -209,6 +209,7 @@ class TransactionTypeActionTransactionInline(admin.StackedInline):
         ('allocation_balance', 'allocation_balance_input', 'allocation_balance_phantom'),
         ('allocation_pl', 'allocation_pl_input', 'allocation_pl_phantom'),
 
+        'reference_fx_rate',
         'factor',
         'trade_price',
         'principal_amount',
@@ -297,7 +298,7 @@ admin.site.register(TransactionType, TransactionTypeAdmin)
 class ComplexTransactionInputInline(admin.StackedInline):
     model = ComplexTransactionInput
     extra = 0
-    raw_id_fields = ('transaction_type_input','account', 'instrument_type', 'instrument', 'currency', 'counterparty',
+    raw_id_fields = ('transaction_type_input', 'account', 'instrument_type', 'instrument', 'currency', 'counterparty',
                      'responsible', 'portfolio', 'strategy1', 'strategy2', 'strategy3', 'price_download_scheme')
     readonly_fields = ('id',)
 
@@ -305,12 +306,13 @@ class ComplexTransactionInputInline(admin.StackedInline):
 class ComplexTransactionAdmin(AbstractModelAdmin):
     model = ComplexTransaction
     master_user_path = 'transaction_type__master_user'
-    list_display = ['id', 'master_user', 'transaction_type', 'code', 'status']
+    list_display = ['id', 'master_user', 'date', 'transaction_type', 'code', 'status']
     list_select_related = ['transaction_type', 'transaction_type__master_user']
     ordering = ['transaction_type', 'code']
     search_fields = ['id']
     raw_id_fields = ['transaction_type']
     inlines = [ComplexTransactionInputInline]
+    save_as = True
 
     def master_user(self, obj):
         return obj.transaction_type.master_user
@@ -339,20 +341,38 @@ admin.site.register(ComplexTransaction, ComplexTransactionAdmin)
 class TransactionAdmin(AbstractModelAdmin):
     model = Transaction
     master_user_path = 'master_user'
-    list_display = ['id', 'master_user', 'transaction_date', 'transaction_code',
-                    'complex_transaction_id',
-                    'transaction_class',
-                    'accounting_date', 'cash_date',
-                    'instrument', 'transaction_currency',
-                    'position_size_with_sign',
-                    'settlement_currency', 'cash_consideration',
-                    'principal_with_sign', 'carry_with_sign', 'overheads_with_sign',
-                    'account_cash', 'account_position', 'account_interim',
-                    'strategy1_position', 'strategy1_cash', 'strategy2_position', 'strategy2_cash',
-                    'strategy3_position', 'strategy3_cash',
-                    'linked_instrument',
-                    'allocation_balance', 'allocation_pl',
-                    ]
+    list_display = [
+        'id',
+        'master_user',
+        'transaction_date',
+        'transaction_code',
+        'complex_transaction',
+        'transaction_class',
+        'accounting_date',
+        # 'cash_date',
+        'instrument',
+        'transaction_currency',
+        'position_size_with_sign',
+        'settlement_currency',
+        'cash_consideration',
+        # 'principal_with_sign',
+        # 'carry_with_sign',
+        # 'overheads_with_sign',
+        'portfolio',
+        # 'account_cash',
+        'account_position',
+        # 'account_interim',
+        # 'strategy1_position',
+        # 'strategy1_cash',
+        # 'strategy2_position',
+        # 'strategy2_cash',
+        # 'strategy3_position',
+        # 'strategy3_cash',
+        # 'linked_instrument',
+        # 'allocation_balance',
+        # 'allocation_pl',
+        # 'is_canceled',
+    ]
     list_select_related = [
         'master_user', 'complex_transaction', 'transaction_class',
         'instrument', 'transaction_currency', 'settlement_currency',
@@ -403,6 +423,7 @@ class TransactionAdmin(AbstractModelAdmin):
         'trade_price',
         'principal_amount', 'carry_amount', 'overheads',
     )
+    save_as = True
 
 
 admin.site.register(Transaction, TransactionAdmin)

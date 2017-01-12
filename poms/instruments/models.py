@@ -1,8 +1,9 @@
 from __future__ import unicode_literals
 
-from datetime import date
+from datetime import date, timedelta
 
 from dateutil import relativedelta, rrule
+from django.conf import settings
 from django.contrib.contenttypes.fields import GenericRelation
 from django.core import serializers
 from django.core.exceptions import ObjectDoesNotExist
@@ -212,41 +213,6 @@ class Periodicity(AbstractClassModel):
             return relativedelta.relativedelta(years=1 * delta)
         return None
 
-    # @staticmethod
-    # def to_rrule(periodicity, dtstart=None, count=None, until=None):
-    #     if isinstance(periodicity, Periodicity):
-    #         periodicity = periodicity.id
-    #
-    #     if periodicity == Periodicity.N_DAY:
-    #         return rrule.rrule(dtstart=dtstart, count=count, until=until, freq=rrule.DAILY)
-    #     elif periodicity == Periodicity.N_WEEK_EOBW:
-    #         return rrule.rrule(dtstart=dtstart, count=count, until=until, freq=rrule.WEEKLY,
-    #                            byweekday=[rrule.FR])
-    #     elif periodicity == Periodicity.N_MONTH_EOM:
-    #         return rrule.rrule(dtstart=dtstart, count=count, until=until, freq=rrule.MONTHLY,
-    #                            bymonthday=[31])
-    #     elif periodicity == Periodicity.N_MONTH_SAME_DAY:
-    #         return rrule.rrule(dtstart=dtstart, count=count, until=until, freq=rrule.MONTHLY,
-    #                            bymonthday=[dtstart.day])
-    #     elif periodicity == Periodicity.N_YEAR_EOY:
-    #         return rrule.rrule(dtstart=dtstart, count=count, until=until, freq=rrule.YEARLY,
-    #                            bymonth=[12], bymonthday=[31])
-    #     elif periodicity == Periodicity.N_YEAR_SAME_DAY:
-    #         return rrule.rrule(dtstart=dtstart, count=count, until=until, freq=rrule.WEEKLY)
-    #     elif periodicity == Periodicity.WEEKLY:
-    #         return rrule.rrule(dtstart=dtstart, count=count, until=until, freq=rrule.WEEKLY)
-    #     elif periodicity == Periodicity.MONTHLY:
-    #         return rrule.rrule(dtstart=dtstart, count=count, until=until, freq=rrule.MONTHLY)
-    #     elif periodicity == Periodicity.BIMONTHLY:
-    #         return rrule.rrule(dtstart=dtstart, count=count, interval=2, until=until, freq=rrule.MONTHLY)
-    #     elif periodicity == Periodicity.QUARTERLY:
-    #         return rrule.rrule(dtstart=dtstart, count=count, interval=3, until=until, freq=rrule.MONTHLY)
-    #     elif periodicity == Periodicity.SEMI_ANNUALLY:
-    #         return rrule.rrule(dtstart=dtstart, count=count, interval=6, until=until, freq=rrule.MONTHLY)
-    #     elif periodicity == Periodicity.ANNUALLY:
-    #         return rrule.rrule(dtstart=dtstart, count=count, until=until, freq=rrule.YEARLY)
-    #     return None
-
     def to_freq(self):
         if self.id == Periodicity.N_DAY:
             return 0
@@ -346,24 +312,6 @@ class InstrumentType(NamedModel, FakeDeletableModel):
         return self.master_user.instrument_type_id == self.id if self.master_user_id else False
 
 
-# class InstrumentTypeUserObjectPermission(AbstractUserObjectPermission):
-#     content_object = models.ForeignKey(InstrumentType, related_name='user_object_permissions',
-#                                        verbose_name=ugettext_lazy('content object'))
-#
-#     class Meta(AbstractUserObjectPermission.Meta):
-#         verbose_name = ugettext_lazy('instrument types - user permission')
-#         verbose_name_plural = ugettext_lazy('instrument types - user permissions')
-#
-#
-# class InstrumentTypeGroupObjectPermission(AbstractGroupObjectPermission):
-#     content_object = models.ForeignKey(InstrumentType, related_name='group_object_permissions',
-#                                        verbose_name=ugettext_lazy('content object'))
-#
-#     class Meta(AbstractGroupObjectPermission.Meta):
-#         verbose_name = ugettext_lazy('instrument types - group permission')
-#         verbose_name_plural = ugettext_lazy('instrument types - group permissions')
-
-
 @python_2_unicode_compatible
 class Instrument(NamedModel, FakeDeletableModel):
     master_user = models.ForeignKey(MasterUser, related_name='instruments', verbose_name=ugettext_lazy('master user'))
@@ -431,10 +379,10 @@ class Instrument(NamedModel, FakeDeletableModel):
             event_schedule_config = EventScheduleConfig.create_default(master_user=master_user)
 
         events = list(self.event_schedules.prefetch_related('actions').filter(is_auto_generated=True))
-        events_by_accrual = {e.accrual_calculation_schedule_id: e for e in events
-                             if e.accrual_calculation_schedule_id is not None}
-        events_by_factor = {e.factor_schedule_id: e for e in events
-                            if e.factor_schedule_id is not None}
+        events_by_accrual = {e.accrual_calculation_schedule_id: e
+                             for e in events if e.accrual_calculation_schedule_id is not None}
+        events_by_factor = {e.factor_schedule_id: e
+                            for e in events if e.factor_schedule_id is not None}
 
         processed = []
 
@@ -597,16 +545,6 @@ class Instrument(NamedModel, FakeDeletableModel):
                 accrual = a
         return accrual
 
-    # def find_factor(self, d, factors=None):
-    #     if factors is None:
-    #         # TODO: verify that use queryset cache
-    #         factors = self.factor_schedules.order_by('effective_date').all()
-    #     factor = None
-    #     for f in factors:
-    #         if f.effective_date <= d:
-    #             factor = f
-    #     return factor
-
     def calculate_prices_accrued_price(self, begin_date=None, end_date=None):
         accruals = [a for a in self.accrual_calculation_schedules.order_by('accrual_start_date')]
         if not accruals:
@@ -657,97 +595,6 @@ class Instrument(NamedModel, FakeDeletableModel):
         return accrual.accrual_size * factor
 
 
-# class InstrumentUserObjectPermission(AbstractUserObjectPermission):
-#     content_object = models.ForeignKey(Instrument, related_name='user_object_permissions',
-#                                        verbose_name=ugettext_lazy('content object'))
-#
-#     class Meta(AbstractUserObjectPermission.Meta):
-#         verbose_name = ugettext_lazy('instruments - user permission')
-#         verbose_name_plural = ugettext_lazy('instruments - user permissions')
-#
-#
-# class InstrumentGroupObjectPermission(AbstractGroupObjectPermission):
-#     content_object = models.ForeignKey(Instrument, related_name='group_object_permissions',
-#                                        verbose_name=ugettext_lazy('content object'))
-#
-#     class Meta(AbstractGroupObjectPermission.Meta):
-#         verbose_name = ugettext_lazy('instruments - group permission')
-#         verbose_name_plural = ugettext_lazy('instruments - group permissions')
-
-
-# class InstrumentAttributeType(AbstractAttributeType):
-#     # classifier_root = models.OneToOneField(
-#     #     InstrumentClassifier,
-#     #     on_delete=models.PROTECT,
-#     #     null=True,
-#     #     blank=True,
-#     #     verbose_name=ugettext_lazy('classifier')
-#     # )
-#     object_permissions = GenericRelation(GenericObjectPermission)
-#
-#     class Meta(AbstractAttributeType.Meta):
-#         verbose_name = ugettext_lazy('instrument attribute type')
-#         verbose_name_plural = ugettext_lazy('instrument attribute types')
-#         permissions = [
-#             ('view_instrumentattributetype', 'Can view instrument attribute type'),
-#             ('manage_instrumentattributetype', 'Can manage instrument attribute type'),
-#         ]
-
-
-# class InstrumentAttributeTypeUserObjectPermission(AbstractUserObjectPermission):
-#     content_object = models.ForeignKey(InstrumentAttributeType, related_name='user_object_permissions',
-#                                        verbose_name=ugettext_lazy('content object'))
-#
-#     class Meta(AbstractUserObjectPermission.Meta):
-#         verbose_name = ugettext_lazy('instrument attribute types - user permission')
-#         verbose_name_plural = ugettext_lazy('instrument attribute types - user permissions')
-#
-#
-# class InstrumentAttributeTypeGroupObjectPermission(AbstractGroupObjectPermission):
-#     content_object = models.ForeignKey(InstrumentAttributeType, related_name='group_object_permissions',
-#                                        verbose_name=ugettext_lazy('content object'))
-#
-#     class Meta(AbstractGroupObjectPermission.Meta):
-#         verbose_name = ugettext_lazy('instrument attribute types - group permission')
-#         verbose_name_plural = ugettext_lazy('instrument attribute types - group permissions')
-
-
-# @python_2_unicode_compatible
-# class InstrumentClassifier(AbstractClassifier):
-#     attribute_type = models.ForeignKey(InstrumentAttributeType, related_name='classifiers',
-#                                        verbose_name=ugettext_lazy('attribute type'))
-#     parent = TreeForeignKey('self', null=True, blank=True, related_name='children', db_index=True,
-#                             verbose_name=ugettext_lazy('parent'))
-#
-#     class Meta(AbstractClassifier.Meta):
-#         verbose_name = ugettext_lazy('instrument classifier')
-#         verbose_name_plural = ugettext_lazy('instrument classifiers')
-#
-#
-# class InstrumentAttributeTypeOption(AbstractAttributeTypeOption):
-#     member = models.ForeignKey(Member, related_name='instrument_attribute_type_options',
-#                                verbose_name=ugettext_lazy('member'))
-#     attribute_type = models.ForeignKey(InstrumentAttributeType, related_name='options',
-#                                        verbose_name=ugettext_lazy('attribute type'))
-#
-#     class Meta(AbstractAttributeTypeOption.Meta):
-#         verbose_name = ugettext_lazy('instrument attribute types - option')
-#         verbose_name_plural = ugettext_lazy('instrument attribute types - options')
-#
-#
-# class InstrumentAttribute(AbstractAttribute):
-#     attribute_type = models.ForeignKey(InstrumentAttributeType, related_name='attributes',
-#                                        verbose_name=ugettext_lazy('attribute type'))
-#     content_object = models.ForeignKey(Instrument, related_name='attributes',
-#                                        verbose_name=ugettext_lazy('content object'))
-#     classifier = models.ForeignKey(InstrumentClassifier, on_delete=models.SET_NULL, null=True, blank=True,
-#                                    verbose_name=ugettext_lazy('classifier'))
-#
-#     class Meta(AbstractAttribute.Meta):
-#         verbose_name = ugettext_lazy('instrument attribute')
-#         verbose_name_plural = ugettext_lazy('instrument attributes')
-
-
 @python_2_unicode_compatible
 class ManualPricingFormula(models.Model):
     instrument = models.ForeignKey(Instrument, related_name='manual_pricing_formulas',
@@ -787,29 +634,8 @@ class PriceHistory(models.Model):
         ordering = ['date']
 
     def __str__(self):
-        # return '%s/%s@%s,%s,%s' % (
-        #     self.instrument, self.pricing_policy, self.date, self.principal_price, self.accrued_price)
         return '%s:%s:%s:%s:%s' % (
             self.instrument_id, self.pricing_policy_id, self.date, self.principal_price, self.accrued_price)
-
-        # def find_accrual(self, accruals=None):
-        #     return self.instrument.find_accrual(self.date, accruals=accruals)
-        #
-        # def calculate_accrued_price(self, accrual=None, accruals=None, save=False):
-        #     if accrual is None:
-        #         accrual = self.find_accrual(accruals=accruals)
-        #     old_accrued_price = self.accrued_price
-        #     if accrual is None:
-        #         self.accrued_price = 0.
-        #     else:
-        #         from poms.common.formula_accruals import coupon_accrual_factor
-        #         factor = coupon_accrual_factor(accrual_calculation_schedule=accrual,
-        #                                        dt1=accrual.accrual_start_date,
-        #                                        dt2=self.date,
-        #                                        dt3=accrual.first_payment_date)
-        #         self.accrued_price = accrual.accrual_size * factor
-        #     if save and not isclose(old_accrued_price, self.accrued_price):
-        #         self.save(update_fields=['accrued_price'])
 
 
 @python_2_unicode_compatible
@@ -893,6 +719,37 @@ class EventSchedule(models.Model):
 
     def __str__(self):
         return '#%s/#%s' % (self.id, self.instrument_id)
+
+    def check_date(self, now):
+        from poms.transactions.models import EventClass
+
+        notification_date_correction = timedelta(days=self.notify_in_n_days)
+
+        if self.event_class_id == EventClass.ONE_OFF:
+            effective_date = self.effective_date
+            notification_date = effective_date - notification_date_correction
+            # _l.debug('effective_date=%s, notification_date=%s', effective_date, notification_date)
+
+            if notification_date == now or effective_date == now:
+                return True, effective_date, notification_date
+
+        elif self.event_class_id == EventClass.REGULAR:
+            for i in range(0, settings.INSTRUMENT_EVENTS_REGULAR_MAX_INTERVALS):
+                effective_date = self.effective_date + self.periodicity.to_timedelta(
+                    i, same_date=self.effective_date)
+                notification_date = effective_date - notification_date_correction
+                # _l.debug('i=%s, book_date=%s, notify_date=%s', i, effective_date, notification_date)
+
+                if effective_date > self.final_date:
+                    break
+                if effective_date < now:
+                    continue
+                if notification_date > now and effective_date > now:
+                    break
+
+                if notification_date == now or effective_date == now:
+                    return True, effective_date, notification_date
+        return False, None, None
 
 
 class EventScheduleAction(models.Model):
@@ -1013,6 +870,9 @@ class GeneratedEvent(models.Model):
             return self.notification_date == now and notification_class.is_apply_default_on_notification_date
         return False
 
+    def is_apply_default_on_date(self, now=None):
+        return self.is_apply_default_on_effective_date(now) or self.is_apply_default_on_notification_date(now)
+
     def is_need_reaction_on_effective_date(self, now=None):
         from poms.transactions.models import NotificationClass
         if self.status == GeneratedEvent.NEW:
@@ -1028,6 +888,15 @@ class GeneratedEvent(models.Model):
             notification_class = self.event_schedule.notification_class
             return self.notification_date == now and notification_class.is_need_reaction_on_notification_date
         return False
+
+    def get_default_action(self, actions=None):
+        if actions is None:
+            actions = self.event_schedule.actions.all()
+        for a in actions:
+            if a.is_book_automatic:
+                return a
+        return None
+
 
 
 class EventScheduleConfig(models.Model):

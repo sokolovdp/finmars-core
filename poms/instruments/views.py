@@ -3,8 +3,9 @@ from __future__ import unicode_literals
 import django_filters
 from django.core.exceptions import ObjectDoesNotExist
 from django.db import transaction
-from django.db.models import Prefetch
+from django.db.models import Prefetch, Q, Case, When, Value, BooleanField
 from django.utils import timezone
+from django.utils.encoding import force_text
 from rest_framework import serializers
 from rest_framework.decorators import list_route, detail_route
 from rest_framework.exceptions import MethodNotAllowed, PermissionDenied, ValidationError
@@ -16,6 +17,7 @@ from poms.accounts.models import AccountType
 from poms.common.filters import CharFilter, ModelExtWithPermissionMultipleChoiceFilter, NoOpFilter, \
     ModelExtMultipleChoiceFilter
 from poms.common.mixins import UpdateModelMixinExt
+from poms.common.utils import date_now
 from poms.common.views import AbstractClassModelViewSet, AbstractModelViewSet, AbstractReadOnlyModelViewSet
 from poms.currencies.models import Currency
 from poms.instruments.filters import OwnerByInstrumentFilter, PriceHistoryObjectPermissionFilter, \
@@ -31,7 +33,7 @@ from poms.instruments.serializers import InstrumentSerializer, PriceHistorySeria
     PaymentSizeDetailSerializer, PeriodicitySerializer, CostMethodSerializer, InstrumentTypeSerializer, \
     PricingPolicySerializer, EventScheduleConfigSerializer, InstrumentCalculatePricesAccruedPriceSerializer, \
     GeneratedEventSerializer
-from poms.instruments.tasks import calculate_prices_accrued_price, process_events, generate_events
+from poms.instruments.tasks import calculate_prices_accrued_price, generate_events
 from poms.integrations.models import PriceDownloadScheme
 from poms.obj_attrs.utils import get_attributes_prefetch
 from poms.obj_attrs.views import GenericAttributeTypeViewSet, \
@@ -45,7 +47,7 @@ from poms.strategies.models import Strategy1, Strategy1Subgroup, Strategy1Group,
     Strategy2Group, Strategy3, Strategy3Subgroup, Strategy3Group
 from poms.tags.filters import TagFilter
 from poms.tags.utils import get_tag_prefetch
-from poms.transactions.models import TransactionType, TransactionTypeGroup
+from poms.transactions.models import TransactionType, TransactionTypeGroup, NotificationClass
 from poms.transactions.serializers import TransactionTypeProcessSerializer
 from poms.users.filters import OwnerByMasterUserFilter
 from poms.users.permissions import SuperUserOrReadOnly
@@ -357,6 +359,8 @@ class PriceHistoryViewSet(AbstractModelViewSet):
 
 class GeneratedEventFilterSet(FilterSet):
     id = NoOpFilter()
+    # is_need_reaction = django_filters.MethodFilter(action='filter_is_need_reaction')
+    is_need_reaction = django_filters.BooleanFilter()
     status = django_filters.MultipleChoiceFilter(choices=GeneratedEvent.STATUS_CHOICES)
     status_date = django_filters.DateFromToRangeFilter()
     instrument = ModelExtWithPermissionMultipleChoiceFilter(model=Instrument)
@@ -370,9 +374,26 @@ class GeneratedEventFilterSet(FilterSet):
     effective_date = django_filters.DateFromToRangeFilter()
     notification_date = django_filters.DateFromToRangeFilter()
 
+
     class Meta:
         model = GeneratedEvent
         fields = []
+
+    # def filter_is_need_reaction(self, qs, value):
+    #     value = force_text(value).lower()
+    #     now = date_now()
+    #     expr = Q(status=GeneratedEvent.NEW, action__isnull=True) & (
+    #         Q(notification_date=now,
+    #           event_schedule__notification_class__in=NotificationClass.get_need_reaction_on_notification_date_classes())
+    #         | Q(effective_date=now,
+    #             event_schedule__notification_class__in=NotificationClass.get_need_reaction_on_effective_date_classes())
+    #     )
+    #     if value in ['true', '1', 'yes']:
+    #         qs = qs.filter(expr)
+    #     elif value in ['false', '0', 'no']:
+    #         qs = qs.exclude(expr)
+    #
+    #     return qs
 
 
 class GeneratedEventViewSet(UpdateModelMixinExt, AbstractReadOnlyModelViewSet):
@@ -438,10 +459,32 @@ class GeneratedEventViewSet(UpdateModelMixinExt, AbstractReadOnlyModelViewSet):
         'member',
     ]
 
-    @detail_route(methods=['get', 'put'], url_path='book', serializer_class=TransactionTypeProcessSerializer,
-                  permission_classes=AbstractReadOnlyModelViewSet.permission_classes + [GeneratedEventPermission])
+    def get_queryset(self):
+        qs = super(GeneratedEventViewSet, self).get_queryset()
+        now = date_now()
+        qs = qs.annotate(
+            is_need_reaction=Case(
+                When(
+                    Q(status=GeneratedEvent.NEW, action__isnull=True) & (
+                        Q(notification_date__lte=now,
+                          event_schedule__notification_class__in=NotificationClass.get_need_reaction_on_notification_date_classes())
+                        | Q(effective_date__lte=now,
+                            event_schedule__notification_class__in=NotificationClass.get_need_reaction_on_effective_date_classes())
+                    ),
+                    then=Value(True)
+                ),
+                default=Value(False),
+                output_field=BooleanField(),
+            )
+        )
+        return qs
+
+    @detail_route(methods=['get', 'put'], url_path='book', serializer_class=TransactionTypeProcessSerializer)
     def process(self, request, pk=None):
         generated_event = self.get_object()
+
+        if not generated_event.is_need_reaction:
+            raise ValidationError('event already processed or future event')
 
         # if generated_event.status != GeneratedEvent.NEW:
         #     raise PermissionDenied()

@@ -85,6 +85,7 @@ INSTALLED_APPS = [
 MIDDLEWARE_CLASSES = [
     'poms.common.middleware.CommonMiddleware',
     # 'django.middleware.cache.UpdateCacheMiddleware',
+    'django.middleware.gzip.GZipMiddleware',
     'corsheaders.middleware.CorsMiddleware',
     'django.middleware.http.ConditionalGetMiddleware',
     'django.middleware.security.SecurityMiddleware',
@@ -478,7 +479,6 @@ AWS_STORAGE_BUCKET_NAME = os.environ.get('AWS_STORAGE_BUCKET_NAME', None)
 
 
 CELERY_BROKER_URL = 'redis://%s/1' % REDIS_HOST
-CELERY_WORKER_CONCURRENCY = 1
 CELERY_RESULT_BACKEND = 'redis://%s/1' % REDIS_HOST
 CELERY_ENABLE_UTC = True
 CELERY_TIMEZONE = 'UTC'
@@ -489,21 +489,16 @@ CELERY_ACCEPT_CONTENT = ['json', 'pickle-signed']
 CELERY_TASK_SERIALIZER = 'pickle-signed'
 CELERY_RESULT_SERIALIZER = 'pickle-signed'
 CELERY_RESULT_EXPIRES = 60
-CELERY_WORKER_REDIRECT_STDOUTS = False
-CELERY_WORKER_LOG_COLOR = False
-CELERY_WORKER_LOG_FORMAT = '[%(levelname)1.1s %(asctime)s %(process)d:%(thread)d %(name)s %(module)s:%(lineno)d] %(message)s'
-
-# CELERY_TASK_COMPRESSION = 'gzip'
-# CELERY_RESULT_COMPRESSION = 'gzip'
-
-CELERY_TASK_TRACK_STARTED = True
-CELERY_SEND_EVENTS = True
-CELERY_TASK_SEND_SENT_EVENT = True
-
-# CELERY_BEAT_SCHEDULER = 'djcelery.schedulers.DatabaseScheduler'
-# CELERY_RESULT_BACKEND = 'djcelery.backends.database:DatabaseBackend'
-# CELERY_TASK_IGNORE_RESULT = False
-# CELERY_TASK_STORE_ERRORS_EVEN_IF_IGNORED = True
+# CELERY_WORKER_REDIRECT_STDOUTS = False
+# CELERY_WORKER_LOG_COLOR = False
+# CELERY_WORKER_LOG_FORMAT = '[%(levelname)1.1s %(asctime)s %(process)d:%(thread)d %(name)s %(module)s:%(lineno)d] %(message)s'
+try:
+    CELERY_WORKER_CONCURRENCY = int(os.environ.get('CELERY_WORKER_CONCURRENCY', '1'))
+except (ValueError, TypeError):
+    CELERY_WORKER_CONCURRENCY = 1
+# CELERY_TASK_TRACK_STARTED = True
+# CELERY_SEND_EVENTS = True
+# CELERY_TASK_SEND_SENT_EVENT = True
 
 CELERY_BEAT_SCHEDULE = {
     'integrations.download_pricing_auto_scheduler': {

@@ -537,7 +537,8 @@ class PriceHistorySerializer(serializers.ModelSerializer):
 
 class GeneratedEventSerializer(serializers.ModelSerializer):
     status_date = DateTimeTzAwareField(read_only=True)
-    is_need_reaction = serializers.SerializerMethodField()
+    # is_need_reaction = serializers.SerializerMethodField()
+    is_need_reaction = serializers.BooleanField(read_only=True)
 
     class Meta:
         model = GeneratedEvent
@@ -584,11 +585,11 @@ class GeneratedEventSerializer(serializers.ModelSerializer):
         finally:
             self._current_instance = None
 
-    def get_is_need_reaction(self, obj):
-        now = date_now()
-        return obj.action is None and (
-            obj.is_need_reaction_on_notification_date(now) or obj.is_need_reaction_on_effective_date(now)
-        )
+    # def get_is_need_reaction(self, obj):
+    #     now = date_now()
+    #     return obj.action is None and (
+    #         obj.is_need_reaction_on_notification_date(now) or obj.is_need_reaction_on_effective_date(now)
+    #     )
 
     def generate_text(self, exr, obj, names=None):
         # member = get_member_from_context(self.context)

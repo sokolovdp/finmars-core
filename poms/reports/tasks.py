@@ -1,73 +1,87 @@
-import base64
-import hashlib
 import logging
 
 from celery import shared_task
+from django.utils import translation, timezone
 
 from poms.reports.builders import ReportBuilder
+from poms.reports.cash_flow_projection import TransactionReportBuilder, CashFlowProjectionReportBuilder
+from poms.users.models import MasterUser, Member
 
 _l = logging.getLogger('poms.instruments')
 
 
-# def _cache_key(master_user, *args, **kwargs):
-#     m = hashlib.sha256()
-#     m.update(str(args).encode('utf-8'))
-#     m.update(str(kwargs).encode('utf-8'))
-#     digest = base64.b64encode(m.digest())
-#     # digest = m.hexdigest()
-#     return '%s_%s' % (master_user, digest)
-#
-#
-# def _balance_cache_key(master_user, cost_method, report_date, portfolios=None, accounts=None, strategies1=None,
-#                        strategies2=None, strategies3=None, report_currency=None, use_portfolio=False,
-#                        use_account=False, use_strategy=False, custom_fields=None):
-#     portfolios = sorted(portfolios) if portfolios else []
-#     accounts = sorted(accounts) if accounts else []
-#     strategies1 = sorted(strategies1) if strategies1 else []
-#     strategies2 = sorted(strategies2) if strategies2 else []
-#     strategies3 = sorted(strategies3) if strategies3 else []
-#     return _cache_key(
-#         master_user, cost_method, report_date.toordinal(),
-#         portfolios, accounts, strategies1, strategies2, strategies3,
-#         report_currency, use_portfolio, use_account, use_strategy, custom_fields
-#     )
-#
-#
-# @shared_task(name='reports.balance_report')
-# def balance_report(instance):
-#     _l.debug('balance_report: %s', instance)
-#     # _l.debug('balance_report: master_user=%s, cost_method=%s, begin_date=%s, end_date=%s, portfolios=%s, accounts=%s, '
-#     #          'strategies1=%s, strategies2=%s, strategies3=%s, value_currency=%s, use_portfolio=%s, use_account=%s, '
-#     #          'use_strategy=%s, custom_fields=%s',
-#     #          instance.master_user, instance.cost_method, instance.begin_date, instance.end_date, instance.portfolios,
-#     #          instance.accounts, instance.strategies1, instance.strategies2, instance.strategies3,
-#     #          instance.value_currency, instance.use_portfolio, instance.use_account, instance.use_strategy,
-#     #          instance.custom_fields)
-#
-#     builder = BalanceReport2Builder(instance=instance)
-#     instance = builder.build()
-#
-#     _l.debug('finished')
-#     return instance
-#
-#
-# @shared_task(name='reports.pl_report')
-# def pl_report(instance):
-#     _l.debug('pl_report: %s', instance)
-#
-#     builder = PLReport2Builder(instance=instance)
-#     instance = builder.build()
-#
-#     _l.debug('finished')
-#     return instance
+# curl -X POST --user a:a  http://127.0.0.1:8000/api/v1/reports/transaction-report/?format=json  -v -o /dev/null
 
 
-@shared_task(name='reports.build_report')
+class FakeRequest:
+    def __init__(self, master_user, member):
+        self.user = member.user
+        self.user.member = member
+        self.user.master_user = master_user
+
+
+@shared_task(name='reports.build_report', expires=30)
 def build_report(instance):
-    _l.debug('report: %s', instance)
-
+    _l.debug('build_report: %s', instance)
     builder = ReportBuilder(instance=instance)
     instance = builder.build()
-
     _l.debug('finished')
     return instance
+
+
+def _json_cb(data, master_user, member, serializer_class):
+    _l.debug('_json_cb: >')
+
+    master_user = MasterUser.objects.get(id=master_user)
+    member = Member.objects.get(id=member)
+
+    with translation.override(None), timezone.override(None):
+        ser = serializer_class(data=data, context={
+            'request': FakeRequest(master_user, member),
+            'master_user': master_user,
+            'member': member,
+        })
+        ser.is_valid(raise_exception=True)
+        instance = ser.save()
+
+        instance = transaction_report(instance)
+
+        ser = serializer_class(instance=instance, context={
+            # 'request': FakeRequest(master_user, member),
+            'master_user': master_user,
+            'member': member,
+        })
+        res_data = ser.data
+
+    _l.debug('_json_cb: <')
+
+    return res_data
+
+
+@shared_task(name='reports.transaction_report', expires=30)
+def transaction_report(instance):
+    _l.debug('transaction_report: >')
+    builder = TransactionReportBuilder(instance)
+    builder.build()
+    _l.debug('transaction_report: <')
+    return builder.instance
+
+
+@shared_task(name='reports.transaction_report_json', expires=30)
+def transaction_report_json(data, master_user, member):
+    _l.debug('transaction_report_json: >')
+
+    from poms.reports.serializers import TransactionReportSerializer
+    res_data = _json_cb(data=data, master_user=master_user, member=member, serializer_class=TransactionReportSerializer)
+
+    _l.debug('transaction_report_json: <')
+    return res_data
+
+
+@shared_task(name='reports.cash_flow_projection_report', expires=30)
+def cash_flow_projection_report(instance):
+    _l.debug('cash_flow_projection_report: >')
+    builder = CashFlowProjectionReportBuilder(instance)
+    builder.build()
+    _l.debug('cash_flow_projection_report: <')
+    return builder.instance

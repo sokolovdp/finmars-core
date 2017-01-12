@@ -134,6 +134,8 @@ class CommonMiddleware(MiddlewareMixin):
 
     def process_response(self, request, response):
         deactivate()
+        # timezone.deactivate()
+        # translation.deactivate()
         return response
 
 

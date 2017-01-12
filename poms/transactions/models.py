@@ -137,86 +137,9 @@ class NotificationClass(AbstractClassModel):
         verbose_name = ugettext_lazy('notification class')
         verbose_name_plural = ugettext_lazy('notification classes')
 
-    # @property
-    # def needed_reaction(self):
-    #     return self.id in [
-    #         NotificationClass.INFORM_ON_NDATE_WITH_REACT,
-    #         NotificationClass.INFORM_ON_EDATE_WITH_REACT,
-    #         NotificationClass.INFORM_ON_NDATE_AND_EDATE_WITH_REACT_ON_EDATE,
-    #         NotificationClass.INFORM_ON_NDATE_AND_EDATE_WITH_REACT_ON_NDATE,
-    #     ]
-
-    # def check_date(self, now, effective_date, notification_date):
-    #     if now is None:
-    #         now = date_now()
-    #
-    #     effective_date_notify = False
-    #     notification_date_notify = False
-    #     apply_default = False
-    #     needed_reaction = False
-    #
-    #     # NDATE -> notification_date
-    #     # EDATE -> effective_date
-    #     if self.id == NotificationClass.DONT_REACT:
-    #         pass
-    #
-    #     elif self.id == NotificationClass.APPLY_DEF_ON_EDATE:
-    #         apply_default = now == effective_date
-    #
-    #     elif self.id == NotificationClass.APPLY_DEF_ON_NDATE:
-    #         apply_default = now == notification_date
-    #
-    #     elif self.id == NotificationClass.INFORM_ON_NDATE_WITH_REACT:
-    #         notification_date_notify = now == notification_date
-    #         needed_reaction = now == notification_date
-    #
-    #     elif self.id == NotificationClass.INFORM_ON_NDATE_APPLY_DEF:
-    #         notification_date_notify = now == notification_date
-    #         apply_default = now == notification_date
-    #
-    #     elif self.id == NotificationClass.INFORM_ON_NDATE_DONT_REACT:
-    #         notification_date_notify = now == notification_date
-    #
-    #     elif self.id == NotificationClass.INFORM_ON_EDATE_WITH_REACT:
-    #         effective_date_notify = now == effective_date
-    #         needed_reaction = now == effective_date
-    #
-    #     elif self.id == NotificationClass.INFORM_ON_EDATE_APPLY_DEF:
-    #         effective_date_notify = now == effective_date
-    #         apply_default = now == effective_date
-    #
-    #     elif self.id == NotificationClass.INFORM_ON_EDATE_DONT_REACT:
-    #         effective_date_notify = now == effective_date
-    #
-    #     elif self.id == NotificationClass.INFORM_ON_NDATE_AND_EDATE_WITH_REACT_ON_EDATE:
-    #         effective_date_notify = now == effective_date
-    #         notification_date_notify = now == notification_date
-    #         needed_reaction = now == effective_date
-    #
-    #     elif self.id == NotificationClass.INFORM_ON_NDATE_AND_EDATE_WITH_REACT_ON_NDATE:
-    #         effective_date_notify = now == effective_date
-    #         notification_date_notify = now == notification_date
-    #         needed_reaction = now == notification_date
-    #
-    #     elif self.id == NotificationClass.INFORM_ON_NDATE_AND_EDATE_APPLY_DEF_ON_EDATE:
-    #         effective_date_notify = now == effective_date
-    #         notification_date_notify = now == notification_date
-    #         apply_default = now == effective_date
-    #
-    #     elif self.id == NotificationClass.INFORM_ON_NDATE_AND_EDATE_APPLY_DEF_ON_NDATE:
-    #         effective_date_notify = now == effective_date
-    #         notification_date_notify = now == notification_date
-    #         apply_default = now == notification_date
-    #
-    #     elif self.id == NotificationClass.INFORM_ON_NDATE_AND_EDATE_DONT_REACT:
-    #         effective_date_notify = now == effective_date
-    #         notification_date_notify = now == notification_date
-    #
-    #     return effective_date_notify, notification_date_notify, apply_default, needed_reaction
-
-    @property
-    def is_notify_on_effective_date(self):
-        return self.id in [
+    @staticmethod
+    def get_notify_on_effective_date_classes():
+        return [
             # NotificationClass.DONT_REACT,
             # NotificationClass.APPLY_DEF_ON_EDATE,
             # NotificationClass.APPLY_DEF_ON_NDATE,
@@ -236,8 +159,12 @@ class NotificationClass(AbstractClassModel):
         ]
 
     @property
-    def is_notify_on_notification_date(self):
-        return self.id in [
+    def is_notify_on_effective_date(self):
+        return self.id in NotificationClass.get_notify_on_effective_date_classes()
+
+    @staticmethod
+    def get_notify_on_notification_date_classes():
+        return [
             # NotificationClass.DONT_REACT,
             # NotificationClass.APPLY_DEF_ON_EDATE,
             # NotificationClass.APPLY_DEF_ON_NDATE,
@@ -257,8 +184,12 @@ class NotificationClass(AbstractClassModel):
         ]
 
     @property
-    def is_apply_default_on_effective_date(self):
-        return self.id in [
+    def is_notify_on_notification_date(self):
+        return self.id in NotificationClass.get_notify_on_notification_date_classes()
+
+    @staticmethod
+    def get_apply_default_on_effective_date_classes():
+        return [
             # NotificationClass.DONT_REACT,
             NotificationClass.APPLY_DEF_ON_EDATE,
             # NotificationClass.APPLY_DEF_ON_NDATE,
@@ -278,8 +209,12 @@ class NotificationClass(AbstractClassModel):
         ]
 
     @property
-    def is_apply_default_on_notification_date(self):
-        return self.id in [
+    def is_apply_default_on_effective_date(self):
+        return self.id in NotificationClass.get_apply_default_on_effective_date_classes()
+
+    @staticmethod
+    def get_apply_default_on_notification_date_classes():
+        return [
             # NotificationClass.DONT_REACT,
             # NotificationClass.APPLY_DEF_ON_EDATE,
             NotificationClass.APPLY_DEF_ON_NDATE,
@@ -299,8 +234,12 @@ class NotificationClass(AbstractClassModel):
         ]
 
     @property
-    def is_need_reaction_on_effective_date(self):
-        return self.id in [
+    def is_apply_default_on_notification_date(self):
+        return self.id in NotificationClass.get_apply_default_on_notification_date_classes()
+
+    @staticmethod
+    def get_need_reaction_on_effective_date_classes():
+        return [
             # NotificationClass.DONT_REACT,
             # NotificationClass.APPLY_DEF_ON_EDATE,
             # NotificationClass.APPLY_DEF_ON_NDATE,
@@ -320,8 +259,12 @@ class NotificationClass(AbstractClassModel):
         ]
 
     @property
-    def is_need_reaction_on_notification_date(self):
-        return self.id in [
+    def is_need_reaction_on_effective_date(self):
+        return self.id in NotificationClass.get_need_reaction_on_effective_date_classes()
+
+    @staticmethod
+    def get_need_reaction_on_notification_date_classes():
+        return [
             # NotificationClass.DONT_REACT,
             # NotificationClass.APPLY_DEF_ON_EDATE,
             # NotificationClass.APPLY_DEF_ON_NDATE,
@@ -339,6 +282,10 @@ class NotificationClass(AbstractClassModel):
             # NotificationClass.INFORM_ON_NDATE_AND_EDATE_APPLY_DEF_ON_NDATE,
             # NotificationClass.INFORM_ON_NDATE_AND_EDATE_DONT_REACT,
         ]
+
+    @property
+    def is_need_reaction_on_notification_date(self):
+        return self.id in NotificationClass.get_need_reaction_on_notification_date_classes()
 
 
 class PeriodicityGroup(AbstractClassModel):
@@ -798,6 +745,7 @@ class ComplexTransaction(models.Model):
     )
 
     transaction_type = models.ForeignKey(TransactionType, on_delete=models.PROTECT)
+    date = models.DateField(default=date_now, verbose_name=ugettext_lazy("date"), db_index=True)
     status = models.PositiveSmallIntegerField(default=PRODUCTION, choices=STATUS_CHOICES, db_index=True)
     code = models.IntegerField(default=0)
 
@@ -856,7 +804,7 @@ class ComplexTransactionInput(models.Model):
         verbose_name = ugettext_lazy('complex transaction input')
         verbose_name_plural = ugettext_lazy('complex transaction inputs')
         unique_together = [
-            ['complex_transaction', 'transaction_type_input',]
+            ['complex_transaction', 'transaction_type_input', ]
         ]
 
 
@@ -889,10 +837,10 @@ class Transaction(models.Model):
     overheads_with_sign = models.FloatField(default=0.0, verbose_name=ugettext_lazy("overheads with sign"))
 
     # accounting dates
-    transaction_date = models.DateField(editable=False, default=date_now,
+    transaction_date = models.DateField(editable=False, default=date_now, db_index=True,
                                         verbose_name=ugettext_lazy("transaction date"))
-    accounting_date = models.DateField(default=date_now, verbose_name=ugettext_lazy("accounting date"))
-    cash_date = models.DateField(default=date_now, verbose_name=ugettext_lazy("cash date"))
+    accounting_date = models.DateField(default=date_now, db_index=True, verbose_name=ugettext_lazy("accounting date"))
+    cash_date = models.DateField(default=date_now, db_index=True, verbose_name=ugettext_lazy("cash date"))
 
     # portfolio
     portfolio = models.ForeignKey(Portfolio, on_delete=models.PROTECT, verbose_name=ugettext_lazy("portfolio"))

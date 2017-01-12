@@ -15,10 +15,10 @@ if 'crispy_forms' not in INSTALLED_APPS:
     INSTALLED_APPS += ['crispy_forms', ]
 if 'redisboard' not in INSTALLED_APPS:
     INSTALLED_APPS += ['redisboard', ]
-if 'debug_toolbar' not in INSTALLED_APPS:
-    INSTALLED_APPS += ['debug_toolbar', ]
-    MIDDLEWARE_CLASSES = MIDDLEWARE_CLASSES + ['debug_toolbar.middleware.DebugToolbarMiddleware', ]
-    INTERNAL_IPS = ['127.0.0.1']
+# if 'debug_toolbar' not in INSTALLED_APPS:
+#     INSTALLED_APPS += ['debug_toolbar', ]
+#     MIDDLEWARE_CLASSES = MIDDLEWARE_CLASSES + ['debug_toolbar.middleware.DebugToolbarMiddleware', ]
+#     INTERNAL_IPS = ['127.0.0.1']
 
 LOGGING['formatters']['verbose']['format'] = '[%(levelname)1.1s %(asctime)s %(name)s %(module)s:%(lineno)d] %(message)s'
 # LOGGING['loggers']['django.db'] = {'level': 'DEBUG'}
@@ -45,13 +45,23 @@ MEDIA_URL = '/api/media/'
 MEDIA_ROOT = os.path.join(BASE_DIR, 'tmp', 'media')
 MEDIA_SERVE = True
 
+
+# REST_FRAMEWORK ------------------------------------------------
+
+
+REST_FRAMEWORK['DEFAULT_AUTHENTICATION_CLASSES'] = (
+    'rest_framework.authentication.SessionAuthentication',
+    'rest_framework.authentication.BasicAuthentication',
+)
+
+
 # CELERY ------------------------------------------------
 
 CELERY_WORKER_CONCURRENCY = 1
 CELERY_TASK_ALWAYS_EAGER = True
 CELERY_TASK_EAGER_PROPAGATES = True
-CELERY_WORKER_LOG_FORMAT = LOGGING['formatters']['verbose']['format']
-CELERY_RESULT_EXPIRES = 600
+# CELERY_WORKER_LOG_FORMAT = LOGGING['formatters']['verbose']['format']
+CELERY_RESULT_EXPIRES = 60
 # CELERY_BEAT_SCHEDULE = {}
 CELERY_BEAT_SCHEDULE = {
     # 'integrations.download_pricing_auto_scheduler': {

@@ -13,7 +13,9 @@ from poms.users.utils import get_member_from_context
 
 class UserObjectPermissionListSerializer(serializers.ListSerializer):
     def get_attribute(self, instance):
-        return [op for op in instance.object_permissions.all() if op.member_id]
+        if hasattr(instance, 'object_permissions'):
+            return [op for op in instance.object_permissions.all() if op.member_id]
+        return []
 
 
 class UserObjectPermissionSerializer(serializers.Serializer):
@@ -27,7 +29,9 @@ class UserObjectPermissionSerializer(serializers.Serializer):
 
 class GroupObjectPermissionListSerializer(serializers.ListSerializer):
     def get_attribute(self, instance):
-        return [op for op in instance.object_permissions.all() if op.group_id]
+        if hasattr(instance, 'object_permissions'):
+            return [op for op in instance.object_permissions.all() if op.group_id]
+        return []
 
 
 class GroupObjectPermissionSerializer(serializers.Serializer):
@@ -75,9 +79,7 @@ class ModelWithObjectPermissionViewListSerializer(serializers.ListSerializer):
         objects = super(ModelWithObjectPermissionViewListSerializer, self).get_attribute(instance)
         objects = objects.all() if isinstance(objects, models.Manager) else objects
         member = get_member_from_context(self.context)
-        return [
-            o for o in objects if has_view_perms(member, o)
-            ]
+        return [o for o in objects if has_view_perms(member, o)]
         # member = get_member_from_context(self.context)
         # if member.is_superuser:
         #     return instance.attributes
@@ -93,10 +95,10 @@ class ModelWithObjectPermissionSerializer(serializers.ModelSerializer):
         list_serializer_class = ModelWithObjectPermissionViewListSerializer
 
     def __init__(self, *args, **kwargs):
-        kwargs.pop('show_object_permissions', False)
         super(ModelWithObjectPermissionSerializer, self).__init__(*args, **kwargs)
 
         self.fields['display_name'] = serializers.SerializerMethodField()
+
         self.fields['granted_permissions'] = GrantedPermissionField()
         self.fields['user_object_permissions'] = UserObjectPermissionSerializer(many=True, required=False,
                                                                                 allow_null=True)
@@ -137,10 +139,21 @@ class ModelWithObjectPermissionSerializer(serializers.ModelSerializer):
             for k in list(ret.keys()):
                 if k not in ['id', 'public_name', 'display_name', 'granted_permissions']:
                     ret.pop(k)
-        if not has_manage_perm(member, instance):
-            for k in list(ret.keys()):
-                if k in ['object_permissions', 'user_object_permissions', 'group_object_permissions']:
-                    ret.pop(k)
+
+        if self.context.get('show_object_permissions', True):
+            if not has_manage_perm(member, instance):
+                # for k in list(ret.keys()):
+                #     if k in ['object_permissions', 'user_object_permissions', 'group_object_permissions']:
+                #         ret.pop(k)
+                ret.pop('object_permissions', None)
+                ret.pop('user_object_permissions', None)
+                ret.pop('group_object_permissions', None)
+
+        else:
+            ret.pop('granted_permissions', None)
+            ret.pop('object_permissions', None)
+            ret.pop('user_object_permissions', None)
+            ret.pop('group_object_permissions', None)
         return ret
 
     def create(self, validated_data):
@@ -266,10 +279,10 @@ class ModelWithObjectPermissionVewSerializer(serializers.ModelSerializer):
         list_serializer_class = ModelWithObjectPermissionViewListSerializer
 
     def __init__(self, *args, **kwargs):
-        kwargs.pop('show_object_permissions', False)
         super(ModelWithObjectPermissionVewSerializer, self).__init__(*args, **kwargs)
 
         self.fields['display_name'] = serializers.SerializerMethodField()
+
         self.fields['granted_permissions'] = GrantedPermissionField()
 
     def get_display_name(self, instance):
@@ -286,10 +299,20 @@ class ModelWithObjectPermissionVewSerializer(serializers.ModelSerializer):
             for k in list(ret.keys()):
                 if k not in ['id', 'public_name', 'display_name', 'granted_permissions']:
                     ret.pop(k)
-        if not has_manage_perm(member, instance):
-            for k in list(ret.keys()):
-                if k in ['object_permissions', 'user_object_permissions', 'group_object_permissions']:
-                    ret.pop(k)
+
+        if self.context.get('show_object_permissions', True):
+            if not has_manage_perm(member, instance):
+                # for k in list(ret.keys()):
+                #     if k in ['object_permissions', 'user_object_permissions', 'group_object_permissions']:
+                #         ret.pop(k)
+                ret.pop('object_permissions', None)
+                ret.pop('user_object_permissions', None)
+                ret.pop('group_object_permissions', None)
+        else:
+            ret.pop('granted_permissions', None)
+            ret.pop('object_permissions', None)
+            ret.pop('user_object_permissions', None)
+            ret.pop('group_object_permissions', None)
         return ret
 
 

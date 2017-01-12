@@ -858,6 +858,9 @@ class TransactionSerializer(ModelWithAttributesSerializer):
 
         self.fields['transaction_class_object'] = TransactionClassSerializer(source='transaction_class', read_only=True)
 
+        self.fields['complex_transaction_object'] = ComplexTransactionViewSerializer(source='complex_transaction',
+                                                                                     read_only=True)
+
         self.fields['instrument_object'] = InstrumentViewSerializer(source='instrument', read_only=True)
         self.fields['transaction_currency_object'] = CurrencyViewSerializer(source='transaction_currency',
                                                                             read_only=True)
@@ -884,78 +887,65 @@ class TransactionSerializer(ModelWithAttributesSerializer):
         self.fields['allocation_pl_object'] = InstrumentViewSerializer(source='allocation_pl', read_only=True)
 
 
-class ComplexTransactionSerializer(serializers.ModelSerializer):
+class TransactionTextRenderSerializer(TransactionSerializer):
+    def __init__(self, *args, **kwargs):
+        super(TransactionTextRenderSerializer, self).__init__(*args, **kwargs)
+        self.fields.pop('complex_transaction_object')
+
+
+class ComplexTransactionMixin:
+    def get_text(self, obj):
+        # return ''
+        if hasattr(obj, '_fake_transactions'):
+            transactions = obj._fake_transactions
+        else:
+            transactions = obj.transactions.all()
+
+        try:
+            return obj._cached_text
+        except AttributeError:
+            if obj.transaction_type_id is None:
+                obj._cached_text = ''
+            else:
+                names = {
+                    'code': obj.code,
+                    'transactions': formula.get_model_data(transactions, TransactionTextRenderSerializer, many=True,
+                                                           context=self.context),
+                }
+                try:
+                    obj._cached_text = formula.safe_eval(obj.transaction_type.display_expr, names=names)
+                except formula.InvalidExpression:
+                    obj._cached_text = '<InvalidExpression>'
+            return obj._cached_text
+
+
+class ComplexTransactionSerializer(ComplexTransactionMixin, serializers.ModelSerializer):
     text = serializers.SerializerMethodField()
     transaction_type = serializers.PrimaryKeyRelatedField(read_only=True)
     transactions = serializers.PrimaryKeyRelatedField(read_only=True, many=True)
 
-    transaction_type_object = TransactionTypeViewSerializer(source='transaction_type', read_only=True)
-    transactions_object = TransactionSerializer(source='transactions', many=True, read_only=True)
+    def __init__(self, *args, **kwargs):
+        super(ComplexTransactionSerializer, self).__init__(*args, **kwargs)
+
+        self.fields['transaction_type_object'] = TransactionTypeViewSerializer(source='transaction_type',
+                                                                               read_only=True)
+        self.fields['transactions_object'] = TransactionSerializer(source='transactions', many=True, read_only=True)
 
     class Meta:
         model = ComplexTransaction
         fields = [
-            'id', 'status', 'code', 'text', 'transaction_type', 'transactions',
-            'transaction_type_object', 'transactions_object',
+            'id', 'date', 'status', 'code', 'text', 'transaction_type', 'transactions',
         ]
 
-    def get_text(self, obj):
-        # from poms.transactions.renderer import ComplexTransactionRenderer
-        # renderer = ComplexTransactionRenderer()
-        # return renderer.render(complex_transaction=obj, context=self.context)
 
-        if obj.id is None or obj.id < 0:
-            transactions = getattr(obj, '_fake_transactions', [])
-        else:
-            transactions = obj.transactions.all()
-        names = {
-            'code': obj.code,
-            'transactions': formula.get_model_data(transactions, TransactionSerializer, many=True,
-                                                   context=self.context),
-        }
-        # member = get_member_from_context(self.context)
-        # meval = ModelSimpleEval(names={
-        #     'code': obj.code,
-        #     'transactions': transactions,
-        # }, member=member)
-        try:
-            return formula.safe_eval(obj.transaction_type.display_expr, names=names)
-        except formula.InvalidExpression:
-            return '<InvalidExpression>'
-
-
-class ComplexTransactionViewSerializer(serializers.ModelSerializer):
+class ComplexTransactionViewSerializer(ComplexTransactionMixin, serializers.ModelSerializer):
     text = serializers.SerializerMethodField()
 
     class Meta:
         model = ComplexTransaction
         fields = [
-            'id', 'status', 'code', 'text'
+            'id', 'date', 'status', 'code', 'text'
         ]
-
-    def get_text(self, obj):
-        # from poms.transactions.renderer import ComplexTransactionRenderer
-        # renderer = ComplexTransactionRenderer()
-        # return renderer.render(complex_transaction=obj, context=self.context)
-
-        if obj.id is None or obj.id < 0:
-            transactions = getattr(obj, '_fake_transactions', [])
-        else:
-            transactions = obj.transactions.all()
-        names = {
-            'code': obj.code,
-            'transactions': formula.get_model_data(transactions, TransactionSerializer, many=True,
-                                                   context=self.context),
-        }
-        # member = get_member_from_context(self.context)
-        # meval = ModelSimpleEval(names={
-        #     'code': obj.code,
-        #     'transactions': transactions,
-        # }, member=member)
-        try:
-            return formula.safe_eval(obj.transaction_type.display_expr, names=names)
-        except formula.InvalidExpression:
-            return '<InvalidExpression>'
 
 
 # TransactionType processing -------------------------------------------------------------------------------------------

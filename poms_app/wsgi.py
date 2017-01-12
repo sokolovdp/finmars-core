@@ -20,4 +20,4 @@ os.environ.setdefault("DJANGO_SETTINGS_MODULE", "poms_app.settings")
 
 application = get_wsgi_application()
 
-application = StaticFilesHandler(application)
+# application = StaticFilesHandler(application)

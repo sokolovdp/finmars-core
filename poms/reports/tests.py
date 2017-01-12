@@ -13,22 +13,17 @@ from poms.strategies.models import Strategy1Group, Strategy1Subgroup, Strategy1
 from poms.transactions.models import Transaction, TransactionClass
 from poms.users.models import MasterUser
 
-try:
-    import pandas
-except ImportError:
-    pandas = None
-
 
 class ReportTestCase(TestCase):
     def setUp(self):
         print('*' * 100)
 
-        if pandas:
-            pandas.set_option('display.width', 10000)
-            pandas.set_option('display.max_rows', 100)
-            pandas.set_option('display.max_columns', 1000)
-            pandas.set_option('precision', 4)
-            pandas.set_option('display.float_format', '{:.4f}'.format)
+        # if pandas:
+        #     pandas.set_option('display.width', 10000)
+        #     pandas.set_option('display.max_rows', 100)
+        #     pandas.set_option('display.max_columns', 1000)
+        #     pandas.set_option('precision', 4)
+        #     pandas.set_option('display.float_format', '{:.4f}'.format)
 
         self.report_date = date(2016, 3, 1)
 

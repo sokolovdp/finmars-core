@@ -10,3 +10,11 @@ class TransactionObjectPermission(BasePermission):
             return True
         p = lambda obj1: PomsObjectPermission().simple_has_object_permission(member, 'GET', obj1)
         return p(obj.portfolio) and (p(obj.account_position) | p (obj.account_cash) | p(obj.account_interim))
+
+
+class ComplexTransactionPermission(BasePermission):
+
+    def has_permission(self, request, view):
+        if request.method in ['POST']:
+            return False
+        return True

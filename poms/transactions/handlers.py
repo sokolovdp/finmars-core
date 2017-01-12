@@ -22,7 +22,10 @@ class TransactionTypeProcess(object):
                  calculate=True, store=False, has_errors=False,
                  instruments=None, instruments_errors=None,
                  complex_transaction=None, complex_transaction_status=None,
-                 transactions=None, transactions_errors=None):
+                 complex_transaction_date=None,
+                 transactions=None, transactions_errors=None,
+                 fake_id_gen=None, transaction_order_gen=None,
+                 now=None):
 
         self.transaction_type = transaction_type
 
@@ -38,6 +41,8 @@ class TransactionTypeProcess(object):
             self.complex_transaction = ComplexTransaction(transaction_type=self.transaction_type)
         if complex_transaction_status is not None:
             self.complex_transaction.status = complex_transaction_status
+        if complex_transaction_date is not None:
+            self.complex_transaction.date = complex_transaction_date
 
         if values is None:
             self._set_values()
@@ -51,6 +56,19 @@ class TransactionTypeProcess(object):
 
         self._id_seq = 0
         self._transaction_order_seq = 0
+
+        self._next_fake_id = fake_id_gen or self._next_fake_id_default
+        self._next_transaction_order = transaction_order_gen or self._next_transaction_order_default
+
+        self._now = now
+
+    def _next_fake_id_default(self):
+        self._id_seq -= 1
+        return self._id_seq
+
+    def _next_transaction_order_default(self):
+        self._transaction_order_seq += 1
+        return self._transaction_order_seq
 
     def _set_values(self):
         def _get_val_by_model_cls(obj, model_class):
@@ -121,7 +139,7 @@ class TransactionTypeProcess(object):
                 if value is None:
                     if i.value:
                         try:
-                            value = formula.safe_eval(i.value)
+                            value = formula.safe_eval(i.value, now=self._now)
                         except formula.InvalidExpression:
                             value = None
             self.values[i.name] = value
@@ -143,7 +161,7 @@ class TransactionTypeProcess(object):
             if action_instrument:
                 errors = {}
                 try:
-                    user_code = formula.safe_eval(action_instrument.user_code, names=self.values)
+                    user_code = formula.safe_eval(action_instrument.user_code, names=self.values, now=self._now)
                 except formula.InvalidExpression as e:
                     self._set_eval_error(errors, 'user_code', action_instrument.user_code, e)
                     user_code = None
@@ -325,19 +343,19 @@ class TransactionTypeProcess(object):
                               target=transaction, target_attr_name='linked_instrument',
                               source=action_transaction, source_attr_name='linked_instrument')
                 if action_transaction.linked_instrument_phantom is not None:
-                    transaction.linked_instrument = instrument_map[action_transaction.instrument_phantom_id]
+                    transaction.linked_instrument = instrument_map[action_transaction.linked_instrument_phantom_id]
 
                 self._set_rel(errors=errors, values=self.values, default_value=None,
                               target=transaction, target_attr_name='allocation_balance',
                               source=action_transaction, source_attr_name='allocation_balance')
                 if action_transaction.allocation_balance_phantom is not None:
-                    transaction.allocation_balance = instrument_map[action_transaction.allocation_balance_id]
+                    transaction.allocation_balance = instrument_map[action_transaction.allocation_balance_phantom_id]
 
                 self._set_rel(errors=errors, values=self.values, default_value=None,
                               target=transaction, target_attr_name='allocation_pl',
                               source=action_transaction, source_attr_name='allocation_pl')
-                if action_transaction.allocation_pl is not None:
-                    transaction.allocation_pl = instrument_map[action_transaction.allocation_pl_id]
+                if action_transaction.allocation_pl_phantom  is not None:
+                    transaction.allocation_pl = instrument_map[action_transaction.allocation_pl_phantom_id]
 
                 self._set_val(errors=errors, values=self.values, default_value=0.0,
                               target=transaction, target_attr_name='factor',
@@ -352,6 +370,10 @@ class TransactionTypeProcess(object):
                               target=transaction, target_attr_name='carry_amount',
                               source=action_transaction, source_attr_name='carry_amount')
 
+                if transaction.accounting_date is None:
+                    transaction.accounting_date = date_now()
+                if transaction.cash_date is None:
+                    transaction.cash_date = date_now()
                 transaction.transaction_date = min(transaction.accounting_date, transaction.cash_date)
                 if self.store:
                     transaction.save()
@@ -361,19 +383,11 @@ class TransactionTypeProcess(object):
                 self.transactions.append(transaction)
                 self.transactions_errors.append(errors)
 
-    def _next_fake_id(self):
-        self._id_seq -= 1
-        return self._id_seq
-
-    def _next_transaction_order(self):
-        self._transaction_order_seq += 1
-        return self._transaction_order_seq
-
     def _set_val(self, errors, values, default_value, target, target_attr_name, source, source_attr_name):
         value = getattr(source, source_attr_name)
         if value:
             try:
-                value = formula.safe_eval(value, names=values)
+                value = formula.safe_eval(value, names=values, now=self._now)
             except formula.InvalidExpression as e:
                 self._set_eval_error(errors, source_attr_name, value, e)
                 return

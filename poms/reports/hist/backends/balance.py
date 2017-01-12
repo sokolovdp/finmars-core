@@ -7,7 +7,7 @@ from functools import reduce
 
 from django.conf import settings
 
-from poms.reports.backends.base import BaseReport2Builder
+from poms.reports.hist.backends.base import BaseReport2Builder
 from poms.reports.models import BalanceReportItem
 from poms.transactions.models import TransactionClass
 

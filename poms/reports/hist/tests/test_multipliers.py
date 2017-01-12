@@ -2,9 +2,9 @@ from __future__ import unicode_literals, division
 
 from datetime import date
 
-from poms.reports.backends.pl import PLReport2Builder
+from poms.reports.hist.backends.pl import PLReport2Builder
+from poms.reports.hist.tests.base import BaseReportTestCase, n
 from poms.reports.models import PLReport
-from poms.reports.tests.base import BaseReportTestCase, n
 from poms.transactions.models import Transaction
 
 
