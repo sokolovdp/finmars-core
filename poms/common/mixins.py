@@ -218,7 +218,8 @@ class BulkDestroyModelMixin(DestroyModelMixin):
         return Response(status=status.HTTP_204_NO_CONTENT)
 
 
-class BulkModelMixin(BulkCreateModelMixin, BulkUpdateModelMixin, BulkSaveModelMixin, BulkDestroyModelMixin):
+# BulkSaveModelMixin have some problem with permissions
+class BulkModelMixin(BulkCreateModelMixin, BulkUpdateModelMixin, BulkDestroyModelMixin):
     @list_route(methods=['post', 'put', 'patch', 'delete'], url_path='bulk')
     def bulk_dispatch(self, request):
         method = request.method.lower()
