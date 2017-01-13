@@ -38,7 +38,6 @@ class TransactionTypeProcess(object):
         self.complex_transaction = complex_transaction
         if self.complex_transaction is None:
             self.complex_transaction = ComplexTransaction(transaction_type=self.transaction_type, date=None)
-            print('------->', self.complex_transaction.date)
         if complex_transaction_status is not None:
             self.complex_transaction.status = complex_transaction_status
         # if complex_transaction_date is not None:
