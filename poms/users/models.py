@@ -1,6 +1,5 @@
 from __future__ import unicode_literals
 
-import pycountry
 import pytz
 from django.conf import settings
 from django.contrib.auth.models import User, Permission
@@ -23,95 +22,120 @@ TIMEZONE_COMMON_CHOICES = sorted(list((k, k) for k in pytz.common_timezones))
 
 class MasterUserManager(models.Manager):
     def create_master_user(self, user=None, **kwargs):
-        from poms.currencies.models import Currency
-        from poms.accounts.models import AccountType, Account
-        from poms.counterparties.models import Counterparty, CounterpartyGroup, Responsible, ResponsibleGroup
-        from poms.portfolios.models import Portfolio
-        from poms.instruments.models import InstrumentClass, InstrumentType, EventScheduleConfig, Instrument
-        from poms.integrations.models import PricingAutomatedSchedule
-        from poms.strategies.models import Strategy1Group, Strategy1Subgroup, Strategy1, Strategy2Group, \
-            Strategy2Subgroup, Strategy2, Strategy3Group, Strategy3Subgroup, Strategy3
-        from poms.chats.models import ThreadGroup
-        from poms.obj_perms.utils import assign_perms3, get_change_perms
+        # from poms.currencies.models import currencies_data, Currency
+        # from poms.accounts.models import AccountType, Account
+        # from poms.counterparties.models import Counterparty, CounterpartyGroup, Responsible, ResponsibleGroup
+        # from poms.portfolios.models import Portfolio
+        # from poms.instruments.models import InstrumentClass, InstrumentType, EventScheduleConfig, Instrument
+        # from poms.integrations.models import PricingAutomatedSchedule, CurrencyMapping, ProviderClass
+        # from poms.strategies.models import Strategy1Group, Strategy1Subgroup, Strategy1, Strategy2Group, \
+        #     Strategy2Subgroup, Strategy2, Strategy3Group, Strategy3Subgroup, Strategy3
+        # from poms.chats.models import ThreadGroup
+        # from poms.obj_perms.utils import assign_perms3, get_change_perms
 
         obj = MasterUser(**kwargs)
         obj.save()
 
-        EventScheduleConfig.objects.create(master_user=obj)
-        PricingAutomatedSchedule.objects.create(master_user=obj, is_enabled=False)
+        obj.fill_defaults()
 
-        ccy = Currency.objects.create(master_user=obj, name='-')
-        ccy_usd = None
-
-        for c in pycountry.currencies:
-            c1 = Currency.objects.create(master_user=obj, user_code=c.alpha_3, short_name=c.alpha_3, name=c.name)
-            if c.alpha_3 == 'USD':
-                ccy_usd = c1
-
-        account_type = AccountType.objects.create(master_user=obj, name='-')
-        account = Account.objects.create(master_user=obj, type=account_type, name='-')
-
-        counterparty_group = CounterpartyGroup.objects.create(master_user=obj, name='-')
-        counterparty = Counterparty.objects.create(master_user=obj, group=counterparty_group, name='-')
-        responsible_group = ResponsibleGroup.objects.create(master_user=obj, name='-')
-        responsible = Responsible.objects.create(master_user=obj, group=responsible_group, name='-')
-
-        portfolio = Portfolio.objects.create(master_user=obj, name='-')
-
-        instrument_general_class = InstrumentClass.objects.get(pk=InstrumentClass.GENERAL)
-        instrument_type = InstrumentType.objects.create(master_user=obj, instrument_class=instrument_general_class,
-                                                        name='-')
-        instrument = Instrument.objects.create(master_user=obj, instrument_type=instrument_type, pricing_currency=ccy,
-                                               accrued_currency=ccy, name='-')
-
-        strategy1_group = Strategy1Group.objects.create(master_user=obj, name='-')
-        strategy1_subgroup = Strategy1Subgroup.objects.create(master_user=obj, group=strategy1_group, name='-')
-        strategy1 = Strategy1.objects.create(master_user=obj, subgroup=strategy1_subgroup, name='-')
-
-        strategy2_group = Strategy2Group.objects.create(master_user=obj, name='-')
-        strategy2_subgroup = Strategy2Subgroup.objects.create(master_user=obj, group=strategy2_group, name='-')
-        strategy2 = Strategy2.objects.create(master_user=obj, subgroup=strategy2_subgroup, name='-')
-
-        strategy3_group = Strategy3Group.objects.create(master_user=obj, name='-')
-        strategy3_subgroup = Strategy3Subgroup.objects.create(master_user=obj, group=strategy3_group, name='-')
-        strategy3 = Strategy3.objects.create(master_user=obj, subgroup=strategy3_subgroup, name='-')
-
-        thread_group = ThreadGroup.objects.create(master_user=obj, name='-')
-
-        if user:
-            Member.objects.create(user=user, master_user=obj, is_owner=True, is_admin=True)
-        group = Group.objects.create(master_user=obj, name='%s' % ugettext_lazy('Default'))
-
-        obj.system_currency = ccy_usd
-        obj.currency = ccy
-        obj.account_type = account_type
-        obj.account = account
-        obj.counterparty_group = counterparty_group
-        obj.counterparty = counterparty
-        obj.responsible_group = responsible_group
-        obj.responsible = responsible
-        obj.portfolio = portfolio
-        obj.instrument_type = instrument_type
-        obj.instrument = instrument
-        obj.strategy1_group = strategy1_group
-        obj.strategy1_subgroup = strategy1_subgroup
-        obj.strategy1 = strategy1
-        obj.strategy2_group = strategy2_group
-        obj.strategy2_subgroup = strategy2_subgroup
-        obj.strategy2 = strategy2
-        obj.strategy3_group = strategy3_group
-        obj.strategy3_subgroup = strategy3_subgroup
-        obj.strategy3 = strategy3
-        obj.thread_group = thread_group
-        obj.mismatch_portfolio = portfolio
-        obj.mismatch_account = account
-        obj.save()
-
-        for c in [account_type, account, counterparty_group, counterparty, responsible_group, responsible, portfolio,
-                  instrument_type, instrument, strategy1_group, strategy1_subgroup, strategy1, strategy2_group,
-                  strategy2_subgroup, strategy2, strategy3_group, strategy3_subgroup, strategy3, thread_group]:
-            for p in get_change_perms(c):
-                assign_perms3(c, perms=[{'group': group, 'permission': p}])
+        # EventScheduleConfig.objects.create(master_user=obj)
+        # PricingAutomatedSchedule.objects.create(master_user=obj, is_enabled=False)
+        #
+        # ccys = {}
+        # ccy = Currency.objects.create(master_user=obj, name='-')
+        # ccy_usd = None
+        # for dc in currencies_data.items():
+        #     dc_user_code = dc['user_code']
+        #     dc_name = dc.get('name', dc_user_code)
+        #     dc_reference_for_pricing = dc.get('reference_for_pricing', None)
+        #
+        #     if dc_user_code == '-':
+        #         pass
+        #     else:
+        #         c = Currency.objects.create(
+        #             master_user=obj,
+        #             user_code=dc_user_code,
+        #             short_name=dc_name,
+        #             name=dc_name,
+        #             reference_for_pricing=dc_reference_for_pricing
+        #         )
+        #         if dc_user_code == 'USD':
+        #             ccy_usd = c
+        #         ccys[c.user_code] = c
+        #
+        # account_type = AccountType.objects.create(master_user=obj, name='-')
+        # account = Account.objects.create(master_user=obj, type=account_type, name='-')
+        #
+        # counterparty_group = CounterpartyGroup.objects.create(master_user=obj, name='-')
+        # counterparty = Counterparty.objects.create(master_user=obj, group=counterparty_group, name='-')
+        # responsible_group = ResponsibleGroup.objects.create(master_user=obj, name='-')
+        # responsible = Responsible.objects.create(master_user=obj, group=responsible_group, name='-')
+        #
+        # portfolio = Portfolio.objects.create(master_user=obj, name='-')
+        #
+        # instrument_general_class = InstrumentClass.objects.get(pk=InstrumentClass.GENERAL)
+        # instrument_type = InstrumentType.objects.create(master_user=obj, instrument_class=instrument_general_class,
+        #                                                 name='-')
+        # instrument = Instrument.objects.create(master_user=obj, instrument_type=instrument_type, pricing_currency=ccy,
+        #                                        accrued_currency=ccy, name='-')
+        #
+        # strategy1_group = Strategy1Group.objects.create(master_user=obj, name='-')
+        # strategy1_subgroup = Strategy1Subgroup.objects.create(master_user=obj, group=strategy1_group, name='-')
+        # strategy1 = Strategy1.objects.create(master_user=obj, subgroup=strategy1_subgroup, name='-')
+        #
+        # strategy2_group = Strategy2Group.objects.create(master_user=obj, name='-')
+        # strategy2_subgroup = Strategy2Subgroup.objects.create(master_user=obj, group=strategy2_group, name='-')
+        # strategy2 = Strategy2.objects.create(master_user=obj, subgroup=strategy2_subgroup, name='-')
+        #
+        # strategy3_group = Strategy3Group.objects.create(master_user=obj, name='-')
+        # strategy3_subgroup = Strategy3Subgroup.objects.create(master_user=obj, group=strategy3_group, name='-')
+        # strategy3 = Strategy3.objects.create(master_user=obj, subgroup=strategy3_subgroup, name='-')
+        #
+        # thread_group = ThreadGroup.objects.create(master_user=obj, name='-')
+        #
+        # if user:
+        #     Member.objects.create(user=user, master_user=obj, is_owner=True, is_admin=True)
+        # group = Group.objects.create(master_user=obj, name='%s' % ugettext_lazy('Default'))
+        #
+        # bloomberg = ProviderClass.objects.get(pk=ProviderClass.BLOOMBERG)
+        # for c in ccys.values():
+        #     CurrencyMapping.objects.create(
+        #         master_user=obj,
+        #         provider=bloomberg,
+        #         value=c.reference_for_pricing,
+        #         currency=c
+        #     )
+        #
+        # obj.system_currency = ccy_usd
+        # obj.currency = ccy
+        # obj.account_type = account_type
+        # obj.account = account
+        # obj.counterparty_group = counterparty_group
+        # obj.counterparty = counterparty
+        # obj.responsible_group = responsible_group
+        # obj.responsible = responsible
+        # obj.portfolio = portfolio
+        # obj.instrument_type = instrument_type
+        # obj.instrument = instrument
+        # obj.strategy1_group = strategy1_group
+        # obj.strategy1_subgroup = strategy1_subgroup
+        # obj.strategy1 = strategy1
+        # obj.strategy2_group = strategy2_group
+        # obj.strategy2_subgroup = strategy2_subgroup
+        # obj.strategy2 = strategy2
+        # obj.strategy3_group = strategy3_group
+        # obj.strategy3_subgroup = strategy3_subgroup
+        # obj.strategy3 = strategy3
+        # obj.thread_group = thread_group
+        # obj.mismatch_portfolio = portfolio
+        # obj.mismatch_account = account
+        # obj.save()
+        #
+        # for c in [account_type, account, counterparty_group, counterparty, responsible_group, responsible, portfolio,
+        #           instrument_type, instrument, strategy1_group, strategy1_subgroup, strategy1, strategy2_group,
+        #           strategy2_subgroup, strategy2, strategy3_group, strategy3_subgroup, strategy3, thread_group]:
+        #     for p in get_change_perms(c):
+        #         assign_perms3(c, perms=[{'group': group, 'permission': p}])
 
         return obj
 
@@ -186,6 +210,177 @@ class MasterUser(models.Model):
 
     def __str__(self):
         return self.name
+
+    def fill_defaults(self, user=None):
+        from poms.currencies.models import currencies_data, Currency
+        from poms.accounts.models import AccountType, Account
+        from poms.counterparties.models import Counterparty, CounterpartyGroup, Responsible, ResponsibleGroup
+        from poms.portfolios.models import Portfolio
+        from poms.instruments.models import InstrumentClass, InstrumentType, EventScheduleConfig, Instrument
+        from poms.integrations.models import PricingAutomatedSchedule, CurrencyMapping, ProviderClass
+        from poms.strategies.models import Strategy1Group, Strategy1Subgroup, Strategy1, Strategy2Group, \
+            Strategy2Subgroup, Strategy2, Strategy3Group, Strategy3Subgroup, Strategy3
+        from poms.chats.models import ThreadGroup
+        from poms.obj_perms.utils import assign_perms3, get_change_perms
+
+        if not EventScheduleConfig.objects.filter(master_user=self).exists():
+            EventScheduleConfig.objects.create(master_user=self)
+
+        if not PricingAutomatedSchedule.objects.filter(master_user=self).exists():
+            PricingAutomatedSchedule.objects.create(master_user=self, is_enabled=False)
+
+        ccys = {}
+        ccy = Currency.objects.create(master_user=self, name='-')
+        ccy_usd = None
+        for dc in currencies_data.values():
+            dc_user_code = dc['user_code']
+            dc_name = dc.get('name', dc_user_code)
+            dc_reference_for_pricing = dc.get('reference_for_pricing', None)
+
+            if dc_user_code == '-':
+                pass
+            else:
+                c = Currency.objects.create(master_user=self, user_code=dc_user_code, short_name=dc_name, name=dc_name,
+                                            reference_for_pricing=dc_reference_for_pricing)
+                if dc_user_code == 'USD':
+                    ccy_usd = c
+                ccys[c.user_code] = c
+
+        account_type = AccountType.objects.create(master_user=self, name='-')
+        account = Account.objects.create(master_user=self, type=account_type, name='-')
+
+        counterparty_group = CounterpartyGroup.objects.create(master_user=self, name='-')
+        counterparty = Counterparty.objects.create(master_user=self, group=counterparty_group, name='-')
+        responsible_group = ResponsibleGroup.objects.create(master_user=self, name='-')
+        responsible = Responsible.objects.create(master_user=self, group=responsible_group, name='-')
+
+        portfolio = Portfolio.objects.create(master_user=self, name='-')
+
+        instrument_general_class = InstrumentClass.objects.get(pk=InstrumentClass.GENERAL)
+        instrument_type = InstrumentType.objects.create(master_user=self, instrument_class=instrument_general_class,
+                                                        name='-')
+        instrument = Instrument.objects.create(master_user=self, instrument_type=instrument_type, pricing_currency=ccy,
+                                               accrued_currency=ccy, name='-')
+
+        strategy1_group = Strategy1Group.objects.create(master_user=self, name='-')
+        strategy1_subgroup = Strategy1Subgroup.objects.create(master_user=self, group=strategy1_group, name='-')
+        strategy1 = Strategy1.objects.create(master_user=self, subgroup=strategy1_subgroup, name='-')
+
+        strategy2_group = Strategy2Group.objects.create(master_user=self, name='-')
+        strategy2_subgroup = Strategy2Subgroup.objects.create(master_user=self, group=strategy2_group, name='-')
+        strategy2 = Strategy2.objects.create(master_user=self, subgroup=strategy2_subgroup, name='-')
+
+        strategy3_group = Strategy3Group.objects.create(master_user=self, name='-')
+        strategy3_subgroup = Strategy3Subgroup.objects.create(master_user=self, group=strategy3_group, name='-')
+        strategy3 = Strategy3.objects.create(master_user=self, subgroup=strategy3_subgroup, name='-')
+
+        thread_group = ThreadGroup.objects.create(master_user=self, name='-')
+
+        if user:
+            Member.objects.create(user=user, master_user=self, is_owner=True, is_admin=True)
+        group = Group.objects.create(master_user=self, name='%s' % ugettext_lazy('Default'))
+
+        bloomberg = ProviderClass.objects.get(pk=ProviderClass.BLOOMBERG)
+        for dc in currencies_data.values():
+            dc_user_code = dc['user_code']
+            dc_bloomberg = dc['bloomberg']
+
+            if dc_user_code != '-' and dc_user_code in ccys:
+                c = ccys[dc_user_code]
+                CurrencyMapping.objects.create(master_user=self, provider=bloomberg, value=dc_bloomberg, currency=c)
+
+        self.system_currency = ccy_usd
+        self.currency = ccy
+        self.account_type = account_type
+        self.account = account
+        self.counterparty_group = counterparty_group
+        self.counterparty = counterparty
+        self.responsible_group = responsible_group
+        self.responsible = responsible
+        self.portfolio = portfolio
+        self.instrument_type = instrument_type
+        self.instrument = instrument
+        self.strategy1_group = strategy1_group
+        self.strategy1_subgroup = strategy1_subgroup
+        self.strategy1 = strategy1
+        self.strategy2_group = strategy2_group
+        self.strategy2_subgroup = strategy2_subgroup
+        self.strategy2 = strategy2
+        self.strategy3_group = strategy3_group
+        self.strategy3_subgroup = strategy3_subgroup
+        self.strategy3 = strategy3
+        self.thread_group = thread_group
+        self.mismatch_portfolio = portfolio
+        self.mismatch_account = account
+        self.save()
+
+        for c in [account_type, account, counterparty_group, counterparty, responsible_group, responsible, portfolio,
+                  instrument_type, instrument, strategy1_group, strategy1_subgroup, strategy1, strategy2_group,
+                  strategy2_subgroup, strategy2, strategy3_group, strategy3_subgroup, strategy3, thread_group]:
+            for p in get_change_perms(c):
+                assign_perms3(c, perms=[{'group': group, 'permission': p}])
+
+    def patch_currencies(self, overwrite_name=False, overwrite_reference_for_pricing=False):
+        from poms.currencies.models import currencies_data, Currency
+
+        ccys_existed = {c.user_code: c for c in Currency.objects.filter(master_user=self, is_deleted=False)}
+
+        ccys = {}
+        for dc in currencies_data.values():
+            dc_user_code = dc['user_code']
+            dc_name = dc.get('name', dc_user_code)
+            dc_reference_for_pricing = dc.get('reference_for_pricing', None)
+
+            if dc_user_code in ccys_existed:
+                c1 = ccys_existed[dc_user_code]
+                is_change = False
+
+                if overwrite_name or not c1.name:
+                    c1.name = dc_name
+                    is_change = True
+
+                if overwrite_name or not c1.short_name:
+                    c1.short_name = dc_name
+                    is_change = True
+
+                if overwrite_name or not c1.public_name:
+                    c1.public_name = dc_name
+                    is_change = True
+
+                if overwrite_reference_for_pricing or not c1.reference_for_pricing:
+                    c1.reference_for_pricing = dc_reference_for_pricing
+                    is_change = True
+
+                if is_change:
+                    c1.save()
+            else:
+                c = Currency.objects.create(master_user=self, user_code=dc_user_code, name=dc_name, short_name=dc_name,
+                                            public_name=dc_name, reference_for_pricing=dc_reference_for_pricing)
+                ccys[c.user_code] = c
+
+    def patch_bloomberg_currency_mappings(self, overwrite_mapping=False):
+        from poms.integrations.models import ProviderClass, CurrencyMapping
+        from poms.currencies.models import currencies_data, Currency
+        bloomberg = ProviderClass.objects.get(pk=ProviderClass.BLOOMBERG)
+
+        ccys = {c.user_code: c for c in Currency.objects.filter(master_user=self)}
+
+        mapping_existed = {m.currency_id: m
+                           for m in CurrencyMapping.objects.filter(master_user=self, provider=bloomberg)}
+
+        for dc in currencies_data.values():
+            dc_user_code = dc['user_code']
+            dc_bloomberg = dc['bloomberg']
+
+            if dc_user_code != '-' and dc_user_code in ccys:
+                c = ccys[dc_user_code]
+                if c.id in mapping_existed:
+                    if overwrite_mapping:
+                        mapping = mapping_existed[c.id]
+                        mapping.value = dc_bloomberg
+                        mapping.save()
+                else:
+                    CurrencyMapping.objects.create(master_user=self, provider=bloomberg, value=dc_bloomberg, currency=c)
 
 
 @python_2_unicode_compatible

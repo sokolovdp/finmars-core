@@ -79,7 +79,11 @@ class MasterUserAdmin(AbstractModelAdmin):
         'thread_group', 'mismatch_portfolio', 'mismatch_account',
     ]
 
-    actions = ['generate_events', 'clone_data', ]
+    actions = [
+        'generate_events', 'clone_data',
+        'patch_currencies', 'patch_currencies_with_overwrites',
+        'patch_bloomberg_currency_mappings', 'patch_bloomberg_currency_mappings_with_overwrites',
+    ]
 
     def get_queryset(self, request):
         from django.contrib.admin.options import IS_POPUP_VAR
@@ -90,6 +94,12 @@ class MasterUserAdmin(AbstractModelAdmin):
         qs = super(MasterUserAdmin, self).get_queryset(request)
         qs = qs.annotate(id_check=F('id') - self.get_active_master_user(request))
         return qs
+
+    def save_model(self, request, obj, form, change):
+        super(MasterUserAdmin, self).save_model(request, obj, form, change)
+
+        if not change:
+            obj.fill_defaults()
 
     def clone_data(self, request, queryset):
         from poms.users.cloner import FullDataCloner
@@ -104,6 +114,32 @@ class MasterUserAdmin(AbstractModelAdmin):
         generate_events(master_users=[mu.pk for mu in queryset])
 
     generate_events.short_description = ugettext_lazy("Generate and check events")
+
+    def patch_currencies(self, request, queryset):
+        for mu in queryset:
+            mu.patch_currencies()
+
+    patch_currencies.short_description = ugettext_lazy("Patch currencies")
+
+    def patch_currencies_with_overwrites(self, request, queryset):
+        for mu in queryset:
+            mu.patch_currencies(True, True)
+
+    patch_currencies_with_overwrites.short_description = ugettext_lazy(
+        "Patch currencies (and overwrite names and reference_for_pricing)")
+
+    def patch_bloomberg_currency_mappings(self, request, queryset):
+        for mu in queryset:
+            mu.patch_bloomberg_currency_mappings()
+
+    patch_bloomberg_currency_mappings.short_description = ugettext_lazy("Patch bloomberg mapping")
+
+    def patch_bloomberg_currency_mappings_with_overwrites(self, request, queryset):
+        for mu in queryset:
+            mu.patch_bloomberg_currency_mappings(True)
+
+    patch_bloomberg_currency_mappings_with_overwrites.short_description = ugettext_lazy(
+        "Patch bloomberg mapping (and overwrite value)")
 
     def set_activate_link(self, obj):
         if getattr(obj, 'id_check', 1) == 0:
