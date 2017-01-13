@@ -58,6 +58,13 @@ class UpdateModelMixinExt(UpdateModelMixin):
             return Response(serializer.data)
         return response
 
+        # Incorrect
+        # def perform_update(self, serializer):
+        #     if hasattr(serializer.instance, 'is_deleted') and hasattr(serializer.instance, 'fake_delete'):
+        #         if serializer.is_deleted:
+        #             raise PermissionDenied()
+        #     return super(UpdateModelMixinExt, self).perform_update(serializer)
+
 
 class BulkCreateModelMixin(CreateModelMixin):
     @list_route(methods=['post'], url_path='bulk-create')
