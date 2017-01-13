@@ -8,3 +8,10 @@ class CurrenciesConfig(AppConfig):
     name = 'poms.currencies'
     # label = 'poms_currencies'
     verbose_name = ugettext_lazy('Currencies')
+
+    # def ready(self):
+    #     from poms.currencies.models import defaults_currencies
+    #     import pprint
+    #
+    #     for k, v in defaults_currencies.items():
+    #         pprint.pprint(v)

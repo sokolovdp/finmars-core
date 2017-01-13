@@ -1857,9 +1857,13 @@ class ReportBuilder(object):
         else:
             queryset = self._queryset
 
-        queryset = queryset.filter(master_user=self.instance.master_user, is_canceled=False)
         queryset = queryset.filter(
-            Q(complex_transaction__isnull=True) | Q(complex_transaction__status=ComplexTransaction.PRODUCTION))
+            master_user=self.instance.master_user,
+            is_deleted=False,
+        ).filter(
+            Q(complex_transaction__isnull=True) | Q(complex_transaction__status=ComplexTransaction.PRODUCTION,
+                                                    complex_transaction__is_deleted=False)
+        )
 
         queryset = queryset.select_related(
             # TODO: add fields!!!

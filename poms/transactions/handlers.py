@@ -21,8 +21,7 @@ class TransactionTypeProcess(object):
     def __init__(self, transaction_type=None, default_values=None, values=None,
                  calculate=True, store=False, has_errors=False,
                  instruments=None, instruments_errors=None,
-                 complex_transaction=None, complex_transaction_status=None,
-                 complex_transaction_date=None,
+                 complex_transaction=None, complex_transaction_status=None, complex_transaction_errors=None,
                  transactions=None, transactions_errors=None,
                  fake_id_gen=None, transaction_order_gen=None,
                  now=None):
@@ -38,20 +37,22 @@ class TransactionTypeProcess(object):
 
         self.complex_transaction = complex_transaction
         if self.complex_transaction is None:
-            self.complex_transaction = ComplexTransaction(transaction_type=self.transaction_type)
+            self.complex_transaction = ComplexTransaction(transaction_type=self.transaction_type, date=None)
         if complex_transaction_status is not None:
             self.complex_transaction.status = complex_transaction_status
-        if complex_transaction_date is not None:
-            self.complex_transaction.date = complex_transaction_date
+        # if complex_transaction_date is not None:
+        #     self.complex_transaction.date = complex_transaction_date
 
         if values is None:
             self._set_values()
         else:
             self.values = values
+
         self.has_errors = has_errors
         self.transactions = transactions or []
         self.instruments = instruments or []
         self.instruments_errors = instruments_errors or []
+        self.complex_transaction_errors = complex_transaction_errors or []
         self.transactions_errors = transactions_errors or []
 
         self._id_seq = 0
@@ -60,7 +61,7 @@ class TransactionTypeProcess(object):
         self._next_fake_id = fake_id_gen or self._next_fake_id_default
         self._next_transaction_order = transaction_order_gen or self._next_transaction_order_default
 
-        self._now = now
+        self._now = now or date_now()
 
     def _next_fake_id_default(self):
         self._id_seq -= 1
@@ -103,6 +104,7 @@ class TransactionTypeProcess(object):
         self.values = {}
 
         if self.complex_transaction and self.complex_transaction.id is not None and self.complex_transaction.id > 0:
+            # load previous values if need
             ci_qs = self.complex_transaction.inputs.all().select_related(
                 'transaction_type_input', 'transaction_type_input__content_type'
             )
@@ -247,6 +249,13 @@ class TransactionTypeProcess(object):
                 self.instruments_errors.append(errors)
 
         if self.complex_transaction.id is None:
+            errors = {}
+            if self.complex_transaction.date is None:
+                self._set_val(errors=errors, values=self.values, default_value=self._now,
+                              target=self.complex_transaction, target_attr_name='date',
+                              source=self.transaction_type, source_attr_name='date_expr')
+            self.complex_transaction_errors.append(errors)
+
             if self.store:
                 self.complex_transaction.save()
             else:
@@ -306,10 +315,10 @@ class TransactionTypeProcess(object):
                 self._set_rel(errors=errors, values=self.values, default_value=master_user.account,
                               target=transaction, target_attr_name='account_interim',
                               source=action_transaction, source_attr_name='account_interim')
-                self._set_val(errors=errors, values=self.values, default_value=date_now(),
+                self._set_val(errors=errors, values=self.values, default_value=self._now,
                               target=transaction, target_attr_name='accounting_date',
                               source=action_transaction, source_attr_name='accounting_date')
-                self._set_val(errors=errors, values=self.values, default_value=date_now(),
+                self._set_val(errors=errors, values=self.values, default_value=self._now,
                               target=transaction, target_attr_name='cash_date',
                               source=action_transaction, source_attr_name='cash_date')
 
@@ -354,7 +363,7 @@ class TransactionTypeProcess(object):
                 self._set_rel(errors=errors, values=self.values, default_value=None,
                               target=transaction, target_attr_name='allocation_pl',
                               source=action_transaction, source_attr_name='allocation_pl')
-                if action_transaction.allocation_pl_phantom  is not None:
+                if action_transaction.allocation_pl_phantom is not None:
                     transaction.allocation_pl = instrument_map[action_transaction.allocation_pl_phantom_id]
 
                 self._set_val(errors=errors, values=self.values, default_value=0.0,
@@ -371,9 +380,10 @@ class TransactionTypeProcess(object):
                               source=action_transaction, source_attr_name='carry_amount')
 
                 if transaction.accounting_date is None:
-                    transaction.accounting_date = date_now()
+                    transaction.accounting_date = self._now
                 if transaction.cash_date is None:
-                    transaction.cash_date = date_now()
+                    transaction.cash_date = self._now
+
                 transaction.transaction_date = min(transaction.accounting_date, transaction.cash_date)
                 if self.store:
                     transaction.save()
@@ -382,6 +392,10 @@ class TransactionTypeProcess(object):
 
                 self.transactions.append(transaction)
                 self.transactions_errors.append(errors)
+
+        self.has_errors = bool(self.instruments_errors) or \
+                          bool(self.complex_transaction_errors) or \
+                          bool(self.transactions_errors)
 
     def _set_val(self, errors, values, default_value, target, target_attr_name, source, source_attr_name):
         value = getattr(source, source_attr_name)

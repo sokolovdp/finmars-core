@@ -58,6 +58,13 @@ class UpdateModelMixinExt(UpdateModelMixin):
             return Response(serializer.data)
         return response
 
+        # Incorrect
+        # def perform_update(self, serializer):
+        #     if hasattr(serializer.instance, 'is_deleted') and hasattr(serializer.instance, 'fake_delete'):
+        #         if serializer.is_deleted:
+        #             raise PermissionDenied()
+        #     return super(UpdateModelMixinExt, self).perform_update(serializer)
+
 
 class BulkCreateModelMixin(CreateModelMixin):
     @list_route(methods=['post'], url_path='bulk-create')
@@ -218,7 +225,8 @@ class BulkDestroyModelMixin(DestroyModelMixin):
         return Response(status=status.HTTP_204_NO_CONTENT)
 
 
-class BulkModelMixin(BulkCreateModelMixin, BulkUpdateModelMixin, BulkSaveModelMixin, BulkDestroyModelMixin):
+# BulkSaveModelMixin have some problem with permissions
+class BulkModelMixin(BulkCreateModelMixin, BulkUpdateModelMixin, BulkDestroyModelMixin):
     @list_route(methods=['post', 'put', 'patch', 'delete'], url_path='bulk')
     def bulk_dispatch(self, request):
         method = request.method.lower()

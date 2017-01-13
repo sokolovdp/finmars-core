@@ -49,7 +49,10 @@ class BaseReport2Builder(object):
         else:
             queryset = self._queryset
 
-        queryset = queryset.filter(master_user=self.instance.master_user, is_canceled=False)
+        queryset = queryset.filter(
+            master_user=self.instance.master_user,
+            # is_canceled=False,
+        )
 
         queryset = queryset.select_related(
             'master_user',

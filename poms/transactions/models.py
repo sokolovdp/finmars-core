@@ -364,6 +364,7 @@ class TransactionType(NamedModel, FakeDeletableModel):
     master_user = models.ForeignKey(MasterUser, related_name='transaction_types',
                                     verbose_name=ugettext_lazy('master user'))
     group = models.ForeignKey(TransactionTypeGroup, null=True, blank=True, on_delete=models.PROTECT)
+    date_expr = models.CharField(max_length=255, blank=True, default='')
     display_expr = models.CharField(max_length=255, blank=True, default='')
     instrument_types = models.ManyToManyField('instruments.InstrumentType', related_name='transaction_types',
                                               blank=True, verbose_name=ugettext_lazy('instrument types'))
@@ -736,7 +737,7 @@ class EventToHandle(NamedModel):
 
 
 @python_2_unicode_compatible
-class ComplexTransaction(models.Model):
+class ComplexTransaction(FakeDeletableModel):
     PRODUCTION = 1
     PENDING = 2
     STATUS_CHOICES = (
@@ -809,7 +810,7 @@ class ComplexTransactionInput(models.Model):
 
 
 @python_2_unicode_compatible
-class Transaction(models.Model):
+class Transaction(FakeDeletableModel):
     master_user = models.ForeignKey(MasterUser, related_name='transactions', verbose_name=ugettext_lazy('master user'))
     complex_transaction = models.ForeignKey(ComplexTransaction, on_delete=models.SET_NULL, null=True, blank=True,
                                             related_name='transactions')
@@ -908,8 +909,8 @@ class Transaction(models.Model):
     # other
     is_locked = models.BooleanField(default=False, verbose_name=ugettext_lazy("is locked"),
                                     help_text=ugettext_lazy('If checked - transaction cannot be changed'))
-    is_canceled = models.BooleanField(default=False, verbose_name=ugettext_lazy("is canceled"),
-                                      help_text=ugettext_lazy('If checked - transaction is cancelled'))
+    # is_canceled = models.BooleanField(default=False, verbose_name=ugettext_lazy("is canceled"),
+    #                                   help_text=ugettext_lazy('If checked - transaction is cancelled'))
     factor = models.FloatField(default=0.0, verbose_name=ugettext_lazy("factor"),
                                help_text=ugettext_lazy('Multiplier (for calculations on the form)'))
     trade_price = models.FloatField(default=0.0, verbose_name=ugettext_lazy("trade price"),

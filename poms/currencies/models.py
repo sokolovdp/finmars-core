@@ -1,9 +1,13 @@
 from __future__ import unicode_literals
 
+import csv
+import os
+
 from django.conf import settings
 from django.contrib.contenttypes.fields import GenericRelation
 from django.db import models
 from django.utils.encoding import python_2_unicode_compatible
+from django.utils.functional import SimpleLazyObject
 from django.utils.translation import ugettext_lazy
 
 from poms.common.models import NamedModel, FakeDeletableModel
@@ -11,6 +15,19 @@ from poms.common.utils import date_now
 from poms.obj_attrs.models import GenericAttribute
 from poms.tags.models import TagLink
 from poms.users.models import MasterUser
+
+
+def _load_currencies_data():
+    ccy_path = os.path.join(settings.BASE_DIR, 'data', 'currencies.csv')
+    ret = {}
+    with open(ccy_path) as csvfile:
+        reader = csv.DictReader(csvfile, delimiter=';')
+        for row in reader:
+            ret[row['user_code']] = row
+    return ret
+
+
+currencies_data = SimpleLazyObject(_load_currencies_data)
 
 
 @python_2_unicode_compatible

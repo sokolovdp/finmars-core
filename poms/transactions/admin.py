@@ -306,11 +306,12 @@ class ComplexTransactionInputInline(admin.StackedInline):
 class ComplexTransactionAdmin(AbstractModelAdmin):
     model = ComplexTransaction
     master_user_path = 'transaction_type__master_user'
-    list_display = ['id', 'master_user', 'date', 'transaction_type', 'code', 'status']
+    list_display = ['id', 'master_user', 'date', 'transaction_type', 'code', 'status', 'is_deleted', ]
     list_select_related = ['transaction_type', 'transaction_type__master_user']
     ordering = ['transaction_type', 'code']
     search_fields = ['id']
     raw_id_fields = ['transaction_type']
+    list_filter = ['is_deleted', 'date', ]
     inlines = [ComplexTransactionInputInline]
     save_as = True
 
@@ -348,19 +349,19 @@ class TransactionAdmin(AbstractModelAdmin):
         'transaction_code',
         'complex_transaction',
         'transaction_class',
-        'accounting_date',
+        # 'accounting_date',
         # 'cash_date',
-        'instrument',
-        'transaction_currency',
-        'position_size_with_sign',
-        'settlement_currency',
-        'cash_consideration',
+        # 'instrument',
+        # 'transaction_currency',
+        # 'position_size_with_sign',
+        # 'settlement_currency',
+        # 'cash_consideration',
         # 'principal_with_sign',
         # 'carry_with_sign',
         # 'overheads_with_sign',
-        'portfolio',
+        # 'portfolio',
         # 'account_cash',
-        'account_position',
+        # 'account_position',
         # 'account_interim',
         # 'strategy1_position',
         # 'strategy1_cash',
@@ -371,7 +372,7 @@ class TransactionAdmin(AbstractModelAdmin):
         # 'linked_instrument',
         # 'allocation_balance',
         # 'allocation_pl',
-        # 'is_canceled',
+        'is_deleted',
     ]
     list_select_related = [
         'master_user', 'complex_transaction', 'transaction_class',
@@ -383,7 +384,7 @@ class TransactionAdmin(AbstractModelAdmin):
         'allocation_balance', 'allocation_pl',
     ]
     search_fields = ['id']
-    list_filter = ['is_canceled']
+    list_filter = ['is_deleted', 'transaction_date',]
     date_hierarchy = 'transaction_date'
     raw_id_fields = ['master_user', 'complex_transaction',
                      'instrument', 'transaction_currency',
@@ -417,11 +418,9 @@ class TransactionAdmin(AbstractModelAdmin):
         'linked_instrument',
         ('allocation_balance', 'allocation_pl'),
         'reference_fx_rate',
-        'is_locked',
-        'is_canceled',
-        'factor',
-        'trade_price',
-        'principal_amount', 'carry_amount', 'overheads',
+        ('is_locked', 'is_deleted'),
+        ('factor', 'trade_price'),
+        ('principal_amount', 'carry_amount', 'overheads'),
     )
     save_as = True
 

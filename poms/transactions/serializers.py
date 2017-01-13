@@ -530,6 +530,7 @@ class TransactionTypeSerializer(ModelWithObjectPermissionSerializer, ModelWithUs
                                 ModelWithTagSerializer):
     master_user = MasterUserField()
     group = TransactionTypeGroupField(required=False, allow_null=False)
+    date_expr = ExpressionField(required=False, allow_blank=False, allow_null=False, default='now()')
     display_expr = ExpressionField(required=False, allow_blank=False, allow_null=False, default='')
     instrument_types = InstrumentTypeField(required=False, allow_null=True, many=True)
     portfolios = PortfolioField(required=False, allow_null=True, many=True)
@@ -559,7 +560,8 @@ class TransactionTypeSerializer(ModelWithObjectPermissionSerializer, ModelWithUs
         fields = [
             'id', 'master_user', 'group',
             'user_code', 'name', 'short_name', 'public_name', 'notes',
-            'display_expr', 'is_valid_for_all_portfolios', 'is_valid_for_all_instruments', 'is_deleted',
+            'date_expr', 'display_expr',
+            'is_valid_for_all_portfolios', 'is_valid_for_all_instruments', 'is_deleted',
             'book_transaction_layout',
             'instrument_types', 'portfolios',
             'inputs', 'actions',
@@ -814,7 +816,7 @@ class TransactionSerializer(ModelWithAttributesSerializer):
             'strategy3_cash',
             'reference_fx_rate',
             'is_locked',
-            'is_canceled',
+            'is_deleted',
             'factor',
             'trade_price',
             'principal_amount',
@@ -934,7 +936,14 @@ class ComplexTransactionSerializer(ComplexTransactionMixin, serializers.ModelSer
     class Meta:
         model = ComplexTransaction
         fields = [
-            'id', 'date', 'status', 'code', 'text', 'transaction_type', 'transactions',
+            'id',
+            'date',
+            'status',
+            'code',
+            'text',
+            'is_deleted',
+            'transaction_type',
+            'transactions',
         ]
 
 
@@ -1067,6 +1076,7 @@ class PhantomTransactionSerializer(TransactionSerializer):
 
 
 class TransactionTypeComplexTransactionSerializer(serializers.ModelSerializer):
+    date = serializers.DateField(required=False, allow_null=True)
     code = serializers.IntegerField(default=0, initial=0, min_value=0, required=False)
     status = serializers.ChoiceField(default=ComplexTransaction.PRODUCTION, initial=ComplexTransaction.PRODUCTION,
                                      required=False, choices=ComplexTransaction.STATUS_CHOICES)
@@ -1074,7 +1084,7 @@ class TransactionTypeComplexTransactionSerializer(serializers.ModelSerializer):
     class Meta:
         model = ComplexTransaction
         fields = [
-            'id', 'status', 'code',
+            'id', 'date', 'status', 'code',
         ]
 
 
@@ -1093,6 +1103,7 @@ class TransactionTypeProcessSerializer(serializers.Serializer):
             self.fields['values'] = TransactionTypeProcessValuesSerializer(instance=self.instance)
         self.fields['has_errors'] = serializers.BooleanField(read_only=True)
         self.fields['instruments_errors'] = serializers.ReadOnlyField()
+        self.fields['complex_transaction_errors'] = serializers.ReadOnlyField()
         self.fields['transactions_errors'] = serializers.ReadOnlyField()
         self.fields['instruments'] = InstrumentSerializer(many=True, read_only=False, required=False, allow_null=True)
         self.fields['complex_transaction'] = TransactionTypeComplexTransactionSerializer(read_only=False,

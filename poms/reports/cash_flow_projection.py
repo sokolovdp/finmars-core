@@ -304,7 +304,7 @@ class TransactionReportBuilder:
 
         qs = Transaction.objects.filter(
             master_user=self.instance.master_user,
-            is_canceled=False
+            is_deleted=False,
         ).filter(
             Q(complex_transaction__status=ComplexTransaction.PRODUCTION) | Q(complex_transaction__isnull=True)
         ).prefetch_related(
@@ -1450,7 +1450,7 @@ class CashFlowProjectionReportBuilder(TransactionReportBuilder):
                                     action=a,
                                     calculate=True,
                                     store=False,
-                                    complex_transaction_date=now,
+                                    # complex_transaction_date=now,
                                     fake_id_gen=self._fake_id_gen,
                                     transaction_order_gen=self._trn_order_gen,
                                     now=lambda: now

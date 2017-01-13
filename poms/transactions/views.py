@@ -4,6 +4,7 @@ import django_filters
 from django.db import transaction
 from django.db.models import Prefetch
 from rest_framework.decorators import detail_route
+from rest_framework.exceptions import PermissionDenied
 from rest_framework.filters import FilterSet
 from rest_framework.response import Response
 
@@ -390,7 +391,7 @@ class TransactionFilterSet(FilterSet):
     strategy3_cash = ModelExtWithPermissionMultipleChoiceFilter(model=Strategy3)
     reference_fx_rate = django_filters.RangeFilter()
     is_locked = django_filters.BooleanFilter()
-    is_canceled = django_filters.BooleanFilter()
+    is_deleted = django_filters.BooleanFilter()
     factor = django_filters.RangeFilter()
     trade_price = django_filters.RangeFilter()
     principal_amount = django_filters.RangeFilter()
@@ -742,7 +743,7 @@ class TransactionViewSet(AbstractModelViewSet):
         'strategy3_cash__public_name',
         'reference_fx_rate',
         'is_locked',
-        'is_canceled',
+        'is_deleted',
         'factor',
         'trade_price',
         'principal_amount',
@@ -775,11 +776,17 @@ class TransactionViewSet(AbstractModelViewSet):
         'allocation_pl__public_name',
     ]
 
+    def perform_update(self, serializer):
+        if serializer.is_locked:
+            raise PermissionDenied()
+        return super(TransactionViewSet, self).perform_update(serializer)
+
 
 class ComplexTransactionFilterSet(FilterSet):
     id = NoOpFilter()
     code = django_filters.RangeFilter()
     date = django_filters.DateFromToRangeFilter()
+    is_deleted = django_filters.BooleanFilter()
     transaction_type = ModelExtWithPermissionMultipleChoiceFilter(model=TransactionType)
 
     class Meta:
@@ -900,9 +907,23 @@ class ComplexTransactionViewSet(AbstractModelViewSet):
     ]
     filter_class = ComplexTransactionFilterSet
     ordering_fields = [
-        'date'
+        'date',
         'code',
+        'is_deleted',
     ]
+
+    # def perform_update(self, serializer):
+    #     if serializer.is_locked:
+    #         raise PermissionDenied()
+    #     return super(ComplexTransactionViewSet, self).perform_update(serializer)
+
+    def perform_destroy(self, instance):
+        super(ComplexTransactionViewSet, self).perform_destroy(instance)
+        Transaction.objects.filter(
+            complex_transaction=instance
+        ).update(
+            is_deleted=instance.is_deleted
+        )
 
     @detail_route(methods=['get', 'put'], url_path='book', serializer_class=TransactionTypeProcessSerializer)
     def book(self, request, pk=None):
