@@ -159,7 +159,15 @@ DATE format string (also used in parse):
 Objects and their fields:
 
     instrument:
-        id: int
+        user_code: str
+        name: str
+        short_name: str
+        public_name: str
+        user_text_1: str
+        user_text_2: str
+        user_text_3: str
+        maturity_date: date
+        display_name: str
         instrument_type: instrument type data
             id: int
             instrument_class: instrument class data
@@ -172,16 +180,6 @@ Objects and their fields:
             short_name: str
             public_name: str
             display_name: str
-        },
-        user_code: str
-        name: str
-        short_name: str
-        public_name: str
-        user_text_1: str
-        user_text_2: str
-        user_text_3: str
-        maturity_date: date
-        display_name: str
 
     currency:
         id: int
@@ -242,7 +240,7 @@ Objects and their fields:
         short_name: str
         public_name: str
         display_name: str
-        group:
+        group: responsible group data
             id: int
             user_code: str
             name: str
@@ -257,7 +255,7 @@ Objects and their fields:
         short_name: str
         public_name: str
         display_name: str
-        group:
+        group: counterparty group data
             id: int
             user_code: str
             name: str
@@ -312,14 +310,14 @@ Objects and their fields:
     effective_date: date
     notification_date: date
 
-    dynamic attributes:
+    dynamic attributes (in future releases):
         value_string: str - used for string type
         value_float: float - used for number type
         value_date: date - used for date type
         classifier: null - used for classifier type
-            "name": str
-            "level": int
-            "parent": recursive classifier data
+            name: str
+            level: int
+            parent: recursive classifier data
 
 EXAMPLES:
 
