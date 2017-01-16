@@ -530,7 +530,7 @@ class TransactionTypeSerializer(ModelWithObjectPermissionSerializer, ModelWithUs
                                 ModelWithTagSerializer):
     master_user = MasterUserField()
     group = TransactionTypeGroupField(required=False, allow_null=False)
-    date_expr = ExpressionField(required=False, allow_blank=False, allow_null=False, default='now()')
+    date_expr = ExpressionField(required=False, allow_blank=False, allow_null=True, default='now()')
     display_expr = ExpressionField(required=False, allow_blank=False, allow_null=False, default='')
     instrument_types = InstrumentTypeField(required=False, allow_null=True, many=True)
     portfolios = PortfolioField(required=False, allow_null=True, many=True)
