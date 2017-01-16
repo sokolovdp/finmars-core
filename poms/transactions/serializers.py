@@ -910,7 +910,10 @@ class ComplexTransactionMixin:
                 obj._cached_text = ''
             else:
                 names = {
-                    'code': obj.code,
+                    'complex_transaction': {
+                        'code': obj.code,
+                        'date': obj.date,
+                    },
                     'transactions': formula.get_model_data(transactions, TransactionTextRenderSerializer, many=True,
                                                            context=self.context),
                 }

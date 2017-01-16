@@ -537,6 +537,8 @@ class SimpleEval2(object):
             _globals['now'] = _SysDef('now', now)
         _globals['globals'] = _SysDef('globals', lambda: _globals)
         _globals['locals'] = _SysDef('locals', lambda: self._table)
+        _globals['true'] = True
+        _globals['false'] = False
         if names:
             for k, v in names.items():
                 _globals[k] = v
@@ -1162,7 +1164,7 @@ simple_price(date, date1, value1, date2, value2)
     date, date1, date2 - date or string in format '%Y-%m-%d'
 
 
-DATE format string:
+DATE format string (also used in parse):
     %w 	Weekday as a decimal number, where 0 is Sunday and 6 is Saturday - 0, 1, ..., 6
     %d 	Day of the month as a zero-padded decimal number - 01, 02, ..., 31
     %m 	Month as a zero-padded decimal number - 01, 02, ..., 12
@@ -1672,5 +1674,11 @@ accrual_NL_365_NO_EOM(date(2000, 1, 1), date(2000, 1, 25))
         now = datetime.date(2000, 1, 1)
         _l.info(safe_eval('now()'))
         _l.info(safe_eval('now()', now=lambda: now))
-    now_test()
+    # now_test()
+    pass
+
+    def globals_test():
+        _l.info(safe_eval('globals()["a"]', names={'a': 123}))
+
+    globals_test()
     pass
