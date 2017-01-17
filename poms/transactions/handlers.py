@@ -24,7 +24,7 @@ class TransactionTypeProcess(object):
                  complex_transaction=None, complex_transaction_status=None, complex_transaction_errors=None,
                  transactions=None, transactions_errors=None,
                  fake_id_gen=None, transaction_order_gen=None,
-                 now=None):
+                 now=None, imperial_mode=False, context=None):
 
         self.transaction_type = transaction_type
 
@@ -62,6 +62,8 @@ class TransactionTypeProcess(object):
         self._next_transaction_order = transaction_order_gen or self._next_transaction_order_default
 
         self._now = now or date_now()
+        self._imperial_mode = imperial_mode
+        self._context = context
 
     def _next_fake_id_default(self):
         self._id_seq -= 1
@@ -401,7 +403,8 @@ class TransactionTypeProcess(object):
         value = getattr(source, source_attr_name)
         if value:
             try:
-                value = formula.safe_eval(value, names=values, now=self._now)
+                value = formula.safe_eval(value, names=values, now=self._now,
+                                          imperial_mode=self._imperial_mode, context=self._context)
             except formula.InvalidExpression as e:
                 self._set_eval_error(errors, source_attr_name, value, e)
                 return

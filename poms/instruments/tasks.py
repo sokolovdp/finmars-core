@@ -266,7 +266,7 @@ def process_events(master_users=None):
                                   None)
                     if action:
                         ttp = GeneratedEventProcess(generated_event=generated_event, action=action, calculate=True,
-                                                    store=True)
+                                                    store=True, imperial_mode=True)
                         ttp.process()
                         generated_event.processed(None, action, ttp.complex_transaction)
                     else:

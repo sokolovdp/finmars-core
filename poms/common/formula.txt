@@ -1,0 +1,406 @@
+TYPES:
+
+string:
+    '' or ""
+
+number (int, float):
+    1 or 1.0
+
+boolean:
+    True/False or true/false
+date:
+    date object
+
+timedelta:
+    time delta object for operations with dates
+
+arrays of object:
+    a[1], a[4]
+
+OPERATORS:
+
+    +, -, /, *, ==, !=, >, >=, <, <=, % (mod)
+
+
+VARIABLES:
+
+access to context value in formulas
+    x * 10
+    globals()['x'] * 10
+    instrument.price_multiplier
+    instrument['price_multiplier']
+    context['instrument']['price_multiplier']
+
+
+Context vars
+    compelex transaction rendering
+        complex_transaction
+        transactions: array of transaction
+
+
+    processing of generated event
+        instrument
+        portfolio
+        account
+        strategy1
+        strategy2
+        strategy3
+        position
+        effective_date
+        notification_date
+
+    report item 'delatil' from acount_type:
+        item: -> report item
+
+
+FUNCTIONS:
+
+function description
+    function_name(arg1, arg2=<default value for arg>)
+
+example of function call->
+    iff(d==now(), 1, 2)
+    iff(d==now(), v1=1, v2=2)
+
+
+Predefined functions:
+
+str(a)
+    any value to string
+
+contains(a, b)
+    string a contains or not in string b
+
+int(a)
+    convert string to integer
+float(a)
+    convert string to number
+round(number)
+    math round float
+trunc(number)
+    math truncate float
+
+isclose(a, b)
+    compare to float numbers to equality
+
+iff(expr, a, b)
+    return a if x is True else v2
+
+now()
+    current date
+date(year, month=1, day=1)
+    create date object
+
+days(a) / weeks(a) / months(a)
+    create timedelta object for operations with dates
+    now() - days(10)
+    now() + days(10)
+
+timedelta(years=0, months=0, days=0, leapdays=0, weeks=0)
+    general timedelta creation
+
+    years, months, weeks, days:
+        Relative information, may be negative (argument is plural); adding
+        or subtracting a relativedelta with relative information performs
+        the corresponding aritmetic operation on the original datetime value
+        with the information in the relativedelta.
+    leapdays:
+        Will add given days to the date found, if year is a leap
+        year, and the date found is post 28 of february.
+
+add_days(date, days)
+    same as date + days(x)
+
+add_weeks(date, days)
+    same as d + days(x * 7)
+
+add_workdays(date, workdays)
+    add "x" work days to d
+
+format_date(date, format='%Y-%m-%d')
+    format date (default format is '%Y-%m-%d')
+
+parse_date(date_string, format='%Y-%m-%d')
+    parse date from string (default format is '%Y-%m-%d')
+
+format_number(number, decimal_sep='.', decimal_pos=None, grouping=3, thousand_sep='', use_grouping=False)
+    format float number
+
+    decimal_sep:
+        Decimal separator symbol (for example ".")
+    decimal_pos:
+        Number of decimal positions
+    grouping:
+        Number of digits in every group limited by thousand separator
+    thousand_sep:
+        Thousand separator symbol (for example ",")
+    use_grouping:
+        use thousand separator
+
+parse_number(a)
+    same as float(a)
+
+simple_price(date, date1, value1, date2, value2)
+    calculate price on date using 2 point (date1, value1) and (date2, value2)
+
+
+if dates is string then that try parse use '%Y-%m-%d'
+
+DATE format string (also used in parse):
+    %w 	Weekday as a decimal number, where 0 is Sunday and 6 is Saturday - 0, 1, ..., 6
+    %d 	Day of the month as a zero-padded decimal number - 01, 02, ..., 31
+    %m 	Month as a zero-padded decimal number - 01, 02, ..., 12
+    %y 	Year without century as a zero-padded decimal number - 00, 01, ..., 99
+    %Y 	Year with century as a decimal number - 1970, 1988, 2001, 2013
+    %j 	Day of the year as a zero-padded decimal number - 001, 002, ..., 366
+    %U 	Week number of the year (Sunday as the first day of the week) as a zero padded decimal number.
+        All days in a new year preceding the first Sunday are considered to be in week 0. - 00, 01, ..., 53
+    %W 	Week number of the year (Monday as the first day of the week) as a decimal number.
+        All days in a new year preceding the first Monday are considered to be in week 0. - 00, 01, ..., 53
+    %% 	A literal '%' character - %
+
+Objects and their fields:
+
+    instrument:
+        user_code: str
+        name: str
+        short_name: str
+        public_name: str
+        user_text_1: str
+        user_text_2: str
+        user_text_3: str
+        maturity_date: date
+        display_name: str
+        instrument_type: instrument type data
+            id: int
+            instrument_class: instrument class data
+                id: int
+                system_code: str
+                name: str
+                description: str
+            user_code: str
+            name: str
+            short_name: str
+            public_name: str
+            display_name: str
+
+    currency:
+        id: int
+        user_code: str
+        name: str
+        short_name: str
+
+    portfolio:
+        id: int
+        user_code: str
+        name: str
+        short_name: str
+        public_name: str
+        display_name: str
+
+    account:
+        id: int
+        name: str
+        public_name: str
+        short_name: str
+        display_name: str
+        user_code: str
+        type_object: account type data
+            id: int
+            user_code: str
+            short_name: str
+            name: str
+            display_name: str
+            public_name: str
+
+
+    strategyN (strategy1, strategy2, strategy3):
+        id: int
+        user_code: str
+        name: str
+        short_name: str
+        public_name: str
+        display_name: str
+        subgroup: strategyN subgroup
+            id: int
+            user_code: str
+            name: str
+            short_name: str
+            public_name: str
+            display_name: str
+            group: strategyN group
+                id: int
+                user_code: str
+                name: str
+                short_name: str
+                public_name: str
+                display_name: str
+
+    responsible:
+        id: int
+        user_code: str
+        name: str
+        short_name: str
+        public_name: str
+        display_name: str
+        group: responsible group data
+            id: int
+            user_code: str
+            name: str
+            short_name: str
+            public_name: str
+            display_name: str
+
+    counterparty:
+        id: int
+        user_code: str
+        name: str
+        short_name: str
+        public_name: str
+        display_name: str
+        group: counterparty group data
+            id: int
+            user_code: str
+            name: str
+            short_name: str
+            public_name: str
+            display_name: str
+
+    complex_transaction:
+        code - str
+        date - date
+
+    transaction:
+        id: int
+        transaction_code: int
+        transaction_class: simple data
+            id: int
+            system_code: str
+            name: str
+            description: str
+        instrument: instrument data
+        transaction_currency: currency data
+        position_size_with_sign: float
+        settlement_currency: currency data
+        cash_consideration: float
+        principal_with_sign: float
+        carry_with_sign: float
+        overheads_with_sign: float
+        accounting_date: date
+        cash_date: date
+        transaction_date: date
+        portfolio: portfolio data
+        account_cash: account data
+        account_position: account data
+        account_interim: account data
+        strategy1_position: strategy1 data
+        strategy1_cash: strategy1 data
+        strategy2_position: strategy2 data
+        strategy2_cash: strategy2 data
+        strategy3_position: strategy3 data
+        strategy3_cash: strategy3 data
+        reference_fx_rate: float
+        is_locked: bool
+        is_deleted: bool
+        responsible: responsible data
+        counterparty: counterparty data
+        linked_instrument: instrument data
+        allocation_balance: instrument data
+        allocation_pl: instrument data
+        attributes: dynamic attributes data
+
+    position: float
+    effective_date: date
+    notification_date: date
+
+    dynamic attributes (in future releases):
+        value_string: str - used for string type
+        value_float: float - used for number type
+        value_date: date - used for date type
+        classifier: - used for classifier type
+            name: str
+            level: int
+            parent: recursive classifier data
+
+    report item:
+        item_type: int -> 1, 2, 3, 4, 5, 100
+        item_type_code: str -> "INSTR", "CCY", "TRN_PL", "FX_TRADE", "CASH_IN_OUT", "MISMATCH"
+        item_type_name: str -> "Instrument", "Currency", "Transaction PL", "FX-Trade", "Cash In/Out", "Mismatch", "Summary"
+        user_code: str (depend on item_type:  instrument.user_code/currency.user_code)
+        name: str  (depend on item_type:  instrument.name/currency.name)
+        short_name: str (depend on item_type:  instrument.short_name/currency.short_name)
+        detail: str
+        instrument: instrument data
+        currency: currency data
+        portfolio: portfolio data
+        account: account data
+        strategy1: strategyN data
+        strategy2: strategyN data
+        strategy3: strategyN data
+        custom_fields: ->
+            custom_field: simple data
+                name: str
+            value: str/float/date
+        allocation_balance: instrument data
+        allocation_pl: instrument data
+        mismatch: float
+        mismatch_portfolio: portfolio data
+        mismatch_account: account data
+        position_size: float
+        market_value: float
+        cost: float
+        instr_principal: float
+        instr_accrued: float
+        exposure: float
+        principal: float
+        carry: float
+        overheads: float
+        total: float
+        principal_closed: float
+        carry_closed: float
+        overheads_closed: float
+        total_closed: float
+        principal_opened: float
+        carry_opened: float
+        overheads_opened: float
+        total_opened: float
+        principal_fx: float
+        carry_fx: float
+        overheads_fx: float
+        total_fx: float
+        principal_fx_closed: float
+        carry_fx_closed: float
+        overheads_fx_closed: float
+        total_fx_closed: float
+        principal_fx_opened: float
+        carry_fx_opened: float
+        overheads_fx_opened: float
+        total_fx_opened: float
+        principal_fixed: float
+        carry_fixed: float
+        overheads_fixed: float
+        total_fixed: float
+        principal_fixed_closed: float
+        carry_fixed_closed: float
+        overheads_fixed_closed: float
+        total_fixed_closed: float
+        principal_fixed_opened: float
+        carry_fixed_opened: float
+        overheads_fixed_opened: float
+        total_fixed_opened: float
+
+EXAMPLES:
+
+    2 + 2
+
+    5 / 2
+
+    round(1.5)
+
+    iff(1.001 > 1.002, 'str1', 'str2')
+
+    format_number(1234.234, decimal_sep='.', decimal_pos=2)
+
+    transactions[0].instrument.user_code + '@' + format_date(transactions[0].accounting_date)
+
+    simple_price("2000-01-05", "2000-01-01", 0.0, "2000-04-10", 100.0)

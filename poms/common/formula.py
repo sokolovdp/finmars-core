@@ -288,6 +288,78 @@ def _simple_price(date, date1, value1, date2, value2):
     return 0.0
 
 
+def _get_instrument_accrued_price(evaluator, instrument, date):
+    from poms.users.utils import get_master_user_from_context, get_member_from_context
+    from poms.instruments.models import Instrument
+    from poms.obj_perms.utils import obj_perms_filter_objects, get_view_perms
+
+    if instrument is None or date is None:
+        raise ExpressionEvalError()
+
+    context = evaluator.context
+    imperial_mode = evaluator.imperial_mode
+    if context is None:
+        raise InvalidExpression('context must be defined')
+
+    pk = None
+    user_code = None
+    if isinstance(instrument, dict):
+        pk = instrument['id']
+    elif isinstance(instrument, (int, float)):
+        pk = int(instrument)
+    elif isinstance(instrument, str):
+        user_code = instrument
+
+    if id is None and user_code is None:
+        raise ExpressionEvalError()
+
+    master_user = get_master_user_from_context(context)
+    if master_user is None:
+        return 0.0
+    instrument_qs = Instrument.objects.filter(master_user=master_user)
+
+    if imperial_mode:
+        pass
+    else:
+        member = get_member_from_context(context)
+        if member is None:
+            return 0.0
+        instrument_qs = obj_perms_filter_objects(member, get_view_perms(Instrument), instrument_qs)
+
+    if pk is not None:
+        instrument = context.get(('_instrument_get_accrued_price', pk, None), None)
+    elif user_code is not None:
+        instrument = context.get(('_instrument_get_accrued_price', None, user_code), None)
+    # else:
+    #     raise ExpressionEvalError()
+    if instrument is None:
+        try:
+            if pk is not None:
+                instrument = instrument_qs.get(pk=pk)
+            elif user_code is not None:
+                instrument = instrument_qs.get(user_code=user_code)
+                # else:
+                #     raise ExpressionEvalError()
+        except Instrument.DoesNotExist:
+            raise ExpressionEvalError()
+
+        context[('_instrument_get_accrued_price', instrument.pk, None)] = instrument
+        context[('_instrument_get_accrued_price', None, instrument.user_code)] = instrument
+
+    if isinstance(date, str):
+        date = _parse_date(date)
+    if not isinstance(date, datetime.date):
+        date = _parse_date(str(date))
+
+    val = instrument.get_accrued_price(date)
+    if val is None:
+        val = 0.0
+    return val
+
+
+_get_instrument_accrued_price.evaluator = True
+
+
 def _find_name(*args):
     for s in args:
         if s is not None:
@@ -390,7 +462,7 @@ OPERATORS = {
 # }
 
 
-class _SysDef(object):
+class SimpleEval2Def(object):
     def __init__(self, name, func):
         self.name = name
         self.func = func
@@ -401,8 +473,11 @@ class _SysDef(object):
     def __repr__(self):
         return '<def %s>' % self.name
 
-    def __call__(self, *args, **kwargs):
-        return self.func(*args, **kwargs)
+    def __call__(self, evaluator, *args, **kwargs):
+        if getattr(self.func, 'evaluator', False):
+            return self.func(evaluator, *args, **kwargs)
+        else:
+            return self.func(*args, **kwargs)
 
 
 class _UserDef(object):
@@ -416,7 +491,7 @@ class _UserDef(object):
     def __repr__(self):
         return '<def %s>' % self.node.name
 
-    def __call__(self, *args, **kwargs):
+    def __call__(self, evaluator, *args, **kwargs):
         kwargs = kwargs.copy()
         for i, val in enumerate(args):
             name = self.node.args.args[i].arg
@@ -443,41 +518,42 @@ class _UserDef(object):
 
 
 FUNCTIONS = [
-    _SysDef('str', _str),
-    _SysDef('upper', _upper),
-    _SysDef('lower', _lower),
-    _SysDef('contains', _contains),
+    SimpleEval2Def('str', _str),
+    SimpleEval2Def('upper', _upper),
+    SimpleEval2Def('lower', _lower),
+    SimpleEval2Def('contains', _contains),
 
-    _SysDef('int', _int),
-    _SysDef('float', _float),
-    _SysDef('round', _round),
-    _SysDef('trunc', _trunc),
-    _SysDef('isclose', _isclose),
-    _SysDef('random', _random),
+    SimpleEval2Def('int', _int),
+    SimpleEval2Def('float', _float),
+    SimpleEval2Def('round', _round),
+    SimpleEval2Def('trunc', _trunc),
+    SimpleEval2Def('isclose', _isclose),
+    SimpleEval2Def('random', _random),
 
-    _SysDef('iff', _iff),
-    _SysDef('len', _len),
-    _SysDef('range', _range),
+    SimpleEval2Def('iff', _iff),
+    SimpleEval2Def('len', _len),
+    SimpleEval2Def('range', _range),
 
-    _SysDef('now', _now),
-    _SysDef('date', _date),
-    _SysDef('isleap', _isleap),
-    _SysDef('days', _days),
-    _SysDef('weeks', _weeks),
-    _SysDef('months', _months),
-    _SysDef('timedelta', _timedelta),
-    _SysDef('add_days', _add_days),
-    _SysDef('add_weeks', _add_weeks),
-    _SysDef('add_workdays', _add_workdays),
-    _SysDef('format_date', _format_date),
-    _SysDef('parse_date', _parse_date),
+    SimpleEval2Def('now', _now),
+    SimpleEval2Def('date', _date),
+    SimpleEval2Def('isleap', _isleap),
+    SimpleEval2Def('days', _days),
+    SimpleEval2Def('weeks', _weeks),
+    SimpleEval2Def('months', _months),
+    SimpleEval2Def('timedelta', _timedelta),
+    SimpleEval2Def('add_days', _add_days),
+    SimpleEval2Def('add_weeks', _add_weeks),
+    SimpleEval2Def('add_workdays', _add_workdays),
+    SimpleEval2Def('format_date', _format_date),
+    SimpleEval2Def('parse_date', _parse_date),
 
-    _SysDef('format_number', _format_number),
-    _SysDef('parse_number', _parse_number),
+    SimpleEval2Def('format_number', _format_number),
+    SimpleEval2Def('parse_number', _parse_number),
 
-    _SysDef('simple_price', _simple_price),
+    SimpleEval2Def('simple_price', _simple_price),
+    SimpleEval2Def('get_instrument_accrued_price', _get_instrument_accrued_price),
 
-    _SysDef('find_name', _find_name),
+    SimpleEval2Def('find_name', _find_name),
 ]
 
 # FUNCTIONS = {
@@ -521,12 +597,15 @@ empty = object()
 
 
 class SimpleEval2(object):
-    def __init__(self, names=None, max_time=None, add_print=False, allow_assign=False, now=None):
+    def __init__(self, names=None, max_time=None, add_print=False, allow_assign=False, now=None,
+                 imperial_mode=False, context=None):
         self.max_time = max_time or 1  # one second
         # self.max_time = 10000000000
         self.start_time = 0
         self.tik_time = 0
         self.allow_assign = allow_assign
+        self.imperial_mode = imperial_mode
+        self.context = context
 
         self.expr = None
         self.expr_ast = None
@@ -534,9 +613,11 @@ class SimpleEval2(object):
 
         _globals = {f.name: f for f in FUNCTIONS}
         if now is not None and callable(now):
-            _globals['now'] = _SysDef('now', now)
-        _globals['globals'] = _SysDef('globals', lambda: _globals)
-        _globals['locals'] = _SysDef('locals', lambda: self._table)
+            _globals['now'] = SimpleEval2Def('now', now)
+        _globals['globals'] = SimpleEval2Def('globals', lambda: _globals)
+        _globals['locals'] = SimpleEval2Def('locals', lambda: self._table)
+        _globals['true'] = True
+        _globals['false'] = False
         if names:
             for k, v in names.items():
                 _globals[k] = v
@@ -851,7 +932,7 @@ class SimpleEval2(object):
 
         f_args = [self._eval(a) for a in node.args]
         f_kwargs = {k.arg: self._eval(k.value) for k in node.keywords}
-        return f(*f_args, **f_kwargs)
+        return f(self, *f_args, **f_kwargs)
 
     def _on_ast_Return(self, node):
         val = self._eval(node.value)
@@ -1026,8 +1107,25 @@ def validate(expr):
         raise ValidationError('Invalid expression: %s' % e)
 
 
-def safe_eval(s, names=None, max_time=None, add_print=False, allow_assign=False, now=None):
-    return SimpleEval2(names=names, max_time=max_time, add_print=add_print, allow_assign=allow_assign, now=now).eval(s)
+def safe_eval(s, names=None, max_time=None, add_print=False, allow_assign=False, now=None,
+              imperial_mode=False, context=None):
+    e = SimpleEval2(names=names, max_time=max_time, add_print=add_print, allow_assign=allow_assign, now=now,
+                    imperial_mode=imperial_mode, context=context)
+    return e.eval(s)
+
+
+def register_fun(name, callback):
+    if not callable(callback):
+        raise InvalidExpression('Bad function callback')
+    if name is None:
+        raise InvalidExpression('Invalid function name')
+    if name is FUNCTIONS:
+        raise InvalidExpression('Function with this name already registered')
+
+    if isinstance(callback, SimpleEval2Def):
+        FUNCTIONS[name] = callback
+    else:
+        FUNCTIONS[name] = SimpleEval2Def(name, callback)
 
 
 def value_prepare(orig):
@@ -1162,7 +1260,7 @@ simple_price(date, date1, value1, date2, value2)
     date, date1, date2 - date or string in format '%Y-%m-%d'
 
 
-DATE format string:
+DATE format string (also used in parse):
     %w 	Weekday as a decimal number, where 0 is Sunday and 6 is Saturday - 0, 1, ..., 6
     %d 	Day of the month as a zero-padded decimal number - 01, 02, ..., 31
     %m 	Month as a zero-padded decimal number - 01, 02, ..., 12
@@ -1672,5 +1770,26 @@ accrual_NL_365_NO_EOM(date(2000, 1, 1), date(2000, 1, 25))
         now = datetime.date(2000, 1, 1)
         _l.info(safe_eval('now()'))
         _l.info(safe_eval('now()', now=lambda: now))
-    now_test()
+
+
+    # now_test()
+    pass
+
+
+    def accrued_test():
+        from poms.users.models import Member
+        member = Member.objects.get(user__username='a')
+        master_user = member.master_user
+
+        _l.info(safe_eval('get_instrument_accrued_price("testaccruals", "2010-03-10")', context={
+            'master_user': master_user,
+            'member': member,
+        }))
+
+        _l.info(safe_eval('get_instrument_accrued_price("testaccruals", "2010-03-10")', imperial_mode=True, context={
+            'master_user': master_user,
+        }))
+
+
+    accrued_test()
     pass

@@ -93,6 +93,7 @@ class TransactionTypeActionInstrumentPhantomField(serializers.IntegerField):
 
 
 class TransactionTypeInputSerializer(serializers.ModelSerializer):
+    id = serializers.IntegerField(read_only=False, required=False, allow_null=True)
     name = serializers.CharField(max_length=255, allow_null=False, allow_blank=False,
                                  validators=[
                                      # serializers.RegexValidator(regex='[a-zA-Z0-9_]+'),
@@ -530,8 +531,8 @@ class TransactionTypeSerializer(ModelWithObjectPermissionSerializer, ModelWithUs
                                 ModelWithTagSerializer):
     master_user = MasterUserField()
     group = TransactionTypeGroupField(required=False, allow_null=False)
-    date_expr = ExpressionField(required=False, allow_blank=False, allow_null=False, default='now()')
-    display_expr = ExpressionField(required=False, allow_blank=False, allow_null=False, default='')
+    date_expr = ExpressionField(required=False, allow_blank=True, allow_null=True, default='now()')
+    display_expr = ExpressionField(required=False, allow_blank=True, allow_null=True, default='')
     instrument_types = InstrumentTypeField(required=False, allow_null=True, many=True)
     portfolios = PortfolioField(required=False, allow_null=True, many=True)
     # tags = TagField(required=False, many=True, allow_null=True)
@@ -589,24 +590,25 @@ class TransactionTypeSerializer(ModelWithObjectPermissionSerializer, ModelWithUs
         if actions is not empty:
             actions = self.save_actions(instance, actions, inputs)
         if inputs is not empty:
-            instance.inputs.exclude(id__in=[i.id for i in inputs.values()]).delete()
+            instance.inputs.exclude(id__in=[i.id for i in inputs]).delete()
         if actions is not empty:
             instance.actions.exclude(id__in=[a.id for a in actions]).delete()
         return instance
 
     def save_inputs(self, instance, inputs_data):
-        cur_inputs = {i.name: i for i in instance.inputs.all()}
-        new_inputs = {}
+        cur_inputs = {i.id: i for i in instance.inputs.all()}
+        new_inputs = []
         for order, inp_data in enumerate(inputs_data):
-            name = inp_data['name']
-            inp = cur_inputs.pop(name, None)
+            # name = inp_data['name']
+            pk = inp_data.pop('id', None)
+            inp = cur_inputs.pop(pk, None)
             if inp is None:
                 inp = TransactionTypeInput(transaction_type=instance)
             inp.order = order
             for attr, value in inp_data.items():
                 setattr(inp, attr, value)
             inp.save()
-            new_inputs[inp.name] = inp
+            new_inputs.append(inp)
         return new_inputs
 
     def save_actions(self, instance, actions_data, inputs):
@@ -616,6 +618,8 @@ class TransactionTypeSerializer(ModelWithObjectPermissionSerializer, ModelWithUs
 
         if inputs is None or inputs is empty:
             inputs = {i.name: i for i in instance.inputs.all()}
+        else:
+            inputs = {i.name: i for i in inputs}
 
         actions = [None for a in actions_data]
         for order, action_data in enumerate(actions_data):
@@ -910,14 +914,20 @@ class ComplexTransactionMixin:
                 obj._cached_text = ''
             else:
                 names = {
-                    'code': obj.code,
+                    'complex_transaction': {
+                        'code': obj.code,
+                        'date': obj.date,
+                    },
                     'transactions': formula.get_model_data(transactions, TransactionTextRenderSerializer, many=True,
                                                            context=self.context),
                 }
-                try:
-                    obj._cached_text = formula.safe_eval(obj.transaction_type.display_expr, names=names)
-                except formula.InvalidExpression:
-                    obj._cached_text = '<InvalidExpression>'
+                if obj.transaction_type.display_expr:
+                    try:
+                        obj._cached_text = formula.safe_eval(obj.transaction_type.display_expr, names=names)
+                    except formula.InvalidExpression:
+                        obj._cached_text = '<InvalidExpression>'
+                else:
+                    obj._cached_text = ''
             return obj._cached_text
 
 
