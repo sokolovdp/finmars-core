@@ -288,7 +288,7 @@ def _simple_price(date, date1, value1, date2, value2):
     return 0.0
 
 
-def _instrument_get_accrued_price(evaluator, instrument, date):
+def _get_instrument_accrued_price(evaluator, instrument, date):
     from poms.users.utils import get_master_user_from_context, get_member_from_context
     from poms.instruments.models import Instrument
     from poms.obj_perms.utils import obj_perms_filter_objects, get_view_perms
@@ -352,7 +352,7 @@ def _instrument_get_accrued_price(evaluator, instrument, date):
     return val
 
 
-_instrument_get_accrued_price.evaluator = True
+_get_instrument_accrued_price.evaluator = True
 
 
 def _find_name(*args):
@@ -546,7 +546,7 @@ FUNCTIONS = [
     SimpleEval2Def('parse_number', _parse_number),
 
     SimpleEval2Def('simple_price', _simple_price),
-    SimpleEval2Def('get_accrued_price', _instrument_get_accrued_price),
+    SimpleEval2Def('get_instrument_accrued_price', _get_instrument_accrued_price),
 
     SimpleEval2Def('find_name', _find_name),
 ]
@@ -1777,7 +1777,7 @@ accrual_NL_365_NO_EOM(date(2000, 1, 1), date(2000, 1, 25))
             'master_user': master_user,
             'member': member,
         }
-        _l.info(safe_eval('get_accrued_price("testaccruals", "2010-03-10")', context=context))
+        _l.info(safe_eval('get_instrument_accrued_price("testaccruals", "2010-03-10")', context=context))
 
 
     accrued_test()
