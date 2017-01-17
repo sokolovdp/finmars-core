@@ -297,14 +297,9 @@ def _get_instrument_accrued_price(evaluator, instrument, date):
         raise ExpressionEvalError()
 
     context = evaluator.context
+    imperial_mode = evaluator.imperial_mode
     if context is None:
         raise InvalidExpression('context must be defined')
-
-    master_user = get_master_user_from_context(context)
-    member = get_member_from_context(context)
-
-    if master_user is None or member is None:
-        return 0.0
 
     pk = None
     user_code = None
@@ -318,8 +313,18 @@ def _get_instrument_accrued_price(evaluator, instrument, date):
     if id is None and user_code is None:
         raise ExpressionEvalError()
 
+    master_user = get_master_user_from_context(context)
+    if master_user is None:
+        return 0.0
     instrument_qs = Instrument.objects.filter(master_user=master_user)
-    instrument_qs = obj_perms_filter_objects(member, get_view_perms(Instrument), instrument_qs)
+
+    if imperial_mode:
+        pass
+    else:
+        member = get_member_from_context(context)
+        if member is None:
+            return 0.0
+        instrument_qs = obj_perms_filter_objects(member, get_view_perms(Instrument), instrument_qs)
 
     if pk is not None:
         instrument = context.get(('_instrument_get_accrued_price', pk, None), None)
@@ -333,8 +338,8 @@ def _get_instrument_accrued_price(evaluator, instrument, date):
                 instrument = instrument_qs.get(pk=pk)
             elif user_code is not None:
                 instrument = instrument_qs.get(user_code=user_code)
-            # else:
-            #     raise ExpressionEvalError()
+                # else:
+                #     raise ExpressionEvalError()
         except Instrument.DoesNotExist:
             raise ExpressionEvalError()
 
@@ -593,12 +598,13 @@ empty = object()
 
 class SimpleEval2(object):
     def __init__(self, names=None, max_time=None, add_print=False, allow_assign=False, now=None,
-                 context=None):
+                 imperial_mode=False, context=None):
         self.max_time = max_time or 1  # one second
         # self.max_time = 10000000000
         self.start_time = 0
         self.tik_time = 0
         self.allow_assign = allow_assign
+        self.imperial_mode = imperial_mode
         self.context = context
 
         self.expr = None
@@ -1101,9 +1107,10 @@ def validate(expr):
         raise ValidationError('Invalid expression: %s' % e)
 
 
-def safe_eval(s, names=None, max_time=None, add_print=False, allow_assign=False, now=None, context=None):
+def safe_eval(s, names=None, max_time=None, add_print=False, allow_assign=False, now=None,
+              imperial_mode=False, context=None):
     e = SimpleEval2(names=names, max_time=max_time, add_print=add_print, allow_assign=allow_assign, now=now,
-                    context=context)
+                    imperial_mode=imperial_mode, context=context)
     return e.eval(s)
 
 
@@ -1773,11 +1780,15 @@ accrual_NL_365_NO_EOM(date(2000, 1, 1), date(2000, 1, 25))
         from poms.users.models import Member
         member = Member.objects.get(user__username='a')
         master_user = member.master_user
-        context = {
+
+        _l.info(safe_eval('get_instrument_accrued_price("testaccruals", "2010-03-10")', context={
             'master_user': master_user,
             'member': member,
-        }
-        _l.info(safe_eval('get_instrument_accrued_price("testaccruals", "2010-03-10")', context=context))
+        }))
+
+        _l.info(safe_eval('get_instrument_accrued_price("testaccruals", "2010-03-10")', imperial_mode=True, context={
+            'master_user': master_user,
+        }))
 
 
     accrued_test()

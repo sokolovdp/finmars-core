@@ -5,7 +5,6 @@ from django.core.exceptions import ObjectDoesNotExist
 from django.db import transaction
 from django.db.models import Prefetch, Q, Case, When, Value, BooleanField
 from django.utils import timezone
-from django.utils.encoding import force_text
 from rest_framework import serializers
 from rest_framework.decorators import list_route, detail_route
 from rest_framework.exceptions import MethodNotAllowed, PermissionDenied, ValidationError
@@ -27,7 +26,6 @@ from poms.instruments.models import Instrument, PriceHistory, InstrumentClass, D
     AccrualCalculationModel, PaymentSizeDetail, Periodicity, CostMethod, InstrumentType, PricingPolicy, \
     EventScheduleConfig, ManualPricingFormula, \
     AccrualCalculationSchedule, EventSchedule, EventScheduleAction, GeneratedEvent
-from poms.instruments.permissions import GeneratedEventPermission
 from poms.instruments.serializers import InstrumentSerializer, PriceHistorySerializer, \
     InstrumentClassSerializer, DailyPricingModelSerializer, AccrualCalculationModelSerializer, \
     PaymentSizeDetailSerializer, PeriodicitySerializer, CostMethodSerializer, InstrumentTypeSerializer, \
@@ -374,26 +372,25 @@ class GeneratedEventFilterSet(FilterSet):
     effective_date = django_filters.DateFromToRangeFilter()
     notification_date = django_filters.DateFromToRangeFilter()
 
-
     class Meta:
         model = GeneratedEvent
         fields = []
 
-    # def filter_is_need_reaction(self, qs, value):
-    #     value = force_text(value).lower()
-    #     now = date_now()
-    #     expr = Q(status=GeneratedEvent.NEW, action__isnull=True) & (
-    #         Q(notification_date=now,
-    #           event_schedule__notification_class__in=NotificationClass.get_need_reaction_on_notification_date_classes())
-    #         | Q(effective_date=now,
-    #             event_schedule__notification_class__in=NotificationClass.get_need_reaction_on_effective_date_classes())
-    #     )
-    #     if value in ['true', '1', 'yes']:
-    #         qs = qs.filter(expr)
-    #     elif value in ['false', '0', 'no']:
-    #         qs = qs.exclude(expr)
-    #
-    #     return qs
+        # def filter_is_need_reaction(self, qs, value):
+        #     value = force_text(value).lower()
+        #     now = date_now()
+        #     expr = Q(status=GeneratedEvent.NEW, action__isnull=True) & (
+        #         Q(notification_date=now,
+        #           event_schedule__notification_class__in=NotificationClass.get_need_reaction_on_notification_date_classes())
+        #         | Q(effective_date=now,
+        #             event_schedule__notification_class__in=NotificationClass.get_need_reaction_on_effective_date_classes())
+        #     )
+        #     if value in ['true', '1', 'yes']:
+        #         qs = qs.filter(expr)
+        #     elif value in ['false', '0', 'no']:
+        #         qs = qs.exclude(expr)
+        #
+        #     return qs
 
 
 class GeneratedEventViewSet(UpdateModelMixinExt, AbstractReadOnlyModelViewSet):
@@ -502,7 +499,8 @@ class GeneratedEventViewSet(UpdateModelMixinExt, AbstractReadOnlyModelViewSet):
         if action is None:
             raise ValidationError('Require "action" query parameter')
 
-        instance = GeneratedEventProcess(generated_event=generated_event, action=action)
+        instance = GeneratedEventProcess(generated_event=generated_event, action=action,
+                                         context=self.get_serializer_context())
         if request.method == 'GET':
             serializer = self.get_serializer(instance=instance)
             return Response(serializer.data)

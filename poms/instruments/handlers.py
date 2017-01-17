@@ -21,9 +21,14 @@ class GeneratedEventProcess(TransactionTypeProcess):
             'notification_date': generated_event.notification_date,
         })
         kwargs['default_values'] = default_values
+
         if action.is_sent_to_pending:
             kwargs['complex_transaction_status'] = ComplexTransaction.PENDING
         else:
             kwargs['complex_transaction_status'] = ComplexTransaction.PRODUCTION
+
+        context = kwargs.get('context', None) or {}
+        if 'master_user' not in context:
+            context['master_user'] = generated_event.master_user
 
         super(GeneratedEventProcess, self).__init__(**kwargs)
