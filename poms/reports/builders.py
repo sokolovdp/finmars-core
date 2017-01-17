@@ -1599,17 +1599,25 @@ class ReportItem(_Base):
 
         return '<ERROR>'
 
-    @property
-    def detail(self):
-        if self.detail_trn:
-            expr = self.acc.type.transaction_details_expr
-            if expr:
-                try:
-                    value = formula.safe_eval(expr, names={'item': self})
-                except formula.InvalidExpression:
-                    value = ugettext('Invalid expression')
-                return value
-        return None
+    # @property
+    # def detail(self):
+    #     from poms.reports.serializers import ReportItemSerializer
+    #     my_data = formula.get_model_data(self, ReportItemSerializer, context=self.context)
+    #
+    #     try:
+    #         return formula.safe_eval('item.instr', names={'item': self})
+    #     except formula.InvalidExpression:
+    #         return 'OLALALALALALA'
+    #
+    #     if self.detail_trn:
+    #         expr = self.acc.type.transaction_details_expr
+    #         if expr:
+    #             try:
+    #                 value = formula.safe_eval(expr, names={'item': self})
+    #             except formula.InvalidExpression:
+    #                 value = ugettext('Invalid expression')
+    #             return value
+    #     return None
 
     @property
     def trn_cls(self):

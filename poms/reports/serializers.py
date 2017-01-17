@@ -4,11 +4,12 @@ from datetime import timedelta, date
 
 from dateutil.relativedelta import relativedelta
 from django.conf import settings
-from django.utils.translation import ugettext_lazy
+from django.utils.translation import ugettext_lazy, ugettext
 from rest_framework import serializers
 
 from poms.accounts.fields import AccountField
 from poms.accounts.serializers import AccountSerializer, AccountViewSerializer
+from poms.common import formula
 from poms.common.fields import ExpressionField
 from poms.common.utils import date_now
 from poms.counterparties.serializers import ResponsibleSerializer, \
@@ -278,7 +279,8 @@ class ReportItemSerializer(serializers.Serializer):
     user_code = serializers.ReadOnlyField()
     name = serializers.ReadOnlyField()
     short_name = serializers.ReadOnlyField()
-    detail = serializers.CharField(read_only=True)
+    # detail = serializers.CharField(read_only=True)
+    detail = serializers.SerializerMethodField()
 
     instrument = serializers.PrimaryKeyRelatedField(source='instr', read_only=True)
     currency = serializers.PrimaryKeyRelatedField(source='ccy', read_only=True)
@@ -391,6 +393,29 @@ class ReportItemSerializer(serializers.Serializer):
         self.fields['mismatch_portfolio_object'] = ReportPortfolioSerializer(source='mismatch_prtfl', read_only=True)
         self.fields['mismatch_account_object'] = ReportAccountSerializer(source='mismatch_acc', read_only=True)
         # self.fields['mismatch_currency_object'] = ReportCurrencySerializer(source='mismatch_ccy', read_only=True)
+
+    def get_detail(self, obj):
+        # obj_data = formula.get_model_data(obj, ReportItemDetailRendererSerializer, context=self.context)
+        # try:
+        #     return formula.safe_eval('item.instrument.user_code', names={'item': obj_data})
+        # except formula.InvalidExpression:
+        #     return 'OLALALALALALA'
+        if obj.detail_trn:
+            expr = obj.acc.type.transaction_details_expr
+            if expr:
+                obj_data = formula.get_model_data(obj, ReportItemDetailRendererSerializer, context=self.context)
+                try:
+                    value = formula.safe_eval(expr, names={'item': obj_data})
+                except formula.InvalidExpression:
+                    value = ugettext('Invalid expression')
+                return value
+        return None
+
+
+class ReportItemDetailRendererSerializer(ReportItemSerializer):
+    def __init__(self, *args, **kwargs):
+        super(ReportItemDetailRendererSerializer, self).__init__(*args, **kwargs)
+        self.fields.pop('detail')
 
 
 class ReportSerializer(serializers.Serializer):
