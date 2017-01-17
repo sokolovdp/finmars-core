@@ -49,6 +49,9 @@ Context vars
         effective_date
         notification_date
 
+    report item 'delatil' from acount_type:
+        item: -> report item
+
 
 FUNCTIONS:
 
@@ -314,10 +317,77 @@ Objects and their fields:
         value_string: str - used for string type
         value_float: float - used for number type
         value_date: date - used for date type
-        classifier: null - used for classifier type
+        classifier: - used for classifier type
             name: str
             level: int
             parent: recursive classifier data
+
+    report item:
+        item_type: int -> 1, 2, 3, 4, 5, 100
+        item_type_code: str -> "INSTR", "CCY", "TRN_PL", "FX_TRADE", "CASH_IN_OUT", "MISMATCH"
+        item_type_name: str -> "Instrument", "Currency", "Transaction PL", "FX-Trade", "Cash In/Out", "Mismatch", "Summary"
+        user_code: str (depend on item_type:  instrument.user_code/currency.user_code)
+        name: str  (depend on item_type:  instrument.name/currency.name)
+        short_name: str (depend on item_type:  instrument.short_name/currency.short_name)
+        detail: str
+        instrument: instrument data
+        currency: currency data
+        portfolio: portfolio data
+        account: account data
+        strategy1: strategyN data
+        strategy2: strategyN data
+        strategy3: strategyN data
+        custom_fields: ->
+            custom_field: simple data
+                name: str
+            value: str/float/date
+        allocation_balance: instrument data
+        allocation_pl: instrument data
+        mismatch: float
+        mismatch_portfolio: portfolio data
+        mismatch_account: account data
+        position_size: float
+        market_value: float
+        cost: float
+        instr_principal: float
+        instr_accrued: float
+        exposure: float
+        principal: float
+        carry: float
+        overheads: float
+        total: float
+        principal_closed: float
+        carry_closed: float
+        overheads_closed: float
+        total_closed: float
+        principal_opened: float
+        carry_opened: float
+        overheads_opened: float
+        total_opened: float
+        principal_fx: float
+        carry_fx: float
+        overheads_fx: float
+        total_fx: float
+        principal_fx_closed: float
+        carry_fx_closed: float
+        overheads_fx_closed: float
+        total_fx_closed: float
+        principal_fx_opened: float
+        carry_fx_opened: float
+        overheads_fx_opened: float
+        total_fx_opened: float
+        principal_fixed: float
+        carry_fixed: float
+        overheads_fixed: float
+        total_fixed: float
+        principal_fixed_closed: float
+        carry_fixed_closed: float
+        overheads_fixed_closed: float
+        total_fixed_closed: float
+        principal_fixed_opened: float
+        carry_fixed_opened: float
+        overheads_fixed_opened: float
+        total_fixed_opened: float
 
 EXAMPLES:
 
