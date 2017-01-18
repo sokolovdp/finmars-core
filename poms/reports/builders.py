@@ -1630,13 +1630,16 @@ class ReportItem(_Base):
         return None
 
     def eval_custom_fields(self):
-        from poms.reports.serializers import ReportItemSerializer
+        # from poms.reports.serializers import ReportItemSerializer
         res = []
         for cf in self.report.custom_fields:
             if cf.expr and self.report.member:
                 try:
-                    names = formula.get_model_data(self, ReportItemSerializer, context={'member': self.report.member,})
-                    value = formula.safe_eval(cf.expr, names=names)
+                    names = {
+                        # 'item': formula.get_model_data(self, ReportItemSerializer, context=context)
+                        'item': self
+                    }
+                    value = formula.safe_eval(cf.expr, names=names, context=self.report.context)
                 except formula.InvalidExpression:
                     value = ugettext('Invalid expression')
             else:
@@ -1690,6 +1693,10 @@ class Report(object):
 
         self.master_user = master_user
         self.member = member
+        self.context = {
+            'master_user': self.master_user,
+            'member': self.member,
+        }
         self.pricing_policy = pricing_policy
         self.report_date = report_date or (date_now() - timedelta(days=1))
         self.report_currency = report_currency or master_user.system_currency

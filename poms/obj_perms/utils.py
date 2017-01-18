@@ -41,6 +41,9 @@ from poms.obj_perms.models import GenericObjectPermission
 
 
 def obj_perms_filter_objects(member, perms, queryset, model_cls=None, prefetch=True):
+    if member is None:
+        return queryset
+
     if member.is_superuser:
         return queryset
 

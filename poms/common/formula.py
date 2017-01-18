@@ -10,7 +10,7 @@ from collections import OrderedDict
 
 from dateutil import relativedelta
 from django.utils import numberformat
-from django.utils.functional import Promise
+from django.utils.functional import Promise, SimpleLazyObject
 
 from poms.common.utils import date_now, isclose
 
@@ -19,7 +19,8 @@ _l = logging.getLogger('poms.formula')
 MAX_STR_LEN = 2000
 # MAX_EXPONENT = 4000000  # highest exponent
 MAX_EXPONENT = 10000  # highest exponent
-MAX_SHIFT = 1000
+# MAX_SHIFT = 1000
+MAX_SHIFT = 10
 MAX_LEN = 1000
 
 
@@ -61,26 +62,6 @@ class _Return(InvalidExpression):
     def __init__(self, value):
         self.value = value
         super(_Return, self).__init__()
-
-
-# def _check_string(a):
-#     if not isinstance(a, str):
-#         raise InvalidExpression('Value error')
-
-
-# def _check_number(a):
-#     if not isinstance(a, (int, float)):
-#         raise InvalidExpression('Value error')
-
-
-# def _check_date(a):
-#     if not isinstance(a, datetime.date):
-#         raise InvalidExpression('Value error')
-
-
-# def _check_timedelta(a):
-#     if not isinstance(a, datetime.timedelta):
-#         raise InvalidExpression('Value error')
 
 
 def _str(a):
@@ -294,57 +275,62 @@ def _get_instrument_accrued_price(evaluator, instrument, date):
     from poms.obj_perms.utils import obj_perms_filter_objects, get_view_perms
 
     if instrument is None or date is None:
-        raise ExpressionEvalError()
-
-    context = evaluator.context
-    imperial_mode = evaluator.imperial_mode
-    if context is None:
-        raise InvalidExpression('context must be defined')
-
-    pk = None
-    user_code = None
-    if isinstance(instrument, dict):
-        pk = instrument['id']
-    elif isinstance(instrument, (int, float)):
-        pk = int(instrument)
-    elif isinstance(instrument, str):
-        user_code = instrument
-
-    if id is None and user_code is None:
-        raise ExpressionEvalError()
-
-    master_user = get_master_user_from_context(context)
-    if master_user is None:
         return 0.0
-    instrument_qs = Instrument.objects.filter(master_user=master_user)
 
-    if imperial_mode:
+    if isinstance(instrument, Instrument):
         pass
     else:
-        member = get_member_from_context(context)
-        if member is None:
-            return 0.0
-        instrument_qs = obj_perms_filter_objects(member, get_view_perms(Instrument), instrument_qs)
+        context = evaluator.context
+        if context is None:
+            raise InvalidExpression('context must be defined')
 
-    if pk is not None:
-        instrument = context.get(('_instrument_get_accrued_price', pk, None), None)
-    elif user_code is not None:
-        instrument = context.get(('_instrument_get_accrued_price', None, user_code), None)
-    # else:
-    #     raise ExpressionEvalError()
-    if instrument is None:
-        try:
-            if pk is not None:
-                instrument = instrument_qs.get(pk=pk)
-            elif user_code is not None:
-                instrument = instrument_qs.get(user_code=user_code)
-                # else:
-                #     raise ExpressionEvalError()
-        except Instrument.DoesNotExist:
+        pk = None
+        user_code = None
+        if isinstance(instrument, dict):
+            pk = instrument['id']
+        elif isinstance(instrument, (int, float)):
+            pk = int(instrument)
+        elif isinstance(instrument, str):
+            user_code = instrument
+
+        if id is None and user_code is None:
             raise ExpressionEvalError()
 
-        context[('_instrument_get_accrued_price', instrument.pk, None)] = instrument
-        context[('_instrument_get_accrued_price', None, instrument.user_code)] = instrument
+        master_user = get_master_user_from_context(context)
+        if master_user is None:
+            return 0.0
+        instrument_qs = Instrument.objects.filter(master_user=master_user)
+
+        # if evaluator.imperial_mode:
+        #     pass
+        # else:
+        #     member = get_member_from_context(context)
+        #     if member is None:
+        #         return 0.0
+        #     instrument_qs = obj_perms_filter_objects(member, get_view_perms(Instrument), instrument_qs)
+        member = get_member_from_context(context)
+        instrument_qs = obj_perms_filter_objects(member, get_view_perms(Instrument), instrument_qs)
+
+        if pk is not None:
+            instrument = context.get(('_instrument_get_accrued_price', pk, None), None)
+        elif user_code is not None:
+            instrument = context.get(('_instrument_get_accrued_price', None, user_code), None)
+        # else:
+        #     raise ExpressionEvalError()
+        if instrument is None:
+            try:
+                if pk is not None:
+                    instrument = instrument_qs.get(pk=pk)
+                elif user_code is not None:
+                    instrument = instrument_qs.get(user_code=user_code)
+                if instrument is not None:
+                    context[('_instrument_get_accrued_price', instrument.pk, None)] = instrument
+                    context[('_instrument_get_accrued_price', None, instrument.user_code)] = instrument
+            except Instrument.DoesNotExist:
+                raise ExpressionEvalError()
+
+    if instrument is None:
+        raise ExpressionEvalError()
 
     if isinstance(date, str):
         date = _parse_date(date)
@@ -438,28 +424,6 @@ OPERATORS = {
     ast.UAdd: lambda a: +a,
     ast.USub: lambda a: -a
 }
-
-
-# OPERATORS = {
-#     ast.Add: _op_add,
-#     ast.Sub: operator.sub,
-#     ast.Mult: _op_mult,
-#     ast.Div: operator.truediv,
-#     ast.Pow: _op_power,
-#     ast.Mod: operator.mod,
-#     ast.Eq: operator.eq,
-#     ast.NotEq: operator.ne,
-#     ast.Gt: operator.gt,
-#     ast.Lt: operator.lt,
-#     ast.GtE: operator.ge,
-#     ast.LtE: operator.le,
-#     ast.USub: operator.neg,
-#     ast.UAdd: operator.pos,
-#     ast.In: _op_in,
-#     ast.Is: operator.is_,
-#     ast.IsNot: operator.is_not,
-#     ast.Not: operator.not_,
-# }
 
 
 class SimpleEval2Def(object):
@@ -556,56 +520,18 @@ FUNCTIONS = [
     SimpleEval2Def('find_name', _find_name),
 ]
 
-# FUNCTIONS = {
-#     'str': _WrapDef('str', _str),
-#     'upper': _WrapDef('upper', _upper),
-#     'lower': _WrapDef('lower', _lower),
-#     'contains': _WrapDef('contains', _contains),
-#
-#     'int': _WrapDef('int', _int),
-#     'float': _WrapDef('float', _float),
-#     'round': _WrapDef('round', _round),
-#     'trunc': _WrapDef('trunc', _trunc),
-#     'isclose': _WrapDef('isclose', _isclose),
-#     'random': _WrapDef('random', _random),
-#
-#     'iff': _WrapDef('iff', _iff),
-#     'len': _WrapDef('len', _len),
-#     'range': _WrapDef('range', _range),
-#
-#     'now': _WrapDef('now', _now),
-#     'date': _WrapDef('date', _date),
-#     'isleap': _WrapDef('isleap', _isleap),
-#     'days': _WrapDef('days', _days),
-#     'weeks': _WrapDef('weeks', _weeks),
-#     'months': _WrapDef('months', _months),
-#     'timedelta': _WrapDef('timedelta', _timedelta),
-#     'add_days': _WrapDef('add_days', _add_days),
-#     'add_weeks': _WrapDef('add_weeks', _add_weeks),
-#     'add_workdays': _WrapDef('add_workdays', _add_workdays),
-#     'format_date': _WrapDef('format_date', _format_date),
-#     'parse_date': _WrapDef('parse_date', _parse_date),
-#
-#     'format_number': _WrapDef('format_number', _format_number),
-#     'parse_number': _WrapDef('parse_number', _parse_number),
-#
-#     'simple_price': _WrapDef('simple_price', _simple_price),
-# }
-
-
 empty = object()
 
 
 class SimpleEval2(object):
-    def __init__(self, names=None, max_time=None, add_print=False, allow_assign=False, now=None,
-                 imperial_mode=False, context=None):
+    def __init__(self, names=None, max_time=None, add_print=False, allow_assign=False, now=None, context=None):
         self.max_time = max_time or 1  # one second
         # self.max_time = 10000000000
         self.start_time = 0
         self.tik_time = 0
         self.allow_assign = allow_assign
-        self.imperial_mode = imperial_mode
-        self.context = context
+        self.context = context if context is not None else {}
+        # self.imperial_mode = context.get('imperial_mode', False)
 
         self.expr = None
         self.expr_ast = None
@@ -645,11 +571,32 @@ class SimpleEval2(object):
         except:
             return False
 
-    def find_name(self, name):
+    def _find_name(self, name):
+
         try:
-            return self._table[name]
+            val = self._table[name]
+            val = self._check_value(val)
+            return val
         except KeyError:
             raise NameNotDefined(name)
+
+    def _check_value(self, val):
+        from django.db import models
+
+        if val is None:
+            return None
+        elif isinstance(val, (bool, int, str, list, tuple, dict, OrderedDict, datetime.date)):
+            return val
+        elif isinstance(val, models.Model):
+            # return get_model_data_ext(val, many=False, context=self.context)
+            key = (type, val.pk)
+            if key in self._table:
+                val = self._table[key]
+            else:
+                val = get_model_data_ext(val, many=False, context=self.context)
+                self._table[key] = val
+            return val
+        return val
 
     def eval(self, expr, names=None):
         if not expr:
@@ -668,8 +615,10 @@ class SimpleEval2(object):
             self.result = self._eval(self.expr_ast.body)
             return self.result
         except InvalidExpression:
+            _l.debug('InvalidExpression', exc_info=True)
             raise
         except Exception as e:
+            _l.debug('Exception', exc_info=True)
             raise ExpressionEvalError(e)
         finally:
             self._table = save_table
@@ -680,102 +629,17 @@ class SimpleEval2(object):
         if self.tik_time - self.start_time > self.max_time:
             raise InvalidExpression("Execution exceeded time limit, max runtime is %s" % self.max_time)
 
-        # if isinstance(node, (list, tuple)):
-        #     return self._on_many(node)
-        #
-        # elif isinstance(node, ast.Assign):
-        #     return self._on_ast_Assign(node)
-        #
-        # elif isinstance(node, ast.If):
-        #     return self._on_ast_If(node)
-        #
-        # elif isinstance(node, ast.For):
-        #     return self._on_ast_For(node)
-        #
-        # elif isinstance(node, ast.While):
-        #     return self._on_ast_While(node)
-        #
-        # elif isinstance(node, ast.Break):
-        #     return self._on_ast_Break(node)
-        #
-        # elif isinstance(node, ast.FunctionDef):
-        #     return self._on_ast_FunctionDef(node)
-        #
-        # elif isinstance(node, ast.Pass):
-        #     return self._on_ast_Pass(node)
-        #
-        # elif isinstance(node, ast.Try):
-        #     return self._on_ast_Try(node)
-        #
-        # elif isinstance(node, ast.Num):  # <number>
-        #     return self._on_ast_Num(node)
-        #
-        # elif isinstance(node, ast.Str):  # <string>
-        #     return self._on_ast_Str(node)
-        #
-        # # python 3 compatibility:
-        # elif hasattr(ast, 'NameConstant') and isinstance(node, ast.NameConstant):  # <bool>
-        #     return self._on_ast_NameConstant(node)
-        #
-        # elif isinstance(node, ast.Dict):
-        #     return self._on_ast_Dict(node)
-        #
-        # elif isinstance(node, ast.List):
-        #     return self._on_ast_List(node)
-        #
-        # elif isinstance(node, ast.Tuple):
-        #     return self._on_ast_Tuple(node)
-        #
-        # elif isinstance(node, ast.Set):
-        #     return self._on_ast_Set(node)
-        #
-        # elif isinstance(node, ast.UnaryOp):  # - and + etc.
-        #     return self._on_ast_UnaryOp(node)
-        #
-        # elif isinstance(node, ast.BinOp):  # <left> <operator> <right>
-        #     return self._on_ast_BinOp(node)
-        #
-        # elif isinstance(node, ast.BoolOp):  # and & or...
-        #     return self._on_ast_BoolOp(node)
-        #
-        # elif isinstance(node, ast.Compare):  # 1 < 2, a == b...
-        #     return self._on_ast_Compare(node)
-        #
-        # elif isinstance(node, ast.IfExp):  # x if y else z
-        #     return self._on_ast_IfExp(node)
-        #
-        # elif isinstance(node, ast.Call):  # function...
-        #     return self._on_ast_Call(node)
-        #
-        # elif isinstance(node, ast.Return):
-        #     return self._on_ast_Return(node)
-        #
-        # elif isinstance(node, ast.Name):  # a, b, c...
-        #     return self._on_ast_Name(node)
-        #
-        # elif isinstance(node, ast.Subscript):  # b[1]
-        #     return self._on_ast_Subscript(node)
-        #
-        # elif isinstance(node, ast.Attribute):  # a.b.c
-        #     return self._on_ast_Attribute(node)
-        #
-        # elif isinstance(node, ast.Index):
-        #     return self._on_ast_Index(node)
-        #
-        # elif isinstance(node, ast.Expr):
-        #     return self._on_ast_Expr(node)
-        #
-        # else:
-        #     raise InvalidExpression("Sorry, %s is not available in this evaluator" % type(node).__name__)
-
-        if isinstance(node, (list, tuple)):
-            return self._on_many(node)
-        else:
-            op = '_on_ast_%s' % type(node).__name__
-            if hasattr(self, op):
-                return getattr(self, op)(node)
+        try:
+            if isinstance(node, (list, tuple)):
+                return self._on_many(node)
             else:
-                raise InvalidExpression("Sorry, %s is not available in this evaluator" % type(node).__name__)
+                op = '_on_ast_%s' % type(node).__name__
+                if hasattr(self, op):
+                    return getattr(self, op)(node)
+        except _Return as e:
+            return e.value
+
+        raise InvalidExpression("Sorry, %s is not available in this evaluator" % type(node).__name__)
 
     def _on_many(self, node):
         ret = None
@@ -939,14 +803,16 @@ class SimpleEval2(object):
         raise _Return(val)
 
     def _on_ast_Name(self, node):
-        ret = self.find_name(node.id)
+        ret = self._find_name(node.id)
         return ret
 
     def _on_ast_Subscript(self, node):
         val = self._eval(node.value)
         index_or_key = self._eval(node.slice)
         try:
-            return val[index_or_key]
+            val = val[index_or_key]
+            val = self._check_value(val)
+            return val
         except KeyError:
             return None
 
@@ -982,122 +848,6 @@ class SimpleEval2(object):
         return self._eval(node.value)
 
 
-# class ModelSimpleEval(SimpleEval2):
-#     def __init__(self, *args, **kwargs):
-#         self.member = kwargs.pop('member')
-#         super(ModelSimpleEval, self).__init__(*args, **kwargs)
-#
-#     def _on_ast_Subscript(self, node):
-#         val = self._eval(node.value)
-#
-#         # from django.db import models
-#         # if isinstance(val, (models.Manager, models.QuerySet)):
-#         #     if isinstance(val, models.Manager):
-#         #         val = val.all()
-#         #     pass
-#         val = self._filter_value(val, wrap=False)
-#
-#         try:
-#             return val[self._eval(node.slice)]
-#         except KeyError:
-#             return None
-#
-#     def _on_ast_Attribute(self, node, val=empty):
-#         from django.db import models
-#         from poms.obj_perms.utils import has_view_perms
-#
-#         val = self._eval(node.value)
-#         if isinstance(val, (models.Manager, models.QuerySet)):
-#             if isinstance(val, models.Manager):
-#                 val = val.all()
-#             val = self._filter_value(val, wrap=True)
-#             return val
-#
-#         elif isinstance(val, models.Model):
-#             rejected = False
-#             if self._has_object_permission(val):
-#                 if has_view_perms(self.member, val):
-#                     pass
-#                 else:
-#                     if node.attr in ['id', 'public_name', 'display_name']:
-#                         pass
-#                     else:
-#                         rejected = True
-#
-#             self._check_field(val, node.attr)
-#
-#             if node.attr == 'display_name':
-#                 if rejected:
-#                     res = getattr(val, 'public_name', None)
-#                 else:
-#                     res = getattr(val, 'name', None)
-#             else:
-#                 res = getattr(val, node.attr)
-#                 if rejected:
-#                     return None
-#
-#                 res = self._filter_value(res, wrap=True)
-#                 if node.attr == 'attributes':
-#                     if rejected:
-#                         res = None
-#                     else:
-#                         res = {a.attribute_type.name: a for a in res if has_view_perms(self.member, a.attribute_type)}
-#
-#             if callable(res):
-#                 raise AttributeDoesNotExist(node.attr)
-#
-#             return None if rejected else res
-#
-#         return super(ModelSimpleEval, self)._on_ast_Attribute(node, val=val)
-#
-#     def _filter_value(self, val, wrap=False):
-#         from django.db import models
-#
-#         if isinstance(val, (models.Manager, models.QuerySet)):
-#             if isinstance(val, models.Manager):
-#                 val = val.all()
-#             if self._has_object_permission(val.model):
-#                 # use prefetched permissions!
-#                 from poms.obj_perms.utils import has_view_perms
-#                 return [
-#                     o for o in val if has_view_perms(self.member, o)
-#                     ]
-#             if wrap:
-#                 return list(val)
-#
-#         return val
-#
-#     def _has_object_permission(self, model_or_instance):
-#         from django.db import models
-#
-#         if isinstance(model_or_instance, models.Model):
-#             model = model_or_instance.__class__
-#         else:
-#             model = model_or_instance
-#         try:
-#             model._meta.get_field('object_permissions')
-#             return True
-#         except models.FieldDoesNotExist:
-#             return False
-#
-#     def _check_field(self, obj, name):
-#         from django.db import models
-#         from poms.obj_attrs.models import GenericAttribute
-#
-#         try:
-#             field = obj._meta.get_field(name)
-#             if field.many_to_many or field.one_to_many or field.one_to_one:
-#                 if field.name != 'attributes':
-#                     raise AttributeDoesNotExist(name)
-#         except models.FieldDoesNotExist:
-#             if isinstance(obj, GenericAttribute):
-#                 if name == 'value':
-#                     return
-#             if name == 'display_name':
-#                 return
-#             raise
-
-
 def validate(expr):
     from rest_framework.exceptions import ValidationError
     try:
@@ -1107,10 +857,9 @@ def validate(expr):
         raise ValidationError('Invalid expression: %s' % e)
 
 
-def safe_eval(s, names=None, max_time=None, add_print=False, allow_assign=False, now=None,
-              imperial_mode=False, context=None):
+def safe_eval(s, names=None, max_time=None, add_print=False, allow_assign=False, now=None, context=None):
     e = SimpleEval2(names=names, max_time=max_time, add_print=add_print, allow_assign=allow_assign, now=now,
-                    imperial_mode=imperial_mode, context=context)
+                    context=context)
     return e.eval(s)
 
 
@@ -1149,9 +898,6 @@ def value_prepare(orig):
             ret.append(_value(v))
         return ret
 
-    def _tuple(data):
-        return tuple(_list(data))
-
     def _value(data):
         if data is None:
             return None
@@ -1159,25 +905,84 @@ def value_prepare(orig):
             return str(data)
         elif isinstance(data, (dict, OrderedDict)):
             return _dict(data)
-        elif isinstance(data, list):
+        elif isinstance(data, (list, tuple, set)):
             return _list(data)
-        elif isinstance(data, tuple):
-            return _tuple(data)
         return data
 
     return _value(orig)
 
 
 def get_model_data(val, serializer_class, many=False, context=None, hide_fields=None):
-    serializer = serializer_class(instance=val, many=many, context=context)
-    if hide_fields:
-        for f in hide_fields:
-            serializer.fields.pop(f)
-    data = serializer.data
-    data = value_prepare(data)
-    # import json
-    # print(json.dumps(data, indent=2))
-    return data
+    def _dumps():
+        serializer = serializer_class(instance=val, many=many, context=context)
+        if hide_fields:
+            for f in hide_fields:
+                serializer.fields.pop(f)
+        data = serializer.data
+        data = value_prepare(data)
+        # import json
+        # print(json.dumps(data, indent=2))
+        return data
+
+    return SimpleLazyObject(_dumps)
+
+
+def _get_supported_models_serializer_class():
+    from poms.accounts.models import Account
+    from poms.accounts.serializers import AccountSerializer
+    from poms.counterparties.models import Counterparty, Responsible
+    from poms.counterparties.serializers import CounterpartySerializer, ResponsibleSerializer
+    from poms.instruments.models import Instrument, DailyPricingModel, PaymentSizeDetail
+    from poms.instruments.serializers import InstrumentSerializer, DailyPricingModelSerializer, \
+        PaymentSizeDetailSerializer
+    from poms.currencies.models import Currency
+    from poms.currencies.serializers import CurrencySerializer
+    from poms.portfolios.models import Portfolio
+    from poms.portfolios.serializers import PortfolioSerializer
+    from poms.strategies.models import Strategy1, Strategy2, Strategy3
+    from poms.strategies.serializers import Strategy1Serializer, Strategy2Serializer, Strategy3Serializer
+    from poms.integrations.models import PriceDownloadScheme
+    from poms.integrations.serializers import PriceDownloadSchemeSerializer
+    from poms.transactions.models import Transaction
+    from poms.transactions.serializers import TransactionTextRenderSerializer
+    from poms.reports.builders import ReportItem
+    from poms.reports.serializers import ReportItemDetailRendererSerializer
+    return {
+        Account: AccountSerializer,
+        Counterparty: CounterpartySerializer,
+        Responsible: ResponsibleSerializer,
+        Instrument: InstrumentSerializer,
+        Currency: CurrencySerializer,
+        Portfolio: PortfolioSerializer,
+        Strategy1: Strategy1Serializer,
+        Strategy2: Strategy2Serializer,
+        Strategy3: Strategy3Serializer,
+        DailyPricingModel: DailyPricingModelSerializer,
+        PaymentSizeDetail: PaymentSizeDetailSerializer,
+        PriceDownloadScheme: PriceDownloadSchemeSerializer,
+        Transaction: TransactionTextRenderSerializer,
+        ReportItem: ReportItemDetailRendererSerializer,
+    }
+
+
+_supported_models_serializer_class = SimpleLazyObject(_get_supported_models_serializer_class)
+
+
+def get_model_data_ext(instance, many=False, context=None, hide_fields=None):
+    if many:
+        if not instance:
+            return []
+        model = instance[0].__class__
+    else:
+        if not instance:
+            return None
+        model = instance.__class__
+
+    try:
+        serializer_class = _supported_models_serializer_class[model]
+    except KeyError:
+        raise InvalidExpression()
+    return get_model_data(instance, serializer_class, many=many, context=context, hide_fields=hide_fields)
 
 
 HELP = """
@@ -1698,71 +1503,42 @@ accrual_NL_365_NO_EOM(date(2000, 1, 1), date(2000, 1, 25))
     def model_access_test():
         from poms.users.models import Member
         from poms.transactions.models import Transaction
-
-        member = Member.objects.get(pk=1)  # a
-        # member = Member.objects.get(pk=4)  # b
-
-        # ts_qs = Transaction.objects
-        from poms.obj_attrs.utils import get_attributes_prefetch
-        from poms.obj_perms.utils import get_permissions_prefetch_lookups
-        from poms.accounts.models import Account, AccountType
+        from poms.accounts.models import Account
         from poms.instruments.models import Instrument
 
-        ts_qs = Transaction.objects.select_related(
-            'account_cash', 'account_cash__type',
-            'account_position', 'account_position__type',
-            'account_interim', 'account_interim__type',
-        ).prefetch_related(
-            get_attributes_prefetch(),
-            *get_permissions_prefetch_lookups(
-                ('account_cash', Account),
-                ('account_cash__type', AccountType),
-                ('account_position', Account),
-                ('account_position__type', AccountType),
-                ('account_interim', Account),
-                ('account_interim__type', AccountType),
-            )
-        )
+        from poms.users.models import Member
+        member = Member.objects.get(user__username='a')
+        master_user = member.master_user
+        context = {
+            'master_user': master_user,
+            'member': member,
+        }
 
         names = {
             # 'transactions': ts_qs,
-            'transactions': list(ts_qs),
-            'transaction': ts_qs.first(),
-            'account': Account.objects.get(pk=1),
-            'instrument': Instrument.objects.get(pk=1),
+            'transactions': list(Transaction.objects.filter(master_user=master_user)),
+            'transaction': Transaction.objects.filter(master_user=master_user).first(),
+            'accounts': list(Account.objects.filter(master_user=master_user)),
+            'account': Account.objects.filter(master_user=master_user).first(),
+            'instruments': list(Instrument.objects.filter(master_user=master_user)),
+            'instrument': Instrument.objects.filter(master_user=master_user).first(),
+            'instrument1': Instrument.objects.filter(master_user=master_user).first(),
         }
 
         _l.info('---------')
+        # _l.info(safe_eval('instrument', names=names, context=context))
+        # _l.info(safe_eval('instrument1', names=names, context=context))
+        # _l.info(safe_eval('instrument1.price_multiplier', names=names, context=context))
+        # _l.info(safe_eval('instrument1.price_multiplier * instrument1.price_multiplier', names=names, context=context))
+        # _l.info(safe_eval('instrument1["price_multiplier"]', names=names, context=context))
+        # _l.info(safe_eval('return instruments', names=names, context=context))
+        # _l.info(safe_eval('instruments[0].price_multiplier', names=names, context=context))
+        _l.info(safe_eval('transactions[0].instrument.user_code', names=names, context=context))
 
-        # seval = ModelSimpleEval(names=names, add_print=True, allow_assign=False, member=member)
-        # _l.info(seval.eval('transactions1'))
-        # _l.info(seval.eval('transactions1[0]'))
-        # _l.info(seval.eval('transactions2'))
-        # _l.info(seval.eval('transactions2[0]'))
-        # _l.info(seval.eval('transaction.transaction_class'))
-        # _l.info(seval.eval('transactions[0].attributes'))
-        # _l.info(seval.eval('transactions[0].attributes["SomeNumber"]'))
-        # _l.info(seval.eval('transactions[0].attributes.SomeNumber'))
-        # _l.info(seval.eval('transactions[0].attributes["SomeNumber"].value'))
-        # _l.info(seval.eval('transaction.account_position.user_code or transaction.account_position.public_name'))
-        # _l.info(seval.eval('find_name(transaction.account_position.user_code, transaction.account_position.public_name)'))
-        # _l.info(seval.eval('find_name(transaction.account_cash.user_code, transaction.account_cash.public_name)'))
-        # _l.info(seval.eval('find_name(transaction.account_interim.user_code, transaction.account_interim.public_name)'))
-        # _l.info(seval.eval('account.tags'))
-        # _l.info(seval.eval('account.object_permissions'))
-        # _l.info(seval.eval('account.attributes'))
-        # _l.info(seval.eval('account.attributes["SomeString"].value'))
-        # _l.info(seval.eval('instrument.attributes'))
-        # _l.info(seval.eval('instrument.prices'))
-        # _l.info(seval.eval('instrument.maturity_date'))
-        # _l.info(seval.eval('instrument.maturity_date.year'))
-        # _l.info(seval.eval('a = 3'))
-        # _l.info(seval.eval('None or "a"'))
-        # _l.info(seval.eval('"b" or "a"'))
         pass
 
 
-    # model_access_test()
+    model_access_test()
     pass
 
 
@@ -1786,10 +1562,10 @@ accrual_NL_365_NO_EOM(date(2000, 1, 1), date(2000, 1, 25))
             'member': member,
         }))
 
-        _l.info(safe_eval('get_instrument_accrued_price("testaccruals", "2010-03-10")', imperial_mode=True, context={
+        _l.info(safe_eval('get_instrument_accrued_price("testaccruals", "2010-03-10")', context={
             'master_user': master_user,
         }))
 
 
-    accrued_test()
+    # accrued_test()
     pass

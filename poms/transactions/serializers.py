@@ -913,17 +913,19 @@ class ComplexTransactionMixin:
             if obj.transaction_type_id is None:
                 obj._cached_text = ''
             else:
-                names = {
-                    'complex_transaction': {
-                        'code': obj.code,
-                        'date': obj.date,
-                    },
-                    'transactions': formula.get_model_data(transactions, TransactionTextRenderSerializer, many=True,
-                                                           context=self.context),
-                }
                 if obj.transaction_type.display_expr:
+                    names = {
+                        'complex_transaction': {
+                            'code': obj.code,
+                            'date': obj.date,
+                        },
+                        # 'transactions': formula.get_model_data(transactions, TransactionTextRenderSerializer, many=True,
+                        #                                        context=self.context),
+                        'transactions': transactions,
+                    }
                     try:
-                        obj._cached_text = formula.safe_eval(obj.transaction_type.display_expr, names=names)
+                        obj._cached_text = formula.safe_eval(obj.transaction_type.display_expr, names=names,
+                                                             context=self.context)
                     except formula.InvalidExpression:
                         obj._cached_text = '<InvalidExpression>'
                 else:
