@@ -1351,8 +1351,12 @@ class ReportItem(_Base):
             self.market_value_res = self.pos_size * self.ccy_cur_fx
 
         elif self.type == ReportItem.TYPE_INSTRUMENT:
-            self.instr_principal_res = self.pos_size * self.instr.price_multiplier * self.instr_price_cur_principal_price * self.instr_pricing_ccy_cur_fx
-            self.instr_accrued_res = self.pos_size * self.instr.accrued_multiplier * self.instr_price_cur_accrued_price * self.instr_pricing_ccy_cur_fx
+            if self.instr:
+                self.instr_principal_res = self.pos_size * self.instr.price_multiplier * self.instr_price_cur_principal_price * self.instr_pricing_ccy_cur_fx
+                self.instr_accrued_res = self.pos_size * self.instr.accrued_multiplier * self.instr_price_cur_accrued_price * self.instr_pricing_ccy_cur_fx
+            else:
+                self.instr_principal_res = 0.0
+                self.instr_accrued_res = 0.0
             self.exposure_res = self.instr_principal_res + self.instr_accrued_res
 
             self.market_value_res = self.instr_principal_res + self.instr_accrued_res
