@@ -203,6 +203,9 @@ def process_events(master_users=None):
 
     for master_user in master_user_qs:
         _l.debug('process_events: master_user=%s', master_user.id)
+        context = {
+            'master_user': master_user,
+        }
         with transaction.atomic():
             generated_event_qs = GeneratedEvent.objects.filter(
                 master_user=master_user,
@@ -266,7 +269,7 @@ def process_events(master_users=None):
                                   None)
                     if action:
                         ttp = GeneratedEventProcess(generated_event=generated_event, action=action, calculate=True,
-                                                    store=True, imperial_mode=True)
+                                                    store=True, context=context)
                         ttp.process()
                         generated_event.processed(None, action, ttp.complex_transaction)
                     else:

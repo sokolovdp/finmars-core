@@ -1351,8 +1351,12 @@ class ReportItem(_Base):
             self.market_value_res = self.pos_size * self.ccy_cur_fx
 
         elif self.type == ReportItem.TYPE_INSTRUMENT:
-            self.instr_principal_res = self.pos_size * self.instr.price_multiplier * self.instr_price_cur_principal_price * self.instr_pricing_ccy_cur_fx
-            self.instr_accrued_res = self.pos_size * self.instr.accrued_multiplier * self.instr_price_cur_accrued_price * self.instr_pricing_ccy_cur_fx
+            if self.instr:
+                self.instr_principal_res = self.pos_size * self.instr.price_multiplier * self.instr_price_cur_principal_price * self.instr_pricing_ccy_cur_fx
+                self.instr_accrued_res = self.pos_size * self.instr.accrued_multiplier * self.instr_price_cur_accrued_price * self.instr_pricing_ccy_cur_fx
+            else:
+                self.instr_principal_res = 0.0
+                self.instr_accrued_res = 0.0
             self.exposure_res = self.instr_principal_res + self.instr_accrued_res
 
             self.market_value_res = self.instr_principal_res + self.instr_accrued_res
@@ -1630,13 +1634,16 @@ class ReportItem(_Base):
         return None
 
     def eval_custom_fields(self):
-        from poms.reports.serializers import ReportItemSerializer
+        # from poms.reports.serializers import ReportItemSerializer
         res = []
         for cf in self.report.custom_fields:
             if cf.expr and self.report.member:
                 try:
-                    names = formula.get_model_data(self, ReportItemSerializer, context={'member': self.report.member,})
-                    value = formula.safe_eval(cf.expr, names=names)
+                    names = {
+                        # 'item': formula.get_model_data(self, ReportItemSerializer, context=context)
+                        'item': self
+                    }
+                    value = formula.safe_eval(cf.expr, names=names, context=self.report.context)
                 except formula.InvalidExpression:
                     value = ugettext('Invalid expression')
             else:
@@ -1690,6 +1697,10 @@ class Report(object):
 
         self.master_user = master_user
         self.member = member
+        self.context = {
+            'master_user': self.master_user,
+            'member': self.member,
+        }
         self.pricing_policy = pricing_policy
         self.report_date = report_date or (date_now() - timedelta(days=1))
         self.report_currency = report_currency or master_user.system_currency

@@ -601,21 +601,29 @@ class GeneratedEventSerializer(serializers.ModelSerializer):
             obj = self._current_instance
         names.update({
             # 'event': obj,
-            'effective_date': serializers.DateField().to_representation(obj.effective_date),
-            'notification_date': serializers.DateField().to_representation(obj.notification_date),
+            # 'effective_date': serializers.DateField().to_representation(obj.effective_date),
+            # 'notification_date': serializers.DateField().to_representation(obj.notification_date),
+            'effective_date': obj.effective_date,
+            'notification_date': obj.notification_date,
             # 'event_schedule': obj.event_schedule,
-            'instrument':  formula.get_model_data(obj.instrument, InstrumentViewSerializer, context=self.context),
-            'portfolio': formula.get_model_data(obj.portfolio, PortfolioViewSerializer, context=self.context),
-            'account': formula.get_model_data(obj.account, AccountViewSerializer, context=self.context),
-            'strategy1': formula.get_model_data(obj.strategy1, Strategy1ViewSerializer, context=self.context),
-            'strategy2': formula.get_model_data(obj.strategy2, Strategy2ViewSerializer, context=self.context),
-            'strategy3': formula.get_model_data(obj.strategy3, Strategy3ViewSerializer, context=self.context),
+            # 'instrument':  formula.get_model_data(obj.instrument, InstrumentViewSerializer, context=self.context),
+            # 'portfolio': formula.get_model_data(obj.portfolio, PortfolioViewSerializer, context=self.context),
+            # 'account': formula.get_model_data(obj.account, AccountViewSerializer, context=self.context),
+            # 'strategy1': formula.get_model_data(obj.strategy1, Strategy1ViewSerializer, context=self.context),
+            # 'strategy2': formula.get_model_data(obj.strategy2, Strategy2ViewSerializer, context=self.context),
+            # 'strategy3': formula.get_model_data(obj.strategy3, Strategy3ViewSerializer, context=self.context),
+            'instrument':  obj.instrument,
+            'portfolio': obj.portfolio,
+            'account': obj.account,
+            'strategy1': obj.strategy1,
+            'strategy2': obj.strategy2,
+            'strategy3': obj.strategy3,
             'position': obj.position,
         })
         # import json
         # print(json.dumps(names, indent=2))
         try:
-            return formula.safe_eval(exr, names=names)
+            return formula.safe_eval(exr, names=names, context=self.context)
         except formula.InvalidExpression as e:
             return '<InvalidExpression>'
 

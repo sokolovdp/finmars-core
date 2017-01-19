@@ -77,7 +77,7 @@ class ExpressionSerializer(serializers.Serializer):
             names2 = attrs.get('names2', None)
             if names2:
                 try:
-                    names2 = formula.safe_eval(names2)
+                    names2 = formula.safe_eval(names2, context=self.context)
                 except formula.InvalidExpression as e:
                     raise ValidationError({'names2': ugettext_lazy('Invalid expression.')})
             names = {}
@@ -87,7 +87,7 @@ class ExpressionSerializer(serializers.Serializer):
                 names.update(names2)
             attrs['names'] = names
             try:
-                attrs['result'] = formula.safe_eval(expression, names)
+                attrs['result'] = formula.safe_eval(expression, names, context=self.context)
             except formula.InvalidExpression as e:
                 raise ValidationError({'expression': ugettext_lazy('Invalid expression.')})
         return attrs

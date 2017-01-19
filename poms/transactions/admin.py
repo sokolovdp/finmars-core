@@ -212,9 +212,10 @@ class TransactionTypeActionTransactionInline(admin.StackedInline):
         'reference_fx_rate',
         'factor',
         'trade_price',
-        'principal_amount',
-        'carry_amount',
-        'overheads',
+        'position_amount',
+        ('principal_amount', 'carry_amount', 'overheads'),
+
+        'notes',
     )
     raw_id_fields = (
         'portfolio', 'portfolio_input',
@@ -384,7 +385,7 @@ class TransactionAdmin(AbstractModelAdmin):
         'allocation_balance', 'allocation_pl',
     ]
     search_fields = ['id']
-    list_filter = ['is_deleted', 'transaction_date',]
+    list_filter = ['is_deleted', 'transaction_date', ]
     date_hierarchy = 'transaction_date'
     raw_id_fields = ['master_user', 'complex_transaction',
                      'instrument', 'transaction_currency',
@@ -420,7 +421,9 @@ class TransactionAdmin(AbstractModelAdmin):
         'reference_fx_rate',
         ('is_locked', 'is_deleted'),
         ('factor', 'trade_price'),
+        'position_amount',
         ('principal_amount', 'carry_amount', 'overheads'),
+        'notes',
     )
     save_as = True
 

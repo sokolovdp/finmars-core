@@ -27,8 +27,8 @@ class GeneratedEventProcess(TransactionTypeProcess):
         else:
             kwargs['complex_transaction_status'] = ComplexTransaction.PRODUCTION
 
-        context = kwargs.get('context', None) or {}
-        if 'master_user' not in context:
-            context['master_user'] = generated_event.master_user
+        # context = kwargs.get('context', None) or {}
+        # if 'master_user' not in context:
+        #     context['master_user'] = generated_event.master_user
 
         super(GeneratedEventProcess, self).__init__(**kwargs)

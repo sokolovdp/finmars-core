@@ -403,9 +403,12 @@ class ReportItemSerializer(serializers.Serializer):
         if obj.detail_trn:
             expr = obj.acc.type.transaction_details_expr
             if expr:
-                obj_data = formula.get_model_data(obj, ReportItemDetailRendererSerializer, context=self.context)
+                names = {
+                    # 'item': formula.get_model_data(obj, ReportItemDetailRendererSerializer, context=self.context),
+                    'item': obj,
+                }
                 try:
-                    value = formula.safe_eval(expr, names={'item': obj_data})
+                    value = formula.safe_eval(expr, names=names, context=self.context)
                 except formula.InvalidExpression:
                     value = ugettext('Invalid expression')
                 return value

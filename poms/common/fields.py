@@ -109,7 +109,7 @@ class FloatEvalField(FloatField):
         if data is not None:
             try:
                 expr = str(data)
-                return formula.safe_eval(expr)
+                return formula.safe_eval(expr, context=self.context)
             except (formula.InvalidExpression, ArithmeticError):
                 raise ValidationError(ugettext_lazy('Invalid expression.'))
 

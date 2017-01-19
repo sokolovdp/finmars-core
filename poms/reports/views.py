@@ -1,11 +1,12 @@
 from __future__ import unicode_literals
 
+import logging
+
 from celery.result import AsyncResult
 from django.core.signing import TimestampSigner
 from rest_framework import status
 from rest_framework.exceptions import PermissionDenied
 from rest_framework.filters import FilterSet
-from rest_framework.renderers import JSONRenderer
 from rest_framework.response import Response
 
 from poms.common.filters import NoOpFilter, CharFilter
@@ -15,6 +16,9 @@ from poms.reports.serializers import CustomFieldSerializer, ReportSerializer, Tr
     CashFlowProjectionReportSerializer
 from poms.reports.tasks import build_report, transaction_report, cash_flow_projection_report, transaction_report_json
 from poms.users.filters import OwnerByMasterUserFilter
+
+
+_l = logging.getLogger('poms.reports')
 
 
 class CustomFieldFilterSet(FilterSet):
