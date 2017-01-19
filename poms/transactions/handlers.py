@@ -374,12 +374,23 @@ class TransactionTypeProcess(object):
                 self._set_val(errors=errors, values=self.values, default_value=0.0,
                               target=transaction, target_attr_name='trade_price',
                               source=action_transaction, source_attr_name='trade_price')
+
+                self._set_val(errors=errors, values=self.values, default_value=0.0,
+                              target=transaction, target_attr_name='position_amount',
+                              source=action_transaction, source_attr_name='position_amount')
                 self._set_val(errors=errors, values=self.values, default_value=0.0,
                               target=transaction, target_attr_name='principal_amount',
                               source=action_transaction, source_attr_name='principal_amount')
                 self._set_val(errors=errors, values=self.values, default_value=0.0,
                               target=transaction, target_attr_name='carry_amount',
                               source=action_transaction, source_attr_name='carry_amount')
+                self._set_val(errors=errors, values=self.values, default_value=0.0,
+                              target=transaction, target_attr_name='overheads',
+                              source=action_transaction, source_attr_name='overheads')
+
+                self._set_val(errors=errors, values=self.values, default_value='',
+                              target=transaction, target_attr_name='notes',
+                              source=action_transaction, source_attr_name='notes')
 
                 if transaction.accounting_date is None:
                     transaction.accounting_date = self._now

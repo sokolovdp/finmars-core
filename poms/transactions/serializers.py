@@ -233,11 +233,11 @@ class TransactionTypeInputSerializer(serializers.ModelSerializer):
 
 
 class TransactionTypeActionInstrumentSerializer(serializers.ModelSerializer):
-    user_code = ExpressionField(required=False, allow_blank=True, default='""')
-    name = ExpressionField(required=False, allow_blank=True, default='""')
-    public_name = ExpressionField(required=False, allow_blank=True, default='""')
-    short_name = ExpressionField(required=False, allow_blank=True, default='""')
-    notes = ExpressionField(required=False, allow_blank=True, default='""')
+    user_code = ExpressionField(required=False, allow_blank=True, default='')
+    name = ExpressionField(required=False, allow_blank=True, default='')
+    public_name = ExpressionField(required=False, allow_blank=True, default='')
+    short_name = ExpressionField(required=False, allow_blank=True, default='')
+    notes = ExpressionField(required=False, allow_blank=True, default='')
 
     instrument_type = InstrumentTypeField(required=False, allow_null=True)
     instrument_type_input = TransactionInputField(required=False, allow_null=True)
@@ -249,11 +249,11 @@ class TransactionTypeActionInstrumentSerializer(serializers.ModelSerializer):
     accrued_multiplier = ExpressionField(required=False, default="1.0")
     default_price = ExpressionField(required=False, default="0.0")
     default_accrued = ExpressionField(required=False, default="0.0")
-    user_text_1 = ExpressionField(required=False, allow_blank=True, default='""')
-    user_text_2 = ExpressionField(required=False, allow_blank=True, default='""')
-    user_text_3 = ExpressionField(required=False, allow_blank=True, default='""')
+    user_text_1 = ExpressionField(required=False, allow_blank=True, default='')
+    user_text_2 = ExpressionField(required=False, allow_blank=True, default='')
+    user_text_3 = ExpressionField(required=False, allow_blank=True, default='')
 
-    reference_for_pricing = ExpressionField(required=False, allow_blank=True, default='""')
+    reference_for_pricing = ExpressionField(required=False, allow_blank=True, default='')
     daily_pricing_model_input = TransactionInputField(required=False, allow_null=True)
     payment_size_detail_input = TransactionInputField(required=False, allow_null=True)
     price_download_scheme = PriceDownloadSchemeField(required=False, allow_null=True)
@@ -375,9 +375,12 @@ class TransactionTypeActionTransactionSerializer(serializers.ModelSerializer):
     reference_fx_rate = ExpressionField(required=False, default="0.0")
     factor = ExpressionField(required=False, default="0.0")
     trade_price = ExpressionField(required=False, default="0.0")
+    position_amount = ExpressionField(required=False, default="0.0")
     principal_amount = ExpressionField(required=False, default="0.0")
     carry_amount = ExpressionField(required=False, default="0.0")
     overheads = ExpressionField(required=False, default="0.0")
+
+    notes = ExpressionField(required=False, allow_blank=True, default='')
 
     # transaction_class_object = TransactionClassSerializer(source='transaction_class', read_only=True)
     # instrument_object = serializers.PrimaryKeyRelatedField(source='instrument', read_only=True)
@@ -412,6 +415,7 @@ class TransactionTypeActionTransactionSerializer(serializers.ModelSerializer):
             'principal_with_sign',
             'carry_with_sign',
             'overheads_with_sign',
+            'reference_fx_rate',
             'portfolio',
             'portfolio_input',
             'account_position',
@@ -443,16 +447,17 @@ class TransactionTypeActionTransactionSerializer(serializers.ModelSerializer):
             'allocation_pl',
             'allocation_pl_input',
             'allocation_pl_phantom',
-            'reference_fx_rate',
-            'factor',
-            'trade_price',
-            'principal_amount',
-            'carry_amount',
-            'overheads',
             'responsible',
             'responsible_input',
             'counterparty',
             'counterparty_input',
+            'factor',
+            'trade_price',
+            'position_amount',
+            'principal_amount',
+            'carry_amount',
+            'overheads',
+            'notes',
 
             # 'transaction_class_object',
             # 'portfolio_object',
@@ -805,9 +810,12 @@ class TransactionSerializer(ModelWithAttributesSerializer):
             'principal_with_sign',
             'carry_with_sign',
             'overheads_with_sign',
+            'reference_fx_rate',
+
             'accounting_date',
             'cash_date',
             'transaction_date',
+
             'portfolio',
             'account_cash',
             'account_position',
@@ -818,19 +826,22 @@ class TransactionSerializer(ModelWithAttributesSerializer):
             'strategy2_cash',
             'strategy3_position',
             'strategy3_cash',
-            'reference_fx_rate',
-            'is_locked',
-            'is_deleted',
-            'factor',
-            'trade_price',
-            'principal_amount',
-            'carry_amount',
-            'overheads',
+
             'responsible',
             'counterparty',
             'linked_instrument',
             'allocation_balance',
             'allocation_pl',
+
+            'is_locked',
+            'is_deleted',
+            'factor',
+            'trade_price',
+            'position_amount',
+            'principal_amount',
+            'carry_amount',
+            'overheads',
+            'notes',
 
             # 'transaction_class_object',
             # 'transaction_currency_object',

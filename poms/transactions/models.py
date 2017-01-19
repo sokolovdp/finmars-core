@@ -709,9 +709,12 @@ class TransactionTypeActionTransaction(TransactionTypeAction):
 
     factor = models.CharField(max_length=255, default='0.0')
     trade_price = models.CharField(max_length=255, default='0.0')
+    position_amount = models.CharField(max_length=255, default='0.0')
     principal_amount = models.CharField(max_length=255, default='0.0')
     carry_amount = models.CharField(max_length=255, default='0.0')
     overheads = models.CharField(max_length=255, default='0.0')
+
+    notes = models.CharField(max_length=255, blank=True, default='')
 
     class Meta:
         verbose_name = ugettext_lazy('transaction type action transaction')
@@ -915,6 +918,9 @@ class Transaction(FakeDeletableModel):
                                help_text=ugettext_lazy('Multiplier (for calculations on the form)'))
     trade_price = models.FloatField(default=0.0, verbose_name=ugettext_lazy("trade price"),
                                     help_text=ugettext_lazy('Price (for calculations on the form)'))
+    position_amount = models.FloatField(default=0.0, verbose_name=ugettext_lazy("position amount"),
+                                        help_text=ugettext_lazy(
+                                            'Absolute value of Position with Sign (for calculations on the form)'))
     principal_amount = models.FloatField(default=0.0, verbose_name=ugettext_lazy("principal amount"),
                                          help_text=ugettext_lazy(
                                              'Absolute value of Principal with Sign (for calculations on the form)'))
@@ -924,6 +930,8 @@ class Transaction(FakeDeletableModel):
     overheads = models.FloatField(default=0.0, verbose_name=ugettext_lazy("overheads"),
                                   help_text=ugettext_lazy(
                                       'Absolute value of Carry with Sign (for calculations on the form)'))
+
+    notes = models.TextField(null=True, blank=True, verbose_name=ugettext_lazy('notes'))
 
     attributes = GenericRelation(GenericAttribute)
 
