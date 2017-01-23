@@ -1122,6 +1122,13 @@ class TransactionTypeProcessSerializer(serializers.Serializer):
         self.fields['transaction_type'] = serializers.PrimaryKeyRelatedField(read_only=True)
         self.fields['calculate'] = serializers.BooleanField(default=False, required=False)
         self.fields['store'] = serializers.BooleanField(default=False, required=False)
+
+        self.fields['expressions'] = serializers.DictField(
+            child=serializers.CharField(allow_null=False, allow_blank=False), allow_null=True, required=False)
+        self.fields['expressions_error'] = serializers.ReadOnlyField()
+        self.fields['expressions_result'] = serializers.ReadOnlyField()
+
+        # self.fields['expressions'] = serializers.ListField(child=ExpressionField())
         if self.instance:
             self.fields['values'] = TransactionTypeProcessValuesSerializer(instance=self.instance)
         self.fields['has_errors'] = serializers.BooleanField(read_only=True)
@@ -1162,6 +1169,8 @@ class TransactionTypeProcessSerializer(serializers.Serializer):
         # for key, value in list(instance.values.items()):
         #     name = instance.get_input_name(key)
         #     instance.values[name] = value
+
+        instance.process_expressions()
 
         if instance.store and instance.complex_transaction.id is not None and instance.complex_transaction.id > 0:
             instance.complex_transaction.transactions.all().delete()
