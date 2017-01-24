@@ -9,10 +9,11 @@ from django.contrib.contenttypes.models import ContentType
 from django.core.exceptions import ObjectDoesNotExist
 from django.core.signing import TimestampSigner, BadSignature
 from django.utils import timezone
-from django.utils.translation import ugettext
+from django.utils.translation import ugettext, ugettext_lazy
 from rest_framework import serializers
 from rest_framework.exceptions import ValidationError
 from rest_framework.fields import empty
+from rest_framework.validators import UniqueTogetherValidator
 
 from poms.common.fields import ExpressionField, DateTimeTzAwareField
 from poms.common.serializers import PomsClassSerializer, ModelWithUserCodeSerializer
@@ -270,6 +271,13 @@ class CurrencyMappingSerializer(serializers.ModelSerializer):
         fields = [
             'id', 'master_user', 'provider', 'provider_object', 'value', 'currency', 'currency_object',
         ]
+        validators = [
+            UniqueTogetherValidator(
+                queryset=CurrencyMapping.objects.all(),
+                fields=('master_user', 'provider', 'value'),
+                message=ugettext_lazy('The fields provider and value must make a unique set.')
+            )
+        ]
 
     def __init__(self, *args, **kwargs):
         super(CurrencyMappingSerializer, self).__init__(*args, **kwargs)
@@ -289,6 +297,13 @@ class InstrumentTypeMappingSerializer(serializers.ModelSerializer):
         fields = [
             'id', 'master_user', 'provider', 'provider_object', 'value', 'instrument_type',
             'instrument_type_object',
+        ]
+        validators = [
+            UniqueTogetherValidator(
+                queryset=InstrumentTypeMapping.objects.all(),
+                fields=('master_user', 'provider', 'value'),
+                message=ugettext_lazy('The fields provider and value must make a unique set.')
+            )
         ]
 
     def __init__(self, *args, **kwargs):
@@ -312,6 +327,13 @@ class InstrumentAttributeValueMappingSerializer(serializers.ModelSerializer):
             'id', 'master_user', 'provider', 'provider_object', 'value',
             'attribute_type', 'attribute_type_object', 'value_string', 'value_float', 'value_date',
             'classifier', 'classifier_object',
+        ]
+        validators = [
+            UniqueTogetherValidator(
+                queryset=InstrumentAttributeValueMapping.objects.all(),
+                fields=('master_user', 'provider', 'value'),
+                message=ugettext_lazy('The fields provider and value must make a unique set.')
+            )
         ]
 
     def __init__(self, *args, **kwargs):
@@ -347,6 +369,13 @@ class AccrualCalculationModelMappingSerializer(serializers.ModelSerializer):
             'id', 'master_user', 'provider', 'provider_object', 'value', 'accrual_calculation_model',
             'accrual_calculation_model_object',
         ]
+        validators = [
+            UniqueTogetherValidator(
+                queryset=AccrualCalculationModelMapping.objects.all(),
+                fields=('master_user', 'provider', 'value'),
+                message=ugettext_lazy('The fields provider and value must make a unique set.')
+            )
+        ]
 
     def __init__(self, *args, **kwargs):
         super(AccrualCalculationModelMappingSerializer, self).__init__(*args, **kwargs)
@@ -365,6 +394,13 @@ class PeriodicityMappingSerializer(serializers.ModelSerializer):
         model = PeriodicityMapping
         fields = [
             'id', 'master_user', 'provider', 'provider_object', 'value', 'periodicity', 'periodicity_object',
+        ]
+        validators = [
+            UniqueTogetherValidator(
+                queryset=PeriodicityMapping.objects.all(),
+                fields=('master_user', 'provider', 'value'),
+                message=ugettext_lazy('The fields provider and value must make a unique set.')
+            )
         ]
 
     def __init__(self, *args, **kwargs):
