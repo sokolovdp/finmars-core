@@ -308,6 +308,10 @@ class CurrencyMapping(AbstractMapping):
     class Meta(AbstractMapping.Meta):
         verbose_name = ugettext_lazy('currency mapping')
         verbose_name_plural = ugettext_lazy('currency mappings')
+        unique_together = [
+            ['master_user', 'provider', 'value'],
+            # ['master_user', 'provider', 'currency'],
+        ]
 
     def __str__(self):
         return '%s / %s -> %s' % (self.provider, self.value, self.currency)
@@ -319,6 +323,10 @@ class InstrumentTypeMapping(AbstractMapping):
     class Meta(AbstractMapping.Meta):
         verbose_name = ugettext_lazy('instrument type mapping')
         verbose_name_plural = ugettext_lazy('instrument type mappings')
+        unique_together = [
+            ['master_user', 'provider', 'value'],
+            # ['master_user', 'provider', 'instrument_type'],
+        ]
 
     def __str__(self):
         return '%s / %s -> %s' % (self.provider, self.value, self.instrument_type)
@@ -337,6 +345,10 @@ class InstrumentAttributeValueMapping(AbstractMapping):
     class Meta(AbstractMapping.Meta):
         verbose_name = ugettext_lazy('instrument attribute value mapping')
         verbose_name_plural = ugettext_lazy('instrument attribute value mappings')
+        unique_together = [
+            ['master_user', 'provider', 'value'],
+            # ['master_user', 'provider', 'attribute_type'],
+        ]
 
     def __str__(self):
         value = self.attribute_type.get_value(self)
@@ -349,6 +361,10 @@ class AccrualCalculationModelMapping(AbstractMapping):
     class Meta(AbstractMapping.Meta):
         verbose_name = ugettext_lazy('accrual calculation model mapping')
         verbose_name_plural = ugettext_lazy('accrual calculation model  mappings')
+        unique_together = [
+            ['master_user', 'provider', 'value'],
+            # ['master_user', 'provider', 'accrual_calculation_model'],
+        ]
 
     def __str__(self):
         return '%s / %s -> %s' % (self.provider, self.value, self.accrual_calculation_model)
@@ -360,6 +376,10 @@ class PeriodicityMapping(AbstractMapping):
     class Meta(AbstractMapping.Meta):
         verbose_name = ugettext_lazy('periodicity mapping')
         verbose_name_plural = ugettext_lazy('periodicity  mappings')
+        unique_together = [
+            ['master_user', 'provider', 'value'],
+            # ['master_user', 'provider', 'periodicity'],
+        ]
 
     def __str__(self):
         return '%s / %s -> %s' % (self.provider, self.value, self.periodicity)
