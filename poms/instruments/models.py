@@ -365,7 +365,7 @@ class Instrument(NamedModel, FakeDeletableModel):
         return self.master_user.instrument_id == self.id if self.master_user_id else False
 
     def rebuild_event_schedules(self):
-        from poms.transactions.models import EventClass
+        from poms.transactions.models import EventClass, NotificationClass
         # TODO: add validate equality before process
 
         # self.event_schedules.filter(is_auto_generated=True).delete()
@@ -373,10 +373,16 @@ class Instrument(NamedModel, FakeDeletableModel):
         master_user = self.master_user
         instrument_type = self.instrument_type
         instrument_class = instrument_type.instrument_class
+
         try:
             event_schedule_config = master_user.instrument_event_schedule_config
         except ObjectDoesNotExist:
             event_schedule_config = EventScheduleConfig.create_default(master_user=master_user)
+
+        notification_class_id = event_schedule_config.notification_class_id
+        if notification_class_id is None:
+            notification_class_id = NotificationClass.DONT_REACT
+
 
         events = list(self.event_schedules.prefetch_related('actions').filter(is_auto_generated=True))
         events_by_accrual = {e.accrual_calculation_schedule_id: e
@@ -403,7 +409,7 @@ class Instrument(NamedModel, FakeDeletableModel):
                     e.name = event_schedule_config.name
                     e.description = event_schedule_config.description
                     e.event_class_id = EventClass.REGULAR
-                    e.notification_class = event_schedule_config.notification_class
+                    e.notification_class_id = notification_class_id
                     e.effective_date = accrual.first_payment_date
                     e.notify_in_n_days = event_schedule_config.notify_in_n_days
                     e.periodicity = accrual.periodicity
@@ -430,7 +436,7 @@ class Instrument(NamedModel, FakeDeletableModel):
                 e.name = event_schedule_config.name
                 e.description = event_schedule_config.description
                 e.event_class_id = EventClass.ONE_OFF
-                e.notification_class = event_schedule_config.notification_class
+                e.notification_class_id = notification_class_id
                 e.effective_date = self.maturity_date
                 e.notify_in_n_days = event_schedule_config.notify_in_n_days
                 e.final_date = self.maturity_date
@@ -485,7 +491,7 @@ class Instrument(NamedModel, FakeDeletableModel):
             e.name = event_schedule_config.name
             e.description = event_schedule_config.description
             e.event_class_id = EventClass.ONE_OFF
-            e.notification_class = event_schedule_config.notification_class
+            e.notification_class_id = notification_class_id
             e.effective_date = f.effective_date
             e.notify_in_n_days = event_schedule_config.notify_in_n_days
             e.final_date = f.effective_date
