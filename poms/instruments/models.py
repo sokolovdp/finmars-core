@@ -919,7 +919,8 @@ class EventScheduleConfig(models.Model):
                                            on_delete=models.PROTECT, verbose_name=ugettext_lazy('notification class'))
     notify_in_n_days = models.PositiveSmallIntegerField(default=0, verbose_name=ugettext_lazy('notify in N days'))
     action_text = models.CharField(max_length=255, blank=True, default='', verbose_name=ugettext_lazy('action text'))
-    action_is_sent_to_pending = models.BooleanField(default=True, verbose_name=ugettext_lazy('action is sent to pending'))
+    action_is_sent_to_pending = models.BooleanField(default=True,
+                                                    verbose_name=ugettext_lazy('action is sent to pending'))
     action_is_book_automatic = models.BooleanField(default=True, verbose_name=ugettext_lazy('action is book automatic'))
 
     class Meta:
@@ -932,10 +933,15 @@ class EventScheduleConfig(models.Model):
     @staticmethod
     def create_default(master_user):
         from poms.transactions.models import NotificationClass
+
         return EventScheduleConfig.objects.create(
             master_user=master_user,
-            name="''",
-            description="''",
+            name='""',
+            description='""',
+            # notification_class=NotificationClass.objects.get(pk=NotificationClass.DONT_REACT),
             notification_class_id=NotificationClass.DONT_REACT,
-            action_text="''",
+            notify_in_n_days=0,
+            action_text='""',
+            action_is_sent_to_pending=False,
+            action_is_book_automatic=True
         )

@@ -240,17 +240,7 @@ class MasterUser(models.Model):
         from poms.transactions.models import NotificationClass
 
         if not EventScheduleConfig.objects.filter(master_user=self).exists():
-            EventScheduleConfig.objects.create(
-                master_user=self,
-                name='""',
-                description='""',
-                # notification_class=NotificationClass.objects.get(pk=NotificationClass.DONT_REACT),
-                notification_class_id=NotificationClass.DONT_REACT,
-                notify_in_n_days=0,
-                action_text='""',
-                action_is_sent_to_pending=False,
-                action_is_book_automatic=True
-            )
+            EventScheduleConfig.create_default(master_user=self)
 
         if not PricingAutomatedSchedule.objects.filter(master_user=self).exists():
             PricingAutomatedSchedule.objects.create(master_user=self, is_enabled=False)
