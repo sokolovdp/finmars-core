@@ -383,7 +383,6 @@ class Instrument(NamedModel, FakeDeletableModel):
         if notification_class_id is None:
             notification_class_id = NotificationClass.DONT_REACT
 
-
         events = list(self.event_schedules.prefetch_related('actions').filter(is_auto_generated=True))
         events_by_accrual = {e.accrual_calculation_schedule_id: e
                              for e in events if e.accrual_calculation_schedule_id is not None}
