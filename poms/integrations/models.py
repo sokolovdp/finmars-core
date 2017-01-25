@@ -61,12 +61,16 @@ def import_cert_upload_to(instance, filename):
 
 
 class ImportConfig(models.Model):
-    master_user = models.ForeignKey('users.MasterUser', related_name='import_configs')
-    provider = models.ForeignKey(ProviderClass)
-    p12cert = models.FileField(null=True, blank=True, upload_to=import_cert_upload_to, storage=import_config_storage)
-    password = models.CharField(max_length=64, null=True, blank=True)
-    cert = models.FileField(null=True, blank=True, upload_to=import_cert_upload_to, storage=import_config_storage)
-    key = models.FileField(null=True, blank=True, upload_to=import_cert_upload_to, storage=import_config_storage)
+    master_user = models.ForeignKey('users.MasterUser', related_name='import_configs',
+                                    verbose_name=ugettext_lazy('master user'))
+    provider = models.ForeignKey(ProviderClass, verbose_name=ugettext_lazy('provider'))
+    p12cert = models.FileField(null=True, blank=True, upload_to=import_cert_upload_to, storage=import_config_storage,
+                               verbose_name=ugettext_lazy('p12cert'))
+    password = models.CharField(max_length=64, null=True, blank=True, verbose_name=ugettext_lazy('password'))
+    cert = models.FileField(null=True, blank=True, upload_to=import_cert_upload_to, storage=import_config_storage,
+                            verbose_name=ugettext_lazy('cert'))
+    key = models.FileField(null=True, blank=True, upload_to=import_cert_upload_to, storage=import_config_storage,
+                           verbose_name=ugettext_lazy('key'))
 
     class Meta:
         verbose_name = ugettext_lazy('import config')
@@ -128,25 +132,32 @@ class InstrumentDownloadScheme(models.Model):
         'user_text_1', 'user_text_2', 'user_text_3',
     ]
 
-    master_user = models.ForeignKey('users.MasterUser')
-    scheme_name = models.CharField(max_length=255)
-    provider = models.ForeignKey(ProviderClass)
+    master_user = models.ForeignKey('users.MasterUser', verbose_name=ugettext_lazy('master user'))
+    scheme_name = models.CharField(max_length=255, verbose_name=ugettext_lazy('scheme name'))
+    provider = models.ForeignKey(ProviderClass, verbose_name=ugettext_lazy('provider'))
 
-    reference_for_pricing = models.CharField(max_length=255, blank=True, default='')
-    user_code = models.CharField(max_length=255, blank=True, default='')
-    name = models.CharField(max_length=255)
-    short_name = models.CharField(max_length=255, blank=True, default='')
-    public_name = models.CharField(max_length=255, blank=True, default='')
-    notes = models.CharField(max_length=255, blank=True, default='')
-    instrument_type = models.CharField(max_length=255, blank=True, default='')
-    pricing_currency = models.CharField(max_length=255, blank=True, default='')
-    price_multiplier = models.CharField(max_length=255, blank=True, default='1.0')
-    accrued_currency = models.CharField(max_length=255, blank=True, default='')
-    accrued_multiplier = models.CharField(max_length=255, blank=True, default='1.0')
-    maturity_date = models.CharField(max_length=255, blank=True, default='')
-    user_text_1 = models.CharField(max_length=255, blank=True, default='')
-    user_text_2 = models.CharField(max_length=255, blank=True, default='')
-    user_text_3 = models.CharField(max_length=255, blank=True, default='')
+    reference_for_pricing = models.CharField(max_length=255, blank=True, default='',
+                                             verbose_name=ugettext_lazy('reference for pricing'))
+    user_code = models.CharField(max_length=255, blank=True, default='', verbose_name=ugettext_lazy('user code'))
+    name = models.CharField(max_length=255, verbose_name=ugettext_lazy('name'))
+    short_name = models.CharField(max_length=255, blank=True, default='', verbose_name=ugettext_lazy('short name'))
+    public_name = models.CharField(max_length=255, blank=True, default='', verbose_name=ugettext_lazy('public name'))
+    notes = models.CharField(max_length=255, blank=True, default='', verbose_name=ugettext_lazy('notes'))
+    instrument_type = models.CharField(max_length=255, blank=True, default='',
+                                       verbose_name=ugettext_lazy('instrument type'))
+    pricing_currency = models.CharField(max_length=255, blank=True, default='',
+                                        verbose_name=ugettext_lazy('pricing currency'))
+    price_multiplier = models.CharField(max_length=255, blank=True, default='1.0',
+                                        verbose_name=ugettext_lazy('price multiplier'))
+    accrued_currency = models.CharField(max_length=255, blank=True, default='',
+                                        verbose_name=ugettext_lazy('accrued currency'))
+    accrued_multiplier = models.CharField(max_length=255, blank=True, default='1.0',
+                                          verbose_name=ugettext_lazy('accrued multiplier'))
+    maturity_date = models.CharField(max_length=255, blank=True, default='',
+                                     verbose_name=ugettext_lazy('maturity date'))
+    user_text_1 = models.CharField(max_length=255, blank=True, default='', verbose_name=ugettext_lazy('user text 1'))
+    user_text_2 = models.CharField(max_length=255, blank=True, default='', verbose_name=ugettext_lazy('user text 2'))
+    user_text_3 = models.CharField(max_length=255, blank=True, default='', verbose_name=ugettext_lazy('user text 3'))
 
     payment_size_detail = models.ForeignKey('instruments.PaymentSizeDetail', on_delete=models.PROTECT,
                                             null=True, blank=True, verbose_name=ugettext_lazy('payment size detail'))
@@ -157,8 +168,11 @@ class InstrumentDownloadScheme(models.Model):
     default_price = models.FloatField(default=0.0, verbose_name=ugettext_lazy('default price'))
     default_accrued = models.FloatField(default=0.0, verbose_name=ugettext_lazy('default accrued'))
 
-    factor_schedule_method = models.ForeignKey(FactorScheduleDownloadMethod, null=True, blank=True)
-    accrual_calculation_schedule_method = models.ForeignKey(AccrualScheduleDownloadMethod, null=True, blank=True)
+    factor_schedule_method = models.ForeignKey(FactorScheduleDownloadMethod, null=True, blank=True,
+                                               verbose_name=ugettext_lazy('factor schedule method'))
+    accrual_calculation_schedule_method = models.ForeignKey(AccrualScheduleDownloadMethod, null=True, blank=True,
+                                                            verbose_name=ugettext_lazy(
+                                                                'accrual calculation schedule method'))
 
     class Meta:
         verbose_name = ugettext_lazy('instrument download scheme')
@@ -181,9 +195,9 @@ class InstrumentDownloadScheme(models.Model):
 
 
 class InstrumentDownloadSchemeInput(models.Model):
-    scheme = models.ForeignKey(InstrumentDownloadScheme, related_name='inputs')
-    name = models.CharField(max_length=32, blank=True, default='')
-    field = models.CharField(max_length=32, blank=True, default='')
+    scheme = models.ForeignKey(InstrumentDownloadScheme, related_name='inputs', verbose_name=ugettext_lazy('scheme'))
+    name = models.CharField(max_length=32, blank=True, default='', verbose_name=ugettext_lazy('name'))
+    field = models.CharField(max_length=32, blank=True, default='', verbose_name=ugettext_lazy('field'))
 
     class Meta:
         verbose_name = ugettext_lazy('instrument download scheme input')
@@ -205,9 +219,11 @@ class InstrumentDownloadSchemeInput(models.Model):
 
 @python_2_unicode_compatible
 class InstrumentDownloadSchemeAttribute(models.Model):
-    scheme = models.ForeignKey(InstrumentDownloadScheme, related_name='attributes')
-    attribute_type = models.ForeignKey('obj_attrs.GenericAttributeType', null=True, blank=True)
-    value = models.CharField(max_length=255, blank=True, default='')
+    scheme = models.ForeignKey(InstrumentDownloadScheme, related_name='attributes',
+                               verbose_name=ugettext_lazy('scheme'))
+    attribute_type = models.ForeignKey('obj_attrs.GenericAttributeType', null=True, blank=True,
+                                       verbose_name=ugettext_lazy('attribute_ type'))
+    value = models.CharField(max_length=255, blank=True, default='', verbose_name=ugettext_lazy('value'))
 
     class Meta:
         verbose_name = ugettext_lazy('instrument download scheme attribute')
@@ -223,34 +239,35 @@ class InstrumentDownloadSchemeAttribute(models.Model):
 
 
 class PriceDownloadScheme(models.Model):
-    master_user = models.ForeignKey('users.MasterUser')
-    scheme_name = models.CharField(max_length=255)
-    provider = models.ForeignKey(ProviderClass)
+    master_user = models.ForeignKey('users.MasterUser', verbose_name=ugettext_lazy('master user'))
+    scheme_name = models.CharField(max_length=255, verbose_name=ugettext_lazy('scheme name'))
+    provider = models.ForeignKey(ProviderClass, verbose_name=ugettext_lazy('provider'))
 
-    bid0 = models.CharField(max_length=50, blank=True)
-    bid1 = models.CharField(max_length=50, blank=True)
-    bid2 = models.CharField(max_length=50, blank=True)
-    bid_multiplier = models.FloatField(default=1.0)
-    ask0 = models.CharField(max_length=50, blank=True)
-    ask1 = models.CharField(max_length=50, blank=True)
-    ask2 = models.CharField(max_length=50, blank=True)
-    ask_multiplier = models.FloatField(default=1.0)
-    last = models.CharField(max_length=50, blank=True)
-    last_multiplier = models.FloatField(default=1.0)
-    mid = models.CharField(max_length=50, blank=True)
-    mid_multiplier = models.FloatField(default=1.0)
+    bid0 = models.CharField(max_length=50, blank=True, verbose_name=ugettext_lazy('bid0'))
+    bid1 = models.CharField(max_length=50, blank=True, verbose_name=ugettext_lazy('bid1'))
+    bid2 = models.CharField(max_length=50, blank=True, verbose_name=ugettext_lazy('bid2'))
+    bid_multiplier = models.FloatField(default=1.0, verbose_name=ugettext_lazy('bid multiplier'))
+    ask0 = models.CharField(max_length=50, blank=True, verbose_name=ugettext_lazy('ask0'))
+    ask1 = models.CharField(max_length=50, blank=True, verbose_name=ugettext_lazy('ask1'))
+    ask2 = models.CharField(max_length=50, blank=True, verbose_name=ugettext_lazy('ask2'))
+    ask_multiplier = models.FloatField(default=1.0, verbose_name=ugettext_lazy('ask multiplier'))
+    last = models.CharField(max_length=50, blank=True, verbose_name=ugettext_lazy('last'))
+    last_multiplier = models.FloatField(default=1.0, verbose_name=ugettext_lazy('last multiplier'))
+    mid = models.CharField(max_length=50, blank=True, verbose_name=ugettext_lazy('mid'))
+    mid_multiplier = models.FloatField(default=1.0, verbose_name=ugettext_lazy('mid multiplier'))
 
-    bid_history = models.CharField(max_length=50, blank=True)
-    bid_history_multiplier = models.FloatField(default=1.0)
-    ask_history = models.CharField(max_length=50, blank=True)
-    ask_history_multiplier = models.FloatField(default=1.0)
-    mid_history = models.CharField(max_length=50, blank=True)
-    mid_history_multiplier = models.FloatField(default=1.0)
-    last_history = models.CharField(max_length=50, blank=True)
-    last_history_multiplier = models.FloatField(default=1.0)
+    bid_history = models.CharField(max_length=50, blank=True, verbose_name=ugettext_lazy('bid history'))
+    bid_history_multiplier = models.FloatField(default=1.0, verbose_name=ugettext_lazy('bid history multiplier'))
+    ask_history = models.CharField(max_length=50, blank=True, verbose_name=ugettext_lazy('ask history'))
+    ask_history_multiplier = models.FloatField(default=1.0, verbose_name=ugettext_lazy('ask history multiplier'))
+    mid_history = models.CharField(max_length=50, blank=True, verbose_name=ugettext_lazy('mid history'))
+    mid_history_multiplier = models.FloatField(default=1.0, verbose_name=ugettext_lazy('mid history multiplier'))
+    last_history = models.CharField(max_length=50, blank=True, verbose_name=ugettext_lazy('last history'))
+    last_history_multiplier = models.FloatField(default=1.0, verbose_name=ugettext_lazy('last history multiplier'))
 
-    currency_fxrate = models.CharField(max_length=50, blank=True)
-    currency_fxrate_multiplier = models.FloatField(default=1.0)
+    currency_fxrate = models.CharField(max_length=50, blank=True, verbose_name=ugettext_lazy('currency FX-rate'))
+    currency_fxrate_multiplier = models.FloatField(default=1.0,
+                                                   verbose_name=ugettext_lazy('currency FX-rate multiplier'))
 
     class Meta:
         verbose_name = ugettext_lazy('price download scheme')
@@ -293,9 +310,9 @@ class PriceDownloadScheme(models.Model):
 
 
 class AbstractMapping(models.Model):
-    master_user = models.ForeignKey('users.MasterUser')
-    provider = models.ForeignKey(ProviderClass)
-    value = models.CharField(max_length=255)
+    master_user = models.ForeignKey('users.MasterUser', verbose_name=ugettext_lazy('master user'))
+    provider = models.ForeignKey(ProviderClass, verbose_name=ugettext_lazy('provider'))
+    value = models.CharField(max_length=255, verbose_name=ugettext_lazy('value'))
 
     class Meta:
         abstract = True
@@ -303,7 +320,7 @@ class AbstractMapping(models.Model):
 
 
 class CurrencyMapping(AbstractMapping):
-    currency = models.ForeignKey('currencies.Currency')
+    currency = models.ForeignKey('currencies.Currency', verbose_name=ugettext_lazy('currency'))
 
     class Meta(AbstractMapping.Meta):
         verbose_name = ugettext_lazy('currency mapping')
@@ -318,7 +335,7 @@ class CurrencyMapping(AbstractMapping):
 
 
 class InstrumentTypeMapping(AbstractMapping):
-    instrument_type = models.ForeignKey('instruments.InstrumentType')
+    instrument_type = models.ForeignKey('instruments.InstrumentType', verbose_name=ugettext_lazy('instrument type'))
 
     class Meta(AbstractMapping.Meta):
         verbose_name = ugettext_lazy('instrument type mapping')
@@ -356,7 +373,8 @@ class InstrumentAttributeValueMapping(AbstractMapping):
 
 
 class AccrualCalculationModelMapping(AbstractMapping):
-    accrual_calculation_model = models.ForeignKey('instruments.AccrualCalculationModel')
+    accrual_calculation_model = models.ForeignKey('instruments.AccrualCalculationModel',
+                                                  verbose_name=ugettext_lazy('accrual calculation model'))
 
     class Meta(AbstractMapping.Meta):
         verbose_name = ugettext_lazy('accrual calculation model mapping')
@@ -371,7 +389,7 @@ class AccrualCalculationModelMapping(AbstractMapping):
 
 
 class PeriodicityMapping(AbstractMapping):
-    periodicity = models.ForeignKey('instruments.Periodicity')
+    periodicity = models.ForeignKey('instruments.Periodicity', verbose_name=ugettext_lazy('periodicity'))
 
     class Meta(AbstractMapping.Meta):
         verbose_name = ugettext_lazy('periodicity mapping')
@@ -405,20 +423,25 @@ class Task(TimeStampedModel):
         (STATUS_TIMEOUT, 'TIMEOUT'),
     )
 
-    master_user = models.ForeignKey('users.MasterUser', related_name='tasks')
-    member = models.ForeignKey('users.Member', related_name='tasks', null=True, blank=True)
+    master_user = models.ForeignKey('users.MasterUser', related_name='tasks', verbose_name=ugettext_lazy('master user'))
+    member = models.ForeignKey('users.Member', related_name='tasks', null=True, blank=True,
+                               verbose_name=ugettext_lazy('member'))
 
-    provider = models.ForeignKey(ProviderClass, null=True, blank=True, db_index=True)
-    action = models.CharField(max_length=20, db_index=True)
-    status = models.CharField(max_length=1, default=STATUS_PENDING, choices=STATUS_CHOICES)
+    provider = models.ForeignKey(ProviderClass, null=True, blank=True, db_index=True,
+                                 verbose_name=ugettext_lazy('provider'))
+    action = models.CharField(max_length=20, db_index=True, verbose_name=ugettext_lazy('action'))
+    status = models.CharField(max_length=1, default=STATUS_PENDING, choices=STATUS_CHOICES,
+                              verbose_name=ugettext_lazy('status'))
 
-    celery_tasks_id = models.CharField(max_length=255, blank=True, default='')
-    parent = models.ForeignKey('self', null=True, blank=True, related_name='children')
+    celery_tasks_id = models.CharField(max_length=255, blank=True, default='',
+                                       verbose_name=ugettext_lazy('celery tasks id'))
+    parent = models.ForeignKey('self', null=True, blank=True, related_name='children',
+                               verbose_name=ugettext_lazy('parent'))
 
-    options = models.TextField(null=True, blank=True)
-    result = models.TextField(null=True, blank=True)
-    request_id = models.CharField(max_length=50, null=True, db_index=True)
-    response_id = models.CharField(max_length=50, null=True, db_index=True)
+    options = models.TextField(null=True, blank=True, verbose_name=ugettext_lazy('options'))
+    result = models.TextField(null=True, blank=True, verbose_name=ugettext_lazy('result'))
+    request_id = models.CharField(max_length=50, null=True, db_index=True, verbose_name=ugettext_lazy('request id'))
+    response_id = models.CharField(max_length=50, null=True, db_index=True, verbose_name=ugettext_lazy('response id'))
 
     class Meta:
         verbose_name = ugettext_lazy('task')
@@ -519,22 +542,25 @@ class PricingAutomatedSchedule(models.Model):
     master_user = models.OneToOneField('users.MasterUser', related_name='pricing_automated_schedule',
                                        verbose_name=ugettext_lazy('master user'))
 
-    is_enabled = models.BooleanField(default=True)
+    is_enabled = models.BooleanField(default=True, verbose_name=ugettext_lazy('is enabled'))
     cron_expr = models.CharField(max_length=255, blank=True, default='', validators=[validate_crontab],
+                                 verbose_name=ugettext_lazy('cron expr'),
                                  help_text=ugettext_lazy(
                                      'Format is "* * * * *" (minute / hour / day_month / month / day_week)'))
-    balance_day = models.PositiveSmallIntegerField(default=0)
-    load_days = models.PositiveSmallIntegerField(default=1)
-    fill_days = models.PositiveSmallIntegerField(default=0)
-    override_existed = models.BooleanField(default=True)
+    balance_day = models.PositiveSmallIntegerField(default=0, verbose_name=ugettext_lazy('balance day'))
+    load_days = models.PositiveSmallIntegerField(default=1, verbose_name=ugettext_lazy('load days'))
+    fill_days = models.PositiveSmallIntegerField(default=0, verbose_name=ugettext_lazy('tagfill dayss'))
+    override_existed = models.BooleanField(default=True, verbose_name=ugettext_lazy('override existed'))
 
     # latest_running = models.DateTimeField(null=True, blank=True, editable=False)
     # latest_task = models.ForeignKey(Task, null=True, blank=True, on_delete=models.SET_NULL, editable=False)
 
-    last_run_at = models.DateTimeField(default=timezone.now, editable=False, db_index=True)
-    next_run_at = models.DateTimeField(default=timezone.now, editable=False, db_index=True)
+    last_run_at = models.DateTimeField(default=timezone.now, editable=False, db_index=True,
+                                       verbose_name=ugettext_lazy('last run at'))
+    next_run_at = models.DateTimeField(default=timezone.now, editable=False, db_index=True,
+                                       verbose_name=ugettext_lazy('next run at'))
     last_run_task = models.ForeignKey(Task, null=True, blank=True, on_delete=models.SET_NULL, editable=False,
-                                      db_index=True)
+                                      db_index=True, verbose_name=ugettext_lazy('last run task'))
 
     class Meta:
         verbose_name = ugettext_lazy('pricing automated schedule')

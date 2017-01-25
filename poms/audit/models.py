@@ -11,11 +11,11 @@ from django.utils.translation import ugettext_lazy
 
 @python_2_unicode_compatible
 class AuthLogEntry(models.Model):
-    date = models.DateTimeField(auto_now_add=True, db_index=True)
+    date = models.DateTimeField(auto_now_add=True, db_index=True, verbose_name=ugettext_lazy('date'))
     user = models.ForeignKey(settings.AUTH_USER_MODEL, verbose_name=ugettext_lazy('user'))
-    user_ip = models.GenericIPAddressField(null=True, blank=True)
-    user_agent = models.CharField(max_length=255, null=True, blank=True)
-    is_success = models.BooleanField(default=False, db_index=True)
+    user_ip = models.GenericIPAddressField(null=True, blank=True, verbose_name=ugettext_lazy('user ip'))
+    user_agent = models.CharField(max_length=255, null=True, blank=True, verbose_name=ugettext_lazy('user agent'))
+    is_success = models.BooleanField(default=False, db_index=True, verbose_name=ugettext_lazy('is success'))
 
     class Meta:
         verbose_name = ugettext_lazy('authenticate log')
@@ -57,35 +57,41 @@ class ObjectHistory4Entry(models.Model):
     )
 
     # actor = models.ForeignKey(ObjectHistory4Actor)
-    master_user = models.ForeignKey('users.MasterUser', related_name='object_histories')
+    master_user = models.ForeignKey('users.MasterUser', related_name='object_histories',
+                                    verbose_name=ugettext_lazy('master user'))
     member = models.ForeignKey('users.Member', related_name='object_histories', null=True, blank=True,
-                               on_delete=models.SET_NULL)
+                               on_delete=models.SET_NULL, verbose_name=ugettext_lazy('member'))
 
-    group_id = models.IntegerField(default=0)
-    created = models.DateTimeField(auto_now_add=True, db_index=True)
+    group_id = models.IntegerField(default=0, verbose_name=ugettext_lazy('group id'))
+    created = models.DateTimeField(auto_now_add=True, db_index=True, verbose_name=ugettext_lazy('created'))
 
-    actor_content_type = models.ForeignKey(ContentType, related_name='+', blank=True, null=True)
-    actor_object_id = models.BigIntegerField(blank=True, null=True)
+    actor_content_type = models.ForeignKey(ContentType, related_name='+', blank=True, null=True,
+                                           verbose_name=ugettext_lazy('actor content type'))
+    actor_object_id = models.BigIntegerField(blank=True, null=True, verbose_name=ugettext_lazy('actor object id'))
     actor_content_object = GenericForeignKey(ct_field='actor_content_type', fk_field='actor_object_id')
-    actor_object_repr = models.TextField(blank=True)
+    actor_object_repr = models.TextField(blank=True, verbose_name=ugettext_lazy('actor object repr'))
 
-    action_flag = models.PositiveSmallIntegerField(choices=FLAG_CHOICES)
+    action_flag = models.PositiveSmallIntegerField(choices=FLAG_CHOICES, verbose_name=ugettext_lazy('action flag'))
 
-    content_type = models.ForeignKey(ContentType, related_name='+', blank=True, null=True)
-    object_id = models.BigIntegerField(blank=True, null=True)
+    content_type = models.ForeignKey(ContentType, related_name='+', blank=True, null=True,
+                                     verbose_name=ugettext_lazy('content type'))
+    object_id = models.BigIntegerField(blank=True, null=True, verbose_name=ugettext_lazy('object id'))
     content_object = GenericForeignKey()
-    object_repr = models.TextField(blank=True)
+    object_repr = models.TextField(blank=True, verbose_name=ugettext_lazy('object repr'))
 
-    field_name = models.CharField(max_length=50, null=True, blank=True)
+    field_name = models.CharField(max_length=50, null=True, blank=True, verbose_name=ugettext_lazy('field name'))
 
-    value = models.TextField(blank=True)
-    value_content_type = models.ForeignKey(ContentType, related_name='+', blank=True, null=True)
-    value_object_id = models.BigIntegerField(blank=True, null=True)
+    value = models.TextField(blank=True, verbose_name=ugettext_lazy('value'))
+    value_content_type = models.ForeignKey(ContentType, related_name='+', blank=True, null=True,
+                                           verbose_name=ugettext_lazy('value content type'))
+    value_object_id = models.BigIntegerField(blank=True, null=True, verbose_name=ugettext_lazy('value object id'))
     value_content_object = GenericForeignKey(ct_field='value_content_type', fk_field='value_object_id')
 
-    old_value = models.TextField(blank=True)
-    old_value_content_type = models.ForeignKey(ContentType, related_name='+', blank=True, null=True)
-    old_value_object_id = models.BigIntegerField(blank=True, null=True)
+    old_value = models.TextField(blank=True, verbose_name=ugettext_lazy('old value'))
+    old_value_content_type = models.ForeignKey(ContentType, related_name='+', blank=True, null=True,
+                                               verbose_name=ugettext_lazy('old value content type'))
+    old_value_object_id = models.BigIntegerField(blank=True, null=True,
+                                                 verbose_name=ugettext_lazy('old value object id'))
     old_value_content_object = GenericForeignKey(ct_field='old_value_content_type', fk_field='old_value_object_id')
 
     class Meta:
@@ -223,7 +229,7 @@ class ObjectHistory4Entry(models.Model):
 
 
 class InstrumentAudit(models.Model):
-    master_user = models.ForeignKey('users.MasterUser', related_name='+')
+    master_user = models.ForeignKey('users.MasterUser', related_name='+', verbose_name=ugettext_lazy('master user'))
 
     class Meta:
         verbose_name = ugettext_lazy('instrument audit')
@@ -231,7 +237,7 @@ class InstrumentAudit(models.Model):
 
 
 class TransactionAudit(models.Model):
-    master_user = models.ForeignKey('users.MasterUser', related_name='+')
+    master_user = models.ForeignKey('users.MasterUser', related_name='+', verbose_name=ugettext_lazy('master user'))
 
     class Meta:
         verbose_name = ugettext_lazy('transaction audit')

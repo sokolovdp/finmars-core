@@ -40,8 +40,8 @@ class Currency(NamedModel, FakeDeletableModel):
     price_download_scheme = models.ForeignKey('integrations.PriceDownloadScheme', on_delete=models.PROTECT, null=True,
                                               blank=True, verbose_name=ugettext_lazy('price download scheme'))
 
-    attributes = GenericRelation(GenericAttribute)
-    tags = GenericRelation(TagLink)
+    attributes = GenericRelation(GenericAttribute, verbose_name=ugettext_lazy('attributes'))
+    tags = GenericRelation(TagLink, verbose_name=ugettext_lazy('tags'))
 
     class Meta(NamedModel.Meta, FakeDeletableModel.Meta):
         verbose_name = ugettext_lazy('currency')

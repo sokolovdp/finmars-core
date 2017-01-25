@@ -18,8 +18,8 @@ class Strategy1Group(NamedModel, FakeDeletableModel):
     master_user = models.ForeignKey(MasterUser, related_name='strategy1_groups',
                                     verbose_name=ugettext_lazy('master user'))
 
-    object_permissions = GenericRelation(GenericObjectPermission)
-    tags = GenericRelation(TagLink)
+    object_permissions = GenericRelation(GenericObjectPermission, verbose_name=ugettext_lazy('object permissions'))
+    tags = GenericRelation(TagLink, verbose_name=ugettext_lazy('tags'))
 
     class Meta(NamedModel.Meta, FakeDeletableModel.Meta):
         verbose_name = ugettext_lazy('strategy1 group')
@@ -61,8 +61,8 @@ class Strategy1Subgroup(NamedModel, FakeDeletableModel):
                                     verbose_name=ugettext_lazy('master user'))
     group = models.ForeignKey(Strategy1Group, null=True, blank=True, on_delete=models.PROTECT, related_name='subgroups')
 
-    object_permissions = GenericRelation(GenericObjectPermission)
-    tags = GenericRelation(TagLink)
+    object_permissions = GenericRelation(GenericObjectPermission, verbose_name=ugettext_lazy('object permissions'))
+    tags = GenericRelation(TagLink, verbose_name=ugettext_lazy('tags'))
 
     class Meta(NamedModel.Meta, FakeDeletableModel.Meta):
         verbose_name = ugettext_lazy('strategy1 subgroup')
@@ -104,8 +104,8 @@ class Strategy1(NamedModel, FakeDeletableModel):
     subgroup = models.ForeignKey(Strategy1Subgroup, null=True, blank=True, on_delete=models.PROTECT,
                                  related_name='strategies')
 
-    object_permissions = GenericRelation(GenericObjectPermission)
-    tags = GenericRelation(TagLink)
+    object_permissions = GenericRelation(GenericObjectPermission, verbose_name=ugettext_lazy('object permissions'))
+    tags = GenericRelation(TagLink, verbose_name=ugettext_lazy('tags'))
 
     class Meta(NamedModel.Meta, FakeDeletableModel.Meta):
         verbose_name = ugettext_lazy('strategy1')
@@ -149,8 +149,8 @@ class Strategy2Group(NamedModel, FakeDeletableModel):
     master_user = models.ForeignKey(MasterUser, related_name='strategy2_groups',
                                     verbose_name=ugettext_lazy('master user'))
 
-    object_permissions = GenericRelation(GenericObjectPermission)
-    tags = GenericRelation(TagLink)
+    object_permissions = GenericRelation(GenericObjectPermission, verbose_name=ugettext_lazy('object permissions'))
+    tags = GenericRelation(TagLink, verbose_name=ugettext_lazy('tags'))
 
     class Meta(NamedModel.Meta, FakeDeletableModel.Meta):
         verbose_name = ugettext_lazy('strategy2 group')
@@ -192,8 +192,8 @@ class Strategy2Subgroup(NamedModel, FakeDeletableModel):
                                     verbose_name=ugettext_lazy('master user'))
     group = models.ForeignKey(Strategy2Group, null=True, blank=True, on_delete=models.PROTECT, related_name='subgroups')
 
-    object_permissions = GenericRelation(GenericObjectPermission)
-    tags = GenericRelation(TagLink)
+    object_permissions = GenericRelation(GenericObjectPermission, verbose_name=ugettext_lazy('object permissions'))
+    tags = GenericRelation(TagLink, verbose_name=ugettext_lazy('tags'))
 
     class Meta(NamedModel.Meta, FakeDeletableModel.Meta):
         verbose_name = ugettext_lazy('strategy2 subgroup')
@@ -235,8 +235,8 @@ class Strategy2(NamedModel, FakeDeletableModel):
     subgroup = models.ForeignKey(Strategy2Subgroup, null=True, blank=True, on_delete=models.PROTECT,
                                  related_name='strategies')
 
-    object_permissions = GenericRelation(GenericObjectPermission)
-    tags = GenericRelation(TagLink)
+    object_permissions = GenericRelation(GenericObjectPermission, verbose_name=ugettext_lazy('object permissions'))
+    tags = GenericRelation(TagLink, verbose_name=ugettext_lazy('tags'))
 
     class Meta(NamedModel.Meta, FakeDeletableModel.Meta):
         verbose_name = ugettext_lazy('strategy2')
@@ -280,8 +280,8 @@ class Strategy3Group(NamedModel, FakeDeletableModel):
     master_user = models.ForeignKey(MasterUser, related_name='strategy3_groups',
                                     verbose_name=ugettext_lazy('master user'))
 
-    object_permissions = GenericRelation(GenericObjectPermission)
-    tags = GenericRelation(TagLink)
+    object_permissions = GenericRelation(GenericObjectPermission, verbose_name=ugettext_lazy('object permissions'))
+    tags = GenericRelation(TagLink, verbose_name=ugettext_lazy('tags'))
 
     class Meta(NamedModel.Meta, FakeDeletableModel.Meta):
         verbose_name = ugettext_lazy('strategy3 group')
@@ -323,8 +323,8 @@ class Strategy3Subgroup(NamedModel, FakeDeletableModel):
                                     verbose_name=ugettext_lazy('master user'))
     group = models.ForeignKey(Strategy3Group, null=True, blank=True, on_delete=models.PROTECT, related_name='subgroups')
 
-    object_permissions = GenericRelation(GenericObjectPermission)
-    tags = GenericRelation(TagLink)
+    object_permissions = GenericRelation(GenericObjectPermission, verbose_name=ugettext_lazy('object permissions'))
+    tags = GenericRelation(TagLink, verbose_name=ugettext_lazy('tags'))
 
     class Meta(NamedModel.Meta, FakeDeletableModel.Meta):
         verbose_name = ugettext_lazy('strategy3 subgroup')
@@ -366,8 +366,8 @@ class Strategy3(NamedModel, FakeDeletableModel):
     subgroup = models.ForeignKey(Strategy3Subgroup, null=True, blank=True, on_delete=models.PROTECT,
                                  related_name='strategies')
 
-    object_permissions = GenericRelation(GenericObjectPermission)
-    tags = GenericRelation(TagLink)
+    object_permissions = GenericRelation(GenericObjectPermission, verbose_name=ugettext_lazy('object permissions'))
+    tags = GenericRelation(TagLink, verbose_name=ugettext_lazy('tags'))
 
     class Meta(NamedModel.Meta, FakeDeletableModel.Meta):
         verbose_name = ugettext_lazy('strategy3')
@@ -384,7 +384,6 @@ class Strategy3(NamedModel, FakeDeletableModel):
     @property
     def is_default(self):
         return self.master_user.strategy3_id == self.id if self.master_user_id else False
-
 
 # class Strategy3UserObjectPermission(AbstractUserObjectPermission):
 #     content_object = models.ForeignKey(Strategy3, related_name='user_object_permissions',

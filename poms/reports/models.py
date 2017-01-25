@@ -9,9 +9,9 @@ from poms.users.models import MasterUser
 
 
 class CustomField(models.Model):
-    master_user = models.ForeignKey(MasterUser, related_name='custom_fields')
-    name = models.CharField(max_length=255)
-    expr = models.CharField(max_length=255)
+    master_user = models.ForeignKey(MasterUser, related_name='custom_fields', verbose_name=ugettext_lazy('master user'))
+    name = models.CharField(max_length=255, verbose_name=ugettext_lazy('name'))
+    expr = models.CharField(max_length=255, verbose_name=ugettext_lazy('expr'))
 
     class Meta:
         verbose_name = ugettext_lazy('custom field')
@@ -25,7 +25,8 @@ class CustomField(models.Model):
 
 
 class BalanceReport(models.Model):
-    master_user = models.ForeignKey(MasterUser, related_name='balance_reports')
+    master_user = models.ForeignKey(MasterUser, related_name='balance_reports',
+                                    verbose_name=ugettext_lazy('master user'))
 
     class Meta:
         verbose_name = ugettext_lazy('balance report')
@@ -33,7 +34,7 @@ class BalanceReport(models.Model):
 
 
 class PLReport(models.Model):
-    master_user = models.ForeignKey(MasterUser, related_name='pl_reports')
+    master_user = models.ForeignKey(MasterUser, related_name='pl_reports', verbose_name=ugettext_lazy('master user'))
 
     class Meta:
         verbose_name = ugettext_lazy('p&l report')
@@ -41,7 +42,8 @@ class PLReport(models.Model):
 
 
 class PerformanceReport(models.Model):
-    master_user = models.ForeignKey(MasterUser, related_name='performance_reports')
+    master_user = models.ForeignKey(MasterUser, related_name='performance_reports',
+                                    verbose_name=ugettext_lazy('master user'))
 
     class Meta:
         verbose_name = ugettext_lazy('performance report')
@@ -49,7 +51,8 @@ class PerformanceReport(models.Model):
 
 
 class CashFlowReport(models.Model):
-    master_user = models.ForeignKey(MasterUser, related_name='cashflow_reports')
+    master_user = models.ForeignKey(MasterUser, related_name='cashflow_reports',
+                                    verbose_name=ugettext_lazy('master user'))
 
     class Meta:
         verbose_name = ugettext_lazy('cash flow report')
@@ -57,7 +60,8 @@ class CashFlowReport(models.Model):
 
 
 class TransactionReport(models.Model):
-    master_user = models.ForeignKey(MasterUser, related_name='transaction_reports')
+    master_user = models.ForeignKey(MasterUser, related_name='transaction_reports',
+                                    verbose_name=ugettext_lazy('master user'))
 
     class Meta:
         verbose_name = ugettext_lazy('transaction report')

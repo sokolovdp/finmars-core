@@ -11,7 +11,7 @@ class NamedModel(models.Model):
     user_code = models.CharField(max_length=25, null=True, blank=True, verbose_name=ugettext_lazy('user code'))
     name = models.CharField(max_length=255, verbose_name=ugettext_lazy('name'))
     short_name = models.CharField(max_length=50, null=True, blank=True, verbose_name=ugettext_lazy('short name'))
-    public_name = models.CharField(max_length=255, verbose_name=ugettext_lazy('public name'), null=True, blank=True,
+    public_name = models.CharField(max_length=255, null=True, blank=True, verbose_name=ugettext_lazy('public name'),
                                    help_text=ugettext_lazy('used if user does not have permissions to view object'))
     notes = models.TextField(null=True, blank=True, verbose_name=ugettext_lazy('notes'))
 
@@ -71,7 +71,7 @@ class AbstractClassModel(models.Model):
 
 
 class FakeDeletableModel(models.Model):
-    is_deleted = models.BooleanField(default=False, db_index=True)
+    is_deleted = models.BooleanField(default=False, db_index=True, verbose_name=ugettext_lazy('is deleted'))
 
     class Meta:
         abstract = True

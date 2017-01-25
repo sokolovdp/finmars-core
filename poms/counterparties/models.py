@@ -4,11 +4,10 @@ from django.contrib.contenttypes.fields import GenericRelation
 from django.db import models
 from django.utils.encoding import python_2_unicode_compatible
 from django.utils.translation import ugettext_lazy
-from mptt.fields import TreeForeignKey
 from mptt.models import MPTTModel
 
 from poms.common.models import NamedModel, FakeDeletableModel
-from poms.obj_attrs.models import  GenericAttribute
+from poms.obj_attrs.models import GenericAttribute
 from poms.obj_perms.models import GenericObjectPermission
 from poms.tags.models import TagLink
 from poms.users.models import MasterUser, Member
@@ -19,8 +18,8 @@ class CounterpartyGroup(NamedModel, FakeDeletableModel):
     master_user = models.ForeignKey(MasterUser, related_name='counterparty_groups',
                                     verbose_name=ugettext_lazy('master user'))
 
-    object_permissions = GenericRelation(GenericObjectPermission)
-    tags = GenericRelation(TagLink)
+    object_permissions = GenericRelation(GenericObjectPermission, verbose_name=ugettext_lazy('object permissions'))
+    tags = GenericRelation(TagLink, verbose_name=ugettext_lazy('tags'))
 
     class Meta(NamedModel.Meta, FakeDeletableModel.Meta):
         verbose_name = ugettext_lazy('counterparty group')
@@ -57,12 +56,14 @@ class CounterpartyGroup(NamedModel, FakeDeletableModel):
 class Counterparty(NamedModel, FakeDeletableModel):
     master_user = models.ForeignKey(MasterUser, related_name='counterparties',
                                     verbose_name=ugettext_lazy('master user'))
-    group = models.ForeignKey(CounterpartyGroup, related_name='counterparties', null=True, blank=True)
-    is_valid_for_all_portfolios = models.BooleanField(default=True)
+    group = models.ForeignKey(CounterpartyGroup, related_name='counterparties', null=True, blank=True,
+                              verbose_name=ugettext_lazy('group'))
+    is_valid_for_all_portfolios = models.BooleanField(default=True,
+                                                      verbose_name=ugettext_lazy('is valid for all portfolios'))
 
-    attributes = GenericRelation(GenericAttribute)
-    object_permissions = GenericRelation(GenericObjectPermission)
-    tags = GenericRelation(TagLink)
+    attributes = GenericRelation(GenericAttribute, verbose_name=ugettext_lazy('attributes'))
+    object_permissions = GenericRelation(GenericObjectPermission, verbose_name=ugettext_lazy('object permissions'))
+    tags = GenericRelation(TagLink, verbose_name=ugettext_lazy('tags'))
 
     class Meta(NamedModel.Meta, FakeDeletableModel.Meta):
         verbose_name = ugettext_lazy('counterparty')
@@ -169,8 +170,8 @@ class ResponsibleGroup(NamedModel, FakeDeletableModel):
     master_user = models.ForeignKey(MasterUser, related_name='responsible_groups',
                                     verbose_name=ugettext_lazy('master user'))
 
-    object_permissions = GenericRelation(GenericObjectPermission)
-    tags = GenericRelation(TagLink)
+    object_permissions = GenericRelation(GenericObjectPermission, verbose_name=ugettext_lazy('object permissions'))
+    tags = GenericRelation(TagLink, verbose_name=ugettext_lazy('tags'))
 
     class Meta(NamedModel.Meta, FakeDeletableModel.Meta):
         verbose_name = ugettext_lazy('responsible group')
@@ -206,12 +207,14 @@ class ResponsibleGroup(NamedModel, FakeDeletableModel):
 @python_2_unicode_compatible
 class Responsible(NamedModel, FakeDeletableModel):
     master_user = models.ForeignKey(MasterUser, related_name='responsibles', verbose_name=ugettext_lazy('master user'))
-    group = models.ForeignKey(ResponsibleGroup, related_name='responsibles', null=True, blank=True)
-    is_valid_for_all_portfolios = models.BooleanField(default=True)
+    group = models.ForeignKey(ResponsibleGroup, related_name='responsibles', null=True, blank=True,
+                              verbose_name=ugettext_lazy('group'))
+    is_valid_for_all_portfolios = models.BooleanField(default=True,
+                                                      verbose_name=ugettext_lazy('is valid for all portfolios'))
 
-    attributes = GenericRelation(GenericAttribute)
-    object_permissions = GenericRelation(GenericObjectPermission)
-    tags = GenericRelation(TagLink)
+    attributes = GenericRelation(GenericAttribute, verbose_name=ugettext_lazy('attributes'))
+    object_permissions = GenericRelation(GenericObjectPermission, verbose_name=ugettext_lazy('object permissions'))
+    tags = GenericRelation(TagLink, verbose_name=ugettext_lazy('tags'))
 
     class Meta(NamedModel.Meta, FakeDeletableModel.Meta):
         verbose_name = ugettext_lazy('responsible')
@@ -225,7 +228,6 @@ class Responsible(NamedModel, FakeDeletableModel):
     @property
     def is_default(self):
         return self.master_user.responsible_id == self.id if self.master_user_id else False
-
 
 # class ResponsibleUserObjectPermission(AbstractUserObjectPermission):
 #     content_object = models.ForeignKey(Responsible, related_name='user_object_permissions',

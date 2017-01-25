@@ -55,8 +55,8 @@ class GenericObjectPermission(models.Model):
     group = models.ForeignKey(Group, null=True, blank=True, verbose_name=ugettext_lazy('group'))
     member = models.ForeignKey(Member, null=True, blank=True, verbose_name=ugettext_lazy('member'))
 
-    content_type = models.ForeignKey(ContentType)
-    object_id = models.BigIntegerField()
+    content_type = models.ForeignKey(ContentType, verbose_name=ugettext_lazy('content type'))
+    object_id = models.BigIntegerField(verbose_name=ugettext_lazy('object id'))
     content_object = GenericForeignKey('content_type', 'object_id')
 
     permission = models.ForeignKey(Permission, verbose_name=ugettext_lazy('permission'))

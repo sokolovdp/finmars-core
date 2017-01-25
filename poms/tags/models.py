@@ -68,7 +68,7 @@ class Tag(NamedModel):
     # thread_groups = models.ManyToManyField('chats.ThreadGroup', related_name='tags', blank=True)
     # threads = models.ManyToManyField('chats.Thread', related_name='tags', blank=True)
 
-    object_permissions = GenericRelation(GenericObjectPermission)
+    object_permissions = GenericRelation(GenericObjectPermission, verbose_name=ugettext_lazy('object permissions'))
 
     class Meta(NamedModel.Meta):
         verbose_name = ugettext_lazy('tag')
@@ -98,10 +98,10 @@ class Tag(NamedModel):
 
 
 class TagLink(models.Model):
-    tag = models.ForeignKey(Tag, related_name='links')
+    tag = models.ForeignKey(Tag, related_name='links', verbose_name=ugettext_lazy('tag'))
 
-    content_type = models.ForeignKey(ContentType, null=True, blank=True)
-    object_id = models.BigIntegerField()
+    content_type = models.ForeignKey(ContentType, null=True, blank=True, verbose_name=ugettext_lazy('content type'))
+    object_id = models.BigIntegerField(verbose_name=ugettext_lazy('object id'))
     content_object = GenericForeignKey('content_type', 'object_id')
 
     class Meta:

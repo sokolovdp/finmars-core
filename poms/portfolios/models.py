@@ -4,8 +4,6 @@ from django.contrib.contenttypes.fields import GenericRelation
 from django.db import models
 from django.utils.encoding import python_2_unicode_compatible
 from django.utils.translation import ugettext_lazy
-from mptt.fields import TreeForeignKey
-from mptt.models import MPTTModel
 
 from poms.common.models import NamedModel, FakeDeletableModel
 from poms.obj_attrs.models import GenericAttribute
@@ -16,15 +14,19 @@ from poms.users.models import MasterUser, Member
 
 @python_2_unicode_compatible
 class Portfolio(NamedModel, FakeDeletableModel):
-    master_user = models.ForeignKey(MasterUser, related_name='portfolios')
-    accounts = models.ManyToManyField('accounts.Account', related_name='portfolios', blank=True)
-    responsibles = models.ManyToManyField('counterparties.Responsible', related_name='portfolios', blank=True)
-    counterparties = models.ManyToManyField('counterparties.Counterparty', related_name='portfolios', blank=True)
-    transaction_types = models.ManyToManyField('transactions.TransactionType', related_name='portfolios', blank=True)
+    master_user = models.ForeignKey(MasterUser, related_name='portfolios', verbose_name=ugettext_lazy('master user'))
+    accounts = models.ManyToManyField('accounts.Account', related_name='portfolios', blank=True,
+                                      verbose_name=ugettext_lazy('accounts'))
+    responsibles = models.ManyToManyField('counterparties.Responsible', related_name='portfolios', blank=True,
+                                          verbose_name=ugettext_lazy('responsibles'))
+    counterparties = models.ManyToManyField('counterparties.Counterparty', related_name='portfolios', blank=True,
+                                            verbose_name=ugettext_lazy('counterparties'))
+    transaction_types = models.ManyToManyField('transactions.TransactionType', related_name='portfolios', blank=True,
+                                               verbose_name=ugettext_lazy('transaction types'))
 
-    attributes = GenericRelation(GenericAttribute)
-    object_permissions = GenericRelation(GenericObjectPermission)
-    tags = GenericRelation(TagLink)
+    attributes = GenericRelation(GenericAttribute, verbose_name=ugettext_lazy('attributes'))
+    object_permissions = GenericRelation(GenericObjectPermission, verbose_name=ugettext_lazy('object permissions'))
+    tags = GenericRelation(TagLink, verbose_name=ugettext_lazy('tags'))
 
     class Meta(NamedModel.Meta, FakeDeletableModel.Meta):
         verbose_name = ugettext_lazy('portfolio')
@@ -37,7 +39,6 @@ class Portfolio(NamedModel, FakeDeletableModel):
     @property
     def is_default(self):
         return self.master_user.portfolio_id == self.id if self.master_user_id else False
-
 
 # class PortfolioUserObjectPermission(AbstractUserObjectPermission):
 #     content_object = models.ForeignKey(Portfolio, related_name='user_object_permissions')
