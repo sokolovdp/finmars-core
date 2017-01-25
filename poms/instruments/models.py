@@ -332,11 +332,11 @@ class Instrument(NamedModel, FakeDeletableModel):
     default_price = models.FloatField(default=0.0, verbose_name=ugettext_lazy('default price'))
     default_accrued = models.FloatField(default=0.0, verbose_name=ugettext_lazy('default accrued'))
 
-    user_text_1 = models.CharField(max_length=255, null=True, blank=True,
+    user_text_1 = models.CharField(max_length=255, null=True, blank=True, verbose_name=ugettext_lazy('user text 1'),
                                    help_text=ugettext_lazy('User specified field 1'))
-    user_text_2 = models.CharField(max_length=255, null=True, blank=True,
+    user_text_2 = models.CharField(max_length=255, null=True, blank=True, verbose_name=ugettext_lazy('user text 2'),
                                    help_text=ugettext_lazy('User specified field 2'))
-    user_text_3 = models.CharField(max_length=255, null=True, blank=True,
+    user_text_3 = models.CharField(max_length=255, null=True, blank=True, verbose_name=ugettext_lazy('user text 3'),
                                    help_text=ugettext_lazy('User specified field 3'))
 
     reference_for_pricing = models.CharField(max_length=100, blank=True, default='',
@@ -347,9 +347,9 @@ class Instrument(NamedModel, FakeDeletableModel):
                                               blank=True, verbose_name=ugettext_lazy('price download scheme'))
     maturity_date = models.DateField(default=date.max, verbose_name=ugettext_lazy('maturity date'))
 
-    attributes = GenericRelation(GenericAttribute)
-    object_permissions = GenericRelation(GenericObjectPermission)
-    tags = GenericRelation(TagLink)
+    attributes = GenericRelation(GenericAttribute, verbose_name=ugettext_lazy('attributes'))
+    object_permissions = GenericRelation(GenericObjectPermission, verbose_name=ugettext_lazy('object permissions'))
+    tags = GenericRelation(TagLink, verbose_name=ugettext_lazy('tags'))
 
     class Meta(NamedModel.Meta, FakeDeletableModel.Meta):
         verbose_name = ugettext_lazy('instrument')
@@ -696,20 +696,22 @@ class EventSchedule(models.Model):
     # TODO: is first_payment_date for regular
     # TODO: is instrument.maturity for one-off
     effective_date = models.DateField(null=True, blank=True, verbose_name=ugettext_lazy('effective date'))
-    notify_in_n_days = models.PositiveIntegerField(default=0)
+    notify_in_n_days = models.PositiveIntegerField(default=0, verbose_name=ugettext_lazy('notify in N days'))
 
-    periodicity = models.ForeignKey(Periodicity, null=True, blank=True, on_delete=models.PROTECT)
-    periodicity_n = models.IntegerField(default=0)
+    periodicity = models.ForeignKey(Periodicity, null=True, blank=True, on_delete=models.PROTECT,
+                                    verbose_name=ugettext_lazy('periodicity'))
+    periodicity_n = models.IntegerField(default=0, verbose_name=ugettext_lazy('N'))
     # TODO: =see next accrual_calculation_schedule.accrual_start_date or instrument.maturity_date (if last)
-    final_date = models.DateField(default=date.max)
+    final_date = models.DateField(default=date.max, verbose_name=ugettext_lazy('final date'))
 
-    is_auto_generated = models.BooleanField(default=False)
+    is_auto_generated = models.BooleanField(default=False, verbose_name=ugettext_lazy('is auto generated'))
     accrual_calculation_schedule = models.ForeignKey(AccrualCalculationSchedule, null=True, blank=True, editable=False,
                                                      related_name='event_schedules',
+                                                     verbose_name=ugettext_lazy('accrual calculation schedule'),
                                                      help_text=ugettext_lazy(
                                                          'Used for store link when is_auto_generated is True'))
     factor_schedule = models.ForeignKey(InstrumentFactorSchedule, null=True, blank=True, editable=False,
-                                        related_name='event_schedules',
+                                        related_name='event_schedules', verbose_name=ugettext_lazy('factor schedule'),
                                         help_text=ugettext_lazy('Used for store link when is_auto_generated is True'))
 
     class Meta:
@@ -756,15 +758,16 @@ class EventScheduleAction(models.Model):
     # TODO: for auto generated always one
     event_schedule = models.ForeignKey(EventSchedule, related_name='actions',
                                        verbose_name=ugettext_lazy('event schedule'))
-    transaction_type = models.ForeignKey('transactions.TransactionType', on_delete=models.PROTECT)
+    transaction_type = models.ForeignKey('transactions.TransactionType', on_delete=models.PROTECT,
+                                         verbose_name=ugettext_lazy('transaction type'))
     # T O D O: on auto generate fill 'Book: ' + transaction_type
-    text = models.CharField(max_length=100, blank=True, default='')
+    text = models.CharField(max_length=100, blank=True, default='', verbose_name=ugettext_lazy('text'))
     # T O D O: add to MasterUser defaults
-    is_sent_to_pending = models.BooleanField(default=True)
+    is_sent_to_pending = models.BooleanField(default=True, verbose_name=ugettext_lazy('is sent to pending'))
     # T O D O: add to MasterUser defaults
     # T O D O: rename to: is_book_automatic (used when now notification)
-    is_book_automatic = models.BooleanField(default=True)
-    button_position = models.IntegerField(default=0)
+    is_book_automatic = models.BooleanField(default=True, verbose_name=ugettext_lazy('is book automatic'))
+    button_position = models.IntegerField(default=0, verbose_name=ugettext_lazy('button position'))
 
     class Meta:
         verbose_name = ugettext_lazy('event schedule action')
@@ -787,40 +790,48 @@ class GeneratedEvent(models.Model):
         (BOOKED, ugettext_lazy('Booked')),
     )
 
-    master_user = models.ForeignKey(MasterUser, related_name='generated_events')
+    master_user = models.ForeignKey(MasterUser, related_name='generated_events',
+                                    verbose_name=ugettext_lazy('master user'))
 
-    effective_date = models.DateField(default=date_now, db_index=True)
-    effective_date_notified = models.BooleanField(default=False, db_index=True)
-    notification_date = models.DateField(default=date_now, db_index=True)
-    notification_date_notified = models.BooleanField(default=False, db_index=True)
+    effective_date = models.DateField(default=date_now, db_index=True, verbose_name=ugettext_lazy('effective date'))
+    effective_date_notified = models.BooleanField(default=False, db_index=True,
+                                                  verbose_name=ugettext_lazy('effective date notified'))
+    notification_date = models.DateField(default=date_now, db_index=True,
+                                         verbose_name=ugettext_lazy('notification date'))
+    notification_date_notified = models.BooleanField(default=False, db_index=True,
+                                                     verbose_name=ugettext_lazy('notification date notified'))
 
-    status = models.PositiveSmallIntegerField(default=NEW, choices=STATUS_CHOICES, db_index=True)
-    status_date = models.DateTimeField(default=timezone.now, db_index=True)
+    status = models.PositiveSmallIntegerField(default=NEW, choices=STATUS_CHOICES, db_index=True,
+                                              verbose_name=ugettext_lazy('status'))
+    status_date = models.DateTimeField(default=timezone.now, db_index=True, verbose_name=ugettext_lazy('status date'))
 
     event_schedule = models.ForeignKey(EventSchedule, null=True, blank=True, on_delete=models.SET_NULL,
-                                       related_name='generated_events')
+                                       related_name='generated_events', verbose_name=ugettext_lazy('event schedule'))
 
     instrument = models.ForeignKey('instruments.Instrument', null=True, blank=True, on_delete=models.PROTECT,
-                                   related_name='generated_events')
+                                   related_name='generated_events', verbose_name=ugettext_lazy('instrument'))
     portfolio = models.ForeignKey('portfolios.Portfolio', null=True, blank=True, on_delete=models.PROTECT,
-                                  related_name='generated_events')
+                                  related_name='generated_events', verbose_name=ugettext_lazy('portfolio'))
     account = models.ForeignKey('accounts.Account', null=True, blank=True, on_delete=models.PROTECT,
-                                related_name='generated_events')
+                                related_name='generated_events', verbose_name=ugettext_lazy('account'))
     strategy1 = models.ForeignKey('strategies.Strategy1', null=True, blank=True, on_delete=models.PROTECT,
-                                  related_name='generated_events')
+                                  related_name='generated_events', verbose_name=ugettext_lazy('strategy1'))
     strategy2 = models.ForeignKey('strategies.Strategy2', null=True, blank=True, on_delete=models.PROTECT,
-                                  related_name='generated_events')
+                                  related_name='generated_events', verbose_name=ugettext_lazy('strategy2'))
     strategy3 = models.ForeignKey('strategies.Strategy3', null=True, blank=True, on_delete=models.PROTECT,
-                                  related_name='generated_events')
-    position = models.FloatField(default=0.0)
+                                  related_name='generated_events', verbose_name=ugettext_lazy('strategy3'))
+    position = models.FloatField(default=0.0, verbose_name=ugettext_lazy('position'))
 
     action = models.ForeignKey(EventScheduleAction, null=True, blank=True, on_delete=models.SET_NULL,
-                               related_name='generated_events')
+                               related_name='generated_events', verbose_name=ugettext_lazy('action'))
     transaction_type = models.ForeignKey('transactions.TransactionType', null=True, blank=True,
-                                         on_delete=models.PROTECT, related_name='generated_events')
+                                         on_delete=models.PROTECT, related_name='generated_events',
+                                         verbose_name=ugettext_lazy('transaction type'))
     complex_transaction = models.ForeignKey('transactions.ComplexTransaction', null=True, blank=True,
-                                            on_delete=models.PROTECT, related_name='generated_events')
-    member = models.ForeignKey('users.Member', null=True, blank=True, on_delete=models.SET_NULL)
+                                            on_delete=models.PROTECT, related_name='generated_events',
+                                            verbose_name=ugettext_lazy('complex transaction'))
+    member = models.ForeignKey('users.Member', null=True, blank=True, on_delete=models.SET_NULL,
+                               verbose_name=ugettext_lazy('member'))
 
     class Meta:
         verbose_name = ugettext_lazy('generated event')
@@ -898,7 +909,6 @@ class GeneratedEvent(models.Model):
         return None
 
 
-
 class EventScheduleConfig(models.Model):
     master_user = models.OneToOneField('users.MasterUser', related_name='instrument_event_schedule_config',
                                        verbose_name=ugettext_lazy('master user'))
@@ -909,8 +919,8 @@ class EventScheduleConfig(models.Model):
                                            on_delete=models.PROTECT, verbose_name=ugettext_lazy('notification class'))
     notify_in_n_days = models.PositiveSmallIntegerField(default=0, verbose_name=ugettext_lazy('notify in N days'))
     action_text = models.CharField(max_length=255, blank=True, default='', verbose_name=ugettext_lazy('action text'))
-    action_is_sent_to_pending = models.BooleanField(default=True)
-    action_is_book_automatic = models.BooleanField(default=True)
+    action_is_sent_to_pending = models.BooleanField(default=True, verbose_name=ugettext_lazy('action is sent to pending'))
+    action_is_book_automatic = models.BooleanField(default=True, verbose_name=ugettext_lazy('action is book automatic'))
 
     class Meta:
         verbose_name = ugettext_lazy('event schedule config')

@@ -4,7 +4,6 @@ from django.contrib.contenttypes.fields import GenericRelation
 from django.db import models
 from django.utils.encoding import python_2_unicode_compatible
 from django.utils.translation import ugettext_lazy
-from mptt.fields import TreeForeignKey
 from mptt.models import MPTTModel
 
 from poms.common.models import NamedModel, FakeDeletableModel
@@ -17,15 +16,14 @@ from poms.users.models import MasterUser, Member
 
 @python_2_unicode_compatible
 class AccountType(NamedModel, FakeDeletableModel):
-    master_user = models.ForeignKey(MasterUser, related_name='account_types',
-                                    verbose_name=ugettext_lazy('master user'))
+    master_user = models.ForeignKey(MasterUser, related_name='account_types', verbose_name=ugettext_lazy('master user'))
     show_transaction_details = models.BooleanField(default=False,
                                                    verbose_name=ugettext_lazy('show transaction details'))
     transaction_details_expr = models.CharField(max_length=255, null=True, blank=True,
                                                 verbose_name=ugettext_lazy('transaction details expr'))
 
-    object_permissions = GenericRelation(GenericObjectPermission)
-    tags = GenericRelation(TagLink)
+    object_permissions = GenericRelation(GenericObjectPermission, verbose_name=ugettext_lazy('object permissions'))
+    tags = GenericRelation(TagLink, verbose_name=ugettext_lazy('tags'))
 
     class Meta(NamedModel.Meta, FakeDeletableModel.Meta):
         verbose_name = ugettext_lazy('account type')
@@ -60,15 +58,15 @@ class AccountType(NamedModel, FakeDeletableModel):
 
 @python_2_unicode_compatible
 class Account(NamedModel, FakeDeletableModel):
-    master_user = models.ForeignKey(MasterUser, related_name='accounts',
-                                    verbose_name=ugettext_lazy('master user'))
+    master_user = models.ForeignKey(MasterUser, related_name='accounts', verbose_name=ugettext_lazy('master user'))
     type = models.ForeignKey(AccountType, on_delete=models.PROTECT, null=True, blank=True,
                              verbose_name=ugettext_lazy('account type'))
-    is_valid_for_all_portfolios = models.BooleanField(default=True)
+    is_valid_for_all_portfolios = models.BooleanField(default=True,
+                                                      verbose_name=ugettext_lazy('is valid for all portfolios'))
 
-    attributes = GenericRelation(GenericAttribute)
-    object_permissions = GenericRelation(GenericObjectPermission)
-    tags = GenericRelation(TagLink)
+    attributes = GenericRelation(GenericAttribute, verbose_name=ugettext_lazy('attributes'))
+    object_permissions = GenericRelation(GenericObjectPermission, verbose_name=ugettext_lazy('object permissions'))
+    tags = GenericRelation(TagLink, verbose_name=ugettext_lazy('tags'))
 
     class Meta(NamedModel.Meta, FakeDeletableModel.Meta):
         verbose_name = ugettext_lazy('account')
@@ -81,7 +79,6 @@ class Account(NamedModel, FakeDeletableModel):
     @property
     def is_default(self):
         return self.master_user.account_id == self.id if self.master_user_id else False
-
 
 # class AccountUserObjectPermission(AbstractUserObjectPermission):
 #     content_object = models.ForeignKey(Account, related_name='user_object_permissions',

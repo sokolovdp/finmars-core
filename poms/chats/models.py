@@ -18,11 +18,12 @@ from poms.users.models import MasterUser, Member
 
 @python_2_unicode_compatible
 class ThreadGroup(FakeDeletableModel, models.Model):
-    master_user = models.ForeignKey(MasterUser, related_name='chat_thread_groups')
+    master_user = models.ForeignKey(MasterUser, related_name='chat_thread_groups',
+                                    verbose_name=ugettext_lazy('master user'))
     name = models.CharField(max_length=255, verbose_name=ugettext_lazy('name'))
 
-    object_permissions = GenericRelation(GenericObjectPermission)
-    tags = GenericRelation(TagLink)
+    object_permissions = GenericRelation(GenericObjectPermission, verbose_name=ugettext_lazy('object permissions'))
+    tags = GenericRelation(TagLink, verbose_name=ugettext_lazy('tags'))
 
     class Meta(FakeDeletableModel.Meta):
         verbose_name = ugettext_lazy('thread group')
@@ -57,14 +58,15 @@ class ThreadGroup(FakeDeletableModel, models.Model):
 
 @python_2_unicode_compatible
 class Thread(TimeStampedModel, FakeDeletableModel):
-    master_user = models.ForeignKey(MasterUser, related_name='chat_threads')
-    thread_group = models.ForeignKey(ThreadGroup, related_name='groups', null=True, blank=True)
-    subject = models.CharField(max_length=255)
-    is_closed = models.BooleanField(default=False, db_index=True)
-    closed = models.DateTimeField(null=True, blank=True, db_index=True)
+    master_user = models.ForeignKey(MasterUser, related_name='chat_threads', verbose_name=ugettext_lazy('master user'))
+    thread_group = models.ForeignKey(ThreadGroup, related_name='groups', null=True, blank=True,
+                                     verbose_name=ugettext_lazy('thread group'))
+    subject = models.CharField(max_length=255, verbose_name=ugettext_lazy('subject'))
+    is_closed = models.BooleanField(default=False, db_index=True, verbose_name=ugettext_lazy('is closed'))
+    closed = models.DateTimeField(null=True, blank=True, db_index=True, verbose_name=ugettext_lazy('closed'))
 
-    object_permissions = GenericRelation(GenericObjectPermission)
-    tags = GenericRelation(TagLink)
+    object_permissions = GenericRelation(GenericObjectPermission, verbose_name=ugettext_lazy('object permissions'))
+    tags = GenericRelation(TagLink, verbose_name=ugettext_lazy('tags'))
 
     class Meta(TimeStampedModel.Meta, FakeDeletableModel.Meta):
         verbose_name = ugettext_lazy('thread')

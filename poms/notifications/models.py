@@ -41,32 +41,40 @@ class NotificationSetting(models.Model):
 # Target        :  The object to which the activity was performed.
 @python_2_unicode_compatible
 class Notification(models.Model):
-    recipient = models.ForeignKey(settings.AUTH_USER_MODEL, related_name='notifications', blank=False)
-    recipient_member = models.ForeignKey('users.Member', related_name='notifications', null=True)
+    recipient = models.ForeignKey(settings.AUTH_USER_MODEL, related_name='notifications', blank=False,
+                                  verbose_name=ugettext_lazy('recipient'))
+    recipient_member = models.ForeignKey('users.Member', related_name='notifications', null=True,
+                                         verbose_name=ugettext_lazy('recipient member'))
 
     # level = models.PositiveSmallIntegerField(choices=LEVELS, default=messages.INFO)
     # type = models.CharField(max_length=30, null=True, blank=True)
 
-    message = models.TextField(blank=True, null=True)
+    message = models.TextField(blank=True, null=True, verbose_name=ugettext_lazy('message'))
 
-    actor_content_type = models.ForeignKey(ContentType, related_name='+', null=True, blank=True)
-    actor_object_id = models.CharField(max_length=255, null=True, blank=True)
+    actor_content_type = models.ForeignKey(ContentType, related_name='+', null=True, blank=True,
+                                           verbose_name=ugettext_lazy('actor content type'))
+    actor_object_id = models.CharField(max_length=255, null=True, blank=True,
+                                       verbose_name=ugettext_lazy('actor object id'))
     actor = GenericForeignKey('actor_content_type', 'actor_object_id')
 
-    verb = models.CharField(max_length=255, null=True, blank=True)
+    verb = models.CharField(max_length=255, null=True, blank=True, verbose_name=ugettext_lazy('verb'))
 
-    action_object_content_type = models.ForeignKey(ContentType, blank=True, null=True, related_name='+')
-    action_object_object_id = models.CharField(max_length=255, blank=True, null=True)
+    action_object_content_type = models.ForeignKey(ContentType, blank=True, null=True, related_name='+',
+                                                   verbose_name=ugettext_lazy('action object content type'))
+    action_object_object_id = models.CharField(max_length=255, blank=True, null=True,
+                                               verbose_name=ugettext_lazy('action object object id'))
     action_object = GenericForeignKey('action_object_content_type', 'action_object_object_id')
 
-    target_content_type = models.ForeignKey(ContentType, blank=True, null=True, related_name='+')
-    target_object_id = models.CharField(max_length=255, blank=True, null=True)
+    target_content_type = models.ForeignKey(ContentType, blank=True, null=True, related_name='+',
+                                            verbose_name=ugettext_lazy('target content type'))
+    target_object_id = models.CharField(max_length=255, blank=True, null=True,
+                                        verbose_name=ugettext_lazy('target object id'))
     target = GenericForeignKey('target_content_type', 'target_object_id')
 
-    create_date = models.DateTimeField(default=timezone.now, db_index=True)
-    read_date = models.DateTimeField(null=True, blank=True, db_index=True)
+    create_date = models.DateTimeField(default=timezone.now, db_index=True, verbose_name=ugettext_lazy('create date'))
+    read_date = models.DateTimeField(null=True, blank=True, db_index=True, verbose_name=ugettext_lazy('read date'))
 
-    data = models.TextField(blank=True, null=True)
+    data = models.TextField(blank=True, null=True, verbose_name=ugettext_lazy('data'))
 
     # objects = NotificationQuerySet.as_manager()
 

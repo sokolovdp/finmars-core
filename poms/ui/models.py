@@ -3,13 +3,14 @@ import json
 from django.contrib.contenttypes.models import ContentType
 from django.core.serializers.json import DjangoJSONEncoder
 from django.db import models
+from django.utils.translation import ugettext_lazy
 
 from poms.users.models import MasterUser, Member
 
 
 class BaseLayout(models.Model):
-    content_type = models.ForeignKey(ContentType)
-    json_data = models.TextField(null=True, blank=True)
+    content_type = models.ForeignKey(ContentType, verbose_name=ugettext_lazy('content type'))
+    json_data = models.TextField(null=True, blank=True, verbose_name=ugettext_lazy('json data'))
 
     class Meta:
         abstract = True
@@ -27,9 +28,10 @@ class BaseLayout(models.Model):
 
 
 class TemplateListLayout(BaseLayout):
-    master_user = models.ForeignKey(MasterUser, related_name='template_list_layouts')
-    name = models.CharField(max_length=255, blank=True, default="", db_index=True)
-    is_default = models.BooleanField(default=False)
+    master_user = models.ForeignKey(MasterUser, related_name='template_list_layouts',
+                                    verbose_name=ugettext_lazy('master user'))
+    name = models.CharField(max_length=255, blank=True, default="", db_index=True, verbose_name=ugettext_lazy('name'))
+    is_default = models.BooleanField(default=False, verbose_name=ugettext_lazy('is default'))
 
     class Meta(BaseLayout.Meta):
         unique_together = [
@@ -48,7 +50,7 @@ class TemplateListLayout(BaseLayout):
 
 
 class TemplateEditLayout(BaseLayout):
-    master_user = models.ForeignKey(MasterUser, related_name='edit_layouts')
+    master_user = models.ForeignKey(MasterUser, related_name='edit_layouts', verbose_name=ugettext_lazy('master user'))
 
     class Meta(BaseLayout.Meta):
         unique_together = [
@@ -58,9 +60,9 @@ class TemplateEditLayout(BaseLayout):
 
 
 class ListLayout(BaseLayout):
-    member = models.ForeignKey(Member, related_name='template_list_layouts')
-    name = models.CharField(max_length=255, blank=True, default="", db_index=True)
-    is_default = models.BooleanField(default=False)
+    member = models.ForeignKey(Member, related_name='template_list_layouts', verbose_name=ugettext_lazy('member'))
+    name = models.CharField(max_length=255, blank=True, default="", db_index=True, verbose_name=ugettext_lazy('name'))
+    is_default = models.BooleanField(default=False, verbose_name=ugettext_lazy('is default'))
 
     class Meta(BaseLayout.Meta):
         unique_together = [
@@ -78,7 +80,7 @@ class ListLayout(BaseLayout):
 
 
 class EditLayout(BaseLayout):
-    member = models.ForeignKey(Member, related_name='edit_layouts')
+    member = models.ForeignKey(Member, related_name='edit_layouts', verbose_name=ugettext_lazy('member'))
 
     class Meta(BaseLayout.Meta):
         unique_together = [

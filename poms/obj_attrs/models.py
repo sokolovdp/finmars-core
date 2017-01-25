@@ -3,7 +3,6 @@ from datetime import date
 from django.contrib.contenttypes.fields import GenericForeignKey, GenericRelation
 from django.contrib.contenttypes.models import ContentType
 from django.db import models
-from django.utils.encoding import python_2_unicode_compatible
 from django.utils.translation import ugettext_lazy
 from mptt.fields import TreeForeignKey
 from mptt.models import MPTTModel
@@ -152,12 +151,12 @@ class GenericAttributeType(NamedModel):
     )
 
     master_user = models.ForeignKey(MasterUser, verbose_name=ugettext_lazy('master user'))
-    content_type = models.ForeignKey(ContentType)
+    content_type = models.ForeignKey(ContentType, verbose_name=ugettext_lazy('content type'))
     value_type = models.PositiveSmallIntegerField(choices=VALUE_TYPES, default=STRING,
                                                   verbose_name=ugettext_lazy('value type'))
     order = models.IntegerField(default=0, verbose_name=ugettext_lazy('order'))
 
-    object_permissions = GenericRelation(GenericObjectPermission)
+    object_permissions = GenericRelation(GenericObjectPermission, verbose_name=ugettext_lazy('object permissions'))
 
     class Meta(NamedModel.Meta):
         verbose_name = ugettext_lazy('attribute type')
@@ -189,8 +188,7 @@ class GenericAttributeType(NamedModel):
 class GenericAttributeTypeOption(models.Model):
     attribute_type = models.ForeignKey(GenericAttributeType, related_name='options',
                                        verbose_name=ugettext_lazy('attribute type'))
-    member = models.ForeignKey(Member,
-                               verbose_name=ugettext_lazy('member'))
+    member = models.ForeignKey(Member, verbose_name=ugettext_lazy('member'))
     is_hidden = models.BooleanField(default=False, verbose_name=ugettext_lazy('is hidden'))
 
     class Meta:
@@ -225,10 +223,10 @@ class GenericClassifier(MPTTModel):
 
 
 class GenericAttribute(models.Model):
-    attribute_type = models.ForeignKey(GenericAttributeType)
+    attribute_type = models.ForeignKey(GenericAttributeType, verbose_name=ugettext_lazy('attribute type'))
 
-    content_type = models.ForeignKey(ContentType)
-    object_id = models.BigIntegerField(db_index=True)
+    content_type = models.ForeignKey(ContentType, verbose_name=ugettext_lazy('content type'))
+    object_id = models.BigIntegerField(db_index=True, verbose_name=ugettext_lazy('object id'))
     content_object = GenericForeignKey('content_type', 'object_id')
 
     value_string = models.CharField(max_length=255, default='', blank=True,

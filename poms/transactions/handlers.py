@@ -18,8 +18,9 @@ from poms.transactions.models import ComplexTransaction, TransactionTypeInput, T
 
 
 class TransactionTypeProcess(object):
-    def __init__(self, transaction_type=None, default_values=None, values=None,
-                 calculate=True, store=False, has_errors=False,
+    def __init__(self, transaction_type=None, default_values=None,
+                 # expressions=None,
+                 values=None,                 calculate=True, store=False, has_errors=False,
                  instruments=None, instruments_errors=None,
                  complex_transaction=None, complex_transaction_status=None, complex_transaction_errors=None,
                  transactions=None, transactions_errors=None,
@@ -32,6 +33,10 @@ class TransactionTypeProcess(object):
 
         self.calculate = calculate or False
         self.store = store or False
+
+        # self.expressions = expressions or {}
+        # self.expressions_error = None
+        # self.expressions_result = None
 
         self.inputs = list(self.transaction_type.inputs.all())
 
@@ -451,4 +456,21 @@ class TransactionTypeProcess(object):
         }
         msgs = errors.get(attr_name, None) or []
         if msg not in msgs:
-            errors[attr_name] = msgs + [msg]
+            msgs += [msg]
+            errors[attr_name] = msgs
+        return msgs
+
+    # def process_expressions(self):
+    #     self.expressions_error = {}
+    #     self.expressions_result = {}
+    #     if not self.expressions:
+    #         return
+    #     for key, expr in self.expressions.items():
+    #         self.expressions_result[key] = None
+    #         self.expressions_error[key] = None
+    #         if expr:
+    #             try:
+    #                 self.expressions_result[key] = formula.safe_eval(expr, names=self.values, now=self._now,
+    #                                                                  context=self._context)
+    #             except formula.InvalidExpression as e:
+    #                 self._set_eval_error(self.expressions_error, key, expr, e)
