@@ -518,7 +518,7 @@ class ImportInstrumentViewSerializer(ModelWithAttributesSerializer, ModelWithObj
     factor_schedules = serializers.SerializerMethodField()
     event_schedules = serializers.PrimaryKeyRelatedField(read_only=True, many=True)
 
-    attributes = serializers.SerializerMethodField()
+    # attributes = serializers.SerializerMethodField()
 
     # tags = TagField(many=True, required=False, allow_null=True)
     # tags_object = TagViewSerializer(source='tags', many=True, read_only=True)
@@ -537,7 +537,7 @@ class ImportInstrumentViewSerializer(ModelWithAttributesSerializer, ModelWithObj
             'maturity_date',
             # 'manual_pricing_formulas',
             'accrual_calculation_schedules', 'factor_schedules', 'event_schedules',
-            'attributes',
+            # 'attributes',
             # 'tags', 'tags_object'
         ]
 
@@ -559,6 +559,8 @@ class ImportInstrumentViewSerializer(ModelWithAttributesSerializer, ModelWithObj
 
         self.fields['price_download_scheme_object'] = PriceDownloadSchemeViewSerializer(source='price_download_scheme',
                                                                                         read_only=True)
+
+        self.fields['attributes'] = serializers.SerializerMethodField()
 
         # self.fields.pop('manual_pricing_formulas')
         # self.fields.pop('accrual_calculation_schedules')
@@ -589,6 +591,7 @@ class ImportInstrumentViewSerializer(ModelWithAttributesSerializer, ModelWithObj
 
     def get_attributes(self, obj):
         from poms.obj_attrs.serializers import GenericAttributeSerializer
+        _l.warn('get_attributes: _attributes=%s', hasattr(obj, '_attributes'))
         if hasattr(obj, '_attributes'):
             l = obj._attributes
         else:
@@ -632,7 +635,7 @@ class ImportInstrumentSerializer(serializers.Serializer):
     task_result = serializers.SerializerMethodField()
     task_result_overrides = serializers.JSONField(default={}, allow_null=True)
 
-    instrument = serializers.ReadOnlyField()
+    # instrument = serializers.ReadOnlyField()
     errors = serializers.ReadOnlyField()
 
     def __init__(self, *args, **kwargs):

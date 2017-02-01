@@ -365,7 +365,7 @@ class Instrument(NamedModel, FakeDeletableModel):
         return self.master_user.instrument_id == self.id if self.master_user_id else False
 
     def rebuild_event_schedules(self):
-        from poms.transactions.models import EventClass
+        from poms.transactions.models import EventClass, NotificationClass
         # TODO: add validate equality before process
 
         # self.event_schedules.filter(is_auto_generated=True).delete()
@@ -373,10 +373,15 @@ class Instrument(NamedModel, FakeDeletableModel):
         master_user = self.master_user
         instrument_type = self.instrument_type
         instrument_class = instrument_type.instrument_class
+
         try:
             event_schedule_config = master_user.instrument_event_schedule_config
         except ObjectDoesNotExist:
             event_schedule_config = EventScheduleConfig.create_default(master_user=master_user)
+
+        notification_class_id = event_schedule_config.notification_class_id
+        if notification_class_id is None:
+            notification_class_id = NotificationClass.DONT_REACT
 
         events = list(self.event_schedules.prefetch_related('actions').filter(is_auto_generated=True))
         events_by_accrual = {e.accrual_calculation_schedule_id: e
@@ -403,7 +408,7 @@ class Instrument(NamedModel, FakeDeletableModel):
                     e.name = event_schedule_config.name
                     e.description = event_schedule_config.description
                     e.event_class_id = EventClass.REGULAR
-                    e.notification_class = event_schedule_config.notification_class
+                    e.notification_class_id = notification_class_id
                     e.effective_date = accrual.first_payment_date
                     e.notify_in_n_days = event_schedule_config.notify_in_n_days
                     e.periodicity = accrual.periodicity
@@ -430,7 +435,7 @@ class Instrument(NamedModel, FakeDeletableModel):
                 e.name = event_schedule_config.name
                 e.description = event_schedule_config.description
                 e.event_class_id = EventClass.ONE_OFF
-                e.notification_class = event_schedule_config.notification_class
+                e.notification_class_id = notification_class_id
                 e.effective_date = self.maturity_date
                 e.notify_in_n_days = event_schedule_config.notify_in_n_days
                 e.final_date = self.maturity_date
@@ -485,7 +490,7 @@ class Instrument(NamedModel, FakeDeletableModel):
             e.name = event_schedule_config.name
             e.description = event_schedule_config.description
             e.event_class_id = EventClass.ONE_OFF
-            e.notification_class = event_schedule_config.notification_class
+            e.notification_class_id = notification_class_id
             e.effective_date = f.effective_date
             e.notify_in_n_days = event_schedule_config.notify_in_n_days
             e.final_date = f.effective_date
@@ -919,7 +924,8 @@ class EventScheduleConfig(models.Model):
                                            on_delete=models.PROTECT, verbose_name=ugettext_lazy('notification class'))
     notify_in_n_days = models.PositiveSmallIntegerField(default=0, verbose_name=ugettext_lazy('notify in N days'))
     action_text = models.CharField(max_length=255, blank=True, default='', verbose_name=ugettext_lazy('action text'))
-    action_is_sent_to_pending = models.BooleanField(default=True, verbose_name=ugettext_lazy('action is sent to pending'))
+    action_is_sent_to_pending = models.BooleanField(default=True,
+                                                    verbose_name=ugettext_lazy('action is sent to pending'))
     action_is_book_automatic = models.BooleanField(default=True, verbose_name=ugettext_lazy('action is book automatic'))
 
     class Meta:
@@ -932,10 +938,15 @@ class EventScheduleConfig(models.Model):
     @staticmethod
     def create_default(master_user):
         from poms.transactions.models import NotificationClass
+
         return EventScheduleConfig.objects.create(
             master_user=master_user,
-            name="''",
-            description="''",
+            name='""',
+            description='""',
+            # notification_class=NotificationClass.objects.get(pk=NotificationClass.DONT_REACT),
             notification_class_id=NotificationClass.DONT_REACT,
-            action_text="''",
+            notify_in_n_days=0,
+            action_text='""',
+            action_is_sent_to_pending=False,
+            action_is_book_automatic=True
         )

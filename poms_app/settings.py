@@ -421,12 +421,6 @@ if DEBUG or DEV:
         'rest_framework.renderers.AdminRenderer',
     )
 
-SWAGGER_SETTINGS = {
-    'SHOW_REQUEST_HEADERS': True,
-    'APIS_SORTER': 'alpha',
-    'OPERATIONS_SORTER': 'method',
-    'JSON_EDITOR': True,
-}
 
 # CURRENCY_CODE = 'USD'
 

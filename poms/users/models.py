@@ -237,10 +237,10 @@ class MasterUser(models.Model):
         from poms.strategies.models import Strategy1Group, Strategy1Subgroup, Strategy1, Strategy2Group, \
             Strategy2Subgroup, Strategy2, Strategy3Group, Strategy3Subgroup, Strategy3
         from poms.chats.models import ThreadGroup
-        from poms.obj_perms.utils import assign_perms3, get_change_perms
+        from poms.transactions.models import NotificationClass
 
         if not EventScheduleConfig.objects.filter(master_user=self).exists():
-            EventScheduleConfig.objects.create(master_user=self)
+            EventScheduleConfig.create_default(master_user=self)
 
         if not PricingAutomatedSchedule.objects.filter(master_user=self).exists():
             PricingAutomatedSchedule.objects.create(master_user=self, is_enabled=False)
