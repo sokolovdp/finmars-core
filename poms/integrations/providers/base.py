@@ -79,8 +79,10 @@ class AbstractProvider(object):
         return None, True
 
     def get_currency(self, master_user, provider, value):
-        if not value:
-            return None
+        # if not value:
+        #     return None
+        if value is None:
+            value = ''
         try:
             obj = CurrencyMapping.objects.select_related('currency').get(
                 master_user=master_user, provider=provider, value=value)
@@ -89,8 +91,10 @@ class AbstractProvider(object):
         return obj.currency
 
     def get_instrument_type(self, master_user, provider, value):
-        if not value:
-            return None
+        # if not value:
+        #     return None
+        if value is None:
+            value = ''
         try:
             obj = InstrumentTypeMapping.objects.select_related('instrument_type').get(
                 master_user=master_user, provider=provider, value=value)
@@ -99,8 +103,10 @@ class AbstractProvider(object):
         return obj.instrument_type
 
     def get_instrument_attribute_value(self, master_user, provider, attribute_type, value):
-        if not value:
-            return None
+        # if not value:
+        #     return None
+        if value is None:
+            value = ''
         try:
             obj = InstrumentAttributeValueMapping.objects.select_related('classifier').get(
                 master_user=master_user, provider=provider, attribute_type=attribute_type, value=value)
@@ -109,8 +115,10 @@ class AbstractProvider(object):
         return obj.value_string, obj.value_float, obj.value_date, obj.classifier
 
     def get_accrual_calculation_model(self, master_user, provider, value):
-        if not value:
-            return None
+        # if not value:
+        #     return None
+        if value is None:
+            value = ''
         try:
             obj = AccrualCalculationModelMapping.objects.select_related('accrual_calculation_model').get(
                 master_user=master_user, provider=provider, value=value)
@@ -119,8 +127,10 @@ class AbstractProvider(object):
         return obj.accrual_calculation_model
 
     def get_periodicity(self, master_user, provider, value):
-        if not value:
-            return None
+        # if not value:
+        #     return None
+        if value is None:
+            value = ''
         try:
             obj = PeriodicityMapping.objects.select_related('periodicity').get(
                 master_user=master_user, provider=provider, value=value)
@@ -157,23 +167,23 @@ class AbstractProvider(object):
                 errors[attr] = [ugettext_lazy('Invalid expression.')]
                 continue
             if attr in ['pricing_currency', 'accrued_currency']:
-                if self.is_empty_value(v):
-                    pass
+                # if self.is_empty_value(v):
+                #     pass
+                # else:
+                v = self.get_currency(master_user, provider, v)
+                if v:
+                    setattr(instr, attr, v)
                 else:
-                    v = self.get_currency(master_user, provider, v)
-                    if v:
-                        setattr(instr, attr, v)
-                    else:
-                        errors[attr] = [ugettext_lazy('This field is required.')]
+                    errors[attr] = [ugettext_lazy('This field is required.')]
             elif attr in ['instrument_type']:
-                if self.is_empty_value(v):
-                    pass
+                # if self.is_empty_value(v):
+                #     pass
+                # else:
+                v = self.get_instrument_type(master_user, provider, v)
+                if v:
+                    setattr(instr, attr, v)
                 else:
-                    v = self.get_instrument_type(master_user, provider, v)
-                    if v:
-                        setattr(instr, attr, v)
-                    else:
-                        errors[attr] = [ugettext_lazy('This field is required.')]
+                    errors[attr] = [ugettext_lazy('This field is required.')]
             elif attr in ['price_multiplier', 'accrued_multiplier', 'default_price', 'default_accrued']:
                 if self.is_empty_value(v):
                     pass
@@ -230,10 +240,11 @@ class AbstractProvider(object):
                              instrument_download_scheme.id, attr.id, attr.value, values)
                     errors[err_name] = [ugettext_lazy('Invalid expression.')]
                     continue
-                if not self.is_empty_value(v):
-                    attr_mapped_values = self.get_instrument_attribute_value(master_user, provider, tattr, v)
-                else:
-                    attr_mapped_values = None
+                # if not self.is_empty_value(v):
+                #     attr_mapped_values = self.get_instrument_attribute_value(master_user, provider, tattr, v)
+                # else:
+                #     attr_mapped_values = None
+                attr_mapped_values = self.get_instrument_attribute_value(master_user, provider, tattr, v)
                 if attr_mapped_values is not None:
                     iattr.value_string, iattr.value_float, iattr.value_date, iattr.classifier = attr_mapped_values
                 else:
