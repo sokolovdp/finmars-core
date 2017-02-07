@@ -113,7 +113,7 @@ class Bookmark(BaseUIModel, MPTTModel):
     name = models.CharField(max_length=100, verbose_name=ugettext_lazy('name'))
     uri = models.CharField(max_length=256, null=True, blank=True, verbose_name=ugettext_lazy('uri'))
     list_layout = models.ForeignKey(ListLayout, null=True, blank=True, related_name='bookmarks',
-                                    verbose_name=ugettext_lazy('list layout'))
+                                    on_delete=models.SET_NULL, verbose_name=ugettext_lazy('list layout'))
 
     class MPTTMeta:
         order_insertion_by = ['member', 'name']
