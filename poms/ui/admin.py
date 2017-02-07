@@ -2,7 +2,7 @@ from django.contrib import admin
 
 from poms.common.admin import AbstractModelAdmin
 from poms.ui.filters import LayoutContentTypeFilter
-from poms.ui.models import TemplateListLayout, TemplateEditLayout, ListLayout, EditLayout
+from poms.ui.models import TemplateListLayout, TemplateEditLayout, ListLayout, EditLayout, Bookmark
 
 
 class BaseLayoutAdmin(AbstractModelAdmin):
@@ -73,3 +73,22 @@ class EditLayoutAdmin(BaseLayoutAdmin):
 
 
 admin.site.register(EditLayout, EditLayoutAdmin)
+
+
+class BookmarkAdmin(AbstractModelAdmin):
+    model = Bookmark
+    master_user_path = 'member__master_user'
+    list_display = ['id', 'master_user', 'member', 'tree_id', 'level', 'parent', 'name', ]
+    list_select_related = ['member', 'member__master_user', 'parent']
+    # search_fields = ['attribute_type_id']
+    raw_id_fields = ['member', 'parent', 'list_layout']
+    ordering = ['member', 'tree_id', 'level', ]
+    save_as = True
+
+    def master_user(self, obj):
+        return obj.member.master_user
+
+    master_user.admin_order_field = 'member__master_user'
+
+
+admin.site.register(Bookmark, BookmarkAdmin)

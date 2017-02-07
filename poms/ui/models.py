@@ -4,12 +4,13 @@ from django.contrib.contenttypes.models import ContentType
 from django.core.serializers.json import DjangoJSONEncoder
 from django.db import models
 from django.utils.translation import ugettext_lazy
+from mptt.fields import TreeForeignKey
+from mptt.models import MPTTModel
 
 from poms.users.models import MasterUser, Member
 
 
-class BaseLayout(models.Model):
-    content_type = models.ForeignKey(ContentType, verbose_name=ugettext_lazy('content type'))
+class BaseUIModel(models.Model):
     json_data = models.TextField(null=True, blank=True, verbose_name=ugettext_lazy('json data'))
 
     class Meta:
@@ -17,14 +18,27 @@ class BaseLayout(models.Model):
 
     @property
     def data(self):
-        try:
-            return json.loads(self.json_data) if self.json_data else None
-        except (ValueError, TypeError):
+        if self.json_data:
+            try:
+                return json.loads(self.json_data)
+            except (ValueError, TypeError):
+                return None
+        else:
             return None
 
     @data.setter
-    def data(self, data):
-        self.json_data = json.dumps(data, cls=DjangoJSONEncoder, sort_keys=True) if data else None
+    def data(self, val):
+        if val:
+            self.json_data = json.dumps(val, cls=DjangoJSONEncoder, sort_keys=True)
+        else:
+            self.json_data = None
+
+
+class BaseLayout(BaseUIModel):
+    content_type = models.ForeignKey(ContentType, verbose_name=ugettext_lazy('content type'))
+
+    class Meta:
+        abstract = True
 
 
 class TemplateListLayout(BaseLayout):
@@ -78,6 +92,9 @@ class ListLayout(BaseLayout):
             qs.update(is_default=False)
         return super(ListLayout, self).save(*args, **kwargs)
 
+    def __str__(self):
+        return self.name
+
 
 class EditLayout(BaseLayout):
     member = models.ForeignKey(Member, related_name='edit_layouts', verbose_name=ugettext_lazy('member'))
@@ -87,6 +104,27 @@ class EditLayout(BaseLayout):
             ['member', 'content_type'],
         ]
         ordering = ['content_type']
+
+
+class Bookmark(BaseUIModel, MPTTModel):
+    member = models.ForeignKey(Member, related_name='bookmarks', verbose_name=ugettext_lazy('member'))
+    parent = TreeForeignKey('self', null=True, blank=True, related_name='children', db_index=True,
+                            verbose_name=ugettext_lazy('parent'))
+    name = models.CharField(max_length=100, verbose_name=ugettext_lazy('name'))
+    uri = models.CharField(max_length=256, null=True, blank=True, verbose_name=ugettext_lazy('uri'))
+    list_layout = models.ForeignKey(ListLayout, null=True, blank=True, related_name='bookmarks',
+                                    verbose_name=ugettext_lazy('list layout'))
+
+    class MPTTMeta:
+        order_insertion_by = ['member', 'name']
+
+    class Meta:
+        verbose_name = ugettext_lazy('bookmark')
+        verbose_name_plural = ugettext_lazy('bookmarks')
+        ordering = ['tree_id', 'level', 'name']
+
+    def __str__(self):
+        return self.name
 
 # history.register(TemplateListLayout)
 # history.register(TemplateEditLayout)
