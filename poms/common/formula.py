@@ -581,22 +581,26 @@ class SimpleEval2(object):
             raise NameNotDefined(name)
 
     def _check_value(self, val):
-        from django.db import models
+        # from django.db import models
 
         if val is None:
             return None
         elif isinstance(val, (bool, int, str, list, tuple, dict, OrderedDict, datetime.date)):
             return val
-        elif isinstance(val, models.Model):
+        # elif isinstance(val, models.Model):
+        else:
             # return get_model_data_ext(val, many=False, context=self.context)
-            key = (type, val.pk)
+            key = (
+                type(val),
+                getattr(val, 'pk', getattr(val, 'id', None))
+            )
             if key in self._table:
                 val = self._table[key]
             else:
                 val = get_model_data_ext(val, many=False, context=self.context)
                 self._table[key] = val
             return val
-        return val
+        # return val
 
     def eval(self, expr, names=None):
         if not expr:
