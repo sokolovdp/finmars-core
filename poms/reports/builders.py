@@ -16,7 +16,7 @@ from poms.accounts.models import Account, AccountType
 from poms.common import formula
 from poms.common.utils import date_now, isclose
 from poms.currencies.models import Currency
-from poms.instruments.models import Instrument, InstrumentType, CostMethod
+from poms.instruments.models import Instrument, InstrumentType, CostMethod, InstrumentClass
 from poms.obj_attrs.utils import get_attributes_prefetch
 from poms.obj_perms.utils import get_permissions_prefetch_lookups
 from poms.portfolios.models import Portfolio
@@ -95,7 +95,9 @@ class VirtualTransaction(_Base):
     trn_cls = None
     # case = 0
     avco_multiplier = 0.0
+    avco_closed_by = None
     fifo_multiplier = 0.0
+    fifo_closed_by = None
     multiplier = 1.0
     closed_by = None
 
@@ -2019,7 +2021,9 @@ class ReportBuilder(object):
             trn.pricing()
             res.append(trn)
 
-        res1 = self._calc_multipliers(res)
+        # res1 = self.calc_multipliers(res)
+        self.calc_multipliers(res)
+        res1 = res
 
         res2 = []
         for trn in res1:
@@ -2192,24 +2196,42 @@ class ReportBuilder(object):
     #
     #     return res
 
-    def _calc_multipliers(self, src):
-        self._calc_avco_multipliers(src)
-        self._calc_fifo_multipliers(src)
-
-        res = []
+    def calc_multipliers(self, src):
+        # TODO: check. approach_clone
         if self.instance.cost_method.id == CostMethod.AVCO:
-            for t in src:
-                res.append(t)
-                t.multiplier = getattr(t, 'avco_multiplier', 0.0)
+            self._calc_avco_multipliers(src)
         elif self.instance.cost_method.id == CostMethod.FIFO:
-            for t in src:
-                res.append(t)
-                t.multiplier = getattr(t, 'fifo_multiplier', 0.0)
-        else:
-            for t in src:
-                res.append(t)
-                t.multiplier = 0.0
-        return res
+            self._calc_fifo_multipliers(src)
+
+        # res = []
+        # if self.instance.cost_method.id == CostMethod.AVCO:
+        #     for t in src:
+        #         # res.append(t)
+        #         t.multiplier = t.avco_multiplier
+        # elif self.instance.cost_method.id == CostMethod.FIFO:
+        #     for t in src:
+        #         # res.append(t)
+        #         t.multiplier = t.fifo_multiplier
+        # else:
+        #     for t in src:
+        #         # res.append(t)
+        #         t.multiplier = 0.0
+        #         # return src
+
+        for t in src:
+            # res.append(t)
+
+            # if t.instr and t.instr.instrument_type.instrument_class_id == InstrumentClass.CONTRACT_FOR_DIFFERENCE:
+            #     t.multiplier = t.fifo_multiplier
+            #     t.closed_by = t.fifo_closed_by
+
+            if self.instance.cost_method.id == CostMethod.AVCO:
+                t.multiplier = t.avco_multiplier
+                t.closed_by = t.avco_closed_by
+
+            elif self.instance.cost_method.id == CostMethod.FIFO:
+                t.multiplier = t.fifo_multiplier
+                t.closed_by = t.fifo_closed_by
 
     def _get_trn_key(self, t):
         return (
@@ -2231,11 +2253,11 @@ class ReportBuilder(object):
             return delta
 
         def _close_by(closed, cur, delta):
-            closed.closed_by.append((cur, delta))
+            closed.avco_closed_by.append((cur, delta))
 
-        res = []
+        # res = []
         for t in src:
-            res.append(t)
+            # res.append(t)
 
             if t.trn_cls.id not in [TransactionClass.BUY, TransactionClass.SELL]:
                 continue
@@ -2243,7 +2265,7 @@ class ReportBuilder(object):
             t_key = self._get_trn_key(t)
 
             t.avco_multiplier = 0.0
-            t.closed_by = []
+            t.avco_closed_by = []
             rolling_position = rolling_positions[t_key]
 
             if isclose(rolling_position, 0.0):
@@ -2284,7 +2306,7 @@ class ReportBuilder(object):
 
             rolling_positions[t_key] = rolling_position
 
-        return res
+            # return res
 
     def _calc_fifo_multipliers(self, src):
         rolling_positions = Counter()
@@ -2296,11 +2318,11 @@ class ReportBuilder(object):
             return delta
 
         def _close_by(closed, cur, delta):
-            closed.closed_by.append((cur, delta))
+            closed.fifo_closed_by.append((cur, delta))
 
-        res = []
+        # res = []
         for t in src:
-            res.append(t)
+            # res.append(t)
 
             if t.trn_cls.id not in [TransactionClass.BUY, TransactionClass.SELL]:
                 continue
@@ -2308,7 +2330,7 @@ class ReportBuilder(object):
             t_key = self._get_trn_key(t)
 
             t.fifo_multiplier = 0.0
-            t.closed_by = []
+            t.fifo_closed_by = []
             rolling_position = rolling_positions[t_key]
 
             if isclose(rolling_position, 0.0):
@@ -2373,7 +2395,7 @@ class ReportBuilder(object):
 
             rolling_positions[t_key] = rolling_position
 
-        return res
+            # return res
 
     def build(self, full=True):
         mismatch_items = []
