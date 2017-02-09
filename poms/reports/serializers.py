@@ -270,7 +270,7 @@ class ReportItemCustomFieldSerializer(serializers.Serializer):
 
 
 class ReportItemSerializer(serializers.Serializer):
-    id = serializers.CharField(read_only=True)
+    id = serializers.SerializerMethodField()
 
     item_type = serializers.ChoiceField(source='type', choices=ReportItem.TYPE_CHOICES, read_only=True)
     item_type_code = serializers.ReadOnlyField(source='type_code')
@@ -393,6 +393,9 @@ class ReportItemSerializer(serializers.Serializer):
         self.fields['mismatch_portfolio_object'] = ReportPortfolioSerializer(source='mismatch_prtfl', read_only=True)
         self.fields['mismatch_account_object'] = ReportAccountSerializer(source='mismatch_acc', read_only=True)
         # self.fields['mismatch_currency_object'] = ReportCurrencySerializer(source='mismatch_ccy', read_only=True)
+
+    def get_id(self, obj):
+        return ','.join(str(x) for x in obj.pk)
 
     def get_detail(self, obj):
         # obj_data = formula.get_model_data(obj, ReportItemDetailRendererSerializer, context=self.context)
