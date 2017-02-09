@@ -1693,6 +1693,7 @@ class Report(object):
                  strategy3_mode=MODE_INDEPENDENT,
                  show_transaction_details=False,
                  approach_multiplier=0.5,
+                 instruments=None,
                  portfolios=None,
                  accounts=None,
                  strategies1=None,
@@ -1725,6 +1726,7 @@ class Report(object):
         self.show_transaction_details = show_transaction_details
         self.approach_multiplier = approach_multiplier
 
+        self.instruments = instruments or []
         self.portfolios = portfolios or []
         self.accounts = accounts or []
         self.strategies1 = strategies1 or []
@@ -1792,7 +1794,7 @@ class ReportBuilder(object):
             queryset = self._queryset
 
         # permissions and attributes refreshed after build report
-        queryset = Transaction.objects.prefetch_related(
+        queryset = queryset.prefetch_related(
             'master_user',
             # 'complex_transaction',
             # 'complex_transaction__transaction_type',
@@ -1899,6 +1901,9 @@ class ReportBuilder(object):
             'is_deleted': False,
             '%s__lte' % self.instance.date_field: self.instance.report_date
         }
+
+        if self.instance.instruments:
+            kw_filters['instrument__in'] = self.instance.instruments
 
         if self.instance.portfolios:
             # queryset = queryset.filter(portfolio__in=self.instance.portfolios)
