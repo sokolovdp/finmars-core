@@ -242,7 +242,7 @@ class ReportTestCase(TestCase):
 
         if print_transactions is None:
             print_transactions = self._print_transactions
-        print_transactions(builder.transactions)
+        print_transactions(builder.instance.transactions)
 
         if print_items is None:
             print_items = self._print_items

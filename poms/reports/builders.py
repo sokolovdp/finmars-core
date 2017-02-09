@@ -3,7 +3,7 @@ from __future__ import unicode_literals, division
 
 import copy
 import logging
-from collections import Counter, defaultdict
+from collections import Counter, defaultdict, namedtuple
 from datetime import timedelta
 from itertools import groupby
 
@@ -46,22 +46,6 @@ class _Base:
     def clone(self):
         return copy.copy(self)
 
-    # def __getattr__(self, item):
-    #     if item.endswith('_rep'):
-    #         # automatic make value in report ccy
-    #         item_sys = '%s_sys' % item[:-4]
-    #         # if hasattr(self, item_sys):
-    #         #     val = getattr(self, item_sys)
-    #         #     if self.report_ccy_is_sys:
-    #         #         return val
-    #         #     else:
-    #         #         fx = self.report_ccy_rep_fx
-    #         #         if isclose(fx, 0.0):
-    #         #             return 0.0
-    #         #         return val / fx
-    #         return getattr(self, item_sys)
-    #     raise AttributeError(item)
-
     def dump_values(self, columns=None):
         if columns is None:
             columns = self.dump_columns
@@ -78,12 +62,8 @@ class _Base:
         data = []
         for item in items:
             data.append(item.dump_values(columns=columns))
-        print(sprint_table(data, columns))
-        # from io import StringIO
-        # r = StringIO()
-        # df.to_csv(r, sep=';')
-        # print(r.getvalue())
-        pass
+        _l.debug('\n%s', sprint_table(data, columns))
+        # print(sprint_table(data, columns))
 
 
 class VirtualTransaction(_Base):
@@ -877,6 +857,9 @@ class VirtualTransaction(_Base):
         if self.case in [1, 2] and self.report.show_transaction_details:
             return acc and acc.type and acc.type.show_transaction_details
         return False
+
+
+VirtualTransactionClosedByData = namedtuple('VirtualTransactionClosedByData', ['trn', 'delta'])
 
 
 class ReportItem(_Base):
@@ -1982,13 +1965,16 @@ class ReportBuilder(object):
             p.fill_using_transactions(self._trn_qs(), currencies=[self.instance.report_currency], lazy=False)
             return p
 
-    @cached_property
-    def transactions(self):
-        if self._transactions:
+    def get_transactions(self):
+        if self._transactions is not None:
             return self._transactions
 
+        trn_qs = self._trn_qs()
+        if not trn_qs.exists():
+            return []
+
         res = []
-        for t in self._trn_qs():
+        for t in trn_qs:
             overrides = {}
 
             if self.instance.portfolio_mode == Report.MODE_IGNORE:
@@ -2021,13 +2007,12 @@ class ReportBuilder(object):
             trn.pricing()
             res.append(trn)
 
-        # res1 = self.calc_multipliers(res)
-        self.calc_multipliers(res)
-        res1 = res
+        return res
 
-        res2 = []
-        for trn in res1:
-            res2.append(trn)
+    def clone_transactions_if_need(self, transactions):
+        res = []
+        for trn in transactions:
+            res.append(trn)
 
             trn.calc()
 
@@ -2035,15 +2020,15 @@ class ReportBuilder(object):
                 if trn.closed_by:
                     for closed_by, delta in trn.closed_by:
                         closed_by2, trn2 = VirtualTransaction.approach_clone(closed_by, trn, delta)
-                        res2.append(trn2)
-                        res2.append(closed_by2)
+                        res.append(trn2)
+                        res.append(closed_by2)
 
             elif trn.trn_cls.id == TransactionClass.FX_TRADE:
                 trn.is_hidden = True
 
                 trn1, trn2 = trn.fx_trade_clone()
-                res2.append(trn1)
-                res2.append(trn2)
+                res.append(trn1)
+                res.append(trn2)
 
             elif trn.trn_cls.id == TransactionClass.TRANSFER:
                 trn.is_hidden = True
@@ -2052,17 +2037,17 @@ class ReportBuilder(object):
                     trn1, trn2 = trn.transfer_clone(self._trn_cls_sell, self._trn_cls_buy)
                 else:
                     trn1, trn2 = trn.transfer_clone(self._trn_cls_buy, self._trn_cls_sell)
-                res2.append(trn1)
-                res2.append(trn2)
+                res.append(trn1)
+                res.append(trn2)
 
             elif trn.trn_cls.id == TransactionClass.FX_TRANSFER:
                 trn.is_hidden = True
 
                 trn1, trn2 = trn.transfer_clone(self._trn_cls_fx_trade, self._trn_cls_fx_trade)
-                res2.append(trn1)
-                res2.append(trn2)
+                res.append(trn1)
+                res.append(trn2)
 
-        return res2
+        return res
 
     # def _calc_multipliers(self, src):
     #     rolling_positions = Counter()
@@ -2196,12 +2181,14 @@ class ReportBuilder(object):
     #
     #     return res
 
-    def calc_multipliers(self, src):
-        # TODO: check. approach_clone
-        if self.instance.cost_method.id == CostMethod.AVCO:
-            self._calc_avco_multipliers(src)
-        elif self.instance.cost_method.id == CostMethod.FIFO:
-            self._calc_fifo_multipliers(src)
+    def calc_multipliers(self, transactions):
+        # # TO DO: check. approach_clone
+        # if self.instance.cost_method.id == CostMethod.AVCO:
+        #     self._calc_avco_multipliers(src)
+        # elif self.instance.cost_method.id == CostMethod.FIFO:
+        #     self._calc_fifo_multipliers(src)
+        self.calc_avco_multipliers(transactions)
+        self.calc_fifo_multipliers(transactions)
 
         # res = []
         # if self.instance.cost_method.id == CostMethod.AVCO:
@@ -2218,12 +2205,12 @@ class ReportBuilder(object):
         #         t.multiplier = 0.0
         #         # return src
 
-        for t in src:
+        for t in transactions:
             # res.append(t)
 
-            # if t.instr and t.instr.instrument_type.instrument_class_id == InstrumentClass.CONTRACT_FOR_DIFFERENCE:
-            #     t.multiplier = t.fifo_multiplier
-            #     t.closed_by = t.fifo_closed_by
+            if t.instr and t.instr.instrument_type.instrument_class_id == InstrumentClass.CONTRACT_FOR_DIFFERENCE:
+                t.multiplier = t.fifo_multiplier
+                t.closed_by = t.fifo_closed_by
 
             if self.instance.cost_method.id == CostMethod.AVCO:
                 t.multiplier = t.avco_multiplier
@@ -2243,7 +2230,7 @@ class ReportBuilder(object):
             getattr(t.instr, 'id', None),
         )
 
-    def _calc_avco_multipliers(self, src):
+    def calc_avco_multipliers(self, src):
         rolling_positions = Counter()
         items = defaultdict(list)
 
@@ -2253,7 +2240,7 @@ class ReportBuilder(object):
             return delta
 
         def _close_by(closed, cur, delta):
-            closed.avco_closed_by.append((cur, delta))
+            closed.avco_closed_by.append(VirtualTransactionClosedByData(cur, delta))
 
         # res = []
         for t in src:
@@ -2308,7 +2295,7 @@ class ReportBuilder(object):
 
             # return res
 
-    def _calc_fifo_multipliers(self, src):
+    def calc_fifo_multipliers(self, src):
         rolling_positions = Counter()
         items = defaultdict(list)
 
@@ -2318,7 +2305,7 @@ class ReportBuilder(object):
             return delta
 
         def _close_by(closed, cur, delta):
-            closed.fifo_closed_by.append((cur, delta))
+            closed.fifo_closed_by.append(VirtualTransactionClosedByData(cur, delta))
 
         # res = []
         for t in src:
@@ -2402,7 +2389,12 @@ class ReportBuilder(object):
 
         # split transactions to atomic items using transaction class, case and something else
 
-        for trn in self.transactions:
+        transactions = self.get_transactions()
+        self.calc_multipliers(transactions)
+        transactions = self.clone_transactions_if_need(transactions)
+        self.instance.transactions = transactions
+
+        for trn in transactions:
             if trn.is_mismatch and trn.link_instr and not isclose(trn.mismatch, 0.0):
                 item = ReportItem.from_trn(self.instance, self._pricing_provider, self._fx_rate_provider,
                                            ReportItem.TYPE_MISMATCH, trn)
@@ -2549,13 +2541,13 @@ class ReportBuilder(object):
 
         self.instance.close()
 
-        # print('0' * 100)
-        # VirtualTransaction.dumps(self.transactions)
-        # print('1' * 100)
+        # _l.debug('0' * 100)
+        # VirtualTransaction.dumps(self.instance.transactions)
+        # _l.debug('1' * 100)
         # ReportItem.dumps(self._items)
-        # print('2' * 100)
+        # _l.debug('2' * 100)
         # ReportItem.dumps(self.instance.items)
-        # print('3' * 100)
+        # _l.debug('3' * 100)
 
         return self.instance
 
