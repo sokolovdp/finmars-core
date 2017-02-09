@@ -94,6 +94,8 @@ class VirtualTransaction(_Base):
     trn_code = None
     trn_cls = None
     # case = 0
+    avco_multiplier = 0.0
+    fifo_multiplier = 0.0
     multiplier = 1.0
     closed_by = None
 
@@ -257,6 +259,8 @@ class VirtualTransaction(_Base):
         'is_mismatch',
         'trn_cls',
         # 'case',
+        # 'avco_multiplier',
+        # 'fifo_multiplier',
         'multiplier',
         # 'acc_date',
         # 'cash_date',
@@ -602,6 +606,8 @@ class VirtualTransaction(_Base):
             t.stl_ccy_cur_fx = float('nan')
 
             t.mismatch = 0.0
+            t.avco_multiplier = 0.0
+            t.fifo_multiplier = 0.0
             t.multiplier = 1.0
             t.cash = 0.0
             t.cash_res = 0.0
@@ -2013,18 +2019,7 @@ class ReportBuilder(object):
             trn.pricing()
             res.append(trn)
 
-        res1 = self._multipliers(res)
-
-        # res21 = []
-        # for trn in res1:
-        #     trn.calc()
-        #     if trn.closed_by:
-        #         for closed_by, delta in trn.closed_by:
-        #             closed_by2, trn2 = VirtualTransaction.approach_clone(closed_by, trn, delta)
-        #             res21.append(trn2)
-        #             res21.append(closed_by2)
-        # res2 = res1 + res21
-        # res3 = self._transfers(res2)
+        res1 = self._calc_multipliers(res)
 
         res2 = []
         for trn in res1:
@@ -2065,49 +2060,189 @@ class ReportBuilder(object):
 
         return res2
 
-    def _multipliers(self, src):
+    # def _calc_multipliers(self, src):
+    #     rolling_positions = Counter()
+    #     items = defaultdict(list)
+    #
+    #     res = []
+    #
+    #     def _set_mul(t0, multiplier):
+    #         delta = multiplier - t0.multiplier
+    #         t0.multiplier = multiplier
+    #         return delta
+    #
+    #     def _close_by(closed, cur, delta):
+    #         closed.closed_by.append((cur, delta))
+    #
+    #     for t in src:
+    #         res.append(t)
+    #
+    #         if t.trn_cls.id not in [TransactionClass.BUY, TransactionClass.SELL]:
+    #             continue
+    #
+    #         t_key = (
+    #             getattr(t.prtfl, 'id', None) if self.instance.portfolio_mode == Report.MODE_INDEPENDENT else None,
+    #             getattr(t.acc_pos, 'id', None) if self.instance.account_mode == Report.MODE_INDEPENDENT else None,
+    #             getattr(t.str1_pos, 'id', None) if self.instance.strategy1_mode == Report.MODE_INDEPENDENT else None,
+    #             getattr(t.str2_pos, 'id', None) if self.instance.strategy2_mode == Report.MODE_INDEPENDENT else None,
+    #             getattr(t.str3_pos, 'id', None) if self.instance.strategy3_mode == Report.MODE_INDEPENDENT else None,
+    #             getattr(t.instr, 'id', None),
+    #         )
+    #
+    #         t.multiplier = 0.0
+    #         t.closed_by = []
+    #         rolling_position = rolling_positions[t_key]
+    #
+    #         if isclose(rolling_position, 0.0):
+    #             k = -1
+    #         else:
+    #             k = - t.pos_size / rolling_position
+    #
+    #         if self.instance.cost_method.id == CostMethod.AVCO:
+    #
+    #             if k > 1.0:
+    #                 if t_key in items:
+    #                     for t0 in items[t_key]:
+    #                         delta = _set_mul(t0, 1.0)
+    #                         _close_by(t0, t, delta)
+    #                     del items[t_key]
+    #                 items[t_key].append(t)
+    #                 _set_mul(t, 1.0 / k)
+    #                 rolling_position = t.pos_size * (1.0 - t.multiplier)
+    #
+    #             elif isclose(k, 1.0):
+    #                 if t_key in items:
+    #                     for t0 in items[t_key]:
+    #                         delta = _set_mul(t0, 1.0)
+    #                         _close_by(t0, t, delta)
+    #                     del items[t_key]
+    #                 _set_mul(t, 1.0)
+    #                 rolling_position = 0.0
+    #
+    #             elif k > 0.0:
+    #                 if t_key in items:
+    #                     for t0 in items[t_key]:
+    #                         delta = _set_mul(t0, t0.multiplier + k * (1.0 - t0.multiplier))
+    #                         _close_by(t0, t, delta)
+    #                 _set_mul(t, 1.0)
+    #                 rolling_position += t.pos_size
+    #
+    #             else:
+    #                 items[t_key].append(t)
+    #                 rolling_position += t.pos_size
+    #
+    #         elif self.instance.cost_method.id == CostMethod.FIFO:
+    #
+    #             if k > 1.0:
+    #                 if t_key in items:
+    #                     for t0 in items[t_key]:
+    #                         delta = _set_mul(t0, 1.0)
+    #                         _close_by(t0, t, delta)
+    #                     items[t_key].clear()
+    #                 items[t_key].append(t)
+    #                 _set_mul(t, 1.0 / k)
+    #                 rolling_position = t.pos_size * (1.0 - t.multiplier)
+    #
+    #             elif isclose(k, 1.0):
+    #                 if t_key in items:
+    #                     for t0 in items[t_key]:
+    #                         delta = _set_mul(t0, 1.0)
+    #                         _close_by(t0, t, delta)
+    #                     del items[t_key]
+    #                 _set_mul(t, 1.0)
+    #                 rolling_position = 0.0
+    #
+    #             elif k > 0.0:
+    #                 position = t.pos_size
+    #                 if t_key in items:
+    #                     t_items = items[t_key]
+    #                     for t0 in t_items:
+    #                         remaining = t0.pos_size * (1.0 - t0.multiplier)
+    #                         k0 = - position / remaining
+    #                         if k0 > 1.0:
+    #                             delta = _set_mul(t0, 1.0)
+    #                             _close_by(t0, t, delta)
+    #                             position += remaining
+    #                         elif isclose(k0, 1.0):
+    #                             delta = _set_mul(t0, 1.0)
+    #                             _close_by(t0, t, delta)
+    #                             position += remaining
+    #                         elif k0 > 0.0:
+    #                             position += remaining * k0
+    #                             delta = _set_mul(t0, t0.multiplier + k0 * (1.0 - t0.multiplier))
+    #                             _close_by(t0, t, delta)
+    #                         # else:
+    #                         #     break
+    #                         if isclose(position, 0.0):
+    #                             break
+    #                     t_items = [t0 for t0 in t_items if not isclose(t0.multiplier, 1.0)]
+    #                     if t_items:
+    #                         items[t_key] = t_items
+    #                     else:
+    #                         del items[t_key]
+    #
+    #                 _set_mul(t, abs((t.pos_size - position) / t.pos_size))
+    #                 rolling_position += t.pos_size * t.multiplier
+    #
+    #             else:
+    #                 items[t_key].append(t)
+    #                 rolling_position += t.pos_size
+    #
+    #         rolling_positions[t_key] = rolling_position
+    #
+    #     return res
+
+    def _calc_multipliers(self, src):
+        self._calc_avco_multipliers(src)
+        self._calc_fifo_multipliers(src)
+
+        res = []
+        if self.instance.cost_method.id == CostMethod.AVCO:
+            for t in src:
+                res.append(t)
+                t.multiplier = getattr(t, 'avco_multiplier', 0.0)
+        elif self.instance.cost_method.id == CostMethod.FIFO:
+            for t in src:
+                res.append(t)
+                t.multiplier = getattr(t, 'fifo_multiplier', 0.0)
+        else:
+            for t in src:
+                res.append(t)
+                t.multiplier = 0.0
+        return res
+
+    def _get_trn_key(self, t):
+        return (
+            getattr(t.prtfl, 'id', None) if self.instance.portfolio_mode == Report.MODE_INDEPENDENT else None,
+            getattr(t.acc_pos, 'id', None) if self.instance.account_mode == Report.MODE_INDEPENDENT else None,
+            getattr(t.str1_pos, 'id', None) if self.instance.strategy1_mode == Report.MODE_INDEPENDENT else None,
+            getattr(t.str2_pos, 'id', None) if self.instance.strategy2_mode == Report.MODE_INDEPENDENT else None,
+            getattr(t.str3_pos, 'id', None) if self.instance.strategy3_mode == Report.MODE_INDEPENDENT else None,
+            getattr(t.instr, 'id', None),
+        )
+
+    def _calc_avco_multipliers(self, src):
         rolling_positions = Counter()
         items = defaultdict(list)
 
-        res = []
-
-        # multipliers_delta = []
-
-        # closed, closed_by, delta
-        # changes = []
-
-        def _set_mul(t0, multiplier):
-            # if isclose(t.r_multiplier, multiplier):
-            #     return
-            delta = multiplier - t0.multiplier
-            # multipliers_delta.append((t0, delta))
-            t0.multiplier = multiplier
+        def _set_mul(t0, avco_multiplier):
+            delta = avco_multiplier - t0.avco_multiplier
+            t0.avco_multiplier = avco_multiplier
             return delta
 
         def _close_by(closed, cur, delta):
-            # changes.append((closed, cur, delta))
             closed.closed_by.append((cur, delta))
-            # cur2, closed2 = VirtualTransaction.approach_clone(cur, closed, delta)
-            # res.append(cur2)
-            # res.append(closed2)
 
+        res = []
         for t in src:
             res.append(t)
 
             if t.trn_cls.id not in [TransactionClass.BUY, TransactionClass.SELL]:
                 continue
 
-            t_key = (
-                getattr(t.prtfl, 'id', None) if self.instance.portfolio_mode == Report.MODE_INDEPENDENT else None,
-                getattr(t.acc_pos, 'id', None) if self.instance.account_mode == Report.MODE_INDEPENDENT else None,
-                getattr(t.str1_pos, 'id', None) if self.instance.strategy1_mode == Report.MODE_INDEPENDENT else None,
-                getattr(t.str2_pos, 'id', None) if self.instance.strategy2_mode == Report.MODE_INDEPENDENT else None,
-                getattr(t.str3_pos, 'id', None) if self.instance.strategy3_mode == Report.MODE_INDEPENDENT else None,
-                getattr(t.instr, 'id', None),
-            )
+            t_key = self._get_trn_key(t)
 
-            # multipliers_delta.clear()
-            t.multiplier = 0.0
+            t.avco_multiplier = 0.0
             t.closed_by = []
             rolling_position = rolling_positions[t_key]
 
@@ -2116,171 +2251,129 @@ class ReportBuilder(object):
             else:
                 k = - t.pos_size / rolling_position
 
-            if self.instance.cost_method.id == CostMethod.AVCO:
+            if k > 1.0:
+                if t_key in items:
+                    for t0 in items[t_key]:
+                        delta = _set_mul(t0, 1.0)
+                        _close_by(t0, t, delta)
+                    del items[t_key]
+                items[t_key].append(t)
+                _set_mul(t, 1.0 / k)
+                rolling_position = t.pos_size * (1.0 - t.avco_multiplier)
 
-                if k > 1.0:
-                    if t_key in items:
-                        for t0 in items[t_key]:
-                            delta = _set_mul(t0, 1.0)
-                            _close_by(t0, t, delta)
-                        del items[t_key]
-                    items[t_key].append(t)
-                    _set_mul(t, 1.0 / k)
-                    rolling_position = t.pos_size * (1.0 - t.multiplier)
+            elif isclose(k, 1.0):
+                if t_key in items:
+                    for t0 in items[t_key]:
+                        delta = _set_mul(t0, 1.0)
+                        _close_by(t0, t, delta)
+                    del items[t_key]
+                _set_mul(t, 1.0)
+                rolling_position = 0.0
 
-                elif isclose(k, 1.0):
-                    if t_key in items:
-                        for t0 in items[t_key]:
-                            delta = _set_mul(t0, 1.0)
-                            _close_by(t0, t, delta)
-                        del items[t_key]
-                    _set_mul(t, 1.0)
-                    rolling_position = 0.0
+            elif k > 0.0:
+                if t_key in items:
+                    for t0 in items[t_key]:
+                        delta = _set_mul(t0, t0.avco_multiplier + k * (1.0 - t0.avco_multiplier))
+                        _close_by(t0, t, delta)
+                _set_mul(t, 1.0)
+                rolling_position += t.pos_size
 
-                elif k > 0.0:
-                    if t_key in items:
-                        for t0 in items[t_key]:
-                            delta = _set_mul(t0, t0.multiplier + k * (1.0 - t0.multiplier))
-                            _close_by(t0, t, delta)
-                    _set_mul(t, 1.0)
-                    rolling_position += t.pos_size
-
-                else:
-                    items[t_key].append(t)
-                    rolling_position += t.pos_size
-
-            elif self.instance.cost_method.id == CostMethod.FIFO:
-
-                if k > 1.0:
-                    if t_key in items:
-                        for t0 in items[t_key]:
-                            delta = _set_mul(t0, 1.0)
-                            _close_by(t0, t, delta)
-                        items[t_key].clear()
-                    items[t_key].append(t)
-                    _set_mul(t, 1.0 / k)
-                    rolling_position = t.pos_size * (1.0 - t.multiplier)
-
-                elif isclose(k, 1.0):
-                    if t_key in items:
-                        for t0 in items[t_key]:
-                            delta = _set_mul(t0, 1.0)
-                            _close_by(t0, t, delta)
-                        del items[t_key]
-                    _set_mul(t, 1.0)
-                    rolling_position = 0.0
-
-                elif k > 0.0:
-                    position = t.pos_size
-                    if t_key in items:
-                        t_items = items[t_key]
-                        for t0 in t_items:
-                            remaining = t0.pos_size * (1.0 - t0.multiplier)
-                            k0 = - position / remaining
-                            if k0 > 1.0:
-                                delta = _set_mul(t0, 1.0)
-                                _close_by(t0, t, delta)
-                                position += remaining
-                            elif isclose(k0, 1.0):
-                                delta = _set_mul(t0, 1.0)
-                                _close_by(t0, t, delta)
-                                position += remaining
-                            elif k0 > 0.0:
-                                position += remaining * k0
-                                delta = _set_mul(t0, t0.multiplier + k0 * (1.0 - t0.multiplier))
-                                _close_by(t0, t, delta)
-                            # else:
-                            #     break
-                            if isclose(position, 0.0):
-                                break
-                        t_items = [t0 for t0 in t_items if not isclose(t0.multiplier, 1.0)]
-                        if t_items:
-                            items[t_key] = t_items
-                        else:
-                            del items[t_key]
-
-                    _set_mul(t, abs((t.pos_size - position) / t.pos_size))
-                    rolling_position += t.pos_size * t.multiplier
-
-                else:
-                    items[t_key].append(t)
-                    rolling_position += t.pos_size
+            else:
+                items[t_key].append(t)
+                rolling_position += t.pos_size
 
             rolling_positions[t_key] = rolling_position
-            # print('i =', i, ', rolling_positions =', rolling_position)
 
-            # if multipliers_delta:
-            #     init_mult = 1.0 - self.instance.pl_real_unreal_end_multiplier
-            #     end_mult = self.instance.pl_real_unreal_end_multiplier
-            #
-            #     t, inc_multiplier = multipliers_delta[-1]
-            #
-            #     # sum_principal = 0.0
-            #     # sum_carry = 0.0
-            #     # sum_overheads = 0.0
-            #     sum_total = 0.0
-            #     for t0, inc_multiplier0 in multipliers_delta:
-            #         # sum_principal += t0.principal_with_sign * inc_multiplier0
-            #         # sum_carry += t0.carry_with_sign * inc_multiplier0
-            #         # sum_overheads += t0.overheads_with_sign * inc_multiplier0
-            #         sum_total += inc_multiplier0 * t0.total_sys
-            #
-            #     for t0, inc_multiplier0 in multipliers_delta:
-            #         mult = end_mult if t0.pk == t.pk else init_mult
-            #
-            #         matched = abs((t0.pos_size * inc_multiplier0) / (
-            #             t.pos_size * inc_multiplier))
-            #         # adj = matched * mult
-            #
-            #         # t0.real_pl_principal_with_sign += sum_principal * matched * mult
-            #         # t0.real_pl_carry_with_sign += sum_carry * matched * mult
-            #         # t0.real_pl_overheads_with_sign += sum_overheads * matched * mult
-            #         t0.total_real_sys += sum_total * matched * mult
-            pass
-
-        # for t in transactions:
-        #     if t.trn_cls.id not in [TransactionClass.BUY, TransactionClass.SELL]:
-        #         continue
-        #     # t.r_position_size = t.pos_size * (1.0 - t.multiplier)
-        #     # t.r_cost = t.principal_ * (1.0 - t.multiplier)
-        #     pass
         return res
 
-    # def _transfers(self, src):
-    #     res = []
-    #
-    #     for t in src:
-    #         res.append(t)
-    #
-    #         if t.trn_cls.id == TransactionClass.FX_TRADE:
-    #             t.is_hidden = True
-    #
-    #             t1, t2 = t.fx_trade_clone()
-    #             res.append(t1)
-    #             res.append(t2)
-    #
-    #         elif t.trn_cls.id == TransactionClass.TRANSFER:
-    #             t.is_hidden = True
-    #             # split TRANSFER to sell/buy or buy/sell
-    #
-    #             if t.pos_size >= 0:
-    #                 t1, t2 = t.transfer_clone(self._trn_cls_sell, self._trn_cls_buy)
-    #                 res.append(t1)
-    #                 res.append(t2)
-    #
-    #             else:
-    #                 t1, t2 = t.transfer_clone(self._trn_cls_buy, self._trn_cls_sell)
-    #                 res.append(t1)
-    #                 res.append(t2)
-    #
-    #         elif t.trn_cls.id == TransactionClass.FX_TRANSFER:
-    #             t.is_hidden = True
-    #
-    #             t1, t2 = t.transfer_clone(self._trn_cls_fx_trade, self._trn_cls_fx_trade)
-    #             res.append(t1)
-    #             res.append(t2)
-    #
-    #     return res
+    def _calc_fifo_multipliers(self, src):
+        rolling_positions = Counter()
+        items = defaultdict(list)
+
+        def _set_mul(t0, fifo_multiplier):
+            delta = fifo_multiplier - t0.fifo_multiplier
+            t0.fifo_multiplier = fifo_multiplier
+            return delta
+
+        def _close_by(closed, cur, delta):
+            closed.closed_by.append((cur, delta))
+
+        res = []
+        for t in src:
+            res.append(t)
+
+            if t.trn_cls.id not in [TransactionClass.BUY, TransactionClass.SELL]:
+                continue
+
+            t_key = self._get_trn_key(t)
+
+            t.fifo_multiplier = 0.0
+            t.closed_by = []
+            rolling_position = rolling_positions[t_key]
+
+            if isclose(rolling_position, 0.0):
+                k = -1
+            else:
+                k = - t.pos_size / rolling_position
+
+            if k > 1.0:
+                if t_key in items:
+                    for t0 in items[t_key]:
+                        delta = _set_mul(t0, 1.0)
+                        _close_by(t0, t, delta)
+                    items[t_key].clear()
+                items[t_key].append(t)
+                _set_mul(t, 1.0 / k)
+                rolling_position = t.pos_size * (1.0 - t.fifo_multiplier)
+
+            elif isclose(k, 1.0):
+                if t_key in items:
+                    for t0 in items[t_key]:
+                        delta = _set_mul(t0, 1.0)
+                        _close_by(t0, t, delta)
+                    del items[t_key]
+                _set_mul(t, 1.0)
+                rolling_position = 0.0
+
+            elif k > 0.0:
+                position = t.pos_size
+                if t_key in items:
+                    t_items = items[t_key]
+                    for t0 in t_items:
+                        remaining = t0.pos_size * (1.0 - t0.fifo_multiplier)
+                        k0 = - position / remaining
+                        if k0 > 1.0:
+                            delta = _set_mul(t0, 1.0)
+                            _close_by(t0, t, delta)
+                            position += remaining
+                        elif isclose(k0, 1.0):
+                            delta = _set_mul(t0, 1.0)
+                            _close_by(t0, t, delta)
+                            position += remaining
+                        elif k0 > 0.0:
+                            position += remaining * k0
+                            delta = _set_mul(t0, t0.fifo_multiplier + k0 * (1.0 - t0.fifo_multiplier))
+                            _close_by(t0, t, delta)
+                        # else:
+                        #     break
+                        if isclose(position, 0.0):
+                            break
+                    t_items = [t0 for t0 in t_items if not isclose(t0.fifo_multiplier, 1.0)]
+                    if t_items:
+                        items[t_key] = t_items
+                    else:
+                        del items[t_key]
+
+                _set_mul(t, abs((t.pos_size - position) / t.pos_size))
+                rolling_position += t.pos_size * t.fifo_multiplier
+
+            else:
+                items[t_key].append(t)
+                rolling_position += t.pos_size
+
+            rolling_positions[t_key] = rolling_position
+
+        return res
 
     def build(self, full=True):
         mismatch_items = []
@@ -2368,11 +2461,9 @@ class ReportBuilder(object):
 
         # aggregate items
 
-        # invested_items = []
         res_items = []
         for k, g in groupby(_items, key=_group_key):
             res_item = None
-            # invested_item = None
 
             for item in g:
                 if item.type in [ReportItem.TYPE_INSTRUMENT, ReportItem.TYPE_CURRENCY, ReportItem.TYPE_TRANSACTION_PL,
@@ -2381,23 +2472,10 @@ class ReportBuilder(object):
                         res_item = ReportItem.from_item(item)
                     res_item.add(item)
 
-                    # if item.trn and item.type in [ReportItem.TYPE_CURRENCY] and \
-                    #                 item.trn.trn_cls.id in [TransactionClass.CASH_INFLOW, TransactionClass.CASH_OUTFLOW]:
-                    #     if invested_item is None:
-                    #         invested_item = ReportItem.from_item(item)
-                    #         invested_item.type = ReportItem.TYPE_CURRENCY
-                    #     invested_item.add(item)
-
             if res_item:
                 res_item.pricing()
                 res_item.close()
                 res_items.append(res_item)
-
-            # if invested_item:
-            #     invested_item.pricing()
-            #     invested_item.close()
-            #     invested_items.append(invested_item)
-            pass
 
         # ReportItem.dumps(_items)
 
@@ -2440,14 +2518,6 @@ class ReportBuilder(object):
                 mismatch_item.pricing()
                 mismatch_item.close()
                 mismatch_items.append(mismatch_item)
-
-        # aggregate invested summary (primary for validation only)
-        # invested_summary = ReportItem(self.instance, self._pricing_provider, self._fx_rate_provider,
-        #                               ReportItem.TYPE_INVESTED_SUMMARY)
-        # for item in invested_items:
-        #     if item.type in [ReportItem.TYPE_INVESTED_CURRENCY]:
-        #         invested_summary.add(item)
-        # invested_summary.close()
 
         # self.instance.items = res_items + mismatch_items + [summary, ] + invested_items + [invested_summary, ]
         self.instance.items = res_items + mismatch_items + summaries
