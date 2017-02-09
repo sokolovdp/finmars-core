@@ -5,7 +5,6 @@ import sys
 from collections import defaultdict
 from itertools import groupby
 
-from django.conf import settings
 from django.db import transaction
 from django.db.models import Q
 
@@ -59,15 +58,41 @@ def _val(obj, val, attr, default=None):
 
 
 class TransactionReportItem:
-    def __init__(self, trn=None, id=empty, complex_transaction=empty, complex_transaction_order=empty,
-                 transaction_code=empty, transaction_class=empty, instrument=empty, transaction_currency=empty,
-                 position_size_with_sign=empty, settlement_currency=empty, cash_consideration=empty,
-                 principal_with_sign=empty, carry_with_sign=empty, overheads_with_sign=empty, transaction_date=empty,
-                 accounting_date=empty, cash_date=empty, portfolio=empty, account_position=empty, account_cash=empty,
-                 account_interim=empty, strategy1_position=empty, strategy1_cash=empty, strategy2_position=empty,
-                 strategy2_cash=empty, strategy3_position=empty, strategy3_cash=empty, responsible=empty,
-                 counterparty=empty, linked_instrument=empty, allocation_balance=empty, allocation_pl=empty,
-                 reference_fx_rate=empty, attributes=empty):
+    def __init__(self,
+                 trn=None,
+                 id=empty,
+                 complex_transaction=empty,
+                 complex_transaction_order=empty,
+                 transaction_code=empty,
+                 transaction_class=empty,
+                 instrument=empty,
+                 transaction_currency=empty,
+                 position_size_with_sign=empty,
+                 settlement_currency=empty,
+                 cash_consideration=empty,
+                 principal_with_sign=empty,
+                 carry_with_sign=empty,
+                 overheads_with_sign=empty,
+                 transaction_date=empty,
+                 accounting_date=empty,
+                 cash_date=empty,
+                 portfolio=empty,
+                 account_position=empty,
+                 account_cash=empty,
+                 account_interim=empty,
+                 strategy1_position=empty,
+                 strategy1_cash=empty,
+                 strategy2_position=empty,
+                 strategy2_cash=empty,
+                 strategy3_position=empty,
+                 strategy3_cash=empty,
+                 responsible=empty,
+                 counterparty=empty,
+                 linked_instrument=empty,
+                 allocation_balance=empty,
+                 allocation_pl=empty,
+                 reference_fx_rate=empty,
+                 attributes=empty):
         # self.id = id if id is not empty else \
         #     getattr(trn, 'id', None)
         self.id = _val(trn, id, 'id')
@@ -1404,9 +1429,9 @@ class CashFlowProjectionReportBuilder(TransactionReportBuilder):
         for k, bitem in self._balance_items.items():
             self._items.append(bitem)
 
-        # if settings.DEBUG:
-        #     for k, ritem in self._rolling_items.items():
-        #         self._items.append(ritem)
+            # if settings.DEBUG:
+            #     for k, ritem in self._rolling_items.items():
+            #         self._items.append(ritem)
 
     def _step2(self):
         # eval future events
@@ -1549,4 +1574,5 @@ class CashFlowProjectionReportBuilder(TransactionReportBuilder):
                 _check_int_min(i.complex_transaction_order),
                 _check_int_min(i.transaction_code),
             )
+
         self._items = sorted(self._items, key=_resp_sort_key)
