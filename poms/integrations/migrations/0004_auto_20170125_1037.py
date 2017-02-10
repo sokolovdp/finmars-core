@@ -7,7 +7,7 @@ from django.db import migrations, models
 import django.db.models.deletion
 import django.utils.timezone
 import poms.integrations.models
-
+import poms.integrations.storage
 
 class Migration(migrations.Migration):
 
@@ -59,12 +59,12 @@ class Migration(migrations.Migration):
         migrations.AlterField(
             model_name='importconfig',
             name='cert',
-            field=models.FileField(blank=True, null=True, storage=django.core.files.storage.FileSystemStorage(base_url='/api/hidden/', location='/Users/ailyukhin/develop/workspaces/mars/backend/tmp/import/config'), upload_to=poms.integrations.models.import_cert_upload_to, verbose_name='cert'),
+            field=models.FileField(blank=True, null=True, storage=poms.integrations.storage.ImportConfigStorage(), upload_to=poms.integrations.models.import_cert_upload_to, verbose_name='cert'),
         ),
         migrations.AlterField(
             model_name='importconfig',
             name='key',
-            field=models.FileField(blank=True, null=True, storage=django.core.files.storage.FileSystemStorage(base_url='/api/hidden/', location='/Users/ailyukhin/develop/workspaces/mars/backend/tmp/import/config'), upload_to=poms.integrations.models.import_cert_upload_to, verbose_name='key'),
+            field=models.FileField(blank=True, null=True, storage=poms.integrations.storage.ImportConfigStorage(), upload_to=poms.integrations.models.import_cert_upload_to, verbose_name='key'),
         ),
         migrations.AlterField(
             model_name='importconfig',
@@ -74,7 +74,7 @@ class Migration(migrations.Migration):
         migrations.AlterField(
             model_name='importconfig',
             name='p12cert',
-            field=models.FileField(blank=True, null=True, storage=django.core.files.storage.FileSystemStorage(base_url='/api/hidden/', location='/Users/ailyukhin/develop/workspaces/mars/backend/tmp/import/config'), upload_to=poms.integrations.models.import_cert_upload_to, verbose_name='p12cert'),
+            field=models.FileField(blank=True, null=True, storage=poms.integrations.storage.ImportConfigStorage(), upload_to=poms.integrations.models.import_cert_upload_to, verbose_name='p12cert'),
         ),
         migrations.AlterField(
             model_name='importconfig',
