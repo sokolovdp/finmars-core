@@ -15,10 +15,11 @@ from poms.common.utils import date_now
 from poms.counterparties.serializers import ResponsibleSerializer, \
     CounterpartySerializer
 from poms.currencies.fields import CurrencyField, SystemCurrencyDefault
-from poms.currencies.serializers import CurrencySerializer, CurrencyViewSerializer
+from poms.currencies.serializers import CurrencySerializer, CurrencyViewSerializer, CurrencyHistorySerializer
 from poms.instruments.fields import PricingPolicyField
 from poms.instruments.models import CostMethod
-from poms.instruments.serializers import InstrumentSerializer, PricingPolicyViewSerializer, CostMethodSerializer
+from poms.instruments.serializers import InstrumentSerializer, PricingPolicyViewSerializer, CostMethodSerializer, \
+    PriceHistorySerializer
 from poms.obj_attrs.serializers import GenericAttributeTypeSerializer, GenericAttributeSerializer
 from poms.portfolios.fields import PortfolioField
 from poms.portfolios.serializers import PortfolioSerializer, PortfolioViewSerializer
@@ -90,7 +91,7 @@ class ReportInstrumentSerializer(InstrumentSerializer):
 
         # self.fields.pop('user_object_permissions')
         # self.fields.pop('group_object_permissions')
-        # self.fields.pop('object_permissions')
+        # self.fields.pop('object _permissions')
 
         self.fields.pop('tags')
         self.fields.pop('tags_object')
@@ -101,6 +102,17 @@ class ReportInstrumentSerializer(InstrumentSerializer):
         self.fields.pop('price_download_scheme_object')
         self.fields.pop('daily_pricing_model')
         self.fields.pop('daily_pricing_model_object')
+
+
+class ReportPriceHistorySerializer(PriceHistorySerializer):
+    def __init__(self, *args, **kwargs):
+        super(ReportPriceHistorySerializer, self).__init__(*args, **kwargs)
+
+        self.fields.pop('instrument')
+        self.fields.pop('instrument_object')
+
+        self.fields.pop('pricing_policy')
+        self.fields.pop('pricing_policy_object')
 
 
 class ReportCurrencySerializer(CurrencySerializer):
@@ -118,6 +130,17 @@ class ReportCurrencySerializer(CurrencySerializer):
         self.fields.pop('daily_pricing_model_object')
 
         self.fields.pop('is_default')
+
+
+class ReportCurrencyHistorySerializer(CurrencyHistorySerializer):
+    def __init__(self, *args, **kwargs):
+        super(ReportCurrencyHistorySerializer, self).__init__(*args, **kwargs)
+
+        self.fields.pop('currency')
+        self.fields.pop('currency_object')
+
+        self.fields.pop('pricing_policy')
+        self.fields.pop('pricing_policy_object')
 
 
 class ReportPortfolioSerializer(PortfolioSerializer):
@@ -368,6 +391,15 @@ class ReportItemSerializer(serializers.Serializer):
     overheads_fixed_opened = serializers.FloatField(source='overheads_fixed_opened_res', read_only=True)
     total_fixed_opened = serializers.FloatField(source='total_fixed_opened_res', read_only=True)
 
+    # prices and fx-rates
+    report_currency_history = serializers.PrimaryKeyRelatedField(source='report_ccy_cur', read_only=True)
+    instrument_price_history = serializers.PrimaryKeyRelatedField(source='instr_price_cur', read_only=True)
+    instrument_pricing_currency_history = serializers.PrimaryKeyRelatedField(source='instr_pricing_ccy_cur',
+                                                                             read_only=True)
+    instrument_accrued_currency_history = serializers.PrimaryKeyRelatedField(source='instr_accrued_ccy_cur',
+                                                                             read_only=True)
+    currency_history = serializers.PrimaryKeyRelatedField(source='ccy_cur', read_only=True)
+
     def __init__(self, *args, **kwargs):
         super(ReportItemSerializer, self).__init__(*args, **kwargs)
 
@@ -393,6 +425,14 @@ class ReportItemSerializer(serializers.Serializer):
         self.fields['mismatch_portfolio_object'] = ReportPortfolioSerializer(source='mismatch_prtfl', read_only=True)
         self.fields['mismatch_account_object'] = ReportAccountSerializer(source='mismatch_acc', read_only=True)
         # self.fields['mismatch_currency_object'] = ReportCurrencySerializer(source='mismatch_ccy', read_only=True)
+
+        self.fields['mismatch_portfolio_object'] = ReportPortfolioSerializer(source='mismatch_prtfl', read_only=True)
+
+        self.fields['report_currency_history_object'] = ReportCurrencyHistorySerializer(source='report_currency_history', read_only=True)
+        self.fields['instrument_price_history_object'] = ReportPriceHistorySerializer(source='instr_price_cur', read_only=True)
+        self.fields['instrument_pricing_currency_history_object'] = ReportCurrencyHistorySerializer(source='instr_pricing_ccy_cur', read_only=True)
+        self.fields['instrument_accrued_currency_history_object'] = ReportCurrencyHistorySerializer(source='instr_accrued_ccy_cur', read_only=True)
+        self.fields['currency_history_object'] = ReportCurrencyHistorySerializer(source='ccy_cur', read_only=True)
 
     def get_id(self, obj):
         return ','.join(str(x) for x in obj.pk)
