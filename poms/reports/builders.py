@@ -3,10 +3,12 @@ from __future__ import unicode_literals, division
 
 import copy
 import logging
+import uuid
 from collections import Counter, defaultdict, namedtuple
-from datetime import timedelta
+from datetime import timedelta, date
 from itertools import groupby
 
+import sys
 from django.conf import settings
 from django.db.models import Q
 from django.utils.functional import cached_property
@@ -237,18 +239,22 @@ class VirtualTransaction(_Base):
 
     dump_columns = [
         'pk',
-        'is_hidden',
-        'is_mismatch',
+        # 'lid',
+        # 'is_hidden',
+        # 'is_mismatch',
         'trn_cls',
         # 'case',
         # 'avco_multiplier',
-        # 'fifo_multiplier',
-        'multiplier',
-        # 'acc_date',
+        # 'avco_closed_by',
+        'fifo_multiplier',
+        'fifo_closed_by',
+        # 'multiplier',
+        # 'closed_by',
+        'acc_date',
         # 'cash_date',
         'instr',
-        'trn_ccy',
-        'stl_ccy',
+        # 'trn_ccy',
+        # 'stl_ccy',
         # 'prtfl',
         # 'acc_pos',
         # 'acc_cash',
@@ -260,13 +266,13 @@ class VirtualTransaction(_Base):
         # 'str3_pos',
         # 'str3_cash',
         # 'link_instr',
-        'alloc_bl',
-        'alloc_pl',
+        # 'alloc_bl',
+        # 'alloc_pl',
         'pos_size',
         'cash',
-        # 'principal',
-        # 'carry',
-        # 'overheads',
+        'principal',
+        'carry',
+        'overheads',
         'total',
         # 'mismatch',
         # 'ref_fx',
@@ -286,61 +292,63 @@ class VirtualTransaction(_Base):
         # 'principal_res',
         # 'carry_res',
         # 'overheads_res',
-        'total_res',
+        # 'total_res',
 
         # full / closed ----------------------------------------------------
         # 'principal_closed_res',
         # 'carry_closed_res',
         # 'overheads_closed_res',
-        'total_closed_res',
+        # 'total_closed_res',
 
         # full / opened ----------------------------------------------------
         # 'principal_opened_res',
         # 'carry_opened_res',
         # 'overheads_opened_res',
-        'total_opened_res',
+        # 'total_opened_res',
 
         # fx ----------------------------------------------------
         # 'principal_fx_res',
         # 'carry_fx_res',
         # 'overheads_fx_res',
-        'total_fx_res',
+        # 'total_fx_res',
 
         # fx / closed ----------------------------------------------------
         # 'principal_fx_closed_res',
         # 'carry_fx_closed_res',
         # 'overheads_fx_closed_res',
-        'total_fx_closed_res',
+        # 'total_fx_closed_res',
 
         # fx / opened ----------------------------------------------------
         # 'principal_fx_opened_res',
         # 'carry_fx_opened_res',
         # 'overheads_fx_opened_res',
-        'total_fx_opened_res',
+        # 'total_fx_opened_res',
 
         # fixed ----------------------------------------------------
         # 'principal_fixed_res',
         # 'carry_fixed_res',
         # 'overheads_fixed_res',
-        'total_fixed_res',
+        # 'total_fixed_res',
 
         # fixed / closed ----------------------------------------------------
         # 'principal_fixed_closed_res',
         # 'carry_fixed_closed_res',
         # 'overheads_fixed_closed_res',
-        'total_fixed_closed_res',
+        # 'total_fixed_closed_res',
 
         # fixed / opened ----------------------------------------------------
         # 'principal_fixed_opened_res',
         # 'carry_fixed_opened_res',
         # 'overheads_fixed_opened_res',
-        'total_fixed_opened_res',
+        # 'total_fixed_opened_res',
     ]
 
     def __init__(self, report, pricing_provider, fx_rate_provider, trn, overrides=None):
         super(VirtualTransaction, self).__init__(report, pricing_provider, fx_rate_provider)
         overrides = overrides or {}
         self.trn = trn
+        self.lid = uuid.uuid1()
+        # self.lid = uuid.uuid1()
         self.pk = overrides.get('pk', trn.pk)
         self.trn_code = overrides.get('transaction_code', trn.transaction_code)
         self.trn_cls = overrides.get('transaction_class', trn.transaction_class)
@@ -391,6 +399,9 @@ class VirtualTransaction(_Base):
 
     def __str__(self):
         return str(self.pk)
+
+    def __repr__(self):
+        return 'VT(%s)' % self.pk
 
     def pricing(self):
         # report ccy ----------------------------------------------------
@@ -859,7 +870,7 @@ class VirtualTransaction(_Base):
         return False
 
 
-VirtualTransactionClosedByData = namedtuple('VirtualTransactionClosedByData', ['trn', 'delta'])
+# VirtualTransactionClosedByData = namedtuple('VirtualTransactionClosedByData', ['trn', 'delta'])
 
 
 class ReportItem(_Base):
@@ -1945,10 +1956,33 @@ class ReportBuilder(object):
 
         return queryset
 
+    def sort_transactions(self, transactions):
+        def _trn_key(t):
+
+            d = None
+            if self.instance.date_field == 'accounting_date':
+                d = t.acc_date
+            elif self.instance.date_field == 'cash_date':
+                d = t.cash_date
+            else:
+                if t.trn_date is None:
+                    if t.acc_date and t.cash_date:
+                        d = min(t.acc_date, t.cash_date)
+                else:
+                    d = t.trn_date
+
+            return (
+                d if d is not None else date.min,
+                t.trn_code if t.trn_code is not None else sys.maxsize,
+                t.pk if t.pk is not None else sys.maxsize,
+            )
+
+        return sorted(transactions, key=_trn_key)
+
     @cached_property
-    def _pricing_provider(self):
+    def pricing_provider(self):
         if self.instance.pricing_policy is None:
-            return FakeInstrumentPricingProvider(None, None, self.instance.report_date)
+            return FakeInstrumentPricingProvider(self.instance.master_user, None, self.instance.report_date)
         else:
             p = InstrumentPricingProvider(self.instance.master_user, self.instance.pricing_policy,
                                           self.instance.report_date)
@@ -1956,9 +1990,9 @@ class ReportBuilder(object):
             return p
 
     @cached_property
-    def _fx_rate_provider(self):
+    def fx_rate_provider(self):
         if self.instance.pricing_policy is None:
-            return FakeCurrencyFxRateProvider(None, None, self.instance.report_date)
+            return FakeCurrencyFxRateProvider(self.instance.master_user, None, self.instance.report_date)
         else:
             p = CurrencyFxRateProvider(self.instance.master_user, self.instance.pricing_policy,
                                        self.instance.report_date)
@@ -1999,8 +2033,8 @@ class ReportBuilder(object):
 
             trn = VirtualTransaction(
                 report=self.instance,
-                pricing_provider=self._pricing_provider,
-                fx_rate_provider=self._fx_rate_provider,
+                pricing_provider=self.pricing_provider,
+                fx_rate_provider=self.fx_rate_provider,
                 trn=t,
                 overrides=overrides
             )
@@ -2240,7 +2274,8 @@ class ReportBuilder(object):
             return delta
 
         def _close_by(closed, cur, delta):
-            closed.avco_closed_by.append(VirtualTransactionClosedByData(cur, delta))
+            # closed.avco_closed_by.append(VirtualTransactionClosedByData(cur, delta))
+            closed.avco_closed_by.append((cur, delta))
 
         # res = []
         for t in src:
@@ -2305,7 +2340,8 @@ class ReportBuilder(object):
             return delta
 
         def _close_by(closed, cur, delta):
-            closed.fifo_closed_by.append(VirtualTransactionClosedByData(cur, delta))
+            # closed.fifo_closed_by.append(VirtualTransactionClosedByData(cur, delta))
+            closed.fifo_closed_by.append((cur, delta))
 
         # res = []
         for t in src:
@@ -2396,7 +2432,7 @@ class ReportBuilder(object):
 
         for trn in transactions:
             if trn.is_mismatch and trn.link_instr and not isclose(trn.mismatch, 0.0):
-                item = ReportItem.from_trn(self.instance, self._pricing_provider, self._fx_rate_provider,
+                item = ReportItem.from_trn(self.instance, self.pricing_provider, self.fx_rate_provider,
                                            ReportItem.TYPE_MISMATCH, trn)
                 mismatch_items.append(item)
 
@@ -2413,7 +2449,7 @@ class ReportBuilder(object):
                                str3=trn.str3_pos)
 
                 # P&L
-                item = ReportItem.from_trn(self.instance, self._pricing_provider, self._fx_rate_provider,
+                item = ReportItem.from_trn(self.instance, self.pricing_provider, self.fx_rate_provider,
                                            ReportItem.TYPE_CASH_IN_OUT, trn, acc=trn.acc_cash,
                                            str1=trn.str1_cash, str2=trn.str2_cash, str3=trn.str3_cash,
                                            ccy=trn.stl_ccy)
@@ -2426,7 +2462,7 @@ class ReportBuilder(object):
             elif trn.trn_cls.id == TransactionClass.TRANSACTION_PL:
                 self._add_cash(trn, val=trn.cash, ccy=trn.stl_ccy)
 
-                item = ReportItem.from_trn(self.instance, self._pricing_provider, self._fx_rate_provider,
+                item = ReportItem.from_trn(self.instance, self.pricing_provider, self.fx_rate_provider,
                                            ReportItem.TYPE_TRANSACTION_PL, trn, acc=trn.acc_pos,
                                            str1=trn.str1_pos, str2=trn.str2_pos, str3=trn.str3_pos)
                 self._items.append(item)
@@ -2438,7 +2474,7 @@ class ReportBuilder(object):
                 # self._add_cash(trn, val=trn.cash, ccy=trn.stl_ccy)
 
                 # P&L
-                item = ReportItem.from_trn(self.instance, self._pricing_provider, self._fx_rate_provider,
+                item = ReportItem.from_trn(self.instance, self.pricing_provider, self.fx_rate_provider,
                                            ReportItem.TYPE_FX_TRADE, trn, acc=trn.acc_cash,
                                            str1=trn.str1_cash, str2=trn.str2_cash, str3=trn.str3_cash,
                                            ccy=trn.trn.settlement_currency, trn_ccy=trn.trn_ccy)
@@ -2498,7 +2534,7 @@ class ReportBuilder(object):
         # aggregate summary
         summaries = []
         if settings.DEBUG:
-            summary = ReportItem(self.instance, self._pricing_provider, self._fx_rate_provider, ReportItem.TYPE_SUMMARY)
+            summary = ReportItem(self.instance, self.pricing_provider, self.fx_rate_provider, ReportItem.TYPE_SUMMARY)
             for item in res_items:
                 if item.type in [ReportItem.TYPE_INSTRUMENT, ReportItem.TYPE_CURRENCY, ReportItem.TYPE_TRANSACTION_PL,
                                  ReportItem.TYPE_FX_TRADE, ReportItem.TYPE_CASH_IN_OUT]:
@@ -2553,12 +2589,12 @@ class ReportBuilder(object):
 
     def _add_instr(self, trn):
         if trn.case == 0:
-            item = ReportItem.from_trn(self.instance, self._pricing_provider, self._fx_rate_provider,
+            item = ReportItem.from_trn(self.instance, self.pricing_provider, self.fx_rate_provider,
                                        ReportItem.TYPE_INSTRUMENT, trn)
             self._items.append(item)
 
         elif trn.case == 1:
-            item = ReportItem.from_trn(self.instance, self._pricing_provider, self._fx_rate_provider,
+            item = ReportItem.from_trn(self.instance, self.pricing_provider, self.fx_rate_provider,
                                        ReportItem.TYPE_INSTRUMENT, trn)
             self._items.append(item)
 
@@ -2570,27 +2606,27 @@ class ReportBuilder(object):
 
     def _add_cash(self, trn, val, ccy, acc=None, acc_interim=None, str1=None, str2=None, str3=None):
         if trn.case == 0:
-            item = ReportItem.from_trn(self.instance, self._pricing_provider, self._fx_rate_provider,
+            item = ReportItem.from_trn(self.instance, self.pricing_provider, self.fx_rate_provider,
                                        ReportItem.TYPE_CURRENCY, trn, ccy=ccy, acc=acc,
                                        str1=str1, str2=str2, str3=str3,
                                        val=val)
             self._items.append(item)
 
         elif trn.case == 1:
-            item = ReportItem.from_trn(self.instance, self._pricing_provider, self._fx_rate_provider,
+            item = ReportItem.from_trn(self.instance, self.pricing_provider, self.fx_rate_provider,
                                        ReportItem.TYPE_CURRENCY, trn, ccy=ccy, acc=acc_interim or trn.acc_interim,
                                        str1=str1, str2=str2, str3=str3,
                                        val=val)
             self._items.append(item)
 
         elif trn.case == 2:
-            item = ReportItem.from_trn(self.instance, self._pricing_provider, self._fx_rate_provider,
+            item = ReportItem.from_trn(self.instance, self.pricing_provider, self.fx_rate_provider,
                                        ReportItem.TYPE_CURRENCY, trn, ccy=ccy, acc=acc,
                                        str1=str1, str2=str2, str3=str3,
                                        val=val)
             self._items.append(item)
 
-            item = ReportItem.from_trn(self.instance, self._pricing_provider, self._fx_rate_provider,
+            item = ReportItem.from_trn(self.instance, self.pricing_provider, self.fx_rate_provider,
                                        ReportItem.TYPE_CURRENCY, trn, ccy=ccy, acc=acc_interim or trn.acc_interim,
                                        str1=str1, str2=str2, str3=str3,
                                        val=-val)
