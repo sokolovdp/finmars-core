@@ -238,7 +238,7 @@ class MasterUser(models.Model):
             Strategy2Subgroup, Strategy2, Strategy3Group, Strategy3Subgroup, Strategy3
         from poms.chats.models import ThreadGroup
         from poms.transactions.models import NotificationClass
-        from poms.obj_perms.utils import assign_perms3, get_change_perms
+        from poms.obj_perms.utils import get_change_perms, assign_perms3
 
         if not EventScheduleConfig.objects.filter(master_user=self).exists():
             EventScheduleConfig.create_default(master_user=self)
