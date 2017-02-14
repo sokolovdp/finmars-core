@@ -74,8 +74,8 @@ class ReportGenericAttributeSerializer(GenericAttributeSerializer):
 
     def __init__(self, *args, **kwargs):
         super(ReportGenericAttributeSerializer, self).__init__(*args, **kwargs)
-        # self.fields.pop('attribute_type_object')
-        # self.fields.pop('classifier_object')
+        self.fields.pop('attribute_type_object')
+        self.fields.pop('classifier_object')
 
 
 class ReportInstrumentSerializer(InstrumentSerializer):
@@ -277,6 +277,8 @@ class ReportComplexTransactionSerializer(ComplexTransactionSerializer):
         # self.fields.pop('transaction_type_object')
         # self.fields['transaction_type_object'] = TransactionTypeViewSerializer(source='transaction_type', read_only=True)
 
+        self.fields['attributes'] = ReportGenericAttributeSerializer(many=True, required=False, allow_null=True)
+
         for k in list(self.fields.keys()):
             if str(k).endswith('_object'):
                 self.fields.pop(k)
@@ -428,10 +430,14 @@ class ReportItemSerializer(serializers.Serializer):
 
         self.fields['mismatch_portfolio_object'] = ReportPortfolioSerializer(source='mismatch_prtfl', read_only=True)
 
-        self.fields['report_currency_history_object'] = ReportCurrencyHistorySerializer(source='report_currency_history', read_only=True)
-        self.fields['instrument_price_history_object'] = ReportPriceHistorySerializer(source='instr_price_cur', read_only=True)
-        self.fields['instrument_pricing_currency_history_object'] = ReportCurrencyHistorySerializer(source='instr_pricing_ccy_cur', read_only=True)
-        self.fields['instrument_accrued_currency_history_object'] = ReportCurrencyHistorySerializer(source='instr_accrued_ccy_cur', read_only=True)
+        self.fields['report_currency_history_object'] = ReportCurrencyHistorySerializer(
+            source='report_currency_history', read_only=True)
+        self.fields['instrument_price_history_object'] = ReportPriceHistorySerializer(source='instr_price_cur',
+                                                                                      read_only=True)
+        self.fields['instrument_pricing_currency_history_object'] = ReportCurrencyHistorySerializer(
+            source='instr_pricing_ccy_cur', read_only=True)
+        self.fields['instrument_accrued_currency_history_object'] = ReportCurrencyHistorySerializer(
+            source='instr_accrued_ccy_cur', read_only=True)
         self.fields['currency_history_object'] = ReportCurrencyHistorySerializer(source='ccy_cur', read_only=True)
 
     def get_id(self, obj):
@@ -550,11 +556,6 @@ class TransactionReportItemSerializer(serializers.Serializer):
 
     complex_transaction = ReportComplexTransactionSerializer(read_only=True)
 
-    # complex_transaction_date = serializers.ReadOnlyField()
-    # complex_transaction_code = serializers.ReadOnlyField()
-    # complex_transaction_order = serializers.ReadOnlyField()
-    # complex_transaction_transaction_type = serializers.ReadOnlyField()
-
     transaction_code = serializers.ReadOnlyField()
     transaction_class = serializers.PrimaryKeyRelatedField(read_only=True)
     instrument = serializers.PrimaryKeyRelatedField(read_only=True)
@@ -609,6 +610,8 @@ class TransactionReportSerializer(serializers.Serializer):
     responsibles = ReportResponsibleSerializer(many=True, read_only=True)
     counterparties = ReportCounterpartySerializer(many=True, read_only=True)
 
+    complex_transaction_attribute_types = ReportGenericAttributeTypeSerializer(many=True, read_only=True,
+                                                                               show_classifiers=True)
     transaction_attribute_types = ReportGenericAttributeTypeSerializer(many=True, read_only=True, show_classifiers=True)
     instrument_attribute_types = ReportGenericAttributeTypeSerializer(many=True, read_only=True, show_classifiers=True)
     currency_attribute_types = ReportGenericAttributeTypeSerializer(many=True, read_only=True, show_classifiers=True)
@@ -627,17 +630,6 @@ class TransactionReportSerializer(serializers.Serializer):
 
 class CashFlowProjectionReportItemSerializer(TransactionReportItemSerializer):
     item_type = serializers.ChoiceField(source='type', read_only=True, choices=CashFlowProjectionReportItem.TYPE_CHOICE)
-
-    # date = serializers.DateField(read_only=True)
-    # portfolio = serializers.PrimaryKeyRelatedField(read_only=True)
-    # account = serializers.PrimaryKeyRelatedField(read_only=True)
-    # instrument = serializers.PrimaryKeyRelatedField(read_only=True)
-    # currency = serializers.PrimaryKeyRelatedField(read_only=True)
-
-    # position_size_with_sign = serializers.ReadOnlyField()
-    # position_size_with_sign_before = serializers.ReadOnlyField()
-    # position_size_with_sign_after = serializers.ReadOnlyField()
-    # cash_consideration = serializers.ReadOnlyField()
     cash_consideration_before = serializers.ReadOnlyField()
     cash_consideration_after = serializers.ReadOnlyField()
 
@@ -645,62 +637,12 @@ class CashFlowProjectionReportItemSerializer(TransactionReportItemSerializer):
         super(CashFlowProjectionReportItemSerializer, self).__init__(*args, **kwargs)
         self.fields.fields.move_to_end('item_type', last=False)
 
-        # if settings.DEBUG:
-        #     for k in [
-        #         "transaction_code",
-        #         "transaction_class",
-        #         "instrument",
-        #         "transaction_currency",
-        #         "position_size_with_sign",
-        #         # "settlement_currency",
-        #         # "cash_consideration",
-        #         "principal_with_sign",
-        #         "carry_with_sign",
-        #         "overheads_with_sign",
-        #         "accounting_date",
-        #         "cash_date",
-        #         "transaction_date",
-        #         # "portfolio",
-        #         "account_cash",
-        #         # "account_position",
-        #         # "account_interim",
-        #         "strategy1_position",
-        #         "strategy1_cash",
-        #         "strategy2_position",
-        #         "strategy2_cash",
-        #         "strategy3_position",
-        #         "strategy3_cash",
-        #         "reference_fx_rate",
-        #         "responsible",
-        #         "counterparty",
-        #         "linked_instrument",
-        #         "allocation_balance",
-        #         "allocation_pl",
-        #         "attributes",
-        #         # "cash_consideration_before",
-        #         # "cash_consideration_after",
-        #     ]:
-        #         self.fields.pop(k)
-        pass
-
 
 class CashFlowProjectionReportSerializer(TransactionReportSerializer):
-    # task_id = serializers.CharField(allow_null=True, allow_blank=True, required=False)
-    # task_status = serializers.ReadOnlyField()
-
-    # master_user = MasterUserField()
-    # member = HiddenMemberField()
-
     balance_date = serializers.DateField(required=False, allow_null=True)
     report_date = serializers.DateField(required=False, allow_null=True)
     has_errors = serializers.ReadOnlyField()
-
     items = CashFlowProjectionReportItemSerializer(many=True, read_only=True)
-
-    # instruments = ReportInstrumentSerializer(many=True, read_only=True)
-    # currencies = ReportCurrencySerializer(many=True, read_only=True)
-    # portfolios = ReportPortfolioSerializer(many=True, read_only=True)
-    # accounts = ReportAccountSerializer(many=True, read_only=True)
 
     def validate(self, attrs):
         if not attrs.get('balance_date', None):
