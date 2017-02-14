@@ -27,6 +27,20 @@ def calc_cash_for_contract_for_difference(transaction, instrument, portfolio, ac
 
     from poms.reports.builders import Report, ReportBuilder, VirtualTransaction
 
+    def _get_id(obj):
+        if obj is None:
+            return None
+        elif isinstance(obj, (int, float, str)):
+            return int(obj)
+        else:
+            return obj.id
+
+    def _make_filters(obj):
+        if obj is None:
+            return None
+        else:
+            return [_get_id(obj)]
+
     # queryset = Transaction.objects.all()
 
     if is_calculate_for_all or is_calculate_for_newer:
@@ -41,13 +55,17 @@ def calc_cash_for_contract_for_difference(transaction, instrument, portfolio, ac
 
     assert instrument is not None, "instrument must be specified"
 
+    instruments = _make_filters(instrument)
+    portfolios = _make_filters(portfolio)
+    accounts = _make_filters(account)
+
     r = Report(master_user=instrument.master_user,
                member=member,
-               instruments=[instrument.id],
-               portfolios=[portfolio.id] if portfolio else None,
-               accounts=[account.id] if account else None,
-               portfolio_mode=Report.MODE_INDEPENDENT if portfolio else Report.MODE_IGNORE,
-               account_mode=Report.MODE_INDEPENDENT if account else Report.MODE_IGNORE,
+               instruments=instruments,
+               portfolios=portfolios,
+               accounts=accounts,
+               portfolio_mode=Report.MODE_INDEPENDENT if portfolios else Report.MODE_IGNORE,
+               account_mode=Report.MODE_INDEPENDENT if accounts else Report.MODE_IGNORE,
                strategy1_mode=Report.MODE_IGNORE,
                strategy2_mode=Report.MODE_IGNORE,
                strategy3_mode=Report.MODE_IGNORE,
@@ -70,12 +88,6 @@ def calc_cash_for_contract_for_difference(transaction, instrument, portfolio, ac
         VirtualTransaction.dumps(transactions)
 
     processed = set()
-
-    # def _calc_cash(trn):
-    #     trn.cash += trn.overheads
-    #     # trn.cash += (trn.principal + trn.carry) * trn.fifo_multiplier
-    #     for cb, delta in trn.fifo_closed_by:
-    #         cb.cash += (trn.principal + trn.carry) * delta
 
     vt_older = -1
     vt_this = 0

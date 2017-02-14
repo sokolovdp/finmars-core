@@ -879,7 +879,7 @@ class ReportTestCase(TestCase):
         b.build()
         self._dump(b, 'test_approach_str1_0: STRATEGY_INTERDEPENDENT')
 
-    def _test_instr_contract_for_difference(self):
+    def test_instr_contract_for_difference(self):
         tinstr = InstrumentType.objects.create(master_user=self.m,
                                                instrument_class_id=InstrumentClass.CONTRACT_FOR_DIFFERENCE, name='cfd1')
         instr = Instrument.objects.create(master_user=self.m, name="cfd, USD/USD", instrument_type=tinstr,
@@ -905,13 +905,6 @@ class ReportTestCase(TestCase):
                                               is_calculate_for_newer=False,
                                               is_calculate_for_all=True,
                                               save=True)
-
-        # r = Report(master_user=self.m, pricing_policy=self.pp, report_date=self._d(0),
-        #            approach_multiplier=approach_multiplier,
-        #            strategy1_mode=Report.MODE_INDEPENDENT)
-        # b = ReportBuilder(instance=r)
-        # b.build()
-        # self._dump(b, 'test_instr_contract_for_difference')
 
     def test_xnpv_xirr(self):
         from poms.reports.utils import xnpv, xirr
