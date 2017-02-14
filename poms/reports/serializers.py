@@ -60,7 +60,6 @@ class CustomFieldViewSerializer(serializers.ModelSerializer):
 # Report --------
 
 
-
 class ReportGenericAttributeTypeSerializer(GenericAttributeTypeSerializer):
     def __init__(self, *args, **kwargs):
         super(ReportGenericAttributeTypeSerializer, self).__init__(*args, **kwargs)
@@ -74,8 +73,9 @@ class ReportGenericAttributeSerializer(GenericAttributeSerializer):
 
     def __init__(self, *args, **kwargs):
         super(ReportGenericAttributeSerializer, self).__init__(*args, **kwargs)
-        self.fields.pop('attribute_type_object')
-        self.fields.pop('classifier_object')
+        # if self.context.get('attributes_hide_objects', False):
+        #     self.fields.pop('attribute_type_object')
+        #     self.fields.pop('classifier_object')
 
 
 class ReportInstrumentSerializer(InstrumentSerializer):
