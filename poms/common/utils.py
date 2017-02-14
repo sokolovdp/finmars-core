@@ -41,6 +41,12 @@ except AttributeError:
     def isclose(a, b, rel_tol=1e-09, abs_tol=0.0):
         return abs(a - b) <= max(rel_tol * max(abs(a), abs(b)), abs_tol)
 
+def safe_div(a, b, default=0.0):
+    try:
+        return a / b
+    except ZeroDivisionError:
+        return default
+
 
 def add_view_and_manage_permissions():
     from django.contrib.contenttypes.models import ContentType

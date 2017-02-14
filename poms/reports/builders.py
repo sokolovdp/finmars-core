@@ -3,12 +3,12 @@ from __future__ import unicode_literals, division
 
 import copy
 import logging
+import sys
 import uuid
-from collections import Counter, defaultdict, namedtuple
+from collections import Counter, defaultdict
 from datetime import timedelta, date
 from itertools import groupby
 
-import sys
 from django.conf import settings
 from django.db.models import Q
 from django.utils.functional import cached_property
@@ -16,7 +16,7 @@ from django.utils.translation import ugettext, ugettext_lazy
 
 from poms.accounts.models import Account, AccountType
 from poms.common import formula
-from poms.common.utils import date_now, isclose
+from poms.common.utils import date_now, isclose, safe_div
 from poms.currencies.models import Currency
 from poms.instruments.models import Instrument, InstrumentType, CostMethod, InstrumentClass
 from poms.obj_attrs.utils import get_attributes_prefetch
@@ -66,7 +66,7 @@ class _Base:
             for item in items:
                 data.append(item.dump_values(columns=columns))
             _l.debug('\n%s', sprint_table(data, columns))
-        # print(sprint_table(data, columns))
+            # print(sprint_table(data, columns))
 
 
 class VirtualTransaction(_Base):
@@ -130,6 +130,7 @@ class VirtualTransaction(_Base):
 
     # total_real_res = 0.0
     # total_unreal_res = 0.0
+    notes = None
 
     # calculated ----------------------------------------------------
     case = 0
@@ -388,6 +389,8 @@ class VirtualTransaction(_Base):
 
         self.alloc_bl = overrides.get('allocation_balance', trn.allocation_balance)
         self.alloc_pl = overrides.get('allocation_pl', trn.allocation_pl)
+
+        self.notes = overrides.get('notes', trn.notes)
 
         # ----
 
@@ -871,7 +874,35 @@ class VirtualTransaction(_Base):
         return False
 
 
-# VirtualTransactionClosedByData = namedtuple('VirtualTransactionClosedByData', ['trn', 'delta'])
+# additional fields
+#
+# Pricing currency => Instrument Pricing Ccy for instrumen;= System CCY (by default USD, but may be changed) for Currency
+# Current Price, pricing ccy => Pricing CCY for enitiy = Currency (not instrument) is System Currency (by default USD, but may be changed)
+# Current Accrued, accrued ccy =>
+# Pricing Ccy FX rate => FX of Pricing CCY vs Reporting CCY
+# Accrued currency FX rate => Accrued currency FX rate
+# Current Payment Size, accrued ccy => from Accruals Schedule - coupon size used to calculate Annual Coupon and Coupon Yield
+# Current Payment Frequency => Current Payment Frequency
+# Current Payment Periodicity N => from Accruals  Schedule.
+#
+# YTM =>
+# Modified Duration =>
+#
+# Last Notes => Front Office Notes - last Note from Basic Transaction Buy/Sell
+# Gross Cost Price, pricing ccy => doesn't include overheads
+# Net Cost Price, pricing ccy => includes overheads
+# YTM at Cost =>
+# Time Invested =>
+# Amount invested, rep ccy => principal + carry (no overheads)
+# Amount invested, pricing ccy =>
+#
+# Mkt Value, pricing ccy =>
+# Exposure, pricing ccy =>
+
+# Position Return, rep ccy => pos return / time invested
+# Position Return, pricing ccy =>
+# Daily Price Change, % =>  (Current Price - Fross Cost Price) / Gross Cost Price, if Time Invested = 1 day
+# MTD Price Change, %
 
 
 class ReportItem(_Base):
@@ -913,6 +944,9 @@ class ReportItem(_Base):
     custom_fields = []
     is_empty = False
 
+    pricing_ccy = None
+    last_notes = ''
+
     # link
     mismatch = 0.0
     # mismatch_ccy = None
@@ -935,17 +969,35 @@ class ReportItem(_Base):
     instr_accrued_ccy_cur_fx = 0.0
     ccy_cur = None
     ccy_cur_fx = 0.0
+    pricing_ccy_cur = None
+    pricing_ccy_cur_fx = 0.0
 
     # instr
-
     instr_principal_res = 0.0
     instr_accrued_res = 0.0
     exposure_res = 0.0
+    exposure_loc = 0.0
+    instr_accrual = None  # Current Payment Size, Current Payment Frequency, Current Payment Periodicity N
 
     # balance
     pos_size = 0.0
     market_value_res = 0.0
+    market_value_loc = 0.0
     cost_res = 0.0
+
+    #
+    ytm = 0.0
+    modif_dur = 0.0
+    ytm_at_cost = 0.0
+    time_inv = 0.0
+    gros_cost_loc = 0.0
+    net_cost_loc = 0.0
+    amount_inv_res = 0.0
+    amount_inv_loc = 0.0
+    pos_ret_res = 0.0
+    pos_ret_loc = 0.0
+    daily_price_change = 0.0
+    mtd_price_change = 0.0
 
     # full ----------------------------------------------------
     principal_res = 0.0
@@ -1168,6 +1220,11 @@ class ReportItem(_Base):
             item.pos_size = trn.pos_size * (1.0 - trn.multiplier)
             item.cost_res = trn.principal_res * (1.0 - trn.multiplier)
 
+            item.pricing_ccy = trn.instr.pricing_currency
+
+            if trn.trn_cls.id in [TransactionClass.BUY, TransactionClass.SELL]:
+                item.last_notes = trn.notes
+
         elif item.type == ReportItem.TYPE_CURRENCY:
             item.acc = acc or trn.acc_cash
             item.str1 = str1 or trn.str1_cash
@@ -1176,6 +1233,8 @@ class ReportItem(_Base):
             item.ccy = ccy or trn.trn_ccy
 
             item.pos_size = val
+
+            item.pricing_ccy = trn.report.master_user.system_currency
 
         elif item.type == ReportItem.TYPE_FX_TRADE:
             item.acc = acc or trn.acc_cash
@@ -1233,6 +1292,8 @@ class ReportItem(_Base):
         item.str2 = src.str2  # -> Strategy2 if use_strategy2
         item.str3 = src.str3  # -> Strategy3 if use_strategy3
 
+        item.pricing_ccy = src.pricing_ccy
+
         # if item.type in [ReportItem.TYPE_TRANSACTION_PL, ReportItem.TYPE_FX_TRADE]:
         #     item.trn = src.trn
         if src.detail_trn:
@@ -1255,10 +1316,11 @@ class ReportItem(_Base):
         self.report_ccy_cur = self.fx_rate_provider[self.report.report_currency]
         self.report_ccy_cur_fx = self.report_ccy_cur.fx_rate
 
-        try:
-            report_ccy_cur_fx = 1.0 / self.report_ccy_cur_fx
-        except ZeroDivisionError:
-            report_ccy_cur_fx = 0.0
+        # try:
+        #     report_ccy_cur_fx = 1.0 / self.report_ccy_cur_fx
+        # except ZeroDivisionError:
+        #     report_ccy_cur_fx = 0.0
+        report_ccy_cur_fx = safe_div(1.0 / self.report_ccy_cur_fx)
 
         if self.instr:
             self.instr_price_cur = self.pricing_provider[self.instr]
@@ -1269,9 +1331,16 @@ class ReportItem(_Base):
             self.instr_accrued_ccy_cur = self.fx_rate_provider[self.instr.accrued_currency]
             self.instr_accrued_ccy_cur_fx = self.instr_accrued_ccy_cur.fx_rate * report_ccy_cur_fx
 
+            self.pricing_ccy_cur = self.instr_pricing_ccy_cur
+            self.pricing_ccy_cur_fx = self.instr_pricing_ccy_cur_fx
+
         if self.ccy:
             self.ccy_cur = self.fx_rate_provider[self.ccy]
             self.ccy_cur_fx = self.ccy_cur.fx_rate * report_ccy_cur_fx
+
+            if self.pricing_ccy:
+                self.pricing_ccy_cur = self.fx_rate_provider[self.pricing_ccy]
+                self.pricing_ccy_cur_fx = self.pricing_ccy_cur.fx_rate * report_ccy_cur_fx
 
     def add(self, o):
         # TODO: in TYPE_INSTRUMENT or global
@@ -1338,6 +1407,9 @@ class ReportItem(_Base):
             # self.total_real_res += o.total_real_res
             # self.total_unreal_res += o.market_value_res + o.cost_res
             # self.total_unreal_res += (o.instr_principal_res + o.instr_accrued_res) + o.cost_res
+
+            if o.last_notes is not None:
+                self.last_notes = o.last_notes
 
         # elif self.type == ReportItem.TYPE_SUMMARY or self.type == ReportItem.TYPE_INVESTED_SUMMARY:
         elif self.type == ReportItem.TYPE_SUMMARY:
