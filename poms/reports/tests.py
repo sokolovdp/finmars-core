@@ -1,3 +1,4 @@
+import logging
 from datetime import date, timedelta
 
 from django.contrib.auth.models import User
@@ -6,12 +7,15 @@ from django.utils.functional import cached_property
 
 from poms.accounts.models import AccountType, Account
 from poms.currencies.models import Currency, CurrencyHistory
-from poms.instruments.models import Instrument, PriceHistory, PricingPolicy, CostMethod
+from poms.instruments.models import Instrument, PriceHistory, PricingPolicy, CostMethod, InstrumentType, InstrumentClass
 from poms.portfolios.models import Portfolio
 from poms.reports.builders import Report, ReportBuilder, VirtualTransaction, ReportItem
+from poms.reports.utils import calc_cash_for_contract_for_difference
 from poms.strategies.models import Strategy1Group, Strategy1Subgroup, Strategy1
 from poms.transactions.models import Transaction, TransactionClass
-from poms.users.models import MasterUser
+from poms.users.models import MasterUser, Member
+
+_l = logging.getLogger('poms.reports')
 
 
 class ReportTestCase(TestCase):
@@ -29,6 +33,7 @@ class ReportTestCase(TestCase):
 
         user = User.objects.create_user('a1')
         self.m = MasterUser.objects.create_master_user(user=user, name='a1_m1')
+        self.member = Member.objects.create(master_user=self.m, user=user, is_owner=True, is_admin=True)
 
         self.pp = PricingPolicy.objects.create(master_user=self.m)
 
@@ -136,7 +141,8 @@ class ReportTestCase(TestCase):
            acc_date=None, acc_date_days=None, cash_date=None, cash_date_days=None,
            acc_pos=None, acc_cash=None, acc_interim=None, fx_rate=0.0,
            s1_pos=None, s1_cash=None, s2_pos=None, s2_cash=None, s3_pos=None, s3_cash=None,
-           link_instr=None, alloc_bl=None, alloc_pl=None):
+           link_instr=None, alloc_bl=None, alloc_pl=None,
+           save=True):
         t = Transaction()
 
         t.master_user = master if master else self.m
@@ -154,6 +160,7 @@ class ReportTestCase(TestCase):
 
         t.accounting_date = acc_date if acc_date else self._d(acc_date_days)
         t.cash_date = cash_date if cash_date else self._d(cash_date_days)
+        t.transaction_date = min(t.accounting_date, t.cash_date)
 
         t.portfolio = p or self.m.portfolio
 
@@ -173,8 +180,8 @@ class ReportTestCase(TestCase):
         t.linked_instrument = link_instr or self.m.instrument
         t.allocation_balance = alloc_bl or self.m.instrument
         t.allocation_pl = alloc_pl or self.m.instrument
-
-        t.save()
+        if save:
+            t.save()
         return t
 
     def _instr_hist(self, instr, d, principal_price, accrued_price):
@@ -242,7 +249,7 @@ class ReportTestCase(TestCase):
 
         if print_transactions is None:
             print_transactions = self._print_transactions
-        print_transactions(builder.transactions)
+        print_transactions(builder.instance.transactions)
 
         if print_items is None:
             print_items = self._print_items
@@ -358,7 +365,7 @@ class ReportTestCase(TestCase):
         b.build()
         self._dump(b, 'test_avco_str1_0: OFFSETTING')
 
-    def test_balance_0(self):
+    def _test_balance_0(self):
         self._t(t_class=self._cash_inflow, trn_ccy=self.eur, position=1000, fx_rate=1.3)
         self._t(t_class=self._cash_outflow, trn_ccy=self.usd, position=-1000, acc_date_days=1, cash_date_days=1,
                 fx_rate=1.0)
@@ -727,7 +734,6 @@ class ReportTestCase(TestCase):
                 acc_date_days=101, cash_date_days=101,
                 alloc_bl=self.bond1, alloc_pl=self.bond2)
 
-
         r = Report(master_user=self.m, pricing_policy=self.pp, report_date=self._d(104), report_currency=self.cad,
                    cost_method=self._avco)
         b = ReportBuilder(instance=r)
@@ -872,3 +878,41 @@ class ReportTestCase(TestCase):
         b = ReportBuilder(instance=r)
         b.build()
         self._dump(b, 'test_approach_str1_0: STRATEGY_INTERDEPENDENT')
+
+    def test_instr_contract_for_difference(self):
+        tinstr = InstrumentType.objects.create(master_user=self.m,
+                                               instrument_class_id=InstrumentClass.CONTRACT_FOR_DIFFERENCE, name='cfd1')
+        instr = Instrument.objects.create(master_user=self.m, name="cfd, USD/USD", instrument_type=tinstr,
+                                          pricing_currency=self.usd, price_multiplier=1.0,
+                                          accrued_currency=self.usd, accrued_multiplier=1.0)
+
+        t0 = self._t(t_class=self._buy, instr=instr, position=3, acc_date_days=1, cash_date_days=1,
+                     stl_ccy=self.usd, cash=0, principal=-3600000, carry=-5000, overheads=-100)
+        t1 = self._t(t_class=self._buy, instr=instr, position=2, acc_date_days=2, cash_date_days=2,
+                     stl_ccy=self.usd, cash=0, principal=-2450000, carry=-2000, overheads=-100)
+        t2 = self._t(t_class=self._buy, instr=instr, position=1, acc_date_days=3, cash_date_days=3,
+                     stl_ccy=self.usd, cash=0, principal=-1230000, carry=-1000, overheads=-100)
+        t3 = self._t(t_class=self._sell, instr=instr, position=-1, acc_date_days=4, cash_date_days=4,
+                     stl_ccy=self.usd, cash=0, principal=1250000, carry=8000, overheads=-100)
+        t4 = self._t(t_class=self._sell, instr=instr, position=-3, acc_date_days=5, cash_date_days=5,
+                     stl_ccy=self.usd, cash=0, principal=3825000, carry=9000, overheads=-100)
+
+        calc_cash_for_contract_for_difference(transaction=None,
+                                              instrument=instr,
+                                              portfolio=self.m.portfolio,
+                                              account=self.m.account,
+                                              member=self.member,
+                                              is_calculate_for_newer=False,
+                                              is_calculate_for_all=True,
+                                              save=True)
+
+    def test_xnpv_xirr(self):
+        from poms.common.utils import xnpv, xirr
+        from datetime import date
+        dates = [date(2008, 1, 1), date(2008, 3, 1), date(2008, 10, 30), date(2009, 2, 15), date(2009, 4, 1), ]
+        values = [-10000, 2750, 4250, 3250, 2750, ]
+        # from MS office
+        #  xnpv(0.09, ...) = $2,086.65
+        #  xiir = 0.373362535
+        _l.debug('xnpv.1: %s', xnpv(0.09, values, dates))
+        _l.debug('xirr.1: %s', xirr(values, dates))

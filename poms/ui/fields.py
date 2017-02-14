@@ -4,8 +4,10 @@ from django.contrib.contenttypes.models import ContentType
 from django.core.exceptions import ObjectDoesNotExist
 from django.utils.encoding import smart_text
 
-from poms.common.fields import SlugRelatedFilteredField
+from poms.common.fields import SlugRelatedFilteredField, PrimaryKeyRelatedFilteredField
 from poms.ui.filters import LayoutContentTypeFilter
+from poms.ui.models import ListLayout, EditLayout
+from poms.users.filters import OwnerByMemberFilter
 
 
 class LayoutContentTypeField(SlugRelatedFilteredField):
@@ -29,3 +31,17 @@ class LayoutContentTypeField(SlugRelatedFilteredField):
 
     def to_representation(self, obj):
         return '%s.%s' % (obj.app_label, obj.model)
+
+
+class ListLayoutField(PrimaryKeyRelatedFilteredField):
+    queryset = ListLayout.objects
+    filter_backends = (
+        OwnerByMemberFilter,
+    )
+
+
+class EditLayoutField(PrimaryKeyRelatedFilteredField):
+    queryset = EditLayout.objects
+    filter_backends = (
+        OwnerByMemberFilter,
+    )

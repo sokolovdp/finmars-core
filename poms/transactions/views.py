@@ -543,6 +543,7 @@ def get_complex_transaction_queryset(select_related=True, transactions=False):
         qs = qs.prefetch_related(*fields1)
 
     qs = qs.prefetch_related(
+        get_attributes_prefetch(),
         *get_permissions_prefetch_lookups(
             ('transaction_type', TransactionType),
             ('transaction_type__group', TransactionTypeGroup),
@@ -780,6 +781,10 @@ class TransactionViewSet(AbstractModelViewSet):
         if serializer.is_locked:
             raise PermissionDenied()
         return super(TransactionViewSet, self).perform_update(serializer)
+
+
+class ComplexTransactionAttributeTypeViewSet(GenericAttributeTypeViewSet):
+    target_model = ComplexTransaction
 
 
 class ComplexTransactionFilterSet(FilterSet):

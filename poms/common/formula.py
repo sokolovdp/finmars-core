@@ -120,6 +120,14 @@ def _date(year, month=1, day=1):
     return datetime.date(year=int(year), month=int(month), day=int(day))
 
 
+def _date_min():
+    return datetime.date.min
+
+
+def _date_max():
+    return datetime.date.max
+
+
 def _isleap(date_or_year):
     if isinstance(date_or_year, datetime.date):
         return calendar.isleap(date_or_year.year)
@@ -500,6 +508,8 @@ FUNCTIONS = [
 
     SimpleEval2Def('now', _now),
     SimpleEval2Def('date', _date),
+    SimpleEval2Def('date_min', _date_min),
+    SimpleEval2Def('date_max', _date_max),
     SimpleEval2Def('isleap', _isleap),
     SimpleEval2Def('days', _days),
     SimpleEval2Def('weeks', _weeks),
@@ -581,22 +591,26 @@ class SimpleEval2(object):
             raise NameNotDefined(name)
 
     def _check_value(self, val):
-        from django.db import models
+        # from django.db import models
 
         if val is None:
             return None
         elif isinstance(val, (bool, int, str, list, tuple, dict, OrderedDict, datetime.date)):
             return val
-        elif isinstance(val, models.Model):
+        # elif isinstance(val, models.Model):
+        else:
             # return get_model_data_ext(val, many=False, context=self.context)
-            key = (type, val.pk)
+            key = (
+                type(val),
+                getattr(val, 'pk', getattr(val, 'id', None))
+            )
             if key in self._table:
                 val = self._table[key]
             else:
                 val = get_model_data_ext(val, many=False, context=self.context)
                 self._table[key] = val
             return val
-        return val
+            # return val
 
     def eval(self, expr, names=None):
         if not expr:

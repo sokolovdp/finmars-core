@@ -346,6 +346,7 @@ class Instrument(NamedModel, FakeDeletableModel):
     price_download_scheme = models.ForeignKey('integrations.PriceDownloadScheme', on_delete=models.PROTECT, null=True,
                                               blank=True, verbose_name=ugettext_lazy('price download scheme'))
     maturity_date = models.DateField(default=date.max, verbose_name=ugettext_lazy('maturity date'))
+    maturity_price = models.FloatField(default=0.0, verbose_name=ugettext_lazy('maturity price'))
 
     attributes = GenericRelation(GenericAttribute, verbose_name=ugettext_lazy('attributes'))
     object_permissions = GenericRelation(GenericObjectPermission, verbose_name=ugettext_lazy('object permissions'))

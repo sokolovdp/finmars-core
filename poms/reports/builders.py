@@ -3,8 +3,10 @@ from __future__ import unicode_literals, division
 
 import copy
 import logging
+import sys
+import uuid
 from collections import Counter, defaultdict
-from datetime import timedelta
+from datetime import timedelta, date
 from itertools import groupby
 
 from django.conf import settings
@@ -14,9 +16,9 @@ from django.utils.translation import ugettext, ugettext_lazy
 
 from poms.accounts.models import Account, AccountType
 from poms.common import formula
-from poms.common.utils import date_now, isclose
+from poms.common.utils import date_now, isclose, safe_div
 from poms.currencies.models import Currency
-from poms.instruments.models import Instrument, InstrumentType, CostMethod
+from poms.instruments.models import Instrument, InstrumentType, CostMethod, InstrumentClass
 from poms.obj_attrs.utils import get_attributes_prefetch
 from poms.obj_perms.utils import get_permissions_prefetch_lookups
 from poms.portfolios.models import Portfolio
@@ -46,22 +48,6 @@ class _Base:
     def clone(self):
         return copy.copy(self)
 
-    # def __getattr__(self, item):
-    #     if item.endswith('_rep'):
-    #         # automatic make value in report ccy
-    #         item_sys = '%s_sys' % item[:-4]
-    #         # if hasattr(self, item_sys):
-    #         #     val = getattr(self, item_sys)
-    #         #     if self.report_ccy_is_sys:
-    #         #         return val
-    #         #     else:
-    #         #         fx = self.report_ccy_rep_fx
-    #         #         if isclose(fx, 0.0):
-    #         #             return 0.0
-    #         #         return val / fx
-    #         return getattr(self, item_sys)
-    #     raise AttributeError(item)
-
     def dump_values(self, columns=None):
         if columns is None:
             columns = self.dump_columns
@@ -72,18 +58,15 @@ class _Base:
 
     @classmethod
     def dumps(cls, items, columns=None):
-        if columns is None:
-            columns = cls.dump_columns
+        if _l.isEnabledFor(logging.DEBUG):
+            if columns is None:
+                columns = cls.dump_columns
 
-        data = []
-        for item in items:
-            data.append(item.dump_values(columns=columns))
-        print(sprint_table(data, columns))
-        # from io import StringIO
-        # r = StringIO()
-        # df.to_csv(r, sep=';')
-        # print(r.getvalue())
-        pass
+            data = []
+            for item in items:
+                data.append(item.dump_values(columns=columns))
+            _l.debug('\n%s', sprint_table(data, columns))
+            # print(sprint_table(data, columns))
 
 
 class VirtualTransaction(_Base):
@@ -94,6 +77,10 @@ class VirtualTransaction(_Base):
     trn_code = None
     trn_cls = None
     # case = 0
+    avco_multiplier = 0.0
+    avco_closed_by = None
+    fifo_multiplier = 0.0
+    fifo_closed_by = None
     multiplier = 1.0
     closed_by = None
 
@@ -143,6 +130,7 @@ class VirtualTransaction(_Base):
 
     # total_real_res = 0.0
     # total_unreal_res = 0.0
+    notes = None
 
     # calculated ----------------------------------------------------
     case = 0
@@ -253,16 +241,22 @@ class VirtualTransaction(_Base):
 
     dump_columns = [
         'pk',
-        'is_hidden',
-        'is_mismatch',
+        # 'lid',
+        # 'is_hidden',
+        # 'is_mismatch',
         'trn_cls',
         # 'case',
-        'multiplier',
-        # 'acc_date',
+        # 'avco_multiplier',
+        # 'avco_closed_by',
+        'fifo_multiplier',
+        'fifo_closed_by',
+        # 'multiplier',
+        # 'closed_by',
+        'acc_date',
         # 'cash_date',
         'instr',
-        'trn_ccy',
-        'stl_ccy',
+        # 'trn_ccy',
+        # 'stl_ccy',
         # 'prtfl',
         # 'acc_pos',
         # 'acc_cash',
@@ -274,13 +268,13 @@ class VirtualTransaction(_Base):
         # 'str3_pos',
         # 'str3_cash',
         # 'link_instr',
-        'alloc_bl',
-        'alloc_pl',
+        # 'alloc_bl',
+        # 'alloc_pl',
         'pos_size',
         'cash',
-        # 'principal',
-        # 'carry',
-        # 'overheads',
+        'principal',
+        'carry',
+        'overheads',
         'total',
         # 'mismatch',
         # 'ref_fx',
@@ -300,61 +294,63 @@ class VirtualTransaction(_Base):
         # 'principal_res',
         # 'carry_res',
         # 'overheads_res',
-        'total_res',
+        # 'total_res',
 
         # full / closed ----------------------------------------------------
         # 'principal_closed_res',
         # 'carry_closed_res',
         # 'overheads_closed_res',
-        'total_closed_res',
+        # 'total_closed_res',
 
         # full / opened ----------------------------------------------------
         # 'principal_opened_res',
         # 'carry_opened_res',
         # 'overheads_opened_res',
-        'total_opened_res',
+        # 'total_opened_res',
 
         # fx ----------------------------------------------------
         # 'principal_fx_res',
         # 'carry_fx_res',
         # 'overheads_fx_res',
-        'total_fx_res',
+        # 'total_fx_res',
 
         # fx / closed ----------------------------------------------------
         # 'principal_fx_closed_res',
         # 'carry_fx_closed_res',
         # 'overheads_fx_closed_res',
-        'total_fx_closed_res',
+        # 'total_fx_closed_res',
 
         # fx / opened ----------------------------------------------------
         # 'principal_fx_opened_res',
         # 'carry_fx_opened_res',
         # 'overheads_fx_opened_res',
-        'total_fx_opened_res',
+        # 'total_fx_opened_res',
 
         # fixed ----------------------------------------------------
         # 'principal_fixed_res',
         # 'carry_fixed_res',
         # 'overheads_fixed_res',
-        'total_fixed_res',
+        # 'total_fixed_res',
 
         # fixed / closed ----------------------------------------------------
         # 'principal_fixed_closed_res',
         # 'carry_fixed_closed_res',
         # 'overheads_fixed_closed_res',
-        'total_fixed_closed_res',
+        # 'total_fixed_closed_res',
 
         # fixed / opened ----------------------------------------------------
         # 'principal_fixed_opened_res',
         # 'carry_fixed_opened_res',
         # 'overheads_fixed_opened_res',
-        'total_fixed_opened_res',
+        # 'total_fixed_opened_res',
     ]
 
     def __init__(self, report, pricing_provider, fx_rate_provider, trn, overrides=None):
         super(VirtualTransaction, self).__init__(report, pricing_provider, fx_rate_provider)
         overrides = overrides or {}
         self.trn = trn
+        self.lid = uuid.uuid1()
+        # self.lid = uuid.uuid1()
         self.pk = overrides.get('pk', trn.pk)
         self.trn_code = overrides.get('transaction_code', trn.transaction_code)
         self.trn_cls = overrides.get('transaction_class', trn.transaction_class)
@@ -394,6 +390,8 @@ class VirtualTransaction(_Base):
         self.alloc_bl = overrides.get('allocation_balance', trn.allocation_balance)
         self.alloc_pl = overrides.get('allocation_pl', trn.allocation_pl)
 
+        self.notes = overrides.get('notes', trn.notes)
+
         # ----
 
         if self.acc_date <= self.report.report_date < self.cash_date:
@@ -405,6 +403,9 @@ class VirtualTransaction(_Base):
 
     def __str__(self):
         return str(self.pk)
+
+    def __repr__(self):
+        return 'VT(%s)' % self.pk
 
     def pricing(self):
         # report ccy ----------------------------------------------------
@@ -602,6 +603,8 @@ class VirtualTransaction(_Base):
             t.stl_ccy_cur_fx = float('nan')
 
             t.mismatch = 0.0
+            t.avco_multiplier = 0.0
+            t.fifo_multiplier = 0.0
             t.multiplier = 1.0
             t.cash = 0.0
             t.cash_res = 0.0
@@ -871,6 +874,37 @@ class VirtualTransaction(_Base):
         return False
 
 
+# additional fields
+#
+# Pricing currency => Instrument Pricing Ccy for instrumen;= System CCY (by default USD, but may be changed) for Currency
+# Current Price, pricing ccy => Pricing CCY for enitiy = Currency (not instrument) is System Currency (by default USD, but may be changed)
+# Current Accrued, accrued ccy =>
+# Pricing Ccy FX rate => FX of Pricing CCY vs Reporting CCY
+# Accrued currency FX rate => Accrued currency FX rate
+# Current Payment Size, accrued ccy => from Accruals Schedule - coupon size used to calculate Annual Coupon and Coupon Yield
+# Current Payment Frequency => Current Payment Frequency
+# Current Payment Periodicity N => from Accruals  Schedule.
+#
+# YTM =>
+# Modified Duration =>
+#
+# Last Notes => Front Office Notes - last Note from Basic Transaction Buy/Sell
+# Gross Cost Price, pricing ccy => doesn't include overheads
+# Net Cost Price, pricing ccy => includes overheads
+# YTM at Cost =>
+# Time Invested =>
+# Amount invested, rep ccy => principal + carry (no overheads)
+# Amount invested, pricing ccy =>
+#
+# Mkt Value, pricing ccy =>
+# Exposure, pricing ccy =>
+
+# Position Return, rep ccy => pos return / time invested
+# Position Return, pricing ccy =>
+# Daily Price Change, % =>  (Current Price - Fross Cost Price) / Gross Cost Price, if Time Invested = 1 day
+# MTD Price Change, %
+
+
 class ReportItem(_Base):
     TYPE_UNKNOWN = 0
     TYPE_INSTRUMENT = 1
@@ -910,6 +944,9 @@ class ReportItem(_Base):
     custom_fields = []
     is_empty = False
 
+    pricing_ccy = None
+    last_notes = ''
+
     # link
     mismatch = 0.0
     # mismatch_ccy = None
@@ -932,17 +969,35 @@ class ReportItem(_Base):
     instr_accrued_ccy_cur_fx = 0.0
     ccy_cur = None
     ccy_cur_fx = 0.0
+    pricing_ccy_cur = None
+    pricing_ccy_cur_fx = 0.0
 
     # instr
-
     instr_principal_res = 0.0
     instr_accrued_res = 0.0
     exposure_res = 0.0
+    exposure_loc = 0.0
+    instr_accrual = None  # Current Payment Size, Current Payment Frequency, Current Payment Periodicity N
 
     # balance
     pos_size = 0.0
     market_value_res = 0.0
+    market_value_loc = 0.0
     cost_res = 0.0
+
+    #
+    ytm = 0.0
+    modif_dur = 0.0
+    ytm_at_cost = 0.0
+    time_inv = 0.0
+    gros_cost_loc = 0.0
+    net_cost_loc = 0.0
+    amount_inv_res = 0.0
+    amount_inv_loc = 0.0
+    pos_ret_res = 0.0
+    pos_ret_loc = 0.0
+    daily_price_change = 0.0
+    mtd_price_change = 0.0
 
     # full ----------------------------------------------------
     principal_res = 0.0
@@ -1165,6 +1220,11 @@ class ReportItem(_Base):
             item.pos_size = trn.pos_size * (1.0 - trn.multiplier)
             item.cost_res = trn.principal_res * (1.0 - trn.multiplier)
 
+            item.pricing_ccy = trn.instr.pricing_currency
+
+            if trn.trn_cls.id in [TransactionClass.BUY, TransactionClass.SELL]:
+                item.last_notes = trn.notes
+
         elif item.type == ReportItem.TYPE_CURRENCY:
             item.acc = acc or trn.acc_cash
             item.str1 = str1 or trn.str1_cash
@@ -1173,6 +1233,8 @@ class ReportItem(_Base):
             item.ccy = ccy or trn.trn_ccy
 
             item.pos_size = val
+
+            item.pricing_ccy = trn.report.master_user.system_currency
 
         elif item.type == ReportItem.TYPE_FX_TRADE:
             item.acc = acc or trn.acc_cash
@@ -1230,6 +1292,8 @@ class ReportItem(_Base):
         item.str2 = src.str2  # -> Strategy2 if use_strategy2
         item.str3 = src.str3  # -> Strategy3 if use_strategy3
 
+        item.pricing_ccy = src.pricing_ccy
+
         # if item.type in [ReportItem.TYPE_TRANSACTION_PL, ReportItem.TYPE_FX_TRADE]:
         #     item.trn = src.trn
         if src.detail_trn:
@@ -1252,10 +1316,11 @@ class ReportItem(_Base):
         self.report_ccy_cur = self.fx_rate_provider[self.report.report_currency]
         self.report_ccy_cur_fx = self.report_ccy_cur.fx_rate
 
-        try:
-            report_ccy_cur_fx = 1.0 / self.report_ccy_cur_fx
-        except ZeroDivisionError:
-            report_ccy_cur_fx = 0.0
+        # try:
+        #     report_ccy_cur_fx = 1.0 / self.report_ccy_cur_fx
+        # except ZeroDivisionError:
+        #     report_ccy_cur_fx = 0.0
+        report_ccy_cur_fx = safe_div(1.0 / self.report_ccy_cur_fx)
 
         if self.instr:
             self.instr_price_cur = self.pricing_provider[self.instr]
@@ -1266,9 +1331,16 @@ class ReportItem(_Base):
             self.instr_accrued_ccy_cur = self.fx_rate_provider[self.instr.accrued_currency]
             self.instr_accrued_ccy_cur_fx = self.instr_accrued_ccy_cur.fx_rate * report_ccy_cur_fx
 
+            self.pricing_ccy_cur = self.instr_pricing_ccy_cur
+            self.pricing_ccy_cur_fx = self.instr_pricing_ccy_cur_fx
+
         if self.ccy:
             self.ccy_cur = self.fx_rate_provider[self.ccy]
             self.ccy_cur_fx = self.ccy_cur.fx_rate * report_ccy_cur_fx
+
+            if self.pricing_ccy:
+                self.pricing_ccy_cur = self.fx_rate_provider[self.pricing_ccy]
+                self.pricing_ccy_cur_fx = self.pricing_ccy_cur.fx_rate * report_ccy_cur_fx
 
     def add(self, o):
         # TODO: in TYPE_INSTRUMENT or global
@@ -1335,6 +1407,9 @@ class ReportItem(_Base):
             # self.total_real_res += o.total_real_res
             # self.total_unreal_res += o.market_value_res + o.cost_res
             # self.total_unreal_res += (o.instr_principal_res + o.instr_accrued_res) + o.cost_res
+
+            if o.last_notes is not None:
+                self.last_notes = o.last_notes
 
         # elif self.type == ReportItem.TYPE_SUMMARY or self.type == ReportItem.TYPE_INVESTED_SUMMARY:
         elif self.type == ReportItem.TYPE_SUMMARY:
@@ -1451,6 +1526,17 @@ class ReportItem(_Base):
     #     )
 
     # ----------------------------------------------------
+    @property
+    def pk(self):
+        return (
+            self.type,
+            getattr(self.prtfl, 'id', -1),
+            getattr(self.acc, 'id', -1),
+            getattr(self.instr, 'id', -1),
+            getattr(self.ccy, 'id', -1),
+            getattr(self.mismatch_prtfl, 'id', -1),
+            getattr(self.mismatch_acc, 'id', -1),
+        )
 
     @property
     def type_name(self):
@@ -1682,6 +1768,7 @@ class Report(object):
                  strategy3_mode=MODE_INDEPENDENT,
                  show_transaction_details=False,
                  approach_multiplier=0.5,
+                 instruments=None,
                  portfolios=None,
                  accounts=None,
                  strategies1=None,
@@ -1714,6 +1801,7 @@ class Report(object):
         self.show_transaction_details = show_transaction_details
         self.approach_multiplier = approach_multiplier
 
+        self.instruments = instruments or []
         self.portfolios = portfolios or []
         self.accounts = accounts or []
         self.strategies1 = strategies1 or []
@@ -1776,151 +1864,198 @@ class ReportBuilder(object):
 
     def _trn_qs(self):
         if self._queryset is None:
-            # permissions and attributes refreshed after build report
-            queryset = Transaction.objects.prefetch_related(
-                'master_user',
-                # 'complex_transaction',
-                # 'complex_transaction__transaction_type',
-                'transaction_class',
-                'instrument',
-                # 'instrument__instrument_type',
-                # 'instrument__instrument_type__instrument_class',
-                'transaction_currency',
-                'settlement_currency',
-                'portfolio',
-                'account_cash',
-                # 'account_cash__type',
-                'account_position',
-                # 'account_position__type',
-                'account_interim',
-                # 'account_interim__type',
-                'strategy1_position',
-                # 'strategy1_position__subgroup',
-                # 'strategy1_position__subgroup__group',
-                'strategy1_cash',
-                # 'strategy1_cash__subgroup',
-                # 'strategy1_cash__subgroup__group',
-                'strategy2_position',
-                # 'strategy2_position__subgroup',
-                # 'strategy2_position__subgroup__group',
-                'strategy2_cash',
-                # 'strategy2_cash__subgroup',
-                # 'strategy2_cash__subgroup__group',
-                'strategy3_position',
-                # 'strategy3_position__subgroup',
-                # 'strategy3_position__subgroup__group',
-                'strategy3_cash',
-                # 'strategy3_cash__subgroup',
-                # 'strategy3_cash__subgroup__group',
-                # 'responsible',
-                # 'responsible__group',
-                # 'counterparty',
-                # 'counterparty__group',
-                'linked_instrument',
-                # 'linked_instrument__instrument_type',
-                # 'linked_instrument__instrument_type__instrument_class',
-                'allocation_balance',
-                # 'allocation_balance__instrument_type',
-                # 'allocation_balance__instrument_type__instrument_class',
-                'allocation_pl',
-                # 'allocation_pl__instrument_type',
-                # 'allocation_pl__instrument_type__instrument_class',
-            ).prefetch_related(
-                #     get_attributes_prefetch_by_path('portfolio__attributes'),
-                #     get_attributes_prefetch_by_path('instrument__attributes'),
-                #     get_attributes_prefetch_by_path('account_cash__attributes'),
-                #     get_attributes_prefetch_by_path('account_position__attributes'),
-                #     get_attributes_prefetch_by_path('account_interim__attributes'),
-                #     get_attributes_prefetch_by_path('transaction_currency__attributes'),
-                #     get_attributes_prefetch_by_path('settlement_currency__attributes'),
-                #     *get_permissions_prefetch_lookups(
-                #         ('portfolio', Portfolio),
-                #         ('instrument', Instrument),
-                #         ('instrument__instrument_type', InstrumentType),
-                #         ('account_cash', Account),
-                #         ('account_cash__type', AccountType),
-                #         ('account_position', Account),
-                #         ('account_position__type', AccountType),
-                #         ('account_interim', Account),
-                #         ('account_interim__type', AccountType),
-                #         ('strategy1_position', Strategy1),
-                #         ('strategy1_position__subgroup', Strategy1Subgroup),
-                #         ('strategy1_position__subgroup__group', Strategy1Group),
-                #         ('strategy1_cash', Strategy1),
-                #         ('strategy1_cash__subgroup', Strategy1Subgroup),
-                #         ('strategy1_cash__subgroup__group', Strategy1Group),
-                #         ('strategy2_position', Strategy2),
-                #         ('strategy2_position__subgroup', Strategy2Subgroup),
-                #         ('strategy2_position__subgroup__group', Strategy2Group),
-                #         ('strategy2_cash', Strategy2),
-                #         ('strategy2_cash__subgroup', Strategy2Subgroup),
-                #         ('strategy2_cash__subgroup__group', Strategy2Group),
-                #         ('strategy3_position', Strategy3),
-                #         ('strategy3_position__subgroup', Strategy3Subgroup),
-                #         ('strategy3_position__subgroup__group', Strategy3Group),
-                #         ('strategy3_cash', Strategy3),
-                #         ('strategy3_cash__subgroup', Strategy3Subgroup),
-                #         ('strategy3_cash__subgroup__group', Strategy3Group),
-                #         ('responsible', Responsible),
-                #         ('responsible__group', ResponsibleGroup),
-                #         ('counterparty', Counterparty),
-                #         ('counterparty__group', CounterpartyGroup),
-                #         ('linked_instrument', Instrument),
-                #         ('linked_instrument__instrument_type', InstrumentType),
-                #         ('allocation_balance', Instrument),
-                #         ('allocation_balance__instrument_type', InstrumentType),
-                #         ('allocation_pl', Instrument),
-                #         ('allocation_pl__instrument_type', InstrumentType),
-                #     )
-            )
+            queryset = Transaction.objects.all()
         else:
             queryset = self._queryset
 
-        queryset = queryset.filter(
-            master_user=self.instance.master_user,
-            is_deleted=False,
-        ).filter(
+        # permissions and attributes refreshed after build report
+        queryset = queryset.prefetch_related(
+            'master_user',
+            # 'complex_transaction',
+            # 'complex_transaction__transaction_type',
+            'transaction_class',
+            'instrument',
+            'instrument__instrument_type',
+            # 'instrument__instrument_type__instrument_class',
+            'transaction_currency',
+            'settlement_currency',
+            'portfolio',
+            'account_cash',
+            # 'account_cash__type',
+            'account_position',
+            # 'account_position__type',
+            'account_interim',
+            # 'account_interim__type',
+            'strategy1_position',
+            # 'strategy1_position__subgroup',
+            # 'strategy1_position__subgroup__group',
+            'strategy1_cash',
+            # 'strategy1_cash__subgroup',
+            # 'strategy1_cash__subgroup__group',
+            'strategy2_position',
+            # 'strategy2_position__subgroup',
+            # 'strategy2_position__subgroup__group',
+            'strategy2_cash',
+            # 'strategy2_cash__subgroup',
+            # 'strategy2_cash__subgroup__group',
+            'strategy3_position',
+            # 'strategy3_position__subgroup',
+            # 'strategy3_position__subgroup__group',
+            'strategy3_cash',
+            # 'strategy3_cash__subgroup',
+            # 'strategy3_cash__subgroup__group',
+            # 'responsible',
+            # 'responsible__group',
+            # 'counterparty',
+            # 'counterparty__group',
+            'linked_instrument',
+            # 'linked_instrument__instrument_type',
+            # 'linked_instrument__instrument_type__instrument_class',
+            'allocation_balance',
+            # 'allocation_balance__instrument_type',
+            # 'allocation_balance__instrument_type__instrument_class',
+            'allocation_pl',
+            # 'allocation_pl__instrument_type',
+            # 'allocation_pl__instrument_type__instrument_class',
+        ).prefetch_related(
+            #     get_attributes_prefetch_by_path('portfolio__attributes'),
+            #     get_attributes_prefetch_by_path('instrument__attributes'),
+            #     get_attributes_prefetch_by_path('account_cash__attributes'),
+            #     get_attributes_prefetch_by_path('account_position__attributes'),
+            #     get_attributes_prefetch_by_path('account_interim__attributes'),
+            #     get_attributes_prefetch_by_path('transaction_currency__attributes'),
+            #     get_attributes_prefetch_by_path('settlement_currency__attributes'),
+            #     *get_permissions_prefetch_lookups(
+            #         ('portfolio', Portfolio),
+            #         ('instrument', Instrument),
+            #         ('instrument__instrument_type', InstrumentType),
+            #         ('account_cash', Account),
+            #         ('account_cash__type', AccountType),
+            #         ('account_position', Account),
+            #         ('account_position__type', AccountType),
+            #         ('account_interim', Account),
+            #         ('account_interim__type', AccountType),
+            #         ('strategy1_position', Strategy1),
+            #         ('strategy1_position__subgroup', Strategy1Subgroup),
+            #         ('strategy1_position__subgroup__group', Strategy1Group),
+            #         ('strategy1_cash', Strategy1),
+            #         ('strategy1_cash__subgroup', Strategy1Subgroup),
+            #         ('strategy1_cash__subgroup__group', Strategy1Group),
+            #         ('strategy2_position', Strategy2),
+            #         ('strategy2_position__subgroup', Strategy2Subgroup),
+            #         ('strategy2_position__subgroup__group', Strategy2Group),
+            #         ('strategy2_cash', Strategy2),
+            #         ('strategy2_cash__subgroup', Strategy2Subgroup),
+            #         ('strategy2_cash__subgroup__group', Strategy2Group),
+            #         ('strategy3_position', Strategy3),
+            #         ('strategy3_position__subgroup', Strategy3Subgroup),
+            #         ('strategy3_position__subgroup__group', Strategy3Group),
+            #         ('strategy3_cash', Strategy3),
+            #         ('strategy3_cash__subgroup', Strategy3Subgroup),
+            #         ('strategy3_cash__subgroup__group', Strategy3Group),
+            #         ('responsible', Responsible),
+            #         ('responsible__group', ResponsibleGroup),
+            #         ('counterparty', Counterparty),
+            #         ('counterparty__group', CounterpartyGroup),
+            #         ('linked_instrument', Instrument),
+            #         ('linked_instrument__instrument_type', InstrumentType),
+            #         ('allocation_balance', Instrument),
+            #         ('allocation_balance__instrument_type', InstrumentType),
+            #         ('allocation_pl', Instrument),
+            #         ('allocation_pl__instrument_type', InstrumentType),
+            #     )
+        )
+
+        a_filters = [
             Q(complex_transaction__isnull=True) | Q(complex_transaction__status=ComplexTransaction.PRODUCTION,
                                                     complex_transaction__is_deleted=False)
-        )
+        ]
 
-        queryset = queryset.select_related(
-            # TODO: add fields!!!
-        )
+        kw_filters = {
+            'master_user': self.instance.master_user,
+            'is_deleted': False,
+            '%s__lte' % self.instance.date_field: self.instance.report_date
+        }
 
-        queryset = queryset.filter(**{'%s__lte' % self.instance.date_field: self.instance.report_date})
+        if self.instance.instruments:
+            kw_filters['instrument__in'] = self.instance.instruments
 
         if self.instance.portfolios:
-            queryset = queryset.filter(portfolio__in=self.instance.portfolios)
+            # queryset = queryset.filter(portfolio__in=self.instance.portfolios)
+            kw_filters['portfolio__in'] = self.instance.portfolios
 
         if self.instance.accounts:
-            queryset = queryset.filter(account_position__in=self.instance.accounts)
-            queryset = queryset.filter(account_cash__in=self.instance.accounts)
-            queryset = queryset.filter(account_interim__in=self.instance.accounts)
+            # queryset = queryset.filter(account_position__in=self.instance.accounts)
+            # queryset = queryset.filter(account_cash__in=self.instance.accounts)
+            # queryset = queryset.filter(account_interim__in=self.instance.accounts)
+            kw_filters['account_position__in'] = self.instance.accounts
+            kw_filters['account_cash__in'] = self.instance.accounts
+            kw_filters['account_interim__in'] = self.instance.accounts
 
         if self.instance.strategies1:
-            queryset = queryset.filter(strategy1_position__in=self.instance.strategies1)
-            queryset = queryset.filter(strategy1_cash__in=self.instance.strategies1)
+            # queryset = queryset.filter(strategy1_position__in=self.instance.strategies1)
+            # queryset = queryset.filter(strategy1_cash__in=self.instance.strategies1)
+            kw_filters['strategy1_position__in'] = self.instance.strategies1
+            kw_filters['strategy1_cash__in'] = self.instance.strategies1
 
         if self.instance.strategies2:
-            queryset = queryset.filter(strategy2_position__in=self.instance.strategies2)
-            queryset = queryset.filter(strategy2_cash__in=self.instance.strategies2)
+            # queryset = queryset.filter(strategy2_position__in=self.instance.strategies2)
+            # queryset = queryset.filter(strategy2_cash__in=self.instance.strategies2)
+            kw_filters['strategy2_position__in'] = self.instance.strategies2
+            kw_filters['strategy2_cash__in'] = self.instance.strategies2
 
         if self.instance.strategies3:
-            queryset = queryset.filter(strategy3_position__in=self.instance.strategies3)
-            queryset = queryset.filter(strategy3_cash__in=self.instance.strategies3)
+            # queryset = queryset.filter(strategy3_position__in=self.instance.strategies3)
+            # queryset = queryset.filter(strategy3_cash__in=self.instance.strategies3)
+            kw_filters['strategy3_position__in'] = self.instance.strategies3
+            kw_filters['strategy3_cash__in'] = self.instance.strategies3
 
         if self.instance.transaction_classes:
-            queryset = queryset.filter(transaction_class__in=self.instance.transaction_classes)
+            # queryset = queryset.filter(transaction_class__in=self.instance.transaction_classes)
+            kw_filters['transaction_class__in'] = self.instance.transaction_classes
+
+        # queryset = queryset.filter(
+        #     master_user=self.instance.master_user,
+        #     is_deleted=False,
+        #     **{'%s__lte' % self.instance.date_field: self.instance.report_date}
+        # ).filter(
+        #     Q(complex_transaction__isnull=True) | Q(complex_transaction__status=ComplexTransaction.PRODUCTION,
+        #                                             complex_transaction__is_deleted=False)
+        # )
+
+        queryset = queryset.filter(*a_filters, **kw_filters)
 
         queryset = queryset.order_by(self.instance.date_field, 'transaction_code', 'id')
 
         return queryset
 
+    def sort_transactions(self, transactions):
+        def _trn_key(t):
+
+            d = None
+            if self.instance.date_field == 'accounting_date':
+                d = t.acc_date
+            elif self.instance.date_field == 'cash_date':
+                d = t.cash_date
+            else:
+                if t.trn_date is None:
+                    if t.acc_date and t.cash_date:
+                        d = min(t.acc_date, t.cash_date)
+                else:
+                    d = t.trn_date
+
+            return (
+                d if d is not None else date.min,
+                t.trn_code if t.trn_code is not None else sys.maxsize,
+                t.pk if t.pk is not None else sys.maxsize,
+            )
+
+        return sorted(transactions, key=_trn_key)
+
     @cached_property
-    def _pricing_provider(self):
+    def pricing_provider(self):
         if self.instance.pricing_policy is None:
-            return FakeInstrumentPricingProvider(None, None, self.instance.report_date)
+            return FakeInstrumentPricingProvider(self.instance.master_user, None, self.instance.report_date)
         else:
             p = InstrumentPricingProvider(self.instance.master_user, self.instance.pricing_policy,
                                           self.instance.report_date)
@@ -1928,22 +2063,25 @@ class ReportBuilder(object):
             return p
 
     @cached_property
-    def _fx_rate_provider(self):
+    def fx_rate_provider(self):
         if self.instance.pricing_policy is None:
-            return FakeCurrencyFxRateProvider(None, None, self.instance.report_date)
+            return FakeCurrencyFxRateProvider(self.instance.master_user, None, self.instance.report_date)
         else:
             p = CurrencyFxRateProvider(self.instance.master_user, self.instance.pricing_policy,
                                        self.instance.report_date)
             p.fill_using_transactions(self._trn_qs(), currencies=[self.instance.report_currency], lazy=False)
             return p
 
-    @cached_property
-    def transactions(self):
-        if self._transactions:
+    def get_transactions(self):
+        if self._transactions is not None:
             return self._transactions
 
+        trn_qs = self._trn_qs()
+        if not trn_qs.exists():
+            return []
+
         res = []
-        for t in self._trn_qs():
+        for t in trn_qs:
             overrides = {}
 
             if self.instance.portfolio_mode == Report.MODE_IGNORE:
@@ -1968,30 +2106,20 @@ class ReportBuilder(object):
 
             trn = VirtualTransaction(
                 report=self.instance,
-                pricing_provider=self._pricing_provider,
-                fx_rate_provider=self._fx_rate_provider,
+                pricing_provider=self.pricing_provider,
+                fx_rate_provider=self.fx_rate_provider,
                 trn=t,
                 overrides=overrides
             )
             trn.pricing()
             res.append(trn)
 
-        res1 = self._multipliers(res)
+        return res
 
-        # res21 = []
-        # for trn in res1:
-        #     trn.calc()
-        #     if trn.closed_by:
-        #         for closed_by, delta in trn.closed_by:
-        #             closed_by2, trn2 = VirtualTransaction.approach_clone(closed_by, trn, delta)
-        #             res21.append(trn2)
-        #             res21.append(closed_by2)
-        # res2 = res1 + res21
-        # res3 = self._transfers(res2)
-
-        res2 = []
-        for trn in res1:
-            res2.append(trn)
+    def clone_transactions_if_need(self, transactions):
+        res = []
+        for trn in transactions:
+            res.append(trn)
 
             trn.calc()
 
@@ -1999,15 +2127,15 @@ class ReportBuilder(object):
                 if trn.closed_by:
                     for closed_by, delta in trn.closed_by:
                         closed_by2, trn2 = VirtualTransaction.approach_clone(closed_by, trn, delta)
-                        res2.append(trn2)
-                        res2.append(closed_by2)
+                        res.append(trn2)
+                        res.append(closed_by2)
 
             elif trn.trn_cls.id == TransactionClass.FX_TRADE:
                 trn.is_hidden = True
 
                 trn1, trn2 = trn.fx_trade_clone()
-                res2.append(trn1)
-                res2.append(trn2)
+                res.append(trn1)
+                res.append(trn2)
 
             elif trn.trn_cls.id == TransactionClass.TRANSFER:
                 trn.is_hidden = True
@@ -2016,62 +2144,223 @@ class ReportBuilder(object):
                     trn1, trn2 = trn.transfer_clone(self._trn_cls_sell, self._trn_cls_buy)
                 else:
                     trn1, trn2 = trn.transfer_clone(self._trn_cls_buy, self._trn_cls_sell)
-                res2.append(trn1)
-                res2.append(trn2)
+                res.append(trn1)
+                res.append(trn2)
 
             elif trn.trn_cls.id == TransactionClass.FX_TRANSFER:
                 trn.is_hidden = True
 
                 trn1, trn2 = trn.transfer_clone(self._trn_cls_fx_trade, self._trn_cls_fx_trade)
-                res2.append(trn1)
-                res2.append(trn2)
+                res.append(trn1)
+                res.append(trn2)
 
-        return res2
+        return res
 
-    def _multipliers(self, src):
+    # def _calc_multipliers(self, src):
+    #     rolling_positions = Counter()
+    #     items = defaultdict(list)
+    #
+    #     res = []
+    #
+    #     def _set_mul(t0, multiplier):
+    #         delta = multiplier - t0.multiplier
+    #         t0.multiplier = multiplier
+    #         return delta
+    #
+    #     def _close_by(closed, cur, delta):
+    #         closed.closed_by.append((cur, delta))
+    #
+    #     for t in src:
+    #         res.append(t)
+    #
+    #         if t.trn_cls.id not in [TransactionClass.BUY, TransactionClass.SELL]:
+    #             continue
+    #
+    #         t_key = (
+    #             getattr(t.prtfl, 'id', None) if self.instance.portfolio_mode == Report.MODE_INDEPENDENT else None,
+    #             getattr(t.acc_pos, 'id', None) if self.instance.account_mode == Report.MODE_INDEPENDENT else None,
+    #             getattr(t.str1_pos, 'id', None) if self.instance.strategy1_mode == Report.MODE_INDEPENDENT else None,
+    #             getattr(t.str2_pos, 'id', None) if self.instance.strategy2_mode == Report.MODE_INDEPENDENT else None,
+    #             getattr(t.str3_pos, 'id', None) if self.instance.strategy3_mode == Report.MODE_INDEPENDENT else None,
+    #             getattr(t.instr, 'id', None),
+    #         )
+    #
+    #         t.multiplier = 0.0
+    #         t.closed_by = []
+    #         rolling_position = rolling_positions[t_key]
+    #
+    #         if isclose(rolling_position, 0.0):
+    #             k = -1
+    #         else:
+    #             k = - t.pos_size / rolling_position
+    #
+    #         if self.instance.cost_method.id == CostMethod.AVCO:
+    #
+    #             if k > 1.0:
+    #                 if t_key in items:
+    #                     for t0 in items[t_key]:
+    #                         delta = _set_mul(t0, 1.0)
+    #                         _close_by(t0, t, delta)
+    #                     del items[t_key]
+    #                 items[t_key].append(t)
+    #                 _set_mul(t, 1.0 / k)
+    #                 rolling_position = t.pos_size * (1.0 - t.multiplier)
+    #
+    #             elif isclose(k, 1.0):
+    #                 if t_key in items:
+    #                     for t0 in items[t_key]:
+    #                         delta = _set_mul(t0, 1.0)
+    #                         _close_by(t0, t, delta)
+    #                     del items[t_key]
+    #                 _set_mul(t, 1.0)
+    #                 rolling_position = 0.0
+    #
+    #             elif k > 0.0:
+    #                 if t_key in items:
+    #                     for t0 in items[t_key]:
+    #                         delta = _set_mul(t0, t0.multiplier + k * (1.0 - t0.multiplier))
+    #                         _close_by(t0, t, delta)
+    #                 _set_mul(t, 1.0)
+    #                 rolling_position += t.pos_size
+    #
+    #             else:
+    #                 items[t_key].append(t)
+    #                 rolling_position += t.pos_size
+    #
+    #         elif self.instance.cost_method.id == CostMethod.FIFO:
+    #
+    #             if k > 1.0:
+    #                 if t_key in items:
+    #                     for t0 in items[t_key]:
+    #                         delta = _set_mul(t0, 1.0)
+    #                         _close_by(t0, t, delta)
+    #                     items[t_key].clear()
+    #                 items[t_key].append(t)
+    #                 _set_mul(t, 1.0 / k)
+    #                 rolling_position = t.pos_size * (1.0 - t.multiplier)
+    #
+    #             elif isclose(k, 1.0):
+    #                 if t_key in items:
+    #                     for t0 in items[t_key]:
+    #                         delta = _set_mul(t0, 1.0)
+    #                         _close_by(t0, t, delta)
+    #                     del items[t_key]
+    #                 _set_mul(t, 1.0)
+    #                 rolling_position = 0.0
+    #
+    #             elif k > 0.0:
+    #                 position = t.pos_size
+    #                 if t_key in items:
+    #                     t_items = items[t_key]
+    #                     for t0 in t_items:
+    #                         remaining = t0.pos_size * (1.0 - t0.multiplier)
+    #                         k0 = - position / remaining
+    #                         if k0 > 1.0:
+    #                             delta = _set_mul(t0, 1.0)
+    #                             _close_by(t0, t, delta)
+    #                             position += remaining
+    #                         elif isclose(k0, 1.0):
+    #                             delta = _set_mul(t0, 1.0)
+    #                             _close_by(t0, t, delta)
+    #                             position += remaining
+    #                         elif k0 > 0.0:
+    #                             position += remaining * k0
+    #                             delta = _set_mul(t0, t0.multiplier + k0 * (1.0 - t0.multiplier))
+    #                             _close_by(t0, t, delta)
+    #                         # else:
+    #                         #     break
+    #                         if isclose(position, 0.0):
+    #                             break
+    #                     t_items = [t0 for t0 in t_items if not isclose(t0.multiplier, 1.0)]
+    #                     if t_items:
+    #                         items[t_key] = t_items
+    #                     else:
+    #                         del items[t_key]
+    #
+    #                 _set_mul(t, abs((t.pos_size - position) / t.pos_size))
+    #                 rolling_position += t.pos_size * t.multiplier
+    #
+    #             else:
+    #                 items[t_key].append(t)
+    #                 rolling_position += t.pos_size
+    #
+    #         rolling_positions[t_key] = rolling_position
+    #
+    #     return res
+
+    def calc_multipliers(self, transactions):
+        # # TO DO: check. approach_clone
+        # if self.instance.cost_method.id == CostMethod.AVCO:
+        #     self._calc_avco_multipliers(src)
+        # elif self.instance.cost_method.id == CostMethod.FIFO:
+        #     self._calc_fifo_multipliers(src)
+        self.calc_avco_multipliers(transactions)
+        self.calc_fifo_multipliers(transactions)
+
+        # res = []
+        # if self.instance.cost_method.id == CostMethod.AVCO:
+        #     for t in src:
+        #         # res.append(t)
+        #         t.multiplier = t.avco_multiplier
+        # elif self.instance.cost_method.id == CostMethod.FIFO:
+        #     for t in src:
+        #         # res.append(t)
+        #         t.multiplier = t.fifo_multiplier
+        # else:
+        #     for t in src:
+        #         # res.append(t)
+        #         t.multiplier = 0.0
+        #         # return src
+
+        for t in transactions:
+            # res.append(t)
+
+            if t.instr and t.instr.instrument_type.instrument_class_id == InstrumentClass.CONTRACT_FOR_DIFFERENCE:
+                t.multiplier = t.fifo_multiplier
+                t.closed_by = t.fifo_closed_by
+
+            if self.instance.cost_method.id == CostMethod.AVCO:
+                t.multiplier = t.avco_multiplier
+                t.closed_by = t.avco_closed_by
+
+            elif self.instance.cost_method.id == CostMethod.FIFO:
+                t.multiplier = t.fifo_multiplier
+                t.closed_by = t.fifo_closed_by
+
+    def _get_trn_key(self, t):
+        return (
+            getattr(t.prtfl, 'id', None) if self.instance.portfolio_mode == Report.MODE_INDEPENDENT else None,
+            getattr(t.acc_pos, 'id', None) if self.instance.account_mode == Report.MODE_INDEPENDENT else None,
+            getattr(t.str1_pos, 'id', None) if self.instance.strategy1_mode == Report.MODE_INDEPENDENT else None,
+            getattr(t.str2_pos, 'id', None) if self.instance.strategy2_mode == Report.MODE_INDEPENDENT else None,
+            getattr(t.str3_pos, 'id', None) if self.instance.strategy3_mode == Report.MODE_INDEPENDENT else None,
+            getattr(t.instr, 'id', None),
+        )
+
+    def calc_avco_multipliers(self, src):
         rolling_positions = Counter()
         items = defaultdict(list)
 
-        res = []
-
-        # multipliers_delta = []
-
-        # closed, closed_by, delta
-        # changes = []
-
-        def _set_mul(t0, multiplier):
-            # if isclose(t.r_multiplier, multiplier):
-            #     return
-            delta = multiplier - t0.multiplier
-            # multipliers_delta.append((t0, delta))
-            t0.multiplier = multiplier
+        def _set_mul(t0, avco_multiplier):
+            delta = avco_multiplier - t0.avco_multiplier
+            t0.avco_multiplier = avco_multiplier
             return delta
 
         def _close_by(closed, cur, delta):
-            # changes.append((closed, cur, delta))
-            closed.closed_by.append((cur, delta))
-            # cur2, closed2 = VirtualTransaction.approach_clone(cur, closed, delta)
-            # res.append(cur2)
-            # res.append(closed2)
+            # closed.avco_closed_by.append(VirtualTransactionClosedByData(cur, delta))
+            closed.avco_closed_by.append((cur, delta))
 
+        # res = []
         for t in src:
-            res.append(t)
+            # res.append(t)
 
             if t.trn_cls.id not in [TransactionClass.BUY, TransactionClass.SELL]:
                 continue
 
-            t_key = (
-                getattr(t.prtfl, 'id', None) if self.instance.portfolio_mode == Report.MODE_INDEPENDENT else None,
-                getattr(t.acc_pos, 'id', None) if self.instance.account_mode == Report.MODE_INDEPENDENT else None,
-                getattr(t.str1_pos, 'id', None) if self.instance.strategy1_mode == Report.MODE_INDEPENDENT else None,
-                getattr(t.str2_pos, 'id', None) if self.instance.strategy2_mode == Report.MODE_INDEPENDENT else None,
-                getattr(t.str3_pos, 'id', None) if self.instance.strategy3_mode == Report.MODE_INDEPENDENT else None,
-                getattr(t.instr, 'id', None),
-            )
+            t_key = self._get_trn_key(t)
 
-            # multipliers_delta.clear()
-            t.multiplier = 0.0
-            t.closed_by = []
+            t.avco_multiplier = 0.0
+            t.avco_closed_by = []
             rolling_position = rolling_positions[t_key]
 
             if isclose(rolling_position, 0.0):
@@ -2079,180 +2368,144 @@ class ReportBuilder(object):
             else:
                 k = - t.pos_size / rolling_position
 
-            if self.instance.cost_method.id == CostMethod.AVCO:
+            if k > 1.0:
+                if t_key in items:
+                    for t0 in items[t_key]:
+                        delta = _set_mul(t0, 1.0)
+                        _close_by(t0, t, delta)
+                    del items[t_key]
+                items[t_key].append(t)
+                _set_mul(t, 1.0 / k)
+                rolling_position = t.pos_size * (1.0 - t.avco_multiplier)
 
-                if k > 1.0:
-                    if t_key in items:
-                        for t0 in items[t_key]:
-                            delta = _set_mul(t0, 1.0)
-                            _close_by(t0, t, delta)
-                        del items[t_key]
-                    items[t_key].append(t)
-                    _set_mul(t, 1.0 / k)
-                    rolling_position = t.pos_size * (1.0 - t.multiplier)
+            elif isclose(k, 1.0):
+                if t_key in items:
+                    for t0 in items[t_key]:
+                        delta = _set_mul(t0, 1.0)
+                        _close_by(t0, t, delta)
+                    del items[t_key]
+                _set_mul(t, 1.0)
+                rolling_position = 0.0
 
-                elif isclose(k, 1.0):
-                    if t_key in items:
-                        for t0 in items[t_key]:
-                            delta = _set_mul(t0, 1.0)
-                            _close_by(t0, t, delta)
-                        del items[t_key]
-                    _set_mul(t, 1.0)
-                    rolling_position = 0.0
+            elif k > 0.0:
+                if t_key in items:
+                    for t0 in items[t_key]:
+                        delta = _set_mul(t0, t0.avco_multiplier + k * (1.0 - t0.avco_multiplier))
+                        _close_by(t0, t, delta)
+                _set_mul(t, 1.0)
+                rolling_position += t.pos_size
 
-                elif k > 0.0:
-                    if t_key in items:
-                        for t0 in items[t_key]:
-                            delta = _set_mul(t0, t0.multiplier + k * (1.0 - t0.multiplier))
-                            _close_by(t0, t, delta)
-                    _set_mul(t, 1.0)
-                    rolling_position += t.pos_size
-
-                else:
-                    items[t_key].append(t)
-                    rolling_position += t.pos_size
-
-            elif self.instance.cost_method.id == CostMethod.FIFO:
-
-                if k > 1.0:
-                    if t_key in items:
-                        for t0 in items[t_key]:
-                            delta = _set_mul(t0, 1.0)
-                            _close_by(t0, t, delta)
-                        items[t_key].clear()
-                    items[t_key].append(t)
-                    _set_mul(t, 1.0 / k)
-                    rolling_position = t.pos_size * (1.0 - t.multiplier)
-
-                elif isclose(k, 1.0):
-                    if t_key in items:
-                        for t0 in items[t_key]:
-                            delta = _set_mul(t0, 1.0)
-                            _close_by(t0, t, delta)
-                        del items[t_key]
-                    _set_mul(t, 1.0)
-                    rolling_position = 0.0
-
-                elif k > 0.0:
-                    position = t.pos_size
-                    if t_key in items:
-                        t_items = items[t_key]
-                        for t0 in t_items:
-                            remaining = t0.pos_size * (1.0 - t0.multiplier)
-                            k0 = - position / remaining
-                            if k0 > 1.0:
-                                delta = _set_mul(t0, 1.0)
-                                _close_by(t0, t, delta)
-                                position += remaining
-                            elif isclose(k0, 1.0):
-                                delta = _set_mul(t0, 1.0)
-                                _close_by(t0, t, delta)
-                                position += remaining
-                            elif k0 > 0.0:
-                                position += remaining * k0
-                                delta = _set_mul(t0, t0.multiplier + k0 * (1.0 - t0.multiplier))
-                                _close_by(t0, t, delta)
-                            # else:
-                            #     break
-                            if isclose(position, 0.0):
-                                break
-                        t_items = [t0 for t0 in t_items if not isclose(t0.multiplier, 1.0)]
-                        if t_items:
-                            items[t_key] = t_items
-                        else:
-                            del items[t_key]
-
-                    _set_mul(t, abs((t.pos_size - position) / t.pos_size))
-                    rolling_position += t.pos_size * t.multiplier
-
-                else:
-                    items[t_key].append(t)
-                    rolling_position += t.pos_size
+            else:
+                items[t_key].append(t)
+                rolling_position += t.pos_size
 
             rolling_positions[t_key] = rolling_position
-            # print('i =', i, ', rolling_positions =', rolling_position)
 
-            # if multipliers_delta:
-            #     init_mult = 1.0 - self.instance.pl_real_unreal_end_multiplier
-            #     end_mult = self.instance.pl_real_unreal_end_multiplier
-            #
-            #     t, inc_multiplier = multipliers_delta[-1]
-            #
-            #     # sum_principal = 0.0
-            #     # sum_carry = 0.0
-            #     # sum_overheads = 0.0
-            #     sum_total = 0.0
-            #     for t0, inc_multiplier0 in multipliers_delta:
-            #         # sum_principal += t0.principal_with_sign * inc_multiplier0
-            #         # sum_carry += t0.carry_with_sign * inc_multiplier0
-            #         # sum_overheads += t0.overheads_with_sign * inc_multiplier0
-            #         sum_total += inc_multiplier0 * t0.total_sys
-            #
-            #     for t0, inc_multiplier0 in multipliers_delta:
-            #         mult = end_mult if t0.pk == t.pk else init_mult
-            #
-            #         matched = abs((t0.pos_size * inc_multiplier0) / (
-            #             t.pos_size * inc_multiplier))
-            #         # adj = matched * mult
-            #
-            #         # t0.real_pl_principal_with_sign += sum_principal * matched * mult
-            #         # t0.real_pl_carry_with_sign += sum_carry * matched * mult
-            #         # t0.real_pl_overheads_with_sign += sum_overheads * matched * mult
-            #         t0.total_real_sys += sum_total * matched * mult
-            pass
+            # return res
 
-        # for t in transactions:
-        #     if t.trn_cls.id not in [TransactionClass.BUY, TransactionClass.SELL]:
-        #         continue
-        #     # t.r_position_size = t.pos_size * (1.0 - t.multiplier)
-        #     # t.r_cost = t.principal_ * (1.0 - t.multiplier)
-        #     pass
-        return res
+    def calc_fifo_multipliers(self, src):
+        rolling_positions = Counter()
+        items = defaultdict(list)
 
-    # def _transfers(self, src):
-    #     res = []
-    #
-    #     for t in src:
-    #         res.append(t)
-    #
-    #         if t.trn_cls.id == TransactionClass.FX_TRADE:
-    #             t.is_hidden = True
-    #
-    #             t1, t2 = t.fx_trade_clone()
-    #             res.append(t1)
-    #             res.append(t2)
-    #
-    #         elif t.trn_cls.id == TransactionClass.TRANSFER:
-    #             t.is_hidden = True
-    #             # split TRANSFER to sell/buy or buy/sell
-    #
-    #             if t.pos_size >= 0:
-    #                 t1, t2 = t.transfer_clone(self._trn_cls_sell, self._trn_cls_buy)
-    #                 res.append(t1)
-    #                 res.append(t2)
-    #
-    #             else:
-    #                 t1, t2 = t.transfer_clone(self._trn_cls_buy, self._trn_cls_sell)
-    #                 res.append(t1)
-    #                 res.append(t2)
-    #
-    #         elif t.trn_cls.id == TransactionClass.FX_TRANSFER:
-    #             t.is_hidden = True
-    #
-    #             t1, t2 = t.transfer_clone(self._trn_cls_fx_trade, self._trn_cls_fx_trade)
-    #             res.append(t1)
-    #             res.append(t2)
-    #
-    #     return res
+        def _set_mul(t0, fifo_multiplier):
+            delta = fifo_multiplier - t0.fifo_multiplier
+            t0.fifo_multiplier = fifo_multiplier
+            return delta
+
+        def _close_by(closed, cur, delta):
+            # closed.fifo_closed_by.append(VirtualTransactionClosedByData(cur, delta))
+            closed.fifo_closed_by.append((cur, delta))
+
+        # res = []
+        for t in src:
+            # res.append(t)
+
+            if t.trn_cls.id not in [TransactionClass.BUY, TransactionClass.SELL]:
+                continue
+
+            t_key = self._get_trn_key(t)
+
+            t.fifo_multiplier = 0.0
+            t.fifo_closed_by = []
+            rolling_position = rolling_positions[t_key]
+
+            if isclose(rolling_position, 0.0):
+                k = -1
+            else:
+                k = - t.pos_size / rolling_position
+
+            if k > 1.0:
+                if t_key in items:
+                    for t0 in items[t_key]:
+                        delta = _set_mul(t0, 1.0)
+                        _close_by(t0, t, delta)
+                    items[t_key].clear()
+                items[t_key].append(t)
+                _set_mul(t, 1.0 / k)
+                rolling_position = t.pos_size * (1.0 - t.fifo_multiplier)
+
+            elif isclose(k, 1.0):
+                if t_key in items:
+                    for t0 in items[t_key]:
+                        delta = _set_mul(t0, 1.0)
+                        _close_by(t0, t, delta)
+                    del items[t_key]
+                _set_mul(t, 1.0)
+                rolling_position = 0.0
+
+            elif k > 0.0:
+                position = t.pos_size
+                if t_key in items:
+                    t_items = items[t_key]
+                    for t0 in t_items:
+                        remaining = t0.pos_size * (1.0 - t0.fifo_multiplier)
+                        k0 = - position / remaining
+                        if k0 > 1.0:
+                            delta = _set_mul(t0, 1.0)
+                            _close_by(t0, t, delta)
+                            position += remaining
+                        elif isclose(k0, 1.0):
+                            delta = _set_mul(t0, 1.0)
+                            _close_by(t0, t, delta)
+                            position += remaining
+                        elif k0 > 0.0:
+                            position += remaining * k0
+                            delta = _set_mul(t0, t0.fifo_multiplier + k0 * (1.0 - t0.fifo_multiplier))
+                            _close_by(t0, t, delta)
+                        # else:
+                        #     break
+                        if isclose(position, 0.0):
+                            break
+                    t_items = [t0 for t0 in t_items if not isclose(t0.fifo_multiplier, 1.0)]
+                    if t_items:
+                        items[t_key] = t_items
+                    else:
+                        del items[t_key]
+
+                _set_mul(t, abs((t.pos_size - position) / t.pos_size))
+                rolling_position += t.pos_size * t.fifo_multiplier
+
+            else:
+                items[t_key].append(t)
+                rolling_position += t.pos_size
+
+            rolling_positions[t_key] = rolling_position
+
+            # return res
 
     def build(self, full=True):
         mismatch_items = []
 
         # split transactions to atomic items using transaction class, case and something else
 
-        for trn in self.transactions:
+        transactions = self.get_transactions()
+        self.calc_multipliers(transactions)
+        transactions = self.clone_transactions_if_need(transactions)
+        self.instance.transactions = transactions
+
+        for trn in transactions:
             if trn.is_mismatch and trn.link_instr and not isclose(trn.mismatch, 0.0):
-                item = ReportItem.from_trn(self.instance, self._pricing_provider, self._fx_rate_provider,
+                item = ReportItem.from_trn(self.instance, self.pricing_provider, self.fx_rate_provider,
                                            ReportItem.TYPE_MISMATCH, trn)
                 mismatch_items.append(item)
 
@@ -2269,7 +2522,7 @@ class ReportBuilder(object):
                                str3=trn.str3_pos)
 
                 # P&L
-                item = ReportItem.from_trn(self.instance, self._pricing_provider, self._fx_rate_provider,
+                item = ReportItem.from_trn(self.instance, self.pricing_provider, self.fx_rate_provider,
                                            ReportItem.TYPE_CASH_IN_OUT, trn, acc=trn.acc_cash,
                                            str1=trn.str1_cash, str2=trn.str2_cash, str3=trn.str3_cash,
                                            ccy=trn.stl_ccy)
@@ -2282,7 +2535,7 @@ class ReportBuilder(object):
             elif trn.trn_cls.id == TransactionClass.TRANSACTION_PL:
                 self._add_cash(trn, val=trn.cash, ccy=trn.stl_ccy)
 
-                item = ReportItem.from_trn(self.instance, self._pricing_provider, self._fx_rate_provider,
+                item = ReportItem.from_trn(self.instance, self.pricing_provider, self.fx_rate_provider,
                                            ReportItem.TYPE_TRANSACTION_PL, trn, acc=trn.acc_pos,
                                            str1=trn.str1_pos, str2=trn.str2_pos, str3=trn.str3_pos)
                 self._items.append(item)
@@ -2294,7 +2547,7 @@ class ReportBuilder(object):
                 # self._add_cash(trn, val=trn.cash, ccy=trn.stl_ccy)
 
                 # P&L
-                item = ReportItem.from_trn(self.instance, self._pricing_provider, self._fx_rate_provider,
+                item = ReportItem.from_trn(self.instance, self.pricing_provider, self.fx_rate_provider,
                                            ReportItem.TYPE_FX_TRADE, trn, acc=trn.acc_cash,
                                            str1=trn.str1_cash, str2=trn.str2_cash, str3=trn.str3_cash,
                                            ccy=trn.trn.settlement_currency, trn_ccy=trn.trn_ccy)
@@ -2331,11 +2584,9 @@ class ReportBuilder(object):
 
         # aggregate items
 
-        # invested_items = []
         res_items = []
         for k, g in groupby(_items, key=_group_key):
             res_item = None
-            # invested_item = None
 
             for item in g:
                 if item.type in [ReportItem.TYPE_INSTRUMENT, ReportItem.TYPE_CURRENCY, ReportItem.TYPE_TRANSACTION_PL,
@@ -2344,23 +2595,10 @@ class ReportBuilder(object):
                         res_item = ReportItem.from_item(item)
                     res_item.add(item)
 
-                    # if item.trn and item.type in [ReportItem.TYPE_CURRENCY] and \
-                    #                 item.trn.trn_cls.id in [TransactionClass.CASH_INFLOW, TransactionClass.CASH_OUTFLOW]:
-                    #     if invested_item is None:
-                    #         invested_item = ReportItem.from_item(item)
-                    #         invested_item.type = ReportItem.TYPE_CURRENCY
-                    #     invested_item.add(item)
-
             if res_item:
                 res_item.pricing()
                 res_item.close()
                 res_items.append(res_item)
-
-            # if invested_item:
-            #     invested_item.pricing()
-            #     invested_item.close()
-            #     invested_items.append(invested_item)
-            pass
 
         # ReportItem.dumps(_items)
 
@@ -2369,7 +2607,7 @@ class ReportBuilder(object):
         # aggregate summary
         summaries = []
         if settings.DEBUG:
-            summary = ReportItem(self.instance, self._pricing_provider, self._fx_rate_provider, ReportItem.TYPE_SUMMARY)
+            summary = ReportItem(self.instance, self.pricing_provider, self.fx_rate_provider, ReportItem.TYPE_SUMMARY)
             for item in res_items:
                 if item.type in [ReportItem.TYPE_INSTRUMENT, ReportItem.TYPE_CURRENCY, ReportItem.TYPE_TRANSACTION_PL,
                                  ReportItem.TYPE_FX_TRADE, ReportItem.TYPE_CASH_IN_OUT]:
@@ -2404,14 +2642,6 @@ class ReportBuilder(object):
                 mismatch_item.close()
                 mismatch_items.append(mismatch_item)
 
-        # aggregate invested summary (primary for validation only)
-        # invested_summary = ReportItem(self.instance, self._pricing_provider, self._fx_rate_provider,
-        #                               ReportItem.TYPE_INVESTED_SUMMARY)
-        # for item in invested_items:
-        #     if item.type in [ReportItem.TYPE_INVESTED_CURRENCY]:
-        #         invested_summary.add(item)
-        # invested_summary.close()
-
         # self.instance.items = res_items + mismatch_items + [summary, ] + invested_items + [invested_summary, ]
         self.instance.items = res_items + mismatch_items + summaries
 
@@ -2420,24 +2650,24 @@ class ReportBuilder(object):
 
         self.instance.close()
 
-        # print('0' * 100)
-        # VirtualTransaction.dumps(self.transactions)
-        # print('1' * 100)
+        # _l.debug('0' * 100)
+        # VirtualTransaction.dumps(self.instance.transactions)
+        # _l.debug('1' * 100)
         # ReportItem.dumps(self._items)
-        # print('2' * 100)
+        # _l.debug('2' * 100)
         # ReportItem.dumps(self.instance.items)
-        # print('3' * 100)
+        # _l.debug('3' * 100)
 
         return self.instance
 
     def _add_instr(self, trn):
         if trn.case == 0:
-            item = ReportItem.from_trn(self.instance, self._pricing_provider, self._fx_rate_provider,
+            item = ReportItem.from_trn(self.instance, self.pricing_provider, self.fx_rate_provider,
                                        ReportItem.TYPE_INSTRUMENT, trn)
             self._items.append(item)
 
         elif trn.case == 1:
-            item = ReportItem.from_trn(self.instance, self._pricing_provider, self._fx_rate_provider,
+            item = ReportItem.from_trn(self.instance, self.pricing_provider, self.fx_rate_provider,
                                        ReportItem.TYPE_INSTRUMENT, trn)
             self._items.append(item)
 
@@ -2449,27 +2679,27 @@ class ReportBuilder(object):
 
     def _add_cash(self, trn, val, ccy, acc=None, acc_interim=None, str1=None, str2=None, str3=None):
         if trn.case == 0:
-            item = ReportItem.from_trn(self.instance, self._pricing_provider, self._fx_rate_provider,
+            item = ReportItem.from_trn(self.instance, self.pricing_provider, self.fx_rate_provider,
                                        ReportItem.TYPE_CURRENCY, trn, ccy=ccy, acc=acc,
                                        str1=str1, str2=str2, str3=str3,
                                        val=val)
             self._items.append(item)
 
         elif trn.case == 1:
-            item = ReportItem.from_trn(self.instance, self._pricing_provider, self._fx_rate_provider,
+            item = ReportItem.from_trn(self.instance, self.pricing_provider, self.fx_rate_provider,
                                        ReportItem.TYPE_CURRENCY, trn, ccy=ccy, acc=acc_interim or trn.acc_interim,
                                        str1=str1, str2=str2, str3=str3,
                                        val=val)
             self._items.append(item)
 
         elif trn.case == 2:
-            item = ReportItem.from_trn(self.instance, self._pricing_provider, self._fx_rate_provider,
+            item = ReportItem.from_trn(self.instance, self.pricing_provider, self.fx_rate_provider,
                                        ReportItem.TYPE_CURRENCY, trn, ccy=ccy, acc=acc,
                                        str1=str1, str2=str2, str3=str3,
                                        val=val)
             self._items.append(item)
 
-            item = ReportItem.from_trn(self.instance, self._pricing_provider, self._fx_rate_provider,
+            item = ReportItem.from_trn(self.instance, self.pricing_provider, self.fx_rate_provider,
                                        ReportItem.TYPE_CURRENCY, trn, ccy=ccy, acc=acc_interim or trn.acc_interim,
                                        str1=str1, str2=str2, str3=str3,
                                        val=-val)

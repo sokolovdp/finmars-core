@@ -96,8 +96,7 @@ class TransactionTypeInputSerializer(serializers.ModelSerializer):
     id = serializers.IntegerField(read_only=False, required=False, allow_null=True)
     name = serializers.CharField(max_length=255, allow_null=False, allow_blank=False,
                                  validators=[
-                                     # serializers.RegexValidator(regex='[a-zA-Z0-9_]+'),
-                                     serializers.RegexValidator(regex='[a-zA-Z_][a-zA-Z0-9_]*'),
+                                     serializers.RegexValidator(regex='\A[a-zA-Z_][a-zA-Z0-9_]*\Z'),
                                  ])
     content_type = TransactionTypeInputContentTypeField(required=False, allow_null=True, allow_empty=True)
     is_fill_from_context = serializers.BooleanField(default=False, initial=False, required=False)
@@ -260,6 +259,7 @@ class TransactionTypeActionInstrumentSerializer(serializers.ModelSerializer):
     price_download_scheme_input = TransactionInputField(required=False, allow_null=True)
 
     maturity_date = ExpressionField(required=False, allow_blank=True)
+    maturity_price = ExpressionField(required=False, default="0.0")
 
     # instrument_type_object = serializers.PrimaryKeyRelatedField(source='instrument_type', read_only=True)
     # pricing_currency_object = serializers.PrimaryKeyRelatedField(source='pricing_currency', read_only=True)
@@ -293,6 +293,7 @@ class TransactionTypeActionInstrumentSerializer(serializers.ModelSerializer):
             'daily_pricing_model',
             'daily_pricing_model_input',
             'maturity_date',
+            'maturity_price',
 
             # 'instrument_type_object',
             # 'pricing_currency_object',
@@ -944,7 +945,7 @@ class ComplexTransactionMixin:
             return obj._cached_text
 
 
-class ComplexTransactionSerializer(ComplexTransactionMixin, serializers.ModelSerializer):
+class ComplexTransactionSerializer(ComplexTransactionMixin, ModelWithAttributesSerializer):
     text = serializers.SerializerMethodField()
     transaction_type = serializers.PrimaryKeyRelatedField(read_only=True)
     transactions = serializers.PrimaryKeyRelatedField(read_only=True, many=True)

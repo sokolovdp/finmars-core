@@ -313,7 +313,7 @@ class ComplexTransactionAdmin(AbstractModelAdmin):
     search_fields = ['id']
     raw_id_fields = ['transaction_type']
     list_filter = ['is_deleted', 'date', ]
-    inlines = [ComplexTransactionInputInline]
+    inlines = [GenericAttributeInline, ComplexTransactionInputInline, ]
     save_as = True
 
     def master_user(self, obj):
@@ -352,10 +352,10 @@ class TransactionAdmin(AbstractModelAdmin):
         'transaction_class',
         # 'accounting_date',
         # 'cash_date',
-        # 'instrument',
-        # 'transaction_currency',
+        'instrument',
+        'transaction_currency',
         # 'position_size_with_sign',
-        # 'settlement_currency',
+        'settlement_currency',
         # 'cash_consideration',
         # 'principal_with_sign',
         # 'carry_with_sign',

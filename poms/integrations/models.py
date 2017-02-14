@@ -155,6 +155,8 @@ class InstrumentDownloadScheme(models.Model):
                                           verbose_name=ugettext_lazy('accrued multiplier'))
     maturity_date = models.CharField(max_length=255, blank=True, default='',
                                      verbose_name=ugettext_lazy('maturity date'))
+    maturity_price = models.CharField(max_length=255, blank=True, default='',
+                                        verbose_name=ugettext_lazy('maturity price'))
     user_text_1 = models.CharField(max_length=255, blank=True, default='', verbose_name=ugettext_lazy('user text 1'))
     user_text_2 = models.CharField(max_length=255, blank=True, default='', verbose_name=ugettext_lazy('user text 2'))
     user_text_3 = models.CharField(max_length=255, blank=True, default='', verbose_name=ugettext_lazy('user text 3'))

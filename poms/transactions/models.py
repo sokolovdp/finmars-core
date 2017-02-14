@@ -565,14 +565,14 @@ class TransactionTypeActionInstrument(TransactionTypeAction):
     pricing_currency_input = models.ForeignKey(TransactionTypeInput, null=True, blank=True, on_delete=models.PROTECT,
                                                related_name='+', verbose_name=ugettext_lazy('pricing currency input'))
 
-    price_multiplier = models.CharField(max_length=255, default='0.', verbose_name=ugettext_lazy('price multiplier'))
+    price_multiplier = models.CharField(max_length=255, default='0.0', verbose_name=ugettext_lazy('price multiplier'))
 
     accrued_currency = models.ForeignKey('currencies.Currency', null=True, blank=True, on_delete=models.PROTECT,
                                          related_name='+', verbose_name=ugettext_lazy('accrued currency'))
     accrued_currency_input = models.ForeignKey(TransactionTypeInput, null=True, blank=True, on_delete=models.PROTECT,
                                                related_name='+', verbose_name=ugettext_lazy('accrued currency input'))
 
-    accrued_multiplier = models.CharField(max_length=255, default='0.',
+    accrued_multiplier = models.CharField(max_length=255, default='0.0',
                                           verbose_name=ugettext_lazy('accrued multiplier'))
 
     payment_size_detail = models.ForeignKey('instruments.PaymentSizeDetail', null=True, blank=True,
@@ -582,8 +582,8 @@ class TransactionTypeActionInstrument(TransactionTypeAction):
                                                   related_name='+',
                                                   verbose_name=ugettext_lazy('payment size detail input'))
 
-    default_price = models.CharField(max_length=255, default='0.', verbose_name=ugettext_lazy('default price'))
-    default_accrued = models.CharField(max_length=255, default='0.', verbose_name=ugettext_lazy('default accrued'))
+    default_price = models.CharField(max_length=255, default='0.0', verbose_name=ugettext_lazy('default price'))
+    default_accrued = models.CharField(max_length=255, default='0.0', verbose_name=ugettext_lazy('default accrued'))
 
     user_text_1 = models.CharField(max_length=255, blank=True, default='', verbose_name=ugettext_lazy('user text 1'))
     user_text_2 = models.CharField(max_length=255, blank=True, default='', verbose_name=ugettext_lazy('user text 2'))
@@ -603,6 +603,7 @@ class TransactionTypeActionInstrument(TransactionTypeAction):
                                                     on_delete=models.PROTECT, related_name='+',
                                                     verbose_name=ugettext_lazy('price download scheme input'))
     maturity_date = models.CharField(max_length=255, default='now()', verbose_name=ugettext_lazy('maturity date'))
+    maturity_price = models.CharField(max_length=255, default='0.0', verbose_name=ugettext_lazy('default price'))
 
     class Meta:
         verbose_name = ugettext_lazy('transaction type action instrument')
@@ -790,6 +791,8 @@ class ComplexTransaction(FakeDeletableModel):
                                               verbose_name=ugettext_lazy('status'))
     code = models.IntegerField(default=0, verbose_name=ugettext_lazy('code'))
 
+    attributes = GenericRelation(GenericAttribute, verbose_name=ugettext_lazy('attributes'))
+
     class Meta:
         verbose_name = ugettext_lazy('complex transaction')
         verbose_name_plural = ugettext_lazy('complex transactions')
@@ -803,7 +806,7 @@ class ComplexTransaction(FakeDeletableModel):
 
     def save(self, *args, **kwargs):
         if self.code is None or self.code == 0:
-            self.code = FakeSequence.next_value(self.transaction_type.master_user, 'complex_transaction')
+            self.code = FakeSequence.next_value(self.transaction_type.master_user, 'complex_transaction', count=100)
         super(ComplexTransaction, self).save(*args, **kwargs)
 
 
@@ -993,7 +996,10 @@ class Transaction(FakeDeletableModel):
     def save(self, *args, **kwargs):
         self.transaction_date = min(self.accounting_date, self.cash_date)
         if self.transaction_code is None or self.transaction_code == 0:
-            self.transaction_code = FakeSequence.next_value(self.master_user, 'transaction')
+            if self.complex_transaction_id:
+                self.transaction_code = self.complex_transaction.code + self.complex_transaction_order
+            else:
+                self.transaction_code = FakeSequence.next_value(self.master_user, 'transaction', count=1)
         super(Transaction, self).save(*args, **kwargs)
 
 

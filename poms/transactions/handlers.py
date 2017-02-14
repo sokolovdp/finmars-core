@@ -245,6 +245,9 @@ class TransactionTypeProcess(object):
                 self._set_val(errors=errors, values=self.values, default_value=date.max,
                               target=instrument, target_attr_name='maturity_date',
                               source=action_instrument, source_attr_name='maturity_date')
+                self._set_val(errors=errors, values=self.values, default_value=0.0,
+                              target=instrument, target_attr_name='maturity_price',
+                              source=action_instrument, source_attr_name='maturity_price')
 
                 if self.store:
                     instrument.save()

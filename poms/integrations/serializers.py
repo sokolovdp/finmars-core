@@ -139,6 +139,7 @@ class InstrumentDownloadSchemeSerializer(serializers.ModelSerializer):
     user_text_3 = ExpressionField(allow_blank=True)
     # price_download_mode = ExpressionField(allow_blank=True)
     maturity_date = ExpressionField(allow_blank=True)
+    maturity_price = ExpressionField(allow_blank=True)
 
     payment_size_detail_object = serializers.PrimaryKeyRelatedField(source='payment_size_detail', read_only=True)
     daily_pricing_model_object = serializers.PrimaryKeyRelatedField(source='daily_pricing_model', read_only=True)

@@ -209,7 +209,7 @@ class InstrumentSerializer(ModelWithAttributesSerializer, ModelWithObjectPermiss
             'user_text_1', 'user_text_2', 'user_text_3',
             'reference_for_pricing', 'daily_pricing_model', 'daily_pricing_model_object',
             'price_download_scheme', 'price_download_scheme_object',
-            'maturity_date',
+            'maturity_date', 'maturity_price',
             'manual_pricing_formulas', 'accrual_calculation_schedules', 'factor_schedules', 'event_schedules',
             # 'attributes',
             # 'tags', 'tags_object'

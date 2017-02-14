@@ -4,9 +4,9 @@ from rest_framework.filters import FilterSet
 
 from poms.common.filters import NoOpFilter, CharFilter
 from poms.common.views import AbstractModelViewSet
-from poms.ui.models import TemplateListLayout, TemplateEditLayout, ListLayout, EditLayout
+from poms.ui.models import TemplateListLayout, TemplateEditLayout, ListLayout, EditLayout, Bookmark
 from poms.ui.serializers import TemplateListLayoutSerializer, ListLayoutSerializer, TemplateEditLayoutSerializer, \
-    EditLayoutSerializer
+    EditLayoutSerializer, BookmarkSerializer
 from poms.users.filters import OwnerByMasterUserFilter, OwnerByMemberFilter
 from poms.users.permissions import SuperUserOnly
 
@@ -137,4 +137,31 @@ class EditLayoutViewSet(AbstractModelViewSet):
     filter_class = EditLayoutFilterSet
     ordering_fields = [
         'content_type',
+    ]
+
+
+class BookmarkFilterSet(FilterSet):
+    id = NoOpFilter()
+
+    class Meta:
+        model = Bookmark
+        fields = []
+
+
+class BookmarkViewSet(AbstractModelViewSet):
+    queryset = Bookmark.objects.prefetch_related(
+        'member',
+        'list_layout',
+        'list_layout__content_type',
+        'parent',
+        'children',
+    ).filter(parent__isnull=True)
+    serializer_class = BookmarkSerializer
+    filter_backends = AbstractModelViewSet.filter_backends + [
+        OwnerByMemberFilter,
+    ]
+    filter_class = BookmarkFilterSet
+    ordering_fields = [
+        'name',
+        'position',
     ]

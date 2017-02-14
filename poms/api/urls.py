@@ -119,12 +119,16 @@ router.register(r'transactions/transaction-attribute-type', transactions.Transac
 router.register(r'transactions/transaction-classifier', transactions.TransactionClassifierViewSet,
                 'transactionclassifier')
 router.register(r'transactions/transaction', transactions.TransactionViewSet)
+
+router.register(r'transactions/complex-transaction-attribute-type', transactions.ComplexTransactionAttributeTypeViewSet,
+                'complextransactionattributetype')
 router.register(r'transactions/complex-transaction', transactions.ComplexTransactionViewSet)
 
 router.register(r'ui/list-layout', ui.ListLayoutViewSet)
 router.register(r'ui/edit-layout', ui.EditLayoutViewSet)
 router.register(r'ui/template-list-layout', ui.TemplateListLayoutViewSet)
 router.register(r'ui/template-edit-layout', ui.TemplateEditLayoutViewSet)
+router.register(r'ui/bookmark', ui.BookmarkViewSet)
 
 router.register(r'reports/custom-field', reports.CustomFieldViewSet)
 router.register(r'reports/report', reports.ReportViewSet, "report")
