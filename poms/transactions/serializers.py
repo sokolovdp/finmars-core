@@ -259,6 +259,7 @@ class TransactionTypeActionInstrumentSerializer(serializers.ModelSerializer):
     price_download_scheme_input = TransactionInputField(required=False, allow_null=True)
 
     maturity_date = ExpressionField(required=False, allow_blank=True)
+    maturity_price = ExpressionField(required=False, default="0.0")
 
     # instrument_type_object = serializers.PrimaryKeyRelatedField(source='instrument_type', read_only=True)
     # pricing_currency_object = serializers.PrimaryKeyRelatedField(source='pricing_currency', read_only=True)
@@ -292,6 +293,7 @@ class TransactionTypeActionInstrumentSerializer(serializers.ModelSerializer):
             'daily_pricing_model',
             'daily_pricing_model_input',
             'maturity_date',
+            'maturity_price',
 
             # 'instrument_type_object',
             # 'pricing_currency_object',

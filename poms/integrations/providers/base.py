@@ -166,7 +166,7 @@ class AbstractProvider(object):
                          instrument_download_scheme.id, attr, expr, values)
                 errors[attr] = [ugettext_lazy('Invalid expression.')]
                 continue
-            if attr in ['pricing_currency', 'accrued_currency']:
+            if attr in ('pricing_currency', 'accrued_currency',):
                 # if self.is_empty_value(v):
                 #     pass
                 # else:
@@ -175,7 +175,7 @@ class AbstractProvider(object):
                     setattr(instr, attr, v)
                 else:
                     errors[attr] = [ugettext_lazy('This field is required.')]
-            elif attr in ['instrument_type']:
+            elif attr in ('instrument_type',):
                 # if self.is_empty_value(v):
                 #     pass
                 # else:
@@ -184,7 +184,8 @@ class AbstractProvider(object):
                     setattr(instr, attr, v)
                 else:
                     errors[attr] = [ugettext_lazy('This field is required.')]
-            elif attr in ['price_multiplier', 'accrued_multiplier', 'default_price', 'default_accrued']:
+            elif attr in ('price_multiplier', 'accrued_multiplier', 'default_price', 'default_accrued',
+                          'maturity_price'):
                 if self.is_empty_value(v):
                     pass
                 else:
@@ -192,7 +193,7 @@ class AbstractProvider(object):
                         setattr(instr, attr, float(v))
                     except (ValueError, TypeError):
                         errors[attr] = [ugettext_lazy('A valid number is required.')]
-            elif attr in ['maturity_date']:
+            elif attr in ('maturity_date',):
                 if self.is_empty_value(v):
                     pass
                 else:

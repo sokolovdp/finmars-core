@@ -565,14 +565,14 @@ class TransactionTypeActionInstrument(TransactionTypeAction):
     pricing_currency_input = models.ForeignKey(TransactionTypeInput, null=True, blank=True, on_delete=models.PROTECT,
                                                related_name='+', verbose_name=ugettext_lazy('pricing currency input'))
 
-    price_multiplier = models.CharField(max_length=255, default='0.', verbose_name=ugettext_lazy('price multiplier'))
+    price_multiplier = models.CharField(max_length=255, default='0.0', verbose_name=ugettext_lazy('price multiplier'))
 
     accrued_currency = models.ForeignKey('currencies.Currency', null=True, blank=True, on_delete=models.PROTECT,
                                          related_name='+', verbose_name=ugettext_lazy('accrued currency'))
     accrued_currency_input = models.ForeignKey(TransactionTypeInput, null=True, blank=True, on_delete=models.PROTECT,
                                                related_name='+', verbose_name=ugettext_lazy('accrued currency input'))
 
-    accrued_multiplier = models.CharField(max_length=255, default='0.',
+    accrued_multiplier = models.CharField(max_length=255, default='0.0',
                                           verbose_name=ugettext_lazy('accrued multiplier'))
 
     payment_size_detail = models.ForeignKey('instruments.PaymentSizeDetail', null=True, blank=True,
@@ -582,8 +582,8 @@ class TransactionTypeActionInstrument(TransactionTypeAction):
                                                   related_name='+',
                                                   verbose_name=ugettext_lazy('payment size detail input'))
 
-    default_price = models.CharField(max_length=255, default='0.', verbose_name=ugettext_lazy('default price'))
-    default_accrued = models.CharField(max_length=255, default='0.', verbose_name=ugettext_lazy('default accrued'))
+    default_price = models.CharField(max_length=255, default='0.0', verbose_name=ugettext_lazy('default price'))
+    default_accrued = models.CharField(max_length=255, default='0.0', verbose_name=ugettext_lazy('default accrued'))
 
     user_text_1 = models.CharField(max_length=255, blank=True, default='', verbose_name=ugettext_lazy('user text 1'))
     user_text_2 = models.CharField(max_length=255, blank=True, default='', verbose_name=ugettext_lazy('user text 2'))
@@ -603,6 +603,7 @@ class TransactionTypeActionInstrument(TransactionTypeAction):
                                                     on_delete=models.PROTECT, related_name='+',
                                                     verbose_name=ugettext_lazy('price download scheme input'))
     maturity_date = models.CharField(max_length=255, default='now()', verbose_name=ugettext_lazy('maturity date'))
+    maturity_price = models.CharField(max_length=255, default='0.0', verbose_name=ugettext_lazy('default price'))
 
     class Meta:
         verbose_name = ugettext_lazy('transaction type action instrument')
