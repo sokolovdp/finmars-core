@@ -4,6 +4,7 @@ from datetime import timedelta, date
 
 from dateutil.relativedelta import relativedelta
 from django.conf import settings
+from django.utils.functional import cached_property
 from django.utils.translation import ugettext_lazy, ugettext
 from rest_framework import serializers
 
@@ -76,6 +77,14 @@ class ReportGenericAttributeSerializer(GenericAttributeSerializer):
         # if self.context.get('attributes_hide_objects', False):
         #     self.fields.pop('attribute_type_object')
         #     self.fields.pop('classifier_object')
+
+    @cached_property
+    def _readable_fields(self):
+        attributes_hide_objects = self.context.get('attributes_hide_objects', False)
+        return [
+            field for field in self.fields.values()
+            if not field.write_only and (not attributes_hide_objects or field.field_name not in ('attribute_type_object', 'classifier_object'))
+            ]
 
 
 class ReportInstrumentSerializer(InstrumentSerializer):
