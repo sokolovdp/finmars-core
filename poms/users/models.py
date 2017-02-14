@@ -337,6 +337,9 @@ class MasterUser(models.Model):
             for p in get_change_perms(c):
                 assign_perms3(c, perms=[{'group': group, 'permission': p}])
 
+        for fsn in ['complex_transaction', 'transaction']:
+            FakeSequence.objects.get_or_create(master_user=self, name=fsn)
+
     def patch_currencies(self, overwrite_name=False, overwrite_reference_for_pricing=False):
         from poms.currencies.models import currencies_data, Currency
 

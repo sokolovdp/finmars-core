@@ -119,6 +119,9 @@ router.register(r'transactions/transaction-attribute-type', transactions.Transac
 router.register(r'transactions/transaction-classifier', transactions.TransactionClassifierViewSet,
                 'transactionclassifier')
 router.register(r'transactions/transaction', transactions.TransactionViewSet)
+
+router.register(r'transactions/complex-transaction-attribute-type', transactions.ComplexTransactionAttributeTypeViewSet,
+                'complextransactionattributetype')
 router.register(r'transactions/complex-transaction', transactions.ComplexTransactionViewSet)
 
 router.register(r'ui/list-layout', ui.ListLayoutViewSet)

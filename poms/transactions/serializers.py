@@ -945,7 +945,7 @@ class ComplexTransactionMixin:
             return obj._cached_text
 
 
-class ComplexTransactionSerializer(ComplexTransactionMixin, serializers.ModelSerializer):
+class ComplexTransactionSerializer(ComplexTransactionMixin, ModelWithAttributesSerializer):
     text = serializers.SerializerMethodField()
     transaction_type = serializers.PrimaryKeyRelatedField(read_only=True)
     transactions = serializers.PrimaryKeyRelatedField(read_only=True, many=True)

@@ -313,7 +313,7 @@ class ComplexTransactionAdmin(AbstractModelAdmin):
     search_fields = ['id']
     raw_id_fields = ['transaction_type']
     list_filter = ['is_deleted', 'date', ]
-    inlines = [ComplexTransactionInputInline]
+    inlines = [GenericAttributeInline, ComplexTransactionInputInline, ]
     save_as = True
 
     def master_user(self, obj):

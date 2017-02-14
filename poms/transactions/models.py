@@ -791,6 +791,8 @@ class ComplexTransaction(FakeDeletableModel):
                                               verbose_name=ugettext_lazy('status'))
     code = models.IntegerField(default=0, verbose_name=ugettext_lazy('code'))
 
+    attributes = GenericRelation(GenericAttribute, verbose_name=ugettext_lazy('attributes'))
+
     class Meta:
         verbose_name = ugettext_lazy('complex transaction')
         verbose_name_plural = ugettext_lazy('complex transactions')
@@ -804,7 +806,7 @@ class ComplexTransaction(FakeDeletableModel):
 
     def save(self, *args, **kwargs):
         if self.code is None or self.code == 0:
-            self.code = FakeSequence.next_value(self.transaction_type.master_user, 'complex_transaction')
+            self.code = FakeSequence.next_value(self.transaction_type.master_user, 'complex_transaction', count=100)
         super(ComplexTransaction, self).save(*args, **kwargs)
 
 
@@ -994,7 +996,10 @@ class Transaction(FakeDeletableModel):
     def save(self, *args, **kwargs):
         self.transaction_date = min(self.accounting_date, self.cash_date)
         if self.transaction_code is None or self.transaction_code == 0:
-            self.transaction_code = FakeSequence.next_value(self.master_user, 'transaction')
+            if self.complex_transaction_id:
+                self.transaction_code = self.complex_transaction.code + self.complex_transaction_order
+            else:
+                self.transaction_code = FakeSequence.next_value(self.master_user, 'transaction', count=1)
         super(Transaction, self).save(*args, **kwargs)
 
 
