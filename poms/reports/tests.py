@@ -907,7 +907,7 @@ class ReportTestCase(TestCase):
                                               save=True)
 
     def test_xnpv_xirr(self):
-        from poms.reports.utils import xnpv, xirr
+        from poms.common.utils import xnpv, xirr
         from datetime import date
         dates = [date(2008, 1, 1), date(2008, 3, 1), date(2008, 10, 30), date(2009, 2, 15), date(2009, 4, 1), ]
         values = [-10000, 2750, 4250, 3250, 2750, ]
