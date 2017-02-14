@@ -918,5 +918,8 @@ class ReportTestCase(TestCase):
         from datetime import date
         dates = [date(2008, 1, 1), date(2008, 3, 1), date(2008, 10, 30), date(2009, 2, 15), date(2009, 4, 1), ]
         values = [-10000, 2750, 4250, 3250, 2750, ]
+        # from MS office
+        #  xnpv(0.09, ...) = $2,086.65
+        #  xiir = 0.373362535
         _l.debug('xnpv.1: %s', xnpv(0.09, values, dates))
         _l.debug('xirr.1: %s', xirr(values, dates))

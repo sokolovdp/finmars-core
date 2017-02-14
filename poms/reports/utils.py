@@ -120,6 +120,7 @@ def calc_cash_for_contract_for_difference(transaction, instrument, portfolio, ac
 
 def xnpv(rate, values, dates):
     '''Equivalent of Excel's XNPV function.
+    https://support.office.com/en-us/article/XNPV-function-1b42bbf6-370f-4532-a0eb-d67c16b664b7
 
     >>> from datetime import date
     >>> dates = [date(2010, 12, 29), date(2012, 1, 25), date(2012, 3, 8)]
@@ -143,6 +144,7 @@ def xnpv(rate, values, dates):
 
 def xirr(values, dates):
     '''Equivalent of Excel's XIRR function.
+    https://support.office.com/en-us/article/XIRR-function-de1242ec-6477-445b-b11b-a303ad9adc9d
 
     >>> from datetime import date
     >>> dates = [date(2010, 12, 29), date(2012, 1, 25), date(2012, 3, 8)]
