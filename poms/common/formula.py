@@ -11,7 +11,6 @@ from collections import OrderedDict
 from dateutil import relativedelta
 from django.utils import numberformat
 from django.utils.functional import Promise, SimpleLazyObject
-from suds.sax.date import _date_from_match
 
 from poms.common.utils import date_now, isclose
 
