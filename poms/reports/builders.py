@@ -58,13 +58,14 @@ class _Base:
 
     @classmethod
     def dumps(cls, items, columns=None):
-        if columns is None:
-            columns = cls.dump_columns
+        if _l.isEnabledFor(logging.DEBUG):
+            if columns is None:
+                columns = cls.dump_columns
 
-        data = []
-        for item in items:
-            data.append(item.dump_values(columns=columns))
-        _l.debug('\n%s', sprint_table(data, columns))
+            data = []
+            for item in items:
+                data.append(item.dump_values(columns=columns))
+            _l.debug('\n%s', sprint_table(data, columns))
         # print(sprint_table(data, columns))
 
 

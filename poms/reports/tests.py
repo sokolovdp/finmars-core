@@ -894,8 +894,14 @@ class ReportTestCase(TestCase):
         t4 = self._t(t_class=self._sell, instr=instr, position=-3, acc_date_days=5, cash_date_days=5,
                      stl_ccy=self.usd, cash=0, principal=3825000, carry=9000, overheads=-100)
 
-        calc_cash_for_contract_for_difference(self.member, instr, self.m.portfolio, self.m.account,
-                                              None, is_calculate_for_newer=False, is_calculate_for_all=True, save=True)
+        calc_cash_for_contract_for_difference(transaction=None,
+                                              instrument=instr,
+                                              portfolio=self.m.portfolio,
+                                              account=self.m.account,
+                                              member=self.member,
+                                              is_calculate_for_newer=False,
+                                              is_calculate_for_all=True,
+                                              save=True)
 
         # r = Report(master_user=self.m, pricing_policy=self.pp, report_date=self._d(0),
         #            approach_multiplier=approach_multiplier,

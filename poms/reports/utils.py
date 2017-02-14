@@ -1,6 +1,8 @@
 import logging
 from datetime import date
 
+from django.conf import settings
+
 from poms.common.utils import isclose
 from poms.instruments.models import CostMethod
 
@@ -12,8 +14,17 @@ def sprint_table(data, headers=None, floatfmt=".4f"):
     return tabulate.tabulate(data, headers=headers, floatfmt=floatfmt)
 
 
-def calc_cash_for_contract_for_difference(member, instrument, portfolio, account, transaction,
+def calc_cash_for_contract_for_difference(transaction, instrument, portfolio, account, member,
                                           is_calculate_for_newer=False, is_calculate_for_all=False, save=False):
+    _l.debug('calc_cash_for_contract_for_difference: transaction=%s, instrument=%s, portfolio=%s, account=%s, '
+             'member=%s, is_calculate_for_newer=%s, is_calculate_for_all=%s, save=%s',
+             transaction.id if transaction else None,
+             instrument.id if instrument else None,
+             portfolio.id if portfolio else None,
+             account.id if account else None,
+             member.id if member else None,
+             is_calculate_for_newer, is_calculate_for_all, save)
+
     from poms.reports.builders import Report, ReportBuilder, VirtualTransaction
 
     # queryset = Transaction.objects.all()
@@ -25,7 +36,12 @@ def calc_cash_for_contract_for_difference(member, instrument, portfolio, account
             return None
         report_date = transaction.accounting_date
 
-    r = Report(master_user=member.master_user,
+    if transaction and instrument is None:
+        instrument = transaction.instrument
+
+    assert instrument is not None, "instrument must be specified"
+
+    r = Report(master_user=instrument.master_user,
                member=member,
                instruments=[instrument.id],
                portfolios=[portfolio.id] if portfolio else None,
@@ -50,7 +66,8 @@ def calc_cash_for_contract_for_difference(member, instrument, portfolio, account
 
     rb.calc_fifo_multipliers(transactions)
 
-    VirtualTransaction.dumps(transactions)
+    if settings.DEV:
+        VirtualTransaction.dumps(transactions)
 
     processed = set()
 
@@ -84,14 +101,18 @@ def calc_cash_for_contract_for_difference(member, instrument, portfolio, account
             t_save = True
 
         if t_save and not isclose(vt.trn.cash_consideration, vt.cash):
-            _l.debug('+ => %s: cash=%s, v_cash=%s', vt, vt.trn.cash_consideration, vt.cash)
+            if settings.DEV:
+                _l.debug('+ => %s: cash=(%s => %s)', vt, vt.trn.cash_consideration, vt.cash)
             vt.trn.cash_consideration = vt.cash
             if save:
                 vt.trn.save()
                 vt.pk = vt.trn.pk
         else:
-            _l.debug('- => %s: cash=%s, v_cash=%s', vt, vt.trn.cash_consideration, vt.cash)
+            if settings.DEV:
+                _l.debug('- => %s: cash=(%s <> %s)', vt, vt.trn.cash_consideration, vt.cash)
+            pass
 
-    VirtualTransaction.dumps(transactions)
+    if settings.DEV:
+        VirtualTransaction.dumps(transactions)
 
     return [vt.trn for vt in transactions]
