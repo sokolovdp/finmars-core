@@ -1,3 +1,4 @@
+import logging
 from datetime import date, timedelta
 
 from django.contrib.auth.models import User
@@ -13,6 +14,8 @@ from poms.reports.utils import calc_cash_for_contract_for_difference
 from poms.strategies.models import Strategy1Group, Strategy1Subgroup, Strategy1
 from poms.transactions.models import Transaction, TransactionClass
 from poms.users.models import MasterUser, Member
+
+_l = logging.getLogger('poms.reports')
 
 
 class ReportTestCase(TestCase):
@@ -876,7 +879,7 @@ class ReportTestCase(TestCase):
         b.build()
         self._dump(b, 'test_approach_str1_0: STRATEGY_INTERDEPENDENT')
 
-    def test_instr_contract_for_difference(self):
+    def _test_instr_contract_for_difference(self):
         tinstr = InstrumentType.objects.create(master_user=self.m,
                                                instrument_class_id=InstrumentClass.CONTRACT_FOR_DIFFERENCE, name='cfd1')
         instr = Instrument.objects.create(master_user=self.m, name="cfd, USD/USD", instrument_type=tinstr,
@@ -909,3 +912,11 @@ class ReportTestCase(TestCase):
         # b = ReportBuilder(instance=r)
         # b.build()
         # self._dump(b, 'test_instr_contract_for_difference')
+
+    def test_xnpv_xirr(self):
+        from poms.reports.utils import xnpv, xirr
+        from datetime import date
+        dates = [date(2008, 1, 1), date(2008, 3, 1), date(2008, 10, 30), date(2009, 2, 15), date(2009, 4, 1), ]
+        values = [-10000, 2750, 4250, 3250, 2750, ]
+        _l.debug('xnpv.1: %s', xnpv(0.09, values, dates))
+        _l.debug('xirr.1: %s', xirr(values, dates))
