@@ -916,9 +916,6 @@ class ReportTestCase(TestCase):
         dates = [date(2016, 2, 16), date(2016, 3, 10), date(2016, 9, 1), date(2017, 1, 17), ]
         values = [-90, 5, 5, 105, ]
 
-        # from MS office
-        #  xnpv(0.09, ...) = $2,086.65
-        #  xiir = 0.373362535
         _l.debug('xnpv.1: %s', f_xnpv(0.09, values, dates))
         _l.debug('xirr.1: %s', f_xirr(values, dates))
         _l.debug('duration.1: %s', f_duration(values, dates))

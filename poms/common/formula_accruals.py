@@ -382,10 +382,10 @@ def f_xnpv(rate, values, dates):
     https://support.office.com/en-us/article/XNPV-function-1b42bbf6-370f-4532-a0eb-d67c16b664b7
 
     >>> from datetime import date
-    >>> dates = [date(2010, 12, 29), date(2012, 1, 25), date(2012, 3, 8)]
-    >>> values = [-10000, 20, 10100]
-    >>> f_xnpv(0.1, values, dates)
-    -966.4345...
+    >>> dates = [date(2016, 2, 16), date(2016, 3, 10), date(2016, 9, 1), date(2017, 1, 17), ]
+    >>> values = [-90, 5, 5, 105, ]
+    >>> f_xnpv(0.09, values, dates)
+    16.7366702148651
     '''
     # _l.debug('xnpv > rate=%s', rate)
 
@@ -403,10 +403,10 @@ def f_xirr(values, dates):
     https://support.office.com/en-us/article/XIRR-function-de1242ec-6477-445b-b11b-a303ad9adc9d
 
     >>> from datetime import date
-    >>> dates = [date(2010, 12, 29), date(2012, 1, 25), date(2012, 3, 8)]
-    >>> values = [-10000, 20, 10100]
+    >>> dates = [date(2016, 2, 16), date(2016, 3, 10), date(2016, 9, 1), date(2017, 1, 17), ]
+    >>> values = [-90, 5, 5, 105, ]
     >>> f_xirr(values, dates)
-    0.0100612...
+    0.3291520343150294
     '''
 
     from scipy.optimize import newton, brentq
@@ -427,10 +427,10 @@ def f_duration(values, dates, ytm=None):
     https://support.office.com/en-us/article/XIRR-function-de1242ec-6477-445b-b11b-a303ad9adc9d
 
     >>> from datetime import date
-    >>> dates = [date(2010, 12, 29), date(2012, 1, 25), date(2012, 3, 8)]
-    >>> values = [-10000, 20, 10100]
+    >>> dates = [date(2016, 2, 16), date(2016, 3, 10), date(2016, 9, 1), date(2017, 1, 17), ]
+    >>> values = [-90, 5, 5, 105, ]
     >>> f_xirr(values, dates)
-    0.0100612...
+    0.6438341602180792
     '''
 
     if ytm is None:
@@ -452,8 +452,7 @@ def f_duration(values, dates, ytm=None):
 
     return sum(
         ((di - d0).days / 365.0) * (vi / ((1 + ytm) ** ((di - d0).days / 365.0)))
-        for i, (vi, di) in enumerate(zip(values, dates))
-        if i != 0
+        for vi, di in zip(values, dates)
     ) / v0 / (1 + ytm)
 
 
