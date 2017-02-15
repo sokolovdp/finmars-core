@@ -41,10 +41,11 @@ except AttributeError:
     def isclose(a, b, rel_tol=1e-09, abs_tol=0.0):
         return abs(a - b) <= max(rel_tol * max(abs(a), abs(b)), abs_tol)
 
+
 def safe_div(a, b, default=0.0):
     try:
         return a / b
-    except ZeroDivisionError:
+    except (ZeroDivisionError, TypeError):
         return default
 
 
