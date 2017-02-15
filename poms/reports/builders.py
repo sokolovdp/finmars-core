@@ -990,7 +990,9 @@ class ReportItem(_Base):
     modified_duration = 0.0
     ytm_at_cost = 0.0
     time_invested = 0.0
+    gross_cost_res = 0.0
     gross_cost_loc = 0.0
+    net_cost_res = 0.0
     net_cost_loc = 0.0
     amount_invested_res = 0.0
     amount_invested_loc = 0.0
