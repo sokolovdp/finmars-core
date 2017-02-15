@@ -20,7 +20,7 @@ _l = logging.getLogger('poms.reports')
 
 class ReportTestCase(TestCase):
     def setUp(self):
-        print('*' * 100)
+        _l.debug('*' * 100)
 
         # if pandas:
         #     pandas.set_option('display.width', 10000)
@@ -236,16 +236,16 @@ class ReportTestCase(TestCase):
         return CostMethod.objects.get(pk=CostMethod.FIFO)
 
     def _print_transactions(self, transactions):
-        print('-' * 100)
-        print('Transactions: ')
+        _l.debug('-' * 100)
+        _l.debug('Transactions: ')
         VirtualTransaction.dumps(transactions)
 
     def _print_items(self, name, builder, items):
-        print('%s:' % name)
+        _l.debug('%s:', name)
         ReportItem.dumps(items)
 
     def _dump(self, builder, name, print_transactions=None, print_items=None):
-        print('Report: %s' % name)
+        _l.debug('Report: %s', name)
 
         if print_transactions is None:
             print_transactions = self._print_transactions
@@ -565,7 +565,7 @@ class ReportTestCase(TestCase):
     #     self._ccy_hist(self.cad, self._d(104), 0.9)
     #     self._ccy_hist(self.rub, self._d(104), 1.0 / 65.0)
     #     # for ch in CurrencyHistory.objects.order_by('currency__user_code', '-date').filter(date__gte=self._d(100)):
-    #     #     print(ch.currency.user_code, ch.date, ch.fx_rate)
+    #     #     _l.debug(ch.currency.user_code, ch.date, ch.fx_rate)
     #
     #     self._t(t_class=self._buy, instr=instr, position=5,
     #             stl_ccy=self.gbp, principal=-20.0, carry=-5.0,
@@ -907,7 +907,7 @@ class ReportTestCase(TestCase):
                                               save=True)
 
     def test_xnpv_xirr(self):
-        from poms.common.utils import f_xnpv, f_xirr, f_duration
+        from poms.common.formula_accruals import f_xnpv, f_xirr, f_duration
         from datetime import date
 
         # dates = [date(2008, 1, 1), date(2008, 3, 1), date(2008, 10, 30), date(2009, 2, 15), date(2009, 4, 1), ]
