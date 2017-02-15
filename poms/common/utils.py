@@ -1,6 +1,9 @@
+import logging
 import math
 
 from django.views.generic.dates import timezone_today
+
+_l = logging.getLogger('poms.common')
 
 
 def db_class_check_data(model, verbosity, using):
@@ -74,14 +77,14 @@ def add_view_and_manage_permissions():
             )
 
 
-def xnpv(rate, values, dates):
+def f_xnpv(rate, values, dates):
     '''Equivalent of Excel's XNPV function.
     https://support.office.com/en-us/article/XNPV-function-1b42bbf6-370f-4532-a0eb-d67c16b664b7
 
     >>> from datetime import date
     >>> dates = [date(2010, 12, 29), date(2012, 1, 25), date(2012, 3, 8)]
     >>> values = [-10000, 20, 10100]
-    >>> xnpv(0.1, values, dates)
+    >>> f_xnpv(0.1, values, dates)
     -966.4345...
     '''
     # _l.debug('xnpv > rate=%s', rate)
@@ -90,7 +93,7 @@ def xnpv(rate, values, dates):
             return float('inf')
         d0 = dates[0]  # or min(dates)
         return sum(
-            (vi / (1.0 + rate) ** ((di - d0).days / 365.0))
+            vi / ((1.0 + rate) ** ((di - d0).days / 365.0))
             for vi, di in zip(values, dates)
         )
     finally:
@@ -98,14 +101,14 @@ def xnpv(rate, values, dates):
         pass
 
 
-def xirr(values, dates):
+def f_xirr(values, dates):
     '''Equivalent of Excel's XIRR function.
     https://support.office.com/en-us/article/XIRR-function-de1242ec-6477-445b-b11b-a303ad9adc9d
 
     >>> from datetime import date
     >>> dates = [date(2010, 12, 29), date(2012, 1, 25), date(2012, 3, 8)]
     >>> values = [-10000, 20, 10100]
-    >>> xirr(values, dates)
+    >>> f_xirr(values, dates)
     0.0100612...
     '''
     # _l.debug('xirr >')
@@ -117,9 +120,38 @@ def xirr(values, dates):
         # return newton(lambda r: xnpv(r, values, dates), 0.0)
         # return brentq(lambda r: xnpv(r, values, dates), -1.0, 1e10)
         try:
-            return newton(lambda r: xnpv(r, values, dates), 0.0)
+            return newton(lambda r: f_xnpv(r, values, dates), 0.0)
         except RuntimeError:  # Failed to converge?
-            return brentq(lambda r: xnpv(r, values, dates), -1.0, 1e10)
+            return brentq(lambda r: f_xnpv(r, values, dates), -1.0, 1e10)
     finally:
         # _l.debug('xirr <')
+        pass
+
+
+def f_duration(values, dates, ytm=None):
+    # _l.debug('duration >')
+    try:
+        if ytm is None:
+            ytm = f_xirr(values=values, dates=dates)
+        d0 = dates[0]
+        v0 = -values[0]
+
+        # if _l.isEnabledFor(logging.DEBUG):
+        #     discounted_cf = [(vi / ((1 + ytm) ** ((di - d0).days / 365.0)))
+        #                      for i, (vi, di) in enumerate(zip(values, dates))
+        #                      if i != 0]
+        #     dur1 = [((di - d0).days / 365.0) * (vi / ((1 + ytm) ** ((di - d0).days / 365.0)))
+        #             for i, (vi, di) in enumerate(zip(values, dates))
+        #             if i != 0]
+        #     _l.debug('values: %s', values)
+        #     _l.debug('dates: %s', dates)
+        #     _l.debug('discounted_cf: %s', discounted_cf)
+        #     _l.debug('dur1: %s', dur1)
+        return sum(
+            ((di - d0).days / 365.0) * (vi / ((1 + ytm) ** ((di - d0).days / 365.0)))
+            for i, (vi, di) in enumerate(zip(values, dates))
+            if i != 0
+        ) / v0 / (1 + ytm)
+    finally:
+        # _l.debug('duration <')
         pass

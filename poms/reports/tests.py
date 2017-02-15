@@ -879,7 +879,7 @@ class ReportTestCase(TestCase):
         b.build()
         self._dump(b, 'test_approach_str1_0: STRATEGY_INTERDEPENDENT')
 
-    def test_instr_contract_for_difference(self):
+    def _test_instr_contract_for_difference(self):
         tinstr = InstrumentType.objects.create(master_user=self.m,
                                                instrument_class_id=InstrumentClass.CONTRACT_FOR_DIFFERENCE, name='cfd1')
         instr = Instrument.objects.create(master_user=self.m, name="cfd, USD/USD", instrument_type=tinstr,
@@ -907,12 +907,18 @@ class ReportTestCase(TestCase):
                                               save=True)
 
     def test_xnpv_xirr(self):
-        from poms.common.utils import xnpv, xirr
+        from poms.common.utils import f_xnpv, f_xirr, f_duration
         from datetime import date
-        dates = [date(2008, 1, 1), date(2008, 3, 1), date(2008, 10, 30), date(2009, 2, 15), date(2009, 4, 1), ]
-        values = [-10000, 2750, 4250, 3250, 2750, ]
+
+        # dates = [date(2008, 1, 1), date(2008, 3, 1), date(2008, 10, 30), date(2009, 2, 15), date(2009, 4, 1), ]
+        # values = [-10000, 2750, 4250, 3250, 2750, ]
+
+        dates = [date(2016, 2, 16), date(2016, 3, 10), date(2016, 9, 1), date(2017, 1, 17), ]
+        values = [-90, 5, 5, 105, ]
+
         # from MS office
         #  xnpv(0.09, ...) = $2,086.65
         #  xiir = 0.373362535
-        _l.debug('xnpv.1: %s', xnpv(0.09, values, dates))
-        _l.debug('xirr.1: %s', xirr(values, dates))
+        _l.debug('xnpv.1: %s', f_xnpv(0.09, values, dates))
+        _l.debug('xirr.1: %s', f_xirr(values, dates))
+        _l.debug('duration.1: %s', f_duration(values, dates))
