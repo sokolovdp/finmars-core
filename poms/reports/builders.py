@@ -350,7 +350,6 @@ class VirtualTransaction(_Base):
         overrides = overrides or {}
         self.trn = trn
         self.lid = uuid.uuid1()
-        # self.lid = uuid.uuid1()
         self.pk = overrides.get('pk', trn.pk)
         self.trn_code = overrides.get('transaction_code', trn.transaction_code)
         self.trn_cls = overrides.get('transaction_class', trn.transaction_class)
@@ -981,25 +980,28 @@ class ReportItem(_Base):
     instr_accrual = None  # Current Payment Size, Current Payment Frequency, Current Payment Periodicity N
     instr_accrual_accrued_price = 0.0
 
-    # balance
+    # ----------------------------------------------------
+
     pos_size = 0.0
     market_value_res = 0.0
     market_value_loc = 0.0
     cost_res = 0.0
-
-    #
     ytm = 0.0
-    modif_dur = 0.0
+    modified_duration = 0.0
     ytm_at_cost = 0.0
-    time_inv = 0.0
-    gros_cost_loc = 0.0
+    time_invested = 0.0
+    gross_cost_res = 0.0
+    gross_cost_loc = 0.0
+    net_cost_res = 0.0
     net_cost_loc = 0.0
-    amount_inv_res = 0.0
-    amount_inv_loc = 0.0
-    pos_ret_res = 0.0
-    pos_ret_loc = 0.0
+    amount_invested_res = 0.0
+    amount_invested_loc = 0.0
+    pos_return_res = 0.0
+    pos_return_loc = 0.0
     daily_price_change = 0.0
     mtd_price_change = 0.0
+
+    # P&L ----------------------------------------------------
 
     # full ----------------------------------------------------
     principal_res = 0.0
@@ -1434,10 +1436,15 @@ class ReportItem(_Base):
 
                 self.instr_accrual = self.instr.find_accrual(self.report.report_date)
                 if self.instr_accrual:
-                    self.instr_accrual_accrued_price = self.instr.get_accrued_price(self.report.report_date, accrual=self.instr_accrual)
+                    self.instr_accrual_accrued_price = self.instr.get_accrued_price(self.report.report_date,
+                                                                                    accrual=self.instr_accrual)
             else:
                 self.instr_principal_res = 0.0
                 self.instr_accrued_res = 0.0
+
+                self.instr_accrual = None
+                self.instr_accrual_accrued_price = 0.0
+
             self.exposure_res = self.instr_principal_res + self.instr_accrued_res
 
             self.market_value_res = self.instr_principal_res + self.instr_accrued_res
@@ -1475,6 +1482,8 @@ class ReportItem(_Base):
             self.principal_fixed_opened_res += self.instr_principal_res
             self.carry_fixed_opened_res += self.instr_accrued_res
 
+            self.amount_invested_res = self.principal_res + self.carry_res
+
         elif self.type == ReportItem.TYPE_MISMATCH:
             # self.market_value_res = self.pos_size * self.ccy_cur_fx
             #
@@ -1490,6 +1499,10 @@ class ReportItem(_Base):
         self.total_fixed_res = self.principal_fixed_res + self.carry_fixed_res + self.overheads_fixed_res
         self.total_fixed_closed_res = self.principal_fixed_closed_res + self.carry_fixed_closed_res + self.overheads_fixed_closed_res
         self.total_fixed_opened_res = self.principal_fixed_opened_res + self.carry_fixed_opened_res + self.overheads_fixed_opened_res
+
+        self.market_value_loc = safe_div(self.market_value_res, self.pricing_ccy_cur_fx)
+        self.exposure_loc = safe_div(self.exposure_res, self.pricing_ccy_cur_fx)
+        self.amount_invested_loc = safe_div(self.amount_invested_res, self.pricing_ccy_cur_fx)
 
         # is_empty
 
