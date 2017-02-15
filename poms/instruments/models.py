@@ -540,6 +540,8 @@ class Instrument(NamedModel, FakeDeletableModel):
                 processed.append(old_event.id)
 
     def find_accrual(self, d, accruals=None):
+        if d >= self.maturity_date:
+            return None
         if accruals is None:
             # TODO: verify that use queryset cache
             accruals = self.accrual_calculation_schedules.select_related(
@@ -561,7 +563,7 @@ class Instrument(NamedModel, FakeDeletableModel):
             for price in existed_prices:
                 if price.date >= self.maturity_date:
                     continue
-                accrued_price = self.get_accrued_price(price.date, accruals)
+                accrued_price = self.get_accrued_price(price.date, accruals=accruals)
                 if accrued_price is None:
                     accrued_price = 0.0
                 price.accrued_price = accrued_price
@@ -574,7 +576,7 @@ class Instrument(NamedModel, FakeDeletableModel):
                     if d >= self.maturity_date:
                         continue
                     price = existed_prices.get((pp.id, d), None)
-                    accrued_price = self.get_accrued_price(d, accruals)
+                    accrued_price = self.get_accrued_price(d, accruals=accruals)
                     if price is None:
                         if accrued_price is not None:
                             price = PriceHistory()
@@ -589,9 +591,12 @@ class Instrument(NamedModel, FakeDeletableModel):
                         price.accrued_price = accrued_price
                         price.save(update_fields=['accrued_price'])
 
-    def get_accrued_price(self, price_date, accruals=None):
+    def get_accrued_price(self, price_date, accruals=None, accrual=None):
         from poms.common.formula_accruals import coupon_accrual_factor
-        accrual = self.find_accrual(price_date, accruals=accruals)
+        if price_date >= self.maturity_date:
+            return self.maturity_price
+        if accrual is None:
+            accrual = self.find_accrual(price_date, accruals=accruals)
         if accrual is None:
             return None
         factor = coupon_accrual_factor(accrual_calculation_schedule=accrual,

@@ -20,7 +20,7 @@ from poms.currencies.serializers import CurrencySerializer, CurrencyViewSerializ
 from poms.instruments.fields import PricingPolicyField
 from poms.instruments.models import CostMethod
 from poms.instruments.serializers import InstrumentSerializer, PricingPolicyViewSerializer, CostMethodSerializer, \
-    PriceHistorySerializer
+    PriceHistorySerializer, AccrualCalculationScheduleSerializer
 from poms.obj_attrs.serializers import GenericAttributeTypeSerializer, GenericAttributeSerializer
 from poms.portfolios.fields import PortfolioField
 from poms.portfolios.serializers import PortfolioSerializer, PortfolioViewSerializer
@@ -119,6 +119,13 @@ class ReportInstrumentSerializer(InstrumentSerializer):
         self.fields.pop('price_download_scheme_object')
         self.fields.pop('daily_pricing_model')
         self.fields.pop('daily_pricing_model_object')
+
+
+class ReportAccrualCalculationScheduleSerializer(AccrualCalculationScheduleSerializer):
+    def __init__(self, *args, **kwargs):
+        kwargs.setdefault('read_only', True)
+
+        super(AccrualCalculationScheduleSerializer, self).__init__(*args, **kwargs)
 
 
 class ReportPriceHistorySerializer(PriceHistorySerializer):
@@ -362,33 +369,49 @@ class ReportItemSerializer(serializers.Serializer):
 
     last_notes = serializers.CharField(read_only=True)
 
-    # allocations
+    # allocations ----------------------------------------------------
 
     allocation_balance = serializers.PrimaryKeyRelatedField(source='alloc_bl', read_only=True)
     allocation_pl = serializers.PrimaryKeyRelatedField(source='alloc_pl', read_only=True)
 
-    # mismatches
+    # mismatches ----------------------------------------------------
 
     mismatch = serializers.FloatField(read_only=True)
     mismatch_portfolio = serializers.PrimaryKeyRelatedField(source='mismatch_prtfl', read_only=True)
     mismatch_account = serializers.PrimaryKeyRelatedField(source='mismatch_acc', read_only=True)
     # mismatch_currency = serializers.PrimaryKeyRelatedField(source='mismatch_ccy', read_only=True)
 
-    # balance
+    # balance ----------------------------------------------------
 
     position_size = serializers.FloatField(source='pos_size', read_only=True)
     market_value = serializers.FloatField(source='market_value_res', read_only=True)
     market_value_loc = serializers.FloatField(read_only=True)
     cost = serializers.FloatField(source='cost_res', read_only=True)
 
+    # ----------------------------------------------------
+
     instr_principal = serializers.FloatField(source='instr_principal_res', read_only=True)
+    instrument_principal = serializers.FloatField(source='instr_principal_res', read_only=True)
     instr_accrued = serializers.FloatField(source='instr_accrued_res', read_only=True)
+    instrument_accrued = serializers.FloatField(source='instr_accrued_res', read_only=True)
+
     exposure = serializers.FloatField(source='exposure_res', read_only=True)
     exposure_loc = serializers.FloatField(read_only=True)
 
+    instrument_principal_price = serializers.FloatField(source='instr_price_cur_principal_price', read_only=True)
+    instrument_accrued_price = serializers.FloatField(source='instr_price_cur_accrued_price', read_only=True)
+
+    report_currency_fx_rate = serializers.FloatField(source='report_ccy_cur_fx', read_only=True)
+    instrument_pricing_currency_fx_rate = serializers.FloatField(source='instr_pricing_ccy_cur_fx', read_only=True)
+    instrument_accrued_currency_fx_rate = serializers.FloatField(source='instr_accrued_ccy_cur_fx', read_only=True)
+    currency_fx_rate = serializers.FloatField(source='ccy_cur_fx', read_only=True)
+    pricing_currency_fx_rate = serializers.FloatField(source='pricing_ccy_cur_fx', read_only=True)
+
+    # ----------------------------------------------------
+
     ytm = serializers.FloatField(read_only=True)
     modified_duration = serializers.FloatField(source='modif_dur', read_only=True)
-    ytm_at_cost = serializers.FloatField( read_only=True)
+    ytm_at_cost = serializers.FloatField(read_only=True)
     time_inveted = serializers.FloatField(source='time_inv', read_only=True)
     gros_cost_price_loc = serializers.FloatField(source='gros_cost_loc', read_only=True)
     net_cost_price_loc = serializers.FloatField(source='net_cost_loc', read_only=True)
@@ -453,7 +476,7 @@ class ReportItemSerializer(serializers.Serializer):
     overheads_fixed_opened = serializers.FloatField(source='overheads_fixed_opened_res', read_only=True)
     total_fixed_opened = serializers.FloatField(source='total_fixed_opened_res', read_only=True)
 
-    # prices and fx-rates
+    # ----------------------------------------------------
     report_currency_history = serializers.PrimaryKeyRelatedField(source='report_ccy_cur', read_only=True)
     instrument_price_history = serializers.PrimaryKeyRelatedField(source='instr_price_cur', read_only=True)
     instrument_pricing_currency_history = serializers.PrimaryKeyRelatedField(source='instr_pricing_ccy_cur',
@@ -463,6 +486,10 @@ class ReportItemSerializer(serializers.Serializer):
     currency_history = serializers.PrimaryKeyRelatedField(source='ccy_cur', read_only=True)
     pricing_currency_history = serializers.PrimaryKeyRelatedField(source='ccy_cur', read_only=True)
 
+    instrument_accrual = serializers.PrimaryKeyRelatedField(source='instr_accrual', read_only=True)
+    instrument_accrual_accrued_price = serializers.FloatField(source='instr_accrual_accrued_price', read_only=True)
+
+    # ----------------------------------------------------
     portfolio_object = ReportPortfolioSerializer(source='prtfl', read_only=True)
     account_object = ReportAccountSerializer(source='acc', read_only=True)
     strategy1_object = ReportStrategy1Serializer(source='str1', read_only=True)
@@ -479,6 +506,7 @@ class ReportItemSerializer(serializers.Serializer):
     mismatch_portfolio_object = ReportPortfolioSerializer(source='mismatch_prtfl', read_only=True)
     mismatch_account_object = ReportAccountSerializer(source='mismatch_acc', read_only=True)
 
+    # ----------------------------------------------------
     report_currency_history_object = ReportCurrencyHistorySerializer(source='report_ccy_cur', read_only=True)
     instrument_price_history_object = ReportPriceHistorySerializer(source='instr_price_cur', read_only=True)
     instrument_pricing_currency_history_object = ReportCurrencyHistorySerializer(source='instr_pricing_ccy_cur',
@@ -487,6 +515,8 @@ class ReportItemSerializer(serializers.Serializer):
                                                                                  read_only=True)
     currency_history_object = ReportCurrencyHistorySerializer(source='ccy_cur', read_only=True)
     pricing_currency_history_object = ReportCurrencyHistorySerializer(source='pricing_ccy_cur', read_only=True)
+
+    instrument_accrual_object = ReportAccrualCalculationScheduleSerializer(source='instr_accrual')
 
     def __init__(self, *args, **kwargs):
         kwargs.setdefault('read_only', True)
@@ -622,7 +652,10 @@ class ReportSerializer(serializers.Serializer):
 
     def validate(self, attrs):
         if not attrs.get('report_date', None):
-            attrs['report_date'] = date_now() - timedelta(days=1)
+            if settings.DEBUG:
+                attrs['report_date'] = date(2017, 2, 12)
+            else:
+                attrs['report_date'] = date_now() - timedelta(days=1)
 
         if not attrs.get('report_currency', None):
             attrs['report_currency'] = attrs['master_user'].system_currency

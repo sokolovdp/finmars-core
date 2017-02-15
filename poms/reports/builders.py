@@ -977,7 +977,9 @@ class ReportItem(_Base):
     instr_accrued_res = 0.0
     exposure_res = 0.0
     exposure_loc = 0.0
+
     instr_accrual = None  # Current Payment Size, Current Payment Frequency, Current Payment Periodicity N
+    instr_accrual_accrued_price = 0.0
 
     # balance
     pos_size = 0.0
@@ -1320,7 +1322,7 @@ class ReportItem(_Base):
         #     report_ccy_cur_fx = 1.0 / self.report_ccy_cur_fx
         # except ZeroDivisionError:
         #     report_ccy_cur_fx = 0.0
-        report_ccy_cur_fx = safe_div(1.0 / self.report_ccy_cur_fx)
+        report_ccy_cur_fx = safe_div(1.0, self.report_ccy_cur_fx)
 
         if self.instr:
             self.instr_price_cur = self.pricing_provider[self.instr]
@@ -1429,6 +1431,10 @@ class ReportItem(_Base):
             if self.instr:
                 self.instr_principal_res = self.pos_size * self.instr.price_multiplier * self.instr_price_cur_principal_price * self.instr_pricing_ccy_cur_fx
                 self.instr_accrued_res = self.pos_size * self.instr.accrued_multiplier * self.instr_price_cur_accrued_price * self.instr_pricing_ccy_cur_fx
+
+                self.instr_accrual = self.instr.find_accrual(self.report.report_date)
+                if self.instr_accrual:
+                    self.instr_accrual_accrued_price = self.instr.get_accrued_price(self.report.report_date, accrual=self.instr_accrual)
             else:
                 self.instr_principal_res = 0.0
                 self.instr_accrued_res = 0.0
@@ -1877,6 +1883,9 @@ class ReportBuilder(object):
             'instrument',
             'instrument__instrument_type',
             # 'instrument__instrument_type__instrument_class',
+            'instrument__accrual_calculation_schedules',
+            'instrument__accrual_calculation_schedules__accrual_calculation_model',
+            'instrument__accrual_calculation_schedules__periodicity',
             'transaction_currency',
             'settlement_currency',
             'portfolio',
