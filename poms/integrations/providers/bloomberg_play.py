@@ -4,7 +4,7 @@ import django
 
 django.setup()
 
-from poms.integrations.providers.bloomberg import get_certs_from_file, FakeBloombergDataProvider
+from poms.integrations.providers.bloomberg import get_certs_from_file, FakeBloombergDataProvider, BloombergDataProvider
 
 import logging
 import os
@@ -65,6 +65,7 @@ def test_instrument_data(b):
     # instrument = 'XS1433454243 Corp'
     # instrument = 'USP7807HAK16 Corp'
     instrument = 'USP16394AG62 Corp'
+    # instrument = 'XS0955552178 @BGN Corp'
 
     response = b.get_instrument_sync(instrument, instrument_fields)
 
@@ -179,6 +180,8 @@ if __name__ == "__main__":
 
     # b = BloombergDataProvider(wsdl="https://service.bloomberg.com/assets/dl/dlws.wsdl", cert=cert, key=key)
     b = FakeBloombergDataProvider(wsdl="https://service.bloomberg.com/assets/dl/dlws.wsdl", cert=cert, key=key)
+    # print(b._bbg_instr('10 20'))
+    # print(b._bbg_instr('XS0955552178 @BGN Corp'))
     # b.get_fields()
     test_instrument_data(b)
     # test_pricing_latest(b)
