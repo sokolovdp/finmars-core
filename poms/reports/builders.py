@@ -1996,7 +1996,7 @@ class ReportBuilder(object):
         kw_filters = {
             'master_user': self.instance.master_user,
             'is_deleted': False,
-            '%s__lte' % self.instance.date_field: self.instance.report_date
+            '%s__lt' % self.instance.date_field: self.instance.report_date
         }
 
         if self.instance.instruments:

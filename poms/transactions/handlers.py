@@ -18,9 +18,10 @@ from poms.transactions.models import ComplexTransaction, TransactionTypeInput, T
 
 
 class TransactionTypeProcess(object):
+    # if store is false then operations must be rollback outside, for example in view...
+
     def __init__(self, transaction_type=None, default_values=None,
-                 # expressions=None,
-                 values=None,                 calculate=True, store=False, has_errors=False,
+                 values=None, calculate=True, store=False, has_errors=False,
                  instruments=None, instruments_errors=None,
                  complex_transaction=None, complex_transaction_status=None, complex_transaction_errors=None,
                  transactions=None, transactions_errors=None,
@@ -63,8 +64,8 @@ class TransactionTypeProcess(object):
         self._id_seq = 0
         self._transaction_order_seq = 0
 
-        self._next_fake_id = fake_id_gen or self._next_fake_id_default
-        self._next_transaction_order = transaction_order_gen or self._next_transaction_order_default
+        self.next_fake_id = fake_id_gen or self._next_fake_id_default
+        self.next_transaction_order = transaction_order_gen or self._next_transaction_order_default
 
         self._now = now or date_now()
         self._context = context
@@ -249,11 +250,15 @@ class TransactionTypeProcess(object):
                               target=instrument, target_attr_name='maturity_price',
                               source=action_instrument, source_attr_name='maturity_price')
 
+                instrument.save()
                 if self.store:
-                    instrument.save()
                     self._instrument_assign_permission(instrument, object_permissions)
-                else:
-                    instrument.id = self._next_fake_id()
+                # if self.store:
+                #     instrument.save()
+                #     self._instrument_assign_permission(instrument, object_permissions)
+                # else:
+                #     instrument.id = self.next_fake_id()
+
                 instrument_map[action.id] = instrument
                 self.instruments.append(instrument)
                 self.instruments_errors.append(errors)
@@ -266,10 +271,11 @@ class TransactionTypeProcess(object):
                               source=self.transaction_type, source_attr_name='date_expr')
             self.complex_transaction_errors.append(errors)
 
-            if self.store:
-                self.complex_transaction.save()
-            else:
-                self.complex_transaction.id = self._next_fake_id()
+            self.complex_transaction.save()
+            # if self.store:
+            #     self.complex_transaction.save()
+            # else:
+            #     self.complex_transaction.id = self.next_fake_id()
 
         for order, action in enumerate(actions):
             try:
@@ -281,7 +287,7 @@ class TransactionTypeProcess(object):
                 errors = {}
                 transaction = Transaction(master_user=master_user)
                 transaction.complex_transaction = self.complex_transaction
-                transaction.complex_transaction_order = self._next_transaction_order()
+                transaction.complex_transaction_order = self.next_transaction_order()
                 transaction.transaction_class = action_transaction.transaction_class
 
                 self._set_rel(errors=errors, values=self.values, default_value=None,
@@ -406,10 +412,11 @@ class TransactionTypeProcess(object):
                     transaction.cash_date = self._now
 
                 transaction.transaction_date = min(transaction.accounting_date, transaction.cash_date)
-                if self.store:
-                    transaction.save()
-                else:
-                    transaction.id = self._next_fake_id()
+                transaction.save()
+                # if self.store:
+                #     transaction.save()
+                # else:
+                #     transaction.id = self.next_fake_id()
 
                 self.transactions.append(transaction)
                 self.transactions_errors.append(errors)
@@ -463,17 +470,17 @@ class TransactionTypeProcess(object):
             errors[attr_name] = msgs
         return msgs
 
-    # def process_expressions(self):
-    #     self.expressions_error = {}
-    #     self.expressions_result = {}
-    #     if not self.expressions:
-    #         return
-    #     for key, expr in self.expressions.items():
-    #         self.expressions_result[key] = None
-    #         self.expressions_error[key] = None
-    #         if expr:
-    #             try:
-    #                 self.expressions_result[key] = formula.safe_eval(expr, names=self.values, now=self._now,
-    #                                                                  context=self._context)
-    #             except formula.InvalidExpression as e:
-    #                 self._set_eval_error(self.expressions_error, key, expr, e)
+        # def process_expressions(self):
+        #     self.expressions_error = {}
+        #     self.expressions_result = {}
+        #     if not self.expressions:
+        #         return
+        #     for key, expr in self.expressions.items():
+        #         self.expressions_result[key] = None
+        #         self.expressions_error[key] = None
+        #         if expr:
+        #             try:
+        #                 self.expressions_result[key] = formula.safe_eval(expr, names=self.values, now=self._now,
+        #                                                                  context=self._context)
+        #             except formula.InvalidExpression as e:
+        #                 self._set_eval_error(self.expressions_error, key, expr, e)

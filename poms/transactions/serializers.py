@@ -1228,6 +1228,29 @@ class TransactionTypeProcessSerializer(serializers.Serializer):
 
         instance.complex_transaction._fake_transactions = instance.transactions
 
+        if instance.transactions:
+            for trn in instance.transactions:
+                trn.calc_cash_by_formulas()
+
+        if not instance.store:
+            instance.complex_transaction.id = instance.next_fake_id()
+            instr_map = {}
+            for instr in instance.instruments:
+                pk = instance.next_fake_id()
+                instr_map[instr.pk] = pk
+                instr.pk = pk
+            for trn in instance.transactions:
+                pk = instance.next_fake_id()
+                trn.pk = pk
+                if trn.instrument_id in instr_map:
+                    trn.instrument_id = instr_map[trn.instrument_id]
+                if trn.linked_instrument_id in instr_map:
+                    trn.linked_instrument_id = instr_map[trn.linked_instrument_id]
+                if trn.allocation_balance_id in instr_map:
+                    trn.allocation_balance_id = instr_map[trn.allocation_balance_id]
+                if trn.allocation_pl_id in instr_map:
+                    trn.allocation_pl_id = instr_map[trn.allocation_pl_id]
+
         return instance
 
     def _save_if_need(self, obj):

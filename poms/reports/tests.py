@@ -12,7 +12,6 @@ from poms.instruments.models import Instrument, PriceHistory, PricingPolicy, Cos
     AccrualCalculationSchedule, AccrualCalculationModel, Periodicity
 from poms.portfolios.models import Portfolio
 from poms.reports.builders import Report, ReportBuilder, VirtualTransaction, ReportItem
-from poms.reports.utils import calc_cash_for_contract_for_difference
 from poms.strategies.models import Strategy1Group, Strategy1Subgroup, Strategy1
 from poms.transactions.models import Transaction, TransactionClass
 from poms.users.models import MasterUser, Member
@@ -899,11 +898,12 @@ class ReportTestCase(TestCase):
         t4 = self._t(t_class=self._sell, instr=instr, position=-3, acc_date_days=5, cash_date_days=5,
                      stl_ccy=self.usd, cash=0, principal=3825000, carry=9000, overheads=-100)
 
+        from poms.transactions.utils import calc_cash_for_contract_for_difference
         calc_cash_for_contract_for_difference(transaction=None,
                                               instrument=instr,
                                               portfolio=self.m.portfolio,
                                               account=self.m.account,
-                                              member=self.member,
+                                              member=None,
                                               is_calculate_for_newer=False,
                                               is_calculate_for_all=True,
                                               save=True)

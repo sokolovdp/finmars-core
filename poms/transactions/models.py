@@ -16,12 +16,13 @@ from poms.common.models import NamedModel, AbstractClassModel, FakeDeletableMode
 from poms.common.utils import date_now
 from poms.counterparties.models import Responsible, Counterparty
 from poms.currencies.models import Currency
-from poms.instruments.models import Instrument
+from poms.instruments.models import Instrument, InstrumentClass
 from poms.obj_attrs.models import GenericAttribute
 from poms.obj_perms.models import GenericObjectPermission
 from poms.portfolios.models import Portfolio
 from poms.strategies.models import Strategy1, Strategy2, Strategy3
 from poms.tags.models import TagLink
+from poms.transactions.utils import calc_cash_for_contract_for_difference
 from poms.users.models import MasterUser, Member, FakeSequence
 
 
@@ -862,8 +863,10 @@ class ComplexTransactionInput(models.Model):
 class Transaction(FakeDeletableModel):
     master_user = models.ForeignKey(MasterUser, related_name='transactions', verbose_name=ugettext_lazy('master user'))
     complex_transaction = models.ForeignKey(ComplexTransaction, on_delete=models.SET_NULL, null=True, blank=True,
-                                            related_name='transactions', verbose_name=ugettext_lazy('complex transaction'))
-    complex_transaction_order = models.PositiveSmallIntegerField(default=0.0, verbose_name=ugettext_lazy('complex transaction order'))
+                                            related_name='transactions',
+                                            verbose_name=ugettext_lazy('complex transaction'))
+    complex_transaction_order = models.PositiveSmallIntegerField(default=0.0, verbose_name=ugettext_lazy(
+        'complex transaction order'))
     transaction_code = models.IntegerField(default=0, verbose_name=ugettext_lazy('transaction code'))
     transaction_class = models.ForeignKey(TransactionClass, on_delete=models.PROTECT,
                                           verbose_name=ugettext_lazy("transaction class"))
@@ -994,6 +997,8 @@ class Transaction(FakeDeletableModel):
         return 'Transaction #%s' % (self.transaction_code)
 
     def save(self, *args, **kwargs):
+        calc_cash = kwargs.pop('calc_cash', False)
+
         self.transaction_date = min(self.accounting_date, self.cash_date)
         if self.transaction_code is None or self.transaction_code == 0:
             if self.complex_transaction_id:
@@ -1001,6 +1006,26 @@ class Transaction(FakeDeletableModel):
             else:
                 self.transaction_code = FakeSequence.next_value(self.master_user, 'transaction', count=1)
         super(Transaction, self).save(*args, **kwargs)
+
+        if calc_cash:
+            self.calc_cash_by_formula()
+
+    def is_can_calc_cash_by_formulas(self):
+        return self.transaction_class_id in [TransactionClass.BUY, TransactionClass.SELL] \
+               and self.instrument.instrument_type.instrument_class_id == InstrumentClass.CONTRACT_FOR_DIFFERENCE
+
+    def calc_cash_by_formulas(self, save=True):
+        if self.is_can_calc_cash_by_formulas():
+            calc_cash_for_contract_for_difference(
+                transaction=self,
+                instrument=self.instrument,
+                portfolio=self.portfolio,
+                account=self.account_position,
+                member=None,
+                is_calculate_for_newer=True,
+                is_calculate_for_all=False,
+                save=save
+            )
 
 
 # class TransactionAttributeType(AbstractAttributeType):
