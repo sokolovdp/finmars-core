@@ -532,6 +532,10 @@ FUNCTIONS = [
 
 empty = object()
 
+SAFE_TYPES = (bool, int, float, str, list, tuple, dict, OrderedDict,
+              datetime.date, datetime.timedelta, datetime.datetime, relativedelta.relativedelta,
+              SimpleEval2Def, _UserDef)
+
 
 class SimpleEval2(object):
     def __init__(self, names=None, max_time=None, add_print=False, allow_assign=False, now=None, context=None):
@@ -595,7 +599,7 @@ class SimpleEval2(object):
 
         if val is None:
             return None
-        elif isinstance(val, (bool, int, str, list, tuple, dict, OrderedDict, datetime.date)):
+        elif isinstance(val, SAFE_TYPES):
             return val
         # elif isinstance(val, models.Model):
         else:
@@ -1562,7 +1566,7 @@ accrual_NL_365_NO_EOM(date(2000, 1, 1), date(2000, 1, 25))
         _l.info(safe_eval('now()', now=lambda: now))
 
 
-    # now_test()
+    now_test()
     pass
 
 
